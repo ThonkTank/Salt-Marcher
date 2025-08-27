@@ -12,6 +12,56 @@ import { DEFAULT_SETTINGS, type SaltSettings } from "./settings";
 import { SaltSettingsTab } from "./settingsTab";
 import { setLoggerConfig, createLogger } from "./logger";
 import { createOrOpenTileNote } from "./templateService";
+import { TileNoteService } from "./TileNoteService";
+
+// main.ts (Ausschnitt – oben bei den Imports ergänzen)
+import { TileNoteService } from "./TileNoteService";
+
+// ... in der Plugin-Klasse:
+export default class SaltMarcherPlugin extends Plugin {
+  settings: SaltSettings;
+  private log = createLogger("Core/Bootstrap");
+
+  // ➕ NEU: zentral verfügbar für Klick-Handler/Commands
+  tileNotes!: TileNoteService;
+
+  async onload() {
+    // ... (unverändert, Settings laden)
+
+    // ➕ NEU: Service initialisieren (nach Settings!)
+    this.tileNotes = new TileNoteService(this.app, this.settings);
+    this.log.debug("TileNoteService initialisiert", {
+      hexFolder: this.settings.hexFolder,
+      defaultRegion: this.settings.defaultRegion,
+    });
+
+    // ... (SettingsTab registrieren, SelfTest etc.)
+
+    // ➕ NEU: Test-Command für Feature 3
+    this.addCommand({
+      id: "salt-open-tile-0-0-feature3",
+      name: "Feature 3: Öffne/Erzeuge Tile 0,0 (TileNoteService)",
+      callback: async () => {
+        const t0 = performance.now();
+        const region = this.settings?.defaultRegion || "Region";
+        this.log.info("F3 Command gestartet: tileNotes.open(0,0)", { region });
+
+        try {
+          const ref = await this.tileNotes.open(0, 0, region);
+          const dt = Math.round(performance.now() - t0);
+          this.log.info("F3 Command OK", { durationMs: dt, ref });
+        } catch (err) {
+          const dt = Math.round(performance.now() - t0);
+          this.log.error("F3 Command FAIL", { durationMs: dt, err });
+        }
+      },
+    });
+
+    // ...
+  }
+
+  // ...
+}
 
 export default class SaltMarcherPlugin extends Plugin {
   settings: SaltSettings;
