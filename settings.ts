@@ -21,6 +21,12 @@ export interface SaltSettings {
   logRingBufferSize: number;
   logMaxContextChars: number;
 
+  // Travel (P0)
+  travelHexWidthMiles: number;
+  travelBaseSpeedMph: number;
+  travelRoadMod: number;
+  travelRiverCrossingMin: number;
+
   // Projektpfade
   hexFolder: string;
   locationsFolder: string;
@@ -48,6 +54,11 @@ export const DEFAULT_SETTINGS: SaltSettings = {
   sessionsFolder: "Sessions",
 
   defaultRegion: "Spitzberge",
+
+  travelHexWidthMiles: 3,      // P0: 3 Meilen pro Hex-Schritt (adjacent)
+  travelBaseSpeedMph: 3,       // ~ normales Gehtempo
+  travelRoadMod: 0.7,          // Straße ist schneller (Multiplikator < 1)
+  travelRiverCrossingMin: 10,  // fixer Aufschlag beim Querung-Segment
 };
 
 /* ───────────────────────────── Helper ───────────────────────────── */
