@@ -251,3 +251,105 @@ export class HexView {
     this.container.removeChild(this.root);
   }
 }
+
+--- a/HexView.ts
++++ b/HexView.ts
+@@
+   private attachEvents() {
+-    // Pan (middle mouse)
+-    this.svg.addEventListener('mousedown', (ev) => {
++    // Pan (middle mouse)
++    this.svg.addEventListener('mousedown', (ev) => {
+       if (ev.button === 1) {
+         this.dragging = true;
+         this.svg.style.cursor = 'grabbing';
+         this.dragStart = { x: ev.clientX, y: ev.clientY };
+         const s = this.store.state;
+         this.panStart = { x: s.panX, y: s.panY };
+-        ev.preve
++        ev.preventDefault(); // verhindert Browser-Autoscroll
+       }
+     });
+     window.addEventListener('mouseup', () => {
+       if (this.dragging) {
+-        this.dragging = false;
+-        this.svg.style.cursor = 'grab';
++        this.dragging = false;
++        this.svg.style.cursor = 'grab';
+       }
+     });
+     window.addEventListener('mousemove', (ev) => {
+       if (!this.dragging) return;
+       const dx = ev.clientX - this.dragStart.x;
+       const dy = ev.clientY - this.dragStart.y;
+       this.store.set({ panX: this.panStart.x + dx, panY: this.panStart.y + dy });
+     });
+ 
++    // Zoom (wheel) – zoomt zur Mausposition
++    this.svg.addEventListener('wheel', (ev: WheelEvent) => {
++      ev.preventDefault();
++      const rect = this.svg.getBoundingClientRect();
++      const vx = ev.clientX - rect.left;
++      const vy = ev.clientY - rect.top;
++      const factor = ev.deltaY > 0 ? 0.9 : 1.1;
++      const { oldZoom, newZoom } = this.store.zoomAt(factor, vx, vy);
++      this.logger.debug('[HexView] wheelZoom', { oldZoom, newZoom, vx, vy });
++    }, { passive: false });
++
+     // Click → hitTest → select → open note
+-    this.svg.addEventListener('click', async (ev) => {
++    this.svg.addEventListener('click', async (ev) => {
+       // Ignore if middle-drag ended
+       if (this.dragging) return;
+       const rect = this.svg.getBoundingClientRect();
+       const vx = ev.clientX - rect.left;
+       const vy = ev.clientY - rect.top;
+       const s = this.store.state;
+       const worldX = (vx - s.panX) / s.zoom;
+       const worldY = (vy - s.panY) / s.zoom;
+ 
+       const { q, r } = pixelToAxial({ x: worldX, y: worldY }, { size: s.hexSize });
+       this.logger.debug('[HexView] hitTest', { px: worldX, py: worldY, result: { q, r } });
+       this.store.set({ selected: { q, r } });
+ 
+       try {
+-        await this.notes.createIfMissing(q, r, this.store.state.region ?? 
+-null, undefined);
++        await this.notes.createIfMissing(q, r, this.store.state.region ?? null, undefined);
+         await this.notes.open(q, r);
+         this.logger.info('[HexView] open', { q, r });
+       } catch (err) {
+         this.logger.error('[HexView] open-failed', { q, r, err });
+       }
+     });
+ 
+     // Tooltip show (mousemove)
+-    this.svg.addEventListener('mousemove', (ev) => {
++    this.svg.addEventListener('mousemove', (ev) => {
+       const rect = this.svg.getBoundingClientRect();
+       const vx = ev.clientX - rect.left;
+       const vy = ev.clientY - rect.top;
+       const s = this.store.state;
+       const worldX = (vx - s.panX) / s.zoom;
+       const worldY = (vy - s.panY) / s.zoom;
++      const { q, r } = pixelToAxial({ x: worldX, y: worldY }, { size: s.hexSize });
++      this.tooltip.style.display = 'block';
++      this.tooltip.style.left = `${vx + 12}px`;
++      this.tooltip.style.top  = `${vy + 12}px`;
++      this.tooltip.textContent = `(${q},${r})${s.region ? ` · ${s.region}` : ''}`;
+     });
+@@
+   private drawGrid() {
+     const s = this.store.state;
+     this.logger.debug('[HexView] drawGrid', { cols: this.opts.cols, rows: this.opts.rows, hexSize: s.hexSize });
+@@
+-    world.appendChild(this.terrainLayer);
+-    world.appendChild(this.featureLayer);
+-    world.appendChild(this.select
++    world.appendChild(this.terrainLayer);
++    world.appendChild(this.featureLayer);
++    world.appendChild(this.selectionLayer);
+
+  this.svg.style.cursor = 'grab';
+(this.root.style as any).position = 'relative'; // Tooltip absolute darin
+
