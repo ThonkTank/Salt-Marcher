@@ -1,0 +1,154 @@
+Hier ist ein kompakter, priorisierter High-Level-Plan als To-Do-Liste. Ich nutze **P0–P4** (höchste → niedrigste Priorität) und **T-Shirt-Schätzungen** (S/M/L/XL) für die Komplexität. Jede Aufgabe hat Ziel, Kernschritte, Abhängigkeiten und eine kurze **DoD** (Definition of Done).
+
+# P0 – MVP Core (läuft überhaupt)
+
+1. Logger & Settings (S)
+   **Ziel:** Einheitliches Debugging + konfigurierbare Verbosität.
+   **Kern:** `Logger.ts` (Namespaces, Levels), Settings-Panel.
+   **Abh.:** –
+   **DoD:** Logs in DevTools & Obsidian Log; Level live umschaltbar.
+
+2. Datenmodell-Skeleton & Notiz-Vorlagen (S)
+   **Ziel:** Standard-Frontmatter/Ordnerstruktur für Tiles/Locations/NPC/Fraktionen.
+   **Kern:** YAML-Schemas + Template-Generator.
+   **Abh.:** –
+   **DoD:** „Neues Tile“ erzeugt valide Note aus Template.
+
+3. TileNoteService (S)
+   **Ziel:** Tile-Notizen finden/erstellen per (q,r).
+   **Kern:** Pfadkonvention, UUID, bidirektionale Links.
+   **Abh.:** (2)
+   **DoD:** Klick auf leeres Hex → Note wird angelegt & geöffnet.
+
+4. HexView (M)
+   **Ziel:** 2D-Hex-Renderer mit Pan/Zoom/Hit-Test & Selection.
+   **Kern:** Axial-Koordinaten, Layer (Terrain/Features/Routes).
+   **Abh.:** (1)(3)
+   **DoD:** Selektionsrahmen + Tooltip; Klick öffnet Note.
+
+5. TravelProcessor + Basis-Regeln (M)
+   **Ziel:** Reisezeit pro Segment (Terrain/Road/River).
+   **Kern:** Formel & Mod-Pipeline; Routenliste verarbeiten.
+   **Abh.:** (4)
+   **DoD:** Route A→B berechnet Zeit & gibt Debug-Breakdown aus.
+
+6. Clock & EventBus (S)
+   **Ziel:** Zeitfortschritt bei Reisen + Perioden-Trigger.
+   **Kern:** `advanceByTravelTime`, stündliche Hooks.
+   **Abh.:** (5)
+   **DoD:** Zeitstempel ändert sich; Events feuern zuverlässig.
+
+7. ChronicleService (S)
+   **Ziel:** Session-Log (Reisen/Events) automatisch protokollieren.
+   **Kern:** Listener auf EventBus; Markdown-Append.
+   **Abh.:** (6)
+   **DoD:** Route erzeugt Einträge in der aktuellen Session-Notiz.
+
+# P1 – Core Gameplay (sichtbar nützlich)
+
+8. Locations (Area/Room) – Grundsupport (M)
+   **Ziel:** Zwei Location-Typen inkl. Notizen & Verlinkung zu Hex.
+   **Kern:** `LocationFactory`, minimaler Raster/Graph-Stub.
+   **Abh.:** (2)(3)
+   **DoD:** Location anlegen, in Hex verlinken, öffnen.
+
+9. Visibility/Fog-of-War (M)
+   **Ziel:** Sichtweite nach Elevation + Blockern; Spieleransicht.
+   **Kern:** Hex-Raycast/Caching; Toggle „GM/Spieler“.
+   **Abh.:** (4)
+   **DoD:** Sichtbare Hexe korrekt markiert; Blocker wirken.
+
+10. Encounter-Stub + Intervalle (S)
+    **Ziel:** Reisewürfe & Platzhalter-Encounter-Events.
+    **Kern:** konfigurierbare Intervalle, Log-Only Outcome.
+    **Abh.:** (6)(5)
+    **DoD:** Encounter-Chancen laufen & loggen Gründe/Seeds.
+
+11. Faction Territory Heatmap (M)
+    **Ziel:** Soft-Control 0..100 je Tile visualisieren.
+    **Kern:** Influence-Map + Layer-Renderer.
+    **Abh.:** (4)
+    **DoD:** Heatmap-Overlay; Min/Max in Debug-Stats.
+
+# P2 – Simulation & Inhalte
+
+12. NPCIndex & StatblockRegistry (M)
+    **Ziel:** Generische/benannte NPCs + Statblöcke verwalten.
+    **Kern:** JSON-Schemas, Suche nach Standort/Tags.
+    **Abh.:** (2)(3)
+    **DoD:** NPC anlegen, finden, in Tile/Fraktion referenzieren.
+
+13. PopAI Basic (L)
+    **Ziel:** Leichtgewichtige Hintergrundaktionen (forage/hunt/patrol).
+    **Kern:** Tick-Jobs, Wegschritte, nur Deltas persistieren.
+    **Abh.:** (12)(6)(5)
+    **DoD:** Aktionen erzeugen protokollierte Outcomes & Bewegungen.
+
+14. WeatherEngine (M)
+    **Ziel:** Monatsprofile + Gebietsmodifikatoren; Hook in Travel.
+    **Kern:** Profile/Regeln; Weather→Speed/Stealth.
+    **Abh.:** (6)(5)
+    **DoD:** Wetter ändert Reisezeit/Tooltips reproduzierbar.
+
+15. Spieler-Import (DnD Beyond) – Minimal (M)
+    **Ziel:** Charakterwerte in Note synchronisieren.
+    **Kern:** OAuth/Export-Pfad (konfig.); Normalisierung.
+    **Abh.:** (2)
+    **DoD:** Pull liefert HP/Speed/AC etc. + Diff-Log.
+
+# P3 – Systems-Ausbau
+
+16. Encounter-Generator v1 (L)
+    **Ziel:** Gegner passend zu Gefahr/Party-Power (XP/DPR/AE).
+    **Kern:** Tabellen je Region/Tag/Nacht/Wetter; Scoring.
+    **Abh.:** (12)(14)(15)
+    **DoD:** Generator listet Gegner + Begründung; Export → Combat.
+
+17. Loot-Generator v1 (M)
+    **Ziel:** Belohnung nach Level/Distanz/Fraktions-Flavor.
+    **Kern:** gewichtete Tabellen + Kontext-Tags.
+    **Abh.:** (16) optional
+    **DoD:** Output mit Seed & Roll-Pfad im Log.
+
+18. Location-Generator Tools (M)
+    **Ziel:** Editierbare Generatoren für Area/Room-Maps.
+    **Kern:** Param-Formulare, Presets speichern/laden.
+    **Abh.:** (8)
+    **DoD:** Generator erzeugt Map/Notizen konsistent.
+
+19. FactionService – Assets & Construction (L)
+    **Ziel:** Produktionsorte (Forge/Portal), Auto-Bau erzeugt Maps.
+    **Kern:** ConstructionJob → LocationFactory; Ressourcenverbrauch.
+    **Abh.:** (12)(18)
+    **DoD:** Baujob legt Location an & verlinkt; Log der Kette.
+
+20. Combat-Tracker (M)
+    **Ziel:** Initiative-Order, HP-Quick-Edits, Aktions-Panel.
+    **Kern:** UI-Pane; Import aus Encounter.
+    **Abh.:** (16)
+    **DoD:** Runde tickt stabil; Aktionen/HP editierbar mit Log.
+
+# P4 – Nice-to-Have/Erweiterungen
+
+21. Ökonomie v1 (L) – Markt/Angebot/Nachfrage
+22. QuestForge v1 (L) – Bedürfnisbasierte Quests + Platzierung
+23. Spieler-Routen-UI Deluxe (M) – Mehrsegment-Planer, Wegpunkte
+24. Modding Hooks/Export (M) – JSON-Exports, APIs
+25. Analytics/Profiling (S) – Tick-Zeit, Entity-Counts, Caches
+
+---
+
+## Querschnittlich (alle Phasen)
+
+* **Fehlerrobuste Logs** (mandatory): Jede Aktion loggt *Inputs → Entscheidung → Output* (mit `traceId`).
+* **Caching/Performance:** Tile-/Path/LOS-Caches mit Invalidation.
+* **Tests:** Unit für RuleEngine/Travel/Visibility; Golden-Logs für deterministische Routen.
+
+---
+
+## Startvorschlag „erste zwei Releases“
+
+**Release 0.1 (P0):** (1–7) → Klickbare Hexe, Notizen, Reisen, Zeit, Chronik.
+**Release 0.2 (P1-Kern):** (8–11) → Locations, Fog, Encounter-Stub, Territorien-Heatmap.
+
+Wenn du möchtest, setze ich direkt Release 0.1 um und lege die Ordnerstruktur + Grundgerüste (TS-Dateien) mit reichlich Debug-Ausgaben an.
