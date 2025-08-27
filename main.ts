@@ -8,9 +8,10 @@
  */
 
 import { Plugin } from "obsidian";
-import { DEFAULT_SETTINGS, type SaltSettings } from "./settings";
+import { DEFAULT_SETTINGS, type SaltSettings, withDefaults } from "./settings";
 import { SaltSettingsTab } from "./settingsTab";
 import { setLoggerConfig, createLogger } from "./logger";
+import { HEX_VIEW_TYPE, HexViewView } from "./HexViewView";
 import { EventBus, type EventMap } from "./EventBus";
 import { Clock } from "./Clock";
 import { createOrOpenTileNote } from "./templateService";
@@ -28,12 +29,17 @@ export default class SaltMarcherPlugin extends Plugin {
   // Zentraler Service für Feature 3
   public tileNotes!: TileNoteService;
 
+  // Eventing/Time
+  public bus!: EventBus<EventMap>;
+  public clock!: Clock;
+  public chronicle!: ChronicleService;
+
   
   // Feature 6
   public bus!: EventBus<EventMap>;
   public clock!: Clock;
 
-  public chronicle!: ChronicleService;
+  public travel!: TravelProcessor;
 // ────────────────────────────────────────────────────────────────────────────
   // Lifecycle
   // ────────────────────────────────────────────────────────────────────────────
@@ -47,11 +53,41 @@ export default class SaltMarcherPlugin extends Plugin {
       }
     });
 
+      await this._validateAndPreparePaths();
+
     this.addCommand({
       id: "salt-chronicle-create-today",
       name: "Chronicle: Heutige Session erstellen & setzen",
       callback: async () => {
         try { await this.chronicle.createTodaySession(); } catch (err) { this.log.error("chronicle:createToday failed", { err }); }
+      }
+    });
+
+    this.addCommand({
+      id: "salt-travel-demo-road",
+      name: "Reise (Demo): 3 Schritte (Straße) → Zeit anwenden",
+      callback: async () => {
+        try {
+          const res = await this.travel.demoThreeStepsRoad();
+          this.bus?.emit("route:computed", { totalMin: res.totalMin, segments: res.segments, traceId: "cmd:demo-road" });
+          this.clock?.advanceByTravel(res.totalMin, "cmd:demo-road");
+        } catch (err) {
+          this.log.error("cmd:demo-road failed", { err });
+        }
+      }
+    });
+
+    this.addCommand({
+      id: "salt-travel-demo-river",
+      name: "Reise (Demo): 1 Schritt (Flussquerung) → Zeit anwenden",
+      callback: async () => {
+        try {
+          const res = await this.travel.demoRiverCrossing();
+          this.bus?.emit("route:computed", { totalMin: res.totalMin, segments: res.segments, traceId: "cmd:demo-river" });
+          this.clock?.advanceByTravel(res.totalMin, "cmd:demo-river");
+        } catch (err) {
+          this.log.error("cmd:demo-river failed", { err });
+        }
       }
     });
 
@@ -139,8 +175,114 @@ export default class SaltMarcherPlugin extends Plugin {
     try {
       await this.loadSettings();
       this.log.debug("Settings geladen & gemerged", {
+      
         settingsKeys: Object.keys(this.settings ?? {}),
       });
+// EventBus & Clock initialisieren
+try {
+  this.bus = new EventBus<EventMap>();
+  this.log.debug("EventBus initialisiert", { listeners: this.bus.count() });
+
+  this.clock = new Clock(this, this.bus, this.settings.clockStartISO ?? undefined);
+  await this.clock.initFromStorage(this.settings.clockStartISO ?? undefined, Boolean(this.settings.clockAutoStartNow));
+  this.log.info("Clock initialisiert", { now: this.clock.now() });
+
+  // Demo-Listener: logge jeden hourlyTick
+  this.bus.on("clock:hourlyTick", ({ tickISO, tickIndex }) => {
+    this.log.debug("clock:hourlyTick", { tickISO, tickIndex });
+  });
+} catch (err) {
+  this.log.error("EventBus/Clock konnte nicht initialisiert werden!", { err });
+}
+
+// ChronicleService initialisieren (hört auf route:applied)
+try {
+  this.chronicle = new ChronicleService(this.app, this as any, this.settings, this.bus, this.clock);
+  this.chronicle.initListeners();
+  this.log.info("Chronicle initialisiert");
+} catch (err) {
+  this.log.error("Chronicle konnte nicht initialisiert werden", { err });
+}
+
+
+
+    // Feature 5 (repaired in P0.1): TravelProcessor
+    try {
+      const terrainResolver = makeTerrainResolver(this.app, this.tileNotes);
+      this.travel = new TravelProcessor(this.app, this.settings as any, terrainResolver, (p) => {
+        this.bus?.emit("route:computed", { totalMin: p.totalMin, segments: p.segments, traceId: "travel" });
+      });
+      this.log.info("TravelProcessor initialisiert");
+// Feature 4 (P0.1 Step 3): Eigene HexView registrieren
+try {
+  this.registerView(HEX_VIEW_TYPE, (leaf) => new HexViewView(leaf, this));
+  this.log.info("HexView registriert", { type: HEX_VIEW_TYPE });
+
+  // Command: HexView öffnen (rechte Leiste)
+  this.addCommand({
+    id: "salt-hexview-open",
+    name: "Salt Marcher: HexView öffnen",
+    callback: async () => {
+      try {
+        const leaf = this.app.workspace.getRightLeaf(false);
+        await leaf.setViewState({ type: HEX_VIEW_TYPE, active: true });
+        this.app.workspace.revealLeaf(leaf);
+        this.log.info("HexView geöffnet (right leaf)");
+      } catch (err) {
+        this.log.error("HexView öffnen fehlgeschlagen", { err });
+      }
+    }
+  });
+} catch (err) {
+  this.log.error("registerView fehlgeschlagen", { err });
+/** Prüft/erstellt konfigurierten Hex-/Session-Ordner und warnt bei Problemen. */
+private async _validateAndPreparePaths(): Promise<void> {
+  try {
+    const { hexFolder, sessionsFolder, defaultRegion } = this.settings;
+    const created: string[] = [];
+    const warnings: string[] = [];
+
+    const ensureFolder = async (path: string, label: string) => {
+      const abs = this.app.vault.getAbstractFileByPath(path);
+      if (!abs) {
+        try {
+          await this.app.vault.createFolder(path);
+          created.push(`${label}:${path}`);
+          this.log.warn("Ordner nicht gefunden – neu angelegt", { label, path });
+        } catch (err) {
+          this.log.error("Ordner anlegen fehlgeschlagen", { label, path, err });
+        }
+      } else if (!(abs as any).children) {
+        // existiert, ist aber keine Mappe
+        warnings.push(`${label}:${path} ist keine Mappe`);
+        this.log.warn("Pfad ist keine Mappe", { label, path });
+      }
+    };
+
+    await ensureFolder(hexFolder, "hexFolder");
+    await ensureFolder(sessionsFolder, "sessionsFolder");
+
+    if (!defaultRegion || !defaultRegion.trim()) {
+      this.settings.defaultRegion = "Default";
+      warnings.push("defaultRegion war leer → auf 'Default' gesetzt");
+    }
+
+    if (created.length || warnings.length) {
+      this.log.info("Path-Validation abgeschlossen", { created, warnings });
+    } else {
+      this.log.debug("Path-Validation ok");
+    }
+  } catch (err) {
+    this.log.error("Path-Validation exception", { err });
+  }
+}
+
+}
+
+    } catch (err) {
+      this.log.error("TravelProcessor konnte nicht initialisiert werden", { err });
+    }
+
     } catch (err) {
       this.log.error("Fehler beim Laden der Settings – nutze DEFAULT_SETTINGS!", { err });
       this.settings = { ...DEFAULT_SETTINGS };
@@ -183,11 +325,14 @@ export default class SaltMarcherPlugin extends Plugin {
     this.log.info("onload() abgeschlossen");
   }
 
-  onunload() {
-    // Keine async-Operationen – nur sauber loggen
+  \1
     try {
-      this.log.info("Plugin wird entladen");
+      this.app.workspace.detachLeavesOfType(HEX_VIEW_TYPE);
+      this.log.info("HexView detached on unload");
     } catch (err) {
+      this.log.warn("detachLeavesOfType failed", { err });
+    }
+\2\3 catch (err) {
       // Falls Logger-Konfig zu diesem Zeitpunkt defekt ist:
       console.log("[SaltMarcher] Plugin entladen (Logger nicht verfügbar?)", err);
     }
@@ -198,15 +343,20 @@ export default class SaltMarcherPlugin extends Plugin {
   // ────────────────────────────────────────────────────────────────────────────
 
   private async loadSettings() {
-    const started = performance.now();
-    const loaded = await this.loadData(); // kann null/undefined sein
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, loaded ?? {});
-    const duration = Math.round(performance.now() - started);
-    this.log.debug("loadSettings(): abgeschlossen", {
-      durationMs: duration,
-      loadedNullish: loaded == null,
-    });
-  }
+  const started = performance.now();
+  const loaded = await this.loadData(); // kann null/undefined sein
+  this.settings = withDefaults(loaded ?? {});
+  const duration = Math.round(performance.now() - started);
+  this.log.debug("loadSettings(): abgeschlossen", {
+    durationMs: duration,
+    loadedNullish: loaded == null,
+    folders: {
+      hex: this.settings.hexFolder,
+      sessions: this.settings.sessionsFolder,
+    },
+    defaultRegion: this.settings.defaultRegion,
+  });
+}
 
   async saveSettings() {
     const started = performance.now();
@@ -226,23 +376,24 @@ export default class SaltMarcherPlugin extends Plugin {
 
   /** Zentral: Wendet die Logger-Konfig aus den aktuellen Settings an. */
   private _applyLoggerConfig(reason: string) {
-    try {
-      setLoggerConfig({
-        globalLevel: this.settings.logGlobalLevel,
-        perNamespace: this.settings.logPerNamespace,
-        enableConsole: this.settings.logEnableConsole,
-        enableNotice: this.settings.logEnableNotice,
-        ringBufferSize: this.settings.logRingBufferSize,
-        maxContextChars: this.settings.logMaxContextChars,
-      });
-      // Früh loggen – kann noch mit altem Logger sein, ist aber okay
-      this.log.debug("Logger-Konfiguration angewendet", {
-        reason,
-        globalLevel: this.settings.logGlobalLevel,
-        enableConsole: this.settings.logEnableConsole,
-        enableNotice: this.settings.logEnableNotice,
-      });
-    } catch (err) {
+  try {
+    setLoggerConfig({
+      globalLevel: this.settings.logGlobalLevel,
+      perNamespace: this.settings.logPerNamespace,
+      enableConsole: this.settings.logEnableConsole,
+      enableNotice: this.settings.logEnableNotice,
+      ringBufferSize: this.settings.logRingBufferSize,
+      maxContextChars: this.settings.logMaxContextChars,
+    });
+    // Logger nach Anwendung neu erstellen, damit Level/Namespaces greifen
+    this.log = createLogger("Core");
+    this.log.debug("Logger-Konfiguration angewendet & Logger re-initialisiert", {
+      reason,
+      globalLevel: this.settings.logGlobalLevel,
+      enableConsole: this.settings.logEnableConsole,
+      enableNotice: this.settings.logEnableNotice,
+    });
+  } catch (err) {
       // Harter Fehlerfall: Fallback zu console
       console.error("[SaltMarcher] setLoggerConfig() fehlgeschlagen", err, this.settings);
     }
