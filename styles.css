@@ -1,0 +1,26 @@
+.hexmap-wrapper {
+  display: flex;
+  flex-direction: row;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.hex-grid-container {
+  display: grid;
+  grid-template-columns: repeat(3, 80px);
+  grid-template-rows: repeat(3, 80px);
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+}
+
+.tile-details-panel {
+  min-width: 150px;
+  background: #232323;
+  color: #fff;
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 1rem;
+  box-shadow: 0 2px 8px #0003;
+  user-select: none;
+}
