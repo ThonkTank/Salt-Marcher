@@ -1,0 +1,239 @@
+# Dokumentation: Logger & Settings (P0 – MVP Core Schritt 1)
+
+Dieser Eintrag beschreibt die im Projekt implementierten **Logger- und Settings-Features**. Er dient als Referenz, warum und wie diese Funktionen umgesetzt wurden.
+
+---
+
+## Überblick
+
+**Warum?**
+Debugging ist ein zentrales Werkzeug bei der Entwicklung eines komplexen Plugins. Ohne klar strukturierte Logs ist es schwer nachzuvollziehen, was schief läuft. Mit Namespace-basiertem Logging und konfigurierbarer Verbosität können wir gezielt einzelne Module untersuchen.
+
+**Was?**
+
+* Einheitliches Logger-System mit globalem Level und optionalen Namespace-Overrides.
+* Obsidian Settings-Tab, um Log-Level und „Verbose Mode“ live umschalten zu können.
+* Integration in das Plugin, sodass Logs sofort beim Start verfügbar sind.
+
+**Wie?**
+
+* `Logger.ts`: zentrale Logger-Klasse mit Methoden `error`, `warn`, `info`, `debug`, `trace`.
+* `SettingsTab.ts`: UI-Komponente, um Log-Level einzustellen und „Verbose Mode“ zu toggeln.
+* `main.ts`: Integration der Settings in den Plugin-Lifecycle.
+
+---
+
+## Logger
+
+**Funktion:**
+
+* Jeder Logger wird mit einem **Namespace** instanziiert (z. B. `Travel`, `HexView`).
+* Logs erscheinen mit Präfix `[LEVEL][Namespace]`.
+* Über Log-Level-Filter wird gesteuert, welche Logs angezeigt werden.
+
+**Technische Umsetzung:**
+
+* `Logger.globalLevel` definiert die Standard-Stufe (z. B. `info`).
+* `Logger.nsLevels` erlaubt per-Module Overrides.
+* `shouldLog()` prüft anhand einer Level-Hierarchie (`error < warn < info < debug < trace`), ob eine Nachricht ausgegeben werden darf.
+* Ausgabe erfolgt in die DevTools-Konsole von Obsidian (und kann später erweitert werden).
+
+**Beispiel:**
+
+```ts
+const log = new Logger('Travel');
+log.debug('Segment berechnet', {from: "0,0", to: "1,0", result: 80});
+```
+
+Konsolen-Ausgabe:
+
+```
+[DEBUG][Travel] Segment berechnet {from:"0,0", to:"1,0", result:80}
+```
+
+---
+
+## SettingsTab
+
+**Funktion:**
+
+* Verwaltung der Logger-Konfiguration über die Obsidian-Settings-Oberfläche.
+* Einstellung des globalen Log-Levels (`error`, `warn`, `info`, `debug`, `trace`).
+* Schalter für „Verbose Mode“, der automatisch auf `trace` setzt.
+
+**Technische Umsetzung:**
+
+* `SaltMarcherSettingTab` erweitert `PluginSettingTab`.
+* UI-Elemente: Dropdown für Log-Level, Toggle für „Verbose Mode“.
+* Änderungen werden sofort in `Logger` übernommen und gespeichert.
+
+**Beispiel im UI:**
+
+* **Log Level**: Dropdown → `Info` ausgewählt.
+* **Verbose Mode**: Toggle → an → alle `trace`-Logs erscheinen.
+
+---
+
+## Integration in das Plugin
+
+**Funktion:**
+
+* Beim Starten (`onload`) lädt das Plugin die gespeicherten Settings.
+* Log-Level wird initialisiert.
+* Settings-Tab wird hinzugefügt.
+* Test-Log „Salt Marcher geladen“ erscheint in der Konsole.
+
+**Code-Auszug:**
+
+```ts
+const log = new Logger('Core');
+log.info('Salt Marcher geladen');
+```
+
+---
+
+## Debug-Strategie
+
+* **Info**: wichtige Lifecycle-Meldungen (Plugin geladen, Route gestartet).
+* **Debug**: Berechnungsschritte (Reisezeit, Tile-Erstellung).
+* **Trace**: detaillierte Iterationen und Hit-Tests.
+* **Warn/Error**: Probleme oder Fehlversuche (immer sichtbar).
+
+---
+
+## Definition of Done (DoD)
+
+* Logs erscheinen mit Namespace-Präfix in DevTools.
+* Settings-Tab erlaubt Live-Änderungen.
+* `Verbose Mode` schaltet auf `trace`.
+* Beispiel: Klick auf ein Hex zeigt `HexView.debug("hitTest", {q,r})`.
+
+---
+
+## Nutzen für die nächsten Schritte
+
+* Saubere Trennung nach Namespaces macht es möglich, später gezielt nur `Travel` oder `NPC` Logs zu sehen.
+* Live-Umschaltung erlaubt schnelles Debugging ohne Neustart.
+* Grundlage für **TileNoteService**, **HexView** und weitere P0-Features.
+
+Feature 2 – Datenmodell-Skeleton & Notiz-Vorlagen (Stand: 2025-08-27)
+Was wurde umgesetzt
+
+Ordnerstruktur (konfigurierbar)
+Vorgabeordner mit Defaults:
+Hexes/<Region>/<q>_<r>.md, Sessions/<YYYY-MM-DD>.md, NPC/<Name>.md, Factions/<Name>.md.
+Die Basispfade sind in den Plugin-Settings überschreibbar (siehe Feature 1 Settings UI).
+
+Minimal-Schemas (P0) für Tiles & Sessions
+Leichtgewichtiges Laufzeit-Guarding (type-narrowing + manuelle Checks) für Pflichtfelder; optionale Felder sauber vorinitialisiert.
+
+Template-Generator
+Service erzeugt Frontmatter + Start-Inhalt für „Neues Tile“ und „Neue Session“.
+Bei Klick auf ein Hex (Feature 1) wird die zugehörige Tile-Note geöffnet oder on-demand erstellt (mit Default-Werten).
+
+Wie wurde es implementiert
+Typen & Laufzeitprüfung
+
+Tile (P0 minimal)
+export type Tile = {
+  id: string;                      // "Region:q,r"
+  coords: { q: number; r: number };
+  region: string;
+  terrain: { tier: 0|1|2|3; speed_mod: number }; // multiplicative (z.B. 1.0, 0.75, 1.25)
+  features: string[];              // "river", "road", "forest", …
+  visibility: { elevation: number; blocks_view: boolean };
+  // Platzhalter für spätere P1/P2-Erweiterungen (factions, rumors, encounters…)
+}
+Warum so schlank? P0 deckt alle Reise-/Zeit-Berechnungen und Map-Verlinkungen ab, ohne früh ein komplexes Schema zu zementieren. Dadurch bleiben Migrationen klein und deterministisch.
+
+Session (P0)
+export type Session = {
+  date: string;                    // YYYY-MM-DD
+  party: string[];                 // optionale Namen
+  region?: string;
+  notes?: string;
+}
+Warum minimal? Sessions dienen v.a. als Zeit-Anker für Reisefortschritt/Log; Detail-Tracking (XP/Loot) folgt später.
+
+Laufzeit-Guards
+Simpler isTile(value): value is Tile / isSession(value): value is Session + defensive Defaults bei fehlenden Feldern (robust ggü. hand-editierten Notizen).
+Vorlagen (Template-Service)
+
+TemplateService.renderTileFrontmatter(q, r, region)
+Erzeugt YAML + Body für neue Tiles:
+---
+sm:type: tile
+sm:id: "{{region}}:{{q}},{{r}}"
+sm:coords: { q: {{q}}, r: {{r}} }
+sm:region: "{{region}}"
+sm:terrain: { tier: 1, speed_mod: 1.0 }
+sm:features: []
+sm:visibility: { elevation: 0, blocks_view: false }
+tags: [hex, {{region}}]
+---
+# Hex {{q}},{{r}} ({{region}})
+
+- **Gelände**: tier 1 (×1.00)
+- **Features**: —
+- **Höhe**: 0 m
+Warum YAML-Präfix sm:*? Kollisionen mit benutzerdefinierten Keys werden vermieden; gleichzeitig klare Namespace-Semantik fürs Plugin.
+
+TemplateService.renderSessionFrontmatter(date)
+---
+sm:type: session
+date: "{{date}}"
+party: []
+region:
+tags: [session]
+---
+# Session {{date}}
+
+> Notizen…
+Ordner & Dateinamen
+
+Defaults in Settings (Feature 1) pflegbar; beim Erstellen wird fehlende Struktur automatisch erzeugt (soweit Obsidian APi erlaubt).
+Warum deterministische Pfade? Schnelles „resolve or create“ ohne globale Suche; verlässliche Backlinks von Map→Note.
+
+Integration mit Feature 1 (Map/Click-Flow)
+
+Klick auf Hex → TilePathResolver berechnet Pfad → falls Datei fehlt: Template anwenden, Datei schreiben, anschließend öffnen.
+
+Debug-Logs begleiten jeden Schritt (s.u.), damit Fehlkonfigurationen (z.B. ungültiger Ordner) sofort auffallen.
+
+Debug- und Fehler-Handling (ausführlich)
+
+Globales Logging (Level in den Settings) + per-Namespace Overrides für data, templates, resolver:
+
+INFO: „[templates] create Tile (Ooke:3,-1) → Hexes/Ooke/3_-1.md“
+
+DEBUG: „[resolver] ensured folder Hexes/Ooke exists“
+
+WARN: „[data] invalid terrain.tier (5) – fallback to tier=1“
+
+ERROR: „[templates] failed to write file … (EACCES)“
+
+Warum so viel Logging? Obsidian-Setups variieren stark; laute, kontextreiche Logs beschleunigen Fehlersuche u. Support.
+
+Design-Entscheidungen (Warum)
+
+Minimal zuerst, erweiterbar später – Tile/Session decken Kernfälle ab; optionale Keys bleiben reserviert → migrationsarm.
+
+Deterministische Pfade – macht Automationen (Reisezeit, Uhr, Backlinks) trivial und performant.
+
+YAML Namespacing (sm:*) – klare Trennung von User-Frontmatter und Plugin-Feldern.
+
+Defensive Defaults – Notizen bleiben nutzbar, auch wenn Felder fehlen/kaputt sind.
+
+Verbose Logging – schnellere Diagnose bei Ordner-/Berechtigungs-/Schemafehlern.
+
+Offene Punkte / Nächste Schritte (P1+)
+
+Validierung optional auf Zod oder Valibot heben (bessere Fehlermeldungen; derzeit Guards ausreichend).
+
+Feature-Katalog für features[] (Enum + Icons) und automatische Darstellung im Hex-Overlay.
+
+Migrations-Utility (Frontmatter-Upgrades, falls Keys umbenannt werden).
+
+Session↔Tile Link-Macros (Sammeln aller in der Session berührten Tiles).
+
+Tests: Smoke-Tests für Resolver & Templates mit Mock-Vault.
