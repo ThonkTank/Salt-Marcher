@@ -1,1 +1,28 @@
+# Changelog
+
+## [0.1.0] - 2025-08-27
+
+### Added
+- **HexMapView Grundgerüst**: Erstellt `views/HexMapView.ts` mit Basispanel ("Hello HexMap"), extends von `ItemView`, Rückgabe von View-Typ und Display-Text.
+- **HexGrid Rendering**: Implementiert `renderHexGrid(container)` in `HexMapView`, erzeugt ein 3x3 Grid aus Tiles mit Koordinaten und Klick-Handlern.
+- **Hexagon-Darstellung**: Styles für `.hex-tile` hinzugefügt, Hexagon-Form per `clip-path`, visuelles Highlighting bei Auswahl.
+- **Tile-Details Panel**: Seitenpanel (`tile-details-panel`) zeigt die aktuell ausgewählte Tile und deren Koordinaten.
+- **Klick-Logik**: Klick auf ein Tile entfernt `.selected` von allen Tiles, fügt `.selected` dem geklickten hinzu und aktualisiert das Seitenpanel.
+- **Debugging & Logging**: Debug-Logs für Grid-Rendering, Tile-Klicks und Panel-Updates hinzugefügt.
+- **Struktur für Erweiterungen**: Code so gestaltet, dass Grid-Größe und Tile-Features zukünftig einfach erweitert werden können.
+
+### Changed
+- Keine Änderungen an bestehenden Features.
+
+### Deprecated
+- Nichts.
+
+### Removed
+- Nichts.
+
+### Fixed
+- Nichts.
+
+### Security
+- Nichts.
 
