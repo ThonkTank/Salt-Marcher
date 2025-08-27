@@ -28,6 +28,33 @@ export default class SaltMarcherPlugin extends Plugin {
   // ────────────────────────────────────────────────────────────────────────────
 
   async onload() {
+    this.addCommand({
+      id: "salt-hexview-open-demo",
+      name: "HexView (Demo) in Setting-Panel öffnen",
+      callback: () => {
+      const pane = this.addStatusBarItem(); // oder container in Leaf/Modal
+      pane.empty();
+      pane.createEl("div", { attr: { id: "hexview-demo" } });
+      const container = pane.querySelector("#hexview-demo") as HTMLElement;
+  
+      // Store + Logger (falls Logger defekt, fallback auf console)
+      const store = new (require("./HexViewStore").HexViewStore)({
+        hexSize: 30,
+        region: this.settings.defaultRegion ?? null,
+      });
+      const logger = require("./logger").createLogger?.("Hex/View") ?? console;
+  
+      // TileNoteService
+      const notes = this.tileNotes;
+  
+      // HexView
+      const HexView = require("./HexView").HexView as any;
+      const view = new HexView(container, store, logger, notes, { cols: 20, rows: 14, bg: "transparent" });
+      // keine weitere Referenz nötig – Demo
+        },
+    });
+
+    
     // Sehr frühe Info (noch vor erfolgreichem Settings-Laden)
     this.log.debug("onload() start – beginne Settings zu laden …", {
       manifestVersion: this.manifest?.version,
