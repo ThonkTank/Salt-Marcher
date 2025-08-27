@@ -472,4 +472,3 @@ private async _validateAndPreparePaths(): Promise<void> {
       console.warn("[SaltMarcher] SelfTest-Logs fehlgeschlagen", err);
     }
   }
-}
