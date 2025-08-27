@@ -1,0 +1,425 @@
+Mega—hier ist die umfassende Feature-Review für **P0 – MVP Core**. Ich gehe pro Feature auf **Ziel, User Stories, Muss-Funktionen, Implementierung**, **Debug-/Fehler-Logs**, **Tests/DoD** und **Risiken/Fallbacks** ein. Alles mit Fokus auf viele, aussagekräftige Debug-Messages.
+
+---
+
+# 1) Logger & Settings (S)
+
+## Ziel
+
+Einheitliches, fein steuerbares Debugging für alle Module. Live umschaltbar, damit wir Probleme direkt im Feld nachvollziehen.
+
+## User Stories
+
+* *Als Dev* möchte ich Logs nach Namespace filtern, um gezielt Travel-Bugs zu jagen.
+* *Als GM* möchte ich bei Problemen „Verbose Mode“ aktivieren, ohne neu zu starten.
+
+## Muss-Funktionen
+
+* Log-Levels: `error`, `warn`, `info`, `debug`, `trace`.
+* Namespaces (z. B. `HexView`, `Travel`, `Clock`, `Notes`, `Chronicle`).
+* Zwei Sinks: DevTools-Konsole + Obsidian-Log/Notice (optionales Toasting bei `warn/error`).
+* Live-Umschaltung im Settings-Tab (pro Namespace & global).
+* Serialisierung großer Objekte defensiv (Circular-safe, size-limit).
+
+## Implementierung
+
+* `Logger.ts`
+
+  * `createLogger(ns: string)` → `log.debug(msg, ctx?)`, …
+  * `setLevel(level | perNamespaceMap)`, `getLevel(ns)`.
+  * Context-Objekte „pretty“ drucken (stringify mit Länge ≤ n, Rest abschneiden).
+* `SettingsTab.ts`
+
+  * Global Level Dropdown, Namespace-Toggles, „Copy last 200 lines“.
+* Optional später: Persistente Ring-Buffer-Logs im Speicher (z. B. letzte 2 000 Einträge).
+
+### Beispiel-Logs (Style)
+
+```
+[DEBUG][HexView] click { q:1, r:-2, hasNote:true, path:"Hexes/Spitzberge/1_-2.md" }
+[INFO ][Travel] start { party:"[[Gruppe Alpha]]", segments:5, seed:"TQ7Q" }
+[WARN ][Notes ] templateMissing { template:"tile.md", fallback:true }
+[ERROR][Clock ] advanceFailed { deltaMin:192, reason:"overflow", stack:"..." }
+```
+
+## Tests & DoD
+
+* Level-Filter wirkt (per Namespace & global).
+* Logs sichtbar in DevTools + Obsidian-Log.
+* Live-Umschaltung ohne Reload.
+* 1–2 Unit-Tests: Level-Vergleich, JSON-Sicherheit.
+
+## Risiken & Fallbacks
+
+* **Rauschen:** Mit „Min Level = info“ starten; „debug/trace“ nur on-demand.
+* **Leistung:** Großobjekte clampen; teure Serialisierung nur bei `debug+`.
+
+---
+
+# 2) Datenmodell-Skeleton & Notiz-Vorlagen (S)
+
+## Ziel
+
+Konsistente Markdown-Struktur, damit alles eindeutig verlinkbar ist und Tools deterministisch arbeiten.
+
+## User Stories
+
+* *Als GM* möchte ich durch Klick auf ein Hex sofort eine „fertige“ Note mit Frontmatter bekommen.
+* *Als Dev* will ich mich auf definierte YAML-Felder verlassen.
+
+## Muss-Funktionen
+
+* Ordnerstruktur (konfigurierbar): `Hexes/<Region>/<q>_<r>.md`, `Locations/…`, `NPC/…`, `Factions/…`.
+* Minimal-Schemas für P0 (Tile/Session).
+* Template-Generator für „Neues Tile“, „Neue Session“.
+
+## Implementierung
+
+* `Schemas.ts` (TypeScript-Typen + Laufzeitprüfung, leichtgewichtig):
+
+  * Tile (P0 minimal): `id`, `coords:{q,r}`, `region`, `terrain:{tier,speed_mod}`, `features:[]`, `visibility:{elevation,blocks_view}`.
+* `TemplateService.ts`
+
+  * `renderTileFrontmatter(q,r,region,defaults)` → YAML-Block
+  * `createNoteAt(path, content)` mit Existenz-Check + UUID.
+* **Wichtig:** Alle Dateien mit stabiler `id` (UUID) im Frontmatter.
+
+### YAML-Beispiel (P0-Tile minimal)
+
+```yaml
+---
+id: hex_3n8q4p
+coords: { q: 1, r: -2 }
+region: Spitzberge
+terrain: { tier: 2, speed_mod: 2 }
+features: []
+visibility: { elevation: 120, blocks_view: false }
+---
+# Hex 1,-2
+Notizen…
+```
+
+## Debug/Fehler-Logs
+
+```
+[DEBUG][Notes] createTile { q:1, r:-2, path:"Hexes/Spitzberge/1_-2.md" }
+[WARN ][Notes] existingTile { path:".../1_-2.md" }  // keine Duplikate
+[ERROR][Notes] writeFailed { path, reason:"perm_denied" }
+```
+
+## Tests & DoD
+
+* „Neues Tile“ erzeugt valide Note (Schema-Check).
+* Duplikat-Klick öffnet vorhandene Note (kein zweites File).
+* Pfade folgen Konvention (Region/Koords).
+
+## Risiken & Fallbacks
+
+* **User ändert Ordner:** Pfade in Settings konfigurierbar; `TileNoteService` nutzt Settings.
+
+---
+
+# 3) TileNoteService (S)
+
+## Ziel
+
+Zentraler Service: Finden/Erstellen/Öffnen von Tile-Notizen anhand (q,r).
+
+## User Stories
+
+* *Als GM* klicke ich auf ein Hex und lande immer bei „der“ Note (neu oder bestehend).
+* *Als Dev* will ich die Tile-ID schnell für andere Features (Travel, Chronicle).
+
+## Muss-Funktionen
+
+* `getPathFor(q,r,region)` → deterministischer Pfad.
+* `find(q,r)` → vorhandene Datei (by path oder by `coords` scan).
+* `createIfMissing(q,r,region,defaults)` → Note mit Template.
+* `open(q,r)` → Obsidian-Editor öffnet Datei.
+* Rückgabewerte mit `{ path, id }`.
+
+## Implementierung
+
+* `TileNoteService.ts`
+
+  * Erst Pfad prüfen; wenn nicht vorhanden: „leichter Index-Scan“ über `Hexes/<Region>/`.
+  * Schreibzugriff mittels Obsidian-API.
+  * **Bidi-Links** (P0 light): am Ende „Backlink“-Section optional lassen; Bidi bauen wir später aus.
+
+### Debug/Fehler-Logs
+
+```
+[DEBUG][Notes] resolve { q:1, r:-2 } -> "Hexes/Spitzberge/1_-2.md"
+[INFO ][Notes] created { q:1, r:-2, id:"hex_3n8q4p" }
+[ERROR][Notes] openFailed { path:"...", reason:"not_found" }
+```
+
+## Tests & DoD
+
+* Klick auf leeres Hex → Note angelegt + geöffnet.
+* Klick auf existierendes Hex → gleiche Note geöffnet.
+* Rückgabe enthält `id` und `path`.
+
+## Risiken & Fallbacks
+
+* **Region unbekannt:** Default-Region aus Settings; Warn-Log + Fallback.
+
+---
+
+# 4) HexView (M)
+
+## Ziel
+
+Interaktiver 2D-Renderer: Pan/Zoom, Hit-Test, Auswahlrahmen, Tooltip. Klick öffnet Note.
+
+## User Stories
+
+* *Als GM* will ich zügig über die Karte pannen/zoomen und mit einem Klick das Hex öffnen.
+* *Als Dev* brauche ich eindeutige (q,r)-Treffer inklusive visuellem Feedback (Selection).
+
+## Muss-Funktionen
+
+* Darstellung eines Hex-Grids (konfigurierbare Größe).
+* Pan (Middle-Drag) / Zoom (Wheel) mit Fokus auf Mausposition.
+* Hit-Test → (q,r).
+* Selektions-Overlay (z. B. Stroke-Hex).
+* Tooltip (q,r, Region, evtl. Kurzinfo).
+
+## Implementierung
+
+* **Technik:** SVG (für klare Interaktion, saubere Layers)
+  Alternativ Canvas, aber SVG ist für P0 einfacher zu debuggen & stylen.
+* `HexView.tsx` (React/Preact im Plugin-Pane):
+
+  * Koordinaten: axial (q,r); `axialToPixel(q,r,hexSize)`; inverse für Hit-Test.
+  * Layers: `<g id="terrain">`, `<g id="features">`, `<g id="selection">`.
+  * Wheel-Zoom um Mausfokus: erst Weltpunkt berechnen, Zoom anwenden, dann pan kompensieren.
+* State in `HexViewStore` (Zoom, Pan, SelectedHex).
+* **Interaktion:** `onClick` → (q,r) → `TileNoteService.createIfMissing` → `open`.
+
+### Debug/Fehler-Logs
+
+```
+[DEBUG][HexView] drawGrid { cols:60, rows:60, hexSize:28 }
+[DEBUG][HexView] wheelZoom { old:1.0, new:1.15, at:{x:512,y:342} }
+[DEBUG][HexView] hitTest { px:740,py:288 } -> { q:1, r:-2 }
+[INFO ][HexView] select { q:1, r:-2 }
+[ERROR][HexView] badTransform { reason:"NaN pan", state:{...} }
+```
+
+## Tests & DoD
+
+* Selektionsrahmen wird korrekt gezeichnet.
+* Tooltip zeigt (q,r) zuverlässig.
+* Klick öffnet Note (aus 3).
+* Zoomen/Pannen fühlen sich stabil an (keine Sprünge).
+
+## Risiken & Fallbacks
+
+* **Performance bei großen Karten:** P0 nur „dünn“ rendern (Grid + Selection); Feature-Icons später lazy.
+
+---
+
+# 5) TravelProcessor + Basis-Regeln (M)
+
+## Ziel
+
+Reisezeit für eine **gegebene Route** (Liste benachbarter Hexe) berechnen—mit Terrain/Straße/Fluss (Wetter & Actor-Mods erst später).
+
+## User Stories
+
+* *Als GM* gebe ich A→B (oder A→…→Z) und bekomme eine Zeit + Debug-Breakdown pro Segment.
+* *Als Dev* will ich die Modifikatoren nachvollziehen (Warum dauert Segment 3 so lange?).
+
+## Muss-Funktionen
+
+* Routenformat: `[{from:{q,r}, to:{q,r}}...]` (benachbarte Hexe vorausgesetzt).
+* Basismetrik: Distanz/Speed → Minuten (Hexbreite global konfigurierbar, z. B. 3 mi).
+* Mod-Pipeline: `terrain_mod` **oder** `road_mod` (wenn Straße gefolgt), `+ river_crossing_cost`.
+* Ergebnis: Gesamtminuten + Liste pro Segment (Inputs/Outputs).
+
+## Implementierung
+
+* `TravelProcessor.ts`
+
+  * `computeSegment(ctx): Minutes`
+
+    ```
+    base = distance / speedBase
+    move = onRoad ? base * roadMod : base * terrainMod
+    time = round(move * weatherMod * actorMod + crossingCost) // weather/actor = 1.0 im P0
+    ```
+  * `processRoute(route, options)` → `{ total, segments: [...] }`.
+* `RuleEngine.ts` (P0):
+
+  * Terrain-Mod aus Tile-Frontmatter.
+  * Road-Follow: Flag im Segment-Kontext (P0: manuell gesetzt).
+  * River-Cross: `needsCrossRiver` → `crossingCost` (P0: pauschale Werte).
+
+### Debug-Breakdown (pro Segment)
+
+```
+[DEBUG][Travel] segment {
+  from:"0,0", to:"1,0",
+  dist:3.0mi, base:40,
+  terrain:"hills", terrainMod:"×2",
+  onRoad:false,
+  river:"+0",
+  resultMin:80
+}
+```
+
+## Tests & DoD
+
+* Route A→B liefert Gesamtzeit und korrekte Segment-Summen.
+* Straßen-Follow ignoriert Terrain-Mod (ersetzt durch roadMod).
+* River-Cross addiert fixer Minuten-Block.
+* „Leere“ Faktoren = 1.0/0 funktionieren deterministisch.
+
+## Risiken & Fallbacks
+
+* **Unklare Neighbor-Beziehung:** P0 setzt benachbarte Schritte voraus; Pathfinding kommt später (P1/P2).
+
+---
+
+# 6) Clock & EventBus (S)
+
+## Ziel
+
+Zeit fortschreiben, wenn gereist wird; periodische Trigger (stündlich) für spätere Systeme; lose Kopplung via Events.
+
+## User Stories
+
+* *Als GM* möchte, dass Reisen die Kampagnenzeit plausibel voranbringen.
+* *Als Dev* möchte ich auf „Zeit vergeht“ reagieren können (Encounter-Stub, später Wetter).
+
+## Muss-Funktionen
+
+* `Clock.now` (ISO + In-World-Kalender, P0 reicht ISO).
+* `advanceBy(minutes)` → aktualisiert `now` und sendet Events: `clock:advance`, `clock:hourlyTick` (für jeden überschrittenen Stundensprung).
+* `EventBus.on/off/emit` (einfache Pub/Sub-Schnittstelle).
+
+## Implementierung
+
+* `EventBus.ts` – Minimales Pub/Sub mit Map\<event, Set<handler>>.
+* `Clock.ts`
+
+  * `getNow()`, `setNow()`
+  * `advanceBy(min)` → `emit('clock:advance', { delta:min, now })`
+  * Bei Stundengrenzen: `emit('clock:hourlyTick', { hour, now })`.
+* TravelProcessor ruft `Clock.advanceBy(totalMinutes)`.
+
+### Debug/Fehler-Logs
+
+```
+[INFO ][Clock] advanceBy { minutes:192, from:"1023-05-12T09:00", to:"1023-05-12T12:12" }
+[DEBUG][Clock] hourlyTick { hour:10 }
+[DEBUG][Clock] hourlyTick { hour:11 }
+[DEBUG][Clock] hourlyTick { hour:12 }
+[ERROR][Clock] invalidDelta { minutes:-15 }
+```
+
+## Tests & DoD
+
+* Zeit springt korrekt nach `advanceBy`.
+* Stündliche Ticks feuern für jede überschrittene Stunde exakt einmal.
+* EventBus liefert/entfernt Listener korrekt (Memory-Leak-Check rudimentär).
+
+## Risiken & Fallbacks
+
+* **Viele Listener:** P0 klein halten, Listener-Counts loggen im Debug.
+
+---
+
+# 7) ChronicleService (S)
+
+## Ziel
+
+Automatische Sitzungschronik: Reisen & Basisevents in eine Session-Note schreiben, damit nichts verloren geht.
+
+## User Stories
+
+* *Als GM* klicke ich „Session starten“ und bekomme am Ende eine vollständige Liste der Ereignisse.
+* *Als Spieler/GM* will ich Links zu Hexen/Orten im Log.
+
+## Muss-Funktionen
+
+* „Session starten“ erstellt/öffnet Note `Sessions/2025-08-27.md` (Datum als Default).
+* Listener auf `Travel.start`, `Travel.segment`, `Travel.end`, `clock:advance` (optional zusammengefasst).
+* Einträge sind idempotent (kein mehrfaches Duplizieren bei Wiederholung).
+
+## Implementierung
+
+* `ChronicleService.ts`
+
+  * `startSession(date?)` speichert Pfad in Speicher (Settings/State).
+  * `append(entry)` hängt Markdown an (mit Trennern & Zeit).
+  * Minimal-Format P0:
+
+    ```
+    ## Reise
+    - 1023-05-12 09:00 → Route start [[Hex 0,0]] → [[Hex 1,0]]
+      - Segment 1: 40 min (Hügel ×2)
+      - Gesamt: 192 min → Uhrzeit jetzt 12:12
+    ```
+* Verlinkung: `[[Hexes/Spitzberge/1_-2|Hex 1,-2]]`.
+
+### Debug/Fehler-Logs
+
+```
+[INFO ][Chronicle] sessionStart { path:"Sessions/2025-08-27.md" }
+[DEBUG][Chronicle] append { kind:"travelEnd", totalMin:192, now:"..." }
+[ERROR][Chronicle] writeFailed { path, reason:"locked" }
+```
+
+## Tests & DoD
+
+* Neue Session-Note wird korrekt angelegt/erkannt.
+* Eine Reise erzeugt zusammenhängende Einträge (Start → Segmente → Ende).
+* Keine doppelten Einträge bei erneutem `emit` der gleichen Route (simple de-dupe anhand `traceId`).
+
+## Risiken & Fallbacks
+
+* **Konkurrenz beim Schreiben:** P0 einfach sequenziell; später Queue/Flush.
+
+---
+
+## Gesamt-Flow (Wie spielt P0 zusammen?)
+
+1. **HexView** rendert die Karte.
+   ‣ Klick auf Hex → `TileNoteService.createIfMissing(q,r)` → `open()`.
+
+2. **Reise** (Basis):
+   ‣ User gibt Route (A→B→C) ein → `TravelProcessor.processRoute()`
+   ‣ Pro Segment Debug-Breakdown → Summe.
+   ‣ `Clock.advanceBy(totalMinutes)` feuert `clock:advance`/`hourlyTick`.
+
+3. **Chronik**:
+   ‣ `ChronicleService` hört Travel- und Clock-Events → schreibt Markdown in Session-Note.
+
+4. **Logger/Settings**:
+   ‣ Bei Problemen „Verbose“ aktivieren, Namespaces filtern (z. B. nur `Travel`, `Notes`).
+
+---
+
+## Akzeptanzkriterien (DoD – P0 gesamt)
+
+* **Hex-Interaktion**: Selektionsrahmen & Tooltip funktionieren; Klick öffnet/erstellt Note.
+* **Reisezeit**: Eine manuell definierte Route liefert reproduzierbar Gesamtzeit + Segment-Breakdowns.
+* **Zeit**: `Clock.now` erhöht sich um die Reisedauer; stündliche Events feuern.
+* **Chronik**: Start einer Session + vollständiger Reiseeintrag (Start, Segmente, Ende, neue Zeit).
+* **Debug**: Alle oben gezeigten Logs sind in „Debug“-Level sichtbar; Level umschaltbar.
+
+---
+
+## Nächste konkrete Schritte (Umsetzung P0)
+
+1. **Logger & Settings**: `Logger.ts`, `SettingsTab.ts` (Basis-UI).
+2. **Schemas & Templates**: `Schemas.ts`, `TemplateService.ts`.
+3. **TileNoteService**: Pfadkonvention, Create/Find/Open, UUID.
+4. **HexView**: SVG-Renderer (Pan/Zoom/Hit-Test), Selection & Tooltip.
+5. **TravelProcessor**: Segment-Formel + Debug-Breakdowns.
+6. **Clock & EventBus**: Pub/Sub + `advanceBy`.
+7. **ChronicleService**: Session starten + Append-Pipeline.
+
+Wenn du willst, setze ich Punkt 1–3 direkt als TypeScript-Skeletons auf (mit **sehr** ausführlichen Debug-Nachrichten) — dann haben wir in kurzer Zeit ein klickbares Grid mit Notizerstellung und stabilen Logs.
