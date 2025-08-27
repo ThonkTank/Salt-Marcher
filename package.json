@@ -1,0 +1,16 @@
+{
+  "name": "salt-marcher",
+  "version": "0.1.0",
+  "description": "Ein Hexcrawling Omni-Tool für Obsidian.",
+  "main": "main.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": ["obsidian-plugin", "hexcrawl", "salt marcher"],
+  "author": "ThonkTank",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}
