@@ -3,7 +3,7 @@
  * - Lädt/merged Settings
  * - Konfiguriert Logger (inkl. Re-Init bei Settings-Updates)
  * - Registriert Settings-Tab
- * - Stellt Demo-Command bereit (createOrOpenTileNote)
+ * - Stellt Demo-Commands bereit (TemplateService & TileNoteService)
  * - Liefert ausführliche Debug-Ausgaben für robuste Fehlersuche
  */
 
@@ -14,59 +14,18 @@ import { setLoggerConfig, createLogger } from "./logger";
 import { createOrOpenTileNote } from "./templateService";
 import { TileNoteService } from "./TileNoteService";
 
-// main.ts (Ausschnitt – oben bei den Imports ergänzen)
-import { TileNoteService } from "./TileNoteService";
-
-// ... in der Plugin-Klasse:
 export default class SaltMarcherPlugin extends Plugin {
-  settings: SaltSettings;
+  settings!: SaltSettings;
+
+  // Bootstrap-Logger für ganz frühe Logs; wird nach setLoggerConfig() neu erstellt
   private log = createLogger("Core/Bootstrap");
 
-  // ➕ NEU: zentral verfügbar für Klick-Handler/Commands
-  tileNotes!: TileNoteService;
+  // Zentraler Service für Feature 3
+  public tileNotes!: TileNoteService;
 
-  async onload() {
-    // ... (unverändert, Settings laden)
-
-    // ➕ NEU: Service initialisieren (nach Settings!)
-    this.tileNotes = new TileNoteService(this.app, this.settings);
-    this.log.debug("TileNoteService initialisiert", {
-      hexFolder: this.settings.hexFolder,
-      defaultRegion: this.settings.defaultRegion,
-    });
-
-    // ... (SettingsTab registrieren, SelfTest etc.)
-
-    // ➕ NEU: Test-Command für Feature 3
-    this.addCommand({
-      id: "salt-open-tile-0-0-feature3",
-      name: "Feature 3: Öffne/Erzeuge Tile 0,0 (TileNoteService)",
-      callback: async () => {
-        const t0 = performance.now();
-        const region = this.settings?.defaultRegion || "Region";
-        this.log.info("F3 Command gestartet: tileNotes.open(0,0)", { region });
-
-        try {
-          const ref = await this.tileNotes.open(0, 0, region);
-          const dt = Math.round(performance.now() - t0);
-          this.log.info("F3 Command OK", { durationMs: dt, ref });
-        } catch (err) {
-          const dt = Math.round(performance.now() - t0);
-          this.log.error("F3 Command FAIL", { durationMs: dt, err });
-        }
-      },
-    });
-
-    // ...
-  }
-
-  // ...
-}
-
-export default class SaltMarcherPlugin extends Plugin {
-  settings: SaltSettings;
-  // Hinweis: Logger erst nach setLoggerConfig() initialisieren
-  private log = createLogger("Core/Bootstrap");
+  // ────────────────────────────────────────────────────────────────────────────
+  // Lifecycle
+  // ────────────────────────────────────────────────────────────────────────────
 
   async onload() {
     // Sehr frühe Info (noch vor erfolgreichem Settings-Laden)
@@ -74,23 +33,20 @@ export default class SaltMarcherPlugin extends Plugin {
       manifestVersion: this.manifest?.version,
     });
 
+    // Settings laden/mergen (defensiv)
     try {
       await this.loadSettings();
       this.log.debug("Settings geladen & gemerged", {
         settingsKeys: Object.keys(this.settings ?? {}),
       });
     } catch (err) {
-      this.log.error("Fehler beim Laden der Settings – nutze DEFAULT_SETTINGS!", {
-        err,
-      });
-      // Fallback, damit Plugin trotzdem läuft
+      this.log.error("Fehler beim Laden der Settings – nutze DEFAULT_SETTINGS!", { err });
       this.settings = { ...DEFAULT_SETTINGS };
     }
 
-    // Logger anhand (ggf. gefallbackter) Settings konfigurieren
+    // Logger mit gelesenen (oder Fallback-) Settings initialisieren
     this._applyLoggerConfig("onload:initial");
-
-    // Erst NACH setLoggerConfig() einen frischen Core-Logger anlegen
+    // Erst NACH setLoggerConfig() frischen Logger holen
     this.log = createLogger("Core");
     this.log.info("Plugin geladen – Settings & Logger aktiv", {
       version: this.manifest?.version,
@@ -105,17 +61,28 @@ export default class SaltMarcherPlugin extends Plugin {
       this.log.error("Konnte Settings-Tab nicht registrieren", { err });
     }
 
-    // Selbsttest: unterschiedliche Log-Levels testen
+    // Feature-3 Service initialisieren (nach Settings!)
+    try {
+      this.tileNotes = new TileNoteService(this.app, this.settings as any);
+      this.log.debug("TileNoteService initialisiert", {
+        hexFolder: this.settings.hexFolder,
+        defaultRegion: this.settings.defaultRegion,
+      });
+    } catch (err) {
+      this.log.error("TileNoteService konnte nicht initialisiert werden!", { err });
+    }
+
+    // Selbsttest-Logs
     this._selfTestLogs();
 
-    // Demo-Command registrieren
-    this._registerDemoCommands();
+    // Commands registrieren
+    this._registerCommands();
 
     this.log.info("onload() abgeschlossen");
   }
 
   onunload() {
-    // Hier KEINE async-Operationen erzwingen – nur sauber loggen
+    // Keine async-Operationen – nur sauber loggen
     try {
       this.log.info("Plugin wird entladen");
     } catch (err) {
@@ -128,10 +95,9 @@ export default class SaltMarcherPlugin extends Plugin {
   // Settings-Handling
   // ────────────────────────────────────────────────────────────────────────────
 
-  async loadSettings() {
+  private async loadSettings() {
     const started = performance.now();
-    const loaded = await this.loadData();
-    // Defensive Merge (loaded kann null/undefined sein)
+    const loaded = await this.loadData(); // kann null/undefined sein
     this.settings = Object.assign({}, DEFAULT_SETTINGS, loaded ?? {});
     const duration = Math.round(performance.now() - started);
     this.log.debug("loadSettings(): abgeschlossen", {
@@ -147,7 +113,7 @@ export default class SaltMarcherPlugin extends Plugin {
       const duration = Math.round(performance.now() - started);
       this.log.info("Settings gespeichert", { durationMs: duration });
 
-      // Nach dem Speichern ggf. Logger live neu konfigurieren
+      // Nach dem Speichern Logger live neu konfigurieren
       this._applyLoggerConfig("saveSettings");
       this.log.debug("Logger-Config nach saveSettings() neu angewendet");
     } catch (err) {
@@ -184,11 +150,12 @@ export default class SaltMarcherPlugin extends Plugin {
   // Commands
   // ────────────────────────────────────────────────────────────────────────────
 
-  private _registerDemoCommands() {
+  private _registerCommands() {
     try {
+      // (A) Bestehendes Demo über TemplateService – Regression Guard
       this.addCommand({
         id: "salt-create-tile-0-0",
-        name: "Demo: Erzeuge Tile 0,0 in Default-Region",
+        name: "Demo: Erzeuge/Öffne Tile 0,0 (TemplateService)",
         callback: async () => {
           const t0 = performance.now();
           const region = this.settings?.defaultRegion || "Region";
@@ -197,17 +164,37 @@ export default class SaltMarcherPlugin extends Plugin {
           try {
             await createOrOpenTileNote(this.app, 0, 0, region, this.settings);
             const dt = Math.round(performance.now() - t0);
-            this.log.info("Demo-Command erfolgreich abgeschlossen", { durationMs: dt });
+            this.log.info("Demo-Command OK (TemplateService)", { durationMs: dt });
           } catch (err) {
             const dt = Math.round(performance.now() - t0);
-            this.log.error("Demo-Command fehlgeschlagen", { durationMs: dt, err });
+            this.log.error("Demo-Command FAIL (TemplateService)", { durationMs: dt, err });
           }
         },
       });
 
-      this.log.debug("Demo-Command registriert: salt-create-tile-0-0");
+      // (B) Neues Feature-3-Command über TileNoteService – Zielpfad der Implementierung
+      this.addCommand({
+        id: "salt-open-tile-0-0-feature3",
+        name: "Feature 3: Öffne/Erzeuge Tile 0,0 (TileNoteService)",
+        callback: async () => {
+          const t0 = performance.now();
+          const region = this.settings?.defaultRegion || "Region";
+          this.log.info("F3 Command gestartet: tileNotes.open(0,0)", { region });
+
+          try {
+            const ref = await this.tileNotes.open(0, 0, region);
+            const dt = Math.round(performance.now() - t0);
+            this.log.info("F3 Command OK (TileNoteService)", { durationMs: dt, ref });
+          } catch (err) {
+            const dt = Math.round(performance.now() - t0);
+            this.log.error("F3 Command FAIL (TileNoteService)", { durationMs: dt, err });
+          }
+        },
+      });
+
+      this.log.debug("Commands registriert: salt-create-tile-0-0, salt-open-tile-0-0-feature3");
     } catch (err) {
-      this.log.error("Fehler beim Registrieren von Demo-Commands", { err });
+      this.log.error("Fehler beim Registrieren von Commands", { err });
     }
   }
 
