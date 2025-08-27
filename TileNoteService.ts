@@ -1,105 +1,85 @@
-/*
- * Salt Marcher – TileNoteService
+/* 
+ * Salt Marcher – TileNoteService (Fortsetzung Feature 3)
  * Ziel: Zentraler Service zum Finden/Erstellen/Öffnen von Tile-Notizen anhand (q,r[,region]).
- *
+ * 
  * Muss-Funktionen
- *  - getPathFor(q,r,region)
- *  - find(q,r)
- *  - createIfMissing(q,r,region,defaults)
- *  - open(q,r)
- *  - Rückgabewerte mit { path, id }
- *
- * Hinweise
- *  - Fallback-Region aus Settings, sonst "Default".
- *  - Ordnerstruktur: <hexesRoot>/<Region>/<q>_<r>.md  (Hexes/<Region>/1_-2.md)
- *  - "Leichter Index-Scan": Falls der deterministische Pfad nicht existiert, scanne Hexes/<Region>/ nach YAML coords.
- *  - Viele Debug-Logs! (nutzt internen Logger, bricht nicht wenn kein globaler Logger existiert)
- *  - Bidi-Links (P0 light): fügt am Ende eine Backlink-Sektion als Platzhalter ein.
+ * - getPathFor(q,r,region)
+ * - find(q,r,region)
+ * - createIfMissing(q,r,region,defaults)
+ * - open(q,r,region)
+ * 
+ * Design
+ * - Deterministische Pfade: "<hexFolder>/<region>/<q>_<r>.md"
+ * - "Leichter Index-Scan": Wenn Datei nicht am Pfad liegt, scannt Regionsordner nach YAML coords.
+ * - Sehr viele Debug-Logs (Namespace: "Notes/Tile").
  */
 
 import { App, TAbstractFile, TFile, normalizePath } from "obsidian";
+import { createLogger } from "./logger";
+import type { SaltSettings } from "./settings";
 
-// === Types ===
+// ——— Types ————————————————————————————————————————————————————————————————
 export type TileNoteRef = { path: string; id: string; file?: TFile };
+
 export type TileDefaults = Partial<{
   terrain: { tier: number | null; speed_mod: number };
   features: string[];
   visibility: { elevation: number | null; blocks_view: boolean };
 }>;
 
-export type SaltMarcherLikeSettings = Partial<{
-  defaultRegion: string;
-  folders: { hexesRoot: string };
-  templates: { tile: string | null };
+// Optional: Template-Pfad, ohne Settings zwingend zu ändern (bleibt kompatibel)
+type MaybeTemplateSetting = Partial<{
+  templates: { tile?: string | null };
 }>;
 
 export class TileNoteService {
   private app: App;
-  private settings: SaltMarcherLikeSettings;
+  private settings: SaltSettings & MaybeTemplateSetting;
+  private log = createLogger("Notes/Tile");
 
-  constructor(app: App, settings: SaltMarcherLikeSettings) {
+  constructor(app: App, settings: SaltSettings & MaybeTemplateSetting) {
     this.app = app;
-    this.settings = settings ?? {};
+    this.settings = settings ?? ({} as any);
+    this.log.debug("TileNoteService.ctor", {
+      hasTemplatesKey: !!(settings as any)?.templates,
+      hexFolder: this.settings.hexFolder,
+      defaultRegion: this.settings.defaultRegion,
+    });
   }
 
-  // =========== Logger (robust, keine externen Abhängigkeiten nötig) ==========
-  private log(level: "DEBUG" | "INFO" | "WARN" | "ERROR", scope: string, msg: string, data?: unknown) {
-    const prefix = `[${level}][${scope}]`;
-    try {
-      if (data !== undefined) {
-        // Stringify defensiv, damit wir nie Exceptions werfen
-        const safe = (() => {
-          try {
-            return JSON.stringify(data);
-          } catch (_) {
-            return String(data);
-          }
-        })();
-        // eslint-disable-next-line no-console
-        console.log(prefix, msg, safe);
-      } else {
-        // eslint-disable-next-line no-console
-        console.log(prefix, msg);
-      }
-    } catch (_) {
-      // ignorieren – Logging darf niemals die App crashen
-    }
-  }
-
-  // ======================== Öffentliche API ========================
+  // ======================== Öffentliche API ================================
 
   /** Deterministischer Pfad für (q,r,region). */
   getPathFor(q: number, r: number, region?: string): string {
-    const hexesRoot = this.settings.folders?.hexesRoot || "Hexes";
-    const reg = region || this.settings.defaultRegion || "Default";
+    const hexesRoot = this.settings.hexFolder || "Hexes";
+    const reg = (region || this.settings.defaultRegion || "Default").replace(/\//g, "-");
     const path = normalizePath(`${hexesRoot}/${reg}/${q}_${r}.md`);
-    this.log("DEBUG", "Notes", `resolve { q:${q}, r:${r}, region:${reg} } -> "${path}"`);
+    this.log.debug("getPathFor", { q, r, region: reg, path });
     return path;
   }
 
   /**
-   * Findet eine bestehende Datei zu (q,r).
+   * Findet eine bestehende Datei zu (q,r,region).
    * 1) Prüft den deterministischen Pfad.
    * 2) Wenn nicht vorhanden, scannt den Regionsordner nach YAML coords.
    */
   async find(q: number, r: number, region?: string): Promise<TileNoteRef | null> {
-    const reg = region || this.settings.defaultRegion || "Default";
+    const reg = (region || this.settings.defaultRegion || "Default").trim();
     const path = this.getPathFor(q, r, reg);
 
     // 1) Direkt am Pfad
-    const dirHit = this.app.vault.getAbstractFileByPath(path);
-    if (dirHit instanceof TFile) {
-      const id = await this.ensureIdAndCoords(dirHit, { q, r, region: reg });
-      this.log("INFO", "Notes", `foundByPath { q:${q}, r:${r}, id:"${id}" }`, { path });
-      return { path, id, file: dirHit };
+    const direct = this.app.vault.getAbstractFileByPath(path);
+    if (direct instanceof TFile) {
+      const id = await this.ensureIdAndCoords(direct, { q, r, region: reg });
+      this.log.info("find.foundByPath", { q, r, id, path });
+      return { path, id, file: direct };
     }
 
-    // 2) Leichter Index-Scan über Hexes/<Region>/
-    const folderPath = normalizePath(`${this.settings.folders?.hexesRoot || "Hexes"}/${reg}`);
+    // 2) Regions-Ordner scannen
+    const folderPath = normalizePath(`${this.settings.hexFolder || "Hexes"}/${reg}`);
     const folder = this.app.vault.getAbstractFileByPath(folderPath);
-
     if (!folder) {
-      this.log("WARN", "Notes", "regionFolderMissing – no scan possible", { folderPath });
+      this.log.warn("find.regionFolderMissing", { folderPath, q, r });
       return null;
     }
 
@@ -119,29 +99,27 @@ export class TileNoteService {
       matches.sort((a, b) => a.path.localeCompare(b.path));
       const file = matches[0];
       const id = await this.ensureIdAndCoords(file, { q, r, region: reg });
-      this.log("INFO", "Notes", `foundByScan { q:${q}, r:${r}, id:"${id}" }`, { path: file.path });
+      this.log.info("find.foundByScan", { q, r, id, path: file.path, candidates: matches.length });
       return { path: file.path, id, file };
     }
 
-    this.log("DEBUG", "Notes", `find.miss { q:${q}, r:${r}, region:${reg} }`);
+    this.log.debug("find.miss", { q, r, region: reg });
     return null;
   }
 
-  /**
-   * Erstellt die Notiz, falls nicht vorhanden. Liefert Referenz zurück.
-   */
+  /** Erstellt die Notiz, falls nicht vorhanden. */
   async createIfMissing(
     q: number,
     r: number,
     region?: string,
     defaults?: TileDefaults
   ): Promise<TileNoteRef> {
-    const reg = region || this.settings.defaultRegion || "Default";
+    const reg = (region || this.settings.defaultRegion || "Default").trim();
 
     // 1) Existiert bereits?
     const existing = await this.find(q, r, reg);
     if (existing) {
-      this.log("DEBUG", "Notes", "createIfMissing.hit – already exists", existing);
+      this.log.debug("createIfMissing.hit", { q, r, region: reg, path: existing.path });
       return existing;
     }
 
@@ -150,43 +128,42 @@ export class TileNoteService {
     const { parent } = this.splitPath(path);
     await this.ensureFolder(parent);
 
-    // 3) Datei erzeugen
+    // 3) Inhalt erzeugen & Datei schreiben
     const id = this.makeId();
-    const content = this.renderTileTemplate({ q, r, region: reg, id, defaults });
+    const content = await this.renderTileTemplate({ q, r, region: reg, id, defaults });
 
     let file: TFile;
     try {
       file = await this.app.vault.create(path, content);
-      this.log("INFO", "Notes", `created { q:${q}, r:${r}, id:"${id}" }`, { path });
+      this.log.info("createIfMissing.created", { q, r, region: reg, id, path });
     } catch (err) {
-      this.log("ERROR", "Notes", "createFailed", { path, error: String(err) });
+      this.log.error("createIfMissing.createFailed", { path, error: String(err) });
       throw err;
     }
 
-    // 4) Frontmatter sicherstellen (falls Templates angepasst wurden)
+    // 4) Frontmatter sicherstellen (falls Template unvollständig war)
     await this.ensureIdAndCoords(file, { q, r, region: reg, id });
 
     return { path, id, file };
   }
 
-  /** Öffnet (oder erstellt und öffnet) die Notiz für (q,r). */
+  /** Öffnet (oder erstellt + öffnet) die Notiz. */
   async open(q: number, r: number, region?: string): Promise<TileNoteRef> {
-    const reg = region || this.settings.defaultRegion || "Default";
+    const reg = (region || this.settings.defaultRegion || "Default").trim();
     const ref = (await this.find(q, r, reg)) ?? (await this.createIfMissing(q, r, reg));
 
     try {
       const leaf = this.app.workspace.getLeaf(true);
       await leaf.openFile(ref.file ?? (this.app.vault.getAbstractFileByPath(ref.path) as TFile));
-      this.log("INFO", "Notes", "opened", { path: ref.path, id: ref.id });
+      this.log.info("open.ok", { path: ref.path, id: ref.id, q, r, region: reg });
     } catch (err) {
-      this.log("ERROR", "Notes", "openFailed", { path: ref.path, reason: String(err) });
+      this.log.error("open.failed", { path: ref.path, reason: String(err) });
       throw err;
     }
-
     return ref;
   }
 
-  // ======================== Private Helpers ========================
+  // ======================== Private Helpers =================================
 
   /** Sichere ID & Coords im Frontmatter; generiert ID wenn nötig. */
   private async ensureIdAndCoords(
@@ -195,26 +172,21 @@ export class TileNoteService {
   ): Promise<string> {
     const cache = this.app.metadataCache.getFileCache(file);
     let id: string | undefined = (cache?.frontmatter as any)?.id;
-
-    // Wenn keine ID im Cache, versuchen wir sie im Dokument zu setzen
     if (!id) id = opts.id || this.makeId();
 
     try {
       await this.app.fileManager.processFrontMatter(file, (fm) => {
         (fm as any).id = (fm as any).id || id;
         (fm as any).type = (fm as any).type || "tile";
-        (fm as any).coords = {
-          q: opts.q,
-          r: opts.r,
-          region: opts.region,
-        };
+        (fm as any).coords = { q: opts.q, r: opts.r, region: opts.region };
       });
+      this.log.debug("ensureIdAndCoords.processFrontMatter.ok", { path: file.path, id });
     } catch (err) {
-      this.log("WARN", "Notes", "processFrontMatter.failed – falling back to raw write", {
+      // Fallback: Rohtext parsen und ersetzen
+      this.log.warn("ensureIdAndCoords.processFrontMatter.failed", {
         path: file.path,
         error: String(err),
       });
-      // Fallback: Rohtext parsen und ersetzen
       const raw = await this.app.vault.read(file);
       const updated = this.patchFrontmatterRaw(raw, {
         id,
@@ -222,8 +194,8 @@ export class TileNoteService {
         coords: { q: opts.q, r: opts.r, region: opts.region },
       });
       await this.app.vault.modify(file, updated);
+      this.log.debug("ensureIdAndCoords.rawPatch.ok", { path: file.path, id });
     }
-
     return id;
   }
 
@@ -243,6 +215,7 @@ export class TileNoteService {
   private async ensureFolder(folderPath: string): Promise<void> {
     if (!folderPath || folderPath === "/") return;
     const segs = folderPath.split("/");
+
     let acc = "";
     for (const seg of segs) {
       acc = acc ? `${acc}/${seg}` : seg;
@@ -250,10 +223,10 @@ export class TileNoteService {
       if (!existing) {
         try {
           await this.app.vault.createFolder(acc);
-          this.log("DEBUG", "Notes", "createFolder", { path: acc });
+          this.log.debug("ensureFolder.created", { path: acc });
         } catch (err) {
-          // Ordner könnte in der Zwischenzeit erstellt worden sein – nur warnen
-          this.log("WARN", "Notes", "ensureFolder.failed", { path: acc, error: String(err) });
+          // Race condition möglich – nur warnen
+          this.log.warn("ensureFolder.failed", { path: acc, error: String(err) });
         }
       }
     }
@@ -262,32 +235,28 @@ export class TileNoteService {
   /** DFS über ein Vault-Tree-Substrukt. */
   private walk(root: TAbstractFile, visit: (f: TAbstractFile) => void) {
     visit(root);
-    // @ts-ignore – Obsidian hat children auf TFolder, aber wir prüfen zur Laufzeit
+    // @ts-ignore Obsidian: children nur bei TFolder – Runtime-Check reicht
     if (root.children && Array.isArray(root.children)) {
       // @ts-ignore
       for (const child of root.children) this.walk(child, visit);
     }
   }
 
-  /** Sehr einfache Template-Generierung (nutzt Einstellungen wenn vorhanden). */
-  private renderTileTemplate(args: {
+  /** Sehr einfache Template-Generierung (nutzt optional eine externe Datei). */
+  private async renderTileTemplate(args: {
     q: number;
     r: number;
     region: string;
     id: string;
     defaults?: TileDefaults;
-  }): string {
+  }): Promise<string> {
     const { q, r, region, id, defaults } = args;
 
-    // Versuch: externes Template (Pfad oder Name) laden – falls bereitgestellt
+    // Optionales externes Template nutzen, falls Settings so etwas vorsehen
     const tplNameOrPath = this.settings.templates?.tile;
     if (tplNameOrPath) {
-      // Soft attempt: Wenn eine Templatedatei existiert, lese sie und fülle Minimalfelder
       const file = this.app.vault.getAbstractFileByPath(tplNameOrPath);
       if (file instanceof TFile) {
-        // Wir ersetzen nur ein paar bekannte Platzhalter, ohne den Benutzer zu stören
-        // (z.B. {{id}}, {{q}}, {{r}}, {{region}})
-        // Wenn nix passt, schreiben wir unten unseren Fallback.
         try {
           const raw = await this.app.vault.read(file);
           const rendered = raw
@@ -300,10 +269,16 @@ export class TileNoteService {
             type: "tile",
             coords: { q, r, region },
           });
+          this.log.debug("renderTileTemplate.external.ok", { tpl: tplNameOrPath });
           return ensured + this.backlinkSection();
         } catch (e) {
-          this.log("WARN", "Notes", "templateReadFailed – falling back", { tplNameOrPath, error: String(e) });
+          this.log.warn("renderTileTemplate.external.failed", {
+            tpl: tplNameOrPath,
+            error: String(e),
+          });
         }
+      } else {
+        this.log.warn("renderTileTemplate.external.notFound", { tpl: tplNameOrPath });
       }
     }
 
@@ -343,18 +318,22 @@ export class TileNoteService {
       "",
     ].join("\n");
 
+    this.log.debug("renderTileTemplate.fallback", { q, r, region });
     return yaml + this.backlinkSection();
   }
 
   private backlinkSection(): string {
-    return "\n## Backlinks\n<!-- reserved for Salt Marcher bidi links (P0 light) -->\n";
+    return "\n## Backlinks\n\n";
   }
 
   /**
    * Minimaler YAML-Patcher: ersetzt/fügt id/type/coords hinzu.
-   * ⚠️ Beabsichtigt simpel zu sein – keine vollständige YAML-Implementierung.
+   * ⚠️ Beabsichtigt simpel – kein vollständiger YAML-Merger.
    */
-  private patchFrontmatterRaw(raw: string, inject: { id: string; type: string; coords: { q: number; r: number; region: string } }): string {
+  private patchFrontmatterRaw(
+    raw: string,
+    inject: { id: string; type: string; coords: { q: number; r: number; region: string } }
+  ): string {
     const fmRegex = /^---[\s\S]*?---/m;
     const block = [
       "---",
@@ -368,7 +347,6 @@ export class TileNoteService {
     ].join("\n");
 
     if (fmRegex.test(raw)) {
-      // Ersetze existierenden Block grob – in echt wäre ein YAML-Merger schöner
       return raw.replace(fmRegex, block);
     } else {
       return block + "\n" + raw;
