@@ -1,0 +1,130 @@
+Sehr gut – wir legen den Grundstein für Salt Marcher 🚀
+Ich baue dir jetzt eine **ausführliche Schritt-für-Schritt To-Do-Liste**, wie du in deinem Obsidian-Plugin eine erste funktionale **HexMap** (3x3 Platzhalter, klickbare Tiles, Koordinatenanzeige im Seitenpanel) umsetzt. Ich gehe davon aus, dass du dein Repo schon initialisiert hast (wie in deinem GitHub Link).
+
+---
+
+# ✅ To-Do-Liste für eine klickbare HexMap in Salt Marcher
+
+### 1. Projektstruktur vorbereiten
+
+* [ ] Stelle sicher, dass du die **Obsidian Plugin API** eingebunden hast (`obsidian.d.ts`).
+* [ ] Lege eine klare Struktur an:
+
+  ```
+  /src
+    main.ts
+    views/
+      HexMapView.ts
+    components/
+      HexTile.ts
+  ```
+
+### 2. Neues `View` für die HexMap registrieren
+
+* [ ] In `main.ts`:
+
+  * Einen neuen `WorkspaceLeaf`-View registrieren (z. B. `"hexmap-view"`).
+  * Command hinzufügen: `"Salt Marcher: Open HexMap"`.
+  * Debug-Logs einfügen, die dich wissen lassen, wann das View geladen wird.
+
+👉 Ergebnis: Du kannst im Command Palette `"Salt Marcher: Open HexMap"` eingeben und ein leeres Panel öffnet sich.
+
+### 3. HexMapView Grundgerüst bauen
+
+* [ ] Erstelle `views/HexMapView.ts`.
+* [ ] Extend von `ItemView`.
+* [ ] Im `getViewType()` `"hexmap-view"` zurückgeben.
+* [ ] Im `getDisplayText()` `"Salt Marcher HexMap"` zurückgeben.
+* [ ] Im `onOpen()`:
+
+  * Ein `div` erstellen, das als Container dient.
+  * Debug-Log schreiben: `"HexMapView: opened"`.
+
+👉 Ergebnis: Das Panel zeigt erstmal nur "Hello HexMap".
+
+### 4. HexGrid Rendering vorbereiten
+
+* [ ] In `HexMapView.ts` eine `renderHexGrid(container: HTMLElement)` Funktion schreiben.
+* [ ] Dort ein **3x3 Grid** von Platzhaltern erzeugen.
+* [ ] Für jeden Platzhalter:
+
+  * Ein `div` mit CSS-Klasse `.hex-tile`.
+  * Daten-Attribute für Koordinaten (`data-x`, `data-y`).
+  * Event Listener: `onclick => tileClicked(x,y)`.
+
+👉 Ergebnis: Du siehst 9 klickbare Tiles (noch quadratisch).
+
+### 5. Hex-Tile Darstellung mit CSS
+
+* [ ] In `styles.css` (oder plugin-eigene CSS) Hexagon-Shapes bauen:
+
+  ```css
+  .hex-tile {
+    width: 80px;
+    height: 80px;
+    background-color: #2d2d2d;
+    clip-path: polygon(25% 6%, 75% 6%, 100% 50%, 75% 94%, 25% 94%, 0 50%);
+    margin: 4px;
+    display: inline-block;
+    cursor: pointer;
+    text-align: center;
+    line-height: 80px;
+    color: white;
+  }
+  .hex-tile.selected {
+    background-color: #4caf50;
+  }
+  ```
+* [ ] Tiles nebeneinander in einem flex/grid Container anordnen.
+
+👉 Ergebnis: 3x3 Hexfelder sichtbar, anklickbar.
+
+### 6. Seitenpanel für Tile-Details
+
+* [ ] In `HexMapView` ein zweites `div` anlegen, rechts oder unterhalb der Map.
+* [ ] Dieses Panel zeigt aktuelle Tile-Infos:
+
+  * `"Selected Tile:"`
+  * `"X: 0, Y: 0"`
+
+### 7. Klick-Logik einbauen
+
+* [ ] `tileClicked(x,y)` Funktion:
+
+  * Debug-Log: `"Tile clicked at (x,y)"`
+  * Entferne `.selected` Klasse von allen anderen Tiles.
+  * Füge `.selected` zu geklicktem Tile hinzu.
+  * Aktualisiere Seitenpanel mit `"X: ${x}, Y: ${y}"`.
+
+👉 Ergebnis: Du kannst klicken, und rechts/updaten sich die Koordinaten.
+
+### 8. Debugging & Tests
+
+* [ ] Beim Laden Debug-Log: `"Rendering HexGrid (3x3)"`
+* [ ] Beim Klick Debug-Log: `"Tile clicked at (1,2)"`
+* [ ] Beim Panel-Update Debug-Log: `"Updated selection panel"`
+
+👉 Damit erkennst du sofort, wo etwas hängt.
+
+### 9. Erweiterung vorbereiten
+
+* [ ] Den Code so strukturieren, dass du später:
+
+  * Map-Größe dynamisch ändern kannst.
+  * Tile-Features (Flüsse, Wälder etc.) anzeigen kannst.
+  * Reisezeit berechnen kannst.
+* [ ] Für jetzt bleibt es ein 3x3 Dummy-Grid.
+
+---
+
+📌 **Zusammenfassung**
+Nach dieser To-Do Liste hast du in Obsidian ein neues Panel:
+
+* Zeigt eine **3x3 klickbare HexMap**.
+* Beim Klick wird das Tile grün markiert.
+* Rechts werden die **Koordinaten angezeigt**.
+* Alles ist reichlich mit Debug Logs versehen.
+
+---
+
+👉 Soll ich dir im nächsten Schritt direkt die **Code-Skeletons** für `main.ts`, `HexMapView.ts` und CSS schreiben, sodass du das direkt einkopieren kannst?
