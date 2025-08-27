@@ -56,6 +56,67 @@ export class SaltSettingsTab extends PluginSettingTab {
         });
       });
 
+    
+    /* ───────────────────────── Reise (P0) ───────────────────────── */
+    containerEl.createEl("h3", { text: "Reise (P0)" });
+
+new Setting(containerEl)
+  .setName("Hex-Breite (Meilen)")
+  .setDesc("Distanz pro benachbartem Hex-Schritt.")
+  .addText((t) =>
+    t.setValue(String(this.plugin.settings.travelHexWidthMiles))
+      .onChange(async (v) => {
+        const n = Number(v);
+        if (Number.isFinite(n) && n > 0) {
+          this.plugin.settings.travelHexWidthMiles = n;
+          await this.plugin.saveSettings();
+        }
+      })
+  );
+
+new Setting(containerEl)
+  .setName("Basisgeschwindigkeit (mph)")
+  .setDesc("Grundtempo zu Fuß, ohne Modifikatoren.")
+  .addText((t) =>
+    t.setValue(String(this.plugin.settings.travelBaseSpeedMph))
+      .onChange(async (v) => {
+        const n = Number(v);
+        if (Number.isFinite(n) && n > 0) {
+          this.plugin.settings.travelBaseSpeedMph = n;
+          await this.plugin.saveSettings();
+        }
+      })
+  );
+
+new Setting(containerEl)
+  .setName("Straßen-Multiplikator")
+  .setDesc("Wird verwendet, wenn onRoad=true (z. B. 0.7).")
+  .addText((t) =>
+    t.setValue(String(this.plugin.settings.travelRoadMod))
+      .onChange(async (v) => {
+        const n = Number(v);
+        if (Number.isFinite(n) && n > 0) {
+          this.plugin.settings.travelRoadMod = n;
+          await this.plugin.saveSettings();
+        }
+      })
+  );
+
+new Setting(containerEl)
+  .setName("Flussquerung (Minuten)")
+  .setDesc("Fixe Zusatzminuten für Segmente mit Flussquerung.")
+  .addText((t) =>
+    t.setValue(String(this.plugin.settings.travelRiverCrossingMin))
+      .onChange(async (v) => {
+        const n = Number(v);
+        if (Number.isFinite(n) && n >= 0) {
+          this.plugin.settings.travelRiverCrossingMin = n;
+          await this.plugin.saveSettings();
+        }
+      })
+  );
+
+
     /* ───────────────────────── Logger: Sinks ───────────────────────── */
     new Setting(containerEl)
       .setName("Console-Ausgabe aktivieren")
