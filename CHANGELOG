@@ -348,3 +348,40 @@ Tests: Smoke-Tests für Resolver & Templates mit Mock-Vault.
 - P0 geht von **benachbarten** Hex-Schritten aus; **Pathfinding** folgt in P1/P2.
 - Wetter/Actor-Mod = **1.0** in P0 (geplant für spätere Iterationen).
 
+
+## [Unreleased] – Feature 6: Clock & EventBus
+
+### Added
+- `EventBus.ts`: leichter, typsicherer Pub/Sub mit `on/once/off/emit`, ausführlichen Debug-Logs (Namespace `Bus`) und Listener-Zählung.
+- `Clock.ts`: persistente Kampagnenzeit mit `now()`, `set()`, `advanceBy(min)`, `advanceByTravel(min)` und stündlichen Ticks (`clock:hourlyTick`). Jeder Zeitfortschritt emittiert `clock:advanced`.
+- Settings: `clockStartISO`, `clockAutoStartNow` + UI in `settingsTab.ts` inkl. Anzeige der aktuellen Kampagnenzeit.
+- Demo-Commands in `main.ts`: „Clock: +60 Minuten“ und „Clock: Setze auf Jetzt“.
+
+### Changed
+- `main.ts`: Initialisierung von EventBus & Clock nach dem Laden der Settings; Beispiel-Listener für `clock:hourlyTick`.
+- (Vorbereitung) Reibungslose Integration für Travel (`route:applied`) – sobald `TravelProcessor` die Reisezeit liefert, genügt `clock.advanceByTravel(totalMin)`.
+
+### Debug
+- Sämtliche kritischen Pfade loggen Eingaben, Entscheidungen und Ergebnisse; Persistenzfehler werden abgefangen und als `error`/`warn` mit Kontext ausgegeben.
+
+### Next
+- `TravelProcessor` erweitern: `route:computed` emittieren und in einem Demo-Command `clock.advanceByTravel(totalMin)` aufrufen.
+- Optionale UI-Anzeige der Kampagnenzeit in der Statusleiste.
+
+## [Unreleased] – Feature 7: ChronicleService
+
+### Added
+- `ChronicleService.ts`: Lauscht auf EventBus (`route:applied`, `clock:hourlyTick`) und protokolliert Reisen automatisch in die *aktuelle Session-Notiz*. Persistenz über Settings (`currentSessionPath`).
+- Settings: `currentSessionPath`, `chronicleEnabled` + UI in `settingsTab.ts`.
+- Commands: 
+  - „Chronicle: Aktive Datei als Session setzen“ (setzt `currentSessionPath`)
+  - „Chronicle: Heutige Session erstellen & setzen“
+
+### Behavior
+- Bei `route:applied` wird in `## Log` der Session-Notiz ein Abschnitt `### <ISO> – Reise abgeschlossen` mit Dauer angehängt.
+- Stündliche Ticks werden vorerst nur geloggt (kein Markdown-Spam im P0).
+
+### DoD
+- Nach Anwenden einer Route entsteht **sichtbar** ein Logeintrag in der aktuellen Session-Notiz.
+
+
