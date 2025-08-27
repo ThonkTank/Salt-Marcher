@@ -1,13 +1,11 @@
 // HexViewStore.ts
-/**
- * HexViewStore – minimal reactive store für pan/zoom/selection.
- * Framework-agnostisch (DOM, React, Preact…)
- */
+// Minimaler Store für HexView-Zustand (Pan, Zoom, Selection)
+
 export interface HexViewState {
-  zoom: number;           // world scale
-  panX: number;           // world pan (px)
+  zoom: number;
+  panX: number;
   panY: number;
-  hexSize: number;        // Radius (Center→Corner)
+  hexSize: number;
   selected?: { q: number; r: number } | null;
   region?: string | null;
 }
@@ -35,7 +33,6 @@ export class HexViewStore {
     return this.s;
   }
 
-  /** Shallow-merge + notify */
   set(patch: Partial<HexViewState>): void {
     const before = this.s;
     this.s = { ...this.s, ...patch };
@@ -45,36 +42,29 @@ export class HexViewStore {
 
   subscribe(fn: Listener): () => void {
     this.listeners.add(fn);
-    // sofort initialen Zustand schicken (praktisch für Mounting)
     fn(this.s);
-    return () => {
-      this.listeners.delete(fn);
-    };
+    return () => this.listeners.delete(fn);
   }
 
   private emit() {
     for (const fn of this.listeners) {
-      try { fn(this.s); } catch (e) {
+      try {
+        fn(this.s);
+      } catch (e) {
         console.error("[HexViewStore] listener error", e);
       }
     }
   }
 
-  /**
-   * Zoom um einen Fokuspunkt im Viewport (vx, vy).
-   * Konserviert dabei die Weltposition unter dem Mauszeiger.
-   */
   zoomAt(factor: number, viewportX: number, viewportY: number): { oldZoom: number; newZoom: number } {
     const { zoom, panX, panY } = this.s;
 
-    // Weltpunkt unter (vx,vy) vor dem Zoom:
     const worldX = (viewportX - panX) / zoom;
     const worldY = (viewportY - panY) / zoom;
 
     const oldZoom = zoom;
     const newZoom = Math.max(0.1, Math.min(6, oldZoom * factor));
 
-    // Neue Pan-Werte so wählen, dass der Weltpunkt am gleichen Pixel bleibt:
     const newPanX = viewportX - worldX * newZoom;
     const newPanY = viewportY - worldY * newZoom;
 
