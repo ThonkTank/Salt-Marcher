@@ -1,0 +1,177 @@
+# P0 – Blocker (ohne das geht’s nicht)
+
+## 1) Build & Packaging fertigstellen
+
+* [ ] **`manifest.json` anlegen** (im Plugin-Root):
+
+  * `id`: `salt-marcher`
+  * `name`: `Salt Marcher`
+  * `version`: `0.1.0`
+  * `minAppVersion`: `1.5.0` (oder eure Zielversion)
+  * `author`: euer Name
+  * `description`: „Hexcrawl-Tooling (HexView, TileNotes, Travel, Clock, Chronicle)“
+  * `isDesktopOnly`: `false`
+* [ ] **Bundling einrichten** (Rollup oder esbuild). Empfehlung: **esbuild** (schnell, simpel).
+
+  * [ ] Dev-Dependency hinzufügen: `esbuild`, `obsidian` (Types), ggf. `@rollup/plugin-node-resolve` wenn Rollup.
+  * [ ] **Build-Script** in `package.json`:
+
+    * `build`: transpiliert `main.ts` → `main.js` (CommonJS) + **keine** externen Node-APIs.
+    * `dev`: Watch-Build.
+  * [ ] **tsconfig** ergänzen: `target: ES2020`, `module: ESNext`, `moduleResolution: Node`, `isolatedModules: true`, `skipLibCheck: true`, `types: ["obsidian"]`.
+  * [ ] **Outfiles**: `main.js` (Pflicht). Keine `index.html` nötig.
+* [ ] **Obsidian-API Typen**:
+
+  * [ ] `npm i -D obsidian @types/node`
+  * [ ] Import-Fixes (z. B. `Notice` in `main.ts` wird benutzt → `import { Notice } from "obsidian"` ergänzen).
+* [ ] **Validierung im Vault**:
+
+  * [ ] Ordner `<Vault>/.obsidian/plugins/salt-marcher/` anlegen.
+  * [ ] `manifest.json` + `main.js` + (optional `styles.css`) hineinkopieren.
+  * [ ] Obsidian → Community-Plugins → „Salt Marcher“ aktivieren.
+
+## 2) Code-Konsistenz & offensichtliche Fixes
+
+* [ ] **Fehler: `TravelProcessor.ts` enthält den Code aus `RuleEngine.ts`.**
+
+  * **Fix:** Inhalt korrigieren. `TravelProcessor` muss wirklich `processRoute(...)` & Segment-Berechnung liefern (siehe Changelog-Beschreibung).
+* [ ] **Imports prüfen**:
+
+  * [ ] `main.ts`: fehlender `Notice`-Import.
+  * [ ] Zyklische Imports vermeiden (`TravelProcessor` ↔ `RuleEngine`).
+* [ ] **Exports angleichen**:
+
+  * [ ] Public APIs aus `TileNoteService`/`HexView`/`Clock`/`ChronicleService` exakt so exportieren, wie `main.ts` sie importiert.
+
+## 3) HexView tatsächlich „mounten“
+
+* [ ] **Eigene Obsidian-View registrieren** (statt Statusbar-Demo):
+
+  * [ ] `registerView(viewType, leaf => new HexViewLeaf(...))`.
+  * [ ] Command: „Salt Marcher: HexView öffnen“ → `this.app.workspace.getRightLeaf(false).setViewState({type:viewType, active:true})`.
+  * [ ] Container-Element im Leaf erzeugen und `new HexView(container, store, logger, tileNotes, …)` dort mounten.
+* [ ] **Interaktionen verdrahten**:
+
+  * [ ] Klick auf Hex → `tileNotes.open(q, r, region)` (Region aus Store/Settings).
+  * [ ] **Viele Debug-Logs**: click, hitTest, select, open-success, open-error.
+
+## 4) Settings sauber nutzbar machen
+
+* [ ] `settings.ts` + `settingsTab.ts` mit **persistenter Speicherung** verbinden:
+
+  * [ ] `await this.loadData()` / `await this.saveData()` korrekt nutzen.
+  * [ ] Beim Ändern der Settings: `setLoggerConfig(...)` neu anwenden; ggf. `this.log = createLogger("Core")` re-initialisieren.
+* [ ] **Pfad-Settings** validieren (Hex-Ordner, Session-Ordner, Default-Region).
+
+  * [ ] Beim Start: Checks + **Warn-Logs** (Folder missing → wird angelegt / oder Nutzerhinweis).
+
+## 5) TileNoteService end-to-end testen
+
+* [ ] `getPathFor(q,r,region)` → deterministischer Pfad.
+* [ ] `find(q,r,region)` → erst Pfad, dann leichter Index-Scan (Frontmatter `coords`).
+* [ ] `createIfMissing(...)` → Datei mit Template; **Frontmatter** garantiert: `sm:type: tile`, `sm:id`, `sm:coords`, `sm:region`, `terrain`, `features`, `visibility`.
+* [ ] `open(q,r,region)` → tatsächlich die Datei im Editor öffnen.
+* [ ] **Edge-Cases** mit Logs: Ordner nicht vorhanden, Schreibfehler, ungültiges Frontmatter.
+
+## 6) Clock/EventBus verdrahten
+
+* [ ] Beim Plugin-Start: `bus` und `clock` instanziieren und initialisieren (`initFromStorage` mit `clockStartISO`/`autoStart`).
+* [ ] Commands prüfen („+60 Minuten“, „Setze auf Jetzt“) → funktionieren/loggen?
+* [ ] `clock.advanceByTravel(totalMin)` emittiert `route:applied` → **ChronicleService** hört zu.
+
+## 7) ChronicleService wirklich anhängen
+
+* [ ] Beim Start: `chronicle = new ChronicleService(...)`.
+* [ ] Commands:
+
+  * [ ] „Aktive Datei als Session setzen“ → pflegt `currentSessionPath`.
+  * [ ] „Heutige Session erstellen & setzen“ → legt `Sessions/YYYY-MM-DD.md` an.
+* [ ] Listener:
+
+  * [ ] `route:applied` → Markdown-Append in die Session-Datei.
+  * [ ] **Deduping** verhindern Spam (z. B. `traceId`).
+* [ ] **Fehlerpfade loggen** (keine Session gesetzt, Datei gesperrt, etc.).
+
+---
+
+# P0.5 – Wichtige Ergänzungen (macht’s stabil & angenehm)
+
+## 8) TemplateService & Settings zusammenführen
+
+* [ ] Optionalen **Pfad für Tile-Template** in Settings anbieten (`settings.templates.tile`).
+* [ ] Platzhalter: `{{id}}`, `{{q}}`, `{{r}}`, `{{region}}`, `{{date}}`.
+* [ ] Fallback-Template robust halten (Frontmatter + kurzer Body).
+
+## 9) TravelProcessor/RuleEngine komplettieren
+
+* [ ] **Segment-Formel** sicher implementieren (Distanz/Speed → Minuten, Terrain vs. Road, River-Cost).
+* [ ] **TerrainResolver**: Wenn kein Tile existiert → `speedMod = 1`.
+* [ ] **Demo-Command**: Beispielroute rechnen, **Breakdown** loggen und per Notice zusammenfassen.
+
+## 10) Defaults & Statusleisten-Feedback
+
+* [ ] **Statusbar-Item**: aktuelle Kampagnenzeit anzeigen (optional).
+* [ ] **Sinnvolle Defaults** in `DEFAULT_SETTINGS` setzen (Hexbreite in Meilen, Basisgeschwindigkeit, Road-Mod, River-Minuten).
+* [ ] **On-boarding-Notice** beim ersten Start (wo finde ich HexView/Settings).
+
+## 11) Performance & Sicherheit
+
+* [ ] HexView: nur sichtbares Grid rendern (einfaches Viewport-Culling) wenn Grid groß wird.
+* [ ] **Big Vaults**: leichter Index-Scan in `TileNoteService` cachen (Map region→(q,r)→path).
+* [ ] Serialisierung großer Log-Objekte kappen (max Länge) – bereits vorgesehen, prüfen.
+
+---
+
+# P1 – Nice to have / Qualität
+
+## 12) UX-Polish für HexView
+
+* [ ] Tooltip konfigurierbar (q,r, region, evtl. Kurzinfo aus Frontmatter).
+* [ ] Tastenkürzel: Zoom in/out, Reset Pan/Zoom, Toggle Grid.
+* [ ] Kontext-Menü: „Tile-Note öffnen“, „Neue Session-Notiz“, „Route hierher starten“.
+
+## 13) Fehlerrobustheit & Debug-Werkzeuge
+
+* [ ] **„Copy last logs“** im Settings-Tab (letzte 200 Zeilen).
+* [ ] **„Self-Test“-Command**: prüft Ordner, Settings, kann Dummy-Tile anlegen, prüft Schreibrechte.
+* [ ] „Safe Mode“: bei Exceptions in Rendering sauber de-mounten & Hinweis anzeigen.
+
+## 14) Tests & QA
+
+* [ ] **Unit-Tests** (leichtgewichtig) für:
+
+  * Logger Level-Filter.
+  * `getPathFor` und `createIfMissing`.
+  * `pixelToAxial`/`axialToPixel` (HexMath).
+  * `advanceBy` + `hourlyTick`.
+* [ ] **Manual QA-Script** (Markdown-Checkliste im Repo):
+
+  * Aktivieren, Settings öffnen, HexView öffnen, Klick erzeugt Note, Route rechnen, Clock & Chronicle testen.
+
+## 15) Doku & Release
+
+* [ ] **README** erweitern: Setup, Features, Tastenkürzel, bekannte Limitierungen.
+* [ ] **CHANGELOG** auf Version `0.1.0` trimmen (klare „Added/Changed/Fixed“).
+* [ ] **Release-ZIP** bauen (nur `manifest.json`, `main.js`, `styles.css` falls vorhanden).
+* [ ] **Beispiel-Vault** (kleines Demo-Set mit 2–3 Regionen, 6–12 Hexes) für Screenshots/Tests.
+
+---
+
+# Konkrete Mini-Checkliste pro Datei
+
+* `manifest.json`: **neu anlegen** (siehe oben).
+* `package.json`: Scripts `build`, `dev`; Dev-Deps (`esbuild`/Rollup, `obsidian`).
+* `tsconfig.json`: Target/Module, `"types": ["obsidian"]`.
+* `main.ts`:
+
+  * `import { Notice } from "obsidian"` ergänzen.
+  * `registerView` + Command „HexView öffnen“.
+  * `tileNotes`, `bus`, `clock`, `chronicle` **in genau der Reihenfolge** initialisieren (erst Settings/Logger).
+  * Demo-Commands testen.
+* `TileNoteService.ts`: Pfad/Find/Create/Open final prüfen, **ausgiebige Debug-Logs**.
+* `HexView.ts`/`HexViewStore.ts`/`HexMath.ts`: Hit-Test/Zoom stabil, Click→open.
+* `RuleEngine.ts`: bleibt dünn, defensive Fallbacks loggen.
+* `TravelProcessor.ts`: **richtigen Inhalt wiederherstellen** (kein RuleEngine-Code!).
+* `Clock.ts`/`EventBus.ts`: persistente Zeit + Ticks + Events – bereits gut, nur hooking.
+* `settings.ts`/`settingsTab.ts`: **Persistenz** & **Live-Reinit** vom Logger.
+* `templateService.ts`: Platzhalter + Fallback-Template OK; Option Pfad aus Settings.
