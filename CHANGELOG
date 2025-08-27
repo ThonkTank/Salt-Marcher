@@ -287,4 +287,29 @@ Tests: Smoke-Tests für Resolver & Templates mit Mock-Vault.
 - **UI-Setting (optional)**: Feld für „Tile-Template-Pfad“ in `settingsTab.ts` anbieten.
 - **DRY**: Duplizierende Logik zwischen `templateService` und `TileNoteService` prüfen und ggf. zusammenführen.
 - **Perf**: Scan im Regionsordner bei sehr großen Vaults optional cachen (leichter Index).
+## [Unreleased]
+
+### Added
+- **Feature 4 – HexView (M):**  
+  - Neuer interaktiver 2D-Renderer (`HexView.ts`, `HexViewStore.ts`, `HexMath.ts`).  
+  - Darstellung eines Hex-Grids via SVG mit konfigurierbarer Größe.  
+  - **Interaktionen:**
+    - **Pan** (mittlere Maustaste ziehen)  
+    - **Zoom** (Mausrad, Fokuspunkt unter Cursor bleibt stabil)  
+    - **Hit-Test** → `(q,r)` wird zuverlässig berechnet  
+    - **Selektions-Overlay** (markiertes Hex mit Akzentfarbe)  
+    - **Tooltip** mit `(q,r)` und optional Region  
+  - **Integration mit TileNoteService:** Klick auf ein Hex erstellt bei Bedarf eine neue Tile-Note und öffnet sie direkt.  
+  - Umfangreiche Debug-Logs:
+    - `[HexView] drawGrid …`
+    - `[HexView] wheelZoom …`
+    - `[HexView] hitTest …`
+    - `[HexView] select …`
+    - `[HexView] open` / `open-failed`
+
+### Next Steps
+- Obsidian-Integration in eigenes View/Panels (statt StatusBar-Item).  
+- Settings-Optionen für Grid-Maße (`cols/rows`, `hexSize`, `defaultRegion`).  
+- Erweiterung des Feature-Layers für Terrain- und Symbol-Darstellung (Flüsse, Straßen etc.).  
+- Performance-Optimierungen (Viewport-Culling für sehr große Karten).  
 
