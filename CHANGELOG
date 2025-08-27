@@ -313,3 +313,17 @@ Tests: Smoke-Tests für Resolver & Templates mit Mock-Vault.
 - Erweiterung des Feature-Layers für Terrain- und Symbol-Darstellung (Flüsse, Straßen etc.).  
 - Performance-Optimierungen (Viewport-Culling für sehr große Karten).  
 
+## [Unreleased] – Feature 4: HexView (SVG Renderer)
+
+### Added
+- `HexView` (SVG-basiert) mit Pan (Middle-Drag), Zoom (Mausrad mit Fokus), Hit-Test → (q,r), Selection-Overlay, Tooltip.
+- Click-Handler integriert `TileNoteService.createIfMissing(q,r,region)` und `open(q,r)`.
+- `HexViewStore` als framework-agnostischer Zustand mit `zoomAt()` (Mausfokus-korrektes Zoomen).
+
+### Fixed
+- Event-Handler in `HexView.ts`: fehlende `preventDefault()` & abgeschnittene Codezeilen repariert.
+- `HexMath.pixelToAxial()` vereinfacht auf präzise Invertierung (Red-Blob-konform), um Drift zu vermeiden.
+
+### Known Issues
+- Noch kein eigener Obsidian-View; vorerst Demo-Command zum Mounten in ein Panel.
+- Feature-Layer (Straßen/Flüsse etc.) folgen in P1.
