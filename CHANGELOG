@@ -264,3 +264,27 @@ Tests: Smoke-Tests für Resolver & Templates mit Mock-Vault.
 - **Offene Punkte**:
   - Ausarbeitung der Bidi-Links (Backlinks Section dynamisch füllen).
   - Verbesserte YAML-Mergeroutine statt simplem `patchFrontmatterRaw`.
+
+## [Unreleased]
+### Continued – Feature 3: TileNoteService (Stand: 2025-08-27)
+- **Refactor & Fixes**
+  - Vollständige Typisierung aller Public-APIs (`Promise<TileNoteRef|null>` etc.).
+  - `renderTileTemplate` auf `async` gehoben (vorher wurde `await` in einer Sync-Funktion genutzt).
+  - YAML-Fallback-Patcher stabilisiert; robustes Frontmatter-Update mit Log-Pfaden.
+  - Sehr ausführliches Namespace-Logging (`Notes/Tile`) mit Kontextobjekten in allen Pfaden.
+- **Integration**
+  - Service in `main.ts` initialisiert (`this.tileNotes = new TileNoteService(this.app, this.settings)`).
+  - Neuer Test-Command **„Feature 3: Öffne/Erzeuge Tile 0,0 (TileNoteService)”** zum schnellen Verifizieren.
+- **Kompatibilität**
+  - Optionales externes Template wird unterstützt, **ohne** neue Settings zu erzwingen (`settings.templates?.tile` wird nur genutzt, falls vorhanden).
+- **DoD (aktualisiert)**
+  - Klick-Flow/Command erzeugt oder öffnet deterministisch dieselbe Note für `(q,r,region)`.
+  - Frontmatter garantiert: `id`, `type: tile`, `coords { q,r,region }`.
+  - Logs decken alle Fehlerpfade (Ordner/Schreibrechte/Frontmatter) ab.
+
+### Nächste Schritte
+- **Event-Hook**: Hex-Klick-Handler an `tileNotes.open(q,r,region)` anbinden.
+- **UI-Setting (optional)**: Feld für „Tile-Template-Pfad“ in `settingsTab.ts` anbieten.
+- **DRY**: Duplizierende Logik zwischen `templateService` und `TileNoteService` prüfen und ggf. zusammenführen.
+- **Perf**: Scan im Regionsordner bei sehr großen Vaults optional cachen (leichter Index).
+
