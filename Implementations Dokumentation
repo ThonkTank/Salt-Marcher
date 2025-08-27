@@ -1,0 +1,117 @@
+# Dokumentation: Logger & Settings (P0 – MVP Core Schritt 1)
+
+Dieser Eintrag beschreibt die im Projekt implementierten **Logger- und Settings-Features**. Er dient als Referenz, warum und wie diese Funktionen umgesetzt wurden.
+
+---
+
+## Überblick
+
+**Warum?**
+Debugging ist ein zentrales Werkzeug bei der Entwicklung eines komplexen Plugins. Ohne klar strukturierte Logs ist es schwer nachzuvollziehen, was schief läuft. Mit Namespace-basiertem Logging und konfigurierbarer Verbosität können wir gezielt einzelne Module untersuchen.
+
+**Was?**
+
+* Einheitliches Logger-System mit globalem Level und optionalen Namespace-Overrides.
+* Obsidian Settings-Tab, um Log-Level und „Verbose Mode“ live umschalten zu können.
+* Integration in das Plugin, sodass Logs sofort beim Start verfügbar sind.
+
+**Wie?**
+
+* `Logger.ts`: zentrale Logger-Klasse mit Methoden `error`, `warn`, `info`, `debug`, `trace`.
+* `SettingsTab.ts`: UI-Komponente, um Log-Level einzustellen und „Verbose Mode“ zu toggeln.
+* `main.ts`: Integration der Settings in den Plugin-Lifecycle.
+
+---
+
+## Logger
+
+**Funktion:**
+
+* Jeder Logger wird mit einem **Namespace** instanziiert (z. B. `Travel`, `HexView`).
+* Logs erscheinen mit Präfix `[LEVEL][Namespace]`.
+* Über Log-Level-Filter wird gesteuert, welche Logs angezeigt werden.
+
+**Technische Umsetzung:**
+
+* `Logger.globalLevel` definiert die Standard-Stufe (z. B. `info`).
+* `Logger.nsLevels` erlaubt per-Module Overrides.
+* `shouldLog()` prüft anhand einer Level-Hierarchie (`error < warn < info < debug < trace`), ob eine Nachricht ausgegeben werden darf.
+* Ausgabe erfolgt in die DevTools-Konsole von Obsidian (und kann später erweitert werden).
+
+**Beispiel:**
+
+```ts
+const log = new Logger('Travel');
+log.debug('Segment berechnet', {from: "0,0", to: "1,0", result: 80});
+```
+
+Konsolen-Ausgabe:
+
+```
+[DEBUG][Travel] Segment berechnet {from:"0,0", to:"1,0", result:80}
+```
+
+---
+
+## SettingsTab
+
+**Funktion:**
+
+* Verwaltung der Logger-Konfiguration über die Obsidian-Settings-Oberfläche.
+* Einstellung des globalen Log-Levels (`error`, `warn`, `info`, `debug`, `trace`).
+* Schalter für „Verbose Mode“, der automatisch auf `trace` setzt.
+
+**Technische Umsetzung:**
+
+* `SaltMarcherSettingTab` erweitert `PluginSettingTab`.
+* UI-Elemente: Dropdown für Log-Level, Toggle für „Verbose Mode“.
+* Änderungen werden sofort in `Logger` übernommen und gespeichert.
+
+**Beispiel im UI:**
+
+* **Log Level**: Dropdown → `Info` ausgewählt.
+* **Verbose Mode**: Toggle → an → alle `trace`-Logs erscheinen.
+
+---
+
+## Integration in das Plugin
+
+**Funktion:**
+
+* Beim Starten (`onload`) lädt das Plugin die gespeicherten Settings.
+* Log-Level wird initialisiert.
+* Settings-Tab wird hinzugefügt.
+* Test-Log „Salt Marcher geladen“ erscheint in der Konsole.
+
+**Code-Auszug:**
+
+```ts
+const log = new Logger('Core');
+log.info('Salt Marcher geladen');
+```
+
+---
+
+## Debug-Strategie
+
+* **Info**: wichtige Lifecycle-Meldungen (Plugin geladen, Route gestartet).
+* **Debug**: Berechnungsschritte (Reisezeit, Tile-Erstellung).
+* **Trace**: detaillierte Iterationen und Hit-Tests.
+* **Warn/Error**: Probleme oder Fehlversuche (immer sichtbar).
+
+---
+
+## Definition of Done (DoD)
+
+* Logs erscheinen mit Namespace-Präfix in DevTools.
+* Settings-Tab erlaubt Live-Änderungen.
+* `Verbose Mode` schaltet auf `trace`.
+* Beispiel: Klick auf ein Hex zeigt `HexView.debug("hitTest", {q,r})`.
+
+---
+
+## Nutzen für die nächsten Schritte
+
+* Saubere Trennung nach Namespaces macht es möglich, später gezielt nur `Travel` oder `NPC` Logs zu sehen.
+* Live-Umschaltung erlaubt schnelles Debugging ohne Neustart.
+* Grundlage für **TileNoteService**, **HexView** und weitere P0-Features.
