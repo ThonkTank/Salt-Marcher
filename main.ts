@@ -11,8 +11,11 @@ import { Plugin } from "obsidian";
 import { DEFAULT_SETTINGS, type SaltSettings } from "./settings";
 import { SaltSettingsTab } from "./settingsTab";
 import { setLoggerConfig, createLogger } from "./logger";
+import { EventBus, type EventMap } from "./EventBus";
+import { Clock } from "./Clock";
 import { createOrOpenTileNote } from "./templateService";
 import { TileNoteService } from "./TileNoteService";
+import { ChronicleService } from "./ChronicleService";
 import { TravelProcessor } from "./TravelProcessor";
 import { makeTerrainResolver } from "./RuleEngine";
 
@@ -25,11 +28,49 @@ export default class SaltMarcherPlugin extends Plugin {
   // Zentraler Service für Feature 3
   public tileNotes!: TileNoteService;
 
-  // ────────────────────────────────────────────────────────────────────────────
+  
+  // Feature 6
+  public bus!: EventBus<EventMap>;
+  public clock!: Clock;
+
+  public chronicle!: ChronicleService;
+// ────────────────────────────────────────────────────────────────────────────
   // Lifecycle
   // ────────────────────────────────────────────────────────────────────────────
 
   async onload() {
+    this.addCommand({
+      id: "salt-chronicle-set-from-active",
+      name: "Chronicle: Aktive Datei als Session setzen",
+      callback: async () => {
+        try { await this.chronicle.setCurrentFromActiveFile(); } catch (err) { this.log.error("chronicle:setFromActive failed", { err }); }
+      }
+    });
+
+    this.addCommand({
+      id: "salt-chronicle-create-today",
+      name: "Chronicle: Heutige Session erstellen & setzen",
+      callback: async () => {
+        try { await this.chronicle.createTodaySession(); } catch (err) { this.log.error("chronicle:createToday failed", { err }); }
+      }
+    });
+
+    this.addCommand({
+      id: "salt-clock-plus-60",
+      name: "Clock: +60 Minuten",
+      callback: () => {
+        try { this.clock.advanceBy(60, "cmd:+60"); } catch (err) { this.log.error("cmd:+60 failed", { err }); }
+      }
+    });
+
+    this.addCommand({
+      id: "salt-clock-now",
+      name: "Clock: Setze auf Jetzt",
+      callback: () => {
+        try { this.clock.set(new Date().toISOString(), "cmd:setNow"); } catch (err) { this.log.error("cmd:setNow failed", { err }); }
+      }
+    });
+
     this.addCommand({
       id: "salt-hexview-open-demo",
       name: "HexView (Demo) in Setting-Panel öffnen",
