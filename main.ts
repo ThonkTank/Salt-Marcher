@@ -55,39 +55,39 @@ export default class SaltMarcherPlugin extends Plugin {
       // keine weitere Referenz nötig – Demo
         },
     });
-this.addCommand({
-  id: "salt-demo-travel-route",
-  name: "Demo – Reisedauer für Beispielroute (Debug-Logs)",
-  callback: async () => {
-    try {
-      const tp = new TravelProcessor({
-        hexWidthMiles: this.settings.travelHexWidthMiles,
-        baseSpeedMph: this.settings.travelBaseSpeedMph,
-        roadMod: this.settings.travelRoadMod,
-        riverCrossingMin: this.settings.travelRiverCrossingMin,
-        terrainResolver: makeTerrainResolver(this.app, this.tileNotes),
-      });
-
-      // P0: einfache Beispielroute (benachbart)
-      const route = [
-        { from: { q: 0, r: 0 }, to: { q: 1, r: 0 }, onRoad: true,  note: "Start auf Straße" },
-        { from: { q: 1, r: 0 }, to: { q: 1, r: 1 }, needsCrossRiver: true, note: "Flussquerung" },
-        { from: { q: 1, r: 1 }, to: { q: 2, r: 1 }, onRoad: false, note: "Terrain zählt" },
-      ];
-
-      const res = await tp.processRoute(route);
-      this.log.info("Travel-Demo Ergebnis", res);
-
-      // Optional: kurze Notice
-      if (this.settings.logEnableNotice) {
-        new Notice(`Reisezeit (Demo): ${res.totalMin} min, Segmente: ${res.segments.length}`);
-      }
-    } catch (e) {
-      this.log.error("Travel-Demo Fehler", { error: String(e) });
-      new Notice("Travel-Demo Fehler – siehe Konsole/Logs.", 8000);
-    }
-  },
-});
+    this.addCommand({
+      id: "salt-demo-travel-route",
+      name: "Demo – Reisedauer für Beispielroute (Debug-Logs)",
+      callback: async () => {
+        try {
+          const tp = new TravelProcessor({
+            hexWidthMiles: this.settings.travelHexWidthMiles,
+            baseSpeedMph: this.settings.travelBaseSpeedMph,
+            roadMod: this.settings.travelRoadMod,
+            riverCrossingMin: this.settings.travelRiverCrossingMin,
+            terrainResolver: makeTerrainResolver(this.app, this.tileNotes),
+          });
+    
+          // P0: einfache Beispielroute (benachbart)
+          const route = [
+            { from: { q: 0, r: 0 }, to: { q: 1, r: 0 }, onRoad: true,  note: "Start auf Straße" },
+            { from: { q: 1, r: 0 }, to: { q: 1, r: 1 }, needsCrossRiver: true, note: "Flussquerung" },
+            { from: { q: 1, r: 1 }, to: { q: 2, r: 1 }, onRoad: false, note: "Terrain zählt" },
+          ];
+    
+          const res = await tp.processRoute(route);
+          this.log.info("Travel-Demo Ergebnis", res);
+    
+          // Optional: kurze Notice
+          if (this.settings.logEnableNotice) {
+            new Notice(`Reisezeit (Demo): ${res.totalMin} min, Segmente: ${res.segments.length}`);
+          }
+        } catch (e) {
+          this.log.error("Travel-Demo Fehler", { error: String(e) });
+          new Notice("Travel-Demo Fehler – siehe Konsole/Logs.", 8000);
+        }
+      },
+    });
     
     // Sehr frühe Info (noch vor erfolgreichem Settings-Laden)
     this.log.debug("onload() start – beginne Settings zu laden …", {
