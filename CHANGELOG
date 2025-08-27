@@ -237,3 +237,30 @@ Migrations-Utility (Frontmatter-Upgrades, falls Keys umbenannt werden).
 Session↔Tile Link-Macros (Sammeln aller in der Session berührten Tiles).
 
 Tests: Smoke-Tests für Resolver & Templates mit Mock-Vault.
+
+## [Unreleased]
+
+### Added – Feature 3: TileNoteService
+- **Neue Datei `TileNoteService.ts`** implementiert:
+  - Zentrale API für das Finden, Erstellen und Öffnen von Tile-Notizen anhand von `(q,r,region)`.
+  - `getPathFor(q,r,region)` erzeugt deterministische Pfade wie `Hexes/<Region>/<q>_<r>.md`.
+  - `find(q,r,region)` prüft den Standardpfad und führt bei Bedarf einen leichten Index-Scan über `coords`-Frontmatter im Regionsordner durch.
+  - `createIfMissing(q,r,region,defaults)` legt eine neue Note mit minimalem Schema (YAML-Frontmatter, Basisfelder für Terrain, Features, Visibility) an.
+  - `open(q,r,region)` öffnet die Note direkt im Obsidian-Editor (erstellt sie bei Bedarf).
+  - Automatische Vergabe stabiler IDs (`hex_xxxxx`) und Sicherstellung von `coords` im Frontmatter.
+  - **Debug-/Info-/Warn-/Error-Logs** durchgehend implementiert, robust gegen Fehler im Dateisystem oder Metadaten.
+  - Optionale Nutzung eines externen Templates mit Platzhaltern (`{{id}}`, `{{q}}`, `{{r}}`, `{{region}}`).
+  - Fallback-Minimal-Template enthält eine „## Backlinks“-Section als Platzhalter für spätere Bidi-Link-Features.
+
+### Next Steps
+- **Integration in den Plugin-Flow**:
+  - Service in `main.ts` initialisieren (`plugin.tileNotes = new TileNoteService(app, settings)`).
+  - Commands hinzufügen („Hex-Note öffnen“).
+  - Klick-Handler im Hex-UI anbinden, sodass `open(q,r,region)` automatisch getriggert wird.
+- **Tests/DoD**:
+  - Klick auf ein leeres Hex erzeugt und öffnet Note.
+  - Klick auf ein existierendes Hex öffnet die gleiche Note.
+  - Rückgabe-Objekte enthalten konsistent `id` und `path`.
+- **Offene Punkte**:
+  - Ausarbeitung der Bidi-Links (Backlinks Section dynamisch füllen).
+  - Verbesserte YAML-Mergeroutine statt simplem `patchFrontmatterRaw`.
