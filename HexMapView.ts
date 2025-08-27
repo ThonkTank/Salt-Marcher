@@ -1,6 +1,6 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
 
-export const HEXMAP_VIEW_TYPE = "hexmap-view";
+export const VIEW_TYPE_HEXMAP = "salt-marcher-hexmap"; // ← angleichen
 
 export interface HexTileData {
 	x: number;
@@ -25,7 +25,7 @@ export class HexMapView extends ItemView {
 	}
 
 	getViewType(): string {
-		return HEXMAP_VIEW_TYPE;
+		return VIEW_TYPE_HEXMAP;
 	}
 
 	getDisplayText(): string {
