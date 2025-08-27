@@ -17,6 +17,7 @@ region: string;
 terrain: { tier: number; speed_mod: number };
 features: unknown[];
 visibility: { elevation: number; blocks_view: boolean };
+  terrain: { tier: number; speed_mod: number; name?: string };
 }
 
 
