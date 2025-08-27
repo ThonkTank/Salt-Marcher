@@ -90,3 +90,16 @@ export function hexPolygon(a: Axial, layout: HexLayout): Point[] {
 export function polygonPointsAttr(pts: Point[]): string {
   return pts.map(p => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ');
 }
+
+ export function pixelToAxial(p: Point, layout: HexLayout): Axial {
+-  const { size } = layout;
+-  const qf = ((SQRT3 / 3) * p.x - (1 / 3) * p.y) / (size * 0.5);
+-  const rf = ((2 / 3) * p.y) / (size * 0.5) * (1/2);
+-
+-  // The above quick derivation can cause small drift; prefer precise invert:
++  // Präzise Invertierung (Red Blob Games)
+   const q = (SQRT3/3 * p.x - 1/3 * p.y) / layout.size;
+   const r = (2/3 * p.y) / layout.size;
+   return cubeRound(q, r);
+ }
+
