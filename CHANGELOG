@@ -327,3 +327,24 @@ Tests: Smoke-Tests für Resolver & Templates mit Mock-Vault.
 ### Known Issues
 - Noch kein eigener Obsidian-View; vorerst Demo-Command zum Mounten in ein Panel.
 - Feature-Layer (Straßen/Flüsse etc.) folgen in P1.
+
+## [0.1.0] – 2025-08-27
+### Added
+- **Feature 5 – TravelProcessor (P0):**
+  - Neue Module `TravelProcessor.ts` (Kernlogik) und `RuleEngine.ts` (Terrain-Resolver via Frontmatter/TileNoteService).
+  - Unterstützt Routen als Liste benachbarter Hex-Segmente: `{from:{q,r}, to:{q,r}, onRoad?, needsCrossRiver?, note?}`.
+  - P0-Modifikatoren:
+    - **Terrain**: `terrain.speed_mod` aus Tile-Frontmatter (Fallback ×1).
+    - **Straße**: `onRoad=true` ersetzt Terrain-Mod durch `settings.travelRoadMod` (z. B. 0.7).
+    - **Flussquerung**: fixer Minutenaufschlag `settings.travelRiverCrossingMin`.
+  - Ausführliche Debug-Logs pro Segment (Namespace **Travel**) inkl. Distanz, Base-Minuten, gewähltem Modifikator, River-Cost und Ergebnis.
+  - Aggregiertes Routeresultat: Gesamtminuten + Segment-Breakdown.
+
+### Changed
+- **Settings:** Neue Travel-Defaults (`travelHexWidthMiles`, `travelBaseSpeedMph`, `travelRoadMod`, `travelRiverCrossingMin`) inkl. UI im Settings-Tab.
+- **main.ts:** Demo-Command „**Demo – Reisedauer für Beispielroute (Debug-Logs)**“ zum schnellen Testen der Pipeline.
+
+### Notes
+- P0 geht von **benachbarten** Hex-Schritten aus; **Pathfinding** folgt in P1/P2.
+- Wetter/Actor-Mod = **1.0** in P0 (geplant für spätere Iterationen).
+
