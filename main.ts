@@ -63,33 +63,44 @@ export default class SaltMarcherPlugin extends Plugin {
 	async onload() {
 		console.debug("[Salt Marcher][Plugin][onload] Plugin wird geladen…");
 
-		// 1) View registrieren
 		this.registerView(
 			VIEW_TYPE_HEXMAP,
-			(leaf) => {
-				console.debug("[Salt Marcher][Plugin] Registriere View-Instanz für Leaf…");
+			(leaf: WorkspaceLeaf) => {
+				console.debug("[Salt Marcher][Plugin] Registriere HexMapView für Leaf…");
 				return new HexMapView(leaf);
 			}
 		);
 
 		// 2) Command zum Öffnen der View
-		this.addCommand({
-			id: "salt-marcher-open-hexmap",
-			name: "Salt Marcher: Open HexMap",
-			callback: async () => {
-				console.debug("[Salt Marcher][Command] „Open HexMap“ ausgelöst – aktiviere View…");
-				try {
-					await this.activateHexMapView();
-					console.debug("[Salt Marcher][Command] HexMap wurde (oder war bereits) sichtbar.");
-				} catch (err) {
-					console.error("[Salt Marcher][Command][FEHLER] Konnte HexMap nicht aktivieren:", err);
-				}
-			},
-		});
+	    this.addCommand({
+	      id: "salt-marcher-open-hexmap",
+	      name: "Open HexMap", // ← Kürzer, damit im Command-Palette nicht doppelt „Salt Marcher:“ steht
+	      callback: async () => {
+	        console.debug("[Salt Marcher][Command] „Open HexMap“ ausgelöst – aktiviere View…");
+	        try {
+	          await this.activateHexMapView();
+	          console.debug("[Salt Marcher][Command] HexMap wurde (oder war bereits) sichtbar.");
+	        } catch (err) {
+	          console.error("[Salt Marcher][Command][FEHLER] Konnte HexMap nicht aktivieren:", err);
+	        }
+	      },
+	    });
+	
+	    console.debug("[Salt Marcher][Plugin][onload] Plugin geladen. Command & View stehen bereit.");
+	  }
 
-		console.debug("[Salt Marcher][Plugin][onload] Plugin geladen. Command & View stehen bereit.");
-	}
-
+	  async activateHexMapView() {
+	    console.debug("[Salt Marcher][activateHexMapView] Aktiviere/öffne HexMap-View…");
+	    const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_HEXMAP);
+	    if (leaves.length > 0) {
+	      console.debug("[Salt Marcher][activateHexMapView] Leaf existiert bereits – setze aktiv.");
+	      this.app.workspace.revealLeaf(leaves[0]);
+	      return;
+	    }
+	    console.debug("[Salt Marcher][activateHexMapView] Erzeuge neuen Leaf für HexMap.");
+	    await this.app.workspace.getRightLeaf(false).setViewState({ type: VIEW_TYPE_HEXMAP, active: true });
+	  }
+	
 	onunload() {
 		console.debug("[Salt Marcher][Plugin][onunload] Plugin wird entladen – entferne HexMap-Leaves…");
 		this.app.workspace.getLeavesOfType(VIEW_TYPE_HEXMAP).forEach((leaf) => {
