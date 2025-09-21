@@ -86,6 +86,9 @@ export const HEX_PLUGIN_CSS = `
 
 /* === Travel Guide === */
 .sm-travel-guide {
+    --tg-color-token: var(--color-purple, #9c6dfb);
+    --tg-color-user-anchor: var(--color-orange, #f59e0b);
+    --tg-color-auto-point: var(--color-blue, #3b82f6);
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -137,6 +140,36 @@ export const HEX_PLUGIN_CSS = `
 .sm-travel-guide .sm-tg-map .hex3x3-map {
     max-width: none;
     height: 100%;
+}
+
+.sm-travel-guide .tg-token__circle {
+    fill: var(--tg-color-token);
+    opacity: 0.95;
+    stroke: var(--background-modifier-border);
+    stroke-width: 3;
+    transition: opacity 120ms ease;
+}
+
+.sm-travel-guide .tg-route-dot {
+    transition: opacity 120ms ease, r 120ms ease, stroke 120ms ease;
+}
+
+.sm-travel-guide .tg-route-dot--user {
+    fill: var(--tg-color-user-anchor);
+    opacity: 0.95;
+}
+
+.sm-travel-guide .tg-route-dot--auto {
+    fill: var(--tg-color-auto-point);
+    opacity: 0.55;
+}
+
+.sm-travel-guide .tg-route-dot--user.is-highlighted {
+    opacity: 1;
+}
+
+.sm-travel-guide .tg-route-dot--auto.is-highlighted {
+    opacity: 0.9;
 }
 
 .sm-travel-guide .sm-tg-sidebar {
