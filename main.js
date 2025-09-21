@@ -2022,6 +2022,26 @@ function createDragController(deps) {
     token.setPos(ctr.x, ctr.y);
     token.show();
   }
+  const onGlobalPointerDownCapture = (ev) => {
+    if (ev.button !== 0) return;
+    const check = (el) => {
+      if (!(el instanceof Element)) return false;
+      if (el === tokenEl || tokenEl.contains(el)) return true;
+      if (el instanceof SVGCircleElement && routeLayerEl.contains(el)) return true;
+      return false;
+    };
+    const path = typeof ev.composedPath === "function" ? ev.composedPath() : [];
+    if (Array.isArray(path) && path.length > 0) {
+      for (const el of path) {
+        if (check(el)) {
+          suppressNextHexClick = true;
+          return;
+        }
+      }
+    } else if (check(ev.target)) {
+      suppressNextHexClick = true;
+    }
+  };
   const onDotPointerDown = (ev) => {
     if (ev.button !== 0) return;
     const t = ev.target;
@@ -2083,6 +2103,7 @@ function createDragController(deps) {
   const onPointerUp = () => endDrag();
   const onPointerCancel = () => endDrag();
   function bind() {
+    window.addEventListener("pointerdown", onGlobalPointerDownCapture, { capture: true });
     routeLayerEl.addEventListener("pointerdown", onDotPointerDown, { capture: true });
     tokenEl.addEventListener("pointerdown", onTokenPointerDown, { capture: true });
     window.addEventListener("pointermove", onPointerMove, { passive: true });
@@ -2090,6 +2111,7 @@ function createDragController(deps) {
     window.addEventListener("pointercancel", onPointerCancel, { passive: true });
   }
   function unbind() {
+    window.removeEventListener("pointerdown", onGlobalPointerDownCapture, { capture: true });
     routeLayerEl.removeEventListener("pointerdown", onDotPointerDown, { capture: true });
     tokenEl.removeEventListener("pointerdown", onTokenPointerDown, { capture: true });
     window.removeEventListener("pointermove", onPointerMove);
