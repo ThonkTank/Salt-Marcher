@@ -2464,6 +2464,8 @@ async function mountTravelGuide(app, host, file) {
     mapHost.empty();
   };
   const onHexClick = (ev) => {
+    if (ev.cancelable) ev.preventDefault();
+    ev.stopPropagation();
     if (!logic) return;
     if (drag?.consumeClickSuppression()) return;
     const { r, c } = ev.detail;

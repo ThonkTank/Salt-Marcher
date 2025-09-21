@@ -83,6 +83,8 @@ export async function mountTravelGuide(
     };
 
     const onHexClick = (ev: CustomEvent<Coord>) => {
+        if (ev.cancelable) ev.preventDefault();
+        ev.stopPropagation();
         if (!logic) return;
         if (drag?.consumeClickSuppression()) return;
         const { r, c } = ev.detail;
