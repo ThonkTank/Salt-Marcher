@@ -1,0 +1,18 @@
+# UI Overview
+
+Der UI-Layer stellt kleine, wiederverwendbare Dialoge bereit, die mehreren Feature-Apps dienen. Alle Komponenten nutzen Obsidian-spezifische Basisklassen und kapseln die UX, sodass Features nur Callback-Logik einhängen müssen.
+
+## Modals
+
+| Modul | Verantwortung | Notizen |
+| --- | --- | --- |
+| `modals.ts` | Enthält generische Modals ohne Domänenlogik: <br>• `NameInputModal` fragt einen Kartennamen ab, fokussiert das Textfeld automatisch und akzeptiert `Enter` als Shortcut. <br>• `MapSelectModal` erweitert `FuzzySuggestModal`, um Karten (`TFile`) anhand des Dateinamens auszuwählen und gibt das Ergebnis über den Constructor-Callback weiter. | Wird z. B. vom Karten-Editor sowie der Galerie genutzt, um neue Karten anzulegen oder bestehende zu öffnen. |
+| `confirm-delete.ts` | `ConfirmDeleteModal` fordert den Nutzer auf, den Kartennamen zur Bestätigung einzugeben. Der Delete-Button zeigt ein Warning-Styling mit Icon; bei Erfolg/Fehler wird eine `Notice` angezeigt. | Zentraler Sicherheitsdialog für map-delete-Flows. |
+
+## Zusammenspiel mit Feature-Apps
+
+1. **Karten anlegen:** Features öffnen `NameInputModal`, um einen Titel zu sammeln und anschließend `createHexMapFile(...)` aus dem Core aufzurufen.
+2. **Karten auswählen:** `MapSelectModal` bietet eine Fuzzy-Suche über `TFile`-Listen, wie sie von `map-list.ts` geliefert werden.
+3. **Löschbestätigung:** Vor dem Aufruf von `deleteMapAndTiles(...)` bindet die Galerie den `ConfirmDeleteModal` ein, damit versehentliche Löschvorgänge verhindert werden.
+
+Durch diese Kapselung können UI-Anpassungen (Texte, Styling, UX-Verhalten) zentral gepflegt werden, ohne die Feature-spezifischen Views anfassen zu müssen.

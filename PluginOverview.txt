@@ -1,82 +1,67 @@
-# SaltMarcher – Overview
+# SaltMarcher – Plugin Overview
 
-## Architektur in Kürze
+SaltMarcher erweitert Obsidian um Werkzeuge für hex-basierte Kampagnenplanung: Karten lassen sich anlegen, editieren, einfärben,
+analysieren und mit Reiserouten versehen. Das Plugin ist in klar getrennte Layer gegliedert, damit Rendering-Logik, Dateisystemzugriffe und UI-Komponenten unabhängig voneinander weiterentwickelt werden können.
 
-- **Plugin-Einstieg:** `src/app/main.ts` registriert Views, Commands und Ribbons, lädt CSS sowie Terrain-Palette und räumt beim Unload alles auf.
-- **Feature-Schicht:** Unter `src/apps/` liegen die Obsidian-Views. Jeder Feature-Ordner bringt ein eigenes Architektur-Dokument (`*Overview.txt`) mit.
-- **Core-Services:** `src/core/` kapselt Hex-Mathematik, Dateiverwaltung und Terrain-Daten als wiederverwendbare Dienste.
-- **UI-Bausteine:** `src/ui/` enthält generische Modals/Bestätigungsdialoge, die von mehreren Features genutzt werden.
-- **Styling:** `src/app/css.ts` bündelt sämtliches Plugin-CSS in einem Template-String und wird zentral injiziert.
+## Architektur auf einen Blick
+
+| Layer | Standort | Aufgabe | Detail-Dokument |
+| --- | --- | --- | --- |
+| Plugin-Bootstrap | `src/app/` | Registriert Views/Commands, lädt CSS & Terrain-Daten und koordiniert Lifecycle sowie Watcher. | – |
+| Feature-Apps | `src/apps/` | Enthalten eigenständige Obsidian-Views (Galerie, Editor, Terrain-Editor, Travel Guide). | Pro Feature in `*Overview.txt` |
+| Core-Services | `src/core/` | Bietet Hex-Geometrie, Map-/Tile-Dateioperationen, Terrain-Verwaltung und Workspace-Helfer. | `src/core/CoreOverview.txt` |
+| UI-Bausteine | `src/ui/` | Stellt wiederverwendbare Modals/Bestätigungsdialoge für Features bereit. | `src/ui/UiOverview.txt` |
+| Styling | `src/app/css.ts` | Liefert das zentrale CSS, das beim Plugin-Start injiziert wird. | – |
 
 ```
 src/
 ├─ app/
-│  ├─ main.ts                # Plugin-Bootstrap
-│  └─ css.ts                 # Zentrales Styling
+│  ├─ main.ts                # Plugin-Bootstrap (Commands, Views, Watcher)
+│  └─ css.ts                 # Zentrales Styling (wird dynamisch injiziert)
 │
 ├─ apps/
-│  ├─ map-gallery.ts         # Kartenübersicht (einzelne Datei)
-│  ├─ map-editor/            # Hex-Editor – siehe MapEditorOverview.txt
-│  ├─ terrain-editor/        # Terrain-Palette – siehe TerrainEditorOverview.txt
-│  └─ travel-guide/          # Reiseplanung – siehe TravelGuideOverview.txt
+│  ├─ map-gallery.ts         # Kartenübersicht – siehe MapEditorOverview.txt für den Editor
+│  ├─ map-editor/            # Interaktiver Hex-Editor – MapEditorOverview.txt
+│  ├─ terrain-editor/        # Terrain-Palette – TerrainEditorOverview.txt
+│  └─ travel-guide/          # Reiseplanung – TravelGuideOverview.txt
 │
-├─ core/                     # Hex-Engine, Map/Terrain-Services, Map-Erstellung/-Löschung
-└─ ui/                       # Wiederverwendbare Modals & Dialoge
+├─ core/                     # Hex-Engine & Dateiservices – CoreOverview.txt
+└─ ui/                       # Modals & Dialoge – UiOverview.txt
 ```
 
----
+## Layer-Highlights
 
-## Plugin-Lifecycle (`src/app/`)
+### Plugin-Lifecycle (`src/app/`)
+- `main.ts` richtet Views (MapEditor, HexGallery, TerrainEditor, TravelGuide) sowie passende Commands/Ribbons ein.
+- Lädt Terrain-Definitionen (`ensureTerrainFile → loadTerrains → setTerrains`) und beobachtet Änderungen via `watchTerrains`.
+- Injiziert das zentrale CSS (`injectCss`) und räumt beim Unload alle Listener/Watcher ab.
+- Verteilt Events/Handler an Feature-Layer und Core-Services.
 
-- **`main.ts`**
-  - Registriert die Views `MapEditorView`, `HexGalleryView`, `TerrainEditorView` und `TravelGuideView`.
-  - Richtet Commands (`open-map-editor`, `open-terrain-editor`, `open-travel-guide`) sowie passende Ribbon-Icons ein.
-  - Lädt Terrain-Daten (`ensureTerrainFile → loadTerrains → setTerrains`) und beobachtet Änderungen via `watchTerrains`.
-  - Integriert das zentrale CSS (`injectCss`) und sorgt beim Unload für Cleanup (Watcher, CSS, Event-Refs).
-- **`css.ts`** bündelt das Styling für Karten, Editor-UI, Terrain-Editor und Travel-Guide. Renderer setzen Farben inline; CSS kümmert sich um Layout, Hover-Zustände und Animationen.
+### Feature-Apps (`src/apps/`)
+- **Map Gallery (`map-gallery.ts`):** Listet Karten mit SVG-Vorschau, nutzt Modals (`NameInputModal`, `ConfirmDeleteModal`) und Core-Helfer (`getAllMapFiles`, `renderHexMap`, `deleteMapAndTiles`).
+- **Map Editor (`map-editor/`):** Liefert Tooling für Hex-Auswahl, Brush-Painting, Tile-Speicherung und Inspector-Views (Details siehe `MapEditorOverview.txt`).
+- **Terrain Editor (`terrain-editor/`):** Pflegt Farb- und Geschwindigkeits-Paletten, synchronisiert Änderungen mit `terrain.ts`.
+- **Travel Guide (`travel-guide/`):** Spielt Reiserouten auf Hex-Karten ab und nutzt Rendering/Geometrie aus dem Core.
 
----
+### Core-Services (`src/core/`)
+- Bündelt Hex-Mathematik, SVG-Rendering, Map/Terrain-Dateiverwaltung und Workspace-Utilities.
+- High-Level-Flows für Kartenanlage (`createHexMapFile`), Tile-Liste/Selektion (`getAllMapFiles`, `getFirstHexBlock`), Rendering (`renderHexMap`) und Löschung (`deleteMapAndTiles`).
+- Terrain-Verwaltung (`setTerrainPalette`, `setTerrains`) hält UI und Renderer konsistent.
+- Ausführliche Beschreibung im [Core Overview](src/core/CoreOverview.txt).
 
-## Feature-Apps (`src/apps/`)
+### Geteilte UI-Bausteine (`src/ui/`)
+- `NameInputModal`, `MapSelectModal` und `ConfirmDeleteModal` kapseln wiederverwendbare Dialoge.
+- Reduzieren Boilerplate in Feature-Apps und sorgen für einheitliche UX.
+- Details im [UI Overview](src/ui/UiOverview.txt).
 
-- **Map Gallery (`map-gallery.ts`)**
-  - Stellt eine Obsidian-`ItemView` dar, die Karten auflistet, Vorschaurender zeigt und Aktionen wie Öffnen, Löschen oder Erstellen bereitstellt.
-  - Nutzt Core-Helfer (`getFirstHexBlock`, `renderHexMap`, `deleteMapAndTiles`) und Modals aus `src/ui/`.
+### Styling & Build
+- `src/app/css.ts` enthält alle SCSS-ähnlichen Styles für Maps, Tools, Terrain-Editor und Travel Guide.
+- `manifest.json` definiert Plugin-ID/Version, `esbuild.config.mjs` + `tsconfig.json` stellen die Build-Pipeline für TypeScript sicher (`npm run build`).
 
-- **Map Editor (`map-editor/`)**
-  - Interaktiver Hex-Editor mit Tool-System, Brush-Preview und Tile-Persistenz.
-  - Detaillierte Architektur inklusive Tool-APIs, Lifecycle und Modulaufteilung in `src/apps/map-editor/MapEditorOverview.txt`.
+## Typische Nutzerflüsse
+1. Anwender erstellt über Ribbon/Command eine neue Karte → `NameInputModal` sammelt den Namen, `createHexMapFile` legt Map + Tiles an, `MapEditorView` öffnet im Workspace.
+2. In der Galerie werden vorhandene Karten via `getAllMapFiles` gefunden und in SVGs gerendert; ein Klick startet den Editor oder öffnet zugehörige Tile-Notizen.
+3. Terrain-Anpassungen werden im Terrain-Editor vorgenommen, der via Core `setTerrains` aktualisiert und sofort im Renderer wirksam macht.
+4. Travel-Routen greifen auf dieselben Hex-Geometrie- und Rendering-Bausteine zurück, um Bewegungen über Karten abzubilden.
 
-- **Terrain Editor (`terrain-editor/`)**
-  - Verwaltungsoberfläche für Farben und Reisegeschwindigkeiten der Terrain-Palette.
-  - Verantwortlichkeiten, Datenfluss und Store-Logik sind in `src/apps/terrain-editor/TerrainEditorOverview.txt` beschrieben.
-
-- **Travel Guide (`travel-guide/`)**
-  - Visualisiert und animiert Reiserouten über Hex-Karten inklusive Token-Playback.
-  - Domänenmodell, Rendering-Layer und Persistenzschnittstellen werden in `src/apps/travel-guide/TravelGuideOverview.txt` erläutert.
-
----
-
-## Core-Services (`src/core/`)
-
-- **Hex Mapper (`hex-mapper/`):** Liefert Geometrie (`hex-geom`), Rendering (`hex-render`), Kamera-Steuerung (`camera`) und Tile-I/O (`hex-notes`). Diese Module kapseln sämtliche low-level Hex-Operationen und SVG-Manipulationen.
-- **Map Management:**
-  - `map-list.ts` findet Karten-Dateien, extrahiert Hex-Optionen und stellt `MapSelectModal` zur Verfügung.
-  - `map-maker.ts` erzeugt neue Karten inkl. initialem Tile-Satz und Dateinamen-Sanitizing.
-  - `map-delete.ts` entfernt Karten samt zugehöriger Tiles robust.
-- **Layout Utilities (`layout.ts`):** Wählt passende Obsidian-Leaves (z. B. rechter Leaf für Travel Guide) und abstrahiert Workspace-Handling.
-- **Terrain-Verwaltung (`terrain.ts`):** Hält globale Farb- und Geschwindigkeits-Maps aktuell (`setTerrains`, `setTerrainPalette`) und stellt Defaults bereit.
-
----
-
-## Geteilte UI-Bausteine (`src/ui/`)
-
-- **`modals.ts`** bietet `NameInputModal` (neue Karten) und `MapSelectModal` (Kartenwahl) für mehrere Features.
-- **`confirm-delete.ts`** stellt einen Sicherheitsdialog zum Löschen von Karten bereit (Name zur Bestätigung, visuelles Warning).
-
----
-
-## Manifest & Build
-
-- **`manifest.json`** definiert Plugin-ID, Version und Entry (`main.ts`).
-- **`main.js` / `esbuild.config.mjs` / `tsconfig.json`** bilden die Build-Pipeline (esbuild) für TypeScript → Obsidian-kompatibles Bundle.
+Dieses Dokument bietet den High-Level-Einstieg. Für Details zu einzelnen Layern verweisen die verlinkten Overview-Dateien auf Verantwortlichkeiten, APIs und Erweiterungspunkte.
