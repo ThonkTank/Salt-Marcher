@@ -159,7 +159,7 @@ export type TravelLogic = {
 - `destroy()` entfernt die Gruppe.
 
 ### `ui/token-layer.ts`
-- Erstellt `<g class="tg-token">` inklusive Kreis, versteckt initial, und hängt ihn direkt an das kamera-transformierte `contentG`.
+- Erstellt `<g class="tg-token">` inklusive auffälligem Kreis (Radius 14, dicker Rand), versteckt initial, und hängt ihn direkt an das kamera-transformierte `contentG`.
 - Stellt `setPos`, `moveTo` (RAF-Animation, optional durations), `show`, `hide`, `destroy` bereit und erfüllt damit `TokenCtl`.
 - Lässt Pointer-Events aktiv (`cursor: grab`) für Drag-Start.
 

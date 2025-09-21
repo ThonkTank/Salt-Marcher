@@ -10,11 +10,11 @@ export function createTokenLayer(contentG: SVGGElement): TokenCtl & { el: SVGGEl
     contentG.appendChild(el);
 
     const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    circle.setAttribute("r", "9");
+    circle.setAttribute("r", "14");
     circle.setAttribute("fill", "var(--color-accent)");
     circle.setAttribute("opacity", "0.95");
     circle.setAttribute("stroke", "var(--background-modifier-border)");
-    circle.setAttribute("stroke-width", "2");
+    circle.setAttribute("stroke-width", "3");
     el.appendChild(circle);
 
     let vx = 0, vy = 0;

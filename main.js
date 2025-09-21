@@ -1920,18 +1920,18 @@ function createRouteLayer(contentRoot, centerOf) {
 }
 
 // src/apps/travel-guide/ui/token-layer.ts
-function createTokenLayer(svgRoot) {
+function createTokenLayer(contentG) {
   const el = document.createElementNS("http://www.w3.org/2000/svg", "g");
   el.classList.add("tg-token");
   el.style.pointerEvents = "auto";
   el.style.cursor = "grab";
-  svgRoot.appendChild(el);
+  contentG.appendChild(el);
   const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-  circle.setAttribute("r", "9");
+  circle.setAttribute("r", "14");
   circle.setAttribute("fill", "var(--color-accent)");
   circle.setAttribute("opacity", "0.95");
   circle.setAttribute("stroke", "var(--background-modifier-border)");
-  circle.setAttribute("stroke-width", "2");
+  circle.setAttribute("stroke-width", "3");
   el.appendChild(circle);
   let vx = 0, vy = 0;
   let rafId = null;
@@ -2594,7 +2594,7 @@ async function mountTravelGuide(app, host, file) {
       mapLayer.handles.contentG,
       (rc) => mapLayer.centerOf(rc)
     );
-    tokenLayer = createTokenLayer(mapLayer.handles.svg);
+    tokenLayer = createTokenLayer(mapLayer.handles.contentG);
     const adapter = {
       ensurePolys: (coords) => mapLayer.ensurePolys(coords),
       centerOf: (rc) => mapLayer.centerOf(rc),
