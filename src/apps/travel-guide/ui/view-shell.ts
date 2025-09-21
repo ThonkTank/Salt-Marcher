@@ -3,21 +3,30 @@
 // Delegiert Pointer/RMB an Controller; Domain erledigt Regeln & Persistenz.
 
 import type { App, TFile } from "obsidian";
-import { parseOptions } from "../../core/options";
-import { loadTerrains } from "../../core/terrain-store";
-import { setTerrains } from "../../core/terrain";
+import { parseOptions } from "../../../core/options";
+import { loadTerrains } from "../../../core/terrain-store";
+import { setTerrains } from "../../../core/terrain";
 
 import type { RenderAdapter } from "../infra/adapter";
 import { createMapLayer } from "./map-layer";
 import { createRouteLayer } from "./route-layer";
 import { createTokenLayer } from "./token-layer";
 import { createDragController } from "./drag.controller";
-import { bindContextMenu } from "./contextmenu";
+import { bindContextMenu } from "./contextmenue";
 
 import { createTravelLogic } from "../domain/actions";
 import type { Coord } from "../domain/types";
 
-export async function mountTravelGuide(app: App, host: HTMLElement, file: TFile | null) {
+export type TravelGuideController = {
+    destroy(): void;
+    setFile?(file: TFile | null): void;
+};
+
+export async function mountTravelGuide(
+    app: App,
+    host: HTMLElement,
+    file: TFile | null
+): Promise<TravelGuideController | undefined> {
     host.empty();
     if (!file) return;
 
@@ -50,12 +59,12 @@ export async function mountTravelGuide(app: App, host: HTMLElement, file: TFile 
     const logic = createTravelLogic({
         app,
         getMapFile: () => file,
-                                    baseMs: 900,
-                                    adapter,
-                                    onChange: () => {
-                                        const s = logic.getState();
-                                        routeLayer.draw(s.route, s.editIdx ?? null);
-                                    },
+        baseMs: 900,
+        adapter,
+        onChange: () => {
+            const s = logic.getState();
+            routeLayer.draw(s.route, s.editIdx ?? null);
+        },
     });
 
     // Token aus Tiles laden/anzeigen (Persistenz bleibt in der Domain)
@@ -65,22 +74,22 @@ export async function mountTravelGuide(app: App, host: HTMLElement, file: TFile 
     const drag = createDragController({
         routeLayerEl: routeLayer.el,
         tokenEl: (tokenLayer as any).el as SVGGElement,
-                                      token: tokenLayer,
-                                      adapter,
-                                      logic: {
-                                          getState: () => logic.getState(),
-                                      selectDot: (i) => logic.selectDot(i),
-                                      moveSelectedTo: (rc) => logic.moveSelectedTo(rc),
-                                      moveTokenTo: (rc) => logic.moveTokenTo(rc),
-                                      },
-                                      polyToCoord: mapLayer.polyToCoord,
+        token: tokenLayer,
+        adapter,
+        logic: {
+            getState: () => logic.getState(),
+            selectDot: (i) => logic.selectDot(i),
+            moveSelectedTo: (rc) => logic.moveSelectedTo(rc),
+            moveTokenTo: (rc) => logic.moveTokenTo(rc),
+        },
+        polyToCoord: mapLayer.polyToCoord,
     });
     drag.bind();
 
     // RMB-Kontextmenü (nur user-Punkte löschen)
     const unbindContext = bindContextMenu(routeLayer.el, {
         getState: () => logic.getState(),
-                                          deleteUserAt: (idx) => logic.deleteUserAt(idx),
+        deleteUserAt: (idx) => logic.deleteUserAt(idx),
     });
 
     // hex:click → neuen user-Punkt setzen (Click nach Drag wird unterdrückt)
@@ -93,7 +102,7 @@ export async function mountTravelGuide(app: App, host: HTMLElement, file: TFile 
     clickTarget.addEventListener?.("hex:click", onHexClick, { passive: false });
 
     // Cleanup
-    return {
+    const controller: TravelGuideController = {
         destroy() {
             clickTarget.removeEventListener?.("hex:click", onHexClick as any);
             unbindContext();
@@ -103,4 +112,6 @@ export async function mountTravelGuide(app: App, host: HTMLElement, file: TFile 
             host.empty();
         },
     };
+
+    return controller;
 }
