@@ -242,6 +242,7 @@ Alle Farbwerte lassen sich über die jeweiligen Custom Properties überschreiben
 
 ### `render/draw-route.ts`
 - `drawRoute({ layer, route, centerOf, highlightIndex, start })` leert Layer, setzt den Token-Mittelpunkt als erstes Polyline-Segment (ohne zusätzlichen Dot), zeichnet anschließend die Route (falls ≥2 Punkte) und generiert Kreise pro Knoten inklusive `.tg-route-dot` + Typ-Klassen für CSS-gestützte Farbgebung.
-- `updateHighlight(layer, highlightIndex)` setzt Stroke/Radius, toggelt `.is-highlighted` und delegiert die finale Opazität an CSS.
+- Standardradien: User-Anker = 7 px, Auto-Punkte = 5 px; beide Werte werden als `data-radius` hinterlegt, damit spätere Updates den Baseline-Radius kennen.
+- `updateHighlight(layer, highlightIndex)` liest den Baseline-Radius aus `data-radius`, addiert den Highlight-Offset (+2 px), setzt Stroke/Radius, toggelt `.is-highlighted` und delegiert die finale Opazität an CSS.
 - Pointer-Events der Polyline deaktiviert, Dots behalten Pointer für Interaktion.
 
