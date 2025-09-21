@@ -90,10 +90,10 @@ export async function mountTravelGuide(
     };
 
     const onHexClick = (ev: CustomEvent<Coord>) => {
+        if (drag?.consumeClickSuppression()) return;
+        if (!logic) return;
         if (ev.cancelable) ev.preventDefault();
         ev.stopPropagation();
-        if (!logic) return;
-        if (drag?.consumeClickSuppression()) return;
         const { r, c } = ev.detail;
         logic.handleHexClick({ r, c });
     };
