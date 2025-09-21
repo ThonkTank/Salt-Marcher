@@ -33,20 +33,20 @@ src/
 
 ### Plugin-Lifecycle (`src/app/`)
 - `main.ts` richtet Views (MapEditor, HexGallery, TerrainEditor, TravelGuide) sowie passende Commands/Ribbons ein.
-- Lädt Terrain-Definitionen (`ensureTerrainFile → loadTerrains → setTerrains`) und beobachtet Änderungen via `watchTerrains`.
+- Lädt Terrain-Definitionen über den Core-Service (`core/terrain-store.ts`: `ensureTerrainFile → loadTerrains → setTerrains`) und beobachtet Änderungen via `watchTerrains`.
 - Injiziert das zentrale CSS (`injectCss`) und räumt beim Unload alle Listener/Watcher ab.
 - Verteilt Events/Handler an Feature-Layer und Core-Services.
 
 ### Feature-Apps (`src/apps/`)
 - **Map Gallery (`map-gallery.ts`):** Listet Karten mit SVG-Vorschau, nutzt gemeinsame UI-Flows (`promptMapSelection`, `promptCreateMap`, `renderHexMapFromFile`) sowie `ConfirmDeleteModal` und Core-Helfer (`deleteMapAndTiles`).
 - **Map Editor (`map-editor/`):** Liefert Tooling für Hex-Auswahl, Brush-Painting, Tile-Speicherung und Inspector-Views (Details siehe `MapEditorOverview.txt`).
-- **Terrain Editor (`terrain-editor/`):** Pflegt Farb- und Geschwindigkeits-Paletten, synchronisiert Änderungen mit `terrain.ts`.
+- **Terrain Editor (`terrain-editor/`):** Pflegt Farb- und Geschwindigkeits-Paletten über den Core-Terrain-Store und synchronisiert Änderungen mit `terrain.ts`.
 - **Travel Guide (`travel-guide/`):** Spielt Reiserouten auf Hex-Karten ab und nutzt Rendering/Geometrie aus dem Core.
 
 ### Core-Services (`src/core/`)
 - Bündelt Hex-Mathematik, SVG-Rendering, Map/Terrain-Dateiverwaltung und Workspace-Utilities.
 - High-Level-Flows für Kartenanlage (`createHexMapFile`), Tile-Liste/Selektion (`getAllMapFiles`, `getFirstHexBlock`), Rendering (`renderHexMap`) und Löschung (`deleteMapAndTiles`).
-- Terrain-Verwaltung (`setTerrainPalette`, `setTerrains`) hält UI und Renderer konsistent.
+- Terrain-Verwaltung (`terrain-store.ts`, `setTerrainPalette`, `setTerrains`) hält UI und Renderer konsistent.
 - Ausführliche Beschreibung im [Core Overview](src/core/CoreOverview.txt).
 
 ### Geteilte UI-Bausteine (`src/ui/`)

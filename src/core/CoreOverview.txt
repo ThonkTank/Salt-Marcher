@@ -12,6 +12,7 @@ Der Core-Layer bündelt sämtliche fachlichen Services des Plugins, die unabhän
 | `map-delete.ts` | Löscht eine Karte gemeinsam mit allen zugehörigen Tiles über `hex-notes`. |
 | `options.ts` | Parst Hex-Block-Optionen (`folder`, `prefix`, `radius`) in ein Typsicheres Objekt. |
 | `save.ts` | Placeholder für Persistenz-Funktionen (`saveMap`, `saveMapAs`) – dient als Erweiterungspunkt. |
+| `terrain-store.ts` | Zentraler Dateiservice für `Terrains.md` (Ensure, Parser, Stringifier, Load/Save, Watcher + Workspace-Event). |
 | `terrain.ts` | Verwaltet Standard- und Laufzeit-Terrainpaletten (Farben + Geschwindigkeiten) und bietet Mutatoren (`setTerrainPalette`, `setTerrains`). |
 
 ### Hex-Mapper Subsystem (`hex-mapper/`)
@@ -32,6 +33,6 @@ Der Core-Layer bündelt sämtliche fachlichen Services des Plugins, die unabhän
 4. **Bearbeitung:** Feature-spezifische Tools verwenden die `RenderHandles` (`setFill`, `ensurePolys`) sowie Tile-APIs (`saveTile`, `deleteTile`) zur Aktualisierung.
 5. **Löschen:** `deleteMapAndTiles(...)` entfernt Karte + Tiles, wobei `hex-notes.ts` alle betroffenen Dateien identifiziert.
 6. **Workspace-Steuerung:** `layout.ts` stellt sicher, dass neue Views im gewünschten Leaf erscheinen.
-7. **Terrain-Pflege:** `terrain.ts` synchronisiert globale Paletten, damit Renderer und UI konsistent bleiben.
+7. **Terrain-Pflege:** `terrain-store.ts` stellt Datei-/Watcher-Funktionen bereit, `terrain.ts` synchronisiert globale Paletten, damit Renderer und UI konsistent bleiben.
 
 Diese Aufteilung sorgt dafür, dass neue Features (`src/apps/`) auf konsistente, getestete Services zugreifen können, ohne Hex-spezifische Details neu implementieren zu müssen.

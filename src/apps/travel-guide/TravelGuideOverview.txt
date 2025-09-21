@@ -138,7 +138,7 @@ export type TravelLogic = {
 
 ### `ui/view-shell.ts`
 - `mountTravelGuide(app, host, file)` leert den Host, beendet sofort wenn keine Datei übergeben wurde, und richtet anschließend SVG-Root & Layers ein.
-- Lädt Terrain-Definitionen (`loadTerrains`) und registriert sie über `setTerrains` für die restliche App.
+- Lädt Terrain-Definitionen über den Core-Terrain-Store (`loadTerrains`) und registriert sie über `setTerrains` für die restliche App.
 - Baut `mapLayer`, `routeLayer`, `tokenLayer` und kombiniert sie zu einem `RenderAdapter`.
 - Initialisiert `createTravelLogic` (Basisdauer 900 ms) und reicht `onChange` durch, um `routeLayer.draw(route, editIdx)` zu triggern.
 - Ruft `logic.initTokenFromTiles()` (Token laden/anzeigen).
