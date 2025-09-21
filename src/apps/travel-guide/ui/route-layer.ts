@@ -4,12 +4,12 @@ import type { Coord, RouteNode } from "../domain/types";
 import { drawRoute, updateHighlight } from "../render/draw-route";
 
 export function createRouteLayer(
-    svgRoot: SVGSVGElement,
+    contentRoot: SVGGElement,
     centerOf: (rc: { r: number; c: number }) => { x: number; y: number } | null
 ) {
     const el = document.createElementNS("http://www.w3.org/2000/svg", "g");
     el.classList.add("tg-route-layer");
-    svgRoot.appendChild(el);
+    contentRoot.appendChild(el);
 
     function draw(route: RouteNode[], highlightIndex: number | null = null, start?: Coord | null) {
         drawRoute({ layer: el, route, centerOf, highlightIndex, start });

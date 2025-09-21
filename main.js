@@ -1903,10 +1903,10 @@ function updateHighlight(layer, highlightIndex) {
 }
 
 // src/apps/travel-guide/ui/route-layer.ts
-function createRouteLayer(svgRoot, centerOf) {
+function createRouteLayer(contentRoot, centerOf) {
   const el = document.createElementNS("http://www.w3.org/2000/svg", "g");
   el.classList.add("tg-route-layer");
-  svgRoot.appendChild(el);
+  contentRoot.appendChild(el);
   function draw(route, highlightIndex = null, start) {
     drawRoute({ layer: el, route, centerOf, highlightIndex, start });
   }
@@ -2590,7 +2590,10 @@ async function mountTravelGuide(app, host, file) {
       mapLayer = null;
       return;
     }
-    routeLayer = createRouteLayer(mapLayer.handles.svg, (rc) => mapLayer.centerOf(rc));
+    routeLayer = createRouteLayer(
+      mapLayer.handles.contentG,
+      (rc) => mapLayer.centerOf(rc)
+    );
     tokenLayer = createTokenLayer(mapLayer.handles.svg);
     const adapter = {
       ensurePolys: (coords) => mapLayer.ensurePolys(coords),
