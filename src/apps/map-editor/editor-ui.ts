@@ -1,18 +1,15 @@
 // src/apps/map-editor/editor-ui.ts
-import { App, TFile, Notice, setIcon } from "obsidian";
+import { App, TFile } from "obsidian";
 import { type HexOptions } from "../../core/options";
 import { type RenderHandles } from "../../core/hex-mapper/hex-render";
 import {
-    applyMapButtonStyle,
-    promptCreateMap,
-    promptMapSelection,
     renderHexMapFromFile,
 } from "../../ui/map-workflows";
 import type { ToolModule, ToolContext } from "./tools-api";
 import { createBrushTool } from "./terrain-brush/brush-options";
 import { createInspectorTool } from "./inspektor/inspektor-options";
 // Falls vorhanden, echte Saves nutzen (wenn nicht vorhanden: temporär auskommentieren)
-import { saveMap, saveMapAs } from "../../core/save";
+import { createMapHeader } from "../../ui/map-header";
 
 type State = {
     file: TFile | null;
@@ -29,53 +26,15 @@ export function mountMapEditor(app: App, host: HTMLElement, init?: { mapPath?: s
     const state: State = { file: null, opts: null, handles: null, tool: null, cleanupPanel: null };
 
     /* ---------- Header ---------- */
-    const header = host.createDiv({ cls: "map-editor-header" });
-    Object.assign(header.style, { display: "flex", flexDirection: "column", gap: ".4rem" });
-
-    // Row 1: Titel | Open | +
-    const r1 = header.createDiv();
-    Object.assign(r1.style, { display: "flex", alignItems: "center", gap: ".5rem" });
-    r1.createEl("h2", { text: "Map Editor" }).style.marginRight = "auto";
-
-    const btnOpen = r1.createEl("button", { text: "Open Map" });
-    setIcon(btnOpen, "folder-open");
-    applyMapButtonStyle(btnOpen);
-    btnOpen.onclick = () => {
-        void promptMapSelection(app, async (f) => { await setFile(f); });
-    };
-
-    const btnPlus = r1.createEl("button"); btnPlus.append(" ", "+");
-    setIcon(btnPlus, "plus");
-    applyMapButtonStyle(btnPlus);
-    btnPlus.onclick = () => {
-        promptCreateMap(app, async (file) => {
+    const headerHandle = createMapHeader(app, host, {
+        title: "Map Editor",
+        onOpen: async (file) => {
             await setFile(file);
-        });
-    };
-
-    // Row 2: Dateiname | Dropdown: Speichern / Speichern als
-    const r2 = header.createDiv();
-    Object.assign(r2.style, { display: "flex", alignItems: "center", gap: ".5rem" });
-
-    const nameBox = r2.createEl("div", { text: "—" });
-    Object.assign(nameBox.style, { marginRight: "auto", opacity: ".85" });
-
-    const saveSelect = r2.createEl("select");
-    saveSelect.createEl("option", { text: "Speichern" }).value = "save";
-    saveSelect.createEl("option", { text: "Speichern als" }).value = "saveAs";
-    const saveBtn = r2.createEl("button", { text: "Los" });
-    applyMapButtonStyle(saveBtn);
-    saveBtn.onclick = async () => {
-        if (!state.file) return new Notice("Keine Karte ausgewählt.");
-        try {
-            if (saveSelect.value === "save") await saveMap(app, state.file);
-            else await saveMapAs(app, state.file);
-            new Notice("Gespeichert.");
-        } catch (e) {
-            console.error(e);
-            new Notice("Speichern fehlgeschlagen.");
-        }
-    };
+        },
+        onCreate: async (file) => {
+            await setFile(file);
+        },
+    });
 
     /* ---------- Body Split ---------- */
     const body = host.createDiv();
@@ -177,7 +136,7 @@ export function mountMapEditor(app: App, host: HTMLElement, init?: { mapPath?: s
     }
 
     async function refreshAll() {
-        nameBox.textContent = state.file ? state.file.basename : "—";
+        headerHandle.setFileLabel(state.file);
         optName.textContent = state.file ? state.file.basename : "—";
         await renderMap();                                   // neue Handles
         // aktives Tool (re)aktivieren → Kreis an neues overlay hängen

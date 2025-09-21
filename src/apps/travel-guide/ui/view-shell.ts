@@ -6,6 +6,7 @@ import type { App, TFile } from "obsidian";
 import { parseOptions } from "../../../core/options";
 import { loadTerrains } from "../../../core/terrain-store";
 import { setTerrains } from "../../../core/terrain";
+import { saveMap, saveMapAs } from "../../../core/save";
 
 import type { RenderAdapter } from "../infra/adapter";
 import { createMapLayer } from "./map-layer";
@@ -14,6 +15,8 @@ import { createTokenLayer } from "./token-layer";
 import { createDragController } from "./drag.controller";
 import { bindContextMenu } from "./contextmenue";
 import { createSidebar } from "./sidebar";
+
+import { createMapHeader, type MapHeaderHandle } from "../../../ui/map-header";
 
 import { createTravelLogic } from "../domain/actions";
 import type { Coord, LogicStateSnapshot } from "../domain/types";
@@ -31,8 +34,11 @@ export async function mountTravelGuide(
     host.empty();
     host.classList.add("sm-travel-guide");
 
-    const mapHost = host.createDiv({ cls: "sm-tg-map" });
-    const sidebarHost = host.createDiv({ cls: "sm-tg-sidebar" });
+    const headerHost = host.createDiv({ cls: "sm-travel-guide__header" });
+    const body = host.createDiv({ cls: "sm-travel-guide__body" });
+
+    const mapHost = body.createDiv({ cls: "sm-tg-map" });
+    const sidebarHost = body.createDiv({ cls: "sm-tg-sidebar" });
 
     const sidebar = createSidebar(sidebarHost, file?.basename ?? "—");
 
@@ -40,6 +46,7 @@ export async function mountTravelGuide(
 
     const opts = parseOptions("radius: 42");
 
+    let headerHandle: MapHeaderHandle | null = null;
     let currentFile: TFile | null = null;
     let mapLayer: Awaited<ReturnType<typeof createMapLayer>> | null = null;
     let routeLayer: ReturnType<typeof createRouteLayer> | null = null;
@@ -99,6 +106,7 @@ export async function mountTravelGuide(
 
         currentFile = nextFile;
         sidebar.setTitle(nextFile?.basename ?? "—");
+        headerHandle?.setFileLabel(currentFile);
         sidebar.setTile(null);
 
         logic?.pause?.();
@@ -165,8 +173,6 @@ export async function mountTravelGuide(
         logic?.setTokenSpeed(v);
     });
 
-    await loadFile(file);
-
     const enqueueLoad = (next: TFile | null) => {
         loadChain = loadChain
             .then(() => loadFile(next))
@@ -175,6 +181,29 @@ export async function mountTravelGuide(
             });
         return loadChain;
     };
+
+    headerHandle = createMapHeader(app, headerHost, {
+        title: "Travel Guide",
+        initialFile: file ?? null,
+        onOpen: async (next) => {
+            await enqueueLoad(next);
+        },
+        onCreate: async (created) => {
+            await enqueueLoad(created);
+        },
+        onSave: async (mode, current) => {
+            await logic?.persistTokenToTiles();
+            if (!current) return false;
+            if (mode === "save") {
+                await saveMap(app, current);
+            } else {
+                await saveMapAs(app, current);
+            }
+            return true;
+        },
+    });
+
+    await enqueueLoad(file ?? null);
 
     const controller: TravelGuideController = {
         setFile(next) {
@@ -187,6 +216,8 @@ export async function mountTravelGuide(
             logic?.pause?.();
             logic = null;
             sidebar.destroy();
+            headerHandle?.destroy();
+            headerHandle = null;
             host.classList.remove("sm-travel-guide");
             host.empty();
         },

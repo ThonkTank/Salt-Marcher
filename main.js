@@ -23,10 +23,10 @@ __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian12 = require("obsidian");
+var import_obsidian13 = require("obsidian");
 
 // src/apps/map-gallery.ts
-var import_obsidian8 = require("obsidian");
+var import_obsidian9 = require("obsidian");
 
 // src/core/layout.ts
 function getRightLeaf(app) {
@@ -42,10 +42,10 @@ function getCenterLeaf(app) {
 }
 
 // src/apps/map-editor/index.ts
-var import_obsidian6 = require("obsidian");
+var import_obsidian7 = require("obsidian");
 
 // src/apps/map-editor/editor-ui.ts
-var import_obsidian5 = require("obsidian");
+var import_obsidian6 = require("obsidian");
 
 // src/ui/map-workflows.ts
 var import_obsidian4 = require("obsidian");
@@ -1152,6 +1152,9 @@ function createInspectorTool() {
   };
 }
 
+// src/ui/map-header.ts
+var import_obsidian5 = require("obsidian");
+
 // src/core/save.ts
 async function saveMap(_app, file) {
   console.warn("[save] saveMap() not implemented. File:", file.path);
@@ -1160,53 +1163,114 @@ async function saveMapAs(_app, file) {
   console.warn("[save] saveMapAs() not implemented. File:", file.path);
 }
 
+// src/ui/map-header.ts
+function createMapHeader(app, host, options) {
+  const labels = {
+    open: options.labels?.open ?? "Open Map",
+    create: options.labels?.create ?? "Create",
+    save: options.labels?.save ?? "Speichern",
+    saveAs: options.labels?.saveAs ?? "Speichern als",
+    trigger: options.labels?.trigger ?? "Los"
+  };
+  const notices = {
+    missingFile: options.notices?.missingFile ?? "Keine Karte ausgew\xE4hlt.",
+    saveSuccess: options.notices?.saveSuccess ?? "Gespeichert.",
+    saveError: options.notices?.saveError ?? "Speichern fehlgeschlagen."
+  };
+  let currentFile = options.initialFile ?? null;
+  let destroyed = false;
+  const root = host.createDiv({ cls: "sm-map-header" });
+  root.classList.add("map-editor-header");
+  Object.assign(root.style, { display: "flex", flexDirection: "column", gap: ".4rem" });
+  const row1 = root.createDiv();
+  Object.assign(row1.style, { display: "flex", alignItems: "center", gap: ".5rem" });
+  const titleEl = row1.createEl("h2", { text: options.title });
+  titleEl.style.marginRight = "auto";
+  const openBtn = row1.createEl("button", { text: labels.open });
+  (0, import_obsidian5.setIcon)(openBtn, "folder-open");
+  applyMapButtonStyle(openBtn);
+  openBtn.onclick = () => {
+    if (destroyed) return;
+    void promptMapSelection(app, async (file) => {
+      if (destroyed) return;
+      setFileLabel(file);
+      await options.onOpen?.(file);
+    });
+  };
+  const createBtn = row1.createEl("button");
+  createBtn.append(" ", "+");
+  (0, import_obsidian5.setIcon)(createBtn, "plus");
+  applyMapButtonStyle(createBtn);
+  createBtn.onclick = () => {
+    if (destroyed) return;
+    promptCreateMap(app, async (file) => {
+      if (destroyed) return;
+      setFileLabel(file);
+      await options.onCreate?.(file);
+    });
+  };
+  const row2 = root.createDiv();
+  Object.assign(row2.style, { display: "flex", alignItems: "center", gap: ".5rem" });
+  const nameBox = row2.createEl("div", { text: options.initialFile?.basename ?? options.emptyLabel ?? "\u2014" });
+  Object.assign(nameBox.style, { marginRight: "auto", opacity: ".85" });
+  const select = row2.createEl("select");
+  select.createEl("option", { text: labels.save }).value = "save";
+  select.createEl("option", { text: labels.saveAs }).value = "saveAs";
+  const triggerBtn = row2.createEl("button", { text: labels.trigger });
+  applyMapButtonStyle(triggerBtn);
+  triggerBtn.onclick = async () => {
+    if (destroyed) return;
+    const mode = select.value ?? "save";
+    const file = currentFile;
+    if (!file) {
+      await options.onSave?.(mode, null);
+      new import_obsidian5.Notice(notices.missingFile);
+      return;
+    }
+    try {
+      const handled = await options.onSave?.(mode, file) === true;
+      if (!handled) {
+        if (mode === "save") await saveMap(app, file);
+        else await saveMapAs(app, file);
+      }
+      new import_obsidian5.Notice(notices.saveSuccess);
+    } catch (err) {
+      console.error("[map-header] save failed", err);
+      new import_obsidian5.Notice(notices.saveError);
+    }
+  };
+  function setFileLabel(file) {
+    currentFile = file;
+    nameBox.textContent = file?.basename ?? options.emptyLabel ?? "\u2014";
+  }
+  function setTitle(title) {
+    titleEl.textContent = title;
+  }
+  function destroy() {
+    if (destroyed) return;
+    destroyed = true;
+    openBtn.onclick = null;
+    createBtn.onclick = null;
+    triggerBtn.onclick = null;
+    root.remove();
+  }
+  return { root, setFileLabel, setTitle, destroy };
+}
+
 // src/apps/map-editor/editor-ui.ts
 function mountMapEditor(app, host, init) {
   host.empty();
   Object.assign(host.style, { display: "flex", flexDirection: "column", height: "100%", gap: ".5rem" });
   const state = { file: null, opts: null, handles: null, tool: null, cleanupPanel: null };
-  const header = host.createDiv({ cls: "map-editor-header" });
-  Object.assign(header.style, { display: "flex", flexDirection: "column", gap: ".4rem" });
-  const r1 = header.createDiv();
-  Object.assign(r1.style, { display: "flex", alignItems: "center", gap: ".5rem" });
-  r1.createEl("h2", { text: "Map Editor" }).style.marginRight = "auto";
-  const btnOpen = r1.createEl("button", { text: "Open Map" });
-  (0, import_obsidian5.setIcon)(btnOpen, "folder-open");
-  applyMapButtonStyle(btnOpen);
-  btnOpen.onclick = () => {
-    void promptMapSelection(app, async (f) => {
-      await setFile(f);
-    });
-  };
-  const btnPlus = r1.createEl("button");
-  btnPlus.append(" ", "+");
-  (0, import_obsidian5.setIcon)(btnPlus, "plus");
-  applyMapButtonStyle(btnPlus);
-  btnPlus.onclick = () => {
-    promptCreateMap(app, async (file) => {
+  const headerHandle = createMapHeader(app, host, {
+    title: "Map Editor",
+    onOpen: async (file) => {
       await setFile(file);
-    });
-  };
-  const r2 = header.createDiv();
-  Object.assign(r2.style, { display: "flex", alignItems: "center", gap: ".5rem" });
-  const nameBox = r2.createEl("div", { text: "\u2014" });
-  Object.assign(nameBox.style, { marginRight: "auto", opacity: ".85" });
-  const saveSelect = r2.createEl("select");
-  saveSelect.createEl("option", { text: "Speichern" }).value = "save";
-  saveSelect.createEl("option", { text: "Speichern als" }).value = "saveAs";
-  const saveBtn = r2.createEl("button", { text: "Los" });
-  applyMapButtonStyle(saveBtn);
-  saveBtn.onclick = async () => {
-    if (!state.file) return new import_obsidian5.Notice("Keine Karte ausgew\xE4hlt.");
-    try {
-      if (saveSelect.value === "save") await saveMap(app, state.file);
-      else await saveMapAs(app, state.file);
-      new import_obsidian5.Notice("Gespeichert.");
-    } catch (e) {
-      console.error(e);
-      new import_obsidian5.Notice("Speichern fehlgeschlagen.");
+    },
+    onCreate: async (file) => {
+      await setFile(file);
     }
-  };
+  });
   const body = host.createDiv();
   Object.assign(body.style, { display: "flex", gap: ".5rem", minHeight: "300px", flex: "1 1 auto" });
   const mapPane = body.createDiv();
@@ -1285,7 +1349,7 @@ function mountMapEditor(app, host, init) {
     );
   }
   async function refreshAll() {
-    nameBox.textContent = state.file ? state.file.basename : "\u2014";
+    headerHandle.setFileLabel(state.file);
     optName.textContent = state.file ? state.file.basename : "\u2014";
     await renderMap();
     if (!state.tool) await switchTool(tools[0].id);
@@ -1301,7 +1365,7 @@ function mountMapEditor(app, host, init) {
   }
   if (init?.mapPath) {
     const af = app.vault.getAbstractFileByPath(init.mapPath);
-    if (af instanceof import_obsidian5.TFile) state.file = af;
+    if (af instanceof import_obsidian6.TFile) state.file = af;
   }
   void refreshAll();
   return {
@@ -1312,7 +1376,7 @@ function mountMapEditor(app, host, init) {
 
 // src/apps/map-editor/index.ts
 var VIEW_TYPE_MAP_EDITOR = "map-editor-view";
-var MapEditorView = class extends import_obsidian6.ItemView {
+var MapEditorView = class extends import_obsidian7.ItemView {
   constructor(leaf) {
     super(leaf);
     this._state = {};
@@ -1333,7 +1397,7 @@ var MapEditorView = class extends import_obsidian6.ItemView {
     this._controller = mountMapEditor(this.app, container, initial);
     if (this._state?.mapPath && this._state.mapPath !== initial.mapPath) {
       const af = this.app.vault.getAbstractFileByPath(this._state.mapPath);
-      if (af instanceof import_obsidian6.TFile) await this._controller.setFile(af);
+      if (af instanceof import_obsidian7.TFile) await this._controller.setFile(af);
     }
   }
   onClose() {
@@ -1347,14 +1411,14 @@ var MapEditorView = class extends import_obsidian6.ItemView {
     this._state = state ?? {};
     if (this._controller?.setFile && this._state.mapPath) {
       const af = this.app.vault.getAbstractFileByPath(this._state.mapPath);
-      if (af instanceof import_obsidian6.TFile) await this._controller.setFile(af);
+      if (af instanceof import_obsidian7.TFile) await this._controller.setFile(af);
     }
   }
 };
 
 // src/ui/confirm-delete.ts
-var import_obsidian7 = require("obsidian");
-var ConfirmDeleteModal = class extends import_obsidian7.Modal {
+var import_obsidian8 = require("obsidian");
+var ConfirmDeleteModal = class extends import_obsidian8.Modal {
   constructor(app, mapFile, onConfirm) {
     super(app);
     this.mapFile = mapFile;
@@ -1373,7 +1437,7 @@ var ConfirmDeleteModal = class extends import_obsidian7.Modal {
     const btnRow = contentEl.createDiv({ cls: "modal-button-container" });
     const cancelBtn = btnRow.createEl("button", { text: "Cancel" });
     const confirmBtn = btnRow.createEl("button", { text: "Delete" });
-    (0, import_obsidian7.setIcon)(confirmBtn, "trash");
+    (0, import_obsidian8.setIcon)(confirmBtn, "trash");
     confirmBtn.classList.add("mod-warning");
     confirmBtn.disabled = true;
     input.addEventListener("input", () => {
@@ -1384,10 +1448,10 @@ var ConfirmDeleteModal = class extends import_obsidian7.Modal {
       confirmBtn.disabled = true;
       try {
         await this.onConfirm();
-        new import_obsidian7.Notice("Map deleted.");
+        new import_obsidian8.Notice("Map deleted.");
       } catch (e) {
         console.error(e);
-        new import_obsidian7.Notice("Deleting map failed.");
+        new import_obsidian8.Notice("Deleting map failed.");
       } finally {
         this.close();
       }
@@ -1418,7 +1482,7 @@ async function deleteMapAndTiles(app, mapFile) {
 
 // src/apps/map-gallery.ts
 var VIEW_TYPE_HEX_GALLERY = "hex-gallery-view";
-var HexGalleryView = class extends import_obsidian8.ItemView {
+var HexGalleryView = class extends import_obsidian9.ItemView {
   constructor(leaf) {
     super(leaf);
   }
@@ -1445,11 +1509,11 @@ function renderHeader(app, root, cbs, currentFile) {
   const hTitle = row1.createEl("h2", { text: "Map Gallery" });
   Object.assign(hTitle.style, { marginRight: "auto", fontSize: "1.1rem" });
   const btnOpen = row1.createEl("button", { text: "Open Map" });
-  (0, import_obsidian8.setIcon)(btnOpen, "folder-open");
+  (0, import_obsidian9.setIcon)(btnOpen, "folder-open");
   applyMapButtonStyle(btnOpen);
   btnOpen.addEventListener("click", () => cbs.openMap());
   const btnPlus = row1.createEl("button");
-  (0, import_obsidian8.setIcon)(btnPlus, "plus");
+  (0, import_obsidian9.setIcon)(btnPlus, "plus");
   applyMapButtonStyle(btnPlus);
   btnPlus.addEventListener("click", () => cbs.createMap());
   const row2 = header.createDiv({ cls: "hex-gallery-row2" });
@@ -1471,7 +1535,7 @@ function renderHeader(app, root, cbs, currentFile) {
     cbs.onOpenIn(target);
   });
   const btnDelete = row2.createEl("button", { attr: { "aria-label": "Delete map" } });
-  (0, import_obsidian8.setIcon)(btnDelete, "trash");
+  (0, import_obsidian9.setIcon)(btnDelete, "trash");
   applyMapButtonStyle(btnDelete);
   toggleButton(btnDelete, !!currentFile);
   btnDelete.addEventListener("click", () => cbs.onDelete());
@@ -1509,7 +1573,7 @@ function mountMapGallery(app, container) {
         });
       },
       onOpenIn: (target) => {
-        if (!currentFile) return new import_obsidian8.Notice("Keine Karte ausgew\xE4hlt.");
+        if (!currentFile) return new import_obsidian9.Notice("Keine Karte ausgew\xE4hlt.");
         openIn(app, target, currentFile);
       },
       onDelete: () => {
@@ -1517,13 +1581,13 @@ function mountMapGallery(app, container) {
         new ConfirmDeleteModal(app, currentFile, async () => {
           try {
             await deleteMapAndTiles(app, currentFile);
-            new import_obsidian8.Notice("Map gel\xF6scht.");
+            new import_obsidian9.Notice("Map gel\xF6scht.");
             currentFile = void 0;
             setCurrentTitle(void 0);
             await refreshViewer();
           } catch (e) {
             console.error(e);
-            new import_obsidian8.Notice("L\xF6schen fehlgeschlagen.");
+            new import_obsidian9.Notice("L\xF6schen fehlgeschlagen.");
           }
         }).open();
       }
@@ -1570,16 +1634,16 @@ function toggleButton(btn, enabled) {
 }
 
 // src/apps/terrain-editor/view.ts
-var import_obsidian10 = require("obsidian");
+var import_obsidian11 = require("obsidian");
 
 // src/core/terrain-store.ts
-var import_obsidian9 = require("obsidian");
+var import_obsidian10 = require("obsidian");
 var TERRAIN_FILE = "SaltMarcher/Terrains.md";
 var BLOCK_RE = /```terrain\s*([\s\S]*?)```/i;
 async function ensureTerrainFile(app) {
-  const p = (0, import_obsidian9.normalizePath)(TERRAIN_FILE);
+  const p = (0, import_obsidian10.normalizePath)(TERRAIN_FILE);
   const existing = app.vault.getAbstractFileByPath(p);
-  if (existing instanceof import_obsidian9.TFile) return existing;
+  if (existing instanceof import_obsidian10.TFile) return existing;
   await app.vault.createFolder(p.split("/").slice(0, -1).join("/")).catch(() => {
   });
   const body = [
@@ -1656,7 +1720,7 @@ function normalize(input) {
   if (!out[""]) out[""] = { color: "transparent", speed: 1 };
   return out;
 }
-var TerrainEditorView = class extends import_obsidian10.ItemView {
+var TerrainEditorView = class extends import_obsidian11.ItemView {
   constructor() {
     super(...arguments);
     this.state = {};
@@ -1753,7 +1817,7 @@ var TerrainEditorView = class extends import_obsidian10.ItemView {
 };
 
 // src/apps/travel-guide/index.ts
-var import_obsidian11 = require("obsidian");
+var import_obsidian12 = require("obsidian");
 
 // src/apps/travel-guide/ui/map-layer.ts
 var keyOf2 = (r, c) => `${r},${c}`;
@@ -2448,11 +2512,14 @@ function createTravelLogic(cfg) {
 async function mountTravelGuide(app, host, file) {
   host.empty();
   host.classList.add("sm-travel-guide");
-  const mapHost = host.createDiv({ cls: "sm-tg-map" });
-  const sidebarHost = host.createDiv({ cls: "sm-tg-sidebar" });
+  const headerHost = host.createDiv({ cls: "sm-travel-guide__header" });
+  const body = host.createDiv({ cls: "sm-travel-guide__body" });
+  const mapHost = body.createDiv({ cls: "sm-tg-map" });
+  const sidebarHost = body.createDiv({ cls: "sm-tg-sidebar" });
   const sidebar = createSidebar(sidebarHost, file?.basename ?? "\u2014");
   await setTerrains(await loadTerrains(app));
   const opts = parseOptions("radius: 42");
+  let headerHandle = null;
   let currentFile = null;
   let mapLayer = null;
   let routeLayer = null;
@@ -2508,6 +2575,7 @@ async function mountTravelGuide(app, host, file) {
     if (same) return;
     currentFile = nextFile;
     sidebar.setTitle(nextFile?.basename ?? "\u2014");
+    headerHandle?.setFileLabel(currentFile);
     sidebar.setTile(null);
     logic?.pause?.();
     logic = null;
@@ -2562,13 +2630,33 @@ async function mountTravelGuide(app, host, file) {
   sidebar.onSpeedChange((v) => {
     logic?.setTokenSpeed(v);
   });
-  await loadFile(file);
   const enqueueLoad = (next) => {
     loadChain = loadChain.then(() => loadFile(next)).catch((err) => {
       console.error("[travel-guide] setFile failed", err);
     });
     return loadChain;
   };
+  headerHandle = createMapHeader(app, headerHost, {
+    title: "Travel Guide",
+    initialFile: file ?? null,
+    onOpen: async (next) => {
+      await enqueueLoad(next);
+    },
+    onCreate: async (created) => {
+      await enqueueLoad(created);
+    },
+    onSave: async (mode, current) => {
+      await logic?.persistTokenToTiles();
+      if (!current) return false;
+      if (mode === "save") {
+        await saveMap(app, current);
+      } else {
+        await saveMapAs(app, current);
+      }
+      return true;
+    }
+  });
+  await enqueueLoad(file ?? null);
   const controller = {
     setFile(next) {
       return enqueueLoad(next ?? null);
@@ -2580,6 +2668,8 @@ async function mountTravelGuide(app, host, file) {
       logic?.pause?.();
       logic = null;
       sidebar.destroy();
+      headerHandle?.destroy();
+      headerHandle = null;
       host.classList.remove("sm-travel-guide");
       host.empty();
     }
@@ -2590,7 +2680,7 @@ async function mountTravelGuide(app, host, file) {
 // src/apps/travel-guide/index.ts
 var VIEW_TYPE_TRAVEL_GUIDE = "travel-guide-view";
 var VIEW_TRAVEL_GUIDE = VIEW_TYPE_TRAVEL_GUIDE;
-var TravelGuideView = class extends import_obsidian11.ItemView {
+var TravelGuideView = class extends import_obsidian12.ItemView {
   constructor(leaf) {
     super(leaf);
     this.controller = null;
@@ -2715,14 +2805,39 @@ var HEX_PLUGIN_CSS = `
 /* === Travel Guide === */
 .sm-travel-guide {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     align-items: stretch;
     width: 100%;
     height: 100%;
     min-height: 100%;
-    gap: 1.5rem;
+    gap: 1rem;
     padding: 1rem;
     box-sizing: border-box;
+}
+
+.sm-travel-guide__header {
+    padding-bottom: 0.25rem;
+}
+
+.sm-travel-guide__header .sm-map-header {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 10px;
+    padding: 0.75rem;
+    gap: 0.5rem;
+}
+
+.sm-travel-guide__header .sm-map-header h2 {
+    margin: 0;
+}
+
+.sm-travel-guide__body {
+    display: flex;
+    flex: 1 1 auto;
+    gap: 1.5rem;
+    align-items: stretch;
+    width: 100%;
+    min-height: 0;
 }
 
 .sm-travel-guide .sm-tg-map {
@@ -2809,7 +2924,7 @@ var HEX_PLUGIN_CSS = `
 `;
 
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian12.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian13.Plugin {
   async onload() {
     this.registerView(VIEW_TYPE_HEX_GALLERY, (leaf) => new HexGalleryView(leaf));
     this.registerView(VIEW_TYPE_MAP_EDITOR, (leaf) => new MapEditorView(leaf));

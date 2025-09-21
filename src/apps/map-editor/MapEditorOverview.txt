@@ -14,7 +14,7 @@
 ```
 src/apps/map-editor/
 ├─ index.ts                    # Obsidian-View (Lifecycle, State ↔ ViewState, mountMapEditor)
-├─ editor-ui.ts                # Haupt-UI (Header, Map-Canvas, Tool-Switch, Save-/Open-Aktionen)
+├─ editor-ui.ts                # Haupt-UI (Header via ui/map-header.ts, Map-Canvas, Tool-Switch, Save-/Open-Aktionen)
 ├─ MapEditorOverview.txt       # Dieses Dokument
 ├─ brush-circle.ts             # SVG-Kreis als Brush-Vorschau (Pointertracking)
 ├─ tools-api.ts                # Tool-Kontrakt (Context, Hooks, Controller)
@@ -60,7 +60,7 @@ export type ToolModule = {
 ## View-Lifecycle & Datenfluss
 
 1. **View-Initialisierung (`index.ts`):** `MapEditorView` leitet Obsidian-View-State (`mapPath`) an `mountMapEditor` weiter und speichert den vom UI zurückgegebenen Controller (`setFile`, `setTool`). `setState` synchronisiert spätere ViewState-Änderungen mit einer bereits gemounteten UI.
-2. **UI-Aufbau (`editor-ui.ts`):** Beim Mounten werden Header (Open/Create/Save), Optionspane und Map-Canvas erzeugt. Styling und Open/Create-Flows laufen über `ui/map-workflows.ts` (`applyMapButtonStyle`, `promptMapSelection`, `promptCreateMap`), sodass Editor und Galerie identische UX teilen. `state` hält aktuelle Datei, Hex-Optionen, Renderer-Handles, aktives Tool sowie ein Cleanup des Toolpanels.
+2. **UI-Aufbau (`editor-ui.ts`):** Beim Mounten erstellt die UI den Header über `createMapHeader` (`ui/map-header.ts`) und hängt die Optionen/Map-Container an. Open/Create-Flows laufen weiterhin über `ui/map-workflows.ts`, sodass Editor und Galerie identische UX teilen. `state` hält aktuelle Datei, Hex-Optionen, Renderer-Handles, aktives Tool sowie ein Cleanup des Toolpanels.
 3. **Dateiwechsel:** `setFile` aktualisiert `state.file` und delegiert das eigentliche Rendering an `renderHexMapFromFile` (ebenfalls aus `ui/map-workflows.ts`). Die Utility kümmert sich um Hex-Block-Suche, Options-Parsing und `renderHexMap`, der wiederum `RenderHandles` inkl. Overlay liefert.
 4. **Toolwechsel:** `switchTool` ruft `onDeactivate`/`mountPanel`/`onActivate` auf dem Modul auf. Tools können DOM in `optBody` anlegen und via Cleanup wieder entfernen.
 5. **Interaktion:** Hex-Klicks werden im `renderHexMap`-Host auf `hex:click` geloggt und an das aktive Tool (`onHexClick`) delegiert. Tools entscheiden, ob das Event verarbeitet wurde (Rückgabewert `true`) und können über `ctx.refreshMap()` einen vollständigen Re-Render auslösen.
@@ -93,8 +93,7 @@ export type ToolModule = {
 - Mountet UI auf `onOpen`, kümmert sich um leeren Container, CSS-Klasse `hex-map-editor-root` und initialen ViewState.
 - `setState` kann vor oder nach dem UI-Mount aufgerufen werden; lädt Karte nachträglich per `controller.setFile`.
 
-### `editor-ui.ts`
-- Erstellt DOM-Struktur für Header (Open/Neuanlage/Speichern) und Body (Map-Canvas + Optionspane) und nutzt `ui/map-workflows.ts`, um Button-Styling sowie Open/Create-Prompts zu teilen.
+- Erstellt DOM-Struktur für Body (Map-Canvas + Optionspane) und delegiert den Header (`Open/Neuanlage/Speichern`) an `createMapHeader` aus `ui/map-header.ts`, das Button-Styling sowie Save/Open-Flows bündelt.
 - Verwaltert `state` für aktive Datei, Hex-Optionen (über `renderHexMapFromFile`), Renderer-Handles und aktuelles Tool.
 - Stellt Controller `{ setFile, setTool }` bereit, der von `MapEditorView` genutzt wird.
 - Verantwortlich für `renderMap()` (Delegation an `renderHexMapFromFile`, danach Hex-Klick → Tool weiterreichen).

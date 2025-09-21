@@ -87,14 +87,39 @@ export const HEX_PLUGIN_CSS = `
 /* === Travel Guide === */
 .sm-travel-guide {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     align-items: stretch;
     width: 100%;
     height: 100%;
     min-height: 100%;
-    gap: 1.5rem;
+    gap: 1rem;
     padding: 1rem;
     box-sizing: border-box;
+}
+
+.sm-travel-guide__header {
+    padding-bottom: 0.25rem;
+}
+
+.sm-travel-guide__header .sm-map-header {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 10px;
+    padding: 0.75rem;
+    gap: 0.5rem;
+}
+
+.sm-travel-guide__header .sm-map-header h2 {
+    margin: 0;
+}
+
+.sm-travel-guide__body {
+    display: flex;
+    flex: 1 1 auto;
+    gap: 1.5rem;
+    align-items: stretch;
+    width: 100%;
+    min-height: 0;
 }
 
 .sm-travel-guide .sm-tg-map {

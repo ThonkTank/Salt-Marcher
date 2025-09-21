@@ -107,7 +107,7 @@ export type TravelLogic = {
 
 ## Datenfluss (kurz)
 
-1. **Mount:** `index.ts` erstellt im View `mountTravelGuide(app, host, file)`. Die Shell lädt Terrain-Daten, baut Map/Route/Token-Layer und instanziiert `createTravelLogic` (Basisdauer 900 ms).
+1. **Mount:** `index.ts` erstellt im View `mountTravelGuide(app, host, file)`. Die Shell richtet einen Spalten-Wrapper mit gemeinsamem Map-Header (`ui/map-header.ts`) ein, lädt Terrain-Daten, baut Map/Route/Token-Layer und instanziiert `createTravelLogic` (Basisdauer 900 ms). Der Header verknüpft Open/Create mit `enqueueLoad` und ruft beim Speichern `persistTokenToTiles` plus `saveMap`/`saveMapAs`.
 2. **Store-Abos:** `createTravelLogic` subscribed auf den Store. Jede Änderung triggert `adapter.draw(route, tokenRC)` und optionales `onChange` (View rendert Highlight).
 3. **Hex-Klick:** `map-layer` emittiert `hex:click` → `view-shell` ruft `logic.handleHexClick(rc)` → `expandCoords` erzeugt Autos → Store-Update → Route-Layer zeichnet neu.
 4. **Dot-Drag:** `drag.controller` zeigt Ghost (nur UI), `pointerup` → `logic.moveSelectedTo(rc)` → neue Segmente via `expandCoords` → Store-Update.
@@ -136,8 +136,7 @@ export type TravelLogic = {
 - `activateTravelGuide(file?)` holt oder erstellt das Leaf, setzt den View-State aktiv und reicht optional eine Map-Datei durch.
 - `getOrCreateLeaf()` bevorzugt vorhandene oder rechte Splits (Obsidian API).
 
-### `ui/view-shell.ts`
-- `mountTravelGuide(app, host, file)` setzt den Host auf `.sm-travel-guide`, erzeugt Map-/Sidebar-Container und führt das Karten-SVG über `createMapLayer` direkt in den linken Bereich ein.
+- `mountTravelGuide(app, host, file)` setzt den Host auf `.sm-travel-guide`, erzeugt Header + Body (Map-/Sidebar-Container) und führt das Karten-SVG über `createMapLayer` direkt in den linken Bereich ein. Der Header stammt aus `ui/map-header.ts`, verlinkt Öffnen/Erstellen mit `enqueueLoad` und erweitert den Save-Flow um `logic.persistTokenToTiles()`.
 - Lädt Terrain-Definitionen (`loadTerrains` → `setTerrains`) einmalig beim Mount.
 - Erstellt `routeLayer`/`tokenLayer` auf `mapLayer.handles.svg`, damit Route & Token im Renderer-SVG leben.
 - Instanziiert `createSidebar` im rechten Bereich, füllt Titel/Status/Schnelleingaben und verbindet `onSpeedChange` mit `logic.setTokenSpeed`.
