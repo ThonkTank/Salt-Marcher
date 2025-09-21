@@ -2061,6 +2061,67 @@ function bindContextMenu(routeLayerEl, logic) {
   return () => routeLayerEl.removeEventListener("contextmenu", onContextMenu, { capture: true });
 }
 
+// src/apps/travel-guide/ui/sidebar.ts
+function createSidebar(host, initialTitle) {
+  host.empty();
+  host.classList.add("sm-tg-sidebar");
+  const root = host.createDiv({ cls: "sm-tg-sidebar__inner" });
+  const titleEl = root.createEl("div", {
+    cls: "sm-tg-sidebar__title",
+    text: initialTitle ?? "\u2014"
+  });
+  const statusSection = root.createDiv({
+    cls: "sm-tg-sidebar__section sm-tg-sidebar__section--status"
+  });
+  statusSection.createEl("h3", {
+    cls: "sm-tg-sidebar__section-title",
+    text: "Status"
+  });
+  const tileRow = statusSection.createDiv({ cls: "sm-tg-sidebar__row" });
+  tileRow.createSpan({ cls: "sm-tg-sidebar__label", text: "Aktuelles Hex" });
+  const tileValue = tileRow.createSpan({ cls: "sm-tg-sidebar__value", text: "\u2014" });
+  const speedSection = root.createDiv({
+    cls: "sm-tg-sidebar__section sm-tg-sidebar__section--speed"
+  });
+  speedSection.createEl("h3", {
+    cls: "sm-tg-sidebar__section-title",
+    text: "Geschwindigkeit"
+  });
+  const speedRow = speedSection.createDiv({ cls: "sm-tg-sidebar__row" });
+  speedRow.createSpan({ cls: "sm-tg-sidebar__label", text: "Token-Speed" });
+  const speedInput = speedRow.createEl("input", {
+    type: "number",
+    cls: "sm-tg-sidebar__speed-input",
+    attr: { step: "0.1", min: "0.1", value: "1" }
+  });
+  let onChange = () => {
+  };
+  speedInput.onchange = () => {
+    const v = parseFloat(speedInput.value);
+    const val = Number.isFinite(v) && v > 0 ? v : 1;
+    speedInput.value = String(val);
+    onChange(val);
+  };
+  const setTile = (rc) => {
+    tileValue.textContent = rc ? `${rc.r},${rc.c}` : "\u2014";
+  };
+  const setSpeed = (v) => {
+    const next = String(v);
+    if (speedInput.value !== next) speedInput.value = next;
+  };
+  const setTitle = (title) => {
+    titleEl.textContent = title && title.trim().length > 0 ? title : "\u2014";
+  };
+  return {
+    root,
+    setTitle,
+    setTile,
+    setSpeed,
+    onSpeedChange: (fn) => onChange = fn,
+    destroy: () => host.empty()
+  };
+}
+
 // src/apps/travel-guide/domain/state.store.ts
 function createStore() {
   let state2 = {
@@ -2356,65 +2417,138 @@ function createTravelLogic(cfg) {
 // src/apps/travel-guide/ui/view-shell.ts
 async function mountTravelGuide(app, host, file) {
   host.empty();
-  if (!file) return;
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("width", "100%");
-  svg.setAttribute("height", "100%");
-  host.appendChild(svg);
-  setTerrains(await loadTerrains(app));
+  host.classList.add("sm-travel-guide");
+  const mapHost = host.createDiv({ cls: "sm-tg-map" });
+  const sidebarHost = host.createDiv({ cls: "sm-tg-sidebar" });
+  const sidebar = createSidebar(sidebarHost, file?.basename ?? "\u2014");
+  await setTerrains(await loadTerrains(app));
   const opts = parseOptions("radius: 42");
-  const mapLayer = await createMapLayer(app, host, file, opts);
-  const routeLayer = createRouteLayer(svg, (rc) => mapLayer.centerOf(rc));
-  const tokenLayer = createTokenLayer(svg);
-  const adapter = {
-    ensurePolys: (coords) => mapLayer.ensurePolys(coords),
-    centerOf: (rc) => mapLayer.centerOf(rc),
-    draw: (route) => routeLayer.draw(route),
-    token: tokenLayer
+  let currentFile = null;
+  let mapLayer = null;
+  let routeLayer = null;
+  let tokenLayer = null;
+  let drag = null;
+  let unbindContext = () => {
   };
-  const logic = createTravelLogic({
-    app,
-    getMapFile: () => file,
-    baseMs: 900,
-    adapter,
-    onChange: () => {
-      const s = logic.getState();
-      routeLayer.draw(s.route, s.editIdx ?? null);
+  let logic = null;
+  let isDestroyed = false;
+  let loadChain = Promise.resolve();
+  const handleStateChange = (s) => {
+    if (routeLayer) routeLayer.draw(s.route, s.editIdx ?? null);
+    sidebar.setTile(s.currentTile ?? s.tokenRC ?? null);
+    sidebar.setSpeed(s.tokenSpeed);
+  };
+  const cleanupInteractions = () => {
+    unbindContext();
+    unbindContext = () => {
+    };
+    if (drag) {
+      drag.unbind();
+      drag = null;
     }
-  });
-  await logic.initTokenFromTiles();
-  const drag = createDragController({
-    routeLayerEl: routeLayer.el,
-    tokenEl: tokenLayer.el,
-    token: tokenLayer,
-    adapter,
-    logic: {
-      getState: () => logic.getState(),
-      selectDot: (i) => logic.selectDot(i),
-      moveSelectedTo: (rc) => logic.moveSelectedTo(rc),
-      moveTokenTo: (rc) => logic.moveTokenTo(rc)
-    },
-    polyToCoord: mapLayer.polyToCoord
-  });
-  drag.bind();
-  const unbindContext = bindContextMenu(routeLayer.el, {
-    getState: () => logic.getState(),
-    deleteUserAt: (idx) => logic.deleteUserAt(idx)
-  });
+  };
+  const cleanupLayers = () => {
+    cleanupInteractions();
+    if (tokenLayer) {
+      tokenLayer.destroy?.();
+      tokenLayer = null;
+    }
+    if (routeLayer) {
+      routeLayer.destroy();
+      routeLayer = null;
+    }
+    if (mapLayer) {
+      mapLayer.destroy();
+      mapLayer = null;
+    }
+    mapHost.empty();
+  };
   const onHexClick = (ev) => {
-    if (drag.consumeClickSuppression()) return;
+    if (!logic) return;
+    if (drag?.consumeClickSuppression()) return;
     const { r, c } = ev.detail;
     logic.handleHexClick({ r, c });
   };
-  const clickTarget = mapLayer.el ?? host;
-  clickTarget.addEventListener?.("hex:click", onHexClick, { passive: false });
-  const controller = {
-    destroy() {
-      clickTarget.removeEventListener?.("hex:click", onHexClick);
-      unbindContext();
-      drag.unbind();
-      tokenLayer.destroy?.();
+  mapHost.addEventListener("hex:click", onHexClick, { passive: false });
+  const loadFile = async (nextFile) => {
+    if (isDestroyed) return;
+    const same = nextFile?.path === currentFile?.path;
+    if (same) return;
+    currentFile = nextFile;
+    sidebar.setTitle(nextFile?.basename ?? "\u2014");
+    sidebar.setTile(null);
+    logic?.pause?.();
+    logic = null;
+    cleanupLayers();
+    if (!nextFile) {
+      sidebar.setSpeed(1);
+      return;
+    }
+    mapLayer = await createMapLayer(app, mapHost, nextFile, opts);
+    if (isDestroyed) {
       mapLayer.destroy();
+      mapLayer = null;
+      return;
+    }
+    routeLayer = createRouteLayer(mapLayer.handles.svg, (rc) => mapLayer.centerOf(rc));
+    tokenLayer = createTokenLayer(mapLayer.handles.svg);
+    const adapter = {
+      ensurePolys: (coords) => mapLayer.ensurePolys(coords),
+      centerOf: (rc) => mapLayer.centerOf(rc),
+      draw: (route) => routeLayer.draw(route),
+      token: tokenLayer
+    };
+    logic = createTravelLogic({
+      app,
+      baseMs: 900,
+      getMapFile: () => currentFile,
+      adapter,
+      onChange: (state2) => handleStateChange(state2)
+    });
+    handleStateChange(logic.getState());
+    await logic.initTokenFromTiles();
+    if (isDestroyed) return;
+    drag = createDragController({
+      routeLayerEl: routeLayer.el,
+      tokenEl: tokenLayer.el,
+      token: tokenLayer,
+      adapter,
+      logic: {
+        getState: () => logic.getState(),
+        selectDot: (i) => logic.selectDot(i),
+        moveSelectedTo: (rc) => logic.moveSelectedTo(rc),
+        moveTokenTo: (rc) => logic.moveTokenTo(rc)
+      },
+      polyToCoord: mapLayer.polyToCoord
+    });
+    drag.bind();
+    unbindContext = bindContextMenu(routeLayer.el, {
+      getState: () => logic.getState(),
+      deleteUserAt: (idx) => logic.deleteUserAt(idx)
+    });
+  };
+  sidebar.onSpeedChange((v) => {
+    logic?.setTokenSpeed(v);
+  });
+  await loadFile(file);
+  const enqueueLoad = (next) => {
+    loadChain = loadChain.then(() => loadFile(next)).catch((err) => {
+      console.error("[travel-guide] setFile failed", err);
+    });
+    return loadChain;
+  };
+  const controller = {
+    setFile(next) {
+      return enqueueLoad(next ?? null);
+    },
+    destroy() {
+      isDestroyed = true;
+      mapHost.removeEventListener("hex:click", onHexClick);
+      cleanupLayers();
+      logic?.pause?.();
+      logic = null;
+      sidebar.destroy();
+      host.classList.remove("sm-travel-guide");
       host.empty();
     }
   };
@@ -2443,7 +2577,7 @@ var TravelGuideView = class extends import_obsidian11.ItemView {
   /** Optional: open view with a preselected file */
   setFile(file) {
     this.initialFile = file;
-    this.controller?.setFile(file ?? null);
+    void this.controller?.setFile(file ?? null);
   }
   async onOpen() {
     const container = this.containerEl;
@@ -2547,6 +2681,97 @@ var HEX_PLUGIN_CSS = `
 .sm-terrain-editor .addbar input[type="text"] { flex:1; min-width:0; }
 
 /* === Travel Guide === */
+.sm-travel-guide {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    gap: 1.5rem;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
+.sm-travel-guide .sm-tg-map {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    position: relative;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 10px;
+    background: var(--background-primary);
+    padding: 0.75rem;
+    box-sizing: border-box;
+}
+
+.sm-travel-guide .sm-tg-map .hex3x3-map {
+    max-width: none;
+    height: 100%;
+}
+
+.sm-travel-guide .sm-tg-sidebar {
+    flex: 0 0 280px;
+    max-width: 340px;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 10px;
+    padding: 1rem;
+    box-sizing: border-box;
+    display: flex;
+}
+
+.sm-tg-sidebar__inner {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+}
+
+.sm-tg-sidebar__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+.sm-tg-sidebar__section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sm-tg-sidebar__section-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.sm-tg-sidebar__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.sm-tg-sidebar__label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.sm-tg-sidebar__value {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.sm-tg-sidebar__speed-input {
+    width: 100%;
+    padding: 0.35rem 0.5rem;
+    border-radius: 6px;
+}
+
 .sm-travel-guide .hex3x3-map circle[data-token] { opacity: .95; }
 .sm-travel-guide .hex3x3-map polyline { pointer-events: none; }
 `;

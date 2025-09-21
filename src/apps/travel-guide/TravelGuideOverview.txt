@@ -39,7 +39,7 @@ src/apps/travel-guide/
    ├─ token-layer.ts              # Sichtbares Token (SVG <g>, RAF-Animation)
    ├─ drag.controller.ts          # Pointerdown/move/up, Ghost-Preview, Commit via Logik
    ├─ contextmenue.ts             # RMB auf Dots → deleteUserAt
-   └─ sidebar.ts                  # (Derzeit unbenutzte) Sidebar für Status + Speed-Input
+   └─ sidebar.ts                  # Sidebar für Karten-Titel, Status & Speed-Steuerung
 ```
 
 > Zielgrößen: 80–180 LOC pro Modul, maximal 300 LOC.
@@ -137,14 +137,14 @@ export type TravelLogic = {
 - `getOrCreateLeaf()` bevorzugt vorhandene oder rechte Splits (Obsidian API).
 
 ### `ui/view-shell.ts`
-- `mountTravelGuide(app, host, file)` leert den Host, beendet sofort wenn keine Datei übergeben wurde, und richtet anschließend SVG-Root & Layers ein.
-- Lädt Terrain-Definitionen über den Core-Terrain-Store (`loadTerrains`) und registriert sie über `setTerrains` für die restliche App.
-- Baut `mapLayer`, `routeLayer`, `tokenLayer` und kombiniert sie zu einem `RenderAdapter`.
-- Initialisiert `createTravelLogic` (Basisdauer 900 ms) und reicht `onChange` durch, um `routeLayer.draw(route, editIdx)` zu triggern.
-- Ruft `logic.initTokenFromTiles()` (Token laden/anzeigen).
-- Verkabelt `createDragController` (inkl. `polyToCoord` für Hit-Tests) und `bindContextMenu`.
-- Listet auf `hex:click` (vom Map-Layer) und ruft `logic.handleHexClick` – Drag-Suppressions werden respektiert.
-- Exportiert `TravelGuideController` (mit `destroy()` und optionalem `setFile`) und liefert diesen Typ zurück; `undefined`, falls keine Datei vorhanden ist.
+- `mountTravelGuide(app, host, file)` setzt den Host auf `.sm-travel-guide`, erzeugt Map-/Sidebar-Container und führt das Karten-SVG über `createMapLayer` direkt in den linken Bereich ein.
+- Lädt Terrain-Definitionen (`loadTerrains` → `setTerrains`) einmalig beim Mount.
+- Erstellt `routeLayer`/`tokenLayer` auf `mapLayer.handles.svg`, damit Route & Token im Renderer-SVG leben.
+- Instanziiert `createSidebar` im rechten Bereich, füllt Titel/Status/Schnelleingaben und verbindet `onSpeedChange` mit `logic.setTokenSpeed`.
+- Initialisiert `createTravelLogic` (Basisdauer 900 ms) mit einem `onChange`, der Route-Highlight, Sidebar-Tile (`currentTile ?? tokenRC`) und Speed synchronisiert.
+- `logic.initTokenFromTiles()` lädt/persistiert die Tokenposition; Hook wird nach dem Mount einmal manuell aufgerufen.
+- Richtet Drag- & Kontextmenüs neu ein, sobald `setFile` eine Karte lädt; `setFile` returned ein `Promise` und serialisiert Ladevorgänge.
+- Der zurückgegebene `TravelGuideController` sorgt für Cleanup (Drag, Sidebar, Klassen) und akzeptiert `setFile`, um Karte, Titel und Route während der Laufzeit neu zu binden.
 
 ### `ui/map-layer.ts`
 - Nutzt `renderHexMap` um das Kartensvg zu erzeugen, verwaltet `RenderHandles`.
@@ -176,9 +176,9 @@ export type TravelLogic = {
 - Ruft bei `user`-Dots `logic.deleteUserAt(idx)` und stoppt Event-Bubbling.
 
 ### `ui/sidebar.ts`
-- Baut eine rechte Sidebar mit „Status“-Heading, aktuellem Hex (`setTile`) und Speed-Input (`setSpeed`).
-- Validiert Speed-Eingaben (>0, default 1) und ruft registrierten Callback `onSpeedChange`.
-- `destroy()` entfernt das DOM-Fragment. Momentan noch nicht in `view-shell` eingebunden.
+- Rendert einen strukturierten Sidebar-Block (`Titel`, `Status`, `Geschwindigkeit`) inkl. CSS-Klassen.
+- `setTitle`, `setTile`, `setSpeed` aktualisieren sichtbare Werte; Eingaben werden (>0) validiert.
+- `onSpeedChange` registriert den externen Callback, `destroy()` leert den Host. Wird von `view-shell` genutzt.
 
 ### `domain/types.ts`
 - Definiert Basis-Koordinaten (`Coord`), Knotenarten (`NodeKind`) und `RouteNode`.
