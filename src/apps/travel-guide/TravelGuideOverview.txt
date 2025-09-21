@@ -132,7 +132,7 @@ export type TravelLogic = {
 
 ### `index.ts`
 - Registriert `VIEW_TYPE_TRAVEL_GUIDE`, Commands („Open Travel Guide“, „…for current file“) und optionales Ribbon-Icon.
-- `TravelGuideView` verwaltet Host-Element, ruft beim Öffnen `mountTravelGuide`, leitet `setFile` an den Controller weiter und sorgt für Cleanup in `onClose()`.
+- `TravelGuideView` verwaltet Host-Element, ruft beim Öffnen `mountTravelGuide`, leitet `setFile` an den Controller weiter und sorgt für Cleanup in `onClose()`; der Controller-Typ (`TravelGuideController`) wird direkt aus `ui/view-shell.ts` importiert.
 - `activateTravelGuide(file?)` holt oder erstellt das Leaf, setzt den View-State aktiv und reicht optional eine Map-Datei durch.
 - `getOrCreateLeaf()` bevorzugt vorhandene oder rechte Splits (Obsidian API).
 
@@ -144,7 +144,7 @@ export type TravelLogic = {
 - Ruft `logic.initTokenFromTiles()` (Token laden/anzeigen).
 - Verkabelt `createDragController` (inkl. `polyToCoord` für Hit-Tests) und `bindContextMenu`.
 - Listet auf `hex:click` (vom Map-Layer) und ruft `logic.handleHexClick` – Drag-Suppressions werden respektiert.
-- Gibt einen Controller mit `destroy()` zurück (remove listener, unbind controller, destroy layers, host leeren).
+- Exportiert `TravelGuideController` (mit `destroy()` und optionalem `setFile`) und liefert diesen Typ zurück; `undefined`, falls keine Datei vorhanden ist.
 
 ### `ui/map-layer.ts`
 - Nutzt `renderHexMap` um das Kartensvg zu erzeugen, verwaltet `RenderHandles`.

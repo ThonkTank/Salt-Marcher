@@ -26,57 +26,32 @@ module.exports = __toCommonJS(main_exports);
 var import_obsidian12 = require("obsidian");
 
 // src/apps/map-gallery.ts
-var import_obsidian7 = require("obsidian");
+var import_obsidian8 = require("obsidian");
 
-// src/ui/modals.ts
+// src/core/layout.ts
+function getRightLeaf(app) {
+  console.log("[Layout] Requesting right leaf...");
+  const leaf = app.workspace.getRightLeaf(false) ?? app.workspace.getRightLeaf(true) ?? app.workspace.getLeaf(true);
+  console.log("[Layout] Right leaf resolved:", leaf);
+  return leaf;
+}
+function getCenterLeaf(app) {
+  const leaf = app.workspace.getMostRecentLeaf() ?? app.workspace.getLeaf(false) ?? app.workspace.getLeaf(true);
+  console.log("[Layout] Center leaf resolved:", leaf);
+  return leaf;
+}
+
+// src/apps/map-editor/index.ts
+var import_obsidian6 = require("obsidian");
+
+// src/apps/map-editor/editor-ui.ts
+var import_obsidian5 = require("obsidian");
+
+// src/ui/map-workflows.ts
+var import_obsidian4 = require("obsidian");
+
+// src/core/hex-mapper/hex-notes.ts
 var import_obsidian = require("obsidian");
-var NameInputModal = class extends import_obsidian.Modal {
-  constructor(app, onSubmit) {
-    super(app);
-    this.onSubmit = onSubmit;
-    this.value = "";
-    this.placeholder = "Neue Hex Map";
-  }
-  onOpen() {
-    const { contentEl } = this;
-    contentEl.empty();
-    contentEl.createEl("h3", { text: "Name der neuen Karte" });
-    let inputEl;
-    new import_obsidian.Setting(contentEl).addText((t) => {
-      t.setPlaceholder(this.placeholder).onChange((v) => this.value = v.trim());
-      inputEl = t.inputEl;
-    }).addButton(
-      (b) => b.setButtonText("Erstellen").setCta().onClick(() => this.submit())
-    );
-    this.scope.register([], "Enter", () => this.submit());
-    queueMicrotask(() => inputEl?.focus());
-  }
-  onClose() {
-    this.contentEl.empty();
-  }
-  submit() {
-    const name = this.value || this.placeholder;
-    this.close();
-    this.onSubmit(name);
-  }
-};
-var MapSelectModal = class extends import_obsidian.FuzzySuggestModal {
-  constructor(app, files, onChoose) {
-    super(app);
-    this.files = files;
-    this.onChoose = onChoose;
-    this.setPlaceholder("Karte suchen\u2026");
-  }
-  getItems() {
-    return this.files;
-  }
-  getItemText(f) {
-    return f.basename;
-  }
-  onChooseItem(f) {
-    this.onChoose(f);
-  }
-};
 
 // src/core/options.ts
 function parseOptions(src) {
@@ -97,81 +72,7 @@ function parseOptions(src) {
   return d;
 }
 
-// src/core/hex-mapper/hex-render.ts
-var import_obsidian3 = require("obsidian");
-
-// src/core/layout.ts
-function getRightLeaf(app) {
-  console.log("[Layout] Requesting right leaf...");
-  const leaf = app.workspace.getRightLeaf(false) ?? app.workspace.getRightLeaf(true) ?? app.workspace.getLeaf(true);
-  console.log("[Layout] Right leaf resolved:", leaf);
-  return leaf;
-}
-function getCenterLeaf(app) {
-  const leaf = app.workspace.getMostRecentLeaf() ?? app.workspace.getLeaf(false) ?? app.workspace.getLeaf(true);
-  console.log("[Layout] Center leaf resolved:", leaf);
-  return leaf;
-}
-
-// src/core/hex-mapper/hex-geom.ts
-var SQRT3 = Math.sqrt(3);
-function oddrToAxial(rc) {
-  const parity = rc.r & 1;
-  const q = rc.c - (rc.r - parity) / 2;
-  return { q, r: rc.r };
-}
-function axialToOddr(ax) {
-  const parity = ax.r & 1;
-  const c = ax.q + (ax.r - parity) / 2;
-  return { r: ax.r, c: Math.round(c) };
-}
-function axialToCube(ax) {
-  return { q: ax.q, r: ax.r, s: -ax.q - ax.r };
-}
-function cubeToAxial(cu) {
-  return { q: cu.q, r: cu.r };
-}
-function cubeDistance(a, b) {
-  return (Math.abs(a.q - b.q) + Math.abs(a.r - b.r) + Math.abs(a.s - b.s)) / 2;
-}
-function cubeLerp(a, b, t) {
-  return {
-    q: a.q + (b.q - a.q) * t,
-    r: a.r + (b.r - a.r) * t,
-    s: a.s + (b.s - a.s) * t
-  };
-}
-function cubeRound(fr) {
-  let q = Math.round(fr.q), r = Math.round(fr.r), s = Math.round(fr.s);
-  const qd = Math.abs(q - fr.q), rd = Math.abs(r - fr.r), sd = Math.abs(s - fr.s);
-  if (qd > rd && qd > sd) q = -r - s;
-  else if (rd > sd) r = -q - s;
-  else s = -q - r;
-  return { q, r, s };
-}
-function lineOddR(a, b) {
-  const A = axialToCube(oddrToAxial(a));
-  const B = axialToCube(oddrToAxial(b));
-  const N = cubeDistance(A, B);
-  const out = [];
-  for (let i = 0; i <= N; i++) {
-    const t = N === 0 ? 0 : i / N;
-    const p = cubeRound(cubeLerp(A, B, t));
-    out.push(axialToOddr(cubeToAxial(p)));
-  }
-  return out;
-}
-function hexPolygonPoints(cx, cy, r) {
-  const pts = [];
-  for (let i = 0; i < 6; i++) {
-    const ang = (60 * i - 90) * Math.PI / 180;
-    pts.push(`${cx + r * Math.cos(ang)},${cy + r * Math.sin(ang)}`);
-  }
-  return pts.join(" ");
-}
-
 // src/core/hex-mapper/hex-notes.ts
-var import_obsidian2 = require("obsidian");
 var FM_TYPE = "hex";
 function mapNameFromPath(mapPath) {
   const base = mapPath.replace(/\\/g, "/").split("/").pop() || "Map";
@@ -200,13 +101,13 @@ async function readOptions(app, mapFile) {
   return { folder, folderPrefix };
 }
 async function ensureFolder(app, folderPath) {
-  const path = (0, import_obsidian2.normalizePath)(folderPath);
+  const path = (0, import_obsidian.normalizePath)(folderPath);
   const existing = app.vault.getAbstractFileByPath(path);
-  if (existing && existing instanceof import_obsidian2.TFolder) return existing;
+  if (existing && existing instanceof import_obsidian.TFolder) return existing;
   if (existing) throw new Error(`Pfad existiert, ist aber kein Ordner: ${path}`);
   await app.vault.createFolder(path);
   const created = app.vault.getAbstractFileByPath(path);
-  if (!(created && created instanceof import_obsidian2.TFolder)) throw new Error(`Ordner konnte nicht erstellt werden: ${path}`);
+  if (!(created && created instanceof import_obsidian.TFolder)) throw new Error(`Ordner konnte nicht erstellt werden: ${path}`);
   return created;
 }
 function fm(app, file) {
@@ -233,7 +134,7 @@ function buildMarkdown(coord, mapPath, folderPrefix, data) {
 }
 async function resolveTilePath(app, mapFile, coord) {
   const { folder, folderPrefix } = await readOptions(app, mapFile);
-  const folderPath = (0, import_obsidian2.normalizePath)(folder);
+  const folderPath = (0, import_obsidian.normalizePath)(folder);
   const newName = fileNameForMap(mapFile, coord);
   const newPath = `${folderPath}/${newName}`;
   const legacy = legacyFilenames(folderPrefix, coord).map((n) => `${folderPath}/${n}`);
@@ -272,7 +173,7 @@ async function fmFromFile(app, file) {
 }
 async function listTilesForMap(app, mapFile) {
   const { folder } = await readOptions(app, mapFile);
-  const folderPath = (0, import_obsidian2.normalizePath)(folder);
+  const folderPath = (0, import_obsidian.normalizePath)(folder);
   const folderPrefix = (folderPath.endsWith("/") ? folderPath : folderPath + "/").toLowerCase();
   const out = [];
   for (const child of app.vault.getFiles()) {
@@ -352,6 +253,175 @@ async function initTilesForNewMap(app, mapFile) {
       await saveTile(app, mapFile, { r, c }, { terrain: "" });
     }
   }
+}
+
+// src/core/map-maker.ts
+async function createHexMapFile(app, rawName, opts = { folder: "Hexes", folderPrefix: "Hex", radius: 42 }) {
+  const name = sanitizeFileName(rawName) || "Neue Hex Map";
+  const content = buildHexMapMarkdown(name, opts);
+  const path = await ensureUniquePath(app, `${name}.md`);
+  const file = await app.vault.create(path, content);
+  await initTilesForNewMap(app, file);
+  return file;
+}
+function buildHexMapMarkdown(name, opts) {
+  const folder = (opts.folder ?? "Hexes").toString();
+  const folderPrefix = (opts.folderPrefix ?? opts.prefix ?? "Hex").toString();
+  const radius = typeof opts.radius === "number" ? opts.radius : 42;
+  return [
+    `# ${name}`,
+    "",
+    "```hex3x3",
+    `folder: ${folder}`,
+    `folderPrefix: ${folderPrefix}`,
+    // neu: von hex-notes ausgewertet
+    `prefix: ${folderPrefix}`,
+    // legacy: mitschreiben für ältere Parser
+    `radius: ${radius}`,
+    "```",
+    ""
+  ].join("\n");
+}
+function sanitizeFileName(input) {
+  return input.trim().replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").slice(0, 120);
+}
+async function ensureUniquePath(app, basePath) {
+  if (!app.vault.getAbstractFileByPath(basePath)) return basePath;
+  const dot = basePath.lastIndexOf(".");
+  const stem = dot === -1 ? basePath : basePath.slice(0, dot);
+  const ext = dot === -1 ? "" : basePath.slice(dot);
+  for (let i = 2; i < 9999; i++) {
+    const candidate = `${stem} (${i})${ext}`;
+    if (!app.vault.getAbstractFileByPath(candidate)) return candidate;
+  }
+  return `${stem}-${Date.now()}${ext}`;
+}
+
+// src/ui/modals.ts
+var import_obsidian2 = require("obsidian");
+var NameInputModal = class extends import_obsidian2.Modal {
+  constructor(app, onSubmit) {
+    super(app);
+    this.onSubmit = onSubmit;
+    this.value = "";
+    this.placeholder = "Neue Hex Map";
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.createEl("h3", { text: "Name der neuen Karte" });
+    let inputEl;
+    new import_obsidian2.Setting(contentEl).addText((t) => {
+      t.setPlaceholder(this.placeholder).onChange((v) => this.value = v.trim());
+      inputEl = t.inputEl;
+    }).addButton(
+      (b) => b.setButtonText("Erstellen").setCta().onClick(() => this.submit())
+    );
+    this.scope.register([], "Enter", () => this.submit());
+    queueMicrotask(() => inputEl?.focus());
+  }
+  onClose() {
+    this.contentEl.empty();
+  }
+  submit() {
+    const name = this.value || this.placeholder;
+    this.close();
+    this.onSubmit(name);
+  }
+};
+var MapSelectModal = class extends import_obsidian2.FuzzySuggestModal {
+  constructor(app, files, onChoose) {
+    super(app);
+    this.files = files;
+    this.onChoose = onChoose;
+    this.setPlaceholder("Karte suchen\u2026");
+  }
+  getItems() {
+    return this.files;
+  }
+  getItemText(f) {
+    return f.basename;
+  }
+  onChooseItem(f) {
+    this.onChoose(f);
+  }
+};
+
+// src/core/map-list.ts
+async function getAllMapFiles(app) {
+  const mdFiles = app.vault.getMarkdownFiles();
+  const results = [];
+  const rx = /```[\t ]*hex3x3\b[\s\S]*?```/i;
+  for (const f of mdFiles) {
+    const content = await app.vault.cachedRead(f);
+    if (rx.test(content)) results.push(f);
+  }
+  return results.sort((a, b) => (b.stat.mtime ?? 0) - (a.stat.mtime ?? 0));
+}
+async function getFirstHexBlock(app, file) {
+  const content = await app.vault.cachedRead(file);
+  const m = content.match(/```[\t ]*hex3x3\b\s*\n([\s\S]*?)\n```/i);
+  return m ? m[1].trim() : null;
+}
+
+// src/core/hex-mapper/hex-render.ts
+var import_obsidian3 = require("obsidian");
+
+// src/core/hex-mapper/hex-geom.ts
+var SQRT3 = Math.sqrt(3);
+function oddrToAxial(rc) {
+  const parity = rc.r & 1;
+  const q = rc.c - (rc.r - parity) / 2;
+  return { q, r: rc.r };
+}
+function axialToOddr(ax) {
+  const parity = ax.r & 1;
+  const c = ax.q + (ax.r - parity) / 2;
+  return { r: ax.r, c: Math.round(c) };
+}
+function axialToCube(ax) {
+  return { q: ax.q, r: ax.r, s: -ax.q - ax.r };
+}
+function cubeToAxial(cu) {
+  return { q: cu.q, r: cu.r };
+}
+function cubeDistance(a, b) {
+  return (Math.abs(a.q - b.q) + Math.abs(a.r - b.r) + Math.abs(a.s - b.s)) / 2;
+}
+function cubeLerp(a, b, t) {
+  return {
+    q: a.q + (b.q - a.q) * t,
+    r: a.r + (b.r - a.r) * t,
+    s: a.s + (b.s - a.s) * t
+  };
+}
+function cubeRound(fr) {
+  let q = Math.round(fr.q), r = Math.round(fr.r), s = Math.round(fr.s);
+  const qd = Math.abs(q - fr.q), rd = Math.abs(r - fr.r), sd = Math.abs(s - fr.s);
+  if (qd > rd && qd > sd) q = -r - s;
+  else if (rd > sd) r = -q - s;
+  else s = -q - r;
+  return { q, r, s };
+}
+function lineOddR(a, b) {
+  const A = axialToCube(oddrToAxial(a));
+  const B = axialToCube(oddrToAxial(b));
+  const N = cubeDistance(A, B);
+  const out = [];
+  for (let i = 0; i <= N; i++) {
+    const t = N === 0 ? 0 : i / N;
+    const p = cubeRound(cubeLerp(A, B, t));
+    out.push(axialToOddr(cubeToAxial(p)));
+  }
+  return out;
+}
+function hexPolygonPoints(cx, cy, r) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const ang = (60 * i - 90) * Math.PI / 180;
+    pts.push(`${cx + r * Math.cos(ang)},${cy + r * Math.sin(ang)}`);
+  }
+  return pts.join(" ");
 }
 
 // src/core/hex-mapper/camera.ts
@@ -729,69 +799,46 @@ async function renderHexMap(app, host, opts, mapPath) {
   };
 }
 
-// src/core/map-list.ts
-async function getAllMapFiles(app) {
-  const mdFiles = app.vault.getMarkdownFiles();
-  const results = [];
-  const rx = /```[\t ]*hex3x3\b[\s\S]*?```/i;
-  for (const f of mdFiles) {
-    const content = await app.vault.cachedRead(f);
-    if (rx.test(content)) results.push(f);
+// src/ui/map-workflows.ts
+function applyMapButtonStyle(button) {
+  Object.assign(button.style, {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.4rem",
+    padding: "6px 10px",
+    cursor: "pointer"
+  });
+}
+async function promptMapSelection(app, onSelect, options) {
+  const files = await getAllMapFiles(app);
+  if (!files.length) {
+    new import_obsidian4.Notice(options?.emptyMessage ?? "Keine Karten gefunden.");
+    return;
   }
-  return results.sort((a, b) => (b.stat.mtime ?? 0) - (a.stat.mtime ?? 0));
+  new MapSelectModal(app, files, async (file) => {
+    await onSelect(file);
+  }).open();
 }
-async function getFirstHexBlock(app, file) {
-  const content = await app.vault.cachedRead(file);
-  const m = content.match(/```[\t ]*hex3x3\b\s*\n([\s\S]*?)\n```/i);
-  return m ? m[1].trim() : null;
+function promptCreateMap(app, onCreate, options) {
+  new NameInputModal(app, async (name) => {
+    const file = await createHexMapFile(app, name);
+    new import_obsidian4.Notice(options?.successMessage ?? "Karte erstellt.");
+    await onCreate(file);
+  }).open();
 }
-
-// src/apps/map-editor/index.ts
-var import_obsidian5 = require("obsidian");
-
-// src/apps/map-editor/editor-ui.ts
-var import_obsidian4 = require("obsidian");
-
-// src/core/map-maker.ts
-async function createHexMapFile(app, rawName, opts = { folder: "Hexes", folderPrefix: "Hex", radius: 42 }) {
-  const name = sanitizeFileName(rawName) || "Neue Hex Map";
-  const content = buildHexMapMarkdown(name, opts);
-  const path = await ensureUniquePath(app, `${name}.md`);
-  const file = await app.vault.create(path, content);
-  await initTilesForNewMap(app, file);
-  return file;
-}
-function buildHexMapMarkdown(name, opts) {
-  const folder = (opts.folder ?? "Hexes").toString();
-  const folderPrefix = (opts.folderPrefix ?? opts.prefix ?? "Hex").toString();
-  const radius = typeof opts.radius === "number" ? opts.radius : 42;
-  return [
-    `# ${name}`,
-    "",
-    "```hex3x3",
-    `folder: ${folder}`,
-    `folderPrefix: ${folderPrefix}`,
-    // neu: von hex-notes ausgewertet
-    `prefix: ${folderPrefix}`,
-    // legacy: mitschreiben für ältere Parser
-    `radius: ${radius}`,
-    "```",
-    ""
-  ].join("\n");
-}
-function sanitizeFileName(input) {
-  return input.trim().replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").slice(0, 120);
-}
-async function ensureUniquePath(app, basePath) {
-  if (!app.vault.getAbstractFileByPath(basePath)) return basePath;
-  const dot = basePath.lastIndexOf(".");
-  const stem = dot === -1 ? basePath : basePath.slice(0, dot);
-  const ext = dot === -1 ? "" : basePath.slice(dot);
-  for (let i = 2; i < 9999; i++) {
-    const candidate = `${stem} (${i})${ext}`;
-    if (!app.vault.getAbstractFileByPath(candidate)) return candidate;
+async function renderHexMapFromFile(app, host, file, options) {
+  const container = host.createDiv({ cls: options?.containerClass ?? "hex3x3-container" });
+  Object.assign(container.style, { width: "100%", height: "100%" }, options?.containerStyle ?? {});
+  const block = await getFirstHexBlock(app, file);
+  if (!block) {
+    container.createEl("div", {
+      text: options?.missingBlockMessage ?? "Kein hex3x3-Block in dieser Datei."
+    });
+    return null;
   }
-  return `${stem}-${Date.now()}${ext}`;
+  const parsed = parseOptions(block);
+  const handles = await renderHexMap(app, container, parsed, file.path);
+  return { host: container, options: parsed, handles };
 }
 
 // src/apps/map-editor/brush-circle.ts
@@ -928,13 +975,13 @@ async function applyBrush(app, mapFile, center, opts, handles) {
 
 // src/apps/map-editor/terrain-brush/brush-options.ts
 function createBrushTool() {
-  let state = {
+  let state2 = {
     radius: 1,
     // UI zeigt 1 = nur Mitte
     terrain: "Wald",
     mode: "paint"
   };
-  const eff = () => Math.max(0, state.radius - 1);
+  const eff = () => Math.max(0, state2.radius - 1);
   let circle = null;
   return {
     id: "brush",
@@ -947,10 +994,10 @@ function createBrushTool() {
       const radiusInput = radiusRow.createEl("input", {
         attr: { type: "range", min: "1", max: "6", step: "1" }
       });
-      radiusInput.value = String(state.radius);
+      radiusInput.value = String(state2.radius);
       const radiusVal = radiusRow.createEl("span", { text: radiusInput.value });
       radiusInput.oninput = () => {
-        state.radius = Number(radiusInput.value);
+        state2.radius = Number(radiusInput.value);
         radiusVal.textContent = radiusInput.value;
         circle?.updateRadius(eff());
       };
@@ -965,12 +1012,12 @@ function createBrushTool() {
           const opt = terrSelect.createEl("option", { text: t || "(leer)" });
           opt.value = t;
         }
-        if (TERRAIN_COLORS[state.terrain] === void 0) state.terrain = "";
-        terrSelect.value = state.terrain;
+        if (TERRAIN_COLORS[state2.terrain] === void 0) state2.terrain = "";
+        terrSelect.value = state2.terrain;
       };
       fillOptions();
       terrSelect.onchange = () => {
-        state.terrain = terrSelect.value;
+        state2.terrain = terrSelect.value;
       };
       const ref = ctx.app.workspace.on?.("salt:terrains-updated", fillOptions);
       const modeRow = root.createDiv({ cls: "sm-row" });
@@ -978,9 +1025,9 @@ function createBrushTool() {
       const modeSelect = modeRow.createEl("select");
       modeSelect.createEl("option", { text: "Malen", value: "paint" });
       modeSelect.createEl("option", { text: "L\xF6schen", value: "erase" });
-      modeSelect.value = state.mode;
+      modeSelect.value = state2.mode;
       modeSelect.onchange = () => {
-        state.mode = modeSelect.value;
+        state2.mode = modeSelect.value;
       };
       return () => {
         if (ref) ctx.app.workspace.offref?.(ref);
@@ -1019,7 +1066,7 @@ function createBrushTool() {
       if (!file || !handles) return false;
       const raw = coordsInRadius(rc, eff());
       const targets = [...new Map(raw.map((k) => [`${k.r},${k.c}`, k])).values()];
-      if (state.mode === "paint") {
+      if (state2.mode === "paint") {
         const missing = targets.filter((k) => !handles.polyByCoord.has(`${k.r},${k.c}`));
         if (missing.length) handles.ensurePolys?.(missing);
       }
@@ -1027,7 +1074,7 @@ function createBrushTool() {
         ctx.app,
         file,
         rc,
-        { radius: eff(), terrain: state.terrain, mode: state.mode },
+        { radius: eff(), terrain: state2.terrain, mode: state2.mode },
         // Distanz reinschreiben
         handles
       );
@@ -1117,32 +1164,28 @@ async function saveMapAs(_app, file) {
 function mountMapEditor(app, host, init) {
   host.empty();
   Object.assign(host.style, { display: "flex", flexDirection: "column", height: "100%", gap: ".5rem" });
-  const state = { file: null, opts: null, handles: null, tool: null, cleanupPanel: null };
+  const state2 = { file: null, opts: null, handles: null, tool: null, cleanupPanel: null };
   const header = host.createDiv({ cls: "map-editor-header" });
   Object.assign(header.style, { display: "flex", flexDirection: "column", gap: ".4rem" });
   const r1 = header.createDiv();
   Object.assign(r1.style, { display: "flex", alignItems: "center", gap: ".5rem" });
   r1.createEl("h2", { text: "Map Editor" }).style.marginRight = "auto";
   const btnOpen = r1.createEl("button", { text: "Open Map" });
-  (0, import_obsidian4.setIcon)(btnOpen, "folder-open");
-  styleBtn(btnOpen);
-  btnOpen.onclick = async () => {
-    const files = await getAllMapFiles(app);
-    if (!files.length) return new import_obsidian4.Notice("Keine Karten gefunden.");
-    new MapSelectModal(app, files, async (f) => {
+  (0, import_obsidian5.setIcon)(btnOpen, "folder-open");
+  applyMapButtonStyle(btnOpen);
+  btnOpen.onclick = () => {
+    void promptMapSelection(app, async (f) => {
       await setFile(f);
-    }).open();
+    });
   };
   const btnPlus = r1.createEl("button");
   btnPlus.append(" ", "+");
-  (0, import_obsidian4.setIcon)(btnPlus, "plus");
-  styleBtn(btnPlus);
+  (0, import_obsidian5.setIcon)(btnPlus, "plus");
+  applyMapButtonStyle(btnPlus);
   btnPlus.onclick = () => {
-    new NameInputModal(app, async (name) => {
-      const f = await createHexMapFile(app, name);
-      new import_obsidian4.Notice("Karte erstellt.");
-      await setFile(f);
-    }).open();
+    promptCreateMap(app, async (file) => {
+      await setFile(file);
+    });
   };
   const r2 = header.createDiv();
   Object.assign(r2.style, { display: "flex", alignItems: "center", gap: ".5rem" });
@@ -1152,16 +1195,16 @@ function mountMapEditor(app, host, init) {
   saveSelect.createEl("option", { text: "Speichern" }).value = "save";
   saveSelect.createEl("option", { text: "Speichern als" }).value = "saveAs";
   const saveBtn = r2.createEl("button", { text: "Los" });
-  styleBtn(saveBtn);
+  applyMapButtonStyle(saveBtn);
   saveBtn.onclick = async () => {
-    if (!state.file) return new import_obsidian4.Notice("Keine Karte ausgew\xE4hlt.");
+    if (!state2.file) return new import_obsidian5.Notice("Keine Karte ausgew\xE4hlt.");
     try {
-      if (saveSelect.value === "save") await saveMap(app, state.file);
-      else await saveMapAs(app, state.file);
-      new import_obsidian4.Notice("Gespeichert.");
+      if (saveSelect.value === "save") await saveMap(app, state2.file);
+      else await saveMapAs(app, state2.file);
+      new import_obsidian5.Notice("Gespeichert.");
     } catch (e) {
       console.error(e);
-      new import_obsidian4.Notice("Speichern fehlgeschlagen.");
+      new import_obsidian5.Notice("Speichern fehlgeschlagen.");
     }
   };
   const body = host.createDiv();
@@ -1197,69 +1240,60 @@ function mountMapEditor(app, host, init) {
   toolSelect.onchange = () => switchTool(toolSelect.value);
   const ctx = {
     app,
-    getFile: () => state.file,
-    getHandles: () => state.handles,
-    getOpts: () => state.opts ?? { folder: "Hexes", prefix: "Hex", radius: 42 },
+    getFile: () => state2.file,
+    getHandles: () => state2.handles,
+    getOpts: () => state2.opts ?? { folder: "Hexes", prefix: "Hex", radius: 42 },
     setStatus: (_msg) => {
     },
     refreshMap: async () => {
       await renderMap();
-      state.tool?.onMapRendered?.(ctx);
+      state2.tool?.onMapRendered?.(ctx);
     }
   };
-  function styleBtn(b) {
-    Object.assign(b.style, { display: "flex", alignItems: "center", gap: ".4rem", padding: "6px 10px", cursor: "pointer" });
-  }
   async function switchTool(id) {
-    if (state.tool?.onDeactivate) state.tool.onDeactivate(ctx);
-    state.cleanupPanel?.();
+    if (state2.tool?.onDeactivate) state2.tool.onDeactivate(ctx);
+    state2.cleanupPanel?.();
     const next = tools.find((t) => t.id === id) || tools[0];
-    state.tool = next;
+    state2.tool = next;
     toolSelect.value = next.id;
     optBody.empty();
-    state.cleanupPanel = next.mountPanel(optBody, ctx);
+    state2.cleanupPanel = next.mountPanel(optBody, ctx);
     if (next.onActivate) next.onActivate(ctx);
-    if (state.handles && next.onMapRendered) next.onMapRendered(ctx);
+    if (state2.handles && next.onMapRendered) next.onMapRendered(ctx);
   }
   async function renderMap() {
     mapPane.empty();
-    state.handles?.destroy();
-    state.handles = null;
-    if (!state.file) {
+    state2.handles?.destroy();
+    state2.handles = null;
+    if (!state2.file) {
       mapPane.createEl("div", { text: "Keine Karte ge\xF6ffnet." });
       return;
     }
-    const block = await getFirstHexBlock(app, state.file);
-    if (!block) {
-      mapPane.createEl("div", { text: "Kein hex3x3-Block in dieser Datei." });
-      return;
-    }
-    const opts = parseOptions(block);
-    state.opts = opts;
-    const hostDiv = mapPane.createDiv({ cls: "hex3x3-container" });
-    Object.assign(hostDiv.style, { width: "100%", height: "100%" });
-    const handles = await renderHexMap(app, hostDiv, opts, state.file.path);
-    state.handles = handles;
+    const result = await renderHexMapFromFile(app, mapPane, state2.file);
+    if (!result) return;
+    state2.opts = result.options;
+    state2.handles = result.handles;
+    const hostDiv = result.host;
     hostDiv.addEventListener(
       "hex:click",
       (ev) => {
         const e = ev;
         e.preventDefault();
-        void state.tool?.onHexClick?.(e.detail, ctx);
+        void state2.tool?.onHexClick?.(e.detail, ctx);
       },
       { passive: false }
     );
   }
   async function refreshAll() {
-    nameBox.textContent = state.file ? state.file.basename : "\u2014";
-    optName.textContent = state.file ? state.file.basename : "\u2014";
+    nameBox.textContent = state2.file ? state2.file.basename : "\u2014";
+    optName.textContent = state2.file ? state2.file.basename : "\u2014";
     await renderMap();
-    if (!state.tool) await switchTool(tools[0].id);
-    else await switchTool(state.tool.id);
-    state.tool?.onMapRendered?.(ctx);
+    if (!state2.tool) await switchTool(tools[0].id);
+    else await switchTool(state2.tool.id);
+    state2.tool?.onMapRendered?.(ctx);
   }
   async function setFile(f) {
-    state.file = f ?? null;
+    state2.file = f ?? null;
     await refreshAll();
   }
   function setTool(id) {
@@ -1267,7 +1301,7 @@ function mountMapEditor(app, host, init) {
   }
   if (init?.mapPath) {
     const af = app.vault.getAbstractFileByPath(init.mapPath);
-    if (af instanceof import_obsidian4.TFile) state.file = af;
+    if (af instanceof import_obsidian5.TFile) state2.file = af;
   }
   void refreshAll();
   return {
@@ -1278,7 +1312,7 @@ function mountMapEditor(app, host, init) {
 
 // src/apps/map-editor/index.ts
 var VIEW_TYPE_MAP_EDITOR = "map-editor-view";
-var MapEditorView = class extends import_obsidian5.ItemView {
+var MapEditorView = class extends import_obsidian6.ItemView {
   constructor(leaf) {
     super(leaf);
     this._state = {};
@@ -1299,7 +1333,7 @@ var MapEditorView = class extends import_obsidian5.ItemView {
     this._controller = mountMapEditor(this.app, container, initial);
     if (this._state?.mapPath && this._state.mapPath !== initial.mapPath) {
       const af = this.app.vault.getAbstractFileByPath(this._state.mapPath);
-      if (af instanceof import_obsidian5.TFile) await this._controller.setFile(af);
+      if (af instanceof import_obsidian6.TFile) await this._controller.setFile(af);
     }
   }
   onClose() {
@@ -1309,18 +1343,18 @@ var MapEditorView = class extends import_obsidian5.ItemView {
   getState() {
     return this._state;
   }
-  async setState(state) {
-    this._state = state ?? {};
+  async setState(state2) {
+    this._state = state2 ?? {};
     if (this._controller?.setFile && this._state.mapPath) {
       const af = this.app.vault.getAbstractFileByPath(this._state.mapPath);
-      if (af instanceof import_obsidian5.TFile) await this._controller.setFile(af);
+      if (af instanceof import_obsidian6.TFile) await this._controller.setFile(af);
     }
   }
 };
 
 // src/ui/confirm-delete.ts
-var import_obsidian6 = require("obsidian");
-var ConfirmDeleteModal = class extends import_obsidian6.Modal {
+var import_obsidian7 = require("obsidian");
+var ConfirmDeleteModal = class extends import_obsidian7.Modal {
   constructor(app, mapFile, onConfirm) {
     super(app);
     this.mapFile = mapFile;
@@ -1339,7 +1373,7 @@ var ConfirmDeleteModal = class extends import_obsidian6.Modal {
     const btnRow = contentEl.createDiv({ cls: "modal-button-container" });
     const cancelBtn = btnRow.createEl("button", { text: "Cancel" });
     const confirmBtn = btnRow.createEl("button", { text: "Delete" });
-    (0, import_obsidian6.setIcon)(confirmBtn, "trash");
+    (0, import_obsidian7.setIcon)(confirmBtn, "trash");
     confirmBtn.classList.add("mod-warning");
     confirmBtn.disabled = true;
     input.addEventListener("input", () => {
@@ -1350,10 +1384,10 @@ var ConfirmDeleteModal = class extends import_obsidian6.Modal {
       confirmBtn.disabled = true;
       try {
         await this.onConfirm();
-        new import_obsidian6.Notice("Map deleted.");
+        new import_obsidian7.Notice("Map deleted.");
       } catch (e) {
         console.error(e);
-        new import_obsidian6.Notice("Deleting map failed.");
+        new import_obsidian7.Notice("Deleting map failed.");
       } finally {
         this.close();
       }
@@ -1384,7 +1418,7 @@ async function deleteMapAndTiles(app, mapFile) {
 
 // src/apps/map-gallery.ts
 var VIEW_TYPE_HEX_GALLERY = "hex-gallery-view";
-var HexGalleryView = class extends import_obsidian7.ItemView {
+var HexGalleryView = class extends import_obsidian8.ItemView {
   constructor(leaf) {
     super(leaf);
   }
@@ -1411,12 +1445,12 @@ function renderHeader(app, root, cbs, currentFile) {
   const hTitle = row1.createEl("h2", { text: "Map Gallery" });
   Object.assign(hTitle.style, { marginRight: "auto", fontSize: "1.1rem" });
   const btnOpen = row1.createEl("button", { text: "Open Map" });
-  (0, import_obsidian7.setIcon)(btnOpen, "folder-open");
-  Object.assign(btnOpen.style, btnStyle());
+  (0, import_obsidian8.setIcon)(btnOpen, "folder-open");
+  applyMapButtonStyle(btnOpen);
   btnOpen.addEventListener("click", () => cbs.openMap());
   const btnPlus = row1.createEl("button");
-  (0, import_obsidian7.setIcon)(btnPlus, "plus");
-  Object.assign(btnPlus.style, btnStyle());
+  (0, import_obsidian8.setIcon)(btnPlus, "plus");
+  applyMapButtonStyle(btnPlus);
   btnPlus.addEventListener("click", () => cbs.createMap());
   const row2 = header.createDiv({ cls: "hex-gallery-row2" });
   Object.assign(row2.style, { display: "flex", alignItems: "center", gap: "0.5rem" });
@@ -1431,14 +1465,14 @@ function renderHeader(app, root, cbs, currentFile) {
   select.createEl("option", { text: "Map Editor" }).value = "map-editor";
   select.createEl("option", { text: "Travel Guide" }).value = "travel-guide";
   const btnGo = openWrap.createEl("button", { text: "Los" });
-  Object.assign(btnGo.style, btnStyle());
+  applyMapButtonStyle(btnGo);
   btnGo.addEventListener("click", () => {
     const target = select.value || "map-editor";
     cbs.onOpenIn(target);
   });
   const btnDelete = row2.createEl("button", { attr: { "aria-label": "Delete map" } });
-  (0, import_obsidian7.setIcon)(btnDelete, "trash");
-  Object.assign(btnDelete.style, btnStyle());
+  (0, import_obsidian8.setIcon)(btnDelete, "trash");
+  applyMapButtonStyle(btnDelete);
   toggleButton(btnDelete, !!currentFile);
   btnDelete.addEventListener("click", () => cbs.onDelete());
   return {
@@ -1461,25 +1495,21 @@ function mountMapGallery(app, container) {
     container,
     {
       openMap: async () => {
-        const files = await getAllMapFiles(app);
-        if (!files.length) return new import_obsidian7.Notice("Keine Karten gefunden.");
-        new MapSelectModal(app, files, async (f) => {
+        await promptMapSelection(app, async (f) => {
           currentFile = f;
           setCurrentTitle(currentFile);
           await refreshViewer();
-        }).open();
+        });
       },
       createMap: () => {
-        new NameInputModal(app, async (name) => {
-          const file = await createHexMapFile(app, name);
-          new import_obsidian7.Notice("Karte erstellt.");
+        promptCreateMap(app, async (file) => {
           currentFile = file;
           setCurrentTitle(currentFile);
           await refreshViewer();
-        }).open();
+        });
       },
       onOpenIn: (target) => {
-        if (!currentFile) return new import_obsidian7.Notice("Keine Karte ausgew\xE4hlt.");
+        if (!currentFile) return new import_obsidian8.Notice("Keine Karte ausgew\xE4hlt.");
         openIn(app, target, currentFile);
       },
       onDelete: () => {
@@ -1487,13 +1517,13 @@ function mountMapGallery(app, container) {
         new ConfirmDeleteModal(app, currentFile, async () => {
           try {
             await deleteMapAndTiles(app, currentFile);
-            new import_obsidian7.Notice("Map gel\xF6scht.");
+            new import_obsidian8.Notice("Map gel\xF6scht.");
             currentFile = void 0;
             setCurrentTitle(void 0);
             await refreshViewer();
           } catch (e) {
             console.error(e);
-            new import_obsidian7.Notice("L\xF6schen fehlgeschlagen.");
+            new import_obsidian8.Notice("L\xF6schen fehlgeschlagen.");
           }
         }).open();
       }
@@ -1517,15 +1547,7 @@ function mountMapGallery(app, container) {
   };
 }
 async function renderViewer(app, root, file) {
-  const host = root.createDiv({ cls: "hex3x3-container" });
-  Object.assign(host.style, { width: "100%", height: "100%" });
-  const block = await getFirstHexBlock(app, file);
-  if (!block) {
-    host.createEl("div", { text: "Kein hex3x3-Block in dieser Datei." });
-    return;
-  }
-  const opts = parseOptions(block);
-  await renderHexMap(app, host, opts, file.path);
+  await renderHexMapFromFile(app, root, file);
 }
 async function openIn(app, target, file) {
   if (target === "map-editor") {
@@ -1541,15 +1563,6 @@ async function openIn(app, target, file) {
   const leaf = getRightLeaf(app);
   await leaf.openFile(file, { state: { mode: "travel-guide" } });
 }
-function btnStyle() {
-  return {
-    display: "flex",
-    alignItems: "center",
-    gap: "0.4rem",
-    padding: "6px 10px",
-    cursor: "pointer"
-  };
-}
 function toggleButton(btn, enabled) {
   btn.disabled = !enabled;
   btn.style.opacity = enabled ? "1" : "0.5";
@@ -1557,16 +1570,16 @@ function toggleButton(btn, enabled) {
 }
 
 // src/apps/terrain-editor/view.ts
-var import_obsidian9 = require("obsidian");
+var import_obsidian10 = require("obsidian");
 
-// src/apps/terrain-editor/terrain-store.ts
-var import_obsidian8 = require("obsidian");
+// src/core/terrain-store.ts
+var import_obsidian9 = require("obsidian");
 var TERRAIN_FILE = "SaltMarcher/Terrains.md";
 var BLOCK_RE = /```terrain\s*([\s\S]*?)```/i;
 async function ensureTerrainFile(app) {
-  const p = (0, import_obsidian8.normalizePath)(TERRAIN_FILE);
+  const p = (0, import_obsidian9.normalizePath)(TERRAIN_FILE);
   const existing = app.vault.getAbstractFileByPath(p);
-  if (existing instanceof import_obsidian8.TFile) return existing;
+  if (existing instanceof import_obsidian9.TFile) return existing;
   await app.vault.createFolder(p.split("/").slice(0, -1).join("/")).catch(() => {
   });
   const body = [
@@ -1643,7 +1656,7 @@ function normalize(input) {
   if (!out[""]) out[""] = { color: "transparent", speed: 1 };
   return out;
 }
-var TerrainEditorView = class extends import_obsidian9.ItemView {
+var TerrainEditorView = class extends import_obsidian10.ItemView {
   constructor() {
     super(...arguments);
     this.state = {};
@@ -1742,82 +1755,50 @@ var TerrainEditorView = class extends import_obsidian9.ItemView {
 // src/apps/travel-guide/index.ts
 var import_obsidian11 = require("obsidian");
 
-// src/apps/travel-guide/view.ts
-var import_obsidian10 = require("obsidian");
-
-// src/apps/travel-guide/token.ts
-function createToken(handles) {
-  const g = handles.contentG;
-  const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-  circle.setAttribute("r", "10");
-  circle.setAttribute("fill", "var(--color-blue-hex, #00b0ff)");
-  circle.setAttribute("opacity", "0.95");
-  g.appendChild(circle);
-  let animId = 0;
-  const setPos = (x, y) => {
-    circle.setAttribute("cx", String(x));
-    circle.setAttribute("cy", String(y));
-  };
-  const moveTo = (x, y, durMs) => new Promise((resolve) => {
-    const x0 = Number(circle.getAttribute("cx") || 0);
-    const y0 = Number(circle.getAttribute("cy") || 0);
-    const dx = x - x0, dy = y - y0;
-    const start = performance.now();
-    const myId = ++animId;
-    const step = (t) => {
-      if (myId !== animId) return resolve();
-      const k = Math.min(1, (t - start) / Math.max(1, durMs));
-      const ease = k < 0.5 ? 2 * k * k : -1 + (4 - 2 * k) * k;
-      setPos(x0 + dx * ease, y0 + dy * ease);
-      if (k < 1) requestAnimationFrame(step);
-      else resolve();
-    };
-    requestAnimationFrame(step);
-  });
-  return {
-    setPos,
-    moveTo,
-    show: () => {
-      circle.style.display = "";
-    },
-    hide: () => {
-      circle.style.display = "none";
-    },
-    destroy: () => {
-      animId++;
-      circle.remove();
-    }
-  };
-}
-
-// src/apps/travel-guide/route.ts
+// src/apps/travel-guide/ui/map-layer.ts
 var keyOf2 = (r, c) => `${r},${c}`;
-function centerFromPoly(h, r, c) {
-  const poly = h.polyByCoord.get(keyOf2(r, c));
-  if (!poly) return null;
-  const bb = poly.getBBox();
-  return { x: bb.x + bb.width / 2, y: bb.y + bb.height / 2 };
-}
-function drawRoute(h, route, layerG) {
-  while (layerG.firstChild) layerG.removeChild(layerG.firstChild);
-  if (route.length === 0) return;
-  for (const rc of route) {
-    const ctr = centerFromPoly(h, rc.r, rc.c);
-    if (!ctr) continue;
-    const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    dot.setAttribute("cx", String(ctr.x));
-    dot.setAttribute("cy", String(ctr.y));
-    dot.setAttribute("r", "4");
-    dot.setAttribute("fill", "var(--interactive-accent)");
-    dot.setAttribute("opacity", "0.9");
-    layerG.appendChild(dot);
+async function createMapLayer(app, host, mapFile, opts) {
+  const handles = await renderHexMap(app, host, opts, mapFile.path);
+  const polyToCoord = /* @__PURE__ */ new WeakMap();
+  for (const [k, poly] of handles.polyByCoord) {
+    if (!poly) continue;
+    const [r, c] = k.split(",").map(Number);
+    polyToCoord.set(poly, { r, c });
   }
-  if (route.length >= 2) {
-    const pts = [];
-    for (const rc of route) {
-      const ctr = centerFromPoly(h, rc.r, rc.c);
-      if (ctr) pts.push(`${ctr.x},${ctr.y}`);
+  function ensurePolys(coords) {
+    handles.ensurePolys?.(coords);
+    for (const rc of coords) {
+      const poly = handles.polyByCoord.get(keyOf2(rc.r, rc.c));
+      if (poly) polyToCoord.set(poly, rc);
     }
+  }
+  function centerOf(rc) {
+    let poly = handles.polyByCoord.get(keyOf2(rc.r, rc.c));
+    if (!poly) {
+      ensurePolys([rc]);
+      poly = handles.polyByCoord.get(keyOf2(rc.r, rc.c));
+      if (!poly) return null;
+    }
+    const bb = poly.getBBox();
+    return { x: bb.x + bb.width / 2, y: bb.y + bb.height / 2 };
+  }
+  function destroy() {
+    try {
+      handles.destroy?.();
+    } catch {
+    }
+  }
+  return { handles, polyToCoord, ensurePolys, centerOf, destroy };
+}
+
+// src/apps/travel-guide/render/draw-route.ts
+function drawRoute(args) {
+  const { layer, route, centerOf, highlightIndex = null } = args;
+  while (layer.firstChild) layer.removeChild(layer.firstChild);
+  const pts = [];
+  const centers = route.map((n) => centerOf(n));
+  for (const p of centers) if (p) pts.push(`${p.x},${p.y}`);
+  if (pts.length >= 2) {
     const pl = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
     pl.setAttribute("points", pts.join(" "));
     pl.setAttribute("fill", "none");
@@ -1825,437 +1806,657 @@ function drawRoute(h, route, layerG) {
     pl.setAttribute("stroke-width", "3");
     pl.setAttribute("stroke-linejoin", "round");
     pl.setAttribute("stroke-linecap", "round");
-    layerG.appendChild(pl);
+    pl.style.pointerEvents = "none";
+    layer.appendChild(pl);
   }
-}
-
-// src/apps/travel-guide/logic.ts
-function createTravelLogic(cfg) {
-  let adapter = cfg.adapter ?? null;
-  const baseMs = cfg.baseMs ?? 900;
-  const state = {
-    route: [],
-    editIdx: null,
-    playing: false,
-    tokenSpeed: 1,
-    currentTile: null
-  };
-  const emit = () => cfg.onChange?.({ ...state });
-  const bindAdapter = (a) => {
-    adapter = a;
-  };
-  const setTokenSpeed = (v) => {
-    state.tokenSpeed = Number.isFinite(v) && v > 0 ? v : 1;
-    emit();
-  };
-  const selectDot = (idx) => {
-    state.editIdx = idx;
-    emit();
-  };
-  const reset = () => {
-    state.playing = false;
-    state.route = [];
-    state.editIdx = null;
-    adapter?.draw(state.route);
-    adapter?.token.hide();
-    state.currentTile = null;
-    emit();
-  };
-  const expand = (a, b) => {
-    const seg = lineOddR(a, b);
-    seg.shift();
-    return seg;
-  };
-  const ensure = (coords) => adapter?.ensurePolys(coords);
-  const terrainSpeedFor = async (rc) => {
-    const mapFile = cfg.getMapFile();
-    if (!mapFile) return 1;
-    const data = await loadTile(cfg.app, mapFile, rc).catch(() => null);
-    const t = data?.terrain ?? "";
-    const s = TERRAIN_SPEEDS[t];
-    return Number.isFinite(s) ? s : 1;
-  };
-  const handleHexClick = async (rc) => {
-    if (!adapter) return;
-    ensure([rc]);
-    if (state.editIdx != null) {
-      moveSelectedTo(rc);
-      return;
-    }
-    if (state.route.length === 0) {
-      const ctr = adapter.centerOf(rc);
-      if (ctr) {
-        adapter.token.setPos(ctr.x, ctr.y);
-        adapter.token.show();
-      }
-      state.route.push(rc);
-      state.currentTile = rc;
-      adapter.draw(state.route);
-      emit();
-      return;
-    }
-    const last = state.route[state.route.length - 1];
-    if (last.r === rc.r && last.c === rc.c) return;
-    const seg = expand(last, rc);
-    ensure(seg);
-    state.route.push(...seg);
-    adapter.draw(state.route);
-    emit();
-  };
-  const moveSelectedTo = (rc) => {
-    if (!adapter || state.editIdx == null || state.route.length === 0) return;
-    const i = state.editIdx;
-    const prev = i > 0 ? state.route[i - 1] : null;
-    const next = i < state.route.length - 1 ? state.route[i + 1] : null;
-    const head = state.route.slice(0, i);
-    const tail = state.route.slice(i + 1);
-    const left = prev ? expand(prev, rc) : [rc];
-    const right = next ? expand(rc, next) : [];
-    ensure([...left, ...right]);
-    const newRoute = next != null ? [...head, ...left, ...right, ...tail.slice(1)] : [...head, ...left];
-    state.route = newRoute;
-    if (i === 0) {
-      const ctr = adapter.centerOf(rc);
-      if (ctr) {
-        adapter.token.setPos(ctr.x, ctr.y);
-        adapter.token.show();
-      }
-      state.currentTile = rc;
-    }
-    const idxNew = state.route.findIndex((p) => p.r === rc.r && p.c === rc.c);
-    state.editIdx = idxNew >= 0 ? idxNew : null;
-    adapter.draw(state.route);
-    emit();
-  };
-  const play = async () => {
-    if (!adapter || state.route.length < 2) return;
-    state.playing = true;
-    emit();
-    for (let i = 0; i < state.route.length - 1 && state.playing; i++) {
-      const b = state.route[i + 1];
-      const terrainSpeed = await terrainSpeedFor(b);
-      const effective = Math.max(0.05, terrainSpeed * state.tokenSpeed);
-      const dur = baseMs / effective;
-      const ctr = adapter.centerOf(b);
-      if (!ctr) continue;
-      await adapter.token.moveTo(ctr.x, ctr.y, dur);
-      state.currentTile = b;
-      emit();
-    }
-  };
-  const pause = () => {
-    state.playing = false;
-    emit();
-  };
-  const getState = () => ({ ...state });
-  return {
-    bindAdapter,
-    setTokenSpeed,
-    selectDot,
-    reset,
-    handleHexClick,
-    moveSelectedTo,
-    play,
-    pause,
-    getState
-  };
-}
-
-// src/apps/travel-guide/view.ts
-async function mountTravelGuide(app, host, file) {
-  host.empty();
-  const STYLE_ID = "sm-tg-style";
-  if (!document.getElementById(STYLE_ID)) {
-    const style = document.createElement("style");
-    style.id = STYLE_ID;
-    style.textContent = `
-        .sm-tg-main{display:flex;gap:.75rem;align-items:flex-start}
-        .sm-tg-map{flex:1;min-width:0}
-        .sm-tg-side{width:280px;flex:0 0 280px;border-left:1px solid var(--background-modifier-border);padding-left:.75rem}
-        .sm-tg-side .row{display:flex;align-items:center;gap:.5rem;margin:.5rem 0}
-        .sm-tg-side input[type=number]{width:100%;padding:.25rem .5rem}
-        `;
-    document.head.appendChild(style);
-  }
-  const header = host.createDiv({ cls: "hex-gallery-header" });
-  header.createEl("h2", { text: "Travel Guide" });
-  const controls = header.createDiv({ cls: "hex-gallery-card-row" });
-  const openBtn = controls.createEl("button", { text: "\u{1F4C2} Karte \xF6ffnen\u2026" });
-  const startBtn = controls.createEl("button", { text: "\u25B6 Start" });
-  const pauseBtn = controls.createEl("button", { text: "\u23F8 Pause" });
-  const resetBtn = controls.createEl("button", { text: "\u27F2 Reset" });
-  const main = host.createDiv({ cls: "sm-tg-main" });
-  const mapWrap = main.createDiv({ cls: "sm-tg-map" });
-  const side = main.createDiv({ cls: "sm-tg-side" });
-  side.createEl("h4", { text: "Status" });
-  const sideEls = {};
-  const rowTile = side.createDiv({ cls: "row" });
-  rowTile.createEl("span", { text: "Aktuelles Hex:" });
-  sideEls.tile = rowTile.createEl("span", { text: "\u2014" });
-  const rowSpeed = side.createDiv({ cls: "row" });
-  rowSpeed.createEl("span", { text: "Token-Speed:" });
-  sideEls.speed = rowSpeed.createEl("input", {
-    type: "number",
-    attr: { step: "0.1", min: "0.1", value: "1" }
+  route.forEach((node, i) => {
+    const ctr = centers[i];
+    if (!ctr) return;
+    const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    dot.setAttribute("cx", String(ctr.x));
+    dot.setAttribute("cy", String(ctr.y));
+    dot.setAttribute("r", node.kind === "user" ? "5" : "4");
+    dot.setAttribute("fill", "var(--interactive-accent)");
+    dot.setAttribute("opacity", node.kind === "user" ? "1" : "0.55");
+    dot.setAttribute("data-kind", node.kind);
+    dot.style.pointerEvents = "auto";
+    layer.appendChild(dot);
   });
-  let handles = null;
-  let mapFile = file;
-  let token = null;
-  let logic = null;
-  let suppressNextHexClick = false;
-  let isDragging = false;
-  let lastDragRC = null;
-  const polyToCoord = /* @__PURE__ */ new WeakMap();
-  const layerG = document.createElementNS("http://www.w3.org/2000/svg", "g");
-  const updateSidebar = (tile, speed) => {
-    sideEls.tile.textContent = tile ? `${tile.r},${tile.c}` : "\u2014";
-    if (sideEls.speed && sideEls.speed.value !== String(speed)) {
-      sideEls.speed.value = String(speed);
+  updateHighlight(layer, highlightIndex);
+}
+function updateHighlight(layer, highlightIndex) {
+  const dots = Array.from(layer.querySelectorAll("circle"));
+  dots.forEach((el, idx) => {
+    const isHi = highlightIndex != null && idx === highlightIndex;
+    el.setAttribute("stroke", isHi ? "var(--background-modifier-border)" : "none");
+    el.setAttribute("stroke-width", isHi ? "2" : "0");
+    el.setAttribute("r", isHi ? String(Number(el.getAttribute("r") || "4") + 2) : el.dataset.kind === "user" ? "5" : "4");
+    el.style.opacity = el.getAttribute("data-kind") === "user" ? isHi ? "1" : "1" : isHi ? "0.9" : "0.55";
+    el.style.cursor = "pointer";
+  });
+}
+
+// src/apps/travel-guide/ui/route-layer.ts
+function createRouteLayer(svgRoot, centerOf) {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  el.classList.add("tg-route-layer");
+  svgRoot.appendChild(el);
+  function draw(route, highlightIndex = null) {
+    drawRoute({ layer: el, route, centerOf, highlightIndex });
+  }
+  function highlight(i) {
+    updateHighlight(el, i);
+  }
+  function destroy() {
+    el.remove();
+  }
+  return { el, draw, highlight, destroy };
+}
+
+// src/apps/travel-guide/ui/token-layer.ts
+function createTokenLayer(svgRoot) {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  el.classList.add("tg-token");
+  el.style.pointerEvents = "auto";
+  el.style.cursor = "grab";
+  svgRoot.appendChild(el);
+  const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  circle.setAttribute("r", "9");
+  circle.setAttribute("fill", "var(--color-accent)");
+  circle.setAttribute("opacity", "0.95");
+  circle.setAttribute("stroke", "var(--background-modifier-border)");
+  circle.setAttribute("stroke-width", "2");
+  el.appendChild(circle);
+  let vx = 0, vy = 0;
+  let rafId = null;
+  function setPos(x, y) {
+    vx = x;
+    vy = y;
+    el.setAttribute("transform", `translate(${x},${y})`);
+  }
+  function moveTo(x, y, durMs) {
+    if (durMs <= 0) {
+      setPos(x, y);
+      return Promise.resolve();
     }
-  };
-  function highlightSelectedDot() {
-    const s = logic?.getState();
-    const editIdx = s?.editIdx ?? null;
-    const dots = Array.from(layerG.querySelectorAll("circle"));
-    dots.forEach((el, idx) => {
-      el.style.cursor = "pointer";
-      el.setAttribute("r", idx === editIdx ? "6" : "4");
-      el.setAttribute("stroke", idx === editIdx ? "var(--background-modifier-border)" : "none");
-      el.setAttribute("stroke-width", idx === editIdx ? "2" : "0");
-      el.setAttribute("opacity", idx === editIdx ? "1" : "0.9");
+    if (rafId != null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+    const x0 = vx, y0 = vy;
+    const dx = x - x0, dy = y - y0;
+    const t0 = performance.now();
+    return new Promise((resolve) => {
+      const step = () => {
+        const t = (performance.now() - t0) / durMs;
+        if (t >= 1) {
+          setPos(x, y);
+          rafId = null;
+          resolve();
+          return;
+        }
+        const k = t < 0 ? 0 : t;
+        setPos(x0 + dx * k, y0 + dy * k);
+        rafId = requestAnimationFrame(step);
+      };
+      rafId = requestAnimationFrame(step);
     });
   }
-  layerG.addEventListener(
-    "pointerdown",
-    (ev) => {
-      const pe = ev;
-      if (pe.button !== 0) return;
-      const t = ev.target;
-      if (!(t instanceof SVGCircleElement)) return;
-      const nodes = Array.from(layerG.querySelectorAll("circle"));
-      const idx = nodes.indexOf(t);
-      if (idx >= 0) {
-        logic?.selectDot(idx);
-        highlightSelectedDot();
-        logic?.pause();
-        isDragging = true;
-        lastDragRC = null;
-        suppressNextHexClick = true;
-        t.setPointerCapture?.(pe.pointerId);
-        ev.preventDefault();
-        ev.stopImmediatePropagation?.();
-        ev.stopPropagation();
-      }
-    },
-    { capture: true }
-  );
-  mapWrap.addEventListener(
-    "pointerdown",
-    (ev) => {
-      const pe = ev;
-      if (pe.button !== 0) return;
-      const el = document.elementFromPoint(pe.clientX, pe.clientY);
-      if (!el) return;
-      let cur = el;
-      let poly = null;
-      while (cur) {
-        if (cur instanceof SVGPolygonElement) {
-          poly = cur;
-          break;
-        }
-        cur = cur.parentElement;
-      }
-      if (!poly) return;
-      const rc = polyToCoord.get(poly);
-      if (!rc) return;
-      const s = logic?.getState();
-      const idx = s?.route.findIndex((p) => p.r === rc.r && p.c === rc.c) ?? -1;
-      if (idx >= 0) {
-        logic?.selectDot(idx);
-        highlightSelectedDot();
-        logic?.pause();
-        isDragging = true;
-        lastDragRC = null;
-        suppressNextHexClick = true;
-        poly.setPointerCapture?.(pe.pointerId);
-        ev.preventDefault();
-        ev.stopPropagation();
-      }
-    },
-    { capture: true }
-  );
+  function show() {
+    el.style.display = "";
+  }
+  function hide() {
+    el.style.display = "none";
+  }
+  function destroy() {
+    if (rafId != null) cancelAnimationFrame(rafId);
+    el.remove();
+  }
+  hide();
+  return { el, setPos, moveTo, show, hide, destroy };
+}
+
+// src/apps/travel-guide/ui/drag.controller.ts
+function createDragController(deps) {
+  const { routeLayerEl, tokenEl, token, adapter, logic, polyToCoord } = deps;
+  let isDragging = false;
+  let dragKind = null;
+  let lastDragRC = null;
+  let suppressNextHexClick = false;
+  function disableLayerHit(on) {
+    routeLayerEl.style.pointerEvents = on ? "none" : "";
+  }
+  function findPolygonAt(clientX, clientY) {
+    const el = document.elementFromPoint(clientX, clientY);
+    if (!el) return null;
+    const poly1 = el.closest?.("polygon");
+    if (poly1) return poly1;
+    let cur = el;
+    while (cur) {
+      if (cur instanceof SVGPolygonElement) return cur;
+      cur = cur.parentElement;
+    }
+    return null;
+  }
+  function ghostMoveSelectedDot(rc) {
+    const s = logic.getState();
+    const idx = s.editIdx;
+    if (idx == null) return;
+    const dots = Array.from(routeLayerEl.querySelectorAll("circle"));
+    const dot = dots[idx];
+    if (!dot) return;
+    const ctr = adapter.centerOf(rc);
+    if (!ctr) return;
+    dot.setAttribute("cx", String(ctr.x));
+    dot.setAttribute("cy", String(ctr.y));
+  }
+  function ghostMoveToken(rc) {
+    const ctr = adapter.centerOf(rc);
+    if (!ctr) return;
+    token.setPos(ctr.x, ctr.y);
+    token.show();
+  }
+  const onDotPointerDown = (ev) => {
+    if (ev.button !== 0) return;
+    const t = ev.target;
+    if (!(t instanceof SVGCircleElement)) return;
+    const nodes = Array.from(routeLayerEl.querySelectorAll("circle"));
+    const idx = nodes.indexOf(t);
+    if (idx < 0) return;
+    logic.selectDot(idx);
+    dragKind = "dot";
+    isDragging = true;
+    lastDragRC = null;
+    suppressNextHexClick = true;
+    disableLayerHit(true);
+    t.setPointerCapture?.(ev.pointerId);
+    ev.preventDefault();
+    ev.stopImmediatePropagation?.();
+    ev.stopPropagation();
+  };
+  const onTokenPointerDown = (ev) => {
+    if (ev.button !== 0) return;
+    dragKind = "token";
+    isDragging = true;
+    lastDragRC = null;
+    suppressNextHexClick = true;
+    disableLayerHit(true);
+    tokenEl.setPointerCapture?.(ev.pointerId);
+    ev.preventDefault();
+    ev.stopImmediatePropagation?.();
+    ev.stopPropagation();
+  };
   const onPointerMove = (ev) => {
     if (!isDragging) return;
     if ((ev.buttons & 1) === 0) {
       endDrag();
       return;
     }
-    const el = document.elementFromPoint(ev.clientX, ev.clientY);
-    if (!el) return;
-    let cur = el;
-    let poly = null;
-    while (cur) {
-      if (cur instanceof SVGPolygonElement) {
-        poly = cur;
-        break;
-      }
-      cur = cur.parentElement;
-    }
+    const poly = findPolygonAt(ev.clientX, ev.clientY);
     if (!poly) return;
     const rc = polyToCoord.get(poly);
     if (!rc) return;
-    if (!lastDragRC || rc.r !== lastDragRC.r || rc.c !== lastDragRC.c) {
-      lastDragRC = rc;
-    }
+    if (lastDragRC && rc.r === lastDragRC.r && rc.c === lastDragRC.c) return;
+    lastDragRC = rc;
+    if (dragKind === "dot") ghostMoveSelectedDot(rc);
+    else if (dragKind === "token") ghostMoveToken(rc);
   };
-  window.addEventListener("pointermove", onPointerMove, { passive: true });
   function endDrag() {
     if (!isDragging) return;
     isDragging = false;
     if (lastDragRC) {
-      logic?.moveSelectedTo(lastDragRC);
+      adapter.ensurePolys([lastDragRC]);
+      if (dragKind === "dot") logic.moveSelectedTo(lastDragRC);
+      else if (dragKind === "token") logic.moveTokenTo(lastDragRC);
       suppressNextHexClick = true;
     }
     lastDragRC = null;
+    dragKind = null;
+    disableLayerHit(false);
   }
   const onPointerUp = () => endDrag();
-  window.addEventListener("pointerup", onPointerUp, { passive: true });
-  window.addEventListener("pointercancel", onPointerUp, { passive: true });
-  const onHexClick = (ev) => {
-    if (suppressNextHexClick) {
-      suppressNextHexClick = false;
+  const onPointerCancel = () => endDrag();
+  function bind() {
+    routeLayerEl.addEventListener("pointerdown", onDotPointerDown, { capture: true });
+    tokenEl.addEventListener("pointerdown", onTokenPointerDown, { capture: true });
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    window.addEventListener("pointerup", onPointerUp, { passive: true });
+    window.addEventListener("pointercancel", onPointerCancel, { passive: true });
+  }
+  function unbind() {
+    routeLayerEl.removeEventListener("pointerdown", onDotPointerDown, { capture: true });
+    tokenEl.removeEventListener("pointerdown", onTokenPointerDown, { capture: true });
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", onPointerUp);
+    window.removeEventListener("pointercancel", onPointerCancel);
+  }
+  function consumeClickSuppression() {
+    const r = suppressNextHexClick;
+    suppressNextHexClick = false;
+    return r;
+  }
+  return { bind, unbind, consumeClickSuppression };
+}
+
+// src/apps/travel-guide/ui/contextmenue.ts
+function bindContextMenu(routeLayerEl, logic) {
+  const onContextMenu = (ev) => {
+    const t = ev.target;
+    if (!(t instanceof SVGCircleElement)) return;
+    const circles = Array.from(routeLayerEl.querySelectorAll("circle"));
+    const idx = circles.indexOf(t);
+    if (idx < 0) return;
+    const route = logic.getState().route;
+    const node = route[idx];
+    if (!node) return;
+    if (node.kind !== "user") {
+      ev.preventDefault();
       return;
     }
-    if (!handles) return;
-    ev.preventDefault?.();
-    const { r, c } = ev.detail;
-    void logic?.handleHexClick({ r, c });
+    ev.preventDefault();
+    ev.stopPropagation();
+    logic.deleteUserAt(idx);
   };
-  mapWrap.addEventListener("hex:click", onHexClick, { passive: false });
-  host.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      logic?.selectDot(null);
-      highlightSelectedDot();
+  routeLayerEl.addEventListener("contextmenu", onContextMenu, { capture: true });
+  return () => routeLayerEl.removeEventListener("contextmenu", onContextMenu, { capture: true });
+}
+
+// src/apps/travel-guide/domain/state.store.ts
+function createStore() {
+  let state2 = {
+    tokenRC: { r: 0, c: 0 },
+    route: [],
+    editIdx: null,
+    tokenSpeed: 1,
+    currentTile: null,
+    playing: false
+  };
+  const subs = /* @__PURE__ */ new Set();
+  const get = () => state2;
+  const set = (patch) => {
+    state2 = { ...state2, ...patch };
+    emit2();
+  };
+  const replace = (next) => {
+    state2 = next;
+    emit2();
+  };
+  const subscribe = (fn) => {
+    subs.add(fn);
+    fn(state2);
+    return () => subs.delete(fn);
+  };
+  const emit2 = () => {
+    for (const fn of subs) fn(state2);
+  };
+  return { get, set, replace, subscribe, emit: emit2 };
+}
+
+// src/apps/travel-guide/domain/expansion.ts
+function expandCoords(a, b) {
+  const seg = lineOddR(a, b);
+  if (seg.length <= 1) return [];
+  seg.shift();
+  return seg;
+}
+function rebuildFromAnchors(tokenRC, anchors) {
+  const route = [];
+  let cur = tokenRC;
+  for (let i = 0; i < anchors.length; i++) {
+    const next = anchors[i];
+    const seg = expandCoords(cur, next);
+    const autos = seg.slice(0, Math.max(0, seg.length - 1)).map(asAutoNode);
+    route.push(...autos);
+    route.push(asUserNode(next));
+    cur = next;
+  }
+  return route;
+}
+var asUserNode = (rc) => ({ ...rc, kind: "user" });
+var asAutoNode = (rc) => ({ ...rc, kind: "auto" });
+
+// src/apps/travel-guide/domain/terrain.service.ts
+async function loadTerrainSpeed(app, mapFile, rc) {
+  try {
+    const data = await loadTile(app, mapFile, rc);
+    const t = data?.terrain ?? "";
+    const s = TERRAIN_SPEEDS[t];
+    return Number.isFinite(s) ? s : 1;
+  } catch {
+    return 1;
+  }
+}
+
+// src/apps/travel-guide/domain/persistence.ts
+var TOKEN_KEY = "token_travel";
+async function loadTokenCoordFromMap(app, mapFile) {
+  const tiles = await listTilesForMap(app, mapFile);
+  for (const rc of tiles) {
+    const data = await loadTile(app, mapFile, rc).catch(() => null);
+    if (data && data[TOKEN_KEY] === true) return rc;
+  }
+  return null;
+}
+async function writeTokenToTiles(app, mapFile, rc) {
+  const tiles = await listTilesForMap(app, mapFile);
+  for (const t of tiles) {
+    const data = await loadTile(app, mapFile, t).catch(() => null);
+    if (data && data[TOKEN_KEY] === true && (t.r !== rc.r || t.c !== rc.c)) {
+      await saveTile(app, mapFile, t, { ...data, [TOKEN_KEY]: false });
     }
-  });
-  async function mountMap() {
-    mapWrap.empty();
-    token?.destroy();
-    handles?.destroy();
-    logic?.reset();
+  }
+  const cur = await loadTile(app, mapFile, rc).catch(() => ({}));
+  await saveTile(app, mapFile, rc, { ...cur, [TOKEN_KEY]: true });
+}
+
+// src/apps/travel-guide/domain/playback.ts
+function createPlayback(cfg) {
+  const { app, getMapFile, adapter, store, baseMs, onChange } = cfg;
+  let playing = false;
+  function trimRoutePassed(token) {
+    const cur = store.get();
+    let i = 0;
+    while (i < cur.route.length && cur.route[i].r === token.r && cur.route[i].c === token.c) i++;
+    if (i > 0) store.set({ route: cur.route.slice(i) });
+  }
+  async function play() {
+    const mapFile = getMapFile();
     if (!mapFile) return;
-    setTerrains(await loadTerrains(app));
-    const opts = parseOptions("radius: 42");
-    handles = await renderHexMap(app, mapWrap, opts, mapFile.path);
-    handles.contentG.appendChild(layerG);
-    token = createToken(handles);
-    token.hide();
-    buildPolyIndexFromHandles();
-    const adapter = {
-      ensurePolys: (coords) => {
-        handles.ensurePolys?.(coords);
-        for (const rc of coords) {
-          const key = `${rc.r},${rc.c}`;
-          const poly = handles.polyByCoord.get(key);
-          if (poly) polyToCoord.set(poly, rc);
-        }
-      },
-      centerOf: (rc) => centerFromPoly(handles, rc.r, rc.c),
-      draw: (route) => drawRoute(handles, route, layerG),
-      token
-    };
-    if (!logic) {
-      logic = createTravelLogic({
-        app,
-        getMapFile: () => mapFile,
-        baseMs: 900,
-        adapter,
-        onChange: (s) => {
-          updateSidebar(s.currentTile, s.tokenSpeed);
-          highlightSelectedDot();
-        }
-      });
-    } else {
-      logic.bindAdapter(adapter);
+    const s0 = store.get();
+    if (s0.route.length === 0) return;
+    playing = true;
+    store.set({ playing: true });
+    onChange();
+    while (playing) {
+      const s = store.get();
+      if (s.route.length === 0) break;
+      const next = s.route[0];
+      adapter.ensurePolys([{ r: next.r, c: next.c }]);
+      const terr = await loadTerrainSpeed(app, mapFile, next);
+      const eff = Math.max(0.05, terr * s.tokenSpeed);
+      const dur = baseMs / eff;
+      const ctr = adapter.centerOf(next);
+      if (ctr) {
+        await adapter.token.moveTo(ctr.x, ctr.y, dur);
+      }
+      const tokenRC = { r: next.r, c: next.c };
+      store.set({ tokenRC, currentTile: tokenRC });
+      await writeTokenToTiles(app, mapFile, tokenRC);
+      trimRoutePassed(tokenRC);
+      onChange();
+      if (!playing) break;
     }
+    playing = false;
+    store.set({ playing: false });
+    onChange();
   }
-  function buildPolyIndexFromHandles() {
-    if (!handles) return;
-    for (const [k, poly] of handles.polyByCoord) {
-      const [r, c] = k.split(",").map(Number);
-      if (poly) polyToCoord.set(poly, { r, c });
-    }
+  function pause() {
+    playing = false;
+    store.set({ playing: false });
+    onChange();
   }
-  sideEls.speed.onchange = () => {
-    const v = parseFloat(sideEls.speed.value);
-    logic?.setTokenSpeed(v);
+  return { play, pause };
+}
+
+// src/apps/travel-guide/domain/actions.ts
+function createTravelLogic(cfg) {
+  const store = createStore();
+  let adapter = cfg.adapter;
+  const unsub = store.subscribe((s) => {
+    cfg.onChange?.(s);
+    adapter.draw(s.route);
+  });
+  const playback = createPlayback({
+    app: cfg.app,
+    getMapFile: cfg.getMapFile,
+    baseMs: cfg.baseMs,
+    store,
+    adapter
+  });
+  const getState = () => store.get();
+  const bindAdapter = (a) => {
+    adapter = a;
   };
-  openBtn.onclick = async () => {
-    const files = await getAllMapFiles(app);
-    if (!files.length) {
-      new import_obsidian10.Notice("Keine Karten gefunden.");
-      return;
+  const selectDot = (idx) => {
+    const len = store.get().route.length;
+    const safe = idx == null ? null : Math.max(0, Math.min(idx, len - 1));
+    store.set({ editIdx: safe });
+  };
+  const lastUserAnchor = () => {
+    const r = store.get().route;
+    for (let i = r.length - 1; i >= 0; i--) {
+      if (r[i].kind === "user") return r[i];
     }
-    const list = mapFile ? [mapFile, ...files.filter((f) => f.path !== mapFile.path)] : files;
-    new MapSelectModal(app, list, async (f) => {
-      mapFile = f;
-      await mountMap();
-    }).open();
+    return null;
   };
-  startBtn.onclick = () => void logic?.play();
-  pauseBtn.onclick = () => logic?.pause();
-  resetBtn.onclick = () => {
-    logic?.reset();
-    highlightSelectedDot();
+  const userIndices = () => {
+    const out = [];
+    store.get().route.forEach((n, i) => {
+      if (n.kind === "user") out.push(i);
+    });
+    return out;
   };
-  await mountMap();
+  const ensurePolys = (coords) => adapter.ensurePolys(coords);
+  const handleHexClick = (rc) => {
+    const s = store.get();
+    const source = lastUserAnchor() ?? s.tokenRC;
+    if (source.r === rc.r && source.c === rc.c) return;
+    const seg = expandCoords(source, rc);
+    ensurePolys(seg);
+    const autos = seg.slice(0, Math.max(0, seg.length - 1)).map(asAutoNode);
+    const user = asUserNode(rc);
+    const route = [...s.route, ...autos, user];
+    store.set({ route });
+  };
+  const moveSelectedTo = (rc) => {
+    const s = store.get();
+    const i = s.editIdx;
+    if (i == null || i < 0 || i >= s.route.length) return;
+    const users = userIndices();
+    const prevUserIdx = [...users].reverse().find((u) => u < i) ?? -1;
+    const nextUserIdx = users.find((u) => u > i) ?? -1;
+    const prevAnchor = prevUserIdx >= 0 ? s.route[prevUserIdx] : s.tokenRC;
+    const head = prevUserIdx >= 0 ? s.route.slice(0, prevUserIdx + 1) : [];
+    const leftSeg = expandCoords(prevAnchor, rc);
+    const leftAutos = leftSeg.slice(0, Math.max(0, leftSeg.length - 1)).map(asAutoNode);
+    const moved = asUserNode(rc);
+    let rightAutos = [];
+    let tail = [];
+    if (nextUserIdx >= 0) {
+      const nextAnchor = s.route[nextUserIdx];
+      const rightSeg = expandCoords(rc, nextAnchor);
+      rightAutos = rightSeg.slice(0, Math.max(0, rightSeg.length - 1)).map(asAutoNode);
+      tail = s.route.slice(nextUserIdx);
+    }
+    const newRoute = [...head, ...leftAutos, moved, ...rightAutos, ...tail];
+    ensurePolys([rc, ...leftSeg, ...rightAutos.map(({ r, c }) => ({ r, c }))]);
+    const newIdx = newRoute.findIndex((n) => n.kind === "user" && n.r === rc.r && n.c === rc.c);
+    store.set({ route: newRoute, editIdx: newIdx >= 0 ? newIdx : null });
+  };
+  async function moveTokenTo(rc) {
+    if (!adapter) return;
+    state.tokenRC = rc;
+    adapter.ensurePolys([rc]);
+    const ctr = adapter.centerOf(rc);
+    if (ctr) {
+      adapter.token.setPos(ctr.x, ctr.y);
+      adapter.token.show();
+    }
+    const anchors = state.route.filter((n) => n.kind === "user").map(({ r, c }) => ({ r, c }));
+    state.route = rebuildFromAnchors(state.tokenRC, anchors);
+    const mapFile = cfg.getMapFile();
+    if (mapFile) await writeTokenToTiles(cfg.app, mapFile, state.tokenRC);
+    adapter.draw(state.route);
+    emit();
+  }
+  const deleteUserAt = (idx) => {
+    const s = store.get();
+    if (idx < 0 || idx >= s.route.length) return;
+    if (s.route[idx].kind !== "user") return;
+    const users = userIndices();
+    const myUserPos = users.indexOf(idx);
+    const prevUserIdx = myUserPos > 0 ? users[myUserPos - 1] : -1;
+    const nextUserIdx = myUserPos < users.length - 1 ? users[myUserPos + 1] : -1;
+    const prevAnchor = prevUserIdx >= 0 ? s.route[prevUserIdx] : s.tokenRC;
+    const nextAnchor = nextUserIdx >= 0 ? s.route[nextUserIdx] : null;
+    const head = prevUserIdx >= 0 ? s.route.slice(0, prevUserIdx + 1) : [];
+    const tail = nextUserIdx >= 0 ? s.route.slice(nextUserIdx) : [];
+    let bridge = [];
+    if (nextAnchor) {
+      const seg = expandCoords(prevAnchor, nextAnchor);
+      const autos = seg.slice(0, Math.max(0, seg.length - 1)).map(asAutoNode);
+      bridge = [...autos];
+      ensurePolys(seg);
+    }
+    const newRoute = [...head, ...bridge, ...tail];
+    const newEdit = null;
+    store.set({ route: newRoute, editIdx: newEdit });
+  };
+  const setTokenSpeed = (v) => {
+    const val = Number.isFinite(v) && v > 0 ? v : 1;
+    store.set({ tokenSpeed: val });
+  };
+  const play = async () => playback.play();
+  const pause = () => playback.pause();
+  async function initTokenFromTiles() {
+    const mapFile = cfg.getMapFile();
+    if (!mapFile || !adapter) return;
+    const found = await loadTokenCoordFromMap(cfg.app, mapFile);
+    state.tokenRC = found ?? { r: 0, c: 0 };
+    adapter.ensurePolys([state.tokenRC]);
+    const ctr = adapter.centerOf(state.tokenRC);
+    if (ctr) {
+      adapter.token.setPos(ctr.x, ctr.y);
+      adapter.token.show();
+    }
+    if (!found) await writeTokenToTiles(cfg.app, mapFile, state.tokenRC);
+    emit();
+  }
+  const persistTokenToTiles = async () => {
+    const mf = cfg.getMapFile();
+    if (!mf) return;
+    await writeTokenToTiles(cfg.app, mf, store.get().tokenRC);
+  };
   return {
-    setFile: async (f) => {
-      mapFile = f;
-      await mountMap();
-    },
-    destroy: () => {
-      mapWrap.removeEventListener("hex:click", onHexClick);
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerup", onPointerUp);
-      window.removeEventListener("pointercancel", onPointerUp);
-      logic?.pause();
-      logic = null;
-      token?.destroy();
-      handles?.destroy();
-    }
+    getState: () => store.get(),
+    selectDot,
+    handleHexClick,
+    moveSelectedTo,
+    moveTokenTo,
+    deleteUserAt,
+    play,
+    pause,
+    setTokenSpeed,
+    bindAdapter,
+    initTokenFromTiles,
+    persistTokenToTiles
   };
 }
 
+// src/apps/travel-guide/ui/view-shell.ts
+async function mountTravelGuide(app, host, file) {
+  host.empty();
+  if (!file) return;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", "100%");
+  host.appendChild(svg);
+  setTerrains(await loadTerrains(app));
+  const opts = parseOptions("radius: 42");
+  const mapLayer = await createMapLayer(app, host, file, opts);
+  const routeLayer = createRouteLayer(svg, (rc) => mapLayer.centerOf(rc));
+  const tokenLayer = createTokenLayer(svg);
+  const adapter = {
+    ensurePolys: (coords) => mapLayer.ensurePolys(coords),
+    centerOf: (rc) => mapLayer.centerOf(rc),
+    draw: (route) => routeLayer.draw(route),
+    token: tokenLayer
+  };
+  const logic = createTravelLogic({
+    app,
+    getMapFile: () => file,
+    baseMs: 900,
+    adapter,
+    onChange: () => {
+      const s = logic.getState();
+      routeLayer.draw(s.route, s.editIdx ?? null);
+    }
+  });
+  await logic.initTokenFromTiles();
+  const drag = createDragController({
+    routeLayerEl: routeLayer.el,
+    tokenEl: tokenLayer.el,
+    token: tokenLayer,
+    adapter,
+    logic: {
+      getState: () => logic.getState(),
+      selectDot: (i) => logic.selectDot(i),
+      moveSelectedTo: (rc) => logic.moveSelectedTo(rc),
+      moveTokenTo: (rc) => logic.moveTokenTo(rc)
+    },
+    polyToCoord: mapLayer.polyToCoord
+  });
+  drag.bind();
+  const unbindContext = bindContextMenu(routeLayer.el, {
+    getState: () => logic.getState(),
+    deleteUserAt: (idx) => logic.deleteUserAt(idx)
+  });
+  const onHexClick = (ev) => {
+    if (drag.consumeClickSuppression()) return;
+    const { r, c } = ev.detail;
+    logic.handleHexClick({ r, c });
+  };
+  const clickTarget = mapLayer.el ?? host;
+  clickTarget.addEventListener?.("hex:click", onHexClick, { passive: false });
+  const controller = {
+    destroy() {
+      clickTarget.removeEventListener?.("hex:click", onHexClick);
+      unbindContext();
+      drag.unbind();
+      tokenLayer.destroy?.();
+      mapLayer.destroy();
+      host.empty();
+    }
+  };
+  return controller;
+}
+
 // src/apps/travel-guide/index.ts
-var VIEW_TRAVEL_GUIDE = "salt-travel-guide";
+var VIEW_TYPE_TRAVEL_GUIDE = "travel-guide-view";
+var VIEW_TRAVEL_GUIDE = VIEW_TYPE_TRAVEL_GUIDE;
 var TravelGuideView = class extends import_obsidian11.ItemView {
+  constructor(leaf) {
+    super(leaf);
+    this.controller = null;
+    this.hostEl = null;
+    this.initialFile = null;
+  }
   getViewType() {
-    return VIEW_TRAVEL_GUIDE;
+    return VIEW_TYPE_TRAVEL_GUIDE;
   }
   getDisplayText() {
     return "Travel Guide";
   }
   getIcon() {
-    return "navigation";
+    return "map";
+  }
+  /** Optional: open view with a preselected file */
+  setFile(file) {
+    this.initialFile = file;
+    this.controller?.setFile(file ?? null);
   }
   async onOpen() {
-    this.contentEl.addClass("sm-travel-guide");
-    this.ctrl = await mountTravelGuide(this.app, this.contentEl, this.mapFile || null);
+    const container = this.containerEl;
+    const content = container.children[1];
+    content.empty();
+    this.hostEl = content.createDiv({ cls: "travel-guide-host" });
+    const file = this.initialFile ?? this.app.workspace.getActiveFile() ?? null;
+    this.controller = await mountTravelGuide(this.app, this.hostEl, file);
   }
   async onClose() {
-    this.ctrl?.destroy?.();
-  }
-  getState() {
-    return { mapPath: this.mapFile?.path ?? null };
-  }
-  async setState(state) {
-    const path = state?.mapPath;
-    if (path) {
-      const f = this.app.vault.getAbstractFileByPath(path);
-      if (f instanceof import_obsidian11.TFile) this.mapFile = f;
-    } else this.mapFile = void 0;
-    this.ctrl?.setFile?.(this.mapFile || null);
+    this.controller?.destroy();
+    this.controller = null;
+    this.hostEl = null;
   }
 };
 

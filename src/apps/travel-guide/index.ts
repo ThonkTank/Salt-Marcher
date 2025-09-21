@@ -1,11 +1,12 @@
 // src/apps/travel-guide/index.ts
 import { Plugin, ItemView, WorkspaceLeaf, TFile } from "obsidian";
 import type { App } from "obsidian";
-import { mountTravelGuide, type TravelGuideController } from "./view";
+import { mountTravelGuide, type TravelGuideController } from "./ui/view-shell";
 
 export const VIEW_TYPE_TRAVEL_GUIDE = "travel-guide-view";
+export const VIEW_TRAVEL_GUIDE = VIEW_TYPE_TRAVEL_GUIDE;
 
-class TravelGuideView extends ItemView {
+export class TravelGuideView extends ItemView {
     controller: TravelGuideController | null = null;
     hostEl: HTMLElement | null = null;
     initialFile: TFile | null = null;

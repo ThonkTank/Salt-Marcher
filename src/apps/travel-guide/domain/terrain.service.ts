@@ -2,8 +2,8 @@
 // Nutzung: ausschließlich aus domain/playback.ts
 
 import type { App, TFile } from "obsidian";
-import { TERRAIN_SPEEDS } from "../../core/terrain";
-import { loadTile } from "../../core/hex-mapper/hex-notes";
+import { TERRAIN_SPEEDS } from "../../../core/terrain";
+import { loadTile } from "../../../core/hex-mapper/hex-notes";
 import type { Coord } from "./types";
 
 export async function loadTerrainSpeed(app: App, mapFile: TFile, rc: Coord): Promise<number> {
