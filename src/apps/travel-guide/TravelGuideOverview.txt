@@ -168,6 +168,7 @@ export type TravelLogic = {
 - Nutzt `polyToCoord` + `document.elementFromPoint` für Ziel-Hex-Erkennung.
 - `ghostMoveSelectedDot/Token` verschieben nur UI (kein State).
 - `endDrag()` sorgt für Commit über `logic.moveSelectedTo` oder `logic.moveTokenTo` und ruft `adapter.ensurePolys` als Sicherheit.
+- Capture-Hook auf `window` setzt früh `suppressNextHexClick`, damit `hex:click` keine Wegpunkte erzeugt, wenn Token/Dots gedrückt werden.
 - Stellt `bind`, `unbind`, `consumeClickSuppression` bereit.
 
 ### `ui/contextmenue.ts`

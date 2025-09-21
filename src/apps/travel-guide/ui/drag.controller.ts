@@ -75,6 +75,29 @@ polyToCoord: WeakMap<SVGElement, Coord>;       // MapLayer-Index
 
     // Event handlers -----------------------------------------------------------
 
+    const onGlobalPointerDownCapture = (ev: PointerEvent) => {
+        if (ev.button !== 0) return;
+
+        const check = (el: EventTarget | null | undefined): boolean => {
+            if (!(el instanceof Element)) return false;
+            if (el === tokenEl || tokenEl.contains(el)) return true;
+            if (el instanceof SVGCircleElement && routeLayerEl.contains(el)) return true;
+            return false;
+        };
+
+        const path = typeof ev.composedPath === "function" ? ev.composedPath() : [];
+        if (Array.isArray(path) && path.length > 0) {
+            for (const el of path) {
+                if (check(el)) {
+                    suppressNextHexClick = true;
+                    return;
+                }
+            }
+        } else if (check(ev.target)) {
+            suppressNextHexClick = true;
+        }
+    };
+
     const onDotPointerDown = (ev: PointerEvent) => {
         if (ev.button !== 0) return; // nur LMB
         const t = ev.target as Element;
@@ -152,6 +175,7 @@ polyToCoord: WeakMap<SVGElement, Coord>;       // MapLayer-Index
         // Public API ---------------------------------------------------------------
 
         function bind() {
+            window.addEventListener("pointerdown", onGlobalPointerDownCapture, { capture: true });
             routeLayerEl.addEventListener("pointerdown", onDotPointerDown, { capture: true });
             tokenEl.addEventListener("pointerdown", onTokenPointerDown, { capture: true });
             window.addEventListener("pointermove", onPointerMove, { passive: true });
@@ -160,6 +184,7 @@ polyToCoord: WeakMap<SVGElement, Coord>;       // MapLayer-Index
         }
 
         function unbind() {
+            window.removeEventListener("pointerdown", onGlobalPointerDownCapture as any, { capture: true } as any);
             routeLayerEl.removeEventListener("pointerdown", onDotPointerDown as any, { capture: true } as any);
             tokenEl.removeEventListener("pointerdown", onTokenPointerDown as any, { capture: true } as any);
             window.removeEventListener("pointermove", onPointerMove as any);
