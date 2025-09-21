@@ -128,6 +128,17 @@ export type TravelLogic = {
 
 ---
 
+## Farbkonzept (Token & Route)
+
+- **Token (`.tg-token__circle`):** kräftiges Violett (`--tg-color-token`, fallback `#9c6dfb`) mit Border (`var(--background-modifier-border)`) und 95 % Deckkraft für eine deutliche Start-/Playback-Markierung.
+- **User-Anker (`.tg-route-dot--user`):** warmes Orange (`--tg-color-user-anchor`, fallback `#f59e0b`) bei 95 % Deckkraft, damit manuelle Wegpunkte hervorstechen.
+- **Auto-Punkte (`.tg-route-dot--auto`):** kühles Blau (`--tg-color-auto-point`, fallback `#3b82f6`) mit reduzierter Deckkraft (55 %), um ergänzte Zwischenknoten subtiler zu halten.
+- **Highlight (`.is-highlighted`):** Domain-Highlighting erhöht weiterhin Radius + Border; zusätzlich hebt CSS die Deckkraft auf 100 % (User) bzw. 90 % (Auto), damit der aktuelle Fokus sofort sichtbar ist.
+
+Alle Farbwerte lassen sich über die jeweiligen Custom Properties überschreiben und nehmen vorhandene Obsidian-Theme-Variablen als bevorzugte Quelle.
+
+---
+
 ## Detailübersicht pro Datei
 
 ### `index.ts`
@@ -160,6 +171,7 @@ export type TravelLogic = {
 
 ### `ui/token-layer.ts`
 - Erstellt `<g class="tg-token">` inklusive auffälligem Kreis (Radius 14, dicker Rand), versteckt initial, und hängt ihn direkt an das kamera-transformierte `contentG`.
+- Nutzt `.tg-token__circle`, damit Farbe, Border und Opazität zentral über CSS gesteuert werden.
 - Stellt `setPos`, `moveTo` (RAF-Animation, optional durations), `show`, `hide`, `destroy` bereit und erfüllt damit `TokenCtl`.
 - Lässt Pointer-Events aktiv (`cursor: grab`) für Drag-Start.
 
@@ -229,7 +241,7 @@ export type TravelLogic = {
 - Keine Implementierung, reine Typen.
 
 ### `render/draw-route.ts`
-- `drawRoute({ layer, route, centerOf, highlightIndex, start })` leert Layer, setzt den Token-Mittelpunkt als erstes Polyline-Segment (ohne zusätzlichen Dot), zeichnet anschließend die Route (falls ≥2 Punkte) und generiert Kreise pro Knoten (`user` größer/opaker als `auto`).
-- `updateHighlight(layer, highlightIndex)` setzt Stroke/Radius/Opacity für ausgewählten Dot.
+- `drawRoute({ layer, route, centerOf, highlightIndex, start })` leert Layer, setzt den Token-Mittelpunkt als erstes Polyline-Segment (ohne zusätzlichen Dot), zeichnet anschließend die Route (falls ≥2 Punkte) und generiert Kreise pro Knoten inklusive `.tg-route-dot` + Typ-Klassen für CSS-gestützte Farbgebung.
+- `updateHighlight(layer, highlightIndex)` setzt Stroke/Radius, toggelt `.is-highlighted` und delegiert die finale Opazität an CSS.
 - Pointer-Events der Polyline deaktiviert, Dots behalten Pointer für Interaktion.
 

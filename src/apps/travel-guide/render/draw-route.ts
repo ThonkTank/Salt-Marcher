@@ -45,9 +45,9 @@ export function drawRoute(args: {
         dot.setAttribute("cx", String(ctr.x));
         dot.setAttribute("cy", String(ctr.y));
         dot.setAttribute("r", node.kind === "user" ? "5" : "4");
-        dot.setAttribute("fill", "var(--interactive-accent)");
-        dot.setAttribute("opacity", node.kind === "user" ? "1" : "0.55");
         dot.setAttribute("data-kind", node.kind);
+        dot.classList.add("tg-route-dot");
+        dot.classList.add(node.kind === "user" ? "tg-route-dot--user" : "tg-route-dot--auto");
         dot.style.pointerEvents = "auto";
         layer.appendChild(dot);
     });
@@ -60,10 +60,11 @@ export function updateHighlight(layer: SVGGElement, highlightIndex: number | nul
     const dots = Array.from(layer.querySelectorAll<SVGCircleElement>("circle"));
     dots.forEach((el, idx) => {
         const isHi = highlightIndex != null && idx === highlightIndex;
+        el.classList.toggle("is-highlighted", isHi);
         el.setAttribute("stroke", isHi ? "var(--background-modifier-border)" : "none");
         el.setAttribute("stroke-width", isHi ? "2" : "0");
         el.setAttribute("r", isHi ? String(Number(el.getAttribute("r") || "4") + 2) : (el.dataset.kind === "user" ? "5" : "4"));
-        el.style.opacity = el.getAttribute("data-kind") === "user" ? (isHi ? "1" : "1") : (isHi ? "0.9" : "0.55");
+        el.style.removeProperty("opacity");
         el.style.cursor = "pointer";
     });
 }
