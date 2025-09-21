@@ -126,7 +126,10 @@ export async function mountTravelGuide(
             return;
         }
 
-        routeLayer = createRouteLayer(mapLayer.handles.svg, (rc) => mapLayer!.centerOf(rc));
+        routeLayer = createRouteLayer(
+            mapLayer.handles.contentG,
+            (rc) => mapLayer!.centerOf(rc)
+        );
         tokenLayer = createTokenLayer(mapLayer.handles.svg);
 
         const adapter: RenderAdapter = {
