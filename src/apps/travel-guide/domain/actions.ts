@@ -149,23 +149,38 @@ export function createTravelLogic(cfg: {
     async function moveTokenTo(rc: Coord) {
         if (!adapter) return;
 
-        // Token setzen + UI
-        state.tokenRC = rc;
-        adapter.ensurePolys([rc]);
+        const prev = store.get();
+        const anchors = prev.route
+            .filter((n) => n.kind === "user")
+            .map(({ r, c }) => ({ r, c }));
+        const route = rebuildFromAnchors(rc, anchors);
+
+        const routeCoords = route.map(({ r, c }) => ({ r, c }));
+        adapter.ensurePolys([rc, ...routeCoords]);
+
         const ctr = adapter.centerOf(rc);
-        if (ctr) { adapter.token.setPos(ctr.x, ctr.y); adapter.token.show(); }
+        if (ctr) {
+            adapter.token.setPos(ctr.x, ctr.y);
+            adapter.token.show();
+        }
 
-        // Autos komplett zwischen Ankern neu generieren
-        // (anchors = alle user-Punkte in state.route in ihrer Reihenfolge)
-        const anchors = state.route.filter(n => n.kind === "user").map(({ r, c }) => ({ r, c }));
-        state.route = rebuildFromAnchors(state.tokenRC, anchors); // aus expansion.ts
+        let editIdx: number | null = prev.editIdx;
+        if (editIdx != null) {
+            const prevNode = prev.route[editIdx];
+            if (!prevNode) {
+                editIdx = null;
+            } else {
+                const matchIdx = route.findIndex(
+                    (n) => n.kind === prevNode.kind && n.r === prevNode.r && n.c === prevNode.c,
+                );
+                editIdx = matchIdx >= 0 ? matchIdx : null;
+            }
+        }
 
-        // Persistieren NUR hier (Domain)
+        store.set({ tokenRC: rc, route, editIdx });
+
         const mapFile = cfg.getMapFile();
-        if (mapFile) await writeTokenToTiles(cfg.app, mapFile, state.tokenRC);
-
-        adapter.draw(state.route);
-        emit();
+        if (mapFile) await writeTokenToTiles(cfg.app, mapFile, rc);
     }
 
 
@@ -215,23 +230,45 @@ export function createTravelLogic(cfg: {
 
         // Token I/O ---------------------------------------------------------------
 
-        async function initTokenFromTiles() {
-            const mapFile = cfg.getMapFile();
-            if (!mapFile || !adapter) return;
+    async function initTokenFromTiles() {
+        const mapFile = cfg.getMapFile();
+        if (!mapFile || !adapter) return;
 
-            const found = await loadTokenCoordFromMap(cfg.app, mapFile);
-            state.tokenRC = found ?? { r: 0, c: 0 };
+        const prev = store.get();
+        const found = await loadTokenCoordFromMap(cfg.app, mapFile);
+        const tokenRC = found ?? prev.tokenRC ?? { r: 0, c: 0 };
 
-            adapter.ensurePolys([state.tokenRC]);
+        const anchors = prev.route
+            .filter((n) => n.kind === "user")
+            .map(({ r, c }) => ({ r, c }));
+        const route = rebuildFromAnchors(tokenRC, anchors);
 
-            const ctr = adapter.centerOf(state.tokenRC);
-            if (ctr) { adapter.token.setPos(ctr.x, ctr.y); adapter.token.show(); }
+        const routeCoords = route.map(({ r, c }) => ({ r, c }));
+        adapter.ensurePolys([tokenRC, ...routeCoords]);
 
-            // Falls kein Token in Tiles vorhanden war → direkt anlegen
-            if (!found) await writeTokenToTiles(cfg.app, mapFile, state.tokenRC);
-
-            emit(); // onChange → Route neu zeichnen (meist leer)
+        const ctr = adapter.centerOf(tokenRC);
+        if (ctr) {
+            adapter.token.setPos(ctr.x, ctr.y);
+            adapter.token.show();
         }
+
+        let editIdx: number | null = prev.editIdx;
+        if (editIdx != null) {
+            const prevNode = prev.route[editIdx];
+            if (!prevNode) {
+                editIdx = null;
+            } else {
+                const matchIdx = route.findIndex(
+                    (n) => n.kind === prevNode.kind && n.r === prevNode.r && n.c === prevNode.c,
+                );
+                editIdx = matchIdx >= 0 ? matchIdx : null;
+            }
+        }
+
+        store.set({ tokenRC, route, editIdx });
+
+        if (!found) await writeTokenToTiles(cfg.app, mapFile, tokenRC);
+    }
 
             const persistTokenToTiles = async () => {
                 const mf = cfg.getMapFile();
