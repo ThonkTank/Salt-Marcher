@@ -130,7 +130,7 @@ export async function mountTravelGuide(
             mapLayer.handles.contentG,
             (rc) => mapLayer!.centerOf(rc)
         );
-        tokenLayer = createTokenLayer(mapLayer.handles.svg);
+        tokenLayer = createTokenLayer(mapLayer.handles.contentG);
 
         const adapter: RenderAdapter = {
             ensurePolys: (coords) => mapLayer!.ensurePolys(coords),

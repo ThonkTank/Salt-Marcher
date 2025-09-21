@@ -2,12 +2,12 @@
 
 import type { TokenCtl } from "../infra/adapter";
 
-export function createTokenLayer(svgRoot: SVGSVGElement): TokenCtl & { el: SVGGElement } {
+export function createTokenLayer(contentG: SVGGElement): TokenCtl & { el: SVGGElement } {
     const el = document.createElementNS("http://www.w3.org/2000/svg", "g");
     el.classList.add("tg-token");
     el.style.pointerEvents = "auto";
     el.style.cursor = "grab";
-    svgRoot.appendChild(el);
+    contentG.appendChild(el);
 
     const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     circle.setAttribute("r", "9");
