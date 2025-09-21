@@ -111,10 +111,10 @@ export type TravelLogic = {
 2. **Store-Abos:** `createTravelLogic` subscribed auf den Store. Jede Änderung triggert `adapter.draw(route)` und optionales `onChange` (View rendert Highlight).
 3. **Hex-Klick:** `map-layer` emittiert `hex:click` → `view-shell` ruft `logic.handleHexClick(rc)` → `expandCoords` erzeugt Autos → Store-Update → Route-Layer zeichnet neu.
 4. **Dot-Drag:** `drag.controller` zeigt Ghost (nur UI), `pointerup` → `logic.moveSelectedTo(rc)` → neue Segmente via `expandCoords` → Store-Update.
-5. **Token-Drag:** `drag.controller` Ghost via `TokenCtl`, Commit → `logic.moveTokenTo(rc)` → `rebuildFromAnchors` + Persist in Tiles → Route neu gezeichnet.
+5. **Token-Drag:** `drag.controller` Ghost via `TokenCtl`, Commit → `logic.moveTokenTo(rc)` liest Route-Anker aus dem Store, rekonstruiert Token + Route über `store.set` und persistiert Tiles; der Store-Subscriber zeichnet unmittelbar neu.
 6. **RMB:** `contextmenue` prüft Dot-Kind, löscht nur `user` via `logic.deleteUserAt(idx)` → Brücke neu expandiert.
 7. **Playback:** `logic.play()` → `createPlayback` iteriert Route, lädt Terrain-Speed, animiert Token, persistiert Position und trimmt passierte Knoten. `pause()` stoppt Schleife.
-8. **Token-Initialisierung:** `logic.initTokenFromTiles()` lädt einmalig das `token_travel`-Flag, setzt Token-Position und legt Flag an, falls fehlend.
+8. **Token-Initialisierung:** `logic.initTokenFromTiles()` lädt einmalig das `token_travel`-Flag, rekonstruiert Token + Route via Store und legt Flag an, falls fehlend.
 
 ---
 
@@ -217,11 +217,11 @@ export type TravelLogic = {
 - Subscription auf den Store ruft `cfg.onChange` und `adapter.draw(route)`.
 - `handleHexClick` hängt neuen User-Punkt samt Auto-Segmenten an (Quelle = letzter User oder Token).
 - `moveSelectedTo` findet Nachbar-User, expandiert Segmente neu, ersetzt Autos, setzt `editIdx` auf neue Position.
-- `moveTokenTo` (asynchron) repositioniert Token (UI + Store), rebuildet Route per `rebuildFromAnchors` und persistiert in Tiles.
+- `moveTokenTo` (asynchron) liest Route-Anker aus dem Store, rekonstruiert Route + Token via `store.set` und persistiert in Tiles.
 - `deleteUserAt` entfernt nur `user`-Dots und baut Brücken neu.
 - `setTokenSpeed`, `play`, `pause` reichen an Store/Playback weiter.
 - `bindAdapter` erlaubt Layer-Neuaufbau (Adapter-Swap).
-- `initTokenFromTiles` lädt/persistiert Token-Startposition und zeigt Token an.
+- `initTokenFromTiles` lädt `token_travel`, aktualisiert Token + Route über den Store und legt das Flag an, falls fehlend.
 - `persistTokenToTiles` schreibt aktuelle Tokenposition (z. B. beim View-Close).
 
 ### `infra/adapter.ts`
