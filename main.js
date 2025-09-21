@@ -975,13 +975,13 @@ async function applyBrush(app, mapFile, center, opts, handles) {
 
 // src/apps/map-editor/terrain-brush/brush-options.ts
 function createBrushTool() {
-  let state2 = {
+  let state = {
     radius: 1,
     // UI zeigt 1 = nur Mitte
     terrain: "Wald",
     mode: "paint"
   };
-  const eff = () => Math.max(0, state2.radius - 1);
+  const eff = () => Math.max(0, state.radius - 1);
   let circle = null;
   return {
     id: "brush",
@@ -994,10 +994,10 @@ function createBrushTool() {
       const radiusInput = radiusRow.createEl("input", {
         attr: { type: "range", min: "1", max: "6", step: "1" }
       });
-      radiusInput.value = String(state2.radius);
+      radiusInput.value = String(state.radius);
       const radiusVal = radiusRow.createEl("span", { text: radiusInput.value });
       radiusInput.oninput = () => {
-        state2.radius = Number(radiusInput.value);
+        state.radius = Number(radiusInput.value);
         radiusVal.textContent = radiusInput.value;
         circle?.updateRadius(eff());
       };
@@ -1012,12 +1012,12 @@ function createBrushTool() {
           const opt = terrSelect.createEl("option", { text: t || "(leer)" });
           opt.value = t;
         }
-        if (TERRAIN_COLORS[state2.terrain] === void 0) state2.terrain = "";
-        terrSelect.value = state2.terrain;
+        if (TERRAIN_COLORS[state.terrain] === void 0) state.terrain = "";
+        terrSelect.value = state.terrain;
       };
       fillOptions();
       terrSelect.onchange = () => {
-        state2.terrain = terrSelect.value;
+        state.terrain = terrSelect.value;
       };
       const ref = ctx.app.workspace.on?.("salt:terrains-updated", fillOptions);
       const modeRow = root.createDiv({ cls: "sm-row" });
@@ -1025,9 +1025,9 @@ function createBrushTool() {
       const modeSelect = modeRow.createEl("select");
       modeSelect.createEl("option", { text: "Malen", value: "paint" });
       modeSelect.createEl("option", { text: "L\xF6schen", value: "erase" });
-      modeSelect.value = state2.mode;
+      modeSelect.value = state.mode;
       modeSelect.onchange = () => {
-        state2.mode = modeSelect.value;
+        state.mode = modeSelect.value;
       };
       return () => {
         if (ref) ctx.app.workspace.offref?.(ref);
@@ -1066,7 +1066,7 @@ function createBrushTool() {
       if (!file || !handles) return false;
       const raw = coordsInRadius(rc, eff());
       const targets = [...new Map(raw.map((k) => [`${k.r},${k.c}`, k])).values()];
-      if (state2.mode === "paint") {
+      if (state.mode === "paint") {
         const missing = targets.filter((k) => !handles.polyByCoord.has(`${k.r},${k.c}`));
         if (missing.length) handles.ensurePolys?.(missing);
       }
@@ -1074,7 +1074,7 @@ function createBrushTool() {
         ctx.app,
         file,
         rc,
-        { radius: eff(), terrain: state2.terrain, mode: state2.mode },
+        { radius: eff(), terrain: state.terrain, mode: state.mode },
         // Distanz reinschreiben
         handles
       );
@@ -1164,7 +1164,7 @@ async function saveMapAs(_app, file) {
 function mountMapEditor(app, host, init) {
   host.empty();
   Object.assign(host.style, { display: "flex", flexDirection: "column", height: "100%", gap: ".5rem" });
-  const state2 = { file: null, opts: null, handles: null, tool: null, cleanupPanel: null };
+  const state = { file: null, opts: null, handles: null, tool: null, cleanupPanel: null };
   const header = host.createDiv({ cls: "map-editor-header" });
   Object.assign(header.style, { display: "flex", flexDirection: "column", gap: ".4rem" });
   const r1 = header.createDiv();
@@ -1197,10 +1197,10 @@ function mountMapEditor(app, host, init) {
   const saveBtn = r2.createEl("button", { text: "Los" });
   applyMapButtonStyle(saveBtn);
   saveBtn.onclick = async () => {
-    if (!state2.file) return new import_obsidian5.Notice("Keine Karte ausgew\xE4hlt.");
+    if (!state.file) return new import_obsidian5.Notice("Keine Karte ausgew\xE4hlt.");
     try {
-      if (saveSelect.value === "save") await saveMap(app, state2.file);
-      else await saveMapAs(app, state2.file);
+      if (saveSelect.value === "save") await saveMap(app, state.file);
+      else await saveMapAs(app, state.file);
       new import_obsidian5.Notice("Gespeichert.");
     } catch (e) {
       console.error(e);
@@ -1240,60 +1240,60 @@ function mountMapEditor(app, host, init) {
   toolSelect.onchange = () => switchTool(toolSelect.value);
   const ctx = {
     app,
-    getFile: () => state2.file,
-    getHandles: () => state2.handles,
-    getOpts: () => state2.opts ?? { folder: "Hexes", prefix: "Hex", radius: 42 },
+    getFile: () => state.file,
+    getHandles: () => state.handles,
+    getOpts: () => state.opts ?? { folder: "Hexes", prefix: "Hex", radius: 42 },
     setStatus: (_msg) => {
     },
     refreshMap: async () => {
       await renderMap();
-      state2.tool?.onMapRendered?.(ctx);
+      state.tool?.onMapRendered?.(ctx);
     }
   };
   async function switchTool(id) {
-    if (state2.tool?.onDeactivate) state2.tool.onDeactivate(ctx);
-    state2.cleanupPanel?.();
+    if (state.tool?.onDeactivate) state.tool.onDeactivate(ctx);
+    state.cleanupPanel?.();
     const next = tools.find((t) => t.id === id) || tools[0];
-    state2.tool = next;
+    state.tool = next;
     toolSelect.value = next.id;
     optBody.empty();
-    state2.cleanupPanel = next.mountPanel(optBody, ctx);
+    state.cleanupPanel = next.mountPanel(optBody, ctx);
     if (next.onActivate) next.onActivate(ctx);
-    if (state2.handles && next.onMapRendered) next.onMapRendered(ctx);
+    if (state.handles && next.onMapRendered) next.onMapRendered(ctx);
   }
   async function renderMap() {
     mapPane.empty();
-    state2.handles?.destroy();
-    state2.handles = null;
-    if (!state2.file) {
+    state.handles?.destroy();
+    state.handles = null;
+    if (!state.file) {
       mapPane.createEl("div", { text: "Keine Karte ge\xF6ffnet." });
       return;
     }
-    const result = await renderHexMapFromFile(app, mapPane, state2.file);
+    const result = await renderHexMapFromFile(app, mapPane, state.file);
     if (!result) return;
-    state2.opts = result.options;
-    state2.handles = result.handles;
+    state.opts = result.options;
+    state.handles = result.handles;
     const hostDiv = result.host;
     hostDiv.addEventListener(
       "hex:click",
       (ev) => {
         const e = ev;
         e.preventDefault();
-        void state2.tool?.onHexClick?.(e.detail, ctx);
+        void state.tool?.onHexClick?.(e.detail, ctx);
       },
       { passive: false }
     );
   }
   async function refreshAll() {
-    nameBox.textContent = state2.file ? state2.file.basename : "\u2014";
-    optName.textContent = state2.file ? state2.file.basename : "\u2014";
+    nameBox.textContent = state.file ? state.file.basename : "\u2014";
+    optName.textContent = state.file ? state.file.basename : "\u2014";
     await renderMap();
-    if (!state2.tool) await switchTool(tools[0].id);
-    else await switchTool(state2.tool.id);
-    state2.tool?.onMapRendered?.(ctx);
+    if (!state.tool) await switchTool(tools[0].id);
+    else await switchTool(state.tool.id);
+    state.tool?.onMapRendered?.(ctx);
   }
   async function setFile(f) {
-    state2.file = f ?? null;
+    state.file = f ?? null;
     await refreshAll();
   }
   function setTool(id) {
@@ -1301,7 +1301,7 @@ function mountMapEditor(app, host, init) {
   }
   if (init?.mapPath) {
     const af = app.vault.getAbstractFileByPath(init.mapPath);
-    if (af instanceof import_obsidian5.TFile) state2.file = af;
+    if (af instanceof import_obsidian5.TFile) state.file = af;
   }
   void refreshAll();
   return {
@@ -1343,8 +1343,8 @@ var MapEditorView = class extends import_obsidian6.ItemView {
   getState() {
     return this._state;
   }
-  async setState(state2) {
-    this._state = state2 ?? {};
+  async setState(state) {
+    this._state = state ?? {};
     if (this._controller?.setFile && this._state.mapPath) {
       const af = this.app.vault.getAbstractFileByPath(this._state.mapPath);
       if (af instanceof import_obsidian6.TFile) await this._controller.setFile(af);
@@ -1793,9 +1793,11 @@ async function createMapLayer(app, host, mapFile, opts) {
 
 // src/apps/travel-guide/render/draw-route.ts
 function drawRoute(args) {
-  const { layer, route, centerOf, highlightIndex = null } = args;
+  const { layer, route, centerOf, highlightIndex = null, start = null } = args;
   while (layer.firstChild) layer.removeChild(layer.firstChild);
   const pts = [];
+  const startCtr = start ? centerOf(start) : null;
+  if (startCtr) pts.push(`${startCtr.x},${startCtr.y}`);
   const centers = route.map((n) => centerOf(n));
   for (const p of centers) if (p) pts.push(`${p.x},${p.y}`);
   if (pts.length >= 2) {
@@ -1841,8 +1843,8 @@ function createRouteLayer(svgRoot, centerOf) {
   const el = document.createElementNS("http://www.w3.org/2000/svg", "g");
   el.classList.add("tg-route-layer");
   svgRoot.appendChild(el);
-  function draw(route, highlightIndex = null) {
-    drawRoute({ layer: el, route, centerOf, highlightIndex });
+  function draw(route, highlightIndex = null, start) {
+    drawRoute({ layer: el, route, centerOf, highlightIndex, start });
   }
   function highlight(i) {
     updateHighlight(el, i);
@@ -2124,7 +2126,7 @@ function createSidebar(host, initialTitle) {
 
 // src/apps/travel-guide/domain/state.store.ts
 function createStore() {
-  let state2 = {
+  let state = {
     tokenRC: { r: 0, c: 0 },
     route: [],
     editIdx: null,
@@ -2133,24 +2135,24 @@ function createStore() {
     playing: false
   };
   const subs = /* @__PURE__ */ new Set();
-  const get = () => state2;
+  const get = () => state;
   const set = (patch) => {
-    state2 = { ...state2, ...patch };
-    emit2();
+    state = { ...state, ...patch };
+    emit();
   };
   const replace = (next) => {
-    state2 = next;
-    emit2();
+    state = next;
+    emit();
   };
   const subscribe = (fn) => {
     subs.add(fn);
-    fn(state2);
+    fn(state);
     return () => subs.delete(fn);
   };
-  const emit2 = () => {
-    for (const fn of subs) fn(state2);
+  const emit = () => {
+    for (const fn of subs) fn(state);
   };
-  return { get, set, replace, subscribe, emit: emit2 };
+  return { get, set, replace, subscribe, emit };
 }
 
 // src/apps/travel-guide/domain/expansion.ts
@@ -2265,7 +2267,7 @@ function createTravelLogic(cfg) {
   let adapter = cfg.adapter;
   const unsub = store.subscribe((s) => {
     cfg.onChange?.(s);
-    adapter.draw(s.route);
+    adapter.draw(s.route, s.tokenRC);
   });
   const playback = createPlayback({
     app: cfg.app,
@@ -2336,19 +2338,31 @@ function createTravelLogic(cfg) {
   };
   async function moveTokenTo(rc) {
     if (!adapter) return;
-    state.tokenRC = rc;
-    adapter.ensurePolys([rc]);
+    const prev = store.get();
+    const anchors = prev.route.filter((n) => n.kind === "user").map(({ r, c }) => ({ r, c }));
+    const route = rebuildFromAnchors(rc, anchors);
+    const routeCoords = route.map(({ r, c }) => ({ r, c }));
+    adapter.ensurePolys([rc, ...routeCoords]);
     const ctr = adapter.centerOf(rc);
     if (ctr) {
       adapter.token.setPos(ctr.x, ctr.y);
       adapter.token.show();
     }
-    const anchors = state.route.filter((n) => n.kind === "user").map(({ r, c }) => ({ r, c }));
-    state.route = rebuildFromAnchors(state.tokenRC, anchors);
+    let editIdx = prev.editIdx;
+    if (editIdx != null) {
+      const prevNode = prev.route[editIdx];
+      if (!prevNode) {
+        editIdx = null;
+      } else {
+        const matchIdx = route.findIndex(
+          (n) => n.kind === prevNode.kind && n.r === prevNode.r && n.c === prevNode.c
+        );
+        editIdx = matchIdx >= 0 ? matchIdx : null;
+      }
+    }
+    store.set({ tokenRC: rc, route, editIdx });
     const mapFile = cfg.getMapFile();
-    if (mapFile) await writeTokenToTiles(cfg.app, mapFile, state.tokenRC);
-    adapter.draw(state.route);
-    emit();
+    if (mapFile) await writeTokenToTiles(cfg.app, mapFile, rc);
   }
   const deleteUserAt = (idx) => {
     const s = store.get();
@@ -2382,16 +2396,32 @@ function createTravelLogic(cfg) {
   async function initTokenFromTiles() {
     const mapFile = cfg.getMapFile();
     if (!mapFile || !adapter) return;
+    const prev = store.get();
     const found = await loadTokenCoordFromMap(cfg.app, mapFile);
-    state.tokenRC = found ?? { r: 0, c: 0 };
-    adapter.ensurePolys([state.tokenRC]);
-    const ctr = adapter.centerOf(state.tokenRC);
+    const tokenRC = found ?? prev.tokenRC ?? { r: 0, c: 0 };
+    const anchors = prev.route.filter((n) => n.kind === "user").map(({ r, c }) => ({ r, c }));
+    const route = rebuildFromAnchors(tokenRC, anchors);
+    const routeCoords = route.map(({ r, c }) => ({ r, c }));
+    adapter.ensurePolys([tokenRC, ...routeCoords]);
+    const ctr = adapter.centerOf(tokenRC);
     if (ctr) {
       adapter.token.setPos(ctr.x, ctr.y);
       adapter.token.show();
     }
-    if (!found) await writeTokenToTiles(cfg.app, mapFile, state.tokenRC);
-    emit();
+    let editIdx = prev.editIdx;
+    if (editIdx != null) {
+      const prevNode = prev.route[editIdx];
+      if (!prevNode) {
+        editIdx = null;
+      } else {
+        const matchIdx = route.findIndex(
+          (n) => n.kind === prevNode.kind && n.r === prevNode.r && n.c === prevNode.c
+        );
+        editIdx = matchIdx >= 0 ? matchIdx : null;
+      }
+    }
+    store.set({ tokenRC, route, editIdx });
+    if (!found) await writeTokenToTiles(cfg.app, mapFile, tokenRC);
   }
   const persistTokenToTiles = async () => {
     const mf = cfg.getMapFile();
@@ -2434,7 +2464,7 @@ async function mountTravelGuide(app, host, file) {
   let isDestroyed = false;
   let loadChain = Promise.resolve();
   const handleStateChange = (s) => {
-    if (routeLayer) routeLayer.draw(s.route, s.editIdx ?? null);
+    if (routeLayer) routeLayer.draw(s.route, s.editIdx ?? null, s.tokenRC ?? null);
     sidebar.setTile(s.currentTile ?? s.tokenRC ?? null);
     sidebar.setSpeed(s.tokenSpeed);
   };
@@ -2497,7 +2527,7 @@ async function mountTravelGuide(app, host, file) {
     const adapter = {
       ensurePolys: (coords) => mapLayer.ensurePolys(coords),
       centerOf: (rc) => mapLayer.centerOf(rc),
-      draw: (route) => routeLayer.draw(route),
+      draw: (route, tokenRC) => routeLayer.draw(route, null, tokenRC),
       token: tokenLayer
     };
     logic = createTravelLogic({
@@ -2505,7 +2535,7 @@ async function mountTravelGuide(app, host, file) {
       baseMs: 900,
       getMapFile: () => currentFile,
       adapter,
-      onChange: (state2) => handleStateChange(state2)
+      onChange: (state) => handleStateChange(state)
     });
     handleStateChange(logic.getState());
     await logic.initTokenFromTiles();

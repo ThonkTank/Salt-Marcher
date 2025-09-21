@@ -49,7 +49,7 @@ export function createTravelLogic(cfg: {
     // UI-Callback koppeln
     const unsub = store.subscribe((s) => {
         cfg.onChange?.(s);
-        adapter.draw(s.route);
+        adapter.draw(s.route, s.tokenRC);
     });
 
     const playback = createPlayback({

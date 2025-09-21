@@ -10,14 +10,17 @@ export function drawRoute(args: {
     route: RouteNode[];
     centerOf: CtrFn;
     highlightIndex?: number | null;
+    start?: C | null;
 }) {
-    const { layer, route, centerOf, highlightIndex = null } = args;
+    const { layer, route, centerOf, highlightIndex = null, start = null } = args;
 
     // clear
     while (layer.firstChild) layer.removeChild(layer.firstChild);
 
     // collect points
     const pts: string[] = [];
+    const startCtr = start ? centerOf(start) : null;
+    if (startCtr) pts.push(`${startCtr.x},${startCtr.y}`);
     const centers: Array<{ x: number; y: number } | null> = route.map((n) => centerOf(n));
     for (const p of centers) if (p) pts.push(`${p.x},${p.y}`);
 

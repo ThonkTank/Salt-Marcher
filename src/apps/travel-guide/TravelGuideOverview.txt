@@ -79,7 +79,7 @@ export type TokenCtl = {
 export type RenderAdapter = {
   ensurePolys(coords: Coord[]): void;
   centerOf(rc: Coord): { x: number; y: number } | null;
-  draw(route: RouteNode[]): void;
+  draw(route: RouteNode[], tokenRC: Coord): void;
   token: TokenCtl;
 };
 ```
@@ -108,7 +108,7 @@ export type TravelLogic = {
 ## Datenfluss (kurz)
 
 1. **Mount:** `index.ts` erstellt im View `mountTravelGuide(app, host, file)`. Die Shell lädt Terrain-Daten, baut Map/Route/Token-Layer und instanziiert `createTravelLogic` (Basisdauer 900 ms).
-2. **Store-Abos:** `createTravelLogic` subscribed auf den Store. Jede Änderung triggert `adapter.draw(route)` und optionales `onChange` (View rendert Highlight).
+2. **Store-Abos:** `createTravelLogic` subscribed auf den Store. Jede Änderung triggert `adapter.draw(route, tokenRC)` und optionales `onChange` (View rendert Highlight).
 3. **Hex-Klick:** `map-layer` emittiert `hex:click` → `view-shell` ruft `logic.handleHexClick(rc)` → `expandCoords` erzeugt Autos → Store-Update → Route-Layer zeichnet neu.
 4. **Dot-Drag:** `drag.controller` zeigt Ghost (nur UI), `pointerup` → `logic.moveSelectedTo(rc)` → neue Segmente via `expandCoords` → Store-Update.
 5. **Token-Drag:** `drag.controller` Ghost via `TokenCtl`, Commit → `logic.moveTokenTo(rc)` liest Route-Anker aus dem Store, rekonstruiert Token + Route über `store.set` und persistiert Tiles; der Store-Subscriber zeichnet unmittelbar neu.
@@ -155,7 +155,7 @@ export type TravelLogic = {
 - `destroy()` ruft `handles.destroy?.()` sicher.
 
 ### `ui/route-layer.ts`
-- Erstellt `<g class="tg-route-layer">` im SVG und delegiert `draw(route, highlightIndex)` an `drawRoute`.
+- Erstellt `<g class="tg-route-layer">` im SVG und delegiert `draw(route, highlightIndex, tokenRC)` an `drawRoute`.
 - `highlight(i)` ruft `updateHighlight` (nur UI-Anpassung).
 - `destroy()` entfernt die Gruppe.
 
@@ -214,7 +214,7 @@ export type TravelLogic = {
 
 ### `domain/actions.ts`
 - `createTravelLogic` kapselt gesamten Domänenfluss: Store, Adapterbindung, Playback, Persistenz.
-- Subscription auf den Store ruft `cfg.onChange` und `adapter.draw(route)`.
+- Subscription auf den Store ruft `cfg.onChange` und `adapter.draw(route, tokenRC)`.
 - `handleHexClick` hängt neuen User-Punkt samt Auto-Segmenten an (Quelle = letzter User oder Token).
 - `moveSelectedTo` findet Nachbar-User, expandiert Segmente neu, ersetzt Autos, setzt `editIdx` auf neue Position.
 - `moveTokenTo` (asynchron) liest Route-Anker aus dem Store, rekonstruiert Route + Token via `store.set` und persistiert in Tiles.
@@ -229,7 +229,7 @@ export type TravelLogic = {
 - Keine Implementierung, reine Typen.
 
 ### `render/draw-route.ts`
-- `drawRoute({ layer, route, centerOf, highlightIndex })` leert Layer, zeichnet Polyline (falls ≥2 Punkte) und generiert Kreise pro Knoten (`user` größer/opaker als `auto`).
+- `drawRoute({ layer, route, centerOf, highlightIndex, start })` leert Layer, setzt den Token-Mittelpunkt als erstes Polyline-Segment (ohne zusätzlichen Dot), zeichnet anschließend die Route (falls ≥2 Punkte) und generiert Kreise pro Knoten (`user` größer/opaker als `auto`).
 - `updateHighlight(layer, highlightIndex)` setzt Stroke/Radius/Opacity für ausgewählten Dot.
 - Pointer-Events der Polyline deaktiviert, Dots behalten Pointer für Interaktion.
 
