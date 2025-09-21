@@ -116,6 +116,26 @@ export const HEX_PLUGIN_CSS = `
     margin: 0;
 }
 
+.sm-travel-guide__controls {
+    margin-top: 0.5rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.sm-travel-guide__controls .sm-tg-controls__inner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 10px;
+    padding: 0.5rem 0.75rem;
+}
+
+.sm-tg-controls__btn {
+    font-weight: 600;
+}
+
 .sm-travel-guide__body {
     display: flex;
     flex: 1 1 auto;

@@ -26,6 +26,7 @@ export type TravelLogic = {
     // Reise
     play(): Promise<void>;
     pause(): void;
+    reset(): Promise<void>;
     setTokenSpeed(v: number): void;
 
     // Adapterwechsel
@@ -228,6 +229,17 @@ export function createTravelLogic(cfg: {
         const play = async () => playback.play();
         const pause = () => playback.pause();
 
+        const reset = async () => {
+            playback.pause();
+            store.set({
+                route: [],
+                editIdx: null,
+                currentTile: null,
+                playing: false,
+            });
+            await initTokenFromTiles();
+        };
+
         // Token I/O ---------------------------------------------------------------
 
     async function initTokenFromTiles() {
@@ -287,6 +299,7 @@ export function createTravelLogic(cfg: {
                 deleteUserAt,
                 play,
                 pause,
+                reset,
                 setTokenSpeed,
                 bindAdapter,
                 initTokenFromTiles,
