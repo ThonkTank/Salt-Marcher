@@ -138,7 +138,7 @@ export type TravelLogic = {
 
 - `mountTravelGuide(app, host, file)` setzt den Host auf `.sm-travel-guide`, erzeugt Header + Body (Map-/Sidebar-Container) und führt das Karten-SVG über `createMapLayer` direkt in den linken Bereich ein. Der Header stammt aus `ui/map-header.ts`, verlinkt Öffnen/Erstellen mit `enqueueLoad` und erweitert den Save-Flow um `logic.persistTokenToTiles()`.
 - Lädt Terrain-Definitionen (`loadTerrains` → `setTerrains`) einmalig beim Mount.
-- Erstellt `routeLayer` auf `mapLayer.handles.contentG` (kamera-transformierte Content-Gruppe) und `tokenLayer` auf `mapLayer.handles.svg`, damit beide innerhalb des Renderer-SVG leben.
+- Erstellt `routeLayer` und `tokenLayer` gemeinsam auf `mapLayer.handles.contentG` (kamera-transformierte Content-Gruppe), damit Karte, Route und Token identisch gescaled/panned werden.
 - Instanziiert `createSidebar` im rechten Bereich, füllt Titel/Status/Schnelleingaben und verbindet `onSpeedChange` mit `logic.setTokenSpeed`.
 - Initialisiert `createTravelLogic` (Basisdauer 900 ms) mit einem `onChange`, der Route-Highlight, Sidebar-Tile (`currentTile ?? tokenRC`) und Speed synchronisiert.
 - `logic.initTokenFromTiles()` lädt/persistiert die Tokenposition; Hook wird nach dem Mount einmal manuell aufgerufen.
@@ -159,7 +159,7 @@ export type TravelLogic = {
 - `destroy()` entfernt die Gruppe.
 
 ### `ui/token-layer.ts`
-- Erstellt `<g class="tg-token">` inklusive Kreis, versteckt initial.
+- Erstellt `<g class="tg-token">` inklusive Kreis, versteckt initial, und hängt ihn direkt an das kamera-transformierte `contentG`.
 - Stellt `setPos`, `moveTo` (RAF-Animation, optional durations), `show`, `hide`, `destroy` bereit und erfüllt damit `TokenCtl`.
 - Lässt Pointer-Events aktiv (`cursor: grab`) für Drag-Start.
 
