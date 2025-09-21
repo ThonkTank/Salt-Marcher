@@ -60,11 +60,11 @@ export type ToolModule = {
 ## View-Lifecycle & Datenfluss
 
 1. **View-Initialisierung (`index.ts`):** `MapEditorView` leitet Obsidian-View-State (`mapPath`) an `mountMapEditor` weiter und speichert den vom UI zurückgegebenen Controller (`setFile`, `setTool`). `setState` synchronisiert spätere ViewState-Änderungen mit einer bereits gemounteten UI.
-2. **UI-Aufbau (`editor-ui.ts`):** Beim Mounten werden Header (Open/Create/Save), Optionspane und Map-Canvas erzeugt. `state` hält aktuelle Datei, Hex-Optionen, Renderer-Handles, aktives Tool sowie ein Cleanup des Toolpanels.
-3. **Dateiwechsel:** `setFile` aktualisiert `state.file`, lädt Hex-Block per `getFirstHexBlock`, parst Optionen (`parseOptions`) und rendert die Karte via `renderHexMap`. Renderer liefert `RenderHandles` inkl. Overlay, das Pointer-Events für Tools bereitstellt.
+2. **UI-Aufbau (`editor-ui.ts`):** Beim Mounten werden Header (Open/Create/Save), Optionspane und Map-Canvas erzeugt. Styling und Open/Create-Flows laufen über `ui/map-workflows.ts` (`applyMapButtonStyle`, `promptMapSelection`, `promptCreateMap`), sodass Editor und Galerie identische UX teilen. `state` hält aktuelle Datei, Hex-Optionen, Renderer-Handles, aktives Tool sowie ein Cleanup des Toolpanels.
+3. **Dateiwechsel:** `setFile` aktualisiert `state.file` und delegiert das eigentliche Rendering an `renderHexMapFromFile` (ebenfalls aus `ui/map-workflows.ts`). Die Utility kümmert sich um Hex-Block-Suche, Options-Parsing und `renderHexMap`, der wiederum `RenderHandles` inkl. Overlay liefert.
 4. **Toolwechsel:** `switchTool` ruft `onDeactivate`/`mountPanel`/`onActivate` auf dem Modul auf. Tools können DOM in `optBody` anlegen und via Cleanup wieder entfernen.
 5. **Interaktion:** Hex-Klicks werden im `renderHexMap`-Host auf `hex:click` geloggt und an das aktive Tool (`onHexClick`) delegiert. Tools entscheiden, ob das Event verarbeitet wurde (Rückgabewert `true`) und können über `ctx.refreshMap()` einen vollständigen Re-Render auslösen.
-6. **Speichern:** Dropdown `save`/`saveAs` ruft `saveMap` bzw. `saveMapAs` aus `core/save`. Neue Karten werden über `NameInputModal` + `createHexMapFile` erzeugt.
+6. **Speichern:** Dropdown `save`/`saveAs` ruft `saveMap` bzw. `saveMapAs` aus `core/save`. Neue Karten werden über `promptCreateMap` erstellt, das intern `NameInputModal` + `createHexMapFile` kombiniert und eine Erfolgs-Notice zeigt.
 7. **Terrain-Updates:** Tools können über `ctx.app.workspace.trigger("salt:terrains-updated")` oder den Terrain-Editor Farben aktualisieren; `editor-ui` reagiert durch Re-Render der Karte oder UI-Aktualisierung (z. B. Brush-Options `fillOptions`).
 
 ---
@@ -94,10 +94,10 @@ export type ToolModule = {
 - `setState` kann vor oder nach dem UI-Mount aufgerufen werden; lädt Karte nachträglich per `controller.setFile`.
 
 ### `editor-ui.ts`
-- Erstellt DOM-Struktur für Header (Open/Neuanlage/Speichern) und Body (Map-Canvas + Optionspane).
-- Verwaltert `state` für aktive Datei, Hex-Optionen (`parseOptions`), Renderer-Handles und aktuelles Tool.
+- Erstellt DOM-Struktur für Header (Open/Neuanlage/Speichern) und Body (Map-Canvas + Optionspane) und nutzt `ui/map-workflows.ts`, um Button-Styling sowie Open/Create-Prompts zu teilen.
+- Verwaltert `state` für aktive Datei, Hex-Optionen (über `renderHexMapFromFile`), Renderer-Handles und aktuelles Tool.
 - Stellt Controller `{ setFile, setTool }` bereit, der von `MapEditorView` genutzt wird.
-- Verantwortlich für `renderMap()` (Hex-Block finden, Renderer mounten, Hex-Klick → Tool weiterreichen).
+- Verantwortlich für `renderMap()` (Delegation an `renderHexMapFromFile`, danach Hex-Klick → Tool weiterreichen).
 
 ### `brush-circle.ts`
 - Erzeugt einen SVG-Kreis, der Pointer-Bewegungen im Overlay trackt (via `requestAnimationFrame`).

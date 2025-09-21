@@ -9,6 +9,12 @@ Der UI-Layer stellt kleine, wiederverwendbare Dialoge bereit, die mehreren Featu
 | `modals.ts` | Enthält generische Modals ohne Domänenlogik: <br>• `NameInputModal` fragt einen Kartennamen ab, fokussiert das Textfeld automatisch und akzeptiert `Enter` als Shortcut. <br>• `MapSelectModal` erweitert `FuzzySuggestModal`, um Karten (`TFile`) anhand des Dateinamens auszuwählen und gibt das Ergebnis über den Constructor-Callback weiter. | Wird z. B. vom Karten-Editor sowie der Galerie genutzt, um neue Karten anzulegen oder bestehende zu öffnen. |
 | `confirm-delete.ts` | `ConfirmDeleteModal` fordert den Nutzer auf, den Kartennamen zur Bestätigung einzugeben. Der Delete-Button zeigt ein Warning-Styling mit Icon; bei Erfolg/Fehler wird eine `Notice` angezeigt. | Zentraler Sicherheitsdialog für map-delete-Flows. |
 
+## Gemeinsame Map-Flows
+
+| Modul | Verantwortung | Notizen |
+| --- | --- | --- |
+| `map-workflows.ts` | Bündelt wiederkehrende UI-Schritte der Map-Features: <br>• `applyMapButtonStyle` vereinheitlicht das Flex-Layout der Buttons für Öffnen/Erstellen/Speichern. <br>• `promptMapSelection` kapselt `getAllMapFiles` + `MapSelectModal` inklusive Leerstands-Notice. <br>• `promptCreateMap` nutzt `NameInputModal` und `createHexMapFile` und meldet den Erfolg via `Notice`. <br>• `renderHexMapFromFile` übernimmt den Standard-Renderweg (`getFirstHexBlock` → `parseOptions` → `renderHexMap`) und stellt Fallback-Meldungen bereit. | Map Editor und Map Gallery greifen auf diese Utilities zurück, um identische UX und weniger duplizierten Code sicherzustellen. |
+
 ## Zusammenspiel mit Feature-Apps
 
 1. **Karten anlegen:** Features öffnen `NameInputModal`, um einen Titel zu sammeln und anschließend `createHexMapFile(...)` aus dem Core aufzurufen.
