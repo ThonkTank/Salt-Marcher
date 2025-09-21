@@ -4,7 +4,7 @@
 
 import type { App, TFile } from "obsidian";
 import { parseOptions } from "../../core/options";
-import { loadTerrains } from "../terrain-editor/terrain-store";
+import { loadTerrains } from "../../core/terrain-store";
 import { setTerrains } from "../../core/terrain";
 
 import type { RenderAdapter } from "../infra/adapter";

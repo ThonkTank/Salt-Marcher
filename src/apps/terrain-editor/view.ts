@@ -1,6 +1,6 @@
 // src/apps/terrain-editor/view.ts
 import { ItemView, WorkspaceLeaf } from "obsidian";
-import { loadTerrains, saveTerrains, watchTerrains, TERRAIN_FILE } from "./terrain-store";
+import { loadTerrains, saveTerrains, watchTerrains, TERRAIN_FILE } from "../../core/terrain-store";
 import { setTerrains } from "../../core/terrain";
 
 export const VIEW_TERRAIN_EDITOR = "salt-terrain-editor";

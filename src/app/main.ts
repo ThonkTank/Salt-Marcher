@@ -4,7 +4,7 @@ import { VIEW_TYPE_HEX_GALLERY, HexGalleryView } from "../apps/map-gallery";
 import { VIEW_TYPE_MAP_EDITOR, MapEditorView } from "../apps/map-editor";
 import { TerrainEditorView, VIEW_TERRAIN_EDITOR } from "../apps/terrain-editor/view";
 import { VIEW_TRAVEL_GUIDE, TravelGuideView } from "../apps/travel-guide";
-import { ensureTerrainFile, loadTerrains, watchTerrains } from "../apps/terrain-editor/terrain-store";
+import { ensureTerrainFile, loadTerrains, watchTerrains } from "../core/terrain-store";
 import { setTerrains } from "../core/terrain";
 import { HEX_PLUGIN_CSS } from "./css";
 

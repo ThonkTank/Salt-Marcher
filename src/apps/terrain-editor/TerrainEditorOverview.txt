@@ -3,7 +3,7 @@
 ## Zweck & Prinzipien
 
 - Der Terrain Editor pflegt die globale Terrain-Palette (`TERRAIN_COLORS`, `speed`) und schreibt Änderungen direkt in `SaltMarcher/Terrains.md`.
-- UI ist vollständig in `view.ts` implementiert und nutzt nur `terrain-store.ts` als Persistence-Schicht.
+- UI ist vollständig in `view.ts` implementiert und nutzt den Core-Service `core/terrain-store.ts` als Persistence-Schicht (via Re-Export `apps/terrain-editor/terrain-store.ts`).
 - Alle Änderungen lösen eine Aktualisierung der globalen Terrain-Registry (`setTerrains`) aus und informieren verbundene Komponenten (z. B. Map Editor) über das Workspace-Event `salt:terrains-updated`.
 
 ---
@@ -13,7 +13,7 @@
 ```
 src/apps/terrain-editor/
 ├─ view.ts                       # Obsidian-View (UI, State, Event-Wiring)
-├─ terrain-store.ts              # Persistenz + Watcher für Terrains.md
+├─ terrain-store.ts              # Re-Export → siehe `src/core/terrain-store.ts`
 └─ TerrainEditorOverview.txt     # Dieses Dokument
 ```
 
@@ -29,7 +29,7 @@ export const VIEW_TERRAIN_EDITOR = "salt-terrain-editor";
 
 - Wird von der Plugin-Registrierung genutzt, um die View anzulegen.
 
-### `terrain-store.ts`
+### `core/terrain-store.ts` (Re-Export via `apps/terrain-editor/terrain-store.ts`)
 
 ```ts
 export const TERRAIN_FILE = "SaltMarcher/Terrains.md";
@@ -68,12 +68,13 @@ export function watchTerrains(app: App, onChange: () => void): () => void;
 - Enthält UI-Helfer (`addRow`, `addBar`) und Methoden zur Mutation des lokalen State (`upsert`, `renameKey`, `remove`).
 - Jede Mutation ruft `commit` asynchron auf, damit Datei und globale Registry konsistent bleiben.
 
-### `terrain-store.ts`
+### `core/terrain-store.ts`
 - Sicherer Zugriff auf `Terrains.md` inklusive Erstellung fehlender Ordner.
 - `parseTerrainBlock` liest einen Markdown-Codeblock ```terrain``` und erzeugt Map `name -> { color, speed }`. Kommentare/Leerzeilen werden ignoriert.
 - `stringifyTerrainBlock` sortiert Einträge (leer zuerst, Rest alphabetisch) und liefert formatierten Codeblock.
 - `loadTerrains`/`saveTerrains` kapseln Vault-I/O und verwenden Parser/Stringifier.
 - `watchTerrains` registriert `modify`/`delete` Listener, ruft `setTerrains` und ein optionales Callback auf. Rückgabe schließt Listener wieder.
+- `src/apps/terrain-editor/terrain-store.ts` re-exportiert diese Funktionen für Legacy-Importe.
 
 ---
 
@@ -87,6 +88,6 @@ export function watchTerrains(app: App, onChange: () => void): () => void;
 
 ## Erweiterungshinweise
 
-- Erweiterungen (z. B. zusätzliche Attribute pro Terrain) sollten zuerst das Datenmodell in `terrain-store.ts` anpassen (Parser + Stringifier) und anschließend das UI in `view.ts` erweitern.
+- Erweiterungen (z. B. zusätzliche Attribute pro Terrain) sollten zuerst das Datenmodell in `core/terrain-store.ts` anpassen (Parser + Stringifier) und anschließend das UI in `view.ts` erweitern.
 - Für komplexere UIs kann `view.ts` in Unterkomponenten aufgeteilt werden; wichtig ist, dass `commit` weiterhin zentrale Persistenz-Stelle bleibt.
 - Bei neuen Events sollte das bestehende Workspace-Signal (`salt:terrains-updated`) weiter genutzt oder erweitert werden, damit andere Module konsistent informiert werden.
