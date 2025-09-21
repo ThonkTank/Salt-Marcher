@@ -1882,9 +1882,9 @@ function drawRoute(args) {
     dot.setAttribute("cx", String(ctr.x));
     dot.setAttribute("cy", String(ctr.y));
     dot.setAttribute("r", node.kind === "user" ? "5" : "4");
-    dot.setAttribute("fill", "var(--interactive-accent)");
-    dot.setAttribute("opacity", node.kind === "user" ? "1" : "0.55");
     dot.setAttribute("data-kind", node.kind);
+    dot.classList.add("tg-route-dot");
+    dot.classList.add(node.kind === "user" ? "tg-route-dot--user" : "tg-route-dot--auto");
     dot.style.pointerEvents = "auto";
     layer.appendChild(dot);
   });
@@ -1894,10 +1894,11 @@ function updateHighlight(layer, highlightIndex) {
   const dots = Array.from(layer.querySelectorAll("circle"));
   dots.forEach((el, idx) => {
     const isHi = highlightIndex != null && idx === highlightIndex;
+    el.classList.toggle("is-highlighted", isHi);
     el.setAttribute("stroke", isHi ? "var(--background-modifier-border)" : "none");
     el.setAttribute("stroke-width", isHi ? "2" : "0");
     el.setAttribute("r", isHi ? String(Number(el.getAttribute("r") || "4") + 2) : el.dataset.kind === "user" ? "5" : "4");
-    el.style.opacity = el.getAttribute("data-kind") === "user" ? isHi ? "1" : "1" : isHi ? "0.9" : "0.55";
+    el.style.removeProperty("opacity");
     el.style.cursor = "pointer";
   });
 }
@@ -1928,10 +1929,7 @@ function createTokenLayer(contentG) {
   contentG.appendChild(el);
   const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
   circle.setAttribute("r", "14");
-  circle.setAttribute("fill", "var(--color-accent)");
-  circle.setAttribute("opacity", "0.95");
-  circle.setAttribute("stroke", "var(--background-modifier-border)");
-  circle.setAttribute("stroke-width", "3");
+  circle.classList.add("tg-token__circle");
   el.appendChild(circle);
   let vx = 0, vy = 0;
   let rafId = null;
@@ -2583,10 +2581,10 @@ async function mountTravelGuide(app, host, file) {
     mapHost.empty();
   };
   const onHexClick = (ev) => {
+    if (drag?.consumeClickSuppression()) return;
+    if (!logic) return;
     if (ev.cancelable) ev.preventDefault();
     ev.stopPropagation();
-    if (!logic) return;
-    if (drag?.consumeClickSuppression()) return;
     const { r, c } = ev.detail;
     logic.handleHexClick({ r, c });
   };
@@ -2829,6 +2827,9 @@ var HEX_PLUGIN_CSS = `
 
 /* === Travel Guide === */
 .sm-travel-guide {
+    --tg-color-token: var(--color-purple, #9c6dfb);
+    --tg-color-user-anchor: var(--color-orange, #f59e0b);
+    --tg-color-auto-point: var(--color-blue, #3b82f6);
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -2880,6 +2881,36 @@ var HEX_PLUGIN_CSS = `
 .sm-travel-guide .sm-tg-map .hex3x3-map {
     max-width: none;
     height: 100%;
+}
+
+.sm-travel-guide .tg-token__circle {
+    fill: var(--tg-color-token);
+    opacity: 0.95;
+    stroke: var(--background-modifier-border);
+    stroke-width: 3;
+    transition: opacity 120ms ease;
+}
+
+.sm-travel-guide .tg-route-dot {
+    transition: opacity 120ms ease, r 120ms ease, stroke 120ms ease;
+}
+
+.sm-travel-guide .tg-route-dot--user {
+    fill: var(--tg-color-user-anchor);
+    opacity: 0.95;
+}
+
+.sm-travel-guide .tg-route-dot--auto {
+    fill: var(--tg-color-auto-point);
+    opacity: 0.55;
+}
+
+.sm-travel-guide .tg-route-dot--user.is-highlighted {
+    opacity: 1;
+}
+
+.sm-travel-guide .tg-route-dot--auto.is-highlighted {
+    opacity: 0.9;
 }
 
 .sm-travel-guide .sm-tg-sidebar {

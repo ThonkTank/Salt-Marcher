@@ -155,7 +155,7 @@ Alle Farbwerte lassen sich über die jeweiligen Custom Properties überschreiben
 - `logic.initTokenFromTiles()` lädt/persistiert die Tokenposition; Hook wird nach dem Mount einmal manuell aufgerufen.
 - Richtet Drag- & Kontextmenüs neu ein, sobald `setFile` eine Karte lädt; `setFile` returned ein `Promise` und serialisiert Ladevorgänge.
 - Der zurückgegebene `TravelGuideController` sorgt für Cleanup (Drag, Sidebar, Klassen) und akzeptiert `setFile`, um Karte, Titel und Route während der Laufzeit neu zu binden.
-- Unterdrückt das Default-Verhalten der `hex:click`-Events (`preventDefault`/`stopPropagation`), damit Obsidian keine Dash-Ansicht startet, bevor die Logik `handleHexClick` ausführt.
+- Prüft zuerst `drag.consumeClickSuppression()` und kehrt bei Drag-bedingter Unterdrückung früh zurück; nur echte Klicks rufen `preventDefault`/`stopPropagation` auf, damit Obsidian keine Dash-Ansicht startet, bevor die Logik `handleHexClick` ausführt.
 
 ### `ui/map-layer.ts`
 - Nutzt `renderHexMap` um das Kartensvg zu erzeugen, verwaltet `RenderHandles`.
