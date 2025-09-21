@@ -23,7 +23,7 @@ __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian13 = require("obsidian");
+var import_obsidian14 = require("obsidian");
 
 // src/apps/map-gallery.ts
 var import_obsidian9 = require("obsidian");
@@ -1817,7 +1817,7 @@ var TerrainEditorView = class extends import_obsidian11.ItemView {
 };
 
 // src/apps/travel-guide/index.ts
-var import_obsidian12 = require("obsidian");
+var import_obsidian13 = require("obsidian");
 
 // src/apps/travel-guide/ui/map-layer.ts
 var keyOf2 = (r, c) => `${r},${c}`;
@@ -2214,6 +2214,64 @@ function createSidebar(host, initialTitle) {
   };
 }
 
+// src/apps/travel-guide/ui/controls.ts
+var import_obsidian12 = require("obsidian");
+function createPlaybackControls(host, callbacks) {
+  const root = host.createDiv({ cls: "sm-travel-guide__controls" });
+  const inner = root.createDiv({ cls: "sm-tg-controls__inner" });
+  const playBtn = inner.createEl("button", {
+    cls: "sm-tg-controls__btn sm-tg-controls__btn--play",
+    text: "Play"
+  });
+  (0, import_obsidian12.setIcon)(playBtn, "play");
+  applyMapButtonStyle(playBtn);
+  playBtn.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    if (playBtn.disabled) return;
+    void callbacks.onPlay?.();
+  });
+  const pauseBtn = inner.createEl("button", {
+    cls: "sm-tg-controls__btn sm-tg-controls__btn--pause",
+    text: "Pause"
+  });
+  (0, import_obsidian12.setIcon)(pauseBtn, "pause");
+  applyMapButtonStyle(pauseBtn);
+  pauseBtn.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    if (pauseBtn.disabled) return;
+    void callbacks.onPause?.();
+  });
+  const resetBtn = inner.createEl("button", {
+    cls: "sm-tg-controls__btn sm-tg-controls__btn--reset",
+    text: "Reset"
+  });
+  (0, import_obsidian12.setIcon)(resetBtn, "rotate-ccw");
+  applyMapButtonStyle(resetBtn);
+  resetBtn.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    if (resetBtn.disabled) return;
+    void callbacks.onReset?.();
+  });
+  const setState = (state) => {
+    const hasRoute = state.route.length > 0;
+    playBtn.disabled = state.playing || !hasRoute;
+    pauseBtn.disabled = !state.playing;
+    resetBtn.disabled = !hasRoute && !state.playing;
+  };
+  setState({ playing: false, route: [] });
+  const destroy = () => {
+    playBtn.replaceWith();
+    pauseBtn.replaceWith();
+    resetBtn.replaceWith();
+    root.remove();
+  };
+  return {
+    root,
+    setState,
+    destroy
+  };
+}
+
 // src/apps/travel-guide/domain/state.store.ts
 function createStore() {
   let state = {
@@ -2483,6 +2541,16 @@ function createTravelLogic(cfg) {
   };
   const play = async () => playback.play();
   const pause = () => playback.pause();
+  const reset = async () => {
+    playback.pause();
+    store.set({
+      route: [],
+      editIdx: null,
+      currentTile: null,
+      playing: false
+    });
+    await initTokenFromTiles();
+  };
   async function initTokenFromTiles() {
     const mapFile = cfg.getMapFile();
     if (!mapFile || !adapter) return;
@@ -2527,6 +2595,7 @@ function createTravelLogic(cfg) {
     deleteUserAt,
     play,
     pause,
+    reset,
     setTokenSpeed,
     bindAdapter,
     initTokenFromTiles,
@@ -2554,12 +2623,14 @@ async function mountTravelGuide(app, host, file) {
   let unbindContext = () => {
   };
   let logic = null;
+  let playbackControls = null;
   let isDestroyed = false;
   let loadChain = Promise.resolve();
   const handleStateChange = (s) => {
     if (routeLayer) routeLayer.draw(s.route, s.editIdx ?? null, s.tokenRC ?? null);
     sidebar.setTile(s.currentTile ?? s.tokenRC ?? null);
     sidebar.setSpeed(s.tokenSpeed);
+    playbackControls?.setState({ playing: s.playing, route: s.route });
   };
   const cleanupInteractions = () => {
     unbindContext();
@@ -2606,8 +2677,10 @@ async function mountTravelGuide(app, host, file) {
     logic?.pause?.();
     logic = null;
     cleanupLayers();
+    playbackControls?.setState({ playing: false, route: [] });
     if (!nextFile) {
       sidebar.setSpeed(1);
+      playbackControls?.setState({ playing: false, route: [] });
       return;
     }
     mapLayer = await createMapLayer(app, mapHost, nextFile, opts);
@@ -2685,6 +2758,17 @@ async function mountTravelGuide(app, host, file) {
       return true;
     }
   });
+  playbackControls = createPlaybackControls(headerHost, {
+    onPlay: () => {
+      void logic?.play();
+    },
+    onPause: () => {
+      logic?.pause();
+    },
+    onReset: () => {
+      void logic?.reset();
+    }
+  });
   await enqueueLoad(file ?? null);
   const controller = {
     setFile(next) {
@@ -2697,6 +2781,8 @@ async function mountTravelGuide(app, host, file) {
       logic?.pause?.();
       logic = null;
       sidebar.destroy();
+      playbackControls?.destroy();
+      playbackControls = null;
       headerHandle?.destroy();
       headerHandle = null;
       host.classList.remove("sm-travel-guide");
@@ -2709,7 +2795,7 @@ async function mountTravelGuide(app, host, file) {
 // src/apps/travel-guide/index.ts
 var VIEW_TYPE_TRAVEL_GUIDE = "travel-guide-view";
 var VIEW_TRAVEL_GUIDE = VIEW_TYPE_TRAVEL_GUIDE;
-var TravelGuideView = class extends import_obsidian12.ItemView {
+var TravelGuideView = class extends import_obsidian13.ItemView {
   constructor(leaf) {
     super(leaf);
     this.controller = null;
@@ -2863,6 +2949,26 @@ var HEX_PLUGIN_CSS = `
     margin: 0;
 }
 
+.sm-travel-guide__controls {
+    margin-top: 0.5rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.sm-travel-guide__controls .sm-tg-controls__inner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 10px;
+    padding: 0.5rem 0.75rem;
+}
+
+.sm-tg-controls__btn {
+    font-weight: 600;
+}
+
 .sm-travel-guide__body {
     display: flex;
     flex: 1 1 auto;
@@ -2986,7 +3092,7 @@ var HEX_PLUGIN_CSS = `
 `;
 
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian13.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian14.Plugin {
   async onload() {
     this.registerView(VIEW_TYPE_HEX_GALLERY, (leaf) => new HexGalleryView(leaf));
     this.registerView(VIEW_TYPE_MAP_EDITOR, (leaf) => new MapEditorView(leaf));

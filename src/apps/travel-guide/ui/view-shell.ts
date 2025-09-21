@@ -15,6 +15,7 @@ import { createTokenLayer } from "./token-layer";
 import { createDragController } from "./drag.controller";
 import { bindContextMenu } from "./contextmenue";
 import { createSidebar } from "./sidebar";
+import { createPlaybackControls, type PlaybackControlsHandle } from "./controls";
 
 import { createMapHeader, type MapHeaderHandle } from "../../../ui/map-header";
 
@@ -54,6 +55,7 @@ export async function mountTravelGuide(
     let drag: ReturnType<typeof createDragController> | null = null;
     let unbindContext: () => void = () => {};
     let logic: ReturnType<typeof createTravelLogic> | null = null;
+    let playbackControls: PlaybackControlsHandle | null = null;
     let isDestroyed = false;
     let loadChain = Promise.resolve();
 
@@ -61,6 +63,7 @@ export async function mountTravelGuide(
         if (routeLayer) routeLayer.draw(s.route, s.editIdx ?? null, s.tokenRC ?? null);
         sidebar.setTile(s.currentTile ?? s.tokenRC ?? null);
         sidebar.setSpeed(s.tokenSpeed);
+        playbackControls?.setState({ playing: s.playing, route: s.route });
     };
 
     const cleanupInteractions = () => {
@@ -114,8 +117,11 @@ export async function mountTravelGuide(
 
         cleanupLayers();
 
+        playbackControls?.setState({ playing: false, route: [] });
+
         if (!nextFile) {
             sidebar.setSpeed(1);
+            playbackControls?.setState({ playing: false, route: [] });
             return;
         }
 
@@ -206,6 +212,18 @@ export async function mountTravelGuide(
         },
     });
 
+    playbackControls = createPlaybackControls(headerHost, {
+        onPlay: () => {
+            void logic?.play();
+        },
+        onPause: () => {
+            logic?.pause();
+        },
+        onReset: () => {
+            void logic?.reset();
+        },
+    });
+
     await enqueueLoad(file ?? null);
 
     const controller: TravelGuideController = {
@@ -219,6 +237,8 @@ export async function mountTravelGuide(
             logic?.pause?.();
             logic = null;
             sidebar.destroy();
+            playbackControls?.destroy();
+            playbackControls = null;
             headerHandle?.destroy();
             headerHandle = null;
             host.classList.remove("sm-travel-guide");
