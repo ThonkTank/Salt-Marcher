@@ -1,0 +1,37 @@
+# Core Overview
+
+Der Core-Layer bündelt sämtliche fachlichen Services des Plugins, die unabhängig von einer konkreten Obsidian-View arbeiten. Er liefert Utilities für Workspace-Layout, Dateiverwaltung, Hex-Geometrie, Rendering und Terrain-Paletten. Feature-Apps aus `src/apps/` greifen auf diese Module zu, um Maps zu erzeugen, zu rendern, zu laden und zu löschen.
+
+## Modul-Landkarte
+
+| Modul | Verantwortlichkeit |
+| --- | --- |
+| `layout.ts` | Liefert Helper zum Öffnen/Erstellen der passenden Workspace-Leaves (`getRightLeaf`, `getCenterLeaf`). |
+| `map-maker.ts` | Erstellt neue Karten-Dateien inklusive initialem `hex3x3`-Codeblock und legt direkt 3×3 leere Tiles an (`initTilesForNewMap`). Enthält Sanitizer/Unique-Path-Helfer. |
+| `map-list.ts` | Sammelt alle Markdown-Dateien mit Hex-Block, sortiert sie nach Änderungszeit und extrahiert den ersten Block für Optionen. Stellt `pickLatest(...)` als Utility bereit. |
+| `map-delete.ts` | Löscht eine Karte gemeinsam mit allen zugehörigen Tiles über `hex-notes`. |
+| `options.ts` | Parst Hex-Block-Optionen (`folder`, `prefix`, `radius`) in ein Typsicheres Objekt. |
+| `save.ts` | Placeholder für Persistenz-Funktionen (`saveMap`, `saveMapAs`) – dient als Erweiterungspunkt. |
+| `terrain.ts` | Verwaltet Standard- und Laufzeit-Terrainpaletten (Farben + Geschwindigkeiten) und bietet Mutatoren (`setTerrainPalette`, `setTerrains`). |
+
+### Hex-Mapper Subsystem (`hex-mapper/`)
+
+| Modul | Verantwortlichkeit |
+| --- | --- |
+| `hex-geom.ts` | Mathematische Utilities für Hex-Koordinaten (odd-r ↔ axial/cube, Distanz, Nachbarn, Pixel-Mapping, Polygonpunkte). |
+| `camera.ts` | Fügt SVG-Pan/Zoom-Kontrollen mit Wheel-Gesten und mittlerer Maustaste hinzu. |
+| `hex-notes.ts` | Organisiert Tile-Dateien: liest Optionen, erzeugt Folder/Dateinamen, migriert Legacy-Strukturen, liest/schreibt Frontmatter + Body. Bietet High-Level-APIs (`listTilesForMap`, `loadTile`, `saveTile`, `deleteTile`, `initTilesForNewMap`). |
+| `hex-render.ts` | Rendert Hex-Karten in ein SVG, färbt Tiles anhand `TERRAIN_COLORS`, verdrahtet Kamera und User-Interaction (Click-Dispatch, Brush-Drag). Gibt Handles (`setFill`, `ensurePolys`, `destroy`) zur Laufzeitsteuerung zurück. |
+| `hex-map.ts` | Aggregiert Exporte (`parseOptions`, `renderHexMap`, `getAllMapFiles`, `getFirstHexBlock`) als Einstiegsmodul für Renderer/Feature-Layer. |
+
+## Lebenszyklus & Zusammenspiel
+
+1. **Kartenerstellung:** Features rufen `createHexMapFile(...)` aus `map-maker.ts` auf. Der Hex-Block wird gebaut, die Datei in der Vault angelegt und Start-Tiles via `initTilesForNewMap` erzeugt.
+2. **Auflistung:** `map-list.ts` liefert Karten-Dateien (z. B. für Galerie/Selector) und stellt `getFirstHexBlock` bereit, um Render-Optionen zu lesen.
+3. **Rendering:** `renderHexMap(...)` erzeugt das SVG, lädt vorhandene Tiles (`hex-notes.ts`), setzt Kamera-Kontrollen (`camera.ts`) und färbt die Polygone mit Hilfe von `terrain.ts`.
+4. **Bearbeitung:** Feature-spezifische Tools verwenden die `RenderHandles` (`setFill`, `ensurePolys`) sowie Tile-APIs (`saveTile`, `deleteTile`) zur Aktualisierung.
+5. **Löschen:** `deleteMapAndTiles(...)` entfernt Karte + Tiles, wobei `hex-notes.ts` alle betroffenen Dateien identifiziert.
+6. **Workspace-Steuerung:** `layout.ts` stellt sicher, dass neue Views im gewünschten Leaf erscheinen.
+7. **Terrain-Pflege:** `terrain.ts` synchronisiert globale Paletten, damit Renderer und UI konsistent bleiben.
+
+Diese Aufteilung sorgt dafür, dass neue Features (`src/apps/`) auf konsistente, getestete Services zugreifen können, ohne Hex-spezifische Details neu implementieren zu müssen.
