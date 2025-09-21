@@ -38,7 +38,7 @@ src/
 - Verteilt Events/Handler an Feature-Layer und Core-Services.
 
 ### Feature-Apps (`src/apps/`)
-- **Map Gallery (`map-gallery.ts`):** Listet Karten mit SVG-Vorschau, nutzt Modals (`NameInputModal`, `ConfirmDeleteModal`) und Core-Helfer (`getAllMapFiles`, `renderHexMap`, `deleteMapAndTiles`).
+- **Map Gallery (`map-gallery.ts`):** Listet Karten mit SVG-Vorschau, nutzt gemeinsame UI-Flows (`promptMapSelection`, `promptCreateMap`, `renderHexMapFromFile`) sowie `ConfirmDeleteModal` und Core-Helfer (`deleteMapAndTiles`).
 - **Map Editor (`map-editor/`):** Liefert Tooling für Hex-Auswahl, Brush-Painting, Tile-Speicherung und Inspector-Views (Details siehe `MapEditorOverview.txt`).
 - **Terrain Editor (`terrain-editor/`):** Pflegt Farb- und Geschwindigkeits-Paletten, synchronisiert Änderungen mit `terrain.ts`.
 - **Travel Guide (`travel-guide/`):** Spielt Reiserouten auf Hex-Karten ab und nutzt Rendering/Geometrie aus dem Core.
@@ -50,8 +50,8 @@ src/
 - Ausführliche Beschreibung im [Core Overview](src/core/CoreOverview.txt).
 
 ### Geteilte UI-Bausteine (`src/ui/`)
-- `NameInputModal`, `MapSelectModal` und `ConfirmDeleteModal` kapseln wiederverwendbare Dialoge.
-- Reduzieren Boilerplate in Feature-Apps und sorgen für einheitliche UX.
+- `NameInputModal`, `MapSelectModal`, `ConfirmDeleteModal` und `map-workflows.ts` kapseln wiederverwendbare Dialoge und Map-spezifische Workflows (Button-Styling, Open/Create/Render).
+- Reduzieren Boilerplate in Feature-Apps und sorgen für einheitliche UX zwischen Galerie und Editor.
 - Details im [UI Overview](src/ui/UiOverview.txt).
 
 ### Styling & Build
@@ -59,8 +59,8 @@ src/
 - `manifest.json` definiert Plugin-ID/Version, `esbuild.config.mjs` + `tsconfig.json` stellen die Build-Pipeline für TypeScript sicher (`npm run build`).
 
 ## Typische Nutzerflüsse
-1. Anwender erstellt über Ribbon/Command eine neue Karte → `NameInputModal` sammelt den Namen, `createHexMapFile` legt Map + Tiles an, `MapEditorView` öffnet im Workspace.
-2. In der Galerie werden vorhandene Karten via `getAllMapFiles` gefunden und in SVGs gerendert; ein Klick startet den Editor oder öffnet zugehörige Tile-Notizen.
+1. Anwender erstellt über Ribbon/Command eine neue Karte → `promptCreateMap` sammelt den Namen (intern `NameInputModal` + `createHexMapFile`), legt Map + Tiles an und öffnet den Editor.
+2. In der Galerie werden vorhandene Karten via `promptMapSelection` gefunden und per `renderHexMapFromFile` in SVGs gerendert; ein Klick startet den Editor oder öffnet zugehörige Tile-Notizen.
 3. Terrain-Anpassungen werden im Terrain-Editor vorgenommen, der via Core `setTerrains` aktualisiert und sofort im Renderer wirksam macht.
 4. Travel-Routen greifen auf dieselben Hex-Geometrie- und Rendering-Bausteine zurück, um Bewegungen über Karten abzubilden.
 

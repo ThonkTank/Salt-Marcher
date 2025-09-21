@@ -1,10 +1,13 @@
 // src/apps/map-editor/editor-ui.ts
 import { App, TFile, Notice, setIcon } from "obsidian";
-import { NameInputModal, MapSelectModal } from "../../ui/modals";
-import { createHexMapFile } from "../../core/map-maker";
-import { getAllMapFiles, getFirstHexBlock } from "../../core/map-list";
-import { parseOptions, type HexOptions } from "../../core/options";
-import { renderHexMap, type RenderHandles } from "../../core/hex-mapper/hex-render";
+import { type HexOptions } from "../../core/options";
+import { type RenderHandles } from "../../core/hex-mapper/hex-render";
+import {
+    applyMapButtonStyle,
+    promptCreateMap,
+    promptMapSelection,
+    renderHexMapFromFile,
+} from "../../ui/map-workflows";
 import type { ToolModule, ToolContext } from "./tools-api";
 import { createBrushTool } from "./terrain-brush/brush-options";
 import { createInspectorTool } from "./inspektor/inspektor-options";
@@ -35,21 +38,19 @@ export function mountMapEditor(app: App, host: HTMLElement, init?: { mapPath?: s
     r1.createEl("h2", { text: "Map Editor" }).style.marginRight = "auto";
 
     const btnOpen = r1.createEl("button", { text: "Open Map" });
-    setIcon(btnOpen, "folder-open"); styleBtn(btnOpen);
-    btnOpen.onclick = async () => {
-        const files = await getAllMapFiles(app);
-        if (!files.length) return new Notice("Keine Karten gefunden.");
-        new MapSelectModal(app, files, async (f) => { await setFile(f); }).open();
+    setIcon(btnOpen, "folder-open");
+    applyMapButtonStyle(btnOpen);
+    btnOpen.onclick = () => {
+        void promptMapSelection(app, async (f) => { await setFile(f); });
     };
 
     const btnPlus = r1.createEl("button"); btnPlus.append(" ", "+");
-    setIcon(btnPlus, "plus"); styleBtn(btnPlus);
+    setIcon(btnPlus, "plus");
+    applyMapButtonStyle(btnPlus);
     btnPlus.onclick = () => {
-        new NameInputModal(app, async (name) => {
-            const f = await createHexMapFile(app, name);
-            new Notice("Karte erstellt.");
-            await setFile(f);
-        }).open();
+        promptCreateMap(app, async (file) => {
+            await setFile(file);
+        });
     };
 
     // Row 2: Dateiname | Dropdown: Speichern / Speichern als
@@ -62,7 +63,8 @@ export function mountMapEditor(app: App, host: HTMLElement, init?: { mapPath?: s
     const saveSelect = r2.createEl("select");
     saveSelect.createEl("option", { text: "Speichern" }).value = "save";
     saveSelect.createEl("option", { text: "Speichern als" }).value = "saveAs";
-    const saveBtn = r2.createEl("button", { text: "Los" }); styleBtn(saveBtn);
+    const saveBtn = r2.createEl("button", { text: "Los" });
+    applyMapButtonStyle(saveBtn);
     saveBtn.onclick = async () => {
         if (!state.file) return new Notice("Keine Karte ausgewählt.");
         try {
@@ -129,10 +131,6 @@ export function mountMapEditor(app: App, host: HTMLElement, init?: { mapPath?: s
     };
 
     /* ---------- Core-Funktionen ---------- */
-    function styleBtn(b: HTMLElement) {
-        Object.assign(b.style, { display: "flex", alignItems: "center", gap: ".4rem", padding: "6px 10px", cursor: "pointer" });
-    }
-
     async function switchTool(id: string) {
         if (state.tool?.onDeactivate) state.tool.onDeactivate(ctx);
         state.cleanupPanel?.();
@@ -158,21 +156,12 @@ export function mountMapEditor(app: App, host: HTMLElement, init?: { mapPath?: s
             return;
         }
 
-        const block = await getFirstHexBlock(app, state.file);
-        if (!block) {
-            mapPane.createEl("div", { text: "Kein hex3x3-Block in dieser Datei." });
-            return;
-        }
+        const result = await renderHexMapFromFile(app, mapPane, state.file);
+        if (!result) return;
 
-        const opts = parseOptions(block);
-        state.opts = opts;
-
-        const hostDiv = mapPane.createDiv({ cls: "hex3x3-container" });
-        Object.assign(hostDiv.style, { width: "100%", height: "100%" });
-
-        // Render & Handles
-        const handles = await renderHexMap(app, hostDiv, opts, state.file.path);
-        state.handles = handles;
+        state.opts = result.options;
+        state.handles = result.handles;
+        const hostDiv = result.host;
 
         // Hex-Klick zentral → ans aktive Tool weiterreichen
         hostDiv.addEventListener(
