@@ -1,285 +1,82 @@
 # SaltMarcher – Overview
 
+## Architektur in Kürze
+
+- **Plugin-Einstieg:** `src/app/main.ts` registriert Views, Commands und Ribbons, lädt CSS sowie Terrain-Palette und räumt beim Unload alles auf.
+- **Feature-Schicht:** Unter `src/apps/` liegen die Obsidian-Views. Jeder Feature-Ordner bringt ein eigenes Architektur-Dokument (`*Overview.txt`) mit.
+- **Core-Services:** `src/core/` kapselt Hex-Mathematik, Dateiverwaltung und Terrain-Daten als wiederverwendbare Dienste.
+- **UI-Bausteine:** `src/ui/` enthält generische Modals/Bestätigungsdialoge, die von mehreren Features genutzt werden.
+- **Styling:** `src/app/css.ts` bündelt sämtliches Plugin-CSS in einem Template-String und wird zentral injiziert.
+
 ```
 src/
 ├─ app/
-│  ├─ main.ts                # Bootstrapping: Views (Gallery/Editor/Terrain/Travel), Ribbons, Commands, CSS
-│  └─ css.ts                 # Zentrales Styling (Map, Gallery, Terrain-Editor, Travel-Guide)
+│  ├─ main.ts                # Plugin-Bootstrap
+│  └─ css.ts                 # Zentrales Styling
 │
 ├─ apps/
-│  ├─ map-editor/            # Hex-Map-Editor
-│  │  ├─ index.ts            # View-Wrapper
-│  │  ├─ editor-ui.ts        # Editor-Shell (Tools, Panels, hex:click-Routing)
-│  │  ├─ brush-circle.ts     # Brush-Vorschaukreis (Radius)
-│  │  ├─ tools-api.ts        # Tool-Schnittstelle (ToolModule/Context)
-│  │  ├─ terrain-brush/
-│  │  │  ├─ index.ts
-│  │  │  ├─ brush.ts         # Anwenden (paint/erase), Live-Färbung
-│  │  │  ├─ brush-math.ts    # Odd-r Distanz/Radius
-│  │  │  └─ brush-options.ts # Options-Panel (Radius, Terrain, Modus; live Palette)
-│  │  └─ inspektor/
-│  │     ├─ index.ts
-│  │     ├─ inspektor.ts
-│  │     └─ inspektor-options.ts
-│  ├─ map-gallery.ts         # Kartenübersicht (rechter Leaf)
-│  ├─ terrain-editor/
-│  │  ├─ terrain-store.ts    # Terrains.md I/O + Watch (Name, color, speed)
-│  │  └─ view.ts             # Terrain-Editor-View (CRUD, live Broadcast)
-│  └─ travel-guide/
+│  ├─ map-gallery.ts         # Kartenübersicht (einzelne Datei)
+│  ├─ map-editor/            # Hex-Editor – siehe MapEditorOverview.txt
+│  ├─ terrain-editor/        # Terrain-Palette – siehe TerrainEditorOverview.txt
+│  └─ travel-guide/          # Reiseplanung – siehe TravelGuideOverview.txt
 │
-├─ core/
-│  ├─ hex-mapper/
-│  │  ├─ camera.ts           # Pan (MMB) / Wheel-Zoom
-│  │  ├─ hex-geom.ts         # Hex-Punkte
-│  │  ├─ hex-map.ts          # Barrel-Exports
-│  │  ├─ hex-notes.ts        # Tile I/O (md) – load/save/list/delete
-│  │  └─ hex-render.ts       # SVG-Render, zentraler svg.click, Drag-Malen, ensurePolys
-│  ├─ layout.ts              # getCenterLeaf / getRightLeaf
-│  ├─ map-list.ts            # Karten finden + ersten hex3x3-Block lesen
-│  ├─ map-maker.ts           # Neue Map + initiale 3×3 Tiles
-│  ├─ map-delete.ts          # Karte + Tiles löschen
-│  ├─ options.ts             # parseOptions (hex3x3)
-│  └─ terrain.ts             # Defaults + live TERRAIN_COLORS/SPEEDS, setTerrainPalette, setTerrains
-│
-└─ ui/
-   ├─ confirm-delete.ts      # Sicherheitsdialog
-   └─ modals.ts              # NameInputModal, MapSelectModal
-
+├─ core/                     # Hex-Engine, Map/Terrain-Services, Map-Erstellung/-Löschung
+└─ ui/                       # Wiederverwendbare Modals & Dialoge
 ```
 
-### Verantwortungen
+---
 
-- app/main.ts
-  Zweck: Bootstrapping des Plugins: Views registrieren, Terrain-Palette laden/watchen, Commands & Ribbons, CSS injizieren.
-  Views: `HexGalleryView`, `MapEditorView`, `TerrainEditorView`, `TravelGuideView`.
-  Terrain: `ensureTerrainFile()` → `loadTerrains()` → `setTerrains()`; `watchTerrains()` hält Palette aktuell (UI reagiert über salt:terrains-updated`).
-  Ribbons: Gallery (`images`), Terrain-Editor (`palette`), Travel-Guide (`rocket`).
-  Commands: `open-map-editor`, `open-terrain-editor`, `open-travel-guide`.
-  CSS: `injectCss()` lädt `HEX_PLUGIN_CSS`; `removeCss()` beim Unload.
-  Cleanup: `onunload()` entfernt Terrain-Watcher und CSS.
+## Plugin-Lifecycle (`src/app/`)
 
-- src/apps/map-gallery.ts
-  Implementiert die „Map Gallery“ als Obsidian-ItemView:
-  - View & State: Verwaltet `currentFile`, rendert Kopfbereich + Karten-Vorschau, `setFile()` und `refreshViewer()` für Updates.
-  - Header-Aktionen: Open Map (MapSelectModal), Neue Karte (NameInputModal → createHexMapFile), Öffnen in (Map Editor / Travel Guide), Papierkorb (ConfirmDeleteModal → `deleteMapAndTiles`).
-  - Viewer: Liest ersten `hex3x3`-Block (`getFirstHexBlock` + `parseOptions`) und zeigt die Karte per `renderHexMap`.
-  - Navigation: Öffnet ausgewählte Map im Map Editor (Center leaf) oder Travel Guide (Right leaf).
-  - UI-Helpers: `btnStyle()` und `toggleButton()` für einfache Button-States.
+- **`main.ts`**
+  - Registriert die Views `MapEditorView`, `HexGalleryView`, `TerrainEditorView` und `TravelGuideView`.
+  - Richtet Commands (`open-map-editor`, `open-terrain-editor`, `open-travel-guide`) sowie passende Ribbon-Icons ein.
+  - Lädt Terrain-Daten (`ensureTerrainFile → loadTerrains → setTerrains`) und beobachtet Änderungen via `watchTerrains`.
+  - Integriert das zentrale CSS (`injectCss`) und sorgt beim Unload für Cleanup (Watcher, CSS, Event-Refs).
+- **`css.ts`** bündelt das Styling für Karten, Editor-UI, Terrain-Editor und Travel-Guide. Renderer setzen Farben inline; CSS kümmert sich um Layout, Hover-Zustände und Animationen.
 
-- src/apps/map-editor/editor-ui.ts
-  Tool-agnostische Editor-Shell für den Map-Editor.
-  - Rendert die Karte via `renderHexMap`, hält `RenderHandles` & `HexOptions`.
-  - Registriert/verwaltet Tools (z. B. Brush, Inspektor) als `ToolModule` ohne Tool-Logik im Editor.
-  - Stellt `ToolContext` bereit: `{ app, getFile, getHandles, getOpts, setStatus, refreshMap }`.
-  - Routet `hex:click` an das aktive Tool; kümmert sich um `onActivate/onDeactivate/onMapRendered` und Panel-Mount.
-  - Header-Aktionen: Map öffnen/neu anlegen, speichern/“speichern als”.
-  - Öffentliche API: `setFile`, `setTool`.
+---
 
-- src/apps/map-editor/index.ts
-  - Definiert die View-Klasse `MapEditorView` für den zentralen Leaf.
-  - Verknüpft die Editor-UI (aus `editor-ui.ts`) mit dem Obsidian-View-System.
-  - Sorgt dafür, dass beim Öffnen der View der aktuelle State (`mapPath`) an den Editor übergeben wird.
-  - Unterstützt spätere Aktualisierung des States über `setState`, auch wenn die UI schon gemountet ist.
-  Struktur:
-  - VIEW_TYPE_MAP_EDITOR: Konstanter Identifier für diesen View-Typ.
-  - MapEditorView:
-    - `onOpen()`: Rendert den Editor, liest den initialen ViewState aus und mountet die UI.
-    - `onClose()`: Optionaler Cleanup, z.B. Event-Handler entfernen oder Speicher freigeben.
-    - `getState()`: Liefert den aktuellen State (`mapPath`), damit Obsidian den Zustand serialisieren kann.
-    - `setState()`: Aktualisiert den State und synchronisiert, falls die UI bereits läuft.
-  - Controller-Schnittstelle: Erlaubt UI-Updates nach dem Mount, z.B. Karte wechseln (`setFile`) oder Tool umstellen (`setTool`).
-  Wichtige Punkte:
-  - Verhindert Race Conditions, wenn Obsidian den State verzögert setzt.
-  - Ermöglicht externes Öffnen des Editors mit einer bestimmten Karte aus der Galerie (`mapPath`).
-  - Saubere Trennung zwischen View-Wrapper (Lifecycle, State) und UI-Logik (editor-ui.ts).
+## Feature-Apps (`src/apps/`)
 
-- src/apps/map-editor/tools-api.ts
-  Gemeinsame Schnittstelle für Editor-Tools; hält `editor-ui` generisch.
-  - `ToolContext`: `{ app, getFile, getHandles, getOpts, setStatus, refreshMap? }` – liefert Umgebung & optionalen Re-Render.
-  - `ToolModule`: `{ id, label, mountPanel, onActivate?, onDeactivate?, onMapRendered?, onHexClick? }` – Standard-Lifecycle & Event-Hook (gibt `true` zurück, wenn Klick handled ist).
+- **Map Gallery (`map-gallery.ts`)**
+  - Stellt eine Obsidian-`ItemView` dar, die Karten auflistet, Vorschaurender zeigt und Aktionen wie Öffnen, Löschen oder Erstellen bereitstellt.
+  - Nutzt Core-Helfer (`getFirstHexBlock`, `renderHexMap`, `deleteMapAndTiles`) und Modals aus `src/ui/`.
 
+- **Map Editor (`map-editor/`)**
+  - Interaktiver Hex-Editor mit Tool-System, Brush-Preview und Tile-Persistenz.
+  - Detaillierte Architektur inklusive Tool-APIs, Lifecycle und Modulaufteilung in `src/apps/map-editor/MapEditorOverview.txt`.
 
-- src/apps/map-editor/terrain-brush/brush.ts
-  Anwenden des Terrain-Brushes auf die Map.
-  - `applyBrush(app, mapFile, center, opts, handles)`
-    - paint (default): erzeugt/aktualisiert Tiles per `saveTile`, färbt Hexe live über `handles.setFill`.
-    - erase (`opts.mode:"erase"`): löscht Tiles per `deleteTile`, setzt Fill auf transparent.
-  - Nutzt `coordsInRadius` (brush-math) zur Bestimmung der betroffenen Koordinaten.
-  - Bindeglied zwischen Daten (Tile-I/O) und Renderer (Füllfarbe).
+- **Terrain Editor (`terrain-editor/`)**
+  - Verwaltungsoberfläche für Farben und Reisegeschwindigkeiten der Terrain-Palette.
+  - Verantwortlichkeiten, Datenfluss und Store-Logik sind in `src/apps/terrain-editor/TerrainEditorOverview.txt` beschrieben.
 
-- src/apps/map-editor/brush-circle.ts
-  Terrain-UI: Select befüllt aus `TERRAIN_COLORS`; Button „Bearbeiten…“ öffnet den Terrain-Editor (`salt-marcher:open-terrain-editor`).
-    Live-Update via Workspace-Event `salt:terrains-updated` → `fillOptions()`; Cleanup mit `offref` im Disposer.
-  Radius-Logik: Slider 1..6 → eff() = radius − 1 (Hex-Distanz). Vorschaukreis wird mit `circle.updateRadius(eff())` aktualisiert.
-  Modus: `paint | erase` per Dropdown.
-  Lifecycle:
-    - `onActivate`/`onMapRendered`: Brush-Kreis neu anbinden (`attachBrushCircle` mit `initialRadius: eff()`), `onDeactivate`: `destroy()`.
-  Malen: `onHexClick` → Ziele per `coordsInRadius(rc, eff())` deduplizieren; bei paint fehlende Polys zuerst `ensurePolys(missing)`, dann `applyBrush(...)`.
-    `return true` verhindert das Default-Öffnen der Note.
+- **Travel Guide (`travel-guide/`)**
+  - Visualisiert und animiert Reiserouten über Hex-Karten inklusive Token-Playback.
+  - Domänenmodell, Rendering-Layer und Persistenzschnittstellen werden in `src/apps/travel-guide/TravelGuideOverview.txt` erläutert.
 
+---
 
-- src/apps/map-editor/terrain-brush/brush-math.ts
-  Mathe-Utils fürs Brush-Tool (odd-r Grid).
-  - hexDistanceOddR(a, b): Hex-Distanz über Axial-Konvertierung.
-  - coordsInRadius(center, radius): Alle Koordinaten im inklusiven Radius; sortiert nach Distanz → r → c.
+## Core-Services (`src/core/`)
 
-- src/apps/map-editor/inspektor/inspektor-options.ts
-  Implementiert das Inspektor-Tool als `ToolModule`.
-  - `createInspectorTool()`: liefert ein Tool mit Panel und Hex-Interaktion.
-    - UI: Terrain-Dropdown (aus `TERRAIN_COLORS`), Notiz-Textarea.
-    - Lifecycle:
-      - `onHexClick`: setzt aktuelle Auswahl, lädt Tile-Daten via `loadTile`, füllt UI, aktiviert Eingaben.
-      - Eingaben werden verzögert gespeichert (`saveTile`, debounce), Renderer-Fill wird live über `handles.setFill` aktualisiert.
-    - Cleanup: entfernt Panel-Inhalte und Timer.
-  - Kapselt Inspektor-spezifische Logik (lesen/schreiben einzelner Tiles), sodass `editor-ui` generisch bleibt.
+- **Hex Mapper (`hex-mapper/`):** Liefert Geometrie (`hex-geom`), Rendering (`hex-render`), Kamera-Steuerung (`camera`) und Tile-I/O (`hex-notes`). Diese Module kapseln sämtliche low-level Hex-Operationen und SVG-Manipulationen.
+- **Map Management:**
+  - `map-list.ts` findet Karten-Dateien, extrahiert Hex-Optionen und stellt `MapSelectModal` zur Verfügung.
+  - `map-maker.ts` erzeugt neue Karten inkl. initialem Tile-Satz und Dateinamen-Sanitizing.
+  - `map-delete.ts` entfernt Karten samt zugehöriger Tiles robust.
+- **Layout Utilities (`layout.ts`):** Wählt passende Obsidian-Leaves (z. B. rechter Leaf für Travel Guide) und abstrahiert Workspace-Handling.
+- **Terrain-Verwaltung (`terrain.ts`):** Hält globale Farb- und Geschwindigkeits-Maps aktuell (`setTerrains`, `setTerrainPalette`) und stellt Defaults bereit.
 
-- src/apps/terrain-editor/terrain-store.ts
-  Zweck: Liest/schreibt die Terrain-Palette in `SaltMarcher/Terrains.md` und hält sie global aktuell.
-  Format: Erster \`\`\`terrain-Codeblock, Zeilen `Name: #farbe[, speed: Zahl]`. Leeres Terrain via `: …` (immer `transparent`, `speed: 1`).
-  APIs:
-    - `ensureTerrainFile(app)`: Datei/Folders anlegen, Defaults inkl. `speed`.
-    - `parseTerrainBlock(md)`: Markdown → `{ name: { color, speed } }` (fehlende `speed` ⇒ `1`).
-    - `stringifyTerrainBlock(map)`: Objekt → Codeblock (leeres Terrain zuerst, Rest alphabetisch).
-    - `loadTerrains(app)`, `saveTerrains(app, map)`: I/O.
-    - `watchTerrains(app, onChange)`: Beobachtet Änderungen, ruft `setTerrains(map)` und triggert `salt:terrains-updated`.
-  Kompatibel: Alte Dateien ohne `speed` werden korrekt interpretiert (Default `1`).
+---
 
-- src/apps/terrain-editor/view.ts
-  Zweck: Obsidian-View „Terrain Editor“ zum Verwalten von Terrains.
-  Daten: Lädt/schreibt `SaltMarcher/Terrains.md` via `terrain-store` und setzt globale Palette mit `setTerrains(...)`.
-  Kompatibilität: Akzeptiert alte Paletten (`name → color`) und normalisiert zu `{ color, speed }` (Speed-Default = 1).
-  UI: Zeilenliste mit Inputs für Name, Farbe (Color-Picker) und Reisegeschwindigkeit (Number). Erste Zeile ist das leere Terrain (`""`).
-  Aktionen: `upsert`, `renameKey`, `remove` ändern lokalen State, `commit()` speichert und broadcastet `salt:terrains-updated`.
-  Live-Updates: `watchTerrains(...)` lädt Änderungen von Disk nach und rendert neu.
-  Exports: `VIEW_TERRAIN_EDITOR`, `TerrainEditorView`.
+## Geteilte UI-Bausteine (`src/ui/`)
 
-- src/core/hex-mapper/camera.ts
-  - `attachCameraControls(svg, contentG, {minScale,maxScale,zoomSpeed}, extraTargets?)`
-  - MMB‑Pan, Wheel‑Zoom zum Cursor, `touch-action:none`, Cleanup‑Return.
+- **`modals.ts`** bietet `NameInputModal` (neue Karten) und `MapSelectModal` (Kartenwahl) für mehrere Features.
+- **`confirm-delete.ts`** stellt einen Sicherheitsdialog zum Löschen von Karten bereit (Name zur Bestätigung, visuelles Warning).
 
-- src/core/hex-mapper/hex-geom.ts
-  Zweck: Zentrale Hex-Mathe & Geometrie für pointy-top, odd-r Grids. Single-source of truth für Renderer & Routing.
-  Exporte (Kern): Typen Coord|Axial|Cube; Konvertierungen oddr↔axial↔cube; Distanz cubeDistance/oddrDistance; Interp/Rundung cubeLerp/cubeRound; Nachbarn neighborsOddR; Linie lineOddR (schrittweise Nachbar-Route).
-  Pixel-Mapping: axialToPixel, oddrToPixel, pixelToAxial, pixelToOddr.
-  Rendering-Helper: hexPolygonPoints, hexPolygonPointsAtOddr.
-  Konventionen: size = Hex-Radius; Koordinaten {r,c} 0-basiert; reine, seiteneffektfreie Funktionen.
+---
 
-- src/core/hex-mapper/hex-render.ts
-  Zweck: Rendert die Hex-Map (SVG-Polygone + Labels), verwaltet `viewBox/overlay`, Pan/Zoom und Live-Färbung.
-  Init: Zeichnet nur existierende Tiles; leere Maps → 3×3-Fallback. `ensureViewCovers(...)` setzt/erweitert `viewBox` & `overlay`.
-  Färbung: `setFill({r,c}, color)` nutzt inline `style.fill`/`fillOpacity` und toggelt `data-painted` (Theme/CSS kann Farbe nicht überschreiben).
-  Erzeugung: `addHex(r,c)` erstellt Polygon+Label, setzt Basis-Styles und registriert in `polyByCoord`.
-  Interaktion: Ein zentraler `svg`-Click rechnet Screen→Hex (`pointToCoord`) und dispatcht cancelable `"hex:click"`. Wenn nicht gecancelt → Default-Open (`saveTile(...)` + Note öffnen).
-  Drag-Malen: `pointerdown` → prüft per `"hex:click"`, ob der Editor cancelt; nur dann Malmode aktiv. `pointermove` (rAF-throttled) sendet weitere `"hex:click"` für neue Zellen (Entdoppelung via `visited`). `pointerup/cancel` räumt auf.
-  API (`RenderHandles`): `svg`, `contentG`, `overlay`, `polyByCoord`, `setFill`, `ensurePolys` (fehlende Polys + ViewBox-Grow), `destroy()`.
-  Wichtig: Editor-Listener muss `"hex:click"` sofort `preventDefault()` rufen; sonst greift der Default-Open-Pfad.
+## Manifest & Build
 
-
-
-- `src/core/hex-mapper/hex-notes.ts`
-  Zentrale Tile-I/O (Markdown je Hex): Erzeugen, Laden, Aktualisieren, Löschen und Auflisten von Tiles inkl. sofortiger Sichtbarkeit im Editor.
-  - Dateinamen (neu, kollisionsfrei): `"<KartenName>-<r>,<c>.md"` via `fileNameForMap(...)`. Migration von Legacy-Namen (`"Prefix r,c.md"` / `"Prefix-rX-cY.md"`) passiert automatisch in `resolveTilePath(...)`.
-  Frontmatter:
-  - `type: "hex"`, `row`, `col`, `map_path`, `terrain`. Body enthält optionalen Backlink und Notiztext.
-  Robust gegen Cache-Lags: `listTilesForMap(...)` scannt `app.vault.getFiles()` im Zielordner und nutzt Fallback-Parser (`fmFromFile`) falls `metadataCache` noch leer ist → Änderungen erscheinen ohne Reload.
-  Exports (Kern-API):
-  - `listTilesForMap(app, mapFile)` → `{coord,file,data}`\[]
-  - `loadTile(app, mapFile, coord)` → `TileData|null`
-  - `saveTile(app, mapFile, coord, data)` → `TFile` (legt Ordner/Datei an, aktualisiert FM/Body)
-  - `deleteTile(app, mapFile, coord)` → `void`
-  - `initTilesForNewMap(app, mapFile)` → erzeugt 3×3 Start-Tiles (leer)
-  Sonstiges: `buildMarkdown(...)` setzt den sichtbaren Titel mit dem konfigurierten `folderPrefix`; Ordner wird bei Bedarf in `ensureFolder(...)` angelegt.
-
-- src/core/hex-mapper/hex-render.ts
-  - Zweck: SVG-Render der Hex-Map (Polygone+Labels), `viewBox/overlay`, Pan/Zoom, Live-Färbung.
-  - Init: Zeichnet nur existierende Tiles; leere Maps → 3×3-Fallback mit `ensureViewCovers(...)` (Overlay/ViewBox zuerst).
-  - Click: Polygon dispatcht cancelable `"hex:click"`. Wenn nicht gecancelt → `saveTile(...)` + Öffnen der Note.
-  - Kamera: `attachCameraControls(svg, contentG, …, [overlay, host])`.
-  - Färbung: `setFill({r,c}, color)` setzt inline `style.fill`/`fillOpacity` und toggelt `data-painted` (CSS kann’s nicht übermalen).
-  - Erzeugung: `addHex(r,c)` legt Polygon+Label an, setzt inline Stroke/Transition, und registriert in `polyByCoord`.
-  - API (RenderHandles): `svg`, `contentG`, `overlay`, `polyByCoord`, `setFill`, `ensurePolys` (fügt fehlende Polys hinzu + vergrößert ViewBox), `destroy`.
-  - Wichtig: Editor-Listener muss `"hex:click"` sofort `preventDefault()` rufen; sonst greift der Default-Open-Pfad.
-
-
-- src/core/map-list.ts
-  - pickLatest(files): Gibt die neueste Datei anhand des Änderungsdatums zurück
-  - getAllMapFiles(app): Sucht alle Markdown-Dateien mit ```hex3x3```-Codeblock im Vault
-  - getFirstHexBlock(app, file): Liefert den Inhalt des ersten hex3x3-Blocks ohne die ```-Marker
-  - Re-Export von MapSelectModal aus ui/modals, um UI-Funktionalität verfügbar zu machen
-  Hinweise:
-    - Bietet die Datenlogik (Dateisuche, Parsing), UI bleibt in ui/modals.ts
-    - Ermöglicht konsistente Nutzung von MapSelectModal in anderen Modulen
-
-- `src/core/map-maker.ts'
-  createHexMapFile(app, name, opts)
-  - Legt eine neue Karten-Markdown an (Header + `hex3x3`-Block mit `folder`, `prefix`/`folderPrefix`, `radius`).
-  - Ruft `initTilesForNewMap(app, file)` auf → erzeugt sofort ein leeres 3×3-Preset an Tile-Dateien.
-  buildHexMapMarkdown(name, opts)
-  - Baut den Karteninhalt mit erstem `hex3x3`-Optionsblock.
-  sanitizeFileName(input)
-  - Bereinigt Namen (verbotene Zeichen, Mehrfach-Spaces, max. Länge).
-  ensureUniquePath(app, basePath)
-  - Sorgt für kollisionsfreie Dateipfade (`… (2)`, `… (3)` …).
-  Effekt: Neue Karten sind sofort renderbar (3×3 Bounds vorhanden) und nutzen das zentrale Tile-I/O.
-
-- src/core/layout.ts
-  Übersicht:
-  - Utility-Funktionen, um gezielt Arbeitsbereiche (Leaves) in Obsidian zu holen.
-  - Nutzt Workspace-API, um im UI konsistent richtige Panels zu öffnen.
-  Funktionen:
-  - getRightLeaf(app: App): WorkspaceLeaf
-    - Liefert den rechten Leaf-Bereich, ohne neuen Tab zu erzwingen.
-    - Fallback: erzeugt neuen rechten Leaf, wenn keiner existiert.
-  - getCenterLeaf(app: App): WorkspaceLeaf
-    - Liefert den aktiven zentralen Leaf (meist Haupt-Editor-Bereich).
-    - Erstellt neuen Leaf, falls keiner aktiv ist.
-  Hinweise:
-  - Diese Funktionen werden von Map-Gallery und Map-Editor genutzt,
-    um Karten im passenden Panel zu öffnen (rechts für Travel Guide,
-    Mitte für Map Editor).
-  - Logging kann für Debugging ergänzt/entfernt werden.
-  - API stabil gegenüber künftigen UI-Änderungen in Obsidian.
-
--  src/core/terrain.ts
-  Zweck: Zentrale Verwaltung der Terrain-Palette (Farbe) und Reisegeschwindigkeit.
-  Defaults (immutable): `DEFAULT_TERRAIN_COLORS`, `DEFAULT_TERRAIN_SPEEDS`.
-  Live-Maps (mutable): `TERRAIN_COLORS` und `TERRAIN_SPEEDS` – werden in-place aktualisiert, alle Importe sehen Änderungen sofort.
-  APIs:
-    - `setTerrainPalette(next)`: Back-compat – setzt nur Farben; Speeds werden passend zu den Keys aufgefüllt (Default `1`, Defaults bevorzugt).
-    - `setTerrains(next)`: Setzt Farbe + Speed gemeinsam; mischt Defaults ein, erzwingt `"" → color: transparent, speed: 1`, entfernt fehlende Keys.
-  Nutzung: Renderer liest `TERRAIN_COLORS`; Reise-/Pfadlogik liest `TERRAIN_SPEEDS`.
-  Kompatibel: Alte Paletten ohne Speed funktionieren weiter (Speed fällt auf `1`).
-
-- src/core/map-delete.ts
-  - Zweck: Löscht eine Karte inkl. aller verknüpften Tile-Dateien in einem Rutsch.
-  - API: async deleteMapAndTiles(app, mapFile) → findet Tiles via listTilesForMap(...), löscht erst Tiles, dann die Map.
-  - Robustheit: Fehler pro Datei werden geloggt (console.warn), der Rest läuft weiter.
-  - Voraussetzung: Tiles müssen type: hex + korrektes map_path im Frontmatter haben (wird von deinem System erfüllt).
-  - Hinweis: Irreversibel. Vorher immer über UI bestätigen lassen.
-
-- src/ui/modals.ts
-  - NameInputModal: Eingabe-Modal für neuen Kartennamen
-    - Unterstützt Enter-Shortcut und automatischen Fokus
-    - Ruft Callback mit bereinigtem Namen auf
-  - MapSelectModal: Fuzzy-Suchmodal für vorhandene Karten (TFile-Liste)
-    - Ermöglicht Auswahl per Tastatur oder Klick
-    - Ruft Callback mit gewählter Datei auf
-  Verwendung:
-  - Importiere in anderen Modulen via: import { NameInputModal, MapSelectModal } from "../ui/modals";
-
-- src/ui/confirm-delete.ts
-  - Zweck: Sicherheits-Modal für das endgültige Löschen einer Karte.
-  - API: new ConfirmDeleteModal(app, mapFile, onConfirm) → open().
-  - Verhalten: Zeigt Warntext, aktiviert “Delete” erst, wenn der Kartenname exakt eingegeben wird.
-  - UX: Fokus auf Eingabefeld, “Delete” mit Trash-Icon (mod-warning-Klasse), Erfolg/Fehler via Notice.
-  - Integration: Im Gallery-Papierkorb-Button verwenden; im onConfirm einfach deleteMapAndTiles(...) aufrufen und UI refreshen.
-
-- src/app/css.ts
-  Zweck: Bündelt das komplette Plugin-Styling als Template-String (`HEX_PLUGIN_CSS`) und wird von `main.ts` injiziert.
-  Deckt ab:
-    - Hex-Map: Container, SVG, Hex-Polygone (Hover-Rahmen, transparente Grundfüllung), Labels, Brush-Kreis (Transitions).
-    - Gallery-UI: Header, Kartenzeilen, Trunkierung langer Titel.
-    - Live-Preview: Aktiviert Interaktion in Codeblöcken, ohne Edit-Button zu stören.
-    - Terrain-Editor: Zeilen-Layout, Add-Bar, dezente Beschreibungsstile.
-    - Travel-Guide (neu): Token/Route-Styles (`circle[data-token]` Opazität, `polyline` ohne Pointer-Events).
-  Hinweise: Rendering setzt Füllfarben inline (überschreibt Basis-CSS). Hover-Fill wirkt nur auf unbemalte Tiles (`:not([data-painted="1"])`).
+- **`manifest.json`** definiert Plugin-ID, Version und Entry (`main.ts`).
+- **`main.js` / `esbuild.config.mjs` / `tsconfig.json`** bilden die Build-Pipeline (esbuild) für TypeScript → Obsidian-kompatibles Bundle.
