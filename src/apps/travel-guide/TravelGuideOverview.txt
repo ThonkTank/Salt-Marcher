@@ -1,0 +1,270 @@
+# Travel Guide – Modularer Schnitt
+
+## Prinzipien
+
+ Eine Verantwortung pro Datei.
+ Public API = schmal. UI ruft nur Logik-Funktionen auf.
+ Kein Zustand in der UI. State liegt im Store.
+ Rendering ist dumm. Bekommt Daten rein, zeichnet raus.
+ Services kapseln I/O (Hex-Notes, Terrain).
+
+---
+
+## Paketstruktur
+
+```
+src/apps/travel-guide/
+├─ index.ts                         # Bootstrapping (Mount/Unmount)
+│
+├─ ui/                              # UI-only, keine Business-Logik
+│  ├─ view-shell.ts                 # Layout, Adapter bauen, Listener binden
+│  ├─ sidebar.ts                    # Sidebar-UI (Speed, Status)
+│  ├─ map-layer.ts                  # renderHexMap + ensurePolys + polyIndex
+│  ├─ route-layer.ts                # drawRoute(RouteNode[]) + Highlight
+│  ├─ token-layer.ts                # TokenCtl (el, setPos, moveTo, show/hide)
+│  ├─ drag.controller.ts            # Pointerdown/move/up, Ghost, Commit-Aufruf
+│  └─ contextmenu.ts                # RMB auf Dots → deleteUserAt
+│
+├─ domain/                          # Business-Logik + State
+│  ├─ types.ts                      # Coord, NodeKind, RouteNode, StateSnapshot
+│  ├─ state.store.ts                # Mutabler State + onChange (Observer)
+│  ├─ actions.ts                    # Public API (handleHexClick, move, delete)
+│  ├─ expansion.ts                  # lineOddR-Wrapper: expandBetween, dedupe
+│  ├─ playback.ts                   # play/pause (Terrain×Speed, trimPassed)
+│  ├─ persistence.ts                # token_travel load/save (hex-notes)
+│  └─ terrain.service.ts            # loadTerrainSpeed (kapselt TERRAIN_SPEEDS)
+│
+├─ render/
+│  └─ draw-route.ts                 # Reines Rendering (Polyline + Kreise)
+│
+└─ infra/
+   └─ adapter.ts                    # RenderAdapter-Interface (UI <-> Logik)
+```
+
+> Zielgrößen: 80–180 LOC je Modul, max. 300 LOC.
+
+---
+
+## Öffentliche Schnittstellen
+
+### `domain/types.ts`
+
+```ts
+export type Coord = { r: number; c: number };
+export type NodeKind = "user" | "auto";
+export type RouteNode = Coord & { kind: NodeKind };
+
+export type LogicStateSnapshot = {
+  tokenRC: Coord;
+  route: RouteNode[];
+  editIdx: number | null;
+  tokenSpeed: number;
+  currentTile: Coord | null;
+};
+```
+
+### `infra/adapter.ts`
+
+```ts
+import type { Coord, RouteNode } from "../domain/types";
+import type { TokenCtl } from "../ui/token-layer";
+
+export type RenderAdapter = {
+  ensurePolys(coords: Coord[]): void;
+  centerOf(rc: Coord): { x: number; y: number } | null;
+  draw(route: RouteNode[]): void;
+  token: TokenCtl;
+};
+```
+
+### `domain/actions.ts` (Public API)
+
+```ts
+export type TravelLogic = {
+  getState(): LogicStateSnapshot;
+  selectDot(idx: number | null): void;
+  handleHexClick(rc: Coord): void;
+  moveSelectedTo(rc: Coord): void;  // auto neu, moved => user
+  moveTokenTo(rc: Coord): void;     // token persist, autos neu
+  deleteUserAt(idx: number): void;  // nur user
+  play(): Promise<void>;
+  pause(): void;
+  setTokenSpeed(v: number): void;
+  bindAdapter(adapter: RenderAdapter): void;
+  initTokenFromTiles(): Promise<void>;
+  persistTokenToTiles(): Promise<void>;
+};
+```
+
+---
+
+## Datenfluss (kurz)
+
+Klick: `view-shell` → `actions.handleHexClick(rc)`
+→ erzeugt `{kind:"user"}`, Autos via `expansion.expandBetween`, `store` updated → `onChange` → `route-layer.draw`.
+
+Dot-Drag: `drag.controller` (Ghost) → `pointerup`
+→ `actions.moveSelectedTo(rc)` (alte Autos weg, moved => user, Autos neu) → draw.
+
+Token-Drag: `drag.controller` (Ghost) → `pointerup`
+→ `actions.moveTokenTo(rc)` (persist, Autos ab Anchors neu) → draw.
+
+RMB: `contextmenu` → `actions.deleteUserAt(idx)` → Autos links/rechts weg, Bridge neu → draw.
+
+Play: `actions.play()` → `playback` steppt, persistiert nach jedem Schritt, `trimPassed()` entfernt passierte Knoten → draw.
+
+---
+
+## Verantwortungen pro Modul
+
+ view-shell.ts: Layout, Buttons, Sidebar binden, Adapter erstellen, Listener registrieren/entfernen. Kein State.
+ drag.controller.ts: Pointer-Events, `elementFromPoint`, Ghost (per `adapter.centerOf`), Commit ruft nur Actions.
+ route-layer.ts: `drawRoute(RouteNode[])` + Dot-Highlight (UI-only).
+ token-layer.ts: `TokenCtl` (SVG `<g>`, `el`, `setPos`, `moveTo`, `show/hide`).
+ state.store.ts: State-Objekt, `subscribe(onChange)`, `emit(snapshot)`.
+ actions.ts: Alle Regeln (Klick, Move, Delete, Token, Speed) – nutzt `expansion`, `persistence`, `terrain`, `store`, `adapter`.
+ expansion.ts: `lineOddR`-basierte Helpers: `expandBetween(a,b)`, `rebuildFromAnchors(tokenRC, users)`, `dedupe`.
+ playback.ts: `play/pause`, Dauerberechnung (Terrain×Speed), `trimPassed`.
+ persistence.ts: `loadTokenCoordFromMap`, `writeTokenToTiles` (Frontmatter mergen).
+ terrain.service.ts: `loadTerrainSpeed(app,mapFile,rc)`.
+
+
+## Qualitätsleitplanken
+
+ Jede Datei: max 300 LOC (CI-Check via simple Zeilen-Lint).
+ Keine Importzyklen (Domain kennt UI nicht).
+ Null Business-Regeln in `ui/`.
+
+## Einzel Übersichten
+
+- travel-guide/index.ts
+    Zweck: Plugin-Entry. Registriert die Travel Guide-View und bietet Commands zum Öffnen.
+    View-Typ: `VIEW_TYPE_TRAVEL_GUIDE = "travel-guide-view"`.
+    Klassen:
+      `TravelGuidePlugin`: registriert View/Commands/Ribbon, öffnet/enthält Leaves, Cleanup on unload.
+      `TravelGuideView`: hostet UI, ruft `mountTravelGuide(app, host, file)`, hält `controller` und leitet `setFile`.
+    Commands:
+      `travel-guide-open` → öffnet leere View.
+      `travel-guide-open-for-current` → öffnet mit aktuellem File (falls vorhanden).
+    Leaf-Logik: `getOrCreateLeaf()` (bestehendes Leaf nutzen oder rechts splitten), `activateTravelGuide(file?)` setzt ViewState + übergibt File.
+    Lifecycle:
+      `onOpen()` → erstellt Host-DIV, mountet View.
+      `onClose()`/`onunload()` → `controller.destroy()` + Detach aller Leaves.
+    Abhängigkeit: UI/Logik stecken in `view.ts` (hier keine Business-Logik).
+
+- ui/view-shell.ts
+    Zweck:   App-Shell & Verkabelung. Baut SVG-Layout, initialisiert Map/Route/Token-Layer und verbindet Domain-Logik.
+    Verantwortung:
+    Terrain laden, Map mounten (`createMapLayer`).
+    Adapter bauen (`ensurePolys`, `centerOf`, `draw`, `token`).
+    `createTravelLogic` binden, `onChange` → `routeLayer.draw(state.route, state.editIdx)`.
+    Controller registrieren:   Drag   (Ghost + Commit) &   Contextmenu   (RMB-Delete).
+    `hex:click` → `logic.handleHexClick(rc)`.
+    Kein UI-State:   Liest   immer   per `logic.getState()`. Keine direkten Mutationen.
+    Lifecycle:   `initTokenFromTiles()` beim Mount; `destroy()` entfernt Listener, unbindet Controller, zerstört Layer.
+
+- travel-guide/ui/sidebar.ts
+  Zweck: Rechte Status-/Kontrollspalte (aktuelles Hex, Token-Speed).
+  API: `setTile(rc)`, `setSpeed(v)`, `onSpeedChange(cb)`.
+  Logik: Keine. Reine UI → leitet Speed-Änderungen an Logik weiter.
+
+- travel-guide/ui/map-layer.ts
+  Zweck: UI-Layer für die Karte; kapselt `renderHexMap`, Poly-Index, `ensurePolys`, `centerOf`.
+  API:
+    `createMapLayer(app, host, mapFile, opts) → { ensurePolys, centerOf, polyToCoord, handles, destroy }`
+  Verhalten:
+    Indexiert neue Polygone nach `ensurePolys`.
+    `centerOf` stellt fehlende Polys sicher und liefert BBox-Mittelpunkt.
+  Verantwortungen: Reine UI/Rendering-Infrastruktur,   keine   Business-Logik.
+
+- travel-guide/ui/route-layer.ts
+  Zweck: Dünne UI-Hülle um `draw-route`.
+  API: `createRouteLayer(svg, centerOf) → { el, draw(route, i?), highlight(i), destroy }`.
+  Verhalten: Delegiert   Rendern   und   Highlight   vollständig an `render/draw-route.ts`.
+  Keine Pointer-/RMB-Handler, keine Business-Logik.
+
+- travel-guide/ui/token-layer.ts
+  Zweck: Sichtbarer Token (SVG `<g>`) mit einfacher RAF-Animation.
+  API: `createTokenLayer(svg) → TokenCtl & { el }` mit `setPos`, `moveTo`, `show`, `hide`, `destroy`.
+  Hinweise: Kein Drag hier (vom Controller gesteuert). Startet unsichtbar; Position/Anzeige übernimmt View/Logic.
+
+- travel-guide/ui/drag.controller.ts
+  Zweck: Zentrale Drag-Steuerung (Dot & Token) inkl. Ghost/Preview und Commit.
+  API: `createDragController({ routeLayerEl, tokenEl, token, adapter, logic, polyToCoord }) → { bind, unbind, consumeClickSuppression }`.
+  Verhalten: Deaktiviert während Drag `pointer-events` am Route-Layer, findet Ziel-Hex via `elementFromPoint`, verschiebt nur visuell (Ghost), commit bei `pointerup` → `logic.moveSelectedTo`/`moveTokenTo`.
+
+- travel-guide/ui/contextmenu.ts
+  Zweck: RMB-Löschen von   user  -Punkten.
+  Verhalten: Rechtsklick auf Dot → prüft `kind`. Nur `user` wird gelöscht via `logic.deleteUserAt(idx)`. `auto` wird ignoriert (Browser-Menü unterdrückt).
+  API: `bindContextMenu(routeLayerEl, logic) → () => void` (Disposer).
+
+- travel-guide/domain/types.ts
+    Zweck:   Zentrale Typen.
+    Enthält:   `Coord`, `NodeKind`, `RouteNode`, `LogicStateSnapshot`.
+    Nutzen:   Einheitliche Datengrundlage für Logik, UI und Services.
+
+- domain/actions.ts
+  Zweck: Zentrale   Business-API   des Travel Guide.
+  Verantwortlich für: Setzen/Bewegen/Löschen von Punkten, Token-Moves, Re-Expansion, Speed, Adapter-Bindings.
+  Nutzt: `state.store` (State), `expansion` (lineOddR/Anchors), `persistence` (token\_travel), `playback` (Abspielen).
+  Public API:
+    `getState()`, `selectDot(idx)`, `handleHexClick(rc)`
+    `moveSelectedTo(rc)`, `moveTokenTo(rc)`, `deleteUserAt(idx)`
+    `play()`, `pause()`, `setTokenSpeed(v)`
+    `bindAdapter(adapter)`, `initTokenFromTiles()`
+
+- travel-guide/domain/state.store.ts
+    Zweck:   Mutabler App-State + Observer.
+    API:   `get()`, `set(patch)`, `replace(state)`, `subscribe(fn)`, `emit()`.
+    State:   `tokenRC`, `route`, `editIdx`, `tokenSpeed`, `currentTile`, `playing`.
+
+- travel-guide/domain/expansion.ts
+    Zweck:   Pfad-Expansion auf Hex-Gitter.
+    API:   `expandCoords(a,b)` (exkl. Start, inkl. Ende), `dedupeCoords`, `rebuildFromAnchors(tokenRC, anchors)`.
+    Utils:   `asUserNode`, `asAutoNode`.
+    Regel:   Keine Duplikate an Segmentgrenzen.
+
+- travel-guide/domain/terrain.service.ts
+  Zweck: Einzige Quelle für Terrain-Geschwindigkeit.
+  API: `loadTerrainSpeed(app, mapFile, rc): Promise<number>`.
+  Verhalten: Liest Tile-Frontmatter (`terrain`) via `hex-notes`, mappt über `TERRAIN_SPEEDS`, fällt robust auf `1` zurück.
+  Nutzung: Nur von `domain/playback.ts` aufgerufen.
+
+- travel-guide/domain/persistence.ts
+    Zweck:   Token-Persistenz in Tile-Notes.
+    API:   `loadTokenCoordFromMap(app,mapFile)`, `writeTokenToTiles(app,mapFile,rc)`.
+    Format:   Frontmatter-Flag `token_travel: true` genau auf einem Tile.
+
+- domain/playback.ts
+  Zweck:   Abspiel-Loop   (Token → nächstes Tile), Dauer = `baseMs / (Terrain × TokenSpeed)`.
+  Verantwortlich für: Token animieren,   Persist   in Tiles nach jedem Schritt,   Trim   passierter Routeknoten, `onChange()` triggern.
+  Nutzt: `terrain.service.loadTerrainSpeed`, `persistence.writeTokenToTiles`, `adapter.centerOf/token.moveTo`.
+  Public API: `createPlayback({ app, getMapFile, adapter, store, baseMs, onChange }) → { play, pause }`.
+
+- travel-guide/infra/adapter.ts
+  Zweck: Schlanke Schnittstelle   UI ↔︎ Domain  .
+  Typen:
+    `TokenCtl`: reine Token-Steuerung (`setPos`, `moveTo`, `show`, `hide`, optional `destroy`).
+    `RenderAdapter`: `ensurePolys`, `centerOf`, `draw(route)`, `token`.
+  Rolle: Domain kennt nur den Adapter; UI/Layers implementieren ihn.   Keine   Business-Logik hier.
+
+- travel-guide/infra/adapter.ts
+  Zweck: Dünne Schnittstelle   UI ↔︎ Domain  .
+  Exports:
+    `TokenCtl`: `setPos`, `moveTo`, `show`, `hide`, optional `destroy`.
+    `RenderAdapter`: `ensurePolys`, `centerOf`, `draw(route)`, `token`.
+  Einsatz: View baut Adapter aus Map/Route/Token-Layern; Domain nutzt nur diese Methoden.
+  Leitlinie: Keine State-/Businesslogik im Adapter.
+
+- travel-guide/render/draw-route.ts
+  Zweck: Reines SVG-Rendering der Route inkl.   zentralem Highlighting  .
+  Input: `{ layer, route, centerOf, highlightIndex? }`.
+  Verhalten:
+    Zeichnet   eine Polyline   (pointer-events: none).
+    Zeichnet   Dots  : `user` größer/opak, `auto` kleiner/transparenter.
+    `updateHighlight(layer, i)` markiert ausgewählten Dot (Ring + größer).
+  Keine Logik/State – nur Darstellung.
+
+
+
+
