@@ -30,7 +30,7 @@ export class TravelGuideView extends ItemView {
     /** Optional: open view with a preselected file */
     setFile(file: TFile | null) {
         this.initialFile = file;
-        this.controller?.setFile(file ?? null);
+        void this.controller?.setFile(file ?? null);
     }
 
     async onOpen(): Promise<void> {

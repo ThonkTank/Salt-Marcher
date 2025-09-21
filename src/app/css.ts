@@ -85,6 +85,97 @@ export const HEX_PLUGIN_CSS = `
 .sm-terrain-editor .addbar input[type="text"] { flex:1; min-width:0; }
 
 /* === Travel Guide === */
+.sm-travel-guide {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    gap: 1.5rem;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
+.sm-travel-guide .sm-tg-map {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    position: relative;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 10px;
+    background: var(--background-primary);
+    padding: 0.75rem;
+    box-sizing: border-box;
+}
+
+.sm-travel-guide .sm-tg-map .hex3x3-map {
+    max-width: none;
+    height: 100%;
+}
+
+.sm-travel-guide .sm-tg-sidebar {
+    flex: 0 0 280px;
+    max-width: 340px;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 10px;
+    padding: 1rem;
+    box-sizing: border-box;
+    display: flex;
+}
+
+.sm-tg-sidebar__inner {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+}
+
+.sm-tg-sidebar__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+.sm-tg-sidebar__section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sm-tg-sidebar__section-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.sm-tg-sidebar__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.sm-tg-sidebar__label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.sm-tg-sidebar__value {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.sm-tg-sidebar__speed-input {
+    width: 100%;
+    padding: 0.35rem 0.5rem;
+    border-radius: 6px;
+}
+
 .sm-travel-guide .hex3x3-map circle[data-token] { opacity: .95; }
 .sm-travel-guide .hex3x3-map polyline { pointer-events: none; }
 `;
