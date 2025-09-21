@@ -18,7 +18,7 @@ export type RenderAdapter = {
     centerOf(rc: Coord): { x: number; y: number } | null;
 
     /** Route-Layer: Route zeichnen (nur Rendering) */
-    draw(route: RouteNode[]): void;
+    draw(route: RouteNode[], tokenRC: Coord): void;
 
     /** Token-Layer: Sichtbarer Token */
     token: TokenCtl;

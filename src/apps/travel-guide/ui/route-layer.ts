@@ -1,6 +1,6 @@
 // Reines UI-Wrapping: delegiert Render & Highlight vollständig an draw-route.
 
-import type { RouteNode } from "../domain/types";
+import type { Coord, RouteNode } from "../domain/types";
 import { drawRoute, updateHighlight } from "../render/draw-route";
 
 export function createRouteLayer(
@@ -11,8 +11,8 @@ export function createRouteLayer(
     el.classList.add("tg-route-layer");
     svgRoot.appendChild(el);
 
-    function draw(route: RouteNode[], highlightIndex: number | null = null) {
-        drawRoute({ layer: el, route, centerOf, highlightIndex });
+    function draw(route: RouteNode[], highlightIndex: number | null = null, start?: Coord | null) {
+        drawRoute({ layer: el, route, centerOf, highlightIndex, start });
     }
 
     function highlight(i: number | null) {

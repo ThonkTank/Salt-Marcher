@@ -51,7 +51,7 @@ export async function mountTravelGuide(
     let loadChain = Promise.resolve();
 
     const handleStateChange = (s: LogicStateSnapshot) => {
-        if (routeLayer) routeLayer.draw(s.route, s.editIdx ?? null);
+        if (routeLayer) routeLayer.draw(s.route, s.editIdx ?? null, s.tokenRC ?? null);
         sidebar.setTile(s.currentTile ?? s.tokenRC ?? null);
         sidebar.setSpeed(s.tokenSpeed);
     };
@@ -124,7 +124,7 @@ export async function mountTravelGuide(
         const adapter: RenderAdapter = {
             ensurePolys: (coords) => mapLayer!.ensurePolys(coords),
             centerOf: (rc) => mapLayer!.centerOf(rc),
-            draw: (route) => routeLayer!.draw(route),
+            draw: (route, tokenRC) => routeLayer!.draw(route, null, tokenRC),
             token: tokenLayer!,
         };
 
