@@ -22,6 +22,7 @@ export type MapHeaderOptions = {
     labels?: {
         open?: string;
         create?: string;
+        delete?: string;
         save?: string;
         saveAs?: string;
         trigger?: string;
@@ -35,6 +36,8 @@ export type MapHeaderOptions = {
     onOpen?: (file: TFile) => void | Promise<void>;
     /** Callback nach Erstellung einer neuen Karte. */
     onCreate?: (file: TFile) => void | Promise<void>;
+    /** Callback nach bestätigter Löschung. */
+    onDelete?: (file: TFile) => void | Promise<void>;
     /**
      * Optionaler Save-Hook. Rückgabewert `true` signalisiert, dass das Speichern
      * vollständig behandelt wurde und kein Default-Save mehr nötig ist.
@@ -61,6 +64,7 @@ export function createMapHeader(app: App, host: HTMLElement, options: MapHeaderO
     const labels = {
         open: options.labels?.open ?? "Open Map",
         create: options.labels?.create ?? "Create",
+        delete: options.labels?.delete ?? "Delete",
         save: options.labels?.save ?? "Speichern",
         saveAs: options.labels?.saveAs ?? "Speichern als",
         trigger: options.labels?.trigger ?? "Los",
@@ -129,6 +133,22 @@ export function createMapHeader(app: App, host: HTMLElement, options: MapHeaderO
         });
     };
 
+    const deleteBtn = options.onDelete
+        ? row1.createEl("button", { text: labels.delete, attr: { "aria-label": labels.delete } })
+        : null;
+    if (deleteBtn) {
+        setIcon(deleteBtn, "trash");
+        applyMapButtonStyle(deleteBtn);
+        deleteBtn.onclick = () => {
+            if (destroyed) return;
+            if (!currentFile) {
+                new Notice(notices.missingFile);
+                return;
+            }
+            void options.onDelete?.(currentFile);
+        };
+    }
+
     const row2 = root.createDiv();
     Object.assign(row2.style, { display: "flex", alignItems: "center", gap: ".5rem" });
 
@@ -184,6 +204,10 @@ export function createMapHeader(app: App, host: HTMLElement, options: MapHeaderO
             nameBox.textContent = file?.basename ?? options.emptyLabel ?? "—";
         }
         secondaryLeftSlot.dataset.fileLabel = file?.basename ?? options.emptyLabel ?? "—";
+        if (deleteBtn) {
+            deleteBtn.disabled = !file;
+            deleteBtn.style.opacity = file ? "1" : "0.5";
+        }
     }
 
     function setTitle(title: string) {

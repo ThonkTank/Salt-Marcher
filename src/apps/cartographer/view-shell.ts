@@ -7,6 +7,7 @@ import { getFirstHexBlock } from "../../core/map-list";
 import type { RenderHandles } from "../../core/hex-mapper/hex-render";
 import { createMapLayer, type MapLayer } from "../travel-guide/ui/map-layer";
 import { createMapHeader, type MapHeaderHandle, type MapHeaderSaveMode } from "../../ui/map-header";
+import { createMapManager } from "../../ui/map-manager";
 import { createTravelGuideMode } from "./modes/travel-guide";
 import { createEditorMode } from "./modes/editor";
 import { createInspectorMode } from "./modes/inspector";
@@ -196,20 +197,32 @@ export async function mountCartographer(
         await renderMap(token);
     }
 
-    async function setFile(file: TFile | null) {
+    const onManagerChange = async (file: TFile | null) => {
         currentFile = file;
         headerHandle?.setFileLabel(file);
         await refresh();
+    };
+
+    const mapManager = createMapManager(app, {
+        initialFile: currentFile,
+        onChange: onManagerChange,
+    });
+
+    async function setFile(file: TFile | null) {
+        await mapManager.setFile(file);
     }
 
     headerHandle = createMapHeader(app, headerHost, {
         title: "Cartographer",
         initialFile,
         onOpen: async (file) => {
-            await setFile(file);
+            await mapManager.setFile(file);
         },
         onCreate: async (file) => {
-            await setFile(file);
+            await mapManager.setFile(file);
+        },
+        onDelete: async () => {
+            mapManager.deleteCurrent();
         },
         onSave: async (mode, file) => {
             if (!activeMode?.onSave) return false;
@@ -237,7 +250,7 @@ export async function mountCartographer(
     headerHandle.setFileLabel(currentFile);
 
     await switchMode(modes[0].id);
-    await refresh();
+    await mapManager.setFile(currentFile);
 
     async function destroy() {
         if (destroyed) return;
