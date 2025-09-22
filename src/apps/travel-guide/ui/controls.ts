@@ -18,10 +18,10 @@ export type PlaybackControlsHandle = {
 };
 
 export function createPlaybackControls(host: HTMLElement, callbacks: PlaybackControlsCallbacks): PlaybackControlsHandle {
-    const root = host.createDiv({ cls: "sm-tg-controls" });
+    const root = host.createDiv({ cls: "sm-cartographer__travel-buttons" });
 
     const playBtn = root.createEl("button", {
-        cls: "sm-tg-controls__btn sm-tg-controls__btn--play",
+        cls: "sm-cartographer__travel-button sm-cartographer__travel-button--play",
         text: "Start",
     });
     setIcon(playBtn, "play");
@@ -33,7 +33,7 @@ export function createPlaybackControls(host: HTMLElement, callbacks: PlaybackCon
     });
 
     const stopBtn = root.createEl("button", {
-        cls: "sm-tg-controls__btn sm-tg-controls__btn--stop",
+        cls: "sm-cartographer__travel-button sm-cartographer__travel-button--stop",
         text: "Stopp",
     });
     setIcon(stopBtn, "square");
@@ -45,7 +45,7 @@ export function createPlaybackControls(host: HTMLElement, callbacks: PlaybackCon
     });
 
     const resetBtn = root.createEl("button", {
-        cls: "sm-tg-controls__btn sm-tg-controls__btn--reset",
+        cls: "sm-cartographer__travel-button sm-cartographer__travel-button--reset",
         text: "Reset",
     });
     setIcon(resetBtn, "rotate-ccw");

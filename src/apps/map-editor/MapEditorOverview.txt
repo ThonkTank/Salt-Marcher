@@ -20,8 +20,8 @@ src/apps/map-editor/
 
 ## Features & Verantwortlichkeiten
 
-- **Wrapper-View:** `index.ts` mountet den Cartographer und schaltet direkt in den Editor-Modus. Der View bleibt kompatibel mit bestehenden Commands/States, leitet aber sämtliche Karten-Interaktionen an die gemeinsame Shell weiter.
-- **Tool-Schnittstelle:** `tools-api.ts` definiert den Kontext (`getHandles`, `getOptions`, `setStatus` …) für Editier-Tools. Der Cartographer-Editor erzeugt Instanzen dieses Kontextes und triggert `onActivate`, `onMapRendered` sowie `onHexClick`.
+- **Wrapper-View:** `index.ts` mountet den Cartographer (`sm-cartographer`-Shell) und schaltet direkt in den Editor-Modus. Der View bleibt kompatibel mit bestehenden Commands/States, leitet aber sämtliche Karten-Interaktionen an die gemeinsame Shell weiter.
+- **Tool-Schnittstelle:** `tools-api.ts` definiert den Kontext (`getHandles`, `getOptions`, `setStatus` …) für Editier-Tools. Der Cartographer-Editor erzeugt Instanzen dieses Kontextes, triggert `onActivate`, `onMapRendered` sowie `onHexClick` und montiert Tool-UIs im geteilten Sidebar-Panel (`.sm-cartographer__panel--editor`).
 - **Brush-Infrastruktur:** `terrain-brush/*` stellt UI, Mathematik und Persistenz (Tiles schreiben/löschen) für das Terrain-Brush-Tool bereit. `brush-circle.ts` visualisiert den aktiven Radius direkt auf dem SVG.
 - **Inspector-Verlagerung:** Der Terrain-/Notiz-Inspector lebt nun als eigener Cartographer-Modus (`modes/inspector.ts`) und nutzt dort die gemeinsamen Render-/Persistenz-Hooks.
 

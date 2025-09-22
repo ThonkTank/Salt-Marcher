@@ -53,6 +53,7 @@ src/apps/travel-guide/
 ## Featureliste
 
 - **Kartenverwaltung & Persistenz:** Karten lassen sich öffnen, erstellen und speichern; Terrain-Geschwindigkeiten werden beim Mount geladen und Token-Positionen (`token_travel`) automatisch aus den Hex-Notes gelesen bzw. dorthin zurückgeschrieben.
+- **Cartographer-Integration:** Der Modus läuft identisch im Cartographer-View und in der Legacy-Travel-Guide-Shell. Beide mounten die `sm-cartographer`-Struktur (Header, Map-Stage, Sidebar), sodass CSS, Header-Slots und Map-Management (`createMapManager`) geteilt werden.
 - **Routenaufbau durch Hex-Klicks:** Hex-Klicks erzeugen Nutzeranker, ergänzen automatische Zwischenpunkte entlang der Linie und aktualisieren Highlight & Route-Rendering unmittelbar.
 - **Präzise Drag-Interaktionen:** Nutzeranker und Token können mit Ghost-Vorschau verschoben werden; während aktiver Drags werden Hex-Klick-Events vollständig unterdrückt, damit keine zusätzlichen Wegpunkte entstehen.
 - **Token-Steuerung & Playback:** Token lassen sich manuell positionieren oder über Play/Stop/Reset animieren; der Playback-Loop berücksichtigt Terrain-Speed, Token-Speed und persistiert Fortschritte pro Tile.
@@ -137,7 +138,7 @@ export type TravelLogic = {
 
 ## Playback-Steuerung & Reset
 
-- Oberhalb der Sidebar-Zeilen liegt `sm-tg-sidebar__controls`; `ui/controls.ts` montiert seine Buttons in diesem Host, damit Play/Stop/Reset direkt neben Speed-Regler und Statuswerten sitzen, während der Map-Header wieder den Dateinamen im Standardslot anzeigt.
+- Oberhalb der Sidebar-Zeilen liegt `sm-cartographer__travel-controls`; `ui/controls.ts` montiert seine Buttons in diesem Host, damit Play/Stop/Reset direkt neben Speed-Regler und Statuswerten sitzen, während der Map-Header wieder den Dateinamen im Standardslot anzeigt.
 - Buttons verwenden weiterhin `applyMapButtonStyle`, zeigen „Start“, „Stopp“ und „Reset“ (Icons: Play, Square, Rotate) und rufen ausschließlich die übergebenen Callbacks (`logic.play()`, `logic.pause()`, `logic.reset()`) auf.
 - `handleStateChange` liefert `playing` und `route.length` an `setState`, damit „Start“ nur mit vorhandener Route aktiv ist, „Stopp“ ausschließlich während des Playbacks verfügbar bleibt und „Reset“ die Route leert, auch wenn Playback noch läuft.
 - `logic.reset()` ruft immer zuerst `logic.pause()` (sofortiges Abbrechen inkl. Token-Stop), leert Route/Edit-Index/`currentTile` und initialisiert das Token über `initTokenFromTiles()` neu, wodurch Position & Persistenz auf den Kartendaten aktualisiert werden.
@@ -161,7 +162,7 @@ export type TravelLogic = {
 - **Auto-Punkte (`.tg-route-dot--auto`):** kühles Blau (`--tg-color-auto-point`, fallback `#3b82f6`) mit reduzierter Deckkraft (55 %), um ergänzte Zwischenknoten subtiler zu halten.
 - **Highlight (`.is-highlighted`):** Domain-Highlighting erhöht weiterhin Radius + Border; zusätzlich hebt CSS die Deckkraft auf 100 % (User) bzw. 90 % (Auto), damit der aktuelle Fokus sofort sichtbar ist.
 
-Alle Farbwerte lassen sich über die jeweiligen Custom Properties überschreiben und nehmen vorhandene Obsidian-Theme-Variablen als bevorzugte Quelle.
+Alle Farbwerte lassen sich über die jeweiligen Custom Properties überschreiben und nehmen vorhandene Obsidian-Theme-Variablen als bevorzugte Quelle. Die Defaults werden auf `.sm-cartographer--travel` gesetzt, damit sowohl Cartographer-View als auch Legacy-Shell identisch aussehen.
 
 ---
 
@@ -173,7 +174,7 @@ Alle Farbwerte lassen sich über die jeweiligen Custom Properties überschreiben
 - `activateTravelGuide(file?)` holt oder erstellt das Leaf, setzt den View-State aktiv und reicht optional eine Map-Datei durch.
 - `getOrCreateLeaf()` bevorzugt vorhandene oder rechte Splits (Obsidian API).
 
-- `mountTravelGuide(app, host, file)` setzt den Host auf `.sm-travel-guide`, erzeugt Header + Body (Map-/Sidebar-Container) und instanziiert `createTravelGuideMode()`.
+- `mountTravelGuide(app, host, file)` setzt den Host auf `.sm-cartographer` + `.sm-cartographer--travel`, erzeugt Header + Body (Map-/Sidebar-Container) und instanziiert `createTravelGuideMode()`.
 - Baut einen `CartographerModeContext` (Hosts, File-Getter, Map-Layer-Getter), ruft `mode.onEnter` auf und serialisiert Dateiladevorgänge über `enqueueLoad`.
 - Lädt Karten via `createMapLayer`, reicht `RenderHandles` an `mode.onFileChange` weiter und leitet `hex:click`-Events an `mode.onHexClick` durch.
 - Koppelt den Map-Header (`createMapHeader`) mit dem Modus (`onSave`) und führt Standard-Speicherlogik (`saveMap`/`saveMapAs`) aus, falls der Modus das Speichern nicht vollständig übernimmt.
@@ -202,7 +203,7 @@ Alle Farbwerte lassen sich über die jeweiligen Custom Properties überschreiben
 - Lässt Pointer-Events aktiv (`cursor: grab`) für Drag-Start.
 
 ### `ui/controls.ts`
-- Rendert Start/Stopp/Reset-Buttons im von der Sidebar bereitgestellten Controls-Host (`.sm-tg-sidebar__controls`), nutzt `applyMapButtonStyle` und Obsidian-Icons (`play`, `square`, `rotate-ccw`).
+- Rendert Start/Stopp/Reset-Buttons im von der Sidebar bereitgestellten Controls-Host (`.sm-cartographer__travel-controls`), nutzt `applyMapButtonStyle` und Obsidian-Icons (`play`, `square`, `rotate-ccw`).
 - `setState` aktiviert „Start“ nur mit Route, „Stopp“ nur beim laufenden Playback und „Reset“ sobald entweder Route existiert oder abgespielt wird.
 - Klicks lösen ausschließlich die übergebenen Callbacks aus; der Helper hält keinen eigenen Zustand und lässt sich über `destroy()` vollständig entfernen.
 
@@ -222,7 +223,7 @@ Alle Farbwerte lassen sich über die jeweiligen Custom Properties überschreiben
 - Ruft bei `user`-Dots `logic.deleteUserAt(idx)` und stoppt Event-Bubbling.
 
 ### `ui/sidebar.ts`
-- Rendert eine kompakte Sidebar mit vorgelagertem `controlsHost` (Klasse `.sm-tg-sidebar__controls`) und zwei Status-Zeilen (aktuelles Hex, Token-Speed) inklusive Styles für Label/Value/Input.
+- Rendert eine kompakte Sidebar mit vorgelagertem `controlsHost` (Klasse `.sm-cartographer__travel-controls`) und zwei Status-Zeilen (aktuelles Hex, Token-Speed) inklusive Styles für Label/Value/Input.
 - `controlsHost` dient dem Travel-Mode als Mount-Punkt für die Playback-Buttons; `setTile`, `setSpeed` aktualisieren Werte, `setTitle` hinterlegt den Dateinamen als `data-map-title` auf dem Host (für Tooltips/Debug) und validiert Eingaben (>0).
 - `onSpeedChange` registriert den externen Callback, `destroy()` leert den Host und entfernt das Daten-Attribut. Wird vom Travel-Mode genutzt.
 

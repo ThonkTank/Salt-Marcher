@@ -8,7 +8,7 @@ analysieren und mit Reiserouten versehen. Das Plugin ist in klar getrennte Layer
 | Layer | Standort | Aufgabe | Detail-Dokument |
 | --- | --- | --- | --- |
 | Plugin-Bootstrap | `src/app/` | Registriert Views/Commands, lädt CSS & Terrain-Daten und koordiniert Lifecycle sowie Watcher. | – |
-| Feature-Apps | `src/apps/` | Enthalten eigenständige Obsidian-Views (Cartographer, Terrain-Editor sowie Legacy-Galerie/-Editor/-Travel Guide). | Pro Feature in `*Overview.txt` |
+| Feature-Apps | `src/apps/` | Enthalten eigenständige Obsidian-Views (Cartographer mit Travel/Editor/Inspector-Modi, Terrain-Editor sowie Legacy-Galerie-/Travel-Hüllen). | Pro Feature in `*Overview.txt` |
 | Core-Services | `src/core/` | Bietet Hex-Geometrie, Map-/Tile-Dateioperationen, Terrain-Verwaltung und Workspace-Helfer. | `src/core/CoreOverview.txt` |
 | UI-Bausteine | `src/ui/` | Stellt wiederverwendbare Modals/Bestätigungsdialoge für Features bereit. | `src/ui/UiOverview.txt` |
 | Styling | `src/app/css.ts` | Liefert das zentrale CSS, das beim Plugin-Start injiziert wird. | – |
@@ -23,8 +23,8 @@ src/
 │  ├─ map-gallery.ts         # Historische Galerie; leitet jetzt direkt in den Cartographer um
 │  ├─ map-editor/            # Interaktiver Hex-Editor – MapEditorOverview.txt
 │  ├─ terrain-editor/        # Terrain-Palette – TerrainEditorOverview.txt
-│  ├─ travel-guide/          # Reiseplanung – TravelGuideOverview.txt
-│  └─ cartographer/          # Multi-Mode Map Viewer – CartographerOverview.txt
+│  ├─ travel-guide/          # Legacy-View, mountet den Cartographer-Travel-Mode – TravelGuideOverview.txt
+│  └─ cartographer/          # Multi-Mode Map Viewer (Travel/Editor/Inspector) – CartographerOverview.txt
 │
 ├─ core/                     # Hex-Engine & Dateiservices – CoreOverview.txt
 └─ ui/                       # Modals & Dialoge – UiOverview.txt
@@ -40,11 +40,11 @@ src/
 - Verteilt Events/Handler an Feature-Layer und Core-Services.
 
 ### Feature-Apps (`src/apps/`)
-- **Cartographer (`cartographer/`):** Stellt einen mehrstufigen Map-Viewer bereit, der das Travel-Guide-Layout wiederverwendet, `renderHexMap`/`createMapLayer` für die Stage nutzt, Modi über einen Header-Slot umschaltet und via `createMapManager` im Header Open/Create/Delete bündelt. View & Command sind die primären Entry-Points im Plugin.
+- **Cartographer (`cartographer/`):** Stellt den `sm-cartographer`-Shell bereit, rendert Karten via `renderHexMap`/`createMapLayer`, schaltet Travel/Editor/Inspector-Modi über einen Header-Slot, kapselt deren Sidebars und bündelt Open/Create/Delete über `createMapManager`. View & Command sind die primären Entry-Points im Plugin.
 - **Terrain Editor (`terrain-editor/`):** Pflegt Farb- und Geschwindigkeits-Paletten über den Core-Terrain-Store und synchronisiert Änderungen mit `terrain.ts`.
 - **Map Gallery (`map-gallery.ts`):** Historische View, die beim direkten Öffnen (z. B. aus alten Workspaces) weiterhin auf den Cartographer umleitet.
 - **Map Editor (`map-editor/`):** Liefert Tooling für Hex-Auswahl, Brush-Painting, Tile-Speicherung und Inspector-Views (Details siehe `MapEditorOverview.txt`); wird über neue Cartographer-Flows eröffnet.
-- **Travel Guide (`travel-guide/`):** Spielt Reiserouten auf Hex-Karten ab; der Standalone-View bleibt für Rückwärtskompatibilität erhalten, wird aber nicht mehr vom Haupt-Plugin registriert.
+- **Travel Guide (`travel-guide/`):** Legacy-Hülle für Rückwärtskompatibilität. Mountet `createTravelGuideMode()` in derselben `sm-cartographer`-Shell, verwaltet nur View-Lifecycle und delegiert sämtliche UI/Logik an den Cartographer.
 
 ### Core-Services (`src/core/`)
 - Bündelt Hex-Mathematik, SVG-Rendering, Map/Terrain-Dateiverwaltung und Workspace-Utilities.
@@ -58,7 +58,7 @@ src/
 - Details im [UI Overview](src/ui/UiOverview.txt).
 
 ### Styling & Build
-- `src/app/css.ts` enthält alle SCSS-ähnlichen Styles für Maps, Tools, Terrain-Editor und Travel Guide.
+- `src/app/css.ts` liefert den konsolidierten `sm-cartographer`-Look (Stage, Header, Mode-Sidebars) sowie Travel-spezifische Controls. Galerie-Styles wurden entfernt; Modals oder optionale Komponenten bringen eigene CSS-Blöcke mit.
 - `manifest.json` definiert Plugin-ID/Version, `esbuild.config.mjs` + `tsconfig.json` stellen die Build-Pipeline für TypeScript sicher (`npm run build`).
 
 ## Typische Nutzerflüsse
