@@ -20,7 +20,7 @@ src/
 │  └─ css.ts                 # Zentrales Styling (wird dynamisch injiziert)
 │
 ├─ apps/
-│  ├─ map-gallery.ts         # Kartenübersicht – siehe MapEditorOverview.txt für den Editor
+│  ├─ map-gallery.ts         # Historische Galerie; leitet jetzt direkt in den Cartographer um
 │  ├─ map-editor/            # Interaktiver Hex-Editor – MapEditorOverview.txt
 │  ├─ terrain-editor/        # Terrain-Palette – TerrainEditorOverview.txt
 │  ├─ travel-guide/          # Reiseplanung – TravelGuideOverview.txt
@@ -39,11 +39,11 @@ src/
 - Verteilt Events/Handler an Feature-Layer und Core-Services.
 
 ### Feature-Apps (`src/apps/`)
-- **Map Gallery (`map-gallery.ts`):** Listet Karten mit SVG-Vorschau, nutzt gemeinsame UI-Flows (`promptMapSelection`, `promptCreateMap`, `renderHexMapFromFile`) sowie `ConfirmDeleteModal` und Core-Helfer (`deleteMapAndTiles`).
+- **Map Gallery (`map-gallery.ts`):** Historische View, die beim Öffnen auf den Cartographer weiterleitet – Map-Verwaltung & Vorschau sitzen nun gesammelt dort.
 - **Map Editor (`map-editor/`):** Liefert Tooling für Hex-Auswahl, Brush-Painting, Tile-Speicherung und Inspector-Views (Details siehe `MapEditorOverview.txt`).
 - **Terrain Editor (`terrain-editor/`):** Pflegt Farb- und Geschwindigkeits-Paletten über den Core-Terrain-Store und synchronisiert Änderungen mit `terrain.ts`.
 - **Travel Guide (`travel-guide/`):** Spielt Reiserouten auf Hex-Karten ab, bindet den View über die `ui/view-shell` (liefert `TravelGuideController`) ein und nutzt Rendering/Geometrie aus dem Core.
-- **Cartographer (`cartographer/`):** Stellt einen mehrstufigen Map-Viewer bereit, der das Travel-Guide-Layout wiederverwendet, `renderHexMap`/`createMapLayer` für die Stage nutzt und Modi über einen Header-Slot zwischen Editor, Inspector und Beispiel-Panels umschaltet.
+- **Cartographer (`cartographer/`):** Stellt einen mehrstufigen Map-Viewer bereit, der das Travel-Guide-Layout wiederverwendet, `renderHexMap`/`createMapLayer` für die Stage nutzt, Modi über einen Header-Slot umschaltet und via `createMapManager` im Header Open/Create/Delete bündelt.
 
 ### Core-Services (`src/core/`)
 - Bündelt Hex-Mathematik, SVG-Rendering, Map/Terrain-Dateiverwaltung und Workspace-Utilities.
@@ -62,7 +62,7 @@ src/
 
 ## Typische Nutzerflüsse
 1. Anwender erstellt über Ribbon/Command eine neue Karte → `promptCreateMap` sammelt den Namen (intern `NameInputModal` + `createHexMapFile`), legt Map + Tiles an und öffnet den Editor.
-2. In der Galerie werden vorhandene Karten via `promptMapSelection` gefunden und per `renderHexMapFromFile` in SVGs gerendert; ein Klick startet den Editor oder öffnet zugehörige Tile-Notizen.
+2. Im Cartographer-Header lassen sich Karten via `promptMapSelection` öffnen, neu erstellen oder löschen (`ConfirmDeleteModal` + `deleteMapAndTiles`); die Stage zeigt sofort eine Vorschau oder Leerhinweise, falls keine Karte gewählt ist.
 3. Terrain-Anpassungen werden im Terrain-Editor vorgenommen, der via Core `setTerrains` aktualisiert und sofort im Renderer wirksam macht.
 4. Travel-Routen greifen auf dieselben Hex-Geometrie- und Rendering-Bausteine zurück, um Bewegungen über Karten abzubilden.
 

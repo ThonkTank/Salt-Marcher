@@ -16,8 +16,8 @@ src/apps/cartographer/
 ## Features & Verantwortlichkeiten
 
 - **View-Registrierung:** `index.ts` meldet `VIEW_TYPE_CARTOGRAPHER` an, richtet Ribbon & Command ein und kümmert sich um Mount/Cleanup des Views.
-- **Layout-Shell:** `view-shell.ts` übernimmt das Cartographer-Grundlayout (Header + Body mit Map/Sidebar), verwaltet den Moduswechsel und stellt `CartographerModeContext` inkl. `getOptions()` bereit.
-- **Map-Stage:** Rendert Karten via `createMapLayer`/`renderHexMap`, verwaltet `RenderHandles`, Hex-Klick-Delegation sowie Options-Parsing (`getFirstHexBlock` → `parseOptions`).
+- **Layout-Shell:** `view-shell.ts` übernimmt das Cartographer-Grundlayout (Header + Body mit Map/Sidebar), verwaltet den Moduswechsel, bindet `createMapManager` für Open/Create/Delete ein und stellt `CartographerModeContext` inkl. `getOptions()` bereit.
+- **Map-Stage:** Rendert Karten via `createMapLayer`/`renderHexMap`, verwaltet `RenderHandles`, Hex-Klick-Delegation sowie Options-Parsing (`getFirstHexBlock` → `parseOptions`) und zeigt sinnvolle Platzhalter, wenn kein File oder kein Hex-Block vorliegt.
 - **Modus-System:** Stellt das Mode-Interface (`onEnter`, `onExit`, `onFileChange`, `onHexClick`, `onSave`) bereit, schaltet per Header-Slot zwischen Modi, delegiert Events und räumt Ressourcen deterministisch auf.
 - **Editor-Integration:** `modes/editor.ts` stellt die Map-Editor-Logik bereit (Tool-Registry, Brush-Handling, Options-Panel) und nutzt direkt die vom Cartographer gerenderten `RenderHandles`.
 - **Inspector-Modus:** `modes/inspector.ts` ermöglicht Terrain- & Notizbearbeitung für das aktuell geklickte Hex, lädt/speichert Tiles über `hex-notes` und aktualisiert das Live-Fill via `RenderHandles`.
@@ -35,7 +35,7 @@ src/apps/cartographer/
 - Implementiert `CartographerMode` & `CartographerModeContext` (inkl. `getOptions`) als zentrale Schnittstelle für Modi.
 - Baut Header, Body, Map- und Sidebar-Container mit `sm-cartographer`-Klassen auf.
 - Nutzt `createMapLayer` + `renderHexMap` zum Laden der Karte, aktualisiert `currentOptions` und leitet `hex:click`-Events an den aktiven Modus weiter.
-- Bindet den Map-Header samt Mode-Switch und Save-Hook; `onSave` des Modus kann persistieren/abbrechen, anschließend greift optional die Standard-Speicherlogik.
+- Bindet `createMapManager`, um Header-Buttons (`Open`, `Create`, `Delete`) zu teilen und den Stage-Reload nach jeder State-Änderung zu koordinieren.
 - Registriert Travel-, Editor-, Inspector- sowie Beispiel-Modi und sorgt für konsistente `onEnter`/`onExit`/`onFileChange`-Sequenzen.
 
 ### `modes/editor.ts`
