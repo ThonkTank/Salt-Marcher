@@ -116,15 +116,10 @@ export const HEX_PLUGIN_CSS = `
     margin: 0;
 }
 
+
 .sm-travel-guide__header .sm-map-header .sm-map-header__secondary-left {
     margin-left: auto;
     margin-right: 0;
-}
-
-.sm-travel-guide__header .sm-tg-controls {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
 }
 
 .sm-tg-controls__btn {
@@ -208,6 +203,20 @@ export const HEX_PLUGIN_CSS = `
     flex-direction: column;
     gap: 0.75rem;
     width: 100%;
+}
+
+.sm-tg-sidebar__controls {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.sm-tg-sidebar__controls .sm-tg-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .sm-tg-sidebar__row {

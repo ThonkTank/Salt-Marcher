@@ -39,8 +39,8 @@ src/apps/travel-guide/
    ├─ token-layer.ts              # Sichtbares Token (SVG <g>, RAF-Animation)
    ├─ drag.controller.ts          # Pointerdown/move/up, Ghost-Preview, Commit via Logik
    ├─ contextmenue.ts             # RMB auf Dots → deleteUserAt
-   ├─ controls.ts                 # Playback-Steuerung (Start/Stopp/Reset) im Map-Header-Slot
-   └─ sidebar.ts                  # Sidebar für Karten-Titel, Status & Speed-Steuerung
+   ├─ controls.ts                 # Playback-Steuerung (Start/Stopp/Reset) im Sidebar-Controls-Host
+   └─ sidebar.ts                  # Sidebar inkl. Controls-Bereich für Karten-Titel, Status & Speed
 ```
 
 > Zielgrößen: 80–180 LOC pro Modul, maximal 300 LOC.
@@ -121,10 +121,10 @@ export type TravelLogic = {
 
 ---
 
-## Playback-Header & Reset
+## Playback-Steuerung & Reset
 
-- Der Map-Header stellt über `secondaryLeftSlot` einen freien Bereich in Zeile 2 bereit. `ui/controls.ts` nutzt diesen Slot, um die Buttons direkt neben Save-Dropdown & Trigger zu platzieren – ohne zusätzlichen Card-Container.
-- Buttons verwenden weiterhin `applyMapButtonStyle`, zeigen jetzt „Start“, „Stopp“ und „Reset“ (Icons: Play, Square, Rotate) und rufen ausschließlich die übergebenen Callbacks (`logic.play()`, `logic.pause()`, `logic.reset()`) auf.
+- Oberhalb der Sidebar-Zeilen liegt `sm-tg-sidebar__controls`; `ui/controls.ts` montiert seine Buttons in diesem Host, damit Play/Stop/Reset direkt neben Speed-Regler und Statuswerten sitzen, während der Map-Header wieder den Dateinamen im Standardslot anzeigt.
+- Buttons verwenden weiterhin `applyMapButtonStyle`, zeigen „Start“, „Stopp“ und „Reset“ (Icons: Play, Square, Rotate) und rufen ausschließlich die übergebenen Callbacks (`logic.play()`, `logic.pause()`, `logic.reset()`) auf.
 - `handleStateChange` liefert `playing` und `route.length` an `setState`, damit „Start“ nur mit vorhandener Route aktiv ist, „Stopp“ ausschließlich während des Playbacks verfügbar bleibt und „Reset“ die Route leert, auch wenn Playback noch läuft.
 - `logic.reset()` ruft immer zuerst `logic.pause()` (sofortiges Abbrechen inkl. Token-Stop), leert Route/Edit-Index/`currentTile` und initialisiert das Token über `initTokenFromTiles()` neu, wodurch Position & Persistenz auf den Kartendaten aktualisiert werden.
 
@@ -162,13 +162,13 @@ Alle Farbwerte lassen sich über die jeweiligen Custom Properties überschreiben
 - `mountTravelGuide(app, host, file)` setzt den Host auf `.sm-travel-guide`, erzeugt Header + Body (Map-/Sidebar-Container) und führt das Karten-SVG über `createMapLayer` direkt in den linken Bereich ein. Der Header stammt aus `ui/map-header.ts`, verlinkt Öffnen/Erstellen mit `enqueueLoad` und erweitert den Save-Flow um `logic.persistTokenToTiles()`.
 - Lädt Terrain-Definitionen (`loadTerrains` → `setTerrains`) einmalig beim Mount.
 - Erstellt `routeLayer` und `tokenLayer` gemeinsam auf `mapLayer.handles.contentG` (kamera-transformierte Content-Gruppe), damit Karte, Route und Token identisch gescaled/panned werden.
-- Instanziiert `createSidebar` im rechten Bereich; die Sidebar reduziert sich auf zwei Zeilen (aktuelles Hex, Token-Speed) und verbindet `onSpeedChange` mit `logic.setTokenSpeed`.
-- Nutzt `MapHeaderHandle.secondaryLeftSlot`, um `createPlaybackControls` direkt im Header zu mounten; die Buttons rufen `logic.play()`, `logic.pause()` (Stop) und `logic.reset()` auf und erhalten `playing/route` über `handleStateChange`, um aktiv/inaktiv zu wechseln.
+- Instanziiert `createSidebar` im rechten Bereich; der Wrapper stellt `controlsHost` für die Playback-Buttons bereit und hält zwei Status-Zeilen (aktuelles Hex, Token-Speed). `onSpeedChange` verbindet die Eingabe mit `logic.setTokenSpeed`.
+- Montiert `createPlaybackControls` im `sidebar.controlsHost`, damit Play/Stop/Reset an der Sidebar angedockt bleiben; `handleStateChange` beliefert sie mit `playing/route`, um Aktivierung und Disabled-State zu steuern.
 - Initialisiert `createTravelLogic` (Mindestdauer 0,1 s pro Tile) mit einem `onChange`, der Route-Highlight, Sidebar-Tile (`currentTile ?? tokenRC`) und Speed synchronisiert.
 - `logic.initTokenFromTiles()` lädt/persistiert die Tokenposition; Hook wird nach dem Mount einmal manuell aufgerufen.
 - Richtet Drag- & Kontextmenüs neu ein, sobald `setFile` eine Karte lädt; `setFile` returned ein `Promise` und serialisiert Ladevorgänge.
 - Der zurückgegebene `TravelGuideController` sorgt für Cleanup (Drag, Sidebar, Klassen) und akzeptiert `setFile`, um Karte, Titel und Route während der Laufzeit neu zu binden.
-- Prüft zuerst `drag.consumeClickSuppression()` und kehrt bei Drag-bedingter Unterdrückung früh zurück; nur echte Klicks rufen `preventDefault`/`stopPropagation` auf, damit Obsidian keine Dash-Ansicht startet, bevor die Logik `handleHexClick` ausführt.
+- Prüft `drag.consumeClickSuppression()` und cancelt unterdrückte Klicks (`preventDefault` + `stopPropagation`), damit Drag-Abbrüche kein Tile-Open mehr triggern; echte Klicks leitet es weiterhin an `logic.handleHexClick` weiter.
 
 ### `ui/map-layer.ts`
 - Nutzt `renderHexMap` um das Kartensvg zu erzeugen, verwaltet `RenderHandles`.
@@ -189,7 +189,7 @@ Alle Farbwerte lassen sich über die jeweiligen Custom Properties überschreiben
 - Lässt Pointer-Events aktiv (`cursor: grab`) für Drag-Start.
 
 ### `ui/controls.ts`
-- Rendert Start/Stopp/Reset-Buttons direkt im `secondaryLeftSlot` des Map-Headers, nutzt `applyMapButtonStyle` und Obsidian-Icons (`play`, `square`, `rotate-ccw`).
+- Rendert Start/Stopp/Reset-Buttons im von der Sidebar bereitgestellten Controls-Host (`.sm-tg-sidebar__controls`), nutzt `applyMapButtonStyle` und Obsidian-Icons (`play`, `square`, `rotate-ccw`).
 - `setState` aktiviert „Start“ nur mit Route, „Stopp“ nur beim laufenden Playback und „Reset“ sobald entweder Route existiert oder abgespielt wird.
 - Klicks lösen ausschließlich die übergebenen Callbacks aus; der Helper hält keinen eigenen Zustand und lässt sich über `destroy()` vollständig entfernen.
 
@@ -207,8 +207,8 @@ Alle Farbwerte lassen sich über die jeweiligen Custom Properties überschreiben
 - Ruft bei `user`-Dots `logic.deleteUserAt(idx)` und stoppt Event-Bubbling.
 
 ### `ui/sidebar.ts`
-- Rendert eine kompakte Sidebar mit zwei Zeilen (aktuelles Hex, Token-Speed) inklusive Styles für Label/Value/Input.
-- `setTile`, `setSpeed` aktualisieren sichtbare Werte; `setTitle` hinterlegt den Dateinamen nur als `data-map-title` auf dem Host (für Tooltips/Debug), Eingaben werden (>0) validiert.
+- Rendert eine kompakte Sidebar mit vorgelagertem `controlsHost` (Klasse `.sm-tg-sidebar__controls`) und zwei Status-Zeilen (aktuelles Hex, Token-Speed) inklusive Styles für Label/Value/Input.
+- `controlsHost` dient `view-shell` als Mount-Punkt für die Playback-Buttons; `setTile`, `setSpeed` aktualisieren Werte, `setTitle` hinterlegt den Dateinamen als `data-map-title` auf dem Host (für Tooltips/Debug) und validiert Eingaben (>0).
 - `onSpeedChange` registriert den externen Callback, `destroy()` leert den Host und entfernt das Daten-Attribut. Wird von `view-shell` genutzt.
 
 ### `domain/types.ts`

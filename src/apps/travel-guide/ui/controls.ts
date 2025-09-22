@@ -1,5 +1,5 @@
 // src/apps/travel-guide/ui/controls.ts
-// Playback-Buttons (Start/Stopp/Reset) direkt im Map-Header-Slot. Kapselt nur DOM + Button-State.
+// Playback-Buttons (Start/Stopp/Reset) im Sidebar-Controls-Host. Kapselt nur DOM + Button-State.
 
 import { setIcon } from "obsidian";
 import { applyMapButtonStyle } from "../../../ui/map-workflows";
