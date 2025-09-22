@@ -59,7 +59,7 @@ export function drawRoute(args: {
         hit.style.fill = "transparent";
         hit.setAttribute("stroke", "transparent");
         hit.style.pointerEvents = "all";
-        hit.style.cursor = "pointer";
+        hit.style.cursor = "grab";
         layer.appendChild(hit);
 
         const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -72,7 +72,7 @@ export function drawRoute(args: {
         dot.classList.add("tg-route-dot");
         dot.classList.add(node.kind === "user" ? "tg-route-dot--user" : "tg-route-dot--auto");
         dot.style.pointerEvents = "auto";
-        dot.style.cursor = "pointer";
+        dot.style.cursor = "grab";
         layer.appendChild(dot);
     });
 
@@ -90,6 +90,6 @@ export function updateHighlight(layer: SVGGElement, highlightIndex: number | nul
         el.setAttribute("stroke-width", isHi ? "2" : "0");
         el.setAttribute("r", String(isHi ? baseRadius + HIGHLIGHT_OFFSET : baseRadius));
         el.style.removeProperty("opacity");
-        el.style.cursor = "pointer";
+        el.style.cursor = "grab";
     });
 }

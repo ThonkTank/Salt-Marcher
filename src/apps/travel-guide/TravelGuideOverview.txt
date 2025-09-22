@@ -193,6 +193,10 @@ Alle Farbwerte lassen sich über die jeweiligen Custom Properties überschreiben
 - `highlight(i)` ruft `updateHighlight` (nur UI-Anpassung).
 - `destroy()` entfernt die Gruppe.
 
+### `render/draw-route.ts`
+- Zeichnet Polyline und Wegpunkt-Dots rein über SVG und aktualisiert Highlight-Styles ohne eigenen Zustand.
+- Setzt `cursor: grab` für Dots und Hitboxen und belässt ihn auch während `updateHighlight`, damit Drag-Anker denselben Greif-Affordance wie das Token anzeigen.
+
 ### `ui/token-layer.ts`
 - Erstellt `<g class="tg-token">` inklusive auffälligem Kreis (Radius 14, dicker Rand), versteckt initial, und hängt ihn direkt an das kamera-transformierte `contentG`.
 - Nutzt `.tg-token__circle`, damit Farbe, Border und Opazität zentral über CSS gesteuert werden.
