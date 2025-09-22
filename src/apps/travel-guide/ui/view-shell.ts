@@ -94,7 +94,11 @@ export async function mountTravelGuide(
     };
 
     const onHexClick = (ev: CustomEvent<Coord>) => {
-        if (drag?.consumeClickSuppression()) return;
+        if (drag?.consumeClickSuppression()) {
+            if (ev.cancelable) ev.preventDefault();
+            ev.stopPropagation();
+            return;
+        }
         if (!logic) return;
         if (ev.cancelable) ev.preventDefault();
         ev.stopPropagation();
@@ -195,7 +199,6 @@ export async function mountTravelGuide(
     headerHandle = createMapHeader(app, headerHost, {
         title: "Travel Guide",
         initialFile: file ?? null,
-        secondaryLeftSlot: () => {},
         onOpen: async (next) => {
             await enqueueLoad(next);
         },
@@ -214,7 +217,7 @@ export async function mountTravelGuide(
         },
     });
 
-    playbackControls = createPlaybackControls(headerHandle.secondaryLeftSlot, {
+    playbackControls = createPlaybackControls(sidebar.controlsHost, {
         onPlay: () => {
             void logic?.play();
         },

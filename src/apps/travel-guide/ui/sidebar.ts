@@ -1,5 +1,6 @@
 export type Sidebar = {
     root: HTMLElement;
+    controlsHost: HTMLElement;
     setTitle?: (title: string) => void;
     setTile(rc: { r: number; c: number } | null): void;
     setSpeed(v: number): void;
@@ -12,6 +13,8 @@ export function createSidebar(host: HTMLElement): Sidebar {
     host.classList.add("sm-tg-sidebar");
 
     const root = host.createDiv({ cls: "sm-tg-sidebar__inner" });
+
+    const controlsHost = root.createDiv({ cls: "sm-tg-sidebar__controls" });
 
     const tileRow = root.createDiv({ cls: "sm-tg-sidebar__row" });
     tileRow.createSpan({ cls: "sm-tg-sidebar__label", text: "Aktuelles Hex" });
@@ -51,6 +54,7 @@ export function createSidebar(host: HTMLElement): Sidebar {
     return {
         root,
         setTitle,
+        controlsHost,
         setTile,
         setSpeed,
         onSpeedChange: (fn) => (onChange = fn),
