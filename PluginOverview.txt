@@ -8,7 +8,7 @@ analysieren und mit Reiserouten versehen. Das Plugin ist in klar getrennte Layer
 | Layer | Standort | Aufgabe | Detail-Dokument |
 | --- | --- | --- | --- |
 | Plugin-Bootstrap | `src/app/` | Registriert Views/Commands, lädt CSS & Terrain-Daten und koordiniert Lifecycle sowie Watcher. | – |
-| Feature-Apps | `src/apps/` | Enthalten eigenständige Obsidian-Views (Cartographer mit Travel/Editor/Inspector-Modi, Terrain-Editor sowie Legacy-Galerie-/Travel-Hüllen). | Pro Feature in `*Overview.txt` |
+| Feature-Apps | `src/apps/` | Enthalten aktive Obsidian-Views (Cartographer mit Travel/Editor/Inspector-Modi sowie Terrain-Editor); Legacy-Hüllen liegen gebündelt unter `src/apps/legacy/`. | Pro Feature in `*Overview.txt` |
 | Core-Services | `src/core/` | Bietet Hex-Geometrie, Map-/Tile-Dateioperationen, Terrain-Verwaltung und Workspace-Helfer. | `src/core/CoreOverview.txt` |
 | UI-Bausteine | `src/ui/` | Stellt wiederverwendbare Modals/Bestätigungsdialoge für Features bereit. | `src/ui/UiOverview.txt` |
 | Styling | `src/app/css.ts` | Liefert das zentrale CSS, das beim Plugin-Start injiziert wird. | – |
@@ -20,12 +20,9 @@ src/
 │  └─ css.ts                 # Zentrales Styling (wird dynamisch injiziert)
 │
 ├─ apps/
-│  ├─ map-gallery.ts         # Historische Galerie; leitet jetzt direkt in den Cartographer um
-│  ├─ map-editor/            # Interaktiver Hex-Editor – MapEditorOverview.txt
+│  ├─ cartographer/          # Multi-Mode Map Viewer (Travel/Editor/Inspector) – CartographerOverview.txt
 │  ├─ terrain-editor/        # Terrain-Palette – TerrainEditorOverview.txt
-│  ├─ legacy/
-│  │  └─ travel-guide-view/  # Legacy-View, mountet den Cartographer-Travel-Mode
-│  └─ cartographer/          # Multi-Mode Map Viewer (Travel/Editor/Inspector) – CartographerOverview.txt
+│  └─ legacy/                # Kompatibilitäts-Wrapper (Map Editor, Gallery, Travel Guide)
 │
 ├─ core/                     # Hex-Engine & Dateiservices – CoreOverview.txt
 └─ ui/                       # Modals & Dialoge – UiOverview.txt
@@ -43,9 +40,7 @@ src/
 ### Feature-Apps (`src/apps/`)
 - **Cartographer (`cartographer/`):** Stellt den `sm-cartographer`-Shell bereit, rendert Karten via `renderHexMap`/`createMapLayer`, schaltet Travel/Editor/Inspector-Modi über einen Header-Slot, kapselt deren Sidebars und bündelt Open/Create/Delete über `createMapManager`. View & Command sind die primären Entry-Points im Plugin.
 - **Terrain Editor (`terrain-editor/`):** Pflegt Farb- und Geschwindigkeits-Paletten über den Core-Terrain-Store und synchronisiert Änderungen mit `terrain.ts`.
-- **Map Gallery (`map-gallery.ts`):** Historische View, die beim direkten Öffnen (z. B. aus alten Workspaces) weiterhin auf den Cartographer umleitet.
-- **Map Editor (`map-editor/`):** Liefert Tooling für Hex-Auswahl, Brush-Painting, Tile-Speicherung und Inspector-Views (Details siehe `MapEditorOverview.txt`); wird über neue Cartographer-Flows eröffnet.
-- **Legacy Travel Guide (`legacy/travel-guide-view/`):** Dünne Hülle für Rückwärtskompatibilität. Mountet den Travel-Modus aus `cartographer/travel/` in der bekannten `sm-cartographer`-Shell und kümmert sich ausschließlich um den View-Lifecycle.
+- **Legacy-Hüllen (`legacy/`):** Bewahrt frühere Views (Map Editor, Map Gallery, Travel Guide) als Kompatibilitäts-Schicht. Details siehe `src/apps/legacy/LegacyAppsOverview.txt`.
 
 ### Core-Services (`src/core/`)
 - Bündelt Hex-Mathematik, SVG-Rendering, Map/Terrain-Dateiverwaltung und Workspace-Utilities.
