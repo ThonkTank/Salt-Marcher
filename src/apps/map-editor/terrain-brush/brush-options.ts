@@ -90,7 +90,7 @@ export function createBrushTool(): ToolModule {
             circle?.destroy();
             circle = attachBrushCircle(
                 { svg: handles.svg, contentG: handles.contentG, overlay: handles.overlay },
-                { initialRadius: eff(), hexRadiusPx: ctx.getOpts().radius }
+                { initialRadius: eff(), hexRadiusPx: ctx.getOptions()?.radius ?? 42 }
             );
             circle.show();
         },
@@ -105,7 +105,7 @@ export function createBrushTool(): ToolModule {
             circle?.destroy();
             circle = attachBrushCircle(
                 { svg: handles.svg, contentG: handles.contentG, overlay: handles.overlay },
-                { initialRadius: eff(), hexRadiusPx: ctx.getOpts().radius }
+                { initialRadius: eff(), hexRadiusPx: ctx.getOptions()?.radius ?? 42 }
             );
             circle.show();
 
