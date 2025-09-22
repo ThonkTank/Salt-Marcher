@@ -1,0 +1,49 @@
+# Cartographer Editor Tools – Übersicht
+
+## Struktur
+
+```
+src/apps/cartographer/editor/
+├─ EditorOverview.txt             # Dieses Dokument
+└─ tools/
+   ├─ tools-api.ts                # Tool-Schnittstelle für Cartographer-Modi
+   ├─ brush-circle.ts             # SVG-Vorschaukreis für Brush-Werkzeuge
+   └─ terrain-brush/
+      ├─ brush-options.ts         # Terrain-Brush UI & Statuslogik
+      ├─ brush.ts                 # Persistenz & Live-Fill für Terrain-Änderungen
+      └─ brush-math.ts            # Hex-Radius-Berechnungen im odd-r Grid
+```
+
+---
+
+## Features & Verantwortlichkeiten
+
+- **Gemeinsame Tool-API:** `tools-api.ts` definiert den Vertrag für Editor-Tools (Lifecycle, Kontextzugriff, Statusmeldungen) und wird vom Cartographer-Modus konsumiert.
+- **Brush-Vorschau:** `brush-circle.ts` kapselt den SVG-Kreis, der als Radius-Vorschau im Map-Overlay dient, inklusive Pointer-Capture und Throttling.
+- **Terrain-Brush Paket:** `terrain-brush/*` bündelt UI, Persistenz und Mathematik für das Standard-Brush-Tool des Editors. Die Module liefern die Optionen, berechnen Zielkoordinaten und synchronisieren Render-Fills.
+- **Legacy-Kompatibilität:** Der Map-Editor-Wrapper importiert weiterhin aus `map-editor/*`, die Dateien leiten jedoch in diesen Namespace um.
+
+---
+
+## Datei-Rollen
+
+### `tools/tools-api.ts`
+- Deklariert `ToolContext` mit Zugriff auf `App`, aktive Datei, `RenderHandles`, Hex-Optionen und Statusausgaben.
+- Beschreibt das `ToolModule`-Interface (Lifecycle-Hooks, `onHexClick`) und dient als zentrale Grundlage für Editor-Werkzeuge.
+
+### `tools/brush-circle.ts`
+- Erzeugt einen SVG-Kreis, der Pointer-Events vom Overlay in Kartenkoordinaten transformiert.
+- Stellt ein steuerbares Interface (`updateRadius`, `show`, `hide`, `destroy`) bereit, das Brush-Tools zur Vorschau verwenden.
+
+### `tools/terrain-brush/brush-options.ts`
+- Baut das Options-Panel (Radius-Slider, Terrain-Select, Moduswahl) und aktualisiert Live-Statusmeldungen.
+- Bindet den Brush-Kreis an aktuelle `RenderHandles` und reagiert auf Terrain-Paletten-Updates.
+
+### `tools/terrain-brush/brush.ts`
+- Persistiert Terrain-Änderungen via `saveTile`/`deleteTile` und setzt SVG-Fills unmittelbar.
+- Unterstützt Mal- und Löschmodus und dedupliziert Zielkoordinaten im Brush-Radius.
+
+### `tools/terrain-brush/brush-math.ts`
+- Konvertiert odd-r Koordinaten in Axialwerte und berechnet den Hex-Radius.
+- Liefert `coordsInRadius`, das Brush-Ziele stabil sortiert zurückgibt.
+
