@@ -18,12 +18,12 @@ export function createPlayback(cfg: {
     getMapFile: () => TFile | null;
     adapter: RenderAdapter;
     store: Store;
-    baseMs: number;
-    onChange: () => void; // UI zeichnet im onChange()-Handler
+    minSecondsPerTile: number;
 }) {
-    const { app, getMapFile, adapter, store, baseMs, onChange } = cfg;
+    const { app, getMapFile, adapter, store, minSecondsPerTile } = cfg;
 
     let playing = false;
+    let currentRun: Promise<void> | null = null;
 
     function trimRoutePassed(token: Coord) {
         const cur = store.get();
@@ -33,61 +33,85 @@ export function createPlayback(cfg: {
     }
 
     async function play() {
+        if (playing) return;
+
+        if (currentRun) {
+            try {
+                await currentRun;
+            } catch {
+                // vorheriger Lauf bereits abgebrochen → ignorieren
+            }
+        }
+
         const mapFile = getMapFile();
         if (!mapFile) return;
 
         const s0 = store.get();
         if (s0.route.length === 0) return;
 
-        playing = true;
-        store.set({ playing: true });
-        onChange();
+        const run = (async () => {
+            playing = true;
+            store.set({ playing: true });
 
-        while (playing) {
-            const s = store.get();
-            if (s.route.length === 0) break;
+            try {
+                while (playing) {
+                    const s = store.get();
+                    if (s.route.length === 0) break;
 
-            // Immer das nächste Ziel vom aktuellen State nehmen (Route beginnt NACH dem Token)
-            const next = s.route[0];
+                    const next = s.route[0];
+                    adapter.ensurePolys([{ r: next.r, c: next.c }]);
 
-            // Sicherstellen, dass Geometrie vorhanden ist
-            adapter.ensurePolys([{ r: next.r, c: next.c }]);
+                    const terr = await loadTerrainSpeed(app, mapFile, next);
+                    const seconds = Math.max(minSecondsPerTile, s.tokenSpeed * terr);
+                    const dur = seconds * 1000;
 
-            // Dauer = baseMs / (Terrain × TokenSpeed)
-            const terr = await loadTerrainSpeed(app, mapFile, next);
-            const eff = Math.max(0.05, terr * s.tokenSpeed);
-            const dur = baseMs / eff;
+                    const ctr = adapter.centerOf(next);
+                    let cancelled = false;
+                    if (ctr) {
+                        try {
+                            await adapter.token.moveTo(ctr.x, ctr.y, dur);
+                        } catch (err) {
+                            if (err instanceof Error && err.name === "TokenMoveCancelled") {
+                                cancelled = true;
+                            } else {
+                                throw err;
+                            }
+                        }
+                    }
 
-            const ctr = adapter.centerOf(next);
-            if (ctr) {
-                await adapter.token.moveTo(ctr.x, ctr.y, dur);
+                    if (cancelled) break;
+
+                    const tokenRC = { r: next.r, c: next.c };
+                    store.set({ tokenRC, currentTile: tokenRC });
+
+                    await writeTokenToTiles(app, mapFile, tokenRC);
+                    trimRoutePassed(tokenRC);
+
+                    if (!playing) break;
+                }
+            } finally {
+                playing = false;
+                store.set({ playing: false });
             }
+        })();
 
-            // Token angekommen → State aktualisieren
-            const tokenRC = { r: next.r, c: next.c };
-            store.set({ tokenRC, currentTile: tokenRC });
+        currentRun = run;
+        try {
+            await run;
+        } finally {
+            if (currentRun === run) currentRun = null;
+        }
+    }
 
-            // Persistieren in Tiles (Domain-only)
-            await writeTokenToTiles(app, mapFile, tokenRC);
-
-            // Passierte Knoten entfernen (Pfad beginnt immer am Token)
-            trimRoutePassed(tokenRC);
-
-            onChange();
-
-            // Abbruch prüfen
-            if (!playing) break;
+    function pause() {
+        if (!playing && !currentRun) {
+            adapter.token.stop?.();
+            return;
         }
 
         playing = false;
         store.set({ playing: false });
-        onChange();
-    }
-
-    function pause() {
-        playing = false;
-        store.set({ playing: false });
-        onChange();
+        adapter.token.stop?.();
     }
 
     return { play, pause };

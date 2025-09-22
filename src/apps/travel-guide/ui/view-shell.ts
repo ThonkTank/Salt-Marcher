@@ -41,7 +41,8 @@ export async function mountTravelGuide(
     const mapHost = body.createDiv({ cls: "sm-tg-map" });
     const sidebarHost = body.createDiv({ cls: "sm-tg-sidebar" });
 
-    const sidebar = createSidebar(sidebarHost, file?.basename ?? "—");
+    const sidebar = createSidebar(sidebarHost);
+    if (file) sidebar.setTitle?.(file.basename);
 
     await setTerrains(await loadTerrains(app));
 
@@ -108,7 +109,7 @@ export async function mountTravelGuide(
         if (same) return;
 
         currentFile = nextFile;
-        sidebar.setTitle(nextFile?.basename ?? "—");
+        sidebar.setTitle?.(nextFile?.basename ?? "");
         headerHandle?.setFileLabel(currentFile);
         sidebar.setTile(null);
 
@@ -147,7 +148,7 @@ export async function mountTravelGuide(
 
         logic = createTravelLogic({
             app,
-            baseMs: 900,
+            minSecondsPerTile: 0.1,
             getMapFile: () => currentFile,
             adapter,
             onChange: (state) => handleStateChange(state),
@@ -194,6 +195,7 @@ export async function mountTravelGuide(
     headerHandle = createMapHeader(app, headerHost, {
         title: "Travel Guide",
         initialFile: file ?? null,
+        secondaryLeftSlot: () => {},
         onOpen: async (next) => {
             await enqueueLoad(next);
         },
@@ -212,11 +214,11 @@ export async function mountTravelGuide(
         },
     });
 
-    playbackControls = createPlaybackControls(headerHost, {
+    playbackControls = createPlaybackControls(headerHandle.secondaryLeftSlot, {
         onPlay: () => {
             void logic?.play();
         },
-        onPause: () => {
+        onStop: () => {
             logic?.pause();
         },
         onReset: () => {

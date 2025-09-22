@@ -53,17 +53,26 @@ polyToCoord: WeakMap<SVGElement, Coord>;       // MapLayer-Index
         return null;
     }
 
+    function getDotElements(idx: number) {
+        const dot = routeLayerEl.querySelector<SVGCircleElement>(`.tg-route-dot[data-idx="${idx}"]`);
+        const hit = routeLayerEl.querySelector<SVGCircleElement>(`.tg-route-dot-hitbox[data-idx="${idx}"]`);
+        return { dot, hit };
+    }
+
     function ghostMoveSelectedDot(rc: Coord) {
         const s = logic.getState();
         const idx = s.editIdx;
         if (idx == null) return;
-        const dots = Array.from(routeLayerEl.querySelectorAll<SVGCircleElement>("circle"));
-        const dot = dots[idx];
+        const { dot, hit } = getDotElements(idx);
         if (!dot) return;
         const ctr = adapter.centerOf(rc);
         if (!ctr) return;
         dot.setAttribute("cx", String(ctr.x));
         dot.setAttribute("cy", String(ctr.y));
+        if (hit) {
+            hit.setAttribute("cx", String(ctr.x));
+            hit.setAttribute("cy", String(ctr.y));
+        }
     }
 
     function ghostMoveToken(rc: Coord) {
@@ -102,10 +111,11 @@ polyToCoord: WeakMap<SVGElement, Coord>;       // MapLayer-Index
         if (ev.button !== 0) return; // nur LMB
         const t = ev.target as Element;
         if (!(t instanceof SVGCircleElement)) return;
+        if (!t.classList.contains("tg-route-dot") && !t.classList.contains("tg-route-dot-hitbox")) return;
 
-        const nodes = Array.from(routeLayerEl.querySelectorAll("circle"));
-        const idx = nodes.indexOf(t);
-        if (idx < 0) return;
+        const idxAttr = t.getAttribute("data-idx");
+        const idx = idxAttr ? Number(idxAttr) : NaN;
+        if (!Number.isFinite(idx) || idx < 0) return;
 
         logic.selectDot(idx);
         dragKind = "dot";
@@ -113,7 +123,8 @@ polyToCoord: WeakMap<SVGElement, Coord>;       // MapLayer-Index
         lastDragRC = null;
         suppressNextHexClick = true;
         disableLayerHit(true);
-        (t as Element).setPointerCapture?.(ev.pointerId);
+        const { dot } = getDotElements(idx);
+        (dot ?? t).setPointerCapture?.(ev.pointerId);
 
         ev.preventDefault();
         (ev as any).stopImmediatePropagation?.();

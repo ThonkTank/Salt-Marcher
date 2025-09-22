@@ -39,7 +39,7 @@ src/apps/travel-guide/
    ├─ token-layer.ts              # Sichtbares Token (SVG <g>, RAF-Animation)
    ├─ drag.controller.ts          # Pointerdown/move/up, Ghost-Preview, Commit via Logik
    ├─ contextmenue.ts             # RMB auf Dots → deleteUserAt
-   ├─ controls.ts                 # Playback-Steuerung (Play/Pause/Reset) unter dem Header
+   ├─ controls.ts                 # Playback-Steuerung (Start/Stopp/Reset) im Map-Header-Slot
    └─ sidebar.ts                  # Sidebar für Karten-Titel, Status & Speed-Steuerung
 ```
 
@@ -109,24 +109,24 @@ export type TravelLogic = {
 
 ## Datenfluss (kurz)
 
-1. **Mount:** `index.ts` erstellt im View `mountTravelGuide(app, host, file)`. Die Shell richtet einen Spalten-Wrapper mit gemeinsamem Map-Header (`ui/map-header.ts`) ein, lädt Terrain-Daten, baut Map/Route/Token-Layer und instanziiert `createTravelLogic` (Basisdauer 900 ms). Der Header verknüpft Open/Create mit `enqueueLoad` und ruft beim Speichern `persistTokenToTiles` plus `saveMap`/`saveMapAs`.
+1. **Mount:** `index.ts` erstellt im View `mountTravelGuide(app, host, file)`. Die Shell richtet einen Spalten-Wrapper mit gemeinsamem Map-Header (`ui/map-header.ts`) ein, lädt Terrain-Daten, baut Map/Route/Token-Layer und instanziiert `createTravelLogic` (Mindestdauer 0,1 s pro Tile). Der Header verknüpft Open/Create mit `enqueueLoad` und ruft beim Speichern `persistTokenToTiles` plus `saveMap`/`saveMapAs`.
 2. **Store-Abos:** `createTravelLogic` subscribed auf den Store. Jede Änderung triggert `adapter.draw(route, tokenRC)` und optionales `onChange` (View rendert Highlight).
 3. **Hex-Klick:** `map-layer` emittiert `hex:click` → `view-shell` ruft `logic.handleHexClick(rc)` → `expandCoords` erzeugt Autos → Store-Update → Route-Layer zeichnet neu.
 4. **Dot-Drag:** `drag.controller` zeigt Ghost (nur UI), `pointerup` → `logic.moveSelectedTo(rc)` → neue Segmente via `expandCoords` → Store-Update.
 5. **Token-Drag:** `drag.controller` Ghost via `TokenCtl`, Commit → `logic.moveTokenTo(rc)` liest Route-Anker aus dem Store, rekonstruiert Token + Route über `store.set` und persistiert Tiles; der Store-Subscriber zeichnet unmittelbar neu.
 6. **RMB:** `contextmenue` prüft Dot-Kind, löscht nur `user` via `logic.deleteUserAt(idx)` → Brücke neu expandiert.
-7. **Playback-Steuerung:** `ui/controls.ts` rendert Play/Pause/Reset unter dem Header. `handleStateChange` füttert `setState` mit `playing` und der aktuellen Route, damit Buttons nur bei verfügbaren Wegpunkten aktiv sind. Klicks triggern `logic.play()`, `logic.pause()` bzw. `logic.reset()`. Der Reset stoppt Playback, leert Route/`editIdx`/`currentTile` und ruft `initTokenFromTiles()` zur Token-Neuinitialisierung.
-8. **Playback:** `logic.play()` → `createPlayback` iteriert Route, lädt Terrain-Speed, animiert Token, persistiert Position und trimmt passierte Knoten. `pause()` stoppt Schleife.
+7. **Playback-Steuerung:** `ui/controls.ts` nutzt den Header-Slot für Start/Stopp/Reset. `handleStateChange` füttert `setState` mit `playing` und der aktuellen Route, damit Buttons nur bei verfügbaren Wegpunkten aktiv sind. Klicks triggern `logic.play()`, `logic.pause()` (Stop) bzw. `logic.reset()`. Der Reset stoppt Playback, leert Route/`editIdx`/`currentTile` und ruft `initTokenFromTiles()` zur Token-Neuinitialisierung.
+8. **Playback:** `logic.play()` → `createPlayback` iteriert Route, lädt Terrain-Speed, animiert Token (`Math.max(minSecondsPerTile, tokenSpeed×terrainSpeed) * 1000`), persistiert Position und trimmt passierte Knoten. `pause()` setzt `playing=false`, ruft `token.stop()` auf und beendet den Durchlauf.
 9. **Token-Initialisierung:** `logic.initTokenFromTiles()` lädt einmalig das `token_travel`-Flag, rekonstruiert Token + Route via Store und legt Flag an, falls fehlend.
 
 ---
 
 ## Playback-Header & Reset
 
-- Unter `sm-travel-guide__header` ergänzt `ui/controls.ts` einen eigenen Flex-Container mit denselben Border/Background-Styles wie der Map-Header.
-- Buttons nutzen `applyMapButtonStyle`, Icons aus Obsidian und werden ausschließlich über Callbacks (`logic.play/pause/reset`) verdrahtet.
-- `handleStateChange` liefert `playing` und `route.length` an `setState`, damit „Play“ nur mit vorhandener Route aktiv ist, „Pause“ ausschließlich während des Playbacks angeboten wird und „Reset“ die Route leert, auch wenn Playback läuft.
-- `logic.reset()` pausiert immer zuerst, setzt Route/Edit-Index/`currentTile` leer und ruft `initTokenFromTiles()` erneut auf, wodurch Token-Position und Persistenz sofort auf den Kartendaten landen.
+- Der Map-Header stellt über `secondaryLeftSlot` einen freien Bereich in Zeile 2 bereit. `ui/controls.ts` nutzt diesen Slot, um die Buttons direkt neben Save-Dropdown & Trigger zu platzieren – ohne zusätzlichen Card-Container.
+- Buttons verwenden weiterhin `applyMapButtonStyle`, zeigen jetzt „Start“, „Stopp“ und „Reset“ (Icons: Play, Square, Rotate) und rufen ausschließlich die übergebenen Callbacks (`logic.play()`, `logic.pause()`, `logic.reset()`) auf.
+- `handleStateChange` liefert `playing` und `route.length` an `setState`, damit „Start“ nur mit vorhandener Route aktiv ist, „Stopp“ ausschließlich während des Playbacks verfügbar bleibt und „Reset“ die Route leert, auch wenn Playback noch läuft.
+- `logic.reset()` ruft immer zuerst `logic.pause()` (sofortiges Abbrechen inkl. Token-Stop), leert Route/Edit-Index/`currentTile` und initialisiert das Token über `initTokenFromTiles()` neu, wodurch Position & Persistenz auf den Kartendaten aktualisiert werden.
 
 ---
 
@@ -162,9 +162,9 @@ Alle Farbwerte lassen sich über die jeweiligen Custom Properties überschreiben
 - `mountTravelGuide(app, host, file)` setzt den Host auf `.sm-travel-guide`, erzeugt Header + Body (Map-/Sidebar-Container) und führt das Karten-SVG über `createMapLayer` direkt in den linken Bereich ein. Der Header stammt aus `ui/map-header.ts`, verlinkt Öffnen/Erstellen mit `enqueueLoad` und erweitert den Save-Flow um `logic.persistTokenToTiles()`.
 - Lädt Terrain-Definitionen (`loadTerrains` → `setTerrains`) einmalig beim Mount.
 - Erstellt `routeLayer` und `tokenLayer` gemeinsam auf `mapLayer.handles.contentG` (kamera-transformierte Content-Gruppe), damit Karte, Route und Token identisch gescaled/panned werden.
-- Instanziiert `createSidebar` im rechten Bereich, füllt Titel/Status/Schnelleingaben und verbindet `onSpeedChange` mit `logic.setTokenSpeed`.
-- Direkt unter dem Header mounted `createPlaybackControls`; die Buttons rufen `logic.play()`, `logic.pause()` und `logic.reset()` auf und erhalten `playing/route` über `handleStateChange`, um aktiv/inaktiv zu wechseln.
-- Initialisiert `createTravelLogic` (Basisdauer 900 ms) mit einem `onChange`, der Route-Highlight, Sidebar-Tile (`currentTile ?? tokenRC`) und Speed synchronisiert.
+- Instanziiert `createSidebar` im rechten Bereich; die Sidebar reduziert sich auf zwei Zeilen (aktuelles Hex, Token-Speed) und verbindet `onSpeedChange` mit `logic.setTokenSpeed`.
+- Nutzt `MapHeaderHandle.secondaryLeftSlot`, um `createPlaybackControls` direkt im Header zu mounten; die Buttons rufen `logic.play()`, `logic.pause()` (Stop) und `logic.reset()` auf und erhalten `playing/route` über `handleStateChange`, um aktiv/inaktiv zu wechseln.
+- Initialisiert `createTravelLogic` (Mindestdauer 0,1 s pro Tile) mit einem `onChange`, der Route-Highlight, Sidebar-Tile (`currentTile ?? tokenRC`) und Speed synchronisiert.
 - `logic.initTokenFromTiles()` lädt/persistiert die Tokenposition; Hook wird nach dem Mount einmal manuell aufgerufen.
 - Richtet Drag- & Kontextmenüs neu ein, sobald `setFile` eine Karte lädt; `setFile` returned ein `Promise` und serialisiert Ladevorgänge.
 - Der zurückgegebene `TravelGuideController` sorgt für Cleanup (Drag, Sidebar, Klassen) und akzeptiert `setFile`, um Karte, Titel und Route während der Laufzeit neu zu binden.
@@ -185,12 +185,12 @@ Alle Farbwerte lassen sich über die jeweiligen Custom Properties überschreiben
 ### `ui/token-layer.ts`
 - Erstellt `<g class="tg-token">` inklusive auffälligem Kreis (Radius 14, dicker Rand), versteckt initial, und hängt ihn direkt an das kamera-transformierte `contentG`.
 - Nutzt `.tg-token__circle`, damit Farbe, Border und Opazität zentral über CSS gesteuert werden.
-- Stellt `setPos`, `moveTo` (RAF-Animation, optional durations), `show`, `hide`, `destroy` bereit und erfüllt damit `TokenCtl`.
+- Stellt `setPos`, `moveTo` (RAF-Animation), `stop` (bricht laufende Frames via `cancelAnimationFrame` ab), `show`, `hide`, `destroy` bereit und erfüllt damit `TokenCtl`.
 - Lässt Pointer-Events aktiv (`cursor: grab`) für Drag-Start.
 
 ### `ui/controls.ts`
-- Baut einen eigenständigen Container unter dem Header auf, nutzt `applyMapButtonStyle` für konsistente Buttons und versieht sie mit Play/Pause/Reset-Icons.
-- `setState` aktiviert `Play` nur mit Route, `Pause` nur beim laufenden Playback und `Reset` sobald entweder Route existiert oder gespielt wird.
+- Rendert Start/Stopp/Reset-Buttons direkt im `secondaryLeftSlot` des Map-Headers, nutzt `applyMapButtonStyle` und Obsidian-Icons (`play`, `square`, `rotate-ccw`).
+- `setState` aktiviert „Start“ nur mit Route, „Stopp“ nur beim laufenden Playback und „Reset“ sobald entweder Route existiert oder abgespielt wird.
 - Klicks lösen ausschließlich die übergebenen Callbacks aus; der Helper hält keinen eigenen Zustand und lässt sich über `destroy()` vollständig entfernen.
 
 ### `ui/drag.controller.ts`
@@ -207,9 +207,9 @@ Alle Farbwerte lassen sich über die jeweiligen Custom Properties überschreiben
 - Ruft bei `user`-Dots `logic.deleteUserAt(idx)` und stoppt Event-Bubbling.
 
 ### `ui/sidebar.ts`
-- Rendert einen strukturierten Sidebar-Block (`Titel`, `Status`, `Geschwindigkeit`) inkl. CSS-Klassen.
-- `setTitle`, `setTile`, `setSpeed` aktualisieren sichtbare Werte; Eingaben werden (>0) validiert.
-- `onSpeedChange` registriert den externen Callback, `destroy()` leert den Host. Wird von `view-shell` genutzt.
+- Rendert eine kompakte Sidebar mit zwei Zeilen (aktuelles Hex, Token-Speed) inklusive Styles für Label/Value/Input.
+- `setTile`, `setSpeed` aktualisieren sichtbare Werte; `setTitle` hinterlegt den Dateinamen nur als `data-map-title` auf dem Host (für Tooltips/Debug), Eingaben werden (>0) validiert.
+- `onSpeedChange` registriert den externen Callback, `destroy()` leert den Host und entfernt das Daten-Attribut. Wird von `view-shell` genutzt.
 
 ### `domain/types.ts`
 - Definiert Basis-Koordinaten (`Coord`), Knotenarten (`NodeKind`) und `RouteNode`.
@@ -232,9 +232,9 @@ Alle Farbwerte lassen sich über die jeweiligen Custom Properties überschreiben
 - `writeTokenToTiles` setzt das Flag exakt auf `rc`, entfernt es von allen anderen Tiles (Frontmatter-Merge).
 
 ### `domain/playback.ts`
-- `createPlayback({ app, getMapFile, adapter, store, baseMs, onChange })` steuert Abspiel-Schleife.
-- `play()` prüft Route, setzt `playing=true`, lädt Terrain-Speed (`loadTerrainSpeed`), berechnet Dauer (`baseMs / (terrain×tokenSpeed)`), animiert Token via `adapter.token.moveTo`, persistiert Position (`writeTokenToTiles`) und trimmt passierte Knoten.
-- `pause()` setzt `playing=false` und beendet Loop.
+- `createPlayback({ app, getMapFile, adapter, store, minSecondsPerTile })` kapselt die Abspiel-Schleife.
+- `play()` prüft Route, setzt `playing=true`, lädt Terrain-Speed (`loadTerrainSpeed`), berechnet Dauer (`Math.max(minSecondsPerTile, tokenSpeed×terrainSpeed) * 1000`), animiert via `adapter.token.moveTo`, persistiert Position (`writeTokenToTiles`) und trimmt passierte Knoten. Abbrüche über `token.stop()` lassen die Route unverändert.
+- `pause()` setzt `playing=false`, ruft `adapter.token.stop?.()` und beendet den laufenden Durchlauf.
 - `trimRoutePassed` entfernt Knoten, die mit der Tokenposition übereinstimmen.
 
 ### `domain/terrain.service.ts`
@@ -249,18 +249,18 @@ Alle Farbwerte lassen sich über die jeweiligen Custom Properties überschreiben
 - `moveSelectedTo` findet Nachbar-User, expandiert Segmente neu, ersetzt Autos, setzt `editIdx` auf neue Position.
 - `moveTokenTo` (asynchron) liest Route-Anker aus dem Store, rekonstruiert Route + Token via `store.set` und persistiert in Tiles.
 - `deleteUserAt` entfernt nur `user`-Dots und baut Brücken neu.
-- `setTokenSpeed`, `play`, `pause`, `reset` reichen an Store/Playback weiter (`reset` pausiert, leert Route/Edit/Tile und ruft `initTokenFromTiles()`).
+- `setTokenSpeed`, `play`, `pause`, `reset` reichen an Store/Playback weiter (`pause` stoppt laufende Animationspromises sofort, `reset` pausiert, leert Route/Edit/Tile und ruft `initTokenFromTiles()`).
 - `bindAdapter` erlaubt Layer-Neuaufbau (Adapter-Swap).
 - `initTokenFromTiles` lädt `token_travel`, aktualisiert Token + Route über den Store und legt das Flag an, falls fehlend.
 - `persistTokenToTiles` schreibt aktuelle Tokenposition (z. B. beim View-Close).
 
 ### `infra/adapter.ts`
-- Definiert `TokenCtl` (UI-Kontrolle des Tokens) und `RenderAdapter` (Schnittstelle Domain ↔ Rendering).
+- Definiert `TokenCtl` (UI-Kontrolle des Tokens, inkl. optionalem `stop()` zum Abbrechen laufender Animationen) und `RenderAdapter` (Schnittstelle Domain ↔ Rendering).
 - Keine Implementierung, reine Typen.
 
 ### `render/draw-route.ts`
-- `drawRoute({ layer, route, centerOf, highlightIndex, start })` leert Layer, setzt den Token-Mittelpunkt als erstes Polyline-Segment (ohne zusätzlichen Dot), zeichnet anschließend die Route (falls ≥2 Punkte) und generiert Kreise pro Knoten inklusive `.tg-route-dot` + Typ-Klassen für CSS-gestützte Farbgebung.
-- Standardradien: User-Anker = 7 px, Auto-Punkte = 5 px; beide Werte werden als `data-radius` hinterlegt, damit spätere Updates den Baseline-Radius kennen.
+- `drawRoute({ layer, route, centerOf, highlightIndex, start })` leert Layer, setzt den Token-Mittelpunkt als erstes Polyline-Segment (ohne zusätzlichen Dot), zeichnet anschließend die Route (falls ≥2 Punkte) und generiert pro Knoten einen sichtbaren `.tg-route-dot` sowie einen unsichtbaren `.tg-route-dot-hitbox` mit größerem Radius für angenehmere Pointer-Hits.
+- Standardradien: User-Anker = 7 px, Auto-Punkte = 5 px; die Hitbox addiert +6 px. Werte werden als `data-radius` hinterlegt, damit spätere Updates den Baseline-Radius kennen.
 - `updateHighlight(layer, highlightIndex)` liest den Baseline-Radius aus `data-radius`, addiert den Highlight-Offset (+2 px), setzt Stroke/Radius, toggelt `.is-highlighted` und delegiert die finale Opazität an CSS.
-- Pointer-Events der Polyline deaktiviert, Dots behalten Pointer für Interaktion.
+- Pointer-Events der Polyline deaktiviert; sichtbare Dots und Hitbox übernehmen Pointer für Interaktion.
 

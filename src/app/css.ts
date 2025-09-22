@@ -116,20 +116,15 @@ export const HEX_PLUGIN_CSS = `
     margin: 0;
 }
 
-.sm-travel-guide__controls {
-    margin-top: 0.5rem;
-    display: flex;
-    justify-content: flex-end;
+.sm-travel-guide__header .sm-map-header .sm-map-header__secondary-left {
+    margin-left: auto;
+    margin-right: 0;
 }
 
-.sm-travel-guide__controls .sm-tg-controls__inner {
+.sm-travel-guide__header .sm-tg-controls {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background: var(--background-primary);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 10px;
-    padding: 0.5rem 0.75rem;
 }
 
 .sm-tg-controls__btn {
@@ -184,6 +179,11 @@ export const HEX_PLUGIN_CSS = `
     opacity: 0.55;
 }
 
+.sm-travel-guide .tg-route-dot-hitbox {
+    fill: transparent;
+    stroke: transparent;
+}
+
 .sm-travel-guide .tg-route-dot--user.is-highlighted {
     opacity: 1;
 }
@@ -206,29 +206,8 @@ export const HEX_PLUGIN_CSS = `
 .sm-tg-sidebar__inner {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
     width: 100%;
-}
-
-.sm-tg-sidebar__title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--text-normal);
-}
-
-.sm-tg-sidebar__section {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.sm-tg-sidebar__section-title {
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin: 0;
-    color: var(--text-muted);
 }
 
 .sm-tg-sidebar__row {

@@ -1,42 +1,23 @@
 export type Sidebar = {
     root: HTMLElement;
-    setTitle(title: string): void;
+    setTitle?: (title: string) => void;
     setTile(rc: { r: number; c: number } | null): void;
     setSpeed(v: number): void;
     onSpeedChange(fn: (v: number) => void): void;
     destroy(): void;
 };
 
-export function createSidebar(host: HTMLElement, initialTitle?: string): Sidebar {
+export function createSidebar(host: HTMLElement): Sidebar {
     host.empty();
     host.classList.add("sm-tg-sidebar");
 
     const root = host.createDiv({ cls: "sm-tg-sidebar__inner" });
 
-    const titleEl = root.createEl("div", {
-        cls: "sm-tg-sidebar__title",
-        text: initialTitle ?? "—",
-    });
-
-    const statusSection = root.createDiv({
-        cls: "sm-tg-sidebar__section sm-tg-sidebar__section--status",
-    });
-    statusSection.createEl("h3", {
-        cls: "sm-tg-sidebar__section-title",
-        text: "Status",
-    });
-    const tileRow = statusSection.createDiv({ cls: "sm-tg-sidebar__row" });
+    const tileRow = root.createDiv({ cls: "sm-tg-sidebar__row" });
     tileRow.createSpan({ cls: "sm-tg-sidebar__label", text: "Aktuelles Hex" });
     const tileValue = tileRow.createSpan({ cls: "sm-tg-sidebar__value", text: "—" });
 
-    const speedSection = root.createDiv({
-        cls: "sm-tg-sidebar__section sm-tg-sidebar__section--speed",
-    });
-    speedSection.createEl("h3", {
-        cls: "sm-tg-sidebar__section-title",
-        text: "Geschwindigkeit",
-    });
-    const speedRow = speedSection.createDiv({ cls: "sm-tg-sidebar__row" });
+    const speedRow = root.createDiv({ cls: "sm-tg-sidebar__row" });
     speedRow.createSpan({ cls: "sm-tg-sidebar__label", text: "Token-Speed" });
     const speedInput = speedRow.createEl("input", {
         type: "number",
@@ -60,7 +41,11 @@ export function createSidebar(host: HTMLElement, initialTitle?: string): Sidebar
         if (speedInput.value !== next) speedInput.value = next;
     };
     const setTitle = (title: string) => {
-        titleEl.textContent = title && title.trim().length > 0 ? title : "—";
+        if (title && title.trim().length > 0) {
+            host.dataset.mapTitle = title;
+        } else {
+            delete host.dataset.mapTitle;
+        }
     };
 
     return {
@@ -69,6 +54,9 @@ export function createSidebar(host: HTMLElement, initialTitle?: string): Sidebar
         setTile,
         setSpeed,
         onSpeedChange: (fn) => (onChange = fn),
-        destroy: () => host.empty(),
+        destroy: () => {
+            host.empty();
+            delete host.dataset.mapTitle;
+        },
     };
 }
