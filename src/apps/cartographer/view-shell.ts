@@ -9,6 +9,7 @@ import { createMapLayer, type MapLayer } from "../travel-guide/ui/map-layer";
 import { createMapHeader, type MapHeaderHandle, type MapHeaderSaveMode } from "../../ui/map-header";
 import { createTravelGuideMode } from "./modes/travel-guide";
 import { createEditorMode } from "./modes/editor";
+import { createInspectorMode } from "./modes/inspector";
 
 export type HexCoord = { r: number; c: number };
 
@@ -86,7 +87,7 @@ export async function mountCartographer(
     const modes: CartographerMode[] = [
         createTravelGuideMode(),
         createEditorMode(),
-        createInspectMode(),
+        createInspectorMode(),
         createNotesMode(),
     ];
 
@@ -261,37 +262,6 @@ export async function mountCartographer(
         setFile,
         setMode: async (id: string) => {
             await switchMode(id);
-        },
-    };
-}
-
-function createInspectMode(): CartographerMode {
-    let panel: HTMLElement | null = null;
-    let fileLabel: HTMLElement | null = null;
-    let info: HTMLElement | null = null;
-    return {
-        id: "inspect",
-        label: "Inspect",
-        async onEnter(ctx) {
-            ctx.sidebarHost.empty();
-            panel = ctx.sidebarHost.createDiv({ cls: "sm-cartographer__panel" });
-            panel.createEl("h3", { text: "Inspect" });
-            fileLabel = panel.createEl("div", { cls: "sm-cartographer__panel-file" });
-            info = panel.createEl("div", { cls: "sm-cartographer__panel-info" });
-        },
-        async onExit() {
-            panel?.remove();
-            panel = null;
-            fileLabel = null;
-            info = null;
-        },
-        async onFileChange(file) {
-            if (fileLabel) fileLabel.textContent = file ? `Datei: ${file.basename}` : "Keine Karte";
-            if (!file && info) info.textContent = "Wähle eine Karte, um Hex-Koordinaten zu inspizieren.";
-        },
-        async onHexClick(coord) {
-            if (!info) return;
-            info.textContent = `Hex r${coord.r}, c${coord.c}`;
         },
     };
 }

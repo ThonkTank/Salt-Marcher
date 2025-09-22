@@ -8,8 +8,6 @@ src/apps/map-editor/
 ├─ MapEditorOverview.txt       # Dieses Dokument
 ├─ brush-circle.ts             # SVG-Kreis als Brush-Vorschau (Pointertracking)
 ├─ tools-api.ts                # Tool-Kontrakt (Context, Hooks, Controller)
-├─ inspektor/                  # Legacy-Inspector (derzeit nicht registriert)
-│  └─ inspektor-options.ts
 └─ terrain-brush/
    ├─ brush-options.ts         # Brush-Tool (UI, Radius-/Terrainwahl, Live-Vorschau)
    ├─ brush.ts                 # Brush-Anwendung (Tiles schreiben/löschen, Live-Fill)
@@ -25,7 +23,7 @@ src/apps/map-editor/
 - **Wrapper-View:** `index.ts` mountet den Cartographer und schaltet direkt in den Editor-Modus. Der View bleibt kompatibel mit bestehenden Commands/States, leitet aber sämtliche Karten-Interaktionen an die gemeinsame Shell weiter.
 - **Tool-Schnittstelle:** `tools-api.ts` definiert den Kontext (`getHandles`, `getOptions`, `setStatus` …) für Editier-Tools. Der Cartographer-Editor erzeugt Instanzen dieses Kontextes und triggert `onActivate`, `onMapRendered` sowie `onHexClick`.
 - **Brush-Infrastruktur:** `terrain-brush/*` stellt UI, Mathematik und Persistenz (Tiles schreiben/löschen) für das Terrain-Brush-Tool bereit. `brush-circle.ts` visualisiert den aktiven Radius direkt auf dem SVG.
-- **Legacy Inspector:** Die ehemalige Inspector-Implementierung liegt weiterhin unter `inspektor/`, wird aber aktuell nicht in den Editor-Modus eingebunden.
+- **Inspector-Verlagerung:** Der Terrain-/Notiz-Inspector lebt nun als eigener Cartographer-Modus (`modes/inspector.ts`) und nutzt dort die gemeinsamen Render-/Persistenz-Hooks.
 
 ---
 
@@ -77,6 +75,5 @@ export type ToolModule = {
 ### `terrain-brush/brush-math.ts`
 - Konvertiert odd-r Koordinaten in Axial-Koordinaten und liefert `coordsInRadius`/`hexDistanceOddR` zur Brush-Berechnung.
 
-### `inspektor/inspektor-options.ts`
-- Legacy-Panel für Terrain/Notiz-Inspektion. Kann bei Bedarf wieder registriert werden, ist jedoch aktuell inaktiv.
+*(Legacy-Inspector entfernt: Umsetzung erfolgt nun im Cartographer unter `modes/inspector.ts`.)*
 
