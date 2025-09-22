@@ -6,7 +6,8 @@ import { parseOptions, type HexOptions } from "../../core/options";
 import { getFirstHexBlock } from "../../core/map-list";
 import type { RenderHandles } from "../../core/hex-mapper/hex-render";
 import { createMapLayer, type MapLayer } from "../travel-guide/ui/map-layer";
-import { createMapHeader, type MapHeaderHandle } from "../../ui/map-header";
+import { createMapHeader, type MapHeaderHandle, type MapHeaderSaveMode } from "../../ui/map-header";
+import { createTravelGuideMode } from "./modes/travel-guide";
 
 export type HexCoord = { r: number; c: number };
 
@@ -31,6 +32,7 @@ export interface CartographerMode {
         ctx: CartographerModeContext
     ): void | Promise<void>;
     onHexClick?(coord: HexCoord, event: CustomEvent<HexCoord>, ctx: CartographerModeContext): void | Promise<void>;
+    onSave?(mode: MapHeaderSaveMode, file: TFile | null, ctx: CartographerModeContext): void | Promise<void | boolean> | boolean;
 }
 
 export type CartographerController = {
@@ -77,7 +79,11 @@ export async function mountCartographer(
         getRenderHandles: () => mapLayer?.handles ?? null,
     };
 
-    const modes: CartographerMode[] = [createInspectMode(), createNotesMode()];
+    const modes: CartographerMode[] = [
+        createTravelGuideMode(),
+        createInspectMode(),
+        createNotesMode(),
+    ];
 
     const onHexClick = async (event: Event) => {
         const ev = event as CustomEvent<HexCoord>;
@@ -193,6 +199,16 @@ export async function mountCartographer(
         },
         onCreate: async (file) => {
             await setFile(file);
+        },
+        onSave: async (mode, file) => {
+            if (!activeMode?.onSave) return false;
+            try {
+                const handled = await activeMode.onSave(mode, file, modeCtx);
+                return handled === true;
+            } catch (err) {
+                console.error("[cartographer] mode onSave failed", err);
+                return false;
+            }
         },
         titleRightSlot: (slot) => {
             slot.classList.add("sm-cartographer__mode-switch");

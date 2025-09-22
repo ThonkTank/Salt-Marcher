@@ -6,6 +6,8 @@
 src/apps/cartographer/
 ├─ index.ts                 # Obsidian-View inkl. Ribbon/Command-Anbindung
 ├─ view-shell.ts            # Layout, Map-Stage und Modusverwaltung
+├─ modes/
+│  └─ travel-guide.ts       # Travel-Guide-Modus (Route/Token, Sidebar, Drag, Persistenz)
 └─ CartographerOverview.txt # Dieses Dokument
 ```
 
@@ -14,8 +16,9 @@ src/apps/cartographer/
 - **View-Registrierung:** `index.ts` meldet `VIEW_TYPE_CARTOGRAPHER` an, richtet Ribbon & Command ein und kümmert sich um Mount/Cleanup des Views.
 - **Layout-Shell:** `view-shell.ts` übernimmt das Travel-Guide-Grundlayout (Header + Body mit Map/Sidebar) und ersetzt Klassen durch `sm-cartographer`.
 - **Map-Stage:** Rendert Karten via `createMapLayer`/`renderHexMap`, verwaltet RenderHandles und sorgt für korrekte Hex-Klick-Delegation.
-- **Modus-System:** Stellt ein zentrales Mode-Interface (`onEnter`, `onExit`, `onFileChange`, `onHexClick`) bereit, schaltet per Header-Slot zwischen Modi und reicht Events/Cleanup sauber weiter.
-- **Sidebar-Panels:** Jeder Modus darf den Sidebar-Host exklusiv füllen; Standard-Modi demonstrieren Inspect-/Notizverhalten als Platzhalter für Erweiterungen.
+- **Modus-System:** Stellt ein zentrales Mode-Interface (`onEnter`, `onExit`, `onFileChange`, `onHexClick`, `onSave`) bereit, schaltet per Header-Slot zwischen Modi, delegiert Events inkl. Speichern und räumt Ressourcen deterministisch auf.
+- **Travel-Integration:** Der neue `modes/travel-guide.ts` spiegelt die Travel-Guide-Funktionalität (Route, Token, Playback) und kann sowohl im Cartographer als auch in der eigenständigen Travel-Guide-View eingesetzt werden.
+- **Sidebar-Panels:** Jeder Modus darf den Sidebar-Host exklusiv füllen; Inspect/Notes bleiben Beispiel-Modi und illustrieren einfache Panels.
 
 ## Dateibeschreibungen
 
@@ -25,9 +28,15 @@ src/apps/cartographer/
 - Der View erzeugt einen Host (`cartographer-host`) und mountet `view-shell.ts`, reicht `setFile`-Aufrufe weiter und räumt beim Schließen auf.
 
 ### `view-shell.ts`
-- Implementiert `CartographerMode` & `CartographerModeContext` als zentrales Interface.
+- Implementiert `CartographerMode` & `CartographerModeContext` (inkl. `onSave`) als zentrale Schnittstelle für Modi.
 - Baut Header, Body, Map- und Sidebar-Container mit `sm-cartographer`-Klassen auf.
 - Nutzt `createMapLayer` + `renderHexMap` zum Laden der Karte (inkl. Options-Parsing via `getFirstHexBlock`/`parseOptions`).
-- Leitet `hex:click`-Events an den aktiven Modus und ruft dessen Lifecycle-Hooks (`onEnter`/`onExit`/`onFileChange`).
-- Fügt über `createMapHeader` einen Title-Slot hinzu, um den Modus-Schalter (Segmented Control) im Header zu rendern.
-- Demonstriert zwei Beispiel-Modi (Inspect, Notes), die Sidebar-Inhalte setzen und RenderHandles/File-State berücksichtigen.
+- Leitet `hex:click` an den aktiven Modus weiter, koordiniert `onEnter`/`onExit`/`onFileChange` und serialisiert Moduswechsel.
+- Bindet den Map-Header samt Mode-Switch und Save-Hook: `onSave` des Modus kann persistieren/abbrechen, anschließend greift optional die Standard-Speicherlogik (`saveMap`/`saveMapAs`).
+- Registriert den Travel-Guide-Modus (`modes/travel-guide.ts`) plus einfache Beispiel-Modi (Inspect, Notes), die Sidebar-Inhalte und RenderHandles/File-State berücksichtigen.
+### `modes/travel-guide.ts`
+- Travel-Mode, der Sidebar, Playback-Controls, Route-/Token-Layer, Drag-Controller und Kontextmenü bündelt.
+- Lädt Terrains einmalig, verwaltet `createTravelLogic` + `handleStateChange` und räumt beim Dateiwechsel konsequent auf.
+- `onFileChange` erzeugt Adapter für `createTravelLogic`, ruft `initTokenFromTiles()` nach jedem Kartenwechsel auf und bindet Drag/Contextmenü an die aktuellen Layer.
+- `onSave` persistiert das Token (`logic.persistTokenToTiles()`), damit Header-Speicheraktionen weiterhin korrekt arbeiten.
+

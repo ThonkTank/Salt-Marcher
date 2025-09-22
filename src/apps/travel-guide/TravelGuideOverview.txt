@@ -33,7 +33,7 @@ src/apps/travel-guide/
 │  └─ draw-route.ts               # Reines SVG-Rendering (Polyline, Dots, Highlight)
 │
 └─ ui/
-   ├─ view-shell.ts               # mountTravelGuide: Layout, Adapter, Wiring, Cleanup
+   ├─ view-shell.ts               # Mount-Shell: Layout, Header + Delegation an den Cartographer-Travel-Mode
    ├─ map-layer.ts                # renderHexMap + Poly-Index + ensurePolys/centerOf
    ├─ route-layer.ts              # Wrapper um drawRoute + Highlight-Steuerung
    ├─ token-layer.ts              # Sichtbares Token (SVG <g>, RAF-Animation)
@@ -41,6 +41,9 @@ src/apps/travel-guide/
    ├─ contextmenue.ts             # RMB auf Dots → deleteUserAt
    ├─ controls.ts                 # Playback-Steuerung (Start/Stopp/Reset) im Sidebar-Controls-Host
    └─ sidebar.ts                  # Sidebar inkl. Controls-Bereich für Karten-Titel, Status & Speed
+
+├─ ../cartographer/modes/
+│  └─ travel-guide.ts             # Wiederverwendbarer Modus: Sidebar, Route/Token-Layer, Drag & Persistenz
 ```
 
 > Zielgrößen: 80–180 LOC pro Modul, maximal 300 LOC.
@@ -120,15 +123,15 @@ export type TravelLogic = {
 
 ## Datenfluss (kurz)
 
-1. **Mount:** `index.ts` erstellt im View `mountTravelGuide(app, host, file)`. Die Shell richtet einen Spalten-Wrapper mit gemeinsamem Map-Header (`ui/map-header.ts`) ein, lädt Terrain-Daten, baut Map/Route/Token-Layer und instanziiert `createTravelLogic` (Mindestdauer 0,1 s pro Tile). Der Header verknüpft Open/Create mit `enqueueLoad` und ruft beim Speichern `persistTokenToTiles` plus `saveMap`/`saveMapAs`.
-2. **Store-Abos:** `createTravelLogic` subscribed auf den Store. Jede Änderung triggert `adapter.draw(route, tokenRC)` und optionales `onChange` (View rendert Highlight).
-3. **Hex-Klick:** `map-layer` emittiert `hex:click` → `view-shell` ruft `logic.handleHexClick(rc)` → `expandCoords` erzeugt Autos → Store-Update → Route-Layer zeichnet neu.
-4. **Dot-Drag:** `drag.controller` zeigt Ghost (nur UI), `pointerup` → `logic.moveSelectedTo(rc)` → neue Segmente via `expandCoords` → Store-Update.
-5. **Token-Drag:** `drag.controller` Ghost via `TokenCtl`, Commit → `logic.moveTokenTo(rc)` liest Route-Anker aus dem Store, rekonstruiert Token + Route über `store.set` und persistiert Tiles; der Store-Subscriber zeichnet unmittelbar neu.
-6. **RMB:** `contextmenue` prüft Dot-Kind, löscht nur `user` via `logic.deleteUserAt(idx)` → Brücke neu expandiert.
-7. **Playback-Steuerung:** `ui/controls.ts` nutzt den Header-Slot für Start/Stopp/Reset. `handleStateChange` füttert `setState` mit `playing` und der aktuellen Route, damit Buttons nur bei verfügbaren Wegpunkten aktiv sind. Klicks triggern `logic.play()`, `logic.pause()` (Stop) bzw. `logic.reset()`. Der Reset stoppt Playback, leert Route/`editIdx`/`currentTile` und ruft `initTokenFromTiles()` zur Token-Neuinitialisierung.
-8. **Playback:** `logic.play()` → `createPlayback` iteriert Route, lädt Terrain-Speed, animiert Token (`Math.max(minSecondsPerTile, tokenSpeed×terrainSpeed) * 1000`), persistiert Position und trimmt passierte Knoten. `pause()` setzt `playing=false`, ruft `token.stop()` auf und beendet den Durchlauf.
-9. **Token-Initialisierung:** `logic.initTokenFromTiles()` lädt einmalig das `token_travel`-Flag, rekonstruiert Token + Route via Store und legt Flag an, falls fehlend.
+1. **Mount:** `index.ts` erstellt im View `mountTravelGuide(app, host, file)`. Die Shell richtet Header + Spaltenlayout ein, instanziiert `createTravelGuideMode()` und übergibt einen `CartographerModeContext` (Hosts, Dateizugriff, Map-Layer-Getter). `mode.onEnter` kümmert sich um Terrain-Setup, Sidebar/Playback-Mounting und initiale UI-Räumung. Der Header verbindet Open/Create mit `enqueueLoad` und delegiert den Save-Hook zuerst an den Modus.
+2. **Dateiwechsel & Rendering:** `view-shell` serialisiert `setFile`, ruft `createMapLayer` für die Karte auf und übergibt `RenderHandles` bzw. `null` an `mode.onFileChange`. Der Modus baut Route-/Token-Layer, TravelLogic, Drag-Controller und Kontextmenü auf, synchronisiert Sidebar & Playback und räumt beim Wechsel vollständig auf.
+3. **Hex-Klick:** `map-layer` emittiert `hex:click` → Shell leitet das Event an `mode.onHexClick` weiter → der Modus prüft Drag-Unterdrückung und ruft `logic.handleHexClick(rc)` → `expandCoords` ergänzt Auto-Punkte → Store-Update → Route-Layer zeichnet neu.
+4. **Dot-Drag:** `drag.controller` (innerhalb des Modus) zeigt Ghost-Positionsupdates; `pointerup` commitet via `logic.moveSelectedTo(rc)` → neue Segmente durch `expandCoords` → Store-Update.
+5. **Token-Drag:** Derselbe Controller behandelt Token-Drags; Commit → `logic.moveTokenTo(rc)` rekonstruiert Route über `rebuildFromAnchors`, aktualisiert Store, Token-Position & Persistenz.
+6. **RMB:** `contextmenue` überwacht Dots, filtert nur `user`-Knoten und ruft `logic.deleteUserAt(idx)`; das UI bleibt vollständig im Modus gekapselt.
+7. **Playback-Steuerung:** `ui/controls.ts` sitzt im Sidebar-Controls-Host des Modus. `handleStateChange` liefert `playing` + Route an `setState`, Buttons triggern `logic.play()`, `logic.pause()` bzw. `logic.reset()`.
+8. **Playback:** `logic.play()` startet `createPlayback`, das Terrain-Speed + Token-Speed kombiniert, Token animiert, Tiles schreibt und Route-Knoten reduziert. `pause()` stoppt Animation & Status.
+9. **Token-Initialisierung & Persistenz:** `mode.onFileChange` ruft `logic.initTokenFromTiles()` nach jedem Kartenwechsel auf. Der Map-Header löst `mode.onSave` aus, damit `logic.persistTokenToTiles()` vor `saveMap`/`saveMapAs` läuft.
 
 ---
 
@@ -170,16 +173,11 @@ Alle Farbwerte lassen sich über die jeweiligen Custom Properties überschreiben
 - `activateTravelGuide(file?)` holt oder erstellt das Leaf, setzt den View-State aktiv und reicht optional eine Map-Datei durch.
 - `getOrCreateLeaf()` bevorzugt vorhandene oder rechte Splits (Obsidian API).
 
-- `mountTravelGuide(app, host, file)` setzt den Host auf `.sm-travel-guide`, erzeugt Header + Body (Map-/Sidebar-Container) und führt das Karten-SVG über `createMapLayer` direkt in den linken Bereich ein. Der Header stammt aus `ui/map-header.ts`, verlinkt Öffnen/Erstellen mit `enqueueLoad` und erweitert den Save-Flow um `logic.persistTokenToTiles()`.
-- Lädt Terrain-Definitionen (`loadTerrains` → `setTerrains`) einmalig beim Mount.
-- Erstellt `routeLayer` und `tokenLayer` gemeinsam auf `mapLayer.handles.contentG` (kamera-transformierte Content-Gruppe), damit Karte, Route und Token identisch gescaled/panned werden.
-- Instanziiert `createSidebar` im rechten Bereich; der Wrapper stellt `controlsHost` für die Playback-Buttons bereit und hält zwei Status-Zeilen (aktuelles Hex, Token-Speed). `onSpeedChange` verbindet die Eingabe mit `logic.setTokenSpeed`.
-- Montiert `createPlaybackControls` im `sidebar.controlsHost`, damit Play/Stop/Reset an der Sidebar angedockt bleiben; `handleStateChange` beliefert sie mit `playing/route`, um Aktivierung und Disabled-State zu steuern.
-- Initialisiert `createTravelLogic` (Mindestdauer 0,1 s pro Tile) mit einem `onChange`, der Route-Highlight, Sidebar-Tile (`currentTile ?? tokenRC`) und Speed synchronisiert.
-- `logic.initTokenFromTiles()` lädt/persistiert die Tokenposition; Hook wird nach dem Mount einmal manuell aufgerufen.
-- Richtet Drag- & Kontextmenüs neu ein, sobald `setFile` eine Karte lädt; `setFile` returned ein `Promise` und serialisiert Ladevorgänge.
-- Der zurückgegebene `TravelGuideController` sorgt für Cleanup (Drag, Sidebar, Klassen) und akzeptiert `setFile`, um Karte, Titel und Route während der Laufzeit neu zu binden.
-- Prüft `drag.consumeClickSuppression()` und cancelt unterdrückte Klicks (`preventDefault` + `stopPropagation`), damit Drag-Abbrüche kein Tile-Open mehr triggern; echte Klicks leitet es weiterhin an `logic.handleHexClick` weiter.
+- `mountTravelGuide(app, host, file)` setzt den Host auf `.sm-travel-guide`, erzeugt Header + Body (Map-/Sidebar-Container) und instanziiert `createTravelGuideMode()`.
+- Baut einen `CartographerModeContext` (Hosts, File-Getter, Map-Layer-Getter), ruft `mode.onEnter` auf und serialisiert Dateiladevorgänge über `enqueueLoad`.
+- Lädt Karten via `createMapLayer`, reicht `RenderHandles` an `mode.onFileChange` weiter und leitet `hex:click`-Events an `mode.onHexClick` durch.
+- Koppelt den Map-Header (`createMapHeader`) mit dem Modus (`onSave`) und führt Standard-Speicherlogik (`saveMap`/`saveMapAs`) aus, falls der Modus das Speichern nicht vollständig übernimmt.
+- Der zurückgegebene `TravelGuideController` wartet laufende Loads ab, ruft `mode.onExit`, zerstört Map-Layer/DOM und entfernt View-Klassen.
 
 ### `ui/map-layer.ts`
 - Nutzt `renderHexMap` um das Kartensvg zu erzeugen, verwaltet `RenderHandles`.
@@ -225,8 +223,15 @@ Alle Farbwerte lassen sich über die jeweiligen Custom Properties überschreiben
 
 ### `ui/sidebar.ts`
 - Rendert eine kompakte Sidebar mit vorgelagertem `controlsHost` (Klasse `.sm-tg-sidebar__controls`) und zwei Status-Zeilen (aktuelles Hex, Token-Speed) inklusive Styles für Label/Value/Input.
-- `controlsHost` dient `view-shell` als Mount-Punkt für die Playback-Buttons; `setTile`, `setSpeed` aktualisieren Werte, `setTitle` hinterlegt den Dateinamen als `data-map-title` auf dem Host (für Tooltips/Debug) und validiert Eingaben (>0).
-- `onSpeedChange` registriert den externen Callback, `destroy()` leert den Host und entfernt das Daten-Attribut. Wird von `view-shell` genutzt.
+- `controlsHost` dient dem Travel-Mode als Mount-Punkt für die Playback-Buttons; `setTile`, `setSpeed` aktualisieren Werte, `setTitle` hinterlegt den Dateinamen als `data-map-title` auf dem Host (für Tooltips/Debug) und validiert Eingaben (>0).
+- `onSpeedChange` registriert den externen Callback, `destroy()` leert den Host und entfernt das Daten-Attribut. Wird vom Travel-Mode genutzt.
+
+### `../cartographer/modes/travel-guide.ts`
+- Wiederverwendbarer Modus für Cartographer und die Travel-Guide-Shell: bündelt Sidebar, Playback, Route-/Token-Layer sowie Drag- & Kontextmenü-Handling.
+- Lädt Terrain-Definitionen beim ersten `onEnter`, erstellt Sidebar + Playback-Controls und sorgt via Cleanup-Hooks für einen sauberen Abbau in `onExit`.
+- `onFileChange` räumt bestehende Layer/Logik auf, baut neue Route-/Token-Layer über `handles.contentG`, instanziiert `createTravelLogic`, bindet Drag/Contextmenü und ruft `logic.initTokenFromTiles()` nach jedem Kartenwechsel auf.
+- `handleStateChange` aktualisiert Route-Rendering, Sidebar (Tile/Speed) und Playback-State bei jeder Store-Änderung.
+- `onHexClick` respektiert `drag.consumeClickSuppression()` und delegiert echte Klicks an `logic.handleHexClick`; `onSave` persistiert das Token via `logic.persistTokenToTiles()` bevor der Header speichert.
 
 ### `domain/types.ts`
 - Definiert Basis-Koordinaten (`Coord`), Knotenarten (`NodeKind`) und `RouteNode`.
