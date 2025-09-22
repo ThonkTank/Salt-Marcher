@@ -1,7 +1,7 @@
 import type { TFile } from "obsidian";
 import type { CartographerMode, CartographerModeContext, HexCoord } from "../view-shell";
-import { createBrushTool } from "../../map-editor/terrain-brush/brush-options";
-import type { ToolModule, ToolContext } from "../../map-editor/tools-api";
+import { createBrushTool } from "../editor/tools/terrain-brush/brush-options";
+import type { ToolModule, ToolContext } from "../editor/tools/tools-api";
 import type { RenderHandles } from "../../../core/hex-mapper/hex-render";
 import type { HexOptions } from "../../../core/options";
 
