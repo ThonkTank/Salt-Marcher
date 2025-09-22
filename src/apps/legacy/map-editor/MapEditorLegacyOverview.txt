@@ -1,0 +1,36 @@
+# Map Editor Legacy Wrapper – Übersicht
+
+## Struktur
+
+```
+src/apps/legacy/map-editor/
+├─ MapEditorLegacyOverview.txt  # Dieses Dokument
+├─ index.ts                     # Barrel-Export für den Wrapper
+└─ view.ts                      # Obsidian-View als Hülle für den Cartographer-Editor
+```
+
+> Die eigentliche Editor-Infrastruktur liegt im Cartographer (`src/apps/cartographer/editor`).
+> Diese Hülle existiert ausschließlich, um alte Workspaces und Imports stabil zu halten.
+
+---
+
+## Features & Verantwortlichkeiten
+
+- **Kompatibilitäts-View:** `view.ts` montiert den Cartographer und schaltet unmittelbar in den Editor-Modus, sodass
+  alte `map-editor-view`-Leaves weiterhin funktionieren.
+- **State-Bridge:** Übernimmt den serialisierten View-State (`mapPath`) aus Obsidian und synchronisiert ihn mit dem
+  neuen `CartographerController` (`setFile`, `setMode`).
+- **Export-Kette:** Die ursprünglichen Einträge unter `src/apps/map-editor/` re-exportieren diesen Wrapper, damit
+  Konsument:innen ihre Import-Pfade nicht anpassen müssen.
+
+---
+
+## Datei-Rollen
+
+### `index.ts`
+- Bündelt alle Exporte aus `view.ts`, damit Konsument:innen wahlweise `legacy/map-editor` importieren können.
+
+### `view.ts`
+- Definiert `VIEW_TYPE_MAP_EDITOR` für bestehende Commands und gespeicherte Workspaces.
+- Mountet den Cartographer in einem Legacy-Container und erzwingt den Editor-Modus.
+- Setzt bei `setState` direkt die ausgewählte Karte, sobald der Controller bereits initialisiert wurde.
