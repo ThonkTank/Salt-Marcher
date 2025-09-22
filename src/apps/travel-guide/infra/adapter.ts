@@ -5,6 +5,7 @@ import type { Coord, RouteNode } from "../domain/types";
 export type TokenCtl = {
     setPos(x: number, y: number): void;
     moveTo(x: number, y: number, durMs: number): Promise<void> | void;
+    stop?(): void;
     show(): void;
     hide(): void;
     destroy?: () => void;

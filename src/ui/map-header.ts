@@ -14,6 +14,8 @@ export type MapHeaderOptions = {
     initialFile?: TFile | null;
     /** Text, wenn keine Karte selektiert ist. Standard: "—". */
     emptyLabel?: string;
+    /** Optionalen Inhalt für die linke Seite der zweiten Zeile einsetzen. */
+    secondaryLeftSlot?: (host: HTMLElement) => void;
     /** Button-Beschriftungen / Notices anpassen. */
     labels?: {
         open?: string;
@@ -41,6 +43,8 @@ export type MapHeaderOptions = {
 export type MapHeaderHandle = {
     /** Wurzel-Element des Headers. */
     readonly root: HTMLElement;
+    /** Linker Slot der zweiten Zeile (Map-Name oder Custom-Inhalt). */
+    readonly secondaryLeftSlot: HTMLElement;
     /** Aktualisiert den Dateinamen im Header und merkt sich das aktuelle File. */
     setFileLabel(file: TFile | null): void;
     /** Optional andere Überschrift setzen. */
@@ -104,8 +108,23 @@ export function createMapHeader(app: App, host: HTMLElement, options: MapHeaderO
     const row2 = root.createDiv();
     Object.assign(row2.style, { display: "flex", alignItems: "center", gap: ".5rem" });
 
-    const nameBox = row2.createEl("div", { text: options.initialFile?.basename ?? options.emptyLabel ?? "—" });
-    Object.assign(nameBox.style, { marginRight: "auto", opacity: ".85" });
+    const secondaryLeftSlot = row2.createDiv({ cls: "sm-map-header__secondary-left" });
+    Object.assign(secondaryLeftSlot.style, {
+        marginRight: "auto",
+        display: "flex",
+        alignItems: "center",
+        gap: ".5rem",
+    });
+
+    let nameBox: HTMLElement | null = null;
+    if (options.secondaryLeftSlot) {
+        options.secondaryLeftSlot(secondaryLeftSlot);
+    } else {
+        nameBox = secondaryLeftSlot.createEl("div", {
+            text: options.initialFile?.basename ?? options.emptyLabel ?? "—",
+        });
+        nameBox.style.opacity = ".85";
+    }
 
     const select = row2.createEl("select");
     select.createEl("option", { text: labels.save }).value = "save";
@@ -137,7 +156,10 @@ export function createMapHeader(app: App, host: HTMLElement, options: MapHeaderO
 
     function setFileLabel(file: TFile | null) {
         currentFile = file;
-        nameBox.textContent = file?.basename ?? options.emptyLabel ?? "—";
+        if (nameBox) {
+            nameBox.textContent = file?.basename ?? options.emptyLabel ?? "—";
+        }
+        secondaryLeftSlot.dataset.fileLabel = file?.basename ?? options.emptyLabel ?? "—";
     }
 
     function setTitle(title: string) {
@@ -153,5 +175,7 @@ export function createMapHeader(app: App, host: HTMLElement, options: MapHeaderO
         root.remove();
     }
 
-    return { root, setFileLabel, setTitle, destroy };
+    setFileLabel(currentFile);
+
+    return { root, secondaryLeftSlot, setFileLabel, setTitle, destroy };
 }

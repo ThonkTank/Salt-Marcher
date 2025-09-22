@@ -16,6 +16,25 @@ export function createTokenLayer(contentG: SVGGElement): TokenCtl & { el: SVGGEl
 
     let vx = 0, vy = 0;
     let rafId: number | null = null;
+    let pendingReject: ((reason?: unknown) => void) | null = null;
+
+    const makeCancelError = () => {
+        const err = new Error("token-move-cancelled");
+        err.name = "TokenMoveCancelled";
+        return err;
+    };
+
+    const cancelActiveAnimation = (reason = makeCancelError()) => {
+        if (rafId != null) {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+        }
+        if (pendingReject) {
+            const reject = pendingReject;
+            pendingReject = null;
+            reject(reason);
+        }
+    };
 
     function setPos(x: number, y: number) {
         vx = x; vy = y;
@@ -23,19 +42,26 @@ export function createTokenLayer(contentG: SVGGElement): TokenCtl & { el: SVGGEl
     }
 
     function moveTo(x: number, y: number, durMs: number): Promise<void> {
-        if (durMs <= 0) { setPos(x, y); return Promise.resolve(); }
-        if (rafId != null) { cancelAnimationFrame(rafId); rafId = null; }
+        cancelActiveAnimation();
+        if (durMs <= 0) {
+            setPos(x, y);
+            return Promise.resolve();
+        }
 
-        const x0 = vx, y0 = vy;
-        const dx = x - x0, dy = y - y0;
+        const x0 = vx;
+        const y0 = vy;
+        const dx = x - x0;
+        const dy = y - y0;
         const t0 = performance.now();
 
-        return new Promise<void>((resolve) => {
+        return new Promise<void>((resolve, reject) => {
+            pendingReject = reject;
             const step = () => {
                 const t = (performance.now() - t0) / durMs;
                 if (t >= 1) {
                     setPos(x, y);
                     rafId = null;
+                    pendingReject = null;
                     resolve();
                     return;
                 }
@@ -49,9 +75,16 @@ export function createTokenLayer(contentG: SVGGElement): TokenCtl & { el: SVGGEl
 
     function show() { el.style.display = ""; }
     function hide() { el.style.display = "none"; }
-    function destroy() { if (rafId != null) cancelAnimationFrame(rafId); el.remove(); }
+    function stop() {
+        cancelActiveAnimation();
+    }
+
+    function destroy() {
+        cancelActiveAnimation();
+        el.remove();
+    }
 
     hide(); // Start unsichtbar
 
-    return { el, setPos, moveTo, show, hide, destroy };
+    return { el, setPos, moveTo, stop, show, hide, destroy };
 }

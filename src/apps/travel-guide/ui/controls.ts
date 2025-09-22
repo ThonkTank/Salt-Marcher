@@ -1,5 +1,5 @@
 // src/apps/travel-guide/ui/controls.ts
-// Playback-Buttons (Play/Pause/Reset) unter dem Header. Kapselt nur DOM + Button-State.
+// Playback-Buttons (Start/Stopp/Reset) direkt im Map-Header-Slot. Kapselt nur DOM + Button-State.
 
 import { setIcon } from "obsidian";
 import { applyMapButtonStyle } from "../../../ui/map-workflows";
@@ -7,7 +7,7 @@ import type { LogicStateSnapshot } from "../domain/types";
 
 export type PlaybackControlsCallbacks = {
     onPlay: () => void | Promise<void>;
-    onPause: () => void | Promise<void>;
+    onStop: () => void | Promise<void>;
     onReset: () => void | Promise<void>;
 };
 
@@ -17,16 +17,12 @@ export type PlaybackControlsHandle = {
     destroy(): void;
 };
 
-export function createPlaybackControls(
-    host: HTMLElement,
-    callbacks: PlaybackControlsCallbacks,
-): PlaybackControlsHandle {
-    const root = host.createDiv({ cls: "sm-travel-guide__controls" });
-    const inner = root.createDiv({ cls: "sm-tg-controls__inner" });
+export function createPlaybackControls(host: HTMLElement, callbacks: PlaybackControlsCallbacks): PlaybackControlsHandle {
+    const root = host.createDiv({ cls: "sm-tg-controls" });
 
-    const playBtn = inner.createEl("button", {
+    const playBtn = root.createEl("button", {
         cls: "sm-tg-controls__btn sm-tg-controls__btn--play",
-        text: "Play",
+        text: "Start",
     });
     setIcon(playBtn, "play");
     applyMapButtonStyle(playBtn);
@@ -36,19 +32,19 @@ export function createPlaybackControls(
         void callbacks.onPlay?.();
     });
 
-    const pauseBtn = inner.createEl("button", {
-        cls: "sm-tg-controls__btn sm-tg-controls__btn--pause",
-        text: "Pause",
+    const stopBtn = root.createEl("button", {
+        cls: "sm-tg-controls__btn sm-tg-controls__btn--stop",
+        text: "Stopp",
     });
-    setIcon(pauseBtn, "pause");
-    applyMapButtonStyle(pauseBtn);
-    pauseBtn.addEventListener("click", (ev) => {
+    setIcon(stopBtn, "square");
+    applyMapButtonStyle(stopBtn);
+    stopBtn.addEventListener("click", (ev) => {
         ev.preventDefault();
-        if (pauseBtn.disabled) return;
-        void callbacks.onPause?.();
+        if (stopBtn.disabled) return;
+        void callbacks.onStop?.();
     });
 
-    const resetBtn = inner.createEl("button", {
+    const resetBtn = root.createEl("button", {
         cls: "sm-tg-controls__btn sm-tg-controls__btn--reset",
         text: "Reset",
     });
@@ -63,7 +59,7 @@ export function createPlaybackControls(
     const setState = (state: Pick<LogicStateSnapshot, "playing" | "route">) => {
         const hasRoute = state.route.length > 0;
         playBtn.disabled = state.playing || !hasRoute;
-        pauseBtn.disabled = !state.playing;
+        stopBtn.disabled = !state.playing;
         resetBtn.disabled = !hasRoute && !state.playing;
     };
 
@@ -71,7 +67,7 @@ export function createPlaybackControls(
 
     const destroy = () => {
         playBtn.replaceWith();
-        pauseBtn.replaceWith();
+        stopBtn.replaceWith();
         resetBtn.replaceWith();
         root.remove();
     };

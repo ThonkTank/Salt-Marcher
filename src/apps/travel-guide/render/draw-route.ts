@@ -5,6 +5,7 @@ import type { RouteNode } from "../domain/types";
 const USER_RADIUS = 7;
 const AUTO_RADIUS = 5;
 const HIGHLIGHT_OFFSET = 2;
+const HITBOX_PADDING = 6;
 
 type C = { r: number; c: number };
 type CtrFn = (rc: C) => { x: number; y: number } | null;
@@ -45,16 +46,33 @@ export function drawRoute(args: {
     route.forEach((node, i) => {
         const ctr = centers[i];
         if (!ctr) return;
+
+        const baseRadius = node.kind === "user" ? USER_RADIUS : AUTO_RADIUS;
+        const hitRadius = baseRadius + HITBOX_PADDING;
+
+        const hit = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        hit.setAttribute("cx", String(ctr.x));
+        hit.setAttribute("cy", String(ctr.y));
+        hit.setAttribute("r", String(hitRadius));
+        hit.setAttribute("data-idx", String(i));
+        hit.classList.add("tg-route-dot-hitbox");
+        hit.style.fill = "transparent";
+        hit.setAttribute("stroke", "transparent");
+        hit.style.pointerEvents = "all";
+        hit.style.cursor = "pointer";
+        layer.appendChild(hit);
+
         const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         dot.setAttribute("cx", String(ctr.x));
         dot.setAttribute("cy", String(ctr.y));
-        const baseRadius = node.kind === "user" ? USER_RADIUS : AUTO_RADIUS;
         dot.setAttribute("r", String(baseRadius));
         dot.setAttribute("data-radius", String(baseRadius));
         dot.setAttribute("data-kind", node.kind);
+        dot.setAttribute("data-idx", String(i));
         dot.classList.add("tg-route-dot");
         dot.classList.add(node.kind === "user" ? "tg-route-dot--user" : "tg-route-dot--auto");
         dot.style.pointerEvents = "auto";
+        dot.style.cursor = "pointer";
         layer.appendChild(dot);
     });
 
@@ -63,7 +81,7 @@ export function drawRoute(args: {
 }
 
 export function updateHighlight(layer: SVGGElement, highlightIndex: number | null) {
-    const dots = Array.from(layer.querySelectorAll<SVGCircleElement>("circle"));
+    const dots = Array.from(layer.querySelectorAll<SVGCircleElement>(".tg-route-dot"));
     dots.forEach((el, idx) => {
         const isHi = highlightIndex != null && idx === highlightIndex;
         const baseRadius = Number(el.dataset.radius || el.getAttribute("r") || (el.dataset.kind === "user" ? USER_RADIUS : AUTO_RADIUS));

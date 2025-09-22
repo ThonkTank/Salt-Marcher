@@ -39,7 +39,7 @@ export type TravelLogic = {
 
 export function createTravelLogic(cfg: {
     app: App;
-    baseMs: number;
+    minSecondsPerTile: number;
     getMapFile: () => TFile | null;
     adapter: RenderAdapter;
     onChange?: (s: LogicStateSnapshot) => void;
@@ -56,9 +56,9 @@ export function createTravelLogic(cfg: {
     const playback = createPlayback({
         app: cfg.app,
         getMapFile: cfg.getMapFile,
-        baseMs: cfg.baseMs,
         store,
         adapter,
+        minSecondsPerTile: cfg.minSecondsPerTile,
     });
 
     const getState = () => store.get();
