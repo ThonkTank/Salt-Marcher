@@ -12,9 +12,11 @@ export function bindContextMenu(routeLayerEl: SVGGElement, logic: LogicPort): ()
         const t = ev.target as Element | null;
         if (!(t instanceof SVGCircleElement)) return;
 
-        const circles = Array.from(routeLayerEl.querySelectorAll<SVGCircleElement>("circle"));
-        const idx = circles.indexOf(t);
-        if (idx < 0) return;
+        const idxAttr = t.getAttribute("data-idx");
+        if (!idxAttr) return;
+
+        const idx = Number(idxAttr);
+        if (!Number.isFinite(idx) || idx < 0) return;
 
         const route = logic.getState().route;
         const node = route[idx];

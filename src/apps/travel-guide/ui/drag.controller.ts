@@ -204,9 +204,10 @@ polyToCoord: WeakMap<SVGElement, Coord>;       // MapLayer-Index
         }
 
         function consumeClickSuppression(): boolean {
-            const r = suppressNextHexClick;
+            if (isDragging) return true;
+            if (!suppressNextHexClick) return false;
             suppressNextHexClick = false;
-            return r;
+            return true;
         }
 
         return { bind, unbind, consumeClickSuppression };
