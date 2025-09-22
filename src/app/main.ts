@@ -4,6 +4,7 @@ import { VIEW_TYPE_HEX_GALLERY, HexGalleryView } from "../apps/map-gallery";
 import { VIEW_TYPE_MAP_EDITOR, MapEditorView } from "../apps/map-editor";
 import { TerrainEditorView, VIEW_TERRAIN_EDITOR } from "../apps/terrain-editor/view";
 import { VIEW_TRAVEL_GUIDE, TravelGuideView } from "../apps/travel-guide";
+import { VIEW_CARTOGRAPHER, CartographerView } from "../apps/cartographer";
 import { ensureTerrainFile, loadTerrains, watchTerrains } from "../core/terrain-store";
 import { setTerrains } from "../core/terrain";
 import { HEX_PLUGIN_CSS } from "./css";
@@ -17,6 +18,7 @@ export default class SaltMarcherPlugin extends Plugin {
         this.registerView(VIEW_TYPE_MAP_EDITOR,  (leaf) => new MapEditorView(leaf));
         this.registerView(VIEW_TERRAIN_EDITOR,   (leaf: WorkspaceLeaf) => new TerrainEditorView(leaf));
         this.registerView(VIEW_TRAVEL_GUIDE,     (leaf: WorkspaceLeaf) => new TravelGuideView(leaf));
+        this.registerView(VIEW_CARTOGRAPHER,     (leaf: WorkspaceLeaf) => new CartographerView(leaf));
 
         // Terrains initial laden & live halten
         await ensureTerrainFile(this.app);
@@ -40,6 +42,12 @@ export default class SaltMarcherPlugin extends Plugin {
         this.addRibbonIcon("rocket", "Open Travel Guide", async () => {
             const leaf = this.app.workspace.getLeaf(false);
             await leaf.setViewState({ type: VIEW_TRAVEL_GUIDE, active: true });
+            this.app.workspace.revealLeaf(leaf);
+        });
+
+        this.addRibbonIcon("compass", "Open Cartographer", async () => {
+            const leaf = this.app.workspace.getLeaf(false);
+            await leaf.setViewState({ type: VIEW_CARTOGRAPHER, active: true });
             this.app.workspace.revealLeaf(leaf);
         });
 
@@ -69,6 +77,16 @@ export default class SaltMarcherPlugin extends Plugin {
             callback: async () => {
                 const leaf = this.app.workspace.getLeaf(false);
                 await leaf.setViewState({ type: VIEW_TRAVEL_GUIDE, active: true });
+                this.app.workspace.revealLeaf(leaf);
+            },
+        });
+
+        this.addCommand({
+            id: "open-cartographer",
+            name: "Cartographer öffnen",
+            callback: async () => {
+                const leaf = this.app.workspace.getLeaf(false);
+                await leaf.setViewState({ type: VIEW_CARTOGRAPHER, active: true });
                 this.app.workspace.revealLeaf(leaf);
             },
         });

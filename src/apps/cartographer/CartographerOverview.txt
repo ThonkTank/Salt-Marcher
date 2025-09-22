@@ -1,0 +1,33 @@
+# Cartographer – Overview
+
+## Struktur
+
+```
+src/apps/cartographer/
+├─ index.ts                 # Obsidian-View inkl. Ribbon/Command-Anbindung
+├─ view-shell.ts            # Layout, Map-Stage und Modusverwaltung
+└─ CartographerOverview.txt # Dieses Dokument
+```
+
+## Features & Verantwortlichkeiten
+
+- **View-Registrierung:** `index.ts` meldet `VIEW_TYPE_CARTOGRAPHER` an, richtet Ribbon & Command ein und kümmert sich um Mount/Cleanup des Views.
+- **Layout-Shell:** `view-shell.ts` übernimmt das Travel-Guide-Grundlayout (Header + Body mit Map/Sidebar) und ersetzt Klassen durch `sm-cartographer`.
+- **Map-Stage:** Rendert Karten via `createMapLayer`/`renderHexMap`, verwaltet RenderHandles und sorgt für korrekte Hex-Klick-Delegation.
+- **Modus-System:** Stellt ein zentrales Mode-Interface (`onEnter`, `onExit`, `onFileChange`, `onHexClick`) bereit, schaltet per Header-Slot zwischen Modi und reicht Events/Cleanup sauber weiter.
+- **Sidebar-Panels:** Jeder Modus darf den Sidebar-Host exklusiv füllen; Standard-Modi demonstrieren Inspect-/Notizverhalten als Platzhalter für Erweiterungen.
+
+## Dateibeschreibungen
+
+### `index.ts`
+- Exportiert `CartographerView` und `VIEW_TYPE_CARTOGRAPHER`.
+- Registriert Ribbon & Command, damit der neue View erreichbar ist.
+- Der View erzeugt einen Host (`cartographer-host`) und mountet `view-shell.ts`, reicht `setFile`-Aufrufe weiter und räumt beim Schließen auf.
+
+### `view-shell.ts`
+- Implementiert `CartographerMode` & `CartographerModeContext` als zentrales Interface.
+- Baut Header, Body, Map- und Sidebar-Container mit `sm-cartographer`-Klassen auf.
+- Nutzt `createMapLayer` + `renderHexMap` zum Laden der Karte (inkl. Options-Parsing via `getFirstHexBlock`/`parseOptions`).
+- Leitet `hex:click`-Events an den aktiven Modus und ruft dessen Lifecycle-Hooks (`onEnter`/`onExit`/`onFileChange`).
+- Fügt über `createMapHeader` einen Title-Slot hinzu, um den Modus-Schalter (Segmented Control) im Header zu rendern.
+- Demonstriert zwei Beispiel-Modi (Inspect, Notes), die Sidebar-Inhalte setzen und RenderHandles/File-State berücksichtigen.
