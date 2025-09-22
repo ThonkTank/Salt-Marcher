@@ -9,13 +9,12 @@ export type ToolContext = {
     app: App;
     getFile(): TFile | null;
     getHandles(): RenderHandles | null;
-    getOpts(): HexOptions;
+    getOptions(): HexOptions | null;
     setStatus(msg: string): void;          // optional: Status-/Tooltip-Ausgabe
-    refreshMap?: () => Promise<void>;      // NEU: kompletten Re-Render anstoßen (z. B. nach Brush)
 };
 
 export type ToolModule = {
-    id: "brush" | "inspektor" | string;
+    id: "brush" | string;
     label: string;
     /** Panel in den Options-Bereich mounten; Rückgabe: Cleanup */
     mountPanel(root: HTMLElement, ctx: ToolContext): CleanupFn;
@@ -25,5 +24,5 @@ export type ToolModule = {
     /** Nach Karten-Render (Handles verfügbar) */
     onMapRendered?(ctx: ToolContext): void;
     /** Hex-Klick abfangen. true = handled (Editor öffnet nichts mehr) */
-    onHexClick?(rc: { r: number; c: number }, ctx: ToolContext): Promise<boolean> | boolean;
+    onHexClick?(rc: { r: number; c: number }, ctx: ToolContext): Promise<boolean | void> | boolean | void;
 };

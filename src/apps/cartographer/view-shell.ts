@@ -8,6 +8,7 @@ import type { RenderHandles } from "../../core/hex-mapper/hex-render";
 import { createMapLayer, type MapLayer } from "../travel-guide/ui/map-layer";
 import { createMapHeader, type MapHeaderHandle, type MapHeaderSaveMode } from "../../ui/map-header";
 import { createTravelGuideMode } from "./modes/travel-guide";
+import { createEditorMode } from "./modes/editor";
 
 export type HexCoord = { r: number; c: number };
 
@@ -19,6 +20,7 @@ export type CartographerModeContext = {
     getFile(): TFile | null;
     getMapLayer(): MapLayer | null;
     getRenderHandles(): RenderHandles | null;
+    getOptions(): HexOptions | null;
 };
 
 export interface CartographerMode {
@@ -68,6 +70,7 @@ export async function mountCartographer(
     let activeMode: CartographerMode | null = null;
     let modeChange = Promise.resolve();
     const modeButtons: ModeButton[] = [];
+    let currentOptions: HexOptions | null = null;
 
     const modeCtx: CartographerModeContext = {
         app,
@@ -77,10 +80,12 @@ export async function mountCartographer(
         getFile: () => currentFile,
         getMapLayer: () => mapLayer,
         getRenderHandles: () => mapLayer?.handles ?? null,
+        getOptions: () => currentOptions,
     };
 
     const modes: CartographerMode[] = [
         createTravelGuideMode(),
+        createEditorMode(),
         createInspectMode(),
         createNotesMode(),
     ];
@@ -104,6 +109,7 @@ export async function mountCartographer(
             mapLayer = null;
         }
         mapHost.empty();
+        currentOptions = null;
     }
 
     async function switchMode(id: string) {
@@ -143,6 +149,7 @@ export async function mountCartographer(
 
         if (!currentFile) {
             mapHost.createDiv({ cls: "sm-cartographer__empty", text: "Keine Karte ausgewählt." });
+            currentOptions = null;
             await activeMode?.onFileChange(null, null, modeCtx);
             return;
         }
@@ -158,6 +165,7 @@ export async function mountCartographer(
                 cls: "sm-cartographer__empty",
                 text: "Kein hex3x3-Block in dieser Datei.",
             });
+            currentOptions = null;
             await activeMode?.onFileChange(currentFile, null, modeCtx);
             return;
         }
@@ -169,6 +177,7 @@ export async function mountCartographer(
                 return;
             }
             mapLayer = layer;
+            currentOptions = opts;
             await activeMode?.onFileChange(currentFile, mapLayer.handles, modeCtx);
         } catch (err) {
             console.error("[cartographer] failed to render map", err);
@@ -176,6 +185,7 @@ export async function mountCartographer(
                 cls: "sm-cartographer__empty",
                 text: "Karte konnte nicht geladen werden.",
             });
+            currentOptions = null;
             await activeMode?.onFileChange(currentFile, null, modeCtx);
         }
     }

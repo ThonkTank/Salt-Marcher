@@ -1,30 +1,31 @@
 # Map Editor – Übersicht
 
-## Leitlinien
-
-- Der Map Editor ist eine Obsidian-`ItemView`, die Hex-Karten öffnet, rendert und Änderungen unmittelbar in den Markdown-Dateien speichert.
-- UI-Logik (`editor-ui.ts`) hält nur transienten Zustand; persistente Daten (Karten-Datei, Tiles) werden über Core-Services (`core/hex-mapper`, `core/save`, `core/map-list`) verwaltet.
-- Werkzeuge sind modulare Plug-ins, die über eine schlanke `ToolModule`-Schnittstelle eingebunden werden. Die UI kennt nur das Interface und stellt Kontext-Informationen bereit.
-- Renderer (`renderHexMap`) bleibt zustandslos; alle Interaktionen laufen über `RenderHandles` und Tool-Controller.
-
----
-
-## Paketstruktur
+## Struktur
 
 ```
 src/apps/map-editor/
-├─ index.ts                    # Obsidian-View (Lifecycle, State ↔ ViewState, mountMapEditor)
-├─ editor-ui.ts                # Haupt-UI (Header via ui/map-header.ts, Map-Canvas, Tool-Switch, Save-/Open-Aktionen)
+├─ index.ts                    # Obsidian-View als Wrapper für den Cartographer-Editor-Modus
 ├─ MapEditorOverview.txt       # Dieses Dokument
 ├─ brush-circle.ts             # SVG-Kreis als Brush-Vorschau (Pointertracking)
 ├─ tools-api.ts                # Tool-Kontrakt (Context, Hooks, Controller)
-├─ inspektor/
-│  └─ inspektor-options.ts     # Inspector-Tool (Terrain/Notizen lesen & schreiben)
+├─ inspektor/                  # Legacy-Inspector (derzeit nicht registriert)
+│  └─ inspektor-options.ts
 └─ terrain-brush/
    ├─ brush-options.ts         # Brush-Tool (UI, Radius-/Terrainwahl, Live-Vorschau)
    ├─ brush.ts                 # Brush-Anwendung (Tiles schreiben/löschen, Live-Fill)
    └─ brush-math.ts            # Hex-Radius-Berechnungen (odd-r ↔ axial)
 ```
+
+> Die eigentliche Editor-Oberfläche wird nun im Cartographer unter `modes/editor.ts` betrieben. Die hier verbleibenden Module stellen weiterhin UI- und Tool-Funktionen bereit.
+
+---
+
+## Features & Verantwortlichkeiten
+
+- **Wrapper-View:** `index.ts` mountet den Cartographer und schaltet direkt in den Editor-Modus. Der View bleibt kompatibel mit bestehenden Commands/States, leitet aber sämtliche Karten-Interaktionen an die gemeinsame Shell weiter.
+- **Tool-Schnittstelle:** `tools-api.ts` definiert den Kontext (`getHandles`, `getOptions`, `setStatus` …) für Editier-Tools. Der Cartographer-Editor erzeugt Instanzen dieses Kontextes und triggert `onActivate`, `onMapRendered` sowie `onHexClick`.
+- **Brush-Infrastruktur:** `terrain-brush/*` stellt UI, Mathematik und Persistenz (Tiles schreiben/löschen) für das Terrain-Brush-Tool bereit. `brush-circle.ts` visualisiert den aktiven Radius direkt auf dem SVG.
+- **Legacy Inspector:** Die ehemalige Inspector-Implementierung liegt weiterhin unter `inspektor/`, wird aber aktuell nicht in den Editor-Modus eingebunden.
 
 ---
 
@@ -37,9 +38,8 @@ export type ToolContext = {
   app: App;
   getFile(): TFile | null;
   getHandles(): RenderHandles | null;
-  getOpts(): HexOptions;
+  getOptions(): HexOptions | null;
   setStatus(msg: string): void;
-  refreshMap?: () => Promise<void>;
 };
 
 export type ToolModule = {
@@ -49,82 +49,34 @@ export type ToolModule = {
   onActivate?(ctx: ToolContext): void;
   onDeactivate?(ctx: ToolContext): void;
   onMapRendered?(ctx: ToolContext): void;
-  onHexClick?(rc: { r: number; c: number }, ctx: ToolContext): Promise<boolean> | boolean;
+  onHexClick?(rc: { r: number; c: number }, ctx: ToolContext): Promise<boolean | void> | boolean | void;
 };
 ```
 
-> Neue Tools registrieren sich in `editor-ui.ts` über `const tools: ToolModule[] = [...]` und werden automatisch im Select angezeigt.
+> Der Cartographer-Modus registriert Tools über diese Schnittstelle und montiert ihr Panel in den Sidebar-Container.
 
 ---
 
-## View-Lifecycle & Datenfluss
-
-1. **View-Initialisierung (`index.ts`):** `MapEditorView` leitet Obsidian-View-State (`mapPath`) an `mountMapEditor` weiter und speichert den vom UI zurückgegebenen Controller (`setFile`, `setTool`). `setState` synchronisiert spätere ViewState-Änderungen mit einer bereits gemounteten UI.
-2. **UI-Aufbau (`editor-ui.ts`):** Beim Mounten erstellt die UI den Header über `createMapHeader` (`ui/map-header.ts`) und hängt die Optionen/Map-Container an. Open/Create-Flows laufen weiterhin über `ui/map-workflows.ts`, sodass Editor und Galerie identische UX teilen. `state` hält aktuelle Datei, Hex-Optionen, Renderer-Handles, aktives Tool sowie ein Cleanup des Toolpanels.
-3. **Dateiwechsel:** `setFile` aktualisiert `state.file` und delegiert das eigentliche Rendering an `renderHexMapFromFile` (ebenfalls aus `ui/map-workflows.ts`). Die Utility kümmert sich um Hex-Block-Suche, Options-Parsing und `renderHexMap`, der wiederum `RenderHandles` inkl. Overlay liefert.
-4. **Toolwechsel:** `switchTool` ruft `onDeactivate`/`mountPanel`/`onActivate` auf dem Modul auf. Tools können DOM in `optBody` anlegen und via Cleanup wieder entfernen.
-5. **Interaktion:** Hex-Klicks werden im `renderHexMap`-Host auf `hex:click` geloggt und an das aktive Tool (`onHexClick`) delegiert. Tools entscheiden, ob das Event verarbeitet wurde (Rückgabewert `true`) und können über `ctx.refreshMap()` einen vollständigen Re-Render auslösen.
-6. **Speichern:** Dropdown `save`/`saveAs` ruft `saveMap` bzw. `saveMapAs` aus `core/save`. Neue Karten werden über `promptCreateMap` erstellt, das intern `NameInputModal` + `createHexMapFile` kombiniert und eine Erfolgs-Notice zeigt.
-7. **Terrain-Updates:** Tools können über `ctx.app.workspace.trigger("salt:terrains-updated")` oder den Terrain-Editor Farben aktualisieren; `editor-ui` reagiert durch Re-Render der Karte oder UI-Aktualisierung (z. B. Brush-Options `fillOptions`).
-
----
-
-## Tool-Implementierungen
-
-### Brush (`terrain-brush/brush-options.ts` + `brush.ts` + `brush-math.ts`)
-- Verwaltet internen Zustand (`radius`, `terrain`, `mode`). UI besteht aus Radius-Slider, Terrain-Select (inkl. Live-Update aus Terrain-Editor) und Modus-Umschalter.
-- Aktivierung und `onMapRendered` hängen einen Vorschau-Kreis (`attachBrushCircle`) an das SVG an und halten ihn bei Pointerbewegungen synchron.
-- Bei Hex-Klick:
-  - Berechnet Zielkoordinaten via `coordsInRadius` (odd-r Grid, dedupliziert).
-  - Legt bei Mal-Modus fehlende Polygone mit `handles.ensurePolys?.()` an.
-  - Ruft `applyBrush` auf, das Tiles über `saveTile`/`deleteTile` persistiert und `handles.setFill` sofort anpasst.
-
-### Inspector (`inspektor/inspektor-options.ts`)
-- Bietet Dropdown für Terrain und Textarea für Notizen. Beide werden beim ersten Klick auf eine Hex freigeschaltet.
-- `scheduleSave` debounced Persistenz (`saveTile`) und aktualisiert live die Polygonfarbe (`handles.setFill`).
-- `onHexClick` lädt vorhandene Daten (`loadTile`), setzt Auswahl und gibt `true` zurück, damit Obsidian die zugrunde liegende Note nicht öffnet.
-
----
-
-## Datei-Rollen (Detail)
+## Datei-Rollen
 
 ### `index.ts`
-- Registriert den View-Type `map-editor-view` und liefert Anzeige-Label „Map Editor“.
-- Mountet UI auf `onOpen`, kümmert sich um leeren Container, CSS-Klasse `hex-map-editor-root` und initialen ViewState.
-- `setState` kann vor oder nach dem UI-Mount aufgerufen werden; lädt Karte nachträglich per `controller.setFile`.
-
-- Erstellt DOM-Struktur für Body (Map-Canvas + Optionspane) und delegiert den Header (`Open/Neuanlage/Speichern`) an `createMapHeader` aus `ui/map-header.ts`, das Button-Styling sowie Save/Open-Flows bündelt.
-- Verwaltert `state` für aktive Datei, Hex-Optionen (über `renderHexMapFromFile`), Renderer-Handles und aktuelles Tool.
-- Stellt Controller `{ setFile, setTool }` bereit, der von `MapEditorView` genutzt wird.
-- Verantwortlich für `renderMap()` (Delegation an `renderHexMapFromFile`, danach Hex-Klick → Tool weiterreichen).
+- Registriert den View-Type `map-editor-view` und zeigt weiterhin „Map Editor“ als Titel.
+- Mountet `mountCartographer` und erzwingt den Editor-Modus (`controller.setMode("editor")`).
+- Synchronisiert View-State (`mapPath`) mit dem Cartographer-Controller (`setFile`).
 
 ### `brush-circle.ts`
-- Erzeugt einen SVG-Kreis, der Pointer-Bewegungen im Overlay trackt (via `requestAnimationFrame`).
-- Stellt `updateRadius`, `show`, `hide`, `destroy` bereit. Nutzt `getScreenCTM()` für Koordinaten-Transformation.
-
-### `terrain-brush/brush-math.ts`
-- Konvertiert odd-r Koordinaten in Axial-Koordinaten (Red-Blob-Formeln) und liefert `hexDistanceOddR` sowie `coordsInRadius`.
-- Sortiert Ergebnisse nach Distanz und Koordinate, damit Tool-Operationen deterministisch sind.
-
-### `terrain-brush/brush.ts`
-- Anwenden des Brush auf Persistenz-Schicht. Iteriert Koordinaten dedupliziert und schreibt Terrain-Farbe oder löscht Tiles.
-- Nutzt `TERRAIN_COLORS`, um Renderer-Farbwerte zu setzen.
+- Erzeugt einen SVG-Kreis, der Pointer-Bewegungen im Overlay trackt und via `show/hide/updateRadius` steuerbar ist.
 
 ### `terrain-brush/brush-options.ts`
-- UI-Factory für Brush-Tool; erstellt Formular, bindet Event-Handler und sorgt für Cleanup (Off-refs aus Workspace-Events).
-- Reagiert auf Terrain-Paletten-Updates (`salt:terrains-updated`).
+- UI-Factory für den Brush: Radius-Slider, Terrain-Auswahl inkl. Live-Updates aus dem Terrain-Editor, Mal-/Löschmodus.
+- Bindet den Kreis (`attachBrushCircle`) an das aktuelle `RenderHandles`-Overlay und aktualisiert ihn bei Kartenwechseln.
+
+### `terrain-brush/brush.ts`
+- Persistiert Brush-Aktionen per `saveTile`/`deleteTile` und färbt die betroffenen Polygone live über `handles.setFill`.
+
+### `terrain-brush/brush-math.ts`
+- Konvertiert odd-r Koordinaten in Axial-Koordinaten und liefert `coordsInRadius`/`hexDistanceOddR` zur Brush-Berechnung.
 
 ### `inspektor/inspektor-options.ts`
-- Implementiert Inspector-Panel, lädt/ speichert Tile-Daten und synchronisiert Notiz-/Terrainwerte.
-- Debounced Speichern (250 ms) und setzt Polygonfarben sofort anhand `TERRAIN_COLORS`.
+- Legacy-Panel für Terrain/Notiz-Inspektion. Kann bei Bedarf wieder registriert werden, ist jedoch aktuell inaktiv.
 
-### `tools-api.ts`
-- Einheitliche Typdefinition für Tool-Module; ermöglicht zukünftige Erweiterungen ohne Anpassung der UI.
-
----
-
-## Erweiterungshinweise
-
-- Zusätzliche Tools können im Ordner `tools/` oder Unterordnern abgelegt werden. Wichtig ist, dass sie `ToolModule` implementieren und in `editor-ui.ts` zur `tools`-Liste hinzugefügt werden.
-- `ToolContext.refreshMap` sollte sparsam verwendet werden (teuerer Re-Render). Für reine Farb-Updates reichen `RenderHandles`-Methoden.
-- UI ist modular: Header/Body können bei Bedarf in eigene Dateien ausgelagert werden, solange der Controller `{ setFile, setTool }` beibehalten wird.
