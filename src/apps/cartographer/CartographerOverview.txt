@@ -8,6 +8,7 @@ src/apps/cartographer/
 ├─ view-shell.ts            # Layout, Map-Stage und Modusverwaltung
 ├─ modes/
 │  ├─ editor.ts             # Map-Editor-Modus (Tools, Brush, Sidebar-Panel)
+│  ├─ inspector.ts          # Inspector-Modus (Terrain & Notizen pro Hex bearbeiten)
 │  └─ travel-guide.ts       # Travel-Guide-Modus (Route/Token, Sidebar, Drag, Persistenz)
 └─ CartographerOverview.txt # Dieses Dokument
 ```
@@ -18,9 +19,10 @@ src/apps/cartographer/
 - **Layout-Shell:** `view-shell.ts` übernimmt das Cartographer-Grundlayout (Header + Body mit Map/Sidebar), verwaltet den Moduswechsel und stellt `CartographerModeContext` inkl. `getOptions()` bereit.
 - **Map-Stage:** Rendert Karten via `createMapLayer`/`renderHexMap`, verwaltet `RenderHandles`, Hex-Klick-Delegation sowie Options-Parsing (`getFirstHexBlock` → `parseOptions`).
 - **Modus-System:** Stellt das Mode-Interface (`onEnter`, `onExit`, `onFileChange`, `onHexClick`, `onSave`) bereit, schaltet per Header-Slot zwischen Modi, delegiert Events und räumt Ressourcen deterministisch auf.
-- **Editor-Integration:** `modes/editor.ts` stellt die bisherige Map-Editor-Logik bereit (Tool-Registry, Brush-Handling, Options-Panel) und nutzt direkt die vom Cartographer gerenderten `RenderHandles`.
+- **Editor-Integration:** `modes/editor.ts` stellt die Map-Editor-Logik bereit (Tool-Registry, Brush-Handling, Options-Panel) und nutzt direkt die vom Cartographer gerenderten `RenderHandles`.
+- **Inspector-Modus:** `modes/inspector.ts` ermöglicht Terrain- & Notizbearbeitung für das aktuell geklickte Hex, lädt/speichert Tiles über `hex-notes` und aktualisiert das Live-Fill via `RenderHandles`.
 - **Travel-Integration:** `modes/travel-guide.ts` spiegelt die Travel-Guide-Funktionalität (Route, Token, Playback) und kann sowohl im Cartographer als auch in der eigenständigen Travel-Guide-View eingesetzt werden.
-- **Beispiel-Modi:** Die internen Inspect/Notes-Modi illustrieren weiterhin einfache Panels und bleiben als Referenz implementiert.
+- **Platzhalter-Mode:** Das interne Notes-Panel dient weiterhin als Beispiel für minimale Mode-Implementierungen.
 
 ## Dateibeschreibungen
 
@@ -34,7 +36,7 @@ src/apps/cartographer/
 - Baut Header, Body, Map- und Sidebar-Container mit `sm-cartographer`-Klassen auf.
 - Nutzt `createMapLayer` + `renderHexMap` zum Laden der Karte, aktualisiert `currentOptions` und leitet `hex:click`-Events an den aktiven Modus weiter.
 - Bindet den Map-Header samt Mode-Switch und Save-Hook; `onSave` des Modus kann persistieren/abbrechen, anschließend greift optional die Standard-Speicherlogik.
-- Registriert Travel-, Editor- sowie Beispiel-Modi und sorgt für konsistente `onEnter`/`onExit`/`onFileChange`-Sequenzen.
+- Registriert Travel-, Editor-, Inspector- sowie Beispiel-Modi und sorgt für konsistente `onEnter`/`onExit`/`onFileChange`-Sequenzen.
 
 ### `modes/editor.ts`
 - Erzeugt das Editor-Panel im Sidebar-Host, zeigt Dateiname & Tool-Auswahl (derzeit nur Brush) und liefert Statusmeldungen.
@@ -45,4 +47,9 @@ src/apps/cartographer/
 - Travel-Mode mit Sidebar, Playback-Controls, Route-/Token-Layer, Drag-Controller und Kontextmenü.
 - Lädt Terrains einmalig, verwaltet `createTravelLogic` + `handleStateChange` und räumt beim Dateiwechsel konsequent auf.
 - Persistiert den Token über `onSave` (`logic.persistTokenToTiles()`), damit Header-Speicheraktionen korrekt arbeiten.
+
+### `modes/inspector.ts`
+- Baut das Inspector-Panel im Sidebar-Host auf (Terrain-Select, Notizfeld, Statuszeile).
+- Lädt/speichert Tile-Daten mit `loadTile`/`saveTile` und debounced Speichervorgänge zur Schonung des Dateisystems.
+- Aktualisiert die Renderer-Fills live über `RenderHandles.setFill`, sobald Terrain geändert wird, und hält die Auswahl beim Karten-Reload konsistent.
 
