@@ -8,7 +8,7 @@ analysieren und mit Reiserouten versehen. Das Plugin ist in klar getrennte Layer
 | Layer | Standort | Aufgabe | Detail-Dokument |
 | --- | --- | --- | --- |
 | Plugin-Bootstrap | `src/app/` | Registriert Views/Commands, lädt CSS & Terrain-Daten und koordiniert Lifecycle sowie Watcher. | – |
-| Feature-Apps | `src/apps/` | Enthalten eigenständige Obsidian-Views (Galerie, Editor, Terrain-Editor, Travel Guide, Cartographer). | Pro Feature in `*Overview.txt` |
+| Feature-Apps | `src/apps/` | Enthalten eigenständige Obsidian-Views (Cartographer, Terrain-Editor sowie Legacy-Galerie/-Editor/-Travel Guide). | Pro Feature in `*Overview.txt` |
 | Core-Services | `src/core/` | Bietet Hex-Geometrie, Map-/Tile-Dateioperationen, Terrain-Verwaltung und Workspace-Helfer. | `src/core/CoreOverview.txt` |
 | UI-Bausteine | `src/ui/` | Stellt wiederverwendbare Modals/Bestätigungsdialoge für Features bereit. | `src/ui/UiOverview.txt` |
 | Styling | `src/app/css.ts` | Liefert das zentrale CSS, das beim Plugin-Start injiziert wird. | – |
@@ -33,17 +33,18 @@ src/
 ## Layer-Highlights
 
 ### Plugin-Lifecycle (`src/app/`)
-- `main.ts` richtet Views (MapEditor, HexGallery, TerrainEditor, TravelGuide) sowie passende Commands/Ribbons ein.
+- `main.ts` registriert nur noch den Cartographer und den Terrain Editor als aktive Views; Legacy-Views bleiben im Code, werden aber nicht mehr automatisch angehängt.
+- Cartographer-Ribbons/Commands nutzen `getCenterLeaf`, um stets den mittleren Workspace-Leaf zu fokussieren, während der Terrain Editor weiterhin in einem neuen Leaf öffnet.
 - Lädt Terrain-Definitionen über den Core-Service (`core/terrain-store.ts`: `ensureTerrainFile → loadTerrains → setTerrains`) und beobachtet Änderungen via `watchTerrains`.
 - Injiziert das zentrale CSS (`injectCss`) und räumt beim Unload alle Listener/Watcher ab.
 - Verteilt Events/Handler an Feature-Layer und Core-Services.
 
 ### Feature-Apps (`src/apps/`)
-- **Map Gallery (`map-gallery.ts`):** Historische View, die beim Öffnen auf den Cartographer weiterleitet – Map-Verwaltung & Vorschau sitzen nun gesammelt dort.
-- **Map Editor (`map-editor/`):** Liefert Tooling für Hex-Auswahl, Brush-Painting, Tile-Speicherung und Inspector-Views (Details siehe `MapEditorOverview.txt`).
+- **Cartographer (`cartographer/`):** Stellt einen mehrstufigen Map-Viewer bereit, der das Travel-Guide-Layout wiederverwendet, `renderHexMap`/`createMapLayer` für die Stage nutzt, Modi über einen Header-Slot umschaltet und via `createMapManager` im Header Open/Create/Delete bündelt. View & Command sind die primären Entry-Points im Plugin.
 - **Terrain Editor (`terrain-editor/`):** Pflegt Farb- und Geschwindigkeits-Paletten über den Core-Terrain-Store und synchronisiert Änderungen mit `terrain.ts`.
-- **Travel Guide (`travel-guide/`):** Spielt Reiserouten auf Hex-Karten ab, bindet den View über die `ui/view-shell` (liefert `TravelGuideController`) ein und nutzt Rendering/Geometrie aus dem Core.
-- **Cartographer (`cartographer/`):** Stellt einen mehrstufigen Map-Viewer bereit, der das Travel-Guide-Layout wiederverwendet, `renderHexMap`/`createMapLayer` für die Stage nutzt, Modi über einen Header-Slot umschaltet und via `createMapManager` im Header Open/Create/Delete bündelt.
+- **Map Gallery (`map-gallery.ts`):** Historische View, die beim direkten Öffnen (z. B. aus alten Workspaces) weiterhin auf den Cartographer umleitet.
+- **Map Editor (`map-editor/`):** Liefert Tooling für Hex-Auswahl, Brush-Painting, Tile-Speicherung und Inspector-Views (Details siehe `MapEditorOverview.txt`); wird über neue Cartographer-Flows eröffnet.
+- **Travel Guide (`travel-guide/`):** Spielt Reiserouten auf Hex-Karten ab; der Standalone-View bleibt für Rückwärtskompatibilität erhalten, wird aber nicht mehr vom Haupt-Plugin registriert.
 
 ### Core-Services (`src/core/`)
 - Bündelt Hex-Mathematik, SVG-Rendering, Map/Terrain-Dateiverwaltung und Workspace-Utilities.

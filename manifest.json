@@ -3,7 +3,7 @@
   "name": "Salt Marcher",
   "version": "0.1.0",
   "minAppVersion": "1.4.0",
-  "description": "Hex map gallery & interactive viewer.",
+  "description": "Cartographer workspace and terrain palette for hex maps.",
   "author": "You",
   "authorUrl": "",
   "isDesktopOnly": true,
