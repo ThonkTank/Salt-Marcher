@@ -139,7 +139,7 @@ export function createInspectorMode(): CartographerMode {
             const messageRow = ui.panel.createEl("div", { cls: "sm-cartographer__panel-info" });
             ui.message = messageRow;
 
-            const terrRow = ui.panel.createDiv({ cls: "sm-row" });
+            const terrRow = ui.panel.createDiv({ cls: "sm-cartographer__panel-row" });
             terrRow.createEl("label", { text: "Terrain:" });
             ui.terrain = terrRow.createEl("select") as HTMLSelectElement;
             for (const key of Object.keys(TERRAIN_COLORS)) {
@@ -149,7 +149,7 @@ export function createInspectorMode(): CartographerMode {
             ui.terrain.disabled = true;
             ui.terrain.onchange = () => scheduleSave(ctx);
 
-            const noteRow = ui.panel.createDiv({ cls: "sm-row" });
+            const noteRow = ui.panel.createDiv({ cls: "sm-cartographer__panel-row" });
             noteRow.createEl("label", { text: "Notiz:" });
             ui.note = noteRow.createEl("textarea", { attr: { rows: "6" } }) as HTMLTextAreaElement;
             ui.note.disabled = true;

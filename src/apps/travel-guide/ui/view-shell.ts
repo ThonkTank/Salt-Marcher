@@ -26,13 +26,15 @@ export async function mountTravelGuide(
     file: TFile | null
 ): Promise<TravelGuideController | undefined> {
     host.empty();
-    host.classList.add("sm-travel-guide");
+    host.classList.add("sm-cartographer", "sm-cartographer--travel");
 
-    const headerHost = host.createDiv({ cls: "sm-travel-guide__header" });
-    const body = host.createDiv({ cls: "sm-travel-guide__body" });
+    const headerHost = host.createDiv({ cls: "sm-cartographer__header" });
+    const body = host.createDiv({ cls: "sm-cartographer__body" });
 
-    const mapHost = body.createDiv({ cls: "sm-tg-map" });
-    const sidebarHost = body.createDiv({ cls: "sm-tg-sidebar" });
+    const mapHost = body.createDiv({ cls: "sm-cartographer__map" });
+    const sidebarHost = body.createDiv({
+        cls: "sm-cartographer__sidebar sm-cartographer__sidebar--travel",
+    });
 
     const travelMode = createTravelGuideMode();
 
@@ -155,7 +157,7 @@ export async function mountTravelGuide(
             await travelMode.onExit();
             headerHandle?.destroy();
             headerHandle = null;
-            host.classList.remove("sm-travel-guide");
+            host.classList.remove("sm-cartographer", "sm-cartographer--travel");
             host.empty();
         },
     };

@@ -42,34 +42,6 @@ export const HEX_PLUGIN_CSS = `
     transition: opacity 120ms ease, r 120ms ease, cx 60ms ease, cy 60ms ease;
 }
 
-/* === Gallery-Layout (Header + Toolbar) === */
-.hex-gallery-header {
-    display: flex;
-    align-items: center;
-    gap: .75rem;
-    margin-bottom: .5rem;
-}
-
-/* Titel kürzen, falls der Dateiname zu lang ist */
-.hex-gallery-header h2 {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 60%;
-}
-
-.hex-gallery-card-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 6px;
-}
-
-.hex-gallery-card-row a {
-    font-weight: 600;
-    cursor: pointer;
-}
-
 /* === Live-Preview: Interaktion im Codeblock erlauben (optional) === */
 .markdown-source-view .cm-preview-code-block .hex3x3-container,
 .markdown-source-view .cm-preview-code-block .hex3x3-map { pointer-events: auto; }
@@ -84,11 +56,14 @@ export const HEX_PLUGIN_CSS = `
 .sm-terrain-editor .addbar { display:flex; gap:.5rem; margin-top:.5rem; }
 .sm-terrain-editor .addbar input[type="text"] { flex:1; min-width:0; }
 
-/* === Travel Guide === */
-.sm-travel-guide {
-    --tg-color-token: var(--color-purple, #9c6dfb);
-    --tg-color-user-anchor: var(--color-orange, #f59e0b);
-    --tg-color-auto-point: var(--color-blue, #3b82f6);
+/* === Cartographer Shell === */
+.cartographer-host {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.sm-cartographer {
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -100,11 +75,11 @@ export const HEX_PLUGIN_CSS = `
     box-sizing: border-box;
 }
 
-.sm-travel-guide__header {
+.sm-cartographer__header {
     padding-bottom: 0.25rem;
 }
 
-.sm-travel-guide__header .sm-map-header {
+.sm-cartographer__header .sm-map-header {
     background: var(--background-primary);
     border: 1px solid var(--background-modifier-border);
     border-radius: 10px;
@@ -112,30 +87,25 @@ export const HEX_PLUGIN_CSS = `
     gap: 0.5rem;
 }
 
-.sm-travel-guide__header .sm-map-header h2 {
+.sm-cartographer__header .sm-map-header h2 {
     margin: 0;
 }
 
-
-.sm-travel-guide__header .sm-map-header .sm-map-header__secondary-left {
+.sm-cartographer__header .sm-map-header .sm-map-header__secondary-left {
     margin-left: auto;
     margin-right: 0;
 }
 
-.sm-tg-controls__btn {
-    font-weight: 600;
-}
-
-.sm-travel-guide__body {
+.sm-cartographer__body {
     display: flex;
     flex: 1 1 auto;
-    gap: 1.5rem;
+    gap: 1.25rem;
     align-items: stretch;
     width: 100%;
     min-height: 0;
 }
 
-.sm-travel-guide .sm-tg-map {
+.sm-cartographer__map {
     flex: 1 1 auto;
     min-width: 0;
     min-height: 0;
@@ -147,84 +117,30 @@ export const HEX_PLUGIN_CSS = `
     box-sizing: border-box;
 }
 
-.sm-travel-guide .sm-tg-map .hex3x3-map {
-    max-width: none;
+.sm-cartographer__map .hex3x3-map {
     height: 100%;
+    max-width: none;
 }
 
-.sm-travel-guide .tg-token__circle {
-    fill: var(--tg-color-token);
-    opacity: 0.95;
-    stroke: var(--background-modifier-border);
-    stroke-width: 3;
-    transition: opacity 120ms ease;
-}
-
-.sm-travel-guide .tg-route-dot {
-    transition: opacity 120ms ease, r 120ms ease, stroke 120ms ease;
-}
-
-.sm-travel-guide .tg-route-dot--user {
-    fill: var(--tg-color-user-anchor);
-    opacity: 0.95;
-}
-
-.sm-travel-guide .tg-route-dot--auto {
-    fill: var(--tg-color-auto-point);
-    opacity: 0.55;
-}
-
-.sm-travel-guide .tg-route-dot-hitbox {
-    fill: transparent;
-    stroke: transparent;
-}
-
-.sm-travel-guide .tg-route-dot--user.is-highlighted {
-    opacity: 1;
-}
-
-.sm-travel-guide .tg-route-dot--auto.is-highlighted {
-    opacity: 0.9;
-}
-
-.sm-travel-guide .sm-tg-sidebar {
+.sm-cartographer__sidebar {
     flex: 0 0 280px;
-    max-width: 340px;
+    max-width: 320px;
     background: var(--background-secondary);
     border: 1px solid var(--background-modifier-border);
     border-radius: 10px;
     padding: 1rem;
     box-sizing: border-box;
     display: flex;
-}
-
-/* === Cartographer === */
-.cartographer-host {
-    display: flex;
     flex-direction: column;
-    height: 100%;
+    gap: 0.75rem;
 }
 
-.sm-cartographer {
+.sm-cartographer__empty {
     display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    width: 100%;
+    align-items: center;
+    justify-content: center;
     height: 100%;
-    padding: 1rem;
-    box-sizing: border-box;
-}
-
-.sm-cartographer__header .sm-map-header {
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 10px;
-    padding: 0.75rem;
-    background: var(--background-primary);
-    gap: 0.5rem;
-}
-
-.sm-cartographer__header .sm-map-header h2 {
-    margin: 0;
+    color: var(--text-muted);
 }
 
 .sm-cartographer__mode-switch {
@@ -247,45 +163,7 @@ export const HEX_PLUGIN_CSS = `
     color: var(--text-on-accent, #fff);
 }
 
-.sm-cartographer__body {
-    display: flex;
-    flex: 1 1 auto;
-    gap: 1.25rem;
-    align-items: stretch;
-    width: 100%;
-    min-height: 0;
-}
-
-.sm-cartographer__map {
-    flex: 1 1 auto;
-    min-width: 0;
-    min-height: 0;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 10px;
-    background: var(--background-primary);
-    padding: 0.75rem;
-    box-sizing: border-box;
-    position: relative;
-}
-
-.sm-cartographer__map .hex3x3-map {
-    height: 100%;
-    max-width: none;
-}
-
-.sm-cartographer__sidebar {
-    flex: 0 0 280px;
-    max-width: 320px;
-    background: var(--background-secondary);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 10px;
-    padding: 1rem;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
+/* === Cartographer Panels (Editor & Inspector) === */
 .sm-cartographer__panel {
     display: flex;
     flex-direction: column;
@@ -298,6 +176,7 @@ export const HEX_PLUGIN_CSS = `
 
 .sm-cartographer__panel.is-disabled {
     opacity: 0.6;
+    pointer-events: none;
 }
 
 .sm-cartographer__panel-info {
@@ -305,58 +184,150 @@ export const HEX_PLUGIN_CSS = `
     color: var(--text-muted);
 }
 
-.sm-cartographer__empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
+.sm-cartographer__panel-file {
+    font-size: 0.9rem;
     color: var(--text-muted);
 }
 
-.sm-tg-sidebar__inner {
+.sm-cartographer__panel-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sm-cartographer__panel-tools label {
+    font-weight: 600;
+}
+
+.sm-cartographer__panel-tools select {
+    flex: 1 1 auto;
+}
+
+.sm-cartographer__panel-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sm-cartographer__panel-status {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.sm-cartographer__panel-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.sm-cartographer__panel-row label {
+    font-weight: 600;
+}
+
+.sm-cartographer__panel-row select,
+.sm-cartographer__panel-row textarea {
+    width: 100%;
+    border-radius: 6px;
+}
+
+.sm-cartographer__panel-row textarea {
+    resize: vertical;
+}
+
+/* === Travel Mode (Cartographer & Legacy Shell) === */
+.sm-cartographer--travel {
+    --tg-color-token: var(--color-purple, #9c6dfb);
+    --tg-color-user-anchor: var(--color-orange, #f59e0b);
+    --tg-color-auto-point: var(--color-blue, #3b82f6);
+}
+
+.sm-cartographer__sidebar--travel {
+    gap: 1rem;
+}
+
+.sm-cartographer__travel {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
     width: 100%;
 }
 
-.sm-tg-sidebar__controls {
+.sm-cartographer__travel-controls {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
 }
 
-.sm-tg-sidebar__controls .sm-tg-controls {
+.sm-cartographer__travel-buttons {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem;
 }
 
-.sm-tg-sidebar__row {
+.sm-cartographer__travel-button {
+    font-weight: 600;
+}
+
+.sm-cartographer__travel-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
 }
 
-.sm-tg-sidebar__label {
+.sm-cartographer__travel-label {
     font-size: 0.9rem;
     color: var(--text-muted);
 }
 
-.sm-tg-sidebar__value {
+.sm-cartographer__travel-value {
     font-size: 1rem;
     font-weight: 600;
 }
 
-.sm-tg-sidebar__speed-input {
+.sm-cartographer__travel-input {
     width: 100%;
     padding: 0.35rem 0.5rem;
     border-radius: 6px;
 }
 
-.sm-travel-guide .hex3x3-map circle[data-token] { opacity: .95; }
-.sm-travel-guide .hex3x3-map polyline { pointer-events: none; }
+.sm-cartographer--travel .tg-token__circle {
+    fill: var(--tg-color-token);
+    opacity: 0.95;
+    stroke: var(--background-modifier-border);
+    stroke-width: 3;
+    transition: opacity 120ms ease;
+}
+
+.sm-cartographer--travel .tg-route-dot {
+    transition: opacity 120ms ease, r 120ms ease, stroke 120ms ease;
+}
+
+.sm-cartographer--travel .tg-route-dot--user {
+    fill: var(--tg-color-user-anchor);
+    opacity: 0.95;
+}
+
+.sm-cartographer--travel .tg-route-dot--auto {
+    fill: var(--tg-color-auto-point);
+    opacity: 0.55;
+}
+
+.sm-cartographer--travel .tg-route-dot-hitbox {
+    fill: transparent;
+    stroke: transparent;
+}
+
+.sm-cartographer--travel .tg-route-dot--user.is-highlighted {
+    opacity: 1;
+}
+
+.sm-cartographer--travel .tg-route-dot--auto.is-highlighted {
+    opacity: 0.9;
+}
+
+.sm-cartographer--travel .hex3x3-map circle[data-token] { opacity: .95; }
+.sm-cartographer--travel .hex3x3-map polyline { pointer-events: none; }
 `;

@@ -10,21 +10,24 @@ export type Sidebar = {
 
 export function createSidebar(host: HTMLElement): Sidebar {
     host.empty();
-    host.classList.add("sm-tg-sidebar");
+    host.classList.add("sm-cartographer__sidebar--travel");
 
-    const root = host.createDiv({ cls: "sm-tg-sidebar__inner" });
+    const root = host.createDiv({ cls: "sm-cartographer__travel" });
 
-    const controlsHost = root.createDiv({ cls: "sm-tg-sidebar__controls" });
+    const controlsHost = root.createDiv({ cls: "sm-cartographer__travel-controls" });
 
-    const tileRow = root.createDiv({ cls: "sm-tg-sidebar__row" });
-    tileRow.createSpan({ cls: "sm-tg-sidebar__label", text: "Aktuelles Hex" });
-    const tileValue = tileRow.createSpan({ cls: "sm-tg-sidebar__value", text: "—" });
+    const tileRow = root.createDiv({ cls: "sm-cartographer__travel-row" });
+    tileRow.createSpan({ cls: "sm-cartographer__travel-label", text: "Aktuelles Hex" });
+    const tileValue = tileRow.createSpan({
+        cls: "sm-cartographer__travel-value",
+        text: "—",
+    });
 
-    const speedRow = root.createDiv({ cls: "sm-tg-sidebar__row" });
-    speedRow.createSpan({ cls: "sm-tg-sidebar__label", text: "Token-Speed" });
+    const speedRow = root.createDiv({ cls: "sm-cartographer__travel-row" });
+    speedRow.createSpan({ cls: "sm-cartographer__travel-label", text: "Token-Speed" });
     const speedInput = speedRow.createEl("input", {
         type: "number",
-        cls: "sm-tg-sidebar__speed-input",
+        cls: "sm-cartographer__travel-input",
         attr: { step: "0.1", min: "0.1", value: "1" },
     }) as HTMLInputElement;
 
@@ -60,6 +63,7 @@ export function createSidebar(host: HTMLElement): Sidebar {
         onSpeedChange: (fn) => (onChange = fn),
         destroy: () => {
             host.empty();
+            host.classList.remove("sm-cartographer__sidebar--travel");
             delete host.dataset.mapTitle;
         },
     };
