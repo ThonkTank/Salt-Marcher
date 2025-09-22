@@ -47,6 +47,17 @@ src/apps/travel-guide/
 
 ---
 
+## Featureliste
+
+- **Kartenverwaltung & Persistenz:** Karten lassen sich öffnen, erstellen und speichern; Terrain-Geschwindigkeiten werden beim Mount geladen und Token-Positionen (`token_travel`) automatisch aus den Hex-Notes gelesen bzw. dorthin zurückgeschrieben.
+- **Routenaufbau durch Hex-Klicks:** Hex-Klicks erzeugen Nutzeranker, ergänzen automatische Zwischenpunkte entlang der Linie und aktualisieren Highlight & Route-Rendering unmittelbar.
+- **Präzise Drag-Interaktionen:** Nutzeranker und Token können mit Ghost-Vorschau verschoben werden; während aktiver Drags werden Hex-Klick-Events vollständig unterdrückt, damit keine zusätzlichen Wegpunkte entstehen.
+- **Token-Steuerung & Playback:** Token lassen sich manuell positionieren oder über Play/Stop/Reset animieren; der Playback-Loop berücksichtigt Terrain-Speed, Token-Speed und persistiert Fortschritte pro Tile.
+- **Kontextmenü für Nutzeranker:** Rechtsklick auf Nutzerpunkte bietet schnelles Löschen, während Auto-Punkte geschützt bleiben.
+- **Sidebar & Statusanzeigen:** Die Sidebar bündelt Playback-Controls, aktuellen Hex, Speed-Regler sowie Karten-Titel, damit alle relevanten Zustände im Blick bleiben.
+
+---
+
 ## Öffentliche Schnittstellen
 
 ### `domain/types.ts`
@@ -199,11 +210,13 @@ Alle Farbwerte lassen sich über die jeweiligen Custom Properties überschreiben
 - `ghostMoveSelectedDot/Token` verschieben nur UI (kein State).
 - `endDrag()` sorgt für Commit über `logic.moveSelectedTo` oder `logic.moveTokenTo` und ruft `adapter.ensurePolys` als Sicherheit.
 - Capture-Hook auf `window` setzt früh `suppressNextHexClick`, damit `hex:click` keine Wegpunkte erzeugt, wenn Token/Dots gedrückt werden.
+- `consumeClickSuppression` blockiert Hex-Klicks solange der Drag läuft und leert Unterdrückungs-Flags erst nach Drag-Ende.
 - Stellt `bind`, `unbind`, `consumeClickSuppression` bereit.
 
 ### `ui/contextmenue.ts`
 - Bindet `contextmenu` auf dem Route-Layer.
 - Ignoriert Nicht-Kreis-Elemente und `auto`-Dots, unterdrückt Browser-Menü.
+- Liest den Zielindex direkt aus `data-idx` (funktioniert für sichtbare Dots & Hitboxen).
 - Ruft bei `user`-Dots `logic.deleteUserAt(idx)` und stoppt Event-Bubbling.
 
 ### `ui/sidebar.ts`
