@@ -16,6 +16,8 @@ export type MapHeaderOptions = {
     emptyLabel?: string;
     /** Optionalen Inhalt für die linke Seite der zweiten Zeile einsetzen. */
     secondaryLeftSlot?: (host: HTMLElement) => void;
+    /** Optionaler Slot rechts neben dem Titel. */
+    titleRightSlot?: (host: HTMLElement) => void;
     /** Button-Beschriftungen / Notices anpassen. */
     labels?: {
         open?: string;
@@ -45,6 +47,8 @@ export type MapHeaderHandle = {
     readonly root: HTMLElement;
     /** Linker Slot der zweiten Zeile (Map-Name oder Custom-Inhalt). */
     readonly secondaryLeftSlot: HTMLElement;
+    /** Slot rechts neben dem Titel. */
+    readonly titleRightSlot: HTMLElement;
     /** Aktualisiert den Dateinamen im Header und merkt sich das aktuelle File. */
     setFileLabel(file: TFile | null): void;
     /** Optional andere Überschrift setzen. */
@@ -77,8 +81,28 @@ export function createMapHeader(app: App, host: HTMLElement, options: MapHeaderO
 
     const row1 = root.createDiv();
     Object.assign(row1.style, { display: "flex", alignItems: "center", gap: ".5rem" });
-    const titleEl = row1.createEl("h2", { text: options.title });
-    titleEl.style.marginRight = "auto";
+
+    const titleGroup = row1.createDiv({ cls: "sm-map-header__title-group" });
+    Object.assign(titleGroup.style, {
+        display: "flex",
+        alignItems: "center",
+        gap: ".5rem",
+        marginRight: "auto",
+    });
+    const titleEl = titleGroup.createEl("h2", { text: options.title });
+    Object.assign(titleEl.style, { margin: 0 });
+
+    const titleRightSlot = titleGroup.createDiv({ cls: "sm-map-header__title-slot" });
+    Object.assign(titleRightSlot.style, {
+        display: "flex",
+        alignItems: "center",
+        gap: ".5rem",
+    });
+    if (options.titleRightSlot) {
+        options.titleRightSlot(titleRightSlot);
+    } else {
+        titleRightSlot.style.display = "none";
+    }
 
     const openBtn = row1.createEl("button", { text: labels.open });
     setIcon(openBtn, "folder-open");
@@ -177,5 +201,5 @@ export function createMapHeader(app: App, host: HTMLElement, options: MapHeaderO
 
     setFileLabel(currentFile);
 
-    return { root, secondaryLeftSlot, setFileLabel, setTitle, destroy };
+    return { root, secondaryLeftSlot, titleRightSlot, setFileLabel, setTitle, destroy };
 }

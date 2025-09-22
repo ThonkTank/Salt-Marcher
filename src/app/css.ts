@@ -198,6 +198,121 @@ export const HEX_PLUGIN_CSS = `
     display: flex;
 }
 
+/* === Cartographer === */
+.cartographer-host {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.sm-cartographer {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+    height: 100%;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
+.sm-cartographer__header .sm-map-header {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 10px;
+    padding: 0.75rem;
+    background: var(--background-primary);
+    gap: 0.5rem;
+}
+
+.sm-cartographer__header .sm-map-header h2 {
+    margin: 0;
+}
+
+.sm-cartographer__mode-switch {
+    display: inline-flex;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.sm-cartographer__mode-switch button {
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-secondary);
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 120ms ease, color 120ms ease;
+}
+
+.sm-cartographer__mode-switch button.is-active {
+    background: var(--interactive-accent, var(--color-accent));
+    color: var(--text-on-accent, #fff);
+}
+
+.sm-cartographer__body {
+    display: flex;
+    flex: 1 1 auto;
+    gap: 1.25rem;
+    align-items: stretch;
+    width: 100%;
+    min-height: 0;
+}
+
+.sm-cartographer__map {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 10px;
+    background: var(--background-primary);
+    padding: 0.75rem;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.sm-cartographer__map .hex3x3-map {
+    height: 100%;
+    max-width: none;
+}
+
+.sm-cartographer__sidebar {
+    flex: 0 0 280px;
+    max-width: 320px;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 10px;
+    padding: 1rem;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.sm-cartographer__panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sm-cartographer__panel h3 {
+    margin: 0;
+}
+
+.sm-cartographer__panel.is-disabled {
+    opacity: 0.6;
+}
+
+.sm-cartographer__panel-info {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.sm-cartographer__empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+}
+
 .sm-tg-sidebar__inner {
     display: flex;
     flex-direction: column;
