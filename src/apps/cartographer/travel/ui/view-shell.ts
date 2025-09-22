@@ -3,17 +3,17 @@
 // Delegiert Pointer/RMB an Controller; Domain erledigt Regeln & Persistenz.
 
 import type { App, TFile } from "obsidian";
-import { parseOptions } from "../../../core/options";
-import { saveMap, saveMapAs } from "../../../core/save";
+import { parseOptions } from "../../../../core/options";
+import { saveMap, saveMapAs } from "../../../../core/save";
 import type { Coord } from "../domain/types";
 import { createMapLayer, type MapLayer } from "./map-layer";
 import {
     createMapHeader,
     type MapHeaderHandle,
     type MapHeaderSaveMode,
-} from "../../../ui/map-header";
-import { createTravelGuideMode } from "../../cartographer/modes/travel-guide";
-import type { CartographerModeContext } from "../../cartographer/view-shell";
+} from "../../../../ui/map-header";
+import { createTravelGuideMode } from "../../modes/travel-guide";
+import type { CartographerModeContext } from "../../view-shell";
 
 export type TravelGuideController = {
     destroy(): void | Promise<void>;

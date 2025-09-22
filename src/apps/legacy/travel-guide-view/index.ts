@@ -1,7 +1,10 @@
-// src/apps/travel-guide/index.ts
+// src/apps/legacy/travel-guide-view/index.ts
 import { Plugin, ItemView, WorkspaceLeaf, TFile } from "obsidian";
 import type { App } from "obsidian";
-import { mountTravelGuide, type TravelGuideController } from "./ui/view-shell";
+import {
+    mountTravelGuide,
+    type TravelGuideController,
+} from "../../cartographer/travel/ui/view-shell";
 
 export const VIEW_TYPE_TRAVEL_GUIDE = "travel-guide-view";
 export const VIEW_TRAVEL_GUIDE = VIEW_TYPE_TRAVEL_GUIDE;

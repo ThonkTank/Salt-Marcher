@@ -2,7 +2,7 @@
 // Playback-Buttons (Start/Stopp/Reset) im Sidebar-Controls-Host. Kapselt nur DOM + Button-State.
 
 import { setIcon } from "obsidian";
-import { applyMapButtonStyle } from "../../../ui/map-workflows";
+import { applyMapButtonStyle } from "../../../../ui/map-workflows";
 import type { LogicStateSnapshot } from "../domain/types";
 
 export type PlaybackControlsCallbacks = {

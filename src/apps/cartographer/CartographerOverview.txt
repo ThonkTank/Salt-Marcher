@@ -10,6 +10,11 @@ src/apps/cartographer/
 │  ├─ editor.ts             # Map-Editor-Modus (Tools, Brush, Sidebar-Panel)
 │  ├─ inspector.ts          # Inspector-Modus (Terrain & Notizen pro Hex bearbeiten)
 │  └─ travel-guide.ts       # Travel-Guide-Modus (Route/Token, Sidebar, Drag, Persistenz)
+├─ travel/
+│  ├─ domain/               # Route-/Token-Logik, Playback & Persistenz
+│  ├─ infra/                # Schnittstelle zwischen Domain & Renderer
+│  ├─ render/               # SVG-Zeichenhelfer für Route + Highlights
+│  └─ ui/                   # Travel-spezifische Shell, Sidebar & Layer
 └─ CartographerOverview.txt # Dieses Dokument
 ```
 
@@ -21,7 +26,8 @@ src/apps/cartographer/
 - **Modus-System:** Stellt das Mode-Interface (`onEnter`, `onExit`, `onFileChange`, `onHexClick`, `onSave`) bereit, schaltet per Header-Slot zwischen Modi, delegiert Events und räumt Ressourcen deterministisch auf.
 - **Editor-Integration:** `modes/editor.ts` stellt die Map-Editor-Logik bereit (Tool-Registry, Brush-Handling, Options-Panel) und nutzt direkt die vom Cartographer gerenderten `RenderHandles`.
 - **Inspector-Modus:** `modes/inspector.ts` ermöglicht Terrain- & Notizbearbeitung für das aktuell geklickte Hex, lädt/speichert Tiles über `hex-notes` und aktualisiert das Live-Fill via `RenderHandles`.
-- **Travel-Integration:** `modes/travel-guide.ts` spiegelt die Travel-Guide-Funktionalität (Route, Token, Playback) und kann sowohl im Cartographer als auch in der eigenständigen Travel-Guide-View eingesetzt werden.
+- **Travel-Integration:** `modes/travel-guide.ts` montiert die Travel-Bausteine aus `travel/` (Sidebar, Layers, Domain/Playback) und kann sowohl im Cartographer als auch in der eigenständigen Travel-Guide-View eingesetzt werden.
+- **Travel-Modulpaket:** `travel/` stellt Domain-Logik, Rendering-Adapter und UI-Shell bereit und dient als Single Source of Truth für Cartographer-Travel und die Legacy-View (Details siehe `travel/TravelGuideOverview.txt`).
 - **Platzhalter-Mode:** Das interne Notes-Panel dient weiterhin als Beispiel für minimale Mode-Implementierungen.
 
 ## Dateibeschreibungen
@@ -52,4 +58,9 @@ src/apps/cartographer/
 - Baut das Inspector-Panel im Sidebar-Host auf (Terrain-Select, Notizfeld, Statuszeile).
 - Lädt/speichert Tile-Daten mit `loadTile`/`saveTile` und debounced Speichervorgänge zur Schonung des Dateisystems.
 - Aktualisiert die Renderer-Fills live über `RenderHandles.setFill`, sobald Terrain geändert wird, und hält die Auswahl beim Karten-Reload konsistent.
+
+### `travel/`
+- Enthält Travel-spezifische Domain-, Infra-, Render- und UI-Bausteine; zentrale Beschreibung siehe `travel/TravelGuideOverview.txt`.
+- `travel/ui/view-shell.ts` stellt eine eigenständige Cartographer-Shell bereit, die vom Legacy-Wrapper direkt gemountet wird.
+- `travel/domain/actions.ts` bündelt Route-/Token-Logik und nutzt `infra/adapter.ts`, um Rendering-Layer (`ui/*`, `render/draw-route.ts`) lose zu koppeln.
 

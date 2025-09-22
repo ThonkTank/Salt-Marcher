@@ -1,4 +1,4 @@
-import { lineOddR } from "../../../core/hex-mapper/hex-geom";
+import { lineOddR } from "../../../../core/hex-mapper/hex-geom";
 import type { Coord, RouteNode } from "./types";
 
 /** Liefert Pfad EXKL. Start, INKL. Ende (keine Duplikate am Start) */

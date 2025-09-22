@@ -5,7 +5,7 @@ import type { App, TFile } from "obsidian";
 import { parseOptions, type HexOptions } from "../../core/options";
 import { getFirstHexBlock } from "../../core/map-list";
 import type { RenderHandles } from "../../core/hex-mapper/hex-render";
-import { createMapLayer, type MapLayer } from "../travel-guide/ui/map-layer";
+import { createMapLayer, type MapLayer } from "./travel/ui/map-layer";
 import { createMapHeader, type MapHeaderHandle, type MapHeaderSaveMode } from "../../ui/map-header";
 import { createMapManager } from "../../ui/map-manager";
 import { createTravelGuideMode } from "./modes/travel-guide";

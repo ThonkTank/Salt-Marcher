@@ -2,7 +2,7 @@
 // Hält KEINE Business-Logik. Stellt Funktionen für Adapter bereit.
 
 import type { App, TFile } from "obsidian";
-import { renderHexMap, type RenderHandles } from "../../../core/hex-mapper/hex-render";
+import { renderHexMap, type RenderHandles } from "../../../../core/hex-mapper/hex-render";
 import type { Coord } from "../domain/types";
 
 export type MapLayer = {
