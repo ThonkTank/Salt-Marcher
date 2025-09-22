@@ -1,5 +1,5 @@
 import type { App, TFile } from "obsidian";
-import { listTilesForMap, loadTile, saveTile } from "../../../core/hex-mapper/hex-notes";
+import { listTilesForMap, loadTile, saveTile } from "../../../../core/hex-mapper/hex-notes";
 import type { Coord } from "./types";
 
 export const TOKEN_KEY = "token_travel";

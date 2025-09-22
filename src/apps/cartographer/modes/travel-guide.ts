@@ -2,24 +2,24 @@ import type { MapHeaderSaveMode } from "../../../ui/map-header";
 import type { CartographerMode, CartographerModeContext } from "../view-shell";
 import { loadTerrains } from "../../../core/terrain-store";
 import { setTerrains } from "../../../core/terrain";
-import { createSidebar, type Sidebar } from "../../travel-guide/ui/sidebar";
+import { createSidebar, type Sidebar } from "../travel/ui/sidebar";
 import {
     createPlaybackControls,
     type PlaybackControlsHandle,
-} from "../../travel-guide/ui/controls";
-import { createRouteLayer } from "../../travel-guide/ui/route-layer";
-import { createTokenLayer } from "../../travel-guide/ui/token-layer";
+} from "../travel/ui/controls";
+import { createRouteLayer } from "../travel/ui/route-layer";
+import { createTokenLayer } from "../travel/ui/token-layer";
 import {
     createDragController,
     type DragController,
-} from "../../travel-guide/ui/drag.controller";
-import { bindContextMenu } from "../../travel-guide/ui/contextmenue";
-import { createTravelLogic } from "../../travel-guide/domain/actions";
+} from "../travel/ui/drag.controller";
+import { bindContextMenu } from "../travel/ui/contextmenue";
+import { createTravelLogic } from "../travel/domain/actions";
 import type {
     LogicStateSnapshot,
     RouteNode,
-} from "../../travel-guide/domain/types";
-import type { RenderAdapter } from "../../travel-guide/infra/adapter";
+} from "../travel/domain/types";
+import type { RenderAdapter } from "../travel/infra/adapter";
 
 export function createTravelGuideMode(): CartographerMode {
     let sidebar: Sidebar | null = null;
