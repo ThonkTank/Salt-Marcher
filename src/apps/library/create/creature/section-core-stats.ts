@@ -20,7 +20,10 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
   // Identity: Name, Größe, Typ, Gesinnung (zweiteilig)
   const idSetting = new Setting(root).setName("Name");
   idSetting.addText((t) => {
-    t.setPlaceholder("Aboleth").setValue(data.name || "").onChange((v: string) => (data.name = v.trim()));
+    const updateName = (v: string) => { data.name = v.trim(); };
+    t.setPlaceholder("Aboleth").setValue(data.name || "").onChange((v: string) => updateName(v));
+    t.inputEl.dataset.role = "creature-name";
+    t.inputEl.addEventListener("input", () => updateName(t.inputEl.value));
     t.inputEl.style.width = '30ch';
   });
 

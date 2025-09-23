@@ -7,6 +7,22 @@ import { mountCoreStatsSection } from "./section-core-stats";
 import { mountEntriesSection } from "./section-entries";
 import { mountSpellsKnownSection } from "./section-spells-known";
 import { CREATURE_MOVEMENT_TYPES, type CreatureMovementType } from "./presets";
+import { abilityMod, parseIntSafe } from "../shared/stat-utils";
+
+class CreaturePreviewModal extends Modal {
+    constructor(app: App, private readonly data: StatblockData) {
+        super(app);
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        contentEl.addClass("sm-cc-preview-modal");
+        contentEl.createEl("h3", { text: "Vorschau – aktuelle Eingaben" });
+        const pre = contentEl.createEl("pre", { cls: "sm-cc-preview" });
+        pre.textContent = JSON.stringify(this.data, null, 2);
+    }
+}
 
 export class CreateCreatureModal extends Modal {
     private data: StatblockData;
@@ -29,9 +45,59 @@ export class CreateCreatureModal extends Modal {
         const bg = document.querySelector('.modal-bg') as HTMLElement | null;
         if (bg) { this._bgEl = bg; this._bgPrevPointer = bg.style.pointerEvents; bg.style.pointerEvents = 'none'; }
 
-        // (Dropdown-Suche entfernt — stattdessen echte Typeahead an Stellen mit vielen Optionen)
+        const wrapper = contentEl.createDiv({ cls: "sm-cc-create-wrapper" });
 
-        contentEl.createEl("h3", { text: "Neuen Statblock erstellen" });
+        const header = wrapper.createDiv({ cls: "sm-cc-create-header" });
+        const breadcrumb = header.createDiv({ cls: "sm-cc-create-breadcrumb" });
+        breadcrumb.createSpan({ cls: "sm-cc-crumb", text: "Bibliothek" });
+        breadcrumb.createSpan({ cls: "sm-cc-crumb", text: "Statblocks" });
+        breadcrumb.createSpan({ cls: "sm-cc-crumb", text: "Neue Kreatur" });
+        const liveName = breadcrumb.createSpan({ cls: "sm-cc-crumb sm-cc-crumb--name", text: this.data.name || "Neue Kreatur" });
+
+        const stepper = header.createDiv({ cls: "sm-cc-create-stepper" });
+        const prevBtn = stepper.createEl("button", { cls: "sm-cc-stepper-btn", text: "← Zurück" });
+        const stepLabel = stepper.createSpan({ cls: "sm-cc-stepper-label", text: "Grundwerte" });
+        const nextBtn = stepper.createEl("button", { cls: "sm-cc-stepper-btn", text: "Weiter →" });
+
+        const body = wrapper.createDiv({ cls: "sm-cc-create-body" });
+        const leftColumn = body.createDiv({ cls: "sm-cc-create-column sm-cc-create-column--left" });
+        const middleColumn = body.createDiv({ cls: "sm-cc-create-column sm-cc-create-column--middle" });
+        const rightColumn = body.createDiv({ cls: "sm-cc-create-column sm-cc-create-column--right" });
+
+        const steps: Array<{ el: HTMLElement; label: string }> = [
+            { el: leftColumn, label: "Grundwerte" },
+            { el: middleColumn, label: "Details" },
+            { el: rightColumn, label: "Aktionen & Zauber" },
+        ];
+        let activeStep = 0;
+
+        const focusFirstField = (el: HTMLElement) => {
+            const focusable = el.querySelector<HTMLElement>("input, select, textarea, button, [tabindex]:not([tabindex='-1'])");
+            if (focusable) focusable.focus({ preventScroll: true });
+        };
+
+        const updateStep = (nextIndex: number, { scroll }: { scroll: boolean }) => {
+            activeStep = nextIndex;
+            steps.forEach((step, i) => step.el.toggleClass("is-active", i === activeStep));
+            prevBtn.disabled = activeStep === 0;
+            nextBtn.disabled = activeStep === steps.length - 1;
+            stepLabel.setText(steps[activeStep]?.label ?? "");
+            if (scroll) {
+                steps[activeStep]?.el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                setTimeout(() => focusFirstField(steps[activeStep]?.el), 120);
+            }
+        };
+
+        prevBtn.onclick = () => { if (activeStep > 0) updateStep(activeStep - 1, { scroll: true }); };
+        nextBtn.onclick = () => { if (activeStep < steps.length - 1) updateStep(activeStep + 1, { scroll: true }); };
+
+        body.addEventListener("focusin", (ev) => {
+            const column = (ev.target as HTMLElement | null)?.closest<HTMLElement>(".sm-cc-create-column");
+            if (!column) return;
+            const index = steps.findIndex((step) => step.el === column);
+            if (index >= 0 && index !== activeStep) updateStep(index, { scroll: false });
+        });
+
         // Asynchron: verfügbare Zauber laden (best effort)
         let spellsSectionControls: ReturnType<typeof mountSpellsKnownSection> | null = null;
         void (async () => {
@@ -43,24 +109,22 @@ export class CreateCreatureModal extends Modal {
             catch {}
         })();
 
-        // Core Stats (kompakt) auslagern
-        mountCoreStatsSection(contentEl, this.data);
-        // Movement speeds (structured input → speedList strings)
+        // Core Stats (kompakt) in linker Spalte
+        mountCoreStatsSection(leftColumn, this.data);
+
+        // Movement speeds (structured input → speedList strings) – mittlere Spalte
         if (!this.data.speedList) this.data.speedList = [];
-        const speedWrap = contentEl.createDiv({ cls: "setting-item" });
-        speedWrap.createDiv({ cls: "setting-item-info", text: "Bewegung" });
-        const speedCtl = speedWrap.createDiv({ cls: "setting-item-control sm-cc-move-ctl" });
-        const addRow = speedCtl.createDiv({ cls: "sm-cc-searchbar sm-cc-move-row" });
+        const movement = new Setting(middleColumn).setName("Bewegung");
+        const movementContainer = movement.controlEl.createDiv({ cls: "sm-cc-move-ctl" });
+        const addRow = movementContainer.createDiv({ cls: "sm-cc-searchbar sm-cc-move-row" });
         const typeSel = addRow.createEl("select") as HTMLSelectElement;
         for (const [value, label] of CREATURE_MOVEMENT_TYPES) { const option = typeSel.createEl("option", { text: label }); option.value = value; }
         enhanceSelectToSearch(typeSel, 'Such-dropdown…');
-        // hover option only for fly
         const hoverWrap = addRow.createDiv();
         const hoverCb = hoverWrap.createEl("input", { attr: { type: "checkbox", id: "cb-hover" } }) as HTMLInputElement;
         hoverWrap.createEl("label", { text: "Hover", attr: { for: "cb-hover" } });
         const updateHover = () => { const cur = typeSel.value as CreatureMovementType; const isFly = cur === 'fly'; hoverWrap.style.display = isFly ? '' : 'none'; if (!isFly) hoverCb.checked = false; };
         updateHover(); typeSel.onchange = updateHover;
-        // inline number with +/- controls (5ft steps) – placed after hover
         const numWrap = addRow.createDiv({ cls: "sm-inline-number" });
         const valInp = numWrap.createEl("input", { attr: { type: "number", min: "0", step: "5", placeholder: "30" } }) as HTMLInputElement;
         const decBtn = numWrap.createEl("button", { text: "−", cls: "btn-compact" });
@@ -72,9 +136,9 @@ export class CreateCreatureModal extends Modal {
         };
         decBtn.onclick = () => step(-1);
         incBtn.onclick = () => step(1);
-        const addRow2 = speedCtl.createDiv({ cls: "sm-cc-searchbar sm-cc-move-addrow" });
+        const addRow2 = movementContainer.createDiv({ cls: "sm-cc-searchbar sm-cc-move-addrow" });
         const addSpeedBtn = addRow2.createEl("button", { text: "+ Hinzufügen" });
-        const listWrap = speedCtl.createDiv({ cls: "sm-cc-chips" });
+        const listWrap = movementContainer.createDiv({ cls: "sm-cc-chips" });
         const renderSpeeds = () => {
             listWrap.empty();
             this.data.speedList!.forEach((txt, i) => {
@@ -97,18 +161,101 @@ export class CreateCreatureModal extends Modal {
             valInp.value = ""; hoverCb.checked = false; renderSpeeds();
         };
 
-        // Structured entries (Traits, Aktionen, …)
-        mountEntriesSection(contentEl, this.data);
+        // Structured entries (Traits, Aktionen, …) – rechte Spalte
+        mountEntriesSection(rightColumn, this.data);
 
-        // Known spells section
-        spellsSectionControls = mountSpellsKnownSection(contentEl, this.data, () => this.availableSpells);
+        // Known spells section – rechte Spalte
+        spellsSectionControls = mountSpellsKnownSection(rightColumn, this.data, () => this.availableSpells);
 
-        // Buttons
-        new Setting(contentEl)
-            .addButton(b => b.setButtonText("Abbrechen").onClick(() => this.close()))
-            .addButton(b => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
+        const footer = wrapper.createDiv({ cls: "sm-cc-create-footer" });
+        const chipRow = footer.createDiv({ cls: "sm-cc-footer-chips" });
+        const makeChip = (label: string) => {
+            const chip = chipRow.createDiv({ cls: "sm-cc-footer-chip" });
+            chip.createSpan({ cls: "sm-cc-footer-chip__label", text: label });
+            return chip.createSpan({ cls: "sm-cc-footer-chip__value", text: "-" });
+        };
+        const chipAc = makeChip("AC");
+        const chipHp = makeChip("HP");
+        const chipPassive = makeChip("Passive Perception");
+        const chipCr = makeChip("CR");
 
-        // Enter bestätigt NICHT automatisch (nur Button "Erstellen")
+        const footerStatus = footer.createDiv({ cls: "sm-cc-footer-status" });
+        const footerActions = footer.createDiv({ cls: "sm-cc-footer-actions" });
+
+        const cancelBtn = footerActions.createEl("button", { cls: "sm-cc-footer-btn", text: "Abbrechen" });
+        cancelBtn.onclick = () => this.close();
+        const saveBtn = footerActions.createEl("button", { cls: "sm-cc-footer-btn is-primary", text: "Speichern" });
+        saveBtn.onclick = () => this.submit();
+        const previewBtn = footerActions.createEl("button", { cls: "sm-cc-footer-btn", text: "Vorschau öffnen" });
+        previewBtn.onclick = () => {
+            const preview = new CreaturePreviewModal(this.app, this.data);
+            preview.open();
+        };
+
+        const computePassive = () => {
+            const wis = abilityMod(this.data.wis);
+            const base = 10 + wis;
+            const pb = parseIntSafe(this.data.pb);
+            const profBonus = Number.isFinite(pb) ? pb : 0;
+            let bonus = 0;
+            const skills = new Set(this.data.skillsProf || []);
+            const expertise = new Set(this.data.skillsExpertise || []);
+            if (skills.has("Perception")) bonus += profBonus;
+            if (expertise.has("Perception")) bonus += profBonus;
+            return base + bonus;
+        };
+
+        const collectValidationIssues = (): string[] => {
+            const issues: string[] = [];
+            if (!this.data.name || !this.data.name.trim()) issues.push("Name fehlt");
+            const hasEntries = Array.isArray(this.data.entries) && this.data.entries.length > 0;
+            const hasActions = Array.isArray(this.data.entries) && this.data.entries.some((e) => e.category === 'action');
+            const hasLegacyActions = Array.isArray(this.data.actionsList) && this.data.actionsList.length > 0;
+            if (!hasEntries && !hasLegacyActions) issues.push("Mindestens einen Eintrag hinzufügen");
+            else if (!hasActions && !hasLegacyActions) issues.push("Mindestens eine Aktion hinterlegen");
+            return issues;
+        };
+
+        const updateFooter = () => {
+            chipAc.setText(this.data.ac?.trim() || "–");
+            chipHp.setText(this.data.hp?.trim() || "–");
+            const passive = computePassive();
+            chipPassive.setText(Number.isFinite(passive) ? String(passive) : "–");
+            chipCr.setText(this.data.cr?.trim() || "–");
+
+            footerStatus.empty();
+            const issues = collectValidationIssues();
+            if (issues.length === 0) {
+                footerStatus.createSpan({ cls: "sm-cc-footer-status__ok", text: "Bereit zum Speichern" });
+            } else {
+                const list = footerStatus.createDiv({ cls: "sm-cc-footer-status__warnings" });
+                issues.forEach((msg) => { list.createSpan({ cls: "sm-cc-footer-warning", text: msg }); });
+            }
+            saveBtn.toggleClass("is-disabled", issues.length > 0);
+            saveBtn.disabled = issues.length > 0;
+        };
+
+        const refreshName = () => {
+            liveName.setText(this.data.name?.trim() || "Neue Kreatur");
+        };
+
+        const scheduleUpdate = () => {
+            requestAnimationFrame(() => {
+                refreshName();
+                updateFooter();
+            });
+        };
+
+        wrapper.addEventListener("input", scheduleUpdate, true);
+        wrapper.addEventListener("change", scheduleUpdate, true);
+        wrapper.addEventListener("click", (ev) => {
+            const target = ev.target as HTMLElement | null;
+            if (target?.closest("button")) scheduleUpdate();
+        }, true);
+
+        refreshName();
+        updateFooter();
+        updateStep(0, { scroll: false });
     }
 
     onClose() { this.contentEl.empty(); if (this._bgEl) { this._bgEl.style.pointerEvents = this._bgPrevPointer ?? ''; this._bgEl = undefined; } }
