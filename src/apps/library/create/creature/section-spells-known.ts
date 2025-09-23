@@ -1,5 +1,5 @@
-// src/apps/library/create/section-spells-known.ts
-import type { StatblockData } from "../core/creature-files";
+// src/apps/library/create/creature/section-spells-known.ts
+import type { StatblockData } from "../../core/creature-files";
 
 export function mountSpellsKnownSection(
   parent: HTMLElement,

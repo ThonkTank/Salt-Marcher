@@ -1,7 +1,7 @@
-// src/apps/library/create/section-entries.ts
-import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
-import type { StatblockData } from "../core/creature-files";
-import { abilityMod, formatSigned, parseIntSafe } from "./shared/stat-utils";
+// src/apps/library/create/creature/section-entries.ts
+import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
+import type { StatblockData } from "../../core/creature-files";
+import { abilityMod, formatSigned, parseIntSafe } from "../shared/stat-utils";
 
 export function mountEntriesSection(parent: HTMLElement, data: StatblockData) {
   if (!data.entries) data.entries = [] as any;

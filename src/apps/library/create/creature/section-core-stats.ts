@@ -1,9 +1,9 @@
-// src/apps/library/create/section-core-stats.ts
+// src/apps/library/create/creature/section-core-stats.ts
 import { Setting } from "obsidian";
-import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
-import { mountTokenEditor } from "./shared/token-editor";
-import { abilityMod, formatSigned, parseIntSafe } from "./shared/stat-utils";
-import type { StatblockData } from "../core/creature-files";
+import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
+import { mountTokenEditor } from "../shared/token-editor";
+import { abilityMod, formatSigned, parseIntSafe } from "../shared/stat-utils";
+import type { StatblockData } from "../../core/creature-files";
 
 export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) {
   const root = parent.createDiv();
