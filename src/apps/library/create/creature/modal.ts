@@ -1,5 +1,6 @@
 // src/apps/library/create/creature/modal.ts
 import { App, Modal, Setting } from "obsidian";
+import { ensureSpeedList } from "../../core/creature-files";
 import type { StatblockData } from "../../core/creature-files";
 import { listSpellFiles } from "../../core/spell-files";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
@@ -9,6 +10,44 @@ import { mountSpellcastingSection } from "./section-spellcasting";
 import { CREATURE_MOVEMENT_TYPES, type CreatureMovementType } from "./presets";
 import { abilityMod, parseIntSafe } from "../shared/stat-utils";
 import { mountTokenEditor } from "../shared/token-editor";
+
+const MOVEMENT_LABEL_LOOKUP = CREATURE_MOVEMENT_TYPES.reduce<Record<string, string>>((acc, [value, label]) => {
+    acc[value] = label;
+    return acc;
+}, {});
+
+const DEFAULT_MOVEMENT_LABEL = MOVEMENT_LABEL_LOOKUP.walk ?? "Speed";
+
+type SpeedChipDisplay = { raw: string; typeLabel: string; value: string };
+
+function parseSpeedChip(raw: string | null | undefined): SpeedChipDisplay | null {
+    if (!raw) return null;
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+    const match = trimmed.match(/^([A-Za-z]+)\s+(.*)$/);
+    if (match) {
+        const [, typeToken, rest] = match;
+        const normalized = typeToken.toLowerCase();
+        if (Object.prototype.hasOwnProperty.call(MOVEMENT_LABEL_LOOKUP, normalized)) {
+            return {
+                raw: trimmed,
+                typeLabel: MOVEMENT_LABEL_LOOKUP[normalized],
+                value: rest.trim() || "–",
+            };
+        }
+        const fallbackLabel = typeToken.charAt(0).toUpperCase() + typeToken.slice(1);
+        return {
+            raw: trimmed,
+            typeLabel: fallbackLabel,
+            value: rest.trim() || "–",
+        };
+    }
+    return {
+        raw: trimmed,
+        typeLabel: DEFAULT_MOVEMENT_LABEL,
+        value: trimmed,
+    };
+}
 
 class CreaturePreviewModal extends Modal {
     constructor(app: App, private readonly data: StatblockData) {
@@ -47,6 +86,8 @@ export class CreateCreatureModal extends Modal {
         const { contentEl } = this;
         contentEl.empty();
         contentEl.addClass("sm-cc-create-modal");
+
+        ensureSpeedList(this.data);
 
         // Prevent closing on outside click by disabling background pointer events
         const bg = document.querySelector('.modal-bg') as HTMLElement | null;
@@ -121,7 +162,6 @@ export class CreateCreatureModal extends Modal {
         mountCoreStatsSection(leftColumn, this.data);
 
         // Movement speeds (structured input → speedList strings) – mittlere Spalte
-        if (!this.data.speedList) this.data.speedList = [];
         const movement = new Setting(middleColumn).setName("Bewegung");
         const movementContainer = movement.controlEl.createDiv({ cls: "sm-cc-move-ctl" });
         const addRow = movementContainer.createDiv({ cls: "sm-cc-searchbar sm-cc-move-row" });
@@ -149,9 +189,13 @@ export class CreateCreatureModal extends Modal {
         const listWrap = movementContainer.createDiv({ cls: "sm-cc-chips" });
         const renderSpeeds = () => {
             listWrap.empty();
-            this.data.speedList!.forEach((txt, i) => {
+            const speeds = ensureSpeedList(this.data);
+            speeds.forEach((txt, i) => {
                 const chip = listWrap.createDiv({ cls: 'sm-cc-chip' });
-                chip.createSpan({ text: txt });
+                const display = parseSpeedChip(txt) ?? { raw: txt?.trim?.() || "", typeLabel: DEFAULT_MOVEMENT_LABEL, value: (txt ?? "").trim() };
+                const valueText = display.value?.trim() ? display.value : "–";
+                if (display.raw) chip.setAttr("title", display.raw);
+                chip.createSpan({ text: `${display.typeLabel} · ${valueText}` });
                 const x = chip.createEl('button', { text: '×' });
                 x.onclick = () => { this.data.speedList!.splice(i,1); renderSpeeds(); };
             });
@@ -165,7 +209,8 @@ export class CreateCreatureModal extends Modal {
             const label = kind === 'walk'
                 ? `${n} ${unit}`
                 : (kind === 'fly' && hoverCb.checked ? `fly ${n} ${unit} (hover)` : `${kind} ${n} ${unit}`);
-            this.data.speedList!.push(label);
+            ensureSpeedList(this.data);
+            this.data.speedList!.push(label.trim());
             valInp.value = ""; hoverCb.checked = false; renderSpeeds();
         };
 

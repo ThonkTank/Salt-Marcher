@@ -44,10 +44,6 @@ export type StatblockData = {
     initiative?: string;
     hp?: string;
     hitDice?: string;
-    speedWalk?: string;
-    speedSwim?: string;
-    speedFly?: string;
-    speedBurrow?: string;
     speedList?: string[];
     str?: string; dex?: string; con?: string; int?: string; wis?: string; cha?: string;
     pb?: string;
@@ -76,6 +72,66 @@ export type StatblockData = {
     /** @deprecated Legacy Feld, wird nur zum Import älterer Daten gelesen. */
     spellsKnown?: Array<{ name: string; level?: number; uses?: string; notes?: string }>;
 };
+
+type LegacySpeedFields = {
+    speedWalk?: string | null;
+    speedSwim?: string | null;
+    speedFly?: string | null;
+    speedBurrow?: string | null;
+};
+
+const LEGACY_SPEED_PREFIX: Record<Exclude<keyof LegacySpeedFields, "speedWalk">, string> = {
+    speedSwim: "swim",
+    speedFly: "fly",
+    speedBurrow: "burrow",
+};
+
+const LEGACY_SPEED_KEYS: Array<keyof LegacySpeedFields> = [
+    "speedWalk",
+    "speedSwim",
+    "speedFly",
+    "speedBurrow",
+];
+
+const WALK_PREFIX = "walk ";
+
+export function ensureSpeedList(d: StatblockData): string[] {
+    const legacy = d as StatblockData & LegacySpeedFields;
+    const out: string[] = [];
+    const seen = new Set<string>();
+    const pushNormalized = (value: string | null | undefined, typeKey?: string) => {
+        if (typeof value !== "string") return;
+        let trimmed = value.trim();
+        if (!trimmed) return;
+        if (typeKey) {
+            const prefix = `${typeKey} `;
+            if (!trimmed.toLowerCase().startsWith(prefix)) trimmed = `${typeKey} ${trimmed}`;
+        } else if (trimmed.toLowerCase().startsWith(WALK_PREFIX)) {
+            trimmed = trimmed.slice(WALK_PREFIX.length).trim();
+        }
+        const normalized = trimmed.replace(/\s+/g, " ").toLowerCase();
+        if (seen.has(normalized)) return;
+        seen.add(normalized);
+        out.push(trimmed);
+    };
+
+    if (Array.isArray(d.speedList)) {
+        for (const entry of d.speedList) {
+            if (entry == null) continue;
+            pushNormalized(typeof entry === "string" ? entry : String(entry));
+        }
+    }
+
+    for (const key of LEGACY_SPEED_KEYS) {
+        const value = legacy[key];
+        const typeKey = key === "speedWalk" ? undefined : LEGACY_SPEED_PREFIX[key as Exclude<keyof LegacySpeedFields, "speedWalk">];
+        pushNormalized(value, typeKey);
+        if (value != null) delete legacy[key];
+    }
+
+    d.speedList = out;
+    return d.speedList;
+}
 
 export async function ensureCreatureDir(app: App): Promise<TFolder> {
     const p = normalizePath(CREATURES_DIR);
@@ -256,8 +312,8 @@ function statblockToMarkdown(d: StatblockData): string {
     lines.push("---"); lines.push("smType: creature"); lines.push(`name: "${name.replace(/"/g, '\\"')}"`);
     if (d.size) lines.push(`size: "${d.size}"`); if (d.type) lines.push(`type: "${d.type}"`); const align = composeAlignment(d); if (align) lines.push(`alignment: "${align}"`);
     if (d.ac) lines.push(`ac: "${d.ac}"`); if (d.initiative) lines.push(`initiative: "${d.initiative}"`); if (d.hp) lines.push(`hp: "${d.hp}"`); if (d.hitDice) lines.push(`hit_dice: "${d.hitDice}"`);
-    if (d.speedWalk) lines.push(`speed_walk: "${d.speedWalk}"`); if (d.speedSwim) lines.push(`speed_swim: "${d.speedSwim}"`); if (d.speedFly) lines.push(`speed_fly: "${d.speedFly}"`); if (d.speedBurrow) lines.push(`speed_burrow: "${d.speedBurrow}"`);
-    const speedsYaml = yamlList(d.speedList); if (speedsYaml) lines.push(`speeds: ${speedsYaml}`);
+    const speeds = ensureSpeedList(d);
+    const speedsYaml = yamlList(speeds); if (speedsYaml) lines.push(`speeds: ${speedsYaml}`);
     if (d.str) lines.push(`str: "${d.str}"`); if (d.dex) lines.push(`dex: "${d.dex}"`); if (d.con) lines.push(`con: "${d.con}"`); if (d.int) lines.push(`int: "${d.int}"`); if (d.wis) lines.push(`wis: "${d.wis}"`); if (d.cha) lines.push(`cha: "${d.cha}"`); if (d.pb) lines.push(`pb: "${d.pb}"`);
     if (d.saveProf) { const profs = Object.entries(d.saveProf).filter(([, v]) => !!v).map(([k]) => k.toUpperCase()); if (profs.length) lines.push(`saves_prof: ${yamlList(profs)}`); }
     if (d.skillsProf && d.skillsProf.length) lines.push(`skills_prof: ${yamlList(d.skillsProf)}`); if (d.skillsExpertise && d.skillsExpertise.length) lines.push(`skills_expertise: ${yamlList(d.skillsExpertise)}`);
@@ -286,7 +342,7 @@ function statblockToMarkdown(d: StatblockData): string {
     lines.push(`# ${name}`); if (hdr) lines.push(hdr); lines.push("");
     if (d.ac || d.initiative) lines.push(`AC ${d.ac ?? "-"}    Initiative ${d.initiative ?? "-"}`);
     if (d.hp || d.hitDice) lines.push(`HP ${d.hp ?? "-"}${d.hitDice ? ` (${d.hitDice})` : ""}`);
-    let speedsLine: string[] = []; if (d.speedList && d.speedList.length) speedsLine = d.speedList.slice(); else { if (d.speedWalk) speedsLine.push(`${d.speedWalk}`); if (d.speedSwim) speedsLine.push(`swim ${d.speedSwim}`); if (d.speedFly) speedsLine.push(`fly ${d.speedFly}`); if (d.speedBurrow) speedsLine.push(`burrow ${d.speedBurrow}`); } if (speedsLine.length) lines.push(`Speed ${speedsLine.join(", ")}`);
+    const speedsLine = speeds.slice(); if (speedsLine.length) lines.push(`Speed ${speedsLine.join(", ")}`);
     lines.push("");
     const abilities = [["STR", d.str],["DEX", d.dex],["CON", d.con],["INT", d.int],["WIS", d.wis],["CHA", d.cha]] as const; if (abilities.some(([_,v])=>!!v)) { lines.push("| Ability | Score |"); lines.push("| ------: | :---- |"); for (const [k,v] of abilities) if (v) lines.push(`| ${k} | ${v} |`); lines.push(""); }
     const pbNum = parseNum(d.pb) ?? 0; if (d.saveProf) { const parts: string[] = []; const map: Array<[keyof typeof d.saveProf, string, string|undefined]> = [['str','Str',d.str],['dex','Dex',d.dex],['con','Con',d.con],['int','Int',d.int],['wis','Wis',d.wis],['cha','Cha',d.cha]]; for (const [key,label,score] of map) { if (d.saveProf[key]) { const mod = abilityMod(score) ?? 0; parts.push(`${label} ${fmtSigned(mod + pbNum)}`); } } if (parts.length) lines.push(`Saves ${parts.join(", ")}`); }
