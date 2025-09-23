@@ -80,8 +80,10 @@ Salt-Marcher/
   an Bereichs-spezifische Controller.
 - `core/*`: Gemeinsame Logik für Library-Daten (Laden/Speichern der Sammeldateien, Parsing, Suche, Filter, Eventing).
 - `create/creature/modal.ts`: Modal zum Anlegen von Creatures; orchestriert die Formular-Sektionen und persistiert neue Statblocks.
-- `create/spell/modal.ts`: Dediziertes Spell-Modal mit Dropdown-Komfort und Markdown-Feldern.
+- `create/spell/modal.ts`: Dediziertes Spell-Modal mit Dropdown-Komfort, Markdown-Feldern und zentral eingespielten Preset-Listen.
+- `create/spell/presets.ts`: `readonly`-Listen für Grade, Schulen, Angriffstypen und Save-Abilities zur Wiederverwendung in weiteren Features.
 - `create/index.ts`: Re-exportiert beide Modals, sodass `view.ts` die Create-Flows aus einem Bündel importiert.
+- `create/spell/index.ts`: Bündelt Modal und Presets zu einem stabilen Import-Pfad für externe Consumer.
 - `create/*`: Komponenten zum Erstellen/Bearbeiten von Library-Einträgen (z. B. Formularbaugruppen, Presets, Helpers).
 - `LibraryOverview.txt`: Struktur- und Verantwortlichkeitsdokument für den Library-Bereich.
 

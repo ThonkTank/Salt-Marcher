@@ -3,6 +3,12 @@ import { App, Modal, Setting } from "obsidian";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import { mountTokenEditor } from "../shared/token-editor";
 import type { SpellData } from "../../core/spell-files";
+import {
+    SPELL_ATTACK_OPTIONS,
+    SPELL_GRADES,
+    SPELL_SAVE_ABILITIES,
+    SPELL_SCHOOLS,
+} from "./presets";
 
 export class CreateSpellModal extends Modal {
     private data: SpellData;
@@ -28,13 +34,12 @@ export class CreateSpellModal extends Modal {
             (t as any).inputEl.style.width = '28ch';
         });
         new Setting(contentEl).setName("Grad").setDesc("0 = Zaubertrick").addDropdown(dd => {
-            for (let i = 0; i <= 9; i++) dd.addOption(String(i), String(i));
+            for (const grade of SPELL_GRADES) dd.addOption(String(grade), String(grade));
             dd.onChange(v => this.data.level = parseInt(v, 10));
             try { enhanceSelectToSearch((dd as any).selectEl, 'Such-dropdown…'); } catch {}
         });
         new Setting(contentEl).setName("Schule").addDropdown(dd => {
-            const schools = ["Abjuration","Conjuration","Divination","Enchantment","Evocation","Illusion","Necromancy","Transmutation"];
-            for (const s of schools) dd.addOption(s, s);
+            for (const school of SPELL_SCHOOLS) dd.addOption(school, school);
             dd.onChange(v => this.data.school = v);
             try { enhanceSelectToSearch((dd as any).selectEl, 'Such-dropdown…'); } catch {}
         });
@@ -70,15 +75,13 @@ export class CreateSpellModal extends Modal {
 
         // Targeting / Damage
         new Setting(contentEl).setName("Angriff").addDropdown(dd => {
-            const opts = ["","Melee Spell Attack","Ranged Spell Attack","Melee Weapon Attack","Ranged Weapon Attack"];
-            for (const s of opts) dd.addOption(s, s || "(kein)");
+            for (const option of SPELL_ATTACK_OPTIONS) dd.addOption(option, option || "(kein)");
             dd.onChange(v => this.data.attack = v || undefined);
             try { enhanceSelectToSearch((dd as any).selectEl, 'Such-dropdown…'); } catch {}
         });
         const save = new Setting(contentEl).setName("Rettungswurf");
         save.addDropdown(dd => {
-            const abil = ["","STR","DEX","CON","INT","WIS","CHA"];
-            for (const a of abil) dd.addOption(a, a || "(kein)");
+            for (const ability of SPELL_SAVE_ABILITIES) dd.addOption(ability, ability || "(kein)");
             dd.onChange(v => this.data.save_ability = v || undefined);
             try { enhanceSelectToSearch((dd as any).selectEl, 'Such-dropdown…'); } catch {}
         });

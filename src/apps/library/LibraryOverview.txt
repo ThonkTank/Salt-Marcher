@@ -23,8 +23,9 @@ src/apps/library/
 │  │  ├─ section-entries.ts      # Abschnitt für Traits/Aktionen/Legendäre Einträge mit Presets
 │  │  └─ section-spells-known.ts # Abschnitt für bekannte Zauber inkl. Typeahead-Suche
 │  ├─ spell/
-│  │  ├─ index.ts             # Re-export für externe Zugriffe auf das Spell-Modal
-│  │  └─ modal.ts             # Modal zum Anlegen von Spells
+│  │  ├─ index.ts             # Re-export für externe Zugriffe auf das Spell-Modal und Presets
+│  │  ├─ modal.ts             # Modal zum Anlegen von Spells
+│  │  └─ presets.ts           # Gemeinsame Dropdown-Presets (Grade, Schulen, Angriff, Saves)
 │  ├─ index.ts                # Bündelt die Modal-Exporte für `view.ts`
 │  └─ shared/
 │     ├─ stat-utils.ts        # Gemeinsame Berechnungshelfer für Ability-Mods & Vorzeichenformatierung
@@ -107,6 +108,7 @@ src/apps/library/
 ### `create/spell/modal.ts`
 - Modal zum Anlegen neuer Zauberdateien mit Komfortfeldern und direktem Aufruf von `createSpellFile`.
 - Verwendet `shared/token-editor`, um die Klassenliste als Chip-Liste zu bearbeiten und dieselbe UX wie in Creature-Abschnitten zu bieten.
+- Greift auf `spell/presets` zurück, um Dropdown-Werte (Grade, Schulen, Angriff, Saves) zentral zu verwalten und anderen Features zur Verfügung zu stellen.
 - Warum: Dedizierte UI für Spell-Erstellung; bleibt unabhängig vom Creature-Flow.
 
 ### `create/shared/token-editor.ts`
@@ -114,7 +116,11 @@ src/apps/library/
 - Bietet optionale Add/Remove-Callbacks und einen Refresh-Hook, um konsistente Token-Editoren in allen Formularen zu gewährleisten.
 
 ### `create/spell/index.ts`
-- Exportiert `CreateSpellModal` mit kurzem Pfad und erlaubt konsistente Aggregation über `create/index.ts`.
+- Exportiert `CreateSpellModal` und die Preset-Listen mit kurzem Pfad und erlaubt konsistente Aggregation über `create/index.ts`.
+
+### `create/spell/presets.ts`
+- Definiert `readonly`-Listen für Spell-Grade, Schulen, Angriffstypen und Save-Abilities.
+- Warum: Sichert konsistente Dropdown-Werte im Spell-Modal und bietet dieselben Presets für weitere Consumer an, ohne dass Duplikate entstehen.
 
 ## Interaktion mit Core & UI
 
