@@ -13,6 +13,7 @@ creature/
 Unterstützende Utilities liegen in `shared/` (`token-editor`, `stat-utils`).
 
 ## Features & Hauptzuständigkeiten
+- **Geführtes Dreispalten-Layout mit Navigation:** Header-Breadcrumb & Stepper halten den Workflow linear, jede Spalte scrollt unabhängig und der Footer liefert AC/HP/Passive/CR-Chips plus Aktionen (Abbrechen/Speichern/Vorschau) samt Validierungsstatus.【F:src/apps/library/create/creature/modal.ts†L44-L204】【F:src/app/css.ts†L49-L176】
 - **Statblock-Basisdaten erfassen:** Größe, Typ, Gesinnung, AC, Initiative, HP, Hit Dice, Bewegungen, Proficiency Bonus, CR, XP.【F:src/apps/library/create/creature/section-core-stats.ts†L19-L74】【F:src/apps/library/core/creature-files.ts†L7-L74】
 - **Attribute & Fertigkeiten mit Autofill:** Tabelle für STR–CHA inkl. Save-Proficiencies und Skills, automatische Modifikatorberechnung über gemeinsame Utilities.【F:src/apps/library/create/creature/section-core-stats.ts†L42-L132】【F:src/apps/library/create/shared/stat-utils.ts†L1-L33】
 - **Freitext-Listen (Sinne/Sprachen/Speeds):** Token-Editor-Chips zur Verwaltung variabler Listenfelder.【F:src/apps/library/create/creature/section-core-stats.ts†L134-L149】
@@ -27,15 +28,16 @@ Unterstützende Utilities liegen in `shared/` (`token-editor`, `stat-utils`).
 - **Eingeteilte Aktionen:** Traits, Actions, Bonus Actions, Reactions, Legendary Actions sowie Nutzungs-/Recharge-Regeln und Spellcasting-Blocks.【F:References, do not delete!/rulebooks/Statblocks/11_Monsters.md†L210-L272】【F:References, do not delete!/rulebooks/Statblocks/12_MonstersA-Z.md†L26-L158】
 
 ## Was funktioniert bereits gut?
-- **Geführter Datenfluss:** Der Modal baut Abschnitte sequentiell auf und hält den `StatblockData`-State zusammen, was den Export direkt speist.【F:src/apps/library/create/creature/modal.ts†L16-L104】
-- **Wiederverwendbare UI-Hilfen:** Suche-fähige Dropdowns, Inline-Stepper und Token-Chips sorgen für schnelle Eingabe wiederkehrender Felder.【F:src/apps/library/create/creature/modal.ts†L36-L103】【F:src/apps/library/create/shared/token-editor.ts†L1-L63】
+- **Klares Navigationsgerüst:** Breadcrumb, Stepper und Spaltenfokus lassen schnell zwischen Grundwerten, Details und Aktionen springen und halten den Namen live präsent.【F:src/apps/library/create/creature/modal.ts†L44-L128】
+- **Wiederverwendbare UI-Hilfen:** Suche-fähige Dropdowns, Inline-Stepper und Token-Chips sorgen für schnelle Eingabe wiederkehrender Felder.【F:src/apps/library/create/creature/modal.ts†L118-L161】【F:src/apps/library/create/shared/token-editor.ts†L1-L63】
 - **Automatik für Würfelwerte:** Treffer- und Schadenswerte lassen sich aus Ability + PB berechnen, wodurch Inkonsistenzen reduziert werden.【F:src/apps/library/create/creature/section-entries.ts†L68-L142】
+- **Footer-Feedback:** Zusammenfassungschips & Warn-Badges zeigen fehlende Pflichtfelder an und deaktivieren Speichern, bis Mindestanforderungen erfüllt sind.【F:src/apps/library/create/creature/modal.ts†L168-L204】
 - **Markdown-Ausgabe deckt Kernabschnitte ab:** Export generiert YAML, Tabellen und strukturierte Abschnittsgruppen gemäß Vorlage.【F:src/apps/library/core/creature-files.ts†L79-L157】
 
 ## Optimierungspotenzial
 - **Defensive Details ergänzen:** Resistances, Vulnerabilities, Immunities und Gear sind im Referenz-Statblock wichtig, fehlen jedoch noch in Datentyp & UI.【F:References, do not delete!/rulebooks/Statblocks/11_Monsters.md†L98-L121】【F:src/apps/library/core/creature-files.ts†L15-L74】
-- **Speed-Felder konsolidieren:** Sowohl einzelne `speedWalk/swim/...` als auch `speedList` existieren; ein einheitliches Modell würde UI-Logik vereinfachen.【F:src/apps/library/core/creature-files.ts†L19-L26】【F:src/apps/library/create/creature/modal.ts†L44-L98】
-- **Abschnittsgewichtung verbessern:** Lange Listen (Skills, Einträge, Zauber) scrollen vertikal; Accordion- oder Tabs für „Offense/Defense/Spellcasting“ könnten Übersicht erhöhen ohne Informationen zu verstecken.【F:src/apps/library/create/creature/modal.ts†L36-L103】
+- **Speed-Felder konsolidieren:** Sowohl einzelne `speedWalk/swim/...` als auch `speedList` existieren; ein einheitliches Modell würde UI-Logik vereinfachen.【F:src/apps/library/core/creature-files.ts†L19-L26】【F:src/apps/library/create/creature/modal.ts†L115-L162】
+- **Abschnittsgewichtung verbessern:** Lange Listen (Skills, Einträge, Zauber) scrollen vertikal; Accordion- oder Tabs für „Offense/Defense/Spellcasting“ könnten Übersicht erhöhen ohne Informationen zu verstecken.【F:src/apps/library/create/creature/modal.ts†L44-L168】
 - **Voreinstellungen & Presets ausbauen:** Beispielstatblocks zeigen konsistente Reihenfolge & Terminologie (z. B. Initiative in Klammern); UI könnte Templates/Preview nutzen.【F:References, do not delete!/rulebooks/Statblocks/12_MonstersA-Z.md†L5-L58】
 
 ## Layout-Blueprint für den Creature-Dialog
@@ -79,7 +81,7 @@ Unterstützende Utilities liegen in `shared/` (`token-editor`, `stat-utils`).
 
 ## Datei-Details
 - **index.ts:** Bündelt Exporte für Modal und Section-Mounts, damit externe Aufrufer eine schlanke API nutzen.【F:src/apps/library/create/creature/index.ts†L1-L6】
-- **modal.ts:** Verantwortlich für Lebenszyklus des Modal-Dialogs, orchestriert Sections, lädt Spell-Liste und handhabt Submit/Cancel.【F:src/apps/library/create/creature/modal.ts†L16-L119】
+- **modal.ts:** Baut Header mit Breadcrumb & Stepper, richtet Dreispaltenlayout samt Speed-/Entries-/Spells-Sektionen ein, lädt Spell-Liste, zeigt Footer-Chips/Validierungen und öffnet bei Bedarf eine JSON-Vorschau.【F:src/apps/library/create/creature/modal.ts†L28-L210】
 - **section-core-stats.ts:** Baut Identity-/Kernwerte-Form, Fähigkeitentabelle, Skill-Checkboxen und Token-Editoren für Sinne/Sprachen.【F:src/apps/library/create/creature/section-core-stats.ts†L19-L149】
 - **section-entries.ts:** Rendert wiederholbare Karten für strukturierte Statblock-Einträge inklusive Auto-Berechnung und Markdown-Textbox.【F:src/apps/library/create/creature/section-entries.ts†L8-L151】
 - **section-spells-known.ts:** Stellt Typeahead-Input bereit, verwaltet die gespeicherten Zauberobjekte und erzeugt Listenansicht mit Entfernen-Buttons.【F:src/apps/library/create/creature/section-spells-known.ts†L8-L70】

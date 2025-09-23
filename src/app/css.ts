@@ -72,6 +72,230 @@ export const HEX_PLUGIN_CSS = `
 .sm-cc-item { display:flex; gap:.5rem; align-items:center; justify-content:space-between; padding:.35rem .5rem; border:1px solid var(--background-modifier-border); border-radius:8px; background: var(--background-primary); }
 .sm-cc-item__name { font-weight: 500; }
 
+/* Create Creature Modal layout */
+.sm-cc-create-modal {
+    width: min(96vw, 1240px);
+    max-height: min(88vh, 760px);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.sm-cc-create-modal .sm-cc-create-wrapper {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem 1rem;
+    box-sizing: border-box;
+    height: 100%;
+    min-height: 0;
+}
+
+.sm-cc-create-modal .sm-cc-create-header {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    align-items: center;
+    background: var(--background-primary);
+    z-index: 5;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.sm-cc-create-breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+    color: var(--text-muted);
+    font-size: 0.95em;
+}
+
+.sm-cc-create-breadcrumb .sm-cc-crumb + .sm-cc-crumb::before {
+    content: "›";
+    opacity: 0.6;
+    margin: 0 0.35rem;
+}
+
+.sm-cc-crumb--name {
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+.sm-cc-create-stepper {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.sm-cc-stepper-btn {
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-secondary);
+    padding: 0.35rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.9em;
+    cursor: pointer;
+}
+
+.sm-cc-stepper-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.sm-cc-stepper-label {
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+.sm-cc-create-body {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: 320px 360px minmax(0, 1fr);
+    gap: 1rem;
+    min-height: 0;
+}
+
+.sm-cc-create-column {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    min-height: 0;
+}
+
+.sm-cc-create-column.is-active {
+    border-color: var(--interactive-accent);
+    box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+.sm-cc-create-footer {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    align-items: center;
+    background: var(--background-primary);
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--background-modifier-border);
+    z-index: 5;
+}
+
+.sm-cc-footer-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.sm-cc-footer-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 999px;
+    padding: 0.35rem 0.75rem;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    font-size: 0.9em;
+}
+
+.sm-cc-footer-chip__label {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.sm-cc-footer-chip__value {
+    font-weight: 600;
+}
+
+.sm-cc-footer-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.sm-cc-footer-status__ok {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.sm-cc-footer-status__warnings {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.sm-cc-footer-warning {
+    background: rgba(255, 196, 0, 0.18);
+    border: 1px solid rgba(255, 196, 0, 0.45);
+    border-radius: 999px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.85em;
+    color: var(--text-normal);
+}
+
+.sm-cc-footer-actions {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sm-cc-footer-btn {
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-secondary);
+    color: var(--text-normal);
+    padding: 0.45rem 1.1rem;
+    border-radius: 8px;
+    font-size: 0.9em;
+    cursor: pointer;
+}
+
+.sm-cc-footer-btn.is-primary {
+    background: var(--interactive-accent);
+    border-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.sm-cc-footer-btn.is-disabled,
+.sm-cc-footer-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.sm-cc-preview-modal {
+    min-width: 520px;
+}
+
+.sm-cc-preview {
+    max-height: 60vh;
+    overflow: auto;
+    padding: 0.75rem;
+    background: var(--background-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--background-modifier-border);
+    font-size: 0.85em;
+}
+
+@media (max-width: 1180px) {
+    .sm-cc-create-modal .sm-cc-create-body {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .sm-cc-create-modal .sm-cc-create-column {
+        max-height: 36vh;
+    }
+}
+
 /* Create Creature Modal helpers */
 .sm-cc-create-modal .sm-cc-grid {
     display: grid;
