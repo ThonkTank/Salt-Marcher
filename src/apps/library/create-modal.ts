@@ -32,10 +32,12 @@ export class CreateCreatureModal extends Modal {
 
         contentEl.createEl("h3", { text: "Neuen Statblock erstellen" });
         // Asynchron: verfügbare Zauber laden (best effort)
+        let spellsSectionControls: ReturnType<typeof mountSpellsKnownSection> | null = null;
         void (async () => {
             try {
                 const spells = (await listSpellFiles(this.app)).map(f => f.basename).sort((a,b)=>a.localeCompare(b));
                 this.availableSpells.splice(0, this.availableSpells.length, ...spells);
+                spellsSectionControls?.refreshSpellMatches();
             }
             catch {}
         })();
@@ -105,7 +107,7 @@ export class CreateCreatureModal extends Modal {
         mountEntriesSection(contentEl, this.data);
 
         // Known spells section
-        mountSpellsKnownSection(contentEl, this.data, this.availableSpells);
+        spellsSectionControls = mountSpellsKnownSection(contentEl, this.data, () => this.availableSpells);
 
         // Buttons
         new Setting(contentEl)

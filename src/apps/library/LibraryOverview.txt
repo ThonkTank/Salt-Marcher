@@ -33,7 +33,7 @@ src/apps/library/
   - Terrains: legt neuen Eintrag mit Defaultwerten an (`#888888`, `speed: 1`).
   - Regionen: legt neuen Eintrag ohne Terrain/Encounter an.
   - Creatures/Spells: öffnet ein Modal, erzeugt eine `.md`‑Datei im passenden Ordner und öffnet sie im Editor.
-- Creature-Modal gliedert die Eingabe in wiederverwendbare Abschnitte (Core Stats, Einträge, Zauber) für klare Zuständigkeiten.
+- Creature-Modal gliedert die Eingabe in wiederverwendbare Abschnitte (Core Stats, Einträge, Zauber) für klare Zuständigkeiten und aktualisiert die Spell-Auswahl live nach dem Laden der Dateien.
 - Öffnen: Ein Button pro Eintrag öffnet die Quelle (Datei bzw. Sammeldatei) in Obsidian.
 - Live‑Updates: Nutzt Watcher für Ordner/Dateien, um die Liste bei Änderungen neu zu laden.
 
@@ -63,6 +63,7 @@ src/apps/library/
 
 ### `create-modal.ts`
 - Orchestriert den gesamten Creature-Erstellungsfluss: setzt das Modal auf, lädt verfügbare Zauber, mountet die Abschnitts-Module und verarbeitet Bewegung sowie Speichern.
+- Reicht die Zauber-Liste als Getter weiter und stößt nach dem Async-Laden ein Refresh der Spell-Sektion an, damit neue Dateien ohne erneutes Öffnen sichtbar werden.
 - Warum: Hält den Workflow zentral und delegiert UI-Details an spezialisierte Sektionen, sodass Erweiterungen (z. B. neue Abschnitte) gebündelt erfolgen.
 
 ### `create/section-core-stats.ts`
@@ -74,7 +75,7 @@ src/apps/library/
 - Warum: Die komplexeste Sektion des Modals bleibt isoliert wartbar; Presets und Logik lassen sich hier ergänzen, ohne den Modal-Controller aufzublähen.
 
 ### `create/section-spells-known.ts`
-- Stellt den Zauber-Selector mit Typeahead, Grad/Nutzungsfeldern und Ergebnisliste bereit.
+- Stellt den Zauber-Selector mit Typeahead, Grad/Nutzungsfeldern und Ergebnisliste bereit und liest Treffer bei jedem Rendern per Getter, sodass asynchron geladene Zauber sofort verfügbar sind.
 - Warum: Entkoppelt die Such-/Listenlogik von der Modal-Hülle und ermöglicht Wiederverwendung bzw. gezielte Anpassungen am Spell-UX.
 
 ### `create-spell-modal.ts`
