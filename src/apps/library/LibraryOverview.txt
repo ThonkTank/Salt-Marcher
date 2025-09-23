@@ -19,6 +19,7 @@ src/apps/library/
 │  ├─ creature/
 │  │  ├─ index.ts             # Re-exports Modal & Creature-Sections für externe Zugriffe
 │  │  ├─ modal.ts             # Modal zum Anlegen von Creatures (koordiniert die Abschnitte)
+│  │  ├─ presets.ts           # Zentralisierte Auswahllisten (Größe, Typ, Skills, Bewegungen …)
 │  │  ├─ section-core-stats.ts   # Abschnitt für Identität, Kernwerte, Saves & Sinne/Sprachen
 │  │  ├─ section-entries.ts      # Abschnitt für Traits/Aktionen/Legendäre Einträge mit Presets
 │  │  └─ section-spells-known.ts # Abschnitt für bekannte Zauber inkl. Typeahead-Suche
@@ -41,7 +42,7 @@ src/apps/library/
   - Terrains: legt neuen Eintrag mit Defaultwerten an (`#888888`, `speed: 1`).
   - Regionen: legt neuen Eintrag ohne Terrain/Encounter an.
   - Creatures/Spells: öffnet ein Modal, erzeugt eine `.md`‑Datei im passenden Ordner und öffnet sie im Editor.
-- Creature-Modal (`create/creature/modal.ts`) zerlegt das Formular in modulare Abschnitte (`create/creature/section-*.ts`) und orchestriert Mounting, State-Passing und Persistenz-Trigger. Dadurch lassen sich neue Segmente ergänzen, ohne das Modal selbst aufzublähen.
+- Creature-Modal (`create/creature/modal.ts`) zerlegt das Formular in modulare Abschnitte (`create/creature/section-*.ts`) und orchestriert Mounting, State-Passing und Persistenz-Trigger. Gemeinsame Optionslisten (Größen, Typen, Gesinnung, Skills, Bewegungsarten) werden aus `create/creature/presets.ts` gespeist, sodass alle Segmente denselben Kanon verwenden.
   - `creature/section-core-stats`: Steuert Identität, Ability Scores, Saves/Skills sowie Sinnes- und Sprachfelder inklusive Automatik-Berechnungen.
   - `creature/section-entries`: Verwaltet Traits, Aktionen, legendäre Optionen und Presets für Treffer-/Schadenswerte.
   - `creature/section-spells-known`: Liefert eine Typeahead-gestützte Spell-Liste mit Grad- und Nutzungskonfiguration, die auf den live gehaltenen Spell-Getter des Modals hört.
@@ -77,6 +78,10 @@ src/apps/library/
 - Orchestriert den gesamten Creature-Erstellungsfluss: setzt das Modal auf, lädt verfügbare Zauber, mountet die Abschnitts-Module und verarbeitet Bewegung sowie Speichern.
 - Reicht die Zauber-Liste als Getter weiter und stößt nach dem Async-Laden ein Refresh der Spell-Sektion an, damit neue Dateien ohne erneutes Öffnen sichtbar werden.
 - Warum: Hält den Workflow zentral und delegiert UI-Details an spezialisierte Sektionen, sodass Erweiterungen (z. B. neue Abschnitte) gebündelt erfolgen.
+
+### `create/creature/presets.ts`
+- Kapselt alle Konstanten/Typen für Dropdowns und Automatisierungen (Größen, Typen, Gesinnungsteile, Ability-Definitionen, Skill-Mappings, Entry-Kategorien, Bewegungsarten).
+- Warum: Statt mehrfacher Inline-Listen verwenden alle Sektionen dieselben Presets, was Pflegeaufwand reduziert und Erweiterungen an einer Stelle bündelt.
 
 ### `create/creature/index.ts`
 - Re-exportiert das Modal sowie die Creature-Sections für externe Consumer. Dadurch bleibt die Pfadstruktur (`create/creature/modal` & `create/creature/section-*`) intern, während Aufrufer (`view.ts` oder Tests) nur `create/creature` adressieren müssen.

@@ -2,6 +2,7 @@
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import type { StatblockData } from "../../core/creature-files";
 import { abilityMod, formatSigned, parseIntSafe } from "../shared/stat-utils";
+import { CREATURE_ABILITY_SELECTIONS, CREATURE_ENTRY_CATEGORIES, CREATURE_SAVE_OPTIONS } from "./presets";
 
 export function mountEntriesSection(parent: HTMLElement, data: StatblockData) {
   if (!data.entries) data.entries = [] as any;
@@ -12,8 +13,10 @@ export function mountEntriesSection(parent: HTMLElement, data: StatblockData) {
 
   const addBar = ctl.createDiv({ cls: "sm-cc-searchbar" });
   const catSel = addBar.createEl("select") as HTMLSelectElement;
-  const catMap = [["trait","Eigenschaft"],["action","Aktion"],["bonus","Bonusaktion"],["reaction","Reaktion"],["legendary","Legendäre Aktion"]] as const;
-  for (const [v,l] of catMap) { const o = catSel.createEl("option", { text: l }); (o as HTMLOptionElement).value = v; }
+  for (const [value, label] of CREATURE_ENTRY_CATEGORIES) {
+    const option = catSel.createEl("option", { text: label });
+    (option as HTMLOptionElement).value = value;
+  }
   try { enhanceSelectToSearch(catSel, 'Such-dropdown…'); } catch {}
   const addEntryBtn = addBar.createEl("button", { text: "+ Eintrag" });
 
@@ -26,7 +29,11 @@ export function mountEntriesSection(parent: HTMLElement, data: StatblockData) {
       const box = host.createDiv({ cls: "sm-cc-skill-group" });
       const head = box.createDiv({ cls: "sm-cc-skill sm-cc-entry-head" });
       const c = head.createEl("select") as HTMLSelectElement;
-      for (const [v,l] of catMap) { const o=c.createEl("option",{ text:l }); (o as HTMLOptionElement).value=v; if (v===e.category) (o as HTMLOptionElement).selected=true; }
+      for (const [value, label] of CREATURE_ENTRY_CATEGORIES) {
+        const option = c.createEl("option", { text: label });
+        (option as HTMLOptionElement).value = value;
+        if (value === e.category) (option as HTMLOptionElement).selected = true;
+      }
       c.onchange = () => e.category = c.value as any;
       try { enhanceSelectToSearch(c, 'Such-dropdown…'); } catch {}
 
@@ -54,7 +61,10 @@ export function mountEntriesSection(parent: HTMLElement, data: StatblockData) {
       const hitGroup = autoRow.createDiv({ cls: 'sm-auto-group' });
       hitGroup.createSpan({ text: 'To hit:' });
       const toHitAbil = hitGroup.createEl('select') as HTMLSelectElement;
-      ['','best_of_str_dex','str','dex','con','int','wis','cha'].forEach(v=>{ const o=toHitAbil.createEl('option',{ text: v||'(von)' }); (o as HTMLOptionElement).value=v; });
+      for (const value of CREATURE_ABILITY_SELECTIONS) {
+        const option = toHitAbil.createEl('option', { text: value || '(von)' });
+        (option as HTMLOptionElement).value = value;
+      }
       try { enhanceSelectToSearch(toHitAbil, 'Such-dropdown…'); } catch {}
       const toHitProf = hitGroup.createEl('input', { attr: { type: 'checkbox', id: `hit-prof-${i}` } }) as HTMLInputElement;
       hitGroup.createEl('label', { text: 'Prof', attr: { for: `hit-prof-${i}` } });
@@ -64,7 +74,11 @@ export function mountEntriesSection(parent: HTMLElement, data: StatblockData) {
       const dmgGroup = autoRow.createDiv({ cls: 'sm-auto-group' });
       dmgGroup.createSpan({ text: 'Damage:' });
       const dmgDice = dmgGroup.createEl('input', { attr: { type: 'text', placeholder: '1d8', 'aria-label': 'Würfel' } }) as HTMLInputElement; (dmgDice.style as any).width = '10ch';
-      const dmgAbil = dmgGroup.createEl('select') as HTMLSelectElement; ['','best_of_str_dex','str','dex','con','int','wis','cha'].forEach(v=>{ const o=dmgAbil.createEl('option',{ text: v||'(von)' }); (o as HTMLOptionElement).value=v; });
+      const dmgAbil = dmgGroup.createEl('select') as HTMLSelectElement;
+      for (const value of CREATURE_ABILITY_SELECTIONS) {
+        const option = dmgAbil.createEl('option', { text: value || '(von)' });
+        (option as HTMLOptionElement).value = value;
+      }
       try { enhanceSelectToSearch(dmgAbil, 'Such-dropdown…'); } catch {}
       const dmgBonus = dmgGroup.createEl('input', { attr: { type: 'text', placeholder: 'piercing / slashing …', 'aria-label': 'Art' } }) as HTMLInputElement; (dmgBonus.style as any).width = '12ch';
       const dmg = dmgGroup.createEl('input', { cls: 'sm-auto-dmg', attr: { type: 'text', placeholder: '1d8 +3 piercing', 'aria-label': 'Schaden' } }) as HTMLInputElement; (dmg.style as any).width = '20ch';
@@ -96,7 +110,13 @@ export function mountEntriesSection(parent: HTMLElement, data: StatblockData) {
 
       const misc = box.createDiv({ cls: "sm-cc-grid sm-cc-entry-grid" });
       misc.createEl('label', { text: 'Save' });
-      const saveAb = misc.createEl("select") as HTMLSelectElement; ["","STR","DEX","CON","INT","WIS","CHA"].forEach(x=>{ const o=saveAb.createEl("option", { text: x||"(kein)" }); (o as HTMLOptionElement).value=x; if (x===(e.save_ability||"")) (o as HTMLOptionElement).selected=true; }); saveAb.onchange = () => e.save_ability = saveAb.value || undefined;
+      const saveAb = misc.createEl("select") as HTMLSelectElement;
+      for (const value of CREATURE_SAVE_OPTIONS) {
+        const option = saveAb.createEl("option", { text: value || "(kein)" });
+        (option as HTMLOptionElement).value = value;
+        if (value === (e.save_ability || "")) (option as HTMLOptionElement).selected = true;
+      }
+      saveAb.onchange = () => e.save_ability = saveAb.value || undefined;
       misc.createEl('label', { text: 'DC' });
       const saveDc = misc.createEl("input", { attr: { type: "number", placeholder: "DC", 'aria-label': 'DC' } }) as HTMLInputElement; saveDc.value = e.save_dc ? String(e.save_dc) : ""; saveDc.oninput = () => e.save_dc = saveDc.value ? parseInt(saveDc.value,10) : undefined as any; (saveDc.style as any).width = '4ch';
       misc.createEl('label', { text: 'Save-Effekt' });

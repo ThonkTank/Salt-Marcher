@@ -80,6 +80,7 @@ Salt-Marcher/
   an Bereichs-spezifische Controller.
 - `core/*`: Gemeinsame Logik für Library-Daten (Laden/Speichern der Sammeldateien, Parsing, Suche, Filter, Eventing).
 - `create/creature/modal.ts`: Modal zum Anlegen von Creatures; orchestriert die Formular-Sektionen und persistiert neue Statblocks.
+- `create/creature/presets.ts`: Zentraler Pool an Konstanten & Typen für Creature-Dropdowns (Größe, Typ, Gesinnung, Skills, Bewegungen).
 - `create/spell/modal.ts`: Dediziertes Spell-Modal mit Dropdown-Komfort und Markdown-Feldern.
 - `create/index.ts`: Re-exportiert beide Modals, sodass `view.ts` die Create-Flows aus einem Bündel importiert.
 - `create/*`: Komponenten zum Erstellen/Bearbeiten von Library-Einträgen (z. B. Formularbaugruppen, Presets, Helpers).
