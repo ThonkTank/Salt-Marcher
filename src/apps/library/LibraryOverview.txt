@@ -25,7 +25,9 @@ src/apps/library/
 │  ├─ index.ts                # Bündelt die Modal-Exporte für `view.ts`
 │  ├─ section-core-stats.ts   # Abschnitt für Identität, Kernwerte, Saves & Sinne/Sprachen
 │  ├─ section-entries.ts      # Abschnitt für Traits/Aktionen/Legendäre Einträge mit Presets
-│  └─ section-spells-known.ts # Abschnitt für bekannte Zauber inkl. Typeahead-Suche
+│  ├─ section-spells-known.ts # Abschnitt für bekannte Zauber inkl. Typeahead-Suche
+│  └─ shared/
+│     └─ token-editor.ts      # Gemeinsame Token-Editor-Utility für Chips-Eingaben
 ├─ view.ts                  # Obsidian-View mit Modus‑Tabs, Suche, Liste
 └─ LibraryOverview.txt      # Dieses Dokument
 ```
@@ -82,6 +84,7 @@ src/apps/library/
 
 ### `create/section-core-stats.ts`
 - Rendert Identität, Kernwerte, Saves/Skills sowie Sinne und Sprachen inklusive automatischer Modifikator- und Proficiency-Berechnung.
+- Nutzt den gemeinsamen Token-Editor (`shared/token-editor`) für Sinne/Sprachen, damit Chips-UX und Add/Remove-Verhalten identisch mit anderen Formularteilen bleibt.
 - Warum: Bündelt alle abhängigen Formeln (z. B. PB, Ability Mods) und sorgt dafür, dass Änderungen an Attributen sofort in allen Feldern sichtbar werden.
 
 ### `create/section-entries.ts`
@@ -94,7 +97,12 @@ src/apps/library/
 
 ### `create/spell/modal.ts`
 - Modal zum Anlegen neuer Zauberdateien mit Komfortfeldern und direktem Aufruf von `createSpellFile`.
+- Verwendet `shared/token-editor`, um die Klassenliste als Chip-Liste zu bearbeiten und dieselbe UX wie in Creature-Abschnitten zu bieten.
 - Warum: Dedizierte UI für Spell-Erstellung; bleibt unabhängig vom Creature-Flow.
+
+### `create/shared/token-editor.ts`
+- Kapselt Setting-Aufbau, Input-Handling und Chip-Rendering für freie Listen (z. B. Klassen, Sinne, Sprachen).
+- Bietet optionale Add/Remove-Callbacks und einen Refresh-Hook, um konsistente Token-Editoren in allen Formularen zu gewährleisten.
 
 ### `create/spell/index.ts`
 - Exportiert `CreateSpellModal` mit kurzem Pfad und erlaubt konsistente Aggregation über `create/index.ts`.

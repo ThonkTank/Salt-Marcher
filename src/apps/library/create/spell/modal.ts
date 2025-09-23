@@ -1,6 +1,7 @@
 // src/apps/library/create/spell/modal.ts
 import { App, Modal, Setting } from "obsidian";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
+import { mountTokenEditor } from "../shared/token-editor";
 import type { SpellData } from "../../core/spell-files";
 
 export class CreateSpellModal extends Modal {
@@ -92,7 +93,11 @@ export class CreateSpellModal extends Modal {
 
         // Classes (as chips)
         if (!this.data.classes) this.data.classes = [];
-        this.makeTokenEditor(contentEl, "Klassen", (v) => this.data.classes!.push(v), () => this.data.classes!, (i) => this.data.classes!.splice(i,1));
+        mountTokenEditor(contentEl, "Klassen", {
+            getItems: () => this.data.classes!,
+            add: (value) => this.data.classes!.push(value),
+            remove: (index) => this.data.classes!.splice(index, 1),
+        });
 
         // Text
         this.addTextArea(contentEl, "Beschreibung", "Beschreibung (Markdown)", v => this.data.description = v);
@@ -113,30 +118,6 @@ export class CreateSpellModal extends Modal {
         const ctl = wrap.createDiv({ cls: "setting-item-control" });
         const ta = ctl.createEl("textarea", { attr: { placeholder } });
         ta.addEventListener("input", () => onChange(ta.value));
-    }
-
-    private makeTokenEditor(parent: HTMLElement, title: string, onAdd: (v: string) => void, itemsProvider: () => string[], onRemove: (idx: number) => void) {
-        new Setting(parent).setName(title).addText(t => {
-            t.setPlaceholder("Begriff eingeben…");
-            // @ts-ignore
-            const input = (t as any).inputEl as HTMLInputElement;
-            t.inputEl.style.minWidth = '260px';
-            t.inputEl.addEventListener('keydown', (e: KeyboardEvent) => {
-                if (e.key === 'Enter') { const v = input.value.trim(); if (v) { onAdd(v); input.value = ''; renderChips(); } }
-            });
-        }).addButton(b => b.setButtonText("+").onClick(() => { const inp = (b.buttonEl.parentElement?.querySelector('input') as HTMLInputElement); const v = inp?.value?.trim(); if (v) { onAdd(v); inp.value=''; renderChips(); } }));
-        const chips = parent.createDiv({ cls: 'sm-cc-chips' });
-        const renderChips = () => {
-            chips.empty();
-            const items = itemsProvider();
-            items.forEach((txt, i) => {
-                const chip = chips.createDiv({ cls: 'sm-cc-chip' });
-                chip.createSpan({ text: txt });
-                const x = chip.createEl('button', { text: '×' });
-                x.onclick = () => { onRemove(i); renderChips(); };
-            });
-        };
-        renderChips();
     }
 
     private submit() {
