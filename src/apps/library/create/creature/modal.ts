@@ -3,9 +3,9 @@ import { App, Modal, Setting } from "obsidian";
 import type { StatblockData } from "../../core/creature-files";
 import { listSpellFiles } from "../../core/spell-files";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
-import { mountCoreStatsSection } from "../section-core-stats";
-import { mountEntriesSection } from "../section-entries";
-import { mountSpellsKnownSection } from "../section-spells-known";
+import { mountCoreStatsSection } from "./section-core-stats";
+import { mountEntriesSection } from "./section-entries";
+import { mountSpellsKnownSection } from "./section-spells-known";
 
 export class CreateCreatureModal extends Modal {
     private data: StatblockData;
