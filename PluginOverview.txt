@@ -83,7 +83,7 @@ Salt-Marcher/
 - `create/creature/presets.ts`: Zentraler Pool an Konstanten & Typen für Creature-Dropdowns (Größe, Typ, Gesinnung, Skills, Bewegungen).
 - `create/creature/section-core-stats.ts`: Rendert den Kernbereich des Statblocks (Identität, AC/HP-Zeile, Ability-/Skill-Tabellen) inkl. Token-/Dropdown-Helfer.
 - `create/creature/section-entries.ts`: Dynamischer Editor für Traits/Aktionen mit Auto-Berechnung von Treffer-/Schadenswerten und Save/Recharge-Optionen.
-- `create/creature/section-spells-known.ts`: Pflegt bekannte Zauber mit Suchfeld, Grad-/Nutzungsfeldern und removebaren Listeneinträgen.
+- `create/creature/section-spellcasting.ts`: Spellcasting-Tab mit Casting-Stats sowie Frequenzlisten (At-Will, pro Tag/Rast, Slots, freie Gruppen) inklusive Typeahead und Uses/Notizen je Zauber.【F:src/apps/library/create/creature/section-spellcasting.ts†L438-L587】
 - `create/spell/modal.ts`: Dediziertes Spell-Modal mit Dropdown-Komfort und Markdown-Feldern.
 - `create/index.ts`: Re-exportiert beide Modals, sodass `view.ts` die Create-Flows aus einem Bündel importiert.
 - `create/shared/stat-utils.ts`: Geteilte Parser/Formatter für Ability-Scores (z. B. `abilityMod`, `parseIntSafe`) zur Berechnung von Modifikatoren.

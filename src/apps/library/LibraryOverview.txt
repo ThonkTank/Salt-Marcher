@@ -22,7 +22,7 @@ src/apps/library/
 │  │  ├─ presets.ts           # Zentralisierte Auswahllisten (Größe, Typ, Skills, Bewegungen …)
 │  │  ├─ section-core-stats.ts   # Abschnitt für Identität, Kernwerte, Saves & Sinne/Sprachen
 │  │  ├─ section-entries.ts      # Abschnitt für Traits/Aktionen/Legendäre Einträge mit Presets
-│  │  └─ section-spells-known.ts # Abschnitt für bekannte Zauber inkl. Typeahead-Suche
+│  │  └─ section-spellcasting.ts # Spellcasting-Tab mit Casting-Stats & Frequenzlisten
 │  ├─ spell/
 │  │  ├─ index.ts             # Re-export für externe Zugriffe auf das Spell-Modal
 │  │  └─ modal.ts             # Modal zum Anlegen von Spells
@@ -45,7 +45,7 @@ src/apps/library/
 - Creature-Modal (`create/creature/modal.ts`) zerlegt das Formular in modulare Abschnitte (`create/creature/section-*.ts`) und orchestriert Mounting, State-Passing und Persistenz-Trigger. Gemeinsame Optionslisten (Größen, Typen, Gesinnung, Skills, Bewegungsarten) werden aus `create/creature/presets.ts` gespeist, sodass alle Segmente denselben Kanon verwenden.
   - `creature/section-core-stats`: Steuert Identität, Ability Scores, Saves/Skills sowie Sinnes- und Sprachfelder inklusive Automatik-Berechnungen.
   - `creature/section-entries`: Verwaltet Traits, Aktionen, legendäre Optionen und Presets für Treffer-/Schadenswerte.
-  - `creature/section-spells-known`: Liefert eine Typeahead-gestützte Spell-Liste mit Grad- und Nutzungskonfiguration, die auf den live gehaltenen Spell-Getter des Modals hört.
+  - `creature/section-spellcasting`: Erfasst Casting-Stats, organisiert Zauber nach Frequenz (At-Will, pro Tag/Rast, Slots, freie Gruppen) mit Typeahead & Uses/Notizen und reagiert auf Refresh-Hooks des Modals.【F:src/apps/library/create/creature/section-spellcasting.ts†L438-L587】【F:src/apps/library/create/creature/modal.ts†L109-L205】
 - Defensive Zusatzerfassung: Chip-Editoren für Resistances, Immunities, Vulnerabilities sowie ein Equipment-&-Notes-Textarea erweitern die mittlere Spalte des Creature-Modals und schreiben direkt ins Statblock-Objekt.【F:src/apps/library/create/creature/modal.ts†L104-L165】
 - Geteilte Stat-Utilities (`create/shared/stat-utils.ts`) bündeln Parsing, Modifikator-Logik und Vorzeichenformatierung für alle Abschnitte – nutzbar auch für zukünftige Modals (z. B. Items oder NPC-Varianten).
 - Öffnen: Ein Button pro Eintrag öffnet die Quelle (Datei bzw. Sammeldatei) in Obsidian.
@@ -102,9 +102,9 @@ src/apps/library/
 - Greift auf `shared/stat-utils` zurück, um Treffer- und Schadenswerte konsistent mit den Kernwerten zu berechnen.
 - Warum: Die komplexeste Sektion des Modals bleibt isoliert wartbar; Presets und Logik lassen sich hier ergänzen, ohne den Modal-Controller aufzublähen. Unterstützt Rückmeldungen an das Modal (z. B. Dirty-State), ohne dass andere Abschnitte davon beeinflusst werden.
 
-### `create/creature/section-spells-known.ts`
-- Stellt den Zauber-Selector mit Typeahead, Grad/Nutzungsfeldern und Ergebnisliste bereit und liest Treffer bei jedem Rendern per Getter, sodass asynchron geladene Zauber sofort verfügbar sind.
-- Warum: Entkoppelt die Such-/Listenlogik von der Modal-Hülle und ermöglicht Wiederverwendung bzw. gezielte Anpassungen am Spell-UX. Die Sektion reagiert auf Refresh-Signale des Modals, sobald neue Spell-Dateien auftauchen.
+### `create/creature/section-spellcasting.ts`
+- Liefert den Spellcasting-Tab mit Casting-Stat-Feldern, Frequenzlisten (At-Will, pro Tag/Rast, Slots, weitere Gruppen), Typeahead-Suche sowie Uses-/Notizen-Inputs und bedient Refresh-Aufrufe des Modals.【F:src/apps/library/create/creature/section-spellcasting.ts†L59-L587】
+- Warum: Trennt Spellcasting-spezifische Logik und Migration von der Modal-Hülle, sodass Suche, Gruppierung und Validierung zentral bleiben und andere Bereiche unbeeinflusst sind.【F:src/apps/library/create/creature/modal.ts†L109-L269】
 
 ### `create/shared/stat-utils.ts`
 - Fasst `parseIntSafe`, `abilityMod` und `formatSigned` zusammen, damit UI-Sektionen identische Rechenregeln verwenden.

@@ -5,7 +5,7 @@ import { listSpellFiles } from "../../core/spell-files";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import { mountCoreStatsSection } from "./section-core-stats";
 import { mountEntriesSection } from "./section-entries";
-import { mountSpellsKnownSection } from "./section-spells-known";
+import { mountSpellcastingSection } from "./section-spellcasting";
 import { CREATURE_MOVEMENT_TYPES, type CreatureMovementType } from "./presets";
 import { abilityMod, parseIntSafe } from "../shared/stat-utils";
 import { mountTokenEditor } from "../shared/token-editor";
@@ -107,7 +107,7 @@ export class CreateCreatureModal extends Modal {
         });
 
         // Asynchron: verfügbare Zauber laden (best effort)
-        let spellsSectionControls: ReturnType<typeof mountSpellsKnownSection> | null = null;
+        let spellsSectionControls: ReturnType<typeof mountSpellcastingSection> | null = null;
         void (async () => {
             try {
                 const spells = (await listSpellFiles(this.app)).map(f => f.basename).sort((a,b)=>a.localeCompare(b));
@@ -200,8 +200,8 @@ export class CreateCreatureModal extends Modal {
         // Structured entries (Traits, Aktionen, …) – rechte Spalte
         mountEntriesSection(rightColumn, this.data);
 
-        // Known spells section – rechte Spalte
-        spellsSectionControls = mountSpellsKnownSection(rightColumn, this.data, () => this.availableSpells);
+        // Spellcasting tab – rechte Spalte
+        spellsSectionControls = mountSpellcastingSection(rightColumn, this.data, () => this.availableSpells, () => scheduleUpdate());
 
         const footer = wrapper.createDiv({ cls: "sm-cc-create-footer" });
         const chipRow = footer.createDiv({ cls: "sm-cc-footer-chips" });
@@ -249,6 +249,24 @@ export class CreateCreatureModal extends Modal {
             const hasLegacyActions = Array.isArray(this.data.actionsList) && this.data.actionsList.length > 0;
             if (!hasEntries && !hasLegacyActions) issues.push("Mindestens einen Eintrag hinzufügen");
             else if (!hasActions && !hasLegacyActions) issues.push("Mindestens eine Aktion hinterlegen");
+            const hasSpellcasting = () => {
+                const listHasItems = (arr?: { length?: number } | null): boolean => Array.isArray(arr) && arr.length > 0;
+                const mapHasItems = (map?: Record<string, unknown[]> | null): boolean =>
+                    !!map && Object.values(map).some((arr) => Array.isArray(arr) && arr.length > 0);
+                return (
+                    listHasItems(this.data.spellsAtWill) ||
+                    mapHasItems(this.data.spellsPerDay) ||
+                    mapHasItems(this.data.spellsPerRest) ||
+                    mapHasItems(this.data.spellsBySlot) ||
+                    mapHasItems(this.data.spellsOther)
+                );
+            };
+            if (hasSpellcasting()) {
+                if (!this.data.spellcastingAbility?.trim()) issues.push("Zauber-Fähigkeit fehlt");
+                const hasDc = !!this.data.spellSaveDc?.trim();
+                const hasAttack = !!this.data.spellAttackBonus?.trim();
+                if (!hasDc && !hasAttack) issues.push("Zauber-SG oder Angriffsbonus fehlt");
+            }
             return issues;
         };
 
