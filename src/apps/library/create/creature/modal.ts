@@ -49,6 +49,13 @@ function parseSpeedChip(raw: string | null | undefined): SpeedChipDisplay | null
     };
 }
 
+function createSection(parent: HTMLElement, title: string, desc?: string): HTMLElement {
+    const card = parent.createDiv({ cls: "sm-cc-card" });
+    card.createEl("h3", { cls: "sm-cc-card__title", text: title });
+    if (desc) card.createDiv({ cls: "sm-cc-card__desc", text: desc });
+    return card.createDiv({ cls: "sm-cc-card__body" });
+}
+
 class CreaturePreviewModal extends Modal {
     constructor(app: App, private readonly data: StatblockData) {
         super(app);
@@ -159,10 +166,20 @@ export class CreateCreatureModal extends Modal {
         })();
 
         // Core Stats (kompakt) in linker Spalte
-        mountCoreStatsSection(leftColumn, this.data);
+        const coreStatsSection = createSection(
+            leftColumn,
+            "Grundwerte",
+            "Identität, Kernwerte, Attribute und Listen dieser Kreatur."
+        );
+        mountCoreStatsSection(coreStatsSection, this.data);
 
         // Movement speeds (structured input → speedList strings) – mittlere Spalte
-        const movement = new Setting(middleColumn).setName("Bewegung");
+        const movementSection = createSection(
+            middleColumn,
+            "Bewegung",
+            "Geschwindigkeiten mit Typ, Wert und optionaler Hover-Regel verwalten."
+        );
+        const movement = new Setting(movementSection).setName("Geschwindigkeiten");
         const movementContainer = movement.controlEl.createDiv({ cls: "sm-cc-move-ctl" });
         const addRow = movementContainer.createDiv({ cls: "sm-cc-searchbar sm-cc-move-row" });
         const typeSel = addRow.createEl("select") as HTMLSelectElement;
@@ -214,6 +231,11 @@ export class CreateCreatureModal extends Modal {
             valInp.value = ""; hoverCb.checked = false; renderSpeeds();
         };
 
+        const defensesSection = createSection(
+            middleColumn,
+            "Defensive Listen",
+            "Resistenzen, Immunitäten, Verwundbarkeiten und Ausrüstungsnotizen pflegen."
+        );
         type DefenseKey = "resistances" | "immunities" | "vulnerabilities";
         const ensureDefenseList = (key: DefenseKey) => {
             if (!this.data[key]) this.data[key] = [];
@@ -221,7 +243,7 @@ export class CreateCreatureModal extends Modal {
         };
         const mountDefenseEditor = (label: string, key: DefenseKey, placeholder: string) => {
             ensureDefenseList(key);
-            mountTokenEditor(middleColumn, label, {
+            mountTokenEditor(defensesSection, label, {
                 getItems: () => ensureDefenseList(key),
                 add: (value) => ensureDefenseList(key).push(value),
                 remove: (index) => ensureDefenseList(key).splice(index, 1),
@@ -233,7 +255,7 @@ export class CreateCreatureModal extends Modal {
         mountDefenseEditor("Vulnerabilities", "vulnerabilities", "z. B. radiant damage");
 
         if (typeof this.data.equipmentNotes !== "string") this.data.equipmentNotes = "";
-        const equipmentSetting = new Setting(middleColumn).setName("Equipment & Notes");
+        const equipmentSetting = new Setting(defensesSection).setName("Equipment & Notes");
         equipmentSetting.addTextArea((ta) => {
             ta.setPlaceholder("Ausrüstung, Sonderregeln, Kampfnotizen…");
             ta.setValue(this.data.equipmentNotes || "");
@@ -243,10 +265,20 @@ export class CreateCreatureModal extends Modal {
         });
 
         // Structured entries (Traits, Aktionen, …) – rechte Spalte
-        mountEntriesSection(rightColumn, this.data);
+        const entriesSection = createSection(
+            rightColumn,
+            "Einträge",
+            "Traits, Aktionen, Reaktionen und weitere strukturierte Inhalte."
+        );
+        mountEntriesSection(entriesSection, this.data);
 
         // Spellcasting tab – rechte Spalte
-        spellsSectionControls = mountSpellcastingSection(rightColumn, this.data, () => this.availableSpells, () => scheduleUpdate());
+        const spellcastingSection = createSection(
+            rightColumn,
+            "Zauberwirken",
+            "Zauberstatistiken sowie Frequenz- und Zauberlisten verwalten."
+        );
+        spellsSectionControls = mountSpellcastingSection(spellcastingSection, this.data, () => this.availableSpells, () => scheduleUpdate());
 
         const footer = wrapper.createDiv({ cls: "sm-cc-create-footer" });
         const chipRow = footer.createDiv({ cls: "sm-cc-footer-chips" });
