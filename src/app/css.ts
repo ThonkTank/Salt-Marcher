@@ -74,8 +74,9 @@ export const HEX_PLUGIN_CSS = `
 
 /* Create Creature Modal layout */
 .sm-cc-create-modal {
-    width: min(96vw, 1240px);
-    max-height: min(88vh, 760px);
+    width: clamp(1100px, 96vw, 1420px);
+    max-width: clamp(1100px, 96vw, 1420px);
+    max-height: min(90vh, 780px);
     padding: 0;
     display: flex;
     flex-direction: column;
