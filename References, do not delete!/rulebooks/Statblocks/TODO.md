@@ -36,6 +36,6 @@
 * [x] - Rules Glossary
 * [x] - Gameplay Toolbox
 * [x] - Magic Items
-* [ ] - Monsters
-* [ ] - Animals
+* [x] - Monsters
+* [x] - Animals
 
