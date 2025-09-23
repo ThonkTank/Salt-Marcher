@@ -6,6 +6,7 @@ import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import { mountCoreStatsSection } from "./section-core-stats";
 import { mountEntriesSection } from "./section-entries";
 import { mountSpellsKnownSection } from "./section-spells-known";
+import { CREATURE_MOVEMENT_TYPES, type CreatureMovementType } from "./presets";
 
 export class CreateCreatureModal extends Modal {
     private data: StatblockData;
@@ -51,20 +52,13 @@ export class CreateCreatureModal extends Modal {
         const speedCtl = speedWrap.createDiv({ cls: "setting-item-control sm-cc-move-ctl" });
         const addRow = speedCtl.createDiv({ cls: "sm-cc-searchbar sm-cc-move-row" });
         const typeSel = addRow.createEl("select") as HTMLSelectElement;
-        const types = [
-            ["walk","Gehen"],
-            ["climb","Klettern"],
-            ["fly","Fliegen"],
-            ["swim","Schwimmen"],
-            ["burrow","Graben"],
-        ] as const;
-        for (const [v,l] of types) { const o = typeSel.createEl("option", { text: l }); o.value = v; }
+        for (const [value, label] of CREATURE_MOVEMENT_TYPES) { const option = typeSel.createEl("option", { text: label }); option.value = value; }
         enhanceSelectToSearch(typeSel, 'Such-dropdown…');
         // hover option only for fly
         const hoverWrap = addRow.createDiv();
         const hoverCb = hoverWrap.createEl("input", { attr: { type: "checkbox", id: "cb-hover" } }) as HTMLInputElement;
         hoverWrap.createEl("label", { text: "Hover", attr: { for: "cb-hover" } });
-        const updateHover = () => { const isFly = typeSel.value === 'fly'; hoverWrap.style.display = isFly ? '' : 'none'; if (!isFly) hoverCb.checked = false; };
+        const updateHover = () => { const cur = typeSel.value as CreatureMovementType; const isFly = cur === 'fly'; hoverWrap.style.display = isFly ? '' : 'none'; if (!isFly) hoverCb.checked = false; };
         updateHover(); typeSel.onchange = updateHover;
         // inline number with +/- controls (5ft steps) – placed after hover
         const numWrap = addRow.createDiv({ cls: "sm-inline-number" });

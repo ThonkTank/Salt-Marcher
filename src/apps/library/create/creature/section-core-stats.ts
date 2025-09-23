@@ -4,6 +4,15 @@ import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import { mountTokenEditor } from "../shared/token-editor";
 import { abilityMod, formatSigned, parseIntSafe } from "../shared/stat-utils";
 import type { StatblockData } from "../../core/creature-files";
+import {
+  CREATURE_ABILITIES,
+  CREATURE_ALIGNMENT_GOOD_EVIL,
+  CREATURE_ALIGNMENT_LAW_CHAOS,
+  CREATURE_SIZES,
+  CREATURE_SKILLS,
+  CREATURE_TYPES,
+  type CreatureAbilityKey,
+} from "./presets";
 
 export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) {
   const root = parent.createDiv();
@@ -18,7 +27,7 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
   const sizeSetting = new Setting(root).setName("Größe");
   sizeSetting.addDropdown((dd) => {
     dd.addOption("", "");
-    ["Tiny","Small","Medium","Large","Huge","Gargantuan"].forEach((s) => dd.addOption(s, s));
+    for (const option of CREATURE_SIZES) dd.addOption(option, option);
     dd.onChange((v: string) => (data.size = v));
     try { enhanceSelectToSearch(dd.selectEl, 'Such-dropdown…'); } catch {}
   });
@@ -26,7 +35,7 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
   const typeSetting = new Setting(root).setName("Typ");
   typeSetting.addDropdown((dd) => {
     dd.addOption("", "");
-    ["Aberration","Beast","Celestial","Construct","Dragon","Elemental","Fey","Fiend","Giant","Humanoid","Monstrosity","Ooze","Plant","Undead"].forEach((s) => dd.addOption(s, s));
+    for (const option of CREATURE_TYPES) dd.addOption(option, option);
     dd.onChange((v: string) => (data.type = v));
     try { enhanceSelectToSearch(dd.selectEl, 'Such-dropdown…'); } catch {}
   });
@@ -34,13 +43,13 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
   const alignSetting = new Setting(root).setName("Gesinnung");
   alignSetting.addDropdown((dd) => {
     dd.addOption("", "");
-    ["Lawful","Neutral","Chaotic"].forEach((s) => dd.addOption(s, s));
+    for (const option of CREATURE_ALIGNMENT_LAW_CHAOS) dd.addOption(option, option);
     dd.onChange((v: string) => (data.alignmentLawChaos = v));
     try { const el = dd.selectEl; el.dataset.sdOpenAll = '0'; enhanceSelectToSearch(el, 'Such-dropdown…'); } catch {}
   });
   alignSetting.addDropdown((dd) => {
     dd.addOption("", "");
-    ["Good","Neutral","Evil"].forEach((s) => dd.addOption(s, s));
+    for (const option of CREATURE_ALIGNMENT_GOOD_EVIL) dd.addOption(option, option);
     dd.onChange((v: string) => (data.alignmentGoodEvil = v));
     try { const el = dd.selectEl; el.dataset.sdOpenAll = '0'; enhanceSelectToSearch(el, 'Such-dropdown…'); } catch {}
   });
@@ -70,12 +79,7 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
   const header = statsTbl.createDiv({ cls: "sm-cc-row sm-cc-header" });
   ;["Name","Wert","Mod","Save","Save Mod"].forEach(h => header.createDiv({ cls: "sm-cc-cell", text: h }));
 
-  const abDefs = [
-    { key: 'str', label: 'STR' }, { key: 'dex', label: 'DEX' }, { key: 'con', label: 'CON' },
-    { key: 'int', label: 'INT' }, { key: 'wis', label: 'WIS' }, { key: 'cha', label: 'CHA' },
-  ] as const;
-
-  const abilityElems = new Map<string, { score: HTMLInputElement; mod: HTMLElement; save: HTMLInputElement; saveMod: HTMLElement }>();
+  const abilityElems = new Map<CreatureAbilityKey, { score: HTMLInputElement; mod: HTMLElement; save: HTMLInputElement; saveMod: HTMLElement }>();
 
   const ensureSets = () => {
     if (!data.saveProf) data.saveProf = {} as any;
@@ -83,7 +87,7 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
     if (!data.skillsExpertise) data.skillsExpertise = [];
   };
 
-  for (const s of abDefs) {
+  for (const s of CREATURE_ABILITIES) {
     const rowEl = statsTbl.createDiv({ cls: "sm-cc-row" });
     rowEl.createDiv({ cls: "sm-cc-cell", text: s.label });
     const scoreCell = rowEl.createDiv({ cls: "sm-cc-cell sm-inline-number" });
@@ -116,16 +120,8 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
   const skillsHeader = skillsTbl.createDiv({ cls: "sm-cc-row sm-cc-header" });
   ;["Name","Prof","Expertise","Mod"].forEach(h => skillsHeader.createDiv({ cls: "sm-cc-cell", text: h }));
 
-  const skills: Array<[string,string]> = [
-    ['Athletics','str'],
-    ['Acrobatics','dex'],['Sleight of Hand','dex'],['Stealth','dex'],
-    ['Arcana','int'],['History','int'],['Investigation','int'],['Nature','int'],['Religion','int'],
-    ['Animal Handling','wis'],['Insight','wis'],['Medicine','wis'],['Perception','wis'],['Survival','wis'],
-    ['Deception','cha'],['Intimidation','cha'],['Performance','cha'],['Persuasion','cha'],
-  ];
-
-  const skillElems: Array<{ ability: string; prof: HTMLInputElement; exp: HTMLInputElement; out: HTMLElement }> = [];
-  for (const [name, abil] of skills) {
+  const skillElems: Array<{ ability: CreatureAbilityKey; prof: HTMLInputElement; exp: HTMLInputElement; out: HTMLElement }> = [];
+  for (const [name, abil] of CREATURE_SKILLS) {
     const rowEl = skillsTbl.createDiv({ cls: "sm-cc-row" });
     rowEl.createDiv({ cls: "sm-cc-cell", text: name });
     const cbP = rowEl.createEl("input", { cls: "sm-cc-cell", attr: { type: "checkbox" } }) as HTMLInputElement;
