@@ -472,14 +472,77 @@ export const HEX_PLUGIN_CSS = `
 .sm-cc-terrains.is-open .sm-cc-terrains__menu { display: block; }
 .sm-cc-terrains__item { display: flex; align-items: center; gap: .5rem; padding: .15rem 0; }
 
-/* Inline compact row for grouped fields */
-.sm-cc-inline-row {
+/* Creature creator – Identity & core value grids */
+.sm-cc-identity-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.sm-cc-identity-grid .setting-item {
+    margin: 0;
+}
+
+.sm-cc-identity-grid .setting-item-control {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
-    gap: .35rem .6rem;
+    gap: 0.4rem;
 }
-.sm-cc-inline-row label { font-size: 0.9em; color: var(--text-muted); }
+
+.sm-cc-identity-grid .setting-item input[type="text"],
+.sm-cc-identity-grid .setting-item select {
+    width: 100%;
+}
+
+.sm-cc-identity-grid .sm-cc-identity-grid__name {
+    grid-column: 1 / -1;
+}
+
+.sm-cc-identity-grid .sm-cc-identity-grid__alignment .setting-item-control {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.4rem;
+}
+
+@media (max-width: 720px) {
+    .sm-cc-identity-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.sm-cc-core-grid {
+    display: grid;
+    gap: 0.5rem 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    align-items: end;
+}
+
+.sm-cc-core-grid__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.sm-cc-core-grid__field label {
+    font-size: 0.85em;
+    color: var(--text-muted);
+}
+
+.sm-cc-core-grid__field input[type="text"] {
+    width: 100%;
+}
+
+@media (max-width: 600px) {
+    .sm-cc-core-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+}
+
+@media (max-width: 520px) {
+    .sm-cc-core-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
 
 /* Region Compendium */
 .sm-region-compendium { padding:.5rem 0; }
