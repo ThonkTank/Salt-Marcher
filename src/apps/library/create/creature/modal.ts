@@ -8,6 +8,7 @@ import { mountEntriesSection } from "./section-entries";
 import { mountSpellsKnownSection } from "./section-spells-known";
 import { CREATURE_MOVEMENT_TYPES, type CreatureMovementType } from "./presets";
 import { abilityMod, parseIntSafe } from "../shared/stat-utils";
+import { mountTokenEditor } from "../shared/token-editor";
 
 class CreaturePreviewModal extends Modal {
     constructor(app: App, private readonly data: StatblockData) {
@@ -33,7 +34,13 @@ export class CreateCreatureModal extends Modal {
     constructor(app: App, presetName: string | undefined, onSubmit: (d: StatblockData) => void) {
         super(app);
         this.onSubmit = onSubmit;
-        this.data = { name: presetName?.trim() || "Neue Kreatur" };
+        this.data = {
+            name: presetName?.trim() || "Neue Kreatur",
+            resistances: [],
+            immunities: [],
+            vulnerabilities: [],
+            equipmentNotes: "",
+        };
     }
 
     onOpen() {
@@ -70,6 +77,7 @@ export class CreateCreatureModal extends Modal {
             { el: rightColumn, label: "Aktionen & Zauber" },
         ];
         let activeStep = 0;
+        let scheduleUpdate: () => void = () => {};
 
         const focusFirstField = (el: HTMLElement) => {
             const focusable = el.querySelector<HTMLElement>("input, select, textarea, button, [tabindex]:not([tabindex='-1'])");
@@ -161,6 +169,34 @@ export class CreateCreatureModal extends Modal {
             valInp.value = ""; hoverCb.checked = false; renderSpeeds();
         };
 
+        type DefenseKey = "resistances" | "immunities" | "vulnerabilities";
+        const ensureDefenseList = (key: DefenseKey) => {
+            if (!this.data[key]) this.data[key] = [];
+            return this.data[key]!;
+        };
+        const mountDefenseEditor = (label: string, key: DefenseKey, placeholder: string) => {
+            ensureDefenseList(key);
+            mountTokenEditor(middleColumn, label, {
+                getItems: () => ensureDefenseList(key),
+                add: (value) => ensureDefenseList(key).push(value),
+                remove: (index) => ensureDefenseList(key).splice(index, 1),
+            }, { placeholder, addButtonLabel: "+", onAdd: () => scheduleUpdate(), onRemove: () => scheduleUpdate() });
+        };
+
+        mountDefenseEditor("Resistances", "resistances", "z. B. fire; nicht-magische Waffen");
+        mountDefenseEditor("Immunities", "immunities", "z. B. poison; charmed");
+        mountDefenseEditor("Vulnerabilities", "vulnerabilities", "z. B. radiant damage");
+
+        if (typeof this.data.equipmentNotes !== "string") this.data.equipmentNotes = "";
+        const equipmentSetting = new Setting(middleColumn).setName("Equipment & Notes");
+        equipmentSetting.addTextArea((ta) => {
+            ta.setPlaceholder("Ausrüstung, Sonderregeln, Kampfnotizen…");
+            ta.setValue(this.data.equipmentNotes || "");
+            ta.inputEl.rows = 4;
+            ta.inputEl.style.width = "100%";
+            ta.inputEl.addEventListener("input", () => { this.data.equipmentNotes = ta.getValue(); });
+        });
+
         // Structured entries (Traits, Aktionen, …) – rechte Spalte
         mountEntriesSection(rightColumn, this.data);
 
@@ -239,7 +275,7 @@ export class CreateCreatureModal extends Modal {
             liveName.setText(this.data.name?.trim() || "Neue Kreatur");
         };
 
-        const scheduleUpdate = () => {
+        scheduleUpdate = () => {
             requestAnimationFrame(() => {
                 refreshName();
                 updateFooter();
