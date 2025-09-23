@@ -18,62 +18,104 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
   const root = parent.createDiv();
 
   // Identity: Name, Größe, Typ, Gesinnung (zweiteilig)
-  const idSetting = new Setting(root).setName("Name");
-  idSetting.addText((t) => {
+  const identityGrid = root.createDiv({ cls: "sm-cc-identity-grid" });
+
+  const nameSetting = new Setting(identityGrid)
+    .setName("Name *")
+    .setDesc("Pflichtfeld: Angezeigter Name der Kreatur.");
+  nameSetting.settingEl.addClass("sm-cc-identity-grid__name");
+  nameSetting.addText((t) => {
     const updateName = (v: string) => { data.name = v.trim(); };
-    t.setPlaceholder("Aboleth").setValue(data.name || "").onChange((v: string) => updateName(v));
+    t.setPlaceholder("Aboleth").setValue(data.name || "").onChange(updateName);
     t.inputEl.dataset.role = "creature-name";
+    t.inputEl.required = true;
     t.inputEl.addEventListener("input", () => updateName(t.inputEl.value));
-    t.inputEl.style.width = '30ch';
   });
 
-  const sizeSetting = new Setting(root).setName("Größe");
+  const sizeSetting = new Setting(identityGrid)
+    .setName("Größe *")
+    .setDesc("Pflichtfeld: Wähle die Größenkategorie.");
   sizeSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_SIZES) dd.addOption(option, option);
     dd.onChange((v: string) => (data.size = v));
-    try { enhanceSelectToSearch(dd.selectEl, 'Such-dropdown…'); } catch {}
+    dd.setValue(data.size || "");
+    try { enhanceSelectToSearch(dd.selectEl, "Such-dropdown…"); } catch {}
   });
 
-  const typeSetting = new Setting(root).setName("Typ");
+  const typeSetting = new Setting(identityGrid)
+    .setName("Typ *")
+    .setDesc("Pflichtfeld: Kreaturentyp oder -tag.");
   typeSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_TYPES) dd.addOption(option, option);
     dd.onChange((v: string) => (data.type = v));
-    try { enhanceSelectToSearch(dd.selectEl, 'Such-dropdown…'); } catch {}
+    dd.setValue(data.type || "");
+    try { enhanceSelectToSearch(dd.selectEl, "Such-dropdown…"); } catch {}
   });
 
-  const alignSetting = new Setting(root).setName("Gesinnung");
+  const alignSetting = new Setting(identityGrid)
+    .setName("Gesinnung")
+    .setDesc("Optional: Kombiniere Rechtschaffen/Neutral/Chaotisch mit Gut/Neutral/Böse.");
+  alignSetting.settingEl.addClass("sm-cc-identity-grid__alignment");
   alignSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_ALIGNMENT_LAW_CHAOS) dd.addOption(option, option);
     dd.onChange((v: string) => (data.alignmentLawChaos = v));
-    try { const el = dd.selectEl; el.dataset.sdOpenAll = '0'; enhanceSelectToSearch(el, 'Such-dropdown…'); } catch {}
+    dd.setValue(data.alignmentLawChaos || "");
+    try {
+      const el = dd.selectEl;
+      el.dataset.sdOpenAll = "0";
+      enhanceSelectToSearch(el, "Such-dropdown…");
+    } catch {}
   });
   alignSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_ALIGNMENT_GOOD_EVIL) dd.addOption(option, option);
     dd.onChange((v: string) => (data.alignmentGoodEvil = v));
-    try { const el = dd.selectEl; el.dataset.sdOpenAll = '0'; enhanceSelectToSearch(el, 'Such-dropdown…'); } catch {}
+    dd.setValue(data.alignmentGoodEvil || "");
+    try {
+      const el = dd.selectEl;
+      el.dataset.sdOpenAll = "0";
+      enhanceSelectToSearch(el, "Such-dropdown…");
+    } catch {}
   });
 
   // Kernwerte: AC, Init, HP, HD, PB, CR, XP
-  const coreSetting = new Setting(root).setName("Kernwerte");
-  const row = coreSetting.controlEl.createDiv({ cls: 'sm-cc-inline-row' });
-  const mk = (label: string, widthCh: number, placeholder: string, key: keyof StatblockData) => {
-    row.createEl('label', { text: label });
-    const inp = row.createEl('input', { attr: { type: 'text', placeholder, 'aria-label': label } }) as HTMLInputElement;
-    inp.style.width = `${widthCh}ch`;
-    inp.value = (data[key] as any) || '';
-    inp.addEventListener('input', () => ((data as any)[key] = inp.value.trim()));
+  const coreSetting = new Setting(root)
+    .setName("Kernwerte")
+    .setDesc("Markierte Werte (*) sind Pflichtfelder für Vorschau & Export.");
+  const coreGrid = coreSetting.controlEl.createDiv({ cls: "sm-cc-core-grid" });
+  const mk = (
+    label: string,
+    placeholder: string,
+    key: keyof StatblockData,
+    options?: { required?: boolean; inputMode?: string }
+  ) => {
+    const field = coreGrid.createDiv({ cls: "sm-cc-core-grid__field" });
+    const inputId = `sm-cc-core-${key}`;
+    field.createEl("label", { text: options?.required ? `${label} *` : label, attr: { for: inputId } });
+    const inp = field.createEl("input", {
+      attr: {
+        type: "text",
+        placeholder,
+        id: inputId,
+        "aria-label": label,
+        ...(options?.inputMode ? { inputmode: options.inputMode } : {}),
+        ...(options?.required ? { "aria-required": "true" } : {}),
+      },
+    }) as HTMLInputElement;
+    if (options?.required) inp.required = true;
+    inp.value = ((data as any)[key] as string) || "";
+    inp.addEventListener("input", () => ((data as any)[key] = inp.value.trim()));
   };
-  mk('AC', 18, '17', 'ac');
-  mk('Init', 6, '+7', 'initiative');
-  mk('HP', 8, '150', 'hp');
-  mk('HD', 14, '20d10 + 40', 'hitDice');
-  mk('PB', 5, '+4', 'pb');
-  mk('CR', 6, '10', 'cr');
-  mk('XP', 8, '5900', 'xp');
+  mk("AC", "17", "ac", { required: true, inputMode: "numeric" });
+  mk("Initiative", "+7", "initiative");
+  mk("HP", "150", "hp", { required: true, inputMode: "numeric" });
+  mk("Hit Dice", "20d10 + 40", "hitDice");
+  mk("PB", "+4", "pb");
+  mk("CR", "10", "cr", { required: true, inputMode: "numeric" });
+  mk("XP", "5900", "xp", { inputMode: "numeric" });
 
   // Abilities + Saves
   const abilitySection = root.createDiv({ cls: "sm-cc-skills" });
