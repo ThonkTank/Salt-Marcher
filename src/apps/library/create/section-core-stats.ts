@@ -1,4 +1,5 @@
 // src/apps/library/create/section-core-stats.ts
+import { Setting } from "obsidian";
 import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
 import type { StatblockData } from "../core/creature-files";
 
@@ -6,49 +7,49 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
   const root = parent.createDiv();
 
   // Identity: Name, Größe, Typ, Gesinnung (zweiteilig)
-  const idSetting = new (window as any).Setting(root).setName("Name");
-  idSetting.addText((t: any) => {
+  const idSetting = new Setting(root).setName("Name");
+  idSetting.addText((t) => {
     t.setPlaceholder("Aboleth").setValue(data.name || "").onChange((v: string) => (data.name = v.trim()));
     t.inputEl.style.width = '30ch';
   });
 
-  const sizeSetting = new (window as any).Setting(root).setName("Größe");
-  sizeSetting.addDropdown((dd: any) => {
+  const sizeSetting = new Setting(root).setName("Größe");
+  sizeSetting.addDropdown((dd) => {
     dd.addOption("", "");
     ["Tiny","Small","Medium","Large","Huge","Gargantuan"].forEach((s) => dd.addOption(s, s));
     dd.onChange((v: string) => (data.size = v));
-    try { enhanceSelectToSearch((dd as any).selectEl, 'Such-dropdown…'); } catch {}
+    try { enhanceSelectToSearch(dd.selectEl, 'Such-dropdown…'); } catch {}
   });
 
-  const typeSetting = new (window as any).Setting(root).setName("Typ");
-  typeSetting.addDropdown((dd: any) => {
+  const typeSetting = new Setting(root).setName("Typ");
+  typeSetting.addDropdown((dd) => {
     dd.addOption("", "");
     ["Aberration","Beast","Celestial","Construct","Dragon","Elemental","Fey","Fiend","Giant","Humanoid","Monstrosity","Ooze","Plant","Undead"].forEach((s) => dd.addOption(s, s));
     dd.onChange((v: string) => (data.type = v));
-    try { enhanceSelectToSearch((dd as any).selectEl, 'Such-dropdown…'); } catch {}
+    try { enhanceSelectToSearch(dd.selectEl, 'Such-dropdown…'); } catch {}
   });
 
-  const alignSetting = new (window as any).Setting(root).setName("Gesinnung");
-  alignSetting.addDropdown((dd: any) => {
+  const alignSetting = new Setting(root).setName("Gesinnung");
+  alignSetting.addDropdown((dd) => {
     dd.addOption("", "");
     ["Lawful","Neutral","Chaotic"].forEach((s) => dd.addOption(s, s));
     dd.onChange((v: string) => (data.alignmentLawChaos = v));
-    try { const el = (dd as any).selectEl as HTMLSelectElement; el.dataset.sdOpenAll = '0'; enhanceSelectToSearch(el, 'Such-dropdown…'); } catch {}
+    try { const el = dd.selectEl; el.dataset.sdOpenAll = '0'; enhanceSelectToSearch(el, 'Such-dropdown…'); } catch {}
   });
-  alignSetting.addDropdown((dd: any) => {
+  alignSetting.addDropdown((dd) => {
     dd.addOption("", "");
     ["Good","Neutral","Evil"].forEach((s) => dd.addOption(s, s));
     dd.onChange((v: string) => (data.alignmentGoodEvil = v));
-    try { const el = (dd as any).selectEl as HTMLSelectElement; el.dataset.sdOpenAll = '0'; enhanceSelectToSearch(el, 'Such-dropdown…'); } catch {}
+    try { const el = dd.selectEl; el.dataset.sdOpenAll = '0'; enhanceSelectToSearch(el, 'Such-dropdown…'); } catch {}
   });
 
   // Kernwerte: AC, Init, HP, HD, PB, CR, XP
-  const coreSetting = new (window as any).Setting(root).setName("Kernwerte");
+  const coreSetting = new Setting(root).setName("Kernwerte");
   const row = coreSetting.controlEl.createDiv({ cls: 'sm-cc-inline-row' });
   const mk = (label: string, widthCh: number, placeholder: string, key: keyof StatblockData) => {
     row.createEl('label', { text: label });
     const inp = row.createEl('input', { attr: { type: 'text', placeholder, 'aria-label': label } }) as HTMLInputElement;
-    (inp.style as any).width = `${widthCh}ch`;
+    inp.style.width = `${widthCh}ch`;
     inp.value = (data[key] as any) || '';
     inp.addEventListener('input', () => ((data as any)[key] = inp.value.trim()));
   };
@@ -168,12 +169,12 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
 
   // Senses & Languages token editors
   const makeTokenEditor = (host: HTMLElement, title: string, items: () => string[], onAdd: (v: string) => void, onRemove: (i: number) => void) => {
-    new (window as any).Setting(host).setName(title).addText((t: any) => {
+    new Setting(host).setName(title).addText((t) => {
       t.setPlaceholder("Begriff eingeben…");
-      const input = (t as any).inputEl as HTMLInputElement;
+      const input = t.inputEl;
       t.inputEl.style.minWidth = '260px';
       t.inputEl.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Enter') { const v = input.value.trim(); if (v) { onAdd(v); input.value = ''; renderChips(); } }});
-    }).addButton((b: any) => b.setButtonText("+").onClick(() => { const inp = (b.buttonEl.parentElement?.querySelector('input') as HTMLInputElement); const v = inp?.value?.trim(); if (v) { onAdd(v); inp.value=''; renderChips(); } }));
+    }).addButton((b) => b.setButtonText("+").onClick(() => { const inp = b.buttonEl.parentElement?.querySelector('input') as HTMLInputElement | null; const v = inp?.value?.trim(); if (v) { onAdd(v); inp.value=''; renderChips(); } }));
     const chips = host.createDiv({ cls: 'sm-cc-chips' });
     const renderChips = () => {
       chips.empty();
