@@ -1,11 +1,11 @@
-// src/apps/library/create-modal.ts
+// src/apps/library/create/creature/modal.ts
 import { App, Modal, Setting } from "obsidian";
-import type { StatblockData } from "./core/creature-files";
-import { listSpellFiles } from "./core/spell-files";
-import { enhanceSelectToSearch } from "../../ui/search-dropdown";
-import { mountCoreStatsSection } from "./create/section-core-stats";
-import { mountEntriesSection } from "./create/section-entries";
-import { mountSpellsKnownSection } from "./create/section-spells-known";
+import type { StatblockData } from "../../core/creature-files";
+import { listSpellFiles } from "../../core/spell-files";
+import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
+import { mountCoreStatsSection } from "../section-core-stats";
+import { mountEntriesSection } from "../section-entries";
+import { mountSpellsKnownSection } from "../section-spells-known";
 
 export class CreateCreatureModal extends Modal {
     private data: StatblockData;

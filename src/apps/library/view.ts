@@ -4,9 +4,8 @@ import { ensureCreatureDir, listCreatureFiles, watchCreatureDir, createCreatureF
 import { enhanceSelectToSearch } from "../../ui/search-dropdown";
 import { ensureTerrainFile, loadTerrains, saveTerrains, watchTerrains, TERRAIN_FILE } from "../../core/terrain-store";
 import { ensureRegionsFile, loadRegions, saveRegions, watchRegions, REGIONS_FILE, type Region } from "../../core/regions-store";
-import { CreateCreatureModal } from "./create-modal";
 import { ensureSpellDir, listSpellFiles, watchSpellDir, createSpellFile } from "./core/spell-files";
-import { CreateSpellModal } from "./create-spell-modal";
+import { CreateCreatureModal, CreateSpellModal } from "./create";
 
 export const VIEW_LIBRARY = "salt-library";
 
