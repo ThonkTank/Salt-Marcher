@@ -45,7 +45,7 @@ Unterstützende Utilities liegen in `shared/` (`token-editor`, `stat-utils`).
 ## Layout-Blueprint für den Creature-Dialog
 
 ### 1. Grid & Navigation
-- **Dialograhmen:** Fester Inhalt auf 1240 px Breite, 720 px Höhe; dreispaltiges CSS-Grid mit Spaltenbreiten 320 px · 360 px · flex (Rest). 24 px Innenabstand, 16 px Spaltengap für klare Blickführung.
+- **Dialograhmen:** Breite via Clamp auf 1100 – 1420 px (96 % Viewport-Limit) und Höhe bis 780 px bei 90 % vh; dreispaltiges CSS-Grid mit Spaltenbreiten 320 px · 360 px · flex (Rest). 24 px Innenabstand, 16 px Spaltengap für klare Blickführung.
 - **Sektionensteuerung:** Accordion auf Desktop standardmäßig ausgeklappt, „Zurück/Weiter“-Stepper oberhalb des Footers für linearen Workflow. Breadcrumb-Titel zeigt Kreaturenname (live aktualisiert) zur Orientierung.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/ancient-black-dragon.md†L1-L8】
 - **Scrollverhalten:** Grid-Spalten scrollen unabhängig (overflow-y auto) mit Sticky-Section-Headern bei 48 px Höhe, damit lange Aktionslisten nicht Navigationselemente verdecken.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/vampire.md†L45-L64】
 
