@@ -3,89 +3,19 @@
 ## Strukturübersicht
 ```
 creature/
-├─ index.ts              – Exportiert die öffentlichen Mount-/Modal-Hooks.
-├─ modal.ts              – Orchestriert den Dialog und bündelt die Sections.
-├─ section-core-stats.ts – UI für Identität (`sm-cc-identity-grid`), Kernwerte (`sm-cc-core-grid`), Attribute & Listen.
-├─ section-entries.ts    – Tab-basiertes Entry-Interface mit Usage-Badges & Auto-Werten.
-├─ section-spellcasting.ts – Spellcasting-Tab mit Casting-Stats & Frequenz-Listen.
-└─ presets.ts            – Geteilte Konstanten für Dropdowns/Enums.
+├─ index.ts      – Registriert den Creator als Modal und gibt Mount-/Unmount-Hilfen frei.
+├─ modal.ts      – Rendert das Einspalten-Formular, sammelt Eingaben und löst Speichern aus.
+└─ statblock.ts  – Definiert den `CreatureStatblock`, stellt Defaults bereit und erzeugt Markdown.
 ```
-Unterstützende Utilities liegen in `shared/` (`token-editor`, `stat-utils`).
+Alle früheren Untersektionen (`section-*`, `presets.ts`) entfallen, damit nur noch die minimal nötigen Dateien übrig bleiben.
 
 ## Features & Hauptzuständigkeiten
-- **Geführtes Dreispalten-Layout mit Navigation:** Header-Breadcrumb & Stepper halten den Workflow linear, jede Spalte scrollt unabhängig und der Footer liefert AC/HP/Passive/CR-Chips plus Aktionen (Abbrechen/Speichern/Vorschau) samt Validierungsstatus.【F:src/apps/library/create/creature/modal.ts†L92-L360】【F:src/app/css.ts†L49-L176】
-- **Kartenbasierte Sektionen mit Titeln & Beschreibungen:** `createSection` legt `.sm-cc-card`-Container mit Titel/Optional-Text an, wodurch Core-Stats, Bewegung, Defense, Einträge und Spellcasting konsistent eingerahmt werden.【F:src/apps/library/create/creature/modal.ts†L168-L281】【F:src/app/css.ts†L160-L195】
-- **Statblock-Basisdaten erfassen:** Name, Größe, Typ & Gesinnung laufen über das responsive `sm-cc-identity-grid`, AC/Initiative/HP/Hit Dice/PB/CR/XP sitzen in `sm-cc-core-grid`; Bewegungen, Sinnes- & Sprachlisten ergänzen die Basiswerte.【F:src/apps/library/create/creature/section-core-stats.ts†L19-L164】【F:src/app/css.ts†L460-L519】【F:src/apps/library/core/creature-files.ts†L7-L74】
-- **Attribute & Fertigkeiten mit Autofill:** Tabelle für STR–CHA inkl. Save-Proficiencies und Skills, automatische Modifikatorberechnung über gemeinsame Utilities.【F:src/apps/library/create/creature/section-core-stats.ts†L42-L132】【F:src/apps/library/create/shared/stat-utils.ts†L1-L33】
-- **Bewegungs-Editor mit Typ/Wert-Chips:** Dropdown, Stepper und Hover-Checkbox erzeugen `speedList`-Einträge und nutzen `ensureSpeedList`, um Legacy-Felder zu migrieren; Chips rendern „Typ · Wert“ für übersichtliche Darstellung.【F:src/apps/library/create/creature/modal.ts†L176-L232】【F:src/apps/library/core/creature-files.ts†L98-L134】
-- **Freitext-Listen (Sinne/Sprachen):** Token-Editor-Chips zur Verwaltung variabler Listenfelder.【F:src/apps/library/create/creature/section-core-stats.ts†L134-L149】
-- **Defensive Listen & Ausrüstung:** Chip-Editoren für Resistances, Immunities, Vulnerabilities sowie ein Equipment-&-Notes-Textarea befüllen die neuen Felder im Statblock-Datentyp.【F:src/apps/library/create/creature/modal.ts†L234-L266】
-- **Strukturierte Einträge für Traits/Aktionen:** Tab-Navigation für Traits/Actions/Bonus/Reactions/Legendary/Lair, Usage-Dropdowns mit Recharge-/Limited-Use-Badges sowie Mehrfach-Schadenszeilen inklusive Auto-Berechnung aus Ability & PB.【F:src/apps/library/create/creature/section-entries.ts†L90-L409】
-- **Spellcasting-Tab:** Erfasst Ability, Save DC und Angriffsbonus und verwaltet Zauber per Frequenzlisten (At-Will, pro Tag/Rast, Slots, freie Gruppen) mit Typeahead, Uses/Notizen und Refresh-Hook ins Modal.【F:src/apps/library/create/creature/section-spellcasting.ts†L438-L587】【F:src/apps/library/create/creature/modal.ts†L267-L281】
-- **Export als Markdown/YAML:** `statblockToMarkdown` ergänzt Spellcasting-Felder (Ability, Save DC, Attack Bonus) samt Frequenz-JSON, normalisiert `speedList` und rendert strukturierte Abschnitte für Traits/Aktionen & Spellcasting neben Resistances/Immunities/Vulnerabilities und Equipment-Notizen.【F:src/apps/library/core/creature-files.ts†L283-L401】
-
-## Statblock-Anforderungen (aus Referenzen)
-- **Meta & Kampf-Hauptdaten:** Name, Größe, Kreaturentyp(+Tags), Gesinnung, AC, Initiative, HP/Hit Dice, Speed-Varianten.【F:References, do not delete!/rulebooks/Statblocks/11_Monsters.md†L5-L88】
-- **Attributblock & Abgeleitete Werte:** STR–CHA, Modifikatoren, Saves, Skills, Resistances/Vulnerabilities, Immunitäten, Ausrüstung.【F:References, do not delete!/rulebooks/Statblocks/11_Monsters.md†L9-L118】
-- **Sinne, Sprachen, CR/PB/XP:** Wahrnehmung & besondere Sinne, Sprachoptionen, Challenge Rating samt Proficiency Bonus & Erfahrungswerten.【F:References, do not delete!/rulebooks/Statblocks/11_Monsters.md†L10-L207】
-- **Eingeteilte Aktionen:** Traits, Actions, Bonus Actions, Reactions, Legendary Actions sowie Nutzungs-/Recharge-Regeln und Spellcasting-Blocks.【F:References, do not delete!/rulebooks/Statblocks/11_Monsters.md†L210-L272】【F:References, do not delete!/rulebooks/Statblocks/12_MonstersA-Z.md†L26-L158】
-
-## Was funktioniert bereits gut?
-- **Klares Navigationsgerüst:** Breadcrumb, Stepper und Spaltenfokus lassen schnell zwischen Grundwerten, Details und Aktionen springen und halten den Namen live präsent.【F:src/apps/library/create/creature/modal.ts†L44-L128】
-- **Wiederverwendbare UI-Hilfen:** Suche-fähige Dropdowns, Inline-Stepper und Token-Chips sorgen für schnelle Eingabe wiederkehrender Felder.【F:src/apps/library/create/creature/modal.ts†L118-L161】【F:src/apps/library/create/shared/token-editor.ts†L1-L63】
-- **Automatik für Würfelwerte:** Trefferbonus und mehrteilige Schadensstrings lassen sich aus Ability + PB ableiten; Änderungen aktualisieren die finalen Werte automatisch.【F:src/apps/library/create/creature/section-entries.ts†L318-L407】
-- **Footer-Feedback:** Zusammenfassungschips & Warn-Badges zeigen fehlende Pflichtfelder an und deaktivieren Speichern, bis Mindestanforderungen erfüllt sind.【F:src/apps/library/create/creature/modal.ts†L283-L360】
-- **Markdown-Ausgabe deckt Kernabschnitte ab:** Export generiert YAML samt Spellcasting-JSON, gruppiert Traits/Actions/Bonus/Reactions/Legendary/Lair und übernimmt Usage-Badges sowie mehrteilige Schadensteile ins Markdown.【F:src/apps/library/core/creature-files.ts†L283-L401】
-
-## Optimierungspotenzial
-- **Condition Immunities & Sonderfelder ergänzen:** Referenz-Statblocks führen neben Damage-Resistances häufig Condition Immunities oder Traits wie „Damage Threshold“, die weiterhin fehlen.【F:References, do not delete!/rulebooks/Statblocks/11_Monsters.md†L98-L128】
-- **Speed-Chips editierbar machen:** Aktuell lassen sich Geschwindigkeitswerte nur löschen und neu hinzufügen; Inline-Bearbeitung oder Drag & Drop könnte die Pflege langer Listen beschleunigen.【F:src/apps/library/create/creature/modal.ts†L176-L232】
-- **Abschnittsgewichtung verbessern:** Lange Listen (Skills, Einträge, Zauber) scrollen vertikal; Accordion- oder Tabs für „Offense/Defense/Spellcasting“ könnten Übersicht erhöhen ohne Informationen zu verstecken.【F:src/apps/library/create/creature/modal.ts†L44-L168】
-- **Voreinstellungen & Presets ausbauen:** Beispielstatblocks zeigen konsistente Reihenfolge & Terminologie (z. B. Initiative in Klammern); UI könnte Templates/Preview nutzen.【F:References, do not delete!/rulebooks/Statblocks/12_MonstersA-Z.md†L5-L58】
-
-## Layout-Blueprint für den Creature-Dialog
-
-### 1. Grid & Navigation
-- **Dialograhmen:** Breite via Clamp auf 1100 – 1420 px (96 % Viewport-Limit) und Höhe bis 780 px bei 90 % vh; dreispaltiges CSS-Grid mit Spaltenbreiten 320 px · 360 px · flex (Rest). 24 px Innenabstand, 16 px Spaltengap für klare Blickführung.
-- **Sektionensteuerung:** Accordion auf Desktop standardmäßig ausgeklappt, „Zurück/Weiter“-Stepper oberhalb des Footers für linearen Workflow. Breadcrumb-Titel zeigt Kreaturenname (live aktualisiert) zur Orientierung.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/ancient-black-dragon.md†L1-L8】
-- **Scrollverhalten:** Grid-Spalten scrollen unabhängig (overflow-y auto) mit Sticky-Section-Headern bei 48 px Höhe, damit lange Aktionslisten nicht Navigationselemente verdecken.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/vampire.md†L45-L64】
-
-### 2. Linke Spalte – Identität & Kampf-Basics (320 px)
-- **Identitätskarte (Spacing 12 px):**
-  - `TextField` „Name“ (Pflichtfeld) spannt das Grid über alle Spalten und füllt dank `sm-cc-identity-grid` automatisch die Breite.【F:src/app/css.ts†L460-L482】
-  - Dropdowns für „Größe“, „Kreaturentyp“ (Pflichtfelder) und die zweigeteilte Gesinnung liegen im gleichen auto-fit Grid und brechen unter 720 px um.【F:src/app/css.ts†L460-L490】
-  - **Defensive & Initiativwerte (`sm-cc-core-grid` auto-fit):** AC*, Initiative, HP*, Hit Dice, PB, CR*, XP – Labels zeigen Pflichtfelder mit `*`, Inputs skalieren nebeneinander bis 520 px Breite, danach Block-Anzeige.【F:src/app/css.ts†L492-L519】【F:src/apps/library/create/creature/section-core-stats.ts†L101-L132】
-  - AC (NumberField, Label „Armor Class“), HP (Hit Points, NumberField mit „(xdy + z)“-Textfeld daneben, 90 px), „Hit Dice“ (TextField).【F:References, do not delete!/rulebooks/Statblocks/Creatures/Animals/wolf.md†L5-L8】
-  - Initiative (NumberField, Label „Initiative“ mit sekundärer Anzeige „(Modifikator)“ als Readonly-Chip).【F:References, do not delete!/rulebooks/Statblocks/Creatures/Animals/wolf.md†L9-L18】
-- **Bewegungsarten:** Token-Chip-Editor über volle Breite, Label „Speed (ft.)“; jede Chip zeigt „Art · Wert“ (z. B. „Fly · 80“) zur Abbildung mehrerer Werte.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/ancient-black-dragon.md†L5-L8】
-- **Herausforderungsgrad:** Kartenabschnitt mit dreifachem Inline-Stack (je 96 px): „Challenge Rating“, „XP“, „Proficiency Bonus“, um CR-Ausgabe samt XP/PB sichtbar zu halten.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/ancient-black-dragon.md†L23-L24】
-- **Sprachen & Sinne:** Zweizeilige `Textarea`-Karte mit Tabs „Senses“ und „Languages“, Labels exakt wie im Statblock, inkl. passiver Wahrnehmung & Format „darkvision 120 ft.; Passive Perception 26“. Sticky-Helper-Text erinnert an semikolon-getrennte Darstellung.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/ancient-black-dragon.md†L21-L22】
-
-### 3. Mittlere Spalte – Werte, Defensive Listen & Ausrüstung (360 px)
-- **Attributmatrix:** Fixierte Tabelle (Headerhöhe 40 px) mit sechs Zeilen (STR–CHA) und drei editierbaren Spalten „Score“, „Mod“, „Save“; „Mod“ wird berechnet & gesperrt, „Save“ Checkbox für Proficiency + Stepper. Zeilen-Label-Buttons öffnen Kontextmenü für abgeleitete Notizen.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Animals/wolf.md†L11-L18】
-- **Skills & Fertigkeiten:** Accordion-Panel mit Filterbarer Liste (Zweispaltig 168 px). Jede Zeile: Checkbox „Proficient“, Badge zeigt automatischen Bonus (PB+Mod). Standardliste enthält Einträge wie „Perception +16, Stealth +9“. Sticky-Header „Skills“.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/ancient-black-dragon.md†L19-L21】
-- **Resistances/Immunities/Vulnerabilities:** Drei Chips-Stacks übereinander (Label exakt „Resistances“, „Immunities“, „Vulnerabilities“). Chips erlauben Typ + optionalen Kontext (z. B. „Sunlight – Disadvantage on attack rolls“).【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/vampire.md†L19-L40】
-- **Ausrüstung & Besonderheiten:** `Textarea` „Equipment & Notes“ (3 Zeilen) für Gegenstände oder Sondernotizen, damit Schwächen wie „Stake to the Heart“ erfasst werden können.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/vampire.md†L34-L40】
-
-### 4. Rechte Spalte – Aktionen, Fähigkeiten & Zauber (flex)
-- **Traits-Sektion:** Wiederholbare Karten (Breite 100 % der Spalte) mit Feldern: „Titel“, „Verwendung“ (Dropdown: Passive, Recharge X-Y, Limited Use), „Beschreibung“ (Markdown-Editor). Unterstützt legendäre Widerstände wie im Vampir-Statblock.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/vampire.md†L25-L33】
-- **Actions & Bonus/Reaction/Legendary Tabs:** Horizontaler Tab-Switcher (Actions · Bonus Actions · Reactions · Legendary · Lair). Jede Karte enthält strukturierte Felder:
-  - Primärer Aktionsname („Multiattack“, „Bite“).【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/vampire.md†L45-L55】
-  - Aktionsart (Dropdown: Melee Attack, Ranged, Save, Special) + Felder „Attack Bonus“, „Reach/Range“, „Target“.
-  - Schadenstabelle (bis zu 3 Zeilen: Würfel-Notationsfeld + Schadenstyp).【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/ancient-black-dragon.md†L34-L39】
-  - Optionales „Save DC“ & Effekt-Editor, um Einträge wie „Dexterity Saving Throw: DC 22 …“ abzubilden.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/ancient-black-dragon.md†L38-L39】
-  - Recharge/Limited-Use-Badges (rechts oben) mit automatischem Anzeigeformat („Recharge 5–6“).【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/vampire.md†L58-L59】
-- **Spellcasting Block:** Dedizierter Tab innerhalb der rechten Spalte mit Formular: oberer Bereich für Casting-Statistik („Spellcasting Ability“, „Save DC“, „Attack Bonus“), darunter Frequenz-Listen (At-Will, X/Day) mit Typeahead zur Auswahl der Zauber, Format übernimmt Aufzählungen wie bei Drachen.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/ancient-black-dragon.md†L40-L43】
-- **Legendary Actions/Lair Actions:** Unter-Tabs innerhalb des Legendary-Bereichs ermöglichen separate Kartenlisten für Aktionen wie „Cloud of Insects“ oder „Beguile“, inkl. Beschreibungsfeld und Kosten-Badge (z. B. „Costs 2 Actions“).【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/ancient-black-dragon.md†L45-L51】【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/vampire.md†L60-L64】
-
-### 5. Footer & Kontext-Tools
-- **Sticky-Footer (68 px Höhe):** Links Zusammenfassung in Chips (AC, HP, Passive Perception, CR) zur schnellen Gegenprüfung, rechts Buttons „Abbrechen“, „Speichern“, „Vorschau öffnen“.
-- **Validierungs-Hinweise:** Inline-Statusleisten innerhalb des Footers listen fehlende Pflichtfelder (z. B. Name, mindestens eine Aktion), damit der Export konform zu den Referenzstatblocks bleibt.
+- **Einfacher Einspalten-Dialog:** `modal.ts` zeigt ein vertikales Formular mit kompakten Fieldsets für Basisdaten, Attributwerte, Ressourcen (Resistances/Immunities/Vulnerabilities), Sinne/Sprachen sowie freie Textbereiche für Traits, Actions, Bonus Actions, Reactions, Legendary Actions und Spellcasting. Pflichtfelder (Name, Größe, Typ, Gesinnung, AC, HP, Speed, STR–CHA, CR, PB) werden direkt validiert und verhindern das Speichern, bis sie ausgefüllt sind.
+- **Markdown-Export ohne Zusätze:** Der Speichern-Button ruft `buildStatblockMarkdown` aus `statblock.ts` auf. Die Funktion generiert eine vollständige `.md`-Datei im Standardlayout (Kopfzeile, Grundwerte, Attribut-Tabelle, Verteidigung, Sinne/Sprachen, Challenge-Bereich, Abschnittsüberschriften mit Listen für Aktionen). Spellcasting-Informationen werden als eigener Abschnitt mit Ability, Save DC, Attack Bonus und vorbereiteten Listen (At-Will, X/Day, Slots) ausgegeben.
+- **Dateiablage mit Minimalkonfiguration:** `index.ts` reicht den vom Modal gelieferten Markdown-String an das bestehende Dateiservice der Library weiter (`saveMarkdownFile`). Damit genügt ein einziger Schreibaufruf, um die `.md`-Datei im Bibliotheksverzeichnis abzulegen.
+- **Schlanke State-Verwaltung:** Die Formularwerte liegen in einem einzigen `CreatureStatblock`-State-Objekt. Hilfsfunktionen wie `updateAbility(scoreKey, value)` oder `updateList(fieldKey, rawText)` halten die Struktur konsistent, ohne dedizierte Unterkomponenten.
 
 ## Datei-Details
-- **index.ts:** Bündelt Exporte für Modal und Section-Mounts, damit externe Aufrufer eine schlanke API nutzen.【F:src/apps/library/create/creature/index.ts†L1-L6】
-- **modal.ts:** Baut Header mit Breadcrumb & Stepper, kapselt Spaltenmodule via `createSection` in `.sm-cc-card`-Container mit Titel/Beschreibung, normalisiert `speedList` über `ensureSpeedList`, rendert Typ·Wert-Chips, erweitert die Mittelspalte um Resistances/Immunities/Vulnerabilities-Chips plus Equipment-&-Notes-Textarea, lädt Spell-Liste, zeigt Footer-Chips/Validierungen und öffnet bei Bedarf eine JSON-Vorschau.【F:src/apps/library/create/creature/modal.ts†L28-L360】
-- **section-core-stats.ts:** Baut Identity-/Kernwerte-Form via `sm-cc-identity-grid` & `sm-cc-core-grid`, aktualisiert Pflichtfeld-Markierungen, rendert Fähigkeitentabelle, Skill-Checkboxen und Token-Editoren für Sinne/Sprachen.【F:src/apps/library/create/creature/section-core-stats.ts†L19-L164】【F:src/app/css.ts†L460-L519】
-- **section-entries.ts:** Rendert Tab-Panels je Kategorie, Usage-Editoren (Passive/Recharges/Limited Use), Auto-Damage-Reihen und Markdown-Textfelder pro Eintrag.【F:src/apps/library/create/creature/section-entries.ts†L90-L409】
-- **section-spellcasting.ts:** Organisiert Spellcasting-Daten inkl. Casting-Stats, Typeahead-Listen nach Frequenz (At-Will, pro Tag/Rast, Slots, freie Gruppen) sowie Uses-/Notizen-Feldern und liefert Refresh-Hooks ans Modal.【F:src/apps/library/create/creature/section-spellcasting.ts†L59-L587】
-- **presets.ts:** Enthält Konstanten/Typen für Größen, Typen, Gesinnungen, Skills, Bewegungsarten und Dropdown-Befüllung, damit UI & Export konsistent bleiben.【F:src/apps/library/create/creature/presets.ts†L1-L67】
+- **index.ts:** Stellt `mountCreatureCreator(root, initialData?)` bereit, das das Modal lazy lädt, den optionalen Startwert ins Formular injiziert und beim Speichern `saveMarkdownFile(name, markdown)` aufruft. Außerdem exportiert es `openCreatureCreator()` für Call-Sites, die nur den Dialog anzeigen möchten.
+- **modal.ts:** Implementiert das tatsächliche Modal mit einer einfachen Formularspalte. Die Datei enthält die lokale State-Verwaltung (`createStatblockState()`), Input-Handler für Textfelder, Number-Inputs und Multi-Line Textareas sowie die Validierung für Pflichtfelder. Beim Speichern wird `buildStatblockMarkdown(state)` aufgerufen und das Ergebnis via Callback zurückgegeben.
+- **statblock.ts:** Hält den `CreatureStatblock`-Typ inklusive aller Pflichtfelder (Meta, Ability Scores, Combat Stats, Sinnes-/Sprachlisten, Traits/Aktionen/Spellcasting als Markdown-Strings). `createEmptyStatblock()` liefert Defaultwerte. `buildStatblockMarkdown(statblock)` rendert den Markdown-String: Kopfbereich mit Name/Größe/Typ/Gesinnung, anschließend AC/HP/Hit Dice/Speed, Tabelle mit STR–CHA (Score & Mod), Auflistungen für Saves/Skills/Resistances/Immunities/Vulnerabilities, Block für Sinne/Sprachen, Challenge Rating/PB/XP sowie formatierte Listen für Traits, Actions, Bonus/Reactions, Legendary Actions und Spellcasting.
