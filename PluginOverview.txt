@@ -1,66 +1,112 @@
 # SaltMarcher – Plugin Overview
 
-SaltMarcher erweitert Obsidian um Werkzeuge für hex-basierte Kampagnenplanung: Karten lassen sich anlegen, editieren, einfärben,
-analysieren und mit Reiserouten versehen. Das Plugin ist in klar getrennte Layer gegliedert, damit Rendering-Logik, Dateisystemzugriffe und UI-Komponenten unabhängig voneinander weiterentwickelt werden können.
+SaltMarcher erweitert Obsidian um Werkzeuge für hex-basierte Kampagnenplanung. Der Code ist in klar getrennte Layer aufgeteilt,
+damit Rendering-Logik, Dateizugriffe und UI-Komponenten unabhängig voneinander weiterentwickelt werden können.
 
-## Architektur auf einen Blick
+## Struktur
 
-| Layer | Standort | Aufgabe | Detail-Dokument |
-| --- | --- | --- | --- |
-| Plugin-Bootstrap | `src/app/` | Registriert Views/Commands, lädt CSS & Terrain-Daten und koordiniert Lifecycle sowie Watcher. | – |
-| Feature-Apps | `src/apps/` | Enthalten aktive Obsidian-Views (Cartographer mit Travel/Editor/Inspector-Modi) sowie die neue Library für Terrains/Regionen/Kreaturen. | Pro Feature in `*Overview.txt` |
-| Core-Services | `src/core/` | Bietet Hex-Geometrie, Map-/Tile-Dateioperationen, Terrain-Verwaltung und Workspace-Helfer. | `src/core/CoreOverview.txt` |
-| UI-Bausteine | `src/ui/` | Stellt wiederverwendbare Modals/Bestätigungsdialoge für Features bereit. | `src/ui/UiOverview.txt` |
-| Styling | `src/app/css.ts` | Liefert das zentrale CSS, das beim Plugin-Start injiziert wird. | – |
-
-```
-src/
-├─ app/
-│  ├─ main.ts                # Plugin-Bootstrap (Commands, Views, Watcher)
-│  └─ css.ts                 # Zentrales Styling (wird dynamisch injiziert)
-│
-├─ apps/
-│  ├─ cartographer/          # Multi-Mode Map Viewer (Travel/Editor/Inspector) – CartographerOverview.txt
-│  ├─ terrain-editor/        # Terrain-Palette – TerrainEditorOverview.txt
-│  └─ legacy/                # Kompatibilitäts-Wrapper (Map Editor, Gallery, Travel Guide)
-│
-├─ core/                     # Hex-Engine & Dateiservices – CoreOverview.txt
-└─ ui/                       # Modals & Dialoge – UiOverview.txt
+```text
+Salt-Marcher/
+├─ manifest.json            # Obsidian-Manifest (verweist auf das gebündelte main.js)
+├─ esbuild.config.mjs       # Build-Pipeline (bundelt src/app/main.ts → main.js)
+├─ main.js                  # Gebündeltes Plugin für die Auslieferung
+├─ package.json             # Scripts & Dev-Abhängigkeiten (esbuild, TypeScript, Obsidian-Typen)
+├─ package-lock.json        # Reproduzierbare Dependency-Auflösung
+├─ src/
+│  ├─ app/
+│  │  ├─ main.ts            # Plugin-Bootstrap (Views, Commands, CSS, Terrain-Watcher)
+│  │  └─ css.ts             # Zentrales Styling als String-Literal
+│  ├─ apps/
+│  │  ├─ cartographer/      # Hex-Map-Workspace mit Editor/Inspector/Travel-Modi
+│  │  ├─ encounter/         # Einfache Encounter-View
+│  │  └─ library/           # Bibliothek für Terrains, Regionen und Kreaturen
+│  ├─ core/                 # Domain-Services (Hex-Geometrie, Dateien, Terrain, Optionen)
+│  └─ ui/                   # Geteilte Dialoge und Workflow-Helfer
+└─ tsconfig.json            # TypeScript-Konfiguration für das Build-Setup
 ```
 
-## Layer-Highlights
+## Features & Verantwortlichkeiten
 
-### Plugin-Lifecycle (`src/app/`)
-- `main.ts` registriert nur noch den Cartographer und den Terrain Editor als aktive Views; Legacy-Views bleiben im Code, werden aber nicht mehr automatisch angehängt.
-- Cartographer-Ribbons/Commands nutzen `getCenterLeaf`, um stets den mittleren Workspace-Leaf zu fokussieren, während der Terrain Editor weiterhin in einem neuen Leaf öffnet.
-- Lädt Terrain-Definitionen über den Core-Service (`core/terrain-store.ts`: `ensureTerrainFile → loadTerrains → setTerrains`) und beobachtet Änderungen via `watchTerrains`.
-- Injiziert das zentrale CSS (`injectCss`) und räumt beim Unload alle Listener/Watcher ab.
-- Verteilt Events/Handler an Feature-Layer und Core-Services.
+- **Plugin-Bootstrap:** Registriert Views & Commands, lädt Terrain-Daten, injiziert CSS und koppelt Event-Watcher sauber ab.
+- **Cartographer-Workspace:** Stellt Map-Stage, Header, Sidebars und Modusverwaltung bereit. Bindet Editor-, Inspector- und
+  Travel-Logik ein und synchronisiert Dateizugriffe mit dem Renderer.
+- **Library-View:** Vereinheitlicht das Management von Terrains, Regionen und Kreaturen inklusive Suchleiste, Erstellung,
+  Inline-Bearbeitung und Persistenz.
+- **Encounter-View:** Liefert eine leichtgewichtige Ansicht für Encounter-Notizen.
+- **Core-Services:** Stellen Hex-Geometrie, Map/Tile-Dateioperationen, Terrain- und Regions-Persistenz sowie Workspace-Helfer
+  bereit und dienen als Single Source of Truth für die Apps.
+- **Geteilte UI-Bausteine:** Modals, Header- und Workflow-Helfer kapseln wiederkehrende Interaktionen (Map-Auswahl, Bestätigungen,
+  Eingabedialoge) für alle Views.
+- **Build & Styling:** Esbuild bundelt den Plugin-Code in `main.js`, während `css.ts` das Styling zentral hält und beim Plugin-Start
+  injiziert wird.
 
-### Feature-Apps (`src/apps/`)
-- **Cartographer (`cartographer/`):** Stellt den `sm-cartographer`-Shell bereit, rendert Karten via `renderHexMap`/`createMapLayer`, schaltet Travel/Editor/Inspector-Modi über ein Dropdown im Header, kapselt deren Sidebars und bündelt Open/Create/Delete über `createMapManager`.
-- **Library (`library/`):** Vereinheitlichte Bibliothek für Terrains, Regionen und Kreaturen. Bietet Modus-Tabs, gemeinsame Such-/Erstellen-Leiste und Ergebnisliste sowie Inline-Bearbeitung für Terrains/Regionen. Terrains/Regionen bearbeiten Sammeldateien (`SaltMarcher/Terrains.md`, `SaltMarcher/Regions.md`), Kreaturen nutzen per‑Datei‑Speicherung unter `SaltMarcher/Creatures/`.
-- **Legacy-Hüllen (`legacy/`):** Bewahrt frühere Views (Map Editor, Map Gallery, Travel Guide) als Kompatibilitäts-Schicht. Details siehe `src/apps/legacy/LegacyAppsOverview.txt`.
+## Skript-Referenz
 
-### Core-Services (`src/core/`)
-- Bündelt Hex-Mathematik, SVG-Rendering, Map/Terrain-Dateiverwaltung und Workspace-Utilities.
-- High-Level-Flows für Kartenanlage (`createHexMapFile`), Tile-Liste/Selektion (`getAllMapFiles`, `getFirstHexBlock`), Rendering (`renderHexMap`) und Löschung (`deleteMapAndTiles`).
-- Terrain-Verwaltung (`terrain-store.ts`, `setTerrainPalette`, `setTerrains`) hält UI und Renderer konsistent.
-- Ausführliche Beschreibung im [Core Overview](src/core/CoreOverview.txt).
+### src/app
+- `main.ts`: Einstiegspunkt des Plugins. Registriert Cartographer-, Library- und Encounter-Views, richtet Ribbons und Commands ein,
+  lädt Terrain-Daten (`ensureTerrainFile`, `loadTerrains`, `watchTerrains`) und injiziert das zentrale CSS.
+- `css.ts`: Enthält das vollständige Styling als Template-String. Wird von `main.ts` in ein `<style>`-Element geschrieben.
 
-### Geteilte UI-Bausteine (`src/ui/`)
-- `NameInputModal`, `MapSelectModal`, `ConfirmDeleteModal` und `map-workflows.ts` kapseln wiederverwendbare Dialoge und Map-spezifische Workflows (Button-Styling, Open/Create/Render).
-- Reduzieren Boilerplate in Feature-Apps und sorgen für einheitliche UX zwischen Galerie und Editor.
-- Details im [UI Overview](src/ui/UiOverview.txt).
+### src/apps/cartographer
+- `index.ts`: Meldet `CartographerView` bei Obsidian an, verwaltet Ribbon/Command-Anbindung und mountet `view-shell.ts` in einem
+  `cartographer-host`-Element.
+- `view-shell.ts`: Baut Layout (Header, Stage, Sidebar), hält den aktiven Modus, lädt Karten via `createMapLayer`/`renderHexMap`
+  und delegiert Hex-Events an die Modi.
+- `modes/editor.ts`: Sidebar für den Editor-Modus. Bindet Tool-Infrastruktur aus `editor/`, synchronisiert Brush-Vorschau und
+  persistiert Terrain-Änderungen über `RenderHandles`.
+- `modes/inspector.ts`: Inspector-Sidebar zum Bearbeiten von Terrain und Notizen eines ausgewählten Hex. Nutzt `hex-notes` für
+  Dateizugriffe und aktualisiert Renderer-Fills live.
+- `modes/travel-guide.ts`: Verknüpft Travel-Logik (Playback, Token, Routen) mit dem Cartographer, verwaltet UI-Sidebar und
+  Persistenz über `travel/domain`.
+- `editor/tools/tools-api.ts`: Definiert das Tool-Interface für Cartographer-Editor-Modi (Lifecycle, Events, Kontext).
+- `editor/tools/terrain-brush/brush.ts`: Kernlogik des Terrain-Brushes (Persistenz, Renderer-Updates, Statusmeldungen).
+- `editor/tools/terrain-brush/brush-options.ts`: UI-Steuerelemente für Radius-/Terrainwahl sowie Statusausgabe des Brushes.
+- `editor/tools/terrain-brush/brush-math.ts`: Berechnet Hex-Radien im odd-r-Grid für Brush-Anwendungen.
+- `editor/tools/brush-circle.ts`: Zeichnet den SVG-Vorschaukreis für Brush-Tools.
+- `travel/domain/*`: Enthält Routen-/Token-Domainlogik (`actions.ts`, `state.ts`, `types.ts`, `persist.ts`) und sorgt für
+  konsistentes Playback sowie Speicherung.
+- `travel/render/*`: Low-Level-Zeichenhelfer (z. B. `draw-route.ts`, `draw-token.ts`, `draw-terrain-hints.ts`) für Travel-Layer.
+- `travel/ui/*`: UI-Shell für Travel-Modus (Sidebar, Header, Layer-Mounting) inklusive Controller für Interaktionen.
+- `travel/infra/*`: Adapter zwischen Domain-Zustand und Renderer (z. B. `adapter.ts`, `event-bus.ts`).
+- `travel/TravelGuideOverview.txt`: Detaildokumentation des Travel-Modulpakets.
+- `CartographerOverview.txt`: High-Level-Dokumentation des gesamten Cartographer-Bereichs.
 
-### Styling & Build
-- `src/app/css.ts` liefert den konsolidierten `sm-cartographer`-Look (Stage, Header, Mode-Sidebars) sowie Travel-spezifische Controls. Galerie-Styles wurden entfernt; Modals oder optionale Komponenten bringen eigene CSS-Blöcke mit.
-- `manifest.json` definiert Plugin-ID/Version, `esbuild.config.mjs` + `tsconfig.json` stellen die Build-Pipeline für TypeScript sicher (`npm run build`).
+### src/apps/encounter
+- `view.ts`: Implementiert `EncounterView` (ItemView). Rendert eine einfache Encounter-Seite mit Titel und Platzhaltertext und
+  räumt beim Schließen das DOM auf.
 
-## Typische Nutzerflüsse
-1. Anwender erstellt über Ribbon/Command eine neue Karte → `promptCreateMap` sammelt den Namen (intern `NameInputModal` + `createHexMapFile`), legt Map + Tiles an und öffnet den Editor.
-2. Im Cartographer-Header lassen sich Karten via `promptMapSelection` öffnen, neu erstellen oder löschen (`ConfirmDeleteModal` + `deleteMapAndTiles`); die Stage zeigt sofort eine Vorschau oder Leerhinweise, falls keine Karte gewählt ist.
-3. Terrain-Anpassungen werden im Terrain-Editor vorgenommen, der via Core `setTerrains` aktualisiert und sofort im Renderer wirksam macht.
-4. Travel-Routen greifen auf dieselben Hex-Geometrie- und Rendering-Bausteine zurück, um Bewegungen über Karten abzubilden.
+### src/apps/library
+- `view.ts`: Zentrale Library-View mit Tab-Leiste (Terrains, Regionen, Kreaturen), Suchleiste, Ergebnisliste und Event-Delegation
+  an Bereichs-spezifische Controller.
+- `core/*`: Gemeinsame Logik für Library-Daten (Laden/Speichern der Sammeldateien, Parsing, Suche, Filter, Eventing).
+- `create-modal.ts`: Modal zum Anlegen von Terrains/Regionen mit Validierung und Ergebnis-Rückgabe an den View.
+- `create-spell-modal.ts`: Spezialisierter Dialog zum Erfassen von Zaubern innerhalb einer Kreatur.
+- `create/*`: Komponenten zum Erstellen/Bearbeiten von Library-Einträgen (z. B. Formularbaugruppen, Presets, Helpers).
+- `entry-presets.ts`: Vordefinierte Templates für Kreaturen-Einträge (z. B. Standardwerte, Kategorie-Listen).
+- `LibraryOverview.txt`: Struktur- und Verantwortlichkeitsdokument für den Library-Bereich.
 
-Dieses Dokument bietet den High-Level-Einstieg. Für Details zu einzelnen Layern verweisen die verlinkten Overview-Dateien auf Verantwortlichkeiten, APIs und Erweiterungspunkte.
+### src/core
+- `CoreOverview.txt`: Übersicht über Aufbau und Verantwortlichkeiten der Core-Schicht.
+- `options.ts`: Parser für Hex-Codeblöcke (`hex3x3`) und freie Optionen (Folder, Prefix, Radius).
+- `layout.ts`: Workspace-Helfer (`getCenterLeaf`, `getRightLeaf`) zur gezielten Steuerung der Obsidian-Leaves.
+- `hex-mapper/hex-map.ts`: Erzeugt Karten-Modelle und hexagonale Koordinatenstrukturen.
+- `hex-mapper/hex-geom.ts`: Mathematische Hilfen für Hex-Koordinaten (odd-r/axial, Nachbarn, Distanz, Ring-Iterationen).
+- `hex-mapper/camera.ts`: Verwaltet Map-Viewport, Zoom und Pan-Logik.
+- `hex-mapper/hex-render.ts`: Rendert Hex-Karten in SVG und synchronisiert Füllfarben/Labels.
+- `hex-mapper/hex-notes.ts`: Verwaltung der Hex-Tile-Dateien (Lesen/Schreiben, Legacy-Dateinamen, Markdown-Generierung).
+- `map-maker.ts`: Workflows zum Erstellen neuer Karten inklusive Initialisierung der Tile-Dateien.
+- `map-delete.ts`: Löscht Karten inklusive zugehöriger Tiles und räumt verwaiste Ordner auf.
+- `map-list.ts`: Listet verfügbare Karten, wählt erste Treffer aus Hex-Blocks und liefert Anzeige-Informationen.
+- `save.ts`: Gemeinsame Speicherdienste (debounced writes, Fehlerbehandlung).
+- `terrain.ts`: Verwaltung des Terrain-Katalogs im Speicher (Setzen, Auslesen, Utility-Funktionen).
+- `terrain-store.ts`: Datei-Persistenz für Terrains (Ensure/Create, Laden, Watcher, Broadcast an Listener).
+- `regions-store.ts`: Persistenzhelfer für Regionen-Dateien analog zu `terrain-store`.
+
+### src/ui
+- `UiOverview.txt`: Überblick über Struktur und Verantwortlichkeiten der UI-Bausteine.
+- `modals.ts`: Basis-Modals (`NameInputModal`, `MapSelectModal`, `ConfirmDeleteModal`) mit gemeinsamen Styling-Helfern.
+- `map-workflows.ts`: High-Level-Workflows für Kartenaktionen (Öffnen, Erstellen, Rendern) inklusive Error-Handling.
+- `map-manager.ts`: Steuerobjekt für `view-shell.ts` (koordiniert Open/Create/Delete-Buttons und File-Callbacks).
+- `map-header.ts`: Baut den Cartographer-Header (Titel, Moduswahl, Actions) und sendet Events an die Shell.
+- `confirm-delete.ts`: Spezifischer Bestätigungsdialog für Map-Löschungen mit Callback-Future.
+- `search-dropdown.ts`: Wiederverwendbare Dropdown-Suche für Library-Filter und andere Features.
