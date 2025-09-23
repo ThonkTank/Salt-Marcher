@@ -23,7 +23,6 @@ Der Core-Layer bündelt sämtliche fachlichen Services des Plugins, die unabhän
 | `camera.ts` | Fügt SVG-Pan/Zoom-Kontrollen mit Wheel-Gesten und mittlerer Maustaste hinzu. |
 | `hex-notes.ts` | Organisiert Tile-Dateien: liest Optionen, erzeugt Folder/Dateinamen, migriert Legacy-Strukturen, liest/schreibt Frontmatter + Body. Schreibt `smHexTile: true` ins Frontmatter. Bietet High-Level-APIs (`listTilesForMap`, `loadTile`, `saveTile`, `deleteTile`, `initTilesForNewMap`). |
 | `hex-render.ts` | Rendert Hex-Karten in ein SVG, färbt Tiles anhand `TERRAIN_COLORS`, verdrahtet Kamera und User-Interaction (Click-Dispatch, Brush-Drag). Gibt Handles (`setFill`, `ensurePolys`, `destroy`) zur Laufzeitsteuerung zurück. |
-| `hex-map.ts` | Aggregiert Exporte (`parseOptions`, `renderHexMap`, `getAllMapFiles`, `getFirstHexBlock`) als Einstiegsmodul für Renderer/Feature-Layer. |
 
 ## Lebenszyklus & Zusammenspiel
 

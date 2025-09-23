@@ -88,7 +88,6 @@ Salt-Marcher/
 - `CoreOverview.txt`: Übersicht über Aufbau und Verantwortlichkeiten der Core-Schicht.
 - `options.ts`: Parser für Hex-Codeblöcke (`hex3x3`) und freie Optionen (Folder, Prefix, Radius).
 - `layout.ts`: Workspace-Helfer (`getCenterLeaf`, `getRightLeaf`) zur gezielten Steuerung der Obsidian-Leaves.
-- `hex-mapper/hex-map.ts`: Erzeugt Karten-Modelle und hexagonale Koordinatenstrukturen.
 - `hex-mapper/hex-geom.ts`: Mathematische Hilfen für Hex-Koordinaten (odd-r/axial, Nachbarn, Distanz, Ring-Iterationen).
 - `hex-mapper/camera.ts`: Verwaltet Map-Viewport, Zoom und Pan-Logik.
 - `hex-mapper/hex-render.ts`: Rendert Hex-Karten in SVG und synchronisiert Füllfarben/Labels.
