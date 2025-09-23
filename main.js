@@ -3882,6 +3882,523 @@ async function createSpellFile(app, d) {
   return file;
 }
 
+// src/apps/library/create/section-core-stats.ts
+function mountCoreStatsSection(parent, data) {
+  const root = parent.createDiv();
+  const idSetting = new window.Setting(root).setName("Name");
+  idSetting.addText((t) => {
+    t.setPlaceholder("Aboleth").setValue(data.name || "").onChange((v) => data.name = v.trim());
+    t.inputEl.style.width = "30ch";
+  });
+  const sizeSetting = new window.Setting(root).setName("Gr\xF6\xDFe");
+  sizeSetting.addDropdown((dd) => {
+    dd.addOption("", "");
+    ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"].forEach((s) => dd.addOption(s, s));
+    dd.onChange((v) => data.size = v);
+    try {
+      enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
+    } catch {
+    }
+  });
+  const typeSetting = new window.Setting(root).setName("Typ");
+  typeSetting.addDropdown((dd) => {
+    dd.addOption("", "");
+    ["Aberration", "Beast", "Celestial", "Construct", "Dragon", "Elemental", "Fey", "Fiend", "Giant", "Humanoid", "Monstrosity", "Ooze", "Plant", "Undead"].forEach((s) => dd.addOption(s, s));
+    dd.onChange((v) => data.type = v);
+    try {
+      enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
+    } catch {
+    }
+  });
+  const alignSetting = new window.Setting(root).setName("Gesinnung");
+  alignSetting.addDropdown((dd) => {
+    dd.addOption("", "");
+    ["Lawful", "Neutral", "Chaotic"].forEach((s) => dd.addOption(s, s));
+    dd.onChange((v) => data.alignmentLawChaos = v);
+    try {
+      const el = dd.selectEl;
+      el.dataset.sdOpenAll = "0";
+      enhanceSelectToSearch(el, "Such-dropdown\u2026");
+    } catch {
+    }
+  });
+  alignSetting.addDropdown((dd) => {
+    dd.addOption("", "");
+    ["Good", "Neutral", "Evil"].forEach((s) => dd.addOption(s, s));
+    dd.onChange((v) => data.alignmentGoodEvil = v);
+    try {
+      const el = dd.selectEl;
+      el.dataset.sdOpenAll = "0";
+      enhanceSelectToSearch(el, "Such-dropdown\u2026");
+    } catch {
+    }
+  });
+  const coreSetting = new window.Setting(root).setName("Kernwerte");
+  const row = coreSetting.controlEl.createDiv({ cls: "sm-cc-inline-row" });
+  const mk = (label, widthCh, placeholder, key) => {
+    row.createEl("label", { text: label });
+    const inp = row.createEl("input", { attr: { type: "text", placeholder, "aria-label": label } });
+    inp.style.width = `${widthCh}ch`;
+    inp.value = data[key] || "";
+    inp.addEventListener("input", () => data[key] = inp.value.trim());
+  };
+  mk("AC", 18, "17", "ac");
+  mk("Init", 6, "+7", "initiative");
+  mk("HP", 8, "150", "hp");
+  mk("HD", 14, "20d10 + 40", "hitDice");
+  mk("PB", 5, "+4", "pb");
+  mk("CR", 6, "10", "cr");
+  mk("XP", 8, "5900", "xp");
+  const abilitySection = root.createDiv({ cls: "sm-cc-skills" });
+  abilitySection.createEl("h4", { text: "Stats" });
+  const statsTbl = abilitySection.createDiv({ cls: "sm-cc-table sm-cc-stats-table" });
+  const header = statsTbl.createDiv({ cls: "sm-cc-row sm-cc-header" });
+  ;
+  ["Name", "Wert", "Mod", "Save", "Save Mod"].forEach((h) => header.createDiv({ cls: "sm-cc-cell", text: h }));
+  const parseIntSafe = (v) => {
+    const m = String(v ?? "").match(/-?\d+/);
+    return m ? parseInt(m[0], 10) : NaN;
+  };
+  const abilityMod2 = (score) => {
+    const n = parseIntSafe(score);
+    if (Number.isNaN(n)) return 0;
+    return Math.floor((n - 10) / 2);
+  };
+  const fmt = (n) => (n >= 0 ? "+" : "") + n;
+  const abDefs = [
+    { key: "str", label: "STR" },
+    { key: "dex", label: "DEX" },
+    { key: "con", label: "CON" },
+    { key: "int", label: "INT" },
+    { key: "wis", label: "WIS" },
+    { key: "cha", label: "CHA" }
+  ];
+  const abilityElems = /* @__PURE__ */ new Map();
+  const ensureSets = () => {
+    if (!data.saveProf) data.saveProf = {};
+    if (!data.skillsProf) data.skillsProf = [];
+    if (!data.skillsExpertise) data.skillsExpertise = [];
+  };
+  for (const s of abDefs) {
+    const rowEl = statsTbl.createDiv({ cls: "sm-cc-row" });
+    rowEl.createDiv({ cls: "sm-cc-cell", text: s.label });
+    const scoreCell = rowEl.createDiv({ cls: "sm-cc-cell sm-inline-number" });
+    const score = scoreCell.createEl("input", { attr: { type: "number", placeholder: "10", min: "0", step: "1" } });
+    const dec = scoreCell.createEl("button", { text: "\u2212", cls: "btn-compact" });
+    const inc = scoreCell.createEl("button", { text: "+", cls: "btn-compact" });
+    score.value = data[s.key] || "";
+    const step = (d) => {
+      const cur = parseInt(score.value, 10) || 0;
+      const next = Math.max(0, cur + d);
+      score.value = String(next);
+      data[s.key] = score.value.trim();
+      updateMods();
+    };
+    dec.onclick = () => step(-1);
+    inc.onclick = () => step(1);
+    score.addEventListener("input", () => {
+      data[s.key] = score.value.trim();
+      updateMods();
+    });
+    const modOut = rowEl.createDiv({ cls: "sm-cc-cell", text: "+0" });
+    const saveCb = rowEl.createEl("input", { cls: "sm-cc-cell", attr: { type: "checkbox" } });
+    const saveOut = rowEl.createDiv({ cls: "sm-cc-cell", text: "+0" });
+    ensureSets();
+    saveCb.checked = !!data.saveProf[s.key];
+    saveCb.addEventListener("change", () => {
+      data.saveProf[s.key] = saveCb.checked;
+      updateMods();
+    });
+    abilityElems.set(s.key, { score, mod: modOut, save: saveCb, saveMod: saveOut });
+  }
+  const skillsSection = root.createDiv({ cls: "sm-cc-skills" });
+  skillsSection.createEl("h4", { text: "Fertigkeiten" });
+  const skillsTbl = skillsSection.createDiv({ cls: "sm-cc-table sm-cc-skills-table" });
+  const skillsHeader = skillsTbl.createDiv({ cls: "sm-cc-row sm-cc-header" });
+  ;
+  ["Name", "Prof", "Expertise", "Mod"].forEach((h) => skillsHeader.createDiv({ cls: "sm-cc-cell", text: h }));
+  const skills = [
+    ["Athletics", "str"],
+    ["Acrobatics", "dex"],
+    ["Sleight of Hand", "dex"],
+    ["Stealth", "dex"],
+    ["Arcana", "int"],
+    ["History", "int"],
+    ["Investigation", "int"],
+    ["Nature", "int"],
+    ["Religion", "int"],
+    ["Animal Handling", "wis"],
+    ["Insight", "wis"],
+    ["Medicine", "wis"],
+    ["Perception", "wis"],
+    ["Survival", "wis"],
+    ["Deception", "cha"],
+    ["Intimidation", "cha"],
+    ["Performance", "cha"],
+    ["Persuasion", "cha"]
+  ];
+  const skillElems = [];
+  for (const [name, abil] of skills) {
+    const rowEl = skillsTbl.createDiv({ cls: "sm-cc-row" });
+    rowEl.createDiv({ cls: "sm-cc-cell", text: name });
+    const cbP = rowEl.createEl("input", { cls: "sm-cc-cell", attr: { type: "checkbox" } });
+    const cbE = rowEl.createEl("input", { cls: "sm-cc-cell", attr: { type: "checkbox" } });
+    const out = rowEl.createDiv({ cls: "sm-cc-cell", text: "+0" });
+    ensureSets();
+    cbP.checked = !!data.skillsProf?.includes(name);
+    cbE.checked = !!data.skillsExpertise?.includes(name);
+    cbP.addEventListener("change", () => {
+      ensureSets();
+      const arr = data.skillsProf;
+      if (cbP.checked && !arr.includes(name)) arr.push(name);
+      else if (!cbP.checked) data.skillsProf = arr.filter((s) => s !== name);
+      updateMods();
+    });
+    cbE.addEventListener("change", () => {
+      ensureSets();
+      const arr = data.skillsExpertise;
+      if (cbE.checked && !arr.includes(name)) arr.push(name);
+      else if (!cbE.checked) data.skillsExpertise = arr.filter((s) => s !== name);
+      updateMods();
+    });
+    skillElems.push({ ability: abil, prof: cbP, exp: cbE, out });
+  }
+  const updateMods = () => {
+    const pb = parseIntSafe(data.pb) || 0;
+    for (const [key, refs] of abilityElems) {
+      const mod = abilityMod2(data[key]);
+      refs.mod.textContent = fmt(mod);
+      const saveBonus = data.saveProf?.[key] ? pb : 0;
+      refs.saveMod.textContent = fmt(mod + saveBonus);
+    }
+    for (const sk of skillElems) {
+      const mod = abilityMod2(data[sk.ability]);
+      const bonus = sk.exp.checked ? pb * 2 : sk.prof.checked ? pb : 0;
+      sk.out.textContent = fmt(mod + bonus);
+    }
+  };
+  updateMods();
+  const makeTokenEditor = (host, title, items, onAdd, onRemove) => {
+    new window.Setting(host).setName(title).addText((t) => {
+      t.setPlaceholder("Begriff eingeben\u2026");
+      const input = t.inputEl;
+      t.inputEl.style.minWidth = "260px";
+      t.inputEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          const v = input.value.trim();
+          if (v) {
+            onAdd(v);
+            input.value = "";
+            renderChips();
+          }
+        }
+      });
+    }).addButton((b) => b.setButtonText("+").onClick(() => {
+      const inp = b.buttonEl.parentElement?.querySelector("input");
+      const v = inp?.value?.trim();
+      if (v) {
+        onAdd(v);
+        inp.value = "";
+        renderChips();
+      }
+    }));
+    const chips = host.createDiv({ cls: "sm-cc-chips" });
+    const renderChips = () => {
+      chips.empty();
+      items().forEach((txt, i) => {
+        const chip = chips.createDiv({ cls: "sm-cc-chip" });
+        chip.createSpan({ text: txt });
+        const x = chip.createEl("button", { text: "\xD7" });
+        x.onclick = () => {
+          onRemove(i);
+          renderChips();
+        };
+      });
+    };
+    renderChips();
+  };
+  if (!data.sensesList) data.sensesList = [];
+  if (!data.languagesList) data.languagesList = [];
+  makeTokenEditor(root, "Sinne", () => data.sensesList, (v) => data.sensesList.push(v), (i) => data.sensesList.splice(i, 1));
+  makeTokenEditor(root, "Sprachen", () => data.languagesList, (v) => data.languagesList.push(v), (i) => data.languagesList.splice(i, 1));
+}
+
+// src/apps/library/create/section-entries.ts
+function mountEntriesSection(parent, data) {
+  if (!data.entries) data.entries = [];
+  const wrap = parent.createDiv({ cls: "setting-item sm-cc-entries" });
+  wrap.createDiv({ cls: "setting-item-info", text: "Eintr\xE4ge (Traits, Aktionen, \u2026)" });
+  const ctl = wrap.createDiv({ cls: "setting-item-control" });
+  const addBar = ctl.createDiv({ cls: "sm-cc-searchbar" });
+  const catSel = addBar.createEl("select");
+  const catMap = [["trait", "Eigenschaft"], ["action", "Aktion"], ["bonus", "Bonusaktion"], ["reaction", "Reaktion"], ["legendary", "Legend\xE4re Aktion"]];
+  for (const [v, l] of catMap) {
+    const o = catSel.createEl("option", { text: l });
+    o.value = v;
+  }
+  try {
+    enhanceSelectToSearch(catSel, "Such-dropdown\u2026");
+  } catch {
+  }
+  const addEntryBtn = addBar.createEl("button", { text: "+ Eintrag" });
+  const host = ctl.createDiv();
+  let focusIdx = null;
+  const render = () => {
+    host.empty();
+    data.entries.forEach((e, i) => {
+      const box = host.createDiv({ cls: "sm-cc-skill-group" });
+      const head = box.createDiv({ cls: "sm-cc-skill sm-cc-entry-head" });
+      const c = head.createEl("select");
+      for (const [v, l] of catMap) {
+        const o = c.createEl("option", { text: l });
+        o.value = v;
+        if (v === e.category) o.selected = true;
+      }
+      c.onchange = () => e.category = c.value;
+      try {
+        enhanceSelectToSearch(c, "Such-dropdown\u2026");
+      } catch {
+      }
+      head.createEl("label", { text: "Name" });
+      const name = head.createEl("input", { cls: "sm-cc-entry-name", attr: { type: "text", placeholder: "Name (z. B. Multiattack)", "aria-label": "Name" } });
+      name.value = e.name || "";
+      name.oninput = () => e.name = name.value.trim();
+      name.style.width = "26ch";
+      if (focusIdx === i) {
+        setTimeout(() => name.focus(), 0);
+        focusIdx = null;
+      }
+      const del = head.createEl("button", { text: "\u{1F5D1}" });
+      del.onclick = () => {
+        data.entries.splice(i, 1);
+        render();
+      };
+      const grid = box.createDiv({ cls: "sm-cc-grid sm-cc-entry-grid" });
+      grid.createEl("label", { text: "Art" });
+      const kind = grid.createEl("input", { attr: { type: "text", placeholder: "Melee/Ranged \u2026", "aria-label": "Art" } });
+      kind.value = e.kind || "";
+      kind.oninput = () => e.kind = kind.value.trim() || void 0;
+      kind.style.width = "24ch";
+      grid.createEl("label", { text: "Reichweite" });
+      const rng = grid.createEl("input", { attr: { type: "text", placeholder: "reach 5 ft. / range 30 ft.", "aria-label": "Reichweite" } });
+      rng.value = e.range || "";
+      rng.oninput = () => e.range = rng.value.trim() || void 0;
+      rng.style.width = "30ch";
+      grid.createEl("label", { text: "Ziel" });
+      const tgt = grid.createEl("input", { attr: { type: "text", placeholder: "one target", "aria-label": "Ziel" } });
+      tgt.value = e.target || "";
+      tgt.oninput = () => e.target = tgt.value.trim() || void 0;
+      tgt.style.width = "16ch";
+      const parseIntSafe = (v) => {
+        const m = String(v ?? "").match(/-?\d+/);
+        return m ? parseInt(m[0], 10) : NaN;
+      };
+      const abilityMod2 = (score) => {
+        const n = parseIntSafe(score);
+        if (Number.isNaN(n)) return 0;
+        return Math.floor((n - 10) / 2);
+      };
+      const fmt = (n) => (n >= 0 ? "+" : "") + n;
+      const autoRow = box.createDiv({ cls: "sm-cc-auto" });
+      const hitGroup = autoRow.createDiv({ cls: "sm-auto-group" });
+      hitGroup.createSpan({ text: "To hit:" });
+      const toHitAbil = hitGroup.createEl("select");
+      ["", "best_of_str_dex", "str", "dex", "con", "int", "wis", "cha"].forEach((v) => {
+        const o = toHitAbil.createEl("option", { text: v || "(von)" });
+        o.value = v;
+      });
+      try {
+        enhanceSelectToSearch(toHitAbil, "Such-dropdown\u2026");
+      } catch {
+      }
+      const toHitProf = hitGroup.createEl("input", { attr: { type: "checkbox", id: `hit-prof-${i}` } });
+      hitGroup.createEl("label", { text: "Prof", attr: { for: `hit-prof-${i}` } });
+      const hit = hitGroup.createEl("input", { cls: "sm-auto-tohit", attr: { type: "text", placeholder: "+7", "aria-label": "To hit" } });
+      hit.style.width = "6ch";
+      hit.value = e.to_hit || "";
+      hit.addEventListener("input", () => e.to_hit = hit.value.trim() || void 0);
+      const dmgGroup = autoRow.createDiv({ cls: "sm-auto-group" });
+      dmgGroup.createSpan({ text: "Damage:" });
+      const dmgDice = dmgGroup.createEl("input", { attr: { type: "text", placeholder: "1d8", "aria-label": "W\xFCrfel" } });
+      dmgDice.style.width = "10ch";
+      const dmgAbil = dmgGroup.createEl("select");
+      ["", "best_of_str_dex", "str", "dex", "con", "int", "wis", "cha"].forEach((v) => {
+        const o = dmgAbil.createEl("option", { text: v || "(von)" });
+        o.value = v;
+      });
+      try {
+        enhanceSelectToSearch(dmgAbil, "Such-dropdown\u2026");
+      } catch {
+      }
+      const dmgBonus = dmgGroup.createEl("input", { attr: { type: "text", placeholder: "piercing / slashing \u2026", "aria-label": "Art" } });
+      dmgBonus.style.width = "12ch";
+      const dmg = dmgGroup.createEl("input", { cls: "sm-auto-dmg", attr: { type: "text", placeholder: "1d8 +3 piercing", "aria-label": "Schaden" } });
+      dmg.style.width = "20ch";
+      dmg.value = e.damage || "";
+      dmg.addEventListener("input", () => e.damage = dmg.value.trim() || void 0);
+      const applyAuto = () => {
+        const pb = parseIntSafe(data.pb) || 0;
+        if (e.to_hit_from) {
+          const abil = e.to_hit_from.ability;
+          const abilMod = abil === "best_of_str_dex" ? Math.max(abilityMod2(data.str), abilityMod2(data.dex)) : abilityMod2(data[abil]);
+          const total = abilMod + (e.to_hit_from.proficient ? pb : 0);
+          e.to_hit = fmt(total);
+          hit.value = e.to_hit;
+        }
+        if (e.damage_from) {
+          const abil = e.damage_from.ability;
+          const abilMod = abil ? abil === "best_of_str_dex" ? Math.max(abilityMod2(data.str), abilityMod2(data.dex)) : abilityMod2(data[abil]) : 0;
+          const base = e.damage_from.dice;
+          const tail = (abilMod ? ` ${fmt(abilMod)}` : "") + (e.damage_from.bonus ? ` ${e.damage_from.bonus}` : "");
+          e.damage = `${base}${tail}`.trim();
+          dmg.value = e.damage;
+        }
+      };
+      if (e.to_hit_from) {
+        toHitAbil.value = e.to_hit_from.ability;
+        toHitProf.checked = !!e.to_hit_from.proficient;
+      }
+      if (e.damage_from) {
+        dmgDice.value = e.damage_from.dice;
+        dmgAbil.value = e.damage_from.ability || "";
+        dmgBonus.value = e.damage_from.bonus || "";
+      }
+      toHitAbil.onchange = () => {
+        e.to_hit_from = { ability: toHitAbil.value, proficient: toHitProf.checked };
+        applyAuto();
+      };
+      toHitProf.onchange = () => {
+        e.to_hit_from = { ability: toHitAbil.value, proficient: toHitProf.checked };
+        applyAuto();
+      };
+      dmgDice.oninput = () => {
+        e.damage_from = { dice: dmgDice.value.trim(), ability: dmgAbil.value || void 0, bonus: dmgBonus.value.trim() || void 0 };
+        applyAuto();
+      };
+      dmgAbil.onchange = () => {
+        e.damage_from = { dice: dmgDice.value.trim(), ability: dmgAbil.value || void 0, bonus: dmgBonus.value.trim() || void 0 };
+        applyAuto();
+      };
+      dmgBonus.oninput = () => {
+        e.damage_from = { dice: dmgDice.value.trim(), ability: dmgAbil.value || void 0, bonus: dmgBonus.value.trim() || void 0 };
+        applyAuto();
+      };
+      const misc = box.createDiv({ cls: "sm-cc-grid sm-cc-entry-grid" });
+      misc.createEl("label", { text: "Save" });
+      const saveAb = misc.createEl("select");
+      ["", "STR", "DEX", "CON", "INT", "WIS", "CHA"].forEach((x) => {
+        const o = saveAb.createEl("option", { text: x || "(kein)" });
+        o.value = x;
+        if (x === (e.save_ability || "")) o.selected = true;
+      });
+      saveAb.onchange = () => e.save_ability = saveAb.value || void 0;
+      misc.createEl("label", { text: "DC" });
+      const saveDc = misc.createEl("input", { attr: { type: "number", placeholder: "DC", "aria-label": "DC" } });
+      saveDc.value = e.save_dc ? String(e.save_dc) : "";
+      saveDc.oninput = () => e.save_dc = saveDc.value ? parseInt(saveDc.value, 10) : void 0;
+      saveDc.style.width = "4ch";
+      misc.createEl("label", { text: "Save-Effekt" });
+      const saveFx = misc.createEl("input", { attr: { type: "text", placeholder: "half on save \u2026", "aria-label": "Save-Effekt" } });
+      saveFx.value = e.save_effect || "";
+      saveFx.oninput = () => e.save_effect = saveFx.value.trim() || void 0;
+      saveFx.style.width = "18ch";
+      misc.createEl("label", { text: "Recharge" });
+      const rech = misc.createEl("input", { attr: { type: "text", placeholder: "Recharge 5\u20136 / 1/day" } });
+      rech.value = e.recharge || "";
+      rech.oninput = () => e.recharge = rech.value.trim() || void 0;
+      box.createEl("label", { text: "Details" });
+      const ta = box.createEl("textarea", { cls: "sm-cc-entry-text", attr: { placeholder: "Details (Markdown)" } });
+      ta.value = e.text || "";
+      ta.addEventListener("input", () => e.text = ta.value);
+    });
+  };
+  addEntryBtn.onclick = () => {
+    data.entries.unshift({ category: catSel.value, name: "" });
+    focusIdx = 0;
+    render();
+  };
+  render();
+}
+
+// src/apps/library/create/section-spells-known.ts
+function mountSpellsKnownSection(parent, data, availableSpells) {
+  if (!data.spellsKnown) data.spellsKnown = [];
+  const wrap = parent.createDiv({ cls: "setting-item sm-cc-spells" });
+  wrap.createDiv({ cls: "setting-item-info", text: "Bekannte Zauber" });
+  const ctl = wrap.createDiv({ cls: "setting-item-control" });
+  const row1 = ctl.createDiv({ cls: "sm-cc-searchbar" });
+  row1.createEl("label", { text: "Zauber" });
+  const spellBox = row1.createDiv({ cls: "sm-preset-box", attr: { style: "flex:1 1 auto; min-width: 180px;" } });
+  const spellInput = spellBox.createEl("input", { cls: "sm-preset-input", attr: { type: "text", placeholder: "Zauber suchen\u2026" } });
+  const spellMenu = spellBox.createDiv({ cls: "sm-preset-menu" });
+  let chosenSpell = "";
+  const renderSpellMenu = () => {
+    const q = (spellInput.value || "").toLowerCase();
+    spellMenu.empty();
+    const matches = (availableSpells || []).filter((n) => !q || n.toLowerCase().includes(q)).slice(0, 24);
+    if (matches.length === 0) {
+      spellBox.removeClass("is-open");
+      return;
+    }
+    for (const name of matches) {
+      const it = spellMenu.createDiv({ cls: "sm-preset-item", text: name });
+      it.onclick = () => {
+        chosenSpell = name;
+        spellInput.value = name;
+        spellBox.removeClass("is-open");
+      };
+    }
+    spellBox.addClass("is-open");
+  };
+  spellInput.addEventListener("focus", renderSpellMenu);
+  spellInput.addEventListener("input", renderSpellMenu);
+  spellInput.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape") {
+      spellInput.value = "";
+      chosenSpell = "";
+      spellBox.removeClass("is-open");
+    }
+  });
+  spellInput.addEventListener("blur", () => {
+    setTimeout(() => spellBox.removeClass("is-open"), 120);
+  });
+  row1.createEl("label", { text: "Grad" });
+  const lvl = row1.createEl("input", { attr: { type: "number", min: "0", max: "9", placeholder: "Grad", "aria-label": "Grad" } });
+  lvl.style.width = "4ch";
+  const row2 = ctl.createDiv({ cls: "sm-cc-searchbar" });
+  row2.createEl("label", { text: "Nutzung" });
+  const uses = row2.createEl("input", { attr: { type: "text", placeholder: "at will / 3/day / slots", "aria-label": "Nutzung" } });
+  uses.style.width = "14ch";
+  row2.createEl("label", { text: "Notizen" });
+  const notes = row2.createEl("input", { attr: { type: "text", placeholder: "Notizen", "aria-label": "Notizen" } });
+  notes.style.width = "16ch";
+  const addSpell = row2.createEl("button", { text: "+ Hinzuf\xFCgen" });
+  addSpell.onclick = () => {
+    let name = chosenSpell?.trim();
+    if (!name) name = (spellInput.value || "").trim();
+    if (!name) return;
+    data.spellsKnown.push({ name, level: lvl.value ? parseInt(lvl.value, 10) : void 0, uses: uses.value.trim() || void 0, notes: notes.value.trim() || void 0 });
+    spellInput.value = "";
+    chosenSpell = "";
+    lvl.value = uses.value = notes.value = "";
+    renderList();
+  };
+  const list = ctl.createDiv({ cls: "sm-cc-list" });
+  const renderList = () => {
+    list.empty();
+    data.spellsKnown.forEach((s, i) => {
+      const item = list.createDiv({ cls: "sm-cc-item" });
+      item.createDiv({ cls: "sm-cc-item__name", text: `${s.name}${s.level != null ? ` (Lvl ${s.level})` : ""}${s.uses ? ` \u2013 ${s.uses}` : ""}` });
+      const rm = item.createEl("button", { text: "\xD7" });
+      rm.onclick = () => {
+        data.spellsKnown.splice(i, 1);
+        renderList();
+      };
+    });
+  };
+  renderList();
+}
+
 // src/apps/library/create-modal.ts
 var CreateCreatureModal = class extends import_obsidian15.Modal {
   constructor(app, presetName, onSubmit) {
@@ -3903,116 +4420,12 @@ var CreateCreatureModal = class extends import_obsidian15.Modal {
     contentEl.createEl("h3", { text: "Neuen Statblock erstellen" });
     void (async () => {
       try {
-        this.availableSpells = (await listSpellFiles(this.app)).map((f) => f.basename).sort((a, b) => a.localeCompare(b));
+        const spells = (await listSpellFiles(this.app)).map((f) => f.basename).sort((a, b) => a.localeCompare(b));
+        this.availableSpells.splice(0, this.availableSpells.length, ...spells);
       } catch {
       }
     })();
-    new import_obsidian15.Setting(contentEl).setName("Name").addText((t) => {
-      t.setPlaceholder("Aboleth").setValue(this.data.name).onChange((v) => this.data.name = v.trim());
-      t.inputEl.style.width = "30ch";
-    });
-    new import_obsidian15.Setting(contentEl).setName("Gr\xF6\xDFe").addDropdown((dd) => {
-      dd.addOption("", "");
-      const sizes = ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"];
-      for (const s of sizes) dd.addOption(s, s);
-      dd.onChange((v) => this.data.size = v);
-      try {
-        enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
-      } catch {
-      }
-    });
-    new import_obsidian15.Setting(contentEl).setName("Typ").addDropdown((dd) => {
-      dd.addOption("", "");
-      const types2 = [
-        "Aberration",
-        "Beast",
-        "Celestial",
-        "Construct",
-        "Dragon",
-        "Elemental",
-        "Fey",
-        "Fiend",
-        "Giant",
-        "Humanoid",
-        "Monstrosity",
-        "Ooze",
-        "Plant",
-        "Undead"
-      ];
-      for (const t of types2) dd.addOption(t, t);
-      dd.onChange((v) => this.data.type = v);
-      try {
-        enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
-      } catch {
-      }
-    });
-    const align = new import_obsidian15.Setting(contentEl).setName("Gesinnung");
-    align.addDropdown((dd) => {
-      dd.addOption("", "");
-      dd.addOption("Lawful", "Lawful");
-      dd.addOption("Neutral", "Neutral");
-      dd.addOption("Chaotic", "Chaotic");
-      dd.onChange((v) => this.data.alignmentLawChaos = v);
-      try {
-        const el = dd.selectEl;
-        el.dataset.sdOpenAll = "0";
-        enhanceSelectToSearch(el, "Such-dropdown\u2026");
-      } catch {
-      }
-    });
-    align.addDropdown((dd) => {
-      dd.addOption("", "");
-      dd.addOption("Good", "Good");
-      dd.addOption("Neutral", "Neutral");
-      dd.addOption("Evil", "Evil");
-      dd.onChange((v) => this.data.alignmentGoodEvil = v);
-      try {
-        const el = dd.selectEl;
-        el.dataset.sdOpenAll = "0";
-        enhanceSelectToSearch(el, "Such-dropdown\u2026");
-      } catch {
-      }
-    });
-    const coreStats = new import_obsidian15.Setting(contentEl).setName("Kernwerte");
-    const coreRow = coreStats.controlEl.createDiv({ cls: "sm-cc-inline-row" });
-    coreRow.createEl("label", { text: "AC" });
-    const inputAc = coreRow.createEl("input", { attr: { type: "text", placeholder: "17", "aria-label": "AC" } });
-    inputAc.style.width = "18ch";
-    inputAc.value = this.data.ac || "";
-    inputAc.addEventListener("input", () => this.data.ac = inputAc.value.trim());
-    coreRow.createEl("label", { text: "Init" });
-    const inputInit = coreRow.createEl("input", { attr: { type: "text", placeholder: "+7", "aria-label": "Initiative" } });
-    inputInit.style.width = "6ch";
-    inputInit.value = this.data.initiative || "";
-    inputInit.addEventListener("input", () => this.data.initiative = inputInit.value.trim());
-    coreRow.createEl("label", { text: "HP" });
-    const inputHp = coreRow.createEl("input", { attr: { type: "text", placeholder: "150", "aria-label": "HP" } });
-    inputHp.style.width = "8ch";
-    inputHp.value = this.data.hp || "";
-    inputHp.addEventListener("input", () => this.data.hp = inputHp.value.trim());
-    coreRow.createEl("label", { text: "HD" });
-    const inputHd = coreRow.createEl("input", { attr: { type: "text", placeholder: "20d10 + 40", "aria-label": "Hit Dice" } });
-    inputHd.style.width = "14ch";
-    inputHd.value = this.data.hitDice || "";
-    inputHd.addEventListener("input", () => this.data.hitDice = inputHd.value.trim());
-    coreRow.createEl("label", { text: "PB" });
-    const inputPb = coreRow.createEl("input", { attr: { type: "text", placeholder: "+4", "aria-label": "Proficiency Bonus" } });
-    inputPb.style.width = "5ch";
-    inputPb.value = this.data.pb || "";
-    inputPb.addEventListener("input", () => {
-      this.data.pb = inputPb.value.trim();
-      updateModifiers();
-    });
-    coreRow.createEl("label", { text: "CR" });
-    const inputCr = coreRow.createEl("input", { attr: { type: "text", placeholder: "10", "aria-label": "Challenge Rating" } });
-    inputCr.style.width = "6ch";
-    inputCr.value = this.data.cr || "";
-    inputCr.addEventListener("input", () => this.data.cr = inputCr.value.trim());
-    coreRow.createEl("label", { text: "XP" });
-    const inputXp = coreRow.createEl("input", { attr: { type: "text", placeholder: "5900", "aria-label": "XP" } });
-    inputXp.style.width = "8ch";
-    inputXp.value = this.data.xp || "";
-    inputXp.addEventListener("input", () => this.data.xp = inputXp.value.trim());
+    mountCoreStatsSection(contentEl, this.data);
     if (!this.data.speedList) this.data.speedList = [];
     const speedWrap = contentEl.createDiv({ cls: "setting-item" });
     speedWrap.createDiv({ cls: "setting-item-info", text: "Bewegung" });
@@ -4079,389 +4492,8 @@ var CreateCreatureModal = class extends import_obsidian15.Modal {
       hoverCb.checked = false;
       renderSpeeds();
     };
-    const abilityElems = /* @__PURE__ */ new Map();
-    const skillElems = [];
-    const parseIntSafe = (v) => {
-      const m = String(v ?? "").match(/-?\d+/);
-      return m ? parseInt(m[0], 10) : NaN;
-    };
-    const abilityMod2 = (score) => {
-      const n = parseIntSafe(score);
-      if (Number.isNaN(n)) return 0;
-      return Math.floor((n - 10) / 2);
-    };
-    const getPB = () => {
-      const n = parseIntSafe(this.data.pb);
-      return Number.isNaN(n) ? 0 : n;
-    };
-    const fmt = (n) => (n >= 0 ? "+" : "") + n;
-    const updateModifiers = () => {
-      const pb = getPB();
-      for (const [key, els] of abilityElems) {
-        const mod = abilityMod2(els.score.value || this.data[key]);
-        els.mod.textContent = `${fmt(mod)}`;
-        const saveProf = els.save.checked;
-        if (!this.data.saveProf) this.data.saveProf = {};
-        this.data.saveProf[key] = saveProf;
-        const saveVal = mod + (saveProf ? pb : 0);
-        els.saveMod.textContent = `${fmt(saveVal)}`;
-      }
-      for (const sk of skillElems) {
-        const mod = abilityMod2(this.data[sk.ability]);
-        const bonus = sk.exp.checked ? pb * 2 : sk.prof.checked ? pb : 0;
-        sk.out.textContent = fmt(mod + bonus);
-      }
-    };
-    const ensureSets = () => {
-      if (!this.data.skillsProf) this.data.skillsProf = [];
-      if (!this.data.skillsExpertise) this.data.skillsExpertise = [];
-      if (!this.data.saveProf) this.data.saveProf = {};
-    };
-    const statsSection = contentEl.createDiv({ cls: "sm-cc-skills" });
-    statsSection.createEl("h4", { text: "Stats" });
-    const statsTbl = statsSection.createDiv({ cls: "sm-cc-table sm-cc-stats-table" });
-    const statsHeader = statsTbl.createDiv({ cls: "sm-cc-row sm-cc-header" });
-    ;
-    ["Name", "Wert", "Mod", "Save", "Save Mod"].forEach((h) => statsHeader.createDiv({ cls: "sm-cc-cell", text: h }));
-    const statDefs = [
-      { key: "str", label: "STR" },
-      { key: "dex", label: "DEX" },
-      { key: "con", label: "CON" },
-      { key: "int", label: "INT" },
-      { key: "wis", label: "WIS" },
-      { key: "cha", label: "CHA" }
-    ];
-    for (const s of statDefs) {
-      const row = statsTbl.createDiv({ cls: "sm-cc-row" });
-      row.createDiv({ cls: "sm-cc-cell", text: s.label });
-      const scoreCell = row.createDiv({ cls: "sm-cc-cell sm-inline-number" });
-      const score = scoreCell.createEl("input", { attr: { type: "number", placeholder: "10", min: "0", step: "1" } });
-      const scoreDec = scoreCell.createEl("button", { text: "\u2212", cls: "btn-compact" });
-      const scoreInc = scoreCell.createEl("button", { text: "+", cls: "btn-compact" });
-      score.value = this.data[s.key] || "";
-      score.addEventListener("input", () => {
-        this.data[s.key] = score.value.trim();
-        updateModifiers();
-      });
-      const step1 = (dir) => {
-        const cur = parseInt(score.value, 10) || 0;
-        const next = Math.max(0, cur + 1 * dir);
-        score.value = String(next);
-        this.data[s.key] = score.value.trim();
-        updateModifiers();
-      };
-      scoreDec.onclick = () => step1(-1);
-      scoreInc.onclick = () => step1(1);
-      const modOut = row.createDiv({ cls: "sm-cc-cell", text: "+0" });
-      const saveCb = row.createEl("input", { cls: "sm-cc-cell", attr: { type: "checkbox" } });
-      const saveOut = row.createDiv({ cls: "sm-cc-cell", text: "+0" });
-      ensureSets();
-      saveCb.checked = !!this.data.saveProf[s.key];
-      saveCb.addEventListener("change", () => {
-        this.data.saveProf[s.key] = saveCb.checked;
-        updateModifiers();
-      });
-      abilityElems.set(s.key, { score, mod: modOut, save: saveCb, saveMod: saveOut });
-    }
-    const skillsSection = contentEl.createDiv({ cls: "sm-cc-skills" });
-    skillsSection.createEl("h4", { text: "Fertigkeiten" });
-    const skillsTbl = skillsSection.createDiv({ cls: "sm-cc-table sm-cc-skills-table" });
-    const skillsHeader = skillsTbl.createDiv({ cls: "sm-cc-row sm-cc-header" });
-    ;
-    ["Name", "Prof", "Expertise", "Mod"].forEach((h) => skillsHeader.createDiv({ cls: "sm-cc-cell", text: h }));
-    const skillsList = [
-      ["Athletics", "str"],
-      ["Acrobatics", "dex"],
-      ["Sleight of Hand", "dex"],
-      ["Stealth", "dex"],
-      ["Arcana", "int"],
-      ["History", "int"],
-      ["Investigation", "int"],
-      ["Nature", "int"],
-      ["Religion", "int"],
-      ["Animal Handling", "wis"],
-      ["Insight", "wis"],
-      ["Medicine", "wis"],
-      ["Perception", "wis"],
-      ["Survival", "wis"],
-      ["Deception", "cha"],
-      ["Intimidation", "cha"],
-      ["Performance", "cha"],
-      ["Persuasion", "cha"]
-    ];
-    for (const [name, abil] of skillsList) {
-      const row = skillsTbl.createDiv({ cls: "sm-cc-row" });
-      row.createDiv({ cls: "sm-cc-cell", text: name });
-      const cbP = row.createEl("input", { cls: "sm-cc-cell", attr: { type: "checkbox" } });
-      const cbE = row.createEl("input", { cls: "sm-cc-cell", attr: { type: "checkbox" } });
-      const out = row.createDiv({ cls: "sm-cc-cell", text: "+0" });
-      ensureSets();
-      cbP.checked = !!this.data.skillsProf?.includes(name);
-      cbE.checked = !!this.data.skillsExpertise?.includes(name);
-      cbP.addEventListener("change", () => {
-        ensureSets();
-        const arr = this.data.skillsProf;
-        if (cbP.checked && !arr.includes(name)) arr.push(name);
-        else if (!cbP.checked) this.data.skillsProf = arr.filter((s) => s !== name);
-        updateModifiers();
-      });
-      cbE.addEventListener("change", () => {
-        ensureSets();
-        const arr = this.data.skillsExpertise;
-        if (cbE.checked && !arr.includes(name)) arr.push(name);
-        else if (!cbE.checked) this.data.skillsExpertise = arr.filter((s) => s !== name);
-        updateModifiers();
-      });
-      skillElems.push({ ability: abil, prof: cbP, exp: cbE, out });
-    }
-    updateModifiers();
-    updateModifiers();
-    if (!this.data.sensesList) this.data.sensesList = [];
-    if (!this.data.languagesList) this.data.languagesList = [];
-    this.makeTokenEditor(contentEl, "Sinne", (v) => this.data.sensesList.push(v), () => this.data.sensesList, (i) => this.data.sensesList.splice(i, 1));
-    this.makeTokenEditor(contentEl, "Sprachen", (v) => this.data.languagesList.push(v), () => this.data.languagesList, (i) => this.data.languagesList.splice(i, 1));
-    if (!this.data.entries) this.data.entries = [];
-    const entriesWrap = contentEl.createDiv({ cls: "setting-item sm-cc-entries" });
-    entriesWrap.createDiv({ cls: "setting-item-info", text: "Eintr\xE4ge (Traits, Aktionen, \u2026)" });
-    const entriesCtl = entriesWrap.createDiv({ cls: "setting-item-control" });
-    const addBar = entriesCtl.createDiv({ cls: "sm-cc-searchbar" });
-    const catSel = addBar.createEl("select");
-    enhanceSelectToSearch(catSel, "Such-dropdown\u2026");
-    const catMap = [["trait", "Eigenschaft"], ["action", "Aktion"], ["bonus", "Bonusaktion"], ["reaction", "Reaktion"], ["legendary", "Legend\xE4re Aktion"]];
-    for (const [v, l] of catMap) {
-      const o = catSel.createEl("option", { text: l });
-      o.value = v;
-    }
-    const addEntryBtn = addBar.createEl("button", { text: "+ Eintrag" });
-    const entriesHost = entriesCtl.createDiv();
-    let focusEntryIdx = null;
-    addEntryBtn.onclick = () => {
-      this.data.entries.unshift({ category: catSel.value, name: "" });
-      focusEntryIdx = 0;
-      renderEntries();
-    };
-    const renderEntries = () => {
-      entriesHost.empty();
-      this.data.entries.forEach((e, i) => {
-        const box = entriesHost.createDiv({ cls: "sm-cc-skill-group" });
-        const head = box.createDiv({ cls: "sm-cc-skill sm-cc-entry-head" });
-        const c = head.createEl("select");
-        for (const [v, l] of catMap) {
-          const o = c.createEl("option", { text: l });
-          o.value = v;
-          if (v === e.category) o.selected = true;
-        }
-        c.onchange = () => e.category = c.value;
-        enhanceSelectToSearch(c, "Such-dropdown\u2026");
-        head.createEl("label", { text: "Name" });
-        const name = head.createEl("input", { cls: "sm-cc-entry-name", attr: { type: "text", placeholder: "Name (z. B. Multiattack)" } });
-        name.value = e.name || "";
-        name.oninput = () => e.name = name.value.trim();
-        if (focusEntryIdx === i) {
-          setTimeout(() => name.focus(), 0);
-          focusEntryIdx = null;
-        }
-        const del = head.createEl("button", { text: "\u{1F5D1}" });
-        del.onclick = () => {
-          this.data.entries.splice(i, 1);
-          renderEntries();
-        };
-        const grid = box.createDiv({ cls: "sm-cc-grid sm-cc-entry-grid" });
-        grid.createEl("label", { text: "Art" });
-        const kind = grid.createEl("input", { attr: { type: "text", placeholder: "Melee/Ranged \u2026", "aria-label": "Art" } });
-        kind.value = e.kind || "";
-        kind.oninput = () => e.kind = kind.value.trim() || void 0;
-        kind.style.width = "24ch";
-        grid.createEl("label", { text: "Reichweite" });
-        const rng = grid.createEl("input", { attr: { type: "text", placeholder: "reach 5 ft. / range 30 ft.", "aria-label": "Reichweite" } });
-        rng.value = e.range || "";
-        rng.oninput = () => e.range = rng.value.trim() || void 0;
-        rng.style.width = "30ch";
-        grid.createEl("label", { text: "Ziel" });
-        const tgt = grid.createEl("input", { attr: { type: "text", placeholder: "one target", "aria-label": "Ziel" } });
-        tgt.value = e.target || "";
-        tgt.oninput = () => e.target = tgt.value.trim() || void 0;
-        tgt.style.width = "16ch";
-        const autoRow = box.createDiv({ cls: "sm-cc-auto" });
-        const hitGroup = autoRow.createDiv({ cls: "sm-auto-group" });
-        hitGroup.createSpan({ text: "To hit:" });
-        const toHitAbil = hitGroup.createEl("select");
-        ["", "best_of_str_dex", "str", "dex", "con", "int", "wis", "cha"].forEach((v) => {
-          const o = toHitAbil.createEl("option", { text: v || "(von)" });
-          o.value = v;
-        });
-        enhanceSelectToSearch(toHitAbil, "Such-dropdown\u2026");
-        const toHitProf = hitGroup.createEl("input", { attr: { type: "checkbox", id: `hit-prof-${i}` } });
-        hitGroup.createEl("label", { text: "Prof", attr: { for: `hit-prof-${i}` } });
-        const hit = hitGroup.createEl("input", { cls: "sm-auto-tohit", attr: { type: "text", placeholder: "+7", "aria-label": "To hit" } });
-        hit.value = e.to_hit || "";
-        hit.addEventListener("input", () => e.to_hit = hit.value.trim() || void 0);
-        hit.style.width = "6ch";
-        const dmgGroup = autoRow.createDiv({ cls: "sm-auto-group" });
-        dmgGroup.createSpan({ text: "Damage:" });
-        const dmgDice = dmgGroup.createEl("input", { attr: { type: "text", placeholder: "1d8", "aria-label": "W\xFCrfel" } });
-        dmgDice.style.width = "10ch";
-        const dmgAbil = dmgGroup.createEl("select");
-        ["", "best_of_str_dex", "str", "dex", "con", "int", "wis", "cha"].forEach((v) => {
-          const o = dmgAbil.createEl("option", { text: v || "(von)" });
-          o.value = v;
-        });
-        enhanceSelectToSearch(dmgAbil, "Such-dropdown\u2026");
-        const dmgBonus = dmgGroup.createEl("input", { attr: { type: "text", placeholder: "piercing / slashing \u2026", "aria-label": "Art" } });
-        dmgBonus.style.width = "12ch";
-        const dmg = dmgGroup.createEl("input", { cls: "sm-auto-dmg", attr: { type: "text", placeholder: "1d8 +3 piercing", "aria-label": "Schaden" } });
-        dmg.value = e.damage || "";
-        dmg.addEventListener("input", () => e.damage = dmg.value.trim() || void 0);
-        dmg.style.width = "20ch";
-        const applyAuto = () => {
-          e.to_hit_from = toHitAbil.value ? { ability: toHitAbil.value, proficient: toHitProf.checked } : void 0;
-          e.damage_from = dmgDice.value ? { dice: dmgDice.value.trim(), ability: dmgAbil.value ? dmgAbil.value : void 0, bonus: dmgBonus.value.trim() || void 0 } : void 0;
-          const parseIntSafe2 = (v) => {
-            const m = String(v ?? "").match(/-?\d+/);
-            return m ? parseInt(m[0], 10) : NaN;
-          };
-          const abilityMod3 = (score) => {
-            const n = parseIntSafe2(score);
-            if (Number.isNaN(n)) return 0;
-            return Math.floor((n - 10) / 2);
-          };
-          const fmt2 = (n) => (n >= 0 ? "+" : "") + n;
-          const pb = parseIntSafe2(this.data.pb) || 0;
-          if (e.to_hit_from) {
-            const abil = e.to_hit_from.ability;
-            const abilMod = abil === "best_of_str_dex" ? Math.max(abilityMod3(this.data.str), abilityMod3(this.data.dex)) : abilityMod3(this.data[abil]);
-            const total = abilMod + (e.to_hit_from.proficient ? pb : 0);
-            e.to_hit = fmt2(total);
-            hit.value = e.to_hit;
-          }
-          if (e.damage_from) {
-            const abil = e.damage_from.ability;
-            const abilMod = abil ? abil === "best_of_str_dex" ? Math.max(abilityMod3(this.data.str), abilityMod3(this.data.dex)) : abilityMod3(this.data[abil]) : 0;
-            const base = e.damage_from.dice;
-            const tail = (abilMod ? ` ${fmt2(abilMod)}` : "") + (e.damage_from.bonus ? ` ${e.damage_from.bonus}` : "");
-            e.damage = `${base}${tail}`.trim();
-            dmg.value = e.damage;
-          }
-        };
-        if (e.to_hit_from) {
-          toHitAbil.value = e.to_hit_from.ability;
-          toHitProf.checked = !!e.to_hit_from.proficient;
-        }
-        if (e.damage_from) {
-          dmgDice.value = e.damage_from.dice;
-          dmgAbil.value = e.damage_from.ability || "";
-          dmgBonus.value = e.damage_from.bonus || "";
-        }
-        toHitAbil.onchange = applyAuto;
-        toHitProf.onchange = applyAuto;
-        dmgDice.oninput = applyAuto;
-        dmgAbil.onchange = applyAuto;
-        dmgBonus.oninput = applyAuto;
-        const misc = box.createDiv({ cls: "sm-cc-grid sm-cc-entry-grid" });
-        misc.createEl("label", { text: "Save" });
-        const saveAb = misc.createEl("select");
-        ["", "STR", "DEX", "CON", "INT", "WIS", "CHA"].forEach((x) => {
-          const o = saveAb.createEl("option", { text: x || "(kein)" });
-          o.value = x;
-          if (x === (e.save_ability || "")) o.selected = true;
-        });
-        saveAb.onchange = () => e.save_ability = saveAb.value || void 0;
-        misc.createEl("label", { text: "DC" });
-        const saveDc = misc.createEl("input", { attr: { type: "number", placeholder: "DC", "aria-label": "DC" } });
-        saveDc.value = e.save_dc ? String(e.save_dc) : "";
-        saveDc.oninput = () => e.save_dc = saveDc.value ? parseInt(saveDc.value, 10) : void 0;
-        saveDc.style.width = "4ch";
-        misc.createEl("label", { text: "Save-Effekt" });
-        const saveFx = misc.createEl("input", { attr: { type: "text", placeholder: "half on save \u2026", "aria-label": "Save-Effekt" } });
-        saveFx.value = e.save_effect || "";
-        saveFx.oninput = () => e.save_effect = saveFx.value.trim() || void 0;
-        saveFx.style.width = "18ch";
-        misc.createEl("label", { text: "Recharge" });
-        const rech = misc.createEl("input", { attr: { type: "text", placeholder: "Recharge 5\u20136 / 1/day" } });
-        rech.value = e.recharge || "";
-        rech.oninput = () => e.recharge = rech.value.trim() || void 0;
-        box.createEl("label", { text: "Details" });
-        const ta = box.createEl("textarea", { cls: "sm-cc-entry-text", attr: { placeholder: "Details (Markdown)" } });
-        ta.value = e.text || "";
-        ta.addEventListener("input", () => e.text = ta.value);
-      });
-    };
-    renderEntries();
-    if (this.data.spellsKnown == null) this.data.spellsKnown = [];
-    const spellsWrap = contentEl.createDiv({ cls: "setting-item sm-cc-spells" });
-    spellsWrap.createDiv({ cls: "setting-item-info", text: "Bekannte Zauber" });
-    const spellsCtl = spellsWrap.createDiv({ cls: "setting-item-control" });
-    const row1 = spellsCtl.createDiv({ cls: "sm-cc-searchbar" });
-    row1.createEl("label", { text: "Zauber" });
-    let chosenSpell = "";
-    const spellBox = row1.createDiv({ cls: "sm-preset-box", attr: { style: "flex:1 1 auto; min-width: 180px;" } });
-    const spellInput = spellBox.createEl("input", { cls: "sm-preset-input", attr: { type: "text", placeholder: "Zauber suchen\u2026" } });
-    const spellMenu = spellBox.createDiv({ cls: "sm-preset-menu" });
-    const renderSpellMenu = () => {
-      const q = (spellInput.value || "").toLowerCase();
-      spellMenu.empty();
-      const matches = (this.availableSpells || []).filter((n) => !q || n.toLowerCase().includes(q)).slice(0, 24);
-      if (matches.length === 0) {
-        spellBox.removeClass("is-open");
-        return;
-      }
-      for (const name of matches) {
-        const it = spellMenu.createDiv({ cls: "sm-preset-item", text: name });
-        it.onclick = () => {
-          chosenSpell = name;
-          spellInput.value = name;
-          spellBox.removeClass("is-open");
-        };
-      }
-      spellBox.addClass("is-open");
-    };
-    spellInput.addEventListener("focus", renderSpellMenu);
-    spellInput.addEventListener("input", renderSpellMenu);
-    spellInput.addEventListener("keydown", (ev) => {
-      if (ev.key === "Escape") {
-        spellInput.value = "";
-        chosenSpell = "";
-        spellBox.removeClass("is-open");
-      }
-    });
-    spellInput.addEventListener("blur", () => {
-      setTimeout(() => spellBox.removeClass("is-open"), 120);
-    });
-    row1.createEl("label", { text: "Grad" });
-    const lvl = row1.createEl("input", { attr: { type: "number", min: "0", max: "9", placeholder: "Grad", "aria-label": "Grad" } });
-    lvl.style.width = "4ch";
-    const row2 = spellsCtl.createDiv({ cls: "sm-cc-searchbar" });
-    row2.createEl("label", { text: "Nutzung" });
-    const uses = row2.createEl("input", { attr: { type: "text", placeholder: "at will / 3/day / slots", "aria-label": "Nutzung" } });
-    uses.style.width = "14ch";
-    row2.createEl("label", { text: "Notizen" });
-    const notes = row2.createEl("input", { attr: { type: "text", placeholder: "Notizen", "aria-label": "Notizen" } });
-    notes.style.width = "16ch";
-    const addSpell = row2.createEl("button", { text: "+ Hinzuf\xFCgen" });
-    addSpell.onclick = () => {
-      let name = chosenSpell?.trim();
-      if (!name) name = (spellInput.value || "").trim();
-      if (!name) return;
-      this.data.spellsKnown.push({ name, level: lvl.value ? parseInt(lvl.value, 10) : void 0, uses: uses.value.trim() || void 0, notes: notes.value.trim() || void 0 });
-      spellInput.value = "";
-      chosenSpell = "";
-      lvl.value = uses.value = notes.value = "";
-      renderSpellList();
-    };
-    const list = spellsCtl.createDiv({ cls: "sm-cc-list" });
-    const renderSpellList = () => {
-      list.empty();
-      this.data.spellsKnown.forEach((s, i) => {
-        const item = list.createDiv({ cls: "sm-cc-item" });
-        item.createDiv({ cls: "sm-cc-item__name", text: `${s.name}${s.level != null ? ` (Lvl ${s.level})` : ""}${s.uses ? ` \u2013 ${s.uses}` : ""}` });
-        const rm = item.createEl("button", { text: "\xD7" });
-        rm.onclick = () => {
-          this.data.spellsKnown.splice(i, 1);
-          renderSpellList();
-        };
-      });
-    };
-    renderSpellList();
+    mountEntriesSection(contentEl, this.data);
+    mountSpellsKnownSection(contentEl, this.data, this.availableSpells);
     new import_obsidian15.Setting(contentEl).addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close())).addButton((b) => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
   }
   onClose() {
@@ -4476,53 +4508,6 @@ var CreateCreatureModal = class extends import_obsidian15.Modal {
       this._bgEl.style.pointerEvents = this._bgPrevPointer ?? "";
       this._bgEl = void 0;
     }
-  }
-  addTextArea(parent, label, placeholder, onChange) {
-    const wrap = parent.createDiv({ cls: "setting-item" });
-    wrap.createDiv({ cls: "setting-item-info", text: label });
-    const ctl = wrap.createDiv({ cls: "setting-item-control" });
-    const ta = ctl.createEl("textarea", { attr: { placeholder } });
-    ta.addEventListener("input", () => onChange(ta.value));
-  }
-  makeTokenEditor(parent, title, onAdd, itemsProvider, onRemove) {
-    new import_obsidian15.Setting(parent).setName(title).addText((t) => {
-      t.setPlaceholder("Begriff eingeben\u2026");
-      const input = t.inputEl;
-      t.inputEl.style.minWidth = "260px";
-      t.inputEl.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          const v = input.value.trim();
-          if (v) {
-            onAdd(v);
-            input.value = "";
-            renderChips();
-          }
-        }
-      });
-    }).addButton((b) => b.setButtonText("+").onClick(() => {
-      const inp = b.buttonEl.parentElement?.querySelector("input");
-      const v = inp?.value?.trim();
-      if (v) {
-        onAdd(v);
-        inp.value = "";
-        renderChips();
-      }
-    }));
-    const chips = parent.createDiv({ cls: "sm-cc-chips" });
-    const renderChips = () => {
-      chips.empty();
-      const items = itemsProvider();
-      items.forEach((txt, i) => {
-        const chip = chips.createDiv({ cls: "sm-cc-chip" });
-        chip.createSpan({ text: txt });
-        const x = chip.createEl("button", { text: "\xD7" });
-        x.onclick = () => {
-          onRemove(i);
-          renderChips();
-        };
-      });
-    };
-    renderChips();
   }
   submit() {
     if (!this.data.name || !this.data.name.trim()) return;
