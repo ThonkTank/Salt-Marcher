@@ -15,7 +15,11 @@ src/apps/library/
 ├─ core/
 │  ├─ creature-files.ts     # FS‑Utilities für Creatures (ensure/list/watch/create)
 │  └─ spell-files.ts        # FS‑Utilities für Spells (ensure/list/watch/create)
-├─ create-modal.ts          # Modal zum Anlegen von Creatures (Name + Vorlagen)
+├─ create/
+│  ├─ section-core-stats.ts    # Abschnitt für Identität, Kernwerte, Sinne/Sprachen
+│  ├─ section-entries.ts       # Abschnitt für Traits/Aktionen/Legendäre Einträge
+│  └─ section-spells-known.ts  # Abschnitt für bekannte Zauber mit Typeahead
+├─ create-modal.ts          # Modal zum Anlegen von Creatures (koordiniert die Abschnitte)
 ├─ create-spell-modal.ts    # Modal zum Anlegen von Spells
 ├─ view.ts                  # Obsidian-View mit Modus‑Tabs, Suche, Liste
 └─ LibraryOverview.txt      # Dieses Dokument
@@ -29,6 +33,7 @@ src/apps/library/
   - Terrains: legt neuen Eintrag mit Defaultwerten an (`#888888`, `speed: 1`).
   - Regionen: legt neuen Eintrag ohne Terrain/Encounter an.
   - Creatures/Spells: öffnet ein Modal, erzeugt eine `.md`‑Datei im passenden Ordner und öffnet sie im Editor.
+- Creature-Modal gliedert die Eingabe in wiederverwendbare Abschnitte (Core Stats, Einträge, Zauber) für klare Zuständigkeiten.
 - Öffnen: Ein Button pro Eintrag öffnet die Quelle (Datei bzw. Sammeldatei) in Obsidian.
 - Live‑Updates: Nutzt Watcher für Ordner/Dateien, um die Liste bei Änderungen neu zu laden.
 
@@ -56,8 +61,25 @@ src/apps/library/
 - `ensureSpellDir`, `listSpellFiles`, `watchSpellDir`, `createSpellFile`.
 - Analog zu Creatures, eigener Ordner.
 
-### `create-modal.ts` / `create-spell-modal.ts`
-- Modals zum Anlegen neuer Dateien. Bieten Komfort‑Felder/Presets und rufen `createCreatureFile`/`createSpellFile` im Anschluss.
+### `create-modal.ts`
+- Orchestriert den gesamten Creature-Erstellungsfluss: setzt das Modal auf, lädt verfügbare Zauber, mountet die Abschnitts-Module und verarbeitet Bewegung sowie Speichern.
+- Warum: Hält den Workflow zentral und delegiert UI-Details an spezialisierte Sektionen, sodass Erweiterungen (z. B. neue Abschnitte) gebündelt erfolgen.
+
+### `create/section-core-stats.ts`
+- Rendert Identität, Kernwerte, Saves/Skills sowie Sinne und Sprachen inklusive automatischer Modifikator-Berechnung.
+- Warum: Bündelt alle abhängigen Berechnungen (PB, Ability Mods) in einem Modul und stellt so konsistente Ergebnisse zwischen UI und Daten sicher.
+
+### `create/section-entries.ts`
+- Verwaltet Trait/Aktion/Legendär-Einträge inkl. Preset-Formeln, Auto-Berechnung von Treffer- und Schadenswerten sowie zusätzlichen Feldern (Saves, Recharge, Text).
+- Warum: Die komplexeste Sektion des Modals bleibt isoliert wartbar; Presets und Logik lassen sich hier ergänzen, ohne den Modal-Controller aufzublähen.
+
+### `create/section-spells-known.ts`
+- Stellt den Zauber-Selector mit Typeahead, Grad/Nutzungsfeldern und Ergebnisliste bereit.
+- Warum: Entkoppelt die Such-/Listenlogik von der Modal-Hülle und ermöglicht Wiederverwendung bzw. gezielte Anpassungen am Spell-UX.
+
+### `create-spell-modal.ts`
+- Modal zum Anlegen neuer Zauberdateien mit Komfortfeldern und direktem Aufruf von `createSpellFile`.
+- Warum: Dedizierte UI für Spell-Erstellung; bleibt unabhängig vom Creature-Flow.
 
 ## Interaktion mit Core & UI
 
