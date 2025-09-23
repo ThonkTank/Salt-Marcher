@@ -160,6 +160,37 @@ export const HEX_PLUGIN_CSS = `
     min-height: 0;
 }
 
+.sm-cc-card {
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.sm-cc-card__title {
+    margin: 0;
+    font-size: 1.05em;
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+.sm-cc-card__desc {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.9em;
+    line-height: 1.4;
+}
+
+.sm-cc-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
 .sm-cc-create-column {
     background: var(--background-primary);
     border: 1px solid var(--background-modifier-border);
