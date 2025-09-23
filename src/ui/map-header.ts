@@ -3,6 +3,7 @@
 
 import { App, Notice, TFile, setIcon } from "obsidian";
 import { applyMapButtonStyle, promptCreateMap, promptMapSelection } from "./map-workflows";
+import { enhanceSelectToSearch } from "./search-dropdown";
 import { saveMap, saveMapAs } from "../core/save";
 
 export type MapHeaderSaveMode = "save" | "saveAs";
@@ -173,6 +174,7 @@ export function createMapHeader(app: App, host: HTMLElement, options: MapHeaderO
     const select = row2.createEl("select");
     select.createEl("option", { text: labels.save }).value = "save";
     select.createEl("option", { text: labels.saveAs }).value = "saveAs";
+    enhanceSelectToSearch(select, 'Such-dropdown…');
 
     const triggerBtn = row2.createEl("button", { text: labels.trigger });
     applyMapButtonStyle(triggerBtn);

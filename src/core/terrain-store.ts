@@ -12,6 +12,9 @@ export async function ensureTerrainFile(app: App): Promise<TFile> {
     if (existing instanceof TFile) return existing;
     await app.vault.createFolder(p.split("/").slice(0, -1).join("/")).catch(() => {});
     const body = [
+        "---",
+        'smList: true',
+        "---",
         "# Terrains",
         "",
         "```terrain",

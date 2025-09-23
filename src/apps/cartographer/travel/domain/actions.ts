@@ -28,6 +28,7 @@ export type TravelLogic = {
     pause(): void;
     reset(): Promise<void>;
     setTokenSpeed(v: number): void;
+    setTempo?(v: number): void;
 
     // Adapterwechsel
     bindAdapter(adapter: RenderAdapter): void;
@@ -43,6 +44,7 @@ export function createTravelLogic(cfg: {
     getMapFile: () => TFile | null;
     adapter: RenderAdapter;
     onChange?: (s: LogicStateSnapshot) => void;
+    onEncounter?: () => void | Promise<void>;
 }): TravelLogic {
     const store = createStore();
     let adapter = cfg.adapter;
@@ -59,6 +61,7 @@ export function createTravelLogic(cfg: {
         store,
         adapter,
         minSecondsPerTile: cfg.minSecondsPerTile,
+        onEncounter: cfg.onEncounter,
     });
 
     const getState = () => store.get();
@@ -225,6 +228,10 @@ export function createTravelLogic(cfg: {
             const val = Number.isFinite(v) && v > 0 ? v : 1;
             store.set({ tokenSpeed: val });
         };
+        const setTempo = (v: number) => {
+            const val = Number.isFinite(v) ? Math.max(0.1, Math.min(10, v)) : 1;
+            store.set({ tempo: val });
+        };
 
         const play = async () => playback.play();
         const pause = () => playback.pause();
@@ -301,6 +308,7 @@ export function createTravelLogic(cfg: {
                 pause,
                 reset,
                 setTokenSpeed,
+                setTempo,
                 bindAdapter,
                 initTokenFromTiles,
                 persistTokenToTiles,

@@ -3,13 +3,16 @@ import type { ToolModule } from "../tools-api";
 import { attachBrushCircle } from "../brush-circle";
 import { applyBrush } from "./brush";
 import { TERRAIN_COLORS } from "../../../../../core/terrain";
+import { loadRegions } from "../../../../../core/regions-store";
+import { enhanceSelectToSearch } from "../../../../../ui/search-dropdown";
 import { coordsInRadius } from "./brush-math";
 
 export function createBrushTool(): ToolModule {
     // Radius 0 = exakt die angeklickte Zelle
-    let state: { radius: number; terrain: string; mode: "paint" | "erase" } = {
+    let state: { radius: number; region: string; terrain: string; mode: "paint" | "erase" } = {
         radius: 1, // UI zeigt 1 = nur Mitte
-        terrain: "Wald",
+        region: "",
+        terrain: "",
         mode: "paint",
     };
     const eff = () => Math.max(0, state.radius - 1);
@@ -22,7 +25,7 @@ export function createBrushTool(): ToolModule {
 
         // Options-Panel (nur UI & State)
         mountPanel(root, ctx) {
-            root.createEl("h3", { text: "Terrain-Brush" });
+            root.createEl("h3", { text: "Region-Brush" });
 
             // Radius
             const radiusRow = root.createDiv({ cls: "sm-row" });
@@ -39,32 +42,39 @@ export function createBrushTool(): ToolModule {
                 circle?.updateRadius(eff());                   // Vorschau = Hex-Distanz
             };
 
-            // Terrain
-            const terrRow = root.createDiv({ cls: "sm-row" });
-            terrRow.createEl("label", { text: "Terrain:" });
-            const terrSelect = terrRow.createEl("select") as HTMLSelectElement;
+            // Region
+            const regionRow = root.createDiv({ cls: "sm-row" });
+            regionRow.createEl("label", { text: "Region:" });
+            const regionSelect = regionRow.createEl("select") as HTMLSelectElement;
+            enhanceSelectToSearch(regionSelect, 'Such-dropdown…');
 
-            const editBtn = terrRow.createEl("button", { text: "Bearbeiten…" });
-            editBtn.onclick = () => (ctx.app as any).commands?.executeCommandById?.("salt-marcher:open-terrain-editor");
+            const editRegionsBtn = regionRow.createEl("button", { text: "Bearbeiten…" });
+            editRegionsBtn.onclick = () => (ctx.app as any).commands?.executeCommandById?.("salt-marcher:open-library");
 
-            // Optionen aus der aktuellen Palette aufbauen
-            const fillOptions = () => {
-                terrSelect.empty();
-                for (const t of Object.keys(TERRAIN_COLORS)) {
-                    const opt = terrSelect.createEl("option", { text: t || "(leer)" }) as HTMLOptionElement;
-                    opt.value = t;
-
+            // Regionen laden und Dropdown füllen; Terrain ableiten
+            const fillOptions = async () => {
+                regionSelect.empty();
+                const regions = await loadRegions(ctx.app);
+                for (const r of regions) {
+                    const opt = regionSelect.createEl("option", { text: r.name || "(leer)", value: r.name });
+                    (opt as any)._terrain = r.terrain || "";
+                    if (r.name === state.region) opt.selected = true;
                 }
-                // Falls das aktuelle Terrain entfernt wurde → auf leer zurückfallen
-                if (TERRAIN_COLORS[state.terrain] === undefined) state.terrain = "";
-                terrSelect.value = state.terrain;
-
+                // Ableitung Terrain
+                const cur = Array.from(regionSelect.options).find(o => o.value === state.region) as HTMLOptionElement | undefined;
+                state.terrain = (cur && (cur as any)._terrain) || "";
+                regionSelect.value = state.region;
             };
-            fillOptions();
+            void fillOptions();
 
-            terrSelect.onchange = () => { state.terrain = terrSelect.value; };
-            // Live-Update aus dem Terrain-Editor
-            const ref = (ctx.app.workspace as any).on?.("salt:terrains-updated", fillOptions);
+            regionSelect.onchange = () => {
+                state.region = regionSelect.value;
+                const opt = regionSelect.selectedOptions[0] as HTMLOptionElement | undefined;
+                state.terrain = (opt && (opt as any)._terrain) || "";
+            };
+            // Live-Updates
+            const refTerr = (ctx.app.workspace as any).on?.("salt:terrains-updated", () => void fillOptions());
+            const refReg  = (ctx.app.workspace as any).on?.("salt:regions-updated", () => void fillOptions());
 
             // Modus (Malen/Löschen)
             const modeRow = root.createDiv({ cls: "sm-row" });
@@ -74,9 +84,11 @@ export function createBrushTool(): ToolModule {
             modeSelect.createEl("option", { text: "Löschen", value: "erase" });
             modeSelect.value = state.mode;
             modeSelect.onchange = () => { state.mode = modeSelect.value as "paint" | "erase"; };
+            enhanceSelectToSearch(modeSelect, 'Such-dropdown…');
 
             return () => {
-                if (ref) (ctx.app.workspace as any).offref?.(ref);
+                if (refTerr) (ctx.app.workspace as any).offref?.(refTerr);
+                if (refReg)  (ctx.app.workspace as any).offref?.(refReg);
                 root.empty();
 
             };
@@ -130,7 +142,7 @@ export function createBrushTool(): ToolModule {
             // Schreiben & live färben
             await applyBrush(
                 ctx.app, file, rc,
-                { radius: eff(), terrain: state.terrain, mode: state.mode }, // Distanz reinschreiben
+                { radius: eff(), terrain: state.terrain, region: state.region, mode: state.mode }, // Distanz reinschreiben
                 handles
             );
 

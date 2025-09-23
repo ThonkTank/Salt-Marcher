@@ -31,6 +31,7 @@ export function createTravelGuideMode(): CartographerMode {
     let tokenLayer: ReturnType<typeof createTokenLayer> | null = null;
     let cleanupFile: (() => void | Promise<void>) | null = null;
     let terrainsReady = false;
+    let hostEl: HTMLElement | null = null;
 
     const handleStateChange = (state: LogicStateSnapshot) => {
         if (routeLayer) {
@@ -39,6 +40,8 @@ export function createTravelGuideMode(): CartographerMode {
         sidebar?.setTile(state.currentTile ?? state.tokenRC ?? null);
         sidebar?.setSpeed(state.tokenSpeed);
         playback?.setState({ playing: state.playing, route: state.route });
+        (playback as any)?.setClock?.(state.clockHours ?? 0);
+        (playback as any)?.setTempo?.(state.tempo ?? 1);
     };
 
     const resetUi = () => {
@@ -88,6 +91,9 @@ export function createTravelGuideMode(): CartographerMode {
         id: "travel",
         label: "Travel",
         async onEnter(ctx) {
+            // Ensure travel-specific styles are active in Cartographer
+            hostEl = ctx.host;
+            hostEl.classList.add("sm-cartographer--travel");
             await ensureTerrains(ctx);
             ctx.sidebarHost.empty();
             sidebar = createSidebar(ctx.sidebarHost);
@@ -105,10 +111,12 @@ export function createTravelGuideMode(): CartographerMode {
                 onReset: () => {
                     void logic?.reset();
                 },
+                onTempoChange: (v) => { logic?.setTempo?.(v); },
             });
             resetUi();
         },
         async onExit() {
+            // Remove travel-specific style scope when leaving mode
             await cleanupFile?.();
             cleanupFile = null;
             disposeFile();
@@ -116,6 +124,8 @@ export function createTravelGuideMode(): CartographerMode {
             playback = null;
             sidebar?.destroy();
             sidebar = null;
+            hostEl?.classList?.remove?.("sm-cartographer--travel");
+            hostEl = null;
         },
         async onFileChange(file, handles, ctx) {
             await cleanupFile?.();
@@ -150,10 +160,19 @@ export function createTravelGuideMode(): CartographerMode {
 
             const activeLogic = createTravelLogic({
                 app: ctx.app,
-                minSecondsPerTile: 0.1,
+                minSecondsPerTile: 0.05,
                 getMapFile: () => ctx.getFile(),
                 adapter,
                 onChange: (state) => handleStateChange(state),
+                onEncounter: async () => {
+                    try { activeLogic.pause(); } catch {}
+                    // Open Encounter view in right leaf
+                    const { getRightLeaf } = await import("../../../core/layout");
+                    const { VIEW_ENCOUNTER } = await import("../../encounter/view");
+                    const leaf = getRightLeaf(ctx.app);
+                    await leaf.setViewState({ type: VIEW_ENCOUNTER, active: true });
+                    ctx.app.workspace.revealLeaf(leaf);
+                },
             });
             logic = activeLogic;
 
@@ -197,10 +216,15 @@ export function createTravelGuideMode(): CartographerMode {
                 routeLayer = null;
             };
         },
-        async onHexClick(coord, event) {
+        async onHexClick(coord, event, ctx) {
             if (drag?.consumeClickSuppression()) {
                 if (event.cancelable) event.preventDefault();
                 event.stopPropagation();
+                return;
+            }
+            // Ignore clicks that are not on an existing tile (no visual poly)
+            const handles = ctx?.getRenderHandles?.();
+            if (handles && !handles.polyByCoord?.has?.(`${coord.r},${coord.c}`)) {
                 return;
             }
             if (!logic) return;

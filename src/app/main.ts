@@ -1,7 +1,9 @@
 // src/app/main.ts
 import { Plugin, WorkspaceLeaf } from "obsidian";
-import { TerrainEditorView, VIEW_TERRAIN_EDITOR } from "../apps/terrain-editor/view";
+// Legacy views removed (consolidated into Library)
+import { EncounterView, VIEW_ENCOUNTER } from "../apps/encounter/view";
 import { VIEW_CARTOGRAPHER, CartographerView } from "../apps/cartographer";
+import { VIEW_LIBRARY, LibraryView } from "../apps/library/view";
 import { ensureTerrainFile, loadTerrains, watchTerrains } from "../core/terrain-store";
 import { setTerrains } from "../core/terrain";
 import { getCenterLeaf } from "../core/layout";
@@ -12,8 +14,9 @@ export default class SaltMarcherPlugin extends Plugin {
 
     async onload() {
         // Views
-        this.registerView(VIEW_TERRAIN_EDITOR,   (leaf: WorkspaceLeaf) => new TerrainEditorView(leaf));
-        this.registerView(VIEW_CARTOGRAPHER,     (leaf: WorkspaceLeaf) => new CartographerView(leaf));
+        this.registerView(VIEW_CARTOGRAPHER,         (leaf: WorkspaceLeaf) => new CartographerView(leaf));
+        this.registerView(VIEW_ENCOUNTER,            (leaf: WorkspaceLeaf) => new EncounterView(leaf));
+        this.registerView(VIEW_LIBRARY,              (leaf: WorkspaceLeaf) => new LibraryView(leaf));
 
         // Terrains initial laden & live halten
         await ensureTerrainFile(this.app);
@@ -21,36 +24,33 @@ export default class SaltMarcherPlugin extends Plugin {
         this.unwatchTerrains = watchTerrains(this.app, () => { /* Views reagieren via Event */ });
 
         // Ribbons
-        const terrainRibbon = this.addRibbonIcon("palette", "Open Terrain Editor", async () => {
-            const leaf = this.app.workspace.getLeaf(true);
-            await leaf.setViewState({ type: VIEW_TERRAIN_EDITOR, active: true });
-            this.app.workspace.revealLeaf(leaf);
-        });
-        terrainRibbon.addClass("salt-terrain-ribbon");
-
         this.addRibbonIcon("compass", "Open Cartographer", async () => {
             const leaf = getCenterLeaf(this.app);
             await leaf.setViewState({ type: VIEW_CARTOGRAPHER, active: true });
             this.app.workspace.revealLeaf(leaf);
         });
-
-        // Commands
-        this.addCommand({
-            id: "open-terrain-editor",
-            name: "Terrain Editor öffnen",
-            callback: async () => {
-                const leaf = this.app.workspace.getLeaf(true);
-                await leaf.setViewState({ type: VIEW_TERRAIN_EDITOR, active: true });
-                this.app.workspace.revealLeaf(leaf);
-            },
+        this.addRibbonIcon("book", "Open Library", async () => {
+            const leaf = this.app.workspace.getLeaf(true);
+            await leaf.setViewState({ type: VIEW_LIBRARY, active: true });
+            this.app.workspace.revealLeaf(leaf);
         });
 
+        // Commands
         this.addCommand({
             id: "open-cartographer",
             name: "Cartographer öffnen",
             callback: async () => {
                 const leaf = getCenterLeaf(this.app);
                 await leaf.setViewState({ type: VIEW_CARTOGRAPHER, active: true });
+                this.app.workspace.revealLeaf(leaf);
+            },
+        });
+        this.addCommand({
+            id: "open-library",
+            name: "Library öffnen",
+            callback: async () => {
+                const leaf = this.app.workspace.getLeaf(true);
+                await leaf.setViewState({ type: VIEW_LIBRARY, active: true });
                 this.app.workspace.revealLeaf(leaf);
             },
         });

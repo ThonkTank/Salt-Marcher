@@ -1,0 +1,80 @@
+# Library – Overview
+
+Einheitliche Bibliothek mit gemeinsamem Header und identischer Listen‑UX für vier Modi:
+- Terrains
+- Regionen
+- Kreaturen
+- Zauber (Spells)
+
+Die Library bündelt Suche, Erstellen‑Fluss und Öffnen der Quelldateien. Sie beobachtet ihre Datenquellen live und aktualisiert die Liste ohne Reload. Ziel ist ein zentraler, erweiterbarer Einstiegspunkt für Inhalte, die andere Features (z. B. Cartographer/Travel) referenzieren.
+
+## Struktur
+
+```
+src/apps/library/
+├─ core/
+│  ├─ creature-files.ts     # FS‑Utilities für Creatures (ensure/list/watch/create)
+│  └─ spell-files.ts        # FS‑Utilities für Spells (ensure/list/watch/create)
+├─ create-modal.ts          # Modal zum Anlegen von Creatures (Name + Vorlagen)
+├─ create-spell-modal.ts    # Modal zum Anlegen von Spells
+├─ view.ts                  # Obsidian-View mit Modus‑Tabs, Suche, Liste
+└─ LibraryOverview.txt      # Dieses Dokument
+```
+
+## Features & Verantwortlichkeiten
+
+- Modus‑Tabs: Schaltet zwischen Creatures, Spells, Terrains, Regions.
+- Suche: Ein Textfeld filtert die Liste live (Prefix/Substring‑Priorisierung).
+- Erstellen‑Flow pro Modus:
+  - Terrains: legt neuen Eintrag mit Defaultwerten an (`#888888`, `speed: 1`).
+  - Regionen: legt neuen Eintrag ohne Terrain/Encounter an.
+  - Creatures/Spells: öffnet ein Modal, erzeugt eine `.md`‑Datei im passenden Ordner und öffnet sie im Editor.
+- Öffnen: Ein Button pro Eintrag öffnet die Quelle (Datei bzw. Sammeldatei) in Obsidian.
+- Live‑Updates: Nutzt Watcher für Ordner/Dateien, um die Liste bei Änderungen neu zu laden.
+
+## Datenflüsse
+
+- Terrains: `core/terrain-store.ts` stellt `ensureTerrainFile → loadTerrains → saveTerrains → watchTerrains` bereit. Die Library parst/validiert und schreibt Einträge konsistent (inkl. „leeres Terrain“ mit `transparent` und `speed: 1`).
+- Regionen: `core/regions-store.ts` analog mit `ensureRegionsFile → loadRegions → saveRegions → watchRegions`. Einträge speichern ihren Namen, Terrain‑Referenz und optionale Encounter‑Odds (`1/n`).
+- Creatures: `apps/library/core/creature-files.ts` verwaltet den Ordner `SaltMarcher/Creatures/` (Ensure/List/Watch/Create). Dateien sind Markdown mit YAML‑Frontmatter; strukturierte Einträge können als JSON in FM abgelegt werden.
+- Spells: `apps/library/core/spell-files.ts` verwaltet `SaltMarcher/Spells/` (Ensure/List/Watch/Create). Dateien sind Markdown mit YAML‑Frontmatter; Text liegt im Body.
+
+## Dateibeschreibungen
+
+### `view.ts`
+- Obsidian‑View `VIEW_LIBRARY` mit Modus‑Tabs, Suchfeld und Ergebnisliste.
+- Lädt initial alle Quellen: Creatures, Spells, Terrains, Regions.
+- Registriert Watcher: `watchCreatureDir`, `watchSpellDir`, `watchTerrains`, `watchRegions` → ruft `renderList()` bei Änderungen.
+- Terrains/Regions: Inline‑Bearbeitung (Inputs) mit sofortiger Persistenz (`saveTerrains`/`saveRegions`).
+- Nutzt `enhanceSelectToSearch` für komfortable Dropdowns (z. B. Terrain‑Zuweisung in Regions).
+
+### `core/creature-files.ts`
+- `ensureCreatureDir`, `listCreatureFiles`, `watchCreatureDir`, `createCreatureFile`.
+- Verantwortlich für Verzeichnis‑Struktur und Dateibenennung.
+
+### `core/spell-files.ts`
+- `ensureSpellDir`, `listSpellFiles`, `watchSpellDir`, `createSpellFile`.
+- Analog zu Creatures, eigener Ordner.
+
+### `create-modal.ts` / `create-spell-modal.ts`
+- Modals zum Anlegen neuer Dateien. Bieten Komfort‑Felder/Presets und rufen `createCreatureFile`/`createSpellFile` im Anschluss.
+
+## Interaktion mit Core & UI
+
+- Terrains: Änderungen werden über `saveTerrains` geschrieben; `watchTerrains` aktualisiert die Library‑Liste und triggert global die Terrain‑Palette (wird vom Renderer konsumiert).
+- Regionen: Schreiben über `saveRegions`, Live‑Reload über `watchRegions`.
+- UI: Nutzt `ui/search-dropdown.ts` für durchsuchbare Selects; allgemeine Notices/Dialoge stammen aus Obsidian.
+
+## Erweiterungspunkte
+
+- Weitere Modi: Die Library lässt sich um zusätzliche Tabs erweitern (z. B. „Items“), sofern die Datenquelle über ein analoges FS‑ oder Store‑Modul abstrahiert wird (ensure/list/save/watch).
+- Validierung: Zusätzliche Validierungslogik kann in die Inline‑Editoren (Inputs) integriert werden, ohne die Persistenz‑Services zu ändern.
+
+## Speicherorte & Formate
+
+- Terrains: `SaltMarcher/Terrains.md` mit einem ```terrain```‑Codeblock. Einträge: `Name: #aabbcc, speed: 0.8` oder `: transparent, speed: 1` für „leer“.
+- Regionen: `SaltMarcher/Regions.md` mit ```regions```‑Block. Einträge: `Name: Terrain, encounter: 1/n` (optional).
+- Creatures: Einzeldateien unter `SaltMarcher/Creatures/` (Markdown + YAML‑FM, optional strukturierte JSON‑Felder in FM).
+- Spells: Einzeldateien unter `SaltMarcher/Spells/` (Markdown + YAML‑FM, Text im Body).
+
+Diese Struktur hält Daten und Darstellung sauber getrennt. Die Library fungiert als zentraler, risikoarmer Editor‑Hub, während andere Features (z. B. Cartographer/Travel) diese Daten konsumieren, ohne eigene Editoren pflegen zu müssen.

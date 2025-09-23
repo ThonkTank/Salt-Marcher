@@ -24,7 +24,7 @@ export function createSidebar(host: HTMLElement): Sidebar {
     });
 
     const speedRow = root.createDiv({ cls: "sm-cartographer__travel-row" });
-    speedRow.createSpan({ cls: "sm-cartographer__travel-label", text: "Token-Speed" });
+    speedRow.createSpan({ cls: "sm-cartographer__travel-label", text: "Party Speed (mph)" });
     const speedInput = speedRow.createEl("input", {
         type: "number",
         cls: "sm-cartographer__travel-input",

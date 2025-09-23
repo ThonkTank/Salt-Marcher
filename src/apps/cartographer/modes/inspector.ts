@@ -1,6 +1,7 @@
 import type { TFile } from "obsidian";
 import { loadTile, saveTile } from "../../../core/hex-mapper/hex-notes";
 import { TERRAIN_COLORS } from "../../../core/terrain";
+import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
 import type { RenderHandles } from "../../../core/hex-mapper/hex-render";
 import type { CartographerMode, CartographerModeContext, HexCoord } from "../view-shell";
 
@@ -146,6 +147,7 @@ export function createInspectorMode(): CartographerMode {
                 const opt = ui.terrain.createEl("option", { text: key || "(leer)" }) as HTMLOptionElement;
                 opt.value = key;
             }
+            enhanceSelectToSearch(ui.terrain, 'Such-dropdown…');
             ui.terrain.disabled = true;
             ui.terrain.onchange = () => scheduleSave(ctx);
 

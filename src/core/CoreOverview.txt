@@ -7,12 +7,12 @@ Der Core-Layer bündelt sämtliche fachlichen Services des Plugins, die unabhän
 | Modul | Verantwortlichkeit |
 | --- | --- |
 | `layout.ts` | Liefert Helper zum Öffnen/Erstellen der passenden Workspace-Leaves (`getRightLeaf`, `getCenterLeaf`). |
-| `map-maker.ts` | Erstellt neue Karten-Dateien inklusive initialem `hex3x3`-Codeblock und legt direkt 3×3 leere Tiles an (`initTilesForNewMap`). Enthält Sanitizer/Unique-Path-Helfer. |
+| `map-maker.ts` | Erstellt neue Karten-Dateien inklusive initialem `hex3x3`-Codeblock und legt direkt 3×3 leere Tiles an (`initTilesForNewMap`). Schreibt `smMap: true` ins Frontmatter und legt die Datei unter `SaltMarcher/Maps/` an. Enthält Sanitizer/Unique-Path-Helfer. |
 | `map-list.ts` | Sammelt alle Markdown-Dateien mit Hex-Block, sortiert sie nach Änderungszeit und extrahiert den ersten Block für Optionen. Stellt `pickLatest(...)` als Utility bereit. |
 | `map-delete.ts` | Löscht eine Karte gemeinsam mit allen zugehörigen Tiles über `hex-notes`. |
-| `options.ts` | Parst Hex-Block-Optionen (`folder`, `prefix`, `radius`) in ein Typsicheres Objekt. |
+| `options.ts` | Parst Hex-Block-Optionen robust in ein typsicheres Objekt. Unterstützt `folder`, `folderPrefix` (neu), `prefix` (legacy) und `radius`. Erkennt automatisch einen ```hex3x3```‑Block, falls der gesamte Dateiinhalt übergeben wird. |
 | `save.ts` | Placeholder für Persistenz-Funktionen (`saveMap`, `saveMapAs`) – dient als Erweiterungspunkt. |
-| `terrain-store.ts` | Zentraler Dateiservice für `Terrains.md` (Ensure, Parser, Stringifier, Load/Save, Watcher + Workspace-Event). |
+| `terrain-store.ts` | Zentraler Dateiservice für `Terrains.md` (Ensure, Parser, Stringifier, Load/Save, Watcher + Workspace-Event). Legt die Datei mit `smList: true` an. |
 | `terrain.ts` | Verwaltet Standard- und Laufzeit-Terrainpaletten (Farben + Geschwindigkeiten) und bietet Mutatoren (`setTerrainPalette`, `setTerrains`). |
 
 ### Hex-Mapper Subsystem (`hex-mapper/`)
@@ -21,7 +21,7 @@ Der Core-Layer bündelt sämtliche fachlichen Services des Plugins, die unabhän
 | --- | --- |
 | `hex-geom.ts` | Mathematische Utilities für Hex-Koordinaten (odd-r ↔ axial/cube, Distanz, Nachbarn, Pixel-Mapping, Polygonpunkte). |
 | `camera.ts` | Fügt SVG-Pan/Zoom-Kontrollen mit Wheel-Gesten und mittlerer Maustaste hinzu. |
-| `hex-notes.ts` | Organisiert Tile-Dateien: liest Optionen, erzeugt Folder/Dateinamen, migriert Legacy-Strukturen, liest/schreibt Frontmatter + Body. Bietet High-Level-APIs (`listTilesForMap`, `loadTile`, `saveTile`, `deleteTile`, `initTilesForNewMap`). |
+| `hex-notes.ts` | Organisiert Tile-Dateien: liest Optionen, erzeugt Folder/Dateinamen, migriert Legacy-Strukturen, liest/schreibt Frontmatter + Body. Schreibt `smHexTile: true` ins Frontmatter. Bietet High-Level-APIs (`listTilesForMap`, `loadTile`, `saveTile`, `deleteTile`, `initTilesForNewMap`). |
 | `hex-render.ts` | Rendert Hex-Karten in ein SVG, färbt Tiles anhand `TERRAIN_COLORS`, verdrahtet Kamera und User-Interaction (Click-Dispatch, Brush-Drag). Gibt Handles (`setFill`, `ensurePolys`, `destroy`) zur Laufzeitsteuerung zurück. |
 | `hex-map.ts` | Aggregiert Exporte (`parseOptions`, `renderHexMap`, `getAllMapFiles`, `getFirstHexBlock`) als Einstiegsmodul für Renderer/Feature-Layer. |
 

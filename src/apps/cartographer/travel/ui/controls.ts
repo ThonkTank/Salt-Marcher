@@ -9,16 +9,22 @@ export type PlaybackControlsCallbacks = {
     onPlay: () => void | Promise<void>;
     onStop: () => void | Promise<void>;
     onReset: () => void | Promise<void>;
+    onTempoChange?: (tempo: number) => void | Promise<void>;
 };
 
 export type PlaybackControlsHandle = {
     readonly root: HTMLElement;
     setState(state: Pick<LogicStateSnapshot, "playing" | "route">): void;
+    setClock(hours: number): void;
+    setTempo(tempo: number): void;
     destroy(): void;
 };
 
 export function createPlaybackControls(host: HTMLElement, callbacks: PlaybackControlsCallbacks): PlaybackControlsHandle {
     const root = host.createDiv({ cls: "sm-cartographer__travel-buttons" });
+
+    // Clock display
+    const clock = root.createEl("div", { cls: "sm-cartographer__travel-clock", text: "00h" });
 
     const playBtn = root.createEl("button", {
         cls: "sm-cartographer__travel-button sm-cartographer__travel-button--play",
@@ -56,6 +62,20 @@ export function createPlaybackControls(host: HTMLElement, callbacks: PlaybackCon
         void callbacks.onReset?.();
     });
 
+    // Tempo slider (x0.1 .. x10)
+    const tempoWrap = root.createDiv({ cls: "sm-cartographer__travel-tempo" });
+    const tempoLabel = tempoWrap.createSpan({ text: "x1.0" });
+    const tempoInput = tempoWrap.createEl("input", {
+        type: "range",
+        attr: { min: "0.1", max: "10", step: "0.1" },
+    }) as HTMLInputElement;
+    tempoInput.value = "1";
+    tempoInput.oninput = () => {
+        const v = Math.max(0.1, Math.min(10, parseFloat(tempoInput.value) || 1));
+        tempoLabel.setText(`x${v.toFixed(1)}`);
+        callbacks.onTempoChange?.(v);
+    };
+
     const setState = (state: Pick<LogicStateSnapshot, "playing" | "route">) => {
         const hasRoute = state.route.length > 0;
         playBtn.disabled = state.playing || !hasRoute;
@@ -64,6 +84,17 @@ export function createPlaybackControls(host: HTMLElement, callbacks: PlaybackCon
     };
 
     setState({ playing: false, route: [] });
+
+    const setClock = (hours: number) => {
+        const h = Math.floor(hours);
+        clock.setText(`${h}h`);
+    };
+
+    const setTempo = (tempo: number) => {
+        const v = Math.max(0.1, Math.min(10, tempo));
+        tempoInput.value = String(v);
+        tempoLabel.setText(`x${v.toFixed(1)}`);
+    };
 
     const destroy = () => {
         playBtn.replaceWith();
@@ -76,5 +107,7 @@ export function createPlaybackControls(host: HTMLElement, callbacks: PlaybackCon
         root,
         setState,
         destroy,
+        setClock,
+        setTempo,
     };
 }

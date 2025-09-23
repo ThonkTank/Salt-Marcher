@@ -56,6 +56,184 @@ export const HEX_PLUGIN_CSS = `
 .sm-terrain-editor .addbar { display:flex; gap:.5rem; margin-top:.5rem; }
 .sm-terrain-editor .addbar input[type="text"] { flex:1; min-width:0; }
 
+/* Creature Compendium – nutzt die gleichen Layout-Hilfsklassen */
+.sm-creature-compendium { padding:.5rem 0; }
+.sm-creature-compendium .desc { color: var(--text-muted); margin-bottom:.25rem; }
+.sm-creature-compendium .rows { margin-top:.5rem; }
+.sm-creature-compendium .row { display:flex; gap:.5rem; align-items:center; margin:.25rem 0; }
+.sm-creature-compendium .row input[type="text"] { flex:1; min-width:0; }
+.sm-creature-compendium .addbar { display:flex; gap:.5rem; margin-top:.5rem; }
+.sm-creature-compendium .addbar input[type="text"] { flex:1; min-width:0; }
+
+/* Creature Compendium – Search + list */
+.sm-cc-searchbar { display:flex; gap:.5rem; margin:.5rem 0; }
+.sm-cc-searchbar input[type="text"] { flex:1; min-width:0; }
+.sm-cc-list { display:flex; flex-direction:column; gap:.25rem; margin-top:.25rem; }
+.sm-cc-item { display:flex; gap:.5rem; align-items:center; justify-content:space-between; padding:.35rem .5rem; border:1px solid var(--background-modifier-border); border-radius:8px; background: var(--background-primary); }
+.sm-cc-item__name { font-weight: 500; }
+
+/* Create Creature Modal helpers */
+.sm-cc-create-modal .sm-cc-grid {
+    display: grid;
+    grid-template-columns: max-content 140px max-content;
+    gap: .35rem .75rem;
+    align-items: center;
+    margin: .25rem 0 .5rem;
+}
+.sm-cc-grid__row { display: contents; }
+.sm-cc-grid__save { display: flex; align-items: center; gap: .35rem; }
+
+.sm-cc-skills { margin-top: .5rem; }
+.sm-cc-skill-group { border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: .5rem; margin: .35rem 0; }
+.sm-cc-skill-group__title { font-weight: 600; margin-bottom: .25rem; }
+.sm-cc-skill { display: grid; grid-template-columns: 1fr max-content max-content; gap: .5rem; align-items: center; margin: .15rem 0; }
+
+.sm-cc-chips { display:flex; gap:.35rem; flex-wrap:wrap; margin:.25rem 0 .5rem; }
+.sm-cc-chip { display:inline-flex; align-items:center; gap:.25rem; border:1px solid var(--background-modifier-border); border-radius:999px; padding:.1rem .4rem; background: var(--background-secondary); }
+
+/* Creature modal layout improvements */
+.sm-cc-create-modal .setting-item-control { flex: 1 1 auto; min-width: 0; }
+.sm-cc-create-modal textarea { width: 100%; min-height: 140px; }
+.sm-cc-create-modal .sm-cc-entry-text { min-height: 180px; }
+.sm-cc-create-modal .sm-cc-skill-group { width: 100%; box-sizing: border-box; }
+.sm-cc-create-modal .sm-cc-searchbar { flex-wrap: wrap; }
+.sm-cc-create-modal .sm-cc-searchbar > * { flex: 1 1 160px; min-width: 140px; }
+.sm-cc-create-modal .sm-cc-entry-grid { grid-template-columns: max-content 1fr max-content 1fr; column-gap: .75rem; row-gap: .35rem; align-items: center; }
+.sm-cc-create-modal .sm-cc-entry-grid input, .sm-cc-create-modal .sm-cc-entry-grid select { width: 100%; max-width: 220px; box-sizing: border-box; }
+.sm-cc-create-modal .sm-cc-entry-grid input[type="number"] { max-width: 100px; }
+.sm-cc-create-modal .sm-cc-entry-grid input.sm-auto-tohit { max-width: 72px; }
+
+/* Inline labels kept compact */
+.sm-cc-create-modal label { font-size: 0.9em; color: var(--text-muted); margin-right: .25rem; }
+.sm-cc-entry-head label { margin-right: .35rem; }
+.sm-cc-create-modal .sm-cc-searchbar label { align-self: center; }
+
+/* Ensure entry and spell controls stack vertically */
+.sm-cc-create-modal .sm-cc-entries,
+.sm-cc-create-modal .sm-cc-spells { display: block; }
+.sm-cc-create-modal .sm-cc-entries .setting-item-info,
+.sm-cc-create-modal .sm-cc-spells .setting-item-info { display: block; width: 100%; margin-bottom: .35rem; }
+.sm-cc-create-modal .sm-cc-entries .setting-item-control,
+.sm-cc-create-modal .sm-cc-spells .setting-item-control { display: flex; flex-direction: column; align-items: stretch; gap: .5rem; width: 100%; }
+.sm-cc-create-modal .sm-cc-entries .sm-cc-searchbar,
+.sm-cc-create-modal .sm-cc-spells .sm-cc-searchbar { width: 100%; }
+.sm-cc-create-modal .setting-item-control > * { max-width: 100%; }
+
+/* Entry header layout: [category | name (flex) | delete] */
+.sm-cc-create-modal .sm-cc-entry-head {
+    display: grid;
+    grid-template-columns: max-content 1fr max-content;
+    gap: .5rem;
+    align-items: center;
+}
+.sm-cc-create-modal .sm-cc-entry-head select { width: auto; }
+.sm-cc-create-modal .sm-cc-entry-name { width: 100%; min-width: 0; }
+
+/* Table-like layout for Stats and Skills */
+.sm-cc-create-modal .sm-cc-table { display: grid; gap: .35rem .5rem; align-items: center; }
+.sm-cc-create-modal .sm-cc-row { display: contents; }
+.sm-cc-create-modal .sm-cc-cell { align-self: center; }
+.sm-cc-create-modal .sm-cc-header .sm-cc-cell { font-weight: 600; color: var(--text-muted); }
+.sm-cc-create-modal .sm-cc-stats-table { grid-template-columns: 100px 90px 80px 60px 90px; }
+.sm-cc-create-modal .sm-cc-stats-table input[type="number"] { width: 100%; }
+.sm-cc-create-modal .sm-cc-skills-table { grid-template-columns: 160px 60px 90px 70px; }
+.sm-cc-create-modal .sm-cc-skills-table input[type="checkbox"] { justify-self: start; }
+
+/* Compact inline number controls */
+.sm-inline-number { display: inline-flex; align-items: center; gap: .25rem; }
+.sm-inline-number input[type="number"] { width: 84px; }
+.btn-compact { padding: 0 .4rem; min-width: 1.5rem; height: 1.6rem; line-height: 1.2; }
+
+/* Movement row should not overflow; children stay compact */
+.sm-cc-create-modal .sm-cc-move-ctl { display: flex; flex-direction: column; align-items: stretch; gap: .35rem; }
+.sm-cc-create-modal .sm-cc-move-row { flex-wrap: nowrap; justify-content: flex-end; gap: .5rem; }
+.sm-cc-create-modal .sm-cc-move-addrow { display: flex; justify-content: flex-end; }
+.sm-cc-create-modal .sm-cc-move-row > * { flex: 0 0 auto; }
+.sm-cc-create-modal .sm-cc-move-row select { max-width: 220px; }
+
+/* Entry auto compute groups */
+.sm-cc-create-modal .sm-cc-auto { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; }
+.sm-cc-create-modal .sm-auto-group { display: inline-flex; align-items: center; gap: .35rem; flex-wrap: wrap; }
+.sm-cc-create-modal .sm-auto-tohit { width: 72px; }
+.sm-cc-create-modal .sm-auto-dmg { width: 220px; }
+
+/* Select with search */
+.sm-cc-create-modal .sm-select-wrap { display: flex; flex-direction: column; gap: .25rem; min-width: 0; }
+.sm-cc-create-modal .sm-select-search { width: 100%; }
+
+/* Preset typeahead menu */
+.sm-cc-create-modal .sm-preset-box { position: relative; }
+.sm-cc-create-modal .sm-preset-input { width: 100%; }
+.sm-cc-create-modal .sm-preset-menu {
+    position: absolute; left: 0; right: 0; top: calc(100% + 4px);
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: .25rem;
+    display: none;
+    max-height: 240px; overflow: auto; z-index: 1000;
+}
+.sm-cc-create-modal .sm-preset-box.is-open .sm-preset-menu { display: block; }
+.sm-cc-create-modal .sm-preset-item { padding: .25rem .35rem; border-radius: 6px; cursor: pointer; }
+.sm-cc-create-modal .sm-preset-item:hover { background: var(--background-secondary); }
+
+/* Such-dropdown (SearchDropdown) */
+.sm-sd { position: relative; display: inline-block; width: auto; min-width: 0; }
+.sm-sd__input { width: 100%; }
+.sm-sd__menu { position: absolute; left: 0; right: 0; top: calc(100% + 4px); background: var(--background-primary); border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: .25rem; display: none; max-height: 240px; overflow: auto; z-index: 1000; }
+.sm-sd.is-open .sm-sd__menu { display: block; }
+.sm-sd__item { padding: .25rem .35rem; border-radius: 6px; cursor: pointer; }
+.sm-sd__item.is-active, .sm-sd__item:hover { background: var(--background-secondary); }
+
+/* Creature terrain picker */
+.sm-cc-create-modal .sm-cc-auto { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
+.sm-cc-create-modal .sm-cc-auto select { min-width: 160px; }
+.sm-cc-create-modal .sm-cc-auto input[type="text"] { min-width: 160px; }
+
+/* Creature terrain picker */
+.sm-cc-terrains { position: relative; }
+.sm-cc-terrains__trigger {
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-secondary);
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.sm-cc-terrains__menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 0.35rem 0.5rem;
+    display: none;
+    min-width: 220px;
+    max-height: 220px;
+    overflow: auto;
+    z-index: 1000;
+}
+.sm-cc-terrains.is-open .sm-cc-terrains__menu { display: block; }
+.sm-cc-terrains__item { display: flex; align-items: center; gap: .5rem; padding: .15rem 0; }
+
+/* Inline compact row for grouped fields */
+.sm-cc-inline-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .35rem .6rem;
+}
+.sm-cc-inline-row label { font-size: 0.9em; color: var(--text-muted); }
+
+/* Region Compendium */
+.sm-region-compendium { padding:.5rem 0; }
+.sm-region-compendium .desc { color: var(--text-muted); margin-bottom:.25rem; }
+.sm-region-compendium .rows { margin-top:.5rem; }
+.sm-region-compendium .row { display:flex; gap:.5rem; align-items:center; margin:.25rem 0; }
+.sm-region-compendium .row input[type="text"] { flex:1; min-width:0; }
+.sm-region-compendium .addbar { display:flex; gap:.5rem; margin-top:.5rem; }
+.sm-region-compendium .addbar input[type="text"] { flex:1; min-width:0; }
+
 /* === Cartographer Shell === */
 .cartographer-host {
     display: flex;
@@ -163,7 +341,62 @@ export const HEX_PLUGIN_CSS = `
     color: var(--text-on-accent, #fff);
 }
 
+/* Mode Dropdown */
+.sm-mode-dropdown {
+    position: relative;
+}
+
+.sm-mode-dropdown__trigger {
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-secondary);
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.sm-mode-dropdown__menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 0.25rem;
+    min-width: 160px;
+    display: none;
+    flex-direction: column;
+    gap: 0.25rem;
+    z-index: 1000;
+}
+
+.sm-mode-dropdown.is-open .sm-mode-dropdown__menu {
+    display: flex;
+}
+
+.sm-mode-dropdown__item {
+    border: none;
+    background: transparent;
+    text-align: left;
+    padding: 0.35rem 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.sm-mode-dropdown__item:hover {
+    background: var(--background-modifier-hover);
+}
+
+.sm-mode-dropdown__item.is-active {
+    background: var(--interactive-accent, var(--color-accent));
+    color: var(--text-on-accent, #fff);
+}
+
 /* === Cartographer Panels (Editor & Inspector) === */
+
+/* Library header */
+.sm-library .sm-lib-header { display:flex; gap:.4rem; margin:.25rem 0 .25rem; }
+.sm-library .sm-lib-header button { border: 1px solid var(--background-modifier-border); background: var(--background-secondary); padding:.25rem .75rem; border-radius:6px; cursor:pointer; }
+.sm-library .sm-lib-header button.is-active { background: var(--interactive-accent); color: var(--text-on-accent,#fff); }
 .sm-cartographer__panel {
     display: flex;
     flex-direction: column;
@@ -264,6 +497,18 @@ export const HEX_PLUGIN_CSS = `
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem;
+}
+
+.sm-cartographer__travel-clock {
+    font-weight: 600;
+    margin-right: .5rem;
+}
+
+.sm-cartographer__travel-tempo {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    margin-left: auto;
 }
 
 .sm-cartographer__travel-button {

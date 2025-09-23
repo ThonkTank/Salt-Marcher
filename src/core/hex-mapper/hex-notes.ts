@@ -3,7 +3,7 @@ import { App, TFile, TFolder, normalizePath } from "obsidian";
 import { parseOptions } from "../options";
 
 export type TileCoord = { r: number; c: number };
-export type TileData  = { terrain: string; note?: string };
+export type TileData  = { terrain: string; region?: string; note?: string };
 
 const FM_TYPE = "hex";
 
@@ -56,11 +56,14 @@ function matchesThisMap(app: App, file: TFile, mapPath: string): boolean {
 
 function buildMarkdown(coord: TileCoord, mapPath: string, folderPrefix: string, data: TileData): string {
     const terrain = data.terrain ?? "";
+    const region = (data.region ?? "").trim();
     const mapName = mapNameFromPath(mapPath);
     const bodyNote = (data.note ?? "Notizen hier …").trim();
     return [
         "---",
         `type: ${FM_TYPE}`,
+        `smHexTile: true`,
+        `region: "${region}"`,
         `row: ${coord.r}`,
         `col: ${coord.c}`,
         `map_path: "${mapPath}"`,
@@ -196,6 +199,7 @@ export async function loadTile(
 
     return {
         terrain: (typeof fmc.terrain === "string" ? fmc.terrain : "") ?? "",
+        region: (typeof (fmc as any).region === "string" ? (fmc as any).region : "") ?? "",
         note: note || undefined,
     };
 }
@@ -217,12 +221,14 @@ export async function saveTile(
         return await app.vault.create(newPath, md);
     }
 
-    // Frontmatter aktualisieren (terrain nur setzen, wenn explizit übergeben)
+    // Frontmatter aktualisieren (nur setzen, wenn explizit übergeben)
     await app.fileManager.processFrontMatter(file, (f) => {
         f.type = FM_TYPE;
+        (f as any).smHexTile = true;
         f.row = coord.r;
         f.col = coord.c;
         f.map_path = mapPath;
+        if (data.region !== undefined) (f as any).region = data.region ?? "";
         if (data.terrain !== undefined) f.terrain = data.terrain ?? "";
         if (typeof f.terrain !== "string") f.terrain = "";
     });

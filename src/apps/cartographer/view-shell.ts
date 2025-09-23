@@ -45,10 +45,7 @@ export type CartographerController = {
     setMode(id: string): Promise<void>;
 };
 
-type ModeButton = {
-    mode: CartographerMode;
-    button: HTMLButtonElement;
-};
+type ModeMenuItem = { mode: CartographerMode; item: HTMLButtonElement };
 
 export async function mountCartographer(
     app: App,
@@ -71,7 +68,11 @@ export async function mountCartographer(
     let loadToken = 0;
     let activeMode: CartographerMode | null = null;
     let modeChange = Promise.resolve();
-    const modeButtons: ModeButton[] = [];
+    const modeMenuItems: ModeMenuItem[] = [];
+    let modeTriggerBtn: HTMLButtonElement | null = null;
+    let modeMenuEl: HTMLElement | null = null;
+    let modeDropdownEl: HTMLElement | null = null;
+    let unbindOutsideClick: (() => void) | null = null;
     let currentOptions: HexOptions | null = null;
 
     const modeCtx: CartographerModeContext = {
@@ -89,7 +90,6 @@ export async function mountCartographer(
         createTravelGuideMode(),
         createEditorMode(),
         createInspectorMode(),
-        createNotesMode(),
     ];
 
     const onHexClick = async (event: Event) => {
@@ -125,10 +125,12 @@ export async function mountCartographer(
                 console.error("[cartographer] mode exit failed", err);
             }
             activeMode = next;
-            for (const { mode, button } of modeButtons) {
+            // Reflect active mode in dropdown UI
+            if (modeTriggerBtn) modeTriggerBtn.textContent = next.label;
+            for (const { mode, item } of modeMenuItems) {
                 const isActive = mode.id === next.id;
-                button.classList.toggle("is-active", isActive);
-                button.ariaPressed = isActive ? "true" : "false";
+                item.classList.toggle("is-active", isActive);
+                item.ariaSelected = isActive ? "true" : "false";
             }
             try {
                 await next.onEnter(modeCtx);
@@ -235,14 +237,59 @@ export async function mountCartographer(
             }
         },
         titleRightSlot: (slot) => {
+            // Build dropdown for modes
             slot.classList.add("sm-cartographer__mode-switch");
+            const dropdown = slot.createDiv({ cls: "sm-mode-dropdown" });
+            modeDropdownEl = dropdown;
+
+            // Trigger button shows current mode label
+            modeTriggerBtn = dropdown.createEl("button", {
+                text: modes[0]?.label ?? "Mode",
+                attr: { type: "button", "aria-haspopup": "listbox", "aria-expanded": "false" },
+            });
+            modeTriggerBtn.classList.add("sm-mode-dropdown__trigger");
+
+            // Menu list
+            modeMenuEl = dropdown.createDiv({ cls: "sm-mode-dropdown__menu", attr: { role: "listbox" } });
+
+            const closeMenu = () => {
+                if (!modeMenuEl || !modeTriggerBtn) return;
+                modeDropdownEl?.classList.remove("is-open");
+                modeTriggerBtn.setAttr("aria-expanded", "false");
+                if (unbindOutsideClick) {
+                    unbindOutsideClick();
+                    unbindOutsideClick = null;
+                }
+            };
+
+            const openMenu = () => {
+                if (!modeMenuEl || !modeTriggerBtn) return;
+                modeDropdownEl?.classList.add("is-open");
+                modeTriggerBtn.setAttr("aria-expanded", "true");
+                const onDocClick = (ev: MouseEvent) => {
+                    if (!dropdown.contains(ev.target as Node)) closeMenu();
+                };
+                document.addEventListener("mousedown", onDocClick);
+                unbindOutsideClick = () => document.removeEventListener("mousedown", onDocClick);
+            };
+
+            modeTriggerBtn.onclick = () => {
+                if (!modeMenuEl) return;
+                const isOpen = modeDropdownEl?.classList.contains("is-open");
+                if (isOpen) closeMenu(); else openMenu();
+            };
+
             for (const mode of modes) {
-                const button = slot.createEl("button", { text: mode.label, attr: { type: "button" } });
-                button.onclick = () => {
+                const item = modeMenuEl.createEl("button", {
+                    text: mode.label,
+                    attr: { role: "option", type: "button", "data-id": mode.id },
+                });
+                item.classList.add("sm-mode-dropdown__item");
+                item.onclick = () => {
+                    closeMenu();
                     void switchMode(mode.id);
                 };
-                button.ariaPressed = "false";
-                modeButtons.push({ mode, button });
+                modeMenuItems.push({ mode, item });
             }
         },
     });
@@ -266,6 +313,7 @@ export async function mountCartographer(
         await teardownLayer();
         headerHandle?.destroy();
         headerHandle = null;
+        if (unbindOutsideClick) { unbindOutsideClick(); unbindOutsideClick = null; }
         host.empty();
         host.removeClass("sm-cartographer");
     }

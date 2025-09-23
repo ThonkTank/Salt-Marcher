@@ -13,9 +13,11 @@ export function createStore(): Store {
         tokenRC: { r: 0, c: 0 },
         route: [],
         editIdx: null,
-        tokenSpeed: 1,
+        tokenSpeed: 3, // mph default party speed
         currentTile: null,
         playing: false,
+        tempo: 1,
+        clockHours: 0,
     };
 
     const subs = new Set<(s: LogicStateSnapshot) => void>();

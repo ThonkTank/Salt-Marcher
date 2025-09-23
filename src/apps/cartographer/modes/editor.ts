@@ -1,5 +1,6 @@
 import type { TFile } from "obsidian";
 import type { CartographerMode, CartographerModeContext, HexCoord } from "../view-shell";
+import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
 import { createBrushTool } from "../editor/tools/terrain-brush/brush-options";
 import type { ToolModule, ToolContext } from "../editor/tools/tools-api";
 import type { RenderHandles } from "../../../core/hex-mapper/hex-render";
@@ -120,6 +121,7 @@ export function createEditorMode(): CartographerMode {
             for (const tool of tools) {
                 toolSelect.createEl("option", { value: tool.id, text: tool.label });
             }
+            enhanceSelectToSearch(toolSelect, 'Such-dropdown…');
             toolSelect.onchange = () => {
                 void switchTool(toolSelect?.value ?? tools[0].id);
             };

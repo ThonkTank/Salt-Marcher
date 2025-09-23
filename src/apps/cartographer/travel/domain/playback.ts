@@ -19,11 +19,14 @@ export function createPlayback(cfg: {
     adapter: RenderAdapter;
     store: Store;
     minSecondsPerTile: number;
+    onEncounter?: () => void | Promise<void>;
 }) {
-    const { app, getMapFile, adapter, store, minSecondsPerTile } = cfg;
+    const { app, getMapFile, adapter, store, minSecondsPerTile, onEncounter } = cfg;
 
     let playing = false;
     let currentRun: Promise<void> | null = null;
+    let clockTimer: number | null = null;
+    let hourAcc = 0; // accumulate fractional hours for encounter checks
 
     function trimRoutePassed(token: Coord) {
         const cur = store.get();
@@ -52,6 +55,21 @@ export function createPlayback(cfg: {
         const run = (async () => {
             playing = true;
             store.set({ playing: true });
+            // start clock
+            if (clockTimer == null) {
+                clockTimer = window.setInterval(() => {
+                    const s = store.get();
+                    const tempo = Math.max(0.1, Math.min(10, s.tempo || 1));
+                    const nextHours = (s.clockHours || 0) + tempo;
+                    hourAcc += tempo;
+                    // Encounter check per full hour elapsed
+                    while (hourAcc >= 1) {
+                        hourAcc -= 1;
+                        void checkEncounter();
+                    }
+                    store.set({ clockHours: nextHours });
+                }, 1000);
+            }
 
             try {
                 while (playing) {
@@ -62,7 +80,10 @@ export function createPlayback(cfg: {
                     adapter.ensurePolys([{ r: next.r, c: next.c }]);
 
                     const terr = await loadTerrainSpeed(app, mapFile, next);
-                    const seconds = Math.max(minSecondsPerTile, s.tokenSpeed * terr);
+                    const mph = Math.max(0.1, s.tokenSpeed); // party speed mph
+                    const hoursPerTile = (3 / mph) * terr; // 3 miles per tile
+                    const tempo = Math.max(0.1, Math.min(10, s.tempo || 1));
+                    const seconds = Math.max(minSecondsPerTile, hoursPerTile / tempo);
                     const dur = seconds * 1000;
 
                     const ctr = adapter.centerOf(next);
@@ -92,6 +113,7 @@ export function createPlayback(cfg: {
             } finally {
                 playing = false;
                 store.set({ playing: false });
+                if (clockTimer != null) { clearInterval(clockTimer); clockTimer = null; }
             }
         })();
 
@@ -112,6 +134,32 @@ export function createPlayback(cfg: {
         playing = false;
         store.set({ playing: false });
         adapter.token.stop?.();
+        if (clockTimer != null) { clearInterval(clockTimer); clockTimer = null; }
+    }
+
+    async function checkEncounter() {
+        try {
+            const mapFile = getMapFile(); if (!mapFile) return;
+            const s = store.get();
+            const cur = s.currentTile || s.tokenRC;
+            if (!cur) return;
+            const { loadTile } = await import("../../../../core/hex-mapper/hex-notes");
+            const tile = await loadTile(app, mapFile, cur).catch(() => null);
+            const regionName = (tile as any)?.region as string | undefined;
+            if (!regionName) return; // no region → skip
+            const { loadRegions } = await import("../../../../core/regions-store");
+            const regions = await loadRegions(app);
+            const region = regions.find(r => (r.name || "").toLowerCase() === regionName.toLowerCase());
+            const odds = (region as any)?.encounterOdds as number | undefined;
+            const n = Number.isFinite(odds) && (odds as number) > 0 ? (odds as number) : undefined;
+            if (!n) return;
+            const roll = Math.floor(Math.random() * n) + 1;
+            if (roll === 1) {
+                onEncounter && (await onEncounter());
+            }
+        } catch (err) {
+            console.error("[travel] encounter check failed", err);
+        }
     }
 
     return { play, pause };

@@ -8,7 +8,7 @@ analysieren und mit Reiserouten versehen. Das Plugin ist in klar getrennte Layer
 | Layer | Standort | Aufgabe | Detail-Dokument |
 | --- | --- | --- | --- |
 | Plugin-Bootstrap | `src/app/` | Registriert Views/Commands, lädt CSS & Terrain-Daten und koordiniert Lifecycle sowie Watcher. | – |
-| Feature-Apps | `src/apps/` | Enthalten aktive Obsidian-Views (Cartographer mit Travel/Editor/Inspector-Modi sowie Terrain-Editor); Legacy-Hüllen liegen gebündelt unter `src/apps/legacy/`. | Pro Feature in `*Overview.txt` |
+| Feature-Apps | `src/apps/` | Enthalten aktive Obsidian-Views (Cartographer mit Travel/Editor/Inspector-Modi) sowie die neue Library für Terrains/Regionen/Kreaturen. | Pro Feature in `*Overview.txt` |
 | Core-Services | `src/core/` | Bietet Hex-Geometrie, Map-/Tile-Dateioperationen, Terrain-Verwaltung und Workspace-Helfer. | `src/core/CoreOverview.txt` |
 | UI-Bausteine | `src/ui/` | Stellt wiederverwendbare Modals/Bestätigungsdialoge für Features bereit. | `src/ui/UiOverview.txt` |
 | Styling | `src/app/css.ts` | Liefert das zentrale CSS, das beim Plugin-Start injiziert wird. | – |
@@ -38,8 +38,8 @@ src/
 - Verteilt Events/Handler an Feature-Layer und Core-Services.
 
 ### Feature-Apps (`src/apps/`)
-- **Cartographer (`cartographer/`):** Stellt den `sm-cartographer`-Shell bereit, rendert Karten via `renderHexMap`/`createMapLayer`, schaltet Travel/Editor/Inspector-Modi über einen Header-Slot, kapselt deren Sidebars und bündelt Open/Create/Delete über `createMapManager`. View & Command sind die primären Entry-Points im Plugin.
-- **Terrain Editor (`terrain-editor/`):** Pflegt Farb- und Geschwindigkeits-Paletten über den Core-Terrain-Store und synchronisiert Änderungen mit `terrain.ts`.
+- **Cartographer (`cartographer/`):** Stellt den `sm-cartographer`-Shell bereit, rendert Karten via `renderHexMap`/`createMapLayer`, schaltet Travel/Editor/Inspector-Modi über ein Dropdown im Header, kapselt deren Sidebars und bündelt Open/Create/Delete über `createMapManager`.
+- **Library (`library/`):** Vereinheitlichte Bibliothek für Terrains, Regionen und Kreaturen. Bietet Modus-Tabs, gemeinsame Such-/Erstellen-Leiste und Ergebnisliste sowie Inline-Bearbeitung für Terrains/Regionen. Terrains/Regionen bearbeiten Sammeldateien (`SaltMarcher/Terrains.md`, `SaltMarcher/Regions.md`), Kreaturen nutzen per‑Datei‑Speicherung unter `SaltMarcher/Creatures/`.
 - **Legacy-Hüllen (`legacy/`):** Bewahrt frühere Views (Map Editor, Map Gallery, Travel Guide) als Kompatibilitäts-Schicht. Details siehe `src/apps/legacy/LegacyAppsOverview.txt`.
 
 ### Core-Services (`src/core/`)

@@ -8,6 +8,7 @@ import { TERRAIN_COLORS } from "../../../../../core/terrain";
 type BrushOpts = {
     radius: number;               // 0 == nur die angeklickte Zelle
     terrain: string;              // z. B. "Wald" | "Meer" | "Berg" | ""
+    region?: string;              // Region-Name (für Encounter/Zuordnung)
     mode?: "paint" | "erase";     // default: "paint"
 };
 
@@ -45,7 +46,7 @@ export async function applyBrush(
 
         // paint
         const terrain = opts.terrain ?? "";
-        await saveTile(app, mapFile, coord, { terrain });
+        await saveTile(app, mapFile, coord, { terrain, region: opts.region ?? "" });
         const color = TERRAIN_COLORS[terrain] ?? "transparent";
         handles.setFill(coord, color);
     }

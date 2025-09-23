@@ -20,7 +20,9 @@ export async function createHexMapFile(
 ): Promise<TFile> {
     const name = sanitizeFileName(rawName) || "Neue Hex Map";
     const content = buildHexMapMarkdown(name, opts);
-    const path = await ensureUniquePath(app, `${name}.md`);
+    const mapsFolder = "SaltMarcher/Maps";
+    await app.vault.createFolder(mapsFolder).catch(() => {});
+    const path = await ensureUniquePath(app, `${mapsFolder}/${name}.md`);
     const file = await app.vault.create(path, content);
 
     // Sofort Start-Tiles anlegen → Renderer hat Bounds, Brush/Inspector laufen ohne Reload
@@ -37,6 +39,9 @@ export function buildHexMapMarkdown(name: string, opts: HexBlockOptions): string
     const radius = typeof opts.radius === "number" ? opts.radius : 42;
 
     return [
+        "---",
+        'smMap: true',
+        "---",
         `# ${name}`,
         "",
         "```hex3x3",

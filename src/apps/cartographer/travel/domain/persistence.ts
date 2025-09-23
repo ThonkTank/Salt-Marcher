@@ -23,6 +23,9 @@ export async function writeTokenToTiles(app: App, mapFile: TFile, rc: Coord): Pr
             await saveTile(app, mapFile, t, { ...data, [TOKEN_KEY]: false });
         }
     }
+    // Do not create a new tile file on empty space; only update if the tile already exists.
+    const exists = tiles.some((t) => t.r === rc.r && t.c === rc.c);
+    if (!exists) return;
     const cur = await loadTile(app, mapFile, rc).catch(() => ({} as any));
     await saveTile(app, mapFile, rc, { ...cur, [TOKEN_KEY]: true });
 }

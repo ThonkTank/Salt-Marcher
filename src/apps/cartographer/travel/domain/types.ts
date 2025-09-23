@@ -8,7 +8,9 @@ export type LogicStateSnapshot = {
     tokenRC: Coord;
     route: RouteNode[];        // nur Wegpunkte NACH tokenRC
     editIdx: number | null;
-    tokenSpeed: number;
+    tokenSpeed: number;        // Party speed in mph
     currentTile: Coord | null; // Fortschritt beim Abspielen
     playing: boolean;
+    tempo?: number;            // playback tempo (hours per real second)
+    clockHours?: number;       // accumulated in-game hours since start
 };
