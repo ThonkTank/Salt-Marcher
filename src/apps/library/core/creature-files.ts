@@ -26,6 +26,10 @@ export type StatblockData = {
     skillsExpertise?: string[];
     sensesList?: string[];
     languagesList?: string[];
+    resistances?: string[];
+    immunities?: string[];
+    vulnerabilities?: string[];
+    equipmentNotes?: string;
     cr?: string;
     xp?: string;
     traits?: string; actions?: string; legendary?: string;
@@ -84,7 +88,12 @@ function statblockToMarkdown(d: StatblockData): string {
     if (d.str) lines.push(`str: "${d.str}"`); if (d.dex) lines.push(`dex: "${d.dex}"`); if (d.con) lines.push(`con: "${d.con}"`); if (d.int) lines.push(`int: "${d.int}"`); if (d.wis) lines.push(`wis: "${d.wis}"`); if (d.cha) lines.push(`cha: "${d.cha}"`); if (d.pb) lines.push(`pb: "${d.pb}"`);
     if (d.saveProf) { const profs = Object.entries(d.saveProf).filter(([, v]) => !!v).map(([k]) => k.toUpperCase()); if (profs.length) lines.push(`saves_prof: ${yamlList(profs)}`); }
     if (d.skillsProf && d.skillsProf.length) lines.push(`skills_prof: ${yamlList(d.skillsProf)}`); if (d.skillsExpertise && d.skillsExpertise.length) lines.push(`skills_expertise: ${yamlList(d.skillsExpertise)}`);
-    const sensesYaml = yamlList(d.sensesList); if (sensesYaml) lines.push(`senses: ${sensesYaml}`); const langsYaml = yamlList(d.languagesList); if (langsYaml) lines.push(`languages: ${langsYaml}`);
+    const sensesYaml = yamlList(d.sensesList); if (sensesYaml) lines.push(`senses: ${sensesYaml}`);
+    const langsYaml = yamlList(d.languagesList); if (langsYaml) lines.push(`languages: ${langsYaml}`);
+    const resistancesYaml = yamlList(d.resistances); if (resistancesYaml) lines.push(`resistances: ${resistancesYaml}`);
+    const immunitiesYaml = yamlList(d.immunities); if (immunitiesYaml) lines.push(`immunities: ${immunitiesYaml}`);
+    const vulnerabilitiesYaml = yamlList(d.vulnerabilities); if (vulnerabilitiesYaml) lines.push(`vulnerabilities: ${vulnerabilitiesYaml}`);
+    const equipmentNotes = d.equipmentNotes?.trim(); if (equipmentNotes) lines.push(`equipment_notes: "${equipmentNotes.replace(/"/g, '\\"').replace(/\r?\n/g, "\\n")}"`);
     if (d.cr) lines.push(`cr: "${d.cr}"`); if (d.xp) lines.push(`xp: "${d.xp}"`);
     const entries = (d.entries && d.entries.length) ? d.entries : (d.actionsList && d.actionsList.length ? d.actionsList.map(a => ({ category: 'action' as const, ...a })) : undefined);
     if (entries && entries.length) { const json = JSON.stringify(entries).replace(/"/g, '\\"'); lines.push(`entries_structured_json: "${json}"`); }
@@ -99,7 +108,13 @@ function statblockToMarkdown(d: StatblockData): string {
     const pbNum = parseNum(d.pb) ?? 0; if (d.saveProf) { const parts: string[] = []; const map: Array<[keyof typeof d.saveProf, string, string|undefined]> = [['str','Str',d.str],['dex','Dex',d.dex],['con','Con',d.con],['int','Int',d.int],['wis','Wis',d.wis],['cha','Cha',d.cha]]; for (const [key,label,score] of map) { if (d.saveProf[key]) { const mod = abilityMod(score) ?? 0; parts.push(`${label} ${fmtSigned(mod + pbNum)}`); } } if (parts.length) lines.push(`Saves ${parts.join(", ")}`); }
     const getSet = (arr?: string[]) => new Set((arr || []).map(s => s.trim()).filter(Boolean)); const profSet = getSet(d.skillsProf); const expSet = getSet(d.skillsExpertise);
     if (profSet.size || expSet.size) { const parts: string[] = []; const allSkills = Array.from(new Set([...Object.keys(SKILL_TO_ABILITY)])); for (const sk of allSkills) { const hasProf = profSet.has(sk) || expSet.has(sk); if (!hasProf) continue; const abilKey = SKILL_TO_ABILITY[sk]; const mod = abilityMod((d as any)[abilKey]) ?? 0; const bonus = expSet.has(sk) ? pbNum * 2 : pbNum; parts.push(`${sk} ${fmtSigned(mod + bonus)}`); } if (parts.length) lines.push(`Skills ${parts.join(", ")}`); }
-    if (d.sensesList && d.sensesList.length) lines.push(`Senses ${d.sensesList.join(", ")}`); if (d.languagesList && d.languagesList.length) lines.push(`Languages ${d.languagesList.join(", ")}`); if (d.cr || d.pb || d.xp) { const bits: string[] = []; if (d.cr) bits.push(`CR ${d.cr}`); if (pbNum) bits.push(`PB ${fmtSigned(pbNum)}`); if (d.xp) bits.push(`XP ${d.xp}`); if (bits.length) lines.push(bits.join("; ")); } lines.push("");
+    if (d.resistances && d.resistances.length) lines.push(`Damage Resistances ${d.resistances.join(", ")}`);
+    if (d.immunities && d.immunities.length) lines.push(`Damage Immunities ${d.immunities.join(", ")}`);
+    if (d.vulnerabilities && d.vulnerabilities.length) lines.push(`Damage Vulnerabilities ${d.vulnerabilities.join(", ")}`);
+    if (d.sensesList && d.sensesList.length) lines.push(`Senses ${d.sensesList.join(", ")}`);
+    if (d.languagesList && d.languagesList.length) lines.push(`Languages ${d.languagesList.join(", ")}`);
+    if (d.cr || d.pb || d.xp) { const bits: string[] = []; if (d.cr) bits.push(`CR ${d.cr}`); if (pbNum) bits.push(`PB ${fmtSigned(pbNum)}`); if (d.xp) bits.push(`XP ${d.xp}`); if (bits.length) lines.push(bits.join("; ")); }
+    lines.push("");
     if (entries && entries.length) {
         const groups: Record<string, typeof entries> = { trait: [], action: [], bonus: [], reaction: [], legendary: [] } as any;
         for (const e of entries) { (groups[e.category] ||= []).push(e); }
@@ -111,6 +126,7 @@ function statblockToMarkdown(d: StatblockData): string {
         if (d.legendary) { lines.push("## Legendary Actions\n"); lines.push(d.legendary.trim()); lines.push(""); }
     }
     if (d.spellsKnown && d.spellsKnown.length) { lines.push("## Spellcasting\n"); const byLevel: Record<string, Array<{ name: string; uses?: string; notes?: string }>> = {}; for (const s of d.spellsKnown) { const key = s.level == null ? "unknown" : String(s.level); (byLevel[key] ||= []).push({ name: s.name, uses: s.uses, notes: s.notes }); } const order = Object.keys(byLevel).map(k => (k === 'unknown' ? Infinity : parseInt(k,10))).sort((a,b)=>a-b).map(n => n === Infinity ? 'unknown' : String(n)); for (const k of order) { const lvl = k === 'unknown' ? 'Spells' : (k === '0' ? 'Cantrips' : `Level ${k}`); lines.push(`- ${lvl}:`); for (const s of byLevel[k]) { const extra = [s.uses, s.notes].filter(Boolean).join('; '); lines.push(`  - ${s.name}${extra ? ` (${extra})` : ''}`); } } lines.push(""); }
+    if (equipmentNotes) { lines.push("## Equipment & Notes\n"); lines.push(equipmentNotes); lines.push(""); }
     return lines.join("\n");
 }
 
