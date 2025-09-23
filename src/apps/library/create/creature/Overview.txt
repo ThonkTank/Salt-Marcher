@@ -6,7 +6,7 @@ creature/
 ├─ index.ts              – Exportiert die öffentlichen Mount-/Modal-Hooks.
 ├─ modal.ts              – Orchestriert den Dialog und bündelt die Sections.
 ├─ section-core-stats.ts – UI für Identität, Kernwerte, Attribute & Listen.
-├─ section-entries.ts    – Strukturierte Einträge (Traits/Aktionen/... ).
+├─ section-entries.ts    – Tab-basiertes Entry-Interface mit Usage-Badges & Auto-Werten.
 ├─ section-spells-known.ts – Verwaltung bekannter Zauber.
 └─ presets.ts            – Geteilte Konstanten für Dropdowns/Enums.
 ```
@@ -18,9 +18,9 @@ Unterstützende Utilities liegen in `shared/` (`token-editor`, `stat-utils`).
 - **Attribute & Fertigkeiten mit Autofill:** Tabelle für STR–CHA inkl. Save-Proficiencies und Skills, automatische Modifikatorberechnung über gemeinsame Utilities.【F:src/apps/library/create/creature/section-core-stats.ts†L42-L132】【F:src/apps/library/create/shared/stat-utils.ts†L1-L33】
 - **Freitext-Listen (Sinne/Sprachen/Speeds):** Token-Editor-Chips zur Verwaltung variabler Listenfelder.【F:src/apps/library/create/creature/section-core-stats.ts†L134-L149】
 - **Defensive Listen & Ausrüstung:** Chip-Editoren für Resistances, Immunities, Vulnerabilities sowie ein Equipment-&-Notes-Textarea befüllen die neuen Felder im Statblock-Datentyp.【F:src/apps/library/create/creature/modal.ts†L104-L165】
-- **Strukturierte Einträge für Traits/Aktionen:** Kategoriebezogene Karten mit Feldern für Art, Trefferwürfe, Schaden, Saves, Recharge und Markdown-Text, inkl. Auto-Berechnung aus Ability/Proficiency.【F:src/apps/library/create/creature/section-entries.ts†L8-L151】
+- **Strukturierte Einträge für Traits/Aktionen:** Tab-Navigation für Traits/Actions/Bonus/Reactions/Legendary/Lair, Usage-Dropdowns mit Recharge-/Limited-Use-Badges sowie Mehrfach-Schadenszeilen inklusive Auto-Berechnung aus Ability & PB.【F:src/apps/library/create/creature/section-entries.ts†L90-L409】
 - **Zauber-Verwaltung:** Typeahead-Auswahl bekannter Zauber mit Level-, Nutzungs- und Notizfeldern.【F:src/apps/library/create/creature/section-spells-known.ts†L8-L70】
-- **Export als Markdown/YAML:** `statblockToMarkdown` schreibt strukturierte JSON/YAML-Felder (inkl. Resistances/Immunities/Vulnerabilities und Equipment-Notizen) für Frontmatter und geordnete Abschnittsausgabe.【F:src/apps/library/core/creature-files.ts†L55-L157】
+- **Export als Markdown/YAML:** `statblockToMarkdown` schreibt strukturierte JSON/YAML-Felder (inkl. Resistances/Immunities/Vulnerabilities und Equipment-Notizen) für Frontmatter und geordnete Abschnittsausgabe.【F:src/apps/library/core/creature-files.ts†L179-L238】
 
 ## Statblock-Anforderungen (aus Referenzen)
 - **Meta & Kampf-Hauptdaten:** Name, Größe, Kreaturentyp(+Tags), Gesinnung, AC, Initiative, HP/Hit Dice, Speed-Varianten.【F:References, do not delete!/rulebooks/Statblocks/11_Monsters.md†L5-L88】
@@ -31,9 +31,9 @@ Unterstützende Utilities liegen in `shared/` (`token-editor`, `stat-utils`).
 ## Was funktioniert bereits gut?
 - **Klares Navigationsgerüst:** Breadcrumb, Stepper und Spaltenfokus lassen schnell zwischen Grundwerten, Details und Aktionen springen und halten den Namen live präsent.【F:src/apps/library/create/creature/modal.ts†L44-L128】
 - **Wiederverwendbare UI-Hilfen:** Suche-fähige Dropdowns, Inline-Stepper und Token-Chips sorgen für schnelle Eingabe wiederkehrender Felder.【F:src/apps/library/create/creature/modal.ts†L118-L161】【F:src/apps/library/create/shared/token-editor.ts†L1-L63】
-- **Automatik für Würfelwerte:** Treffer- und Schadenswerte lassen sich aus Ability + PB berechnen, wodurch Inkonsistenzen reduziert werden.【F:src/apps/library/create/creature/section-entries.ts†L68-L142】
+- **Automatik für Würfelwerte:** Trefferbonus und mehrteilige Schadensstrings lassen sich aus Ability + PB ableiten; Änderungen aktualisieren die finalen Werte automatisch.【F:src/apps/library/create/creature/section-entries.ts†L318-L407】
 - **Footer-Feedback:** Zusammenfassungschips & Warn-Badges zeigen fehlende Pflichtfelder an und deaktivieren Speichern, bis Mindestanforderungen erfüllt sind.【F:src/apps/library/create/creature/modal.ts†L168-L204】
-- **Markdown-Ausgabe deckt Kernabschnitte ab:** Export generiert YAML, Tabellen und strukturierte Abschnittsgruppen gemäß Vorlage.【F:src/apps/library/core/creature-files.ts†L79-L157】
+- **Markdown-Ausgabe deckt Kernabschnitte ab:** Export generiert YAML, gruppiert Traits/Actions/Bonus/Reactions/Legendary/Lair und übernimmt Usage-Badges sowie mehrteilige Schadensteile ins Markdown.【F:src/apps/library/core/creature-files.ts†L179-L238】
 
 ## Optimierungspotenzial
 - **Condition Immunities & Sonderfelder ergänzen:** Referenz-Statblocks führen neben Damage-Resistances häufig Condition Immunities oder Traits wie „Damage Threshold“, die weiterhin fehlen.【F:References, do not delete!/rulebooks/Statblocks/11_Monsters.md†L98-L128】
@@ -84,6 +84,6 @@ Unterstützende Utilities liegen in `shared/` (`token-editor`, `stat-utils`).
 - **index.ts:** Bündelt Exporte für Modal und Section-Mounts, damit externe Aufrufer eine schlanke API nutzen.【F:src/apps/library/create/creature/index.ts†L1-L6】
 - **modal.ts:** Baut Header mit Breadcrumb & Stepper, richtet Dreispaltenlayout samt Speed-/Entries-/Spells-Sektionen ein, erweitert die Mittelspalte um Resistances/Immunities/Vulnerabilities-Chips plus Equipment-&-Notes-Textarea, lädt Spell-Liste, zeigt Footer-Chips/Validierungen und öffnet bei Bedarf eine JSON-Vorschau.【F:src/apps/library/create/creature/modal.ts†L28-L210】
 - **section-core-stats.ts:** Baut Identity-/Kernwerte-Form, Fähigkeitentabelle, Skill-Checkboxen und Token-Editoren für Sinne/Sprachen.【F:src/apps/library/create/creature/section-core-stats.ts†L19-L149】
-- **section-entries.ts:** Rendert wiederholbare Karten für strukturierte Statblock-Einträge inklusive Auto-Berechnung und Markdown-Textbox.【F:src/apps/library/create/creature/section-entries.ts†L8-L151】
+- **section-entries.ts:** Rendert Tab-Panels je Kategorie, Usage-Editoren (Passive/Recharges/Limited Use), Auto-Damage-Reihen und Markdown-Textfelder pro Eintrag.【F:src/apps/library/create/creature/section-entries.ts†L90-L409】
 - **section-spells-known.ts:** Stellt Typeahead-Input bereit, verwaltet die gespeicherten Zauberobjekte und erzeugt Listenansicht mit Entfernen-Buttons.【F:src/apps/library/create/creature/section-spells-known.ts†L8-L70】
 - **presets.ts:** Enthält Konstanten/Typen für Größen, Typen, Gesinnungen, Skills, Bewegungsarten und Dropdown-Befüllung, damit UI & Export konsistent bleiben.【F:src/apps/library/create/creature/presets.ts†L1-L67】

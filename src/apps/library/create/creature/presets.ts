@@ -88,6 +88,7 @@ export const CREATURE_ENTRY_CATEGORIES = [
   ["bonus", "Bonusaktion"],
   ["reaction", "Reaktion"],
   ["legendary", "Legendäre Aktion"],
+  ["lair", "Lair-Aktion"],
 ] as const;
 export type CreatureEntryCategory = (typeof CREATURE_ENTRY_CATEGORIES)[number][0];
 

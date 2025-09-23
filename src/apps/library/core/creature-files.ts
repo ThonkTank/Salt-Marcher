@@ -4,6 +4,33 @@ import { App, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
 
 export const CREATURES_DIR = "SaltMarcher/Creatures";
 
+export type CreatureEntryAbilityKey = 'str'|'dex'|'con'|'int'|'wis'|'cha'|'best_of_str_dex';
+export type CreatureEntryAbilitySource = { ability: CreatureEntryAbilityKey; proficient?: boolean };
+export type CreatureEntryDamagePart = { dice: string; ability?: CreatureEntryAbilityKey; bonus?: string };
+export type CreatureEntryUsage =
+    | { type: 'passive' }
+    | { type: 'recharge'; min?: number | null; max?: number | null }
+    | { type: 'limited'; charges?: string | null; cost?: string | null };
+export type CreatureEntryCategory = 'trait'|'action'|'bonus'|'reaction'|'legendary'|'lair';
+export type CreatureEntry = {
+    category: CreatureEntryCategory;
+    name: string;
+    kind?: string;
+    to_hit?: string;
+    to_hit_from?: CreatureEntryAbilitySource;
+    range?: string;
+    target?: string;
+    save_ability?: string;
+    save_dc?: number;
+    save_effect?: string;
+    damage?: string;
+    damage_from?: CreatureEntryDamagePart;
+    damage_extra?: CreatureEntryDamagePart[];
+    usage?: CreatureEntryUsage;
+    recharge?: string;
+    text?: string;
+};
+
 export type StatblockData = {
     name: string;
     size?: string;
@@ -32,8 +59,8 @@ export type StatblockData = {
     equipmentNotes?: string;
     cr?: string;
     xp?: string;
-    traits?: string; actions?: string; legendary?: string;
-    entries?: Array<{ category: 'trait'|'action'|'bonus'|'reaction'|'legendary'; name: string; kind?: string; to_hit?: string; to_hit_from?: { ability: 'str'|'dex'|'con'|'int'|'wis'|'cha'|'best_of_str_dex'; proficient?: boolean }; range?: string; target?: string; save_ability?: string; save_dc?: number; save_effect?: string; damage?: string; damage_from?: { dice: string; ability?: 'str'|'dex'|'con'|'int'|'wis'|'cha'|'best_of_str_dex'; bonus?: string }; recharge?: string; text?: string; }>;
+    traits?: string; actions?: string; legendary?: string; lair?: string;
+    entries?: CreatureEntry[];
     actionsList?: Array<{ name: string; kind?: string; to_hit?: string; range?: string; target?: string; save_ability?: string; save_dc?: number; save_effect?: string; damage?: string; recharge?: string; text?: string; }>;
     spellsKnown?: Array<{ name: string; level?: number; uses?: string; notes?: string }>;
 };
@@ -76,6 +103,79 @@ function fmtSigned(n: number): string { return (n >= 0 ? "+" : "") + n; }
 const SKILL_TO_ABILITY: Record<string, keyof Pick<StatblockData, 'str'|'dex'|'int'|'wis'|'cha'|'con'>> = { Athletics: 'str', Acrobatics: 'dex', 'Sleight of Hand': 'dex', Stealth: 'dex', Arcana: 'int', History: 'int', Investigation: 'int', Nature: 'int', Religion: 'int', 'Animal Handling': 'wis', Insight: 'wis', Medicine: 'wis', Perception: 'wis', Survival: 'wis', Deception: 'cha', Intimidation: 'cha', Performance: 'cha', Persuasion: 'cha', };
 function composeAlignment(d: StatblockData): string | undefined { const a = d.alignmentLawChaos?.trim(); const b = d.alignmentGoodEvil?.trim(); if (!a && !b) return undefined; if ((a?.toLowerCase() === 'neutral') && (b?.toLowerCase() === 'neutral')) return 'Neutral'; return [a, b].filter(Boolean).join(' '); }
 
+export function formatEntryUsage(entry: CreatureEntry): string | undefined {
+    const usage = entry.usage;
+    if (!usage) return entry.recharge || undefined;
+    switch (usage.type) {
+        case 'passive':
+            return undefined;
+        case 'recharge': {
+            const { min, max } = usage;
+            if (min != null && max != null) {
+                if (min === max) return `Recharge ${min}`;
+                return `Recharge ${min}–${max}`;
+            }
+            if (min != null) return `Recharge ${min}+`;
+            if (max != null) return `Recharge ${max}`;
+            return 'Recharge';
+        }
+        case 'limited': {
+            const parts: string[] = [];
+            if (usage.charges && usage.charges.trim()) parts.push(usage.charges.trim());
+            if (usage.cost && usage.cost.trim()) parts.push(usage.cost.trim());
+            if (parts.length === 0) return 'Limited Use';
+            return `Limited Use (${parts.join('; ')})`;
+        }
+        default:
+            return undefined;
+    }
+}
+
+function abilityModForKey(d: StatblockData, ability?: CreatureEntryAbilityKey): number {
+    if (!ability) return 0;
+    if (ability === 'best_of_str_dex') return Math.max(abilityMod(d.str) ?? 0, abilityMod(d.dex) ?? 0);
+    return abilityMod((d as any)[ability]) ?? 0;
+}
+
+function normalizeDamagePart(part?: CreatureEntryDamagePart | null): CreatureEntryDamagePart | null {
+    if (!part) return null;
+    const dice = part.dice?.trim();
+    if (!dice) return null;
+    return {
+        dice,
+        ability: part.ability,
+        bonus: part.bonus?.trim() || undefined,
+    };
+}
+
+function formatDamagePart(part: CreatureEntryDamagePart | null, d: StatblockData): string | null {
+    if (!part) return null;
+    const base = part.dice;
+    if (!base) return null;
+    const abilMod = abilityModForKey(d, part.ability);
+    const modTxt = abilMod ? ` ${fmtSigned(abilMod)}` : '';
+    const bonusTxt = part.bonus ? ` ${part.bonus}` : '';
+    return `${base}${modTxt}${bonusTxt}`.trim();
+}
+
+export function computeEntryAutoDamageParts(entry: CreatureEntry, d: StatblockData): string[] {
+    const out: string[] = [];
+    const first = normalizeDamagePart(entry.damage_from);
+    const extras = Array.isArray(entry.damage_extra) ? entry.damage_extra : [];
+    const parts = [first, ...extras.map(normalizeDamagePart)];
+    for (const p of parts) {
+        const txt = formatDamagePart(p, d);
+        if (txt) out.push(txt);
+    }
+    return out;
+}
+
+export function resolveEntryAutoDamage(entry: CreatureEntry, d: StatblockData): string | undefined {
+    const parts = computeEntryAutoDamageParts(entry, d);
+    if (!parts.length) return undefined;
+    return parts.join('; ');
+}
+
 function statblockToMarkdown(d: StatblockData): string {
     const hdr = [d.size || "", d.type || "", composeAlignment(d) || ""].filter(Boolean).join(", ");
     const name = d.name || "Unnamed Creature";
@@ -116,14 +216,49 @@ function statblockToMarkdown(d: StatblockData): string {
     if (d.cr || d.pb || d.xp) { const bits: string[] = []; if (d.cr) bits.push(`CR ${d.cr}`); if (pbNum) bits.push(`PB ${fmtSigned(pbNum)}`); if (d.xp) bits.push(`XP ${d.xp}`); if (bits.length) lines.push(bits.join("; ")); }
     lines.push("");
     if (entries && entries.length) {
-        const groups: Record<string, typeof entries> = { trait: [], action: [], bonus: [], reaction: [], legendary: [] } as any;
+        const groups: Record<string, typeof entries> = { trait: [], action: [], bonus: [], reaction: [], legendary: [], lair: [] } as any;
         for (const e of entries) { (groups[e.category] ||= []).push(e); }
-        const renderGroup = (title: string, arr: typeof entries) => { if (!arr || arr.length === 0) return; lines.push(`## ${title}\n`); for (const a of arr) { const headParts = [a.name, a.recharge].filter(Boolean).join(" "); lines.push(`- **${headParts}**`); const sub: string[] = []; if (a.kind) sub.push(a.kind); if (a.to_hit) sub.push(`to hit ${a.to_hit}`); else if (a.to_hit_from) { const abil = a.to_hit_from.ability; const abilMod = abil === 'best_of_str_dex' ? Math.max(abilityMod(d.str) ?? 0, abilityMod(d.dex) ?? 0) : (abilityMod((d as any)[abil]) ?? 0); const pb = parseNum(d.pb) ?? 0; const total = abilMod + (a.to_hit_from.proficient ? pb : 0); sub.push(`to hit ${fmtSigned(total)}`); } if (a.range) sub.push(a.range); if (a.target) sub.push(a.target); if (a.damage) sub.push(a.damage); else if (a.damage_from) { const abilKey = a.damage_from.ability; const abilMod = abilKey ? (abilKey === 'best_of_str_dex' ? Math.max(abilityMod(d.str) ?? 0, abilityMod(d.dex) ?? 0) : (abilityMod((d as any)[abilKey]) ?? 0)) : 0; const bonus = a.damage_from.bonus ? ` ${a.damage_from.bonus}` : ''; const modTxt = abilMod ? ` ${fmtSigned(abilMod)}` : ''; sub.push(`${a.damage_from.dice}${modTxt}${bonus}`.trim()); } if (a.save_ability) sub.push(`Save ${a.save_ability}${a.save_dc ? ` DC ${a.save_dc}` : ''}${a.save_effect ? ` (${a.save_effect})` : ''}`); if (sub.length) lines.push(`  - ${sub.join(", ")}`); if (a.text && a.text.trim()) lines.push(`  ${a.text.trim()}`); } lines.push(""); };
-        renderGroup("Traits", groups.trait); renderGroup("Actions", groups.action); renderGroup("Bonus Actions", groups.bonus); renderGroup("Reactions", groups.reaction); renderGroup("Legendary Actions", groups.legendary);
+        const renderGroup = (title: string, arr: typeof entries) => {
+            if (!arr || arr.length === 0) return;
+            lines.push(`## ${title}\n`);
+            for (const a of arr) {
+                const usage = formatEntryUsage(a) ?? a.recharge;
+                const headParts = [a.name || "Unnamed", usage].filter(Boolean).join(" – ");
+                lines.push(`- **${headParts}**`);
+                const sub: string[] = [];
+                if (a.kind) sub.push(a.kind);
+                if (a.to_hit) sub.push(`to hit ${a.to_hit}`);
+                else if (a.to_hit_from) {
+                    const pb = parseNum(d.pb) ?? 0;
+                    const total = abilityModForKey(d, a.to_hit_from.ability) + (a.to_hit_from.proficient ? pb : 0);
+                    sub.push(`to hit ${fmtSigned(total)}`);
+                }
+                if (a.range) sub.push(a.range);
+                if (a.target) sub.push(a.target);
+                const autoDamage = computeEntryAutoDamageParts(a, d);
+                if (autoDamage.length) {
+                    sub.push(`Damage ${autoDamage[0]}`);
+                    for (const extra of autoDamage.slice(1)) sub.push(`+ ${extra}`);
+                } else if (a.damage) {
+                    sub.push(a.damage);
+                }
+                if (a.save_ability) sub.push(`Save ${a.save_ability}${a.save_dc ? ` DC ${a.save_dc}` : ''}${a.save_effect ? ` (${a.save_effect})` : ''}`);
+                if (sub.length) lines.push(`  - ${sub.join(", ")}`);
+                if (a.text && a.text.trim()) lines.push(`  ${a.text.trim()}`);
+            }
+            lines.push("");
+        };
+        renderGroup("Traits", groups.trait);
+        renderGroup("Actions", groups.action);
+        renderGroup("Bonus Actions", groups.bonus);
+        renderGroup("Reactions", groups.reaction);
+        renderGroup("Legendary Actions", groups.legendary);
+        renderGroup("Lair Actions", groups.lair);
     } else {
         if (d.traits) { lines.push("## Traits\n"); lines.push(d.traits.trim()); lines.push(""); }
         if (d.actions) { lines.push("## Actions\n"); lines.push(d.actions.trim()); lines.push(""); }
         if (d.legendary) { lines.push("## Legendary Actions\n"); lines.push(d.legendary.trim()); lines.push(""); }
+        if (d.lair) { lines.push("## Lair Actions\n"); lines.push(d.lair.trim()); lines.push(""); }
     }
     if (d.spellsKnown && d.spellsKnown.length) { lines.push("## Spellcasting\n"); const byLevel: Record<string, Array<{ name: string; uses?: string; notes?: string }>> = {}; for (const s of d.spellsKnown) { const key = s.level == null ? "unknown" : String(s.level); (byLevel[key] ||= []).push({ name: s.name, uses: s.uses, notes: s.notes }); } const order = Object.keys(byLevel).map(k => (k === 'unknown' ? Infinity : parseInt(k,10))).sort((a,b)=>a-b).map(n => n === Infinity ? 'unknown' : String(n)); for (const k of order) { const lvl = k === 'unknown' ? 'Spells' : (k === '0' ? 'Cantrips' : `Level ${k}`); lines.push(`- ${lvl}:`); for (const s of byLevel[k]) { const extra = [s.uses, s.notes].filter(Boolean).join('; '); lines.push(`  - ${s.name}${extra ? ` (${extra})` : ''}`); } } lines.push(""); }
     if (equipmentNotes) { lines.push("## Equipment & Notes\n"); lines.push(equipmentNotes); lines.push(""); }
