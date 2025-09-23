@@ -1,11 +1,11 @@
 // src/apps/library/view.ts
 import { ItemView, TFile, WorkspaceLeaf } from "obsidian";
-import { ensureCreatureDir, listCreatureFiles, watchCreatureDir, createCreatureFile } from "./core/creature-files";
+import { ensureCreatureDir, listCreatureFiles, watchCreatureDir } from "./core/creature-files";
 import { enhanceSelectToSearch } from "../../ui/search-dropdown";
 import { ensureTerrainFile, loadTerrains, saveTerrains, watchTerrains, TERRAIN_FILE } from "../../core/terrain-store";
 import { ensureRegionsFile, loadRegions, saveRegions, watchRegions, REGIONS_FILE, type Region } from "../../core/regions-store";
 import { ensureSpellDir, listSpellFiles, watchSpellDir, createSpellFile } from "./core/spell-files";
-import { CreateCreatureModal, CreateSpellModal } from "./create";
+import { CreateSpellModal, openCreatureCreator } from "./create";
 
 export const VIEW_LIBRARY = "salt-library";
 
@@ -222,11 +222,13 @@ export class LibraryView extends ItemView {
 
     private async onCreate(name: string) {
         if (this.mode === "creatures") {
-            new CreateCreatureModal(this.app, name, async (data) => {
-                const f = await createCreatureFile(this.app, data);
-                await this.onSourceChanged("creatures");
-                await this.app.workspace.openLinkText(f.path, f.path, true, { state: { mode: "source" } });
-            }).open();
+            openCreatureCreator(this.app, {
+                initial: name ? { name } : undefined,
+                onSaved: async ({ file }) => {
+                    await this.onSourceChanged("creatures");
+                    await this.app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
+                },
+            });
             return;
         }
         if (this.mode === "spells") {

@@ -1,403 +1,591 @@
-// src/apps/library/create/creature/modal.ts
-import { App, Modal, Setting } from "obsidian";
-import { ensureSpeedList } from "../../core/creature-files";
-import type { StatblockData } from "../../core/creature-files";
-import { listSpellFiles } from "../../core/spell-files";
-import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
-import { mountCoreStatsSection } from "./section-core-stats";
-import { mountEntriesSection } from "./section-entries";
-import { mountSpellcastingSection } from "./section-spellcasting";
-import { CREATURE_MOVEMENT_TYPES, type CreatureMovementType } from "./presets";
-import { abilityMod, parseIntSafe } from "../shared/stat-utils";
-import { mountTokenEditor } from "../shared/token-editor";
+import { App, Modal } from "obsidian";
+import {
+    ABILITY_KEYS,
+    ABILITY_LABEL,
+    CreatureStatblock,
+    SKILL_OPTIONS,
+    SpellListGroup,
+    buildStatblockMarkdown,
+    cloneStatblock,
+    createEmptyStatblock,
+    createSpellGroup,
+    ensureSkillName,
+    parseListInput,
+} from "./statblock";
 
-const MOVEMENT_LABEL_LOOKUP = CREATURE_MOVEMENT_TYPES.reduce<Record<string, string>>((acc, [value, label]) => {
-    acc[value] = label;
-    return acc;
-}, {});
+type SubmitHandler = (result: { statblock: CreatureStatblock; markdown: string }) => void | Promise<void>;
 
-const DEFAULT_MOVEMENT_LABEL = MOVEMENT_LABEL_LOOKUP.walk ?? "Speed";
+type CancelHandler = () => void;
 
-type SpeedChipDisplay = { raw: string; typeLabel: string; value: string };
+export interface CreatureCreatorOptions {
+    initial?: Partial<CreatureStatblock>;
+    onSubmit?: SubmitHandler;
+    onCancel?: CancelHandler;
+}
 
-function parseSpeedChip(raw: string | null | undefined): SpeedChipDisplay | null {
-    if (!raw) return null;
-    const trimmed = raw.trim();
-    if (!trimmed) return null;
-    const match = trimmed.match(/^([A-Za-z]+)\s+(.*)$/);
-    if (match) {
-        const [, typeToken, rest] = match;
-        const normalized = typeToken.toLowerCase();
-        if (Object.prototype.hasOwnProperty.call(MOVEMENT_LABEL_LOOKUP, normalized)) {
-            return {
-                raw: trimmed,
-                typeLabel: MOVEMENT_LABEL_LOOKUP[normalized],
-                value: rest.trim() || "–",
+export interface CreatureCreatorHandle {
+    destroy(): void;
+    getState(): CreatureStatblock;
+    update(patch: Partial<CreatureStatblock>): void;
+}
+
+type SavingThrowInputs = {
+    checkbox: HTMLInputElement;
+    override: HTMLInputElement;
+};
+
+type SpellListRenderers = {
+    container: HTMLElement;
+    type: keyof Pick<CreatureStatblock, "spellcastingPerDay" | "spellcastingPerRest" | "spellcastingBySlot" | "spellcastingOther">;
+    label: string;
+};
+
+function mergeIntoState(target: CreatureStatblock, patch: Partial<CreatureStatblock>): void {
+    if (!patch) return;
+    const assign = <K extends keyof CreatureStatblock>(key: K) => {
+        if (patch[key] !== undefined) (target[key] as CreatureStatblock[K]) = patch[key] as CreatureStatblock[K];
+    };
+    assign("name");
+    assign("size");
+    assign("type");
+    assign("alignment");
+    assign("armorClass");
+    assign("hitPoints");
+    assign("hitDice");
+    assign("speed");
+    assign("proficiencyBonus");
+    assign("challengeRating");
+    assign("initiativeEnabled");
+    assign("initiative");
+    assign("skills");
+    assign("senses");
+    assign("languages");
+    assign("resistances");
+    assign("immunities");
+    assign("vulnerabilities");
+    assign("traits");
+    assign("actions");
+    assign("bonusActions");
+    assign("reactions");
+    assign("legendaryActions");
+    assign("spellcastingAbility");
+    assign("spellSaveDc");
+    assign("spellAttackBonus");
+    assign("spellcastingAtWill");
+    assign("spellcastingPerDay");
+    assign("spellcastingPerRest");
+    assign("spellcastingBySlot");
+    assign("spellcastingOther");
+    assign("equipment");
+    assign("xpEnabled");
+    assign("experiencePoints");
+
+    if (patch.abilityScores) {
+        for (const key of ABILITY_KEYS) {
+            if (patch.abilityScores[key] !== undefined) {
+                target.abilityScores[key] = patch.abilityScores[key] ?? "";
+            }
+        }
+    }
+    if (patch.savingThrows) {
+        for (const key of ABILITY_KEYS) {
+            if (patch.savingThrows[key] !== undefined) {
+                const next = patch.savingThrows[key];
+                if (next) {
+                    target.savingThrows[key] = {
+                        enabled: next.enabled ?? target.savingThrows[key].enabled,
+                        override: next.override ?? target.savingThrows[key].override,
+                    };
+                }
+            }
+        }
+    }
+}
+
+function buildInitialState(initial?: Partial<CreatureStatblock>): CreatureStatblock {
+    const base = createEmptyStatblock();
+    if (!initial) return base;
+    mergeIntoState(base, initial);
+    if (initial.skills) base.skills = initial.skills.map((skill) => ({ ...skill }));
+    if (initial.senses) base.senses = [...initial.senses];
+    if (initial.languages) base.languages = [...initial.languages];
+    if (initial.resistances) base.resistances = [...initial.resistances];
+    if (initial.immunities) base.immunities = [...initial.immunities];
+    if (initial.vulnerabilities) base.vulnerabilities = [...initial.vulnerabilities];
+    if (initial.spellcastingAtWill) base.spellcastingAtWill = [...initial.spellcastingAtWill];
+    if (initial.spellcastingPerDay) base.spellcastingPerDay = initial.spellcastingPerDay.map((group) => ({ label: group.label, spells: [...group.spells] }));
+    if (initial.spellcastingPerRest) base.spellcastingPerRest = initial.spellcastingPerRest.map((group) => ({ label: group.label, spells: [...group.spells] }));
+    if (initial.spellcastingBySlot) base.spellcastingBySlot = initial.spellcastingBySlot.map((group) => ({ label: group.label, spells: [...group.spells] }));
+    if (initial.spellcastingOther) base.spellcastingOther = initial.spellcastingOther.map((group) => ({ label: group.label, spells: [...group.spells] }));
+    return base;
+}
+
+export function mountCreatureCreator(parent: HTMLElement, options: CreatureCreatorOptions = {}): CreatureCreatorHandle {
+    const state = buildInitialState(options.initial);
+    const root = parent.createDiv({ cls: "sm-creature-form" });
+    const form = root.createEl("form", { cls: "sm-creature-form__form" });
+
+    const inputs: {
+        name: HTMLInputElement;
+        size: HTMLInputElement;
+        type: HTMLInputElement;
+        alignment: HTMLInputElement;
+        armorClass: HTMLInputElement;
+        hitPoints: HTMLInputElement;
+        hitDice: HTMLInputElement;
+        speed: HTMLInputElement;
+        proficiencyBonus: HTMLInputElement;
+        challengeRating: HTMLInputElement;
+        abilityScores: Record<typeof ABILITY_KEYS[number], HTMLInputElement>;
+        initiativeEnabled: HTMLInputElement;
+        initiative: HTMLInputElement;
+        xpEnabled: HTMLInputElement;
+        experiencePoints: HTMLInputElement;
+        senses: HTMLTextAreaElement;
+        languages: HTMLTextAreaElement;
+        resistances: HTMLTextAreaElement;
+        immunities: HTMLTextAreaElement;
+        vulnerabilities: HTMLTextAreaElement;
+        traits: HTMLTextAreaElement;
+        actions: HTMLTextAreaElement;
+        bonusActions: HTMLTextAreaElement;
+        reactions: HTMLTextAreaElement;
+        legendaryActions: HTMLTextAreaElement;
+        equipment: HTMLTextAreaElement;
+        spellcastingAbility: HTMLInputElement;
+        spellSaveDc: HTMLInputElement;
+        spellAttackBonus: HTMLInputElement;
+        spellcastingAtWill: HTMLTextAreaElement;
+        savingThrows: Record<typeof ABILITY_KEYS[number], SavingThrowInputs>;
+    } = {
+        name: form.createEl("input") as HTMLInputElement,
+        size: form.createEl("input") as HTMLInputElement,
+        type: form.createEl("input") as HTMLInputElement,
+        alignment: form.createEl("input") as HTMLInputElement,
+        armorClass: form.createEl("input") as HTMLInputElement,
+        hitPoints: form.createEl("input") as HTMLInputElement,
+        hitDice: form.createEl("input") as HTMLInputElement,
+        speed: form.createEl("input") as HTMLInputElement,
+        proficiencyBonus: form.createEl("input") as HTMLInputElement,
+        challengeRating: form.createEl("input") as HTMLInputElement,
+        abilityScores: { str: form.createEl("input") as HTMLInputElement, dex: form.createEl("input") as HTMLInputElement, con: form.createEl("input") as HTMLInputElement, int: form.createEl("input") as HTMLInputElement, wis: form.createEl("input") as HTMLInputElement, cha: form.createEl("input") as HTMLInputElement },
+        initiativeEnabled: form.createEl("input") as HTMLInputElement,
+        initiative: form.createEl("input") as HTMLInputElement,
+        xpEnabled: form.createEl("input") as HTMLInputElement,
+        experiencePoints: form.createEl("input") as HTMLInputElement,
+        senses: form.createEl("textarea") as HTMLTextAreaElement,
+        languages: form.createEl("textarea") as HTMLTextAreaElement,
+        resistances: form.createEl("textarea") as HTMLTextAreaElement,
+        immunities: form.createEl("textarea") as HTMLTextAreaElement,
+        vulnerabilities: form.createEl("textarea") as HTMLTextAreaElement,
+        traits: form.createEl("textarea") as HTMLTextAreaElement,
+        actions: form.createEl("textarea") as HTMLTextAreaElement,
+        bonusActions: form.createEl("textarea") as HTMLTextAreaElement,
+        reactions: form.createEl("textarea") as HTMLTextAreaElement,
+        legendaryActions: form.createEl("textarea") as HTMLTextAreaElement,
+        equipment: form.createEl("textarea") as HTMLTextAreaElement,
+        spellcastingAbility: form.createEl("input") as HTMLInputElement,
+        spellSaveDc: form.createEl("input") as HTMLInputElement,
+        spellAttackBonus: form.createEl("input") as HTMLInputElement,
+        spellcastingAtWill: form.createEl("textarea") as HTMLTextAreaElement,
+        savingThrows: {
+            str: { checkbox: form.createEl("input") as HTMLInputElement, override: form.createEl("input") as HTMLInputElement },
+            dex: { checkbox: form.createEl("input") as HTMLInputElement, override: form.createEl("input") as HTMLInputElement },
+            con: { checkbox: form.createEl("input") as HTMLInputElement, override: form.createEl("input") as HTMLInputElement },
+            int: { checkbox: form.createEl("input") as HTMLInputElement, override: form.createEl("input") as HTMLInputElement },
+            wis: { checkbox: form.createEl("input") as HTMLInputElement, override: form.createEl("input") as HTMLInputElement },
+            cha: { checkbox: form.createEl("input") as HTMLInputElement, override: form.createEl("input") as HTMLInputElement },
+        },
+    };
+
+    form.empty();
+
+    const title = form.createEl("h2", { text: "Neuer Statblock" });
+    title.addClass("sm-creature-form__title");
+
+    const fieldset = (legend: string, description?: string) => {
+        const set = form.createEl("fieldset", { cls: "sm-creature-form__fieldset" });
+        set.createEl("legend", { text: legend });
+        if (description) set.createEl("p", { cls: "sm-creature-form__hint", text: description });
+        return set;
+    };
+
+    const identity = fieldset("Identität", "Basisdaten der Kreatur");
+    const makeInput = (
+        container: HTMLElement,
+        label: string,
+        input: HTMLInputElement | HTMLTextAreaElement,
+        opts: { required?: boolean; type?: string; placeholder?: string } = {}
+    ) => {
+        const wrapper = container.createDiv({ cls: "sm-creature-form__row" });
+        wrapper.createEl("label", { text: label });
+        input = wrapper.appendChild(input);
+        if (opts.type) (input as HTMLInputElement).type = opts.type;
+        if (opts.placeholder) input.placeholder = opts.placeholder;
+        if (opts.required) input.required = true;
+        return input;
+    };
+
+    inputs.name = makeInput(identity, "Name", identity.createEl("input"), { required: true });
+    inputs.size = makeInput(identity, "Größe", identity.createEl("input"), { required: true, placeholder: "z. B. Medium" });
+    inputs.type = makeInput(identity, "Typ", identity.createEl("input"), { required: true, placeholder: "z. B. Humanoid" });
+    inputs.alignment = makeInput(identity, "Gesinnung", identity.createEl("input"), { required: true, placeholder: "z. B. Neutral" });
+
+    const combat = fieldset("Kampfwerte", "Rüstungsklasse, Lebenspunkte und Geschwindigkeit");
+    inputs.armorClass = makeInput(combat, "Armor Class", combat.createEl("input"), { required: true, placeholder: "z. B. 15 (Ringmail)" });
+    inputs.hitPoints = makeInput(combat, "Hit Points", combat.createEl("input"), { required: true, placeholder: "z. B. 85" });
+    inputs.hitDice = makeInput(combat, "Hit Dice", combat.createEl("input"), { placeholder: "z. B. 10d8 + 30" });
+    inputs.speed = makeInput(combat, "Speed", combat.createEl("input"), { required: true, placeholder: "z. B. 30 ft., fly 40 ft." });
+    inputs.challengeRating = makeInput(combat, "Challenge Rating", combat.createEl("input"), { required: true, placeholder: "z. B. 5" });
+    inputs.proficiencyBonus = makeInput(combat, "Proficiency Bonus", combat.createEl("input"), { required: true, placeholder: "+3" });
+
+    const abilitiesSet = fieldset("Ability Scores", "STR bis CHA als Pflichtfelder");
+    const abilityGrid = abilitiesSet.createDiv({ cls: "sm-creature-form__abilities" });
+    for (const key of ABILITY_KEYS) {
+        const row = abilityGrid.createDiv({ cls: "sm-creature-form__row" });
+        row.createEl("label", { text: `${key.toUpperCase()} (${ABILITY_LABEL[key]})` });
+        const abilityInput = row.createEl("input", {
+            attr: { type: "number", step: "1", required: "true" },
+        }) as HTMLInputElement;
+        abilityInput.placeholder = "10";
+        inputs.abilityScores[key] = abilityInput;
+    }
+
+    const listsSet = fieldset("Listen", "Werte mit Komma oder Zeilenumbruch trennen");
+    inputs.resistances = makeInput(listsSet, "Resistances", listsSet.createEl("textarea"));
+    inputs.immunities = makeInput(listsSet, "Immunities", listsSet.createEl("textarea"));
+    inputs.vulnerabilities = makeInput(listsSet, "Vulnerabilities", listsSet.createEl("textarea"));
+    inputs.senses = makeInput(listsSet, "Senses", listsSet.createEl("textarea"));
+    inputs.languages = makeInput(listsSet, "Languages", listsSet.createEl("textarea"));
+
+    const textSections = fieldset("Abschnitte", "Freitext für Traits und Aktionen");
+    inputs.traits = makeInput(textSections, "Traits", textSections.createEl("textarea"));
+    inputs.actions = makeInput(textSections, "Actions", textSections.createEl("textarea"));
+    inputs.bonusActions = makeInput(textSections, "Bonus Actions", textSections.createEl("textarea"));
+    inputs.reactions = makeInput(textSections, "Reactions", textSections.createEl("textarea"));
+    inputs.legendaryActions = makeInput(textSections, "Legendary Actions", textSections.createEl("textarea"));
+
+    const spellSet = fieldset("Spellcasting", "Ability, Save DC, Attack Bonus und vorbereitete Listen");
+    inputs.spellcastingAbility = makeInput(spellSet, "Ability", spellSet.createEl("input"));
+    inputs.spellSaveDc = makeInput(spellSet, "Save DC", spellSet.createEl("input"));
+    inputs.spellAttackBonus = makeInput(spellSet, "Attack Bonus", spellSet.createEl("input"));
+    inputs.spellcastingAtWill = makeInput(spellSet, "At Will", spellSet.createEl("textarea"));
+
+    const perDayContainer = spellSet.createDiv({ cls: "sm-creature-form__spell-groups" });
+    const perRestContainer = spellSet.createDiv({ cls: "sm-creature-form__spell-groups" });
+    const bySlotContainer = spellSet.createDiv({ cls: "sm-creature-form__spell-groups" });
+    const otherSpellContainer = spellSet.createDiv({ cls: "sm-creature-form__spell-groups" });
+
+    const advancedDetails = form.createEl("details", { cls: "sm-creature-form__advanced" });
+    advancedDetails.createEl("summary", { text: "Erweiterte Werte" });
+
+    const initiativeRow = advancedDetails.createDiv({ cls: "sm-creature-form__row" });
+    const initiativeLabel = initiativeRow.createEl("label");
+    inputs.initiativeEnabled = initiativeLabel.createEl("input", { attr: { type: "checkbox" } }) as HTMLInputElement;
+    initiativeLabel.appendText(" Initiative anzeigen");
+    inputs.initiative = initiativeRow.createEl("input", { attr: { type: "text", placeholder: "+4" } }) as HTMLInputElement;
+
+    const savingWrapper = advancedDetails.createDiv({ cls: "sm-creature-form__saving-throws" });
+    savingWrapper.createEl("h3", { text: "Saving Throws" });
+    for (const key of ABILITY_KEYS) {
+        const row = savingWrapper.createDiv({ cls: "sm-creature-form__row" });
+        const checkbox = row.createEl("input", { attr: { type: "checkbox" } }) as HTMLInputElement;
+        const label = row.createEl("label", { text: key.toUpperCase() });
+        label.prepend(checkbox);
+        const override = row.createEl("input", { attr: { type: "text", placeholder: "+5" } }) as HTMLInputElement;
+        inputs.savingThrows[key] = { checkbox, override };
+    }
+
+    const skillsSection = advancedDetails.createDiv({ cls: "sm-creature-form__skills" });
+    skillsSection.createEl("h3", { text: "Skills" });
+    const skillPicker = skillsSection.createDiv({ cls: "sm-creature-form__row" });
+    const skillSelect = skillPicker.createEl("select");
+    const addSkillOption = skillSelect.createEl("option", { value: "", text: "Skill wählen" });
+    for (const skill of SKILL_OPTIONS) {
+        skillSelect.createEl("option", { value: skill, text: skill });
+    }
+    const addSkillButton = skillPicker.createEl("button", { text: "Hinzufügen", attr: { type: "button" } });
+    const skillList = skillsSection.createDiv({ cls: "sm-creature-form__skill-list" });
+
+    inputs.equipment = makeInput(advancedDetails, "Equipment & Notes", advancedDetails.createEl("textarea"));
+
+    const xpRow = advancedDetails.createDiv({ cls: "sm-creature-form__row" });
+    const xpLabel = xpRow.createEl("label");
+    inputs.xpEnabled = xpLabel.createEl("input", { attr: { type: "checkbox" } }) as HTMLInputElement;
+    xpLabel.appendText(" XP anzeigen");
+    inputs.experiencePoints = xpRow.createEl("input", { attr: { type: "text", placeholder: "z. B. 1,800" } }) as HTMLInputElement;
+
+    const footer = form.createDiv({ cls: "sm-creature-form__footer" });
+    const validationMessage = footer.createSpan({ cls: "sm-creature-form__validation" });
+    const cancelBtn = footer.createEl("button", { text: "Abbrechen", attr: { type: "button" } });
+    const submitBtn = footer.createEl("button", { text: "Speichern", attr: { type: "submit" } });
+
+    const renderSkills = () => {
+        skillList.empty();
+        state.skills.forEach((skill) => {
+            const row = skillList.createDiv({ cls: "sm-creature-form__row" });
+            row.createEl("span", { text: skill.name });
+            const bonusInput = row.createEl("input", { attr: { type: "text", placeholder: "+5" } }) as HTMLInputElement;
+            bonusInput.value = skill.bonus;
+            bonusInput.oninput = () => {
+                skill.bonus = bonusInput.value;
+            };
+            const removeBtn = row.createEl("button", { text: "Entfernen", attr: { type: "button" } });
+            removeBtn.onclick = () => {
+                const index = state.skills.indexOf(skill);
+                if (index >= 0) {
+                    state.skills.splice(index, 1);
+                    renderSkills();
+                    updateSubmitState();
+                }
+            };
+        });
+    };
+
+    const spellRenderers: SpellListRenderers[] = [
+        { container: perDayContainer, type: "spellcastingPerDay", label: "pro Tag" },
+        { container: perRestContainer, type: "spellcastingPerRest", label: "pro Rast" },
+        { container: bySlotContainer, type: "spellcastingBySlot", label: "Spell Slots" },
+        { container: otherSpellContainer, type: "spellcastingOther", label: "Weitere" },
+    ];
+
+    const renderSpellGroups = (renderer: SpellListRenderers) => {
+        const groups = state[renderer.type] as SpellListGroup[];
+        renderer.container.empty();
+        renderer.container.createEl("h4", { text: renderer.label });
+        groups.forEach((group) => {
+            const card = renderer.container.createDiv({ cls: "sm-creature-form__spell-group" });
+            const labelInput = card.createEl("input", { attr: { type: "text", placeholder: "Überschrift" } }) as HTMLInputElement;
+            labelInput.value = group.label;
+            labelInput.oninput = () => {
+                group.label = labelInput.value;
+            };
+            const spellsArea = card.createEl("textarea", { attr: { rows: "3", placeholder: "Zauber\npro Zeile" } }) as HTMLTextAreaElement;
+            spellsArea.value = group.spells.join("\n");
+            spellsArea.oninput = () => {
+                group.spells = parseListInput(spellsArea.value);
+            };
+            const removeBtn = card.createEl("button", { text: "Entfernen", attr: { type: "button" } });
+            removeBtn.onclick = () => {
+                const index = groups.indexOf(group);
+                if (index >= 0) {
+                    groups.splice(index, 1);
+                    renderSpellGroups(renderer);
+                }
+            };
+        });
+        const addBtn = renderer.container.createEl("button", { text: `${renderer.label} hinzufügen`, attr: { type: "button" } });
+        addBtn.onclick = () => {
+            groups.push(createSpellGroup(renderer.label));
+            renderSpellGroups(renderer);
+        };
+    };
+
+    const updateAdvancedVisibility = () => {
+        inputs.initiative.style.display = inputs.initiativeEnabled.checked ? "" : "none";
+        inputs.initiative.toggleAttribute("disabled", !inputs.initiativeEnabled.checked);
+        xpRow.classList.toggle("is-disabled", !inputs.xpEnabled.checked);
+        inputs.experiencePoints.toggleAttribute("disabled", !inputs.xpEnabled.checked);
+    };
+
+    const syncInputs = () => {
+        inputs.name.value = state.name;
+        inputs.size.value = state.size;
+        inputs.type.value = state.type;
+        inputs.alignment.value = state.alignment;
+        inputs.armorClass.value = state.armorClass;
+        inputs.hitPoints.value = state.hitPoints;
+        inputs.hitDice.value = state.hitDice;
+        inputs.speed.value = state.speed;
+        inputs.challengeRating.value = state.challengeRating;
+        inputs.proficiencyBonus.value = state.proficiencyBonus;
+        for (const key of ABILITY_KEYS) {
+            inputs.abilityScores[key].value = state.abilityScores[key];
+        }
+        inputs.resistances.value = state.resistances.join("\n");
+        inputs.immunities.value = state.immunities.join("\n");
+        inputs.vulnerabilities.value = state.vulnerabilities.join("\n");
+        inputs.senses.value = state.senses.join("\n");
+        inputs.languages.value = state.languages.join("\n");
+        inputs.traits.value = state.traits;
+        inputs.actions.value = state.actions;
+        inputs.bonusActions.value = state.bonusActions;
+        inputs.reactions.value = state.reactions;
+        inputs.legendaryActions.value = state.legendaryActions;
+        inputs.spellcastingAbility.value = state.spellcastingAbility;
+        inputs.spellSaveDc.value = state.spellSaveDc;
+        inputs.spellAttackBonus.value = state.spellAttackBonus;
+        inputs.spellcastingAtWill.value = state.spellcastingAtWill.join("\n");
+        inputs.equipment.value = state.equipment;
+        inputs.initiativeEnabled.checked = state.initiativeEnabled;
+        inputs.initiative.value = state.initiative;
+        inputs.xpEnabled.checked = state.xpEnabled;
+        inputs.experiencePoints.value = state.experiencePoints;
+        for (const key of ABILITY_KEYS) {
+            const s = state.savingThrows[key];
+            inputs.savingThrows[key].checkbox.checked = s.enabled;
+            inputs.savingThrows[key].override.value = s.override;
+        }
+        renderSkills();
+        spellRenderers.forEach(renderSpellGroups);
+        updateAdvancedVisibility();
+        advancedDetails.open = Boolean(
+            state.initiativeEnabled ||
+            state.skills.length ||
+            state.equipment.trim() ||
+            state.xpEnabled ||
+            state.spellcastingAtWill.length ||
+            state.spellcastingPerDay.length ||
+            state.spellcastingPerRest.length ||
+            state.spellcastingBySlot.length ||
+            state.spellcastingOther.length
+        );
+    };
+
+    const updateSubmitState = () => {
+        const requiredFieldsFilled = [
+            state.name,
+            state.size,
+            state.type,
+            state.alignment,
+            state.armorClass,
+            state.hitPoints,
+            state.speed,
+            state.challengeRating,
+            state.proficiencyBonus,
+        ].every((value) => value.trim().length > 0);
+        const abilityFilled = ABILITY_KEYS.every((key) => state.abilityScores[key].trim().length > 0);
+        const valid = requiredFieldsFilled && abilityFilled;
+        submitBtn.disabled = !valid;
+        validationMessage.setText(valid ? "" : "Bitte alle Pflichtfelder ausfüllen.");
+    };
+
+    const attachInputHandlers = () => {
+        inputs.name.oninput = () => { state.name = inputs.name.value; updateSubmitState(); };
+        inputs.size.oninput = () => { state.size = inputs.size.value; updateSubmitState(); };
+        inputs.type.oninput = () => { state.type = inputs.type.value; updateSubmitState(); };
+        inputs.alignment.oninput = () => { state.alignment = inputs.alignment.value; updateSubmitState(); };
+        inputs.armorClass.oninput = () => { state.armorClass = inputs.armorClass.value; updateSubmitState(); };
+        inputs.hitPoints.oninput = () => { state.hitPoints = inputs.hitPoints.value; updateSubmitState(); };
+        inputs.hitDice.oninput = () => { state.hitDice = inputs.hitDice.value; };
+        inputs.speed.oninput = () => { state.speed = inputs.speed.value; updateSubmitState(); };
+        inputs.challengeRating.oninput = () => { state.challengeRating = inputs.challengeRating.value; updateSubmitState(); };
+        inputs.proficiencyBonus.oninput = () => { state.proficiencyBonus = inputs.proficiencyBonus.value; updateSubmitState(); };
+        for (const key of ABILITY_KEYS) {
+            inputs.abilityScores[key].oninput = () => {
+                state.abilityScores[key] = inputs.abilityScores[key].value;
+                updateSubmitState();
             };
         }
-        const fallbackLabel = typeToken.charAt(0).toUpperCase() + typeToken.slice(1);
-        return {
-            raw: trimmed,
-            typeLabel: fallbackLabel,
-            value: rest.trim() || "–",
+        inputs.resistances.oninput = () => { state.resistances = parseListInput(inputs.resistances.value); };
+        inputs.immunities.oninput = () => { state.immunities = parseListInput(inputs.immunities.value); };
+        inputs.vulnerabilities.oninput = () => { state.vulnerabilities = parseListInput(inputs.vulnerabilities.value); };
+        inputs.senses.oninput = () => { state.senses = parseListInput(inputs.senses.value); };
+        inputs.languages.oninput = () => { state.languages = parseListInput(inputs.languages.value); };
+        inputs.traits.oninput = () => { state.traits = inputs.traits.value; };
+        inputs.actions.oninput = () => { state.actions = inputs.actions.value; };
+        inputs.bonusActions.oninput = () => { state.bonusActions = inputs.bonusActions.value; };
+        inputs.reactions.oninput = () => { state.reactions = inputs.reactions.value; };
+        inputs.legendaryActions.oninput = () => { state.legendaryActions = inputs.legendaryActions.value; };
+        inputs.spellcastingAbility.oninput = () => { state.spellcastingAbility = inputs.spellcastingAbility.value; };
+        inputs.spellSaveDc.oninput = () => { state.spellSaveDc = inputs.spellSaveDc.value; };
+        inputs.spellAttackBonus.oninput = () => { state.spellAttackBonus = inputs.spellAttackBonus.value; };
+        inputs.spellcastingAtWill.oninput = () => { state.spellcastingAtWill = parseListInput(inputs.spellcastingAtWill.value); };
+        inputs.equipment.oninput = () => { state.equipment = inputs.equipment.value; };
+        inputs.initiativeEnabled.onchange = () => {
+            state.initiativeEnabled = inputs.initiativeEnabled.checked;
+            updateAdvancedVisibility();
         };
-    }
+        inputs.initiative.oninput = () => { state.initiative = inputs.initiative.value; };
+        inputs.xpEnabled.onchange = () => {
+            state.xpEnabled = inputs.xpEnabled.checked;
+            updateAdvancedVisibility();
+        };
+        inputs.experiencePoints.oninput = () => { state.experiencePoints = inputs.experiencePoints.value; };
+        for (const key of ABILITY_KEYS) {
+            const controls = inputs.savingThrows[key];
+            controls.checkbox.onchange = () => {
+                state.savingThrows[key].enabled = controls.checkbox.checked;
+            };
+            controls.override.oninput = () => {
+                state.savingThrows[key].override = controls.override.value;
+            };
+        }
+        addSkillButton.onclick = () => {
+            const selected = ensureSkillName(skillSelect.value || "");
+            if (!selected) return;
+            if (!state.skills.some((skill) => skill.name === selected)) {
+                state.skills.push({ name: selected, bonus: "" });
+                renderSkills();
+                skillSelect.value = "";
+            }
+        };
+    };
+
+    attachInputHandlers();
+    syncInputs();
+    updateSubmitState();
+
+    form.onsubmit = async (event) => {
+        event.preventDefault();
+        updateSubmitState();
+        if (submitBtn.disabled) {
+            form.reportValidity();
+            return;
+        }
+        const snapshot = cloneStatblock(state);
+        const markdown = buildStatblockMarkdown(snapshot);
+        await options.onSubmit?.({ statblock: snapshot, markdown });
+    };
+
+    cancelBtn.onclick = () => {
+        options.onCancel?.();
+    };
+
     return {
-        raw: trimmed,
-        typeLabel: DEFAULT_MOVEMENT_LABEL,
-        value: trimmed,
+        destroy() {
+            root.detach();
+        },
+        getState() {
+            return cloneStatblock(state);
+        },
+        update(patch) {
+            mergeIntoState(state, patch);
+            syncInputs();
+            updateSubmitState();
+        },
     };
 }
 
-function createSection(parent: HTMLElement, title: string, desc?: string): HTMLElement {
-    const card = parent.createDiv({ cls: "sm-cc-card" });
-    card.createEl("h3", { cls: "sm-cc-card__title", text: title });
-    if (desc) card.createDiv({ cls: "sm-cc-card__desc", text: desc });
-    return card.createDiv({ cls: "sm-cc-card__body" });
-}
-
-class CreaturePreviewModal extends Modal {
-    constructor(app: App, private readonly data: StatblockData) {
-        super(app);
-    }
-
-    onOpen() {
-        const { contentEl } = this;
-        contentEl.empty();
-        contentEl.addClass("sm-cc-preview-modal");
-        contentEl.createEl("h3", { text: "Vorschau – aktuelle Eingaben" });
-        const pre = contentEl.createEl("pre", { cls: "sm-cc-preview" });
-        pre.textContent = JSON.stringify(this.data, null, 2);
-    }
-}
-
 export class CreateCreatureModal extends Modal {
-    private data: StatblockData;
-    private onSubmit: (d: StatblockData) => void;
-    private availableSpells: string[] = [];
-    private _bgEl?: HTMLElement; private _bgPrevPointer?: string;
+    private options: CreatureCreatorOptions;
+    private handle: CreatureCreatorHandle | null = null;
 
-    constructor(app: App, presetName: string | undefined, onSubmit: (d: StatblockData) => void) {
+    constructor(app: App, options: CreatureCreatorOptions = {}) {
         super(app);
-        this.onSubmit = onSubmit;
-        this.data = {
-            name: presetName?.trim() || "Neue Kreatur",
-            resistances: [],
-            immunities: [],
-            vulnerabilities: [],
-            equipmentNotes: "",
-        };
+        this.options = options;
     }
 
     onOpen() {
         const { contentEl } = this;
         contentEl.empty();
-        contentEl.addClass("sm-cc-create-modal");
-
-        ensureSpeedList(this.data);
-
-        // Prevent closing on outside click by disabling background pointer events
-        const bg = document.querySelector('.modal-bg') as HTMLElement | null;
-        if (bg) { this._bgEl = bg; this._bgPrevPointer = bg.style.pointerEvents; bg.style.pointerEvents = 'none'; }
-
-        const wrapper = contentEl.createDiv({ cls: "sm-cc-create-wrapper" });
-
-        const header = wrapper.createDiv({ cls: "sm-cc-create-header" });
-        const breadcrumb = header.createDiv({ cls: "sm-cc-create-breadcrumb" });
-        breadcrumb.createSpan({ cls: "sm-cc-crumb", text: "Bibliothek" });
-        breadcrumb.createSpan({ cls: "sm-cc-crumb", text: "Statblocks" });
-        breadcrumb.createSpan({ cls: "sm-cc-crumb", text: "Neue Kreatur" });
-        const liveName = breadcrumb.createSpan({ cls: "sm-cc-crumb sm-cc-crumb--name", text: this.data.name || "Neue Kreatur" });
-
-        const stepper = header.createDiv({ cls: "sm-cc-create-stepper" });
-        const prevBtn = stepper.createEl("button", { cls: "sm-cc-stepper-btn", text: "← Zurück" });
-        const stepLabel = stepper.createSpan({ cls: "sm-cc-stepper-label", text: "Grundwerte" });
-        const nextBtn = stepper.createEl("button", { cls: "sm-cc-stepper-btn", text: "Weiter →" });
-
-        const body = wrapper.createDiv({ cls: "sm-cc-create-body" });
-        const leftColumn = body.createDiv({ cls: "sm-cc-create-column sm-cc-create-column--left" });
-        const middleColumn = body.createDiv({ cls: "sm-cc-create-column sm-cc-create-column--middle" });
-        const rightColumn = body.createDiv({ cls: "sm-cc-create-column sm-cc-create-column--right" });
-
-        const steps: Array<{ el: HTMLElement; label: string }> = [
-            { el: leftColumn, label: "Grundwerte" },
-            { el: middleColumn, label: "Details" },
-            { el: rightColumn, label: "Aktionen & Zauber" },
-        ];
-        let activeStep = 0;
-        let scheduleUpdate: () => void = () => {};
-
-        const focusFirstField = (el: HTMLElement) => {
-            const focusable = el.querySelector<HTMLElement>("input, select, textarea, button, [tabindex]:not([tabindex='-1'])");
-            if (focusable) focusable.focus({ preventScroll: true });
-        };
-
-        const updateStep = (nextIndex: number, { scroll }: { scroll: boolean }) => {
-            activeStep = nextIndex;
-            steps.forEach((step, i) => step.el.toggleClass("is-active", i === activeStep));
-            prevBtn.disabled = activeStep === 0;
-            nextBtn.disabled = activeStep === steps.length - 1;
-            stepLabel.setText(steps[activeStep]?.label ?? "");
-            if (scroll) {
-                steps[activeStep]?.el.scrollIntoView({ block: "nearest", behavior: "smooth" });
-                setTimeout(() => focusFirstField(steps[activeStep]?.el), 120);
-            }
-        };
-
-        prevBtn.onclick = () => { if (activeStep > 0) updateStep(activeStep - 1, { scroll: true }); };
-        nextBtn.onclick = () => { if (activeStep < steps.length - 1) updateStep(activeStep + 1, { scroll: true }); };
-
-        body.addEventListener("focusin", (ev) => {
-            const column = (ev.target as HTMLElement | null)?.closest<HTMLElement>(".sm-cc-create-column");
-            if (!column) return;
-            const index = steps.findIndex((step) => step.el === column);
-            if (index >= 0 && index !== activeStep) updateStep(index, { scroll: false });
+        contentEl.addClass("sm-creature-modal");
+        this.handle = mountCreatureCreator(contentEl, {
+            initial: this.options.initial,
+            onSubmit: async (result) => {
+                await this.options.onSubmit?.(result);
+                this.close();
+            },
+            onCancel: () => {
+                this.close();
+                this.options.onCancel?.();
+            },
         });
-
-        // Asynchron: verfügbare Zauber laden (best effort)
-        let spellsSectionControls: ReturnType<typeof mountSpellcastingSection> | null = null;
-        void (async () => {
-            try {
-                const spells = (await listSpellFiles(this.app)).map(f => f.basename).sort((a,b)=>a.localeCompare(b));
-                this.availableSpells.splice(0, this.availableSpells.length, ...spells);
-                spellsSectionControls?.refreshSpellMatches();
-            }
-            catch {}
-        })();
-
-        // Core Stats (kompakt) in linker Spalte
-        const coreStatsSection = createSection(
-            leftColumn,
-            "Grundwerte",
-            "Identität, Kernwerte, Attribute und Listen dieser Kreatur."
-        );
-        mountCoreStatsSection(coreStatsSection, this.data);
-
-        // Movement speeds (structured input → speedList strings) – mittlere Spalte
-        const movementSection = createSection(
-            middleColumn,
-            "Bewegung",
-            "Geschwindigkeiten mit Typ, Wert und optionaler Hover-Regel verwalten."
-        );
-        const movement = new Setting(movementSection).setName("Geschwindigkeiten");
-        const movementContainer = movement.controlEl.createDiv({ cls: "sm-cc-move-ctl" });
-        const addRow = movementContainer.createDiv({ cls: "sm-cc-searchbar sm-cc-move-row" });
-        const typeSel = addRow.createEl("select") as HTMLSelectElement;
-        for (const [value, label] of CREATURE_MOVEMENT_TYPES) { const option = typeSel.createEl("option", { text: label }); option.value = value; }
-        enhanceSelectToSearch(typeSel, 'Such-dropdown…');
-        const hoverWrap = addRow.createDiv();
-        const hoverCb = hoverWrap.createEl("input", { attr: { type: "checkbox", id: "cb-hover" } }) as HTMLInputElement;
-        hoverWrap.createEl("label", { text: "Hover", attr: { for: "cb-hover" } });
-        const updateHover = () => { const cur = typeSel.value as CreatureMovementType; const isFly = cur === 'fly'; hoverWrap.style.display = isFly ? '' : 'none'; if (!isFly) hoverCb.checked = false; };
-        updateHover(); typeSel.onchange = updateHover;
-        const numWrap = addRow.createDiv({ cls: "sm-inline-number" });
-        const valInp = numWrap.createEl("input", { attr: { type: "number", min: "0", step: "5", placeholder: "30" } }) as HTMLInputElement;
-        const decBtn = numWrap.createEl("button", { text: "−", cls: "btn-compact" });
-        const incBtn = numWrap.createEl("button", { text: "+", cls: "btn-compact" });
-        const step = (dir: 1 | -1) => {
-            const cur = parseInt(valInp.value, 10) || 0;
-            const next = Math.max(0, cur + 5 * dir);
-            valInp.value = String(next);
-        };
-        decBtn.onclick = () => step(-1);
-        incBtn.onclick = () => step(1);
-        const addRow2 = movementContainer.createDiv({ cls: "sm-cc-searchbar sm-cc-move-addrow" });
-        const addSpeedBtn = addRow2.createEl("button", { text: "+ Hinzufügen" });
-        const listWrap = movementContainer.createDiv({ cls: "sm-cc-chips" });
-        const renderSpeeds = () => {
-            listWrap.empty();
-            const speeds = ensureSpeedList(this.data);
-            speeds.forEach((txt, i) => {
-                const chip = listWrap.createDiv({ cls: 'sm-cc-chip' });
-                const display = parseSpeedChip(txt) ?? { raw: txt?.trim?.() || "", typeLabel: DEFAULT_MOVEMENT_LABEL, value: (txt ?? "").trim() };
-                const valueText = display.value?.trim() ? display.value : "–";
-                if (display.raw) chip.setAttr("title", display.raw);
-                chip.createSpan({ text: `${display.typeLabel} · ${valueText}` });
-                const x = chip.createEl('button', { text: '×' });
-                x.onclick = () => { this.data.speedList!.splice(i,1); renderSpeeds(); };
-            });
-        };
-        renderSpeeds();
-        addSpeedBtn.onclick = () => {
-            const n = parseInt(valInp.value, 10);
-            if (!Number.isFinite(n) || n <= 0) return;
-            const kind = typeSel.value;
-            const unit = 'ft.';
-            const label = kind === 'walk'
-                ? `${n} ${unit}`
-                : (kind === 'fly' && hoverCb.checked ? `fly ${n} ${unit} (hover)` : `${kind} ${n} ${unit}`);
-            ensureSpeedList(this.data);
-            this.data.speedList!.push(label.trim());
-            valInp.value = ""; hoverCb.checked = false; renderSpeeds();
-        };
-
-        const defensesSection = createSection(
-            middleColumn,
-            "Defensive Listen",
-            "Resistenzen, Immunitäten, Verwundbarkeiten und Ausrüstungsnotizen pflegen."
-        );
-        type DefenseKey = "resistances" | "immunities" | "vulnerabilities";
-        const ensureDefenseList = (key: DefenseKey) => {
-            if (!this.data[key]) this.data[key] = [];
-            return this.data[key]!;
-        };
-        const mountDefenseEditor = (label: string, key: DefenseKey, placeholder: string) => {
-            ensureDefenseList(key);
-            mountTokenEditor(defensesSection, label, {
-                getItems: () => ensureDefenseList(key),
-                add: (value) => ensureDefenseList(key).push(value),
-                remove: (index) => ensureDefenseList(key).splice(index, 1),
-            }, { placeholder, addButtonLabel: "+", onAdd: () => scheduleUpdate(), onRemove: () => scheduleUpdate() });
-        };
-
-        mountDefenseEditor("Resistances", "resistances", "z. B. fire; nicht-magische Waffen");
-        mountDefenseEditor("Immunities", "immunities", "z. B. poison; charmed");
-        mountDefenseEditor("Vulnerabilities", "vulnerabilities", "z. B. radiant damage");
-
-        if (typeof this.data.equipmentNotes !== "string") this.data.equipmentNotes = "";
-        const equipmentSetting = new Setting(defensesSection).setName("Equipment & Notes");
-        equipmentSetting.addTextArea((ta) => {
-            ta.setPlaceholder("Ausrüstung, Sonderregeln, Kampfnotizen…");
-            ta.setValue(this.data.equipmentNotes || "");
-            ta.inputEl.rows = 4;
-            ta.inputEl.style.width = "100%";
-            ta.inputEl.addEventListener("input", () => { this.data.equipmentNotes = ta.getValue(); });
-        });
-
-        // Structured entries (Traits, Aktionen, …) – rechte Spalte
-        const entriesSection = createSection(
-            rightColumn,
-            "Einträge",
-            "Traits, Aktionen, Reaktionen und weitere strukturierte Inhalte."
-        );
-        mountEntriesSection(entriesSection, this.data);
-
-        // Spellcasting tab – rechte Spalte
-        const spellcastingSection = createSection(
-            rightColumn,
-            "Zauberwirken",
-            "Zauberstatistiken sowie Frequenz- und Zauberlisten verwalten."
-        );
-        spellsSectionControls = mountSpellcastingSection(spellcastingSection, this.data, () => this.availableSpells, () => scheduleUpdate());
-
-        const footer = wrapper.createDiv({ cls: "sm-cc-create-footer" });
-        const chipRow = footer.createDiv({ cls: "sm-cc-footer-chips" });
-        const makeChip = (label: string) => {
-            const chip = chipRow.createDiv({ cls: "sm-cc-footer-chip" });
-            chip.createSpan({ cls: "sm-cc-footer-chip__label", text: label });
-            return chip.createSpan({ cls: "sm-cc-footer-chip__value", text: "-" });
-        };
-        const chipAc = makeChip("AC");
-        const chipHp = makeChip("HP");
-        const chipPassive = makeChip("Passive Perception");
-        const chipCr = makeChip("CR");
-
-        const footerStatus = footer.createDiv({ cls: "sm-cc-footer-status" });
-        const footerActions = footer.createDiv({ cls: "sm-cc-footer-actions" });
-
-        const cancelBtn = footerActions.createEl("button", { cls: "sm-cc-footer-btn", text: "Abbrechen" });
-        cancelBtn.onclick = () => this.close();
-        const saveBtn = footerActions.createEl("button", { cls: "sm-cc-footer-btn is-primary", text: "Speichern" });
-        saveBtn.onclick = () => this.submit();
-        const previewBtn = footerActions.createEl("button", { cls: "sm-cc-footer-btn", text: "Vorschau öffnen" });
-        previewBtn.onclick = () => {
-            const preview = new CreaturePreviewModal(this.app, this.data);
-            preview.open();
-        };
-
-        const computePassive = () => {
-            const wis = abilityMod(this.data.wis);
-            const base = 10 + wis;
-            const pb = parseIntSafe(this.data.pb);
-            const profBonus = Number.isFinite(pb) ? pb : 0;
-            let bonus = 0;
-            const skills = new Set(this.data.skillsProf || []);
-            const expertise = new Set(this.data.skillsExpertise || []);
-            if (skills.has("Perception")) bonus += profBonus;
-            if (expertise.has("Perception")) bonus += profBonus;
-            return base + bonus;
-        };
-
-        const collectValidationIssues = (): string[] => {
-            const issues: string[] = [];
-            if (!this.data.name || !this.data.name.trim()) issues.push("Name fehlt");
-            const hasEntries = Array.isArray(this.data.entries) && this.data.entries.length > 0;
-            const hasActions = Array.isArray(this.data.entries) && this.data.entries.some((e) => e.category === 'action');
-            const hasLegacyActions = Array.isArray(this.data.actionsList) && this.data.actionsList.length > 0;
-            if (!hasEntries && !hasLegacyActions) issues.push("Mindestens einen Eintrag hinzufügen");
-            else if (!hasActions && !hasLegacyActions) issues.push("Mindestens eine Aktion hinterlegen");
-            const hasSpellcasting = () => {
-                const listHasItems = (arr?: { length?: number } | null): boolean => Array.isArray(arr) && arr.length > 0;
-                const mapHasItems = (map?: Record<string, unknown[]> | null): boolean =>
-                    !!map && Object.values(map).some((arr) => Array.isArray(arr) && arr.length > 0);
-                return (
-                    listHasItems(this.data.spellsAtWill) ||
-                    mapHasItems(this.data.spellsPerDay) ||
-                    mapHasItems(this.data.spellsPerRest) ||
-                    mapHasItems(this.data.spellsBySlot) ||
-                    mapHasItems(this.data.spellsOther)
-                );
-            };
-            if (hasSpellcasting()) {
-                if (!this.data.spellcastingAbility?.trim()) issues.push("Zauber-Fähigkeit fehlt");
-                const hasDc = !!this.data.spellSaveDc?.trim();
-                const hasAttack = !!this.data.spellAttackBonus?.trim();
-                if (!hasDc && !hasAttack) issues.push("Zauber-SG oder Angriffsbonus fehlt");
-            }
-            return issues;
-        };
-
-        const updateFooter = () => {
-            chipAc.setText(this.data.ac?.trim() || "–");
-            chipHp.setText(this.data.hp?.trim() || "–");
-            const passive = computePassive();
-            chipPassive.setText(Number.isFinite(passive) ? String(passive) : "–");
-            chipCr.setText(this.data.cr?.trim() || "–");
-
-            footerStatus.empty();
-            const issues = collectValidationIssues();
-            if (issues.length === 0) {
-                footerStatus.createSpan({ cls: "sm-cc-footer-status__ok", text: "Bereit zum Speichern" });
-            } else {
-                const list = footerStatus.createDiv({ cls: "sm-cc-footer-status__warnings" });
-                issues.forEach((msg) => { list.createSpan({ cls: "sm-cc-footer-warning", text: msg }); });
-            }
-            saveBtn.toggleClass("is-disabled", issues.length > 0);
-            saveBtn.disabled = issues.length > 0;
-        };
-
-        const refreshName = () => {
-            liveName.setText(this.data.name?.trim() || "Neue Kreatur");
-        };
-
-        scheduleUpdate = () => {
-            requestAnimationFrame(() => {
-                refreshName();
-                updateFooter();
-            });
-        };
-
-        wrapper.addEventListener("input", scheduleUpdate, true);
-        wrapper.addEventListener("change", scheduleUpdate, true);
-        wrapper.addEventListener("click", (ev) => {
-            const target = ev.target as HTMLElement | null;
-            if (target?.closest("button")) scheduleUpdate();
-        }, true);
-
-        refreshName();
-        updateFooter();
-        updateStep(0, { scroll: false });
     }
 
-    onClose() { this.contentEl.empty(); if (this._bgEl) { this._bgEl.style.pointerEvents = this._bgPrevPointer ?? ''; this._bgEl = undefined; } }
-
-    onunload() {
-        if (this._bgEl) { this._bgEl.style.pointerEvents = this._bgPrevPointer ?? ''; this._bgEl = undefined; }
-    }
-
-    private submit() {
-        if (!this.data.name || !this.data.name.trim()) return;
-        this.close();
-        this.onSubmit(this.data);
+    onClose() {
+        this.handle?.destroy();
+        this.handle = null;
     }
 }
+
