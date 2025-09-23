@@ -17,20 +17,19 @@ src/apps/cartographer/travel/
 │  └─ adapter.ts             # Vertrag zwischen Domain und Renderer-Layern
 ├─ render/
 │  └─ draw-route.ts          # SVG-Zeichnen der Route inklusive Highlights
-└─ ui/                       # Travel-spezifische Shell, Sidebar & Layer
+└─ ui/                       # Travel-spezifische Sidebar-, Control- und Layer-Komponenten
    ├─ contextmenue.ts        # Rechtsklick-Binding zum Löschen von User-Dots
    ├─ controls.ts            # Playback-Buttonleiste (Start/Stopp/Reset)
    ├─ drag.controller.ts     # Drag-Steuerung für Route-Dots & Token
    ├─ map-layer.ts           # Wrapper um renderHexMap + Polygon-Index
    ├─ route-layer.ts         # Layer für Route-Zeichnung & Highlighting
    ├─ sidebar.ts             # Travel-Sidebar inkl. Speed-Eingabe
-   ├─ token-layer.ts         # Sichtbares Token-Element mit Animation
-   └─ view-shell.ts          # Standalone-Shell für Travel-View (Cartographer-kompatibel)
+   └─ token-layer.ts         # Sichtbares Token-Element mit Animation
 ```
 
 ## Features & Verantwortlichkeiten
 
-- **Geteilte Travel-Basis:** Alle Travel-spezifischen Module liegen gebündelt, damit Cartographer und Legacy-View dieselbe Domain-/UI-Lösung nutzen.
+- **Geteilte Travel-Basis:** Alle Travel-spezifischen Module liegen gebündelt, damit der Cartographer-Travel-Modus eine konsistente Domain-/UI-Lösung nutzt.
 - **Routenmanagement:** `domain/actions.ts` orchestriert Wegpunktanlage, Drag/Merge-Logik und Synchronisation mit den SVG-Layern.
 - **Playback & Persistenz:** `domain/playback.ts` berechnet Bewegungsgeschwindigkeiten, animiert den Token und schreibt Fortschritt via `persistence.ts` in Tile-Dateien.
 - **UI-Schichten:** `ui/` liefert Sidebar, Controls, Drag-Controller und Layer-Wrapping, während `render/draw-route.ts` nur das visuelle Zeichnen übernimmt.
@@ -101,7 +100,3 @@ src/apps/cartographer/travel/
 ### `ui/token-layer.ts`
 - Rendert das sichtbare Token-SVG, kapselt Animation (`moveTo`) inkl. Cancel-Handling und erlaubt sofortiges `setPos`.
 - Stellt `show`/`hide` bereit, damit Domain/Playback den Token ein-/ausblenden können.
-
-### `ui/view-shell.ts`
-- Baut eine eigenständige `sm-cartographer`-Shell, mountet den Travel-Modus und synchronisiert Datei-Wechsel/Save-Buttons.
-- Dient als Brücke für die Legacy-View sowie Tests außerhalb des kompletten Cartographer-Hosts.
