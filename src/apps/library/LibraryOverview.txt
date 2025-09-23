@@ -27,6 +27,7 @@ src/apps/library/
 │  ├─ section-entries.ts      # Abschnitt für Traits/Aktionen/Legendäre Einträge mit Presets
 │  ├─ section-spells-known.ts # Abschnitt für bekannte Zauber inkl. Typeahead-Suche
 │  └─ shared/
+│     ├─ stat-utils.ts        # Gemeinsame Berechnungshelfer für Ability-Mods & Vorzeichenformatierung
 │     └─ token-editor.ts      # Gemeinsame Token-Editor-Utility für Chips-Eingaben
 ├─ view.ts                  # Obsidian-View mit Modus‑Tabs, Suche, Liste
 └─ LibraryOverview.txt      # Dieses Dokument
@@ -44,6 +45,7 @@ src/apps/library/
   - `section-core-stats`: Steuert Identität, Ability Scores, Saves/Skills sowie Sinnes- und Sprachfelder inklusive Automatik-Berechnungen.
   - `section-entries`: Verwaltet Traits, Aktionen, legendäre Optionen und Presets für Treffer-/Schadenswerte.
   - `section-spells-known`: Liefert eine Typeahead-gestützte Spell-Liste mit Grad- und Nutzungskonfiguration, die auf den live gehaltenen Spell-Getter des Modals hört.
+- Geteilte Stat-Utilities (`create/shared/stat-utils.ts`) bündeln Parsing, Modifikator-Logik und Vorzeichenformatierung für alle Abschnitte – nutzbar auch für zukünftige Modals (z. B. Items oder NPC-Varianten).
 - Öffnen: Ein Button pro Eintrag öffnet die Quelle (Datei bzw. Sammeldatei) in Obsidian.
 - Live‑Updates: Nutzt Watcher für Ordner/Dateien, um die Liste bei Änderungen neu zu laden.
 
@@ -85,15 +87,22 @@ src/apps/library/
 ### `create/section-core-stats.ts`
 - Rendert Identität, Kernwerte, Saves/Skills sowie Sinne und Sprachen inklusive automatischer Modifikator- und Proficiency-Berechnung.
 - Nutzt den gemeinsamen Token-Editor (`shared/token-editor`) für Sinne/Sprachen, damit Chips-UX und Add/Remove-Verhalten identisch mit anderen Formularteilen bleibt.
+- Zieht Berechnungshelfer (`shared/stat-utils`) für Ability-Modifikatoren und Vorzeichenformatierung heran, sodass dieselben Regeln wie in Eintragssektionen gelten.
 - Warum: Bündelt alle abhängigen Formeln (z. B. PB, Ability Mods) und sorgt dafür, dass Änderungen an Attributen sofort in allen Feldern sichtbar werden.
 
 ### `create/section-entries.ts`
 - Verwaltet Trait/Aktion/Legendär-Einträge inkl. Preset-Formeln, Auto-Berechnung von Treffer- und Schadenswerten sowie zusätzlichen Feldern (Saves, Recharge, Text).
+- Greift auf `shared/stat-utils` zurück, um Treffer- und Schadenswerte konsistent mit den Kernwerten zu berechnen.
 - Warum: Die komplexeste Sektion des Modals bleibt isoliert wartbar; Presets und Logik lassen sich hier ergänzen, ohne den Modal-Controller aufzublähen. Unterstützt Rückmeldungen an das Modal (z. B. Dirty-State), ohne dass andere Abschnitte davon beeinflusst werden.
 
 ### `create/section-spells-known.ts`
 - Stellt den Zauber-Selector mit Typeahead, Grad/Nutzungsfeldern und Ergebnisliste bereit und liest Treffer bei jedem Rendern per Getter, sodass asynchron geladene Zauber sofort verfügbar sind.
 - Warum: Entkoppelt die Such-/Listenlogik von der Modal-Hülle und ermöglicht Wiederverwendung bzw. gezielte Anpassungen am Spell-UX. Die Sektion reagiert auf Refresh-Signale des Modals, sobald neue Spell-Dateien auftauchen.
+
+### `create/shared/stat-utils.ts`
+- Fasst `parseIntSafe`, `abilityMod` und `formatSigned` zusammen, damit UI-Sektionen identische Rechenregeln verwenden.
+- Geeignet für weitere Modals (z. B. Item- oder NPC-Editoren), die Trefferwürfe, Saves oder Schadensformeln automatisch ableiten möchten.
+- Warum: Reduziert Duplikate, verhindert auseinanderlaufende Formeln und erleichtert Tests für gemeinsames Verhalten.
 
 ### `create/spell/modal.ts`
 - Modal zum Anlegen neuer Zauberdateien mit Komfortfeldern und direktem Aufruf von `createSpellFile`.
