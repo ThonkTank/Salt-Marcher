@@ -31,6 +31,9 @@ export type CreatureEntry = {
     text?: string;
 };
 
+export type SpellRef = { name: string; uses?: string; notes?: string };
+export type SpellFrequencyMap = Record<string, SpellRef[]>;
+
 export type StatblockData = {
     name: string;
     size?: string;
@@ -62,6 +65,15 @@ export type StatblockData = {
     traits?: string; actions?: string; legendary?: string; lair?: string;
     entries?: CreatureEntry[];
     actionsList?: Array<{ name: string; kind?: string; to_hit?: string; range?: string; target?: string; save_ability?: string; save_dc?: number; save_effect?: string; damage?: string; recharge?: string; text?: string; }>;
+    spellcastingAbility?: string;
+    spellSaveDc?: string;
+    spellAttackBonus?: string;
+    spellsAtWill?: SpellRef[];
+    spellsPerDay?: SpellFrequencyMap;
+    spellsPerRest?: SpellFrequencyMap;
+    spellsBySlot?: SpellFrequencyMap;
+    spellsOther?: SpellFrequencyMap;
+    /** @deprecated Legacy Feld, wird nur zum Import älterer Daten gelesen. */
     spellsKnown?: Array<{ name: string; level?: number; uses?: string; notes?: string }>;
 };
 
@@ -176,10 +188,71 @@ export function resolveEntryAutoDamage(entry: CreatureEntry, d: StatblockData): 
     return parts.join('; ');
 }
 
+function sanitizeSpellRefLike(ref: { name?: string | null; uses?: string | null; notes?: string | null }): SpellRef | null {
+    const name = ref.name?.trim();
+    if (!name) return null;
+    const uses = ref.uses?.trim() || undefined;
+    const notes = ref.notes?.trim() || undefined;
+    const out: SpellRef = { name };
+    if (uses) out.uses = uses;
+    if (notes) out.notes = notes;
+    return out;
+}
+
+function sanitizeSpellList(list?: SpellRef[] | null): SpellRef[] | undefined {
+    if (!Array.isArray(list)) return undefined;
+    const sanitized = list
+        .map((item) => sanitizeSpellRefLike(item))
+        .filter((item): item is SpellRef => !!item);
+    return sanitized.length ? sanitized : undefined;
+}
+
+function sanitizeSpellMap(map?: SpellFrequencyMap | null): SpellFrequencyMap | undefined {
+    if (!map) return undefined;
+    const out: SpellFrequencyMap = {};
+    for (const [key, arr] of Object.entries(map)) {
+        const trimmedKey = key?.trim();
+        if (!trimmedKey) continue;
+        const sanitizedList = sanitizeSpellList(arr);
+        if (sanitizedList) out[trimmedKey] = sanitizedList;
+    }
+    return Object.keys(out).length ? out : undefined;
+}
+
+function formatSpellRefInline(ref: SpellRef): string {
+    const extras = [ref.uses, ref.notes].map((v) => v?.trim()).filter((v): v is string => !!v);
+    return extras.length ? `${ref.name} (${extras.join('; ')})` : ref.name;
+}
+
 function statblockToMarkdown(d: StatblockData): string {
     const hdr = [d.size || "", d.type || "", composeAlignment(d) || ""].filter(Boolean).join(", ");
     const name = d.name || "Unnamed Creature";
     const lines: string[] = [];
+    const spellAbility = d.spellcastingAbility?.trim();
+    const spellSaveDc = d.spellSaveDc?.trim();
+    const spellAttackBonus = d.spellAttackBonus?.trim();
+    let spellsAtWill = sanitizeSpellList(d.spellsAtWill);
+    let spellsPerDay = sanitizeSpellMap(d.spellsPerDay);
+    let spellsPerRest = sanitizeSpellMap(d.spellsPerRest);
+    let spellsBySlot = sanitizeSpellMap(d.spellsBySlot);
+    let spellsOther = sanitizeSpellMap(d.spellsOther);
+    if (!spellsAtWill && !spellsPerDay && !spellsPerRest && !spellsBySlot && !spellsOther && Array.isArray(d.spellsKnown)) {
+        for (const legacy of d.spellsKnown) {
+            const sanitized = sanitizeSpellRefLike(legacy);
+            if (!sanitized) continue;
+            if (legacy.level == null) {
+                (spellsOther ||= {});
+                (spellsOther["Legacy"] ||= []).push(sanitized);
+            } else {
+                const key = String(legacy.level);
+                (spellsBySlot ||= {});
+                (spellsBySlot[key] ||= []).push(sanitized);
+            }
+        }
+        spellsOther = sanitizeSpellMap(spellsOther);
+        spellsBySlot = sanitizeSpellMap(spellsBySlot);
+    }
+    const hasSpellcastingData = !!(spellsAtWill || spellsPerDay || spellsPerRest || spellsBySlot || spellsOther);
     lines.push("---"); lines.push("smType: creature"); lines.push(`name: "${name.replace(/"/g, '\\"')}"`);
     if (d.size) lines.push(`size: "${d.size}"`); if (d.type) lines.push(`type: "${d.type}"`); const align = composeAlignment(d); if (align) lines.push(`alignment: "${align}"`);
     if (d.ac) lines.push(`ac: "${d.ac}"`); if (d.initiative) lines.push(`initiative: "${d.initiative}"`); if (d.hp) lines.push(`hp: "${d.hp}"`); if (d.hitDice) lines.push(`hit_dice: "${d.hitDice}"`);
@@ -195,9 +268,20 @@ function statblockToMarkdown(d: StatblockData): string {
     const vulnerabilitiesYaml = yamlList(d.vulnerabilities); if (vulnerabilitiesYaml) lines.push(`vulnerabilities: ${vulnerabilitiesYaml}`);
     const equipmentNotes = d.equipmentNotes?.trim(); if (equipmentNotes) lines.push(`equipment_notes: "${equipmentNotes.replace(/"/g, '\\"').replace(/\r?\n/g, "\\n")}"`);
     if (d.cr) lines.push(`cr: "${d.cr}"`); if (d.xp) lines.push(`xp: "${d.xp}"`);
+    if (spellAbility) lines.push(`spellcasting_ability: "${spellAbility.replace(/"/g, '\\"')}"`);
+    if (spellSaveDc) lines.push(`spell_save_dc: "${spellSaveDc.replace(/"/g, '\\"')}"`);
+    if (spellAttackBonus) lines.push(`spell_attack_bonus: "${spellAttackBonus.replace(/"/g, '\\"')}"`);
+    const pushSpellJson = (key: string, value: unknown) => {
+        const json = JSON.stringify(value).replace(/"/g, '\\"');
+        lines.push(`${key}: "${json}"`);
+    };
+    if (spellsAtWill) pushSpellJson("spells_at_will_json", spellsAtWill);
+    if (spellsPerDay) pushSpellJson("spells_per_day_json", spellsPerDay);
+    if (spellsPerRest) pushSpellJson("spells_per_rest_json", spellsPerRest);
+    if (spellsBySlot) pushSpellJson("spells_by_slot_json", spellsBySlot);
+    if (spellsOther) pushSpellJson("spells_other_json", spellsOther);
     const entries = (d.entries && d.entries.length) ? d.entries : (d.actionsList && d.actionsList.length ? d.actionsList.map(a => ({ category: 'action' as const, ...a })) : undefined);
     if (entries && entries.length) { const json = JSON.stringify(entries).replace(/"/g, '\\"'); lines.push(`entries_structured_json: "${json}"`); }
-    if (d.spellsKnown && d.spellsKnown.length) { const json = JSON.stringify(d.spellsKnown).replace(/"/g, '\\"'); lines.push(`spells_known_json: "${json}"`); }
     lines.push("---\n");
     lines.push(`# ${name}`); if (hdr) lines.push(hdr); lines.push("");
     if (d.ac || d.initiative) lines.push(`AC ${d.ac ?? "-"}    Initiative ${d.initiative ?? "-"}`);
@@ -260,7 +344,61 @@ function statblockToMarkdown(d: StatblockData): string {
         if (d.legendary) { lines.push("## Legendary Actions\n"); lines.push(d.legendary.trim()); lines.push(""); }
         if (d.lair) { lines.push("## Lair Actions\n"); lines.push(d.lair.trim()); lines.push(""); }
     }
-    if (d.spellsKnown && d.spellsKnown.length) { lines.push("## Spellcasting\n"); const byLevel: Record<string, Array<{ name: string; uses?: string; notes?: string }>> = {}; for (const s of d.spellsKnown) { const key = s.level == null ? "unknown" : String(s.level); (byLevel[key] ||= []).push({ name: s.name, uses: s.uses, notes: s.notes }); } const order = Object.keys(byLevel).map(k => (k === 'unknown' ? Infinity : parseInt(k,10))).sort((a,b)=>a-b).map(n => n === Infinity ? 'unknown' : String(n)); for (const k of order) { const lvl = k === 'unknown' ? 'Spells' : (k === '0' ? 'Cantrips' : `Level ${k}`); lines.push(`- ${lvl}:`); for (const s of byLevel[k]) { const extra = [s.uses, s.notes].filter(Boolean).join('; '); lines.push(`  - ${s.name}${extra ? ` (${extra})` : ''}`); } } lines.push(""); }
+    if (hasSpellcastingData) {
+        lines.push("## Spellcasting\n");
+        const summaryParts: string[] = [];
+        if (spellAbility) summaryParts.push(`Ability ${spellAbility}`);
+        if (spellSaveDc) summaryParts.push(`Save DC ${spellSaveDc}`);
+        if (spellAttackBonus) summaryParts.push(`Spell Attack ${spellAttackBonus}`);
+        const pushList = (header: string, spells: SpellRef[] | undefined) => {
+            if (!spells || spells.length === 0) return;
+            lines.push(`- ${header}:`);
+            for (const spell of spells) lines.push(`  - ${formatSpellRefInline(spell)}`);
+        };
+        if (summaryParts.length) {
+            lines.push(summaryParts.join("; "));
+            const hasLists = Boolean(
+                (spellsAtWill && spellsAtWill.length) ||
+                (spellsPerDay && Object.keys(spellsPerDay).length) ||
+                (spellsPerRest && Object.keys(spellsPerRest).length) ||
+                (spellsBySlot && Object.keys(spellsBySlot).length) ||
+                (spellsOther && Object.keys(spellsOther).length)
+            );
+            if (hasLists) lines.push("");
+        }
+        pushList("At Will", spellsAtWill);
+        if (spellsPerDay) {
+            const ordered = Object.entries(spellsPerDay).sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true, sensitivity: "base" }));
+            for (const [key, list] of ordered) pushList(key, list);
+        }
+        if (spellsPerRest) {
+            const ordered = Object.entries(spellsPerRest).sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true, sensitivity: "base" }));
+            for (const [key, list] of ordered) pushList(key, list);
+        }
+        if (spellsBySlot) {
+            const formatSlotKey = (key: string) => {
+                const asNum = Number(key);
+                if (Number.isFinite(asNum)) {
+                    return asNum === 0 ? "Cantrips (Grad 0)" : `Grad ${asNum}`;
+                }
+                return key;
+            };
+            const ordered = Object.entries(spellsBySlot).sort((a, b) => {
+                const numA = Number(a[0]);
+                const numB = Number(b[0]);
+                if (Number.isFinite(numA) && Number.isFinite(numB)) return numA - numB;
+                if (Number.isFinite(numA)) return -1;
+                if (Number.isFinite(numB)) return 1;
+                return a[0].localeCompare(b[0], undefined, { sensitivity: "base" });
+            });
+            for (const [key, list] of ordered) pushList(formatSlotKey(key), list);
+        }
+        if (spellsOther) {
+            const ordered = Object.entries(spellsOther).sort((a, b) => a[0].localeCompare(b[0], undefined, { sensitivity: "base" }));
+            for (const [key, list] of ordered) pushList(key, list);
+        }
+        lines.push("");
+    }
     if (equipmentNotes) { lines.push("## Equipment & Notes\n"); lines.push(equipmentNotes); lines.push(""); }
     return lines.join("\n");
 }
