@@ -17,12 +17,9 @@ src/apps/library/
 │  └─ spell-files.ts        # FS‑Utilities für Spells (ensure/list/watch/create)
 ├─ create/
 │  ├─ creature/
-│  │  ├─ index.ts             # Re-exports Modal & Creature-Sections für externe Zugriffe
-│  │  ├─ modal.ts             # Modal zum Anlegen von Creatures (koordiniert die Abschnitte)
-│  │  ├─ presets.ts           # Zentralisierte Auswahllisten (Größe, Typ, Skills, Bewegungen …)
-│  │  ├─ section-core-stats.ts   # Abschnitt für Identität, Kernwerte, Saves & Sinne/Sprachen
-│  │  ├─ section-entries.ts      # Abschnitt für Traits/Aktionen/Legendäre Einträge mit Presets
-│  │  └─ section-spellcasting.ts # Spellcasting-Tab mit Casting-Stats & Frequenzlisten
+│  │  ├─ index.ts             # Exportiert Modal-/Mount-Hilfen und Markdown-Speicherlogik
+│  │  ├─ modal.ts             # Einspaltiges Formular + Modal-Hülle für den Statblock-Editor
+│  │  └─ statblock.ts         # State-Typen, Parser-Helfer und Markdown-Generator
 │  ├─ spell/
 │  │  ├─ index.ts             # Re-export für externe Zugriffe auf das Spell-Modal
 │  │  └─ modal.ts             # Modal zum Anlegen von Spells
@@ -42,11 +39,8 @@ src/apps/library/
   - Terrains: legt neuen Eintrag mit Defaultwerten an (`#888888`, `speed: 1`).
   - Regionen: legt neuen Eintrag ohne Terrain/Encounter an.
   - Creatures/Spells: öffnet ein Modal, erzeugt eine `.md`‑Datei im passenden Ordner und öffnet sie im Editor.
-- Creature-Modal (`create/creature/modal.ts`) zerlegt das Formular in modulare Abschnitte (`create/creature/section-*.ts`) und orchestriert Mounting, State-Passing und Persistenz-Trigger. Gemeinsame Optionslisten (Größen, Typen, Gesinnung, Skills, Bewegungsarten) werden aus `create/creature/presets.ts` gespeist, sodass alle Segmente denselben Kanon verwenden.
-  - `creature/section-core-stats`: Steuert Identität, Ability Scores, Saves/Skills sowie Sinnes- und Sprachfelder inklusive Automatik-Berechnungen.
-  - `creature/section-entries`: Verwaltet Traits, Aktionen, legendäre Optionen und Presets für Treffer-/Schadenswerte.
-  - `creature/section-spellcasting`: Erfasst Casting-Stats, organisiert Zauber nach Frequenz (At-Will, pro Tag/Rast, Slots, freie Gruppen) mit Typeahead & Uses/Notizen und reagiert auf Refresh-Hooks des Modals.【F:src/apps/library/create/creature/section-spellcasting.ts†L438-L587】【F:src/apps/library/create/creature/modal.ts†L109-L205】
-- Defensive Zusatzerfassung: Chip-Editoren für Resistances, Immunities, Vulnerabilities sowie ein Equipment-&-Notes-Textarea erweitern die mittlere Spalte des Creature-Modals und schreiben direkt ins Statblock-Objekt.【F:src/apps/library/create/creature/modal.ts†L104-L165】
+- Creature-Modal (`create/creature/modal.ts`) liefert ein einspaltiges Formular mit Pflichtfeld-Validierung. Abschnitte decken Identität, Kampfwerte, Ability Scores, Listen (Resistances/Immunities/Vulnerabilities/Senses/Languages) sowie Freitextbereiche für Traits, Actions, Bonus Actions, Reactions und Legendary Actions ab. Ein `<details>`-Block bündelt optionale Angaben (Initiative, Saving Throws samt Overrides, Skill-Liste, Equipment/Notes, XP). Spellcasting erlaubt At-Will-Listen und dynamisch anlegbare Gruppen für „pro Tag“, „pro Rast“, „Spell Slots“ und weitere Kategorien.【F:src/apps/library/create/creature/modal.ts†L74-L298】
+- Ein-Klick-Speichern: `openCreatureCreator` verknüpft das Modal mit `saveCreatureMarkdownFile`. Nach dem Submit erzeugt `buildStatblockMarkdown` den Text und legt ihn sofort im Creatures-Verzeichnis ab; Aufrufer erhalten Datei-Handle, Markdown und State zur Weiterverarbeitung (z. B. Listen-Refresh, Editor öffnen).【F:src/apps/library/create/creature/index.ts†L1-L42】
 - Geteilte Stat-Utilities (`create/shared/stat-utils.ts`) bündeln Parsing, Modifikator-Logik und Vorzeichenformatierung für alle Abschnitte – nutzbar auch für zukünftige Modals (z. B. Items oder NPC-Varianten).
 - Öffnen: Ein Button pro Eintrag öffnet die Quelle (Datei bzw. Sammeldatei) in Obsidian.
 - Live‑Updates: Nutzt Watcher für Ordner/Dateien, um die Liste bei Änderungen neu zu laden.
@@ -76,35 +70,19 @@ src/apps/library/
 - Analog zu Creatures, eigener Ordner.
 
 ### `create/creature/modal.ts`
-- Orchestriert den gesamten Creature-Erstellungsfluss: setzt das Modal auf, lädt verfügbare Zauber, mountet die Abschnitts-Module und verarbeitet Bewegung sowie Speichern.
-- Ergänzt die mittlere Spalte um Chip-Editoren für Resistances/Immunities/Vulnerabilities sowie ein Equipment-&-Notes-Textarea, damit defensive Daten konsistent mit dem Referenzstatblock gepflegt werden.【F:src/apps/library/create/creature/modal.ts†L104-L165】
-- Reicht die Zauber-Liste als Getter weiter und stößt nach dem Async-Laden ein Refresh der Spell-Sektion an, damit neue Dateien ohne erneutes Öffnen sichtbar werden.
-- Warum: Hält den Workflow zentral und delegiert UI-Details an spezialisierte Sektionen, sodass Erweiterungen (z. B. neue Abschnitte) gebündelt erfolgen.
-
-### `create/creature/presets.ts`
-- Kapselt alle Konstanten/Typen für Dropdowns und Automatisierungen (Größen, Typen, Gesinnungsteile, Ability-Definitionen, Skill-Mappings, Entry-Kategorien, Bewegungsarten).
-- Warum: Statt mehrfacher Inline-Listen verwenden alle Sektionen dieselben Presets, was Pflegeaufwand reduziert und Erweiterungen an einer Stelle bündelt.
+- Stellt `mountCreatureCreator` bereit, das ein einspaltiges Formular samt Pflichtfeld-Validierung rendert, State↔DOM synchronisiert und bei Submit `onSubmit({ statblock, markdown })` auslöst. Optionale Werte (Initiative, Saves, Skills, Equipment, XP) liegen in einem `<details>`-Block.
+- `CreateCreatureModal` kapselt den Formular-Mount in einem Obsidian-Modal und reicht Cancel-/Submit-Ereignisse an Aufrufer weiter. So können Call-Sites das UI entweder eingebettet mounten oder als Modal öffnen.
+- Spellcasting-Innereien (At-Will-Textarea plus dynamische Gruppen pro Frequenztyp) werden direkt hier gepflegt – zusätzliche Typeahead- oder Preset-Logik kann später ergänzt werden, ohne andere Module zu berühren.【F:src/apps/library/create/creature/modal.ts†L74-L298】
 
 ### `create/creature/index.ts`
-- Re-exportiert das Modal sowie die Creature-Sections für externe Consumer. Dadurch bleibt die Pfadstruktur (`create/creature/modal` & `create/creature/section-*`) intern, während Aufrufer (`view.ts` oder Tests) nur `create/creature` adressieren müssen.
+- Exportiert `CreateCreatureModal`, `mountCreatureCreator`, `openCreatureCreator`, `saveCreatureMarkdownFile` und den Markdown-Builder. `openCreatureCreator(app, { initial, onSaved })` öffnet das Modal, speichert das Ergebnis im Creatures-Ordner und gibt Aufrufern Datei/State/Markdown zurück.
 
 ### `create/index.ts`
-- Fasst die Modal-Exports (`CreateCreatureModal`, `CreateSpellModal`) zusammen. `view.ts` bindet beide über einen Import, was Importketten vereinfacht und die Ordnerstruktur vor Außenstehenden kapselt.
+- Bündelt die Erstellungs-API: re-exportiert `CreateCreatureModal`, `openCreatureCreator`, `mountCreatureCreator`, `saveCreatureMarkdownFile` sowie `CreateSpellModal`. So kann `view.ts` beide Workflows über einen Import konsumieren.
 
-### `create/creature/section-core-stats.ts`
-- Rendert Identität, Kernwerte, Saves/Skills sowie Sinne und Sprachen inklusive automatischer Modifikator- und Proficiency-Berechnung.
-- Nutzt den gemeinsamen Token-Editor (`shared/token-editor`) für Sinne/Sprachen, damit Chips-UX und Add/Remove-Verhalten identisch mit anderen Formularteilen bleibt.
-- Zieht Berechnungshelfer (`shared/stat-utils`) für Ability-Modifikatoren und Vorzeichenformatierung heran, sodass dieselben Regeln wie in Eintragssektionen gelten.
-- Warum: Bündelt alle abhängigen Formeln (z. B. PB, Ability Mods) und sorgt dafür, dass Änderungen an Attributen sofort in allen Feldern sichtbar werden.
-
-### `create/creature/section-entries.ts`
-- Verwaltet Trait/Aktion/Legendär-Einträge inkl. Preset-Formeln, Auto-Berechnung von Treffer- und Schadenswerten sowie zusätzlichen Feldern (Saves, Recharge, Text).
-- Greift auf `shared/stat-utils` zurück, um Treffer- und Schadenswerte konsistent mit den Kernwerten zu berechnen.
-- Warum: Die komplexeste Sektion des Modals bleibt isoliert wartbar; Presets und Logik lassen sich hier ergänzen, ohne den Modal-Controller aufzublähen. Unterstützt Rückmeldungen an das Modal (z. B. Dirty-State), ohne dass andere Abschnitte davon beeinflusst werden.
-
-### `create/creature/section-spellcasting.ts`
-- Liefert den Spellcasting-Tab mit Casting-Stat-Feldern, Frequenzlisten (At-Will, pro Tag/Rast, Slots, weitere Gruppen), Typeahead-Suche sowie Uses-/Notizen-Inputs und bedient Refresh-Aufrufe des Modals.【F:src/apps/library/create/creature/section-spellcasting.ts†L59-L587】
-- Warum: Trennt Spellcasting-spezifische Logik und Migration von der Modal-Hülle, sodass Suche, Gruppierung und Validierung zentral bleiben und andere Bereiche unbeeinflusst sind.【F:src/apps/library/create/creature/modal.ts†L109-L269】
+### `create/creature/statblock.ts`
+- Definiert `CreatureStatblock`, Ability-/Skill-Konstanten und Hilfsfunktionen (`createEmptyStatblock`, `cloneStatblock`, `parseListInput`, `createSpellGroup`, `ensureSkillName`).
+- `buildStatblockMarkdown` erzeugt den Markdown-Body: Kopf mit Name/Größe/Typ/Gesinnung, AC/HP/Speed-Zeilen, Ability-Tabelle (inkl. Modifikatoren), Listen für Saves/Skills/Resistenzen/Immunitäten/Vulnerabilitäten/Sinne/Sprachen, Challenge-Block samt optionalem XP sowie strukturierte Spellcasting-Listen und Equipment-Abschnitt.【F:src/apps/library/create/creature/statblock.ts†L1-L211】
 
 ### `create/shared/stat-utils.ts`
 - Fasst `parseIntSafe`, `abilityMod` und `formatSigned` zusammen, damit UI-Sektionen identische Rechenregeln verwenden.
