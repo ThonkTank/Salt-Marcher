@@ -16,9 +16,9 @@ src/apps/library/
 │  ├─ creature-files.ts     # FS‑Utilities für Creatures (ensure/list/watch/create)
 │  └─ spell-files.ts        # FS‑Utilities für Spells (ensure/list/watch/create)
 ├─ create/
-│  ├─ section-core-stats.ts    # Abschnitt für Identität, Kernwerte, Sinne/Sprachen
-│  ├─ section-entries.ts       # Abschnitt für Traits/Aktionen/Legendäre Einträge
-│  └─ section-spells-known.ts  # Abschnitt für bekannte Zauber mit Typeahead
+│  ├─ section-core-stats.ts    # Abschnitt für Identität, Kernwerte, Saves & Sinne/Sprachen
+│  ├─ section-entries.ts       # Abschnitt für Traits/Aktionen/Legendäre Einträge mit Presets
+│  └─ section-spells-known.ts  # Abschnitt für bekannte Zauber inkl. Typeahead-Suche
 ├─ create-modal.ts          # Modal zum Anlegen von Creatures (koordiniert die Abschnitte)
 ├─ create-spell-modal.ts    # Modal zum Anlegen von Spells
 ├─ view.ts                  # Obsidian-View mit Modus‑Tabs, Suche, Liste
@@ -33,7 +33,10 @@ src/apps/library/
   - Terrains: legt neuen Eintrag mit Defaultwerten an (`#888888`, `speed: 1`).
   - Regionen: legt neuen Eintrag ohne Terrain/Encounter an.
   - Creatures/Spells: öffnet ein Modal, erzeugt eine `.md`‑Datei im passenden Ordner und öffnet sie im Editor.
-- Creature-Modal gliedert die Eingabe in wiederverwendbare Abschnitte (Core Stats, Einträge, Zauber) für klare Zuständigkeiten und aktualisiert die Spell-Auswahl live nach dem Laden der Dateien.
+- Creature-Modal zerlegt das Formular in modulare Abschnitte (`create/section-*.ts`) und orchestriert Mounting, State-Passing und Persistenz-Trigger. Dadurch lassen sich neue Segmente ergänzen, ohne das Modal selbst aufzublähen.
+  - `section-core-stats`: Steuert Identität, Ability Scores, Saves/Skills sowie Sinnes- und Sprachfelder inklusive Automatik-Berechnungen.
+  - `section-entries`: Verwaltet Traits, Aktionen, legendäre Optionen und Presets für Treffer-/Schadenswerte.
+  - `section-spells-known`: Liefert eine Typeahead-gestützte Spell-Liste mit Grad- und Nutzungskonfiguration, die auf den live gehaltenen Spell-Getter des Modals hört.
 - Öffnen: Ein Button pro Eintrag öffnet die Quelle (Datei bzw. Sammeldatei) in Obsidian.
 - Live‑Updates: Nutzt Watcher für Ordner/Dateien, um die Liste bei Änderungen neu zu laden.
 
@@ -67,16 +70,16 @@ src/apps/library/
 - Warum: Hält den Workflow zentral und delegiert UI-Details an spezialisierte Sektionen, sodass Erweiterungen (z. B. neue Abschnitte) gebündelt erfolgen.
 
 ### `create/section-core-stats.ts`
-- Rendert Identität, Kernwerte, Saves/Skills sowie Sinne und Sprachen inklusive automatischer Modifikator-Berechnung.
-- Warum: Bündelt alle abhängigen Berechnungen (PB, Ability Mods) in einem Modul und stellt so konsistente Ergebnisse zwischen UI und Daten sicher.
+- Rendert Identität, Kernwerte, Saves/Skills sowie Sinne und Sprachen inklusive automatischer Modifikator- und Proficiency-Berechnung.
+- Warum: Bündelt alle abhängigen Formeln (z. B. PB, Ability Mods) und sorgt dafür, dass Änderungen an Attributen sofort in allen Feldern sichtbar werden.
 
 ### `create/section-entries.ts`
 - Verwaltet Trait/Aktion/Legendär-Einträge inkl. Preset-Formeln, Auto-Berechnung von Treffer- und Schadenswerten sowie zusätzlichen Feldern (Saves, Recharge, Text).
-- Warum: Die komplexeste Sektion des Modals bleibt isoliert wartbar; Presets und Logik lassen sich hier ergänzen, ohne den Modal-Controller aufzublähen.
+- Warum: Die komplexeste Sektion des Modals bleibt isoliert wartbar; Presets und Logik lassen sich hier ergänzen, ohne den Modal-Controller aufzublähen. Unterstützt Rückmeldungen an das Modal (z. B. Dirty-State), ohne dass andere Abschnitte davon beeinflusst werden.
 
 ### `create/section-spells-known.ts`
 - Stellt den Zauber-Selector mit Typeahead, Grad/Nutzungsfeldern und Ergebnisliste bereit und liest Treffer bei jedem Rendern per Getter, sodass asynchron geladene Zauber sofort verfügbar sind.
-- Warum: Entkoppelt die Such-/Listenlogik von der Modal-Hülle und ermöglicht Wiederverwendung bzw. gezielte Anpassungen am Spell-UX.
+- Warum: Entkoppelt die Such-/Listenlogik von der Modal-Hülle und ermöglicht Wiederverwendung bzw. gezielte Anpassungen am Spell-UX. Die Sektion reagiert auf Refresh-Signale des Modals, sobald neue Spell-Dateien auftauchen.
 
 ### `create-spell-modal.ts`
 - Modal zum Anlegen neuer Zauberdateien mit Komfortfeldern und direktem Aufruf von `createSpellFile`.
