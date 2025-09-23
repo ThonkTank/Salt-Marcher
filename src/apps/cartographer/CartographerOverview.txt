@@ -23,7 +23,7 @@ src/apps/cartographer/
 │  ├─ domain/               # Route-/Token-Logik, Playback & Persistenz
 │  ├─ infra/                # Schnittstelle zwischen Domain & Renderer
 │  ├─ render/               # SVG-Zeichenhelfer für Route + Highlights
-│  └─ ui/                   # Travel-spezifische Shell, Sidebar & Layer
+│  └─ ui/                   # Travel-spezifische Sidebar-, Control- und Layer-Bausteine
 └─ CartographerOverview.txt # Dieses Dokument
 ```
 
@@ -35,8 +35,8 @@ src/apps/cartographer/
 - **Modus-System:** Stellt das Mode-Interface (`onEnter`, `onExit`, `onFileChange`, `onHexClick`, `onSave`) bereit, schaltet über ein Dropdown im Header zwischen Travel/Editor/Inspector um, delegiert Events und räumt Ressourcen deterministisch auf.
 - **Editor-Tooling:** `editor/` beherbergt die wiederverwendbare Tool-Infrastruktur (Schnittstelle, Brush-Vorschau, Terrain-Brush). `modes/editor.ts` konsumiert diese Module und mountet sie in das gemeinsame Sidebar-Panel.
 - **Inspector-Modus:** `modes/inspector.ts` ermöglicht Terrain- & Notizbearbeitung für das aktuell geklickte Hex, lädt/speichert Tiles über `hex-notes` und aktualisiert das Live-Fill via `RenderHandles`.
-- **Travel-Integration:** `modes/travel-guide.ts` montiert die Travel-Bausteine aus `travel/` (Sidebar, Layers, Domain/Playback) und kann sowohl im Cartographer als auch in der eigenständigen Travel-Guide-View eingesetzt werden.
-- **Travel-Modulpaket:** `travel/` stellt Domain-Logik, Rendering-Adapter und UI-Shell bereit und dient als Single Source of Truth für Cartographer-Travel und die Legacy-View (Details siehe `travel/TravelGuideOverview.txt`).
+- **Travel-Integration:** `modes/travel-guide.ts` montiert die Travel-Bausteine aus `travel/` (Sidebar, Layers, Domain/Playback) direkt im Cartographer und nutzt dafür ausschließlich die gemeinsamen Module.
+- **Travel-Modulpaket:** `travel/` stellt Domain-Logik, Rendering-Adapter und UI-Komponenten bereit und dient als Single Source of Truth für den Travel-Modus im Cartographer (Details siehe `travel/TravelGuideOverview.txt`).
   
 
 ## Dateibeschreibungen
@@ -71,5 +71,5 @@ src/apps/cartographer/
 
 ### `travel/`
 - Enthält Travel-spezifische Domain-, Infra-, Render- und UI-Bausteine; zentrale Beschreibung siehe `travel/TravelGuideOverview.txt`.
-- `travel/ui/view-shell.ts` stellt eine eigenständige Cartographer-Shell bereit, die vom Legacy-Wrapper direkt gemountet wird.
+- `travel/ui/*` bündelt Sidebar, Controls, Token-/Route-Layer und Drag-Controller für den Cartographer-Modus.
 - `travel/domain/actions.ts` bündelt Route-/Token-Logik und nutzt `infra/adapter.ts`, um Rendering-Layer (`ui/*`, `render/draw-route.ts`) lose zu koppeln.
