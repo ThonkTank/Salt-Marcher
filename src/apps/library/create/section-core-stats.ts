@@ -1,6 +1,7 @@
 // src/apps/library/create/section-core-stats.ts
 import { Setting } from "obsidian";
 import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
+import { mountTokenEditor } from "./shared/token-editor";
 import type { StatblockData } from "../core/creature-files";
 
 export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) {
@@ -167,30 +168,17 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
   };
   updateMods();
 
-  // Senses & Languages token editors
-  const makeTokenEditor = (host: HTMLElement, title: string, items: () => string[], onAdd: (v: string) => void, onRemove: (i: number) => void) => {
-    new Setting(host).setName(title).addText((t) => {
-      t.setPlaceholder("Begriff eingeben…");
-      const input = t.inputEl;
-      t.inputEl.style.minWidth = '260px';
-      t.inputEl.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Enter') { const v = input.value.trim(); if (v) { onAdd(v); input.value = ''; renderChips(); } }});
-    }).addButton((b) => b.setButtonText("+").onClick(() => { const inp = b.buttonEl.parentElement?.querySelector('input') as HTMLInputElement | null; const v = inp?.value?.trim(); if (v) { onAdd(v); inp.value=''; renderChips(); } }));
-    const chips = host.createDiv({ cls: 'sm-cc-chips' });
-    const renderChips = () => {
-      chips.empty();
-      items().forEach((txt, i) => {
-        const chip = chips.createDiv({ cls: 'sm-cc-chip' });
-        chip.createSpan({ text: txt });
-        const x = chip.createEl('button', { text: '×' });
-        x.onclick = () => { onRemove(i); renderChips(); };
-      });
-    };
-    renderChips();
-  };
-
   if (!data.sensesList) data.sensesList = [];
   if (!data.languagesList) data.languagesList = [];
-  makeTokenEditor(root, "Sinne", () => data.sensesList!, (v) => data.sensesList!.push(v), (i) => data.sensesList!.splice(i, 1));
-  makeTokenEditor(root, "Sprachen", () => data.languagesList!, (v) => data.languagesList!.push(v), (i) => data.languagesList!.splice(i, 1));
+  mountTokenEditor(root, "Sinne", {
+    getItems: () => data.sensesList!,
+    add: (value) => data.sensesList!.push(value),
+    remove: (index) => data.sensesList!.splice(index, 1),
+  });
+  mountTokenEditor(root, "Sprachen", {
+    getItems: () => data.languagesList!,
+    add: (value) => data.languagesList!.push(value),
+    remove: (index) => data.languagesList!.splice(index, 1),
+  });
 }
 
