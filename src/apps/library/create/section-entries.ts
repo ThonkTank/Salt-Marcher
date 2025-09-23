@@ -1,6 +1,7 @@
 // src/apps/library/create/section-entries.ts
 import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
 import type { StatblockData } from "../core/creature-files";
+import { abilityMod, formatSigned, parseIntSafe } from "./shared/stat-utils";
 
 export function mountEntriesSection(parent: HTMLElement, data: StatblockData) {
   if (!data.entries) data.entries = [] as any;
@@ -49,10 +50,6 @@ export function mountEntriesSection(parent: HTMLElement, data: StatblockData) {
       tgt.value = e.target || ""; tgt.oninput = () => e.target = tgt.value.trim() || undefined; (tgt.style as any).width = '16ch';
 
       // Auto-compute helpers
-      const parseIntSafe = (v?: string) => { const m = String(v ?? '').match(/-?\d+/); return m ? parseInt(m[0], 10) : NaN; };
-      const abilityMod = (score?: string) => { const n = parseIntSafe(score); if (Number.isNaN(n)) return 0; return Math.floor((n - 10) / 2); };
-      const fmt = (n: number) => (n>=0?'+':'')+n;
-
       const autoRow = box.createDiv({ cls: "sm-cc-auto" });
       const hitGroup = autoRow.createDiv({ cls: 'sm-auto-group' });
       hitGroup.createSpan({ text: 'To hit:' });
@@ -79,13 +76,13 @@ export function mountEntriesSection(parent: HTMLElement, data: StatblockData) {
           const abil = e.to_hit_from.ability as any;
           const abilMod = abil === 'best_of_str_dex' ? Math.max(abilityMod(data.str as any), abilityMod(data.dex as any)) : abilityMod((data as any)[abil]);
           const total = abilMod + (e.to_hit_from.proficient ? pb : 0);
-          e.to_hit = fmt(total); hit.value = e.to_hit;
+          e.to_hit = formatSigned(total); hit.value = e.to_hit;
         }
         if (e.damage_from) {
           const abil = e.damage_from.ability as any;
           const abilMod = abil ? (abil === 'best_of_str_dex' ? Math.max(abilityMod(data.str as any), abilityMod(data.dex as any)) : abilityMod((data as any)[abil])) : 0;
           const base = e.damage_from.dice;
-          const tail = (abilMod ? ` ${fmt(abilMod)}` : '') + (e.damage_from.bonus ? ` ${e.damage_from.bonus}` : '');
+          const tail = (abilMod ? ` ${formatSigned(abilMod)}` : '') + (e.damage_from.bonus ? ` ${e.damage_from.bonus}` : '');
           e.damage = `${base}${tail}`.trim(); dmg.value = e.damage;
         }
       };

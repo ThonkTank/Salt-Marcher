@@ -2,6 +2,7 @@
 import { Setting } from "obsidian";
 import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
 import { mountTokenEditor } from "./shared/token-editor";
+import { abilityMod, formatSigned, parseIntSafe } from "./shared/stat-utils";
 import type { StatblockData } from "../core/creature-files";
 
 export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) {
@@ -68,10 +69,6 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
   const statsTbl = abilitySection.createDiv({ cls: "sm-cc-table sm-cc-stats-table" });
   const header = statsTbl.createDiv({ cls: "sm-cc-row sm-cc-header" });
   ;["Name","Wert","Mod","Save","Save Mod"].forEach(h => header.createDiv({ cls: "sm-cc-cell", text: h }));
-
-  const parseIntSafe = (v?: string) => { const m = String(v ?? '').match(/-?\d+/); return m ? parseInt(m[0], 10) : NaN; };
-  const abilityMod = (score?: string) => { const n = parseIntSafe(score); if (Number.isNaN(n)) return 0; return Math.floor((n - 10) / 2); };
-  const fmt = (n: number) => (n>=0?'+':'')+n;
 
   const abDefs = [
     { key: 'str', label: 'STR' }, { key: 'dex', label: 'DEX' }, { key: 'con', label: 'CON' },
@@ -156,14 +153,14 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
     const pb = parseIntSafe(data.pb as any) || 0;
     for (const [key, refs] of abilityElems) {
       const mod = abilityMod((data as any)[key]);
-      refs.mod.textContent = fmt(mod);
+      refs.mod.textContent = formatSigned(mod);
       const saveBonus = (data.saveProf as any)?.[key] ? pb : 0;
-      refs.saveMod.textContent = fmt(mod + saveBonus);
+      refs.saveMod.textContent = formatSigned(mod + saveBonus);
     }
     for (const sk of skillElems) {
       const mod = abilityMod((data as any)[sk.ability]);
       const bonus = sk.exp.checked ? pb * 2 : sk.prof.checked ? pb : 0;
-      sk.out.textContent = fmt(mod + bonus);
+      sk.out.textContent = formatSigned(mod + bonus);
     }
   };
   updateMods();
