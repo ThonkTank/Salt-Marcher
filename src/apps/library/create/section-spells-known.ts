@@ -1,7 +1,11 @@
 // src/apps/library/create/section-spells-known.ts
 import type { StatblockData } from "../core/creature-files";
 
-export function mountSpellsKnownSection(parent: HTMLElement, data: StatblockData, availableSpells: string[]) {
+export function mountSpellsKnownSection(
+  parent: HTMLElement,
+  data: StatblockData,
+  getAvailableSpells: () => readonly string[] | null | undefined,
+) {
   if (!data.spellsKnown) (data as any).spellsKnown = [] as any[];
   const wrap = parent.createDiv({ cls: "setting-item sm-cc-spells" });
   wrap.createDiv({ cls: "setting-item-info", text: "Bekannte Zauber" });
@@ -17,7 +21,9 @@ export function mountSpellsKnownSection(parent: HTMLElement, data: StatblockData
   const renderSpellMenu = () => {
     const q = (spellInput.value || '').toLowerCase();
     spellMenu.empty();
-    const matches = (availableSpells || []).filter(n => !q || n.toLowerCase().includes(q)).slice(0, 24);
+    const matches = (getAvailableSpells()?.slice() || [])
+      .filter(n => !q || n.toLowerCase().includes(q))
+      .slice(0, 24);
     if (matches.length === 0) { spellBox.removeClass('is-open'); return; }
     for (const name of matches) {
       const it = spellMenu.createDiv({ cls: 'sm-preset-item', text: name });
@@ -56,5 +62,13 @@ export function mountSpellsKnownSection(parent: HTMLElement, data: StatblockData
     });
   };
   renderList();
+
+  const refreshSpellMatches = () => {
+    if (document.activeElement === spellInput || spellBox.hasClass('is-open')) {
+      renderSpellMenu();
+    }
+  };
+
+  return { refreshSpellMatches };
 }
 
