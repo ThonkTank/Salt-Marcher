@@ -79,8 +79,9 @@ Salt-Marcher/
 - `view.ts`: Zentrale Library-View mit Tab-Leiste (Terrains, Regionen, Kreaturen), Suchleiste, Ergebnisliste und Event-Delegation
   an Bereichs-spezifische Controller.
 - `core/*`: Gemeinsame Logik für Library-Daten (Laden/Speichern der Sammeldateien, Parsing, Suche, Filter, Eventing).
-- `create-modal.ts`: Modal zum Anlegen von Terrains/Regionen mit Validierung und Ergebnis-Rückgabe an den View.
-- `create-spell-modal.ts`: Spezialisierter Dialog zum Erfassen von Zaubern innerhalb einer Kreatur.
+- `create/creature/modal.ts`: Modal zum Anlegen von Creatures; orchestriert die Formular-Sektionen und persistiert neue Statblocks.
+- `create/spell/modal.ts`: Dediziertes Spell-Modal mit Dropdown-Komfort und Markdown-Feldern.
+- `create/index.ts`: Re-exportiert beide Modals, sodass `view.ts` die Create-Flows aus einem Bündel importiert.
 - `create/*`: Komponenten zum Erstellen/Bearbeiten von Library-Einträgen (z. B. Formularbaugruppen, Presets, Helpers).
 - `LibraryOverview.txt`: Struktur- und Verantwortlichkeitsdokument für den Library-Bereich.
 

@@ -1,7 +1,7 @@
-// src/apps/library/create-spell-modal.ts
+// src/apps/library/create/spell/modal.ts
 import { App, Modal, Setting } from "obsidian";
-import { enhanceSelectToSearch } from "../../ui/search-dropdown";
-import type { SpellData } from "./core/spell-files";
+import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
+import type { SpellData } from "../../core/spell-files";
 
 export class CreateSpellModal extends Modal {
     private data: SpellData;
