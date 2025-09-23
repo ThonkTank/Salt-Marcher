@@ -38,11 +38,44 @@ Unterstützende Utilities liegen in `shared/` (`token-editor`, `stat-utils`).
 - **Abschnittsgewichtung verbessern:** Lange Listen (Skills, Einträge, Zauber) scrollen vertikal; Accordion- oder Tabs für „Offense/Defense/Spellcasting“ könnten Übersicht erhöhen ohne Informationen zu verstecken.【F:src/apps/library/create/creature/modal.ts†L36-L103】
 - **Voreinstellungen & Presets ausbauen:** Beispielstatblocks zeigen konsistente Reihenfolge & Terminologie (z. B. Initiative in Klammern); UI könnte Templates/Preview nutzen.【F:References, do not delete!/rulebooks/Statblocks/12_MonstersA-Z.md†L5-L58】
 
-## Layout-Empfehlung für den Dialog
-1. **Header-Spalte (links):** Name, Größe, Typ, Gesinnung, AC/HP/Init/Hit Dice, Speed-Chips und CR/PB/XP kompakt in einer zweispaltigen Grid-Kachel.
-2. **Mittlere Spalte (Attribute & Fertigkeiten):** Tabelle für STR–CHA mit Saves, darunter Skills mit Sticky-Header, ergänzt um separate Sektion für Resistances/Immunities/Gear.
-3. **Rechte Spalte (Aktionen & Zauber):** Accordion mit Gruppen „Traits“, „Actions“, „Bonus“, „Reactions“, „Legendary“ (jeweils aufklappbar) plus eigener Tab für Spellcasting/Known Spells.
-4. **Footer:** Zusammenfassung wichtiger Werte + CTA-Buttons, optional Vorschau-Link, damit die Eingabe trotz Umfang fokussiert bleibt.
+## Layout-Blueprint für den Creature-Dialog
+
+### 1. Grid & Navigation
+- **Dialograhmen:** Fester Inhalt auf 1240 px Breite, 720 px Höhe; dreispaltiges CSS-Grid mit Spaltenbreiten 320 px · 360 px · flex (Rest). 24 px Innenabstand, 16 px Spaltengap für klare Blickführung.
+- **Sektionensteuerung:** Accordion auf Desktop standardmäßig ausgeklappt, „Zurück/Weiter“-Stepper oberhalb des Footers für linearen Workflow. Breadcrumb-Titel zeigt Kreaturenname (live aktualisiert) zur Orientierung.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/ancient-black-dragon.md†L1-L8】
+- **Scrollverhalten:** Grid-Spalten scrollen unabhängig (overflow-y auto) mit Sticky-Section-Headern bei 48 px Höhe, damit lange Aktionslisten nicht Navigationselemente verdecken.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/vampire.md†L45-L64】
+
+### 2. Linke Spalte – Identität & Kampf-Basics (320 px)
+- **Identitätskarte (Spacing 12 px):**
+  - `TextField` „Name“ (Label exakt so), Vollbreite, Pflichtfeld.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/ancient-black-dragon.md†L1-L3】
+  - Drei Dropdowns in 3×1 Grid (je 96 px): „Größe“, „Kreaturentyp“, „Gesinnung“, befüllt aus Presets; Formatierung entspricht Referenz (*z. B. “Gargantuan Dragon (Chromatic), Chaotic Evil”*).【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/ancient-black-dragon.md†L3-L4】
+- **Defensive & Initiativwerte (Zweispaltiges Grid 150 px + 150 px):**
+  - AC (NumberField, Label „Armor Class“), HP (Hit Points, NumberField mit „(xdy + z)“-Textfeld daneben, 90 px), „Hit Dice“ (TextField).【F:References, do not delete!/rulebooks/Statblocks/Creatures/Animals/wolf.md†L5-L8】
+  - Initiative (NumberField, Label „Initiative“ mit sekundärer Anzeige „(Modifikator)“ als Readonly-Chip).【F:References, do not delete!/rulebooks/Statblocks/Creatures/Animals/wolf.md†L9-L18】
+- **Bewegungsarten:** Token-Chip-Editor über volle Breite, Label „Speed (ft.)“; jede Chip zeigt „Art · Wert“ (z. B. „Fly · 80“) zur Abbildung mehrerer Werte.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/ancient-black-dragon.md†L5-L8】
+- **Herausforderungsgrad:** Kartenabschnitt mit dreifachem Inline-Stack (je 96 px): „Challenge Rating“, „XP“, „Proficiency Bonus“, um CR-Ausgabe samt XP/PB sichtbar zu halten.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/ancient-black-dragon.md†L23-L24】
+- **Sprachen & Sinne:** Zweizeilige `Textarea`-Karte mit Tabs „Senses“ und „Languages“, Labels exakt wie im Statblock, inkl. passiver Wahrnehmung & Format „darkvision 120 ft.; Passive Perception 26“. Sticky-Helper-Text erinnert an semikolon-getrennte Darstellung.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/ancient-black-dragon.md†L21-L22】
+
+### 3. Mittlere Spalte – Werte, Defensive Listen & Ausrüstung (360 px)
+- **Attributmatrix:** Fixierte Tabelle (Headerhöhe 40 px) mit sechs Zeilen (STR–CHA) und drei editierbaren Spalten „Score“, „Mod“, „Save“; „Mod“ wird berechnet & gesperrt, „Save“ Checkbox für Proficiency + Stepper. Zeilen-Label-Buttons öffnen Kontextmenü für abgeleitete Notizen.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Animals/wolf.md†L11-L18】
+- **Skills & Fertigkeiten:** Accordion-Panel mit Filterbarer Liste (Zweispaltig 168 px). Jede Zeile: Checkbox „Proficient“, Badge zeigt automatischen Bonus (PB+Mod). Standardliste enthält Einträge wie „Perception +16, Stealth +9“. Sticky-Header „Skills“.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/ancient-black-dragon.md†L19-L21】
+- **Resistances/Immunities/Vulnerabilities:** Drei Chips-Stacks übereinander (Label exakt „Resistances“, „Immunities“, „Vulnerabilities“). Chips erlauben Typ + optionalen Kontext (z. B. „Sunlight – Disadvantage on attack rolls“).【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/vampire.md†L19-L40】
+- **Ausrüstung & Besonderheiten:** `Textarea` „Equipment & Notes“ (3 Zeilen) für Gegenstände oder Sondernotizen, damit Schwächen wie „Stake to the Heart“ erfasst werden können.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/vampire.md†L34-L40】
+
+### 4. Rechte Spalte – Aktionen, Fähigkeiten & Zauber (flex)
+- **Traits-Sektion:** Wiederholbare Karten (Breite 100 % der Spalte) mit Feldern: „Titel“, „Verwendung“ (Dropdown: Passive, Recharge X-Y, Limited Use), „Beschreibung“ (Markdown-Editor). Unterstützt legendäre Widerstände wie im Vampir-Statblock.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/vampire.md†L25-L33】
+- **Actions & Bonus/Reaction/Legendary Tabs:** Horizontaler Tab-Switcher (Actions · Bonus Actions · Reactions · Legendary · Lair). Jede Karte enthält strukturierte Felder:
+  - Primärer Aktionsname („Multiattack“, „Bite“).【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/vampire.md†L45-L55】
+  - Aktionsart (Dropdown: Melee Attack, Ranged, Save, Special) + Felder „Attack Bonus“, „Reach/Range“, „Target“.
+  - Schadenstabelle (bis zu 3 Zeilen: Würfel-Notationsfeld + Schadenstyp).【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/ancient-black-dragon.md†L34-L39】
+  - Optionales „Save DC“ & Effekt-Editor, um Einträge wie „Dexterity Saving Throw: DC 22 …“ abzubilden.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/ancient-black-dragon.md†L38-L39】
+  - Recharge/Limited-Use-Badges (rechts oben) mit automatischem Anzeigeformat („Recharge 5–6“).【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/vampire.md†L58-L59】
+- **Spellcasting Block:** Dedizierter Tab innerhalb der rechten Spalte mit Formular: oberer Bereich für Casting-Statistik („Spellcasting Ability“, „Save DC“, „Attack Bonus“), darunter Frequenz-Listen (At-Will, X/Day) mit Typeahead zur Auswahl der Zauber, Format übernimmt Aufzählungen wie bei Drachen.【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/ancient-black-dragon.md†L40-L43】
+- **Legendary Actions/Lair Actions:** Unter-Tabs innerhalb des Legendary-Bereichs ermöglichen separate Kartenlisten für Aktionen wie „Cloud of Insects“ oder „Beguile“, inkl. Beschreibungsfeld und Kosten-Badge (z. B. „Costs 2 Actions“).【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/ancient-black-dragon.md†L45-L51】【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/vampire.md†L60-L64】
+
+### 5. Footer & Kontext-Tools
+- **Sticky-Footer (68 px Höhe):** Links Zusammenfassung in Chips (AC, HP, Passive Perception, CR) zur schnellen Gegenprüfung, rechts Buttons „Abbrechen“, „Speichern“, „Vorschau öffnen“.
+- **Validierungs-Hinweise:** Inline-Statusleisten innerhalb des Footers listen fehlende Pflichtfelder (z. B. Name, mindestens eine Aktion), damit der Export konform zu den Referenzstatblocks bleibt.
 
 ## Datei-Details
 - **index.ts:** Bündelt Exporte für Modal und Section-Mounts, damit externe Aufrufer eine schlanke API nutzen.【F:src/apps/library/create/creature/index.ts†L1-L6】
