@@ -117,6 +117,7 @@ export const HEX_PLUGIN_CSS = `
 .sm-cc-skill-editor { display:flex; flex-direction:column; gap:.35rem; }
 .sm-cc-skill-search,
 .sm-cc-senses-search {
+    display:flex;
     align-items:center;
     justify-content:flex-end;
     margin-left:auto;
