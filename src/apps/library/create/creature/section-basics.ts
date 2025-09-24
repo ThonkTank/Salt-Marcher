@@ -101,7 +101,7 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
   const speedControl = speedSetting.controlEl.createDiv({ cls: "sm-cc-move-ctl" });
 
   const addRow = speedControl.createDiv({ cls: "sm-cc-searchbar sm-cc-move-row" });
-  const typeSelect = addRow.createEl("select") as HTMLSelectElement;
+  const typeSelect = addRow.createEl("select", { cls: "sm-sd" }) as HTMLSelectElement;
   for (const [value, label] of CREATURE_MOVEMENT_TYPES) {
     const option = typeSelect.createEl("option", { text: label }) as HTMLOptionElement;
     option.value = value;
@@ -110,7 +110,7 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
     enhanceSelectToSearch(typeSelect, "Such-dropdown…");
   } catch {}
 
-  const hoverWrap = addRow.createDiv();
+  const hoverWrap = addRow.createDiv({ cls: "sm-cc-move-hover" });
   const hoverId = `sm-cc-hover-${Math.random().toString(36).slice(2)}`;
   const hoverCb = hoverWrap.createEl("input", {
     attr: { type: "checkbox", id: hoverId },
@@ -139,8 +139,11 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
   decBtn.onclick = () => step(-1);
   incBtn.onclick = () => step(1);
 
-  const addRow2 = speedControl.createDiv({ cls: "sm-cc-searchbar sm-cc-move-addrow" });
-  const addSpeedBtn = addRow2.createEl("button", { text: "+ Hinzufügen" });
+  const addSpeedBtn = addRow.createEl("button", {
+    text: "+",
+    cls: "sm-cc-move-add",
+    attr: { "aria-label": "Geschwindigkeitswert hinzufügen" },
+  });
   const speedChips = speedControl.createDiv({ cls: "sm-cc-chips" });
 
   const speeds = ensureSpeedList(data);
