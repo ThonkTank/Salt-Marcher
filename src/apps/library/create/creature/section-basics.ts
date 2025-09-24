@@ -19,26 +19,63 @@ function ensureSpeedList(data: StatblockData): string[] {
 export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockData) {
   const root = parent.createDiv({ cls: "sm-cc-basics" });
 
-  const identityRow = root.createDiv({ cls: "sm-cc-basics__identity" });
+  const grid = root.createDiv({ cls: "sm-cc-basics__grid" });
+  const registerGridItem = (setting: Setting, span: 1 | 2 | 3 | 4 = 1) => {
+    setting.settingEl.classList.add("sm-cc-basics__grid-item");
+    if (span === 2) setting.settingEl.classList.add("sm-cc-basics__grid-item--span-2");
+    if (span === 3) setting.settingEl.classList.add("sm-cc-basics__grid-item--span-3");
+    if (span === 4) setting.settingEl.classList.add("sm-cc-basics__grid-item--span-4");
+  };
 
-  const idSetting = new Setting(identityRow).setName("Name");
-  idSetting.settingEl.classList.add("sm-cc-basics__identity-item", "sm-cc-basics__identity-name");
+  const idSetting = new Setting(grid).setName("Name");
+  registerGridItem(idSetting, 2);
   idSetting.addText((t) => {
     t.setPlaceholder("Aboleth")
       .setValue(data.name || "")
       .onChange((v: string) => (data.name = v.trim()));
+    t.inputEl.classList.add("sm-cc-basics__text-input");
     t.inputEl.style.width = "100%";
   });
 
-  const alignSetting = new Setting(identityRow).setName("Gesinnung");
-  alignSetting.settingEl.classList.add("sm-cc-basics__identity-item", "sm-cc-basics__alignment");
+  const typeSetting = new Setting(grid).setName("Typ");
+  registerGridItem(typeSetting, 2);
+  typeSetting.addDropdown((dd) => {
+    dd.addOption("", "");
+    for (const option of CREATURE_TYPES) dd.addOption(option, option);
+    dd.setValue(data.type ?? "");
+    dd.onChange((v: string) => (data.type = v));
+    dd.selectEl.classList.add("sm-cc-basics__select");
+    dd.selectEl.style.width = "100%";
+    try {
+      enhanceSelectToSearch(dd.selectEl, "Such-dropdown…");
+    } catch {}
+  });
+
+  const sizeSetting = new Setting(grid).setName("Größe");
+  registerGridItem(sizeSetting, 2);
+  sizeSetting.addDropdown((dd) => {
+    dd.addOption("", "");
+    for (const option of CREATURE_SIZES) dd.addOption(option, option);
+    dd.setValue(data.size ?? "");
+    dd.onChange((v: string) => (data.size = v));
+    dd.selectEl.classList.add("sm-cc-basics__select");
+    dd.selectEl.style.width = "100%";
+    try {
+      enhanceSelectToSearch(dd.selectEl, "Such-dropdown…");
+    } catch {}
+  });
+
+  const alignSetting = new Setting(grid).setName("Gesinnung");
+  registerGridItem(alignSetting, 2);
+  alignSetting.settingEl.classList.add("sm-cc-basics__alignment");
   alignSetting.controlEl.classList.add("sm-cc-basics__alignment-controls");
   alignSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_ALIGNMENT_LAW_CHAOS) dd.addOption(option, option);
     dd.setValue(data.alignmentLawChaos ?? "");
     dd.onChange((v: string) => (data.alignmentLawChaos = v));
-    dd.selectEl.classList.add("sm-cc-basics__alignment-select");
+    dd.selectEl.classList.add("sm-cc-basics__alignment-select", "sm-cc-basics__select");
+    dd.selectEl.style.width = "100%";
     try {
       const el = dd.selectEl;
       el.dataset.sdOpenAll = "0";
@@ -50,7 +87,8 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
     for (const option of CREATURE_ALIGNMENT_GOOD_EVIL) dd.addOption(option, option);
     dd.setValue(data.alignmentGoodEvil ?? "");
     dd.onChange((v: string) => (data.alignmentGoodEvil = v));
-    dd.selectEl.classList.add("sm-cc-basics__alignment-select");
+    dd.selectEl.classList.add("sm-cc-basics__alignment-select", "sm-cc-basics__select");
+    dd.selectEl.style.width = "100%";
     try {
       const el = dd.selectEl;
       el.dataset.sdOpenAll = "0";
@@ -58,64 +96,8 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
     } catch {}
   });
 
-  const grid = root.createDiv({ cls: "sm-cc-basics__grid" });
-  const registerGridItem = (setting: Setting, span: 1 | 2 | 3 = 1) => {
-    setting.settingEl.classList.add("sm-cc-basics__grid-item");
-    if (span === 2) setting.settingEl.classList.add("sm-cc-basics__grid-item--span-2");
-    if (span === 3) setting.settingEl.classList.add("sm-cc-basics__grid-item--span-3");
-  };
-
-  const sizeSetting = new Setting(grid).setName("Größe");
-  registerGridItem(sizeSetting);
-  sizeSetting.addDropdown((dd) => {
-    dd.addOption("", "");
-    for (const option of CREATURE_SIZES) dd.addOption(option, option);
-    dd.setValue(data.size ?? "");
-    dd.onChange((v: string) => (data.size = v));
-    try {
-      enhanceSelectToSearch(dd.selectEl, "Such-dropdown…");
-    } catch {}
-  });
-
-  const typeSetting = new Setting(grid).setName("Typ");
-  registerGridItem(typeSetting);
-  typeSetting.addDropdown((dd) => {
-    dd.addOption("", "");
-    for (const option of CREATURE_TYPES) dd.addOption(option, option);
-    dd.setValue(data.type ?? "");
-    dd.onChange((v: string) => (data.type = v));
-    try {
-      enhanceSelectToSearch(dd.selectEl, "Such-dropdown…");
-    } catch {}
-  });
-
-  const coreSetting = new Setting(grid).setName("Kernwerte");
-  registerGridItem(coreSetting, 2);
-  const row = coreSetting.controlEl.createDiv({ cls: "sm-cc-inline-row" });
-  const mk = (
-    label: string,
-    widthCh: number,
-    placeholder: string,
-    key: keyof StatblockData,
-  ) => {
-    row.createEl("label", { text: label });
-    const inp = row.createEl("input", {
-      attr: { type: "text", placeholder, "aria-label": label },
-    }) as HTMLInputElement;
-    inp.style.width = `${widthCh}ch`;
-    inp.value = (data[key] as any) || "";
-    inp.addEventListener("input", () => ((data as any)[key] = inp.value.trim()));
-  };
-  mk("AC", 18, "17", "ac");
-  mk("Init", 6, "+7", "initiative");
-  mk("HP", 8, "150", "hp");
-  mk("HD", 14, "20d10 + 40", "hitDice");
-  mk("PB", 5, "+4", "pb");
-  mk("CR", 6, "10", "cr");
-  mk("XP", 8, "5900", "xp");
-
   const speedSetting = new Setting(grid).setName("Bewegung");
-  registerGridItem(speedSetting, 3);
+  registerGridItem(speedSetting, 4);
   const speedControl = speedSetting.controlEl.createDiv({ cls: "sm-cc-move-ctl" });
 
   const addRow = speedControl.createDiv({ cls: "sm-cc-searchbar sm-cc-move-row" });
@@ -124,6 +106,7 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
     const option = typeSelect.createEl("option", { text: label }) as HTMLOptionElement;
     option.value = value;
   }
+  typeSelect.classList.add("sm-cc-basics__select");
   try {
     enhanceSelectToSearch(typeSelect, "Such-dropdown…");
   } catch {}
@@ -147,6 +130,7 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
   const valInput = numWrap.createEl("input", {
     attr: { type: "number", min: "0", step: "5", placeholder: "30" },
   }) as HTMLInputElement;
+  valInput.classList.add("sm-cc-basics__text-input");
   const decBtn = numWrap.createEl("button", { text: "−", cls: "btn-compact" });
   const incBtn = numWrap.createEl("button", { text: "+", cls: "btn-compact" });
   const step = (dir: 1 | -1) => {
@@ -199,4 +183,29 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
     hoverCb.checked = false;
     renderSpeeds();
   };
+
+  const mkStatSetting = (
+    label: string,
+    placeholder: string,
+    key: keyof StatblockData,
+    span: 1 | 2 = 1,
+  ) => {
+    const setting = new Setting(grid).setName(label);
+    registerGridItem(setting, span);
+    setting.addText((t) => {
+      t.setPlaceholder(placeholder)
+        .setValue((data[key] as string) ?? "")
+        .onChange((v: string) => ((data as any)[key] = v.trim()));
+      t.inputEl.classList.add("sm-cc-basics__text-input");
+      t.inputEl.style.width = "100%";
+    });
+  };
+
+  mkStatSetting("HP", "150", "hp");
+  mkStatSetting("AC", "17", "ac");
+  mkStatSetting("Init", "+7", "initiative");
+  mkStatSetting("PB", "+4", "pb");
+  mkStatSetting("HD", "20d10 + 40", "hitDice", 2);
+  mkStatSetting("CR", "10", "cr");
+  mkStatSetting("XP", "5900", "xp");
 }
