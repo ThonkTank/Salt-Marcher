@@ -5633,7 +5633,7 @@ var ELEMENT_DEFINITIONS = [
   {
     type: "separator",
     buttonLabel: "Trennstrich",
-    defaultLabel: "",
+    defaultLabel: "Trennlinie",
     width: 320,
     height: 80
   },
@@ -5654,6 +5654,24 @@ var ELEMENT_DEFINITIONS = [
     options: ["Erster Eintrag", "Zweiter Eintrag"],
     width: 280,
     height: 160
+  },
+  {
+    type: "vbox",
+    buttonLabel: "VBox-Container",
+    defaultLabel: "VBox",
+    defaultDescription: "Ordnet verkn\xFCpfte Elemente automatisch untereinander an.",
+    width: 340,
+    height: 260,
+    defaultLayout: { gap: 16, padding: 16, align: "stretch" }
+  },
+  {
+    type: "hbox",
+    buttonLabel: "HBox-Container",
+    defaultLabel: "HBox",
+    defaultDescription: "Ordnet verkn\xFCpfte Elemente automatisch nebeneinander an.",
+    width: 360,
+    height: 220,
+    defaultLayout: { gap: 16, padding: 16, align: "center" }
   }
 ];
 var ELEMENT_DEFINITION_LOOKUP = new Map(
@@ -5763,6 +5781,7 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     this.canvasHeight = 600;
     this.isImporting = false;
     this.elementElements = /* @__PURE__ */ new Map();
+    this.activeAttributePopover = null;
   }
   getViewType() {
     return VIEW_LAYOUT_EDITOR;
@@ -5888,13 +5907,19 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       element.height = clamp(element.height, MIN_ELEMENT_SIZE, maxHeight);
       this.syncElementElement(element);
     }
+    for (const element of this.elements) {
+      if (isContainerType(element.type)) {
+        this.applyContainerLayout(element, { silent: true });
+      }
+    }
   }
   createElement(type) {
     const def = ELEMENT_DEFINITION_LOOKUP.get(type);
     const width = def ? def.width : Math.min(240, Math.max(160, Math.round(this.canvasWidth * 0.25)));
     const height = def ? def.height : Math.min(160, Math.max(120, Math.round(this.canvasHeight * 0.25)));
+    const id = `element-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const element = {
-      id: `element-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id,
       type,
       x: Math.max(0, Math.round((this.canvasWidth - width) / 2)),
       y: Math.max(0, Math.round((this.canvasHeight - height) / 2)),
@@ -5907,7 +5932,25 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       options: def?.options ? [...def.options] : void 0,
       attributes: []
     };
+    if (def?.defaultLayout) {
+      element.layout = { ...def.defaultLayout };
+      element.children = [];
+    }
+    const selected = this.selectedElementId ? this.elements.find((el) => el.id === this.selectedElementId) : null;
+    const parentContainer = selected && isContainerElement(selected) && !isContainerType(type) ? selected : null;
+    if (parentContainer) {
+      element.parentId = parentContainer.id;
+      const padding = parentContainer.layout.padding;
+      element.x = parentContainer.x + padding;
+      element.y = parentContainer.y + padding;
+      element.width = Math.min(parentContainer.width - padding * 2, element.width);
+      element.height = Math.min(parentContainer.height - padding * 2, element.height);
+    }
     this.elements.push(element);
+    if (parentContainer) {
+      this.addChildToContainer(parentContainer, element.id);
+      this.applyContainerLayout(parentContainer);
+    }
     this.renderElements();
     this.selectElement(element.id);
     this.refreshExport();
@@ -5916,6 +5959,9 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     if (!this.canvasEl) return;
     const seen = /* @__PURE__ */ new Set();
     for (const element of this.elements) {
+      if (isContainerType(element.type)) {
+        this.ensureContainerDefaults(element);
+      }
       seen.add(element.id);
       let el = this.elementElements.get(element.id);
       if (!el) {
@@ -5933,6 +5979,280 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     this.updateSelectionStyles();
     this.updateStatus();
   }
+  ensureContainerDefaults(element) {
+    if (!isContainerType(element.type)) return;
+    if (!element.layout) {
+      const def = ELEMENT_DEFINITION_LOOKUP.get(element.type);
+      element.layout = def?.defaultLayout ? { ...def.defaultLayout } : { gap: 16, padding: 16, align: "stretch" };
+    }
+    if (!Array.isArray(element.children)) {
+      element.children = [];
+    }
+  }
+  addChildToContainer(container, childId) {
+    if (!isContainerType(container.type)) return;
+    this.ensureContainerDefaults(container);
+    if (!container.children.includes(childId)) {
+      container.children.push(childId);
+    }
+  }
+  removeChildFromContainer(container, childId) {
+    if (!isContainerType(container.type) || !Array.isArray(container.children)) return;
+    container.children = container.children.filter((id) => id !== childId);
+  }
+  moveChildInContainer(container, childId, delta) {
+    if (!isContainerType(container.type) || !Array.isArray(container.children)) return;
+    const index = container.children.indexOf(childId);
+    if (index === -1) return;
+    const nextIndex = clamp(index + delta, 0, container.children.length - 1);
+    if (nextIndex === index) return;
+    const [id] = container.children.splice(index, 1);
+    container.children.splice(nextIndex, 0, id);
+    this.applyContainerLayout(container);
+  }
+  assignElementToContainer(elementId, containerId) {
+    const element = this.elements.find((el) => el.id === elementId);
+    if (!element) return;
+    const previousParent = element.parentId ? this.elements.find((el) => el.id === element.parentId) : null;
+    if (previousParent) {
+      this.removeChildFromContainer(previousParent, element.id);
+    }
+    element.parentId = void 0;
+    const nextParent = containerId ? this.elements.find((el) => el.id === containerId) : null;
+    if (nextParent) {
+      this.addChildToContainer(nextParent, element.id);
+      element.parentId = nextParent.id;
+    }
+    if (previousParent) {
+      this.applyContainerLayout(previousParent);
+    }
+    if (nextParent) {
+      this.applyContainerLayout(nextParent);
+    }
+    this.syncElementElement(element);
+    this.refreshExport();
+    this.renderInspector();
+  }
+  applyContainerLayout(container, options) {
+    if (!isContainerType(container.type)) return;
+    this.ensureContainerDefaults(container);
+    const layout = container.layout;
+    const gap = Math.max(0, layout.gap);
+    const padding = Math.max(0, layout.padding);
+    const align = layout.align;
+    const childIds = Array.isArray(container.children) ? container.children.slice() : [];
+    const children = [];
+    const validIds = [];
+    for (const id of childIds) {
+      if (id === container.id) continue;
+      const child = this.elements.find((el) => el.id === id);
+      if (child) {
+        children.push(child);
+        validIds.push(id);
+      }
+    }
+    container.children = validIds;
+    if (!children.length) {
+      if (!options?.silent) {
+        this.refreshExport();
+        this.renderInspector();
+      }
+      return;
+    }
+    const innerWidth = Math.max(MIN_ELEMENT_SIZE, container.width - padding * 2);
+    const innerHeight = Math.max(MIN_ELEMENT_SIZE, container.height - padding * 2);
+    const gapCount = Math.max(0, children.length - 1);
+    if (container.type === "vbox") {
+      const availableHeight = innerHeight - gap * gapCount;
+      const slotHeight = Math.max(MIN_ELEMENT_SIZE, Math.floor(availableHeight / children.length));
+      let y = container.y + padding;
+      for (const child of children) {
+        child.parentId = container.id;
+        child.height = slotHeight;
+        child.y = y;
+        let width = innerWidth;
+        if (align === "stretch") {
+          child.x = container.x + padding;
+        } else {
+          width = Math.min(child.width, innerWidth);
+          if (align === "center") {
+            child.x = container.x + padding + Math.round((innerWidth - width) / 2);
+          } else if (align === "end") {
+            child.x = container.x + padding + (innerWidth - width);
+          } else {
+            child.x = container.x + padding;
+          }
+        }
+        child.width = width;
+        y += slotHeight + gap;
+        this.syncElementElement(child);
+      }
+    } else {
+      const availableWidth = innerWidth - gap * gapCount;
+      const slotWidth = Math.max(MIN_ELEMENT_SIZE, Math.floor(availableWidth / children.length));
+      let x = container.x + padding;
+      for (const child of children) {
+        child.parentId = container.id;
+        child.width = slotWidth;
+        child.x = x;
+        let height = innerHeight;
+        if (align === "stretch") {
+          child.y = container.y + padding;
+        } else {
+          height = Math.min(child.height, innerHeight);
+          if (align === "center") {
+            child.y = container.y + padding + Math.round((innerHeight - height) / 2);
+          } else if (align === "end") {
+            child.y = container.y + padding + (innerHeight - height);
+          } else {
+            child.y = container.y + padding;
+          }
+        }
+        child.height = height;
+        x += slotWidth + gap;
+        this.syncElementElement(child);
+      }
+    }
+    this.syncElementElement(container);
+    if (!options?.silent) {
+      this.refreshExport();
+      this.renderInspector();
+    }
+    this.refreshAttributePopover();
+  }
+  openAttributePopover(element, anchor) {
+    this.closeAttributePopover();
+    const container = document.createElement("div");
+    container.className = "sm-le-attr-popover";
+    container.style.position = "absolute";
+    container.style.zIndex = "1000";
+    container.style.visibility = "hidden";
+    container.addEventListener("pointerdown", (ev) => ev.stopPropagation());
+    const heading = document.createElement("div");
+    heading.className = "sm-le-attr-popover__heading";
+    heading.textContent = "Attribute";
+    container.appendChild(heading);
+    const hint = document.createElement("div");
+    hint.className = "sm-le-attr-popover__hint";
+    hint.textContent = "Mehrfachauswahl m\xF6glich.";
+    container.appendChild(hint);
+    const scroll = document.createElement("div");
+    scroll.className = "sm-le-attr-popover__scroll";
+    container.appendChild(scroll);
+    const clearBtn = document.createElement("button");
+    clearBtn.className = "sm-le-attr-popover__clear";
+    clearBtn.textContent = "Alle entfernen";
+    clearBtn.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      if (element.attributes.length === 0) return;
+      element.attributes = [];
+      this.syncElementElement(element);
+      this.refreshExport();
+      this.renderInspector();
+      this.refreshAttributePopover();
+    });
+    container.appendChild(clearBtn);
+    for (const group of ATTRIBUTE_GROUPS) {
+      const groupEl = document.createElement("div");
+      groupEl.className = "sm-le-attr-popover__group";
+      const title = document.createElement("div");
+      title.className = "sm-le-attr-popover__group-title";
+      title.textContent = group.label;
+      groupEl.appendChild(title);
+      for (const option of group.options) {
+        const optionLabel = document.createElement("label");
+        optionLabel.className = "sm-le-attr-popover__option";
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.dataset.attr = option.value;
+        checkbox.checked = element.attributes.includes(option.value);
+        checkbox.addEventListener("change", () => {
+          if (checkbox.checked) {
+            if (!element.attributes.includes(option.value)) {
+              element.attributes = [...element.attributes, option.value];
+            }
+          } else {
+            element.attributes = element.attributes.filter((v) => v !== option.value);
+          }
+          this.syncElementElement(element);
+          this.refreshExport();
+          this.renderInspector();
+          this.refreshAttributePopover();
+        });
+        const labelText = document.createElement("span");
+        labelText.textContent = option.label;
+        optionLabel.appendChild(checkbox);
+        optionLabel.appendChild(labelText);
+        groupEl.appendChild(optionLabel);
+      }
+      scroll.appendChild(groupEl);
+    }
+    const onPointerDown = (ev) => {
+      if (!(ev.target instanceof Node)) return;
+      if (!container.contains(ev.target) && ev.target !== anchor && !anchor.contains(ev.target)) {
+        this.closeAttributePopover();
+      }
+    };
+    const onKeyDown = (ev) => {
+      if (ev.key === "Escape") {
+        this.closeAttributePopover();
+      }
+    };
+    document.body.appendChild(container);
+    const state = {
+      elementId: element.id,
+      container,
+      anchor,
+      dispose: () => {
+        document.removeEventListener("pointerdown", onPointerDown, true);
+        document.removeEventListener("keydown", onKeyDown, true);
+        container.remove();
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    document.addEventListener("keydown", onKeyDown, true);
+    this.activeAttributePopover = state;
+    this.positionAttributePopover(state);
+    container.style.visibility = "visible";
+  }
+  closeAttributePopover() {
+    if (!this.activeAttributePopover) return;
+    this.activeAttributePopover.dispose();
+    this.activeAttributePopover = null;
+  }
+  refreshAttributePopover() {
+    if (!this.activeAttributePopover) return;
+    const element = this.elements.find((el) => el.id === this.activeAttributePopover.elementId);
+    if (!element) {
+      this.closeAttributePopover();
+      return;
+    }
+    const checkboxes = this.activeAttributePopover.container.querySelectorAll("input[type='checkbox'][data-attr]");
+    checkboxes.forEach((checkbox) => {
+      const attr = checkbox.dataset.attr;
+      if (!attr) return;
+      checkbox.checked = element.attributes.includes(attr);
+    });
+  }
+  positionAttributePopover(state) {
+    const anchorRect = state.anchor.getBoundingClientRect();
+    const popRect = state.container.getBoundingClientRect();
+    const margin = 8;
+    let left = anchorRect.left + window.scrollX;
+    let top = anchorRect.bottom + window.scrollY + margin;
+    const viewportWidth = window.innerWidth + window.scrollX;
+    const viewportHeight = window.innerHeight + window.scrollY;
+    if (left + popRect.width > viewportWidth - margin) {
+      left = viewportWidth - popRect.width - margin;
+    }
+    if (left < margin) left = margin;
+    if (top + popRect.height > viewportHeight - margin) {
+      top = anchorRect.top + window.scrollY - popRect.height - margin;
+    }
+    if (top < margin) top = margin;
+    state.container.style.left = `${Math.round(left)}px`;
+    state.container.style.top = `${Math.round(top)}px`;
+  }
   createElementNode(element) {
     const el = this.canvasEl.createDiv({ cls: "sm-le-box" });
     el.dataset.id = element.id;
@@ -5946,7 +6266,14 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     body.createDiv({ cls: "sm-le-box__label", text: "(Label)" }).dataset.role = "label";
     body.createDiv({ cls: "sm-le-box__details", text: "" }).dataset.role = "details";
     const footer = el.createDiv({ cls: "sm-le-box__footer" });
-    footer.createSpan({ cls: "sm-le-box__attrs", text: "" }).dataset.role = "attrs";
+    const attrs = footer.createSpan({ cls: "sm-le-box__attrs", text: "" });
+    attrs.dataset.role = "attrs";
+    attrs.addClass("is-editable");
+    attrs.onclick = (ev) => {
+      ev.stopPropagation();
+      this.selectElement(element.id);
+      this.openAttributePopover(element, attrs);
+    };
     const resize = el.createDiv({ cls: "sm-le-box__resize" });
     resize.dataset.role = "resize";
     el.onclick = (ev) => {
@@ -5972,6 +6299,7 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     el.style.top = `${element.y}px`;
     el.style.width = `${element.width}px`;
     el.style.height = `${element.height}px`;
+    el.classList.toggle("sm-le-box--container", isContainerType(element.type));
     const typeEl = el.querySelector('[data-role="type"]');
     const labelEl = el.querySelector('[data-role="label"]');
     const detailsEl = el.querySelector('[data-role="details"]');
@@ -5985,6 +6313,11 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     }
     if (attrsEl) {
       attrsEl.setText(this.getAttributeSummary(element.attributes));
+      attrsEl.classList.toggle("is-empty", element.attributes.length === 0);
+    }
+    if (this.activeAttributePopover?.elementId === element.id) {
+      this.refreshAttributePopover();
+      this.positionAttributePopover(this.activeAttributePopover);
     }
   }
   beginDrag(element, event) {
@@ -5992,6 +6325,17 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     const startY = event.clientY;
     const originX = element.x;
     const originY = element.y;
+    const isContainer = isContainerType(element.type);
+    const parent = element.parentId ? this.elements.find((el) => el.id === element.parentId) : null;
+    const childOrigins = [];
+    if (isContainer && Array.isArray(element.children)) {
+      for (const childId of element.children) {
+        const child = this.elements.find((el) => el.id === childId);
+        if (child) {
+          childOrigins.push({ child, x: child.x, y: child.y });
+        }
+      }
+    }
     const onMove = (ev) => {
       const dx = ev.clientX - startX;
       const dy = ev.clientY - startY;
@@ -6002,12 +6346,26 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       element.x = clamp(nextX, 0, maxX);
       element.y = clamp(nextY, 0, maxY);
       this.syncElementElement(element);
+      if (isContainer) {
+        for (const entry of childOrigins) {
+          const childMaxX = Math.max(0, this.canvasWidth - entry.child.width);
+          const childMaxY = Math.max(0, this.canvasHeight - entry.child.height);
+          entry.child.x = clamp(entry.x + dx, 0, childMaxX);
+          entry.child.y = clamp(entry.y + dy, 0, childMaxY);
+          this.syncElementElement(entry.child);
+        }
+      }
       this.refreshExport();
       this.renderInspector();
     };
     const onUp = () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
+      if (isContainer) {
+        this.applyContainerLayout(element);
+      } else if (parent && isContainerType(parent.type)) {
+        this.applyContainerLayout(parent);
+      }
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
@@ -6017,6 +6375,8 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     const startY = event.clientY;
     const originW = element.width;
     const originH = element.height;
+    const isContainer = isContainerType(element.type);
+    const parent = element.parentId ? this.elements.find((el) => el.id === element.parentId) : null;
     const onMove = (ev) => {
       const dx = ev.clientX - startX;
       const dy = ev.clientY - startY;
@@ -6027,17 +6387,26 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       element.width = nextW;
       element.height = nextH;
       this.syncElementElement(element);
+      if (isContainer) {
+        this.applyContainerLayout(element, { silent: true });
+      }
       this.refreshExport();
       this.renderInspector();
     };
     const onUp = () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
+      if (isContainer) {
+        this.applyContainerLayout(element);
+      } else if (parent && isContainerType(parent.type)) {
+        this.applyContainerLayout(parent);
+      }
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
   }
   selectElement(id) {
+    this.closeAttributePopover();
     this.selectedElementId = id;
     this.updateSelectionStyles();
     this.renderInspector();
@@ -6057,6 +6426,11 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       host.createDiv({ cls: "sm-le-empty", text: "W\xE4hle ein Element, um Details anzupassen." });
       return;
     }
+    const isContainer = isContainerType(element.type);
+    if (isContainer) {
+      this.ensureContainerDefaults(element);
+    }
+    const parentContainer = !isContainer && element.parentId ? this.elements.find((el) => el.id === element.parentId) : null;
     host.createDiv({ cls: "sm-le-meta", text: `Typ: ${getElementTypeLabel(element.type)}` });
     const labelField = host.createDiv({ cls: "sm-le-field" });
     labelField.createEl("label", { text: element.type === "label" ? "Text" : "Label" });
@@ -6068,6 +6442,24 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       this.syncElementElement(element);
       this.refreshExport();
     };
+    if (!isContainer) {
+      const containers = this.elements.filter((el) => isContainerType(el.type));
+      if (containers.length) {
+        const containerField = host.createDiv({ cls: "sm-le-field" });
+        containerField.createEl("label", { text: "Container" });
+        const parentSelect = containerField.createEl("select");
+        parentSelect.createEl("option", { value: "", text: "Kein Container" });
+        for (const container of containers) {
+          const label = container.label || getElementTypeLabel(container.type);
+          const option = parentSelect.createEl("option", { value: container.id, text: label });
+          if (element.parentId === container.id) option.selected = true;
+        }
+        parentSelect.onchange = () => {
+          const value = parentSelect.value || null;
+          this.assignElementToContainer(element.id, value);
+        };
+      }
+    }
     if (element.type === "label" || element.type === "box") {
       const descField = host.createDiv({ cls: "sm-le-field" });
       descField.createEl("label", { text: element.type === "box" ? "Beschreibung" : "Zusatztext" });
@@ -6145,8 +6537,107 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
           }
           this.syncElementElement(element);
           this.refreshExport();
+          this.refreshAttributePopover();
         };
         row.createEl("label", { text: option.label, attr: { for: optionId } });
+      }
+    }
+    if (isContainerElement(element)) {
+      const layoutField = host.createDiv({ cls: "sm-le-field sm-le-field--grid" });
+      layoutField.createEl("label", { text: "Abstand (px)" });
+      const gapInput = layoutField.createEl("input", { attr: { type: "number", min: "0" } });
+      gapInput.value = String(Math.round(element.layout.gap));
+      gapInput.onchange = () => {
+        const next = Math.max(0, parseInt(gapInput.value, 10) || 0);
+        element.layout.gap = next;
+        gapInput.value = String(next);
+        this.applyContainerLayout(element);
+      };
+      layoutField.createEl("label", { text: "Innenabstand (px)" });
+      const paddingInput = layoutField.createEl("input", { attr: { type: "number", min: "0" } });
+      paddingInput.value = String(Math.round(element.layout.padding));
+      paddingInput.onchange = () => {
+        const next = Math.max(0, parseInt(paddingInput.value, 10) || 0);
+        element.layout.padding = next;
+        paddingInput.value = String(next);
+        this.applyContainerLayout(element);
+      };
+      const alignField = host.createDiv({ cls: "sm-le-field" });
+      alignField.createEl("label", { text: element.type === "vbox" ? "Horizontale Ausrichtung" : "Vertikale Ausrichtung" });
+      const alignSelect = alignField.createEl("select");
+      const alignOptions = element.type === "vbox" ? [
+        ["start", "Links"],
+        ["center", "Zentriert"],
+        ["end", "Rechts"],
+        ["stretch", "Breite strecken"]
+      ] : [
+        ["start", "Oben"],
+        ["center", "Zentriert"],
+        ["end", "Unten"],
+        ["stretch", "H\xF6he strecken"]
+      ];
+      for (const [value, label] of alignOptions) {
+        const option = alignSelect.createEl("option", { value, text: label });
+        if (element.layout.align === value) option.selected = true;
+      }
+      alignSelect.onchange = () => {
+        const next = alignSelect.value ?? element.layout.align;
+        element.layout.align = next;
+        this.applyContainerLayout(element);
+      };
+      const childField = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
+      childField.createEl("label", { text: "Zugeordnete Elemente" });
+      const addRow = childField.createDiv({ cls: "sm-le-container-add" });
+      const addSelect = addRow.createEl("select");
+      addSelect.createEl("option", { value: "", text: "Element ausw\xE4hlen\u2026" });
+      const candidates = this.elements.filter((el) => el.id !== element.id && !isContainerType(el.type));
+      for (const candidate of candidates) {
+        const textBase = candidate.label || getElementTypeLabel(candidate.type);
+        let optionText = textBase;
+        if (candidate.parentId && candidate.parentId !== element.id) {
+          const parentElement = this.elements.find((el) => el.id === candidate.parentId);
+          if (parentElement) {
+            const parentName = parentElement.label || getElementTypeLabel(parentElement.type);
+            optionText = `${textBase} (in ${parentName})`;
+          }
+        }
+        addSelect.createEl("option", { value: candidate.id, text: optionText });
+      }
+      const addButton = addRow.createEl("button", { text: "Hinzuf\xFCgen" });
+      addButton.onclick = (ev) => {
+        ev.preventDefault();
+        const target = addSelect.value;
+        if (target) {
+          this.assignElementToContainer(target, element.id);
+        }
+      };
+      const childList = childField.createDiv({ cls: "sm-le-container-children" });
+      const children = Array.isArray(element.children) ? element.children.map((childId) => this.elements.find((el) => el.id === childId)).filter((child) => !!child) : [];
+      if (!children.length) {
+        childList.createDiv({ cls: "sm-le-empty", text: "Keine Elemente verkn\xFCpft." });
+      } else {
+        for (const [idx, child] of children.entries()) {
+          const row = childList.createDiv({ cls: "sm-le-container-child" });
+          row.createSpan({ cls: "sm-le-container-child__label", text: child.label || getElementTypeLabel(child.type) });
+          const controls = row.createDiv({ cls: "sm-le-container-child__actions" });
+          const upBtn = controls.createEl("button", { text: "\u2191", attr: { title: "Nach oben" } });
+          upBtn.disabled = idx === 0;
+          upBtn.onclick = (ev) => {
+            ev.preventDefault();
+            this.moveChildInContainer(element, child.id, -1);
+          };
+          const downBtn = controls.createEl("button", { text: "\u2193", attr: { title: "Nach unten" } });
+          downBtn.disabled = idx === children.length - 1;
+          downBtn.onclick = (ev) => {
+            ev.preventDefault();
+            this.moveChildInContainer(element, child.id, 1);
+          };
+          const removeBtn = controls.createEl("button", { text: "\u2715", attr: { title: "Entfernen" } });
+          removeBtn.onclick = (ev) => {
+            ev.preventDefault();
+            this.assignElementToContainer(child.id, null);
+          };
+        }
       }
     }
     const actions = host.createDiv({ cls: "sm-le-actions" });
@@ -6164,6 +6655,11 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       widthInput.value = String(next);
       this.syncElementElement(element);
       this.refreshExport();
+      if (isContainer) {
+        this.applyContainerLayout(element);
+      } else if (parentContainer && isContainerType(parentContainer.type)) {
+        this.applyContainerLayout(parentContainer);
+      }
     };
     dimsField.createEl("label", { text: "H\xF6he (px)" });
     const heightInput = dimsField.createEl("input", { attr: { type: "number", min: String(MIN_ELEMENT_SIZE) } });
@@ -6175,6 +6671,11 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       heightInput.value = String(next);
       this.syncElementElement(element);
       this.refreshExport();
+      if (isContainer) {
+        this.applyContainerLayout(element);
+      } else if (parentContainer && isContainerType(parentContainer.type)) {
+        this.applyContainerLayout(parentContainer);
+      }
     };
     const posField = host.createDiv({ cls: "sm-le-field sm-le-field--grid" });
     posField.createEl("label", { text: "X-Position" });
@@ -6187,6 +6688,11 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       posXInput.value = String(next);
       this.syncElementElement(element);
       this.refreshExport();
+      if (isContainer) {
+        this.applyContainerLayout(element);
+      } else if (parentContainer && isContainerType(parentContainer.type)) {
+        this.applyContainerLayout(parentContainer);
+      }
     };
     posField.createEl("label", { text: "Y-Position" });
     const posYInput = posField.createEl("input", { attr: { type: "number", min: "0" } });
@@ -6198,6 +6704,11 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       posYInput.value = String(next);
       this.syncElementElement(element);
       this.refreshExport();
+      if (isContainer) {
+        this.applyContainerLayout(element);
+      } else if (parentContainer && isContainerType(parentContainer.type)) {
+        this.applyContainerLayout(parentContainer);
+      }
     };
     const meta = host.createDiv({ cls: "sm-le-meta" });
     meta.setText(`Fl\xE4che: ${Math.round(element.width * element.height)} px\xB2`);
@@ -6205,10 +6716,30 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
   deleteElement(id) {
     const index = this.elements.findIndex((b) => b.id === id);
     if (index === -1) return;
+    const element = this.elements[index];
     this.elements.splice(index, 1);
+    if (isContainerType(element.type) && Array.isArray(element.children)) {
+      for (const childId of element.children) {
+        const child = this.elements.find((el2) => el2.id === childId);
+        if (child) {
+          child.parentId = void 0;
+          this.syncElementElement(child);
+        }
+      }
+    }
+    if (element.parentId) {
+      const parent = this.elements.find((el2) => el2.id === element.parentId);
+      if (parent) {
+        this.removeChildFromContainer(parent, element.id);
+        this.applyContainerLayout(parent);
+      }
+    }
     const el = this.elementElements.get(id);
     el?.remove();
     this.elementElements.delete(id);
+    if (this.activeAttributePopover?.elementId === id) {
+      this.closeAttributePopover();
+    }
     if (this.selectedElementId === id) {
       this.selectedElementId = null;
     }
@@ -6218,6 +6749,16 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
   }
   getElementDetails(element) {
     const parts = [];
+    if (isContainerType(element.type)) {
+      const layout = element.layout;
+      const gap = layout ? Math.round(layout.gap) : 0;
+      const alignLabel = layout ? getContainerAlignLabel(element.type, layout.align) : null;
+      const count = element.children?.length ?? 0;
+      parts.push(element.type === "vbox" ? "Vertikale Verteilung" : "Horizontale Verteilung");
+      parts.push(`Abstand ${gap}px`);
+      if (alignLabel) parts.push(alignLabel);
+      parts.push(`${count} Elemente`);
+    }
     if ((element.type === "label" || element.type === "box") && element.description) {
       parts.push(element.description);
     }
@@ -6240,7 +6781,7 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     return parts.join(" \xB7 ");
   }
   getAttributeSummary(attributes) {
-    if (!attributes.length) return "Keine Attribute verkn\xFCpft";
+    if (!attributes.length) return "Attribute w\xE4hlen\u2026";
     return attributes.map((attr) => ATTRIBUTE_LABEL_LOOKUP.get(attr) ?? attr).join(", ");
   }
   detectElementTypeFromDom(node) {
@@ -6306,6 +6847,19 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
         if (element.placeholder) node.placeholder = element.placeholder;
         if (element.defaultValue) node.defaultValue = element.defaultValue;
         if (element.options && element.options.length) node.options = [...element.options];
+        if (element.parentId) node.parentId = element.parentId;
+        if (isContainerType(element.type)) {
+          if (element.layout) {
+            node.layout = {
+              gap: Math.round(element.layout.gap),
+              padding: Math.round(element.layout.padding),
+              align: element.layout.align
+            };
+          }
+          if (element.children && element.children.length) {
+            node.children = [...element.children];
+          }
+        }
         return node;
       })
     };
@@ -6433,6 +6987,38 @@ function clamp(value, min, max) {
 }
 function getElementTypeLabel(type) {
   return ELEMENT_DEFINITION_LOOKUP.get(type)?.buttonLabel ?? type;
+}
+function isContainerType(type) {
+  return type === "vbox" || type === "hbox";
+}
+function isContainerElement(element) {
+  return isContainerType(element.type) && !!element.layout && Array.isArray(element.children);
+}
+function getContainerAlignLabel(type, align) {
+  if (type === "vbox") {
+    switch (align) {
+      case "start":
+        return "Links ausgerichtet";
+      case "center":
+        return "Zentriert";
+      case "end":
+        return "Rechts ausgerichtet";
+      case "stretch":
+        return "Breite gestreckt";
+    }
+  } else {
+    switch (align) {
+      case "start":
+        return "Oben ausgerichtet";
+      case "center":
+        return "Vertikal zentriert";
+      case "end":
+        return "Unten ausgerichtet";
+      case "stretch":
+        return "H\xF6he gestreckt";
+    }
+  }
+  return "";
 }
 
 // src/app/main.ts
@@ -7253,6 +7839,21 @@ var HEX_PLUGIN_CSS = `
     transition: box-shadow 120ms ease, border-color 120ms ease;
 }
 
+.sm-le-box--container {
+    border-style: dashed;
+    border-color: var(--interactive-accent);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.05)), var(--background-primary);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
+}
+
+.sm-le-box--container .sm-le-box__type {
+    color: var(--interactive-accent);
+}
+
+.sm-le-box--container .sm-le-box__footer {
+    color: var(--text-muted);
+}
+
 .sm-le-box.is-selected {
     border-color: var(--interactive-accent);
     box-shadow: 0 14px 32px rgba(0, 0, 0, 0.25);
@@ -7318,6 +7919,21 @@ var HEX_PLUGIN_CSS = `
     width: 100%;
 }
 
+.sm-le-box__attrs.is-editable {
+    cursor: pointer;
+    transition: color 120ms ease;
+}
+
+.sm-le-box__attrs.is-editable:hover,
+.sm-le-box__attrs.is-editable:focus-visible {
+    color: var(--interactive-accent);
+}
+
+.sm-le-box__attrs.is-empty {
+    font-style: italic;
+    color: var(--text-muted);
+}
+
 .sm-le-box__resize {
     position: absolute;
     width: 18px;
@@ -7378,6 +7994,10 @@ var HEX_PLUGIN_CSS = `
     gap: 0.5rem;
 }
 
+.sm-le-field--stack {
+    gap: 0.6rem;
+}
+
 .sm-le-attributes {
     display: flex;
     flex-direction: column;
@@ -7413,6 +8033,56 @@ var HEX_PLUGIN_CSS = `
     margin: 0;
 }
 
+.sm-le-container-add {
+    display: flex;
+    gap: 0.35rem;
+    align-items: center;
+}
+
+.sm-le-container-add select {
+    flex: 1;
+}
+
+.sm-le-container-add button {
+    white-space: nowrap;
+}
+
+.sm-le-container-children {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.sm-le-container-child {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.35rem 0.45rem;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-secondary);
+}
+
+.sm-le-container-child__label {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.sm-le-container-child__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.sm-le-container-child__actions button {
+    padding: 0.1rem 0.4rem;
+    font-size: 0.75rem;
+}
+
 .sm-le-field--grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -7434,6 +8104,65 @@ var HEX_PLUGIN_CSS = `
 .sm-le-meta {
     font-size: 0.85rem;
     color: var(--text-muted);
+}
+
+.sm-le-attr-popover {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 12px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 240px;
+}
+
+.sm-le-attr-popover__heading {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.sm-le-attr-popover__hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.sm-le-attr-popover__clear {
+    align-self: flex-end;
+    font-size: 0.75rem;
+}
+
+.sm-le-attr-popover__scroll {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.sm-le-attr-popover__group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.35rem 0.45rem;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+}
+
+.sm-le-attr-popover__group-title {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+}
+
+.sm-le-attr-popover__option {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
 }
 
 .sm-le-export {
