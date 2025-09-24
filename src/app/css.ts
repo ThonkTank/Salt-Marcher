@@ -250,16 +250,17 @@ export const HEX_PLUGIN_CSS = `
 .sm-cc-create-modal .sm-cc-header .sm-cc-cell { font-weight: 600; color: var(--text-muted); }
 
 /* Ability score cards */
-.sm-cc-create-modal .sm-cc-stats-section { display: flex; flex-direction: column; gap: .05rem; }
+.sm-cc-create-modal .sm-cc-stats { display: flex; flex-direction: column; width: 100%; min-width: 0; }
+.sm-cc-create-modal .sm-cc-stats-section { display: flex; flex-direction: column; gap: .05rem; width: 100%; box-sizing: border-box; }
 .sm-cc-create-modal .sm-cc-stats-section__title { margin: 0; line-height: 1.3; }
-.sm-cc-create-modal .sm-cc-stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(0, auto); align-items: stretch; gap: .12rem .4rem; margin: 0; }
+.sm-cc-create-modal .sm-cc-stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(0, auto); align-items: stretch; gap: .12rem .4rem; margin: 0; width: 100%; box-sizing: border-box; }
 .sm-cc-create-modal .sm-cc-stats-grid__header { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: .4rem; row-gap: .05rem; align-items: end; padding: 0; margin: 0; font-size: .85em; color: var(--text-muted); }
 .sm-cc-create-modal .sm-cc-stats-grid__header-cell { display: flex; align-items: center; justify-content: flex-end; gap: .2rem; font-weight: 600; }
 .sm-cc-create-modal .sm-cc-stats-grid__header-cell--save { gap: .25rem; }
 .sm-cc-create-modal .sm-cc-stats-grid__header-save-mod { font-size: .78em; letter-spacing: .06em; text-transform: uppercase; min-width: 3ch; text-align: right; }
 .sm-cc-create-modal .sm-cc-stats-grid__header-save-label { font-weight: 600; }
-.sm-cc-create-modal .sm-cc-stats-col { display: flex; flex-direction: column; gap: .12rem; }
-.sm-cc-create-modal .sm-cc-stat-row { display: flex; align-items: center; gap: .15rem; padding: .18rem .28rem; border-radius: 8px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); }
+.sm-cc-create-modal .sm-cc-stats-col { display: flex; flex-direction: column; gap: .12rem; min-width: 0; }
+.sm-cc-create-modal .sm-cc-stat-row { display: flex; align-items: center; gap: .15rem; padding: .18rem .28rem; border-radius: 8px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); width: 100%; box-sizing: border-box; }
 .sm-cc-create-modal .sm-cc-stat-row__label { flex: 0 0 2.5rem; font-weight: 600; color: var(--text-normal); }
 .sm-cc-create-modal .sm-cc-stat-row__score { flex: 0 0 auto; }
 .sm-cc-create-modal .sm-cc-stat-row__mod-value { font-weight: 600; color: var(--text-normal); min-width: 3ch; text-align: right; margin-left: .08rem; }
@@ -277,8 +278,8 @@ export const HEX_PLUGIN_CSS = `
 .sm-inline-number input[type="number"] { width: 84px; }
 .sm-cc-create-modal .sm-cc-stat-row .sm-inline-number { gap: .12rem; }
 .sm-cc-create-modal .sm-cc-stat-row .sm-inline-number input[type="number"].sm-cc-stat-row__score-input {
-    width: 2.2ch;
-    min-width: 2.2ch;
+    width: calc(2.2ch + 10px);
+    min-width: calc(2.2ch + 10px);
     text-align: center;
     padding-inline: 0;
 }
