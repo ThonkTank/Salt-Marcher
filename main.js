@@ -4160,7 +4160,7 @@ function mountCreatureBasicsSection(parent, data) {
   const speedSetting = new import_obsidian15.Setting(root).setName("Bewegung");
   const speedControl = speedSetting.controlEl.createDiv({ cls: "sm-cc-move-ctl" });
   const addRow = speedControl.createDiv({ cls: "sm-cc-searchbar sm-cc-move-row" });
-  const typeSelect = addRow.createEl("select");
+  const typeSelect = addRow.createEl("select", { cls: "sm-sd" });
   for (const [value, label] of CREATURE_MOVEMENT_TYPES) {
     const option = typeSelect.createEl("option", { text: label });
     option.value = value;
@@ -4169,7 +4169,7 @@ function mountCreatureBasicsSection(parent, data) {
     enhanceSelectToSearch(typeSelect, "Such-dropdown\u2026");
   } catch {
   }
-  const hoverWrap = addRow.createDiv();
+  const hoverWrap = addRow.createDiv({ cls: "sm-cc-move-hover" });
   const hoverId = `sm-cc-hover-${Math.random().toString(36).slice(2)}`;
   const hoverCb = hoverWrap.createEl("input", {
     attr: { type: "checkbox", id: hoverId }
@@ -4196,8 +4196,11 @@ function mountCreatureBasicsSection(parent, data) {
   };
   decBtn.onclick = () => step(-1);
   incBtn.onclick = () => step(1);
-  const addRow2 = speedControl.createDiv({ cls: "sm-cc-searchbar sm-cc-move-addrow" });
-  const addSpeedBtn = addRow2.createEl("button", { text: "+ Hinzuf\xFCgen" });
+  const addSpeedBtn = addRow.createEl("button", {
+    text: "+",
+    cls: "sm-cc-move-add",
+    attr: { "aria-label": "Geschwindigkeitswert hinzuf\xFCgen" }
+  });
   const speedChips = speedControl.createDiv({ cls: "sm-cc-chips" });
   const speeds = ensureSpeedList(data);
   const renderSpeeds = () => {
@@ -5729,10 +5732,13 @@ var HEX_PLUGIN_CSS = `
 
 /* Movement row should not overflow; children stay compact */
 .sm-cc-create-modal .sm-cc-move-ctl { display: flex; flex-direction: column; align-items: stretch; gap: .35rem; }
-.sm-cc-create-modal .sm-cc-move-row { flex-wrap: nowrap; justify-content: flex-end; gap: .5rem; }
-.sm-cc-create-modal .sm-cc-move-addrow { display: flex; justify-content: flex-end; }
-.sm-cc-create-modal .sm-cc-move-row > * { flex: 0 0 auto; }
+.sm-cc-create-modal .sm-cc-move-row { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+.sm-cc-create-modal .sm-cc-move-row .sm-sd { flex:1 1 220px; min-width:200px; }
 .sm-cc-create-modal .sm-cc-move-row select { max-width: 220px; }
+.sm-cc-create-modal .sm-cc-move-hover { display:inline-flex; align-items:center; gap:.35rem; flex:0 0 auto; }
+.sm-cc-create-modal .sm-cc-move-hover input { margin:0; }
+.sm-cc-create-modal .sm-cc-move-row .sm-inline-number { flex:0 0 auto; }
+.sm-cc-create-modal .sm-cc-move-add { margin-left:auto; flex:0 0 auto; }
 
 /* Entry auto compute groups */
 .sm-cc-create-modal .sm-cc-auto { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; }
