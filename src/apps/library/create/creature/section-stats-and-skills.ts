@@ -30,6 +30,24 @@ export function mountCreatureStatsAndSkillsSection(
   abilitySection.createEl("h4", { text: "Stats" });
 
   const statsGrid = abilitySection.createDiv({ cls: "sm-cc-stats-grid" });
+  const statsGridHeader = statsGrid.createDiv({
+    cls: "sm-cc-stats-grid__header",
+  });
+  statsGridHeader.createSpan({
+    cls: "sm-cc-stats-grid__header-cell sm-cc-stats-grid__header-cell--mod",
+    text: "Mod",
+  });
+  const statsGridSaveHead = statsGridHeader.createDiv({
+    cls: "sm-cc-stats-grid__header-cell sm-cc-stats-grid__header-cell--save",
+  });
+  statsGridSaveHead.createSpan({
+    cls: "sm-cc-stats-grid__header-save-label",
+    text: "Save",
+  });
+  statsGridSaveHead.createSpan({
+    cls: "sm-cc-stats-grid__header-save-mod",
+    text: "Mod",
+  });
 
   const abilityByKey = new Map<CreatureAbilityKey, (typeof CREATURE_ABILITIES)[number]>(
     CREATURE_ABILITIES.map((def) => [def.key, def]),
@@ -69,7 +87,6 @@ export function mountCreatureStatsAndSkillsSection(
         updateMods();
       });
 
-      row.createSpan({ cls: "sm-cc-stat-row__mod-label", text: "Mod" });
       const modOut = row.createSpan({
         cls: "sm-cc-stat-row__mod-value",
         text: "+0",
@@ -80,7 +97,6 @@ export function mountCreatureStatsAndSkillsSection(
       const saveCb = saveLabel.createEl("input", {
         attr: { type: "checkbox", "aria-label": `${ability.label} Save Proficiency` },
       }) as HTMLInputElement;
-      saveLabel.createSpan({ text: "Save" });
       const saveOut = saveWrap.createSpan({
         cls: "sm-cc-stat-row__save-mod",
         text: "+0",
