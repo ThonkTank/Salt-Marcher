@@ -4087,39 +4087,22 @@ function ensureSpeedList(data) {
 }
 function mountCreatureBasicsSection(parent, data) {
   const root = parent.createDiv({ cls: "sm-cc-basics" });
-  const idSetting = new import_obsidian15.Setting(root).setName("Name");
+  const identityRow = root.createDiv({ cls: "sm-cc-basics__identity" });
+  const idSetting = new import_obsidian15.Setting(identityRow).setName("Name");
+  idSetting.settingEl.classList.add("sm-cc-basics__identity-item", "sm-cc-basics__identity-name");
   idSetting.addText((t) => {
     t.setPlaceholder("Aboleth").setValue(data.name || "").onChange((v) => data.name = v.trim());
-    t.inputEl.style.width = "30ch";
+    t.inputEl.style.width = "100%";
   });
-  const sizeSetting = new import_obsidian15.Setting(root).setName("Gr\xF6\xDFe");
-  sizeSetting.addDropdown((dd) => {
-    dd.addOption("", "");
-    for (const option of CREATURE_SIZES) dd.addOption(option, option);
-    dd.setValue(data.size ?? "");
-    dd.onChange((v) => data.size = v);
-    try {
-      enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
-    } catch {
-    }
-  });
-  const typeSetting = new import_obsidian15.Setting(root).setName("Typ");
-  typeSetting.addDropdown((dd) => {
-    dd.addOption("", "");
-    for (const option of CREATURE_TYPES) dd.addOption(option, option);
-    dd.setValue(data.type ?? "");
-    dd.onChange((v) => data.type = v);
-    try {
-      enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
-    } catch {
-    }
-  });
-  const alignSetting = new import_obsidian15.Setting(root).setName("Gesinnung");
+  const alignSetting = new import_obsidian15.Setting(identityRow).setName("Gesinnung");
+  alignSetting.settingEl.classList.add("sm-cc-basics__identity-item", "sm-cc-basics__alignment");
+  alignSetting.controlEl.classList.add("sm-cc-basics__alignment-controls");
   alignSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_ALIGNMENT_LAW_CHAOS) dd.addOption(option, option);
     dd.setValue(data.alignmentLawChaos ?? "");
     dd.onChange((v) => data.alignmentLawChaos = v);
+    dd.selectEl.classList.add("sm-cc-basics__alignment-select");
     try {
       const el = dd.selectEl;
       el.dataset.sdOpenAll = "0";
@@ -4132,6 +4115,7 @@ function mountCreatureBasicsSection(parent, data) {
     for (const option of CREATURE_ALIGNMENT_GOOD_EVIL) dd.addOption(option, option);
     dd.setValue(data.alignmentGoodEvil ?? "");
     dd.onChange((v) => data.alignmentGoodEvil = v);
+    dd.selectEl.classList.add("sm-cc-basics__alignment-select");
     try {
       const el = dd.selectEl;
       el.dataset.sdOpenAll = "0";
@@ -4139,7 +4123,38 @@ function mountCreatureBasicsSection(parent, data) {
     } catch {
     }
   });
-  const coreSetting = new import_obsidian15.Setting(root).setName("Kernwerte");
+  const grid = root.createDiv({ cls: "sm-cc-basics__grid" });
+  const registerGridItem = (setting, span = 1) => {
+    setting.settingEl.classList.add("sm-cc-basics__grid-item");
+    if (span === 2) setting.settingEl.classList.add("sm-cc-basics__grid-item--span-2");
+    if (span === 3) setting.settingEl.classList.add("sm-cc-basics__grid-item--span-3");
+  };
+  const sizeSetting = new import_obsidian15.Setting(grid).setName("Gr\xF6\xDFe");
+  registerGridItem(sizeSetting);
+  sizeSetting.addDropdown((dd) => {
+    dd.addOption("", "");
+    for (const option of CREATURE_SIZES) dd.addOption(option, option);
+    dd.setValue(data.size ?? "");
+    dd.onChange((v) => data.size = v);
+    try {
+      enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
+    } catch {
+    }
+  });
+  const typeSetting = new import_obsidian15.Setting(grid).setName("Typ");
+  registerGridItem(typeSetting);
+  typeSetting.addDropdown((dd) => {
+    dd.addOption("", "");
+    for (const option of CREATURE_TYPES) dd.addOption(option, option);
+    dd.setValue(data.type ?? "");
+    dd.onChange((v) => data.type = v);
+    try {
+      enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
+    } catch {
+    }
+  });
+  const coreSetting = new import_obsidian15.Setting(grid).setName("Kernwerte");
+  registerGridItem(coreSetting, 2);
   const row = coreSetting.controlEl.createDiv({ cls: "sm-cc-inline-row" });
   const mk = (label, widthCh, placeholder, key) => {
     row.createEl("label", { text: label });
@@ -4157,7 +4172,8 @@ function mountCreatureBasicsSection(parent, data) {
   mk("PB", 5, "+4", "pb");
   mk("CR", 6, "10", "cr");
   mk("XP", 8, "5900", "xp");
-  const speedSetting = new import_obsidian15.Setting(root).setName("Bewegung");
+  const speedSetting = new import_obsidian15.Setting(grid).setName("Bewegung");
+  registerGridItem(speedSetting, 3);
   const speedControl = speedSetting.controlEl.createDiv({ cls: "sm-cc-move-ctl" });
   const addRow = speedControl.createDiv({ cls: "sm-cc-searchbar sm-cc-move-row" });
   const typeSelect = addRow.createEl("select", { cls: "sm-sd" });
@@ -4262,9 +4278,27 @@ function mountCreatureStatsAndSkillsSection(parent, data) {
     if (!data.skillsProf) data.skillsProf = [];
     if (!data.skillsExpertise) data.skillsExpertise = [];
   };
-  const abilitySection = root.createDiv({ cls: "sm-cc-skills" });
-  abilitySection.createEl("h4", { text: "Stats" });
-  const statsGrid = abilitySection.createDiv({ cls: "sm-cc-stats-grid" });
+  const statsSection = root.createDiv({ cls: "sm-cc-stats-section" });
+  statsSection.createEl("h4", { cls: "sm-cc-stats-section__title", text: "Stats" });
+  const statsGrid = statsSection.createDiv({ cls: "sm-cc-stats-grid" });
+  const statsGridHeader = statsGrid.createDiv({
+    cls: "sm-cc-stats-grid__header"
+  });
+  statsGridHeader.createSpan({
+    cls: "sm-cc-stats-grid__header-cell sm-cc-stats-grid__header-cell--mod",
+    text: "Mod"
+  });
+  const statsGridSaveHead = statsGridHeader.createDiv({
+    cls: "sm-cc-stats-grid__header-cell sm-cc-stats-grid__header-cell--save"
+  });
+  statsGridSaveHead.createSpan({
+    cls: "sm-cc-stats-grid__header-save-label",
+    text: "Save"
+  });
+  statsGridSaveHead.createSpan({
+    cls: "sm-cc-stats-grid__header-save-mod",
+    text: "Mod"
+  });
   const abilityByKey = new Map(
     CREATURE_ABILITIES.map((def) => [def.key, def])
   );
@@ -4283,6 +4317,7 @@ function mountCreatureStatsAndSkillsSection(parent, data) {
       const score = scoreWrap.createEl("input", {
         attr: { type: "number", placeholder: "10", min: "0", step: "1" }
       });
+      score.addClass("sm-cc-stat-row__score-input");
       const dec = scoreWrap.createEl("button", { text: "\u2212", cls: "btn-compact" });
       const inc = scoreWrap.createEl("button", { text: "+", cls: "btn-compact" });
       score.value = data[ability.key] || "";
@@ -4299,7 +4334,6 @@ function mountCreatureStatsAndSkillsSection(parent, data) {
         data[ability.key] = score.value.trim();
         updateMods();
       });
-      row.createSpan({ cls: "sm-cc-stat-row__mod-label", text: "Mod" });
       const modOut = row.createSpan({
         cls: "sm-cc-stat-row__mod-value",
         text: "+0"
@@ -4309,7 +4343,6 @@ function mountCreatureStatsAndSkillsSection(parent, data) {
       const saveCb = saveLabel.createEl("input", {
         attr: { type: "checkbox", "aria-label": `${ability.label} Save Proficiency` }
       });
-      saveLabel.createSpan({ text: "Save" });
       const saveOut = saveWrap.createSpan({
         cls: "sm-cc-stat-row__save-mod",
         text: "+0"
@@ -4500,9 +4533,14 @@ function mountPresetSelectEditor(parent, title, options, model, config) {
     inlineLabel,
     rowClass,
     defaultAddButtonLabel,
-    addButtonLabel
+    addButtonLabel,
+    settingClass
   } = resolved;
   const setting = new import_obsidian18.Setting(parent).setName(title);
+  if (settingClass) {
+    const classes = Array.isArray(settingClass) ? settingClass : [settingClass];
+    setting.settingEl.classList.add(...classes);
+  }
   const rowClasses = ["sm-cc-searchbar"];
   if (rowClass) rowClasses.push(rowClass);
   const row = setting.controlEl.createDiv({ cls: rowClasses.join(" ") });
@@ -4733,28 +4771,31 @@ var makeModel = (list) => ({
 });
 function mountCreatureSensesAndDefensesSection(parent, data) {
   const root = parent.createDiv({ cls: "sm-cc-defenses" });
+  const sensesLanguages = root.createDiv({ cls: "sm-cc-senses-block" });
   const senses = ensureStringList(data, "sensesList");
   mountPresetSelectEditor(
-    root,
+    sensesLanguages,
     "Sinne",
     CREATURE_SENSE_PRESETS,
     makeModel(senses),
     {
       placeholder: "Sinn suchen oder eingeben\u2026",
       rowClass: "sm-cc-senses-search",
-      defaultAddButtonLabel: "+"
+      defaultAddButtonLabel: "+",
+      settingClass: "sm-cc-senses-setting"
     }
   );
   const languages = ensureStringList(data, "languagesList");
   mountPresetSelectEditor(
-    root,
+    sensesLanguages,
     "Sprachen",
     CREATURE_LANGUAGE_PRESETS,
     makeModel(languages),
     {
       placeholder: "Sprache suchen oder eingeben\u2026",
       rowClass: "sm-cc-senses-search",
-      defaultAddButtonLabel: "+"
+      defaultAddButtonLabel: "+",
+      settingClass: "sm-cc-senses-setting"
     }
   );
   const passives = ensureStringList(data, "passivesList");
@@ -5622,6 +5663,30 @@ var HEX_PLUGIN_CSS = `
 .sm-cc-item { display:flex; gap:.5rem; align-items:center; justify-content:space-between; padding:.35rem .5rem; border:1px solid var(--background-modifier-border); border-radius:8px; background: var(--background-primary); }
 .sm-cc-item__name { font-weight: 500; }
 
+/* Creature Creator \u2013 Basics Section */
+.sm-cc-basics { display:flex; flex-direction:column; gap:.75rem; }
+.sm-cc-basics__identity { display:flex; flex-wrap:wrap; gap:.75rem; align-items:flex-start; }
+.sm-cc-basics__identity-item { flex:1 1 220px; margin:0; }
+.sm-cc-basics__identity-name .setting-item-control { width:100%; }
+.sm-cc-basics__identity-name input[type="text"] { width:100%; box-sizing:border-box; }
+.sm-cc-basics__alignment .setting-item-control { display:flex; flex-wrap:wrap; gap:.5rem; }
+.sm-cc-basics__alignment-select { flex:1 1 140px; min-width:120px; }
+.sm-cc-basics__grid { display:grid; gap:.75rem; grid-template-columns:repeat(3, minmax(0, 1fr)); }
+.sm-cc-basics__grid-item { margin:0; height:100%; }
+.sm-cc-basics__grid-item .setting-item-control { width:100%; }
+.sm-cc-basics__grid .setting-item-info { align-self:flex-start; }
+.sm-cc-basics__grid-item--span-2 { grid-column:span 2; }
+.sm-cc-basics__grid-item--span-3 { grid-column:1 / -1; }
+@media (max-width: 980px) {
+    .sm-cc-basics__grid { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    .sm-cc-basics__grid-item--span-2 { grid-column:1 / -1; }
+}
+@media (max-width: 680px) {
+    .sm-cc-basics__grid { grid-template-columns:minmax(0, 1fr); }
+    .sm-cc-basics__identity { flex-direction:column; }
+    .sm-cc-basics__identity-item { flex-basis:auto; }
+}
+
 /* Create Creature Modal helpers */
 .sm-cc-create-modal .sm-cc-grid {
     display: grid;
@@ -5665,8 +5730,7 @@ var HEX_PLUGIN_CSS = `
 .sm-cc-damage-chip--vuln .sm-cc-damage-chip__badge { background-color: rgba(234,88,12,.18); color:#ea580c; }
 .sm-cc-damage-chip--vuln .sm-cc-damage-chip__badge { background-color: color-mix(in srgb, var(--color-orange, #ea580c) 22%, transparent); color: var(--color-orange, #ea580c); }
 .sm-cc-skill-editor { display:flex; flex-direction:column; gap:.35rem; }
-.sm-cc-skill-search,
-.sm-cc-senses-search {
+.sm-cc-skill-search {
     display:flex;
     align-items:center;
     justify-content:flex-end;
@@ -5675,15 +5739,49 @@ var HEX_PLUGIN_CSS = `
     max-width:420px;
 }
 .sm-cc-skill-search select,
-.sm-cc-senses-search select,
-.sm-cc-skill-search .sm-sd,
-.sm-cc-senses-search .sm-sd {
+.sm-cc-skill-search .sm-sd {
     flex:1 1 260px;
     min-width:220px;
 }
-.sm-cc-skill-search button,
-.sm-cc-senses-search button {
+.sm-cc-skill-search button {
     flex:0 0 auto;
+}
+
+.sm-cc-defenses .sm-cc-senses-block {
+    border-top: 1px solid var(--background-modifier-border);
+    margin-top: .65rem;
+    padding-top: .65rem;
+}
+.sm-cc-defenses .sm-cc-senses-setting .setting-item-control {
+    display: flex;
+    justify-content: flex-end;
+}
+.sm-cc-defenses .sm-cc-senses-search {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    justify-content: flex-end;
+    margin-left: 0;
+    width: auto;
+}
+.sm-cc-defenses .sm-cc-senses-search select,
+.sm-cc-defenses .sm-cc-senses-search .sm-sd {
+    flex: 0 0 280px;
+    min-width: 280px;
+    max-width: 280px;
+}
+.sm-cc-defenses .sm-cc-senses-search button {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: .2rem .45rem;
+    min-width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 4px;
+    font-size: .85em;
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-secondary);
 }
 .sm-cc-skill-chips { gap:.45rem; }
 .sm-cc-skill-chip { align-items:center; gap:.4rem; padding-right:.5rem; }
@@ -5743,24 +5841,39 @@ var HEX_PLUGIN_CSS = `
 .sm-cc-create-modal .sm-cc-header .sm-cc-cell { font-weight: 600; color: var(--text-muted); }
 
 /* Ability score cards */
-.sm-cc-create-modal .sm-cc-stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; align-items: stretch; gap: .35rem 1rem; margin-top: .35rem; }
-.sm-cc-create-modal .sm-cc-stats-col { display: flex; flex-direction: column; gap: .35rem; }
-.sm-cc-create-modal .sm-cc-stat-row { display: flex; align-items: center; gap: .45rem; padding: .35rem .45rem; border-radius: 8px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); }
+.sm-cc-create-modal .sm-cc-stats { display: flex; flex-direction: column; width: 100%; min-width: 0; }
+.sm-cc-create-modal .sm-cc-stats-section { display: flex; flex-direction: column; gap: .05rem; width: 100%; box-sizing: border-box; }
+.sm-cc-create-modal .sm-cc-stats-section__title { margin: 0; line-height: 1.3; }
+.sm-cc-create-modal .sm-cc-stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(0, auto); align-items: stretch; gap: .12rem .4rem; margin: 0; width: 100%; box-sizing: border-box; }
+.sm-cc-create-modal .sm-cc-stats-grid__header { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: .4rem; row-gap: .05rem; align-items: end; padding: 0; margin: 0; font-size: .85em; color: var(--text-muted); }
+.sm-cc-create-modal .sm-cc-stats-grid__header-cell { display: flex; align-items: center; justify-content: flex-end; gap: .2rem; font-weight: 600; }
+.sm-cc-create-modal .sm-cc-stats-grid__header-cell--save { gap: .25rem; }
+.sm-cc-create-modal .sm-cc-stats-grid__header-save-mod { font-size: .78em; letter-spacing: .06em; text-transform: uppercase; min-width: 3ch; text-align: right; }
+.sm-cc-create-modal .sm-cc-stats-grid__header-save-label { font-weight: 600; }
+.sm-cc-create-modal .sm-cc-stats-col { display: flex; flex-direction: column; gap: .12rem; min-width: 0; }
+.sm-cc-create-modal .sm-cc-stat-row { display: flex; align-items: center; gap: .15rem; padding: .18rem .28rem; border-radius: 8px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); width: 100%; box-sizing: border-box; }
 .sm-cc-create-modal .sm-cc-stat-row__label { flex: 0 0 2.5rem; font-weight: 600; color: var(--text-normal); }
 .sm-cc-create-modal .sm-cc-stat-row__score { flex: 0 0 auto; }
-.sm-cc-create-modal .sm-cc-stat-row__mod-label { font-size: .85em; color: var(--text-muted); }
-.sm-cc-create-modal .sm-cc-stat-row__mod-value { font-weight: 600; color: var(--text-normal); min-width: 2.5rem; text-align: right; }
-.sm-cc-create-modal .sm-cc-stat-row__save { margin-left: auto; display: inline-flex; align-items: center; gap: .35rem; }
-.sm-cc-create-modal .sm-cc-stat-row__save-prof { display: inline-flex; align-items: center; gap: .3rem; font-size: .85em; color: var(--text-muted); cursor: pointer; }
+.sm-cc-create-modal .sm-cc-stat-row__mod-value { font-weight: 600; color: var(--text-normal); min-width: 3ch; text-align: right; margin-left: .08rem; }
+.sm-cc-create-modal .sm-cc-stat-row__save { margin-left: .08rem; display: grid; grid-auto-flow: column; grid-auto-columns: max-content; align-items: center; gap: .1rem; }
+.sm-cc-create-modal .sm-cc-stat-row__save-prof { display: inline-flex; align-items: center; justify-content: center; width: 1.25rem; height: 1.25rem; font-size: .85em; color: var(--text-muted); cursor: pointer; }
 .sm-cc-create-modal .sm-cc-stat-row__save-prof input[type="checkbox"] { margin: 0; }
-.sm-cc-create-modal .sm-cc-stat-row__save-mod { font-weight: 600; color: var(--text-normal); min-width: 2.5rem; text-align: right; }
+.sm-cc-create-modal .sm-cc-stat-row__save-mod { font-weight: 600; color: var(--text-normal); min-width: 3ch; text-align: right; }
 @media (max-width: 700px) {
     .sm-cc-create-modal .sm-cc-stats-grid { grid-template-columns: minmax(0, 1fr); }
+    .sm-cc-create-modal .sm-cc-stats-grid__header { grid-template-columns: minmax(0, 1fr); justify-items: flex-end; row-gap: .1rem; }
 }
 
 /* Compact inline number controls */
-.sm-inline-number { display: inline-flex; align-items: center; gap: .25rem; }
+.sm-inline-number { display: inline-flex; align-items: center; gap: .2rem; }
 .sm-inline-number input[type="number"] { width: 84px; }
+.sm-cc-create-modal .sm-cc-stat-row .sm-inline-number { gap: .12rem; }
+.sm-cc-create-modal .sm-cc-stat-row .sm-inline-number input[type="number"].sm-cc-stat-row__score-input {
+    width: calc(2.2ch + 10px);
+    min-width: calc(2.2ch + 10px);
+    text-align: center;
+    padding-inline: 0;
+}
 .btn-compact { padding: 0 .4rem; min-width: 1.5rem; height: 1.6rem; line-height: 1.2; }
 
 /* Movement row should not overflow; children stay compact */
