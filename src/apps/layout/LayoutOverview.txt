@@ -15,6 +15,7 @@ src/apps/layout/
 - **Label-Übersetzung:** Nutzt `translateText` aus `src/core/translator.ts`, um Box-Labels in eine wählbare Zielsprache zu übertragen. Unterstützt Einzel- und Sammelübersetzung inkl. Fehlerfeedback.
 - **Export für Abmessungen:** Generiert jederzeit ein JSON-Snippet mit Canvas-Größe, Positionen, Dimensionen und Übersetzungen aller Boxen, damit Layouts leicht weitergegeben werden können.
 - **Inspector-Panel:** Bietet ein Seitenpanel für detaillierte Bearbeitung (Label, Übersetzung, Maße, Position) sowie Kontextaktionen wie Löschen.
+- **Creature-Creator-Import:** Baut den vollständigen DOM des Creature-Creator-Dialogs in einem versteckten Sandbox-Container auf, misst alle relevanten Bereiche aus und befüllt die Canvas automatisch mit Boxen für Name, Grundwerte, Stats, Verteidigungen, Einträge und Buttons.
 
 ## Dateibeschreibungen
 
@@ -23,4 +24,5 @@ src/apps/layout/
 - Baut Header (Steuerung, Sprachwahl, Status), Canvas und Inspector auf und hält DOM-Referenzen für effiziente Updates.
 - Verwaltet Box-Modelle in einem In-Memory-Array, synchronisiert Position/Größe mit dem DOM und kümmert sich um Pointer-basierte Drag-/Resize-Interaktionen.
 - Orchestriert Übersetzungen (Einzelbox oder alle Boxen) über `translateText`, zeigt Fortschritt/Fehler im UI und aktualisiert Exportdaten.
+- Rekonstruiert bei Bedarf das Creature-Creator-Layout über die Abschnitts-Mount-Funktionen (`mountCreatureBasicsSection`, `mountCreatureStatsAndSkillsSection`, …), projiziert die gemessenen Bounding-Boxes auf die Canvas und ersetzt vorhandene Boxen.
 - Erstellt das Export-JSON inklusive Canvas- und Box-Metadaten und stellt eine Kopier-Schaltfläche bereit.
