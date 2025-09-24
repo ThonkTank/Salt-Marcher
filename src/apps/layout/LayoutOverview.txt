@@ -10,19 +10,19 @@ src/apps/layout/
 
 ## Features & Verantwortlichkeiten
 
-- **Layout-Arbeitsfläche:** Stellt eine konfigurierbare Canvas (Breite/Höhe) bereit, auf der beliebig viele Boxen platziert werden können.
-- **Box-Verwaltung:** Ermöglicht das Hinzufügen, Auswählen, Verschieben und Skalieren von Boxen via Drag & Drop oder numerischen Eingaben.
-- **Label-Übersetzung:** Nutzt `translateText` aus `src/core/translator.ts`, um Box-Labels in eine wählbare Zielsprache zu übertragen. Unterstützt Einzel- und Sammelübersetzung inkl. Fehlerfeedback.
-- **Export für Abmessungen:** Generiert jederzeit ein JSON-Snippet mit Canvas-Größe, Positionen, Dimensionen und Übersetzungen aller Boxen, damit Layouts leicht weitergegeben werden können.
-- **Inspector-Panel:** Bietet ein Seitenpanel für detaillierte Bearbeitung (Label, Übersetzung, Maße, Position) sowie Kontextaktionen wie Löschen.
-- **Creature-Creator-Import:** Baut den vollständigen DOM des Creature-Creator-Dialogs in einem versteckten Sandbox-Container auf, misst alle relevanten Bereiche aus und befüllt die Canvas automatisch mit Boxen für Name, Grundwerte, Stats, Verteidigungen, Einträge und Buttons.
+- **Layout-Arbeitsfläche:** Stellt eine konfigurierbare Canvas (Breite/Höhe) bereit, auf der beliebig viele UI-Elemente platziert werden können.
+- **Element-Palette:** Fügt per Klick Labels, Textfelder, Mehrzeiler, Container-Boxen, Trennlinien, Dropdowns und Such-Dropdowns hinzu – jedes neue Element landet direkt auf der Canvas und kann sofort bearbeitet werden.
+- **Element-Verwaltung:** Unterstützt Auswählen, Verschieben und Skalieren per Drag & Drop oder numerische Eingaben, inklusive visueller Auswahlmarkierung.
+- **Inspector-Panel:** Ermöglicht das Anpassen von Texten, Beschreibungen, Platzhaltern, Default-Werten, Dropdown-Optionen und verknüpften Creature-Attributen; bietet zudem Löschaktionen sowie exakte Positions-/Größenangaben.
+- **Export für Layoutdaten:** Generiert jederzeit ein JSON-Snippet mit Canvas-Größe plus vollständigem Element-Metadatenpaket (Typ, Texte, Optionen, Attribute, Maße), damit Layouts reproduzierbar bleiben.
+- **Creature-Creator-Import:** Baut den DOM des Creature-Creator-Dialogs in einer Sandbox nach, analysiert Maße, weist passende Elementtypen zu und füllt die Canvas automatisch mit vorkonfigurierten UI-Bereichen.
 
 ## Dateibeschreibungen
 
 ### `view.ts`
 - Implementiert `LayoutEditorView` als `ItemView`-Ableitung.
-- Baut Header (Steuerung, Sprachwahl, Status), Canvas und Inspector auf und hält DOM-Referenzen für effiziente Updates.
-- Verwaltet Box-Modelle in einem In-Memory-Array, synchronisiert Position/Größe mit dem DOM und kümmert sich um Pointer-basierte Drag-/Resize-Interaktionen.
-- Orchestriert Übersetzungen (Einzelbox oder alle Boxen) über `translateText`, zeigt Fortschritt/Fehler im UI und aktualisiert Exportdaten.
-- Rekonstruiert bei Bedarf das Creature-Creator-Layout über die Abschnitts-Mount-Funktionen (`mountCreatureBasicsSection`, `mountCreatureStatsAndSkillsSection`, …), projiziert die gemessenen Bounding-Boxes auf die Canvas und ersetzt vorhandene Boxen.
-- Erstellt das Export-JSON inklusive Canvas- und Box-Metadaten und stellt eine Kopier-Schaltfläche bereit.
+- Baut Header (Element-Palette, Import, Status), Canvas und Inspector auf und hält DOM-Referenzen für performante Aktualisierungen.
+- Verwaltet Element-Modelle in einem Array, synchronisiert Position/Größe mit dem DOM und bedient Pointer-basierte Drag-/Resize-Interaktionen.
+- Stellt im Inspector Eingabefelder für Label, Beschreibung, Platzhalter, Default-Werte, Dropdown-Optionen sowie eine Attribut-Auswahl bereit und synchronisiert Änderungen direkt mit der Canvas.
+- Rekonstruiert bei Bedarf das Creature-Creator-Layout über die Abschnitts-Mount-Funktionen (`mountCreatureBasicsSection`, `mountCreatureStatsAndSkillsSection`, …), erkennt simple Eingabe-Typen und projiziert die gemessenen Bounding-Boxes auf die Canvas.
+- Erstellt das Export-JSON inklusive Canvas- und Element-Metadaten und stellt eine Kopier-Schaltfläche bereit.

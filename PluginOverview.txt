@@ -78,8 +78,7 @@ Salt-Marcher/
   räumt beim Schließen das DOM auf.
 
 ### src/apps/layout
-- `view.ts`: Implementiert den `LayoutEditorView` mit Canvas, Inspector und Export. Unterstützt das Erstellen, Verschieben und
-  Skalieren von Boxen, nutzt `translateText` zur Sprachübersetzung von Labels und stellt JSON-Export inklusive Maße bereit.
+- `view.ts`: Implementiert den `LayoutEditorView` mit Canvas, Element-Palette, Inspector und JSON-Export. Unterstützt Drag/Resize, Text-/Platzhalter-/Options-Editing sowie die Zuordnung von Creature-Attributen für den Creature-Creator-Dialog.
 - `LayoutOverview.txt`: Struktur- und Verantwortlichkeitsübersicht des Layout-Editors.
 
 ### src/apps/library

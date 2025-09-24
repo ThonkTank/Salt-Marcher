@@ -753,6 +753,10 @@ export const HEX_PLUGIN_CSS = `
     min-width: 120px;
 }
 
+.sm-le-control--stack {
+    min-width: 220px;
+}
+
 .sm-le-control label {
     font-size: 0.8rem;
     color: var(--text-muted);
@@ -761,6 +765,12 @@ export const HEX_PLUGIN_CSS = `
 .sm-le-size {
     display: inline-flex;
     align-items: center;
+    gap: 0.35rem;
+}
+
+.sm-le-add {
+    display: flex;
+    flex-wrap: wrap;
     gap: 0.35rem;
 }
 
@@ -837,11 +847,18 @@ export const HEX_PLUGIN_CSS = `
     gap: 0.35rem;
 }
 
+.sm-le-box__type {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+}
+
 .sm-le-box__label {
     font-weight: 600;
 }
 
-.sm-le-box__translation {
+.sm-le-box__details {
     font-size: 0.9rem;
     color: var(--text-muted);
     white-space: pre-wrap;
@@ -852,7 +869,13 @@ export const HEX_PLUGIN_CSS = `
     font-size: 0.75rem;
     color: var(--text-faint);
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start;
+}
+
+.sm-le-box__attrs {
+    display: block;
+    white-space: normal;
+    width: 100%;
 }
 
 .sm-le-box__resize {
@@ -911,6 +934,45 @@ export const HEX_PLUGIN_CSS = `
     box-sizing: border-box;
 }
 
+.sm-le-field--attributes {
+    gap: 0.5rem;
+}
+
+.sm-le-attributes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.sm-le-attributes__group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.35rem 0.4rem;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+}
+
+.sm-le-attributes__group-title {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+}
+
+.sm-le-attributes__option {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.sm-le-attributes__option input {
+    margin: 0;
+}
+
 .sm-le-field--grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -924,17 +986,8 @@ export const HEX_PLUGIN_CSS = `
     align-items: center;
 }
 
-.sm-le-actions button:last-child {
-    margin-left: auto;
-}
-
 .sm-le-empty {
     color: var(--text-muted);
-    font-size: 0.9rem;
-}
-
-.sm-le-error {
-    color: var(--text-error);
     font-size: 0.9rem;
 }
 
