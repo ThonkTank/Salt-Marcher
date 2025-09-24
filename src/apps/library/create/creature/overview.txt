@@ -1,0 +1,47 @@
+# Creature Creator Dialog – Overview
+
+## Struktur
+```
+src/apps/library/create/creature/
+├── index.ts                # Barrel-Exports für den Creator-Dialog
+├── modal.ts                # Einstiegspunkt, verwaltet Lebenszyklus des Modals
+├── presets.ts              # Vordefinierte Auswahlwerte (Größen, Typen, Skills …)
+├── section-core-stats.ts   # UI-Abschnitt für Identität, Kernwerte, Attribute, Sinnes-/Sprachlisten
+├── section-entries.ts      # UI-Abschnitt für strukturierte Einträge (Traits, Aktionen …)
+└── section-spells-known.ts # UI-Abschnitt für bekannte Zauber und Auswahl-Logik
+```
+
+## Dialog-Flow
+1. **Initialisierung:** `CreateCreatureModal` legt ein frisches `StatblockData`-Objekt an und deaktiviert das Schließen per Außenklick, um versehentliche Abbrüche zu vermeiden.
+2. **Rendering beim Öffnen:** Beim `onOpen`-Hook leert der Dialog seinen Inhalt, setzt Styling-Klassen und startet parallel das Laden der Zauber-Dateiliste (best effort).
+3. **Abschnitts-Mounting:** Nacheinander werden die drei Abschnitte `mountCoreStatsSection`, `mountEntriesSection` und `mountSpellsKnownSection` angebunden. Dadurch entsteht eine modulare Oberfläche, deren Teilbereiche ihre eigenen State- und Render-Methoden besitzen.
+4. **Geschwindigkeitsverwaltung:** Der Dialog ergänzt eine Speed-Management-Zeile, mit der Bewegungsarten samt Hover-Flag und Schrittweiten gepflegt werden. Änderungen landen als `speedList` im gemeinsamen Datenobjekt und werden sofort visualisiert.
+5. **Asynchrones Spell-Matching:** Sobald `listSpellFiles` abgeschlossen ist, befüllt das Modal `availableSpells` und triggert ein Refresh im Spell-Abschnitt, sodass Typeahead-Vorschläge aktualisiert werden.
+6. **Submission:** Der CTA-Button überprüft den Namen, schließt das Modal und ruft den übergebenen Callback mit dem finalen `StatblockData` auf. `onClose` sowie `onunload` stellen sicher, dass Pointer-Events des Hintergrunds wiederhergestellt werden.
+
+## Erforderliche Statblock-Eigenschaften
+Um laut „Monsters“-Regelwerk und den vorhandenen Beispielstatblocks vollständige Daten abzubilden, muss der Creator Eingaben für folgende Bereiche ermöglichen:
+- **Allgemeine Kopfdaten:** Name, Größe, Kreaturentyp inkl. Tags, Gesinnung.【F:References, do not delete!/rulebooks/Statblocks/11_Monsters.md†L5-L41】
+- **Kampfwerte:** Armor Class, Hit Points (inklusive Hit Dice), Speed für alle Bewegungsarten (walk, fly, swim, burrow, climb, hover), Initiative-Modifikator und -Score.【F:References, do not delete!/rulebooks/Statblocks/11_Monsters.md†L7-L79】
+- **Attributblock:** STR/DEX/CON/INT/WIS/CHA Scores, abgeleitete Modifikatoren sowie markierbare Saving-Throw-Proficiencies.【F:References, do not delete!/rulebooks/Statblocks/11_Monsters.md†L81-L111】
+- **Fertigkeiten & Boni:** Skill-Proficiencies/-Expertise, Wahrnehmung und sonstige passive Werte; Proficiency Bonus nach CR.【F:References, do not delete!/rulebooks/Statblocks/11_Monsters.md†L113-L158】
+- **Schadensmerkmale:** Resistances, Vulnerabilities, Immunities (Schaden & Zustände) sowie optionale Gear-Angaben.【F:References, do not delete!/rulebooks/Statblocks/11_Monsters.md†L113-L151】【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/skeleton.md†L18-L21】
+- **Sinne & Sprachen:** Passive Perception, besondere Sinne, bekannte Sprachen und ggf. Telepathie-Details.【F:References, do not delete!/rulebooks/Statblocks/11_Monsters.md†L153-L193】
+- **Gefährlichkeitswerte:** Challenge Rating, zugehörige XP, Proficiency Bonus sowie Hinweise auf lair-/mythic-Varianten.【F:References, do not delete!/rulebooks/Statblocks/11_Monsters.md†L195-L247】【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/vampire.md†L24-L26】
+- **Traits & Aktionen:** Dauerhafte Traits, Actions, Bonus Actions, Reactions und Legendary Actions inklusive Hit-/Save-/Damage-Notationen, Recharge-Mechaniken und begrenzter Nutzung.【F:References, do not delete!/rulebooks/Statblocks/11_Monsters.md†L249-L333】【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/vampire.md†L28-L77】
+- **Zauberwirken:** Spellcasting-Einträge mit DC, Attack Bonus, Nutzungsfrequenzen und Komponentenhinweisen für Monster-Zauberlisten.【F:References, do not delete!/rulebooks/Statblocks/11_Monsters.md†L305-L325】【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/vampire.md†L72-L77】
+- **Sonderfälle:** Multiattack-Automatiken, limitierte Nutzung (X/Day, Recharge), Formwechsel oder Ausrüstungswechsel (z. B. Shape-Shift), sowie optionale Gear-/Equipment-Interaktionen.【F:References, do not delete!/rulebooks/Statblocks/11_Monsters.md†L273-L333】【F:References, do not delete!/rulebooks/Statblocks/Creatures/Monsters/vampire.md†L40-L71】
+
+## Features & Zuständigkeiten
+- **Modulares Abschnitts-System:** Jede logische Eingabegruppe (Kernwerte, Einträge, Zauber) besitzt eigene Mount-Funktionen mit State-Management und Utility-Hooks.【F:src/apps/library/create/creature/modal.ts†L24-L103】
+- **Dynamische Berechnungen:** Core-Stats und Entry-Module berechnen Modifikatoren, Saves und Schadens-/Trefferwerte automatisch aus Attributen und PB, inklusive Unterstützung für „best of STR/DEX“ Fälle.【F:src/apps/library/create/creature/section-core-stats.ts†L60-L150】【F:src/apps/library/create/creature/section-entries.ts†L69-L148】
+- **Typeahead-Auswahl:** Selects und Zaubersuche verwenden Search-Dropdowns bzw. Typeahead-Menüs, um große Datenmengen (Bewegungstypen, Fähigkeiten, Zauberliste) handhabbar zu halten.【F:src/apps/library/create/creature/modal.ts†L37-L88】【F:src/apps/library/create/creature/section-spells-known.ts†L14-L45】
+- **Strukturierte Ausgabe:** Einträge werden strukturiert im `StatblockData` gespeichert und ermöglichen später die Generierung formatierter Markdown-Abschnitte aus JSON-Daten.【F:src/apps/library/create/creature/section-entries.ts†L14-L175】【F:src/apps/library/core/creature-files.ts†L64-L119】
+
+## Skript-Details
+- **`index.ts`:** Bündelt alle öffentlichen Einhängepunkte des Creature Creators (Modal & Mounting-Funktionen) für externe Nutzung.【F:src/apps/library/create/creature/index.ts†L1-L6】
+- **`modal.ts`:** Implementiert den Obsidian-Modal, orchestriert Abschnitt-Mounting, Geschwindigkeitserfassung, Spell-Ladeprozess und Submit-Handling.【F:src/apps/library/create/creature/modal.ts†L11-L105】
+- **`presets.ts`:** Enthält Konstanten für Auswahloptionen (Größen, Typen, Gesinnung, Skills, Eintragskategorien, Bewegungsarten) zur zentralen Pflege von Listenwerten.【F:src/apps/library/create/creature/presets.ts†L1-L69】
+- **`section-core-stats.ts`:** Rendert Identitätsfelder, Kernwerte, Attributtabellen, Skill-Grids sowie Token-Editoren für Sinne/Sprachen und aktualisiert automatisch Modifikatoren & Saves.【F:src/apps/library/create/creature/section-core-stats.ts†L17-L140】
+- **`section-entries.ts`:** Verwalten der strukturierten Statblock-Einträge inkl. Kategorieauswahl, Auto-Berechnungen für To-Hit/Schaden, Save- und Recharge-Felder sowie Markdown-Detailtexten.【F:src/apps/library/create/creature/section-entries.ts†L12-L175】
+- **`section-spells-known.ts`:** Bietet Typeahead-Auswahl für Zauber, Felder für Grad/Nutzung/Notizen und Listenpflege für die gespeicherten Spells mit Refresh-Hook für asynchrones Nachladen.【F:src/apps/library/create/creature/section-spells-known.ts†L5-L68】
