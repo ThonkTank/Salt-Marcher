@@ -4280,37 +4280,84 @@ function mountCoreStatsSection(parent, data) {
     });
     abilityElems.set(s.key, { score, mod: modOut, save: saveCb, saveMod: saveOut });
   }
-  const skillsSection = root.createDiv({ cls: "sm-cc-skills" });
-  skillsSection.createEl("h4", { text: "Fertigkeiten" });
-  const skillsTbl = skillsSection.createDiv({ cls: "sm-cc-table sm-cc-skills-table" });
-  const skillsHeader = skillsTbl.createDiv({ cls: "sm-cc-row sm-cc-header" });
-  ;
-  ["Name", "Prof", "Expertise", "Mod"].forEach((h) => skillsHeader.createDiv({ cls: "sm-cc-cell", text: h }));
-  const skillElems = [];
-  for (const [name, abil] of CREATURE_SKILLS) {
-    const rowEl = skillsTbl.createDiv({ cls: "sm-cc-row" });
-    rowEl.createDiv({ cls: "sm-cc-cell", text: name });
-    const cbP = rowEl.createEl("input", { cls: "sm-cc-cell", attr: { type: "checkbox" } });
-    const cbE = rowEl.createEl("input", { cls: "sm-cc-cell", attr: { type: "checkbox" } });
-    const out = rowEl.createDiv({ cls: "sm-cc-cell", text: "+0" });
+  const skillAbilityMap = new Map(CREATURE_SKILLS);
+  const skillsSetting = new import_obsidian16.Setting(root).setName("Fertigkeiten");
+  skillsSetting.settingEl.addClass("sm-cc-skills");
+  const skillsControl = skillsSetting.controlEl;
+  skillsControl.addClass("sm-cc-skill-editor");
+  const skillsRow = skillsControl.createDiv({ cls: "sm-cc-searchbar sm-cc-skill-search" });
+  const skillsSelect = skillsRow.createEl("select");
+  const blankSkill = skillsSelect.createEl("option", { text: "Fertigkeit w\xE4hlen\u2026" });
+  blankSkill.value = "";
+  for (const [name] of CREATURE_SKILLS) {
+    const opt = skillsSelect.createEl("option", { text: name });
+    opt.value = name;
+  }
+  try {
+    enhanceSelectToSearch(skillsSelect, "Fertigkeit suchen\u2026");
+  } catch {
+  }
+  const skillsSearchInput = skillsSelect._smSearchInput;
+  if (skillsSearchInput) skillsSearchInput.placeholder = "Fertigkeit suchen\u2026";
+  const addSkillBtn = skillsRow.createEl("button", { text: "+ Hinzuf\xFCgen" });
+  const skillChips = skillsControl.createDiv({ cls: "sm-cc-chips sm-cc-skill-chips" });
+  const skillRefs = /* @__PURE__ */ new Map();
+  const addSkillByName = (rawName) => {
+    const name = rawName.trim();
+    if (!name) return;
+    if (!skillAbilityMap.has(name)) return;
     ensureSets();
-    cbP.checked = !!data.skillsProf?.includes(name);
-    cbE.checked = !!data.skillsExpertise?.includes(name);
-    cbP.addEventListener("change", () => {
-      ensureSets();
-      const arr = data.skillsProf;
-      if (cbP.checked && !arr.includes(name)) arr.push(name);
-      else if (!cbP.checked) data.skillsProf = arr.filter((s) => s !== name);
-      updateMods();
-    });
-    cbE.addEventListener("change", () => {
-      ensureSets();
-      const arr = data.skillsExpertise;
-      if (cbE.checked && !arr.includes(name)) arr.push(name);
-      else if (!cbE.checked) data.skillsExpertise = arr.filter((s) => s !== name);
-      updateMods();
-    });
-    skillElems.push({ ability: abil, prof: cbP, exp: cbE, out });
+    if (!data.skillsProf.includes(name)) data.skillsProf.push(name);
+    renderSkillChips();
+  };
+  addSkillBtn.onclick = () => {
+    const selected = skillsSelect.value.trim();
+    const typed = skillsSearchInput?.value.trim() ?? "";
+    let value = selected;
+    if (!value && typed) {
+      const match = Array.from(skillsSelect.options).find((opt) => opt.text.trim().toLowerCase() === typed.toLowerCase());
+      if (match) value = match.value.trim();
+    }
+    if (skillsSearchInput) skillsSearchInput.value = "";
+    skillsSelect.value = "";
+    addSkillByName(value);
+  };
+  function renderSkillChips() {
+    ensureSets();
+    skillChips.empty();
+    skillRefs.clear();
+    const profs = data.skillsProf ?? [];
+    for (const name of profs) {
+      const chip = skillChips.createDiv({ cls: "sm-cc-chip sm-cc-skill-chip" });
+      chip.createSpan({ cls: "sm-cc-skill-chip__name", text: name });
+      const modOut = chip.createSpan({ cls: "sm-cc-skill-chip__mod", text: "+0" });
+      const expertiseWrap = chip.createEl("label", { cls: "sm-cc-skill-chip__exp" });
+      const expertiseCb = expertiseWrap.createEl("input", { attr: { type: "checkbox" } });
+      expertiseWrap.createSpan({ text: "Expertise" });
+      expertiseCb.checked = !!data.skillsExpertise?.includes(name);
+      expertiseCb.addEventListener("change", () => {
+        ensureSets();
+        if (expertiseCb.checked) {
+          if (!data.skillsExpertise.includes(name)) data.skillsExpertise.push(name);
+        } else {
+          data.skillsExpertise = data.skillsExpertise.filter((s) => s !== name);
+        }
+        updateMods();
+      });
+      const removeBtn = chip.createEl("button", {
+        cls: "sm-cc-chip__remove",
+        text: "\xD7",
+        attr: { "aria-label": `${name} entfernen` }
+      });
+      removeBtn.onclick = () => {
+        ensureSets();
+        data.skillsProf = data.skillsProf.filter((s) => s !== name);
+        data.skillsExpertise = data.skillsExpertise.filter((s) => s !== name);
+        renderSkillChips();
+      };
+      skillRefs.set(name, { mod: modOut, expertise: expertiseCb });
+    }
+    updateMods();
   }
   const updateMods = () => {
     const pb = parseIntSafe(data.pb) || 0;
@@ -4320,13 +4367,19 @@ function mountCoreStatsSection(parent, data) {
       const saveBonus = data.saveProf?.[key] ? pb : 0;
       refs.saveMod.textContent = formatSigned(mod + saveBonus);
     }
-    for (const sk of skillElems) {
-      const mod = abilityMod2(data[sk.ability]);
-      const bonus = sk.exp.checked ? pb * 2 : sk.prof.checked ? pb : 0;
-      sk.out.textContent = formatSigned(mod + bonus);
+    ensureSets();
+    const profs = new Set(data.skillsProf ?? []);
+    data.skillsExpertise = (data.skillsExpertise ?? []).filter((name) => profs.has(name));
+    for (const [name, refs] of skillRefs) {
+      const ability = skillAbilityMap.get(name);
+      const mod = ability ? abilityMod2(data[ability]) : 0;
+      const hasExpertise = data.skillsExpertise?.includes(name) ?? false;
+      const bonus = hasExpertise ? pb * 2 : pb;
+      refs.mod.textContent = formatSigned(mod + bonus);
+      if (refs.expertise.checked !== hasExpertise) refs.expertise.checked = hasExpertise;
     }
   };
-  updateMods();
+  renderSkillChips();
   if (!data.sensesList) data.sensesList = [];
   if (!data.languagesList) data.languagesList = [];
   mountTokenEditor(root, "Sinne", {
@@ -5279,6 +5332,17 @@ var HEX_PLUGIN_CSS = `
 
 .sm-cc-chips { display:flex; gap:.35rem; flex-wrap:wrap; margin:.25rem 0 .5rem; }
 .sm-cc-chip { display:inline-flex; align-items:center; gap:.25rem; border:1px solid var(--background-modifier-border); border-radius:999px; padding:.1rem .4rem; background: var(--background-secondary); }
+.sm-cc-skill-editor { display:flex; flex-direction:column; gap:.35rem; }
+.sm-cc-skill-search { align-items:center; }
+.sm-cc-skill-search select { min-width:220px; }
+.sm-cc-skill-chips { gap:.45rem; }
+.sm-cc-skill-chip { align-items:center; gap:.4rem; padding-right:.5rem; }
+.sm-cc-skill-chip__name { font-weight:500; }
+.sm-cc-skill-chip__mod { font-weight:600; color: var(--text-normal); }
+.sm-cc-skill-chip__exp { display:inline-flex; align-items:center; gap:.25rem; font-size:.85em; color: var(--text-muted); }
+.sm-cc-skill-chip__exp input { margin:0; }
+.sm-cc-chip__remove { background:none; border:none; cursor:pointer; font-size:1rem; line-height:1; padding:0; color: var(--text-muted); }
+.sm-cc-chip__remove:hover { color: var(--text-normal); }
 
 /* Creature modal layout improvements */
 .sm-cc-create-modal .setting-item-control { flex: 1 1 auto; min-width: 0; }
@@ -5325,8 +5389,6 @@ var HEX_PLUGIN_CSS = `
 .sm-cc-create-modal .sm-cc-header .sm-cc-cell { font-weight: 600; color: var(--text-muted); }
 .sm-cc-create-modal .sm-cc-stats-table { grid-template-columns: 100px 90px 80px 60px 90px; }
 .sm-cc-create-modal .sm-cc-stats-table input[type="number"] { width: 100%; }
-.sm-cc-create-modal .sm-cc-skills-table { grid-template-columns: 160px 60px 90px 70px; }
-.sm-cc-create-modal .sm-cc-skills-table input[type="checkbox"] { justify-self: start; }
 
 /* Compact inline number controls */
 .sm-inline-number { display: inline-flex; align-items: center; gap: .25rem; }

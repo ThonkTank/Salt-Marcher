@@ -90,6 +90,17 @@ export const HEX_PLUGIN_CSS = `
 
 .sm-cc-chips { display:flex; gap:.35rem; flex-wrap:wrap; margin:.25rem 0 .5rem; }
 .sm-cc-chip { display:inline-flex; align-items:center; gap:.25rem; border:1px solid var(--background-modifier-border); border-radius:999px; padding:.1rem .4rem; background: var(--background-secondary); }
+.sm-cc-skill-editor { display:flex; flex-direction:column; gap:.35rem; }
+.sm-cc-skill-search { align-items:center; }
+.sm-cc-skill-search select { min-width:220px; }
+.sm-cc-skill-chips { gap:.45rem; }
+.sm-cc-skill-chip { align-items:center; gap:.4rem; padding-right:.5rem; }
+.sm-cc-skill-chip__name { font-weight:500; }
+.sm-cc-skill-chip__mod { font-weight:600; color: var(--text-normal); }
+.sm-cc-skill-chip__exp { display:inline-flex; align-items:center; gap:.25rem; font-size:.85em; color: var(--text-muted); }
+.sm-cc-skill-chip__exp input { margin:0; }
+.sm-cc-chip__remove { background:none; border:none; cursor:pointer; font-size:1rem; line-height:1; padding:0; color: var(--text-muted); }
+.sm-cc-chip__remove:hover { color: var(--text-normal); }
 
 /* Creature modal layout improvements */
 .sm-cc-create-modal .setting-item-control { flex: 1 1 auto; min-width: 0; }
@@ -136,8 +147,6 @@ export const HEX_PLUGIN_CSS = `
 .sm-cc-create-modal .sm-cc-header .sm-cc-cell { font-weight: 600; color: var(--text-muted); }
 .sm-cc-create-modal .sm-cc-stats-table { grid-template-columns: 100px 90px 80px 60px 90px; }
 .sm-cc-create-modal .sm-cc-stats-table input[type="number"] { width: 100%; }
-.sm-cc-create-modal .sm-cc-skills-table { grid-template-columns: 160px 60px 90px 70px; }
-.sm-cc-create-modal .sm-cc-skills-table input[type="checkbox"] { justify-self: start; }
 
 /* Compact inline number controls */
 .sm-inline-number { display: inline-flex; align-items: center; gap: .25rem; }
