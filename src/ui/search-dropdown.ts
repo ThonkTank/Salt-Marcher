@@ -56,4 +56,5 @@ export function enhanceSelectToSearch(select: HTMLSelectElement, placeholder = '
     input.addEventListener('blur', () => { setTimeout(closeMenu, 120); });
     // Do not prefill input from current selection to avoid unintended defaults
     (select as any)._smEnhanced = true;
+    (select as any)._smSearchInput = input;
 }
