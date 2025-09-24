@@ -112,3 +112,59 @@ export const CREATURE_MOVEMENT_TYPES = [
   ["burrow", "Graben"],
 ] as const;
 export type CreatureMovementType = (typeof CREATURE_MOVEMENT_TYPES)[number][0];
+
+export const CREATURE_DAMAGE_PRESETS = [
+  "Acid",
+  "Bludgeoning",
+  "Bludgeoning (magisch)",
+  "Bludgeoning (nichtmagisch)",
+  "Cold",
+  "Fire",
+  "Force",
+  "Lightning",
+  "Necrotic",
+  "Piercing",
+  "Piercing (magisch)",
+  "Piercing (nichtmagisch)",
+  "Poison",
+  "Psychic",
+  "Radiant",
+  "Slashing",
+  "Slashing (magisch)",
+  "Slashing (nichtmagisch)",
+  "Thunder",
+  "Alle außer Force",
+  "Alle außer Psychic",
+  "Nichtmagische Angriffe",
+  "Magische Angriffe",
+  "Nichtmagische Waffen",
+  "Nichtmagische Angriffe (nicht versilbert)",
+  "Nichtmagische Angriffe (nicht aus Adamantit)",
+] as const;
+export type CreatureDamagePreset = (typeof CREATURE_DAMAGE_PRESETS)[number];
+
+export const CREATURE_CONDITION_PRESETS = [
+  "Blinded",
+  "Charmed",
+  "Deafened",
+  "Exhaustion",
+  "Frightened",
+  "Grappled",
+  "Incapacitated",
+  "Invisible",
+  "Paralyzed",
+  "Petrified",
+  "Poisoned",
+  "Prone",
+  "Restrained",
+  "Stunned",
+  "Unconscious",
+] as const;
+export type CreatureConditionPreset = (typeof CREATURE_CONDITION_PRESETS)[number];
+
+export const CREATURE_PASSIVE_PRESETS = [
+  "Passive Perception",
+  "Passive Insight",
+  "Passive Investigation",
+] as const;
+export type CreaturePassivePreset = (typeof CREATURE_PASSIVE_PRESETS)[number];

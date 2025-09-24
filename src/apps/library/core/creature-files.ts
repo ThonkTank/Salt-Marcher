@@ -26,6 +26,12 @@ export type StatblockData = {
     skillsExpertise?: string[];
     sensesList?: string[];
     languagesList?: string[];
+    passivesList?: string[];
+    damageVulnerabilitiesList?: string[];
+    damageResistancesList?: string[];
+    damageImmunitiesList?: string[];
+    conditionImmunitiesList?: string[];
+    gearList?: string[];
     cr?: string;
     xp?: string;
     traits?: string; actions?: string; legendary?: string;
@@ -84,7 +90,14 @@ function statblockToMarkdown(d: StatblockData): string {
     if (d.str) lines.push(`str: "${d.str}"`); if (d.dex) lines.push(`dex: "${d.dex}"`); if (d.con) lines.push(`con: "${d.con}"`); if (d.int) lines.push(`int: "${d.int}"`); if (d.wis) lines.push(`wis: "${d.wis}"`); if (d.cha) lines.push(`cha: "${d.cha}"`); if (d.pb) lines.push(`pb: "${d.pb}"`);
     if (d.saveProf) { const profs = Object.entries(d.saveProf).filter(([, v]) => !!v).map(([k]) => k.toUpperCase()); if (profs.length) lines.push(`saves_prof: ${yamlList(profs)}`); }
     if (d.skillsProf && d.skillsProf.length) lines.push(`skills_prof: ${yamlList(d.skillsProf)}`); if (d.skillsExpertise && d.skillsExpertise.length) lines.push(`skills_expertise: ${yamlList(d.skillsExpertise)}`);
-    const sensesYaml = yamlList(d.sensesList); if (sensesYaml) lines.push(`senses: ${sensesYaml}`); const langsYaml = yamlList(d.languagesList); if (langsYaml) lines.push(`languages: ${langsYaml}`);
+    const sensesYaml = yamlList(d.sensesList); if (sensesYaml) lines.push(`senses: ${sensesYaml}`);
+    const langsYaml = yamlList(d.languagesList); if (langsYaml) lines.push(`languages: ${langsYaml}`);
+    const passivesYaml = yamlList(d.passivesList); if (passivesYaml) lines.push(`passives: ${passivesYaml}`);
+    const vulnerabilitiesYaml = yamlList(d.damageVulnerabilitiesList); if (vulnerabilitiesYaml) lines.push(`damage_vulnerabilities: ${vulnerabilitiesYaml}`);
+    const resistancesYaml = yamlList(d.damageResistancesList); if (resistancesYaml) lines.push(`damage_resistances: ${resistancesYaml}`);
+    const immunitiesYaml = yamlList(d.damageImmunitiesList); if (immunitiesYaml) lines.push(`damage_immunities: ${immunitiesYaml}`);
+    const conditionYaml = yamlList(d.conditionImmunitiesList); if (conditionYaml) lines.push(`condition_immunities: ${conditionYaml}`);
+    const gearYaml = yamlList(d.gearList); if (gearYaml) lines.push(`gear: ${gearYaml}`);
     if (d.cr) lines.push(`cr: "${d.cr}"`); if (d.xp) lines.push(`xp: "${d.xp}"`);
     const entries = (d.entries && d.entries.length) ? d.entries : (d.actionsList && d.actionsList.length ? d.actionsList.map(a => ({ category: 'action' as const, ...a })) : undefined);
     if (entries && entries.length) { const json = JSON.stringify(entries).replace(/"/g, '\\"'); lines.push(`entries_structured_json: "${json}"`); }
@@ -99,7 +112,20 @@ function statblockToMarkdown(d: StatblockData): string {
     const pbNum = parseNum(d.pb) ?? 0; if (d.saveProf) { const parts: string[] = []; const map: Array<[keyof typeof d.saveProf, string, string|undefined]> = [['str','Str',d.str],['dex','Dex',d.dex],['con','Con',d.con],['int','Int',d.int],['wis','Wis',d.wis],['cha','Cha',d.cha]]; for (const [key,label,score] of map) { if (d.saveProf[key]) { const mod = abilityMod(score) ?? 0; parts.push(`${label} ${fmtSigned(mod + pbNum)}`); } } if (parts.length) lines.push(`Saves ${parts.join(", ")}`); }
     const getSet = (arr?: string[]) => new Set((arr || []).map(s => s.trim()).filter(Boolean)); const profSet = getSet(d.skillsProf); const expSet = getSet(d.skillsExpertise);
     if (profSet.size || expSet.size) { const parts: string[] = []; const allSkills = Array.from(new Set([...Object.keys(SKILL_TO_ABILITY)])); for (const sk of allSkills) { const hasProf = profSet.has(sk) || expSet.has(sk); if (!hasProf) continue; const abilKey = SKILL_TO_ABILITY[sk]; const mod = abilityMod((d as any)[abilKey]) ?? 0; const bonus = expSet.has(sk) ? pbNum * 2 : pbNum; parts.push(`${sk} ${fmtSigned(mod + bonus)}`); } if (parts.length) lines.push(`Skills ${parts.join(", ")}`); }
-    if (d.sensesList && d.sensesList.length) lines.push(`Senses ${d.sensesList.join(", ")}`); if (d.languagesList && d.languagesList.length) lines.push(`Languages ${d.languagesList.join(", ")}`); if (d.cr || d.pb || d.xp) { const bits: string[] = []; if (d.cr) bits.push(`CR ${d.cr}`); if (pbNum) bits.push(`PB ${fmtSigned(pbNum)}`); if (d.xp) bits.push(`XP ${d.xp}`); if (bits.length) lines.push(bits.join("; ")); } lines.push("");
+    const sensesParts: string[] = [];
+    if (d.sensesList && d.sensesList.length) sensesParts.push(d.sensesList.join(", "));
+    const passiveChunk = d.passivesList && d.passivesList.length ? d.passivesList.join("; ") : "";
+    if (sensesParts.length || passiveChunk) {
+        const tail = passiveChunk ? (sensesParts.length ? `; ${passiveChunk}` : passiveChunk) : "";
+        lines.push(`Senses ${[sensesParts.join(", "), tail].filter(Boolean).join("")}`);
+    }
+    if (d.damageVulnerabilitiesList && d.damageVulnerabilitiesList.length) lines.push(`Vulnerabilities ${d.damageVulnerabilitiesList.join(", ")}`);
+    if (d.damageResistancesList && d.damageResistancesList.length) lines.push(`Resistances ${d.damageResistancesList.join(", ")}`);
+    if (d.damageImmunitiesList && d.damageImmunitiesList.length) lines.push(`Immunities ${d.damageImmunitiesList.join(", ")}`);
+    if (d.conditionImmunitiesList && d.conditionImmunitiesList.length) lines.push(`Condition Immunities ${d.conditionImmunitiesList.join(", ")}`);
+    if (d.languagesList && d.languagesList.length) lines.push(`Languages ${d.languagesList.join(", ")}`);
+    if (d.gearList && d.gearList.length) lines.push(`Gear ${d.gearList.join(", ")}`);
+    if (d.cr || d.pb || d.xp) { const bits: string[] = []; if (d.cr) bits.push(`CR ${d.cr}`); if (pbNum) bits.push(`PB ${fmtSigned(pbNum)}`); if (d.xp) bits.push(`XP ${d.xp}`); if (bits.length) lines.push(bits.join("; ")); } lines.push("");
     if (entries && entries.length) {
         const groups: Record<string, typeof entries> = { trait: [], action: [], bonus: [], reaction: [], legendary: [] } as any;
         for (const e of entries) { (groups[e.category] ||= []).push(e); }
