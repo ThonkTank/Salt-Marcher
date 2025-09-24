@@ -8,11 +8,81 @@ import {
   CREATURE_ABILITIES,
   CREATURE_ALIGNMENT_GOOD_EVIL,
   CREATURE_ALIGNMENT_LAW_CHAOS,
+  CREATURE_CONDITION_PRESETS,
+  CREATURE_DAMAGE_PRESETS,
+  CREATURE_PASSIVE_PRESETS,
   CREATURE_SIZES,
   CREATURE_SKILLS,
   CREATURE_TYPES,
   type CreatureAbilityKey,
 } from "./presets";
+
+interface PresetSelectModel {
+  get(): string[];
+  add(value: string): void;
+  remove(index: number): void;
+}
+
+function mountPresetSelectEditor(
+  parent: HTMLElement,
+  title: string,
+  options: readonly string[],
+  model: PresetSelectModel,
+  customPlaceholder?: string,
+) {
+  const setting = new Setting(parent).setName(title);
+  const row = setting.controlEl.createDiv({ cls: "sm-cc-searchbar" });
+  const select = row.createEl("select") as HTMLSelectElement;
+  const blank = select.createEl("option", { text: "Auswahl…" }) as HTMLOptionElement;
+  blank.value = "";
+  for (const option of options) {
+    const opt = select.createEl("option", { text: option }) as HTMLOptionElement;
+    opt.value = option;
+  }
+  try { enhanceSelectToSearch(select, "Such-dropdown…"); } catch {}
+
+  let customInput: HTMLInputElement | null = null;
+  if (customPlaceholder) {
+    customInput = row.createEl("input", {
+      attr: { type: "text", placeholder: customPlaceholder, "aria-label": customPlaceholder },
+    }) as HTMLInputElement;
+    (customInput.style as any).width = "22ch";
+  }
+
+  const addBtn = row.createEl("button", { text: "+ Hinzufügen" });
+  const chips = setting.controlEl.createDiv({ cls: "sm-cc-chips" });
+
+  const renderChips = () => {
+    chips.empty();
+    model.get().forEach((txt, index) => {
+      const chip = chips.createDiv({ cls: "sm-cc-chip" });
+      chip.createSpan({ text: txt });
+      const removeBtn = chip.createEl("button", { text: "×" });
+      removeBtn.onclick = () => {
+        model.remove(index);
+        renderChips();
+      };
+    });
+  };
+
+  addBtn.onclick = () => {
+    let value = select.value;
+    const customValue = customInput?.value.trim();
+    if (customValue) {
+      value = customValue;
+    }
+    if (!value) {
+      select.value = "";
+      return;
+    }
+    model.add(value.trim());
+    select.value = "";
+    if (customInput) customInput.value = "";
+    renderChips();
+  };
+
+  renderChips();
+}
 
 export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) {
   const root = parent.createDiv();
@@ -173,5 +243,50 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
     add: (value) => data.languagesList!.push(value),
     remove: (index) => data.languagesList!.splice(index, 1),
   });
+
+  const ensureStringList = (key: keyof StatblockData & string): string[] => {
+    const current = (data as any)[key];
+    if (Array.isArray(current)) return current as string[];
+    const arr: string[] = [];
+    (data as any)[key] = arr;
+    return arr;
+  };
+  const makeModel = (list: string[]): PresetSelectModel => ({
+    get: () => list,
+    add: (value: string) => {
+      const trimmed = value.trim();
+      if (!trimmed) return;
+      if (!list.includes(trimmed)) list.push(trimmed);
+    },
+    remove: (index: number) => {
+      list.splice(index, 1);
+    },
+  });
+
+  const passives = ensureStringList("passivesList");
+  mountPresetSelectEditor(root, "Passive Werte", CREATURE_PASSIVE_PRESETS, makeModel(passives), "Eigenen passiven Wert eingeben");
+
+  const vulnerabilities = ensureStringList("damageVulnerabilitiesList");
+  mountPresetSelectEditor(root, "Verwundbarkeiten", CREATURE_DAMAGE_PRESETS, makeModel(vulnerabilities), "Eigene Verwundbarkeit eingeben");
+
+  const resistances = ensureStringList("damageResistancesList");
+  mountPresetSelectEditor(root, "Resistenzen", CREATURE_DAMAGE_PRESETS, makeModel(resistances), "Eigene Resistenz eingeben");
+
+  const immunities = ensureStringList("damageImmunitiesList");
+  mountPresetSelectEditor(root, "Immunitäten (Schaden)", CREATURE_DAMAGE_PRESETS, makeModel(immunities), "Eigene Immunität eingeben");
+
+  const conditionImmunities = ensureStringList("conditionImmunitiesList");
+  mountPresetSelectEditor(root, "Zustandsimmunitäten", CREATURE_CONDITION_PRESETS, makeModel(conditionImmunities), "Eigene Zustandsimmunität eingeben");
+
+  const gear = ensureStringList("gearList");
+  mountTokenEditor(root, "Ausrüstung/Gear", {
+    getItems: () => gear,
+    add: (value) => {
+      const trimmed = value.trim();
+      if (!trimmed) return;
+      if (!gear.includes(trimmed)) gear.push(trimmed);
+    },
+    remove: (index) => gear.splice(index, 1),
+  }, { placeholder: "Gegenstand oder Hinweis…", addButtonLabel: "+ Hinzufügen" });
 }
 
