@@ -1,0 +1,75 @@
+# Cartographer – Overview
+
+## Struktur
+
+```
+src/apps/cartographer/
+├─ editor/
+│  ├─ EditorOverview.txt   # Dokumentiert die Editor-Tooling-Module (Brush, Tool-API)
+│  └─ tools/
+│     ├─ tools-api.ts      # Gemeinsame Tool-Schnittstelle für Cartographer-Editor-Modi
+│     ├─ brush-circle.ts   # SVG-Vorschaukreis für Brush-Tools
+│     └─ terrain-brush/
+│        ├─ brush-options.ts # Brush-Tool (UI, Radius-/Terrainwahl, Statushandling)
+│        ├─ brush.ts         # Persistiert Terrain-Änderungen + Live-Fill
+│        └─ brush-math.ts    # Hex-Radius-Berechnungen im odd-r Grid
+├─ index.ts                 # Obsidian-View inkl. Ribbon/Command-Anbindung
+├─ view-shell.ts            # Layout, Map-Stage und Modusverwaltung
+├─ modes/
+│  ├─ editor.ts             # Map-Editor-Modus (Tools, Brush, Sidebar-Panel)
+│  ├─ inspector.ts          # Inspector-Modus (Terrain & Notizen pro Hex bearbeiten)
+│  └─ travel-guide.ts       # Travel-Guide-Modus (Route/Token, Sidebar, Drag, Persistenz)
+├─ travel/
+│  ├─ domain/               # Route-/Token-Logik, Playback & Persistenz
+│  ├─ infra/                # Schnittstelle zwischen Domain & Renderer
+│  ├─ render/               # SVG-Zeichenhelfer für Route + Highlights
+│  └─ ui/                   # Travel-spezifische Sidebar-, Control- und Layer-Bausteine
+└─ CartographerOverview.txt # Dieses Dokument
+```
+
+## Features & Verantwortlichkeiten
+
+- **View-Registrierung:** `index.ts` meldet `VIEW_TYPE_CARTOGRAPHER` an, richtet Ribbon & Command ein und kümmert sich um Mount/Cleanup des Views.
+- **Layout-Shell:** `view-shell.ts` übernimmt das Cartographer-Grundlayout (Header + Body mit Map/Sidebar), verwaltet den Moduswechsel, bindet `createMapManager` für Open/Create/Delete ein und stellt `CartographerModeContext` inkl. `getOptions()` bereit.
+- **Map-Stage:** Rendert Karten via `createMapLayer`/`renderHexMap`, verwaltet `RenderHandles`, Hex-Klick-Delegation sowie Options-Parsing (`getFirstHexBlock` → `parseOptions`) und zeigt sinnvolle Platzhalter, wenn kein File oder kein Hex-Block vorliegt.
+- **Modus-System:** Stellt das Mode-Interface (`onEnter`, `onExit`, `onFileChange`, `onHexClick`, `onSave`) bereit, schaltet über ein Dropdown im Header zwischen Travel/Editor/Inspector um, delegiert Events und räumt Ressourcen deterministisch auf.
+- **Editor-Tooling:** `editor/` beherbergt die wiederverwendbare Tool-Infrastruktur (Schnittstelle, Brush-Vorschau, Terrain-Brush). `modes/editor.ts` konsumiert diese Module und mountet sie in das gemeinsame Sidebar-Panel.
+- **Inspector-Modus:** `modes/inspector.ts` ermöglicht Terrain- & Notizbearbeitung für das aktuell geklickte Hex, lädt/speichert Tiles über `hex-notes` und aktualisiert das Live-Fill via `RenderHandles`.
+- **Travel-Integration:** `modes/travel-guide.ts` montiert die Travel-Bausteine aus `travel/` (Sidebar, Layers, Domain/Playback) direkt im Cartographer und nutzt dafür ausschließlich die gemeinsamen Module.
+- **Travel-Modulpaket:** `travel/` stellt Domain-Logik, Rendering-Adapter und UI-Komponenten bereit und dient als Single Source of Truth für den Travel-Modus im Cartographer (Details siehe `travel/TravelGuideOverview.txt`).
+  
+
+## Dateibeschreibungen
+
+### `index.ts`
+- Exportiert `CartographerView` und `VIEW_TYPE_CARTOGRAPHER`.
+- Registriert Ribbon & Command, damit der View erreichbar ist.
+- Erzeugt einen Host (`cartographer-host`), mountet `view-shell.ts`, reicht `setFile`-Aufrufe weiter und räumt beim Schließen auf.
+
+### `view-shell.ts`
+- Implementiert `CartographerMode` & `CartographerModeContext` (inkl. `getOptions`) als zentrale Schnittstelle für Modi.
+- Baut Header, Body, Map- und Sidebar-Container mit `sm-cartographer`-Klassen auf.
+- Nutzt `createMapLayer` + `renderHexMap` zum Laden der Karte, aktualisiert `currentOptions` und leitet `hex:click`-Events an den aktiven Modus weiter.
+- Bindet `createMapManager`, um Header-Buttons (`Open`, `Create`, `Delete`) zu teilen und den Stage-Reload nach jeder State-Änderung zu koordinieren.
+- Registriert Travel-, Editor-, Inspector- sowie Beispiel-Modi und sorgt für konsistente `onEnter`/`onExit`/`onFileChange`-Sequenzen.
+
+### `modes/editor.ts`
+- Erzeugt das Editor-Panel im Sidebar-Host, zeigt Dateiname & Tool-Auswahl (derzeit nur Brush) und liefert Statusmeldungen.
+- Verwaltet Tool-Lifecycle (`mountPanel`, `onActivate`, `onMapRendered`, `onHexClick`) mit einem gemeinsamen `ToolContext`.
+- Reagiert auf `onFileChange`, übernimmt `RenderHandles`/Hex-Optionen vom Cartographer und aktualisiert den Brush-Kreis ohne Re-Render.
+- Greift auf die Tool-Schnittstelle & Brush-Module aus `editor/tools/*` zu und hält die Kompatibilität zum Legacy-Wrapper.
+
+### `modes/travel-guide.ts`
+- Travel-Mode mit Sidebar, Playback-Controls, Route-/Token-Layer, Drag-Controller und Kontextmenü.
+- Lädt Terrains einmalig, verwaltet `createTravelLogic` + `handleStateChange` und räumt beim Dateiwechsel konsequent auf.
+- Persistiert den Token über `onSave` (`logic.persistTokenToTiles()`), damit Header-Speicheraktionen korrekt arbeiten.
+
+### `modes/inspector.ts`
+- Baut das Inspector-Panel im Sidebar-Host auf (Terrain-Select, Notizfeld, Statuszeile).
+- Lädt/speichert Tile-Daten mit `loadTile`/`saveTile` und debounced Speichervorgänge zur Schonung des Dateisystems.
+- Aktualisiert die Renderer-Fills live über `RenderHandles.setFill`, sobald Terrain geändert wird, und hält die Auswahl beim Karten-Reload konsistent.
+
+### `travel/`
+- Enthält Travel-spezifische Domain-, Infra-, Render- und UI-Bausteine; zentrale Beschreibung siehe `travel/TravelGuideOverview.txt`.
+- `travel/ui/*` bündelt Sidebar, Controls, Token-/Route-Layer und Drag-Controller für den Cartographer-Modus.
+- `travel/domain/actions.ts` bündelt Route-/Token-Logik und nutzt `infra/adapter.ts`, um Rendering-Layer (`ui/*`, `render/draw-route.ts`) lose zu koppeln.

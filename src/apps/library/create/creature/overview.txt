@@ -1,0 +1,47 @@
+# Creature Creator Dialog – Overview
+
+## Struktur
+```
+src/apps/library/create/creature/
+├── index.ts                  # Barrel-Exports für Modal & Abschnitts-Mounter
+├── modal.ts                  # Einstiegspunkt, orchestriert Abschnitte & Submit-Flow
+├── presets.ts                # Vordefinierte Auswahlwerte (Größen, Typen, Skills, Sinne, Sprachen …)
+├── section-basics.ts         # Identity-, Kernwert- und Bewegungs-Editor
+├── section-stats-and-skills.ts # Ability-Zweispalten-Layout mit bündiger Kopfzeile, kompakten Zweistellen-Inputs & Skill-Editor mit Mod-Neuberechnung
+├── section-senses-and-defenses.ts # Sinne, Sprachen, Passives, Schadenstyp-Antworten & Gear
+├── section-utils.ts          # Geteilte Preset-/Damage-Editor-Helfer für Sections
+├── section-entries.ts        # Strukturierte Einträge (Traits, Aktionen …)
+└── section-spells-known.ts   # UI-Abschnitt für bekannte Zauber und Auswahl-Logik
+```
+
+## Dialog-Flow
+1. **Initialisierung:** `CreateCreatureModal` legt ein frisches `StatblockData` an, verhindert Outside-Click-Closes und startet das asynchrone Laden der Zauberdateiliste.
+2. **Abschnitts-Mounting:** Das Modal ruft nacheinander `mountCreatureBasicsSection`, `mountCreatureStatsAndSkillsSection`, `mountCreatureSensesAndDefensesSection`, `mountEntriesSection` und `mountSpellsKnownSection` auf. Jede Section erhält das gemeinsame Datenobjekt und pflegt ihren Teilbereich eigenständig.
+3. **Grunddaten & Bewegung:** Die Basics-Section eröffnet mit einer zweispaltigen Kartenzeile für Name und Typ, legt Größe sowie die doppelte Gesinnung bündig in der zweiten Zeile ab, spannt den Bewegungs-Editor über alle vier Spalten und präsentiert AC/HP/Init/PB/HD/CR/XP als symmetrische Kartenreihen mit gleich hohen Inputs; die kombinierte Such-/Input-Leiste inklusive Hover-Toggle und `+`-Button erzeugt weiterhin Speed-Chips in `speedList`.
+4. **Ability/Skill-Bereich:** Die Stats-&-Skills-Section rendert ein zweispaltiges, bündig ausgerichtetes Ability-Grid mit vorgelagerter Mod/Save-Kopfzeile, zweistelligen Score-Inputs und minimalen Save-Abständen, verwaltet Skill-Chips samt Expertise-Toggle und berechnet Modifikatoren nach jeder Änderung automatisch.
+5. **Sinne/Verteidigung:** Sinne/Sprachen/Passives sitzen in einem gemeinsamen Block mit oberer Trennerlinie; beide Preset-Dropdowns sind rechtsbündig ausgerichtet, teilen sich feste Eingabebreiten und kompakte, rechteckige `+`-Buttons. Schadenstyp-Reaktionen nutzen weiterhin einen Editor mit Status-Schaltern, Zustandsimmunitäten und Gear werden via Chips gepflegt.
+6. **Submission:** Buttons am Ende schließen das Modal oder reichen das `StatblockData` an den Callback weiter; `onClose`/`onunload` stellen Pointer-Events des Hintergrunds wieder her.
+
+## Features & Zuständigkeiten
+- **Modulare Abschnittsstruktur:** Jede Eingabegruppe ist in ein eigenes Skript ausgelagert, wodurch UI-Logik, State-Hooks und Preset-Helfer getrennt wartbar bleiben.【F:src/apps/library/create/creature/modal.ts†L5-L55】
+- **Grunddaten & Movement-Chips:** Die Basics-Section staffelt Name/Typ, Größe/Gesinnung, Bewegung und Kernwerte in einem vier-spaltigen Kartenraster mit konsistenten 32px-Kontrollen, wodurch visuelle Balance, gleichmäßige Breiten und saubere Bewegungs-Chips gewährleistet bleiben.【F:src/apps/library/create/creature/section-basics.ts†L19-L204】【F:src/app/css.ts†L76-L105】
+- **Ability-Zeilen mit Live-Mods:** Ability Scores, Saves und Skill-Proficiencies sitzen in einem zweispaltigen, bündig ausgerichteten Reihenlayout mit geteilter Mod/Save-Headerzeile; die Inputs wachsen jetzt spürbar breiter, die beiden Spalten strecken sich über die volle Modalbreite und bleiben dennoch responsive – Änderungen aktualisieren Modifikatoren, Save-Boni und Expertise-Synchronisation sofort.【F:src/apps/library/create/creature/section-stats-and-skills.ts†L32-L217】【F:src/app/css.ts†L253-L285】
+- **Suchbare Sinne/Sprachen & Schadenstyp-Editor:** Ein neuer Sinne/Sprachen-Block bringt eine sichtbare Trennerlinie, gleich breite Suchdropdowns und verkleinerte rechteckige `+`-Buttons mit rechtsbündigem Layout, während der kombinierte Schadenstyp-Editor Resistenz/Immunität/Verwundbarkeit weiter über Status-Schalter steuert.【F:src/apps/library/create/creature/section-senses-and-defenses.ts†L44-L108】【F:src/apps/library/create/creature/section-utils.ts†L24-L129】【F:src/app/css.ts†L111-L162】
+- **Geteilte Helfer:** `section-utils.ts` stellt `mountPresetSelectEditor` und `mountDamageResponseEditor` bereit, damit mehrere Abschnitte identische Chip-UX und Validierung nutzen können.【F:src/apps/library/create/creature/section-utils.ts†L1-L210】
+- **Strukturierte Einträge & Zauber:** Traits/Aktionen und Zauberlisten behalten ihre bestehenden Module mit Typeahead- und Berechnungslogik; sie hängen direkt an `StatblockData` und reagieren auf Refresh-Signale aus dem Modal.【F:src/apps/library/create/creature/section-entries.ts†L12-L175】【F:src/apps/library/create/creature/section-spells-known.ts†L5-L68】
+
+## Design Guidelines
+- **Balance & Symmetrie:** Paare Felder so, dass jede Rasterzeile den gleichen visuellen Schwerpunkt behält; nutze `--span`-Klassen nur, wenn ein Element bewusst über mehrere Spalten laufen soll, damit die vier Spalten gleichmäßig bleiben.【F:src/apps/library/create/creature/section-basics.ts†L23-L120】【F:src/app/css.ts†L76-L105】
+- **Konsistenz & Affordance:** Halte Eingabe-Höhen und -Breiten mit den Klassen `sm-cc-basics__text-input`/`sm-cc-basics__select` konstant, damit alle Controls dieselbe Interaktionsfläche besitzen und den Dialograhmen sauber füllen.【F:src/apps/library/create/creature/section-basics.ts†L28-L109】【F:src/app/css.ts†L98-L105】
+- **Nähe & Hierarchie:** Gruppiere verwandte Werte (z. B. AC/HP/Init/PB sowie HD/CR/XP) in aufeinanderfolgenden Rasterzellen, damit der Nutzer zusammengehörige Daten direkt scannt; oberste Zeile reserviert für Identität (Name/Typ).【F:src/apps/library/create/creature/section-basics.ts†L31-L140】
+
+## Skript-Details
+- **`index.ts`:** Bündelt alle öffentlichen Einstiegspunkte (Modal + Sections) und hält Importpfade für externe Verbraucher schlank.【F:src/apps/library/create/creature/index.ts†L1-L6】
+- **`modal.ts`:** Obsidian-Modal, das Lebenszyklus, Abschnitts-Mounting, Spell-Refresh und Submit-Handling koordiniert.【F:src/apps/library/create/creature/modal.ts†L1-L62】
+- **`presets.ts`:** Zentralisiert Auswahlwerte für Größen, Typen, Gesinnung, Bewegungsarten, Skills, Sinne, Sprachen, Passives, Schadenstypen und Zustände.【F:src/apps/library/create/creature/presets.ts†L1-L183】
+- **`section-basics.ts`:** Baut ein vier-spaltiges Kartenraster für Name/Typ, Größe/Gesinnung, Bewegung und Kernwerte auf, sorgt für gleich hohe Controls (32 px), kapselt den Bewegungs-Editor mit Hover-Toggle und legt neue Speed-Einträge weiterhin als Chips in `speedList` ab.【F:src/apps/library/create/creature/section-basics.ts†L19-L204】【F:src/app/css.ts†L76-L105】
+- **`section-stats-and-skills.ts`:** Rendert das zweispaltige Ability-Grid mit bündiger Mod/Save-Headerleiste, nun vollflächig dehnenden Spalten und breiteren Score-Inputs, dazu eine rechtsbündige Skill-Suche mit Chips/Expertise und Mod-Synchronisation via `shared/stat-utils`.【F:src/apps/library/create/creature/section-stats-and-skills.ts†L32-L217】【F:src/app/css.ts†L253-L285】
+- **`section-senses-and-defenses.ts`:** Kapselt Sinne/Sprachen/Passives in einem gebündelten Block mit Trennerlinie, steuert über `mountPresetSelectEditor` rechtsbündige Dropdowns mit festen Breiten und kompakten rechteckigen `+`-Buttons und kombiniert Schadenstypen mit Statusauswahl; Gear und Zustandsimmunitäten bleiben Chip-basiert.【F:src/apps/library/create/creature/section-senses-and-defenses.ts†L1-L108】
+- **`section-utils.ts`:** Gemeinsame Helper zum Mounten von Preset-Suchdropdowns (inklusive konfigurierbarer Standard-Buttonbeschriftung) und Schadenstyp-Reaktionseditoren für mehrere Sections.【F:src/apps/library/create/creature/section-utils.ts†L1-L210】
+- **`section-entries.ts`:** Strukturierte Eingabemaske für Traits/Aktionen, inklusive Auto-Berechnungen für To-Hit, Saves und Schaden.【F:src/apps/library/create/creature/section-entries.ts†L12-L175】
+- **`section-spells-known.ts`:** Spell-Liste mit Typeahead, Grad/Nutzung/Notizen und Refresh-Hook fürs Modal.【F:src/apps/library/create/creature/section-spells-known.ts†L5-L68】
