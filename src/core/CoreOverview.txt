@@ -14,6 +14,7 @@ Der Core-Layer bündelt sämtliche fachlichen Services des Plugins, die unabhän
 | `save.ts` | Placeholder für Persistenz-Funktionen (`saveMap`, `saveMapAs`) – dient als Erweiterungspunkt. |
 | `terrain-store.ts` | Zentraler Dateiservice für `Terrains.md` (Ensure, Parser, Stringifier, Load/Save, Watcher + Workspace-Event). Legt die Datei mit `smList: true` an. |
 | `terrain.ts` | Verwaltet Standard- und Laufzeit-Terrainpaletten (Farben + Geschwindigkeiten) und bietet Mutatoren (`setTerrainPalette`, `setTerrains`). |
+| `translator.ts` | Stellt `translateText` bereit, ein schlankes Fetch-Utility für Google Translate (inkl. Fallback bei Fehlern). |
 
 ### Hex-Mapper Subsystem (`hex-mapper/`)
 
