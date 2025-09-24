@@ -31,51 +31,70 @@ export function mountCreatureStatsAndSkillsSection(
 
   const statsGrid = abilitySection.createDiv({ cls: "sm-cc-stats-grid" });
 
-  for (const s of CREATURE_ABILITIES) {
-    const statEl = statsGrid.createDiv({ cls: "sm-cc-stat" });
+  const abilityByKey = new Map<CreatureAbilityKey, (typeof CREATURE_ABILITIES)[number]>(
+    CREATURE_ABILITIES.map((def) => [def.key, def]),
+  );
+  const statColumns: CreatureAbilityKey[][] = [
+    ["str", "dex", "con"],
+    ["int", "wis", "cha"],
+  ];
 
-    const header = statEl.createDiv({ cls: "sm-cc-stat__header" });
-    header.createSpan({ text: s.label });
-    const scoreWrap = header.createDiv({ cls: "sm-inline-number sm-cc-stat__score" });
-    const score = scoreWrap.createEl("input", {
-      attr: { type: "number", placeholder: "10", min: "0", step: "1" },
-    }) as HTMLInputElement;
-    const dec = scoreWrap.createEl("button", { text: "−", cls: "btn-compact" });
-    const inc = scoreWrap.createEl("button", { text: "+", cls: "btn-compact" });
-    score.value = (data as any)[s.key] || "";
-    const step = (d: number) => {
-      const cur = parseInt(score.value, 10) || 0;
-      const next = Math.max(0, cur + d);
-      score.value = String(next);
-      (data as any)[s.key] = score.value.trim();
-      updateMods();
-    };
-    dec.onclick = () => step(-1);
-    inc.onclick = () => step(1);
-    score.addEventListener("input", () => {
-      (data as any)[s.key] = score.value.trim();
-      updateMods();
-    });
+  for (const keys of statColumns) {
+    const columnEl = statsGrid.createDiv({ cls: "sm-cc-stats-col" });
+    for (const key of keys) {
+      const ability = abilityByKey.get(key);
+      if (!ability) continue;
 
-    const modRow = statEl.createDiv({ cls: "sm-cc-stat__mod" });
-    modRow.createSpan({ text: "Mod" });
-    const modOut = modRow.createSpan({ cls: "sm-cc-stat__mod-value", text: "+0" });
+      const row = columnEl.createDiv({ cls: "sm-cc-stat-row" });
+      row.createSpan({ cls: "sm-cc-stat-row__label", text: ability.label });
 
-    const saveRow = statEl.createDiv({ cls: "sm-cc-stat__save" });
-    saveRow.createSpan({ cls: "sm-cc-stat__save-label", text: "Save mod" });
-    const saveControls = saveRow.createDiv({ cls: "sm-cc-stat__save-controls" });
-    const saveCb = saveControls.createEl("input", {
-      attr: { type: "checkbox", "aria-label": `${s.label} Save Proficiency` },
-    }) as HTMLInputElement;
-    const saveOut = saveControls.createSpan({ cls: "sm-cc-stat__save-value", text: "+0" });
+      const scoreWrap = row.createDiv({ cls: "sm-inline-number sm-cc-stat-row__score" });
+      const score = scoreWrap.createEl("input", {
+        attr: { type: "number", placeholder: "10", min: "0", step: "1" },
+      }) as HTMLInputElement;
+      const dec = scoreWrap.createEl("button", { text: "−", cls: "btn-compact" });
+      const inc = scoreWrap.createEl("button", { text: "+", cls: "btn-compact" });
+      score.value = (data as any)[ability.key] || "";
+      const step = (d: number) => {
+        const cur = parseInt(score.value, 10) || 0;
+        const next = Math.max(0, cur + d);
+        score.value = String(next);
+        (data as any)[ability.key] = score.value.trim();
+        updateMods();
+      };
+      dec.onclick = () => step(-1);
+      inc.onclick = () => step(1);
+      score.addEventListener("input", () => {
+        (data as any)[ability.key] = score.value.trim();
+        updateMods();
+      });
 
-    ensureSets();
-    saveCb.checked = !!(data.saveProf as any)[s.key];
-    saveCb.addEventListener("change", () => {
-      (data.saveProf as any)[s.key] = saveCb.checked;
-      updateMods();
-    });
-    abilityElems.set(s.key, { score, mod: modOut, save: saveCb, saveMod: saveOut });
+      row.createSpan({ cls: "sm-cc-stat-row__mod-label", text: "Mod" });
+      const modOut = row.createSpan({
+        cls: "sm-cc-stat-row__mod-value",
+        text: "+0",
+      });
+
+      const saveWrap = row.createDiv({ cls: "sm-cc-stat-row__save" });
+      const saveLabel = saveWrap.createEl("label", { cls: "sm-cc-stat-row__save-prof" });
+      const saveCb = saveLabel.createEl("input", {
+        attr: { type: "checkbox", "aria-label": `${ability.label} Save Proficiency` },
+      }) as HTMLInputElement;
+      saveLabel.createSpan({ text: "Save" });
+      const saveOut = saveWrap.createSpan({
+        cls: "sm-cc-stat-row__save-mod",
+        text: "+0",
+      });
+
+      ensureSets();
+      saveCb.checked = !!(data.saveProf as any)[ability.key];
+      saveCb.addEventListener("change", () => {
+        (data.saveProf as any)[ability.key] = saveCb.checked;
+        updateMods();
+      });
+
+      abilityElems.set(ability.key, { score, mod: modOut, save: saveCb, saveMod: saveOut });
+    }
   }
 
   const skillAbilityMap = new Map<string, CreatureAbilityKey>(CREATURE_SKILLS);
