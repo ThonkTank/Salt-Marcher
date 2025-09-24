@@ -1,0 +1,142 @@
+# Library – Overview
+
+Einheitliche Bibliothek mit gemeinsamem Header und identischer Listen‑UX für vier Modi:
+- Terrains
+- Regionen
+- Kreaturen
+- Zauber (Spells)
+
+Die Library bündelt Suche, Erstellen‑Fluss und Öffnen der Quelldateien. Sie beobachtet ihre Datenquellen live und aktualisiert die Liste ohne Reload. Ziel ist ein zentraler, erweiterbarer Einstiegspunkt für Inhalte, die andere Features (z. B. Cartographer/Travel) referenzieren.
+
+## Struktur
+
+```
+src/apps/library/
+├─ core/
+│  ├─ creature-files.ts     # FS‑Utilities für Creatures (ensure/list/watch/create)
+│  └─ spell-files.ts        # FS‑Utilities für Spells (ensure/list/watch/create)
+├─ create/
+│  ├─ creature/
+│  │  ├─ index.ts             # Re-exports Modal & Creature-Sections für externe Zugriffe
+│  │  ├─ modal.ts             # Modal zum Anlegen von Creatures (koordiniert die Abschnitte)
+│  │  ├─ presets.ts           # Zentralisierte Auswahllisten (Größe, Typ, Skills, Bewegungen …)
+│  │  ├─ section-core-stats.ts   # Abschnitt für Identität, Kernwerte, Saves & Sinne/Sprachen
+│  │  ├─ section-entries.ts      # Abschnitt für Traits/Aktionen/Legendäre Einträge mit Presets
+│  │  └─ section-spells-known.ts # Abschnitt für bekannte Zauber inkl. Typeahead-Suche
+│  ├─ spell/
+│  │  ├─ index.ts             # Re-export für externe Zugriffe auf das Spell-Modal
+│  │  └─ modal.ts             # Modal zum Anlegen von Spells
+│  ├─ index.ts                # Bündelt die Modal-Exporte für `view.ts`
+│  └─ shared/
+│     ├─ stat-utils.ts        # Gemeinsame Berechnungshelfer für Ability-Mods & Vorzeichenformatierung
+│     └─ token-editor.ts      # Gemeinsame Token-Editor-Utility für Chips-Eingaben
+├─ view.ts                  # Obsidian-View mit Modus‑Tabs, Suche, Liste
+└─ LibraryOverview.txt      # Dieses Dokument
+```
+
+## Features & Verantwortlichkeiten
+
+- Modus‑Tabs: Schaltet zwischen Creatures, Spells, Terrains, Regions.
+- Suche: Ein Textfeld filtert die Liste live (Prefix/Substring‑Priorisierung).
+- Erstellen‑Flow pro Modus:
+  - Terrains: legt neuen Eintrag mit Defaultwerten an (`#888888`, `speed: 1`).
+  - Regionen: legt neuen Eintrag ohne Terrain/Encounter an.
+  - Creatures/Spells: öffnet ein Modal, erzeugt eine `.md`‑Datei im passenden Ordner und öffnet sie im Editor.
+- Creature-Modal (`create/creature/modal.ts`) zerlegt das Formular in modulare Abschnitte (`create/creature/section-*.ts`) und orchestriert Mounting, State-Passing und Persistenz-Trigger. Gemeinsame Optionslisten (Größen, Typen, Gesinnung, Skills, Bewegungsarten) werden aus `create/creature/presets.ts` gespeist, sodass alle Segmente denselben Kanon verwenden.
+  - `creature/section-core-stats`: Steuert Identität, Ability Scores, Saves/Skills sowie Sinnes- und Sprachfelder inklusive Automatik-Berechnungen.
+  - `creature/section-entries`: Verwaltet Traits, Aktionen, legendäre Optionen und Presets für Treffer-/Schadenswerte.
+  - `creature/section-spells-known`: Liefert eine Typeahead-gestützte Spell-Liste mit Grad- und Nutzungskonfiguration, die auf den live gehaltenen Spell-Getter des Modals hört.
+- Geteilte Stat-Utilities (`create/shared/stat-utils.ts`) bündeln Parsing, Modifikator-Logik und Vorzeichenformatierung für alle Abschnitte – nutzbar auch für zukünftige Modals (z. B. Items oder NPC-Varianten).
+- Öffnen: Ein Button pro Eintrag öffnet die Quelle (Datei bzw. Sammeldatei) in Obsidian.
+- Live‑Updates: Nutzt Watcher für Ordner/Dateien, um die Liste bei Änderungen neu zu laden.
+
+## Datenflüsse
+
+- Terrains: `core/terrain-store.ts` stellt `ensureTerrainFile → loadTerrains → saveTerrains → watchTerrains` bereit. Die Library parst/validiert und schreibt Einträge konsistent (inkl. „leeres Terrain“ mit `transparent` und `speed: 1`).
+- Regionen: `core/regions-store.ts` analog mit `ensureRegionsFile → loadRegions → saveRegions → watchRegions`. Einträge speichern ihren Namen, Terrain‑Referenz und optionale Encounter‑Odds (`1/n`).
+- Creatures: `apps/library/core/creature-files.ts` verwaltet den Ordner `SaltMarcher/Creatures/` (Ensure/List/Watch/Create). Dateien sind Markdown mit YAML‑Frontmatter; strukturierte Einträge können als JSON in FM abgelegt werden.
+- Spells: `apps/library/core/spell-files.ts` verwaltet `SaltMarcher/Spells/` (Ensure/List/Watch/Create). Dateien sind Markdown mit YAML‑Frontmatter; Text liegt im Body.
+
+## Dateibeschreibungen
+
+### `view.ts`
+- Obsidian‑View `VIEW_LIBRARY` mit Modus‑Tabs, Suchfeld und Ergebnisliste.
+- Lädt initial alle Quellen: Creatures, Spells, Terrains, Regions.
+- Registriert Watcher: `watchCreatureDir`, `watchSpellDir`, `watchTerrains`, `watchRegions` → ruft `renderList()` bei Änderungen.
+- Terrains/Regions: Inline‑Bearbeitung (Inputs) mit sofortiger Persistenz (`saveTerrains`/`saveRegions`).
+- Nutzt `enhanceSelectToSearch` für komfortable Dropdowns (z. B. Terrain‑Zuweisung in Regions).
+
+### `core/creature-files.ts`
+- `ensureCreatureDir`, `listCreatureFiles`, `watchCreatureDir`, `createCreatureFile`.
+- Verantwortlich für Verzeichnis‑Struktur und Dateibenennung.
+
+### `core/spell-files.ts`
+- `ensureSpellDir`, `listSpellFiles`, `watchSpellDir`, `createSpellFile`.
+- Analog zu Creatures, eigener Ordner.
+
+### `create/creature/modal.ts`
+- Orchestriert den gesamten Creature-Erstellungsfluss: setzt das Modal auf, lädt verfügbare Zauber, mountet die Abschnitts-Module und verarbeitet Bewegung sowie Speichern.
+- Reicht die Zauber-Liste als Getter weiter und stößt nach dem Async-Laden ein Refresh der Spell-Sektion an, damit neue Dateien ohne erneutes Öffnen sichtbar werden.
+- Warum: Hält den Workflow zentral und delegiert UI-Details an spezialisierte Sektionen, sodass Erweiterungen (z. B. neue Abschnitte) gebündelt erfolgen.
+
+### `create/creature/presets.ts`
+- Kapselt alle Konstanten/Typen für Dropdowns und Automatisierungen (Größen, Typen, Gesinnungsteile, Ability-Definitionen, Skill-Mappings, Entry-Kategorien, Bewegungsarten).
+- Warum: Statt mehrfacher Inline-Listen verwenden alle Sektionen dieselben Presets, was Pflegeaufwand reduziert und Erweiterungen an einer Stelle bündelt.
+
+### `create/creature/index.ts`
+- Re-exportiert das Modal sowie die Creature-Sections für externe Consumer. Dadurch bleibt die Pfadstruktur (`create/creature/modal` & `create/creature/section-*`) intern, während Aufrufer (`view.ts` oder Tests) nur `create/creature` adressieren müssen.
+
+### `create/index.ts`
+- Fasst die Modal-Exports (`CreateCreatureModal`, `CreateSpellModal`) zusammen. `view.ts` bindet beide über einen Import, was Importketten vereinfacht und die Ordnerstruktur vor Außenstehenden kapselt.
+
+### `create/creature/section-core-stats.ts`
+- Rendert Identität, Kernwerte, Saves/Skills sowie Sinne und Sprachen inklusive automatischer Modifikator- und Proficiency-Berechnung.
+- Nutzt den gemeinsamen Token-Editor (`shared/token-editor`) für Sinne/Sprachen, damit Chips-UX und Add/Remove-Verhalten identisch mit anderen Formularteilen bleibt.
+- Zieht Berechnungshelfer (`shared/stat-utils`) für Ability-Modifikatoren und Vorzeichenformatierung heran, sodass dieselben Regeln wie in Eintragssektionen gelten.
+- Warum: Bündelt alle abhängigen Formeln (z. B. PB, Ability Mods) und sorgt dafür, dass Änderungen an Attributen sofort in allen Feldern sichtbar werden.
+
+### `create/creature/section-entries.ts`
+- Verwaltet Trait/Aktion/Legendär-Einträge inkl. Preset-Formeln, Auto-Berechnung von Treffer- und Schadenswerten sowie zusätzlichen Feldern (Saves, Recharge, Text).
+- Greift auf `shared/stat-utils` zurück, um Treffer- und Schadenswerte konsistent mit den Kernwerten zu berechnen.
+- Warum: Die komplexeste Sektion des Modals bleibt isoliert wartbar; Presets und Logik lassen sich hier ergänzen, ohne den Modal-Controller aufzublähen. Unterstützt Rückmeldungen an das Modal (z. B. Dirty-State), ohne dass andere Abschnitte davon beeinflusst werden.
+
+### `create/creature/section-spells-known.ts`
+- Stellt den Zauber-Selector mit Typeahead, Grad/Nutzungsfeldern und Ergebnisliste bereit und liest Treffer bei jedem Rendern per Getter, sodass asynchron geladene Zauber sofort verfügbar sind.
+- Warum: Entkoppelt die Such-/Listenlogik von der Modal-Hülle und ermöglicht Wiederverwendung bzw. gezielte Anpassungen am Spell-UX. Die Sektion reagiert auf Refresh-Signale des Modals, sobald neue Spell-Dateien auftauchen.
+
+### `create/shared/stat-utils.ts`
+- Fasst `parseIntSafe`, `abilityMod` und `formatSigned` zusammen, damit UI-Sektionen identische Rechenregeln verwenden.
+- Geeignet für weitere Modals (z. B. Item- oder NPC-Editoren), die Trefferwürfe, Saves oder Schadensformeln automatisch ableiten möchten.
+- Warum: Reduziert Duplikate, verhindert auseinanderlaufende Formeln und erleichtert Tests für gemeinsames Verhalten.
+
+### `create/spell/modal.ts`
+- Modal zum Anlegen neuer Zauberdateien mit Komfortfeldern und direktem Aufruf von `createSpellFile`.
+- Verwendet `shared/token-editor`, um die Klassenliste als Chip-Liste zu bearbeiten und dieselbe UX wie in Creature-Abschnitten zu bieten.
+- Warum: Dedizierte UI für Spell-Erstellung; bleibt unabhängig vom Creature-Flow.
+
+### `create/shared/token-editor.ts`
+- Kapselt Setting-Aufbau, Input-Handling und Chip-Rendering für freie Listen (z. B. Klassen, Sinne, Sprachen).
+- Bietet optionale Add/Remove-Callbacks und einen Refresh-Hook, um konsistente Token-Editoren in allen Formularen zu gewährleisten.
+
+### `create/spell/index.ts`
+- Exportiert `CreateSpellModal` mit kurzem Pfad und erlaubt konsistente Aggregation über `create/index.ts`.
+
+## Interaktion mit Core & UI
+
+- Terrains: Änderungen werden über `saveTerrains` geschrieben; `watchTerrains` aktualisiert die Library‑Liste und triggert global die Terrain‑Palette (wird vom Renderer konsumiert).
+- Regionen: Schreiben über `saveRegions`, Live‑Reload über `watchRegions`.
+- UI: Nutzt `ui/search-dropdown.ts` für durchsuchbare Selects; allgemeine Notices/Dialoge stammen aus Obsidian.
+
+## Erweiterungspunkte
+
+- Weitere Modi: Die Library lässt sich um zusätzliche Tabs erweitern (z. B. „Items“), sofern die Datenquelle über ein analoges FS‑ oder Store‑Modul abstrahiert wird (ensure/list/save/watch).
+- Validierung: Zusätzliche Validierungslogik kann in die Inline‑Editoren (Inputs) integriert werden, ohne die Persistenz‑Services zu ändern.
+
+## Speicherorte & Formate
+
+- Terrains: `SaltMarcher/Terrains.md` mit einem ```terrain```‑Codeblock. Einträge: `Name: #aabbcc, speed: 0.8` oder `: transparent, speed: 1` für „leer“.
+- Regionen: `SaltMarcher/Regions.md` mit ```regions```‑Block. Einträge: `Name: Terrain, encounter: 1/n` (optional).
+- Creatures: Einzeldateien unter `SaltMarcher/Creatures/` (Markdown + YAML‑FM, optional strukturierte JSON‑Felder in FM).
+- Spells: Einzeldateien unter `SaltMarcher/Spells/` (Markdown + YAML‑FM, Text im Body).
+
+Diese Struktur hält Daten und Darstellung sauber getrennt. Die Library fungiert als zentraler, risikoarmer Editor‑Hub, während andere Features (z. B. Cartographer/Travel) diese Daten konsumieren, ohne eigene Editoren pflegen zu müssen.
