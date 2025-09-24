@@ -26,10 +26,10 @@ export function mountCreatureStatsAndSkillsSection(
     if (!data.skillsExpertise) data.skillsExpertise = [];
   };
 
-  const abilitySection = root.createDiv({ cls: "sm-cc-skills" });
-  abilitySection.createEl("h4", { text: "Stats" });
+  const statsSection = root.createDiv({ cls: "sm-cc-stats-section" });
+  statsSection.createEl("h4", { cls: "sm-cc-stats-section__title", text: "Stats" });
 
-  const statsGrid = abilitySection.createDiv({ cls: "sm-cc-stats-grid" });
+  const statsGrid = statsSection.createDiv({ cls: "sm-cc-stats-grid" });
   const statsGridHeader = statsGrid.createDiv({
     cls: "sm-cc-stats-grid__header",
   });
@@ -70,6 +70,7 @@ export function mountCreatureStatsAndSkillsSection(
       const score = scoreWrap.createEl("input", {
         attr: { type: "number", placeholder: "10", min: "0", step: "1" },
       }) as HTMLInputElement;
+      score.addClass("sm-cc-stat-row__score-input");
       const dec = scoreWrap.createEl("button", { text: "−", cls: "btn-compact" });
       const inc = scoreWrap.createEl("button", { text: "+", cls: "btn-compact" });
       score.value = (data as any)[ability.key] || "";
