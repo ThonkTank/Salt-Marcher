@@ -5595,57 +5595,174 @@ var LibraryView = class extends import_obsidian21.ItemView {
 
 // src/apps/layout/view.ts
 var import_obsidian22 = require("obsidian");
-
-// src/core/translator.ts
-var GOOGLE_TRANSLATE_ENDPOINT = "https://translate.googleapis.com/translate_a/single";
-async function translateText({ text, target, source }) {
-  if (!text.trim()) {
-    return { translatedText: "", detectedSourceLanguage: source };
-  }
-  const params = new URLSearchParams({
-    client: "gtx",
-    sl: source || "auto",
-    tl: target,
-    dt: "t",
-    q: text
-  });
-  try {
-    const response = await fetch(`${GOOGLE_TRANSLATE_ENDPOINT}?${params.toString()}`);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    const body = await response.json();
-    const translated = Array.isArray(body?.[0]) ? body[0].map((chunk) => chunk?.[0] ?? "").join("") : text;
-    const detected = typeof body?.[2] === "string" ? body[2] : source;
-    return { translatedText: translated, detectedSourceLanguage: detected };
-  } catch (error) {
-    console.error("translateText failed", error);
-    return { translatedText: text, detectedSourceLanguage: source };
-  }
-}
-
-// src/apps/layout/view.ts
 var VIEW_LAYOUT_EDITOR = "salt-layout-editor";
-var MIN_BOX_SIZE = 60;
-var LANG_OPTIONS = [
-  { value: "de", label: "Deutsch" },
-  { value: "en", label: "Englisch" },
-  { value: "fr", label: "Franz\xF6sisch" },
-  { value: "es", label: "Spanisch" },
-  { value: "it", label: "Italienisch" },
-  { value: "pl", label: "Polnisch" },
-  { value: "ja", label: "Japanisch" }
+var MIN_ELEMENT_SIZE = 60;
+var ELEMENT_DEFINITIONS = [
+  {
+    type: "label",
+    buttonLabel: "Label",
+    defaultLabel: "Label",
+    defaultDescription: "Beschreibender Text f\xFCr den Dialog.",
+    width: 220,
+    height: 120
+  },
+  {
+    type: "text-input",
+    buttonLabel: "Textfeld",
+    defaultLabel: "Label",
+    defaultPlaceholder: "Wert eingeben\u2026",
+    width: 260,
+    height: 140
+  },
+  {
+    type: "textarea",
+    buttonLabel: "Mehrzeiliges Feld",
+    defaultLabel: "Beschreibung",
+    defaultPlaceholder: "Text erfassen\u2026",
+    width: 320,
+    height: 180
+  },
+  {
+    type: "box",
+    buttonLabel: "Box",
+    defaultLabel: "Abschnitt",
+    defaultDescription: "Container f\xFCr zusammengeh\xF6rige Felder.",
+    width: 360,
+    height: 200
+  },
+  {
+    type: "separator",
+    buttonLabel: "Trennstrich",
+    defaultLabel: "",
+    width: 320,
+    height: 80
+  },
+  {
+    type: "dropdown",
+    buttonLabel: "Dropdown",
+    defaultLabel: "Auswahl",
+    defaultPlaceholder: "Option w\xE4hlen\u2026",
+    options: ["Option A", "Option B"],
+    width: 260,
+    height: 150
+  },
+  {
+    type: "search-dropdown",
+    buttonLabel: "Such-Dropdown",
+    defaultLabel: "Suchfeld",
+    defaultPlaceholder: "Suchen\u2026",
+    options: ["Erster Eintrag", "Zweiter Eintrag"],
+    width: 280,
+    height: 160
+  }
 ];
+var ELEMENT_DEFINITION_LOOKUP = new Map(
+  ELEMENT_DEFINITIONS.map((def) => [def.type, def])
+);
+var ATTRIBUTE_GROUPS = [
+  {
+    label: "Allgemein",
+    options: [
+      { value: "name", label: "Name" },
+      { value: "type", label: "Typ" },
+      { value: "size", label: "Gr\xF6\xDFe" },
+      { value: "alignmentLawChaos", label: "Gesinnung (Gesetz/Chaos)" },
+      { value: "alignmentGoodEvil", label: "Gesinnung (Gut/B\xF6se)" },
+      { value: "cr", label: "Herausforderungsgrad" },
+      { value: "xp", label: "Erfahrungspunkte" }
+    ]
+  },
+  {
+    label: "Kampfwerte",
+    options: [
+      { value: "ac", label: "R\xFCstungsklasse" },
+      { value: "initiative", label: "Initiative" },
+      { value: "hp", label: "Trefferpunkte" },
+      { value: "hitDice", label: "Trefferw\xFCrfel" },
+      { value: "pb", label: "Proficiency Bonus" }
+    ]
+  },
+  {
+    label: "Bewegung",
+    options: [
+      { value: "speedWalk", label: "Geschwindigkeit (Laufen)" },
+      { value: "speedFly", label: "Geschwindigkeit (Fliegen)" },
+      { value: "speedSwim", label: "Geschwindigkeit (Schwimmen)" },
+      { value: "speedBurrow", label: "Geschwindigkeit (Graben)" },
+      { value: "speedList", label: "Geschwindigkeiten (Liste)" }
+    ]
+  },
+  {
+    label: "Attribute",
+    options: [
+      { value: "str", label: "St\xE4rke" },
+      { value: "dex", label: "Geschicklichkeit" },
+      { value: "con", label: "Konstitution" },
+      { value: "int", label: "Intelligenz" },
+      { value: "wis", label: "Weisheit" },
+      { value: "cha", label: "Charisma" }
+    ]
+  },
+  {
+    label: "Rettungsw\xFCrfe & Fertigkeiten",
+    options: [
+      { value: "saveProf.str", label: "Rettungswurf: St\xE4rke" },
+      { value: "saveProf.dex", label: "Rettungswurf: Geschicklichkeit" },
+      { value: "saveProf.con", label: "Rettungswurf: Konstitution" },
+      { value: "saveProf.int", label: "Rettungswurf: Intelligenz" },
+      { value: "saveProf.wis", label: "Rettungswurf: Weisheit" },
+      { value: "saveProf.cha", label: "Rettungswurf: Charisma" },
+      { value: "skillsProf", label: "Fertigkeiten (Proficiencies)" },
+      { value: "skillsExpertise", label: "Fertigkeiten (Expertise)" }
+    ]
+  },
+  {
+    label: "Sinne & Sprache",
+    options: [
+      { value: "sensesList", label: "Sinne" },
+      { value: "languagesList", label: "Sprachen" }
+    ]
+  },
+  {
+    label: "Resistenzen & Immunit\xE4ten",
+    options: [
+      { value: "damageVulnerabilitiesList", label: "Verwundbarkeiten" },
+      { value: "damageResistancesList", label: "Resistenzen" },
+      { value: "damageImmunitiesList", label: "Schadensimmunit\xE4ten" },
+      { value: "conditionImmunitiesList", label: "Zustandsimmunit\xE4ten" }
+    ]
+  },
+  {
+    label: "Ausr\xFCstung & Ressourcen",
+    options: [
+      { value: "gearList", label: "Ausr\xFCstung" },
+      { value: "passivesList", label: "Passive Werte" }
+    ]
+  },
+  {
+    label: "Texte & Abschnitte",
+    options: [
+      { value: "traits", label: "Traits (Text)" },
+      { value: "actions", label: "Actions (Text)" },
+      { value: "legendary", label: "Legendary Actions (Text)" },
+      { value: "entries", label: "Strukturierte Eintr\xE4ge" },
+      { value: "actionsList", label: "Strukturierte Actions" },
+      { value: "spellsKnown", label: "Bekannte Zauber" }
+    ]
+  }
+];
+var ATTRIBUTE_LABEL_LOOKUP = new Map(
+  ATTRIBUTE_GROUPS.flatMap((group) => group.options.map((opt) => [opt.value, opt.label]))
+);
 var LayoutEditorView = class extends import_obsidian22.ItemView {
   constructor() {
     super(...arguments);
-    this.boxes = [];
-    this.selectedBoxId = null;
+    this.elements = [];
+    this.selectedElementId = null;
     this.canvasWidth = 800;
     this.canvasHeight = 600;
-    this.isTranslating = false;
     this.isImporting = false;
-    this.boxElements = /* @__PURE__ */ new Map();
+    this.elementElements = /* @__PURE__ */ new Map();
   }
   getViewType() {
     return VIEW_LAYOUT_EDITOR;
@@ -5659,17 +5776,17 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
   async onOpen() {
     this.contentEl.addClass("sm-layout-editor");
     this.render();
-    if (this.boxes.length === 0) {
+    if (this.elements.length === 0) {
       await this.importCreatureCreatorLayout({ silent: true });
     }
-    if (this.boxes.length === 0) {
-      this.createBox();
+    if (this.elements.length === 0) {
+      this.createElement("label");
     }
     this.refreshExport();
     this.updateStatus();
   }
   async onClose() {
-    this.boxElements.clear();
+    this.elementElements.clear();
     this.contentEl.empty();
     this.contentEl.removeClass("sm-layout-editor");
   }
@@ -5679,24 +5796,16 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     const header = root.createDiv({ cls: "sm-le-header" });
     header.createEl("h2", { text: "Layout Editor" });
     const controls = header.createDiv({ cls: "sm-le-controls" });
-    const addBtn = controls.createEl("button", { text: "Box hinzuf\xFCgen" });
-    addBtn.onclick = () => this.createBox();
+    const addGroup = controls.createDiv({ cls: "sm-le-control sm-le-control--stack" });
+    addGroup.createEl("label", { text: "Element hinzuf\xFCgen" });
+    const addWrap = addGroup.createDiv({ cls: "sm-le-add" });
+    for (const def of ELEMENT_DEFINITIONS) {
+      const btn = addWrap.createEl("button", { text: def.buttonLabel });
+      btn.onclick = () => this.createElement(def.type);
+    }
     this.importBtn = controls.createEl("button", { text: "Creature-Layout importieren" });
     this.importBtn.onclick = () => {
       void this.importCreatureCreatorLayout();
-    };
-    const languageGroup = controls.createDiv({ cls: "sm-le-control" });
-    languageGroup.createEl("label", { text: "Zielsprache" });
-    this.languageSelect = languageGroup.createEl("select");
-    for (const opt of LANG_OPTIONS) {
-      const option = this.languageSelect.createEl("option", { text: opt.label, attr: { value: opt.value } });
-      option.selected = opt.value === "en";
-    }
-    this.languageSelect.value = this.languageSelect.value || "en";
-    this.languageSelect.onchange = () => {
-      this.updateStatus();
-      this.refreshExport();
-      this.renderInspector();
     };
     const sizeGroup = controls.createDiv({ cls: "sm-le-control" });
     sizeGroup.createEl("label", { text: "Arbeitsfl\xE4che" });
@@ -5721,10 +5830,6 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       this.refreshExport();
     };
     sizeWrapper.createSpan({ text: "px" });
-    this.translateAllBtn = controls.createEl("button", { text: "Alle \xFCbersetzen" });
-    this.translateAllBtn.onclick = () => {
-      void this.translateAll();
-    };
     this.statusEl = header.createDiv({ cls: "sm-le-status" });
     const body = root.createDiv({ cls: "sm-le-body" });
     const stage = body.createDiv({ cls: "sm-le-stage" });
@@ -5733,7 +5838,7 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     this.canvasEl.style.height = `${this.canvasHeight}px`;
     this.registerDomEvent(this.canvasEl, "pointerdown", (ev) => {
       if (ev.target === this.canvasEl) {
-        this.selectBox(null);
+        this.selectElement(null);
       }
     });
     this.inspectorHost = body.createDiv({ cls: "sm-le-inspector" });
@@ -5757,7 +5862,7 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       }
     };
     this.exportEl = exportWrap.createEl("textarea", { cls: "sm-le-export__textarea", attr: { rows: "10", readonly: "readonly" } });
-    this.renderBoxes();
+    this.renderElements();
     this.sandboxEl = root.createDiv({ cls: "sm-le-sandbox" });
     this.sandboxEl.style.position = "absolute";
     this.sandboxEl.style.top = "-10000px";
@@ -5772,134 +5877,131 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     if (!this.canvasEl) return;
     this.canvasEl.style.width = `${this.canvasWidth}px`;
     this.canvasEl.style.height = `${this.canvasHeight}px`;
-    for (const box of this.boxes) {
-      const maxX = Math.max(0, this.canvasWidth - box.width);
-      const maxY = Math.max(0, this.canvasHeight - box.height);
-      box.x = clamp(box.x, 0, maxX);
-      box.y = clamp(box.y, 0, maxY);
-      const maxWidth = Math.max(MIN_BOX_SIZE, this.canvasWidth - box.x);
-      const maxHeight = Math.max(MIN_BOX_SIZE, this.canvasHeight - box.y);
-      box.width = clamp(box.width, MIN_BOX_SIZE, maxWidth);
-      box.height = clamp(box.height, MIN_BOX_SIZE, maxHeight);
-      this.syncBoxElement(box);
+    for (const element of this.elements) {
+      const maxX = Math.max(0, this.canvasWidth - element.width);
+      const maxY = Math.max(0, this.canvasHeight - element.height);
+      element.x = clamp(element.x, 0, maxX);
+      element.y = clamp(element.y, 0, maxY);
+      const maxWidth = Math.max(MIN_ELEMENT_SIZE, this.canvasWidth - element.x);
+      const maxHeight = Math.max(MIN_ELEMENT_SIZE, this.canvasHeight - element.y);
+      element.width = clamp(element.width, MIN_ELEMENT_SIZE, maxWidth);
+      element.height = clamp(element.height, MIN_ELEMENT_SIZE, maxHeight);
+      this.syncElementElement(element);
     }
   }
-  createBox() {
-    const width = Math.min(240, Math.max(160, Math.round(this.canvasWidth * 0.25)));
-    const height = Math.min(160, Math.max(120, Math.round(this.canvasHeight * 0.25)));
-    const box = {
-      id: `box-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+  createElement(type) {
+    const def = ELEMENT_DEFINITION_LOOKUP.get(type);
+    const width = def ? def.width : Math.min(240, Math.max(160, Math.round(this.canvasWidth * 0.25)));
+    const height = def ? def.height : Math.min(160, Math.max(120, Math.round(this.canvasHeight * 0.25)));
+    const element = {
+      id: `element-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      type,
       x: Math.max(0, Math.round((this.canvasWidth - width) / 2)),
       y: Math.max(0, Math.round((this.canvasHeight - height) / 2)),
       width,
       height,
-      label: "",
-      translationText: ""
+      label: def?.defaultLabel ?? type,
+      description: def?.defaultDescription,
+      placeholder: def?.defaultPlaceholder,
+      defaultValue: def?.defaultValue,
+      options: def?.options ? [...def.options] : void 0,
+      attributes: []
     };
-    this.boxes.push(box);
-    this.renderBoxes();
-    this.selectBox(box.id);
+    this.elements.push(element);
+    this.renderElements();
+    this.selectElement(element.id);
     this.refreshExport();
   }
-  renderBoxes() {
+  renderElements() {
     if (!this.canvasEl) return;
     const seen = /* @__PURE__ */ new Set();
-    for (const box of this.boxes) {
-      seen.add(box.id);
-      let el = this.boxElements.get(box.id);
+    for (const element of this.elements) {
+      seen.add(element.id);
+      let el = this.elementElements.get(element.id);
       if (!el) {
-        el = this.createBoxElement(box);
-        this.boxElements.set(box.id, el);
+        el = this.createElementNode(element);
+        this.elementElements.set(element.id, el);
       }
-      this.syncBoxElement(box);
+      this.syncElementElement(element);
     }
-    for (const [id, el] of Array.from(this.boxElements.entries())) {
+    for (const [id, el] of Array.from(this.elementElements.entries())) {
       if (!seen.has(id)) {
         el.remove();
-        this.boxElements.delete(id);
+        this.elementElements.delete(id);
       }
     }
     this.updateSelectionStyles();
     this.updateStatus();
   }
-  createBoxElement(box) {
+  createElementNode(element) {
     const el = this.canvasEl.createDiv({ cls: "sm-le-box" });
-    el.dataset.id = box.id;
+    el.dataset.id = element.id;
     const header = el.createDiv({ cls: "sm-le-box__header" });
     const handle = header.createSpan({ cls: "sm-le-box__handle", text: "\u283F" });
     handle.dataset.role = "move";
     const dims = header.createSpan({ cls: "sm-le-box__dims", text: "" });
     dims.dataset.role = "dims";
     const body = el.createDiv({ cls: "sm-le-box__body" });
+    body.createDiv({ cls: "sm-le-box__type", text: "" }).dataset.role = "type";
     body.createDiv({ cls: "sm-le-box__label", text: "(Label)" }).dataset.role = "label";
-    body.createDiv({ cls: "sm-le-box__translation", text: "" }).dataset.role = "translation";
+    body.createDiv({ cls: "sm-le-box__details", text: "" }).dataset.role = "details";
     const footer = el.createDiv({ cls: "sm-le-box__footer" });
-    footer.createSpan({ cls: "sm-le-box__source", text: "" }).dataset.role = "source";
+    footer.createSpan({ cls: "sm-le-box__attrs", text: "" }).dataset.role = "attrs";
     const resize = el.createDiv({ cls: "sm-le-box__resize" });
     resize.dataset.role = "resize";
     el.onclick = (ev) => {
       if (ev.target instanceof HTMLElement && ev.target.dataset.role === "resize") return;
-      this.selectBox(box.id);
+      this.selectElement(element.id);
     };
     handle.onpointerdown = (ev) => {
       ev.preventDefault();
-      this.selectBox(box.id);
-      this.beginDrag(box, ev);
+      this.selectElement(element.id);
+      this.beginDrag(element, ev);
     };
     resize.onpointerdown = (ev) => {
       ev.preventDefault();
-      this.selectBox(box.id);
-      this.beginResize(box, ev);
+      this.selectElement(element.id);
+      this.beginResize(element, ev);
     };
     return el;
   }
-  syncBoxElement(box) {
-    const el = this.boxElements.get(box.id);
+  syncElementElement(element) {
+    const el = this.elementElements.get(element.id);
     if (!el) return;
-    el.style.left = `${box.x}px`;
-    el.style.top = `${box.y}px`;
-    el.style.width = `${box.width}px`;
-    el.style.height = `${box.height}px`;
-    const label = el.querySelector('[data-role="label"]');
-    const translation = el.querySelector('[data-role="translation"]');
-    const dims = el.querySelector('[data-role="dims"]');
-    const source = el.querySelector('[data-role="source"]');
-    label?.setText(box.label || "(Label)");
-    if (box.translationPending) {
-      translation?.setText("\xDCbersetze\u2026");
-    } else if (box.translationError) {
-      translation?.setText(`Fehler: ${box.translationError}`);
-    } else {
-      translation?.setText(box.translationText || "");
+    el.style.left = `${element.x}px`;
+    el.style.top = `${element.y}px`;
+    el.style.width = `${element.width}px`;
+    el.style.height = `${element.height}px`;
+    const typeEl = el.querySelector('[data-role="type"]');
+    const labelEl = el.querySelector('[data-role="label"]');
+    const detailsEl = el.querySelector('[data-role="details"]');
+    const dimsEl = el.querySelector('[data-role="dims"]');
+    const attrsEl = el.querySelector('[data-role="attrs"]');
+    typeEl?.setText(getElementTypeLabel(element.type));
+    labelEl?.setText(element.label || "(Label)");
+    detailsEl?.setText(this.getElementDetails(element));
+    if (dimsEl) {
+      dimsEl.setText(`${Math.round(element.width)} \xD7 ${Math.round(element.height)} px`);
     }
-    if (dims) {
-      dims.setText(`${Math.round(box.width)} \xD7 ${Math.round(box.height)} px`);
-    }
-    if (source) {
-      const meta = [];
-      if (box.translationSource) meta.push(`aus ${box.translationSource.toUpperCase()}`);
-      if (box.lastTranslatedAt) {
-        const date = new Date(box.lastTranslatedAt);
-        meta.push(date.toLocaleTimeString());
-      }
-      source.setText(meta.join(" \xB7 "));
+    if (attrsEl) {
+      attrsEl.setText(this.getAttributeSummary(element.attributes));
     }
   }
-  beginDrag(box, event) {
+  beginDrag(element, event) {
     const startX = event.clientX;
     const startY = event.clientY;
-    const originX = box.x;
-    const originY = box.y;
+    const originX = element.x;
+    const originY = element.y;
     const onMove = (ev) => {
       const dx = ev.clientX - startX;
       const dy = ev.clientY - startY;
       const nextX = originX + dx;
       const nextY = originY + dy;
-      const maxX = Math.max(0, this.canvasWidth - box.width);
-      const maxY = Math.max(0, this.canvasHeight - box.height);
-      box.x = clamp(nextX, 0, maxX);
-      box.y = clamp(nextY, 0, maxY);
-      this.syncBoxElement(box);
+      const maxX = Math.max(0, this.canvasWidth - element.width);
+      const maxY = Math.max(0, this.canvasHeight - element.height);
+      element.x = clamp(nextX, 0, maxX);
+      element.y = clamp(nextY, 0, maxY);
+      this.syncElementElement(element);
       this.refreshExport();
       this.renderInspector();
     };
@@ -5910,21 +6012,21 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
   }
-  beginResize(box, event) {
+  beginResize(element, event) {
     const startX = event.clientX;
     const startY = event.clientY;
-    const originW = box.width;
-    const originH = box.height;
+    const originW = element.width;
+    const originH = element.height;
     const onMove = (ev) => {
       const dx = ev.clientX - startX;
       const dy = ev.clientY - startY;
-      const maxWidth = Math.max(MIN_BOX_SIZE, this.canvasWidth - box.x);
-      const maxHeight = Math.max(MIN_BOX_SIZE, this.canvasHeight - box.y);
-      const nextW = clamp(originW + dx, MIN_BOX_SIZE, maxWidth);
-      const nextH = clamp(originH + dy, MIN_BOX_SIZE, maxHeight);
-      box.width = nextW;
-      box.height = nextH;
-      this.syncBoxElement(box);
+      const maxWidth = Math.max(MIN_ELEMENT_SIZE, this.canvasWidth - element.x);
+      const maxHeight = Math.max(MIN_ELEMENT_SIZE, this.canvasHeight - element.y);
+      const nextW = clamp(originW + dx, MIN_ELEMENT_SIZE, maxWidth);
+      const nextH = clamp(originH + dy, MIN_ELEMENT_SIZE, maxHeight);
+      element.width = nextW;
+      element.height = nextH;
+      this.syncElementElement(element);
       this.refreshExport();
       this.renderInspector();
     };
@@ -5935,14 +6037,14 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
   }
-  selectBox(id) {
-    this.selectedBoxId = id;
+  selectElement(id) {
+    this.selectedElementId = id;
     this.updateSelectionStyles();
     this.renderInspector();
   }
   updateSelectionStyles() {
-    for (const [id, el] of this.boxElements) {
-      el.classList.toggle("is-selected", id === this.selectedBoxId);
+    for (const [id, el] of this.elementElements) {
+      el.classList.toggle("is-selected", id === this.selectedElementId);
     }
   }
   renderInspector() {
@@ -5950,216 +6052,269 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     const host = this.inspectorHost;
     host.empty();
     host.createEl("h3", { text: "Eigenschaften" });
-    const box = this.selectedBoxId ? this.boxes.find((b) => b.id === this.selectedBoxId) : null;
-    if (!box) {
-      host.createDiv({ cls: "sm-le-empty", text: "W\xE4hle eine Box, um Details anzupassen." });
+    const element = this.selectedElementId ? this.elements.find((b) => b.id === this.selectedElementId) : null;
+    if (!element) {
+      host.createDiv({ cls: "sm-le-empty", text: "W\xE4hle ein Element, um Details anzupassen." });
       return;
     }
+    host.createDiv({ cls: "sm-le-meta", text: `Typ: ${getElementTypeLabel(element.type)}` });
     const labelField = host.createDiv({ cls: "sm-le-field" });
-    labelField.createEl("label", { text: "Label" });
+    labelField.createEl("label", { text: element.type === "label" ? "Text" : "Label" });
     const labelInput = labelField.createEl("textarea");
-    labelInput.value = box.label;
-    labelInput.rows = 2;
+    labelInput.value = element.label;
+    labelInput.rows = element.type === "textarea" ? 3 : 2;
     labelInput.oninput = () => {
-      box.label = labelInput.value;
-      this.syncBoxElement(box);
+      element.label = labelInput.value;
+      this.syncElementElement(element);
       this.refreshExport();
     };
-    const translationField = host.createDiv({ cls: "sm-le-field" });
-    translationField.createEl("label", { text: `\xDCbersetzung (${this.languageSelect?.value?.toUpperCase() || "EN"})` });
-    const translationInput = translationField.createEl("textarea");
-    translationInput.value = box.translationText;
-    translationInput.rows = 2;
-    translationInput.oninput = () => {
-      box.translationText = translationInput.value;
-      box.translationError = null;
-      this.syncBoxElement(box);
-      this.refreshExport();
-    };
-    const translateControls = host.createDiv({ cls: "sm-le-actions" });
-    const translateBtn = translateControls.createEl("button", { text: "Label \xFCbersetzen" });
-    translateBtn.disabled = this.isTranslating || box.translationPending || !box.label.trim();
-    translateBtn.onclick = () => {
-      void this.translateSingle(box);
-    };
-    const deleteBtn = translateControls.createEl("button", { text: "Box l\xF6schen" });
+    if (element.type === "label" || element.type === "box") {
+      const descField = host.createDiv({ cls: "sm-le-field" });
+      descField.createEl("label", { text: element.type === "box" ? "Beschreibung" : "Zusatztext" });
+      const descInput = descField.createEl("textarea");
+      descInput.value = element.description || "";
+      descInput.rows = 3;
+      descInput.oninput = () => {
+        element.description = descInput.value || void 0;
+        this.syncElementElement(element);
+        this.refreshExport();
+      };
+    }
+    if (element.type === "text-input" || element.type === "textarea" || element.type === "dropdown" || element.type === "search-dropdown") {
+      const placeholderField = host.createDiv({ cls: "sm-le-field" });
+      placeholderField.createEl("label", { text: "Platzhalter" });
+      const placeholderInput = placeholderField.createEl("input", { attr: { type: "text" } });
+      placeholderInput.value = element.placeholder || "";
+      placeholderInput.oninput = () => {
+        element.placeholder = placeholderInput.value || void 0;
+        this.syncElementElement(element);
+        this.refreshExport();
+      };
+      const defaultField = host.createDiv({ cls: "sm-le-field" });
+      defaultField.createEl("label", { text: "Default-Wert" });
+      if (element.type === "textarea") {
+        const defaultTextarea = defaultField.createEl("textarea");
+        defaultTextarea.rows = 3;
+        defaultTextarea.value = element.defaultValue || "";
+        defaultTextarea.oninput = () => {
+          element.defaultValue = defaultTextarea.value || void 0;
+          this.syncElementElement(element);
+          this.refreshExport();
+        };
+      } else {
+        const defaultInput = defaultField.createEl("input", { attr: { type: "text" } });
+        defaultInput.value = element.defaultValue || "";
+        defaultInput.oninput = () => {
+          element.defaultValue = defaultInput.value || void 0;
+          this.syncElementElement(element);
+          this.refreshExport();
+        };
+      }
+    }
+    if (element.type === "dropdown" || element.type === "search-dropdown") {
+      const optionsField = host.createDiv({ cls: "sm-le-field" });
+      optionsField.createEl("label", { text: "Optionen (eine pro Zeile)" });
+      const optionsInput = optionsField.createEl("textarea");
+      optionsInput.rows = 4;
+      optionsInput.value = (element.options || []).join("\n");
+      optionsInput.oninput = () => {
+        const lines = optionsInput.value.split(/\r?\n/).map((v) => v.trim()).filter(Boolean);
+        element.options = lines.length ? lines : void 0;
+        this.syncElementElement(element);
+        this.refreshExport();
+      };
+    }
+    const attributesField = host.createDiv({ cls: "sm-le-field sm-le-field--attributes" });
+    attributesField.createEl("label", { text: "Verkn\xFCpfte Attribute" });
+    const attributesList = attributesField.createDiv({ cls: "sm-le-attributes" });
+    for (const group of ATTRIBUTE_GROUPS) {
+      const groupEl = attributesList.createDiv({ cls: "sm-le-attributes__group" });
+      groupEl.createEl("div", { cls: "sm-le-attributes__group-title", text: group.label });
+      for (const option of group.options) {
+        const optionId = `${element.id}-${option.value}`;
+        const row = groupEl.createDiv({ cls: "sm-le-attributes__option" });
+        const checkbox = row.createEl("input", { attr: { type: "checkbox", id: optionId } });
+        checkbox.checked = element.attributes.includes(option.value);
+        checkbox.onchange = () => {
+          if (checkbox.checked) {
+            if (!element.attributes.includes(option.value)) {
+              element.attributes.push(option.value);
+            }
+          } else {
+            element.attributes = element.attributes.filter((v) => v !== option.value);
+          }
+          this.syncElementElement(element);
+          this.refreshExport();
+        };
+        row.createEl("label", { text: option.label, attr: { for: optionId } });
+      }
+    }
+    const actions = host.createDiv({ cls: "sm-le-actions" });
+    const deleteBtn = actions.createEl("button", { text: "Element l\xF6schen" });
     deleteBtn.classList.add("mod-warning");
-    deleteBtn.onclick = () => this.deleteBox(box.id);
+    deleteBtn.onclick = () => this.deleteElement(element.id);
     const dimsField = host.createDiv({ cls: "sm-le-field sm-le-field--grid" });
     dimsField.createEl("label", { text: "Breite (px)" });
-    const widthInput = dimsField.createEl("input", { attr: { type: "number", min: String(MIN_BOX_SIZE) } });
-    widthInput.value = String(Math.round(box.width));
+    const widthInput = dimsField.createEl("input", { attr: { type: "number", min: String(MIN_ELEMENT_SIZE) } });
+    widthInput.value = String(Math.round(element.width));
     widthInput.onchange = () => {
-      const maxWidth = Math.max(MIN_BOX_SIZE, this.canvasWidth - box.x);
-      const next = clamp(parseInt(widthInput.value, 10) || box.width, MIN_BOX_SIZE, maxWidth);
-      box.width = next;
+      const maxWidth = Math.max(MIN_ELEMENT_SIZE, this.canvasWidth - element.x);
+      const next = clamp(parseInt(widthInput.value, 10) || element.width, MIN_ELEMENT_SIZE, maxWidth);
+      element.width = next;
       widthInput.value = String(next);
-      this.syncBoxElement(box);
+      this.syncElementElement(element);
       this.refreshExport();
     };
     dimsField.createEl("label", { text: "H\xF6he (px)" });
-    const heightInput = dimsField.createEl("input", { attr: { type: "number", min: String(MIN_BOX_SIZE) } });
-    heightInput.value = String(Math.round(box.height));
+    const heightInput = dimsField.createEl("input", { attr: { type: "number", min: String(MIN_ELEMENT_SIZE) } });
+    heightInput.value = String(Math.round(element.height));
     heightInput.onchange = () => {
-      const maxHeight = Math.max(MIN_BOX_SIZE, this.canvasHeight - box.y);
-      const next = clamp(parseInt(heightInput.value, 10) || box.height, MIN_BOX_SIZE, maxHeight);
-      box.height = next;
+      const maxHeight = Math.max(MIN_ELEMENT_SIZE, this.canvasHeight - element.y);
+      const next = clamp(parseInt(heightInput.value, 10) || element.height, MIN_ELEMENT_SIZE, maxHeight);
+      element.height = next;
       heightInput.value = String(next);
-      this.syncBoxElement(box);
+      this.syncElementElement(element);
       this.refreshExport();
     };
     const posField = host.createDiv({ cls: "sm-le-field sm-le-field--grid" });
     posField.createEl("label", { text: "X-Position" });
     const posXInput = posField.createEl("input", { attr: { type: "number", min: "0" } });
-    posXInput.value = String(Math.round(box.x));
+    posXInput.value = String(Math.round(element.x));
     posXInput.onchange = () => {
-      const maxX = Math.max(0, this.canvasWidth - box.width);
-      const next = clamp(parseInt(posXInput.value, 10) || box.x, 0, maxX);
-      box.x = next;
+      const maxX = Math.max(0, this.canvasWidth - element.width);
+      const next = clamp(parseInt(posXInput.value, 10) || element.x, 0, maxX);
+      element.x = next;
       posXInput.value = String(next);
-      this.syncBoxElement(box);
+      this.syncElementElement(element);
       this.refreshExport();
     };
     posField.createEl("label", { text: "Y-Position" });
     const posYInput = posField.createEl("input", { attr: { type: "number", min: "0" } });
-    posYInput.value = String(Math.round(box.y));
+    posYInput.value = String(Math.round(element.y));
     posYInput.onchange = () => {
-      const maxY = Math.max(0, this.canvasHeight - box.height);
-      const next = clamp(parseInt(posYInput.value, 10) || box.y, 0, maxY);
-      box.y = next;
+      const maxY = Math.max(0, this.canvasHeight - element.height);
+      const next = clamp(parseInt(posYInput.value, 10) || element.y, 0, maxY);
+      element.y = next;
       posYInput.value = String(next);
-      this.syncBoxElement(box);
+      this.syncElementElement(element);
       this.refreshExport();
     };
-    if (box.translationError) {
-      host.createDiv({ cls: "sm-le-error", text: box.translationError });
-    }
     const meta = host.createDiv({ cls: "sm-le-meta" });
-    meta.setText(`Fl\xE4che: ${Math.round(box.width * box.height)} px\xB2`);
+    meta.setText(`Fl\xE4che: ${Math.round(element.width * element.height)} px\xB2`);
   }
-  async translateSingle(box) {
-    if (!box.label.trim()) return;
-    box.translationPending = true;
-    box.translationError = null;
-    this.isTranslating = true;
-    this.syncBoxElement(box);
-    this.renderInspector();
-    this.updateStatus();
-    try {
-      const result = await translateText({
-        text: box.label,
-        target: this.languageSelect?.value || "en",
-        source: box.translationSource
-      });
-      box.translationText = result.translatedText;
-      box.translationSource = result.detectedSourceLanguage;
-      box.lastTranslatedAt = Date.now();
-    } catch (error) {
-      console.error("translateSingle", error);
-      box.translationError = error instanceof Error ? error.message : String(error);
-    } finally {
-      box.translationPending = false;
-      this.isTranslating = false;
-      this.syncBoxElement(box);
-      this.renderInspector();
-      this.refreshExport();
-      this.updateStatus();
-    }
-  }
-  async translateAll() {
-    if (!this.boxes.length || this.isTranslating) return;
-    this.isTranslating = true;
-    this.updateStatus();
-    this.translateAllBtn.disabled = true;
-    for (const box of this.boxes) {
-      if (!box.label.trim()) continue;
-      box.translationPending = true;
-      box.translationError = null;
-      this.syncBoxElement(box);
-    }
-    try {
-      for (const box of this.boxes) {
-        if (!box.label.trim()) {
-          box.translationText = "";
-          continue;
-        }
-        const result = await translateText({
-          text: box.label,
-          target: this.languageSelect?.value || "en",
-          source: box.translationSource
-        });
-        box.translationText = result.translatedText;
-        box.translationSource = result.detectedSourceLanguage;
-        box.lastTranslatedAt = Date.now();
-        box.translationPending = false;
-        this.syncBoxElement(box);
-        if (this.selectedBoxId === box.id) {
-          this.renderInspector();
-        }
-        this.refreshExport();
-      }
-    } catch (error) {
-      console.error("translateAll", error);
-      const message = error instanceof Error ? error.message : String(error);
-      for (const box of this.boxes) {
-        if (box.translationPending) {
-          box.translationError = message;
-          box.translationPending = false;
-          this.syncBoxElement(box);
-        }
-      }
-      new import_obsidian22.Notice("\xDCbersetzung fehlgeschlagen");
-    } finally {
-      this.isTranslating = false;
-      this.translateAllBtn.disabled = false;
-      for (const box of this.boxes) {
-        box.translationPending = false;
-      }
-      this.updateStatus();
-      this.renderInspector();
-      this.refreshExport();
-    }
-  }
-  deleteBox(id) {
-    const index = this.boxes.findIndex((b) => b.id === id);
+  deleteElement(id) {
+    const index = this.elements.findIndex((b) => b.id === id);
     if (index === -1) return;
-    this.boxes.splice(index, 1);
-    const el = this.boxElements.get(id);
+    this.elements.splice(index, 1);
+    const el = this.elementElements.get(id);
     el?.remove();
-    this.boxElements.delete(id);
-    if (this.selectedBoxId === id) {
-      this.selectedBoxId = null;
+    this.elementElements.delete(id);
+    if (this.selectedElementId === id) {
+      this.selectedElementId = null;
     }
     this.renderInspector();
     this.refreshExport();
     this.updateStatus();
   }
+  getElementDetails(element) {
+    const parts = [];
+    if ((element.type === "label" || element.type === "box") && element.description) {
+      parts.push(element.description);
+    }
+    if (element.type === "text-input" || element.type === "textarea") {
+      if (element.placeholder) parts.push(`Platzhalter: ${element.placeholder}`);
+      if (element.defaultValue) parts.push(`Default: ${element.defaultValue}`);
+    }
+    if (element.type === "dropdown" || element.type === "search-dropdown") {
+      if (element.placeholder) parts.push(`Platzhalter: ${element.placeholder}`);
+      if (element.defaultValue) parts.push(`Default: ${element.defaultValue}`);
+      if (element.options && element.options.length) {
+        const preview = element.options.slice(0, 3).join(", ");
+        const suffix = element.options.length > 3 ? "\u2026" : "";
+        parts.push(`Optionen: ${preview}${suffix}`);
+      }
+    }
+    if (element.type === "separator") {
+      parts.push("Trennlinie");
+    }
+    return parts.join(" \xB7 ");
+  }
+  getAttributeSummary(attributes) {
+    if (!attributes.length) return "Keine Attribute verkn\xFCpft";
+    return attributes.map((attr) => ATTRIBUTE_LABEL_LOOKUP.get(attr) ?? attr).join(", ");
+  }
+  detectElementTypeFromDom(node) {
+    if (node.querySelector("hr")) return "separator";
+    const select = node.querySelector("select");
+    if (select instanceof HTMLSelectElement) {
+      if (select.classList.contains("sm-sd") || select.dataset.sdOpenAll != null) {
+        return "search-dropdown";
+      }
+      return "dropdown";
+    }
+    const textarea = node.querySelector("textarea");
+    if (textarea instanceof HTMLTextAreaElement) return "textarea";
+    const input = node.querySelector("input[type='text'], input[type='number'], input[type='search'], input[type='email'], input[type='url']");
+    if (input instanceof HTMLInputElement) return "text-input";
+    return "box";
+  }
+  extractElementDefaults(node, type) {
+    const defaults = {};
+    const desc = node.querySelector(".setting-item-description");
+    if (desc?.textContent?.trim()) {
+      defaults.description = desc.textContent.trim();
+    }
+    if (type === "text-input") {
+      const input = node.querySelector("input[type='text'], input[type='number'], input[type='search'], input[type='email'], input[type='url']");
+      if (input) {
+        if (input.placeholder) defaults.placeholder = input.placeholder;
+        if (input.value) defaults.defaultValue = input.value;
+      }
+    } else if (type === "textarea") {
+      const textarea = node.querySelector("textarea");
+      if (textarea) {
+        if (textarea.placeholder) defaults.placeholder = textarea.placeholder;
+        if (textarea.value) defaults.defaultValue = textarea.value;
+      }
+    } else if (type === "dropdown" || type === "search-dropdown") {
+      const select = node.querySelector("select");
+      if (select) {
+        const options = Array.from(select.options).map((opt) => opt.textContent?.trim() || "").filter(Boolean);
+        if (options.length) defaults.options = options;
+        const selected = select.selectedOptions[0]?.textContent?.trim();
+        if (selected) defaults.defaultValue = selected;
+      }
+    }
+    return defaults;
+  }
   refreshExport() {
     if (!this.exportEl) return;
     const payload = {
       canvas: { width: Math.round(this.canvasWidth), height: Math.round(this.canvasHeight) },
-      targetLanguage: this.languageSelect?.value || "en",
-      boxes: this.boxes.map((box) => ({
-        id: box.id,
-        label: box.label,
-        translation: box.translationText,
-        sourceLanguage: box.translationSource,
-        x: Math.round(box.x),
-        y: Math.round(box.y),
-        width: Math.round(box.width),
-        height: Math.round(box.height)
-      }))
+      elements: this.elements.map((element) => {
+        const node = {
+          id: element.id,
+          type: element.type,
+          label: element.label,
+          x: Math.round(element.x),
+          y: Math.round(element.y),
+          width: Math.round(element.width),
+          height: Math.round(element.height),
+          attributes: [...element.attributes]
+        };
+        if (element.description) node.description = element.description;
+        if (element.placeholder) node.placeholder = element.placeholder;
+        if (element.defaultValue) node.defaultValue = element.defaultValue;
+        if (element.options && element.options.length) node.options = [...element.options];
+        return node;
+      })
     };
     this.exportEl.value = JSON.stringify(payload, null, 2);
   }
   updateStatus() {
     if (!this.statusEl) return;
-    const pending = this.boxes.filter((b) => b.translationPending).length;
-    const info = `${this.boxes.length} Boxen \xB7 Zielsprache ${this.languageSelect?.value?.toUpperCase() || "EN"}`;
-    this.statusEl.setText(pending > 0 ? `${info} \xB7 \xDCbersetzung l\xE4uft\u2026` : info);
-    if (this.translateAllBtn) {
-      this.translateAllBtn.disabled = !this.boxes.length || this.isTranslating;
-    }
+    const info = `${this.elements.length} Elemente \xB7 ${Math.round(this.canvasWidth)} \xD7 ${Math.round(this.canvasHeight)} px`;
+    this.statusEl.setText(info);
   }
   async importCreatureCreatorLayout(options) {
     if (this.isImporting) return;
@@ -6188,7 +6343,7 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       await this.nextFrame();
       const containerRect = sandbox.getBoundingClientRect();
       const margin = 48;
-      const boxes = [];
+      const elements = [];
       const used = /* @__PURE__ */ new Set();
       let counter = 0;
       const pushElement = (element, label) => {
@@ -6198,16 +6353,23 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
         if (rect.width <= 0 || rect.height <= 0) return;
         const x = rect.left - containerRect.left + margin;
         const y = rect.top - containerRect.top + margin;
-        const width = Math.max(MIN_BOX_SIZE, Math.round(rect.width));
-        const height = Math.max(MIN_BOX_SIZE, Math.round(rect.height));
-        boxes.push({
+        const width = Math.max(MIN_ELEMENT_SIZE, Math.round(rect.width));
+        const height = Math.max(MIN_ELEMENT_SIZE, Math.round(rect.height));
+        const type = this.detectElementTypeFromDom(element);
+        const defaults = this.extractElementDefaults(element, type);
+        elements.push({
           id: `creature-${String(++counter).padStart(2, "0")}`,
+          type,
           x: Math.round(x),
           y: Math.round(y),
           width,
           height,
           label,
-          translationText: ""
+          description: defaults.description,
+          placeholder: defaults.placeholder,
+          defaultValue: defaults.defaultValue,
+          options: defaults.options,
+          attributes: []
         });
         used.add(element);
       };
@@ -6236,18 +6398,18 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       pushElement(sandbox.querySelector(".sm-cc-entries.setting-item"), "Eintr\xE4ge");
       pushElement(sandbox.querySelector(".sm-cc-spells.setting-item"), "Zauber");
       pushElement(actions, actions.dataset.layoutLabel || "Aktionen");
-      boxes.sort((a, b) => a.y - b.y || a.x - b.x);
-      if (!boxes.length) {
+      elements.sort((a, b) => a.y - b.y || a.x - b.x);
+      if (!elements.length) {
         throw new Error("Keine Layout-Elemente gefunden");
       }
       this.canvasWidth = Math.max(200, Math.round(containerRect.width) + margin * 2);
       this.canvasHeight = Math.max(200, Math.round(containerRect.height) + margin * 2);
       this.widthInput && (this.widthInput.value = String(this.canvasWidth));
       this.heightInput && (this.heightInput.value = String(this.canvasHeight));
-      this.boxes = boxes;
-      this.selectedBoxId = null;
+      this.elements = elements;
+      this.selectedElementId = null;
       this.applyCanvasSize();
-      this.renderBoxes();
+      this.renderElements();
       this.renderInspector();
       this.refreshExport();
       this.updateStatus();
@@ -6268,6 +6430,9 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
 };
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
+}
+function getElementTypeLabel(type) {
+  return ELEMENT_DEFINITION_LOOKUP.get(type)?.buttonLabel ?? type;
 }
 
 // src/app/main.ts
@@ -7028,6 +7193,10 @@ var HEX_PLUGIN_CSS = `
     min-width: 120px;
 }
 
+.sm-le-control--stack {
+    min-width: 220px;
+}
+
 .sm-le-control label {
     font-size: 0.8rem;
     color: var(--text-muted);
@@ -7036,6 +7205,12 @@ var HEX_PLUGIN_CSS = `
 .sm-le-size {
     display: inline-flex;
     align-items: center;
+    gap: 0.35rem;
+}
+
+.sm-le-add {
+    display: flex;
+    flex-wrap: wrap;
     gap: 0.35rem;
 }
 
@@ -7112,11 +7287,18 @@ var HEX_PLUGIN_CSS = `
     gap: 0.35rem;
 }
 
+.sm-le-box__type {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+}
+
 .sm-le-box__label {
     font-weight: 600;
 }
 
-.sm-le-box__translation {
+.sm-le-box__details {
     font-size: 0.9rem;
     color: var(--text-muted);
     white-space: pre-wrap;
@@ -7127,7 +7309,13 @@ var HEX_PLUGIN_CSS = `
     font-size: 0.75rem;
     color: var(--text-faint);
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start;
+}
+
+.sm-le-box__attrs {
+    display: block;
+    white-space: normal;
+    width: 100%;
 }
 
 .sm-le-box__resize {
@@ -7186,6 +7374,45 @@ var HEX_PLUGIN_CSS = `
     box-sizing: border-box;
 }
 
+.sm-le-field--attributes {
+    gap: 0.5rem;
+}
+
+.sm-le-attributes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.sm-le-attributes__group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.35rem 0.4rem;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+}
+
+.sm-le-attributes__group-title {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+}
+
+.sm-le-attributes__option {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.sm-le-attributes__option input {
+    margin: 0;
+}
+
 .sm-le-field--grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -7199,17 +7426,8 @@ var HEX_PLUGIN_CSS = `
     align-items: center;
 }
 
-.sm-le-actions button:last-child {
-    margin-left: auto;
-}
-
 .sm-le-empty {
     color: var(--text-muted);
-    font-size: 0.9rem;
-}
-
-.sm-le-error {
-    color: var(--text-error);
     font-size: 0.9rem;
 }
 
