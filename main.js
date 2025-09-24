@@ -5782,6 +5782,32 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     this.isImporting = false;
     this.elementElements = /* @__PURE__ */ new Map();
     this.activeAttributePopover = null;
+    this.history = [];
+    this.historyIndex = -1;
+    this.isRestoringHistory = false;
+    this.onKeyDown = (ev) => {
+      if (this.isEditingTarget(ev.target)) {
+        return;
+      }
+      const key = ev.key.toLowerCase();
+      const isModifier = ev.metaKey || ev.ctrlKey;
+      if (key === "delete") {
+        if (this.selectedElementId) {
+          ev.preventDefault();
+          this.deleteElement(this.selectedElementId);
+        }
+        return;
+      }
+      if (!isModifier) return;
+      if (key === "z") {
+        ev.preventDefault();
+        if (ev.shiftKey) {
+          this.redo();
+        } else {
+          this.undo();
+        }
+      }
+    };
   }
   getViewType() {
     return VIEW_LAYOUT_EDITOR;
@@ -5803,9 +5829,459 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     this.contentEl.empty();
     this.contentEl.removeClass("sm-layout-editor");
   }
+  isEditingTarget(target) {
+    if (!target) return false;
+    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) {
+      return true;
+    }
+    if (target instanceof HTMLElement && target.isContentEditable) {
+      return true;
+    }
+    return false;
+  }
+  captureSnapshot() {
+    return {
+      canvasWidth: this.canvasWidth,
+      canvasHeight: this.canvasHeight,
+      selectedElementId: this.selectedElementId,
+      elements: this.elements.map(cloneLayoutElement)
+    };
+  }
+  restoreSnapshot(snapshot) {
+    this.isRestoringHistory = true;
+    try {
+      this.canvasWidth = snapshot.canvasWidth;
+      this.canvasHeight = snapshot.canvasHeight;
+      this.selectedElementId = snapshot.selectedElementId;
+      this.elements = snapshot.elements.map(cloneLayoutElement);
+      if (this.widthInput) this.widthInput.value = String(this.canvasWidth);
+      if (this.heightInput) this.heightInput.value = String(this.canvasHeight);
+      this.closeAttributePopover();
+      this.applyCanvasSize();
+      this.renderElements();
+      this.renderInspector();
+      this.refreshExport();
+      this.updateStatus();
+    } finally {
+      this.isRestoringHistory = false;
+    }
+  }
+  pushHistory() {
+    if (this.isRestoringHistory) return;
+    const snapshot = this.captureSnapshot();
+    const last = this.history[this.historyIndex];
+    if (last && snapshotsAreEqual(last, snapshot)) {
+      return;
+    }
+    if (this.historyIndex < this.history.length - 1) {
+      this.history.splice(this.historyIndex + 1);
+    }
+    this.history.push(snapshot);
+    this.historyIndex = this.history.length - 1;
+  }
+  undo() {
+    if (this.historyIndex <= 0) return;
+    const nextIndex = this.historyIndex - 1;
+    const snapshot = this.history[nextIndex];
+    if (!snapshot) return;
+    this.historyIndex = nextIndex;
+    this.restoreSnapshot(snapshot);
+  }
+  redo() {
+    if (this.historyIndex >= this.history.length - 1) return;
+    const nextIndex = this.historyIndex + 1;
+    const snapshot = this.history[nextIndex];
+    if (!snapshot) return;
+    this.historyIndex = nextIndex;
+    this.restoreSnapshot(snapshot);
+  }
+  finalizeInlineMutation(element) {
+    if (this.isRestoringHistory) return;
+    this.syncElementElement(element);
+    this.refreshExport();
+    this.renderInspector();
+    this.updateStatus();
+    this.pushHistory();
+  }
+  createInlineEditor(options) {
+    const el = options.parent.createEl(options.multiline ? "div" : "span", { cls: "sm-le-inline-edit" });
+    if (options.block) el.addClass("sm-le-inline-edit--block");
+    if (options.multiline) el.addClass("sm-le-inline-edit--multiline");
+    el.contentEditable = "true";
+    el.spellcheck = false;
+    el.dataset.placeholder = options.placeholder;
+    const trim = options.trim ?? true;
+    const initialValue = options.value ?? "";
+    if (initialValue) {
+      el.setText(initialValue);
+    }
+    let committedValue = trim ? initialValue.trim() : initialValue;
+    const readValue = () => {
+      const raw = el.textContent ?? "";
+      return trim ? raw.trim() : raw;
+    };
+    const commit = () => {
+      const next = readValue();
+      if (next === committedValue) return;
+      committedValue = next;
+      options.onCommit(next);
+    };
+    el.addEventListener("keydown", (ev) => {
+      if (!options.multiline && ev.key === "Enter") {
+        ev.preventDefault();
+        ev.target.blur();
+      } else if (options.multiline && ev.key === "Enter" && !ev.shiftKey) {
+        ev.preventDefault();
+        ev.target.blur();
+      }
+    });
+    el.addEventListener("blur", () => {
+      commit();
+      if (!readValue()) {
+        el.empty();
+      }
+    });
+    el.addEventListener("input", () => {
+      options.onInput?.(readValue());
+    });
+    return el;
+  }
+  renderElementPreview(element, host) {
+    host.empty();
+    host.toggleClass("sm-le-box__content", true);
+    const preview = host.createDiv({ cls: `sm-le-preview sm-le-preview--${element.type}` });
+    const commitLabel = (value) => {
+      const next = value || "";
+      if (next === element.label) return;
+      element.label = next;
+      this.finalizeInlineMutation(element);
+    };
+    const createPlaceholderEditor = (parent, placeholder, value, onChange) => {
+      this.createInlineEditor({
+        parent,
+        value: value ?? "",
+        placeholder,
+        onInput: (val) => {
+          onChange(val || void 0);
+        },
+        onCommit: (val) => {
+          const next = val || void 0;
+          if (next === value) return;
+          onChange(next);
+          this.finalizeInlineMutation(element);
+        }
+      }).addClass("sm-le-inline-meta");
+    };
+    if (element.type === "label") {
+      const text = this.createInlineEditor({
+        parent: preview,
+        value: element.label,
+        placeholder: "Text eingeben\u2026",
+        multiline: true,
+        block: true,
+        trim: false,
+        onCommit: commitLabel
+      });
+      text.addClass("sm-le-preview__text");
+      this.createInlineEditor({
+        parent: preview,
+        value: element.description ?? "",
+        placeholder: "Zusatztext hinzuf\xFCgen\u2026",
+        multiline: true,
+        block: true,
+        trim: false,
+        onCommit: (value) => {
+          const next = value || void 0;
+          if (next === element.description) return;
+          element.description = next;
+          this.finalizeInlineMutation(element);
+        }
+      }).addClass("sm-le-preview__subtext");
+      return;
+    }
+    if (element.type === "box") {
+      const header = preview.createDiv({ cls: "sm-le-preview__title" });
+      this.createInlineEditor({
+        parent: header,
+        value: element.label,
+        placeholder: "Titel eingeben\u2026",
+        multiline: false,
+        onCommit: commitLabel
+      });
+      this.createInlineEditor({
+        parent: preview,
+        value: element.description ?? "",
+        placeholder: "Beschreibung hinzuf\xFCgen\u2026",
+        multiline: true,
+        block: true,
+        trim: false,
+        onCommit: (value) => {
+          const next = value || void 0;
+          if (next === element.description) return;
+          element.description = next;
+          this.finalizeInlineMutation(element);
+        }
+      }).addClass("sm-le-preview__description");
+      return;
+    }
+    if (element.type === "separator") {
+      const labelRow = preview.createDiv({ cls: "sm-le-preview__label" });
+      this.createInlineEditor({
+        parent: labelRow,
+        value: element.label,
+        placeholder: "Titel eingeben\u2026",
+        onCommit: commitLabel
+      });
+      preview.createEl("hr");
+      return;
+    }
+    if (element.type === "text-input" || element.type === "textarea") {
+      const field = preview.createDiv({ cls: "sm-le-preview__field" });
+      this.createInlineEditor({
+        parent: field,
+        value: element.label,
+        placeholder: "Label eingeben\u2026",
+        onCommit: commitLabel
+      }).addClass("sm-le-preview__label");
+      if (element.type === "textarea") {
+        const textarea = field.createEl("textarea", { cls: "sm-le-preview__textarea" });
+        textarea.value = element.defaultValue ?? "";
+        textarea.placeholder = element.placeholder ?? "";
+        textarea.rows = 4;
+        let lastValue = textarea.value;
+        textarea.addEventListener("input", () => {
+          element.defaultValue = textarea.value ? textarea.value : void 0;
+        });
+        textarea.addEventListener("blur", () => {
+          const next = textarea.value;
+          if (next === lastValue) return;
+          lastValue = next;
+          element.defaultValue = next ? next : void 0;
+          this.finalizeInlineMutation(element);
+        });
+        const meta = preview.createDiv({ cls: "sm-le-preview__meta" });
+        createPlaceholderEditor(meta, "Platzhalter hinzuf\xFCgen\u2026", element.placeholder, (next) => {
+          textarea.placeholder = next ?? "";
+          element.placeholder = next;
+        });
+      } else {
+        const input = field.createEl("input", { cls: "sm-le-preview__input", attr: { type: "text" } });
+        input.value = element.defaultValue ?? "";
+        input.placeholder = element.placeholder ?? "";
+        let lastValue = input.value;
+        input.addEventListener("input", () => {
+          element.defaultValue = input.value ? input.value : void 0;
+        });
+        input.addEventListener("blur", () => {
+          const next = input.value;
+          if (next === lastValue) return;
+          lastValue = next;
+          element.defaultValue = next ? next : void 0;
+          this.finalizeInlineMutation(element);
+        });
+        const meta = preview.createDiv({ cls: "sm-le-preview__meta" });
+        createPlaceholderEditor(meta, "Platzhalter hinzuf\xFCgen\u2026", element.placeholder, (next) => {
+          input.placeholder = next ?? "";
+          element.placeholder = next;
+        });
+      }
+      return;
+    }
+    if (element.type === "dropdown" || element.type === "search-dropdown") {
+      const field = preview.createDiv({ cls: "sm-le-preview__field" });
+      this.createInlineEditor({
+        parent: field,
+        value: element.label,
+        placeholder: "Label eingeben\u2026",
+        onCommit: commitLabel
+      }).addClass("sm-le-preview__label");
+      const controlWrapper = field.createDiv({ cls: "sm-le-preview__control" });
+      let options = element.options ?? [];
+      let placeholderOption = null;
+      let searchInput = null;
+      if (element.type === "dropdown") {
+        const select = controlWrapper.createEl("select", { cls: "sm-le-preview__select" });
+        const placeholderText = element.placeholder ?? "Option w\xE4hlen\u2026";
+        placeholderOption = select.createEl("option", { value: "", text: placeholderText });
+        placeholderOption.disabled = true;
+        if (!element.defaultValue) placeholderOption.selected = true;
+        if (!options.length) {
+          select.createEl("option", { value: "opt-1", text: "Erste Option" });
+        } else {
+          for (const opt of options) {
+            const option = select.createEl("option", { value: opt, text: opt });
+            if (element.defaultValue && opt === element.defaultValue) {
+              option.selected = true;
+            }
+          }
+        }
+        select.onchange = () => {
+          const value = select.value || void 0;
+          if (value === element.defaultValue) return;
+          element.defaultValue = value;
+          this.finalizeInlineMutation(element);
+        };
+      } else {
+        const search = controlWrapper.createEl("input", {
+          cls: "sm-le-preview__input",
+          attr: { type: "search", placeholder: element.placeholder ?? "Suchen\u2026" }
+        });
+        searchInput = search;
+        search.value = element.defaultValue ?? "";
+        let lastValue = search.value;
+        search.addEventListener("input", () => {
+          element.defaultValue = search.value ? search.value : void 0;
+        });
+        search.addEventListener("blur", () => {
+          const next = search.value;
+          if (next === lastValue) return;
+          lastValue = next;
+          element.defaultValue = next ? next : void 0;
+          this.finalizeInlineMutation(element);
+        });
+      }
+      const meta = preview.createDiv({ cls: "sm-le-preview__meta" });
+      createPlaceholderEditor(meta, "Platzhalter hinzuf\xFCgen\u2026", element.placeholder, (next) => {
+        element.placeholder = next;
+        if (placeholderOption) {
+          placeholderOption.setText(next ?? "Option w\xE4hlen\u2026");
+        }
+        if (searchInput) {
+          searchInput.placeholder = next ?? "Suchen\u2026";
+        }
+      });
+      const optionList = preview.createDiv({ cls: "sm-le-inline-options" });
+      if (!options.length) {
+        optionList.createDiv({ cls: "sm-le-inline-options__empty", text: "Noch keine Optionen." });
+      } else {
+        options.forEach((opt, index) => {
+          const row = optionList.createDiv({ cls: "sm-le-inline-option" });
+          this.createInlineEditor({
+            parent: row,
+            value: opt,
+            placeholder: "Option\u2026",
+            onCommit: (value) => {
+              const next = value || opt;
+              if (next === opt) return;
+              const nextOptions = [...element.options ?? []];
+              nextOptions[index] = next;
+              element.options = nextOptions;
+              if (element.defaultValue && element.defaultValue === opt) {
+                element.defaultValue = next;
+              }
+              this.finalizeInlineMutation(element);
+            }
+          }).addClass("sm-le-inline-option__label");
+          const remove = row.createSpan({ cls: "sm-le-inline-option__remove", text: "\u2715" });
+          remove.onclick = (ev) => {
+            ev.preventDefault();
+            const nextOptions = (element.options ?? []).filter((_, idx) => idx !== index);
+            element.options = nextOptions.length ? nextOptions : void 0;
+            if (element.defaultValue && !nextOptions.includes(element.defaultValue)) {
+              element.defaultValue = void 0;
+            }
+            this.finalizeInlineMutation(element);
+          };
+        });
+      }
+      const addOption = preview.createEl("button", { cls: "sm-le-inline-add", text: "Option hinzuf\xFCgen" });
+      addOption.onclick = (ev) => {
+        ev.preventDefault();
+        const nextOptions = [...element.options ?? []];
+        const label = `Option ${nextOptions.length + 1}`;
+        nextOptions.push(label);
+        element.options = nextOptions;
+        this.finalizeInlineMutation(element);
+      };
+      return;
+    }
+    if (isContainerType(element.type)) {
+      this.ensureContainerDefaults(element);
+      const header = preview.createDiv({ cls: "sm-le-preview__container-header" });
+      this.createInlineEditor({
+        parent: header,
+        value: element.label,
+        placeholder: "Container benennen\u2026",
+        onCommit: commitLabel
+      }).addClass("sm-le-preview__label");
+      const controls = preview.createDiv({ cls: "sm-le-preview__layout" });
+      const layout = element.layout;
+      const gapWrap = controls.createDiv({ cls: "sm-le-inline-control" });
+      gapWrap.createSpan({ text: "Abstand" });
+      const gapInput = gapWrap.createEl("input", { cls: "sm-le-inline-number", attr: { type: "number", min: "0" } });
+      gapInput.value = String(Math.round(layout.gap));
+      gapInput.onchange = () => {
+        const next = Math.max(0, parseInt(gapInput.value, 10) || 0);
+        if (next === layout.gap) return;
+        layout.gap = next;
+        gapInput.value = String(next);
+        this.applyContainerLayout(element);
+        this.pushHistory();
+      };
+      const paddingWrap = controls.createDiv({ cls: "sm-le-inline-control" });
+      paddingWrap.createSpan({ text: "Innenabstand" });
+      const paddingInput = paddingWrap.createEl("input", {
+        cls: "sm-le-inline-number",
+        attr: { type: "number", min: "0" }
+      });
+      paddingInput.value = String(Math.round(layout.padding));
+      paddingInput.onchange = () => {
+        const next = Math.max(0, parseInt(paddingInput.value, 10) || 0);
+        if (next === layout.padding) return;
+        layout.padding = next;
+        paddingInput.value = String(next);
+        this.applyContainerLayout(element);
+        this.pushHistory();
+      };
+      const alignWrap = controls.createDiv({ cls: "sm-le-inline-control" });
+      alignWrap.createSpan({ text: "Ausrichtung" });
+      const alignSelect = alignWrap.createEl("select", { cls: "sm-le-inline-select" });
+      const alignOptions = element.type === "vbox" ? [
+        ["start", "Links"],
+        ["center", "Zentriert"],
+        ["end", "Rechts"],
+        ["stretch", "Breite"]
+      ] : [
+        ["start", "Oben"],
+        ["center", "Zentriert"],
+        ["end", "Unten"],
+        ["stretch", "H\xF6he"]
+      ];
+      for (const [value, label] of alignOptions) {
+        const option = alignSelect.createEl("option", { value, text: label });
+        if (layout.align === value) option.selected = true;
+      }
+      alignSelect.onchange = () => {
+        const next = alignSelect.value ?? layout.align;
+        if (next === layout.align) return;
+        layout.align = next;
+        this.applyContainerLayout(element);
+        this.pushHistory();
+      };
+      const summary = preview.createDiv({ cls: "sm-le-preview__container-summary" });
+      const children = Array.isArray(element.children) ? element.children.map((childId) => this.elements.find((el) => el.id === childId)).filter((child) => !!child) : [];
+      if (!children.length) {
+        summary.createDiv({ cls: "sm-le-inline-options__empty", text: "Keine Elemente verkn\xFCpft." });
+      } else {
+        for (const child of children) {
+          const row = summary.createDiv({ cls: "sm-le-container-chip" });
+          row.setText(child.label || getElementTypeLabel(child.type));
+        }
+      }
+      return;
+    }
+    this.createInlineEditor({
+      parent: preview,
+      value: element.label,
+      placeholder: "Label eingeben\u2026",
+      onCommit: commitLabel
+    });
+  }
   render() {
     const root = this.contentEl;
     root.empty();
+    this.history = [];
+    this.historyIndex = -1;
     const header = root.createDiv({ cls: "sm-le-header" });
     header.createEl("h2", { text: "Layout Editor" });
     const controls = header.createDiv({ cls: "sm-le-controls" });
@@ -5831,6 +6307,8 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       this.widthInput.value = String(next);
       this.applyCanvasSize();
       this.refreshExport();
+      this.updateStatus();
+      this.pushHistory();
     };
     sizeWrapper.createSpan({ text: "\xD7" });
     this.heightInput = sizeWrapper.createEl("input", { attr: { type: "number", min: "200", max: "2000" } });
@@ -5841,6 +6319,8 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       this.heightInput.value = String(next);
       this.applyCanvasSize();
       this.refreshExport();
+      this.updateStatus();
+      this.pushHistory();
     };
     sizeWrapper.createSpan({ text: "px" });
     this.statusEl = header.createDiv({ cls: "sm-le-status" });
@@ -5854,6 +6334,7 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
         this.selectElement(null);
       }
     });
+    this.registerDomEvent(window, "keydown", this.onKeyDown);
     this.inspectorHost = body.createDiv({ cls: "sm-le-inspector" });
     this.renderInspector();
     const exportWrap = root.createDiv({ cls: "sm-le-export" });
@@ -5885,6 +6366,7 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     this.sandboxEl.style.width = "960px";
     this.sandboxEl.style.padding = "24px";
     this.sandboxEl.style.boxSizing = "border-box";
+    this.pushHistory();
   }
   applyCanvasSize() {
     if (!this.canvasEl) return;
@@ -5948,6 +6430,8 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     this.renderElements();
     this.selectElement(element.id);
     this.refreshExport();
+    this.updateStatus();
+    this.pushHistory();
   }
   renderElements() {
     if (!this.canvasEl) return;
@@ -6003,6 +6487,8 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     const [id] = container.children.splice(index, 1);
     container.children.splice(nextIndex, 0, id);
     this.applyContainerLayout(container);
+    this.updateStatus();
+    this.pushHistory();
   }
   assignElementToContainer(elementId, containerId) {
     const element = this.elements.find((el) => el.id === elementId);
@@ -6026,6 +6512,8 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     this.syncElementElement(element);
     this.refreshExport();
     this.renderInspector();
+    this.updateStatus();
+    this.pushHistory();
   }
   applyContainerLayout(container, options) {
     if (!isContainerType(container.type)) return;
@@ -6111,6 +6599,7 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     if (!options?.silent) {
       this.refreshExport();
       this.renderInspector();
+      this.updateStatus();
     }
     this.refreshAttributePopover();
   }
@@ -6144,6 +6633,8 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       this.refreshExport();
       this.renderInspector();
       this.refreshAttributePopover();
+      this.updateStatus();
+      this.pushHistory();
     });
     container.appendChild(clearBtn);
     for (const group of ATTRIBUTE_GROUPS) {
@@ -6172,6 +6663,8 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
           this.refreshExport();
           this.renderInspector();
           this.refreshAttributePopover();
+          this.updateStatus();
+          this.pushHistory();
         });
         const labelText = document.createElement("span");
         labelText.textContent = option.label;
@@ -6257,8 +6750,7 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     dims.dataset.role = "dims";
     const body = el.createDiv({ cls: "sm-le-box__body" });
     body.createDiv({ cls: "sm-le-box__type", text: "" }).dataset.role = "type";
-    body.createDiv({ cls: "sm-le-box__label", text: "(Label)" }).dataset.role = "label";
-    body.createDiv({ cls: "sm-le-box__details", text: "" }).dataset.role = "details";
+    body.createDiv({ cls: "sm-le-box__content" }).dataset.role = "content";
     const footer = el.createDiv({ cls: "sm-le-box__footer" });
     const attrs = footer.createSpan({ cls: "sm-le-box__attrs", text: "" });
     attrs.dataset.role = "attrs";
@@ -6295,13 +6787,13 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     el.style.height = `${element.height}px`;
     el.classList.toggle("sm-le-box--container", isContainerType(element.type));
     const typeEl = el.querySelector('[data-role="type"]');
-    const labelEl = el.querySelector('[data-role="label"]');
-    const detailsEl = el.querySelector('[data-role="details"]');
+    const contentEl = el.querySelector('[data-role="content"]');
     const dimsEl = el.querySelector('[data-role="dims"]');
     const attrsEl = el.querySelector('[data-role="attrs"]');
     typeEl?.setText(getElementTypeLabel(element.type));
-    labelEl?.setText(element.label || "(Label)");
-    detailsEl?.setText(this.getElementDetails(element));
+    if (contentEl) {
+      this.renderElementPreview(element, contentEl);
+    }
     if (dimsEl) {
       dimsEl.setText(`${Math.round(element.width)} \xD7 ${Math.round(element.height)} px`);
     }
@@ -6360,6 +6852,7 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       } else if (parent && isContainerType(parent.type)) {
         this.applyContainerLayout(parent);
       }
+      this.pushHistory();
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
@@ -6395,6 +6888,7 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       } else if (parent && isContainerType(parent.type)) {
         this.applyContainerLayout(parent);
       }
+      this.pushHistory();
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
@@ -6431,10 +6925,17 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     const labelInput = labelField.createEl("textarea");
     labelInput.value = element.label;
     labelInput.rows = element.type === "textarea" ? 3 : 2;
+    const initialLabel = element.label;
     labelInput.oninput = () => {
       element.label = labelInput.value;
       this.syncElementElement(element);
       this.refreshExport();
+    };
+    labelInput.onblur = () => {
+      if (element.label === initialLabel) return;
+      this.updateStatus();
+      this.pushHistory();
+      this.renderInspector();
     };
     if (!isContainer) {
       const containers = this.elements.filter((el) => isContainerType(el.type));
@@ -6460,10 +6961,18 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       const descInput = descField.createEl("textarea");
       descInput.value = element.description || "";
       descInput.rows = 3;
+      const initialDesc = element.description ?? "";
       descInput.oninput = () => {
         element.description = descInput.value || void 0;
         this.syncElementElement(element);
         this.refreshExport();
+      };
+      descInput.onblur = () => {
+        const current = element.description ?? "";
+        if (current === initialDesc) return;
+        this.updateStatus();
+        this.pushHistory();
+        this.renderInspector();
       };
     }
     if (element.type === "text-input" || element.type === "textarea" || element.type === "dropdown" || element.type === "search-dropdown") {
@@ -6471,10 +6980,18 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       placeholderField.createEl("label", { text: "Platzhalter" });
       const placeholderInput = placeholderField.createEl("input", { attr: { type: "text" } });
       placeholderInput.value = element.placeholder || "";
+      const initialPlaceholder = element.placeholder ?? "";
       placeholderInput.oninput = () => {
         element.placeholder = placeholderInput.value || void 0;
         this.syncElementElement(element);
         this.refreshExport();
+      };
+      placeholderInput.onblur = () => {
+        const current = element.placeholder ?? "";
+        if (current === initialPlaceholder) return;
+        this.updateStatus();
+        this.pushHistory();
+        this.renderInspector();
       };
       const defaultField = host.createDiv({ cls: "sm-le-field" });
       defaultField.createEl("label", { text: "Default-Wert" });
@@ -6482,18 +6999,34 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
         const defaultTextarea = defaultField.createEl("textarea");
         defaultTextarea.rows = 3;
         defaultTextarea.value = element.defaultValue || "";
+        const initialDefault = element.defaultValue ?? "";
         defaultTextarea.oninput = () => {
           element.defaultValue = defaultTextarea.value || void 0;
           this.syncElementElement(element);
           this.refreshExport();
         };
+        defaultTextarea.onblur = () => {
+          const current = element.defaultValue ?? "";
+          if (current === initialDefault) return;
+          this.updateStatus();
+          this.pushHistory();
+          this.renderInspector();
+        };
       } else {
         const defaultInput = defaultField.createEl("input", { attr: { type: "text" } });
         defaultInput.value = element.defaultValue || "";
+        const initialDefault = element.defaultValue ?? "";
         defaultInput.oninput = () => {
           element.defaultValue = defaultInput.value || void 0;
           this.syncElementElement(element);
           this.refreshExport();
+        };
+        defaultInput.onblur = () => {
+          const current = element.defaultValue ?? "";
+          if (current === initialDefault) return;
+          this.updateStatus();
+          this.pushHistory();
+          this.renderInspector();
         };
       }
     }
@@ -6503,11 +7036,18 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       const optionsInput = optionsField.createEl("textarea");
       optionsInput.rows = 4;
       optionsInput.value = (element.options || []).join("\n");
+      const initialOptionsValue = optionsInput.value;
       optionsInput.oninput = () => {
         const lines = optionsInput.value.split(/\r?\n/).map((v) => v.trim()).filter(Boolean);
         element.options = lines.length ? lines : void 0;
         this.syncElementElement(element);
         this.refreshExport();
+      };
+      optionsInput.onblur = () => {
+        if (optionsInput.value === initialOptionsValue) return;
+        this.updateStatus();
+        this.pushHistory();
+        this.renderInspector();
       };
     }
     const attributesField = host.createDiv({ cls: "sm-le-field sm-le-field--attributes" });
@@ -6532,6 +7072,8 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
           this.syncElementElement(element);
           this.refreshExport();
           this.refreshAttributePopover();
+          this.updateStatus();
+          this.pushHistory();
         };
         row.createEl("label", { text: option.label, attr: { for: optionId } });
       }
@@ -6546,6 +7088,7 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
         element.layout.gap = next;
         gapInput.value = String(next);
         this.applyContainerLayout(element);
+        this.pushHistory();
       };
       layoutField.createEl("label", { text: "Innenabstand (px)" });
       const paddingInput = layoutField.createEl("input", { attr: { type: "number", min: "0" } });
@@ -6555,6 +7098,7 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
         element.layout.padding = next;
         paddingInput.value = String(next);
         this.applyContainerLayout(element);
+        this.pushHistory();
       };
       const alignField = host.createDiv({ cls: "sm-le-field" });
       alignField.createEl("label", { text: element.type === "vbox" ? "Horizontale Ausrichtung" : "Vertikale Ausrichtung" });
@@ -6578,6 +7122,7 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
         const next = alignSelect.value ?? element.layout.align;
         element.layout.align = next;
         this.applyContainerLayout(element);
+        this.pushHistory();
       };
       const childField = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
       childField.createEl("label", { text: "Zugeordnete Elemente" });
@@ -6740,39 +7285,7 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     this.renderInspector();
     this.refreshExport();
     this.updateStatus();
-  }
-  getElementDetails(element) {
-    const parts = [];
-    if (isContainerType(element.type)) {
-      const layout = element.layout;
-      const gap = layout ? Math.round(layout.gap) : 0;
-      const alignLabel = layout ? getContainerAlignLabel(element.type, layout.align) : null;
-      const count = element.children?.length ?? 0;
-      parts.push(element.type === "vbox" ? "Vertikale Verteilung" : "Horizontale Verteilung");
-      parts.push(`Abstand ${gap}px`);
-      if (alignLabel) parts.push(alignLabel);
-      parts.push(`${count} Elemente`);
-    }
-    if ((element.type === "label" || element.type === "box") && element.description) {
-      parts.push(element.description);
-    }
-    if (element.type === "text-input" || element.type === "textarea") {
-      if (element.placeholder) parts.push(`Platzhalter: ${element.placeholder}`);
-      if (element.defaultValue) parts.push(`Default: ${element.defaultValue}`);
-    }
-    if (element.type === "dropdown" || element.type === "search-dropdown") {
-      if (element.placeholder) parts.push(`Platzhalter: ${element.placeholder}`);
-      if (element.defaultValue) parts.push(`Default: ${element.defaultValue}`);
-      if (element.options && element.options.length) {
-        const preview = element.options.slice(0, 3).join(", ");
-        const suffix = element.options.length > 3 ? "\u2026" : "";
-        parts.push(`Optionen: ${preview}${suffix}`);
-      }
-    }
-    if (element.type === "separator") {
-      parts.push("Trennlinie");
-    }
-    return parts.join(" \xB7 ");
+    this.pushHistory();
   }
   getAttributeSummary(attributes) {
     if (!attributes.length) return "Attribute w\xE4hlen\u2026";
@@ -6961,6 +7474,7 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       this.renderInspector();
       this.refreshExport();
       this.updateStatus();
+      this.pushHistory();
       if (!options?.silent) new import_obsidian22.Notice("Creature-Layout importiert");
     } catch (error) {
       console.error("importCreatureCreatorLayout", error);
@@ -6988,31 +7502,57 @@ function isContainerType(type) {
 function isContainerElement(element) {
   return isContainerType(element.type) && !!element.layout && Array.isArray(element.children);
 }
-function getContainerAlignLabel(type, align) {
-  if (type === "vbox") {
-    switch (align) {
-      case "start":
-        return "Links ausgerichtet";
-      case "center":
-        return "Zentriert";
-      case "end":
-        return "Rechts ausgerichtet";
-      case "stretch":
-        return "Breite gestreckt";
-    }
-  } else {
-    switch (align) {
-      case "start":
-        return "Oben ausgerichtet";
-      case "center":
-        return "Vertikal zentriert";
-      case "end":
-        return "Unten ausgerichtet";
-      case "stretch":
-        return "H\xF6he gestreckt";
+function cloneLayoutElement(element) {
+  return {
+    ...element,
+    attributes: [...element.attributes],
+    options: element.options ? [...element.options] : void 0,
+    layout: element.layout ? { ...element.layout } : void 0,
+    children: element.children ? [...element.children] : void 0
+  };
+}
+function elementsAreEqual(a, b) {
+  if (a === b) return true;
+  if (a.id !== b.id || a.type !== b.type || a.x !== b.x || a.y !== b.y || a.width !== b.width || a.height !== b.height || a.label !== b.label || a.description !== b.description || a.placeholder !== b.placeholder || a.defaultValue !== b.defaultValue) {
+    return false;
+  }
+  const aOptions = a.options ?? [];
+  const bOptions = b.options ?? [];
+  if (aOptions.length !== bOptions.length) return false;
+  for (let i = 0; i < aOptions.length; i++) {
+    if (aOptions[i] !== bOptions[i]) return false;
+  }
+  const aAttrs = a.attributes ?? [];
+  const bAttrs = b.attributes ?? [];
+  if (aAttrs.length !== bAttrs.length) return false;
+  for (let i = 0; i < aAttrs.length; i++) {
+    if (aAttrs[i] !== bAttrs[i]) return false;
+  }
+  const aChildren = a.children ?? [];
+  const bChildren = b.children ?? [];
+  if (aChildren.length !== bChildren.length) return false;
+  for (let i = 0; i < aChildren.length; i++) {
+    if (aChildren[i] !== bChildren[i]) return false;
+  }
+  if (!!a.layout !== !!b.layout) return false;
+  if (a.layout && b.layout) {
+    if (a.layout.gap !== b.layout.gap || a.layout.padding !== b.layout.padding || a.layout.align !== b.layout.align) {
+      return false;
     }
   }
-  return "";
+  if (!!a.parentId !== !!b.parentId) return false;
+  if (a.parentId !== b.parentId) return false;
+  return true;
+}
+function snapshotsAreEqual(a, b) {
+  if (!a || !b) return false;
+  if (a.canvasWidth !== b.canvasWidth || a.canvasHeight !== b.canvasHeight || a.selectedElementId !== b.selectedElementId || a.elements.length !== b.elements.length) {
+    return false;
+  }
+  for (let i = 0; i < a.elements.length; i++) {
+    if (!elementsAreEqual(a.elements[i], b.elements[i])) return false;
+  }
+  return true;
 }
 
 // src/app/main.ts
@@ -7889,14 +8429,191 @@ var HEX_PLUGIN_CSS = `
     color: var(--text-muted);
 }
 
-.sm-le-box__label {
-    font-weight: 600;
+.sm-le-box__content {
+    flex: 1;
+    display: flex;
 }
 
-.sm-le-box__details {
+.sm-le-preview {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
     font-size: 0.9rem;
+}
+
+.sm-le-preview__text {
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+.sm-le-preview__subtext,
+.sm-le-preview__description {
+    font-size: 0.85rem;
     color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.sm-le-preview__title {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.sm-le-preview__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.sm-le-preview__label {
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.sm-le-preview__input,
+.sm-le-preview__textarea,
+.sm-le-preview__select {
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--background-modifier-border);
+    padding: 0.4rem 0.5rem;
+    background: var(--background-primary);
+    font: inherit;
+    color: inherit;
+}
+
+.sm-le-preview__textarea {
+    resize: vertical;
+}
+
+.sm-le-preview__meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.sm-le-inline-edit {
+    display: inline-block;
+    padding: 0.1rem 0.2rem;
+    border-radius: 6px;
+    cursor: text;
+    transition: box-shadow 120ms ease, background 120ms ease;
+    min-width: 0.6rem;
+}
+
+.sm-le-inline-edit--block {
+    display: block;
+}
+
+.sm-le-inline-edit--multiline {
+    min-height: 2.2rem;
     white-space: pre-wrap;
+}
+
+.sm-le-inline-edit:focus {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--interactive-accent);
+    background: rgba(var(--interactive-accent-rgb), 0.08);
+}
+
+.sm-le-inline-edit:empty::before {
+    content: attr(data-placeholder);
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.sm-le-inline-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.sm-le-inline-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.sm-le-inline-options__empty {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.sm-le-inline-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: var(--background-secondary);
+    border-radius: 999px;
+    padding: 0.15rem 0.35rem;
+}
+
+.sm-le-inline-option__label {
+    font-size: 0.8rem;
+}
+
+.sm-le-inline-option__remove {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.sm-le-inline-option__remove:hover {
+    color: var(--text-normal);
+}
+
+.sm-le-inline-add {
+    align-self: flex-start;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.sm-le-preview__container-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sm-le-preview__layout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.sm-le-inline-control {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.sm-le-inline-number,
+.sm-le-inline-select {
+    border-radius: 6px;
+    border: 1px solid var(--background-modifier-border);
+    padding: 0.25rem 0.35rem;
+    font: inherit;
+    background: var(--background-primary);
+    color: inherit;
+}
+
+.sm-le-preview__container-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.sm-le-container-chip {
+    background: var(--background-secondary);
+    border-radius: 999px;
+    padding: 0.25rem 0.6rem;
 }
 
 .sm-le-box__footer {
