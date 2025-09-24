@@ -423,7 +423,7 @@ __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian20 = require("obsidian");
+var import_obsidian22 = require("obsidian");
 init_view();
 
 // src/apps/cartographer/index.ts
@@ -3477,7 +3477,7 @@ var CartographerView = class extends import_obsidian12.ItemView {
 };
 
 // src/apps/library/view.ts
-var import_obsidian19 = require("obsidian");
+var import_obsidian21 = require("obsidian");
 
 // src/apps/library/core/creature-files.ts
 var import_obsidian13 = require("obsidian");
@@ -3904,79 +3904,10 @@ async function createSpellFile(app, d) {
 }
 
 // src/apps/library/create/creature/modal.ts
-var import_obsidian17 = require("obsidian");
+var import_obsidian19 = require("obsidian");
 
-// src/apps/library/create/creature/section-core-stats.ts
-var import_obsidian16 = require("obsidian");
-
-// src/apps/library/create/shared/token-editor.ts
+// src/apps/library/create/creature/section-basics.ts
 var import_obsidian15 = require("obsidian");
-function mountTokenEditor(parent, title, model, options = {}) {
-  const placeholder = options.placeholder ?? "Begriff eingeben\u2026";
-  const addLabel = options.addButtonLabel ?? "+";
-  const setting = new import_obsidian15.Setting(parent).setName(title);
-  let inputEl;
-  let renderChips = () => {
-  };
-  const commitValue = (value) => {
-    const trimmed = value.trim();
-    if (!trimmed) return;
-    model.add(trimmed);
-    options.onAdd?.(trimmed);
-    renderChips();
-  };
-  setting.addText((t) => {
-    t.setPlaceholder(placeholder);
-    inputEl = t.inputEl;
-    t.inputEl.style.minWidth = "260px";
-    t.inputEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        commitValue((inputEl?.value ?? "").trim());
-        if (inputEl) inputEl.value = "";
-      }
-    });
-  });
-  setting.addButton(
-    (b) => b.setButtonText(addLabel).onClick(() => {
-      commitValue((inputEl?.value ?? "").trim());
-      if (inputEl) inputEl.value = "";
-    })
-  );
-  const chips = parent.createDiv({ cls: "sm-cc-chips" });
-  renderChips = () => {
-    chips.empty();
-    const items = model.getItems();
-    items.forEach((txt, index) => {
-      const chip = chips.createDiv({ cls: "sm-cc-chip" });
-      chip.createSpan({ text: txt });
-      const removeBtn = chip.createEl("button", { text: "\xD7" });
-      removeBtn.onclick = () => {
-        model.remove(index);
-        options.onRemove?.(txt, index);
-        renderChips();
-      };
-    });
-  };
-  renderChips();
-  return { setting, chipsEl: chips, refresh: renderChips };
-}
-
-// src/apps/library/create/shared/stat-utils.ts
-function parseIntSafe(value) {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? Math.trunc(value) : NaN;
-  }
-  const match = String(value ?? "").match(/-?\d+/);
-  return match ? parseInt(match[0], 10) : NaN;
-}
-function abilityMod2(score) {
-  const numeric = typeof score === "number" ? score : parseIntSafe(score);
-  if (Number.isNaN(numeric)) return 0;
-  return Math.floor((numeric - 10) / 2);
-}
-function formatSigned(value) {
-  return `${value >= 0 ? "+" : ""}${value}`;
-}
 
 // src/apps/library/create/creature/presets.ts
 var CREATURE_SIZES = [
@@ -4149,11 +4080,406 @@ var CREATURE_LANGUAGE_PRESETS = [
   "Thieves' Cant"
 ];
 
-// src/apps/library/create/creature/section-core-stats.ts
+// src/apps/library/create/creature/section-basics.ts
+function ensureSpeedList(data) {
+  if (!Array.isArray(data.speedList)) data.speedList = [];
+  return data.speedList;
+}
+function mountCreatureBasicsSection(parent, data) {
+  const root = parent.createDiv({ cls: "sm-cc-basics" });
+  const idSetting = new import_obsidian15.Setting(root).setName("Name");
+  idSetting.addText((t) => {
+    t.setPlaceholder("Aboleth").setValue(data.name || "").onChange((v) => data.name = v.trim());
+    t.inputEl.style.width = "30ch";
+  });
+  const sizeSetting = new import_obsidian15.Setting(root).setName("Gr\xF6\xDFe");
+  sizeSetting.addDropdown((dd) => {
+    dd.addOption("", "");
+    for (const option of CREATURE_SIZES) dd.addOption(option, option);
+    dd.setValue(data.size ?? "");
+    dd.onChange((v) => data.size = v);
+    try {
+      enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
+    } catch {
+    }
+  });
+  const typeSetting = new import_obsidian15.Setting(root).setName("Typ");
+  typeSetting.addDropdown((dd) => {
+    dd.addOption("", "");
+    for (const option of CREATURE_TYPES) dd.addOption(option, option);
+    dd.setValue(data.type ?? "");
+    dd.onChange((v) => data.type = v);
+    try {
+      enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
+    } catch {
+    }
+  });
+  const alignSetting = new import_obsidian15.Setting(root).setName("Gesinnung");
+  alignSetting.addDropdown((dd) => {
+    dd.addOption("", "");
+    for (const option of CREATURE_ALIGNMENT_LAW_CHAOS) dd.addOption(option, option);
+    dd.setValue(data.alignmentLawChaos ?? "");
+    dd.onChange((v) => data.alignmentLawChaos = v);
+    try {
+      const el = dd.selectEl;
+      el.dataset.sdOpenAll = "0";
+      enhanceSelectToSearch(el, "Such-dropdown\u2026");
+    } catch {
+    }
+  });
+  alignSetting.addDropdown((dd) => {
+    dd.addOption("", "");
+    for (const option of CREATURE_ALIGNMENT_GOOD_EVIL) dd.addOption(option, option);
+    dd.setValue(data.alignmentGoodEvil ?? "");
+    dd.onChange((v) => data.alignmentGoodEvil = v);
+    try {
+      const el = dd.selectEl;
+      el.dataset.sdOpenAll = "0";
+      enhanceSelectToSearch(el, "Such-dropdown\u2026");
+    } catch {
+    }
+  });
+  const coreSetting = new import_obsidian15.Setting(root).setName("Kernwerte");
+  const row = coreSetting.controlEl.createDiv({ cls: "sm-cc-inline-row" });
+  const mk = (label, widthCh, placeholder, key) => {
+    row.createEl("label", { text: label });
+    const inp = row.createEl("input", {
+      attr: { type: "text", placeholder, "aria-label": label }
+    });
+    inp.style.width = `${widthCh}ch`;
+    inp.value = data[key] || "";
+    inp.addEventListener("input", () => data[key] = inp.value.trim());
+  };
+  mk("AC", 18, "17", "ac");
+  mk("Init", 6, "+7", "initiative");
+  mk("HP", 8, "150", "hp");
+  mk("HD", 14, "20d10 + 40", "hitDice");
+  mk("PB", 5, "+4", "pb");
+  mk("CR", 6, "10", "cr");
+  mk("XP", 8, "5900", "xp");
+  const speedSetting = new import_obsidian15.Setting(root).setName("Bewegung");
+  const speedControl = speedSetting.controlEl.createDiv({ cls: "sm-cc-move-ctl" });
+  const addRow = speedControl.createDiv({ cls: "sm-cc-searchbar sm-cc-move-row" });
+  const typeSelect = addRow.createEl("select");
+  for (const [value, label] of CREATURE_MOVEMENT_TYPES) {
+    const option = typeSelect.createEl("option", { text: label });
+    option.value = value;
+  }
+  try {
+    enhanceSelectToSearch(typeSelect, "Such-dropdown\u2026");
+  } catch {
+  }
+  const hoverWrap = addRow.createDiv();
+  const hoverId = `sm-cc-hover-${Math.random().toString(36).slice(2)}`;
+  const hoverCb = hoverWrap.createEl("input", {
+    attr: { type: "checkbox", id: hoverId }
+  });
+  hoverWrap.createEl("label", { text: "Hover", attr: { for: hoverId } });
+  const updateHover = () => {
+    const cur = typeSelect.value;
+    const isFly = cur === "fly";
+    hoverWrap.style.display = isFly ? "" : "none";
+    if (!isFly) hoverCb.checked = false;
+  };
+  updateHover();
+  typeSelect.addEventListener("change", updateHover);
+  const numWrap = addRow.createDiv({ cls: "sm-inline-number" });
+  const valInput = numWrap.createEl("input", {
+    attr: { type: "number", min: "0", step: "5", placeholder: "30" }
+  });
+  const decBtn = numWrap.createEl("button", { text: "\u2212", cls: "btn-compact" });
+  const incBtn = numWrap.createEl("button", { text: "+", cls: "btn-compact" });
+  const step = (dir) => {
+    const cur = parseInt(valInput.value, 10) || 0;
+    const next = Math.max(0, cur + 5 * dir);
+    valInput.value = String(next);
+  };
+  decBtn.onclick = () => step(-1);
+  incBtn.onclick = () => step(1);
+  const addRow2 = speedControl.createDiv({ cls: "sm-cc-searchbar sm-cc-move-addrow" });
+  const addSpeedBtn = addRow2.createEl("button", { text: "+ Hinzuf\xFCgen" });
+  const speedChips = speedControl.createDiv({ cls: "sm-cc-chips" });
+  const speeds = ensureSpeedList(data);
+  const renderSpeeds = () => {
+    speedChips.empty();
+    speeds.forEach((txt, i) => {
+      const chip = speedChips.createDiv({ cls: "sm-cc-chip" });
+      chip.createSpan({ text: txt });
+      const removeBtn = chip.createEl("button", {
+        text: "\xD7",
+        cls: "sm-cc-chip__remove",
+        attr: { "aria-label": `${txt} entfernen` }
+      });
+      removeBtn.onclick = () => {
+        speeds.splice(i, 1);
+        renderSpeeds();
+      };
+    });
+  };
+  renderSpeeds();
+  addSpeedBtn.onclick = () => {
+    const n = parseInt(valInput.value, 10);
+    if (!Number.isFinite(n) || n <= 0) return;
+    const kind = typeSelect.value;
+    const unit = "ft.";
+    const label = kind === "walk" ? `${n} ${unit}` : kind === "fly" && hoverCb.checked ? `fly ${n} ${unit} (hover)` : `${kind} ${n} ${unit}`;
+    speeds.push(label);
+    valInput.value = "";
+    hoverCb.checked = false;
+    renderSpeeds();
+  };
+}
+
+// src/apps/library/create/creature/section-stats-and-skills.ts
+var import_obsidian16 = require("obsidian");
+
+// src/apps/library/create/shared/stat-utils.ts
+function parseIntSafe(value) {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? Math.trunc(value) : NaN;
+  }
+  const match = String(value ?? "").match(/-?\d+/);
+  return match ? parseInt(match[0], 10) : NaN;
+}
+function abilityMod2(score) {
+  const numeric = typeof score === "number" ? score : parseIntSafe(score);
+  if (Number.isNaN(numeric)) return 0;
+  return Math.floor((numeric - 10) / 2);
+}
+function formatSigned(value) {
+  return `${value >= 0 ? "+" : ""}${value}`;
+}
+
+// src/apps/library/create/creature/section-stats-and-skills.ts
+function mountCreatureStatsAndSkillsSection(parent, data) {
+  const root = parent.createDiv({ cls: "sm-cc-stats" });
+  const abilityElems = /* @__PURE__ */ new Map();
+  const ensureSets = () => {
+    if (!data.saveProf) data.saveProf = {};
+    if (!data.skillsProf) data.skillsProf = [];
+    if (!data.skillsExpertise) data.skillsExpertise = [];
+  };
+  const abilitySection = root.createDiv({ cls: "sm-cc-skills" });
+  abilitySection.createEl("h4", { text: "Stats" });
+  const statsGrid = abilitySection.createDiv({ cls: "sm-cc-stats-grid" });
+  for (const s of CREATURE_ABILITIES) {
+    const statEl = statsGrid.createDiv({ cls: "sm-cc-stat" });
+    const header = statEl.createDiv({ cls: "sm-cc-stat__header" });
+    header.createSpan({ text: s.label });
+    const scoreWrap = header.createDiv({ cls: "sm-inline-number sm-cc-stat__score" });
+    const score = scoreWrap.createEl("input", {
+      attr: { type: "number", placeholder: "10", min: "0", step: "1" }
+    });
+    const dec = scoreWrap.createEl("button", { text: "\u2212", cls: "btn-compact" });
+    const inc = scoreWrap.createEl("button", { text: "+", cls: "btn-compact" });
+    score.value = data[s.key] || "";
+    const step = (d) => {
+      const cur = parseInt(score.value, 10) || 0;
+      const next = Math.max(0, cur + d);
+      score.value = String(next);
+      data[s.key] = score.value.trim();
+      updateMods();
+    };
+    dec.onclick = () => step(-1);
+    inc.onclick = () => step(1);
+    score.addEventListener("input", () => {
+      data[s.key] = score.value.trim();
+      updateMods();
+    });
+    const modRow = statEl.createDiv({ cls: "sm-cc-stat__mod" });
+    modRow.createSpan({ text: "Mod" });
+    const modOut = modRow.createSpan({ cls: "sm-cc-stat__mod-value", text: "+0" });
+    const saveRow = statEl.createDiv({ cls: "sm-cc-stat__save" });
+    saveRow.createSpan({ cls: "sm-cc-stat__save-label", text: "Save mod" });
+    const saveControls = saveRow.createDiv({ cls: "sm-cc-stat__save-controls" });
+    const saveCb = saveControls.createEl("input", {
+      attr: { type: "checkbox", "aria-label": `${s.label} Save Proficiency` }
+    });
+    const saveOut = saveControls.createSpan({ cls: "sm-cc-stat__save-value", text: "+0" });
+    ensureSets();
+    saveCb.checked = !!data.saveProf[s.key];
+    saveCb.addEventListener("change", () => {
+      data.saveProf[s.key] = saveCb.checked;
+      updateMods();
+    });
+    abilityElems.set(s.key, { score, mod: modOut, save: saveCb, saveMod: saveOut });
+  }
+  const skillAbilityMap = new Map(CREATURE_SKILLS);
+  const skillsSetting = new import_obsidian16.Setting(root).setName("Fertigkeiten");
+  skillsSetting.settingEl.addClass("sm-cc-skills");
+  const skillsControl = skillsSetting.controlEl;
+  skillsControl.addClass("sm-cc-skill-editor");
+  skillsSetting.nameEl.empty();
+  const skillsRow = skillsControl.createDiv({ cls: "sm-cc-searchbar sm-cc-skill-search" });
+  const skillsSelectId = "sm-cc-skill-select";
+  const skillsLabel = skillsRow.createEl("label", {
+    text: "Fertigkeiten",
+    attr: { for: skillsSelectId }
+  });
+  const skillsSelect = skillsRow.createEl("select", {
+    attr: { id: skillsSelectId }
+  });
+  const blankSkill = skillsSelect.createEl("option", {
+    text: "Fertigkeit w\xE4hlen\u2026"
+  });
+  blankSkill.value = "";
+  for (const [name] of CREATURE_SKILLS) {
+    const opt = skillsSelect.createEl("option", { text: name });
+    opt.value = name;
+  }
+  try {
+    enhanceSelectToSearch(skillsSelect, "Fertigkeit suchen\u2026");
+  } catch {
+  }
+  const skillsSearchInput = skillsSelect._smSearchInput;
+  if (skillsSearchInput) {
+    skillsSearchInput.placeholder = "Fertigkeit suchen\u2026";
+    if (!skillsSearchInput.id) skillsSearchInput.id = `${skillsSelectId}-search`;
+    skillsLabel.htmlFor = skillsSearchInput.id;
+  }
+  const addSkillBtn = skillsRow.createEl("button", { text: "+ Hinzuf\xFCgen" });
+  const skillChips = skillsControl.createDiv({ cls: "sm-cc-chips sm-cc-skill-chips" });
+  const skillRefs = /* @__PURE__ */ new Map();
+  const addSkillByName = (rawName) => {
+    const name = rawName.trim();
+    if (!name) return;
+    if (!skillAbilityMap.has(name)) return;
+    ensureSets();
+    if (!data.skillsProf.includes(name)) data.skillsProf.push(name);
+    renderSkillChips();
+  };
+  addSkillBtn.onclick = () => {
+    const selected = skillsSelect.value.trim();
+    const typed = skillsSearchInput?.value.trim() ?? "";
+    let value = selected;
+    if (!value && typed) {
+      const match = Array.from(skillsSelect.options).find(
+        (opt) => opt.text.trim().toLowerCase() === typed.toLowerCase()
+      );
+      if (match) value = match.value.trim();
+    }
+    if (skillsSearchInput) skillsSearchInput.value = "";
+    skillsSelect.value = "";
+    addSkillByName(value);
+  };
+  function renderSkillChips() {
+    ensureSets();
+    skillChips.empty();
+    skillRefs.clear();
+    const profs = data.skillsProf ?? [];
+    for (const name of profs) {
+      const chip = skillChips.createDiv({ cls: "sm-cc-chip sm-cc-skill-chip" });
+      chip.createSpan({ cls: "sm-cc-skill-chip__name", text: name });
+      const modOut = chip.createSpan({ cls: "sm-cc-skill-chip__mod", text: "+0" });
+      const expertiseWrap = chip.createEl("label", { cls: "sm-cc-skill-chip__exp" });
+      const expertiseCb = expertiseWrap.createEl("input", { attr: { type: "checkbox" } });
+      expertiseWrap.createSpan({ text: "Expertise" });
+      expertiseCb.checked = !!data.skillsExpertise?.includes(name);
+      expertiseCb.addEventListener("change", () => {
+        ensureSets();
+        if (expertiseCb.checked) {
+          if (!data.skillsExpertise.includes(name)) data.skillsExpertise.push(name);
+        } else {
+          data.skillsExpertise = data.skillsExpertise.filter((s) => s !== name);
+        }
+        updateMods();
+      });
+      const removeBtn = chip.createEl("button", {
+        cls: "sm-cc-chip__remove",
+        text: "\xD7",
+        attr: { "aria-label": `${name} entfernen` }
+      });
+      removeBtn.onclick = () => {
+        ensureSets();
+        data.skillsProf = data.skillsProf.filter((s) => s !== name);
+        data.skillsExpertise = data.skillsExpertise.filter((s) => s !== name);
+        renderSkillChips();
+      };
+      skillRefs.set(name, { mod: modOut, expertise: expertiseCb });
+    }
+    updateMods();
+  }
+  const updateMods = () => {
+    const pb = parseIntSafe(data.pb) || 0;
+    for (const [key, refs] of abilityElems) {
+      const mod = abilityMod2(data[key]);
+      refs.mod.textContent = formatSigned(mod);
+      const saveBonus = data.saveProf?.[key] ? pb : 0;
+      refs.saveMod.textContent = formatSigned(mod + saveBonus);
+    }
+    ensureSets();
+    const profs = new Set(data.skillsProf ?? []);
+    data.skillsExpertise = (data.skillsExpertise ?? []).filter((name) => profs.has(name));
+    for (const [name, refs] of skillRefs) {
+      const ability = skillAbilityMap.get(name);
+      const mod = ability ? abilityMod2(data[ability]) : 0;
+      const hasExpertise = data.skillsExpertise?.includes(name) ?? false;
+      const bonus = hasExpertise ? pb * 2 : pb;
+      refs.mod.textContent = formatSigned(mod + bonus);
+      if (refs.expertise.checked !== hasExpertise) refs.expertise.checked = hasExpertise;
+    }
+  };
+  renderSkillChips();
+}
+
+// src/apps/library/create/shared/token-editor.ts
+var import_obsidian17 = require("obsidian");
+function mountTokenEditor(parent, title, model, options = {}) {
+  const placeholder = options.placeholder ?? "Begriff eingeben\u2026";
+  const addLabel = options.addButtonLabel ?? "+";
+  const setting = new import_obsidian17.Setting(parent).setName(title);
+  let inputEl;
+  let renderChips = () => {
+  };
+  const commitValue = (value) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    model.add(trimmed);
+    options.onAdd?.(trimmed);
+    renderChips();
+  };
+  setting.addText((t) => {
+    t.setPlaceholder(placeholder);
+    inputEl = t.inputEl;
+    t.inputEl.style.minWidth = "260px";
+    t.inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        commitValue((inputEl?.value ?? "").trim());
+        if (inputEl) inputEl.value = "";
+      }
+    });
+  });
+  setting.addButton(
+    (b) => b.setButtonText(addLabel).onClick(() => {
+      commitValue((inputEl?.value ?? "").trim());
+      if (inputEl) inputEl.value = "";
+    })
+  );
+  const chips = parent.createDiv({ cls: "sm-cc-chips" });
+  renderChips = () => {
+    chips.empty();
+    const items = model.getItems();
+    items.forEach((txt, index) => {
+      const chip = chips.createDiv({ cls: "sm-cc-chip" });
+      chip.createSpan({ text: txt });
+      const removeBtn = chip.createEl("button", { text: "\xD7" });
+      removeBtn.onclick = () => {
+        model.remove(index);
+        options.onRemove?.(txt, index);
+        renderChips();
+      };
+    });
+  };
+  renderChips();
+  return { setting, chipsEl: chips, refresh: renderChips };
+}
+
+// src/apps/library/create/creature/section-utils.ts
+var import_obsidian18 = require("obsidian");
 function mountPresetSelectEditor(parent, title, options, model, config) {
   const resolved = typeof config === "string" ? { placeholder: config } : config ?? {};
   const { placeholder, inlineLabel, rowClass } = resolved;
-  const setting = new import_obsidian16.Setting(parent).setName(title);
+  const setting = new import_obsidian18.Setting(parent).setName(title);
   const rowClasses = ["sm-cc-searchbar"];
   if (rowClass) rowClasses.push(rowClass);
   const row = setting.controlEl.createDiv({ cls: rowClasses.join(" ") });
@@ -4203,12 +4529,14 @@ function mountPresetSelectEditor(parent, title, options, model, config) {
       };
     });
   };
-  addBtn.onclick = () => {
+  const addEntry = () => {
     const selectedValue = select.value.trim();
     const typedValue = searchInput?.value.trim() ?? "";
     let value = selectedValue;
     if (!value && typedValue) {
-      const match = Array.from(select.options).find((opt) => opt.text.trim().toLowerCase() === typedValue.toLowerCase());
+      const match = Array.from(select.options).find(
+        (opt) => opt.text.trim().toLowerCase() === typedValue.toLowerCase()
+      );
       value = match ? match.value.trim() : typedValue;
     }
     if (!value) {
@@ -4221,6 +4549,15 @@ function mountPresetSelectEditor(parent, title, options, model, config) {
     if (searchInput) searchInput.value = "";
     renderChips();
   };
+  addBtn.onclick = addEntry;
+  if (searchInput) {
+    searchInput.addEventListener("keydown", (evt) => {
+      if (evt.key === "Enter") {
+        evt.preventDefault();
+        addEntry();
+      }
+    });
+  }
   renderChips();
 }
 function mountDamageResponseEditor(parent, damageLists) {
@@ -4244,7 +4581,7 @@ function mountDamageResponseEditor(parent, damageLists) {
       chipClass: "sm-cc-damage-chip--vuln"
     }
   ];
-  const setting = new import_obsidian16.Setting(parent).setName("Schadenstyp-Reaktionen");
+  const setting = new import_obsidian18.Setting(parent).setName("Schadenstyp-Reaktionen");
   const row = setting.controlEl.createDiv({ cls: "sm-cc-searchbar sm-cc-damage-row" });
   row.createEl("label", { cls: "sm-cc-damage-label", text: "Schadenstyp" });
   const select = row.createEl("select", { cls: "sm-cc-damage-select" });
@@ -4342,245 +4679,29 @@ function mountDamageResponseEditor(parent, damageLists) {
   }
   renderChips();
 }
-function mountCoreStatsSection(parent, data) {
-  const root = parent.createDiv();
-  const idSetting = new import_obsidian16.Setting(root).setName("Name");
-  idSetting.addText((t) => {
-    t.setPlaceholder("Aboleth").setValue(data.name || "").onChange((v) => data.name = v.trim());
-    t.inputEl.style.width = "30ch";
-  });
-  const sizeSetting = new import_obsidian16.Setting(root).setName("Gr\xF6\xDFe");
-  sizeSetting.addDropdown((dd) => {
-    dd.addOption("", "");
-    for (const option of CREATURE_SIZES) dd.addOption(option, option);
-    dd.onChange((v) => data.size = v);
-    try {
-      enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
-    } catch {
-    }
-  });
-  const typeSetting = new import_obsidian16.Setting(root).setName("Typ");
-  typeSetting.addDropdown((dd) => {
-    dd.addOption("", "");
-    for (const option of CREATURE_TYPES) dd.addOption(option, option);
-    dd.onChange((v) => data.type = v);
-    try {
-      enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
-    } catch {
-    }
-  });
-  const alignSetting = new import_obsidian16.Setting(root).setName("Gesinnung");
-  alignSetting.addDropdown((dd) => {
-    dd.addOption("", "");
-    for (const option of CREATURE_ALIGNMENT_LAW_CHAOS) dd.addOption(option, option);
-    dd.onChange((v) => data.alignmentLawChaos = v);
-    try {
-      const el = dd.selectEl;
-      el.dataset.sdOpenAll = "0";
-      enhanceSelectToSearch(el, "Such-dropdown\u2026");
-    } catch {
-    }
-  });
-  alignSetting.addDropdown((dd) => {
-    dd.addOption("", "");
-    for (const option of CREATURE_ALIGNMENT_GOOD_EVIL) dd.addOption(option, option);
-    dd.onChange((v) => data.alignmentGoodEvil = v);
-    try {
-      const el = dd.selectEl;
-      el.dataset.sdOpenAll = "0";
-      enhanceSelectToSearch(el, "Such-dropdown\u2026");
-    } catch {
-    }
-  });
-  const coreSetting = new import_obsidian16.Setting(root).setName("Kernwerte");
-  const row = coreSetting.controlEl.createDiv({ cls: "sm-cc-inline-row" });
-  const mk = (label, widthCh, placeholder, key) => {
-    row.createEl("label", { text: label });
-    const inp = row.createEl("input", { attr: { type: "text", placeholder, "aria-label": label } });
-    inp.style.width = `${widthCh}ch`;
-    inp.value = data[key] || "";
-    inp.addEventListener("input", () => data[key] = inp.value.trim());
-  };
-  mk("AC", 18, "17", "ac");
-  mk("Init", 6, "+7", "initiative");
-  mk("HP", 8, "150", "hp");
-  mk("HD", 14, "20d10 + 40", "hitDice");
-  mk("PB", 5, "+4", "pb");
-  mk("CR", 6, "10", "cr");
-  mk("XP", 8, "5900", "xp");
-  const abilitySection = root.createDiv({ cls: "sm-cc-skills" });
-  abilitySection.createEl("h4", { text: "Stats" });
-  const abilityElems = /* @__PURE__ */ new Map();
-  const ensureSets = () => {
-    if (!data.saveProf) data.saveProf = {};
-    if (!data.skillsProf) data.skillsProf = [];
-    if (!data.skillsExpertise) data.skillsExpertise = [];
-  };
-  const statsGrid = abilitySection.createDiv({ cls: "sm-cc-stats-grid" });
-  for (const s of CREATURE_ABILITIES) {
-    const statEl = statsGrid.createDiv({ cls: "sm-cc-stat" });
-    const header = statEl.createDiv({ cls: "sm-cc-stat__header" });
-    header.createSpan({ text: s.label });
-    const scoreWrap = header.createDiv({ cls: "sm-inline-number sm-cc-stat__score" });
-    const score = scoreWrap.createEl("input", { attr: { type: "number", placeholder: "10", min: "0", step: "1" } });
-    const dec = scoreWrap.createEl("button", { text: "\u2212", cls: "btn-compact" });
-    const inc = scoreWrap.createEl("button", { text: "+", cls: "btn-compact" });
-    score.value = data[s.key] || "";
-    const step = (d) => {
-      const cur = parseInt(score.value, 10) || 0;
-      const next = Math.max(0, cur + d);
-      score.value = String(next);
-      data[s.key] = score.value.trim();
-      updateMods();
-    };
-    dec.onclick = () => step(-1);
-    inc.onclick = () => step(1);
-    score.addEventListener("input", () => {
-      data[s.key] = score.value.trim();
-      updateMods();
-    });
-    const modRow = statEl.createDiv({ cls: "sm-cc-stat__mod" });
-    modRow.createSpan({ text: "Mod" });
-    const modOut = modRow.createSpan({ cls: "sm-cc-stat__mod-value", text: "+0" });
-    const saveRow = statEl.createDiv({ cls: "sm-cc-stat__save" });
-    saveRow.createSpan({ cls: "sm-cc-stat__save-label", text: "Save mod" });
-    const saveControls = saveRow.createDiv({ cls: "sm-cc-stat__save-controls" });
-    const saveCb = saveControls.createEl("input", { attr: { type: "checkbox", "aria-label": `${s.label} Save Proficiency` } });
-    const saveOut = saveControls.createSpan({ cls: "sm-cc-stat__save-value", text: "+0" });
-    ensureSets();
-    saveCb.checked = !!data.saveProf[s.key];
-    saveCb.addEventListener("change", () => {
-      data.saveProf[s.key] = saveCb.checked;
-      updateMods();
-    });
-    abilityElems.set(s.key, { score, mod: modOut, save: saveCb, saveMod: saveOut });
+
+// src/apps/library/create/creature/section-senses-and-defenses.ts
+function ensureStringList(data, key) {
+  const current = data[key];
+  if (Array.isArray(current)) return current;
+  const arr = [];
+  data[key] = arr;
+  return arr;
+}
+var makeModel = (list) => ({
+  get: () => list,
+  add: (value) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    if (!list.includes(trimmed)) list.push(trimmed);
+  },
+  remove: (index) => {
+    list.splice(index, 1);
   }
-  const skillAbilityMap = new Map(CREATURE_SKILLS);
-  const skillsSetting = new import_obsidian16.Setting(root).setName("Fertigkeiten");
-  skillsSetting.settingEl.addClass("sm-cc-skills");
-  const skillsControl = skillsSetting.controlEl;
-  skillsControl.addClass("sm-cc-skill-editor");
-  skillsSetting.nameEl.empty();
-  const skillsRow = skillsControl.createDiv({ cls: "sm-cc-searchbar sm-cc-skill-search" });
-  const skillsSelectId = "sm-cc-skill-select";
-  const skillsLabel = skillsRow.createEl("label", { text: "Fertigkeiten", attr: { for: skillsSelectId } });
-  const skillsSelect = skillsRow.createEl("select", { attr: { id: skillsSelectId } });
-  const blankSkill = skillsSelect.createEl("option", { text: "Fertigkeit w\xE4hlen\u2026" });
-  blankSkill.value = "";
-  for (const [name] of CREATURE_SKILLS) {
-    const opt = skillsSelect.createEl("option", { text: name });
-    opt.value = name;
-  }
-  try {
-    enhanceSelectToSearch(skillsSelect, "Fertigkeit suchen\u2026");
-  } catch {
-  }
-  const skillsSearchInput = skillsSelect._smSearchInput;
-  if (skillsSearchInput) {
-    skillsSearchInput.placeholder = "Fertigkeit suchen\u2026";
-    if (!skillsSearchInput.id) skillsSearchInput.id = `${skillsSelectId}-search`;
-    skillsLabel.htmlFor = skillsSearchInput.id;
-  }
-  const addSkillBtn = skillsRow.createEl("button", { text: "+ Hinzuf\xFCgen" });
-  const skillChips = skillsControl.createDiv({ cls: "sm-cc-chips sm-cc-skill-chips" });
-  const skillRefs = /* @__PURE__ */ new Map();
-  const addSkillByName = (rawName) => {
-    const name = rawName.trim();
-    if (!name) return;
-    if (!skillAbilityMap.has(name)) return;
-    ensureSets();
-    if (!data.skillsProf.includes(name)) data.skillsProf.push(name);
-    renderSkillChips();
-  };
-  addSkillBtn.onclick = () => {
-    const selected = skillsSelect.value.trim();
-    const typed = skillsSearchInput?.value.trim() ?? "";
-    let value = selected;
-    if (!value && typed) {
-      const match = Array.from(skillsSelect.options).find((opt) => opt.text.trim().toLowerCase() === typed.toLowerCase());
-      if (match) value = match.value.trim();
-    }
-    if (skillsSearchInput) skillsSearchInput.value = "";
-    skillsSelect.value = "";
-    addSkillByName(value);
-  };
-  function renderSkillChips() {
-    ensureSets();
-    skillChips.empty();
-    skillRefs.clear();
-    const profs = data.skillsProf ?? [];
-    for (const name of profs) {
-      const chip = skillChips.createDiv({ cls: "sm-cc-chip sm-cc-skill-chip" });
-      chip.createSpan({ cls: "sm-cc-skill-chip__name", text: name });
-      const modOut = chip.createSpan({ cls: "sm-cc-skill-chip__mod", text: "+0" });
-      const expertiseWrap = chip.createEl("label", { cls: "sm-cc-skill-chip__exp" });
-      const expertiseCb = expertiseWrap.createEl("input", { attr: { type: "checkbox" } });
-      expertiseWrap.createSpan({ text: "Expertise" });
-      expertiseCb.checked = !!data.skillsExpertise?.includes(name);
-      expertiseCb.addEventListener("change", () => {
-        ensureSets();
-        if (expertiseCb.checked) {
-          if (!data.skillsExpertise.includes(name)) data.skillsExpertise.push(name);
-        } else {
-          data.skillsExpertise = data.skillsExpertise.filter((s) => s !== name);
-        }
-        updateMods();
-      });
-      const removeBtn = chip.createEl("button", {
-        cls: "sm-cc-chip__remove",
-        text: "\xD7",
-        attr: { "aria-label": `${name} entfernen` }
-      });
-      removeBtn.onclick = () => {
-        ensureSets();
-        data.skillsProf = data.skillsProf.filter((s) => s !== name);
-        data.skillsExpertise = data.skillsExpertise.filter((s) => s !== name);
-        renderSkillChips();
-      };
-      skillRefs.set(name, { mod: modOut, expertise: expertiseCb });
-    }
-    updateMods();
-  }
-  const updateMods = () => {
-    const pb = parseIntSafe(data.pb) || 0;
-    for (const [key, refs] of abilityElems) {
-      const mod = abilityMod2(data[key]);
-      refs.mod.textContent = formatSigned(mod);
-      const saveBonus = data.saveProf?.[key] ? pb : 0;
-      refs.saveMod.textContent = formatSigned(mod + saveBonus);
-    }
-    ensureSets();
-    const profs = new Set(data.skillsProf ?? []);
-    data.skillsExpertise = (data.skillsExpertise ?? []).filter((name) => profs.has(name));
-    for (const [name, refs] of skillRefs) {
-      const ability = skillAbilityMap.get(name);
-      const mod = ability ? abilityMod2(data[ability]) : 0;
-      const hasExpertise = data.skillsExpertise?.includes(name) ?? false;
-      const bonus = hasExpertise ? pb * 2 : pb;
-      refs.mod.textContent = formatSigned(mod + bonus);
-      if (refs.expertise.checked !== hasExpertise) refs.expertise.checked = hasExpertise;
-    }
-  };
-  renderSkillChips();
-  const ensureStringList = (key) => {
-    const current = data[key];
-    if (Array.isArray(current)) return current;
-    const arr = [];
-    data[key] = arr;
-    return arr;
-  };
-  const makeModel = (list) => ({
-    get: () => list,
-    add: (value) => {
-      const trimmed = value.trim();
-      if (!trimmed) return;
-      if (!list.includes(trimmed)) list.push(trimmed);
-    },
-    remove: (index) => {
-      list.splice(index, 1);
-    }
-  });
-  const senses = ensureStringList("sensesList");
+});
+function mountCreatureSensesAndDefensesSection(parent, data) {
+  const root = parent.createDiv({ cls: "sm-cc-defenses" });
+  const senses = ensureStringList(data, "sensesList");
   mountPresetSelectEditor(
     root,
     "Sinne",
@@ -4588,7 +4709,7 @@ function mountCoreStatsSection(parent, data) {
     makeModel(senses),
     { placeholder: "Sinn suchen oder eingeben\u2026", inlineLabel: "Eintrag", rowClass: "sm-cc-senses-search" }
   );
-  const languages = ensureStringList("languagesList");
+  const languages = ensureStringList(data, "languagesList");
   mountPresetSelectEditor(
     root,
     "Sprachen",
@@ -4596,28 +4717,45 @@ function mountCoreStatsSection(parent, data) {
     makeModel(languages),
     { placeholder: "Sprache suchen oder eingeben\u2026", inlineLabel: "Eintrag", rowClass: "sm-cc-senses-search" }
   );
-  const passives = ensureStringList("passivesList");
-  mountPresetSelectEditor(root, "Passive Werte", CREATURE_PASSIVE_PRESETS, makeModel(passives), "Passiven Wert suchen oder eingeben\u2026");
-  const vulnerabilities = ensureStringList("damageVulnerabilitiesList");
-  const resistances = ensureStringList("damageResistancesList");
-  const immunities = ensureStringList("damageImmunitiesList");
+  const passives = ensureStringList(data, "passivesList");
+  mountPresetSelectEditor(
+    root,
+    "Passive Werte",
+    CREATURE_PASSIVE_PRESETS,
+    makeModel(passives),
+    "Passiven Wert suchen oder eingeben\u2026"
+  );
+  const vulnerabilities = ensureStringList(data, "damageVulnerabilitiesList");
+  const resistances = ensureStringList(data, "damageResistancesList");
+  const immunities = ensureStringList(data, "damageImmunitiesList");
   mountDamageResponseEditor(root, {
     vulnerabilities,
     resistances,
     immunities
   });
-  const conditionImmunities = ensureStringList("conditionImmunitiesList");
-  mountPresetSelectEditor(root, "Zustandsimmunit\xE4ten", CREATURE_CONDITION_PRESETS, makeModel(conditionImmunities), "Zustandsimmunit\xE4t suchen oder eingeben\u2026");
-  const gear = ensureStringList("gearList");
-  mountTokenEditor(root, "Ausr\xFCstung/Gear", {
-    getItems: () => gear,
-    add: (value) => {
-      const trimmed = value.trim();
-      if (!trimmed) return;
-      if (!gear.includes(trimmed)) gear.push(trimmed);
+  const conditionImmunities = ensureStringList(data, "conditionImmunitiesList");
+  mountPresetSelectEditor(
+    root,
+    "Zustandsimmunit\xE4ten",
+    CREATURE_CONDITION_PRESETS,
+    makeModel(conditionImmunities),
+    "Zustandsimmunit\xE4t suchen oder eingeben\u2026"
+  );
+  const gear = ensureStringList(data, "gearList");
+  mountTokenEditor(
+    root,
+    "Ausr\xFCstung/Gear",
+    {
+      getItems: () => gear,
+      add: (value) => {
+        const trimmed = value.trim();
+        if (!trimmed) return;
+        if (!gear.includes(trimmed)) gear.push(trimmed);
+      },
+      remove: (index) => gear.splice(index, 1)
     },
-    remove: (index) => gear.splice(index, 1)
-  }, { placeholder: "Gegenstand oder Hinweis\u2026", addButtonLabel: "+ Hinzuf\xFCgen" });
+    { placeholder: "Gegenstand oder Hinweis\u2026", addButtonLabel: "+ Hinzuf\xFCgen" }
+  );
 }
 
 // src/apps/library/create/creature/section-entries.ts
@@ -4892,7 +5030,7 @@ function mountSpellsKnownSection(parent, data, getAvailableSpells) {
 }
 
 // src/apps/library/create/creature/modal.ts
-var CreateCreatureModal = class extends import_obsidian17.Modal {
+var CreateCreatureModal = class extends import_obsidian19.Modal {
   constructor(app, presetName, onSubmit) {
     super(app);
     this.availableSpells = [];
@@ -4919,70 +5057,12 @@ var CreateCreatureModal = class extends import_obsidian17.Modal {
       } catch {
       }
     })();
-    mountCoreStatsSection(contentEl, this.data);
-    if (!this.data.speedList) this.data.speedList = [];
-    const speedWrap = contentEl.createDiv({ cls: "setting-item" });
-    speedWrap.createDiv({ cls: "setting-item-info", text: "Bewegung" });
-    const speedCtl = speedWrap.createDiv({ cls: "setting-item-control sm-cc-move-ctl" });
-    const addRow = speedCtl.createDiv({ cls: "sm-cc-searchbar sm-cc-move-row" });
-    const typeSel = addRow.createEl("select");
-    for (const [value, label] of CREATURE_MOVEMENT_TYPES) {
-      const option = typeSel.createEl("option", { text: label });
-      option.value = value;
-    }
-    enhanceSelectToSearch(typeSel, "Such-dropdown\u2026");
-    const hoverWrap = addRow.createDiv();
-    const hoverCb = hoverWrap.createEl("input", { attr: { type: "checkbox", id: "cb-hover" } });
-    hoverWrap.createEl("label", { text: "Hover", attr: { for: "cb-hover" } });
-    const updateHover = () => {
-      const cur = typeSel.value;
-      const isFly = cur === "fly";
-      hoverWrap.style.display = isFly ? "" : "none";
-      if (!isFly) hoverCb.checked = false;
-    };
-    updateHover();
-    typeSel.onchange = updateHover;
-    const numWrap = addRow.createDiv({ cls: "sm-inline-number" });
-    const valInp = numWrap.createEl("input", { attr: { type: "number", min: "0", step: "5", placeholder: "30" } });
-    const decBtn = numWrap.createEl("button", { text: "\u2212", cls: "btn-compact" });
-    const incBtn = numWrap.createEl("button", { text: "+", cls: "btn-compact" });
-    const step = (dir) => {
-      const cur = parseInt(valInp.value, 10) || 0;
-      const next = Math.max(0, cur + 5 * dir);
-      valInp.value = String(next);
-    };
-    decBtn.onclick = () => step(-1);
-    incBtn.onclick = () => step(1);
-    const addRow2 = speedCtl.createDiv({ cls: "sm-cc-searchbar sm-cc-move-addrow" });
-    const addSpeedBtn = addRow2.createEl("button", { text: "+ Hinzuf\xFCgen" });
-    const listWrap = speedCtl.createDiv({ cls: "sm-cc-chips" });
-    const renderSpeeds = () => {
-      listWrap.empty();
-      this.data.speedList.forEach((txt, i) => {
-        const chip = listWrap.createDiv({ cls: "sm-cc-chip" });
-        chip.createSpan({ text: txt });
-        const x = chip.createEl("button", { text: "\xD7" });
-        x.onclick = () => {
-          this.data.speedList.splice(i, 1);
-          renderSpeeds();
-        };
-      });
-    };
-    renderSpeeds();
-    addSpeedBtn.onclick = () => {
-      const n = parseInt(valInp.value, 10);
-      if (!Number.isFinite(n) || n <= 0) return;
-      const kind = typeSel.value;
-      const unit = "ft.";
-      const label = kind === "walk" ? `${n} ${unit}` : kind === "fly" && hoverCb.checked ? `fly ${n} ${unit} (hover)` : `${kind} ${n} ${unit}`;
-      this.data.speedList.push(label);
-      valInp.value = "";
-      hoverCb.checked = false;
-      renderSpeeds();
-    };
+    mountCreatureBasicsSection(contentEl, this.data);
+    mountCreatureStatsAndSkillsSection(contentEl, this.data);
+    mountCreatureSensesAndDefensesSection(contentEl, this.data);
     mountEntriesSection(contentEl, this.data);
     spellsSectionControls = mountSpellsKnownSection(contentEl, this.data, () => this.availableSpells);
-    new import_obsidian17.Setting(contentEl).addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close())).addButton((b) => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
+    new import_obsidian19.Setting(contentEl).addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close())).addButton((b) => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
   }
   onClose() {
     this.contentEl.empty();
@@ -5005,8 +5085,8 @@ var CreateCreatureModal = class extends import_obsidian17.Modal {
 };
 
 // src/apps/library/create/spell/modal.ts
-var import_obsidian18 = require("obsidian");
-var CreateSpellModal = class extends import_obsidian18.Modal {
+var import_obsidian20 = require("obsidian");
+var CreateSpellModal = class extends import_obsidian20.Modal {
   constructor(app, presetName, onSubmit) {
     super(app);
     this.onSubmit = onSubmit;
@@ -5017,11 +5097,11 @@ var CreateSpellModal = class extends import_obsidian18.Modal {
     contentEl.empty();
     contentEl.addClass("sm-cc-create-modal");
     contentEl.createEl("h3", { text: "Neuen Zauber erstellen" });
-    new import_obsidian18.Setting(contentEl).setName("Name").addText((t) => {
+    new import_obsidian20.Setting(contentEl).setName("Name").addText((t) => {
       t.setPlaceholder("Fireball").setValue(this.data.name).onChange((v) => this.data.name = v.trim());
       t.inputEl.style.width = "28ch";
     });
-    new import_obsidian18.Setting(contentEl).setName("Grad").setDesc("0 = Zaubertrick").addDropdown((dd) => {
+    new import_obsidian20.Setting(contentEl).setName("Grad").setDesc("0 = Zaubertrick").addDropdown((dd) => {
       for (let i = 0; i <= 9; i++) dd.addOption(String(i), String(i));
       dd.onChange((v) => this.data.level = parseInt(v, 10));
       try {
@@ -5029,7 +5109,7 @@ var CreateSpellModal = class extends import_obsidian18.Modal {
       } catch {
       }
     });
-    new import_obsidian18.Setting(contentEl).setName("Schule").addDropdown((dd) => {
+    new import_obsidian20.Setting(contentEl).setName("Schule").addDropdown((dd) => {
       const schools = ["Abjuration", "Conjuration", "Divination", "Enchantment", "Evocation", "Illusion", "Necromancy", "Transmutation"];
       for (const s of schools) dd.addOption(s, s);
       dd.onChange((v) => this.data.school = v);
@@ -5038,15 +5118,15 @@ var CreateSpellModal = class extends import_obsidian18.Modal {
       } catch {
       }
     });
-    new import_obsidian18.Setting(contentEl).setName("Wirkzeit").addText((t) => {
+    new import_obsidian20.Setting(contentEl).setName("Wirkzeit").addText((t) => {
       t.setPlaceholder("1 Aktion").onChange((v) => this.data.casting_time = v.trim());
       t.inputEl.style.width = "12ch";
     });
-    new import_obsidian18.Setting(contentEl).setName("Reichweite").addText((t) => {
+    new import_obsidian20.Setting(contentEl).setName("Reichweite").addText((t) => {
       t.setPlaceholder("60 Fu\xDF").onChange((v) => this.data.range = v.trim());
       t.inputEl.style.width = "12ch";
     });
-    const comps = new import_obsidian18.Setting(contentEl).setName("Komponenten");
+    const comps = new import_obsidian20.Setting(contentEl).setName("Komponenten");
     let cV = false, cS = false, cM = false;
     const updateComps = () => {
       const arr = [];
@@ -5072,22 +5152,22 @@ var CreateSpellModal = class extends import_obsidian18.Modal {
       cM = v;
       updateComps();
     });
-    new import_obsidian18.Setting(contentEl).setName("Materialien").addText((t) => {
+    new import_obsidian20.Setting(contentEl).setName("Materialien").addText((t) => {
       t.setPlaceholder("winzige Kugel aus Guano und Schwefel").onChange((v) => this.data.materials = v.trim());
       t.inputEl.style.width = "34ch";
     });
-    new import_obsidian18.Setting(contentEl).setName("Dauer").addText((t) => {
+    new import_obsidian20.Setting(contentEl).setName("Dauer").addText((t) => {
       t.setPlaceholder("Augenblicklich / Konzentration, bis zu 1 Minute").onChange((v) => this.data.duration = v.trim());
       t.inputEl.style.width = "34ch";
     });
-    const flags = new import_obsidian18.Setting(contentEl).setName("Flags");
+    const flags = new import_obsidian20.Setting(contentEl).setName("Flags");
     const cbConc = flags.controlEl.createEl("input", { attr: { type: "checkbox" } });
     flags.controlEl.createEl("label", { text: "Konzentration" });
     const cbRit = flags.controlEl.createEl("input", { attr: { type: "checkbox" } });
     flags.controlEl.createEl("label", { text: "Ritual" });
     cbConc.addEventListener("change", () => this.data.concentration = cbConc.checked);
     cbRit.addEventListener("change", () => this.data.ritual = cbRit.checked);
-    new import_obsidian18.Setting(contentEl).setName("Angriff").addDropdown((dd) => {
+    new import_obsidian20.Setting(contentEl).setName("Angriff").addDropdown((dd) => {
       const opts = ["", "Melee Spell Attack", "Ranged Spell Attack", "Melee Weapon Attack", "Ranged Weapon Attack"];
       for (const s of opts) dd.addOption(s, s || "(kein)");
       dd.onChange((v) => this.data.attack = v || void 0);
@@ -5096,7 +5176,7 @@ var CreateSpellModal = class extends import_obsidian18.Modal {
       } catch {
       }
     });
-    const save = new import_obsidian18.Setting(contentEl).setName("Rettungswurf");
+    const save = new import_obsidian20.Setting(contentEl).setName("Rettungswurf");
     save.addDropdown((dd) => {
       const abil = ["", "STR", "DEX", "CON", "INT", "WIS", "CHA"];
       for (const a of abil) dd.addOption(a, a || "(kein)");
@@ -5111,7 +5191,7 @@ var CreateSpellModal = class extends import_obsidian18.Modal {
       t.setPlaceholder("Half on save / Negates \u2026").onChange((v) => this.data.save_effect = v.trim() || void 0);
       t.inputEl.style.width = "18ch";
     });
-    const dmg = new import_obsidian18.Setting(contentEl).setName("Schaden");
+    const dmg = new import_obsidian20.Setting(contentEl).setName("Schaden");
     dmg.controlEl.createEl("label", { text: "W\xFCrfel" });
     dmg.addText((t) => {
       t.setPlaceholder("8d6").onChange((v) => this.data.damage = v.trim() || void 0);
@@ -5130,7 +5210,7 @@ var CreateSpellModal = class extends import_obsidian18.Modal {
     });
     this.addTextArea(contentEl, "Beschreibung", "Beschreibung (Markdown)", (v) => this.data.description = v);
     this.addTextArea(contentEl, "H\xF6here Grade", "Bei h\xF6heren Graden (Markdown)", (v) => this.data.higher_levels = v);
-    new import_obsidian18.Setting(contentEl).addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close())).addButton((b) => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
+    new import_obsidian20.Setting(contentEl).addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close())).addButton((b) => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
     this.scope.register([], "Enter", () => this.submit());
   }
   onClose() {
@@ -5152,7 +5232,7 @@ var CreateSpellModal = class extends import_obsidian18.Modal {
 
 // src/apps/library/view.ts
 var VIEW_LIBRARY = "salt-library";
-var LibraryView = class extends import_obsidian19.ItemView {
+var LibraryView = class extends import_obsidian21.ItemView {
   constructor() {
     super(...arguments);
     this.mode = "creatures";
@@ -6064,7 +6144,7 @@ var HEX_PLUGIN_CSS = `
 `;
 
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian20.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian22.Plugin {
   async onload() {
     this.registerView(VIEW_CARTOGRAPHER, (leaf) => new CartographerView(leaf));
     this.registerView(VIEW_ENCOUNTER, (leaf) => new EncounterView(leaf));

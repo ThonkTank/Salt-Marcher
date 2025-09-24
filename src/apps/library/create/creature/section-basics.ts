@@ -1,0 +1,181 @@
+// src/apps/library/create/creature/section-basics.ts
+import { Setting } from "obsidian";
+import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
+import type { StatblockData } from "../../core/creature-files";
+import {
+  CREATURE_ALIGNMENT_GOOD_EVIL,
+  CREATURE_ALIGNMENT_LAW_CHAOS,
+  CREATURE_MOVEMENT_TYPES,
+  CREATURE_SIZES,
+  CREATURE_TYPES,
+  type CreatureMovementType,
+} from "./presets";
+
+function ensureSpeedList(data: StatblockData): string[] {
+  if (!Array.isArray(data.speedList)) data.speedList = [];
+  return data.speedList;
+}
+
+export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockData) {
+  const root = parent.createDiv({ cls: "sm-cc-basics" });
+
+  const idSetting = new Setting(root).setName("Name");
+  idSetting.addText((t) => {
+    t.setPlaceholder("Aboleth")
+      .setValue(data.name || "")
+      .onChange((v: string) => (data.name = v.trim()));
+    t.inputEl.style.width = "30ch";
+  });
+
+  const sizeSetting = new Setting(root).setName("Größe");
+  sizeSetting.addDropdown((dd) => {
+    dd.addOption("", "");
+    for (const option of CREATURE_SIZES) dd.addOption(option, option);
+    dd.setValue(data.size ?? "");
+    dd.onChange((v: string) => (data.size = v));
+    try {
+      enhanceSelectToSearch(dd.selectEl, "Such-dropdown…");
+    } catch {}
+  });
+
+  const typeSetting = new Setting(root).setName("Typ");
+  typeSetting.addDropdown((dd) => {
+    dd.addOption("", "");
+    for (const option of CREATURE_TYPES) dd.addOption(option, option);
+    dd.setValue(data.type ?? "");
+    dd.onChange((v: string) => (data.type = v));
+    try {
+      enhanceSelectToSearch(dd.selectEl, "Such-dropdown…");
+    } catch {}
+  });
+
+  const alignSetting = new Setting(root).setName("Gesinnung");
+  alignSetting.addDropdown((dd) => {
+    dd.addOption("", "");
+    for (const option of CREATURE_ALIGNMENT_LAW_CHAOS) dd.addOption(option, option);
+    dd.setValue(data.alignmentLawChaos ?? "");
+    dd.onChange((v: string) => (data.alignmentLawChaos = v));
+    try {
+      const el = dd.selectEl;
+      el.dataset.sdOpenAll = "0";
+      enhanceSelectToSearch(el, "Such-dropdown…");
+    } catch {}
+  });
+  alignSetting.addDropdown((dd) => {
+    dd.addOption("", "");
+    for (const option of CREATURE_ALIGNMENT_GOOD_EVIL) dd.addOption(option, option);
+    dd.setValue(data.alignmentGoodEvil ?? "");
+    dd.onChange((v: string) => (data.alignmentGoodEvil = v));
+    try {
+      const el = dd.selectEl;
+      el.dataset.sdOpenAll = "0";
+      enhanceSelectToSearch(el, "Such-dropdown…");
+    } catch {}
+  });
+
+  const coreSetting = new Setting(root).setName("Kernwerte");
+  const row = coreSetting.controlEl.createDiv({ cls: "sm-cc-inline-row" });
+  const mk = (
+    label: string,
+    widthCh: number,
+    placeholder: string,
+    key: keyof StatblockData,
+  ) => {
+    row.createEl("label", { text: label });
+    const inp = row.createEl("input", {
+      attr: { type: "text", placeholder, "aria-label": label },
+    }) as HTMLInputElement;
+    inp.style.width = `${widthCh}ch`;
+    inp.value = (data[key] as any) || "";
+    inp.addEventListener("input", () => ((data as any)[key] = inp.value.trim()));
+  };
+  mk("AC", 18, "17", "ac");
+  mk("Init", 6, "+7", "initiative");
+  mk("HP", 8, "150", "hp");
+  mk("HD", 14, "20d10 + 40", "hitDice");
+  mk("PB", 5, "+4", "pb");
+  mk("CR", 6, "10", "cr");
+  mk("XP", 8, "5900", "xp");
+
+  const speedSetting = new Setting(root).setName("Bewegung");
+  const speedControl = speedSetting.controlEl.createDiv({ cls: "sm-cc-move-ctl" });
+
+  const addRow = speedControl.createDiv({ cls: "sm-cc-searchbar sm-cc-move-row" });
+  const typeSelect = addRow.createEl("select") as HTMLSelectElement;
+  for (const [value, label] of CREATURE_MOVEMENT_TYPES) {
+    const option = typeSelect.createEl("option", { text: label }) as HTMLOptionElement;
+    option.value = value;
+  }
+  try {
+    enhanceSelectToSearch(typeSelect, "Such-dropdown…");
+  } catch {}
+
+  const hoverWrap = addRow.createDiv();
+  const hoverId = `sm-cc-hover-${Math.random().toString(36).slice(2)}`;
+  const hoverCb = hoverWrap.createEl("input", {
+    attr: { type: "checkbox", id: hoverId },
+  }) as HTMLInputElement;
+  hoverWrap.createEl("label", { text: "Hover", attr: { for: hoverId } });
+  const updateHover = () => {
+    const cur = typeSelect.value as CreatureMovementType;
+    const isFly = cur === "fly";
+    hoverWrap.style.display = isFly ? "" : "none";
+    if (!isFly) hoverCb.checked = false;
+  };
+  updateHover();
+  typeSelect.addEventListener("change", updateHover);
+
+  const numWrap = addRow.createDiv({ cls: "sm-inline-number" });
+  const valInput = numWrap.createEl("input", {
+    attr: { type: "number", min: "0", step: "5", placeholder: "30" },
+  }) as HTMLInputElement;
+  const decBtn = numWrap.createEl("button", { text: "−", cls: "btn-compact" });
+  const incBtn = numWrap.createEl("button", { text: "+", cls: "btn-compact" });
+  const step = (dir: 1 | -1) => {
+    const cur = parseInt(valInput.value, 10) || 0;
+    const next = Math.max(0, cur + 5 * dir);
+    valInput.value = String(next);
+  };
+  decBtn.onclick = () => step(-1);
+  incBtn.onclick = () => step(1);
+
+  const addRow2 = speedControl.createDiv({ cls: "sm-cc-searchbar sm-cc-move-addrow" });
+  const addSpeedBtn = addRow2.createEl("button", { text: "+ Hinzufügen" });
+  const speedChips = speedControl.createDiv({ cls: "sm-cc-chips" });
+
+  const speeds = ensureSpeedList(data);
+  const renderSpeeds = () => {
+    speedChips.empty();
+    speeds.forEach((txt, i) => {
+      const chip = speedChips.createDiv({ cls: "sm-cc-chip" });
+      chip.createSpan({ text: txt });
+      const removeBtn = chip.createEl("button", {
+        text: "×",
+        cls: "sm-cc-chip__remove",
+        attr: { "aria-label": `${txt} entfernen` },
+      });
+      removeBtn.onclick = () => {
+        speeds.splice(i, 1);
+        renderSpeeds();
+      };
+    });
+  };
+  renderSpeeds();
+
+  addSpeedBtn.onclick = () => {
+    const n = parseInt(valInput.value, 10);
+    if (!Number.isFinite(n) || n <= 0) return;
+    const kind = typeSelect.value as CreatureMovementType;
+    const unit = "ft.";
+    const label =
+      kind === "walk"
+        ? `${n} ${unit}`
+        : kind === "fly" && hoverCb.checked
+        ? `fly ${n} ${unit} (hover)`
+        : `${kind} ${n} ${unit}`;
+    speeds.push(label);
+    valInput.value = "";
+    hoverCb.checked = false;
+    renderSpeeds();
+  };
+}

@@ -2,11 +2,11 @@
 import { App, Modal, Setting } from "obsidian";
 import type { StatblockData } from "../../core/creature-files";
 import { listSpellFiles } from "../../core/spell-files";
-import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
-import { mountCoreStatsSection } from "./section-core-stats";
+import { mountCreatureBasicsSection } from "./section-basics";
+import { mountCreatureStatsAndSkillsSection } from "./section-stats-and-skills";
+import { mountCreatureSensesAndDefensesSection } from "./section-senses-and-defenses";
 import { mountEntriesSection } from "./section-entries";
 import { mountSpellsKnownSection } from "./section-spells-known";
-import { CREATURE_MOVEMENT_TYPES, type CreatureMovementType } from "./presets";
 
 export class CreateCreatureModal extends Modal {
     private data: StatblockData;
@@ -43,59 +43,10 @@ export class CreateCreatureModal extends Modal {
             catch {}
         })();
 
-        // Core Stats (kompakt) auslagern
-        mountCoreStatsSection(contentEl, this.data);
-        // Movement speeds (structured input → speedList strings)
-        if (!this.data.speedList) this.data.speedList = [];
-        const speedWrap = contentEl.createDiv({ cls: "setting-item" });
-        speedWrap.createDiv({ cls: "setting-item-info", text: "Bewegung" });
-        const speedCtl = speedWrap.createDiv({ cls: "setting-item-control sm-cc-move-ctl" });
-        const addRow = speedCtl.createDiv({ cls: "sm-cc-searchbar sm-cc-move-row" });
-        const typeSel = addRow.createEl("select") as HTMLSelectElement;
-        for (const [value, label] of CREATURE_MOVEMENT_TYPES) { const option = typeSel.createEl("option", { text: label }); option.value = value; }
-        enhanceSelectToSearch(typeSel, 'Such-dropdown…');
-        // hover option only for fly
-        const hoverWrap = addRow.createDiv();
-        const hoverCb = hoverWrap.createEl("input", { attr: { type: "checkbox", id: "cb-hover" } }) as HTMLInputElement;
-        hoverWrap.createEl("label", { text: "Hover", attr: { for: "cb-hover" } });
-        const updateHover = () => { const cur = typeSel.value as CreatureMovementType; const isFly = cur === 'fly'; hoverWrap.style.display = isFly ? '' : 'none'; if (!isFly) hoverCb.checked = false; };
-        updateHover(); typeSel.onchange = updateHover;
-        // inline number with +/- controls (5ft steps) – placed after hover
-        const numWrap = addRow.createDiv({ cls: "sm-inline-number" });
-        const valInp = numWrap.createEl("input", { attr: { type: "number", min: "0", step: "5", placeholder: "30" } }) as HTMLInputElement;
-        const decBtn = numWrap.createEl("button", { text: "−", cls: "btn-compact" });
-        const incBtn = numWrap.createEl("button", { text: "+", cls: "btn-compact" });
-        const step = (dir: 1 | -1) => {
-            const cur = parseInt(valInp.value, 10) || 0;
-            const next = Math.max(0, cur + 5 * dir);
-            valInp.value = String(next);
-        };
-        decBtn.onclick = () => step(-1);
-        incBtn.onclick = () => step(1);
-        const addRow2 = speedCtl.createDiv({ cls: "sm-cc-searchbar sm-cc-move-addrow" });
-        const addSpeedBtn = addRow2.createEl("button", { text: "+ Hinzufügen" });
-        const listWrap = speedCtl.createDiv({ cls: "sm-cc-chips" });
-        const renderSpeeds = () => {
-            listWrap.empty();
-            this.data.speedList!.forEach((txt, i) => {
-                const chip = listWrap.createDiv({ cls: 'sm-cc-chip' });
-                chip.createSpan({ text: txt });
-                const x = chip.createEl('button', { text: '×' });
-                x.onclick = () => { this.data.speedList!.splice(i,1); renderSpeeds(); };
-            });
-        };
-        renderSpeeds();
-        addSpeedBtn.onclick = () => {
-            const n = parseInt(valInp.value, 10);
-            if (!Number.isFinite(n) || n <= 0) return;
-            const kind = typeSel.value;
-            const unit = 'ft.';
-            const label = kind === 'walk'
-                ? `${n} ${unit}`
-                : (kind === 'fly' && hoverCb.checked ? `fly ${n} ${unit} (hover)` : `${kind} ${n} ${unit}`);
-            this.data.speedList!.push(label);
-            valInp.value = ""; hoverCb.checked = false; renderSpeeds();
-        };
+        // Grundlagen, Stats und Verteidigungen modular aufbauen
+        mountCreatureBasicsSection(contentEl, this.data);
+        mountCreatureStatsAndSkillsSection(contentEl, this.data);
+        mountCreatureSensesAndDefensesSection(contentEl, this.data);
 
         // Structured entries (Traits, Aktionen, …)
         mountEntriesSection(contentEl, this.data);
