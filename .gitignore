@@ -3,4 +3,4 @@ node_modules/
 *.log
 
 # Build artefacts
-dist/
+# (Keep bundled output in dist/ for plugin distribution)
