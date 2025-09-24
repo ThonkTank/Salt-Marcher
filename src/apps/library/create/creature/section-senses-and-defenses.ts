@@ -45,7 +45,7 @@ export function mountCreatureSensesAndDefensesSection(
     "Sinne",
     CREATURE_SENSE_PRESETS,
     makeModel(senses),
-    { placeholder: "Sinn suchen oder eingeben…", inlineLabel: "Eintrag", rowClass: "sm-cc-senses-search" },
+    { placeholder: "Sinn suchen oder eingeben…", rowClass: "sm-cc-senses-search" },
   );
 
   const languages = ensureStringList(data, "languagesList");
@@ -54,7 +54,7 @@ export function mountCreatureSensesAndDefensesSection(
     "Sprachen",
     CREATURE_LANGUAGE_PRESETS,
     makeModel(languages),
-    { placeholder: "Sprache suchen oder eingeben…", inlineLabel: "Eintrag", rowClass: "sm-cc-senses-search" },
+    { placeholder: "Sprache suchen oder eingeben…", rowClass: "sm-cc-senses-search" },
   );
 
   const passives = ensureStringList(data, "passivesList");

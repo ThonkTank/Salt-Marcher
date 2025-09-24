@@ -13,6 +13,7 @@ export interface PresetSelectEditorOptions {
   placeholder?: string;
   inlineLabel?: string;
   rowClass?: string;
+  addButtonLabel?: string;
 }
 
 export type PresetSelectEditorConfig =
@@ -29,7 +30,7 @@ export function mountPresetSelectEditor(
 ) {
   const resolved: PresetSelectEditorOptions =
     typeof config === "string" ? { placeholder: config } : config ?? {};
-  const { placeholder, inlineLabel, rowClass } = resolved;
+  const { placeholder, inlineLabel, rowClass, addButtonLabel } = resolved;
   const setting = new Setting(parent).setName(title);
   const rowClasses = ["sm-cc-searchbar"];
   if (rowClass) rowClasses.push(rowClass);
@@ -40,9 +41,12 @@ export function mountPresetSelectEditor(
     controlId = `sm-cc-select-${Math.random().toString(36).slice(2)}`;
     labelEl = row.createEl("label", { text: inlineLabel, attr: { for: controlId } });
   }
+  const selectAttrs: Record<string, string> = {};
+  if (controlId) selectAttrs.id = controlId;
+  else selectAttrs["aria-label"] = `${title} auswählen`;
   const select = row.createEl(
     "select",
-    controlId ? { attr: { id: controlId } } : undefined,
+    Object.keys(selectAttrs).length ? { attr: selectAttrs } : undefined,
   ) as HTMLSelectElement;
   const blank = select.createEl("option", { text: "Auswahl…" }) as HTMLOptionElement;
   blank.value = "";
@@ -60,9 +64,13 @@ export function mountPresetSelectEditor(
       searchInput.id = controlId ?? `sm-cc-input-${Math.random().toString(36).slice(2)}`;
     }
     if (labelEl) labelEl.htmlFor = searchInput.id;
+    else searchInput.setAttribute("aria-label", placeholder ?? title);
   }
 
-  const addBtn = row.createEl("button", { text: "+ Hinzufügen", attr: { type: "button" } });
+  const addBtn = row.createEl("button", {
+    text: addButtonLabel ?? "+",
+    attr: { type: "button", "aria-label": `${title} hinzufügen` },
+  });
   const chips = setting.controlEl.createDiv({ cls: "sm-cc-chips" });
 
   const renderChips = () => {
