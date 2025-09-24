@@ -4111,17 +4111,62 @@ var CREATURE_CONDITION_PRESETS = [
   "Stunned",
   "Unconscious"
 ];
+var CREATURE_SENSE_PRESETS = [
+  "Blindsight",
+  "Darkvision",
+  "Tremorsense",
+  "Truesight",
+  "Passive Perception",
+  "Telepathy"
+];
 var CREATURE_PASSIVE_PRESETS = [
   "Passive Perception",
   "Passive Insight",
   "Passive Investigation"
 ];
+var CREATURE_LANGUAGE_PRESETS = [
+  "Common",
+  "Dwarvish",
+  "Elvish",
+  "Giant",
+  "Gnomish",
+  "Goblin",
+  "Halfling",
+  "Orc",
+  "Abyssal",
+  "Celestial",
+  "Draconic",
+  "Deep Speech",
+  "Infernal",
+  "Primordial",
+  "Aquan",
+  "Auran",
+  "Ignan",
+  "Terran",
+  "Sylvan",
+  "Undercommon",
+  "Druidic",
+  "Thieves' Cant"
+];
 
 // src/apps/library/create/creature/section-core-stats.ts
-function mountPresetSelectEditor(parent, title, options, model, customPlaceholder) {
+function mountPresetSelectEditor(parent, title, options, model, config) {
+  const resolved = typeof config === "string" ? { placeholder: config } : config ?? {};
+  const { placeholder, inlineLabel, rowClass } = resolved;
   const setting = new import_obsidian16.Setting(parent).setName(title);
-  const row = setting.controlEl.createDiv({ cls: "sm-cc-searchbar" });
-  const select = row.createEl("select");
+  const rowClasses = ["sm-cc-searchbar"];
+  if (rowClass) rowClasses.push(rowClass);
+  const row = setting.controlEl.createDiv({ cls: rowClasses.join(" ") });
+  let labelEl;
+  let controlId;
+  if (inlineLabel) {
+    controlId = `sm-cc-select-${Math.random().toString(36).slice(2)}`;
+    labelEl = row.createEl("label", { text: inlineLabel, attr: { for: controlId } });
+  }
+  const select = row.createEl(
+    "select",
+    controlId ? { attr: { id: controlId } } : void 0
+  );
   const blank = select.createEl("option", { text: "Auswahl\u2026" });
   blank.value = "";
   for (const option of options) {
@@ -4129,21 +4174,29 @@ function mountPresetSelectEditor(parent, title, options, model, customPlaceholde
     opt.value = option;
   }
   try {
-    enhanceSelectToSearch(select, "Such-dropdown\u2026");
+    enhanceSelectToSearch(select, placeholder ?? "Such-dropdown\u2026");
   } catch {
   }
   const searchInput = select._smSearchInput;
-  if (customPlaceholder && searchInput) {
-    searchInput.placeholder = customPlaceholder;
+  if (searchInput) {
+    if (placeholder) searchInput.placeholder = placeholder;
+    if (!searchInput.id) {
+      searchInput.id = controlId ?? `sm-cc-input-${Math.random().toString(36).slice(2)}`;
+    }
+    if (labelEl) labelEl.htmlFor = searchInput.id;
   }
-  const addBtn = row.createEl("button", { text: "+ Hinzuf\xFCgen" });
+  const addBtn = row.createEl("button", { text: "+ Hinzuf\xFCgen", attr: { type: "button" } });
   const chips = setting.controlEl.createDiv({ cls: "sm-cc-chips" });
   const renderChips = () => {
     chips.empty();
     model.get().forEach((txt, index) => {
       const chip = chips.createDiv({ cls: "sm-cc-chip" });
       chip.createSpan({ text: txt });
-      const removeBtn = chip.createEl("button", { text: "\xD7" });
+      const removeBtn = chip.createEl("button", {
+        cls: "sm-cc-chip__remove",
+        text: "\xD7",
+        attr: { type: "button", "aria-label": `${txt} entfernen` }
+      });
       removeBtn.onclick = () => {
         model.remove(index);
         renderChips();
@@ -4168,6 +4221,125 @@ function mountPresetSelectEditor(parent, title, options, model, customPlaceholde
     if (searchInput) searchInput.value = "";
     renderChips();
   };
+  renderChips();
+}
+function mountDamageResponseEditor(parent, damageLists) {
+  const configs = [
+    {
+      kind: "res",
+      label: "Resistenz",
+      list: damageLists.resistances,
+      chipClass: "sm-cc-damage-chip--res"
+    },
+    {
+      kind: "imm",
+      label: "Immunit\xE4t",
+      list: damageLists.immunities,
+      chipClass: "sm-cc-damage-chip--imm"
+    },
+    {
+      kind: "vuln",
+      label: "Verwundbarkeit",
+      list: damageLists.vulnerabilities,
+      chipClass: "sm-cc-damage-chip--vuln"
+    }
+  ];
+  const setting = new import_obsidian16.Setting(parent).setName("Schadenstyp-Reaktionen");
+  const row = setting.controlEl.createDiv({ cls: "sm-cc-searchbar sm-cc-damage-row" });
+  row.createEl("label", { cls: "sm-cc-damage-label", text: "Schadenstyp" });
+  const select = row.createEl("select", { cls: "sm-cc-damage-select" });
+  const blank = select.createEl("option", { text: "Auswahl\u2026" });
+  blank.value = "";
+  for (const option of CREATURE_DAMAGE_PRESETS) {
+    const opt = select.createEl("option", { text: option });
+    opt.value = option;
+  }
+  try {
+    enhanceSelectToSearch(select, "Schadenstyp suchen\u2026");
+  } catch {
+  }
+  const searchInput = select._smSearchInput;
+  const typeWrap = row.createDiv({ cls: "sm-cc-damage-type" });
+  typeWrap.createSpan({ cls: "sm-cc-damage-type__label", text: "Status" });
+  const btnWrap = typeWrap.createDiv({ cls: "sm-cc-damage-type__buttons" });
+  let activeConfig = configs[0];
+  const buttons = /* @__PURE__ */ new Map();
+  for (const config of configs) {
+    const btn = btnWrap.createEl("button", {
+      cls: "sm-cc-damage-type__btn",
+      text: config.label,
+      attr: { type: "button" }
+    });
+    buttons.set(config.kind, btn);
+    btn.onclick = () => {
+      activeConfig = config;
+      for (const [kind, button] of buttons) {
+        if (kind === config.kind) button.addClass("is-active");
+        else button.removeClass("is-active");
+      }
+    };
+  }
+  buttons.get(activeConfig.kind)?.addClass("is-active");
+  const addBtn = row.createEl("button", {
+    cls: "sm-cc-damage-add",
+    text: "+ Hinzuf\xFCgen",
+    attr: { type: "button" }
+  });
+  const chips = setting.controlEl.createDiv({ cls: "sm-cc-chips sm-cc-damage-chips" });
+  const normalize = (value) => value.trim().toLowerCase();
+  const renderChips = () => {
+    chips.empty();
+    for (const config of configs) {
+      config.list.forEach((entry, index) => {
+        const chip = chips.createDiv({ cls: `sm-cc-chip sm-cc-damage-chip ${config.chipClass}` });
+        chip.createSpan({ cls: "sm-cc-damage-chip__name", text: entry });
+        chip.createSpan({ cls: "sm-cc-damage-chip__badge", text: config.label });
+        const removeBtn = chip.createEl("button", {
+          cls: "sm-cc-chip__remove",
+          text: "\xD7",
+          attr: { type: "button", "aria-label": `${config.label} entfernen` }
+        });
+        removeBtn.onclick = () => {
+          config.list.splice(index, 1);
+          renderChips();
+        };
+      });
+    }
+  };
+  const addEntry = () => {
+    const selectedValue = select.value.trim();
+    const typedValue = searchInput?.value.trim() ?? "";
+    let value = selectedValue;
+    if (!value && typedValue) {
+      const match = Array.from(select.options).find(
+        (opt) => opt.text.trim().toLowerCase() === typedValue.toLowerCase()
+      );
+      value = match ? match.value.trim() : typedValue;
+    }
+    const trimmed = value.trim();
+    if (!trimmed) {
+      select.value = "";
+      if (searchInput) searchInput.value = "";
+      return;
+    }
+    const list = activeConfig.list;
+    if (list.some((entry) => normalize(entry) === normalize(trimmed))) {
+      return;
+    }
+    list.push(trimmed);
+    select.value = "";
+    if (searchInput) searchInput.value = "";
+    renderChips();
+  };
+  addBtn.addEventListener("click", addEntry);
+  if (searchInput) {
+    searchInput.addEventListener("keydown", (evt) => {
+      if (evt.key === "Enter") {
+        evt.preventDefault();
+        addEntry();
+      }
+    });
+  }
   renderChips();
 }
 function mountCoreStatsSection(parent, data) {
@@ -4238,23 +4410,21 @@ function mountCoreStatsSection(parent, data) {
   mk("XP", 8, "5900", "xp");
   const abilitySection = root.createDiv({ cls: "sm-cc-skills" });
   abilitySection.createEl("h4", { text: "Stats" });
-  const statsTbl = abilitySection.createDiv({ cls: "sm-cc-table sm-cc-stats-table" });
-  const header = statsTbl.createDiv({ cls: "sm-cc-row sm-cc-header" });
-  ;
-  ["Name", "Wert", "Mod", "Save", "Save Mod"].forEach((h) => header.createDiv({ cls: "sm-cc-cell", text: h }));
   const abilityElems = /* @__PURE__ */ new Map();
   const ensureSets = () => {
     if (!data.saveProf) data.saveProf = {};
     if (!data.skillsProf) data.skillsProf = [];
     if (!data.skillsExpertise) data.skillsExpertise = [];
   };
+  const statsGrid = abilitySection.createDiv({ cls: "sm-cc-stats-grid" });
   for (const s of CREATURE_ABILITIES) {
-    const rowEl = statsTbl.createDiv({ cls: "sm-cc-row" });
-    rowEl.createDiv({ cls: "sm-cc-cell", text: s.label });
-    const scoreCell = rowEl.createDiv({ cls: "sm-cc-cell sm-inline-number" });
-    const score = scoreCell.createEl("input", { attr: { type: "number", placeholder: "10", min: "0", step: "1" } });
-    const dec = scoreCell.createEl("button", { text: "\u2212", cls: "btn-compact" });
-    const inc = scoreCell.createEl("button", { text: "+", cls: "btn-compact" });
+    const statEl = statsGrid.createDiv({ cls: "sm-cc-stat" });
+    const header = statEl.createDiv({ cls: "sm-cc-stat__header" });
+    header.createSpan({ text: s.label });
+    const scoreWrap = header.createDiv({ cls: "sm-inline-number sm-cc-stat__score" });
+    const score = scoreWrap.createEl("input", { attr: { type: "number", placeholder: "10", min: "0", step: "1" } });
+    const dec = scoreWrap.createEl("button", { text: "\u2212", cls: "btn-compact" });
+    const inc = scoreWrap.createEl("button", { text: "+", cls: "btn-compact" });
     score.value = data[s.key] || "";
     const step = (d) => {
       const cur = parseInt(score.value, 10) || 0;
@@ -4269,9 +4439,14 @@ function mountCoreStatsSection(parent, data) {
       data[s.key] = score.value.trim();
       updateMods();
     });
-    const modOut = rowEl.createDiv({ cls: "sm-cc-cell", text: "+0" });
-    const saveCb = rowEl.createEl("input", { cls: "sm-cc-cell", attr: { type: "checkbox" } });
-    const saveOut = rowEl.createDiv({ cls: "sm-cc-cell", text: "+0" });
+    const modRow = statEl.createDiv({ cls: "sm-cc-stat__mod" });
+    modRow.createSpan({ text: "Mod" });
+    const modOut = modRow.createSpan({ cls: "sm-cc-stat__mod-value", text: "+0" });
+    const saveRow = statEl.createDiv({ cls: "sm-cc-stat__save" });
+    saveRow.createSpan({ cls: "sm-cc-stat__save-label", text: "Save mod" });
+    const saveControls = saveRow.createDiv({ cls: "sm-cc-stat__save-controls" });
+    const saveCb = saveControls.createEl("input", { attr: { type: "checkbox", "aria-label": `${s.label} Save Proficiency` } });
+    const saveOut = saveControls.createSpan({ cls: "sm-cc-stat__save-value", text: "+0" });
     ensureSets();
     saveCb.checked = !!data.saveProf[s.key];
     saveCb.addEventListener("change", () => {
@@ -4285,8 +4460,11 @@ function mountCoreStatsSection(parent, data) {
   skillsSetting.settingEl.addClass("sm-cc-skills");
   const skillsControl = skillsSetting.controlEl;
   skillsControl.addClass("sm-cc-skill-editor");
+  skillsSetting.nameEl.empty();
   const skillsRow = skillsControl.createDiv({ cls: "sm-cc-searchbar sm-cc-skill-search" });
-  const skillsSelect = skillsRow.createEl("select");
+  const skillsSelectId = "sm-cc-skill-select";
+  const skillsLabel = skillsRow.createEl("label", { text: "Fertigkeiten", attr: { for: skillsSelectId } });
+  const skillsSelect = skillsRow.createEl("select", { attr: { id: skillsSelectId } });
   const blankSkill = skillsSelect.createEl("option", { text: "Fertigkeit w\xE4hlen\u2026" });
   blankSkill.value = "";
   for (const [name] of CREATURE_SKILLS) {
@@ -4298,7 +4476,11 @@ function mountCoreStatsSection(parent, data) {
   } catch {
   }
   const skillsSearchInput = skillsSelect._smSearchInput;
-  if (skillsSearchInput) skillsSearchInput.placeholder = "Fertigkeit suchen\u2026";
+  if (skillsSearchInput) {
+    skillsSearchInput.placeholder = "Fertigkeit suchen\u2026";
+    if (!skillsSearchInput.id) skillsSearchInput.id = `${skillsSelectId}-search`;
+    skillsLabel.htmlFor = skillsSearchInput.id;
+  }
   const addSkillBtn = skillsRow.createEl("button", { text: "+ Hinzuf\xFCgen" });
   const skillChips = skillsControl.createDiv({ cls: "sm-cc-chips sm-cc-skill-chips" });
   const skillRefs = /* @__PURE__ */ new Map();
@@ -4380,18 +4562,6 @@ function mountCoreStatsSection(parent, data) {
     }
   };
   renderSkillChips();
-  if (!data.sensesList) data.sensesList = [];
-  if (!data.languagesList) data.languagesList = [];
-  mountTokenEditor(root, "Sinne", {
-    getItems: () => data.sensesList,
-    add: (value) => data.sensesList.push(value),
-    remove: (index) => data.sensesList.splice(index, 1)
-  });
-  mountTokenEditor(root, "Sprachen", {
-    getItems: () => data.languagesList,
-    add: (value) => data.languagesList.push(value),
-    remove: (index) => data.languagesList.splice(index, 1)
-  });
   const ensureStringList = (key) => {
     const current = data[key];
     if (Array.isArray(current)) return current;
@@ -4410,14 +4580,32 @@ function mountCoreStatsSection(parent, data) {
       list.splice(index, 1);
     }
   });
+  const senses = ensureStringList("sensesList");
+  mountPresetSelectEditor(
+    root,
+    "Sinne",
+    CREATURE_SENSE_PRESETS,
+    makeModel(senses),
+    { placeholder: "Sinn suchen oder eingeben\u2026", inlineLabel: "Eintrag", rowClass: "sm-cc-senses-search" }
+  );
+  const languages = ensureStringList("languagesList");
+  mountPresetSelectEditor(
+    root,
+    "Sprachen",
+    CREATURE_LANGUAGE_PRESETS,
+    makeModel(languages),
+    { placeholder: "Sprache suchen oder eingeben\u2026", inlineLabel: "Eintrag", rowClass: "sm-cc-senses-search" }
+  );
   const passives = ensureStringList("passivesList");
   mountPresetSelectEditor(root, "Passive Werte", CREATURE_PASSIVE_PRESETS, makeModel(passives), "Passiven Wert suchen oder eingeben\u2026");
   const vulnerabilities = ensureStringList("damageVulnerabilitiesList");
-  mountPresetSelectEditor(root, "Verwundbarkeiten", CREATURE_DAMAGE_PRESETS, makeModel(vulnerabilities), "Verwundbarkeit suchen oder eingeben\u2026");
   const resistances = ensureStringList("damageResistancesList");
-  mountPresetSelectEditor(root, "Resistenzen", CREATURE_DAMAGE_PRESETS, makeModel(resistances), "Resistenz suchen oder eingeben\u2026");
   const immunities = ensureStringList("damageImmunitiesList");
-  mountPresetSelectEditor(root, "Immunit\xE4ten (Schaden)", CREATURE_DAMAGE_PRESETS, makeModel(immunities), "Schadensimmunit\xE4t suchen oder eingeben\u2026");
+  mountDamageResponseEditor(root, {
+    vulnerabilities,
+    resistances,
+    immunities
+  });
   const conditionImmunities = ensureStringList("conditionImmunitiesList");
   mountPresetSelectEditor(root, "Zustandsimmunit\xE4ten", CREATURE_CONDITION_PRESETS, makeModel(conditionImmunities), "Zustandsimmunit\xE4t suchen oder eingeben\u2026");
   const gear = ensureStringList("gearList");
@@ -5332,9 +5520,38 @@ var HEX_PLUGIN_CSS = `
 
 .sm-cc-chips { display:flex; gap:.35rem; flex-wrap:wrap; margin:.25rem 0 .5rem; }
 .sm-cc-chip { display:inline-flex; align-items:center; gap:.25rem; border:1px solid var(--background-modifier-border); border-radius:999px; padding:.1rem .4rem; background: var(--background-secondary); }
+.sm-cc-damage-row { align-items:center; }
+.sm-cc-damage-type { display:inline-flex; align-items:center; gap:.35rem; flex-wrap:wrap; justify-content:flex-start; }
+.sm-cc-damage-type__label { font-size:.85em; color: var(--text-muted); }
+.sm-cc-damage-type__buttons { display:inline-flex; border:1px solid var(--background-modifier-border); border-radius:999px; overflow:hidden; background: var(--background-primary); }
+.sm-cc-damage-type__btn { border:none; background:transparent; padding:.2rem .75rem; font-size:.85em; color: var(--text-muted); cursor:pointer; transition: background 120ms ease, color 120ms ease; }
+.sm-cc-damage-type__btn:hover { color: var(--text-normal); }
+.sm-cc-damage-type__btn.is-active { background: var(--interactive-accent); color: var(--text-on-accent, #fff); }
+.sm-cc-damage-type__btn.is-active:hover { color: var(--text-on-accent, #fff); }
+.sm-cc-damage-chips { margin-top:.25rem; }
+.sm-cc-damage-chip { align-items:center; gap:.4rem; padding-right:.5rem; }
+.sm-cc-damage-chip__name { font-weight:500; }
+.sm-cc-damage-chip__badge { font-size:.75em; font-weight:600; border-radius:999px; padding:.1rem .45rem; text-transform:uppercase; letter-spacing:.03em; }
+.sm-cc-damage-chip--res { border-color: rgba(37,99,235,.45); background-color: rgba(37,99,235,.08); }
+.sm-cc-damage-chip--res { border-color: color-mix(in srgb, var(--interactive-accent) 45%, transparent); background-color: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-secondary)); }
+.sm-cc-damage-chip--res .sm-cc-damage-chip__badge { background-color: rgba(37,99,235,.18); color:#2563eb; }
+.sm-cc-damage-chip--res .sm-cc-damage-chip__badge { background-color: color-mix(in srgb, var(--interactive-accent) 22%, transparent); color: var(--interactive-accent); }
+.sm-cc-damage-chip--imm { border-color: rgba(124,58,237,.45); background-color: rgba(124,58,237,.08); }
+.sm-cc-damage-chip--imm { border-color: color-mix(in srgb, var(--color-purple, #7c3aed) 45%, transparent); background-color: color-mix(in srgb, var(--color-purple, #7c3aed) 12%, var(--background-secondary)); }
+.sm-cc-damage-chip--imm .sm-cc-damage-chip__badge { background-color: rgba(124,58,237,.18); color:#7c3aed; }
+.sm-cc-damage-chip--imm .sm-cc-damage-chip__badge { background-color: color-mix(in srgb, var(--color-purple, #7c3aed) 22%, transparent); color: var(--color-purple, #7c3aed); }
+.sm-cc-damage-chip--vuln { border-color: rgba(234,88,12,.45); background-color: rgba(234,88,12,.08); }
+.sm-cc-damage-chip--vuln { border-color: color-mix(in srgb, var(--color-orange, #ea580c) 45%, transparent); background-color: color-mix(in srgb, var(--color-orange, #ea580c) 12%, var(--background-secondary)); }
+.sm-cc-damage-chip--vuln .sm-cc-damage-chip__badge { background-color: rgba(234,88,12,.18); color:#ea580c; }
+.sm-cc-damage-chip--vuln .sm-cc-damage-chip__badge { background-color: color-mix(in srgb, var(--color-orange, #ea580c) 22%, transparent); color: var(--color-orange, #ea580c); }
 .sm-cc-skill-editor { display:flex; flex-direction:column; gap:.35rem; }
 .sm-cc-skill-search { align-items:center; }
+.sm-cc-skill-search label { flex: 0 0 auto; }
 .sm-cc-skill-search select { min-width:220px; }
+.sm-cc-senses-search { align-items:center; }
+.sm-cc-senses-search label { flex: 0 0 auto; }
+.sm-cc-senses-search .sm-sd { flex: 1 1 220px; min-width: 200px; }
+.sm-cc-senses-search button { flex: 0 0 auto; }
 .sm-cc-skill-chips { gap:.45rem; }
 .sm-cc-skill-chip { align-items:center; gap:.4rem; padding-right:.5rem; }
 .sm-cc-skill-chip__name { font-weight:500; }
@@ -5351,6 +5568,10 @@ var HEX_PLUGIN_CSS = `
 .sm-cc-create-modal .sm-cc-skill-group { width: 100%; box-sizing: border-box; }
 .sm-cc-create-modal .sm-cc-searchbar { flex-wrap: wrap; }
 .sm-cc-create-modal .sm-cc-searchbar > * { flex: 1 1 160px; min-width: 140px; }
+.sm-cc-create-modal .sm-cc-damage-row > label,
+.sm-cc-create-modal .sm-cc-damage-row .sm-cc-damage-type,
+.sm-cc-create-modal .sm-cc-damage-row .sm-cc-damage-add { flex:0 0 auto; min-width:auto; }
+.sm-cc-create-modal .sm-cc-damage-row .sm-cc-damage-select { flex:1 1 240px; min-width:200px; }
 .sm-cc-create-modal .sm-cc-entry-grid { grid-template-columns: max-content 1fr max-content 1fr; column-gap: .75rem; row-gap: .35rem; align-items: center; }
 .sm-cc-create-modal .sm-cc-entry-grid input, .sm-cc-create-modal .sm-cc-entry-grid select { width: 100%; max-width: 220px; box-sizing: border-box; }
 .sm-cc-create-modal .sm-cc-entry-grid input[type="number"] { max-width: 100px; }
@@ -5382,13 +5603,27 @@ var HEX_PLUGIN_CSS = `
 .sm-cc-create-modal .sm-cc-entry-head select { width: auto; }
 .sm-cc-create-modal .sm-cc-entry-name { width: 100%; min-width: 0; }
 
-/* Table-like layout for Stats and Skills */
+/* Table-like layout for Skills */
 .sm-cc-create-modal .sm-cc-table { display: grid; gap: .35rem .5rem; align-items: center; }
 .sm-cc-create-modal .sm-cc-row { display: contents; }
 .sm-cc-create-modal .sm-cc-cell { align-self: center; }
 .sm-cc-create-modal .sm-cc-header .sm-cc-cell { font-weight: 600; color: var(--text-muted); }
-.sm-cc-create-modal .sm-cc-stats-table { grid-template-columns: 100px 90px 80px 60px 90px; }
-.sm-cc-create-modal .sm-cc-stats-table input[type="number"] { width: 100%; }
+
+/* Ability score cards */
+.sm-cc-create-modal .sm-cc-stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; margin-top: .35rem; }
+.sm-cc-create-modal .sm-cc-stat { border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: .5rem; background: var(--background-primary); display: flex; flex-direction: column; gap: .35rem; }
+.sm-cc-create-modal .sm-cc-stat__header { display: flex; align-items: center; justify-content: space-between; gap: .5rem; font-weight: 600; }
+.sm-cc-create-modal .sm-cc-stat__header span:first-child { color: var(--text-normal); }
+.sm-cc-create-modal .sm-cc-stat__mod { display: flex; align-items: center; justify-content: space-between; gap: .5rem; font-size: .95em; color: var(--text-muted); }
+.sm-cc-create-modal .sm-cc-stat__mod-value { font-weight: 600; color: var(--text-normal); }
+.sm-cc-create-modal .sm-cc-stat__save { display: flex; flex-direction: column; gap: .25rem; }
+.sm-cc-create-modal .sm-cc-stat__save-label { font-size: .85em; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; color: var(--text-muted); }
+.sm-cc-create-modal .sm-cc-stat__save-controls { display: flex; align-items: center; gap: .35rem; }
+.sm-cc-create-modal .sm-cc-stat__save-controls input[type="checkbox"] { margin: 0; }
+.sm-cc-create-modal .sm-cc-stat__save-value { font-weight: 600; }
+@media (max-width: 700px) {
+    .sm-cc-create-modal .sm-cc-stats-grid { grid-template-columns: minmax(0, 1fr); }
+}
 
 /* Compact inline number controls */
 .sm-inline-number { display: inline-flex; align-items: center; gap: .25rem; }

@@ -19,8 +19,8 @@ src/apps/library/
 │  ├─ creature/
 │  │  ├─ index.ts             # Re-exports Modal & Creature-Sections für externe Zugriffe
 │  │  ├─ modal.ts             # Modal zum Anlegen von Creatures (koordiniert die Abschnitte)
-│  │  ├─ presets.ts           # Zentralisierte Auswahllisten (Größe, Typ, Skills, Bewegungen …)
-│  │  ├─ section-core-stats.ts   # Abschnitt für Identität, Kernwerte, Saves & Sinne/Sprachen
+│  │  ├─ presets.ts           # Zentralisierte Auswahllisten (Größe, Typ, Skills, Bewegungen, Sinne, Sprachen …)
+│  │  ├─ section-core-stats.ts   # Abschnitt für Identität, Kernwerte, Saves & Sinne/Sprachen (Preset-Suche)
 │  │  ├─ section-entries.ts      # Abschnitt für Traits/Aktionen/Legendäre Einträge mit Presets
 │  │  └─ section-spells-known.ts # Abschnitt für bekannte Zauber inkl. Typeahead-Suche
 │  ├─ spell/
@@ -42,8 +42,8 @@ src/apps/library/
   - Terrains: legt neuen Eintrag mit Defaultwerten an (`#888888`, `speed: 1`).
   - Regionen: legt neuen Eintrag ohne Terrain/Encounter an.
   - Creatures/Spells: öffnet ein Modal, erzeugt eine `.md`‑Datei im passenden Ordner und öffnet sie im Editor.
-- Creature-Modal (`create/creature/modal.ts`) zerlegt das Formular in modulare Abschnitte (`create/creature/section-*.ts`) und orchestriert Mounting, State-Passing und Persistenz-Trigger. Gemeinsame Optionslisten (Größen, Typen, Gesinnung, Skills, Bewegungsarten) werden aus `create/creature/presets.ts` gespeist, sodass alle Segmente denselben Kanon verwenden.
-  - `creature/section-core-stats`: Steuert Identität, Ability Scores, Saves/Skills sowie Sinnes- und Sprachfelder inklusive Automatik-Berechnungen.
+- Creature-Modal (`create/creature/modal.ts`) zerlegt das Formular in modulare Abschnitte (`create/creature/section-*.ts`) und orchestriert Mounting, State-Passing und Persistenz-Trigger. Gemeinsame Optionslisten (Größen, Typen, Gesinnung, Skills, Bewegungsarten, Sinne, Sprachen) werden aus `create/creature/presets.ts` gespeist, sodass alle Segmente denselben Kanon verwenden.
+  - `creature/section-core-stats`: Steuert Identität, Ability Scores, Saves/Skills mit Inline-Label-Suchzeile sowie Sinnes- und Sprachfelder inklusive Automatik-Berechnungen und nutzt Preset-gestützte Such-Dropdowns für Sinne/Sprachen.
   - `creature/section-entries`: Verwaltet Traits, Aktionen, legendäre Optionen und Presets für Treffer-/Schadenswerte.
   - `creature/section-spells-known`: Liefert eine Typeahead-gestützte Spell-Liste mit Grad- und Nutzungskonfiguration, die auf den live gehaltenen Spell-Getter des Modals hört.
 - Geteilte Stat-Utilities (`create/shared/stat-utils.ts`) bündeln Parsing, Modifikator-Logik und Vorzeichenformatierung für alle Abschnitte – nutzbar auch für zukünftige Modals (z. B. Items oder NPC-Varianten).
@@ -80,7 +80,7 @@ src/apps/library/
 - Warum: Hält den Workflow zentral und delegiert UI-Details an spezialisierte Sektionen, sodass Erweiterungen (z. B. neue Abschnitte) gebündelt erfolgen.
 
 ### `create/creature/presets.ts`
-- Kapselt alle Konstanten/Typen für Dropdowns und Automatisierungen (Größen, Typen, Gesinnungsteile, Ability-Definitionen, Skill-Mappings, Entry-Kategorien, Bewegungsarten).
+- Kapselt alle Konstanten/Typen für Dropdowns und Automatisierungen (Größen, Typen, Gesinnungsteile, Ability-Definitionen, Skill-Mappings, Entry-Kategorien, Bewegungsarten, Sinne, Sprachen).
 - Warum: Statt mehrfacher Inline-Listen verwenden alle Sektionen dieselben Presets, was Pflegeaufwand reduziert und Erweiterungen an einer Stelle bündelt.
 
 ### `create/creature/index.ts`
@@ -90,8 +90,8 @@ src/apps/library/
 - Fasst die Modal-Exports (`CreateCreatureModal`, `CreateSpellModal`) zusammen. `view.ts` bindet beide über einen Import, was Importketten vereinfacht und die Ordnerstruktur vor Außenstehenden kapselt.
 
 ### `create/creature/section-core-stats.ts`
-- Rendert Identität, Kernwerte, Saves/Skills sowie Sinne und Sprachen inklusive automatischer Modifikator- und Proficiency-Berechnung.
-- Nutzt den gemeinsamen Token-Editor (`shared/token-editor`) für Sinne/Sprachen, damit Chips-UX und Add/Remove-Verhalten identisch mit anderen Formularteilen bleibt.
+- Rendert Identität, Kernwerte, Saves/Skills mit Inline-Label in der Suchzeile sowie Sinne und Sprachen inklusive automatischer Modifikator- und Proficiency-Berechnung.
+- Nutzt Preset-gestützte Search-Dropdowns für Sinne/Sprachen (Freitext bleibt möglich) und spiegelt die Chip-UX des Skill-Editors inklusive Entfernen-Buttons; Token-Editoren bleiben für freie Listen wie Gear im Einsatz.
 - Zieht Berechnungshelfer (`shared/stat-utils`) für Ability-Modifikatoren und Vorzeichenformatierung heran, sodass dieselben Regeln wie in Eintragssektionen gelten.
 - Warum: Bündelt alle abhängigen Formeln (z. B. PB, Ability Mods) und sorgt dafür, dass Änderungen an Attributen sofort in allen Feldern sichtbar werden.
 
@@ -114,8 +114,7 @@ src/apps/library/
 - Verwendet `shared/token-editor`, um die Klassenliste als Chip-Liste zu bearbeiten und dieselbe UX wie in Creature-Abschnitten zu bieten.
 - Warum: Dedizierte UI für Spell-Erstellung; bleibt unabhängig vom Creature-Flow.
 
-### `create/shared/token-editor.ts`
-- Kapselt Setting-Aufbau, Input-Handling und Chip-Rendering für freie Listen (z. B. Klassen, Sinne, Sprachen).
+- Kapselt Setting-Aufbau, Input-Handling und Chip-Rendering für freie Listen (z. B. Klassen oder Gear) und ergänzt Sense-/Language-Workflows, wenn Felder ohne Preset-Suche benötigt werden.
 - Bietet optionale Add/Remove-Callbacks und einen Refresh-Hook, um konsistente Token-Editoren in allen Formularen zu gewährleisten.
 
 ### `create/spell/index.ts`

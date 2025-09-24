@@ -10,7 +10,9 @@ import {
   CREATURE_ALIGNMENT_LAW_CHAOS,
   CREATURE_CONDITION_PRESETS,
   CREATURE_DAMAGE_PRESETS,
+  CREATURE_LANGUAGE_PRESETS,
   CREATURE_PASSIVE_PRESETS,
+  CREATURE_SENSE_PRESETS,
   CREATURE_SIZES,
   CREATURE_SKILLS,
   CREATURE_TYPES,
@@ -23,29 +25,64 @@ interface PresetSelectModel {
   remove(index: number): void;
 }
 
+interface PresetSelectEditorOptions {
+  placeholder?: string;
+  inlineLabel?: string;
+  rowClass?: string;
+}
+
+type PresetSelectEditorConfig = string | PresetSelectEditorOptions | undefined;
+
+type DamageResponseKind = "res" | "imm" | "vuln";
+
+interface DamageResponseConfig {
+  kind: DamageResponseKind;
+  label: string;
+  list: string[];
+  chipClass: string;
+}
+
 function mountPresetSelectEditor(
   parent: HTMLElement,
   title: string,
   options: readonly string[],
   model: PresetSelectModel,
-  customPlaceholder?: string,
+  config?: PresetSelectEditorConfig,
 ) {
+  const resolved: PresetSelectEditorOptions =
+    typeof config === "string" ? { placeholder: config } : config ?? {};
+  const { placeholder, inlineLabel, rowClass } = resolved;
   const setting = new Setting(parent).setName(title);
-  const row = setting.controlEl.createDiv({ cls: "sm-cc-searchbar" });
-  const select = row.createEl("select") as HTMLSelectElement;
+  const rowClasses = ["sm-cc-searchbar"];
+  if (rowClass) rowClasses.push(rowClass);
+  const row = setting.controlEl.createDiv({ cls: rowClasses.join(" ") });
+  let labelEl: HTMLLabelElement | undefined;
+  let controlId: string | undefined;
+  if (inlineLabel) {
+    controlId = `sm-cc-select-${Math.random().toString(36).slice(2)}`;
+    labelEl = row.createEl("label", { text: inlineLabel, attr: { for: controlId } });
+  }
+  const select = row.createEl(
+    "select",
+    controlId ? { attr: { id: controlId } } : undefined,
+  ) as HTMLSelectElement;
   const blank = select.createEl("option", { text: "Auswahl…" }) as HTMLOptionElement;
   blank.value = "";
   for (const option of options) {
     const opt = select.createEl("option", { text: option }) as HTMLOptionElement;
     opt.value = option;
   }
-  try { enhanceSelectToSearch(select, "Such-dropdown…"); } catch {}
+  try { enhanceSelectToSearch(select, placeholder ?? "Such-dropdown…"); } catch {}
   const searchInput = (select as any)._smSearchInput as HTMLInputElement | undefined;
-  if (customPlaceholder && searchInput) {
-    searchInput.placeholder = customPlaceholder;
+  if (searchInput) {
+    if (placeholder) searchInput.placeholder = placeholder;
+    if (!searchInput.id) {
+      searchInput.id = controlId ?? `sm-cc-input-${Math.random().toString(36).slice(2)}`;
+    }
+    if (labelEl) labelEl.htmlFor = searchInput.id;
   }
 
-  const addBtn = row.createEl("button", { text: "+ Hinzufügen" });
+  const addBtn = row.createEl("button", { text: "+ Hinzufügen", attr: { type: "button" } });
   const chips = setting.controlEl.createDiv({ cls: "sm-cc-chips" });
 
   const renderChips = () => {
@@ -53,7 +90,11 @@ function mountPresetSelectEditor(
     model.get().forEach((txt, index) => {
       const chip = chips.createDiv({ cls: "sm-cc-chip" });
       chip.createSpan({ text: txt });
-      const removeBtn = chip.createEl("button", { text: "×" });
+      const removeBtn = chip.createEl("button", {
+        cls: "sm-cc-chip__remove",
+        text: "×",
+        attr: { type: "button", "aria-label": `${txt} entfernen` },
+      });
       removeBtn.onclick = () => {
         model.remove(index);
         renderChips();
@@ -79,6 +120,137 @@ function mountPresetSelectEditor(
     if (searchInput) searchInput.value = "";
     renderChips();
   };
+
+  renderChips();
+}
+
+function mountDamageResponseEditor(
+  parent: HTMLElement,
+  damageLists: { resistances: string[]; immunities: string[]; vulnerabilities: string[] },
+) {
+  const configs: DamageResponseConfig[] = [
+    {
+      kind: "res",
+      label: "Resistenz",
+      list: damageLists.resistances,
+      chipClass: "sm-cc-damage-chip--res",
+    },
+    {
+      kind: "imm",
+      label: "Immunität",
+      list: damageLists.immunities,
+      chipClass: "sm-cc-damage-chip--imm",
+    },
+    {
+      kind: "vuln",
+      label: "Verwundbarkeit",
+      list: damageLists.vulnerabilities,
+      chipClass: "sm-cc-damage-chip--vuln",
+    },
+  ];
+
+  const setting = new Setting(parent).setName("Schadenstyp-Reaktionen");
+  const row = setting.controlEl.createDiv({ cls: "sm-cc-searchbar sm-cc-damage-row" });
+  row.createEl("label", { cls: "sm-cc-damage-label", text: "Schadenstyp" });
+
+  const select = row.createEl("select", { cls: "sm-cc-damage-select" }) as HTMLSelectElement;
+  const blank = select.createEl("option", { text: "Auswahl…" }) as HTMLOptionElement;
+  blank.value = "";
+  for (const option of CREATURE_DAMAGE_PRESETS) {
+    const opt = select.createEl("option", { text: option }) as HTMLOptionElement;
+    opt.value = option;
+  }
+  try { enhanceSelectToSearch(select, "Schadenstyp suchen…"); } catch {}
+  const searchInput = (select as any)._smSearchInput as HTMLInputElement | undefined;
+
+  const typeWrap = row.createDiv({ cls: "sm-cc-damage-type" });
+  typeWrap.createSpan({ cls: "sm-cc-damage-type__label", text: "Status" });
+  const btnWrap = typeWrap.createDiv({ cls: "sm-cc-damage-type__buttons" });
+
+  let activeConfig = configs[0];
+  const buttons = new Map<DamageResponseKind, HTMLButtonElement>();
+  for (const config of configs) {
+    const btn = btnWrap.createEl("button", {
+      cls: "sm-cc-damage-type__btn",
+      text: config.label,
+      attr: { type: "button" },
+    }) as HTMLButtonElement;
+    buttons.set(config.kind, btn);
+    btn.onclick = () => {
+      activeConfig = config;
+      for (const [kind, button] of buttons) {
+        if (kind === config.kind) button.addClass("is-active");
+        else button.removeClass("is-active");
+      }
+    };
+  }
+  buttons.get(activeConfig.kind)?.addClass("is-active");
+
+  const addBtn = row.createEl("button", {
+    cls: "sm-cc-damage-add",
+    text: "+ Hinzufügen",
+    attr: { type: "button" },
+  });
+
+  const chips = setting.controlEl.createDiv({ cls: "sm-cc-chips sm-cc-damage-chips" });
+
+  const normalize = (value: string) => value.trim().toLowerCase();
+
+  const renderChips = () => {
+    chips.empty();
+    for (const config of configs) {
+      config.list.forEach((entry, index) => {
+        const chip = chips.createDiv({ cls: `sm-cc-chip sm-cc-damage-chip ${config.chipClass}` });
+        chip.createSpan({ cls: "sm-cc-damage-chip__name", text: entry });
+        chip.createSpan({ cls: "sm-cc-damage-chip__badge", text: config.label });
+        const removeBtn = chip.createEl("button", {
+          cls: "sm-cc-chip__remove",
+          text: "×",
+          attr: { type: "button", "aria-label": `${config.label} entfernen` },
+        });
+        removeBtn.onclick = () => {
+          config.list.splice(index, 1);
+          renderChips();
+        };
+      });
+    }
+  };
+
+  const addEntry = () => {
+    const selectedValue = select.value.trim();
+    const typedValue = searchInput?.value.trim() ?? "";
+    let value = selectedValue;
+    if (!value && typedValue) {
+      const match = Array.from(select.options).find(
+        (opt) => opt.text.trim().toLowerCase() === typedValue.toLowerCase(),
+      );
+      value = match ? match.value.trim() : typedValue;
+    }
+    const trimmed = value.trim();
+    if (!trimmed) {
+      select.value = "";
+      if (searchInput) searchInput.value = "";
+      return;
+    }
+    const list = activeConfig.list;
+    if (list.some((entry) => normalize(entry) === normalize(trimmed))) {
+      return;
+    }
+    list.push(trimmed);
+    select.value = "";
+    if (searchInput) searchInput.value = "";
+    renderChips();
+  };
+
+  addBtn.addEventListener("click", addEntry);
+  if (searchInput) {
+    searchInput.addEventListener("keydown", (evt) => {
+      if (evt.key === "Enter") {
+        evt.preventDefault();
+        addEntry();
+      }
+    });
+  }
 
   renderChips();
 }
@@ -144,10 +316,6 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
   // Abilities + Saves
   const abilitySection = root.createDiv({ cls: "sm-cc-skills" });
   abilitySection.createEl("h4", { text: "Stats" });
-  const statsTbl = abilitySection.createDiv({ cls: "sm-cc-table sm-cc-stats-table" });
-  const header = statsTbl.createDiv({ cls: "sm-cc-row sm-cc-header" });
-  ;["Name","Wert","Mod","Save","Save Mod"].forEach(h => header.createDiv({ cls: "sm-cc-cell", text: h }));
-
   const abilityElems = new Map<CreatureAbilityKey, { score: HTMLInputElement; mod: HTMLElement; save: HTMLInputElement; saveMod: HTMLElement }>();
 
   const ensureSets = () => {
@@ -156,13 +324,17 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
     if (!data.skillsExpertise) data.skillsExpertise = [];
   };
 
+  const statsGrid = abilitySection.createDiv({ cls: "sm-cc-stats-grid" });
+
   for (const s of CREATURE_ABILITIES) {
-    const rowEl = statsTbl.createDiv({ cls: "sm-cc-row" });
-    rowEl.createDiv({ cls: "sm-cc-cell", text: s.label });
-    const scoreCell = rowEl.createDiv({ cls: "sm-cc-cell sm-inline-number" });
-    const score = scoreCell.createEl("input", { attr: { type: "number", placeholder: "10", min: "0", step: "1" } }) as HTMLInputElement;
-    const dec = scoreCell.createEl("button", { text: "−", cls: "btn-compact" });
-    const inc = scoreCell.createEl("button", { text: "+", cls: "btn-compact" });
+    const statEl = statsGrid.createDiv({ cls: "sm-cc-stat" });
+
+    const header = statEl.createDiv({ cls: "sm-cc-stat__header" });
+    header.createSpan({ text: s.label });
+    const scoreWrap = header.createDiv({ cls: "sm-inline-number sm-cc-stat__score" });
+    const score = scoreWrap.createEl("input", { attr: { type: "number", placeholder: "10", min: "0", step: "1" } }) as HTMLInputElement;
+    const dec = scoreWrap.createEl("button", { text: "−", cls: "btn-compact" });
+    const inc = scoreWrap.createEl("button", { text: "+", cls: "btn-compact" });
     score.value = (data as any)[s.key] || "";
     const step = (d: number) => {
       const cur = parseInt(score.value, 10) || 0;
@@ -174,10 +346,19 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
     dec.onclick = () => step(-1);
     inc.onclick = () => step(1);
     score.addEventListener("input", () => { (data as any)[s.key] = score.value.trim(); updateMods(); });
-    const modOut = rowEl.createDiv({ cls: "sm-cc-cell", text: "+0" });
-    const saveCb = rowEl.createEl("input", { cls: "sm-cc-cell", attr: { type: "checkbox" } }) as HTMLInputElement;
-    const saveOut = rowEl.createDiv({ cls: "sm-cc-cell", text: "+0" });
-    ensureSets(); saveCb.checked = !!(data.saveProf as any)[s.key];
+
+    const modRow = statEl.createDiv({ cls: "sm-cc-stat__mod" });
+    modRow.createSpan({ text: "Mod" });
+    const modOut = modRow.createSpan({ cls: "sm-cc-stat__mod-value", text: "+0" });
+
+    const saveRow = statEl.createDiv({ cls: "sm-cc-stat__save" });
+    saveRow.createSpan({ cls: "sm-cc-stat__save-label", text: "Save mod" });
+    const saveControls = saveRow.createDiv({ cls: "sm-cc-stat__save-controls" });
+    const saveCb = saveControls.createEl("input", { attr: { type: "checkbox", "aria-label": `${s.label} Save Proficiency` } }) as HTMLInputElement;
+    const saveOut = saveControls.createSpan({ cls: "sm-cc-stat__save-value", text: "+0" });
+
+    ensureSets();
+    saveCb.checked = !!(data.saveProf as any)[s.key];
     saveCb.addEventListener("change", () => { (data.saveProf as any)[s.key] = saveCb.checked; updateMods(); });
     abilityElems.set(s.key, { score, mod: modOut, save: saveCb, saveMod: saveOut });
   }
@@ -189,8 +370,12 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
   const skillsControl = skillsSetting.controlEl;
   skillsControl.addClass("sm-cc-skill-editor");
 
+  skillsSetting.nameEl.empty();
+
   const skillsRow = skillsControl.createDiv({ cls: "sm-cc-searchbar sm-cc-skill-search" });
-  const skillsSelect = skillsRow.createEl("select") as HTMLSelectElement;
+  const skillsSelectId = "sm-cc-skill-select";
+  const skillsLabel = skillsRow.createEl("label", { text: "Fertigkeiten", attr: { for: skillsSelectId } });
+  const skillsSelect = skillsRow.createEl("select", { attr: { id: skillsSelectId } }) as HTMLSelectElement;
   const blankSkill = skillsSelect.createEl("option", { text: "Fertigkeit wählen…" }) as HTMLOptionElement;
   blankSkill.value = "";
   for (const [name] of CREATURE_SKILLS) {
@@ -199,7 +384,11 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
   }
   try { enhanceSelectToSearch(skillsSelect, "Fertigkeit suchen…"); } catch {}
   const skillsSearchInput = (skillsSelect as any)._smSearchInput as HTMLInputElement | undefined;
-  if (skillsSearchInput) skillsSearchInput.placeholder = "Fertigkeit suchen…";
+  if (skillsSearchInput) {
+    skillsSearchInput.placeholder = "Fertigkeit suchen…";
+    if (!skillsSearchInput.id) skillsSearchInput.id = `${skillsSelectId}-search`;
+    skillsLabel.htmlFor = skillsSearchInput.id;
+  }
 
   const addSkillBtn = skillsRow.createEl("button", { text: "+ Hinzufügen" });
   const skillChips = skillsControl.createDiv({ cls: "sm-cc-chips sm-cc-skill-chips" });
@@ -288,19 +477,6 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
   };
   renderSkillChips();
 
-  if (!data.sensesList) data.sensesList = [];
-  if (!data.languagesList) data.languagesList = [];
-  mountTokenEditor(root, "Sinne", {
-    getItems: () => data.sensesList!,
-    add: (value) => data.sensesList!.push(value),
-    remove: (index) => data.sensesList!.splice(index, 1),
-  });
-  mountTokenEditor(root, "Sprachen", {
-    getItems: () => data.languagesList!,
-    add: (value) => data.languagesList!.push(value),
-    remove: (index) => data.languagesList!.splice(index, 1),
-  });
-
   const ensureStringList = (key: keyof StatblockData & string): string[] => {
     const current = (data as any)[key];
     if (Array.isArray(current)) return current as string[];
@@ -320,17 +496,35 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
     },
   });
 
+  const senses = ensureStringList("sensesList");
+  mountPresetSelectEditor(
+    root,
+    "Sinne",
+    CREATURE_SENSE_PRESETS,
+    makeModel(senses),
+    { placeholder: "Sinn suchen oder eingeben…", inlineLabel: "Eintrag", rowClass: "sm-cc-senses-search" },
+  );
+
+  const languages = ensureStringList("languagesList");
+  mountPresetSelectEditor(
+    root,
+    "Sprachen",
+    CREATURE_LANGUAGE_PRESETS,
+    makeModel(languages),
+    { placeholder: "Sprache suchen oder eingeben…", inlineLabel: "Eintrag", rowClass: "sm-cc-senses-search" },
+  );
+
   const passives = ensureStringList("passivesList");
   mountPresetSelectEditor(root, "Passive Werte", CREATURE_PASSIVE_PRESETS, makeModel(passives), "Passiven Wert suchen oder eingeben…");
 
   const vulnerabilities = ensureStringList("damageVulnerabilitiesList");
-  mountPresetSelectEditor(root, "Verwundbarkeiten", CREATURE_DAMAGE_PRESETS, makeModel(vulnerabilities), "Verwundbarkeit suchen oder eingeben…");
-
   const resistances = ensureStringList("damageResistancesList");
-  mountPresetSelectEditor(root, "Resistenzen", CREATURE_DAMAGE_PRESETS, makeModel(resistances), "Resistenz suchen oder eingeben…");
-
   const immunities = ensureStringList("damageImmunitiesList");
-  mountPresetSelectEditor(root, "Immunitäten (Schaden)", CREATURE_DAMAGE_PRESETS, makeModel(immunities), "Schadensimmunität suchen oder eingeben…");
+  mountDamageResponseEditor(root, {
+    vulnerabilities,
+    resistances,
+    immunities,
+  });
 
   const conditionImmunities = ensureStringList("conditionImmunitiesList");
   mountPresetSelectEditor(root, "Zustandsimmunitäten", CREATURE_CONDITION_PRESETS, makeModel(conditionImmunities), "Zustandsimmunität suchen oder eingeben…");
