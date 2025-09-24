@@ -250,20 +250,20 @@ export const HEX_PLUGIN_CSS = `
 .sm-cc-create-modal .sm-cc-header .sm-cc-cell { font-weight: 600; color: var(--text-muted); }
 
 /* Ability score cards */
-.sm-cc-create-modal .sm-cc-stats-section { display: flex; flex-direction: column; gap: .1rem; }
+.sm-cc-create-modal .sm-cc-stats-section { display: flex; flex-direction: column; gap: .05rem; }
 .sm-cc-create-modal .sm-cc-stats-section__title { margin: 0; line-height: 1.3; }
-.sm-cc-create-modal .sm-cc-stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; align-items: stretch; gap: .15rem .5rem; margin: 0; }
-.sm-cc-create-modal .sm-cc-stats-grid__header { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: .5rem; row-gap: .05rem; align-items: end; padding: 0; margin: 0; font-size: .85em; color: var(--text-muted); }
+.sm-cc-create-modal .sm-cc-stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(0, auto); align-items: stretch; gap: .12rem .4rem; margin: 0; }
+.sm-cc-create-modal .sm-cc-stats-grid__header { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: .4rem; row-gap: .05rem; align-items: end; padding: 0; margin: 0; font-size: .85em; color: var(--text-muted); }
 .sm-cc-create-modal .sm-cc-stats-grid__header-cell { display: flex; align-items: center; justify-content: flex-end; gap: .2rem; font-weight: 600; }
 .sm-cc-create-modal .sm-cc-stats-grid__header-cell--save { gap: .25rem; }
 .sm-cc-create-modal .sm-cc-stats-grid__header-save-mod { font-size: .78em; letter-spacing: .06em; text-transform: uppercase; min-width: 3ch; text-align: right; }
 .sm-cc-create-modal .sm-cc-stats-grid__header-save-label { font-weight: 600; }
-.sm-cc-create-modal .sm-cc-stats-col { display: flex; flex-direction: column; gap: .15rem; }
-.sm-cc-create-modal .sm-cc-stat-row { display: flex; align-items: center; gap: .2rem; padding: .2rem .3rem; border-radius: 8px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); }
+.sm-cc-create-modal .sm-cc-stats-col { display: flex; flex-direction: column; gap: .12rem; }
+.sm-cc-create-modal .sm-cc-stat-row { display: flex; align-items: center; gap: .15rem; padding: .18rem .28rem; border-radius: 8px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); }
 .sm-cc-create-modal .sm-cc-stat-row__label { flex: 0 0 2.5rem; font-weight: 600; color: var(--text-normal); }
 .sm-cc-create-modal .sm-cc-stat-row__score { flex: 0 0 auto; }
-.sm-cc-create-modal .sm-cc-stat-row__mod-value { font-weight: 600; color: var(--text-normal); min-width: 3ch; text-align: right; margin-left: .15rem; }
-.sm-cc-create-modal .sm-cc-stat-row__save { margin-left: .1rem; display: grid; grid-auto-flow: column; grid-auto-columns: max-content; align-items: center; gap: .15rem; }
+.sm-cc-create-modal .sm-cc-stat-row__mod-value { font-weight: 600; color: var(--text-normal); min-width: 3ch; text-align: right; margin-left: .08rem; }
+.sm-cc-create-modal .sm-cc-stat-row__save { margin-left: .08rem; display: grid; grid-auto-flow: column; grid-auto-columns: max-content; align-items: center; gap: .1rem; }
 .sm-cc-create-modal .sm-cc-stat-row__save-prof { display: inline-flex; align-items: center; justify-content: center; width: 1.25rem; height: 1.25rem; font-size: .85em; color: var(--text-muted); cursor: pointer; }
 .sm-cc-create-modal .sm-cc-stat-row__save-prof input[type="checkbox"] { margin: 0; }
 .sm-cc-create-modal .sm-cc-stat-row__save-mod { font-weight: 600; color: var(--text-normal); min-width: 3ch; text-align: right; }
@@ -273,10 +273,10 @@ export const HEX_PLUGIN_CSS = `
 }
 
 /* Compact inline number controls */
-.sm-inline-number { display: inline-flex; align-items: center; gap: .25rem; }
+.sm-inline-number { display: inline-flex; align-items: center; gap: .2rem; }
 .sm-inline-number input[type="number"] { width: 84px; }
-.sm-cc-create-modal .sm-cc-stat-row .sm-inline-number { gap: .15rem; }
-.sm-cc-create-modal .sm-cc-stat-row__score-input { width: 2.6ch; min-width: 2.6ch; text-align: center; padding-inline: 0; }
+.sm-cc-create-modal .sm-cc-stat-row .sm-inline-number { gap: .12rem; }
+.sm-cc-create-modal .sm-cc-stat-row__score-input { width: 2.2ch; min-width: 2.2ch; text-align: center; padding-inline: 0; }
 .btn-compact { padding: 0 .4rem; min-width: 1.5rem; height: 1.6rem; line-height: 1.2; }
 
 /* Movement row should not overflow; children stay compact */
