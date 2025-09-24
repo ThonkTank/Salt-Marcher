@@ -278,12 +278,6 @@ export class LayoutEditorView extends ItemView {
     async onOpen() {
         this.contentEl.addClass("sm-layout-editor");
         this.render();
-        if (this.elements.length === 0) {
-            await this.importCreatureCreatorLayout({ silent: true });
-        }
-        if (this.elements.length === 0) {
-            this.createElement("label");
-        }
         this.refreshExport();
         this.updateStatus();
     }
