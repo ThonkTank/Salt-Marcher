@@ -47,7 +47,7 @@ src/apps/library/
   - Creatures/Spells: öffnet ein Modal, erzeugt eine `.md`‑Datei im passenden Ordner und öffnet sie im Editor.
 - Creature-Modal (`create/creature/modal.ts`) zerlegt das Formular in modulare Abschnitte (`create/creature/section-*.ts`) und orchestriert Mounting, State-Passing und Persistenz-Trigger. Gemeinsame Optionslisten (Größen, Typen, Gesinnung, Skills, Bewegungsarten, Sinne, Sprachen) werden aus `create/creature/presets.ts` gespeist, sodass alle Segmente denselben Kanon verwenden.
   - `creature/section-basics`: Verwaltet Identität, Kernwerte und einen Movement-Editor (Dropdown + Hover + Chip-Liste) und schreibt Ergebnisse direkt in `StatblockData`.
-  - `creature/section-stats-and-skills`: Rendert das Ability-Kartengrid mit Save-Proficiencies sowie den Skill-Chip-Workflow inklusive Expertise-Toggle und Live-Mod-Berechnung.
+  - `creature/section-stats-and-skills`: Rendert das Ability-Kartengrid mit Save-Proficiencies sowie den Skill-Chip-Workflow inklusive Expertise-Toggle, Live-Mod-Berechnung und kompakten Abständen.
   - `creature/section-senses-and-defenses`: Pflegt Sinne, Sprachen, Passives, Schadenstyp-Reaktionen, Zustandsimmunitäten und Gear per Preset-Suche/Chips.
   - `creature/section-utils`: Stellt geteilte Preset-/Damage-Editoren bereit, damit mehrere Sections denselben UX-Baukasten nutzen.
   - `creature/section-entries`: Verwaltet Traits, Aktionen, legendäre Optionen und Presets für Treffer-/Schadenswerte.
@@ -101,9 +101,9 @@ src/apps/library/
 - Warum: Bündelt sämtliche Kopfdaten und Bewegungslogik in einer fokussierten Section und entlastet das Modal von Inline-Steuerungen.
 
 ### `create/creature/section-stats-and-skills.ts`
-- Rendert das zweispaltige Ability-Kartengrid inklusive Save-Proficiencies, Mod-Anzeige und Score-Steppern.
+- Rendert das zweispaltige Ability-Kartengrid inklusive Save-Proficiencies, Mod-Anzeige und Score-Steppern mit reduziertem vertikalen Abstand.
 - Bietet einen Skill-Such-Workflow mit Chips, Expertise-Checkboxen und Mod-Neuberechnung via `shared/stat-utils`.
-- Warum: Trennt Ability-/Skill-Logik klar von anderen Bereichen und sorgt für konsistente Modifikator-Berechnungen an einer Stelle.
+- Warum: Trennt Ability-/Skill-Logik klar von anderen Bereichen und sorgt für konsistente Modifikator-Berechnungen an einer Stelle; das Layout hält Eingaben kompakt für schnellere Datenerfassung.
 
 ### `create/creature/section-senses-and-defenses.ts`
 - Nutzt Preset-Suchdropdowns für Sinne, Sprachen und passive Werte, kombiniert Schadenstyp-Reaktionen mit einem Status-Schalter (Resistenz/Immunität/Verwundbarkeit) und verwaltet Zustandsimmunitäten sowie Gear per Chip-UX.
