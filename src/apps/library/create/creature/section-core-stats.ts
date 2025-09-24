@@ -40,13 +40,9 @@ function mountPresetSelectEditor(
     opt.value = option;
   }
   try { enhanceSelectToSearch(select, "Such-dropdown…"); } catch {}
-
-  let customInput: HTMLInputElement | null = null;
-  if (customPlaceholder) {
-    customInput = row.createEl("input", {
-      attr: { type: "text", placeholder: customPlaceholder, "aria-label": customPlaceholder },
-    }) as HTMLInputElement;
-    (customInput.style as any).width = "22ch";
+  const searchInput = (select as any)._smSearchInput as HTMLInputElement | undefined;
+  if (customPlaceholder && searchInput) {
+    searchInput.placeholder = customPlaceholder;
   }
 
   const addBtn = row.createEl("button", { text: "+ Hinzufügen" });
@@ -66,18 +62,21 @@ function mountPresetSelectEditor(
   };
 
   addBtn.onclick = () => {
-    let value = select.value;
-    const customValue = customInput?.value.trim();
-    if (customValue) {
-      value = customValue;
+    const selectedValue = select.value.trim();
+    const typedValue = searchInput?.value.trim() ?? "";
+    let value = selectedValue;
+    if (!value && typedValue) {
+      const match = Array.from(select.options).find((opt) => opt.text.trim().toLowerCase() === typedValue.toLowerCase());
+      value = match ? match.value.trim() : typedValue;
     }
     if (!value) {
       select.value = "";
+      if (searchInput) searchInput.value = "";
       return;
     }
-    model.add(value.trim());
+    model.add(value);
     select.value = "";
-    if (customInput) customInput.value = "";
+    if (searchInput) searchInput.value = "";
     renderChips();
   };
 
@@ -264,19 +263,19 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
   });
 
   const passives = ensureStringList("passivesList");
-  mountPresetSelectEditor(root, "Passive Werte", CREATURE_PASSIVE_PRESETS, makeModel(passives), "Eigenen passiven Wert eingeben");
+  mountPresetSelectEditor(root, "Passive Werte", CREATURE_PASSIVE_PRESETS, makeModel(passives), "Passiven Wert suchen oder eingeben…");
 
   const vulnerabilities = ensureStringList("damageVulnerabilitiesList");
-  mountPresetSelectEditor(root, "Verwundbarkeiten", CREATURE_DAMAGE_PRESETS, makeModel(vulnerabilities), "Eigene Verwundbarkeit eingeben");
+  mountPresetSelectEditor(root, "Verwundbarkeiten", CREATURE_DAMAGE_PRESETS, makeModel(vulnerabilities), "Verwundbarkeit suchen oder eingeben…");
 
   const resistances = ensureStringList("damageResistancesList");
-  mountPresetSelectEditor(root, "Resistenzen", CREATURE_DAMAGE_PRESETS, makeModel(resistances), "Eigene Resistenz eingeben");
+  mountPresetSelectEditor(root, "Resistenzen", CREATURE_DAMAGE_PRESETS, makeModel(resistances), "Resistenz suchen oder eingeben…");
 
   const immunities = ensureStringList("damageImmunitiesList");
-  mountPresetSelectEditor(root, "Immunitäten (Schaden)", CREATURE_DAMAGE_PRESETS, makeModel(immunities), "Eigene Immunität eingeben");
+  mountPresetSelectEditor(root, "Immunitäten (Schaden)", CREATURE_DAMAGE_PRESETS, makeModel(immunities), "Schadensimmunität suchen oder eingeben…");
 
   const conditionImmunities = ensureStringList("conditionImmunitiesList");
-  mountPresetSelectEditor(root, "Zustandsimmunitäten", CREATURE_CONDITION_PRESETS, makeModel(conditionImmunities), "Eigene Zustandsimmunität eingeben");
+  mountPresetSelectEditor(root, "Zustandsimmunitäten", CREATURE_CONDITION_PRESETS, makeModel(conditionImmunities), "Zustandsimmunität suchen oder eingeben…");
 
   const gear = ensureStringList("gearList");
   mountTokenEditor(root, "Ausrüstung/Gear", {

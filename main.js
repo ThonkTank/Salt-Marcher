@@ -1151,6 +1151,7 @@ function enhanceSelectToSearch(select, placeholder = "Suchen\u2026") {
     setTimeout(closeMenu, 120);
   });
   select._smEnhanced = true;
+  select._smSearchInput = input;
 }
 
 // src/core/save.ts
@@ -4131,12 +4132,9 @@ function mountPresetSelectEditor(parent, title, options, model, customPlaceholde
     enhanceSelectToSearch(select, "Such-dropdown\u2026");
   } catch {
   }
-  let customInput = null;
-  if (customPlaceholder) {
-    customInput = row.createEl("input", {
-      attr: { type: "text", placeholder: customPlaceholder, "aria-label": customPlaceholder }
-    });
-    customInput.style.width = "22ch";
+  const searchInput = select._smSearchInput;
+  if (customPlaceholder && searchInput) {
+    searchInput.placeholder = customPlaceholder;
   }
   const addBtn = row.createEl("button", { text: "+ Hinzuf\xFCgen" });
   const chips = setting.controlEl.createDiv({ cls: "sm-cc-chips" });
@@ -4153,18 +4151,21 @@ function mountPresetSelectEditor(parent, title, options, model, customPlaceholde
     });
   };
   addBtn.onclick = () => {
-    let value = select.value;
-    const customValue = customInput?.value.trim();
-    if (customValue) {
-      value = customValue;
+    const selectedValue = select.value.trim();
+    const typedValue = searchInput?.value.trim() ?? "";
+    let value = selectedValue;
+    if (!value && typedValue) {
+      const match = Array.from(select.options).find((opt) => opt.text.trim().toLowerCase() === typedValue.toLowerCase());
+      value = match ? match.value.trim() : typedValue;
     }
     if (!value) {
       select.value = "";
+      if (searchInput) searchInput.value = "";
       return;
     }
-    model.add(value.trim());
+    model.add(value);
     select.value = "";
-    if (customInput) customInput.value = "";
+    if (searchInput) searchInput.value = "";
     renderChips();
   };
   renderChips();
@@ -4357,15 +4358,15 @@ function mountCoreStatsSection(parent, data) {
     }
   });
   const passives = ensureStringList("passivesList");
-  mountPresetSelectEditor(root, "Passive Werte", CREATURE_PASSIVE_PRESETS, makeModel(passives), "Eigenen passiven Wert eingeben");
+  mountPresetSelectEditor(root, "Passive Werte", CREATURE_PASSIVE_PRESETS, makeModel(passives), "Passiven Wert suchen oder eingeben\u2026");
   const vulnerabilities = ensureStringList("damageVulnerabilitiesList");
-  mountPresetSelectEditor(root, "Verwundbarkeiten", CREATURE_DAMAGE_PRESETS, makeModel(vulnerabilities), "Eigene Verwundbarkeit eingeben");
+  mountPresetSelectEditor(root, "Verwundbarkeiten", CREATURE_DAMAGE_PRESETS, makeModel(vulnerabilities), "Verwundbarkeit suchen oder eingeben\u2026");
   const resistances = ensureStringList("damageResistancesList");
-  mountPresetSelectEditor(root, "Resistenzen", CREATURE_DAMAGE_PRESETS, makeModel(resistances), "Eigene Resistenz eingeben");
+  mountPresetSelectEditor(root, "Resistenzen", CREATURE_DAMAGE_PRESETS, makeModel(resistances), "Resistenz suchen oder eingeben\u2026");
   const immunities = ensureStringList("damageImmunitiesList");
-  mountPresetSelectEditor(root, "Immunit\xE4ten (Schaden)", CREATURE_DAMAGE_PRESETS, makeModel(immunities), "Eigene Immunit\xE4t eingeben");
+  mountPresetSelectEditor(root, "Immunit\xE4ten (Schaden)", CREATURE_DAMAGE_PRESETS, makeModel(immunities), "Schadensimmunit\xE4t suchen oder eingeben\u2026");
   const conditionImmunities = ensureStringList("conditionImmunitiesList");
-  mountPresetSelectEditor(root, "Zustandsimmunit\xE4ten", CREATURE_CONDITION_PRESETS, makeModel(conditionImmunities), "Eigene Zustandsimmunit\xE4t eingeben");
+  mountPresetSelectEditor(root, "Zustandsimmunit\xE4ten", CREATURE_CONDITION_PRESETS, makeModel(conditionImmunities), "Zustandsimmunit\xE4t suchen oder eingeben\u2026");
   const gear = ensureStringList("gearList");
   mountTokenEditor(root, "Ausr\xFCstung/Gear", {
     getItems: () => gear,
