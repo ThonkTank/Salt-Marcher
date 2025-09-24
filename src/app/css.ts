@@ -74,26 +74,40 @@ export const HEX_PLUGIN_CSS = `
 
 /* Creature Creator – Basics Section */
 .sm-cc-basics { display:flex; flex-direction:column; gap:.75rem; }
-.sm-cc-basics__identity { display:flex; flex-wrap:wrap; gap:.75rem; align-items:flex-start; }
-.sm-cc-basics__identity-item { flex:1 1 220px; margin:0; }
-.sm-cc-basics__identity-name .setting-item-control { width:100%; }
-.sm-cc-basics__identity-name input[type="text"] { width:100%; box-sizing:border-box; }
-.sm-cc-basics__alignment .setting-item-control { display:flex; flex-wrap:wrap; gap:.5rem; }
-.sm-cc-basics__alignment-select { flex:1 1 140px; min-width:120px; }
-.sm-cc-basics__grid { display:grid; gap:.75rem; grid-template-columns:repeat(3, minmax(0, 1fr)); }
-.sm-cc-basics__grid-item { margin:0; height:100%; }
-.sm-cc-basics__grid-item .setting-item-control { width:100%; }
-.sm-cc-basics__grid .setting-item-info { align-self:flex-start; }
-.sm-cc-basics__grid-item--span-2 { grid-column:span 2; }
-.sm-cc-basics__grid-item--span-3 { grid-column:1 / -1; }
-@media (max-width: 980px) {
-    .sm-cc-basics__grid { grid-template-columns:repeat(2, minmax(0, 1fr)); }
-    .sm-cc-basics__grid-item--span-2 { grid-column:1 / -1; }
+.sm-cc-basics__grid { display:grid; grid-template-columns:repeat(12, minmax(0, 1fr)); gap:.75rem; align-items:stretch; }
+.sm-cc-basics__cell { margin:0; height:100%; grid-column:span 12; }
+.sm-cc-basics__cell.setting-item { border:1px solid var(--background-modifier-border); border-radius:10px; background: var(--background-primary); padding:.6rem .7rem; display:flex; flex-direction:column; gap:.45rem; box-sizing:border-box; border-top:none; }
+.sm-cc-basics__cell .setting-item-info { align-self:stretch; margin-right:0; }
+.sm-cc-basics__cell .setting-item-name { font-weight:600; letter-spacing:.01em; }
+.sm-cc-basics__cell .setting-item-control { width:100%; margin-left:0; display:flex; flex-direction:column; gap:.35rem; }
+.sm-cc-basics__cell select,
+.sm-cc-basics__cell input[type="text"],
+.sm-cc-basics__cell input[type="number"] { width:100%; box-sizing:border-box; }
+.sm-cc-basics__cell--half { grid-column:span 6; }
+.sm-cc-basics__cell--quarter { grid-column:span 3; }
+.sm-cc-basics__cell--full { grid-column:span 12; }
+.sm-cc-basics__alignment-controls { display:grid; gap:.5rem; grid-template-columns:repeat(2, minmax(0, 1fr)); }
+.sm-cc-basics__alignment-select { min-width:0; }
+.sm-cc-basics__select { min-height:32px; }
+.sm-cc-basics__text-input { min-height:32px; box-sizing:border-box; }
+@media (max-width: 1080px) {
+    .sm-cc-basics__grid { grid-template-columns:repeat(8, minmax(0, 1fr)); }
+    .sm-cc-basics__cell--quarter { grid-column:span 4; }
 }
-@media (max-width: 680px) {
+@media (max-width: 860px) {
+    .sm-cc-basics__grid { grid-template-columns:repeat(6, minmax(0, 1fr)); }
+    .sm-cc-basics__cell--half { grid-column:span 6; }
+    .sm-cc-basics__cell--quarter { grid-column:span 6; }
+}
+@media (max-width: 620px) {
+    .sm-cc-basics__grid { grid-template-columns:repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
     .sm-cc-basics__grid { grid-template-columns:minmax(0, 1fr); }
-    .sm-cc-basics__identity { flex-direction:column; }
-    .sm-cc-basics__identity-item { flex-basis:auto; }
+    .sm-cc-basics__alignment-controls { grid-template-columns:minmax(0, 1fr); }
+    .sm-cc-basics__cell--half,
+    .sm-cc-basics__cell--quarter,
+    .sm-cc-basics__cell--full { grid-column:span 1; }
 }
 
 /* Create Creature Modal helpers */
@@ -359,15 +373,6 @@ export const HEX_PLUGIN_CSS = `
 }
 .sm-cc-terrains.is-open .sm-cc-terrains__menu { display: block; }
 .sm-cc-terrains__item { display: flex; align-items: center; gap: .5rem; padding: .15rem 0; }
-
-/* Inline compact row for grouped fields */
-.sm-cc-inline-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: .35rem .6rem;
-}
-.sm-cc-inline-row label { font-size: 0.9em; color: var(--text-muted); }
 
 /* Region Compendium */
 .sm-region-compendium { padding:.5rem 0; }
