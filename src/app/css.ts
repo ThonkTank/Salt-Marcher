@@ -276,7 +276,12 @@ export const HEX_PLUGIN_CSS = `
 .sm-inline-number { display: inline-flex; align-items: center; gap: .2rem; }
 .sm-inline-number input[type="number"] { width: 84px; }
 .sm-cc-create-modal .sm-cc-stat-row .sm-inline-number { gap: .12rem; }
-.sm-cc-create-modal .sm-cc-stat-row__score-input { width: 2.2ch; min-width: 2.2ch; text-align: center; padding-inline: 0; }
+.sm-cc-create-modal .sm-cc-stat-row .sm-inline-number input[type="number"].sm-cc-stat-row__score-input {
+    width: 2.2ch;
+    min-width: 2.2ch;
+    text-align: center;
+    padding-inline: 0;
+}
 .btn-compact { padding: 0 .4rem; min-width: 1.5rem; height: 1.6rem; line-height: 1.2; }
 
 /* Movement row should not overflow; children stay compact */
