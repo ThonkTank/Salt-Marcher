@@ -115,13 +115,25 @@ export const HEX_PLUGIN_CSS = `
 .sm-cc-damage-chip--vuln .sm-cc-damage-chip__badge { background-color: rgba(234,88,12,.18); color:#ea580c; }
 .sm-cc-damage-chip--vuln .sm-cc-damage-chip__badge { background-color: color-mix(in srgb, var(--color-orange, #ea580c) 22%, transparent); color: var(--color-orange, #ea580c); }
 .sm-cc-skill-editor { display:flex; flex-direction:column; gap:.35rem; }
-.sm-cc-skill-search { align-items:center; }
-.sm-cc-skill-search label { flex: 0 0 auto; }
-.sm-cc-skill-search select { min-width:220px; }
-.sm-cc-senses-search { align-items:center; }
-.sm-cc-senses-search label { flex: 0 0 auto; }
-.sm-cc-senses-search .sm-sd { flex: 1 1 220px; min-width: 200px; }
-.sm-cc-senses-search button { flex: 0 0 auto; }
+.sm-cc-skill-search,
+.sm-cc-senses-search {
+    align-items:center;
+    justify-content:flex-end;
+    margin-left:auto;
+    width:100%;
+    max-width:420px;
+}
+.sm-cc-skill-search select,
+.sm-cc-senses-search select,
+.sm-cc-skill-search .sm-sd,
+.sm-cc-senses-search .sm-sd {
+    flex:1 1 260px;
+    min-width:220px;
+}
+.sm-cc-skill-search button,
+.sm-cc-senses-search button {
+    flex:0 0 auto;
+}
 .sm-cc-skill-chips { gap:.45rem; }
 .sm-cc-skill-chip { align-items:center; gap:.4rem; padding-right:.5rem; }
 .sm-cc-skill-chip__name { font-weight:500; }

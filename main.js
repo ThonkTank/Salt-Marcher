@@ -4309,15 +4309,10 @@ function mountCreatureStatsAndSkillsSection(parent, data) {
   skillsSetting.settingEl.addClass("sm-cc-skills");
   const skillsControl = skillsSetting.controlEl;
   skillsControl.addClass("sm-cc-skill-editor");
-  skillsSetting.nameEl.empty();
   const skillsRow = skillsControl.createDiv({ cls: "sm-cc-searchbar sm-cc-skill-search" });
   const skillsSelectId = "sm-cc-skill-select";
-  const skillsLabel = skillsRow.createEl("label", {
-    text: "Fertigkeiten",
-    attr: { for: skillsSelectId }
-  });
   const skillsSelect = skillsRow.createEl("select", {
-    attr: { id: skillsSelectId }
+    attr: { id: skillsSelectId, "aria-label": "Fertigkeit ausw\xE4hlen" }
   });
   const blankSkill = skillsSelect.createEl("option", {
     text: "Fertigkeit w\xE4hlen\u2026"
@@ -4335,9 +4330,12 @@ function mountCreatureStatsAndSkillsSection(parent, data) {
   if (skillsSearchInput) {
     skillsSearchInput.placeholder = "Fertigkeit suchen\u2026";
     if (!skillsSearchInput.id) skillsSearchInput.id = `${skillsSelectId}-search`;
-    skillsLabel.htmlFor = skillsSearchInput.id;
+    skillsSearchInput.setAttribute("aria-label", "Fertigkeit suchen");
   }
-  const addSkillBtn = skillsRow.createEl("button", { text: "+ Hinzuf\xFCgen" });
+  const addSkillBtn = skillsRow.createEl("button", {
+    text: "+",
+    attr: { type: "button", "aria-label": "Fertigkeit hinzuf\xFCgen" }
+  });
   const skillChips = skillsControl.createDiv({ cls: "sm-cc-chips sm-cc-skill-chips" });
   const skillRefs = /* @__PURE__ */ new Map();
   const addSkillByName = (rawName) => {
@@ -4478,7 +4476,7 @@ function mountTokenEditor(parent, title, model, options = {}) {
 var import_obsidian18 = require("obsidian");
 function mountPresetSelectEditor(parent, title, options, model, config) {
   const resolved = typeof config === "string" ? { placeholder: config } : config ?? {};
-  const { placeholder, inlineLabel, rowClass } = resolved;
+  const { placeholder, inlineLabel, rowClass, addButtonLabel } = resolved;
   const setting = new import_obsidian18.Setting(parent).setName(title);
   const rowClasses = ["sm-cc-searchbar"];
   if (rowClass) rowClasses.push(rowClass);
@@ -4489,9 +4487,12 @@ function mountPresetSelectEditor(parent, title, options, model, config) {
     controlId = `sm-cc-select-${Math.random().toString(36).slice(2)}`;
     labelEl = row.createEl("label", { text: inlineLabel, attr: { for: controlId } });
   }
+  const selectAttrs = {};
+  if (controlId) selectAttrs.id = controlId;
+  else selectAttrs["aria-label"] = `${title} ausw\xE4hlen`;
   const select = row.createEl(
     "select",
-    controlId ? { attr: { id: controlId } } : void 0
+    Object.keys(selectAttrs).length ? { attr: selectAttrs } : void 0
   );
   const blank = select.createEl("option", { text: "Auswahl\u2026" });
   blank.value = "";
@@ -4510,8 +4511,12 @@ function mountPresetSelectEditor(parent, title, options, model, config) {
       searchInput.id = controlId ?? `sm-cc-input-${Math.random().toString(36).slice(2)}`;
     }
     if (labelEl) labelEl.htmlFor = searchInput.id;
+    else searchInput.setAttribute("aria-label", placeholder ?? title);
   }
-  const addBtn = row.createEl("button", { text: "+ Hinzuf\xFCgen", attr: { type: "button" } });
+  const addBtn = row.createEl("button", {
+    text: addButtonLabel ?? "+",
+    attr: { type: "button", "aria-label": `${title} hinzuf\xFCgen` }
+  });
   const chips = setting.controlEl.createDiv({ cls: "sm-cc-chips" });
   const renderChips = () => {
     chips.empty();
@@ -4707,7 +4712,7 @@ function mountCreatureSensesAndDefensesSection(parent, data) {
     "Sinne",
     CREATURE_SENSE_PRESETS,
     makeModel(senses),
-    { placeholder: "Sinn suchen oder eingeben\u2026", inlineLabel: "Eintrag", rowClass: "sm-cc-senses-search" }
+    { placeholder: "Sinn suchen oder eingeben\u2026", rowClass: "sm-cc-senses-search" }
   );
   const languages = ensureStringList(data, "languagesList");
   mountPresetSelectEditor(
@@ -4715,7 +4720,7 @@ function mountCreatureSensesAndDefensesSection(parent, data) {
     "Sprachen",
     CREATURE_LANGUAGE_PRESETS,
     makeModel(languages),
-    { placeholder: "Sprache suchen oder eingeben\u2026", inlineLabel: "Eintrag", rowClass: "sm-cc-senses-search" }
+    { placeholder: "Sprache suchen oder eingeben\u2026", rowClass: "sm-cc-senses-search" }
   );
   const passives = ensureStringList(data, "passivesList");
   mountPresetSelectEditor(
@@ -5625,13 +5630,25 @@ var HEX_PLUGIN_CSS = `
 .sm-cc-damage-chip--vuln .sm-cc-damage-chip__badge { background-color: rgba(234,88,12,.18); color:#ea580c; }
 .sm-cc-damage-chip--vuln .sm-cc-damage-chip__badge { background-color: color-mix(in srgb, var(--color-orange, #ea580c) 22%, transparent); color: var(--color-orange, #ea580c); }
 .sm-cc-skill-editor { display:flex; flex-direction:column; gap:.35rem; }
-.sm-cc-skill-search { align-items:center; }
-.sm-cc-skill-search label { flex: 0 0 auto; }
-.sm-cc-skill-search select { min-width:220px; }
-.sm-cc-senses-search { align-items:center; }
-.sm-cc-senses-search label { flex: 0 0 auto; }
-.sm-cc-senses-search .sm-sd { flex: 1 1 220px; min-width: 200px; }
-.sm-cc-senses-search button { flex: 0 0 auto; }
+.sm-cc-skill-search,
+.sm-cc-senses-search {
+    align-items:center;
+    justify-content:flex-end;
+    margin-left:auto;
+    width:100%;
+    max-width:420px;
+}
+.sm-cc-skill-search select,
+.sm-cc-senses-search select,
+.sm-cc-skill-search .sm-sd,
+.sm-cc-senses-search .sm-sd {
+    flex:1 1 260px;
+    min-width:220px;
+}
+.sm-cc-skill-search button,
+.sm-cc-senses-search button {
+    flex:0 0 auto;
+}
 .sm-cc-skill-chips { gap:.45rem; }
 .sm-cc-skill-chip { align-items:center; gap:.4rem; padding-right:.5rem; }
 .sm-cc-skill-chip__name { font-weight:500; }

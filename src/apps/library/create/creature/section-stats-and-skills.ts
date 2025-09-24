@@ -84,16 +84,10 @@ export function mountCreatureStatsAndSkillsSection(
   const skillsControl = skillsSetting.controlEl;
   skillsControl.addClass("sm-cc-skill-editor");
 
-  skillsSetting.nameEl.empty();
-
   const skillsRow = skillsControl.createDiv({ cls: "sm-cc-searchbar sm-cc-skill-search" });
   const skillsSelectId = "sm-cc-skill-select";
-  const skillsLabel = skillsRow.createEl("label", {
-    text: "Fertigkeiten",
-    attr: { for: skillsSelectId },
-  });
   const skillsSelect = skillsRow.createEl("select", {
-    attr: { id: skillsSelectId },
+    attr: { id: skillsSelectId, "aria-label": "Fertigkeit auswählen" },
   }) as HTMLSelectElement;
   const blankSkill = skillsSelect.createEl("option", {
     text: "Fertigkeit wählen…",
@@ -110,10 +104,13 @@ export function mountCreatureStatsAndSkillsSection(
   if (skillsSearchInput) {
     skillsSearchInput.placeholder = "Fertigkeit suchen…";
     if (!skillsSearchInput.id) skillsSearchInput.id = `${skillsSelectId}-search`;
-    skillsLabel.htmlFor = skillsSearchInput.id;
+    skillsSearchInput.setAttribute("aria-label", "Fertigkeit suchen");
   }
 
-  const addSkillBtn = skillsRow.createEl("button", { text: "+ Hinzufügen" });
+  const addSkillBtn = skillsRow.createEl("button", {
+    text: "+",
+    attr: { type: "button", "aria-label": "Fertigkeit hinzufügen" },
+  });
   const skillChips = skillsControl.createDiv({ cls: "sm-cc-chips sm-cc-skill-chips" });
 
   const skillRefs = new Map<string, { mod: HTMLElement; expertise: HTMLInputElement }>();
