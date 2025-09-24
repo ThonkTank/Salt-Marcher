@@ -162,9 +162,45 @@ export const CREATURE_CONDITION_PRESETS = [
 ] as const;
 export type CreatureConditionPreset = (typeof CREATURE_CONDITION_PRESETS)[number];
 
+export const CREATURE_SENSE_PRESETS = [
+  "Blindsight",
+  "Darkvision",
+  "Tremorsense",
+  "Truesight",
+  "Passive Perception",
+  "Telepathy",
+] as const;
+export type CreatureSensePreset = (typeof CREATURE_SENSE_PRESETS)[number];
+
 export const CREATURE_PASSIVE_PRESETS = [
   "Passive Perception",
   "Passive Insight",
   "Passive Investigation",
 ] as const;
 export type CreaturePassivePreset = (typeof CREATURE_PASSIVE_PRESETS)[number];
+
+export const CREATURE_LANGUAGE_PRESETS = [
+  "Common",
+  "Dwarvish",
+  "Elvish",
+  "Giant",
+  "Gnomish",
+  "Goblin",
+  "Halfling",
+  "Orc",
+  "Abyssal",
+  "Celestial",
+  "Draconic",
+  "Deep Speech",
+  "Infernal",
+  "Primordial",
+  "Aquan",
+  "Auran",
+  "Ignan",
+  "Terran",
+  "Sylvan",
+  "Undercommon",
+  "Druidic",
+  "Thieves' Cant",
+] as const;
+export type CreatureLanguagePreset = (typeof CREATURE_LANGUAGE_PRESETS)[number];
