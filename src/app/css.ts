@@ -202,10 +202,13 @@ export const HEX_PLUGIN_CSS = `
 
 /* Movement row should not overflow; children stay compact */
 .sm-cc-create-modal .sm-cc-move-ctl { display: flex; flex-direction: column; align-items: stretch; gap: .35rem; }
-.sm-cc-create-modal .sm-cc-move-row { flex-wrap: nowrap; justify-content: flex-end; gap: .5rem; }
-.sm-cc-create-modal .sm-cc-move-addrow { display: flex; justify-content: flex-end; }
-.sm-cc-create-modal .sm-cc-move-row > * { flex: 0 0 auto; }
+.sm-cc-create-modal .sm-cc-move-row { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+.sm-cc-create-modal .sm-cc-move-row .sm-sd { flex:1 1 220px; min-width:200px; }
 .sm-cc-create-modal .sm-cc-move-row select { max-width: 220px; }
+.sm-cc-create-modal .sm-cc-move-hover { display:inline-flex; align-items:center; gap:.35rem; flex:0 0 auto; }
+.sm-cc-create-modal .sm-cc-move-hover input { margin:0; }
+.sm-cc-create-modal .sm-cc-move-row .sm-inline-number { flex:0 0 auto; }
+.sm-cc-create-modal .sm-cc-move-add { margin-left:auto; flex:0 0 auto; }
 
 /* Entry auto compute groups */
 .sm-cc-create-modal .sm-cc-auto { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; }
