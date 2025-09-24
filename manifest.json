@@ -7,5 +7,5 @@
   "author": "You",
   "authorUrl": "",
   "isDesktopOnly": true,
-  "main": "dist/main.js"
+  "main": "main.js"
 }

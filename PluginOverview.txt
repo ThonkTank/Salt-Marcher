@@ -7,10 +7,9 @@ damit Rendering-Logik, Dateizugriffe und UI-Komponenten unabhängig voneinander 
 
 ```text
 Salt-Marcher/
-├─ manifest.json            # Obsidian-Manifest (verweist auf das gebündelte dist/main.js)
-├─ esbuild.config.mjs       # Build-Pipeline (bundelt src/app/main.ts → dist/main.js)
-├─ dist/
-│  └─ main.js               # Gebündeltes Plugin für die Auslieferung
+├─ manifest.json            # Obsidian-Manifest (lädt das gebündelte main.js im Projektstamm)
+├─ esbuild.config.mjs       # Build-Pipeline (bundelt src/app/main.ts → main.js)
+├─ main.js                  # Gebündeltes Plugin für die Auslieferung
 ├─ package.json             # Scripts & Dev-Abhängigkeiten (esbuild, TypeScript, Obsidian-Typen)
 ├─ package-lock.json        # Reproduzierbare Dependency-Auflösung
 ├─ src/
@@ -38,7 +37,7 @@ Salt-Marcher/
   bereit und dienen als Single Source of Truth für die Apps.
 - **Geteilte UI-Bausteine:** Modals, Header- und Workflow-Helfer kapseln wiederkehrende Interaktionen (Map-Auswahl, Bestätigungen,
   Eingabedialoge) für alle Views.
-- **Build & Styling:** Esbuild bundelt den Plugin-Code in `dist/main.js`, während `css.ts` das Styling zentral hält und beim Plugin-Start
+- **Build & Styling:** Esbuild bundelt den Plugin-Code in `main.js`, während `css.ts` das Styling zentral hält und beim Plugin-Start
   injiziert wird.
 
 ## Skript-Referenz
