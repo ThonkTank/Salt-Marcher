@@ -19,6 +19,7 @@ Salt-Marcher/
 │  ├─ apps/
 │  │  ├─ cartographer/      # Hex-Map-Workspace mit Editor/Inspector/Travel-Modi
 │  │  ├─ encounter/         # Einfache Encounter-View
+│  │  ├─ layout/            # Layout-Editor für Boxen, Übersetzungen & Maßexport
 │  │  └─ library/           # Bibliothek für Terrains, Regionen und Kreaturen
 │  ├─ core/                 # Domain-Services (Hex-Geometrie, Dateien, Terrain, Optionen)
 │  └─ ui/                   # Geteilte Dialoge und Workflow-Helfer
@@ -33,6 +34,7 @@ Salt-Marcher/
 - **Library-View:** Vereinheitlicht das Management von Terrains, Regionen und Kreaturen inklusive Suchleiste, Erstellung,
   Inline-Bearbeitung und Persistenz.
 - **Encounter-View:** Liefert eine leichtgewichtige Ansicht für Encounter-Notizen.
+- **Layout-Editor:** Bietet eine Drag-&-Drop-Arbeitsfläche zum Platzieren von Boxen, übersetzt Label-Texte in Zielsprachen und exportiert Abmessungen als JSON.
 - **Core-Services:** Stellen Hex-Geometrie, Map/Tile-Dateioperationen, Terrain- und Regions-Persistenz sowie Workspace-Helfer
   bereit und dienen als Single Source of Truth für die Apps.
 - **Geteilte UI-Bausteine:** Modals, Header- und Workflow-Helfer kapseln wiederkehrende Interaktionen (Map-Auswahl, Bestätigungen,
@@ -74,6 +76,11 @@ Salt-Marcher/
 ### src/apps/encounter
 - `view.ts`: Implementiert `EncounterView` (ItemView). Rendert eine einfache Encounter-Seite mit Titel und Platzhaltertext und
   räumt beim Schließen das DOM auf.
+
+### src/apps/layout
+- `view.ts`: Implementiert den `LayoutEditorView` mit Canvas, Inspector und Export. Unterstützt das Erstellen, Verschieben und
+  Skalieren von Boxen, nutzt `translateText` zur Sprachübersetzung von Labels und stellt JSON-Export inklusive Maße bereit.
+- `LayoutOverview.txt`: Struktur- und Verantwortlichkeitsübersicht des Layout-Editors.
 
 ### src/apps/library
 - `view.ts`: Zentrale Library-View mit Tab-Leiste (Terrains, Regionen, Kreaturen), Suchleiste, Ergebnisliste und Event-Delegation

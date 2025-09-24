@@ -423,7 +423,7 @@ __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian22 = require("obsidian");
+var import_obsidian23 = require("obsidian");
 init_view();
 
 // src/apps/cartographer/index.ts
@@ -5586,6 +5586,562 @@ var LibraryView = class extends import_obsidian21.ItemView {
   }
 };
 
+// src/apps/layout/view.ts
+var import_obsidian22 = require("obsidian");
+
+// src/core/translator.ts
+var GOOGLE_TRANSLATE_ENDPOINT = "https://translate.googleapis.com/translate_a/single";
+async function translateText({ text, target, source }) {
+  if (!text.trim()) {
+    return { translatedText: "", detectedSourceLanguage: source };
+  }
+  const params = new URLSearchParams({
+    client: "gtx",
+    sl: source || "auto",
+    tl: target,
+    dt: "t",
+    q: text
+  });
+  try {
+    const response = await fetch(`${GOOGLE_TRANSLATE_ENDPOINT}?${params.toString()}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const body = await response.json();
+    const translated = Array.isArray(body?.[0]) ? body[0].map((chunk) => chunk?.[0] ?? "").join("") : text;
+    const detected = typeof body?.[2] === "string" ? body[2] : source;
+    return { translatedText: translated, detectedSourceLanguage: detected };
+  } catch (error) {
+    console.error("translateText failed", error);
+    return { translatedText: text, detectedSourceLanguage: source };
+  }
+}
+
+// src/apps/layout/view.ts
+var VIEW_LAYOUT_EDITOR = "salt-layout-editor";
+var MIN_BOX_SIZE = 60;
+var LANG_OPTIONS = [
+  { value: "de", label: "Deutsch" },
+  { value: "en", label: "Englisch" },
+  { value: "fr", label: "Franz\xF6sisch" },
+  { value: "es", label: "Spanisch" },
+  { value: "it", label: "Italienisch" },
+  { value: "pl", label: "Polnisch" },
+  { value: "ja", label: "Japanisch" }
+];
+var LayoutEditorView = class extends import_obsidian22.ItemView {
+  constructor() {
+    super(...arguments);
+    this.boxes = [];
+    this.selectedBoxId = null;
+    this.canvasWidth = 800;
+    this.canvasHeight = 600;
+    this.isTranslating = false;
+    this.boxElements = /* @__PURE__ */ new Map();
+  }
+  getViewType() {
+    return VIEW_LAYOUT_EDITOR;
+  }
+  getDisplayText() {
+    return "Layout Editor";
+  }
+  getIcon() {
+    return "layout-grid";
+  }
+  async onOpen() {
+    this.contentEl.addClass("sm-layout-editor");
+    this.render();
+    if (this.boxes.length === 0) {
+      this.createBox();
+    }
+    this.refreshExport();
+    this.updateStatus();
+  }
+  async onClose() {
+    this.boxElements.clear();
+    this.contentEl.empty();
+    this.contentEl.removeClass("sm-layout-editor");
+  }
+  render() {
+    const root = this.contentEl;
+    root.empty();
+    const header = root.createDiv({ cls: "sm-le-header" });
+    header.createEl("h2", { text: "Layout Editor" });
+    const controls = header.createDiv({ cls: "sm-le-controls" });
+    const addBtn = controls.createEl("button", { text: "Box hinzuf\xFCgen" });
+    addBtn.onclick = () => this.createBox();
+    const languageGroup = controls.createDiv({ cls: "sm-le-control" });
+    languageGroup.createEl("label", { text: "Zielsprache" });
+    this.languageSelect = languageGroup.createEl("select");
+    for (const opt of LANG_OPTIONS) {
+      const option = this.languageSelect.createEl("option", { text: opt.label, attr: { value: opt.value } });
+      option.selected = opt.value === "en";
+    }
+    this.languageSelect.value = this.languageSelect.value || "en";
+    this.languageSelect.onchange = () => {
+      this.updateStatus();
+      this.refreshExport();
+      this.renderInspector();
+    };
+    const sizeGroup = controls.createDiv({ cls: "sm-le-control" });
+    sizeGroup.createEl("label", { text: "Arbeitsfl\xE4che" });
+    const sizeWrapper = sizeGroup.createDiv({ cls: "sm-le-size" });
+    const widthInput = sizeWrapper.createEl("input", { attr: { type: "number", min: "200", max: "2000" } });
+    widthInput.value = String(this.canvasWidth);
+    widthInput.onchange = () => {
+      const next = clamp(parseInt(widthInput.value, 10) || this.canvasWidth, 200, 2e3);
+      this.canvasWidth = next;
+      widthInput.value = String(next);
+      this.applyCanvasSize();
+      this.refreshExport();
+    };
+    sizeWrapper.createSpan({ text: "\xD7" });
+    const heightInput = sizeWrapper.createEl("input", { attr: { type: "number", min: "200", max: "2000" } });
+    heightInput.value = String(this.canvasHeight);
+    heightInput.onchange = () => {
+      const next = clamp(parseInt(heightInput.value, 10) || this.canvasHeight, 200, 2e3);
+      this.canvasHeight = next;
+      heightInput.value = String(next);
+      this.applyCanvasSize();
+      this.refreshExport();
+    };
+    sizeWrapper.createSpan({ text: "px" });
+    this.translateAllBtn = controls.createEl("button", { text: "Alle \xFCbersetzen" });
+    this.translateAllBtn.onclick = () => {
+      void this.translateAll();
+    };
+    this.statusEl = header.createDiv({ cls: "sm-le-status" });
+    const body = root.createDiv({ cls: "sm-le-body" });
+    const stage = body.createDiv({ cls: "sm-le-stage" });
+    this.canvasEl = stage.createDiv({ cls: "sm-le-canvas" });
+    this.canvasEl.style.width = `${this.canvasWidth}px`;
+    this.canvasEl.style.height = `${this.canvasHeight}px`;
+    this.registerDomEvent(this.canvasEl, "pointerdown", (ev) => {
+      if (ev.target === this.canvasEl) {
+        this.selectBox(null);
+      }
+    });
+    this.inspectorHost = body.createDiv({ cls: "sm-le-inspector" });
+    this.renderInspector();
+    const exportWrap = root.createDiv({ cls: "sm-le-export" });
+    exportWrap.createEl("h3", { text: "Layout-Daten" });
+    const exportControls = exportWrap.createDiv({ cls: "sm-le-export__controls" });
+    const copyBtn = exportControls.createEl("button", { text: "JSON kopieren" });
+    copyBtn.onclick = async () => {
+      if (!this.exportEl.value) return;
+      try {
+        const clip = navigator.clipboard;
+        if (!clip || typeof clip.writeText !== "function") {
+          throw new Error("Clipboard API nicht verf\xFCgbar");
+        }
+        await clip.writeText(this.exportEl.value);
+        new import_obsidian22.Notice("Layout kopiert");
+      } catch (error) {
+        console.error("Clipboard write failed", error);
+        new import_obsidian22.Notice("Konnte nicht in die Zwischenablage kopieren");
+      }
+    };
+    this.exportEl = exportWrap.createEl("textarea", { cls: "sm-le-export__textarea", attr: { rows: "10", readonly: "readonly" } });
+    this.renderBoxes();
+  }
+  applyCanvasSize() {
+    if (!this.canvasEl) return;
+    this.canvasEl.style.width = `${this.canvasWidth}px`;
+    this.canvasEl.style.height = `${this.canvasHeight}px`;
+    for (const box of this.boxes) {
+      const maxX = Math.max(0, this.canvasWidth - box.width);
+      const maxY = Math.max(0, this.canvasHeight - box.height);
+      box.x = clamp(box.x, 0, maxX);
+      box.y = clamp(box.y, 0, maxY);
+      const maxWidth = Math.max(MIN_BOX_SIZE, this.canvasWidth - box.x);
+      const maxHeight = Math.max(MIN_BOX_SIZE, this.canvasHeight - box.y);
+      box.width = clamp(box.width, MIN_BOX_SIZE, maxWidth);
+      box.height = clamp(box.height, MIN_BOX_SIZE, maxHeight);
+      this.syncBoxElement(box);
+    }
+  }
+  createBox() {
+    const width = Math.min(240, Math.max(160, Math.round(this.canvasWidth * 0.25)));
+    const height = Math.min(160, Math.max(120, Math.round(this.canvasHeight * 0.25)));
+    const box = {
+      id: `box-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      x: Math.max(0, Math.round((this.canvasWidth - width) / 2)),
+      y: Math.max(0, Math.round((this.canvasHeight - height) / 2)),
+      width,
+      height,
+      label: "",
+      translationText: ""
+    };
+    this.boxes.push(box);
+    this.renderBoxes();
+    this.selectBox(box.id);
+    this.refreshExport();
+  }
+  renderBoxes() {
+    if (!this.canvasEl) return;
+    const seen = /* @__PURE__ */ new Set();
+    for (const box of this.boxes) {
+      seen.add(box.id);
+      let el = this.boxElements.get(box.id);
+      if (!el) {
+        el = this.createBoxElement(box);
+        this.boxElements.set(box.id, el);
+      }
+      this.syncBoxElement(box);
+    }
+    for (const [id, el] of Array.from(this.boxElements.entries())) {
+      if (!seen.has(id)) {
+        el.remove();
+        this.boxElements.delete(id);
+      }
+    }
+    this.updateSelectionStyles();
+    this.updateStatus();
+  }
+  createBoxElement(box) {
+    const el = this.canvasEl.createDiv({ cls: "sm-le-box" });
+    el.dataset.id = box.id;
+    const header = el.createDiv({ cls: "sm-le-box__header" });
+    const handle = header.createSpan({ cls: "sm-le-box__handle", text: "\u283F" });
+    handle.dataset.role = "move";
+    const dims = header.createSpan({ cls: "sm-le-box__dims", text: "" });
+    dims.dataset.role = "dims";
+    const body = el.createDiv({ cls: "sm-le-box__body" });
+    body.createDiv({ cls: "sm-le-box__label", text: "(Label)" }).dataset.role = "label";
+    body.createDiv({ cls: "sm-le-box__translation", text: "" }).dataset.role = "translation";
+    const footer = el.createDiv({ cls: "sm-le-box__footer" });
+    footer.createSpan({ cls: "sm-le-box__source", text: "" }).dataset.role = "source";
+    const resize = el.createDiv({ cls: "sm-le-box__resize" });
+    resize.dataset.role = "resize";
+    el.onclick = (ev) => {
+      if (ev.target instanceof HTMLElement && ev.target.dataset.role === "resize") return;
+      this.selectBox(box.id);
+    };
+    handle.onpointerdown = (ev) => {
+      ev.preventDefault();
+      this.selectBox(box.id);
+      this.beginDrag(box, ev);
+    };
+    resize.onpointerdown = (ev) => {
+      ev.preventDefault();
+      this.selectBox(box.id);
+      this.beginResize(box, ev);
+    };
+    return el;
+  }
+  syncBoxElement(box) {
+    const el = this.boxElements.get(box.id);
+    if (!el) return;
+    el.style.left = `${box.x}px`;
+    el.style.top = `${box.y}px`;
+    el.style.width = `${box.width}px`;
+    el.style.height = `${box.height}px`;
+    const label = el.querySelector('[data-role="label"]');
+    const translation = el.querySelector('[data-role="translation"]');
+    const dims = el.querySelector('[data-role="dims"]');
+    const source = el.querySelector('[data-role="source"]');
+    label?.setText(box.label || "(Label)");
+    if (box.translationPending) {
+      translation?.setText("\xDCbersetze\u2026");
+    } else if (box.translationError) {
+      translation?.setText(`Fehler: ${box.translationError}`);
+    } else {
+      translation?.setText(box.translationText || "");
+    }
+    if (dims) {
+      dims.setText(`${Math.round(box.width)} \xD7 ${Math.round(box.height)} px`);
+    }
+    if (source) {
+      const meta = [];
+      if (box.translationSource) meta.push(`aus ${box.translationSource.toUpperCase()}`);
+      if (box.lastTranslatedAt) {
+        const date = new Date(box.lastTranslatedAt);
+        meta.push(date.toLocaleTimeString());
+      }
+      source.setText(meta.join(" \xB7 "));
+    }
+  }
+  beginDrag(box, event) {
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const originX = box.x;
+    const originY = box.y;
+    const onMove = (ev) => {
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+      const nextX = originX + dx;
+      const nextY = originY + dy;
+      const maxX = Math.max(0, this.canvasWidth - box.width);
+      const maxY = Math.max(0, this.canvasHeight - box.height);
+      box.x = clamp(nextX, 0, maxX);
+      box.y = clamp(nextY, 0, maxY);
+      this.syncBoxElement(box);
+      this.refreshExport();
+      this.renderInspector();
+    };
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }
+  beginResize(box, event) {
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const originW = box.width;
+    const originH = box.height;
+    const onMove = (ev) => {
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+      const maxWidth = Math.max(MIN_BOX_SIZE, this.canvasWidth - box.x);
+      const maxHeight = Math.max(MIN_BOX_SIZE, this.canvasHeight - box.y);
+      const nextW = clamp(originW + dx, MIN_BOX_SIZE, maxWidth);
+      const nextH = clamp(originH + dy, MIN_BOX_SIZE, maxHeight);
+      box.width = nextW;
+      box.height = nextH;
+      this.syncBoxElement(box);
+      this.refreshExport();
+      this.renderInspector();
+    };
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }
+  selectBox(id) {
+    this.selectedBoxId = id;
+    this.updateSelectionStyles();
+    this.renderInspector();
+  }
+  updateSelectionStyles() {
+    for (const [id, el] of this.boxElements) {
+      el.classList.toggle("is-selected", id === this.selectedBoxId);
+    }
+  }
+  renderInspector() {
+    if (!this.inspectorHost) return;
+    const host = this.inspectorHost;
+    host.empty();
+    host.createEl("h3", { text: "Eigenschaften" });
+    const box = this.selectedBoxId ? this.boxes.find((b) => b.id === this.selectedBoxId) : null;
+    if (!box) {
+      host.createDiv({ cls: "sm-le-empty", text: "W\xE4hle eine Box, um Details anzupassen." });
+      return;
+    }
+    const labelField = host.createDiv({ cls: "sm-le-field" });
+    labelField.createEl("label", { text: "Label" });
+    const labelInput = labelField.createEl("textarea");
+    labelInput.value = box.label;
+    labelInput.rows = 2;
+    labelInput.oninput = () => {
+      box.label = labelInput.value;
+      this.syncBoxElement(box);
+      this.refreshExport();
+    };
+    const translationField = host.createDiv({ cls: "sm-le-field" });
+    translationField.createEl("label", { text: `\xDCbersetzung (${this.languageSelect?.value?.toUpperCase() || "EN"})` });
+    const translationInput = translationField.createEl("textarea");
+    translationInput.value = box.translationText;
+    translationInput.rows = 2;
+    translationInput.oninput = () => {
+      box.translationText = translationInput.value;
+      box.translationError = null;
+      this.syncBoxElement(box);
+      this.refreshExport();
+    };
+    const translateControls = host.createDiv({ cls: "sm-le-actions" });
+    const translateBtn = translateControls.createEl("button", { text: "Label \xFCbersetzen" });
+    translateBtn.disabled = this.isTranslating || box.translationPending || !box.label.trim();
+    translateBtn.onclick = () => {
+      void this.translateSingle(box);
+    };
+    const deleteBtn = translateControls.createEl("button", { text: "Box l\xF6schen" });
+    deleteBtn.classList.add("mod-warning");
+    deleteBtn.onclick = () => this.deleteBox(box.id);
+    const dimsField = host.createDiv({ cls: "sm-le-field sm-le-field--grid" });
+    dimsField.createEl("label", { text: "Breite (px)" });
+    const widthInput = dimsField.createEl("input", { attr: { type: "number", min: String(MIN_BOX_SIZE) } });
+    widthInput.value = String(Math.round(box.width));
+    widthInput.onchange = () => {
+      const maxWidth = Math.max(MIN_BOX_SIZE, this.canvasWidth - box.x);
+      const next = clamp(parseInt(widthInput.value, 10) || box.width, MIN_BOX_SIZE, maxWidth);
+      box.width = next;
+      widthInput.value = String(next);
+      this.syncBoxElement(box);
+      this.refreshExport();
+    };
+    dimsField.createEl("label", { text: "H\xF6he (px)" });
+    const heightInput = dimsField.createEl("input", { attr: { type: "number", min: String(MIN_BOX_SIZE) } });
+    heightInput.value = String(Math.round(box.height));
+    heightInput.onchange = () => {
+      const maxHeight = Math.max(MIN_BOX_SIZE, this.canvasHeight - box.y);
+      const next = clamp(parseInt(heightInput.value, 10) || box.height, MIN_BOX_SIZE, maxHeight);
+      box.height = next;
+      heightInput.value = String(next);
+      this.syncBoxElement(box);
+      this.refreshExport();
+    };
+    const posField = host.createDiv({ cls: "sm-le-field sm-le-field--grid" });
+    posField.createEl("label", { text: "X-Position" });
+    const posXInput = posField.createEl("input", { attr: { type: "number", min: "0" } });
+    posXInput.value = String(Math.round(box.x));
+    posXInput.onchange = () => {
+      const maxX = Math.max(0, this.canvasWidth - box.width);
+      const next = clamp(parseInt(posXInput.value, 10) || box.x, 0, maxX);
+      box.x = next;
+      posXInput.value = String(next);
+      this.syncBoxElement(box);
+      this.refreshExport();
+    };
+    posField.createEl("label", { text: "Y-Position" });
+    const posYInput = posField.createEl("input", { attr: { type: "number", min: "0" } });
+    posYInput.value = String(Math.round(box.y));
+    posYInput.onchange = () => {
+      const maxY = Math.max(0, this.canvasHeight - box.height);
+      const next = clamp(parseInt(posYInput.value, 10) || box.y, 0, maxY);
+      box.y = next;
+      posYInput.value = String(next);
+      this.syncBoxElement(box);
+      this.refreshExport();
+    };
+    if (box.translationError) {
+      host.createDiv({ cls: "sm-le-error", text: box.translationError });
+    }
+    const meta = host.createDiv({ cls: "sm-le-meta" });
+    meta.setText(`Fl\xE4che: ${Math.round(box.width * box.height)} px\xB2`);
+  }
+  async translateSingle(box) {
+    if (!box.label.trim()) return;
+    box.translationPending = true;
+    box.translationError = null;
+    this.isTranslating = true;
+    this.syncBoxElement(box);
+    this.renderInspector();
+    this.updateStatus();
+    try {
+      const result = await translateText({
+        text: box.label,
+        target: this.languageSelect?.value || "en",
+        source: box.translationSource
+      });
+      box.translationText = result.translatedText;
+      box.translationSource = result.detectedSourceLanguage;
+      box.lastTranslatedAt = Date.now();
+    } catch (error) {
+      console.error("translateSingle", error);
+      box.translationError = error instanceof Error ? error.message : String(error);
+    } finally {
+      box.translationPending = false;
+      this.isTranslating = false;
+      this.syncBoxElement(box);
+      this.renderInspector();
+      this.refreshExport();
+      this.updateStatus();
+    }
+  }
+  async translateAll() {
+    if (!this.boxes.length || this.isTranslating) return;
+    this.isTranslating = true;
+    this.updateStatus();
+    this.translateAllBtn.disabled = true;
+    for (const box of this.boxes) {
+      if (!box.label.trim()) continue;
+      box.translationPending = true;
+      box.translationError = null;
+      this.syncBoxElement(box);
+    }
+    try {
+      for (const box of this.boxes) {
+        if (!box.label.trim()) {
+          box.translationText = "";
+          continue;
+        }
+        const result = await translateText({
+          text: box.label,
+          target: this.languageSelect?.value || "en",
+          source: box.translationSource
+        });
+        box.translationText = result.translatedText;
+        box.translationSource = result.detectedSourceLanguage;
+        box.lastTranslatedAt = Date.now();
+        box.translationPending = false;
+        this.syncBoxElement(box);
+        if (this.selectedBoxId === box.id) {
+          this.renderInspector();
+        }
+        this.refreshExport();
+      }
+    } catch (error) {
+      console.error("translateAll", error);
+      const message = error instanceof Error ? error.message : String(error);
+      for (const box of this.boxes) {
+        if (box.translationPending) {
+          box.translationError = message;
+          box.translationPending = false;
+          this.syncBoxElement(box);
+        }
+      }
+      new import_obsidian22.Notice("\xDCbersetzung fehlgeschlagen");
+    } finally {
+      this.isTranslating = false;
+      this.translateAllBtn.disabled = false;
+      for (const box of this.boxes) {
+        box.translationPending = false;
+      }
+      this.updateStatus();
+      this.renderInspector();
+      this.refreshExport();
+    }
+  }
+  deleteBox(id) {
+    const index = this.boxes.findIndex((b) => b.id === id);
+    if (index === -1) return;
+    this.boxes.splice(index, 1);
+    const el = this.boxElements.get(id);
+    el?.remove();
+    this.boxElements.delete(id);
+    if (this.selectedBoxId === id) {
+      this.selectedBoxId = null;
+    }
+    this.renderInspector();
+    this.refreshExport();
+    this.updateStatus();
+  }
+  refreshExport() {
+    if (!this.exportEl) return;
+    const payload = {
+      canvas: { width: Math.round(this.canvasWidth), height: Math.round(this.canvasHeight) },
+      targetLanguage: this.languageSelect?.value || "en",
+      boxes: this.boxes.map((box) => ({
+        id: box.id,
+        label: box.label,
+        translation: box.translationText,
+        sourceLanguage: box.translationSource,
+        x: Math.round(box.x),
+        y: Math.round(box.y),
+        width: Math.round(box.width),
+        height: Math.round(box.height)
+      }))
+    };
+    this.exportEl.value = JSON.stringify(payload, null, 2);
+  }
+  updateStatus() {
+    if (!this.statusEl) return;
+    const pending = this.boxes.filter((b) => b.translationPending).length;
+    const info = `${this.boxes.length} Boxen \xB7 Zielsprache ${this.languageSelect?.value?.toUpperCase() || "EN"}`;
+    this.statusEl.setText(pending > 0 ? `${info} \xB7 \xDCbersetzung l\xE4uft\u2026` : info);
+    if (this.translateAllBtn) {
+      this.translateAllBtn.disabled = !this.boxes.length || this.isTranslating;
+    }
+  }
+};
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
 // src/app/main.ts
 init_layout();
 
@@ -6310,14 +6866,268 @@ var HEX_PLUGIN_CSS = `
 
 .sm-cartographer--travel .hex3x3-map circle[data-token] { opacity: .95; }
 .sm-cartographer--travel .hex3x3-map polyline { pointer-events: none; }
+
+/* === Layout Editor === */
+.sm-layout-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0.75rem 1rem 1.5rem;
+}
+
+.sm-le-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.sm-le-header h2 {
+    margin: 0;
+}
+
+.sm-le-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+.sm-le-control {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 120px;
+}
+
+.sm-le-control label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.sm-le-size {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.sm-le-status {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.sm-le-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.sm-le-stage {
+    flex: 1 1 520px;
+    display: flex;
+    justify-content: center;
+}
+
+.sm-le-canvas {
+    position: relative;
+    border: 1px dashed var(--background-modifier-border);
+    background: var(--background-secondary);
+    border-radius: 12px;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.sm-le-box {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    background: var(--background-primary);
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+    border: 2px solid transparent;
+    cursor: default;
+    transition: box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.sm-le-box.is-selected {
+    border-color: var(--interactive-accent);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.25);
+}
+
+.sm-le-box__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.35rem 0.5rem;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--background-modifier-border);
+    cursor: grab;
+    user-select: none;
+}
+
+.sm-le-box__handle {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.sm-le-box__dims {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.sm-le-box__body {
+    flex: 1;
+    padding: 0.5rem 0.6rem 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.sm-le-box__label {
+    font-weight: 600;
+}
+
+.sm-le-box__translation {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    white-space: pre-wrap;
+}
+
+.sm-le-box__footer {
+    padding: 0 0.6rem 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-faint);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.sm-le-box__resize {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    right: 0.25rem;
+    bottom: 0.25rem;
+    cursor: se-resize;
+    background: rgba(0, 0, 0, 0.08);
+    display: grid;
+    place-items: center;
+}
+
+.sm-le-box__resize::after {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-right: 2px solid var(--text-muted);
+    border-bottom: 2px solid var(--text-muted);
+}
+
+.sm-le-inspector {
+    flex: 0 0 280px;
+    min-width: 260px;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 12px;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.sm-le-inspector h3 {
+    margin: 0;
+}
+
+.sm-le-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.sm-le-field label {
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.sm-le-field textarea,
+.sm-le-field input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.sm-le-field--grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    align-items: end;
+}
+
+.sm-le-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.sm-le-actions button:last-child {
+    margin-left: auto;
+}
+
+.sm-le-empty {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.sm-le-error {
+    color: var(--text-error);
+    font-size: 0.9rem;
+}
+
+.sm-le-meta {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.sm-le-export {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sm-le-export__controls {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.sm-le-export__textarea {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: var(--font-monospace);
+    min-height: 160px;
+}
+
+@media (max-width: 860px) {
+    .sm-le-inspector {
+        flex: 1 1 100%;
+    }
+
+    .sm-le-stage {
+        flex: 1 1 100%;
+    }
+}
+
 `;
 
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian22.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian23.Plugin {
   async onload() {
     this.registerView(VIEW_CARTOGRAPHER, (leaf) => new CartographerView(leaf));
     this.registerView(VIEW_ENCOUNTER, (leaf) => new EncounterView(leaf));
     this.registerView(VIEW_LIBRARY, (leaf) => new LibraryView(leaf));
+    this.registerView(VIEW_LAYOUT_EDITOR, (leaf) => new LayoutEditorView(leaf));
     await ensureTerrainFile(this.app);
     setTerrains(await loadTerrains(this.app));
     this.unwatchTerrains = watchTerrains(this.app, () => {
@@ -6330,6 +7140,11 @@ var SaltMarcherPlugin = class extends import_obsidian22.Plugin {
     this.addRibbonIcon("book", "Open Library", async () => {
       const leaf = this.app.workspace.getLeaf(true);
       await leaf.setViewState({ type: VIEW_LIBRARY, active: true });
+      this.app.workspace.revealLeaf(leaf);
+    });
+    this.addRibbonIcon("layout-grid", "Open Layout Editor", async () => {
+      const leaf = getCenterLeaf(this.app);
+      await leaf.setViewState({ type: VIEW_LAYOUT_EDITOR, active: true });
       this.app.workspace.revealLeaf(leaf);
     });
     this.addCommand({
@@ -6347,6 +7162,15 @@ var SaltMarcherPlugin = class extends import_obsidian22.Plugin {
       callback: async () => {
         const leaf = this.app.workspace.getLeaf(true);
         await leaf.setViewState({ type: VIEW_LIBRARY, active: true });
+        this.app.workspace.revealLeaf(leaf);
+      }
+    });
+    this.addCommand({
+      id: "open-layout-editor",
+      name: "Layout Editor \xF6ffnen",
+      callback: async () => {
+        const leaf = getCenterLeaf(this.app);
+        await leaf.setViewState({ type: VIEW_LAYOUT_EDITOR, active: true });
         this.app.workspace.revealLeaf(leaf);
       }
     });
