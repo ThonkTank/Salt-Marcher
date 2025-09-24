@@ -50,6 +50,24 @@ interface LayoutElement {
     children?: string[];
 }
 
+interface LayoutEditorSnapshot {
+    canvasWidth: number;
+    canvasHeight: number;
+    selectedElementId: string | null;
+    elements: LayoutElement[];
+}
+
+interface InlineEditOptions {
+    parent: HTMLElement;
+    value?: string;
+    placeholder: string;
+    onCommit: (value: string) => void;
+    onInput?: (value: string) => void;
+    multiline?: boolean;
+    block?: boolean;
+    trim?: boolean;
+}
+
 const MIN_ELEMENT_SIZE = 60;
 
 const ELEMENT_DEFINITIONS: Array<{
@@ -271,6 +289,10 @@ export class LayoutEditorView extends ItemView {
     private elementElements = new Map<string, HTMLElement>();
     private activeAttributePopover: AttributePopover | null = null;
 
+    private history: LayoutEditorSnapshot[] = [];
+    private historyIndex = -1;
+    private isRestoringHistory = false;
+
     getViewType() { return VIEW_LAYOUT_EDITOR; }
     getDisplayText() { return "Layout Editor"; }
     getIcon() { return "layout-grid" as any; }
@@ -288,9 +310,524 @@ export class LayoutEditorView extends ItemView {
         this.contentEl.removeClass("sm-layout-editor");
     }
 
+    private onKeyDown = (ev: KeyboardEvent) => {
+        if (this.isEditingTarget(ev.target)) {
+            return;
+        }
+        const key = ev.key.toLowerCase();
+        const isModifier = ev.metaKey || ev.ctrlKey;
+        if (key === "delete") {
+            if (this.selectedElementId) {
+                ev.preventDefault();
+                this.deleteElement(this.selectedElementId);
+            }
+            return;
+        }
+        if (!isModifier) return;
+        if (key === "z") {
+            ev.preventDefault();
+            if (ev.shiftKey) {
+                this.redo();
+            } else {
+                this.undo();
+            }
+        }
+    };
+
+    private isEditingTarget(target: EventTarget | null): boolean {
+        if (!target) return false;
+        if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) {
+            return true;
+        }
+        if (target instanceof HTMLElement && target.isContentEditable) {
+            return true;
+        }
+        return false;
+    }
+
+    private captureSnapshot(): LayoutEditorSnapshot {
+        return {
+            canvasWidth: this.canvasWidth,
+            canvasHeight: this.canvasHeight,
+            selectedElementId: this.selectedElementId,
+            elements: this.elements.map(cloneLayoutElement),
+        };
+    }
+
+    private restoreSnapshot(snapshot: LayoutEditorSnapshot) {
+        this.isRestoringHistory = true;
+        try {
+            this.canvasWidth = snapshot.canvasWidth;
+            this.canvasHeight = snapshot.canvasHeight;
+            this.selectedElementId = snapshot.selectedElementId;
+            this.elements = snapshot.elements.map(cloneLayoutElement);
+            if (this.widthInput) this.widthInput.value = String(this.canvasWidth);
+            if (this.heightInput) this.heightInput.value = String(this.canvasHeight);
+            this.closeAttributePopover();
+            this.applyCanvasSize();
+            this.renderElements();
+            this.renderInspector();
+            this.refreshExport();
+            this.updateStatus();
+        } finally {
+            this.isRestoringHistory = false;
+        }
+    }
+
+    private pushHistory() {
+        if (this.isRestoringHistory) return;
+        const snapshot = this.captureSnapshot();
+        const last = this.history[this.historyIndex];
+        if (last && snapshotsAreEqual(last, snapshot)) {
+            return;
+        }
+        if (this.historyIndex < this.history.length - 1) {
+            this.history.splice(this.historyIndex + 1);
+        }
+        this.history.push(snapshot);
+        this.historyIndex = this.history.length - 1;
+    }
+
+    private undo() {
+        if (this.historyIndex <= 0) return;
+        const nextIndex = this.historyIndex - 1;
+        const snapshot = this.history[nextIndex];
+        if (!snapshot) return;
+        this.historyIndex = nextIndex;
+        this.restoreSnapshot(snapshot);
+    }
+
+    private redo() {
+        if (this.historyIndex >= this.history.length - 1) return;
+        const nextIndex = this.historyIndex + 1;
+        const snapshot = this.history[nextIndex];
+        if (!snapshot) return;
+        this.historyIndex = nextIndex;
+        this.restoreSnapshot(snapshot);
+    }
+
+    private finalizeInlineMutation(element: LayoutElement) {
+        if (this.isRestoringHistory) return;
+        this.syncElementElement(element);
+        this.refreshExport();
+        this.renderInspector();
+        this.updateStatus();
+        this.pushHistory();
+    }
+
+    private createInlineEditor(options: InlineEditOptions): HTMLElement {
+        const el = options.parent.createEl(options.multiline ? "div" : "span", { cls: "sm-le-inline-edit" });
+        if (options.block) el.addClass("sm-le-inline-edit--block");
+        if (options.multiline) el.addClass("sm-le-inline-edit--multiline");
+        el.contentEditable = "true";
+        el.spellcheck = false;
+        el.dataset.placeholder = options.placeholder;
+        const trim = options.trim ?? true;
+        const initialValue = options.value ?? "";
+        if (initialValue) {
+            el.setText(initialValue);
+        }
+        let committedValue = trim ? initialValue.trim() : initialValue;
+        const readValue = () => {
+            const raw = el.textContent ?? "";
+            return trim ? raw.trim() : raw;
+        };
+        const commit = () => {
+            const next = readValue();
+            if (next === committedValue) return;
+            committedValue = next;
+            options.onCommit(next);
+        };
+        el.addEventListener("keydown", ev => {
+            if (!options.multiline && ev.key === "Enter") {
+                ev.preventDefault();
+                (ev.target as HTMLElement).blur();
+            } else if (options.multiline && ev.key === "Enter" && !ev.shiftKey) {
+                ev.preventDefault();
+                (ev.target as HTMLElement).blur();
+            }
+        });
+        el.addEventListener("blur", () => {
+            commit();
+            if (!readValue()) {
+                el.empty();
+            }
+        });
+        el.addEventListener("input", () => {
+            options.onInput?.(readValue());
+        });
+        return el;
+    }
+
+    private renderElementPreview(element: LayoutElement, host: HTMLElement) {
+        host.empty();
+        host.toggleClass("sm-le-box__content", true);
+        const preview = host.createDiv({ cls: `sm-le-preview sm-le-preview--${element.type}` });
+
+        const commitLabel = (value: string) => {
+            const next = value || "";
+            if (next === element.label) return;
+            element.label = next;
+            this.finalizeInlineMutation(element);
+        };
+
+        const createPlaceholderEditor = (
+            parent: HTMLElement,
+            placeholder: string,
+            value: string | undefined,
+            onChange: (next: string | undefined) => void,
+        ) => {
+            this.createInlineEditor({
+                parent,
+                value: value ?? "",
+                placeholder,
+                onInput: val => {
+                    onChange(val || undefined);
+                },
+                onCommit: val => {
+                    const next = val || undefined;
+                    if (next === value) return;
+                    onChange(next);
+                    this.finalizeInlineMutation(element);
+                },
+            }).addClass("sm-le-inline-meta");
+        };
+
+        if (element.type === "label") {
+            const text = this.createInlineEditor({
+                parent: preview,
+                value: element.label,
+                placeholder: "Text eingeben…",
+                multiline: true,
+                block: true,
+                trim: false,
+                onCommit: commitLabel,
+            });
+            text.addClass("sm-le-preview__text");
+            this.createInlineEditor({
+                parent: preview,
+                value: element.description ?? "",
+                placeholder: "Zusatztext hinzufügen…",
+                multiline: true,
+                block: true,
+                trim: false,
+                onCommit: value => {
+                    const next = value || undefined;
+                    if (next === element.description) return;
+                    element.description = next;
+                    this.finalizeInlineMutation(element);
+                },
+            }).addClass("sm-le-preview__subtext");
+            return;
+        }
+
+        if (element.type === "box") {
+            const header = preview.createDiv({ cls: "sm-le-preview__title" });
+            this.createInlineEditor({
+                parent: header,
+                value: element.label,
+                placeholder: "Titel eingeben…",
+                multiline: false,
+                onCommit: commitLabel,
+            });
+            this.createInlineEditor({
+                parent: preview,
+                value: element.description ?? "",
+                placeholder: "Beschreibung hinzufügen…",
+                multiline: true,
+                block: true,
+                trim: false,
+                onCommit: value => {
+                    const next = value || undefined;
+                    if (next === element.description) return;
+                    element.description = next;
+                    this.finalizeInlineMutation(element);
+                },
+            }).addClass("sm-le-preview__description");
+            return;
+        }
+
+        if (element.type === "separator") {
+            const labelRow = preview.createDiv({ cls: "sm-le-preview__label" });
+            this.createInlineEditor({
+                parent: labelRow,
+                value: element.label,
+                placeholder: "Titel eingeben…",
+                onCommit: commitLabel,
+            });
+            preview.createEl("hr");
+            return;
+        }
+
+        if (element.type === "text-input" || element.type === "textarea") {
+            const field = preview.createDiv({ cls: "sm-le-preview__field" });
+            this.createInlineEditor({
+                parent: field,
+                value: element.label,
+                placeholder: "Label eingeben…",
+                onCommit: commitLabel,
+            }).addClass("sm-le-preview__label");
+            if (element.type === "textarea") {
+                const textarea = field.createEl("textarea", { cls: "sm-le-preview__textarea" }) as HTMLTextAreaElement;
+                textarea.value = element.defaultValue ?? "";
+                textarea.placeholder = element.placeholder ?? "";
+                textarea.rows = 4;
+                let lastValue = textarea.value;
+                textarea.addEventListener("input", () => {
+                    element.defaultValue = textarea.value ? textarea.value : undefined;
+                });
+                textarea.addEventListener("blur", () => {
+                    const next = textarea.value;
+                    if (next === lastValue) return;
+                    lastValue = next;
+                    element.defaultValue = next ? next : undefined;
+                    this.finalizeInlineMutation(element);
+                });
+                const meta = preview.createDiv({ cls: "sm-le-preview__meta" });
+                createPlaceholderEditor(meta, "Platzhalter hinzufügen…", element.placeholder, next => {
+                    textarea.placeholder = next ?? "";
+                    element.placeholder = next;
+                });
+            } else {
+                const input = field.createEl("input", { cls: "sm-le-preview__input", attr: { type: "text" } }) as HTMLInputElement;
+                input.value = element.defaultValue ?? "";
+                input.placeholder = element.placeholder ?? "";
+                let lastValue = input.value;
+                input.addEventListener("input", () => {
+                    element.defaultValue = input.value ? input.value : undefined;
+                });
+                input.addEventListener("blur", () => {
+                    const next = input.value;
+                    if (next === lastValue) return;
+                    lastValue = next;
+                    element.defaultValue = next ? next : undefined;
+                    this.finalizeInlineMutation(element);
+                });
+                const meta = preview.createDiv({ cls: "sm-le-preview__meta" });
+                createPlaceholderEditor(meta, "Platzhalter hinzufügen…", element.placeholder, next => {
+                    input.placeholder = next ?? "";
+                    element.placeholder = next;
+                });
+            }
+            return;
+        }
+
+        if (element.type === "dropdown" || element.type === "search-dropdown") {
+            const field = preview.createDiv({ cls: "sm-le-preview__field" });
+            this.createInlineEditor({
+                parent: field,
+                value: element.label,
+                placeholder: "Label eingeben…",
+                onCommit: commitLabel,
+            }).addClass("sm-le-preview__label");
+
+            const controlWrapper = field.createDiv({ cls: "sm-le-preview__control" });
+            let options = element.options ?? [];
+            let placeholderOption: HTMLOptionElement | null = null;
+            let searchInput: HTMLInputElement | null = null;
+
+            if (element.type === "dropdown") {
+                const select = controlWrapper.createEl("select", { cls: "sm-le-preview__select" }) as HTMLSelectElement;
+                const placeholderText = element.placeholder ?? "Option wählen…";
+                placeholderOption = select.createEl("option", { value: "", text: placeholderText });
+                placeholderOption.disabled = true;
+                if (!element.defaultValue) placeholderOption.selected = true;
+                if (!options.length) {
+                    select.createEl("option", { value: "opt-1", text: "Erste Option" });
+                } else {
+                    for (const opt of options) {
+                        const option = select.createEl("option", { value: opt, text: opt });
+                        if (element.defaultValue && opt === element.defaultValue) {
+                            option.selected = true;
+                        }
+                    }
+                }
+                select.onchange = () => {
+                    const value = select.value || undefined;
+                    if (value === element.defaultValue) return;
+                    element.defaultValue = value;
+                    this.finalizeInlineMutation(element);
+                };
+            } else {
+                const search = controlWrapper.createEl("input", {
+                    cls: "sm-le-preview__input",
+                    attr: { type: "search", placeholder: element.placeholder ?? "Suchen…" },
+                }) as HTMLInputElement;
+                searchInput = search;
+                search.value = element.defaultValue ?? "";
+                let lastValue = search.value;
+                search.addEventListener("input", () => {
+                    element.defaultValue = search.value ? search.value : undefined;
+                });
+                search.addEventListener("blur", () => {
+                    const next = search.value;
+                    if (next === lastValue) return;
+                    lastValue = next;
+                    element.defaultValue = next ? next : undefined;
+                    this.finalizeInlineMutation(element);
+                });
+            }
+
+            const meta = preview.createDiv({ cls: "sm-le-preview__meta" });
+            createPlaceholderEditor(meta, "Platzhalter hinzufügen…", element.placeholder, next => {
+                element.placeholder = next;
+                if (placeholderOption) {
+                    placeholderOption.setText(next ?? "Option wählen…");
+                }
+                if (searchInput) {
+                    searchInput.placeholder = next ?? "Suchen…";
+                }
+            });
+
+            const optionList = preview.createDiv({ cls: "sm-le-inline-options" });
+            if (!options.length) {
+                optionList.createDiv({ cls: "sm-le-inline-options__empty", text: "Noch keine Optionen." });
+            } else {
+                options.forEach((opt, index) => {
+                    const row = optionList.createDiv({ cls: "sm-le-inline-option" });
+                    this.createInlineEditor({
+                        parent: row,
+                        value: opt,
+                        placeholder: "Option…",
+                        onCommit: value => {
+                            const next = value || opt;
+                            if (next === opt) return;
+                            const nextOptions = [...(element.options ?? [])];
+                            nextOptions[index] = next;
+                            element.options = nextOptions;
+                            if (element.defaultValue && element.defaultValue === opt) {
+                                element.defaultValue = next;
+                            }
+                            this.finalizeInlineMutation(element);
+                        },
+                    }).addClass("sm-le-inline-option__label");
+                    const remove = row.createSpan({ cls: "sm-le-inline-option__remove", text: "✕" });
+                    remove.onclick = ev => {
+                        ev.preventDefault();
+                        const nextOptions = (element.options ?? []).filter((_, idx) => idx !== index);
+                        element.options = nextOptions.length ? nextOptions : undefined;
+                        if (element.defaultValue && !nextOptions.includes(element.defaultValue)) {
+                            element.defaultValue = undefined;
+                        }
+                        this.finalizeInlineMutation(element);
+                    };
+                });
+            }
+            const addOption = preview.createEl("button", { cls: "sm-le-inline-add", text: "Option hinzufügen" });
+            addOption.onclick = ev => {
+                ev.preventDefault();
+                const nextOptions = [...(element.options ?? [])];
+                const label = `Option ${nextOptions.length + 1}`;
+                nextOptions.push(label);
+                element.options = nextOptions;
+                this.finalizeInlineMutation(element);
+            };
+            return;
+        }
+
+        if (isContainerType(element.type)) {
+            this.ensureContainerDefaults(element);
+            const header = preview.createDiv({ cls: "sm-le-preview__container-header" });
+            this.createInlineEditor({
+                parent: header,
+                value: element.label,
+                placeholder: "Container benennen…",
+                onCommit: commitLabel,
+            }).addClass("sm-le-preview__label");
+
+            const controls = preview.createDiv({ cls: "sm-le-preview__layout" });
+            const layout = element.layout!;
+
+            const gapWrap = controls.createDiv({ cls: "sm-le-inline-control" });
+            gapWrap.createSpan({ text: "Abstand" });
+            const gapInput = gapWrap.createEl("input", { cls: "sm-le-inline-number", attr: { type: "number", min: "0" } }) as HTMLInputElement;
+            gapInput.value = String(Math.round(layout.gap));
+            gapInput.onchange = () => {
+                const next = Math.max(0, parseInt(gapInput.value, 10) || 0);
+                if (next === layout.gap) return;
+                layout.gap = next;
+                gapInput.value = String(next);
+                this.applyContainerLayout(element);
+                this.pushHistory();
+            };
+
+            const paddingWrap = controls.createDiv({ cls: "sm-le-inline-control" });
+            paddingWrap.createSpan({ text: "Innenabstand" });
+            const paddingInput = paddingWrap.createEl("input", {
+                cls: "sm-le-inline-number",
+                attr: { type: "number", min: "0" },
+            }) as HTMLInputElement;
+            paddingInput.value = String(Math.round(layout.padding));
+            paddingInput.onchange = () => {
+                const next = Math.max(0, parseInt(paddingInput.value, 10) || 0);
+                if (next === layout.padding) return;
+                layout.padding = next;
+                paddingInput.value = String(next);
+                this.applyContainerLayout(element);
+                this.pushHistory();
+            };
+
+            const alignWrap = controls.createDiv({ cls: "sm-le-inline-control" });
+            alignWrap.createSpan({ text: "Ausrichtung" });
+            const alignSelect = alignWrap.createEl("select", { cls: "sm-le-inline-select" }) as HTMLSelectElement;
+            const alignOptions: Array<[LayoutContainerAlign, string]> =
+                element.type === "vbox"
+                    ? [
+                          ["start", "Links"],
+                          ["center", "Zentriert"],
+                          ["end", "Rechts"],
+                          ["stretch", "Breite"],
+                      ]
+                    : [
+                          ["start", "Oben"],
+                          ["center", "Zentriert"],
+                          ["end", "Unten"],
+                          ["stretch", "Höhe"],
+                      ];
+            for (const [value, label] of alignOptions) {
+                const option = alignSelect.createEl("option", { value, text: label });
+                if (layout.align === value) option.selected = true;
+            }
+            alignSelect.onchange = () => {
+                const next = (alignSelect.value as LayoutContainerAlign) ?? layout.align;
+                if (next === layout.align) return;
+                layout.align = next;
+                this.applyContainerLayout(element);
+                this.pushHistory();
+            };
+
+            const summary = preview.createDiv({ cls: "sm-le-preview__container-summary" });
+            const children = Array.isArray(element.children)
+                ? element.children
+                      .map(childId => this.elements.find(el => el.id === childId))
+                      .filter((child): child is LayoutElement => !!child)
+                : [];
+            if (!children.length) {
+                summary.createDiv({ cls: "sm-le-inline-options__empty", text: "Keine Elemente verknüpft." });
+            } else {
+                for (const child of children) {
+                    const row = summary.createDiv({ cls: "sm-le-container-chip" });
+                    row.setText(child.label || getElementTypeLabel(child.type));
+                }
+            }
+            return;
+        }
+
+        // Default fallback
+        this.createInlineEditor({
+            parent: preview,
+            value: element.label,
+            placeholder: "Label eingeben…",
+            onCommit: commitLabel,
+        });
+    }
+
     private render() {
         const root = this.contentEl;
         root.empty();
+
+        this.history = [];
+        this.historyIndex = -1;
 
         const header = root.createDiv({ cls: "sm-le-header" });
         header.createEl("h2", { text: "Layout Editor" });
@@ -319,6 +856,8 @@ export class LayoutEditorView extends ItemView {
             this.widthInput!.value = String(next);
             this.applyCanvasSize();
             this.refreshExport();
+            this.updateStatus();
+            this.pushHistory();
         };
         sizeWrapper.createSpan({ text: "×" });
         this.heightInput = sizeWrapper.createEl("input", { attr: { type: "number", min: "200", max: "2000" } }) as HTMLInputElement;
@@ -329,6 +868,8 @@ export class LayoutEditorView extends ItemView {
             this.heightInput!.value = String(next);
             this.applyCanvasSize();
             this.refreshExport();
+            this.updateStatus();
+            this.pushHistory();
         };
         sizeWrapper.createSpan({ text: "px" });
 
@@ -344,6 +885,7 @@ export class LayoutEditorView extends ItemView {
                 this.selectElement(null);
             }
         });
+        this.registerDomEvent(window, "keydown", this.onKeyDown);
 
         this.inspectorHost = body.createDiv({ cls: "sm-le-inspector" });
         this.renderInspector();
@@ -379,6 +921,8 @@ export class LayoutEditorView extends ItemView {
         this.sandboxEl.style.width = "960px";
         this.sandboxEl.style.padding = "24px";
         this.sandboxEl.style.boxSizing = "border-box";
+
+        this.pushHistory();
     }
 
     private applyCanvasSize() {
@@ -449,6 +993,8 @@ export class LayoutEditorView extends ItemView {
         this.renderElements();
         this.selectElement(element.id);
         this.refreshExport();
+        this.updateStatus();
+        this.pushHistory();
     }
 
     private renderElements() {
@@ -509,6 +1055,8 @@ export class LayoutEditorView extends ItemView {
         const [id] = container.children.splice(index, 1);
         container.children.splice(nextIndex, 0, id);
         this.applyContainerLayout(container);
+        this.updateStatus();
+        this.pushHistory();
     }
 
     private assignElementToContainer(elementId: string, containerId: string | null) {
@@ -535,6 +1083,8 @@ export class LayoutEditorView extends ItemView {
         this.syncElementElement(element);
         this.refreshExport();
         this.renderInspector();
+        this.updateStatus();
+        this.pushHistory();
     }
 
     private applyContainerLayout(container: LayoutElement, options?: { silent?: boolean }) {
@@ -624,6 +1174,7 @@ export class LayoutEditorView extends ItemView {
         if (!options?.silent) {
             this.refreshExport();
             this.renderInspector();
+            this.updateStatus();
         }
         this.refreshAttributePopover();
     }
@@ -662,6 +1213,8 @@ export class LayoutEditorView extends ItemView {
             this.refreshExport();
             this.renderInspector();
             this.refreshAttributePopover();
+            this.updateStatus();
+            this.pushHistory();
         });
         container.appendChild(clearBtn);
 
@@ -691,6 +1244,8 @@ export class LayoutEditorView extends ItemView {
                     this.refreshExport();
                     this.renderInspector();
                     this.refreshAttributePopover();
+                    this.updateStatus();
+                    this.pushHistory();
                 });
                 const labelText = document.createElement("span");
                 labelText.textContent = option.label;
@@ -784,8 +1339,7 @@ export class LayoutEditorView extends ItemView {
 
         const body = el.createDiv({ cls: "sm-le-box__body" });
         body.createDiv({ cls: "sm-le-box__type", text: "" }).dataset.role = "type";
-        body.createDiv({ cls: "sm-le-box__label", text: "(Label)" }).dataset.role = "label";
-        body.createDiv({ cls: "sm-le-box__details", text: "" }).dataset.role = "details";
+        body.createDiv({ cls: "sm-le-box__content" }).dataset.role = "content";
         const footer = el.createDiv({ cls: "sm-le-box__footer" });
         const attrs = footer.createSpan({ cls: "sm-le-box__attrs", text: "" }) as HTMLElement;
         attrs.dataset.role = "attrs";
@@ -829,14 +1383,14 @@ export class LayoutEditorView extends ItemView {
         el.classList.toggle("sm-le-box--container", isContainerType(element.type));
 
         const typeEl = el.querySelector('[data-role="type"]') as HTMLElement | null;
-        const labelEl = el.querySelector('[data-role="label"]') as HTMLElement | null;
-        const detailsEl = el.querySelector('[data-role="details"]') as HTMLElement | null;
+        const contentEl = el.querySelector('[data-role="content"]') as HTMLElement | null;
         const dimsEl = el.querySelector('[data-role="dims"]') as HTMLElement | null;
         const attrsEl = el.querySelector('[data-role="attrs"]') as HTMLElement | null;
 
         typeEl?.setText(getElementTypeLabel(element.type));
-        labelEl?.setText(element.label || "(Label)");
-        detailsEl?.setText(this.getElementDetails(element));
+        if (contentEl) {
+            this.renderElementPreview(element, contentEl);
+        }
         if (dimsEl) {
             dimsEl.setText(`${Math.round(element.width)} × ${Math.round(element.height)} px`);
         }
@@ -898,6 +1452,7 @@ export class LayoutEditorView extends ItemView {
             } else if (parent && isContainerType(parent.type)) {
                 this.applyContainerLayout(parent);
             }
+            this.pushHistory();
         };
 
         window.addEventListener("pointermove", onMove);
@@ -937,6 +1492,7 @@ export class LayoutEditorView extends ItemView {
             } else if (parent && isContainerType(parent.type)) {
                 this.applyContainerLayout(parent);
             }
+            this.pushHistory();
         };
 
         window.addEventListener("pointermove", onMove);
@@ -981,10 +1537,17 @@ export class LayoutEditorView extends ItemView {
         const labelInput = labelField.createEl("textarea") as HTMLTextAreaElement;
         labelInput.value = element.label;
         labelInput.rows = element.type === "textarea" ? 3 : 2;
+        const initialLabel = element.label;
         labelInput.oninput = () => {
             element.label = labelInput.value;
             this.syncElementElement(element);
             this.refreshExport();
+        };
+        labelInput.onblur = () => {
+            if (element.label === initialLabel) return;
+            this.updateStatus();
+            this.pushHistory();
+            this.renderInspector();
         };
 
         if (!isContainer) {
@@ -1012,10 +1575,18 @@ export class LayoutEditorView extends ItemView {
             const descInput = descField.createEl("textarea") as HTMLTextAreaElement;
             descInput.value = element.description || "";
             descInput.rows = 3;
+            const initialDesc = element.description ?? "";
             descInput.oninput = () => {
                 element.description = descInput.value || undefined;
                 this.syncElementElement(element);
                 this.refreshExport();
+            };
+            descInput.onblur = () => {
+                const current = element.description ?? "";
+                if (current === initialDesc) return;
+                this.updateStatus();
+                this.pushHistory();
+                this.renderInspector();
             };
         }
 
@@ -1024,10 +1595,18 @@ export class LayoutEditorView extends ItemView {
             placeholderField.createEl("label", { text: "Platzhalter" });
             const placeholderInput = placeholderField.createEl("input", { attr: { type: "text" } }) as HTMLInputElement;
             placeholderInput.value = element.placeholder || "";
+            const initialPlaceholder = element.placeholder ?? "";
             placeholderInput.oninput = () => {
                 element.placeholder = placeholderInput.value || undefined;
                 this.syncElementElement(element);
                 this.refreshExport();
+            };
+            placeholderInput.onblur = () => {
+                const current = element.placeholder ?? "";
+                if (current === initialPlaceholder) return;
+                this.updateStatus();
+                this.pushHistory();
+                this.renderInspector();
             };
 
             const defaultField = host.createDiv({ cls: "sm-le-field" });
@@ -1036,18 +1615,34 @@ export class LayoutEditorView extends ItemView {
                 const defaultTextarea = defaultField.createEl("textarea") as HTMLTextAreaElement;
                 defaultTextarea.rows = 3;
                 defaultTextarea.value = element.defaultValue || "";
+                const initialDefault = element.defaultValue ?? "";
                 defaultTextarea.oninput = () => {
                     element.defaultValue = defaultTextarea.value || undefined;
                     this.syncElementElement(element);
                     this.refreshExport();
                 };
+                defaultTextarea.onblur = () => {
+                    const current = element.defaultValue ?? "";
+                    if (current === initialDefault) return;
+                    this.updateStatus();
+                    this.pushHistory();
+                    this.renderInspector();
+                };
             } else {
                 const defaultInput = defaultField.createEl("input", { attr: { type: "text" } }) as HTMLInputElement;
                 defaultInput.value = element.defaultValue || "";
+                const initialDefault = element.defaultValue ?? "";
                 defaultInput.oninput = () => {
                     element.defaultValue = defaultInput.value || undefined;
                     this.syncElementElement(element);
                     this.refreshExport();
+                };
+                defaultInput.onblur = () => {
+                    const current = element.defaultValue ?? "";
+                    if (current === initialDefault) return;
+                    this.updateStatus();
+                    this.pushHistory();
+                    this.renderInspector();
                 };
             }
         }
@@ -1058,6 +1653,7 @@ export class LayoutEditorView extends ItemView {
             const optionsInput = optionsField.createEl("textarea") as HTMLTextAreaElement;
             optionsInput.rows = 4;
             optionsInput.value = (element.options || []).join("\n");
+            const initialOptionsValue = optionsInput.value;
             optionsInput.oninput = () => {
                 const lines = optionsInput.value
                     .split(/\r?\n/)
@@ -1066,6 +1662,12 @@ export class LayoutEditorView extends ItemView {
                 element.options = lines.length ? lines : undefined;
                 this.syncElementElement(element);
                 this.refreshExport();
+            };
+            optionsInput.onblur = () => {
+                if (optionsInput.value === initialOptionsValue) return;
+                this.updateStatus();
+                this.pushHistory();
+                this.renderInspector();
             };
         }
 
@@ -1091,6 +1693,8 @@ export class LayoutEditorView extends ItemView {
                     this.syncElementElement(element);
                     this.refreshExport();
                     this.refreshAttributePopover();
+                    this.updateStatus();
+                    this.pushHistory();
                 };
                 row.createEl("label", { text: option.label, attr: { for: optionId } });
             }
@@ -1106,6 +1710,7 @@ export class LayoutEditorView extends ItemView {
                 element.layout!.gap = next;
                 gapInput.value = String(next);
                 this.applyContainerLayout(element);
+                this.pushHistory();
             };
             layoutField.createEl("label", { text: "Innenabstand (px)" });
             const paddingInput = layoutField.createEl("input", { attr: { type: "number", min: "0" } }) as HTMLInputElement;
@@ -1115,6 +1720,7 @@ export class LayoutEditorView extends ItemView {
                 element.layout!.padding = next;
                 paddingInput.value = String(next);
                 this.applyContainerLayout(element);
+                this.pushHistory();
             };
 
             const alignField = host.createDiv({ cls: "sm-le-field" });
@@ -1142,6 +1748,7 @@ export class LayoutEditorView extends ItemView {
                 const next = (alignSelect.value as LayoutContainerAlign) ?? element.layout!.align;
                 element.layout!.align = next;
                 this.applyContainerLayout(element);
+                this.pushHistory();
             };
 
             const childField = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
@@ -1318,40 +1925,7 @@ export class LayoutEditorView extends ItemView {
         this.renderInspector();
         this.refreshExport();
         this.updateStatus();
-    }
-
-    private getElementDetails(element: LayoutElement): string {
-        const parts: string[] = [];
-        if (isContainerType(element.type)) {
-            const layout = element.layout;
-            const gap = layout ? Math.round(layout.gap) : 0;
-            const alignLabel = layout ? getContainerAlignLabel(element.type, layout.align) : null;
-            const count = element.children?.length ?? 0;
-            parts.push(element.type === "vbox" ? "Vertikale Verteilung" : "Horizontale Verteilung");
-            parts.push(`Abstand ${gap}px`);
-            if (alignLabel) parts.push(alignLabel);
-            parts.push(`${count} Elemente`);
-        }
-        if ((element.type === "label" || element.type === "box") && element.description) {
-            parts.push(element.description);
-        }
-        if (element.type === "text-input" || element.type === "textarea") {
-            if (element.placeholder) parts.push(`Platzhalter: ${element.placeholder}`);
-            if (element.defaultValue) parts.push(`Default: ${element.defaultValue}`);
-        }
-        if (element.type === "dropdown" || element.type === "search-dropdown") {
-            if (element.placeholder) parts.push(`Platzhalter: ${element.placeholder}`);
-            if (element.defaultValue) parts.push(`Default: ${element.defaultValue}`);
-            if (element.options && element.options.length) {
-                const preview = element.options.slice(0, 3).join(", ");
-                const suffix = element.options.length > 3 ? "…" : "";
-                parts.push(`Optionen: ${preview}${suffix}`);
-            }
-        }
-        if (element.type === "separator") {
-            parts.push("Trennlinie");
-        }
-        return parts.join(" · ");
+        this.pushHistory();
     }
 
     private getAttributeSummary(attributes: string[]): string {
@@ -1566,6 +2140,7 @@ export class LayoutEditorView extends ItemView {
             this.renderInspector();
             this.refreshExport();
             this.updateStatus();
+            this.pushHistory();
 
             if (!options?.silent) new Notice("Creature-Layout importiert");
         } catch (error) {
@@ -1629,4 +2204,79 @@ function getContainerAlignLabel(type: LayoutContainerType, align: LayoutContaine
         }
     }
     return "";
+}
+
+function cloneLayoutElement(element: LayoutElement): LayoutElement {
+    return {
+        ...element,
+        attributes: [...element.attributes],
+        options: element.options ? [...element.options] : undefined,
+        layout: element.layout ? { ...element.layout } : undefined,
+        children: element.children ? [...element.children] : undefined,
+    };
+}
+
+function elementsAreEqual(a: LayoutElement, b: LayoutElement): boolean {
+    if (a === b) return true;
+    if (
+        a.id !== b.id ||
+        a.type !== b.type ||
+        a.x !== b.x ||
+        a.y !== b.y ||
+        a.width !== b.width ||
+        a.height !== b.height ||
+        a.label !== b.label ||
+        a.description !== b.description ||
+        a.placeholder !== b.placeholder ||
+        a.defaultValue !== b.defaultValue
+    ) {
+        return false;
+    }
+    const aOptions = a.options ?? [];
+    const bOptions = b.options ?? [];
+    if (aOptions.length !== bOptions.length) return false;
+    for (let i = 0; i < aOptions.length; i++) {
+        if (aOptions[i] !== bOptions[i]) return false;
+    }
+    const aAttrs = a.attributes ?? [];
+    const bAttrs = b.attributes ?? [];
+    if (aAttrs.length !== bAttrs.length) return false;
+    for (let i = 0; i < aAttrs.length; i++) {
+        if (aAttrs[i] !== bAttrs[i]) return false;
+    }
+    const aChildren = a.children ?? [];
+    const bChildren = b.children ?? [];
+    if (aChildren.length !== bChildren.length) return false;
+    for (let i = 0; i < aChildren.length; i++) {
+        if (aChildren[i] !== bChildren[i]) return false;
+    }
+    if (!!a.layout !== !!b.layout) return false;
+    if (a.layout && b.layout) {
+        if (
+            a.layout.gap !== b.layout.gap ||
+            a.layout.padding !== b.layout.padding ||
+            a.layout.align !== b.layout.align
+        ) {
+            return false;
+        }
+    }
+    if (!!a.parentId !== !!b.parentId) return false;
+    if (a.parentId !== b.parentId) return false;
+    return true;
+}
+
+function snapshotsAreEqual(a: LayoutEditorSnapshot | undefined, b: LayoutEditorSnapshot | undefined): boolean {
+    if (!a || !b) return false;
+    if (
+        a.canvasWidth !== b.canvasWidth ||
+        a.canvasHeight !== b.canvasHeight ||
+        a.selectedElementId !== b.selectedElementId ||
+        a.elements.length !== b.elements.length
+    ) {
+        return false;
+    }
+    for (let i = 0; i < a.elements.length; i++) {
+        if (!elementsAreEqual(a.elements[i], b.elements[i])) return false;
+    }
+    return true;
 }

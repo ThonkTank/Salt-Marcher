@@ -16,6 +16,8 @@ src/apps/layout/
 - **Element-Verwaltung:** Unterstützt Auswählen, Verschieben und Skalieren per Drag & Drop oder numerische Eingaben, inklusive visueller Auswahlmarkierung; Container bewegen ihre Kinder mit und wenden nach dem Loslassen erneut ihre Auto-Layouts an.
 - **Inspector-Panel:** Ermöglicht das Anpassen von Texten, Beschreibungen, Platzhaltern, Default-Werten, Dropdown-Optionen und verknüpften Creature-Attributen; bietet zudem Container-spezifische Eingaben für Abstand, Innenabstand, Ausrichtung, Kinderverwaltung sowie eine schnelle Zuweisung/Abmeldung von Elementen aus Containern.
 - **Inline-Attributeditor:** Attribute lassen sich direkt am Canvas-Element über ein Popover pflegen; Inspector und Canvas bleiben dabei synchron.
+- **Inline-Bearbeitung auf der Canvas:** Labels, Beschreibungen, Platzhalter, Default-Werte und Dropdown-Optionen werden direkt am dargestellten UI-Element editiert; dafür rendert der Editor echte Eingabefelder statt abstrakter Platzhalter.
+- **Canvas-Kurzbefehle & Historie:** Elemente lassen sich per Entf-Taste löschen und über Strg+Z / Strg+Umschalt+Z rückgängig machen bzw. wiederherstellen; alle Änderungen fließen in eine Undo/Redo-Historie.
 - **Export für Layoutdaten:** Generiert jederzeit ein JSON-Snippet mit Canvas-Größe plus vollständigem Element-Metadatenpaket (Typ, Texte, Optionen, Attribute, Maße), damit Layouts reproduzierbar bleiben.
 - **Creature-Creator-Import:** Baut den DOM des Creature-Creator-Dialogs in einer Sandbox nach, analysiert Maße, weist passende Elementtypen zu und füllt die Canvas automatisch mit vorkonfigurierten UI-Bereichen.
 
@@ -26,6 +28,7 @@ src/apps/layout/
 - Baut Header (Element-Palette, Import, Status), Canvas und Inspector auf und hält DOM-Referenzen für performante Aktualisierungen.
 - Verwaltet Element-Modelle in einem Array, synchronisiert Position/Größe mit dem DOM und bedient Pointer-basierte Drag-/Resize-Interaktionen.
 - Stellt im Inspector Eingabefelder für Label, Beschreibung, Platzhalter, Default-Werte, Dropdown-Optionen sowie eine Attribut-Auswahl bereit, ergänzt um Container-spezifische Controls (Abstand, Padding, Ausrichtung, Child-Management) und eine Container-Zuweisung für klassische Elemente.
-- Synchronisiert den Inline-Attributeditor (Popover auf der Canvas) mit dem Inspector und aktualisiert beide Wege konsistent.
+- Synchronisiert neben dem Inline-Attributeditor (Popover auf der Canvas) auch alle Inline-Text- und Options-Editoren mit dem Inspector und aktualisiert beide Wege konsistent.
+- Rendert auf der Canvas echte UI-Kontrollen (Labels, Inputs, Textareas, Dropdowns, Suche, Container) inklusive Undo/Redo-Historie und Tastaturkürzeln zum schnellen Löschen und Wiederherstellen.
 - Rekonstruiert bei Bedarf das Creature-Creator-Layout über die Abschnitts-Mount-Funktionen (`mountCreatureBasicsSection`, `mountCreatureStatsAndSkillsSection`, …), erkennt simple Eingabe-Typen und projiziert die gemessenen Bounding-Boxes auf die Canvas.
 - Erstellt das Export-JSON inklusive Canvas- und Element-Metadaten (inklusive Container-Beziehungen, Layout-Konfiguration und Kinderlisten) und stellt eine Kopier-Schaltfläche bereit.
