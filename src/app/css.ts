@@ -193,17 +193,17 @@ export const HEX_PLUGIN_CSS = `
 .sm-cc-create-modal .sm-cc-header .sm-cc-cell { font-weight: 600; color: var(--text-muted); }
 
 /* Ability score cards */
-.sm-cc-create-modal .sm-cc-stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; margin-top: .35rem; }
-.sm-cc-create-modal .sm-cc-stat { border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: .5rem; background: var(--background-primary); display: flex; flex-direction: column; gap: .35rem; }
-.sm-cc-create-modal .sm-cc-stat__header { display: flex; align-items: center; justify-content: space-between; gap: .5rem; font-weight: 600; }
-.sm-cc-create-modal .sm-cc-stat__header span:first-child { color: var(--text-normal); }
-.sm-cc-create-modal .sm-cc-stat__mod { display: flex; align-items: center; justify-content: space-between; gap: .5rem; font-size: .95em; color: var(--text-muted); }
-.sm-cc-create-modal .sm-cc-stat__mod-value { font-weight: 600; color: var(--text-normal); }
-.sm-cc-create-modal .sm-cc-stat__save { display: flex; flex-direction: column; gap: .25rem; }
-.sm-cc-create-modal .sm-cc-stat__save-label { font-size: .85em; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; color: var(--text-muted); }
-.sm-cc-create-modal .sm-cc-stat__save-controls { display: flex; align-items: center; gap: .35rem; }
-.sm-cc-create-modal .sm-cc-stat__save-controls input[type="checkbox"] { margin: 0; }
-.sm-cc-create-modal .sm-cc-stat__save-value { font-weight: 600; }
+.sm-cc-create-modal .sm-cc-stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; align-items: stretch; gap: .35rem 1rem; margin-top: .35rem; }
+.sm-cc-create-modal .sm-cc-stats-col { display: flex; flex-direction: column; gap: .35rem; }
+.sm-cc-create-modal .sm-cc-stat-row { display: flex; align-items: center; gap: .45rem; padding: .35rem .45rem; border-radius: 8px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); }
+.sm-cc-create-modal .sm-cc-stat-row__label { flex: 0 0 2.5rem; font-weight: 600; color: var(--text-normal); }
+.sm-cc-create-modal .sm-cc-stat-row__score { flex: 0 0 auto; }
+.sm-cc-create-modal .sm-cc-stat-row__mod-label { font-size: .85em; color: var(--text-muted); }
+.sm-cc-create-modal .sm-cc-stat-row__mod-value { font-weight: 600; color: var(--text-normal); min-width: 2.5rem; text-align: right; }
+.sm-cc-create-modal .sm-cc-stat-row__save { margin-left: auto; display: inline-flex; align-items: center; gap: .35rem; }
+.sm-cc-create-modal .sm-cc-stat-row__save-prof { display: inline-flex; align-items: center; gap: .3rem; font-size: .85em; color: var(--text-muted); cursor: pointer; }
+.sm-cc-create-modal .sm-cc-stat-row__save-prof input[type="checkbox"] { margin: 0; }
+.sm-cc-create-modal .sm-cc-stat-row__save-mod { font-weight: 600; color: var(--text-normal); min-width: 2.5rem; text-align: right; }
 @media (max-width: 700px) {
     .sm-cc-create-modal .sm-cc-stats-grid { grid-template-columns: minmax(0, 1fr); }
 }

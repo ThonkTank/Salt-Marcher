@@ -4265,47 +4265,63 @@ function mountCreatureStatsAndSkillsSection(parent, data) {
   const abilitySection = root.createDiv({ cls: "sm-cc-skills" });
   abilitySection.createEl("h4", { text: "Stats" });
   const statsGrid = abilitySection.createDiv({ cls: "sm-cc-stats-grid" });
-  for (const s of CREATURE_ABILITIES) {
-    const statEl = statsGrid.createDiv({ cls: "sm-cc-stat" });
-    const header = statEl.createDiv({ cls: "sm-cc-stat__header" });
-    header.createSpan({ text: s.label });
-    const scoreWrap = header.createDiv({ cls: "sm-inline-number sm-cc-stat__score" });
-    const score = scoreWrap.createEl("input", {
-      attr: { type: "number", placeholder: "10", min: "0", step: "1" }
-    });
-    const dec = scoreWrap.createEl("button", { text: "\u2212", cls: "btn-compact" });
-    const inc = scoreWrap.createEl("button", { text: "+", cls: "btn-compact" });
-    score.value = data[s.key] || "";
-    const step = (d) => {
-      const cur = parseInt(score.value, 10) || 0;
-      const next = Math.max(0, cur + d);
-      score.value = String(next);
-      data[s.key] = score.value.trim();
-      updateMods();
-    };
-    dec.onclick = () => step(-1);
-    inc.onclick = () => step(1);
-    score.addEventListener("input", () => {
-      data[s.key] = score.value.trim();
-      updateMods();
-    });
-    const modRow = statEl.createDiv({ cls: "sm-cc-stat__mod" });
-    modRow.createSpan({ text: "Mod" });
-    const modOut = modRow.createSpan({ cls: "sm-cc-stat__mod-value", text: "+0" });
-    const saveRow = statEl.createDiv({ cls: "sm-cc-stat__save" });
-    saveRow.createSpan({ cls: "sm-cc-stat__save-label", text: "Save mod" });
-    const saveControls = saveRow.createDiv({ cls: "sm-cc-stat__save-controls" });
-    const saveCb = saveControls.createEl("input", {
-      attr: { type: "checkbox", "aria-label": `${s.label} Save Proficiency` }
-    });
-    const saveOut = saveControls.createSpan({ cls: "sm-cc-stat__save-value", text: "+0" });
-    ensureSets();
-    saveCb.checked = !!data.saveProf[s.key];
-    saveCb.addEventListener("change", () => {
-      data.saveProf[s.key] = saveCb.checked;
-      updateMods();
-    });
-    abilityElems.set(s.key, { score, mod: modOut, save: saveCb, saveMod: saveOut });
+  const abilityByKey = new Map(
+    CREATURE_ABILITIES.map((def) => [def.key, def])
+  );
+  const statColumns = [
+    ["str", "dex", "con"],
+    ["int", "wis", "cha"]
+  ];
+  for (const keys of statColumns) {
+    const columnEl = statsGrid.createDiv({ cls: "sm-cc-stats-col" });
+    for (const key of keys) {
+      const ability = abilityByKey.get(key);
+      if (!ability) continue;
+      const row = columnEl.createDiv({ cls: "sm-cc-stat-row" });
+      row.createSpan({ cls: "sm-cc-stat-row__label", text: ability.label });
+      const scoreWrap = row.createDiv({ cls: "sm-inline-number sm-cc-stat-row__score" });
+      const score = scoreWrap.createEl("input", {
+        attr: { type: "number", placeholder: "10", min: "0", step: "1" }
+      });
+      const dec = scoreWrap.createEl("button", { text: "\u2212", cls: "btn-compact" });
+      const inc = scoreWrap.createEl("button", { text: "+", cls: "btn-compact" });
+      score.value = data[ability.key] || "";
+      const step = (d) => {
+        const cur = parseInt(score.value, 10) || 0;
+        const next = Math.max(0, cur + d);
+        score.value = String(next);
+        data[ability.key] = score.value.trim();
+        updateMods();
+      };
+      dec.onclick = () => step(-1);
+      inc.onclick = () => step(1);
+      score.addEventListener("input", () => {
+        data[ability.key] = score.value.trim();
+        updateMods();
+      });
+      row.createSpan({ cls: "sm-cc-stat-row__mod-label", text: "Mod" });
+      const modOut = row.createSpan({
+        cls: "sm-cc-stat-row__mod-value",
+        text: "+0"
+      });
+      const saveWrap = row.createDiv({ cls: "sm-cc-stat-row__save" });
+      const saveLabel = saveWrap.createEl("label", { cls: "sm-cc-stat-row__save-prof" });
+      const saveCb = saveLabel.createEl("input", {
+        attr: { type: "checkbox", "aria-label": `${ability.label} Save Proficiency` }
+      });
+      saveLabel.createSpan({ text: "Save" });
+      const saveOut = saveWrap.createSpan({
+        cls: "sm-cc-stat-row__save-mod",
+        text: "+0"
+      });
+      ensureSets();
+      saveCb.checked = !!data.saveProf[ability.key];
+      saveCb.addEventListener("change", () => {
+        data.saveProf[ability.key] = saveCb.checked;
+        updateMods();
+      });
+      abilityElems.set(ability.key, { score, mod: modOut, save: saveCb, saveMod: saveOut });
+    }
   }
   const skillAbilityMap = new Map(CREATURE_SKILLS);
   const skillsSetting = new import_obsidian16.Setting(root).setName("Fertigkeiten");
@@ -5727,17 +5743,17 @@ var HEX_PLUGIN_CSS = `
 .sm-cc-create-modal .sm-cc-header .sm-cc-cell { font-weight: 600; color: var(--text-muted); }
 
 /* Ability score cards */
-.sm-cc-create-modal .sm-cc-stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; margin-top: .35rem; }
-.sm-cc-create-modal .sm-cc-stat { border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: .5rem; background: var(--background-primary); display: flex; flex-direction: column; gap: .35rem; }
-.sm-cc-create-modal .sm-cc-stat__header { display: flex; align-items: center; justify-content: space-between; gap: .5rem; font-weight: 600; }
-.sm-cc-create-modal .sm-cc-stat__header span:first-child { color: var(--text-normal); }
-.sm-cc-create-modal .sm-cc-stat__mod { display: flex; align-items: center; justify-content: space-between; gap: .5rem; font-size: .95em; color: var(--text-muted); }
-.sm-cc-create-modal .sm-cc-stat__mod-value { font-weight: 600; color: var(--text-normal); }
-.sm-cc-create-modal .sm-cc-stat__save { display: flex; flex-direction: column; gap: .25rem; }
-.sm-cc-create-modal .sm-cc-stat__save-label { font-size: .85em; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; color: var(--text-muted); }
-.sm-cc-create-modal .sm-cc-stat__save-controls { display: flex; align-items: center; gap: .35rem; }
-.sm-cc-create-modal .sm-cc-stat__save-controls input[type="checkbox"] { margin: 0; }
-.sm-cc-create-modal .sm-cc-stat__save-value { font-weight: 600; }
+.sm-cc-create-modal .sm-cc-stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; align-items: stretch; gap: .35rem 1rem; margin-top: .35rem; }
+.sm-cc-create-modal .sm-cc-stats-col { display: flex; flex-direction: column; gap: .35rem; }
+.sm-cc-create-modal .sm-cc-stat-row { display: flex; align-items: center; gap: .45rem; padding: .35rem .45rem; border-radius: 8px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); }
+.sm-cc-create-modal .sm-cc-stat-row__label { flex: 0 0 2.5rem; font-weight: 600; color: var(--text-normal); }
+.sm-cc-create-modal .sm-cc-stat-row__score { flex: 0 0 auto; }
+.sm-cc-create-modal .sm-cc-stat-row__mod-label { font-size: .85em; color: var(--text-muted); }
+.sm-cc-create-modal .sm-cc-stat-row__mod-value { font-weight: 600; color: var(--text-normal); min-width: 2.5rem; text-align: right; }
+.sm-cc-create-modal .sm-cc-stat-row__save { margin-left: auto; display: inline-flex; align-items: center; gap: .35rem; }
+.sm-cc-create-modal .sm-cc-stat-row__save-prof { display: inline-flex; align-items: center; gap: .3rem; font-size: .85em; color: var(--text-muted); cursor: pointer; }
+.sm-cc-create-modal .sm-cc-stat-row__save-prof input[type="checkbox"] { margin: 0; }
+.sm-cc-create-modal .sm-cc-stat-row__save-mod { font-weight: 600; color: var(--text-normal); min-width: 2.5rem; text-align: right; }
 @media (max-width: 700px) {
     .sm-cc-create-modal .sm-cc-stats-grid { grid-template-columns: minmax(0, 1fr); }
 }
