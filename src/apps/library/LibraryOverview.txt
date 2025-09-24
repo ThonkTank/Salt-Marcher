@@ -20,9 +20,12 @@ src/apps/library/
 │  │  ├─ index.ts             # Re-exports Modal & Creature-Sections für externe Zugriffe
 │  │  ├─ modal.ts             # Modal zum Anlegen von Creatures (koordiniert die Abschnitte)
 │  │  ├─ presets.ts           # Zentralisierte Auswahllisten (Größe, Typ, Skills, Bewegungen, Sinne, Sprachen …)
-│  │  ├─ section-core-stats.ts   # Abschnitt für Identität, Kernwerte, Saves & Sinne/Sprachen (Preset-Suche)
-│  │  ├─ section-entries.ts      # Abschnitt für Traits/Aktionen/Legendäre Einträge mit Presets
-│  │  └─ section-spells-known.ts # Abschnitt für bekannte Zauber inkl. Typeahead-Suche
+│  │  ├─ section-basics.ts         # Abschnitt für Identität, Kernwerte & Bewegungs-Chips
+│  │  ├─ section-stats-and-skills.ts # Ability-, Save- & Skill-Editor mit Mod-Neuberechnung
+│  │  ├─ section-senses-and-defenses.ts # Sinne/Sprachen/Passives/Resistenzen/Gear via Presets & Chips
+│  │  ├─ section-utils.ts          # Geteilte Preset-/Damage-Editor-Helfer
+│  │  ├─ section-entries.ts        # Abschnitt für Traits/Aktionen/Legendäre Einträge mit Presets
+│  │  └─ section-spells-known.ts   # Abschnitt für bekannte Zauber inkl. Typeahead-Suche
 │  ├─ spell/
 │  │  ├─ index.ts             # Re-export für externe Zugriffe auf das Spell-Modal
 │  │  └─ modal.ts             # Modal zum Anlegen von Spells
@@ -43,7 +46,10 @@ src/apps/library/
   - Regionen: legt neuen Eintrag ohne Terrain/Encounter an.
   - Creatures/Spells: öffnet ein Modal, erzeugt eine `.md`‑Datei im passenden Ordner und öffnet sie im Editor.
 - Creature-Modal (`create/creature/modal.ts`) zerlegt das Formular in modulare Abschnitte (`create/creature/section-*.ts`) und orchestriert Mounting, State-Passing und Persistenz-Trigger. Gemeinsame Optionslisten (Größen, Typen, Gesinnung, Skills, Bewegungsarten, Sinne, Sprachen) werden aus `create/creature/presets.ts` gespeist, sodass alle Segmente denselben Kanon verwenden.
-  - `creature/section-core-stats`: Steuert Identität, Ability Scores, Saves/Skills mit Inline-Label-Suchzeile sowie Sinnes- und Sprachfelder inklusive Automatik-Berechnungen und nutzt Preset-gestützte Such-Dropdowns für Sinne/Sprachen.
+  - `creature/section-basics`: Verwaltet Identität, Kernwerte und einen Movement-Editor (Dropdown + Hover + Chip-Liste) und schreibt Ergebnisse direkt in `StatblockData`.
+  - `creature/section-stats-and-skills`: Rendert das Ability-Kartengrid mit Save-Proficiencies sowie den Skill-Chip-Workflow inklusive Expertise-Toggle und Live-Mod-Berechnung.
+  - `creature/section-senses-and-defenses`: Pflegt Sinne, Sprachen, Passives, Schadenstyp-Reaktionen, Zustandsimmunitäten und Gear per Preset-Suche/Chips.
+  - `creature/section-utils`: Stellt geteilte Preset-/Damage-Editoren bereit, damit mehrere Sections denselben UX-Baukasten nutzen.
   - `creature/section-entries`: Verwaltet Traits, Aktionen, legendäre Optionen und Presets für Treffer-/Schadenswerte.
   - `creature/section-spells-known`: Liefert eine Typeahead-gestützte Spell-Liste mit Grad- und Nutzungskonfiguration, die auf den live gehaltenen Spell-Getter des Modals hört.
 - Geteilte Stat-Utilities (`create/shared/stat-utils.ts`) bündeln Parsing, Modifikator-Logik und Vorzeichenformatierung für alle Abschnitte – nutzbar auch für zukünftige Modals (z. B. Items oder NPC-Varianten).
@@ -89,11 +95,23 @@ src/apps/library/
 ### `create/index.ts`
 - Fasst die Modal-Exports (`CreateCreatureModal`, `CreateSpellModal`) zusammen. `view.ts` bindet beide über einen Import, was Importketten vereinfacht und die Ordnerstruktur vor Außenstehenden kapselt.
 
-### `create/creature/section-core-stats.ts`
-- Rendert Identität, Kernwerte, Saves/Skills mit Inline-Label in der Suchzeile sowie Sinne und Sprachen inklusive automatischer Modifikator- und Proficiency-Berechnung.
-- Nutzt Preset-gestützte Search-Dropdowns für Sinne/Sprachen (Freitext bleibt möglich) und spiegelt die Chip-UX des Skill-Editors inklusive Entfernen-Buttons; Token-Editoren bleiben für freie Listen wie Gear im Einsatz.
-- Zieht Berechnungshelfer (`shared/stat-utils`) für Ability-Modifikatoren und Vorzeichenformatierung heran, sodass dieselben Regeln wie in Eintragssektionen gelten.
-- Warum: Bündelt alle abhängigen Formeln (z. B. PB, Ability Mods) und sorgt dafür, dass Änderungen an Attributen sofort in allen Feldern sichtbar werden.
+### `create/creature/section-basics.ts`
+- Verwaltet Identität (Name, Größe, Typ, Gesinnung), Kernwerte (AC, Init, HP, Hit Dice, PB, CR, XP) sowie einen Movement-Editor mit Dropdown, Hover-Toggle und Speed-Chips.
+- Schreibt jede Eingabe unmittelbar in `StatblockData` und stellt sicher, dass `speedList` als Array vorliegt.
+- Warum: Bündelt sämtliche Kopfdaten und Bewegungslogik in einer fokussierten Section und entlastet das Modal von Inline-Steuerungen.
+
+### `create/creature/section-stats-and-skills.ts`
+- Rendert das zweispaltige Ability-Kartengrid inklusive Save-Proficiencies, Mod-Anzeige und Score-Steppern.
+- Bietet einen Skill-Such-Workflow mit Chips, Expertise-Checkboxen und Mod-Neuberechnung via `shared/stat-utils`.
+- Warum: Trennt Ability-/Skill-Logik klar von anderen Bereichen und sorgt für konsistente Modifikator-Berechnungen an einer Stelle.
+
+### `create/creature/section-senses-and-defenses.ts`
+- Nutzt Preset-Suchdropdowns für Sinne, Sprachen und passive Werte, kombiniert Schadenstyp-Reaktionen mit einem Status-Schalter (Resistenz/Immunität/Verwundbarkeit) und verwaltet Zustandsimmunitäten sowie Gear per Chip-UX.
+- Warum: Gruppiert alle Wahrnehmungs-, Sprach- und Verteidigungsdaten und ermöglicht gemeinsame Pflege über wiederverwendbare Preset-Editoren.
+
+### `create/creature/section-utils.ts`
+- Stellt `mountPresetSelectEditor` und `mountDamageResponseEditor` bereit, damit mehrere Sections identische Search-/Chip-Interaktionen nutzen können.
+- Warum: Zentralisiert UI-Bausteine und verhindert duplizierte Logik in den einzelnen Sections.
 
 ### `create/creature/section-entries.ts`
 - Verwaltet Trait/Aktion/Legendär-Einträge inkl. Preset-Formeln, Auto-Berechnung von Treffer- und Schadenswerten sowie zusätzlichen Feldern (Saves, Recharge, Text).

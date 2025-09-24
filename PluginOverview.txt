@@ -80,10 +80,13 @@ Salt-Marcher/
   an Bereichs-spezifische Controller.
 - `core/*`: Gemeinsame Logik für Library-Daten (Laden/Speichern der Sammeldateien, Parsing, Suche, Filter, Eventing).
 - `create/creature/modal.ts`: Modal zum Anlegen von Creatures; orchestriert die Formular-Sektionen und persistiert neue Statblocks.
-- `create/creature/presets.ts`: Zentraler Pool an Konstanten & Typen für Creature-Dropdowns (Größe, Typ, Gesinnung, Skills, Bewegungen).
-- `create/creature/section-core-stats.ts`: Rendert den Kernbereich des Statblocks (Identität, AC/HP-Zeile, Ability-/Skill-Tabellen) inkl. Token-/Dropdown-Helfer.
+- `create/creature/presets.ts`: Zentraler Pool an Konstanten & Typen für Creature-Dropdowns (Größe, Typ, Gesinnung, Skills, Bewegungen, Sinne, Sprachen …).
+- `create/creature/section-basics.ts`: Verwaltet Identität, Kernwerte sowie Bewegungsarten inklusive Hover-Flag und Speed-Chips.
+- `create/creature/section-stats-and-skills.ts`: Ability-/Save-Karten plus Skill-Suche mit Chips, Expertise-Checkbox und Mod-Neuberechnung.
+- `create/creature/section-senses-and-defenses.ts`: Pflege für Sinne, Sprachen, Passives, Schadenstyp-Reaktionen, Zustandsimmunitäten und Gear.
+- `create/creature/section-utils.ts`: Gemeinsame Preset- und Schadenstyp-Editoren, die von mehreren Sections genutzt werden.
 - `create/creature/section-entries.ts`: Dynamischer Editor für Traits/Aktionen mit Auto-Berechnung von Treffer-/Schadenswerten und Save/Recharge-Optionen.
-- `create/creature/section-spellcasting.ts`: Spellcasting-Tab mit Casting-Stats sowie Frequenzlisten (At-Will, pro Tag/Rast, Slots, freie Gruppen) inklusive Typeahead und Uses/Notizen je Zauber.【F:src/apps/library/create/creature/section-spellcasting.ts†L438-L587】
+- `create/creature/section-spells-known.ts`: Spell-Liste mit Typeahead, Grad-/Nutzungsfeldern und Refresh-Hook aufs Modal.
 - `create/spell/modal.ts`: Dediziertes Spell-Modal mit Dropdown-Komfort und Markdown-Feldern.
 - `create/index.ts`: Re-exportiert beide Modals, sodass `view.ts` die Create-Flows aus einem Bündel importiert.
 - `create/shared/stat-utils.ts`: Geteilte Parser/Formatter für Ability-Scores (z. B. `abilityMod`, `parseIntSafe`) zur Berechnung von Modifikatoren.
