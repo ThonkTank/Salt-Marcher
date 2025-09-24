@@ -4087,22 +4087,59 @@ function ensureSpeedList(data) {
 }
 function mountCreatureBasicsSection(parent, data) {
   const root = parent.createDiv({ cls: "sm-cc-basics" });
-  const identityRow = root.createDiv({ cls: "sm-cc-basics__identity" });
-  const idSetting = new import_obsidian15.Setting(identityRow).setName("Name");
-  idSetting.settingEl.classList.add("sm-cc-basics__identity-item", "sm-cc-basics__identity-name");
+  const grid = root.createDiv({ cls: "sm-cc-basics__grid" });
+  const registerGridItem = (setting, span = 1) => {
+    setting.settingEl.classList.add("sm-cc-basics__grid-item");
+    if (span === 2) setting.settingEl.classList.add("sm-cc-basics__grid-item--span-2");
+    if (span === 3) setting.settingEl.classList.add("sm-cc-basics__grid-item--span-3");
+    if (span === 4) setting.settingEl.classList.add("sm-cc-basics__grid-item--span-4");
+  };
+  const idSetting = new import_obsidian15.Setting(grid).setName("Name");
+  registerGridItem(idSetting, 2);
   idSetting.addText((t) => {
     t.setPlaceholder("Aboleth").setValue(data.name || "").onChange((v) => data.name = v.trim());
+    t.inputEl.classList.add("sm-cc-basics__text-input");
     t.inputEl.style.width = "100%";
   });
-  const alignSetting = new import_obsidian15.Setting(identityRow).setName("Gesinnung");
-  alignSetting.settingEl.classList.add("sm-cc-basics__identity-item", "sm-cc-basics__alignment");
+  const typeSetting = new import_obsidian15.Setting(grid).setName("Typ");
+  registerGridItem(typeSetting, 2);
+  typeSetting.addDropdown((dd) => {
+    dd.addOption("", "");
+    for (const option of CREATURE_TYPES) dd.addOption(option, option);
+    dd.setValue(data.type ?? "");
+    dd.onChange((v) => data.type = v);
+    dd.selectEl.classList.add("sm-cc-basics__select");
+    dd.selectEl.style.width = "100%";
+    try {
+      enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
+    } catch {
+    }
+  });
+  const sizeSetting = new import_obsidian15.Setting(grid).setName("Gr\xF6\xDFe");
+  registerGridItem(sizeSetting, 2);
+  sizeSetting.addDropdown((dd) => {
+    dd.addOption("", "");
+    for (const option of CREATURE_SIZES) dd.addOption(option, option);
+    dd.setValue(data.size ?? "");
+    dd.onChange((v) => data.size = v);
+    dd.selectEl.classList.add("sm-cc-basics__select");
+    dd.selectEl.style.width = "100%";
+    try {
+      enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
+    } catch {
+    }
+  });
+  const alignSetting = new import_obsidian15.Setting(grid).setName("Gesinnung");
+  registerGridItem(alignSetting, 2);
+  alignSetting.settingEl.classList.add("sm-cc-basics__alignment");
   alignSetting.controlEl.classList.add("sm-cc-basics__alignment-controls");
   alignSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_ALIGNMENT_LAW_CHAOS) dd.addOption(option, option);
     dd.setValue(data.alignmentLawChaos ?? "");
     dd.onChange((v) => data.alignmentLawChaos = v);
-    dd.selectEl.classList.add("sm-cc-basics__alignment-select");
+    dd.selectEl.classList.add("sm-cc-basics__alignment-select", "sm-cc-basics__select");
+    dd.selectEl.style.width = "100%";
     try {
       const el = dd.selectEl;
       el.dataset.sdOpenAll = "0";
@@ -4115,7 +4152,8 @@ function mountCreatureBasicsSection(parent, data) {
     for (const option of CREATURE_ALIGNMENT_GOOD_EVIL) dd.addOption(option, option);
     dd.setValue(data.alignmentGoodEvil ?? "");
     dd.onChange((v) => data.alignmentGoodEvil = v);
-    dd.selectEl.classList.add("sm-cc-basics__alignment-select");
+    dd.selectEl.classList.add("sm-cc-basics__alignment-select", "sm-cc-basics__select");
+    dd.selectEl.style.width = "100%";
     try {
       const el = dd.selectEl;
       el.dataset.sdOpenAll = "0";
@@ -4123,57 +4161,8 @@ function mountCreatureBasicsSection(parent, data) {
     } catch {
     }
   });
-  const grid = root.createDiv({ cls: "sm-cc-basics__grid" });
-  const registerGridItem = (setting, span = 1) => {
-    setting.settingEl.classList.add("sm-cc-basics__grid-item");
-    if (span === 2) setting.settingEl.classList.add("sm-cc-basics__grid-item--span-2");
-    if (span === 3) setting.settingEl.classList.add("sm-cc-basics__grid-item--span-3");
-  };
-  const sizeSetting = new import_obsidian15.Setting(grid).setName("Gr\xF6\xDFe");
-  registerGridItem(sizeSetting);
-  sizeSetting.addDropdown((dd) => {
-    dd.addOption("", "");
-    for (const option of CREATURE_SIZES) dd.addOption(option, option);
-    dd.setValue(data.size ?? "");
-    dd.onChange((v) => data.size = v);
-    try {
-      enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
-    } catch {
-    }
-  });
-  const typeSetting = new import_obsidian15.Setting(grid).setName("Typ");
-  registerGridItem(typeSetting);
-  typeSetting.addDropdown((dd) => {
-    dd.addOption("", "");
-    for (const option of CREATURE_TYPES) dd.addOption(option, option);
-    dd.setValue(data.type ?? "");
-    dd.onChange((v) => data.type = v);
-    try {
-      enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
-    } catch {
-    }
-  });
-  const coreSetting = new import_obsidian15.Setting(grid).setName("Kernwerte");
-  registerGridItem(coreSetting, 2);
-  const row = coreSetting.controlEl.createDiv({ cls: "sm-cc-inline-row" });
-  const mk = (label, widthCh, placeholder, key) => {
-    row.createEl("label", { text: label });
-    const inp = row.createEl("input", {
-      attr: { type: "text", placeholder, "aria-label": label }
-    });
-    inp.style.width = `${widthCh}ch`;
-    inp.value = data[key] || "";
-    inp.addEventListener("input", () => data[key] = inp.value.trim());
-  };
-  mk("AC", 18, "17", "ac");
-  mk("Init", 6, "+7", "initiative");
-  mk("HP", 8, "150", "hp");
-  mk("HD", 14, "20d10 + 40", "hitDice");
-  mk("PB", 5, "+4", "pb");
-  mk("CR", 6, "10", "cr");
-  mk("XP", 8, "5900", "xp");
   const speedSetting = new import_obsidian15.Setting(grid).setName("Bewegung");
-  registerGridItem(speedSetting, 3);
+  registerGridItem(speedSetting, 4);
   const speedControl = speedSetting.controlEl.createDiv({ cls: "sm-cc-move-ctl" });
   const addRow = speedControl.createDiv({ cls: "sm-cc-searchbar sm-cc-move-row" });
   const typeSelect = addRow.createEl("select", { cls: "sm-sd" });
@@ -4181,6 +4170,7 @@ function mountCreatureBasicsSection(parent, data) {
     const option = typeSelect.createEl("option", { text: label });
     option.value = value;
   }
+  typeSelect.classList.add("sm-cc-basics__select");
   try {
     enhanceSelectToSearch(typeSelect, "Such-dropdown\u2026");
   } catch {
@@ -4203,6 +4193,7 @@ function mountCreatureBasicsSection(parent, data) {
   const valInput = numWrap.createEl("input", {
     attr: { type: "number", min: "0", step: "5", placeholder: "30" }
   });
+  valInput.classList.add("sm-cc-basics__text-input");
   const decBtn = numWrap.createEl("button", { text: "\u2212", cls: "btn-compact" });
   const incBtn = numWrap.createEl("button", { text: "+", cls: "btn-compact" });
   const step = (dir) => {
@@ -4247,6 +4238,22 @@ function mountCreatureBasicsSection(parent, data) {
     hoverCb.checked = false;
     renderSpeeds();
   };
+  const mkStatSetting = (label, placeholder, key, span = 1) => {
+    const setting = new import_obsidian15.Setting(grid).setName(label);
+    registerGridItem(setting, span);
+    setting.addText((t) => {
+      t.setPlaceholder(placeholder).setValue(data[key] ?? "").onChange((v) => data[key] = v.trim());
+      t.inputEl.classList.add("sm-cc-basics__text-input");
+      t.inputEl.style.width = "100%";
+    });
+  };
+  mkStatSetting("HP", "150", "hp");
+  mkStatSetting("AC", "17", "ac");
+  mkStatSetting("Init", "+7", "initiative");
+  mkStatSetting("PB", "+4", "pb");
+  mkStatSetting("HD", "20d10 + 40", "hitDice", 2);
+  mkStatSetting("CR", "10", "cr");
+  mkStatSetting("XP", "5900", "xp");
 }
 
 // src/apps/library/create/creature/section-stats-and-skills.ts
@@ -5637,6 +5644,7 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     this.canvasWidth = 800;
     this.canvasHeight = 600;
     this.isTranslating = false;
+    this.isImporting = false;
     this.boxElements = /* @__PURE__ */ new Map();
   }
   getViewType() {
@@ -5651,6 +5659,9 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
   async onOpen() {
     this.contentEl.addClass("sm-layout-editor");
     this.render();
+    if (this.boxes.length === 0) {
+      await this.importCreatureCreatorLayout({ silent: true });
+    }
     if (this.boxes.length === 0) {
       this.createBox();
     }
@@ -5670,6 +5681,10 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     const controls = header.createDiv({ cls: "sm-le-controls" });
     const addBtn = controls.createEl("button", { text: "Box hinzuf\xFCgen" });
     addBtn.onclick = () => this.createBox();
+    this.importBtn = controls.createEl("button", { text: "Creature-Layout importieren" });
+    this.importBtn.onclick = () => {
+      void this.importCreatureCreatorLayout();
+    };
     const languageGroup = controls.createDiv({ cls: "sm-le-control" });
     languageGroup.createEl("label", { text: "Zielsprache" });
     this.languageSelect = languageGroup.createEl("select");
@@ -5686,22 +5701,22 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     const sizeGroup = controls.createDiv({ cls: "sm-le-control" });
     sizeGroup.createEl("label", { text: "Arbeitsfl\xE4che" });
     const sizeWrapper = sizeGroup.createDiv({ cls: "sm-le-size" });
-    const widthInput = sizeWrapper.createEl("input", { attr: { type: "number", min: "200", max: "2000" } });
-    widthInput.value = String(this.canvasWidth);
-    widthInput.onchange = () => {
-      const next = clamp(parseInt(widthInput.value, 10) || this.canvasWidth, 200, 2e3);
+    this.widthInput = sizeWrapper.createEl("input", { attr: { type: "number", min: "200", max: "2000" } });
+    this.widthInput.value = String(this.canvasWidth);
+    this.widthInput.onchange = () => {
+      const next = clamp(parseInt(this.widthInput.value, 10) || this.canvasWidth, 200, 2e3);
       this.canvasWidth = next;
-      widthInput.value = String(next);
+      this.widthInput.value = String(next);
       this.applyCanvasSize();
       this.refreshExport();
     };
     sizeWrapper.createSpan({ text: "\xD7" });
-    const heightInput = sizeWrapper.createEl("input", { attr: { type: "number", min: "200", max: "2000" } });
-    heightInput.value = String(this.canvasHeight);
-    heightInput.onchange = () => {
-      const next = clamp(parseInt(heightInput.value, 10) || this.canvasHeight, 200, 2e3);
+    this.heightInput = sizeWrapper.createEl("input", { attr: { type: "number", min: "200", max: "2000" } });
+    this.heightInput.value = String(this.canvasHeight);
+    this.heightInput.onchange = () => {
+      const next = clamp(parseInt(this.heightInput.value, 10) || this.canvasHeight, 200, 2e3);
       this.canvasHeight = next;
-      heightInput.value = String(next);
+      this.heightInput.value = String(next);
       this.applyCanvasSize();
       this.refreshExport();
     };
@@ -5743,6 +5758,15 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
     };
     this.exportEl = exportWrap.createEl("textarea", { cls: "sm-le-export__textarea", attr: { rows: "10", readonly: "readonly" } });
     this.renderBoxes();
+    this.sandboxEl = root.createDiv({ cls: "sm-le-sandbox" });
+    this.sandboxEl.style.position = "absolute";
+    this.sandboxEl.style.top = "-10000px";
+    this.sandboxEl.style.left = "-10000px";
+    this.sandboxEl.style.visibility = "hidden";
+    this.sandboxEl.style.pointerEvents = "none";
+    this.sandboxEl.style.width = "960px";
+    this.sandboxEl.style.padding = "24px";
+    this.sandboxEl.style.boxSizing = "border-box";
   }
   applyCanvasSize() {
     if (!this.canvasEl) return;
@@ -6137,6 +6161,110 @@ var LayoutEditorView = class extends import_obsidian22.ItemView {
       this.translateAllBtn.disabled = !this.boxes.length || this.isTranslating;
     }
   }
+  async importCreatureCreatorLayout(options) {
+    if (this.isImporting) return;
+    if (!this.sandboxEl) return;
+    this.isImporting = true;
+    this.importBtn?.addClass("is-loading");
+    this.importBtn.disabled = true;
+    try {
+      const sandbox = this.sandboxEl;
+      sandbox.empty();
+      sandbox.addClass("sm-cc-create-modal");
+      sandbox.createEl("h3", { text: "Neuen Statblock erstellen" });
+      const data = { name: "Neue Kreatur" };
+      mountCreatureBasicsSection(sandbox, data);
+      mountCreatureStatsAndSkillsSection(sandbox, data);
+      mountCreatureSensesAndDefensesSection(sandbox, data);
+      mountEntriesSection(sandbox, data);
+      mountSpellsKnownSection(sandbox, data, () => []);
+      const actions = sandbox.createDiv({ cls: "setting-item sm-cc-actions" });
+      actions.dataset.layoutLabel = "Aktionen";
+      const actionsCtl = actions.createDiv({ cls: "setting-item-control" });
+      actionsCtl.createEl("button", { text: "Abbrechen" });
+      const createBtn = actionsCtl.createEl("button", { text: "Erstellen" });
+      createBtn.addClass("mod-cta");
+      await this.nextFrame();
+      await this.nextFrame();
+      const containerRect = sandbox.getBoundingClientRect();
+      const margin = 48;
+      const boxes = [];
+      const used = /* @__PURE__ */ new Set();
+      let counter = 0;
+      const pushElement = (element, label) => {
+        if (!(element instanceof HTMLElement)) return;
+        if (used.has(element)) return;
+        const rect = element.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return;
+        const x = rect.left - containerRect.left + margin;
+        const y = rect.top - containerRect.top + margin;
+        const width = Math.max(MIN_BOX_SIZE, Math.round(rect.width));
+        const height = Math.max(MIN_BOX_SIZE, Math.round(rect.height));
+        boxes.push({
+          id: `creature-${String(++counter).padStart(2, "0")}`,
+          x: Math.round(x),
+          y: Math.round(y),
+          width,
+          height,
+          label,
+          translationText: ""
+        });
+        used.add(element);
+      };
+      pushElement(sandbox.querySelector("h3"), "Titel");
+      const basicsItems = Array.from(sandbox.querySelectorAll(".sm-cc-basics__grid .setting-item"));
+      for (const el of basicsItems) {
+        const name = el.querySelector(".setting-item-name")?.textContent?.trim() || "Feld";
+        pushElement(el, `Basics \xB7 ${name}`);
+      }
+      const statRows = Array.from(sandbox.querySelectorAll(".sm-cc-stat-row"));
+      for (const row of statRows) {
+        const label = row.querySelector(".sm-cc-stat-row__label")?.textContent?.trim() || "Stat";
+        pushElement(row, `Stat \xB7 ${label}`);
+      }
+      const statsSettings = Array.from(sandbox.querySelectorAll(".sm-cc-stats > .setting-item"));
+      for (const el of statsSettings) {
+        const name = el.querySelector(".setting-item-name")?.textContent?.trim() || "Feld";
+        pushElement(el, `Stats \xB7 ${name}`);
+      }
+      const defenseSettings = Array.from(sandbox.querySelectorAll(".sm-cc-defenses .setting-item"));
+      for (const el of defenseSettings) {
+        const custom = el.dataset.layoutLabel;
+        const name = custom || el.querySelector(".setting-item-name")?.textContent?.trim() || "Feld";
+        pushElement(el, `Defenses \xB7 ${name}`);
+      }
+      pushElement(sandbox.querySelector(".sm-cc-entries.setting-item"), "Eintr\xE4ge");
+      pushElement(sandbox.querySelector(".sm-cc-spells.setting-item"), "Zauber");
+      pushElement(actions, actions.dataset.layoutLabel || "Aktionen");
+      boxes.sort((a, b) => a.y - b.y || a.x - b.x);
+      if (!boxes.length) {
+        throw new Error("Keine Layout-Elemente gefunden");
+      }
+      this.canvasWidth = Math.max(200, Math.round(containerRect.width) + margin * 2);
+      this.canvasHeight = Math.max(200, Math.round(containerRect.height) + margin * 2);
+      this.widthInput && (this.widthInput.value = String(this.canvasWidth));
+      this.heightInput && (this.heightInput.value = String(this.canvasHeight));
+      this.boxes = boxes;
+      this.selectedBoxId = null;
+      this.applyCanvasSize();
+      this.renderBoxes();
+      this.renderInspector();
+      this.refreshExport();
+      this.updateStatus();
+      if (!options?.silent) new import_obsidian22.Notice("Creature-Layout importiert");
+    } catch (error) {
+      console.error("importCreatureCreatorLayout", error);
+      if (!options?.silent) new import_obsidian22.Notice("Konnte Creature-Layout nicht importieren");
+    } finally {
+      this.sandboxEl?.empty();
+      this.importBtn?.removeClass("is-loading");
+      if (this.importBtn) this.importBtn.disabled = false;
+      this.isImporting = false;
+    }
+  }
+  nextFrame() {
+    return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  }
 };
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -6221,26 +6349,34 @@ var HEX_PLUGIN_CSS = `
 
 /* Creature Creator \u2013 Basics Section */
 .sm-cc-basics { display:flex; flex-direction:column; gap:.75rem; }
-.sm-cc-basics__identity { display:flex; flex-wrap:wrap; gap:.75rem; align-items:flex-start; }
-.sm-cc-basics__identity-item { flex:1 1 220px; margin:0; }
-.sm-cc-basics__identity-name .setting-item-control { width:100%; }
-.sm-cc-basics__identity-name input[type="text"] { width:100%; box-sizing:border-box; }
-.sm-cc-basics__alignment .setting-item-control { display:flex; flex-wrap:wrap; gap:.5rem; }
-.sm-cc-basics__alignment-select { flex:1 1 140px; min-width:120px; }
-.sm-cc-basics__grid { display:grid; gap:.75rem; grid-template-columns:repeat(3, minmax(0, 1fr)); }
+.sm-cc-basics__grid { display:grid; gap:.75rem; grid-template-columns:repeat(4, minmax(0, 1fr)); align-items:stretch; }
 .sm-cc-basics__grid-item { margin:0; height:100%; }
-.sm-cc-basics__grid-item .setting-item-control { width:100%; }
-.sm-cc-basics__grid .setting-item-info { align-self:flex-start; }
+.sm-cc-basics__grid-item.setting-item { border:1px solid var(--background-modifier-border); border-radius:8px; background: var(--background-primary); padding:.6rem .65rem; display:flex; flex-direction:column; gap:.4rem; box-sizing:border-box; border-top:none; }
+.sm-cc-basics__grid-item .setting-item-info { align-self:stretch; margin-right:0; }
+.sm-cc-basics__grid-item .setting-item-name { font-weight:600; }
+.sm-cc-basics__grid-item .setting-item-control { width:100%; margin-left:0; display:flex; flex-direction:column; gap:.35rem; }
+.sm-cc-basics__grid-item select,
+.sm-cc-basics__grid-item input[type="text"],
+.sm-cc-basics__grid-item input[type="number"] { width:100%; box-sizing:border-box; }
 .sm-cc-basics__grid-item--span-2 { grid-column:span 2; }
-.sm-cc-basics__grid-item--span-3 { grid-column:1 / -1; }
-@media (max-width: 980px) {
+.sm-cc-basics__grid-item--span-3 { grid-column:span 3; }
+.sm-cc-basics__grid-item--span-4 { grid-column:1 / -1; }
+.sm-cc-basics__alignment-controls { display:grid; gap:.5rem; grid-template-columns:repeat(2, minmax(0, 1fr)); }
+.sm-cc-basics__alignment-select { min-width:0; }
+.sm-cc-basics__select { min-height:32px; }
+.sm-cc-basics__text-input { min-height:32px; box-sizing:border-box; }
+@media (max-width: 1080px) {
+    .sm-cc-basics__grid { grid-template-columns:repeat(3, minmax(0, 1fr)); }
+    .sm-cc-basics__grid-item--span-3,
+    .sm-cc-basics__grid-item--span-4 { grid-column:1 / -1; }
+}
+@media (max-width: 860px) {
     .sm-cc-basics__grid { grid-template-columns:repeat(2, minmax(0, 1fr)); }
     .sm-cc-basics__grid-item--span-2 { grid-column:1 / -1; }
 }
-@media (max-width: 680px) {
+@media (max-width: 620px) {
     .sm-cc-basics__grid { grid-template-columns:minmax(0, 1fr); }
-    .sm-cc-basics__identity { flex-direction:column; }
-    .sm-cc-basics__identity-item { flex-basis:auto; }
+    .sm-cc-basics__alignment-controls { grid-template-columns:minmax(0, 1fr); }
 }
 
 /* Create Creature Modal helpers */
@@ -6506,15 +6642,6 @@ var HEX_PLUGIN_CSS = `
 }
 .sm-cc-terrains.is-open .sm-cc-terrains__menu { display: block; }
 .sm-cc-terrains__item { display: flex; align-items: center; gap: .5rem; padding: .15rem 0; }
-
-/* Inline compact row for grouped fields */
-.sm-cc-inline-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: .35rem .6rem;
-}
-.sm-cc-inline-row label { font-size: 0.9em; color: var(--text-muted); }
 
 /* Region Compendium */
 .sm-region-compendium { padding:.5rem 0; }
@@ -7107,6 +7234,14 @@ var HEX_PLUGIN_CSS = `
     box-sizing: border-box;
     font-family: var(--font-monospace);
     min-height: 160px;
+}
+
+.sm-le-sandbox {
+    position: absolute;
+    top: -10000px;
+    left: -10000px;
+    visibility: hidden;
+    pointer-events: none;
 }
 
 @media (max-width: 860px) {

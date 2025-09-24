@@ -1,5 +1,13 @@
 // src/apps/layout/view.ts
 import { ItemView, Notice } from "obsidian";
+import type { StatblockData } from "../library/core/creature-files";
+import {
+    mountCreatureBasicsSection,
+    mountCreatureSensesAndDefensesSection,
+    mountCreatureStatsAndSkillsSection,
+    mountEntriesSection,
+    mountSpellsKnownSection,
+} from "../library/create/creature";
 import { translateText } from "../../core/translator";
 
 export const VIEW_LAYOUT_EDITOR = "salt-layout-editor";
@@ -36,13 +44,18 @@ export class LayoutEditorView extends ItemView {
     private canvasWidth = 800;
     private canvasHeight = 600;
     private isTranslating = false;
+    private isImporting = false;
 
     private canvasEl!: HTMLElement;
     private inspectorHost!: HTMLElement;
     private exportEl!: HTMLTextAreaElement;
     private languageSelect!: HTMLSelectElement;
     private translateAllBtn!: HTMLButtonElement;
+    private importBtn!: HTMLButtonElement;
     private statusEl!: HTMLElement;
+    private widthInput?: HTMLInputElement;
+    private heightInput?: HTMLInputElement;
+    private sandboxEl?: HTMLElement;
 
     private boxElements = new Map<string, HTMLElement>();
 
@@ -53,6 +66,9 @@ export class LayoutEditorView extends ItemView {
     async onOpen() {
         this.contentEl.addClass("sm-layout-editor");
         this.render();
+        if (this.boxes.length === 0) {
+            await this.importCreatureCreatorLayout({ silent: true });
+        }
         if (this.boxes.length === 0) {
             this.createBox();
         }
@@ -78,6 +94,9 @@ export class LayoutEditorView extends ItemView {
         const addBtn = controls.createEl("button", { text: "Box hinzufügen" });
         addBtn.onclick = () => this.createBox();
 
+        this.importBtn = controls.createEl("button", { text: "Creature-Layout importieren" });
+        this.importBtn.onclick = () => { void this.importCreatureCreatorLayout(); };
+
         const languageGroup = controls.createDiv({ cls: "sm-le-control" });
         languageGroup.createEl("label", { text: "Zielsprache" });
         this.languageSelect = languageGroup.createEl("select") as HTMLSelectElement;
@@ -95,22 +114,22 @@ export class LayoutEditorView extends ItemView {
         const sizeGroup = controls.createDiv({ cls: "sm-le-control" });
         sizeGroup.createEl("label", { text: "Arbeitsfläche" });
         const sizeWrapper = sizeGroup.createDiv({ cls: "sm-le-size" });
-        const widthInput = sizeWrapper.createEl("input", { attr: { type: "number", min: "200", max: "2000" } }) as HTMLInputElement;
-        widthInput.value = String(this.canvasWidth);
-        widthInput.onchange = () => {
-            const next = clamp(parseInt(widthInput.value, 10) || this.canvasWidth, 200, 2000);
+        this.widthInput = sizeWrapper.createEl("input", { attr: { type: "number", min: "200", max: "2000" } }) as HTMLInputElement;
+        this.widthInput.value = String(this.canvasWidth);
+        this.widthInput.onchange = () => {
+            const next = clamp(parseInt(this.widthInput!.value, 10) || this.canvasWidth, 200, 2000);
             this.canvasWidth = next;
-            widthInput.value = String(next);
+            this.widthInput!.value = String(next);
             this.applyCanvasSize();
             this.refreshExport();
         };
         sizeWrapper.createSpan({ text: "×" });
-        const heightInput = sizeWrapper.createEl("input", { attr: { type: "number", min: "200", max: "2000" } }) as HTMLInputElement;
-        heightInput.value = String(this.canvasHeight);
-        heightInput.onchange = () => {
-            const next = clamp(parseInt(heightInput.value, 10) || this.canvasHeight, 200, 2000);
+        this.heightInput = sizeWrapper.createEl("input", { attr: { type: "number", min: "200", max: "2000" } }) as HTMLInputElement;
+        this.heightInput.value = String(this.canvasHeight);
+        this.heightInput.onchange = () => {
+            const next = clamp(parseInt(this.heightInput!.value, 10) || this.canvasHeight, 200, 2000);
             this.canvasHeight = next;
-            heightInput.value = String(next);
+            this.heightInput!.value = String(next);
             this.applyCanvasSize();
             this.refreshExport();
         };
@@ -156,6 +175,16 @@ export class LayoutEditorView extends ItemView {
         this.exportEl = exportWrap.createEl("textarea", { cls: "sm-le-export__textarea", attr: { rows: "10", readonly: "readonly" } }) as HTMLTextAreaElement;
 
         this.renderBoxes();
+
+        this.sandboxEl = root.createDiv({ cls: "sm-le-sandbox" });
+        this.sandboxEl.style.position = "absolute";
+        this.sandboxEl.style.top = "-10000px";
+        this.sandboxEl.style.left = "-10000px";
+        this.sandboxEl.style.visibility = "hidden";
+        this.sandboxEl.style.pointerEvents = "none";
+        this.sandboxEl.style.width = "960px";
+        this.sandboxEl.style.padding = "24px";
+        this.sandboxEl.style.boxSizing = "border-box";
     }
 
     private applyCanvasSize() {
@@ -586,6 +615,126 @@ export class LayoutEditorView extends ItemView {
         if (this.translateAllBtn) {
             this.translateAllBtn.disabled = !this.boxes.length || this.isTranslating;
         }
+    }
+
+    private async importCreatureCreatorLayout(options?: { silent?: boolean }) {
+        if (this.isImporting) return;
+        if (!this.sandboxEl) return;
+        this.isImporting = true;
+        this.importBtn?.addClass("is-loading");
+        this.importBtn.disabled = true;
+        try {
+            const sandbox = this.sandboxEl;
+            sandbox.empty();
+            sandbox.addClass("sm-cc-create-modal");
+            sandbox.createEl("h3", { text: "Neuen Statblock erstellen" });
+
+            const data: StatblockData = { name: "Neue Kreatur" };
+            mountCreatureBasicsSection(sandbox, data);
+            mountCreatureStatsAndSkillsSection(sandbox, data);
+            mountCreatureSensesAndDefensesSection(sandbox, data);
+            mountEntriesSection(sandbox, data);
+            mountSpellsKnownSection(sandbox, data, () => []);
+            const actions = sandbox.createDiv({ cls: "setting-item sm-cc-actions" });
+            actions.dataset.layoutLabel = "Aktionen";
+            const actionsCtl = actions.createDiv({ cls: "setting-item-control" });
+            actionsCtl.createEl("button", { text: "Abbrechen" });
+            const createBtn = actionsCtl.createEl("button", { text: "Erstellen" });
+            createBtn.addClass("mod-cta");
+
+            await this.nextFrame();
+            await this.nextFrame();
+
+            const containerRect = sandbox.getBoundingClientRect();
+            const margin = 48;
+            const boxes: LayoutBox[] = [];
+            const used = new Set<HTMLElement>();
+            let counter = 0;
+
+            const pushElement = (element: Element | null, label: string) => {
+                if (!(element instanceof HTMLElement)) return;
+                if (used.has(element)) return;
+                const rect = element.getBoundingClientRect();
+                if (rect.width <= 0 || rect.height <= 0) return;
+                const x = rect.left - containerRect.left + margin;
+                const y = rect.top - containerRect.top + margin;
+                const width = Math.max(MIN_BOX_SIZE, Math.round(rect.width));
+                const height = Math.max(MIN_BOX_SIZE, Math.round(rect.height));
+                boxes.push({
+                    id: `creature-${String(++counter).padStart(2, "0")}`,
+                    x: Math.round(x),
+                    y: Math.round(y),
+                    width,
+                    height,
+                    label,
+                    translationText: "",
+                });
+                used.add(element);
+            };
+
+            pushElement(sandbox.querySelector("h3"), "Titel");
+
+            const basicsItems = Array.from(sandbox.querySelectorAll<HTMLElement>(".sm-cc-basics__grid .setting-item"));
+            for (const el of basicsItems) {
+                const name = el.querySelector(".setting-item-name")?.textContent?.trim() || "Feld";
+                pushElement(el, `Basics · ${name}`);
+            }
+
+            const statRows = Array.from(sandbox.querySelectorAll<HTMLElement>(".sm-cc-stat-row"));
+            for (const row of statRows) {
+                const label = row.querySelector(".sm-cc-stat-row__label")?.textContent?.trim() || "Stat";
+                pushElement(row, `Stat · ${label}`);
+            }
+
+            const statsSettings = Array.from(sandbox.querySelectorAll<HTMLElement>(".sm-cc-stats > .setting-item"));
+            for (const el of statsSettings) {
+                const name = el.querySelector(".setting-item-name")?.textContent?.trim() || "Feld";
+                pushElement(el, `Stats · ${name}`);
+            }
+
+            const defenseSettings = Array.from(sandbox.querySelectorAll<HTMLElement>(".sm-cc-defenses .setting-item"));
+            for (const el of defenseSettings) {
+                const custom = el.dataset.layoutLabel;
+                const name = custom || el.querySelector(".setting-item-name")?.textContent?.trim() || "Feld";
+                pushElement(el, `Defenses · ${name}`);
+            }
+
+            pushElement(sandbox.querySelector(".sm-cc-entries.setting-item"), "Einträge");
+            pushElement(sandbox.querySelector(".sm-cc-spells.setting-item"), "Zauber");
+            pushElement(actions, actions.dataset.layoutLabel || "Aktionen");
+
+            boxes.sort((a, b) => (a.y - b.y) || (a.x - b.x));
+            if (!boxes.length) {
+                throw new Error("Keine Layout-Elemente gefunden");
+            }
+
+            this.canvasWidth = Math.max(200, Math.round(containerRect.width) + margin * 2);
+            this.canvasHeight = Math.max(200, Math.round(containerRect.height) + margin * 2);
+            this.widthInput && (this.widthInput.value = String(this.canvasWidth));
+            this.heightInput && (this.heightInput.value = String(this.canvasHeight));
+
+            this.boxes = boxes;
+            this.selectedBoxId = null;
+            this.applyCanvasSize();
+            this.renderBoxes();
+            this.renderInspector();
+            this.refreshExport();
+            this.updateStatus();
+
+            if (!options?.silent) new Notice("Creature-Layout importiert");
+        } catch (error) {
+            console.error("importCreatureCreatorLayout", error);
+            if (!options?.silent) new Notice("Konnte Creature-Layout nicht importieren");
+        } finally {
+            this.sandboxEl?.empty();
+            this.importBtn?.removeClass("is-loading");
+            if (this.importBtn) this.importBtn.disabled = false;
+            this.isImporting = false;
+        }
+    }
+
+    private nextFrame(): Promise<void> {
+        return new Promise(resolve => requestAnimationFrame(() => resolve()));
     }
 }
 

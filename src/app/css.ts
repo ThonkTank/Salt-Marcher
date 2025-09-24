@@ -961,6 +961,14 @@ export const HEX_PLUGIN_CSS = `
     min-height: 160px;
 }
 
+.sm-le-sandbox {
+    position: absolute;
+    top: -10000px;
+    left: -10000px;
+    visibility: hidden;
+    pointer-events: none;
+}
+
 @media (max-width: 860px) {
     .sm-le-inspector {
         flex: 1 1 100%;
