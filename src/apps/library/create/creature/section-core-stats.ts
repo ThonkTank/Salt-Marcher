@@ -183,35 +183,87 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
   }
 
   // Skills
-  const skillsSection = root.createDiv({ cls: "sm-cc-skills" });
-  skillsSection.createEl("h4", { text: "Fertigkeiten" });
-  const skillsTbl = skillsSection.createDiv({ cls: "sm-cc-table sm-cc-skills-table" });
-  const skillsHeader = skillsTbl.createDiv({ cls: "sm-cc-row sm-cc-header" });
-  ;["Name","Prof","Expertise","Mod"].forEach(h => skillsHeader.createDiv({ cls: "sm-cc-cell", text: h }));
+  const skillAbilityMap = new Map<string, CreatureAbilityKey>(CREATURE_SKILLS);
+  const skillsSetting = new Setting(root).setName("Fertigkeiten");
+  skillsSetting.settingEl.addClass("sm-cc-skills");
+  const skillsControl = skillsSetting.controlEl;
+  skillsControl.addClass("sm-cc-skill-editor");
 
-  const skillElems: Array<{ ability: CreatureAbilityKey; prof: HTMLInputElement; exp: HTMLInputElement; out: HTMLElement }> = [];
-  for (const [name, abil] of CREATURE_SKILLS) {
-    const rowEl = skillsTbl.createDiv({ cls: "sm-cc-row" });
-    rowEl.createDiv({ cls: "sm-cc-cell", text: name });
-    const cbP = rowEl.createEl("input", { cls: "sm-cc-cell", attr: { type: "checkbox" } }) as HTMLInputElement;
-    const cbE = rowEl.createEl("input", { cls: "sm-cc-cell", attr: { type: "checkbox" } }) as HTMLInputElement;
-    const out = rowEl.createDiv({ cls: "sm-cc-cell", text: "+0" });
+  const skillsRow = skillsControl.createDiv({ cls: "sm-cc-searchbar sm-cc-skill-search" });
+  const skillsSelect = skillsRow.createEl("select") as HTMLSelectElement;
+  const blankSkill = skillsSelect.createEl("option", { text: "Fertigkeit wählen…" }) as HTMLOptionElement;
+  blankSkill.value = "";
+  for (const [name] of CREATURE_SKILLS) {
+    const opt = skillsSelect.createEl("option", { text: name }) as HTMLOptionElement;
+    opt.value = name;
+  }
+  try { enhanceSelectToSearch(skillsSelect, "Fertigkeit suchen…"); } catch {}
+  const skillsSearchInput = (skillsSelect as any)._smSearchInput as HTMLInputElement | undefined;
+  if (skillsSearchInput) skillsSearchInput.placeholder = "Fertigkeit suchen…";
+
+  const addSkillBtn = skillsRow.createEl("button", { text: "+ Hinzufügen" });
+  const skillChips = skillsControl.createDiv({ cls: "sm-cc-chips sm-cc-skill-chips" });
+
+  const skillRefs = new Map<string, { mod: HTMLElement; expertise: HTMLInputElement }>();
+
+  const addSkillByName = (rawName: string) => {
+    const name = rawName.trim();
+    if (!name) return;
+    if (!skillAbilityMap.has(name)) return;
     ensureSets();
-    cbP.checked = !!data.skillsProf?.includes(name);
-    cbE.checked = !!data.skillsExpertise?.includes(name);
-    cbP.addEventListener("change", () => {
-      ensureSets();
-      const arr = data.skillsProf!;
-      if (cbP.checked && !arr.includes(name)) arr.push(name); else if (!cbP.checked) data.skillsProf = arr.filter(s => s !== name);
-      updateMods();
-    });
-    cbE.addEventListener("change", () => {
-      ensureSets();
-      const arr = data.skillsExpertise!;
-      if (cbE.checked && !arr.includes(name)) arr.push(name); else if (!cbE.checked) data.skillsExpertise = arr.filter(s => s !== name);
-      updateMods();
-    });
-    skillElems.push({ ability: abil, prof: cbP, exp: cbE, out });
+    if (!data.skillsProf!.includes(name)) data.skillsProf!.push(name);
+    renderSkillChips();
+  };
+
+  addSkillBtn.onclick = () => {
+    const selected = skillsSelect.value.trim();
+    const typed = skillsSearchInput?.value.trim() ?? "";
+    let value = selected;
+    if (!value && typed) {
+      const match = Array.from(skillsSelect.options).find((opt) => opt.text.trim().toLowerCase() === typed.toLowerCase());
+      if (match) value = match.value.trim();
+    }
+    if (skillsSearchInput) skillsSearchInput.value = "";
+    skillsSelect.value = "";
+    addSkillByName(value);
+  };
+
+  function renderSkillChips() {
+    ensureSets();
+    skillChips.empty();
+    skillRefs.clear();
+    const profs = data.skillsProf ?? [];
+    for (const name of profs) {
+      const chip = skillChips.createDiv({ cls: "sm-cc-chip sm-cc-skill-chip" });
+      chip.createSpan({ cls: "sm-cc-skill-chip__name", text: name });
+      const modOut = chip.createSpan({ cls: "sm-cc-skill-chip__mod", text: "+0" });
+      const expertiseWrap = chip.createEl("label", { cls: "sm-cc-skill-chip__exp" });
+      const expertiseCb = expertiseWrap.createEl("input", { attr: { type: "checkbox" } }) as HTMLInputElement;
+      expertiseWrap.createSpan({ text: "Expertise" });
+      expertiseCb.checked = !!data.skillsExpertise?.includes(name);
+      expertiseCb.addEventListener("change", () => {
+        ensureSets();
+        if (expertiseCb.checked) {
+          if (!data.skillsExpertise!.includes(name)) data.skillsExpertise!.push(name);
+        } else {
+          data.skillsExpertise = data.skillsExpertise!.filter((s) => s !== name);
+        }
+        updateMods();
+      });
+      const removeBtn = chip.createEl("button", {
+        cls: "sm-cc-chip__remove",
+        text: "×",
+        attr: { "aria-label": `${name} entfernen` },
+      }) as HTMLButtonElement;
+      removeBtn.onclick = () => {
+        ensureSets();
+        data.skillsProf = data.skillsProf!.filter((s) => s !== name);
+        data.skillsExpertise = data.skillsExpertise!.filter((s) => s !== name);
+        renderSkillChips();
+      };
+      skillRefs.set(name, { mod: modOut, expertise: expertiseCb });
+    }
+    updateMods();
   }
 
   const updateMods = () => {
@@ -222,13 +274,19 @@ export function mountCoreStatsSection(parent: HTMLElement, data: StatblockData) 
       const saveBonus = (data.saveProf as any)?.[key] ? pb : 0;
       refs.saveMod.textContent = formatSigned(mod + saveBonus);
     }
-    for (const sk of skillElems) {
-      const mod = abilityMod((data as any)[sk.ability]);
-      const bonus = sk.exp.checked ? pb * 2 : sk.prof.checked ? pb : 0;
-      sk.out.textContent = formatSigned(mod + bonus);
+    ensureSets();
+    const profs = new Set(data.skillsProf ?? []);
+    data.skillsExpertise = (data.skillsExpertise ?? []).filter((name) => profs.has(name));
+    for (const [name, refs] of skillRefs) {
+      const ability = skillAbilityMap.get(name);
+      const mod = ability ? abilityMod((data as any)[ability]) : 0;
+      const hasExpertise = data.skillsExpertise?.includes(name) ?? false;
+      const bonus = hasExpertise ? pb * 2 : pb;
+      refs.mod.textContent = formatSigned(mod + bonus);
+      if (refs.expertise.checked !== hasExpertise) refs.expertise.checked = hasExpertise;
     }
   };
-  updateMods();
+  renderSkillChips();
 
   if (!data.sensesList) data.sensesList = [];
   if (!data.languagesList) data.languagesList = [];
