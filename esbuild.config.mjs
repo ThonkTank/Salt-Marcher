@@ -2,13 +2,13 @@
 import esbuild from "esbuild";
 
 /**
- * Bundelt src/app/main.ts nach dist/main.js.
+ * Bundelt src/app/main.ts nach main.js im Plugin-Stamm.
  * Externe Module (von Obsidian/Electron bereitgestellt) werden nicht gebundelt.
  */
 await esbuild.build({
     entryPoints: ["src/app/main.ts"],   // Plugin-Einstieg
     bundle: true,
-    outfile: "dist/main.js",            // Gebündeltes Ziel im dist/-Ordner
+    outfile: "main.js",                 // Gebündeltes Ziel direkt im Plugin-Ordner
     platform: "browser",                // Renderer-Kontext
     format: "cjs",                      // Obsidian-Plugins sind CommonJS
         target: "es2020",
