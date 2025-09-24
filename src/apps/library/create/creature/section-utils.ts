@@ -15,6 +15,7 @@ export interface PresetSelectEditorOptions {
   rowClass?: string;
   defaultAddButtonLabel?: string;
   addButtonLabel?: string;
+  settingClass?: string | string[];
 }
 
 export type PresetSelectEditorConfig =
@@ -37,8 +38,13 @@ export function mountPresetSelectEditor(
     rowClass,
     defaultAddButtonLabel,
     addButtonLabel,
+    settingClass,
   } = resolved;
   const setting = new Setting(parent).setName(title);
+  if (settingClass) {
+    const classes = Array.isArray(settingClass) ? settingClass : [settingClass];
+    setting.settingEl.classList.add(...classes);
+  }
   const rowClasses = ["sm-cc-searchbar"];
   if (rowClass) rowClasses.push(rowClass);
   const row = setting.controlEl.createDiv({ cls: rowClasses.join(" ") });

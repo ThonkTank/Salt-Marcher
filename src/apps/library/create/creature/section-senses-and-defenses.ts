@@ -39,9 +39,11 @@ export function mountCreatureSensesAndDefensesSection(
 ) {
   const root = parent.createDiv({ cls: "sm-cc-defenses" });
 
+  const sensesLanguages = root.createDiv({ cls: "sm-cc-senses-block" });
+
   const senses = ensureStringList(data, "sensesList");
   mountPresetSelectEditor(
-    root,
+    sensesLanguages,
     "Sinne",
     CREATURE_SENSE_PRESETS,
     makeModel(senses),
@@ -49,12 +51,13 @@ export function mountCreatureSensesAndDefensesSection(
       placeholder: "Sinn suchen oder eingeben…",
       rowClass: "sm-cc-senses-search",
       defaultAddButtonLabel: "+",
+      settingClass: "sm-cc-senses-setting",
     },
   );
 
   const languages = ensureStringList(data, "languagesList");
   mountPresetSelectEditor(
-    root,
+    sensesLanguages,
     "Sprachen",
     CREATURE_LANGUAGE_PRESETS,
     makeModel(languages),
@@ -62,6 +65,7 @@ export function mountCreatureSensesAndDefensesSection(
       placeholder: "Sprache suchen oder eingeben…",
       rowClass: "sm-cc-senses-search",
       defaultAddButtonLabel: "+",
+      settingClass: "sm-cc-senses-setting",
     },
   );
 
