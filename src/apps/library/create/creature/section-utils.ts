@@ -13,6 +13,7 @@ export interface PresetSelectEditorOptions {
   placeholder?: string;
   inlineLabel?: string;
   rowClass?: string;
+  defaultAddButtonLabel?: string;
   addButtonLabel?: string;
 }
 
@@ -30,7 +31,13 @@ export function mountPresetSelectEditor(
 ) {
   const resolved: PresetSelectEditorOptions =
     typeof config === "string" ? { placeholder: config } : config ?? {};
-  const { placeholder, inlineLabel, rowClass, addButtonLabel } = resolved;
+  const {
+    placeholder,
+    inlineLabel,
+    rowClass,
+    defaultAddButtonLabel,
+    addButtonLabel,
+  } = resolved;
   const setting = new Setting(parent).setName(title);
   const rowClasses = ["sm-cc-searchbar"];
   if (rowClass) rowClasses.push(rowClass);
@@ -67,8 +74,11 @@ export function mountPresetSelectEditor(
     else searchInput.setAttribute("aria-label", placeholder ?? title);
   }
 
+  const fallbackAddLabel = defaultAddButtonLabel ?? "+";
+  const effectiveAddLabel = addButtonLabel ?? fallbackAddLabel;
+
   const addBtn = row.createEl("button", {
-    text: addButtonLabel ?? "+",
+    text: effectiveAddLabel,
     attr: { type: "button", "aria-label": `${title} hinzufügen` },
   });
   const chips = setting.controlEl.createDiv({ cls: "sm-cc-chips" });

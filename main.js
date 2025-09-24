@@ -4479,7 +4479,13 @@ function mountTokenEditor(parent, title, model, options = {}) {
 var import_obsidian18 = require("obsidian");
 function mountPresetSelectEditor(parent, title, options, model, config) {
   const resolved = typeof config === "string" ? { placeholder: config } : config ?? {};
-  const { placeholder, inlineLabel, rowClass, addButtonLabel } = resolved;
+  const {
+    placeholder,
+    inlineLabel,
+    rowClass,
+    defaultAddButtonLabel,
+    addButtonLabel
+  } = resolved;
   const setting = new import_obsidian18.Setting(parent).setName(title);
   const rowClasses = ["sm-cc-searchbar"];
   if (rowClass) rowClasses.push(rowClass);
@@ -4516,8 +4522,10 @@ function mountPresetSelectEditor(parent, title, options, model, config) {
     if (labelEl) labelEl.htmlFor = searchInput.id;
     else searchInput.setAttribute("aria-label", placeholder ?? title);
   }
+  const fallbackAddLabel = defaultAddButtonLabel ?? "+";
+  const effectiveAddLabel = addButtonLabel ?? fallbackAddLabel;
   const addBtn = row.createEl("button", {
-    text: addButtonLabel ?? "+",
+    text: effectiveAddLabel,
     attr: { type: "button", "aria-label": `${title} hinzuf\xFCgen` }
   });
   const chips = setting.controlEl.createDiv({ cls: "sm-cc-chips" });
@@ -4715,7 +4723,11 @@ function mountCreatureSensesAndDefensesSection(parent, data) {
     "Sinne",
     CREATURE_SENSE_PRESETS,
     makeModel(senses),
-    { placeholder: "Sinn suchen oder eingeben\u2026", rowClass: "sm-cc-senses-search" }
+    {
+      placeholder: "Sinn suchen oder eingeben\u2026",
+      rowClass: "sm-cc-senses-search",
+      defaultAddButtonLabel: "+"
+    }
   );
   const languages = ensureStringList(data, "languagesList");
   mountPresetSelectEditor(
@@ -4723,7 +4735,11 @@ function mountCreatureSensesAndDefensesSection(parent, data) {
     "Sprachen",
     CREATURE_LANGUAGE_PRESETS,
     makeModel(languages),
-    { placeholder: "Sprache suchen oder eingeben\u2026", rowClass: "sm-cc-senses-search" }
+    {
+      placeholder: "Sprache suchen oder eingeben\u2026",
+      rowClass: "sm-cc-senses-search",
+      defaultAddButtonLabel: "+"
+    }
   );
   const passives = ensureStringList(data, "passivesList");
   mountPresetSelectEditor(
@@ -5635,6 +5651,7 @@ var HEX_PLUGIN_CSS = `
 .sm-cc-skill-editor { display:flex; flex-direction:column; gap:.35rem; }
 .sm-cc-skill-search,
 .sm-cc-senses-search {
+    display:flex;
     align-items:center;
     justify-content:flex-end;
     margin-left:auto;
