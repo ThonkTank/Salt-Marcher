@@ -9,15 +9,21 @@ import {
     isContainerType,
     onLayoutElementDefinitionsChanged,
 } from "./definitions";
-import { LayoutEditorSnapshot, LayoutElement, LayoutElementDefinition, LayoutElementType } from "./types";
+import {
+    LayoutEditorSnapshot,
+    LayoutElement,
+    LayoutElementDefinition,
+    LayoutElementType,
+    SavedLayout,
+} from "./types";
 import { LayoutHistory } from "./history";
 import { AttributePopoverController } from "./attribute-popover";
 import { renderElementPreview } from "./element-preview";
 import { renderInspectorPanel } from "./inspector-panel";
 import { clamp, cloneLayoutElement, collectDescendantIds, isContainerElement } from "./utils";
-import { importCreatureLayout } from "./creature-import";
-import { saveLayoutToLibrary } from "./layout-library";
+import { listSavedLayouts, loadSavedLayout, saveLayoutToLibrary } from "./layout-library";
 import { NameInputModal } from "./name-input-modal";
+import { LayoutPickerModal } from "./layout-picker-modal";
 
 export const VIEW_LAYOUT_EDITOR = "salt-layout-editor";
 const DEFAULT_INPUT_TYPES = new Set<string>(["text-input", "textarea", "dropdown", "search-dropdown"]);
@@ -212,8 +218,8 @@ export class LayoutEditorView extends ItemView {
         this.addPaletteEl = addGroup.createDiv({ cls: "sm-le-add" });
         this.renderAddPalette();
 
-        this.importBtn = controls.createEl("button", { text: "Creature-Layout importieren" });
-        this.importBtn.onclick = () => { void this.importCreatureCreatorLayout(); };
+        this.importBtn = controls.createEl("button", { text: "Gespeichertes Layout laden" });
+        this.importBtn.onclick = () => this.promptImportSavedLayout();
 
         const sizeGroup = controls.createDiv({ cls: "sm-le-control" });
         sizeGroup.createEl("label", { text: "Arbeitsfläche" });
@@ -1443,41 +1449,58 @@ export class LayoutEditorView extends ItemView {
         return null;
     }
 
-    private async importCreatureCreatorLayout(options?: { silent?: boolean }) {
+    private promptImportSavedLayout() {
+        if (this.isImporting) return;
+        const modal = new LayoutPickerModal(this.app, {
+            loadLayouts: () => listSavedLayouts(this.app),
+            onPick: layoutId => {
+                void this.importSavedLayout(layoutId);
+            },
+        });
+        modal.open();
+    }
+
+    private async importSavedLayout(layoutId: string) {
         if (this.isImporting) return;
         this.isImporting = true;
         this.importBtn?.addClass("is-loading");
         if (this.importBtn) this.importBtn.disabled = true;
         try {
-            await importCreatureLayout(
-                {
-                    setCanvasSize: (width, height) => {
-                        this.canvasWidth = width;
-                        this.canvasHeight = height;
-                    },
-                    updateCanvasInputs: (width, height) => {
-                        if (this.widthInput) this.widthInput.value = String(width);
-                        if (this.heightInput) this.heightInput.value = String(height);
-                    },
-                    setElements: elements => {
-                        this.elements = elements;
-                        this.selectedElementId = null;
-                    },
-                    applyCanvasSize: () => this.applyCanvasSize(),
-                    renderElements: () => this.renderElements(),
-                    renderInspector: () => this.renderInspector(),
-                    refreshExport: () => this.refreshExport(),
-                    updateStatus: () => this.updateStatus(),
-                    pushHistory: () => this.pushHistory(),
-                },
-                options,
-            );
+            const layout = await loadSavedLayout(this.app, layoutId);
+            if (!layout) {
+                new Notice("Layout konnte nicht geladen werden");
+                return;
+            }
+            this.applySavedLayout(layout);
+            new Notice(`Layout „${layout.name}” geladen`);
+        } catch (error) {
+            console.error("Failed to import saved layout", error);
+            new Notice("Konnte Layout nicht laden");
         } finally {
             this.sandboxEl.empty();
             this.importBtn?.removeClass("is-loading");
             if (this.importBtn) this.importBtn.disabled = false;
             this.isImporting = false;
         }
+    }
+
+    private applySavedLayout(layout: SavedLayout) {
+        this.attributePopover.close();
+        this.canvasWidth = layout.canvasWidth;
+        this.canvasHeight = layout.canvasHeight;
+        this.elements = layout.elements.map(cloneLayoutElement);
+        this.selectedElementId = null;
+        this.lastSavedLayoutId = layout.id;
+        this.lastSavedLayoutName = layout.name;
+        if (this.widthInput) this.widthInput.value = String(this.canvasWidth);
+        if (this.heightInput) this.heightInput.value = String(this.canvasHeight);
+        this.applyCanvasSize();
+        this.centerCamera();
+        this.renderElements();
+        this.renderInspector();
+        this.refreshExport();
+        this.updateStatus();
+        this.pushHistory();
     }
 
     private nextFrame(): Promise<void> {
