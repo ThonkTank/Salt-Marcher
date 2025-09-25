@@ -4,17 +4,10 @@ import {
     ELEMENT_DEFINITION_LOOKUP,
     ELEMENT_DEFINITIONS,
     MIN_ELEMENT_SIZE,
-    getAttributeSummary,
     getElementTypeLabel,
     isContainerType,
 } from "./definitions";
-import {
-    LayoutContainerAlign,
-    LayoutContainerType,
-    LayoutEditorSnapshot,
-    LayoutElement,
-    LayoutElementType,
-} from "./types";
+import { LayoutContainerType, LayoutEditorSnapshot, LayoutElement, LayoutElementType } from "./types";
 import { LayoutHistory } from "./history";
 import { AttributePopoverController } from "./attribute-popover";
 import { renderElementPreview } from "./element-preview";
@@ -381,39 +374,54 @@ export class LayoutEditorView extends ItemView {
         const content = el.createDiv({ cls: "sm-le-box__content" });
         content.dataset.role = "content";
 
-        const chrome = el.createDiv({ cls: "sm-le-box__chrome" });
-        const handle = chrome.createSpan({ cls: "sm-le-box__handle", text: "⠿" });
-        handle.dataset.role = "move";
-        const attrs = chrome.createSpan({ cls: "sm-le-box__attrs", text: "⚙" }) as HTMLElement;
-        attrs.dataset.role = "attrs";
+        const updateCursor = (event: PointerEvent) => {
+            const mode = this.resolveInteractionMode(el, event);
+            if (!mode) {
+                el.style.cursor = "";
+                return;
+            }
+            if (mode.type === "resize") {
+                const cursor =
+                    mode.corner === "nw" || mode.corner === "se"
+                        ? "nwse-resize"
+                        : "nesw-resize";
+                el.style.cursor = cursor;
+            } else {
+                el.style.cursor = "move";
+            }
+        };
 
-        handle.addEventListener("pointerdown", ev => {
-            ev.preventDefault();
-            ev.stopPropagation();
-            this.selectElement(element.id);
-            this.beginMove(element, ev);
+        el.addEventListener("pointermove", ev => {
+            if (ev.buttons) return;
+            updateCursor(ev);
+        });
+
+        el.addEventListener("pointerleave", () => {
+            if (el.hasClass("is-interacting")) return;
+            el.style.cursor = "";
         });
 
         el.addEventListener("pointerdown", ev => {
-            ev.stopPropagation();
             this.selectElement(element.id);
-        });
-
-        const resizeHandle = el.createDiv({ cls: "sm-le-box__resize" });
-        resizeHandle.addEventListener("pointerdown", ev => {
+            const mode = this.resolveInteractionMode(el, ev);
+            if (!mode) {
+                return;
+            }
             ev.preventDefault();
             ev.stopPropagation();
-            this.selectElement(element.id);
-            this.beginResize(element, ev);
+            el.addClass("is-interacting");
+            if (mode.type === "resize") {
+                this.beginResize(element, ev, mode.corner, () => {
+                    el.removeClass("is-interacting");
+                    el.style.cursor = "";
+                });
+            } else {
+                this.beginMove(element, ev, () => {
+                    el.removeClass("is-interacting");
+                    el.style.cursor = "";
+                });
+            }
         });
-
-        attrs.onclick = ev => {
-            ev.preventDefault();
-            ev.stopPropagation();
-            this.selectElement(element.id);
-            this.attributePopover.open(element, attrs);
-            this.attributePopover.position();
-        };
 
         return el;
     }
@@ -438,13 +446,6 @@ export class LayoutEditorView extends ItemView {
                 pushHistory: () => this.pushHistory(),
                 createElement: (type, options) => this.createElement(type, options),
             });
-        }
-        const attrsEl = el.querySelector<HTMLElement>('[data-role="attrs"]');
-        if (attrsEl) {
-            const summary = getAttributeSummary(element.attributes);
-            attrsEl.setAttr("title", summary);
-            attrsEl.setAttr("aria-label", summary);
-            attrsEl.classList.toggle("is-empty", !element.attributes.length);
         }
     }
 
@@ -718,7 +719,7 @@ export class LayoutEditorView extends ItemView {
         }
     }
 
-    private beginMove(element: LayoutElement, event: PointerEvent) {
+    private beginMove(element: LayoutElement, event: PointerEvent, onComplete?: () => void) {
         const startX = event.clientX;
         const startY = event.clientY;
         const originX = element.x;
@@ -764,27 +765,60 @@ export class LayoutEditorView extends ItemView {
                 this.applyContainerLayout(parent);
             }
             this.pushHistory();
+            onComplete?.();
         };
 
         window.addEventListener("pointermove", onMove);
         window.addEventListener("pointerup", onUp);
     }
 
-    private beginResize(element: LayoutElement, event: PointerEvent) {
+    private beginResize(
+        element: LayoutElement,
+        event: PointerEvent,
+        corner: "nw" | "ne" | "sw" | "se",
+        onComplete?: () => void,
+    ) {
         const startX = event.clientX;
         const startY = event.clientY;
         const originW = element.width;
         const originH = element.height;
         const isContainer = isContainerType(element.type);
         const parent = element.parentId ? this.elements.find(el => el.id === element.parentId) : null;
+        const originX = element.x;
+        const originY = element.y;
+        const resizeLeft = corner === "nw" || corner === "sw";
+        const resizeTop = corner === "nw" || corner === "ne";
 
         const onMove = (ev: PointerEvent) => {
             const dx = ev.clientX - startX;
             const dy = ev.clientY - startY;
-            const maxWidth = Math.max(MIN_ELEMENT_SIZE, this.canvasWidth - element.x);
-            const maxHeight = Math.max(MIN_ELEMENT_SIZE, this.canvasHeight - element.y);
-            const nextW = clamp(originW + dx, MIN_ELEMENT_SIZE, maxWidth);
-            const nextH = clamp(originH + dy, MIN_ELEMENT_SIZE, maxHeight);
+            let nextX = originX;
+            let nextY = originY;
+            let nextW = originW;
+            let nextH = originH;
+
+            if (resizeLeft) {
+                const maxLeft = originX + originW - MIN_ELEMENT_SIZE;
+                const proposedX = clamp(originX + dx, 0, maxLeft);
+                nextX = proposedX;
+                nextW = originW + (originX - proposedX);
+            } else {
+                const maxWidth = Math.max(MIN_ELEMENT_SIZE, this.canvasWidth - originX);
+                nextW = clamp(originW + dx, MIN_ELEMENT_SIZE, maxWidth);
+            }
+
+            if (resizeTop) {
+                const maxTop = originY + originH - MIN_ELEMENT_SIZE;
+                const proposedY = clamp(originY + dy, 0, maxTop);
+                nextY = proposedY;
+                nextH = originH + (originY - proposedY);
+            } else {
+                const maxHeight = Math.max(MIN_ELEMENT_SIZE, this.canvasHeight - originY);
+                nextH = clamp(originH + dy, MIN_ELEMENT_SIZE, maxHeight);
+            }
+
+            element.x = nextX;
+            element.y = nextY;
             element.width = nextW;
             element.height = nextH;
             this.syncElementElement(element);
@@ -804,10 +838,35 @@ export class LayoutEditorView extends ItemView {
                 this.applyContainerLayout(parent);
             }
             this.pushHistory();
+            onComplete?.();
         };
 
         window.addEventListener("pointermove", onMove);
         window.addEventListener("pointerup", onUp);
+    }
+
+    private resolveInteractionMode(el: HTMLElement, event: PointerEvent):
+        | { type: "move" }
+        | { type: "resize"; corner: "nw" | "ne" | "sw" | "se" }
+        | null {
+        const rect = el.getBoundingClientRect();
+        if (!rect.width || !rect.height) return null;
+        const margin = Math.min(14, rect.width / 2, rect.height / 2);
+        const offsetX = event.clientX - rect.left;
+        const offsetY = event.clientY - rect.top;
+        if (offsetX < 0 || offsetY < 0 || offsetX > rect.width || offsetY > rect.height) {
+            return null;
+        }
+        const nearLeft = offsetX <= margin;
+        const nearRight = rect.width - offsetX <= margin;
+        const nearTop = offsetY <= margin;
+        const nearBottom = rect.height - offsetY <= margin;
+        if (nearLeft && nearTop) return { type: "resize", corner: "nw" };
+        if (nearRight && nearTop) return { type: "resize", corner: "ne" };
+        if (nearLeft && nearBottom) return { type: "resize", corner: "sw" };
+        if (nearRight && nearBottom) return { type: "resize", corner: "se" };
+        if (nearLeft || nearRight || nearTop || nearBottom) return { type: "move" };
+        return null;
     }
 
     private async importCreatureCreatorLayout(options?: { silent?: boolean }) {

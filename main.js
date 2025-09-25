@@ -5602,16 +5602,15 @@ var ELEMENT_DEFINITIONS = [
   {
     type: "label",
     buttonLabel: "Label",
-    defaultLabel: "Label",
-    defaultDescription: "Beschreibender Text f\xFCr den Dialog.",
-    width: 220,
-    height: 120
+    defaultLabel: "\xDCberschrift",
+    width: 260,
+    height: 160
   },
   {
     type: "text-input",
     buttonLabel: "Textfeld",
-    defaultLabel: "Label",
-    defaultPlaceholder: "Wert eingeben\u2026",
+    defaultLabel: "",
+    defaultPlaceholder: "",
     width: 260,
     height: 140
   },
@@ -6093,6 +6092,32 @@ function createInlineEditor(options) {
 }
 
 // src/apps/layout/editor/element-preview.ts
+function autoScaleHeadlineText(target, container) {
+  if (!container.isConnected) return;
+  const maxWidth = Math.max(0, container.clientWidth - 12);
+  const maxHeight = Math.max(0, container.clientHeight - 12);
+  if (!maxWidth || !maxHeight) return;
+  const contentLength = (target.textContent ?? "").trim().length;
+  const minSize = 18;
+  if (contentLength === 0) {
+    const fallback = Math.max(minSize, Math.min(maxWidth, maxHeight) / 3);
+    target.style.fontSize = `${Math.round(fallback)}px`;
+    return;
+  }
+  let low = minSize;
+  let high = Math.max(minSize, Math.min(maxWidth, maxHeight));
+  for (let i = 0; i < 10; i++) {
+    const mid = (low + high) / 2;
+    target.style.fontSize = `${mid}px`;
+    const fits = target.scrollWidth <= maxWidth && target.scrollHeight <= maxHeight;
+    if (fits) {
+      low = mid;
+    } else {
+      high = mid - 1;
+    }
+  }
+  target.style.fontSize = `${Math.floor(low)}px`;
+}
 function renderElementPreview(deps) {
   const { host, element } = deps;
   host.empty();
@@ -6104,51 +6129,34 @@ function renderElementPreview(deps) {
     element.label = next;
     deps.finalize(element);
   };
-  const createPlaceholderEditor = (parent, placeholder, value, onChange) => {
-    const editor = createInlineEditor({
-      parent,
-      value: value ?? "",
-      placeholder,
-      onInput: (val) => {
-        onChange(val || void 0);
-      },
-      onCommit: (val) => {
-        const next = val || void 0;
-        if (next === value) return;
-        onChange(next);
-        deps.finalize(element);
-      }
-    });
-    editor.addClass("sm-le-inline-meta");
-    return editor;
-  };
   if (element.type === "label") {
-    const block = preview.createDiv({ cls: "sm-le-preview__text-block" });
-    const labelEl = createInlineEditor({
-      parent: block,
+    const block = preview.createDiv({ cls: "sm-le-preview__headline" });
+    const inner = block.createDiv({ cls: "sm-le-preview__headline-inner" });
+    let labelEl;
+    const applyScale = () => {
+      if (!labelEl) return;
+      window.requestAnimationFrame(() => autoScaleHeadlineText(labelEl, inner));
+    };
+    labelEl = createInlineEditor({
+      parent: inner,
       value: element.label,
-      placeholder: "Text eingeben\u2026",
+      placeholder: "\xDCberschrift eingeben\u2026",
       multiline: true,
       block: true,
       trim: false,
-      onCommit: commitLabel
-    });
-    labelEl.addClass("sm-le-preview__text");
-    const desc = createInlineEditor({
-      parent: block,
-      value: element.description ?? "",
-      placeholder: "Zusatztext hinzuf\xFCgen\u2026",
-      multiline: true,
-      block: true,
-      trim: false,
+      onInput: () => {
+        autoScaleHeadlineText(labelEl, inner);
+      },
       onCommit: (value) => {
-        const next = value || void 0;
-        if (next === element.description) return;
-        element.description = next;
-        deps.finalize(element);
+        commitLabel(value);
+        applyScale();
       }
     });
-    desc.addClass("sm-le-preview__subtext");
+    labelEl.addClass("sm-le-preview__headline-text");
+    applyScale();
+    if (element.description !== void 0) {
+      element.description = void 0;
+    }
     return;
   }
   if (element.type === "box") {
@@ -6190,7 +6198,28 @@ function renderElementPreview(deps) {
     preview.createEl("hr", { cls: "sm-le-preview__divider" });
     return;
   }
-  if (element.type === "text-input" || element.type === "textarea") {
+  if (element.type === "text-input") {
+    const field = preview.createDiv({ cls: "sm-le-preview__input-only" });
+    const input = field.createEl("input", { attr: { type: "text" }, cls: "sm-le-preview__input" });
+    input.value = element.defaultValue ?? "";
+    input.placeholder = "";
+    let lastValue = input.value;
+    input.addEventListener("input", () => {
+      element.defaultValue = input.value ? input.value : void 0;
+    });
+    input.addEventListener("blur", () => {
+      const next = input.value;
+      if (next === lastValue) return;
+      lastValue = next;
+      element.defaultValue = next ? next : void 0;
+      deps.finalize(element);
+    });
+    if (element.placeholder) {
+      element.placeholder = void 0;
+    }
+    return;
+  }
+  if (element.type === "textarea") {
     const field = preview.createEl("label", { cls: "sm-le-preview__field" });
     const labelHost2 = field.createSpan({ cls: "sm-le-preview__label" });
     createInlineEditor({
@@ -6199,47 +6228,20 @@ function renderElementPreview(deps) {
       placeholder: "Label eingeben\u2026",
       onCommit: commitLabel
     });
-    const controlEl = element.type === "textarea" ? field.createEl("textarea", { cls: "sm-le-preview__textarea" }) : field.createEl("input", { attr: { type: "text" }, cls: "sm-le-preview__input" });
-    if (element.type === "textarea") {
-      const textarea = controlEl;
-      textarea.value = element.defaultValue ?? "";
-      textarea.placeholder = element.placeholder ?? "";
-      textarea.rows = 4;
-      let lastValue = textarea.value;
-      textarea.addEventListener("input", () => {
-        element.defaultValue = textarea.value ? textarea.value : void 0;
-      });
-      textarea.addEventListener("blur", () => {
-        const next = textarea.value;
-        if (next === lastValue) return;
-        lastValue = next;
-        element.defaultValue = next ? next : void 0;
-        deps.finalize(element);
-      });
-    } else {
-      const input = controlEl;
-      input.value = element.defaultValue ?? "";
-      input.placeholder = element.placeholder ?? "";
-      let lastValue = input.value;
-      input.addEventListener("input", () => {
-        element.defaultValue = input.value ? input.value : void 0;
-      });
-      input.addEventListener("blur", () => {
-        const next = input.value;
-        if (next === lastValue) return;
-        lastValue = next;
-        element.defaultValue = next ? next : void 0;
-        deps.finalize(element);
-      });
-    }
-    const meta = preview.createDiv({ cls: "sm-le-preview__meta" });
-    createPlaceholderEditor(meta, "Platzhalter hinzuf\xFCgen\u2026", element.placeholder, (next) => {
-      if (element.type === "textarea") {
-        controlEl.placeholder = next ?? "";
-      } else {
-        controlEl.placeholder = next ?? "";
-      }
-      element.placeholder = next;
+    const textarea = field.createEl("textarea", { cls: "sm-le-preview__textarea" });
+    textarea.value = element.defaultValue ?? "";
+    textarea.placeholder = element.placeholder ?? "";
+    textarea.rows = 4;
+    let lastValue = textarea.value;
+    textarea.addEventListener("input", () => {
+      element.defaultValue = textarea.value ? textarea.value : void 0;
+    });
+    textarea.addEventListener("blur", () => {
+      const next = textarea.value;
+      if (next === lastValue) return;
+      lastValue = next;
+      element.defaultValue = next ? next : void 0;
+      deps.finalize(element);
     });
     return;
   }
@@ -6254,11 +6256,10 @@ function renderElementPreview(deps) {
     });
     const select = field.createEl("select", { cls: "sm-le-preview__select" });
     const defaultPlaceholder = element.type === "dropdown" ? "Option w\xE4hlen\u2026" : "Suchen\u2026";
-    let placeholderOption = null;
     const renderSelectOptions = () => {
       select.innerHTML = "";
       const placeholderText = element.placeholder ?? defaultPlaceholder;
-      placeholderOption = select.createEl("option", { value: "", text: placeholderText });
+      const placeholderOption = select.createEl("option", { value: "", text: placeholderText });
       placeholderOption.disabled = true;
       if (!element.defaultValue) {
         placeholderOption.selected = true;
@@ -6275,7 +6276,7 @@ function renderElementPreview(deps) {
         }
         if (element.defaultValue && !optionValues.includes(element.defaultValue)) {
           element.defaultValue = void 0;
-          if (placeholderOption) placeholderOption.selected = true;
+          placeholderOption.selected = true;
         }
       }
       if (element.type === "search-dropdown") {
@@ -6306,137 +6307,25 @@ function renderElementPreview(deps) {
       }
       deps.finalize(element);
     };
-    const meta = preview.createDiv({ cls: "sm-le-preview__meta" });
-    createPlaceholderEditor(meta, "Platzhalter hinzuf\xFCgen\u2026", element.placeholder, (next) => {
-      element.placeholder = next;
-      renderSelectOptions();
-    });
-    const optionList = preview.createDiv({ cls: "sm-le-inline-options" });
-    const renderOptionList = () => {
-      optionList.empty();
-      const optionValues = element.options ?? [];
-      if (!optionValues.length) {
-        optionList.createDiv({ cls: "sm-le-inline-options__empty", text: "Noch keine Optionen." });
-        return;
-      }
-      optionValues.forEach((opt, index) => {
-        const row = optionList.createDiv({ cls: "sm-le-inline-option" });
-        const editor = createInlineEditor({
-          parent: row,
-          value: opt,
-          placeholder: "Option\u2026",
-          onCommit: (value) => {
-            const next = value || opt;
-            if (next === opt) return;
-            const nextOptions = [...element.options ?? []];
-            nextOptions[index] = next;
-            element.options = nextOptions;
-            if (element.defaultValue && element.defaultValue === opt) {
-              element.defaultValue = next;
-            }
-            renderSelectOptions();
-            deps.finalize(element);
-          }
-        });
-        editor.addClass("sm-le-inline-option__label");
-        const remove = row.createSpan({ cls: "sm-le-inline-option__remove", text: "\u2715" });
-        remove.onclick = (ev) => {
-          ev.preventDefault();
-          const nextOptions = (element.options ?? []).filter((_, idx) => idx !== index);
-          element.options = nextOptions.length ? nextOptions : void 0;
-          if (element.defaultValue && !nextOptions.includes(element.defaultValue)) {
-            element.defaultValue = void 0;
-          }
-          renderSelectOptions();
-          renderOptionList();
-          deps.finalize(element);
-        };
-      });
-    };
-    renderOptionList();
-    const addOption = preview.createEl("button", { cls: "sm-le-inline-add", text: "Option hinzuf\xFCgen" });
-    addOption.onclick = (ev) => {
-      ev.preventDefault();
-      const nextOptions = [...element.options ?? []];
-      const labelText = `Option ${nextOptions.length + 1}`;
-      nextOptions.push(labelText);
-      element.options = nextOptions;
-      renderSelectOptions();
-      renderOptionList();
-      deps.finalize(element);
-    };
     return;
   }
   if (isContainerType(element.type)) {
     deps.ensureContainerDefaults(element);
-    const header = preview.createDiv({ cls: "sm-le-preview__container-header" });
+    const frame = preview.createDiv({ cls: "sm-le-preview__container" });
+    const header = frame.createDiv({ cls: "sm-le-preview__container-header" });
     createInlineEditor({
       parent: header,
       value: element.label,
       placeholder: "Container benennen\u2026",
       onCommit: commitLabel
     }).addClass("sm-le-preview__label");
-    const controls = preview.createDiv({ cls: "sm-le-preview__layout" });
-    const layout = element.layout;
-    const gapWrap = controls.createDiv({ cls: "sm-le-inline-control" });
-    gapWrap.createSpan({ text: "Abstand" });
-    const gapInput = gapWrap.createEl("input", { cls: "sm-le-inline-number", attr: { type: "number", min: "0" } });
-    gapInput.value = String(Math.round(layout.gap));
-    gapInput.onchange = () => {
-      const next = Math.max(0, parseInt(gapInput.value, 10) || 0);
-      if (next === layout.gap) return;
-      layout.gap = next;
-      gapInput.value = String(next);
-      deps.applyContainerLayout(element);
-      deps.pushHistory();
-    };
-    const paddingWrap = controls.createDiv({ cls: "sm-le-inline-control" });
-    paddingWrap.createSpan({ text: "Innenabstand" });
-    const paddingInput = paddingWrap.createEl("input", {
-      cls: "sm-le-inline-number",
-      attr: { type: "number", min: "0" }
-    });
-    paddingInput.value = String(Math.round(layout.padding));
-    paddingInput.onchange = () => {
-      const next = Math.max(0, parseInt(paddingInput.value, 10) || 0);
-      if (next === layout.padding) return;
-      layout.padding = next;
-      paddingInput.value = String(next);
-      deps.applyContainerLayout(element);
-      deps.pushHistory();
-    };
-    const alignWrap = controls.createDiv({ cls: "sm-le-inline-control" });
-    alignWrap.createSpan({ text: "Ausrichtung" });
-    const alignSelect = alignWrap.createEl("select", { cls: "sm-le-inline-select" });
-    const alignOptions = element.type === "vbox" ? [
-      ["start", "Links"],
-      ["center", "Zentriert"],
-      ["end", "Rechts"],
-      ["stretch", "Breite"]
-    ] : [
-      ["start", "Oben"],
-      ["center", "Zentriert"],
-      ["end", "Unten"],
-      ["stretch", "H\xF6he"]
-    ];
-    for (const [value, labelText] of alignOptions) {
-      const option = alignSelect.createEl("option", { value, text: labelText });
-      if (layout.align === value) option.selected = true;
-    }
-    alignSelect.onchange = () => {
-      const next = alignSelect.value ?? layout.align;
-      if (next === layout.align) return;
-      layout.align = next;
-      deps.applyContainerLayout(element);
-      deps.pushHistory();
-    };
-    const summary = preview.createDiv({ cls: "sm-le-preview__container-summary" });
+    const body = frame.createDiv({ cls: "sm-le-preview__container-body" });
     const children = Array.isArray(element.children) ? element.children.map((childId) => deps.elements.find((el) => el.id === childId)).filter((child) => !!child) : [];
     if (!children.length) {
-      summary.createDiv({ cls: "sm-le-inline-options__empty", text: "Keine Elemente verkn\xFCpft." });
+      body.createDiv({ cls: "sm-le-preview__container-placeholder", text: "Leerer Container" });
     } else {
       for (const child of children) {
-        const row = summary.createDiv({ cls: "sm-le-container-chip" });
+        const row = body.createDiv({ cls: "sm-le-container-chip" });
         row.setText(child.label || getElementTypeLabel(child.type));
       }
     }
@@ -6472,7 +6361,7 @@ function renderInspectorPanel(deps) {
   host.createDiv({ cls: "sm-le-meta", text: `Typ: ${getElementTypeLabel(element.type)}` });
   host.createDiv({
     cls: "sm-le-hint",
-    text: "Texte, Default-Werte und Platzhalter bearbeitest du direkt in der Vorschau."
+    text: "Texte bearbeitest du direkt im Arbeitsbereich. Platzhalter, Optionen und Layout findest du hier im Inspector."
   });
   if (!isContainer) {
     const containers = elements.filter((el) => isContainerType(el.type));
@@ -6566,12 +6455,27 @@ function renderInspectorPanel(deps) {
       callbacks.applyContainerLayout(parentContainer);
     }
   };
+  renderElementProperties({ host, element, callbacks });
   const meta = host.createDiv({ cls: "sm-le-meta" });
   meta.setText(`Fl\xE4che: ${Math.round(element.width * element.height)} px\xB2`);
   if (isContainer) {
     renderContainerInspectorSections({ element, host, elements, callbacks });
   } else {
     renderAttributeSelector({ element, attributesChip });
+  }
+}
+function renderElementProperties(options) {
+  const { host, element, callbacks } = options;
+  if (isContainerType(element.type)) {
+    renderContainerLayoutControls({ host, element, callbacks });
+    return;
+  }
+  if (element.type === "textarea") {
+    renderPlaceholderField({ host, element, callbacks, label: "Platzhalter" });
+  }
+  if (element.type === "dropdown" || element.type === "search-dropdown") {
+    renderPlaceholderField({ host, element, callbacks, label: "Platzhalter" });
+    renderOptionsEditor({ host, element, callbacks });
   }
 }
 function renderContainerInspectorSections(options) {
@@ -6656,6 +6560,145 @@ function renderAttributeSelector(options) {
     });
     attributesChip.dispatchEvent(event);
   };
+}
+function renderPlaceholderField(options) {
+  const { host, element, callbacks, label } = options;
+  const field = host.createDiv({ cls: "sm-le-field" });
+  field.createEl("label", { text: label });
+  const input = field.createEl("input", { attr: { type: "text" } });
+  input.value = element.placeholder ?? "";
+  const commit = () => {
+    const raw = input.value;
+    const next = raw ? raw : void 0;
+    if (next === element.placeholder) return;
+    element.placeholder = next;
+    finalizeElementChange(element, callbacks);
+  };
+  input.onchange = commit;
+  input.onblur = commit;
+}
+function renderOptionsEditor(options) {
+  const { host, element, callbacks } = options;
+  const field = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
+  field.createEl("label", { text: "Optionen" });
+  const optionList = field.createDiv({ cls: "sm-le-inline-options" });
+  const optionValues = element.options ?? [];
+  if (!optionValues.length) {
+    optionList.createDiv({ cls: "sm-le-inline-options__empty", text: "Noch keine Optionen." });
+  } else {
+    optionValues.forEach((opt, index) => {
+      const row = optionList.createDiv({ cls: "sm-le-inline-option" });
+      const input = row.createEl("input", {
+        attr: { type: "text" },
+        cls: "sm-le-inline-option__input",
+        value: opt
+      });
+      input.onchange = () => {
+        const next = input.value || opt;
+        if (next === opt) return;
+        const nextOptions = [...element.options ?? []];
+        nextOptions[index] = next;
+        element.options = nextOptions;
+        if (element.defaultValue && element.defaultValue === opt) {
+          element.defaultValue = next;
+        }
+        finalizeElementChange(element, callbacks, { rerender: true });
+      };
+      const remove = row.createEl("button", {
+        text: "\u2715",
+        cls: "sm-le-inline-option__remove",
+        attr: { title: "Option entfernen" }
+      });
+      remove.onclick = (ev) => {
+        ev.preventDefault();
+        const nextOptions = (element.options ?? []).filter((_, idx) => idx !== index);
+        element.options = nextOptions.length ? nextOptions : void 0;
+        if (element.defaultValue && !nextOptions.includes(element.defaultValue)) {
+          element.defaultValue = void 0;
+        }
+        finalizeElementChange(element, callbacks, { rerender: true });
+      };
+    });
+  }
+  const addButton = field.createEl("button", { text: "Option hinzuf\xFCgen" });
+  addButton.classList.add("sm-le-inline-add");
+  addButton.onclick = (ev) => {
+    ev.preventDefault();
+    const nextOptions = [...element.options ?? []];
+    const labelText = `Option ${nextOptions.length + 1}`;
+    nextOptions.push(labelText);
+    element.options = nextOptions;
+    finalizeElementChange(element, callbacks, { rerender: true });
+  };
+}
+function renderContainerLayoutControls(options) {
+  const { host, element, callbacks } = options;
+  if (!element.layout) return;
+  const field = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
+  field.createEl("label", { text: "Layout" });
+  const controls = field.createDiv({ cls: "sm-le-preview__layout" });
+  const layout = element.layout;
+  const gapWrap = controls.createDiv({ cls: "sm-le-inline-control" });
+  gapWrap.createSpan({ text: "Abstand" });
+  const gapInput = gapWrap.createEl("input", { cls: "sm-le-inline-number", attr: { type: "number", min: "0" } });
+  gapInput.value = String(Math.round(layout.gap));
+  gapInput.onchange = () => {
+    const next = Math.max(0, parseInt(gapInput.value, 10) || 0);
+    if (next === layout.gap) return;
+    layout.gap = next;
+    gapInput.value = String(next);
+    callbacks.applyContainerLayout(element, { silent: true });
+    finalizeElementChange(element, callbacks);
+  };
+  const paddingWrap = controls.createDiv({ cls: "sm-le-inline-control" });
+  paddingWrap.createSpan({ text: "Innenabstand" });
+  const paddingInput = paddingWrap.createEl("input", {
+    cls: "sm-le-inline-number",
+    attr: { type: "number", min: "0" }
+  });
+  paddingInput.value = String(Math.round(layout.padding));
+  paddingInput.onchange = () => {
+    const next = Math.max(0, parseInt(paddingInput.value, 10) || 0);
+    if (next === layout.padding) return;
+    layout.padding = next;
+    paddingInput.value = String(next);
+    callbacks.applyContainerLayout(element, { silent: true });
+    finalizeElementChange(element, callbacks);
+  };
+  const alignWrap = controls.createDiv({ cls: "sm-le-inline-control" });
+  alignWrap.createSpan({ text: "Ausrichtung" });
+  const alignSelect = alignWrap.createEl("select", { cls: "sm-le-inline-select" });
+  const alignOptions = element.type === "vbox" ? [
+    ["start", "Links"],
+    ["center", "Zentriert"],
+    ["end", "Rechts"],
+    ["stretch", "Breite"]
+  ] : [
+    ["start", "Oben"],
+    ["center", "Zentriert"],
+    ["end", "Unten"],
+    ["stretch", "H\xF6he"]
+  ];
+  for (const [value, labelText] of alignOptions) {
+    const option = alignSelect.createEl("option", { value, text: labelText });
+    if (layout.align === value) option.selected = true;
+  }
+  alignSelect.onchange = () => {
+    const next = alignSelect.value ?? layout.align;
+    if (next === layout.align) return;
+    layout.align = next;
+    callbacks.applyContainerLayout(element, { silent: true });
+    finalizeElementChange(element, callbacks);
+  };
+}
+function finalizeElementChange(element, callbacks, options) {
+  callbacks.syncElementElement(element);
+  callbacks.refreshExport();
+  callbacks.updateStatus();
+  callbacks.pushHistory();
+  if (options?.rerender) {
+    callbacks.renderInspector();
+  }
 }
 function clampNumber(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -7143,35 +7186,48 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     el.dataset.id = element.id;
     const content = el.createDiv({ cls: "sm-le-box__content" });
     content.dataset.role = "content";
-    const chrome = el.createDiv({ cls: "sm-le-box__chrome" });
-    const handle = chrome.createSpan({ cls: "sm-le-box__handle", text: "\u283F" });
-    handle.dataset.role = "move";
-    const attrs = chrome.createSpan({ cls: "sm-le-box__attrs", text: "\u2699" });
-    attrs.dataset.role = "attrs";
-    handle.addEventListener("pointerdown", (ev) => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      this.selectElement(element.id);
-      this.beginMove(element, ev);
+    const updateCursor = (event) => {
+      const mode = this.resolveInteractionMode(el, event);
+      if (!mode) {
+        el.style.cursor = "";
+        return;
+      }
+      if (mode.type === "resize") {
+        const cursor = mode.corner === "nw" || mode.corner === "se" ? "nwse-resize" : "nesw-resize";
+        el.style.cursor = cursor;
+      } else {
+        el.style.cursor = "move";
+      }
+    };
+    el.addEventListener("pointermove", (ev) => {
+      if (ev.buttons) return;
+      updateCursor(ev);
+    });
+    el.addEventListener("pointerleave", () => {
+      if (el.hasClass("is-interacting")) return;
+      el.style.cursor = "";
     });
     el.addEventListener("pointerdown", (ev) => {
-      ev.stopPropagation();
       this.selectElement(element.id);
-    });
-    const resizeHandle = el.createDiv({ cls: "sm-le-box__resize" });
-    resizeHandle.addEventListener("pointerdown", (ev) => {
+      const mode = this.resolveInteractionMode(el, ev);
+      if (!mode) {
+        return;
+      }
       ev.preventDefault();
       ev.stopPropagation();
-      this.selectElement(element.id);
-      this.beginResize(element, ev);
+      el.addClass("is-interacting");
+      if (mode.type === "resize") {
+        this.beginResize(element, ev, mode.corner, () => {
+          el.removeClass("is-interacting");
+          el.style.cursor = "";
+        });
+      } else {
+        this.beginMove(element, ev, () => {
+          el.removeClass("is-interacting");
+          el.style.cursor = "";
+        });
+      }
     });
-    attrs.onclick = (ev) => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      this.selectElement(element.id);
-      this.attributePopover.open(element, attrs);
-      this.attributePopover.position();
-    };
     return el;
   }
   syncElementElement(element) {
@@ -7191,15 +7247,9 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
         finalize: (target) => this.finalizeInlineMutation(target),
         ensureContainerDefaults: (target) => this.ensureContainerDefaults(target),
         applyContainerLayout: (target, options) => this.applyContainerLayout(target, options),
-        pushHistory: () => this.pushHistory()
+        pushHistory: () => this.pushHistory(),
+        createElement: (type, options) => this.createElement(type, options)
       });
-    }
-    const attrsEl = el.querySelector('[data-role="attrs"]');
-    if (attrsEl) {
-      const summary = getAttributeSummary(element.attributes);
-      attrsEl.setAttr("title", summary);
-      attrsEl.setAttr("aria-label", summary);
-      attrsEl.classList.toggle("is-empty", !element.attributes.length);
     }
   }
   selectElement(id) {
@@ -7454,7 +7504,7 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
       element.children = [];
     }
   }
-  beginMove(element, event) {
+  beginMove(element, event, onComplete) {
     const startX = event.clientX;
     const startY = event.clientY;
     const originX = element.x;
@@ -7496,24 +7546,49 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
         this.applyContainerLayout(parent);
       }
       this.pushHistory();
+      onComplete?.();
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
   }
-  beginResize(element, event) {
+  beginResize(element, event, corner, onComplete) {
     const startX = event.clientX;
     const startY = event.clientY;
     const originW = element.width;
     const originH = element.height;
     const isContainer = isContainerType(element.type);
     const parent = element.parentId ? this.elements.find((el) => el.id === element.parentId) : null;
+    const originX = element.x;
+    const originY = element.y;
+    const resizeLeft = corner === "nw" || corner === "sw";
+    const resizeTop = corner === "nw" || corner === "ne";
     const onMove = (ev) => {
       const dx = ev.clientX - startX;
       const dy = ev.clientY - startY;
-      const maxWidth = Math.max(MIN_ELEMENT_SIZE, this.canvasWidth - element.x);
-      const maxHeight = Math.max(MIN_ELEMENT_SIZE, this.canvasHeight - element.y);
-      const nextW = clamp(originW + dx, MIN_ELEMENT_SIZE, maxWidth);
-      const nextH = clamp(originH + dy, MIN_ELEMENT_SIZE, maxHeight);
+      let nextX = originX;
+      let nextY = originY;
+      let nextW = originW;
+      let nextH = originH;
+      if (resizeLeft) {
+        const maxLeft = originX + originW - MIN_ELEMENT_SIZE;
+        const proposedX = clamp(originX + dx, 0, maxLeft);
+        nextX = proposedX;
+        nextW = originW + (originX - proposedX);
+      } else {
+        const maxWidth = Math.max(MIN_ELEMENT_SIZE, this.canvasWidth - originX);
+        nextW = clamp(originW + dx, MIN_ELEMENT_SIZE, maxWidth);
+      }
+      if (resizeTop) {
+        const maxTop = originY + originH - MIN_ELEMENT_SIZE;
+        const proposedY = clamp(originY + dy, 0, maxTop);
+        nextY = proposedY;
+        nextH = originH + (originY - proposedY);
+      } else {
+        const maxHeight = Math.max(MIN_ELEMENT_SIZE, this.canvasHeight - originY);
+        nextH = clamp(originH + dy, MIN_ELEMENT_SIZE, maxHeight);
+      }
+      element.x = nextX;
+      element.y = nextY;
       element.width = nextW;
       element.height = nextH;
       this.syncElementElement(element);
@@ -7532,9 +7607,30 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
         this.applyContainerLayout(parent);
       }
       this.pushHistory();
+      onComplete?.();
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
+  }
+  resolveInteractionMode(el, event) {
+    const rect = el.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    const margin = Math.min(14, rect.width / 2, rect.height / 2);
+    const offsetX = event.clientX - rect.left;
+    const offsetY = event.clientY - rect.top;
+    if (offsetX < 0 || offsetY < 0 || offsetX > rect.width || offsetY > rect.height) {
+      return null;
+    }
+    const nearLeft = offsetX <= margin;
+    const nearRight = rect.width - offsetX <= margin;
+    const nearTop = offsetY <= margin;
+    const nearBottom = rect.height - offsetY <= margin;
+    if (nearLeft && nearTop) return { type: "resize", corner: "nw" };
+    if (nearRight && nearTop) return { type: "resize", corner: "ne" };
+    if (nearLeft && nearBottom) return { type: "resize", corner: "sw" };
+    if (nearRight && nearBottom) return { type: "resize", corner: "se" };
+    if (nearLeft || nearRight || nearTop || nearBottom) return { type: "move" };
+    return null;
   }
   async importCreatureCreatorLayout(options) {
     if (this.isImporting) return;
@@ -8367,14 +8463,13 @@ var HEX_PLUGIN_CSS = `
 }
 
 .sm-le-body {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 1.25rem;
+    align-items: stretch;
 }
 
 .sm-le-stage {
-    flex: 1 1 520px;
     display: flex;
     justify-content: center;
 }
@@ -8399,6 +8494,10 @@ var HEX_PLUGIN_CSS = `
     transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
+.sm-le-box:hover {
+    border-color: var(--background-modifier-border);
+}
+
 .sm-le-box.is-container {
     border-style: dashed;
     border-color: var(--background-modifier-border);
@@ -8413,6 +8512,10 @@ var HEX_PLUGIN_CSS = `
     border-color: var(--interactive-accent);
 }
 
+.sm-le-box.is-interacting {
+    cursor: grabbing;
+}
+
 .sm-le-box__content {
     flex: 1;
     display: flex;
@@ -8421,61 +8524,47 @@ var HEX_PLUGIN_CSS = `
     padding: 0;
 }
 
-.sm-le-box__chrome {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.3rem;
-    padding: 0.3rem;
-}
-
-.sm-le-box__handle,
-.sm-le-box__attrs {
-    pointer-events: auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.75rem;
-    height: 1.75rem;
-    border-radius: 999px;
-    background: var(--background-primary);
-    border: 1px solid var(--background-modifier-border);
-    color: var(--text-muted);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-    user-select: none;
-    transition: border-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
-}
-
-.sm-le-box__handle {
-    cursor: grab;
-    font-size: 0.9rem;
-}
-
-.sm-le-box__attrs {
-    cursor: pointer;
-    font-size: 0.85rem;
-}
-
-.sm-le-box__attrs.is-empty {
-    opacity: 0.7;
-}
-
-.sm-le-box.is-selected .sm-le-box__handle,
-.sm-le-box.is-selected .sm-le-box__attrs {
-    border-color: var(--interactive-accent);
-    color: var(--interactive-accent);
-    box-shadow: 0 8px 20px rgba(56, 189, 248, 0.25);
-}
-
 .sm-le-preview {
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
     padding: 0.15rem;
+}
+
+.sm-le-preview__headline {
+    flex: 1;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+}
+
+.sm-le-preview__headline-inner {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0.4rem;
+    width: 100%;
+    height: 100%;
+}
+
+.sm-le-preview__headline-text {
+    width: 100%;
+    min-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.1;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.sm-le-preview__headline-text.sm-le-inline-edit:empty::before {
+    width: 100%;
+    text-align: center;
 }
 
 .sm-le-preview__text-block,
@@ -8537,6 +8626,18 @@ var HEX_PLUGIN_CSS = `
     min-height: 80px;
 }
 
+.sm-le-preview__input-only {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: stretch;
+    padding: 0.2rem;
+}
+
+.sm-le-preview__input-only .sm-le-preview__input {
+    height: 100%;
+}
+
 .sm-le-inline-edit {
     display: inline-block;
     padding: 0.05rem 0.15rem;
@@ -8575,7 +8676,7 @@ var HEX_PLUGIN_CSS = `
 
 .sm-le-inline-options {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 0.35rem;
 }
 
@@ -8586,26 +8687,45 @@ var HEX_PLUGIN_CSS = `
 }
 
 .sm-le-inline-option {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.35rem;
     background: var(--background-secondary);
-    border-radius: 999px;
-    padding: 0.15rem 0.35rem;
+    border-radius: 8px;
+    padding: 0.35rem 0.5rem;
 }
 
-.sm-le-inline-option__label {
-    font-size: 0.8rem;
+.sm-le-inline-option__input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 0.15rem 0.25rem;
+    font: inherit;
+    color: inherit;
+}
+
+.sm-le-inline-option__input:focus {
+    outline: none;
+    border-color: var(--interactive-accent);
+    background: var(--background-primary);
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.18);
 }
 
 .sm-le-inline-option__remove {
-    font-size: 0.8rem;
+    border: none;
+    background: transparent;
+    padding: 0.1rem 0.35rem;
+    font-size: 0.85rem;
     color: var(--text-muted);
     cursor: pointer;
+    border-radius: 6px;
+    transition: color 120ms ease, background 120ms ease;
 }
 
 .sm-le-inline-option__remove:hover {
     color: var(--text-normal);
+    background: rgba(56, 189, 248, 0.12);
 }
 
 .sm-le-inline-add {
@@ -8648,50 +8768,14 @@ var HEX_PLUGIN_CSS = `
     color: inherit;
 }
 
-.sm-le-preview__container-summary {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-    font-size: 0.7rem;
-    color: var(--text-muted);
-}
-
 .sm-le-container-chip {
     background: var(--background-secondary);
     border-radius: 999px;
     padding: 0.2rem 0.45rem;
 }
 
-.sm-le-box__resize {
-    position: absolute;
-    width: 18px;
-    height: 18px;
-    border-radius: 6px;
-    right: 0.3rem;
-    bottom: 0.3rem;
-    cursor: se-resize;
-    background: var(--background-primary);
-    border: 1px solid var(--background-modifier-border);
-    display: grid;
-    place-items: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
-}
-
-.sm-le-box__resize::after {
-    content: "";
-    width: 10px;
-    height: 10px;
-    border-right: 2px solid var(--text-muted);
-    border-bottom: 2px solid var(--text-muted);
-}
-
-.sm-le-box.is-selected .sm-le-box__resize {
-    border-color: var(--interactive-accent);
-}
-
 .sm-le-inspector {
-    flex: 0 0 240px;
-    min-width: 220px;
+    min-width: 240px;
     background: var(--background-primary);
     border: 1px solid var(--background-modifier-border);
     border-radius: 10px;
@@ -8931,13 +9015,13 @@ var HEX_PLUGIN_CSS = `
     pointer-events: none;
 }
 
-@media (max-width: 860px) {
-    .sm-le-inspector {
-        flex: 1 1 100%;
+@media (max-width: 960px) {
+    .sm-le-body {
+        grid-template-columns: 1fr;
     }
 
-    .sm-le-stage {
-        flex: 1 1 100%;
+    .sm-le-inspector {
+        min-width: 0;
     }
 }
 

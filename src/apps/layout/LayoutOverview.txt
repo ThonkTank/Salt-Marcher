@@ -20,11 +20,11 @@ src/apps/layout/
 
 ## Features & Verantwortlichkeiten
 
-- **Layout-Arbeitsfläche:** Konfigurierbare Canvas mit Breite/Höhe-Controls; alle Elemente werden mit Bounds-Clamping gerendert und können per Drag/Resize manipuliert werden. Inspector und Arbeitsfläche bilden ein Zweispalten-Layout mit rechts angedocktem Eigenschaften-Panel.
+- **Layout-Arbeitsfläche:** Konfigurierbare Canvas mit Breite/Höhe-Controls; alle Elemente werden mit Bounds-Clamping gerendert und lassen sich direkt über ihren Rahmen bewegen (Drag) bzw. an den Ecken skalieren (Resize). Inspector und Arbeitsfläche bilden ein Zweispalten-Layout mit rechts angedocktem Eigenschaften-Panel.
 - **Modulare Element-Hilfen:** Element-Definitionen (Buttons, Defaults, Layout-Standards) liegen zentral in `definitions.ts`; Canvas-Rendering und Inspector greifen auf dieselben Strukturen zu.
-- **Container-Layout:** VBox-/HBox-Container verteilen Kinder automatisch (Gap, Padding, Align) und synchronisieren bei manuellen Änderungen oder Größenanpassungen. Eine Schnell-Hinzufügen-Aktion direkt in der Canvas erlaubt das Anlegen neuer Kinder ohne Umweg über den Inspector.
-- **Inspector & Inline-Editing:** `element-preview.ts` stellt sämtliche Texte, Platzhalter, Default-Werte und Optionen direkt in der Vorschau zur Bearbeitung bereit; `inspector-panel.ts` liefert ergänzend Meta-Steuerung (Container-Zuordnung, Attribute, Maße).
-- **Headline-Labels & Textfelder:** Label-Elemente bestehen aus einer einzigen Überschrift mit automatischer Schriftgrößenanpassung; einfache Textfelder zeigen nur noch das Eingabefeld und verzichten auf Label- und Placeholder-Bearbeitung.
+- **Container-Layout:** VBox-/HBox-Container verteilen Kinder automatisch (Gap, Padding, Align) und synchronisieren bei manuellen Änderungen oder Größenanpassungen. Neue Kinder können weiterhin über den Inspector schnell hinzugefügt werden.
+- **Direkte Bearbeitung & Inspector:** Auf der Arbeitsfläche erscheinen echte UI-Elemente (Labels, Inputs, Dropdowns usw.) und lassen sich dort inhaltlich editieren. Erweiterte Eigenschaften wie Platzhalter, Optionslisten oder Container-Layout werden ausschließlich im Inspector gepflegt.
+- **Echte Vorschau:** Label-Elemente passen ihre Schriftgröße automatisch an, einfache Textfelder bestehen nur aus dem Eingabefeld und alle weiteren Controls spiegeln ihr finales Erscheinungsbild ohne zusätzliche Chrome-Elemente wider.
 - **Attribute-Popover:** `attribute-popover.ts` verwaltet das Popover (Öffnen, Positionierung, Synchronisation) und hält Inspector sowie Canvas konsistent.
 - **Undo/Redo-Historie:** `history.ts` kapselt Snapshot-Verwaltung; `view.ts` nutzt sie für Strg+Z / Strg+Umschalt+Z sowie automatisches Pushen nach Mutationen.
 - **Export & Status:** JSON-Export (Canvas + Elemente) sowie Statusleiste werden in `view.ts` gepflegt und auf jede Mutation aktualisiert.
@@ -61,12 +61,12 @@ src/apps/layout/
 - Bietet einen generischen ContentEditable-Editor (Trim, Multiline, Placeholder) für Preview-Komponenten.
 
 ### `editor/element-preview.ts`
-- Rendert Canvas-Vorschauen als minimalistische UI-Elemente (Labels, Inputs, Dropdowns etc.) inklusive Inline-Label-/Beschreibung-/Optionen-Editoren ohne Surrounding-Panel.
-- Delegiert Layout-spezifische Aktionen (z. B. Container-Layout, History-Push) über Callbacks an die View.
+- Rendert die Canvas als echte UI-Elemente (Labels, Inputs, Dropdowns etc.) und erlaubt dort nur inhaltliche Direktbearbeitung (z. B. Texte, Default-Werte).
+- Übergibt finale Änderungen über Callbacks an die View, damit Inspector, Export und Historie synchron bleiben.
 
 ### `editor/inspector-panel.ts`
-- Rendert einen kompakten Inspector mit Meta-Infos, Container-Zuordnung, Attribut-Anzeige, Positions-/Größensteuerung und Container-Kindverwaltung.
-- Delegiert Mutationen über `InspectorCallbacks` zurück an die View, öffnet Attribute-Popover und reicht Inline-Änderungen weiter.
+- Rendert einen kompakten Inspector mit Meta-Infos, Container-Zuordnung, Attribut-Anzeige, Positions-/Größensteuerung, Layout-Parametern und Container-Kindverwaltung.
+- Delegiert alle Mutationen (inkl. Platzhalter-, Optionen- und Layout-Änderungen) über `InspectorCallbacks` an die View und öffnet das Attribute-Popover.
 
 ### `editor/attribute-popover.ts`
 - Erstellt, positioniert und synchronisiert das Attribut-Popover.
