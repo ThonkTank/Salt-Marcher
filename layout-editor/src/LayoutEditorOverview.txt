@@ -61,6 +61,45 @@ plugins/layout-editor/
 - **Export & Layout-Library:** `view.ts` erstellt JSON-Exporte nun inklusive Metadaten (`id`, `name`, `createdAt`, `updatedAt`) im exakt gleichen Format wie die Bibliothek sie speichert (`canvasWidth`, `canvasHeight`, `elements`). Dadurch lassen sich Layouts ohne Nachbearbeitung wieder importieren oder direkt im Vault bearbeiten; `layout-library.ts` persistiert Layouts unter `LayoutEditor/Layouts/<id>.json`, listet vorhandene Layouts und lädt sie erneut. Die IDs werden dabei konsequent aus dem Dateinamen abgeleitet, sodass auch manuell importierte oder umbenannte Layout-Dateien gefunden werden. Beim Einlesen werden Maße und Elemente tolerant geparst, sodass auch ältere/handbearbeitete Dateien mit Stringwerten oder Objekt-Mappings sicher geladen werden. Für Nutzer mit Bestandsdateien berücksichtigt die Library zusätzlich den Legacy-Pfad `Layout Editor/Layouts`, damit alte Layouts weiterhin erscheinen und importiert werden können. `seed-layouts.ts` sorgt beim Plugin-Start dafür, dass ein Standardlayout („Layout Editor – Kreaturenvorlage“) als JSON im Vault vorhanden ist.
 - **Layout-Bibliothek Import:** `layout-picker-modal.ts` und `view.ts` öffnen gespeicherte Layouts aus der Bibliothek, setzen Canvas/Einstellungen entsprechend zurück und initialisieren die Undo/Redo-Historie direkt auf dem geladenen Stand.
 
+## Layout-Library Workflow (Speichern, Öffnen & API-Nutzung)
+
+### Speichern aus der View
+
+1. **CTA "Layout speichern"** im Export-Panel triggert `promptSaveLayout()` in `view.ts`. Dieser öffnet den `NameInputModal`,
+   übernimmt den zuletzt genutzten Namen als Vorschlag und wartet auf die Bestätigung.
+2. **`handleSaveLayout()`** validiert den eingegebenen Namen, deaktiviert während des Vorgangs den CTA und reicht Canvas-Maße
+   sowie eine Deep-Kopie der aktuellen `LayoutElement`-Liste an `saveLayoutToLibrary()` weiter.
+3. **`saveLayoutToLibrary()`** legt (falls nötig) `LayoutEditor/Layouts/` an, erzeugt für neue Layouts eine UUID und speichert
+   ein vollständiges `SavedLayout`-JSON (inklusive `createdAt`/`updatedAt`). Bei erneutem Speichern desselben Namens wird die
+   bestehende ID wiederverwendet, sodass Versionen überschrieben statt dupliziert werden.
+4. **View-Status aktualisieren:** Nach erfolgreichem Speichern merkt sich die View ID, Name und Zeitstempel und signalisiert
+   Erfolg via `Notice`. Fehler werden geloggt und dem Nutzer über einen Fehler-`Notice` gemeldet.
+
+### Öffnen gespeicherter Layouts
+
+1. **"Layout öffnen"-Button** ruft `promptImportSavedLayout()` auf. Dieser instanziert den `LayoutPickerModal`, dessen
+   `loadLayouts`-Callback `listSavedLayouts()` nutzt. Die Library aggregiert dabei sowohl neue (`LayoutEditor/Layouts`) als auch
+   Legacy-Verzeichnisse (`Layout Editor/Layouts`) und sortiert nach `updatedAt`.
+2. **Auswahl im Modal:** Dank des persistenten Auswahl-Cache liefert `onPick` stets eine valide Layout-ID zurück. Die View
+   ruft anschließend `importSavedLayout()` und deaktiviert während des Imports den CTA.
+3. **`loadSavedLayout()`** findet anhand der ID die passende JSON-Datei, normalisiert deren Inhalt (Dimensionen, Layout-Objekte,
+   Options-Arrays) und gibt ein `SavedLayout` zurück. Fehlerhafte Dateien werden übersprungen und erzeugen eine Nutzer-Meldung.
+4. **`applySavedLayout()`** setzt Canvas-Maße, Element-Liste, Metadaten und Inputs zurück, zentriert die Kamera, rendert Canvas
+   & Inspector neu, aktualisiert den Export-Textarea und initialisiert Undo/Redo direkt auf dem importierten Snapshot. Dadurch
+   sind geladene Layouts ohne weiteren manuellen Schritt editierbar.
+
+### Wiederverwendung in anderen Plugins
+
+1. **API abrufen:** Andere Plugins können über Obsidians Plugin-Manager auf das Layout-Editor-Plugin zugreifen und mit
+   `const layoutEditor = this.app.plugins.getPlugin("layout-editor");` den Export aus `src/index.ts` nutzen. Das Plugin stellt
+   via `getApi()` die `LayoutEditorPluginApi` bereit.
+2. **APIs für die Layout-Bibliothek:** `api.saveLayout()` nimmt ein `LayoutBlueprint` entgegen und speichert es identisch zur
+   internen View-Logik. `api.listLayouts()` liefert alle verfügbaren `SavedLayout`-Metadaten (ID, Name, Maße, Timestamps) –
+   ideal für eigene Auswahllisten. `api.loadLayout(id)` lädt und normalisiert ein Layout inklusive Elementstruktur für externe
+   Renderer oder Generatoren.
+3. **UI-Integration:** Mit `api.openView()` lässt sich der Editor programmatisch öffnen. Plugins, die eigene Elemente anbieten,
+   registrieren Definitionen über `api.registerElementDefinition()` und erhalten Updates via `api.onDefinitionsChanged()`.
+
 ## Datenfluss
 
 1. **Interaktionen** (Drag, Resize, Inspector, Inline): verändern `LayoutElement`-Strukturen.
