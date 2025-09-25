@@ -899,12 +899,6 @@ export const HEX_PLUGIN_CSS = `
     font-size: 1rem;
 }
 
-.sm-le-preview__field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-}
-
 .sm-le-preview__label {
     font-size: 0.8rem;
     letter-spacing: 0.04em;
@@ -926,14 +920,6 @@ export const HEX_PLUGIN_CSS = `
 
 .sm-le-preview__textarea {
     resize: vertical;
-}
-
-.sm-le-preview__meta {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
 }
 
 .sm-le-inline-edit {
@@ -969,6 +955,7 @@ export const HEX_PLUGIN_CSS = `
 .sm-le-inline-meta {
     font-size: 0.75rem;
     color: var(--text-muted);
+    display: block;
 }
 
 .sm-le-inline-options {
@@ -1010,6 +997,55 @@ export const HEX_PLUGIN_CSS = `
     align-self: flex-start;
     font-size: 0.75rem;
     padding: 0.25rem 0.5rem;
+}
+
+.sm-le-inline-add--menu {
+    align-self: flex-start;
+}
+
+.sm-le-preview__setting {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 10px;
+    background: var(--background-primary);
+    padding: 0.6rem 0.7rem;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+.sm-le-preview__setting .setting-item-info {
+    margin-right: 0;
+}
+
+.sm-le-preview__setting .setting-item-control {
+    margin-left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.sm-le-preview__setting .setting-item-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.sm-le-preview__setting .setting-item-description {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.sm-le-preview__setting--box .setting-item-name {
+    font-size: 1.05rem;
+}
+
+.sm-le-preview__divider {
+    border: none;
+    border-top: 1px solid var(--background-modifier-border);
+    margin: 0.25rem 0 0;
 }
 
 .sm-le-preview__container-header {

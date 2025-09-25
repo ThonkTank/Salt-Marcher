@@ -1,5 +1,5 @@
 // src/apps/layout/view.ts
-import { ItemView, Notice } from "obsidian";
+import { ItemView, Menu, Notice, Setting } from "obsidian";
 import type { StatblockData } from "../library/core/creature-files";
 import {
     mountCreatureBasicsSection,
@@ -8,6 +8,7 @@ import {
     mountEntriesSection,
     mountSpellsKnownSection,
 } from "../library/create/creature";
+import { enhanceSelectToSearch } from "../../ui/search-dropdown";
 
 export const VIEW_LAYOUT_EDITOR = "salt-layout-editor";
 
@@ -477,7 +478,7 @@ export class LayoutEditorView extends ItemView {
             value: string | undefined,
             onChange: (next: string | undefined) => void,
         ) => {
-            this.createInlineEditor({
+            const editor = this.createInlineEditor({
                 parent,
                 value: value ?? "",
                 placeholder,
@@ -490,12 +491,25 @@ export class LayoutEditorView extends ItemView {
                     onChange(next);
                     this.finalizeInlineMutation(element);
                 },
-            }).addClass("sm-le-inline-meta");
+            });
+            editor.addClass("sm-le-inline-meta");
+            return editor;
+        };
+
+        const createSetting = (options?: { withDescription?: boolean }) => {
+            const setting = new Setting(preview);
+            setting.settingEl.addClass("sm-le-preview__setting");
+            setting.setName("");
+            if (options?.withDescription ?? true) {
+                setting.setDesc("");
+            }
+            return setting;
         };
 
         if (element.type === "label") {
-            const text = this.createInlineEditor({
-                parent: preview,
+            const setting = createSetting();
+            const labelEl = this.createInlineEditor({
+                parent: setting.nameEl,
                 value: element.label,
                 placeholder: "Text eingeben…",
                 multiline: true,
@@ -503,9 +517,10 @@ export class LayoutEditorView extends ItemView {
                 trim: false,
                 onCommit: commitLabel,
             });
-            text.addClass("sm-le-preview__text");
-            this.createInlineEditor({
-                parent: preview,
+            labelEl.addClass("setting-item-name");
+            const descHost = setting.descEl ?? setting.infoEl.createDiv({ cls: "setting-item-description" });
+            const desc = this.createInlineEditor({
+                parent: descHost,
                 value: element.description ?? "",
                 placeholder: "Zusatztext hinzufügen…",
                 multiline: true,
@@ -517,21 +532,25 @@ export class LayoutEditorView extends ItemView {
                     element.description = next;
                     this.finalizeInlineMutation(element);
                 },
-            }).addClass("sm-le-preview__subtext");
+            });
+            desc.addClass("setting-item-description");
             return;
         }
 
         if (element.type === "box") {
-            const header = preview.createDiv({ cls: "sm-le-preview__title" });
-            this.createInlineEditor({
-                parent: header,
+            const setting = createSetting();
+            setting.settingEl.addClass("sm-le-preview__setting--box");
+            const title = this.createInlineEditor({
+                parent: setting.nameEl,
                 value: element.label,
                 placeholder: "Titel eingeben…",
-                multiline: false,
                 onCommit: commitLabel,
+                block: true,
             });
-            this.createInlineEditor({
-                parent: preview,
+            title.addClass("setting-item-name");
+            const descHost = setting.descEl ?? setting.infoEl.createDiv({ cls: "setting-item-description" });
+            const desc = this.createInlineEditor({
+                parent: descHost,
                 value: element.description ?? "",
                 placeholder: "Beschreibung hinzufügen…",
                 multiline: true,
@@ -543,32 +562,40 @@ export class LayoutEditorView extends ItemView {
                     element.description = next;
                     this.finalizeInlineMutation(element);
                 },
-            }).addClass("sm-le-preview__description");
+            });
+            desc.addClass("setting-item-description");
             return;
         }
 
         if (element.type === "separator") {
-            const labelRow = preview.createDiv({ cls: "sm-le-preview__label" });
-            this.createInlineEditor({
-                parent: labelRow,
+            const setting = createSetting({ withDescription: false });
+            setting.controlEl.detach();
+            const label = this.createInlineEditor({
+                parent: setting.nameEl,
                 value: element.label,
                 placeholder: "Titel eingeben…",
                 onCommit: commitLabel,
             });
-            preview.createEl("hr");
+            label.addClass("setting-item-name");
+            setting.settingEl.createEl("hr", { cls: "sm-le-preview__divider" });
             return;
         }
 
         if (element.type === "text-input" || element.type === "textarea") {
-            const field = preview.createDiv({ cls: "sm-le-preview__field" });
-            this.createInlineEditor({
-                parent: field,
+            const setting = createSetting();
+            const label = this.createInlineEditor({
+                parent: setting.nameEl,
                 value: element.label,
                 placeholder: "Label eingeben…",
                 onCommit: commitLabel,
-            }).addClass("sm-le-preview__label");
+            });
+            label.addClass("setting-item-name");
+
+            setting.controlEl.empty();
+            const placeholderHost = setting.descEl ?? setting.infoEl.createDiv({ cls: "setting-item-description" });
+
             if (element.type === "textarea") {
-                const textarea = field.createEl("textarea", { cls: "sm-le-preview__textarea" }) as HTMLTextAreaElement;
+                const textarea = setting.controlEl.createEl("textarea", { cls: "sm-le-preview__textarea" }) as HTMLTextAreaElement;
                 textarea.value = element.defaultValue ?? "";
                 textarea.placeholder = element.placeholder ?? "";
                 textarea.rows = 4;
@@ -583,13 +610,12 @@ export class LayoutEditorView extends ItemView {
                     element.defaultValue = next ? next : undefined;
                     this.finalizeInlineMutation(element);
                 });
-                const meta = preview.createDiv({ cls: "sm-le-preview__meta" });
-                createPlaceholderEditor(meta, "Platzhalter hinzufügen…", element.placeholder, next => {
+                createPlaceholderEditor(placeholderHost, "Platzhalter hinzufügen…", element.placeholder, next => {
                     textarea.placeholder = next ?? "";
                     element.placeholder = next;
                 });
             } else {
-                const input = field.createEl("input", { cls: "sm-le-preview__input", attr: { type: "text" } }) as HTMLInputElement;
+                const input = setting.controlEl.createEl("input", { attr: { type: "text" }, cls: "sm-le-preview__input" }) as HTMLInputElement;
                 input.value = element.defaultValue ?? "";
                 input.placeholder = element.placeholder ?? "";
                 let lastValue = input.value;
@@ -603,8 +629,7 @@ export class LayoutEditorView extends ItemView {
                     element.defaultValue = next ? next : undefined;
                     this.finalizeInlineMutation(element);
                 });
-                const meta = preview.createDiv({ cls: "sm-le-preview__meta" });
-                createPlaceholderEditor(meta, "Platzhalter hinzufügen…", element.placeholder, next => {
+                createPlaceholderEditor(placeholderHost, "Platzhalter hinzufügen…", element.placeholder, next => {
                     input.placeholder = next ?? "";
                     element.placeholder = next;
                 });
@@ -613,79 +638,91 @@ export class LayoutEditorView extends ItemView {
         }
 
         if (element.type === "dropdown" || element.type === "search-dropdown") {
-            const field = preview.createDiv({ cls: "sm-le-preview__field" });
-            this.createInlineEditor({
-                parent: field,
+            const setting = createSetting();
+            const label = this.createInlineEditor({
+                parent: setting.nameEl,
                 value: element.label,
                 placeholder: "Label eingeben…",
                 onCommit: commitLabel,
-            }).addClass("sm-le-preview__label");
+            });
+            label.addClass("setting-item-name");
 
-            const controlWrapper = field.createDiv({ cls: "sm-le-preview__control" });
-            let options = element.options ?? [];
+            setting.controlEl.empty();
+            const select = setting.controlEl.createEl("select", { cls: "sm-le-preview__select" }) as HTMLSelectElement;
+            const defaultPlaceholder = element.type === "dropdown" ? "Option wählen…" : "Suchen…";
             let placeholderOption: HTMLOptionElement | null = null;
-            let searchInput: HTMLInputElement | null = null;
 
-            if (element.type === "dropdown") {
-                const select = controlWrapper.createEl("select", { cls: "sm-le-preview__select" }) as HTMLSelectElement;
-                const placeholderText = element.placeholder ?? "Option wählen…";
+            const renderSelectOptions = () => {
+                select.innerHTML = "";
+                const placeholderText = element.placeholder ?? defaultPlaceholder;
                 placeholderOption = select.createEl("option", { value: "", text: placeholderText });
                 placeholderOption.disabled = true;
-                if (!element.defaultValue) placeholderOption.selected = true;
-                if (!options.length) {
+                if (!element.defaultValue) {
+                    placeholderOption.selected = true;
+                }
+                const optionValues = element.options && element.options.length ? element.options : null;
+                if (!optionValues) {
                     select.createEl("option", { value: "opt-1", text: "Erste Option" });
                 } else {
-                    for (const opt of options) {
-                        const option = select.createEl("option", { value: opt, text: opt });
-                        if (element.defaultValue && opt === element.defaultValue) {
-                            option.selected = true;
+                    for (const opt of optionValues) {
+                        const optionEl = select.createEl("option", { value: opt, text: opt });
+                        if (element.defaultValue && element.defaultValue === opt) {
+                            optionEl.selected = true;
                         }
                     }
+                    if (element.defaultValue && !optionValues.includes(element.defaultValue)) {
+                        element.defaultValue = undefined;
+                        if (placeholderOption) placeholderOption.selected = true;
+                    }
                 }
-                select.onchange = () => {
-                    const value = select.value || undefined;
-                    if (value === element.defaultValue) return;
-                    element.defaultValue = value;
-                    this.finalizeInlineMutation(element);
-                };
-            } else {
-                const search = controlWrapper.createEl("input", {
-                    cls: "sm-le-preview__input",
-                    attr: { type: "search", placeholder: element.placeholder ?? "Suchen…" },
-                }) as HTMLInputElement;
-                searchInput = search;
-                search.value = element.defaultValue ?? "";
-                let lastValue = search.value;
-                search.addEventListener("input", () => {
-                    element.defaultValue = search.value ? search.value : undefined;
-                });
-                search.addEventListener("blur", () => {
-                    const next = search.value;
-                    if (next === lastValue) return;
-                    lastValue = next;
-                    element.defaultValue = next ? next : undefined;
-                    this.finalizeInlineMutation(element);
-                });
+                if (element.type === "search-dropdown") {
+                    const searchInput = (select as any)._smSearchInput as HTMLInputElement | undefined;
+                    if (searchInput) {
+                        searchInput.value = element.defaultValue ?? "";
+                        searchInput.placeholder = placeholderText;
+                    }
+                }
+            };
+
+            renderSelectOptions();
+            if (element.type === "search-dropdown") {
+                enhanceSelectToSearch(select, element.placeholder ?? defaultPlaceholder);
+                const searchInput = (select as any)._smSearchInput as HTMLInputElement | undefined;
+                if (searchInput) {
+                    searchInput.value = element.defaultValue ?? "";
+                }
             }
 
-            const meta = preview.createDiv({ cls: "sm-le-preview__meta" });
-            createPlaceholderEditor(meta, "Platzhalter hinzufügen…", element.placeholder, next => {
+            select.onchange = () => {
+                const value = select.value || undefined;
+                if (value === element.defaultValue) return;
+                element.defaultValue = value;
+                if (element.type === "search-dropdown") {
+                    const searchInput = (select as any)._smSearchInput as HTMLInputElement | undefined;
+                    if (searchInput) {
+                        searchInput.value = value ?? "";
+                    }
+                }
+                this.finalizeInlineMutation(element);
+            };
+
+            const descHost = setting.descEl ?? setting.infoEl.createDiv({ cls: "setting-item-description" });
+            createPlaceholderEditor(descHost, "Platzhalter hinzufügen…", element.placeholder, next => {
                 element.placeholder = next;
-                if (placeholderOption) {
-                    placeholderOption.setText(next ?? "Option wählen…");
-                }
-                if (searchInput) {
-                    searchInput.placeholder = next ?? "Suchen…";
-                }
+                renderSelectOptions();
             });
 
-            const optionList = preview.createDiv({ cls: "sm-le-inline-options" });
-            if (!options.length) {
-                optionList.createDiv({ cls: "sm-le-inline-options__empty", text: "Noch keine Optionen." });
-            } else {
-                options.forEach((opt, index) => {
+            const optionList = descHost.createDiv({ cls: "sm-le-inline-options" });
+            const renderOptionList = () => {
+                optionList.empty();
+                const optionValues = element.options ?? [];
+                if (!optionValues.length) {
+                    optionList.createDiv({ cls: "sm-le-inline-options__empty", text: "Noch keine Optionen." });
+                    return;
+                }
+                optionValues.forEach((opt, index) => {
                     const row = optionList.createDiv({ cls: "sm-le-inline-option" });
-                    this.createInlineEditor({
+                    const editor = this.createInlineEditor({
                         parent: row,
                         value: opt,
                         placeholder: "Option…",
@@ -698,9 +735,11 @@ export class LayoutEditorView extends ItemView {
                             if (element.defaultValue && element.defaultValue === opt) {
                                 element.defaultValue = next;
                             }
+                            renderSelectOptions();
                             this.finalizeInlineMutation(element);
                         },
-                    }).addClass("sm-le-inline-option__label");
+                    });
+                    editor.addClass("sm-le-inline-option__label");
                     const remove = row.createSpan({ cls: "sm-le-inline-option__remove", text: "✕" });
                     remove.onclick = ev => {
                         ev.preventDefault();
@@ -709,17 +748,23 @@ export class LayoutEditorView extends ItemView {
                         if (element.defaultValue && !nextOptions.includes(element.defaultValue)) {
                             element.defaultValue = undefined;
                         }
+                        renderSelectOptions();
+                        renderOptionList();
                         this.finalizeInlineMutation(element);
                     };
                 });
-            }
-            const addOption = preview.createEl("button", { cls: "sm-le-inline-add", text: "Option hinzufügen" });
+            };
+            renderOptionList();
+
+            const addOption = descHost.createEl("button", { cls: "sm-le-inline-add", text: "Option hinzufügen" });
             addOption.onclick = ev => {
                 ev.preventDefault();
                 const nextOptions = [...(element.options ?? [])];
-                const label = `Option ${nextOptions.length + 1}`;
-                nextOptions.push(label);
+                const labelText = `Option ${nextOptions.length + 1}`;
+                nextOptions.push(labelText);
                 element.options = nextOptions;
+                renderSelectOptions();
+                renderOptionList();
                 this.finalizeInlineMutation(element);
             };
             return;
@@ -784,8 +829,8 @@ export class LayoutEditorView extends ItemView {
                           ["end", "Unten"],
                           ["stretch", "Höhe"],
                       ];
-            for (const [value, label] of alignOptions) {
-                const option = alignSelect.createEl("option", { value, text: label });
+            for (const [value, labelText] of alignOptions) {
+                const option = alignSelect.createEl("option", { value, text: labelText });
                 if (layout.align === value) option.selected = true;
             }
             alignSelect.onchange = () => {
@@ -813,13 +858,14 @@ export class LayoutEditorView extends ItemView {
             return;
         }
 
-        // Default fallback
-        this.createInlineEditor({
-            parent: preview,
+        const fallback = createSetting();
+        const label = this.createInlineEditor({
+            parent: fallback.nameEl,
             value: element.label,
             placeholder: "Label eingeben…",
             onCommit: commitLabel,
         });
+        label.addClass("setting-item-name");
     }
 
     private render() {
@@ -947,7 +993,7 @@ export class LayoutEditorView extends ItemView {
         }
     }
 
-    private createElement(type: LayoutElementType) {
+    private createElement(type: LayoutElementType, options?: { parentId?: string | null }) {
         const def = ELEMENT_DEFINITION_LOOKUP.get(type);
         const width = def ? def.width : Math.min(240, Math.max(160, Math.round(this.canvasWidth * 0.25)));
         const height = def ? def.height : Math.min(160, Math.max(120, Math.round(this.canvasHeight * 0.25)));
@@ -972,8 +1018,18 @@ export class LayoutEditorView extends ItemView {
             element.children = [];
         }
 
-        const selected = this.selectedElementId ? this.elements.find(el => el.id === this.selectedElementId) : null;
-        const parentContainer = selected && isContainerElement(selected) && !isContainerType(type) ? selected : null;
+        const requestedParentId = !isContainerType(type) ? options?.parentId ?? null : null;
+        let parentContainer: (LayoutElement & { type: LayoutContainerType }) | null = null;
+        if (requestedParentId) {
+            const candidate = this.elements.find(el => el.id === requestedParentId);
+            if (candidate && isContainerElement(candidate)) {
+                parentContainer = candidate;
+            }
+        }
+        if (!parentContainer) {
+            const selected = this.selectedElementId ? this.elements.find(el => el.id === this.selectedElementId) : null;
+            parentContainer = selected && isContainerElement(selected) && !isContainerType(type) ? selected : null;
+        }
         if (parentContainer) {
             element.parentId = parentContainer.id;
             const padding = parentContainer.layout.padding;
@@ -1749,6 +1805,24 @@ export class LayoutEditorView extends ItemView {
                 element.layout!.align = next;
                 this.applyContainerLayout(element);
                 this.pushHistory();
+            };
+
+            const quickAddField = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
+            quickAddField.createEl("label", { text: "Neues Element erstellen" });
+            const quickAddBtn = quickAddField.createEl("button", { text: "Element hinzufügen" });
+            quickAddBtn.classList.add("sm-le-inline-add", "sm-le-inline-add--menu");
+            quickAddBtn.onclick = ev => {
+                ev.preventDefault();
+                const menu = new Menu();
+                for (const def of ELEMENT_DEFINITIONS) {
+                    menu.addItem(item => {
+                        item.setTitle(def.buttonLabel);
+                        item.onClick(() => {
+                            this.createElement(def.type, { parentId: element.id });
+                        });
+                    });
+                }
+                menu.showAtMouseEvent(ev);
             };
 
             const childField = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
