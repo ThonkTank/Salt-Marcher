@@ -1,0 +1,16 @@
+{
+  "name": "layout-editor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "build": "node scripts/generate-component-manifest.mjs && node esbuild.config.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.5",
+    "typescript": "^5.5.4",
+    "@types/node": "^20.12.12",
+    "obsidian": "^1.6.0"
+  }
+}

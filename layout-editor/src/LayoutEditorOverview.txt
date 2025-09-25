@@ -1,0 +1,164 @@
+# Layout Editor – Overview
+
+Der Layout Editor ist nun als vollständig eigenständiges Obsidian-Plugin verpackt. `main.ts` registriert den View, stellt ein API-Objekt für andere Erweiterungen bereit und injiziert das dedizierte Styling aus `css.ts`. Alle Persistenz- und Registry-Funktionen liegen weiterhin in `src/` und werden über `index.ts` gebündelt exportiert.
+
+## Struktur
+
+```
+plugins/layout-editor/
+├─ manifest.json          # Eigenes Obsidian-Manifest (lädt das gebündelte main.js)
+├─ esbuild.config.mjs     # Build-Skript (bundelt src/main.ts → main.js)
+├─ package.json           # Dev-Abhängigkeiten & Build-Skript
+├─ package-lock.json      # Feste Auflösung der Dev-Abhängigkeiten
+├─ tsconfig.json          # TypeScript-Konfiguration des Plugins
+├─ main.js                # Gebündeltes Plugin-Artefakt (per esbuild erzeugt)
+└─ src/
+   ├─ main.ts             # Plugin-Bootstrap (View, Ribbon/Command, API, CSS-Injektion)
+   ├─ css.ts              # Layout-Editor-Styling als Template-String
+   ├─ index.ts            # Öffentliche Re-Exports (Plugin-Klasse, API, Registry, Library)
+   ├─ seed-layouts.ts     # Legt Standard-Layouts im Vault an (z. B. Kreaturenvorlage)
+   ├─ LayoutEditorOverview.txt  # Diese Übersicht
+   ├─ elements/ui.ts      # UI-Komponenten (Buttons, Felder, Status) für View & Modals
+   ├─ attribute-popover.ts # Attribute-Popover inkl. Events & Sync
+   ├─ definitions.ts       # Element-/Attribut-Registry + Label-Helfer & Defaults
+   ├─ elements/
+   │  ├─ base.ts           # Gemeinsame Interfaces für Komponenten (Preview/Inspector)
+   │  ├─ registry.ts       # Lädt automatisch alle Komponenten aus ./components
+   │  ├─ shared/
+   │  │  ├─ component-bases.ts # Abstrakte Basiskomponenten für Container-, Feld- & Select-Elemente
+   │  │  └─ container-preview.ts # Gemeinsamer Preview-Renderer für Container
+   │  └─ components/       # Drop-in-Komponenten pro Elementtyp (Preview, Inspector, Defaults)
+   ├─ element-preview.ts   # Canvas-Vorschau delegiert an Element-Komponenten
+   ├─ element-picker-modal.ts # Element-Browser mit Baumansicht für das Hinzufügen neuer Typen
+   ├─ history.ts           # Undo/Redo-Verwaltung für LayoutSnapshots
+   ├─ inline-edit.ts       # Generischer ContentEditable-Editor für Inline-Bearbeitung
+   ├─ inspector-panel.ts   # Inspector-Rendering (Formfelder, Container-Steuerung, Attribute-Trigger)
+   ├─ layout-library.ts    # Persistenz-Layer für gespeicherte Layouts (Vault JSON)
+   ├─ layout-picker-modal.ts # Modal zur Auswahl gespeicherter Layouts aus der Bibliothek
+   ├─ name-input-modal.ts  # Leichtgewichtiger Modal zum Benennen neuer Layouts
+   ├─ search-dropdown.ts   # Autocomplete-Helfer für Select-Elemente
+   ├─ types.ts             # Gemeinsame Typen für Elemente, Container & Snapshots
+   ├─ ui/
+   │  ├─ editor-menu.ts    # Kontextmenü-Komponente für Inspector & weitere Schnellaktionen
+   │  └─ element-tree.ts   # Generische Baumansicht mit ein-/ausklappbaren Gruppen für den Element-Browser
+   └─ utils.ts             # Hilfsfunktionen (clamp, Deep-Clones, Vergleichs-Utilities)
+```
+
+## Features & Verantwortlichkeiten
+
+- **Plugin-Einstieg (`main.ts`):** Registriert den `LayoutEditorView`, richtet Ribbon-Icon und Command ein, injiziert die Styles aus `css.ts` und stellt über `getApi()` ein `LayoutEditorPluginApi` bereit (Open-View, Registry-Hooks, Layout-Library-Funktionen).
+- **Eigenes Styling (`css.ts`):** Enthält das komplette Layout-Editor-CSS. Wird ausschließlich vom Layout-Editor-Plugin injiziert und kollidiert somit nicht länger mit SaltMarcher-spezifischem Styling.
+- **Layout-Arbeitsfläche & Kamera:** Dreigeteilte Arbeitsumgebung mit Strukturbaum links, Canvas in der Mitte und Inspector rechts. Panning, Zoom und Panel-Resizer halten Bounds-Clamping und Fokusverhalten konsistent.
+- **Struktur-Überblick:** Interaktiver Baum mit Drag & Drop zur Container-Neuzuordnung (inkl. Root-Drop-Zone) und zyklusgesicherter Elternwahl. Inspector- und Baum-Breiten lassen sich über Trenner anpassen.
+- **Elementbibliothek & Registry:** Der „+ Element“-Trigger öffnet den `ElementPickerModal`, der alle Definitionen als einklappbare Baumstruktur darstellt. Registry-Änderungen aktualisieren die Baumansicht live, neue Komponenten landen weiterhin nur unter `src/elements/components/`.
+- **Elements-UI:** Header, Inspector, Menüs und Modals verwenden die generischen Buttons, Felder und Statusanzeigen aus `elements/ui.ts`, damit der Editor vollständig auf Elements-Komponenten basiert.
+- **Komponentenbasierte Elemente:** `elements/` bündelt Preview-, Inspector- und Default-Logik je Elementtyp und reduziert Redundanz bei neuen UI-Elementen. Gemeinsame Eigenschaften (z. B. Container-Layout, Select- oder Textfeld-Verhalten) liegen nun in `shared/component-bases.ts` und werden von konkreten Komponenten geerbt.
+- **Container-Layout:** Box-, VBox- und HBox-Container verwalten Gap, Padding und Align sowie verschachtelte Kinder. Inspector und Baum unterstützen das schnelle Hinzufügen und Neuzuordnen von Elementen.
+- **Direkte Bearbeitung & Inspector:** Canvas rendert echte UI-Elemente. Freie Texte lassen sich inline editieren, alle Meta-Informationen pflegst du im Inspector (Labels, Placeholder, Optionen, Layout-Werte).
+- **Vorschau & Inline-Editing:** `element-preview.ts` erzeugt realistische Vorschauen; `inline-edit.ts` kapselt ContentEditable inklusive Placeholder/Trim-Logik.
+- **Attribute-Popover:** `attribute-popover.ts` verwaltet Öffnen, Positionierung und Callbacks, sodass Inspector, Canvas und Historie synchron bleiben.
+- **Undo/Redo-Historie:** `history.ts` kapselt Snapshot-Verwaltung; `view.ts` bindet sie an Shortcuts (Strg+Z / Umschalt+Strg+Z) und automatische Pushes bei Mutationen.
+- **Export & Layout-Library:** `view.ts` erstellt JSON-Exporte; `layout-library.ts` persistiert Layouts unter `LayoutEditor/Layouts/<id>.json`, listet vorhandene Layouts und lädt sie erneut. Die IDs werden dabei konsequent aus dem Dateinamen abgeleitet, sodass auch manuell importierte oder umbenannte Layout-Dateien gefunden werden. `seed-layouts.ts` sorgt beim Plugin-Start dafür, dass ein Standardlayout („Layout Editor – Kreaturenvorlage“) als JSON im Vault vorhanden ist.
+- **Layout-Bibliothek Import:** `layout-picker-modal.ts` und `view.ts` öffnen gespeicherte Layouts aus der Bibliothek und setzen Canvas/Einstellungen entsprechend zurück.
+
+## Datenfluss
+
+1. **Interaktionen** (Drag, Resize, Inspector, Inline): verändern `LayoutElement`-Strukturen.
+2. **`view.ts`** synchronisiert Canvas, Inspector, Export und Statusmeldungen; ruft Hilfs-Renderer und Historie auf.
+3. **`history.ts`** erzeugt Snapshots; Undo/Redo ruft `restoreSnapshot` und aktualisiert View + Inspector.
+4. **Registry-Events** aus `definitions.ts` triggern Aktualisierungen im Element-Browser und Inspector.
+5. **Attribute-Popover** sendet Änderungen via Callbacks zurück an `view.ts`; dort werden Export, Historie und Inspector synchronisiert.
+6. **Layout-Library** speichert/liest Layout-JSON über `layout-library.ts` und liefert Metadaten (timestamps, Name, Maße) zurück an die View.
+
+## Dateibeschreibungen
+
+### `main.ts`
+- Bootstrap des Plugins: registriert View, Ribbon-Icon und Command.
+- Stellt `LayoutEditorPluginApi` bereit (Open-View, Registry- und Library-Methoden).
+- Die API-Weiterleitungen binden die Registry-Helfer (`registerLayoutElementDefinition`/`unregisterLayoutElementDefinition`) explizit ein, damit die gebündelte Ausgabe keine fehlenden Referenzen mehr enthält.
+- Integriert CSS-Injektion und sorgt beim Unload für Cleanup sowie Registry-Reset auf Default-Definitionen.
+
+### `css.ts`
+- Kapselt das komplette Layout-Editor-Styling als Template-String.
+- Wird nur vom Layout-Editor-Plugin geladen, um Konflikte mit anderen Plugins zu vermeiden.
+
+### `index.ts`
+- Re-exportiert Plugin-Klasse, API-Typ, Registry- und Library-Hilfen für Drittcode.
+
+### `seed-layouts.ts`
+- Definiert ein Start-Layout (Kreaturenformular) als `LayoutBlueprint`.
+- Prüft beim Plugin-Load, ob das Layout bereits in `LayoutEditor/Layouts` existiert und legt es ansonsten via `saveLayoutToLibrary` an.
+- Stellt damit sicher, dass der Vault immer mindestens ein bearbeitbares Layout ausliefert.
+
+### `view.ts`
+- Implementiert `LayoutEditorView` (`ItemView`).
+- Baut Header („+ Element“-Button, Import, Status), Struktur-Baum, Stage mit Kamera, Inspector, Exportbereich und Sandbox auf – alle Controls basieren auf `elements/ui.ts`.
+- Verwaltet State (Selektion, Historie, Canvas) und orchestriert Hilfs-Module.
+- Öffnet gespeicherte Layouts über den `LayoutPickerModal` und setzt Canvas/Elemente inklusive Historie zurück.
+
+### `definitions.ts`
+- Enthält Element-Definitionen, Attribute-Gruppen und Registry-API (`registerLayoutElementDefinition`, `unregisterLayoutElementDefinition`, `onLayoutElementDefinitionsChanged`).
+
+### `elements/base.ts`
+- Definiert gemeinsame Interfaces für Komponenten (Preview/Inspector-Kontext, Utility-Hooks).
+
+### `elements/registry.ts`
+- Lädt zur Build-Zeit automatisch alle Komponenten unter `elements/components/` und stellt Lookup-Helfer bereit.
+
+### `elements/components/*`
+- Eine Datei pro UI-Element (Label, Textfeld, Container usw.). Enthält Definition, Preview-Renderer, Inspector-Logik und Default-Werte. Container-, Select- und Textfeld-Elemente erweitern die abstrakten Basisklassen aus `shared/component-bases.ts` und erben so Layout-, Optionen- bzw. Value-Handling.
+
+### `elements/shared/component-bases.ts`
+- Stellt abstrakte Basisklassen für generische UI-Komponenten bereit.
+- `FieldComponent` bündelt gemeinsames Label-/Placeholder-Verhalten für Feld-Elemente.
+- `TextFieldComponent` erweitert `FieldComponent` um Text-/Textarea-Steuerung inklusive Value-Sync.
+- `ContainerComponent` kapselt Preview, Inspector und Default-Layout-Initialisierung für Container.
+- `SelectComponent` erweitert `FieldComponent` und teilt das Verhalten für Dropdown-Elemente (mit/ohne Suche) inklusive Placeholder- und Optionen-Handling.
+
+### `layout-library.ts`
+- Persistiert Layouts als JSON-Dateien im Vault-Ordner `LayoutEditor/Layouts`.
+- Liefert `saveLayoutToLibrary`, `listSavedLayouts`, `loadSavedLayout` für wiederverwendbare Layout-Bibliotheken.
+- Erzwingt, dass die Layout-ID dem Dateinamen entspricht, damit der Import auch bei manuell hinzugefügten oder umbenannten Dateien zuverlässig funktioniert.
+
+### `name-input-modal.ts`
+- Stellt einen schlanken Modal zur Verfügung, um Layout-Namen einzutippen (inkl. Enter-Shortcut und CTA-Button).
+- Baut Formular und CTA vollständig mit `elements/ui.ts` auf und verzichtet auf Obsidian-spezifische Controls.
+
+### `search-dropdown.ts`
+- Verwandelt native `<select>`-Elemente in durchsuchbare Dropdowns (Suchfeld, Keyboard-Navigation, Menü-Rendering).
+
+### `history.ts`
+- Snapshot-Verwaltung inkl. Undo/Redo-Logik und Wiederherstellungs-Callback.
+
+### `inline-edit.ts`
+- ContentEditable-Helfer mit Placeholder-, Trim- und Multiline-Unterstützung.
+
+### `element-picker-modal.ts`
+- Öffnet die neue Baumansicht für das Hinzufügen von Elementen über den „+ Element“-Button.
+- Filtert Definitionen per Suchfeld und ruft `renderElementTree` zur Darstellung der Hierarchie auf.
+
+### `ui/element-tree.ts`
+- Stellt eine generische, einklappbare Baum-Komponente bereit (eigene Styles, keine Obsidian-Controls).
+- Nutzt Buttons aus dem Elements-Designsystem und informiert Callbacks über die Auswahl einzelner Blätter.
+
+### `ui/editor-menu.ts`
+- Implementiert das kontextsensitive Menü des Layout-Editors.
+- Stellt Keyboard- und Pointer-Handling bereit (Escape, Outside-Click) und kapselt das Positioning relativ zum Auslöser (z. B. im Inspector).
+
+### `element-preview.ts`
+- Delegiert das Rendering an die registrierten Komponenten und kapselt das gemeinsame Inline-Editing.
+
+### `inspector-panel.ts`
+- Baut den Inspector komplett mit Elements-UI-Komponenten und ruft Komponenten-Hooks für element-spezifische Felder auf (Label, Placeholder, Optionen, Layout).
+
+### `attribute-popover.ts`
+- Verwaltet Popover-Lifecycle (Öffnen, Fokus, Events) und synchronisiert ausgewählte Attribute.
+
+### `utils.ts`
+- Bietet Utility-Funktionen (Clamping, Deep-Clones, Vergleich) für View und Historie.
+
+### `types.ts`
+- Typisiert LayoutElemente, Container-Konfigurationen, Registry-Definitionen und gespeicherte Layouts.
+
+### `layout-picker-modal.ts`
+- Stellt einen Modal mit Such-Dropdown bereit, um gespeicherte Layouts auszuwählen und die Auswahl an `view.ts` zurückzumelden – inklusive Elements-Buttons, -Selects und Statusmeldungen.
