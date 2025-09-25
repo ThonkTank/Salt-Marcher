@@ -22,6 +22,9 @@ plugins/layout-editor/
    ├─ elements/
    │  ├─ base.ts           # Gemeinsame Interfaces für Komponenten (Preview/Inspector)
    │  ├─ registry.ts       # Lädt automatisch alle Komponenten aus ./components
+   │  ├─ shared/
+   │  │  ├─ component-bases.ts # Abstrakte Basiskomponenten für Container & Selektoren
+   │  │  └─ container-preview.ts # Gemeinsamer Preview-Renderer für Container
    │  └─ components/       # Drop-in-Komponenten pro Elementtyp (Preview, Inspector, Defaults)
    ├─ element-preview.ts   # Canvas-Vorschau delegiert an Element-Komponenten
    ├─ history.ts           # Undo/Redo-Verwaltung für LayoutSnapshots
@@ -44,7 +47,7 @@ plugins/layout-editor/
 - **Layout-Arbeitsfläche & Kamera:** Dreigeteilte Arbeitsumgebung mit Strukturbaum links, Canvas in der Mitte und Inspector rechts. Panning, Zoom und Panel-Resizer halten Bounds-Clamping und Fokusverhalten konsistent.
 - **Struktur-Überblick:** Interaktiver Baum mit Drag & Drop zur Container-Neuzuordnung (inkl. Root-Drop-Zone) und zyklusgesicherter Elternwahl. Inspector- und Baum-Breiten lassen sich über Trenner anpassen.
 - **Palette & Registry:** Element-Palette horcht auf Registry-Änderungen und liest Gruppen direkt aus den Komponentendefinitionen. Neue Element-Typen müssen nur als Datei in `src/elements/components/` landen – Palette und Inspector-Menüs greifen sie automatisch auf.
-- **Komponentenbasierte Elemente:** `elements/` bündelt Preview-, Inspector- und Default-Logik je Elementtyp und reduziert Redundanz bei neuen UI-Elementen.
+- **Komponentenbasierte Elemente:** `elements/` bündelt Preview-, Inspector- und Default-Logik je Elementtyp und reduziert Redundanz bei neuen UI-Elementen. Gemeinsame Eigenschaften (z. B. Container-Layout oder Select-Verhalten) liegen nun in `shared/component-bases.ts` und werden von konkreten Komponenten geerbt.
 - **Container-Layout:** Box-, VBox- und HBox-Container verwalten Gap, Padding und Align sowie verschachtelte Kinder. Inspector und Baum unterstützen das schnelle Hinzufügen und Neuzuordnen von Elementen.
 - **Direkte Bearbeitung & Inspector:** Canvas rendert echte UI-Elemente. Freie Texte lassen sich inline editieren, alle Meta-Informationen pflegst du im Inspector (Labels, Placeholder, Optionen, Layout-Werte).
 - **Vorschau & Inline-Editing:** `element-preview.ts` erzeugt realistische Vorschauen; `inline-edit.ts` kapselt ContentEditable inklusive Placeholder/Trim-Logik.
@@ -93,7 +96,12 @@ plugins/layout-editor/
 - Lädt zur Build-Zeit automatisch alle Komponenten unter `elements/components/` und stellt Lookup-Helfer bereit.
 
 ### `elements/components/*`
-- Eine Datei pro UI-Element (Label, Textfeld, Container usw.). Enthält Definition, Preview-Renderer, Inspector-Logik und Default-Werte.
+- Eine Datei pro UI-Element (Label, Textfeld, Container usw.). Enthält Definition, Preview-Renderer, Inspector-Logik und Default-Werte. Container- und Select-Elemente erweitern die abstrakten Basisklassen aus `shared/component-bases.ts` und erben so Layout- bzw. Optionslogik.
+
+### `elements/shared/component-bases.ts`
+- Stellt abstrakte Basisklassen für generische UI-Komponenten bereit.
+- `ContainerComponent` kapselt Preview, Inspector und Default-Layout-Initialisierung für Container.
+- `SelectComponent` teilt das Verhalten für Dropdown-Elemente (mit/ohne Suche) inklusive Placeholder- und Optionen-Handling.
 
 ### `layout-library.ts`
 - Persistiert Layouts als JSON-Dateien im Vault-Ordner `LayoutEditor/Layouts`.
