@@ -1,5 +1,5 @@
 // src/plugins/layout-editor/view.ts
-import { ItemView, Menu, Notice } from "obsidian";
+import { ItemView, Notice } from "obsidian";
 import {
     MIN_ELEMENT_SIZE,
     getElementDefinition,
@@ -24,10 +24,10 @@ import { clamp, cloneLayoutElement, collectDescendantIds, isContainerElement } f
 import { listSavedLayouts, loadSavedLayout, saveLayoutToLibrary } from "./layout-library";
 import { NameInputModal } from "./name-input-modal";
 import { LayoutPickerModal } from "./layout-picker-modal";
+import { renderPalette } from "./ui/add-palette";
+import { getLayoutElementComponent } from "./elements/registry";
 
 export const VIEW_LAYOUT_EDITOR = "salt-layout-editor";
-const DEFAULT_INPUT_TYPES = new Set<string>(["text-input", "textarea", "dropdown", "search-dropdown"]);
-
 export class LayoutEditorView extends ItemView {
     private elements: LayoutElement[] = [];
     private selectedElementId: string | null = null;
@@ -353,55 +353,11 @@ export class LayoutEditorView extends ItemView {
 
     private renderAddPalette() {
         if (!this.addPaletteEl) return;
-        const host = this.addPaletteEl;
-        host.empty();
-        const containers: LayoutElementDefinition[] = [];
-        const inputs: LayoutElementDefinition[] = [];
-        const others: LayoutElementDefinition[] = [];
-        for (const def of this.elementDefinitions) {
-            const paletteGroup = def.paletteGroup ?? (def.category === "container" ? "container" : undefined);
-            if (paletteGroup === "container" || isContainerType(def.type)) {
-                containers.push(def);
-                continue;
-            }
-            if (paletteGroup === "input" || DEFAULT_INPUT_TYPES.has(def.type)) {
-                inputs.push(def);
-                continue;
-            }
-            others.push(def);
-        }
-        for (const def of others) {
-            const btn = host.createEl("button", { text: def.buttonLabel });
-            btn.onclick = () => this.createElement(def.type);
-        }
-        if (inputs.length) {
-            const inputBtn = host.createEl("button", { text: "Eingabefelder" });
-            inputBtn.onclick = event => {
-                event.preventDefault();
-                const menu = new Menu();
-                for (const def of inputs) {
-                    menu.addItem(item => {
-                        item.setTitle(def.buttonLabel);
-                        item.onClick(() => this.createElement(def.type));
-                    });
-                }
-                menu.showAtMouseEvent(event);
-            };
-        }
-        if (containers.length) {
-            const containerBtn = host.createEl("button", { text: "Container" });
-            containerBtn.onclick = event => {
-                event.preventDefault();
-                const menu = new Menu();
-                for (const def of containers) {
-                    menu.addItem(item => {
-                        item.setTitle(def.buttonLabel);
-                        item.onClick(() => this.createElement(def.type));
-                    });
-                }
-                menu.showAtMouseEvent(event);
-            };
-        }
+        renderPalette({
+            host: this.addPaletteEl,
+            definitions: this.elementDefinitions,
+            onCreate: type => this.createElement(type),
+        });
     }
 
     private findDefinition(type: LayoutElementType): LayoutElementDefinition | undefined {
@@ -1284,16 +1240,21 @@ export class LayoutEditorView extends ItemView {
 
     private ensureContainerDefaults(element: LayoutElement) {
         if (!isContainerType(element.type)) return;
-        if (!element.layout) {
-            const def = this.findDefinition(element.type);
-            if (def?.defaultLayout) {
-                element.layout = { ...def.defaultLayout };
-            } else {
-                element.layout = { gap: 16, padding: 16, align: "stretch" };
+        const component = getLayoutElementComponent(element.type);
+        if (component?.ensureDefaults) {
+            component.ensureDefaults(element);
+        } else {
+            if (!element.layout) {
+                const def = this.findDefinition(element.type);
+                if (def?.defaultLayout) {
+                    element.layout = { ...def.defaultLayout };
+                } else {
+                    element.layout = { gap: 16, padding: 16, align: "stretch" };
+                }
             }
-        }
-        if (!Array.isArray(element.children)) {
-            element.children = [];
+            if (!Array.isArray(element.children)) {
+                element.children = [];
+            }
         }
     }
 
