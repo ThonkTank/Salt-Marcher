@@ -16,6 +16,7 @@ plugins/layout-editor/
    ├─ main.ts             # Plugin-Bootstrap (View, Ribbon/Command, API, CSS-Injektion)
    ├─ css.ts              # Layout-Editor-Styling als Template-String
    ├─ index.ts            # Öffentliche Re-Exports (Plugin-Klasse, API, Registry, Library)
+   ├─ seed-layouts.ts     # Legt Standard-Layouts im Vault an (z. B. Kreaturenvorlage)
    ├─ LayoutEditorOverview.txt  # Diese Übersicht
    ├─ elements/ui.ts      # UI-Komponenten (Buttons, Felder, Status) für View & Modals
    ├─ attribute-popover.ts # Attribute-Popover inkl. Events & Sync
@@ -57,7 +58,7 @@ plugins/layout-editor/
 - **Vorschau & Inline-Editing:** `element-preview.ts` erzeugt realistische Vorschauen; `inline-edit.ts` kapselt ContentEditable inklusive Placeholder/Trim-Logik.
 - **Attribute-Popover:** `attribute-popover.ts` verwaltet Öffnen, Positionierung und Callbacks, sodass Inspector, Canvas und Historie synchron bleiben.
 - **Undo/Redo-Historie:** `history.ts` kapselt Snapshot-Verwaltung; `view.ts` bindet sie an Shortcuts (Strg+Z / Umschalt+Strg+Z) und automatische Pushes bei Mutationen.
-- **Export & Layout-Library:** `view.ts` erstellt JSON-Exporte; `layout-library.ts` persistiert Layouts unter `LayoutEditor/Layouts/<id>.json`, listet vorhandene Layouts und lädt sie erneut.
+- **Export & Layout-Library:** `view.ts` erstellt JSON-Exporte; `layout-library.ts` persistiert Layouts unter `LayoutEditor/Layouts/<id>.json`, listet vorhandene Layouts und lädt sie erneut. `seed-layouts.ts` sorgt beim Plugin-Start dafür, dass ein Standardlayout („Layout Editor – Kreaturenvorlage“) als JSON im Vault vorhanden ist.
 - **Layout-Bibliothek Import:** `layout-picker-modal.ts` und `view.ts` öffnen gespeicherte Layouts aus der Bibliothek und setzen Canvas/Einstellungen entsprechend zurück.
 
 ## Datenfluss
@@ -83,6 +84,11 @@ plugins/layout-editor/
 
 ### `index.ts`
 - Re-exportiert Plugin-Klasse, API-Typ, Registry- und Library-Hilfen für Drittcode.
+
+### `seed-layouts.ts`
+- Definiert ein Start-Layout (Kreaturenformular) als `LayoutBlueprint`.
+- Prüft beim Plugin-Load, ob das Layout bereits in `LayoutEditor/Layouts` existiert und legt es ansonsten via `saveLayoutToLibrary` an.
+- Stellt damit sicher, dass der Vault immer mindestens ein bearbeitbares Layout ausliefert.
 
 ### `view.ts`
 - Implementiert `LayoutEditorView` (`ItemView`).
