@@ -1807,6 +1807,7 @@ var import_obsidian = require("obsidian");
 var LAYOUT_FOLDER = "LayoutEditor/Layouts";
 var LEGACY_LAYOUT_FOLDERS = ["Layout Editor/Layouts"];
 var LAYOUT_FOLDER_CANDIDATES = [LAYOUT_FOLDER, ...LEGACY_LAYOUT_FOLDERS];
+var FORBIDDEN_ID_CHARS = /[\\/]/;
 async function ensureFolderPath(app, folderPath) {
   const normalized = (0, import_obsidian.normalizePath)(folderPath);
   const segments = normalized.split("/").filter(Boolean);
@@ -1861,8 +1862,24 @@ function createId() {
   }
   return `layout-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
 }
+function resolveLayoutId(candidate) {
+  if (!candidate) {
+    return createId();
+  }
+  const trimmed = candidate.trim();
+  if (!trimmed) {
+    return createId();
+  }
+  if (FORBIDDEN_ID_CHARS.test(trimmed)) {
+    throw new Error("Layout-ID darf keine Pfadtrenner enthalten.");
+  }
+  if (trimmed === "." || trimmed === "..") {
+    throw new Error("Layout-ID ist ung\xFCltig.");
+  }
+  return trimmed;
+}
 async function saveLayoutToLibrary(app, payload) {
-  const id = payload.id ?? createId();
+  const id = resolveLayoutId(payload.id);
   const fileName = createFileName(id);
   let existing = findLayoutFile(app, fileName);
   const targetPath = (0, import_obsidian.normalizePath)(`${LAYOUT_FOLDER}/${fileName}`);
@@ -1870,12 +1887,15 @@ async function saveLayoutToLibrary(app, payload) {
     await ensureLayoutFolder(app);
   }
   const now = (/* @__PURE__ */ new Date()).toISOString();
+  const canvasWidth = ensureCanvasDimension(payload.canvasWidth, "Breite");
+  const canvasHeight = ensureCanvasDimension(payload.canvasHeight, "H\xF6he");
+  const elements = normalizeElementsStrict(payload.elements);
   const entry = {
     id,
     name: sanitizeName(payload.name),
-    canvasWidth: payload.canvasWidth,
-    canvasHeight: payload.canvasHeight,
-    elements: payload.elements,
+    canvasWidth,
+    canvasHeight,
+    elements,
     createdAt: existing instanceof import_obsidian.TFile ? (await readLayoutMeta(app, existing))?.createdAt ?? now : now,
     updatedAt: now
   };
@@ -1887,6 +1907,12 @@ async function saveLayoutToLibrary(app, payload) {
     existing = findLayoutFile(app, fileName);
   }
   return entry;
+}
+function ensureCanvasDimension(value, label) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    throw new Error(`Ung\xFCltige ${label} f\xFCr das Layout.`);
+  }
+  return Math.round(value);
 }
 function parseDimension(value) {
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -1901,20 +1927,23 @@ function parseDimension(value) {
   return null;
 }
 function normalizeStringArray(value) {
-  if (!Array.isArray(value)) return void 0;
-  const filtered = value.filter((item) => typeof item === "string");
+  let source;
+  if (Array.isArray(value)) {
+    source = value;
+  } else if (value && typeof value === "object") {
+    source = Object.values(value);
+  } else {
+    return void 0;
+  }
+  const filtered = source.filter((item) => typeof item === "string");
   return filtered.length ? filtered : [];
 }
 function normalizeLayoutConfig(value) {
   if (!value || typeof value !== "object") return void 0;
   const layout = value;
-  const gap = parseDimension(layout.gap);
-  const padding = parseDimension(layout.padding);
-  const align = layout.align;
-  if (gap === null || padding === null) return void 0;
-  if (align !== "start" && align !== "center" && align !== "end" && align !== "stretch") {
-    return void 0;
-  }
+  const gap = parseDimension(layout.gap) ?? 0;
+  const padding = parseDimension(layout.padding) ?? 0;
+  const align = normalizeAlign(layout.align);
   return { gap, padding, align };
 }
 function normalizeElements(value) {
@@ -1952,6 +1981,28 @@ function normalizeElements(value) {
     elements.push(element);
   }
   return elements;
+}
+function normalizeElementsStrict(value) {
+  const normalized = normalizeElements(value);
+  if (!normalized) {
+    throw new Error("Layout enth\xE4lt keine g\xFCltigen Elemente.");
+  }
+  const expectedLength = Array.isArray(value) ? value.length : value && typeof value === "object" ? Object.keys(value).length : normalized.length;
+  if (expectedLength !== normalized.length) {
+    throw new Error("Mindestens ein Layout-Element enth\xE4lt ung\xFCltige Werte und konnte nicht gespeichert werden.");
+  }
+  return normalized;
+}
+function normalizeAlign(value) {
+  if (typeof value !== "string") {
+    return "stretch";
+  }
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "start" || normalized === "flex-start") return "start";
+  if (normalized === "center") return "center";
+  if (normalized === "end" || normalized === "flex-end") return "end";
+  if (normalized === "stretch" || normalized === "space-between") return "stretch";
+  return "stretch";
 }
 async function readLayoutMeta(app, file) {
   try {
@@ -2830,7 +2881,8 @@ var LayoutEditorView = class extends import_obsidian5.ItemView {
       new import_obsidian5.Notice(`Layout \u201E${saved.name}\u201D gespeichert`);
     } catch (error) {
       console.error("Failed to save layout", error);
-      new import_obsidian5.Notice("Konnte Layout nicht speichern");
+      const message = error instanceof Error && error.message ? error.message : "Konnte Layout nicht speichern";
+      new import_obsidian5.Notice(message);
     } finally {
       this.isSavingLayout = false;
       this.saveButton?.removeAttribute("disabled");
