@@ -23,7 +23,7 @@ src/apps/layout/
 - **Layout-Arbeitsfläche:** Konfigurierbare Canvas mit Breite/Höhe-Controls; alle Elemente werden mit Bounds-Clamping gerendert und können per Drag/Resize manipuliert werden.
 - **Modulare Element-Hilfen:** Element-Definitionen (Buttons, Defaults, Layout-Standards) liegen zentral in `definitions.ts`; Canvas-Rendering und Inspector greifen auf dieselben Strukturen zu.
 - **Container-Layout:** VBox-/HBox-Container verteilen Kinder automatisch (Gap, Padding, Align) und synchronisieren bei manuellen Änderungen oder Größenanpassungen.
-- **Inspector & Inline-Editing:** `inspector-panel.ts` erzeugt alle Formfelder, Container-Controls sowie Attribute-Trigger; `element-preview.ts` rendert auf der Canvas echte Obsidian-Settings mit Inline-Editoren.
+- **Inspector & Inline-Editing:** `inspector-panel.ts` erzeugt alle Formfelder, Container-Controls sowie Attribute-Trigger; `element-preview.ts` rendert auf der Canvas reduzierte UI-Elemente mit Inline-Editoren und ohne zusätzliche Panels.
 - **Attribute-Popover:** `attribute-popover.ts` verwaltet das Popover (Öffnen, Positionierung, Synchronisation) und hält Inspector sowie Canvas konsistent.
 - **Undo/Redo-Historie:** `history.ts` kapselt Snapshot-Verwaltung; `view.ts` nutzt sie für Strg+Z / Strg+Umschalt+Z sowie automatisches Pushen nach Mutationen.
 - **Export & Status:** JSON-Export (Canvas + Elemente) sowie Statusleiste werden in `view.ts` gepflegt und auf jede Mutation aktualisiert.
@@ -60,7 +60,7 @@ src/apps/layout/
 - Bietet einen generischen ContentEditable-Editor (Trim, Multiline, Placeholder) für Preview-Komponenten.
 
 ### `editor/element-preview.ts`
-- Rendert Canvas-Vorschauen als echte Obsidian-Settings, inklusive Inline-Label-/Beschreibung-/Optionen-Editoren.
+- Rendert Canvas-Vorschauen als minimalistische UI-Elemente (Labels, Inputs, Dropdowns etc.) inklusive Inline-Label-/Beschreibung-/Optionen-Editoren ohne Surrounding-Panel.
 - Delegiert Layout-spezifische Aktionen (z. B. Container-Layout, History-Push) über Callbacks an die View.
 
 ### `editor/inspector-panel.ts`
