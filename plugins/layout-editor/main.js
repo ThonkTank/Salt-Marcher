@@ -28,57 +28,6 @@ var import_obsidian7 = require("obsidian");
 // src/view.ts
 var import_obsidian6 = require("obsidian");
 
-// src/elements/shared/container-preview.ts
-function renderContainerPreview({ preview, element, elements, ensureContainerDefaults }) {
-  ensureContainerDefaults(element);
-  const frame = preview.createDiv({ cls: "sm-le-preview__container" });
-  const header = frame.createDiv({ cls: "sm-le-preview__container-header" });
-  const labelText = element.label?.trim() ?? "";
-  if (labelText) {
-    header.createSpan({ cls: "sm-le-preview__label", text: labelText });
-  } else {
-    header.style.display = "none";
-  }
-  const body = frame.createDiv({ cls: "sm-le-preview__container-body" });
-  const hasChildren = Array.isArray(element.children) ? element.children.some((childId) => elements.some((el) => el.id === childId)) : false;
-  if (!hasChildren) {
-    body.createDiv({ cls: "sm-le-preview__container-placeholder", text: "Leerer Container" });
-  }
-}
-
-// src/elements/components/box-container.ts
-var defaultLayout = { gap: 16, padding: 16, align: "stretch" };
-function ensureLayout(element) {
-  if (!element.layout) {
-    element.layout = { ...defaultLayout };
-  }
-  if (!Array.isArray(element.children)) {
-    element.children = [];
-  }
-}
-var boxContainerComponent = {
-  definition: {
-    type: "box-container",
-    buttonLabel: "BoxContainer",
-    defaultLabel: "",
-    category: "container",
-    paletteGroup: "container",
-    layoutOrientation: "vertical",
-    width: 360,
-    height: 220,
-    defaultLayout
-  },
-  renderPreview(context) {
-    renderContainerPreview(context);
-  },
-  renderInspector({ renderLabelField: renderLabelField2, renderContainerLayoutControls: renderContainerLayoutControls2 }) {
-    renderLabelField2({ label: "Bezeichnung" });
-    renderContainerLayoutControls2({});
-  },
-  ensureDefaults: ensureLayout
-};
-var box_container_default = boxContainerComponent;
-
 // src/search-dropdown.ts
 function enhanceSelectToSearch(select, placeholder = "Suchen\u2026") {
   if (!select || select._leEnhanced) return;
@@ -180,76 +129,160 @@ function enhanceSelectToSearch(select, placeholder = "Suchen\u2026") {
   select._leSearchInput = input;
 }
 
-// src/elements/components/dropdown.ts
-function renderSelect(element, preview, finalize, enableSearch) {
-  const field = preview.createEl("label", { cls: "sm-le-preview__field" });
-  const labelHost = field.createSpan({ cls: "sm-le-preview__label" });
+// src/elements/shared/container-preview.ts
+function renderContainerPreview({ preview, element, elements, ensureContainerDefaults }) {
+  ensureContainerDefaults(element);
+  const frame = preview.createDiv({ cls: "sm-le-preview__container" });
+  const header = frame.createDiv({ cls: "sm-le-preview__container-header" });
   const labelText = element.label?.trim() ?? "";
   if (labelText) {
-    labelHost.setText(labelText);
+    header.createSpan({ cls: "sm-le-preview__label", text: labelText });
   } else {
-    labelHost.style.display = "none";
+    header.style.display = "none";
   }
-  const select = field.createEl("select", { cls: "sm-le-preview__select" });
-  const defaultPlaceholder = enableSearch ? "Suchen\u2026" : "Option w\xE4hlen\u2026";
-  const renderSelectOptions = () => {
-    select.innerHTML = "";
-    const placeholderText = element.placeholder ?? defaultPlaceholder;
-    const placeholderOption = select.createEl("option", { value: "", text: placeholderText });
-    placeholderOption.disabled = true;
-    if (!element.defaultValue) {
-      placeholderOption.selected = true;
+  const body = frame.createDiv({ cls: "sm-le-preview__container-body" });
+  const hasChildren = Array.isArray(element.children) ? element.children.some((childId) => elements.some((el) => el.id === childId)) : false;
+  if (!hasChildren) {
+    body.createDiv({ cls: "sm-le-preview__container-placeholder", text: "Leerer Container" });
+  }
+}
+
+// src/elements/shared/component-bases.ts
+var ElementComponentBase = class {
+  constructor(definition) {
+    this.definition = definition;
+  }
+};
+var ContainerComponent = class extends ElementComponentBase {
+  constructor(definition, options = {}) {
+    super(definition);
+    if (!definition.defaultLayout) {
+      throw new Error(`Container component "${definition.type}" requires a default layout configuration.`);
     }
-    const optionValues = element.options && element.options.length ? element.options : null;
-    if (!optionValues) {
-      select.createEl("option", { value: "opt-1", text: "Erste Option" });
+    this.defaultLayout = { ...definition.defaultLayout };
+    this.inspectorLabel = options.inspectorLabel ?? "Bezeichnung";
+  }
+  renderPreview(context) {
+    renderContainerPreview(context);
+  }
+  renderInspector({ renderLabelField: renderLabelField2, renderContainerLayoutControls: renderContainerLayoutControls2 }) {
+    renderLabelField2({ label: this.inspectorLabel });
+    renderContainerLayoutControls2({});
+  }
+  ensureDefaults(element) {
+    if (!element.layout) {
+      element.layout = { ...this.defaultLayout };
+    }
+    if (!Array.isArray(element.children)) {
+      element.children = [];
+    }
+  }
+};
+var SelectComponent = class extends ElementComponentBase {
+  constructor(definition, options = {}) {
+    super(definition);
+    this.enableSearch = options.enableSearch ?? false;
+    this.inspectorLabel = options.inspectorLabel ?? "Bezeichnung";
+    this.placeholderInspectorLabel = options.placeholderInspectorLabel ?? "Platzhalter";
+  }
+  getDefaultPlaceholder() {
+    if (this.definition.defaultPlaceholder) {
+      return this.definition.defaultPlaceholder;
+    }
+    return this.enableSearch ? "Suchen\u2026" : "Option w\xE4hlen\u2026";
+  }
+  renderPreview({ preview, element, finalize }) {
+    const field = preview.createEl("label", { cls: "sm-le-preview__field" });
+    const labelHost = field.createSpan({ cls: "sm-le-preview__label" });
+    const labelText = element.label?.trim() ?? "";
+    if (labelText) {
+      labelHost.setText(labelText);
     } else {
-      for (const opt of optionValues) {
-        const optionEl = select.createEl("option", { value: opt, text: opt });
-        if (element.defaultValue && element.defaultValue === opt) {
-          optionEl.selected = true;
-        }
-      }
-      if (element.defaultValue && !optionValues.includes(element.defaultValue)) {
-        element.defaultValue = void 0;
+      labelHost.style.display = "none";
+    }
+    const select = field.createEl("select", { cls: "sm-le-preview__select" });
+    const fallbackPlaceholder = this.getDefaultPlaceholder();
+    const renderSelectOptions = () => {
+      select.innerHTML = "";
+      const placeholderText = element.placeholder ?? fallbackPlaceholder;
+      const placeholderOption = select.createEl("option", { value: "", text: placeholderText });
+      placeholderOption.disabled = true;
+      if (!element.defaultValue) {
         placeholderOption.selected = true;
       }
-    }
-    if (enableSearch) {
+      const optionValues = element.options && element.options.length ? element.options : null;
+      if (!optionValues) {
+        select.createEl("option", { value: "opt-1", text: "Erste Option" });
+      } else {
+        for (const opt of optionValues) {
+          const optionEl = select.createEl("option", { value: opt, text: opt });
+          if (element.defaultValue && element.defaultValue === opt) {
+            optionEl.selected = true;
+          }
+        }
+        if (element.defaultValue && !optionValues.includes(element.defaultValue)) {
+          element.defaultValue = void 0;
+          placeholderOption.selected = true;
+        }
+      }
+      if (this.enableSearch) {
+        const searchInput = select._smSearchInput;
+        if (searchInput) {
+          searchInput.value = element.defaultValue ?? "";
+          searchInput.placeholder = placeholderText;
+        }
+      }
+    };
+    renderSelectOptions();
+    if (this.enableSearch) {
+      enhanceSelectToSearch(select, element.placeholder ?? fallbackPlaceholder);
       const searchInput = select._smSearchInput;
       if (searchInput) {
-        searchInput.value = element.defaultValue ?? "";
-        searchInput.placeholder = placeholderText;
+        searchInput.addEventListener("blur", () => {
+          const next = searchInput.value;
+          element.defaultValue = next ? next : void 0;
+          finalize(element);
+        });
       }
     }
-  };
-  renderSelectOptions();
-  if (enableSearch) {
-    enhanceSelectToSearch(select, element.placeholder ?? defaultPlaceholder);
-    const searchInput = select._smSearchInput;
-    if (searchInput) {
-      searchInput.addEventListener("blur", () => {
-        const next = searchInput.value;
-        element.defaultValue = next ? next : void 0;
-        finalize(element);
-      });
-    }
+    select.onchange = () => {
+      const value = select.value || void 0;
+      if (value === element.defaultValue) return;
+      element.defaultValue = value;
+      if (this.enableSearch) {
+        const searchInput = select._smSearchInput;
+        if (searchInput) {
+          searchInput.value = value ?? "";
+        }
+      }
+      finalize(element);
+    };
   }
-  select.onchange = () => {
-    const value = select.value || void 0;
-    if (value === element.defaultValue) return;
-    element.defaultValue = value;
-    if (enableSearch) {
-      const searchInput = select._smSearchInput;
-      if (searchInput) {
-        searchInput.value = value ?? "";
-      }
-    }
-    finalize(element);
-  };
-}
-var dropdownComponent = {
-  definition: {
+  renderInspector({ renderLabelField: renderLabelField2, renderPlaceholderField: renderPlaceholderField2, renderOptionsEditor: renderOptionsEditor2 }) {
+    renderLabelField2({ label: this.inspectorLabel });
+    renderPlaceholderField2({ label: this.placeholderInspectorLabel });
+    renderOptionsEditor2({});
+  }
+};
+
+// src/elements/components/box-container.ts
+var defaultLayout = { gap: 16, padding: 16, align: "stretch" };
+var boxContainerComponent = new ContainerComponent({
+  type: "box-container",
+  buttonLabel: "BoxContainer",
+  defaultLabel: "",
+  category: "container",
+  paletteGroup: "container",
+  layoutOrientation: "vertical",
+  width: 360,
+  height: 220,
+  defaultLayout
+});
+var box_container_default = boxContainerComponent;
+
+// src/elements/components/dropdown.ts
+var dropdownComponent = new SelectComponent(
+  {
     type: "dropdown",
     buttonLabel: "Dropdown",
     defaultLabel: "",
@@ -260,49 +293,24 @@ var dropdownComponent = {
     width: 260,
     height: 150
   },
-  renderPreview({ preview, element, finalize }) {
-    renderSelect(element, preview, finalize, false);
-  },
-  renderInspector({ renderLabelField: renderLabelField2, renderPlaceholderField: renderPlaceholderField2, renderOptionsEditor: renderOptionsEditor2 }) {
-    renderLabelField2({ label: "Bezeichnung" });
-    renderPlaceholderField2({ label: "Platzhalter" });
-    renderOptionsEditor2({});
-  }
-};
+  { enableSearch: false }
+);
 var dropdown_default = dropdownComponent;
 
 // src/elements/components/hbox-container.ts
 var defaultLayout2 = { gap: 16, padding: 16, align: "center" };
-function ensureLayout2(element) {
-  if (!element.layout) {
-    element.layout = { ...defaultLayout2 };
-  }
-  if (!Array.isArray(element.children)) {
-    element.children = [];
-  }
-}
-var hboxContainerComponent = {
-  definition: {
-    type: "hbox-container",
-    buttonLabel: "HBoxContainer",
-    defaultLabel: "",
-    category: "container",
-    paletteGroup: "container",
-    layoutOrientation: "horizontal",
-    defaultDescription: "Ordnet verkn\xFCpfte Elemente automatisch nebeneinander an.",
-    width: 360,
-    height: 220,
-    defaultLayout: defaultLayout2
-  },
-  renderPreview(context) {
-    renderContainerPreview(context);
-  },
-  renderInspector({ renderLabelField: renderLabelField2, renderContainerLayoutControls: renderContainerLayoutControls2 }) {
-    renderLabelField2({ label: "Bezeichnung" });
-    renderContainerLayoutControls2({});
-  },
-  ensureDefaults: ensureLayout2
-};
+var hboxContainerComponent = new ContainerComponent({
+  type: "hbox-container",
+  buttonLabel: "HBoxContainer",
+  defaultLabel: "",
+  category: "container",
+  paletteGroup: "container",
+  layoutOrientation: "horizontal",
+  defaultDescription: "Ordnet verkn\xFCpfte Elemente automatisch nebeneinander an.",
+  width: 360,
+  height: 220,
+  defaultLayout: defaultLayout2
+});
 var hbox_container_default = hboxContainerComponent;
 
 // src/inline-edit.ts
@@ -417,69 +425,8 @@ var labelComponent = {
 var label_default = labelComponent;
 
 // src/elements/components/search-dropdown.ts
-function renderSelect2(element, preview, finalize) {
-  const field = preview.createEl("label", { cls: "sm-le-preview__field" });
-  const labelHost = field.createSpan({ cls: "sm-le-preview__label" });
-  const labelText = element.label?.trim() ?? "";
-  if (labelText) {
-    labelHost.setText(labelText);
-  } else {
-    labelHost.style.display = "none";
-  }
-  const select = field.createEl("select", { cls: "sm-le-preview__select" });
-  const defaultPlaceholder = "Suchen\u2026";
-  const renderSelectOptions = () => {
-    select.innerHTML = "";
-    const placeholderText = element.placeholder ?? defaultPlaceholder;
-    const placeholderOption = select.createEl("option", { value: "", text: placeholderText });
-    placeholderOption.disabled = true;
-    if (!element.defaultValue) {
-      placeholderOption.selected = true;
-    }
-    const optionValues = element.options && element.options.length ? element.options : null;
-    if (!optionValues) {
-      select.createEl("option", { value: "opt-1", text: "Erste Option" });
-    } else {
-      for (const opt of optionValues) {
-        const optionEl = select.createEl("option", { value: opt, text: opt });
-        if (element.defaultValue && element.defaultValue === opt) {
-          optionEl.selected = true;
-        }
-      }
-      if (element.defaultValue && !optionValues.includes(element.defaultValue)) {
-        element.defaultValue = void 0;
-        placeholderOption.selected = true;
-      }
-    }
-    const searchInput2 = select._smSearchInput;
-    if (searchInput2) {
-      searchInput2.value = element.defaultValue ?? "";
-      searchInput2.placeholder = placeholderText;
-    }
-  };
-  renderSelectOptions();
-  enhanceSelectToSearch(select, element.placeholder ?? defaultPlaceholder);
-  const searchInput = select._smSearchInput;
-  if (searchInput) {
-    searchInput.addEventListener("blur", () => {
-      const next = searchInput.value;
-      element.defaultValue = next ? next : void 0;
-      finalize(element);
-    });
-  }
-  select.onchange = () => {
-    const value = select.value || void 0;
-    if (value === element.defaultValue) return;
-    element.defaultValue = value;
-    const searchInput2 = select._smSearchInput;
-    if (searchInput2) {
-      searchInput2.value = value ?? "";
-    }
-    finalize(element);
-  };
-}
-var searchDropdownComponent = {
-  definition: {
+var searchDropdownComponent = new SelectComponent(
+  {
     type: "search-dropdown",
     buttonLabel: "Such-Dropdown",
     defaultLabel: "",
@@ -490,15 +437,8 @@ var searchDropdownComponent = {
     width: 280,
     height: 160
   },
-  renderPreview({ preview, element, finalize }) {
-    renderSelect2(element, preview, finalize);
-  },
-  renderInspector({ renderLabelField: renderLabelField2, renderPlaceholderField: renderPlaceholderField2, renderOptionsEditor: renderOptionsEditor2 }) {
-    renderLabelField2({ label: "Bezeichnung" });
-    renderPlaceholderField2({ label: "Platzhalter" });
-    renderOptionsEditor2({});
-  }
-};
+  { enableSearch: true }
+);
 var search_dropdown_default = searchDropdownComponent;
 
 // src/elements/components/separator.ts
@@ -608,36 +548,18 @@ var textarea_default = textareaComponent;
 
 // src/elements/components/vbox-container.ts
 var defaultLayout3 = { gap: 16, padding: 16, align: "stretch" };
-function ensureLayout3(element) {
-  if (!element.layout) {
-    element.layout = { ...defaultLayout3 };
-  }
-  if (!Array.isArray(element.children)) {
-    element.children = [];
-  }
-}
-var vboxContainerComponent = {
-  definition: {
-    type: "vbox-container",
-    buttonLabel: "VBoxContainer",
-    defaultLabel: "",
-    category: "container",
-    paletteGroup: "container",
-    layoutOrientation: "vertical",
-    defaultDescription: "Ordnet verkn\xFCpfte Elemente automatisch untereinander an.",
-    width: 340,
-    height: 260,
-    defaultLayout: defaultLayout3
-  },
-  renderPreview(context) {
-    renderContainerPreview(context);
-  },
-  renderInspector({ renderLabelField: renderLabelField2, renderContainerLayoutControls: renderContainerLayoutControls2 }) {
-    renderLabelField2({ label: "Bezeichnung" });
-    renderContainerLayoutControls2({});
-  },
-  ensureDefaults: ensureLayout3
-};
+var vboxContainerComponent = new ContainerComponent({
+  type: "vbox-container",
+  buttonLabel: "VBoxContainer",
+  defaultLabel: "",
+  category: "container",
+  paletteGroup: "container",
+  layoutOrientation: "vertical",
+  defaultDescription: "Ordnet verkn\xFCpfte Elemente automatisch untereinander an.",
+  width: 340,
+  height: 260,
+  defaultLayout: defaultLayout3
+});
 var vbox_container_default = vboxContainerComponent;
 
 // src/elements/component-manifest.ts
