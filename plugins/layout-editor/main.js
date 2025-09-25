@@ -175,6 +175,12 @@ function getElementDefinitions() {
 function getElementDefinition(type) {
   return registry.get(type);
 }
+function registerLayoutElementDefinition(definition) {
+  registry.register(definition);
+}
+function unregisterLayoutElementDefinition(type) {
+  registry.unregister(type);
+}
 function resetLayoutElementDefinitions(definitions) {
   registry.replaceAll(definitions);
 }
@@ -3908,8 +3914,8 @@ var LayoutEditorPlugin = class extends import_obsidian6.Plugin {
     this.api = {
       viewType: VIEW_LAYOUT_EDITOR,
       openView: () => this.openView(),
-      registerElementDefinition,
-      unregisterElementDefinition,
+      registerElementDefinition: registerLayoutElementDefinition,
+      unregisterElementDefinition: unregisterLayoutElementDefinition,
       resetElementDefinitions: (definitions) => {
         if (definitions && definitions.length) {
           resetLayoutElementDefinitions(definitions);

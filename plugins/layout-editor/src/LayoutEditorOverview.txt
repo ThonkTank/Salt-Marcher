@@ -60,6 +60,7 @@ plugins/layout-editor/
 ### `main.ts`
 - Bootstrap des Plugins: registriert View, Ribbon-Icon und Command.
 - Stellt `LayoutEditorPluginApi` bereit (Open-View, Registry- und Library-Methoden).
+- Die API-Weiterleitungen binden die Registry-Helfer (`registerLayoutElementDefinition`/`unregisterLayoutElementDefinition`) explizit ein, damit die gebündelte Ausgabe keine fehlenden Referenzen mehr enthält.
 - Integriert CSS-Injektion und sorgt beim Unload für Cleanup sowie Registry-Reset auf Default-Definitionen.
 
 ### `css.ts`
