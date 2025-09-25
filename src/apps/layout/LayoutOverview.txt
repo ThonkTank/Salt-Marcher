@@ -4,32 +4,76 @@
 
 ```
 src/apps/layout/
-├─ view.ts             # Obsidian-ItemView für den visuellen Layout-Editor
-└─ LayoutOverview.txt  # Diese Übersicht
+├─ editor/
+│  ├─ attribute-popover.ts   # Verwaltet das Attribute-Popover inklusive Events & Synchronisation
+│  ├─ creature-import.ts     # Baut das Creature-Creator-Layout nach und erzeugt LayoutElemente
+│  ├─ definitions.ts         # Konstanten (Element- & Attribut-Definitionen) + Label-Helfer
+│  ├─ element-preview.ts     # Rendert Canvas-Vorschauen inkl. Inline-Editoren
+│  ├─ history.ts             # Undo/Redo-Verwaltung für LayoutSnapshots
+│  ├─ inline-edit.ts         # Generischer ContentEditable-Editor für Inline-Bearbeitung
+│  ├─ inspector-panel.ts     # Inspector-Rendering (Formfelder, Container-Steuerung, Attribute-Trigger)
+│  ├─ types.ts               # Gemeinsame Typen für Elemente, Container & Snapshots
+│  ├─ utils.ts               # Hilfsfunktionen (clamp, Deep-Clones, Vergleichs-Utilities)
+│  └─ view.ts                # `LayoutEditorView` – orchestriert Canvas, Inspector, Export & Historie
+└─ LayoutOverview.txt        # Diese Übersicht
 ```
 
 ## Features & Verantwortlichkeiten
 
-- **Layout-Arbeitsfläche:** Stellt eine konfigurierbare Canvas (Breite/Höhe) bereit, auf der beliebig viele UI-Elemente platziert werden können.
-- **Layout-Hilfen & Container:** Neue VBox-/HBox-Container gruppieren mehrere Elemente, verteilen sie automatisch gleichmäßig (inkl. Abstand, Innenabstand und Ausrichtung) und halten die Kinder bei Größen- oder Positionsänderungen synchron. Container lassen sich über den Inspector bestücken, sortieren und räumen ihre Einträge automatisch nach.
-- **Element-Palette & Leerstart:** Fügt per Klick Labels, Textfelder, Mehrzeiler, Container-Boxen, Trennlinien, Dropdowns und Such-Dropdowns hinzu – jedes neue Element landet direkt auf der Canvas und kann sofort bearbeitet werden. Wird beim Erstellen ein Container ausgewählt, landet das neue Element direkt darin und übernimmt dessen Layout-Einstellungen. Der Editor startet jetzt mit einer leeren Arbeitsfläche, sodass Layouts ohne Vorbelegung entworfen werden können.
-- **Element-Verwaltung:** Unterstützt Auswählen, Verschieben und Skalieren per Drag & Drop oder numerische Eingaben, inklusive visueller Auswahlmarkierung; Container bewegen ihre Kinder mit und wenden nach dem Loslassen erneut ihre Auto-Layouts an.
-- **Inspector-Panel:** Ermöglicht das Anpassen von Texten, Beschreibungen, Platzhaltern, Default-Werten, Dropdown-Optionen und verknüpften Creature-Attributen; bietet zudem Container-spezifische Eingaben für Abstand, Innenabstand, Ausrichtung, Kinderverwaltung sowie eine schnelle Zuweisung/Abmeldung von Elementen aus Containern.
-- **Inline-Attributeditor:** Attribute lassen sich direkt am Canvas-Element über ein Popover pflegen; Inspector und Canvas bleiben dabei synchron.
-- **Inline-Bearbeitung auf der Canvas:** Labels, Beschreibungen, Platzhalter, Default-Werte und Dropdown-Optionen werden direkt am dargestellten UI-Element editiert; die Canvas rendert dafür jetzt die echten Obsidian-Setting-Komponenten inklusive Such-Dropdowns, sodass Vorschau und finale UI pixelgenau übereinstimmen.
-- **Container-Quick-Add:** VBox- und HBox-Container besitzen im Inspector ein Kontextmenü, über das sich neue UI-Elemente sofort innerhalb des Containers anlegen lassen – ohne Umweg über Auswahl und nachträgliche Zuweisung.
-- **Canvas-Kurzbefehle & Historie:** Elemente lassen sich per Entf-Taste löschen und über Strg+Z / Strg+Umschalt+Z rückgängig machen bzw. wiederherstellen; alle Änderungen fließen in eine Undo/Redo-Historie.
-- **Export für Layoutdaten:** Generiert jederzeit ein JSON-Snippet mit Canvas-Größe plus vollständigem Element-Metadatenpaket (Typ, Texte, Optionen, Attribute, Maße), damit Layouts reproduzierbar bleiben.
-- **Creature-Creator-Import:** Baut den DOM des Creature-Creator-Dialogs in einer Sandbox nach, analysiert Maße, weist passende Elementtypen zu und füllt die Canvas automatisch mit vorkonfigurierten UI-Bereichen.
+- **Layout-Arbeitsfläche:** Konfigurierbare Canvas mit Breite/Höhe-Controls; alle Elemente werden mit Bounds-Clamping gerendert und können per Drag/Resize manipuliert werden.
+- **Modulare Element-Hilfen:** Element-Definitionen (Buttons, Defaults, Layout-Standards) liegen zentral in `definitions.ts`; Canvas-Rendering und Inspector greifen auf dieselben Strukturen zu.
+- **Container-Layout:** VBox-/HBox-Container verteilen Kinder automatisch (Gap, Padding, Align) und synchronisieren bei manuellen Änderungen oder Größenanpassungen.
+- **Inspector & Inline-Editing:** `inspector-panel.ts` erzeugt alle Formfelder, Container-Controls sowie Attribute-Trigger; `element-preview.ts` rendert auf der Canvas echte Obsidian-Settings mit Inline-Editoren.
+- **Attribute-Popover:** `attribute-popover.ts` verwaltet das Popover (Öffnen, Positionierung, Synchronisation) und hält Inspector sowie Canvas konsistent.
+- **Undo/Redo-Historie:** `history.ts` kapselt Snapshot-Verwaltung; `view.ts` nutzt sie für Strg+Z / Strg+Umschalt+Z sowie automatisches Pushen nach Mutationen.
+- **Export & Status:** JSON-Export (Canvas + Elemente) sowie Statusleiste werden in `view.ts` gepflegt und auf jede Mutation aktualisiert.
+- **Creature-Import:** `creature-import.ts` mountet den Creature-Creator in einer Sandbox, liest Maße/Defaults aus und erzeugt passende LayoutElemente.
+
+## Datenfluss
+
+1. **Interaktion** (Drag, Resize, Inspector, Inline): löst Mutationen an `LayoutElement`-Objekten aus.
+2. **`view.ts`** synchronisiert DOM (`syncElementElement`) und ruft `renderInspectorPanel` / `renderElementPreview` auf.
+3. **`history.ts`** erstellt Snapshots; Undo/Redo ruft `restoreSnapshot` in der View auf, die wiederum Canvas/Inspector/Export aktualisiert.
+4. **Attribute-Popover** sendet Änderungen zurück an `view.ts`, welches Export, Status & Historie aktualisiert.
 
 ## Dateibeschreibungen
 
-### `view.ts`
-- Implementiert `LayoutEditorView` als `ItemView`-Ableitung.
-- Baut Header (Element-Palette, Import, Status), Canvas und Inspector auf und hält DOM-Referenzen für performante Aktualisierungen.
-- Verwaltet Element-Modelle in einem Array, synchronisiert Position/Größe mit dem DOM und bedient Pointer-basierte Drag-/Resize-Interaktionen.
-- Stellt im Inspector Eingabefelder für Label, Beschreibung, Platzhalter, Default-Werte, Dropdown-Optionen sowie eine Attribut-Auswahl bereit, ergänzt um Container-spezifische Controls (Abstand, Padding, Ausrichtung, Child-Management) und eine Container-Zuweisung für klassische Elemente.
-- Synchronisiert neben dem Inline-Attributeditor (Popover auf der Canvas) auch alle Inline-Text- und Options-Editoren mit dem Inspector und aktualisiert beide Wege konsistent.
-- Rendert auf der Canvas echte UI-Kontrollen (Labels, Inputs, Textareas, Dropdowns, Suche, Container) inklusive Undo/Redo-Historie und Tastaturkürzeln zum schnellen Löschen und Wiederherstellen.
-- Rekonstruiert bei Bedarf das Creature-Creator-Layout über die Abschnitts-Mount-Funktionen (`mountCreatureBasicsSection`, `mountCreatureStatsAndSkillsSection`, …), erkennt simple Eingabe-Typen und projiziert die gemessenen Bounding-Boxes auf die Canvas.
-- Erstellt das Export-JSON inklusive Canvas- und Element-Metadaten (inklusive Container-Beziehungen, Layout-Konfiguration und Kinderlisten) und stellt eine Kopier-Schaltfläche bereit.
+### `editor/view.ts`
+- Implementiert `LayoutEditorView` (`ItemView`).
+- Baut Header (Palette, Import, Status), Canvas, Inspector, Exportbereich und Sandbox auf.
+- Verwaltet Element-State, Selection, Historie und ruft Hilfs-Module (Preview, Inspector, Popover, Import) orchestriert auf.
+- Synchronisiert alle Mutationen (Canvas, Inspector, Export, Status) und sorgt für Bounds-Clamping, Container-Auto-Layout sowie Shortcuts (Delete, Undo/Redo).
+
+### `editor/definitions.ts`
+- Enthält Element-Definitionen inkl. Default-Texte, Größen, Layout-Voreinstellungen und Attribute-Gruppen.
+- Stellt Label-/Summary-Helfer (`getElementTypeLabel`, `getAttributeSummary`, `getContainerAlignLabel`) bereit.
+
+### `editor/types.ts`
+- Typisiert Layout-Elemente, Container-Konfigurationen, Snapshots sowie Inline-Editor-Optionen.
+- Wird von allen Teilmodulen genutzt, um konsistente Datenmodelle zu garantieren.
+
+### `editor/history.ts`
+- Kapselt Undo/Redo mit Snapshot-Array, Index-Verwaltung und Restore-Callback.
+- Bewahrt `isRestoring`-State, damit View-Mutationen keine erneuten History-Einträge erzeugen.
+
+### `editor/inline-edit.ts`
+- Bietet einen generischen ContentEditable-Editor (Trim, Multiline, Placeholder) für Preview-Komponenten.
+
+### `editor/element-preview.ts`
+- Rendert Canvas-Vorschauen als echte Obsidian-Settings, inklusive Inline-Label-/Beschreibung-/Optionen-Editoren.
+- Delegiert Layout-spezifische Aktionen (z. B. Container-Layout, History-Push) über Callbacks an die View.
+
+### `editor/inspector-panel.ts`
+- Baut Inspector-Felder (Label, Placeholder, Defaults, Attribute, Container-Steuerung, Quick-Add) als reines Rendering-Modul.
+- Delegiert Mutationen über `InspectorCallbacks` zurück an die View und löst Attribut-Popover über Custom Events aus.
+
+### `editor/attribute-popover.ts`
+- Erstellt, positioniert und synchronisiert das Attribut-Popover.
+- Ruft über Callbacks View-Aktionen (Sync, Export, Inspector, History) auf und kapselt Event-Cleanup.
+
+### `editor/utils.ts`
+- Enthält Utility-Funktionen (`clamp`, Deep-Clones, Equality-Checks, Container-Erkennung) für View & History.
+
+### `editor/creature-import.ts`
+- Baut den Creature-Creator in einer Sandbox auf, extrahiert Maße/Defaults und erstellt LayoutElemente.
+- Aktualisiert Canvas- & Element-State über den bereitgestellten Kontext.
