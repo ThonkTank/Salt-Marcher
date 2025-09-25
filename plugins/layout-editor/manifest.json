@@ -1,0 +1,11 @@
+{
+  "id": "layout-editor",
+  "name": "Layout Editor",
+  "version": "0.1.0",
+  "minAppVersion": "1.4.0",
+  "description": "Visual layout editor for reusable statblock templates.",
+  "author": "You",
+  "authorUrl": "",
+  "isDesktopOnly": true,
+  "main": "main.js"
+}

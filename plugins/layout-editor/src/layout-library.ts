@@ -2,7 +2,7 @@
 import { App, TFile, TFolder, normalizePath } from "obsidian";
 import { LayoutBlueprint, LayoutElement, SavedLayout } from "./types";
 
-const LAYOUT_FOLDER = "SaltMarcher/Layouts";
+const LAYOUT_FOLDER = "LayoutEditor/Layouts";
 
 async function ensureLayoutFolder(app: App): Promise<void> {
     const folderPath = normalizePath(LAYOUT_FOLDER);
