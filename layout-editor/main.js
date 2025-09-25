@@ -623,6 +623,324 @@ var vboxContainerComponent = new ContainerComponent({
 });
 var vbox_container_default = vboxContainerComponent;
 
+// src/elements/ui.ts
+function createElementsButton(parent, options) {
+  const { label, variant = "default", type = "button", icon, onClick } = options;
+  const classes = ["sm-elements-button"];
+  if (variant !== "default") {
+    classes.push(`sm-elements-button--${variant}`);
+  }
+  const button = parent.createEl("button", {
+    cls: classes.join(" "),
+    text: icon ? void 0 : label
+  });
+  button.type = type;
+  if (icon) {
+    button.setAttr("data-icon", icon);
+    const labelSpan = button.createSpan({ cls: "sm-elements-button__label", text: label });
+    labelSpan.setAttr("aria-hidden", "true");
+  }
+  if (onClick) {
+    button.addEventListener("click", onClick);
+  }
+  return button;
+}
+function createElementsField(parent, options) {
+  const { label, layout = "stack", description } = options;
+  const classes = ["sm-elements-field"];
+  if (layout === "inline") classes.push("sm-elements-field--inline");
+  if (layout === "grid") classes.push("sm-elements-field--grid");
+  const fieldEl = parent.createDiv({ cls: classes.join(" ") });
+  const labelEl = fieldEl.createEl("label", { cls: "sm-elements-field__label", text: label });
+  const controlEl = fieldEl.createDiv({ cls: "sm-elements-field__control" });
+  let descriptionEl;
+  if (description) {
+    descriptionEl = fieldEl.createDiv({ cls: "sm-elements-field__description", text: description });
+  }
+  return { fieldEl, labelEl, controlEl, descriptionEl };
+}
+function createElementsInput(parent, options = {}) {
+  const { type = "text", value, placeholder, min, max, step, required, disabled, attr, autocomplete } = options;
+  const input = parent.createEl("input", { cls: "sm-elements-input", attr: { type } });
+  if (value !== void 0) input.value = value;
+  if (placeholder !== void 0) input.placeholder = placeholder;
+  if (min !== void 0) input.min = String(min);
+  if (max !== void 0) input.max = String(max);
+  if (step !== void 0) input.step = String(step);
+  if (required) input.required = true;
+  if (disabled) input.disabled = true;
+  if (autocomplete !== void 0) input.autocomplete = autocomplete;
+  if (attr) {
+    for (const [key, val] of Object.entries(attr)) {
+      input.setAttr(key, val);
+    }
+  }
+  return input;
+}
+function createElementsSelect(parent, options) {
+  const { options: items, value, placeholder, disabled } = options;
+  const select = parent.createEl("select", { cls: "sm-elements-select" });
+  if (placeholder) {
+    const placeholderOption = select.createEl("option", { value: "", text: placeholder });
+    placeholderOption.disabled = true;
+    if (value === void 0) {
+      placeholderOption.selected = true;
+    }
+  }
+  for (const item of items) {
+    const option = select.createEl("option", { value: item.value, text: item.label });
+    if (item.disabled) option.disabled = true;
+    if (value !== void 0 && item.value === value) option.selected = true;
+  }
+  if (disabled) select.disabled = true;
+  return select;
+}
+function createElementsStatus(parent, options) {
+  const { text, tone = "neutral" } = options;
+  const classes = ["sm-elements-status", `sm-elements-status--${tone}`];
+  const status = parent.createDiv({ cls: classes.join(" ") });
+  status.setText(text);
+  return status;
+}
+function createElementsHeading(parent, level, text) {
+  return parent.createEl(`h${level}`, { cls: "sm-elements-heading", text });
+}
+function createElementsParagraph(parent, text) {
+  return parent.createEl("p", { cls: "sm-elements-paragraph", text });
+}
+function createElementsMeta(parent, text) {
+  return parent.createDiv({ cls: "sm-elements-meta", text });
+}
+function ensureFieldLabelFor(field, control) {
+  if (field.labelEl.getAttr("for")) return;
+  let id = control.id;
+  if (!id) {
+    id = `sm-elements-control-${Math.random().toString(36).slice(2)}`;
+    control.id = id;
+  }
+  field.labelEl.setAttr("for", id);
+}
+
+// src/view-registry.ts
+var LayoutViewBindingRegistry = class {
+  constructor() {
+    this.bindings = /* @__PURE__ */ new Map();
+    this.listeners = /* @__PURE__ */ new Set();
+  }
+  register(def) {
+    if (!def.id?.trim()) {
+      throw new Error("View binding requires a non-empty id");
+    }
+    const id = def.id.trim();
+    this.bindings.set(id, { ...def, id });
+    this.emit();
+  }
+  unregister(id) {
+    if (this.bindings.delete(id)) {
+      this.emit();
+    }
+  }
+  replaceAll(definitions) {
+    this.bindings.clear();
+    for (const def of definitions) {
+      if (!def.id?.trim()) continue;
+      const id = def.id.trim();
+      this.bindings.set(id, { ...def, id });
+    }
+    this.emit();
+  }
+  getAll() {
+    return Array.from(this.bindings.values());
+  }
+  get(id) {
+    return this.bindings.get(id);
+  }
+  onChange(listener) {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+  emit() {
+    const snapshot = this.getAll();
+    for (const listener of this.listeners) {
+      listener(snapshot);
+    }
+  }
+};
+var registry = new LayoutViewBindingRegistry();
+function registerViewBinding(definition) {
+  registry.register(definition);
+}
+function unregisterViewBinding(id) {
+  registry.unregister(id);
+}
+function resetViewBindings(definitions = []) {
+  registry.replaceAll(definitions);
+}
+function getViewBindings() {
+  return registry.getAll();
+}
+function getViewBinding(id) {
+  return registry.get(id);
+}
+function onViewBindingsChanged(listener) {
+  return registry.onChange(listener);
+}
+
+// src/elements/components/view-container.ts
+var MIN_SCALE = 0.25;
+var MAX_SCALE = 3;
+var ViewContainerComponent = class extends ElementComponentBase {
+  constructor() {
+    super({
+      type: "view-container",
+      buttonLabel: "View Container",
+      defaultLabel: "",
+      category: "element",
+      paletteGroup: "container",
+      width: 520,
+      height: 340,
+      defaultDescription: "Platzhalter f\xFCr externe Visualisierungen (z.\u202FB. Karten)"
+    });
+  }
+  renderPreview(context) {
+    const { preview, element } = context;
+    preview.addClass("sm-le-preview--view-container");
+    const wrapper = preview.createDiv({ cls: "sm-view-container sm-view-container--design" });
+    const viewport = wrapper.createDiv({ cls: "sm-view-container__viewport" });
+    const stage = viewport.createDiv({ cls: "sm-view-container__content" });
+    const overlay = wrapper.createDiv({ cls: "sm-view-container__overlay" });
+    const binding = element.viewBindingId ? getViewBinding(element.viewBindingId) : null;
+    const heading = overlay.createDiv({ cls: "sm-view-container__overlay-title" });
+    heading.setText(binding ? binding.label : "Kein Feature verbunden");
+    const subtitle = overlay.createDiv({ cls: "sm-view-container__overlay-subtitle" });
+    subtitle.setText(binding ? binding.id : "W\xE4hle im Inspector ein Feature aus.");
+    overlay.toggleClass("is-visible", !binding);
+    const surface = stage.createDiv({ cls: "sm-view-container__surface" });
+    surface.createDiv({ cls: "sm-view-container__surface-grid" });
+    const info = surface.createDiv({ cls: "sm-view-container__surface-info" });
+    info.createSpan({ cls: "sm-view-container__surface-label", text: binding?.label ?? "View Container" });
+    info.createDiv({ cls: "sm-view-container__surface-id", text: binding?.id ?? "Feature ausw\xE4hlen\u2026" });
+    viewport.style.touchAction = "none";
+    let camera = { x: 0, y: 0, scale: 1 };
+    const applyCamera = () => {
+      surface.style.transform = `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})`;
+    };
+    applyCamera();
+    let panPointer = null;
+    let startX = 0;
+    let startY = 0;
+    let originX = 0;
+    let originY = 0;
+    const endPan = () => {
+      if (panPointer === null) return;
+      panPointer = null;
+      viewport.style.cursor = "";
+    };
+    viewport.addEventListener("pointerdown", (ev) => {
+      if (ev.button !== 1) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      panPointer = ev.pointerId;
+      startX = ev.clientX;
+      startY = ev.clientY;
+      originX = camera.x;
+      originY = camera.y;
+      viewport.setPointerCapture(ev.pointerId);
+      viewport.style.cursor = "grabbing";
+    });
+    viewport.addEventListener("pointermove", (ev) => {
+      if (panPointer === null || ev.pointerId !== panPointer) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+      camera = { ...camera, x: originX + dx, y: originY + dy };
+      applyCamera();
+    });
+    const releasePointer = (ev) => {
+      if (panPointer === null || ev.pointerId !== panPointer) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      viewport.releasePointerCapture(ev.pointerId);
+      endPan();
+    };
+    viewport.addEventListener("pointerup", releasePointer);
+    viewport.addEventListener("pointercancel", releasePointer);
+    viewport.addEventListener("pointerleave", (ev) => {
+      if (panPointer === null || ev.pointerId !== panPointer) return;
+      endPan();
+    });
+    viewport.addEventListener(
+      "wheel",
+      (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const delta = ev.deltaY;
+        const factor = Math.exp(-delta * 15e-4);
+        const nextScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, camera.scale * factor));
+        if (Math.abs(nextScale - camera.scale) < 1e-4) return;
+        const rect = viewport.getBoundingClientRect();
+        const px = ev.clientX - rect.left;
+        const py = ev.clientY - rect.top;
+        const worldX = (px - camera.x) / camera.scale;
+        const worldY = (py - camera.y) / camera.scale;
+        camera = {
+          scale: nextScale,
+          x: px - worldX * nextScale,
+          y: py - worldY * nextScale
+        };
+        applyCamera();
+      },
+      { passive: false }
+    );
+    viewport.addEventListener("contextmenu", (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+    });
+  }
+  renderInspector(context) {
+    const { element, callbacks, sections } = context;
+    context.renderLabelField({ label: "Bezeichnung" });
+    const bindings = getViewBindings();
+    const field = createElementsField(sections.body, { label: "Feature" });
+    field.fieldEl.addClass("sm-le-field");
+    if (!bindings.length) {
+      const notice = field.controlEl.createDiv({ cls: "sm-le-empty", text: "Kein kompatibles Feature registriert." });
+      notice.addClass("sm-le-view-binding-empty");
+      return;
+    }
+    const options = [
+      { value: "", label: "Feature ausw\xE4hlen\u2026" },
+      ...bindings.map((binding) => ({ value: binding.id, label: binding.label }))
+    ];
+    const select = createElementsSelect(field.controlEl, { options, value: element.viewBindingId ?? "" });
+    ensureFieldLabelFor(field, select);
+    select.onchange = () => {
+      const next = select.value || void 0;
+      if (next === element.viewBindingId) return;
+      element.viewBindingId = next;
+      callbacks.syncElementElement(element);
+      callbacks.refreshExport();
+      callbacks.updateStatus();
+      callbacks.pushHistory();
+      callbacks.renderInspector();
+    };
+    const metaHost = field.controlEl.createDiv({ cls: "sm-le-view-binding-meta" });
+    if (element.viewBindingId) {
+      const binding = getViewBinding(element.viewBindingId);
+      if (binding?.description) {
+        createElementsMeta(metaHost, binding.description);
+      } else {
+        createElementsMeta(metaHost, `ID: ${element.viewBindingId}`);
+      }
+    } else {
+      createElementsMeta(metaHost, "W\xE4hle ein Feature, um den Container zu verbinden.");
+    }
+  }
+};
+var viewContainerComponent = new ViewContainerComponent();
+var view_container_default = viewContainerComponent;
+
 // src/elements/component-manifest.ts
 var COMPONENTS = [
   box_container_default,
@@ -633,7 +951,8 @@ var COMPONENTS = [
   separator_default,
   text_input_default,
   textarea_default,
-  vbox_container_default
+  vbox_container_default,
+  view_container_default
 ];
 
 // src/elements/registry.ts
@@ -697,24 +1016,24 @@ var LayoutElementRegistry = class {
     }
   }
 };
-var registry = new LayoutElementRegistry(DEFAULT_ELEMENT_DEFINITIONS);
+var registry2 = new LayoutElementRegistry(DEFAULT_ELEMENT_DEFINITIONS);
 function getElementDefinitions() {
-  return registry.getAll();
+  return registry2.getAll();
 }
 function getElementDefinition(type) {
-  return registry.get(type);
+  return registry2.get(type);
 }
 function registerLayoutElementDefinition(definition) {
-  registry.register(definition);
+  registry2.register(definition);
 }
 function unregisterLayoutElementDefinition(type) {
-  registry.unregister(type);
+  registry2.unregister(type);
 }
 function resetLayoutElementDefinitions(definitions) {
-  registry.replaceAll(definitions);
+  registry2.replaceAll(definitions);
 }
 function onLayoutElementDefinitionsChanged(listener) {
-  return registry.onChange(listener);
+  return registry2.onChange(listener);
 }
 var ATTRIBUTE_GROUPS = [
   {
@@ -812,7 +1131,7 @@ var ATTRIBUTE_LABEL_LOOKUP = new Map(
   ATTRIBUTE_GROUPS.flatMap((group) => group.options.map((opt) => [opt.value, opt.label]))
 );
 function isVerticalContainer(type) {
-  const definition = registry.get(type);
+  const definition = registry2.get(type);
   if (definition?.layoutOrientation) {
     return definition.layoutOrientation !== "horizontal";
   }
@@ -823,10 +1142,10 @@ function getAttributeSummary(attributes) {
   return attributes.map((attr) => ATTRIBUTE_LABEL_LOOKUP.get(attr) ?? attr).join(", ");
 }
 function getElementTypeLabel(type) {
-  return registry.get(type)?.buttonLabel ?? type;
+  return registry2.get(type)?.buttonLabel ?? type;
 }
 function isContainerType(type) {
-  const definition = registry.get(type);
+  const definition = registry2.get(type);
   if (definition) {
     return definition.category === "container";
   }
@@ -843,7 +1162,8 @@ function cloneLayoutElement(element) {
     attributes: [...element.attributes],
     options: element.options ? [...element.options] : void 0,
     layout: element.layout ? { ...element.layout } : void 0,
-    children: element.children ? [...element.children] : void 0
+    children: element.children ? [...element.children] : void 0,
+    viewState: element.viewState ? JSON.parse(JSON.stringify(element.viewState)) : void 0
   };
 }
 function arraysAreEqual(a, b) {
@@ -855,9 +1175,37 @@ function arraysAreEqual(a, b) {
   }
   return true;
 }
+function recordsAreEqual(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return !a && !b;
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  if (keysA.length !== keysB.length) return false;
+  for (const key of keysA) {
+    if (!Object.prototype.hasOwnProperty.call(b, key)) return false;
+    const valA = a[key];
+    const valB = b[key];
+    if (Array.isArray(valA) && Array.isArray(valB)) {
+      if (!arraysAreEqual(valA, valB)) return false;
+      continue;
+    }
+    if (typeof valA === "object" && valA && typeof valB === "object" && valB) {
+      if (!recordsAreEqual(valA, valB)) {
+        return false;
+      }
+      continue;
+    }
+    if (valA !== valB) return false;
+  }
+  return true;
+}
 function elementsAreEqual(a, b) {
   if (a === b) return true;
   if (a.id !== b.id || a.type !== b.type || a.x !== b.x || a.y !== b.y || a.width !== b.width || a.height !== b.height || a.label !== b.label || a.description !== b.description || a.placeholder !== b.placeholder || a.defaultValue !== b.defaultValue || a.parentId !== b.parentId) {
+    return false;
+  }
+  if (a.viewBindingId !== b.viewBindingId) return false;
+  if (!recordsAreEqual(a.viewState, b.viewState)) {
     return false;
   }
   if (!arraysAreEqual(a.options, b.options)) return false;
@@ -1151,104 +1499,6 @@ function renderFallbackPreview(context) {
       finalize(element);
     }
   });
-}
-
-// src/elements/ui.ts
-function createElementsButton(parent, options) {
-  const { label, variant = "default", type = "button", icon, onClick } = options;
-  const classes = ["sm-elements-button"];
-  if (variant !== "default") {
-    classes.push(`sm-elements-button--${variant}`);
-  }
-  const button = parent.createEl("button", {
-    cls: classes.join(" "),
-    text: icon ? void 0 : label
-  });
-  button.type = type;
-  if (icon) {
-    button.setAttr("data-icon", icon);
-    const labelSpan = button.createSpan({ cls: "sm-elements-button__label", text: label });
-    labelSpan.setAttr("aria-hidden", "true");
-  }
-  if (onClick) {
-    button.addEventListener("click", onClick);
-  }
-  return button;
-}
-function createElementsField(parent, options) {
-  const { label, layout = "stack", description } = options;
-  const classes = ["sm-elements-field"];
-  if (layout === "inline") classes.push("sm-elements-field--inline");
-  if (layout === "grid") classes.push("sm-elements-field--grid");
-  const fieldEl = parent.createDiv({ cls: classes.join(" ") });
-  const labelEl = fieldEl.createEl("label", { cls: "sm-elements-field__label", text: label });
-  const controlEl = fieldEl.createDiv({ cls: "sm-elements-field__control" });
-  let descriptionEl;
-  if (description) {
-    descriptionEl = fieldEl.createDiv({ cls: "sm-elements-field__description", text: description });
-  }
-  return { fieldEl, labelEl, controlEl, descriptionEl };
-}
-function createElementsInput(parent, options = {}) {
-  const { type = "text", value, placeholder, min, max, step, required, disabled, attr, autocomplete } = options;
-  const input = parent.createEl("input", { cls: "sm-elements-input", attr: { type } });
-  if (value !== void 0) input.value = value;
-  if (placeholder !== void 0) input.placeholder = placeholder;
-  if (min !== void 0) input.min = String(min);
-  if (max !== void 0) input.max = String(max);
-  if (step !== void 0) input.step = String(step);
-  if (required) input.required = true;
-  if (disabled) input.disabled = true;
-  if (autocomplete !== void 0) input.autocomplete = autocomplete;
-  if (attr) {
-    for (const [key, val] of Object.entries(attr)) {
-      input.setAttr(key, val);
-    }
-  }
-  return input;
-}
-function createElementsSelect(parent, options) {
-  const { options: items, value, placeholder, disabled } = options;
-  const select = parent.createEl("select", { cls: "sm-elements-select" });
-  if (placeholder) {
-    const placeholderOption = select.createEl("option", { value: "", text: placeholder });
-    placeholderOption.disabled = true;
-    if (value === void 0) {
-      placeholderOption.selected = true;
-    }
-  }
-  for (const item of items) {
-    const option = select.createEl("option", { value: item.value, text: item.label });
-    if (item.disabled) option.disabled = true;
-    if (value !== void 0 && item.value === value) option.selected = true;
-  }
-  if (disabled) select.disabled = true;
-  return select;
-}
-function createElementsStatus(parent, options) {
-  const { text, tone = "neutral" } = options;
-  const classes = ["sm-elements-status", `sm-elements-status--${tone}`];
-  const status = parent.createDiv({ cls: classes.join(" ") });
-  status.setText(text);
-  return status;
-}
-function createElementsHeading(parent, level, text) {
-  return parent.createEl(`h${level}`, { cls: "sm-elements-heading", text });
-}
-function createElementsParagraph(parent, text) {
-  return parent.createEl("p", { cls: "sm-elements-paragraph", text });
-}
-function createElementsMeta(parent, text) {
-  return parent.createDiv({ cls: "sm-elements-meta", text });
-}
-function ensureFieldLabelFor(field, control) {
-  if (field.labelEl.getAttr("for")) return;
-  let id = control.id;
-  if (!id) {
-    id = `sm-elements-control-${Math.random().toString(36).slice(2)}`;
-    control.id = id;
-  }
-  field.labelEl.setAttr("for", id);
 }
 
 // src/ui/editor-menu.ts
@@ -2486,6 +2736,7 @@ var LayoutEditorView = class extends import_obsidian5.ItemView {
     this.isImporting = false;
     this.elementDefinitions = getElementDefinitions();
     this.disposeDefinitionListener = null;
+    this.disposeViewBindingListener = null;
     this.structureWidth = 260;
     this.inspectorWidth = 320;
     this.minPanelWidth = 200;
@@ -2606,6 +2857,10 @@ var LayoutEditorView = class extends import_obsidian5.ItemView {
       this.renderAddElementControl();
       this.renderInspector();
     });
+    this.disposeViewBindingListener = onViewBindingsChanged(() => {
+      this.renderInspector();
+      this.renderElements();
+    });
     this.render();
     this.refreshExport();
     this.updateStatus();
@@ -2620,6 +2875,8 @@ var LayoutEditorView = class extends import_obsidian5.ItemView {
     this.isSavingLayout = false;
     this.disposeDefinitionListener?.();
     this.disposeDefinitionListener = null;
+    this.disposeViewBindingListener?.();
+    this.disposeViewBindingListener = null;
   }
   isEditingTarget(target) {
     if (!target) return false;
@@ -4411,6 +4668,126 @@ var LAYOUT_EDITOR_CSS = `
     padding: 0.15rem;
 }
 
+.sm-le-preview--view-container {
+    flex: 1;
+}
+
+.sm-view-container {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    flex: 1;
+    border-radius: 12px;
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+    overflow: hidden;
+}
+
+.sm-view-container--design {
+    background: linear-gradient(
+            135deg,
+            color-mix(in srgb, var(--background-secondary) 78%, transparent) 0%,
+            color-mix(in srgb, var(--background-secondary) 88%, transparent) 100%
+        );
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.sm-view-container__viewport {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+    cursor: grab;
+    touch-action: none;
+    background: color-mix(in srgb, var(--background-secondary) 92%, transparent);
+}
+
+.sm-view-container__content {
+    width: 100%;
+    height: 100%;
+    transform-origin: top left;
+}
+
+.sm-view-container__surface {
+    position: relative;
+    width: 960px;
+    height: 640px;
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--background-primary) 92%, transparent);
+    border: 1px solid color-mix(in srgb, var(--background-modifier-border) 80%, transparent);
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.14);
+    overflow: hidden;
+}
+
+.sm-view-container__surface-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(0deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+}
+
+.sm-view-container__surface-info {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: center;
+    text-align: center;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.08);
+    color: color-mix(in srgb, var(--text-muted) 88%, transparent);
+    backdrop-filter: blur(6px);
+}
+
+.sm-view-container__surface-label {
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+.sm-view-container__surface-id {
+    font-size: 0.85rem;
+    color: color-mix(in srgb, var(--text-muted) 90%, transparent);
+}
+
+.sm-view-container__overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 1.5rem;
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.65));
+    color: white;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 150ms ease;
+}
+
+.sm-view-container__overlay.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.sm-view-container__overlay-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.sm-view-container__overlay-subtitle {
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
 .sm-le-preview__headline {
     flex: 1;
     display: flex;
@@ -4626,6 +5003,16 @@ var LAYOUT_EDITOR_CSS = `
 .sm-le-inline-option__remove:hover {
     color: var(--text-normal);
     background: rgba(56, 189, 248, 0.12);
+}
+
+.sm-le-view-binding-meta {
+    margin-top: 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.sm-le-view-binding-empty {
+    color: var(--text-muted);
 }
 
 .sm-le-inline-add {
@@ -5468,11 +5855,19 @@ var LayoutEditorPlugin = class extends import_obsidian6.Plugin {
       onDefinitionsChanged: (listener) => onLayoutElementDefinitionsChanged(listener),
       saveLayout: (payload) => saveLayoutToLibrary(this.app, payload),
       listLayouts: () => listSavedLayouts(this.app),
-      loadLayout: (id) => loadSavedLayout(this.app, id)
+      loadLayout: (id) => loadSavedLayout(this.app, id),
+      registerViewBinding,
+      unregisterViewBinding,
+      resetViewBindings: (definitions) => {
+        resetViewBindings(definitions ?? []);
+      },
+      getViewBindings,
+      onViewBindingsChanged: (listener) => onViewBindingsChanged(listener)
     };
   }
   onunload() {
     resetLayoutElementDefinitions(DEFAULT_ELEMENT_DEFINITIONS);
+    resetViewBindings();
     this.removeCss();
   }
   getApi() {

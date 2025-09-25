@@ -16,7 +16,8 @@ plugins/
 │  └─ src/
 │     ├─ app/
 │     │  ├─ main.ts          # Plugin-Bootstrap (Views, Commands, CSS, Terrain-Watcher)
-│     │  └─ css.ts           # Zentrales Styling als Template-String
+│     │  ├─ css.ts           # Zentrales Styling als Template-String
+│     │  └─ layout-editor-bridge.ts # Optionales Binding zum Layout-Editor (View-Registry)
 │     ├─ apps/
 │     │  ├─ cartographer/    # Hex-Map-Workspace mit Editor/Inspector/Travel-Modi
 │     │  ├─ encounter/       # Encounter-View
@@ -34,6 +35,7 @@ plugins/
 - **Encounter-View:** Schlanke Ansicht für Encounter-Notizen.
 - **Core-Services:** Hex-Geometrie, Map/Terrain/Regions-Persistenz sowie Workspace-Helfer als Single Source of Truth.
 - **Geteilte UI-Bausteine:** Modals, Header und Workflows für Map-Management und generische Dialoge.
+- **View Container & Layout-Editor-Bridge:** `ui/view-container.ts` kapselt einen renderbaren View-Host inkl. optionaler Kamera; `src/app/layout-editor-bridge.ts` meldet die Cartographer-Karte als View-Binding beim Layout Editor an.
 - **Build & Styling:** Esbuild erzeugt `main.js`; `css.ts` enthält ausschließlich Salt-Marcher-spezifisches Styling (Layout-Editor-CSS ist in das separate Plugin umgezogen).
 
 ## Datenfluss
@@ -52,6 +54,7 @@ plugins/
 ### `src/apps/cartographer`
 - `index.ts`: Meldet `CartographerView` bei Obsidian an, verwaltet Ribbon/Command-Anbindung und mountet `view-shell.ts` in einem `cartographer-host`-Element.
 - `view-shell.ts`: Baut Layout (Header, Stage, Sidebar), hält aktiven Modus, lädt Karten via `createMapLayer`/`renderHexMap` und delegiert Hex-Events an Modi.
+- `view-shell.ts`: Baut Layout (Header, Stage, Sidebar), hält aktiven Modus, lädt Karten via `createMapLayer`/`renderHexMap`, nutzt den gemeinsamen `view-container` als Map-Host und delegiert Hex-Events an Modi.
 - `modes/editor.ts`: Sidebar für den Editor-Modus. Bindet Tool-Infrastruktur aus `editor/`, synchronisiert Brush-Vorschau und persistiert Terrain-Änderungen über `RenderHandles`.
 - `modes/inspector.ts`: Inspector-Sidebar zum Bearbeiten von Terrain/Notizen eines ausgewählten Hex. Nutzt `hex-notes` für Dateioperationen und aktualisiert Renderer-Fills live.
 - `modes/travel-guide.ts`: Verknüpft Travel-Logik (Playback, Token, Routen) mit dem Cartographer, verwaltet UI-Sidebar und Persistenz über `travel/domain`.
@@ -78,9 +81,10 @@ plugins/
 
 ### `src/ui`
 - `UiOverview.txt`: Übersicht über Struktur und Verantwortlichkeiten der UI-Bausteine.
-- `modals.ts`, `map-workflows.ts`, `map-manager.ts`, `map-header.ts`, `confirm-delete.ts`, `search-dropdown.ts`: Geteilte UI- und Workflow-Komponenten.
+- `modals.ts`, `map-workflows.ts`, `map-manager.ts`, `map-header.ts`, `confirm-delete.ts`, `search-dropdown.ts`, `view-container.ts`: Geteilte UI- und Workflow-Komponenten.
 
 ## Zusammenarbeit mit dem Layout-Editor
 
 - Das Layout-Editor-Plugin liegt unter `plugins/layout-editor/` und bringt eigenes Manifest, Build und CSS mit.
 - Falls benötigt, kann Salt Marcher über Obsidian den Layout Editor parallel laden und über dessen öffentliches API (`getApi()` aus `layout-editor`-Plugin) Layout-Definitionen registrieren oder Layouts laden – ohne direkte Code-Abhängigkeit im Salt-Marcher-Build.
+- `layout-editor-bridge.ts` registriert – sobald verfügbar – das Cartographer-Mapping als `viewBindingId` beim Layout Editor, sodass dessen View Container die Karte als Feature anbietet.

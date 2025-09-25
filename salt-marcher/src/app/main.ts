@@ -8,9 +8,11 @@ import { ensureTerrainFile, loadTerrains, watchTerrains } from "../core/terrain-
 import { setTerrains } from "../core/terrain";
 import { getCenterLeaf } from "../core/layout";
 import { HEX_PLUGIN_CSS } from "./css";
+import { setupLayoutEditorBridge } from "./layout-editor-bridge";
 
 export default class SaltMarcherPlugin extends Plugin {
     private unwatchTerrains?: () => void;
+    private teardownLayoutBridge?: () => void;
     async onload() {
         // Views
         this.registerView(VIEW_CARTOGRAPHER,         (leaf: WorkspaceLeaf) => new CartographerView(leaf));
@@ -55,10 +57,13 @@ export default class SaltMarcherPlugin extends Plugin {
         });
 
         this.injectCss();
+
+        this.teardownLayoutBridge = setupLayoutEditorBridge(this);
     }
 
     onunload() {
         this.unwatchTerrains?.();
+        this.teardownLayoutBridge?.();
         this.removeCss();
     }
 

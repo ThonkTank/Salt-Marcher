@@ -3197,13 +3197,150 @@ function createInspectorMode() {
   };
 }
 
+// src/ui/view-container.ts
+var DEFAULT_CAMERA = {
+  minScale: 0.25,
+  maxScale: 4,
+  zoomSpeed: 1.1
+};
+function createViewContainer(parent, options = {}) {
+  const root = parent.createDiv({ cls: "sm-view-container" });
+  if (options.className) root.addClass(options.className);
+  const viewport = root.createDiv({ cls: "sm-view-container__viewport" });
+  const stage = viewport.createDiv({ cls: "sm-view-container__stage" });
+  const overlay = root.createDiv({ cls: "sm-view-container__overlay" });
+  overlay.toggleClass("is-visible", false);
+  let overlayMessageEl = null;
+  const ensureOverlayMessage = () => {
+    if (overlayMessageEl && overlayMessageEl.isConnected) return overlayMessageEl;
+    overlay.empty();
+    overlayMessageEl = overlay.createDiv({ cls: "sm-view-container__overlay-message" });
+    return overlayMessageEl;
+  };
+  let cameraEnabled = options.camera !== false;
+  const cameraConfig = {
+    ...DEFAULT_CAMERA,
+    ...typeof options.camera === "object" ? options.camera : {}
+  };
+  let camera = { x: 0, y: 0, scale: options.initialScale ?? 1 };
+  const applyCamera = () => {
+    stage.style.transform = `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})`;
+  };
+  applyCamera();
+  let panPointer = null;
+  let panStartX = 0;
+  let panStartY = 0;
+  let panOriginX = 0;
+  let panOriginY = 0;
+  const handlePointerDown = (ev) => {
+    if (!cameraEnabled || ev.button !== 1) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    panPointer = ev.pointerId;
+    panStartX = ev.clientX;
+    panStartY = ev.clientY;
+    panOriginX = camera.x;
+    panOriginY = camera.y;
+    viewport.setPointerCapture(ev.pointerId);
+    viewport.addClass("is-panning");
+  };
+  const handlePointerMove = (ev) => {
+    if (panPointer === null || ev.pointerId !== panPointer) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    const dx = ev.clientX - panStartX;
+    const dy = ev.clientY - panStartY;
+    camera = { ...camera, x: panOriginX + dx, y: panOriginY + dy };
+    applyCamera();
+  };
+  const stopPan = (ev) => {
+    if (panPointer === null) return;
+    if (ev && ev.pointerId !== panPointer) return;
+    if (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      viewport.releasePointerCapture(ev.pointerId);
+    }
+    panPointer = null;
+    viewport.removeClass("is-panning");
+  };
+  const handleWheel = (ev) => {
+    if (!cameraEnabled) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    const delta = ev.deltaY;
+    const factor = Math.exp(-delta * 15e-4 * (cameraConfig.zoomSpeed ?? 1));
+    const nextScale = Math.min(cameraConfig.maxScale, Math.max(cameraConfig.minScale, camera.scale * factor));
+    if (Math.abs(nextScale - camera.scale) < 1e-4) return;
+    const rect = viewport.getBoundingClientRect();
+    const px = ev.clientX - rect.left;
+    const py = ev.clientY - rect.top;
+    const worldX = (px - camera.x) / camera.scale;
+    const worldY = (py - camera.y) / camera.scale;
+    camera = {
+      scale: nextScale,
+      x: px - worldX * nextScale,
+      y: py - worldY * nextScale
+    };
+    applyCamera();
+  };
+  if (cameraEnabled) {
+    viewport.style.touchAction = "none";
+    viewport.addEventListener("pointerdown", handlePointerDown);
+    viewport.addEventListener("pointermove", handlePointerMove);
+    viewport.addEventListener("pointerup", stopPan);
+    viewport.addEventListener("pointercancel", stopPan);
+    viewport.addEventListener("pointerleave", stopPan);
+    viewport.addEventListener("wheel", handleWheel, { passive: false });
+  }
+  const setOverlay = (message) => {
+    if (!message) {
+      overlay.toggleClass("is-visible", false);
+      overlay.empty();
+      overlayMessageEl = null;
+      return;
+    }
+    const target = ensureOverlayMessage();
+    target.setText(message);
+    overlay.toggleClass("is-visible", true);
+  };
+  return {
+    rootEl: root,
+    viewportEl: viewport,
+    stageEl: stage,
+    overlayEl: overlay,
+    setOverlay,
+    clearOverlay() {
+      setOverlay(null);
+    },
+    resetCamera() {
+      camera = { x: 0, y: 0, scale: options.initialScale ?? 1 };
+      applyCamera();
+    },
+    destroy() {
+      stopPan();
+      if (cameraEnabled) {
+        viewport.removeEventListener("pointerdown", handlePointerDown);
+        viewport.removeEventListener("pointermove", handlePointerMove);
+        viewport.removeEventListener("pointerup", stopPan);
+        viewport.removeEventListener("pointercancel", stopPan);
+        viewport.removeEventListener("pointerleave", stopPan);
+        viewport.removeEventListener("wheel", handleWheel);
+      }
+      root.remove();
+    }
+  };
+}
+
 // src/apps/cartographer/view-shell.ts
 async function mountCartographer(app, host, initialFile) {
   host.empty();
   host.classList.add("sm-cartographer");
   const headerHost = host.createDiv({ cls: "sm-cartographer__header" });
   const body = host.createDiv({ cls: "sm-cartographer__body" });
-  const mapHost = body.createDiv({ cls: "sm-cartographer__map" });
+  const mapWrapper = body.createDiv({ cls: "sm-cartographer__map" });
+  const mapView = createViewContainer(mapWrapper, { camera: false });
+  const mapHost = mapView.stageEl;
   const sidebarHost = body.createDiv({ cls: "sm-cartographer__sidebar" });
   let currentFile = initialFile ?? null;
   let headerHandle = null;
@@ -3251,6 +3388,7 @@ async function mountCartographer(app, host, initialFile) {
       mapLayer = null;
     }
     mapHost.empty();
+    mapView.setOverlay(null);
     currentOptions = null;
   }
   async function switchMode(id) {
@@ -3287,7 +3425,8 @@ async function mountCartographer(app, host, initialFile) {
   async function renderMap(token) {
     await teardownLayer();
     if (!currentFile) {
-      mapHost.createDiv({ cls: "sm-cartographer__empty", text: "Keine Karte ausgew\xE4hlt." });
+      mapHost.empty();
+      mapView.setOverlay("Keine Karte ausgew\xE4hlt.");
       currentOptions = null;
       await activeMode?.onFileChange(null, null, modeCtx);
       return;
@@ -3299,10 +3438,8 @@ async function mountCartographer(app, host, initialFile) {
       console.error("[cartographer] failed to parse map options", err);
     }
     if (!opts) {
-      mapHost.createDiv({
-        cls: "sm-cartographer__empty",
-        text: "Kein hex3x3-Block in dieser Datei."
-      });
+      mapHost.empty();
+      mapView.setOverlay("Kein hex3x3-Block in dieser Datei.");
       currentOptions = null;
       await activeMode?.onFileChange(currentFile, null, modeCtx);
       return;
@@ -3315,13 +3452,12 @@ async function mountCartographer(app, host, initialFile) {
       }
       mapLayer = layer;
       currentOptions = opts;
+      mapView.setOverlay(null);
       await activeMode?.onFileChange(currentFile, mapLayer.handles, modeCtx);
     } catch (err) {
       console.error("[cartographer] failed to render map", err);
-      mapHost.createDiv({
-        cls: "sm-cartographer__empty",
-        text: "Karte konnte nicht geladen werden."
-      });
+      mapHost.empty();
+      mapView.setOverlay("Karte konnte nicht geladen werden.");
       currentOptions = null;
       await activeMode?.onFileChange(currentFile, null, modeCtx);
     }
@@ -3428,6 +3564,7 @@ async function mountCartographer(app, host, initialFile) {
     }
     activeMode = null;
     await teardownLayer();
+    mapView.destroy();
     headerHandle?.destroy();
     headerHandle = null;
     if (unbindOutsideClick) {
@@ -5606,6 +5743,71 @@ init_layout();
 
 // src/app/css.ts
 var HEX_PLUGIN_CSS = `
+/* === View Container === */
+.sm-view-container {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    border-radius: 12px;
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+    overflow: hidden;
+}
+
+.sm-view-container__viewport {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+    cursor: grab;
+    touch-action: none;
+    background: color-mix(in srgb, var(--background-secondary) 90%, transparent);
+}
+
+.sm-view-container__viewport.is-panning {
+    cursor: grabbing;
+}
+
+.sm-view-container__stage {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-origin: top left;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+}
+
+.sm-view-container__stage > * {
+    flex: 1 1 auto;
+}
+
+.sm-view-container__overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 1.25rem;
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.65));
+    color: #fff;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 160ms ease;
+}
+
+.sm-view-container__overlay.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.sm-view-container__overlay-message {
+    max-width: 480px;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
 /* === Map-Container & SVG === */
 .hex3x3-container {
     width: 100%;
@@ -6044,6 +6246,11 @@ var HEX_PLUGIN_CSS = `
     box-sizing: border-box;
 }
 
+.sm-cartographer__map .sm-view-container {
+    width: 100%;
+    height: 100%;
+}
+
 .sm-cartographer__map .hex3x3-map {
     height: 100%;
     max-width: none;
@@ -6060,14 +6267,6 @@ var HEX_PLUGIN_CSS = `
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-}
-
-.sm-cartographer__empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: var(--text-muted);
 }
 
 .sm-cartographer__mode-switch {
@@ -6326,6 +6525,69 @@ var HEX_PLUGIN_CSS = `
 .sm-cartographer--travel .hex3x3-map polyline { pointer-events: none; }
 `;
 
+// src/app/layout-editor-bridge.ts
+var LAYOUT_EDITOR_PLUGIN_ID = "layout-editor";
+var MAP_VIEW_BINDING_ID = "salt-marcher.cartographer-map";
+function resolveLayoutEditorApi(app) {
+  const layoutEditor = app.plugins.getPlugin(LAYOUT_EDITOR_PLUGIN_ID);
+  if (!layoutEditor || typeof layoutEditor !== "object") return null;
+  const api = layoutEditor.getApi?.();
+  if (!api || typeof api !== "object") return null;
+  return api;
+}
+function setupLayoutEditorBridge(plugin) {
+  const { app } = plugin;
+  let unregister = null;
+  const tryRegister = () => {
+    if (unregister) return;
+    const api = resolveLayoutEditorApi(app);
+    if (!api?.registerViewBinding) return;
+    try {
+      api.registerViewBinding({
+        id: MAP_VIEW_BINDING_ID,
+        label: "Salt Marcher \u2013 Hex Map",
+        description: "Cartographer-View mit renderHexMap & Token-Workflow."
+      });
+      unregister = () => {
+        try {
+          api.unregisterViewBinding?.(MAP_VIEW_BINDING_ID);
+        } catch (err) {
+          console.error("[salt-marcher] failed to unregister layout binding", err);
+        }
+        unregister = null;
+      };
+    } catch (err) {
+      console.error("[salt-marcher] failed to register layout binding", err);
+    }
+  };
+  tryRegister();
+  plugin.registerEvent(app.workspace.on("layout-ready", tryRegister));
+  const manager = app.plugins;
+  let enabledRef = null;
+  let disabledRef = null;
+  if (typeof manager?.on === "function") {
+    enabledRef = manager.on("plugin-enabled", (id) => {
+      if (id === LAYOUT_EDITOR_PLUGIN_ID) {
+        tryRegister();
+      }
+    });
+    disabledRef = manager.on("plugin-disabled", (id) => {
+      if (id === LAYOUT_EDITOR_PLUGIN_ID) {
+        unregister?.();
+      }
+    });
+  }
+  return () => {
+    unregister?.();
+    if (enabledRef && typeof manager?.off === "function") {
+      manager.off("plugin-enabled", enabledRef);
+    }
+    if (disabledRef && typeof manager?.off === "function") {
+      manager.off("plugin-disabled", disabledRef);
+    }
+  };
+}
+
 // src/app/main.ts
 var SaltMarcherPlugin = class extends import_obsidian22.Plugin {
   async onload() {
@@ -6365,9 +6627,11 @@ var SaltMarcherPlugin = class extends import_obsidian22.Plugin {
       }
     });
     this.injectCss();
+    this.teardownLayoutBridge = setupLayoutEditorBridge(this);
   }
   onunload() {
     this.unwatchTerrains?.();
+    this.teardownLayoutBridge?.();
     this.removeCss();
   }
   injectCss() {

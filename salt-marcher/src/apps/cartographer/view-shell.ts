@@ -11,6 +11,7 @@ import { createMapManager } from "../../ui/map-manager";
 import { createTravelGuideMode } from "./modes/travel-guide";
 import { createEditorMode } from "./modes/editor";
 import { createInspectorMode } from "./modes/inspector";
+import { createViewContainer } from "../../ui/view-container";
 
 export type HexCoord = { r: number; c: number };
 
@@ -58,7 +59,9 @@ export async function mountCartographer(
     const headerHost = host.createDiv({ cls: "sm-cartographer__header" });
     const body = host.createDiv({ cls: "sm-cartographer__body" });
 
-    const mapHost = body.createDiv({ cls: "sm-cartographer__map" });
+    const mapWrapper = body.createDiv({ cls: "sm-cartographer__map" });
+    const mapView = createViewContainer(mapWrapper, { camera: false });
+    const mapHost = mapView.stageEl;
     const sidebarHost = body.createDiv({ cls: "sm-cartographer__sidebar" });
 
     let currentFile: TFile | null = initialFile ?? null;
@@ -111,6 +114,7 @@ export async function mountCartographer(
             mapLayer = null;
         }
         mapHost.empty();
+        mapView.setOverlay(null);
         currentOptions = null;
     }
 
@@ -152,7 +156,8 @@ export async function mountCartographer(
         await teardownLayer();
 
         if (!currentFile) {
-            mapHost.createDiv({ cls: "sm-cartographer__empty", text: "Keine Karte ausgewählt." });
+            mapHost.empty();
+            mapView.setOverlay("Keine Karte ausgewählt.");
             currentOptions = null;
             await activeMode?.onFileChange(null, null, modeCtx);
             return;
@@ -165,10 +170,8 @@ export async function mountCartographer(
             console.error("[cartographer] failed to parse map options", err);
         }
         if (!opts) {
-            mapHost.createDiv({
-                cls: "sm-cartographer__empty",
-                text: "Kein hex3x3-Block in dieser Datei.",
-            });
+            mapHost.empty();
+            mapView.setOverlay("Kein hex3x3-Block in dieser Datei.");
             currentOptions = null;
             await activeMode?.onFileChange(currentFile, null, modeCtx);
             return;
@@ -182,13 +185,12 @@ export async function mountCartographer(
             }
             mapLayer = layer;
             currentOptions = opts;
+            mapView.setOverlay(null);
             await activeMode?.onFileChange(currentFile, mapLayer.handles, modeCtx);
         } catch (err) {
             console.error("[cartographer] failed to render map", err);
-            mapHost.createDiv({
-                cls: "sm-cartographer__empty",
-                text: "Karte konnte nicht geladen werden.",
-            });
+            mapHost.empty();
+            mapView.setOverlay("Karte konnte nicht geladen werden.");
             currentOptions = null;
             await activeMode?.onFileChange(currentFile, null, modeCtx);
         }
@@ -311,6 +313,7 @@ export async function mountCartographer(
         }
         activeMode = null;
         await teardownLayer();
+        mapView.destroy();
         headerHandle?.destroy();
         headerHandle = null;
         if (unbindOutsideClick) { unbindOutsideClick(); unbindOutsideClick = null; }
