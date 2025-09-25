@@ -26,7 +26,7 @@ src/apps/layout/
 - **Modulare Element-Hilfen:** Element-Definitionen (Buttons, Defaults, Layout-Standards) liegen zentral in `definitions.ts`; Canvas-Rendering und Inspector greifen auf dieselben Strukturen zu.
 - **Container-Layout:** BoxContainer, VBoxContainer und HBoxContainer verwalten ihre Kinder inklusive Gap, Padding und Align automatisch und reagieren auch auf verschachtelte Konstellationen. Neue Kinder können weiterhin über den Inspector schnell hinzugefügt oder per Struktur-Baum in andere Container gezogen werden.
 - **Direkte Bearbeitung & Inspector:** Auf der Arbeitsfläche erscheinen echte UI-Elemente (Labels, Inputs, Dropdowns usw.) und lassen sich dort inhaltlich editieren. Erweiterte Eigenschaften wie Platzhalter, Optionslisten oder Container-Layout werden ausschließlich im Inspector gepflegt.
-- **Echte Vorschau:** Label-Elemente passen ihre Schriftgröße automatisch an, einfache Textfelder bestehen nur aus dem Eingabefeld und alle weiteren Controls spiegeln ihr finales Erscheinungsbild ohne zusätzliche Chrome-Elemente wider.
+- **Echte Vorschau:** Label-Elemente passen ihre Schriftgröße automatisch an, einfache Textfelder bestehen nur aus dem Eingabefeld und alle weiteren Controls spiegeln ihr finales Erscheinungsbild ohne zusätzliche Chrome-Elemente wider. Standard-Elemente starten ohne automatisch gesetzte Label-Texte und zeigen lediglich Platzhalter, bis Redakteur:innen eigene Beschriftungen vergeben.
 - **Attribute-Popover:** `attribute-popover.ts` verwaltet das Popover (Öffnen, Positionierung, Synchronisation) und hält Inspector sowie Canvas konsistent.
 - **Undo/Redo-Historie:** `history.ts` kapselt Snapshot-Verwaltung; `view.ts` nutzt sie für Strg+Z / Strg+Umschalt+Z sowie automatisches Pushen nach Mutationen.
 - **Export & Status:** JSON-Export (Canvas + Elemente) sowie Statusleiste werden in `view.ts` gepflegt und auf jede Mutation aktualisiert.
@@ -50,6 +50,7 @@ src/apps/layout/
 
 ### `editor/definitions.ts`
 - Enthält Element-Definitionen inkl. Default-Texte, Größen, Layout-Voreinstellungen und Attribute-Gruppen.
+- Setzt für strukturgebende Elemente leere Default-Labels, damit im Canvas keine redundanten Überschriften erscheinen.
 - Stellt Label-/Summary-Helfer (`getElementTypeLabel`, `getAttributeSummary`, `getContainerAlignLabel`) bereit.
 
 ### `editor/types.ts`

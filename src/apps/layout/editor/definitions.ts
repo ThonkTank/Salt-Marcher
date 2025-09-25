@@ -22,7 +22,7 @@ export const ELEMENT_DEFINITIONS: LayoutElementDefinition[] = [
     {
         type: "textarea",
         buttonLabel: "Mehrzeiliges Feld",
-        defaultLabel: "Beschreibung",
+        defaultLabel: "",
         defaultPlaceholder: "Text erfassen…",
         width: 320,
         height: 180,
@@ -30,7 +30,7 @@ export const ELEMENT_DEFINITIONS: LayoutElementDefinition[] = [
     {
         type: "box-container",
         buttonLabel: "BoxContainer",
-        defaultLabel: "BoxContainer",
+        defaultLabel: "",
         width: 360,
         height: 220,
         defaultLayout: { gap: 16, padding: 16, align: "stretch" },
@@ -38,14 +38,14 @@ export const ELEMENT_DEFINITIONS: LayoutElementDefinition[] = [
     {
         type: "separator",
         buttonLabel: "Trennstrich",
-        defaultLabel: "Trennlinie",
+        defaultLabel: "",
         width: 320,
         height: 80,
     },
     {
         type: "dropdown",
         buttonLabel: "Dropdown",
-        defaultLabel: "Auswahl",
+        defaultLabel: "",
         defaultPlaceholder: "Option wählen…",
         options: ["Option A", "Option B"],
         width: 260,
@@ -54,7 +54,7 @@ export const ELEMENT_DEFINITIONS: LayoutElementDefinition[] = [
     {
         type: "search-dropdown",
         buttonLabel: "Such-Dropdown",
-        defaultLabel: "Suchfeld",
+        defaultLabel: "",
         defaultPlaceholder: "Suchen…",
         options: ["Erster Eintrag", "Zweiter Eintrag"],
         width: 280,
@@ -63,7 +63,7 @@ export const ELEMENT_DEFINITIONS: LayoutElementDefinition[] = [
     {
         type: "vbox-container",
         buttonLabel: "VBoxContainer",
-        defaultLabel: "VBoxContainer",
+        defaultLabel: "",
         defaultDescription: "Ordnet verknüpfte Elemente automatisch untereinander an.",
         width: 340,
         height: 260,
@@ -72,7 +72,7 @@ export const ELEMENT_DEFINITIONS: LayoutElementDefinition[] = [
     {
         type: "hbox-container",
         buttonLabel: "HBoxContainer",
-        defaultLabel: "HBoxContainer",
+        defaultLabel: "",
         defaultDescription: "Ordnet verknüpfte Elemente automatisch nebeneinander an.",
         width: 360,
         height: 220,
