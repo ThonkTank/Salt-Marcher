@@ -34,7 +34,7 @@ Salt-Marcher/
 - **Library-View:** Vereinheitlicht das Management von Terrains, Regionen und Kreaturen inklusive Suchleiste, Erstellung,
   Inline-Bearbeitung und Persistenz.
 - **Encounter-View:** Liefert eine leichtgewichtige Ansicht für Encounter-Notizen.
-- **Layout-Editor:** Bietet eine Drag-&-Drop-Arbeitsfläche mit direkter Inline-Bearbeitung für Labels, Defaults & Optionen, übersetzt Texte in Zielsprachen und exportiert Abmessungen als JSON.
+- **Layout-Editor:** Bietet eine Drag-&-Drop-Arbeitsfläche mit gruppierter Elementpalette, zeigt Vorschauen ohne störende Eingabefelder an, verwaltet Benennungen im Inspector, übersetzt Texte in Zielsprachen und exportiert Abmessungen als JSON.
 - **Core-Services:** Stellen Hex-Geometrie, Map/Tile-Dateioperationen, Terrain- und Regions-Persistenz sowie Workspace-Helfer
   bereit und dienen als Single Source of Truth für die Apps.
 - **Geteilte UI-Bausteine:** Modals, Header- und Workflow-Helfer kapseln wiederkehrende Interaktionen (Map-Auswahl, Bestätigungen,
