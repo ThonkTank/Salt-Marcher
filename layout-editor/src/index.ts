@@ -10,4 +10,13 @@ export {
     unregisterLayoutElementDefinition,
 } from "./definitions";
 export { listSavedLayouts, loadSavedLayout, saveLayoutToLibrary } from "./layout-library";
+export {
+    getViewBinding,
+    getViewBindings,
+    onViewBindingsChanged,
+    registerViewBinding,
+    resetViewBindings,
+    unregisterViewBinding,
+    type LayoutViewBindingDefinition,
+} from "./view-registry";
 export * from "./types";

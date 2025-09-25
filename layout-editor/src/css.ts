@@ -588,6 +588,126 @@ export const LAYOUT_EDITOR_CSS = `
     padding: 0.15rem;
 }
 
+.sm-le-preview--view-container {
+    flex: 1;
+}
+
+.sm-view-container {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    flex: 1;
+    border-radius: 12px;
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+    overflow: hidden;
+}
+
+.sm-view-container--design {
+    background: linear-gradient(
+            135deg,
+            color-mix(in srgb, var(--background-secondary) 78%, transparent) 0%,
+            color-mix(in srgb, var(--background-secondary) 88%, transparent) 100%
+        );
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.sm-view-container__viewport {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+    cursor: grab;
+    touch-action: none;
+    background: color-mix(in srgb, var(--background-secondary) 92%, transparent);
+}
+
+.sm-view-container__content {
+    width: 100%;
+    height: 100%;
+    transform-origin: top left;
+}
+
+.sm-view-container__surface {
+    position: relative;
+    width: 960px;
+    height: 640px;
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--background-primary) 92%, transparent);
+    border: 1px solid color-mix(in srgb, var(--background-modifier-border) 80%, transparent);
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.14);
+    overflow: hidden;
+}
+
+.sm-view-container__surface-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(0deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+}
+
+.sm-view-container__surface-info {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: center;
+    text-align: center;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.08);
+    color: color-mix(in srgb, var(--text-muted) 88%, transparent);
+    backdrop-filter: blur(6px);
+}
+
+.sm-view-container__surface-label {
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+.sm-view-container__surface-id {
+    font-size: 0.85rem;
+    color: color-mix(in srgb, var(--text-muted) 90%, transparent);
+}
+
+.sm-view-container__overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 1.5rem;
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.65));
+    color: white;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 150ms ease;
+}
+
+.sm-view-container__overlay.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.sm-view-container__overlay-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.sm-view-container__overlay-subtitle {
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
 .sm-le-preview__headline {
     flex: 1;
     display: flex;
@@ -803,6 +923,16 @@ export const LAYOUT_EDITOR_CSS = `
 .sm-le-inline-option__remove:hover {
     color: var(--text-normal);
     background: rgba(56, 189, 248, 0.12);
+}
+
+.sm-le-view-binding-meta {
+    margin-top: 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.sm-le-view-binding-empty {
+    color: var(--text-muted);
 }
 
 .sm-le-inline-add {

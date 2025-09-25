@@ -10,6 +10,14 @@ import {
     unregisterLayoutElementDefinition as unregisterElementDefinition,
 } from "./definitions";
 import { listSavedLayouts, loadSavedLayout, saveLayoutToLibrary } from "./layout-library";
+import {
+    getViewBindings,
+    onViewBindingsChanged,
+    registerViewBinding as registerView,
+    resetViewBindings as resetViewRegistry,
+    unregisterViewBinding as unregisterView,
+    type LayoutViewBindingDefinition,
+} from "./view-registry";
 import type {
     LayoutBlueprint,
     LayoutElementDefinition,
@@ -30,6 +38,11 @@ export interface LayoutEditorPluginApi {
     saveLayout(payload: LayoutBlueprint & { name: string; id?: string }): Promise<SavedLayout>;
     listLayouts(): Promise<SavedLayout[]>;
     loadLayout(id: string): Promise<SavedLayout | null>;
+    registerViewBinding(definition: LayoutViewBindingDefinition): void;
+    unregisterViewBinding(id: string): void;
+    resetViewBindings(definitions?: LayoutViewBindingDefinition[]): void;
+    getViewBindings(): LayoutViewBindingDefinition[];
+    onViewBindingsChanged(listener: (bindings: LayoutViewBindingDefinition[]) => void): () => void;
 }
 
 export default class LayoutEditorPlugin extends Plugin {
@@ -71,11 +84,19 @@ export default class LayoutEditorPlugin extends Plugin {
             saveLayout: payload => saveLayoutToLibrary(this.app, payload),
             listLayouts: () => listSavedLayouts(this.app),
             loadLayout: id => loadSavedLayout(this.app, id),
+            registerViewBinding: registerView,
+            unregisterViewBinding: unregisterView,
+            resetViewBindings: definitions => {
+                resetViewRegistry(definitions ?? []);
+            },
+            getViewBindings,
+            onViewBindingsChanged: listener => onViewBindingsChanged(listener),
         };
     }
 
     onunload() {
         resetLayoutElementDefinitions(DEFAULT_ELEMENT_DEFINITIONS);
+        resetViewRegistry();
         this.removeCss();
     }
 

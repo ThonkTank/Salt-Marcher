@@ -35,6 +35,7 @@ import {
     createElementsStatus,
     ensureFieldLabelFor,
 } from "./elements/ui";
+import { onViewBindingsChanged } from "./view-registry";
 
 export const VIEW_LAYOUT_EDITOR = "salt-layout-editor";
 export class LayoutEditorView extends ItemView {
@@ -45,6 +46,7 @@ export class LayoutEditorView extends ItemView {
     private isImporting = false;
     private elementDefinitions: LayoutElementDefinition[] = getElementDefinitions();
     private disposeDefinitionListener: (() => void) | null = null;
+    private disposeViewBindingListener: (() => void) | null = null;
 
     private structureWidth = 260;
     private inspectorWidth = 320;
@@ -114,6 +116,10 @@ export class LayoutEditorView extends ItemView {
             this.renderAddElementControl();
             this.renderInspector();
         });
+        this.disposeViewBindingListener = onViewBindingsChanged(() => {
+            this.renderInspector();
+            this.renderElements();
+        });
         this.render();
         this.refreshExport();
         this.updateStatus();
@@ -129,6 +135,8 @@ export class LayoutEditorView extends ItemView {
         this.isSavingLayout = false;
         this.disposeDefinitionListener?.();
         this.disposeDefinitionListener = null;
+        this.disposeViewBindingListener?.();
+        this.disposeViewBindingListener = null;
     }
 
     private onKeyDown = (ev: KeyboardEvent) => {

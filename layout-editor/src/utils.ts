@@ -13,6 +13,7 @@ export function cloneLayoutElement(element: LayoutElement): LayoutElement {
         options: element.options ? [...element.options] : undefined,
         layout: element.layout ? { ...element.layout } : undefined,
         children: element.children ? [...element.children] : undefined,
+        viewState: element.viewState ? JSON.parse(JSON.stringify(element.viewState)) : undefined,
     };
 }
 
@@ -22,6 +23,34 @@ function arraysAreEqual<T>(a: readonly T[] | undefined, b: readonly T[] | undefi
     if (arrA.length !== arrB.length) return false;
     for (let i = 0; i < arrA.length; i++) {
         if (arrA[i] !== arrB[i]) return false;
+    }
+    return true;
+}
+
+function recordsAreEqual(
+    a: Record<string, unknown> | undefined,
+    b: Record<string, unknown> | undefined,
+): boolean {
+    if (a === b) return true;
+    if (!a || !b) return !a && !b;
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+    if (keysA.length !== keysB.length) return false;
+    for (const key of keysA) {
+        if (!Object.prototype.hasOwnProperty.call(b, key)) return false;
+        const valA = a[key];
+        const valB = b[key];
+        if (Array.isArray(valA) && Array.isArray(valB)) {
+            if (!arraysAreEqual(valA, valB)) return false;
+            continue;
+        }
+        if (typeof valA === "object" && valA && typeof valB === "object" && valB) {
+            if (!recordsAreEqual(valA as Record<string, unknown>, valB as Record<string, unknown>)) {
+                return false;
+            }
+            continue;
+        }
+        if (valA !== valB) return false;
     }
     return true;
 }
@@ -41,6 +70,10 @@ export function elementsAreEqual(a: LayoutElement, b: LayoutElement): boolean {
         a.defaultValue !== b.defaultValue ||
         a.parentId !== b.parentId
     ) {
+        return false;
+    }
+    if (a.viewBindingId !== b.viewBindingId) return false;
+    if (!recordsAreEqual(a.viewState as Record<string, unknown> | undefined, b.viewState as Record<string, unknown> | undefined)) {
         return false;
     }
     if (!arraysAreEqual(a.options, b.options)) return false;

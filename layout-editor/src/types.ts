@@ -27,6 +27,8 @@ export interface LayoutElement {
     parentId?: string;
     layout?: LayoutContainerConfig;
     children?: string[];
+    viewBindingId?: string;
+    viewState?: Record<string, unknown>;
 }
 
 export interface LayoutEditorSnapshot {

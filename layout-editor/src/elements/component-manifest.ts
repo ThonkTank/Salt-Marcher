@@ -11,6 +11,7 @@ import separatorComponent from "./components/separator";
 import textInputComponent from "./components/text-input";
 import textareaComponent from "./components/textarea";
 import vboxContainerComponent from "./components/vbox-container";
+import viewContainerComponent from "./components/view-container";
 
 export const COMPONENTS: LayoutElementComponent[] = [
     boxContainerComponent,
@@ -22,4 +23,5 @@ export const COMPONENTS: LayoutElementComponent[] = [
     textInputComponent,
     textareaComponent,
     vboxContainerComponent,
+    viewContainerComponent,
 ];
