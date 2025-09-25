@@ -2,6 +2,14 @@
 import { App, Modal } from "obsidian";
 import type { SavedLayout } from "./types";
 import { enhanceSelectToSearch } from "./search-dropdown";
+import {
+    createElementsButton,
+    createElementsHeading,
+    createElementsMeta,
+    createElementsParagraph,
+    createElementsSelect,
+    createElementsStatus,
+} from "./elements/ui";
 
 interface LayoutPickerModalOptions {
     loadLayouts: () => Promise<SavedLayout[]>;
@@ -30,23 +38,27 @@ export class LayoutPickerModal extends Modal {
         contentEl.empty();
         contentEl.addClass("sm-le-layout-picker");
 
-        contentEl.createEl("h3", { text: "Gespeichertes Layout laden" });
-        contentEl.createEl("p", {
-            text: "Wähle ein Layout aus deiner Bibliothek, das in den Editor geladen werden soll.",
-        });
+        const heading = createElementsHeading(contentEl, 3, "Gespeichertes Layout laden");
+        heading.addClass("sm-le-layout-picker__heading");
+        createElementsParagraph(contentEl, "Wähle ein Layout aus deiner Bibliothek, das in den Editor geladen werden soll.");
 
-        this.selectEl = contentEl.createEl("select", { cls: "sm-le-layout-picker__select" });
+        this.selectEl = createElementsSelect(contentEl, { options: [], disabled: true });
+        this.selectEl.classList.add("sm-le-layout-picker__select");
         this.selectEl.size = 1;
         this.selectEl.disabled = true;
         this.selectEl.addEventListener("change", () => this.handleSelectionChange());
 
-        this.statusEl = contentEl.createDiv({ cls: "sm-le-layout-picker__status", text: "Layouts werden geladen …" });
+        this.statusEl = createElementsStatus(contentEl, {
+            text: "Layouts werden geladen …",
+        });
+        this.statusEl.addClass("sm-le-layout-picker__status");
         this.detailsEl = contentEl.createDiv({ cls: "sm-le-layout-picker__details" });
 
         const buttonContainer = contentEl.createDiv({ cls: "modal-button-container" });
-        const cancelBtn = buttonContainer.createEl("button", { text: "Abbrechen" });
+        const cancelBtn = createElementsButton(buttonContainer, { label: "Abbrechen" });
         cancelBtn.onclick = () => this.close();
-        this.submitBtn = buttonContainer.createEl("button", { text: "Layout laden", cls: "mod-cta" });
+        this.submitBtn = createElementsButton(buttonContainer, { label: "Layout laden", variant: "primary" });
+        this.submitBtn.classList.add("mod-cta");
         this.submitBtn.disabled = true;
         this.submitBtn.onclick = () => this.submit();
 
@@ -78,17 +90,23 @@ export class LayoutPickerModal extends Modal {
             }
 
             this.populateSelect();
-            if (this.statusEl) {
-                this.statusEl.remove();
-                this.statusEl = null;
-            }
+            this.statusEl?.remove();
+            this.statusEl = null;
             this.selectEl.disabled = false;
             this.selectEl.style.display = "";
             enhanceSelectToSearch(this.selectEl, "Layout suchen …");
             this.handleSelectionChange();
         } catch (error) {
             console.error("LayoutPickerModal: failed to load layouts", error);
-            this.statusEl?.setText("Layouts konnten nicht geladen werden.");
+            if (!this.statusEl) {
+                this.statusEl = createElementsStatus(this.contentEl, {
+                    text: "Layouts konnten nicht geladen werden.",
+                    tone: "warning",
+                });
+                this.statusEl.addClass("sm-le-layout-picker__status");
+            } else {
+                this.statusEl.setText("Layouts konnten nicht geladen werden.");
+            }
             this.selectEl.style.display = "none";
             this.submitBtn?.setAttribute("disabled", "disabled");
         }
@@ -133,10 +151,10 @@ export class LayoutPickerModal extends Modal {
         const created = layout.createdAt !== layout.updatedAt ? formatTimestamp(layout.createdAt) : null;
         const metaParts = [`Größe: ${layout.canvasWidth} × ${layout.canvasHeight}`];
         metaParts.push(`Elemente: ${layout.elements.length}`);
-        this.detailsEl.createEl("div", { text: metaParts.join(" · ") });
-        const updatedEl = this.detailsEl.createEl("div", { text: `Zuletzt aktualisiert: ${updated}` });
+        createElementsMeta(this.detailsEl, metaParts.join(" · "));
+        const updatedEl = createElementsMeta(this.detailsEl, `Zuletzt aktualisiert: ${updated}`);
         if (created) {
-            this.detailsEl.createEl("div", { text: `Erstellt: ${created}` });
+            createElementsMeta(this.detailsEl, `Erstellt: ${created}`);
         }
         updatedEl.classList.add("sm-le-layout-picker__meta");
     }

@@ -6,6 +6,7 @@ plugins/layout-editor/src/elements/
 ├─ ElementsOverview.txt     # Diese Übersicht über Struktur & Vererbung
 ├─ base.ts                  # Gemeinsame Interfaces für Preview/Inspector-Kontexte
 ├─ component-manifest.ts    # Auto-generierte Komponentenliste (Build-Artefakt)
+├─ ui.ts                    # Elements-UI-Komponenten für Editor- und Modal-Controls
 ├─ registry.ts              # Registriert Komponenten & liefert Lookup-Helfer
 ├─ shared/
 │  ├─ component-bases.ts    # Abstrakte Basisklassen (Container, Field, TextField, Select)
@@ -44,6 +45,7 @@ ElementComponentBase
 - **Optionale Suche in Selects:** `SelectComponent` erweitert `FieldComponent` um Options-Rendering sowie Search-Integration.
 - **Container-Verhalten:** `ContainerComponent` stellt Standardlayout, Preview und Inspector-Einträge für Container sicher; `container-preview.ts` zeichnet die Vorschau konsistent.
 - **Manifest & Registry:** `component-manifest.ts` und `registry.ts` verbinden sämtliche Komponenten mit Palette und Inspector.
+- **UI-Komponenten (`ui.ts`):** Stellt generische Controls für Buttons, Felder, Inputs und Statusanzeigen bereit, die in View, Inspector und Modals verwendet werden.
 
 ## Datei-Referenz
 - **`base.ts`:** Typisiert Preview-/Inspector-Kontexte, Factory-Signaturen und Komponentenschnittstellen.
@@ -60,3 +62,4 @@ ElementComponentBase
 - **`components/textarea.ts`:** Konfiguriert `TextFieldComponent` für mehrzeilige Eingaben inkl. Placeholder-Steuerung.
 - **`components/label.ts`:** Realisiert Inline-Editing für Überschriften samt dynamischer Schriftgrößenanpassung.
 - **`components/separator.ts`:** Rendert optionale Überschrift plus Trennlinie ohne zusätzliche Basisklasse.
+- **`ui.ts`:** Bündelt allgemeine UI-Bausteine (Buttons, Formularfelder, Selects, Statusanzeigen, Stacks), damit der Editor komplett auf Elements-Komponenten basiert.

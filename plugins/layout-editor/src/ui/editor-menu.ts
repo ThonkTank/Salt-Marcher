@@ -1,4 +1,5 @@
 // plugins/layout-editor/src/ui/editor-menu.ts
+import { createElementsButton } from "../elements/ui";
 export type EditorMenuEntry =
     | { type: "item"; label: string; description?: string; onSelect: () => void; disabled?: boolean }
     | { type: "separator" };
@@ -69,7 +70,9 @@ export function openEditorMenu(options: EditorMenuOptions): EditorMenuHandle | n
             menu.createDiv({ cls: "sm-le-menu__separator" });
             continue;
         }
-        const item = menu.createEl("button", { cls: "sm-le-menu__item" });
+        const item = createElementsButton(menu, { label: "" });
+        item.addClass("sm-le-menu__item");
+        item.setText("");
         item.type = "button";
         item.createSpan({ cls: "sm-le-menu__label", text: entry.label });
         if (entry.description) {

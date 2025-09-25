@@ -11,6 +11,15 @@ import type { ElementInspectorContext } from "./elements/base";
 import { LayoutContainerAlign, LayoutElement, LayoutElementDefinition, LayoutElementType } from "./types";
 import { collectAncestorIds, collectDescendantIds, isContainerElement } from "./utils";
 import { openEditorMenu } from "./ui/editor-menu";
+import {
+    createElementsButton,
+    createElementsField,
+    createElementsHeading,
+    createElementsInput,
+    createElementsMeta,
+    createElementsSelect,
+    ensureFieldLabelFor,
+} from "./elements/ui";
 
 export interface InspectorCallbacks {
     ensureContainerDefaults(element: LayoutElement): void;
@@ -39,7 +48,8 @@ export interface InspectorDependencies {
 export function renderInspectorPanel(deps: InspectorDependencies) {
     const { host, element } = deps;
     host.empty();
-    host.createEl("h3", { text: "Eigenschaften" });
+    const heading = createElementsHeading(host, 3, "Eigenschaften");
+    heading.addClass("sm-le-panel__heading");
 
     if (!element) {
         host.createDiv({ cls: "sm-le-empty", text: "Wähle ein Element, um Details anzupassen." });
@@ -74,36 +84,46 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
             for (const id of ancestors) blockedContainers.add(id);
             blockedContainers.add(element.id);
         }
-        const containerField = host.createDiv({ cls: "sm-le-field" });
-        containerField.createEl("label", { text: "Container" });
-        const parentSelect = containerField.createEl("select") as HTMLSelectElement;
-        parentSelect.createEl("option", { value: "", text: "Kein Container" });
-        for (const container of containers) {
-            if (blockedContainers.has(container.id)) continue;
-            const label = container.label || getElementTypeLabel(container.type);
-            const option = parentSelect.createEl("option", { value: container.id, text: label });
-            if (element.parentId === container.id) option.selected = true;
-        }
+        const containerField = createElementsField(host, { label: "Container" });
+        containerField.fieldEl.addClass("sm-le-field");
+        const options = [
+            { value: "", label: "Kein Container" },
+            ...containers
+                .filter(container => !blockedContainers.has(container.id))
+                .map(container => ({
+                    value: container.id,
+                    label: container.label || getElementTypeLabel(container.type),
+                })),
+        ];
+        const parentSelect = createElementsSelect(containerField.controlEl, {
+            options,
+            value: element.parentId ?? "",
+        });
+        ensureFieldLabelFor(containerField, parentSelect);
         parentSelect.onchange = () => {
             const value = parentSelect.value || null;
             callbacks.assignElementToContainer(element.id, value);
         };
     }
 
-    const attributesField = host.createDiv({ cls: "sm-le-field" });
-    attributesField.createEl("label", { text: "Attribute" });
-    const attributesChip = attributesField.createDiv({ cls: "sm-le-attr" });
+    const attributesField = createElementsField(host, { label: "Attribute" });
+    attributesField.fieldEl.addClass("sm-le-field");
+    const attributesChip = attributesField.controlEl.createDiv({ cls: "sm-le-attr" });
     attributesChip.setText(getAttributeSummary(element.attributes));
 
     const actions = host.createDiv({ cls: "sm-le-actions" });
-    const deleteBtn = actions.createEl("button", { text: "Element löschen" });
+    const deleteBtn = createElementsButton(actions, { label: "Element löschen", variant: "warning" });
     deleteBtn.classList.add("mod-warning");
     deleteBtn.onclick = () => callbacks.deleteElement(element.id);
 
-    const dimsField = host.createDiv({ cls: "sm-le-field sm-le-field--grid" });
-    dimsField.createEl("label", { text: "Breite (px)" });
-    const widthInput = dimsField.createEl("input", { attr: { type: "number", min: String(MIN_ELEMENT_SIZE) } }) as HTMLInputElement;
-    widthInput.value = String(Math.round(element.width));
+    const sizeField = createElementsField(host, { label: "Größe (px)", layout: "inline" });
+    sizeField.fieldEl.addClass("sm-le-field");
+    const widthInput = createElementsInput(sizeField.controlEl, {
+        type: "number",
+        min: MIN_ELEMENT_SIZE,
+        value: String(Math.round(element.width)),
+    });
+    ensureFieldLabelFor(sizeField, widthInput);
     widthInput.onchange = () => {
         const maxWidth = Math.max(MIN_ELEMENT_SIZE, canvasWidth - element.x);
         const next = clampNumber(parseInt(widthInput.value, 10) || element.width, MIN_ELEMENT_SIZE, maxWidth);
@@ -120,9 +140,12 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
             callbacks.applyContainerLayout(parentContainer);
         }
     };
-    dimsField.createEl("label", { text: "Höhe (px)" });
-    const heightInput = dimsField.createEl("input", { attr: { type: "number", min: String(MIN_ELEMENT_SIZE) } }) as HTMLInputElement;
-    heightInput.value = String(Math.round(element.height));
+    sizeField.controlEl.createSpan({ cls: "sm-elements-inline-text", text: "×" });
+    const heightInput = createElementsInput(sizeField.controlEl, {
+        type: "number",
+        min: MIN_ELEMENT_SIZE,
+        value: String(Math.round(element.height)),
+    });
     heightInput.onchange = () => {
         const maxHeight = Math.max(MIN_ELEMENT_SIZE, canvasHeight - element.y);
         const next = clampNumber(parseInt(heightInput.value, 10) || element.height, MIN_ELEMENT_SIZE, maxHeight);
@@ -140,10 +163,14 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
         }
     };
 
-    const posField = host.createDiv({ cls: "sm-le-field sm-le-field--grid" });
-    posField.createEl("label", { text: "X-Position" });
-    const posXInput = posField.createEl("input", { attr: { type: "number", min: "0" } }) as HTMLInputElement;
-    posXInput.value = String(Math.round(element.x));
+    const positionField = createElementsField(host, { label: "Position (px)", layout: "inline" });
+    positionField.fieldEl.addClass("sm-le-field");
+    const posXInput = createElementsInput(positionField.controlEl, {
+        type: "number",
+        min: 0,
+        value: String(Math.round(element.x)),
+    });
+    ensureFieldLabelFor(positionField, posXInput);
     posXInput.onchange = () => {
         const maxX = Math.max(0, canvasWidth - element.width);
         const next = clampNumber(parseInt(posXInput.value, 10) || element.x, 0, maxX);
@@ -160,9 +187,12 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
             callbacks.applyContainerLayout(parentContainer);
         }
     };
-    posField.createEl("label", { text: "Y-Position" });
-    const posYInput = posField.createEl("input", { attr: { type: "number", min: "0" } }) as HTMLInputElement;
-    posYInput.value = String(Math.round(element.y));
+    positionField.controlEl.createSpan({ cls: "sm-elements-inline-text", text: "," });
+    const posYInput = createElementsInput(positionField.controlEl, {
+        type: "number",
+        min: 0,
+        value: String(Math.round(element.y)),
+    });
     posYInput.onchange = () => {
         const maxY = Math.max(0, canvasHeight - element.height);
         const next = clampNumber(parseInt(posYInput.value, 10) || element.y, 0, maxY);
@@ -209,8 +239,8 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
 
     component?.renderInspector?.(inspectorContext);
 
-    const meta = host.createDiv({ cls: "sm-le-meta" });
-    meta.setText(`Fläche: ${Math.round(element.width * element.height)} px²`);
+    const meta = createElementsMeta(host, `Fläche: ${Math.round(element.width * element.height)} px²`);
+    meta.addClass("sm-le-meta");
 
     if (isContainer) {
         renderContainerInspectorSections({ element, host, elements, callbacks, definitions });
@@ -229,9 +259,9 @@ type ContainerInspectorOptions = {
 
 function renderContainerInspectorSections(options: ContainerInspectorOptions) {
     const { element, host, elements, callbacks, definitions } = options;
-    const quickAddField = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
-    quickAddField.createEl("label", { text: "Neues Element erstellen" });
-    const quickAddBtn = quickAddField.createEl("button", { text: "Element hinzufügen" });
+    const quickAddField = createElementsField(host, { label: "Neues Element erstellen", layout: "stack" });
+    quickAddField.fieldEl.addClass("sm-le-field");
+    const quickAddBtn = createElementsButton(quickAddField.controlEl, { label: "Element hinzufügen" });
     quickAddBtn.classList.add("sm-le-inline-add", "sm-le-inline-add--menu");
     quickAddBtn.onclick = ev => {
         ev.preventDefault();
@@ -253,11 +283,13 @@ function renderContainerInspectorSections(options: ContainerInspectorOptions) {
         openEditorMenu({ anchor: quickAddBtn, entries, event: ev });
     };
 
-    const childField = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
-    childField.createEl("label", { text: "Zugeordnete Elemente" });
-    const addRow = childField.createDiv({ cls: "sm-le-container-add" });
-    const addSelect = addRow.createEl("select") as HTMLSelectElement;
-    addSelect.createEl("option", { value: "", text: "Element auswählen…" });
+    const childField = createElementsField(host, { label: "Zugeordnete Elemente", layout: "stack" });
+    childField.fieldEl.addClass("sm-le-field");
+    const addRow = childField.controlEl.createDiv({ cls: "sm-le-container-add" });
+    const addSelect = createElementsSelect(addRow, {
+        options: [{ value: "", label: "Element auswählen…" }],
+        value: "",
+    });
     const blockedIds = new Set<string>([element.id]);
     const descendants = collectDescendantIds(element, elements);
     for (const id of descendants) blockedIds.add(id);
@@ -274,9 +306,12 @@ function renderContainerInspectorSections(options: ContainerInspectorOptions) {
                 optionText = `${textBase} (in ${parentName})`;
             }
         }
-        addSelect.createEl("option", { value: candidate.id, text: optionText });
+        const option = document.createElement("option");
+        option.value = candidate.id;
+        option.text = optionText;
+        addSelect.add(option);
     }
-    const addButton = addRow.createEl("button", { text: "Hinzufügen" });
+    const addButton = createElementsButton(addRow, { label: "Hinzufügen" });
     addButton.onclick = ev => {
         ev.preventDefault();
         const target = addSelect.value;
@@ -285,7 +320,7 @@ function renderContainerInspectorSections(options: ContainerInspectorOptions) {
         }
     };
 
-    const childList = childField.createDiv({ cls: "sm-le-container-children" });
+    const childList = childField.controlEl.createDiv({ cls: "sm-le-container-children" });
     const children = Array.isArray(element.children)
         ? element.children
               .map(childId => elements.find(el => el.id === childId))
@@ -298,19 +333,22 @@ function renderContainerInspectorSections(options: ContainerInspectorOptions) {
             const row = childList.createDiv({ cls: "sm-le-container-child" });
             row.createSpan({ cls: "sm-le-container-child__label", text: child.label || getElementTypeLabel(child.type) });
             const controls = row.createDiv({ cls: "sm-le-container-child__actions" });
-            const upBtn = controls.createEl("button", { text: "↑", attr: { title: "Nach oben" } });
+            const upBtn = createElementsButton(controls, { label: "↑" });
+            upBtn.setAttr("title", "Nach oben");
             upBtn.disabled = idx === 0;
             upBtn.onclick = ev => {
                 ev.preventDefault();
                 callbacks.moveChildInContainer(element, child.id, -1);
             };
-            const downBtn = controls.createEl("button", { text: "↓", attr: { title: "Nach unten" } });
+            const downBtn = createElementsButton(controls, { label: "↓" });
+            downBtn.setAttr("title", "Nach unten");
             downBtn.disabled = idx === children.length - 1;
             downBtn.onclick = ev => {
                 ev.preventDefault();
                 callbacks.moveChildInContainer(element, child.id, 1);
             };
-            const removeBtn = controls.createEl("button", { text: "✕", attr: { title: "Entfernen" } });
+            const removeBtn = createElementsButton(controls, { label: "✕" });
+            removeBtn.setAttr("title", "Entfernen");
             removeBtn.onclick = ev => {
                 ev.preventDefault();
                 callbacks.assignElementToContainer(child.id, null);
@@ -342,9 +380,10 @@ type PlaceholderFieldOptions = {
 
 function renderPlaceholderField(options: PlaceholderFieldOptions) {
     const { host, element, callbacks, label } = options;
-    const field = host.createDiv({ cls: "sm-le-field" });
-    field.createEl("label", { text: label });
-    const input = field.createEl("input", { attr: { type: "text" } }) as HTMLInputElement;
+    const field = createElementsField(host, { label });
+    field.fieldEl.addClass("sm-le-field");
+    const input = createElementsInput(field.controlEl, {});
+    ensureFieldLabelFor(field, input);
     input.value = element.placeholder ?? "";
     const commit = () => {
         const raw = input.value;
@@ -355,7 +394,7 @@ function renderPlaceholderField(options: PlaceholderFieldOptions) {
     };
     input.onchange = commit;
     input.onblur = commit;
-    return field;
+    return field.fieldEl;
 }
 
 type LabelFieldOptions = {
@@ -367,9 +406,10 @@ type LabelFieldOptions = {
 
 function renderLabelField(options: LabelFieldOptions) {
     const { host, element, callbacks, label } = options;
-    const field = host.createDiv({ cls: "sm-le-field" });
-    field.createEl("label", { text: label });
-    const input = field.createEl("input", { attr: { type: "text" } }) as HTMLInputElement;
+    const field = createElementsField(host, { label });
+    field.fieldEl.addClass("sm-le-field");
+    const input = createElementsInput(field.controlEl, {});
+    ensureFieldLabelFor(field, input);
     input.value = element.label ?? "";
     const commit = () => {
         const next = input.value ?? "";
@@ -379,27 +419,24 @@ function renderLabelField(options: LabelFieldOptions) {
     };
     input.onchange = commit;
     input.onblur = commit;
-    return field;
+    return field.fieldEl;
 }
 
 type OptionsEditorOptions = { host: HTMLElement; element: LayoutElement; callbacks: InspectorCallbacks };
 
 function renderOptionsEditor(options: OptionsEditorOptions) {
     const { host, element, callbacks } = options;
-    const field = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
-    field.createEl("label", { text: "Optionen" });
-    const optionList = field.createDiv({ cls: "sm-le-inline-options" });
+    const field = createElementsField(host, { label: "Optionen", layout: "stack" });
+    field.fieldEl.addClass("sm-le-field");
+    const optionList = field.controlEl.createDiv({ cls: "sm-le-inline-options" });
     const optionValues = element.options ?? [];
     if (!optionValues.length) {
         optionList.createDiv({ cls: "sm-le-inline-options__empty", text: "Noch keine Optionen." });
     } else {
         optionValues.forEach((opt, index) => {
             const row = optionList.createDiv({ cls: "sm-le-inline-option" });
-            const input = row.createEl("input", {
-                attr: { type: "text" },
-                cls: "sm-le-inline-option__input",
-                value: opt,
-            }) as HTMLInputElement;
+            const input = createElementsInput(row, { value: opt });
+            input.addClass("sm-le-inline-option__input");
             input.onchange = () => {
                 const next = input.value || opt;
                 if (next === opt) return;
@@ -411,11 +448,9 @@ function renderOptionsEditor(options: OptionsEditorOptions) {
                 }
                 finalizeElementChange(element, callbacks, { rerender: true });
             };
-            const remove = row.createEl("button", {
-                text: "✕",
-                cls: "sm-le-inline-option__remove",
-                attr: { title: "Option entfernen" },
-            });
+            const remove = createElementsButton(row, { label: "✕" });
+            remove.classList.add("sm-le-inline-option__remove");
+            remove.setAttr("title", "Option entfernen");
             remove.onclick = ev => {
                 ev.preventDefault();
                 const nextOptions = (element.options ?? []).filter((_, idx) => idx !== index);
@@ -427,7 +462,7 @@ function renderOptionsEditor(options: OptionsEditorOptions) {
             };
         });
     }
-    const addButton = field.createEl("button", { text: "Option hinzufügen" });
+    const addButton = createElementsButton(field.controlEl, { label: "Option hinzufügen" });
     addButton.classList.add("sm-le-inline-add");
     addButton.onclick = ev => {
         ev.preventDefault();
@@ -437,7 +472,7 @@ function renderOptionsEditor(options: OptionsEditorOptions) {
         element.options = nextOptions;
         finalizeElementChange(element, callbacks, { rerender: true });
     };
-    return field;
+    return field.fieldEl;
 }
 
 type ContainerLayoutOptions = { host: HTMLElement; element: LayoutElement; callbacks: InspectorCallbacks };
@@ -445,14 +480,15 @@ type ContainerLayoutOptions = { host: HTMLElement; element: LayoutElement; callb
 function renderContainerLayoutControls(options: ContainerLayoutOptions) {
     const { host, element, callbacks } = options;
     if (!element.layout) return host;
-    const field = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
-    field.createEl("label", { text: "Layout" });
-    const controls = field.createDiv({ cls: "sm-le-preview__layout" });
+    const field = createElementsField(host, { label: "Layout", layout: "stack" });
+    field.fieldEl.addClass("sm-le-field");
+    const controls = field.controlEl.createDiv({ cls: "sm-le-preview__layout" });
     const layout = element.layout;
 
     const gapWrap = controls.createDiv({ cls: "sm-le-inline-control" });
     gapWrap.createSpan({ text: "Abstand" });
-    const gapInput = gapWrap.createEl("input", { cls: "sm-le-inline-number", attr: { type: "number", min: "0" } }) as HTMLInputElement;
+    const gapInput = createElementsInput(gapWrap, { type: "number", min: 0 });
+    gapInput.addClass("sm-le-inline-number");
     gapInput.value = String(Math.round(layout.gap));
     gapInput.onchange = () => {
         const next = Math.max(0, parseInt(gapInput.value, 10) || 0);
@@ -465,10 +501,8 @@ function renderContainerLayoutControls(options: ContainerLayoutOptions) {
 
     const paddingWrap = controls.createDiv({ cls: "sm-le-inline-control" });
     paddingWrap.createSpan({ text: "Innenabstand" });
-    const paddingInput = paddingWrap.createEl("input", {
-        cls: "sm-le-inline-number",
-        attr: { type: "number", min: "0" },
-    }) as HTMLInputElement;
+    const paddingInput = createElementsInput(paddingWrap, { type: "number", min: 0 });
+    paddingInput.addClass("sm-le-inline-number");
     paddingInput.value = String(Math.round(layout.padding));
     paddingInput.onchange = () => {
         const next = Math.max(0, parseInt(paddingInput.value, 10) || 0);
@@ -481,7 +515,6 @@ function renderContainerLayoutControls(options: ContainerLayoutOptions) {
 
     const alignWrap = controls.createDiv({ cls: "sm-le-inline-control" });
     alignWrap.createSpan({ text: "Ausrichtung" });
-    const alignSelect = alignWrap.createEl("select", { cls: "sm-le-inline-select" }) as HTMLSelectElement;
     const containerType = element.type;
     const alignOptions: Array<[LayoutContainerAlign, string]> = isVerticalContainer(containerType)
         ? [
@@ -496,10 +529,11 @@ function renderContainerLayoutControls(options: ContainerLayoutOptions) {
               ["end", "Unten"],
               ["stretch", "Höhe"],
           ];
-    for (const [value, labelText] of alignOptions) {
-        const option = alignSelect.createEl("option", { value, text: labelText });
-        if (layout.align === value) option.selected = true;
-    }
+    const alignSelect = createElementsSelect(alignWrap, {
+        options: alignOptions.map(([value, labelText]) => ({ value, label: labelText })),
+        value: layout.align,
+    });
+    alignSelect.addClass("sm-le-inline-select");
     alignSelect.onchange = () => {
         const next = (alignSelect.value as LayoutContainerAlign) ?? layout.align;
         if (next === layout.align) return;
