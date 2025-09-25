@@ -1,12 +1,8 @@
 // src/apps/layout/editor/element-preview.ts
-import { Menu } from "obsidian";
 import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
-import {
-    getElementTypeLabel,
-    isContainerType,
-} from "./definitions";
+import { getElementTypeLabel, isContainerType } from "./definitions";
 import { createInlineEditor } from "./inline-edit";
-import { LayoutContainerAlign, LayoutElement, LayoutElementType } from "./types";
+import { LayoutElement, LayoutElementType } from "./types";
 
 export interface ElementPreviewDependencies {
     host: HTMLElement;
@@ -57,30 +53,6 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
         if (next === element.label) return;
         element.label = next;
         deps.finalize(element);
-    };
-
-    const createPlaceholderEditor = (
-        parent: HTMLElement,
-        placeholder: string,
-        value: string | undefined,
-        onChange: (next: string | undefined) => void,
-    ) => {
-        const editor = createInlineEditor({
-            parent,
-            value: value ?? "",
-            placeholder,
-            onInput: val => {
-                onChange(val || undefined);
-            },
-            onCommit: val => {
-                const next = val || undefined;
-                if (next === value) return;
-                onChange(next);
-                deps.finalize(element);
-            },
-        });
-        editor.addClass("sm-le-inline-meta");
-        return editor;
     };
 
     if (element.type === "label") {
@@ -203,11 +175,6 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
             deps.finalize(element);
         });
 
-        const meta = preview.createDiv({ cls: "sm-le-preview__meta" });
-        createPlaceholderEditor(meta, "Platzhalter hinzufügen…", element.placeholder, next => {
-            textarea.placeholder = next ?? "";
-            element.placeholder = next;
-        });
         return;
     }
 
@@ -223,12 +190,11 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
 
         const select = field.createEl("select", { cls: "sm-le-preview__select" }) as HTMLSelectElement;
         const defaultPlaceholder = element.type === "dropdown" ? "Option wählen…" : "Suchen…";
-        let placeholderOption: HTMLOptionElement | null = null;
 
         const renderSelectOptions = () => {
             select.innerHTML = "";
             const placeholderText = element.placeholder ?? defaultPlaceholder;
-            placeholderOption = select.createEl("option", { value: "", text: placeholderText });
+            const placeholderOption = select.createEl("option", { value: "", text: placeholderText });
             placeholderOption.disabled = true;
             if (!element.defaultValue) {
                 placeholderOption.selected = true;
@@ -245,7 +211,7 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
                 }
                 if (element.defaultValue && !optionValues.includes(element.defaultValue)) {
                     element.defaultValue = undefined;
-                    if (placeholderOption) placeholderOption.selected = true;
+                    placeholderOption.selected = true;
                 }
             }
             if (element.type === "search-dropdown") {
@@ -278,181 +244,33 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
             }
             deps.finalize(element);
         };
-
-        const meta = preview.createDiv({ cls: "sm-le-preview__meta" });
-        createPlaceholderEditor(meta, "Platzhalter hinzufügen…", element.placeholder, next => {
-            element.placeholder = next;
-            renderSelectOptions();
-        });
-
-        const optionList = preview.createDiv({ cls: "sm-le-inline-options" });
-        const renderOptionList = () => {
-            optionList.empty();
-            const optionValues = element.options ?? [];
-            if (!optionValues.length) {
-                optionList.createDiv({ cls: "sm-le-inline-options__empty", text: "Noch keine Optionen." });
-                return;
-            }
-            optionValues.forEach((opt, index) => {
-                const row = optionList.createDiv({ cls: "sm-le-inline-option" });
-                const editor = createInlineEditor({
-                    parent: row,
-                    value: opt,
-                    placeholder: "Option…",
-                    onCommit: value => {
-                        const next = value || opt;
-                        if (next === opt) return;
-                        const nextOptions = [...(element.options ?? [])];
-                        nextOptions[index] = next;
-                        element.options = nextOptions;
-                        if (element.defaultValue && element.defaultValue === opt) {
-                            element.defaultValue = next;
-                        }
-                        renderSelectOptions();
-                        deps.finalize(element);
-                    },
-                });
-                editor.addClass("sm-le-inline-option__label");
-                const remove = row.createSpan({ cls: "sm-le-inline-option__remove", text: "✕" });
-                remove.onclick = ev => {
-                    ev.preventDefault();
-                    const nextOptions = (element.options ?? []).filter((_, idx) => idx !== index);
-                    element.options = nextOptions.length ? nextOptions : undefined;
-                    if (element.defaultValue && !nextOptions.includes(element.defaultValue)) {
-                        element.defaultValue = undefined;
-                    }
-                    renderSelectOptions();
-                    renderOptionList();
-                    deps.finalize(element);
-                };
-            });
-        };
-        renderOptionList();
-
-        const addOption = preview.createEl("button", { cls: "sm-le-inline-add", text: "Option hinzufügen" });
-        addOption.onclick = ev => {
-            ev.preventDefault();
-            const nextOptions = [...(element.options ?? [])];
-            const labelText = `Option ${nextOptions.length + 1}`;
-            nextOptions.push(labelText);
-            element.options = nextOptions;
-            renderSelectOptions();
-            renderOptionList();
-            deps.finalize(element);
-        };
         return;
     }
 
     if (isContainerType(element.type)) {
         deps.ensureContainerDefaults(element);
-        const header = preview.createDiv({ cls: "sm-le-preview__container-header" });
+        const frame = preview.createDiv({ cls: "sm-le-preview__container" });
+        const header = frame.createDiv({ cls: "sm-le-preview__container-header" });
         createInlineEditor({
             parent: header,
             value: element.label,
             placeholder: "Container benennen…",
             onCommit: commitLabel,
         }).addClass("sm-le-preview__label");
-
-        const controls = preview.createDiv({ cls: "sm-le-preview__layout" });
-        const layout = element.layout!;
-
-        const gapWrap = controls.createDiv({ cls: "sm-le-inline-control" });
-        gapWrap.createSpan({ text: "Abstand" });
-        const gapInput = gapWrap.createEl("input", { cls: "sm-le-inline-number", attr: { type: "number", min: "0" } }) as HTMLInputElement;
-        gapInput.value = String(Math.round(layout.gap));
-        gapInput.onchange = () => {
-            const next = Math.max(0, parseInt(gapInput.value, 10) || 0);
-            if (next === layout.gap) return;
-            layout.gap = next;
-            gapInput.value = String(next);
-            deps.applyContainerLayout(element);
-            deps.pushHistory();
-        };
-
-        const paddingWrap = controls.createDiv({ cls: "sm-le-inline-control" });
-        paddingWrap.createSpan({ text: "Innenabstand" });
-        const paddingInput = paddingWrap.createEl("input", {
-            cls: "sm-le-inline-number",
-            attr: { type: "number", min: "0" },
-        }) as HTMLInputElement;
-        paddingInput.value = String(Math.round(layout.padding));
-        paddingInput.onchange = () => {
-            const next = Math.max(0, parseInt(paddingInput.value, 10) || 0);
-            if (next === layout.padding) return;
-            layout.padding = next;
-            paddingInput.value = String(next);
-            deps.applyContainerLayout(element);
-            deps.pushHistory();
-        };
-
-        const alignWrap = controls.createDiv({ cls: "sm-le-inline-control" });
-        alignWrap.createSpan({ text: "Ausrichtung" });
-        const alignSelect = alignWrap.createEl("select", { cls: "sm-le-inline-select" }) as HTMLSelectElement;
-        const alignOptions: Array<[LayoutContainerAlign, string]> =
-            element.type === "vbox"
-                ? [
-                      ["start", "Links"],
-                      ["center", "Zentriert"],
-                      ["end", "Rechts"],
-                      ["stretch", "Breite"],
-                  ]
-                : [
-                      ["start", "Oben"],
-                      ["center", "Zentriert"],
-                      ["end", "Unten"],
-                      ["stretch", "Höhe"],
-                  ];
-        for (const [value, labelText] of alignOptions) {
-            const option = alignSelect.createEl("option", { value, text: labelText });
-            if (layout.align === value) option.selected = true;
-        }
-        alignSelect.onchange = () => {
-            const next = (alignSelect.value as LayoutContainerAlign) ?? layout.align;
-            if (next === layout.align) return;
-            layout.align = next;
-            deps.applyContainerLayout(element);
-            deps.pushHistory();
-        };
-
-        const summary = preview.createDiv({ cls: "sm-le-preview__container-summary" });
+        const body = frame.createDiv({ cls: "sm-le-preview__container-body" });
         const children = Array.isArray(element.children)
             ? element.children
                   .map(childId => deps.elements.find(el => el.id === childId))
                   .filter((child): child is LayoutElement => !!child)
             : [];
         if (!children.length) {
-            summary.createDiv({ cls: "sm-le-inline-options__empty", text: "Keine Elemente verknüpft." });
+            body.createDiv({ cls: "sm-le-preview__container-placeholder", text: "Leerer Container" });
         } else {
             for (const child of children) {
-                const row = summary.createDiv({ cls: "sm-le-container-chip" });
+                const row = body.createDiv({ cls: "sm-le-container-chip" });
                 row.setText(child.label || getElementTypeLabel(child.type));
             }
         }
-        const addWrap = preview.createDiv({ cls: "sm-le-preview__container-add" });
-        const addButton = addWrap.createEl("button", {
-            cls: "sm-le-inline-add sm-le-inline-add--ghost",
-            text: "Element hinzufügen",
-        });
-        addButton.onclick = ev => {
-            ev.preventDefault();
-            const menu = new Menu();
-            const quickTypes: LayoutElementType[] = [
-                "label",
-                "text-input",
-                "textarea",
-                "box",
-                "separator",
-                "dropdown",
-                "search-dropdown",
-            ];
-            for (const type of quickTypes) {
-                menu.addItem(item => {
-                    item.setTitle(getElementTypeLabel(type));
-                    item.onClick(() => deps.createElement(type, { parentId: element.id }));
-                });
-            }
-            menu.showAtMouseEvent(ev);
-        };
         return;
     }
 

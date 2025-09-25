@@ -1,7 +1,7 @@
 // src/apps/layout/editor/inspector-panel.ts
 import { Menu } from "obsidian";
 import { getAttributeSummary, getElementTypeLabel, isContainerType, MIN_ELEMENT_SIZE } from "./definitions";
-import { LayoutElement, LayoutElementType } from "./types";
+import { LayoutContainerAlign, LayoutElement, LayoutElementType } from "./types";
 
 export interface InspectorCallbacks {
     ensureContainerDefaults(element: LayoutElement): void;
@@ -48,7 +48,7 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
 
     host.createDiv({
         cls: "sm-le-hint",
-        text: "Texte, Default-Werte und Platzhalter bearbeitest du direkt in der Vorschau.",
+        text: "Texte bearbeitest du direkt im Arbeitsbereich. Platzhalter, Optionen und Layout findest du hier im Inspector.",
     });
 
     if (!isContainer) {
@@ -148,6 +148,8 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
         }
     };
 
+    renderElementProperties({ host, element, callbacks });
+
     const meta = host.createDiv({ cls: "sm-le-meta" });
     meta.setText(`Fläche: ${Math.round(element.width * element.height)} px²`);
 
@@ -155,6 +157,21 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
         renderContainerInspectorSections({ element, host, elements, callbacks });
     } else {
         renderAttributeSelector({ element, attributesChip });
+    }
+}
+
+function renderElementProperties(options: { host: HTMLElement; element: LayoutElement; callbacks: InspectorCallbacks }) {
+    const { host, element, callbacks } = options;
+    if (isContainerType(element.type)) {
+        renderContainerLayoutControls({ host, element, callbacks });
+        return;
+    }
+    if (element.type === "textarea") {
+        renderPlaceholderField({ host, element, callbacks, label: "Platzhalter" });
+    }
+    if (element.type === "dropdown" || element.type === "search-dropdown") {
+        renderPlaceholderField({ host, element, callbacks, label: "Platzhalter" });
+        renderOptionsEditor({ host, element, callbacks });
     }
 }
 
@@ -252,6 +269,164 @@ function renderAttributeSelector(options: { element: LayoutElement; attributesCh
         });
         attributesChip.dispatchEvent(event);
     };
+}
+
+function renderPlaceholderField(options: {
+    host: HTMLElement;
+    element: LayoutElement;
+    callbacks: InspectorCallbacks;
+    label: string;
+}) {
+    const { host, element, callbacks, label } = options;
+    const field = host.createDiv({ cls: "sm-le-field" });
+    field.createEl("label", { text: label });
+    const input = field.createEl("input", { attr: { type: "text" } }) as HTMLInputElement;
+    input.value = element.placeholder ?? "";
+    const commit = () => {
+        const raw = input.value;
+        const next = raw ? raw : undefined;
+        if (next === element.placeholder) return;
+        element.placeholder = next;
+        finalizeElementChange(element, callbacks);
+    };
+    input.onchange = commit;
+    input.onblur = commit;
+}
+
+function renderOptionsEditor(options: { host: HTMLElement; element: LayoutElement; callbacks: InspectorCallbacks }) {
+    const { host, element, callbacks } = options;
+    const field = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
+    field.createEl("label", { text: "Optionen" });
+    const optionList = field.createDiv({ cls: "sm-le-inline-options" });
+    const optionValues = element.options ?? [];
+    if (!optionValues.length) {
+        optionList.createDiv({ cls: "sm-le-inline-options__empty", text: "Noch keine Optionen." });
+    } else {
+        optionValues.forEach((opt, index) => {
+            const row = optionList.createDiv({ cls: "sm-le-inline-option" });
+            const input = row.createEl("input", {
+                attr: { type: "text" },
+                cls: "sm-le-inline-option__input",
+                value: opt,
+            }) as HTMLInputElement;
+            input.onchange = () => {
+                const next = input.value || opt;
+                if (next === opt) return;
+                const nextOptions = [...(element.options ?? [])];
+                nextOptions[index] = next;
+                element.options = nextOptions;
+                if (element.defaultValue && element.defaultValue === opt) {
+                    element.defaultValue = next;
+                }
+                finalizeElementChange(element, callbacks, { rerender: true });
+            };
+            const remove = row.createEl("button", {
+                text: "✕",
+                cls: "sm-le-inline-option__remove",
+                attr: { title: "Option entfernen" },
+            });
+            remove.onclick = ev => {
+                ev.preventDefault();
+                const nextOptions = (element.options ?? []).filter((_, idx) => idx !== index);
+                element.options = nextOptions.length ? nextOptions : undefined;
+                if (element.defaultValue && !nextOptions.includes(element.defaultValue)) {
+                    element.defaultValue = undefined;
+                }
+                finalizeElementChange(element, callbacks, { rerender: true });
+            };
+        });
+    }
+    const addButton = field.createEl("button", { text: "Option hinzufügen" });
+    addButton.classList.add("sm-le-inline-add");
+    addButton.onclick = ev => {
+        ev.preventDefault();
+        const nextOptions = [...(element.options ?? [])];
+        const labelText = `Option ${nextOptions.length + 1}`;
+        nextOptions.push(labelText);
+        element.options = nextOptions;
+        finalizeElementChange(element, callbacks, { rerender: true });
+    };
+}
+
+function renderContainerLayoutControls(options: { host: HTMLElement; element: LayoutElement; callbacks: InspectorCallbacks }) {
+    const { host, element, callbacks } = options;
+    if (!element.layout) return;
+    const field = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
+    field.createEl("label", { text: "Layout" });
+    const controls = field.createDiv({ cls: "sm-le-preview__layout" });
+    const layout = element.layout;
+
+    const gapWrap = controls.createDiv({ cls: "sm-le-inline-control" });
+    gapWrap.createSpan({ text: "Abstand" });
+    const gapInput = gapWrap.createEl("input", { cls: "sm-le-inline-number", attr: { type: "number", min: "0" } }) as HTMLInputElement;
+    gapInput.value = String(Math.round(layout.gap));
+    gapInput.onchange = () => {
+        const next = Math.max(0, parseInt(gapInput.value, 10) || 0);
+        if (next === layout.gap) return;
+        layout.gap = next;
+        gapInput.value = String(next);
+        callbacks.applyContainerLayout(element, { silent: true });
+        finalizeElementChange(element, callbacks);
+    };
+
+    const paddingWrap = controls.createDiv({ cls: "sm-le-inline-control" });
+    paddingWrap.createSpan({ text: "Innenabstand" });
+    const paddingInput = paddingWrap.createEl("input", {
+        cls: "sm-le-inline-number",
+        attr: { type: "number", min: "0" },
+    }) as HTMLInputElement;
+    paddingInput.value = String(Math.round(layout.padding));
+    paddingInput.onchange = () => {
+        const next = Math.max(0, parseInt(paddingInput.value, 10) || 0);
+        if (next === layout.padding) return;
+        layout.padding = next;
+        paddingInput.value = String(next);
+        callbacks.applyContainerLayout(element, { silent: true });
+        finalizeElementChange(element, callbacks);
+    };
+
+    const alignWrap = controls.createDiv({ cls: "sm-le-inline-control" });
+    alignWrap.createSpan({ text: "Ausrichtung" });
+    const alignSelect = alignWrap.createEl("select", { cls: "sm-le-inline-select" }) as HTMLSelectElement;
+    const alignOptions: Array<[LayoutContainerAlign, string]> =
+        element.type === "vbox"
+            ? [
+                  ["start", "Links"],
+                  ["center", "Zentriert"],
+                  ["end", "Rechts"],
+                  ["stretch", "Breite"],
+              ]
+            : [
+                  ["start", "Oben"],
+                  ["center", "Zentriert"],
+                  ["end", "Unten"],
+                  ["stretch", "Höhe"],
+              ];
+    for (const [value, labelText] of alignOptions) {
+        const option = alignSelect.createEl("option", { value, text: labelText });
+        if (layout.align === value) option.selected = true;
+    }
+    alignSelect.onchange = () => {
+        const next = (alignSelect.value as LayoutContainerAlign) ?? layout.align;
+        if (next === layout.align) return;
+        layout.align = next;
+        callbacks.applyContainerLayout(element, { silent: true });
+        finalizeElementChange(element, callbacks);
+    };
+}
+
+function finalizeElementChange(
+    element: LayoutElement,
+    callbacks: InspectorCallbacks,
+    options?: { rerender?: boolean },
+) {
+    callbacks.syncElementElement(element);
+    callbacks.refreshExport();
+    callbacks.updateStatus();
+    callbacks.pushHistory();
+    if (options?.rerender) {
+        callbacks.renderInspector();
+    }
 }
 
 function clampNumber(value: number, min: number, max: number) {
