@@ -191,9 +191,26 @@ export class LayoutEditorView extends ItemView {
         const addWrap = addGroup.createDiv({ cls: "sm-le-add" });
         const containerDefinitions = ELEMENT_DEFINITIONS.filter(def => isContainerType(def.type));
         const elementDefinitions = ELEMENT_DEFINITIONS.filter(def => !isContainerType(def.type));
-        for (const def of elementDefinitions) {
+        const inputFieldTypes = new Set<LayoutElementType>(["text-input", "textarea", "dropdown", "search-dropdown"]);
+        const inputDefinitions = elementDefinitions.filter(def => inputFieldTypes.has(def.type));
+        const otherElementDefinitions = elementDefinitions.filter(def => !inputFieldTypes.has(def.type));
+        for (const def of otherElementDefinitions) {
             const btn = addWrap.createEl("button", { text: def.buttonLabel });
             btn.onclick = () => this.createElement(def.type);
+        }
+        if (inputDefinitions.length) {
+            const inputBtn = addWrap.createEl("button", { text: "Eingabefelder" });
+            inputBtn.onclick = event => {
+                event.preventDefault();
+                const menu = new Menu();
+                for (const def of inputDefinitions) {
+                    menu.addItem(item => {
+                        item.setTitle(def.buttonLabel);
+                        item.onClick(() => this.createElement(def.type));
+                    });
+                }
+                menu.showAtMouseEvent(event);
+            };
         }
         if (containerDefinitions.length) {
             const containerBtn = addWrap.createEl("button", { text: "Container" });

@@ -88,13 +88,12 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
 
     if (element.type === "separator") {
         const header = preview.createDiv({ cls: "sm-le-preview__separator" });
-        const label = createInlineEditor({
-            parent: header,
-            value: element.label,
-            placeholder: "Titel eingeben…",
-            onCommit: commitLabel,
-        });
-        label.addClass("sm-le-preview__label");
+        const title = element.label?.trim() ? element.label : "";
+        if (title) {
+            header.createSpan({ cls: "sm-le-preview__label", text: title });
+        } else {
+            header.style.display = "none";
+        }
         preview.createEl("hr", { cls: "sm-le-preview__divider" });
         return;
     }
@@ -124,12 +123,12 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
     if (element.type === "textarea") {
         const field = preview.createEl("label", { cls: "sm-le-preview__field" });
         const labelHost = field.createSpan({ cls: "sm-le-preview__label" });
-        createInlineEditor({
-            parent: labelHost,
-            value: element.label,
-            placeholder: "Label eingeben…",
-            onCommit: commitLabel,
-        });
+        const labelText = element.label?.trim() ?? "";
+        if (labelText) {
+            labelHost.setText(labelText);
+        } else {
+            labelHost.style.display = "none";
+        }
 
         const textarea = field.createEl("textarea", { cls: "sm-le-preview__textarea" }) as HTMLTextAreaElement;
         textarea.value = element.defaultValue ?? "";
@@ -153,12 +152,12 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
     if (element.type === "dropdown" || element.type === "search-dropdown") {
         const field = preview.createEl("label", { cls: "sm-le-preview__field" });
         const labelHost = field.createSpan({ cls: "sm-le-preview__label" });
-        createInlineEditor({
-            parent: labelHost,
-            value: element.label,
-            placeholder: "Label eingeben…",
-            onCommit: commitLabel,
-        });
+        const labelText = element.label?.trim() ?? "";
+        if (labelText) {
+            labelHost.setText(labelText);
+        } else {
+            labelHost.style.display = "none";
+        }
 
         const select = field.createEl("select", { cls: "sm-le-preview__select" }) as HTMLSelectElement;
         const defaultPlaceholder = element.type === "dropdown" ? "Option wählen…" : "Suchen…";
@@ -223,12 +222,12 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
         deps.ensureContainerDefaults(element);
         const frame = preview.createDiv({ cls: "sm-le-preview__container" });
         const header = frame.createDiv({ cls: "sm-le-preview__container-header" });
-        createInlineEditor({
-            parent: header,
-            value: element.label,
-            placeholder: "Container benennen…",
-            onCommit: commitLabel,
-        }).addClass("sm-le-preview__label");
+        const labelText = element.label?.trim() ?? "";
+        if (labelText) {
+            header.createSpan({ cls: "sm-le-preview__label", text: labelText });
+        } else {
+            header.style.display = "none";
+        }
         const body = frame.createDiv({ cls: "sm-le-preview__container-body" });
         const children = Array.isArray(element.children)
             ? element.children

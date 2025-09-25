@@ -6190,13 +6190,12 @@ function renderElementPreview(deps) {
   }
   if (element.type === "separator") {
     const header = preview.createDiv({ cls: "sm-le-preview__separator" });
-    const label = createInlineEditor({
-      parent: header,
-      value: element.label,
-      placeholder: "Titel eingeben\u2026",
-      onCommit: commitLabel
-    });
-    label.addClass("sm-le-preview__label");
+    const title = element.label?.trim() ? element.label : "";
+    if (title) {
+      header.createSpan({ cls: "sm-le-preview__label", text: title });
+    } else {
+      header.style.display = "none";
+    }
     preview.createEl("hr", { cls: "sm-le-preview__divider" });
     return;
   }
@@ -6224,12 +6223,12 @@ function renderElementPreview(deps) {
   if (element.type === "textarea") {
     const field = preview.createEl("label", { cls: "sm-le-preview__field" });
     const labelHost2 = field.createSpan({ cls: "sm-le-preview__label" });
-    createInlineEditor({
-      parent: labelHost2,
-      value: element.label,
-      placeholder: "Label eingeben\u2026",
-      onCommit: commitLabel
-    });
+    const labelText = element.label?.trim() ?? "";
+    if (labelText) {
+      labelHost2.setText(labelText);
+    } else {
+      labelHost2.style.display = "none";
+    }
     const textarea = field.createEl("textarea", { cls: "sm-le-preview__textarea" });
     textarea.value = element.defaultValue ?? "";
     textarea.placeholder = element.placeholder ?? "";
@@ -6250,12 +6249,12 @@ function renderElementPreview(deps) {
   if (element.type === "dropdown" || element.type === "search-dropdown") {
     const field = preview.createEl("label", { cls: "sm-le-preview__field" });
     const labelHost2 = field.createSpan({ cls: "sm-le-preview__label" });
-    createInlineEditor({
-      parent: labelHost2,
-      value: element.label,
-      placeholder: "Label eingeben\u2026",
-      onCommit: commitLabel
-    });
+    const labelText = element.label?.trim() ?? "";
+    if (labelText) {
+      labelHost2.setText(labelText);
+    } else {
+      labelHost2.style.display = "none";
+    }
     const select = field.createEl("select", { cls: "sm-le-preview__select" });
     const defaultPlaceholder = element.type === "dropdown" ? "Option w\xE4hlen\u2026" : "Suchen\u2026";
     const renderSelectOptions = () => {
@@ -6315,12 +6314,12 @@ function renderElementPreview(deps) {
     deps.ensureContainerDefaults(element);
     const frame = preview.createDiv({ cls: "sm-le-preview__container" });
     const header = frame.createDiv({ cls: "sm-le-preview__container-header" });
-    createInlineEditor({
-      parent: header,
-      value: element.label,
-      placeholder: "Container benennen\u2026",
-      onCommit: commitLabel
-    }).addClass("sm-le-preview__label");
+    const labelText = element.label?.trim() ?? "";
+    if (labelText) {
+      header.createSpan({ cls: "sm-le-preview__label", text: labelText });
+    } else {
+      header.style.display = "none";
+    }
     const body = frame.createDiv({ cls: "sm-le-preview__container-body" });
     const children = Array.isArray(element.children) ? element.children.map((childId) => deps.elements.find((el) => el.id === childId)).filter((child) => !!child) : [];
     if (!children.length) {
@@ -6345,6 +6344,15 @@ function renderElementPreview(deps) {
 
 // src/apps/layout/editor/inspector-panel.ts
 var import_obsidian22 = require("obsidian");
+var LABEL_INSPECTOR_TYPES = /* @__PURE__ */ new Set([
+  "textarea",
+  "dropdown",
+  "search-dropdown",
+  "separator",
+  "box-container",
+  "vbox-container",
+  "hbox-container"
+]);
 function renderInspectorPanel(deps) {
   const { host, element } = deps;
   host.empty();
@@ -6363,8 +6371,12 @@ function renderInspectorPanel(deps) {
   host.createDiv({ cls: "sm-le-meta", text: `Typ: ${getElementTypeLabel(element.type)}` });
   host.createDiv({
     cls: "sm-le-hint",
-    text: "Texte bearbeitest du direkt im Arbeitsbereich. Platzhalter, Optionen und Layout findest du hier im Inspector."
+    text: "Benennungen und Eigenschaften pflegst du hier im Inspector. Reine Textbl\xF6cke bearbeitest du direkt im Arbeitsbereich."
   });
+  if (LABEL_INSPECTOR_TYPES.has(element.type)) {
+    const labelText = element.type === "separator" ? "Titel" : "Bezeichnung";
+    renderLabelField({ host, element, callbacks, label: labelText });
+  }
   const containers = elements.filter((el) => isContainerType(el.type));
   if (containers.length) {
     const blockedContainers = /* @__PURE__ */ new Set();
@@ -6610,6 +6622,21 @@ function renderPlaceholderField(options) {
     if (next === element.placeholder) return;
     element.placeholder = next;
     finalizeElementChange(element, callbacks);
+  };
+  input.onchange = commit;
+  input.onblur = commit;
+}
+function renderLabelField(options) {
+  const { host, element, callbacks, label } = options;
+  const field = host.createDiv({ cls: "sm-le-field" });
+  field.createEl("label", { text: label });
+  const input = field.createEl("input", { attr: { type: "text" } });
+  input.value = element.label ?? "";
+  const commit = () => {
+    const next = input.value ?? "";
+    if (next === element.label) return;
+    element.label = next;
+    finalizeElementChange(element, callbacks, { rerender: true });
   };
   input.onchange = commit;
   input.onblur = commit;
@@ -7093,9 +7120,26 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     const addWrap = addGroup.createDiv({ cls: "sm-le-add" });
     const containerDefinitions = ELEMENT_DEFINITIONS.filter((def) => isContainerType(def.type));
     const elementDefinitions = ELEMENT_DEFINITIONS.filter((def) => !isContainerType(def.type));
-    for (const def of elementDefinitions) {
+    const inputFieldTypes = /* @__PURE__ */ new Set(["text-input", "textarea", "dropdown", "search-dropdown"]);
+    const inputDefinitions = elementDefinitions.filter((def) => inputFieldTypes.has(def.type));
+    const otherElementDefinitions = elementDefinitions.filter((def) => !inputFieldTypes.has(def.type));
+    for (const def of otherElementDefinitions) {
       const btn = addWrap.createEl("button", { text: def.buttonLabel });
       btn.onclick = () => this.createElement(def.type);
+    }
+    if (inputDefinitions.length) {
+      const inputBtn = addWrap.createEl("button", { text: "Eingabefelder" });
+      inputBtn.onclick = (event) => {
+        event.preventDefault();
+        const menu = new import_obsidian24.Menu();
+        for (const def of inputDefinitions) {
+          menu.addItem((item) => {
+            item.setTitle(def.buttonLabel);
+            item.onClick(() => this.createElement(def.type));
+          });
+        }
+        menu.showAtMouseEvent(event);
+      };
     }
     if (containerDefinitions.length) {
       const containerBtn = addWrap.createEl("button", { text: "Container" });

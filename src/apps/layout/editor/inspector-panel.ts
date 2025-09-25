@@ -34,6 +34,16 @@ export interface InspectorDependencies {
     callbacks: InspectorCallbacks;
 }
 
+const LABEL_INSPECTOR_TYPES = new Set<LayoutElementType>([
+    "textarea",
+    "dropdown",
+    "search-dropdown",
+    "separator",
+    "box-container",
+    "vbox-container",
+    "hbox-container",
+]);
+
 export function renderInspectorPanel(deps: InspectorDependencies) {
     const { host, element } = deps;
     host.empty();
@@ -56,8 +66,13 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
 
     host.createDiv({
         cls: "sm-le-hint",
-        text: "Texte bearbeitest du direkt im Arbeitsbereich. Platzhalter, Optionen und Layout findest du hier im Inspector.",
+        text: "Benennungen und Eigenschaften pflegst du hier im Inspector. Reine Textblöcke bearbeitest du direkt im Arbeitsbereich.",
     });
+
+    if (LABEL_INSPECTOR_TYPES.has(element.type)) {
+        const labelText = element.type === "separator" ? "Titel" : "Bezeichnung";
+        renderLabelField({ host, element, callbacks, label: labelText });
+    }
 
     const containers = elements.filter(el => isContainerType(el.type));
     if (containers.length) {
@@ -331,6 +346,22 @@ function renderPlaceholderField(options: {
         if (next === element.placeholder) return;
         element.placeholder = next;
         finalizeElementChange(element, callbacks);
+    };
+    input.onchange = commit;
+    input.onblur = commit;
+}
+
+function renderLabelField(options: { host: HTMLElement; element: LayoutElement; callbacks: InspectorCallbacks; label: string }) {
+    const { host, element, callbacks, label } = options;
+    const field = host.createDiv({ cls: "sm-le-field" });
+    field.createEl("label", { text: label });
+    const input = field.createEl("input", { attr: { type: "text" } }) as HTMLInputElement;
+    input.value = element.label ?? "";
+    const commit = () => {
+        const next = input.value ?? "";
+        if (next === element.label) return;
+        element.label = next;
+        finalizeElementChange(element, callbacks, { rerender: true });
     };
     input.onchange = commit;
     input.onblur = commit;
