@@ -6,6 +6,8 @@ const LAYOUT_FOLDER = "LayoutEditor/Layouts";
 const LEGACY_LAYOUT_FOLDERS = ["Layout Editor/Layouts"] as const;
 const LAYOUT_FOLDER_CANDIDATES = [LAYOUT_FOLDER, ...LEGACY_LAYOUT_FOLDERS];
 
+const FORBIDDEN_ID_CHARS = /[\\/]/;
+
 async function ensureFolderPath(app: App, folderPath: string): Promise<void> {
     const normalized = normalizePath(folderPath);
     const segments = normalized.split("/").filter(Boolean);
@@ -66,8 +68,25 @@ function createId(): string {
     return `layout-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
 }
 
+function resolveLayoutId(candidate?: string): string {
+    if (!candidate) {
+        return createId();
+    }
+    const trimmed = candidate.trim();
+    if (!trimmed) {
+        return createId();
+    }
+    if (FORBIDDEN_ID_CHARS.test(trimmed)) {
+        throw new Error("Layout-ID darf keine Pfadtrenner enthalten.");
+    }
+    if (trimmed === "." || trimmed === "..") {
+        throw new Error("Layout-ID ist ungültig.");
+    }
+    return trimmed;
+}
+
 export async function saveLayoutToLibrary(app: App, payload: LayoutBlueprint & { name: string; id?: string }): Promise<SavedLayout> {
-    const id = payload.id ?? createId();
+    const id = resolveLayoutId(payload.id);
     const fileName = createFileName(id);
     let existing = findLayoutFile(app, fileName);
     const targetPath = normalizePath(`${LAYOUT_FOLDER}/${fileName}`);
@@ -75,12 +94,15 @@ export async function saveLayoutToLibrary(app: App, payload: LayoutBlueprint & {
         await ensureLayoutFolder(app);
     }
     const now = new Date().toISOString();
+    const canvasWidth = ensureCanvasDimension(payload.canvasWidth, "Breite");
+    const canvasHeight = ensureCanvasDimension(payload.canvasHeight, "Höhe");
+    const elements = normalizeElementsStrict(payload.elements);
     const entry: SavedLayout = {
         id,
         name: sanitizeName(payload.name),
-        canvasWidth: payload.canvasWidth,
-        canvasHeight: payload.canvasHeight,
-        elements: payload.elements,
+        canvasWidth,
+        canvasHeight,
+        elements,
         createdAt: existing instanceof TFile ? (await readLayoutMeta(app, existing))?.createdAt ?? now : now,
         updatedAt: now,
     };
@@ -92,6 +114,13 @@ export async function saveLayoutToLibrary(app: App, payload: LayoutBlueprint & {
         existing = findLayoutFile(app, fileName);
     }
     return entry;
+}
+
+function ensureCanvasDimension(value: number, label: "Breite" | "Höhe"): number {
+    if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+        throw new Error(`Ungültige ${label} für das Layout.`);
+    }
+    return Math.round(value);
 }
 
 function parseDimension(value: unknown): number | null {
@@ -108,21 +137,24 @@ function parseDimension(value: unknown): number | null {
 }
 
 function normalizeStringArray(value: unknown): string[] | undefined {
-    if (!Array.isArray(value)) return undefined;
-    const filtered = value.filter((item): item is string => typeof item === "string");
+    let source: unknown[];
+    if (Array.isArray(value)) {
+        source = value;
+    } else if (value && typeof value === "object") {
+        source = Object.values(value as Record<string, unknown>);
+    } else {
+        return undefined;
+    }
+    const filtered = source.filter((item): item is string => typeof item === "string");
     return filtered.length ? filtered : [];
 }
 
 function normalizeLayoutConfig(value: unknown): LayoutElement["layout"] | undefined {
     if (!value || typeof value !== "object") return undefined;
     const layout = value as Partial<LayoutElement["layout"]> & Record<string, unknown>;
-    const gap = parseDimension(layout.gap);
-    const padding = parseDimension(layout.padding);
-    const align = layout.align;
-    if (gap === null || padding === null) return undefined;
-    if (align !== "start" && align !== "center" && align !== "end" && align !== "stretch") {
-        return undefined;
-    }
+    const gap = parseDimension(layout.gap) ?? 0;
+    const padding = parseDimension(layout.padding) ?? 0;
+    const align = normalizeAlign(layout.align);
     return { gap, padding, align };
 }
 
@@ -166,6 +198,34 @@ function normalizeElements(value: unknown): LayoutElement[] | null {
         elements.push(element);
     }
     return elements;
+}
+
+function normalizeElementsStrict(value: unknown): LayoutElement[] {
+    const normalized = normalizeElements(value);
+    if (!normalized) {
+        throw new Error("Layout enthält keine gültigen Elemente.");
+    }
+    const expectedLength = Array.isArray(value)
+        ? value.length
+        : value && typeof value === "object"
+          ? Object.keys(value as Record<string, unknown>).length
+          : normalized.length;
+    if (expectedLength !== normalized.length) {
+        throw new Error("Mindestens ein Layout-Element enthält ungültige Werte und konnte nicht gespeichert werden.");
+    }
+    return normalized;
+}
+
+function normalizeAlign(value: unknown): LayoutElement["layout"]["align"] {
+    if (typeof value !== "string") {
+        return "stretch";
+    }
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "start" || normalized === "flex-start") return "start";
+    if (normalized === "center") return "center";
+    if (normalized === "end" || normalized === "flex-end") return "end";
+    if (normalized === "stretch" || normalized === "space-between") return "stretch";
+    return "stretch";
 }
 
 async function readLayoutMeta(app: App, file: TFile): Promise<SavedLayout | null> {

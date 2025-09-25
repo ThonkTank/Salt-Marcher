@@ -444,7 +444,8 @@ export class LayoutEditorView extends ItemView {
             new Notice(`Layout „${saved.name}” gespeichert`);
         } catch (error) {
             console.error("Failed to save layout", error);
-            new Notice("Konnte Layout nicht speichern");
+            const message = error instanceof Error && error.message ? error.message : "Konnte Layout nicht speichern";
+            new Notice(message);
         } finally {
             this.isSavingLayout = false;
             this.saveButton?.removeAttribute("disabled");
