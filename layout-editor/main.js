@@ -1849,12 +1849,80 @@ async function saveLayoutToLibrary(app, payload) {
   }
   return entry;
 }
+function parseDimension(value) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number.parseFloat(value.trim());
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return null;
+}
+function normalizeStringArray(value) {
+  if (!Array.isArray(value)) return void 0;
+  const filtered = value.filter((item) => typeof item === "string");
+  return filtered.length ? filtered : [];
+}
+function normalizeLayoutConfig(value) {
+  if (!value || typeof value !== "object") return void 0;
+  const layout = value;
+  const gap = parseDimension(layout.gap);
+  const padding = parseDimension(layout.padding);
+  const align = layout.align;
+  if (gap === null || padding === null) return void 0;
+  if (align !== "start" && align !== "center" && align !== "end" && align !== "stretch") {
+    return void 0;
+  }
+  return { gap, padding, align };
+}
+function normalizeElements(value) {
+  const source = Array.isArray(value) ? value : value && typeof value === "object" ? Object.values(value) : null;
+  if (!source) return null;
+  const elements = [];
+  for (const entry of source) {
+    if (!entry || typeof entry !== "object") continue;
+    const raw = entry;
+    const id = typeof raw.id === "string" && raw.id.trim() ? raw.id : null;
+    const type = typeof raw.type === "string" && raw.type.trim() ? raw.type : null;
+    const x = parseDimension(raw.x);
+    const y = parseDimension(raw.y);
+    const width = parseDimension(raw.width);
+    const height = parseDimension(raw.height);
+    const label = typeof raw.label === "string" ? raw.label : "";
+    if (!id || !type || x === null || y === null || width === null || height === null) continue;
+    const element = {
+      id,
+      type,
+      x,
+      y,
+      width,
+      height,
+      label,
+      description: typeof raw.description === "string" ? raw.description : void 0,
+      placeholder: typeof raw.placeholder === "string" ? raw.placeholder : void 0,
+      defaultValue: typeof raw.defaultValue === "string" ? raw.defaultValue : void 0,
+      options: normalizeStringArray(raw.options),
+      attributes: normalizeStringArray(raw.attributes) ?? [],
+      parentId: typeof raw.parentId === "string" ? raw.parentId : void 0,
+      layout: normalizeLayoutConfig(raw.layout),
+      children: normalizeStringArray(raw.children)
+    };
+    elements.push(element);
+  }
+  return elements;
+}
 async function readLayoutMeta(app, file) {
   try {
     const raw = await app.vault.read(file);
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return null;
-    if (!Array.isArray(parsed.elements) || typeof parsed.canvasWidth !== "number" || typeof parsed.canvasHeight !== "number") {
+    const canvasWidth = parseDimension(parsed.canvasWidth);
+    const canvasHeight = parseDimension(parsed.canvasHeight);
+    const elements = normalizeElements(parsed.elements);
+    if (canvasWidth === null || canvasHeight === null || !elements) {
       return null;
     }
     const fallbackCreated = new Date(file.stat.ctime || Date.now()).toISOString();
@@ -1864,9 +1932,9 @@ async function readLayoutMeta(app, file) {
     return {
       id: fileId,
       name: resolvedName,
-      canvasWidth: parsed.canvasWidth,
-      canvasHeight: parsed.canvasHeight,
-      elements: parsed.elements ?? [],
+      canvasWidth,
+      canvasHeight,
+      elements,
       createdAt: typeof parsed.createdAt === "string" ? parsed.createdAt : fallbackCreated,
       updatedAt: typeof parsed.updatedAt === "string" ? parsed.updatedAt : fallbackUpdated
     };

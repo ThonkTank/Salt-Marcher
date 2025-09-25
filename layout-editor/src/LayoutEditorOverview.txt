@@ -58,7 +58,7 @@ plugins/layout-editor/
 - **Vorschau & Inline-Editing:** `element-preview.ts` erzeugt realistische Vorschauen; `inline-edit.ts` kapselt ContentEditable inklusive Placeholder/Trim-Logik.
 - **Attribute-Popover:** `attribute-popover.ts` verwaltet Öffnen, Positionierung und Callbacks, sodass Inspector, Canvas und Historie synchron bleiben.
 - **Undo/Redo-Historie:** `history.ts` kapselt Snapshot-Verwaltung; `view.ts` bindet sie an Shortcuts (Strg+Z / Umschalt+Strg+Z) und automatische Pushes bei Mutationen.
-- **Export & Layout-Library:** `view.ts` erstellt JSON-Exporte; `layout-library.ts` persistiert Layouts unter `LayoutEditor/Layouts/<id>.json`, listet vorhandene Layouts und lädt sie erneut. Die IDs werden dabei konsequent aus dem Dateinamen abgeleitet, sodass auch manuell importierte oder umbenannte Layout-Dateien gefunden werden. `seed-layouts.ts` sorgt beim Plugin-Start dafür, dass ein Standardlayout („Layout Editor – Kreaturenvorlage“) als JSON im Vault vorhanden ist.
+- **Export & Layout-Library:** `view.ts` erstellt JSON-Exporte; `layout-library.ts` persistiert Layouts unter `LayoutEditor/Layouts/<id>.json`, listet vorhandene Layouts und lädt sie erneut. Die IDs werden dabei konsequent aus dem Dateinamen abgeleitet, sodass auch manuell importierte oder umbenannte Layout-Dateien gefunden werden. Beim Einlesen werden Maße und Elemente nun tolerant geparst, sodass auch ältere/handbearbeitete Dateien mit Stringwerten oder Objekt-Mappings sicher geladen werden. `seed-layouts.ts` sorgt beim Plugin-Start dafür, dass ein Standardlayout („Layout Editor – Kreaturenvorlage“) als JSON im Vault vorhanden ist.
 - **Layout-Bibliothek Import:** `layout-picker-modal.ts` und `view.ts` öffnen gespeicherte Layouts aus der Bibliothek und setzen Canvas/Einstellungen entsprechend zurück.
 
 ## Datenfluss
@@ -119,6 +119,7 @@ plugins/layout-editor/
 - Persistiert Layouts als JSON-Dateien im Vault-Ordner `LayoutEditor/Layouts`.
 - Liefert `saveLayoutToLibrary`, `listSavedLayouts`, `loadSavedLayout` für wiederverwendbare Layout-Bibliotheken.
 - Erzwingt, dass die Layout-ID dem Dateinamen entspricht, damit der Import auch bei manuell hinzugefügten oder umbenannten Dateien zuverlässig funktioniert.
+- Normalisiert gespeicherte Layouts beim Lesen (String-Maße → Zahlen, Objekt-Mappings → Arrays, Validierung optionaler Felder), damit der Import nicht mehr an älteren oder handbearbeiteten Layout-Dateien scheitert.
 
 ### `name-input-modal.ts`
 - Stellt einen schlanken Modal zur Verfügung, um Layout-Namen einzutippen (inkl. Enter-Shortcut und CTA-Button).
