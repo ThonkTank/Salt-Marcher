@@ -10,6 +10,7 @@ import {
     onLayoutElementDefinitionsChanged,
 } from "./definitions";
 import {
+    LayoutBlueprint,
     LayoutEditorSnapshot,
     LayoutElement,
     LayoutElementDefinition,
@@ -817,28 +818,19 @@ export class LayoutEditorView extends ItemView {
 
     private refreshExport() {
         if (!this.exportEl) return;
-        const payload = {
-            canvas: {
-                width: this.canvasWidth,
-                height: this.canvasHeight,
-            },
-            elements: this.elements.map(element => ({
-                id: element.id,
-                type: element.type,
-                label: element.label,
-                description: element.description,
-                placeholder: element.placeholder,
-                defaultValue: element.defaultValue,
-                options: element.options ?? [],
-                attributes: element.attributes,
-                layout: element.layout ?? null,
-                children: element.children ?? [],
-                x: Math.round(element.x),
-                y: Math.round(element.y),
-                width: Math.round(element.width),
-                height: Math.round(element.height),
-                parentId: element.parentId ?? null,
-            })),
+        const payload: LayoutBlueprint = {
+            canvasWidth: Math.round(this.canvasWidth),
+            canvasHeight: Math.round(this.canvasHeight),
+            elements: this.elements.map(element => {
+                const clone = cloneLayoutElement(element);
+                return {
+                    ...clone,
+                    x: Math.round(clone.x),
+                    y: Math.round(clone.y),
+                    width: Math.round(clone.width),
+                    height: Math.round(clone.height),
+                };
+            }),
         };
         this.exportEl.value = JSON.stringify(payload, null, 2);
     }
