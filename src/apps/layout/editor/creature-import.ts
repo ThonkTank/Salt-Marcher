@@ -162,7 +162,7 @@ function detectElementTypeFromDom(node: HTMLElement): LayoutElementType {
         "input[type='text'], input[type='number'], input[type='search'], input[type='email'], input[type='url']",
     );
     if (input instanceof HTMLInputElement) return "text-input";
-    return "box";
+    return "box-container";
 }
 
 function extractElementDefaults(node: HTMLElement, type: LayoutElementType): {

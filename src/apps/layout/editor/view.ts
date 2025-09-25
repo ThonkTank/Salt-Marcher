@@ -1,10 +1,11 @@
 // src/apps/layout/editor/view.ts
-import { ItemView, Notice } from "obsidian";
+import { ItemView, Menu, Notice } from "obsidian";
 import {
     ELEMENT_DEFINITION_LOOKUP,
     ELEMENT_DEFINITIONS,
     MIN_ELEMENT_SIZE,
     getElementTypeLabel,
+    isVerticalContainer,
     isContainerType,
 } from "./definitions";
 import { LayoutContainerType, LayoutEditorSnapshot, LayoutElement, LayoutElementType } from "./types";
@@ -12,7 +13,7 @@ import { LayoutHistory } from "./history";
 import { AttributePopoverController } from "./attribute-popover";
 import { renderElementPreview } from "./element-preview";
 import { renderInspectorPanel } from "./inspector-panel";
-import { clamp, cloneLayoutElement, isContainerElement } from "./utils";
+import { clamp, cloneLayoutElement, collectDescendantIds, isContainerElement } from "./utils";
 import { importCreatureLayout } from "./creature-import";
 
 export const VIEW_LAYOUT_EDITOR = "salt-layout-editor";
@@ -167,6 +168,9 @@ export class LayoutEditorView extends ItemView {
     private finalizeInlineMutation(element: LayoutElement) {
         if (this.history.isRestoring) return;
         this.syncElementElement(element);
+        if (isContainerElement(element)) {
+            this.applyContainerLayout(element, { silent: true });
+        }
         this.refreshExport();
         this.renderInspector();
         this.updateStatus();
@@ -185,9 +189,25 @@ export class LayoutEditorView extends ItemView {
         const addGroup = controls.createDiv({ cls: "sm-le-control sm-le-control--stack" });
         addGroup.createEl("label", { text: "Element hinzufügen" });
         const addWrap = addGroup.createDiv({ cls: "sm-le-add" });
-        for (const def of ELEMENT_DEFINITIONS) {
+        const containerDefinitions = ELEMENT_DEFINITIONS.filter(def => isContainerType(def.type));
+        const elementDefinitions = ELEMENT_DEFINITIONS.filter(def => !isContainerType(def.type));
+        for (const def of elementDefinitions) {
             const btn = addWrap.createEl("button", { text: def.buttonLabel });
             btn.onclick = () => this.createElement(def.type);
+        }
+        if (containerDefinitions.length) {
+            const containerBtn = addWrap.createEl("button", { text: "Container" });
+            containerBtn.onclick = event => {
+                event.preventDefault();
+                const menu = new Menu();
+                for (const def of containerDefinitions) {
+                    menu.addItem(item => {
+                        item.setTitle(def.buttonLabel);
+                        item.onClick(() => this.createElement(def.type));
+                    });
+                }
+                menu.showAtMouseEvent(event);
+            };
         }
 
         this.importBtn = controls.createEl("button", { text: "Creature-Layout importieren" });
@@ -504,7 +524,7 @@ export class LayoutEditorView extends ItemView {
             element.children = [];
         }
 
-        const requestedParentId = !isContainerType(type) ? options?.parentId ?? null : null;
+        const requestedParentId = options?.parentId ?? null;
         let parentContainer: (LayoutElement & { type: LayoutContainerType }) | null = null;
         if (requestedParentId) {
             const candidate = this.elements.find(el => el.id === requestedParentId);
@@ -514,7 +534,7 @@ export class LayoutEditorView extends ItemView {
         }
         if (!parentContainer) {
             const selected = this.selectedElementId ? this.elements.find(el => el.id === this.selectedElementId) : null;
-            parentContainer = selected && isContainerElement(selected) && !isContainerType(type) ? selected : null;
+            parentContainer = selected && isContainerElement(selected) ? selected : null;
         }
         if (parentContainer) {
             element.parentId = parentContainer.id;
@@ -782,7 +802,7 @@ export class LayoutEditorView extends ItemView {
         const canDropToRoot = () => {
             if (!this.draggedElementId) return false;
             const dragged = elementById.get(this.draggedElementId);
-            if (!dragged || isContainerType(dragged.type)) return false;
+            if (!dragged) return false;
             return Boolean(dragged.parentId);
         };
 
@@ -848,20 +868,18 @@ export class LayoutEditorView extends ItemView {
                     this.selectElement(child.id);
                     this.focusElementInCamera(child);
                 };
-                if (!isContainerType(child.type)) {
-                    entry.draggable = true;
-                    entry.addClass("is-draggable");
-                    entry.addEventListener("dragstart", dragEvent => {
-                        this.draggedElementId = child.id;
-                        dragEvent.dataTransfer?.setData("text/plain", child.id);
-                        if (dragEvent.dataTransfer) {
-                            dragEvent.dataTransfer.effectAllowed = "move";
-                        }
-                    });
-                    entry.addEventListener("dragend", () => {
-                        this.clearStructureDragState();
-                    });
-                }
+                entry.draggable = true;
+                entry.addClass("is-draggable");
+                entry.addEventListener("dragstart", dragEvent => {
+                    this.draggedElementId = child.id;
+                    dragEvent.dataTransfer?.setData("text/plain", child.id);
+                    if (dragEvent.dataTransfer) {
+                        dragEvent.dataTransfer.effectAllowed = "move";
+                    }
+                });
+                entry.addEventListener("dragend", () => {
+                    this.clearStructureDragState();
+                });
                 if (isContainerElement(child)) {
                     const canDropHere = () => this.canDropOnContainer(child.id);
                     entry.addEventListener("dragenter", dragEvent => {
@@ -917,9 +935,18 @@ export class LayoutEditorView extends ItemView {
         const container = this.elements.find(el => el.id === containerId);
         if (!container || !isContainerElement(container)) return false;
         const dragged = this.elements.find(el => el.id === this.draggedElementId);
-        if (!dragged || isContainerType(dragged.type)) return false;
+        if (!dragged) return false;
         if (dragged.id === containerId) return false;
         if (dragged.parentId === containerId) return false;
+        if (isContainerElement(dragged)) {
+            const descendants = collectDescendantIds(dragged, this.elements);
+            if (descendants.has(containerId)) return false;
+        }
+        let cursor = container.parentId ? this.elements.find(el => el.id === container.parentId) : null;
+        while (cursor) {
+            if (cursor.id === dragged.id) return false;
+            cursor = cursor.parentId ? this.elements.find(el => el.id === cursor.parentId) : null;
+        }
         return true;
     }
 
@@ -977,14 +1004,49 @@ export class LayoutEditorView extends ItemView {
 
     private assignElementToContainer(elementId: string, containerId: string | null) {
         const element = this.elements.find(el => el.id === elementId);
-        if (!element || isContainerType(element.type)) return;
+        if (!element) return;
         const currentParent = element.parentId ? this.elements.find(el => el.id === element.parentId) : null;
+        let nextParent: (LayoutElement & { children: string[] }) | null = null;
+        if (containerId) {
+            const candidate = this.elements.find(el => el.id === containerId);
+            if (candidate && isContainerElement(candidate)) {
+                if (candidate.id === element.id) {
+                    nextParent = null;
+                } else if (isContainerElement(element)) {
+                    const descendants = collectDescendantIds(element, this.elements);
+                    if (!descendants.has(candidate.id)) {
+                        let cursor = candidate.parentId ? this.elements.find(el => el.id === candidate.parentId) : null;
+                        let isValid = true;
+                        while (cursor) {
+                            if (cursor.id === element.id) {
+                                isValid = false;
+                                break;
+                            }
+                            cursor = cursor.parentId ? this.elements.find(el => el.id === cursor.parentId) : null;
+                        }
+                        if (isValid) {
+                            nextParent = candidate;
+                        }
+                    }
+                } else {
+                    nextParent = candidate;
+                }
+            }
+        }
+        if (containerId && !nextParent) {
+            return;
+        }
+        const resolvedParent = nextParent ?? null;
+        const currentId = currentParent && isContainerElement(currentParent) ? currentParent.id : null;
+        const nextId = resolvedParent ? resolvedParent.id : null;
+        if (currentId === nextId) {
+            return;
+        }
         if (currentParent && isContainerElement(currentParent)) {
             this.removeChildFromContainer(currentParent, element.id);
             this.applyContainerLayout(currentParent);
         }
-        const nextParent = containerId ? this.elements.find(el => el.id === containerId) : null;
-        if (nextParent && isContainerElement(nextParent)) {
+        if (nextParent) {
             element.parentId = nextParent.id;
             this.addChildToContainer(nextParent, element.id);
             this.applyContainerLayout(nextParent);
@@ -1041,7 +1103,7 @@ export class LayoutEditorView extends ItemView {
         const innerHeight = Math.max(MIN_ELEMENT_SIZE, element.height - padding * 2);
         const gapCount = Math.max(0, children.length - 1);
 
-        if (element.type === "vbox") {
+        if (isVerticalContainer(element.type)) {
             const availableHeight = innerHeight - gap * gapCount;
             const slotHeight = Math.max(MIN_ELEMENT_SIZE, Math.floor(availableHeight / children.length));
             let y = element.y + padding;

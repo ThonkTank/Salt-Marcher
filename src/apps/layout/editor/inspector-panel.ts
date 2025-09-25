@@ -1,7 +1,15 @@
 // src/apps/layout/editor/inspector-panel.ts
 import { Menu } from "obsidian";
-import { getAttributeSummary, getElementTypeLabel, isContainerType, MIN_ELEMENT_SIZE } from "./definitions";
-import { LayoutContainerAlign, LayoutElement, LayoutElementType } from "./types";
+import {
+    ELEMENT_DEFINITIONS,
+    getAttributeSummary,
+    getElementTypeLabel,
+    isContainerType,
+    isVerticalContainer,
+    MIN_ELEMENT_SIZE,
+} from "./definitions";
+import { LayoutContainerAlign, LayoutContainerType, LayoutElement, LayoutElementType } from "./types";
+import { collectAncestorIds, collectDescendantIds, isContainerElement } from "./utils";
 
 export interface InspectorCallbacks {
     ensureContainerDefaults(element: LayoutElement): void;
@@ -42,7 +50,7 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
     if (isContainer) {
         callbacks.ensureContainerDefaults(element);
     }
-    const parentContainer = !isContainer && element.parentId ? elements.find(el => el.id === element.parentId) : null;
+    const parentContainer = element.parentId ? elements.find(el => el.id === element.parentId) : null;
 
     host.createDiv({ cls: "sm-le-meta", text: `Typ: ${getElementTypeLabel(element.type)}` });
 
@@ -51,23 +59,30 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
         text: "Texte bearbeitest du direkt im Arbeitsbereich. Platzhalter, Optionen und Layout findest du hier im Inspector.",
     });
 
-    if (!isContainer) {
-        const containers = elements.filter(el => isContainerType(el.type));
-        if (containers.length) {
-            const containerField = host.createDiv({ cls: "sm-le-field" });
-            containerField.createEl("label", { text: "Container" });
-            const parentSelect = containerField.createEl("select") as HTMLSelectElement;
-            parentSelect.createEl("option", { value: "", text: "Kein Container" });
-            for (const container of containers) {
-                const label = container.label || getElementTypeLabel(container.type);
-                const option = parentSelect.createEl("option", { value: container.id, text: label });
-                if (element.parentId === container.id) option.selected = true;
-            }
-            parentSelect.onchange = () => {
-                const value = parentSelect.value || null;
-                callbacks.assignElementToContainer(element.id, value);
-            };
+    const containers = elements.filter(el => isContainerType(el.type));
+    if (containers.length) {
+        const blockedContainers = new Set<string>();
+        if (isContainerElement(element)) {
+            const descendants = collectDescendantIds(element, elements);
+            for (const id of descendants) blockedContainers.add(id);
+            const ancestors = collectAncestorIds(element, elements);
+            for (const id of ancestors) blockedContainers.add(id);
+            blockedContainers.add(element.id);
         }
+        const containerField = host.createDiv({ cls: "sm-le-field" });
+        containerField.createEl("label", { text: "Container" });
+        const parentSelect = containerField.createEl("select") as HTMLSelectElement;
+        parentSelect.createEl("option", { value: "", text: "Kein Container" });
+        for (const container of containers) {
+            if (blockedContainers.has(container.id)) continue;
+            const label = container.label || getElementTypeLabel(container.type);
+            const option = parentSelect.createEl("option", { value: container.id, text: label });
+            if (element.parentId === container.id) option.selected = true;
+        }
+        parentSelect.onchange = () => {
+            const value = parentSelect.value || null;
+            callbacks.assignElementToContainer(element.id, value);
+        };
     }
 
     const attributesField = host.createDiv({ cls: "sm-le-field" });
@@ -93,6 +108,9 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
         callbacks.refreshExport();
         if (isContainer) {
             callbacks.applyContainerLayout(element);
+            if (parentContainer && isContainerType(parentContainer.type)) {
+                callbacks.applyContainerLayout(parentContainer);
+            }
         } else if (parentContainer && isContainerType(parentContainer.type)) {
             callbacks.applyContainerLayout(parentContainer);
         }
@@ -109,6 +127,9 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
         callbacks.refreshExport();
         if (isContainer) {
             callbacks.applyContainerLayout(element);
+            if (parentContainer && isContainerType(parentContainer.type)) {
+                callbacks.applyContainerLayout(parentContainer);
+            }
         } else if (parentContainer && isContainerType(parentContainer.type)) {
             callbacks.applyContainerLayout(parentContainer);
         }
@@ -127,6 +148,9 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
         callbacks.refreshExport();
         if (isContainer) {
             callbacks.applyContainerLayout(element);
+            if (parentContainer && isContainerType(parentContainer.type)) {
+                callbacks.applyContainerLayout(parentContainer);
+            }
         } else if (parentContainer && isContainerType(parentContainer.type)) {
             callbacks.applyContainerLayout(parentContainer);
         }
@@ -143,6 +167,9 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
         callbacks.refreshExport();
         if (isContainer) {
             callbacks.applyContainerLayout(element);
+            if (parentContainer && isContainerType(parentContainer.type)) {
+                callbacks.applyContainerLayout(parentContainer);
+            }
         } else if (parentContainer && isContainerType(parentContainer.type)) {
             callbacks.applyContainerLayout(parentContainer);
         }
@@ -189,10 +216,21 @@ function renderContainerInspectorSections(options: {
     quickAddBtn.onclick = ev => {
         ev.preventDefault();
         const menu = new Menu();
-        for (const type of ["label", "text-input", "textarea", "box", "separator", "dropdown", "search-dropdown"] as LayoutElementType[]) {
+        const standardDefs = ELEMENT_DEFINITIONS.filter(def => !isContainerType(def.type));
+        const containerDefs = ELEMENT_DEFINITIONS.filter(def => isContainerType(def.type));
+        for (const def of standardDefs) {
             menu.addItem(item => {
-                item.setTitle(getElementTypeLabel(type));
-                item.onClick(() => callbacks.createElement(type, { parentId: element.id }));
+                item.setTitle(def.buttonLabel);
+                item.onClick(() => callbacks.createElement(def.type, { parentId: element.id }));
+            });
+        }
+        if (standardDefs.length && containerDefs.length) {
+            menu.addSeparator();
+        }
+        for (const def of containerDefs) {
+            menu.addItem(item => {
+                item.setTitle(def.buttonLabel);
+                item.onClick(() => callbacks.createElement(def.type, { parentId: element.id }));
             });
         }
         menu.showAtMouseEvent(ev);
@@ -203,7 +241,12 @@ function renderContainerInspectorSections(options: {
     const addRow = childField.createDiv({ cls: "sm-le-container-add" });
     const addSelect = addRow.createEl("select") as HTMLSelectElement;
     addSelect.createEl("option", { value: "", text: "Element auswählen…" });
-    const candidates = elements.filter(el => el.id !== element.id && !isContainerType(el.type));
+    const blockedIds = new Set<string>([element.id]);
+    const descendants = collectDescendantIds(element, elements);
+    for (const id of descendants) blockedIds.add(id);
+    const ancestors = collectAncestorIds(element, elements);
+    for (const id of ancestors) blockedIds.add(id);
+    const candidates = elements.filter(el => !blockedIds.has(el.id));
     for (const candidate of candidates) {
         const textBase = candidate.label || getElementTypeLabel(candidate.type);
         let optionText = textBase;
@@ -388,20 +431,20 @@ function renderContainerLayoutControls(options: { host: HTMLElement; element: La
     const alignWrap = controls.createDiv({ cls: "sm-le-inline-control" });
     alignWrap.createSpan({ text: "Ausrichtung" });
     const alignSelect = alignWrap.createEl("select", { cls: "sm-le-inline-select" }) as HTMLSelectElement;
-    const alignOptions: Array<[LayoutContainerAlign, string]> =
-        element.type === "vbox"
-            ? [
-                  ["start", "Links"],
-                  ["center", "Zentriert"],
-                  ["end", "Rechts"],
-                  ["stretch", "Breite"],
-              ]
-            : [
-                  ["start", "Oben"],
-                  ["center", "Zentriert"],
-                  ["end", "Unten"],
-                  ["stretch", "Höhe"],
-              ];
+    const containerType = element.type as LayoutContainerType;
+    const alignOptions: Array<[LayoutContainerAlign, string]> = isVerticalContainer(containerType)
+        ? [
+              ["start", "Links"],
+              ["center", "Zentriert"],
+              ["end", "Rechts"],
+              ["stretch", "Breite"],
+          ]
+        : [
+              ["start", "Oben"],
+              ["center", "Zentriert"],
+              ["end", "Unten"],
+              ["stretch", "Höhe"],
+          ];
     for (const [value, labelText] of alignOptions) {
         const option = alignSelect.createEl("option", { value, text: labelText });
         if (layout.align === value) option.selected = true;

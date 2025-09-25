@@ -22,8 +22,9 @@ src/apps/layout/
 
 - **Layout-Arbeitsfläche & Kamera:** Dreigeteilte Arbeitsumgebung mit Strukturbaum links, Canvas in der Mitte und Inspector rechts. Die Arbeitsfläche füllt automatisch den Raum zwischen den Panels, lässt sich mit mittlerer Maustaste verschieben und per Mausrad (mit Fokuspunkt) zoomen. Breite/Höhe-Controls bleiben erhalten, Bounds-Clamping schützt weiterhin vor Überlauf und die Panel-Trenner reagieren erwartungskonform – sowohl links als auch rechts.
 - **Struktur-Überblick:** Ein interaktiver Baum listet alle Layout-Elemente analog zur Container-Hierarchie (inkl. Kinderreihenfolge aus `children`) und zeigt die aktuelle Eltern-Zuordnung direkt im Eintrag an. Ein Klick wählt das Element aus und fokussiert es mittig im Canvas. Über Drag & Drop lassen sich Elemente in Container ziehen oder aus ihnen lösen (Root-Drop-Zone), während das Panel – genauso wie der Inspector – weiterhin über die Trenner in der Breite angepasst werden kann.
+- **Container-Palette & Nesting:** BoxContainer-, VBoxContainer- und HBoxContainer-Definitionen liegen gebündelt im neuen „Container“-Dropdown der Palette. Alle Container lassen sich beliebig ineinander verschachteln; Inspector, Strukturbaum und Drag & Drop verhindern Zyklen und erlauben das Neuzuordnen sowie Verschieben kompletter Container-Hierarchien.
 - **Modulare Element-Hilfen:** Element-Definitionen (Buttons, Defaults, Layout-Standards) liegen zentral in `definitions.ts`; Canvas-Rendering und Inspector greifen auf dieselben Strukturen zu.
-- **Container-Layout:** VBox-/HBox-Container verteilen Kinder automatisch (Gap, Padding, Align) und synchronisieren bei manuellen Änderungen oder Größenanpassungen. Neue Kinder können weiterhin über den Inspector schnell hinzugefügt werden.
+- **Container-Layout:** BoxContainer, VBoxContainer und HBoxContainer verwalten ihre Kinder inklusive Gap, Padding und Align automatisch und reagieren auch auf verschachtelte Konstellationen. Neue Kinder können weiterhin über den Inspector schnell hinzugefügt oder per Struktur-Baum in andere Container gezogen werden.
 - **Direkte Bearbeitung & Inspector:** Auf der Arbeitsfläche erscheinen echte UI-Elemente (Labels, Inputs, Dropdowns usw.) und lassen sich dort inhaltlich editieren. Erweiterte Eigenschaften wie Platzhalter, Optionslisten oder Container-Layout werden ausschließlich im Inspector gepflegt.
 - **Echte Vorschau:** Label-Elemente passen ihre Schriftgröße automatisch an, einfache Textfelder bestehen nur aus dem Eingabefeld und alle weiteren Controls spiegeln ihr finales Erscheinungsbild ohne zusätzliche Chrome-Elemente wider.
 - **Attribute-Popover:** `attribute-popover.ts` verwaltet das Popover (Öffnen, Positionierung, Synchronisation) und hält Inspector sowie Canvas konsistent.
@@ -42,10 +43,10 @@ src/apps/layout/
 
 ### `editor/view.ts`
 - Implementiert `LayoutEditorView` (`ItemView`).
-- Baut Header (Palette, Import, Status), Struktur-Baum, resizable Stage mit Kamera (Pan/Zoom), Inspector, Exportbereich und Sandbox auf.
+- Baut Header (Palette mit Container-Dropdown, Import, Status), Struktur-Baum, resizable Stage mit Kamera (Pan/Zoom), Inspector, Exportbereich und Sandbox auf.
 - Verwaltet Element-State, Selection, Historie und ruft Hilfs-Module (Preview, Inspector, Popover, Import) orchestriert auf.
 - Synchronisiert alle Mutationen (Canvas, Inspector, Export, Status) und sorgt für Bounds-Clamping, Container-Auto-Layout, Shortcuts (Delete, Undo/Redo) sowie Panel-/Kamera-Steuerung.
-- Enthält Drag-&-Drop-Zuordnung im Strukturpanel (inkl. Root-Drop-Zone) und aktualisiert die Panel-Größen-Logik, damit der rechte Trenner der Erwartung folgt.
+- Enthält Drag-&-Drop-Zuordnung im Strukturpanel (inkl. Root-Drop-Zone) mit Zyklus-Schutz und aktualisiert die Panel-Größen-Logik, damit der rechte Trenner der Erwartung folgt.
 
 ### `editor/definitions.ts`
 - Enthält Element-Definitionen inkl. Default-Texte, Größen, Layout-Voreinstellungen und Attribute-Gruppen.
@@ -67,7 +68,7 @@ src/apps/layout/
 - Übergibt finale Änderungen über Callbacks an die View, damit Inspector, Export und Historie synchron bleiben.
 
 ### `editor/inspector-panel.ts`
-- Rendert einen kompakten Inspector mit Meta-Infos, Container-Zuordnung, Attribut-Anzeige, Positions-/Größensteuerung, Layout-Parametern und Container-Kindverwaltung.
+- Rendert einen kompakten Inspector mit Meta-Infos, Container-Zuordnung (Dropdown inkl. Verschachtelungs-Schutz), Attribut-Anzeige, Positions-/Größensteuerung, Layout-Parametern und Container-Kindverwaltung.
 - Delegiert alle Mutationen (inkl. Platzhalter-, Optionen- und Layout-Änderungen) über `InspectorCallbacks` an die View und öffnet das Attribute-Popover.
 
 ### `editor/attribute-popover.ts`
@@ -75,7 +76,7 @@ src/apps/layout/
 - Ruft über Callbacks View-Aktionen (Sync, Export, Inspector, History) auf und kapselt Event-Cleanup.
 
 ### `editor/utils.ts`
-- Enthält Utility-Funktionen (`clamp`, Deep-Clones, Equality-Checks, Container-Erkennung) für View & History.
+- Enthält Utility-Funktionen (`clamp`, Deep-Clones, Equality-Checks, Container-/Ancestry-Erkennung) für View & History.
 
 ### `editor/creature-import.ts`
 - Baut den Creature-Creator in einer Sandbox auf, extrahiert Maße/Defaults und erstellt LayoutElemente.

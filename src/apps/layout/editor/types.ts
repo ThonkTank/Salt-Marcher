@@ -5,14 +5,14 @@ export type LayoutElementType =
     | "label"
     | "text-input"
     | "textarea"
-    | "box"
+    | "box-container"
     | "separator"
     | "dropdown"
     | "search-dropdown"
-    | "vbox"
-    | "hbox";
+    | "vbox-container"
+    | "hbox-container";
 
-export type LayoutContainerType = "vbox" | "hbox";
+export type LayoutContainerType = "box-container" | "vbox-container" | "hbox-container";
 
 export type LayoutContainerAlign = "start" | "center" | "end" | "stretch";
 

@@ -5623,12 +5623,12 @@ var ELEMENT_DEFINITIONS = [
     height: 180
   },
   {
-    type: "box",
-    buttonLabel: "Box",
-    defaultLabel: "Abschnitt",
-    defaultDescription: "Container f\xFCr zusammengeh\xF6rige Felder.",
+    type: "box-container",
+    buttonLabel: "BoxContainer",
+    defaultLabel: "BoxContainer",
     width: 360,
-    height: 200
+    height: 220,
+    defaultLayout: { gap: 16, padding: 16, align: "stretch" }
   },
   {
     type: "separator",
@@ -5656,18 +5656,18 @@ var ELEMENT_DEFINITIONS = [
     height: 160
   },
   {
-    type: "vbox",
-    buttonLabel: "VBox-Container",
-    defaultLabel: "VBox",
+    type: "vbox-container",
+    buttonLabel: "VBoxContainer",
+    defaultLabel: "VBoxContainer",
     defaultDescription: "Ordnet verkn\xFCpfte Elemente automatisch untereinander an.",
     width: 340,
     height: 260,
     defaultLayout: { gap: 16, padding: 16, align: "stretch" }
   },
   {
-    type: "hbox",
-    buttonLabel: "HBox-Container",
-    defaultLabel: "HBox",
+    type: "hbox-container",
+    buttonLabel: "HBoxContainer",
+    defaultLabel: "HBoxContainer",
     defaultDescription: "Ordnet verkn\xFCpfte Elemente automatisch nebeneinander an.",
     width: 360,
     height: 220,
@@ -5772,6 +5772,9 @@ var ATTRIBUTE_GROUPS = [
 var ATTRIBUTE_LABEL_LOOKUP = new Map(
   ATTRIBUTE_GROUPS.flatMap((group) => group.options.map((opt) => [opt.value, opt.label]))
 );
+function isVerticalContainer(type) {
+  return type === "box-container" || type === "vbox-container";
+}
 function getAttributeSummary(attributes) {
   if (!attributes.length) return "Attribute w\xE4hlen\u2026";
   return attributes.map((attr) => ATTRIBUTE_LABEL_LOOKUP.get(attr) ?? attr).join(", ");
@@ -5780,7 +5783,7 @@ function getElementTypeLabel(type) {
   return ELEMENT_DEFINITION_LOOKUP.get(type)?.buttonLabel ?? type;
 }
 function isContainerType(type) {
-  return type === "vbox" || type === "hbox";
+  return type === "box-container" || type === "vbox-container" || type === "hbox-container";
 }
 
 // src/apps/layout/editor/utils.ts
@@ -5833,6 +5836,32 @@ function snapshotsAreEqual(a, b) {
 }
 function isContainerElement(element) {
   return isContainerType(element.type) && Array.isArray(element.children);
+}
+function collectDescendantIds(element, elements) {
+  const lookup = new Map(elements.map((entry) => [entry.id, entry]));
+  const result = /* @__PURE__ */ new Set();
+  const stack = Array.isArray(element.children) ? [...element.children] : [];
+  while (stack.length) {
+    const id = stack.pop();
+    if (result.has(id)) continue;
+    result.add(id);
+    const child = lookup.get(id);
+    if (child?.children?.length) {
+      stack.push(...child.children);
+    }
+  }
+  return result;
+}
+function collectAncestorIds(element, elements) {
+  const lookup = new Map(elements.map((entry) => [entry.id, entry]));
+  const result = /* @__PURE__ */ new Set();
+  let current = element.parentId ? lookup.get(element.parentId) ?? null : null;
+  while (current) {
+    if (result.has(current.id)) break;
+    result.add(current.id);
+    current = current.parentId ? lookup.get(current.parentId) ?? null : null;
+  }
+  return result;
 }
 
 // src/apps/layout/editor/history.ts
@@ -6159,33 +6188,6 @@ function renderElementPreview(deps) {
     }
     return;
   }
-  if (element.type === "box") {
-    const container = preview.createDiv({ cls: "sm-le-preview__box" });
-    const title = createInlineEditor({
-      parent: container,
-      value: element.label,
-      placeholder: "Titel eingeben\u2026",
-      onCommit: commitLabel,
-      block: true
-    });
-    title.addClass("sm-le-preview__title");
-    const desc = createInlineEditor({
-      parent: container,
-      value: element.description ?? "",
-      placeholder: "Beschreibung hinzuf\xFCgen\u2026",
-      multiline: true,
-      block: true,
-      trim: false,
-      onCommit: (value) => {
-        const next = value || void 0;
-        if (next === element.description) return;
-        element.description = next;
-        deps.finalize(element);
-      }
-    });
-    desc.addClass("sm-le-preview__description");
-    return;
-  }
   if (element.type === "separator") {
     const header = preview.createDiv({ cls: "sm-le-preview__separator" });
     const label = createInlineEditor({
@@ -6357,29 +6359,36 @@ function renderInspectorPanel(deps) {
   if (isContainer) {
     callbacks.ensureContainerDefaults(element);
   }
-  const parentContainer = !isContainer && element.parentId ? elements.find((el) => el.id === element.parentId) : null;
+  const parentContainer = element.parentId ? elements.find((el) => el.id === element.parentId) : null;
   host.createDiv({ cls: "sm-le-meta", text: `Typ: ${getElementTypeLabel(element.type)}` });
   host.createDiv({
     cls: "sm-le-hint",
     text: "Texte bearbeitest du direkt im Arbeitsbereich. Platzhalter, Optionen und Layout findest du hier im Inspector."
   });
-  if (!isContainer) {
-    const containers = elements.filter((el) => isContainerType(el.type));
-    if (containers.length) {
-      const containerField = host.createDiv({ cls: "sm-le-field" });
-      containerField.createEl("label", { text: "Container" });
-      const parentSelect = containerField.createEl("select");
-      parentSelect.createEl("option", { value: "", text: "Kein Container" });
-      for (const container of containers) {
-        const label = container.label || getElementTypeLabel(container.type);
-        const option = parentSelect.createEl("option", { value: container.id, text: label });
-        if (element.parentId === container.id) option.selected = true;
-      }
-      parentSelect.onchange = () => {
-        const value = parentSelect.value || null;
-        callbacks.assignElementToContainer(element.id, value);
-      };
+  const containers = elements.filter((el) => isContainerType(el.type));
+  if (containers.length) {
+    const blockedContainers = /* @__PURE__ */ new Set();
+    if (isContainerElement(element)) {
+      const descendants = collectDescendantIds(element, elements);
+      for (const id of descendants) blockedContainers.add(id);
+      const ancestors = collectAncestorIds(element, elements);
+      for (const id of ancestors) blockedContainers.add(id);
+      blockedContainers.add(element.id);
     }
+    const containerField = host.createDiv({ cls: "sm-le-field" });
+    containerField.createEl("label", { text: "Container" });
+    const parentSelect = containerField.createEl("select");
+    parentSelect.createEl("option", { value: "", text: "Kein Container" });
+    for (const container of containers) {
+      if (blockedContainers.has(container.id)) continue;
+      const label = container.label || getElementTypeLabel(container.type);
+      const option = parentSelect.createEl("option", { value: container.id, text: label });
+      if (element.parentId === container.id) option.selected = true;
+    }
+    parentSelect.onchange = () => {
+      const value = parentSelect.value || null;
+      callbacks.assignElementToContainer(element.id, value);
+    };
   }
   const attributesField = host.createDiv({ cls: "sm-le-field" });
   attributesField.createEl("label", { text: "Attribute" });
@@ -6402,6 +6411,9 @@ function renderInspectorPanel(deps) {
     callbacks.refreshExport();
     if (isContainer) {
       callbacks.applyContainerLayout(element);
+      if (parentContainer && isContainerType(parentContainer.type)) {
+        callbacks.applyContainerLayout(parentContainer);
+      }
     } else if (parentContainer && isContainerType(parentContainer.type)) {
       callbacks.applyContainerLayout(parentContainer);
     }
@@ -6418,6 +6430,9 @@ function renderInspectorPanel(deps) {
     callbacks.refreshExport();
     if (isContainer) {
       callbacks.applyContainerLayout(element);
+      if (parentContainer && isContainerType(parentContainer.type)) {
+        callbacks.applyContainerLayout(parentContainer);
+      }
     } else if (parentContainer && isContainerType(parentContainer.type)) {
       callbacks.applyContainerLayout(parentContainer);
     }
@@ -6435,6 +6450,9 @@ function renderInspectorPanel(deps) {
     callbacks.refreshExport();
     if (isContainer) {
       callbacks.applyContainerLayout(element);
+      if (parentContainer && isContainerType(parentContainer.type)) {
+        callbacks.applyContainerLayout(parentContainer);
+      }
     } else if (parentContainer && isContainerType(parentContainer.type)) {
       callbacks.applyContainerLayout(parentContainer);
     }
@@ -6451,6 +6469,9 @@ function renderInspectorPanel(deps) {
     callbacks.refreshExport();
     if (isContainer) {
       callbacks.applyContainerLayout(element);
+      if (parentContainer && isContainerType(parentContainer.type)) {
+        callbacks.applyContainerLayout(parentContainer);
+      }
     } else if (parentContainer && isContainerType(parentContainer.type)) {
       callbacks.applyContainerLayout(parentContainer);
     }
@@ -6487,10 +6508,21 @@ function renderContainerInspectorSections(options) {
   quickAddBtn.onclick = (ev) => {
     ev.preventDefault();
     const menu = new import_obsidian22.Menu();
-    for (const type of ["label", "text-input", "textarea", "box", "separator", "dropdown", "search-dropdown"]) {
+    const standardDefs = ELEMENT_DEFINITIONS.filter((def) => !isContainerType(def.type));
+    const containerDefs = ELEMENT_DEFINITIONS.filter((def) => isContainerType(def.type));
+    for (const def of standardDefs) {
       menu.addItem((item) => {
-        item.setTitle(getElementTypeLabel(type));
-        item.onClick(() => callbacks.createElement(type, { parentId: element.id }));
+        item.setTitle(def.buttonLabel);
+        item.onClick(() => callbacks.createElement(def.type, { parentId: element.id }));
+      });
+    }
+    if (standardDefs.length && containerDefs.length) {
+      menu.addSeparator();
+    }
+    for (const def of containerDefs) {
+      menu.addItem((item) => {
+        item.setTitle(def.buttonLabel);
+        item.onClick(() => callbacks.createElement(def.type, { parentId: element.id }));
       });
     }
     menu.showAtMouseEvent(ev);
@@ -6500,7 +6532,12 @@ function renderContainerInspectorSections(options) {
   const addRow = childField.createDiv({ cls: "sm-le-container-add" });
   const addSelect = addRow.createEl("select");
   addSelect.createEl("option", { value: "", text: "Element ausw\xE4hlen\u2026" });
-  const candidates = elements.filter((el) => el.id !== element.id && !isContainerType(el.type));
+  const blockedIds = /* @__PURE__ */ new Set([element.id]);
+  const descendants = collectDescendantIds(element, elements);
+  for (const id of descendants) blockedIds.add(id);
+  const ancestors = collectAncestorIds(element, elements);
+  for (const id of ancestors) blockedIds.add(id);
+  const candidates = elements.filter((el) => !blockedIds.has(el.id));
   for (const candidate of candidates) {
     const textBase = candidate.label || getElementTypeLabel(candidate.type);
     let optionText = textBase;
@@ -6668,7 +6705,8 @@ function renderContainerLayoutControls(options) {
   const alignWrap = controls.createDiv({ cls: "sm-le-inline-control" });
   alignWrap.createSpan({ text: "Ausrichtung" });
   const alignSelect = alignWrap.createEl("select", { cls: "sm-le-inline-select" });
-  const alignOptions = element.type === "vbox" ? [
+  const containerType = element.type;
+  const alignOptions = isVerticalContainer(containerType) ? [
     ["start", "Links"],
     ["center", "Zentriert"],
     ["end", "Rechts"],
@@ -6828,7 +6866,7 @@ function detectElementTypeFromDom(node) {
     "input[type='text'], input[type='number'], input[type='search'], input[type='email'], input[type='url']"
   );
   if (input instanceof HTMLInputElement) return "text-input";
-  return "box";
+  return "box-container";
 }
 function extractElementDefaults(node, type) {
   const defaults = {};
@@ -7036,6 +7074,9 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
   finalizeInlineMutation(element) {
     if (this.history.isRestoring) return;
     this.syncElementElement(element);
+    if (isContainerElement(element)) {
+      this.applyContainerLayout(element, { silent: true });
+    }
     this.refreshExport();
     this.renderInspector();
     this.updateStatus();
@@ -7050,9 +7091,25 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     const addGroup = controls.createDiv({ cls: "sm-le-control sm-le-control--stack" });
     addGroup.createEl("label", { text: "Element hinzuf\xFCgen" });
     const addWrap = addGroup.createDiv({ cls: "sm-le-add" });
-    for (const def of ELEMENT_DEFINITIONS) {
+    const containerDefinitions = ELEMENT_DEFINITIONS.filter((def) => isContainerType(def.type));
+    const elementDefinitions = ELEMENT_DEFINITIONS.filter((def) => !isContainerType(def.type));
+    for (const def of elementDefinitions) {
       const btn = addWrap.createEl("button", { text: def.buttonLabel });
       btn.onclick = () => this.createElement(def.type);
+    }
+    if (containerDefinitions.length) {
+      const containerBtn = addWrap.createEl("button", { text: "Container" });
+      containerBtn.onclick = (event) => {
+        event.preventDefault();
+        const menu = new import_obsidian24.Menu();
+        for (const def of containerDefinitions) {
+          menu.addItem((item) => {
+            item.setTitle(def.buttonLabel);
+            item.onClick(() => this.createElement(def.type));
+          });
+        }
+        menu.showAtMouseEvent(event);
+      };
     }
     this.importBtn = controls.createEl("button", { text: "Creature-Layout importieren" });
     this.importBtn.onclick = () => {
@@ -7299,7 +7356,7 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
       element.layout = { ...def.defaultLayout };
       element.children = [];
     }
-    const requestedParentId = !isContainerType(type) ? options?.parentId ?? null : null;
+    const requestedParentId = options?.parentId ?? null;
     let parentContainer = null;
     if (requestedParentId) {
       const candidate = this.elements.find((el) => el.id === requestedParentId);
@@ -7309,7 +7366,7 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     }
     if (!parentContainer) {
       const selected = this.selectedElementId ? this.elements.find((el) => el.id === this.selectedElementId) : null;
-      parentContainer = selected && isContainerElement(selected) && !isContainerType(type) ? selected : null;
+      parentContainer = selected && isContainerElement(selected) ? selected : null;
     }
     if (parentContainer) {
       element.parentId = parentContainer.id;
@@ -7551,7 +7608,7 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     const canDropToRoot = () => {
       if (!this.draggedElementId) return false;
       const dragged = elementById.get(this.draggedElementId);
-      if (!dragged || isContainerType(dragged.type)) return false;
+      if (!dragged) return false;
       return Boolean(dragged.parentId);
     };
     rootDropZone.addEventListener("dragenter", (event) => {
@@ -7615,20 +7672,18 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
           this.selectElement(child.id);
           this.focusElementInCamera(child);
         };
-        if (!isContainerType(child.type)) {
-          entry.draggable = true;
-          entry.addClass("is-draggable");
-          entry.addEventListener("dragstart", (dragEvent) => {
-            this.draggedElementId = child.id;
-            dragEvent.dataTransfer?.setData("text/plain", child.id);
-            if (dragEvent.dataTransfer) {
-              dragEvent.dataTransfer.effectAllowed = "move";
-            }
-          });
-          entry.addEventListener("dragend", () => {
-            this.clearStructureDragState();
-          });
-        }
+        entry.draggable = true;
+        entry.addClass("is-draggable");
+        entry.addEventListener("dragstart", (dragEvent) => {
+          this.draggedElementId = child.id;
+          dragEvent.dataTransfer?.setData("text/plain", child.id);
+          if (dragEvent.dataTransfer) {
+            dragEvent.dataTransfer.effectAllowed = "move";
+          }
+        });
+        entry.addEventListener("dragend", () => {
+          this.clearStructureDragState();
+        });
         if (isContainerElement(child)) {
           const canDropHere = () => this.canDropOnContainer(child.id);
           entry.addEventListener("dragenter", (dragEvent) => {
@@ -7681,9 +7736,18 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     const container = this.elements.find((el) => el.id === containerId);
     if (!container || !isContainerElement(container)) return false;
     const dragged = this.elements.find((el) => el.id === this.draggedElementId);
-    if (!dragged || isContainerType(dragged.type)) return false;
+    if (!dragged) return false;
     if (dragged.id === containerId) return false;
     if (dragged.parentId === containerId) return false;
+    if (isContainerElement(dragged)) {
+      const descendants = collectDescendantIds(dragged, this.elements);
+      if (descendants.has(containerId)) return false;
+    }
+    let cursor = container.parentId ? this.elements.find((el) => el.id === container.parentId) : null;
+    while (cursor) {
+      if (cursor.id === dragged.id) return false;
+      cursor = cursor.parentId ? this.elements.find((el) => el.id === cursor.parentId) : null;
+    }
     return true;
   }
   deleteElement(id) {
@@ -7734,14 +7798,49 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
   }
   assignElementToContainer(elementId, containerId) {
     const element = this.elements.find((el) => el.id === elementId);
-    if (!element || isContainerType(element.type)) return;
+    if (!element) return;
     const currentParent = element.parentId ? this.elements.find((el) => el.id === element.parentId) : null;
+    let nextParent = null;
+    if (containerId) {
+      const candidate = this.elements.find((el) => el.id === containerId);
+      if (candidate && isContainerElement(candidate)) {
+        if (candidate.id === element.id) {
+          nextParent = null;
+        } else if (isContainerElement(element)) {
+          const descendants = collectDescendantIds(element, this.elements);
+          if (!descendants.has(candidate.id)) {
+            let cursor = candidate.parentId ? this.elements.find((el) => el.id === candidate.parentId) : null;
+            let isValid = true;
+            while (cursor) {
+              if (cursor.id === element.id) {
+                isValid = false;
+                break;
+              }
+              cursor = cursor.parentId ? this.elements.find((el) => el.id === cursor.parentId) : null;
+            }
+            if (isValid) {
+              nextParent = candidate;
+            }
+          }
+        } else {
+          nextParent = candidate;
+        }
+      }
+    }
+    if (containerId && !nextParent) {
+      return;
+    }
+    const resolvedParent = nextParent ?? null;
+    const currentId = currentParent && isContainerElement(currentParent) ? currentParent.id : null;
+    const nextId = resolvedParent ? resolvedParent.id : null;
+    if (currentId === nextId) {
+      return;
+    }
     if (currentParent && isContainerElement(currentParent)) {
       this.removeChildFromContainer(currentParent, element.id);
       this.applyContainerLayout(currentParent);
     }
-    const nextParent = containerId ? this.elements.find((el) => el.id === containerId) : null;
-    if (nextParent && isContainerElement(nextParent)) {
+    if (nextParent) {
       element.parentId = nextParent.id;
       this.addChildToContainer(nextParent, element.id);
       this.applyContainerLayout(nextParent);
@@ -7794,7 +7893,7 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     const innerWidth = Math.max(MIN_ELEMENT_SIZE, element.width - padding * 2);
     const innerHeight = Math.max(MIN_ELEMENT_SIZE, element.height - padding * 2);
     const gapCount = Math.max(0, children.length - 1);
-    if (element.type === "vbox") {
+    if (isVerticalContainer(element.type)) {
       const availableHeight = innerHeight - gap * gapCount;
       const slotHeight = Math.max(MIN_ELEMENT_SIZE, Math.floor(availableHeight / children.length));
       let y = element.y + padding;
@@ -9061,7 +9160,7 @@ var HEX_PLUGIN_CSS = `
 
 .sm-le-box.is-container {
     border-style: dashed;
-    border-color: var(--background-modifier-border);
+    border-color: color-mix(in srgb, var(--background-modifier-border) 70%, transparent);
 }
 
 .sm-le-box.is-selected {
@@ -9129,7 +9228,6 @@ var HEX_PLUGIN_CSS = `
 }
 
 .sm-le-preview__text-block,
-.sm-le-preview__box,
 .sm-le-preview__field,
 .sm-le-preview__separator,
 .sm-le-preview__container-header {
@@ -9142,29 +9240,28 @@ var HEX_PLUGIN_CSS = `
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    padding: 0.5rem;
-    border-radius: 10px;
-    background: var(--background-primary);
-    border: 1px dashed var(--background-modifier-border);
+    gap: 0.35rem;
+    padding: 0.35rem;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px dashed color-mix(in srgb, var(--background-modifier-border) 65%, transparent);
 }
 
 .sm-le-preview__container-body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
-    padding: 0.4rem;
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--interactive-accent) 6%, transparent);
-    min-height: 60px;
+    gap: 0.3rem;
+    padding: 0.25rem;
+    border-radius: 6px;
+    min-height: 48px;
 }
 
 .sm-le-preview__container-placeholder {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--text-muted);
     text-align: center;
-    padding: 0.35rem 0;
+    padding: 0.25rem 0;
 }
 
 .sm-le-preview__text {
@@ -9172,16 +9269,10 @@ var HEX_PLUGIN_CSS = `
     line-height: 1.4;
 }
 
-.sm-le-preview__subtext,
-.sm-le-preview__description {
+.sm-le-preview__subtext {
     font-size: 0.85rem;
     color: var(--text-muted);
     line-height: 1.4;
-}
-
-.sm-le-preview__title {
-    font-weight: 600;
-    font-size: 1rem;
 }
 
 .sm-le-preview__label {

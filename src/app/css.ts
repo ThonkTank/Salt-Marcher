@@ -1010,7 +1010,7 @@ export const HEX_PLUGIN_CSS = `
 
 .sm-le-box.is-container {
     border-style: dashed;
-    border-color: var(--background-modifier-border);
+    border-color: color-mix(in srgb, var(--background-modifier-border) 70%, transparent);
 }
 
 .sm-le-box.is-selected {
@@ -1078,7 +1078,6 @@ export const HEX_PLUGIN_CSS = `
 }
 
 .sm-le-preview__text-block,
-.sm-le-preview__box,
 .sm-le-preview__field,
 .sm-le-preview__separator,
 .sm-le-preview__container-header {
@@ -1091,29 +1090,28 @@ export const HEX_PLUGIN_CSS = `
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    padding: 0.5rem;
-    border-radius: 10px;
-    background: var(--background-primary);
-    border: 1px dashed var(--background-modifier-border);
+    gap: 0.35rem;
+    padding: 0.35rem;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px dashed color-mix(in srgb, var(--background-modifier-border) 65%, transparent);
 }
 
 .sm-le-preview__container-body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
-    padding: 0.4rem;
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--interactive-accent) 6%, transparent);
-    min-height: 60px;
+    gap: 0.3rem;
+    padding: 0.25rem;
+    border-radius: 6px;
+    min-height: 48px;
 }
 
 .sm-le-preview__container-placeholder {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--text-muted);
     text-align: center;
-    padding: 0.35rem 0;
+    padding: 0.25rem 0;
 }
 
 .sm-le-preview__text {
@@ -1121,16 +1119,10 @@ export const HEX_PLUGIN_CSS = `
     line-height: 1.4;
 }
 
-.sm-le-preview__subtext,
-.sm-le-preview__description {
+.sm-le-preview__subtext {
     font-size: 0.85rem;
     color: var(--text-muted);
     line-height: 1.4;
-}
-
-.sm-le-preview__title {
-    font-weight: 600;
-    font-size: 1rem;
 }
 
 .sm-le-preview__label {
