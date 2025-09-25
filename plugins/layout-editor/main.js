@@ -153,6 +153,102 @@ var ElementComponentBase = class {
     this.definition = definition;
   }
 };
+var FieldComponent = class extends ElementComponentBase {
+  constructor(definition, options = {}) {
+    super(definition);
+    this.inspectorLabel = options.inspectorLabel ?? "Bezeichnung";
+    this.placeholderInspectorLabel = options.placeholderInspectorLabel;
+  }
+  createFieldWrapper(preview, element, config = {}) {
+    const { tagName = "label", fieldClass = "sm-le-preview__field", includeLabel = true, labelClass = "sm-le-preview__label" } = config;
+    const field = preview.createEl(tagName, { cls: fieldClass });
+    let labelHost;
+    if (includeLabel) {
+      labelHost = field.createSpan({ cls: labelClass });
+      const labelText = element.label?.trim() ?? "";
+      if (labelText) {
+        labelHost.setText(labelText);
+      } else {
+        labelHost.style.display = "none";
+      }
+    }
+    return { field, labelHost };
+  }
+  renderInspector({ renderLabelField: renderLabelField2, renderPlaceholderField: renderPlaceholderField2 }) {
+    renderLabelField2({ label: this.inspectorLabel });
+    if (this.placeholderInspectorLabel) {
+      renderPlaceholderField2({ label: this.placeholderInspectorLabel });
+    }
+  }
+};
+var TextFieldComponent = class extends FieldComponent {
+  constructor(definition, options = {}) {
+    super(definition, options);
+    this.inputClass = options.inputClass ?? "sm-le-preview__input";
+    this.wrapperClass = options.wrapperClass ?? "sm-le-preview__field";
+    this.labelClass = options.labelClass;
+    this.wrapperTag = options.wrapperTag ?? "label";
+    this.inputType = options.inputType ?? "text";
+    this.multiline = options.multiline ?? false;
+    this.rows = options.rows ?? 4;
+    this.supportsPlaceholder = options.supportsPlaceholder ?? false;
+    this.showLabelInPreview = options.showLabelInPreview ?? true;
+  }
+  renderPreview({ preview, element, finalize }) {
+    const { field } = this.createFieldWrapper(preview, element, {
+      tagName: this.wrapperTag,
+      fieldClass: this.wrapperClass,
+      includeLabel: this.showLabelInPreview,
+      labelClass: this.labelClass
+    });
+    if (this.multiline) {
+      const textarea = field.createEl("textarea", { cls: this.inputClass });
+      textarea.value = element.defaultValue ?? "";
+      if (this.supportsPlaceholder) {
+        textarea.placeholder = element.placeholder ?? "";
+      } else {
+        textarea.placeholder = "";
+        if (element.placeholder !== void 0) {
+          element.placeholder = void 0;
+        }
+      }
+      textarea.rows = this.rows;
+      let lastValue2 = textarea.value;
+      textarea.addEventListener("input", () => {
+        element.defaultValue = textarea.value ? textarea.value : void 0;
+      });
+      textarea.addEventListener("blur", () => {
+        const next = textarea.value;
+        if (next === lastValue2) return;
+        lastValue2 = next;
+        element.defaultValue = next ? next : void 0;
+        finalize(element);
+      });
+      return;
+    }
+    const input = field.createEl("input", { attr: { type: this.inputType }, cls: this.inputClass });
+    input.value = element.defaultValue ?? "";
+    if (this.supportsPlaceholder) {
+      input.placeholder = element.placeholder ?? "";
+    } else {
+      input.placeholder = "";
+      if (element.placeholder !== void 0) {
+        element.placeholder = void 0;
+      }
+    }
+    let lastValue = input.value;
+    input.addEventListener("input", () => {
+      element.defaultValue = input.value ? input.value : void 0;
+    });
+    input.addEventListener("blur", () => {
+      const next = input.value;
+      if (next === lastValue) return;
+      lastValue = next;
+      element.defaultValue = next ? next : void 0;
+      finalize(element);
+    });
+  }
+};
 var ContainerComponent = class extends ElementComponentBase {
   constructor(definition, options = {}) {
     super(definition);
@@ -178,12 +274,13 @@ var ContainerComponent = class extends ElementComponentBase {
     }
   }
 };
-var SelectComponent = class extends ElementComponentBase {
+var SelectComponent = class extends FieldComponent {
   constructor(definition, options = {}) {
-    super(definition);
+    super(definition, {
+      inspectorLabel: options.inspectorLabel,
+      placeholderInspectorLabel: options.placeholderInspectorLabel ?? "Platzhalter"
+    });
     this.enableSearch = options.enableSearch ?? false;
-    this.inspectorLabel = options.inspectorLabel ?? "Bezeichnung";
-    this.placeholderInspectorLabel = options.placeholderInspectorLabel ?? "Platzhalter";
   }
   getDefaultPlaceholder() {
     if (this.definition.defaultPlaceholder) {
@@ -192,14 +289,7 @@ var SelectComponent = class extends ElementComponentBase {
     return this.enableSearch ? "Suchen\u2026" : "Option w\xE4hlen\u2026";
   }
   renderPreview({ preview, element, finalize }) {
-    const field = preview.createEl("label", { cls: "sm-le-preview__field" });
-    const labelHost = field.createSpan({ cls: "sm-le-preview__label" });
-    const labelText = element.label?.trim() ?? "";
-    if (labelText) {
-      labelHost.setText(labelText);
-    } else {
-      labelHost.style.display = "none";
-    }
+    const { field } = this.createFieldWrapper(preview, element);
     const select = field.createEl("select", { cls: "sm-le-preview__select" });
     const fallbackPlaceholder = this.getDefaultPlaceholder();
     const renderSelectOptions = () => {
@@ -258,10 +348,9 @@ var SelectComponent = class extends ElementComponentBase {
       finalize(element);
     };
   }
-  renderInspector({ renderLabelField: renderLabelField2, renderPlaceholderField: renderPlaceholderField2, renderOptionsEditor: renderOptionsEditor2 }) {
-    renderLabelField2({ label: this.inspectorLabel });
-    renderPlaceholderField2({ label: this.placeholderInspectorLabel });
-    renderOptionsEditor2({});
+  renderInspector(context) {
+    super.renderInspector(context);
+    context.renderOptionsEditor({});
   }
 };
 
@@ -469,42 +558,36 @@ var separatorComponent = {
 var separator_default = separatorComponent;
 
 // src/elements/components/text-input.ts
-var textInputComponent = {
-  definition: {
-    type: "text-input",
-    buttonLabel: "Textfeld",
-    defaultLabel: "",
-    category: "element",
-    paletteGroup: "input",
-    width: 260,
-    height: 140
-  },
-  renderPreview({ preview, element, finalize }) {
-    const field = preview.createDiv({ cls: "sm-le-preview__input-only" });
-    const input = field.createEl("input", { attr: { type: "text" }, cls: "sm-le-preview__input" });
-    input.value = element.defaultValue ?? "";
-    input.placeholder = "";
-    let lastValue = input.value;
-    input.addEventListener("input", () => {
-      element.defaultValue = input.value ? input.value : void 0;
-    });
-    input.addEventListener("blur", () => {
-      const next = input.value;
-      if (next === lastValue) return;
-      lastValue = next;
-      element.defaultValue = next ? next : void 0;
-      finalize(element);
-    });
-    if (element.placeholder) {
-      element.placeholder = void 0;
-    }
+var TextInputComponent = class extends TextFieldComponent {
+  constructor() {
+    super(
+      {
+        type: "text-input",
+        buttonLabel: "Textfeld",
+        defaultLabel: "",
+        category: "element",
+        paletteGroup: "input",
+        width: 260,
+        height: 140
+      },
+      {
+        wrapperTag: "div",
+        wrapperClass: "sm-le-preview__input-only",
+        inputClass: "sm-le-preview__input",
+        showLabelInPreview: false,
+        supportsPlaceholder: false
+      }
+    );
+  }
+  renderInspector(_context) {
   }
 };
+var textInputComponent = new TextInputComponent();
 var text_input_default = textInputComponent;
 
 // src/elements/components/textarea.ts
-var textareaComponent = {
-  definition: {
+var textareaComponent = new TextFieldComponent(
+  {
     type: "textarea",
     buttonLabel: "Mehrzeiliges Feld",
     defaultLabel: "",
@@ -514,36 +597,14 @@ var textareaComponent = {
     width: 320,
     height: 180
   },
-  renderPreview({ preview, element, finalize }) {
-    const field = preview.createEl("label", { cls: "sm-le-preview__field" });
-    const labelHost = field.createSpan({ cls: "sm-le-preview__label" });
-    const labelText = element.label?.trim() ?? "";
-    if (labelText) {
-      labelHost.setText(labelText);
-    } else {
-      labelHost.style.display = "none";
-    }
-    const textarea = field.createEl("textarea", { cls: "sm-le-preview__textarea" });
-    textarea.value = element.defaultValue ?? "";
-    textarea.placeholder = element.placeholder ?? "";
-    textarea.rows = 4;
-    let lastValue = textarea.value;
-    textarea.addEventListener("input", () => {
-      element.defaultValue = textarea.value ? textarea.value : void 0;
-    });
-    textarea.addEventListener("blur", () => {
-      const next = textarea.value;
-      if (next === lastValue) return;
-      lastValue = next;
-      element.defaultValue = next ? next : void 0;
-      finalize(element);
-    });
-  },
-  renderInspector({ renderLabelField: renderLabelField2, renderPlaceholderField: renderPlaceholderField2 }) {
-    renderLabelField2({ label: "Bezeichnung" });
-    renderPlaceholderField2({ label: "Platzhalter" });
+  {
+    inputClass: "sm-le-preview__textarea",
+    supportsPlaceholder: true,
+    multiline: true,
+    rows: 4,
+    placeholderInspectorLabel: "Platzhalter"
   }
-};
+);
 var textarea_default = textareaComponent;
 
 // src/elements/components/vbox-container.ts

@@ -1,35 +1,33 @@
-import type { LayoutElementComponent } from "../base";
+import type { ElementInspectorContext } from "../base";
+import { TextFieldComponent } from "../shared/component-bases";
 
-const textInputComponent: LayoutElementComponent = {
-    definition: {
-        type: "text-input",
-        buttonLabel: "Textfeld",
-        defaultLabel: "",
-        category: "element",
-        paletteGroup: "input",
-        width: 260,
-        height: 140,
-    },
-    renderPreview({ preview, element, finalize }) {
-        const field = preview.createDiv({ cls: "sm-le-preview__input-only" });
-        const input = field.createEl("input", { attr: { type: "text" }, cls: "sm-le-preview__input" }) as HTMLInputElement;
-        input.value = element.defaultValue ?? "";
-        input.placeholder = "";
-        let lastValue = input.value;
-        input.addEventListener("input", () => {
-            element.defaultValue = input.value ? input.value : undefined;
-        });
-        input.addEventListener("blur", () => {
-            const next = input.value;
-            if (next === lastValue) return;
-            lastValue = next;
-            element.defaultValue = next ? next : undefined;
-            finalize(element);
-        });
-        if (element.placeholder) {
-            element.placeholder = undefined;
-        }
-    },
-};
+class TextInputComponent extends TextFieldComponent {
+    constructor() {
+        super(
+            {
+                type: "text-input",
+                buttonLabel: "Textfeld",
+                defaultLabel: "",
+                category: "element",
+                paletteGroup: "input",
+                width: 260,
+                height: 140,
+            },
+            {
+                wrapperTag: "div",
+                wrapperClass: "sm-le-preview__input-only",
+                inputClass: "sm-le-preview__input",
+                showLabelInPreview: false,
+                supportsPlaceholder: false,
+            },
+        );
+    }
+
+    renderInspector(_context: ElementInspectorContext): void {
+        // Intentionally left blank – das Textfeld besitzt keine zusätzlichen Inspector-Felder.
+    }
+}
+
+const textInputComponent = new TextInputComponent();
 
 export default textInputComponent;

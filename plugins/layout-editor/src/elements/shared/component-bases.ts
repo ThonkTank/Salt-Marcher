@@ -1,6 +1,10 @@
 import { enhanceSelectToSearch } from "../../search-dropdown";
 import type { LayoutElement, LayoutElementDefinition } from "../../types";
-import type { ElementInspectorContext, ElementPreviewContext, LayoutElementComponent } from "../base";
+import type {
+    ElementInspectorContext,
+    ElementPreviewContext,
+    LayoutElementComponent,
+} from "../base";
 import { renderContainerPreview } from "./container-preview";
 
 export type PreviewContext = ElementPreviewContext;
@@ -17,6 +21,150 @@ export abstract class ElementComponentBase implements LayoutElementComponent {
     renderInspector?(context: ElementInspectorContext): void;
 
     ensureDefaults?(element: LayoutElement): void;
+}
+
+type FieldPreviewConfig = {
+    tagName?: "label" | "div";
+    fieldClass?: string;
+    includeLabel?: boolean;
+    labelClass?: string;
+};
+
+interface FieldComponentOptions {
+    inspectorLabel?: string;
+    placeholderInspectorLabel?: string;
+}
+
+export abstract class FieldComponent extends ElementComponentBase {
+    private readonly inspectorLabel: string;
+    private readonly placeholderInspectorLabel?: string;
+
+    protected constructor(definition: LayoutElementDefinition, options: FieldComponentOptions = {}) {
+        super(definition);
+        this.inspectorLabel = options.inspectorLabel ?? "Bezeichnung";
+        this.placeholderInspectorLabel = options.placeholderInspectorLabel;
+    }
+
+    protected createFieldWrapper(
+        preview: HTMLElement,
+        element: LayoutElement,
+        config: FieldPreviewConfig = {},
+    ): { field: HTMLElement; labelHost?: HTMLElement } {
+        const { tagName = "label", fieldClass = "sm-le-preview__field", includeLabel = true, labelClass = "sm-le-preview__label" } = config;
+        const field = preview.createEl(tagName, { cls: fieldClass });
+        let labelHost: HTMLElement | undefined;
+        if (includeLabel) {
+            labelHost = field.createSpan({ cls: labelClass });
+            const labelText = element.label?.trim() ?? "";
+            if (labelText) {
+                labelHost.setText(labelText);
+            } else {
+                labelHost.style.display = "none";
+            }
+        }
+        return { field, labelHost };
+    }
+
+    renderInspector({ renderLabelField, renderPlaceholderField }: ElementInspectorContext): void {
+        renderLabelField({ label: this.inspectorLabel });
+        if (this.placeholderInspectorLabel) {
+            renderPlaceholderField({ label: this.placeholderInspectorLabel });
+        }
+    }
+}
+
+interface TextFieldComponentOptions extends FieldComponentOptions {
+    inputClass?: string;
+    wrapperClass?: string;
+    labelClass?: string;
+    wrapperTag?: "label" | "div";
+    inputType?: string;
+    multiline?: boolean;
+    rows?: number;
+    supportsPlaceholder?: boolean;
+    showLabelInPreview?: boolean;
+}
+
+export class TextFieldComponent extends FieldComponent {
+    private readonly inputClass: string;
+    private readonly wrapperClass: string;
+    private readonly labelClass?: string;
+    private readonly wrapperTag: "label" | "div";
+    private readonly inputType: string;
+    private readonly multiline: boolean;
+    private readonly rows: number;
+    private readonly supportsPlaceholder: boolean;
+    private readonly showLabelInPreview: boolean;
+
+    constructor(definition: LayoutElementDefinition, options: TextFieldComponentOptions = {}) {
+        super(definition, options);
+        this.inputClass = options.inputClass ?? "sm-le-preview__input";
+        this.wrapperClass = options.wrapperClass ?? "sm-le-preview__field";
+        this.labelClass = options.labelClass;
+        this.wrapperTag = options.wrapperTag ?? "label";
+        this.inputType = options.inputType ?? "text";
+        this.multiline = options.multiline ?? false;
+        this.rows = options.rows ?? 4;
+        this.supportsPlaceholder = options.supportsPlaceholder ?? false;
+        this.showLabelInPreview = options.showLabelInPreview ?? true;
+    }
+
+    renderPreview({ preview, element, finalize }: PreviewContext): void {
+        const { field } = this.createFieldWrapper(preview, element, {
+            tagName: this.wrapperTag,
+            fieldClass: this.wrapperClass,
+            includeLabel: this.showLabelInPreview,
+            labelClass: this.labelClass,
+        });
+
+        if (this.multiline) {
+            const textarea = field.createEl("textarea", { cls: this.inputClass }) as HTMLTextAreaElement;
+            textarea.value = element.defaultValue ?? "";
+            if (this.supportsPlaceholder) {
+                textarea.placeholder = element.placeholder ?? "";
+            } else {
+                textarea.placeholder = "";
+                if (element.placeholder !== undefined) {
+                    element.placeholder = undefined;
+                }
+            }
+            textarea.rows = this.rows;
+            let lastValue = textarea.value;
+            textarea.addEventListener("input", () => {
+                element.defaultValue = textarea.value ? textarea.value : undefined;
+            });
+            textarea.addEventListener("blur", () => {
+                const next = textarea.value;
+                if (next === lastValue) return;
+                lastValue = next;
+                element.defaultValue = next ? next : undefined;
+                finalize(element);
+            });
+            return;
+        }
+
+        const input = field.createEl("input", { attr: { type: this.inputType }, cls: this.inputClass }) as HTMLInputElement;
+        input.value = element.defaultValue ?? "";
+        if (this.supportsPlaceholder) {
+            input.placeholder = element.placeholder ?? "";
+        } else {
+            input.placeholder = "";
+            if (element.placeholder !== undefined) {
+                element.placeholder = undefined;
+            }
+        }
+        let lastValue = input.value;
+        input.addEventListener("input", () => {
+            element.defaultValue = input.value ? input.value : undefined;
+        });
+        input.addEventListener("blur", () => {
+            const next = input.value;
+            if (next === lastValue) return;
+            lastValue = next;
+            element.defaultValue = next ? next : undefined;
+            finalize(element);
+        });
+    }
 }
 
 interface ContainerComponentOptions {
@@ -55,22 +203,19 @@ export class ContainerComponent extends ElementComponentBase {
     }
 }
 
-interface SelectComponentOptions {
+interface SelectComponentOptions extends FieldComponentOptions {
     enableSearch?: boolean;
-    inspectorLabel?: string;
-    placeholderInspectorLabel?: string;
 }
 
-export class SelectComponent extends ElementComponentBase {
+export class SelectComponent extends FieldComponent {
     private readonly enableSearch: boolean;
-    private readonly inspectorLabel: string;
-    private readonly placeholderInspectorLabel: string;
 
     constructor(definition: LayoutElementDefinition, options: SelectComponentOptions = {}) {
-        super(definition);
+        super(definition, {
+            inspectorLabel: options.inspectorLabel,
+            placeholderInspectorLabel: options.placeholderInspectorLabel ?? "Platzhalter",
+        });
         this.enableSearch = options.enableSearch ?? false;
-        this.inspectorLabel = options.inspectorLabel ?? "Bezeichnung";
-        this.placeholderInspectorLabel = options.placeholderInspectorLabel ?? "Platzhalter";
     }
 
     private getDefaultPlaceholder(): string {
@@ -81,14 +226,7 @@ export class SelectComponent extends ElementComponentBase {
     }
 
     renderPreview({ preview, element, finalize }: PreviewContext): void {
-        const field = preview.createEl("label", { cls: "sm-le-preview__field" });
-        const labelHost = field.createSpan({ cls: "sm-le-preview__label" });
-        const labelText = element.label?.trim() ?? "";
-        if (labelText) {
-            labelHost.setText(labelText);
-        } else {
-            labelHost.style.display = "none";
-        }
+        const { field } = this.createFieldWrapper(preview, element);
 
         const select = field.createEl("select", { cls: "sm-le-preview__select" }) as HTMLSelectElement;
         const fallbackPlaceholder = this.getDefaultPlaceholder();
@@ -155,9 +293,8 @@ export class SelectComponent extends ElementComponentBase {
         };
     }
 
-    renderInspector({ renderLabelField, renderPlaceholderField, renderOptionsEditor }: ElementInspectorContext): void {
-        renderLabelField({ label: this.inspectorLabel });
-        renderPlaceholderField({ label: this.placeholderInspectorLabel });
-        renderOptionsEditor({});
+    renderInspector(context: ElementInspectorContext): void {
+        super.renderInspector(context);
+        context.renderOptionsEditor({});
     }
 }
