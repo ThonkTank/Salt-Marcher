@@ -28,12 +28,12 @@ export const ELEMENT_DEFINITIONS: LayoutElementDefinition[] = [
         height: 180,
     },
     {
-        type: "box",
-        buttonLabel: "Box",
-        defaultLabel: "Abschnitt",
-        defaultDescription: "Container für zusammengehörige Felder.",
+        type: "box-container",
+        buttonLabel: "BoxContainer",
+        defaultLabel: "BoxContainer",
         width: 360,
-        height: 200,
+        height: 220,
+        defaultLayout: { gap: 16, padding: 16, align: "stretch" },
     },
     {
         type: "separator",
@@ -61,18 +61,18 @@ export const ELEMENT_DEFINITIONS: LayoutElementDefinition[] = [
         height: 160,
     },
     {
-        type: "vbox",
-        buttonLabel: "VBox-Container",
-        defaultLabel: "VBox",
+        type: "vbox-container",
+        buttonLabel: "VBoxContainer",
+        defaultLabel: "VBoxContainer",
         defaultDescription: "Ordnet verknüpfte Elemente automatisch untereinander an.",
         width: 340,
         height: 260,
         defaultLayout: { gap: 16, padding: 16, align: "stretch" },
     },
     {
-        type: "hbox",
-        buttonLabel: "HBox-Container",
-        defaultLabel: "HBox",
+        type: "hbox-container",
+        buttonLabel: "HBoxContainer",
+        defaultLabel: "HBoxContainer",
         defaultDescription: "Ordnet verknüpfte Elemente automatisch nebeneinander an.",
         width: 360,
         height: 220,
@@ -181,8 +181,12 @@ export const ATTRIBUTE_LABEL_LOOKUP = new Map(
     ATTRIBUTE_GROUPS.flatMap(group => group.options.map(opt => [opt.value, opt.label] as const)),
 );
 
+export function isVerticalContainer(type: LayoutContainerType): boolean {
+    return type === "box-container" || type === "vbox-container";
+}
+
 export function getContainerAlignLabel(type: LayoutContainerType, align: LayoutContainerAlign): string {
-    if (type === "vbox") {
+    if (isVerticalContainer(type)) {
         switch (align) {
             case "start":
                 return "Links ausgerichtet";
@@ -218,7 +222,7 @@ export function getElementTypeLabel(type: LayoutElementType): string {
 }
 
 export function isContainerType(type: LayoutElementType): type is LayoutContainerType {
-    return type === "vbox" || type === "hbox";
+    return type === "box-container" || type === "vbox-container" || type === "hbox-container";
 }
 
 export function ensureContainerDefaults(config: LayoutElementDefinition): LayoutContainerConfig | undefined {

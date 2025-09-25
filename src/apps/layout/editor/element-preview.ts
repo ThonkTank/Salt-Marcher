@@ -86,34 +86,6 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
         return;
     }
 
-    if (element.type === "box") {
-        const container = preview.createDiv({ cls: "sm-le-preview__box" });
-        const title = createInlineEditor({
-            parent: container,
-            value: element.label,
-            placeholder: "Titel eingeben…",
-            onCommit: commitLabel,
-            block: true,
-        });
-        title.addClass("sm-le-preview__title");
-        const desc = createInlineEditor({
-            parent: container,
-            value: element.description ?? "",
-            placeholder: "Beschreibung hinzufügen…",
-            multiline: true,
-            block: true,
-            trim: false,
-            onCommit: value => {
-                const next = value || undefined;
-                if (next === element.description) return;
-                element.description = next;
-                deps.finalize(element);
-            },
-        });
-        desc.addClass("sm-le-preview__description");
-        return;
-    }
-
     if (element.type === "separator") {
         const header = preview.createDiv({ cls: "sm-le-preview__separator" });
         const label = createInlineEditor({

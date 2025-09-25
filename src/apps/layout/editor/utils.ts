@@ -74,3 +74,31 @@ export function snapshotsAreEqual(a: LayoutEditorSnapshot | undefined, b: Layout
 export function isContainerElement(element: LayoutElement): element is LayoutElement & { children: string[] } {
     return isContainerType(element.type) && Array.isArray(element.children);
 }
+
+export function collectDescendantIds(element: LayoutElement, elements: LayoutElement[]): Set<string> {
+    const lookup = new Map(elements.map(entry => [entry.id, entry] as const));
+    const result = new Set<string>();
+    const stack = Array.isArray(element.children) ? [...element.children] : [];
+    while (stack.length) {
+        const id = stack.pop()!;
+        if (result.has(id)) continue;
+        result.add(id);
+        const child = lookup.get(id);
+        if (child?.children?.length) {
+            stack.push(...child.children);
+        }
+    }
+    return result;
+}
+
+export function collectAncestorIds(element: LayoutElement, elements: LayoutElement[]): Set<string> {
+    const lookup = new Map(elements.map(entry => [entry.id, entry] as const));
+    const result = new Set<string>();
+    let current = element.parentId ? lookup.get(element.parentId) ?? null : null;
+    while (current) {
+        if (result.has(current.id)) break;
+        result.add(current.id);
+        current = current.parentId ? lookup.get(current.parentId) ?? null : null;
+    }
+    return result;
+}
