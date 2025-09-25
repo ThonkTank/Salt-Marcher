@@ -2195,9 +2195,10 @@ var LayoutPickerModal = class extends import_obsidian3.Modal {
     }
   }
   submit() {
-    if (!this.selectedId) return;
+    const layoutId = this.selectedId;
+    if (!layoutId) return;
     this.close();
-    this.onPick(this.selectedId);
+    this.onPick(layoutId);
   }
 };
 function formatTimestamp(value) {
@@ -3758,7 +3759,7 @@ var LayoutEditorView = class extends import_obsidian5.ItemView {
     this.renderInspector();
     this.refreshExport();
     this.updateStatus();
-    this.pushHistory();
+    this.history.reset(this.captureSnapshot());
   }
   nextFrame() {
     return new Promise((resolve) => requestAnimationFrame(() => resolve()));

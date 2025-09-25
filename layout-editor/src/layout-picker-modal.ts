@@ -171,9 +171,10 @@ export class LayoutPickerModal extends Modal {
     }
 
     private submit() {
-        if (!this.selectedId) return;
+        const layoutId = this.selectedId;
+        if (!layoutId) return;
         this.close();
-        this.onPick(this.selectedId);
+        this.onPick(layoutId);
     }
 }
 
