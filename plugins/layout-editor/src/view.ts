@@ -17,7 +17,7 @@ import { renderInspectorPanel } from "./inspector-panel";
 import { clamp, cloneLayoutElement, collectDescendantIds, isContainerElement } from "./utils";
 import { importCreatureLayout } from "./creature-import";
 import { saveLayoutToLibrary } from "./layout-library";
-import { NameInputModal } from "../../ui/modals";
+import { NameInputModal } from "./name-input-modal";
 
 export const VIEW_LAYOUT_EDITOR = "salt-layout-editor";
 const DEFAULT_INPUT_TYPES = new Set<string>(["text-input", "textarea", "dropdown", "search-dropdown"]);
@@ -1451,8 +1451,6 @@ export class LayoutEditorView extends ItemView {
         try {
             await importCreatureLayout(
                 {
-                    sandbox: this.sandboxEl,
-                    nextFrame: () => this.nextFrame(),
                     setCanvasSize: (width, height) => {
                         this.canvasWidth = width;
                         this.canvasHeight = height;
