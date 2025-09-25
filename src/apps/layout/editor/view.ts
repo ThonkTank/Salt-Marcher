@@ -436,6 +436,7 @@ export class LayoutEditorView extends ItemView {
                 ensureContainerDefaults: target => this.ensureContainerDefaults(target),
                 applyContainerLayout: (target, options) => this.applyContainerLayout(target, options),
                 pushHistory: () => this.pushHistory(),
+                createElement: (type, options) => this.createElement(type, options),
             });
         }
         const attrsEl = el.querySelector<HTMLElement>('[data-role="attrs"]');
