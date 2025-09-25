@@ -62,9 +62,11 @@ async function readLayoutMeta(app: App, file: TFile): Promise<SavedLayout | null
         }
         const fallbackCreated = new Date(file.stat.ctime || Date.now()).toISOString();
         const fallbackUpdated = new Date(file.stat.mtime || Date.now()).toISOString();
+        const fileId = file.basename;
+        const resolvedName = typeof parsed.name === "string" && parsed.name.trim() ? parsed.name : fileId;
         return {
-            id: parsed.id ?? file.basename,
-            name: typeof parsed.name === "string" ? parsed.name : file.basename,
+            id: fileId,
+            name: resolvedName,
             canvasWidth: parsed.canvasWidth,
             canvasHeight: parsed.canvasHeight,
             elements: (parsed.elements ?? []) as LayoutElement[],
