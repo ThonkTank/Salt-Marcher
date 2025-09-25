@@ -17,6 +17,7 @@ import type {
     SavedLayout,
 } from "./types";
 import { LAYOUT_EDITOR_CSS } from "./css";
+import { ensureSeedLayouts } from "./seed-layouts";
 
 export interface LayoutEditorPluginApi {
     viewType: string;
@@ -36,6 +37,8 @@ export default class LayoutEditorPlugin extends Plugin {
 
     async onload() {
         resetLayoutElementDefinitions(DEFAULT_ELEMENT_DEFINITIONS);
+
+        await ensureSeedLayouts(this.app);
 
         this.registerView(VIEW_LAYOUT_EDITOR, (leaf: WorkspaceLeaf) => new LayoutEditorView(leaf));
 

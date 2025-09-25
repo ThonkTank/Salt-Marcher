@@ -4893,10 +4893,396 @@ var LAYOUT_EDITOR_CSS = `
 }
 `;
 
+// src/seed-layouts.ts
+var SEED_LAYOUT_ID = "layout-editor-default";
+var SEED_LAYOUT_NAME = "Layout Editor \u2013 Kreaturenvorlage";
+var seedElements = [
+  {
+    id: "el-title",
+    type: "label",
+    x: 48,
+    y: 48,
+    width: 864,
+    height: 120,
+    label: "Kreaturen\xFCbersicht",
+    description: "",
+    attributes: []
+  },
+  {
+    id: "el-meta",
+    type: "hbox-container",
+    x: 48,
+    y: 200,
+    width: 864,
+    height: 200,
+    label: "Grunddaten",
+    description: "",
+    attributes: [],
+    layout: { gap: 16, padding: 16, align: "stretch" },
+    children: ["el-name", "el-size", "el-type", "el-alignment"]
+  },
+  {
+    id: "el-name",
+    type: "text-input",
+    x: 64,
+    y: 216,
+    width: 196,
+    height: 168,
+    label: "Name",
+    placeholder: "Kreaturennamen eingeben\u2026",
+    attributes: ["name"],
+    parentId: "el-meta"
+  },
+  {
+    id: "el-size",
+    type: "dropdown",
+    x: 276,
+    y: 216,
+    width: 196,
+    height: 168,
+    label: "Gr\xF6\xDFe",
+    placeholder: "Gr\xF6\xDFe w\xE4hlen\u2026",
+    options: ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"],
+    attributes: ["size"],
+    parentId: "el-meta"
+  },
+  {
+    id: "el-type",
+    type: "dropdown",
+    x: 488,
+    y: 216,
+    width: 196,
+    height: 168,
+    label: "Typ",
+    placeholder: "Typ w\xE4hlen\u2026",
+    options: [
+      "Aberration",
+      "Beast",
+      "Celestial",
+      "Construct",
+      "Dragon",
+      "Elemental",
+      "Fey",
+      "Fiend",
+      "Giant",
+      "Humanoid",
+      "Monstrosity",
+      "Ooze",
+      "Plant",
+      "Undead"
+    ],
+    attributes: ["type"],
+    parentId: "el-meta"
+  },
+  {
+    id: "el-alignment",
+    type: "dropdown",
+    x: 700,
+    y: 216,
+    width: 196,
+    height: 168,
+    label: "Gesinnung",
+    placeholder: "Gesinnung w\xE4hlen\u2026",
+    options: [
+      "Lawful Good",
+      "Neutral Good",
+      "Chaotic Good",
+      "Lawful Neutral",
+      "True Neutral",
+      "Chaotic Neutral",
+      "Lawful Evil",
+      "Neutral Evil",
+      "Chaotic Evil"
+    ],
+    attributes: ["alignment"],
+    parentId: "el-meta"
+  },
+  {
+    id: "el-ability-heading",
+    type: "label",
+    x: 48,
+    y: 420,
+    width: 864,
+    height: 80,
+    label: "Attribute",
+    description: "",
+    attributes: []
+  },
+  {
+    id: "el-abilities",
+    type: "hbox-container",
+    x: 48,
+    y: 520,
+    width: 864,
+    height: 180,
+    label: "Ability Scores",
+    description: "",
+    attributes: [],
+    layout: { gap: 16, padding: 16, align: "stretch" },
+    children: ["el-str", "el-dex", "el-con", "el-int", "el-wis", "el-cha"]
+  },
+  {
+    id: "el-str",
+    type: "text-input",
+    x: 64,
+    y: 536,
+    width: 125,
+    height: 148,
+    label: "STR",
+    placeholder: "10",
+    attributes: ["str"],
+    parentId: "el-abilities"
+  },
+  {
+    id: "el-dex",
+    type: "text-input",
+    x: 205,
+    y: 536,
+    width: 125,
+    height: 148,
+    label: "DEX",
+    placeholder: "10",
+    attributes: ["dex"],
+    parentId: "el-abilities"
+  },
+  {
+    id: "el-con",
+    type: "text-input",
+    x: 346,
+    y: 536,
+    width: 125,
+    height: 148,
+    label: "CON",
+    placeholder: "10",
+    attributes: ["con"],
+    parentId: "el-abilities"
+  },
+  {
+    id: "el-int",
+    type: "text-input",
+    x: 487,
+    y: 536,
+    width: 125,
+    height: 148,
+    label: "INT",
+    placeholder: "10",
+    attributes: ["int"],
+    parentId: "el-abilities"
+  },
+  {
+    id: "el-wis",
+    type: "text-input",
+    x: 628,
+    y: 536,
+    width: 125,
+    height: 148,
+    label: "WIS",
+    placeholder: "10",
+    attributes: ["wis"],
+    parentId: "el-abilities"
+  },
+  {
+    id: "el-cha",
+    type: "text-input",
+    x: 769,
+    y: 536,
+    width: 125,
+    height: 148,
+    label: "CHA",
+    placeholder: "10",
+    attributes: ["cha"],
+    parentId: "el-abilities"
+  },
+  {
+    id: "el-stats-heading",
+    type: "label",
+    x: 48,
+    y: 720,
+    width: 864,
+    height: 80,
+    label: "Kampfwerte",
+    description: "",
+    attributes: []
+  },
+  {
+    id: "el-stats",
+    type: "hbox-container",
+    x: 48,
+    y: 820,
+    width: 864,
+    height: 180,
+    label: "Statistiken",
+    description: "",
+    attributes: [],
+    layout: { gap: 16, padding: 16, align: "stretch" },
+    children: ["el-ac", "el-hp", "el-speed", "el-initiative"]
+  },
+  {
+    id: "el-ac",
+    type: "text-input",
+    x: 64,
+    y: 836,
+    width: 196,
+    height: 148,
+    label: "R\xFCstungsklasse",
+    placeholder: "AC",
+    attributes: ["ac"],
+    parentId: "el-stats"
+  },
+  {
+    id: "el-hp",
+    type: "text-input",
+    x: 276,
+    y: 836,
+    width: 196,
+    height: 148,
+    label: "Trefferpunkte",
+    placeholder: "HP",
+    attributes: ["hp"],
+    parentId: "el-stats"
+  },
+  {
+    id: "el-speed",
+    type: "text-input",
+    x: 488,
+    y: 836,
+    width: 196,
+    height: 148,
+    label: "Geschwindigkeit",
+    placeholder: "30 ft.",
+    attributes: ["speed"],
+    parentId: "el-stats"
+  },
+  {
+    id: "el-initiative",
+    type: "text-input",
+    x: 700,
+    y: 836,
+    width: 196,
+    height: 148,
+    label: "Initiative",
+    placeholder: "+2",
+    attributes: ["initiative"],
+    parentId: "el-stats"
+  },
+  {
+    id: "el-senses",
+    type: "search-dropdown",
+    x: 48,
+    y: 1020,
+    width: 420,
+    height: 120,
+    label: "Sinne",
+    placeholder: "Sinn hinzuf\xFCgen\u2026",
+    options: ["Darkvision", "Blindsight", "Tremorsense", "Truesight", "Passive Perception"],
+    attributes: ["senses"]
+  },
+  {
+    id: "el-languages",
+    type: "search-dropdown",
+    x: 492,
+    y: 1020,
+    width: 420,
+    height: 120,
+    label: "Sprachen",
+    placeholder: "Sprache hinzuf\xFCgen\u2026",
+    options: [
+      "Common",
+      "Dwarvish",
+      "Elvish",
+      "Giant",
+      "Goblin",
+      "Draconic",
+      "Infernal",
+      "Sylvan"
+    ],
+    attributes: ["languages"]
+  },
+  {
+    id: "el-divider",
+    type: "separator",
+    x: 48,
+    y: 1168,
+    width: 864,
+    height: 24,
+    label: "",
+    attributes: []
+  },
+  {
+    id: "el-traits-heading",
+    type: "label",
+    x: 48,
+    y: 1210,
+    width: 864,
+    height: 80,
+    label: "Eigenschaften",
+    description: "",
+    attributes: []
+  },
+  {
+    id: "el-traits",
+    type: "textarea",
+    x: 48,
+    y: 1290,
+    width: 864,
+    height: 220,
+    label: "Traits",
+    placeholder: "Sonderf\xE4higkeiten und Besonderheiten beschreiben\u2026",
+    attributes: ["traits"]
+  },
+  {
+    id: "el-actions-heading",
+    type: "label",
+    x: 48,
+    y: 1530,
+    width: 864,
+    height: 80,
+    label: "Aktionen",
+    description: "",
+    attributes: []
+  },
+  {
+    id: "el-actions",
+    type: "textarea",
+    x: 48,
+    y: 1610,
+    width: 864,
+    height: 220,
+    label: "Actions",
+    placeholder: "Angriffe und Aktionen dokumentieren\u2026",
+    attributes: ["actions"]
+  }
+];
+var seedBlueprint = {
+  canvasWidth: 960,
+  canvasHeight: 1880,
+  elements: seedElements
+};
+async function ensureSeedLayouts(app) {
+  try {
+    const existing = await loadSavedLayout(app, SEED_LAYOUT_ID);
+    if (existing) {
+      return;
+    }
+  } catch (error) {
+    console.warn("Layout Editor: konnte Seed-Layout nicht pr\xFCfen", error);
+  }
+  try {
+    await saveLayoutToLibrary(app, {
+      ...seedBlueprint,
+      name: SEED_LAYOUT_NAME,
+      id: SEED_LAYOUT_ID
+    });
+  } catch (error) {
+    console.error("Layout Editor: Seed-Layout konnte nicht gespeichert werden", error);
+  }
+}
+
 // src/main.ts
 var LayoutEditorPlugin = class extends import_obsidian6.Plugin {
   async onload() {
     resetLayoutElementDefinitions(DEFAULT_ELEMENT_DEFINITIONS);
+    await ensureSeedLayouts(this.app);
     this.registerView(VIEW_LAYOUT_EDITOR, (leaf) => new LayoutEditorView(leaf));
     this.addRibbonIcon("layout-grid", "Layout Editor \xF6ffnen", () => {
       void this.openView();

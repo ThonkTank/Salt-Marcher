@@ -35,7 +35,7 @@ Salt-Marcher/
 ## Features & Verantwortlichkeiten
 
 - **Salt Marcher Plugin:** Registriert Cartographer-, Encounter- und Library-Views, injiziert eigenes CSS und verwaltet Terrain-/Regions-Daten. Enthält alle Hex-Mapper-, Travel- und Library-Funktionen.
-- **Layout Editor Plugin:** Registriert den Layout-Editor als eigenständigen View, injiziert dediziertes Styling, stellt ein API (`getApi()`) für Registry-/Persistenz-Hooks bereit und verwaltet Layout-Dateien unter `LayoutEditor/Layouts`.
+- **Layout Editor Plugin:** Registriert den Layout-Editor als eigenständigen View, injiziert dediziertes Styling, stellt ein API (`getApi()`) für Registry-/Persistenz-Hooks bereit, verwaltet Layout-Dateien unter `LayoutEditor/Layouts` und legt beim Laden ein Standardlayout als editierbare Vorlage im Vault an.
 - **Getrennte Builds:** Jedes Plugin wird über sein eigenes `esbuild.config.mjs` gebündelt. Die erzeugten `main.js`-Artefakte liegen direkt im jeweiligen Plugin-Ordner und werden durch die zugehörigen Manifeste geladen.
 - **Overview-Dokumente:** Detailinformationen zu Struktur, Datenfluss und Zuständigkeiten stehen in `plugins/salt-marcher/PluginOverview.txt` und `plugins/layout-editor/src/LayoutEditorOverview.txt`.
 
