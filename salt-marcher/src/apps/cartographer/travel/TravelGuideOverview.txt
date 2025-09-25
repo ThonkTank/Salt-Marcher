@@ -1,0 +1,102 @@
+# Cartographer Travel Module – Overview
+
+## Struktur
+
+```
+src/apps/cartographer/travel/
+├─ TravelGuideOverview.txt   # Dieses Dokument
+├─ domain/                   # Zustand, Aktionen & Persistenz für Travel-Routen
+│  ├─ actions.ts             # Hauptlogik: Routenbau, Token-Moves, Playback-Steuerung
+│  ├─ expansion.ts           # Hex-Wegberechnung & RouteNode-Helfer
+│  ├─ playback.ts            # Schrittweises Abspielen inkl. Terrain-Geschwindigkeit
+│  ├─ persistence.ts         # Token-Flag in Tile-Dateien laden/schreiben
+│  ├─ state.store.ts         # In-Memory-Store mit Subscribe/Set/Replace
+│  ├─ terrain.service.ts     # Terrain-Geschwindigkeit pro Hex ermitteln
+│  └─ types.ts               # Geteilte Typdefinitionen für Domain & UI
+├─ infra/
+│  └─ adapter.ts             # Vertrag zwischen Domain und Renderer-Layern
+├─ render/
+│  └─ draw-route.ts          # SVG-Zeichnen der Route inklusive Highlights
+└─ ui/                       # Travel-spezifische Sidebar-, Control- und Layer-Komponenten
+   ├─ contextmenue.ts        # Rechtsklick-Binding zum Löschen von User-Dots
+   ├─ controls.ts            # Playback-Buttonleiste (Start/Stopp/Reset)
+   ├─ drag.controller.ts     # Drag-Steuerung für Route-Dots & Token
+   ├─ map-layer.ts           # Wrapper um renderHexMap + Polygon-Index
+   ├─ route-layer.ts         # Layer für Route-Zeichnung & Highlighting
+   ├─ sidebar.ts             # Travel-Sidebar inkl. Speed-Eingabe
+   └─ token-layer.ts         # Sichtbares Token-Element mit Animation
+```
+
+## Features & Verantwortlichkeiten
+
+- **Geteilte Travel-Basis:** Alle Travel-spezifischen Module liegen gebündelt, damit der Cartographer-Travel-Modus eine konsistente Domain-/UI-Lösung nutzt.
+- **Routenmanagement:** `domain/actions.ts` orchestriert Wegpunktanlage, Drag/Merge-Logik und Synchronisation mit den SVG-Layern.
+- **Playback & Persistenz:** `domain/playback.ts` berechnet Bewegungsgeschwindigkeiten, animiert den Token und schreibt Fortschritt via `persistence.ts` in Tile-Dateien.
+- **UI-Schichten:** `ui/` liefert Sidebar, Controls, Drag-Controller und Layer-Wrapping, während `render/draw-route.ts` nur das visuelle Zeichnen übernimmt.
+- **Renderer-Adapter:** `infra/adapter.ts` definiert die schmale Schnittstelle, damit Domain und UI lose gekoppelt bleiben.
+
+## Dateibeschreibungen
+
+### `domain/actions.ts`
+- Baut das zentrale `TravelLogic`-Objekt auf: verwaltet Route-State, reagiert auf Hex-Klicks, Drag-Operationen und Playback-Callbacks.
+- Bindet den `RenderAdapter`, ruft `expandCoords`/`rebuildFromAnchors` für automatische Zwischenknoten auf und synchronisiert den Token mit der UI.
+
+### `domain/expansion.ts`
+- Liefert Hex-Interpolationen zwischen zwei Koordinaten (`expandCoords`) und Hilfsfunktionen zur Deduplication.
+- Erzeugt via `rebuildFromAnchors` komplette Routenketten aus Token-Start und User-Ankern.
+
+### `domain/playback.ts`
+- Steuert das zeitliche Abspielen der Route: holt Terrain-Geschwindigkeiten, animiert den Token und trimmt bereits besuchte Segmente.
+- Persistiert nach jedem Schritt den Token-Stand in den Tiles und kann laufende Bewegungen abbrechen (`pause`).
+
+### `domain/persistence.ts`
+- Liest die aktuelle Token-Position (`loadTokenCoordFromMap`) und setzt das `token_travel`-Flag konsistent auf genau ein Tile.
+- Nutzt `listTilesForMap`/`saveTile`, um bestehende Werte zu mergen statt zu überschreiben.
+
+### `domain/state.store.ts`
+- Minimalistischer Store mit `get`/`set`/`replace`/`subscribe`, der `LogicStateSnapshot` kapselt und bei Änderungen alle Subscriber benachrichtigt.
+- Initialisiert Default-State (Token bei {0,0}, leere Route) und stellt `emit()` bereit, falls manuelle Re-Paints nötig sind.
+
+### `domain/terrain.service.ts`
+- Ermittelt Terrain-Geschwindigkeiten aus den Tile-Metadaten und fällt auf `1` zurück, falls keine Werte definiert sind.
+- Dient ausschließlich `playback.ts`, um Laufzeiten pro Hex zu skalieren.
+
+### `domain/types.ts`
+- Definiert die zentralen Typen (`Coord`, `RouteNode`, `LogicStateSnapshot`) für Domain- und UI-Module.
+- Dokumentiert, dass `route` nur Wegpunkte nach der aktuellen Token-Position enthält.
+
+### `infra/adapter.ts`
+- Beschreibt den Vertrag zwischen Domain und Renderer (`ensurePolys`, `centerOf`, `draw`, `token`).
+- Ermöglicht, dass `TravelLogic` unabhängig von konkreten SVG-Implementierungen bleibt.
+
+### `render/draw-route.ts`
+- Zeichnet die Route als Polyline mit User-/Auto-Dots, Hitboxen und Highlighting.
+- Stellt `updateHighlight` bereit, damit UI-Komponenten (Drag, Sidebar) den Fokus wechseln können.
+
+### `ui/contextmenue.ts`
+- Bindet ein Capture-Event auf dem Route-Layer, um nur User-Dots per Rechtsklick löschen zu lassen.
+- Delegiert die eigentliche Entfernung an `logic.deleteUserAt` und blockt das Browser-Kontextmenü.
+
+### `ui/controls.ts`
+- Erzeugt die Playback-Buttonleiste mit Icons, wired die Click-Handler der `TravelLogic`-Callbacks und hält den Button-State konsistent.
+- Nutzt `applyMapButtonStyle`, damit Buttons visuell zum Cartographer-Header passen.
+
+### `ui/drag.controller.ts`
+- Managed Dot- und Token-Drags: setzt Pointer-Captures, zeigt Ghost-Previews und commitet das Ergebnis über die Logik-Ports.
+- Unterdrückt nach Drag den nächsten `hex:click`, damit keine Doppelaktionen ausgelöst werden.
+
+### `ui/map-layer.ts`
+- Wickelt `renderHexMap` in ein Objekt, das Polygone indexiert (`polyToCoord`), `ensurePolys` nachlädt und die Mittelpunktkoordinaten liefert.
+- Dient als Grundlage für Drag-Hit-Tests und den RenderAdapter.
+
+### `ui/route-layer.ts`
+- Erstellt einen `<g>`-Layer für die Route und delegiert Zeichnen/Highlighten an `draw-route.ts`.
+- Liefert `destroy()`, damit Modi beim Dateiwechsel sauber aufräumen können.
+
+### `ui/sidebar.ts`
+- Baut die Travel-Sidebar (aktuelles Hex + Speed-Eingabe) und exponiert Setter sowie einen `onSpeedChange`-Callback.
+- Nutzt `data-map-title`, um optional den Kartennamen anzuzeigen.
+
+### `ui/token-layer.ts`
+- Rendert das sichtbare Token-SVG, kapselt Animation (`moveTo`) inkl. Cancel-Handling und erlaubt sofortiges `setPos`.
+- Stellt `show`/`hide` bereit, damit Domain/Playback den Token ein-/ausblenden können.
