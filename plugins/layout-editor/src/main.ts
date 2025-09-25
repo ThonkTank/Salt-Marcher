@@ -5,9 +5,9 @@ import {
     DEFAULT_ELEMENT_DEFINITIONS,
     getElementDefinitions,
     onLayoutElementDefinitionsChanged,
-    registerLayoutElementDefinition,
+    registerLayoutElementDefinition as registerElementDefinition,
     resetLayoutElementDefinitions,
-    unregisterLayoutElementDefinition,
+    unregisterLayoutElementDefinition as unregisterElementDefinition,
 } from "./definitions";
 import { listSavedLayouts, loadSavedLayout, saveLayoutToLibrary } from "./layout-library";
 import type {
