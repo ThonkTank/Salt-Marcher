@@ -2455,6 +2455,8 @@ var LayoutEditorView = class extends import_obsidian5.ItemView {
     this.isSavingLayout = false;
     this.lastSavedLayoutId = null;
     this.lastSavedLayoutName = "";
+    this.lastSavedLayoutCreatedAt = null;
+    this.lastSavedLayoutUpdatedAt = null;
     this.history = new LayoutHistory(
       () => this.captureSnapshot(),
       (snapshot) => this.restoreSnapshot(snapshot)
@@ -2822,6 +2824,8 @@ var LayoutEditorView = class extends import_obsidian5.ItemView {
       });
       this.lastSavedLayoutId = saved.id;
       this.lastSavedLayoutName = saved.name;
+      this.lastSavedLayoutCreatedAt = saved.createdAt;
+      this.lastSavedLayoutUpdatedAt = saved.updatedAt;
       new import_obsidian5.Notice(`Layout \u201E${saved.name}\u201D gespeichert`);
     } catch (error) {
       console.error("Failed to save layout", error);
@@ -3138,7 +3142,11 @@ var LayoutEditorView = class extends import_obsidian5.ItemView {
           width: Math.round(clone.width),
           height: Math.round(clone.height)
         };
-      })
+      }),
+      id: this.lastSavedLayoutId,
+      name: this.lastSavedLayoutName.trim() ? this.lastSavedLayoutName : null,
+      createdAt: this.lastSavedLayoutCreatedAt,
+      updatedAt: this.lastSavedLayoutUpdatedAt ?? this.lastSavedLayoutCreatedAt
     };
     this.exportEl.value = JSON.stringify(payload, null, 2);
   }
@@ -3740,6 +3748,8 @@ var LayoutEditorView = class extends import_obsidian5.ItemView {
     this.selectedElementId = null;
     this.lastSavedLayoutId = layout.id;
     this.lastSavedLayoutName = layout.name;
+    this.lastSavedLayoutCreatedAt = layout.createdAt;
+    this.lastSavedLayoutUpdatedAt = layout.updatedAt;
     if (this.widthInput) this.widthInput.value = String(this.canvasWidth);
     if (this.heightInput) this.heightInput.value = String(this.canvasHeight);
     this.applyCanvasSize();
