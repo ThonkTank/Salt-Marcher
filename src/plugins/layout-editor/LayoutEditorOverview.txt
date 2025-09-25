@@ -3,82 +3,93 @@
 ## Struktur
 
 ```
-src/apps/layout/
-├─ editor/
-│  ├─ attribute-popover.ts   # Verwaltet das Attribute-Popover inklusive Events & Synchronisation
-│  ├─ creature-import.ts     # Baut das Creature-Creator-Layout nach und erzeugt LayoutElemente
-│  ├─ definitions.ts         # Konstanten (Element- & Attribut-Definitionen) + Label-Helfer
-│  ├─ element-preview.ts     # Rendert Canvas-Vorschauen, blendet reine Anzeige-Controls ohne Inline-Editing ein
-│  ├─ history.ts             # Undo/Redo-Verwaltung für LayoutSnapshots
-│  ├─ inline-edit.ts         # Generischer ContentEditable-Editor für Inline-Bearbeitung
-│  ├─ inspector-panel.ts     # Inspector-Rendering (Formfelder, Container-Steuerung, Attribute-Trigger)
-│  ├─ types.ts               # Gemeinsame Typen für Elemente, Container & Snapshots
-│  ├─ utils.ts               # Hilfsfunktionen (clamp, Deep-Clones, Vergleichs-Utilities)
-│  └─ view.ts                # `LayoutEditorView` – orchestriert Canvas, Inspector, Export & Historie
-└─ LayoutOverview.txt        # Diese Übersicht
+src/plugins/layout-editor/
+├─ attribute-popover.ts   # Attribute-Popover inkl. Events & Sync
+├─ creature-import.ts     # Baut den Creature-Creator nach und erzeugt LayoutElemente
+├─ definitions.ts         # Element-/Attribut-Registry + Label-Helfer & Defaults
+├─ element-preview.ts     # Canvas-Vorschau als echte Settings inkl. Inline-Editing
+├─ history.ts             # Undo/Redo-Verwaltung für LayoutSnapshots
+├─ index.ts               # Öffentliche Plugin-API (View-Registrierung, Registry, Layout-Library)
+├─ inline-edit.ts         # Generischer ContentEditable-Editor für Inline-Bearbeitung
+├─ inspector-panel.ts     # Inspector-Rendering (Formfelder, Container-Steuerung, Attribute-Trigger)
+├─ layout-library.ts      # Persistenz-Layer für gespeicherte Layouts (Vault JSON)
+├─ types.ts               # Gemeinsame Typen für Elemente, Container & Snapshots
+├─ utils.ts               # Hilfsfunktionen (clamp, Deep-Clones, Vergleichs-Utilities)
+└─ view.ts                # `LayoutEditorView` – orchestriert Canvas, Inspector, Export, Historie & Persistenz
 ```
 
 ## Features & Verantwortlichkeiten
 
 - **Layout-Arbeitsfläche & Kamera:** Dreigeteilte Arbeitsumgebung mit Strukturbaum links, Canvas in der Mitte und Inspector rechts. Die Arbeitsfläche füllt automatisch den Raum zwischen den Panels, lässt sich mit mittlerer Maustaste verschieben und per Mausrad (mit Fokuspunkt) zoomen. Breite/Höhe-Controls bleiben erhalten, Bounds-Clamping schützt weiterhin vor Überlauf und die Panel-Trenner reagieren erwartungskonform – sowohl links als auch rechts.
 - **Struktur-Überblick:** Ein interaktiver Baum listet alle Layout-Elemente analog zur Container-Hierarchie (inkl. Kinderreihenfolge aus `children`) und zeigt die aktuelle Eltern-Zuordnung direkt im Eintrag an. Ein Klick wählt das Element aus und fokussiert es mittig im Canvas. Über Drag & Drop lassen sich Elemente in Container ziehen oder aus ihnen lösen (Root-Drop-Zone), während das Panel – genauso wie der Inspector – weiterhin über die Trenner in der Breite angepasst werden kann.
-- **Palette & Nesting:** BoxContainer-, VBoxContainer- und HBoxContainer-Definitionen liegen gebündelt im „Container“-Dropdown der Palette, während Textfeld, Mehrzeiliges Feld, Dropdown und Such-Dropdown unter „Eingabefelder“ gruppiert sind. Alle Container lassen sich beliebig ineinander verschachteln; Inspector, Strukturbaum und Drag & Drop verhindern Zyklen und erlauben das Neuzuordnen sowie Verschieben kompletter Container-Hierarchien.
-- **Modulare Element-Hilfen:** Element-Definitionen (Buttons, Defaults, Layout-Standards) liegen zentral in `definitions.ts`; Canvas-Rendering und Inspector greifen auf dieselben Strukturen zu.
+- **Palette & Registry:** Die Element-Palette lauscht auf Registry-Änderungen aus `definitions.ts`. Container erscheinen gesammelt im „Container“-Menü, Eingabefelder im „Eingabefelder“-Dropdown; zusätzliche Definitionen können Plugins zur Laufzeit registrieren und erscheinen sofort in Palette und Inspector-Quick-Add.
+- **Modulare Element-Hilfen:** Element-Definitionen (Buttons, Defaults, Layout-Standards) liegen zentral in `definitions.ts`; Canvas-Rendering und Inspector greifen auf dieselben Strukturen zu. Über `registerLayoutElementDefinition` lassen sich zusätzliche Komponenten ohne Core-Anpassungen einbinden.
 - **Container-Layout:** BoxContainer, VBoxContainer und HBoxContainer verwalten ihre Kinder inklusive Gap, Padding und Align automatisch und reagieren auch auf verschachtelte Konstellationen. Neue Kinder können weiterhin über den Inspector schnell hinzugefügt oder per Struktur-Baum in andere Container gezogen werden. Im Canvas erscheinen Container nur noch mit Rahmen, ohne zusätzliche Textchips für ihre Inhalte.
 - **Direkte Bearbeitung & Inspector:** Auf der Arbeitsfläche erscheinen echte UI-Elemente. Nur freie Texte (z. B. Überschriften) werden dort inline bearbeitet; Bezeichnungen für Container, Felder und Trenner pflegst du im Inspector zusammen mit Platzhaltern, Optionslisten und Layout-Eigenschaften.
 - **Echte Vorschau:** Label-Elemente passen ihre Schriftgröße automatisch an, einfache Textfelder bestehen nur aus dem Eingabefeld und alle weiteren Controls spiegeln ihr finales Erscheinungsbild ohne zusätzliche Chrome-Elemente wider. Standard-Elemente starten ohne automatisch gesetzte Label-Texte und zeigen lediglich Platzhalter, bis Redakteur:innen eigene Beschriftungen vergeben.
 - **Attribute-Popover:** `attribute-popover.ts` verwaltet das Popover (Öffnen, Positionierung, Synchronisation) und hält Inspector sowie Canvas konsistent.
 - **Undo/Redo-Historie:** `history.ts` kapselt Snapshot-Verwaltung; `view.ts` nutzt sie für Strg+Z / Strg+Umschalt+Z sowie automatisches Pushen nach Mutationen.
-- **Export & Status:** JSON-Export (Canvas + Elemente) sowie Statusleiste werden in `view.ts` gepflegt und auf jede Mutation aktualisiert.
+- **Export, Speicherung & Status:** JSON-Export (Canvas + Elemente) sowie Statusleiste werden in `view.ts` gepflegt. Zusätzlich speichert der Editor Layouts über `layout-library.ts` als Vault-Dateien und meldet Erfolg/Fehler via Notice.
 - **Creature-Import:** `creature-import.ts` mountet den Creature-Creator in einer Sandbox, liest Maße/Defaults aus und erzeugt passende LayoutElemente.
+- **Layout-Library:** `layout-library.ts` persistiert Layouts (`SaltMarcher/Layouts/<id>.json`), liefert Listen-/Load-Hilfen und erlaubt „Speichern unter“-Flows (neuer Name => neue Datei, gleicher Name => Update).
+- **Öffentliche Plugin-API:** `index.ts` stellt `createLayoutEditorPlugin` bereit, registriert den Obsidian-View und exponiert Registry-/Persistenz-Hooks für andere Features.
 
 ## Datenfluss
 
 1. **Interaktion** (Drag, Resize, Inspector, Inline): löst Mutationen an `LayoutElement`-Objekten aus.
 2. **`view.ts`** synchronisiert DOM (`syncElementElement`) und ruft `renderInspectorPanel` / `renderElementPreview` auf.
 3. **`history.ts`** erstellt Snapshots; Undo/Redo ruft `restoreSnapshot` in der View auf, die wiederum Canvas/Inspector/Export aktualisiert.
-4. **Attribute-Popover** sendet Änderungen zurück an `view.ts`, welches Export, Status & Historie aktualisiert.
+4. **Registry-Events** (`definitions.ts`) triggern Palette/Inspector-Refreshs in der View.
+5. **Attribute-Popover** sendet Änderungen zurück an `view.ts`, welches Export, Status & Historie aktualisiert.
+6. **Layout-Speicherung** (`layout-library.ts`) erhält per View den aktuellen Blueprint, schreibt JSON-Dateien und liefert Metadaten für Folgeaktionen.
 
 ## Dateibeschreibungen
 
-### `editor/view.ts`
+### `view.ts`
 - Implementiert `LayoutEditorView` (`ItemView`).
-- Baut Header (Palette mit Container-Dropdown, Import, Status), Struktur-Baum, resizable Stage mit Kamera (Pan/Zoom), Inspector, Exportbereich und Sandbox auf.
-- Verwaltet Element-State, Selection, Historie und ruft Hilfs-Module (Preview, Inspector, Popover, Import) orchestriert auf.
+- Baut Header (Palette mit Registry-Hooks, Import, Status), Struktur-Baum, resizable Stage mit Kamera (Pan/Zoom), Inspector, Exportbereich, Layout-Speicher-Controls und Sandbox auf.
+- Verwaltet Element-State, Selection, Historie und ruft Hilfs-Module (Preview, Inspector, Popover, Import, Layout-Library) orchestriert auf.
 - Synchronisiert alle Mutationen (Canvas, Inspector, Export, Status) und sorgt für Bounds-Clamping, Container-Auto-Layout, Shortcuts (Delete, Undo/Redo) sowie Panel-/Kamera-Steuerung.
 - Enthält Drag-&-Drop-Zuordnung im Strukturpanel (inkl. Root-Drop-Zone) mit Zyklus-Schutz und aktualisiert die Panel-Größen-Logik, damit der rechte Trenner der Erwartung folgt.
 
-### `editor/definitions.ts`
+### `definitions.ts`
 - Enthält Element-Definitionen inkl. Default-Texte, Größen, Layout-Voreinstellungen und Attribute-Gruppen.
-- Setzt für strukturgebende Elemente leere Default-Labels, damit im Canvas keine redundanten Überschriften erscheinen.
-- Stellt Label-/Summary-Helfer (`getElementTypeLabel`, `getAttributeSummary`, `getContainerAlignLabel`) bereit.
+- Stellt Registry-API (`registerLayoutElementDefinition`, `unregisterLayoutElementDefinition`, `onLayoutElementDefinitionsChanged`) bereit, sodass weitere Plugins neue UI-Bausteine einspeisen können.
+- Liefert Label-/Summary-Helfer (`getElementTypeLabel`, `getAttributeSummary`, `getContainerAlignLabel`).
 
-### `editor/types.ts`
+### `layout-library.ts`
+- Persistiert Layouts als JSON-Dateien in `SaltMarcher/Layouts`.
+- Liefert `saveLayoutToLibrary`, `listSavedLayouts`, `loadSavedLayout` für wiederverwendbare Layout-Bibliotheken.
+
+### `index.ts`
+- Öffentliche Einstiegstelle für andere Module/Plugins. Registriert den View über `createLayoutEditorPlugin` und gibt Registry-/Persistenz-Hooks gebündelt zurück.
+
+### `types.ts`
 - Typisiert Layout-Elemente, Container-Konfigurationen, Snapshots sowie Inline-Editor-Optionen.
-- Wird von allen Teilmodulen genutzt, um konsistente Datenmodelle zu garantieren.
+- Erweitert `LayoutElementDefinition` um Palette-/Kategorie-Metadaten, damit Registry-Zugänge korrekt gruppiert werden.
 
-### `editor/history.ts`
+### `history.ts`
 - Kapselt Undo/Redo mit Snapshot-Array, Index-Verwaltung und Restore-Callback.
 - Bewahrt `isRestoring`-State, damit View-Mutationen keine erneuten History-Einträge erzeugen.
 
-### `editor/inline-edit.ts`
+### `inline-edit.ts`
 - Bietet einen generischen ContentEditable-Editor (Trim, Multiline, Placeholder) für Preview-Komponenten.
 
-### `editor/element-preview.ts`
+### `element-preview.ts`
 - Rendert die Canvas als echte UI-Elemente (Labels, Inputs, Dropdowns etc.) und zeigt Container-/Labelbereiche ohne Inline-Eingabefelder an.
 - Übergibt finale Änderungen über Callbacks an die View, damit Inspector, Export und Historie synchron bleiben.
 
-### `editor/inspector-panel.ts`
+### `inspector-panel.ts`
 - Rendert einen kompakten Inspector mit Meta-Infos, Benennung, Container-Zuordnung (Dropdown inkl. Verschachtelungs-Schutz), Attribut-Anzeige, Positions-/Größensteuerung, Layout-Parametern und Container-Kindverwaltung.
-- Delegiert alle Mutationen (inkl. Platzhalter-, Optionen-, Benennungs- und Layout-Änderungen) über `InspectorCallbacks` an die View und öffnet das Attribute-Popover.
+- Bindet Registry-Definitionen für Quick-Add-Menüs ein und öffnet das Attribute-Popover.
 
-### `editor/attribute-popover.ts`
+### `attribute-popover.ts`
 - Erstellt, positioniert und synchronisiert das Attribut-Popover.
 - Ruft über Callbacks View-Aktionen (Sync, Export, Inspector, History) auf und kapselt Event-Cleanup.
 
-### `editor/utils.ts`
+### `utils.ts`
 - Enthält Utility-Funktionen (`clamp`, Deep-Clones, Equality-Checks, Container-/Ancestry-Erkennung) für View & History.
 
-### `editor/creature-import.ts`
+### `creature-import.ts`
 - Baut den Creature-Creator in einer Sandbox auf, extrahiert Maße/Defaults und erstellt LayoutElemente.
 - Aktualisiert Canvas- & Element-State über den bereitgestellten Kontext.

@@ -1,14 +1,13 @@
-// src/apps/layout/editor/inspector-panel.ts
+// src/plugins/layout-editor/inspector-panel.ts
 import { Menu } from "obsidian";
 import {
-    ELEMENT_DEFINITIONS,
     getAttributeSummary,
     getElementTypeLabel,
     isContainerType,
     isVerticalContainer,
     MIN_ELEMENT_SIZE,
 } from "./definitions";
-import { LayoutContainerAlign, LayoutContainerType, LayoutElement, LayoutElementType } from "./types";
+import { LayoutContainerAlign, LayoutElement, LayoutElementDefinition, LayoutElementType } from "./types";
 import { collectAncestorIds, collectDescendantIds, isContainerElement } from "./utils";
 
 export interface InspectorCallbacks {
@@ -29,6 +28,7 @@ export interface InspectorDependencies {
     host: HTMLElement;
     element: LayoutElement | null;
     elements: LayoutElement[];
+    definitions: LayoutElementDefinition[];
     canvasWidth: number;
     canvasHeight: number;
     callbacks: InspectorCallbacks;
@@ -55,7 +55,7 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
     }
 
     const callbacks = deps.callbacks;
-    const { elements, canvasWidth, canvasHeight } = deps;
+    const { elements, canvasWidth, canvasHeight, definitions } = deps;
     const isContainer = isContainerType(element.type);
     if (isContainer) {
         callbacks.ensureContainerDefaults(element);
@@ -196,7 +196,7 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
     meta.setText(`Fläche: ${Math.round(element.width * element.height)} px²`);
 
     if (isContainer) {
-        renderContainerInspectorSections({ element, host, elements, callbacks });
+        renderContainerInspectorSections({ element, host, elements, callbacks, definitions });
     } else {
         renderAttributeSelector({ element, attributesChip });
     }
@@ -222,8 +222,9 @@ function renderContainerInspectorSections(options: {
     host: HTMLElement;
     elements: LayoutElement[];
     callbacks: InspectorCallbacks;
+    definitions: LayoutElementDefinition[];
 }) {
-    const { element, host, elements, callbacks } = options;
+    const { element, host, elements, callbacks, definitions } = options;
     const quickAddField = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
     quickAddField.createEl("label", { text: "Neues Element erstellen" });
     const quickAddBtn = quickAddField.createEl("button", { text: "Element hinzufügen" });
@@ -231,8 +232,8 @@ function renderContainerInspectorSections(options: {
     quickAddBtn.onclick = ev => {
         ev.preventDefault();
         const menu = new Menu();
-        const standardDefs = ELEMENT_DEFINITIONS.filter(def => !isContainerType(def.type));
-        const containerDefs = ELEMENT_DEFINITIONS.filter(def => isContainerType(def.type));
+        const standardDefs = definitions.filter(def => !isContainerType(def.type));
+        const containerDefs = definitions.filter(def => isContainerType(def.type));
         for (const def of standardDefs) {
             menu.addItem(item => {
                 item.setTitle(def.buttonLabel);
@@ -462,7 +463,7 @@ function renderContainerLayoutControls(options: { host: HTMLElement; element: La
     const alignWrap = controls.createDiv({ cls: "sm-le-inline-control" });
     alignWrap.createSpan({ text: "Ausrichtung" });
     const alignSelect = alignWrap.createEl("select", { cls: "sm-le-inline-select" }) as HTMLSelectElement;
-    const containerType = element.type as LayoutContainerType;
+    const containerType = element.type;
     const alignOptions: Array<[LayoutContainerAlign, string]> = isVerticalContainer(containerType)
         ? [
               ["start", "Links"],

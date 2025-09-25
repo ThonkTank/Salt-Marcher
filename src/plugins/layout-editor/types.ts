@@ -1,18 +1,9 @@
-// src/apps/layout/editor/types.ts
+// src/plugins/layout-editor/types.ts
 import type { Setting } from "obsidian";
 
-export type LayoutElementType =
-    | "label"
-    | "text-input"
-    | "textarea"
-    | "box-container"
-    | "separator"
-    | "dropdown"
-    | "search-dropdown"
-    | "vbox-container"
-    | "hbox-container";
+export type LayoutElementType = string;
 
-export type LayoutContainerType = "box-container" | "vbox-container" | "hbox-container";
+export type LayoutContainerType = LayoutElementType;
 
 export type LayoutContainerAlign = "start" | "center" | "end" | "stretch";
 
@@ -62,6 +53,9 @@ export interface LayoutElementDefinition {
     type: LayoutElementType;
     buttonLabel: string;
     defaultLabel: string;
+    category?: "element" | "container";
+    layoutOrientation?: "vertical" | "horizontal";
+    paletteGroup?: "element" | "input" | "container";
     defaultPlaceholder?: string;
     defaultValue?: string;
     defaultDescription?: string;
@@ -81,6 +75,19 @@ export interface AttributePopoverState {
     container: HTMLElement;
     anchor: HTMLElement;
     dispose: () => void;
+}
+
+export interface LayoutBlueprint {
+    canvasWidth: number;
+    canvasHeight: number;
+    elements: LayoutElement[];
+}
+
+export interface SavedLayout extends LayoutBlueprint {
+    id: string;
+    name: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface CreateSettingOptions {

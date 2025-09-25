@@ -1,13 +1,20 @@
-// src/apps/layout/editor/definitions.ts
-import { LayoutContainerAlign, LayoutContainerConfig, LayoutElementDefinition, LayoutElementType } from "./types";
+// src/plugins/layout-editor/definitions.ts
+import {
+    LayoutContainerAlign,
+    LayoutContainerConfig,
+    LayoutElementDefinition,
+    LayoutElementType,
+} from "./types";
 
 export const MIN_ELEMENT_SIZE = 60;
 
-export const ELEMENT_DEFINITIONS: LayoutElementDefinition[] = [
+export const DEFAULT_ELEMENT_DEFINITIONS: LayoutElementDefinition[] = [
     {
         type: "label",
         buttonLabel: "Label",
         defaultLabel: "Überschrift",
+        category: "element",
+        paletteGroup: "element",
         width: 260,
         height: 160,
     },
@@ -15,6 +22,8 @@ export const ELEMENT_DEFINITIONS: LayoutElementDefinition[] = [
         type: "text-input",
         buttonLabel: "Textfeld",
         defaultLabel: "",
+        category: "element",
+        paletteGroup: "input",
         defaultPlaceholder: "",
         width: 260,
         height: 140,
@@ -23,6 +32,8 @@ export const ELEMENT_DEFINITIONS: LayoutElementDefinition[] = [
         type: "textarea",
         buttonLabel: "Mehrzeiliges Feld",
         defaultLabel: "",
+        category: "element",
+        paletteGroup: "input",
         defaultPlaceholder: "Text erfassen…",
         width: 320,
         height: 180,
@@ -31,6 +42,9 @@ export const ELEMENT_DEFINITIONS: LayoutElementDefinition[] = [
         type: "box-container",
         buttonLabel: "BoxContainer",
         defaultLabel: "",
+        category: "container",
+        paletteGroup: "container",
+        layoutOrientation: "vertical",
         width: 360,
         height: 220,
         defaultLayout: { gap: 16, padding: 16, align: "stretch" },
@@ -39,6 +53,8 @@ export const ELEMENT_DEFINITIONS: LayoutElementDefinition[] = [
         type: "separator",
         buttonLabel: "Trennstrich",
         defaultLabel: "",
+        category: "element",
+        paletteGroup: "element",
         width: 320,
         height: 80,
     },
@@ -46,6 +62,8 @@ export const ELEMENT_DEFINITIONS: LayoutElementDefinition[] = [
         type: "dropdown",
         buttonLabel: "Dropdown",
         defaultLabel: "",
+        category: "element",
+        paletteGroup: "input",
         defaultPlaceholder: "Option wählen…",
         options: ["Option A", "Option B"],
         width: 260,
@@ -55,6 +73,8 @@ export const ELEMENT_DEFINITIONS: LayoutElementDefinition[] = [
         type: "search-dropdown",
         buttonLabel: "Such-Dropdown",
         defaultLabel: "",
+        category: "element",
+        paletteGroup: "input",
         defaultPlaceholder: "Suchen…",
         options: ["Erster Eintrag", "Zweiter Eintrag"],
         width: 280,
@@ -64,6 +84,9 @@ export const ELEMENT_DEFINITIONS: LayoutElementDefinition[] = [
         type: "vbox-container",
         buttonLabel: "VBoxContainer",
         defaultLabel: "",
+        category: "container",
+        paletteGroup: "container",
+        layoutOrientation: "vertical",
         defaultDescription: "Ordnet verknüpfte Elemente automatisch untereinander an.",
         width: 340,
         height: 260,
@@ -73,6 +96,9 @@ export const ELEMENT_DEFINITIONS: LayoutElementDefinition[] = [
         type: "hbox-container",
         buttonLabel: "HBoxContainer",
         defaultLabel: "",
+        category: "container",
+        paletteGroup: "container",
+        layoutOrientation: "horizontal",
         defaultDescription: "Ordnet verknüpfte Elemente automatisch nebeneinander an.",
         width: 360,
         height: 220,
@@ -80,9 +106,83 @@ export const ELEMENT_DEFINITIONS: LayoutElementDefinition[] = [
     },
 ];
 
-export const ELEMENT_DEFINITION_LOOKUP = new Map<LayoutElementType, LayoutElementDefinition>(
-    ELEMENT_DEFINITIONS.map(def => [def.type, def]),
-);
+type RegistryListener = (definitions: LayoutElementDefinition[]) => void;
+
+class LayoutElementRegistry {
+    private readonly definitions = new Map<LayoutElementType, LayoutElementDefinition>();
+    private readonly listeners = new Set<RegistryListener>();
+
+    constructor(initial: LayoutElementDefinition[]) {
+        for (const def of initial) {
+            this.definitions.set(def.type, { ...def });
+        }
+    }
+
+    register(definition: LayoutElementDefinition) {
+        this.definitions.set(definition.type, { ...definition });
+        this.emit();
+    }
+
+    unregister(type: LayoutElementType) {
+        if (this.definitions.delete(type)) {
+            this.emit();
+        }
+    }
+
+    replaceAll(definitions: LayoutElementDefinition[]) {
+        this.definitions.clear();
+        for (const def of definitions) {
+            this.definitions.set(def.type, { ...def });
+        }
+        this.emit();
+    }
+
+    getAll(): LayoutElementDefinition[] {
+        return Array.from(this.definitions.values());
+    }
+
+    get(type: LayoutElementType): LayoutElementDefinition | undefined {
+        return this.definitions.get(type);
+    }
+
+    onChange(listener: RegistryListener): () => void {
+        this.listeners.add(listener);
+        return () => this.listeners.delete(listener);
+    }
+
+    private emit() {
+        const snapshot = this.getAll();
+        for (const listener of this.listeners) {
+            listener(snapshot);
+        }
+    }
+}
+
+const registry = new LayoutElementRegistry(DEFAULT_ELEMENT_DEFINITIONS);
+
+export function getElementDefinitions(): LayoutElementDefinition[] {
+    return registry.getAll();
+}
+
+export function getElementDefinition(type: LayoutElementType): LayoutElementDefinition | undefined {
+    return registry.get(type);
+}
+
+export function registerLayoutElementDefinition(definition: LayoutElementDefinition) {
+    registry.register(definition);
+}
+
+export function unregisterLayoutElementDefinition(type: LayoutElementType) {
+    registry.unregister(type);
+}
+
+export function resetLayoutElementDefinitions(definitions: LayoutElementDefinition[]) {
+    registry.replaceAll(definitions);
+}
+
+export function onLayoutElementDefinitionsChanged(listener: RegistryListener): () => void {
+    return registry.onChange(listener);
+}
 
 export const ATTRIBUTE_GROUPS: Array<{ label: string; options: Array<{ value: string; label: string }> }> = [
     {
@@ -182,6 +282,10 @@ export const ATTRIBUTE_LABEL_LOOKUP = new Map(
 );
 
 export function isVerticalContainer(type: LayoutContainerType): boolean {
+    const definition = registry.get(type);
+    if (definition?.layoutOrientation) {
+        return definition.layoutOrientation !== "horizontal";
+    }
     return type === "box-container" || type === "vbox-container";
 }
 
@@ -218,10 +322,14 @@ export function getAttributeSummary(attributes: string[]): string {
 }
 
 export function getElementTypeLabel(type: LayoutElementType): string {
-    return ELEMENT_DEFINITION_LOOKUP.get(type)?.buttonLabel ?? type;
+    return registry.get(type)?.buttonLabel ?? type;
 }
 
-export function isContainerType(type: LayoutElementType): type is LayoutContainerType {
+export function isContainerType(type: LayoutElementType): boolean {
+    const definition = registry.get(type);
+    if (definition) {
+        return definition.category === "container";
+    }
     return type === "box-container" || type === "vbox-container" || type === "hbox-container";
 }
 

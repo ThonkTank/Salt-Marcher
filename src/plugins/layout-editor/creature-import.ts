@@ -1,4 +1,4 @@
-// src/apps/layout/editor/creature-import.ts
+// src/plugins/layout-editor/creature-import.ts
 import { Notice } from "obsidian";
 import type { StatblockData } from "../../library/core/creature-files";
 import {
@@ -7,7 +7,7 @@ import {
     mountCreatureStatsAndSkillsSection,
     mountEntriesSection,
     mountSpellsKnownSection,
-} from "../../library/create/creature";
+} from "../../apps/library/create/creature";
 import { MIN_ELEMENT_SIZE } from "./definitions";
 import type { LayoutElement, LayoutElementType } from "./types";
 

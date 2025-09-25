@@ -1,5 +1,5 @@
-// src/apps/layout/editor/element-preview.ts
-import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
+// src/plugins/layout-editor/element-preview.ts
+import { enhanceSelectToSearch } from "../../ui/search-dropdown";
 import { isContainerType } from "./definitions";
 import { createInlineEditor } from "./inline-edit";
 import { LayoutElement, LayoutElementType } from "./types";
