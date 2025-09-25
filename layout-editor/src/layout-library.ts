@@ -3,12 +3,51 @@ import { App, TFile, TFolder, normalizePath } from "obsidian";
 import { LayoutBlueprint, LayoutElement, SavedLayout } from "./types";
 
 const LAYOUT_FOLDER = "LayoutEditor/Layouts";
+const LEGACY_LAYOUT_FOLDERS = ["Layout Editor/Layouts"] as const;
+const LAYOUT_FOLDER_CANDIDATES = [LAYOUT_FOLDER, ...LEGACY_LAYOUT_FOLDERS];
+
+async function ensureFolderPath(app: App, folderPath: string): Promise<void> {
+    const normalized = normalizePath(folderPath);
+    const segments = normalized.split("/").filter(Boolean);
+    let current = "";
+    for (const segment of segments) {
+        current = current ? `${current}/${segment}` : segment;
+        const path = normalizePath(current);
+        const existing = app.vault.getAbstractFileByPath(path);
+        if (existing) continue;
+        await app.vault.createFolder(path).catch(() => {});
+    }
+}
 
 async function ensureLayoutFolder(app: App): Promise<void> {
-    const folderPath = normalizePath(LAYOUT_FOLDER);
-    const folder = app.vault.getAbstractFileByPath(folderPath);
-    if (folder) return;
-    await app.vault.createFolder(folderPath).catch(() => {});
+    await ensureFolderPath(app, LAYOUT_FOLDER);
+}
+
+function findLayoutFile(app: App, fileName: string): TFile | null {
+    for (const folder of LAYOUT_FOLDER_CANDIDATES) {
+        const path = normalizePath(`${folder}/${fileName}`);
+        const file = app.vault.getAbstractFileByPath(path);
+        if (file instanceof TFile) {
+            return file;
+        }
+    }
+    return null;
+}
+
+function collectLayoutFiles(app: App): TFile[] {
+    const seen = new Set<string>();
+    const files: TFile[] = [];
+    for (const folder of LAYOUT_FOLDER_CANDIDATES) {
+        const abstract = app.vault.getAbstractFileByPath(normalizePath(folder));
+        if (!(abstract instanceof TFolder)) continue;
+        for (const child of abstract.children) {
+            if (!(child instanceof TFile) || child.extension !== "json") continue;
+            if (seen.has(child.basename)) continue;
+            seen.add(child.basename);
+            files.push(child);
+        }
+    }
+    return files;
 }
 
 function createFileName(id: string): string {
@@ -28,11 +67,13 @@ function createId(): string {
 }
 
 export async function saveLayoutToLibrary(app: App, payload: LayoutBlueprint & { name: string; id?: string }): Promise<SavedLayout> {
-    await ensureLayoutFolder(app);
     const id = payload.id ?? createId();
     const fileName = createFileName(id);
-    const path = normalizePath(`${LAYOUT_FOLDER}/${fileName}`);
-    const existing = app.vault.getAbstractFileByPath(path);
+    let existing = findLayoutFile(app, fileName);
+    const targetPath = normalizePath(`${LAYOUT_FOLDER}/${fileName}`);
+    if (!existing) {
+        await ensureLayoutFolder(app);
+    }
     const now = new Date().toISOString();
     const entry: SavedLayout = {
         id,
@@ -47,7 +88,8 @@ export async function saveLayoutToLibrary(app: App, payload: LayoutBlueprint & {
     if (existing instanceof TFile) {
         await app.vault.modify(existing, body);
     } else {
-        await app.vault.create(path, body);
+        await app.vault.create(targetPath, body);
+        existing = findLayoutFile(app, fileName);
     }
     return entry;
 }
@@ -158,11 +200,7 @@ async function readLayoutMeta(app: App, file: TFile): Promise<SavedLayout | null
 
 export async function listSavedLayouts(app: App): Promise<SavedLayout[]> {
     await ensureLayoutFolder(app);
-    const folder = app.vault.getAbstractFileByPath(normalizePath(LAYOUT_FOLDER));
-    if (!(folder instanceof TFolder)) {
-        return [];
-    }
-    const files = folder.children.filter((child): child is TFile => child instanceof TFile && child.extension === "json");
+    const files = collectLayoutFiles(app);
     const out: SavedLayout[] = [];
     for (const file of files) {
         const meta = await readLayoutMeta(app, file);
@@ -174,8 +212,8 @@ export async function listSavedLayouts(app: App): Promise<SavedLayout[]> {
 
 export async function loadSavedLayout(app: App, id: string): Promise<SavedLayout | null> {
     await ensureLayoutFolder(app);
-    const path = normalizePath(`${LAYOUT_FOLDER}/${createFileName(id)}`);
-    const file = app.vault.getAbstractFileByPath(path);
+    const fileName = createFileName(id);
+    const file = findLayoutFile(app, fileName);
     if (!(file instanceof TFile)) return null;
     return await readLayoutMeta(app, file);
 }
