@@ -34,7 +34,7 @@ class ViewContainerComponent extends ElementComponentBase {
     }
 
     renderPreview(context: ElementPreviewContext): void {
-        const { preview, element } = context;
+        const { preview, element, registerPreviewCleanup } = context;
         preview.addClass("sm-le-preview--view-container");
 
         const wrapper = preview.createDiv({ cls: "sm-view-container sm-view-container--design" });
@@ -63,9 +63,30 @@ class ViewContainerComponent extends ElementComponentBase {
         };
         applyCamera();
 
+        const supportsResizeObserver = typeof window.ResizeObserver !== "undefined";
+        let resizeObserver: ResizeObserver | null = null;
+        let fallbackLoopId: number | null = null;
+        let pendingFitId: number | null = null;
+
+        const scheduleFit = () => {
+            if (pendingFitId !== null) return;
+            pendingFitId = window.requestAnimationFrame(() => {
+                pendingFitId = null;
+                fitCameraToViewport();
+            });
+        };
+
         const fitCameraToViewport = () => {
+            if (!viewport.isConnected) {
+                return;
+            }
             const rect = viewport.getBoundingClientRect();
-            if (!rect.width || !rect.height) return;
+            if (!rect.width || !rect.height) {
+                if (supportsResizeObserver) {
+                    scheduleFit();
+                }
+                return;
+            }
             const baseScale = Math.min(rect.width / SURFACE_WIDTH, rect.height / SURFACE_HEIGHT);
             if (!isFinite(baseScale) || baseScale <= 0) return;
             const nextScale = Math.min(MAX_SCALE, baseScale);
@@ -79,7 +100,40 @@ class ViewContainerComponent extends ElementComponentBase {
             applyCamera();
         };
 
-        window.requestAnimationFrame(fitCameraToViewport);
+        const disposeCameraSync = () => {
+            if (resizeObserver) {
+                resizeObserver.disconnect();
+                resizeObserver = null;
+            }
+            if (fallbackLoopId !== null) {
+                window.cancelAnimationFrame(fallbackLoopId);
+                fallbackLoopId = null;
+            }
+            if (pendingFitId !== null) {
+                window.cancelAnimationFrame(pendingFitId);
+                pendingFitId = null;
+            }
+        };
+
+        if (supportsResizeObserver) {
+            resizeObserver = new ResizeObserver(() => {
+                scheduleFit();
+            });
+            resizeObserver.observe(viewport);
+            scheduleFit();
+        } else {
+            const runFallbackLoop = () => {
+                if (!viewport.isConnected) {
+                    disposeCameraSync();
+                    return;
+                }
+                fitCameraToViewport();
+                fallbackLoopId = window.requestAnimationFrame(runFallbackLoop);
+            };
+            fallbackLoopId = window.requestAnimationFrame(runFallbackLoop);
+        }
+
+        registerPreviewCleanup(disposeCameraSync);
 
         let panPointer: number | null = null;
         let startX = 0;

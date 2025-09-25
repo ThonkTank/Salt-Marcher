@@ -5,10 +5,21 @@ import { getLayoutElementComponent } from "./elements/registry";
 
 export function renderElementPreview(deps: ElementPreviewDependencies) {
     const { host, element } = deps;
+    const hostWithCleanup = host as HTMLElement & { __smPreviewCleanup__?: () => void };
+    if (hostWithCleanup.__smPreviewCleanup__) {
+        hostWithCleanup.__smPreviewCleanup__();
+        delete hostWithCleanup.__smPreviewCleanup__;
+    }
     host.empty();
     host.toggleClass("sm-le-box__content", true);
     const preview = host.createDiv({ cls: `sm-le-preview sm-le-preview--${element.type}` });
-    const context: ElementPreviewContext = { ...deps, preview, container: host };
+    const registerPreviewCleanup = (cleanup: () => void) => {
+        if (hostWithCleanup.__smPreviewCleanup__) {
+            hostWithCleanup.__smPreviewCleanup__();
+        }
+        hostWithCleanup.__smPreviewCleanup__ = cleanup;
+    };
+    const context: ElementPreviewContext = { ...deps, preview, container: host, registerPreviewCleanup };
 
     const component = getLayoutElementComponent(element.type);
     if (component) {
