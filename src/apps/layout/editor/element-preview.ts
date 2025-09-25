@@ -1,5 +1,4 @@
 // src/apps/layout/editor/element-preview.ts
-import { Setting } from "obsidian";
 import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
 import {
     getElementTypeLabel,
@@ -55,20 +54,10 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
         return editor;
     };
 
-    const createSetting = (options?: { withDescription?: boolean }) => {
-        const setting = new Setting(preview);
-        setting.settingEl.addClass("sm-le-preview__setting");
-        setting.setName("");
-        if (options?.withDescription ?? true) {
-            setting.setDesc("");
-        }
-        return setting;
-    };
-
     if (element.type === "label") {
-        const setting = createSetting();
+        const block = preview.createDiv({ cls: "sm-le-preview__text-block" });
         const labelEl = createInlineEditor({
-            parent: setting.nameEl,
+            parent: block,
             value: element.label,
             placeholder: "Text eingeben…",
             multiline: true,
@@ -76,10 +65,9 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
             trim: false,
             onCommit: commitLabel,
         });
-        labelEl.addClass("setting-item-name");
-        const descHost = setting.descEl ?? setting.infoEl.createDiv({ cls: "setting-item-description" });
+        labelEl.addClass("sm-le-preview__text");
         const desc = createInlineEditor({
-            parent: descHost,
+            parent: block,
             value: element.description ?? "",
             placeholder: "Zusatztext hinzufügen…",
             multiline: true,
@@ -92,24 +80,22 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
                 deps.finalize(element);
             },
         });
-        desc.addClass("setting-item-description");
+        desc.addClass("sm-le-preview__subtext");
         return;
     }
 
     if (element.type === "box") {
-        const setting = createSetting();
-        setting.settingEl.addClass("sm-le-preview__setting--box");
+        const container = preview.createDiv({ cls: "sm-le-preview__box" });
         const title = createInlineEditor({
-            parent: setting.nameEl,
+            parent: container,
             value: element.label,
             placeholder: "Titel eingeben…",
             onCommit: commitLabel,
             block: true,
         });
-        title.addClass("setting-item-name");
-        const descHost = setting.descEl ?? setting.infoEl.createDiv({ cls: "setting-item-description" });
+        title.addClass("sm-le-preview__title");
         const desc = createInlineEditor({
-            parent: descHost,
+            parent: container,
             value: element.description ?? "",
             placeholder: "Beschreibung hinzufügen…",
             multiline: true,
@@ -122,39 +108,40 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
                 deps.finalize(element);
             },
         });
-        desc.addClass("setting-item-description");
+        desc.addClass("sm-le-preview__description");
         return;
     }
 
     if (element.type === "separator") {
-        const setting = createSetting({ withDescription: false });
-        setting.controlEl.detach();
+        const header = preview.createDiv({ cls: "sm-le-preview__separator" });
         const label = createInlineEditor({
-            parent: setting.nameEl,
+            parent: header,
             value: element.label,
             placeholder: "Titel eingeben…",
             onCommit: commitLabel,
         });
-        label.addClass("setting-item-name");
-        setting.settingEl.createEl("hr", { cls: "sm-le-preview__divider" });
+        label.addClass("sm-le-preview__label");
+        preview.createEl("hr", { cls: "sm-le-preview__divider" });
         return;
     }
 
     if (element.type === "text-input" || element.type === "textarea") {
-        const setting = createSetting();
-        const label = createInlineEditor({
-            parent: setting.nameEl,
+        const field = preview.createEl("label", { cls: "sm-le-preview__field" });
+        const labelHost = field.createSpan({ cls: "sm-le-preview__label" });
+        createInlineEditor({
+            parent: labelHost,
             value: element.label,
             placeholder: "Label eingeben…",
             onCommit: commitLabel,
         });
-        label.addClass("setting-item-name");
 
-        setting.controlEl.empty();
-        const placeholderHost = setting.descEl ?? setting.infoEl.createDiv({ cls: "setting-item-description" });
+        const controlEl =
+            element.type === "textarea"
+                ? (field.createEl("textarea", { cls: "sm-le-preview__textarea" }) as HTMLTextAreaElement)
+                : (field.createEl("input", { attr: { type: "text" }, cls: "sm-le-preview__input" }) as HTMLInputElement);
 
         if (element.type === "textarea") {
-            const textarea = setting.controlEl.createEl("textarea", { cls: "sm-le-preview__textarea" }) as HTMLTextAreaElement;
+            const textarea = controlEl as HTMLTextAreaElement;
             textarea.value = element.defaultValue ?? "";
             textarea.placeholder = element.placeholder ?? "";
             textarea.rows = 4;
@@ -169,12 +156,8 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
                 element.defaultValue = next ? next : undefined;
                 deps.finalize(element);
             });
-            createPlaceholderEditor(placeholderHost, "Platzhalter hinzufügen…", element.placeholder, next => {
-                textarea.placeholder = next ?? "";
-                element.placeholder = next;
-            });
         } else {
-            const input = setting.controlEl.createEl("input", { attr: { type: "text" }, cls: "sm-le-preview__input" }) as HTMLInputElement;
+            const input = controlEl as HTMLInputElement;
             input.value = element.defaultValue ?? "";
             input.placeholder = element.placeholder ?? "";
             let lastValue = input.value;
@@ -188,26 +171,31 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
                 element.defaultValue = next ? next : undefined;
                 deps.finalize(element);
             });
-            createPlaceholderEditor(placeholderHost, "Platzhalter hinzufügen…", element.placeholder, next => {
-                input.placeholder = next ?? "";
-                element.placeholder = next;
-            });
         }
+
+        const meta = preview.createDiv({ cls: "sm-le-preview__meta" });
+        createPlaceholderEditor(meta, "Platzhalter hinzufügen…", element.placeholder, next => {
+            if (element.type === "textarea") {
+                (controlEl as HTMLTextAreaElement).placeholder = next ?? "";
+            } else {
+                (controlEl as HTMLInputElement).placeholder = next ?? "";
+            }
+            element.placeholder = next;
+        });
         return;
     }
 
     if (element.type === "dropdown" || element.type === "search-dropdown") {
-        const setting = createSetting();
-        const label = createInlineEditor({
-            parent: setting.nameEl,
+        const field = preview.createEl("label", { cls: "sm-le-preview__field" });
+        const labelHost = field.createSpan({ cls: "sm-le-preview__label" });
+        createInlineEditor({
+            parent: labelHost,
             value: element.label,
             placeholder: "Label eingeben…",
             onCommit: commitLabel,
         });
-        label.addClass("setting-item-name");
 
-        setting.controlEl.empty();
-        const select = setting.controlEl.createEl("select", { cls: "sm-le-preview__select" }) as HTMLSelectElement;
+        const select = field.createEl("select", { cls: "sm-le-preview__select" }) as HTMLSelectElement;
         const defaultPlaceholder = element.type === "dropdown" ? "Option wählen…" : "Suchen…";
         let placeholderOption: HTMLOptionElement | null = null;
 
@@ -265,13 +253,13 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
             deps.finalize(element);
         };
 
-        const descHost = setting.descEl ?? setting.infoEl.createDiv({ cls: "setting-item-description" });
-        createPlaceholderEditor(descHost, "Platzhalter hinzufügen…", element.placeholder, next => {
+        const meta = preview.createDiv({ cls: "sm-le-preview__meta" });
+        createPlaceholderEditor(meta, "Platzhalter hinzufügen…", element.placeholder, next => {
             element.placeholder = next;
             renderSelectOptions();
         });
 
-        const optionList = descHost.createDiv({ cls: "sm-le-inline-options" });
+        const optionList = preview.createDiv({ cls: "sm-le-inline-options" });
         const renderOptionList = () => {
             optionList.empty();
             const optionValues = element.options ?? [];
@@ -315,7 +303,7 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
         };
         renderOptionList();
 
-        const addOption = descHost.createEl("button", { cls: "sm-le-inline-add", text: "Option hinzufügen" });
+        const addOption = preview.createEl("button", { cls: "sm-le-inline-add", text: "Option hinzufügen" });
         addOption.onclick = ev => {
             ev.preventDefault();
             const nextOptions = [...(element.options ?? [])];
@@ -417,12 +405,12 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
         return;
     }
 
-    const fallback = createSetting();
-    const label = createInlineEditor({
-        parent: fallback.nameEl,
+    const fallback = preview.createDiv({ cls: "sm-le-preview__field" });
+    const labelHost = fallback.createSpan({ cls: "sm-le-preview__label" });
+    createInlineEditor({
+        parent: labelHost,
         value: element.label,
         placeholder: "Label eingeben…",
         onCommit: commitLabel,
     });
-    label.addClass("setting-item-name");
 }

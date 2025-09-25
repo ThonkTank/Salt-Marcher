@@ -378,18 +378,13 @@ export class LayoutEditorView extends ItemView {
         const el = this.canvasEl.createDiv({ cls: "sm-le-box" });
         el.dataset.id = element.id;
 
-        const header = el.createDiv({ cls: "sm-le-box__header" });
-        const handle = header.createSpan({ cls: "sm-le-box__handle", text: "⠿" });
+        const content = el.createDiv({ cls: "sm-le-box__content" });
+        content.dataset.role = "content";
+
+        const chrome = el.createDiv({ cls: "sm-le-box__chrome" });
+        const handle = chrome.createSpan({ cls: "sm-le-box__handle", text: "⠿" });
         handle.dataset.role = "move";
-        const dims = header.createSpan({ cls: "sm-le-box__dims", text: "" });
-        dims.dataset.role = "dims";
-
-        const body = el.createDiv({ cls: "sm-le-box__body" });
-        body.createDiv({ cls: "sm-le-box__type", text: "" }).dataset.role = "type";
-        body.createDiv({ cls: "sm-le-box__content" }).dataset.role = "content";
-
-        const footer = el.createDiv({ cls: "sm-le-box__footer" });
-        const attrs = footer.createSpan({ cls: "sm-le-box__attrs", text: "" }) as HTMLElement;
+        const attrs = chrome.createSpan({ cls: "sm-le-box__attrs", text: "⚙" }) as HTMLElement;
         attrs.dataset.role = "attrs";
 
         handle.addEventListener("pointerdown", ev => {
@@ -430,10 +425,7 @@ export class LayoutEditorView extends ItemView {
         el.style.top = `${Math.round(element.y)}px`;
         el.style.width = `${Math.round(element.width)}px`;
         el.style.height = `${Math.round(element.height)}px`;
-        const typeEl = el.querySelector<HTMLElement>('[data-role="type"]');
-        if (typeEl) typeEl.setText(getElementTypeLabel(element.type));
-        const dimsEl = el.querySelector<HTMLElement>('[data-role="dims"]');
-        if (dimsEl) dimsEl.setText(`${Math.round(element.width)} × ${Math.round(element.height)}px`);
+        el.classList.toggle("is-container", isContainerType(element.type));
         const contentEl = el.querySelector<HTMLElement>('[data-role="content"]');
         if (contentEl) {
             renderElementPreview({
@@ -447,7 +439,12 @@ export class LayoutEditorView extends ItemView {
             });
         }
         const attrsEl = el.querySelector<HTMLElement>('[data-role="attrs"]');
-        if (attrsEl) attrsEl.setText(getAttributeSummary(element.attributes));
+        if (attrsEl) {
+            const summary = getAttributeSummary(element.attributes);
+            attrsEl.setAttr("title", summary);
+            attrsEl.setAttr("aria-label", summary);
+            attrsEl.classList.toggle("is-empty", !element.attributes.length);
+        }
     }
 
     private selectElement(id: string | null) {
