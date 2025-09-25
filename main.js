@@ -5617,7 +5617,7 @@ var ELEMENT_DEFINITIONS = [
   {
     type: "textarea",
     buttonLabel: "Mehrzeiliges Feld",
-    defaultLabel: "Beschreibung",
+    defaultLabel: "",
     defaultPlaceholder: "Text erfassen\u2026",
     width: 320,
     height: 180
@@ -5625,7 +5625,7 @@ var ELEMENT_DEFINITIONS = [
   {
     type: "box-container",
     buttonLabel: "BoxContainer",
-    defaultLabel: "BoxContainer",
+    defaultLabel: "",
     width: 360,
     height: 220,
     defaultLayout: { gap: 16, padding: 16, align: "stretch" }
@@ -5633,14 +5633,14 @@ var ELEMENT_DEFINITIONS = [
   {
     type: "separator",
     buttonLabel: "Trennstrich",
-    defaultLabel: "Trennlinie",
+    defaultLabel: "",
     width: 320,
     height: 80
   },
   {
     type: "dropdown",
     buttonLabel: "Dropdown",
-    defaultLabel: "Auswahl",
+    defaultLabel: "",
     defaultPlaceholder: "Option w\xE4hlen\u2026",
     options: ["Option A", "Option B"],
     width: 260,
@@ -5649,7 +5649,7 @@ var ELEMENT_DEFINITIONS = [
   {
     type: "search-dropdown",
     buttonLabel: "Such-Dropdown",
-    defaultLabel: "Suchfeld",
+    defaultLabel: "",
     defaultPlaceholder: "Suchen\u2026",
     options: ["Erster Eintrag", "Zweiter Eintrag"],
     width: 280,
@@ -5658,7 +5658,7 @@ var ELEMENT_DEFINITIONS = [
   {
     type: "vbox-container",
     buttonLabel: "VBoxContainer",
-    defaultLabel: "VBoxContainer",
+    defaultLabel: "",
     defaultDescription: "Ordnet verkn\xFCpfte Elemente automatisch untereinander an.",
     width: 340,
     height: 260,
@@ -5667,7 +5667,7 @@ var ELEMENT_DEFINITIONS = [
   {
     type: "hbox-container",
     buttonLabel: "HBoxContainer",
-    defaultLabel: "HBoxContainer",
+    defaultLabel: "",
     defaultDescription: "Ordnet verkn\xFCpfte Elemente automatisch nebeneinander an.",
     width: 360,
     height: 220,
