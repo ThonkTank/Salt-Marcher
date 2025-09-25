@@ -549,6 +549,62 @@ export const LAYOUT_EDITOR_CSS = `
     align-self: flex-start;
 }
 
+.sm-le-menu {
+    position: absolute;
+    z-index: 10000;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 10px;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.18);
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.3rem;
+    min-width: 180px;
+}
+
+.sm-le-menu__item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    border: none;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    padding: 0.45rem 0.55rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background-color 120ms ease, color 120ms ease;
+}
+
+.sm-le-menu__item:hover,
+.sm-le-menu__item:focus-visible {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.sm-le-menu__item.is-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.sm-le-menu__label {
+    font-weight: 600;
+}
+
+.sm-le-menu__description {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.sm-le-menu__separator {
+    height: 1px;
+    background: var(--background-modifier-border);
+    margin: 0.15rem 0.25rem;
+}
+
 .sm-le-preview__divider {
     border: none;
     border-top: 1px solid var(--background-modifier-border);
@@ -586,6 +642,47 @@ export const LAYOUT_EDITOR_CSS = `
     gap: 0.5rem;
     overflow-y: auto;
     padding-right: 0.25rem;
+}
+
+.sm-le-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.sm-le-modal__form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.sm-le-modal__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.sm-le-modal__field label {
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.sm-le-modal__field input {
+    font: inherit;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+}
+
+.sm-le-modal__actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.sm-le-modal__actions .mod-cta {
+    min-width: 120px;
 }
 
 .sm-le-field {

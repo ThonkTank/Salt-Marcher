@@ -23,10 +23,10 @@ __export(main_exports, {
   default: () => LayoutEditorPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian7 = require("obsidian");
+var import_obsidian5 = require("obsidian");
 
 // src/view.ts
-var import_obsidian6 = require("obsidian");
+var import_obsidian4 = require("obsidian");
 
 // src/search-dropdown.ts
 function enhanceSelectToSearch(select, placeholder = "Suchen\u2026") {
@@ -1153,8 +1153,110 @@ function renderFallbackPreview(context) {
   });
 }
 
+// src/ui/editor-menu.ts
+var activeMenu = null;
+function openEditorMenu(options) {
+  const { anchor, entries, event, onClose } = options;
+  if (!anchor || !entries.length) {
+    return null;
+  }
+  activeMenu?.close();
+  const menu = document.createElement("div");
+  menu.className = "sm-le-menu";
+  let isOpen = true;
+  const close = () => {
+    if (!isOpen) return;
+    isOpen = false;
+    menu.remove();
+    document.removeEventListener("pointerdown", handlePointerDown, true);
+    document.removeEventListener("keydown", handleKeyDown, true);
+    window.removeEventListener("blur", close);
+    if (activeMenu && activeMenu.close === close) {
+      activeMenu = null;
+    }
+    onClose?.();
+  };
+  const handlePointerDown = (ev) => {
+    const target = ev.target;
+    if (!target) {
+      close();
+      return;
+    }
+    if (!menu.contains(target) && !anchor.contains(target)) {
+      close();
+    }
+  };
+  const handleKeyDown = (ev) => {
+    if (ev.key === "Escape") {
+      ev.preventDefault();
+      close();
+    }
+  };
+  document.addEventListener("pointerdown", handlePointerDown, true);
+  document.addEventListener("keydown", handleKeyDown, true);
+  window.addEventListener("blur", close);
+  for (const entry of entries) {
+    if (entry.type === "separator") {
+      menu.createDiv({ cls: "sm-le-menu__separator" });
+      continue;
+    }
+    const item = menu.createEl("button", { cls: "sm-le-menu__item" });
+    item.type = "button";
+    item.createSpan({ cls: "sm-le-menu__label", text: entry.label });
+    if (entry.description) {
+      item.createSpan({ cls: "sm-le-menu__description", text: entry.description });
+    }
+    if (entry.disabled) {
+      item.setAttr("disabled", "disabled");
+      item.addClass("is-disabled");
+    }
+    item.onclick = (ev) => {
+      ev.preventDefault();
+      if (entry.disabled) return;
+      close();
+      entry.onSelect();
+    };
+    item.onkeydown = (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        if (!entry.disabled) {
+          close();
+          entry.onSelect();
+        }
+      }
+    };
+  }
+  document.body.appendChild(menu);
+  const anchorRect = anchor.getBoundingClientRect();
+  const menuRect = menu.getBoundingClientRect();
+  const offsetX = event ? event.clientX - anchorRect.left : 0;
+  let left = anchorRect.left + window.scrollX + offsetX;
+  let top = (event ? event.clientY : anchorRect.bottom) + window.scrollY;
+  const viewportRight = window.scrollX + window.innerWidth;
+  const viewportBottom = window.scrollY + window.innerHeight;
+  if (left + menuRect.width > viewportRight - 8) {
+    left = Math.max(8, viewportRight - menuRect.width - 8);
+  }
+  if (top + menuRect.height > viewportBottom - 8) {
+    const above = anchorRect.top + window.scrollY - menuRect.height;
+    if (above >= 8) {
+      top = above;
+    } else {
+      top = Math.max(8, viewportBottom - menuRect.height - 8);
+    }
+  }
+  menu.style.left = `${Math.round(left)}px`;
+  menu.style.top = `${Math.round(top)}px`;
+  const focusable = menu.querySelector(".sm-le-menu__item:not([disabled])");
+  if (focusable) {
+    focusable.focus();
+  }
+  const handle = { close };
+  activeMenu = handle;
+  return handle;
+}
+
 // src/inspector-panel.ts
-var import_obsidian = require("obsidian");
 function renderInspectorPanel(deps) {
   const { host, element } = deps;
   host.empty();
@@ -1326,25 +1428,22 @@ function renderContainerInspectorSections(options) {
   quickAddBtn.classList.add("sm-le-inline-add", "sm-le-inline-add--menu");
   quickAddBtn.onclick = (ev) => {
     ev.preventDefault();
-    const menu = new import_obsidian.Menu();
     const standardDefs = definitions.filter((def) => !isContainerType(def.type));
     const containerDefs = definitions.filter((def) => isContainerType(def.type));
-    for (const def of standardDefs) {
-      menu.addItem((item) => {
-        item.setTitle(def.buttonLabel);
-        item.onClick(() => callbacks.createElement(def.type, { parentId: element.id }));
-      });
-    }
-    if (standardDefs.length && containerDefs.length) {
-      menu.addSeparator();
-    }
-    for (const def of containerDefs) {
-      menu.addItem((item) => {
-        item.setTitle(def.buttonLabel);
-        item.onClick(() => callbacks.createElement(def.type, { parentId: element.id }));
-      });
-    }
-    menu.showAtMouseEvent(ev);
+    const entries = [
+      ...standardDefs.map((def) => ({
+        type: "item",
+        label: def.buttonLabel,
+        onSelect: () => callbacks.createElement(def.type, { parentId: element.id })
+      })),
+      ...standardDefs.length && containerDefs.length ? [{ type: "separator" }] : [],
+      ...containerDefs.map((def) => ({
+        type: "item",
+        label: def.buttonLabel,
+        onSelect: () => callbacks.createElement(def.type, { parentId: element.id })
+      }))
+    ];
+    openEditorMenu({ anchor: quickAddBtn, entries, event: ev });
   };
   const childField = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
   childField.createEl("label", { text: "Zugeordnete Elemente" });
@@ -1581,10 +1680,10 @@ function clampNumber(value, min, max) {
 }
 
 // src/layout-library.ts
-var import_obsidian2 = require("obsidian");
+var import_obsidian = require("obsidian");
 var LAYOUT_FOLDER = "LayoutEditor/Layouts";
 async function ensureLayoutFolder(app) {
-  const folderPath = (0, import_obsidian2.normalizePath)(LAYOUT_FOLDER);
+  const folderPath = (0, import_obsidian.normalizePath)(LAYOUT_FOLDER);
   const folder = app.vault.getAbstractFileByPath(folderPath);
   if (folder) return;
   await app.vault.createFolder(folderPath).catch(() => {
@@ -1607,7 +1706,7 @@ async function saveLayoutToLibrary(app, payload) {
   await ensureLayoutFolder(app);
   const id = payload.id ?? createId();
   const fileName = createFileName(id);
-  const path = (0, import_obsidian2.normalizePath)(`${LAYOUT_FOLDER}/${fileName}`);
+  const path = (0, import_obsidian.normalizePath)(`${LAYOUT_FOLDER}/${fileName}`);
   const existing = app.vault.getAbstractFileByPath(path);
   const now = (/* @__PURE__ */ new Date()).toISOString();
   const entry = {
@@ -1616,11 +1715,11 @@ async function saveLayoutToLibrary(app, payload) {
     canvasWidth: payload.canvasWidth,
     canvasHeight: payload.canvasHeight,
     elements: payload.elements,
-    createdAt: existing instanceof import_obsidian2.TFile ? (await readLayoutMeta(app, existing))?.createdAt ?? now : now,
+    createdAt: existing instanceof import_obsidian.TFile ? (await readLayoutMeta(app, existing))?.createdAt ?? now : now,
     updatedAt: now
   };
   const body = JSON.stringify(entry, null, 2);
-  if (existing instanceof import_obsidian2.TFile) {
+  if (existing instanceof import_obsidian.TFile) {
     await app.vault.modify(existing, body);
   } else {
     await app.vault.create(path, body);
@@ -1653,11 +1752,11 @@ async function readLayoutMeta(app, file) {
 }
 async function listSavedLayouts(app) {
   await ensureLayoutFolder(app);
-  const folder = app.vault.getAbstractFileByPath((0, import_obsidian2.normalizePath)(LAYOUT_FOLDER));
-  if (!(folder instanceof import_obsidian2.TFolder)) {
+  const folder = app.vault.getAbstractFileByPath((0, import_obsidian.normalizePath)(LAYOUT_FOLDER));
+  if (!(folder instanceof import_obsidian.TFolder)) {
     return [];
   }
-  const files = folder.children.filter((child) => child instanceof import_obsidian2.TFile && child.extension === "json");
+  const files = folder.children.filter((child) => child instanceof import_obsidian.TFile && child.extension === "json");
   const out = [];
   for (const file of files) {
     const meta = await readLayoutMeta(app, file);
@@ -1668,15 +1767,15 @@ async function listSavedLayouts(app) {
 }
 async function loadSavedLayout(app, id) {
   await ensureLayoutFolder(app);
-  const path = (0, import_obsidian2.normalizePath)(`${LAYOUT_FOLDER}/${createFileName(id)}`);
+  const path = (0, import_obsidian.normalizePath)(`${LAYOUT_FOLDER}/${createFileName(id)}`);
   const file = app.vault.getAbstractFileByPath(path);
-  if (!(file instanceof import_obsidian2.TFile)) return null;
+  if (!(file instanceof import_obsidian.TFile)) return null;
   return await readLayoutMeta(app, file);
 }
 
 // src/name-input-modal.ts
-var import_obsidian3 = require("obsidian");
-var NameInputModal = class extends import_obsidian3.Modal {
+var import_obsidian2 = require("obsidian");
+var NameInputModal = class extends import_obsidian2.Modal {
   constructor(app, onSubmit, options) {
     super(app);
     this.onSubmit = onSubmit;
@@ -1691,22 +1790,39 @@ var NameInputModal = class extends import_obsidian3.Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
+    contentEl.addClass("sm-le-modal");
     contentEl.createEl("h3", { text: this.title });
-    let inputEl;
-    new import_obsidian3.Setting(contentEl).addText((text) => {
-      text.setPlaceholder(this.placeholder).onChange((value) => this.value = value.trim());
-      inputEl = text.inputEl;
-      if (this.value) {
-        inputEl.value = this.value;
-      }
-    }).addButton((button) => {
-      button.setButtonText(this.ctaLabel).setCta().onClick(() => this.submit());
+    const form = contentEl.createEl("form", { cls: "sm-le-modal__form" });
+    const field = form.createDiv({ cls: "sm-le-modal__field" });
+    const inputId = `sm-le-name-input-${Date.now()}`;
+    field.createEl("label", { text: "Name", attr: { for: inputId } });
+    const inputEl = field.createEl("input", {
+      attr: { type: "text", id: inputId, placeholder: this.placeholder }
     });
-    this.scope.register([], "Enter", () => this.submit());
-    queueMicrotask(() => inputEl?.focus());
+    if (this.value) {
+      inputEl.value = this.value;
+    }
+    inputEl.addEventListener("input", () => {
+      this.value = inputEl.value.trim();
+    });
+    const actions = form.createDiv({ cls: "sm-le-modal__actions" });
+    const submitBtn = actions.createEl("button", { text: this.ctaLabel });
+    submitBtn.type = "submit";
+    submitBtn.addClass("mod-cta");
+    form.onsubmit = (ev) => {
+      ev.preventDefault();
+      this.value = inputEl.value.trim();
+      this.submit();
+    };
+    this.scope.register([], "Enter", () => {
+      this.value = inputEl.value.trim();
+      this.submit();
+    });
+    queueMicrotask(() => inputEl.focus());
   }
   onClose() {
     this.contentEl.empty();
+    this.contentEl.removeClass("sm-le-modal");
   }
   submit() {
     const name = this.value || this.placeholder;
@@ -1716,8 +1832,8 @@ var NameInputModal = class extends import_obsidian3.Modal {
 };
 
 // src/layout-picker-modal.ts
-var import_obsidian4 = require("obsidian");
-var LayoutPickerModal = class extends import_obsidian4.Modal {
+var import_obsidian3 = require("obsidian");
+var LayoutPickerModal = class extends import_obsidian3.Modal {
   constructor(app, options) {
     super(app);
     this.layouts = [];
@@ -1861,7 +1977,6 @@ function formatTimestamp(value) {
 }
 
 // src/ui/add-palette.ts
-var import_obsidian5 = require("obsidian");
 var GROUP_LABELS = /* @__PURE__ */ new Map([
   ["input", "Eingabefelder"],
   ["container", "Container"]
@@ -1892,14 +2007,12 @@ function renderPalette(options) {
     const button = host.createEl("button", { text: label });
     button.onclick = (event) => {
       event.preventDefault();
-      const menu = new import_obsidian5.Menu();
-      defs.slice().sort((a, b) => a.buttonLabel.localeCompare(b.buttonLabel, "de")).forEach((def) => {
-        menu.addItem((item) => {
-          item.setTitle(def.buttonLabel);
-          item.onClick(() => onCreate(def.type));
-        });
-      });
-      menu.showAtMouseEvent(event);
+      const entries = defs.slice().sort((a, b) => a.buttonLabel.localeCompare(b.buttonLabel, "de")).map((def) => ({
+        type: "item",
+        label: def.buttonLabel,
+        onSelect: () => onCreate(def.type)
+      }));
+      openEditorMenu({ anchor: button, entries, event });
     };
   }
 }
@@ -1910,7 +2023,7 @@ function capitalize(value) {
 
 // src/view.ts
 var VIEW_LAYOUT_EDITOR = "salt-layout-editor";
-var LayoutEditorView = class extends import_obsidian6.ItemView {
+var LayoutEditorView = class extends import_obsidian4.ItemView {
   constructor() {
     super(...arguments);
     this.elements = [];
@@ -2202,10 +2315,10 @@ var LayoutEditorView = class extends import_obsidian6.ItemView {
           throw new Error("Clipboard API nicht verf\xFCgbar");
         }
         await clip.writeText(this.exportEl.value);
-        new import_obsidian6.Notice("Layout kopiert");
+        new import_obsidian4.Notice("Layout kopiert");
       } catch (error) {
         console.error("Clipboard write failed", error);
-        new import_obsidian6.Notice("Konnte nicht in die Zwischenablage kopieren");
+        new import_obsidian4.Notice("Konnte nicht in die Zwischenablage kopieren");
       }
     };
     this.saveButton = exportControls.createEl("button", { text: "Layout speichern" });
@@ -2265,7 +2378,7 @@ var LayoutEditorView = class extends import_obsidian6.ItemView {
   async handleSaveLayout(name) {
     const trimmed = name.trim();
     if (!trimmed) {
-      new import_obsidian6.Notice("Bitte gib einen Namen f\xFCr das Layout an");
+      new import_obsidian4.Notice("Bitte gib einen Namen f\xFCr das Layout an");
       return;
     }
     if (this.isSavingLayout) return;
@@ -2282,10 +2395,10 @@ var LayoutEditorView = class extends import_obsidian6.ItemView {
       });
       this.lastSavedLayoutId = saved.id;
       this.lastSavedLayoutName = saved.name;
-      new import_obsidian6.Notice(`Layout \u201E${saved.name}\u201D gespeichert`);
+      new import_obsidian4.Notice(`Layout \u201E${saved.name}\u201D gespeichert`);
     } catch (error) {
       console.error("Failed to save layout", error);
-      new import_obsidian6.Notice("Konnte Layout nicht speichern");
+      new import_obsidian4.Notice("Konnte Layout nicht speichern");
     } finally {
       this.isSavingLayout = false;
       this.saveButton?.removeAttribute("disabled");
@@ -3184,14 +3297,14 @@ var LayoutEditorView = class extends import_obsidian6.ItemView {
     try {
       const layout = await loadSavedLayout(this.app, layoutId);
       if (!layout) {
-        new import_obsidian6.Notice("Layout konnte nicht geladen werden");
+        new import_obsidian4.Notice("Layout konnte nicht geladen werden");
         return;
       }
       this.applySavedLayout(layout);
-      new import_obsidian6.Notice(`Layout \u201E${layout.name}\u201D geladen`);
+      new import_obsidian4.Notice(`Layout \u201E${layout.name}\u201D geladen`);
     } catch (error) {
       console.error("Failed to import saved layout", error);
-      new import_obsidian6.Notice("Konnte Layout nicht laden");
+      new import_obsidian4.Notice("Konnte Layout nicht laden");
     } finally {
       this.sandboxEl.empty();
       this.importBtn?.removeClass("is-loading");
@@ -3776,6 +3889,62 @@ var LAYOUT_EDITOR_CSS = `
     align-self: flex-start;
 }
 
+.sm-le-menu {
+    position: absolute;
+    z-index: 10000;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 10px;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.18);
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.3rem;
+    min-width: 180px;
+}
+
+.sm-le-menu__item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    border: none;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    padding: 0.45rem 0.55rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background-color 120ms ease, color 120ms ease;
+}
+
+.sm-le-menu__item:hover,
+.sm-le-menu__item:focus-visible {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.sm-le-menu__item.is-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.sm-le-menu__label {
+    font-weight: 600;
+}
+
+.sm-le-menu__description {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.sm-le-menu__separator {
+    height: 1px;
+    background: var(--background-modifier-border);
+    margin: 0.15rem 0.25rem;
+}
+
 .sm-le-preview__divider {
     border: none;
     border-top: 1px solid var(--background-modifier-border);
@@ -3813,6 +3982,47 @@ var LAYOUT_EDITOR_CSS = `
     gap: 0.5rem;
     overflow-y: auto;
     padding-right: 0.25rem;
+}
+
+.sm-le-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.sm-le-modal__form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.sm-le-modal__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.sm-le-modal__field label {
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.sm-le-modal__field input {
+    font: inherit;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+}
+
+.sm-le-modal__actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.sm-le-modal__actions .mod-cta {
+    min-width: 120px;
 }
 
 .sm-le-field {
@@ -4094,7 +4304,7 @@ var LAYOUT_EDITOR_CSS = `
 `;
 
 // src/main.ts
-var LayoutEditorPlugin = class extends import_obsidian7.Plugin {
+var LayoutEditorPlugin = class extends import_obsidian5.Plugin {
   async onload() {
     resetLayoutElementDefinitions(DEFAULT_ELEMENT_DEFINITIONS);
     this.registerView(VIEW_LAYOUT_EDITOR, (leaf) => new LayoutEditorView(leaf));

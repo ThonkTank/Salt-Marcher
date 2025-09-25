@@ -1,6 +1,4 @@
 // src/plugins/layout-editor/types.ts
-import type { Setting } from "obsidian";
-
 export type LayoutElementType = string;
 
 export type LayoutContainerType = LayoutElementType;
@@ -90,8 +88,3 @@ export interface SavedLayout extends LayoutBlueprint {
     updatedAt: string;
 }
 
-export interface CreateSettingOptions {
-    host: HTMLElement;
-    withDescription?: boolean;
-    prepare?: (setting: Setting) => void;
-}

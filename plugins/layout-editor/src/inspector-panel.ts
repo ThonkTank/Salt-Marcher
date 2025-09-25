@@ -1,5 +1,4 @@
 // src/plugins/layout-editor/inspector-panel.ts
-import { Menu } from "obsidian";
 import {
     getAttributeSummary,
     getElementTypeLabel,
@@ -11,6 +10,7 @@ import { getLayoutElementComponent } from "./elements/registry";
 import type { ElementInspectorContext } from "./elements/base";
 import { LayoutContainerAlign, LayoutElement, LayoutElementDefinition, LayoutElementType } from "./types";
 import { collectAncestorIds, collectDescendantIds, isContainerElement } from "./utils";
+import { openEditorMenu } from "./ui/editor-menu";
 
 export interface InspectorCallbacks {
     ensureContainerDefaults(element: LayoutElement): void;
@@ -235,25 +235,22 @@ function renderContainerInspectorSections(options: ContainerInspectorOptions) {
     quickAddBtn.classList.add("sm-le-inline-add", "sm-le-inline-add--menu");
     quickAddBtn.onclick = ev => {
         ev.preventDefault();
-        const menu = new Menu();
         const standardDefs = definitions.filter(def => !isContainerType(def.type));
         const containerDefs = definitions.filter(def => isContainerType(def.type));
-        for (const def of standardDefs) {
-            menu.addItem(item => {
-                item.setTitle(def.buttonLabel);
-                item.onClick(() => callbacks.createElement(def.type, { parentId: element.id }));
-            });
-        }
-        if (standardDefs.length && containerDefs.length) {
-            menu.addSeparator();
-        }
-        for (const def of containerDefs) {
-            menu.addItem(item => {
-                item.setTitle(def.buttonLabel);
-                item.onClick(() => callbacks.createElement(def.type, { parentId: element.id }));
-            });
-        }
-        menu.showAtMouseEvent(ev);
+        const entries = [
+            ...standardDefs.map(def => ({
+                type: "item" as const,
+                label: def.buttonLabel,
+                onSelect: () => callbacks.createElement(def.type, { parentId: element.id }),
+            })),
+            ...(standardDefs.length && containerDefs.length ? ([{ type: "separator" as const }] as const) : []),
+            ...containerDefs.map(def => ({
+                type: "item" as const,
+                label: def.buttonLabel,
+                onSelect: () => callbacks.createElement(def.type, { parentId: element.id }),
+            })),
+        ];
+        openEditorMenu({ anchor: quickAddBtn, entries, event: ev });
     };
 
     const childField = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
