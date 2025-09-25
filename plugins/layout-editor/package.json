@@ -5,7 +5,7 @@
   "type": "module",
   "main": "main.js",
   "scripts": {
-    "build": "node esbuild.config.mjs"
+    "build": "node scripts/generate-component-manifest.mjs && node esbuild.config.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.21.5",

@@ -19,7 +19,11 @@ plugins/layout-editor/
    ├─ LayoutEditorOverview.txt  # Diese Übersicht
    ├─ attribute-popover.ts # Attribute-Popover inkl. Events & Sync
    ├─ definitions.ts       # Element-/Attribut-Registry + Label-Helfer & Defaults
-   ├─ element-preview.ts   # Canvas-Vorschau als echte Settings inkl. Inline-Editing
+   ├─ elements/
+   │  ├─ base.ts           # Gemeinsame Interfaces für Komponenten (Preview/Inspector)
+   │  ├─ registry.ts       # Lädt automatisch alle Komponenten aus ./components
+   │  └─ components/       # Drop-in-Komponenten pro Elementtyp (Preview, Inspector, Defaults)
+   ├─ element-preview.ts   # Canvas-Vorschau delegiert an Element-Komponenten
    ├─ history.ts           # Undo/Redo-Verwaltung für LayoutSnapshots
    ├─ inline-edit.ts       # Generischer ContentEditable-Editor für Inline-Bearbeitung
    ├─ inspector-panel.ts   # Inspector-Rendering (Formfelder, Container-Steuerung, Attribute-Trigger)
@@ -28,6 +32,8 @@ plugins/layout-editor/
    ├─ name-input-modal.ts  # Leichtgewichtiger Modal zum Benennen neuer Layouts
    ├─ search-dropdown.ts   # Autocomplete-Helfer für Select-Elemente
    ├─ types.ts             # Gemeinsame Typen für Elemente, Container & Snapshots
+   ├─ ui/
+   │  └─ add-palette.ts    # Rendert die Element-Palette gruppiert nach Palette-Gruppen
    └─ utils.ts             # Hilfsfunktionen (clamp, Deep-Clones, Vergleichs-Utilities)
 ```
 
@@ -37,7 +43,8 @@ plugins/layout-editor/
 - **Eigenes Styling (`css.ts`):** Enthält das komplette Layout-Editor-CSS. Wird ausschließlich vom Layout-Editor-Plugin injiziert und kollidiert somit nicht länger mit SaltMarcher-spezifischem Styling.
 - **Layout-Arbeitsfläche & Kamera:** Dreigeteilte Arbeitsumgebung mit Strukturbaum links, Canvas in der Mitte und Inspector rechts. Panning, Zoom und Panel-Resizer halten Bounds-Clamping und Fokusverhalten konsistent.
 - **Struktur-Überblick:** Interaktiver Baum mit Drag & Drop zur Container-Neuzuordnung (inkl. Root-Drop-Zone) und zyklusgesicherter Elternwahl. Inspector- und Baum-Breiten lassen sich über Trenner anpassen.
-- **Palette & Registry:** Element-Palette horcht auf Registry-Änderungen. Weitere Plugins können per API Definitionen registrieren; Palette und Inspector-Quick-Add aktualisieren sich automatisch.
+- **Palette & Registry:** Element-Palette horcht auf Registry-Änderungen und liest Gruppen direkt aus den Komponentendefinitionen. Neue Element-Typen müssen nur als Datei in `src/elements/components/` landen – Palette und Inspector-Menüs greifen sie automatisch auf.
+- **Komponentenbasierte Elemente:** `elements/` bündelt Preview-, Inspector- und Default-Logik je Elementtyp und reduziert Redundanz bei neuen UI-Elementen.
 - **Container-Layout:** Box-, VBox- und HBox-Container verwalten Gap, Padding und Align sowie verschachtelte Kinder. Inspector und Baum unterstützen das schnelle Hinzufügen und Neuzuordnen von Elementen.
 - **Direkte Bearbeitung & Inspector:** Canvas rendert echte UI-Elemente. Freie Texte lassen sich inline editieren, alle Meta-Informationen pflegst du im Inspector (Labels, Placeholder, Optionen, Layout-Werte).
 - **Vorschau & Inline-Editing:** `element-preview.ts` erzeugt realistische Vorschauen; `inline-edit.ts` kapselt ContentEditable inklusive Placeholder/Trim-Logik.
@@ -79,6 +86,15 @@ plugins/layout-editor/
 ### `definitions.ts`
 - Enthält Element-Definitionen, Attribute-Gruppen und Registry-API (`registerLayoutElementDefinition`, `unregisterLayoutElementDefinition`, `onLayoutElementDefinitionsChanged`).
 
+### `elements/base.ts`
+- Definiert gemeinsame Interfaces für Komponenten (Preview/Inspector-Kontext, Utility-Hooks).
+
+### `elements/registry.ts`
+- Lädt zur Build-Zeit automatisch alle Komponenten unter `elements/components/` und stellt Lookup-Helfer bereit.
+
+### `elements/components/*`
+- Eine Datei pro UI-Element (Label, Textfeld, Container usw.). Enthält Definition, Preview-Renderer, Inspector-Logik und Default-Werte.
+
 ### `layout-library.ts`
 - Persistiert Layouts als JSON-Dateien im Vault-Ordner `LayoutEditor/Layouts`.
 - Liefert `saveLayoutToLibrary`, `listSavedLayouts`, `loadSavedLayout` für wiederverwendbare Layout-Bibliotheken.
@@ -95,11 +111,14 @@ plugins/layout-editor/
 ### `inline-edit.ts`
 - ContentEditable-Helfer mit Placeholder-, Trim- und Multiline-Unterstützung.
 
+### `ui/add-palette.ts`
+- Baut die gruppierte Element-Palette und öffnet Kontext-Menüs für Sammlungen (Inputs, Container, benutzerdefinierte Gruppen).
+
 ### `element-preview.ts`
-- Rendert Canvas-Elemente als echte Obsidian-Settings und bindet Inline-Editing/Inspector-Callbacks ein.
+- Delegiert das Rendering an die registrierten Komponenten und kapselt das gemeinsame Inline-Editing.
 
 ### `inspector-panel.ts`
-- Erstellt den Inspector mit Meta-Feldern, Layout-Parametern, Container-Verwaltung und Attribute-Popover-Triggern.
+- Baut den Inspector-Aufbau und ruft Komponenten-Hooks für element-spezifische Felder auf (Label, Placeholder, Optionen, Layout).
 
 ### `attribute-popover.ts`
 - Verwaltet Popover-Lifecycle (Öffnen, Fokus, Events) und synchronisiert ausgewählte Attribute.

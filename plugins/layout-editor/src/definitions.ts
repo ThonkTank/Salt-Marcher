@@ -5,106 +5,11 @@ import {
     LayoutElementDefinition,
     LayoutElementType,
 } from "./types";
+import { createDefaultElementDefinitions } from "./elements/registry";
 
 export const MIN_ELEMENT_SIZE = 60;
 
-export const DEFAULT_ELEMENT_DEFINITIONS: LayoutElementDefinition[] = [
-    {
-        type: "label",
-        buttonLabel: "Label",
-        defaultLabel: "Überschrift",
-        category: "element",
-        paletteGroup: "element",
-        width: 260,
-        height: 160,
-    },
-    {
-        type: "text-input",
-        buttonLabel: "Textfeld",
-        defaultLabel: "",
-        category: "element",
-        paletteGroup: "input",
-        defaultPlaceholder: "",
-        width: 260,
-        height: 140,
-    },
-    {
-        type: "textarea",
-        buttonLabel: "Mehrzeiliges Feld",
-        defaultLabel: "",
-        category: "element",
-        paletteGroup: "input",
-        defaultPlaceholder: "Text erfassen…",
-        width: 320,
-        height: 180,
-    },
-    {
-        type: "box-container",
-        buttonLabel: "BoxContainer",
-        defaultLabel: "",
-        category: "container",
-        paletteGroup: "container",
-        layoutOrientation: "vertical",
-        width: 360,
-        height: 220,
-        defaultLayout: { gap: 16, padding: 16, align: "stretch" },
-    },
-    {
-        type: "separator",
-        buttonLabel: "Trennstrich",
-        defaultLabel: "",
-        category: "element",
-        paletteGroup: "element",
-        width: 320,
-        height: 80,
-    },
-    {
-        type: "dropdown",
-        buttonLabel: "Dropdown",
-        defaultLabel: "",
-        category: "element",
-        paletteGroup: "input",
-        defaultPlaceholder: "Option wählen…",
-        options: ["Option A", "Option B"],
-        width: 260,
-        height: 150,
-    },
-    {
-        type: "search-dropdown",
-        buttonLabel: "Such-Dropdown",
-        defaultLabel: "",
-        category: "element",
-        paletteGroup: "input",
-        defaultPlaceholder: "Suchen…",
-        options: ["Erster Eintrag", "Zweiter Eintrag"],
-        width: 280,
-        height: 160,
-    },
-    {
-        type: "vbox-container",
-        buttonLabel: "VBoxContainer",
-        defaultLabel: "",
-        category: "container",
-        paletteGroup: "container",
-        layoutOrientation: "vertical",
-        defaultDescription: "Ordnet verknüpfte Elemente automatisch untereinander an.",
-        width: 340,
-        height: 260,
-        defaultLayout: { gap: 16, padding: 16, align: "stretch" },
-    },
-    {
-        type: "hbox-container",
-        buttonLabel: "HBoxContainer",
-        defaultLabel: "",
-        category: "container",
-        paletteGroup: "container",
-        layoutOrientation: "horizontal",
-        defaultDescription: "Ordnet verknüpfte Elemente automatisch nebeneinander an.",
-        width: 360,
-        height: 220,
-        defaultLayout: { gap: 16, padding: 16, align: "center" },
-    },
-];
+export const DEFAULT_ELEMENT_DEFINITIONS: LayoutElementDefinition[] = createDefaultElementDefinitions();
 
 type RegistryListener = (definitions: LayoutElementDefinition[]) => void;
 

@@ -23,44 +23,41 @@ __export(main_exports, {
   default: () => LayoutEditorPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian6 = require("obsidian");
+var import_obsidian7 = require("obsidian");
 
 // src/view.ts
-var import_obsidian5 = require("obsidian");
+var import_obsidian6 = require("obsidian");
 
-// src/definitions.ts
-var MIN_ELEMENT_SIZE = 60;
-var DEFAULT_ELEMENT_DEFINITIONS = [
-  {
-    type: "label",
-    buttonLabel: "Label",
-    defaultLabel: "\xDCberschrift",
-    category: "element",
-    paletteGroup: "element",
-    width: 260,
-    height: 160
-  },
-  {
-    type: "text-input",
-    buttonLabel: "Textfeld",
-    defaultLabel: "",
-    category: "element",
-    paletteGroup: "input",
-    defaultPlaceholder: "",
-    width: 260,
-    height: 140
-  },
-  {
-    type: "textarea",
-    buttonLabel: "Mehrzeiliges Feld",
-    defaultLabel: "",
-    category: "element",
-    paletteGroup: "input",
-    defaultPlaceholder: "Text erfassen\u2026",
-    width: 320,
-    height: 180
-  },
-  {
+// src/elements/shared/container-preview.ts
+function renderContainerPreview({ preview, element, elements, ensureContainerDefaults }) {
+  ensureContainerDefaults(element);
+  const frame = preview.createDiv({ cls: "sm-le-preview__container" });
+  const header = frame.createDiv({ cls: "sm-le-preview__container-header" });
+  const labelText = element.label?.trim() ?? "";
+  if (labelText) {
+    header.createSpan({ cls: "sm-le-preview__label", text: labelText });
+  } else {
+    header.style.display = "none";
+  }
+  const body = frame.createDiv({ cls: "sm-le-preview__container-body" });
+  const hasChildren = Array.isArray(element.children) ? element.children.some((childId) => elements.some((el) => el.id === childId)) : false;
+  if (!hasChildren) {
+    body.createDiv({ cls: "sm-le-preview__container-placeholder", text: "Leerer Container" });
+  }
+}
+
+// src/elements/components/box-container.ts
+var defaultLayout = { gap: 16, padding: 16, align: "stretch" };
+function ensureLayout(element) {
+  if (!element.layout) {
+    element.layout = { ...defaultLayout };
+  }
+  if (!Array.isArray(element.children)) {
+    element.children = [];
+  }
+}
+var boxContainerComponent = {
+  definition: {
     type: "box-container",
     buttonLabel: "BoxContainer",
     defaultLabel: "",
@@ -69,18 +66,190 @@ var DEFAULT_ELEMENT_DEFINITIONS = [
     layoutOrientation: "vertical",
     width: 360,
     height: 220,
-    defaultLayout: { gap: 16, padding: 16, align: "stretch" }
+    defaultLayout
   },
-  {
-    type: "separator",
-    buttonLabel: "Trennstrich",
-    defaultLabel: "",
-    category: "element",
-    paletteGroup: "element",
-    width: 320,
-    height: 80
+  renderPreview(context) {
+    renderContainerPreview(context);
   },
-  {
+  renderInspector({ renderLabelField: renderLabelField2, renderContainerLayoutControls: renderContainerLayoutControls2 }) {
+    renderLabelField2({ label: "Bezeichnung" });
+    renderContainerLayoutControls2({});
+  },
+  ensureDefaults: ensureLayout
+};
+var box_container_default = boxContainerComponent;
+
+// src/search-dropdown.ts
+function enhanceSelectToSearch(select, placeholder = "Suchen\u2026") {
+  if (!select || select._leEnhanced) return;
+  const wrap = document.createElement("div");
+  wrap.className = "sm-sd";
+  const input = document.createElement("input");
+  input.type = "text";
+  input.placeholder = placeholder;
+  input.className = "sm-sd__input";
+  const menu = document.createElement("div");
+  menu.className = "sm-sd__menu";
+  const parent = select.parentElement;
+  if (!parent) return;
+  parent.insertBefore(wrap, select);
+  wrap.appendChild(input);
+  wrap.appendChild(menu);
+  select.style.display = "none";
+  try {
+    const rect = select.getBoundingClientRect();
+    if (rect && rect.width) wrap.style.width = `${rect.width}px`;
+  } catch (error) {
+    console.warn("enhanceSelectToSearch: unable to read select width", error);
+  }
+  let items = [];
+  let active = -1;
+  const readOptions = () => {
+    items = Array.from(select.options).map((opt) => ({ label: opt.text, value: opt.value }));
+  };
+  const openMenu = () => {
+    wrap.classList.add("is-open");
+  };
+  const closeMenu = () => {
+    wrap.classList.remove("is-open");
+    active = -1;
+  };
+  const render = (query = "") => {
+    readOptions();
+    if (query === "__NOOPEN__") {
+      menu.innerHTML = "";
+      closeMenu();
+      return;
+    }
+    const normalized = query.toLowerCase();
+    const matches = items.filter((it) => !normalized || it.label.toLowerCase().includes(normalized)).slice(0, 50);
+    menu.innerHTML = "";
+    matches.forEach((item, idx) => {
+      const el = document.createElement("div");
+      el.className = "sm-sd__item";
+      el.textContent = item.label;
+      item.el = el;
+      el.onclick = () => {
+        select.value = item.value;
+        select.dispatchEvent(new Event("change"));
+        input.value = item.label;
+        closeMenu();
+      };
+      menu.appendChild(el);
+    });
+    if (matches.length) {
+      openMenu();
+    } else {
+      closeMenu();
+    }
+  };
+  const highlight = (options) => {
+    options.forEach((el2, idx) => el2.classList.toggle("is-active", idx === active));
+    const el = options[active];
+    if (el) el.scrollIntoView({ block: "nearest" });
+  };
+  input.addEventListener("focus", () => {
+    input.select();
+    render("");
+  });
+  input.addEventListener("input", () => render(input.value));
+  input.addEventListener("keydown", (ev) => {
+    if (!wrap.classList.contains("is-open")) return;
+    const options = Array.from(menu.children);
+    if (ev.key === "ArrowDown") {
+      active = Math.min(options.length - 1, active + 1);
+      highlight(options);
+      ev.preventDefault();
+    } else if (ev.key === "ArrowUp") {
+      active = Math.max(0, active - 1);
+      highlight(options);
+      ev.preventDefault();
+    } else if (ev.key === "Enter") {
+      if (options[active]) {
+        options[active].click();
+        ev.preventDefault();
+      }
+    } else if (ev.key === "Escape") {
+      closeMenu();
+    }
+  });
+  input.addEventListener("blur", () => {
+    window.setTimeout(closeMenu, 120);
+  });
+  select._leEnhanced = true;
+  select._leSearchInput = input;
+}
+
+// src/elements/components/dropdown.ts
+function renderSelect(element, preview, finalize, enableSearch) {
+  const field = preview.createEl("label", { cls: "sm-le-preview__field" });
+  const labelHost = field.createSpan({ cls: "sm-le-preview__label" });
+  const labelText = element.label?.trim() ?? "";
+  if (labelText) {
+    labelHost.setText(labelText);
+  } else {
+    labelHost.style.display = "none";
+  }
+  const select = field.createEl("select", { cls: "sm-le-preview__select" });
+  const defaultPlaceholder = enableSearch ? "Suchen\u2026" : "Option w\xE4hlen\u2026";
+  const renderSelectOptions = () => {
+    select.innerHTML = "";
+    const placeholderText = element.placeholder ?? defaultPlaceholder;
+    const placeholderOption = select.createEl("option", { value: "", text: placeholderText });
+    placeholderOption.disabled = true;
+    if (!element.defaultValue) {
+      placeholderOption.selected = true;
+    }
+    const optionValues = element.options && element.options.length ? element.options : null;
+    if (!optionValues) {
+      select.createEl("option", { value: "opt-1", text: "Erste Option" });
+    } else {
+      for (const opt of optionValues) {
+        const optionEl = select.createEl("option", { value: opt, text: opt });
+        if (element.defaultValue && element.defaultValue === opt) {
+          optionEl.selected = true;
+        }
+      }
+      if (element.defaultValue && !optionValues.includes(element.defaultValue)) {
+        element.defaultValue = void 0;
+        placeholderOption.selected = true;
+      }
+    }
+    if (enableSearch) {
+      const searchInput = select._smSearchInput;
+      if (searchInput) {
+        searchInput.value = element.defaultValue ?? "";
+        searchInput.placeholder = placeholderText;
+      }
+    }
+  };
+  renderSelectOptions();
+  if (enableSearch) {
+    enhanceSelectToSearch(select, element.placeholder ?? defaultPlaceholder);
+    const searchInput = select._smSearchInput;
+    if (searchInput) {
+      searchInput.addEventListener("blur", () => {
+        const next = searchInput.value;
+        element.defaultValue = next ? next : void 0;
+        finalize(element);
+      });
+    }
+  }
+  select.onchange = () => {
+    const value = select.value || void 0;
+    if (value === element.defaultValue) return;
+    element.defaultValue = value;
+    if (enableSearch) {
+      const searchInput = select._smSearchInput;
+      if (searchInput) {
+        searchInput.value = value ?? "";
+      }
+    }
+    finalize(element);
+  };
+}
+var dropdownComponent = {
+  definition: {
     type: "dropdown",
     buttonLabel: "Dropdown",
     defaultLabel: "",
@@ -91,7 +260,226 @@ var DEFAULT_ELEMENT_DEFINITIONS = [
     width: 260,
     height: 150
   },
-  {
+  renderPreview({ preview, element, finalize }) {
+    renderSelect(element, preview, finalize, false);
+  },
+  renderInspector({ renderLabelField: renderLabelField2, renderPlaceholderField: renderPlaceholderField2, renderOptionsEditor: renderOptionsEditor2 }) {
+    renderLabelField2({ label: "Bezeichnung" });
+    renderPlaceholderField2({ label: "Platzhalter" });
+    renderOptionsEditor2({});
+  }
+};
+var dropdown_default = dropdownComponent;
+
+// src/elements/components/hbox-container.ts
+var defaultLayout2 = { gap: 16, padding: 16, align: "center" };
+function ensureLayout2(element) {
+  if (!element.layout) {
+    element.layout = { ...defaultLayout2 };
+  }
+  if (!Array.isArray(element.children)) {
+    element.children = [];
+  }
+}
+var hboxContainerComponent = {
+  definition: {
+    type: "hbox-container",
+    buttonLabel: "HBoxContainer",
+    defaultLabel: "",
+    category: "container",
+    paletteGroup: "container",
+    layoutOrientation: "horizontal",
+    defaultDescription: "Ordnet verkn\xFCpfte Elemente automatisch nebeneinander an.",
+    width: 360,
+    height: 220,
+    defaultLayout: defaultLayout2
+  },
+  renderPreview(context) {
+    renderContainerPreview(context);
+  },
+  renderInspector({ renderLabelField: renderLabelField2, renderContainerLayoutControls: renderContainerLayoutControls2 }) {
+    renderLabelField2({ label: "Bezeichnung" });
+    renderContainerLayoutControls2({});
+  },
+  ensureDefaults: ensureLayout2
+};
+var hbox_container_default = hboxContainerComponent;
+
+// src/inline-edit.ts
+function createInlineEditor(options) {
+  const el = options.parent.createEl(options.multiline ? "div" : "span", { cls: "sm-le-inline-edit" });
+  if (options.block) el.addClass("sm-le-inline-edit--block");
+  if (options.multiline) el.addClass("sm-le-inline-edit--multiline");
+  el.contentEditable = "true";
+  el.spellcheck = false;
+  el.dataset.placeholder = options.placeholder;
+  const trim = options.trim ?? true;
+  const initialValue = options.value ?? "";
+  if (initialValue) {
+    el.setText(initialValue);
+  }
+  let committedValue = trim ? initialValue.trim() : initialValue;
+  const readValue = () => {
+    const raw = el.textContent ?? "";
+    return trim ? raw.trim() : raw;
+  };
+  const commit = () => {
+    const next = readValue();
+    if (next === committedValue) return;
+    committedValue = next;
+    options.onCommit(next);
+  };
+  el.addEventListener("keydown", (ev) => {
+    if (!options.multiline && ev.key === "Enter") {
+      ev.preventDefault();
+      ev.target.blur();
+    } else if (options.multiline && ev.key === "Enter" && !ev.shiftKey) {
+      ev.preventDefault();
+      ev.target.blur();
+    }
+  });
+  el.addEventListener("blur", () => {
+    commit();
+    if (!readValue()) {
+      el.empty();
+    }
+  });
+  el.addEventListener("input", () => {
+    options.onInput?.(readValue());
+  });
+  return el;
+}
+
+// src/elements/components/label.ts
+var labelComponent = {
+  definition: {
+    type: "label",
+    buttonLabel: "Label",
+    defaultLabel: "\xDCberschrift",
+    category: "element",
+    paletteGroup: "element",
+    width: 260,
+    height: 160
+  },
+  renderPreview({ preview, element, finalize }) {
+    const block = preview.createDiv({ cls: "sm-le-preview__headline" });
+    const inner = block.createDiv({ cls: "sm-le-preview__headline-inner" });
+    let labelEl;
+    const autoScaleHeadlineText = () => {
+      if (!labelEl || !inner.isConnected) return;
+      const maxWidth = Math.max(0, inner.clientWidth - 12);
+      const maxHeight = Math.max(0, inner.clientHeight - 12);
+      if (!maxWidth || !maxHeight) return;
+      const contentLength = (labelEl.textContent ?? "").trim().length;
+      const minSize = 18;
+      if (contentLength === 0) {
+        const fallback = Math.max(minSize, Math.min(maxWidth, maxHeight) / 3);
+        labelEl.style.fontSize = `${Math.round(fallback)}px`;
+        return;
+      }
+      let low = minSize;
+      let high = Math.max(minSize, Math.min(maxWidth, maxHeight));
+      for (let i = 0; i < 10; i++) {
+        const mid = (low + high) / 2;
+        labelEl.style.fontSize = `${mid}px`;
+        const fits = labelEl.scrollWidth <= maxWidth && labelEl.scrollHeight <= maxHeight;
+        if (fits) {
+          low = mid;
+        } else {
+          high = mid - 1;
+        }
+      }
+      labelEl.style.fontSize = `${Math.floor(low)}px`;
+    };
+    labelEl = createInlineEditor({
+      parent: inner,
+      value: element.label,
+      placeholder: "\xDCberschrift eingeben\u2026",
+      multiline: true,
+      block: true,
+      trim: false,
+      onInput: () => autoScaleHeadlineText(),
+      onCommit: (value) => {
+        const next = value || "";
+        if (next === element.label) return;
+        element.label = next;
+        finalize(element);
+        autoScaleHeadlineText();
+      }
+    });
+    labelEl.addClass("sm-le-preview__headline-text");
+    autoScaleHeadlineText();
+    if (element.description !== void 0) {
+      element.description = void 0;
+    }
+  }
+};
+var label_default = labelComponent;
+
+// src/elements/components/search-dropdown.ts
+function renderSelect2(element, preview, finalize) {
+  const field = preview.createEl("label", { cls: "sm-le-preview__field" });
+  const labelHost = field.createSpan({ cls: "sm-le-preview__label" });
+  const labelText = element.label?.trim() ?? "";
+  if (labelText) {
+    labelHost.setText(labelText);
+  } else {
+    labelHost.style.display = "none";
+  }
+  const select = field.createEl("select", { cls: "sm-le-preview__select" });
+  const defaultPlaceholder = "Suchen\u2026";
+  const renderSelectOptions = () => {
+    select.innerHTML = "";
+    const placeholderText = element.placeholder ?? defaultPlaceholder;
+    const placeholderOption = select.createEl("option", { value: "", text: placeholderText });
+    placeholderOption.disabled = true;
+    if (!element.defaultValue) {
+      placeholderOption.selected = true;
+    }
+    const optionValues = element.options && element.options.length ? element.options : null;
+    if (!optionValues) {
+      select.createEl("option", { value: "opt-1", text: "Erste Option" });
+    } else {
+      for (const opt of optionValues) {
+        const optionEl = select.createEl("option", { value: opt, text: opt });
+        if (element.defaultValue && element.defaultValue === opt) {
+          optionEl.selected = true;
+        }
+      }
+      if (element.defaultValue && !optionValues.includes(element.defaultValue)) {
+        element.defaultValue = void 0;
+        placeholderOption.selected = true;
+      }
+    }
+    const searchInput2 = select._smSearchInput;
+    if (searchInput2) {
+      searchInput2.value = element.defaultValue ?? "";
+      searchInput2.placeholder = placeholderText;
+    }
+  };
+  renderSelectOptions();
+  enhanceSelectToSearch(select, element.placeholder ?? defaultPlaceholder);
+  const searchInput = select._smSearchInput;
+  if (searchInput) {
+    searchInput.addEventListener("blur", () => {
+      const next = searchInput.value;
+      element.defaultValue = next ? next : void 0;
+      finalize(element);
+    });
+  }
+  select.onchange = () => {
+    const value = select.value || void 0;
+    if (value === element.defaultValue) return;
+    element.defaultValue = value;
+    const searchInput2 = select._smSearchInput;
+    if (searchInput2) {
+      searchInput2.value = value ?? "";
+    }
+    finalize(element);
+  };
+}
+var searchDropdownComponent = {
+  definition: {
     type: "search-dropdown",
     buttonLabel: "Such-Dropdown",
     defaultLabel: "",
@@ -102,7 +490,134 @@ var DEFAULT_ELEMENT_DEFINITIONS = [
     width: 280,
     height: 160
   },
-  {
+  renderPreview({ preview, element, finalize }) {
+    renderSelect2(element, preview, finalize);
+  },
+  renderInspector({ renderLabelField: renderLabelField2, renderPlaceholderField: renderPlaceholderField2, renderOptionsEditor: renderOptionsEditor2 }) {
+    renderLabelField2({ label: "Bezeichnung" });
+    renderPlaceholderField2({ label: "Platzhalter" });
+    renderOptionsEditor2({});
+  }
+};
+var search_dropdown_default = searchDropdownComponent;
+
+// src/elements/components/separator.ts
+var separatorComponent = {
+  definition: {
+    type: "separator",
+    buttonLabel: "Trennstrich",
+    defaultLabel: "",
+    category: "element",
+    paletteGroup: "element",
+    width: 320,
+    height: 80
+  },
+  renderPreview({ preview, element }) {
+    const header = preview.createDiv({ cls: "sm-le-preview__separator" });
+    const title = element.label?.trim() ? element.label : "";
+    if (title) {
+      header.createSpan({ cls: "sm-le-preview__label", text: title });
+    } else {
+      header.style.display = "none";
+    }
+    preview.createEl("hr", { cls: "sm-le-preview__divider" });
+  },
+  renderInspector({ renderLabelField: renderLabelField2 }) {
+    renderLabelField2({ label: "Titel" });
+  }
+};
+var separator_default = separatorComponent;
+
+// src/elements/components/text-input.ts
+var textInputComponent = {
+  definition: {
+    type: "text-input",
+    buttonLabel: "Textfeld",
+    defaultLabel: "",
+    category: "element",
+    paletteGroup: "input",
+    width: 260,
+    height: 140
+  },
+  renderPreview({ preview, element, finalize }) {
+    const field = preview.createDiv({ cls: "sm-le-preview__input-only" });
+    const input = field.createEl("input", { attr: { type: "text" }, cls: "sm-le-preview__input" });
+    input.value = element.defaultValue ?? "";
+    input.placeholder = "";
+    let lastValue = input.value;
+    input.addEventListener("input", () => {
+      element.defaultValue = input.value ? input.value : void 0;
+    });
+    input.addEventListener("blur", () => {
+      const next = input.value;
+      if (next === lastValue) return;
+      lastValue = next;
+      element.defaultValue = next ? next : void 0;
+      finalize(element);
+    });
+    if (element.placeholder) {
+      element.placeholder = void 0;
+    }
+  }
+};
+var text_input_default = textInputComponent;
+
+// src/elements/components/textarea.ts
+var textareaComponent = {
+  definition: {
+    type: "textarea",
+    buttonLabel: "Mehrzeiliges Feld",
+    defaultLabel: "",
+    category: "element",
+    paletteGroup: "input",
+    defaultPlaceholder: "Text erfassen\u2026",
+    width: 320,
+    height: 180
+  },
+  renderPreview({ preview, element, finalize }) {
+    const field = preview.createEl("label", { cls: "sm-le-preview__field" });
+    const labelHost = field.createSpan({ cls: "sm-le-preview__label" });
+    const labelText = element.label?.trim() ?? "";
+    if (labelText) {
+      labelHost.setText(labelText);
+    } else {
+      labelHost.style.display = "none";
+    }
+    const textarea = field.createEl("textarea", { cls: "sm-le-preview__textarea" });
+    textarea.value = element.defaultValue ?? "";
+    textarea.placeholder = element.placeholder ?? "";
+    textarea.rows = 4;
+    let lastValue = textarea.value;
+    textarea.addEventListener("input", () => {
+      element.defaultValue = textarea.value ? textarea.value : void 0;
+    });
+    textarea.addEventListener("blur", () => {
+      const next = textarea.value;
+      if (next === lastValue) return;
+      lastValue = next;
+      element.defaultValue = next ? next : void 0;
+      finalize(element);
+    });
+  },
+  renderInspector({ renderLabelField: renderLabelField2, renderPlaceholderField: renderPlaceholderField2 }) {
+    renderLabelField2({ label: "Bezeichnung" });
+    renderPlaceholderField2({ label: "Platzhalter" });
+  }
+};
+var textarea_default = textareaComponent;
+
+// src/elements/components/vbox-container.ts
+var defaultLayout3 = { gap: 16, padding: 16, align: "stretch" };
+function ensureLayout3(element) {
+  if (!element.layout) {
+    element.layout = { ...defaultLayout3 };
+  }
+  if (!Array.isArray(element.children)) {
+    element.children = [];
+  }
+}
+var vboxContainerComponent = {
+  definition: {
     type: "vbox-container",
     buttonLabel: "VBoxContainer",
     defaultLabel: "",
@@ -112,21 +627,52 @@ var DEFAULT_ELEMENT_DEFINITIONS = [
     defaultDescription: "Ordnet verkn\xFCpfte Elemente automatisch untereinander an.",
     width: 340,
     height: 260,
-    defaultLayout: { gap: 16, padding: 16, align: "stretch" }
+    defaultLayout: defaultLayout3
   },
-  {
-    type: "hbox-container",
-    buttonLabel: "HBoxContainer",
-    defaultLabel: "",
-    category: "container",
-    paletteGroup: "container",
-    layoutOrientation: "horizontal",
-    defaultDescription: "Ordnet verkn\xFCpfte Elemente automatisch nebeneinander an.",
-    width: 360,
-    height: 220,
-    defaultLayout: { gap: 16, padding: 16, align: "center" }
-  }
+  renderPreview(context) {
+    renderContainerPreview(context);
+  },
+  renderInspector({ renderLabelField: renderLabelField2, renderContainerLayoutControls: renderContainerLayoutControls2 }) {
+    renderLabelField2({ label: "Bezeichnung" });
+    renderContainerLayoutControls2({});
+  },
+  ensureDefaults: ensureLayout3
+};
+var vbox_container_default = vboxContainerComponent;
+
+// src/elements/component-manifest.ts
+var COMPONENTS = [
+  box_container_default,
+  dropdown_default,
+  hbox_container_default,
+  label_default,
+  search_dropdown_default,
+  separator_default,
+  text_input_default,
+  textarea_default,
+  vbox_container_default
 ];
+
+// src/elements/registry.ts
+var components = [...COMPONENTS];
+var componentByType = /* @__PURE__ */ new Map();
+for (const component of components) {
+  if (!component?.definition) continue;
+  if (componentByType.has(component.definition.type)) {
+    console.warn(`Duplicate layout element component for type "${component.definition.type}"`);
+  }
+  componentByType.set(component.definition.type, component);
+}
+function getLayoutElementComponent(type) {
+  return componentByType.get(type);
+}
+function createDefaultElementDefinitions() {
+  return components.map((component) => ({ ...component.definition }));
+}
+
+// src/definitions.ts
+var MIN_ELEMENT_SIZE = 60;
+var DEFAULT_ELEMENT_DEFINITIONS = createDefaultElementDefinitions();
 var LayoutElementRegistry = class {
   constructor(initial) {
     this.definitions = /* @__PURE__ */ new Map();
@@ -593,380 +1139,39 @@ var AttributePopoverController = class {
   }
 };
 
-// src/search-dropdown.ts
-function enhanceSelectToSearch(select, placeholder = "Suchen\u2026") {
-  if (!select || select._leEnhanced) return;
-  const wrap = document.createElement("div");
-  wrap.className = "sm-sd";
-  const input = document.createElement("input");
-  input.type = "text";
-  input.placeholder = placeholder;
-  input.className = "sm-sd__input";
-  const menu = document.createElement("div");
-  menu.className = "sm-sd__menu";
-  const parent = select.parentElement;
-  if (!parent) return;
-  parent.insertBefore(wrap, select);
-  wrap.appendChild(input);
-  wrap.appendChild(menu);
-  select.style.display = "none";
-  try {
-    const rect = select.getBoundingClientRect();
-    if (rect && rect.width) wrap.style.width = `${rect.width}px`;
-  } catch (error) {
-    console.warn("enhanceSelectToSearch: unable to read select width", error);
-  }
-  let items = [];
-  let active = -1;
-  const readOptions = () => {
-    items = Array.from(select.options).map((opt) => ({ label: opt.text, value: opt.value }));
-  };
-  const openMenu = () => {
-    wrap.classList.add("is-open");
-  };
-  const closeMenu = () => {
-    wrap.classList.remove("is-open");
-    active = -1;
-  };
-  const render = (query = "") => {
-    readOptions();
-    if (query === "__NOOPEN__") {
-      menu.innerHTML = "";
-      closeMenu();
-      return;
-    }
-    const normalized = query.toLowerCase();
-    const matches = items.filter((it) => !normalized || it.label.toLowerCase().includes(normalized)).slice(0, 50);
-    menu.innerHTML = "";
-    matches.forEach((item, idx) => {
-      const el = document.createElement("div");
-      el.className = "sm-sd__item";
-      el.textContent = item.label;
-      item.el = el;
-      el.onclick = () => {
-        select.value = item.value;
-        select.dispatchEvent(new Event("change"));
-        input.value = item.label;
-        closeMenu();
-      };
-      menu.appendChild(el);
-    });
-    if (matches.length) {
-      openMenu();
-    } else {
-      closeMenu();
-    }
-  };
-  const highlight = (options) => {
-    options.forEach((el2, idx) => el2.classList.toggle("is-active", idx === active));
-    const el = options[active];
-    if (el) el.scrollIntoView({ block: "nearest" });
-  };
-  input.addEventListener("focus", () => {
-    input.select();
-    render("");
-  });
-  input.addEventListener("input", () => render(input.value));
-  input.addEventListener("keydown", (ev) => {
-    if (!wrap.classList.contains("is-open")) return;
-    const options = Array.from(menu.children);
-    if (ev.key === "ArrowDown") {
-      active = Math.min(options.length - 1, active + 1);
-      highlight(options);
-      ev.preventDefault();
-    } else if (ev.key === "ArrowUp") {
-      active = Math.max(0, active - 1);
-      highlight(options);
-      ev.preventDefault();
-    } else if (ev.key === "Enter") {
-      if (options[active]) {
-        options[active].click();
-        ev.preventDefault();
-      }
-    } else if (ev.key === "Escape") {
-      closeMenu();
-    }
-  });
-  input.addEventListener("blur", () => {
-    window.setTimeout(closeMenu, 120);
-  });
-  select._leEnhanced = true;
-  select._leSearchInput = input;
-}
-
-// src/inline-edit.ts
-function createInlineEditor(options) {
-  const el = options.parent.createEl(options.multiline ? "div" : "span", { cls: "sm-le-inline-edit" });
-  if (options.block) el.addClass("sm-le-inline-edit--block");
-  if (options.multiline) el.addClass("sm-le-inline-edit--multiline");
-  el.contentEditable = "true";
-  el.spellcheck = false;
-  el.dataset.placeholder = options.placeholder;
-  const trim = options.trim ?? true;
-  const initialValue = options.value ?? "";
-  if (initialValue) {
-    el.setText(initialValue);
-  }
-  let committedValue = trim ? initialValue.trim() : initialValue;
-  const readValue = () => {
-    const raw = el.textContent ?? "";
-    return trim ? raw.trim() : raw;
-  };
-  const commit = () => {
-    const next = readValue();
-    if (next === committedValue) return;
-    committedValue = next;
-    options.onCommit(next);
-  };
-  el.addEventListener("keydown", (ev) => {
-    if (!options.multiline && ev.key === "Enter") {
-      ev.preventDefault();
-      ev.target.blur();
-    } else if (options.multiline && ev.key === "Enter" && !ev.shiftKey) {
-      ev.preventDefault();
-      ev.target.blur();
-    }
-  });
-  el.addEventListener("blur", () => {
-    commit();
-    if (!readValue()) {
-      el.empty();
-    }
-  });
-  el.addEventListener("input", () => {
-    options.onInput?.(readValue());
-  });
-  return el;
-}
-
 // src/element-preview.ts
-function autoScaleHeadlineText(target, container) {
-  if (!container.isConnected) return;
-  const maxWidth = Math.max(0, container.clientWidth - 12);
-  const maxHeight = Math.max(0, container.clientHeight - 12);
-  if (!maxWidth || !maxHeight) return;
-  const contentLength = (target.textContent ?? "").trim().length;
-  const minSize = 18;
-  if (contentLength === 0) {
-    const fallback = Math.max(minSize, Math.min(maxWidth, maxHeight) / 3);
-    target.style.fontSize = `${Math.round(fallback)}px`;
-    return;
-  }
-  let low = minSize;
-  let high = Math.max(minSize, Math.min(maxWidth, maxHeight));
-  for (let i = 0; i < 10; i++) {
-    const mid = (low + high) / 2;
-    target.style.fontSize = `${mid}px`;
-    const fits = target.scrollWidth <= maxWidth && target.scrollHeight <= maxHeight;
-    if (fits) {
-      low = mid;
-    } else {
-      high = mid - 1;
-    }
-  }
-  target.style.fontSize = `${Math.floor(low)}px`;
-}
 function renderElementPreview(deps) {
   const { host, element } = deps;
   host.empty();
   host.toggleClass("sm-le-box__content", true);
   const preview = host.createDiv({ cls: `sm-le-preview sm-le-preview--${element.type}` });
-  const commitLabel = (value) => {
-    const next = value || "";
-    if (next === element.label) return;
-    element.label = next;
-    deps.finalize(element);
-  };
-  if (element.type === "label") {
-    const block = preview.createDiv({ cls: "sm-le-preview__headline" });
-    const inner = block.createDiv({ cls: "sm-le-preview__headline-inner" });
-    let labelEl;
-    const applyScale = () => {
-      if (!labelEl) return;
-      window.requestAnimationFrame(() => autoScaleHeadlineText(labelEl, inner));
-    };
-    labelEl = createInlineEditor({
-      parent: inner,
-      value: element.label,
-      placeholder: "\xDCberschrift eingeben\u2026",
-      multiline: true,
-      block: true,
-      trim: false,
-      onInput: () => {
-        autoScaleHeadlineText(labelEl, inner);
-      },
-      onCommit: (value) => {
-        commitLabel(value);
-        applyScale();
-      }
-    });
-    labelEl.addClass("sm-le-preview__headline-text");
-    applyScale();
-    if (element.description !== void 0) {
-      element.description = void 0;
-    }
+  const context = { ...deps, preview, container: host };
+  const component = getLayoutElementComponent(element.type);
+  if (component) {
+    component.renderPreview(context);
     return;
   }
-  if (element.type === "separator") {
-    const header = preview.createDiv({ cls: "sm-le-preview__separator" });
-    const title = element.label?.trim() ? element.label : "";
-    if (title) {
-      header.createSpan({ cls: "sm-le-preview__label", text: title });
-    } else {
-      header.style.display = "none";
-    }
-    preview.createEl("hr", { cls: "sm-le-preview__divider" });
-    return;
-  }
-  if (element.type === "text-input") {
-    const field = preview.createDiv({ cls: "sm-le-preview__input-only" });
-    const input = field.createEl("input", { attr: { type: "text" }, cls: "sm-le-preview__input" });
-    input.value = element.defaultValue ?? "";
-    input.placeholder = "";
-    let lastValue = input.value;
-    input.addEventListener("input", () => {
-      element.defaultValue = input.value ? input.value : void 0;
-    });
-    input.addEventListener("blur", () => {
-      const next = input.value;
-      if (next === lastValue) return;
-      lastValue = next;
-      element.defaultValue = next ? next : void 0;
-      deps.finalize(element);
-    });
-    if (element.placeholder) {
-      element.placeholder = void 0;
-    }
-    return;
-  }
-  if (element.type === "textarea") {
-    const field = preview.createEl("label", { cls: "sm-le-preview__field" });
-    const labelHost2 = field.createSpan({ cls: "sm-le-preview__label" });
-    const labelText = element.label?.trim() ?? "";
-    if (labelText) {
-      labelHost2.setText(labelText);
-    } else {
-      labelHost2.style.display = "none";
-    }
-    const textarea = field.createEl("textarea", { cls: "sm-le-preview__textarea" });
-    textarea.value = element.defaultValue ?? "";
-    textarea.placeholder = element.placeholder ?? "";
-    textarea.rows = 4;
-    let lastValue = textarea.value;
-    textarea.addEventListener("input", () => {
-      element.defaultValue = textarea.value ? textarea.value : void 0;
-    });
-    textarea.addEventListener("blur", () => {
-      const next = textarea.value;
-      if (next === lastValue) return;
-      lastValue = next;
-      element.defaultValue = next ? next : void 0;
-      deps.finalize(element);
-    });
-    return;
-  }
-  if (element.type === "dropdown" || element.type === "search-dropdown") {
-    const field = preview.createEl("label", { cls: "sm-le-preview__field" });
-    const labelHost2 = field.createSpan({ cls: "sm-le-preview__label" });
-    const labelText = element.label?.trim() ?? "";
-    if (labelText) {
-      labelHost2.setText(labelText);
-    } else {
-      labelHost2.style.display = "none";
-    }
-    const select = field.createEl("select", { cls: "sm-le-preview__select" });
-    const defaultPlaceholder = element.type === "dropdown" ? "Option w\xE4hlen\u2026" : "Suchen\u2026";
-    const renderSelectOptions = () => {
-      select.innerHTML = "";
-      const placeholderText = element.placeholder ?? defaultPlaceholder;
-      const placeholderOption = select.createEl("option", { value: "", text: placeholderText });
-      placeholderOption.disabled = true;
-      if (!element.defaultValue) {
-        placeholderOption.selected = true;
-      }
-      const optionValues = element.options && element.options.length ? element.options : null;
-      if (!optionValues) {
-        select.createEl("option", { value: "opt-1", text: "Erste Option" });
-      } else {
-        for (const opt of optionValues) {
-          const optionEl = select.createEl("option", { value: opt, text: opt });
-          if (element.defaultValue && element.defaultValue === opt) {
-            optionEl.selected = true;
-          }
-        }
-        if (element.defaultValue && !optionValues.includes(element.defaultValue)) {
-          element.defaultValue = void 0;
-          placeholderOption.selected = true;
-        }
-      }
-      if (element.type === "search-dropdown") {
-        const searchInput = select._smSearchInput;
-        if (searchInput) {
-          searchInput.value = element.defaultValue ?? "";
-          searchInput.placeholder = placeholderText;
-        }
-      }
-    };
-    renderSelectOptions();
-    if (element.type === "search-dropdown") {
-      enhanceSelectToSearch(select, element.placeholder ?? defaultPlaceholder);
-      const searchInput = select._smSearchInput;
-      if (searchInput) {
-        searchInput.value = element.defaultValue ?? "";
-      }
-    }
-    select.onchange = () => {
-      const value = select.value || void 0;
-      if (value === element.defaultValue) return;
-      element.defaultValue = value;
-      if (element.type === "search-dropdown") {
-        const searchInput = select._smSearchInput;
-        if (searchInput) {
-          searchInput.value = value ?? "";
-        }
-      }
-      deps.finalize(element);
-    };
-    return;
-  }
-  if (isContainerType(element.type)) {
-    deps.ensureContainerDefaults(element);
-    const frame = preview.createDiv({ cls: "sm-le-preview__container" });
-    const header = frame.createDiv({ cls: "sm-le-preview__container-header" });
-    const labelText = element.label?.trim() ?? "";
-    if (labelText) {
-      header.createSpan({ cls: "sm-le-preview__label", text: labelText });
-    } else {
-      header.style.display = "none";
-    }
-    const body = frame.createDiv({ cls: "sm-le-preview__container-body" });
-    const hasChildren = Array.isArray(element.children) ? element.children.some((childId) => deps.elements.some((el) => el.id === childId)) : false;
-    if (!hasChildren) {
-      body.createDiv({ cls: "sm-le-preview__container-placeholder", text: "Leerer Container" });
-    }
-    return;
-  }
+  renderFallbackPreview(context);
+}
+function renderFallbackPreview(context) {
+  const { preview, element, finalize } = context;
   const fallback = preview.createDiv({ cls: "sm-le-preview__field" });
   const labelHost = fallback.createSpan({ cls: "sm-le-preview__label" });
   createInlineEditor({
     parent: labelHost,
     value: element.label,
     placeholder: "Label eingeben\u2026",
-    onCommit: commitLabel
+    onCommit: (value) => {
+      const next = value || "";
+      if (next === element.label) return;
+      element.label = next;
+      finalize(element);
+    }
   });
 }
 
 // src/inspector-panel.ts
 var import_obsidian = require("obsidian");
-var LABEL_INSPECTOR_TYPES = /* @__PURE__ */ new Set([
-  "textarea",
-  "dropdown",
-  "search-dropdown",
-  "separator",
-  "box-container",
-  "vbox-container",
-  "hbox-container"
-]);
 function renderInspectorPanel(deps) {
   const { host, element } = deps;
   host.empty();
@@ -987,10 +1192,8 @@ function renderInspectorPanel(deps) {
     cls: "sm-le-hint",
     text: "Benennungen und Eigenschaften pflegst du hier im Inspector. Reine Textbl\xF6cke bearbeitest du direkt im Arbeitsbereich."
   });
-  if (LABEL_INSPECTOR_TYPES.has(element.type)) {
-    const labelText = element.type === "separator" ? "Titel" : "Bezeichnung";
-    renderLabelField({ host, element, callbacks, label: labelText });
-  }
+  const component = getLayoutElementComponent(element.type);
+  const customHeader = host.createDiv({ cls: "sm-le-section sm-le-section--custom-header" });
   const containers = elements.filter((el) => isContainerType(el.type));
   if (containers.length) {
     const blockedContainers = /* @__PURE__ */ new Set();
@@ -1102,27 +1305,34 @@ function renderInspectorPanel(deps) {
       callbacks.applyContainerLayout(parentContainer);
     }
   };
-  renderElementProperties({ host, element, callbacks });
+  const customBody = host.createDiv({ cls: "sm-le-section sm-le-section--custom-body" });
+  const sections = { header: customHeader, body: customBody };
+  const inspectorContext = {
+    element,
+    callbacks,
+    sections,
+    renderLabelField: ({ label, host: target } = {}) => renderLabelField({
+      host: target ?? sections.header,
+      element,
+      callbacks,
+      label: label ?? "Bezeichnung"
+    }),
+    renderPlaceholderField: ({ label, host: target } = {}) => renderPlaceholderField({
+      host: target ?? sections.body,
+      element,
+      callbacks,
+      label: label ?? "Platzhalter"
+    }),
+    renderOptionsEditor: ({ host: target } = {}) => renderOptionsEditor({ host: target ?? sections.body, element, callbacks }),
+    renderContainerLayoutControls: ({ host: target } = {}) => renderContainerLayoutControls({ host: target ?? sections.body, element, callbacks })
+  };
+  component?.renderInspector?.(inspectorContext);
   const meta = host.createDiv({ cls: "sm-le-meta" });
   meta.setText(`Fl\xE4che: ${Math.round(element.width * element.height)} px\xB2`);
   if (isContainer) {
     renderContainerInspectorSections({ element, host, elements, callbacks, definitions });
   } else {
     renderAttributeSelector({ element, attributesChip });
-  }
-}
-function renderElementProperties(options) {
-  const { host, element, callbacks } = options;
-  if (isContainerType(element.type)) {
-    renderContainerLayoutControls({ host, element, callbacks });
-    return;
-  }
-  if (element.type === "textarea") {
-    renderPlaceholderField({ host, element, callbacks, label: "Platzhalter" });
-  }
-  if (element.type === "dropdown" || element.type === "search-dropdown") {
-    renderPlaceholderField({ host, element, callbacks, label: "Platzhalter" });
-    renderOptionsEditor({ host, element, callbacks });
   }
 }
 function renderContainerInspectorSections(options) {
@@ -1239,6 +1449,7 @@ function renderPlaceholderField(options) {
   };
   input.onchange = commit;
   input.onblur = commit;
+  return field;
 }
 function renderLabelField(options) {
   const { host, element, callbacks, label } = options;
@@ -1254,6 +1465,7 @@ function renderLabelField(options) {
   };
   input.onchange = commit;
   input.onblur = commit;
+  return field;
 }
 function renderOptionsEditor(options) {
   const { host, element, callbacks } = options;
@@ -1308,10 +1520,11 @@ function renderOptionsEditor(options) {
     element.options = nextOptions;
     finalizeElementChange(element, callbacks, { rerender: true });
   };
+  return field;
 }
 function renderContainerLayoutControls(options) {
   const { host, element, callbacks } = options;
-  if (!element.layout) return;
+  if (!element.layout) return host;
   const field = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
   field.createEl("label", { text: "Layout" });
   const controls = field.createDiv({ cls: "sm-le-preview__layout" });
@@ -1369,6 +1582,7 @@ function renderContainerLayoutControls(options) {
     callbacks.applyContainerLayout(element, { silent: true });
     finalizeElementChange(element, callbacks);
   };
+  return field;
 }
 function finalizeElementChange(element, callbacks, options) {
   callbacks.syncElementElement(element);
@@ -1663,10 +1877,57 @@ function formatTimestamp(value) {
   return value;
 }
 
+// src/ui/add-palette.ts
+var import_obsidian5 = require("obsidian");
+var GROUP_LABELS = /* @__PURE__ */ new Map([
+  ["input", "Eingabefelder"],
+  ["container", "Container"]
+]);
+function renderPalette(options) {
+  const { host, definitions, onCreate } = options;
+  host.empty();
+  const grouped = /* @__PURE__ */ new Map();
+  for (const def of definitions) {
+    const group = def.paletteGroup ?? (def.category === "container" ? "container" : "element");
+    const bucket = grouped.get(group);
+    if (bucket) {
+      bucket.push(def);
+    } else {
+      grouped.set(group, [def]);
+    }
+  }
+  const direct = grouped.get("element") ?? [];
+  direct.sort((a, b) => a.buttonLabel.localeCompare(b.buttonLabel, "de"));
+  for (const def of direct) {
+    const btn = host.createEl("button", { text: def.buttonLabel });
+    btn.onclick = () => onCreate(def.type);
+  }
+  for (const [group, defs] of grouped) {
+    if (group === "element") continue;
+    if (!defs.length) continue;
+    const label = GROUP_LABELS.get(group) ?? capitalize(group);
+    const button = host.createEl("button", { text: label });
+    button.onclick = (event) => {
+      event.preventDefault();
+      const menu = new import_obsidian5.Menu();
+      defs.slice().sort((a, b) => a.buttonLabel.localeCompare(b.buttonLabel, "de")).forEach((def) => {
+        menu.addItem((item) => {
+          item.setTitle(def.buttonLabel);
+          item.onClick(() => onCreate(def.type));
+        });
+      });
+      menu.showAtMouseEvent(event);
+    };
+  }
+}
+function capitalize(value) {
+  if (!value) return value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 // src/view.ts
 var VIEW_LAYOUT_EDITOR = "salt-layout-editor";
-var DEFAULT_INPUT_TYPES = /* @__PURE__ */ new Set(["text-input", "textarea", "dropdown", "search-dropdown"]);
-var LayoutEditorView = class extends import_obsidian5.ItemView {
+var LayoutEditorView = class extends import_obsidian6.ItemView {
   constructor() {
     super(...arguments);
     this.elements = [];
@@ -1958,10 +2219,10 @@ var LayoutEditorView = class extends import_obsidian5.ItemView {
           throw new Error("Clipboard API nicht verf\xFCgbar");
         }
         await clip.writeText(this.exportEl.value);
-        new import_obsidian5.Notice("Layout kopiert");
+        new import_obsidian6.Notice("Layout kopiert");
       } catch (error) {
         console.error("Clipboard write failed", error);
-        new import_obsidian5.Notice("Konnte nicht in die Zwischenablage kopieren");
+        new import_obsidian6.Notice("Konnte nicht in die Zwischenablage kopieren");
       }
     };
     this.saveButton = exportControls.createEl("button", { text: "Layout speichern" });
@@ -1993,55 +2254,11 @@ var LayoutEditorView = class extends import_obsidian5.ItemView {
   }
   renderAddPalette() {
     if (!this.addPaletteEl) return;
-    const host = this.addPaletteEl;
-    host.empty();
-    const containers = [];
-    const inputs = [];
-    const others = [];
-    for (const def of this.elementDefinitions) {
-      const paletteGroup = def.paletteGroup ?? (def.category === "container" ? "container" : void 0);
-      if (paletteGroup === "container" || isContainerType(def.type)) {
-        containers.push(def);
-        continue;
-      }
-      if (paletteGroup === "input" || DEFAULT_INPUT_TYPES.has(def.type)) {
-        inputs.push(def);
-        continue;
-      }
-      others.push(def);
-    }
-    for (const def of others) {
-      const btn = host.createEl("button", { text: def.buttonLabel });
-      btn.onclick = () => this.createElement(def.type);
-    }
-    if (inputs.length) {
-      const inputBtn = host.createEl("button", { text: "Eingabefelder" });
-      inputBtn.onclick = (event) => {
-        event.preventDefault();
-        const menu = new import_obsidian5.Menu();
-        for (const def of inputs) {
-          menu.addItem((item) => {
-            item.setTitle(def.buttonLabel);
-            item.onClick(() => this.createElement(def.type));
-          });
-        }
-        menu.showAtMouseEvent(event);
-      };
-    }
-    if (containers.length) {
-      const containerBtn = host.createEl("button", { text: "Container" });
-      containerBtn.onclick = (event) => {
-        event.preventDefault();
-        const menu = new import_obsidian5.Menu();
-        for (const def of containers) {
-          menu.addItem((item) => {
-            item.setTitle(def.buttonLabel);
-            item.onClick(() => this.createElement(def.type));
-          });
-        }
-        menu.showAtMouseEvent(event);
-      };
-    }
+    renderPalette({
+      host: this.addPaletteEl,
+      definitions: this.elementDefinitions,
+      onCreate: (type) => this.createElement(type)
+    });
   }
   findDefinition(type) {
     return this.elementDefinitions.find((def) => def.type === type) ?? getElementDefinition(type);
@@ -2065,7 +2282,7 @@ var LayoutEditorView = class extends import_obsidian5.ItemView {
   async handleSaveLayout(name) {
     const trimmed = name.trim();
     if (!trimmed) {
-      new import_obsidian5.Notice("Bitte gib einen Namen f\xFCr das Layout an");
+      new import_obsidian6.Notice("Bitte gib einen Namen f\xFCr das Layout an");
       return;
     }
     if (this.isSavingLayout) return;
@@ -2082,10 +2299,10 @@ var LayoutEditorView = class extends import_obsidian5.ItemView {
       });
       this.lastSavedLayoutId = saved.id;
       this.lastSavedLayoutName = saved.name;
-      new import_obsidian5.Notice(`Layout \u201E${saved.name}\u201D gespeichert`);
+      new import_obsidian6.Notice(`Layout \u201E${saved.name}\u201D gespeichert`);
     } catch (error) {
       console.error("Failed to save layout", error);
-      new import_obsidian5.Notice("Konnte Layout nicht speichern");
+      new import_obsidian6.Notice("Konnte Layout nicht speichern");
     } finally {
       this.isSavingLayout = false;
       this.saveButton?.removeAttribute("disabled");
@@ -2819,16 +3036,21 @@ var LayoutEditorView = class extends import_obsidian5.ItemView {
   }
   ensureContainerDefaults(element) {
     if (!isContainerType(element.type)) return;
-    if (!element.layout) {
-      const def = this.findDefinition(element.type);
-      if (def?.defaultLayout) {
-        element.layout = { ...def.defaultLayout };
-      } else {
-        element.layout = { gap: 16, padding: 16, align: "stretch" };
+    const component = getLayoutElementComponent(element.type);
+    if (component?.ensureDefaults) {
+      component.ensureDefaults(element);
+    } else {
+      if (!element.layout) {
+        const def = this.findDefinition(element.type);
+        if (def?.defaultLayout) {
+          element.layout = { ...def.defaultLayout };
+        } else {
+          element.layout = { gap: 16, padding: 16, align: "stretch" };
+        }
       }
-    }
-    if (!Array.isArray(element.children)) {
-      element.children = [];
+      if (!Array.isArray(element.children)) {
+        element.children = [];
+      }
     }
   }
   beginMove(element, event, onComplete) {
@@ -2979,14 +3201,14 @@ var LayoutEditorView = class extends import_obsidian5.ItemView {
     try {
       const layout = await loadSavedLayout(this.app, layoutId);
       if (!layout) {
-        new import_obsidian5.Notice("Layout konnte nicht geladen werden");
+        new import_obsidian6.Notice("Layout konnte nicht geladen werden");
         return;
       }
       this.applySavedLayout(layout);
-      new import_obsidian5.Notice(`Layout \u201E${layout.name}\u201D geladen`);
+      new import_obsidian6.Notice(`Layout \u201E${layout.name}\u201D geladen`);
     } catch (error) {
       console.error("Failed to import saved layout", error);
-      new import_obsidian5.Notice("Konnte Layout nicht laden");
+      new import_obsidian6.Notice("Konnte Layout nicht laden");
     } finally {
       this.sandboxEl.empty();
       this.importBtn?.removeClass("is-loading");
@@ -3889,7 +4111,7 @@ var LAYOUT_EDITOR_CSS = `
 `;
 
 // src/main.ts
-var LayoutEditorPlugin = class extends import_obsidian6.Plugin {
+var LayoutEditorPlugin = class extends import_obsidian7.Plugin {
   async onload() {
     resetLayoutElementDefinitions(DEFAULT_ELEMENT_DEFINITIONS);
     this.registerView(VIEW_LAYOUT_EDITOR, (leaf) => new LayoutEditorView(leaf));

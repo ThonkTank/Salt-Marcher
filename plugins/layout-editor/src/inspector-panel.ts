@@ -7,6 +7,8 @@ import {
     isVerticalContainer,
     MIN_ELEMENT_SIZE,
 } from "./definitions";
+import { getLayoutElementComponent } from "./elements/registry";
+import type { ElementInspectorContext } from "./elements/base";
 import { LayoutContainerAlign, LayoutElement, LayoutElementDefinition, LayoutElementType } from "./types";
 import { collectAncestorIds, collectDescendantIds, isContainerElement } from "./utils";
 
@@ -34,16 +36,6 @@ export interface InspectorDependencies {
     callbacks: InspectorCallbacks;
 }
 
-const LABEL_INSPECTOR_TYPES = new Set<LayoutElementType>([
-    "textarea",
-    "dropdown",
-    "search-dropdown",
-    "separator",
-    "box-container",
-    "vbox-container",
-    "hbox-container",
-]);
-
 export function renderInspectorPanel(deps: InspectorDependencies) {
     const { host, element } = deps;
     host.empty();
@@ -69,10 +61,8 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
         text: "Benennungen und Eigenschaften pflegst du hier im Inspector. Reine Textblöcke bearbeitest du direkt im Arbeitsbereich.",
     });
 
-    if (LABEL_INSPECTOR_TYPES.has(element.type)) {
-        const labelText = element.type === "separator" ? "Titel" : "Bezeichnung";
-        renderLabelField({ host, element, callbacks, label: labelText });
-    }
+    const component = getLayoutElementComponent(element.type);
+    const customHeader = host.createDiv({ cls: "sm-le-section sm-le-section--custom-header" });
 
     const containers = elements.filter(el => isContainerType(el.type));
     if (containers.length) {
@@ -190,7 +180,34 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
         }
     };
 
-    renderElementProperties({ host, element, callbacks });
+    const customBody = host.createDiv({ cls: "sm-le-section sm-le-section--custom-body" });
+
+    const sections = { header: customHeader, body: customBody };
+    const inspectorContext: ElementInspectorContext = {
+        element,
+        callbacks,
+        sections,
+        renderLabelField: ({ label, host: target } = {}) =>
+            renderLabelField({
+                host: target ?? sections.header,
+                element,
+                callbacks,
+                label: label ?? "Bezeichnung",
+            }),
+        renderPlaceholderField: ({ label, host: target } = {}) =>
+            renderPlaceholderField({
+                host: target ?? sections.body,
+                element,
+                callbacks,
+                label: label ?? "Platzhalter",
+            }),
+        renderOptionsEditor: ({ host: target } = {}) =>
+            renderOptionsEditor({ host: target ?? sections.body, element, callbacks }),
+        renderContainerLayoutControls: ({ host: target } = {}) =>
+            renderContainerLayoutControls({ host: target ?? sections.body, element, callbacks }),
+    };
+
+    component?.renderInspector?.(inspectorContext);
 
     const meta = host.createDiv({ cls: "sm-le-meta" });
     meta.setText(`Fläche: ${Math.round(element.width * element.height)} px²`);
@@ -202,28 +219,15 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
     }
 }
 
-function renderElementProperties(options: { host: HTMLElement; element: LayoutElement; callbacks: InspectorCallbacks }) {
-    const { host, element, callbacks } = options;
-    if (isContainerType(element.type)) {
-        renderContainerLayoutControls({ host, element, callbacks });
-        return;
-    }
-    if (element.type === "textarea") {
-        renderPlaceholderField({ host, element, callbacks, label: "Platzhalter" });
-    }
-    if (element.type === "dropdown" || element.type === "search-dropdown") {
-        renderPlaceholderField({ host, element, callbacks, label: "Platzhalter" });
-        renderOptionsEditor({ host, element, callbacks });
-    }
-}
-
-function renderContainerInspectorSections(options: {
+type ContainerInspectorOptions = {
     element: LayoutElement;
     host: HTMLElement;
     elements: LayoutElement[];
     callbacks: InspectorCallbacks;
     definitions: LayoutElementDefinition[];
-}) {
+};
+
+function renderContainerInspectorSections(options: ContainerInspectorOptions) {
     const { element, host, elements, callbacks, definitions } = options;
     const quickAddField = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
     quickAddField.createEl("label", { text: "Neues Element erstellen" });
@@ -318,7 +322,9 @@ function renderContainerInspectorSections(options: {
     }
 }
 
-function renderAttributeSelector(options: { element: LayoutElement; attributesChip: HTMLElement }) {
+type AttributeSelectorOptions = { element: LayoutElement; attributesChip: HTMLElement };
+
+function renderAttributeSelector(options: AttributeSelectorOptions) {
     const { element, attributesChip } = options;
     attributesChip.onclick = ev => {
         ev.preventDefault();
@@ -330,12 +336,14 @@ function renderAttributeSelector(options: { element: LayoutElement; attributesCh
     };
 }
 
-function renderPlaceholderField(options: {
+type PlaceholderFieldOptions = {
     host: HTMLElement;
     element: LayoutElement;
     callbacks: InspectorCallbacks;
     label: string;
-}) {
+};
+
+function renderPlaceholderField(options: PlaceholderFieldOptions) {
     const { host, element, callbacks, label } = options;
     const field = host.createDiv({ cls: "sm-le-field" });
     field.createEl("label", { text: label });
@@ -350,9 +358,17 @@ function renderPlaceholderField(options: {
     };
     input.onchange = commit;
     input.onblur = commit;
+    return field;
 }
 
-function renderLabelField(options: { host: HTMLElement; element: LayoutElement; callbacks: InspectorCallbacks; label: string }) {
+type LabelFieldOptions = {
+    host: HTMLElement;
+    element: LayoutElement;
+    callbacks: InspectorCallbacks;
+    label: string;
+};
+
+function renderLabelField(options: LabelFieldOptions) {
     const { host, element, callbacks, label } = options;
     const field = host.createDiv({ cls: "sm-le-field" });
     field.createEl("label", { text: label });
@@ -366,9 +382,12 @@ function renderLabelField(options: { host: HTMLElement; element: LayoutElement; 
     };
     input.onchange = commit;
     input.onblur = commit;
+    return field;
 }
 
-function renderOptionsEditor(options: { host: HTMLElement; element: LayoutElement; callbacks: InspectorCallbacks }) {
+type OptionsEditorOptions = { host: HTMLElement; element: LayoutElement; callbacks: InspectorCallbacks };
+
+function renderOptionsEditor(options: OptionsEditorOptions) {
     const { host, element, callbacks } = options;
     const field = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
     field.createEl("label", { text: "Optionen" });
@@ -421,11 +440,14 @@ function renderOptionsEditor(options: { host: HTMLElement; element: LayoutElemen
         element.options = nextOptions;
         finalizeElementChange(element, callbacks, { rerender: true });
     };
+    return field;
 }
 
-function renderContainerLayoutControls(options: { host: HTMLElement; element: LayoutElement; callbacks: InspectorCallbacks }) {
+type ContainerLayoutOptions = { host: HTMLElement; element: LayoutElement; callbacks: InspectorCallbacks };
+
+function renderContainerLayoutControls(options: ContainerLayoutOptions) {
     const { host, element, callbacks } = options;
-    if (!element.layout) return;
+    if (!element.layout) return host;
     const field = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
     field.createEl("label", { text: "Layout" });
     const controls = field.createDiv({ cls: "sm-le-preview__layout" });
@@ -488,6 +510,8 @@ function renderContainerLayoutControls(options: { host: HTMLElement; element: La
         callbacks.applyContainerLayout(element, { silent: true });
         finalizeElementChange(element, callbacks);
     };
+
+    return field;
 }
 
 function finalizeElementChange(
