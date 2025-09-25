@@ -78,7 +78,14 @@ Salt-Marcher/
   räumt beim Schließen das DOM auf.
 
 ### src/apps/layout
-- `view.ts`: Implementiert den `LayoutEditorView` mit Canvas, Element-Palette, Inspector und JSON-Export. Unterstützt Drag/Resize, Text-/Platzhalter-/Options-Editing sowie die Zuordnung von Creature-Attributen für den Creature-Creator-Dialog.
+- `editor/view.ts`: Zentraler `LayoutEditorView` (ItemView). Orchestriert Canvas, Inspector, Export, History sowie Attribute-Popover und bindet die übrigen Module ein.
+- `editor/definitions.ts`: Konstante Element-/Attribut-Definitionen inkl. Label-Helfer und Default-Layouts.
+- `editor/history.ts`: Undo/Redo-Snapshotverwaltung mit `LayoutHistory`.
+- `editor/element-preview.ts`: Rendert Canvas-Vorschauen als echte Obsidian-Settings samt Inline-Editoren.
+- `editor/inspector-panel.ts`: Baut den Inspector (Formfelder, Container-Controls, Attribute-Trigger) als Rendering-Modul.
+- `editor/attribute-popover.ts`: Verwaltet das Attribute-Popover (Öffnen, Position, Sync, Cleanup).
+- `editor/creature-import.ts`: Repliziert den Creature-Creator in einer Sandbox und erzeugt LayoutElemente inkl. Defaults.
+- `editor/utils.ts`, `editor/types.ts`, `editor/inline-edit.ts`: Gemeinsame Typen, Hilfsfunktionen und Inline-Editor-Infrastruktur.
 - `LayoutOverview.txt`: Struktur- und Verantwortlichkeitsübersicht des Layout-Editors.
 
 ### src/apps/library

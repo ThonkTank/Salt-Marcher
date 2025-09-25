@@ -4,7 +4,7 @@ import { Plugin, WorkspaceLeaf } from "obsidian";
 import { EncounterView, VIEW_ENCOUNTER } from "../apps/encounter/view";
 import { VIEW_CARTOGRAPHER, CartographerView } from "../apps/cartographer";
 import { VIEW_LIBRARY, LibraryView } from "../apps/library/view";
-import { VIEW_LAYOUT_EDITOR, LayoutEditorView } from "../apps/layout/view";
+import { VIEW_LAYOUT_EDITOR, LayoutEditorView } from "../apps/layout/editor/view";
 import { ensureTerrainFile, loadTerrains, watchTerrains } from "../core/terrain-store";
 import { setTerrains } from "../core/terrain";
 import { getCenterLeaf } from "../core/layout";
