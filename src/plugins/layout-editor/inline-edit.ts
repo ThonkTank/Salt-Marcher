@@ -1,4 +1,4 @@
-// src/apps/layout/editor/inline-edit.ts
+// src/plugins/layout-editor/inline-edit.ts
 import type { InlineEditOptions } from "./types";
 
 export function createInlineEditor(options: InlineEditOptions): HTMLElement {

@@ -1,4 +1,4 @@
-// src/apps/layout/editor/attribute-popover.ts
+// src/plugins/layout-editor/attribute-popover.ts
 import { ATTRIBUTE_GROUPS } from "./definitions";
 import type { AttributePopoverState, LayoutElement } from "./types";
 

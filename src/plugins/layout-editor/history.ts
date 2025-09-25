@@ -1,4 +1,4 @@
-// src/apps/layout/editor/history.ts
+// src/plugins/layout-editor/history.ts
 import { LayoutEditorSnapshot } from "./types";
 import { cloneLayoutElement, snapshotsAreEqual } from "./utils";
 

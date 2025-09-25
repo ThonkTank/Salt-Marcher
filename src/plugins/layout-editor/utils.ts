@@ -1,4 +1,4 @@
-// src/apps/layout/editor/utils.ts
+// src/plugins/layout-editor/utils.ts
 import { LayoutEditorSnapshot, LayoutElement } from "./types";
 import { isContainerType } from "./definitions";
 

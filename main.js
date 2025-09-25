@@ -423,7 +423,7 @@ __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian25 = require("obsidian");
+var import_obsidian26 = require("obsidian");
 init_view();
 
 // src/apps/cartographer/index.ts
@@ -435,22 +435,30 @@ init_options();
 // src/ui/modals.ts
 var import_obsidian2 = require("obsidian");
 var NameInputModal = class extends import_obsidian2.Modal {
-  constructor(app, onSubmit) {
+  constructor(app, onSubmit, options) {
     super(app);
     this.onSubmit = onSubmit;
     this.value = "";
-    this.placeholder = "Neue Hex Map";
+    this.placeholder = options?.placeholder ?? "Neue Hex Map";
+    this.title = options?.title ?? "Name der neuen Karte";
+    this.ctaLabel = options?.cta ?? "Erstellen";
+    if (options?.initialValue) {
+      this.value = options.initialValue.trim();
+    }
   }
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
-    contentEl.createEl("h3", { text: "Name der neuen Karte" });
+    contentEl.createEl("h3", { text: this.title });
     let inputEl;
     new import_obsidian2.Setting(contentEl).addText((t) => {
       t.setPlaceholder(this.placeholder).onChange((v) => this.value = v.trim());
       inputEl = t.inputEl;
+      if (this.value) {
+        inputEl.value = this.value;
+      }
     }).addButton(
-      (b) => b.setButtonText("Erstellen").setCta().onClick(() => this.submit())
+      (b) => b.setButtonText(this.ctaLabel).setCta().onClick(() => this.submit())
     );
     this.scope.register([], "Enter", () => this.submit());
     queueMicrotask(() => inputEl?.focus());
@@ -5593,16 +5601,18 @@ var LibraryView = class extends import_obsidian21.ItemView {
   }
 };
 
-// src/apps/layout/editor/view.ts
-var import_obsidian24 = require("obsidian");
+// src/plugins/layout-editor/view.ts
+var import_obsidian25 = require("obsidian");
 
-// src/apps/layout/editor/definitions.ts
+// src/plugins/layout-editor/definitions.ts
 var MIN_ELEMENT_SIZE = 60;
-var ELEMENT_DEFINITIONS = [
+var DEFAULT_ELEMENT_DEFINITIONS = [
   {
     type: "label",
     buttonLabel: "Label",
     defaultLabel: "\xDCberschrift",
+    category: "element",
+    paletteGroup: "element",
     width: 260,
     height: 160
   },
@@ -5610,6 +5620,8 @@ var ELEMENT_DEFINITIONS = [
     type: "text-input",
     buttonLabel: "Textfeld",
     defaultLabel: "",
+    category: "element",
+    paletteGroup: "input",
     defaultPlaceholder: "",
     width: 260,
     height: 140
@@ -5618,6 +5630,8 @@ var ELEMENT_DEFINITIONS = [
     type: "textarea",
     buttonLabel: "Mehrzeiliges Feld",
     defaultLabel: "",
+    category: "element",
+    paletteGroup: "input",
     defaultPlaceholder: "Text erfassen\u2026",
     width: 320,
     height: 180
@@ -5626,6 +5640,9 @@ var ELEMENT_DEFINITIONS = [
     type: "box-container",
     buttonLabel: "BoxContainer",
     defaultLabel: "",
+    category: "container",
+    paletteGroup: "container",
+    layoutOrientation: "vertical",
     width: 360,
     height: 220,
     defaultLayout: { gap: 16, padding: 16, align: "stretch" }
@@ -5634,6 +5651,8 @@ var ELEMENT_DEFINITIONS = [
     type: "separator",
     buttonLabel: "Trennstrich",
     defaultLabel: "",
+    category: "element",
+    paletteGroup: "element",
     width: 320,
     height: 80
   },
@@ -5641,6 +5660,8 @@ var ELEMENT_DEFINITIONS = [
     type: "dropdown",
     buttonLabel: "Dropdown",
     defaultLabel: "",
+    category: "element",
+    paletteGroup: "input",
     defaultPlaceholder: "Option w\xE4hlen\u2026",
     options: ["Option A", "Option B"],
     width: 260,
@@ -5650,6 +5671,8 @@ var ELEMENT_DEFINITIONS = [
     type: "search-dropdown",
     buttonLabel: "Such-Dropdown",
     defaultLabel: "",
+    category: "element",
+    paletteGroup: "input",
     defaultPlaceholder: "Suchen\u2026",
     options: ["Erster Eintrag", "Zweiter Eintrag"],
     width: 280,
@@ -5659,6 +5682,9 @@ var ELEMENT_DEFINITIONS = [
     type: "vbox-container",
     buttonLabel: "VBoxContainer",
     defaultLabel: "",
+    category: "container",
+    paletteGroup: "container",
+    layoutOrientation: "vertical",
     defaultDescription: "Ordnet verkn\xFCpfte Elemente automatisch untereinander an.",
     width: 340,
     height: 260,
@@ -5668,15 +5694,69 @@ var ELEMENT_DEFINITIONS = [
     type: "hbox-container",
     buttonLabel: "HBoxContainer",
     defaultLabel: "",
+    category: "container",
+    paletteGroup: "container",
+    layoutOrientation: "horizontal",
     defaultDescription: "Ordnet verkn\xFCpfte Elemente automatisch nebeneinander an.",
     width: 360,
     height: 220,
     defaultLayout: { gap: 16, padding: 16, align: "center" }
   }
 ];
-var ELEMENT_DEFINITION_LOOKUP = new Map(
-  ELEMENT_DEFINITIONS.map((def) => [def.type, def])
-);
+var LayoutElementRegistry = class {
+  constructor(initial) {
+    this.definitions = /* @__PURE__ */ new Map();
+    this.listeners = /* @__PURE__ */ new Set();
+    for (const def of initial) {
+      this.definitions.set(def.type, { ...def });
+    }
+  }
+  register(definition) {
+    this.definitions.set(definition.type, { ...definition });
+    this.emit();
+  }
+  unregister(type) {
+    if (this.definitions.delete(type)) {
+      this.emit();
+    }
+  }
+  replaceAll(definitions) {
+    this.definitions.clear();
+    for (const def of definitions) {
+      this.definitions.set(def.type, { ...def });
+    }
+    this.emit();
+  }
+  getAll() {
+    return Array.from(this.definitions.values());
+  }
+  get(type) {
+    return this.definitions.get(type);
+  }
+  onChange(listener) {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+  emit() {
+    const snapshot = this.getAll();
+    for (const listener of this.listeners) {
+      listener(snapshot);
+    }
+  }
+};
+var registry = new LayoutElementRegistry(DEFAULT_ELEMENT_DEFINITIONS);
+function getElementDefinitions() {
+  return registry.getAll();
+}
+function getElementDefinition(type) {
+  return registry.get(type);
+}
+function resetLayoutElementDefinitions(definitions) {
+  registry.replaceAll(definitions);
+}
+function onLayoutElementDefinitionsChanged(listener) {
+  return registry.onChange(listener);
+}
 var ATTRIBUTE_GROUPS = [
   {
     label: "Allgemein",
@@ -5773,6 +5853,10 @@ var ATTRIBUTE_LABEL_LOOKUP = new Map(
   ATTRIBUTE_GROUPS.flatMap((group) => group.options.map((opt) => [opt.value, opt.label]))
 );
 function isVerticalContainer(type) {
+  const definition = registry.get(type);
+  if (definition?.layoutOrientation) {
+    return definition.layoutOrientation !== "horizontal";
+  }
   return type === "box-container" || type === "vbox-container";
 }
 function getAttributeSummary(attributes) {
@@ -5780,13 +5864,17 @@ function getAttributeSummary(attributes) {
   return attributes.map((attr) => ATTRIBUTE_LABEL_LOOKUP.get(attr) ?? attr).join(", ");
 }
 function getElementTypeLabel(type) {
-  return ELEMENT_DEFINITION_LOOKUP.get(type)?.buttonLabel ?? type;
+  return registry.get(type)?.buttonLabel ?? type;
 }
 function isContainerType(type) {
+  const definition = registry.get(type);
+  if (definition) {
+    return definition.category === "container";
+  }
   return type === "box-container" || type === "vbox-container" || type === "hbox-container";
 }
 
-// src/apps/layout/editor/utils.ts
+// src/plugins/layout-editor/utils.ts
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
@@ -5864,7 +5952,7 @@ function collectAncestorIds(element, elements) {
   return result;
 }
 
-// src/apps/layout/editor/history.ts
+// src/plugins/layout-editor/history.ts
 var LayoutHistory = class {
   constructor(capture, restore) {
     this.capture = capture;
@@ -5925,7 +6013,7 @@ function cloneSnapshot(snapshot) {
   };
 }
 
-// src/apps/layout/editor/attribute-popover.ts
+// src/plugins/layout-editor/attribute-popover.ts
 var AttributePopoverController = class {
   constructor(callbacks) {
     this.callbacks = callbacks;
@@ -6075,7 +6163,7 @@ var AttributePopoverController = class {
   }
 };
 
-// src/apps/layout/editor/inline-edit.ts
+// src/plugins/layout-editor/inline-edit.ts
 function createInlineEditor(options) {
   const el = options.parent.createEl(options.multiline ? "div" : "span", { cls: "sm-le-inline-edit" });
   if (options.block) el.addClass("sm-le-inline-edit--block");
@@ -6120,7 +6208,7 @@ function createInlineEditor(options) {
   return el;
 }
 
-// src/apps/layout/editor/element-preview.ts
+// src/plugins/layout-editor/element-preview.ts
 function autoScaleHeadlineText(target, container) {
   if (!container.isConnected) return;
   const maxWidth = Math.max(0, container.clientWidth - 12);
@@ -6321,14 +6409,9 @@ function renderElementPreview(deps) {
       header.style.display = "none";
     }
     const body = frame.createDiv({ cls: "sm-le-preview__container-body" });
-    const children = Array.isArray(element.children) ? element.children.map((childId) => deps.elements.find((el) => el.id === childId)).filter((child) => !!child) : [];
-    if (!children.length) {
+    const hasChildren = Array.isArray(element.children) ? element.children.some((childId) => deps.elements.some((el) => el.id === childId)) : false;
+    if (!hasChildren) {
       body.createDiv({ cls: "sm-le-preview__container-placeholder", text: "Leerer Container" });
-    } else {
-      for (const child of children) {
-        const row = body.createDiv({ cls: "sm-le-container-chip" });
-        row.setText(child.label || getElementTypeLabel(child.type));
-      }
     }
     return;
   }
@@ -6342,7 +6425,7 @@ function renderElementPreview(deps) {
   });
 }
 
-// src/apps/layout/editor/inspector-panel.ts
+// src/plugins/layout-editor/inspector-panel.ts
 var import_obsidian22 = require("obsidian");
 var LABEL_INSPECTOR_TYPES = /* @__PURE__ */ new Set([
   "textarea",
@@ -6362,7 +6445,7 @@ function renderInspectorPanel(deps) {
     return;
   }
   const callbacks = deps.callbacks;
-  const { elements, canvasWidth, canvasHeight } = deps;
+  const { elements, canvasWidth, canvasHeight, definitions } = deps;
   const isContainer = isContainerType(element.type);
   if (isContainer) {
     callbacks.ensureContainerDefaults(element);
@@ -6492,7 +6575,7 @@ function renderInspectorPanel(deps) {
   const meta = host.createDiv({ cls: "sm-le-meta" });
   meta.setText(`Fl\xE4che: ${Math.round(element.width * element.height)} px\xB2`);
   if (isContainer) {
-    renderContainerInspectorSections({ element, host, elements, callbacks });
+    renderContainerInspectorSections({ element, host, elements, callbacks, definitions });
   } else {
     renderAttributeSelector({ element, attributesChip });
   }
@@ -6512,7 +6595,7 @@ function renderElementProperties(options) {
   }
 }
 function renderContainerInspectorSections(options) {
-  const { element, host, elements, callbacks } = options;
+  const { element, host, elements, callbacks, definitions } = options;
   const quickAddField = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
   quickAddField.createEl("label", { text: "Neues Element erstellen" });
   const quickAddBtn = quickAddField.createEl("button", { text: "Element hinzuf\xFCgen" });
@@ -6520,8 +6603,8 @@ function renderContainerInspectorSections(options) {
   quickAddBtn.onclick = (ev) => {
     ev.preventDefault();
     const menu = new import_obsidian22.Menu();
-    const standardDefs = ELEMENT_DEFINITIONS.filter((def) => !isContainerType(def.type));
-    const containerDefs = ELEMENT_DEFINITIONS.filter((def) => isContainerType(def.type));
+    const standardDefs = definitions.filter((def) => !isContainerType(def.type));
+    const containerDefs = definitions.filter((def) => isContainerType(def.type));
     for (const def of standardDefs) {
       menu.addItem((item) => {
         item.setTitle(def.buttonLabel);
@@ -6769,7 +6852,7 @@ function clampNumber(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-// src/apps/layout/editor/creature-import.ts
+// src/plugins/layout-editor/creature-import.ts
 var import_obsidian23 = require("obsidian");
 async function importCreatureLayout(context, options) {
   const sandbox = context.sandbox;
@@ -6927,9 +7010,104 @@ function extractElementDefaults(node, type) {
   return defaults;
 }
 
-// src/apps/layout/editor/view.ts
+// src/plugins/layout-editor/layout-library.ts
+var import_obsidian24 = require("obsidian");
+var LAYOUT_FOLDER = "SaltMarcher/Layouts";
+async function ensureLayoutFolder(app) {
+  const folderPath = (0, import_obsidian24.normalizePath)(LAYOUT_FOLDER);
+  const folder = app.vault.getAbstractFileByPath(folderPath);
+  if (folder) return;
+  await app.vault.createFolder(folderPath).catch(() => {
+  });
+}
+function createFileName(id) {
+  return `${id}.json`;
+}
+function sanitizeName(name) {
+  return name.trim() || "Unbenanntes Layout";
+}
+function createId() {
+  const globalCrypto = globalThis.crypto;
+  if (globalCrypto?.randomUUID) {
+    return globalCrypto.randomUUID();
+  }
+  return `layout-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
+}
+async function saveLayoutToLibrary(app, payload) {
+  await ensureLayoutFolder(app);
+  const id = payload.id ?? createId();
+  const fileName = createFileName(id);
+  const path = (0, import_obsidian24.normalizePath)(`${LAYOUT_FOLDER}/${fileName}`);
+  const existing = app.vault.getAbstractFileByPath(path);
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  const entry = {
+    id,
+    name: sanitizeName(payload.name),
+    canvasWidth: payload.canvasWidth,
+    canvasHeight: payload.canvasHeight,
+    elements: payload.elements,
+    createdAt: existing instanceof import_obsidian24.TFile ? (await readLayoutMeta(app, existing))?.createdAt ?? now : now,
+    updatedAt: now
+  };
+  const body = JSON.stringify(entry, null, 2);
+  if (existing instanceof import_obsidian24.TFile) {
+    await app.vault.modify(existing, body);
+  } else {
+    await app.vault.create(path, body);
+  }
+  return entry;
+}
+async function readLayoutMeta(app, file) {
+  try {
+    const raw = await app.vault.read(file);
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    if (!Array.isArray(parsed.elements) || typeof parsed.canvasWidth !== "number" || typeof parsed.canvasHeight !== "number") {
+      return null;
+    }
+    const fallbackCreated = new Date(file.stat.ctime || Date.now()).toISOString();
+    const fallbackUpdated = new Date(file.stat.mtime || Date.now()).toISOString();
+    return {
+      id: parsed.id ?? file.basename,
+      name: typeof parsed.name === "string" ? parsed.name : file.basename,
+      canvasWidth: parsed.canvasWidth,
+      canvasHeight: parsed.canvasHeight,
+      elements: parsed.elements ?? [],
+      createdAt: typeof parsed.createdAt === "string" ? parsed.createdAt : fallbackCreated,
+      updatedAt: typeof parsed.updatedAt === "string" ? parsed.updatedAt : fallbackUpdated
+    };
+  } catch (error) {
+    console.error("Failed to read layout file", error);
+    return null;
+  }
+}
+async function listSavedLayouts(app) {
+  await ensureLayoutFolder(app);
+  const folder = app.vault.getAbstractFileByPath((0, import_obsidian24.normalizePath)(LAYOUT_FOLDER));
+  if (!(folder instanceof import_obsidian24.TFolder)) {
+    return [];
+  }
+  const files = folder.children.filter((child) => child instanceof import_obsidian24.TFile && child.extension === "json");
+  const out = [];
+  for (const file of files) {
+    const meta = await readLayoutMeta(app, file);
+    if (meta) out.push(meta);
+  }
+  out.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  return out;
+}
+async function loadSavedLayout(app, id) {
+  await ensureLayoutFolder(app);
+  const path = (0, import_obsidian24.normalizePath)(`${LAYOUT_FOLDER}/${createFileName(id)}`);
+  const file = app.vault.getAbstractFileByPath(path);
+  if (!(file instanceof import_obsidian24.TFile)) return null;
+  return await readLayoutMeta(app, file);
+}
+
+// src/plugins/layout-editor/view.ts
 var VIEW_LAYOUT_EDITOR = "salt-layout-editor";
-var LayoutEditorView = class extends import_obsidian24.ItemView {
+var DEFAULT_INPUT_TYPES = /* @__PURE__ */ new Set(["text-input", "textarea", "dropdown", "search-dropdown"]);
+var LayoutEditorView = class extends import_obsidian25.ItemView {
   constructor() {
     super(...arguments);
     this.elements = [];
@@ -6937,6 +7115,8 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     this.canvasWidth = 800;
     this.canvasHeight = 600;
     this.isImporting = false;
+    this.elementDefinitions = getElementDefinitions();
+    this.disposeDefinitionListener = null;
     this.structureWidth = 260;
     this.inspectorWidth = 320;
     this.minPanelWidth = 200;
@@ -6952,8 +7132,12 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     this.panOriginY = 0;
     this.hasInitializedCamera = false;
     this.structureRootDropZone = null;
+    this.addPaletteEl = null;
     this.elementElements = /* @__PURE__ */ new Map();
     this.draggedElementId = null;
+    this.isSavingLayout = false;
+    this.lastSavedLayoutId = null;
+    this.lastSavedLayoutName = "";
     this.history = new LayoutHistory(
       () => this.captureSnapshot(),
       (snapshot) => this.restoreSnapshot(snapshot)
@@ -7046,6 +7230,11 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
   }
   async onOpen() {
     this.contentEl.addClass("sm-layout-editor");
+    this.disposeDefinitionListener = onLayoutElementDefinitionsChanged((defs) => {
+      this.elementDefinitions = defs;
+      this.renderAddPalette();
+      this.renderInspector();
+    });
     this.render();
     this.refreshExport();
     this.updateStatus();
@@ -7055,6 +7244,11 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     this.elementElements.clear();
     this.contentEl.empty();
     this.contentEl.removeClass("sm-layout-editor");
+    this.addPaletteEl = null;
+    this.saveButton = void 0;
+    this.isSavingLayout = false;
+    this.disposeDefinitionListener?.();
+    this.disposeDefinitionListener = null;
   }
   isEditingTarget(target) {
     if (!target) return false;
@@ -7117,44 +7311,8 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     const controls = header.createDiv({ cls: "sm-le-controls" });
     const addGroup = controls.createDiv({ cls: "sm-le-control sm-le-control--stack" });
     addGroup.createEl("label", { text: "Element hinzuf\xFCgen" });
-    const addWrap = addGroup.createDiv({ cls: "sm-le-add" });
-    const containerDefinitions = ELEMENT_DEFINITIONS.filter((def) => isContainerType(def.type));
-    const elementDefinitions = ELEMENT_DEFINITIONS.filter((def) => !isContainerType(def.type));
-    const inputFieldTypes = /* @__PURE__ */ new Set(["text-input", "textarea", "dropdown", "search-dropdown"]);
-    const inputDefinitions = elementDefinitions.filter((def) => inputFieldTypes.has(def.type));
-    const otherElementDefinitions = elementDefinitions.filter((def) => !inputFieldTypes.has(def.type));
-    for (const def of otherElementDefinitions) {
-      const btn = addWrap.createEl("button", { text: def.buttonLabel });
-      btn.onclick = () => this.createElement(def.type);
-    }
-    if (inputDefinitions.length) {
-      const inputBtn = addWrap.createEl("button", { text: "Eingabefelder" });
-      inputBtn.onclick = (event) => {
-        event.preventDefault();
-        const menu = new import_obsidian24.Menu();
-        for (const def of inputDefinitions) {
-          menu.addItem((item) => {
-            item.setTitle(def.buttonLabel);
-            item.onClick(() => this.createElement(def.type));
-          });
-        }
-        menu.showAtMouseEvent(event);
-      };
-    }
-    if (containerDefinitions.length) {
-      const containerBtn = addWrap.createEl("button", { text: "Container" });
-      containerBtn.onclick = (event) => {
-        event.preventDefault();
-        const menu = new import_obsidian24.Menu();
-        for (const def of containerDefinitions) {
-          menu.addItem((item) => {
-            item.setTitle(def.buttonLabel);
-            item.onClick(() => this.createElement(def.type));
-          });
-        }
-        menu.showAtMouseEvent(event);
-      };
-    }
+    this.addPaletteEl = addGroup.createDiv({ cls: "sm-le-add" });
+    this.renderAddPalette();
     this.importBtn = controls.createEl("button", { text: "Creature-Layout importieren" });
     this.importBtn.onclick = () => {
       void this.importCreatureCreatorLayout();
@@ -7243,12 +7401,14 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
           throw new Error("Clipboard API nicht verf\xFCgbar");
         }
         await clip.writeText(this.exportEl.value);
-        new import_obsidian24.Notice("Layout kopiert");
+        new import_obsidian25.Notice("Layout kopiert");
       } catch (error) {
         console.error("Clipboard write failed", error);
-        new import_obsidian24.Notice("Konnte nicht in die Zwischenablage kopieren");
+        new import_obsidian25.Notice("Konnte nicht in die Zwischenablage kopieren");
       }
     };
+    this.saveButton = exportControls.createEl("button", { text: "Layout speichern" });
+    this.saveButton.onclick = () => this.promptSaveLayout();
     this.exportEl = exportWrap.createEl("textarea", {
       cls: "sm-le-export__textarea",
       attr: { rows: "10", readonly: "readonly" }
@@ -7273,6 +7433,106 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
       this.centerCamera();
       this.hasInitializedCamera = true;
     });
+  }
+  renderAddPalette() {
+    if (!this.addPaletteEl) return;
+    const host = this.addPaletteEl;
+    host.empty();
+    const containers = [];
+    const inputs = [];
+    const others = [];
+    for (const def of this.elementDefinitions) {
+      const paletteGroup = def.paletteGroup ?? (def.category === "container" ? "container" : void 0);
+      if (paletteGroup === "container" || isContainerType(def.type)) {
+        containers.push(def);
+        continue;
+      }
+      if (paletteGroup === "input" || DEFAULT_INPUT_TYPES.has(def.type)) {
+        inputs.push(def);
+        continue;
+      }
+      others.push(def);
+    }
+    for (const def of others) {
+      const btn = host.createEl("button", { text: def.buttonLabel });
+      btn.onclick = () => this.createElement(def.type);
+    }
+    if (inputs.length) {
+      const inputBtn = host.createEl("button", { text: "Eingabefelder" });
+      inputBtn.onclick = (event) => {
+        event.preventDefault();
+        const menu = new import_obsidian25.Menu();
+        for (const def of inputs) {
+          menu.addItem((item) => {
+            item.setTitle(def.buttonLabel);
+            item.onClick(() => this.createElement(def.type));
+          });
+        }
+        menu.showAtMouseEvent(event);
+      };
+    }
+    if (containers.length) {
+      const containerBtn = host.createEl("button", { text: "Container" });
+      containerBtn.onclick = (event) => {
+        event.preventDefault();
+        const menu = new import_obsidian25.Menu();
+        for (const def of containers) {
+          menu.addItem((item) => {
+            item.setTitle(def.buttonLabel);
+            item.onClick(() => this.createElement(def.type));
+          });
+        }
+        menu.showAtMouseEvent(event);
+      };
+    }
+  }
+  findDefinition(type) {
+    return this.elementDefinitions.find((def) => def.type === type) ?? getElementDefinition(type);
+  }
+  promptSaveLayout() {
+    if (this.isSavingLayout) return;
+    const modal = new NameInputModal(
+      this.app,
+      (name) => {
+        void this.handleSaveLayout(name);
+      },
+      {
+        placeholder: "Layout-Namen eingeben",
+        title: "Layout speichern",
+        cta: "Speichern",
+        initialValue: this.lastSavedLayoutName
+      }
+    );
+    modal.open();
+  }
+  async handleSaveLayout(name) {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      new import_obsidian25.Notice("Bitte gib einen Namen f\xFCr das Layout an");
+      return;
+    }
+    if (this.isSavingLayout) return;
+    this.isSavingLayout = true;
+    this.saveButton?.setAttribute("disabled", "disabled");
+    const reuseId = this.lastSavedLayoutName === trimmed ? this.lastSavedLayoutId ?? void 0 : void 0;
+    try {
+      const saved = await saveLayoutToLibrary(this.app, {
+        name: trimmed,
+        id: reuseId,
+        canvasWidth: this.canvasWidth,
+        canvasHeight: this.canvasHeight,
+        elements: this.elements.map(cloneLayoutElement)
+      });
+      this.lastSavedLayoutId = saved.id;
+      this.lastSavedLayoutName = saved.name;
+      new import_obsidian25.Notice(`Layout \u201E${saved.name}\u201D gespeichert`);
+    } catch (error) {
+      console.error("Failed to save layout", error);
+      new import_obsidian25.Notice("Konnte Layout nicht speichern");
+    } finally {
+      this.isSavingLayout = false;
+      this.saveButton?.removeAttribute("disabled");
+    }
   }
   applyPanelSizes() {
     if (this.structurePanelEl) {
@@ -7379,7 +7639,7 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     this.renderStructure();
   }
   createElement(type, options) {
-    const def = ELEMENT_DEFINITION_LOOKUP.get(type);
+    const def = this.findDefinition(type);
     const width = def ? def.width : Math.min(240, Math.max(160, Math.round(this.canvasWidth * 0.25)));
     const height = def ? def.height : Math.min(160, Math.max(120, Math.round(this.canvasHeight * 0.25)));
     const element = {
@@ -7547,6 +7807,7 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
       host: this.inspectorHost,
       element: element ?? null,
       elements: this.elements,
+      definitions: this.elementDefinitions,
       canvasWidth: this.canvasWidth,
       canvasHeight: this.canvasHeight,
       callbacks: {
@@ -8002,7 +8263,7 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
   ensureContainerDefaults(element) {
     if (!isContainerType(element.type)) return;
     if (!element.layout) {
-      const def = ELEMENT_DEFINITION_LOOKUP.get(element.type);
+      const def = this.findDefinition(element.type);
       if (def?.defaultLayout) {
         element.layout = { ...def.defaultLayout };
       } else {
@@ -8187,6 +8448,31 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
 };
 function generateElementId() {
   return `element-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+// src/plugins/layout-editor/index.ts
+function createLayoutEditorPlugin(plugin) {
+  const registerView = () => {
+    plugin.registerView(VIEW_LAYOUT_EDITOR, (leaf) => new LayoutEditorView(leaf));
+  };
+  return {
+    viewType: VIEW_LAYOUT_EDITOR,
+    registerView,
+    registerElementDefinition,
+    unregisterElementDefinition,
+    resetElementDefinitions: (definitions) => {
+      if (definitions && definitions.length) {
+        resetLayoutElementDefinitions(definitions);
+      } else {
+        resetLayoutElementDefinitions(DEFAULT_ELEMENT_DEFINITIONS);
+      }
+    },
+    getElementDefinitions,
+    onDefinitionsChanged: (listener) => onLayoutElementDefinitionsChanged(listener),
+    saveLayout: (payload) => saveLayoutToLibrary(plugin.app, payload),
+    listLayouts: () => listSavedLayouts(plugin.app),
+    loadLayout: (id) => loadSavedLayout(plugin.app, id)
+  };
 }
 
 // src/app/main.ts
@@ -9493,12 +9779,6 @@ var HEX_PLUGIN_CSS = `
     color: inherit;
 }
 
-.sm-le-container-chip {
-    background: var(--background-secondary);
-    border-radius: 999px;
-    padding: 0.2rem 0.45rem;
-}
-
 .sm-le-inspector {
     flex: 1;
     display: flex;
@@ -9747,12 +10027,13 @@ var HEX_PLUGIN_CSS = `
 `;
 
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian25.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian26.Plugin {
   async onload() {
+    this.layoutEditor = createLayoutEditorPlugin(this);
     this.registerView(VIEW_CARTOGRAPHER, (leaf) => new CartographerView(leaf));
     this.registerView(VIEW_ENCOUNTER, (leaf) => new EncounterView(leaf));
     this.registerView(VIEW_LIBRARY, (leaf) => new LibraryView(leaf));
-    this.registerView(VIEW_LAYOUT_EDITOR, (leaf) => new LayoutEditorView(leaf));
+    this.layoutEditor.registerView();
     await ensureTerrainFile(this.app);
     setTerrains(await loadTerrains(this.app));
     this.unwatchTerrains = watchTerrains(this.app, () => {
@@ -9769,7 +10050,7 @@ var SaltMarcherPlugin = class extends import_obsidian25.Plugin {
     });
     this.addRibbonIcon("layout-grid", "Open Layout Editor", async () => {
       const leaf = getCenterLeaf(this.app);
-      await leaf.setViewState({ type: VIEW_LAYOUT_EDITOR, active: true });
+      await leaf.setViewState({ type: this.layoutEditor.viewType, active: true });
       this.app.workspace.revealLeaf(leaf);
     });
     this.addCommand({
@@ -9795,7 +10076,7 @@ var SaltMarcherPlugin = class extends import_obsidian25.Plugin {
       name: "Layout Editor \xF6ffnen",
       callback: async () => {
         const leaf = getCenterLeaf(this.app);
-        await leaf.setViewState({ type: VIEW_LAYOUT_EDITOR, active: true });
+        await leaf.setViewState({ type: this.layoutEditor.viewType, active: true });
         this.app.workspace.revealLeaf(leaf);
       }
     });

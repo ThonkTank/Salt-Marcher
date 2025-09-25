@@ -1,22 +1,26 @@
-// src/apps/layout/editor/view.ts
+// src/plugins/layout-editor/view.ts
 import { ItemView, Menu, Notice } from "obsidian";
 import {
-    ELEMENT_DEFINITION_LOOKUP,
-    ELEMENT_DEFINITIONS,
     MIN_ELEMENT_SIZE,
+    getElementDefinition,
+    getElementDefinitions,
     getElementTypeLabel,
     isVerticalContainer,
     isContainerType,
+    onLayoutElementDefinitionsChanged,
 } from "./definitions";
-import { LayoutContainerType, LayoutEditorSnapshot, LayoutElement, LayoutElementType } from "./types";
+import { LayoutEditorSnapshot, LayoutElement, LayoutElementDefinition, LayoutElementType } from "./types";
 import { LayoutHistory } from "./history";
 import { AttributePopoverController } from "./attribute-popover";
 import { renderElementPreview } from "./element-preview";
 import { renderInspectorPanel } from "./inspector-panel";
 import { clamp, cloneLayoutElement, collectDescendantIds, isContainerElement } from "./utils";
 import { importCreatureLayout } from "./creature-import";
+import { saveLayoutToLibrary } from "./layout-library";
+import { NameInputModal } from "../../ui/modals";
 
 export const VIEW_LAYOUT_EDITOR = "salt-layout-editor";
+const DEFAULT_INPUT_TYPES = new Set<string>(["text-input", "textarea", "dropdown", "search-dropdown"]);
 
 export class LayoutEditorView extends ItemView {
     private elements: LayoutElement[] = [];
@@ -24,6 +28,8 @@ export class LayoutEditorView extends ItemView {
     private canvasWidth = 800;
     private canvasHeight = 600;
     private isImporting = false;
+    private elementDefinitions: LayoutElementDefinition[] = getElementDefinitions();
+    private disposeDefinitionListener: (() => void) | null = null;
 
     private structureWidth = 260;
     private inspectorWidth = 320;
@@ -54,12 +60,17 @@ export class LayoutEditorView extends ItemView {
     private exportEl!: HTMLTextAreaElement;
     private importBtn!: HTMLButtonElement;
     private statusEl!: HTMLElement;
+    private addPaletteEl: HTMLElement | null = null;
     private widthInput?: HTMLInputElement;
     private heightInput?: HTMLInputElement;
     private sandboxEl!: HTMLElement;
 
     private elementElements = new Map<string, HTMLElement>();
     private draggedElementId: string | null = null;
+    private saveButton?: HTMLButtonElement;
+    private isSavingLayout = false;
+    private lastSavedLayoutId: string | null = null;
+    private lastSavedLayoutName = "";
 
     private readonly history = new LayoutHistory(
         () => this.captureSnapshot(),
@@ -81,6 +92,11 @@ export class LayoutEditorView extends ItemView {
 
     async onOpen() {
         this.contentEl.addClass("sm-layout-editor");
+        this.disposeDefinitionListener = onLayoutElementDefinitionsChanged(defs => {
+            this.elementDefinitions = defs;
+            this.renderAddPalette();
+            this.renderInspector();
+        });
         this.render();
         this.refreshExport();
         this.updateStatus();
@@ -91,6 +107,11 @@ export class LayoutEditorView extends ItemView {
         this.elementElements.clear();
         this.contentEl.empty();
         this.contentEl.removeClass("sm-layout-editor");
+        this.addPaletteEl = null;
+        this.saveButton = undefined;
+        this.isSavingLayout = false;
+        this.disposeDefinitionListener?.();
+        this.disposeDefinitionListener = null;
     }
 
     private onKeyDown = (ev: KeyboardEvent) => {
@@ -188,44 +209,8 @@ export class LayoutEditorView extends ItemView {
 
         const addGroup = controls.createDiv({ cls: "sm-le-control sm-le-control--stack" });
         addGroup.createEl("label", { text: "Element hinzufügen" });
-        const addWrap = addGroup.createDiv({ cls: "sm-le-add" });
-        const containerDefinitions = ELEMENT_DEFINITIONS.filter(def => isContainerType(def.type));
-        const elementDefinitions = ELEMENT_DEFINITIONS.filter(def => !isContainerType(def.type));
-        const inputFieldTypes = new Set<LayoutElementType>(["text-input", "textarea", "dropdown", "search-dropdown"]);
-        const inputDefinitions = elementDefinitions.filter(def => inputFieldTypes.has(def.type));
-        const otherElementDefinitions = elementDefinitions.filter(def => !inputFieldTypes.has(def.type));
-        for (const def of otherElementDefinitions) {
-            const btn = addWrap.createEl("button", { text: def.buttonLabel });
-            btn.onclick = () => this.createElement(def.type);
-        }
-        if (inputDefinitions.length) {
-            const inputBtn = addWrap.createEl("button", { text: "Eingabefelder" });
-            inputBtn.onclick = event => {
-                event.preventDefault();
-                const menu = new Menu();
-                for (const def of inputDefinitions) {
-                    menu.addItem(item => {
-                        item.setTitle(def.buttonLabel);
-                        item.onClick(() => this.createElement(def.type));
-                    });
-                }
-                menu.showAtMouseEvent(event);
-            };
-        }
-        if (containerDefinitions.length) {
-            const containerBtn = addWrap.createEl("button", { text: "Container" });
-            containerBtn.onclick = event => {
-                event.preventDefault();
-                const menu = new Menu();
-                for (const def of containerDefinitions) {
-                    menu.addItem(item => {
-                        item.setTitle(def.buttonLabel);
-                        item.onClick(() => this.createElement(def.type));
-                    });
-                }
-                menu.showAtMouseEvent(event);
-            };
-        }
+        this.addPaletteEl = addGroup.createDiv({ cls: "sm-le-add" });
+        this.renderAddPalette();
 
         this.importBtn = controls.createEl("button", { text: "Creature-Layout importieren" });
         this.importBtn.onclick = () => { void this.importCreatureCreatorLayout(); };
@@ -329,6 +314,8 @@ export class LayoutEditorView extends ItemView {
                 new Notice("Konnte nicht in die Zwischenablage kopieren");
             }
         };
+        this.saveButton = exportControls.createEl("button", { text: "Layout speichern" });
+        this.saveButton.onclick = () => this.promptSaveLayout();
         this.exportEl = exportWrap.createEl("textarea", {
             cls: "sm-le-export__textarea",
             attr: { rows: "10", readonly: "readonly" },
@@ -356,6 +343,110 @@ export class LayoutEditorView extends ItemView {
             this.centerCamera();
             this.hasInitializedCamera = true;
         });
+    }
+
+    private renderAddPalette() {
+        if (!this.addPaletteEl) return;
+        const host = this.addPaletteEl;
+        host.empty();
+        const containers: LayoutElementDefinition[] = [];
+        const inputs: LayoutElementDefinition[] = [];
+        const others: LayoutElementDefinition[] = [];
+        for (const def of this.elementDefinitions) {
+            const paletteGroup = def.paletteGroup ?? (def.category === "container" ? "container" : undefined);
+            if (paletteGroup === "container" || isContainerType(def.type)) {
+                containers.push(def);
+                continue;
+            }
+            if (paletteGroup === "input" || DEFAULT_INPUT_TYPES.has(def.type)) {
+                inputs.push(def);
+                continue;
+            }
+            others.push(def);
+        }
+        for (const def of others) {
+            const btn = host.createEl("button", { text: def.buttonLabel });
+            btn.onclick = () => this.createElement(def.type);
+        }
+        if (inputs.length) {
+            const inputBtn = host.createEl("button", { text: "Eingabefelder" });
+            inputBtn.onclick = event => {
+                event.preventDefault();
+                const menu = new Menu();
+                for (const def of inputs) {
+                    menu.addItem(item => {
+                        item.setTitle(def.buttonLabel);
+                        item.onClick(() => this.createElement(def.type));
+                    });
+                }
+                menu.showAtMouseEvent(event);
+            };
+        }
+        if (containers.length) {
+            const containerBtn = host.createEl("button", { text: "Container" });
+            containerBtn.onclick = event => {
+                event.preventDefault();
+                const menu = new Menu();
+                for (const def of containers) {
+                    menu.addItem(item => {
+                        item.setTitle(def.buttonLabel);
+                        item.onClick(() => this.createElement(def.type));
+                    });
+                }
+                menu.showAtMouseEvent(event);
+            };
+        }
+    }
+
+    private findDefinition(type: LayoutElementType): LayoutElementDefinition | undefined {
+        return this.elementDefinitions.find(def => def.type === type) ?? getElementDefinition(type);
+    }
+
+    private promptSaveLayout() {
+        if (this.isSavingLayout) return;
+        const modal = new NameInputModal(
+            this.app,
+            name => {
+                void this.handleSaveLayout(name);
+            },
+            {
+                placeholder: "Layout-Namen eingeben",
+                title: "Layout speichern",
+                cta: "Speichern",
+                initialValue: this.lastSavedLayoutName,
+            },
+        );
+        modal.open();
+    }
+
+    private async handleSaveLayout(name: string) {
+        const trimmed = name.trim();
+        if (!trimmed) {
+            new Notice("Bitte gib einen Namen für das Layout an");
+            return;
+        }
+        if (this.isSavingLayout) return;
+        this.isSavingLayout = true;
+        this.saveButton?.setAttribute("disabled", "disabled");
+        const reuseId = this.lastSavedLayoutName === trimmed ? this.lastSavedLayoutId ?? undefined : undefined;
+        try {
+            const saved = await saveLayoutToLibrary(this.app, {
+                name: trimmed,
+                id: reuseId,
+                canvasWidth: this.canvasWidth,
+                canvasHeight: this.canvasHeight,
+                elements: this.elements.map(cloneLayoutElement),
+            });
+            this.lastSavedLayoutId = saved.id;
+            this.lastSavedLayoutName = saved.name;
+            new Notice(`Layout „${saved.name}” gespeichert`);
+        } catch (error) {
+            console.error("Failed to save layout", error);
+            new Notice("Konnte Layout nicht speichern");
+        } finally {
+            this.isSavingLayout = false;
+            this.saveButton?.removeAttribute("disabled");
+        }
     }
 
     private applyPanelSizes() {
@@ -518,7 +609,7 @@ export class LayoutEditorView extends ItemView {
     }
 
     private createElement(type: LayoutElementType, options?: { parentId?: string | null }) {
-        const def = ELEMENT_DEFINITION_LOOKUP.get(type);
+        const def = this.findDefinition(type);
         const width = def ? def.width : Math.min(240, Math.max(160, Math.round(this.canvasWidth * 0.25)));
         const height = def ? def.height : Math.min(160, Math.max(120, Math.round(this.canvasHeight * 0.25)));
         const element: LayoutElement = {
@@ -542,7 +633,7 @@ export class LayoutEditorView extends ItemView {
         }
 
         const requestedParentId = options?.parentId ?? null;
-        let parentContainer: (LayoutElement & { type: LayoutContainerType }) | null = null;
+        let parentContainer: LayoutElement | null = null;
         if (requestedParentId) {
             const candidate = this.elements.find(el => el.id === requestedParentId);
             if (candidate && isContainerElement(candidate)) {
@@ -706,6 +797,7 @@ export class LayoutEditorView extends ItemView {
             host: this.inspectorHost,
             element: element ?? null,
             elements: this.elements,
+            definitions: this.elementDefinitions,
             canvasWidth: this.canvasWidth,
             canvasHeight: this.canvasHeight,
             callbacks: {
@@ -1187,7 +1279,7 @@ export class LayoutEditorView extends ItemView {
     private ensureContainerDefaults(element: LayoutElement) {
         if (!isContainerType(element.type)) return;
         if (!element.layout) {
-            const def = ELEMENT_DEFINITION_LOOKUP.get(element.type);
+            const def = this.findDefinition(element.type);
             if (def?.defaultLayout) {
                 element.layout = { ...def.defaultLayout };
             } else {

@@ -8,14 +8,26 @@ import { App, Modal, Setting, FuzzySuggestModal, TFile } from "obsidian";
 /** Modal zur Eingabe eines neuen Kartennamens */
 export class NameInputModal extends Modal {
     private value = "";
-    private placeholder = "Neue Hex Map";
-    constructor(app: App, private onSubmit: (val: string) => void) {
+    private placeholder: string;
+    private title: string;
+    private ctaLabel: string;
+    constructor(
+        app: App,
+        private onSubmit: (val: string) => void,
+        options?: { placeholder?: string; title?: string; cta?: string; initialValue?: string },
+    ) {
         super(app);
+        this.placeholder = options?.placeholder ?? "Neue Hex Map";
+        this.title = options?.title ?? "Name der neuen Karte";
+        this.ctaLabel = options?.cta ?? "Erstellen";
+        if (options?.initialValue) {
+            this.value = options.initialValue.trim();
+        }
     }
     onOpen() {
         const { contentEl } = this;
         contentEl.empty();
-        contentEl.createEl("h3", { text: "Name der neuen Karte" });
+        contentEl.createEl("h3", { text: this.title });
 
         let inputEl: HTMLInputElement | undefined;
 
@@ -24,9 +36,12 @@ export class NameInputModal extends Modal {
             t.setPlaceholder(this.placeholder).onChange((v) => (this.value = v.trim()));
             // @ts-ignore – Obsidian hält das Input-Element intern
             inputEl = (t as any).inputEl as HTMLInputElement;
+            if (this.value) {
+                inputEl.value = this.value;
+            }
         })
         .addButton((b) =>
-        b.setButtonText("Erstellen").setCta().onClick(() => this.submit()),
+        b.setButtonText(this.ctaLabel).setCta().onClick(() => this.submit()),
         );
 
         // Enter-Shortcut
