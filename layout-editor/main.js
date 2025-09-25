@@ -1805,12 +1805,48 @@ function clampNumber(value, min, max) {
 // src/layout-library.ts
 var import_obsidian = require("obsidian");
 var LAYOUT_FOLDER = "LayoutEditor/Layouts";
+var LEGACY_LAYOUT_FOLDERS = ["Layout Editor/Layouts"];
+var LAYOUT_FOLDER_CANDIDATES = [LAYOUT_FOLDER, ...LEGACY_LAYOUT_FOLDERS];
+async function ensureFolderPath(app, folderPath) {
+  const normalized = (0, import_obsidian.normalizePath)(folderPath);
+  const segments = normalized.split("/").filter(Boolean);
+  let current = "";
+  for (const segment of segments) {
+    current = current ? `${current}/${segment}` : segment;
+    const path = (0, import_obsidian.normalizePath)(current);
+    const existing = app.vault.getAbstractFileByPath(path);
+    if (existing) continue;
+    await app.vault.createFolder(path).catch(() => {
+    });
+  }
+}
 async function ensureLayoutFolder(app) {
-  const folderPath = (0, import_obsidian.normalizePath)(LAYOUT_FOLDER);
-  const folder = app.vault.getAbstractFileByPath(folderPath);
-  if (folder) return;
-  await app.vault.createFolder(folderPath).catch(() => {
-  });
+  await ensureFolderPath(app, LAYOUT_FOLDER);
+}
+function findLayoutFile(app, fileName) {
+  for (const folder of LAYOUT_FOLDER_CANDIDATES) {
+    const path = (0, import_obsidian.normalizePath)(`${folder}/${fileName}`);
+    const file = app.vault.getAbstractFileByPath(path);
+    if (file instanceof import_obsidian.TFile) {
+      return file;
+    }
+  }
+  return null;
+}
+function collectLayoutFiles(app) {
+  const seen = /* @__PURE__ */ new Set();
+  const files = [];
+  for (const folder of LAYOUT_FOLDER_CANDIDATES) {
+    const abstract = app.vault.getAbstractFileByPath((0, import_obsidian.normalizePath)(folder));
+    if (!(abstract instanceof import_obsidian.TFolder)) continue;
+    for (const child of abstract.children) {
+      if (!(child instanceof import_obsidian.TFile) || child.extension !== "json") continue;
+      if (seen.has(child.basename)) continue;
+      seen.add(child.basename);
+      files.push(child);
+    }
+  }
+  return files;
 }
 function createFileName(id) {
   return `${id}.json`;
@@ -1826,11 +1862,13 @@ function createId() {
   return `layout-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
 }
 async function saveLayoutToLibrary(app, payload) {
-  await ensureLayoutFolder(app);
   const id = payload.id ?? createId();
   const fileName = createFileName(id);
-  const path = (0, import_obsidian.normalizePath)(`${LAYOUT_FOLDER}/${fileName}`);
-  const existing = app.vault.getAbstractFileByPath(path);
+  let existing = findLayoutFile(app, fileName);
+  const targetPath = (0, import_obsidian.normalizePath)(`${LAYOUT_FOLDER}/${fileName}`);
+  if (!existing) {
+    await ensureLayoutFolder(app);
+  }
   const now = (/* @__PURE__ */ new Date()).toISOString();
   const entry = {
     id,
@@ -1845,7 +1883,8 @@ async function saveLayoutToLibrary(app, payload) {
   if (existing instanceof import_obsidian.TFile) {
     await app.vault.modify(existing, body);
   } else {
-    await app.vault.create(path, body);
+    await app.vault.create(targetPath, body);
+    existing = findLayoutFile(app, fileName);
   }
   return entry;
 }
@@ -1945,11 +1984,7 @@ async function readLayoutMeta(app, file) {
 }
 async function listSavedLayouts(app) {
   await ensureLayoutFolder(app);
-  const folder = app.vault.getAbstractFileByPath((0, import_obsidian.normalizePath)(LAYOUT_FOLDER));
-  if (!(folder instanceof import_obsidian.TFolder)) {
-    return [];
-  }
-  const files = folder.children.filter((child) => child instanceof import_obsidian.TFile && child.extension === "json");
+  const files = collectLayoutFiles(app);
   const out = [];
   for (const file of files) {
     const meta = await readLayoutMeta(app, file);
@@ -1960,8 +1995,8 @@ async function listSavedLayouts(app) {
 }
 async function loadSavedLayout(app, id) {
   await ensureLayoutFolder(app);
-  const path = (0, import_obsidian.normalizePath)(`${LAYOUT_FOLDER}/${createFileName(id)}`);
-  const file = app.vault.getAbstractFileByPath(path);
+  const fileName = createFileName(id);
+  const file = findLayoutFile(app, fileName);
   if (!(file instanceof import_obsidian.TFile)) return null;
   return await readLayoutMeta(app, file);
 }
