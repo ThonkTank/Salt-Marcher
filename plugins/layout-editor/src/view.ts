@@ -24,7 +24,7 @@ import { clamp, cloneLayoutElement, collectDescendantIds, isContainerElement } f
 import { listSavedLayouts, loadSavedLayout, saveLayoutToLibrary } from "./layout-library";
 import { NameInputModal } from "./name-input-modal";
 import { LayoutPickerModal } from "./layout-picker-modal";
-import { renderPalette } from "./ui/add-palette";
+import { ElementPickerModal } from "./element-picker-modal";
 import { getLayoutElementComponent } from "./elements/registry";
 import {
     createElementsButton,
@@ -74,7 +74,7 @@ export class LayoutEditorView extends ItemView {
     private exportEl!: HTMLTextAreaElement;
     private importBtn!: HTMLButtonElement;
     private statusEl!: HTMLElement;
-    private addPaletteEl: HTMLElement | null = null;
+    private addElementControlEl: HTMLElement | null = null;
     private widthInput?: HTMLInputElement;
     private heightInput?: HTMLInputElement;
     private sandboxEl!: HTMLElement;
@@ -108,7 +108,7 @@ export class LayoutEditorView extends ItemView {
         this.contentEl.addClass("sm-layout-editor");
         this.disposeDefinitionListener = onLayoutElementDefinitionsChanged(defs => {
             this.elementDefinitions = defs;
-            this.renderAddPalette();
+            this.renderAddElementControl();
             this.renderInspector();
         });
         this.render();
@@ -121,7 +121,7 @@ export class LayoutEditorView extends ItemView {
         this.elementElements.clear();
         this.contentEl.empty();
         this.contentEl.removeClass("sm-layout-editor");
-        this.addPaletteEl = null;
+        this.addElementControlEl = null;
         this.saveButton = undefined;
         this.isSavingLayout = false;
         this.disposeDefinitionListener?.();
@@ -224,9 +224,9 @@ export class LayoutEditorView extends ItemView {
         const addGroup = createElementsField(controls, { label: "Element hinzufügen", layout: "stack" });
         addGroup.fieldEl.addClass("sm-le-control");
         addGroup.fieldEl.addClass("sm-le-control--stack");
-        this.addPaletteEl = addGroup.controlEl;
-        this.addPaletteEl.addClass("sm-le-add");
-        this.renderAddPalette();
+        this.addElementControlEl = addGroup.controlEl;
+        this.addElementControlEl.addClass("sm-le-add");
+        this.renderAddElementControl();
 
         const libraryGroup = createElementsField(controls, { label: "Layout-Bibliothek", layout: "stack" });
         libraryGroup.fieldEl.addClass("sm-le-control");
@@ -374,13 +374,25 @@ export class LayoutEditorView extends ItemView {
         });
     }
 
-    private renderAddPalette() {
-        if (!this.addPaletteEl) return;
-        renderPalette({
-            host: this.addPaletteEl,
+    private renderAddElementControl() {
+        if (!this.addElementControlEl) return;
+        const host = this.addElementControlEl;
+        host.empty();
+        const button = createElementsButton(host, { label: "+ Element", variant: "primary" });
+        button.classList.add("sm-le-add__trigger");
+        button.onclick = () => this.openElementPicker();
+    }
+
+    private openElementPicker() {
+        if (!this.elementDefinitions.length) {
+            new Notice("Keine Elementtypen registriert.");
+            return;
+        }
+        const modal = new ElementPickerModal(this.app, {
             definitions: this.elementDefinitions,
-            onCreate: type => this.createElement(type),
+            onPick: type => this.createElement(type),
         });
+        modal.open();
     }
 
     private findDefinition(type: LayoutElementType): LayoutElementDefinition | undefined {
