@@ -1,7 +1,7 @@
 // src/apps/layout/editor/inspector-panel.ts
 import { Menu } from "obsidian";
 import { getAttributeSummary, getElementTypeLabel, isContainerType, MIN_ELEMENT_SIZE } from "./definitions";
-import { LayoutContainerAlign, LayoutElement, LayoutElementType } from "./types";
+import { LayoutElement, LayoutElementType } from "./types";
 
 export interface InspectorCallbacks {
     ensureContainerDefaults(element: LayoutElement): void;
@@ -46,23 +46,10 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
 
     host.createDiv({ cls: "sm-le-meta", text: `Typ: ${getElementTypeLabel(element.type)}` });
 
-    const labelField = host.createDiv({ cls: "sm-le-field" });
-    labelField.createEl("label", { text: element.type === "label" ? "Text" : "Label" });
-    const labelInput = labelField.createEl("textarea") as HTMLTextAreaElement;
-    labelInput.value = element.label;
-    labelInput.rows = element.type === "textarea" ? 3 : 2;
-    const initialLabel = element.label;
-    labelInput.oninput = () => {
-        element.label = labelInput.value;
-        callbacks.syncElementElement(element);
-        callbacks.refreshExport();
-    };
-    labelInput.onblur = () => {
-        if (element.label === initialLabel) return;
-        callbacks.updateStatus();
-        callbacks.pushHistory();
-        callbacks.renderInspector();
-    };
+    host.createDiv({
+        cls: "sm-le-hint",
+        text: "Texte, Default-Werte und Platzhalter bearbeitest du direkt in der Vorschau.",
+    });
 
     if (!isContainer) {
         const containers = elements.filter(el => isContainerType(el.type));
@@ -81,108 +68,6 @@ export function renderInspectorPanel(deps: InspectorDependencies) {
                 callbacks.assignElementToContainer(element.id, value);
             };
         }
-    }
-
-    if (element.type === "label" || element.type === "box") {
-        const descField = host.createDiv({ cls: "sm-le-field" });
-        descField.createEl("label", { text: element.type === "box" ? "Beschreibung" : "Zusatztext" });
-        const descInput = descField.createEl("textarea") as HTMLTextAreaElement;
-        descInput.value = element.description || "";
-        descInput.rows = 3;
-        const initialDesc = element.description ?? "";
-        descInput.oninput = () => {
-            element.description = descInput.value || undefined;
-            callbacks.syncElementElement(element);
-            callbacks.refreshExport();
-        };
-        descInput.onblur = () => {
-            const current = element.description ?? "";
-            if (current === initialDesc) return;
-            callbacks.updateStatus();
-            callbacks.pushHistory();
-            callbacks.renderInspector();
-        };
-    }
-
-    if (element.type === "text-input" || element.type === "textarea" || element.type === "dropdown" || element.type === "search-dropdown") {
-        const placeholderField = host.createDiv({ cls: "sm-le-field" });
-        placeholderField.createEl("label", { text: "Platzhalter" });
-        const placeholderInput = placeholderField.createEl("input", { attr: { type: "text" } }) as HTMLInputElement;
-        placeholderInput.value = element.placeholder || "";
-        const initialPlaceholder = element.placeholder ?? "";
-        placeholderInput.oninput = () => {
-            element.placeholder = placeholderInput.value || undefined;
-            callbacks.syncElementElement(element);
-            callbacks.refreshExport();
-        };
-        placeholderInput.onblur = () => {
-            const current = element.placeholder ?? "";
-            if (current === initialPlaceholder) return;
-            callbacks.updateStatus();
-            callbacks.pushHistory();
-            callbacks.renderInspector();
-        };
-
-        const defaultField = host.createDiv({ cls: "sm-le-field" });
-        defaultField.createEl("label", { text: "Default-Wert" });
-        if (element.type === "textarea") {
-            const defaultTextarea = defaultField.createEl("textarea") as HTMLTextAreaElement;
-            defaultTextarea.rows = 3;
-            defaultTextarea.value = element.defaultValue || "";
-            const initialDefault = element.defaultValue ?? "";
-            defaultTextarea.oninput = () => {
-                element.defaultValue = defaultTextarea.value || undefined;
-                callbacks.syncElementElement(element);
-                callbacks.refreshExport();
-            };
-            defaultTextarea.onblur = () => {
-                const current = element.defaultValue ?? "";
-                if (current === initialDefault) return;
-                callbacks.updateStatus();
-                callbacks.pushHistory();
-                callbacks.renderInspector();
-            };
-        } else {
-            const defaultInput = defaultField.createEl("input", { attr: { type: "text" } }) as HTMLInputElement;
-            defaultInput.value = element.defaultValue || "";
-            const initialDefault = element.defaultValue ?? "";
-            defaultInput.oninput = () => {
-                element.defaultValue = defaultInput.value || undefined;
-                callbacks.syncElementElement(element);
-                callbacks.refreshExport();
-            };
-            defaultInput.onblur = () => {
-                const current = element.defaultValue ?? "";
-                if (current === initialDefault) return;
-                callbacks.updateStatus();
-                callbacks.pushHistory();
-                callbacks.renderInspector();
-            };
-        }
-    }
-
-    if (element.type === "dropdown" || element.type === "search-dropdown") {
-        const optionsField = host.createDiv({ cls: "sm-le-field" });
-        optionsField.createEl("label", { text: "Optionen (eine pro Zeile)" });
-        const optionsInput = optionsField.createEl("textarea") as HTMLTextAreaElement;
-        optionsInput.rows = 4;
-        optionsInput.value = (element.options || []).join("\n");
-        const initialOptionsValue = optionsInput.value;
-        optionsInput.oninput = () => {
-            const lines = optionsInput.value
-                .split(/\r?\n/)
-                .map(v => v.trim())
-                .filter(Boolean);
-            element.options = lines.length ? lines : undefined;
-            callbacks.syncElementElement(element);
-            callbacks.refreshExport();
-        };
-        optionsInput.onblur = () => {
-            if (optionsInput.value === initialOptionsValue) return;
-            callbacks.updateStatus();
-            callbacks.pushHistory();
-            callbacks.renderInspector();
-        };
     }
 
     const attributesField = host.createDiv({ cls: "sm-le-field" });
@@ -280,59 +165,6 @@ function renderContainerInspectorSections(options: {
     callbacks: InspectorCallbacks;
 }) {
     const { element, host, elements, callbacks } = options;
-    const layoutField = host.createDiv({ cls: "sm-le-field sm-le-field--grid" });
-    layoutField.createEl("label", { text: "Abstand" });
-    const gapInput = layoutField.createEl("input", { attr: { type: "number", min: "0" } }) as HTMLInputElement;
-    gapInput.value = String(Math.round(element.layout!.gap));
-    gapInput.onchange = () => {
-        const next = Math.max(0, parseInt(gapInput.value, 10) || 0);
-        if (next === element.layout!.gap) return;
-        element.layout!.gap = next;
-        gapInput.value = String(next);
-        callbacks.applyContainerLayout(element);
-        callbacks.pushHistory();
-    };
-    layoutField.createEl("label", { text: "Innenabstand" });
-    const paddingInput = layoutField.createEl("input", { attr: { type: "number", min: "0" } }) as HTMLInputElement;
-    paddingInput.value = String(Math.round(element.layout!.padding));
-    paddingInput.onchange = () => {
-        const next = Math.max(0, parseInt(paddingInput.value, 10) || 0);
-        if (next === element.layout!.padding) return;
-        element.layout!.padding = next;
-        paddingInput.value = String(next);
-        callbacks.applyContainerLayout(element);
-        callbacks.pushHistory();
-    };
-
-    const alignField = host.createDiv({ cls: "sm-le-field" });
-    alignField.createEl("label", { text: "Ausrichtung" });
-    const alignSelect = alignField.createEl("select") as HTMLSelectElement;
-    const alignOptions: Array<[LayoutContainerAlign, string]> =
-        element.type === "vbox"
-            ? [
-                  ["start", "Links ausgerichtet"],
-                  ["center", "Zentriert"],
-                  ["end", "Rechts ausgerichtet"],
-                  ["stretch", "Breite gestreckt"],
-              ]
-            : [
-                  ["start", "Oben ausgerichtet"],
-                  ["center", "Vertikal zentriert"],
-                  ["end", "Unten ausgerichtet"],
-                  ["stretch", "Höhe gestreckt"],
-              ];
-    for (const [value, label] of alignOptions) {
-        const option = alignSelect.createEl("option", { value, text: label });
-        if (element.layout!.align === value) option.selected = true;
-    }
-    alignSelect.onchange = () => {
-        const next = (alignSelect.value as LayoutContainerAlign) ?? element.layout!.align;
-        if (next === element.layout!.align) return;
-        element.layout!.align = next;
-        callbacks.applyContainerLayout(element);
-        callbacks.pushHistory();
-    };
-
     const quickAddField = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
     quickAddField.createEl("label", { text: "Neues Element erstellen" });
     const quickAddBtn = quickAddField.createEl("button", { text: "Element hinzufügen" });

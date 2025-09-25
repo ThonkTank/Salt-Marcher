@@ -6470,23 +6470,10 @@ function renderInspectorPanel(deps) {
   }
   const parentContainer = !isContainer && element.parentId ? elements.find((el) => el.id === element.parentId) : null;
   host.createDiv({ cls: "sm-le-meta", text: `Typ: ${getElementTypeLabel(element.type)}` });
-  const labelField = host.createDiv({ cls: "sm-le-field" });
-  labelField.createEl("label", { text: element.type === "label" ? "Text" : "Label" });
-  const labelInput = labelField.createEl("textarea");
-  labelInput.value = element.label;
-  labelInput.rows = element.type === "textarea" ? 3 : 2;
-  const initialLabel = element.label;
-  labelInput.oninput = () => {
-    element.label = labelInput.value;
-    callbacks.syncElementElement(element);
-    callbacks.refreshExport();
-  };
-  labelInput.onblur = () => {
-    if (element.label === initialLabel) return;
-    callbacks.updateStatus();
-    callbacks.pushHistory();
-    callbacks.renderInspector();
-  };
+  host.createDiv({
+    cls: "sm-le-hint",
+    text: "Texte, Default-Werte und Platzhalter bearbeitest du direkt in der Vorschau."
+  });
   if (!isContainer) {
     const containers = elements.filter((el) => isContainerType(el.type));
     if (containers.length) {
@@ -6504,101 +6491,6 @@ function renderInspectorPanel(deps) {
         callbacks.assignElementToContainer(element.id, value);
       };
     }
-  }
-  if (element.type === "label" || element.type === "box") {
-    const descField = host.createDiv({ cls: "sm-le-field" });
-    descField.createEl("label", { text: element.type === "box" ? "Beschreibung" : "Zusatztext" });
-    const descInput = descField.createEl("textarea");
-    descInput.value = element.description || "";
-    descInput.rows = 3;
-    const initialDesc = element.description ?? "";
-    descInput.oninput = () => {
-      element.description = descInput.value || void 0;
-      callbacks.syncElementElement(element);
-      callbacks.refreshExport();
-    };
-    descInput.onblur = () => {
-      const current = element.description ?? "";
-      if (current === initialDesc) return;
-      callbacks.updateStatus();
-      callbacks.pushHistory();
-      callbacks.renderInspector();
-    };
-  }
-  if (element.type === "text-input" || element.type === "textarea" || element.type === "dropdown" || element.type === "search-dropdown") {
-    const placeholderField = host.createDiv({ cls: "sm-le-field" });
-    placeholderField.createEl("label", { text: "Platzhalter" });
-    const placeholderInput = placeholderField.createEl("input", { attr: { type: "text" } });
-    placeholderInput.value = element.placeholder || "";
-    const initialPlaceholder = element.placeholder ?? "";
-    placeholderInput.oninput = () => {
-      element.placeholder = placeholderInput.value || void 0;
-      callbacks.syncElementElement(element);
-      callbacks.refreshExport();
-    };
-    placeholderInput.onblur = () => {
-      const current = element.placeholder ?? "";
-      if (current === initialPlaceholder) return;
-      callbacks.updateStatus();
-      callbacks.pushHistory();
-      callbacks.renderInspector();
-    };
-    const defaultField = host.createDiv({ cls: "sm-le-field" });
-    defaultField.createEl("label", { text: "Default-Wert" });
-    if (element.type === "textarea") {
-      const defaultTextarea = defaultField.createEl("textarea");
-      defaultTextarea.rows = 3;
-      defaultTextarea.value = element.defaultValue || "";
-      const initialDefault = element.defaultValue ?? "";
-      defaultTextarea.oninput = () => {
-        element.defaultValue = defaultTextarea.value || void 0;
-        callbacks.syncElementElement(element);
-        callbacks.refreshExport();
-      };
-      defaultTextarea.onblur = () => {
-        const current = element.defaultValue ?? "";
-        if (current === initialDefault) return;
-        callbacks.updateStatus();
-        callbacks.pushHistory();
-        callbacks.renderInspector();
-      };
-    } else {
-      const defaultInput = defaultField.createEl("input", { attr: { type: "text" } });
-      defaultInput.value = element.defaultValue || "";
-      const initialDefault = element.defaultValue ?? "";
-      defaultInput.oninput = () => {
-        element.defaultValue = defaultInput.value || void 0;
-        callbacks.syncElementElement(element);
-        callbacks.refreshExport();
-      };
-      defaultInput.onblur = () => {
-        const current = element.defaultValue ?? "";
-        if (current === initialDefault) return;
-        callbacks.updateStatus();
-        callbacks.pushHistory();
-        callbacks.renderInspector();
-      };
-    }
-  }
-  if (element.type === "dropdown" || element.type === "search-dropdown") {
-    const optionsField = host.createDiv({ cls: "sm-le-field" });
-    optionsField.createEl("label", { text: "Optionen (eine pro Zeile)" });
-    const optionsInput = optionsField.createEl("textarea");
-    optionsInput.rows = 4;
-    optionsInput.value = (element.options || []).join("\n");
-    const initialOptionsValue = optionsInput.value;
-    optionsInput.oninput = () => {
-      const lines = optionsInput.value.split(/\r?\n/).map((v) => v.trim()).filter(Boolean);
-      element.options = lines.length ? lines : void 0;
-      callbacks.syncElementElement(element);
-      callbacks.refreshExport();
-    };
-    optionsInput.onblur = () => {
-      if (optionsInput.value === initialOptionsValue) return;
-      callbacks.updateStatus();
-      callbacks.pushHistory();
-      callbacks.renderInspector();
-    };
   }
   const attributesField = host.createDiv({ cls: "sm-le-field" });
   attributesField.createEl("label", { text: "Attribute" });
@@ -6684,54 +6576,6 @@ function renderInspectorPanel(deps) {
 }
 function renderContainerInspectorSections(options) {
   const { element, host, elements, callbacks } = options;
-  const layoutField = host.createDiv({ cls: "sm-le-field sm-le-field--grid" });
-  layoutField.createEl("label", { text: "Abstand" });
-  const gapInput = layoutField.createEl("input", { attr: { type: "number", min: "0" } });
-  gapInput.value = String(Math.round(element.layout.gap));
-  gapInput.onchange = () => {
-    const next = Math.max(0, parseInt(gapInput.value, 10) || 0);
-    if (next === element.layout.gap) return;
-    element.layout.gap = next;
-    gapInput.value = String(next);
-    callbacks.applyContainerLayout(element);
-    callbacks.pushHistory();
-  };
-  layoutField.createEl("label", { text: "Innenabstand" });
-  const paddingInput = layoutField.createEl("input", { attr: { type: "number", min: "0" } });
-  paddingInput.value = String(Math.round(element.layout.padding));
-  paddingInput.onchange = () => {
-    const next = Math.max(0, parseInt(paddingInput.value, 10) || 0);
-    if (next === element.layout.padding) return;
-    element.layout.padding = next;
-    paddingInput.value = String(next);
-    callbacks.applyContainerLayout(element);
-    callbacks.pushHistory();
-  };
-  const alignField = host.createDiv({ cls: "sm-le-field" });
-  alignField.createEl("label", { text: "Ausrichtung" });
-  const alignSelect = alignField.createEl("select");
-  const alignOptions = element.type === "vbox" ? [
-    ["start", "Links ausgerichtet"],
-    ["center", "Zentriert"],
-    ["end", "Rechts ausgerichtet"],
-    ["stretch", "Breite gestreckt"]
-  ] : [
-    ["start", "Oben ausgerichtet"],
-    ["center", "Vertikal zentriert"],
-    ["end", "Unten ausgerichtet"],
-    ["stretch", "H\xF6he gestreckt"]
-  ];
-  for (const [value, label] of alignOptions) {
-    const option = alignSelect.createEl("option", { value, text: label });
-    if (element.layout.align === value) option.selected = true;
-  }
-  alignSelect.onchange = () => {
-    const next = alignSelect.value ?? element.layout.align;
-    if (next === element.layout.align) return;
-    element.layout.align = next;
-    callbacks.applyContainerLayout(element);
-    callbacks.pushHistory();
-  };
   const quickAddField = host.createDiv({ cls: "sm-le-field sm-le-field--stack" });
   quickAddField.createEl("label", { text: "Neues Element erstellen" });
   const quickAddBtn = quickAddField.createEl("button", { text: "Element hinzuf\xFCgen" });
@@ -8630,8 +8474,8 @@ var HEX_PLUGIN_CSS = `
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    padding: 0.25rem;
+    gap: 0.25rem;
+    padding: 0.15rem;
 }
 
 .sm-le-preview__text-block,
@@ -8641,7 +8485,7 @@ var HEX_PLUGIN_CSS = `
 .sm-le-preview__container-header {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.25rem;
 }
 
 .sm-le-preview__text {
@@ -8668,20 +8512,20 @@ var HEX_PLUGIN_CSS = `
 }
 
 .sm-le-preview__meta {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--text-muted);
     display: flex;
     flex-wrap: wrap;
-    gap: 0.3rem;
+    gap: 0.2rem;
 }
 
 .sm-le-preview__input,
 .sm-le-preview__textarea,
 .sm-le-preview__select {
     width: 100%;
-    border-radius: 8px;
+    border-radius: 4px;
     border: 1px solid var(--background-modifier-border);
-    padding: 0.45rem 0.55rem;
+    padding: 0.3rem 0.4rem;
     background: var(--background-primary);
     font: inherit;
     color: inherit;
@@ -8690,13 +8534,13 @@ var HEX_PLUGIN_CSS = `
 
 .sm-le-preview__textarea {
     resize: vertical;
-    min-height: 120px;
+    min-height: 80px;
 }
 
 .sm-le-inline-edit {
     display: inline-block;
-    padding: 0.1rem 0.2rem;
-    border-radius: 6px;
+    padding: 0.05rem 0.15rem;
+    border-radius: 4px;
     cursor: text;
     transition: box-shadow 120ms ease, background 120ms ease;
     min-width: 0.6rem;
@@ -8783,22 +8627,22 @@ var HEX_PLUGIN_CSS = `
 .sm-le-preview__layout {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.35rem;
 }
 
 .sm-le-inline-control {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    font-size: 0.75rem;
+    gap: 0.2rem;
+    font-size: 0.7rem;
     color: var(--text-muted);
 }
 
 .sm-le-inline-number,
 .sm-le-inline-select {
-    border-radius: 6px;
+    border-radius: 4px;
     border: 1px solid var(--background-modifier-border);
-    padding: 0.25rem 0.35rem;
+    padding: 0.2rem 0.3rem;
     font: inherit;
     background: var(--background-primary);
     color: inherit;
@@ -8807,15 +8651,15 @@ var HEX_PLUGIN_CSS = `
 .sm-le-preview__container-summary {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.35rem;
-    font-size: 0.75rem;
+    gap: 0.25rem;
+    font-size: 0.7rem;
     color: var(--text-muted);
 }
 
 .sm-le-container-chip {
     background: var(--background-secondary);
     border-radius: 999px;
-    padding: 0.25rem 0.6rem;
+    padding: 0.2rem 0.45rem;
 }
 
 .sm-le-box__resize {
@@ -8846,15 +8690,15 @@ var HEX_PLUGIN_CSS = `
 }
 
 .sm-le-inspector {
-    flex: 0 0 280px;
-    min-width: 260px;
+    flex: 0 0 240px;
+    min-width: 220px;
     background: var(--background-primary);
     border: 1px solid var(--background-modifier-border);
-    border-radius: 12px;
-    padding: 0.75rem;
+    border-radius: 10px;
+    padding: 0.6rem;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
 }
 
 .sm-le-inspector h3 {
@@ -8864,14 +8708,20 @@ var HEX_PLUGIN_CSS = `
 .sm-le-field {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.25rem;
 }
 
 .sm-le-field label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--text-muted);
+}
+
+.sm-le-hint {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    line-height: 1.3;
 }
 
 .sm-le-field textarea,
