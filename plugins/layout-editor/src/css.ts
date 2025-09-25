@@ -205,6 +205,116 @@ export const LAYOUT_EDITOR_CSS = `
     gap: 0.35rem;
 }
 
+.sm-le-add__trigger {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+}
+
+.sm-le-element-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 420px;
+}
+
+.sm-le-element-picker__search {
+    margin-bottom: 0.25rem;
+}
+
+.sm-le-element-picker__tree {
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 12px;
+    padding: 0.5rem;
+    background: var(--background-secondary);
+}
+
+.sm-le-element-picker__empty {
+    padding: 1.25rem 0.5rem;
+    text-align: center;
+}
+
+.sm-elements-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.sm-elements-tree__group {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 10px;
+    background: var(--background-primary);
+    overflow: hidden;
+}
+
+.sm-elements-tree__header {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.6rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.sm-elements-tree__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 6px;
+    background: var(--background-secondary);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.sm-elements-tree__label {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.sm-elements-tree__children {
+    display: none;
+    flex-direction: column;
+    gap: 0.25rem;
+    border-left: 1px dashed var(--background-modifier-border);
+    margin: 0 0 0.4rem 0.85rem;
+    padding: 0.35rem 0.5rem 0.35rem 0.75rem;
+}
+
+.sm-elements-tree__group.is-expanded > .sm-elements-tree__children {
+    display: flex;
+}
+
+.sm-elements-tree__item {
+    display: block;
+}
+
+.sm-elements-tree__item-button {
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: transparent;
+    padding: 0.4rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 120ms ease, color 120ms ease;
+}
+
+.sm-elements-tree__item-button:hover,
+.sm-elements-tree__item-button:focus {
+    background: var(--background-modifier-hover);
+    outline: none;
+}
+
+.sm-elements-tree__item-button:active {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent, #ffffff);
+}
+
 .sm-le-status {
     font-size: 0.9rem;
     color: var(--text-muted);
