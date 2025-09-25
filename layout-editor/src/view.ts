@@ -86,6 +86,8 @@ export class LayoutEditorView extends ItemView {
     private isSavingLayout = false;
     private lastSavedLayoutId: string | null = null;
     private lastSavedLayoutName = "";
+    private lastSavedLayoutCreatedAt: string | null = null;
+    private lastSavedLayoutUpdatedAt: string | null = null;
 
     private readonly history = new LayoutHistory(
         () => this.captureSnapshot(),
@@ -437,6 +439,8 @@ export class LayoutEditorView extends ItemView {
             });
             this.lastSavedLayoutId = saved.id;
             this.lastSavedLayoutName = saved.name;
+            this.lastSavedLayoutCreatedAt = saved.createdAt;
+            this.lastSavedLayoutUpdatedAt = saved.updatedAt;
             new Notice(`Layout „${saved.name}” gespeichert`);
         } catch (error) {
             console.error("Failed to save layout", error);
@@ -818,7 +822,12 @@ export class LayoutEditorView extends ItemView {
 
     private refreshExport() {
         if (!this.exportEl) return;
-        const payload: LayoutBlueprint = {
+        const payload: LayoutBlueprint & {
+            id: string | null;
+            name: string | null;
+            createdAt: string | null;
+            updatedAt: string | null;
+        } = {
             canvasWidth: Math.round(this.canvasWidth),
             canvasHeight: Math.round(this.canvasHeight),
             elements: this.elements.map(element => {
@@ -831,6 +840,10 @@ export class LayoutEditorView extends ItemView {
                     height: Math.round(clone.height),
                 };
             }),
+            id: this.lastSavedLayoutId,
+            name: this.lastSavedLayoutName.trim() ? this.lastSavedLayoutName : null,
+            createdAt: this.lastSavedLayoutCreatedAt,
+            updatedAt: this.lastSavedLayoutUpdatedAt ?? this.lastSavedLayoutCreatedAt,
         };
         this.exportEl.value = JSON.stringify(payload, null, 2);
     }
@@ -1482,6 +1495,8 @@ export class LayoutEditorView extends ItemView {
         this.selectedElementId = null;
         this.lastSavedLayoutId = layout.id;
         this.lastSavedLayoutName = layout.name;
+        this.lastSavedLayoutCreatedAt = layout.createdAt;
+        this.lastSavedLayoutUpdatedAt = layout.updatedAt;
         if (this.widthInput) this.widthInput.value = String(this.canvasWidth);
         if (this.heightInput) this.heightInput.value = String(this.canvasHeight);
         this.applyCanvasSize();
