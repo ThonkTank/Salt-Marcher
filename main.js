@@ -6872,6 +6872,20 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     this.canvasWidth = 800;
     this.canvasHeight = 600;
     this.isImporting = false;
+    this.structureWidth = 260;
+    this.inspectorWidth = 320;
+    this.minPanelWidth = 200;
+    this.minStageWidth = 320;
+    this.resizerSize = 6;
+    this.cameraScale = 1;
+    this.cameraX = 0;
+    this.cameraY = 0;
+    this.panPointerId = null;
+    this.panStartX = 0;
+    this.panStartY = 0;
+    this.panOriginX = 0;
+    this.panOriginY = 0;
+    this.hasInitializedCamera = false;
     this.elementElements = /* @__PURE__ */ new Map();
     this.history = new LayoutHistory(
       () => this.captureSnapshot(),
@@ -6907,6 +6921,51 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
           this.undo();
         }
       }
+    };
+    this.onStagePointerDown = (event) => {
+      if (event.button !== 1) return;
+      if (!this.stageViewportEl) return;
+      event.preventDefault();
+      this.panPointerId = event.pointerId;
+      this.panStartX = event.clientX;
+      this.panStartY = event.clientY;
+      this.panOriginX = this.cameraX;
+      this.panOriginY = this.cameraY;
+      this.stageViewportEl.setPointerCapture(event.pointerId);
+      this.stageViewportEl.addClass("is-panning");
+    };
+    this.onStagePointerMove = (event) => {
+      if (this.panPointerId === null) return;
+      if (event.pointerId !== this.panPointerId) return;
+      const dx = event.clientX - this.panStartX;
+      const dy = event.clientY - this.panStartY;
+      this.cameraX = this.panOriginX + dx;
+      this.cameraY = this.panOriginY + dy;
+      this.applyCameraTransform();
+    };
+    this.onStagePointerUp = (event) => {
+      if (this.panPointerId === null) return;
+      if (event.pointerId !== this.panPointerId) return;
+      this.stageViewportEl?.releasePointerCapture(event.pointerId);
+      this.stageViewportEl?.removeClass("is-panning");
+      this.panPointerId = null;
+    };
+    this.onStageWheel = (event) => {
+      if (!this.stageViewportEl) return;
+      if (!event.deltaY) return;
+      event.preventDefault();
+      const scaleFactor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
+      const nextScale = clamp(this.cameraScale * scaleFactor, 0.25, 3);
+      if (Math.abs(nextScale - this.cameraScale) < 1e-4) return;
+      const rect = this.stageViewportEl.getBoundingClientRect();
+      const pointerX = event.clientX - rect.left;
+      const pointerY = event.clientY - rect.top;
+      const worldX = (pointerX - this.cameraX) / this.cameraScale;
+      const worldY = (pointerY - this.cameraY) / this.cameraScale;
+      this.cameraScale = nextScale;
+      this.cameraX = pointerX - worldX * this.cameraScale;
+      this.cameraY = pointerY - worldY * this.cameraScale;
+      this.applyCameraTransform();
     };
   }
   getViewType() {
@@ -7025,9 +7084,25 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     };
     sizeWrapper.createSpan({ text: "px" });
     this.statusEl = header.createDiv({ cls: "sm-le-status" });
-    const body = root.createDiv({ cls: "sm-le-body" });
-    const stage = body.createDiv({ cls: "sm-le-stage" });
-    this.canvasEl = stage.createDiv({ cls: "sm-le-canvas" });
+    this.bodyEl = root.createDiv({ cls: "sm-le-body" });
+    this.structurePanelEl = this.bodyEl.createDiv({ cls: "sm-le-panel sm-le-panel--structure" });
+    this.structurePanelEl.createEl("h3", { text: "Struktur" });
+    this.structureHost = this.structurePanelEl.createDiv({ cls: "sm-le-structure" });
+    const leftResizer = this.bodyEl.createDiv({ cls: "sm-le-resizer sm-le-resizer--structure" });
+    leftResizer.setAttr("role", "separator");
+    leftResizer.setAttr("aria-orientation", "vertical");
+    leftResizer.tabIndex = 0;
+    leftResizer.onpointerdown = (event) => this.beginResizePanel(event, "structure");
+    const stage = this.bodyEl.createDiv({ cls: "sm-le-stage" });
+    this.stageViewportEl = stage.createDiv({ cls: "sm-le-stage__viewport" });
+    this.stageViewportEl.addEventListener("pointerdown", this.onStagePointerDown);
+    this.stageViewportEl.addEventListener("pointermove", this.onStagePointerMove);
+    this.stageViewportEl.addEventListener("pointerup", this.onStagePointerUp);
+    this.stageViewportEl.addEventListener("pointercancel", this.onStagePointerUp);
+    this.stageViewportEl.addEventListener("wheel", this.onStageWheel, { passive: false });
+    this.cameraPanEl = this.stageViewportEl.createDiv({ cls: "sm-le-stage__camera" });
+    this.cameraZoomEl = this.cameraPanEl.createDiv({ cls: "sm-le-stage__zoom" });
+    this.canvasEl = this.cameraZoomEl.createDiv({ cls: "sm-le-canvas" });
     this.canvasEl.style.width = `${this.canvasWidth}px`;
     this.canvasEl.style.height = `${this.canvasHeight}px`;
     this.registerDomEvent(this.canvasEl, "pointerdown", (ev) => {
@@ -7036,7 +7111,14 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
       }
     });
     this.registerDomEvent(window, "keydown", this.onKeyDown);
-    this.inspectorHost = body.createDiv({ cls: "sm-le-inspector" });
+    const rightResizer = this.bodyEl.createDiv({ cls: "sm-le-resizer sm-le-resizer--inspector" });
+    rightResizer.setAttr("role", "separator");
+    rightResizer.setAttr("aria-orientation", "vertical");
+    rightResizer.tabIndex = 0;
+    rightResizer.onpointerdown = (event) => this.beginResizePanel(event, "inspector");
+    this.inspectorPanelEl = this.bodyEl.createDiv({ cls: "sm-le-panel sm-le-panel--inspector" });
+    this.inspectorPanelEl.createEl("h3", { text: "Eigenschaften" });
+    this.inspectorHost = this.inspectorPanelEl.createDiv({ cls: "sm-le-inspector" });
     this.registerDomEvent(this.inspectorHost, "sm-layout-open-attributes", (ev) => {
       const detail = ev.detail;
       if (!detail) return;
@@ -7080,6 +7162,92 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     this.renderElements();
     this.renderInspector();
     this.history.reset(this.captureSnapshot());
+    this.applyPanelSizes();
+    this.applyCameraTransform();
+    this.renderStructure();
+    requestAnimationFrame(() => {
+      if (this.hasInitializedCamera) return;
+      this.centerCamera();
+      this.hasInitializedCamera = true;
+    });
+  }
+  applyPanelSizes() {
+    if (this.structurePanelEl) {
+      const width = Math.max(this.minPanelWidth, Math.round(this.structureWidth));
+      this.structurePanelEl.style.flex = `0 0 ${width}px`;
+      this.structurePanelEl.style.width = `${width}px`;
+    }
+    if (this.inspectorPanelEl) {
+      const width = Math.max(this.minPanelWidth, Math.round(this.inspectorWidth));
+      this.inspectorPanelEl.style.flex = `0 0 ${width}px`;
+      this.inspectorPanelEl.style.width = `${width}px`;
+    }
+  }
+  beginResizePanel(event, target) {
+    if (event.button !== 0) return;
+    if (!this.bodyEl) return;
+    event.preventDefault();
+    const handle = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+    const pointerId = event.pointerId;
+    const startX = event.clientX;
+    const startWidth = target === "structure" ? this.structureWidth : this.inspectorWidth;
+    const otherWidth = target === "structure" ? this.inspectorWidth : this.structureWidth;
+    const onPointerMove = (ev) => {
+      if (ev.pointerId !== pointerId) return;
+      const bodyRect = this.bodyEl.getBoundingClientRect();
+      const maxWidth = Math.max(
+        this.minPanelWidth,
+        bodyRect.width - otherWidth - this.resizerSize * 2 - this.minStageWidth
+      );
+      const delta = ev.clientX - startX;
+      const next = clamp(startWidth + delta, this.minPanelWidth, maxWidth);
+      if (target === "structure") {
+        this.structureWidth = next;
+      } else {
+        this.inspectorWidth = next;
+      }
+      this.applyPanelSizes();
+    };
+    const onPointerUp = (ev) => {
+      if (ev.pointerId !== pointerId) return;
+      handle?.removeEventListener("pointermove", onPointerMove);
+      handle?.removeEventListener("pointerup", onPointerUp);
+      handle?.releasePointerCapture(pointerId);
+      handle?.removeClass("is-active");
+    };
+    handle?.setPointerCapture(pointerId);
+    handle?.addClass("is-active");
+    handle?.addEventListener("pointermove", onPointerMove);
+    handle?.addEventListener("pointerup", onPointerUp);
+  }
+  centerCamera() {
+    if (!this.stageViewportEl) return;
+    const rect = this.stageViewportEl.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const scaledWidth = this.canvasWidth * this.cameraScale;
+    const scaledHeight = this.canvasHeight * this.cameraScale;
+    this.cameraX = Math.round((rect.width - scaledWidth) / 2);
+    this.cameraY = Math.round((rect.height - scaledHeight) / 2);
+    this.applyCameraTransform();
+  }
+  applyCameraTransform() {
+    if (this.cameraPanEl) {
+      this.cameraPanEl.style.transform = `translate(${Math.round(this.cameraX)}px, ${Math.round(this.cameraY)}px)`;
+    }
+    if (this.cameraZoomEl) {
+      this.cameraZoomEl.style.transform = `scale(${this.cameraScale})`;
+    }
+  }
+  focusElementInCamera(element) {
+    if (!this.stageViewportEl) return;
+    const rect = this.stageViewportEl.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const scale = this.cameraScale || 1;
+    const centerX = element.x + element.width / 2;
+    const centerY = element.y + element.height / 2;
+    this.cameraX = Math.round(rect.width / 2 - centerX * scale);
+    this.cameraY = Math.round(rect.height / 2 - centerY * scale);
+    this.applyCameraTransform();
   }
   applyCanvasSize() {
     if (!this.canvasEl) return;
@@ -7102,6 +7270,7 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
       }
     }
     this.attributePopover.refresh();
+    this.renderStructure();
   }
   createElement(type, options) {
     const def = ELEMENT_DEFINITION_LOOKUP.get(type);
@@ -7180,6 +7349,7 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     this.updateSelectionStyles();
     this.updateStatus();
     this.attributePopover.refresh();
+    this.renderStructure();
   }
   createElementNode(element) {
     const el = this.canvasEl.createDiv({ cls: "sm-le-box" });
@@ -7257,6 +7427,7 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     this.selectedElementId = id;
     this.updateSelectionStyles();
     this.renderInspector();
+    this.renderStructure();
   }
   updateSelectionStyles() {
     for (const [id, el] of this.elementElements) {
@@ -7287,6 +7458,7 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
       }
     });
     this.attributePopover.refresh();
+    this.renderStructure();
   }
   refreshExport() {
     if (!this.exportEl) return;
@@ -7325,6 +7497,70 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     }
     this.statusEl.setText(parts.join(" \xB7 "));
   }
+  renderStructure() {
+    if (!this.structureHost) return;
+    this.structureHost.empty();
+    if (!this.elements.length) {
+      this.structureHost.createDiv({ cls: "sm-le-empty", text: "Noch keine Elemente." });
+      return;
+    }
+    const elementById = new Map(this.elements.map((element) => [element.id, element]));
+    const childrenByParent = /* @__PURE__ */ new Map();
+    for (const element of this.elements) {
+      const parentExists = element.parentId && elementById.has(element.parentId) ? element.parentId : null;
+      const key = parentExists ?? null;
+      const bucket = childrenByParent.get(key);
+      if (bucket) {
+        bucket.push(element);
+      } else {
+        childrenByParent.set(key, [element]);
+      }
+    }
+    for (const element of this.elements) {
+      if (!isContainerElement(element) || !element.children?.length) continue;
+      const list = childrenByParent.get(element.id);
+      if (!list) continue;
+      const lookup = new Map(list.map((child) => [child.id, child]));
+      const ordered = [];
+      for (const childId of element.children) {
+        const child = lookup.get(childId);
+        if (child) {
+          ordered.push(child);
+          lookup.delete(childId);
+        }
+      }
+      for (const child of list) {
+        if (lookup.has(child.id)) {
+          ordered.push(child);
+          lookup.delete(child.id);
+        }
+      }
+      childrenByParent.set(element.id, ordered);
+    }
+    const renderLevel = (parentId, container) => {
+      const children = childrenByParent.get(parentId);
+      if (!children || !children.length) return;
+      const listEl = container.createEl("ul", { cls: "sm-le-structure__list" });
+      for (const child of children) {
+        const itemEl = listEl.createEl("li", { cls: "sm-le-structure__item" });
+        const entry = itemEl.createEl("button", { cls: "sm-le-structure__entry" });
+        entry.dataset.id = child.id;
+        if (this.selectedElementId === child.id) {
+          entry.addClass("is-selected");
+        }
+        const name = child.label?.trim() || getElementTypeLabel(child.type);
+        entry.createSpan({ cls: "sm-le-structure__title", text: name });
+        entry.createSpan({ cls: "sm-le-structure__meta", text: getElementTypeLabel(child.type) });
+        entry.onclick = (ev) => {
+          ev.preventDefault();
+          this.selectElement(child.id);
+          this.focusElementInCamera(child);
+        };
+        renderLevel(child.id, itemEl);
+      }
+    };
+    renderLevel(null, this.structureHost);
+  }
   deleteElement(id) {
     const index = this.elements.findIndex((b) => b.id === id);
     if (index === -1) return;
@@ -7359,6 +7595,7 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     this.refreshExport();
     this.updateStatus();
     this.pushHistory();
+    this.renderStructure();
   }
   addChildToContainer(container, childId) {
     if (!Array.isArray(container.children)) container.children = [];
@@ -7391,6 +7628,7 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     this.renderInspector();
     this.updateStatus();
     this.pushHistory();
+    this.renderStructure();
   }
   moveChildInContainer(container, childId, offset) {
     if (!isContainerElement(container) || !container.children) return;
@@ -7489,6 +7727,9 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
       this.updateStatus();
     }
     this.attributePopover.refresh();
+    if (!options?.silent) {
+      this.renderStructure();
+    }
   }
   ensureContainerDefaults(element) {
     if (!isContainerType(element.type)) return;
@@ -7516,8 +7757,9 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
       return child ? { child, x: child.x, y: child.y } : null;
     }).filter((entry) => !!entry) ?? [] : [];
     const onMove = (ev) => {
-      const dx = ev.clientX - startX;
-      const dy = ev.clientY - startY;
+      const scale = this.cameraScale || 1;
+      const dx = (ev.clientX - startX) / scale;
+      const dy = (ev.clientY - startY) / scale;
       const nextX = originX + dx;
       const nextY = originY + dy;
       const maxX = Math.max(0, this.canvasWidth - element.width);
@@ -7563,8 +7805,9 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     const resizeLeft = corner === "nw" || corner === "sw";
     const resizeTop = corner === "nw" || corner === "ne";
     const onMove = (ev) => {
-      const dx = ev.clientX - startX;
-      const dy = ev.clientY - startY;
+      const scale = this.cameraScale || 1;
+      const dx = (ev.clientX - startX) / scale;
+      const dy = (ev.clientY - startY) / scale;
       let nextX = originX;
       let nextY = originY;
       let nextW = originW;
@@ -8463,15 +8706,168 @@ var HEX_PLUGIN_CSS = `
 }
 
 .sm-le-body {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 280px;
-    gap: 1.25rem;
+    display: flex;
     align-items: stretch;
+    gap: 0.75rem;
+    min-height: 520px;
+}
+
+.sm-le-panel {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 12px;
+    padding: 0.75rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
+    min-width: 200px;
+}
+
+.sm-le-panel h3 {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.sm-le-panel--structure {
+    flex-basis: 260px;
+}
+
+.sm-le-panel--inspector {
+    flex-basis: 320px;
+}
+
+.sm-le-structure {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.sm-le-structure__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.sm-le-structure__item {
+    display: block;
+}
+
+.sm-le-structure__item > .sm-le-structure__list {
+    margin-left: 0.85rem;
+    padding-left: 0.75rem;
+    border-left: 1px dashed var(--background-modifier-border);
+    margin-top: 0.35rem;
+}
+
+.sm-le-structure__entry {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    border: none;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    padding: 0.4rem 0.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 120ms ease, color 120ms ease;
+}
+
+.sm-le-structure__entry:hover {
+    background: var(--background-modifier-hover);
+}
+
+.sm-le-structure__entry.is-selected {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent, #ffffff);
+}
+
+.sm-le-structure__entry.is-selected .sm-le-structure__meta {
+    color: inherit;
+    opacity: 0.85;
+}
+
+.sm-le-structure__title {
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.sm-le-structure__meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.2;
+}
+
+.sm-le-resizer {
+    flex: 0 0 6px;
+    border-radius: 999px;
+    background: var(--background-modifier-border);
+    cursor: col-resize;
+    align-self: stretch;
+    transition: background-color 120ms ease;
+}
+
+.sm-le-resizer:hover,
+.sm-le-resizer.is-active {
+    background: var(--interactive-accent);
 }
 
 .sm-le-stage {
+    flex: 1 1 auto;
+    min-width: 320px;
     display: flex;
-    justify-content: center;
+    align-items: stretch;
+    justify-content: stretch;
+}
+
+.sm-le-stage__viewport {
+    position: relative;
+    flex: 1;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--background-secondary);
+    min-height: 520px;
+    cursor: grab;
+}
+
+.sm-le-stage__viewport::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+        linear-gradient(
+            0deg,
+            rgba(0, 0, 0, 0.035) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(0, 0, 0, 0.035) 1px,
+            transparent 1px
+        );
+    background-size: 40px 40px;
+}
+
+.sm-le-stage__viewport.is-panning {
+    cursor: grabbing;
+}
+
+.sm-le-stage__camera {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: top left;
+}
+
+.sm-le-stage__zoom {
+    transform-origin: top left;
 }
 
 .sm-le-canvas {
@@ -8575,6 +8971,35 @@ var HEX_PLUGIN_CSS = `
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+}
+
+.sm-le-preview__container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 10px;
+    background: var(--background-primary);
+    border: 1px dashed var(--background-modifier-border);
+}
+
+.sm-le-preview__container-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.4rem;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--interactive-accent) 6%, transparent);
+    min-height: 60px;
+}
+
+.sm-le-preview__container-placeholder {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 0.35rem 0;
 }
 
 .sm-le-preview__text {
@@ -8775,18 +9200,12 @@ var HEX_PLUGIN_CSS = `
 }
 
 .sm-le-inspector {
-    min-width: 240px;
-    background: var(--background-primary);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 10px;
-    padding: 0.6rem;
+    flex: 1;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-}
-
-.sm-le-inspector h3 {
-    margin: 0;
+    overflow-y: auto;
+    padding-right: 0.25rem;
 }
 
 .sm-le-field {

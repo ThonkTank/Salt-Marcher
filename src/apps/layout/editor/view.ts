@@ -24,8 +24,31 @@ export class LayoutEditorView extends ItemView {
     private canvasHeight = 600;
     private isImporting = false;
 
+    private structureWidth = 260;
+    private inspectorWidth = 320;
+    private readonly minPanelWidth = 200;
+    private readonly minStageWidth = 320;
+    private readonly resizerSize = 6;
+
+    private cameraScale = 1;
+    private cameraX = 0;
+    private cameraY = 0;
+    private panPointerId: number | null = null;
+    private panStartX = 0;
+    private panStartY = 0;
+    private panOriginX = 0;
+    private panOriginY = 0;
+    private hasInitializedCamera = false;
+
     private canvasEl!: HTMLElement;
+    private bodyEl!: HTMLElement;
+    private structurePanelEl!: HTMLElement;
+    private structureHost!: HTMLElement;
+    private stageViewportEl!: HTMLElement;
+    private cameraPanEl!: HTMLElement;
+    private cameraZoomEl!: HTMLElement;
     private inspectorHost!: HTMLElement;
+    private inspectorPanelEl!: HTMLElement;
     private exportEl!: HTMLTextAreaElement;
     private importBtn!: HTMLButtonElement;
     private statusEl!: HTMLElement;
@@ -198,9 +221,29 @@ export class LayoutEditorView extends ItemView {
 
         this.statusEl = header.createDiv({ cls: "sm-le-status" });
 
-        const body = root.createDiv({ cls: "sm-le-body" });
-        const stage = body.createDiv({ cls: "sm-le-stage" });
-        this.canvasEl = stage.createDiv({ cls: "sm-le-canvas" });
+        this.bodyEl = root.createDiv({ cls: "sm-le-body" });
+
+        this.structurePanelEl = this.bodyEl.createDiv({ cls: "sm-le-panel sm-le-panel--structure" });
+        this.structurePanelEl.createEl("h3", { text: "Struktur" });
+        this.structureHost = this.structurePanelEl.createDiv({ cls: "sm-le-structure" });
+
+        const leftResizer = this.bodyEl.createDiv({ cls: "sm-le-resizer sm-le-resizer--structure" });
+        leftResizer.setAttr("role", "separator");
+        leftResizer.setAttr("aria-orientation", "vertical");
+        leftResizer.tabIndex = 0;
+        leftResizer.onpointerdown = event => this.beginResizePanel(event, "structure");
+
+        const stage = this.bodyEl.createDiv({ cls: "sm-le-stage" });
+        this.stageViewportEl = stage.createDiv({ cls: "sm-le-stage__viewport" });
+        this.stageViewportEl.addEventListener("pointerdown", this.onStagePointerDown);
+        this.stageViewportEl.addEventListener("pointermove", this.onStagePointerMove);
+        this.stageViewportEl.addEventListener("pointerup", this.onStagePointerUp);
+        this.stageViewportEl.addEventListener("pointercancel", this.onStagePointerUp);
+        this.stageViewportEl.addEventListener("wheel", this.onStageWheel, { passive: false });
+
+        this.cameraPanEl = this.stageViewportEl.createDiv({ cls: "sm-le-stage__camera" });
+        this.cameraZoomEl = this.cameraPanEl.createDiv({ cls: "sm-le-stage__zoom" });
+        this.canvasEl = this.cameraZoomEl.createDiv({ cls: "sm-le-canvas" });
         this.canvasEl.style.width = `${this.canvasWidth}px`;
         this.canvasEl.style.height = `${this.canvasHeight}px`;
         this.registerDomEvent(this.canvasEl, "pointerdown", (ev: PointerEvent) => {
@@ -210,7 +253,15 @@ export class LayoutEditorView extends ItemView {
         });
         this.registerDomEvent(window, "keydown", this.onKeyDown);
 
-        this.inspectorHost = body.createDiv({ cls: "sm-le-inspector" });
+        const rightResizer = this.bodyEl.createDiv({ cls: "sm-le-resizer sm-le-resizer--inspector" });
+        rightResizer.setAttr("role", "separator");
+        rightResizer.setAttr("aria-orientation", "vertical");
+        rightResizer.tabIndex = 0;
+        rightResizer.onpointerdown = event => this.beginResizePanel(event, "inspector");
+
+        this.inspectorPanelEl = this.bodyEl.createDiv({ cls: "sm-le-panel sm-le-panel--inspector" });
+        this.inspectorPanelEl.createEl("h3", { text: "Eigenschaften" });
+        this.inspectorHost = this.inspectorPanelEl.createDiv({ cls: "sm-le-inspector" });
         this.registerDomEvent(this.inspectorHost, "sm-layout-open-attributes" as any, (ev: Event) => {
             const detail = (ev as CustomEvent<{ elementId: string; anchor: HTMLElement }>).detail;
             if (!detail) return;
@@ -257,7 +308,148 @@ export class LayoutEditorView extends ItemView {
         this.renderElements();
         this.renderInspector();
         this.history.reset(this.captureSnapshot());
+
+        this.applyPanelSizes();
+        this.applyCameraTransform();
+        this.renderStructure();
+        requestAnimationFrame(() => {
+            if (this.hasInitializedCamera) return;
+            this.centerCamera();
+            this.hasInitializedCamera = true;
+        });
     }
+
+    private applyPanelSizes() {
+        if (this.structurePanelEl) {
+            const width = Math.max(this.minPanelWidth, Math.round(this.structureWidth));
+            this.structurePanelEl.style.flex = `0 0 ${width}px`;
+            this.structurePanelEl.style.width = `${width}px`;
+        }
+        if (this.inspectorPanelEl) {
+            const width = Math.max(this.minPanelWidth, Math.round(this.inspectorWidth));
+            this.inspectorPanelEl.style.flex = `0 0 ${width}px`;
+            this.inspectorPanelEl.style.width = `${width}px`;
+        }
+    }
+
+    private beginResizePanel(event: PointerEvent, target: "structure" | "inspector") {
+        if (event.button !== 0) return;
+        if (!this.bodyEl) return;
+        event.preventDefault();
+        const handle = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+        const pointerId = event.pointerId;
+        const startX = event.clientX;
+        const startWidth = target === "structure" ? this.structureWidth : this.inspectorWidth;
+        const otherWidth = target === "structure" ? this.inspectorWidth : this.structureWidth;
+        const onPointerMove = (ev: PointerEvent) => {
+            if (ev.pointerId !== pointerId) return;
+            const bodyRect = this.bodyEl.getBoundingClientRect();
+            const maxWidth = Math.max(
+                this.minPanelWidth,
+                bodyRect.width - otherWidth - this.resizerSize * 2 - this.minStageWidth,
+            );
+            const delta = ev.clientX - startX;
+            const next = clamp(startWidth + delta, this.minPanelWidth, maxWidth);
+            if (target === "structure") {
+                this.structureWidth = next;
+            } else {
+                this.inspectorWidth = next;
+            }
+            this.applyPanelSizes();
+        };
+        const onPointerUp = (ev: PointerEvent) => {
+            if (ev.pointerId !== pointerId) return;
+            handle?.removeEventListener("pointermove", onPointerMove);
+            handle?.removeEventListener("pointerup", onPointerUp);
+            handle?.releasePointerCapture(pointerId);
+            handle?.removeClass("is-active");
+        };
+        handle?.setPointerCapture(pointerId);
+        handle?.addClass("is-active");
+        handle?.addEventListener("pointermove", onPointerMove);
+        handle?.addEventListener("pointerup", onPointerUp);
+    }
+
+    private centerCamera() {
+        if (!this.stageViewportEl) return;
+        const rect = this.stageViewportEl.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        const scaledWidth = this.canvasWidth * this.cameraScale;
+        const scaledHeight = this.canvasHeight * this.cameraScale;
+        this.cameraX = Math.round((rect.width - scaledWidth) / 2);
+        this.cameraY = Math.round((rect.height - scaledHeight) / 2);
+        this.applyCameraTransform();
+    }
+
+    private applyCameraTransform() {
+        if (this.cameraPanEl) {
+            this.cameraPanEl.style.transform = `translate(${Math.round(this.cameraX)}px, ${Math.round(this.cameraY)}px)`;
+        }
+        if (this.cameraZoomEl) {
+            this.cameraZoomEl.style.transform = `scale(${this.cameraScale})`;
+        }
+    }
+
+    private focusElementInCamera(element: LayoutElement) {
+        if (!this.stageViewportEl) return;
+        const rect = this.stageViewportEl.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        const scale = this.cameraScale || 1;
+        const centerX = element.x + element.width / 2;
+        const centerY = element.y + element.height / 2;
+        this.cameraX = Math.round(rect.width / 2 - centerX * scale);
+        this.cameraY = Math.round(rect.height / 2 - centerY * scale);
+        this.applyCameraTransform();
+    }
+
+    private onStagePointerDown = (event: PointerEvent) => {
+        if (event.button !== 1) return;
+        if (!this.stageViewportEl) return;
+        event.preventDefault();
+        this.panPointerId = event.pointerId;
+        this.panStartX = event.clientX;
+        this.panStartY = event.clientY;
+        this.panOriginX = this.cameraX;
+        this.panOriginY = this.cameraY;
+        this.stageViewportEl.setPointerCapture(event.pointerId);
+        this.stageViewportEl.addClass("is-panning");
+    };
+
+    private onStagePointerMove = (event: PointerEvent) => {
+        if (this.panPointerId === null) return;
+        if (event.pointerId !== this.panPointerId) return;
+        const dx = event.clientX - this.panStartX;
+        const dy = event.clientY - this.panStartY;
+        this.cameraX = this.panOriginX + dx;
+        this.cameraY = this.panOriginY + dy;
+        this.applyCameraTransform();
+    };
+
+    private onStagePointerUp = (event: PointerEvent) => {
+        if (this.panPointerId === null) return;
+        if (event.pointerId !== this.panPointerId) return;
+        this.stageViewportEl?.releasePointerCapture(event.pointerId);
+        this.stageViewportEl?.removeClass("is-panning");
+        this.panPointerId = null;
+    };
+
+    private onStageWheel = (event: WheelEvent) => {
+        if (!this.stageViewportEl) return;
+        if (!event.deltaY) return;
+        event.preventDefault();
+        const scaleFactor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
+        const nextScale = clamp(this.cameraScale * scaleFactor, 0.25, 3);
+        if (Math.abs(nextScale - this.cameraScale) < 0.0001) return;
+        const rect = this.stageViewportEl.getBoundingClientRect();
+        const pointerX = event.clientX - rect.left;
+        const pointerY = event.clientY - rect.top;
+        const worldX = (pointerX - this.cameraX) / this.cameraScale;
+        const worldY = (pointerY - this.cameraY) / this.cameraScale;
+        this.cameraScale = nextScale;
+        this.cameraX = pointerX - worldX * this.cameraScale;
+        this.cameraY = pointerY - worldY * this.cameraScale;
+        this.applyCameraTransform();
+    };
 
     private applyCanvasSize() {
         if (!this.canvasEl) return;
@@ -280,6 +472,7 @@ export class LayoutEditorView extends ItemView {
             }
         }
         this.attributePopover.refresh();
+        this.renderStructure();
     }
 
     private createElement(type: LayoutElementType, options?: { parentId?: string | null }) {
@@ -365,6 +558,7 @@ export class LayoutEditorView extends ItemView {
         this.updateSelectionStyles();
         this.updateStatus();
         this.attributePopover.refresh();
+        this.renderStructure();
     }
 
     private createElementNode(element: LayoutElement) {
@@ -454,6 +648,7 @@ export class LayoutEditorView extends ItemView {
         this.selectedElementId = id;
         this.updateSelectionStyles();
         this.renderInspector();
+        this.renderStructure();
     }
 
     private updateSelectionStyles() {
@@ -486,6 +681,7 @@ export class LayoutEditorView extends ItemView {
             },
         });
         this.attributePopover.refresh();
+        this.renderStructure();
     }
 
     private refreshExport() {
@@ -527,6 +723,76 @@ export class LayoutEditorView extends ItemView {
         this.statusEl.setText(parts.join(" · "));
     }
 
+    private renderStructure() {
+        if (!this.structureHost) return;
+        this.structureHost.empty();
+        if (!this.elements.length) {
+            this.structureHost.createDiv({ cls: "sm-le-empty", text: "Noch keine Elemente." });
+            return;
+        }
+
+        const elementById = new Map(this.elements.map(element => [element.id, element]));
+        const childrenByParent = new Map<string | null, LayoutElement[]>();
+
+        for (const element of this.elements) {
+            const parentExists = element.parentId && elementById.has(element.parentId) ? element.parentId : null;
+            const key = parentExists ?? null;
+            const bucket = childrenByParent.get(key);
+            if (bucket) {
+                bucket.push(element);
+            } else {
+                childrenByParent.set(key, [element]);
+            }
+        }
+
+        for (const element of this.elements) {
+            if (!isContainerElement(element) || !element.children?.length) continue;
+            const list = childrenByParent.get(element.id);
+            if (!list) continue;
+            const lookup = new Map(list.map(child => [child.id, child]));
+            const ordered: LayoutElement[] = [];
+            for (const childId of element.children) {
+                const child = lookup.get(childId);
+                if (child) {
+                    ordered.push(child);
+                    lookup.delete(childId);
+                }
+            }
+            for (const child of list) {
+                if (lookup.has(child.id)) {
+                    ordered.push(child);
+                    lookup.delete(child.id);
+                }
+            }
+            childrenByParent.set(element.id, ordered);
+        }
+
+        const renderLevel = (parentId: string | null, container: HTMLElement) => {
+            const children = childrenByParent.get(parentId);
+            if (!children || !children.length) return;
+            const listEl = container.createEl("ul", { cls: "sm-le-structure__list" });
+            for (const child of children) {
+                const itemEl = listEl.createEl("li", { cls: "sm-le-structure__item" });
+                const entry = itemEl.createEl("button", { cls: "sm-le-structure__entry" });
+                entry.dataset.id = child.id;
+                if (this.selectedElementId === child.id) {
+                    entry.addClass("is-selected");
+                }
+                const name = child.label?.trim() || getElementTypeLabel(child.type);
+                entry.createSpan({ cls: "sm-le-structure__title", text: name });
+                entry.createSpan({ cls: "sm-le-structure__meta", text: getElementTypeLabel(child.type) });
+                entry.onclick = ev => {
+                    ev.preventDefault();
+                    this.selectElement(child.id);
+                    this.focusElementInCamera(child);
+                };
+                renderLevel(child.id, itemEl);
+            }
+        };
+
+        renderLevel(null, this.structureHost);
+    }
+
     private deleteElement(id: string) {
         const index = this.elements.findIndex(b => b.id === id);
         if (index === -1) return;
@@ -564,6 +830,7 @@ export class LayoutEditorView extends ItemView {
         this.refreshExport();
         this.updateStatus();
         this.pushHistory();
+        this.renderStructure();
     }
 
     private addChildToContainer(container: LayoutElement & { children: string[] }, childId: string) {
@@ -599,6 +866,7 @@ export class LayoutEditorView extends ItemView {
         this.renderInspector();
         this.updateStatus();
         this.pushHistory();
+        this.renderStructure();
     }
 
     private moveChildInContainer(container: LayoutElement, childId: string, offset: number) {
@@ -702,6 +970,9 @@ export class LayoutEditorView extends ItemView {
             this.updateStatus();
         }
         this.attributePopover.refresh();
+        if (!options?.silent) {
+            this.renderStructure();
+        }
     }
 
     private ensureContainerDefaults(element: LayoutElement) {
@@ -734,8 +1005,9 @@ export class LayoutEditorView extends ItemView {
             : [];
 
         const onMove = (ev: PointerEvent) => {
-            const dx = ev.clientX - startX;
-            const dy = ev.clientY - startY;
+            const scale = this.cameraScale || 1;
+            const dx = (ev.clientX - startX) / scale;
+            const dy = (ev.clientY - startY) / scale;
             const nextX = originX + dx;
             const nextY = originY + dy;
             const maxX = Math.max(0, this.canvasWidth - element.width);
@@ -790,8 +1062,9 @@ export class LayoutEditorView extends ItemView {
         const resizeTop = corner === "nw" || corner === "ne";
 
         const onMove = (ev: PointerEvent) => {
-            const dx = ev.clientX - startX;
-            const dy = ev.clientY - startY;
+            const scale = this.cameraScale || 1;
+            const dx = (ev.clientX - startX) / scale;
+            const dy = (ev.clientY - startY) / scale;
             let nextX = originX;
             let nextY = originY;
             let nextW = originW;

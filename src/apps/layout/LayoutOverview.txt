@@ -20,7 +20,8 @@ src/apps/layout/
 
 ## Features & Verantwortlichkeiten
 
-- **Layout-Arbeitsfläche:** Konfigurierbare Canvas mit Breite/Höhe-Controls; alle Elemente werden mit Bounds-Clamping gerendert und lassen sich direkt über ihren Rahmen bewegen (Drag) bzw. an den Ecken skalieren (Resize). Inspector und Arbeitsfläche bilden ein Zweispalten-Layout mit rechts angedocktem Eigenschaften-Panel.
+- **Layout-Arbeitsfläche & Kamera:** Dreigeteilte Arbeitsumgebung mit Strukturbaum links, Canvas in der Mitte und Inspector rechts. Die Arbeitsfläche füllt automatisch den Raum zwischen den Panels, lässt sich mit mittlerer Maustaste verschieben und per Mausrad (mit Fokuspunkt) zoomen. Breite/Höhe-Controls bleiben erhalten, Bounds-Clamping schützt weiterhin vor Überlauf, Drag/Resize funktionieren auch bei veränderter Zoom-Stufe.
+- **Struktur-Überblick:** Ein interaktiver Baum listet alle Layout-Elemente analog zur Container-Hierarchie (inkl. Kinderreihenfolge aus `children`). Ein Klick wählt das Element aus und fokussiert es mittig im Canvas. Das Panel kann – genauso wie der Inspector – über Drag an den Trennern in der Breite angepasst werden.
 - **Modulare Element-Hilfen:** Element-Definitionen (Buttons, Defaults, Layout-Standards) liegen zentral in `definitions.ts`; Canvas-Rendering und Inspector greifen auf dieselben Strukturen zu.
 - **Container-Layout:** VBox-/HBox-Container verteilen Kinder automatisch (Gap, Padding, Align) und synchronisieren bei manuellen Änderungen oder Größenanpassungen. Neue Kinder können weiterhin über den Inspector schnell hinzugefügt werden.
 - **Direkte Bearbeitung & Inspector:** Auf der Arbeitsfläche erscheinen echte UI-Elemente (Labels, Inputs, Dropdowns usw.) und lassen sich dort inhaltlich editieren. Erweiterte Eigenschaften wie Platzhalter, Optionslisten oder Container-Layout werden ausschließlich im Inspector gepflegt.
@@ -41,9 +42,9 @@ src/apps/layout/
 
 ### `editor/view.ts`
 - Implementiert `LayoutEditorView` (`ItemView`).
-- Baut Header (Palette, Import, Status), Canvas, Inspector, Exportbereich und Sandbox auf.
+- Baut Header (Palette, Import, Status), Struktur-Baum, resizable Stage mit Kamera (Pan/Zoom), Inspector, Exportbereich und Sandbox auf.
 - Verwaltet Element-State, Selection, Historie und ruft Hilfs-Module (Preview, Inspector, Popover, Import) orchestriert auf.
-- Synchronisiert alle Mutationen (Canvas, Inspector, Export, Status) und sorgt für Bounds-Clamping, Container-Auto-Layout sowie Shortcuts (Delete, Undo/Redo).
+- Synchronisiert alle Mutationen (Canvas, Inspector, Export, Status) und sorgt für Bounds-Clamping, Container-Auto-Layout, Shortcuts (Delete, Undo/Redo) sowie Panel-/Kamera-Steuerung.
 
 ### `editor/definitions.ts`
 - Enthält Element-Definitionen inkl. Default-Texte, Größen, Layout-Voreinstellungen und Attribute-Gruppen.
