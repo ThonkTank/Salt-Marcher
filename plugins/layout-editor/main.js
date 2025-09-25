@@ -1383,178 +1383,11 @@ function clampNumber(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-// src/creature-import.ts
-var import_obsidian2 = require("obsidian");
-var DEFAULT_CANVAS = { width: 960, height: 1480 };
-var CREATURE_BLUEPRINT = [
-  {
-    id: "creature-title",
-    type: "label",
-    x: 40,
-    y: 40,
-    width: 880,
-    height: 90,
-    label: "Kreatur",
-    description: "Name oder \xDCberschrift des Statblocks",
-    attributes: []
-  },
-  {
-    id: "creature-meta",
-    type: "text-input",
-    x: 40,
-    y: 150,
-    width: 420,
-    height: 110,
-    label: "Grundwerte",
-    placeholder: "Typ, Gesinnung, Gr\xF6\xDFe \u2026",
-    attributes: []
-  },
-  {
-    id: "creature-ac",
-    type: "text-input",
-    x: 500,
-    y: 150,
-    width: 420,
-    height: 110,
-    label: "R\xFCstungsklasse",
-    placeholder: "AC",
-    attributes: []
-  },
-  {
-    id: "creature-hp",
-    type: "text-input",
-    x: 40,
-    y: 280,
-    width: 420,
-    height: 110,
-    label: "Trefferpunkte",
-    placeholder: "HP",
-    attributes: []
-  },
-  {
-    id: "creature-speed",
-    type: "text-input",
-    x: 500,
-    y: 280,
-    width: 420,
-    height: 110,
-    label: "Bewegung",
-    placeholder: "Geschwindigkeit",
-    attributes: []
-  },
-  {
-    id: "creature-separator",
-    type: "separator",
-    x: 40,
-    y: 420,
-    width: 880,
-    height: 60,
-    label: "",
-    attributes: []
-  },
-  {
-    id: "creature-abilities",
-    type: "textarea",
-    x: 40,
-    y: 500,
-    width: 420,
-    height: 220,
-    label: "Attribute & Saves",
-    placeholder: "STR, DEX, CON \u2026",
-    attributes: []
-  },
-  {
-    id: "creature-defenses",
-    type: "textarea",
-    x: 500,
-    y: 500,
-    width: 420,
-    height: 220,
-    label: "Verteidigungen & Sinne",
-    placeholder: "Resistenzen, Immunit\xE4ten, Sinne",
-    attributes: []
-  },
-  {
-    id: "creature-traits",
-    type: "textarea",
-    x: 40,
-    y: 740,
-    width: 880,
-    height: 240,
-    label: "Eigenschaften",
-    placeholder: "Besondere F\xE4higkeiten & Traits",
-    attributes: []
-  },
-  {
-    id: "creature-actions",
-    type: "textarea",
-    x: 40,
-    y: 1e3,
-    width: 880,
-    height: 220,
-    label: "Aktionen",
-    placeholder: "Angriffe, Aktionen, Multiattacke",
-    attributes: []
-  },
-  {
-    id: "creature-reactions",
-    type: "textarea",
-    x: 40,
-    y: 1240,
-    width: 880,
-    height: 180,
-    label: "Reaktionen & Legend\xE4re Aktionen",
-    placeholder: "Reaktionen, legend\xE4re Aktionen, Mythische Aktionen",
-    attributes: []
-  },
-  {
-    id: "creature-spells",
-    type: "textarea",
-    x: 40,
-    y: 1440,
-    width: 880,
-    height: 200,
-    label: "Zauber & Notizen",
-    placeholder: "Zauberlisten, Anmerkungen",
-    attributes: []
-  }
-];
-async function importCreatureLayout(context, options) {
-  try {
-    const normalized = CREATURE_BLUEPRINT.map((element) => normalizeElement(element));
-    const height = Math.max(DEFAULT_CANVAS.height, ...normalized.map((el) => el.y + el.height + 40));
-    const width = Math.max(DEFAULT_CANVAS.width, ...normalized.map((el) => el.x + el.width + 40));
-    context.setCanvasSize(width, height);
-    context.updateCanvasInputs(width, height);
-    context.setElements(normalized);
-    context.applyCanvasSize();
-    context.renderElements();
-    context.renderInspector();
-    context.refreshExport();
-    context.updateStatus();
-    context.pushHistory();
-    if (!options?.silent) new import_obsidian2.Notice("Creature-Layout importiert");
-  } catch (error) {
-    console.error("importCreatureLayout", error);
-    if (!options?.silent) new import_obsidian2.Notice("Konnte Creature-Layout nicht importieren");
-  }
-}
-function normalizeElement(element) {
-  return {
-    ...element,
-    width: Math.max(MIN_ELEMENT_SIZE, Math.round(element.width)),
-    height: Math.max(MIN_ELEMENT_SIZE, Math.round(element.height)),
-    x: Math.max(0, Math.round(element.x)),
-    y: Math.max(0, Math.round(element.y)),
-    attributes: element.attributes ?? []
-  };
-}
-
 // src/layout-library.ts
-var import_obsidian3 = require("obsidian");
+var import_obsidian2 = require("obsidian");
 var LAYOUT_FOLDER = "LayoutEditor/Layouts";
 async function ensureLayoutFolder(app) {
-  const folderPath = (0, import_obsidian3.normalizePath)(LAYOUT_FOLDER);
+  const folderPath = (0, import_obsidian2.normalizePath)(LAYOUT_FOLDER);
   const folder = app.vault.getAbstractFileByPath(folderPath);
   if (folder) return;
   await app.vault.createFolder(folderPath).catch(() => {
@@ -1577,7 +1410,7 @@ async function saveLayoutToLibrary(app, payload) {
   await ensureLayoutFolder(app);
   const id = payload.id ?? createId();
   const fileName = createFileName(id);
-  const path = (0, import_obsidian3.normalizePath)(`${LAYOUT_FOLDER}/${fileName}`);
+  const path = (0, import_obsidian2.normalizePath)(`${LAYOUT_FOLDER}/${fileName}`);
   const existing = app.vault.getAbstractFileByPath(path);
   const now = (/* @__PURE__ */ new Date()).toISOString();
   const entry = {
@@ -1586,11 +1419,11 @@ async function saveLayoutToLibrary(app, payload) {
     canvasWidth: payload.canvasWidth,
     canvasHeight: payload.canvasHeight,
     elements: payload.elements,
-    createdAt: existing instanceof import_obsidian3.TFile ? (await readLayoutMeta(app, existing))?.createdAt ?? now : now,
+    createdAt: existing instanceof import_obsidian2.TFile ? (await readLayoutMeta(app, existing))?.createdAt ?? now : now,
     updatedAt: now
   };
   const body = JSON.stringify(entry, null, 2);
-  if (existing instanceof import_obsidian3.TFile) {
+  if (existing instanceof import_obsidian2.TFile) {
     await app.vault.modify(existing, body);
   } else {
     await app.vault.create(path, body);
@@ -1623,11 +1456,11 @@ async function readLayoutMeta(app, file) {
 }
 async function listSavedLayouts(app) {
   await ensureLayoutFolder(app);
-  const folder = app.vault.getAbstractFileByPath((0, import_obsidian3.normalizePath)(LAYOUT_FOLDER));
-  if (!(folder instanceof import_obsidian3.TFolder)) {
+  const folder = app.vault.getAbstractFileByPath((0, import_obsidian2.normalizePath)(LAYOUT_FOLDER));
+  if (!(folder instanceof import_obsidian2.TFolder)) {
     return [];
   }
-  const files = folder.children.filter((child) => child instanceof import_obsidian3.TFile && child.extension === "json");
+  const files = folder.children.filter((child) => child instanceof import_obsidian2.TFile && child.extension === "json");
   const out = [];
   for (const file of files) {
     const meta = await readLayoutMeta(app, file);
@@ -1638,15 +1471,15 @@ async function listSavedLayouts(app) {
 }
 async function loadSavedLayout(app, id) {
   await ensureLayoutFolder(app);
-  const path = (0, import_obsidian3.normalizePath)(`${LAYOUT_FOLDER}/${createFileName(id)}`);
+  const path = (0, import_obsidian2.normalizePath)(`${LAYOUT_FOLDER}/${createFileName(id)}`);
   const file = app.vault.getAbstractFileByPath(path);
-  if (!(file instanceof import_obsidian3.TFile)) return null;
+  if (!(file instanceof import_obsidian2.TFile)) return null;
   return await readLayoutMeta(app, file);
 }
 
 // src/name-input-modal.ts
-var import_obsidian4 = require("obsidian");
-var NameInputModal = class extends import_obsidian4.Modal {
+var import_obsidian3 = require("obsidian");
+var NameInputModal = class extends import_obsidian3.Modal {
   constructor(app, onSubmit, options) {
     super(app);
     this.onSubmit = onSubmit;
@@ -1663,7 +1496,7 @@ var NameInputModal = class extends import_obsidian4.Modal {
     contentEl.empty();
     contentEl.createEl("h3", { text: this.title });
     let inputEl;
-    new import_obsidian4.Setting(contentEl).addText((text) => {
+    new import_obsidian3.Setting(contentEl).addText((text) => {
       text.setPlaceholder(this.placeholder).onChange((value) => this.value = value.trim());
       inputEl = text.inputEl;
       if (this.value) {
@@ -1684,6 +1517,151 @@ var NameInputModal = class extends import_obsidian4.Modal {
     this.onSubmit(name);
   }
 };
+
+// src/layout-picker-modal.ts
+var import_obsidian4 = require("obsidian");
+var LayoutPickerModal = class extends import_obsidian4.Modal {
+  constructor(app, options) {
+    super(app);
+    this.layouts = [];
+    this.selectedId = null;
+    this.selectEl = null;
+    this.statusEl = null;
+    this.detailsEl = null;
+    this.submitBtn = null;
+    this.loadLayouts = options.loadLayouts;
+    this.onPick = options.onPick;
+  }
+  async onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass("sm-le-layout-picker");
+    contentEl.createEl("h3", { text: "Gespeichertes Layout laden" });
+    contentEl.createEl("p", {
+      text: "W\xE4hle ein Layout aus deiner Bibliothek, das in den Editor geladen werden soll."
+    });
+    this.selectEl = contentEl.createEl("select", { cls: "sm-le-layout-picker__select" });
+    this.selectEl.size = 1;
+    this.selectEl.disabled = true;
+    this.selectEl.addEventListener("change", () => this.handleSelectionChange());
+    this.statusEl = contentEl.createDiv({ cls: "sm-le-layout-picker__status", text: "Layouts werden geladen \u2026" });
+    this.detailsEl = contentEl.createDiv({ cls: "sm-le-layout-picker__details" });
+    const buttonContainer = contentEl.createDiv({ cls: "modal-button-container" });
+    const cancelBtn = buttonContainer.createEl("button", { text: "Abbrechen" });
+    cancelBtn.onclick = () => this.close();
+    this.submitBtn = buttonContainer.createEl("button", { text: "Layout laden", cls: "mod-cta" });
+    this.submitBtn.disabled = true;
+    this.submitBtn.onclick = () => this.submit();
+    this.scope.register([], "Enter", () => this.submit());
+    await this.fetchLayouts();
+  }
+  onClose() {
+    this.contentEl.empty();
+    this.layouts = [];
+    this.selectedId = null;
+    this.selectEl = null;
+    this.statusEl = null;
+    this.detailsEl = null;
+    this.submitBtn = null;
+  }
+  async fetchLayouts() {
+    if (!this.selectEl || !this.statusEl) return;
+    try {
+      const layouts = await this.loadLayouts();
+      this.layouts = layouts;
+      if (!layouts.length) {
+        this.statusEl.setText("Keine gespeicherten Layouts gefunden.");
+        this.selectEl.style.display = "none";
+        this.submitBtn?.setAttribute("disabled", "disabled");
+        return;
+      }
+      this.populateSelect();
+      if (this.statusEl) {
+        this.statusEl.remove();
+        this.statusEl = null;
+      }
+      this.selectEl.disabled = false;
+      this.selectEl.style.display = "";
+      enhanceSelectToSearch(this.selectEl, "Layout suchen \u2026");
+      this.handleSelectionChange();
+    } catch (error) {
+      console.error("LayoutPickerModal: failed to load layouts", error);
+      this.statusEl?.setText("Layouts konnten nicht geladen werden.");
+      this.selectEl.style.display = "none";
+      this.submitBtn?.setAttribute("disabled", "disabled");
+    }
+  }
+  populateSelect() {
+    if (!this.selectEl) return;
+    const select = this.selectEl;
+    const previous = this.selectedId;
+    select.innerHTML = "";
+    for (const layout of this.layouts) {
+      const option = select.createEl("option", { value: layout.id });
+      option.text = layout.name || layout.id;
+    }
+    if (!this.layouts.length) {
+      this.selectedId = null;
+      return;
+    }
+    const match = previous && this.layouts.some((layout) => layout.id === previous);
+    const firstId = match ? previous : this.layouts[0].id;
+    select.value = firstId;
+    this.selectedId = firstId;
+  }
+  handleSelectionChange() {
+    if (!this.selectEl) return;
+    this.selectedId = this.selectEl.value || null;
+    this.updateDetails();
+    this.updateSubmitState();
+  }
+  updateDetails() {
+    if (!this.detailsEl) return;
+    if (!this.selectedId) {
+      this.detailsEl.empty();
+      return;
+    }
+    const layout = this.layouts.find((item) => item.id === this.selectedId);
+    this.detailsEl.empty();
+    if (!layout) return;
+    const updated = formatTimestamp(layout.updatedAt);
+    const created = layout.createdAt !== layout.updatedAt ? formatTimestamp(layout.createdAt) : null;
+    const metaParts = [`Gr\xF6\xDFe: ${layout.canvasWidth} \xD7 ${layout.canvasHeight}`];
+    metaParts.push(`Elemente: ${layout.elements.length}`);
+    this.detailsEl.createEl("div", { text: metaParts.join(" \xB7 ") });
+    const updatedEl = this.detailsEl.createEl("div", { text: `Zuletzt aktualisiert: ${updated}` });
+    if (created) {
+      this.detailsEl.createEl("div", { text: `Erstellt: ${created}` });
+    }
+    updatedEl.classList.add("sm-le-layout-picker__meta");
+  }
+  updateSubmitState() {
+    if (!this.submitBtn) return;
+    if (this.selectedId) {
+      this.submitBtn.disabled = false;
+      this.submitBtn.removeAttribute("disabled");
+    } else {
+      this.submitBtn.disabled = true;
+      this.submitBtn.setAttribute("disabled", "disabled");
+    }
+  }
+  submit() {
+    if (!this.selectedId) return;
+    this.close();
+    this.onPick(this.selectedId);
+  }
+};
+function formatTimestamp(value) {
+  try {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleString();
+    }
+  } catch (error) {
+    console.warn("LayoutPickerModal: unable to format timestamp", value, error);
+  }
+  return value;
+}
 
 // src/view.ts
 var VIEW_LAYOUT_EDITOR = "salt-layout-editor";
@@ -1894,10 +1872,8 @@ var LayoutEditorView = class extends import_obsidian5.ItemView {
     addGroup.createEl("label", { text: "Element hinzuf\xFCgen" });
     this.addPaletteEl = addGroup.createDiv({ cls: "sm-le-add" });
     this.renderAddPalette();
-    this.importBtn = controls.createEl("button", { text: "Creature-Layout importieren" });
-    this.importBtn.onclick = () => {
-      void this.importCreatureCreatorLayout();
-    };
+    this.importBtn = controls.createEl("button", { text: "Gespeichertes Layout laden" });
+    this.importBtn.onclick = () => this.promptImportSavedLayout();
     const sizeGroup = controls.createDiv({ cls: "sm-le-control" });
     sizeGroup.createEl("label", { text: "Arbeitsfl\xE4che" });
     const sizeWrapper = sizeGroup.createDiv({ cls: "sm-le-size" });
@@ -2985,41 +2961,56 @@ var LayoutEditorView = class extends import_obsidian5.ItemView {
     if (nearLeft || nearRight || nearTop || nearBottom) return { type: "move" };
     return null;
   }
-  async importCreatureCreatorLayout(options) {
+  promptImportSavedLayout() {
+    if (this.isImporting) return;
+    const modal = new LayoutPickerModal(this.app, {
+      loadLayouts: () => listSavedLayouts(this.app),
+      onPick: (layoutId) => {
+        void this.importSavedLayout(layoutId);
+      }
+    });
+    modal.open();
+  }
+  async importSavedLayout(layoutId) {
     if (this.isImporting) return;
     this.isImporting = true;
     this.importBtn?.addClass("is-loading");
     if (this.importBtn) this.importBtn.disabled = true;
     try {
-      await importCreatureLayout(
-        {
-          setCanvasSize: (width, height) => {
-            this.canvasWidth = width;
-            this.canvasHeight = height;
-          },
-          updateCanvasInputs: (width, height) => {
-            if (this.widthInput) this.widthInput.value = String(width);
-            if (this.heightInput) this.heightInput.value = String(height);
-          },
-          setElements: (elements) => {
-            this.elements = elements;
-            this.selectedElementId = null;
-          },
-          applyCanvasSize: () => this.applyCanvasSize(),
-          renderElements: () => this.renderElements(),
-          renderInspector: () => this.renderInspector(),
-          refreshExport: () => this.refreshExport(),
-          updateStatus: () => this.updateStatus(),
-          pushHistory: () => this.pushHistory()
-        },
-        options
-      );
+      const layout = await loadSavedLayout(this.app, layoutId);
+      if (!layout) {
+        new import_obsidian5.Notice("Layout konnte nicht geladen werden");
+        return;
+      }
+      this.applySavedLayout(layout);
+      new import_obsidian5.Notice(`Layout \u201E${layout.name}\u201D geladen`);
+    } catch (error) {
+      console.error("Failed to import saved layout", error);
+      new import_obsidian5.Notice("Konnte Layout nicht laden");
     } finally {
       this.sandboxEl.empty();
       this.importBtn?.removeClass("is-loading");
       if (this.importBtn) this.importBtn.disabled = false;
       this.isImporting = false;
     }
+  }
+  applySavedLayout(layout) {
+    this.attributePopover.close();
+    this.canvasWidth = layout.canvasWidth;
+    this.canvasHeight = layout.canvasHeight;
+    this.elements = layout.elements.map(cloneLayoutElement);
+    this.selectedElementId = null;
+    this.lastSavedLayoutId = layout.id;
+    this.lastSavedLayoutName = layout.name;
+    if (this.widthInput) this.widthInput.value = String(this.canvasWidth);
+    if (this.heightInput) this.heightInput.value = String(this.canvasHeight);
+    this.applyCanvasSize();
+    this.centerCamera();
+    this.renderElements();
+    this.renderInspector();
+    this.refreshExport();
+    this.updateStatus();
+    this.pushHistory();
   }
   nextFrame() {
     return new Promise((resolve) => requestAnimationFrame(() => resolve()));
