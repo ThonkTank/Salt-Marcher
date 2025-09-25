@@ -1,11 +1,12 @@
 // src/apps/layout/editor/element-preview.ts
+import { Menu } from "obsidian";
 import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
 import {
     getElementTypeLabel,
     isContainerType,
 } from "./definitions";
 import { createInlineEditor } from "./inline-edit";
-import { LayoutContainerAlign, LayoutElement } from "./types";
+import { LayoutContainerAlign, LayoutElement, LayoutElementType } from "./types";
 
 export interface ElementPreviewDependencies {
     host: HTMLElement;
@@ -15,6 +16,34 @@ export interface ElementPreviewDependencies {
     ensureContainerDefaults(element: LayoutElement): void;
     applyContainerLayout(element: LayoutElement, options?: { silent?: boolean }): void;
     pushHistory(): void;
+    createElement(type: LayoutElementType, options?: { parentId?: string | null }): void;
+}
+
+function autoScaleHeadlineText(target: HTMLElement, container: HTMLElement) {
+    if (!container.isConnected) return;
+    const maxWidth = Math.max(0, container.clientWidth - 12);
+    const maxHeight = Math.max(0, container.clientHeight - 12);
+    if (!maxWidth || !maxHeight) return;
+    const contentLength = (target.textContent ?? "").trim().length;
+    const minSize = 18;
+    if (contentLength === 0) {
+        const fallback = Math.max(minSize, Math.min(maxWidth, maxHeight) / 3);
+        target.style.fontSize = `${Math.round(fallback)}px`;
+        return;
+    }
+    let low = minSize;
+    let high = Math.max(minSize, Math.min(maxWidth, maxHeight));
+    for (let i = 0; i < 10; i++) {
+        const mid = (low + high) / 2;
+        target.style.fontSize = `${mid}px`;
+        const fits = target.scrollWidth <= maxWidth && target.scrollHeight <= maxHeight;
+        if (fits) {
+            low = mid;
+        } else {
+            high = mid - 1;
+        }
+    }
+    target.style.fontSize = `${Math.floor(low)}px`;
 }
 
 export function renderElementPreview(deps: ElementPreviewDependencies) {
@@ -55,32 +84,33 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
     };
 
     if (element.type === "label") {
-        const block = preview.createDiv({ cls: "sm-le-preview__text-block" });
-        const labelEl = createInlineEditor({
-            parent: block,
+        const block = preview.createDiv({ cls: "sm-le-preview__headline" });
+        const inner = block.createDiv({ cls: "sm-le-preview__headline-inner" });
+        let labelEl: HTMLElement;
+        const applyScale = () => {
+            if (!labelEl) return;
+            window.requestAnimationFrame(() => autoScaleHeadlineText(labelEl, inner));
+        };
+        labelEl = createInlineEditor({
+            parent: inner,
             value: element.label,
-            placeholder: "Text eingeben…",
+            placeholder: "Überschrift eingeben…",
             multiline: true,
             block: true,
             trim: false,
-            onCommit: commitLabel,
-        });
-        labelEl.addClass("sm-le-preview__text");
-        const desc = createInlineEditor({
-            parent: block,
-            value: element.description ?? "",
-            placeholder: "Zusatztext hinzufügen…",
-            multiline: true,
-            block: true,
-            trim: false,
+            onInput: () => {
+                autoScaleHeadlineText(labelEl, inner);
+            },
             onCommit: value => {
-                const next = value || undefined;
-                if (next === element.description) return;
-                element.description = next;
-                deps.finalize(element);
+                commitLabel(value);
+                applyScale();
             },
         });
-        desc.addClass("sm-le-preview__subtext");
+        labelEl.addClass("sm-le-preview__headline-text");
+        applyScale();
+        if (element.description !== undefined) {
+            element.description = undefined;
+        }
         return;
     }
 
@@ -125,7 +155,29 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
         return;
     }
 
-    if (element.type === "text-input" || element.type === "textarea") {
+    if (element.type === "text-input") {
+        const field = preview.createDiv({ cls: "sm-le-preview__input-only" });
+        const input = field.createEl("input", { attr: { type: "text" }, cls: "sm-le-preview__input" }) as HTMLInputElement;
+        input.value = element.defaultValue ?? "";
+        input.placeholder = "";
+        let lastValue = input.value;
+        input.addEventListener("input", () => {
+            element.defaultValue = input.value ? input.value : undefined;
+        });
+        input.addEventListener("blur", () => {
+            const next = input.value;
+            if (next === lastValue) return;
+            lastValue = next;
+            element.defaultValue = next ? next : undefined;
+            deps.finalize(element);
+        });
+        if (element.placeholder) {
+            element.placeholder = undefined;
+        }
+        return;
+    }
+
+    if (element.type === "textarea") {
         const field = preview.createEl("label", { cls: "sm-le-preview__field" });
         const labelHost = field.createSpan({ cls: "sm-le-preview__label" });
         createInlineEditor({
@@ -135,51 +187,25 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
             onCommit: commitLabel,
         });
 
-        const controlEl =
-            element.type === "textarea"
-                ? (field.createEl("textarea", { cls: "sm-le-preview__textarea" }) as HTMLTextAreaElement)
-                : (field.createEl("input", { attr: { type: "text" }, cls: "sm-le-preview__input" }) as HTMLInputElement);
-
-        if (element.type === "textarea") {
-            const textarea = controlEl as HTMLTextAreaElement;
-            textarea.value = element.defaultValue ?? "";
-            textarea.placeholder = element.placeholder ?? "";
-            textarea.rows = 4;
-            let lastValue = textarea.value;
-            textarea.addEventListener("input", () => {
-                element.defaultValue = textarea.value ? textarea.value : undefined;
-            });
-            textarea.addEventListener("blur", () => {
-                const next = textarea.value;
-                if (next === lastValue) return;
-                lastValue = next;
-                element.defaultValue = next ? next : undefined;
-                deps.finalize(element);
-            });
-        } else {
-            const input = controlEl as HTMLInputElement;
-            input.value = element.defaultValue ?? "";
-            input.placeholder = element.placeholder ?? "";
-            let lastValue = input.value;
-            input.addEventListener("input", () => {
-                element.defaultValue = input.value ? input.value : undefined;
-            });
-            input.addEventListener("blur", () => {
-                const next = input.value;
-                if (next === lastValue) return;
-                lastValue = next;
-                element.defaultValue = next ? next : undefined;
-                deps.finalize(element);
-            });
-        }
+        const textarea = field.createEl("textarea", { cls: "sm-le-preview__textarea" }) as HTMLTextAreaElement;
+        textarea.value = element.defaultValue ?? "";
+        textarea.placeholder = element.placeholder ?? "";
+        textarea.rows = 4;
+        let lastValue = textarea.value;
+        textarea.addEventListener("input", () => {
+            element.defaultValue = textarea.value ? textarea.value : undefined;
+        });
+        textarea.addEventListener("blur", () => {
+            const next = textarea.value;
+            if (next === lastValue) return;
+            lastValue = next;
+            element.defaultValue = next ? next : undefined;
+            deps.finalize(element);
+        });
 
         const meta = preview.createDiv({ cls: "sm-le-preview__meta" });
         createPlaceholderEditor(meta, "Platzhalter hinzufügen…", element.placeholder, next => {
-            if (element.type === "textarea") {
-                (controlEl as HTMLTextAreaElement).placeholder = next ?? "";
-            } else {
-                (controlEl as HTMLInputElement).placeholder = next ?? "";
-            }
+            textarea.placeholder = next ?? "";
             element.placeholder = next;
         });
         return;
@@ -402,6 +428,31 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
                 row.setText(child.label || getElementTypeLabel(child.type));
             }
         }
+        const addWrap = preview.createDiv({ cls: "sm-le-preview__container-add" });
+        const addButton = addWrap.createEl("button", {
+            cls: "sm-le-inline-add sm-le-inline-add--ghost",
+            text: "Element hinzufügen",
+        });
+        addButton.onclick = ev => {
+            ev.preventDefault();
+            const menu = new Menu();
+            const quickTypes: LayoutElementType[] = [
+                "label",
+                "text-input",
+                "textarea",
+                "box",
+                "separator",
+                "dropdown",
+                "search-dropdown",
+            ];
+            for (const type of quickTypes) {
+                menu.addItem(item => {
+                    item.setTitle(getElementTypeLabel(type));
+                    item.onClick(() => deps.createElement(type, { parentId: element.id }));
+                });
+            }
+            menu.showAtMouseEvent(ev);
+        };
         return;
     }
 
