@@ -36,7 +36,8 @@ plugins/layout-editor/
    ├─ search-dropdown.ts   # Autocomplete-Helfer für Select-Elemente
    ├─ types.ts             # Gemeinsame Typen für Elemente, Container & Snapshots
    ├─ ui/
-   │  └─ add-palette.ts    # Rendert die Element-Palette gruppiert nach Palette-Gruppen
+   │  ├─ add-palette.ts    # Rendert die Element-Palette gruppiert nach Palette-Gruppen
+   │  └─ editor-menu.ts    # Kontextmenü-Komponente für Palette & Inspector
    └─ utils.ts             # Hilfsfunktionen (clamp, Deep-Clones, Vergleichs-Utilities)
 ```
 
@@ -46,7 +47,7 @@ plugins/layout-editor/
 - **Eigenes Styling (`css.ts`):** Enthält das komplette Layout-Editor-CSS. Wird ausschließlich vom Layout-Editor-Plugin injiziert und kollidiert somit nicht länger mit SaltMarcher-spezifischem Styling.
 - **Layout-Arbeitsfläche & Kamera:** Dreigeteilte Arbeitsumgebung mit Strukturbaum links, Canvas in der Mitte und Inspector rechts. Panning, Zoom und Panel-Resizer halten Bounds-Clamping und Fokusverhalten konsistent.
 - **Struktur-Überblick:** Interaktiver Baum mit Drag & Drop zur Container-Neuzuordnung (inkl. Root-Drop-Zone) und zyklusgesicherter Elternwahl. Inspector- und Baum-Breiten lassen sich über Trenner anpassen.
-- **Palette & Registry:** Element-Palette horcht auf Registry-Änderungen und liest Gruppen direkt aus den Komponentendefinitionen. Neue Element-Typen müssen nur als Datei in `src/elements/components/` landen – Palette und Inspector-Menüs greifen sie automatisch auf.
+- **Palette & Registry:** Element-Palette horcht auf Registry-Änderungen und liest Gruppen direkt aus den Komponentendefinitionen. Neue Element-Typen müssen nur als Datei in `src/elements/components/` landen – Palette und Inspector-Menüs greifen sie automatisch auf. Eigene Editor-Komponenten (Palette + Kontextmenüs) verzichten vollständig auf Obsidian-Menüs.
 - **Komponentenbasierte Elemente:** `elements/` bündelt Preview-, Inspector- und Default-Logik je Elementtyp und reduziert Redundanz bei neuen UI-Elementen. Gemeinsame Eigenschaften (z. B. Container-Layout, Select- oder Textfeld-Verhalten) liegen nun in `shared/component-bases.ts` und werden von konkreten Komponenten geerbt.
 - **Container-Layout:** Box-, VBox- und HBox-Container verwalten Gap, Padding und Align sowie verschachtelte Kinder. Inspector und Baum unterstützen das schnelle Hinzufügen und Neuzuordnen von Elementen.
 - **Direkte Bearbeitung & Inspector:** Canvas rendert echte UI-Elemente. Freie Texte lassen sich inline editieren, alle Meta-Informationen pflegst du im Inspector (Labels, Placeholder, Optionen, Layout-Werte).
@@ -111,6 +112,7 @@ plugins/layout-editor/
 
 ### `name-input-modal.ts`
 - Stellt einen schlanken Modal zur Verfügung, um Layout-Namen einzutippen (inkl. Enter-Shortcut und CTA-Button).
+- Nutzt jetzt ein eigenes Formular-Layout anstelle der Obsidian-`Setting`-Komponente, damit der Editor ausschließlich eigene UI-Bausteine verwendet.
 
 ### `search-dropdown.ts`
 - Verwandelt native `<select>`-Elemente in durchsuchbare Dropdowns (Suchfeld, Keyboard-Navigation, Menü-Rendering).
@@ -123,6 +125,11 @@ plugins/layout-editor/
 
 ### `ui/add-palette.ts`
 - Baut die gruppierte Element-Palette und öffnet Kontext-Menüs für Sammlungen (Inputs, Container, benutzerdefinierte Gruppen).
+- Verwendet das interne `editor-menu.ts`, um Dropdowns ohne Obsidian-`Menu` darzustellen.
+
+### `ui/editor-menu.ts`
+- Implementiert das kontextsensitive Menü des Layout-Editors.
+- Stellt Keyboard- und Pointer-Handling bereit (Escape, Outside-Click) und kapselt das Positioning relativ zum Auslöser.
 
 ### `element-preview.ts`
 - Delegiert das Rendering an die registrierten Komponenten und kapselt das gemeinsame Inline-Editing.

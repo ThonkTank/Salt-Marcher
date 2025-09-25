@@ -1,5 +1,5 @@
-import { Menu } from "obsidian";
 import type { LayoutElementDefinition, LayoutElementType } from "../types";
+import { openEditorMenu } from "./editor-menu";
 
 export interface PaletteRenderOptions {
     host: HTMLElement;
@@ -41,17 +41,15 @@ export function renderPalette(options: PaletteRenderOptions) {
         const button = host.createEl("button", { text: label });
         button.onclick = event => {
             event.preventDefault();
-            const menu = new Menu();
-            defs
+            const entries = defs
                 .slice()
                 .sort((a, b) => a.buttonLabel.localeCompare(b.buttonLabel, "de"))
-                .forEach(def => {
-                    menu.addItem(item => {
-                        item.setTitle(def.buttonLabel);
-                        item.onClick(() => onCreate(def.type));
-                    });
-                });
-            menu.showAtMouseEvent(event);
+                .map(def => ({
+                    type: "item" as const,
+                    label: def.buttonLabel,
+                    onSelect: () => onCreate(def.type),
+                }));
+            openEditorMenu({ anchor: button, entries, event });
         };
     }
 }
