@@ -1505,7 +1505,7 @@ export class LayoutEditorView extends ItemView {
         this.renderInspector();
         this.refreshExport();
         this.updateStatus();
-        this.pushHistory();
+        this.history.reset(this.captureSnapshot());
     }
 
     private nextFrame(): Promise<void> {
