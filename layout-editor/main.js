@@ -789,6 +789,8 @@ function onViewBindingsChanged(listener) {
 // src/elements/components/view-container.ts
 var MIN_SCALE = 0.25;
 var MAX_SCALE = 3;
+var SURFACE_WIDTH = 960;
+var SURFACE_HEIGHT = 640;
 var ViewContainerComponent = class extends ElementComponentBase {
   constructor() {
     super({
@@ -826,6 +828,22 @@ var ViewContainerComponent = class extends ElementComponentBase {
       surface.style.transform = `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})`;
     };
     applyCamera();
+    const fitCameraToViewport = () => {
+      const rect = viewport.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const baseScale = Math.min(rect.width / SURFACE_WIDTH, rect.height / SURFACE_HEIGHT);
+      if (!isFinite(baseScale) || baseScale <= 0) return;
+      const nextScale = Math.min(MAX_SCALE, baseScale);
+      const contentWidth = SURFACE_WIDTH * nextScale;
+      const contentHeight = SURFACE_HEIGHT * nextScale;
+      camera = {
+        scale: nextScale,
+        x: Math.round((rect.width - contentWidth) / 2),
+        y: Math.round((rect.height - contentHeight) / 2)
+      };
+      applyCamera();
+    };
+    window.requestAnimationFrame(fitCameraToViewport);
     let panPointer = null;
     let startX = 0;
     let startY = 0;

@@ -16,6 +16,8 @@ type CameraState = {
 
 const MIN_SCALE = 0.25;
 const MAX_SCALE = 3;
+const SURFACE_WIDTH = 960;
+const SURFACE_HEIGHT = 640;
 
 class ViewContainerComponent extends ElementComponentBase {
     constructor() {
@@ -60,6 +62,24 @@ class ViewContainerComponent extends ElementComponentBase {
             surface.style.transform = `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})`;
         };
         applyCamera();
+
+        const fitCameraToViewport = () => {
+            const rect = viewport.getBoundingClientRect();
+            if (!rect.width || !rect.height) return;
+            const baseScale = Math.min(rect.width / SURFACE_WIDTH, rect.height / SURFACE_HEIGHT);
+            if (!isFinite(baseScale) || baseScale <= 0) return;
+            const nextScale = Math.min(MAX_SCALE, baseScale);
+            const contentWidth = SURFACE_WIDTH * nextScale;
+            const contentHeight = SURFACE_HEIGHT * nextScale;
+            camera = {
+                scale: nextScale,
+                x: Math.round((rect.width - contentWidth) / 2),
+                y: Math.round((rect.height - contentHeight) / 2),
+            };
+            applyCamera();
+        };
+
+        window.requestAnimationFrame(fitCameraToViewport);
 
         let panPointer: number | null = null;
         let startX = 0;

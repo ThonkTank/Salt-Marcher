@@ -47,7 +47,7 @@ ElementComponentBase
 - **Container-Verhalten:** `ContainerComponent` stellt Standardlayout, Preview und Inspector-Einträge für Container sicher; `container-preview.ts` zeichnet die Vorschau konsistent.
 - **Manifest & Registry:** `component-manifest.ts` und `registry.ts` verbinden sämtliche Komponenten mit Palette und Inspector.
 - **UI-Komponenten (`ui.ts`):** Stellt generische Controls für Buttons, Felder, Inputs und Statusanzeigen bereit, die in View, Inspector und Modals verwendet werden.
-- **View-Bindings:** `view-container.ts` bringt eine experimentelle View-Fläche inklusive Inspector-Feld für registrierte Features. Die Preview demonstriert Kamerasteuerung (MMB-Pan, Wheel-Zoom) und spiegelt gewählte Bindings wider.
+- **View-Bindings:** `view-container.ts` bringt eine experimentelle View-Fläche inklusive Inspector-Feld für registrierte Features. Die Preview demonstriert Kamerasteuerung (MMB-Pan, Wheel-Zoom), passt die Demo-Oberfläche automatisch an die Boxgröße an und spiegelt gewählte Bindings wider.
 
 ## Datei-Referenz
 - **`base.ts`:** Typisiert Preview-/Inspector-Kontexte, Factory-Signaturen und Komponentenschnittstellen.
@@ -64,5 +64,5 @@ ElementComponentBase
 - **`components/textarea.ts`:** Konfiguriert `TextFieldComponent` für mehrzeilige Eingaben inkl. Placeholder-Steuerung.
 - **`components/label.ts`:** Realisiert Inline-Editing für Überschriften samt dynamischer Schriftgrößenanpassung.
 - **`components/separator.ts`:** Rendert optionale Überschrift plus Trennlinie ohne zusätzliche Basisklasse.
-- **`components/view-container.ts`:** Koppelt Layout-Elemente an die View-Registry. Inspector bietet eine Feature-Auswahl, Preview stellt eine panning-/zoomfähige Demo-Fläche bereit, die den gewählten Binding-Namen/ID anzeigt.
+- **`components/view-container.ts`:** Koppelt Layout-Elemente an die View-Registry. Inspector bietet eine Feature-Auswahl, Preview stellt eine panning-/zoomfähige Demo-Fläche bereit, richtet diese beim Rendern an die aktuelle Elementgröße aus und zeigt den gewählten Binding-Namen/ID an.
 - **`ui.ts`:** Bündelt allgemeine UI-Bausteine (Buttons, Formularfelder, Selects, Statusanzeigen, Stacks), damit der Editor komplett auf Elements-Komponenten basiert.
