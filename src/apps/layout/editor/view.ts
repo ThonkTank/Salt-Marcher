@@ -44,6 +44,7 @@ export class LayoutEditorView extends ItemView {
     private bodyEl!: HTMLElement;
     private structurePanelEl!: HTMLElement;
     private structureHost!: HTMLElement;
+    private structureRootDropZone: HTMLElement | null = null;
     private stageViewportEl!: HTMLElement;
     private cameraPanEl!: HTMLElement;
     private cameraZoomEl!: HTMLElement;
@@ -57,6 +58,7 @@ export class LayoutEditorView extends ItemView {
     private sandboxEl!: HTMLElement;
 
     private elementElements = new Map<string, HTMLElement>();
+    private draggedElementId: string | null = null;
 
     private readonly history = new LayoutHistory(
         () => this.captureSnapshot(),
@@ -338,8 +340,6 @@ export class LayoutEditorView extends ItemView {
         event.preventDefault();
         const handle = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
         const pointerId = event.pointerId;
-        const startX = event.clientX;
-        const startWidth = target === "structure" ? this.structureWidth : this.inspectorWidth;
         const otherWidth = target === "structure" ? this.inspectorWidth : this.structureWidth;
         const onPointerMove = (ev: PointerEvent) => {
             if (ev.pointerId !== pointerId) return;
@@ -348,8 +348,13 @@ export class LayoutEditorView extends ItemView {
                 this.minPanelWidth,
                 bodyRect.width - otherWidth - this.resizerSize * 2 - this.minStageWidth,
             );
-            const delta = ev.clientX - startX;
-            const next = clamp(startWidth + delta, this.minPanelWidth, maxWidth);
+            let proposedWidth: number;
+            if (target === "structure") {
+                proposedWidth = ev.clientX - bodyRect.left - this.resizerSize / 2;
+            } else {
+                proposedWidth = bodyRect.right - ev.clientX - this.resizerSize / 2;
+            }
+            const next = clamp(Math.round(proposedWidth), this.minPanelWidth, maxWidth);
             if (target === "structure") {
                 this.structureWidth = next;
             } else {
@@ -726,6 +731,7 @@ export class LayoutEditorView extends ItemView {
     private renderStructure() {
         if (!this.structureHost) return;
         this.structureHost.empty();
+        this.structureRootDropZone = null;
         if (!this.elements.length) {
             this.structureHost.createDiv({ cls: "sm-le-empty", text: "Noch keine Elemente." });
             return;
@@ -767,6 +773,50 @@ export class LayoutEditorView extends ItemView {
             childrenByParent.set(element.id, ordered);
         }
 
+        const rootDropZone = this.structureHost.createDiv({
+            cls: "sm-le-structure__root-drop",
+            text: "Ziehe ein Element hierher, um es aus seinem Container zu lösen.",
+        });
+        this.structureRootDropZone = rootDropZone;
+
+        const canDropToRoot = () => {
+            if (!this.draggedElementId) return false;
+            const dragged = elementById.get(this.draggedElementId);
+            if (!dragged || isContainerType(dragged.type)) return false;
+            return Boolean(dragged.parentId);
+        };
+
+        rootDropZone.addEventListener("dragenter", event => {
+            if (!canDropToRoot()) return;
+            event.preventDefault();
+            rootDropZone.addClass("is-active");
+        });
+        rootDropZone.addEventListener("dragover", event => {
+            if (!canDropToRoot()) return;
+            event.preventDefault();
+            if (event.dataTransfer) {
+                event.dataTransfer.dropEffect = "move";
+            }
+            rootDropZone.addClass("is-active");
+        });
+        rootDropZone.addEventListener("dragleave", event => {
+            const related = event.relatedTarget as HTMLElement | null;
+            if (!related || !rootDropZone.contains(related)) {
+                rootDropZone.removeClass("is-active");
+            }
+        });
+        rootDropZone.addEventListener("drop", event => {
+            if (!canDropToRoot()) return;
+            event.preventDefault();
+            event.stopPropagation();
+            rootDropZone.removeClass("is-active");
+            const draggedId = this.draggedElementId;
+            if (draggedId) {
+                this.assignElementToContainer(draggedId, null);
+            }
+            this.clearStructureDragState();
+        });
+
         const renderLevel = (parentId: string | null, container: HTMLElement) => {
             const children = childrenByParent.get(parentId);
             if (!children || !children.length) return;
@@ -780,17 +830,97 @@ export class LayoutEditorView extends ItemView {
                 }
                 const name = child.label?.trim() || getElementTypeLabel(child.type);
                 entry.createSpan({ cls: "sm-le-structure__title", text: name });
-                entry.createSpan({ cls: "sm-le-structure__meta", text: getElementTypeLabel(child.type) });
+                const parentElement = child.parentId ? elementById.get(child.parentId) ?? null : null;
+                const metaParts: string[] = [getElementTypeLabel(child.type)];
+                if (parentElement) {
+                    const parentName = parentElement.label?.trim() || getElementTypeLabel(parentElement.type);
+                    metaParts.push(`Übergeordnet: ${parentName}`);
+                }
+                if (isContainerElement(child)) {
+                    const count = child.children?.length ?? 0;
+                    const label = count === 1 ? "1 Kind" : `${count} Kinder`;
+                    metaParts.push(label);
+                    entry.addClass("sm-le-structure__entry--container");
+                }
+                entry.createSpan({ cls: "sm-le-structure__meta", text: metaParts.join(" • ") });
                 entry.onclick = ev => {
                     ev.preventDefault();
                     this.selectElement(child.id);
                     this.focusElementInCamera(child);
                 };
+                if (!isContainerType(child.type)) {
+                    entry.draggable = true;
+                    entry.addClass("is-draggable");
+                    entry.addEventListener("dragstart", dragEvent => {
+                        this.draggedElementId = child.id;
+                        dragEvent.dataTransfer?.setData("text/plain", child.id);
+                        if (dragEvent.dataTransfer) {
+                            dragEvent.dataTransfer.effectAllowed = "move";
+                        }
+                    });
+                    entry.addEventListener("dragend", () => {
+                        this.clearStructureDragState();
+                    });
+                }
+                if (isContainerElement(child)) {
+                    const canDropHere = () => this.canDropOnContainer(child.id);
+                    entry.addEventListener("dragenter", dragEvent => {
+                        if (!canDropHere()) return;
+                        dragEvent.preventDefault();
+                        entry.addClass("is-drop-target");
+                    });
+                    entry.addEventListener("dragover", dragEvent => {
+                        if (!canDropHere()) return;
+                        dragEvent.preventDefault();
+                        if (dragEvent.dataTransfer) {
+                            dragEvent.dataTransfer.dropEffect = "move";
+                        }
+                        entry.addClass("is-drop-target");
+                    });
+                    entry.addEventListener("dragleave", dragEvent => {
+                        const related = dragEvent.relatedTarget as HTMLElement | null;
+                        if (!related || !entry.contains(related)) {
+                            entry.removeClass("is-drop-target");
+                        }
+                    });
+                    entry.addEventListener("drop", dragEvent => {
+                        if (!canDropHere()) return;
+                        dragEvent.preventDefault();
+                        dragEvent.stopPropagation();
+                        const draggedId = this.draggedElementId;
+                        if (draggedId) {
+                            this.assignElementToContainer(draggedId, child.id);
+                        }
+                        this.clearStructureDragState();
+                    });
+                }
                 renderLevel(child.id, itemEl);
             }
         };
 
         renderLevel(null, this.structureHost);
+    }
+
+    private clearStructureDragState() {
+        this.draggedElementId = null;
+        if (this.structureHost) {
+            const targets = Array.from(this.structureHost.querySelectorAll<HTMLElement>(".sm-le-structure__entry.is-drop-target"));
+            for (const target of targets) {
+                target.removeClass("is-drop-target");
+            }
+        }
+        this.structureRootDropZone?.removeClass("is-active");
+    }
+
+    private canDropOnContainer(containerId: string): boolean {
+        if (!this.draggedElementId) return false;
+        const container = this.elements.find(el => el.id === containerId);
+        if (!container || !isContainerElement(container)) return false;
+        const dragged = this.elements.find(el => el.id === this.draggedElementId);
+        if (!dragged || isContainerType(dragged.type)) return false;
+        if (dragged.id === containerId) return false;
+        if (dragged.parentId === containerId) return false;
+        return true;
     }
 
     private deleteElement(id: string) {

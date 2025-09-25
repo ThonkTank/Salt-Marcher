@@ -866,6 +866,20 @@ export const HEX_PLUGIN_CSS = `
     opacity: 0.85;
 }
 
+.sm-le-structure__entry.is-drop-target {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent, #ffffff);
+}
+
+.sm-le-structure__entry.is-drop-target .sm-le-structure__title,
+.sm-le-structure__entry.is-drop-target .sm-le-structure__meta {
+    color: inherit;
+}
+
+.sm-le-structure__entry.is-drop-target .sm-le-structure__meta {
+    opacity: 0.85;
+}
+
 .sm-le-structure__title {
     font-weight: 600;
     line-height: 1.2;
@@ -875,6 +889,32 @@ export const HEX_PLUGIN_CSS = `
     font-size: 0.75rem;
     color: var(--text-muted);
     line-height: 1.2;
+}
+
+.sm-le-structure__entry.is-draggable {
+    cursor: grab;
+}
+
+.sm-le-structure__entry.is-draggable:active {
+    cursor: grabbing;
+}
+
+.sm-le-structure__root-drop {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    padding: 0.35rem 0.5rem;
+    border: 1px dashed var(--background-modifier-border);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.02);
+    transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.sm-le-structure__root-drop.is-active {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent, #ffffff);
+    border-color: var(--interactive-accent);
 }
 
 .sm-le-resizer {

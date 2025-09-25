@@ -6886,7 +6886,9 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     this.panOriginX = 0;
     this.panOriginY = 0;
     this.hasInitializedCamera = false;
+    this.structureRootDropZone = null;
     this.elementElements = /* @__PURE__ */ new Map();
+    this.draggedElementId = null;
     this.history = new LayoutHistory(
       () => this.captureSnapshot(),
       (snapshot) => this.restoreSnapshot(snapshot)
@@ -7189,8 +7191,6 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
     event.preventDefault();
     const handle = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
     const pointerId = event.pointerId;
-    const startX = event.clientX;
-    const startWidth = target === "structure" ? this.structureWidth : this.inspectorWidth;
     const otherWidth = target === "structure" ? this.inspectorWidth : this.structureWidth;
     const onPointerMove = (ev) => {
       if (ev.pointerId !== pointerId) return;
@@ -7199,8 +7199,13 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
         this.minPanelWidth,
         bodyRect.width - otherWidth - this.resizerSize * 2 - this.minStageWidth
       );
-      const delta = ev.clientX - startX;
-      const next = clamp(startWidth + delta, this.minPanelWidth, maxWidth);
+      let proposedWidth;
+      if (target === "structure") {
+        proposedWidth = ev.clientX - bodyRect.left - this.resizerSize / 2;
+      } else {
+        proposedWidth = bodyRect.right - ev.clientX - this.resizerSize / 2;
+      }
+      const next = clamp(Math.round(proposedWidth), this.minPanelWidth, maxWidth);
       if (target === "structure") {
         this.structureWidth = next;
       } else {
@@ -7500,6 +7505,7 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
   renderStructure() {
     if (!this.structureHost) return;
     this.structureHost.empty();
+    this.structureRootDropZone = null;
     if (!this.elements.length) {
       this.structureHost.createDiv({ cls: "sm-le-empty", text: "Noch keine Elemente." });
       return;
@@ -7537,6 +7543,47 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
       }
       childrenByParent.set(element.id, ordered);
     }
+    const rootDropZone = this.structureHost.createDiv({
+      cls: "sm-le-structure__root-drop",
+      text: "Ziehe ein Element hierher, um es aus seinem Container zu l\xF6sen."
+    });
+    this.structureRootDropZone = rootDropZone;
+    const canDropToRoot = () => {
+      if (!this.draggedElementId) return false;
+      const dragged = elementById.get(this.draggedElementId);
+      if (!dragged || isContainerType(dragged.type)) return false;
+      return Boolean(dragged.parentId);
+    };
+    rootDropZone.addEventListener("dragenter", (event) => {
+      if (!canDropToRoot()) return;
+      event.preventDefault();
+      rootDropZone.addClass("is-active");
+    });
+    rootDropZone.addEventListener("dragover", (event) => {
+      if (!canDropToRoot()) return;
+      event.preventDefault();
+      if (event.dataTransfer) {
+        event.dataTransfer.dropEffect = "move";
+      }
+      rootDropZone.addClass("is-active");
+    });
+    rootDropZone.addEventListener("dragleave", (event) => {
+      const related = event.relatedTarget;
+      if (!related || !rootDropZone.contains(related)) {
+        rootDropZone.removeClass("is-active");
+      }
+    });
+    rootDropZone.addEventListener("drop", (event) => {
+      if (!canDropToRoot()) return;
+      event.preventDefault();
+      event.stopPropagation();
+      rootDropZone.removeClass("is-active");
+      const draggedId = this.draggedElementId;
+      if (draggedId) {
+        this.assignElementToContainer(draggedId, null);
+      }
+      this.clearStructureDragState();
+    });
     const renderLevel = (parentId, container) => {
       const children = childrenByParent.get(parentId);
       if (!children || !children.length) return;
@@ -7550,16 +7597,94 @@ var LayoutEditorView = class extends import_obsidian24.ItemView {
         }
         const name = child.label?.trim() || getElementTypeLabel(child.type);
         entry.createSpan({ cls: "sm-le-structure__title", text: name });
-        entry.createSpan({ cls: "sm-le-structure__meta", text: getElementTypeLabel(child.type) });
+        const parentElement = child.parentId ? elementById.get(child.parentId) ?? null : null;
+        const metaParts = [getElementTypeLabel(child.type)];
+        if (parentElement) {
+          const parentName = parentElement.label?.trim() || getElementTypeLabel(parentElement.type);
+          metaParts.push(`\xDCbergeordnet: ${parentName}`);
+        }
+        if (isContainerElement(child)) {
+          const count = child.children?.length ?? 0;
+          const label = count === 1 ? "1 Kind" : `${count} Kinder`;
+          metaParts.push(label);
+          entry.addClass("sm-le-structure__entry--container");
+        }
+        entry.createSpan({ cls: "sm-le-structure__meta", text: metaParts.join(" \u2022 ") });
         entry.onclick = (ev) => {
           ev.preventDefault();
           this.selectElement(child.id);
           this.focusElementInCamera(child);
         };
+        if (!isContainerType(child.type)) {
+          entry.draggable = true;
+          entry.addClass("is-draggable");
+          entry.addEventListener("dragstart", (dragEvent) => {
+            this.draggedElementId = child.id;
+            dragEvent.dataTransfer?.setData("text/plain", child.id);
+            if (dragEvent.dataTransfer) {
+              dragEvent.dataTransfer.effectAllowed = "move";
+            }
+          });
+          entry.addEventListener("dragend", () => {
+            this.clearStructureDragState();
+          });
+        }
+        if (isContainerElement(child)) {
+          const canDropHere = () => this.canDropOnContainer(child.id);
+          entry.addEventListener("dragenter", (dragEvent) => {
+            if (!canDropHere()) return;
+            dragEvent.preventDefault();
+            entry.addClass("is-drop-target");
+          });
+          entry.addEventListener("dragover", (dragEvent) => {
+            if (!canDropHere()) return;
+            dragEvent.preventDefault();
+            if (dragEvent.dataTransfer) {
+              dragEvent.dataTransfer.dropEffect = "move";
+            }
+            entry.addClass("is-drop-target");
+          });
+          entry.addEventListener("dragleave", (dragEvent) => {
+            const related = dragEvent.relatedTarget;
+            if (!related || !entry.contains(related)) {
+              entry.removeClass("is-drop-target");
+            }
+          });
+          entry.addEventListener("drop", (dragEvent) => {
+            if (!canDropHere()) return;
+            dragEvent.preventDefault();
+            dragEvent.stopPropagation();
+            const draggedId = this.draggedElementId;
+            if (draggedId) {
+              this.assignElementToContainer(draggedId, child.id);
+            }
+            this.clearStructureDragState();
+          });
+        }
         renderLevel(child.id, itemEl);
       }
     };
     renderLevel(null, this.structureHost);
+  }
+  clearStructureDragState() {
+    this.draggedElementId = null;
+    if (this.structureHost) {
+      const targets = Array.from(this.structureHost.querySelectorAll(".sm-le-structure__entry.is-drop-target"));
+      for (const target of targets) {
+        target.removeClass("is-drop-target");
+      }
+    }
+    this.structureRootDropZone?.removeClass("is-active");
+  }
+  canDropOnContainer(containerId) {
+    if (!this.draggedElementId) return false;
+    const container = this.elements.find((el) => el.id === containerId);
+    if (!container || !isContainerElement(container)) return false;
+    const dragged = this.elements.find((el) => el.id === this.draggedElementId);
+    if (!dragged || isContainerType(dragged.type)) return false;
+    if (dragged.id === containerId) return false;
+    if (dragged.parentId === containerId) return false;
+    return true;
   }
   deleteElement(id) {
     const index = this.elements.findIndex((b) => b.id === id);
@@ -8792,6 +8917,20 @@ var HEX_PLUGIN_CSS = `
     opacity: 0.85;
 }
 
+.sm-le-structure__entry.is-drop-target {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent, #ffffff);
+}
+
+.sm-le-structure__entry.is-drop-target .sm-le-structure__title,
+.sm-le-structure__entry.is-drop-target .sm-le-structure__meta {
+    color: inherit;
+}
+
+.sm-le-structure__entry.is-drop-target .sm-le-structure__meta {
+    opacity: 0.85;
+}
+
 .sm-le-structure__title {
     font-weight: 600;
     line-height: 1.2;
@@ -8801,6 +8940,32 @@ var HEX_PLUGIN_CSS = `
     font-size: 0.75rem;
     color: var(--text-muted);
     line-height: 1.2;
+}
+
+.sm-le-structure__entry.is-draggable {
+    cursor: grab;
+}
+
+.sm-le-structure__entry.is-draggable:active {
+    cursor: grabbing;
+}
+
+.sm-le-structure__root-drop {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    padding: 0.35rem 0.5rem;
+    border: 1px dashed var(--background-modifier-border);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.02);
+    transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.sm-le-structure__root-drop.is-active {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent, #ffffff);
+    border-color: var(--interactive-accent);
 }
 
 .sm-le-resizer {
