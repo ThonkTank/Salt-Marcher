@@ -1299,12 +1299,6 @@ export const HEX_PLUGIN_CSS = `
     color: inherit;
 }
 
-.sm-le-container-chip {
-    background: var(--background-secondary);
-    border-radius: 999px;
-    padding: 0.2rem 0.45rem;
-}
-
 .sm-le-inspector {
     flex: 1;
     display: flex;

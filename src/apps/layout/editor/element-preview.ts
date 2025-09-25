@@ -1,6 +1,6 @@
 // src/apps/layout/editor/element-preview.ts
 import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
-import { getElementTypeLabel, isContainerType } from "./definitions";
+import { isContainerType } from "./definitions";
 import { createInlineEditor } from "./inline-edit";
 import { LayoutElement, LayoutElementType } from "./types";
 
@@ -229,18 +229,11 @@ export function renderElementPreview(deps: ElementPreviewDependencies) {
             header.style.display = "none";
         }
         const body = frame.createDiv({ cls: "sm-le-preview__container-body" });
-        const children = Array.isArray(element.children)
-            ? element.children
-                  .map(childId => deps.elements.find(el => el.id === childId))
-                  .filter((child): child is LayoutElement => !!child)
-            : [];
-        if (!children.length) {
+        const hasChildren = Array.isArray(element.children)
+            ? element.children.some(childId => deps.elements.some(el => el.id === childId))
+            : false;
+        if (!hasChildren) {
             body.createDiv({ cls: "sm-le-preview__container-placeholder", text: "Leerer Container" });
-        } else {
-            for (const child of children) {
-                const row = body.createDiv({ cls: "sm-le-container-chip" });
-                row.setText(child.label || getElementTypeLabel(child.type));
-            }
         }
         return;
     }
