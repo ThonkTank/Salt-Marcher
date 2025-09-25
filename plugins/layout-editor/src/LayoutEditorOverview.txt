@@ -17,6 +17,7 @@ plugins/layout-editor/
    ├─ css.ts              # Layout-Editor-Styling als Template-String
    ├─ index.ts            # Öffentliche Re-Exports (Plugin-Klasse, API, Registry, Library)
    ├─ LayoutEditorOverview.txt  # Diese Übersicht
+   ├─ elements/ui.ts      # UI-Komponenten (Buttons, Felder, Status) für View & Modals
    ├─ attribute-popover.ts # Attribute-Popover inkl. Events & Sync
    ├─ definitions.ts       # Element-/Attribut-Registry + Label-Helfer & Defaults
    ├─ elements/
@@ -48,6 +49,7 @@ plugins/layout-editor/
 - **Layout-Arbeitsfläche & Kamera:** Dreigeteilte Arbeitsumgebung mit Strukturbaum links, Canvas in der Mitte und Inspector rechts. Panning, Zoom und Panel-Resizer halten Bounds-Clamping und Fokusverhalten konsistent.
 - **Struktur-Überblick:** Interaktiver Baum mit Drag & Drop zur Container-Neuzuordnung (inkl. Root-Drop-Zone) und zyklusgesicherter Elternwahl. Inspector- und Baum-Breiten lassen sich über Trenner anpassen.
 - **Palette & Registry:** Element-Palette horcht auf Registry-Änderungen und liest Gruppen direkt aus den Komponentendefinitionen. Neue Element-Typen müssen nur als Datei in `src/elements/components/` landen – Palette und Inspector-Menüs greifen sie automatisch auf. Eigene Editor-Komponenten (Palette + Kontextmenüs) verzichten vollständig auf Obsidian-Menüs.
+- **Elements-UI:** Header, Inspector, Menüs und Modals verwenden die generischen Buttons, Felder und Statusanzeigen aus `elements/ui.ts`, damit der Editor vollständig auf Elements-Komponenten basiert.
 - **Komponentenbasierte Elemente:** `elements/` bündelt Preview-, Inspector- und Default-Logik je Elementtyp und reduziert Redundanz bei neuen UI-Elementen. Gemeinsame Eigenschaften (z. B. Container-Layout, Select- oder Textfeld-Verhalten) liegen nun in `shared/component-bases.ts` und werden von konkreten Komponenten geerbt.
 - **Container-Layout:** Box-, VBox- und HBox-Container verwalten Gap, Padding und Align sowie verschachtelte Kinder. Inspector und Baum unterstützen das schnelle Hinzufügen und Neuzuordnen von Elementen.
 - **Direkte Bearbeitung & Inspector:** Canvas rendert echte UI-Elemente. Freie Texte lassen sich inline editieren, alle Meta-Informationen pflegst du im Inspector (Labels, Placeholder, Optionen, Layout-Werte).
@@ -83,7 +85,7 @@ plugins/layout-editor/
 
 ### `view.ts`
 - Implementiert `LayoutEditorView` (`ItemView`).
-- Baut Header (Palette, Import, Status), Struktur-Baum, Stage mit Kamera, Inspector, Exportbereich und Sandbox auf.
+- Baut Header (Palette, Import, Status), Struktur-Baum, Stage mit Kamera, Inspector, Exportbereich und Sandbox auf – alle Controls basieren auf `elements/ui.ts`.
 - Verwaltet State (Selektion, Historie, Canvas) und orchestriert Hilfs-Module.
 - Öffnet gespeicherte Layouts über den `LayoutPickerModal` und setzt Canvas/Elemente inklusive Historie zurück.
 
@@ -112,7 +114,7 @@ plugins/layout-editor/
 
 ### `name-input-modal.ts`
 - Stellt einen schlanken Modal zur Verfügung, um Layout-Namen einzutippen (inkl. Enter-Shortcut und CTA-Button).
-- Nutzt jetzt ein eigenes Formular-Layout anstelle der Obsidian-`Setting`-Komponente, damit der Editor ausschließlich eigene UI-Bausteine verwendet.
+- Baut Formular und CTA vollständig mit `elements/ui.ts` auf und verzichtet auf Obsidian-spezifische Controls.
 
 ### `search-dropdown.ts`
 - Verwandelt native `<select>`-Elemente in durchsuchbare Dropdowns (Suchfeld, Keyboard-Navigation, Menü-Rendering).
@@ -135,7 +137,7 @@ plugins/layout-editor/
 - Delegiert das Rendering an die registrierten Komponenten und kapselt das gemeinsame Inline-Editing.
 
 ### `inspector-panel.ts`
-- Baut den Inspector-Aufbau und ruft Komponenten-Hooks für element-spezifische Felder auf (Label, Placeholder, Optionen, Layout).
+- Baut den Inspector komplett mit Elements-UI-Komponenten und ruft Komponenten-Hooks für element-spezifische Felder auf (Label, Placeholder, Optionen, Layout).
 
 ### `attribute-popover.ts`
 - Verwaltet Popover-Lifecycle (Öffnen, Fokus, Events) und synchronisiert ausgewählte Attribute.
@@ -147,4 +149,4 @@ plugins/layout-editor/
 - Typisiert LayoutElemente, Container-Konfigurationen, Registry-Definitionen und gespeicherte Layouts.
 
 ### `layout-picker-modal.ts`
-- Stellt einen Modal mit Such-Dropdown bereit, um gespeicherte Layouts auszuwählen und die Auswahl an `view.ts` zurückzumelden.
+- Stellt einen Modal mit Such-Dropdown bereit, um gespeicherte Layouts auszuwählen und die Auswahl an `view.ts` zurückzumelden – inklusive Elements-Buttons, -Selects und Statusmeldungen.

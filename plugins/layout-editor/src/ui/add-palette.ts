@@ -1,5 +1,6 @@
 import type { LayoutElementDefinition, LayoutElementType } from "../types";
 import { openEditorMenu } from "./editor-menu";
+import { createElementsButton } from "../elements/ui";
 
 export interface PaletteRenderOptions {
     host: HTMLElement;
@@ -30,7 +31,7 @@ export function renderPalette(options: PaletteRenderOptions) {
     const direct = grouped.get("element") ?? [];
     direct.sort((a, b) => a.buttonLabel.localeCompare(b.buttonLabel, "de"));
     for (const def of direct) {
-        const btn = host.createEl("button", { text: def.buttonLabel });
+        const btn = createElementsButton(host, { label: def.buttonLabel });
         btn.onclick = () => onCreate(def.type);
     }
 
@@ -38,7 +39,7 @@ export function renderPalette(options: PaletteRenderOptions) {
         if (group === "element") continue;
         if (!defs.length) continue;
         const label = GROUP_LABELS.get(group) ?? capitalize(group);
-        const button = host.createEl("button", { text: label });
+        const button = createElementsButton(host, { label });
         button.onclick = event => {
             event.preventDefault();
             const entries = defs

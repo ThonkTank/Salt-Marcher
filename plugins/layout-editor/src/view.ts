@@ -26,6 +26,14 @@ import { NameInputModal } from "./name-input-modal";
 import { LayoutPickerModal } from "./layout-picker-modal";
 import { renderPalette } from "./ui/add-palette";
 import { getLayoutElementComponent } from "./elements/registry";
+import {
+    createElementsButton,
+    createElementsField,
+    createElementsHeading,
+    createElementsInput,
+    createElementsStatus,
+    ensureFieldLabelFor,
+} from "./elements/ui";
 
 export const VIEW_LAYOUT_EDITOR = "salt-layout-editor";
 export class LayoutEditorView extends ItemView {
@@ -209,23 +217,33 @@ export class LayoutEditorView extends ItemView {
         root.empty();
 
         const header = root.createDiv({ cls: "sm-le-header" });
-        header.createEl("h2", { text: "Layout Editor" });
+        createElementsHeading(header, 2, "Layout Editor");
 
         const controls = header.createDiv({ cls: "sm-le-controls" });
 
-        const addGroup = controls.createDiv({ cls: "sm-le-control sm-le-control--stack" });
-        addGroup.createEl("label", { text: "Element hinzufügen" });
-        this.addPaletteEl = addGroup.createDiv({ cls: "sm-le-add" });
+        const addGroup = createElementsField(controls, { label: "Element hinzufügen", layout: "stack" });
+        addGroup.fieldEl.addClass("sm-le-control");
+        addGroup.fieldEl.addClass("sm-le-control--stack");
+        this.addPaletteEl = addGroup.controlEl;
+        this.addPaletteEl.addClass("sm-le-add");
         this.renderAddPalette();
 
-        this.importBtn = controls.createEl("button", { text: "Gespeichertes Layout laden" });
+        const libraryGroup = createElementsField(controls, { label: "Layout-Bibliothek", layout: "stack" });
+        libraryGroup.fieldEl.addClass("sm-le-control");
+        this.importBtn = createElementsButton(libraryGroup.controlEl, { label: "Gespeichertes Layout laden" });
         this.importBtn.onclick = () => this.promptImportSavedLayout();
 
-        const sizeGroup = controls.createDiv({ cls: "sm-le-control" });
-        sizeGroup.createEl("label", { text: "Arbeitsfläche" });
-        const sizeWrapper = sizeGroup.createDiv({ cls: "sm-le-size" });
-        this.widthInput = sizeWrapper.createEl("input", { attr: { type: "number", min: "200", max: "2000" } }) as HTMLInputElement;
-        this.widthInput.value = String(this.canvasWidth);
+        const sizeGroup = createElementsField(controls, { label: "Arbeitsfläche", layout: "inline" });
+        sizeGroup.fieldEl.addClass("sm-le-control");
+        const sizeWrapper = sizeGroup.controlEl;
+        sizeWrapper.addClass("sm-le-size");
+        this.widthInput = createElementsInput(sizeWrapper, {
+            type: "number",
+            min: 200,
+            max: 2000,
+            value: String(this.canvasWidth),
+        });
+        ensureFieldLabelFor(sizeGroup, this.widthInput);
         this.widthInput.onchange = () => {
             const next = clamp(parseInt(this.widthInput!.value, 10) || this.canvasWidth, 200, 2000);
             this.canvasWidth = next;
@@ -235,9 +253,13 @@ export class LayoutEditorView extends ItemView {
             this.updateStatus();
             this.pushHistory();
         };
-        sizeWrapper.createSpan({ text: "×" });
-        this.heightInput = sizeWrapper.createEl("input", { attr: { type: "number", min: "200", max: "2000" } }) as HTMLInputElement;
-        this.heightInput.value = String(this.canvasHeight);
+        sizeWrapper.createSpan({ cls: "sm-elements-inline-text", text: "×" });
+        this.heightInput = createElementsInput(sizeWrapper, {
+            type: "number",
+            min: 200,
+            max: 2000,
+            value: String(this.canvasHeight),
+        });
         this.heightInput.onchange = () => {
             const next = clamp(parseInt(this.heightInput!.value, 10) || this.canvasHeight, 200, 2000);
             this.canvasHeight = next;
@@ -247,9 +269,10 @@ export class LayoutEditorView extends ItemView {
             this.updateStatus();
             this.pushHistory();
         };
-        sizeWrapper.createSpan({ text: "px" });
+        sizeWrapper.createSpan({ cls: "sm-elements-inline-text", text: "px" });
 
-        this.statusEl = header.createDiv({ cls: "sm-le-status" });
+        this.statusEl = createElementsStatus(header, { text: "" });
+        this.statusEl.addClass("sm-le-status");
 
         this.bodyEl = root.createDiv({ cls: "sm-le-body" });
 
@@ -305,7 +328,7 @@ export class LayoutEditorView extends ItemView {
         const exportWrap = root.createDiv({ cls: "sm-le-export" });
         exportWrap.createEl("h3", { text: "Layout-Daten" });
         const exportControls = exportWrap.createDiv({ cls: "sm-le-export__controls" });
-        const copyBtn = exportControls.createEl("button", { text: "JSON kopieren" });
+        const copyBtn = createElementsButton(exportControls, { label: "JSON kopieren" });
         copyBtn.onclick = async () => {
             if (!this.exportEl.value) return;
             try {
@@ -320,7 +343,7 @@ export class LayoutEditorView extends ItemView {
                 new Notice("Konnte nicht in die Zwischenablage kopieren");
             }
         };
-        this.saveButton = exportControls.createEl("button", { text: "Layout speichern" });
+        this.saveButton = createElementsButton(exportControls, { label: "Layout speichern", variant: "primary" });
         this.saveButton.onclick = () => this.promptSaveLayout();
         this.exportEl = exportWrap.createEl("textarea", {
             cls: "sm-le-export__textarea",
@@ -914,11 +937,13 @@ export class LayoutEditorView extends ItemView {
             const listEl = container.createEl("ul", { cls: "sm-le-structure__list" });
             for (const child of children) {
                 const itemEl = listEl.createEl("li", { cls: "sm-le-structure__item" });
-                const entry = itemEl.createEl("button", { cls: "sm-le-structure__entry" });
+                const entry = createElementsButton(itemEl, { label: "" });
+                entry.addClass("sm-le-structure__entry");
                 entry.dataset.id = child.id;
                 if (this.selectedElementId === child.id) {
                     entry.addClass("is-selected");
                 }
+                entry.setText("");
                 const name = child.label?.trim() || getElementTypeLabel(child.type);
                 entry.createSpan({ cls: "sm-le-structure__title", text: name });
                 const parentElement = child.parentId ? elementById.get(child.parentId) ?? null : null;

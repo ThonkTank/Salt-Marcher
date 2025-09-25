@@ -1,5 +1,12 @@
 // plugins/layout-editor/src/name-input-modal.ts
 import { App, Modal } from "obsidian";
+import {
+    createElementsButton,
+    createElementsField,
+    createElementsHeading,
+    createElementsInput,
+    ensureFieldLabelFor,
+} from "./elements/ui";
 
 export class NameInputModal extends Modal {
     private value = "";
@@ -25,15 +32,14 @@ export class NameInputModal extends Modal {
         const { contentEl } = this;
         contentEl.empty();
         contentEl.addClass("sm-le-modal");
-        contentEl.createEl("h3", { text: this.title });
+        const heading = createElementsHeading(contentEl, 3, this.title);
+        heading.addClass("sm-le-modal__heading");
 
         const form = contentEl.createEl("form", { cls: "sm-le-modal__form" });
-        const field = form.createDiv({ cls: "sm-le-modal__field" });
-        const inputId = `sm-le-name-input-${Date.now()}`;
-        field.createEl("label", { text: "Name", attr: { for: inputId } });
-        const inputEl = field.createEl("input", {
-            attr: { type: "text", id: inputId, placeholder: this.placeholder },
-        }) as HTMLInputElement;
+        const field = createElementsField(form, { label: "Name" });
+        field.fieldEl.addClass("sm-le-modal__field");
+        const inputEl = createElementsInput(field.controlEl, { placeholder: this.placeholder });
+        ensureFieldLabelFor(field, inputEl);
         if (this.value) {
             inputEl.value = this.value;
         }
@@ -42,8 +48,7 @@ export class NameInputModal extends Modal {
         });
 
         const actions = form.createDiv({ cls: "sm-le-modal__actions" });
-        const submitBtn = actions.createEl("button", { text: this.ctaLabel });
-        submitBtn.type = "submit";
+        const submitBtn = createElementsButton(actions, { label: this.ctaLabel, variant: "primary", type: "submit" });
         submitBtn.addClass("mod-cta");
 
         form.onsubmit = ev => {
