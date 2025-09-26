@@ -19,3 +19,6 @@ docs/core/
 ## Weiterführende Ressourcen
 - Nutzung im Kontext der Workspaces siehe [Cartographer](../cartographer/README.md) und [Library](../library/README.md).
 - Richtlinien zur Dokumentation: [Style Guide](../../../docs/style-guide.md).
+
+## To-Do
+- [Hex renderer modularization](../../../todo/hex-renderer-modularization.md) – Rendering, Kamera und Interaktionen entflechten.

@@ -21,3 +21,8 @@ docs/cartographer/
 ## Weiterführende Ressourcen
 - Nutzerperspektive im [Cartographer-Wiki-Eintrag](../../../wiki/Cartographer.md).
 - Dokumentationsstandards gemäß [Style Guide](../../../docs/style-guide.md).
+
+## To-Do
+- [Cartographer presenter respects abort signals](../../../todo/cartographer-presenter-abort-handling.md) – Abort-Signale sauber propagieren.
+- [Cartographer mode registry](../../../todo/cartographer-mode-registry.md) – Modi deklarativ konfigurierbar machen.
+- [Cartographer mode state machine](../../../todo/cartographer-mode-state-machine.md) – Mode-Queue in robuste State-Machine überführen.
