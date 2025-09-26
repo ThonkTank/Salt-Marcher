@@ -1,5 +1,6 @@
 import {
     clearCartographerModeRegistry,
+    createCartographerModeRegistrySnapshot,
     createCartographerModesSnapshot,
     getCartographerModeMetadataSnapshot,
     registerCartographerModeProvider,
@@ -30,6 +31,11 @@ export const provideCartographerModes = (): CartographerMode[] => {
     return createCartographerModesSnapshot();
 };
 
+export const provideCartographerModeEntries = (): readonly CartographerModeRegistryEntry[] => {
+    ensureCoreProviders();
+    return createCartographerModeRegistrySnapshot();
+};
+
 export const listCartographerModeMetadata = (): readonly CartographerModeMetadata[] => {
     ensureCoreProviders();
     return getCartographerModeMetadataSnapshot();
@@ -58,11 +64,26 @@ export const resetCartographerModeRegistry = (options?: { registerCoreProviders?
     }
 };
 
-export { createCartographerModesSnapshot, getCartographerModeMetadataSnapshot };
+export {
+    createCartographerModeRegistrySnapshot,
+    createCartographerModesSnapshot,
+    getCartographerModeMetadataSnapshot,
+};
 
 export type {
     CartographerModeMetadata,
     CartographerModeProvider,
     CartographerModeRegistryEvent,
     CartographerModeRegistryEntry,
-};
+} from "./registry";
+
+export type {
+    CartographerModeCapabilities,
+    CartographerModeMapInteraction,
+    CartographerModePersistence,
+    CartographerModeSidebarUsage,
+    CartographerModeWithCapabilities,
+    NormalizedCartographerModeMetadata,
+} from "./registry";
+
+export { defineCartographerModeProvider } from "./registry";

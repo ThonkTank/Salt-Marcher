@@ -5,6 +5,7 @@ import {
     type CartographerMode,
     type CartographerModeContext,
     type CartographerModeLifecycleContext,
+    type HexCoord,
 } from "../../src/apps/cartographer/presenter";
 import type {
     CartographerShellHandle,
@@ -15,6 +16,7 @@ import type { MapManagerHandle } from "../../src/ui/map-manager";
 import type { HexOptions } from "../../src/core/options";
 import type { RenderHandles } from "../../src/core/hex-mapper/hex-render";
 import type { MapLayer } from "../../src/apps/cartographer/travel/ui/map-layer";
+import type { MapHeaderSaveMode } from "../../src/ui/map-header";
 import type {
     CartographerModeRegistryEntry,
     CartographerModeRegistryEvent,
@@ -26,6 +28,11 @@ const createRegistryEntry = (mode: CartographerMode): CartographerModeRegistryEn
         label: mode.label,
         summary: `${mode.label} summary`,
         source: "tests/presenter",
+        capabilities: {
+            mapInteraction: typeof mode.onHexClick === "function" ? "hex-click" : "none",
+            persistence: typeof mode.onSave === "function" ? "manual-save" : "read-only",
+            sidebar: "required",
+        },
     },
     mode,
 });
@@ -202,7 +209,7 @@ describe("CartographerPresenter", () => {
                 throw new Error("layer should not be created in this scenario");
             }),
             loadHexOptions: vi.fn(async () => null as HexOptions | null),
-            provideModes: () => [modeA, modeB],
+            provideModes: () => [createRegistryEntry(modeA), createRegistryEntry(modeB)],
             subscribeToModeRegistry: registry.subscribe,
         });
 
@@ -253,7 +260,7 @@ describe("CartographerPresenter", () => {
                 throw new Error("layer should not be created in this scenario");
             }),
             loadHexOptions: vi.fn(async () => null as HexOptions | null),
-            provideModes: () => [modeA, modeB],
+            provideModes: () => [createRegistryEntry(modeA), createRegistryEntry(modeB)],
             subscribeToModeRegistry: registry.subscribe,
         });
 
@@ -310,7 +317,7 @@ describe("CartographerPresenter", () => {
                 throw new Error("layer should not be created in this scenario");
             }),
             loadHexOptions: vi.fn(async () => null as HexOptions | null),
-            provideModes: () => [modeA, modeB],
+            provideModes: () => [createRegistryEntry(modeA), createRegistryEntry(modeB)],
             subscribeToModeRegistry: registry.subscribe,
         });
 
@@ -360,7 +367,7 @@ describe("CartographerPresenter", () => {
                 throw new Error("layer should not be created in this scenario");
             }),
             loadHexOptions: vi.fn(async () => null as HexOptions | null),
-            provideModes: () => [modeA, modeB],
+            provideModes: () => [createRegistryEntry(modeA), createRegistryEntry(modeB)],
             subscribeToModeRegistry: registry.subscribe,
         });
 
@@ -410,7 +417,7 @@ describe("CartographerPresenter", () => {
             createMapManager: createMapManagerFactory(),
             createMapLayer: createLayer,
             loadHexOptions,
-            provideModes: () => [mode],
+            provideModes: () => [createRegistryEntry(mode)],
             subscribeToModeRegistry: registry.subscribe,
         });
 
@@ -433,6 +440,103 @@ describe("CartographerPresenter", () => {
         expect(typeof ctx.getOptions).toBe("function");
         expect(ctx.signal.aborted).toBe(false);
         expect(shell.setOverlay).toHaveBeenLastCalledWith(null);
+    });
+
+    it("skips mode save handler when persistence capability is read-only", async () => {
+        const shell = createShellStub();
+
+        const saveHandler = vi.fn(async () => true);
+        const mode: CartographerMode = {
+            id: "main",
+            label: "Main",
+            onEnter: vi.fn(),
+            onExit: vi.fn(),
+            onFileChange: vi.fn(),
+            onSave: saveHandler,
+        };
+
+        const entry = createRegistryEntry(mode);
+        entry.metadata = {
+            ...entry.metadata,
+            capabilities: {
+                ...entry.metadata.capabilities,
+                persistence: "read-only",
+            },
+        };
+
+        const registry = createRegistryController();
+
+        const presenter = new CartographerPresenter(appStub, {
+            createShell: shell.factory,
+            createMapManager: createMapManagerFactory(),
+            createMapLayer: vi.fn(async () => {
+                throw new Error("layer should not be created in this scenario");
+            }),
+            loadHexOptions: vi.fn(async () => null as HexOptions | null),
+            provideModes: () => [entry],
+            subscribeToModeRegistry: registry.subscribe,
+        });
+
+        registry.emit({ type: "initial", entries: [entry] });
+
+        await presenter.onOpen(shell.host, null);
+
+        const callbacks = shell.getCallbacks();
+        const result = await callbacks.onSave("manual" as MapHeaderSaveMode, null);
+
+        expect(result).toBe(false);
+        expect(saveHandler).not.toHaveBeenCalled();
+    });
+
+    it("ignores hex click when capability disables map interaction", async () => {
+        const shell = createShellStub();
+
+        const hexClick = vi.fn();
+        const mode: CartographerMode = {
+            id: "main",
+            label: "Main",
+            onEnter: vi.fn(),
+            onExit: vi.fn(),
+            onFileChange: vi.fn(),
+            onHexClick: hexClick,
+        };
+
+        const entry = createRegistryEntry(mode);
+        entry.metadata = {
+            ...entry.metadata,
+            capabilities: {
+                ...entry.metadata.capabilities,
+                mapInteraction: "none",
+            },
+        };
+
+        const registry = createRegistryController();
+
+        const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+        const presenter = new CartographerPresenter(appStub, {
+            createShell: shell.factory,
+            createMapManager: createMapManagerFactory(),
+            createMapLayer: vi.fn(async () => {
+                throw new Error("layer should not be created in this scenario");
+            }),
+            loadHexOptions: vi.fn(async () => null as HexOptions | null),
+            provideModes: () => [entry],
+            subscribeToModeRegistry: registry.subscribe,
+        });
+
+        registry.emit({ type: "initial", entries: [entry] });
+
+        await presenter.onOpen(shell.host, null);
+
+        const callbacks = shell.getCallbacks();
+        const coord: HexCoord = { r: 2, c: 3 };
+        const event = new CustomEvent("hex:click", { detail: coord, cancelable: true }) as CustomEvent<HexCoord>;
+        await callbacks.onHexClick(coord, event);
+
+        expect(hexClick).not.toHaveBeenCalled();
+
+        warn.mockRestore();
     });
 
     it("destroys pending map layer when aborted switch completes", async () => {
@@ -491,7 +595,7 @@ describe("CartographerPresenter", () => {
             createMapManager: createMapManagerFactory(),
             createMapLayer: createLayer,
             loadHexOptions,
-            provideModes: () => [modeA, modeB],
+            provideModes: () => [createRegistryEntry(modeA), createRegistryEntry(modeB)],
             subscribeToModeRegistry: registry.subscribe,
         });
 
@@ -587,7 +691,7 @@ describe("CartographerPresenter", () => {
             createMapManager: createMapManagerFactory(),
             createMapLayer: createLayer,
             loadHexOptions,
-            provideModes: () => [modeA, modeB],
+            provideModes: () => [createRegistryEntry(modeA), createRegistryEntry(modeB)],
             subscribeToModeRegistry: registry.subscribe,
         });
 
@@ -712,7 +816,7 @@ describe("CartographerPresenter", () => {
                 throw new Error("layer should not be created in this scenario");
             }),
             loadHexOptions: vi.fn(async () => null as HexOptions | null),
-            provideModes: () => [modeA, modeB],
+            provideModes: () => [createRegistryEntry(modeA), createRegistryEntry(modeB)],
             subscribeToModeRegistry: registry.subscribe,
         });
 
@@ -767,7 +871,7 @@ describe("CartographerPresenter", () => {
                 throw new Error("layer should not be created in this scenario");
             }),
             loadHexOptions: vi.fn(async () => null as HexOptions | null),
-            provideModes: () => [modeA, modeB],
+            provideModes: () => [createRegistryEntry(modeA), createRegistryEntry(modeB)],
             subscribeToModeRegistry: registry.subscribe,
         });
 
@@ -856,7 +960,7 @@ describe("CartographerPresenter", () => {
                 destroy: vi.fn(),
             } as unknown as MapLayer)),
             loadHexOptions: vi.fn(async () => null as HexOptions | null),
-            provideModes: () => [travelMode, editorMode],
+            provideModes: () => [createRegistryEntry(travelMode), createRegistryEntry(editorMode)],
             subscribeToModeRegistry: registry.subscribe,
         });
 
