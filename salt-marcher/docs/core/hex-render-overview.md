@@ -65,3 +65,6 @@
 - `render/scene.ts`: entfernt SVG aus dem DOM und gibt Maps frei.
 
 Diese Struktur trennt Rendering, Kamera und Interaktionslogik klar, erleichtert Tool-spezifische Delegates und verhindert Speicherlecks bei mehrfacher Montage.
+
+## To-Do
+- [Hex-Renderer modularisieren](../../../todo/hex-renderer-modularization.md)

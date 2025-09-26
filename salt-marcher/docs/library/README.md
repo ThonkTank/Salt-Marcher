@@ -17,3 +17,6 @@ docs/library/
 ## Weiterführende Ressourcen
 - Anwenderdokumentation im [Library-Wiki-Eintrag](../../../wiki/Library.md).
 - Dokumentationsrichtlinien: [Style Guide](../../../docs/style-guide.md).
+
+## To-Do
+- [Terminologie vereinheitlichen](../../../todo/ui-terminology-consistency.md)

@@ -19,3 +19,6 @@ src/ui/
 - Die Delete-Callback-Logik ist in `try/catch` gekapselt. So bleiben Fehler beim Entfernen der Map/Tile-Dateien nicht stumm.
 - Schlägt `deleteMapAndTiles` fehl, protokolliert der Manager den Fehler via `console.error` und informiert Anwender:innen mit einem `Notice`.
 - Der `onChange(null)`-Callback wird nur nach erfolgreich abgeschlossenem Löschvorgang ausgeführt, wodurch externe Konsumenten keine inkonsistenten Zustände erhalten.
+
+## To-Do
+- [Terminologie vereinheitlichen](../../../todo/ui-terminology-consistency.md)

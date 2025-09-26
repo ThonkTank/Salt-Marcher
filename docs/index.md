@@ -27,4 +27,11 @@ This hub orients contributors, technical writers, and support staff to every maj
 ## Standards & Conventions
 - Maintain this index whenever documentation locations change so all teams share an accurate map.
 - Ensure every linked document complies with the [documentation style guide](style-guide.md) and uses relative links where possible.
-- Capture unresolved documentation issues or backlog items in [`../Critique.txt`](../Critique.txt) for coordination across releases.
+- Capture unresolved documentation issues or backlog items via the structured backlog in [`../todo/`](../todo/) for coordination across releases.
+
+## To-Do
+- [Presenter reacts to abort signals](../todo/presenter-abort-signal.md)
+- [Cartographer modes are registered declaratively](../todo/cartographer-mode-registry.md)
+- [Cartographer mode queue gains a robust state machine](../todo/cartographer-mode-queue-state-machine.md)
+- [Hex renderer is modularised](../todo/hex-renderer-modularization.md)
+- [UI terminology is unified](../todo/ui-terminology-consistency.md)

@@ -21,8 +21,13 @@ The Encounter workspace currently provides a dedicated pane for handling travel-
 | Manual pane creation (`Open view by type → salt-marcher-encounter`) | Opens the workspace without a travel trigger. | Useful for testing layouts or preparing upcoming encounter features. |
 
 - Keep the encounter workspace docked next to Cartographer to reduce window juggling when multiple encounters occur.
-- Document any desired encounter tooling in `Critique.txt` so the placeholder can evolve alongside feature work.
+- Document any desired encounter tooling in the structured backlog under [`../todo/`](../todo/) so the placeholder can evolve alongside feature work.
 - Use Obsidian's pane pinning to prevent the encounter view from being replaced by unrelated notes during sessions.
+
+## To-Do
+- [Presenter reacts to abort signals](../todo/presenter-abort-signal.md)
+- [Cartographer modes are registered declaratively](../todo/cartographer-mode-registry.md)
+- [Cartographer mode queue gains a robust state machine](../todo/cartographer-mode-queue-state-machine.md)
 
 ## Related Links
 - [Getting Started](./Getting-Started.md)

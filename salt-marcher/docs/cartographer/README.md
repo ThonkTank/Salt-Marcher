@@ -18,6 +18,11 @@ docs/cartographer/
 - [map-layer-overview.md](map-layer-overview.md) – Rendering-Pipeline, Layer-Architektur und Datenquellen der Hex-Map.
 - [travel-mode-overview.md](travel-mode-overview.md) – Travel-spezifische Controller, Playback-Logik und Encounter-Anbindung.
 
+## To-Do
+- [Presenter reagiert nicht auf Abbruchsignale](../../../todo/presenter-abort-signal.md)
+- [Modi deklarativ registrieren](../../../todo/cartographer-mode-registry.md)
+- [Mode-Queue als robuste State-Machine ausbauen](../../../todo/cartographer-mode-queue-state-machine.md)
+
 ## Weiterführende Ressourcen
 - Nutzerperspektive im [Cartographer-Wiki-Eintrag](../../../wiki/Cartographer.md).
 - Dokumentationsstandards gemäß [Style Guide](../../../docs/style-guide.md).

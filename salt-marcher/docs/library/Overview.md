@@ -54,3 +54,6 @@ Der `LibraryView` reduziert sich auf die Shell-Aufgabe: Mode-Umschaltung, Suchfe
 - **Debounced Saves:** Terrains und Regionen lösen keine direkten Vault-Schreibzugriffe pro Tastendruck mehr aus; Änderungen werden gesammelt und nach 500 ms Inaktivität geschrieben.
 - **Sauberer Lifecycle:** Renderer übernehmen ihre Watcher komplett selbst und geben sie beim Wechsel frei, wodurch `LibraryView` keine zentrale Cleanup-Liste mehr benötigt.
 - **Erweiterbarkeit:** Neue Modi können über zusätzliche Renderer eingeführt werden, ohne `LibraryView` mit Mode-spezifischer Logik zu füllen.
+
+## To-Do
+- [Terminologie vereinheitlichen](../../../todo/ui-terminology-consistency.md)

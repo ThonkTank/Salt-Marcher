@@ -25,4 +25,11 @@ This overview introduces contributors to the structure and responsibilities of t
 ## Standards & Conventions
 - Every new overview or README must adopt the sections defined in the shared [documentation style guide](docs/style-guide.md).
 - Update this overview whenever repository-level folders, workflows, or coordination touchpoints change.
-- Capture architectural risks or follow-up work items in [`Critique.txt`](Critique.txt) to maintain shared visibility.
+- Capture architectural risks or follow-up work items in the structured backlog under [`todo/`](todo/) to maintain shared visibility.
+
+## To-Do
+- [Presenter reacts to abort signals](todo/presenter-abort-signal.md)
+- [Cartographer modes are registered declaratively](todo/cartographer-mode-registry.md)
+- [Cartographer mode queue gains a robust state machine](todo/cartographer-mode-queue-state-machine.md)
+- [Hex renderer is modularised](todo/hex-renderer-modularization.md)
+- [UI terminology is unified](todo/ui-terminology-consistency.md)

@@ -25,3 +25,10 @@ auf weiterführende Ressourcen.
 ## Standards & Pflege
 Alle neuen oder aktualisierten Dokumente müssen dem [Documentation Style Guide](../../docs/style-guide.md) entsprechen. Ergänze
 Querverlinkungen zwischen den Bereichen, sobald sich Verantwortlichkeiten überschneiden, und halte die Strukturdiagramme aktuell.
+
+## To-Do
+- [Presenter reagiert nicht auf Abbruchsignale](../../todo/presenter-abort-signal.md)
+- [Modi deklarativ registrieren](../../todo/cartographer-mode-registry.md)
+- [Mode-Queue als robuste State-Machine ausbauen](../../todo/cartographer-mode-queue-state-machine.md)
+- [Hex-Renderer modularisieren](../../todo/hex-renderer-modularization.md)
+- [Terminologie vereinheitlichen](../../todo/ui-terminology-consistency.md)

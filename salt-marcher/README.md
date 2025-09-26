@@ -44,3 +44,10 @@ Weitere Nutzer-Workflows, Schritt-für-Schritt-Anleitungen und FAQ-Einträge sin
 Die technische Dokumentation dieses Plugins folgt dem [Documentation Index](docs/index.md). Bitte richte neue Beiträge am
 [Style Guide](../docs/style-guide.md) des Projekts aus und verlinke zusätzliche Detaildokumente innerhalb des bestehenden
 Dokumentationsnetzes.
+
+## To-Do
+- [Presenter reagiert nicht auf Abbruchsignale](../todo/presenter-abort-signal.md)
+- [Modi deklarativ registrieren](../todo/cartographer-mode-registry.md)
+- [Mode-Queue als robuste State-Machine ausbauen](../todo/cartographer-mode-queue-state-machine.md)
+- [Hex-Renderer modularisieren](../todo/hex-renderer-modularization.md)
+- [Terminologie vereinheitlichen](../todo/ui-terminology-consistency.md)

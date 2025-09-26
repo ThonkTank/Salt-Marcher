@@ -47,3 +47,8 @@ graph TD
 - Der Mode-Controller reicht den `AbortSignal` direkt an die Presenter-Callbacks weiter. Der `CartographerPresenter` short-circuitet `onExit`, `onEnter` und `onFileChange`, sobald `signal.aborted === true`, und räumt angeforderte Map-Layer wieder auf. Dadurch können schnelle Mode-Wechsel keine veralteten Layer „wiederbeleben“.
 - Dynamische Mode-Listen: Die Shell bietet `setModes`, `registerMode` und `deregisterMode`, um externe Registries zu unterstützen. Änderungen werden sofort ins Dropdown gespiegelt.
 - Das Layout räumt den Host konsequent auf (`empty()` & `removeClass`), wodurch wiederholtes Mounten/Unmounten keine Zombie-Knoten hinterlässt.
+
+## To-Do
+- [Presenter reagiert nicht auf Abbruchsignale](../../../todo/presenter-abort-signal.md)
+- [Modi deklarativ registrieren](../../../todo/cartographer-mode-registry.md)
+- [Mode-Queue als robuste State-Machine ausbauen](../../../todo/cartographer-mode-queue-state-machine.md)
