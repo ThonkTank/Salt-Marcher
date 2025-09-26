@@ -32,6 +32,7 @@ Die View-Shell liefert weiterhin pro Modewechsel ein `AbortSignal`, der Mode-Con
 2. **Optionale Hooks:** `onHexClick` und `onSave` erhalten das identische Kontextobjekt, sofern sie vom Modus implementiert werden. Der Lazy-Wrapper validiert optional implementierte Hooks und reicht Argumente typsicher weiter.【F:salt-marcher/src/apps/cartographer/mode-registry/registry.ts†L113-L165】
 3. **`onExit`:** Beim Verlassen des Modus liefert der Presenter erneut denselben Kontext. Das `AbortSignal` wurde bis dahin abgebrochen, sodass Aufräumlogik deterministisch erkennen kann, dass keine weiteren Updates mehr folgen.【F:salt-marcher/src/apps/cartographer/presenter.ts†L360-L486】
 4. **Wrapper-Garantie:** Drittanbieter, die über die Registry integrieren, erhalten garantiert dieselbe Signatur wie die Kernmodi. Fehlende Parameter fallen bereits beim Kompilieren auf, weil der Wrapper Methodenaufrufe streng typisiert.【F:salt-marcher/src/apps/cartographer/mode-registry/registry.ts†L113-L165】
+5. **Früh abgebrochene Umschaltungen:** Ist das vom Mode-Controller übergebene `AbortSignal` bereits vor Beginn des Exit-Pfades abgebrochen, stoppt der Presenter den Wechsel sofort. Der bisher aktive Modus behält seinen unveränderten Kontext (`ctx.signal.aborted === false`), UI-Updates für den neuen Modus werden nicht ausgelöst.【F:salt-marcher/src/apps/cartographer/presenter.ts†L452-L522】【F:salt-marcher/tests/cartographer/presenter.test.ts†L592-L641】
 
 ## Aufräum- & Idempotenz-Regeln
 
