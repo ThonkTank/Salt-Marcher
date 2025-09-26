@@ -61,7 +61,7 @@ plugins/layout-editor/
 - **Undo/Redo-Historie:** `history.ts` kapselt Snapshot-Verwaltung; `view.ts` bindet sie an Shortcuts (Strg+Z / Umschalt+Strg+Z) und automatische Pushes bei Mutationen.
 - **Export & Layout-Library:** `view.ts` erstellt JSON-Exporte nun inklusive Metadaten (`id`, `name`, `createdAt`, `updatedAt`) im exakt gleichen Format wie die Bibliothek sie speichert (`canvasWidth`, `canvasHeight`, `elements`). Dadurch lassen sich Layouts ohne Nachbearbeitung wieder importieren oder direkt im Vault bearbeiten; `layout-library.ts` persistiert Layouts unter `LayoutEditor/Layouts/<id>.json`, listet vorhandene Layouts und lädt sie erneut. Die IDs werden dabei konsequent aus dem Dateinamen abgeleitet, sodass auch manuell importierte oder umbenannte Layout-Dateien gefunden werden. Beim Speichern validiert die Library IDs gegen Pfadtrenner, rundet Canvas-Maße auf Ganzzahlen, klont alle Elemente strikt und meldet bei ungültigen Feldern verständliche Fehler. Beim Einlesen werden Maße, Layout-Configs sowie Options-/Attribute-Listen tolerant geparst (Strings, Objekt-Mappings, frühere Align-Werte wie `flex-start`), sodass auch ältere oder handbearbeitete Dateien sicher geladen werden. Für Nutzer mit Bestandsdateien berücksichtigt die Library zusätzlich den Legacy-Pfad `Layout Editor/Layouts`, damit alte Layouts weiterhin erscheinen und importiert werden können. `seed-layouts.ts` sorgt beim Plugin-Start dafür, dass ein Standardlayout („Layout Editor – Kreaturenvorlage“) als JSON im Vault vorhanden ist.
 - **Layout-Bibliothek Import:** `layout-picker-modal.ts` und `view.ts` öffnen gespeicherte Layouts aus der Bibliothek, setzen Canvas/Einstellungen entsprechend zurück und initialisieren die Undo/Redo-Historie direkt auf dem geladenen Stand.
-- **View-Bindings & externe Features:** `view-registry.ts` hält registrierte Visualisierungen externer Plugins synchron und informiert Inspector/Preview. Die neue `view-container`-Komponente nutzt die Registry, um Feature-Dropdowns und Kamera-Demos (MMB-Pan, Wheel-Zoom) bereitzustellen, richtet die Demo-Fläche automatisch an der aktuellen Elementgröße aus und speichert die gewählte `viewBindingId` im Layout.
+- **View-Bindings & externe Features:** `view-registry.ts` hält registrierte Visualisierungen externer Plugins synchron und informiert Inspector/Preview. Die neue `view-container`-Komponente nutzt die Registry, um Feature-Dropdowns und Kamera-Demos (MMB-Pan, Wheel-Zoom) bereitzustellen, richtet die Demo-Fläche mit einem `ResizeObserver` (Fallback: RAF-Loop) unmittelbar an der aktuellen Elementgröße aus und speichert die gewählte `viewBindingId` im Layout.
 
 ## Layout-Library Workflow (Speichern, Öffnen & API-Nutzung)
 
@@ -167,7 +167,7 @@ plugins/layout-editor/
 ### `elements/components/view-container.ts`
 - Spezialisiertes Element für externe Renderflächen.
 - Inspector bietet ein Dropdown der registrierten View-Bindings und speichert die Auswahl in `element.viewBindingId`.
-- Preview demonstriert eine Kamera (Mittlere Maustaste zum Pannen, Mausrad zum Zoomen), passt die Demo-Fläche automatisch an die Boxgröße in der Arbeitsfläche an und blendet gewählte Feature-Namen/IDs ein.
+- Preview demonstriert eine Kamera (Mittlere Maustaste zum Pannen, Mausrad zum Zoomen), beobachtet die Viewport-Größe per `ResizeObserver` (inkl. RAF-Fallback) für sofortiges Re-Fitting, räumt Observer/RAF beim Re-Render auf und blendet gewählte Feature-Namen/IDs ein.
 
 ### `layout-library.ts`
 - Persistiert Layouts als JSON-Dateien im Vault-Ordner `LayoutEditor/Layouts`.

@@ -15,6 +15,7 @@ export interface ElementPreviewDependencies {
 export interface ElementPreviewContext extends ElementPreviewDependencies {
     preview: HTMLElement;
     container: HTMLElement;
+    registerPreviewCleanup(cleanup: () => void): void;
 }
 
 export interface ElementInspectorSections {

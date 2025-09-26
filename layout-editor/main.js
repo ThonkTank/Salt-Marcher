@@ -805,7 +805,7 @@ var ViewContainerComponent = class extends ElementComponentBase {
     });
   }
   renderPreview(context) {
-    const { preview, element } = context;
+    const { preview, element, registerPreviewCleanup } = context;
     preview.addClass("sm-le-preview--view-container");
     const wrapper = preview.createDiv({ cls: "sm-view-container sm-view-container--design" });
     const viewport = wrapper.createDiv({ cls: "sm-view-container__viewport" });
@@ -828,9 +828,28 @@ var ViewContainerComponent = class extends ElementComponentBase {
       surface.style.transform = `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})`;
     };
     applyCamera();
+    const supportsResizeObserver = typeof window.ResizeObserver !== "undefined";
+    let resizeObserver = null;
+    let fallbackLoopId = null;
+    let pendingFitId = null;
+    const scheduleFit = () => {
+      if (pendingFitId !== null) return;
+      pendingFitId = window.requestAnimationFrame(() => {
+        pendingFitId = null;
+        fitCameraToViewport();
+      });
+    };
     const fitCameraToViewport = () => {
+      if (!viewport.isConnected) {
+        return;
+      }
       const rect = viewport.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
+      if (!rect.width || !rect.height) {
+        if (supportsResizeObserver) {
+          scheduleFit();
+        }
+        return;
+      }
       const baseScale = Math.min(rect.width / SURFACE_WIDTH, rect.height / SURFACE_HEIGHT);
       if (!isFinite(baseScale) || baseScale <= 0) return;
       const nextScale = Math.min(MAX_SCALE, baseScale);
@@ -843,7 +862,38 @@ var ViewContainerComponent = class extends ElementComponentBase {
       };
       applyCamera();
     };
-    window.requestAnimationFrame(fitCameraToViewport);
+    const disposeCameraSync = () => {
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+        resizeObserver = null;
+      }
+      if (fallbackLoopId !== null) {
+        window.cancelAnimationFrame(fallbackLoopId);
+        fallbackLoopId = null;
+      }
+      if (pendingFitId !== null) {
+        window.cancelAnimationFrame(pendingFitId);
+        pendingFitId = null;
+      }
+    };
+    if (supportsResizeObserver) {
+      resizeObserver = new ResizeObserver(() => {
+        scheduleFit();
+      });
+      resizeObserver.observe(viewport);
+      scheduleFit();
+    } else {
+      const runFallbackLoop = () => {
+        if (!viewport.isConnected) {
+          disposeCameraSync();
+          return;
+        }
+        fitCameraToViewport();
+        fallbackLoopId = window.requestAnimationFrame(runFallbackLoop);
+      };
+      fallbackLoopId = window.requestAnimationFrame(runFallbackLoop);
+    }
+    registerPreviewCleanup(disposeCameraSync);
     let panPointer = null;
     let startX = 0;
     let startY = 0;
@@ -1491,10 +1541,21 @@ var AttributePopoverController = class {
 // src/element-preview.ts
 function renderElementPreview(deps) {
   const { host, element } = deps;
+  const hostWithCleanup = host;
+  if (hostWithCleanup.__smPreviewCleanup__) {
+    hostWithCleanup.__smPreviewCleanup__();
+    delete hostWithCleanup.__smPreviewCleanup__;
+  }
   host.empty();
   host.toggleClass("sm-le-box__content", true);
   const preview = host.createDiv({ cls: `sm-le-preview sm-le-preview--${element.type}` });
-  const context = { ...deps, preview, container: host };
+  const registerPreviewCleanup = (cleanup) => {
+    if (hostWithCleanup.__smPreviewCleanup__) {
+      hostWithCleanup.__smPreviewCleanup__();
+    }
+    hostWithCleanup.__smPreviewCleanup__ = cleanup;
+  };
+  const context = { ...deps, preview, container: host, registerPreviewCleanup };
   const component = getLayoutElementComponent(element.type);
   if (component) {
     component.renderPreview(context);
