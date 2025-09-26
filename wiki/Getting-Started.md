@@ -37,7 +37,7 @@ This guide walks Obsidian users through installing Salt Marcher, enabling its wo
 
 - Keep the release bundle and source tree aligned; mismatched versions may cause watcher errors or missing commands.
 - For development, re-run `npm run build` after TypeScript changes to refresh `main.js` before testing in Obsidian.
-- Record deviations between documentation and behaviour in `Critique.txt` so follow-up tasks can address them.
+- Record deviations between documentation and behaviour in [`docs/architecture-critique.md`](../docs/architecture-critique.md) so follow-up tasks can address them.
 
 ## Related Links
 - [Cartographer](./Cartographer.md)

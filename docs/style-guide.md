@@ -6,7 +6,7 @@ This guide defines the mandatory structure and formatting standards for READMEs,
 ## Directory Map
 | Path | Description | Primary Docs |
 | --- | --- | --- |
-| `docs/index.md` | Repository documentation hub that links every major knowledge area. | [`docs/index.md`](index.md) |
+| `docs/README.md` | Repository documentation hub that links every major knowledge area. | [`docs/README.md`](README.md) |
 | `docs/style-guide.md` | This style guide describing required sections and formatting rules. | _This document_ |
 
 ## Key Workflows
@@ -17,8 +17,8 @@ This guide defines the mandatory structure and formatting standards for READMEs,
 5. **Document standards:** Capture naming conventions, coding guidelines, testing expectations, or workflow agreements that apply to the scope of the document.
 
 ## Linked Docs
-- [Repository documentation hub](index.md) – overview of all documentation entry points.
-- [Salt Marcher plugin overview](../salt-marcher/PluginOverview.txt) – example of the template applied to the plugin package.
+- [Repository documentation hub](README.md) – overview of all documentation entry points.
+- [Salt Marcher plugin overview](../salt-marcher/overview.md) – example of the template applied to the plugin package.
 - [Root README](../README.md) – repository-level application of this style guide.
 
 ## Standards & Conventions
