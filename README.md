@@ -24,8 +24,6 @@ Salt Marcher is an Obsidian community plugin that helps game masters run hexcraw
 - [Project wiki](wiki/README.md) – canonical end-user guides hosted on GitHub.
 
 ## To-Do
-- [Cartographer presenter respects abort signals](todo/cartographer-presenter-abort-handling.md) – Presenter muss Abort-Signale sauber propagieren.
-- [Cartographer mode registry](todo/cartographer-mode-registry.md) – Modi deklarativ registrieren statt hart verdrahten.
 - [UI terminology consistency](todo/ui-terminology-consistency.md) – Einheitliche Sprache für UI-Texte und Kommentare herstellen.
 
 ## Standards & Conventions
