@@ -6,6 +6,8 @@ import {
     resetCartographerModeRegistry,
     createCartographerModesSnapshot,
     getCartographerModeMetadataSnapshot,
+    subscribeToModeRegistry,
+    type CartographerModeRegistryEvent,
     type CartographerModeProvider,
 } from "../../src/apps/cartographer/mode-registry";
 
@@ -138,5 +140,55 @@ describe("cartographer mode registry", () => {
 
         const snapshot = createCartographerModesSnapshot();
         expect(snapshot).toHaveLength(0);
+    });
+
+    it("notifies subscribers about registration lifecycle", async () => {
+        const events: CartographerModeRegistryEvent[] = [];
+        const unsubscribe = subscribeToModeRegistry((event) => {
+            events.push(event);
+        });
+
+        expect(events[0]?.type).toBe("initial");
+        expect(events[0]?.entries.map((entry) => entry.metadata.id)).toEqual([
+            "travel-guide",
+            "editor",
+            "inspector",
+        ]);
+
+        const provider: CartographerModeProvider = {
+            metadata: {
+                id: "dynamic",
+                label: "Dynamic",
+                summary: "dynamic provider",
+                source: "tests/dynamic",
+            },
+            async load() {
+                return {
+                    id: "dynamic",
+                    label: "Dynamic",
+                    onEnter: vi.fn(),
+                    onExit: vi.fn(),
+                    onFileChange: vi.fn(),
+                } satisfies CartographerMode;
+            },
+        };
+
+        const dispose = registerModeProvider(provider);
+
+        const registeredEvent = events.find((event) => event.type === "registered");
+        expect(registeredEvent?.entry.metadata.id).toBe("dynamic");
+        expect(registeredEvent?.entries.some((entry) => entry.metadata.id === "dynamic")).toBe(true);
+
+        dispose();
+
+        const deregisteredEvent = events.find((event) => event.type === "deregistered");
+        expect(deregisteredEvent?.id).toBe("dynamic");
+        expect(deregisteredEvent?.entries.map((entry) => entry.metadata.id)).toEqual([
+            "travel-guide",
+            "editor",
+            "inspector",
+        ]);
+
+        unsubscribe();
     });
 });

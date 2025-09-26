@@ -7,9 +7,6 @@ import { getFirstHexBlock } from "../../core/map-list";
 import type { RenderHandles } from "../../core/hex-mapper/hex-render";
 import { createMapLayer, type MapLayer } from "./travel/ui/map-layer";
 import { createMapManager, type MapManagerHandle } from "../../ui/map-manager";
-import { createTravelGuideMode } from "./modes/travel-guide";
-import { createEditorMode } from "./modes/editor";
-import { createInspectorMode } from "./modes/inspector";
 import {
     createCartographerShell,
     type CartographerShellHandle,
@@ -18,6 +15,11 @@ import {
     type ModeSelectContext,
 } from "./view-shell";
 import type { MapHeaderSaveMode } from "../../ui/map-header";
+import {
+    provideCartographerModes,
+    subscribeToModeRegistry,
+    type CartographerModeRegistryEvent,
+} from "./mode-registry";
 
 export type HexCoord = { r: number; c: number };
 
@@ -64,6 +66,7 @@ export interface CartographerPresenterDeps {
     createMapLayer(app: App, host: HTMLElement, file: TFile, opts: HexOptions): Promise<MapLayer>;
     loadHexOptions(app: App, file: TFile): Promise<HexOptions | null>;
     provideModes(): CartographerMode[];
+    subscribeToModeRegistry(listener: (event: CartographerModeRegistryEvent) => void): () => void;
 }
 
 const createDefaultDeps = (app: App): CartographerPresenterDeps => ({
@@ -75,7 +78,8 @@ const createDefaultDeps = (app: App): CartographerPresenterDeps => ({
         if (!block) return null;
         return parseOptions(block);
     },
-    provideModes: () => [createTravelGuideMode(), createEditorMode(), createInspectorMode()],
+    provideModes: () => provideCartographerModes(),
+    subscribeToModeRegistry: (listener) => subscribeToModeRegistry(listener),
 });
 
 type ModeTransitionPhase = "idle" | "exiting" | "entering";
@@ -105,7 +109,7 @@ export class CartographerPresenter {
     private currentOptions: HexOptions | null = null;
     private mapLayer: MapLayer | null = null;
     private activeMode: CartographerMode | null = null;
-    private readonly modes: CartographerMode[];
+    private modes: CartographerMode[];
     private hostEl: HTMLElement | null = null;
     private modeChange: Promise<void> = Promise.resolve();
     private readonly transitionTasks = new Set<Promise<void>>();
@@ -116,12 +120,20 @@ export class CartographerPresenter {
     private transition: ModeTransition | null = null;
     private activeLifecycleController: AbortController | null = null;
     private activeLifecycleContext: CartographerModeLifecycleContext | null = null;
+    private unsubscribeModeRegistry: (() => void) | null = null;
 
     constructor(app: App, deps?: Partial<CartographerPresenterDeps>) {
         this.app = app;
         const defaults = createDefaultDeps(app);
         this.deps = { ...defaults, ...deps } as CartographerPresenterDeps;
         this.modes = this.deps.provideModes();
+        try {
+            this.unsubscribeModeRegistry = this.deps.subscribeToModeRegistry((event) => {
+                this.handleModeRegistryEvent(event);
+            });
+        } catch (error) {
+            console.error("[cartographer] failed to subscribe to mode registry", error);
+        }
     }
 
     /** Öffnet den Presenter auf dem übergebenen Host. */
@@ -285,6 +297,53 @@ export class CartographerPresenter {
             await this.activeMode.onHexClick(coord, event, ctx);
         } catch (err) {
             console.error("[cartographer] mode onHexClick failed", err);
+        }
+    }
+
+    private handleModeRegistryEvent(event: CartographerModeRegistryEvent): void {
+        if (!event?.entries) return;
+
+        const previousActiveId = this.activeMode?.id ?? null;
+        const nextModes = event.entries.map((entry) => entry.mode);
+        this.modes = nextModes;
+
+        const activeMode = previousActiveId
+            ? nextModes.find((mode) => mode.id === previousActiveId) ?? null
+            : null;
+
+        if (!this.shell) {
+            if (!activeMode) {
+                this.activeMode = null;
+            }
+            return;
+        }
+
+        const shellModes: CartographerShellMode[] = nextModes.map((mode) => ({ id: mode.id, label: mode.label }));
+
+        if (event.type === "registered") {
+            this.shell.registerMode({ id: event.entry.mode.id, label: event.entry.mode.label });
+        } else if (event.type === "deregistered") {
+            this.shell.deregisterMode(event.id);
+        }
+
+        this.shell.setModes(shellModes);
+
+        if (activeMode) {
+            this.activeMode = activeMode;
+            this.shell.setModeActive(activeMode.id);
+            this.shell.setModeLabel(activeMode.label);
+            return;
+        }
+
+        this.activeMode = null;
+
+        if (!this.isMounted) {
+            return;
+        }
+
+        const fallbackId = shellModes[0]?.id ?? null;
+        if (fallbackId) {
+            void this.setMode(fallbackId);
         }
     }
 

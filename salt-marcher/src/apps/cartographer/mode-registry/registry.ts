@@ -18,12 +18,39 @@ export interface CartographerModeProvider {
     load(): Promise<CartographerMode>;
 }
 
-type RegisteredProvider = {
+type ProviderEntry = {
     readonly provider: CartographerModeProvider;
     readonly metadata: CartographerModeMetadata;
 };
 
+type RegisteredProvider = ProviderEntry & {
+    readonly mode: CartographerMode;
+};
+
+export interface CartographerModeRegistryEntry {
+    readonly metadata: CartographerModeMetadata;
+    readonly mode: CartographerMode;
+}
+
+export type CartographerModeRegistryEvent =
+    | { readonly type: "initial"; readonly entries: readonly CartographerModeRegistryEntry[] }
+    | {
+          readonly type: "registered";
+          readonly entry: CartographerModeRegistryEntry;
+          readonly index: number;
+          readonly entries: readonly CartographerModeRegistryEntry[];
+      }
+    | {
+          readonly type: "deregistered";
+          readonly id: string;
+          readonly entries: readonly CartographerModeRegistryEntry[];
+      }
+    | { readonly type: "reset"; readonly entries: readonly CartographerModeRegistryEntry[] };
+
+type CartographerModeRegistryListener = (event: CartographerModeRegistryEvent) => void;
+
 const providers = new Map<string, RegisteredProvider>();
+const listeners = new Set<CartographerModeRegistryListener>();
 
 const cloneMetadata = (metadata: CartographerModeMetadata): CartographerModeMetadata => {
     const keywords = metadata.keywords ? [...metadata.keywords] : undefined;
@@ -34,7 +61,7 @@ const cloneMetadata = (metadata: CartographerModeMetadata): CartographerModeMeta
     return Object.freeze(normalized);
 };
 
-const normalizeProvider = (provider: CartographerModeProvider): RegisteredProvider => {
+const normalizeProvider = (provider: CartographerModeProvider): ProviderEntry => {
     if (!provider?.metadata?.id) {
         throw new Error("[cartographer:mode-registry] provider metadata requires an id");
     }
@@ -45,7 +72,9 @@ const normalizeProvider = (provider: CartographerModeProvider): RegisteredProvid
         throw new Error(`[` + "cartographer:mode-registry" + `] provider '${provider.metadata.id}' requires a summary`);
     }
     if (!provider.metadata.source) {
-        throw new Error(`[` + "cartographer:mode-registry" + `] provider '${provider.metadata.id}' requires a source identifier`);
+        throw new Error(
+            `[` + "cartographer:mode-registry" + `] provider '${provider.metadata.id}' requires a source identifier`,
+        );
     }
 
     return {
@@ -54,50 +83,10 @@ const normalizeProvider = (provider: CartographerModeProvider): RegisteredProvid
             metadata: cloneMetadata(provider.metadata),
         },
         metadata: cloneMetadata(provider.metadata),
-    } satisfies RegisteredProvider;
+    } satisfies ProviderEntry;
 };
 
-export const registerCartographerModeProvider = (
-    provider: CartographerModeProvider,
-): (() => void) => {
-    const entry = normalizeProvider(provider);
-    const existing = providers.get(entry.metadata.id);
-    if (existing) {
-        throw new Error(
-            `[cartographer:mode-registry] provider with id '${entry.metadata.id}' is already registered by '${existing.metadata.source}'`,
-        );
-    }
-    providers.set(entry.metadata.id, entry);
-    return () => {
-        const current = providers.get(entry.metadata.id);
-        if (current === entry) {
-            providers.delete(entry.metadata.id);
-        }
-    };
-};
-
-export const unregisterCartographerModeProvider = (id: string): boolean => {
-    return providers.delete(id);
-};
-
-const orderValue = (metadata: CartographerModeMetadata): number => {
-    if (metadata.order === undefined || Number.isNaN(metadata.order)) return Number.POSITIVE_INFINITY;
-    return metadata.order;
-};
-
-const getSortedProviders = (): RegisteredProvider[] => {
-    return Array.from(providers.values()).sort((a, b) => {
-        const orderDiff = orderValue(a.metadata) - orderValue(b.metadata);
-        if (orderDiff !== 0) return orderDiff;
-        return a.metadata.label.localeCompare(b.metadata.label, undefined, { sensitivity: "base" });
-    });
-};
-
-export const getCartographerModeMetadataSnapshot = (): readonly CartographerModeMetadata[] => {
-    return getSortedProviders().map((entry) => entry.metadata);
-};
-
-const createLazyModeWrapper = (entry: RegisteredProvider): CartographerMode => {
+const createLazyModeWrapper = (entry: ProviderEntry): CartographerMode => {
     const { metadata, provider } = entry;
     let cached: CartographerMode | null = null;
     let loading: Promise<CartographerMode> | null = null;
@@ -185,10 +174,115 @@ const createLazyModeWrapper = (entry: RegisteredProvider): CartographerMode => {
     } satisfies CartographerMode;
 };
 
+const createRegisteredProvider = (provider: CartographerModeProvider): RegisteredProvider => {
+    const entry = normalizeProvider(provider);
+    return {
+        ...entry,
+        mode: createLazyModeWrapper(entry),
+    } satisfies RegisteredProvider;
+};
+
+const toRegistryEntry = (provider: RegisteredProvider): CartographerModeRegistryEntry => ({
+    metadata: provider.metadata,
+    mode: provider.mode,
+});
+
+const notifyListeners = (event: CartographerModeRegistryEvent): void => {
+    const snapshot = Array.from(listeners);
+    for (const listener of snapshot) {
+        try {
+            listener(event);
+        } catch (error) {
+            console.error("[cartographer:mode-registry] listener failed", error);
+        }
+    }
+};
+
+const orderValue = (metadata: CartographerModeMetadata): number => {
+    if (metadata.order === undefined || Number.isNaN(metadata.order)) return Number.POSITIVE_INFINITY;
+    return metadata.order;
+};
+
+const getSortedProviders = (): RegisteredProvider[] => {
+    return Array.from(providers.values()).sort((a, b) => {
+        const orderDiff = orderValue(a.metadata) - orderValue(b.metadata);
+        if (orderDiff !== 0) return orderDiff;
+        return a.metadata.label.localeCompare(b.metadata.label, undefined, { sensitivity: "base" });
+    });
+};
+
+const getRegistryEntries = (): readonly CartographerModeRegistryEntry[] => {
+    return getSortedProviders().map(toRegistryEntry);
+};
+
+export const registerCartographerModeProvider = (
+    provider: CartographerModeProvider,
+): (() => void) => {
+    const entry = createRegisteredProvider(provider);
+    const existing = providers.get(entry.metadata.id);
+    if (existing) {
+        throw new Error(
+            `[cartographer:mode-registry] provider with id '${entry.metadata.id}' is already registered by '${existing.metadata.source}'`,
+        );
+    }
+    providers.set(entry.metadata.id, entry);
+
+    const entries = getRegistryEntries();
+    const index = entries.findIndex((candidate) => candidate.metadata.id === entry.metadata.id);
+    if (index >= 0) {
+        notifyListeners({
+            type: "registered",
+            entry: entries[index]!,
+            index,
+            entries,
+        });
+    }
+
+    return () => {
+        const current = providers.get(entry.metadata.id);
+        if (current === entry) {
+            providers.delete(entry.metadata.id);
+            const remaining = getRegistryEntries();
+            notifyListeners({
+                type: "deregistered",
+                id: entry.metadata.id,
+                entries: remaining,
+            });
+        }
+    };
+};
+
+export const unregisterCartographerModeProvider = (id: string): boolean => {
+    const existed = providers.delete(id);
+    if (existed) {
+        const remaining = getRegistryEntries();
+        notifyListeners({ type: "deregistered", id, entries: remaining });
+    }
+    return existed;
+};
+
+export const getCartographerModeMetadataSnapshot = (): readonly CartographerModeMetadata[] => {
+    return getSortedProviders().map((entry) => entry.metadata);
+};
+
 export const createCartographerModesSnapshot = (): CartographerMode[] => {
-    return getSortedProviders().map(createLazyModeWrapper);
+    return getSortedProviders().map((entry) => entry.mode);
 };
 
 export const clearCartographerModeRegistry = (): void => {
+    if (providers.size === 0) {
+        return;
+    }
     providers.clear();
+    notifyListeners({ type: "reset", entries: [] });
+};
+
+export const subscribeToCartographerModeRegistry = (
+    listener: CartographerModeRegistryListener,
+): (() => void) => {
+    listeners.add(listener);
+    listener({ type: "initial", entries: getRegistryEntries() });
+    return () => {
+        listeners.delete(listener);
+    };
 };
