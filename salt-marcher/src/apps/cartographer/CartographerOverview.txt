@@ -14,7 +14,8 @@ src/apps/cartographer/
 │        ├─ brush.ts         # Persistiert Terrain-Änderungen + Live-Fill
 │        └─ brush-math.ts    # Hex-Radius-Berechnungen im odd-r Grid
 ├─ index.ts                 # Obsidian-View + Leaf-Helfer (Registrierung via SaltMarcherPlugin)
-├─ view-shell.ts            # Layout, Map-Stage und Modusverwaltung
+├─ presenter.ts             # Presenter orchestriert Mode-/File-State und Rendering
+├─ view-shell.ts            # DOM-Aufbau (Header, Stage, Sidebar) + UI-Callbacks
 ├─ modes/
 │  ├─ editor.ts             # Map-Editor-Modus (Tools, Brush, Sidebar-Panel)
 │  ├─ inspector.ts          # Inspector-Modus (Terrain & Notizen pro Hex bearbeiten)
@@ -30,7 +31,7 @@ src/apps/cartographer/
 ## Features & Verantwortlichkeiten
 
 - **View-Registrierung:** `index.ts` meldet `VIEW_TYPE_CARTOGRAPHER` an, stellt `CartographerView` bereit und liefert Leaf-Helfer (`openCartographer`, `detachCartographerLeaves`). Ribbons/Commands werden ausschließlich im `SaltMarcherPlugin` registriert.
-- **Layout-Shell:** `view-shell.ts` übernimmt das Cartographer-Grundlayout (Header + Body mit Map/Sidebar), verwaltet den Moduswechsel, bindet `createMapManager` für Open/Create/Delete ein und stellt `CartographerModeContext` inkl. `getOptions()` bereit.
+- **Presenter & View-Shell:** `presenter.ts` hält Datei-, Mode- und Renderer-State zusammen, orchestriert Map-Manager, Mode-Lifecycle und Hex-Klick-Delegation. `view-shell.ts` rendert ausschließlich den DOM (Header, Mode-Dropdown, Map-Stage, Sidebar) und koppelt UI-Aktionen zurück an den Presenter.
 - **Map-Stage:** Rendert Karten via `createMapLayer`/`renderHexMap`, verwaltet `RenderHandles`, Hex-Klick-Delegation sowie Options-Parsing (`getFirstHexBlock` → `parseOptions`) und zeigt sinnvolle Platzhalter, wenn kein File oder kein Hex-Block vorliegt.
 - **Modus-System:** Stellt das Mode-Interface (`onEnter`, `onExit`, `onFileChange`, `onHexClick`, `onSave`) bereit, schaltet über ein Dropdown im Header zwischen Travel/Editor/Inspector um, delegiert Events und räumt Ressourcen deterministisch auf.
 - **Editor-Tooling:** `editor/` beherbergt die wiederverwendbare Tool-Infrastruktur (Schnittstelle, Brush-Vorschau, Terrain-Brush). `modes/editor.ts` konsumiert diese Module und mountet sie in das gemeinsame Sidebar-Panel.
@@ -44,14 +45,17 @@ src/apps/cartographer/
 ### `index.ts`
 - Exportiert `CartographerView`, `VIEW_TYPE_CARTOGRAPHER` sowie Leaf-/Open-Helfer für den Plugin-Bootstrap.
 - Verzichtet bewusst auf eine eigene Plugin-Klasse; Registrierungen erfolgen über `SaltMarcherPlugin` (`src/app/main.ts`).
-- Erzeugt einen Host (`cartographer-host`), mountet `view-shell.ts`, reicht `setFile`-Aufrufe weiter und räumt beim Schließen auf.
+- Erzeugt den Host (`cartographer-host`) und delegiert Lifecycle (`onOpen`, `onClose`, `setFile`) vollständig an den `CartographerPresenter`.
+
+### `presenter.ts`
+- Definiert das Modus-Interface inkl. Kontext und kapselt die komplette Steuerlogik des Cartographers.
+- Bindet Map-Manager, lädt Hex-Optionen, erzeugt Map-Layer und informiert aktive Modi über Datei- und State-Änderungen.
+- Trennt asynchrone Vorgänge (Mode-Wechsel, Render-Reload) über Promise-Chaining, behandelt Fehler robust und säubert Ressourcen beim Schließen.
 
 ### `view-shell.ts`
-- Implementiert `CartographerMode` & `CartographerModeContext` (inkl. `getOptions`) als zentrale Schnittstelle für Modi.
-- Baut Header, Body, Map- und Sidebar-Container mit `sm-cartographer`-Klassen auf.
-- Nutzt `createMapLayer` + `renderHexMap` zum Laden der Karte, aktualisiert `currentOptions` und leitet `hex:click`-Events an den aktiven Modus weiter.
-- Bindet `createMapManager`, um Header-Buttons (`Open`, `Create`, `Delete`) zu teilen und den Stage-Reload nach jeder State-Änderung zu koordinieren.
-- Registriert Travel-, Editor-, Inspector- sowie Beispiel-Modi und sorgt für konsistente `onEnter`/`onExit`/`onFileChange`-Sequenzen.
+- Rendert Header, Body, Map- und Sidebar-Container mit `sm-cartographer`-Klassen und liefert ein Handle zur Aktualisierung (Mode-Label, Overlay, File-Label).
+- Delegiert UI-Events (Open/Create/Delete/Save, Mode-Wahl, `hex:click`) an den Presenter und hält selbst keinen Business-State.
+- Ermöglicht durch die schlanke Schnittstelle das Mocken in Tests, sodass DOM und State separat validiert werden können.
 
 ### `modes/editor.ts`
 - Erzeugt das Editor-Panel im Sidebar-Host, zeigt Dateiname & Tool-Auswahl (derzeit nur Brush) und liefert Statusmeldungen.

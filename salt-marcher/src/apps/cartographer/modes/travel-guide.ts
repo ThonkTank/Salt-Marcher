@@ -1,5 +1,5 @@
 import type { MapHeaderSaveMode } from "../../../ui/map-header";
-import type { CartographerMode, CartographerModeContext } from "../view-shell";
+import type { CartographerMode, CartographerModeContext } from "../presenter";
 import { loadTerrains } from "../../../core/terrain-store";
 import { setTerrains } from "../../../core/terrain";
 import { createSidebar, type Sidebar } from "../travel/ui/sidebar";
