@@ -1,5 +1,5 @@
 // src/core/regions-store.ts
-import { App, TFile, normalizePath } from "obsidian";
+import { App, TAbstractFile, TFile, normalizePath } from "obsidian";
 
 export const REGIONS_FILE = "SaltMarcher/Regions.md";
 const BLOCK_RE = /```regions\s*([\s\S]*?)```/i;
@@ -80,15 +80,28 @@ export async function saveRegions(app: App, list: Region[]): Promise<void> {
 }
 
 export function watchRegions(app: App, onChange: () => void): () => void {
-    const handler = async (file: TFile) => {
-        if (file.path !== REGIONS_FILE) return;
+    const emitUpdate = () => {
         (app.workspace as any).trigger?.("salt:regions-updated");
         onChange?.();
     };
-    app.vault.on("modify", handler);
-    app.vault.on("delete", handler);
+
+    const handleModify = (file: TFile) => {
+        if (file.path !== REGIONS_FILE) return;
+        emitUpdate();
+    };
+
+    const handleDelete = (file: TAbstractFile) => {
+        if (!(file instanceof TFile) || file.path !== REGIONS_FILE) return;
+        console.warn(
+            "Salt Marcher regions store detected Regions.md deletion; the file is not auto-recreated and must be restored manually."
+        );
+        emitUpdate();
+    };
+
+    app.vault.on("modify", handleModify);
+    app.vault.on("delete", handleDelete);
     return () => {
-        app.vault.off("modify", handler);
-        app.vault.off("delete", handler);
+        app.vault.off("modify", handleModify);
+        app.vault.off("delete", handleDelete);
     };
 }
