@@ -1,6 +1,6 @@
 import type {
     CartographerMode,
-    CartographerModeContext,
+    CartographerModeLifecycleContext,
 } from "../presenter";
 
 export interface CartographerModeMetadata {
@@ -133,37 +133,54 @@ const createLazyModeWrapper = (entry: RegisteredProvider): CartographerMode => {
         return loading;
     };
 
-    const invoke = async <T>(fn: (mode: CartographerMode) => T | Promise<T>): Promise<T> => {
+    type ModeMethodKey = {
+        [K in keyof CartographerMode]: CartographerMode[K] extends (...args: any[]) => any ? K : never;
+    }[keyof CartographerMode];
+
+    type ModeMethod<K extends ModeMethodKey> = Extract<CartographerMode[K], (...args: any[]) => any>;
+
+    const invoke = async <K extends ModeMethodKey>(
+        key: K,
+        ...args: Parameters<ModeMethod<K>>
+    ): Promise<Awaited<ReturnType<ModeMethod<K>>>> => {
         const mode = await load();
-        return await fn(mode);
+        const method = mode[key] as ModeMethod<K>;
+        return await method.apply(mode, args);
     };
 
-    const invokeOptional = async <T>(fn: (mode: CartographerMode) => T | Promise<T>): Promise<T | undefined> => {
+    const invokeIfLoaded = async <K extends ModeMethodKey>(
+        key: K,
+        ...args: Parameters<ModeMethod<K>>
+    ): Promise<Awaited<ReturnType<ModeMethod<K>>> | undefined> => {
         if (!cached && !loading) {
             await load();
         }
-        if (!cached) return undefined;
-        return await fn(cached);
+        const mode = cached;
+        if (!mode) return undefined;
+        const method = mode[key];
+        if (typeof method !== "function") {
+            return undefined;
+        }
+        return await (method as ModeMethod<K>).apply(mode, args);
     };
 
     return {
         id: metadata.id,
         label: metadata.label,
-        async onEnter(ctx: CartographerModeContext) {
-            return await invoke((mode) => mode.onEnter(ctx));
+        async onEnter(ctx: CartographerModeLifecycleContext) {
+            return await invoke("onEnter", ctx);
         },
-        async onExit() {
-            if (!cached) return;
-            await invokeOptional((mode) => mode.onExit());
+        async onExit(ctx) {
+            await invokeIfLoaded("onExit", ctx);
         },
         async onFileChange(file, handles, ctx) {
-            return await invoke((mode) => mode.onFileChange(file, handles, ctx));
+            return await invoke("onFileChange", file, handles, ctx);
         },
         async onHexClick(coord, event, ctx) {
-            return await invokeOptional((mode) => mode.onHexClick?.(coord, event, ctx));
+            return await invokeIfLoaded("onHexClick", coord, event, ctx);
         },
         async onSave(mode, file, ctx) {
-            return await invokeOptional((loaded) => loaded.onSave?.(mode, file, ctx));
+            return await invokeIfLoaded("onSave", mode, file, ctx);
         },
     } satisfies CartographerMode;
 };

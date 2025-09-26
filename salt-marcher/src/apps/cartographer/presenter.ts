@@ -115,6 +115,7 @@ export class CartographerPresenter {
     private modeTransitionSeq = 0;
     private transition: ModeTransition | null = null;
     private activeLifecycleController: AbortController | null = null;
+    private activeLifecycleContext: CartographerModeLifecycleContext | null = null;
 
     constructor(app: App, deps?: Partial<CartographerPresenterDeps>) {
         this.app = app;
@@ -195,13 +196,17 @@ export class CartographerPresenter {
             if (!controller.signal.aborted) {
                 controller.abort();
             }
-            const ctx = this.createLifecycleContext(controller.signal);
+            const ctx =
+                this.activeLifecycleContext && this.activeLifecycleContext.signal === controller.signal
+                    ? this.activeLifecycleContext
+                    : this.createLifecycleContext(controller.signal);
             await this.activeMode?.onExit(ctx);
         } catch (err) {
             console.error("[cartographer] mode exit failed", err);
         }
         this.activeMode = null;
         this.activeLifecycleController = null;
+        this.activeLifecycleContext = null;
         await this.teardownLayer();
         this.shell?.destroy();
         this.shell = null;
@@ -237,6 +242,20 @@ export class CartographerPresenter {
         return { ...base, signal } satisfies CartographerModeLifecycleContext;
     }
 
+    private ensureActiveLifecycleContext(signal: AbortSignal): CartographerModeLifecycleContext {
+        const current = this.activeLifecycleContext;
+        if (current && current.signal === signal) {
+            return current;
+        }
+
+        const context = this.createLifecycleContext(signal);
+        if (this.activeLifecycleController?.signal === signal) {
+            this.activeLifecycleContext = context;
+        }
+
+        return context;
+    }
+
     private getActiveLifecycleSignal(): AbortSignal {
         return this.activeLifecycleController?.signal ?? CartographerPresenter.neverAbortSignal;
     }
@@ -250,7 +269,7 @@ export class CartographerPresenter {
     private async handleSave(mode: MapHeaderSaveMode, file: TFile | null): Promise<boolean> {
         if (!this.activeMode?.onSave) return false;
         try {
-            const ctx = this.createLifecycleContext(this.getActiveLifecycleSignal());
+            const ctx = this.ensureActiveLifecycleContext(this.getActiveLifecycleSignal());
             const handled = await this.activeMode.onSave(mode, file, ctx);
             return handled === true;
         } catch (err) {
@@ -262,7 +281,7 @@ export class CartographerPresenter {
     private async handleHexClick(coord: HexCoord, event: CustomEvent<HexCoord>): Promise<void> {
         if (!this.activeMode?.onHexClick) return;
         try {
-            const ctx = this.createLifecycleContext(this.getActiveLifecycleSignal());
+            const ctx = this.ensureActiveLifecycleContext(this.getActiveLifecycleSignal());
             await this.activeMode.onHexClick(coord, event, ctx);
         } catch (err) {
             console.error("[cartographer] mode onHexClick failed", err);
@@ -373,6 +392,9 @@ export class CartographerPresenter {
             return;
         }
 
+        const previousLifecycleContext = this.activeLifecycleContext;
+        const previousLifecycleController = this.activeLifecycleController;
+
         if (this.activeLifecycleController) {
             try {
                 this.activeLifecycleController.abort();
@@ -400,7 +422,14 @@ export class CartographerPresenter {
         try {
             const previous = transition.previous;
             if (previous) {
-                const exitCtx = this.createLifecycleContext(transition.controller.signal);
+                const exitSignal =
+                    previousLifecycleContext?.signal ??
+                    previousLifecycleController?.signal ??
+                    CartographerPresenter.neverAbortSignal;
+                const exitCtx =
+                    previousLifecycleContext && previousLifecycleContext.signal === exitSignal
+                        ? previousLifecycleContext
+                        : this.createLifecycleContext(exitSignal);
                 const exitOutcome = await this.runTransitionStep(
                     transition,
                     "exiting",
@@ -413,22 +442,25 @@ export class CartographerPresenter {
                 }
 
                 this.activeMode = null;
+                this.activeLifecycleContext = null;
             }
 
             if (this.isTransitionAborted(transition)) {
                 if (!this.activeMode) {
                     this.activeLifecycleController = null;
+                    this.activeLifecycleContext = null;
                 }
                 return;
             }
 
-            const modeCtx = this.createLifecycleContext(transition.controller.signal);
+            const modeCtx = this.ensureActiveLifecycleContext(transition.controller.signal);
 
             this.activeMode = transition.next;
 
             if (this.isTransitionAborted(transition)) {
                 this.activeMode = null;
                 this.activeLifecycleController = null;
+                this.activeLifecycleContext = null;
                 return;
             }
 
@@ -442,12 +474,14 @@ export class CartographerPresenter {
             if (enterOutcome === "aborted") {
                 this.activeMode = null;
                 this.activeLifecycleController = null;
+                this.activeLifecycleContext = null;
                 return;
             }
 
             if (this.isTransitionAborted(transition)) {
                 this.activeMode = null;
                 this.activeLifecycleController = null;
+                this.activeLifecycleContext = null;
                 return;
             }
 
@@ -466,6 +500,7 @@ export class CartographerPresenter {
             if (fileChangeOutcome === "aborted" && this.activeMode?.id === transition.next.id) {
                 this.activeMode = null;
                 this.activeLifecycleController = null;
+                this.activeLifecycleContext = null;
                 return;
             }
 
@@ -484,6 +519,7 @@ export class CartographerPresenter {
             }
             if (!this.activeMode) {
                 this.activeLifecycleController = null;
+                this.activeLifecycleContext = null;
             }
         }
     }
@@ -499,7 +535,7 @@ export class CartographerPresenter {
         if (!this.shell) return;
         const transition = this.transition;
         const signal = transition?.controller.signal ?? this.getActiveLifecycleSignal();
-        const ctx = this.createLifecycleContext(signal);
+        const ctx = this.ensureActiveLifecycleContext(signal);
         const isTransitionAborted = () => (transition ? this.isTransitionAborted(transition) : false);
 
         if (!this.currentFile) {
