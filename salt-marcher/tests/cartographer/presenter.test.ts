@@ -4,6 +4,7 @@ import {
     CartographerPresenter,
     type CartographerMode,
     type CartographerModeContext,
+    type CartographerModeLifecycleContext,
 } from "../../src/apps/cartographer/presenter";
 import type {
     CartographerShellHandle,
@@ -125,10 +126,10 @@ describe("CartographerPresenter", () => {
         const modeA: CartographerMode = {
             id: "a",
             label: "Mode A",
-            onEnter: () => {
+            onEnter: (_ctx) => {
                 events.push("A:enter");
             },
-            onExit: () => {
+            onExit: (_ctx) => {
                 events.push("A:exit");
             },
             onFileChange: (file) => {
@@ -139,10 +140,10 @@ describe("CartographerPresenter", () => {
         const modeB: CartographerMode = {
             id: "b",
             label: "Mode B",
-            onEnter: () => {
+            onEnter: (_ctx) => {
                 events.push("B:enter");
             },
-            onExit: () => {
+            onExit: (_ctx) => {
                 events.push("B:exit");
             },
             onFileChange: (file) => {
@@ -178,7 +179,7 @@ describe("CartographerPresenter", () => {
             id: "a",
             label: "Mode A",
             onEnter: vi.fn(),
-            onExit: vi.fn(() => {
+            onExit: vi.fn((_ctx) => {
                 throw exitError;
             }),
             onFileChange: vi.fn(),
@@ -239,7 +240,7 @@ describe("CartographerPresenter", () => {
         const modeB: CartographerMode = {
             id: "b",
             label: "Mode B",
-            onEnter: vi.fn(() => {
+            onEnter: vi.fn((_ctx) => {
                 throw enterError;
             }),
             onExit: vi.fn(),
@@ -355,10 +356,15 @@ describe("CartographerPresenter", () => {
 
         const calls = (mode.onFileChange as ReturnType<typeof vi.fn>).mock.calls;
         expect(calls.length).toBeGreaterThan(0);
-        const [receivedFile, receivedHandles, ctx] = calls[calls.length - 1];
+        const [receivedFile, receivedHandles, ctx] = calls[calls.length - 1] as [
+            TFile | null,
+            RenderHandles | null,
+            CartographerModeLifecycleContext,
+        ];
         expect(receivedFile).toBe(file);
         expect(receivedHandles).toBe(handles);
-        expect(typeof (ctx as CartographerModeContext).getOptions).toBe("function");
+        expect(typeof ctx.getOptions).toBe("function");
+        expect(ctx.signal.aborted).toBe(false);
         expect(shell.setOverlay).toHaveBeenLastCalledWith(null);
     });
 
@@ -406,7 +412,7 @@ describe("CartographerPresenter", () => {
         const modeB: CartographerMode = {
             id: "b",
             label: "Mode B",
-            onEnter: vi.fn(() => enterDeferred.promise),
+            onEnter: vi.fn((_ctx) => enterDeferred.promise),
             onExit: vi.fn(),
             onFileChange: modeBOnFileChange,
         };
@@ -441,5 +447,93 @@ describe("CartographerPresenter", () => {
 
         expect(pendingLayer.destroy).toHaveBeenCalledTimes(1);
         expect(modeBOnFileChange).not.toHaveBeenCalled();
+    });
+
+    it("aborts slow mode transitions without mutating UI or map state", async () => {
+        const shell = createShellStub();
+        const file: TFile = { path: "Maps/gamma.md", basename: "gamma" } as TFile;
+        const handles = { marker: "handles" } as unknown as RenderHandles;
+        const mapLayer: MapLayer = {
+            handles,
+            polyToCoord: new WeakMap(),
+            ensurePolys: vi.fn(),
+            centerOf: vi.fn(),
+            destroy: vi.fn(),
+        };
+
+        const slowEnter = createDeferred<void>();
+        const slowFile = createDeferred<void>();
+        const enterStarted = createDeferred<void>();
+        const events: string[] = [];
+        let enterCtx: CartographerModeLifecycleContext | null = null;
+        let fileCtx: CartographerModeLifecycleContext | null = null;
+
+        const modeA: CartographerMode = {
+            id: "a",
+            label: "Mode A",
+            onEnter: vi.fn(),
+            onExit: vi.fn(),
+            onFileChange: vi.fn(),
+        };
+
+        const modeB: CartographerMode = {
+            id: "b",
+            label: "Mode B",
+            async onEnter(ctx) {
+                enterCtx = ctx;
+                events.push("enter:start");
+                enterStarted.resolve();
+                await slowEnter.promise;
+                if (ctx.signal.aborted) {
+                    events.push("enter:aborted");
+                    return;
+                }
+                events.push("enter:complete");
+            },
+            async onExit(ctx) {
+                events.push(`exit:${ctx.signal.aborted}`);
+            },
+            async onFileChange(_file, _handles, ctx) {
+                fileCtx = ctx;
+                events.push("file:start");
+                await slowFile.promise;
+                if (ctx.signal.aborted) {
+                    events.push("file:aborted");
+                    return;
+                }
+                events.push("file:complete");
+            },
+        };
+
+        const loadHexOptions = vi.fn(async () => ({ hexSize: 1 } as unknown as HexOptions));
+        const createLayer = vi.fn(async () => mapLayer);
+
+        const presenter = new CartographerPresenter(appStub, {
+            createShell: shell.factory,
+            createMapManager: createMapManagerFactory(),
+            createMapLayer: createLayer,
+            loadHexOptions,
+            provideModes: () => [modeA, modeB],
+        });
+
+        await presenter.onOpen(shell.host, file);
+        events.length = 0;
+
+        const controller = new AbortController();
+        const transition = presenter.setMode("b", { signal: controller.signal });
+        await enterStarted.promise;
+        controller.abort();
+        slowEnter.resolve();
+        slowFile.resolve();
+
+        await transition;
+
+        expect(events).toEqual(["enter:start", "enter:aborted"]);
+        expect(enterCtx?.signal.aborted).toBe(true);
+        expect(fileCtx).toBeNull();
+        expect(shell.setModeActive).toHaveBeenLastCalledWith("a");
+        expect(shell.setModeLabel).toHaveBeenLastCalledWith("Mode A");
+        expect(createLayer).toHaveBeenCalledTimes(1);
+        expect(mapLayer.destroy).not.toHaveBeenCalled();
     });
 });

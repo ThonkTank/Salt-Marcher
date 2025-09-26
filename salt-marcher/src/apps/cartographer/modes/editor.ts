@@ -1,5 +1,10 @@
 import type { TFile } from "obsidian";
-import type { CartographerMode, CartographerModeContext, HexCoord } from "../presenter";
+import type {
+    CartographerMode,
+    CartographerModeContext,
+    CartographerModeLifecycleContext,
+    HexCoord,
+} from "../presenter";
 import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
 import { createBrushTool } from "../editor/tools/terrain-brush/brush-options";
 import type { ToolModule, ToolContext } from "../editor/tools/tools-api";
@@ -66,8 +71,12 @@ export function createEditorMode(): CartographerMode {
         return toolCtx;
     };
 
+    let lifecycleSignal: AbortSignal | null = null;
+
+    const isAborted = () => lifecycleSignal?.aborted ?? false;
+
     const switchTool = async (id: string) => {
-        if (!toolCtx || !toolBody || !toolSelect) return;
+        if (!toolCtx || !toolBody || !toolSelect || isAborted()) return;
         if (state.tool?.onDeactivate) {
             try {
                 state.tool.onDeactivate(toolCtx);
@@ -83,6 +92,7 @@ export function createEditorMode(): CartographerMode {
         toolSelect.value = next.id;
 
         toolBody.empty();
+        if (isAborted()) return;
         try {
             state.cleanupPanel = next.mountPanel(toolBody, toolCtx);
         } catch (err) {
@@ -90,13 +100,14 @@ export function createEditorMode(): CartographerMode {
             state.cleanupPanel = null;
         }
 
+        if (isAborted()) return;
         try {
             next.onActivate?.(toolCtx);
         } catch (err) {
             console.error("[editor-mode] onActivate failed", err);
         }
 
-        if (state.handles) {
+        if (state.handles && !isAborted()) {
             try {
                 next.onMapRendered?.(toolCtx);
             } catch (err) {
@@ -108,7 +119,8 @@ export function createEditorMode(): CartographerMode {
     return {
         id: "editor",
         label: "Editor",
-        async onEnter(ctx) {
+        async onEnter(ctx: CartographerModeLifecycleContext) {
+            lifecycleSignal = ctx.signal;
             state = { ...state, tool: null };
             ctx.sidebarHost.empty();
             panel = ctx.sidebarHost.createDiv({ cls: "sm-cartographer__panel sm-cartographer__panel--editor" });
@@ -123,6 +135,7 @@ export function createEditorMode(): CartographerMode {
             }
             enhanceSelectToSearch(toolSelect, 'Such-dropdown…');
             toolSelect.onchange = () => {
+                if (isAborted()) return;
                 void switchTool(toolSelect?.value ?? tools[0].id);
             };
 
@@ -132,9 +145,11 @@ export function createEditorMode(): CartographerMode {
             ensureToolCtx(ctx);
             updateFileLabel();
             updatePanelState();
+            if (isAborted()) return;
             await switchTool(tools[0].id);
         },
-        async onExit() {
+        async onExit(ctx: CartographerModeLifecycleContext) {
+            lifecycleSignal = ctx.signal;
             if (state.tool && toolCtx) {
                 try {
                     state.tool.onDeactivate?.(toolCtx);
@@ -152,8 +167,10 @@ export function createEditorMode(): CartographerMode {
             toolSelect = null;
             toolBody = null;
             statusLabel = null;
+            lifecycleSignal = null;
         },
-        async onFileChange(file, handles, ctx) {
+        async onFileChange(file, handles, ctx: CartographerModeLifecycleContext) {
+            lifecycleSignal = ctx.signal;
             state.file = file;
             state.handles = handles;
             state.options = ctx.getOptions();
@@ -161,13 +178,16 @@ export function createEditorMode(): CartographerMode {
             updatePanelState();
             if (!handles) return;
             if (!toolCtx) ensureToolCtx(ctx);
+            if (isAborted()) return;
             try {
                 state.tool?.onMapRendered?.(toolCtx!);
             } catch (err) {
                 console.error("[editor-mode] onMapRendered failed", err);
             }
         },
-        async onHexClick(coord: HexCoord) {
+        async onHexClick(coord: HexCoord, _event, ctx: CartographerModeLifecycleContext) {
+            lifecycleSignal = ctx.signal;
+            if (isAborted()) return;
             if (!toolCtx || !state.tool?.onHexClick) return;
             try {
                 await state.tool.onHexClick(coord, toolCtx);

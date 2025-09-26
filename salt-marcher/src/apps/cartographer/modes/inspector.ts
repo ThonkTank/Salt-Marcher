@@ -3,7 +3,12 @@ import { loadTile, saveTile } from "../../../core/hex-mapper/hex-notes";
 import { TERRAIN_COLORS } from "../../../core/terrain";
 import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
 import type { RenderHandles } from "../../../core/hex-mapper/hex-render";
-import type { CartographerMode, CartographerModeContext, HexCoord } from "../presenter";
+import type {
+    CartographerMode,
+    CartographerModeContext,
+    CartographerModeLifecycleContext,
+    HexCoord,
+} from "../presenter";
 
 type InspectorUI = {
     panel: HTMLElement | null;
@@ -35,6 +40,10 @@ export function createInspectorMode(): CartographerMode {
         selection: null,
         saveTimer: null,
     };
+
+    let lifecycleSignal: AbortSignal | null = null;
+
+    const isAborted = () => lifecycleSignal?.aborted ?? false;
 
     const clearSaveTimer = () => {
         if (state.saveTimer !== null) {
@@ -80,13 +89,15 @@ export function createInspectorMode(): CartographerMode {
         updateMessage();
     };
 
-    const scheduleSave = (ctx: CartographerModeContext) => {
+    const scheduleSave = (ctx: CartographerModeLifecycleContext) => {
+        if (ctx.signal.aborted) return;
         if (!state.selection) return;
         const file = ctx.getFile();
         if (!file) return;
         const handles = ctx.getRenderHandles();
         clearSaveTimer();
         state.saveTimer = window.setTimeout(async () => {
+            if (ctx.signal.aborted) return;
             const terrain = ui.terrain?.value ?? "";
             const note = ui.note?.value ?? "";
             try {
@@ -103,7 +114,7 @@ export function createInspectorMode(): CartographerMode {
         }, 250);
     };
 
-    const loadSelection = async (ctx: CartographerModeContext) => {
+    const loadSelection = async (ctx: CartographerModeLifecycleContext) => {
         if (!state.selection) return;
         const file = ctx.getFile();
         if (!file) return;
@@ -114,6 +125,7 @@ export function createInspectorMode(): CartographerMode {
             console.error("[inspector-mode] loadTile failed", err);
             data = null;
         }
+        if (ctx.signal.aborted) return;
         if (ui.terrain) {
             ui.terrain.value = data?.terrain ?? "";
             ui.terrain.disabled = false;
@@ -128,7 +140,8 @@ export function createInspectorMode(): CartographerMode {
     return {
         id: "inspector",
         label: "Inspector",
-        async onEnter(ctx) {
+        async onEnter(ctx: CartographerModeLifecycleContext) {
+            lifecycleSignal = ctx.signal;
             ui = { panel: null, fileLabel: null, message: null, terrain: null, note: null };
             state = { ...state, selection: null };
 
@@ -160,28 +173,34 @@ export function createInspectorMode(): CartographerMode {
             updateFileLabel();
             updatePanelState();
         },
-        async onExit() {
+        async onExit(ctx: CartographerModeLifecycleContext) {
+            lifecycleSignal = ctx.signal;
             clearSaveTimer();
             ui.panel?.remove();
             ui = { panel: null, fileLabel: null, message: null, terrain: null, note: null };
             state = { file: null, handles: null, selection: null, saveTimer: null };
+            lifecycleSignal = null;
         },
-        async onFileChange(file, handles, ctx) {
+        async onFileChange(file, handles, ctx: CartographerModeLifecycleContext) {
+            lifecycleSignal = ctx.signal;
             state.file = file;
             state.handles = handles;
             clearSaveTimer();
             resetInputs();
             updateFileLabel();
             updatePanelState();
-            if (state.selection && state.file && state.handles) {
+            if (state.selection && state.file && state.handles && !isAborted()) {
                 await loadSelection(ctx);
             }
         },
-        async onHexClick(coord, _event, ctx) {
+        async onHexClick(coord, _event, ctx: CartographerModeLifecycleContext) {
+            lifecycleSignal = ctx.signal;
+            if (isAborted()) return;
             if (!state.file || !state.handles) return;
             clearSaveTimer();
             state.selection = coord;
             updateMessage();
+            if (isAborted()) return;
             await loadSelection(ctx);
         },
     } satisfies CartographerMode;
