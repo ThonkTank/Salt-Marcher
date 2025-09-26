@@ -14,6 +14,7 @@ salt-marcher/
 │  ├─ README.md           # Navigationsübersicht
 │  ├─ cartographer/       # Karten-Workspace (README + Overviews)
 │  ├─ core/               # Domain- und Persistenzdienste
+│  ├─ encounter/          # Encounter-Gateway & Workspace-Dokumentation
 │  ├─ library/            # Verwaltungs- und Datenbank-Flows
 │  └─ ui/                 # Geteilte UI-Komponenten
 ├─ src/
@@ -29,8 +30,9 @@ salt-marcher/
   Struktur und Komponenten sind im [`docs/cartographer/`](docs/cartographer/README.md) beschrieben.
 - **Library Workspace:** Verwaltungsoberfläche für Terrains, Regionen, Kreaturen und Zauber. Architekturüberblick unter
   [`docs/library/`](docs/library/README.md).
-- **Encounter Workspace:** Fokus-View für Begegnungen, die aus Cartographer- oder Library-Events gestartet werden. Ergänzende
-  Hinweise liegen im Projekt-Wiki ([Encounter-Guide](../wiki/Encounter.md)).
+- **Encounter Workspace:** Fokus-View für Begegnungen, die aus Cartographer- oder Library-Events gestartet werden. Technische
+  Analyse des Gateways unter [`docs/encounter/`](docs/encounter/README.md); Nutzer:innen-Workflows im Projekt-Wiki
+  ([Encounter-Guide](../wiki/Encounter.md)).
 - **Core Services:** Hex-Geometrie, Kartenpersistenz, Terrain-/Regions-Stores und Dateihilfen, dokumentiert in
   [`docs/core/`](docs/core/README.md).
 - **Geteilte UI:** View-Container, Dialoge und Map-Workflows für alle Workspaces, siehe [`docs/ui/`](docs/ui/README.md).
@@ -52,3 +54,4 @@ bitte den projektspezifischen [Style Guide](../style-guide.md) beachten und Quer
 - [Cartographer presenter respects abort signals](../todo/cartographer-presenter-abort-handling.md) – Presenter muss Abort-Signale in allen Lifecycle-Phasen respektieren.
 - [Cartographer mode registry](../todo/cartographer-mode-registry.md) – Modi deklarativ erfassen und laden.
 - [UI terminology consistency](../todo/ui-terminology-consistency.md) – Einheitliche UI-Sprache und Kommentare sicherstellen.
+- [Encounter Workspace Roadmap](../todo/encounter-workspace-roadmap.md) – Encounter-Hand-off mit Kontext-DTO, Workspace-UI und Travel-Rückkanal planen.

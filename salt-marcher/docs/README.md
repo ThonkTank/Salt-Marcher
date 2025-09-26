@@ -10,6 +10,7 @@ docs/
 ├─ README.md
 ├─ cartographer/
 ├─ core/
+├─ encounter/
 ├─ library/
 └─ ui/
 ```
@@ -19,6 +20,7 @@ auf weiterführende Ressourcen.
 ## Bereiche
 - [Cartographer](cartographer/README.md) – Karten-Workspace mit Editor-, Inspector- und Travel-Modi sowie deren Infrastruktur.
 - [Core](core/README.md) – Persistenz, Hex-Geometrie und zentrale Services, die Workspaces mit Daten versorgen.
+- [Encounter](encounter/README.md) – Placeholder-Workspace für Begegnungen; analysiert die aktuelle Gateway-Implementierung und dokumentiert offene Arbeiten.
 - [Library](library/README.md) – Verwaltung von Kreaturen, Zaubern, Terrains und Regionen inklusive Event-Flows.
 - [UI](ui/README.md) – Wiederverwendbare UI-Bausteine, Shell-Komponenten und Map-spezifische Workflows.
 
