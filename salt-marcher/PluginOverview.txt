@@ -1,100 +1,48 @@
 # Salt Marcher – Plugin Overview
 
-Salt Marcher liefert Kartographie-, Encounter- und Bibliothekswerkzeuge für hex-basierte Kampagnen. Der Code konzentriert sich
-vollständig auf dieses Plugin; eine optionale Kopplung an einen extern installierten Layout Editor erfolgt ausschließlich über
-das Brückenskript `src/app/layout-editor-bridge.ts`.
+## Purpose & Scope
+Dieses Dokument fasst die technische Struktur des Salt-Marcher-Plugins für Obsidian zusammen. Es dient Entwickler:innen als
+Einstieg in die Codebasis, verweist auf Detaildokumente unter `docs/` und beschreibt die wichtigsten Integrationspunkte.
 
-## Struktur
-
+## Repository Layout
 ```
-Salt-Marcher/
-└─ salt-marcher/
-   ├─ manifest.json          # Obsidian-Manifest (lädt das gebündelte main.js im Plugin-Stamm)
-   ├─ esbuild.config.mjs     # Build-Pipeline (bundelt src/app/main.ts → main.js)
-   ├─ main.js                # Gebündeltes Plugin-Artefakt
-   ├─ package.json           # Scripts & Dev-Abhängigkeiten (esbuild, TypeScript, Obsidian-Typen)
-   ├─ package-lock.json      # Reproduzierbare Dependency-Auflösung
-   ├─ tsconfig.json          # TypeScript-Konfiguration für das Build-Setup
-   ├─ PluginOverview.txt     # Diese Detailübersicht
-   ├─ README.md              # Anwender-orientierte Hinweise
-   ├─ docs/                  # Bereichsspezifische Overviews (cartographer/core/library/ui)
-   ├─ src/
-   │  ├─ app/
-   │  │  ├─ main.ts          # Plugin-Bootstrap (Views, Commands, CSS, Terrain-Watcher)
-   │  │  ├─ css.ts           # Zentrales Styling als Template-String
-   │  │  └─ layout-editor-bridge.ts # Optionales Binding zu einem externen Layout-Editor
-   │  ├─ apps/
-   │  │  ├─ cartographer/    # Hex-Map-Workspace mit Editor/Inspector/Travel-Modi
-   │  │  ├─ encounter/       # Encounter-View
-   │  │  └─ library/         # Library-View für Terrains, Regionen, Kreaturen
-   │  ├─ core/               # Domain-Services (Hex-Geometrie, Dateien, Terrain, Optionen)
-   │  └─ ui/                 # Geteilte Dialoge und Workflow-Helfer
-   └─ tests/
-      └─ cartographer/       # Vitest-Suite für den Presenter
+salt-marcher/
+├─ manifest.json          # Obsidian-Manifest (lädt main.js)
+├─ main.js                # Gebündeltes Plugin-Artefakt
+├─ README.md              # Produkt- & Architekturüberblick
+├─ docs/                  # Bereichsdokumentation (siehe unten)
+│  ├─ index.md            # Navigationsübersicht
+│  ├─ cartographer/       # Karten-Workspace (README + Overviews)
+│  ├─ core/               # Domain- und Persistenzdienste
+│  ├─ library/            # Verwaltungs- und Datenbank-Flows
+│  └─ ui/                 # Geteilte UI-Komponenten
+├─ src/
+│  ├─ app/                # Plugin-Bootstrap, CSS, Integrationen
+│  ├─ apps/               # Feature-Workspaces (Cartographer, Encounter, Library)
+│  ├─ core/               # Hex- und Daten-Services
+│  └─ ui/                 # Wiederverwendbare UI-Bausteine
+└─ tests/                 # Vitest-Suites (Presenter, Mocks)
 ```
 
-## Features & Verantwortlichkeiten
+## Kernbereiche
+- **Cartographer Workspace:** Hex-Map-Stage mit Editor-, Inspector- und Travel-Modi, orchestriert durch Presenter und View-Shell.
+  Struktur und Komponenten sind im [`docs/cartographer/`](docs/cartographer/README.md) beschrieben.
+- **Library Workspace:** Verwaltungsoberfläche für Terrains, Regionen, Kreaturen und Zauber. Architekturüberblick unter
+  [`docs/library/`](docs/library/README.md).
+- **Encounter Workspace:** Fokus-View für Begegnungen, die aus Cartographer- oder Library-Events gestartet werden. Ergänzende
+  Hinweise liegen im Projekt-Wiki ([Encounter-Guide](../wiki/Encounter.md)).
+- **Core Services:** Hex-Geometrie, Kartenpersistenz, Terrain-/Regions-Stores und Dateihilfen, dokumentiert in
+  [`docs/core/`](docs/core/README.md).
+- **Geteilte UI:** View-Container, Dialoge und Map-Workflows für alle Workspaces, siehe [`docs/ui/`](docs/ui/README.md).
 
-- **Plugin-Bootstrap (`src/app/main.ts`):** Registriert Cartographer-, Encounter- und Library-Views, injiziert das Salt-Marcher-CSS, hält Terrain-Daten aktuell und nutzt die Cartographer-Helfer (`openCartographer`, `detachCartographerLeaves`) als einzige Entry-Points für Kommandos/Ribbons – es existiert kein zweites Plugin-Objekt mehr.
-- **Cartographer-Workspace:** Map-Stage mit Editor-, Inspector- und Travel-Modi inklusive Renderer-Synchronisierung, Dateioperationen und Modusverwaltung.
-- **Library-View:** Einheitliche Verwaltung von Terrains, Regionen und Kreaturen mit Suche, Create-Workflows und Persistenz.
-- **Encounter-View:** Schlanke Ansicht für Encounter-Notizen.
-- **Core-Services:** Hex-Geometrie, Map/Terrain/Regions-Persistenz sowie Workspace-Helfer als Single Source of Truth.
-- **Geteilte UI-Bausteine:** Modals, Header und Workflows für Map-Management und generische Dialoge.
-- **View Container & Layout-Editor-Bridge:** `ui/view-container.ts` kapselt einen renderbaren View-Host inkl. optionaler Kamera; `src/app/layout-editor-bridge.ts` meldet die Cartographer-Karte als View-Binding bei einem extern installierten Layout-Editor an.
-- **Build & Styling:** Esbuild erzeugt `main.js`; `css.ts` enthält ausschließlich Salt-Marcher-spezifisches Styling (Layout-Editor-CSS ist in das separate Plugin umgezogen).
+## Daten- & Kontrollfluss
+1. **Bootstrap (`src/app/main.ts`):** Registriert Views, Commands und Ribbon-Icons, initialisiert Terrain-Daten und CSS.
+2. **Datenhaltung:** `core/terrain-store.ts`, `core/regions-store.ts` sowie Map-Helfer synchronisieren Vault-Dateien mit den Views.
+3. **Workspaces:** Cartographer-, Library- und Encounter-Apps beobachten die Stores, aktualisieren UI-Zustand und lösen Aktionen
+   wie Encounter-Starts oder Map-Saves aus.
+4. **Integrationen:** Die optionale `layout-editor-bridge.ts` bindet den Cartographer an den Layout Editor, während UI-Komponenten
+   (`src/ui/*`) konsistente Dialoge und Header bereitstellen.
 
-## Datenfluss
-
-1. **Plugin-Load (`main.ts`):** Registriert Views, richtet Ribbons/Commands ein und lädt Terrain-Daten.
-2. **Terrain-Store:** `ensureTerrainFile` und `loadTerrains` initialisieren den Speicher; `watchTerrains` broadcastet Änderungen.
-3. **Views:** Cartographer, Library und Encounter abonnieren die entsprechenden Stores/Services und aktualisieren ihre UI.
-4. **UI-Layer:** Gemeinsame Dialoge (z. B. Map-Workflows) orchestrieren Vault-Zugriffe, Renderer-Updates und Benutzerinteraktionen.
-
-## Skript-Referenz
-
-### `src/app`
-- `main.ts`: Einstiegspunkt des Plugins. Registriert Views/Commands, lädt Terrain-Daten (`ensureTerrainFile`, `loadTerrains`, `watchTerrains`), injiziert CSS.
-- `css.ts`: Enthält das Styling für Cartographer, Library und Encounter. Layout-Editor-spezifische Klassen wurden entfernt.
-- `layout-editor-bridge.ts`: Bindet den Cartographer optional an einen externen Layout Editor (View-Bindings über dessen API).
-
-### `src/apps/cartographer`
-- `index.ts`: Exportiert `CartographerView` sowie Hilfsfunktionen (`openCartographer`, `getOrCreateCartographerLeaf`, `detachCartographerLeaves`); delegiert Lifecycle an den Presenter.
-- `presenter.ts`: Kapselt Datei-/Mode-State, Map-Rendering und Hex-Ereignisse; koordiniert Map-Manager, Modi und View-Shell.
-- `view-shell.ts`: Rendert Header, Map-Stage und Sidebar-Hosts, liefert ein Handle zur UI-Aktualisierung und ruft Presenter-Callbacks (Open/Create/Delete/Save, Mode-Wahl, `hex:click`) auf.
-- `modes/editor.ts`: Sidebar für den Editor-Modus. Bindet Tool-Infrastruktur aus `editor/`, synchronisiert Brush-Vorschau und persistiert Terrain-Änderungen über `RenderHandles`.
-- `modes/inspector.ts`: Inspector-Sidebar zum Bearbeiten von Terrain/Notizen eines ausgewählten Hex. Nutzt `hex-notes` für Dateioperationen und aktualisiert Renderer-Fills live.
-- `modes/travel-guide.ts`: Verknüpft Travel-Logik (Playback, Token, Routen) mit dem Cartographer, verwaltet UI-Sidebar und Persistenz über `travel/domain`.
-- `editor/tools/*`: Tool-API und konkrete Tools (Terrain-Brush etc.).
-- `travel/*`: Domain-, Render- und UI-Bausteine für den Travel-Modus.
-- `CartographerOverview.txt`, `travel/TravelGuideOverview.txt`: Detaildokumentationen der Teilbereiche.
-
-### `src/apps/library`
-- `view.ts`: Tab-basierte Library-View für Terrains, Regionen, Kreaturen inkl. Suche, Inline-Editing und Persistenz.
-- `core/*`: Laden/Speichern der Sammeldateien, Parsing, Filterung und Eventing.
-- `create/*`: Modals und Helfer für Creatures/Spells inkl. Presets und Token-Editoren.
-- `LibraryOverview.txt`: Struktur- und Verantwortlichkeitsübersicht.
-
-### `src/apps/encounter`
-- `view.ts`: Implementiert `EncounterView` (ItemView). Rendert eine Encounter-Seite mit Titel/Platzhaltertext und räumt beim Schließen das DOM auf.
-
-### `src/core`
-- `CoreOverview.txt`: Überblick über Aufbau und Verantwortlichkeiten der Core-Schicht.
-- `options.ts`, `layout.ts`: Parser & Workspace-Helfer.
-- `hex-mapper/*`: Renderer, Geometrie und Camera-Logik.
-- `map-*.ts`: Erstellen, Löschen, Listen von Karten.
-- `terrain.ts`, `terrain-store.ts`, `regions-store.ts`: Verwaltung und Persistenz der Terrain/Regions-Daten.
-- `save.ts`: Gemeinsame Save-Helfer.
-
-### `src/ui`
-- `UiOverview.txt`: Übersicht über Struktur und Verantwortlichkeiten der UI-Bausteine.
-- `modals.ts`, `map-workflows.ts`, `map-manager.ts`, `map-header.ts`, `confirm-delete.ts`, `search-dropdown.ts`, `view-container.ts`: Geteilte UI- und Workflow-Komponenten.
-
-### `tests`
-- `cartographer/presenter.test.ts`: Vitest-Suite, die Presenter-Mode-Wechsel und Dateireaktionen ohne DOM-Verknüpfung prüft (inkl. Obsidian-Mocks).
-
-## Zusammenarbeit mit dem Layout-Editor
-
-- Der Layout Editor wird als separates Obsidian-Plugin ausgeliefert und ist nicht Teil dieses Repositories.
-- Sobald der Layout Editor installiert und aktiviert ist, kann Salt Marcher über dessen öffentliches API (`getApi()`) Layout-Definitionen registrieren oder Layouts laden – ohne direkte Code-Abhängigkeit im Salt-Marcher-Build.
-- `layout-editor-bridge.ts` registriert – sobald verfügbar – das Cartographer-Mapping als `viewBindingId` beim Layout Editor, sodass dessen View Container die Karte als Feature anbietet.
+## Dokumentation & Standards
+Die Bereichsdokumente unter [`docs/`](docs/index.md) werden nach jedem Feature-Update gepflegt. Für neue Beiträge
+bitte den projektspezifischen [Style Guide](../docs/style-guide.md) beachten und Querverlinkungen zu bestehenden Overviews setzen.
