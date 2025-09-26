@@ -13,13 +13,13 @@ export type { HexInteractionDelegate, HexInteractionOutcome } from "./render/typ
 export { createEventBackedInteractionDelegate } from "./render/interaction-delegate";
 
 export type RenderHandles = {
-    svg: SVGSVGElement;
-    contentG: SVGGElement;
-    overlay: SVGRectElement;
-    polyByCoord: Map<string, SVGPolygonElement>;
+    readonly svg: SVGSVGElement;
+    readonly contentG: SVGGElement;
+    readonly overlay: SVGRectElement;
+    readonly polyByCoord: ReadonlyMap<string, SVGPolygonElement>;
     setFill(coord: HexCoord, color: string): void;
     /** Fügt fehlende Polygone für die angegebenen Koordinaten hinzu und erweitert viewBox/Overlay. */
-    ensurePolys(coords: HexCoord[]): void;
+    ensurePolys(coords: readonly HexCoord[]): void;
     /** Ersetzt den aktiven Interaktions-Delegate (z. B. für Editor-Tools). */
     setInteractionDelegate(delegate: HexInteractionDelegate | null): void;
     destroy(): void;
@@ -79,7 +79,7 @@ export async function renderHexMap(
         scene.setFill(coord, color);
     }
 
-    const ensurePolys = (coords: HexCoord[]) => {
+    const ensurePolys = (coords: readonly HexCoord[]) => {
         if (!coords.length) return;
         scene.ensurePolys(coords);
     };
