@@ -1,15 +1,8 @@
 // Zentrale Drag-Steuerung: Dot-/Token-Drag, Ghost-Preview, Commit.
 // UI-only: keine Business-Regeln hier – Commit ruft Logik-API.
 
-import type { Coord } from "../domain/types";
+import type { Coord, DragLogicPort } from "./types";
 import type { TokenCtl, RenderAdapter } from "../infra/adapter";
-
-type LogicPort = {
-    getState(): { editIdx: number | null; route: Array<Coord & { kind: string }> };
-    selectDot(idx: number | null): void;
-    moveSelectedTo(rc: Coord): void;
-    moveTokenTo(rc: Coord): void;
-};
 
 export type DragController = {
     bind(): void;
@@ -22,9 +15,9 @@ export function createDragController(deps: {
     routeLayerEl: SVGGElement;                     // <g> mit Dot circles
     tokenEl: SVGGElement;                          // sichtbares Token-<g>
     token: TokenCtl;                               // TokenCtl (für Ghost setPos)
-adapter: RenderAdapter;                        // centerOf/ensurePolys
-logic: LogicPort;                              // Logik-API (Commit)
-polyToCoord: WeakMap<SVGElement, Coord>;       // MapLayer-Index
+    adapter: RenderAdapter;                        // centerOf/ensurePolys
+    logic: DragLogicPort;                          // Logik-API (Commit)
+    polyToCoord: WeakMap<SVGElement, Coord>;       // MapLayer-Index
 }): DragController {
     const { routeLayerEl, tokenEl, token, adapter, logic, polyToCoord } = deps;
 
@@ -32,6 +25,8 @@ polyToCoord: WeakMap<SVGElement, Coord>;       // MapLayer-Index
     let dragKind: "dot" | "token" | null = null;
     let lastDragRC: Coord | null = null;
     let suppressNextHexClick = false;
+    let pointerCaptureOwner: Element | null = null;
+    let activePointerId: number | null = null;
 
     // Helpers ------------------------------------------------------------------
 
@@ -82,6 +77,36 @@ polyToCoord: WeakMap<SVGElement, Coord>;       // MapLayer-Index
         token.show();
     }
 
+    function capturePointer(el: Element | null, pointerId: number) {
+        if (!el || typeof (el as Element & { setPointerCapture?: unknown }).setPointerCapture !== "function") {
+            pointerCaptureOwner = null;
+            activePointerId = null;
+            return;
+        }
+        try {
+            (el as Element & { setPointerCapture(id: number): void }).setPointerCapture(pointerId);
+            pointerCaptureOwner = el;
+            activePointerId = pointerId;
+        } catch {
+            pointerCaptureOwner = null;
+            activePointerId = null;
+        }
+    }
+
+    function releasePointerCapture() {
+        if (!pointerCaptureOwner || activePointerId == null) {
+            pointerCaptureOwner = null;
+            activePointerId = null;
+            return;
+        }
+        const el = pointerCaptureOwner as Element & { releasePointerCapture?(id: number): void };
+        try {
+            el.releasePointerCapture?.(activePointerId);
+        } catch {}
+        pointerCaptureOwner = null;
+        activePointerId = null;
+    }
+
     // Event handlers -----------------------------------------------------------
 
     const onGlobalPointerDownCapture = (ev: PointerEvent) => {
@@ -124,7 +149,7 @@ polyToCoord: WeakMap<SVGElement, Coord>;       // MapLayer-Index
         suppressNextHexClick = true;
         disableLayerHit(true);
         const { dot } = getDotElements(idx);
-        (dot ?? t).setPointerCapture?.(ev.pointerId);
+        capturePointer(dot ?? t, ev.pointerId);
 
         ev.preventDefault();
         (ev as any).stopImmediatePropagation?.();
@@ -138,7 +163,7 @@ polyToCoord: WeakMap<SVGElement, Coord>;       // MapLayer-Index
         lastDragRC = null;
         suppressNextHexClick = true;
         disableLayerHit(true);
-        tokenEl.setPointerCapture?.(ev.pointerId);
+        capturePointer(tokenEl, ev.pointerId);
 
         ev.preventDefault();
         (ev as any).stopImmediatePropagation?.();
@@ -147,7 +172,10 @@ polyToCoord: WeakMap<SVGElement, Coord>;       // MapLayer-Index
 
     const onPointerMove = (ev: PointerEvent) => {
         if (!isDragging) return;
-        if ((ev.buttons & 1) === 0) { endDrag(); return; }
+        if ((ev.buttons & 1) === 0) {
+            endDrag();
+            return;
+        }
 
         const poly = findPolygonAt(ev.clientX, ev.clientY);
         if (!poly) return;
@@ -161,54 +189,59 @@ polyToCoord: WeakMap<SVGElement, Coord>;       // MapLayer-Index
         else if (dragKind === "token") ghostMoveToken(rc);
     };
 
-        function endDrag() {
-            if (!isDragging) return;
-            isDragging = false;
+    function endDrag() {
+        if (!isDragging) {
+            releasePointerCapture();
+            return;
+        }
+        isDragging = false;
 
-            if (lastDragRC) {
-                // Sicherheitsnetz: sicherstellen, dass Ziel-Poly existiert
-                adapter.ensurePolys([lastDragRC]);
+        if (lastDragRC) {
+            // Sicherheitsnetz: sicherstellen, dass Ziel-Poly existiert
+            adapter.ensurePolys([lastDragRC]);
 
-                if (dragKind === "dot") logic.moveSelectedTo(lastDragRC);
-                else if (dragKind === "token") logic.moveTokenTo(lastDragRC);
+            if (dragKind === "dot") logic.moveSelectedTo(lastDragRC);
+            else if (dragKind === "token") logic.moveTokenTo(lastDragRC);
 
-                suppressNextHexClick = true; // Folgeklick der Maus loslassen unterdrücken
-            }
-
-            lastDragRC = null;
-            dragKind = null;
-            disableLayerHit(false);
+            suppressNextHexClick = true; // Folgeklick der Maus loslassen unterdrücken
         }
 
-        const onPointerUp = () => endDrag();
-        const onPointerCancel = () => endDrag();
+        lastDragRC = null;
+        dragKind = null;
+        disableLayerHit(false);
+        releasePointerCapture();
+    }
 
-        // Public API ---------------------------------------------------------------
+    const onPointerUp = () => endDrag();
+    const onPointerCancel = () => endDrag();
 
-        function bind() {
-            window.addEventListener("pointerdown", onGlobalPointerDownCapture, { capture: true });
-            routeLayerEl.addEventListener("pointerdown", onDotPointerDown, { capture: true });
-            tokenEl.addEventListener("pointerdown", onTokenPointerDown, { capture: true });
-            window.addEventListener("pointermove", onPointerMove, { passive: true });
-            window.addEventListener("pointerup", onPointerUp, { passive: true });
-            window.addEventListener("pointercancel", onPointerCancel, { passive: true });
-        }
+    // Public API ---------------------------------------------------------------
 
-        function unbind() {
-            window.removeEventListener("pointerdown", onGlobalPointerDownCapture as any, { capture: true } as any);
-            routeLayerEl.removeEventListener("pointerdown", onDotPointerDown as any, { capture: true } as any);
-            tokenEl.removeEventListener("pointerdown", onTokenPointerDown as any, { capture: true } as any);
-            window.removeEventListener("pointermove", onPointerMove as any);
-            window.removeEventListener("pointerup", onPointerUp as any);
-            window.removeEventListener("pointercancel", onPointerCancel as any);
-        }
+    function bind() {
+        window.addEventListener("pointerdown", onGlobalPointerDownCapture, { capture: true });
+        routeLayerEl.addEventListener("pointerdown", onDotPointerDown, { capture: true });
+        tokenEl.addEventListener("pointerdown", onTokenPointerDown, { capture: true });
+        window.addEventListener("pointermove", onPointerMove, { passive: true });
+        window.addEventListener("pointerup", onPointerUp, { passive: true });
+        window.addEventListener("pointercancel", onPointerCancel, { passive: true });
+    }
 
-        function consumeClickSuppression(): boolean {
-            if (isDragging) return true;
-            if (!suppressNextHexClick) return false;
-            suppressNextHexClick = false;
-            return true;
-        }
+    function unbind() {
+        window.removeEventListener("pointerdown", onGlobalPointerDownCapture as any, { capture: true } as any);
+        routeLayerEl.removeEventListener("pointerdown", onDotPointerDown as any, { capture: true } as any);
+        tokenEl.removeEventListener("pointerdown", onTokenPointerDown as any, { capture: true } as any);
+        window.removeEventListener("pointermove", onPointerMove as any);
+        window.removeEventListener("pointerup", onPointerUp as any);
+        window.removeEventListener("pointercancel", onPointerCancel as any);
+        releasePointerCapture();
+    }
 
-        return { bind, unbind, consumeClickSuppression };
+    function consumeClickSuppression(): boolean {
+        if (isDragging) return true;
+        if (!suppressNextHexClick) return false;
+        suppressNextHexClick = false;
+        return true;
+    }
+
+    return { bind, unbind, consumeClickSuppression };
 }
