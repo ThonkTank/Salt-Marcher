@@ -16,6 +16,13 @@ type LayoutEditorPluginApi = {
     unregisterViewBinding?(id: string): void;
 };
 
+type PluginLifecycleEvent = "plugin-enabled" | "plugin-disabled";
+type PluginEventRef = unknown;
+type PluginLifecycleEmitter = {
+    on?(event: PluginLifecycleEvent, callback: (id: string) => void): PluginEventRef;
+    off?(event: PluginLifecycleEvent, ref: PluginEventRef): void;
+};
+
 const LAYOUT_EDITOR_PLUGIN_ID = "layout-editor";
 const MAP_VIEW_BINDING_ID = "salt-marcher.cartographer-map";
 
@@ -58,29 +65,35 @@ export function setupLayoutEditorBridge(plugin: Plugin): () => void {
 
     plugin.registerEvent(app.workspace.on("layout-ready", tryRegister));
 
-    const manager: any = app.plugins;
-    let enabledRef: any = null;
-    let disabledRef: any = null;
-    if (typeof manager?.on === "function") {
-        enabledRef = manager.on("plugin-enabled", (id: string) => {
+    const manager = app.plugins as App["plugins"] & PluginLifecycleEmitter;
+    const onLifecycle = typeof manager.on === "function" ? manager.on.bind(manager) : null;
+    const offLifecycle = typeof manager.off === "function" ? manager.off.bind(manager) : null;
+
+    let enabledRef: PluginEventRef | null = null;
+    let disabledRef: PluginEventRef | null = null;
+
+    if (onLifecycle) {
+        enabledRef = onLifecycle("plugin-enabled", (id: string) => {
             if (id === LAYOUT_EDITOR_PLUGIN_ID) {
                 tryRegister();
             }
-        });
-        disabledRef = manager.on("plugin-disabled", (id: string) => {
+        }) ?? null;
+        disabledRef = onLifecycle("plugin-disabled", (id: string) => {
             if (id === LAYOUT_EDITOR_PLUGIN_ID) {
                 unregister?.();
             }
-        });
+        }) ?? null;
     }
 
     return () => {
         unregister?.();
-        if (enabledRef && typeof manager?.off === "function") {
-            manager.off("plugin-enabled", enabledRef);
+        if (offLifecycle && enabledRef) {
+            offLifecycle("plugin-enabled", enabledRef);
+            enabledRef = null;
         }
-        if (disabledRef && typeof manager?.off === "function") {
-            manager.off("plugin-disabled", disabledRef);
+        if (offLifecycle && disabledRef) {
+            offLifecycle("plugin-disabled", disabledRef);
+            disabledRef = null;
         }
     };
 }
