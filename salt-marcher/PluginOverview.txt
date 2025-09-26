@@ -50,10 +50,12 @@ Salt-Marcher/
 ### `src/app`
 - `main.ts`: Einstiegspunkt des Plugins. Registriert Views/Commands, lädt Terrain-Daten (`ensureTerrainFile`, `loadTerrains`, `watchTerrains`), injiziert CSS.
 - `css.ts`: Enthält das Styling für Cartographer, Library und Encounter. Layout-Editor-spezifische Klassen wurden entfernt.
+- `layout-editor-bridge.ts`: Bindet den Cartographer optional an den Layout Editor (View-Bindings).
 
-- `index.ts`: Exportiert `CartographerView` sowie Hilfsfunktionen (`openCartographer`, `getOrCreateCartographerLeaf`, `detachCartographerLeaves`); Registrierung & Befehle liegen ausschließlich im `SaltMarcherPlugin`.
-- `view-shell.ts`: Baut Layout (Header, Stage, Sidebar), hält aktiven Modus, lädt Karten via `createMapLayer`/`renderHexMap` und delegiert Hex-Events an Modi.
-- `view-shell.ts`: Baut Layout (Header, Stage, Sidebar), hält aktiven Modus, lädt Karten via `createMapLayer`/`renderHexMap`, nutzt den gemeinsamen `view-container` als Map-Host und delegiert Hex-Events an Modi.
+### `src/apps/cartographer`
+- `index.ts`: Exportiert `CartographerView` sowie Hilfsfunktionen (`openCartographer`, `getOrCreateCartographerLeaf`, `detachCartographerLeaves`); delegiert Lifecycle an den Presenter.
+- `presenter.ts`: Kapselt Datei-/Mode-State, Map-Rendering und Hex-Ereignisse; koordiniert Map-Manager, Modi und View-Shell.
+- `view-shell.ts`: Rendert Header, Map-Stage und Sidebar-Hosts, liefert ein Handle zur UI-Aktualisierung und ruft Presenter-Callbacks (Open/Create/Delete/Save, Mode-Wahl, `hex:click`) auf.
 - `modes/editor.ts`: Sidebar für den Editor-Modus. Bindet Tool-Infrastruktur aus `editor/`, synchronisiert Brush-Vorschau und persistiert Terrain-Änderungen über `RenderHandles`.
 - `modes/inspector.ts`: Inspector-Sidebar zum Bearbeiten von Terrain/Notizen eines ausgewählten Hex. Nutzt `hex-notes` für Dateioperationen und aktualisiert Renderer-Fills live.
 - `modes/travel-guide.ts`: Verknüpft Travel-Logik (Playback, Token, Routen) mit dem Cartographer, verwaltet UI-Sidebar und Persistenz über `travel/domain`.
@@ -81,6 +83,9 @@ Salt-Marcher/
 ### `src/ui`
 - `UiOverview.txt`: Übersicht über Struktur und Verantwortlichkeiten der UI-Bausteine.
 - `modals.ts`, `map-workflows.ts`, `map-manager.ts`, `map-header.ts`, `confirm-delete.ts`, `search-dropdown.ts`, `view-container.ts`: Geteilte UI- und Workflow-Komponenten.
+
+### `tests`
+- `cartographer/presenter.test.ts`: Vitest-Suite, die Presenter-Mode-Wechsel und Dateireaktionen ohne DOM-Verknüpfung prüft (inkl. Obsidian-Mocks).
 
 ## Zusammenarbeit mit dem Layout-Editor
 

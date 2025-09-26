@@ -8,5 +8,5 @@
     "paths": { "*": ["./*", "./src/*"] },
     "types": ["obsidian", "node"]   // <- wichtig für die Typen
   },
-  "include": ["src"]
+  "include": ["src", "tests"]
 }

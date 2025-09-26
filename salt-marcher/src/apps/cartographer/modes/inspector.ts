@@ -3,7 +3,7 @@ import { loadTile, saveTile } from "../../../core/hex-mapper/hex-notes";
 import { TERRAIN_COLORS } from "../../../core/terrain";
 import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
 import type { RenderHandles } from "../../../core/hex-mapper/hex-render";
-import type { CartographerMode, CartographerModeContext, HexCoord } from "../view-shell";
+import type { CartographerMode, CartographerModeContext, HexCoord } from "../presenter";
 
 type InspectorUI = {
     panel: HTMLElement | null;

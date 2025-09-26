@@ -3,10 +3,10 @@
 ## 1. Architektur & Modularität
 ### 1.1 Einstiegs- und Registrierungslogik
 - ✅ Behoben (2024-04-09): `SaltMarcherPlugin` ist der einzige Entry Point. `src/apps/cartographer/index.ts` exportiert nur noch View- und Leaf-Helfer; Ribbon/Command-Registrierung liegt vollständig in `src/app/main.ts`.
-- `CartographerView` kapselt sowohl View-API als auch Dateiauswahl, während `mountCartographer` erneut State hält. Eine klare Trennung (z. B. Presenter vs. View) fehlt, wodurch Testbarkeit und Erweiterbarkeit leiden.【F:salt-marcher/src/apps/cartographer/index.ts†L9-L52】
+- ✅ Behoben (2024-05-07): `CartographerView` delegiert Lifecycle & Dateiauswahl vollständig an `CartographerPresenter`; die View ist auf Obsidian-Wiring reduziert.【F:salt-marcher/src/apps/cartographer/index.ts†L1-L45】【F:salt-marcher/src/apps/cartographer/presenter.ts†L1-L254】
 
 ### 1.2 Cartographer-Shell
-- `mountCartographer` ist ein 300‑Zeilen-Monolith, der UI-Aufbau, Modusmanagement, Dateiladen, Render-Lifecycle und Dropdown-Interaktionen bündelt.【F:salt-marcher/src/apps/cartographer/view-shell.ts†L51-L218】 Diese Vermischung erschwert Wiederverwendung und erschafft komplexe Seiteneffekte. Empfohlen ist die Aufteilung in kleinere Services (ModeRegistry, MapLoader, HeaderController) mit klaren Verantwortlichkeiten.
+- ✅ Behoben (2024-05-07): State-Logik liegt nun im `CartographerPresenter`, während `view-shell.ts` ausschließlich DOM-Komposition + Callback-Wiring übernimmt. Presenter-Tests decken Mode-Wechsel & File-Reaktionen ab.【F:salt-marcher/src/apps/cartographer/presenter.ts†L1-L254】【F:salt-marcher/src/apps/cartographer/view-shell.ts†L1-L146】【F:salt-marcher/tests/cartographer/presenter.test.ts†L1-L139】
 - Die Modi sind hart im Shell-Code verdrahtet (`createTravelGuideMode`, `createEditorMode`, `createInspectorMode`).【F:salt-marcher/src/apps/cartographer/view-shell.ts†L92-L96】 Erweiterungen oder Konfigurationen erfordern Codeänderungen statt deklarativer Registrierung.
 - `modeChange` verkettet Promises manuell, aber eine Fehlerblase kann den Zustand inkonsistent lassen (z. B. nach Throw bleibt `modeChange` ungelöst). Eine State-Machine oder Task-Queue mit finally-Block wäre robuster.【F:salt-marcher/src/apps/cartographer/view-shell.ts†L121-L147】
 

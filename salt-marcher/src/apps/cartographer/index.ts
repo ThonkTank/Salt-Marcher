@@ -1,18 +1,19 @@
 // src/apps/cartographer/index.ts
 import { ItemView, WorkspaceLeaf, TFile } from "obsidian";
 import type { App } from "obsidian";
-import { mountCartographer, type CartographerController } from "./view-shell";
+import { CartographerPresenter } from "./presenter";
 
 export const VIEW_TYPE_CARTOGRAPHER = "cartographer-view";
 export const VIEW_CARTOGRAPHER = VIEW_TYPE_CARTOGRAPHER;
 
 export class CartographerView extends ItemView {
-    controller: CartographerController | null = null;
+    presenter: CartographerPresenter;
     hostEl: HTMLElement | null = null;
-    initialFile: TFile | null = null;
+    pendingFile: TFile | null = null;
 
     constructor(leaf: WorkspaceLeaf) {
         super(leaf);
+        this.presenter = new CartographerPresenter(this.app as App);
     }
 
     getViewType(): string {
@@ -28,8 +29,8 @@ export class CartographerView extends ItemView {
     }
 
     setFile(file: TFile | null) {
-        this.initialFile = file;
-        void this.controller?.setFile(file ?? null);
+        this.pendingFile = file;
+        void this.presenter.setFile(file ?? null);
     }
 
     async onOpen(): Promise<void> {
@@ -39,14 +40,12 @@ export class CartographerView extends ItemView {
 
         this.hostEl = content.createDiv({ cls: "cartographer-host" });
 
-        const file = this.initialFile ?? this.app.workspace.getActiveFile() ?? null;
-
-        this.controller = await mountCartographer(this.app as App, this.hostEl, file);
+        const fallbackFile = this.pendingFile ?? this.app.workspace.getActiveFile() ?? null;
+        await this.presenter.onOpen(this.hostEl, fallbackFile);
     }
 
     async onClose(): Promise<void> {
-        await this.controller?.destroy();
-        this.controller = null;
+        await this.presenter.onClose();
         this.hostEl = null;
     }
 }
