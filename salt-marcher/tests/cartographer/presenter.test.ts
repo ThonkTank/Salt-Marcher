@@ -170,6 +170,110 @@ describe("CartographerPresenter", () => {
         expect(shell.setModeLabel).toHaveBeenLastCalledWith("Mode B");
     });
 
+    it("continues switching when onExit fails", async () => {
+        const shell = createShellStub();
+        const exitError = new Error("boom");
+
+        const modeA: CartographerMode = {
+            id: "a",
+            label: "Mode A",
+            onEnter: vi.fn(),
+            onExit: vi.fn(() => {
+                throw exitError;
+            }),
+            onFileChange: vi.fn(),
+        };
+
+        const modeBEnter = vi.fn();
+        const modeBFileChange = vi.fn();
+        const modeB: CartographerMode = {
+            id: "b",
+            label: "Mode B",
+            onEnter: modeBEnter,
+            onExit: vi.fn(),
+            onFileChange: modeBFileChange,
+        };
+
+        const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+        const presenter = new CartographerPresenter(appStub, {
+            createShell: shell.factory,
+            createMapManager: createMapManagerFactory(),
+            createMapLayer: vi.fn(async () => {
+                throw new Error("layer should not be created in this scenario");
+            }),
+            loadHexOptions: vi.fn(async () => null as HexOptions | null),
+            provideModes: () => [modeA, modeB],
+        });
+
+        await presenter.onOpen(shell.host, null);
+        consoleError.mockClear();
+
+        await presenter.setMode("b");
+
+        expect(modeBEnter).toHaveBeenCalledTimes(1);
+        expect(modeBFileChange).toHaveBeenCalledTimes(1);
+        expect(
+            consoleError.mock.calls.some(
+                ([message, err]) =>
+                    message === "[cartographer] mode exit failed" && err === exitError,
+            ),
+        ).toBe(true);
+
+        consoleError.mockRestore();
+    });
+
+    it("logs enter failures but still notifies file change", async () => {
+        const shell = createShellStub();
+        const enterError = new Error("enter failed");
+
+        const modeA: CartographerMode = {
+            id: "a",
+            label: "Mode A",
+            onEnter: vi.fn(),
+            onExit: vi.fn(),
+            onFileChange: vi.fn(),
+        };
+
+        const modeBFileChange = vi.fn();
+        const modeB: CartographerMode = {
+            id: "b",
+            label: "Mode B",
+            onEnter: vi.fn(() => {
+                throw enterError;
+            }),
+            onExit: vi.fn(),
+            onFileChange: modeBFileChange,
+        };
+
+        const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+        const presenter = new CartographerPresenter(appStub, {
+            createShell: shell.factory,
+            createMapManager: createMapManagerFactory(),
+            createMapLayer: vi.fn(async () => {
+                throw new Error("layer should not be created in this scenario");
+            }),
+            loadHexOptions: vi.fn(async () => null as HexOptions | null),
+            provideModes: () => [modeA, modeB],
+        });
+
+        await presenter.onOpen(shell.host, null);
+        consoleError.mockClear();
+
+        await presenter.setMode("b");
+
+        expect(modeBFileChange).toHaveBeenCalledTimes(1);
+        expect(
+            consoleError.mock.calls.some(
+                ([message, err]) =>
+                    message === "[cartographer] mode enter failed" && err === enterError,
+            ),
+        ).toBe(true);
+
+        consoleError.mockRestore();
+    });
+
     it("skips lifecycle when switch is cancelled before execution", async () => {
         const shell = createShellStub();
 
