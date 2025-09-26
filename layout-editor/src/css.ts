@@ -617,6 +617,8 @@ export const LAYOUT_EDITOR_CSS = `
 .sm-view-container__viewport {
     position: relative;
     flex: 1;
+    min-width: 0;
+    min-height: 0;
     overflow: hidden;
     cursor: grab;
     touch-action: none;
