@@ -4,12 +4,21 @@
 import type { App, TFile } from "obsidian";
 import type { HexCoord } from "./presenter";
 import { createMapHeader, type MapHeaderSaveMode } from "../../ui/map-header";
-import { createViewContainer } from "../../ui/view-container";
+import { createCartographerLayout } from "./view-shell/layout";
+import { createMapSurface } from "./view-shell/map-surface";
+import {
+    createModeController,
+    type ModeControllerHandle,
+    type ModeSwitchContext,
+} from "./view-shell/mode-controller";
+import { createModeRegistry, type ModeRegistryHandle } from "./view-shell/mode-registry";
 
 export type CartographerShellMode = { id: string; label: string };
 
+export type ModeSelectContext = ModeSwitchContext;
+
 export interface CartographerShellCallbacks {
-    onModeSelect(id: string): void;
+    onModeSelect(id: string, ctx?: ModeSelectContext): void | Promise<void>;
     onOpen(file: TFile): void | Promise<void>;
     onCreate(file: TFile): void | Promise<void>;
     onDelete(file: TFile): void | Promise<void>;
@@ -32,56 +41,62 @@ export interface CartographerShellHandle {
     setFileLabel(file: TFile | null): void;
     setModeActive(id: string): void;
     setModeLabel(label: string): void;
+    setModes(modes: CartographerShellMode[]): void;
+    registerMode(mode: CartographerShellMode): void;
+    deregisterMode(id: string): void;
     setOverlay(content: string | null): void;
     clearMap(): void;
     destroy(): void;
 }
 
-type ModeMenuItem = { modeId: string; item: HTMLButtonElement };
+type HexClickListener = (event: CustomEvent<HexCoord>) => void | Promise<void>;
 
-type Cleanup = () => void;
+type ModeRegistryState = {
+    modes: CartographerShellMode[];
+    activeId: string | null;
+    label: string;
+};
+
+const DEFAULT_MODE_LABEL = "Mode";
 
 export function createCartographerShell(options: CartographerShellOptions): CartographerShellHandle {
     const { app, host, initialFile, modes, callbacks } = options;
 
-    host.empty();
-    host.classList.add("sm-cartographer");
+    const layout = createCartographerLayout(host);
+    const mapSurface = createMapSurface(layout.mapWrapper);
 
-    const headerHost = host.createDiv({ cls: "sm-cartographer__header" });
-    const body = host.createDiv({ cls: "sm-cartographer__body" });
-
-    const mapWrapper = body.createDiv({ cls: "sm-cartographer__map" });
-    const mapView = createViewContainer(mapWrapper, { camera: false });
-    const mapHost = mapView.stageEl;
-    const sidebarHost = body.createDiv({ cls: "sm-cartographer__sidebar" });
-
-    const modeMenuItems: ModeMenuItem[] = [];
-    let modeTriggerBtn: HTMLButtonElement | null = null;
-    let modeDropdownEl: HTMLElement | null = null;
-    let unbindOutsideClick: Cleanup | null = null;
-
-    const closeMenu = () => {
-        if (!modeDropdownEl || !modeTriggerBtn) return;
-        modeDropdownEl.classList.remove("is-open");
-        modeTriggerBtn.setAttr("aria-expanded", "false");
-        if (unbindOutsideClick) {
-            unbindOutsideClick();
-            unbindOutsideClick = null;
-        }
+    const state: ModeRegistryState = {
+        modes: [...modes],
+        activeId: modes[0]?.id ?? null,
+        label: modes[0]?.label ?? DEFAULT_MODE_LABEL,
     };
 
-    const openMenu = () => {
-        if (!modeDropdownEl || !modeTriggerBtn) return;
-        modeDropdownEl.classList.add("is-open");
-        modeTriggerBtn.setAttr("aria-expanded", "true");
-        const onDocClick = (ev: MouseEvent) => {
-            if (!modeDropdownEl?.contains(ev.target as Node)) closeMenu();
-        };
-        document.addEventListener("mousedown", onDocClick);
-        unbindOutsideClick = () => document.removeEventListener("mousedown", onDocClick);
+    let modeRegistry: ModeRegistryHandle | null = null;
+    let modeController: ModeControllerHandle | null = null;
+
+    const ensureModeRegistry = (slot: HTMLElement) => {
+        modeRegistry?.destroy();
+        modeRegistry = createModeRegistry({
+            host: slot,
+            initialLabel: state.label,
+            onSelect: (modeId) => {
+                if (!modeController) return;
+                void modeController.requestMode(modeId).catch((error) => {
+                    console.error("[cartographer] failed to request mode", error);
+                });
+            },
+        });
+        modeRegistry.setModes(state.modes);
+        modeRegistry.setActiveMode(state.activeId);
     };
 
-    const headerHandle = createMapHeader(app, headerHost, {
+    modeController = createModeController({
+        onSwitch: async (modeId, ctx) => {
+            await callbacks.onModeSelect(modeId, ctx);
+        },
+    });
+
+    const headerHandle = createMapHeader(app, layout.headerHost, {
         title: "Cartographer",
         initialFile,
         onOpen: async (file) => {
@@ -97,84 +112,102 @@ export function createCartographerShell(options: CartographerShellOptions): Cart
             return await callbacks.onSave(mode, file);
         },
         titleRightSlot: (slot) => {
-            slot.classList.add("sm-cartographer__mode-switch");
-            const dropdown = slot.createDiv({ cls: "sm-mode-dropdown" });
-            modeDropdownEl = dropdown;
-
-            modeTriggerBtn = dropdown.createEl("button", {
-                text: modes[0]?.label ?? "Mode",
-                attr: { type: "button", "aria-haspopup": "listbox", "aria-expanded": "false" },
-            });
-            modeTriggerBtn.classList.add("sm-mode-dropdown__trigger");
-            modeTriggerBtn.onclick = () => {
-                if (!modeDropdownEl) return;
-                const isOpen = modeDropdownEl.classList.contains("is-open");
-                if (isOpen) closeMenu();
-                else openMenu();
-            };
-
-            const menuEl = dropdown.createDiv({ cls: "sm-mode-dropdown__menu", attr: { role: "listbox" } });
-
-            for (const mode of modes) {
-                const item = menuEl.createEl("button", {
-                    text: mode.label,
-                    attr: { role: "option", type: "button", "data-id": mode.id },
-                });
-                item.classList.add("sm-mode-dropdown__item");
-                item.onclick = () => {
-                    closeMenu();
-                    callbacks.onModeSelect(mode.id);
-                };
-                modeMenuItems.push({ modeId: mode.id, item });
-            }
+            ensureModeRegistry(slot);
         },
     });
 
-    const onHexClick = async (event: Event) => {
-        const ev = event as CustomEvent<HexCoord>;
-        if (ev.cancelable) ev.preventDefault();
-        ev.stopPropagation();
-        await callbacks.onHexClick(ev.detail, ev);
+    const onHexClick: HexClickListener = async (event) => {
+        if (event.cancelable) event.preventDefault();
+        event.stopPropagation();
+        await callbacks.onHexClick(event.detail, event);
     };
-    mapHost.addEventListener("hex:click", onHexClick as EventListener, { passive: false });
+    mapSurface.mapHost.addEventListener("hex:click", onHexClick as EventListener, { passive: false });
 
     const setModeActive = (id: string) => {
-        for (const entry of modeMenuItems) {
-            const isActive = entry.modeId === id;
-            entry.item.classList.toggle("is-active", isActive);
-            entry.item.ariaSelected = isActive ? "true" : "false";
+        state.activeId = id;
+        const activeMode = state.modes.find((mode) => mode.id === id);
+        if (activeMode) {
+            state.label = activeMode.label;
         }
+        modeRegistry?.setActiveMode(id);
     };
 
     const setModeLabel = (label: string) => {
-        if (modeTriggerBtn) {
-            modeTriggerBtn.textContent = label;
+        state.label = label;
+        modeRegistry?.setTriggerLabel(label);
+    };
+
+    const setModes = (nextModes: CartographerShellMode[]) => {
+        state.modes = [...nextModes];
+        modeRegistry?.setModes(state.modes);
+        const activeMode = state.activeId
+            ? state.modes.find((mode) => mode.id === state.activeId)
+            : null;
+        if (!activeMode) {
+            state.activeId = null;
+            modeRegistry?.setActiveMode(null);
+            const fallbackLabel = state.modes[0]?.label ?? DEFAULT_MODE_LABEL;
+            setModeLabel(fallbackLabel);
+        } else {
+            setModeLabel(activeMode.label);
+        }
+    };
+
+    const registerMode = (mode: CartographerShellMode) => {
+        const existingIndex = state.modes.findIndex((entry) => entry.id === mode.id);
+        if (existingIndex >= 0) {
+            state.modes[existingIndex] = mode;
+        } else {
+            state.modes.push(mode);
+        }
+        modeRegistry?.registerMode(mode);
+        if (state.activeId === mode.id) {
+            setModeLabel(mode.label);
+        } else if (!state.activeId) {
+            const fallbackLabel = state.modes[0]?.label ?? DEFAULT_MODE_LABEL;
+            setModeLabel(fallbackLabel);
+        }
+    };
+
+    const deregisterMode = (id: string) => {
+        state.modes = state.modes.filter((mode) => mode.id !== id);
+        modeRegistry?.deregisterMode(id);
+        if (state.activeId === id) {
+            state.activeId = null;
+            modeRegistry?.setActiveMode(null);
+            const fallbackLabel = state.modes[0]?.label ?? DEFAULT_MODE_LABEL;
+            setModeLabel(fallbackLabel);
         }
     };
 
     const destroy = () => {
-        closeMenu();
-        mapHost.removeEventListener("hex:click", onHexClick as EventListener);
+        mapSurface.mapHost.removeEventListener("hex:click", onHexClick as EventListener);
+        modeController?.destroy();
+        modeController = null;
+        modeRegistry?.destroy();
+        modeRegistry = null;
         headerHandle.destroy();
-        mapView.destroy();
-        host.empty();
-        host.removeClass("sm-cartographer");
+        mapSurface.destroy();
+        layout.destroy();
     };
 
     const handle: CartographerShellHandle = {
         host,
-        mapHost,
-        sidebarHost,
+        mapHost: mapSurface.mapHost,
+        sidebarHost: layout.sidebarHost,
         setFileLabel: (file) => {
             headerHandle.setFileLabel(file);
         },
         setModeActive,
         setModeLabel,
+        setModes,
+        registerMode,
+        deregisterMode,
         setOverlay: (content) => {
-            mapView.setOverlay(content);
+            mapSurface.setOverlay(content);
         },
         clearMap: () => {
-            mapHost.empty();
+            mapSurface.clear();
         },
         destroy,
     };
