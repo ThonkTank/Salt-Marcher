@@ -23,7 +23,14 @@ Salt Marcher is an Obsidian community plugin that helps game masters run hexcraw
 - [Developer documentation set](salt-marcher/docs/README.md) – deep dives for individual subsystems.
 - [Project wiki](wiki/README.md) – canonical end-user guides hosted on GitHub.
 
+## To-Do
+- [Cartographer presenter respects abort signals](todo/cartographer-presenter-abort-handling.md) – Presenter muss Abort-Signale sauber propagieren.
+- [Cartographer mode registry](todo/cartographer-mode-registry.md) – Modi deklarativ registrieren statt hart verdrahten.
+- [Cartographer mode state machine](todo/cartographer-mode-state-machine.md) – Mode-Queue benötigt robuste Fehler- und Cleanup-Pfade.
+- [Hex renderer modularization](todo/hex-renderer-modularization.md) – Rendering, Kamera und Interaktionen trennen.
+- [UI terminology consistency](todo/ui-terminology-consistency.md) – Einheitliche Sprache für UI-Texte und Kommentare herstellen.
+
 ## Standards & Conventions
 - All new or updated docs must follow the mandatory template defined in the [documentation style guide](docs/style-guide.md).
 - Synchronize repository docs with the user-focused wiki to keep workflows and terminology consistent for referees and contributors alike.
-- Record outstanding architectural or quality concerns in [`docs/architecture-critique.md`](docs/architecture-critique.md) so the team can triage them across sprints.
+- Record outstanding architectural or quality concerns in the [`todo/`](todo/README.md) backlog and cross-link the relevant documentation sections.

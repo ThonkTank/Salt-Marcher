@@ -19,3 +19,6 @@ docs/ui/
 - Verwendungsbeispiele findest du in den README-Dateien der Bereiche [Cartographer](../cartographer/README.md) und
   [Library](../library/README.md).
 - Dokumentationsrichtlinien: [Style Guide](../../../docs/style-guide.md).
+
+## To-Do
+- [UI terminology consistency](../../../todo/ui-terminology-consistency.md) – UI-Texte und Kommentare sprachlich vereinheitlichen.

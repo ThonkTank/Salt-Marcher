@@ -27,7 +27,14 @@ This hub orients contributors, technical writers, and support staff to every maj
 - [Documentation style guide](style-guide.md) – template and formatting requirements.
 - [GitHub project wiki](../wiki/README.md) – canonical end-user guides and troubleshooting articles.
 
+## To-Do
+- [Cartographer presenter respects abort signals](../todo/cartographer-presenter-abort-handling.md) – Presenter muss Abort-Signale honorieren.
+- [Cartographer mode registry](../todo/cartographer-mode-registry.md) – Modi deklarativ konfigurierbar machen.
+- [Cartographer mode state machine](../todo/cartographer-mode-state-machine.md) – Queue in robuste State-Machine überführen.
+- [Hex renderer modularization](../todo/hex-renderer-modularization.md) – Rendering/Interaktionen entflechten.
+- [UI terminology consistency](../todo/ui-terminology-consistency.md) – UI-Sprache vereinheitlichen.
+
 ## Standards & Conventions
 - Maintain this index whenever documentation locations change so all teams share an accurate map.
 - Ensure every linked document complies with the [documentation style guide](style-guide.md) and uses relative links where possible.
-- Capture unresolved documentation issues or backlog items in [`architecture-critique.md`](architecture-critique.md) for coordination across releases.
+- Capture unresolved documentation issues or backlog items im [`todo/`](../todo/README.md)-Backlog und verweise auf passende Detaildokumente.
