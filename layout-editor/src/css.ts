@@ -586,6 +586,7 @@ export const LAYOUT_EDITOR_CSS = `
     flex-direction: column;
     gap: 0.25rem;
     padding: 0.15rem;
+    box-sizing: border-box;
 }
 
 .sm-le-preview--view-container {

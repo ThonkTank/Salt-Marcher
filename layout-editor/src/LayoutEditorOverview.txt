@@ -48,7 +48,7 @@ plugins/layout-editor/
 ## Features & Verantwortlichkeiten
 
 - **Plugin-Einstieg (`main.ts`):** Registriert den `LayoutEditorView`, richtet Ribbon-Icon und Command ein, injiziert die Styles aus `css.ts` und stellt über `getApi()` ein `LayoutEditorPluginApi` bereit (Open-View, Registry-Hooks, Layout-Library-Funktionen).
-- **Eigenes Styling (`css.ts`):** Enthält das komplette Layout-Editor-CSS. Wird ausschließlich vom Layout-Editor-Plugin injiziert und kollidiert somit nicht länger mit SaltMarcher-spezifischem Styling.
+- **Eigenes Styling (`css.ts`):** Enthält das komplette Layout-Editor-CSS. Wird ausschließlich vom Layout-Editor-Plugin injiziert und kollidiert somit nicht länger mit SaltMarcher-spezifischem Styling. Die View-Container-Vorschau nutzt nun `box-sizing: border-box`, damit das Canvas-Clamping trotz Padding exakt an der sichtbaren Kante greift.
 - **Layout-Arbeitsfläche & Kamera:** Dreigeteilte Arbeitsumgebung mit Strukturbaum links, Canvas in der Mitte und Inspector rechts. Panning, Zoom und Panel-Resizer halten Bounds-Clamping und Fokusverhalten konsistent.
 - **Struktur-Überblick:** Interaktiver Baum mit Drag & Drop zur Container-Neuzuordnung (inkl. Root-Drop-Zone) und zyklusgesicherter Elternwahl. Inspector- und Baum-Breiten lassen sich über Trenner anpassen.
 - **Elementbibliothek & Registry:** Der „+ Element“-Trigger öffnet den `ElementPickerModal`, der alle Definitionen als einklappbare Baumstruktur darstellt. Registry-Änderungen aktualisieren die Baumansicht live, neue Komponenten landen weiterhin nur unter `src/elements/components/`.
