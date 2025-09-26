@@ -6,10 +6,10 @@ Diese Strukturanalyse richtet sich an Maintainer:innen und Architekt:innen, die 
 ## Directory Map
 | Path | Description | Primary Docs |
 | --- | --- | --- |
-| `../salt-marcher/overview.md` | Gesamtüberblick über Aufbau, Build-Pipeline und Integrationen des Plugins. | [`../salt-marcher/overview.md`](../salt-marcher/overview.md) |
-| `../salt-marcher/docs/README.md` | Einstiegspunkt für alle Bereichsdokumente (Cartographer, Core, Library, UI). | [`../salt-marcher/docs/README.md`](../salt-marcher/docs/README.md) |
-| `../salt-marcher/docs/cartographer/README.md` | Detaildokumentation zu Presenter, View-Shell und Travel-Modus. | [`../salt-marcher/docs/cartographer/README.md`](../salt-marcher/docs/cartographer/README.md) |
-| `../salt-marcher/docs/core/README.md` | Übersicht über Persistenz-, Hex- und Terrain-Services. | [`../salt-marcher/docs/core/README.md`](../salt-marcher/docs/core/README.md) |
+| `salt-marcher/overview.md` | Gesamtüberblick über Aufbau, Build-Pipeline und Integrationen des Plugins. | [`salt-marcher/overview.md`](salt-marcher/overview.md) |
+| `salt-marcher/docs/README.md` | Einstiegspunkt für alle Bereichsdokumente (Cartographer, Core, Library, UI). | [`salt-marcher/docs/README.md`](salt-marcher/docs/README.md) |
+| `salt-marcher/docs/cartographer/README.md` | Detaildokumentation zu Presenter, View-Shell und Travel-Modus. | [`salt-marcher/docs/cartographer/README.md`](salt-marcher/docs/cartographer/README.md) |
+| `salt-marcher/docs/core/README.md` | Übersicht über Persistenz-, Hex- und Terrain-Services. | [`salt-marcher/docs/core/README.md`](salt-marcher/docs/core/README.md) |
 
 ## Key Workflows
 1. **Bewertung aktualisieren:** Prüfe nach jedem Merge die betroffenen Abschnitte und markiere erledigte Punkte mit einem ✅-Hinweis sowie Quellenangaben.
@@ -17,9 +17,9 @@ Diese Strukturanalyse richtet sich an Maintainer:innen und Architekt:innen, die 
 3. **Quellen verlinken:** Ergänze bei neuen Feststellungen direkte Referenzen zu Code-Dateien oder Detail-Docs, damit Leser:innen Änderungen schnell nachvollziehen können.
 
 ## Linked Docs
-- [Repository documentation hub](README.md) – Navigationsübersicht über alle Projektdokumente.
+- [Repository documentation hub](DOCUMENTATION.md) – Navigationsübersicht über alle Projektdokumente.
 - [Repository overview](repository-overview.md) – Koordination und Verantwortlichkeiten auf Repo-Ebene.
-- [Salt Marcher plugin overview](../salt-marcher/overview.md) – Architektur, Integrationen und Build-Schritte des Plugins.
+- [Salt Marcher plugin overview](salt-marcher/overview.md) – Architektur, Integrationen und Build-Schritte des Plugins.
 
 ## Standards & Conventions
 - Halte Sprache und Status-Markierungen konsistent (✅ für erledigt, ungekennzeichnet für offen, nummerierte Maßnahmenliste am Ende).
@@ -35,7 +35,7 @@ Diese Strukturanalyse richtet sich an Maintainer:innen und Architekt:innen, die 
 
 #### 1.2 Cartographer-Shell
 - ✅ Behoben (2024-05-07): State-Logik liegt nun im `CartographerPresenter`, während `view-shell.ts` ausschließlich DOM-Komposition + Callback-Wiring übernimmt. Presenter-Tests decken Mode-Wechsel & File-Reaktionen ab.【F:salt-marcher/src/apps/cartographer/presenter.ts†L1-L254】【F:salt-marcher/src/apps/cartographer/view-shell.ts†L1-L146】【F:salt-marcher/tests/cartographer/presenter.test.ts†L1-L139】
-- Die Modi werden im Presenter über `provideModes` fest verdrahtet (`createTravelGuideMode`, `createEditorMode`, `createInspectorMode`). Erweiterungen oder Konfigurationen erfordern weiterhin Codeänderungen statt deklarativer Registrierung.【F:salt-marcher/src/apps/cartographer/presenter.ts†L60-L70】【F:salt-marcher/src/apps/cartographer/presenter.ts†L89-L94】 → [TODO: Cartographer mode registry](../todo/cartographer-mode-registry.md)
+- Die Modi werden im Presenter über `provideModes` fest verdrahtet (`createTravelGuideMode`, `createEditorMode`, `createInspectorMode`). Erweiterungen oder Konfigurationen erfordern weiterhin Codeänderungen statt deklarativer Registrierung.【F:salt-marcher/src/apps/cartographer/presenter.ts†L60-L70】【F:salt-marcher/src/apps/cartographer/presenter.ts†L89-L94】 → [TODO: Cartographer mode registry](todo/cartographer-mode-registry.md)
 - ✅ Behoben (2025-09-26): `CartographerPresenter` orchestriert Modewechsel über eine explizite State-Machine (`idle → exiting → entering`) inklusive eigenem `AbortController`. Supersedierende Wechsel aborten laufende Phasen, Fehler werden zentral geloggt und Cleanup läuft deterministisch.【F:salt-marcher/src/apps/cartographer/presenter.ts†L86-L125】【F:salt-marcher/src/apps/cartographer/presenter.ts†L233-L328】【F:salt-marcher/tests/cartographer/presenter.test.ts†L64-L146】
 
 #### 1.3 Map-Layer-Adapter
@@ -63,15 +63,15 @@ Diese Strukturanalyse richtet sich an Maintainer:innen und Architekt:innen, die 
 - ✅ Behoben (2024-05-31): Das Encounter-Gateway lädt Module vorab und zeigt Notices bei Fehlern, statt Encounter-Events stumm zu verlieren.【F:salt-marcher/src/apps/cartographer/modes/travel-guide/encounter-gateway.ts†L1-L36】
 
 ### 3. Robustheit & Fehlertoleranz
-- `CartographerPresenter` ignoriert das vom Shell-Controller übergebene `ModeSelectContext`/`AbortSignal`. Selbst wenn der Mode-Wechsel vom UI abgebrochen wird, laufen `setMode` und asynchrone Aufräum-/Enter-Schritte weiter und riskieren Race-Conditions.【F:salt-marcher/src/apps/cartographer/presenter.ts†L112-L205】【F:salt-marcher/src/apps/cartographer/view-shell.ts†L77-L119】【F:salt-marcher/src/apps/cartographer/view-shell/mode-controller.ts†L1-L37】 → [TODO: Cartographer presenter respects abort signals](../todo/cartographer-presenter-abort-handling.md)
+- `CartographerPresenter` ignoriert das vom Shell-Controller übergebene `ModeSelectContext`/`AbortSignal`. Selbst wenn der Mode-Wechsel vom UI abgebrochen wird, laufen `setMode` und asynchrone Aufräum-/Enter-Schritte weiter und riskieren Race-Conditions.【F:salt-marcher/src/apps/cartographer/presenter.ts†L112-L205】【F:salt-marcher/src/apps/cartographer/view-shell.ts†L77-L119】【F:salt-marcher/src/apps/cartographer/view-shell/mode-controller.ts†L1-L37】 → [TODO: Cartographer presenter respects abort signals](todo/cartographer-presenter-abort-handling.md)
 - ✅ Behoben (2024-05-31): Standard-Klicks lassen sich nun über das Interaction-Delegate blockieren; `saveTile` wird nur bei explizitem `"default"`-Outcome ausgeführt.【F:salt-marcher/src/core/hex-mapper/hex-render.ts†L138-L183】【F:salt-marcher/src/core/hex-mapper/render/interactions.ts†L45-L114】
 - ✅ Behoben (2024-05-31): `MapManager.deleteCurrent` fängt `deleteMapAndTiles`-Fehler ab und informiert den Nutzer via Notice.【F:salt-marcher/src/ui/map-manager.ts†L77-L93】
 
 ### 4. Sauberkeit & Codequalität
-- Namensgebung und Kommentare wechseln zwischen Englisch und Deutsch (z. B. englische Fehlermeldungen neben deutschsprachigen Notices), was Konsistenz und Lesbarkeit beeinträchtigt.【F:salt-marcher/src/ui/map-manager.ts†L1-L93】【F:salt-marcher/src/apps/library/view.ts†L46-L140】 → [TODO: UI terminology consistency](../todo/ui-terminology-consistency.md)
+- Namensgebung und Kommentare wechseln zwischen Englisch und Deutsch (z. B. englische Fehlermeldungen neben deutschsprachigen Notices), was Konsistenz und Lesbarkeit beeinträchtigt.【F:salt-marcher/src/ui/map-manager.ts†L1-L93】【F:salt-marcher/src/apps/library/view.ts†L46-L140】 → [TODO: UI terminology consistency](todo/ui-terminology-consistency.md)
 - ✅ Behoben (2024-07-01): `renderHexMap` fungiert nur noch als Orchestrator; Tile-Bootstrap, Koordinaten-Mapping und Interaktionsadapter leben in eigenen Modulen. Kamera- und Interaktionscontroller nutzen typsichere Interfaces (`HexCameraController`, `HexInteractionController`).【F:salt-marcher/src/core/hex-mapper/hex-render.ts†L1-L86】【F:salt-marcher/src/core/hex-mapper/render/bootstrap.ts†L1-L74】【F:salt-marcher/src/core/hex-mapper/render/coordinates.ts†L1-L47】【F:salt-marcher/src/core/hex-mapper/render/interaction-adapter.ts†L1-L39】【F:salt-marcher/src/core/hex-mapper/render/types.ts†L1-L43】
 
 ### 5. Empfohlene Maßnahmen
-1. **Presenter abort-aware machen:** `CartographerPresenter.setMode` sollte das `ModeSelectContext`-Signal respektieren, um abgebrochene Modewechsel deterministisch zu stoppen.【F:salt-marcher/src/apps/cartographer/presenter.ts†L112-L205】【F:salt-marcher/src/apps/cartographer/view-shell/mode-controller.ts†L1-L37】 → [TODO](../todo/cartographer-presenter-abort-handling.md)
-2. **Mode-System modularisieren:** Eine deklarative Registry/API für `provideModes` einführen, damit zusätzliche Modi ohne Core-Änderung ladbar sind.【F:salt-marcher/src/apps/cartographer/presenter.ts†L60-L94】 → [TODO](../todo/cartographer-mode-registry.md)
-3. **Terminologie vereinheitlichen:** UI-Texte und Kommentare sollten konsequent in einer Sprache gehalten werden, um Mischformen wie in `MapManager` und `LibraryView` zu vermeiden.【F:salt-marcher/src/ui/map-manager.ts†L1-L93】【F:salt-marcher/src/apps/library/view.ts†L46-L140】 → [TODO](../todo/ui-terminology-consistency.md)
+1. **Presenter abort-aware machen:** `CartographerPresenter.setMode` sollte das `ModeSelectContext`-Signal respektieren, um abgebrochene Modewechsel deterministisch zu stoppen.【F:salt-marcher/src/apps/cartographer/presenter.ts†L112-L205】【F:salt-marcher/src/apps/cartographer/view-shell/mode-controller.ts†L1-L37】 → [TODO](todo/cartographer-presenter-abort-handling.md)
+2. **Mode-System modularisieren:** Eine deklarative Registry/API für `provideModes` einführen, damit zusätzliche Modi ohne Core-Änderung ladbar sind.【F:salt-marcher/src/apps/cartographer/presenter.ts†L60-L94】 → [TODO](todo/cartographer-mode-registry.md)
+3. **Terminologie vereinheitlichen:** UI-Texte und Kommentare sollten konsequent in einer Sprache gehalten werden, um Mischformen wie in `MapManager` und `LibraryView` zu vermeiden.【F:salt-marcher/src/ui/map-manager.ts†L1-L93】【F:salt-marcher/src/apps/library/view.ts†L46-L140】 → [TODO](todo/ui-terminology-consistency.md)

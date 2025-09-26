@@ -5,7 +5,7 @@
 >
 > **Empfohlene Maßnahme:** `CartographerPresenter.setMode` sollte das `ModeSelectContext`-Signal respektieren, um abgebrochene Modewechsel deterministisch zu stoppen.
 
-Quelle: [`docs/architecture-critique.md`](../docs/architecture-critique.md).
+Quelle: [`architecture-critique.md`](../architecture-critique.md).
 
 ## Kontext
 - **Betroffene Module:** `salt-marcher/src/apps/cartographer/presenter.ts`, `salt-marcher/src/apps/cartographer/view-shell.ts`, `salt-marcher/src/apps/cartographer/view-shell/mode-controller.ts`.
