@@ -3620,6 +3620,29 @@ var CartographerView = class extends import_obsidian12.ItemView {
     this.hostEl = null;
   }
 };
+function getExistingCartographerLeaves(app) {
+  return app.workspace.getLeavesOfType(VIEW_TYPE_CARTOGRAPHER);
+}
+function getOrCreateCartographerLeaf(app) {
+  const existing = getExistingCartographerLeaves(app);
+  if (existing.length > 0) return existing[0];
+  return app.workspace.getLeaf(false) ?? app.workspace.getLeaf(true);
+}
+async function openCartographer(app, file) {
+  const leaf = getOrCreateCartographerLeaf(app);
+  await leaf.setViewState({ type: VIEW_TYPE_CARTOGRAPHER, active: true });
+  app.workspace.revealLeaf(leaf);
+  if (file) {
+    const view = leaf.view instanceof CartographerView ? leaf.view : null;
+    view?.setFile(file);
+  }
+}
+async function detachCartographerLeaves(app) {
+  const leaves = getExistingCartographerLeaves(app);
+  for (const leaf of leaves) {
+    await leaf.detach();
+  }
+}
 
 // src/apps/library/view.ts
 var import_obsidian21 = require("obsidian");
@@ -5738,9 +5761,6 @@ var LibraryView = class extends import_obsidian21.ItemView {
   }
 };
 
-// src/app/main.ts
-init_layout();
-
 // src/app/css.ts
 var HEX_PLUGIN_CSS = `
 /* === View Container === */
@@ -6599,9 +6619,7 @@ var SaltMarcherPlugin = class extends import_obsidian22.Plugin {
     this.unwatchTerrains = watchTerrains(this.app, () => {
     });
     this.addRibbonIcon("compass", "Open Cartographer", async () => {
-      const leaf = getCenterLeaf(this.app);
-      await leaf.setViewState({ type: VIEW_CARTOGRAPHER, active: true });
-      this.app.workspace.revealLeaf(leaf);
+      await openCartographer(this.app);
     });
     this.addRibbonIcon("book", "Open Library", async () => {
       const leaf = this.app.workspace.getLeaf(true);
@@ -6612,9 +6630,7 @@ var SaltMarcherPlugin = class extends import_obsidian22.Plugin {
       id: "open-cartographer",
       name: "Cartographer \xF6ffnen",
       callback: async () => {
-        const leaf = getCenterLeaf(this.app);
-        await leaf.setViewState({ type: VIEW_CARTOGRAPHER, active: true });
-        this.app.workspace.revealLeaf(leaf);
+        await openCartographer(this.app);
       }
     });
     this.addCommand({
@@ -6629,9 +6645,10 @@ var SaltMarcherPlugin = class extends import_obsidian22.Plugin {
     this.injectCss();
     this.teardownLayoutBridge = setupLayoutEditorBridge(this);
   }
-  onunload() {
+  async onunload() {
     this.unwatchTerrains?.();
     this.teardownLayoutBridge?.();
+    await detachCartographerLeaves(this.app);
     this.removeCss();
   }
   injectCss() {

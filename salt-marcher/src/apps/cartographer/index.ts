@@ -1,5 +1,5 @@
 // src/apps/cartographer/index.ts
-import { Plugin, ItemView, WorkspaceLeaf, TFile } from "obsidian";
+import { ItemView, WorkspaceLeaf, TFile } from "obsidian";
 import type { App } from "obsidian";
 import { mountCartographer, type CartographerController } from "./view-shell";
 
@@ -51,38 +51,30 @@ export class CartographerView extends ItemView {
     }
 }
 
-export default class CartographerPlugin extends Plugin {
-    async onload() {
-        this.registerView(VIEW_TYPE_CARTOGRAPHER, (leaf) => new CartographerView(leaf));
+export function getExistingCartographerLeaves(app: App): WorkspaceLeaf[] {
+    return app.workspace.getLeavesOfType(VIEW_TYPE_CARTOGRAPHER);
+}
 
-        this.addCommand({
-            id: "cartographer-open",
-            name: "Open Cartographer",
-            callback: () => this.activateCartographer(),
-        });
+export function getOrCreateCartographerLeaf(app: App): WorkspaceLeaf {
+    const existing = getExistingCartographerLeaves(app);
+    if (existing.length > 0) return existing[0];
+    return app.workspace.getLeaf(false) ?? app.workspace.getLeaf(true);
+}
 
-        this.addRibbonIcon("compass", "Open Cartographer", () => this.activateCartographer());
+export async function openCartographer(app: App, file?: TFile | null): Promise<void> {
+    const leaf = getOrCreateCartographerLeaf(app);
+    await leaf.setViewState({ type: VIEW_TYPE_CARTOGRAPHER, active: true });
+    app.workspace.revealLeaf(leaf);
+
+    if (file) {
+        const view = leaf.view instanceof CartographerView ? leaf.view : null;
+        view?.setFile(file);
     }
+}
 
-    async onunload() {
-        const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_CARTOGRAPHER);
-        for (const leaf of leaves) await leaf.detach();
-    }
-
-    private async activateCartographer(file?: TFile | null) {
-        const leaf = this.getOrCreateLeaf();
-        await leaf.setViewState({ type: VIEW_TYPE_CARTOGRAPHER, active: true });
-        this.app.workspace.revealLeaf(leaf);
-
-        if (file) {
-            const view = leaf.view instanceof CartographerView ? (leaf.view as CartographerView) : null;
-            view?.setFile(file);
-        }
-    }
-
-    private getOrCreateLeaf(): WorkspaceLeaf {
-        const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_CARTOGRAPHER);
-        if (existing.length > 0) return existing[0];
-        return this.app.workspace.getLeaf(false) ?? this.app.workspace.getLeaf(true);
+export async function detachCartographerLeaves(app: App): Promise<void> {
+    const leaves = getExistingCartographerLeaves(app);
+    for (const leaf of leaves) {
+        await leaf.detach();
     }
 }
