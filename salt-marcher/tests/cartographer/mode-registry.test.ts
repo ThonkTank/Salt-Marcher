@@ -44,6 +44,11 @@ describe("cartographer mode registry", () => {
                 keywords: ["test"],
                 order: 10,
                 source: "tests/mode",
+                capabilities: {
+                    mapInteraction: "hex-click",
+                    persistence: "read-only",
+                    sidebar: "required",
+                },
             },
             load,
         };
@@ -95,6 +100,11 @@ describe("cartographer mode registry", () => {
                 summary: "first",
                 order: 2,
                 source: "tests/a",
+                capabilities: {
+                    mapInteraction: "hex-click",
+                    persistence: "read-only",
+                    sidebar: "required",
+                },
             },
             async load() {
                 return {
@@ -114,6 +124,11 @@ describe("cartographer mode registry", () => {
                 summary: "second",
                 order: 1,
                 source: "tests/b",
+                capabilities: {
+                    mapInteraction: "hex-click",
+                    persistence: "read-only",
+                    sidebar: "required",
+                },
             },
             async load() {
                 return {
@@ -150,7 +165,7 @@ describe("cartographer mode registry", () => {
 
         expect(events[0]?.type).toBe("initial");
         expect(events[0]?.entries.map((entry) => entry.metadata.id)).toEqual([
-            "travel-guide",
+            "travel",
             "editor",
             "inspector",
         ]);
@@ -161,6 +176,11 @@ describe("cartographer mode registry", () => {
                 label: "Dynamic",
                 summary: "dynamic provider",
                 source: "tests/dynamic",
+                capabilities: {
+                    mapInteraction: "hex-click",
+                    persistence: "read-only",
+                    sidebar: "required",
+                },
             },
             async load() {
                 return {
@@ -184,11 +204,43 @@ describe("cartographer mode registry", () => {
         const deregisteredEvent = events.find((event) => event.type === "deregistered");
         expect(deregisteredEvent?.id).toBe("dynamic");
         expect(deregisteredEvent?.entries.map((entry) => entry.metadata.id)).toEqual([
-            "travel-guide",
+            "travel",
             "editor",
             "inspector",
         ]);
 
         unsubscribe();
+    });
+
+    it("validates capability contracts when loading modes", async () => {
+        const provider: CartographerModeProvider = {
+            metadata: {
+                id: "broken",
+                label: "Broken",
+                summary: "missing save handler",
+                source: "tests/broken",
+                capabilities: {
+                    mapInteraction: "hex-click",
+                    persistence: "manual-save",
+                    sidebar: "required",
+                },
+            },
+            async load() {
+                return {
+                    id: "broken",
+                    label: "Broken",
+                    onEnter: vi.fn(),
+                    onExit: vi.fn(),
+                    onFileChange: vi.fn(),
+                } satisfies CartographerMode;
+            },
+        };
+
+        registerModeProvider(provider);
+
+        const [mode] = createCartographerModesSnapshot();
+        expect(mode.id).toBe("broken");
+
+        await expect(mode.onEnter(createStubContext())).rejects.toThrow(/manual-save/i);
     });
 });

@@ -24,7 +24,7 @@ docs/cartographer/
 - Dokumentationsstandards gemäß [Style Guide](../../../style-guide.md).
 
 ## State-Machine
-Der `CartographerPresenter` verfolgt jeden Modewechsel als eigene State-Machine-Instanz mit Phasen `idle`, `exiting` und `entering`. Jeder Wechsel erhält einen dedizierten `AbortController`, der sowohl UI-Abbrüche (`ModeSelectContext.signal`) als auch supersedierende Wechsel zusammenführt. Dadurch räumt `onExit` deterministisch auf, `onEnter`/`onFileChange` laufen nur, solange das Signal nicht abgebrochen wurde, und parallele Wechsel zerstören keine bereits erstellten Layer mehr.【F:salt-marcher/src/apps/cartographer/presenter.ts†L86-L125】【F:salt-marcher/src/apps/cartographer/presenter.ts†L233-L328】
+Der `CartographerPresenter` verfolgt jeden Modewechsel als eigene State-Machine-Instanz mit Phasen `idle`, `exiting` und `entering`. Jeder Wechsel erhält einen dedizierten `AbortController`, der sowohl UI-Abbrüche (`ModeSelectContext.signal`) als auch supersedierende Wechsel zusammenführt. Dadurch räumt `onExit` deterministisch auf, `onEnter`/`onFileChange` laufen nur, solange das Signal nicht abgebrochen wurde, und parallele Wechsel zerstören keine bereits erstellten Layer mehr.【F:salt-marcher/src/apps/cartographer/presenter.ts†L102-L198】【F:salt-marcher/src/apps/cartographer/presenter.ts†L510-L663】
 
 ## To-Do
 - [Cartographer presenter respects abort signals](../../../todo/cartographer-presenter-abort-handling.md) – Abort-Signale sauber propagieren.
