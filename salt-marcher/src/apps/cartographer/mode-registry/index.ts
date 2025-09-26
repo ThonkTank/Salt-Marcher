@@ -4,6 +4,9 @@ import {
     getCartographerModeMetadataSnapshot,
     registerCartographerModeProvider,
     unregisterCartographerModeProvider,
+    subscribeToCartographerModeRegistry,
+    type CartographerModeRegistryEvent,
+    type CartographerModeRegistryEntry,
     type CartographerModeMetadata,
     type CartographerModeProvider,
 } from "./registry";
@@ -40,6 +43,13 @@ export const unregisterModeProvider = (id: string): boolean => {
     return unregisterCartographerModeProvider(id);
 };
 
+export const subscribeToModeRegistry = (
+    listener: (event: CartographerModeRegistryEvent) => void,
+): (() => void) => {
+    ensureCoreProviders();
+    return subscribeToCartographerModeRegistry(listener);
+};
+
 export const resetCartographerModeRegistry = (options?: { registerCoreProviders?: boolean }): void => {
     clearCartographerModeRegistry();
     coreProvidersRegistered = false;
@@ -50,4 +60,9 @@ export const resetCartographerModeRegistry = (options?: { registerCoreProviders?
 
 export { createCartographerModesSnapshot, getCartographerModeMetadataSnapshot };
 
-export type { CartographerModeMetadata, CartographerModeProvider };
+export type {
+    CartographerModeMetadata,
+    CartographerModeProvider,
+    CartographerModeRegistryEvent,
+    CartographerModeRegistryEntry,
+};

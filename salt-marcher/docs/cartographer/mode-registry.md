@@ -47,6 +47,13 @@ Metadaten werden beim Registrieren defensiv geklont und eingefroren, damit Konsu
 - Ein Abgleich stellt sicher, dass die Mode-ID mit der Provider-ID übereinstimmt; Abweichungen werden als Warnung geloggt.
 - Der Lazy-Wrapper reicht den vollständigen `CartographerModeLifecycleContext` (inkl. `AbortSignal`) an jeden Hook weiter und behält typsichere Signaturen bei.【F:salt-marcher/src/apps/cartographer/mode-registry/registry.ts†L113-L165】
 
+## Beobachtung & UI-Synchronisation
+
+- `subscribeToModeRegistry(listener)` stellt ein Observable über den Registry-Zustand bereit. Jeder Listener erhält sofort ein `initial`-Event mit allen aktuell bekannten Modi (inklusive Kern-Providern) und im weiteren Verlauf gezielte `registered`-, `deregistered`- und `reset`-Events.【F:salt-marcher/src/apps/cartographer/mode-registry/registry.ts†L63-L96】【F:salt-marcher/src/apps/cartographer/mode-registry/index.ts†L28-L56】
+- Event-Nutzlasten kombinieren Metadaten und lazy-gekapselte `CartographerMode`-Instanzen, sodass Konsumenten direkt mit stabilen Objekten weiterarbeiten können.
+- Der `CartographerPresenter` abonniert die Registry dauerhaft, aktualisiert seine interne Modusliste und synchronisiert die View-Shell inkrementell über `registerMode`, `deregisterMode` und `setModes`. Änderungen an Drittanbieter-Providern tauchen daher ohne Reload im Dropdown auf.【F:salt-marcher/src/apps/cartographer/presenter.ts†L102-L190】【F:salt-marcher/src/apps/cartographer/presenter.ts†L260-L299】
+- Wird der aktive Modus deregistriert, stößt der Presenter automatisch einen Fallback auf den zuerst verfügbaren Modus an – inklusive Lifecycle-Aufräumen und UI-Update der Shell.【F:salt-marcher/src/apps/cartographer/presenter.ts†L280-L299】
+
 ## Migration für Drittanbieter-Modi
 
 1. **Metadaten definieren:** Wähle eine stabile `id`, sprechenden `label`, aussagekräftige `summary`, ordne `source` (z. B. deine Plugin-ID) zu.

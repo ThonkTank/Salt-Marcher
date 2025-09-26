@@ -15,6 +15,39 @@ import type { MapManagerHandle } from "../../src/ui/map-manager";
 import type { HexOptions } from "../../src/core/options";
 import type { RenderHandles } from "../../src/core/hex-mapper/hex-render";
 import type { MapLayer } from "../../src/apps/cartographer/travel/ui/map-layer";
+import type {
+    CartographerModeRegistryEntry,
+    CartographerModeRegistryEvent,
+} from "../../src/apps/cartographer/mode-registry";
+
+const createRegistryEntry = (mode: CartographerMode): CartographerModeRegistryEntry => ({
+    metadata: {
+        id: mode.id,
+        label: mode.label,
+        summary: `${mode.label} summary`,
+        source: "tests/presenter",
+    },
+    mode,
+});
+
+const createRegistryController = (initialEvents: CartographerModeRegistryEvent[] = []) => {
+    let listener: ((event: CartographerModeRegistryEvent) => void) | null = null;
+    const subscribe = vi.fn((handler: (event: CartographerModeRegistryEvent) => void) => {
+        listener = handler;
+        for (const event of initialEvents) {
+            handler(event);
+        }
+        return () => {
+            if (listener === handler) {
+                listener = null;
+            }
+        };
+    });
+    const emit = (event: CartographerModeRegistryEvent) => {
+        listener?.(event);
+    };
+    return { subscribe, emit };
+};
 
 function createShellStub() {
     const host = document.createElement("div");
@@ -23,6 +56,9 @@ function createShellStub() {
     const setFileLabel = vi.fn();
     const setModeActive = vi.fn();
     const setModeLabel = vi.fn();
+    const setModes = vi.fn();
+    const registerMode = vi.fn();
+    const deregisterMode = vi.fn();
     const setOverlay = vi.fn();
     const clearMap = vi.fn();
     const destroy = vi.fn();
@@ -36,6 +72,9 @@ function createShellStub() {
         setFileLabel,
         setModeActive,
         setModeLabel,
+        setModes,
+        registerMode,
+        deregisterMode,
         setOverlay,
         clearMap,
         destroy,
@@ -67,6 +106,9 @@ function createShellStub() {
         setFileLabel,
         setModeActive,
         setModeLabel,
+        setModes,
+        registerMode,
+        deregisterMode,
         setOverlay,
         clearMap,
         destroy,
@@ -151,6 +193,8 @@ describe("CartographerPresenter", () => {
             },
         };
 
+        const registry = createRegistryController();
+
         const presenter = new CartographerPresenter(appStub, {
             createShell: shell.factory,
             createMapManager: createMapManagerFactory(),
@@ -159,7 +203,10 @@ describe("CartographerPresenter", () => {
             }),
             loadHexOptions: vi.fn(async () => null as HexOptions | null),
             provideModes: () => [modeA, modeB],
+            subscribeToModeRegistry: registry.subscribe,
         });
+
+        registry.emit({ type: "initial", entries: [createRegistryEntry(modeA), createRegistryEntry(modeB)] });
 
         await presenter.onOpen(shell.host, null);
         events.length = 0;
@@ -197,6 +244,8 @@ describe("CartographerPresenter", () => {
 
         const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
+        const registry = createRegistryController();
+
         const presenter = new CartographerPresenter(appStub, {
             createShell: shell.factory,
             createMapManager: createMapManagerFactory(),
@@ -205,7 +254,10 @@ describe("CartographerPresenter", () => {
             }),
             loadHexOptions: vi.fn(async () => null as HexOptions | null),
             provideModes: () => [modeA, modeB],
+            subscribeToModeRegistry: registry.subscribe,
         });
+
+        registry.emit({ type: "initial", entries: [createRegistryEntry(modeA), createRegistryEntry(modeB)] });
 
         await presenter.onOpen(shell.host, null);
         consoleError.mockClear();
@@ -249,6 +301,8 @@ describe("CartographerPresenter", () => {
 
         const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
+        const registry = createRegistryController();
+
         const presenter = new CartographerPresenter(appStub, {
             createShell: shell.factory,
             createMapManager: createMapManagerFactory(),
@@ -257,7 +311,10 @@ describe("CartographerPresenter", () => {
             }),
             loadHexOptions: vi.fn(async () => null as HexOptions | null),
             provideModes: () => [modeA, modeB],
+            subscribeToModeRegistry: registry.subscribe,
         });
+
+        registry.emit({ type: "initial", entries: [createRegistryEntry(modeA), createRegistryEntry(modeB)] });
 
         await presenter.onOpen(shell.host, null);
         consoleError.mockClear();
@@ -294,6 +351,8 @@ describe("CartographerPresenter", () => {
             onFileChange: vi.fn(),
         };
 
+        const registry = createRegistryController();
+
         const presenter = new CartographerPresenter(appStub, {
             createShell: shell.factory,
             createMapManager: createMapManagerFactory(),
@@ -302,7 +361,10 @@ describe("CartographerPresenter", () => {
             }),
             loadHexOptions: vi.fn(async () => null as HexOptions | null),
             provideModes: () => [modeA, modeB],
+            subscribeToModeRegistry: registry.subscribe,
         });
+
+        registry.emit({ type: "initial", entries: [createRegistryEntry(modeA), createRegistryEntry(modeB)] });
 
         await presenter.onOpen(shell.host, null);
 
@@ -341,13 +403,18 @@ describe("CartographerPresenter", () => {
         const loadHexOptions = vi.fn(async () => ({ hexSize: 1 } as unknown as HexOptions));
         const createLayer = vi.fn(async () => mapLayer);
 
+        const registry = createRegistryController();
+
         const presenter = new CartographerPresenter(appStub, {
             createShell: shell.factory,
             createMapManager: createMapManagerFactory(),
             createMapLayer: createLayer,
             loadHexOptions,
             provideModes: () => [mode],
+            subscribeToModeRegistry: registry.subscribe,
         });
+
+        registry.emit({ type: "initial", entries: [createRegistryEntry(mode)] });
 
         await presenter.onOpen(shell.host, file);
 
@@ -417,13 +484,18 @@ describe("CartographerPresenter", () => {
             onFileChange: modeBOnFileChange,
         };
 
+        const registry = createRegistryController();
+
         const presenter = new CartographerPresenter(appStub, {
             createShell: shell.factory,
             createMapManager: createMapManagerFactory(),
             createMapLayer: createLayer,
             loadHexOptions,
             provideModes: () => [modeA, modeB],
+            subscribeToModeRegistry: registry.subscribe,
         });
+
+        registry.emit({ type: "initial", entries: [createRegistryEntry(modeA), createRegistryEntry(modeB)] });
 
         await presenter.onOpen(shell.host, null);
 
@@ -508,13 +580,18 @@ describe("CartographerPresenter", () => {
         const loadHexOptions = vi.fn(async () => ({ hexSize: 1 } as unknown as HexOptions));
         const createLayer = vi.fn(async () => mapLayer);
 
+        const registry = createRegistryController();
+
         const presenter = new CartographerPresenter(appStub, {
             createShell: shell.factory,
             createMapManager: createMapManagerFactory(),
             createMapLayer: createLayer,
             loadHexOptions,
             provideModes: () => [modeA, modeB],
+            subscribeToModeRegistry: registry.subscribe,
         });
+
+        registry.emit({ type: "initial", entries: [createRegistryEntry(modeA), createRegistryEntry(modeB)] });
 
         await presenter.onOpen(shell.host, file);
         events.length = 0;
@@ -535,6 +612,125 @@ describe("CartographerPresenter", () => {
         expect(shell.setModeLabel).toHaveBeenLastCalledWith("Mode A");
         expect(createLayer).toHaveBeenCalledTimes(1);
         expect(mapLayer.destroy).not.toHaveBeenCalled();
+    });
+
+    it("updates shell controls when a provider registers after mount", async () => {
+        const shell = createShellStub();
+        const registry = createRegistryController();
+
+        const modeA: CartographerMode = {
+            id: "a",
+            label: "Mode A",
+            onEnter: vi.fn(),
+            onExit: vi.fn(),
+            onFileChange: vi.fn(),
+        };
+
+        const modeB: CartographerMode = {
+            id: "b",
+            label: "Mode B",
+            onEnter: vi.fn(),
+            onExit: vi.fn(),
+            onFileChange: vi.fn(),
+        };
+
+        const modeC: CartographerMode = {
+            id: "c",
+            label: "Mode C",
+            onEnter: vi.fn(),
+            onExit: vi.fn(),
+            onFileChange: vi.fn(),
+        };
+
+        const presenter = new CartographerPresenter(appStub, {
+            createShell: shell.factory,
+            createMapManager: createMapManagerFactory(),
+            createMapLayer: vi.fn(async () => {
+                throw new Error("layer should not be created in this scenario");
+            }),
+            loadHexOptions: vi.fn(async () => null as HexOptions | null),
+            provideModes: () => [modeA, modeB],
+            subscribeToModeRegistry: registry.subscribe,
+        });
+
+        const entryA = createRegistryEntry(modeA);
+        const entryB = createRegistryEntry(modeB);
+        registry.emit({ type: "initial", entries: [entryA, entryB] });
+
+        await presenter.onOpen(shell.host, null);
+
+        shell.registerMode.mockClear();
+        shell.setModes.mockClear();
+        shell.setModeActive.mockClear();
+        shell.setModeLabel.mockClear();
+
+        const entryC = createRegistryEntry(modeC);
+        registry.emit({ type: "registered", entry: entryC, index: 2, entries: [entryA, entryB, entryC] });
+
+        expect(shell.registerMode).toHaveBeenCalledWith({ id: "c", label: "Mode C" });
+        expect(shell.setModes).toHaveBeenCalledWith([
+            { id: "a", label: "Mode A" },
+            { id: "b", label: "Mode B" },
+            { id: "c", label: "Mode C" },
+        ]);
+        expect(shell.setModeActive).toHaveBeenCalledWith("a");
+        expect(shell.setModeLabel).toHaveBeenCalledWith("Mode A");
+    });
+
+    it("falls back to the next available mode when the active provider deregisters", async () => {
+        const shell = createShellStub();
+        const registry = createRegistryController();
+
+        const modeA: CartographerMode = {
+            id: "a",
+            label: "Mode A",
+            onEnter: vi.fn(),
+            onExit: vi.fn(),
+            onFileChange: vi.fn(),
+        };
+
+        const modeB: CartographerMode = {
+            id: "b",
+            label: "Mode B",
+            onEnter: vi.fn(),
+            onExit: vi.fn(),
+            onFileChange: vi.fn(),
+        };
+
+        const presenter = new CartographerPresenter(appStub, {
+            createShell: shell.factory,
+            createMapManager: createMapManagerFactory(),
+            createMapLayer: vi.fn(async () => {
+                throw new Error("layer should not be created in this scenario");
+            }),
+            loadHexOptions: vi.fn(async () => null as HexOptions | null),
+            provideModes: () => [modeA, modeB],
+            subscribeToModeRegistry: registry.subscribe,
+        });
+
+        const entryA = createRegistryEntry(modeA);
+        const entryB = createRegistryEntry(modeB);
+        registry.emit({ type: "initial", entries: [entryA, entryB] });
+
+        await presenter.onOpen(shell.host, null);
+        await presenter.setMode("b");
+
+        shell.deregisterMode.mockClear();
+        shell.setModes.mockClear();
+        shell.setModeActive.mockClear();
+        shell.setModeLabel.mockClear();
+        const modeAEnterMock = modeA.onEnter as ReturnType<typeof vi.fn>;
+        modeAEnterMock.mockClear();
+
+        registry.emit({ type: "deregistered", id: "b", entries: [entryA] });
+
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        expect(shell.deregisterMode).toHaveBeenCalledWith("b");
+        expect(shell.setModes).toHaveBeenCalledWith([{ id: "a", label: "Mode A" }]);
+        expect(shell.setModeActive).toHaveBeenCalledWith("a");
+        expect(shell.setModeLabel).toHaveBeenCalledWith("Mode A");
+        expect(modeAEnterMock).toHaveBeenCalledTimes(1);
     });
 
     it("reuses lifecycle contexts per mode during travel/editor round-trips", async () => {
@@ -584,6 +780,8 @@ describe("CartographerPresenter", () => {
             },
         };
 
+        const registry = createRegistryController();
+
         const presenter = new CartographerPresenter(appStub, {
             createShell: shell.factory,
             createMapManager: createMapManagerFactory(),
@@ -596,7 +794,10 @@ describe("CartographerPresenter", () => {
             } as unknown as MapLayer)),
             loadHexOptions: vi.fn(async () => null as HexOptions | null),
             provideModes: () => [travelMode, editorMode],
+            subscribeToModeRegistry: registry.subscribe,
         });
+
+        registry.emit({ type: "initial", entries: [createRegistryEntry(travelMode), createRegistryEntry(editorMode)] });
 
         await presenter.onOpen(shell.host, null);
 
