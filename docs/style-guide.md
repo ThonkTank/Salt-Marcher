@@ -35,3 +35,4 @@ Additional formatting rules:
 - Prefer relative links inside the repository to keep navigation consistent across forks and mirrors.
 - When referencing command sequences or configuration snippets, use fenced code blocks with language hints for readability.
 - Update directory tables and linked references whenever files move to prevent dead links.
+- Runtime UI copy (buttons, notices, placeholders) and accompanying code comments must use English to stay aligned with the Library and UI documentation. Quote the exact labels (e.g. "Create", "Open") when describing workflows.

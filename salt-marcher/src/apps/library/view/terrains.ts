@@ -100,7 +100,7 @@ export class TerrainsRenderer extends BaseModeRenderer implements ModeRenderer {
         }
 
         if (!entries.length) {
-            list.createDiv({ cls: "sm-cc-item" }).setText("Keine Terrains vorhanden.");
+            list.createDiv({ cls: "sm-cc-item" }).setText("No terrains available.");
         }
     }
 
@@ -175,5 +175,5 @@ export class TerrainsRenderer extends BaseModeRenderer implements ModeRenderer {
 }
 
 export function describeTerrainsSource(): string {
-    return `Quelle: ${TERRAIN_FILE}`;
+    return `Source: ${TERRAIN_FILE}`;
 }

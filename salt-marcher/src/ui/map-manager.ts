@@ -1,5 +1,5 @@
 // src/ui/map-manager.ts
-// Gemeinsame Verwaltung für Map-Auswahl, Erstellung und Löschung.
+// Central manager that coordinates map selection, creation, and deletion flows.
 
 import { App, Notice, TFile } from "obsidian";
 import {
@@ -12,35 +12,35 @@ import { ConfirmDeleteModal } from "./confirm-delete";
 import { deleteMapAndTiles } from "../core/map-delete";
 
 export type MapManagerOptions = {
-    /** Startdatei für den internen State. */
+    /** Initial file tracked by the internal state. */
     initialFile?: TFile | null;
-    /** Überschriebene Texte für Notices. */
+    /** Optional overrides for notice copy. */
     notices?: {
         missingSelection?: string;
     };
-    /** Zusätzliche Optionen für die Auswahldialoge. */
+    /** Extra options for the selection dialogs. */
     selectOptions?: PromptMapSelectionOptions;
     createOptions?: PromptCreateMapOptions;
-    /** Callback nach jeder State-Änderung. */
+    /** Callback invoked after every state update. */
     onChange?: (file: TFile | null) => void | Promise<void>;
 };
 
 export type MapManagerHandle = {
-    /** Gibt die aktuell gemerkte Karte zurück. */
+    /** Returns the currently tracked map file. */
     getFile(): TFile | null;
-    /** Setzt den State (z. B. wenn extern ein File zugewiesen wurde). */
+    /** Updates the state (e.g. when a file is assigned externally). */
     setFile(file: TFile | null): Promise<void>;
-    /** Öffnet den Auswahl-Dialog und aktualisiert den State nach Auswahl. */
+    /** Opens the selection dialog and applies the chosen file. */
     open(): Promise<void>;
-    /** Startet den Create-Dialog und setzt den State auf die neue Karte. */
+    /** Launches the creation dialog and tracks the new map. */
     create(): void;
-    /** Öffnet den Delete-Dialog; bei Erfolg wird der State geleert. */
+    /** Opens the delete dialog; on success the state is cleared. */
     deleteCurrent(): void;
 };
 
 export function createMapManager(app: App, options: MapManagerOptions = {}): MapManagerHandle {
     const notices = {
-        missingSelection: options.notices?.missingSelection ?? "Keine Karte ausgewählt.",
+        missingSelection: options.notices?.missingSelection ?? "No map selected.",
     } as const;
 
     let current: TFile | null = options.initialFile ?? null;
@@ -88,7 +88,7 @@ export function createMapManager(app: App, options: MapManagerOptions = {}): Map
                 }
             } catch (error) {
                 console.error("Map deletion failed", error);
-                new Notice("Karte konnte nicht gelöscht werden. Siehe Konsole für Details.");
+                new Notice("Could not delete the map. Check the console for details.");
             }
         }).open();
     };

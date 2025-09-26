@@ -58,7 +58,7 @@ export class RegionsRenderer extends BaseModeRenderer implements ModeRenderer {
             });
 
             const terrSel = row.createEl("select") as HTMLSelectElement;
-            enhanceSelectToSearch(terrSel, "Such-dropdown…");
+            enhanceSelectToSearch(terrSel, "Search options…");
             this.populateTerrainOptions(terrSel, region.terrain || "");
             terrSel.addEventListener("change", () => {
                 region.terrain = terrSel.value;
@@ -80,7 +80,7 @@ export class RegionsRenderer extends BaseModeRenderer implements ModeRenderer {
         }
 
         if (!entries.length) {
-            list.createDiv({ cls: "sm-cc-item" }).setText("Keine Regionen hinterlegt.");
+            list.createDiv({ cls: "sm-cc-item" }).setText("No regions available.");
         }
     }
 
@@ -103,7 +103,7 @@ export class RegionsRenderer extends BaseModeRenderer implements ModeRenderer {
         select.empty();
         const options = Array.from(new Set(["", ...this.terrainNames]));
         for (const name of options) {
-            const option = select.createEl("option", { text: name || "(leer)", value: name });
+            const option = select.createEl("option", { text: name || "(empty)", value: name });
             option.selected = name === selected;
         }
     }
@@ -147,5 +147,5 @@ export class RegionsRenderer extends BaseModeRenderer implements ModeRenderer {
 }
 
 export function describeRegionsSource(): string {
-    return `Quelle: ${REGIONS_FILE}`;
+    return `Source: ${REGIONS_FILE}`;
 }
