@@ -11,7 +11,7 @@
 - `modeChange` verkettet Promises manuell, aber eine Fehlerblase kann den Zustand inkonsistent lassen (z. B. nach Throw bleibt `modeChange` ungelöst). Eine State-Machine oder Task-Queue mit finally-Block wäre robuster.【F:salt-marcher/src/apps/cartographer/view-shell.ts†L121-L147】
 
 ### 1.3 Map-Layer-Adapter
-- `createMapLayer` akzeptiert `opts: any` und greift mehrfach auf `handles` via `as any` zu.【F:salt-marcher/src/apps/cartographer/travel/ui/map-layer.ts†L21-L44】 Dadurch wird der Typschutz der `HexOptions` bzw. `RenderHandles` aufgehoben. Ein explizites Interface für die benötigten Methoden (inkl. `ensurePolys`) wäre nötig.
+- ✅ Behoben (2024-05-10): `createMapLayer` nutzt nun das typsichere `RenderLayerOptions`-Alias zu `HexOptions` und kapselt `ensurePolys` ohne `any`-Casts. Die Adapter-Übersicht dokumentiert das Protokoll.【F:salt-marcher/src/apps/cartographer/travel/ui/map-layer.ts†L5-L69】【F:salt-marcher/docs/cartographer/map-layer-overview.md†L1-L68】
 
 ### 1.4 Travel-Mode-Kapselung
 - `createTravelGuideMode` mischt UI-Aufbau, Domain-Logik und File-spezifische Lebenszyklen in einer Funktion. Mehrere interne Closures (`disposeInteractions`, `cleanupFile`) greifen auf geteilten Mutations-State zu, was Fehleranfälligkeit erhöht.【F:salt-marcher/src/apps/cartographer/modes/travel-guide.ts†L20-L189】 Eine klarere Aufteilung (z. B. separate Controller-Klasse für Drag/Context-Menu) würde Seiteneffekte reduzieren.
