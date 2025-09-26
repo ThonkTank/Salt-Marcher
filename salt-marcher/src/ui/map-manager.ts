@@ -81,9 +81,14 @@ export function createMapManager(app: App, options: MapManagerOptions = {}): Map
             return;
         }
         new ConfirmDeleteModal(app, target, async () => {
-            await deleteMapAndTiles(app, target);
-            if (current && current.path === target.path) {
-                await applyChange(null);
+            try {
+                await deleteMapAndTiles(app, target);
+                if (current && current.path === target.path) {
+                    await applyChange(null);
+                }
+            } catch (error) {
+                console.error("Map deletion failed", error);
+                new Notice("Karte konnte nicht gelöscht werden. Siehe Konsole für Details.");
             }
         }).open();
     };
