@@ -1,41 +1,41 @@
 # UI Overview
 
-Der UI-Layer stellt kleine, wiederverwendbare Dialoge bereit, die mehreren Feature-Apps dienen. Alle Komponenten nutzen Obsidian-spezifische Basisklassen und kapseln die UX, sodass Features nur Callback-Logik einhängen müssen.
+The UI layer provides small, reusable dialogs that power multiple feature apps. Every component builds on Obsidian primitives and encapsulates UX flows so feature modules only supply callback logic.
 
 ## Modals
 
-| Modul | Verantwortung | Notizen |
+| Module | Responsibility | Notes |
 | --- | --- | --- |
-| `modals.ts` | Enthält generische Modals ohne Domänenlogik: <br>• `NameInputModal` fragt einen Kartennamen ab, fokussiert das Textfeld automatisch und akzeptiert `Enter` als Shortcut. <br>• `MapSelectModal` erweitert `FuzzySuggestModal`, um Karten (`TFile`) anhand des Dateinamens auszuwählen und gibt das Ergebnis über den Constructor-Callback weiter. | Wird z. B. vom Karten-Editor sowie der Galerie genutzt, um neue Karten anzulegen oder bestehende zu öffnen. |
-| `confirm-delete.ts` | `ConfirmDeleteModal` fordert den Nutzer auf, den Kartennamen zur Bestätigung einzugeben. Der Delete-Button zeigt ein Warning-Styling mit Icon; bei Erfolg/Fehler wird eine `Notice` angezeigt. | Zentraler Sicherheitsdialog für map-delete-Flows. |
+| `modals.ts` | Contains generic modals with no domain logic: <br>• `NameInputModal` asks for a map name, focuses the input automatically, and accepts **Enter** as a shortcut. <br>• `MapSelectModal` extends `FuzzySuggestModal` to pick maps (`TFile`) based on the file name and invokes the constructor callback with the selection. | Used by the cartographer editor and gallery to create or open maps. |
+| `confirm-delete.ts` | `ConfirmDeleteModal` asks the user to re-enter the map name before deletion. The delete button uses warning styling with an icon; success and failure states surface a `Notice`. | Primary safety dialog for map deletion flows. |
 
-## Gemeinsame Map-Flows
+## Shared map flows
 
-| Modul | Verantwortung | Notizen |
+| Module | Responsibility | Notes |
 | --- | --- | --- |
-| `map-workflows.ts` | Bündelt wiederkehrende UI-Schritte der Map-Features: <br>• `applyMapButtonStyle` vereinheitlicht das Flex-Layout der Buttons für Öffnen/Erstellen/Speichern. <br>• `promptMapSelection` kapselt `getAllMapFiles` + `MapSelectModal` inklusive Leerstands-Notice. <br>• `promptCreateMap` nutzt `NameInputModal` und `createHexMapFile` und meldet den Erfolg via `Notice`. <br>• `renderHexMapFromFile` übernimmt den Standard-Renderweg (`getFirstHexBlock` → `parseOptions` → `renderHexMap`) und stellt Fallback-Meldungen bereit. | Map Editor und Map Gallery greifen auf diese Utilities zurück, um identische UX und weniger duplizierten Code sicherzustellen. |
-| `map-header.ts` | Erstellt den gemeinsamen Header mit Titel, Open/Create-Buttons und Save-Dropdown. Kümmert sich um Buttons (`applyMapButtonStyle`), ruft `promptMapSelection`/`promptCreateMap` und kapselt Standard-Save (`saveMap`/`saveMapAs`). Über `secondaryLeftSlot` kann die linke Fläche der zweiten Zeile ersetzt werden; `titleRightSlot` füllt einen neuen Bereich neben der Überschrift (z. B. für Mode-Switches). Cartographer verwendet hier ein Dropdown zur Moduswahl. Das Handle liefert beide Slots, falls Features eigene Controls einsetzen wollen. Optionaler `onSave`-Hook erlaubt Feature-spezifische Persistenz vor/nach dem Speichern. | Wird u. a. vom Map Editor, Travel Guide und Cartographer genutzt, um Header-UX zu teilen und zusätzliche Persistenzschritte einzuhängen (z. B. `persistTokenToTiles`). |
-| `map-manager.ts` | Hält den aktuellen Karten-State und kapselt die Workflows für `Open`, `Create` und `Delete` via `promptMapSelection`, `promptCreateMap`, `ConfirmDeleteModal` sowie `deleteMapAndTiles`. Meldet Änderungen über `onChange` zurück, damit Views Header & Stage synchron aktualisieren können. | Cartographer-Header und verbleibende Galerie-Entry Points nutzen den Manager, um Map-Verwaltung konsistent abzubilden. |
-| `view-container.ts` | Baut einen flexiblen View-Host mit optionaler Kamera (MMB-Pan, Wheel-Zoom) und Overlay-Handling. | Cartographer nutzt den Container als Stage für `renderHexMap`; der Layout Editor kann den gleichen Binding-Namen konsumieren. |
+| `map-workflows.ts` | Groups recurring UI steps in the map feature set: <br>• `applyMapButtonStyle` keeps button layout consistent for Open/Create/Save. <br>• `promptMapSelection` wraps `getAllMapFiles` + `MapSelectModal` and displays an empty-state notice. <br>• `promptCreateMap` reuses `NameInputModal` and `createHexMapFile`, then displays a success notice. <br>• `renderHexMapFromFile` handles the standard render path (`getFirstHexBlock` → `parseOptions` → `renderHexMap`) and provides fallback messaging. | Map Editor and Map Gallery rely on these utilities to stay in sync. |
+| `map-header.ts` | Builds the shared header with title, Open/Create buttons, and Save dropdown. It configures buttons (`applyMapButtonStyle`), calls `promptMapSelection`/`promptCreateMap`, and wraps default save flows (`saveMap`/`saveMapAs`). `secondaryLeftSlot` allows a custom section in the second row, while `titleRightSlot` fills space next to the title (e.g. mode switches). The handle exposes both slots for advanced controls. An optional `onSave` hook lets features run persistence steps before or after saving. | Used by Cartographer, Travel Guide, and Gallery entry points. |
+| `map-manager.ts` | Maintains the current map state and coordinates Open/Create/Delete via `promptMapSelection`, `promptCreateMap`, `ConfirmDeleteModal`, and `deleteMapAndTiles`. Emits changes through `onChange` so views can update headers and stages. | Cartographer header and gallery entry points depend on the manager to provide consistent map management. |
+| `view-container.ts` | Provides a flexible view host with optional camera controls (MMB pan, wheel zoom) and overlay handling. | Cartographer mounts `renderHexMap` within this container; the layout editor consumes the same binding. |
 
-## Such‑Dropdown (Search-dropdown)
+## Search dropdown
 
-Zentraler Baustein: `ui/search-dropdown.ts` mit `enhanceSelectToSearch(select, placeholder)`.
+Central building block: `ui/search-dropdown.ts` with `enhanceSelectToSearch(select, placeholder)`.
 
-- Verhalten
-  - Öffnet beim Fokus stets die Vorschlagsliste (wichtig für schnelle Auswahl), filtert live beim Tippen.
-  - Tastatur: Pfeile navigieren, Enter wählt aus, Escape schließt.
-  - Standard: zeigt bei leerem Text ALLE Optionen; kann pro Select via `select.dataset.sdOpenAll = '0'` deaktiviert werden (z. B. bei Alignment).
-  - Breite: passt sich dem ursprünglichen `select` an (keine feste Standardbreite). Container/Layout bestimmen die finale Breite.
+- Behaviour
+  - Always opens the suggestion list when focused for quick selection, filters live while typing.
+  - Keyboard support: arrow keys navigate, **Enter** confirms, **Escape** closes the menu.
+  - Default behaviour displays all options when the query is empty; per-select overrides can disable this via `select.dataset.sdOpenAll = '0'`.
+  - Width matches the source `select` element, letting the surrounding layout control sizing.
 
-- Einsatz
-  - Durchgängig in Dialogen/Views für längere Optionslisten (Creature/Spells/Regions/Cartographer/Map‑Header) verwendet.
-  - Ersetzt das native `select`, emittiert weiterhin `change` auf dem Original, um bestehende Logik kompatibel zu halten.
+- Usage
+  - Used across dialogs and views with large option sets (creatures/spells/regions/cartographer/map header).
+  - Replaces the native `select` but still dispatches `change` on the original element for compatibility.
 
-## Zusammenspiel mit Feature-Apps
+## Interaction with feature apps
 
-1. **Karten anlegen:** Features öffnen `NameInputModal`, um einen Titel zu sammeln und anschließend `createHexMapFile(...)` aus dem Core aufzurufen.
-2. **Karten auswählen:** `MapSelectModal` bietet eine Fuzzy-Suche über `TFile`-Listen, wie sie von `map-list.ts` geliefert werden.
-3. **Löschbestätigung:** Vor dem Aufruf von `deleteMapAndTiles(...)` bindet die Galerie den `ConfirmDeleteModal` ein, damit versehentliche Löschvorgänge verhindert werden.
+1. **Create maps:** Features open `NameInputModal` to collect a title, then call `createHexMapFile(...)` from the core module.
+2. **Select maps:** `MapSelectModal` offers a fuzzy search across the `TFile` list provided by `map-list.ts`.
+3. **Confirm deletion:** Before invoking `deleteMapAndTiles(...)`, the gallery launches `ConfirmDeleteModal` to prevent accidental removals.
 
-Durch diese Kapselung können UI-Anpassungen (Texte, Styling, UX-Verhalten) zentral gepflegt werden, ohne die Feature-spezifischen Views anfassen zu müssen.
+Centralising these flows allows copy, styling, and UX tweaks to propagate without touching feature-specific views.

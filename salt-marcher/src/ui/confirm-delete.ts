@@ -1,5 +1,6 @@
 // src/ui/confirm-delete.ts
 import { App, Modal, setIcon, Notice, TFile } from "obsidian";
+import { CONFIRM_DELETE_COPY } from "./copy";
 
 export class ConfirmDeleteModal extends Modal {
     private onConfirm: () => Promise<void>;
@@ -17,17 +18,21 @@ export class ConfirmDeleteModal extends Modal {
 
         const name = this.mapFile.basename;
 
-        contentEl.createEl("h3", { text: "Delete map?" });
-        const p = contentEl.createEl("p");
-        p.textContent = `This will delete your map permanently. If you want to proceed anyways, enter “${name}”.`;
+        contentEl.createEl("h3", { text: CONFIRM_DELETE_COPY.title });
+        const message = contentEl.createEl("p");
+        message.textContent = CONFIRM_DELETE_COPY.body(name);
 
         const input = contentEl.createEl("input", {
-            attr: { type: "text", placeholder: name, style: "width:100%;" },
+            attr: {
+                type: "text",
+                placeholder: CONFIRM_DELETE_COPY.inputPlaceholder(name),
+                style: "width:100%;",
+            },
         }) as HTMLInputElement;
 
         const btnRow = contentEl.createDiv({ cls: "modal-button-container" });
-        const cancelBtn = btnRow.createEl("button", { text: "Cancel" });
-        const confirmBtn = btnRow.createEl("button", { text: "Delete" });
+        const cancelBtn = btnRow.createEl("button", { text: CONFIRM_DELETE_COPY.buttons.cancel });
+        const confirmBtn = btnRow.createEl("button", { text: CONFIRM_DELETE_COPY.buttons.confirm });
         setIcon(confirmBtn, "trash");
         confirmBtn.classList.add("mod-warning");
         confirmBtn.disabled = true;
@@ -42,16 +47,16 @@ export class ConfirmDeleteModal extends Modal {
             confirmBtn.disabled = true;
             try {
                 await this.onConfirm();
-                new Notice("Map deleted.");
+                new Notice(CONFIRM_DELETE_COPY.notices.success);
             } catch (e) {
                 console.error(e);
-                new Notice("Deleting map failed.");
+                new Notice(CONFIRM_DELETE_COPY.notices.error);
             } finally {
                 this.close();
             }
         };
 
-        // Fokus
+        // Keep focus on the confirmation input for quicker deletion flows.
         setTimeout(() => input.focus(), 0);
     }
 

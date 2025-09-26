@@ -1,25 +1,26 @@
 // src/ui/map-header.ts
-// Wiederverwendbarer Header für Map-Features (Open/Create/Save + Titel/Dateiname).
+// Reusable header for map-focused features (Open/Create/Save + title/file name).
 
 import { App, Notice, TFile, setIcon } from "obsidian";
 import { applyMapButtonStyle, promptCreateMap, promptMapSelection } from "./map-workflows";
 import { enhanceSelectToSearch } from "./search-dropdown";
 import { saveMap, saveMapAs } from "../core/save";
+import { MAP_HEADER_COPY } from "./copy";
 
 export type MapHeaderSaveMode = "save" | "saveAs";
 
 export type MapHeaderOptions = {
-    /** Überschrift im Header. */
+    /** Header title. */
     title: string;
-    /** Optionales Startfile für die Anzeige. */
+    /** Optional initial file displayed to the user. */
     initialFile?: TFile | null;
-    /** Text, wenn keine Karte selektiert ist. Standard: "—". */
+    /** Fallback label when no map is selected. Default: "—". */
     emptyLabel?: string;
-    /** Optionalen Inhalt für die linke Seite der zweiten Zeile einsetzen. */
+    /** Optional content injected into the left side of the second row. */
     secondaryLeftSlot?: (host: HTMLElement) => void;
-    /** Optionaler Slot rechts neben dem Titel. */
+    /** Optional slot rendered next to the title. */
     titleRightSlot?: (host: HTMLElement) => void;
-    /** Button-Beschriftungen / Notices anpassen. */
+    /** Override button labels / notices. */
     labels?: {
         open?: string;
         create?: string;
@@ -33,54 +34,54 @@ export type MapHeaderOptions = {
         saveSuccess?: string;
         saveError?: string;
     };
-    /** Callback nach dem Öffnen einer vorhandenen Karte. */
+    /** Callback invoked after opening an existing map. */
     onOpen?: (file: TFile) => void | Promise<void>;
-    /** Callback nach Erstellung einer neuen Karte. */
+    /** Callback invoked after creating a new map. */
     onCreate?: (file: TFile) => void | Promise<void>;
-    /** Callback nach bestätigter Löschung. */
+    /** Callback invoked after a deletion was confirmed. */
     onDelete?: (file: TFile) => void | Promise<void>;
     /**
-     * Optionaler Save-Hook. Rückgabewert `true` signalisiert, dass das Speichern
-     * vollständig behandelt wurde und kein Default-Save mehr nötig ist.
+     * Optional save hook. Returning `true` indicates that the handler fully processed
+     * persistence and the default save routine should be skipped.
      */
     onSave?: (mode: MapHeaderSaveMode, file: TFile | null) => void | Promise<void | boolean> | boolean;
 };
 
 export type MapHeaderHandle = {
-    /** Wurzel-Element des Headers. */
+    /** Root element of the header. */
     readonly root: HTMLElement;
-    /** Linker Slot der zweiten Zeile (Map-Name oder Custom-Inhalt). */
+    /** Left slot in the second row (map name or custom content). */
     readonly secondaryLeftSlot: HTMLElement;
-    /** Slot rechts neben dem Titel. */
+    /** Slot rendered to the right of the title. */
     readonly titleRightSlot: HTMLElement;
-    /** Aktualisiert den Dateinamen im Header und merkt sich das aktuelle File. */
+    /** Updates the displayed file name and tracks the current file. */
     setFileLabel(file: TFile | null): void;
-    /** Optional andere Überschrift setzen. */
+    /** Allows features to override the title. */
     setTitle(title: string): void;
-    /** Event-Handler entfernen und DOM säubern. */
+    /** Removes event handlers and detaches the DOM. */
     destroy(): void;
 };
 
 export function createMapHeader(app: App, host: HTMLElement, options: MapHeaderOptions): MapHeaderHandle {
     const labels = {
-        open: options.labels?.open ?? "Open Map",
-        create: options.labels?.create ?? "Create",
-        delete: options.labels?.delete ?? "Delete",
-        save: options.labels?.save ?? "Speichern",
-        saveAs: options.labels?.saveAs ?? "Speichern als",
-        trigger: options.labels?.trigger ?? "Los",
+        open: options.labels?.open ?? MAP_HEADER_COPY.labels.open,
+        create: options.labels?.create ?? MAP_HEADER_COPY.labels.create,
+        delete: options.labels?.delete ?? MAP_HEADER_COPY.labels.delete,
+        save: options.labels?.save ?? MAP_HEADER_COPY.labels.save,
+        saveAs: options.labels?.saveAs ?? MAP_HEADER_COPY.labels.saveAs,
+        trigger: options.labels?.trigger ?? MAP_HEADER_COPY.labels.trigger,
     } as const;
     const notices = {
-        missingFile: options.notices?.missingFile ?? "Keine Karte ausgewählt.",
-        saveSuccess: options.notices?.saveSuccess ?? "Gespeichert.",
-        saveError: options.notices?.saveError ?? "Speichern fehlgeschlagen.",
+        missingFile: options.notices?.missingFile ?? MAP_HEADER_COPY.notices.missingFile,
+        saveSuccess: options.notices?.saveSuccess ?? MAP_HEADER_COPY.notices.saveSuccess,
+        saveError: options.notices?.saveError ?? MAP_HEADER_COPY.notices.saveError,
     } as const;
 
     let currentFile: TFile | null = options.initialFile ?? null;
     let destroyed = false;
 
     const root = host.createDiv({ cls: "sm-map-header" });
-    // Historische Klasse weiterreichen, damit bestehende Styles greifen.
+    // Preserve the legacy class so existing styles continue to apply.
     root.classList.add("map-editor-header");
     Object.assign(root.style, { display: "flex", flexDirection: "column", gap: ".4rem" });
 
@@ -121,8 +122,7 @@ export function createMapHeader(app: App, host: HTMLElement, options: MapHeaderO
         });
     };
 
-    const createBtn = row1.createEl("button");
-    createBtn.append(" ", "+");
+    const createBtn = row1.createEl("button", { text: labels.create });
     setIcon(createBtn, "plus");
     applyMapButtonStyle(createBtn);
     createBtn.onclick = () => {
@@ -174,7 +174,7 @@ export function createMapHeader(app: App, host: HTMLElement, options: MapHeaderO
     const select = row2.createEl("select");
     select.createEl("option", { text: labels.save }).value = "save";
     select.createEl("option", { text: labels.saveAs }).value = "saveAs";
-    enhanceSelectToSearch(select, 'Such-dropdown…');
+    enhanceSelectToSearch(select, MAP_HEADER_COPY.selectPlaceholder);
 
     const triggerBtn = row2.createEl("button", { text: labels.trigger });
     applyMapButtonStyle(triggerBtn);
@@ -202,10 +202,11 @@ export function createMapHeader(app: App, host: HTMLElement, options: MapHeaderO
 
     function setFileLabel(file: TFile | null) {
         currentFile = file;
+        const label = file?.basename ?? options.emptyLabel ?? "—";
         if (nameBox) {
-            nameBox.textContent = file?.basename ?? options.emptyLabel ?? "—";
+            nameBox.textContent = label;
         }
-        secondaryLeftSlot.dataset.fileLabel = file?.basename ?? options.emptyLabel ?? "—";
+        secondaryLeftSlot.dataset.fileLabel = label;
         if (deleteBtn) {
             deleteBtn.disabled = !file;
             deleteBtn.style.opacity = file ? "1" : "0.5";

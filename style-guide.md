@@ -27,8 +27,8 @@ Every README, overview, or wiki page must include the following sections in the 
 1. **Purpose & Audience** – Describe why the document exists and who should read it.
 2. **Directory Map** – Provide a table with three columns: `Path`, `Description`, and `Primary Docs`. Scope the table to the directories (or files) relevant to the document. Use inline links in the `Primary Docs` column to point at deeper documentation.
 3. **Key Workflows** – Outline the principal tasks or processes a reader should follow. Bulleted or numbered lists are acceptable; keep steps outcome-oriented.
-4. **Linked Docs** – Curate a short list of related documentation, prioritizing wiki articles, subsystem READMEs, diagrams, or API references that complement the current document.
-5. **Standards & Conventions** – Summarize the rules, naming schemes, testing expectations, or collaboration agreements that govern the document's scope.
+4. **Linked Docs** – Curate a short list of related documentation, prioritising wiki articles, subsystem READMEs, diagrams, or API references that complement the current document.
+5. **Standards & Conventions** – Summarise the rules, naming schemes, testing expectations, or collaboration agreements that govern the document's scope.
 
 Additional formatting rules:
 - Use Markdown headings (`#`, `##`, `###`) consistently; avoid skipping levels.
@@ -40,5 +40,6 @@ Additional formatting rules:
 ### Runtime UI Copy
 - Use U.S. English for all runtime copy, developer-facing notices, and inline comments. Avoid mixing locales or borrowing untranslated German phrases.
 - Prefer the canonical phrases defined in the [UI terminology reference](salt-marcher/docs/ui/terminology.md); this includes example strings such as `"Select a map before deleting."`, `"Create entry"`, and `"Search the library or enter a name…"`.
-- When adding new UI flows, centralise labels in exported constants (e.g. `MAP_MANAGER_COPY`, `LIBRARY_COPY`) so production code and tests can import a single source of truth.
-- Reference the exact labels in documentation and commit messages to make reviews traceable against the glossary.
+- Define new UI strings in shared copy objects (e.g. `src/ui/copy.ts`, `MAP_MANAGER_COPY`, `LIBRARY_COPY`) so production code and tests import from a single source of truth.
+- Extend both the glossary and the copy module when introducing new phrases, and reference the exact labels in documentation and commit messages to keep reviews traceable.
+- Run `npm test` to execute the language policy suite (`tests/ui/language-policy.test.ts`), which fails if German characters or non-approved locales slip into monitored modules.
