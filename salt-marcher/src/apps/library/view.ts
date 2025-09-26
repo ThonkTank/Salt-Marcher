@@ -10,6 +10,28 @@ import { SpellsRenderer } from "./view/spells";
 import { TerrainsRenderer, describeTerrainsSource } from "./view/terrains";
 import { RegionsRenderer, describeRegionsSource } from "./view/regions";
 
+/**
+ * Authoritative UI copy for the library view. Keep aligned with `docs/ui/terminology.md`.
+ */
+export const LIBRARY_COPY = {
+    title: "Library",
+    searchPlaceholder: "Search the library or enter a name…",
+    createButton: "Create entry",
+    modes: {
+        creatures: "Creatures",
+        spells: "Spells",
+        terrains: "Terrains",
+        regions: "Regions",
+    },
+    sources: {
+        prefix: "Source: ",
+        creatures: "SaltMarcher/Creatures/",
+        spells: "SaltMarcher/Spells/",
+    },
+} as const;
+
+type ModeCopy = typeof LIBRARY_COPY.modes;
+
 export const VIEW_LIBRARY = "salt-library";
 
 export class LibraryView extends ItemView {
@@ -22,7 +44,7 @@ export class LibraryView extends ItemView {
     private searchInput?: HTMLInputElement;
 
     getViewType() { return VIEW_LIBRARY; }
-    getDisplayText() { return "Library"; }
+    getDisplayText() { return LIBRARY_COPY.title; }
     getIcon() { return "library" as any; }
 
     async onOpen() {
@@ -45,31 +67,31 @@ export class LibraryView extends ItemView {
 
     private renderShell() {
         const root = this.contentEl; root.empty();
-        root.createEl("h2", { text: "Library" });
+        root.createEl("h2", { text: LIBRARY_COPY.title });
 
         // Mode header
         const header = root.createDiv({ cls: "sm-lib-header" });
-        const mkBtn = (label: string, m: Mode) => {
+        const mkBtn = (label: ModeCopy[Mode], m: Mode) => {
             const b = header.createEl("button", { text: label });
             this.headerButtons.set(m, b);
             b.onclick = () => { void this.activateMode(m); };
             return b;
         };
-        mkBtn("Creatures", "creatures");
-        mkBtn("Spells", "spells");
-        mkBtn("Terrains", "terrains");
-        mkBtn("Regions", "regions");
+        mkBtn(LIBRARY_COPY.modes.creatures, "creatures");
+        mkBtn(LIBRARY_COPY.modes.spells, "spells");
+        mkBtn(LIBRARY_COPY.modes.terrains, "terrains");
+        mkBtn(LIBRARY_COPY.modes.regions, "regions");
 
         // Search + create
         const bar = root.createDiv({ cls: "sm-cc-searchbar" });
-        const search = bar.createEl("input", { attr: { type: "text", placeholder: "Search or type a name…" } }) as HTMLInputElement;
+        const search = bar.createEl("input", { attr: { type: "text", placeholder: LIBRARY_COPY.searchPlaceholder } }) as HTMLInputElement;
         search.value = this.query;
         search.oninput = () => {
             this.query = search.value;
             this.activeRenderer?.setQuery(this.query);
         };
         this.searchInput = search;
-        const createBtn = bar.createEl("button", { text: "Create" });
+        const createBtn = bar.createEl("button", { text: LIBRARY_COPY.createButton });
         createBtn.onclick = () => { void this.onCreate(search.value.trim()); };
 
         // Source description
@@ -126,10 +148,13 @@ export class LibraryView extends ItemView {
 
     private updateSourceDescription() {
         if (!this.descEl) return;
-        const text = this.mode === "creatures" ? "Source: SaltMarcher/Creatures/" :
-            this.mode === "spells" ? "Source: SaltMarcher/Spells/" :
-                this.mode === "terrains" ? describeTerrainsSource() :
-                    describeRegionsSource();
+        const text = this.mode === "creatures"
+            ? `${LIBRARY_COPY.sources.prefix}${LIBRARY_COPY.sources.creatures}`
+            : this.mode === "spells"
+                ? `${LIBRARY_COPY.sources.prefix}${LIBRARY_COPY.sources.spells}`
+                : this.mode === "terrains"
+                    ? describeTerrainsSource()
+                    : describeRegionsSource();
         this.descEl.setText(text);
     }
 

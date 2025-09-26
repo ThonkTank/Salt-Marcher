@@ -35,4 +35,10 @@ Additional formatting rules:
 - Prefer relative links inside the repository to keep navigation consistent across forks and mirrors.
 - When referencing command sequences or configuration snippets, use fenced code blocks with language hints for readability.
 - Update directory tables and linked references whenever files move to prevent dead links.
-- Runtime UI copy (buttons, notices, placeholders) and accompanying code comments must use English to stay aligned with the Library and UI documentation. Quote the exact labels (e.g. "Create", "Open") when describing workflows.
+- Runtime UI copy (buttons, notices, placeholders) and accompanying code comments must follow the UI language policy below.
+
+### Runtime UI Copy
+- Use U.S. English for all runtime copy, developer-facing notices, and inline comments. Avoid mixing locales or borrowing untranslated German phrases.
+- Prefer the canonical phrases defined in the [UI terminology reference](salt-marcher/docs/ui/terminology.md); this includes example strings such as `"Select a map before deleting."`, `"Create entry"`, and `"Search the library or enter a name…"`.
+- When adding new UI flows, centralise labels in exported constants (e.g. `MAP_MANAGER_COPY`, `LIBRARY_COPY`) so production code and tests can import a single source of truth.
+- Reference the exact labels in documentation and commit messages to make reviews traceable against the glossary.

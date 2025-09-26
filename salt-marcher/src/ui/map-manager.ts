@@ -11,6 +11,20 @@ import {
 import { ConfirmDeleteModal } from "./confirm-delete";
 import { deleteMapAndTiles } from "../core/map-delete";
 
+/**
+ * Authoritative UI copy for map-management notices.
+ * Keep the strings aligned with the terminology reference in `docs/ui/terminology.md`.
+ */
+export const MAP_MANAGER_COPY = {
+    notices: {
+        missingSelection: "Select a map before deleting.",
+        deleteFailed: "Unable to delete the map. Check the developer console for details.",
+    },
+    logs: {
+        deleteFailed: "Map deletion failed",
+    },
+} as const;
+
 export type MapManagerOptions = {
     /** Initial file tracked by the internal state. */
     initialFile?: TFile | null;
@@ -40,7 +54,9 @@ export type MapManagerHandle = {
 
 export function createMapManager(app: App, options: MapManagerOptions = {}): MapManagerHandle {
     const notices = {
-        missingSelection: options.notices?.missingSelection ?? "No map selected.",
+        missingSelection:
+            options.notices?.missingSelection ?? MAP_MANAGER_COPY.notices.missingSelection,
+        deleteFailed: MAP_MANAGER_COPY.notices.deleteFailed,
     } as const;
 
     let current: TFile | null = options.initialFile ?? null;
@@ -87,8 +103,8 @@ export function createMapManager(app: App, options: MapManagerOptions = {}): Map
                     await applyChange(null);
                 }
             } catch (error) {
-                console.error("Map deletion failed", error);
-                new Notice("Could not delete the map. Check the console for details.");
+                console.error(MAP_MANAGER_COPY.logs.deleteFailed, error);
+                new Notice(notices.deleteFailed);
             }
         }).open();
     };
