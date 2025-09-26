@@ -3,7 +3,27 @@ import type {
     CartographerModeLifecycleContext,
 } from "../presenter";
 
-export interface CartographerModeMetadata {
+export type CartographerModeMapInteraction = "none" | "hex-click";
+
+export type CartographerModePersistence = "read-only" | "manual-save";
+
+export type CartographerModeSidebarUsage = "required" | "optional" | "hidden";
+
+export interface CartographerModeCapabilities {
+    readonly mapInteraction: CartographerModeMapInteraction;
+    readonly persistence: CartographerModePersistence;
+    readonly sidebar: CartographerModeSidebarUsage;
+}
+
+export type CartographerModeWithCapabilities<Caps extends CartographerModeCapabilities> = CartographerMode &
+    (Caps["mapInteraction"] extends "hex-click"
+        ? { onHexClick: NonNullable<CartographerMode["onHexClick"]> }
+        : { onHexClick?: never }) &
+    (Caps["persistence"] extends "manual-save"
+        ? { onSave: NonNullable<CartographerMode["onSave"]> }
+        : { onSave?: never });
+
+export interface CartographerModeMetadata<Caps extends CartographerModeCapabilities = CartographerModeCapabilities> {
     readonly id: string;
     readonly label: string;
     readonly summary: string;
@@ -11,16 +31,23 @@ export interface CartographerModeMetadata {
     readonly order?: number;
     readonly source: string;
     readonly version?: string;
+    readonly capabilities: Caps;
 }
 
-export interface CartographerModeProvider {
-    readonly metadata: CartographerModeMetadata;
-    load(): Promise<CartographerMode>;
+export interface CartographerModeProvider<Caps extends CartographerModeCapabilities = CartographerModeCapabilities> {
+    readonly metadata: CartographerModeMetadata<Caps>;
+    load(): Promise<CartographerModeWithCapabilities<Caps>>;
 }
+
+export const defineCartographerModeProvider = <Caps extends CartographerModeCapabilities>(
+    provider: CartographerModeProvider<Caps>,
+): CartographerModeProvider<Caps> => provider;
+
+export type NormalizedCartographerModeMetadata = CartographerModeMetadata<CartographerModeCapabilities>;
 
 type ProviderEntry = {
     readonly provider: CartographerModeProvider;
-    readonly metadata: CartographerModeMetadata;
+    readonly metadata: NormalizedCartographerModeMetadata;
 };
 
 type RegisteredProvider = ProviderEntry & {
@@ -28,7 +55,7 @@ type RegisteredProvider = ProviderEntry & {
 };
 
 export interface CartographerModeRegistryEntry {
-    readonly metadata: CartographerModeMetadata;
+    readonly metadata: NormalizedCartographerModeMetadata;
     readonly mode: CartographerMode;
 }
 
@@ -52,13 +79,55 @@ type CartographerModeRegistryListener = (event: CartographerModeRegistryEvent) =
 const providers = new Map<string, RegisteredProvider>();
 const listeners = new Set<CartographerModeRegistryListener>();
 
-const cloneMetadata = (metadata: CartographerModeMetadata): CartographerModeMetadata => {
-    const keywords = metadata.keywords ? [...metadata.keywords] : undefined;
-    const normalized: CartographerModeMetadata = {
+const MAP_INTERACTIONS: readonly CartographerModeMapInteraction[] = ["none", "hex-click"];
+const PERSISTENCE_MODES: readonly CartographerModePersistence[] = ["read-only", "manual-save"];
+const SIDEBAR_USAGES: readonly CartographerModeSidebarUsage[] = ["required", "optional", "hidden"];
+
+const normalizeCapabilities = (
+    providerId: string,
+    capabilities: CartographerModeCapabilities | undefined,
+): CartographerModeCapabilities => {
+    if (!capabilities) {
+        throw new Error(
+            `[cartographer:mode-registry] provider '${providerId}' must declare capabilities metadata`,
+        );
+    }
+
+    const { mapInteraction, persistence, sidebar } = capabilities as CartographerModeCapabilities;
+
+    if (!MAP_INTERACTIONS.includes(mapInteraction)) {
+        throw new Error(
+            `[cartographer:mode-registry] provider '${providerId}' declared invalid mapInteraction capability '${mapInteraction}'`,
+        );
+    }
+
+    if (!PERSISTENCE_MODES.includes(persistence)) {
+        throw new Error(
+            `[cartographer:mode-registry] provider '${providerId}' declared invalid persistence capability '${persistence}'`,
+        );
+    }
+
+    if (!SIDEBAR_USAGES.includes(sidebar)) {
+        throw new Error(
+            `[cartographer:mode-registry] provider '${providerId}' declared invalid sidebar capability '${sidebar}'`,
+        );
+    }
+
+    return Object.freeze({
+        mapInteraction,
+        persistence,
+        sidebar,
+    } satisfies CartographerModeCapabilities);
+};
+
+const cloneMetadata = (metadata: CartographerModeMetadata): NormalizedCartographerModeMetadata => {
+    const keywords = metadata.keywords ? Object.freeze([...metadata.keywords]) : undefined;
+    const normalized: NormalizedCartographerModeMetadata = Object.freeze({
         ...metadata,
         keywords,
-    };
-    return Object.freeze(normalized);
+        capabilities: normalizeCapabilities(metadata.id, metadata.capabilities),
+    });
+    return normalized;
 };
 
 const normalizeProvider = (provider: CartographerModeProvider): ProviderEntry => {
@@ -77,13 +146,40 @@ const normalizeProvider = (provider: CartographerModeProvider): ProviderEntry =>
         );
     }
 
+    const metadata = cloneMetadata(provider.metadata);
+
     return {
         provider: {
             ...provider,
-            metadata: cloneMetadata(provider.metadata),
+            metadata,
         },
-        metadata: cloneMetadata(provider.metadata),
+        metadata,
     } satisfies ProviderEntry;
+};
+
+const validateModeCapabilities = (
+    mode: CartographerMode,
+    metadata: NormalizedCartographerModeMetadata,
+): void => {
+    const { capabilities, id } = metadata;
+
+    if (capabilities.mapInteraction === "hex-click" && typeof mode.onHexClick !== "function") {
+        throw new Error(
+            `[cartographer:mode-registry] mode '${id}' declares mapInteraction 'hex-click' but does not implement onHexClick()`,
+        );
+    }
+
+    if (capabilities.persistence === "manual-save" && typeof mode.onSave !== "function") {
+        throw new Error(
+            `[cartographer:mode-registry] mode '${id}' declares persistence 'manual-save' but does not implement onSave()`,
+        );
+    }
+
+    if (capabilities.mapInteraction === "none" && typeof mode.onHexClick === "function") {
+        console.warn(
+            `[cartographer:mode-registry] mode '${id}' provides onHexClick(), but its capabilities declare mapInteraction 'none'`,
+        );
+    }
 };
 
 const createLazyModeWrapper = (entry: ProviderEntry): CartographerMode => {
@@ -107,6 +203,7 @@ const createLazyModeWrapper = (entry: ProviderEntry): CartographerMode => {
                             `[cartographer:mode-registry] mode id '${mode.id}' does not match provider id '${metadata.id}'`,
                         );
                     }
+                    validateModeCapabilities(mode, metadata);
                     cached = mode;
                     return mode;
                 })
@@ -166,9 +263,15 @@ const createLazyModeWrapper = (entry: ProviderEntry): CartographerMode => {
             return await invoke("onFileChange", file, handles, ctx);
         },
         async onHexClick(coord, event, ctx) {
+            if (metadata.capabilities.mapInteraction !== "hex-click") {
+                return;
+            }
             return await invokeIfLoaded("onHexClick", coord, event, ctx);
         },
         async onSave(mode, file, ctx) {
+            if (metadata.capabilities.persistence !== "manual-save") {
+                return undefined;
+            }
             return await invokeIfLoaded("onSave", mode, file, ctx);
         },
     } satisfies CartographerMode;
@@ -261,12 +364,16 @@ export const unregisterCartographerModeProvider = (id: string): boolean => {
     return existed;
 };
 
-export const getCartographerModeMetadataSnapshot = (): readonly CartographerModeMetadata[] => {
+export const getCartographerModeMetadataSnapshot = (): readonly NormalizedCartographerModeMetadata[] => {
     return getSortedProviders().map((entry) => entry.metadata);
 };
 
 export const createCartographerModesSnapshot = (): CartographerMode[] => {
     return getSortedProviders().map((entry) => entry.mode);
+};
+
+export const createCartographerModeRegistrySnapshot = (): readonly CartographerModeRegistryEntry[] => {
+    return getRegistryEntries();
 };
 
 export const clearCartographerModeRegistry = (): void => {
