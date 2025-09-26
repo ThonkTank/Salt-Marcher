@@ -38,7 +38,7 @@ tests/app/
 
 ## Offene Punkte
 - Prüfen, ob das Layout-Editor-Plugin mittelfristig weitere Hooks (z. B. Status-Abfragen) bereitstellt, die wir spiegeln möchten.
-- `todo/layout-editor-bridge-review.md` hält den historischen Review-Kontext fest und sollte nach der nächsten Plugin-Version aktualisiert werden, falls sich der Integrationsvertrag erneut ändert.
+- Review-Fortschritte und verbleibende Beobachtungspunkte werden im [Layout-Bridge-Review-Note](../../Notes/layout-editor-bridge-review.md) nachgehalten; bei Änderungen am Fremd-Plugin dort aktualisieren.
 
 ## Weiterführende Ressourcen
 - Lifecycle-Analyse: [`Notes/layout-editor-bridge-review.md`](../../Notes/layout-editor-bridge-review.md)
