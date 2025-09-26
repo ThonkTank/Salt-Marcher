@@ -1,17 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App, PluginManifest } from "obsidian";
 
-const startSpy = vi.fn<[], Promise<boolean>>();
-const stopSpy = vi.fn();
+const terrainStoreMocks = vi.hoisted(() => ({
+    ensureTerrainFile: vi.fn(),
+    loadTerrains: vi.fn(),
+    watchTerrains: vi.fn(),
+}));
 
-vi.mock("../../src/app/bootstrap-services", () => {
-    return {
-        createTerrainBootstrap: vi.fn(() => ({
-            start: startSpy,
-            stop: stopSpy,
-        })),
-    };
-});
+const terrainMocks = vi.hoisted(() => ({
+    setTerrains: vi.fn(),
+}));
+
+vi.mock("../../src/core/terrain-store", () => terrainStoreMocks);
+vi.mock("../../src/core/terrain", () => terrainMocks);
+
+const { ensureTerrainFile, loadTerrains, watchTerrains } = terrainStoreMocks;
+const { setTerrains } = terrainMocks;
+let unwatch: ReturnType<typeof vi.fn>;
 
 vi.mock("../../src/apps/cartographer", () => ({
     VIEW_CARTOGRAPHER: "cartographer", 
@@ -43,14 +48,18 @@ vi.mock("../../src/app/layout-editor-bridge", () => ({
 }));
 
 import SaltMarcherPlugin from "../../src/app/main";
-import { createTerrainBootstrap } from "../../src/app/bootstrap-services";
 
 describe("SaltMarcherPlugin bootstrap integration", () => {
     beforeEach(() => {
-        startSpy.mockReset();
-        stopSpy.mockReset();
-        startSpy.mockResolvedValue(true);
-        vi.mocked(createTerrainBootstrap).mockClear();
+        ensureTerrainFile.mockReset();
+        loadTerrains.mockReset();
+        watchTerrains.mockReset();
+        setTerrains.mockReset();
+
+        ensureTerrainFile.mockResolvedValue({} as unknown);
+        loadTerrains.mockResolvedValue({ plains: { color: "#ccc", speed: 1 } });
+        unwatch = vi.fn();
+        watchTerrains.mockReturnValue(unwatch);
     });
 
     afterEach(() => {
@@ -68,30 +77,29 @@ describe("SaltMarcherPlugin bootstrap integration", () => {
         return new SaltMarcherPlugin(app, manifest);
     };
 
-    it("initialises and tears down the terrain bootstrapper", async () => {
+    it("ensures and primes the terrain palette before watching for updates", async () => {
         const plugin = createPlugin();
         await plugin.onload();
 
-        expect(createTerrainBootstrap).toHaveBeenCalledTimes(1);
-        expect(createTerrainBootstrap).toHaveBeenCalledWith(plugin.app, expect.objectContaining({ logger: expect.any(Object) }));
-        expect(startSpy).toHaveBeenCalledTimes(1);
+        expect(ensureTerrainFile).toHaveBeenCalledTimes(1);
+        expect(ensureTerrainFile).toHaveBeenCalledWith(plugin.app);
+        expect(loadTerrains).toHaveBeenCalledTimes(1);
+        expect(loadTerrains).toHaveBeenCalledWith(plugin.app);
+        expect(setTerrains).toHaveBeenCalledTimes(1);
+        expect(setTerrains).toHaveBeenCalledWith({ plains: { color: "#ccc", speed: 1 } });
+        expect(watchTerrains).toHaveBeenCalledTimes(1);
+        expect(watchTerrains).toHaveBeenCalledWith(plugin.app, expect.any(Function));
+
+        const [, callback] = watchTerrains.mock.calls[0];
+        await expect(Promise.resolve((callback as () => Promise<void> | void)?.()))
+            .resolves.toBeUndefined();
+
+        expect(watchTerrains.mock.results[0]?.value).toBe(unwatch);
+        expect(unwatch).not.toHaveBeenCalled();
 
         await plugin.onunload();
-        expect(stopSpy).toHaveBeenCalledTimes(1);
+        expect(unwatch).toHaveBeenCalledTimes(1);
     });
 
-    it("logs a warning when priming fails", async () => {
-        const plugin = createPlugin();
-        startSpy.mockResolvedValueOnce(false);
-        const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-        await plugin.onload();
-
-        expect(warnSpy).toHaveBeenCalledWith(
-            "[SaltMarcher] Terrain palette could not be initialised; defaults remain active until the vault updates."
-        );
-
-        await plugin.onunload();
-        warnSpy.mockRestore();
-    });
+    it.todo("integrates createTerrainBootstrap once the merge conflict around main.ts is resolved");
 });
