@@ -18,21 +18,21 @@ The regions store owns the Obsidian integration for the adventuring regions list
 
 ## File Lifecycle – Current Behaviour
 1. Delete `SaltMarcher/Regions.md` in the vault (e.g. via Obsidian’s file browser).
-2. The watcher emits `salt:regions-updated` and prints the warning
-   `Salt Marcher regions store detected Regions.md deletion; the file is not auto-recreated and must be restored manually.`
-3. No attempt is made to recreate the Markdown file; subsequent `loadRegions` calls will re-run `ensureRegionsFile`, but only when explicitly invoked by the UI.
+2. The watcher logs `Salt Marcher regions store detected Regions.md deletion; attempting automatic recreation.` and calls
+   `ensureRegionsFile` immediately.
+3. On success the file is rebuilt with the standard scaffold, a `Notice` informs the user (`Regions.md wurde automatisch neu
+   erstellt.`), and downstream listeners receive a single debounced `salt:regions-updated` signal.
+4. If recreation fails the watcher logs an error, shows `Regions.md konnte nicht automatisch neu erstellt werden. Bitte
+   manuell wiederherstellen.`, and still emits the debounced workspace notification so UIs can surface error states.
 
-### Observed Risks
-- **Data loss window:** Until another consumer calls `ensureRegionsFile`, the Regions list is gone, including frontmatter hints and usage examples.
-- **Silent consumer failures:** Callers that expect the fenced block to exist can receive an empty list and render blank state without explaining why.
-- **No regression coverage:** There is no automated test that asserts deletion recovery, making it easy to introduce regressions.
+### Debounced Notifications
+Obsidian fires rapid `modify`+`delete` sequences when files are recreated. The watcher therefore wraps the workspace trigger and
+optional `onChange` callback in a 200 ms debounce window to collapse these bursts into a single refresh. This keeps palette
+reloads cheap for the Cartographer UI while still guaranteeing eventual consistency after file churn.
 
-## Improvement Options
-The [Regions store resilience to-do](../../../todo/regions-store-resilience.md) captures the follow-up work. Proposed mitigations include:
-- Automatically recreating the Markdown file inside the delete handler to close the data-loss window.
-- Debouncing rapid modify/delete oscillations before notifying listeners to avoid redundant reload cycles.
-- Adding integration tests (e.g. via a mocked vault) that cover deletion, recreation, and listener behaviour.
-- Surfacing a user-facing notification in addition to the console warning for better UX feedback.
+### Regression Coverage
+`tests/core/regions-store.test.ts` mocks the vault API to assert the recreation path, the error branch, and the debounced
+notification contract. These tests prevent future refactors from regressing the automatic safeguards introduced here.
 
 ## References
 - Code: [`src/core/regions-store.ts`](../../src/core/regions-store.ts)

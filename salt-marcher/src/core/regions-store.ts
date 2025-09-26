@@ -1,5 +1,5 @@
 // src/core/regions-store.ts
-import { App, TAbstractFile, TFile, normalizePath } from "obsidian";
+import { App, Notice, TAbstractFile, TFile, normalizePath } from "obsidian";
 
 export const REGIONS_FILE = "SaltMarcher/Regions.md";
 const BLOCK_RE = /```regions\s*([\s\S]*?)```/i;
@@ -80,27 +80,54 @@ export async function saveRegions(app: App, list: Region[]): Promise<void> {
 }
 
 export function watchRegions(app: App, onChange: () => void): () => void {
+    const targetPath = normalizePath(REGIONS_FILE);
+
     const emitUpdate = () => {
         (app.workspace as any).trigger?.("salt:regions-updated");
         onChange?.();
     };
 
-    const handleModify = (file: TFile) => {
-        if (file.path !== REGIONS_FILE) return;
-        emitUpdate();
+    // debounce vault notifications because Obsidian emits modify+delete pairs
+    // when a file is recreated; we only want to refresh downstream consumers once
+    let notifyTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleUpdate = () => {
+        if (notifyTimer) clearTimeout(notifyTimer);
+        notifyTimer = setTimeout(() => {
+            notifyTimer = null;
+            emitUpdate();
+        }, 200);
     };
 
-    const handleDelete = (file: TAbstractFile) => {
-        if (!(file instanceof TFile) || file.path !== REGIONS_FILE) return;
+    const handleModify = (file: TFile) => {
+        if (normalizePath(file.path) !== targetPath) return;
+        scheduleUpdate();
+    };
+
+    const handleDelete = async (file: TAbstractFile) => {
+        if (!(file instanceof TFile) || normalizePath(file.path) !== targetPath) return;
         console.warn(
-            "Salt Marcher regions store detected Regions.md deletion; the file is not auto-recreated and must be restored manually."
+            "Salt Marcher regions store detected Regions.md deletion; attempting automatic recreation."
         );
-        emitUpdate();
+        try {
+            await ensureRegionsFile(app);
+            new Notice("Regions.md wurde automatisch neu erstellt.");
+        } catch (error) {
+            console.error(
+                "Salt Marcher regions store failed to recreate Regions.md automatically.",
+                error
+            );
+            new Notice("Regions.md konnte nicht automatisch neu erstellt werden. Bitte manuell wiederherstellen.");
+        }
+        scheduleUpdate();
     };
 
     app.vault.on("modify", handleModify);
     app.vault.on("delete", handleDelete);
     return () => {
+        if (notifyTimer) {
+            clearTimeout(notifyTimer);
+            notifyTimer = null;
+        }
         app.vault.off("modify", handleModify);
         app.vault.off("delete", handleDelete);
     };
