@@ -2,9 +2,21 @@
 import { ItemView, WorkspaceLeaf, TFile } from "obsidian";
 import type { App } from "obsidian";
 import { CartographerPresenter } from "./presenter";
+import { provideCartographerModes } from "./mode-registry";
 
 export const VIEW_TYPE_CARTOGRAPHER = "cartographer-view";
 export const VIEW_CARTOGRAPHER = VIEW_TYPE_CARTOGRAPHER;
+
+const createProvideModes = () => {
+    return () => {
+        try {
+            return provideCartographerModes();
+        } catch (error) {
+            console.error("[cartographer] Failed to resolve mode registry", error);
+            return [];
+        }
+    };
+};
 
 export class CartographerView extends ItemView {
     presenter: CartographerPresenter;
@@ -13,7 +25,9 @@ export class CartographerView extends ItemView {
 
     constructor(leaf: WorkspaceLeaf) {
         super(leaf);
-        this.presenter = new CartographerPresenter(this.app as App);
+        this.presenter = new CartographerPresenter(this.app as App, {
+            provideModes: createProvideModes(),
+        });
     }
 
     getViewType(): string {
