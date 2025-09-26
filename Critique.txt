@@ -1,0 +1,53 @@
+# Salt Marcher Plugin – Strukturanalyse
+
+## 1. Architektur & Modularität
+### 1.1 Einstiegs- und Registrierungslogik
+- In `src/app/main.ts` wird das eigentliche Plugin registriert, gleichzeitig existiert in `src/apps/cartographer/index.ts` weiterhin eine komplette `CartographerPlugin`-Klasse inklusive eigener Ribbon- und Command-Registrierung.【F:salt-marcher/src/app/main.ts†L16-L74】【F:salt-marcher/src/apps/cartographer/index.ts†L54-L88】 Diese Dopplung erzeugt ein zweites (nicht verwendetes) Entry-Point-Objekt und verwirrt den Build. Sie sollte entfernt oder in dedizierte „feature module“-Funktionen zerlegt werden.
+- `CartographerView` kapselt sowohl View-API als auch Dateiauswahl, während `mountCartographer` erneut State hält. Eine klare Trennung (z. B. Presenter vs. View) fehlt, wodurch Testbarkeit und Erweiterbarkeit leiden.【F:salt-marcher/src/apps/cartographer/index.ts†L9-L52】
+
+### 1.2 Cartographer-Shell
+- `mountCartographer` ist ein 300‑Zeilen-Monolith, der UI-Aufbau, Modusmanagement, Dateiladen, Render-Lifecycle und Dropdown-Interaktionen bündelt.【F:salt-marcher/src/apps/cartographer/view-shell.ts†L51-L218】 Diese Vermischung erschwert Wiederverwendung und erschafft komplexe Seiteneffekte. Empfohlen ist die Aufteilung in kleinere Services (ModeRegistry, MapLoader, HeaderController) mit klaren Verantwortlichkeiten.
+- Die Modi sind hart im Shell-Code verdrahtet (`createTravelGuideMode`, `createEditorMode`, `createInspectorMode`).【F:salt-marcher/src/apps/cartographer/view-shell.ts†L92-L96】 Erweiterungen oder Konfigurationen erfordern Codeänderungen statt deklarativer Registrierung.
+- `modeChange` verkettet Promises manuell, aber eine Fehlerblase kann den Zustand inkonsistent lassen (z. B. nach Throw bleibt `modeChange` ungelöst). Eine State-Machine oder Task-Queue mit finally-Block wäre robuster.【F:salt-marcher/src/apps/cartographer/view-shell.ts†L121-L147】
+
+### 1.3 Map-Layer-Adapter
+- `createMapLayer` akzeptiert `opts: any` und greift mehrfach auf `handles` via `as any` zu.【F:salt-marcher/src/apps/cartographer/travel/ui/map-layer.ts†L21-L44】 Dadurch wird der Typschutz der `HexOptions` bzw. `RenderHandles` aufgehoben. Ein explizites Interface für die benötigten Methoden (inkl. `ensurePolys`) wäre nötig.
+
+### 1.4 Travel-Mode-Kapselung
+- `createTravelGuideMode` mischt UI-Aufbau, Domain-Logik und File-spezifische Lebenszyklen in einer Funktion. Mehrere interne Closures (`disposeInteractions`, `cleanupFile`) greifen auf geteilten Mutations-State zu, was Fehleranfälligkeit erhöht.【F:salt-marcher/src/apps/cartographer/modes/travel-guide.ts†L20-L189】 Eine klarere Aufteilung (z. B. separate Controller-Klasse für Drag/Context-Menu) würde Seiteneffekte reduzieren.
+- Terrain-Pflege (`ensureTerrains`) lädt synchron erneut die Palette, obwohl das Plugin beim Start bereits `setTerrains` ausführt. Die Flag-basierte Kurzschlusslogik ( `terrainsReady` ) verhindert spätere Aktualisierungen, falls der globale Store anderweitig überschrieben wird.【F:salt-marcher/src/apps/cartographer/modes/travel-guide.ts†L63-L103】 Stattdessen sollte der Modus Events des Terrain-Stores hören.
+
+### 1.5 Library-View
+- `LibraryView` implementiert vier funktional unterschiedliche Oberflächen innerhalb eines einzelnen Views, ohne Sub-Komponenten oder Strategie-Pattern. Der Codepfad enthält mehrfach duplizierte Render-Logik für Creatures und Spells.【F:salt-marcher/src/apps/library/view.ts†L128-L152】 Das erschwert Erweiterungen (z. B. weitere Asset-Typen).
+- Das Feld `cleanups` ist vorbereitet, wird aber nie befüllt.【F:salt-marcher/src/apps/library/view.ts†L16-L45】 Dies deutet auf halbfertige Abstraktionen hin; entweder Cleanup-Hooks implementieren oder das Feld entfernen.
+
+## 2. Funktionalität & Datenfluss
+### 2.1 Hex-Rendering
+- `renderHexMap` berechnet Bounding-Boxes (`bboxOf`), nutzt sie aber nicht, wenn neue Koordinaten via `ensurePolys` nachgeladen werden. Dadurch erweitert sich die ViewBox nie und neu erzeugte Hexes außerhalb der Start-Bounds bleiben abgeschnitten.【F:salt-marcher/src/core/hex-mapper/hex-render.ts†L118-L142】【F:salt-marcher/src/core/hex-mapper/hex-render.ts†L247-L254】 Der Renderer sollte bei jedem `addHex` die ViewBox anhand der BBox erweitern.
+- Das Rückgabeobjekt `destroy` entfernt lediglich das SVG, löst aber die von `attachCameraControls` registrierten Listener (inkl. `window.blur`) nicht.【F:salt-marcher/src/core/hex-mapper/hex-render.ts†L105-L111】【F:salt-marcher/src/core/hex-mapper/hex-render.ts†L342-L345】 Das führt nach einigen Mount/Unmount-Zyklen zu Leaks.
+
+### 2.2 Eingaben & Persistenz
+- Der Pointer-Paint-Workflow in `renderHexMap` markiert Hexes als „besucht“, aber aufrufende Tools müssen Events canceln, damit kein Default-Write ausgeführt wird.【F:salt-marcher/src/core/hex-mapper/hex-render.ts†L256-L331】 Das implizite Protokoll (cancel → Tool übernimmt) ist fehleranfällig; es fehlen klar dokumentierte Hooks.
+- Terrain-Änderungen im Library-View speichern jede Eingabe unmittelbar (`void this.commitTerrains()`), was pro Tastendruck eine Vault-Modifikation auslöst.【F:salt-marcher/src/apps/library/view.ts†L175-L185】 Ein Debounce oder „Speichern“-Button würde IO-Last und Race-Conditions reduzieren.
+
+### 2.3 Ereignisverkettungen
+- `watchTerrains` triggert bei Datei-Delete lediglich `setTerrains` und das Workspace-Event. Sollte `Terrains.md` gelöscht werden, fehlt ein Neuaufbau (z. B. via `ensureTerrainFile`) bis zum nächsten `loadTerrains`-Aufruf. Der Watcher sollte den Ensure-Schritt selbst ausführen.【F:salt-marcher/src/core/terrain-store.ts†L41-L73】
+- `createTravelGuideMode` importiert `getRightLeaf` und `VIEW_ENCOUNTER` erst bei Encounter. Fehlschläge (z. B. Modul nicht verfügbar) werden nicht behandelt, sodass Events stumm scheitern.【F:salt-marcher/src/apps/cartographer/modes/travel-guide.ts†L132-L159】 Eine vorgezogene Initialisierung oder sichtbare Fehlerbehandlung wäre sinnvoll.
+
+## 3. Robustheit & Fehlertoleranz
+- `switchMode` verlässt sich auf eine geteilte `modeChange`-Promise. Wird `destroy` während eines langen `onEnter` ausgeführt, verbleibt `modeChange` in pending und verhindert weitere Wechsel. Ein Abbruchsignal (AbortController) sollte verwendet werden.【F:salt-marcher/src/apps/cartographer/view-shell.ts†L121-L147】
+- `renderHexMap` speichert beim Default-Click ein Tile über `saveTile`, selbst wenn eine externe Logik bereits ein `CustomEvent` canceln wollte. Das führt zu ungewollten Dateianlagen, wenn ein Tool das Event vergisst zu canceln.【F:salt-marcher/src/core/hex-mapper/hex-render.ts†L256-L272】 Ein expliziter Rückgabewert des Tool-Handlers (statt rely on cancel) würde sicherer funktionieren.
+- `MapManager.deleteCurrent` ruft `deleteMapAndTiles` ohne Fehlerbehandlung; Exceptions aus dem Dateisystem schlagen direkt in die Modal-Callback-Promise und bleiben unbeobachtet.【F:salt-marcher/src/ui/map-manager.ts†L45-L71】 Hier sollte try/catch + Notice eingefügt werden.
+
+## 4. Sauberkeit & Codequalität
+- Mehrere Dateien enthalten ungenutzte Importe (`getCenterLeaf`, `saveTile`, `TileCoord`) oder Variablen (`commit` in `LibraryView`).【F:salt-marcher/src/core/hex-mapper/hex-render.ts†L3-L7】【F:salt-marcher/src/apps/library/view.ts†L175-L186】 Dies deutet auf fehlende Linter-Checks (z. B. `noUnusedLocals`).
+- Namensgebung und Kommentare wechseln zwischen Englisch und Deutsch (z. B. `sm-cartographer__panel` vs. deutschsprachige Notices), was Konsistenz und Lesbarkeit beeinträchtigt.【F:salt-marcher/src/apps/cartographer/modes/editor.ts†L64-L117】【F:salt-marcher/src/apps/library/view.ts†L93-L152】
+- Dateien wie `renderHexMap` überschreiten 300 Zeilen und beinhalten sowohl Rendering als auch Input-Handling. Ein Aufsplitten (Renderer, InteractionController) würde die „<500 Zeilen“-Vorgabe des Projekt-Guides unterstützen.【F:salt-marcher/src/core/hex-mapper/hex-render.ts†L38-L345】
+
+## 5. Empfohlene Maßnahmen
+1. **Plugin-Bootstrap bereinigen:** Die doppelte `CartographerPlugin`-Klasse entfernen und `mountCartographer` in klar getrennte Services aufteilen.
+2. **Renderer refaktorieren:** `renderHexMap` in Renderer-, Interaction- und Camera-Module zerlegen; ViewBox dynamisch erweitern und Camera-Cleanup in `destroy` integrieren.
+3. **Mode-System modularisieren:** Eine zentrale Mode-Registry mit Abbruch- und Fehler-Handling einführen; Modes sollten eigene Klassen/Instanzen erhalten.
+4. **Library-Persistenz entschärfen:** Terrains/Regions mit „Apply“-Button oder Debounce speichern, damit Vault-Operationen gebündelt werden.
+5. **Tool-API klarer definieren:** Statt Event-Cancel-Pattern eine typsichere Schnittstelle (z. B. `MapInteractionDelegate`) anbieten, damit Tools deterministisch entscheiden können, ob Standardaktionen ausgeführt werden.
+6. **Linting & CI erweitern:** `tsconfig` um `noUnusedLocals`/`noUnusedParameters` ergänzen und Prettier/ESLint einsetzen, um Dead Code frühzeitig zu entdecken.
