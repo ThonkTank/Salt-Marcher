@@ -23,5 +23,4 @@ docs/core/
 - Richtlinien zur Dokumentation: [Style Guide](../../../style-guide.md).
 
 ## To-Do
-- [Regions store resilience](../../../todo/regions-store-resilience.md) – Regions-Datei nach Löschereignissen robuster neu aufbauen und Tests etablieren.
-- Siehe außerdem das zentrale [`todo/`](../../../todo/README.md) für bereichsübergreifende Backlog-Einträge.
+Derzeit keine core-spezifischen Backlog-Einträge. Siehe das zentrale [`todo/`](../../../todo/README.md) für bereichsübergreifende Aufgaben.
