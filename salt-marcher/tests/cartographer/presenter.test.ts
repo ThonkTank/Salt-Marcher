@@ -8,6 +8,7 @@ import {
 import type {
     CartographerShellHandle,
     CartographerShellOptions,
+    ModeSelectContext,
 } from "../../src/apps/cartographer/view-shell";
 import type { MapManagerHandle } from "../../src/ui/map-manager";
 import type { HexOptions } from "../../src/core/options";
@@ -100,6 +101,22 @@ const createMapManagerFactory = () =>
 
 const appStub = { workspace: {} } as unknown as App;
 
+type Deferred<T> = {
+    promise: Promise<T>;
+    resolve: (value: T | PromiseLike<T>) => void;
+    reject: (reason?: unknown) => void;
+};
+
+const createDeferred = <T>(): Deferred<T> => {
+    let resolve!: (value: T | PromiseLike<T>) => void;
+    let reject!: (reason?: unknown) => void;
+    const promise = new Promise<T>((res, rej) => {
+        resolve = res;
+        reject = rej;
+    });
+    return { promise, resolve, reject };
+};
+
 describe("CartographerPresenter", () => {
     it("switches modes and performs lifecycle hooks", async () => {
         const shell = createShellStub();
@@ -153,6 +170,49 @@ describe("CartographerPresenter", () => {
         expect(shell.setModeLabel).toHaveBeenLastCalledWith("Mode B");
     });
 
+    it("skips lifecycle when switch is cancelled before execution", async () => {
+        const shell = createShellStub();
+
+        const modeA: CartographerMode = {
+            id: "a",
+            label: "Mode A",
+            onEnter: vi.fn(),
+            onExit: vi.fn(),
+            onFileChange: vi.fn(),
+        };
+
+        const modeB: CartographerMode = {
+            id: "b",
+            label: "Mode B",
+            onEnter: vi.fn(),
+            onExit: vi.fn(),
+            onFileChange: vi.fn(),
+        };
+
+        const presenter = new CartographerPresenter(appStub, {
+            createShell: shell.factory,
+            createMapManager: createMapManagerFactory(),
+            createMapLayer: vi.fn(async () => {
+                throw new Error("layer should not be created in this scenario");
+            }),
+            loadHexOptions: vi.fn(async () => null as HexOptions | null),
+            provideModes: () => [modeA, modeB],
+        });
+
+        await presenter.onOpen(shell.host, null);
+
+        const controller = new AbortController();
+        controller.abort();
+        const context: ModeSelectContext = { signal: controller.signal };
+
+        await presenter.setMode("b", context);
+
+        expect(modeA.onExit).not.toHaveBeenCalled();
+        expect(modeB.onEnter).not.toHaveBeenCalled();
+        expect(shell.setModeActive).not.toHaveBeenLastCalledWith("b");
+        expect(shell.setModeLabel).not.toHaveBeenLastCalledWith("Mode B");
+    });
+
     it("loads map data when file changes and notifies active mode", async () => {
         const shell = createShellStub();
         const file: TFile = { path: "Maps/alpha.md", basename: "alpha" } as TFile;
@@ -196,5 +256,86 @@ describe("CartographerPresenter", () => {
         expect(receivedHandles).toBe(handles);
         expect(typeof (ctx as CartographerModeContext).getOptions).toBe("function");
         expect(shell.setOverlay).toHaveBeenLastCalledWith(null);
+    });
+
+    it("destroys pending map layer when aborted switch completes", async () => {
+        const shell = createShellStub();
+        const file: TFile = { path: "Maps/beta.md", basename: "beta" } as TFile;
+        const initialLayer: MapLayer = {
+            handles: { initial: true } as unknown as RenderHandles,
+            polyToCoord: new WeakMap(),
+            ensurePolys: vi.fn(),
+            centerOf: vi.fn(),
+            destroy: vi.fn(),
+        };
+        const pendingLayer: MapLayer = {
+            handles: { pending: true } as unknown as RenderHandles,
+            polyToCoord: new WeakMap(),
+            ensurePolys: vi.fn(),
+            centerOf: vi.fn(),
+            destroy: vi.fn(),
+        };
+
+        let deferredLayer: Deferred<MapLayer> | null = null;
+        const createLayer = vi.fn(async () => {
+            if (deferredLayer) {
+                const { promise } = deferredLayer;
+                deferredLayer = null;
+                return await promise;
+            }
+            return initialLayer;
+        });
+
+        const loadHexOptions = vi.fn(async () => ({ hexSize: 1 } as unknown as HexOptions));
+
+        const modeA: CartographerMode = {
+            id: "a",
+            label: "Mode A",
+            onEnter: vi.fn(),
+            onExit: vi.fn(),
+            onFileChange: vi.fn(),
+        };
+
+        const enterDeferred = createDeferred<void>();
+        const modeBOnFileChange = vi.fn();
+
+        const modeB: CartographerMode = {
+            id: "b",
+            label: "Mode B",
+            onEnter: vi.fn(() => enterDeferred.promise),
+            onExit: vi.fn(),
+            onFileChange: modeBOnFileChange,
+        };
+
+        const presenter = new CartographerPresenter(appStub, {
+            createShell: shell.factory,
+            createMapManager: createMapManagerFactory(),
+            createMapLayer: createLayer,
+            loadHexOptions,
+            provideModes: () => [modeA, modeB],
+        });
+
+        await presenter.onOpen(shell.host, null);
+
+        await presenter.setFile(file);
+        expect(createLayer).toHaveBeenCalledTimes(1);
+
+        const controller = new AbortController();
+        const switchPromise = presenter.setMode("b", { signal: controller.signal });
+
+        // trigger a fresh render while the switch is in flight
+        deferredLayer = createDeferred<MapLayer>();
+        const secondRender = presenter.setFile(file);
+
+        controller.abort();
+
+        deferredLayer!.resolve(pendingLayer);
+        enterDeferred.resolve();
+
+        await switchPromise;
+        await secondRender;
+
+        expect(pendingLayer.destroy).toHaveBeenCalledTimes(1);
+        expect(modeBOnFileChange).not.toHaveBeenCalled();
     });
 });

@@ -15,6 +15,7 @@ import {
     type CartographerShellHandle,
     type CartographerShellMode,
     type CartographerShellOptions,
+    type ModeSelectContext,
 } from "./view-shell";
 import type { MapHeaderSaveMode } from "../../ui/map-header";
 
@@ -85,6 +86,8 @@ export class CartographerPresenter {
     private loadToken = 0;
     private isMounted = false;
     private requestedFile: TFile | null | undefined = undefined;
+    private modeTransitionSeq = 0;
+    private currentTransition: { id: number; signal: AbortSignal | null } | null = null;
 
     constructor(app: App, deps?: Partial<CartographerPresenterDeps>) {
         this.app = app;
@@ -109,8 +112,8 @@ export class CartographerPresenter {
             initialFile,
             modes: shellModes,
             callbacks: {
-                onModeSelect: (id) => {
-                    void this.setMode(id);
+                onModeSelect: (id, context) => {
+                    void this.setMode(id, context);
                 },
                 onOpen: async (file) => {
                     await this.mapManager?.setFile(file);
@@ -221,31 +224,87 @@ export class CartographerPresenter {
         }
     }
 
-    async setMode(id: string): Promise<void> {
+    async setMode(id: string, ctx?: ModeSelectContext): Promise<void> {
         const next = this.modes.find((mode) => mode.id === id) ?? this.modes[0];
         if (!next) return;
-        if (this.activeMode?.id === next.id) {
-            this.shell?.setModeActive(next.id);
-            this.shell?.setModeLabel(next.label);
-            return;
-        }
-        const ctx = this.modeCtx;
-        this.modeChange = this.modeChange.then(async () => {
-            try {
-                await this.activeMode?.onExit();
-            } catch (err) {
-                console.error("[cartographer] mode exit failed", err);
+        const transition = {
+            id: ++this.modeTransitionSeq,
+            signal: ctx?.signal ?? null,
+        } as const;
+
+        const runModeChange = async () => {
+            this.currentTransition = transition;
+            const isAborted = () => transition.signal?.aborted ?? false;
+
+            const previous = this.activeMode;
+            if (previous?.id === next.id) {
+                if (isAborted()) return;
+                this.shell?.setModeActive(next.id);
+                this.shell?.setModeLabel(next.label);
+                return;
             }
+
+            if (isAborted()) return;
+
+            if (previous) {
+                try {
+                    await previous.onExit();
+                } catch (err) {
+                    console.error("[cartographer] mode exit failed", err);
+                }
+            }
+
+            this.activeMode = null;
+
+            if (isAborted()) return;
+
+            const modeCtx = this.modeCtx;
+
             this.activeMode = next;
+
+            if (isAborted()) {
+                this.activeMode = null;
+                return;
+            }
+
             this.shell?.setModeActive(next.id);
             this.shell?.setModeLabel(next.label);
-            try {
-                await next.onEnter(ctx);
-                await next.onFileChange(this.currentFile, this.mapLayer?.handles ?? null, ctx);
-            } catch (err) {
-                console.error("[cartographer] mode enter failed", err);
+
+            if (isAborted()) {
+                this.activeMode = null;
+                return;
             }
-        });
+
+            try {
+                await next.onEnter(modeCtx);
+            } catch (err) {
+                if (!isAborted()) {
+                    console.error("[cartographer] mode enter failed", err);
+                }
+            }
+
+            if (isAborted()) {
+                this.activeMode = null;
+                return;
+            }
+
+            try {
+                await next.onFileChange(this.currentFile, this.mapLayer?.handles ?? null, modeCtx);
+            } catch (err) {
+                if (!isAborted()) {
+                    console.error("[cartographer] mode file change failed", err);
+                }
+            }
+        };
+
+        this.modeChange = this.modeChange
+            .then(runModeChange)
+            .finally(() => {
+                if (this.currentTransition === transition) {
+                    this.currentTransition = null;
+                }
+            });
+
         await this.modeChange;
     }
 
@@ -259,12 +318,16 @@ export class CartographerPresenter {
 
         if (!this.shell) return;
         const ctx = this.modeCtx;
+        const transition = this.currentTransition;
+        const isTransitionAborted = () => transition?.signal?.aborted ?? false;
 
         if (!this.currentFile) {
             this.shell.clearMap();
             this.shell.setOverlay("Keine Karte ausgewählt.");
             this.currentOptions = null;
-            await this.activeMode?.onFileChange(null, null, ctx);
+            if (!isTransitionAborted()) {
+                await this.activeMode?.onFileChange(null, null, ctx);
+            }
             return;
         }
 
@@ -279,7 +342,9 @@ export class CartographerPresenter {
             this.shell.clearMap();
             this.shell.setOverlay("Kein hex3x3-Block in dieser Datei.");
             this.currentOptions = null;
-            await this.activeMode?.onFileChange(this.currentFile, null, ctx);
+            if (!isTransitionAborted()) {
+                await this.activeMode?.onFileChange(this.currentFile, null, ctx);
+            }
             return;
         }
 
@@ -289,16 +354,24 @@ export class CartographerPresenter {
                 layer.destroy();
                 return;
             }
+            if (isTransitionAborted()) {
+                layer.destroy();
+                return;
+            }
             this.mapLayer = layer;
             this.currentOptions = options;
             this.shell.setOverlay(null);
-            await this.activeMode?.onFileChange(this.currentFile, this.mapLayer.handles, ctx);
+            if (!isTransitionAborted()) {
+                await this.activeMode?.onFileChange(this.currentFile, this.mapLayer.handles, ctx);
+            }
         } catch (err) {
             console.error("[cartographer] failed to render map", err);
             this.shell.clearMap();
             this.shell.setOverlay("Karte konnte nicht geladen werden.");
             this.currentOptions = null;
-            await this.activeMode?.onFileChange(this.currentFile, null, ctx);
+            if (!isTransitionAborted()) {
+                await this.activeMode?.onFileChange(this.currentFile, null, ctx);
+            }
         }
     }
 
