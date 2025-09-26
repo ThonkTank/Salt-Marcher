@@ -3,35 +3,28 @@ import type { CartographerMode, CartographerModeContext } from "../presenter";
 import { loadTerrains } from "../../../core/terrain-store";
 import { setTerrains } from "../../../core/terrain";
 import { createSidebar, type Sidebar } from "../travel/ui/sidebar";
-import {
-    createPlaybackControls,
-    type PlaybackControlsHandle,
-} from "../travel/ui/controls";
 import { createRouteLayer } from "../travel/ui/route-layer";
 import { createTokenLayer } from "../travel/ui/token-layer";
-import {
-    createDragController,
-    type DragController,
-} from "../travel/ui/drag.controller";
-import { bindContextMenu } from "../travel/ui/contextmenue";
 import { createTravelLogic } from "../travel/domain/actions";
-import type {
-    LogicStateSnapshot,
-    RouteNode,
-} from "../travel/domain/types";
+import type { LogicStateSnapshot } from "../travel/domain/types";
 import type { RenderAdapter } from "../travel/infra/adapter";
+import { TravelPlaybackController } from "./travel-guide/playback-controller";
+import { TravelInteractionController } from "./travel-guide/interaction-controller";
+import {
+    openEncounter,
+    preloadEncounterModule,
+} from "./travel-guide/encounter-gateway";
 
 export function createTravelGuideMode(): CartographerMode {
     let sidebar: Sidebar | null = null;
-    let playback: PlaybackControlsHandle | null = null;
+    const playback = new TravelPlaybackController();
     let logic = null as ReturnType<typeof createTravelLogic> | null;
-    let drag: DragController | null = null;
-    let unbindContext: (() => void) | null = null;
+    const interactions = new TravelInteractionController();
     let routeLayer: ReturnType<typeof createRouteLayer> | null = null;
     let tokenLayer: ReturnType<typeof createTokenLayer> | null = null;
     let cleanupFile: (() => void | Promise<void>) | null = null;
-    let terrainsReady = false;
     let hostEl: HTMLElement | null = null;
+    let terrainEvent: { off(): void } | null = null;
 
     const handleStateChange = (state: LogicStateSnapshot) => {
         if (routeLayer) {
@@ -39,30 +32,17 @@ export function createTravelGuideMode(): CartographerMode {
         }
         sidebar?.setTile(state.currentTile ?? state.tokenRC ?? null);
         sidebar?.setSpeed(state.tokenSpeed);
-        playback?.setState({ playing: state.playing, route: state.route });
-        (playback as any)?.setClock?.(state.clockHours ?? 0);
-        (playback as any)?.setTempo?.(state.tempo ?? 1);
+        playback.sync(state);
     };
 
     const resetUi = () => {
         sidebar?.setTile(null);
         sidebar?.setSpeed(1);
-        playback?.setState({ playing: false, route: [] as RouteNode[] });
-    };
-
-    const disposeInteractions = () => {
-        if (drag) {
-            drag.unbind();
-            drag = null;
-        }
-        if (unbindContext) {
-            unbindContext();
-            unbindContext = null;
-        }
+        playback.reset();
     };
 
     const disposeFile = () => {
-        disposeInteractions();
+        interactions.dispose();
         if (tokenLayer) {
             tokenLayer.destroy?.();
             tokenLayer = null;
@@ -82,9 +62,22 @@ export function createTravelGuideMode(): CartographerMode {
     };
 
     const ensureTerrains = async (ctx: CartographerModeContext) => {
-        if (terrainsReady) return;
         await setTerrains(await loadTerrains(ctx.app));
-        terrainsReady = true;
+    };
+
+    const subscribeToTerrains = (ctx: CartographerModeContext) => {
+        const workspace = ctx.app.workspace as any;
+        const ref = workspace.on?.("salt:terrains-updated", () => {
+            void ensureTerrains(ctx);
+        });
+        if (!ref) {
+            return null;
+        }
+        return {
+            off: () => {
+                workspace.offref?.(ref);
+            },
+        };
     };
 
     return {
@@ -95,23 +88,19 @@ export function createTravelGuideMode(): CartographerMode {
             hostEl = ctx.host;
             hostEl.classList.add("sm-cartographer--travel");
             await ensureTerrains(ctx);
+            terrainEvent = subscribeToTerrains(ctx);
+            preloadEncounterModule();
             ctx.sidebarHost.empty();
             sidebar = createSidebar(ctx.sidebarHost);
             sidebar.setTitle?.(ctx.getFile()?.basename ?? "");
             sidebar.onSpeedChange((value) => {
                 logic?.setTokenSpeed(value);
             });
-            playback = createPlaybackControls(sidebar.controlsHost, {
-                onPlay: () => {
-                    void logic?.play();
-                },
-                onStop: () => {
-                    logic?.pause();
-                },
-                onReset: () => {
-                    void logic?.reset();
-                },
-                onTempoChange: (v) => { logic?.setTempo?.(v); },
+            playback.mount(sidebar, {
+                play: () => logic?.play() ?? undefined,
+                pause: () => logic?.pause(),
+                reset: () => logic?.reset(),
+                setTempo: (value) => logic?.setTempo?.(value),
             });
             resetUi();
         },
@@ -120,10 +109,11 @@ export function createTravelGuideMode(): CartographerMode {
             await cleanupFile?.();
             cleanupFile = null;
             disposeFile();
-            playback?.destroy();
-            playback = null;
+            playback.dispose();
             sidebar?.destroy();
             sidebar = null;
+            terrainEvent?.off();
+            terrainEvent = null;
             hostEl?.classList?.remove?.("sm-cartographer--travel");
             hostEl = null;
         },
@@ -165,13 +155,10 @@ export function createTravelGuideMode(): CartographerMode {
                 adapter,
                 onChange: (state) => handleStateChange(state),
                 onEncounter: async () => {
-                    try { activeLogic.pause(); } catch {}
-                    // Open Encounter view in right leaf
-                    const { getRightLeaf } = await import("../../../core/layout");
-                    const { VIEW_ENCOUNTER } = await import("../../encounter/view");
-                    const leaf = getRightLeaf(ctx.app);
-                    await leaf.setViewState({ type: VIEW_ENCOUNTER, active: true });
-                    ctx.app.workspace.revealLeaf(leaf);
+                    try {
+                        activeLogic.pause();
+                    } catch {}
+                    void openEncounter(ctx.app);
                 },
             });
             logic = activeLogic;
@@ -180,28 +167,25 @@ export function createTravelGuideMode(): CartographerMode {
             await activeLogic.initTokenFromTiles();
             if (logic !== activeLogic) return;
 
-            drag = createDragController({
-                routeLayerEl: routeLayer.el,
-                tokenEl: (tokenLayer as any).el as SVGGElement,
-                token: tokenLayer,
-                adapter,
-                logic: {
+            interactions.bind(
+                {
+                    routeLayerEl: routeLayer.el,
+                    tokenLayerEl: (tokenLayer as any).el as SVGGElement,
+                    token: tokenLayer,
+                    adapter,
+                    polyToCoord: mapLayer.polyToCoord,
+                },
+                {
                     getState: () => activeLogic.getState(),
                     selectDot: (idx) => activeLogic.selectDot(idx),
                     moveSelectedTo: (rc) => activeLogic.moveSelectedTo(rc),
                     moveTokenTo: (rc) => activeLogic.moveTokenTo(rc),
-                },
-                polyToCoord: mapLayer.polyToCoord,
-            });
-            drag.bind();
-
-            unbindContext = bindContextMenu(routeLayer.el, {
-                getState: () => activeLogic.getState(),
-                deleteUserAt: (idx) => activeLogic.deleteUserAt(idx),
-            });
+                    deleteUserAt: (idx) => activeLogic.deleteUserAt(idx),
+                }
+            );
 
             cleanupFile = async () => {
-                disposeInteractions();
+                interactions.dispose();
                 if (logic === activeLogic) {
                     logic = null;
                 }
@@ -217,7 +201,7 @@ export function createTravelGuideMode(): CartographerMode {
             };
         },
         async onHexClick(coord, event, ctx) {
-            if (drag?.consumeClickSuppression()) {
+            if (interactions.consumeClickSuppression()) {
                 if (event.cancelable) event.preventDefault();
                 event.stopPropagation();
                 return;
