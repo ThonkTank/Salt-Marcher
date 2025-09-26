@@ -41,8 +41,6 @@ salt-marcher/
 Weitere Nutzer-Workflows, Schritt-für-Schritt-Anleitungen und FAQ-Einträge sind im [Projekt-Wiki](../wiki/README.md) gesammelt.
 
 ## To-Do
-- [Cartographer presenter respects abort signals](../todo/cartographer-presenter-abort-handling.md) – Abort-Signal-Handling komplett durchziehen.
-- [Cartographer mode registry](../todo/cartographer-mode-registry.md) – Modi flexibel registrieren und konfigurieren.
 - [UI terminology consistency](../todo/ui-terminology-consistency.md) – UI-Terminologie vereinheitlichen.
 
 ## Dokumentations- und Beitragshinweise

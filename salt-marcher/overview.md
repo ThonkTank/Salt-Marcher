@@ -42,7 +42,5 @@ salt-marcher/
 Die Bereichsdokumente unter [`docs/`](docs/README.md) werden nach jedem Feature-Update gepflegt. Der repository-weite Einstieg steht im [Documentation Hub](../DOCUMENTATION.md). Für neue Beiträge bitte den projektspezifischen [Style Guide](../style-guide.md) beachten und Querverlinkungen zu bestehenden Overviews setzen. Bootstrap-bezogene Refactorings sind im [Plugin Bootstrap Review](../todo/plugin-bootstrap-review.md) dokumentiert.
 
 ## To-Do
-- [Cartographer presenter respects abort signals](../todo/cartographer-presenter-abort-handling.md) – Presenter muss Abort-Signale in allen Lifecycle-Phasen respektieren.
-- [Cartographer mode registry](../todo/cartographer-mode-registry.md) – Modi deklarativ erfassen und laden.
 - [UI terminology consistency](../todo/ui-terminology-consistency.md) – Einheitliche UI-Sprache und Kommentare sicherstellen.
 - [Plugin Bootstrap Review](../todo/plugin-bootstrap-review.md) – Verantwortlichkeiten des Bootstraps präzisieren, Error-Handling und Tests evaluieren.

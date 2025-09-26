@@ -5,8 +5,6 @@ Dieser Ordner ersetzt die frühere `Critique.txt`-Sammlung. Jede Datei dokumenti
 
 ## Open Items
 - [Main bootstrap service integration](main-bootstrap-service-integration.md) – `createTerrainBootstrap` konfliktfrei an `main.ts` anbinden und Tests reaktivieren.
-- [Cartographer presenter respects abort signals](cartographer-presenter-abort-handling.md) – Presenter darf Modewechsel abbrechen, wenn das UI den Vorgang storniert.
-- [Cartographer mode registry](cartographer-mode-registry.md) – Modi sollen deklarativ konfigurierbar sein statt hart verdrahtet.
 - [UI terminology consistency](ui-terminology-consistency.md) – UI-Texte und Kommentare brauchen eine einheitliche Sprache.
 
 ## Maintenance Notes
