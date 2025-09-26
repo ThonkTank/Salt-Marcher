@@ -241,7 +241,9 @@ export function createTravelGuideMode(): CartographerMode {
                         activeLogic.pause();
                     } catch {}
                     if (!isAborted()) {
-                        void openEncounter(ctx.app);
+                        const mapFile = ctx.getFile?.() ?? null;
+                        const state = activeLogic.getState();
+                        void openEncounter(ctx.app, { mapFile, state });
                     }
                 },
             });

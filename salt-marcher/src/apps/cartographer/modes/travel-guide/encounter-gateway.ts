@@ -1,4 +1,6 @@
 import { Notice, type App, type WorkspaceLeaf } from "obsidian";
+import { publishEncounterEvent } from "../../../encounter/session-store";
+import { createEncounterEventFromTravel, type TravelEncounterContext } from "../../../encounter/event-builder";
 
 interface EncounterModule {
     getRightLeaf(app: App): WorkspaceLeaf;
@@ -34,9 +36,19 @@ export function preloadEncounterModule() {
     void ensureEncounterModule();
 }
 
-export async function openEncounter(app: App): Promise<boolean> {
+export async function openEncounter(app: App, context?: TravelEncounterContext): Promise<boolean> {
     const mod = await ensureEncounterModule();
     if (!mod) return false;
+    if (context) {
+        try {
+            const event = await createEncounterEventFromTravel(app, context);
+            if (event) {
+                publishEncounterEvent(event);
+            }
+        } catch (err) {
+            console.error("[travel-mode] failed to publish encounter payload", err);
+        }
+    }
     const leaf = mod.getRightLeaf(app);
     await leaf.setViewState({ type: mod.VIEW_ENCOUNTER, active: true });
     app.workspace.revealLeaf(leaf);
