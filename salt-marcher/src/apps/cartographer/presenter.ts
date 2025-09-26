@@ -454,15 +454,6 @@ export class CartographerPresenter {
         const previousLifecycleContext = this.activeLifecycleContext;
         const previousLifecycleController = this.activeLifecycleController;
 
-        if (this.activeLifecycleController) {
-            try {
-                this.activeLifecycleController.abort();
-            } catch (err) {
-                console.error("[cartographer] failed to abort lifecycle controller", err);
-            }
-            this.activeLifecycleController = null;
-        }
-
         const controller = new AbortController();
 
         const transition: ModeTransition = {
@@ -475,24 +466,45 @@ export class CartographerPresenter {
         };
 
         this.transition = transition;
-        this.activeLifecycleController = controller;
         const detachAbort = this.bindExternalAbort(transition);
 
         try {
+            if (this.isTransitionAborted(transition)) {
+                return;
+            }
+
             const previous = transition.previous;
             if (previous) {
-                const exitSignal =
-                    previousLifecycleContext?.signal ??
-                    previousLifecycleController?.signal ??
-                    CartographerPresenter.neverAbortSignal;
-                const exitCtx =
-                    previousLifecycleContext && previousLifecycleContext.signal === exitSignal
-                        ? previousLifecycleContext
-                        : this.createLifecycleContext(exitSignal);
                 const exitOutcome = await this.runTransitionStep(
                     transition,
                     "exiting",
-                    () => previous.onExit(exitCtx),
+                    () => {
+                        if (
+                            previousLifecycleController &&
+                            !previousLifecycleController.signal.aborted
+                        ) {
+                            try {
+                                previousLifecycleController.abort();
+                            } catch (err) {
+                                console.error(
+                                    "[cartographer] failed to abort lifecycle controller",
+                                    err,
+                                );
+                            }
+                        }
+
+                        const exitSignal =
+                            previousLifecycleContext?.signal ??
+                            previousLifecycleController?.signal ??
+                            CartographerPresenter.neverAbortSignal;
+                        const exitCtx =
+                            previousLifecycleContext &&
+                            previousLifecycleContext.signal === exitSignal
+                                ? previousLifecycleContext
+                                : this.createLifecycleContext(exitSignal);
+
+                        return previous.onExit(exitCtx);
+                    },
                     "[cartographer] mode exit failed",
                 );
 
@@ -505,13 +517,10 @@ export class CartographerPresenter {
             }
 
             if (this.isTransitionAborted(transition)) {
-                if (!this.activeMode) {
-                    this.activeLifecycleController = null;
-                    this.activeLifecycleContext = null;
-                }
                 return;
             }
 
+            this.activeLifecycleController = controller;
             const modeCtx = this.ensureActiveLifecycleContext(transition.controller.signal);
 
             this.activeMode = transition.next;

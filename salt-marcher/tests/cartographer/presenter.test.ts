@@ -614,6 +614,69 @@ describe("CartographerPresenter", () => {
         expect(mapLayer.destroy).not.toHaveBeenCalled();
     });
 
+    it("short-circuits immediately aborted mode switches", async () => {
+        const shell = createShellStub();
+        const registry = createRegistryController();
+
+        let activeCtx: CartographerModeLifecycleContext | null = null;
+
+        const modeA: CartographerMode = {
+            id: "a",
+            label: "Mode A",
+            onEnter: vi.fn((ctx) => {
+                activeCtx = ctx;
+            }),
+            onExit: vi.fn(),
+            onFileChange: vi.fn((_file, _handles, ctx) => {
+                activeCtx = ctx;
+            }),
+        };
+
+        const modeB: CartographerMode = {
+            id: "b",
+            label: "Mode B",
+            onEnter: vi.fn(),
+            onExit: vi.fn(),
+            onFileChange: vi.fn(),
+        };
+
+        const presenter = new CartographerPresenter(appStub, {
+            createShell: shell.factory,
+            createMapManager: createMapManagerFactory(),
+            createMapLayer: vi.fn(async () => {
+                throw new Error("no map layer expected");
+            }),
+            loadHexOptions: vi.fn(async () => null as HexOptions | null),
+            provideModes: () => [modeA, modeB],
+            subscribeToModeRegistry: registry.subscribe,
+        });
+
+        registry.emit({ type: "initial", entries: [createRegistryEntry(modeA), createRegistryEntry(modeB)] });
+
+        await presenter.onOpen(shell.host, null);
+
+        modeA.onEnter.mockClear();
+        modeA.onExit.mockClear();
+        modeA.onFileChange.mockClear();
+        modeB.onEnter.mockClear();
+        modeB.onExit.mockClear();
+        modeB.onFileChange.mockClear();
+        shell.setModeActive.mockClear();
+        shell.setModeLabel.mockClear();
+
+        const controller = new AbortController();
+        controller.abort();
+
+        await presenter.setMode("b", { signal: controller.signal });
+
+        expect(modeA.onExit).not.toHaveBeenCalled();
+        expect(modeB.onEnter).not.toHaveBeenCalled();
+        expect(modeB.onFileChange).not.toHaveBeenCalled();
+        expect(shell.setModeActive).not.toHaveBeenCalledWith("b");
+        expect(shell.setModeLabel).not.toHaveBeenCalledWith("Mode B");
+        expect(activeCtx?.signal.aborted).toBe(false);
+    });
+
     it("updates shell controls when a provider registers after mount", async () => {
         const shell = createShellStub();
         const registry = createRegistryController();
