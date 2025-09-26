@@ -9,11 +9,13 @@ schnell passende Module für Daten- und Rechenlogik zu finden.
 docs/core/
 ├─ README.md
 ├─ hex-render-overview.md
+├─ regions-store-overview.md
 └─ terrain-store-overview.md
 ```
 
 ## Inhalte
 - [hex-render-overview.md](hex-render-overview.md) – Renderer-Architektur, Kamera-Logik und Hex-Koordinatensystem.
+- [regions-store-overview.md](regions-store-overview.md) – Lifecycle des Regions-Stores, aktuelles Verhalten bei Dateiverlust und Folgearbeiten.
 - [terrain-store-overview.md](terrain-store-overview.md) – Laden, Beobachten und Synchronisieren der Terrain-Daten.
 
 ## Weiterführende Ressourcen
@@ -21,4 +23,5 @@ docs/core/
 - Richtlinien zur Dokumentation: [Style Guide](../../../style-guide.md).
 
 ## To-Do
-- Keine offenen Core-spezifischen Punkte. Siehe das zentrale [`todo/`](../../../todo/README.md) für bereichsübergreifende Backlog-Einträge.
+- [Regions store resilience](../../../todo/regions-store-resilience.md) – Regions-Datei nach Löschereignissen robuster neu aufbauen und Tests etablieren.
+- Siehe außerdem das zentrale [`todo/`](../../../todo/README.md) für bereichsübergreifende Backlog-Einträge.
