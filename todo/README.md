@@ -7,6 +7,9 @@ Dieser Ordner ersetzt die frühere `Critique.txt`-Sammlung. Jede Datei dokumenti
 - [Main bootstrap service integration](main-bootstrap-service-integration.md) – `createTerrainBootstrap` konfliktfrei an `main.ts` anbinden und Tests reaktivieren.
 - [UI terminology consistency](ui-terminology-consistency.md) – UI-Texte und Kommentare brauchen eine einheitliche Sprache.
 
+## Recently Closed
+- **2025-09-26 – Encounter workspace review**: Entfernt, nachdem Encounter-View, Presenter und Travel-Gateway überprüft wurden. Ergebnisse siehe `Notes/encounter-workspace-review.md`.
+
 ## Maintenance Notes
 - Aktualisiere Dateien unmittelbar nach Code- oder Dokumentationsänderungen, damit Kontext und Lösungsideen konsistent bleiben.
 - Verlinke jede To-Do-Datei in den relevanten README- oder Index-Dokumenten, damit offene Punkte dort sichtbar sind, wo Teams arbeiten.

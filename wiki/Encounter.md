@@ -21,7 +21,7 @@ The Encounter workspace currently provides a dedicated pane for handling travel-
 | Manual pane creation (`Open view by type → salt-marcher-encounter`) | Opens the workspace without publishing a new payload. | The pane shows the most recent encounter (if any) and allows reviewing notes. |
 
 - Keep the encounter workspace docked next to Cartographer to reduce window juggling when multiple encounters occur.
-- Document any desired encounter tooling in [`architecture-critique.md`](../architecture-critique.md) so the incremental UX can evolve alongside feature work.
+- Capture new encounter tooling ideas as To-Dos (siehe `todo/`-Ordner) und verlinke die betroffenen Dokumente, damit die inkrementelle UX-Weiterentwicklung nachvollziehbar bleibt.
 - Use Obsidian's pane pinning to prevent the encounter view from being replaced by unrelated notes during sessions.
 - When testing travel mode without a region assignment, expect the pane to show "Unknown region" and omit encounter odds—add odds in Library → Regions to surface them here.
 
