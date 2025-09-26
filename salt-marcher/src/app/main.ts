@@ -4,13 +4,16 @@ import { Plugin, WorkspaceLeaf } from "obsidian";
 import { EncounterView, VIEW_ENCOUNTER } from "../apps/encounter/view";
 import { VIEW_CARTOGRAPHER, CartographerView, openCartographer, detachCartographerLeaves } from "../apps/cartographer";
 import { VIEW_LIBRARY, LibraryView } from "../apps/library/view";
-import { ensureTerrainFile, loadTerrains, watchTerrains } from "../core/terrain-store";
-import { setTerrains } from "../core/terrain";
 import { HEX_PLUGIN_CSS } from "./css";
 import { setupLayoutEditorBridge } from "./layout-editor-bridge";
+import {
+    createTerrainBootstrap,
+    type TerrainBootstrapHandle,
+    type TerrainBootstrapLogger,
+} from "./bootstrap-services";
 
 export default class SaltMarcherPlugin extends Plugin {
-    private unwatchTerrains?: () => void;
+    private terrainBootstrap?: TerrainBootstrapHandle;
     private teardownLayoutBridge?: () => void;
     async onload() {
         // Views
@@ -19,9 +22,35 @@ export default class SaltMarcherPlugin extends Plugin {
         this.registerView(VIEW_LIBRARY,              (leaf: WorkspaceLeaf) => new LibraryView(leaf));
 
         // Terrains initial laden & live halten
-        await ensureTerrainFile(this.app);
-        setTerrains(await loadTerrains(this.app));
-        this.unwatchTerrains = watchTerrains(this.app, () => { /* Views reagieren via Event */ });
+        const terrainLogger: TerrainBootstrapLogger = {
+            info: (message: string, context?: Record<string, unknown>) => {
+                if (context) {
+                    console.info(`[SaltMarcher/bootstrap] ${message}`, context);
+                } else {
+                    console.info(`[SaltMarcher/bootstrap] ${message}`);
+                }
+            },
+            warn: (message: string, context?: Record<string, unknown>) => {
+                if (context) {
+                    console.warn(`[SaltMarcher/bootstrap] ${message}`, context);
+                } else {
+                    console.warn(`[SaltMarcher/bootstrap] ${message}`);
+                }
+            },
+            error: (message: string, context?: Record<string, unknown>) => {
+                if (context) {
+                    console.error(`[SaltMarcher/bootstrap] ${message}`, context);
+                } else {
+                    console.error(`[SaltMarcher/bootstrap] ${message}`);
+                }
+            },
+        };
+
+        this.terrainBootstrap = createTerrainBootstrap(this.app, { logger: terrainLogger });
+        const primed = await this.terrainBootstrap.start();
+        if (!primed) {
+            console.warn("[SaltMarcher] Terrain palette could not be initialised; defaults remain active until the vault updates.");
+        }
 
         // Ribbons
         this.addRibbonIcon("compass", "Open Cartographer", async () => {
@@ -57,7 +86,7 @@ export default class SaltMarcherPlugin extends Plugin {
     }
 
     async onunload() {
-        this.unwatchTerrains?.();
+        this.terrainBootstrap?.stop();
         this.teardownLayoutBridge?.();
         await detachCartographerLeaves(this.app);
         this.removeCss();
