@@ -1,40 +1,47 @@
 # Getting Started
 
-This guide walks you through installing Salt Marcher, activating the plugin inside Obsidian, bootstrapping the shared terrain data, and opening every workspace that ships with the project. For a conceptual overview of features, start at the [Home](./Home.md) page.
+## Overview & Audience
+This guide walks Obsidian users through installing Salt Marcher, enabling its workspaces, and validating that shared data files are initialised. Follow it when onboarding a new vault or refreshing a development environment before testing.
 
-## 1. Install the plugin
-1. Download the latest release bundle or build it locally (see repository instructions).
-2. Copy the compiled plugin folder (containing `manifest.json`, `main.js`, and `styles.css` if present) into your vault under `.obsidian/plugins/salt-marcher`.
-3. Restart or reload Obsidian so it discovers the new plugin.
+## Prerequisites
+- Obsidian Desktop 1.5+ with community plugins enabled.
+- A writable vault location for plugin files and shared terrain data.
+- Latest Salt Marcher release package or a local build produced with `npm run build` inside `salt-marcher/`.
 
-> 💡 **Development build:** Run `npm install` followed by `npm run build` inside `salt-marcher/`. The build outputs `main.js` alongside the existing `manifest.json` for manual deployment.
+## Step-by-step Workflow
+1. **Install the plugin.**
+   - Download the latest release archive or run `npm install` followed by `npm run build` inside `salt-marcher/` to emit `main.js`.
+   - Copy `manifest.json`, `main.js`, and `styles.css` (if present) into `.obsidian/plugins/salt-marcher/` within your vault.
+   - Restart or reload Obsidian so it indexes the new plugin files.
+2. **Enable Salt Marcher inside Obsidian.**
+   - Open **Settings → Community plugins** and toggle **Salt Marcher** on.
+   - Confirm the compass and book ribbon icons appear; these provide one-click access to the Cartographer and Library views.
+3. **Bootstrap the shared terrain palette.**
+   - After activation Salt Marcher ensures `SaltMarcher/Terrains.md` exists, seeds the default palette, and pushes the entries into the global renderer state.
+   - Optionally run **Command Palette → Salt Marcher: Cartographer öffnen** once to trigger the bootstrap immediately.
+4. **Open each workspace to validate registration.**
+   - **Cartographer:** Use the compass ribbon icon or the matching command palette entry to mount the map shell, header, and sidebar hosts.
+   - **Library:** Use the book ribbon icon or **Salt Marcher: Library öffnen** to ensure watcher setup completes and the mode tabs render.
+   - **Encounter:** Travel mode opens this workspace automatically when an encounter trigger fires; to inspect manually, create a new pane and choose `salt-marcher-encounter` from **Open view by type**.
+5. **Plan next steps.**
+   - Review [Cartographer](./Cartographer.md) for map editing, travel playback, and mode lifecycle details.
+   - Visit [Library](./Library.md) to curate terrains, regions, and lore records.
+   - Consult [Data Management](./Data-Management.md) for the precise file formats used by the shared palettes.
 
-## 2. Enable Salt Marcher in Obsidian
-1. Open **Settings → Community plugins**.
-2. Toggle **Salt Marcher** on. The plugin registers the Cartographer, Library, and Encounter views, injects its stylesheet, and starts watching terrain data immediately.【F:salt-marcher/src/app/main.ts†L15-L59】
-3. Optional: pin the "Open Cartographer" (compass) and "Open Library" (book) ribbon icons to the sidebar for quicker access.
+## Reference & Tips
+| Workspace | Command Palette Entry | Ribbon Icon | Notes |
+| --- | --- | --- | --- |
+| Cartographer | `Salt Marcher: Cartographer öffnen` | Compass | Mounts map shell, header actions, and travel/editor/inspector modes. |
+| Library | `Salt Marcher: Library öffnen` | Book | Sets up file watchers for creatures, spells, terrains, and regions. |
+| Encounter | `Open view by type → salt-marcher-encounter` | _None_ | Appears automatically during travel encounters; can be pinned manually. |
 
-## 3. Bootstrap shared terrains
-Salt Marcher maintains a shared terrain palette in `SaltMarcher/Terrains.md`. On first load the plugin ensures the file exists with default entries, reads it, and pushes the palette into the global renderer state.【F:salt-marcher/src/core/terrain-store.ts†L5-L64】
+- Keep the release bundle and source tree aligned; mismatched versions may cause watcher errors or missing commands.
+- For development, re-run `npm run build` after TypeScript changes to refresh `main.js` before testing in Obsidian.
+- Record deviations between documentation and behaviour in `Critique.txt` so follow-up tasks can address them.
 
-If you prefer to prepare the vault ahead of time, run the **Command Palette → Salt Marcher: Cartographer öffnen** command once after enabling the plugin; this triggers the same bootstrap path.
-
-## 4. Open each workspace
-Salt Marcher exposes three dedicated workspaces. All can be opened via the ribbon buttons or the command palette unless otherwise noted.
-
-### Cartographer
-- Use **Command Palette → Salt Marcher: Cartographer öffnen** or click the compass icon.
-- The view mounts the map shell, map header, and the default mode. Travel, Editor, and Inspector modes can be switched via the header dropdown; see [Cartographer](./Cartographer.md) for details.
-
-### Library
-- Use **Command Palette → Salt Marcher: Library öffnen** or click the book icon.
-- When the view loads it ensures creature, spell, terrain, and region sources exist, attaches file watchers, and displays the mode switcher tabs; see [Library](./Library.md).
-
-### Encounter
-- The encounter workspace is primarily opened automatically by the travel mode when a route triggers an encounter hand-off. Manual access requires creating a new pane (`Ctrl/Cmd+P → Open view by type`) and selecting `salt-marcher-encounter`.
-- The view currently focuses on providing a dedicated layout placeholder; see [Encounter](./Encounter.md) for the present state.
-
-## 5. Next steps
-- Review the [Cartographer](./Cartographer.md) guide to learn how each mode behaves.
-- Visit the [Library](./Library.md) article for data management workflows and watcher expectations.
-- Inspect [Data Management](./Data-Management.md) if you need precise format specifications for terrains and regions.
+## Related Links
+- [Cartographer](./Cartographer.md)
+- [Library](./Library.md)
+- [Encounter](./Encounter.md)
+- [Data Management](./Data-Management.md)
+- Repository [README](../README.md) for licensing and contribution logistics.
