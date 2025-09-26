@@ -9,18 +9,24 @@ docs/encounter/
 └─ README.md
 
 src/apps/encounter/
-└─ view.ts            # Obsidian-ItemView, aktuell nur Platzhalter-Markup
+├─ event-builder.ts   # erzeugt Encounter-Events aus Travel-State (Region, Odds, Uhrzeit)
+├─ presenter.ts       # Presenter mit Persistenz-Handling & Store-Anbindung
+├─ session-store.ts   # globaler Pub/Sub-Store für Encounter-Hand-offs
+└─ view.ts            # Obsidian-ItemView, nutzt Presenter & rendert UX
 ```
-Der Workspace wird ausschließlich durch `EncounterView` bereitgestellt. Weitere Module (State-Management, Presenter, Styles) fehlen derzeit vollständig.
+Der Workspace besteht nun aus einem Presenter und einem kleinen Event-Store. `EncounterView` orchestriert beide Komponenten und rendert die minimalen UX-Bausteine (Kontext, Notizen, Auflösen-Button).
 
 ## Workspace-Komponenten & Verantwortlichkeiten
-- **`EncounterView` (`src/apps/encounter/view.ts`)** – registriert als `salt-encounter`-ItemView. Öffnet beim Travel-Hand-off einen Pane mit Titel "Encounter", fügt `sm-encounter-view` als CSS-Hook hinzu und rendert statisches Header-Markup.
-- **Travel-Anbindung** – Cartographer ruft `openEncounter(app)` aus `travel-guide/encounter-gateway.ts` auf, um die View zu öffnen. Das Gateway erwartet, dass `EncounterView` beim Laden bereit ist, übernimmt jedoch selbst keinerlei UI-Initialisierung.
+- **`EncounterView` (`src/apps/encounter/view.ts`)** – registriert als `salt-encounter`-ItemView. Bindet den Presenter ein, rendert Encounter-Kontext (Region, Hex, Odds) sowie Notizen-Textarea und den "resolved"-Button. Persistiert View-State via `getViewData`/`setViewData`.
+- **`EncounterPresenter` (`src/apps/encounter/presenter.ts`)** – verwaltet Encounter-Session-Status (Notizen, Auflösung) und lauscht auf Events des Stores. Normalisiert Persistenzdaten und stellt Listener für die View bereit.
+- **`session-store.ts`** – leichtgewichtiger Pub/Sub-Store. Hält das jüngste Encounter-Event für frisch gemountete Views vor und verteilt Travel-Hand-offs an Presenter-Instanzen.
+- **`event-builder.ts`** – extrahiert aus dem Travel-State Region, Odds und Uhrzeit. Baut ein normalisiertes `EncounterEvent`, das der Store broadcastet.
+- **Travel-Anbindung** – Cartographer ruft `openEncounter(app, { mapFile, state })` aus `travel-guide/encounter-gateway.ts` auf. Das Gateway erzeugt daraus ein Event, published es im Store und öffnet den rechten Workspace-Leaf.
 
 ## Soll-Workflows & Ist-Lücken
-1. **Encounter durch Travel-Events öffnen.** Travel pausiert Playback und fokussiert den Encounter-Workspace. _Ist:_ View rendert nur leeren Placeholder, es existiert kein Zustand oder Rendering der Encounter-Daten.
-2. **Encounter-Kontext anzeigen und bearbeiten.** Erwartet werden Listen von Gegnern, Aktionen oder Notizen gemäß [Encounter-Wiki](../../../wiki/Encounter.md). _Ist:_ Keine UI-Elemente außer Überschrift; keine Verbindung zu Library-/Regions-Daten.
-3. **Encounter schließen und Travel fortsetzen.** Nach Auflösung sollte Travel wiederaufgenommen werden. _Ist:_ View besitzt keine Hooks für Abschlussaktionen oder Kommunikation zurück an Travel.
+1. **Encounter durch Travel-Events öffnen.** Travel pausiert Playback, erzeugt via Gateway ein Encounter-Event und fokussiert den Encounter-Workspace. _Status:_ Implementiert; EncounterView zeigt den Kontext unmittelbar an.
+2. **Encounter-Kontext anzeigen und bearbeiten.** Erwartet werden Listen von Gegnern, Aktionen oder Notizen gemäß [Encounter-Wiki](../../../wiki/Encounter.md). _Status:_ Minimal umgesetzt (Kontext-Übersicht, Notizenfeld, Auflösen-Button). Erweiterte Tools stehen weiterhin aus (Gegnerlisten etc.).
+3. **Encounter schließen und Travel fortsetzen.** Nach Auflösung sollte Travel wiederaufgenommen werden. _Status:_ EncounterView signalisiert Statuswechsel, Travel muss weiterhin manuell fortgesetzt werden (keine Auto-Resume-Logik).
 
 Die vollständige Gap-Analyse befindet sich in [Notes/encounter-workspace-review.md](../../../Notes/encounter-workspace-review.md).
 

@@ -9,20 +9,21 @@ The Encounter workspace currently provides a dedicated pane for handling travel-
 - Optional: predefined encounter notes or templates stored elsewhere in the vault.
 
 ## Step-by-step Workflow
-1. **Trigger the encounter hand-off.** Run a travel route in Cartographer until an encounter event fires; the presenter pauses playback and calls `openEncounter`.
-2. **Review the encounter pane.** The workspace opens (or focuses) a dedicated leaf containing placeholder content and encounter-specific styling hooks.
-3. **Anchor supporting material.** Open related notes—such as NPC stat blocks or region lore—in adjacent panes to keep context visible while the encounter pane remains active.
-4. **Resume travel after resolution.** Close or refocus the encounter pane, return to Cartographer, and resume playback from the paused state once the encounter wraps.
+1. **Trigger the encounter hand-off.** Run a travel route in Cartographer until an encounter event fires; the travel controller pauses playback, assembles region metadata, and calls `openEncounter(app, { mapFile, state })`.
+2. **Review the encounter pane.** The workspace focuses a dedicated leaf that now lists the region name, hex coordinates, travel clock, encounter odds (if defined in Library → Regions), and the timestamp of the trigger.
+3. **Capture notes & decisions.** Use the notes field to jot down initiative, tactics, or follow-ups. The presenter persists these notes so a workspace restore or Obsidian restart keeps the active encounter intact.
+4. **Mark the encounter resolved.** Click **“Mark encounter resolved”** once the scene wraps; the pane records the resolution timestamp and communicates status to future restores. Resume travel from Cartographer when ready (resume remains manual).
 
 ## Reference & Tips
 | Trigger Source | Behaviour | Notes |
 | --- | --- | --- |
-| Travel mode `onEncounter` callback | Opens or reveals the encounter workspace and pauses travel playback. | Encounter pane will reopen automatically if dismissed while another trigger fires. |
-| Manual pane creation (`Open view by type → salt-marcher-encounter`) | Opens the workspace without a travel trigger. | Useful for testing layouts or preparing upcoming encounter features. |
+| Travel mode `onEncounter` callback | Opens or reveals the encounter workspace, publishes the travel payload, and pauses playback. | Encounter pane shows the latest travel metadata and cached notes even after reloads. |
+| Manual pane creation (`Open view by type → salt-marcher-encounter`) | Opens the workspace without publishing a new payload. | The pane shows the most recent encounter (if any) and allows reviewing notes. |
 
 - Keep the encounter workspace docked next to Cartographer to reduce window juggling when multiple encounters occur.
-- Document any desired encounter tooling in [`architecture-critique.md`](../architecture-critique.md) so the placeholder can evolve alongside feature work.
+- Document any desired encounter tooling in [`architecture-critique.md`](../architecture-critique.md) so the incremental UX can evolve alongside feature work.
 - Use Obsidian's pane pinning to prevent the encounter view from being replaced by unrelated notes during sessions.
+- When testing travel mode without a region assignment, expect the pane to show "Unknown region" and omit encounter odds—add odds in Library → Regions to surface them here.
 
 ## Related Links
 - [Getting Started](./Getting-Started.md)
