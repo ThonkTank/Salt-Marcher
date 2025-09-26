@@ -46,6 +46,7 @@ Weitere Nutzer-Workflows, Schritt-für-Schritt-Anleitungen und FAQ-Einträge sin
 - [UI terminology consistency](../todo/ui-terminology-consistency.md) – UI-Terminologie vereinheitlichen.
 
 ## Dokumentations- und Beitragshinweise
-Die technische Dokumentation dieses Plugins folgt dem [Documentation Index](docs/README.md). Bitte richte neue Beiträge am
-[Style Guide](../docs/style-guide.md) des Projekts aus und verlinke zusätzliche Detaildokumente innerhalb des bestehenden
+Die technische Dokumentation dieses Plugins orientiert sich am übergeordneten [Documentation Hub](../DOCUMENTATION.md) und dem
+bereichsspezifischen [Docs-Index](docs/README.md). Bitte richte neue Beiträge am
+[Style Guide](../style-guide.md) des Projekts aus und verlinke zusätzliche Detaildokumente innerhalb des bestehenden
 Dokumentationsnetzes.

@@ -44,8 +44,9 @@ salt-marcher/
    (`src/ui/*`) konsistente Dialoge und Header bereitstellen.
 
 ## Dokumentation & Standards
-Die Bereichsdokumente unter [`docs/`](docs/README.md) werden nach jedem Feature-Update gepflegt. Für neue Beiträge
-bitte den projektspezifischen [Style Guide](../docs/style-guide.md) beachten und Querverlinkungen zu bestehenden Overviews setzen.
+Die Bereichsdokumente unter [`docs/`](docs/README.md) werden nach jedem Feature-Update gepflegt. Der repository-weite Einstieg steht im
+[Documentation Hub](../DOCUMENTATION.md). Für neue Beiträge
+bitte den projektspezifischen [Style Guide](../style-guide.md) beachten und Querverlinkungen zu bestehenden Overviews setzen.
 
 ## To-Do
 - [Cartographer presenter respects abort signals](../todo/cartographer-presenter-abort-handling.md) – Presenter muss Abort-Signale in allen Lifecycle-Phasen respektieren.

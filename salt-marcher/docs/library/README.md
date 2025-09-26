@@ -16,7 +16,7 @@ docs/library/
 
 ## Weiterführende Ressourcen
 - Anwenderdokumentation im [Library-Wiki-Eintrag](../../../wiki/Library.md).
-- Dokumentationsrichtlinien: [Style Guide](../../../docs/style-guide.md).
+- Dokumentationsrichtlinien: [Style Guide](../../../style-guide.md).
 
 ## To-Do
 - [UI terminology consistency](../../../todo/ui-terminology-consistency.md) – UI-Labels und Kommentare vereinheitlichen.

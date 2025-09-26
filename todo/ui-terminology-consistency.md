@@ -5,7 +5,7 @@
 >
 > **Empfohlene Maßnahme:** UI-Texte und Kommentare sollten konsequent in einer Sprache gehalten werden, um Mischformen wie in `MapManager` und `LibraryView` zu vermeiden.
 
-Quelle: [`docs/architecture-critique.md`](../docs/architecture-critique.md).
+Quelle: [`architecture-critique.md`](../architecture-critique.md).
 
 ## Kontext
 - **Betroffene Module:** `salt-marcher/src/ui/map-manager.ts`, `salt-marcher/src/apps/library/view.ts` sowie verbundene UI-Komponenten.

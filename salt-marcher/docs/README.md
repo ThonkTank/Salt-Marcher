@@ -23,5 +23,5 @@ auf weiterführende Ressourcen.
 - [UI](ui/README.md) – Wiederverwendbare UI-Bausteine, Shell-Komponenten und Map-spezifische Workflows.
 
 ## Standards & Pflege
-Alle neuen oder aktualisierten Dokumente müssen dem [Documentation Style Guide](../../docs/style-guide.md) entsprechen. Ergänze
+Alle neuen oder aktualisierten Dokumente müssen dem [Documentation Style Guide](../../style-guide.md) entsprechen. Ergänze
 Querverlinkungen zwischen den Bereichen, sobald sich Verantwortlichkeiten überschneiden, und halte die Strukturdiagramme aktuell.

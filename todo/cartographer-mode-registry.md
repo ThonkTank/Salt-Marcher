@@ -5,7 +5,7 @@
 >
 > **Empfohlene Maßnahme:** Eine deklarative Registry/API für `provideModes` einführen, damit zusätzliche Modi ohne Core-Änderung ladbar sind.
 
-Quelle: [`docs/architecture-critique.md`](../docs/architecture-critique.md).
+Quelle: [`architecture-critique.md`](../architecture-critique.md).
 
 ## Kontext
 - **Betroffene Module:** `salt-marcher/src/apps/cartographer/presenter.ts`, Mode-Fabriken unter `salt-marcher/src/apps/cartographer/modes/`.
