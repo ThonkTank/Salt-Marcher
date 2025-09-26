@@ -1,46 +1,52 @@
 # Salt Marcher Repository Overview
 
-Dieses Repository enthält zwei vollständig getrennte Obsidian-Plugins:
-
-- **Salt Marcher (`plugins/salt-marcher`)** – liefert Kartographie-, Encounter- und Bibliothekswerkzeuge für hex-basierte Kampagnen.
-- **Layout Editor (`plugins/layout-editor`)** – stellt einen eigenständigen visuellen Layout-Editor inklusive Layout-Bibliothek bereit.
-
-Beide Plugins besitzen eigene Build-Pipelines, Manifeste und Overview-Dokumente innerhalb ihrer Verzeichnisse.
+Dieses Repository liefert das **Salt Marcher** Obsidian-Plugin. Es kombiniert Kartographie-, Encounter- und Bibliothekswerkzeuge
+für hex-basierte Kampagnen und bringt sämtliche Build-, Dokumentations- und Testartefakte im Ordner `salt-marcher/` mit.
 
 ## Struktur
 
 ```
 Salt-Marcher/
-├─ AGENTS.md
-├─ README.md                     # Projektweite Hinweise (SRD-Credits)
-├─ plugins/
-│  ├─ salt-marcher/              # Hauptplugin (Cartographer, Library, Encounter)
-│  │  ├─ manifest.json
-│  │  ├─ esbuild.config.mjs
-│  │  ├─ package.json / package-lock.json
-│  │  ├─ tsconfig.json
-│  │  ├─ main.js                 # Build-Output
-│  │  ├─ PluginOverview.txt      # Detaillierte Dokumentation des Salt-Marcher-Plugins
-│  │  └─ src/…                   # TypeScript-Quellcode (app, apps, core, ui)
-│  └─ layout-editor/             # Eigenständiger Layout-Editor
-│     ├─ manifest.json
-│     ├─ esbuild.config.mjs
-│     ├─ package.json / package-lock.json
-│     ├─ tsconfig.json
-│     ├─ main.js                 # Build-Output
-│     └─ src/…                   # Layout-Editor-Code + Overview
-└─ "References, do not delete!/" # SRD-Referenzen (unverändert)
+├─ AGENTS.md                     # Projektweite Arbeitsanweisungen
+├─ Critique.txt                  # Offene Architektur- oder Qualitätshinweise
+├─ PluginOverview.txt            # Diese Gesamtübersicht
+├─ README.md                     # Projektweite Hinweise (z. B. SRD-Credits)
+├─ "References, do not delete!/"
+│  └─ README.md                  # SRD-Referenzen (unverändert)
+└─ salt-marcher/
+   ├─ manifest.json              # Obsidian-Manifest (lädt main.js aus dem Plugin-Stamm)
+   ├─ esbuild.config.mjs         # Build-Pipeline (bundelt TypeScript → main.js)
+   ├─ main.js                    # Gebündeltes Plugin-Artefakt
+   ├─ package.json
+   ├─ package-lock.json
+   ├─ tsconfig.json
+   ├─ PluginOverview.txt         # Detailübersicht des Plugins
+   ├─ README.md                  # Anwender-Hinweise zum Plugin
+   ├─ docs/                      # Bereichspezifische Overviews (cartographer/core/library/ui)
+   ├─ src/
+   │  ├─ app/
+   │  │  ├─ main.ts             # Plugin-Bootstrap
+   │  │  ├─ css.ts              # Zentrales Styling
+   │  │  └─ layout-editor-bridge.ts # Bindung an einen extern installierten Layout Editor
+   │  ├─ apps/
+   │  │  ├─ cartographer/
+   │  │  ├─ encounter/
+   │  │  └─ library/
+   │  ├─ core/
+   │  └─ ui/
+   └─ tests/
+      └─ cartographer/
 ```
 
 ## Features & Verantwortlichkeiten
 
-- **Salt Marcher Plugin:** Registriert Cartographer-, Encounter- und Library-Views, injiziert eigenes CSS und verwaltet Terrain-/Regions-Daten. Enthält alle Hex-Mapper-, Travel- und Library-Funktionen.
-- **Layout Editor Plugin:** Registriert den Layout-Editor als eigenständigen View, injiziert dediziertes Styling, stellt ein API (`getApi()`) für Registry-/Persistenz-Hooks bereit und verwaltet Layout-Dateien unter `LayoutEditor/Layouts`.
-- **Getrennte Builds:** Jedes Plugin wird über sein eigenes `esbuild.config.mjs` gebündelt. Die erzeugten `main.js`-Artefakte liegen direkt im jeweiligen Plugin-Ordner und werden durch die zugehörigen Manifeste geladen.
-- **Overview-Dokumente:** Detailinformationen zu Struktur, Datenfluss und Zuständigkeiten stehen in `plugins/salt-marcher/PluginOverview.txt` und `plugins/layout-editor/src/LayoutEditorOverview.txt`.
+- **Salt Marcher Plugin:** Registriert Cartographer-, Encounter- und Library-Views, injiziert eigenes CSS und verwaltet Terrain-/Regions-Daten. Enthält alle Hex-Mapper-, Travel- und Library-Funktionen des Projekts.
+- **Layout-Editor-Bridge:** `src/app/layout-editor-bridge.ts` verknüpft Salt Marcher mit einem extern installierten Layout-Editor-Plugin und meldet dort optional View-Bindings an.
+- **Build & Artefakte:** `esbuild.config.mjs` erzeugt `main.js`; Tests liegen unter `tests/`, und sämtliche Bereichsübersichten befinden sich unter `docs/`.
+- **Overview-Dokumente:** Detailinformationen zu Struktur, Datenfluss und Zuständigkeiten stehen in `salt-marcher/PluginOverview.txt` sowie den Bereichsübersichten unter `salt-marcher/docs/`.
 
 ## Hinweise zur Zusammenarbeit
 
-- Plugins sind bewusst entkoppelt: Es bestehen keine direkten Imports zwischen den Codebasen.
-- Gemeinsame Funktionalität sollte bei Bedarf als eigene Hilfen in beiden Plugins dupliziert oder neu konzipiert werden (kein Shared-Code-Verzeichnis vorhanden).
-- Beim Arbeiten an einem der Plugins immer die zugehörige Overview-Datei aktualisieren und das Build-Artefakt (`main.js`) neu erzeugen.
+- Salt Marcher kann optional mit einem externen Layout-Editor interagieren; die Brücke ist jedoch so gestaltet, dass Salt Marcher auch ohne das andere Plugin vollständig funktioniert.
+- Gemeinsame Funktionalität sollte in klar abgegrenzten Services (`src/core/…`, `src/ui/…`) umgesetzt werden.
+- Beim Arbeiten am Plugin immer die zugehörigen Overview-Dateien aktualisieren und das Build-Artefakt (`main.js`) neu erzeugen.

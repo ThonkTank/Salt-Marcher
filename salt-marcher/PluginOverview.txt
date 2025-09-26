@@ -1,30 +1,36 @@
 # Salt Marcher – Plugin Overview
 
-Salt Marcher liefert Kartographie-, Encounter- und Bibliothekswerkzeuge für hex-basierte Kampagnen. Der Code ist klar vom Layout Editor getrennt – letzterer lebt als eigenes Plugin im Repository (`layout-editor/`) und wird nicht mehr automatisch mitgeladen.
+Salt Marcher liefert Kartographie-, Encounter- und Bibliothekswerkzeuge für hex-basierte Kampagnen. Der Code konzentriert sich
+vollständig auf dieses Plugin; eine optionale Kopplung an einen extern installierten Layout Editor erfolgt ausschließlich über
+das Brückenskript `src/app/layout-editor-bridge.ts`.
 
 ## Struktur
 
 ```
 Salt-Marcher/
-├─ salt-marcher/
-│  ├─ manifest.json          # Obsidian-Manifest (lädt das gebündelte main.js im Plugin-Stamm)
-│  ├─ esbuild.config.mjs     # Build-Pipeline (bundelt src/app/main.ts → main.js)
-│  ├─ main.js                # Gebündeltes Plugin-Artefakt
-│  ├─ package.json           # Scripts & Dev-Abhängigkeiten (esbuild, TypeScript, Obsidian-Typen)
-│  ├─ package-lock.json      # Reproduzierbare Dependency-Auflösung
-│  ├─ tsconfig.json          # TypeScript-Konfiguration für das Build-Setup
-│  └─ src/
-│     ├─ app/
-│     │  ├─ main.ts          # Plugin-Bootstrap (Views, Commands, CSS, Terrain-Watcher)
-│     │  ├─ css.ts           # Zentrales Styling als Template-String
-│     │  └─ layout-editor-bridge.ts # Optionales Binding zum Layout-Editor (View-Registry)
-│     ├─ apps/
-│     │  ├─ cartographer/    # Hex-Map-Workspace mit Editor/Inspector/Travel-Modi
-│     │  ├─ encounter/       # Encounter-View
-│     │  └─ library/         # Library-View für Terrains, Regionen, Kreaturen
-│     ├─ core/               # Domain-Services (Hex-Geometrie, Dateien, Terrain, Optionen)
-│     └─ ui/                 # Geteilte Dialoge und Workflow-Helfer
-└─ layout-editor/            # Eigenständiges Layout-Editor-Plugin (separater Build & Manifest)
+└─ salt-marcher/
+   ├─ manifest.json          # Obsidian-Manifest (lädt das gebündelte main.js im Plugin-Stamm)
+   ├─ esbuild.config.mjs     # Build-Pipeline (bundelt src/app/main.ts → main.js)
+   ├─ main.js                # Gebündeltes Plugin-Artefakt
+   ├─ package.json           # Scripts & Dev-Abhängigkeiten (esbuild, TypeScript, Obsidian-Typen)
+   ├─ package-lock.json      # Reproduzierbare Dependency-Auflösung
+   ├─ tsconfig.json          # TypeScript-Konfiguration für das Build-Setup
+   ├─ PluginOverview.txt     # Diese Detailübersicht
+   ├─ README.md              # Anwender-orientierte Hinweise
+   ├─ docs/                  # Bereichsspezifische Overviews (cartographer/core/library/ui)
+   ├─ src/
+   │  ├─ app/
+   │  │  ├─ main.ts          # Plugin-Bootstrap (Views, Commands, CSS, Terrain-Watcher)
+   │  │  ├─ css.ts           # Zentrales Styling als Template-String
+   │  │  └─ layout-editor-bridge.ts # Optionales Binding zu einem externen Layout-Editor
+   │  ├─ apps/
+   │  │  ├─ cartographer/    # Hex-Map-Workspace mit Editor/Inspector/Travel-Modi
+   │  │  ├─ encounter/       # Encounter-View
+   │  │  └─ library/         # Library-View für Terrains, Regionen, Kreaturen
+   │  ├─ core/               # Domain-Services (Hex-Geometrie, Dateien, Terrain, Optionen)
+   │  └─ ui/                 # Geteilte Dialoge und Workflow-Helfer
+   └─ tests/
+      └─ cartographer/       # Vitest-Suite für den Presenter
 ```
 
 ## Features & Verantwortlichkeiten
@@ -35,7 +41,7 @@ Salt-Marcher/
 - **Encounter-View:** Schlanke Ansicht für Encounter-Notizen.
 - **Core-Services:** Hex-Geometrie, Map/Terrain/Regions-Persistenz sowie Workspace-Helfer als Single Source of Truth.
 - **Geteilte UI-Bausteine:** Modals, Header und Workflows für Map-Management und generische Dialoge.
-- **View Container & Layout-Editor-Bridge:** `ui/view-container.ts` kapselt einen renderbaren View-Host inkl. optionaler Kamera; `src/app/layout-editor-bridge.ts` meldet die Cartographer-Karte als View-Binding beim Layout Editor an.
+- **View Container & Layout-Editor-Bridge:** `ui/view-container.ts` kapselt einen renderbaren View-Host inkl. optionaler Kamera; `src/app/layout-editor-bridge.ts` meldet die Cartographer-Karte als View-Binding bei einem extern installierten Layout-Editor an.
 - **Build & Styling:** Esbuild erzeugt `main.js`; `css.ts` enthält ausschließlich Salt-Marcher-spezifisches Styling (Layout-Editor-CSS ist in das separate Plugin umgezogen).
 
 ## Datenfluss
@@ -50,7 +56,7 @@ Salt-Marcher/
 ### `src/app`
 - `main.ts`: Einstiegspunkt des Plugins. Registriert Views/Commands, lädt Terrain-Daten (`ensureTerrainFile`, `loadTerrains`, `watchTerrains`), injiziert CSS.
 - `css.ts`: Enthält das Styling für Cartographer, Library und Encounter. Layout-Editor-spezifische Klassen wurden entfernt.
-- `layout-editor-bridge.ts`: Bindet den Cartographer optional an den Layout Editor (View-Bindings).
+- `layout-editor-bridge.ts`: Bindet den Cartographer optional an einen externen Layout Editor (View-Bindings über dessen API).
 
 ### `src/apps/cartographer`
 - `index.ts`: Exportiert `CartographerView` sowie Hilfsfunktionen (`openCartographer`, `getOrCreateCartographerLeaf`, `detachCartographerLeaves`); delegiert Lifecycle an den Presenter.
@@ -89,6 +95,6 @@ Salt-Marcher/
 
 ## Zusammenarbeit mit dem Layout-Editor
 
-- Das Layout-Editor-Plugin liegt unter `layout-editor/` und bringt eigenes Manifest, Build und CSS mit.
-- Falls benötigt, kann Salt Marcher über Obsidian den Layout Editor parallel laden und über dessen öffentliches API (`getApi()` aus `layout-editor`-Plugin) Layout-Definitionen registrieren oder Layouts laden – ohne direkte Code-Abhängigkeit im Salt-Marcher-Build.
+- Der Layout Editor wird als separates Obsidian-Plugin ausgeliefert und ist nicht Teil dieses Repositories.
+- Sobald der Layout Editor installiert und aktiviert ist, kann Salt Marcher über dessen öffentliches API (`getApi()`) Layout-Definitionen registrieren oder Layouts laden – ohne direkte Code-Abhängigkeit im Salt-Marcher-Build.
 - `layout-editor-bridge.ts` registriert – sobald verfügbar – das Cartographer-Mapping als `viewBindingId` beim Layout Editor, sodass dessen View Container die Karte als Feature anbietet.
