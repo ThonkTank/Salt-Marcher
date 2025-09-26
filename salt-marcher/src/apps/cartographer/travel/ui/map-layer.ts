@@ -3,6 +3,7 @@
 
 import type { App, TFile } from "obsidian";
 import { renderHexMap, type RenderHandles } from "../../../../core/hex-mapper/hex-render";
+import type { HexOptions } from "../../../../core/options";
 import type { Coord } from "../domain/types";
 
 export type MapLayer = {
@@ -18,11 +19,13 @@ export type MapLayer = {
 
 const keyOf = (r: number, c: number) => `${r},${c}`;
 
+export type RenderLayerOptions = HexOptions;
+
 export async function createMapLayer(
     app: App,
     host: HTMLElement,
     mapFile: TFile,
-    opts: any
+    opts: RenderLayerOptions
 ): Promise<MapLayer> {
     // render map
     const handles = await renderHexMap(app, host, opts, mapFile.path);
@@ -35,8 +38,12 @@ export async function createMapLayer(
         polyToCoord.set(poly as unknown as SVGElement, { r, c });
     }
 
+    const ensureHandlesPolys = typeof handles.ensurePolys === "function"
+        ? (coords: Coord[]) => handles.ensurePolys(coords)
+        : null;
+
     function ensurePolys(coords: Coord[]) {
-        (handles as any).ensurePolys?.(coords);
+        ensureHandlesPolys?.(coords);
         // Neu erzeugte Polys in den Index aufnehmen
         for (const rc of coords) {
             const poly = handles.polyByCoord.get(keyOf(rc.r, rc.c));
