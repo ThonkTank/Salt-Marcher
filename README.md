@@ -24,7 +24,7 @@ Salt Marcher is an Obsidian community plugin that helps game masters run hexcraw
 - [Project wiki](wiki/README.md) – canonical end-user guides hosted on GitHub.
 
 ## To-Do
-- [UI terminology consistency](todo/ui-terminology-consistency.md) – Einheitliche Sprache für UI-Texte und Kommentare herstellen.
+- [UI terminology consistency](todo/ui-terminology-consistency.md) – Einheitliche englische UI-Terminologie bis ins Release-Artefakt (`main.js`) durchziehen.
 
 ## Standards & Conventions
 - All new or updated docs must follow the mandatory template defined in the [documentation style guide](style-guide.md).

@@ -42,5 +42,5 @@ salt-marcher/
 Die Bereichsdokumente unter [`docs/`](docs/README.md) werden nach jedem Feature-Update gepflegt. Der repository-weite Einstieg steht im [Documentation Hub](../DOCUMENTATION.md). Für neue Beiträge bitte den projektspezifischen [Style Guide](../style-guide.md) beachten und Querverlinkungen zu bestehenden Overviews setzen. Bootstrap-bezogene Refactorings sind im [Plugin Bootstrap Review](../todo/plugin-bootstrap-review.md) dokumentiert.
 
 ## To-Do
-- [UI terminology consistency](../todo/ui-terminology-consistency.md) – Einheitliche UI-Sprache und Kommentare sicherstellen.
+- [UI terminology consistency](../todo/ui-terminology-consistency.md) – Englischsprachige Terminologie bis ins ausgelieferte Artefakt sichern (`main.js` rebuild sicherstellen).
 - [Plugin Bootstrap Review](../todo/plugin-bootstrap-review.md) – Verantwortlichkeiten des Bootstraps präzisieren, Error-Handling und Tests evaluieren.
