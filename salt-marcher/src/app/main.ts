@@ -14,14 +14,16 @@ export default class SaltMarcherPlugin extends Plugin {
     private teardownLayoutBridge?: () => void;
     async onload() {
         // Views
-        this.registerView(VIEW_CARTOGRAPHER,         (leaf: WorkspaceLeaf) => new CartographerView(leaf));
-        this.registerView(VIEW_ENCOUNTER,            (leaf: WorkspaceLeaf) => new EncounterView(leaf));
-        this.registerView(VIEW_LIBRARY,              (leaf: WorkspaceLeaf) => new LibraryView(leaf));
+        this.registerView(VIEW_CARTOGRAPHER, (leaf: WorkspaceLeaf) => new CartographerView(leaf));
+        this.registerView(VIEW_ENCOUNTER, (leaf: WorkspaceLeaf) => new EncounterView(leaf));
+        this.registerView(VIEW_LIBRARY, (leaf: WorkspaceLeaf) => new LibraryView(leaf));
 
-        // Terrains initial laden & live halten
+        // Load terrain data and keep it synchronised with the filesystem.
         await ensureTerrainFile(this.app);
         setTerrains(await loadTerrains(this.app));
-        this.unwatchTerrains = watchTerrains(this.app, () => { /* Views reagieren via Event */ });
+        this.unwatchTerrains = watchTerrains(this.app, () => {
+            /* Views react through events */
+        });
 
         // Ribbons
         this.addRibbonIcon("compass", "Open Cartographer", async () => {
@@ -36,14 +38,14 @@ export default class SaltMarcherPlugin extends Plugin {
         // Commands
         this.addCommand({
             id: "open-cartographer",
-            name: "Cartographer öffnen",
+            name: "Open Cartographer",
             callback: async () => {
                 await openCartographer(this.app);
             },
         });
         this.addCommand({
             id: "open-library",
-            name: "Library öffnen",
+            name: "Open Library",
             callback: async () => {
                 const leaf = this.app.workspace.getLeaf(true);
                 await leaf.setViewState({ type: VIEW_LIBRARY, active: true });

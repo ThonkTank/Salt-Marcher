@@ -1,21 +1,26 @@
-# Map-Manager Overview
+# Map Manager Overview
 
-## Strukturdiagramm
-```
-src/ui/
-└─ map-manager.ts      # Stellt `createMapManager` als zentrales Steuerobjekt bereit
-   ├─ map-workflows.ts # Prompt-Dialoge für Auswahl/Erstellung
-   ├─ confirm-delete.ts# Bestätigungsdialog vor dem Löschen
-   └─ ../core/map-delete.ts
-                      # Löscht Karten-Datei und assoziierte Tiles
-```
+## Purpose & Audience
+This document guides developers who integrate `createMapManager` into feature views. It explains the supporting helpers, deletion safeguards, and error handling expectations.
 
-## Aufgaben & Datenfluss
-- `createMapManager` kapselt den aktuellen Karten-State (`current`) und veröffentlicht die UI-Aktionen `open`, `create`, `setFile`, `deleteCurrent`.
-- Auswahl/Erstellung laufen jeweils über die Prompt-Helfer aus `map-workflows.ts`, das Ergebnis wird über `applyChange` synchronisiert.
-- Beim Löschen wird über `ConfirmDeleteModal` ein Dialog geöffnet. Nach der Bestätigung erfolgt der Aufruf von `deleteMapAndTiles`, der bei Erfolg den State leert.
+## Directory Map
+| Path | Description | Primary Docs |
+| --- | --- | --- |
+| `src/ui/map-manager.ts` | Exposes `createMapManager`, the central orchestration object. | [`../src/ui/UiOverview.txt`](../src/ui/UiOverview.txt) |
+| `src/ui/map-workflows.ts` | Provides selection and creation prompts consumed by the manager. | [`../src/ui/UiOverview.txt`](../src/ui/UiOverview.txt) |
+| `src/ui/confirm-delete.ts` | Confirmation modal that protects destructive actions. | [`../src/ui/UiOverview.txt`](../src/ui/UiOverview.txt) |
+| `src/core/map-delete.ts` | Removes map files and associated tiles. | [`../core/README.md`](../core/README.md) |
 
-## Fehlerbehandlung beim Löschen
-- Die Delete-Callback-Logik ist in `try/catch` gekapselt. So bleiben Fehler beim Entfernen der Map/Tile-Dateien nicht stumm.
-- Schlägt `deleteMapAndTiles` fehl, protokolliert der Manager den Fehler via `console.error` und informiert Anwender:innen mit einem `Notice`.
-- Der `onChange(null)`-Callback wird nur nach erfolgreich abgeschlossenem Löschvorgang ausgeführt, wodurch externe Konsumenten keine inkonsistenten Zustände erhalten.
+## Key Workflows
+1. **State coordination.** `createMapManager` encapsulates the current map (`current`) and exposes `open`, `create`, `setFile`, and `deleteCurrent` actions.
+2. **Selection and creation.** Both flows delegate to helpers in `map-workflows.ts`, ensuring consistent modals and notices.
+3. **Deletion safety.** `deleteCurrent` launches `ConfirmDeleteModal`. Only after successful confirmation does it call `deleteMapAndTiles`, which clears the tracked file and invokes the `onChange` callback with `null`.
+
+## Linked Docs
+- [Shared UI components](README.md) – catalog of related building blocks.
+- [UI terminology reference](terminology.md) – approved copy for notices and button labels.
+
+## Standards & Conventions
+- Wrap destructive operations in `try/catch` and surface failures through both logging (`console.error`) and notices sourced from `MAP_MANAGER_COPY`.
+- New states or notices must be added to `MAP_MANAGER_COPY` and reflected in the glossary.
+- Tests under `tests/ui/map-manager.test.ts` should remain in sync with any behavioral change or new copy requirement.
