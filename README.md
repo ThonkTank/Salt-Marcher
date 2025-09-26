@@ -1,44 +1,28 @@
 # Salt Marcher for Obsidian
 
-Salt Marcher is an Obsidian community plugin for running hexcrawl-inspired tabletop campaigns directly in your vault. It provides integrated map management, lore libraries, and encounter orchestration so referees can prep and run sessions without leaving their notes. Detailed usage guides live in the [project wiki](../../wiki); this README highlights the essentials to help you get started quickly.
+## Purpose & Audience
+Salt Marcher is an Obsidian community plugin that helps game masters run hexcrawl-inspired tabletop campaigns directly in their vaults. This repository-level README is for contributors and maintainers who need a quick orientation across source code, documentation, and supporting assets before diving into specific folders.
 
-## Prerequisites
-- Obsidian Desktop 1.5+ with Community Plugins enabled
-- A vault with write access (the plugin stores terrain data and encounter logs)
-- Optional: existing regional maps or encounter notes you want to import
+## Directory Map
+| Path | Description | Primary Docs |
+| --- | --- | --- |
+| `docs/` | Project-wide documentation hub and shared standards for all contributors. | [`docs/index.md`](docs/index.md) |
+| `salt-marcher/` | Source, build pipeline, and packaged artifacts for the Obsidian plugin. | [`salt-marcher/PluginOverview.txt`](salt-marcher/PluginOverview.txt) |
+| `wiki/` | Offline export of the end-user wiki for reference and contributions. | [`wiki/`](wiki/) |
+| `References, do not delete!/` | External SRD references preserved for licensing compliance. | [`References, do not delete!/README.md`]("References, do not delete!"/README.md) |
 
-## Installation (within Obsidian)
-1. Open **Settings → Community Plugins** and enable community plugins.
-2. Use **Browse** to locate "Salt Marcher" (or install manually from this repository) and press **Install**.
-3. After installation, click **Enable**. Obsidian will load the plugin and register its workspace views automatically.
+## Key Workflows
+- **Install the plugin for testing:** Follow the packaging and enablement steps in the [Salt Marcher README](salt-marcher/README.md) to load the plugin in Obsidian and verify workspace views.
+- **Update documentation consistently:** Use the shared [documentation style guide](docs/style-guide.md) and cross-reference folder-specific docs listed in the directory map before committing changes.
+- **Coordinate releases and support:** Review the project [wiki](../../wiki) for user-facing guides, and keep changelogs or troubleshooting entries aligned with the latest plugin features.
 
-## Primary Workflows
-Salt Marcher ships three coordinated workspaces:
+## Linked Docs
+- [Repository documentation hub](docs/index.md) – entry point into contributor, architecture, and user-facing docs.
+- [Salt Marcher plugin overview](salt-marcher/PluginOverview.txt) – architectural breakdown of the plugin package.
+- [Developer documentation set](salt-marcher/docs/) – deep dives for individual subsystems.
+- [Project wiki](../../wiki) – canonical end-user guides hosted on GitHub.
 
-- **Cartographer** – Your hex map control center for editing tiles, annotating regions, and launching encounters.
-- **Library** – A knowledge base for creatures, spells, terrains, and regions that synchronizes with Cartographer selections.
-- **Encounter** – A focused session view for managing active encounters created from your maps or library records.
-
-Deep-dive documentation, mode breakdowns, and UI tours for each workflow are available in the [wiki](../../wiki).
-
-## What Loads Automatically
-On activation, the plugin registers the following so everything is ready the moment Obsidian starts:
-
-- Workspace views for **Cartographer**, **Encounter**, and **Library**, each backed by their respective presenters and UI shells.【F:salt-marcher/src/app/main.ts†L16-L19】
-- Terrain bootstrap: the plugin creates the terrain data file if missing, loads terrains into memory, and starts a watcher so view components react to updates in real time.【F:salt-marcher/src/app/main.ts†L21-L24】
-- Ribbon icons labelled **Open Cartographer** and **Open Library** that open the corresponding views in a new leaf.【F:salt-marcher/src/app/main.ts†L26-L34】
-- Commands **Cartographer öffnen** and **Library öffnen** so keyboard palettes mirror the ribbon actions.【F:salt-marcher/src/app/main.ts†L36-L47】
-- Hex map styling and the layout editor bridge, ensuring custom CSS and layout synchronization stay active across sessions.【F:salt-marcher/src/app/main.ts†L49-L60】
-
-## Quick-Start Checklist
-- [ ] Click the **Open Cartographer** ribbon icon (or run **Cartographer öffnen**) to open the map workspace.
-- [ ] Create a new hex map or import an existing region using the Cartographer controls.
-- [ ] Manage terrains and regions in the **Library** view; confirm updates reflect instantly in Cartographer.
-- [ ] Trigger an encounter from Cartographer or Library and manage it within the **Encounter** view.
-
-## Support & Licensing
-Need help? Start with the troubleshooting entries in the [wiki](../../wiki). For direct assistance, open a discussion or issue in this repository.
-
-Thank you, Springbov, for providing a purely text version of the 5.2 SRD at https://github.com/springbov/dndsrd5.2_markdown/tree/main
-
-This work includes material from the System Reference Document 5.2 (“SRD 5.2”) by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.
+## Standards & Conventions
+- All new or updated docs must follow the mandatory template defined in the [documentation style guide](docs/style-guide.md).
+- Synchronize repository docs with the user-focused wiki to keep workflows and terminology consistent for referees and contributors alike.
+- Record outstanding architectural or quality concerns in [`Critique.txt`](Critique.txt) so the team can triage them across sprints.
