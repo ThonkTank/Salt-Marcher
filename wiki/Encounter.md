@@ -21,7 +21,7 @@ The Encounter workspace currently provides a dedicated pane for handling travel-
 | Manual pane creation (`Open view by type → salt-marcher-encounter`) | Opens the workspace without a travel trigger. | Useful for testing layouts or preparing upcoming encounter features. |
 
 - Keep the encounter workspace docked next to Cartographer to reduce window juggling when multiple encounters occur.
-- Document any desired encounter tooling in [`docs/architecture-critique.md`](../docs/architecture-critique.md) so the placeholder can evolve alongside feature work.
+- Document any desired encounter tooling in [`architecture-critique.md`](../architecture-critique.md) so the placeholder can evolve alongside feature work.
 - Use Obsidian's pane pinning to prevent the encounter view from being replaced by unrelated notes during sessions.
 
 ## Related Links
