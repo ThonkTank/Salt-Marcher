@@ -50,5 +50,4 @@ bitte den projektspezifischen [Style Guide](../docs/style-guide.md) beachten und
 ## To-Do
 - [Cartographer presenter respects abort signals](../todo/cartographer-presenter-abort-handling.md) – Presenter muss Abort-Signale in allen Lifecycle-Phasen respektieren.
 - [Cartographer mode registry](../todo/cartographer-mode-registry.md) – Modi deklarativ erfassen und laden.
-- [Hex renderer modularization](../todo/hex-renderer-modularization.md) – Renderer in klar getrennte Module zerschneiden.
 - [UI terminology consistency](../todo/ui-terminology-consistency.md) – Einheitliche UI-Sprache und Kommentare sicherstellen.

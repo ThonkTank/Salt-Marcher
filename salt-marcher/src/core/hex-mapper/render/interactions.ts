@@ -1,12 +1,18 @@
 // src/core/hex-mapper/render/interactions.ts
-import type { HexCoord, HexInteractionDelegate, HexInteractionOutcome, Destroyable } from "./types";
+import type {
+    HexCoord,
+    HexInteractionController,
+    HexInteractionDelegate,
+    HexInteractionDelegateRef,
+    HexInteractionOutcome,
+} from "./types";
 
 export type InteractionControllerConfig = {
     svg: SVGSVGElement;
     overlay: SVGRectElement;
     toContentPoint(ev: MouseEvent | PointerEvent): DOMPoint | null;
     pointToCoord(x: number, y: number): HexCoord;
-    delegateRef: { current: HexInteractionDelegate };
+    delegateRef: HexInteractionDelegateRef;
     onDefaultClick(coord: HexCoord, ev: MouseEvent): void | Promise<void>;
 };
 
@@ -14,7 +20,7 @@ const keyOf = (coord: HexCoord) => `${coord.r},${coord.c}`;
 
 type PaintStepResult = { outcome: HexInteractionOutcome; coord: HexCoord | null };
 
-export function createInteractionController(config: InteractionControllerConfig): Destroyable {
+export function createInteractionController(config: InteractionControllerConfig): HexInteractionController {
     const { svg, overlay, toContentPoint, pointToCoord, delegateRef, onDefaultClick } = config;
 
     let painting = false;

@@ -1,6 +1,6 @@
 // src/core/hex-mapper/render/camera-controller.ts
 import { attachCameraControls } from "../camera";
-import type { Destroyable } from "./types";
+import type { HexCameraController } from "./types";
 
 type CameraOptions = { minScale: number; maxScale: number; zoomSpeed: number };
 
@@ -10,7 +10,7 @@ export function createCameraController(
     overlay: SVGRectElement,
     host: HTMLElement,
     options: CameraOptions
-): Destroyable {
+): HexCameraController {
     const detach = attachCameraControls(svg, contentG, options, [overlay, host]);
     return {
         destroy() {

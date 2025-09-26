@@ -23,13 +23,13 @@ Der Core-Layer bündelt sämtliche fachlichen Services des Plugins, die unabhän
 | `hex-geom.ts` | Mathematische Utilities für Hex-Koordinaten (odd-r ↔ axial/cube, Distanz, Nachbarn, Pixel-Mapping, Polygonpunkte). |
 | `camera.ts` | Fügt SVG-Pan/Zoom-Kontrollen mit Wheel-Gesten und mittlerer Maustaste hinzu. |
 | `hex-notes.ts` | Organisiert Tile-Dateien: liest Optionen, erzeugt Folder/Dateinamen, migriert Legacy-Strukturen, liest/schreibt Frontmatter + Body. Schreibt `smHexTile: true` ins Frontmatter. Bietet High-Level-APIs (`listTilesForMap`, `loadTile`, `saveTile`, `deleteTile`, `initTilesForNewMap`). |
-| `hex-render.ts` | Rendert Hex-Karten in ein SVG, färbt Tiles anhand `TERRAIN_COLORS`, verdrahtet Kamera und User-Interaction (Click-Dispatch, Brush-Drag). Gibt Handles (`setFill`, `ensurePolys`, `destroy`) zur Laufzeitsteuerung zurück. |
+| `hex-render.ts` | Orchestriert den Hex-Renderer: bootstrapt Tiles (`render/bootstrap.ts`), baut Szene/Kamera/Koordinaten-Mapper auf und bindet den Interaktionsadapter. Liefert `RenderHandles` (`setFill`, `ensurePolys`, `destroy`, Delegate-Switch). |
 
 ## Lebenszyklus & Zusammenspiel
 
 1. **Kartenerstellung:** Features rufen `createHexMapFile(...)` aus `map-maker.ts` auf. Der Hex-Block wird gebaut, die Datei in der Vault angelegt und Start-Tiles via `initTilesForNewMap` erzeugt.
 2. **Auflistung:** `map-list.ts` liefert Karten-Dateien (z. B. für Galerie/Selector) und stellt `getFirstHexBlock` bereit, um Render-Optionen zu lesen.
-3. **Rendering:** `renderHexMap(...)` erzeugt das SVG, lädt vorhandene Tiles (`hex-notes.ts`), setzt Kamera-Kontrollen (`camera.ts`) und färbt die Polygone mit Hilfe von `terrain.ts`.
+3. **Rendering:** `renderHexMap(...)` startet den Tile-Bootstrap (`render/bootstrap.ts`), erzeugt Szene und Kamera, richtet den Koordinaten-Mapper (`render/coordinates.ts`) ein und koppelt die Interaktionen (`render/interaction-adapter.ts` + `render/interactions.ts`). Anschließend färbt es Polygone via `terrain.ts`.
 4. **Bearbeitung:** Feature-spezifische Tools verwenden die `RenderHandles` (`setFill`, `ensurePolys`) sowie Tile-APIs (`saveTile`, `deleteTile`) zur Aktualisierung.
 5. **Löschen:** `deleteMapAndTiles(...)` entfernt Karte + Tiles, wobei `hex-notes.ts` alle betroffenen Dateien identifiziert.
 6. **Workspace-Steuerung:** `layout.ts` stellt sicher, dass neue Views im gewünschten Leaf erscheinen.

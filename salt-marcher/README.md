@@ -43,7 +43,6 @@ Weitere Nutzer-Workflows, Schritt-für-Schritt-Anleitungen und FAQ-Einträge sin
 ## To-Do
 - [Cartographer presenter respects abort signals](../todo/cartographer-presenter-abort-handling.md) – Abort-Signal-Handling komplett durchziehen.
 - [Cartographer mode registry](../todo/cartographer-mode-registry.md) – Modi flexibel registrieren und konfigurieren.
-- [Hex renderer modularization](../todo/hex-renderer-modularization.md) – Rendering/Interaktionen modularisieren.
 - [UI terminology consistency](../todo/ui-terminology-consistency.md) – UI-Terminologie vereinheitlichen.
 
 ## Dokumentations- und Beitragshinweise

@@ -21,4 +21,4 @@ docs/core/
 - Richtlinien zur Dokumentation: [Style Guide](../../../docs/style-guide.md).
 
 ## To-Do
-- [Hex renderer modularization](../../../todo/hex-renderer-modularization.md) – Rendering, Kamera und Interaktionen entflechten.
+- Keine offenen Core-spezifischen Punkte. Siehe das zentrale [`todo/`](../../../todo/README.md) für bereichsübergreifende Backlog-Einträge.
