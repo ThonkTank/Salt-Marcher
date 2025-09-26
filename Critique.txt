@@ -2,7 +2,7 @@
 
 ## 1. Architektur & Modularität
 ### 1.1 Einstiegs- und Registrierungslogik
-- In `src/app/main.ts` wird das eigentliche Plugin registriert, gleichzeitig existiert in `src/apps/cartographer/index.ts` weiterhin eine komplette `CartographerPlugin`-Klasse inklusive eigener Ribbon- und Command-Registrierung.【F:salt-marcher/src/app/main.ts†L16-L74】【F:salt-marcher/src/apps/cartographer/index.ts†L54-L88】 Diese Dopplung erzeugt ein zweites (nicht verwendetes) Entry-Point-Objekt und verwirrt den Build. Sie sollte entfernt oder in dedizierte „feature module“-Funktionen zerlegt werden.
+- ✅ Behoben (2024-04-09): `SaltMarcherPlugin` ist der einzige Entry Point. `src/apps/cartographer/index.ts` exportiert nur noch View- und Leaf-Helfer; Ribbon/Command-Registrierung liegt vollständig in `src/app/main.ts`.
 - `CartographerView` kapselt sowohl View-API als auch Dateiauswahl, während `mountCartographer` erneut State hält. Eine klare Trennung (z. B. Presenter vs. View) fehlt, wodurch Testbarkeit und Erweiterbarkeit leiden.【F:salt-marcher/src/apps/cartographer/index.ts†L9-L52】
 
 ### 1.2 Cartographer-Shell

@@ -29,7 +29,7 @@ Salt-Marcher/
 
 ## Features & Verantwortlichkeiten
 
-- **Plugin-Bootstrap (`src/app/main.ts`):** Registriert Cartographer-, Encounter- und Library-Views, injiziert das Salt-Marcher-CSS, hält Terrain-Daten aktuell und nutzt die Cartographer-Helfer (`openCartographer`, `detachCartographerLeaves`) als einzige Entry-Points für Kommandos/Ribbons.
+- **Plugin-Bootstrap (`src/app/main.ts`):** Registriert Cartographer-, Encounter- und Library-Views, injiziert das Salt-Marcher-CSS, hält Terrain-Daten aktuell und nutzt die Cartographer-Helfer (`openCartographer`, `detachCartographerLeaves`) als einzige Entry-Points für Kommandos/Ribbons – es existiert kein zweites Plugin-Objekt mehr.
 - **Cartographer-Workspace:** Map-Stage mit Editor-, Inspector- und Travel-Modi inklusive Renderer-Synchronisierung, Dateioperationen und Modusverwaltung.
 - **Library-View:** Einheitliche Verwaltung von Terrains, Regionen und Kreaturen mit Suche, Create-Workflows und Persistenz.
 - **Encounter-View:** Schlanke Ansicht für Encounter-Notizen.
@@ -51,8 +51,7 @@ Salt-Marcher/
 - `main.ts`: Einstiegspunkt des Plugins. Registriert Views/Commands, lädt Terrain-Daten (`ensureTerrainFile`, `loadTerrains`, `watchTerrains`), injiziert CSS.
 - `css.ts`: Enthält das Styling für Cartographer, Library und Encounter. Layout-Editor-spezifische Klassen wurden entfernt.
 
-### `src/apps/cartographer`
-- `index.ts`: Exportiert `CartographerView` sowie Hilfsfunktionen (`openCartographer`, `getOrCreateCartographerLeaf`, `detachCartographerLeaves`), die von `main.ts` genutzt werden, um den View zentral zu registrieren und zu öffnen.
+- `index.ts`: Exportiert `CartographerView` sowie Hilfsfunktionen (`openCartographer`, `getOrCreateCartographerLeaf`, `detachCartographerLeaves`); Registrierung & Befehle liegen ausschließlich im `SaltMarcherPlugin`.
 - `view-shell.ts`: Baut Layout (Header, Stage, Sidebar), hält aktiven Modus, lädt Karten via `createMapLayer`/`renderHexMap` und delegiert Hex-Events an Modi.
 - `view-shell.ts`: Baut Layout (Header, Stage, Sidebar), hält aktiven Modus, lädt Karten via `createMapLayer`/`renderHexMap`, nutzt den gemeinsamen `view-container` als Map-Host und delegiert Hex-Events an Modi.
 - `modes/editor.ts`: Sidebar für den Editor-Modus. Bindet Tool-Infrastruktur aus `editor/`, synchronisiert Brush-Vorschau und persistiert Terrain-Änderungen über `RenderHandles`.

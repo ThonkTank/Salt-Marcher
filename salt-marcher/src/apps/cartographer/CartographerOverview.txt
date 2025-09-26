@@ -13,7 +13,7 @@ src/apps/cartographer/
 │        ├─ brush-options.ts # Brush-Tool (UI, Radius-/Terrainwahl, Statushandling)
 │        ├─ brush.ts         # Persistiert Terrain-Änderungen + Live-Fill
 │        └─ brush-math.ts    # Hex-Radius-Berechnungen im odd-r Grid
-├─ index.ts                 # Obsidian-View inkl. Ribbon/Command-Anbindung
+├─ index.ts                 # Obsidian-View + Leaf-Helfer (Registrierung via SaltMarcherPlugin)
 ├─ view-shell.ts            # Layout, Map-Stage und Modusverwaltung
 ├─ modes/
 │  ├─ editor.ts             # Map-Editor-Modus (Tools, Brush, Sidebar-Panel)
@@ -29,7 +29,7 @@ src/apps/cartographer/
 
 ## Features & Verantwortlichkeiten
 
-- **View-Registrierung:** `index.ts` meldet `VIEW_TYPE_CARTOGRAPHER` an, richtet Ribbon & Command ein und kümmert sich um Mount/Cleanup des Views.
+- **View-Registrierung:** `index.ts` meldet `VIEW_TYPE_CARTOGRAPHER` an, stellt `CartographerView` bereit und liefert Leaf-Helfer (`openCartographer`, `detachCartographerLeaves`). Ribbons/Commands werden ausschließlich im `SaltMarcherPlugin` registriert.
 - **Layout-Shell:** `view-shell.ts` übernimmt das Cartographer-Grundlayout (Header + Body mit Map/Sidebar), verwaltet den Moduswechsel, bindet `createMapManager` für Open/Create/Delete ein und stellt `CartographerModeContext` inkl. `getOptions()` bereit.
 - **Map-Stage:** Rendert Karten via `createMapLayer`/`renderHexMap`, verwaltet `RenderHandles`, Hex-Klick-Delegation sowie Options-Parsing (`getFirstHexBlock` → `parseOptions`) und zeigt sinnvolle Platzhalter, wenn kein File oder kein Hex-Block vorliegt.
 - **Modus-System:** Stellt das Mode-Interface (`onEnter`, `onExit`, `onFileChange`, `onHexClick`, `onSave`) bereit, schaltet über ein Dropdown im Header zwischen Travel/Editor/Inspector um, delegiert Events und räumt Ressourcen deterministisch auf.
@@ -42,8 +42,8 @@ src/apps/cartographer/
 ## Dateibeschreibungen
 
 ### `index.ts`
-- Exportiert `CartographerView` und `VIEW_TYPE_CARTOGRAPHER`.
-- Registriert Ribbon & Command, damit der View erreichbar ist.
+- Exportiert `CartographerView`, `VIEW_TYPE_CARTOGRAPHER` sowie Leaf-/Open-Helfer für den Plugin-Bootstrap.
+- Verzichtet bewusst auf eine eigene Plugin-Klasse; Registrierungen erfolgen über `SaltMarcherPlugin` (`src/app/main.ts`).
 - Erzeugt einen Host (`cartographer-host`), mountet `view-shell.ts`, reicht `setFile`-Aufrufe weiter und räumt beim Schließen auf.
 
 ### `view-shell.ts`
