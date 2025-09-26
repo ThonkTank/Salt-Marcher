@@ -2,11 +2,10 @@
 import { Plugin, WorkspaceLeaf } from "obsidian";
 // Legacy views removed (consolidated into Library)
 import { EncounterView, VIEW_ENCOUNTER } from "../apps/encounter/view";
-import { VIEW_CARTOGRAPHER, CartographerView } from "../apps/cartographer";
+import { VIEW_CARTOGRAPHER, CartographerView, openCartographer, detachCartographerLeaves } from "../apps/cartographer";
 import { VIEW_LIBRARY, LibraryView } from "../apps/library/view";
 import { ensureTerrainFile, loadTerrains, watchTerrains } from "../core/terrain-store";
 import { setTerrains } from "../core/terrain";
-import { getCenterLeaf } from "../core/layout";
 import { HEX_PLUGIN_CSS } from "./css";
 import { setupLayoutEditorBridge } from "./layout-editor-bridge";
 
@@ -26,9 +25,7 @@ export default class SaltMarcherPlugin extends Plugin {
 
         // Ribbons
         this.addRibbonIcon("compass", "Open Cartographer", async () => {
-            const leaf = getCenterLeaf(this.app);
-            await leaf.setViewState({ type: VIEW_CARTOGRAPHER, active: true });
-            this.app.workspace.revealLeaf(leaf);
+            await openCartographer(this.app);
         });
         this.addRibbonIcon("book", "Open Library", async () => {
             const leaf = this.app.workspace.getLeaf(true);
@@ -41,9 +38,7 @@ export default class SaltMarcherPlugin extends Plugin {
             id: "open-cartographer",
             name: "Cartographer öffnen",
             callback: async () => {
-                const leaf = getCenterLeaf(this.app);
-                await leaf.setViewState({ type: VIEW_CARTOGRAPHER, active: true });
-                this.app.workspace.revealLeaf(leaf);
+                await openCartographer(this.app);
             },
         });
         this.addCommand({
@@ -61,9 +56,10 @@ export default class SaltMarcherPlugin extends Plugin {
         this.teardownLayoutBridge = setupLayoutEditorBridge(this);
     }
 
-    onunload() {
+    async onunload() {
         this.unwatchTerrains?.();
         this.teardownLayoutBridge?.();
+        await detachCartographerLeaves(this.app);
         this.removeCss();
     }
 

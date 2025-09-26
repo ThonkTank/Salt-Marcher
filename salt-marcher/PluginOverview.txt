@@ -1,11 +1,11 @@
 # Salt Marcher – Plugin Overview
 
-Salt Marcher liefert Kartographie-, Encounter- und Bibliothekswerkzeuge für hex-basierte Kampagnen. Der Code ist nun klar vom Layout Editor getrennt – letzterer lebt als eigenes Plugin unter `plugins/layout-editor` und wird nicht mehr automatisch mitgeladen.
+Salt Marcher liefert Kartographie-, Encounter- und Bibliothekswerkzeuge für hex-basierte Kampagnen. Der Code ist klar vom Layout Editor getrennt – letzterer lebt als eigenes Plugin im Repository (`layout-editor/`) und wird nicht mehr automatisch mitgeladen.
 
 ## Struktur
 
 ```
-plugins/
+Salt-Marcher/
 ├─ salt-marcher/
 │  ├─ manifest.json          # Obsidian-Manifest (lädt das gebündelte main.js im Plugin-Stamm)
 │  ├─ esbuild.config.mjs     # Build-Pipeline (bundelt src/app/main.ts → main.js)
@@ -29,7 +29,7 @@ plugins/
 
 ## Features & Verantwortlichkeiten
 
-- **Plugin-Bootstrap (`src/app/main.ts`):** Registriert Cartographer-, Encounter- und Library-Views, injiziert das Salt-Marcher-CSS und hält Terrain-Daten aktuell. Layout-bezogene Ribbons/Commands entfallen – diese liefert nun das unabhängige Layout-Editor-Plugin.
+- **Plugin-Bootstrap (`src/app/main.ts`):** Registriert Cartographer-, Encounter- und Library-Views, injiziert das Salt-Marcher-CSS, hält Terrain-Daten aktuell und nutzt die Cartographer-Helfer (`openCartographer`, `detachCartographerLeaves`) als einzige Entry-Points für Kommandos/Ribbons.
 - **Cartographer-Workspace:** Map-Stage mit Editor-, Inspector- und Travel-Modi inklusive Renderer-Synchronisierung, Dateioperationen und Modusverwaltung.
 - **Library-View:** Einheitliche Verwaltung von Terrains, Regionen und Kreaturen mit Suche, Create-Workflows und Persistenz.
 - **Encounter-View:** Schlanke Ansicht für Encounter-Notizen.
@@ -52,7 +52,7 @@ plugins/
 - `css.ts`: Enthält das Styling für Cartographer, Library und Encounter. Layout-Editor-spezifische Klassen wurden entfernt.
 
 ### `src/apps/cartographer`
-- `index.ts`: Meldet `CartographerView` bei Obsidian an, verwaltet Ribbon/Command-Anbindung und mountet `view-shell.ts` in einem `cartographer-host`-Element.
+- `index.ts`: Exportiert `CartographerView` sowie Hilfsfunktionen (`openCartographer`, `getOrCreateCartographerLeaf`, `detachCartographerLeaves`), die von `main.ts` genutzt werden, um den View zentral zu registrieren und zu öffnen.
 - `view-shell.ts`: Baut Layout (Header, Stage, Sidebar), hält aktiven Modus, lädt Karten via `createMapLayer`/`renderHexMap` und delegiert Hex-Events an Modi.
 - `view-shell.ts`: Baut Layout (Header, Stage, Sidebar), hält aktiven Modus, lädt Karten via `createMapLayer`/`renderHexMap`, nutzt den gemeinsamen `view-container` als Map-Host und delegiert Hex-Events an Modi.
 - `modes/editor.ts`: Sidebar für den Editor-Modus. Bindet Tool-Infrastruktur aus `editor/`, synchronisiert Brush-Vorschau und persistiert Terrain-Änderungen über `RenderHandles`.
@@ -85,6 +85,6 @@ plugins/
 
 ## Zusammenarbeit mit dem Layout-Editor
 
-- Das Layout-Editor-Plugin liegt unter `plugins/layout-editor/` und bringt eigenes Manifest, Build und CSS mit.
+- Das Layout-Editor-Plugin liegt unter `layout-editor/` und bringt eigenes Manifest, Build und CSS mit.
 - Falls benötigt, kann Salt Marcher über Obsidian den Layout Editor parallel laden und über dessen öffentliches API (`getApi()` aus `layout-editor`-Plugin) Layout-Definitionen registrieren oder Layouts laden – ohne direkte Code-Abhängigkeit im Salt-Marcher-Build.
 - `layout-editor-bridge.ts` registriert – sobald verfügbar – das Cartographer-Mapping als `viewBindingId` beim Layout Editor, sodass dessen View Container die Karte als Feature anbietet.
