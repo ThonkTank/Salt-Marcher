@@ -30,7 +30,6 @@ This hub orients contributors, technical writers, and support staff to every maj
 ## To-Do
 - [Cartographer presenter respects abort signals](../todo/cartographer-presenter-abort-handling.md) – Presenter muss Abort-Signale honorieren.
 - [Cartographer mode registry](../todo/cartographer-mode-registry.md) – Modi deklarativ konfigurierbar machen.
-- [Hex renderer modularization](../todo/hex-renderer-modularization.md) – Rendering/Interaktionen entflechten.
 - [UI terminology consistency](../todo/ui-terminology-consistency.md) – UI-Sprache vereinheitlichen.
 
 ## Standards & Conventions

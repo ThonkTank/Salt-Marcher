@@ -1,27 +1,8 @@
 // src/core/hex-mapper/render/scene.ts
 import { hexPolygonPoints } from "../hex-geom";
-import type { HexCoord } from "./types";
+import type { HexCoord, HexScene, HexSceneConfig } from "./types";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
-
-export type HexSceneConfig = {
-    host: HTMLElement;
-    radius: number;
-    padding: number;
-    base: HexCoord;
-    initialCoords: HexCoord[];
-};
-
-export type HexScene = {
-    svg: SVGSVGElement;
-    contentG: SVGGElement;
-    overlay: SVGRectElement;
-    polyByCoord: Map<string, SVGPolygonElement>;
-    ensurePolys(coords: HexCoord[]): void;
-    setFill(coord: HexCoord, color: string): void;
-    getViewBox(): { minX: number; minY: number; width: number; height: number };
-    destroy(): void;
-};
 
 const keyOf = (coord: HexCoord) => `${coord.r},${coord.c}`;
 
