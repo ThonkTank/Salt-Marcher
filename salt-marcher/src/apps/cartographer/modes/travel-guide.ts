@@ -1,5 +1,5 @@
 import type { MapHeaderSaveMode } from "../../../ui/map-header";
-import type { CartographerMode, CartographerModeContext } from "../presenter";
+import type { CartographerMode, CartographerModeLifecycleContext } from "../presenter";
 import { loadTerrains } from "../../../core/terrain-store";
 import { setTerrains } from "../../../core/terrain";
 import { createSidebar, type Sidebar } from "../travel/ui/sidebar";
@@ -25,6 +25,17 @@ export function createTravelGuideMode(): CartographerMode {
     let cleanupFile: (() => void | Promise<void>) | null = null;
     let hostEl: HTMLElement | null = null;
     let terrainEvent: { off(): void } | null = null;
+    let lifecycleSignal: AbortSignal | null = null;
+
+    const isAborted = () => lifecycleSignal?.aborted ?? false;
+
+    const bailIfAborted = async (): Promise<boolean> => {
+        if (!isAborted()) {
+            return false;
+        }
+        await abortLifecycle();
+        return true;
+    };
 
     const handleStateChange = (state: LogicStateSnapshot) => {
         if (routeLayer) {
@@ -39,6 +50,42 @@ export function createTravelGuideMode(): CartographerMode {
         sidebar?.setTile(null);
         sidebar?.setSpeed(1);
         playback.reset();
+    };
+
+    const runCleanupFile = async () => {
+        if (!cleanupFile) return;
+        const fn = cleanupFile;
+        cleanupFile = null;
+        try {
+            await fn();
+        } catch (err) {
+            console.error("[travel-mode] cleanupFile failed", err);
+        }
+    };
+
+    const detachSidebar = () => {
+        sidebar?.destroy();
+        sidebar = null;
+    };
+
+    const releaseTerrainEvent = () => {
+        terrainEvent?.off();
+        terrainEvent = null;
+    };
+
+    const removeTravelClass = () => {
+        hostEl?.classList?.remove?.("sm-cartographer--travel");
+        hostEl = null;
+    };
+
+    const abortLifecycle = async () => {
+        await runCleanupFile();
+        disposeFile();
+        resetUi();
+        playback.dispose();
+        detachSidebar();
+        releaseTerrainEvent();
+        removeTravelClass();
     };
 
     const disposeFile = () => {
@@ -61,11 +108,15 @@ export function createTravelGuideMode(): CartographerMode {
         }
     };
 
-    const ensureTerrains = async (ctx: CartographerModeContext) => {
+    const ensureTerrains = async (ctx: CartographerModeLifecycleContext) => {
+        if (ctx.signal.aborted) return;
         await setTerrains(await loadTerrains(ctx.app));
     };
 
-    const subscribeToTerrains = (ctx: CartographerModeContext) => {
+    const subscribeToTerrains = (ctx: CartographerModeLifecycleContext) => {
+        if (ctx.signal.aborted) {
+            return null;
+        }
         const workspace = ctx.app.workspace as any;
         const ref = workspace.on?.("salt:terrains-updated", () => {
             void ensureTerrains(ctx);
@@ -83,46 +134,76 @@ export function createTravelGuideMode(): CartographerMode {
     return {
         id: "travel",
         label: "Travel",
-        async onEnter(ctx) {
-            // Ensure travel-specific styles are active in Cartographer
+        async onEnter(ctx: CartographerModeLifecycleContext) {
+            lifecycleSignal = ctx.signal;
+            if (await bailIfAborted()) {
+                return;
+            }
+
             hostEl = ctx.host;
             hostEl.classList.add("sm-cartographer--travel");
+
             await ensureTerrains(ctx);
+            if (await bailIfAborted()) {
+                return;
+            }
+
             terrainEvent = subscribeToTerrains(ctx);
+            if (await bailIfAborted()) {
+                return;
+            }
+
             preloadEncounterModule();
+            if (await bailIfAborted()) {
+                return;
+            }
+
             ctx.sidebarHost.empty();
+            if (await bailIfAborted()) {
+                return;
+            }
+
             sidebar = createSidebar(ctx.sidebarHost);
+            if (await bailIfAborted()) {
+                return;
+            }
+
             sidebar.setTitle?.(ctx.getFile()?.basename ?? "");
             sidebar.onSpeedChange((value) => {
-                logic?.setTokenSpeed(value);
+                if (!isAborted()) {
+                    logic?.setTokenSpeed(value);
+                }
             });
+
             playback.mount(sidebar, {
-                play: () => logic?.play() ?? undefined,
-                pause: () => logic?.pause(),
-                reset: () => logic?.reset(),
-                setTempo: (value) => logic?.setTempo?.(value),
+                play: () => (isAborted() ? undefined : logic?.play() ?? undefined),
+                pause: () => (isAborted() ? undefined : logic?.pause()),
+                reset: () => (isAborted() ? undefined : logic?.reset()),
+                setTempo: (value) => (isAborted() ? undefined : logic?.setTempo?.(value)),
             });
+
+            if (await bailIfAborted()) {
+                return;
+            }
+
             resetUi();
         },
-        async onExit() {
-            // Remove travel-specific style scope when leaving mode
-            await cleanupFile?.();
-            cleanupFile = null;
-            disposeFile();
-            playback.dispose();
-            sidebar?.destroy();
-            sidebar = null;
-            terrainEvent?.off();
-            terrainEvent = null;
-            hostEl?.classList?.remove?.("sm-cartographer--travel");
-            hostEl = null;
+        async onExit(ctx: CartographerModeLifecycleContext) {
+            lifecycleSignal = ctx.signal;
+            await abortLifecycle();
+            lifecycleSignal = null;
         },
-        async onFileChange(file, handles, ctx) {
-            await cleanupFile?.();
-            cleanupFile = null;
+        async onFileChange(file, handles, ctx: CartographerModeLifecycleContext) {
+            lifecycleSignal = ctx.signal;
+
+            await runCleanupFile();
             disposeFile();
             sidebar?.setTitle?.(file?.basename ?? "");
             resetUi();
+
+            if (await bailIfAborted()) {
+                return;
+            }
 
             if (!file || !handles) {
                 return;
@@ -133,10 +214,7 @@ export function createTravelGuideMode(): CartographerMode {
                 return;
             }
 
-            routeLayer = createRouteLayer(
-                handles.contentG,
-                (rc) => mapLayer.centerOf(rc)
-            );
+            routeLayer = createRouteLayer(handles.contentG, (rc) => mapLayer.centerOf(rc));
             tokenLayer = createTokenLayer(handles.contentG);
 
             const adapter: RenderAdapter = {
@@ -148,6 +226,10 @@ export function createTravelGuideMode(): CartographerMode {
                 token: tokenLayer,
             };
 
+            if (await bailIfAborted()) {
+                return;
+            }
+
             const activeLogic = createTravelLogic({
                 app: ctx.app,
                 minSecondsPerTile: 0.05,
@@ -158,14 +240,20 @@ export function createTravelGuideMode(): CartographerMode {
                     try {
                         activeLogic.pause();
                     } catch {}
-                    void openEncounter(ctx.app);
+                    if (!isAborted()) {
+                        void openEncounter(ctx.app);
+                    }
                 },
             });
             logic = activeLogic;
 
             handleStateChange(activeLogic.getState());
             await activeLogic.initTokenFromTiles();
-            if (logic !== activeLogic) return;
+            if (isAborted() || logic !== activeLogic) {
+                await runCleanupFile();
+                disposeFile();
+                return;
+            }
 
             interactions.bind(
                 {
@@ -199,8 +287,16 @@ export function createTravelGuideMode(): CartographerMode {
                 routeLayer?.destroy();
                 routeLayer = null;
             };
+
+            if (await bailIfAborted()) {
+                return;
+            }
         },
-        async onHexClick(coord, event, ctx) {
+        async onHexClick(coord, event, ctx: CartographerModeLifecycleContext) {
+            lifecycleSignal = ctx.signal;
+            if (await bailIfAborted()) {
+                return;
+            }
             if (interactions.consumeClickSuppression()) {
                 if (event.cancelable) event.preventDefault();
                 event.stopPropagation();
@@ -216,7 +312,11 @@ export function createTravelGuideMode(): CartographerMode {
             event.stopPropagation();
             logic.handleHexClick(coord);
         },
-        async onSave(_mode: MapHeaderSaveMode, file, _ctx) {
+        async onSave(_mode: MapHeaderSaveMode, file, ctx: CartographerModeLifecycleContext) {
+            lifecycleSignal = ctx.signal;
+            if (await bailIfAborted()) {
+                return false;
+            }
             if (!logic || !file) return false;
             try {
                 await logic.persistTokenToTiles();
