@@ -4737,6 +4737,8 @@ var LAYOUT_EDITOR_CSS = `
     align-items: stretch;
     justify-content: stretch;
     padding: 0;
+    min-width: 0;
+    min-height: 0;
 }
 
 .sm-le-preview {
@@ -4746,6 +4748,8 @@ var LAYOUT_EDITOR_CSS = `
     gap: 0.25rem;
     padding: 0.15rem;
     box-sizing: border-box;
+    min-width: 0;
+    min-height: 0;
 }
 
 .sm-le-preview--view-container {
@@ -4762,6 +4766,8 @@ var LAYOUT_EDITOR_CSS = `
     border: 1px solid var(--background-modifier-border);
     background: var(--background-primary);
     overflow: hidden;
+    min-width: 0;
+    min-height: 0;
 }
 
 .sm-view-container--design {

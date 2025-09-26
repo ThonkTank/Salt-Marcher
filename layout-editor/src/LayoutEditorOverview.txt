@@ -48,7 +48,7 @@ plugins/layout-editor/
 ## Features & Verantwortlichkeiten
 
 - **Plugin-Einstieg (`main.ts`):** Registriert den `LayoutEditorView`, richtet Ribbon-Icon und Command ein, injiziert die Styles aus `css.ts` und stellt über `getApi()` ein `LayoutEditorPluginApi` bereit (Open-View, Registry-Hooks, Layout-Library-Funktionen).
-- **Eigenes Styling (`css.ts`):** Enthält das komplette Layout-Editor-CSS. Wird ausschließlich vom Layout-Editor-Plugin injiziert und kollidiert somit nicht länger mit SaltMarcher-spezifischem Styling. Die View-Container-Vorschau nutzt `box-sizing: border-box` und erzwingt mit `min-width/min-height: 0` auf dem flexiblen Viewport, dass die Demo-Fläche auch bei großen Surface-Inhalten innerhalb des 960 px-Frames bleibt und sauber schrumpfen kann.
+- **Eigenes Styling (`css.ts`):** Enthält das komplette Layout-Editor-CSS. Wird ausschließlich vom Layout-Editor-Plugin injiziert und kollidiert somit nicht länger mit SaltMarcher-spezifischem Styling. Die View-Container-Vorschau nutzt `box-sizing: border-box` und erzwingt mit `min-width/min-height: 0` auf Preview-, Box- und View-Container-Ebene, dass die Demo-Fläche auch bei großen Surface-Inhalten innerhalb des 960 px-Frames bleibt und sauber schrumpfen kann.
 - **Layout-Arbeitsfläche & Kamera:** Dreigeteilte Arbeitsumgebung mit Strukturbaum links, Canvas in der Mitte und Inspector rechts. Panning, Zoom und Panel-Resizer halten Bounds-Clamping und Fokusverhalten konsistent.
 - **Struktur-Überblick:** Interaktiver Baum mit Drag & Drop zur Container-Neuzuordnung (inkl. Root-Drop-Zone) und zyklusgesicherter Elternwahl. Inspector- und Baum-Breiten lassen sich über Trenner anpassen.
 - **Elementbibliothek & Registry:** Der „+ Element“-Trigger öffnet den `ElementPickerModal`, der alle Definitionen als einklappbare Baumstruktur darstellt. Registry-Änderungen aktualisieren die Baumansicht live, neue Komponenten landen weiterhin nur unter `src/elements/components/`.
@@ -125,7 +125,7 @@ plugins/layout-editor/
 ### `css.ts`
 - Kapselt das komplette Layout-Editor-Styling als Template-String.
 - Wird nur vom Layout-Editor-Plugin geladen, um Konflikte mit anderen Plugins zu vermeiden.
-- Setzt im View-Container-Viewport `min-width`/`min-height` auf 0, damit das Flex-Item unabhängig von der Surface-Größe innerhalb des Rahmens bleiben kann.
+- Setzt auf Preview-, Box- und View-Container-Ebene `min-width`/`min-height` auf 0, damit Flexbox die Demo-Fläche unabhängig von der Surface-Größe innerhalb des Rahmens hält und bei Bedarf unter 960 px schrumpft.
 
 ### `index.ts`
 - Re-exportiert Plugin-Klasse, API-Typ, Registry- und Library-Hilfen für Drittcode.
