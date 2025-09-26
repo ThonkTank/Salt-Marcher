@@ -6,14 +6,13 @@ Salt Marcher erweitert Obsidian um einen Arbeitsbereich für hexbasierte Kampagn
 ## Kernbereiche und Funktionen
 
 ### Cartographer Workspace
-Der Cartographer-View stellt das Herzstück des Plugins dar: Eine kombinierte Kartenverwaltung mit dynamisch montiertem SVG-Renderer, Seitenleiste und Modusumschaltung. Beim Öffnen werden vorhandene Kartenblöcke aus der aktiven Datei geladen, ein flexibles `MapHeader`-Layout mit Dateiaktionen erstellt und per `MapManager` verwaltet (öffnen, neu anlegen, löschen, speichern). Die rechte Titelzone dient als Dropdown, um zwischen den Betriebsmodi zu wechseln.【F:salt-marcher/src/apps/cartographer/view-shell.ts†L40-L194】【F:salt-marcher/src/ui/map-header.ts†L1-L152】【F:salt-marcher/src/ui/map-manager.ts†L1-L96】
+Der Cartographer-Workspace folgt einer Presenter/Shell-Aufteilung: `CartographerPresenter` mountet die Shell, koordiniert `MapManager`, Map-Layer und Mode-Lifecycle und hält Datei- sowie Options-Status synchron. Die `createCartographerShell`-Schicht rendert Header, Map-Bühne und Sidebar-Hosts, während das `MapHeader`-Layout Dateiaktionen bündelt und die Mode-Auswahl als Dropdown bereitstellt. Nutzer-Workflows sind im [Wiki: Cartographer-Workspace](../../wiki/Cartographer-Workspace) beschrieben.【F:salt-marcher/src/apps/cartographer/presenter.ts†L1-L210】【F:salt-marcher/src/apps/cartographer/view-shell.ts†L1-L141】【F:salt-marcher/src/ui/map-header.ts†L1-L120】【F:salt-marcher/src/ui/map-manager.ts†L1-L88】
 
 #### Travel-Modus
-* initialisiert die Terrain-Palette aus `SaltMarcher/Terrains.md` und aktiviert eine reisefokussierte Oberfläche (`sm-cartographer--travel`).
-* rendert Routen- und Token-Ebenen auf Basis der Hex-Geometrie und steuert sie über `createTravelLogic`.
-* bietet Wiedergabe-, Stopp-, Reset- und Temporegler, inklusive Token-Geschwindigkeit und Uhrzeit.
-* erlaubt Drag-&-Drop sowie Kontextmenüs zum Bearbeiten der Route; Hex-Klicks erweitern die Reise.
-* speichert Token-Positionen zurück in die Karte und kann bei Zufallsereignissen automatisch den Encounter-View im rechten Bereich öffnen.【F:salt-marcher/src/apps/cartographer/modes/travel-guide.ts†L1-L242】
+* initialisiert die Terrain-Palette aus `SaltMarcher/Terrains.md`, hält sie per Vault-Event aktuell und scoped das Layout (`sm-cartographer--travel`).
+* koppelt Routen- und Token-Ebene an `createTravelLogic` und synchronisiert Wiedergabe, Tempo und Uhrzeit über den `TravelPlaybackController`.
+* bindet Drag-&-Drop sowie Kontextmenüs über den `TravelInteractionController`, wodurch Route-Punkte und Token-Positionen im Map-Layer gepflegt werden.
+* persistiert Token-Positionen in die Karte und nutzt das Encounter-Gateway, um bei Zufallsereignissen automatisch den Encounter-View auf der rechten Seite zu öffnen.【F:salt-marcher/src/apps/cartographer/modes/travel-guide.ts†L1-L242】【F:salt-marcher/src/apps/cartographer/modes/travel-guide/playback-controller.ts†L1-L56】【F:salt-marcher/src/apps/cartographer/modes/travel-guide/interaction-controller.ts†L1-L64】【F:salt-marcher/src/apps/cartographer/modes/travel-guide/encounter-gateway.ts†L1-L52】
 
 #### Editor-Modus
 * liefert eine erweiterbare Werkzeugleiste (aktuell: Terrain/Region-Brush) mit Such-Dropdowns.
@@ -25,15 +24,15 @@ Der Cartographer-View stellt das Herzstück des Plugins dar: Eine kombinierte Ka
 * erlaubt die Auswahl einzelner Hexfelder, das Bearbeiten von Terrainzuweisung und Notiztexten und speichert Änderungen zeitverzögert ins Markdown, inklusive Aktualisierung der Kartenfarben.【F:salt-marcher/src/apps/cartographer/modes/inspector.ts†L1-L168】
 
 ### Library View
-Die Library dient als zentrales Verwaltungswerkzeug für Kreaturen, Zauber, Terrains und Regionen.
+Die Library dient als zentrales Verwaltungswerkzeug für Kreaturen, Zauber, Terrains und Regionen. Anwender-Tipps finden sich im [Wiki: Library-View](../../wiki/Library-View).
 * Beim Öffnen werden sämtliche Quellordner/-dateien garantiert angelegt und einmalig geladen, anschließend halten Dateiwächter alle Listen synchron.
 * Eine Kopfleiste schaltet zwischen den Modi, darunter erlaubt eine Such- und Erstellen-Leiste sowohl Fuzzy-Suche als auch das direkte Anlegen neuer Einträge.
 * **Creatures & Spells:** Listen Markdown-Dateien, öffnen sie bei Bedarf und nutzen modale Dialoge zum Erstellen neuer Dateien.
-* **Terrains:** Bearbeitbare Tabelle mit Name, Farbe (per Color-Picker) und Bewegungsgeschwindigkeit; Änderungen werden sofort gespeichert und normalisiert.
+* **Terrains:** Bearbeitbare Tabelle mit Name, Farbe (per Color-Picker) und Bewegungsgeschwindigkeit; Mutationen laufen lokal, werden nach 500 ms Debounce gespeichert und beim Destroy der View zuverlässig geflusht.【F:salt-marcher/src/apps/library/view/terrains.ts†L10-L114】
 * **Regions:** Pflegt Regionen mit Terrainreferenz (Dropdown mit Suche) und optionalen Encounter-Wahrscheinlichkeiten; Änderungen werden persistiert und können gelöscht werden.【F:salt-marcher/src/apps/library/view.ts†L1-L249】
 
 ### Encounter View
-Der Encounter-View liefert aktuell eine strukturierte Platzhalteroberfläche und wird vor allem durch den Travel-Modus automatisch geöffnet, wenn unterwegs ein Ereignis ausgelöst wird. Damit steht sofort ein dedizierter Bereich für spätere Encounter-Verwaltung bereit.【F:salt-marcher/src/apps/encounter/view.ts†L1-L20】【F:salt-marcher/src/apps/cartographer/modes/travel-guide.ts†L125-L205】
+Der Encounter-View liefert aktuell eine strukturierte Platzhalteroberfläche und steht im Fokus, sobald der Travel-Modus über das Encounter-Gateway einen Zufallsfund meldet. Das Gateway lädt Encounter-Modul & Layout-Helfer on demand, holt sich die rechte Workspace-Spalte und aktiviert den View für Nutzer. Mehr Details fasst das [Wiki: Encounter-View](../../wiki/Encounter-View) zusammen.【F:salt-marcher/src/apps/encounter/view.ts†L1-L20】【F:salt-marcher/src/apps/cartographer/modes/travel-guide.ts†L132-L203】【F:salt-marcher/src/apps/cartographer/modes/travel-guide/encounter-gateway.ts†L1-L52】
 
 ### Datenhaltung & Synchronisation
 * **Terrain-Datei:** `ensureTerrainFile` legt bei Bedarf `SaltMarcher/Terrains.md` mit Beispielpalette an, `watchTerrains` lädt Änderungen, aktualisiert globale Farben (`setTerrains`) und triggert Plugin-Events für UI-Komponenten.【F:salt-marcher/src/core/terrain-store.ts†L1-L86】
