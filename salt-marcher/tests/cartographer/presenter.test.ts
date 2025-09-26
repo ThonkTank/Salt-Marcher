@@ -536,4 +536,93 @@ describe("CartographerPresenter", () => {
         expect(createLayer).toHaveBeenCalledTimes(1);
         expect(mapLayer.destroy).not.toHaveBeenCalled();
     });
+
+    it("reuses lifecycle contexts per mode during travel/editor round-trips", async () => {
+        const shell = createShellStub();
+
+        const travelEnter: CartographerModeLifecycleContext[] = [];
+        const travelFile: CartographerModeLifecycleContext[] = [];
+        const travelExit: CartographerModeLifecycleContext[] = [];
+        const travelCleanup = vi.fn();
+
+        const editorEnter: CartographerModeLifecycleContext[] = [];
+        const editorFile: CartographerModeLifecycleContext[] = [];
+        const editorExit: CartographerModeLifecycleContext[] = [];
+        const editorCleanup = vi.fn();
+
+        const travelMode: CartographerMode = {
+            id: "travel",
+            label: "Travel Guide",
+            onEnter: (ctx) => {
+                travelEnter.push(ctx);
+                expect(ctx.signal.aborted).toBe(false);
+            },
+            onExit: (ctx) => {
+                travelExit.push(ctx);
+                travelCleanup();
+                expect(ctx.signal.aborted).toBe(true);
+            },
+            onFileChange: (_file, _handles, ctx) => {
+                travelFile.push(ctx);
+            },
+        };
+
+        const editorMode: CartographerMode = {
+            id: "editor",
+            label: "Editor",
+            onEnter: (ctx) => {
+                editorEnter.push(ctx);
+                expect(ctx.signal.aborted).toBe(false);
+            },
+            onExit: (ctx) => {
+                editorExit.push(ctx);
+                editorCleanup();
+                expect(ctx.signal.aborted).toBe(true);
+            },
+            onFileChange: (_file, _handles, ctx) => {
+                editorFile.push(ctx);
+            },
+        };
+
+        const presenter = new CartographerPresenter(appStub, {
+            createShell: shell.factory,
+            createMapManager: createMapManagerFactory(),
+            createMapLayer: vi.fn(async () => ({
+                handles: {} as RenderHandles,
+                polyToCoord: new WeakMap(),
+                ensurePolys: vi.fn(),
+                centerOf: vi.fn(),
+                destroy: vi.fn(),
+            } as unknown as MapLayer)),
+            loadHexOptions: vi.fn(async () => null as HexOptions | null),
+            provideModes: () => [travelMode, editorMode],
+        });
+
+        await presenter.onOpen(shell.host, null);
+
+        expect(travelEnter).toHaveLength(1);
+        expect(travelFile[0]).toBe(travelEnter[0]);
+        expect(travelCleanup).not.toHaveBeenCalled();
+
+        await presenter.setMode("editor");
+
+        expect(travelExit).toHaveLength(1);
+        expect(travelExit[0]).toBe(travelEnter[0]);
+        expect(travelCleanup).toHaveBeenCalledTimes(1);
+        expect(editorEnter).toHaveLength(1);
+        expect(editorFile[0]).toBe(editorEnter[0]);
+
+        await presenter.setMode("travel");
+
+        expect(editorExit).toHaveLength(1);
+        expect(editorExit[0]).toBe(editorEnter[0]);
+        expect(editorCleanup).toHaveBeenCalledTimes(1);
+        expect(travelEnter).toHaveLength(2);
+        expect(travelFile.length).toBeGreaterThanOrEqual(2);
+        expect(travelFile[travelFile.length - 1]).toBe(travelEnter[1]);
+        expect(travelEnter[1]).not.toBe(travelEnter[0]);
+        expect(travelCleanup).toHaveBeenCalledTimes(1);
+
+        await presenter.onClose();
+    });
 });

@@ -45,6 +45,7 @@ Metadaten werden beim Registrieren defensiv geklont und eingefroren, damit Konsu
 - Fehlschläge beim Laden werden geloggt (`console.error`) und an den Aufrufer propagiert.
 - Optional implementierte Hooks (`onHexClick`, `onSave`) werden nur aufgerufen, wenn der geladene Modus sie anbietet.
 - Ein Abgleich stellt sicher, dass die Mode-ID mit der Provider-ID übereinstimmt; Abweichungen werden als Warnung geloggt.
+- Der Lazy-Wrapper reicht den vollständigen `CartographerModeLifecycleContext` (inkl. `AbortSignal`) an jeden Hook weiter und behält typsichere Signaturen bei.【F:salt-marcher/src/apps/cartographer/mode-registry/registry.ts†L113-L165】
 
 ## Migration für Drittanbieter-Modi
 

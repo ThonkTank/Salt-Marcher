@@ -20,11 +20,18 @@ Weitere Dokumente: [view-shell-overview.md](view-shell-overview.md) für Shell-D
 
 ## Lifecycle & Abort-Signale
 
-Der Presenter erzeugt für jeden Modewechsel einen eigenen `AbortController`. Dessen Signal wird an alle Lifecycle-Schritte (`onExit`, `onEnter`, `onFileChange`, optionale Hooks) weitergereicht und ersetzt das bisherige, signal-lose Kontextobjekt.【F:salt-marcher/src/apps/cartographer/presenter.ts†L24-L56】【F:salt-marcher/src/apps/cartographer/presenter.ts†L360-L471】 Gleichzeitig verknüpft der Presenter externe UI-Abbrüche (`ModeSelectContext.signal`) mit seinem Controller, so dass sowohl Benutzer-Abbrüche als auch supersedierende Wechsel laufende Aufgaben stoppen.【F:salt-marcher/src/apps/cartographer/presenter.ts†L310-L343】 
+Der Presenter erzeugt für jeden Modewechsel einen eigenen `AbortController`. Dessen Signal wird an alle Lifecycle-Schritte (`onExit`, `onEnter`, `onFileChange`, optionale Hooks) weitergereicht und ersetzt das bisherige, signal-lose Kontextobjekt.【F:salt-marcher/src/apps/cartographer/presenter.ts†L24-L56】【F:salt-marcher/src/apps/cartographer/presenter.ts†L360-L471】 Gleichzeitig verknüpft der Presenter externe UI-Abbrüche (`ModeSelectContext.signal`) mit seinem Controller, so dass sowohl Benutzer-Abbrüche als auch supersedierende Wechsel laufende Aufgaben stoppen.【F:salt-marcher/src/apps/cartographer/presenter.ts†L310-L343】
 
-Jeder Hook erhält ein `CartographerModeLifecycleContext`, das alle bisherigen Getter (`getFile`, `getMapLayer`, `getOptions` …) plus `ctx.signal` bereitstellt. Der Presenter erstellt das Kontextobjekt pro Aufruf neu, damit eine einmal abgebrochene Transition kein stale Signal weiterreicht.【F:salt-marcher/src/apps/cartographer/presenter.ts†L205-L240】【F:salt-marcher/src/apps/cartographer/presenter.ts†L488-L524】
+Jeder Hook erhält ein `CartographerModeLifecycleContext`, das alle bisherigen Getter (`getFile`, `getMapLayer`, `getOptions` …) plus `ctx.signal` bereitstellt. Für jeden aktiven Modus wird genau ein Kontextobjekt erzeugt, zwischengespeichert und an sämtliche Hooks (inklusive `onExit`) weitergereicht. Auf dem Exit-Pfad ist derselbe Verweis garantiert, wobei `ctx.signal.aborted` bereits auf `true` gesetzt ist.【F:salt-marcher/src/apps/cartographer/presenter.ts†L198-L247】【F:salt-marcher/src/apps/cartographer/presenter.ts†L360-L520】
 
 Die View-Shell liefert weiterhin pro Modewechsel ein `AbortSignal`, der Mode-Controller kapselt aber nun auch Aufräumlogik für parallele Requests. Bereits laufende Wechsel werden deterministisch abgebrochen, bevor ein neuer `onSwitch`-Callback startet.【F:salt-marcher/src/apps/cartographer/view-shell/mode-controller.ts†L1-L52】
+
+## Garantierter Lifecycle-Vertrag
+
+1. **`onEnter` → `onFileChange`:** Direkt nach einem erfolgreichen `onEnter` ruft der Presenter `onFileChange` mit demselben Kontextobjekt auf. Spätere Refreshes und Map-Updates nutzen solange denselben Verweis, bis der Modus verlassen wird.【F:salt-marcher/src/apps/cartographer/presenter.ts†L360-L561】
+2. **Optionale Hooks:** `onHexClick` und `onSave` erhalten das identische Kontextobjekt, sofern sie vom Modus implementiert werden. Der Lazy-Wrapper validiert optional implementierte Hooks und reicht Argumente typsicher weiter.【F:salt-marcher/src/apps/cartographer/mode-registry/registry.ts†L113-L165】
+3. **`onExit`:** Beim Verlassen des Modus liefert der Presenter erneut denselben Kontext. Das `AbortSignal` wurde bis dahin abgebrochen, sodass Aufräumlogik deterministisch erkennen kann, dass keine weiteren Updates mehr folgen.【F:salt-marcher/src/apps/cartographer/presenter.ts†L360-L486】
+4. **Wrapper-Garantie:** Drittanbieter, die über die Registry integrieren, erhalten garantiert dieselbe Signatur wie die Kernmodi. Fehlende Parameter fallen bereits beim Kompilieren auf, weil der Wrapper Methodenaufrufe streng typisiert.【F:salt-marcher/src/apps/cartographer/mode-registry/registry.ts†L113-L165】
 
 ## Aufräum- & Idempotenz-Regeln
 
