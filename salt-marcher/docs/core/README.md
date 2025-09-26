@@ -1,8 +1,7 @@
 # Core Documentation
 
 ## Überblick
-Der Core-Bereich bündelt zentrale Services: Hex-Geometrie, Persistenz und Dateioperationen. Diese README hilft Entwickler:innen,
-schnell passende Module für Daten- und Rechenlogik zu finden.
+Der Core-Bereich bündelt zentrale Services: Hex-Geometrie, Persistenz und Dateioperationen. Diese README hilft Entwickler:innen, schnell passende Module für Daten- und Rechenlogik zu finden.
 
 ## Struktur
 ```
@@ -23,5 +22,4 @@ docs/core/
 - Richtlinien zur Dokumentation: [Style Guide](../../../style-guide.md).
 
 ## To-Do
-- [Regions store resilience](../../../todo/regions-store-resilience.md) – Regions-Datei nach Löschereignissen robuster neu aufbauen und Tests etablieren.
-- Siehe außerdem das zentrale [`todo/`](../../../todo/README.md) für bereichsübergreifende Backlog-Einträge.
+Derzeit keine core-spezifischen Backlog-Einträge. Siehe das zentrale [`todo/`](../../../todo/README.md) für bereichsübergreifende Aufgaben.

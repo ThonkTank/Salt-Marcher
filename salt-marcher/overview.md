@@ -44,5 +44,5 @@ Die Bereichsdokumente unter [`docs/`](docs/README.md) werden nach jedem Feature-
 ## To-Do
 - [Cartographer presenter respects abort signals](../todo/cartographer-presenter-abort-handling.md) – Presenter muss Abort-Signale in allen Lifecycle-Phasen respektieren.
 - [Cartographer mode registry](../todo/cartographer-mode-registry.md) – Modi deklarativ erfassen und laden.
-- [UI terminology consistency](../todo/ui-terminology-consistency.md) – Einheitliche UI-Sprache und Kommentare sicherstellen.
+- [UI terminology consistency](../todo/ui-terminology-consistency.md) – Englischsprachige Terminologie bis ins ausgelieferte Artefakt sichern (`main.js` rebuild sicherstellen).
 - [Plugin Bootstrap Review](../todo/plugin-bootstrap-review.md) – Verantwortlichkeiten des Bootstraps präzisieren, Error-Handling und Tests evaluieren.
