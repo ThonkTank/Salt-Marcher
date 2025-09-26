@@ -7,29 +7,23 @@
 
 ## Kontext
 - **Betroffene Module:** `salt-marcher/src/apps/cartographer/modes/editor.ts`, `salt-marcher/src/apps/cartographer/editor/tools/**`.
-- **Auswirkung:** Subtle lifecycle bugs (stale context, aborted tool switches) and loose typing around render handles make editor extensibility brittle.
-- **Risiko:** New tools can regress map rendering or leak listeners because the API surface does not enforce correct sequencing.
+- **Auswirkung:** Editor stability hing von impliziten Lifecycle-Verträgen (Tool-Switching, Render-Handles, Workspace-Events) und UI-Konsistenz ab.
+- **Risiko:** Offene Lücken führen zu regressiven Tool-Erweiterungen (fehlende Statusmeldungen, langsame Brush-Schreibvorgänge).
+
+## Status-Update (Review 2025-XX-XX)
+- ✅ `createToolManager` koordiniert Tool-Wechsel inzwischen abort-sicher und räumt angefangene Mounts/Cleanups deterministisch auf (`switchTo` prüft Lifecycle- und lokale `AbortController`). Sichtbare Fehlerbehandlung (Statuslabel) fehlt jedoch weiterhin.
+- ✅ `RenderHandles` ist als Interface dokumentiert (`hex-render.ts`, `docs/cartographer/editor/README.md`), Tool-Kontext reicht getypte Helfer inklusive `ensurePolys` durch.
+- ✅ Brush-UI aktualisiert Workspace-Events mit `offref`-Fallback und setzt Dropdowns/Labels konsequent auf U.S. English; gelöschte Regionen werden inzwischen erkannt und zurückgesetzt.
+- ⚠️ `applyBrush` führt `saveTile`/`deleteTile` weiter strikt sequenziell aus – große Radien blockieren IO und UI-Feedback.
+- ⚠️ Tool-Fehler landen weiterhin nur im Logger; das Statuslabel bleibt leer, wodurch Nutzer:innen fehlgeschlagene `mountPanel`/`onActivate`-Aufrufe nicht erkennen.
 
 ## Offene Risiken & Forschungsfragen
-1. **Abort-safe tool switching:** Verify that `switchTool` halts DOM mutations and overlay setup once the lifecycle signal aborts, and surface failures through the status label.
-2. **Render handle contract:** Document and type `RenderHandles` helpers (`setFill`, `ensurePolys`, overlay expectations) so tool authors can rely on a stable interface.
-3. **Workspace event hygiene:** Confirm that the Obsidian workspace exposes `on/offref` with proper types; otherwise add a wrapper that tracks subscriptions and cleans up deterministically.
-4. **UI copy compliance:** Align dropdown labels and placeholders with the repository's U.S. English policy to avoid mixed locale regressions.
-5. **Region dropdown resilience:** Ensure `fillOptions` reconciles deleted regions and resets the selected value when the backing record disappears.
-6. **Brush write performance:** Evaluate batching for `applyBrush` writes to prevent linear file I/O when using large radii.
-
-## Lösungsideen (zu verfeinern)
-- Extend `RenderHandles` in `hex-render.ts` with optional helpers and update the terrain brush to feature-detect before calling them.
-- Introduce a tool manager abstraction in the mode that queues `switchTool` transitions and bails early when `AbortSignal` aborts.
-- Replace ad-hoc `(ctx.app as any)` access with typed helper services, possibly provided through the tool context.
-- Centralise dropdown copy in a shared constant and reuse `enhanceSelectToSearch` placeholders across tools.
-- Add regression tests that simulate region deletions and ensure the UI resets gracefully.
+1. **Statusmeldungen für Tool-Fehler:** `createToolManager.switchTo` fängt Fehler zwar ab, ruft aber kein `setStatus` auf. Definition einer Fehler-Policy (z. B. `setStatus("Failed to load <tool>")`) sicherstellen, bevor weitere Tools aufgeschaltet werden.
+2. **Brush-Schreibdurchsatz:** `applyBrush` schreibt Tiles weiterhin seriell. Prüfen, ob Batch-Speichern (z. B. gruppierte `saveTile`-Aufrufe oder Datei-Patching) die IO-Latenz bei großen Radien reduziert.
 
 ## Nächste Schritte
-1. Draft an RFC that defines the editor tool contract extensions (render handles, abort behaviour, status reporting).
-2. Prototype tightened typings in a branch and validate against the existing terrain brush implementation.
-3. Align UI strings with the terminology guide and document the requirement in the tool standards.
-4. File follow-up tickets for batching brush writes if the prototype confirms measurable gains.
+1. Fehleroberfläche spezifizieren: Wann setzt der Tool-Manager Statusmeldungen, wann bleibt er stumm? RFC/Vorschlag im Editor-Gilde teilen.
+2. Brush-Batching prototypisieren (z. B. `Promise.all`-Fenster oder Bulk-Write im Notes-Layer) und Messwerte gegen aktuelle Implementation erheben.
 
 ## Referenzen
 - Editor mode source: [`salt-marcher/src/apps/cartographer/modes/editor.ts`](../salt-marcher/src/apps/cartographer/modes/editor.ts)

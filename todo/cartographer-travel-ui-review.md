@@ -9,15 +9,18 @@ Audit aus [Notes/cartographer-travel-ui-review.md](../Notes/cartographer-travel-
 - `src/apps/cartographer/travel/ui/token-layer.ts`
 - `src/apps/cartographer/travel/ui/route-layer.ts`
 
-## Aufgaben
-1. **Naming bereinigen:** Datei `contextmenue.ts` in `context-menu.controller.ts` umbenennen, Exporte anpassen und Dokumentation aktualisieren.
-2. **Typisierung schärfen:** `LogicPort`-Definitionen in Drag- und Kontextmenü-Controller auf zentrale Domain-Typen refaktorieren (keine Inline-Strukturen). Optional generische Ports/Interfaces im `infra`-Layer einführen.
-3. **Pointer-Capture absichern:** Drag-Controller erweitern, um `releasePointerCapture` bei `unbind()` oder `pointercancel` aufzurufen; Tests für Fensterwechsel/Abort-Szenarien ergänzen.
-4. **Event-Propagation prüfen:** Kontextmenü-Handler um konsistentes `stopPropagation()` ergänzen und Integrationstests schreiben, die Konflikte mit anderen Listenern ausschließen.
-5. **Token-Animation testen:** Unit-/Integrationstests erstellen, die `TokenCtl.moveTo()`-Abbrüche abdecken und sicherstellen, dass Aufrufer `TokenMoveCancelled` behandeln.
-6. **Lifecycle-Kopplung dokumentieren:** Sicherstellen, dass Presenter beim Moduswechsel `destroy()` der Layer und `unbind()` der Controller konsistent aufruft; falls fehlend, Follow-up-Refactoring planen.
+## Status-Update (Review 2025-XX-XX)
+- ✅ `drag.controller` ruft `releasePointerCapture()` inzwischen in allen Endpfaden (`pointerup`, `pointercancel`, `unbind()`) auf und deaktiviert Layer-Hit-Tests nur während aktiver Drags.
+- ✅ Gemeinsame Typverträge liegen in `ui/types.ts`; Drag- und Kontextmenü-Controller konsumieren dieselben Ports.
+- ✅ `token-layer` ist durch Vitest-Unit-Tests abgesichert (`tests/cartographer/travel/token-layer.test.ts`), Rejections mit `TokenMoveCancelled` sind abgedeckt.
+- ✅ Travel-Mode-Presenter koppelt `interactions.dispose()`, `tokenLayer.destroy()` und `routeLayer.destroy()` beim Dateiwechsel (`modes/travel-guide.ts`).
+- ⚠️ Legacy-Shim `contextmenue.ts` bleibt aktiv, weil `interaction-controller` und externe Konsumenten noch nicht auf `context-menu.controller` umgestellt sind.
+- ⚠️ Kontextmenü stoppt die Eventpropagation weiterhin nur für löschbare User-Dots; bei nicht-löschbaren Punkten wird lediglich das Browser-Menü verhindert. Auswirkungen auf andere Listener sind ungeklärt.
 
-## Lösungsideen & Hinweise
+## Offene Aufgaben
+1. **Altimporte eliminieren:** `modes/travel-guide/interaction-controller.ts` und verbleibende Konsumenten direkt auf `./context-menu.controller` umstellen, Legacy-Reexport entfernen und Dokumentation bereinigen.
+2. **Kontextmenü-Propagation klären:** Entscheiden, ob `stopPropagation()` auch bei nicht löschbaren Punkten erforderlich ist. Falls ja, anpassen und Regressionstests für parallele Listener (z. B. Presenter-Hex-Click) ergänzen.
+
+## Hinweise für Umsetzungen
+- Style-Guide: Kontextmenü-Dateien konsequent als `context-menu.*` führen, Dokumentation (`docs/cartographer/travel-ui/README.md`) nach Entfernen des Shims aktualisieren.
 - Tests bevorzugt mit jsdom + PointerEvent-Mocks oder Playwright-E2E für Drag/Drop.
-- Naming-Änderungen sollten Style-Guide-Erweiterungen (Kontextmenü-Schreibweise) dokumentieren.
-- Bei Typverfeinerungen zuerst Adapter-Signaturen aus `infra/adapter.ts` analysieren, um Doppelnamen zu vermeiden.

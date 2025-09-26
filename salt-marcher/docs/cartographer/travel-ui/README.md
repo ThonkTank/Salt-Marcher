@@ -49,4 +49,4 @@ src/apps/cartographer/travel/ui/
 - Cartographer-Grundlagen: [../README.md](../README.md)
 
 ## To-Do
-- [Cartographer travel UI review](../../../../todo/cartographer-travel-ui-review.md) – Sammlung konkreter Refactoring- und Testaufgaben basierend auf der Audit-Notiz.
+- [Cartographer travel UI review](../../../../todo/cartographer-travel-ui-review.md) – Fokus auf Entfernen des `contextmenue`-Legacy-Shims und Entscheidung zur Event-Propagation des Kontextmenüs.

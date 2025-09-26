@@ -40,4 +40,4 @@ src/apps/cartographer/editor/
 - Avoid `any` casts when interacting with `RenderHandles`; add typed helpers or extend the interface before relying on ad-hoc properties such as `ensurePolys`.
 - Prefer `createToolManager` for lifecycle orchestration; it enforces `mountPanel → onActivate → onMapRendered` ordering and abort-aware teardown.
 - Keep UI copy in U.S. English and drive dropdown search via `enhanceSelectToSearch` for consistency with other panels.
-- Track outstanding hardening tasks in [`todo/cartographer-editor-review.md`](../../../../todo/cartographer-editor-review.md) and resolve them before building additional tools.
+- Track outstanding hardening tasks (status messaging for tool failures, brush write batching) in [`todo/cartographer-editor-review.md`](../../../../todo/cartographer-editor-review.md) and resolve them before building additional tools.
