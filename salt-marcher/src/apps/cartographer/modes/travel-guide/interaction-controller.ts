@@ -1,7 +1,7 @@
-import { createDragController, type DragController } from "../travel/ui/drag.controller";
-import { bindContextMenu } from "../travel/ui/contextmenue";
-import type { RenderAdapter } from "../travel/infra/adapter";
-import type { LogicStateSnapshot } from "../travel/domain/types";
+import { createDragController, type DragController } from "../../travel/ui/drag.controller";
+import { bindContextMenu } from "../../travel/ui/contextmenue";
+import type { RenderAdapter } from "../../travel/infra/adapter";
+import type { LogicStateSnapshot } from "../../travel/domain/types";
 
 export interface InteractionLogicPort {
     getState(): LogicStateSnapshot;

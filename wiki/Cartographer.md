@@ -11,7 +11,7 @@ The Cartographer workspace orchestrates Salt Marcher's hex maps, presenter lifec
 ## Step-by-step Workflow
 1. **Open the Cartographer workspace.** Launch it from the compass ribbon icon or run `Salt Marcher: Cartographer öffnen` to mount the map shell, header, and sidebar hosts.
 2. **Load or create a map.** Use the header controls to open an existing file or start a new map; confirm the presenter reloads all layers without warnings.
-3. **Select the appropriate mode.** Choose Travel, Editor, or Inspector from the header dropdown. Each switch calls `onExit` on the previous mode before initialising the next to avoid leaking listeners.
+3. **Select the appropriate mode.** Choose Travel, Editor, or Inspector from the header dropdown. Each switch calls `onExit` on the previous mode before initialising the next to avoid leaking listeners. Aborted or rapidly chained selections cancel any unfinished setup, so partially loaded layers are disposed instead of resurfacing later.
 4. **Execute mode-specific tasks.**
    - **Travel:** Play routes, manage tempo, and monitor encounter prompts.
    - **Editor:** Paint terrains, assign regions, and adjust metadata using the active tool panel.

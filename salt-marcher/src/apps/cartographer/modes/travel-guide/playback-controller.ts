@@ -1,9 +1,9 @@
-import type { Sidebar } from "../travel/ui/sidebar";
+import type { Sidebar } from "../../travel/ui/sidebar";
 import {
     createPlaybackControls,
     type PlaybackControlsHandle,
-} from "../travel/ui/controls";
-import type { LogicStateSnapshot, RouteNode } from "../travel/domain/types";
+} from "../../travel/ui/controls";
+import type { LogicStateSnapshot, RouteNode } from "../../travel/domain/types";
 
 export interface PlaybackDriver {
     play(): Promise<void> | void;
