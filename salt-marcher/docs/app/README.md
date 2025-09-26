@@ -13,7 +13,8 @@ Das Verzeichnis dokumentiert ausschließlich den Bootstrap-Layer. Detailentschei
 ## Bootstrap-Modul (`src/app/`)
 ```
 src/app/
-├─ main.ts                # Einstiegspunkt, registriert Views/Commands und orchestriert Dateninitialisierung
+├─ main.ts                 # Einstiegspunkt, registriert Views/Commands und orchestriert Dateninitialisierung
+├─ bootstrap-services.ts   # Service-Grenzen für Terrain-Bootstrap (Priming, Watcher, Logging)
 ├─ layout-editor-bridge.ts # Optionale Integration mit dem Layout-Editor-Plugin
 └─ css.ts                  # Gebündeltes Stylesheet, das zur Laufzeit injiziert wird
 ```
@@ -23,7 +24,10 @@ src/app/
 `main.ts` registriert Cartographer-, Encounter- und Library-Views sowie die zugehörigen Ribbon-Icons und Befehle. Dadurch bleibt der Einstieg in alle Workspaces konsistent und der Bootstrap kontrolliert, welche `WorkspaceLeaf`-Instanzen geöffnet oder wiederverwendet werden.
 
 ### Terrain-Watcher & Initialisierung
-Der Bootstrap sorgt dafür, dass die Terrain-Datei existiert (`ensureTerrainFile`), initiale Daten geladen werden (`loadTerrains` + `setTerrains`) und Änderungen über `watchTerrains` beobachtet werden. Der Watcher ruft aktuell nur einen leeren Callback auf; die konkreten Views reagieren über Event-Listener auf Datensätze. Fehlerbehandlung und Wiederanbindung des Watchers im Fehlerfall sind offene Punkte, siehe [To-Do: Plugin Bootstrap Review](../../todo/plugin-bootstrap-review.md).
+`main.ts` delegiert perspektivisch das Terrain-Priming an `createTerrainBootstrap`. Der Service sorgt dafür, dass die Terrain-Datei existiert (`ensureTerrainFile`), initiale Daten geladen werden (`loadTerrains` + `setTerrains`) und Änderungen über `watchTerrains` beobachtet werden. Fehler bei Priming oder Watcher-Laufzeit werden protokolliert und verhindern nicht mehr das vollständige Laden des Plugins – die Defaults bleiben aktiv, bis Obsidian erneut ein `modify`/`delete`-Event liefert. Bei Problemen schreibt der Service strukturierte Fehlermeldungen in die Konsole, damit Tests (`tests/app/terrain-bootstrap.test.ts`, `tests/app/terrain-watcher.test.ts`) und manuelle QA dieselben Schnittstellen nutzen. Aktuell nutzt `main.ts` übergangsweise noch den Legacy-Pfad, weil die Service-Anbindung merge-blockiert ist (siehe [To-Do: Main bootstrap service integration](../../todo/main-bootstrap-service-integration.md)).
+
+### Bootstrap Service Boundaries
+`bootstrap-services.ts` kapselt die Terrain-spezifische Lifecycle-Logik und bietet einen `TerrainBootstrapHandle` mit `start()`/`stop()`. Dadurch bleibt `main.ts` auf View-Registrierung, Commands und Integrationen fokussiert, während Tests den Service isoliert mocken können. Fehlerbehandlung, Retry-Strategien und Logging lassen sich über die bereitgestellte Logger-Schnittstelle steuern.
 
 ### Layout-Editor-Bridge
 `layout-editor-bridge.ts` kapselt die optionale Integration zum "Layout Editor"-Plugin. Beim Laden versucht der Bootstrap, eine View-Binding-Registrierung anzulegen und hält Listener bereit, um bei Aktivierung/Deaktivierung des Fremd-Plugins korrekt aufzuräumen. Fehler werden geloggt, damit Layout-Probleme sichtbar bleiben.
@@ -32,7 +36,7 @@ Der Bootstrap sorgt dafür, dass die Terrain-Datei existiert (`ensureTerrainFile
 `main.ts` injiziert das gebündelte Stylesheet (`HEX_PLUGIN_CSS`) als `<style id="hex-css">` ins Dokument und entfernt es beim Entladen. Dadurch bleiben die Hex-spezifischen Styles isoliert, ohne dass separate CSS-Dateien im Vault verwaltet werden müssen.
 
 ## Offene Fragen: Bootstrap vs. Feature-Verantwortung
-- Wie robust soll das Error-Handling des Terrain-Watchers sein, bevor Events an die Workspaces weitergereicht werden?
+- Müssen zukünftige Einstellungen (z. B. automatisches Öffnen des Cartographer) über denselben Service konfigurierbar werden?
 - Wann sollten Feature-spezifische Initialisierungen (z. B. Default-Layer-Konfigurationen) aus dem Bootstrap in die jeweiligen Workspaces verschoben werden?
 - Welche Standards gelten für Dritt-Plugin-Integrationen (Layout Editor, potenziell weitere), damit sie testbar bleiben?
 
@@ -41,4 +45,4 @@ Diese Fragen werden im [To-Do: Plugin Bootstrap Review](../../todo/plugin-bootst
 ## Standards & Abhängigkeiten
 - Halte dich an den [Documentation Style Guide](../../style-guide.md) sowie die Obsidian-Plugin-Konventionen (Lifecycle `onload`/`onunload`).
 - Bootstrap-Code muss ohne optionale Plugins lauffähig bleiben; Integrationen dürfen nur defensive Abhängigkeiten aufrufen.
-- Asynchrone Initialisierung (Terrain-Laden) darf UI-Registrierungen nicht blockieren; langfristig sind Tests für die Bootstrapping-Sequenz zu ergänzen (siehe To-Do oben).
+- Asynchrone Initialisierung (Terrain-Laden) darf UI-Registrierungen nicht blockieren; Integrationstests decken das Priming/Watcher-Verhalten inzwischen mit Obsidian-Mocks ab (siehe oben).
