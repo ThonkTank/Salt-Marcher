@@ -64,5 +64,5 @@ ElementComponentBase
 - **`components/textarea.ts`:** Konfiguriert `TextFieldComponent` für mehrzeilige Eingaben inkl. Placeholder-Steuerung.
 - **`components/label.ts`:** Realisiert Inline-Editing für Überschriften samt dynamischer Schriftgrößenanpassung.
 - **`components/separator.ts`:** Rendert optionale Überschrift plus Trennlinie ohne zusätzliche Basisklasse.
-- **`components/view-container.ts`:** Koppelt Layout-Elemente an die View-Registry. Inspector bietet eine Feature-Auswahl, Preview stellt eine panning-/zoomfähige Demo-Fläche bereit, richtet diese per `ResizeObserver` (Fallback: RAF-Loop) dauerhaft an die aktuelle Elementgröße aus, bereinigt Observer/RAF bei Re-Renders und zeigt den gewählten Binding-Namen/ID an.
+- **`components/view-container.ts`:** Koppelt Layout-Elemente an die View-Registry. Inspector bietet eine Feature-Auswahl, Preview stellt eine panning-/zoomfähige Demo-Fläche bereit, richtet diese per `ResizeObserver` (Fallback: RAF-Loop) dauerhaft an die aktuelle Elementgröße aus, bereinigt Observer/RAF bei Re-Renders, setzt via `box-sizing: border-box` auf exakte Außenmaße und zeigt den gewählten Binding-Namen/ID an.
 - **`ui.ts`:** Bündelt allgemeine UI-Bausteine (Buttons, Formularfelder, Selects, Statusanzeigen, Stacks), damit der Editor komplett auf Elements-Komponenten basiert.
