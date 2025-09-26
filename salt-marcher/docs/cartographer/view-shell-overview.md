@@ -44,6 +44,6 @@ graph TD
 - **`view-shell/mode-controller.ts`** – Abort-fähiger Mode-Workflow, der Mehrfach-Wechsel und Destroy-Aufrufe robust verarbeitet.
 
 ## Besondere Hinweise
-- Der Mode-Controller reicht den `AbortSignal` direkt an die Presenter-Callbacks weiter. Der `CartographerPresenter` short-circuitet `onExit`, `onEnter` und `onFileChange`, sobald `signal.aborted === true`, und räumt angeforderte Map-Layer wieder auf. Dadurch können schnelle Mode-Wechsel keine veralteten Layer „wiederbeleben“.
+- Der Mode-Controller reicht den `AbortSignal` direkt an die Presenter-Callbacks weiter. Der `CartographerPresenter` betreibt eine explizite State-Machine (`idle → exiting → entering`) mit eigenem `AbortController` je Wechsel, short-circuitet `onExit`/`onEnter`/`onFileChange` bei Abbrüchen und räumt gestartete Layer deterministisch auf. Supersedierende Wechsel signalisieren dem vorherigen Schritt sofort `abort()` und verhindern so, dass UI-Updates eines alten Modus zurückkehren.【F:salt-marcher/src/apps/cartographer/presenter.ts†L86-L125】【F:salt-marcher/src/apps/cartographer/presenter.ts†L233-L328】
 - Dynamische Mode-Listen: Die Shell bietet `setModes`, `registerMode` und `deregisterMode`, um externe Registries zu unterstützen. Änderungen werden sofort ins Dropdown gespiegelt.
 - Das Layout räumt den Host konsequent auf (`empty()` & `removeClass`), wodurch wiederholtes Mounten/Unmounten keine Zombie-Knoten hinterlässt.

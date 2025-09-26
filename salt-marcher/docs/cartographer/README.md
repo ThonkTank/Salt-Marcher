@@ -17,12 +17,15 @@ docs/cartographer/
 - [view-shell-overview.md](view-shell-overview.md) – Aufbau der Cartographer-Shell, Presenter-Anbindung und Lifecycle-Hooks.
 - [map-layer-overview.md](map-layer-overview.md) – Rendering-Pipeline, Layer-Architektur und Datenquellen der Hex-Map.
 - [travel-mode-overview.md](travel-mode-overview.md) – Travel-spezifische Controller, Playback-Logik und Encounter-Anbindung.
+- **Mode-State-Machine** – Der Presenter verwaltet Modewechsel über die Phasen `idle → exiting → entering`, cancelbar über interne `AbortController`. Details siehe Abschnitt „State-Machine“ unten.
 
 ## Weiterführende Ressourcen
 - Nutzerperspektive im [Cartographer-Wiki-Eintrag](../../../wiki/Cartographer.md).
 - Dokumentationsstandards gemäß [Style Guide](../../../docs/style-guide.md).
 
+## State-Machine
+Der `CartographerPresenter` verfolgt jeden Modewechsel als eigene State-Machine-Instanz mit Phasen `idle`, `exiting` und `entering`. Jeder Wechsel erhält einen dedizierten `AbortController`, der sowohl UI-Abbrüche (`ModeSelectContext.signal`) als auch supersedierende Wechsel zusammenführt. Dadurch räumt `onExit` deterministisch auf, `onEnter`/`onFileChange` laufen nur, solange das Signal nicht abgebrochen wurde, und parallele Wechsel zerstören keine bereits erstellten Layer mehr.【F:salt-marcher/src/apps/cartographer/presenter.ts†L86-L125】【F:salt-marcher/src/apps/cartographer/presenter.ts†L233-L328】
+
 ## To-Do
 - [Cartographer presenter respects abort signals](../../../todo/cartographer-presenter-abort-handling.md) – Abort-Signale sauber propagieren.
 - [Cartographer mode registry](../../../todo/cartographer-mode-registry.md) – Modi deklarativ konfigurierbar machen.
-- [Cartographer mode state machine](../../../todo/cartographer-mode-state-machine.md) – Mode-Queue in robuste State-Machine überführen.

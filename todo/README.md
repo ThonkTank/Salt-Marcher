@@ -6,7 +6,6 @@ Dieser Ordner ersetzt die frühere `Critique.txt`-Sammlung. Jede Datei dokumenti
 ## Open Items
 - [Cartographer presenter respects abort signals](cartographer-presenter-abort-handling.md) – Presenter darf Modewechsel abbrechen, wenn das UI den Vorgang storniert.
 - [Cartographer mode registry](cartographer-mode-registry.md) – Modi sollen deklarativ konfigurierbar sein statt hart verdrahtet.
-- [Cartographer mode state machine](cartographer-mode-state-machine.md) – Mode-Queue benötigt deterministische Fehler- und Cleanup-Wege.
 - [Hex renderer modularization](hex-renderer-modularization.md) – Rendering, Kamera und Interaktionen müssen in klar abgegrenzte Module aufgeteilt werden.
 - [UI terminology consistency](ui-terminology-consistency.md) – UI-Texte und Kommentare brauchen eine einheitliche Sprache.
 

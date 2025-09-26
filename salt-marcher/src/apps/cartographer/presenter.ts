@@ -70,6 +70,21 @@ const createDefaultDeps = (app: App): CartographerPresenterDeps => ({
     provideModes: () => [createTravelGuideMode(), createEditorMode(), createInspectorMode()],
 });
 
+type ModeTransitionPhase = "idle" | "exiting" | "entering";
+
+/**
+ * Internal state machine snapshot for a mode transition. Tracks the active phase and
+ * provides a dedicated abort controller so new switches can cancel in-flight work.
+ */
+type ModeTransition = {
+    readonly id: number;
+    readonly next: CartographerMode;
+    readonly previous: CartographerMode | null;
+    readonly controller: AbortController;
+    readonly externalSignal: AbortSignal | null;
+    phase: ModeTransitionPhase;
+};
+
 export class CartographerPresenter {
     private readonly app: App;
     private readonly deps: CartographerPresenterDeps;
@@ -83,11 +98,12 @@ export class CartographerPresenter {
     private readonly modes: CartographerMode[];
     private hostEl: HTMLElement | null = null;
     private modeChange: Promise<void> = Promise.resolve();
+    private readonly transitionTasks = new Set<Promise<void>>();
     private loadToken = 0;
     private isMounted = false;
     private requestedFile: TFile | null | undefined = undefined;
     private modeTransitionSeq = 0;
-    private currentTransition: { id: number; signal: AbortSignal | null } | null = null;
+    private transition: ModeTransition | null = null;
 
     constructor(app: App, deps?: Partial<CartographerPresenterDeps>) {
         this.app = app;
@@ -161,6 +177,7 @@ export class CartographerPresenter {
         }
 
         this.isMounted = false;
+        this.transition?.controller.abort();
         await this.modeChange;
         try {
             await this.activeMode?.onExit();
@@ -227,85 +244,197 @@ export class CartographerPresenter {
     async setMode(id: string, ctx?: ModeSelectContext): Promise<void> {
         const next = this.modes.find((mode) => mode.id === id) ?? this.modes[0];
         if (!next) return;
-        const transition = {
-            id: ++this.modeTransitionSeq,
-            signal: ctx?.signal ?? null,
-        } as const;
 
-        const runModeChange = async () => {
-            this.currentTransition = transition;
-            const isAborted = () => transition.signal?.aborted ?? false;
+        const promise = this.executeModeTransition(next, ctx?.signal ?? null);
+        this.trackTransition(promise);
 
-            const previous = this.activeMode;
-            if (previous?.id === next.id) {
-                if (isAborted()) return;
+        try {
+            await promise;
+        } catch (err) {
+            console.error("[cartographer] mode transition crashed", err);
+        }
+    }
+
+    private recalcModeChangePromise(): void {
+        if (this.transitionTasks.size === 0) {
+            this.modeChange = Promise.resolve();
+            return;
+        }
+
+        this.modeChange = Promise.allSettled(Array.from(this.transitionTasks)).then(() => undefined);
+    }
+
+    private trackTransition(promise: Promise<void>): void {
+        this.transitionTasks.add(promise);
+        this.recalcModeChangePromise();
+
+        promise
+            .finally(() => {
+                this.transitionTasks.delete(promise);
+                this.recalcModeChangePromise();
+            })
+            .catch(() => {
+                // suppressed to avoid unhandled rejections if the transition unexpectedly fails
+            });
+    }
+
+    private bindExternalAbort(transition: ModeTransition): () => void {
+        const { externalSignal, controller } = transition;
+        if (!externalSignal) return () => {};
+
+        const abort = () => {
+            controller.abort();
+        };
+
+        if (externalSignal.aborted) {
+            abort();
+            return () => {};
+        }
+
+        externalSignal.addEventListener("abort", abort, { once: true });
+        return () => {
+            externalSignal.removeEventListener("abort", abort);
+        };
+    }
+
+    private isTransitionAborted(transition: ModeTransition): boolean {
+        if (transition.controller.signal.aborted) return true;
+        if (transition.externalSignal?.aborted) return true;
+        if (this.transition && this.transition.id !== transition.id) return true;
+        return false;
+    }
+
+    private async runTransitionStep(
+        transition: ModeTransition,
+        phase: ModeTransitionPhase,
+        action: () => Promise<void> | void,
+        errorMessage: string,
+    ): Promise<"completed" | "aborted"> {
+        if (this.isTransitionAborted(transition)) {
+            return "aborted";
+        }
+
+        transition.phase = phase;
+
+        try {
+            await action();
+        } catch (err) {
+            if (!this.isTransitionAborted(transition)) {
+                console.error(errorMessage, err);
+            }
+        }
+
+        if (this.isTransitionAborted(transition)) {
+            return "aborted";
+        }
+
+        return "completed";
+    }
+
+    private async executeModeTransition(next: CartographerMode, externalSignal: AbortSignal | null): Promise<void> {
+        const previousTransition = this.transition;
+        if (previousTransition) {
+            previousTransition.controller.abort();
+        }
+
+        if (this.activeMode?.id === next.id) {
+            if (!(externalSignal?.aborted ?? false)) {
                 this.shell?.setModeActive(next.id);
                 this.shell?.setModeLabel(next.label);
+            }
+            return;
+        }
+
+        const transition: ModeTransition = {
+            id: ++this.modeTransitionSeq,
+            next,
+            previous: this.activeMode,
+            controller: new AbortController(),
+            externalSignal,
+            phase: "idle",
+        };
+
+        this.transition = transition;
+        const detachAbort = this.bindExternalAbort(transition);
+
+        try {
+            const previous = transition.previous;
+            if (previous) {
+                const exitOutcome = await this.runTransitionStep(
+                    transition,
+                    "exiting",
+                    () => previous.onExit(),
+                    "[cartographer] mode exit failed",
+                );
+
+                if (exitOutcome === "aborted") {
+                    return;
+                }
+
+                this.activeMode = null;
+            }
+
+            if (this.isTransitionAborted(transition)) {
                 return;
             }
-
-            if (isAborted()) return;
-
-            if (previous) {
-                try {
-                    await previous.onExit();
-                } catch (err) {
-                    console.error("[cartographer] mode exit failed", err);
-                }
-            }
-
-            this.activeMode = null;
-
-            if (isAborted()) return;
 
             const modeCtx = this.modeCtx;
 
-            this.activeMode = next;
+            this.activeMode = transition.next;
 
-            if (isAborted()) {
+            if (this.isTransitionAborted(transition)) {
                 this.activeMode = null;
                 return;
             }
 
-            this.shell?.setModeActive(next.id);
-            this.shell?.setModeLabel(next.label);
+            this.shell?.setModeActive(transition.next.id);
+            this.shell?.setModeLabel(transition.next.label);
 
-            if (isAborted()) {
+            const enterOutcome = await this.runTransitionStep(
+                transition,
+                "entering",
+                () => transition.next.onEnter(modeCtx),
+                "[cartographer] mode enter failed",
+            );
+
+            if (enterOutcome === "aborted") {
                 this.activeMode = null;
                 return;
             }
 
-            try {
-                await next.onEnter(modeCtx);
-            } catch (err) {
-                if (!isAborted()) {
-                    console.error("[cartographer] mode enter failed", err);
-                }
-            }
-
-            if (isAborted()) {
+            if (this.isTransitionAborted(transition)) {
                 this.activeMode = null;
                 return;
             }
 
-            try {
-                await next.onFileChange(this.currentFile, this.mapLayer?.handles ?? null, modeCtx);
-            } catch (err) {
-                if (!isAborted()) {
-                    console.error("[cartographer] mode file change failed", err);
-                }
+            const fileChangeOutcome = await this.runTransitionStep(
+                transition,
+                "entering",
+                () =>
+                    transition.next.onFileChange(
+                        this.currentFile,
+                        this.mapLayer?.handles ?? null,
+                        modeCtx,
+                    ),
+                "[cartographer] mode file change failed",
+            );
+
+            if (fileChangeOutcome === "aborted" && this.activeMode?.id === transition.next.id) {
+                this.activeMode = null;
+                return;
             }
-        };
 
-        this.modeChange = this.modeChange
-            .then(runModeChange)
-            .finally(() => {
-                if (this.currentTransition === transition) {
-                    this.currentTransition = null;
-                }
-            });
-
-        await this.modeChange;
+            transition.phase = "idle";
+        } catch (err) {
+            if (!this.isTransitionAborted(transition)) {
+                console.error("[cartographer] mode transition failed", err);
+            }
+        } finally {
+            detachAbort();
+            if (this.transition?.id === transition.id) {
+                this.transition = null;
+            }
+        }
     }
 
     private async refresh(): Promise<void> {
@@ -318,8 +447,8 @@ export class CartographerPresenter {
 
         if (!this.shell) return;
         const ctx = this.modeCtx;
-        const transition = this.currentTransition;
-        const isTransitionAborted = () => transition?.signal?.aborted ?? false;
+        const transition = this.transition;
+        const isTransitionAborted = () => (transition ? this.isTransitionAborted(transition) : false);
 
         if (!this.currentFile) {
             this.shell.clearMap();
