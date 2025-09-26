@@ -11,7 +11,7 @@ salt-marcher/
 ├─ main.js                # Gebündeltes Plugin-Artefakt
 ├─ README.md              # Produkt- & Architekturüberblick
 ├─ docs/                  # Bereichsdokumentation (siehe unten)
-│  ├─ index.md            # Navigationsübersicht
+│  ├─ README.md           # Navigationsübersicht
 │  ├─ cartographer/       # Karten-Workspace (README + Overviews)
 │  ├─ core/               # Domain- und Persistenzdienste
 │  ├─ library/            # Verwaltungs- und Datenbank-Flows
@@ -44,5 +44,5 @@ salt-marcher/
    (`src/ui/*`) konsistente Dialoge und Header bereitstellen.
 
 ## Dokumentation & Standards
-Die Bereichsdokumente unter [`docs/`](docs/index.md) werden nach jedem Feature-Update gepflegt. Für neue Beiträge
+Die Bereichsdokumente unter [`docs/`](docs/README.md) werden nach jedem Feature-Update gepflegt. Für neue Beiträge
 bitte den projektspezifischen [Style Guide](../docs/style-guide.md) beachten und Querverlinkungen zu bestehenden Overviews setzen.

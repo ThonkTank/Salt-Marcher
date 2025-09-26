@@ -2,12 +2,12 @@
 
 ## Purpose & Audience
 Diese Indexseite verknüpft die Bereichsdokumente des Plugins. Sie richtet sich an Entwickler:innen, die Architekturentscheidungen
-nachvollziehen oder neue Features ergänzen wollen. Nutzerorientierte Guides findest du im [Projekt-Wiki](../../wiki/Home.md).
+nachvollziehen oder neue Features ergänzen wollen. Nutzerorientierte Guides findest du im [Projekt-Wiki](../../wiki/README.md).
 
 ## Struktur
 ```
 docs/
-├─ index.md
+├─ README.md
 ├─ cartographer/
 ├─ core/
 ├─ library/

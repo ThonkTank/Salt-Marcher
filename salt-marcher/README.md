@@ -9,7 +9,7 @@ Anwenderthemen verweisen wir auf die Projekt-Wiki-Seiten in diesem Repository.
 Das Plugin registriert beim Laden die Cartographer-, Library- und Encounter-Workspaces, erstellt fehlende Datenquellen (z. B.
 Terrains) und hält sie über Dateiwächter synchron. Gemeinsame UI-Bausteine sorgen dafür, dass Karten, Reiserouten und Nachschlage-
 Einträge dieselben Datenmodelle teilen. Ergänzende Detaildokumente zu Architektur und Abläufen befinden sich im Ordner
-[`docs/`](docs/index.md).
+[`docs/`](docs/README.md).
 
 ## Verzeichnisstruktur
 ```
@@ -17,7 +17,7 @@ salt-marcher/
 ├─ manifest.json            # Obsidian-Manifest (zeigt auf main.js)
 ├─ main.js                  # Gebündeltes Plugin-Artefakt
 ├─ docs/                    # Architektur- und Workflow-Dokumentation
-│  ├─ index.md              # Einstiegspunkt für die Plugin-Dokumentation
+│  ├─ README.md             # Einstiegspunkt für die Plugin-Dokumentation
 │  ├─ cartographer/         # Cartographer-spezifische Overviews
 │  ├─ core/                 # Kernservices & Datenhaltung
 │  ├─ library/              # Verwaltungs- und Datenbank-Flows
@@ -38,9 +38,9 @@ salt-marcher/
   Architekturhinweise unter [`docs/library/`](docs/library/README.md).
 - **Encounter:** Begegnungen verwalten, die aus dem Travel-Modus oder der Library gestartet werden. Grundlagen im [Encounter-Guide](../wiki/Encounter.md).
 
-Weitere Nutzer-Workflows, Schritt-für-Schritt-Anleitungen und FAQ-Einträge sind im [Projekt-Wiki](../wiki/Home.md) gesammelt.
+Weitere Nutzer-Workflows, Schritt-für-Schritt-Anleitungen und FAQ-Einträge sind im [Projekt-Wiki](../wiki/README.md) gesammelt.
 
 ## Dokumentations- und Beitragshinweise
-Die technische Dokumentation dieses Plugins folgt dem [Documentation Index](docs/index.md). Bitte richte neue Beiträge am
+Die technische Dokumentation dieses Plugins folgt dem [Documentation Index](docs/README.md). Bitte richte neue Beiträge am
 [Style Guide](../docs/style-guide.md) des Projekts aus und verlinke zusätzliche Detaildokumente innerhalb des bestehenden
 Dokumentationsnetzes.
