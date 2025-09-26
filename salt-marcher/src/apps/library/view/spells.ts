@@ -29,7 +29,7 @@ export class SpellsRenderer extends BaseModeRenderer implements ModeRenderer {
         for (const it of items) {
             const row = list.createDiv({ cls: "sm-cc-item" });
             row.createDiv({ cls: "sm-cc-item__name", text: it.name });
-            const openBtn = row.createEl("button", { text: "Öffnen" });
+            const openBtn = row.createEl("button", { text: "Open" });
             openBtn.onclick = async () => {
                 await this.app.workspace.openLinkText(it.file.path, it.file.path, true);
             };

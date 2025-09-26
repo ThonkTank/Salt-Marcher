@@ -37,7 +37,7 @@ Der `LibraryView` reduziert sich auf die Shell-Aufgabe: Mode-Umschaltung, Suchfe
 
 1. **Mode-Aktivierung:** `LibraryView.activateMode` zerstört ggf. den bisherigen Renderer (inkl. Watcher) und erzeugt eine neue Instanz. Anschließend wird die aktuelle Suchanfrage übergeben und die Liste gerendert.
 2. **Watcher-Management:** Jeder Renderer registriert die benötigten Datei-Watcher selbstständig über `BaseModeRenderer.registerCleanup`. Beim Destroy werden alle Listener aufgehoben und das Container-Element geleert.
-3. **Such- und Create-Fluss:** Der Suchstring wird zentral gehalten und per `setQuery` an den aktiven Renderer weitergereicht. Der „Erstellen“-Button ruft `handleCreate` des aktiven Renderers auf, wodurch Kreaturen/Zauber modale Workflows starten oder Terrains/Regionen direkt vorbereitet werden.
+3. **Such- und Create-Fluss:** Der Suchstring wird zentral gehalten und per `setQuery` an den aktiven Renderer weitergereicht. Der „Create“-Button ruft `handleCreate` des aktiven Renderers auf, wodurch Kreaturen/Zauber modale Workflows starten oder Terrains/Regionen direkt vorbereitet werden.
 4. **Terrains-Persistenz:** Terrain-Änderungen aktualisieren zunächst nur den lokalen Zustand. Ein Debounce (500 ms) bündelt alle Eingaben, bevor `saveTerrains` ausgeführt wird. Nach dem Persistieren werden Daten erneut geladen, um externe Änderungen zu berücksichtigen.
 5. **Regions-Persistenz:** Regionen verhalten sich identisch – Eingaben werden lokal gehalten und erst nach dem Debounce in `saveRegions` geschrieben. Terrain-Namen werden separat beobachtet, sodass Dropdowns automatisch neue Terrains anbieten.
 

@@ -60,19 +60,19 @@ export class LibraryView extends ItemView {
         mkBtn("Terrains", "terrains");
         mkBtn("Regions", "regions");
 
-        // Search + Create
+        // Search + create
         const bar = root.createDiv({ cls: "sm-cc-searchbar" });
-        const search = bar.createEl("input", { attr: { type: "text", placeholder: "Suche oder Name eingeben…" } }) as HTMLInputElement;
+        const search = bar.createEl("input", { attr: { type: "text", placeholder: "Search or type a name…" } }) as HTMLInputElement;
         search.value = this.query;
         search.oninput = () => {
             this.query = search.value;
             this.activeRenderer?.setQuery(this.query);
         };
         this.searchInput = search;
-        const createBtn = bar.createEl("button", { text: "Erstellen" });
+        const createBtn = bar.createEl("button", { text: "Create" });
         createBtn.onclick = () => { void this.onCreate(search.value.trim()); };
 
-        // Target source info
+        // Source description
         this.descEl = root.createDiv({ cls: "desc" });
 
         // List container
@@ -126,8 +126,8 @@ export class LibraryView extends ItemView {
 
     private updateSourceDescription() {
         if (!this.descEl) return;
-        const text = this.mode === "creatures" ? "Quelle: SaltMarcher/Creatures/" :
-            this.mode === "spells" ? "Quelle: SaltMarcher/Spells/" :
+        const text = this.mode === "creatures" ? "Source: SaltMarcher/Creatures/" :
+            this.mode === "spells" ? "Source: SaltMarcher/Spells/" :
                 this.mode === "terrains" ? describeTerrainsSource() :
                     describeRegionsSource();
         this.descEl.setText(text);
