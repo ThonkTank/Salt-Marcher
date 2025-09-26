@@ -16,9 +16,11 @@ import {
 } from "./view-shell";
 import type { MapHeaderSaveMode } from "../../ui/map-header";
 import {
-    provideCartographerModes,
+    provideCartographerModeEntries,
     subscribeToModeRegistry,
     type CartographerModeRegistryEvent,
+    type CartographerModeRegistryEntry,
+    type NormalizedCartographerModeMetadata,
 } from "./mode-registry";
 
 export type HexCoord = { r: number; c: number };
@@ -65,7 +67,7 @@ export interface CartographerPresenterDeps {
     createMapManager(app: App, options: Parameters<typeof createMapManager>[1]): MapManagerHandle;
     createMapLayer(app: App, host: HTMLElement, file: TFile, opts: HexOptions): Promise<MapLayer>;
     loadHexOptions(app: App, file: TFile): Promise<HexOptions | null>;
-    provideModes(): CartographerMode[];
+    provideModes(): readonly CartographerModeRegistryEntry[] | readonly CartographerMode[];
     subscribeToModeRegistry(listener: (event: CartographerModeRegistryEvent) => void): () => void;
 }
 
@@ -78,7 +80,7 @@ const createDefaultDeps = (app: App): CartographerPresenterDeps => ({
         if (!block) return null;
         return parseOptions(block);
     },
-    provideModes: () => provideCartographerModes(),
+    provideModes: () => provideCartographerModeEntries(),
     subscribeToModeRegistry: (listener) => subscribeToModeRegistry(listener),
 });
 
@@ -110,6 +112,8 @@ export class CartographerPresenter {
     private mapLayer: MapLayer | null = null;
     private activeMode: CartographerMode | null = null;
     private modes: CartographerMode[];
+    private modeEntries: readonly CartographerModeRegistryEntry[] = [];
+    private readonly modeMetadataById = new Map<string, NormalizedCartographerModeMetadata>();
     private hostEl: HTMLElement | null = null;
     private modeChange: Promise<void> = Promise.resolve();
     private readonly transitionTasks = new Set<Promise<void>>();
@@ -121,12 +125,16 @@ export class CartographerPresenter {
     private activeLifecycleController: AbortController | null = null;
     private activeLifecycleContext: CartographerModeLifecycleContext | null = null;
     private unsubscribeModeRegistry: (() => void) | null = null;
+    private activeModeMetadata: NormalizedCartographerModeMetadata | null = null;
 
     constructor(app: App, deps?: Partial<CartographerPresenterDeps>) {
         this.app = app;
         const defaults = createDefaultDeps(app);
         this.deps = { ...defaults, ...deps } as CartographerPresenterDeps;
-        this.modes = this.deps.provideModes();
+        const initialEntries = this.coerceModeEntries(this.deps.provideModes());
+        this.modeEntries = initialEntries;
+        this.modes = initialEntries.map((entry) => entry.mode);
+        this.rebuildModeMetadata(initialEntries);
         try {
             this.unsubscribeModeRegistry = this.deps.subscribeToModeRegistry((event) => {
                 this.handleModeRegistryEvent(event);
@@ -219,6 +227,7 @@ export class CartographerPresenter {
         this.activeMode = null;
         this.activeLifecycleController = null;
         this.activeLifecycleContext = null;
+        this.activeModeMetadata = null;
         await this.teardownLayer();
         this.shell?.destroy();
         this.shell = null;
@@ -272,6 +281,50 @@ export class CartographerPresenter {
         return this.activeLifecycleController?.signal ?? CartographerPresenter.neverAbortSignal;
     }
 
+    private rebuildModeMetadata(entries: readonly CartographerModeRegistryEntry[]): void {
+        this.modeMetadataById.clear();
+        for (const entry of entries) {
+            this.modeMetadataById.set(entry.mode.id, entry.metadata);
+        }
+    }
+
+    private getModeMetadata(id: string | null | undefined): NormalizedCartographerModeMetadata | null {
+        if (!id) return null;
+        return this.modeMetadataById.get(id) ?? null;
+    }
+
+    private coerceModeEntries(
+        input: readonly CartographerModeRegistryEntry[] | readonly CartographerMode[],
+    ): readonly CartographerModeRegistryEntry[] {
+        if (!input || input.length === 0) {
+            return [];
+        }
+
+        const first = input[0] as CartographerModeRegistryEntry | CartographerMode;
+        if (first && typeof (first as CartographerModeRegistryEntry).metadata === "object") {
+            return input as readonly CartographerModeRegistryEntry[];
+        }
+
+        const legacyModes = input as readonly CartographerMode[];
+        return legacyModes.map((mode) => ({
+            metadata: Object.freeze({
+                id: mode.id,
+                label: mode.label,
+                summary: mode.label,
+                keywords: undefined,
+                order: undefined,
+                source: "legacy/provideModes",
+                version: undefined,
+                capabilities: Object.freeze({
+                    mapInteraction: typeof mode.onHexClick === "function" ? "hex-click" : "none",
+                    persistence: typeof mode.onSave === "function" ? "manual-save" : "read-only",
+                    sidebar: "required",
+                }),
+            } satisfies NormalizedCartographerModeMetadata),
+            mode,
+        }));
+    }
+
     private async handleFileChange(file: TFile | null): Promise<void> {
         this.currentFile = file;
         this.shell?.setFileLabel(file);
@@ -279,6 +332,9 @@ export class CartographerPresenter {
     }
 
     private async handleSave(mode: MapHeaderSaveMode, file: TFile | null): Promise<boolean> {
+        if (this.activeModeMetadata?.capabilities.persistence !== "manual-save") {
+            return false;
+        }
         if (!this.activeMode?.onSave) return false;
         try {
             const ctx = this.ensureActiveLifecycleContext(this.getActiveLifecycleSignal());
@@ -291,6 +347,9 @@ export class CartographerPresenter {
     }
 
     private async handleHexClick(coord: HexCoord, event: CustomEvent<HexCoord>): Promise<void> {
+        if (this.activeModeMetadata?.capabilities.mapInteraction !== "hex-click") {
+            return;
+        }
         if (!this.activeMode?.onHexClick) return;
         try {
             const ctx = this.ensureActiveLifecycleContext(this.getActiveLifecycleSignal());
@@ -304,16 +363,25 @@ export class CartographerPresenter {
         if (!event?.entries) return;
 
         const previousActiveId = this.activeMode?.id ?? null;
+        this.modeEntries = event.entries;
+        this.rebuildModeMetadata(event.entries);
+
         const nextModes = event.entries.map((entry) => entry.mode);
         this.modes = nextModes;
 
-        const activeMode = previousActiveId
-            ? nextModes.find((mode) => mode.id === previousActiveId) ?? null
+        const activeEntry = previousActiveId
+            ? event.entries.find((entry) => entry.mode.id === previousActiveId) ?? null
             : null;
+        const activeMode = activeEntry?.mode ?? null;
+        const activeMetadata = activeEntry?.metadata ?? null;
 
         if (!this.shell) {
             if (!activeMode) {
                 this.activeMode = null;
+                this.activeModeMetadata = null;
+            } else {
+                this.activeMode = activeMode;
+                this.activeModeMetadata = activeMetadata;
             }
             return;
         }
@@ -330,12 +398,14 @@ export class CartographerPresenter {
 
         if (activeMode) {
             this.activeMode = activeMode;
+            this.activeModeMetadata = activeMetadata ?? this.getModeMetadata(activeMode.id);
             this.shell.setModeActive(activeMode.id);
             this.shell.setModeLabel(activeMode.label);
             return;
         }
 
         this.activeMode = null;
+        this.activeModeMetadata = null;
 
         if (!this.isMounted) {
             return;
@@ -444,6 +514,7 @@ export class CartographerPresenter {
         }
 
         if (this.activeMode?.id === next.id) {
+            this.activeModeMetadata = this.getModeMetadata(next.id) ?? this.activeModeMetadata;
             if (!(externalSignal?.aborted ?? false)) {
                 this.shell?.setModeActive(next.id);
                 this.shell?.setModeLabel(next.label);
@@ -501,6 +572,7 @@ export class CartographerPresenter {
                 }
 
                 this.activeMode = null;
+                this.activeModeMetadata = null;
                 this.activeLifecycleContext = null;
             }
 
@@ -508,6 +580,7 @@ export class CartographerPresenter {
                 if (!this.activeMode) {
                     this.activeLifecycleController = null;
                     this.activeLifecycleContext = null;
+                    this.activeModeMetadata = null;
                 }
                 return;
             }
@@ -515,11 +588,13 @@ export class CartographerPresenter {
             const modeCtx = this.ensureActiveLifecycleContext(transition.controller.signal);
 
             this.activeMode = transition.next;
+            this.activeModeMetadata = this.getModeMetadata(transition.next.id);
 
             if (this.isTransitionAborted(transition)) {
                 this.activeMode = null;
                 this.activeLifecycleController = null;
                 this.activeLifecycleContext = null;
+                this.activeModeMetadata = null;
                 return;
             }
 
@@ -534,6 +609,7 @@ export class CartographerPresenter {
                 this.activeMode = null;
                 this.activeLifecycleController = null;
                 this.activeLifecycleContext = null;
+                this.activeModeMetadata = null;
                 return;
             }
 
@@ -541,6 +617,7 @@ export class CartographerPresenter {
                 this.activeMode = null;
                 this.activeLifecycleController = null;
                 this.activeLifecycleContext = null;
+                this.activeModeMetadata = null;
                 return;
             }
 
@@ -560,6 +637,7 @@ export class CartographerPresenter {
                 this.activeMode = null;
                 this.activeLifecycleController = null;
                 this.activeLifecycleContext = null;
+                this.activeModeMetadata = null;
                 return;
             }
 
@@ -579,6 +657,7 @@ export class CartographerPresenter {
             if (!this.activeMode) {
                 this.activeLifecycleController = null;
                 this.activeLifecycleContext = null;
+                this.activeModeMetadata = null;
             }
         }
     }
