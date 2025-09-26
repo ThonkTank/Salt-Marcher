@@ -73,21 +73,56 @@ export async function saveTerrains(app: App, next: Record<string, { color: strin
     await app.vault.modify(f, replaced);
 }
 
-export function watchTerrains(app: App, onChange?: () => void): () => void {
-    const update = async (reason: "modify" | "delete") => {
-        if (reason === "delete") {
-            await ensureTerrainFile(app);
+export interface TerrainWatcherOptions {
+    onChange?: () => void | Promise<void>;
+    onError?: (error: unknown, meta: { reason: "modify" | "delete" }) => void;
+}
+
+function resolveWatcherOptions(
+    maybeCallback: TerrainWatcherOptions | (() => void | Promise<void>) | undefined
+): TerrainWatcherOptions {
+    if (typeof maybeCallback === "function") {
+        return { onChange: maybeCallback };
+    }
+    return maybeCallback ?? {};
+}
+
+export function watchTerrains(
+    app: App,
+    onChangeOrOptions?: (() => void | Promise<void>) | TerrainWatcherOptions
+): () => void {
+    const options = resolveWatcherOptions(onChangeOrOptions);
+
+    const handleError = (error: unknown, reason: "modify" | "delete") => {
+        if (options.onError) {
+            try {
+                options.onError(error, { reason });
+            } catch (loggingError) {
+                console.error("[salt-marcher] Terrain watcher error handler threw", loggingError);
+            }
+        } else {
+            console.error(`[salt-marcher] Terrain watcher failed after ${reason} event`, error);
         }
-        const map = await loadTerrains(app);
-        setTerrains(map); // Farben + Speed global setzen
-        (app.workspace as any).trigger?.("salt:terrains-updated");
-        onChange?.();
     };
 
-    function maybeUpdate(reason: "modify" | "delete", file: TAbstractFile) {
+    const update = async (reason: "modify" | "delete") => {
+        try {
+            if (reason === "delete") {
+                await ensureTerrainFile(app);
+            }
+            const map = await loadTerrains(app);
+            setTerrains(map); // Farben + Speed global setzen
+            (app.workspace as any).trigger?.("salt:terrains-updated");
+            await options.onChange?.();
+        } catch (error) {
+            handleError(error, reason);
+        }
+    };
+
+    const maybeUpdate = (reason: "modify" | "delete", file: TAbstractFile) => {
         if (!(file instanceof TFile) || file.path !== TERRAIN_FILE) return;
         void update(reason);
-    }
+    };
 
     const refs: EventRef[] = (["modify", "delete"] as const).map((event) =>
         app.vault.on(event, (file) => maybeUpdate(event, file))
