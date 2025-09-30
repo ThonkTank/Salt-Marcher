@@ -15,7 +15,6 @@ Das Verzeichnis dokumentiert ausschließlich den Bootstrap-Layer. Detailentschei
 src/app/
 ├─ main.ts                 # Einstiegspunkt, registriert Views/Commands und orchestriert Dateninitialisierung
 ├─ bootstrap-services.ts   # Service-Grenzen für Terrain-Bootstrap (Priming, Watcher, Logging)
-├─ layout-editor-bridge.ts # Optionale Integration mit dem Layout-Editor-Plugin
 └─ css.ts                  # Gebündeltes Stylesheet, das zur Laufzeit injiziert wird
 ```
 
@@ -29,17 +28,12 @@ src/app/
 ### Bootstrap Service Boundaries
 `bootstrap-services.ts` kapselt die Terrain-spezifische Lifecycle-Logik und bietet einen `TerrainBootstrapHandle` mit `start()`/`stop()`. Dadurch bleibt `main.ts` auf View-Registrierung, Commands und Integrationen fokussiert, während Tests den Service isoliert mocken können. Fehlerbehandlung, Retry-Strategien und Logging lassen sich über die bereitgestellte Logger-Schnittstelle steuern.
 
-### Layout-Editor-Bridge
-`layout-editor-bridge.ts` kapselt die optionale Integration zum "Layout Editor"-Plugin. Beim Laden versucht der Bootstrap, eine View-Binding-Registrierung anzulegen und hält Listener bereit, um bei Aktivierung/Deaktivierung des Fremd-Plugins korrekt aufzuräumen. Fehler werden geloggt, damit Layout-Probleme sichtbar bleiben.
-
 ### CSS-Injektion
 `main.ts` injiziert das gebündelte Stylesheet (`HEX_PLUGIN_CSS`) als `<style id="hex-css">` ins Dokument und entfernt es beim Entladen. Dadurch bleiben die Hex-spezifischen Styles isoliert, ohne dass separate CSS-Dateien im Vault verwaltet werden müssen.
 
 ## Offene Fragen: Bootstrap vs. Feature-Verantwortung
 - Müssen zukünftige Einstellungen (z. B. automatisches Öffnen des Cartographer) über denselben Service konfigurierbar werden?
 - Wann sollten Feature-spezifische Initialisierungen (z. B. Default-Layer-Konfigurationen) aus dem Bootstrap in die jeweiligen Workspaces verschoben werden?
-- Welche Standards gelten für Dritt-Plugin-Integrationen (Layout Editor, potenziell weitere), damit sie testbar bleiben?
-
 Diese Fragen werden im [To-Do: Plugin Bootstrap Review](../../todo/plugin-bootstrap-review.md) gebündelt und priorisiert.
 
 ## Standards & Abhängigkeiten

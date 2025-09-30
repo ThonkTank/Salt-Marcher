@@ -43,10 +43,6 @@ vi.mock("../../src/apps/library/view", () => ({
     VIEW_LIBRARY: "library",
 }));
 
-vi.mock("../../src/app/layout-editor-bridge", () => ({
-    setupLayoutEditorBridge: vi.fn(() => vi.fn()),
-}));
-
 import SaltMarcherPlugin from "../../src/app/main";
 
 describe("SaltMarcherPlugin bootstrap integration", () => {
