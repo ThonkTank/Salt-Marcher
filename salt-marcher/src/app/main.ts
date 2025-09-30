@@ -7,11 +7,9 @@ import { VIEW_LIBRARY, LibraryView } from "../apps/library/view";
 import { ensureTerrainFile, loadTerrains, watchTerrains } from "../core/terrain-store";
 import { setTerrains } from "../core/terrain";
 import { HEX_PLUGIN_CSS } from "./css";
-import { setupLayoutEditorBridge } from "./layout-editor-bridge";
 
 export default class SaltMarcherPlugin extends Plugin {
     private unwatchTerrains?: () => void;
-    private teardownLayoutBridge?: () => void;
     async onload() {
         // Views
         this.registerView(VIEW_CARTOGRAPHER, (leaf: WorkspaceLeaf) => new CartographerView(leaf));
@@ -55,12 +53,10 @@ export default class SaltMarcherPlugin extends Plugin {
 
         this.injectCss();
 
-        this.teardownLayoutBridge = setupLayoutEditorBridge(this);
     }
 
     async onunload() {
         this.unwatchTerrains?.();
-        this.teardownLayoutBridge?.();
         await detachCartographerLeaves(this.app);
         this.removeCss();
     }

@@ -20,6 +20,146 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
+// src/apps/encounter/session-store.ts
+function publishEncounterEvent(event) {
+  latestEvent = event;
+  for (const listener of [...listeners]) {
+    try {
+      listener(event);
+    } catch (err) {
+      console.error("[encounter] listener failed", err);
+    }
+  }
+}
+function subscribeToEncounterEvents(listener) {
+  listeners.add(listener);
+  if (latestEvent) {
+    try {
+      listener(latestEvent);
+    } catch (err) {
+      console.error("[encounter] listener failed", err);
+    }
+  }
+  return () => {
+    listeners.delete(listener);
+  };
+}
+var latestEvent, listeners;
+var init_session_store = __esm({
+  "src/apps/encounter/session-store.ts"() {
+    "use strict";
+    latestEvent = null;
+    listeners = /* @__PURE__ */ new Set();
+  }
+});
+
+// src/apps/encounter/presenter.ts
+var defaultDeps, EncounterPresenter;
+var init_presenter = __esm({
+  "src/apps/encounter/presenter.ts"() {
+    "use strict";
+    init_session_store();
+    defaultDeps = {
+      now: () => (/* @__PURE__ */ new Date()).toISOString()
+    };
+    EncounterPresenter = class _EncounterPresenter {
+      constructor(initial, deps) {
+        this.listeners = /* @__PURE__ */ new Set();
+        this.deps = { ...defaultDeps, ...deps };
+        this.state = _EncounterPresenter.normalise(initial);
+        this.unsubscribeStore = subscribeToEncounterEvents((event) => this.applyEvent(event));
+      }
+      dispose() {
+        this.unsubscribeStore?.();
+        this.listeners.clear();
+      }
+      /** Restores persisted state (e.g. when `setViewData` fires before `onOpen`). */
+      restore(state) {
+        this.state = _EncounterPresenter.normalise(state);
+        this.emit();
+      }
+      getState() {
+        return this.state;
+      }
+      subscribe(listener) {
+        this.listeners.add(listener);
+        listener(this.state);
+        return () => {
+          this.listeners.delete(listener);
+        };
+      }
+      setNotes(notes) {
+        if (!this.state.session) return;
+        if (this.state.session.notes === notes) return;
+        this.state = {
+          session: {
+            ...this.state.session,
+            notes
+          }
+        };
+        this.emit();
+      }
+      markResolved() {
+        const session = this.state.session;
+        if (!session) return;
+        if (session.status === "resolved") return;
+        this.state = {
+          session: {
+            ...session,
+            status: "resolved",
+            resolvedAt: this.deps.now()
+          }
+        };
+        this.emit();
+      }
+      reset() {
+        if (!this.state.session) return;
+        this.state = { session: null };
+        this.emit();
+      }
+      applyEvent(event) {
+        const prev = this.state.session;
+        if (!prev || prev.event.id !== event.id) {
+          this.state = {
+            session: {
+              event,
+              notes: "",
+              status: "pending"
+            }
+          };
+        } else {
+          this.state = {
+            session: {
+              ...prev,
+              event
+            }
+          };
+        }
+        this.emit();
+      }
+      emit() {
+        for (const listener of [...this.listeners]) {
+          listener(this.state);
+        }
+      }
+      static normalise(initial) {
+        if (!initial || !initial.session || !initial.session.event) {
+          return { session: null };
+        }
+        const { event, notes, status, resolvedAt } = initial.session;
+        return {
+          session: {
+            event,
+            notes: notes ?? "",
+            status: status === "resolved" ? "resolved" : "pending",
+            resolvedAt: resolvedAt ?? null
+          }
+        };
+      }
+    };
+  }
+});
+
 // src/apps/encounter/view.ts
 var view_exports = {};
 __export(view_exports, {
@@ -31,8 +171,14 @@ var init_view = __esm({
   "src/apps/encounter/view.ts"() {
     "use strict";
     import_obsidian = require("obsidian");
+    init_presenter();
     VIEW_ENCOUNTER = "salt-encounter";
     EncounterView = class extends import_obsidian.ItemView {
+      constructor(leaf) {
+        super(leaf);
+        this.presenter = null;
+        this.pendingState = null;
+      }
       getViewType() {
         return VIEW_ENCOUNTER;
       }
@@ -44,13 +190,118 @@ var init_view = __esm({
       }
       async onOpen() {
         this.contentEl.addClass("sm-encounter-view");
-        this.contentEl.empty();
-        this.contentEl.createEl("h2", { text: "Encounter" });
-        this.contentEl.createDiv({ text: "", cls: "desc" });
+        this.renderShell();
+        this.presenter = new EncounterPresenter(this.pendingState);
+        this.pendingState = null;
+        this.detachPresenter = this.presenter.subscribe((state) => this.render(state));
       }
       async onClose() {
+        this.detachPresenter?.();
+        this.presenter?.dispose();
+        this.detachPresenter = void 0;
+        this.presenter = null;
+        this.pendingState = null;
         this.contentEl.empty();
         this.contentEl.removeClass("sm-encounter-view");
+      }
+      getViewData() {
+        return this.presenter?.getState() ?? this.pendingState;
+      }
+      setViewData(data) {
+        if (this.presenter) {
+          this.presenter.restore(data);
+        } else {
+          this.pendingState = data;
+        }
+      }
+      renderShell() {
+        this.contentEl.empty();
+        const header = this.contentEl.createEl("div", { cls: "sm-encounter-header" });
+        this.headerEl = header.createEl("h2", { text: "Encounter" });
+        this.statusEl = header.createDiv({ cls: "status", text: "Waiting for travel events\u2026" });
+        this.summaryListEl = this.contentEl.createEl("ul", { cls: "sm-encounter-summary" });
+        this.emptyEl = this.contentEl.createDiv({
+          cls: "sm-encounter-empty",
+          text: "No active encounter. Travel mode will populate this workspace when an encounter triggers."
+        });
+        this.emptyEl.style.display = "";
+        const notesSection = this.contentEl.createDiv({ cls: "sm-encounter-notes" });
+        notesSection.createEl("label", { text: "Notes", attr: { for: "encounter-notes" } });
+        this.notesEl = notesSection.createEl("textarea", {
+          cls: "notes-input",
+          attr: {
+            id: "encounter-notes",
+            placeholder: "Record tactical notes, initiative order, or follow-up tasks\u2026",
+            rows: "6"
+          }
+        });
+        this.notesEl.disabled = true;
+        this.notesEl.addEventListener("input", () => {
+          if (!this.presenter) return;
+          this.presenter.setNotes(this.notesEl.value);
+        });
+        this.resolveBtn = this.contentEl.createEl("button", { cls: "sm-encounter-resolve", text: "Mark encounter resolved" });
+        this.resolveBtn.disabled = true;
+        this.resolveBtn.addEventListener("click", () => {
+          this.presenter?.markResolved();
+        });
+      }
+      render(state) {
+        const session = state.session;
+        if (!session) {
+          this.headerEl.setText("Encounter");
+          this.statusEl.setText("Waiting for travel events\u2026");
+          this.summaryListEl.empty();
+          this.emptyEl.style.display = "";
+          this.notesEl.value = "";
+          this.notesEl.disabled = true;
+          this.resolveBtn.disabled = true;
+          this.resolveBtn.setText("Mark encounter resolved");
+          return;
+        }
+        this.emptyEl.style.display = "none";
+        const { event, notes, status, resolvedAt } = session;
+        const region = event.regionName ?? "Unknown region";
+        this.headerEl.setText(`Encounter \u2013 ${region}`);
+        if (status === "resolved") {
+          this.statusEl.setText(resolvedAt ? `Resolved ${resolvedAt}` : "Resolved");
+        } else {
+          this.statusEl.setText("Awaiting resolution");
+        }
+        this.summaryListEl.empty();
+        const summaryEntries = [];
+        if (event.coord) {
+          summaryEntries.push(["Hex", `${event.coord.r}, ${event.coord.c}`]);
+        }
+        if (event.mapName) {
+          summaryEntries.push(["Map", event.mapName]);
+        }
+        if (event.mapPath) {
+          summaryEntries.push(["Map path", event.mapPath]);
+        }
+        summaryEntries.push(["Triggered", event.triggeredAt]);
+        if (typeof event.travelClockHours === "number") {
+          summaryEntries.push(["Travel clock", `${event.travelClockHours.toFixed(2)} h`]);
+        }
+        if (typeof event.encounterOdds === "number") {
+          summaryEntries.push(["Encounter odds", `1 in ${event.encounterOdds}`]);
+        }
+        for (const [label, value] of summaryEntries) {
+          const li = this.summaryListEl.createEl("li");
+          li.createSpan({ cls: "label", text: `${label}: ` });
+          li.createSpan({ cls: "value", text: value });
+        }
+        if (this.notesEl.value !== notes) {
+          this.notesEl.value = notes;
+        }
+        this.notesEl.disabled = false;
+        if (status === "resolved") {
+          this.resolveBtn.disabled = true;
+          this.resolveBtn.setText("Encounter resolved");
+        } else {
+          this.resolveBtn.disabled = false;
+          this.resolveBtn.setText("Mark encounter resolved");
+        }
       }
     };
   }
@@ -82,6 +333,689 @@ function parseOptions(src) {
 }
 var init_options = __esm({
   "src/core/options.ts"() {
+    "use strict";
+  }
+});
+
+// src/ui/copy.ts
+var SEARCH_DROPDOWN_COPY, MODAL_COPY, MAP_WORKFLOWS_COPY, MAP_HEADER_COPY, CONFIRM_DELETE_COPY;
+var init_copy = __esm({
+  "src/ui/copy.ts"() {
+    "use strict";
+    SEARCH_DROPDOWN_COPY = {
+      placeholder: "Search\u2026"
+    };
+    MODAL_COPY = {
+      nameInput: {
+        placeholder: "New hex map",
+        title: "Name the new map",
+        cta: "Create"
+      },
+      mapSelect: {
+        placeholder: "Search maps\u2026"
+      }
+    };
+    MAP_WORKFLOWS_COPY = {
+      notices: {
+        emptyMaps: "No maps available.",
+        createSuccess: "Map created.",
+        missingHexBlock: "No hex3x3 block found in this file."
+      }
+    };
+    MAP_HEADER_COPY = {
+      labels: {
+        open: "Open map",
+        create: "Create",
+        delete: "Delete",
+        save: "Save",
+        saveAs: "Save as",
+        trigger: "Apply"
+      },
+      notices: {
+        missingFile: "Select a map before continuing.",
+        saveSuccess: "Map saved.",
+        saveError: "Saving the map failed."
+      },
+      selectPlaceholder: "Choose a save action\u2026"
+    };
+    CONFIRM_DELETE_COPY = {
+      title: "Delete map?",
+      body: (name) => `This will delete your map permanently. To continue, enter \u201C${name}\u201D.`,
+      inputPlaceholder: (name) => name,
+      buttons: {
+        cancel: "Cancel",
+        confirm: "Delete"
+      },
+      notices: {
+        success: "Map deleted.",
+        error: "Deleting map failed."
+      }
+    };
+  }
+});
+
+// src/ui/modals.ts
+var import_obsidian2, NameInputModal, MapSelectModal;
+var init_modals = __esm({
+  "src/ui/modals.ts"() {
+    "use strict";
+    import_obsidian2 = require("obsidian");
+    init_copy();
+    NameInputModal = class extends import_obsidian2.Modal {
+      constructor(app, onSubmit, options) {
+        super(app);
+        this.onSubmit = onSubmit;
+        this.value = "";
+        this.placeholder = options?.placeholder ?? MODAL_COPY.nameInput.placeholder;
+        this.title = options?.title ?? MODAL_COPY.nameInput.title;
+        this.ctaLabel = options?.cta ?? MODAL_COPY.nameInput.cta;
+        if (options?.initialValue) {
+          this.value = options.initialValue.trim();
+        }
+      }
+      onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        contentEl.createEl("h3", { text: this.title });
+        let inputEl;
+        new import_obsidian2.Setting(contentEl).addText((t) => {
+          t.setPlaceholder(this.placeholder).onChange((v) => this.value = v.trim());
+          inputEl = t.inputEl;
+          if (this.value) {
+            inputEl.value = this.value;
+          }
+        }).addButton((b) => b.setButtonText(this.ctaLabel).setCta().onClick(() => this.submit()));
+        this.scope.register([], "Enter", () => this.submit());
+        queueMicrotask(() => inputEl?.focus());
+      }
+      onClose() {
+        this.contentEl.empty();
+      }
+      submit() {
+        const name = this.value || this.placeholder;
+        this.close();
+        this.onSubmit(name);
+      }
+    };
+    MapSelectModal = class extends import_obsidian2.FuzzySuggestModal {
+      constructor(app, files, onChoose) {
+        super(app);
+        this.files = files;
+        this.onChoose = onChoose;
+        this.setPlaceholder(MODAL_COPY.mapSelect.placeholder);
+      }
+      getItems() {
+        return this.files;
+      }
+      getItemText(f) {
+        return f.basename;
+      }
+      onChooseItem(f) {
+        this.onChoose(f);
+      }
+    };
+  }
+});
+
+// src/core/map-list.ts
+async function getAllMapFiles(app) {
+  const mdFiles = app.vault.getMarkdownFiles();
+  const results = [];
+  const rx = /```[\t ]*hex3x3\b[\s\S]*?```/i;
+  for (const f of mdFiles) {
+    const content = await app.vault.cachedRead(f);
+    if (rx.test(content)) results.push(f);
+  }
+  return results.sort((a, b) => (b.stat.mtime ?? 0) - (a.stat.mtime ?? 0));
+}
+async function getFirstHexBlock(app, file) {
+  const content = await app.vault.cachedRead(file);
+  const m = content.match(/```[\t ]*hex3x3\b\s*\n([\s\S]*?)\n```/i);
+  return m ? m[1].trim() : null;
+}
+var init_map_list = __esm({
+  "src/core/map-list.ts"() {
+    "use strict";
+    init_modals();
+  }
+});
+
+// src/core/terrain.ts
+function setTerrains(next) {
+  const colors = {};
+  const speeds = {};
+  for (const [name, val] of Object.entries(next)) {
+    const n = (name ?? "").trim();
+    const color = (val?.color ?? "").trim() || "transparent";
+    const sp = Number.isFinite(val?.speed) ? val.speed : 1;
+    colors[n] = color;
+    speeds[n] = sp;
+  }
+  const mergedColors = { ...DEFAULT_TERRAIN_COLORS, ...colors, "": "transparent" };
+  const mergedSpeeds = { ...DEFAULT_TERRAIN_SPEEDS, ...speeds, "": 1 };
+  for (const k of Object.keys(TERRAIN_COLORS)) if (!(k in mergedColors)) delete TERRAIN_COLORS[k];
+  Object.assign(TERRAIN_COLORS, mergedColors);
+  for (const k of Object.keys(TERRAIN_SPEEDS)) if (!(k in mergedSpeeds)) delete TERRAIN_SPEEDS[k];
+  Object.assign(TERRAIN_SPEEDS, mergedSpeeds);
+}
+var DEFAULT_TERRAIN_COLORS, DEFAULT_TERRAIN_SPEEDS, TERRAIN_COLORS, TERRAIN_SPEEDS;
+var init_terrain = __esm({
+  "src/core/terrain.ts"() {
+    "use strict";
+    DEFAULT_TERRAIN_COLORS = Object.freeze({
+      "": "transparent",
+      Wald: "#2e7d32",
+      Meer: "#0288d1",
+      Berg: "#6d4c41"
+    });
+    DEFAULT_TERRAIN_SPEEDS = Object.freeze({
+      "": 1,
+      // leeres Terrain = neutral
+      Wald: 0.6,
+      Meer: 0.5,
+      Berg: 0.4
+    });
+    TERRAIN_COLORS = { ...DEFAULT_TERRAIN_COLORS };
+    TERRAIN_SPEEDS = { ...DEFAULT_TERRAIN_SPEEDS };
+  }
+});
+
+// src/core/hex-mapper/hex-geom.ts
+function oddrToAxial(rc) {
+  const parity = rc.r & 1;
+  const q = rc.c - (rc.r - parity) / 2;
+  return { q, r: rc.r };
+}
+function axialToOddr(ax) {
+  const parity = ax.r & 1;
+  const c = ax.q + (ax.r - parity) / 2;
+  return { r: ax.r, c: Math.round(c) };
+}
+function axialToCube(ax) {
+  return { q: ax.q, r: ax.r, s: -ax.q - ax.r };
+}
+function cubeToAxial(cu) {
+  return { q: cu.q, r: cu.r };
+}
+function cubeDistance(a, b) {
+  return (Math.abs(a.q - b.q) + Math.abs(a.r - b.r) + Math.abs(a.s - b.s)) / 2;
+}
+function cubeLerp(a, b, t) {
+  return {
+    q: a.q + (b.q - a.q) * t,
+    r: a.r + (b.r - a.r) * t,
+    s: a.s + (b.s - a.s) * t
+  };
+}
+function cubeRound(fr) {
+  let q = Math.round(fr.q), r = Math.round(fr.r), s = Math.round(fr.s);
+  const qd = Math.abs(q - fr.q), rd = Math.abs(r - fr.r), sd = Math.abs(s - fr.s);
+  if (qd > rd && qd > sd) q = -r - s;
+  else if (rd > sd) r = -q - s;
+  else s = -q - r;
+  return { q, r, s };
+}
+function lineOddR(a, b) {
+  const A = axialToCube(oddrToAxial(a));
+  const B = axialToCube(oddrToAxial(b));
+  const N = cubeDistance(A, B);
+  const out = [];
+  for (let i = 0; i <= N; i++) {
+    const t = N === 0 ? 0 : i / N;
+    const p = cubeRound(cubeLerp(A, B, t));
+    out.push(axialToOddr(cubeToAxial(p)));
+  }
+  return out;
+}
+function hexPolygonPoints(cx, cy, r) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const ang = (60 * i - 90) * Math.PI / 180;
+    pts.push(`${cx + r * Math.cos(ang)},${cy + r * Math.sin(ang)}`);
+  }
+  return pts.join(" ");
+}
+var SQRT3;
+var init_hex_geom = __esm({
+  "src/core/hex-mapper/hex-geom.ts"() {
+    "use strict";
+    SQRT3 = Math.sqrt(3);
+  }
+});
+
+// src/core/hex-mapper/render/scene.ts
+function createHexScene(config) {
+  const { host, radius, padding, base, initialCoords } = config;
+  const hexW = Math.sqrt(3) * radius;
+  const hexH = 2 * radius;
+  const hStep = hexW;
+  const vStep = 0.75 * hexH;
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("class", "hex3x3-map");
+  svg.setAttribute("width", "100%");
+  svg.style.touchAction = "none";
+  const overlay = document.createElementNS(SVG_NS, "rect");
+  overlay.setAttribute("fill", "transparent");
+  overlay.setAttribute("pointer-events", "all");
+  overlay.style.touchAction = "none";
+  const contentG = document.createElementNS(SVG_NS, "g");
+  svg.appendChild(overlay);
+  svg.appendChild(contentG);
+  host.appendChild(svg);
+  const polyByCoord = /* @__PURE__ */ new Map();
+  const internals = {
+    bounds: null,
+    updateViewBox() {
+      if (!internals.bounds) return;
+      const { minX, minY, maxX, maxY } = internals.bounds;
+      const paddedMinX = Math.floor(minX - padding);
+      const paddedMinY = Math.floor(minY - padding);
+      const paddedMaxX = Math.ceil(maxX + padding);
+      const paddedMaxY = Math.ceil(maxY + padding);
+      const width = Math.max(1, paddedMaxX - paddedMinX);
+      const height = Math.max(1, paddedMaxY - paddedMinY);
+      svg.setAttribute("viewBox", `${paddedMinX} ${paddedMinY} ${width} ${height}`);
+      overlay.setAttribute("x", String(paddedMinX));
+      overlay.setAttribute("y", String(paddedMinY));
+      overlay.setAttribute("width", String(width));
+      overlay.setAttribute("height", String(height));
+    },
+    centerOf(coord) {
+      const { r, c } = coord;
+      const cx = padding + (c - base.c) * hStep + (r % 2 ? hexW / 2 : 0);
+      const cy = padding + (r - base.r) * vStep + hexH / 2;
+      return { cx, cy };
+    },
+    bboxOf(coord) {
+      const { cx, cy } = internals.centerOf(coord);
+      return {
+        minX: cx - hexW / 2,
+        maxX: cx + hexW / 2,
+        minY: cy - radius,
+        maxY: cy + radius
+      };
+    }
+  };
+  function mergeBounds(next) {
+    if (!internals.bounds) {
+      internals.bounds = { ...next };
+      return;
+    }
+    const current = internals.bounds;
+    current.minX = Math.min(current.minX, next.minX);
+    current.minY = Math.min(current.minY, next.minY);
+    current.maxX = Math.max(current.maxX, next.maxX);
+    current.maxY = Math.max(current.maxY, next.maxY);
+  }
+  function addHex(coord) {
+    if (polyByCoord.has(keyOf(coord))) return;
+    const { cx, cy } = internals.centerOf(coord);
+    const poly = document.createElementNS(SVG_NS, "polygon");
+    poly.setAttribute("points", hexPolygonPoints(cx, cy, radius));
+    poly.setAttribute("data-row", String(coord.r));
+    poly.setAttribute("data-col", String(coord.c));
+    poly.style.fill = "transparent";
+    poly.style.stroke = "var(--text-muted)";
+    poly.style.strokeWidth = "2";
+    poly.style.transition = "fill 120ms ease, fill-opacity 120ms ease, stroke 120ms ease";
+    contentG.appendChild(poly);
+    polyByCoord.set(keyOf(coord), poly);
+    const label = document.createElementNS(SVG_NS, "text");
+    label.setAttribute("x", String(cx));
+    label.setAttribute("y", String(cy + 4));
+    label.setAttribute("text-anchor", "middle");
+    label.setAttribute("pointer-events", "none");
+    label.setAttribute("fill", "var(--text-muted)");
+    label.textContent = `${coord.r},${coord.c}`;
+    contentG.appendChild(label);
+    mergeBounds(internals.bboxOf(coord));
+  }
+  function ensurePolys(coords) {
+    let added = false;
+    for (const coord of coords) {
+      const key = keyOf(coord);
+      if (polyByCoord.has(key)) continue;
+      addHex(coord);
+      added = true;
+    }
+    if (added) internals.updateViewBox();
+  }
+  function setFill(coord, color) {
+    const poly = polyByCoord.get(keyOf(coord));
+    if (!poly) return;
+    const fill = color ?? "transparent";
+    poly.style.fill = fill;
+    poly.style.fillOpacity = fill !== "transparent" ? "0.25" : "0";
+    if (fill !== "transparent") {
+      poly.setAttribute("data-painted", "1");
+    } else {
+      poly.removeAttribute("data-painted");
+    }
+  }
+  const initial = initialCoords.length ? initialCoords : [];
+  if (initial.length) {
+    for (const coord of initial) addHex(coord);
+    internals.updateViewBox();
+  }
+  return {
+    svg,
+    contentG,
+    overlay,
+    polyByCoord,
+    ensurePolys,
+    setFill,
+    getViewBox: () => {
+      if (!internals.bounds) {
+        return { minX: 0, minY: 0, width: 0, height: 0 };
+      }
+      const { minX, minY, maxX, maxY } = internals.bounds;
+      return { minX, minY, width: maxX - minX, height: maxY - minY };
+    },
+    destroy: () => {
+      polyByCoord.clear();
+      svg.remove();
+    }
+  };
+}
+var SVG_NS, keyOf;
+var init_scene = __esm({
+  "src/core/hex-mapper/render/scene.ts"() {
+    "use strict";
+    init_hex_geom();
+    SVG_NS = "http://www.w3.org/2000/svg";
+    keyOf = (coord) => `${coord.r},${coord.c}`;
+  }
+});
+
+// src/core/hex-mapper/camera.ts
+function attachCameraControls(svg, contentG, opts, extraTargets = []) {
+  let scale = 1;
+  let tx = 0, ty = 0;
+  let panning = false;
+  let lastX = 0, lastY = 0;
+  svg.style.touchAction = "none";
+  const apply = () => {
+    contentG.setAttribute("transform", `translate(${tx},${ty}) scale(${scale})`);
+  };
+  apply();
+  const svgPoint = (clientX, clientY) => {
+    const pt = svg.createSVGPoint();
+    pt.x = clientX;
+    pt.y = clientY;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return { x: clientX, y: clientY };
+    const p = pt.matrixTransform(ctm.inverse());
+    return { x: p.x, y: p.y };
+  };
+  const normalizeDelta = (ev) => ev.deltaMode === 1 ? ev.deltaY * 16 : ev.deltaMode === 2 ? ev.deltaY * 360 : ev.deltaY;
+  const onWheel = (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const dy = normalizeDelta(ev);
+    const factor = Math.exp(-dy * 1e-3 * (opts.zoomSpeed || 1));
+    const newScale = Math.max(opts.minScale, Math.min(opts.maxScale, scale * factor));
+    if (newScale === scale) return;
+    const { x: sx, y: sy } = svgPoint(ev.clientX, ev.clientY);
+    const wx = (sx - tx) / scale, wy = (sy - ty) / scale;
+    scale = newScale;
+    tx = sx - wx * scale;
+    ty = sy - wy * scale;
+    apply();
+  };
+  const onPointerDown = (ev) => {
+    if (ev.button !== 1) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    panning = true;
+    lastX = ev.clientX;
+    lastY = ev.clientY;
+    ev.target.setPointerCapture?.(ev.pointerId);
+    svg.style.cursor = "grabbing";
+  };
+  const onPointerMove = (ev) => {
+    if (!panning) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    const dx = ev.clientX - lastX, dy = ev.clientY - lastY;
+    lastX = ev.clientX;
+    lastY = ev.clientY;
+    tx += dx;
+    ty += dy;
+    apply();
+  };
+  const endPan = (ev) => {
+    if (!panning) return;
+    if (ev instanceof PointerEvent) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      ev.target.releasePointerCapture?.(ev.pointerId);
+    }
+    panning = false;
+    svg.style.cursor = "";
+  };
+  const targets = [svg, ...extraTargets];
+  for (const t of targets) {
+    t.addEventListener("wheel", onWheel, { passive: false });
+    t.addEventListener("pointerdown", onPointerDown);
+    t.addEventListener("pointermove", onPointerMove);
+    t.addEventListener("pointerup", endPan);
+    t.addEventListener("pointercancel", endPan);
+    t.addEventListener("pointerleave", endPan);
+    t.style.touchAction = "none";
+  }
+  window.addEventListener("blur", endPan);
+  return () => {
+    for (const t of targets) {
+      t.removeEventListener("wheel", onWheel);
+      t.removeEventListener("pointerdown", onPointerDown);
+      t.removeEventListener("pointermove", onPointerMove);
+      t.removeEventListener("pointerup", endPan);
+      t.removeEventListener("pointercancel", endPan);
+      t.removeEventListener("pointerleave", endPan);
+    }
+    window.removeEventListener("blur", endPan);
+  };
+}
+var init_camera = __esm({
+  "src/core/hex-mapper/camera.ts"() {
+    "use strict";
+  }
+});
+
+// src/core/hex-mapper/render/camera-controller.ts
+function createCameraController(svg, contentG, overlay, host, options) {
+  const detach = attachCameraControls(svg, contentG, options, [overlay, host]);
+  return {
+    destroy() {
+      try {
+        detach?.();
+      } catch (err) {
+        console.error("[hex-render] camera cleanup failed", err);
+      }
+    }
+  };
+}
+var init_camera_controller = __esm({
+  "src/core/hex-mapper/render/camera-controller.ts"() {
+    "use strict";
+    init_camera();
+  }
+});
+
+// src/core/hex-mapper/render/interactions.ts
+function createInteractionController(config) {
+  const { svg, overlay, toContentPoint, pointToCoord, delegateRef, onDefaultClick } = config;
+  let painting = false;
+  let visited = null;
+  let raf = 0;
+  let lastPointer = null;
+  const getDelegate = () => delegateRef.current;
+  function convert(ev) {
+    const pt = toContentPoint(ev);
+    if (!pt) return null;
+    return pointToCoord(pt.x, pt.y);
+  }
+  async function executePaintStep(ev) {
+    const coord = convert(ev);
+    if (!coord) return { outcome: "handled", coord: null };
+    if (painting && visited?.has(keyOf2(coord))) {
+      return { outcome: "handled", coord };
+    }
+    const handler = getDelegate().onPaintStep;
+    if (!handler) return { outcome: "default", coord };
+    const outcome = await handler(coord, ev);
+    return { outcome, coord };
+  }
+  const onClick = async (ev) => {
+    ev.preventDefault();
+    const coord = convert(ev);
+    if (!coord) return;
+    const handler = getDelegate().onClick;
+    const outcome = handler ? await handler(coord, ev) : "default";
+    if (outcome === "default") {
+      await onDefaultClick(coord, ev);
+    }
+  };
+  const onPointerDown = (ev) => {
+    if (ev.button !== 0) return;
+    if (!getDelegate().onPaintStep) return;
+    lastPointer = ev;
+    void (async () => {
+      const { outcome, coord } = await executePaintStep(ev);
+      if (outcome === "start-paint" && coord) {
+        painting = true;
+        visited = /* @__PURE__ */ new Set([keyOf2(coord)]);
+        svg.setPointerCapture?.(ev.pointerId);
+        ev.preventDefault();
+      } else if (outcome !== "default") {
+        ev.preventDefault();
+      }
+    })();
+  };
+  const runQueuedPaintStep = () => {
+    if (!painting || !lastPointer) return;
+    const ev = lastPointer;
+    void (async () => {
+      const { outcome, coord } = await executePaintStep(ev);
+      if (!painting) return;
+      if (coord && outcome !== "default") {
+        visited?.add(keyOf2(coord));
+      }
+    })();
+  };
+  const onPointerMove = (ev) => {
+    if (!painting) return;
+    lastPointer = ev;
+    if (!raf) {
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        runQueuedPaintStep();
+      });
+    }
+    ev.preventDefault();
+  };
+  const endPaint = (ev) => {
+    if (!painting) return;
+    painting = false;
+    visited?.clear();
+    visited = null;
+    lastPointer = null;
+    if (raf) {
+      cancelAnimationFrame(raf);
+      raf = 0;
+    }
+    svg.releasePointerCapture?.(ev.pointerId);
+    getDelegate().onPaintEnd?.();
+    ev.preventDefault();
+  };
+  const onPointerCancel = (ev) => {
+    if (!painting) return;
+    endPaint(ev);
+  };
+  svg.addEventListener("click", onClick, { passive: false });
+  svg.addEventListener("pointerdown", onPointerDown, { capture: true });
+  svg.addEventListener("pointermove", onPointerMove, { capture: true });
+  svg.addEventListener("pointerup", endPaint, { capture: true });
+  svg.addEventListener("pointercancel", onPointerCancel, { capture: true });
+  overlay.addEventListener("pointerdown", onPointerDown, { capture: true });
+  overlay.addEventListener("pointermove", onPointerMove, { capture: true });
+  overlay.addEventListener("pointerup", endPaint, { capture: true });
+  overlay.addEventListener("pointercancel", onPointerCancel, { capture: true });
+  return {
+    destroy() {
+      svg.removeEventListener("click", onClick);
+      svg.removeEventListener("pointerdown", onPointerDown);
+      svg.removeEventListener("pointermove", onPointerMove);
+      svg.removeEventListener("pointerup", endPaint);
+      svg.removeEventListener("pointercancel", onPointerCancel);
+      overlay.removeEventListener("pointerdown", onPointerDown);
+      overlay.removeEventListener("pointermove", onPointerMove);
+      overlay.removeEventListener("pointerup", endPaint);
+      overlay.removeEventListener("pointercancel", onPointerCancel);
+      if (raf) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      }
+      painting = false;
+      visited?.clear();
+      visited = null;
+      lastPointer = null;
+    }
+  };
+}
+var keyOf2;
+var init_interactions = __esm({
+  "src/core/hex-mapper/render/interactions.ts"() {
+    "use strict";
+    keyOf2 = (coord) => `${coord.r},${coord.c}`;
+  }
+});
+
+// src/core/hex-mapper/render/coordinates.ts
+function createCoordinateTranslator(config) {
+  const { svg, contentG, base, radius, padding } = config;
+  const hexW = Math.sqrt(3) * radius;
+  const hexH = 2 * radius;
+  const hStep = hexW;
+  const vStep = 0.75 * hexH;
+  const svgPoint = svg.createSVGPoint();
+  const toContentPoint = (ev) => {
+    const matrix = contentG.getScreenCTM();
+    if (!matrix) return null;
+    svgPoint.x = ev.clientX;
+    svgPoint.y = ev.clientY;
+    return svgPoint.matrixTransform(matrix.inverse());
+  };
+  const pointToCoord = (px, py) => {
+    const rFloat = (py - padding - hexH / 2) / vStep + base.r;
+    let r = Math.round(rFloat);
+    const isOdd = r % 2 !== 0;
+    let c = Math.round((px - padding - (isOdd ? hexW / 2 : 0)) / hStep + base.c);
+    let best = { r, c };
+    let bestD2 = Infinity;
+    for (let dr = -1; dr <= 1; dr++) {
+      const rr = r + dr;
+      const odd = rr % 2 !== 0;
+      const cc = Math.round((px - padding - (odd ? hexW / 2 : 0)) / hStep + base.c);
+      const cx = padding + (cc - base.c) * hStep + (rr % 2 ? hexW / 2 : 0);
+      const cy = padding + (rr - base.r) * vStep + hexH / 2;
+      const dx = px - cx;
+      const dy = py - cy;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < bestD2) {
+        bestD2 = d2;
+        best = { r: rr, c: cc };
+      }
+    }
+    return best;
+  };
+  return {
+    toContentPoint,
+    pointToCoord
+  };
+}
+var init_coordinates = __esm({
+  "src/core/hex-mapper/render/coordinates.ts"() {
     "use strict";
   }
 });
@@ -314,394 +1248,99 @@ var init_hex_notes = __esm({
   }
 });
 
-// src/core/regions-store.ts
-var regions_store_exports = {};
-__export(regions_store_exports, {
-  REGIONS_FILE: () => REGIONS_FILE,
-  ensureRegionsFile: () => ensureRegionsFile,
-  loadRegions: () => loadRegions,
-  parseRegionsBlock: () => parseRegionsBlock,
-  saveRegions: () => saveRegions,
-  stringifyRegionsBlock: () => stringifyRegionsBlock,
-  watchRegions: () => watchRegions
-});
-async function ensureRegionsFile(app) {
-  const p = (0, import_obsidian11.normalizePath)(REGIONS_FILE);
-  const existing = app.vault.getAbstractFileByPath(p);
-  if (existing instanceof import_obsidian11.TFile) return existing;
-  await app.vault.createFolder(p.split("/").slice(0, -1).join("/")).catch(() => {
+// src/core/hex-mapper/render/interaction-delegate.ts
+function dispatchInteraction(host, coord, phase, nativeEvent) {
+  let outcome = null;
+  const detail = {
+    r: coord.r,
+    c: coord.c,
+    phase,
+    nativeEvent,
+    setOutcome(next) {
+      outcome = next;
+    }
+  };
+  const evt = new CustomEvent(EVENT_NAME, {
+    detail,
+    bubbles: true,
+    cancelable: true
   });
-  const body = [
-    "---",
-    "smList: true",
-    "---",
-    "# Regions",
-    "",
-    "```regions",
-    "# Name: Terrain",
-    "# Beispiel:",
-    "# Saltmarsh: K\xFCste",
-    "```",
-    ""
-  ].join("\n");
-  return await app.vault.create(p, body);
-}
-function parseRegionsBlock(md) {
-  const m = md.match(BLOCK_RE2);
-  if (!m) return [];
-  const out = [];
-  for (const raw of m[1].split(/\r?\n/)) {
-    const line = raw.trim();
-    if (!line || line.startsWith("#")) continue;
-    const mm = line.match(/^("?)(.*?)\1\s*:\s*(.*)$/);
-    if (!mm) continue;
-    const name = (mm[2] || "").trim();
-    const rest = (mm[3] || "").trim();
-    let terrain = rest;
-    let encounterOdds = void 0;
-    const em = rest.match(/,\s*encounter\s*:\s*([^,]+)\s*$/i);
-    if (em) {
-      terrain = rest.slice(0, em.index).trim();
-      const spec = em[1].trim();
-      const frac = spec.match(/^1\s*\/\s*(\d+)$/);
-      if (frac) encounterOdds = parseInt(frac[1], 10) || void 0;
-      else {
-        const n = parseInt(spec, 10);
-        if (Number.isFinite(n) && n > 0) encounterOdds = n;
+  host.dispatchEvent(evt);
+  if (outcome) return outcome;
+  if (evt.defaultPrevented) {
+    if (phase === "paint" && nativeEvent instanceof PointerEvent) {
+      const pointer = nativeEvent;
+      if (pointer.button === 0 || pointer.buttons === 1) {
+        return "start-paint";
       }
     }
-    out.push({ name, terrain, encounterOdds });
+    return "handled";
   }
-  return out;
+  return "default";
 }
-function stringifyRegionsBlock(list) {
-  const lines = list.map((r) => {
-    const base = `${r.name}: ${r.terrain || ""}`;
-    const n = r.encounterOdds;
-    return n && n > 0 ? `${base}, encounter: 1/${n}` : base;
-  });
-  return ["```regions", ...lines, "```"].join("\n");
-}
-async function loadRegions(app) {
-  const f = await ensureRegionsFile(app);
-  const md = await app.vault.read(f);
-  return parseRegionsBlock(md);
-}
-async function saveRegions(app, list) {
-  const f = await ensureRegionsFile(app);
-  const md = await app.vault.read(f);
-  const block = stringifyRegionsBlock(list);
-  const replaced = md.match(BLOCK_RE2) ? md.replace(BLOCK_RE2, block) : md + "\n\n" + block + "\n";
-  await app.vault.modify(f, replaced);
-}
-function watchRegions(app, onChange) {
-  const handler = async (file) => {
-    if (file.path !== REGIONS_FILE) return;
-    app.workspace.trigger?.("salt:regions-updated");
-    onChange?.();
-  };
-  app.vault.on("modify", handler);
-  app.vault.on("delete", handler);
-  return () => {
-    app.vault.off("modify", handler);
-    app.vault.off("delete", handler);
-  };
-}
-var import_obsidian11, REGIONS_FILE, BLOCK_RE2;
-var init_regions_store = __esm({
-  "src/core/regions-store.ts"() {
-    "use strict";
-    import_obsidian11 = require("obsidian");
-    REGIONS_FILE = "SaltMarcher/Regions.md";
-    BLOCK_RE2 = /```regions\s*([\s\S]*?)```/i;
-  }
-});
-
-// src/app/main.ts
-var main_exports = {};
-__export(main_exports, {
-  default: () => SaltMarcherPlugin
-});
-module.exports = __toCommonJS(main_exports);
-var import_obsidian22 = require("obsidian");
-init_view();
-
-// src/apps/cartographer/index.ts
-var import_obsidian12 = require("obsidian");
-
-// src/apps/cartographer/view-shell.ts
-init_options();
-
-// src/ui/modals.ts
-var import_obsidian2 = require("obsidian");
-var NameInputModal = class extends import_obsidian2.Modal {
-  constructor(app, onSubmit, options) {
-    super(app);
-    this.onSubmit = onSubmit;
-    this.value = "";
-    this.placeholder = options?.placeholder ?? "Neue Hex Map";
-    this.title = options?.title ?? "Name der neuen Karte";
-    this.ctaLabel = options?.cta ?? "Erstellen";
-    if (options?.initialValue) {
-      this.value = options.initialValue.trim();
-    }
-  }
-  onOpen() {
-    const { contentEl } = this;
-    contentEl.empty();
-    contentEl.createEl("h3", { text: this.title });
-    let inputEl;
-    new import_obsidian2.Setting(contentEl).addText((t) => {
-      t.setPlaceholder(this.placeholder).onChange((v) => this.value = v.trim());
-      inputEl = t.inputEl;
-      if (this.value) {
-        inputEl.value = this.value;
-      }
-    }).addButton(
-      (b) => b.setButtonText(this.ctaLabel).setCta().onClick(() => this.submit())
-    );
-    this.scope.register([], "Enter", () => this.submit());
-    queueMicrotask(() => inputEl?.focus());
-  }
-  onClose() {
-    this.contentEl.empty();
-  }
-  submit() {
-    const name = this.value || this.placeholder;
-    this.close();
-    this.onSubmit(name);
-  }
-};
-var MapSelectModal = class extends import_obsidian2.FuzzySuggestModal {
-  constructor(app, files, onChoose) {
-    super(app);
-    this.files = files;
-    this.onChoose = onChoose;
-    this.setPlaceholder("Karte suchen\u2026");
-  }
-  getItems() {
-    return this.files;
-  }
-  getItemText(f) {
-    return f.basename;
-  }
-  onChooseItem(f) {
-    this.onChoose(f);
-  }
-};
-
-// src/core/map-list.ts
-async function getAllMapFiles(app) {
-  const mdFiles = app.vault.getMarkdownFiles();
-  const results = [];
-  const rx = /```[\t ]*hex3x3\b[\s\S]*?```/i;
-  for (const f of mdFiles) {
-    const content = await app.vault.cachedRead(f);
-    if (rx.test(content)) results.push(f);
-  }
-  return results.sort((a, b) => (b.stat.mtime ?? 0) - (a.stat.mtime ?? 0));
-}
-async function getFirstHexBlock(app, file) {
-  const content = await app.vault.cachedRead(file);
-  const m = content.match(/```[\t ]*hex3x3\b\s*\n([\s\S]*?)\n```/i);
-  return m ? m[1].trim() : null;
-}
-
-// src/core/hex-mapper/hex-render.ts
-var import_obsidian4 = require("obsidian");
-init_layout();
-
-// src/core/hex-mapper/hex-geom.ts
-var SQRT3 = Math.sqrt(3);
-function oddrToAxial(rc) {
-  const parity = rc.r & 1;
-  const q = rc.c - (rc.r - parity) / 2;
-  return { q, r: rc.r };
-}
-function axialToOddr(ax) {
-  const parity = ax.r & 1;
-  const c = ax.q + (ax.r - parity) / 2;
-  return { r: ax.r, c: Math.round(c) };
-}
-function axialToCube(ax) {
-  return { q: ax.q, r: ax.r, s: -ax.q - ax.r };
-}
-function cubeToAxial(cu) {
-  return { q: cu.q, r: cu.r };
-}
-function cubeDistance(a, b) {
-  return (Math.abs(a.q - b.q) + Math.abs(a.r - b.r) + Math.abs(a.s - b.s)) / 2;
-}
-function cubeLerp(a, b, t) {
+function createEventBackedInteractionDelegate(host) {
   return {
-    q: a.q + (b.q - a.q) * t,
-    r: a.r + (b.r - a.r) * t,
-    s: a.s + (b.s - a.s) * t
-  };
-}
-function cubeRound(fr) {
-  let q = Math.round(fr.q), r = Math.round(fr.r), s = Math.round(fr.s);
-  const qd = Math.abs(q - fr.q), rd = Math.abs(r - fr.r), sd = Math.abs(s - fr.s);
-  if (qd > rd && qd > sd) q = -r - s;
-  else if (rd > sd) r = -q - s;
-  else s = -q - r;
-  return { q, r, s };
-}
-function lineOddR(a, b) {
-  const A = axialToCube(oddrToAxial(a));
-  const B = axialToCube(oddrToAxial(b));
-  const N = cubeDistance(A, B);
-  const out = [];
-  for (let i = 0; i <= N; i++) {
-    const t = N === 0 ? 0 : i / N;
-    const p = cubeRound(cubeLerp(A, B, t));
-    out.push(axialToOddr(cubeToAxial(p)));
-  }
-  return out;
-}
-function hexPolygonPoints(cx, cy, r) {
-  const pts = [];
-  for (let i = 0; i < 6; i++) {
-    const ang = (60 * i - 90) * Math.PI / 180;
-    pts.push(`${cx + r * Math.cos(ang)},${cy + r * Math.sin(ang)}`);
-  }
-  return pts.join(" ");
-}
-
-// src/core/hex-mapper/hex-render.ts
-init_hex_notes();
-
-// src/core/hex-mapper/camera.ts
-function attachCameraControls(svg, contentG, opts, extraTargets = []) {
-  let scale = 1;
-  let tx = 0, ty = 0;
-  let panning = false;
-  let lastX = 0, lastY = 0;
-  svg.style.touchAction = "none";
-  const apply = () => {
-    contentG.setAttribute("transform", `translate(${tx},${ty}) scale(${scale})`);
-  };
-  apply();
-  const svgPoint = (clientX, clientY) => {
-    const pt = svg.createSVGPoint();
-    pt.x = clientX;
-    pt.y = clientY;
-    const ctm = svg.getScreenCTM();
-    if (!ctm) return { x: clientX, y: clientY };
-    const p = pt.matrixTransform(ctm.inverse());
-    return { x: p.x, y: p.y };
-  };
-  const normalizeDelta = (ev) => ev.deltaMode === 1 ? ev.deltaY * 16 : ev.deltaMode === 2 ? ev.deltaY * 360 : ev.deltaY;
-  const onWheel = (ev) => {
-    ev.preventDefault();
-    ev.stopPropagation();
-    const dy = normalizeDelta(ev);
-    const factor = Math.exp(-dy * 1e-3 * (opts.zoomSpeed || 1));
-    const newScale = Math.max(opts.minScale, Math.min(opts.maxScale, scale * factor));
-    if (newScale === scale) return;
-    const { x: sx, y: sy } = svgPoint(ev.clientX, ev.clientY);
-    const wx = (sx - tx) / scale, wy = (sy - ty) / scale;
-    scale = newScale;
-    tx = sx - wx * scale;
-    ty = sy - wy * scale;
-    apply();
-  };
-  const onPointerDown = (ev) => {
-    if (ev.button !== 1) return;
-    ev.preventDefault();
-    ev.stopPropagation();
-    panning = true;
-    lastX = ev.clientX;
-    lastY = ev.clientY;
-    ev.target.setPointerCapture?.(ev.pointerId);
-    svg.style.cursor = "grabbing";
-  };
-  const onPointerMove = (ev) => {
-    if (!panning) return;
-    ev.preventDefault();
-    ev.stopPropagation();
-    const dx = ev.clientX - lastX, dy = ev.clientY - lastY;
-    lastX = ev.clientX;
-    lastY = ev.clientY;
-    tx += dx;
-    ty += dy;
-    apply();
-  };
-  const endPan = (ev) => {
-    if (!panning) return;
-    if (ev instanceof PointerEvent) {
-      ev.preventDefault();
-      ev.stopPropagation();
-      ev.target.releasePointerCapture?.(ev.pointerId);
+    onClick(coord, ev) {
+      return dispatchInteraction(host, coord, "click", ev);
+    },
+    onPaintStep(coord, ev) {
+      return dispatchInteraction(host, coord, "paint", ev);
     }
-    panning = false;
-    svg.style.cursor = "";
-  };
-  const targets = [svg, ...extraTargets];
-  for (const t of targets) {
-    t.addEventListener("wheel", onWheel, { passive: false });
-    t.addEventListener("pointerdown", onPointerDown);
-    t.addEventListener("pointermove", onPointerMove);
-    t.addEventListener("pointerup", endPan);
-    t.addEventListener("pointercancel", endPan);
-    t.addEventListener("pointerleave", endPan);
-    t.style.touchAction = "none";
-  }
-  window.addEventListener("blur", endPan);
-  return () => {
-    for (const t of targets) {
-      t.removeEventListener("wheel", onWheel);
-      t.removeEventListener("pointerdown", onPointerDown);
-      t.removeEventListener("pointermove", onPointerMove);
-      t.removeEventListener("pointerup", endPan);
-      t.removeEventListener("pointercancel", endPan);
-      t.removeEventListener("pointerleave", endPan);
-    }
-    window.removeEventListener("blur", endPan);
   };
 }
-
-// src/core/terrain.ts
-var DEFAULT_TERRAIN_COLORS = Object.freeze({
-  "": "transparent",
-  Wald: "#2e7d32",
-  Meer: "#0288d1",
-  Berg: "#6d4c41"
-});
-var DEFAULT_TERRAIN_SPEEDS = Object.freeze({
-  "": 1,
-  // leeres Terrain = neutral
-  Wald: 0.6,
-  Meer: 0.5,
-  Berg: 0.4
-});
-var TERRAIN_COLORS = { ...DEFAULT_TERRAIN_COLORS };
-var TERRAIN_SPEEDS = { ...DEFAULT_TERRAIN_SPEEDS };
-function setTerrains(next) {
-  const colors = {};
-  const speeds = {};
-  for (const [name, val] of Object.entries(next)) {
-    const n = (name ?? "").trim();
-    const color = (val?.color ?? "").trim() || "transparent";
-    const sp = Number.isFinite(val?.speed) ? val.speed : 1;
-    colors[n] = color;
-    speeds[n] = sp;
+var EVENT_NAME;
+var init_interaction_delegate = __esm({
+  "src/core/hex-mapper/render/interaction-delegate.ts"() {
+    "use strict";
+    EVENT_NAME = "hex:click";
   }
-  const mergedColors = { ...DEFAULT_TERRAIN_COLORS, ...colors, "": "transparent" };
-  const mergedSpeeds = { ...DEFAULT_TERRAIN_SPEEDS, ...speeds, "": 1 };
-  for (const k of Object.keys(TERRAIN_COLORS)) if (!(k in mergedColors)) delete TERRAIN_COLORS[k];
-  Object.assign(TERRAIN_COLORS, mergedColors);
-  for (const k of Object.keys(TERRAIN_SPEEDS)) if (!(k in mergedSpeeds)) delete TERRAIN_SPEEDS[k];
-  Object.assign(TERRAIN_SPEEDS, mergedSpeeds);
-}
+});
 
-// src/core/hex-mapper/hex-render.ts
-var keyOf = (r, c) => `${r},${c}`;
+// src/core/hex-mapper/render/interaction-adapter.ts
+function resolveMapFile(app, mapPath) {
+  const abstract = app.vault.getAbstractFileByPath(mapPath);
+  return abstract instanceof import_obsidian4.TFile ? abstract : null;
+}
+function createInteractionAdapter(config) {
+  const { app, host, mapPath } = config;
+  const defaultDelegate = createEventBackedInteractionDelegate(host);
+  const delegateRef = { current: defaultDelegate };
+  const handleDefaultClick = async (coord, _ev) => {
+    const file = resolveMapFile(app, mapPath);
+    if (!file) return;
+    const tfile = await saveTile(app, file, coord, { terrain: "" });
+    const leaf = getCenterLeaf(app);
+    await leaf.openFile(tfile, { active: true });
+  };
+  const setDelegate = (delegate) => {
+    delegateRef.current = delegate ?? defaultDelegate;
+  };
+  return {
+    delegateRef,
+    handleDefaultClick,
+    setDelegate
+  };
+}
+var import_obsidian4;
+var init_interaction_adapter = __esm({
+  "src/core/hex-mapper/render/interaction-adapter.ts"() {
+    "use strict";
+    import_obsidian4 = require("obsidian");
+    init_layout();
+    init_hex_notes();
+    init_interaction_delegate();
+  }
+});
+
+// src/core/hex-mapper/render/bootstrap.ts
 function computeBounds(tiles) {
   if (!tiles.length) return null;
-  let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
-  for (const t of tiles) {
-    const { r, c } = t.coord;
+  let minR = Infinity;
+  let maxR = -Infinity;
+  let minC = Infinity;
+  let maxC = -Infinity;
+  for (const tile of tiles) {
+    const { r, c } = tile.coord;
     if (r < minR) minR = r;
     if (r > maxR) maxR = r;
     if (c < minC) minC = c;
@@ -709,287 +1348,132 @@ function computeBounds(tiles) {
   }
   return { minR, maxR, minC, maxC };
 }
+function buildFallback(bounds) {
+  const minR = bounds ? bounds.minR : 0;
+  const maxR = bounds ? bounds.maxR : DEFAULT_FALLBACK_SPAN;
+  const minC = bounds ? bounds.minC : 0;
+  const maxC = bounds ? bounds.maxC : DEFAULT_FALLBACK_SPAN;
+  const coords = [];
+  for (let r = minR; r <= maxR; r++) {
+    for (let c = minC; c <= maxC; c++) {
+      coords.push({ r, c });
+    }
+  }
+  return coords;
+}
+async function loadTiles(app, mapPath) {
+  const file = app.vault.getAbstractFileByPath(mapPath);
+  if (!(file instanceof import_obsidian5.TFile)) {
+    return [];
+  }
+  try {
+    return await listTilesForMap(app, file);
+  } catch {
+    return [];
+  }
+}
+async function bootstrapHexTiles(app, mapPath) {
+  const tiles = await loadTiles(app, mapPath);
+  const bounds = computeBounds(tiles);
+  const base = {
+    r: bounds ? bounds.minR : 0,
+    c: bounds ? bounds.minC : 0
+  };
+  const initialCoords = tiles.length ? tiles.map((tile) => tile.coord) : buildFallback(bounds);
+  return {
+    tiles,
+    base,
+    initialCoords
+  };
+}
+var import_obsidian5, DEFAULT_FALLBACK_SPAN;
+var init_bootstrap = __esm({
+  "src/core/hex-mapper/render/bootstrap.ts"() {
+    "use strict";
+    import_obsidian5 = require("obsidian");
+    init_hex_notes();
+    DEFAULT_FALLBACK_SPAN = 2;
+  }
+});
+
+// src/core/hex-mapper/hex-render.ts
 async function renderHexMap(app, host, opts, mapPath) {
-  const R = opts.radius;
-  const hexW = Math.sqrt(3) * R;
-  const hexH = 2 * R;
-  const hStep = hexW;
-  const vStep = 0.75 * hexH;
-  const pad = 12;
-  const mapFile = app.vault.getAbstractFileByPath(mapPath);
-  let tiles = [];
-  let bounds = null;
-  if (mapFile instanceof import_obsidian4.TFile) {
-    try {
-      tiles = await listTilesForMap(app, mapFile);
-      bounds = computeBounds(tiles);
-    } catch {
-    }
-  }
-  const minR0 = bounds ? bounds.minR : 0;
-  const maxR0 = bounds ? bounds.maxR : 2;
-  const minC0 = bounds ? bounds.minC : 0;
-  const maxC0 = bounds ? bounds.maxC : 2;
-  const baseR = minR0;
-  const baseC = minC0;
-  const rows0 = maxR0 - minR0 + 1;
-  const cols0 = maxC0 - minC0 + 1;
-  const initW = pad * 2 + hexW * cols0 + hexW * 0.5;
-  const initH = pad * 2 + hexH + vStep * (rows0 - 1);
-  const svgNS = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(svgNS, "svg");
-  svg.setAttribute("class", "hex3x3-map");
-  svg.setAttribute("viewBox", `0 0 ${initW} ${initH}`);
-  svg.setAttribute("width", "100%");
-  svg.style.touchAction = "none";
-  const overlay = document.createElementNS(svgNS, "rect");
-  overlay.setAttribute("x", "0");
-  overlay.setAttribute("y", "0");
-  overlay.setAttribute("width", String(initW));
-  overlay.setAttribute("height", String(initH));
-  overlay.setAttribute("fill", "transparent");
-  overlay.setAttribute("pointer-events", "all");
-  overlay.style.touchAction = "none";
-  const contentG = document.createElementNS(svgNS, "g");
-  svg.appendChild(overlay);
-  svg.appendChild(contentG);
-  host.appendChild(svg);
-  attachCameraControls(
-    svg,
-    contentG,
-    { minScale: 0.15, maxScale: 16, zoomSpeed: 1.01 },
-    [overlay, host]
+  const radius = opts.radius;
+  const padding = DEFAULT_PADDING;
+  const { tiles, base, initialCoords } = await bootstrapHexTiles(app, mapPath);
+  const scene = createHexScene({
+    host,
+    radius,
+    padding,
+    base,
+    initialCoords
+  });
+  const camera = createCameraController(
+    scene.svg,
+    scene.contentG,
+    scene.overlay,
+    host,
+    { ...CAMERA_OPTIONS }
   );
-  const polyByCoord = /* @__PURE__ */ new Map();
-  let vb = { minX: 0, minY: 0, width: initW, height: initH };
-  const centerOf = (r, c) => {
-    const cx = pad + (c - baseC) * hStep + (r % 2 ? hexW / 2 : 0);
-    const cy = pad + (r - baseR) * vStep + hexH / 2;
-    return { cx, cy };
-  };
-  const bboxOf = (r, c) => {
-    const { cx, cy } = centerOf(r, c);
-    return {
-      minX: cx - hexW / 2,
-      maxX: cx + hexW / 2,
-      minY: cy - R,
-      maxY: cy + R
-    };
-  };
-  const setViewBox = (minX, minY, width, height) => {
-    vb = { minX, minY, width, height };
-    svg.setAttribute("viewBox", `${minX} ${minY} ${width} ${height}`);
-    overlay.setAttribute("x", String(minX));
-    overlay.setAttribute("y", String(minY));
-    overlay.setAttribute("width", String(width));
-    overlay.setAttribute("height", String(height));
-  };
-  const svgPt = svg.createSVGPoint();
-  function toContentPoint(ev) {
-    const m = contentG.getScreenCTM();
-    if (!m) return null;
-    svgPt.x = ev.clientX;
-    svgPt.y = ev.clientY;
-    return svgPt.matrixTransform(m.inverse());
-  }
-  function pointToCoord(px, py) {
-    const rFloat = (py - pad - hexH / 2) / vStep + baseR;
-    let r = Math.round(rFloat);
-    const isOdd = r % 2 !== 0;
-    let c = Math.round((px - pad - (isOdd ? hexW / 2 : 0)) / hStep + baseC);
-    let best = { r, c }, bestD2 = Infinity;
-    for (let dr = -1; dr <= 1; dr++) {
-      const rr = r + dr;
-      const odd = rr % 2 !== 0;
-      const cc = Math.round((px - pad - (odd ? hexW / 2 : 0)) / hStep + baseC);
-      const { cx, cy } = centerOf(rr, cc);
-      const dx = px - cx, dy = py - cy, d2 = dx * dx + dy * dy;
-      if (d2 < bestD2) {
-        bestD2 = d2;
-        best = { r: rr, c: cc };
-      }
-    }
-    return best;
-  }
-  function dispatchHexClick(r, c) {
-    const evt = new CustomEvent("hex:click", {
-      detail: { r, c },
-      bubbles: true,
-      cancelable: true
-    });
-    return host.dispatchEvent(evt);
-  }
-  const setFill = (coord, color) => {
-    const poly = polyByCoord.get(keyOf(coord.r, coord.c));
-    if (!poly) return;
-    const c = color ?? "transparent";
-    poly.style.fill = c;
-    poly.style.fillOpacity = c !== "transparent" ? "0.25" : "0";
-    if (c !== "transparent") {
-      poly.setAttribute("data-painted", "1");
-    } else {
-      poly.removeAttribute("data-painted");
-    }
-  };
-  const addHex = (r, c) => {
-    const k = keyOf(r, c);
-    if (polyByCoord.has(k)) return;
-    const { cx, cy } = centerOf(r, c);
-    const poly = document.createElementNS(svgNS, "polygon");
-    poly.setAttribute("points", hexPolygonPoints(cx, cy, R));
-    poly.setAttribute("data-row", String(r));
-    poly.setAttribute("data-col", String(c));
-    poly.style.fill = "transparent";
-    poly.style.stroke = "var(--text-muted)";
-    poly.style.strokeWidth = "2";
-    poly.style.transition = "fill 120ms ease, fill-opacity 120ms ease, stroke 120ms ease";
-    contentG.appendChild(poly);
-    polyByCoord.set(k, poly);
-    const label = document.createElementNS(svgNS, "text");
-    label.setAttribute("x", String(cx));
-    label.setAttribute("y", String(cy + 4));
-    label.setAttribute("text-anchor", "middle");
-    label.setAttribute("pointer-events", "none");
-    label.setAttribute("fill", "var(--text-muted)");
-    label.textContent = `${r},${c}`;
-    contentG.appendChild(label);
-  };
-  if (!tiles.length) {
-    const fallback = [];
-    for (let r = 0; r <= 2; r++) for (let c = 0; c <= 2; c++) fallback.push({ r, c });
-    for (const { r, c } of fallback) addHex(r, c);
-  } else {
-    const coords = tiles.map((t) => t.coord);
-    for (const { r, c } of coords) addHex(r, c);
-  }
+  const coordinates = createCoordinateTranslator({
+    svg: scene.svg,
+    contentG: scene.contentG,
+    base,
+    radius,
+    padding
+  });
+  const interactionAdapter = createInteractionAdapter({ app, host, mapPath });
+  const interactions = createInteractionController({
+    svg: scene.svg,
+    overlay: scene.overlay,
+    toContentPoint: coordinates.toContentPoint,
+    pointToCoord: coordinates.pointToCoord,
+    delegateRef: interactionAdapter.delegateRef,
+    onDefaultClick: (coord, ev) => interactionAdapter.handleDefaultClick(coord, ev)
+  });
   for (const { coord, data } of tiles) {
     const color = TERRAIN_COLORS[data.terrain] ?? "transparent";
-    setFill(coord, color);
+    scene.setFill(coord, color);
   }
   const ensurePolys = (coords) => {
-    const missing = [];
-    for (const { r, c } of coords) if (!polyByCoord.has(`${r},${c}`)) missing.push({ r, c });
-    if (!missing.length) return;
-    for (const { r, c } of missing) addHex(r, c);
+    if (!coords.length) return;
+    scene.ensurePolys(coords);
   };
-  svg.addEventListener("click", async (ev) => {
-    ev.preventDefault();
-    const pt = toContentPoint(ev);
-    if (!pt) return;
-    const { r, c } = pointToCoord(pt.x, pt.y);
-    if (dispatchHexClick(r, c) === false) return;
-    const file = app.vault.getAbstractFileByPath(mapPath);
-    if (file instanceof import_obsidian4.TFile) {
-      const tfile = await saveTile(app, file, { r, c }, { terrain: "" });
-      const leaf = getCenterLeaf(app);
-      await leaf.openFile(tfile, { active: true });
-    }
-  }, { passive: false });
-  let painting = false;
-  let visited = null;
-  let raf = 0;
-  let lastEvt = null;
-  const keyRC = (r, c) => `${r},${c}`;
-  function paintStep(ev) {
-    const pt = toContentPoint(ev);
-    if (!pt) return false;
-    const { r, c } = pointToCoord(pt.x, pt.y);
-    const k = keyRC(r, c);
-    if (visited && visited.has(k)) return true;
-    const notCanceled = dispatchHexClick(r, c);
-    if (notCanceled === false) visited?.add(k);
-    return notCanceled === false;
-  }
-  svg.addEventListener("pointerdown", (ev) => {
-    if (ev.button !== 0) return;
-    lastEvt = ev;
-    const willPaint = paintStep(ev);
-    if (!willPaint) return;
-    painting = true;
-    visited = /* @__PURE__ */ new Set();
-    svg.setPointerCapture?.(ev.pointerId);
-    ev.preventDefault();
-  }, { capture: true });
-  svg.addEventListener("pointermove", (ev) => {
-    if (!painting) return;
-    lastEvt = ev;
-    if (!raf) {
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        if (lastEvt) paintStep(lastEvt);
-      });
-    }
-    ev.preventDefault();
-  }, { capture: true });
-  function endPaint(ev) {
-    if (!painting) return;
-    painting = false;
-    visited?.clear();
-    visited = null;
-    lastEvt = null;
-    svg.releasePointerCapture?.(ev.pointerId);
-    ev.preventDefault();
-  }
-  svg.addEventListener("pointerup", endPaint, { capture: true });
-  svg.addEventListener("pointercancel", endPaint, { capture: true });
   return {
-    svg,
-    contentG,
-    overlay,
-    polyByCoord,
-    setFill,
+    svg: scene.svg,
+    contentG: scene.contentG,
+    overlay: scene.overlay,
+    polyByCoord: scene.polyByCoord,
+    setFill: (coord, color) => scene.setFill(coord, color),
     ensurePolys,
+    setInteractionDelegate: (delegate) => {
+      interactionAdapter.setDelegate(delegate);
+    },
     destroy: () => {
-      svg.remove();
-      polyByCoord.clear();
+      interactions.destroy();
+      camera.destroy();
+      scene.destroy();
     }
   };
 }
-
-// src/apps/cartographer/travel/ui/map-layer.ts
-var keyOf2 = (r, c) => `${r},${c}`;
-async function createMapLayer(app, host, mapFile, opts) {
-  const handles = await renderHexMap(app, host, opts, mapFile.path);
-  const polyToCoord = /* @__PURE__ */ new WeakMap();
-  for (const [k, poly] of handles.polyByCoord) {
-    if (!poly) continue;
-    const [r, c] = k.split(",").map(Number);
-    polyToCoord.set(poly, { r, c });
+var DEFAULT_PADDING, CAMERA_OPTIONS;
+var init_hex_render = __esm({
+  "src/core/hex-mapper/hex-render.ts"() {
+    "use strict";
+    init_terrain();
+    init_scene();
+    init_camera_controller();
+    init_interactions();
+    init_coordinates();
+    init_interaction_adapter();
+    init_bootstrap();
+    init_interaction_delegate();
+    DEFAULT_PADDING = 12;
+    CAMERA_OPTIONS = { minScale: 0.15, maxScale: 16, zoomSpeed: 1.01 };
   }
-  function ensurePolys(coords) {
-    handles.ensurePolys?.(coords);
-    for (const rc of coords) {
-      const poly = handles.polyByCoord.get(keyOf2(rc.r, rc.c));
-      if (poly) polyToCoord.set(poly, rc);
-    }
-  }
-  function centerOf(rc) {
-    let poly = handles.polyByCoord.get(keyOf2(rc.r, rc.c));
-    if (!poly) {
-      ensurePolys([rc]);
-      poly = handles.polyByCoord.get(keyOf2(rc.r, rc.c));
-      if (!poly) return null;
-    }
-    const bb = poly.getBBox();
-    return { x: bb.x + bb.width / 2, y: bb.y + bb.height / 2 };
-  }
-  function destroy() {
-    try {
-      handles.destroy?.();
-    } catch {
-    }
-  }
-  return { handles, polyToCoord, ensurePolys, centerOf, destroy };
-}
-
-// src/ui/map-header.ts
-var import_obsidian6 = require("obsidian");
-
-// src/ui/map-workflows.ts
-var import_obsidian5 = require("obsidian");
+});
 
 // src/core/map-maker.ts
-init_hex_notes();
 async function createHexMapFile(app, rawName, opts = { folder: "Hexes", folderPrefix: "Hex", radius: 42 }) {
   const name = sanitizeFileName(rawName) || "Neue Hex Map";
   const content = buildHexMapMarkdown(name, opts);
@@ -1036,9 +1520,14 @@ async function ensureUniquePath(app, basePath) {
   }
   return `${stem}-${Date.now()}${ext}`;
 }
+var init_map_maker = __esm({
+  "src/core/map-maker.ts"() {
+    "use strict";
+    init_hex_notes();
+  }
+});
 
 // src/ui/map-workflows.ts
-init_options();
 function applyMapButtonStyle(button) {
   Object.assign(button.style, {
     display: "flex",
@@ -1051,7 +1540,7 @@ function applyMapButtonStyle(button) {
 async function promptMapSelection(app, onSelect, options) {
   const files = await getAllMapFiles(app);
   if (!files.length) {
-    new import_obsidian5.Notice(options?.emptyMessage ?? "Keine Karten gefunden.");
+    new import_obsidian6.Notice(options?.emptyMessage ?? MAP_WORKFLOWS_COPY.notices.emptyMaps);
     return;
   }
   new MapSelectModal(app, files, async (file) => {
@@ -1061,13 +1550,26 @@ async function promptMapSelection(app, onSelect, options) {
 function promptCreateMap(app, onCreate, options) {
   new NameInputModal(app, async (name) => {
     const file = await createHexMapFile(app, name);
-    new import_obsidian5.Notice(options?.successMessage ?? "Karte erstellt.");
+    new import_obsidian6.Notice(options?.successMessage ?? MAP_WORKFLOWS_COPY.notices.createSuccess);
     await onCreate(file);
   }).open();
 }
+var import_obsidian6;
+var init_map_workflows = __esm({
+  "src/ui/map-workflows.ts"() {
+    "use strict";
+    import_obsidian6 = require("obsidian");
+    init_map_maker();
+    init_map_list();
+    init_options();
+    init_hex_render();
+    init_modals();
+    init_copy();
+  }
+});
 
 // src/ui/search-dropdown.ts
-function enhanceSelectToSearch(select, placeholder = "Suchen\u2026") {
+function enhanceSelectToSearch(select, placeholder = SEARCH_DROPDOWN_COPY.placeholder) {
   if (!select || select._smEnhanced) return;
   const wrap = document.createElement("div");
   wrap.className = "sm-sd";
@@ -1161,293 +1663,936 @@ function enhanceSelectToSearch(select, placeholder = "Suchen\u2026") {
   select._smEnhanced = true;
   select._smSearchInput = input;
 }
+var init_search_dropdown = __esm({
+  "src/ui/search-dropdown.ts"() {
+    "use strict";
+    init_copy();
+  }
+});
 
-// src/core/save.ts
-async function saveMap(_app, file) {
-  console.warn("[save] saveMap() not implemented. File:", file.path);
-}
-async function saveMapAs(_app, file) {
-  console.warn("[save] saveMapAs() not implemented. File:", file.path);
-}
-
-// src/ui/map-header.ts
-function createMapHeader(app, host, options) {
-  const labels = {
-    open: options.labels?.open ?? "Open Map",
-    create: options.labels?.create ?? "Create",
-    delete: options.labels?.delete ?? "Delete",
-    save: options.labels?.save ?? "Speichern",
-    saveAs: options.labels?.saveAs ?? "Speichern als",
-    trigger: options.labels?.trigger ?? "Los"
-  };
-  const notices = {
-    missingFile: options.notices?.missingFile ?? "Keine Karte ausgew\xE4hlt.",
-    saveSuccess: options.notices?.saveSuccess ?? "Gespeichert.",
-    saveError: options.notices?.saveError ?? "Speichern fehlgeschlagen."
-  };
-  let currentFile = options.initialFile ?? null;
-  let destroyed = false;
-  const root = host.createDiv({ cls: "sm-map-header" });
-  root.classList.add("map-editor-header");
-  Object.assign(root.style, { display: "flex", flexDirection: "column", gap: ".4rem" });
-  const row1 = root.createDiv();
-  Object.assign(row1.style, { display: "flex", alignItems: "center", gap: ".5rem" });
-  const titleGroup = row1.createDiv({ cls: "sm-map-header__title-group" });
-  Object.assign(titleGroup.style, {
-    display: "flex",
-    alignItems: "center",
-    gap: ".5rem",
-    marginRight: "auto"
-  });
-  const titleEl = titleGroup.createEl("h2", { text: options.title });
-  Object.assign(titleEl.style, { margin: 0 });
-  const titleRightSlot = titleGroup.createDiv({ cls: "sm-map-header__title-slot" });
-  Object.assign(titleRightSlot.style, {
-    display: "flex",
-    alignItems: "center",
-    gap: ".5rem"
-  });
-  if (options.titleRightSlot) {
-    options.titleRightSlot(titleRightSlot);
-  } else {
-    titleRightSlot.style.display = "none";
+// src/apps/cartographer/editor/tools/brush-circle.ts
+function attachBrushCircle(handles, opts) {
+  const { svg, contentG, overlay } = handles;
+  const R = opts.hexRadiusPx;
+  const vStep = 1.5 * R;
+  const toPx = (d) => R + Math.max(0, d) * vStep;
+  const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  circle.setAttribute("cx", "0");
+  circle.setAttribute("cy", "0");
+  circle.setAttribute("r", String(toPx(opts.initialRadius)));
+  circle.setAttribute("fill", "none");
+  circle.setAttribute("stroke", "var(--interactive-accent)");
+  circle.setAttribute("stroke-width", "2");
+  circle.setAttribute("pointer-events", "none");
+  circle.style.opacity = "0.6";
+  contentG.appendChild(circle);
+  const svgPt = svg.createSVGPoint();
+  let lastEvt = null;
+  let raf = 0;
+  function toContent() {
+    const m = contentG.getScreenCTM();
+    if (!m) return null;
+    return svgPt.matrixTransform(m.inverse());
   }
-  const openBtn = row1.createEl("button", { text: labels.open });
-  (0, import_obsidian6.setIcon)(openBtn, "folder-open");
-  applyMapButtonStyle(openBtn);
-  openBtn.onclick = () => {
-    if (destroyed) return;
-    void promptMapSelection(app, async (file) => {
-      if (destroyed) return;
-      setFileLabel(file);
-      await options.onOpen?.(file);
-    });
-  };
-  const createBtn = row1.createEl("button");
-  createBtn.append(" ", "+");
-  (0, import_obsidian6.setIcon)(createBtn, "plus");
-  applyMapButtonStyle(createBtn);
-  createBtn.onclick = () => {
-    if (destroyed) return;
-    promptCreateMap(app, async (file) => {
-      if (destroyed) return;
-      setFileLabel(file);
-      await options.onCreate?.(file);
-    });
-  };
-  const deleteBtn = options.onDelete ? row1.createEl("button", { text: labels.delete, attr: { "aria-label": labels.delete } }) : null;
-  if (deleteBtn) {
-    (0, import_obsidian6.setIcon)(deleteBtn, "trash");
-    applyMapButtonStyle(deleteBtn);
-    deleteBtn.onclick = () => {
-      if (destroyed) return;
-      if (!currentFile) {
-        new import_obsidian6.Notice(notices.missingFile);
-        return;
-      }
-      void options.onDelete?.(currentFile);
-    };
+  function bringToFront() {
+    contentG.appendChild(circle);
   }
-  const row2 = root.createDiv();
-  Object.assign(row2.style, { display: "flex", alignItems: "center", gap: ".5rem" });
-  const secondaryLeftSlot = row2.createDiv({ cls: "sm-map-header__secondary-left" });
-  Object.assign(secondaryLeftSlot.style, {
-    marginRight: "auto",
-    display: "flex",
-    alignItems: "center",
-    gap: ".5rem"
-  });
-  let nameBox = null;
-  if (options.secondaryLeftSlot) {
-    options.secondaryLeftSlot(secondaryLeftSlot);
-  } else {
-    nameBox = secondaryLeftSlot.createEl("div", {
-      text: options.initialFile?.basename ?? options.emptyLabel ?? "\u2014"
-    });
-    nameBox.style.opacity = ".85";
+  function tick() {
+    raf = 0;
+    if (!lastEvt) return;
+    svgPt.x = lastEvt.clientX;
+    svgPt.y = lastEvt.clientY;
+    const pt = toContent();
+    if (!pt) return;
+    circle.setAttribute("cx", String(pt.x));
+    circle.setAttribute("cy", String(pt.y));
+    bringToFront();
   }
-  const select = row2.createEl("select");
-  select.createEl("option", { text: labels.save }).value = "save";
-  select.createEl("option", { text: labels.saveAs }).value = "saveAs";
-  enhanceSelectToSearch(select, "Such-dropdown\u2026");
-  const triggerBtn = row2.createEl("button", { text: labels.trigger });
-  applyMapButtonStyle(triggerBtn);
-  triggerBtn.onclick = async () => {
-    if (destroyed) return;
-    const mode = select.value ?? "save";
-    const file = currentFile;
-    if (!file) {
-      await options.onSave?.(mode, null);
-      new import_obsidian6.Notice(notices.missingFile);
-      return;
-    }
-    try {
-      const handled = await options.onSave?.(mode, file) === true;
-      if (!handled) {
-        if (mode === "save") await saveMap(app, file);
-        else await saveMapAs(app, file);
-      }
-      new import_obsidian6.Notice(notices.saveSuccess);
-    } catch (err) {
-      console.error("[map-header] save failed", err);
-      new import_obsidian6.Notice(notices.saveError);
-    }
-  };
-  function setFileLabel(file) {
-    currentFile = file;
-    if (nameBox) {
-      nameBox.textContent = file?.basename ?? options.emptyLabel ?? "\u2014";
-    }
-    secondaryLeftSlot.dataset.fileLabel = file?.basename ?? options.emptyLabel ?? "\u2014";
-    if (deleteBtn) {
-      deleteBtn.disabled = !file;
-      deleteBtn.style.opacity = file ? "1" : "0.5";
-    }
+  function onPointerMove(ev) {
+    lastEvt = ev;
+    if (!raf) raf = requestAnimationFrame(tick);
   }
-  function setTitle(title) {
-    titleEl.textContent = title;
+  function onPointerEnter() {
+    circle.style.opacity = "0.6";
+  }
+  function onPointerLeave() {
+    circle.style.opacity = "0";
+  }
+  svg.addEventListener("pointermove", onPointerMove, { passive: true });
+  svg.addEventListener("pointerenter", onPointerEnter, { passive: true });
+  svg.addEventListener("pointerleave", onPointerLeave, { passive: true });
+  function updateRadius(hexDist) {
+    circle.setAttribute("r", String(toPx(hexDist)));
+    bringToFront();
+  }
+  function show() {
+    circle.style.display = "";
+    circle.style.opacity = "0.6";
+    bringToFront();
+  }
+  function hide() {
+    circle.style.opacity = "0";
   }
   function destroy() {
-    if (destroyed) return;
-    destroyed = true;
-    openBtn.onclick = null;
-    createBtn.onclick = null;
-    triggerBtn.onclick = null;
-    root.remove();
+    svg.removeEventListener("pointermove", onPointerMove);
+    svg.removeEventListener("pointerenter", onPointerEnter);
+    svg.removeEventListener("pointerleave", onPointerLeave);
+    if (raf) cancelAnimationFrame(raf);
+    circle.remove();
   }
-  setFileLabel(currentFile);
-  return { root, secondaryLeftSlot, titleRightSlot, setFileLabel, setTitle, destroy };
+  return { updateRadius, show, hide, destroy };
 }
-
-// src/ui/map-manager.ts
-var import_obsidian8 = require("obsidian");
-
-// src/ui/confirm-delete.ts
-var import_obsidian7 = require("obsidian");
-var ConfirmDeleteModal = class extends import_obsidian7.Modal {
-  constructor(app, mapFile, onConfirm) {
-    super(app);
-    this.mapFile = mapFile;
-    this.onConfirm = onConfirm;
+var init_brush_circle = __esm({
+  "src/apps/cartographer/editor/tools/brush-circle.ts"() {
+    "use strict";
   }
-  onOpen() {
-    const { contentEl } = this;
-    contentEl.empty();
-    const name = this.mapFile.basename;
-    contentEl.createEl("h3", { text: "Delete map?" });
-    const p = contentEl.createEl("p");
-    p.textContent = `This will delete your map permanently. If you want to proceed anyways, enter \u201C${name}\u201D.`;
-    const input = contentEl.createEl("input", {
-      attr: { type: "text", placeholder: name, style: "width:100%;" }
-    });
-    const btnRow = contentEl.createDiv({ cls: "modal-button-container" });
-    const cancelBtn = btnRow.createEl("button", { text: "Cancel" });
-    const confirmBtn = btnRow.createEl("button", { text: "Delete" });
-    (0, import_obsidian7.setIcon)(confirmBtn, "trash");
-    confirmBtn.classList.add("mod-warning");
-    confirmBtn.disabled = true;
-    input.addEventListener("input", () => {
-      confirmBtn.disabled = input.value.trim() !== name;
-    });
-    cancelBtn.onclick = () => this.close();
-    confirmBtn.onclick = async () => {
-      confirmBtn.disabled = true;
-      try {
-        await this.onConfirm();
-        new import_obsidian7.Notice("Map deleted.");
-      } catch (e) {
-        console.error(e);
-        new import_obsidian7.Notice("Deleting map failed.");
-      } finally {
-        this.close();
+});
+
+// src/apps/cartographer/editor/tools/terrain-brush/brush-math.ts
+function oddR_toAxial(rc) {
+  const q = rc.c - (rc.r - (rc.r & 1) >> 1);
+  return { q, r: rc.r };
+}
+function axialDistance(a, b) {
+  const dq = Math.abs(a.q - b.q);
+  const dr = Math.abs(a.r - b.r);
+  const ds = Math.abs(-a.q - a.r - (-b.q - b.r));
+  return Math.max(dq, dr, ds);
+}
+function hexDistanceOddR(a, b) {
+  const A = oddR_toAxial(a);
+  const B = oddR_toAxial(b);
+  return axialDistance(A, B);
+}
+function coordsInRadius(center, radius) {
+  const out = [];
+  for (let dr = -radius; dr <= radius; dr++) {
+    for (let dc = -radius; dc <= radius; dc++) {
+      const r = center.r + dr;
+      const c = center.c + dc + (center.r & 1 ? Math.floor((dr + 1) / 2) : Math.floor(dr / 2));
+      if (hexDistanceOddR(center, { r, c }) <= radius) {
+        out.push({ r, c });
       }
-    };
-    setTimeout(() => input.focus(), 0);
-  }
-  onClose() {
-    this.contentEl.empty();
-  }
-};
-
-// src/core/map-delete.ts
-init_hex_notes();
-async function deleteMapAndTiles(app, mapFile) {
-  const tiles = await listTilesForMap(app, mapFile);
-  for (const t of tiles) {
-    try {
-      await app.vault.delete(t.file);
-    } catch (e) {
-      console.warn("Delete tile failed:", t.file.path, e);
     }
   }
-  try {
-    await app.vault.delete(mapFile);
-  } catch (e) {
-    console.warn("Delete map failed:", mapFile.path, e);
+  out.sort((A, B) => {
+    const da = hexDistanceOddR(center, A);
+    const db = hexDistanceOddR(center, B);
+    if (da !== db) return da - db;
+    if (A.r !== B.r) return A.r - B.r;
+    return A.c - B.c;
+  });
+  return out;
+}
+var init_brush_math = __esm({
+  "src/apps/cartographer/editor/tools/terrain-brush/brush-math.ts"() {
+    "use strict";
+  }
+});
+
+// src/apps/cartographer/editor/tools/terrain-brush/brush.ts
+async function applyBrush(app, mapFile, center, opts, handles) {
+  const mode = opts.mode ?? "paint";
+  const radius = Math.max(0, opts.radius | 0);
+  const raw = coordsInRadius(center, radius);
+  const seen = /* @__PURE__ */ new Set();
+  for (const coord of raw) {
+    const key = `${coord.r},${coord.c}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (mode === "erase") {
+      await deleteTile(app, mapFile, coord);
+      handles.setFill(coord, "transparent");
+      continue;
+    }
+    const terrain = opts.terrain ?? "";
+    await saveTile(app, mapFile, coord, { terrain, region: opts.region ?? "" });
+    const color = TERRAIN_COLORS[terrain] ?? "transparent";
+    handles.setFill(coord, color);
   }
 }
+var init_brush = __esm({
+  "src/apps/cartographer/editor/tools/terrain-brush/brush.ts"() {
+    "use strict";
+    init_hex_notes();
+    init_brush_math();
+    init_terrain();
+  }
+});
 
-// src/ui/map-manager.ts
-function createMapManager(app, options = {}) {
-  const notices = {
-    missingSelection: options.notices?.missingSelection ?? "Keine Karte ausgew\xE4hlt."
+// src/core/regions-store.ts
+var regions_store_exports = {};
+__export(regions_store_exports, {
+  REGIONS_FILE: () => REGIONS_FILE,
+  ensureRegionsFile: () => ensureRegionsFile,
+  loadRegions: () => loadRegions,
+  parseRegionsBlock: () => parseRegionsBlock,
+  saveRegions: () => saveRegions,
+  stringifyRegionsBlock: () => stringifyRegionsBlock,
+  watchRegions: () => watchRegions
+});
+async function ensureRegionsFile(app) {
+  const p = (0, import_obsidian10.normalizePath)(REGIONS_FILE);
+  const existing = app.vault.getAbstractFileByPath(p);
+  if (existing instanceof import_obsidian10.TFile) return existing;
+  await app.vault.createFolder(p.split("/").slice(0, -1).join("/")).catch(() => {
+  });
+  const body = [
+    "---",
+    "smList: true",
+    "---",
+    "# Regions",
+    "",
+    "```regions",
+    "# Name: Terrain",
+    "# Beispiel:",
+    "# Saltmarsh: K\xFCste",
+    "```",
+    ""
+  ].join("\n");
+  return await app.vault.create(p, body);
+}
+function parseRegionsBlock(md) {
+  const m = md.match(BLOCK_RE);
+  if (!m) return [];
+  const out = [];
+  for (const raw of m[1].split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    const mm = line.match(/^("?)(.*?)\1\s*:\s*(.*)$/);
+    if (!mm) continue;
+    const name = (mm[2] || "").trim();
+    const rest = (mm[3] || "").trim();
+    let terrain = rest;
+    let encounterOdds = void 0;
+    const em = rest.match(/,\s*encounter\s*:\s*([^,]+)\s*$/i);
+    if (em) {
+      terrain = rest.slice(0, em.index).trim();
+      const spec = em[1].trim();
+      const frac = spec.match(/^1\s*\/\s*(\d+)$/);
+      if (frac) encounterOdds = parseInt(frac[1], 10) || void 0;
+      else {
+        const n = parseInt(spec, 10);
+        if (Number.isFinite(n) && n > 0) encounterOdds = n;
+      }
+    }
+    out.push({ name, terrain, encounterOdds });
+  }
+  return out;
+}
+function stringifyRegionsBlock(list) {
+  const lines = list.map((r) => {
+    const base = `${r.name}: ${r.terrain || ""}`;
+    const n = r.encounterOdds;
+    return n && n > 0 ? `${base}, encounter: 1/${n}` : base;
+  });
+  return ["```regions", ...lines, "```"].join("\n");
+}
+async function loadRegions(app) {
+  const f = await ensureRegionsFile(app);
+  const md = await app.vault.read(f);
+  return parseRegionsBlock(md);
+}
+async function saveRegions(app, list) {
+  const f = await ensureRegionsFile(app);
+  const md = await app.vault.read(f);
+  const block = stringifyRegionsBlock(list);
+  const replaced = md.match(BLOCK_RE) ? md.replace(BLOCK_RE, block) : md + "\n\n" + block + "\n";
+  await app.vault.modify(f, replaced);
+}
+function watchRegions(app, onChange) {
+  const targetPath = (0, import_obsidian10.normalizePath)(REGIONS_FILE);
+  const emitUpdate = () => {
+    app.workspace.trigger?.("salt:regions-updated");
+    onChange?.();
   };
-  let current = options.initialFile ?? null;
-  const applyChange = async (file) => {
-    current = file;
-    await options.onChange?.(file);
+  let notifyTimer = null;
+  const scheduleUpdate = () => {
+    if (notifyTimer) clearTimeout(notifyTimer);
+    notifyTimer = setTimeout(() => {
+      notifyTimer = null;
+      emitUpdate();
+    }, 200);
   };
-  const setFile = async (file) => {
-    await applyChange(file);
+  const handleModify = (file) => {
+    if ((0, import_obsidian10.normalizePath)(file.path) !== targetPath) return;
+    scheduleUpdate();
   };
-  const open = async () => {
-    await promptMapSelection(
-      app,
-      async (file) => {
-        await applyChange(file);
-      },
-      options.selectOptions
+  const handleDelete = async (file) => {
+    if (!(file instanceof import_obsidian10.TFile) || (0, import_obsidian10.normalizePath)(file.path) !== targetPath) return;
+    console.warn(
+      "Salt Marcher regions store detected Regions.md deletion; attempting automatic recreation."
     );
+    try {
+      await ensureRegionsFile(app);
+      new import_obsidian10.Notice("Regions.md wurde automatisch neu erstellt.");
+    } catch (error) {
+      console.error(
+        "Salt Marcher regions store failed to recreate Regions.md automatically.",
+        error
+      );
+      new import_obsidian10.Notice("Regions.md konnte nicht automatisch neu erstellt werden. Bitte manuell wiederherstellen.");
+    }
+    scheduleUpdate();
   };
-  const create = () => {
-    promptCreateMap(
-      app,
-      async (file) => {
-        await applyChange(file);
-      },
-      options.createOptions
-    );
+  app.vault.on("modify", handleModify);
+  app.vault.on("delete", handleDelete);
+  return () => {
+    if (notifyTimer) {
+      clearTimeout(notifyTimer);
+      notifyTimer = null;
+    }
+    app.vault.off("modify", handleModify);
+    app.vault.off("delete", handleDelete);
   };
-  const deleteCurrent = () => {
-    const target = current;
-    if (!target) {
-      new import_obsidian8.Notice(notices.missingSelection);
+}
+var import_obsidian10, REGIONS_FILE, BLOCK_RE;
+var init_regions_store = __esm({
+  "src/core/regions-store.ts"() {
+    "use strict";
+    import_obsidian10 = require("obsidian");
+    REGIONS_FILE = "SaltMarcher/Regions.md";
+    BLOCK_RE = /```regions\s*([\s\S]*?)```/i;
+  }
+});
+
+// src/apps/cartographer/editor/tools/terrain-brush/brush-options.ts
+function createBrushTool() {
+  let state = {
+    radius: 1,
+    // UI zeigt 1 = nur Mitte
+    region: "",
+    terrain: "",
+    mode: "paint"
+  };
+  const eff = () => Math.max(0, state.radius - 1);
+  let circle = null;
+  return {
+    id: "brush",
+    label: "Brush",
+    // Options-Panel (nur UI & State)
+    mountPanel(root, ctx) {
+      let disposed = false;
+      let fillSeq = 0;
+      root.createEl("h3", { text: "Region Brush" });
+      const radiusRow = root.createDiv({ cls: "sm-row" });
+      radiusRow.createEl("label", { text: "Radius:" });
+      const radiusInput = radiusRow.createEl("input", {
+        attr: { type: "range", min: "1", max: "6", step: "1" }
+      });
+      radiusInput.value = String(state.radius);
+      const radiusVal = radiusRow.createEl("span", { text: radiusInput.value });
+      radiusInput.oninput = () => {
+        state.radius = Number(radiusInput.value);
+        radiusVal.textContent = radiusInput.value;
+        circle?.updateRadius(eff());
+      };
+      const regionRow = root.createDiv({ cls: "sm-row" });
+      regionRow.createEl("label", { text: "Region:" });
+      const regionSelect = regionRow.createEl("select");
+      enhanceSelectToSearch(regionSelect, "Search dropdown\u2026");
+      const editRegionsBtn = regionRow.createEl("button", { text: "Manage\u2026" });
+      editRegionsBtn.onclick = () => ctx.app.commands?.executeCommandById?.("salt-marcher:open-library");
+      const fillOptions = async () => {
+        const seq = ++fillSeq;
+        let regions;
+        try {
+          regions = await loadRegions(ctx.app);
+        } catch (err) {
+          console.error("[terrain-brush] failed to load regions", err);
+          if (seq === fillSeq) {
+            regionSelect.empty();
+            state.region = "";
+            state.terrain = "";
+          }
+          return;
+        }
+        if (disposed || ctx.getAbortSignal()?.aborted || seq !== fillSeq) {
+          return;
+        }
+        regionSelect.empty();
+        regionSelect.createEl("option", { text: "(none)", value: "" });
+        let matchedTerrain = state.terrain;
+        let matchedRegion = state.region;
+        for (const r of regions) {
+          const value = r.name ?? "";
+          const label = r.name || "(unnamed)";
+          const opt = regionSelect.createEl("option", { text: label, value });
+          if (r.terrain) opt.dataset.terrain = r.terrain;
+          if (value === state.region && value) {
+            opt.selected = true;
+            matchedRegion = value;
+            matchedTerrain = opt.dataset.terrain ?? "";
+          }
+        }
+        if (!matchedRegion && state.region) {
+          state.region = "";
+          state.terrain = "";
+          regionSelect.value = "";
+        } else {
+          state.region = matchedRegion;
+          state.terrain = matchedTerrain;
+          regionSelect.value = matchedRegion;
+        }
+      };
+      void fillOptions();
+      regionSelect.onchange = () => {
+        state.region = regionSelect.value;
+        const opt = regionSelect.selectedOptions[0];
+        state.terrain = opt?.dataset?.terrain ?? "";
+      };
+      const workspace = ctx.app.workspace;
+      const unsubscribe = [];
+      const subscribe = (event) => {
+        const handler = () => {
+          if (!disposed) void fillOptions();
+        };
+        const token = workspace?.on?.(event, handler);
+        if (typeof workspace?.offref === "function" && token) {
+          unsubscribe.push(() => workspace.offref(token));
+        } else if (typeof token === "function") {
+          unsubscribe.push(() => token());
+        }
+      };
+      subscribe("salt:terrains-updated");
+      subscribe("salt:regions-updated");
+      const modeRow = root.createDiv({ cls: "sm-row" });
+      modeRow.createEl("label", { text: "Mode:" });
+      const modeSelect = modeRow.createEl("select");
+      modeSelect.createEl("option", { text: "Paint", value: "paint" });
+      modeSelect.createEl("option", { text: "Erase", value: "erase" });
+      modeSelect.value = state.mode;
+      modeSelect.onchange = () => {
+        state.mode = modeSelect.value;
+      };
+      enhanceSelectToSearch(modeSelect, "Search dropdown\u2026");
+      return () => {
+        disposed = true;
+        fillSeq += 1;
+        unsubscribe.forEach((off) => {
+          try {
+            off();
+          } catch (err) {
+            console.error("[terrain-brush] failed to unsubscribe", err);
+          }
+        });
+        radiusInput.oninput = null;
+        regionSelect.onchange = null;
+        modeSelect.onchange = null;
+        editRegionsBtn.onclick = null;
+        root.empty();
+      };
+    },
+    // Aktivierung/Deaktivierung → Kreis steuern
+    onActivate(ctx) {
+      const handles = ctx.getHandles();
+      if (!handles) return;
+      circle?.destroy();
+      circle = attachBrushCircle(
+        { svg: handles.svg, contentG: handles.contentG, overlay: handles.overlay },
+        { initialRadius: eff(), hexRadiusPx: ctx.getOptions()?.radius ?? 42 }
+      );
+      circle.show();
+    },
+    onDeactivate() {
+      circle?.destroy();
+      circle = null;
+    },
+    onMapRendered(ctx) {
+      const handles = ctx.getHandles();
+      if (!handles) return;
+      circle?.destroy();
+      circle = attachBrushCircle(
+        { svg: handles.svg, contentG: handles.contentG, overlay: handles.overlay },
+        { initialRadius: eff(), hexRadiusPx: ctx.getOptions()?.radius ?? 42 }
+      );
+      circle.show();
+    },
+    // Hex-Klick: schreiben + live färben; neue Polys nur gezielt ergänzen
+    async onHexClick(rc, ctx) {
+      const file = ctx.getFile();
+      const handles = ctx.getHandles();
+      if (!file || !handles) return false;
+      const raw = coordsInRadius(rc, eff());
+      const targets = [...new Map(raw.map((k) => [`${k.r},${k.c}`, k])).values()];
+      if (state.mode === "paint") {
+        const missing = targets.filter((k) => !handles.polyByCoord.has(`${k.r},${k.c}`));
+        if (missing.length) handles.ensurePolys(missing);
+      }
+      await applyBrush(
+        ctx.app,
+        file,
+        rc,
+        { radius: eff(), terrain: state.terrain, region: state.region, mode: state.mode },
+        // Distanz reinschreiben
+        handles
+      );
+      return true;
+    }
+  };
+}
+var init_brush_options = __esm({
+  "src/apps/cartographer/editor/tools/terrain-brush/brush-options.ts"() {
+    "use strict";
+    init_brush_circle();
+    init_brush();
+    init_regions_store();
+    init_search_dropdown();
+    init_brush_math();
+  }
+});
+
+// src/apps/cartographer/editor/tools/tool-manager.ts
+function createToolManager(tools, options) {
+  let active = null;
+  let switchController = null;
+  let destroyed = false;
+  const getLifecycleAborted = (localSignal) => {
+    if (destroyed) return true;
+    if (localSignal?.aborted) return true;
+    const lifecycle = options.getLifecycleSignal();
+    return lifecycle?.aborted ?? false;
+  };
+  const teardownActive = (ctx) => {
+    if (!active) return;
+    if (ctx) {
+      try {
+        active.module.onDeactivate?.(ctx);
+      } catch (err) {
+        console.error("[tool-manager] onDeactivate failed", err);
+      }
+    }
+    try {
+      (active.cleanup ?? SAFE_CLEANUP)();
+    } catch (err) {
+      console.error("[tool-manager] cleanup failed", err);
+    }
+    active = null;
+    options.onToolChanged?.(null);
+  };
+  const switchTo = async (id) => {
+    const ctx = options.getContext();
+    const host = options.getPanelHost();
+    if (!ctx || !host || tools.length === 0) {
       return;
     }
-    new ConfirmDeleteModal(app, target, async () => {
-      await deleteMapAndTiles(app, target);
-      if (current && current.path === target.path) {
-        await applyChange(null);
+    const next = tools.find((tool) => tool.id === id) ?? tools[0];
+    if (active?.module === next && !switchController) {
+      return;
+    }
+    const controller = new AbortController();
+    if (switchController) {
+      switchController.abort();
+    }
+    switchController = controller;
+    teardownActive(ctx);
+    host.empty();
+    await yieldMicrotask();
+    if (getLifecycleAborted(controller.signal)) {
+      switchController = null;
+      return;
+    }
+    let cleanup = null;
+    try {
+      const result = next.mountPanel(host, ctx);
+      cleanup = typeof result === "function" ? result : null;
+    } catch (err) {
+      console.error("[tool-manager] mountPanel failed", err);
+      cleanup = null;
+    }
+    await yieldMicrotask();
+    if (getLifecycleAborted(controller.signal)) {
+      try {
+        (cleanup ?? SAFE_CLEANUP)();
+      } catch (err) {
+        console.error("[tool-manager] cleanup failed", err);
       }
-    }).open();
+      host.empty();
+      switchController = null;
+      return;
+    }
+    try {
+      next.onActivate?.(ctx);
+    } catch (err) {
+      console.error("[tool-manager] onActivate failed", err);
+    }
+    active = { module: next, cleanup };
+    options.onToolChanged?.(next);
+    if (!getLifecycleAborted(controller.signal) && ctx.getHandles()) {
+      try {
+        next.onMapRendered?.(ctx);
+      } catch (err) {
+        console.error("[tool-manager] onMapRendered failed", err);
+      }
+    }
+    if (switchController === controller) {
+      switchController = null;
+    }
   };
+  const notifyMapRendered = () => {
+    if (!active) return;
+    const ctx = options.getContext();
+    if (!ctx || getLifecycleAborted(null) || !ctx.getHandles()) {
+      return;
+    }
+    try {
+      active.module.onMapRendered?.(ctx);
+    } catch (err) {
+      console.error("[tool-manager] onMapRendered failed", err);
+    }
+  };
+  const deactivate = () => {
+    const ctx = options.getContext();
+    switchController?.abort();
+    switchController = null;
+    teardownActive(ctx);
+  };
+  const destroy = () => {
+    if (destroyed) return;
+    destroyed = true;
+    deactivate();
+  };
+  const getActive = () => active?.module ?? null;
   return {
-    getFile: () => current,
-    setFile,
-    open,
-    create,
-    deleteCurrent
+    getActive,
+    switchTo,
+    notifyMapRendered,
+    deactivate,
+    destroy
   };
 }
+var yieldMicrotask, SAFE_CLEANUP;
+var init_tool_manager = __esm({
+  "src/apps/cartographer/editor/tools/tool-manager.ts"() {
+    "use strict";
+    yieldMicrotask = () => Promise.resolve();
+    SAFE_CLEANUP = () => {
+    };
+  }
+});
+
+// src/apps/cartographer/modes/editor.ts
+var editor_exports = {};
+__export(editor_exports, {
+  createEditorMode: () => createEditorMode
+});
+function createEditorMode() {
+  let panel = null;
+  let fileLabel = null;
+  let toolSelect = null;
+  let toolBody = null;
+  let statusLabel = null;
+  const tools = [createBrushTool()];
+  let manager = null;
+  let state = {
+    file: null,
+    handles: null,
+    options: null
+  };
+  let toolCtx = null;
+  const setStatus = (msg) => {
+    if (!statusLabel) return;
+    statusLabel.setText(msg ?? "");
+    statusLabel.toggleClass("is-empty", !msg);
+  };
+  const updateFileLabel = () => {
+    if (!fileLabel) return;
+    fileLabel.textContent = state.file ? state.file.basename : "No map";
+  };
+  const updatePanelState = () => {
+    const hasHandles = !!state.handles;
+    panel?.toggleClass("is-disabled", !hasHandles);
+    if (toolSelect) {
+      toolSelect.disabled = !hasHandles;
+    }
+    if (!hasHandles) {
+      setStatus(state.file ? "Loading map\u2026" : "No map selected.");
+    } else {
+      setStatus("");
+    }
+  };
+  const ensureToolCtx = (ctx) => {
+    toolCtx = {
+      app: ctx.app,
+      getFile: () => state.file,
+      getHandles: () => state.handles,
+      getOptions: () => state.options,
+      getAbortSignal: () => lifecycleSignal,
+      setStatus
+    };
+    return toolCtx;
+  };
+  let lifecycleSignal = null;
+  const isAborted = () => lifecycleSignal?.aborted ?? false;
+  return {
+    id: "editor",
+    label: "Editor",
+    async onEnter(ctx) {
+      lifecycleSignal = ctx.signal;
+      state = { ...state };
+      ctx.sidebarHost.empty();
+      panel = ctx.sidebarHost.createDiv({ cls: "sm-cartographer__panel sm-cartographer__panel--editor" });
+      panel.createEl("h3", { text: "Map Editor" });
+      fileLabel = panel.createEl("div", { cls: "sm-cartographer__panel-file" });
+      const toolsRow = panel.createDiv({ cls: "sm-cartographer__panel-tools" });
+      toolsRow.createEl("label", { text: "Tool:" });
+      toolSelect = toolsRow.createEl("select");
+      for (const tool of tools) {
+        toolSelect.createEl("option", { value: tool.id, text: tool.label });
+      }
+      enhanceSelectToSearch(toolSelect, "Search dropdown\u2026");
+      toolSelect.onchange = () => {
+        if (isAborted() || !manager) return;
+        const target = toolSelect?.value ?? tools[0].id;
+        void manager.switchTo(target);
+      };
+      toolBody = panel.createDiv({ cls: "sm-cartographer__panel-body" });
+      statusLabel = panel.createDiv({ cls: "sm-cartographer__panel-status" });
+      ensureToolCtx(ctx);
+      manager = createToolManager(tools, {
+        getContext: () => toolCtx,
+        getPanelHost: () => toolBody,
+        getLifecycleSignal: () => lifecycleSignal,
+        onToolChanged: (tool) => {
+          if (!toolSelect) return;
+          toolSelect.value = tool?.id ?? "";
+        }
+      });
+      updateFileLabel();
+      updatePanelState();
+      if (isAborted()) return;
+      await manager.switchTo(tools[0].id);
+    },
+    async onExit(ctx) {
+      lifecycleSignal = ctx.signal;
+      manager?.destroy();
+      manager = null;
+      toolCtx = null;
+      panel?.remove();
+      panel = null;
+      fileLabel = null;
+      toolSelect = null;
+      toolBody = null;
+      statusLabel = null;
+      lifecycleSignal = null;
+    },
+    async onFileChange(file, handles, ctx) {
+      lifecycleSignal = ctx.signal;
+      state.file = file;
+      state.handles = handles;
+      state.options = ctx.getOptions();
+      updateFileLabel();
+      updatePanelState();
+      if (!handles) return;
+      if (!toolCtx) ensureToolCtx(ctx);
+      if (isAborted()) return;
+      manager?.notifyMapRendered();
+    },
+    async onHexClick(coord, _event, ctx) {
+      lifecycleSignal = ctx.signal;
+      if (isAborted()) return;
+      const active = manager?.getActive();
+      if (!toolCtx || !active?.onHexClick) return;
+      try {
+        await active.onHexClick(coord, toolCtx);
+      } catch (err) {
+        console.error("[editor-mode] onHexClick failed", err);
+      }
+    }
+  };
+}
+var init_editor = __esm({
+  "src/apps/cartographer/modes/editor.ts"() {
+    "use strict";
+    init_search_dropdown();
+    init_brush_options();
+    init_tool_manager();
+  }
+});
+
+// src/apps/cartographer/modes/inspector.ts
+var inspector_exports = {};
+__export(inspector_exports, {
+  createInspectorMode: () => createInspectorMode
+});
+function createInspectorMode() {
+  let ui = {
+    panel: null,
+    fileLabel: null,
+    message: null,
+    terrain: null,
+    note: null
+  };
+  let state = {
+    file: null,
+    handles: null,
+    selection: null,
+    saveTimer: null
+  };
+  let lifecycleSignal = null;
+  const isAborted = () => lifecycleSignal?.aborted ?? false;
+  const clearSaveTimer = () => {
+    if (state.saveTimer !== null) {
+      window.clearTimeout(state.saveTimer);
+      state.saveTimer = null;
+    }
+  };
+  const resetInputs = () => {
+    if (ui.terrain) {
+      ui.terrain.value = "";
+      ui.terrain.disabled = true;
+    }
+    if (ui.note) {
+      ui.note.value = "";
+      ui.note.disabled = true;
+    }
+  };
+  const updateMessage = () => {
+    if (!ui.message) return;
+    if (!state.file || !state.handles) {
+      ui.message.setText(state.file ? "Karte wird geladen \u2026" : "Keine Karte ausgew\xE4hlt.");
+    } else if (!state.selection) {
+      ui.message.setText("Hex anklicken, um Terrain & Notiz zu bearbeiten.");
+    } else {
+      ui.message.setText(`Hex r${state.selection.r}, c${state.selection.c}`);
+    }
+  };
+  const updateFileLabel = () => {
+    if (!ui.fileLabel) return;
+    ui.fileLabel.textContent = state.file ? state.file.basename : "Keine Karte";
+  };
+  const updatePanelState = () => {
+    const hasMap = !!state.file && !!state.handles;
+    ui.panel?.toggleClass("is-disabled", !hasMap);
+    if (!hasMap) {
+      state.selection = null;
+      resetInputs();
+    }
+    updateMessage();
+  };
+  const scheduleSave = (ctx) => {
+    if (ctx.signal.aborted) return;
+    if (!state.selection) return;
+    const file = ctx.getFile();
+    if (!file) return;
+    const handles = ctx.getRenderHandles();
+    clearSaveTimer();
+    state.saveTimer = window.setTimeout(async () => {
+      if (ctx.signal.aborted) return;
+      const terrain = ui.terrain?.value ?? "";
+      const note = ui.note?.value ?? "";
+      try {
+        await saveTile(ctx.app, file, state.selection, { terrain, note });
+      } catch (err) {
+        console.error("[inspector-mode] saveTile failed", err);
+      }
+      const color = TERRAIN_COLORS[terrain] ?? "transparent";
+      try {
+        handles?.setFill(state.selection, color);
+      } catch (err) {
+        console.error("[inspector-mode] setFill failed", err);
+      }
+    }, 250);
+  };
+  const loadSelection = async (ctx) => {
+    if (!state.selection) return;
+    const file = ctx.getFile();
+    if (!file) return;
+    let data = null;
+    try {
+      data = await loadTile(ctx.app, file, state.selection);
+    } catch (err) {
+      console.error("[inspector-mode] loadTile failed", err);
+      data = null;
+    }
+    if (ctx.signal.aborted) return;
+    if (ui.terrain) {
+      ui.terrain.value = data?.terrain ?? "";
+      ui.terrain.disabled = false;
+    }
+    if (ui.note) {
+      ui.note.value = data?.note ?? "";
+      ui.note.disabled = false;
+    }
+    updateMessage();
+  };
+  return {
+    id: "inspector",
+    label: "Inspector",
+    async onEnter(ctx) {
+      lifecycleSignal = ctx.signal;
+      ui = { panel: null, fileLabel: null, message: null, terrain: null, note: null };
+      state = { ...state, selection: null };
+      ctx.sidebarHost.empty();
+      ui.panel = ctx.sidebarHost.createDiv({ cls: "sm-cartographer__panel sm-cartographer__panel--inspector" });
+      ui.panel.createEl("h3", { text: "Inspektor" });
+      ui.fileLabel = ui.panel.createEl("div", { cls: "sm-cartographer__panel-file" });
+      const messageRow = ui.panel.createEl("div", { cls: "sm-cartographer__panel-info" });
+      ui.message = messageRow;
+      const terrRow = ui.panel.createDiv({ cls: "sm-cartographer__panel-row" });
+      terrRow.createEl("label", { text: "Terrain:" });
+      ui.terrain = terrRow.createEl("select");
+      for (const key of Object.keys(TERRAIN_COLORS)) {
+        const opt = ui.terrain.createEl("option", { text: key || "(leer)" });
+        opt.value = key;
+      }
+      enhanceSelectToSearch(ui.terrain, "Such-dropdown\u2026");
+      ui.terrain.disabled = true;
+      ui.terrain.onchange = () => scheduleSave(ctx);
+      const noteRow = ui.panel.createDiv({ cls: "sm-cartographer__panel-row" });
+      noteRow.createEl("label", { text: "Notiz:" });
+      ui.note = noteRow.createEl("textarea", { attr: { rows: "6" } });
+      ui.note.disabled = true;
+      ui.note.oninput = () => scheduleSave(ctx);
+      updateFileLabel();
+      updatePanelState();
+    },
+    async onExit(ctx) {
+      lifecycleSignal = ctx.signal;
+      clearSaveTimer();
+      ui.panel?.remove();
+      ui = { panel: null, fileLabel: null, message: null, terrain: null, note: null };
+      state = { file: null, handles: null, selection: null, saveTimer: null };
+      lifecycleSignal = null;
+    },
+    async onFileChange(file, handles, ctx) {
+      lifecycleSignal = ctx.signal;
+      state.file = file;
+      state.handles = handles;
+      clearSaveTimer();
+      resetInputs();
+      updateFileLabel();
+      updatePanelState();
+      if (state.selection && state.file && state.handles && !isAborted()) {
+        await loadSelection(ctx);
+      }
+    },
+    async onHexClick(coord, _event, ctx) {
+      lifecycleSignal = ctx.signal;
+      if (isAborted()) return;
+      if (!state.file || !state.handles) return;
+      clearSaveTimer();
+      state.selection = coord;
+      updateMessage();
+      if (isAborted()) return;
+      await loadSelection(ctx);
+    }
+  };
+}
+var init_inspector = __esm({
+  "src/apps/cartographer/modes/inspector.ts"() {
+    "use strict";
+    init_hex_notes();
+    init_terrain();
+    init_search_dropdown();
+  }
+});
 
 // src/core/terrain-store.ts
-var import_obsidian9 = require("obsidian");
-var TERRAIN_FILE = "SaltMarcher/Terrains.md";
-var BLOCK_RE = /```terrain\s*([\s\S]*?)```/i;
 async function ensureTerrainFile(app) {
-  const p = (0, import_obsidian9.normalizePath)(TERRAIN_FILE);
+  const p = (0, import_obsidian11.normalizePath)(TERRAIN_FILE);
   const existing = app.vault.getAbstractFileByPath(p);
-  if (existing instanceof import_obsidian9.TFile) return existing;
+  if (existing instanceof import_obsidian11.TFile) return existing;
   await app.vault.createFolder(p.split("/").slice(0, -1).join("/")).catch(() => {
   });
   const body = [
@@ -1467,7 +2612,7 @@ async function ensureTerrainFile(app) {
   return await app.vault.create(p, body);
 }
 function parseTerrainBlock(md) {
-  const m = md.match(BLOCK_RE);
+  const m = md.match(BLOCK_RE2);
   if (!m) return {};
   const out = {};
   for (const raw of m[1].split(/\r?\n/)) {
@@ -1498,24 +2643,67 @@ async function saveTerrains(app, next) {
   const f = await ensureTerrainFile(app);
   const md = await app.vault.read(f);
   const block = stringifyTerrainBlock(next);
-  const replaced = md.match(BLOCK_RE) ? md.replace(BLOCK_RE, block) : md + "\n\n" + block + "\n";
+  const replaced = md.match(BLOCK_RE2) ? md.replace(BLOCK_RE2, block) : md + "\n\n" + block + "\n";
   await app.vault.modify(f, replaced);
 }
-function watchTerrains(app, onChange) {
-  const handler = async (file) => {
-    if (file.path !== TERRAIN_FILE) return;
-    const map = await loadTerrains(app);
-    setTerrains(map);
-    app.workspace.trigger?.("salt:terrains-updated");
-    onChange?.();
+function resolveWatcherOptions(maybeCallback) {
+  if (typeof maybeCallback === "function") {
+    return { onChange: maybeCallback };
+  }
+  return maybeCallback ?? {};
+}
+function watchTerrains(app, onChangeOrOptions) {
+  const options = resolveWatcherOptions(onChangeOrOptions);
+  const handleError = (error, reason) => {
+    if (options.onError) {
+      try {
+        options.onError(error, { reason });
+      } catch (loggingError) {
+        console.error("[salt-marcher] Terrain watcher error handler threw", loggingError);
+      }
+    } else {
+      console.error(`[salt-marcher] Terrain watcher failed after ${reason} event`, error);
+    }
   };
-  app.vault.on("modify", handler);
-  app.vault.on("delete", handler);
+  const update = async (reason) => {
+    try {
+      if (reason === "delete") {
+        await ensureTerrainFile(app);
+      }
+      const map = await loadTerrains(app);
+      setTerrains(map);
+      app.workspace.trigger?.("salt:terrains-updated");
+      await options.onChange?.();
+    } catch (error) {
+      handleError(error, reason);
+    }
+  };
+  const maybeUpdate = (reason, file) => {
+    if (!(file instanceof import_obsidian11.TFile) || file.path !== TERRAIN_FILE) return;
+    void update(reason);
+  };
+  const refs = ["modify", "delete"].map(
+    (event) => app.vault.on(event, (file) => maybeUpdate(event, file))
+  );
+  let disposed = false;
   return () => {
-    app.vault.off("modify", handler);
-    app.vault.off("delete", handler);
+    if (disposed) return;
+    disposed = true;
+    for (const ref of refs) {
+      app.vault.offref(ref);
+    }
   };
 }
+var import_obsidian11, TERRAIN_FILE, BLOCK_RE2;
+var init_terrain_store = __esm({
+  "src/core/terrain-store.ts"() {
+    "use strict";
+    import_obsidian11 = require("obsidian");
+    init_terrain();
+    TERRAIN_FILE = "SaltMarcher/Terrains.md";
+    BLOCK_RE2 = /```terrain\s*([\s\S]*?)```/i;
+  }
+});
 
 // src/apps/cartographer/travel/ui/sidebar.ts
 function createSidebar(host) {
@@ -1572,93 +2760,13 @@ function createSidebar(host) {
     }
   };
 }
-
-// src/apps/cartographer/travel/ui/controls.ts
-var import_obsidian10 = require("obsidian");
-function createPlaybackControls(host, callbacks) {
-  const root = host.createDiv({ cls: "sm-cartographer__travel-buttons" });
-  const clock = root.createEl("div", { cls: "sm-cartographer__travel-clock", text: "00h" });
-  const playBtn = root.createEl("button", {
-    cls: "sm-cartographer__travel-button sm-cartographer__travel-button--play",
-    text: "Start"
-  });
-  (0, import_obsidian10.setIcon)(playBtn, "play");
-  applyMapButtonStyle(playBtn);
-  playBtn.addEventListener("click", (ev) => {
-    ev.preventDefault();
-    if (playBtn.disabled) return;
-    void callbacks.onPlay?.();
-  });
-  const stopBtn = root.createEl("button", {
-    cls: "sm-cartographer__travel-button sm-cartographer__travel-button--stop",
-    text: "Stopp"
-  });
-  (0, import_obsidian10.setIcon)(stopBtn, "square");
-  applyMapButtonStyle(stopBtn);
-  stopBtn.addEventListener("click", (ev) => {
-    ev.preventDefault();
-    if (stopBtn.disabled) return;
-    void callbacks.onStop?.();
-  });
-  const resetBtn = root.createEl("button", {
-    cls: "sm-cartographer__travel-button sm-cartographer__travel-button--reset",
-    text: "Reset"
-  });
-  (0, import_obsidian10.setIcon)(resetBtn, "rotate-ccw");
-  applyMapButtonStyle(resetBtn);
-  resetBtn.addEventListener("click", (ev) => {
-    ev.preventDefault();
-    if (resetBtn.disabled) return;
-    void callbacks.onReset?.();
-  });
-  const tempoWrap = root.createDiv({ cls: "sm-cartographer__travel-tempo" });
-  const tempoLabel = tempoWrap.createSpan({ text: "x1.0" });
-  const tempoInput = tempoWrap.createEl("input", {
-    type: "range",
-    attr: { min: "0.1", max: "10", step: "0.1" }
-  });
-  tempoInput.value = "1";
-  tempoInput.oninput = () => {
-    const v = Math.max(0.1, Math.min(10, parseFloat(tempoInput.value) || 1));
-    tempoLabel.setText(`x${v.toFixed(1)}`);
-    callbacks.onTempoChange?.(v);
-  };
-  const setState = (state) => {
-    const hasRoute = state.route.length > 0;
-    playBtn.disabled = state.playing || !hasRoute;
-    stopBtn.disabled = !state.playing;
-    resetBtn.disabled = !hasRoute && !state.playing;
-  };
-  setState({ playing: false, route: [] });
-  const setClock = (hours) => {
-    const h = Math.floor(hours);
-    clock.setText(`${h}h`);
-  };
-  const setTempo = (tempo) => {
-    const v = Math.max(0.1, Math.min(10, tempo));
-    tempoInput.value = String(v);
-    tempoLabel.setText(`x${v.toFixed(1)}`);
-  };
-  const destroy = () => {
-    playBtn.replaceWith();
-    stopBtn.replaceWith();
-    resetBtn.replaceWith();
-    root.remove();
-  };
-  return {
-    root,
-    setState,
-    destroy,
-    setClock,
-    setTempo
-  };
-}
+var init_sidebar = __esm({
+  "src/apps/cartographer/travel/ui/sidebar.ts"() {
+    "use strict";
+  }
+});
 
 // src/apps/cartographer/travel/render/draw-route.ts
-var USER_RADIUS = 7;
-var AUTO_RADIUS = 5;
-var HIGHLIGHT_OFFSET = 2;
-var HITBOX_PADDING = 6;
 function drawRoute(args) {
   const { layer, route, centerOf, highlightIndex = null, start = null } = args;
   while (layer.firstChild) layer.removeChild(layer.firstChild);
@@ -1722,6 +2830,16 @@ function updateHighlight(layer, highlightIndex) {
     el.style.cursor = "grab";
   });
 }
+var USER_RADIUS, AUTO_RADIUS, HIGHLIGHT_OFFSET, HITBOX_PADDING;
+var init_draw_route = __esm({
+  "src/apps/cartographer/travel/render/draw-route.ts"() {
+    "use strict";
+    USER_RADIUS = 7;
+    AUTO_RADIUS = 5;
+    HIGHLIGHT_OFFSET = 2;
+    HITBOX_PADDING = 6;
+  }
+});
 
 // src/apps/cartographer/travel/ui/route-layer.ts
 function createRouteLayer(contentRoot, centerOf) {
@@ -1739,6 +2857,12 @@ function createRouteLayer(contentRoot, centerOf) {
   }
   return { el, draw, highlight, destroy };
 }
+var init_route_layer = __esm({
+  "src/apps/cartographer/travel/ui/route-layer.ts"() {
+    "use strict";
+    init_draw_route();
+  }
+});
 
 // src/apps/cartographer/travel/ui/token-layer.ts
 function createTokenLayer(contentG) {
@@ -1820,185 +2944,11 @@ function createTokenLayer(contentG) {
   hide();
   return { el, setPos, moveTo, stop, show, hide, destroy };
 }
-
-// src/apps/cartographer/travel/ui/drag.controller.ts
-function createDragController(deps) {
-  const { routeLayerEl, tokenEl, token, adapter, logic, polyToCoord } = deps;
-  let isDragging = false;
-  let dragKind = null;
-  let lastDragRC = null;
-  let suppressNextHexClick = false;
-  function disableLayerHit(on) {
-    routeLayerEl.style.pointerEvents = on ? "none" : "";
+var init_token_layer = __esm({
+  "src/apps/cartographer/travel/ui/token-layer.ts"() {
+    "use strict";
   }
-  function findPolygonAt(clientX, clientY) {
-    const el = document.elementFromPoint(clientX, clientY);
-    if (!el) return null;
-    const poly1 = el.closest?.("polygon");
-    if (poly1) return poly1;
-    let cur = el;
-    while (cur) {
-      if (cur instanceof SVGPolygonElement) return cur;
-      cur = cur.parentElement;
-    }
-    return null;
-  }
-  function getDotElements(idx) {
-    const dot = routeLayerEl.querySelector(`.tg-route-dot[data-idx="${idx}"]`);
-    const hit = routeLayerEl.querySelector(`.tg-route-dot-hitbox[data-idx="${idx}"]`);
-    return { dot, hit };
-  }
-  function ghostMoveSelectedDot(rc) {
-    const s = logic.getState();
-    const idx = s.editIdx;
-    if (idx == null) return;
-    const { dot, hit } = getDotElements(idx);
-    if (!dot) return;
-    const ctr = adapter.centerOf(rc);
-    if (!ctr) return;
-    dot.setAttribute("cx", String(ctr.x));
-    dot.setAttribute("cy", String(ctr.y));
-    if (hit) {
-      hit.setAttribute("cx", String(ctr.x));
-      hit.setAttribute("cy", String(ctr.y));
-    }
-  }
-  function ghostMoveToken(rc) {
-    const ctr = adapter.centerOf(rc);
-    if (!ctr) return;
-    token.setPos(ctr.x, ctr.y);
-    token.show();
-  }
-  const onGlobalPointerDownCapture = (ev) => {
-    if (ev.button !== 0) return;
-    const check = (el) => {
-      if (!(el instanceof Element)) return false;
-      if (el === tokenEl || tokenEl.contains(el)) return true;
-      if (el instanceof SVGCircleElement && routeLayerEl.contains(el)) return true;
-      return false;
-    };
-    const path = typeof ev.composedPath === "function" ? ev.composedPath() : [];
-    if (Array.isArray(path) && path.length > 0) {
-      for (const el of path) {
-        if (check(el)) {
-          suppressNextHexClick = true;
-          return;
-        }
-      }
-    } else if (check(ev.target)) {
-      suppressNextHexClick = true;
-    }
-  };
-  const onDotPointerDown = (ev) => {
-    if (ev.button !== 0) return;
-    const t = ev.target;
-    if (!(t instanceof SVGCircleElement)) return;
-    if (!t.classList.contains("tg-route-dot") && !t.classList.contains("tg-route-dot-hitbox")) return;
-    const idxAttr = t.getAttribute("data-idx");
-    const idx = idxAttr ? Number(idxAttr) : NaN;
-    if (!Number.isFinite(idx) || idx < 0) return;
-    logic.selectDot(idx);
-    dragKind = "dot";
-    isDragging = true;
-    lastDragRC = null;
-    suppressNextHexClick = true;
-    disableLayerHit(true);
-    const { dot } = getDotElements(idx);
-    (dot ?? t).setPointerCapture?.(ev.pointerId);
-    ev.preventDefault();
-    ev.stopImmediatePropagation?.();
-    ev.stopPropagation();
-  };
-  const onTokenPointerDown = (ev) => {
-    if (ev.button !== 0) return;
-    dragKind = "token";
-    isDragging = true;
-    lastDragRC = null;
-    suppressNextHexClick = true;
-    disableLayerHit(true);
-    tokenEl.setPointerCapture?.(ev.pointerId);
-    ev.preventDefault();
-    ev.stopImmediatePropagation?.();
-    ev.stopPropagation();
-  };
-  const onPointerMove = (ev) => {
-    if (!isDragging) return;
-    if ((ev.buttons & 1) === 0) {
-      endDrag();
-      return;
-    }
-    const poly = findPolygonAt(ev.clientX, ev.clientY);
-    if (!poly) return;
-    const rc = polyToCoord.get(poly);
-    if (!rc) return;
-    if (lastDragRC && rc.r === lastDragRC.r && rc.c === lastDragRC.c) return;
-    lastDragRC = rc;
-    if (dragKind === "dot") ghostMoveSelectedDot(rc);
-    else if (dragKind === "token") ghostMoveToken(rc);
-  };
-  function endDrag() {
-    if (!isDragging) return;
-    isDragging = false;
-    if (lastDragRC) {
-      adapter.ensurePolys([lastDragRC]);
-      if (dragKind === "dot") logic.moveSelectedTo(lastDragRC);
-      else if (dragKind === "token") logic.moveTokenTo(lastDragRC);
-      suppressNextHexClick = true;
-    }
-    lastDragRC = null;
-    dragKind = null;
-    disableLayerHit(false);
-  }
-  const onPointerUp = () => endDrag();
-  const onPointerCancel = () => endDrag();
-  function bind() {
-    window.addEventListener("pointerdown", onGlobalPointerDownCapture, { capture: true });
-    routeLayerEl.addEventListener("pointerdown", onDotPointerDown, { capture: true });
-    tokenEl.addEventListener("pointerdown", onTokenPointerDown, { capture: true });
-    window.addEventListener("pointermove", onPointerMove, { passive: true });
-    window.addEventListener("pointerup", onPointerUp, { passive: true });
-    window.addEventListener("pointercancel", onPointerCancel, { passive: true });
-  }
-  function unbind() {
-    window.removeEventListener("pointerdown", onGlobalPointerDownCapture, { capture: true });
-    routeLayerEl.removeEventListener("pointerdown", onDotPointerDown, { capture: true });
-    tokenEl.removeEventListener("pointerdown", onTokenPointerDown, { capture: true });
-    window.removeEventListener("pointermove", onPointerMove);
-    window.removeEventListener("pointerup", onPointerUp);
-    window.removeEventListener("pointercancel", onPointerCancel);
-  }
-  function consumeClickSuppression() {
-    if (isDragging) return true;
-    if (!suppressNextHexClick) return false;
-    suppressNextHexClick = false;
-    return true;
-  }
-  return { bind, unbind, consumeClickSuppression };
-}
-
-// src/apps/cartographer/travel/ui/contextmenue.ts
-function bindContextMenu(routeLayerEl, logic) {
-  const onContextMenu = (ev) => {
-    const t = ev.target;
-    if (!(t instanceof SVGCircleElement)) return;
-    const idxAttr = t.getAttribute("data-idx");
-    if (!idxAttr) return;
-    const idx = Number(idxAttr);
-    if (!Number.isFinite(idx) || idx < 0) return;
-    const route = logic.getState().route;
-    const node = route[idx];
-    if (!node) return;
-    if (node.kind !== "user") {
-      ev.preventDefault();
-      return;
-    }
-    ev.preventDefault();
-    ev.stopPropagation();
-    logic.deleteUserAt(idx);
-  };
-  routeLayerEl.addEventListener("contextmenu", onContextMenu, { capture: true });
-  return () => routeLayerEl.removeEventListener("contextmenu", onContextMenu, { capture: true });
-}
+});
 
 // src/apps/cartographer/travel/domain/state.store.ts
 function createStore() {
@@ -2033,6 +2983,11 @@ function createStore() {
   };
   return { get, set, replace, subscribe, emit };
 }
+var init_state_store = __esm({
+  "src/apps/cartographer/travel/domain/state.store.ts"() {
+    "use strict";
+  }
+});
 
 // src/apps/cartographer/travel/domain/expansion.ts
 function expandCoords(a, b) {
@@ -2054,11 +3009,17 @@ function rebuildFromAnchors(tokenRC, anchors) {
   }
   return route;
 }
-var asUserNode = (rc) => ({ ...rc, kind: "user" });
-var asAutoNode = (rc) => ({ ...rc, kind: "auto" });
+var asUserNode, asAutoNode;
+var init_expansion = __esm({
+  "src/apps/cartographer/travel/domain/expansion.ts"() {
+    "use strict";
+    init_hex_geom();
+    asUserNode = (rc) => ({ ...rc, kind: "user" });
+    asAutoNode = (rc) => ({ ...rc, kind: "auto" });
+  }
+});
 
 // src/apps/cartographer/travel/domain/terrain.service.ts
-init_hex_notes();
 async function loadTerrainSpeed(app, mapFile, rc) {
   try {
     const data = await loadTile(app, mapFile, rc);
@@ -2069,10 +3030,15 @@ async function loadTerrainSpeed(app, mapFile, rc) {
     return 1;
   }
 }
+var init_terrain_service = __esm({
+  "src/apps/cartographer/travel/domain/terrain.service.ts"() {
+    "use strict";
+    init_terrain();
+    init_hex_notes();
+  }
+});
 
 // src/apps/cartographer/travel/domain/persistence.ts
-init_hex_notes();
-var TOKEN_KEY = "token_travel";
 async function loadTokenCoordFromMap(app, mapFile) {
   const tiles = await listTilesForMap(app, mapFile);
   for (const rc of tiles) {
@@ -2094,6 +3060,14 @@ async function writeTokenToTiles(app, mapFile, rc) {
   const cur = await loadTile(app, mapFile, rc).catch(() => ({}));
   await saveTile(app, mapFile, rc, { ...cur, [TOKEN_KEY]: true });
 }
+var TOKEN_KEY;
+var init_persistence = __esm({
+  "src/apps/cartographer/travel/domain/persistence.ts"() {
+    "use strict";
+    init_hex_notes();
+    TOKEN_KEY = "token_travel";
+  }
+});
 
 // src/apps/cartographer/travel/domain/playback.ts
 function createPlayback(cfg) {
@@ -2224,6 +3198,13 @@ function createPlayback(cfg) {
   }
   return { play, pause };
 }
+var init_playback = __esm({
+  "src/apps/cartographer/travel/domain/playback.ts"() {
+    "use strict";
+    init_terrain_service();
+    init_persistence();
+  }
+});
 
 // src/apps/cartographer/travel/domain/actions.ts
 function createTravelLogic(cfg) {
@@ -2424,46 +3405,596 @@ function createTravelLogic(cfg) {
     persistTokenToTiles
   };
 }
+var init_actions = __esm({
+  "src/apps/cartographer/travel/domain/actions.ts"() {
+    "use strict";
+    init_state_store();
+    init_expansion();
+    init_playback();
+    init_persistence();
+  }
+});
+
+// src/apps/cartographer/travel/ui/controls.ts
+function createPlaybackControls(host, callbacks) {
+  const root = host.createDiv({ cls: "sm-cartographer__travel-buttons" });
+  const clock = root.createEl("div", { cls: "sm-cartographer__travel-clock", text: "00h" });
+  const playBtn = root.createEl("button", {
+    cls: "sm-cartographer__travel-button sm-cartographer__travel-button--play",
+    text: "Start"
+  });
+  (0, import_obsidian12.setIcon)(playBtn, "play");
+  applyMapButtonStyle(playBtn);
+  playBtn.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    if (playBtn.disabled) return;
+    void callbacks.onPlay?.();
+  });
+  const stopBtn = root.createEl("button", {
+    cls: "sm-cartographer__travel-button sm-cartographer__travel-button--stop",
+    text: "Stopp"
+  });
+  (0, import_obsidian12.setIcon)(stopBtn, "square");
+  applyMapButtonStyle(stopBtn);
+  stopBtn.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    if (stopBtn.disabled) return;
+    void callbacks.onStop?.();
+  });
+  const resetBtn = root.createEl("button", {
+    cls: "sm-cartographer__travel-button sm-cartographer__travel-button--reset",
+    text: "Reset"
+  });
+  (0, import_obsidian12.setIcon)(resetBtn, "rotate-ccw");
+  applyMapButtonStyle(resetBtn);
+  resetBtn.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    if (resetBtn.disabled) return;
+    void callbacks.onReset?.();
+  });
+  const tempoWrap = root.createDiv({ cls: "sm-cartographer__travel-tempo" });
+  const tempoLabel = tempoWrap.createSpan({ text: "x1.0" });
+  const tempoInput = tempoWrap.createEl("input", {
+    type: "range",
+    attr: { min: "0.1", max: "10", step: "0.1" }
+  });
+  tempoInput.value = "1";
+  tempoInput.oninput = () => {
+    const v = Math.max(0.1, Math.min(10, parseFloat(tempoInput.value) || 1));
+    tempoLabel.setText(`x${v.toFixed(1)}`);
+    callbacks.onTempoChange?.(v);
+  };
+  const setState = (state) => {
+    const hasRoute = state.route.length > 0;
+    playBtn.disabled = state.playing || !hasRoute;
+    stopBtn.disabled = !state.playing;
+    resetBtn.disabled = !hasRoute && !state.playing;
+  };
+  setState({ playing: false, route: [] });
+  const setClock = (hours) => {
+    const h = Math.floor(hours);
+    clock.setText(`${h}h`);
+  };
+  const setTempo = (tempo) => {
+    const v = Math.max(0.1, Math.min(10, tempo));
+    tempoInput.value = String(v);
+    tempoLabel.setText(`x${v.toFixed(1)}`);
+  };
+  const destroy = () => {
+    playBtn.replaceWith();
+    stopBtn.replaceWith();
+    resetBtn.replaceWith();
+    root.remove();
+  };
+  return {
+    root,
+    setState,
+    destroy,
+    setClock,
+    setTempo
+  };
+}
+var import_obsidian12;
+var init_controls = __esm({
+  "src/apps/cartographer/travel/ui/controls.ts"() {
+    "use strict";
+    import_obsidian12 = require("obsidian");
+    init_map_workflows();
+  }
+});
+
+// src/apps/cartographer/modes/travel-guide/playback-controller.ts
+var TravelPlaybackController;
+var init_playback_controller = __esm({
+  "src/apps/cartographer/modes/travel-guide/playback-controller.ts"() {
+    "use strict";
+    init_controls();
+    TravelPlaybackController = class {
+      constructor() {
+        this.handle = null;
+      }
+      mount(host, driver) {
+        this.dispose();
+        this.handle = createPlaybackControls(host.controlsHost, {
+          onPlay: () => void driver.play(),
+          onStop: () => void driver.pause(),
+          onReset: () => void driver.reset(),
+          onTempoChange: (value) => driver.setTempo?.(value)
+        });
+        this.reset();
+      }
+      sync(state) {
+        if (!this.handle) return;
+        this.handle.setState({ playing: state.playing, route: state.route });
+        this.handle?.setClock?.(state.clockHours ?? 0);
+        this.handle?.setTempo?.(state.tempo ?? 1);
+      }
+      reset() {
+        this.handle?.setState({ playing: false, route: [] });
+      }
+      dispose() {
+        this.handle?.destroy();
+        this.handle = null;
+      }
+    };
+  }
+});
+
+// src/apps/cartographer/travel/ui/drag.controller.ts
+function createDragController(deps) {
+  const { routeLayerEl, tokenEl, token, adapter, logic, polyToCoord } = deps;
+  let isDragging = false;
+  let dragKind = null;
+  let lastDragRC = null;
+  let suppressNextHexClick = false;
+  let pointerCaptureOwner = null;
+  let activePointerId = null;
+  function disableLayerHit(on) {
+    routeLayerEl.style.pointerEvents = on ? "none" : "";
+  }
+  function findPolygonAt(clientX, clientY) {
+    const el = document.elementFromPoint(clientX, clientY);
+    if (!el) return null;
+    const poly1 = el.closest?.("polygon");
+    if (poly1) return poly1;
+    let cur = el;
+    while (cur) {
+      if (cur instanceof SVGPolygonElement) return cur;
+      cur = cur.parentElement;
+    }
+    return null;
+  }
+  function getDotElements(idx) {
+    const dot = routeLayerEl.querySelector(`.tg-route-dot[data-idx="${idx}"]`);
+    const hit = routeLayerEl.querySelector(`.tg-route-dot-hitbox[data-idx="${idx}"]`);
+    return { dot, hit };
+  }
+  function ghostMoveSelectedDot(rc) {
+    const s = logic.getState();
+    const idx = s.editIdx;
+    if (idx == null) return;
+    const { dot, hit } = getDotElements(idx);
+    if (!dot) return;
+    const ctr = adapter.centerOf(rc);
+    if (!ctr) return;
+    dot.setAttribute("cx", String(ctr.x));
+    dot.setAttribute("cy", String(ctr.y));
+    if (hit) {
+      hit.setAttribute("cx", String(ctr.x));
+      hit.setAttribute("cy", String(ctr.y));
+    }
+  }
+  function ghostMoveToken(rc) {
+    const ctr = adapter.centerOf(rc);
+    if (!ctr) return;
+    token.setPos(ctr.x, ctr.y);
+    token.show();
+  }
+  function capturePointer(el, pointerId) {
+    if (!el || typeof el.setPointerCapture !== "function") {
+      pointerCaptureOwner = null;
+      activePointerId = null;
+      return;
+    }
+    try {
+      el.setPointerCapture(pointerId);
+      pointerCaptureOwner = el;
+      activePointerId = pointerId;
+    } catch {
+      pointerCaptureOwner = null;
+      activePointerId = null;
+    }
+  }
+  function releasePointerCapture() {
+    if (!pointerCaptureOwner || activePointerId == null) {
+      pointerCaptureOwner = null;
+      activePointerId = null;
+      return;
+    }
+    const el = pointerCaptureOwner;
+    try {
+      el.releasePointerCapture?.(activePointerId);
+    } catch {
+    }
+    pointerCaptureOwner = null;
+    activePointerId = null;
+  }
+  const onGlobalPointerDownCapture = (ev) => {
+    if (ev.button !== 0) return;
+    const check = (el) => {
+      if (!(el instanceof Element)) return false;
+      if (el === tokenEl || tokenEl.contains(el)) return true;
+      if (el instanceof SVGCircleElement && routeLayerEl.contains(el)) return true;
+      return false;
+    };
+    const path = typeof ev.composedPath === "function" ? ev.composedPath() : [];
+    if (Array.isArray(path) && path.length > 0) {
+      for (const el of path) {
+        if (check(el)) {
+          suppressNextHexClick = true;
+          return;
+        }
+      }
+    } else if (check(ev.target)) {
+      suppressNextHexClick = true;
+    }
+  };
+  const onDotPointerDown = (ev) => {
+    if (ev.button !== 0) return;
+    const t = ev.target;
+    if (!(t instanceof SVGCircleElement)) return;
+    if (!t.classList.contains("tg-route-dot") && !t.classList.contains("tg-route-dot-hitbox")) return;
+    const idxAttr = t.getAttribute("data-idx");
+    const idx = idxAttr ? Number(idxAttr) : NaN;
+    if (!Number.isFinite(idx) || idx < 0) return;
+    logic.selectDot(idx);
+    dragKind = "dot";
+    isDragging = true;
+    lastDragRC = null;
+    suppressNextHexClick = true;
+    disableLayerHit(true);
+    const { dot } = getDotElements(idx);
+    capturePointer(dot ?? t, ev.pointerId);
+    ev.preventDefault();
+    ev.stopImmediatePropagation?.();
+    ev.stopPropagation();
+  };
+  const onTokenPointerDown = (ev) => {
+    if (ev.button !== 0) return;
+    dragKind = "token";
+    isDragging = true;
+    lastDragRC = null;
+    suppressNextHexClick = true;
+    disableLayerHit(true);
+    capturePointer(tokenEl, ev.pointerId);
+    ev.preventDefault();
+    ev.stopImmediatePropagation?.();
+    ev.stopPropagation();
+  };
+  const onPointerMove = (ev) => {
+    if (!isDragging) return;
+    if ((ev.buttons & 1) === 0) {
+      endDrag();
+      return;
+    }
+    const poly = findPolygonAt(ev.clientX, ev.clientY);
+    if (!poly) return;
+    const rc = polyToCoord.get(poly);
+    if (!rc) return;
+    if (lastDragRC && rc.r === lastDragRC.r && rc.c === lastDragRC.c) return;
+    lastDragRC = rc;
+    if (dragKind === "dot") ghostMoveSelectedDot(rc);
+    else if (dragKind === "token") ghostMoveToken(rc);
+  };
+  function endDrag() {
+    if (!isDragging) {
+      releasePointerCapture();
+      return;
+    }
+    isDragging = false;
+    if (lastDragRC) {
+      adapter.ensurePolys([lastDragRC]);
+      if (dragKind === "dot") logic.moveSelectedTo(lastDragRC);
+      else if (dragKind === "token") logic.moveTokenTo(lastDragRC);
+      suppressNextHexClick = true;
+    }
+    lastDragRC = null;
+    dragKind = null;
+    disableLayerHit(false);
+    releasePointerCapture();
+  }
+  const onPointerUp = () => endDrag();
+  const onPointerCancel = () => endDrag();
+  function bind() {
+    window.addEventListener("pointerdown", onGlobalPointerDownCapture, { capture: true });
+    routeLayerEl.addEventListener("pointerdown", onDotPointerDown, { capture: true });
+    tokenEl.addEventListener("pointerdown", onTokenPointerDown, { capture: true });
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    window.addEventListener("pointerup", onPointerUp, { passive: true });
+    window.addEventListener("pointercancel", onPointerCancel, { passive: true });
+  }
+  function unbind() {
+    window.removeEventListener("pointerdown", onGlobalPointerDownCapture, { capture: true });
+    routeLayerEl.removeEventListener("pointerdown", onDotPointerDown, { capture: true });
+    tokenEl.removeEventListener("pointerdown", onTokenPointerDown, { capture: true });
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", onPointerUp);
+    window.removeEventListener("pointercancel", onPointerCancel);
+    releasePointerCapture();
+  }
+  function consumeClickSuppression() {
+    if (isDragging) return true;
+    if (!suppressNextHexClick) return false;
+    suppressNextHexClick = false;
+    return true;
+  }
+  return { bind, unbind, consumeClickSuppression };
+}
+var init_drag_controller = __esm({
+  "src/apps/cartographer/travel/ui/drag.controller.ts"() {
+    "use strict";
+  }
+});
+
+// src/apps/cartographer/travel/ui/context-menu.controller.ts
+function bindContextMenu(routeLayerEl, logic) {
+  const onContextMenu = (ev) => {
+    const target = ev.target;
+    if (!(target instanceof SVGCircleElement)) return;
+    const idxAttr = target.getAttribute("data-idx");
+    if (!idxAttr) return;
+    const idx = Number(idxAttr);
+    if (!Number.isFinite(idx) || idx < 0) return;
+    const route = logic.getState().route;
+    const node = route[idx];
+    if (!node) return;
+    if (node.kind !== "user") {
+      ev.preventDefault();
+      return;
+    }
+    ev.preventDefault();
+    ev.stopPropagation();
+    logic.deleteUserAt(idx);
+  };
+  routeLayerEl.addEventListener("contextmenu", onContextMenu, { capture: true });
+  return () => routeLayerEl.removeEventListener("contextmenu", onContextMenu, { capture: true });
+}
+var init_context_menu_controller = __esm({
+  "src/apps/cartographer/travel/ui/context-menu.controller.ts"() {
+    "use strict";
+  }
+});
+
+// src/apps/cartographer/travel/ui/contextmenue.ts
+var init_contextmenue = __esm({
+  "src/apps/cartographer/travel/ui/contextmenue.ts"() {
+    "use strict";
+    init_context_menu_controller();
+  }
+});
+
+// src/apps/cartographer/modes/travel-guide/interaction-controller.ts
+var TravelInteractionController;
+var init_interaction_controller = __esm({
+  "src/apps/cartographer/modes/travel-guide/interaction-controller.ts"() {
+    "use strict";
+    init_drag_controller();
+    init_contextmenue();
+    TravelInteractionController = class {
+      constructor() {
+        this.drag = null;
+        this.unbindContext = null;
+      }
+      bind(env, logic) {
+        this.dispose();
+        this.drag = createDragController({
+          routeLayerEl: env.routeLayerEl,
+          tokenEl: env.tokenLayerEl,
+          token: env.token,
+          adapter: env.adapter,
+          logic: {
+            getState: () => logic.getState(),
+            selectDot: (idx) => logic.selectDot(idx),
+            moveSelectedTo: (rc) => logic.moveSelectedTo(rc),
+            moveTokenTo: (rc) => logic.moveTokenTo(rc)
+          },
+          polyToCoord: env.polyToCoord
+        });
+        this.drag.bind();
+        this.unbindContext = bindContextMenu(env.routeLayerEl, {
+          getState: () => logic.getState(),
+          deleteUserAt: (idx) => logic.deleteUserAt(idx)
+        });
+      }
+      consumeClickSuppression() {
+        return this.drag?.consumeClickSuppression() ?? false;
+      }
+      dispose() {
+        if (this.drag) {
+          this.drag.unbind();
+          this.drag = null;
+        }
+        if (this.unbindContext) {
+          this.unbindContext();
+          this.unbindContext = null;
+        }
+      }
+    };
+  }
+});
+
+// src/apps/encounter/event-builder.ts
+async function createEncounterEventFromTravel(app, ctx) {
+  const triggeredAt = (/* @__PURE__ */ new Date()).toISOString();
+  const coord = ctx?.state?.currentTile ?? ctx?.state?.tokenRC ?? null;
+  const mapFile = ctx?.mapFile ?? null;
+  let regionName;
+  let encounterOdds;
+  if (mapFile && coord) {
+    try {
+      const { loadTile: loadTile2 } = await Promise.resolve().then(() => (init_hex_notes(), hex_notes_exports));
+      const tile = await loadTile2(app, mapFile, coord).catch(() => null);
+      const tileRegion = typeof tile?.region === "string" ? tile.region : void 0;
+      if (tileRegion) {
+        regionName = tileRegion;
+        try {
+          const { loadRegions: loadRegions2 } = await Promise.resolve().then(() => (init_regions_store(), regions_store_exports));
+          const regions = await loadRegions2(app);
+          const region = regions.find((r) => typeof r?.name === "string" && r.name.toLowerCase() === tileRegion.toLowerCase());
+          const odds = region?.encounterOdds;
+          if (typeof odds === "number" && Number.isFinite(odds) && odds > 0) {
+            encounterOdds = odds;
+          }
+        } catch (err) {
+          console.error("[encounter] failed to resolve region odds", err);
+        }
+      }
+    } catch (err) {
+      console.error("[encounter] failed to read tile metadata", err);
+    }
+  }
+  const travelClock = ctx?.state?.clockHours;
+  const event = {
+    id: `travel-${Date.now()}`,
+    source: "travel",
+    triggeredAt,
+    coord,
+    regionName,
+    mapPath: mapFile?.path,
+    mapName: mapFile?.basename,
+    encounterOdds,
+    travelClockHours: typeof travelClock === "number" && Number.isFinite(travelClock) ? travelClock : void 0
+  };
+  return event;
+}
+var init_event_builder = __esm({
+  "src/apps/encounter/event-builder.ts"() {
+    "use strict";
+  }
+});
+
+// src/apps/cartographer/modes/travel-guide/encounter-gateway.ts
+function loadEncounterModule() {
+  return Promise.all([
+    Promise.resolve().then(() => (init_layout(), layout_exports)),
+    Promise.resolve().then(() => (init_view(), view_exports))
+  ]).then(([layout, encounter]) => ({
+    getRightLeaf: layout.getRightLeaf,
+    VIEW_ENCOUNTER: encounter.VIEW_ENCOUNTER
+  })).catch((err) => {
+    console.error("[travel-mode] failed to load encounter module", err);
+    new import_obsidian13.Notice("Encounter-Modul konnte nicht geladen werden.");
+    return null;
+  });
+}
+function ensureEncounterModule() {
+  if (!encounterModule) {
+    encounterModule = loadEncounterModule();
+  }
+  return encounterModule;
+}
+function preloadEncounterModule() {
+  void ensureEncounterModule();
+}
+async function openEncounter(app, context) {
+  const mod = await ensureEncounterModule();
+  if (!mod) return false;
+  if (context) {
+    try {
+      const event = await createEncounterEventFromTravel(app, context);
+      if (event) {
+        publishEncounterEvent(event);
+      }
+    } catch (err) {
+      console.error("[travel-mode] failed to publish encounter payload", err);
+    }
+  }
+  const leaf = mod.getRightLeaf(app);
+  await leaf.setViewState({ type: mod.VIEW_ENCOUNTER, active: true });
+  app.workspace.revealLeaf(leaf);
+  return true;
+}
+var import_obsidian13, encounterModule;
+var init_encounter_gateway = __esm({
+  "src/apps/cartographer/modes/travel-guide/encounter-gateway.ts"() {
+    "use strict";
+    import_obsidian13 = require("obsidian");
+    init_session_store();
+    init_event_builder();
+    encounterModule = null;
+  }
+});
 
 // src/apps/cartographer/modes/travel-guide.ts
+var travel_guide_exports = {};
+__export(travel_guide_exports, {
+  createTravelGuideMode: () => createTravelGuideMode
+});
 function createTravelGuideMode() {
   let sidebar = null;
-  let playback = null;
+  const playback = new TravelPlaybackController();
   let logic = null;
-  let drag = null;
-  let unbindContext = null;
+  const interactions = new TravelInteractionController();
   let routeLayer = null;
   let tokenLayer = null;
   let cleanupFile = null;
-  let terrainsReady = false;
   let hostEl = null;
+  let terrainEvent = null;
+  let lifecycleSignal = null;
+  const isAborted = () => lifecycleSignal?.aborted ?? false;
+  const bailIfAborted = async () => {
+    if (!isAborted()) {
+      return false;
+    }
+    await abortLifecycle();
+    return true;
+  };
   const handleStateChange = (state) => {
     if (routeLayer) {
       routeLayer.draw(state.route, state.editIdx ?? null, state.tokenRC ?? null);
     }
     sidebar?.setTile(state.currentTile ?? state.tokenRC ?? null);
     sidebar?.setSpeed(state.tokenSpeed);
-    playback?.setState({ playing: state.playing, route: state.route });
-    playback?.setClock?.(state.clockHours ?? 0);
-    playback?.setTempo?.(state.tempo ?? 1);
+    playback.sync(state);
   };
   const resetUi = () => {
     sidebar?.setTile(null);
     sidebar?.setSpeed(1);
-    playback?.setState({ playing: false, route: [] });
+    playback.reset();
   };
-  const disposeInteractions = () => {
-    if (drag) {
-      drag.unbind();
-      drag = null;
+  const runCleanupFile = async () => {
+    if (!cleanupFile) return;
+    const fn = cleanupFile;
+    cleanupFile = null;
+    try {
+      await fn();
+    } catch (err) {
+      console.error("[travel-mode] cleanupFile failed", err);
     }
-    if (unbindContext) {
-      unbindContext();
-      unbindContext = null;
-    }
+  };
+  const detachSidebar = () => {
+    sidebar?.destroy();
+    sidebar = null;
+  };
+  const releaseTerrainEvent = () => {
+    terrainEvent?.off();
+    terrainEvent = null;
+  };
+  const removeTravelClass = () => {
+    hostEl?.classList?.remove?.("sm-cartographer--travel");
+    hostEl = null;
+  };
+  const abortLifecycle = async () => {
+    await runCleanupFile();
+    disposeFile();
+    resetUi();
+    playback.dispose();
+    detachSidebar();
+    releaseTerrainEvent();
+    removeTravelClass();
   };
   const disposeFile = () => {
-    disposeInteractions();
+    interactions.dispose();
     if (tokenLayer) {
       tokenLayer.destroy?.();
       tokenLayer = null;
@@ -2482,56 +4013,87 @@ function createTravelGuideMode() {
     }
   };
   const ensureTerrains = async (ctx) => {
-    if (terrainsReady) return;
+    if (ctx.signal.aborted) return;
     await setTerrains(await loadTerrains(ctx.app));
-    terrainsReady = true;
+  };
+  const subscribeToTerrains = (ctx) => {
+    if (ctx.signal.aborted) {
+      return null;
+    }
+    const workspace = ctx.app.workspace;
+    const ref = workspace.on?.("salt:terrains-updated", () => {
+      void ensureTerrains(ctx);
+    });
+    if (!ref) {
+      return null;
+    }
+    return {
+      off: () => {
+        workspace.offref?.(ref);
+      }
+    };
   };
   return {
     id: "travel",
     label: "Travel",
     async onEnter(ctx) {
+      lifecycleSignal = ctx.signal;
+      if (await bailIfAborted()) {
+        return;
+      }
       hostEl = ctx.host;
       hostEl.classList.add("sm-cartographer--travel");
       await ensureTerrains(ctx);
+      if (await bailIfAborted()) {
+        return;
+      }
+      terrainEvent = subscribeToTerrains(ctx);
+      if (await bailIfAborted()) {
+        return;
+      }
+      preloadEncounterModule();
+      if (await bailIfAborted()) {
+        return;
+      }
       ctx.sidebarHost.empty();
+      if (await bailIfAborted()) {
+        return;
+      }
       sidebar = createSidebar(ctx.sidebarHost);
+      if (await bailIfAborted()) {
+        return;
+      }
       sidebar.setTitle?.(ctx.getFile()?.basename ?? "");
       sidebar.onSpeedChange((value) => {
-        logic?.setTokenSpeed(value);
-      });
-      playback = createPlaybackControls(sidebar.controlsHost, {
-        onPlay: () => {
-          void logic?.play();
-        },
-        onStop: () => {
-          logic?.pause();
-        },
-        onReset: () => {
-          void logic?.reset();
-        },
-        onTempoChange: (v) => {
-          logic?.setTempo?.(v);
+        if (!isAborted()) {
+          logic?.setTokenSpeed(value);
         }
       });
+      playback.mount(sidebar, {
+        play: () => isAborted() ? void 0 : logic?.play() ?? void 0,
+        pause: () => isAborted() ? void 0 : logic?.pause(),
+        reset: () => isAborted() ? void 0 : logic?.reset(),
+        setTempo: (value) => isAborted() ? void 0 : logic?.setTempo?.(value)
+      });
+      if (await bailIfAborted()) {
+        return;
+      }
       resetUi();
     },
-    async onExit() {
-      await cleanupFile?.();
-      cleanupFile = null;
-      disposeFile();
-      playback?.destroy();
-      playback = null;
-      sidebar?.destroy();
-      sidebar = null;
-      hostEl?.classList?.remove?.("sm-cartographer--travel");
-      hostEl = null;
+    async onExit(ctx) {
+      lifecycleSignal = ctx.signal;
+      await abortLifecycle();
+      lifecycleSignal = null;
     },
     async onFileChange(file, handles, ctx) {
-      await cleanupFile?.();
-      cleanupFile = null;
+      lifecycleSignal = ctx.signal;
+      await runCleanupFile();
       disposeFile();
       sidebar?.setTitle?.(file?.basename ?? "");
       resetUi();
+      if (await bailIfAborted()) {
+        return;
+      }
       if (!file || !handles) {
         return;
       }
@@ -2539,10 +4101,7 @@ function createTravelGuideMode() {
       if (!mapLayer) {
         return;
       }
-      routeLayer = createRouteLayer(
-        handles.contentG,
-        (rc) => mapLayer.centerOf(rc)
-      );
+      routeLayer = createRouteLayer(handles.contentG, (rc) => mapLayer.centerOf(rc));
       tokenLayer = createTokenLayer(handles.contentG);
       const adapter = {
         ensurePolys: (coords) => mapLayer.ensurePolys(coords),
@@ -2552,6 +4111,9 @@ function createTravelGuideMode() {
         },
         token: tokenLayer
       };
+      if (await bailIfAborted()) {
+        return;
+      }
       const activeLogic = createTravelLogic({
         app: ctx.app,
         minSecondsPerTile: 0.05,
@@ -2563,37 +4125,39 @@ function createTravelGuideMode() {
             activeLogic.pause();
           } catch {
           }
-          const { getRightLeaf: getRightLeaf2 } = await Promise.resolve().then(() => (init_layout(), layout_exports));
-          const { VIEW_ENCOUNTER: VIEW_ENCOUNTER2 } = await Promise.resolve().then(() => (init_view(), view_exports));
-          const leaf = getRightLeaf2(ctx.app);
-          await leaf.setViewState({ type: VIEW_ENCOUNTER2, active: true });
-          ctx.app.workspace.revealLeaf(leaf);
+          if (!isAborted()) {
+            const mapFile = ctx.getFile?.() ?? null;
+            const state = activeLogic.getState();
+            void openEncounter(ctx.app, { mapFile, state });
+          }
         }
       });
       logic = activeLogic;
       handleStateChange(activeLogic.getState());
       await activeLogic.initTokenFromTiles();
-      if (logic !== activeLogic) return;
-      drag = createDragController({
-        routeLayerEl: routeLayer.el,
-        tokenEl: tokenLayer.el,
-        token: tokenLayer,
-        adapter,
-        logic: {
+      if (isAborted() || logic !== activeLogic) {
+        await runCleanupFile();
+        disposeFile();
+        return;
+      }
+      interactions.bind(
+        {
+          routeLayerEl: routeLayer.el,
+          tokenLayerEl: tokenLayer.el,
+          token: tokenLayer,
+          adapter,
+          polyToCoord: mapLayer.polyToCoord
+        },
+        {
           getState: () => activeLogic.getState(),
           selectDot: (idx) => activeLogic.selectDot(idx),
           moveSelectedTo: (rc) => activeLogic.moveSelectedTo(rc),
-          moveTokenTo: (rc) => activeLogic.moveTokenTo(rc)
-        },
-        polyToCoord: mapLayer.polyToCoord
-      });
-      drag.bind();
-      unbindContext = bindContextMenu(routeLayer.el, {
-        getState: () => activeLogic.getState(),
-        deleteUserAt: (idx) => activeLogic.deleteUserAt(idx)
-      });
+          moveTokenTo: (rc) => activeLogic.moveTokenTo(rc),
+          deleteUserAt: (idx) => activeLogic.deleteUserAt(idx)
+        }
+      );
       cleanupFile = async () => {
-        disposeInteractions();
+        interactions.dispose();
         if (logic === activeLogic) {
           logic = null;
         }
@@ -2607,9 +4171,16 @@ function createTravelGuideMode() {
         routeLayer?.destroy();
         routeLayer = null;
       };
+      if (await bailIfAborted()) {
+        return;
+      }
     },
     async onHexClick(coord, event, ctx) {
-      if (drag?.consumeClickSuppression()) {
+      lifecycleSignal = ctx.signal;
+      if (await bailIfAborted()) {
+        return;
+      }
+      if (interactions.consumeClickSuppression()) {
         if (event.cancelable) event.preventDefault();
         event.stopPropagation();
         return;
@@ -2623,7 +4194,11 @@ function createTravelGuideMode() {
       event.stopPropagation();
       logic.handleHexClick(coord);
     },
-    async onSave(_mode, file, _ctx) {
+    async onSave(_mode, file, ctx) {
+      lifecycleSignal = ctx.signal;
+      if (await bailIfAborted()) {
+        return false;
+      }
       if (!logic || !file) return false;
       try {
         await logic.persistTokenToTiles();
@@ -2634,565 +4209,397 @@ function createTravelGuideMode() {
     }
   };
 }
+var init_travel_guide = __esm({
+  "src/apps/cartographer/modes/travel-guide.ts"() {
+    "use strict";
+    init_terrain_store();
+    init_terrain();
+    init_sidebar();
+    init_route_layer();
+    init_token_layer();
+    init_actions();
+    init_playback_controller();
+    init_interaction_controller();
+    init_encounter_gateway();
+  }
+});
 
-// src/apps/cartographer/editor/tools/brush-circle.ts
-function attachBrushCircle(handles, opts) {
-  const { svg, contentG, overlay } = handles;
-  const R = opts.hexRadiusPx;
-  const vStep = 1.5 * R;
-  const toPx = (d) => R + Math.max(0, d) * vStep;
-  const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-  circle.setAttribute("cx", "0");
-  circle.setAttribute("cy", "0");
-  circle.setAttribute("r", String(toPx(opts.initialRadius)));
-  circle.setAttribute("fill", "none");
-  circle.setAttribute("stroke", "var(--interactive-accent)");
-  circle.setAttribute("stroke-width", "2");
-  circle.setAttribute("pointer-events", "none");
-  circle.style.opacity = "0.6";
-  contentG.appendChild(circle);
-  const svgPt = svg.createSVGPoint();
-  let lastEvt = null;
-  let raf = 0;
-  function toContent() {
-    const m = contentG.getScreenCTM();
-    if (!m) return null;
-    return svgPt.matrixTransform(m.inverse());
+// src/app/main.ts
+var main_exports = {};
+__export(main_exports, {
+  default: () => SaltMarcherPlugin
+});
+module.exports = __toCommonJS(main_exports);
+var import_obsidian24 = require("obsidian");
+init_view();
+
+// src/apps/cartographer/index.ts
+var import_obsidian14 = require("obsidian");
+
+// src/apps/cartographer/presenter.ts
+init_options();
+init_map_list();
+
+// src/apps/cartographer/travel/ui/map-layer.ts
+init_hex_render();
+var keyOf3 = (r, c) => `${r},${c}`;
+async function createMapLayer(app, host, mapFile, opts) {
+  const handles = await renderHexMap(app, host, opts, mapFile.path);
+  const polyToCoord = /* @__PURE__ */ new WeakMap();
+  for (const [k, poly] of handles.polyByCoord) {
+    if (!poly) continue;
+    const [r, c] = k.split(",").map(Number);
+    polyToCoord.set(poly, { r, c });
   }
-  function bringToFront() {
-    contentG.appendChild(circle);
+  const ensureHandlesPolys = typeof handles.ensurePolys === "function" ? (coords) => handles.ensurePolys(coords) : null;
+  function ensurePolys(coords) {
+    ensureHandlesPolys?.(coords);
+    for (const rc of coords) {
+      const poly = handles.polyByCoord.get(keyOf3(rc.r, rc.c));
+      if (poly) polyToCoord.set(poly, rc);
+    }
   }
-  function tick() {
-    raf = 0;
-    if (!lastEvt) return;
-    svgPt.x = lastEvt.clientX;
-    svgPt.y = lastEvt.clientY;
-    const pt = toContent();
-    if (!pt) return;
-    circle.setAttribute("cx", String(pt.x));
-    circle.setAttribute("cy", String(pt.y));
-    bringToFront();
-  }
-  function onPointerMove(ev) {
-    lastEvt = ev;
-    if (!raf) raf = requestAnimationFrame(tick);
-  }
-  function onPointerEnter() {
-    circle.style.opacity = "0.6";
-  }
-  function onPointerLeave() {
-    circle.style.opacity = "0";
-  }
-  svg.addEventListener("pointermove", onPointerMove, { passive: true });
-  svg.addEventListener("pointerenter", onPointerEnter, { passive: true });
-  svg.addEventListener("pointerleave", onPointerLeave, { passive: true });
-  function updateRadius(hexDist) {
-    circle.setAttribute("r", String(toPx(hexDist)));
-    bringToFront();
-  }
-  function show() {
-    circle.style.display = "";
-    circle.style.opacity = "0.6";
-    bringToFront();
-  }
-  function hide() {
-    circle.style.opacity = "0";
+  function centerOf(rc) {
+    let poly = handles.polyByCoord.get(keyOf3(rc.r, rc.c));
+    if (!poly) {
+      ensurePolys([rc]);
+      poly = handles.polyByCoord.get(keyOf3(rc.r, rc.c));
+      if (!poly) return null;
+    }
+    const bb = poly.getBBox();
+    return { x: bb.x + bb.width / 2, y: bb.y + bb.height / 2 };
   }
   function destroy() {
-    svg.removeEventListener("pointermove", onPointerMove);
-    svg.removeEventListener("pointerenter", onPointerEnter);
-    svg.removeEventListener("pointerleave", onPointerLeave);
-    if (raf) cancelAnimationFrame(raf);
-    circle.remove();
+    try {
+      handles.destroy?.();
+    } catch {
+    }
   }
-  return { updateRadius, show, hide, destroy };
+  return { handles, polyToCoord, ensurePolys, centerOf, destroy };
 }
 
-// src/apps/cartographer/editor/tools/terrain-brush/brush.ts
-init_hex_notes();
+// src/ui/map-manager.ts
+var import_obsidian8 = require("obsidian");
+init_map_workflows();
 
-// src/apps/cartographer/editor/tools/terrain-brush/brush-math.ts
-function oddR_toAxial(rc) {
-  const q = rc.c - (rc.r - (rc.r & 1) >> 1);
-  return { q, r: rc.r };
-}
-function axialDistance(a, b) {
-  const dq = Math.abs(a.q - b.q);
-  const dr = Math.abs(a.r - b.r);
-  const ds = Math.abs(-a.q - a.r - (-b.q - b.r));
-  return Math.max(dq, dr, ds);
-}
-function hexDistanceOddR(a, b) {
-  const A = oddR_toAxial(a);
-  const B = oddR_toAxial(b);
-  return axialDistance(A, B);
-}
-function coordsInRadius(center, radius) {
-  const out = [];
-  for (let dr = -radius; dr <= radius; dr++) {
-    for (let dc = -radius; dc <= radius; dc++) {
-      const r = center.r + dr;
-      const c = center.c + dc + (center.r & 1 ? Math.floor((dr + 1) / 2) : Math.floor(dr / 2));
-      if (hexDistanceOddR(center, { r, c }) <= radius) {
-        out.push({ r, c });
+// src/ui/confirm-delete.ts
+var import_obsidian7 = require("obsidian");
+init_copy();
+var ConfirmDeleteModal = class extends import_obsidian7.Modal {
+  constructor(app, mapFile, onConfirm) {
+    super(app);
+    this.mapFile = mapFile;
+    this.onConfirm = onConfirm;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    const name = this.mapFile.basename;
+    contentEl.createEl("h3", { text: CONFIRM_DELETE_COPY.title });
+    const message = contentEl.createEl("p");
+    message.textContent = CONFIRM_DELETE_COPY.body(name);
+    const input = contentEl.createEl("input", {
+      attr: {
+        type: "text",
+        placeholder: CONFIRM_DELETE_COPY.inputPlaceholder(name),
+        style: "width:100%;"
       }
-    }
-  }
-  out.sort((A, B) => {
-    const da = hexDistanceOddR(center, A);
-    const db = hexDistanceOddR(center, B);
-    if (da !== db) return da - db;
-    if (A.r !== B.r) return A.r - B.r;
-    return A.c - B.c;
-  });
-  return out;
-}
-
-// src/apps/cartographer/editor/tools/terrain-brush/brush.ts
-async function applyBrush(app, mapFile, center, opts, handles) {
-  const mode = opts.mode ?? "paint";
-  const radius = Math.max(0, opts.radius | 0);
-  const raw = coordsInRadius(center, radius);
-  const seen = /* @__PURE__ */ new Set();
-  for (const coord of raw) {
-    const key = `${coord.r},${coord.c}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    if (mode === "erase") {
-      await deleteTile(app, mapFile, coord);
-      handles.setFill(coord, "transparent");
-      continue;
-    }
-    const terrain = opts.terrain ?? "";
-    await saveTile(app, mapFile, coord, { terrain, region: opts.region ?? "" });
-    const color = TERRAIN_COLORS[terrain] ?? "transparent";
-    handles.setFill(coord, color);
-  }
-}
-
-// src/apps/cartographer/editor/tools/terrain-brush/brush-options.ts
-init_regions_store();
-function createBrushTool() {
-  let state = {
-    radius: 1,
-    // UI zeigt 1 = nur Mitte
-    region: "",
-    terrain: "",
-    mode: "paint"
-  };
-  const eff = () => Math.max(0, state.radius - 1);
-  let circle = null;
-  return {
-    id: "brush",
-    label: "Brush",
-    // Options-Panel (nur UI & State)
-    mountPanel(root, ctx) {
-      root.createEl("h3", { text: "Region-Brush" });
-      const radiusRow = root.createDiv({ cls: "sm-row" });
-      radiusRow.createEl("label", { text: "Radius:" });
-      const radiusInput = radiusRow.createEl("input", {
-        attr: { type: "range", min: "1", max: "6", step: "1" }
-      });
-      radiusInput.value = String(state.radius);
-      const radiusVal = radiusRow.createEl("span", { text: radiusInput.value });
-      radiusInput.oninput = () => {
-        state.radius = Number(radiusInput.value);
-        radiusVal.textContent = radiusInput.value;
-        circle?.updateRadius(eff());
-      };
-      const regionRow = root.createDiv({ cls: "sm-row" });
-      regionRow.createEl("label", { text: "Region:" });
-      const regionSelect = regionRow.createEl("select");
-      enhanceSelectToSearch(regionSelect, "Such-dropdown\u2026");
-      const editRegionsBtn = regionRow.createEl("button", { text: "Bearbeiten\u2026" });
-      editRegionsBtn.onclick = () => ctx.app.commands?.executeCommandById?.("salt-marcher:open-library");
-      const fillOptions = async () => {
-        regionSelect.empty();
-        const regions = await loadRegions(ctx.app);
-        for (const r of regions) {
-          const opt = regionSelect.createEl("option", { text: r.name || "(leer)", value: r.name });
-          opt._terrain = r.terrain || "";
-          if (r.name === state.region) opt.selected = true;
-        }
-        const cur = Array.from(regionSelect.options).find((o) => o.value === state.region);
-        state.terrain = cur && cur._terrain || "";
-        regionSelect.value = state.region;
-      };
-      void fillOptions();
-      regionSelect.onchange = () => {
-        state.region = regionSelect.value;
-        const opt = regionSelect.selectedOptions[0];
-        state.terrain = opt && opt._terrain || "";
-      };
-      const refTerr = ctx.app.workspace.on?.("salt:terrains-updated", () => void fillOptions());
-      const refReg = ctx.app.workspace.on?.("salt:regions-updated", () => void fillOptions());
-      const modeRow = root.createDiv({ cls: "sm-row" });
-      modeRow.createEl("label", { text: "Modus:" });
-      const modeSelect = modeRow.createEl("select");
-      modeSelect.createEl("option", { text: "Malen", value: "paint" });
-      modeSelect.createEl("option", { text: "L\xF6schen", value: "erase" });
-      modeSelect.value = state.mode;
-      modeSelect.onchange = () => {
-        state.mode = modeSelect.value;
-      };
-      enhanceSelectToSearch(modeSelect, "Such-dropdown\u2026");
-      return () => {
-        if (refTerr) ctx.app.workspace.offref?.(refTerr);
-        if (refReg) ctx.app.workspace.offref?.(refReg);
-        root.empty();
-      };
-    },
-    // Aktivierung/Deaktivierung → Kreis steuern
-    onActivate(ctx) {
-      const handles = ctx.getHandles();
-      if (!handles) return;
-      circle?.destroy();
-      circle = attachBrushCircle(
-        { svg: handles.svg, contentG: handles.contentG, overlay: handles.overlay },
-        { initialRadius: eff(), hexRadiusPx: ctx.getOptions()?.radius ?? 42 }
-      );
-      circle.show();
-    },
-    onDeactivate() {
-      circle?.destroy();
-      circle = null;
-    },
-    onMapRendered(ctx) {
-      const handles = ctx.getHandles();
-      if (!handles) return;
-      circle?.destroy();
-      circle = attachBrushCircle(
-        { svg: handles.svg, contentG: handles.contentG, overlay: handles.overlay },
-        { initialRadius: eff(), hexRadiusPx: ctx.getOptions()?.radius ?? 42 }
-      );
-      circle.show();
-    },
-    // Hex-Klick: schreiben + live färben; neue Polys nur gezielt ergänzen
-    async onHexClick(rc, ctx) {
-      const file = ctx.getFile();
-      const handles = ctx.getHandles();
-      if (!file || !handles) return false;
-      const raw = coordsInRadius(rc, eff());
-      const targets = [...new Map(raw.map((k) => [`${k.r},${k.c}`, k])).values()];
-      if (state.mode === "paint") {
-        const missing = targets.filter((k) => !handles.polyByCoord.has(`${k.r},${k.c}`));
-        if (missing.length) handles.ensurePolys?.(missing);
+    });
+    const btnRow = contentEl.createDiv({ cls: "modal-button-container" });
+    const cancelBtn = btnRow.createEl("button", { text: CONFIRM_DELETE_COPY.buttons.cancel });
+    const confirmBtn = btnRow.createEl("button", { text: CONFIRM_DELETE_COPY.buttons.confirm });
+    (0, import_obsidian7.setIcon)(confirmBtn, "trash");
+    confirmBtn.classList.add("mod-warning");
+    confirmBtn.disabled = true;
+    input.addEventListener("input", () => {
+      confirmBtn.disabled = input.value.trim() !== name;
+    });
+    cancelBtn.onclick = () => this.close();
+    confirmBtn.onclick = async () => {
+      confirmBtn.disabled = true;
+      try {
+        await this.onConfirm();
+        new import_obsidian7.Notice(CONFIRM_DELETE_COPY.notices.success);
+      } catch (e) {
+        console.error(e);
+        new import_obsidian7.Notice(CONFIRM_DELETE_COPY.notices.error);
+      } finally {
+        this.close();
       }
-      await applyBrush(
-        ctx.app,
-        file,
-        rc,
-        { radius: eff(), terrain: state.terrain, region: state.region, mode: state.mode },
-        // Distanz reinschreiben
-        handles
-      );
-      return true;
-    }
-  };
-}
-
-// src/apps/cartographer/modes/editor.ts
-function createEditorMode() {
-  let panel = null;
-  let fileLabel = null;
-  let toolSelect = null;
-  let toolBody = null;
-  let statusLabel = null;
-  const tools = [createBrushTool()];
-  let state = {
-    file: null,
-    handles: null,
-    options: null,
-    tool: null,
-    cleanupPanel: null
-  };
-  let toolCtx = null;
-  const setStatus = (msg) => {
-    if (!statusLabel) return;
-    statusLabel.setText(msg ?? "");
-    statusLabel.toggleClass("is-empty", !msg);
-  };
-  const updateFileLabel = () => {
-    if (!fileLabel) return;
-    fileLabel.textContent = state.file ? state.file.basename : "Keine Karte";
-  };
-  const updatePanelState = () => {
-    const hasHandles = !!state.handles;
-    panel?.toggleClass("is-disabled", !hasHandles);
-    if (toolSelect) {
-      toolSelect.disabled = !hasHandles;
-    }
-    if (!hasHandles) {
-      setStatus(state.file ? "Karte wird geladen \u2026" : "Keine Karte ausgew\xE4hlt.");
-    } else {
-      setStatus("");
-    }
-  };
-  const ensureToolCtx = (ctx) => {
-    toolCtx = {
-      app: ctx.app,
-      getFile: () => state.file,
-      getHandles: () => state.handles,
-      getOptions: () => state.options,
-      setStatus
     };
-    return toolCtx;
+    setTimeout(() => input.focus(), 0);
+  }
+  onClose() {
+    this.contentEl.empty();
+  }
+};
+
+// src/core/map-delete.ts
+init_hex_notes();
+async function deleteMapAndTiles(app, mapFile) {
+  const tiles = await listTilesForMap(app, mapFile);
+  for (const t of tiles) {
+    try {
+      await app.vault.delete(t.file);
+    } catch (e) {
+      console.warn("Delete tile failed:", t.file.path, e);
+    }
+  }
+  try {
+    await app.vault.delete(mapFile);
+  } catch (e) {
+    console.warn("Delete map failed:", mapFile.path, e);
+  }
+}
+
+// src/ui/map-manager.ts
+var MAP_MANAGER_COPY = {
+  notices: {
+    missingSelection: "Select a map before deleting.",
+    deleteFailed: "Unable to delete the map. Check the developer console for details."
+  },
+  logs: {
+    deleteFailed: "Map deletion failed"
+  }
+};
+function createMapManager(app, options = {}) {
+  const notices = {
+    missingSelection: options.notices?.missingSelection ?? MAP_MANAGER_COPY.notices.missingSelection,
+    deleteFailed: MAP_MANAGER_COPY.notices.deleteFailed
   };
-  const switchTool = async (id) => {
-    if (!toolCtx || !toolBody || !toolSelect) return;
-    if (state.tool?.onDeactivate) {
+  let current = options.initialFile ?? null;
+  const applyChange = async (file) => {
+    current = file;
+    await options.onChange?.(file);
+  };
+  const setFile = async (file) => {
+    await applyChange(file);
+  };
+  const open = async () => {
+    await promptMapSelection(
+      app,
+      async (file) => {
+        await applyChange(file);
+      },
+      options.selectOptions
+    );
+  };
+  const create = () => {
+    promptCreateMap(
+      app,
+      async (file) => {
+        await applyChange(file);
+      },
+      options.createOptions
+    );
+  };
+  const deleteCurrent = () => {
+    const target = current;
+    if (!target) {
+      new import_obsidian8.Notice(notices.missingSelection);
+      return;
+    }
+    new ConfirmDeleteModal(app, target, async () => {
       try {
-        state.tool.onDeactivate(toolCtx);
-      } catch (err) {
-        console.error("[editor-mode] tool onDeactivate failed", err);
+        await deleteMapAndTiles(app, target);
+        if (current && current.path === target.path) {
+          await applyChange(null);
+        }
+      } catch (error) {
+        console.error(MAP_MANAGER_COPY.logs.deleteFailed, error);
+        new import_obsidian8.Notice(notices.deleteFailed);
       }
-    }
-    state.cleanupPanel?.();
-    state.cleanupPanel = null;
-    const next = tools.find((tool) => tool.id === id) ?? tools[0];
-    state.tool = next;
-    toolSelect.value = next.id;
-    toolBody.empty();
-    try {
-      state.cleanupPanel = next.mountPanel(toolBody, toolCtx);
-    } catch (err) {
-      console.error("[editor-mode] mountPanel failed", err);
-      state.cleanupPanel = null;
-    }
-    try {
-      next.onActivate?.(toolCtx);
-    } catch (err) {
-      console.error("[editor-mode] onActivate failed", err);
-    }
-    if (state.handles) {
-      try {
-        next.onMapRendered?.(toolCtx);
-      } catch (err) {
-        console.error("[editor-mode] onMapRendered failed", err);
-      }
-    }
+    }).open();
   };
   return {
-    id: "editor",
-    label: "Editor",
-    async onEnter(ctx) {
-      state = { ...state, tool: null };
-      ctx.sidebarHost.empty();
-      panel = ctx.sidebarHost.createDiv({ cls: "sm-cartographer__panel sm-cartographer__panel--editor" });
-      panel.createEl("h3", { text: "Map Editor" });
-      fileLabel = panel.createEl("div", { cls: "sm-cartographer__panel-file" });
-      const toolsRow = panel.createDiv({ cls: "sm-cartographer__panel-tools" });
-      toolsRow.createEl("label", { text: "Tool:" });
-      toolSelect = toolsRow.createEl("select");
-      for (const tool of tools) {
-        toolSelect.createEl("option", { value: tool.id, text: tool.label });
-      }
-      enhanceSelectToSearch(toolSelect, "Such-dropdown\u2026");
-      toolSelect.onchange = () => {
-        void switchTool(toolSelect?.value ?? tools[0].id);
-      };
-      toolBody = panel.createDiv({ cls: "sm-cartographer__panel-body" });
-      statusLabel = panel.createDiv({ cls: "sm-cartographer__panel-status" });
-      ensureToolCtx(ctx);
-      updateFileLabel();
-      updatePanelState();
-      await switchTool(tools[0].id);
-    },
-    async onExit() {
-      if (state.tool && toolCtx) {
-        try {
-          state.tool.onDeactivate?.(toolCtx);
-        } catch (err) {
-          console.error("[editor-mode] onDeactivate failed", err);
-        }
-      }
-      state.cleanupPanel?.();
-      state.cleanupPanel = null;
-      state.tool = null;
-      toolCtx = null;
-      panel?.remove();
-      panel = null;
-      fileLabel = null;
-      toolSelect = null;
-      toolBody = null;
-      statusLabel = null;
-    },
-    async onFileChange(file, handles, ctx) {
-      state.file = file;
-      state.handles = handles;
-      state.options = ctx.getOptions();
-      updateFileLabel();
-      updatePanelState();
-      if (!handles) return;
-      if (!toolCtx) ensureToolCtx(ctx);
-      try {
-        state.tool?.onMapRendered?.(toolCtx);
-      } catch (err) {
-        console.error("[editor-mode] onMapRendered failed", err);
-      }
-    },
-    async onHexClick(coord) {
-      if (!toolCtx || !state.tool?.onHexClick) return;
-      try {
-        await state.tool.onHexClick(coord, toolCtx);
-      } catch (err) {
-        console.error("[editor-mode] onHexClick failed", err);
-      }
-    }
+    getFile: () => current,
+    setFile,
+    open,
+    create,
+    deleteCurrent
   };
 }
 
-// src/apps/cartographer/modes/inspector.ts
-init_hex_notes();
-function createInspectorMode() {
-  let ui = {
-    panel: null,
-    fileLabel: null,
-    message: null,
-    terrain: null,
-    note: null
+// src/ui/map-header.ts
+var import_obsidian9 = require("obsidian");
+init_map_workflows();
+init_search_dropdown();
+
+// src/core/save.ts
+async function saveMap(_app, file) {
+  console.warn("[save] saveMap() not implemented. File:", file.path);
+}
+async function saveMapAs(_app, file) {
+  console.warn("[save] saveMapAs() not implemented. File:", file.path);
+}
+
+// src/ui/map-header.ts
+init_copy();
+function createMapHeader(app, host, options) {
+  const labels = {
+    open: options.labels?.open ?? MAP_HEADER_COPY.labels.open,
+    create: options.labels?.create ?? MAP_HEADER_COPY.labels.create,
+    delete: options.labels?.delete ?? MAP_HEADER_COPY.labels.delete,
+    save: options.labels?.save ?? MAP_HEADER_COPY.labels.save,
+    saveAs: options.labels?.saveAs ?? MAP_HEADER_COPY.labels.saveAs,
+    trigger: options.labels?.trigger ?? MAP_HEADER_COPY.labels.trigger
   };
-  let state = {
-    file: null,
-    handles: null,
-    selection: null,
-    saveTimer: null
+  const notices = {
+    missingFile: options.notices?.missingFile ?? MAP_HEADER_COPY.notices.missingFile,
+    saveSuccess: options.notices?.saveSuccess ?? MAP_HEADER_COPY.notices.saveSuccess,
+    saveError: options.notices?.saveError ?? MAP_HEADER_COPY.notices.saveError
   };
-  const clearSaveTimer = () => {
-    if (state.saveTimer !== null) {
-      window.clearTimeout(state.saveTimer);
-      state.saveTimer = null;
-    }
+  let currentFile = options.initialFile ?? null;
+  let destroyed = false;
+  const root = host.createDiv({ cls: "sm-map-header" });
+  root.classList.add("map-editor-header");
+  Object.assign(root.style, { display: "flex", flexDirection: "column", gap: ".4rem" });
+  const row1 = root.createDiv();
+  Object.assign(row1.style, { display: "flex", alignItems: "center", gap: ".5rem" });
+  const titleGroup = row1.createDiv({ cls: "sm-map-header__title-group" });
+  Object.assign(titleGroup.style, {
+    display: "flex",
+    alignItems: "center",
+    gap: ".5rem",
+    marginRight: "auto"
+  });
+  const titleEl = titleGroup.createEl("h2", { text: options.title });
+  Object.assign(titleEl.style, { margin: 0 });
+  const titleRightSlot = titleGroup.createDiv({ cls: "sm-map-header__title-slot" });
+  Object.assign(titleRightSlot.style, {
+    display: "flex",
+    alignItems: "center",
+    gap: ".5rem"
+  });
+  if (options.titleRightSlot) {
+    options.titleRightSlot(titleRightSlot);
+  } else {
+    titleRightSlot.style.display = "none";
+  }
+  const openBtn = row1.createEl("button", { text: labels.open });
+  (0, import_obsidian9.setIcon)(openBtn, "folder-open");
+  applyMapButtonStyle(openBtn);
+  openBtn.onclick = () => {
+    if (destroyed) return;
+    void promptMapSelection(app, async (file) => {
+      if (destroyed) return;
+      setFileLabel(file);
+      await options.onOpen?.(file);
+    });
   };
-  const resetInputs = () => {
-    if (ui.terrain) {
-      ui.terrain.value = "";
-      ui.terrain.disabled = true;
-    }
-    if (ui.note) {
-      ui.note.value = "";
-      ui.note.disabled = true;
-    }
+  const createBtn = row1.createEl("button", { text: labels.create });
+  (0, import_obsidian9.setIcon)(createBtn, "plus");
+  applyMapButtonStyle(createBtn);
+  createBtn.onclick = () => {
+    if (destroyed) return;
+    promptCreateMap(app, async (file) => {
+      if (destroyed) return;
+      setFileLabel(file);
+      await options.onCreate?.(file);
+    });
   };
-  const updateMessage = () => {
-    if (!ui.message) return;
-    if (!state.file || !state.handles) {
-      ui.message.setText(state.file ? "Karte wird geladen \u2026" : "Keine Karte ausgew\xE4hlt.");
-    } else if (!state.selection) {
-      ui.message.setText("Hex anklicken, um Terrain & Notiz zu bearbeiten.");
-    } else {
-      ui.message.setText(`Hex r${state.selection.r}, c${state.selection.c}`);
-    }
-  };
-  const updateFileLabel = () => {
-    if (!ui.fileLabel) return;
-    ui.fileLabel.textContent = state.file ? state.file.basename : "Keine Karte";
-  };
-  const updatePanelState = () => {
-    const hasMap = !!state.file && !!state.handles;
-    ui.panel?.toggleClass("is-disabled", !hasMap);
-    if (!hasMap) {
-      state.selection = null;
-      resetInputs();
-    }
-    updateMessage();
-  };
-  const scheduleSave = (ctx) => {
-    if (!state.selection) return;
-    const file = ctx.getFile();
-    if (!file) return;
-    const handles = ctx.getRenderHandles();
-    clearSaveTimer();
-    state.saveTimer = window.setTimeout(async () => {
-      const terrain = ui.terrain?.value ?? "";
-      const note = ui.note?.value ?? "";
-      try {
-        await saveTile(ctx.app, file, state.selection, { terrain, note });
-      } catch (err) {
-        console.error("[inspector-mode] saveTile failed", err);
+  const deleteBtn = options.onDelete ? row1.createEl("button", { text: labels.delete, attr: { "aria-label": labels.delete } }) : null;
+  if (deleteBtn) {
+    (0, import_obsidian9.setIcon)(deleteBtn, "trash");
+    applyMapButtonStyle(deleteBtn);
+    deleteBtn.onclick = () => {
+      if (destroyed) return;
+      if (!currentFile) {
+        new import_obsidian9.Notice(notices.missingFile);
+        return;
       }
-      const color = TERRAIN_COLORS[terrain] ?? "transparent";
-      try {
-        handles?.setFill(state.selection, color);
-      } catch (err) {
-        console.error("[inspector-mode] setFill failed", err);
-      }
-    }, 250);
-  };
-  const loadSelection = async (ctx) => {
-    if (!state.selection) return;
-    const file = ctx.getFile();
-    if (!file) return;
-    let data = null;
+      void options.onDelete?.(currentFile);
+    };
+  }
+  const row2 = root.createDiv();
+  Object.assign(row2.style, { display: "flex", alignItems: "center", gap: ".5rem" });
+  const secondaryLeftSlot = row2.createDiv({ cls: "sm-map-header__secondary-left" });
+  Object.assign(secondaryLeftSlot.style, {
+    marginRight: "auto",
+    display: "flex",
+    alignItems: "center",
+    gap: ".5rem"
+  });
+  let nameBox = null;
+  if (options.secondaryLeftSlot) {
+    options.secondaryLeftSlot(secondaryLeftSlot);
+  } else {
+    nameBox = secondaryLeftSlot.createEl("div", {
+      text: options.initialFile?.basename ?? options.emptyLabel ?? "\u2014"
+    });
+    nameBox.style.opacity = ".85";
+  }
+  const select = row2.createEl("select");
+  select.createEl("option", { text: labels.save }).value = "save";
+  select.createEl("option", { text: labels.saveAs }).value = "saveAs";
+  enhanceSelectToSearch(select, MAP_HEADER_COPY.selectPlaceholder);
+  const triggerBtn = row2.createEl("button", { text: labels.trigger });
+  applyMapButtonStyle(triggerBtn);
+  triggerBtn.onclick = async () => {
+    if (destroyed) return;
+    const mode = select.value ?? "save";
+    const file = currentFile;
+    if (!file) {
+      await options.onSave?.(mode, null);
+      new import_obsidian9.Notice(notices.missingFile);
+      return;
+    }
     try {
-      data = await loadTile(ctx.app, file, state.selection);
+      const handled = await options.onSave?.(mode, file) === true;
+      if (!handled) {
+        if (mode === "save") await saveMap(app, file);
+        else await saveMapAs(app, file);
+      }
+      new import_obsidian9.Notice(notices.saveSuccess);
     } catch (err) {
-      console.error("[inspector-mode] loadTile failed", err);
-      data = null;
+      console.error("[map-header] save failed", err);
+      new import_obsidian9.Notice(notices.saveError);
     }
-    if (ui.terrain) {
-      ui.terrain.value = data?.terrain ?? "";
-      ui.terrain.disabled = false;
-    }
-    if (ui.note) {
-      ui.note.value = data?.note ?? "";
-      ui.note.disabled = false;
-    }
-    updateMessage();
   };
+  function setFileLabel(file) {
+    currentFile = file;
+    const label = file?.basename ?? options.emptyLabel ?? "\u2014";
+    if (nameBox) {
+      nameBox.textContent = label;
+    }
+    secondaryLeftSlot.dataset.fileLabel = label;
+    if (deleteBtn) {
+      deleteBtn.disabled = !file;
+      deleteBtn.style.opacity = file ? "1" : "0.5";
+    }
+  }
+  function setTitle(title) {
+    titleEl.textContent = title;
+  }
+  function destroy() {
+    if (destroyed) return;
+    destroyed = true;
+    openBtn.onclick = null;
+    createBtn.onclick = null;
+    triggerBtn.onclick = null;
+    root.remove();
+  }
+  setFileLabel(currentFile);
+  return { root, secondaryLeftSlot, titleRightSlot, setFileLabel, setTitle, destroy };
+}
+
+// src/apps/cartographer/view-shell/layout.ts
+function createCartographerLayout(host) {
+  host.empty();
+  host.addClass("sm-cartographer");
+  const headerHost = host.createDiv({ cls: "sm-cartographer__header" });
+  const bodyHost = host.createDiv({ cls: "sm-cartographer__body" });
+  const mapWrapper = bodyHost.createDiv({ cls: "sm-cartographer__map" });
+  const sidebarHost = bodyHost.createDiv({ cls: "sm-cartographer__sidebar" });
   return {
-    id: "inspector",
-    label: "Inspector",
-    async onEnter(ctx) {
-      ui = { panel: null, fileLabel: null, message: null, terrain: null, note: null };
-      state = { ...state, selection: null };
-      ctx.sidebarHost.empty();
-      ui.panel = ctx.sidebarHost.createDiv({ cls: "sm-cartographer__panel sm-cartographer__panel--inspector" });
-      ui.panel.createEl("h3", { text: "Inspektor" });
-      ui.fileLabel = ui.panel.createEl("div", { cls: "sm-cartographer__panel-file" });
-      const messageRow = ui.panel.createEl("div", { cls: "sm-cartographer__panel-info" });
-      ui.message = messageRow;
-      const terrRow = ui.panel.createDiv({ cls: "sm-cartographer__panel-row" });
-      terrRow.createEl("label", { text: "Terrain:" });
-      ui.terrain = terrRow.createEl("select");
-      for (const key of Object.keys(TERRAIN_COLORS)) {
-        const opt = ui.terrain.createEl("option", { text: key || "(leer)" });
-        opt.value = key;
-      }
-      enhanceSelectToSearch(ui.terrain, "Such-dropdown\u2026");
-      ui.terrain.disabled = true;
-      ui.terrain.onchange = () => scheduleSave(ctx);
-      const noteRow = ui.panel.createDiv({ cls: "sm-cartographer__panel-row" });
-      noteRow.createEl("label", { text: "Notiz:" });
-      ui.note = noteRow.createEl("textarea", { attr: { rows: "6" } });
-      ui.note.disabled = true;
-      ui.note.oninput = () => scheduleSave(ctx);
-      updateFileLabel();
-      updatePanelState();
-    },
-    async onExit() {
-      clearSaveTimer();
-      ui.panel?.remove();
-      ui = { panel: null, fileLabel: null, message: null, terrain: null, note: null };
-      state = { file: null, handles: null, selection: null, saveTimer: null };
-    },
-    async onFileChange(file, handles, ctx) {
-      state.file = file;
-      state.handles = handles;
-      clearSaveTimer();
-      resetInputs();
-      updateFileLabel();
-      updatePanelState();
-      if (state.selection && state.file && state.handles) {
-        await loadSelection(ctx);
-      }
-    },
-    async onHexClick(coord, _event, ctx) {
-      if (!state.file || !state.handles) return;
-      clearSaveTimer();
-      state.selection = coord;
-      updateMessage();
-      await loadSelection(ctx);
+    host,
+    headerHost,
+    bodyHost,
+    mapWrapper,
+    sidebarHost,
+    destroy: () => {
+      host.empty();
+      host.removeClass("sm-cartographer");
     }
   };
 }
@@ -3332,266 +4739,1174 @@ function createViewContainer(parent, options = {}) {
   };
 }
 
-// src/apps/cartographer/view-shell.ts
-async function mountCartographer(app, host, initialFile) {
-  host.empty();
-  host.classList.add("sm-cartographer");
-  const headerHost = host.createDiv({ cls: "sm-cartographer__header" });
-  const body = host.createDiv({ cls: "sm-cartographer__body" });
-  const mapWrapper = body.createDiv({ cls: "sm-cartographer__map" });
-  const mapView = createViewContainer(mapWrapper, { camera: false });
-  const mapHost = mapView.stageEl;
-  const sidebarHost = body.createDiv({ cls: "sm-cartographer__sidebar" });
-  let currentFile = initialFile ?? null;
-  let headerHandle = null;
-  let mapLayer = null;
-  let destroyed = false;
-  let loadToken = 0;
-  let activeMode = null;
-  let modeChange = Promise.resolve();
-  const modeMenuItems = [];
-  let modeTriggerBtn = null;
-  let modeMenuEl = null;
-  let modeDropdownEl = null;
-  let unbindOutsideClick = null;
-  let currentOptions = null;
-  const modeCtx = {
-    app,
-    host,
-    mapHost,
-    sidebarHost,
-    getFile: () => currentFile,
-    getMapLayer: () => mapLayer,
-    getRenderHandles: () => mapLayer?.handles ?? null,
-    getOptions: () => currentOptions
-  };
-  const modes = [
-    createTravelGuideMode(),
-    createEditorMode(),
-    createInspectorMode()
-  ];
-  const onHexClick = async (event) => {
-    const ev = event;
-    if (ev.cancelable) ev.preventDefault();
-    ev.stopPropagation();
-    if (!activeMode?.onHexClick) return;
-    await activeMode.onHexClick(ev.detail, ev, modeCtx);
-  };
-  mapHost.addEventListener("hex:click", onHexClick, { passive: false });
-  async function teardownLayer() {
-    if (mapLayer) {
-      try {
-        mapLayer.destroy();
-      } catch (err) {
-        console.error("[cartographer] failed to destroy map layer", err);
-      }
-      mapLayer = null;
-    }
-    mapHost.empty();
-    mapView.setOverlay(null);
-    currentOptions = null;
-  }
-  async function switchMode(id) {
-    const next = modes.find((m) => m.id === id) ?? modes[0];
-    if (activeMode?.id === next.id) return;
-    modeChange = modeChange.then(async () => {
-      if (destroyed) return;
-      try {
-        await activeMode?.onExit();
-      } catch (err) {
-        console.error("[cartographer] mode exit failed", err);
-      }
-      activeMode = next;
-      if (modeTriggerBtn) modeTriggerBtn.textContent = next.label;
-      for (const { mode, item } of modeMenuItems) {
-        const isActive = mode.id === next.id;
-        item.classList.toggle("is-active", isActive);
-        item.ariaSelected = isActive ? "true" : "false";
-      }
-      try {
-        await next.onEnter(modeCtx);
-        await next.onFileChange(currentFile, mapLayer?.handles ?? null, modeCtx);
-      } catch (err) {
-        console.error("[cartographer] mode enter failed", err);
-      }
-    });
-    await modeChange;
-  }
-  async function loadHexOptions(file) {
-    const block = await getFirstHexBlock(app, file);
-    if (!block) return null;
-    return parseOptions(block);
-  }
-  async function renderMap(token) {
-    await teardownLayer();
-    if (!currentFile) {
-      mapHost.empty();
-      mapView.setOverlay("Keine Karte ausgew\xE4hlt.");
-      currentOptions = null;
-      await activeMode?.onFileChange(null, null, modeCtx);
-      return;
-    }
-    let opts = null;
-    try {
-      opts = await loadHexOptions(currentFile);
-    } catch (err) {
-      console.error("[cartographer] failed to parse map options", err);
-    }
-    if (!opts) {
-      mapHost.empty();
-      mapView.setOverlay("Kein hex3x3-Block in dieser Datei.");
-      currentOptions = null;
-      await activeMode?.onFileChange(currentFile, null, modeCtx);
-      return;
-    }
-    try {
-      const layer = await createMapLayer(app, mapHost, currentFile, opts);
-      if (destroyed || token !== loadToken) {
-        layer.destroy();
-        return;
-      }
-      mapLayer = layer;
-      currentOptions = opts;
-      mapView.setOverlay(null);
-      await activeMode?.onFileChange(currentFile, mapLayer.handles, modeCtx);
-    } catch (err) {
-      console.error("[cartographer] failed to render map", err);
-      mapHost.empty();
-      mapView.setOverlay("Karte konnte nicht geladen werden.");
-      currentOptions = null;
-      await activeMode?.onFileChange(currentFile, null, modeCtx);
-    }
-  }
-  async function refresh() {
-    const token = ++loadToken;
-    await renderMap(token);
-  }
-  const onManagerChange = async (file) => {
-    currentFile = file;
-    headerHandle?.setFileLabel(file);
-    await refresh();
-  };
-  const mapManager = createMapManager(app, {
-    initialFile: currentFile,
-    onChange: onManagerChange
-  });
-  async function setFile(file) {
-    await mapManager.setFile(file);
-  }
-  headerHandle = createMapHeader(app, headerHost, {
-    title: "Cartographer",
-    initialFile,
-    onOpen: async (file) => {
-      await mapManager.setFile(file);
-    },
-    onCreate: async (file) => {
-      await mapManager.setFile(file);
-    },
-    onDelete: async () => {
-      mapManager.deleteCurrent();
-    },
-    onSave: async (mode, file) => {
-      if (!activeMode?.onSave) return false;
-      try {
-        const handled = await activeMode.onSave(mode, file, modeCtx);
-        return handled === true;
-      } catch (err) {
-        console.error("[cartographer] mode onSave failed", err);
-        return false;
-      }
-    },
-    titleRightSlot: (slot) => {
-      slot.classList.add("sm-cartographer__mode-switch");
-      const dropdown = slot.createDiv({ cls: "sm-mode-dropdown" });
-      modeDropdownEl = dropdown;
-      modeTriggerBtn = dropdown.createEl("button", {
-        text: modes[0]?.label ?? "Mode",
-        attr: { type: "button", "aria-haspopup": "listbox", "aria-expanded": "false" }
-      });
-      modeTriggerBtn.classList.add("sm-mode-dropdown__trigger");
-      modeMenuEl = dropdown.createDiv({ cls: "sm-mode-dropdown__menu", attr: { role: "listbox" } });
-      const closeMenu = () => {
-        if (!modeMenuEl || !modeTriggerBtn) return;
-        modeDropdownEl?.classList.remove("is-open");
-        modeTriggerBtn.setAttr("aria-expanded", "false");
-        if (unbindOutsideClick) {
-          unbindOutsideClick();
-          unbindOutsideClick = null;
-        }
-      };
-      const openMenu = () => {
-        if (!modeMenuEl || !modeTriggerBtn) return;
-        modeDropdownEl?.classList.add("is-open");
-        modeTriggerBtn.setAttr("aria-expanded", "true");
-        const onDocClick = (ev) => {
-          if (!dropdown.contains(ev.target)) closeMenu();
-        };
-        document.addEventListener("mousedown", onDocClick);
-        unbindOutsideClick = () => document.removeEventListener("mousedown", onDocClick);
-      };
-      modeTriggerBtn.onclick = () => {
-        if (!modeMenuEl) return;
-        const isOpen = modeDropdownEl?.classList.contains("is-open");
-        if (isOpen) closeMenu();
-        else openMenu();
-      };
-      for (const mode of modes) {
-        const item = modeMenuEl.createEl("button", {
-          text: mode.label,
-          attr: { role: "option", type: "button", "data-id": mode.id }
-        });
-        item.classList.add("sm-mode-dropdown__item");
-        item.onclick = () => {
-          closeMenu();
-          void switchMode(mode.id);
-        };
-        modeMenuItems.push({ mode, item });
-      }
-    }
-  });
-  headerHandle.setFileLabel(currentFile);
-  await switchMode(modes[0].id);
-  await mapManager.setFile(currentFile);
-  async function destroy() {
-    if (destroyed) return;
-    destroyed = true;
-    mapHost.removeEventListener("hex:click", onHexClick);
-    await modeChange;
-    try {
-      await activeMode?.onExit();
-    } catch (err) {
-      console.error("[cartographer] mode exit during destroy failed", err);
-    }
-    activeMode = null;
-    await teardownLayer();
-    mapView.destroy();
-    headerHandle?.destroy();
-    headerHandle = null;
-    if (unbindOutsideClick) {
-      unbindOutsideClick();
-      unbindOutsideClick = null;
-    }
-    host.empty();
-    host.removeClass("sm-cartographer");
-  }
+// src/apps/cartographer/view-shell/map-surface.ts
+function createMapSurface(container) {
+  const view = createViewContainer(container, { camera: false });
+  const mapHost = view.stageEl;
   return {
-    destroy,
-    setFile,
-    setMode: async (id) => {
-      await switchMode(id);
+    containerEl: container,
+    view,
+    mapHost,
+    setOverlay: (content) => {
+      view.setOverlay(content);
+    },
+    clear: () => {
+      mapHost.empty();
+    },
+    destroy: () => {
+      view.destroy();
+      container.empty();
     }
   };
 }
 
+// src/apps/cartographer/view-shell/mode-controller.ts
+function createModeController(options) {
+  const { onSwitch } = options;
+  let currentController = null;
+  let destroyed = false;
+  let sequence = 0;
+  const abortActive = () => {
+    if (currentController) {
+      currentController.abort();
+      currentController = null;
+    }
+  };
+  const requestMode = async (modeId) => {
+    if (destroyed) return;
+    sequence += 1;
+    const token = sequence;
+    if (currentController) {
+      currentController.abort();
+    }
+    const controller = new AbortController();
+    currentController = controller;
+    try {
+      await onSwitch(modeId, { signal: controller.signal });
+    } catch (error) {
+      if (!controller.signal.aborted) {
+        throw error;
+      }
+    } finally {
+      if (currentController === controller && token === sequence) {
+        currentController = null;
+      }
+    }
+  };
+  const destroy = () => {
+    if (destroyed) return;
+    destroyed = true;
+    abortActive();
+  };
+  return {
+    requestMode,
+    abortActive,
+    destroy
+  };
+}
+
+// src/apps/cartographer/view-shell/mode-registry.ts
+function createModeRegistry(options) {
+  const { host, onSelect } = options;
+  host.addClass("sm-cartographer__mode-switch");
+  const dropdown = host.createDiv({ cls: "sm-mode-dropdown" });
+  const trigger = dropdown.createEl("button", {
+    text: options.initialLabel ?? "Mode",
+    attr: { type: "button", "aria-haspopup": "listbox", "aria-expanded": "false" }
+  });
+  trigger.addClass("sm-mode-dropdown__trigger");
+  const menu = dropdown.createDiv({ cls: "sm-mode-dropdown__menu", attr: { role: "listbox" } });
+  const entries = /* @__PURE__ */ new Map();
+  let activeId = null;
+  let unbindOutsideClick = null;
+  let destroyed = false;
+  const closeMenu = () => {
+    dropdown.removeClass("is-open");
+    trigger.setAttr("aria-expanded", "false");
+    if (unbindOutsideClick) {
+      unbindOutsideClick();
+      unbindOutsideClick = null;
+    }
+  };
+  const openMenu = () => {
+    dropdown.addClass("is-open");
+    trigger.setAttr("aria-expanded", "true");
+    const onDocClick = (event) => {
+      if (!dropdown.contains(event.target)) closeMenu();
+    };
+    document.addEventListener("mousedown", onDocClick);
+    unbindOutsideClick = () => document.removeEventListener("mousedown", onDocClick);
+  };
+  trigger.onclick = () => {
+    const isOpen = dropdown.classList.contains("is-open");
+    if (isOpen) closeMenu();
+    else openMenu();
+  };
+  const updateActive = () => {
+    for (const entry of entries.values()) {
+      const isActive = entry.mode.id === activeId;
+      entry.button.classList.toggle("is-active", isActive);
+      entry.button.ariaSelected = isActive ? "true" : "false";
+    }
+  };
+  const ensureEntry = (mode) => {
+    const button = menu.createEl("button", {
+      text: mode.label,
+      attr: { role: "option", type: "button", "data-id": mode.id }
+    });
+    button.addClass("sm-mode-dropdown__item");
+    button.onclick = () => {
+      closeMenu();
+      onSelect(mode.id);
+    };
+    const entry = { mode, button };
+    entries.set(mode.id, entry);
+    return entry;
+  };
+  const removeEntry = (id) => {
+    const entry = entries.get(id);
+    if (!entry) return;
+    entry.button.remove();
+    entries.delete(id);
+    if (activeId === id) {
+      activeId = null;
+    }
+  };
+  const setModes = (modes) => {
+    const incoming = /* @__PURE__ */ new Set();
+    for (const mode of modes) {
+      incoming.add(mode.id);
+      const existing = entries.get(mode.id);
+      if (existing) {
+        existing.mode = mode;
+        existing.button.setText(mode.label);
+      } else {
+        ensureEntry(mode);
+      }
+    }
+    for (const id of Array.from(entries.keys())) {
+      if (!incoming.has(id)) {
+        removeEntry(id);
+      }
+    }
+    updateActive();
+  };
+  const registerMode = (mode) => {
+    if (entries.has(mode.id)) {
+      setModes([mode]);
+      return;
+    }
+    ensureEntry(mode);
+    updateActive();
+  };
+  const deregisterMode = (id) => {
+    removeEntry(id);
+    updateActive();
+  };
+  const setActiveMode = (id) => {
+    activeId = id;
+    updateActive();
+    if (activeId) {
+      const entry = entries.get(activeId);
+      if (entry) {
+        trigger.setText(entry.mode.label);
+      }
+    }
+  };
+  const setTriggerLabel = (label) => {
+    trigger.setText(label);
+  };
+  const destroy = () => {
+    if (destroyed) return;
+    destroyed = true;
+    closeMenu();
+    trigger.onclick = null;
+    for (const entry of entries.values()) {
+      entry.button.onclick = null;
+      entry.button.remove();
+    }
+    entries.clear();
+    dropdown.remove();
+  };
+  return {
+    setModes,
+    registerMode,
+    deregisterMode,
+    setActiveMode,
+    setTriggerLabel,
+    destroy
+  };
+}
+
+// src/apps/cartographer/view-shell.ts
+var DEFAULT_MODE_LABEL = "Mode";
+function createCartographerShell(options) {
+  const { app, host, initialFile, modes, callbacks } = options;
+  const layout = createCartographerLayout(host);
+  const mapSurface = createMapSurface(layout.mapWrapper);
+  const state = {
+    modes: [...modes],
+    activeId: modes[0]?.id ?? null,
+    label: modes[0]?.label ?? DEFAULT_MODE_LABEL
+  };
+  let modeRegistry = null;
+  let modeController = null;
+  const ensureModeRegistry = (slot) => {
+    modeRegistry?.destroy();
+    modeRegistry = createModeRegistry({
+      host: slot,
+      initialLabel: state.label,
+      onSelect: (modeId) => {
+        if (!modeController) return;
+        void modeController.requestMode(modeId).catch((error) => {
+          console.error("[cartographer] failed to request mode", error);
+        });
+      }
+    });
+    modeRegistry.setModes(state.modes);
+    modeRegistry.setActiveMode(state.activeId);
+  };
+  modeController = createModeController({
+    onSwitch: async (modeId, ctx) => {
+      await callbacks.onModeSelect(modeId, ctx);
+    }
+  });
+  const headerHandle = createMapHeader(app, layout.headerHost, {
+    title: "Cartographer",
+    initialFile,
+    onOpen: async (file) => {
+      await callbacks.onOpen(file);
+    },
+    onCreate: async (file) => {
+      await callbacks.onCreate(file);
+    },
+    onDelete: async (file) => {
+      await callbacks.onDelete(file);
+    },
+    onSave: async (mode, file) => {
+      return await callbacks.onSave(mode, file);
+    },
+    titleRightSlot: (slot) => {
+      ensureModeRegistry(slot);
+    }
+  });
+  const onHexClick = async (event) => {
+    if (event.cancelable) event.preventDefault();
+    event.stopPropagation();
+    await callbacks.onHexClick(event.detail, event);
+  };
+  mapSurface.mapHost.addEventListener("hex:click", onHexClick, { passive: false });
+  const setModeActive = (id) => {
+    state.activeId = id;
+    const activeMode = state.modes.find((mode) => mode.id === id);
+    if (activeMode) {
+      state.label = activeMode.label;
+    }
+    modeRegistry?.setActiveMode(id);
+  };
+  const setModeLabel = (label) => {
+    state.label = label;
+    modeRegistry?.setTriggerLabel(label);
+  };
+  const setModes = (nextModes) => {
+    state.modes = [...nextModes];
+    modeRegistry?.setModes(state.modes);
+    const activeMode = state.activeId ? state.modes.find((mode) => mode.id === state.activeId) : null;
+    if (!activeMode) {
+      state.activeId = null;
+      modeRegistry?.setActiveMode(null);
+      const fallbackLabel = state.modes[0]?.label ?? DEFAULT_MODE_LABEL;
+      setModeLabel(fallbackLabel);
+    } else {
+      setModeLabel(activeMode.label);
+    }
+  };
+  const registerMode = (mode) => {
+    const existingIndex = state.modes.findIndex((entry) => entry.id === mode.id);
+    if (existingIndex >= 0) {
+      state.modes[existingIndex] = mode;
+    } else {
+      state.modes.push(mode);
+    }
+    modeRegistry?.registerMode(mode);
+    if (state.activeId === mode.id) {
+      setModeLabel(mode.label);
+    } else if (!state.activeId) {
+      const fallbackLabel = state.modes[0]?.label ?? DEFAULT_MODE_LABEL;
+      setModeLabel(fallbackLabel);
+    }
+  };
+  const deregisterMode = (id) => {
+    state.modes = state.modes.filter((mode) => mode.id !== id);
+    modeRegistry?.deregisterMode(id);
+    if (state.activeId === id) {
+      state.activeId = null;
+      modeRegistry?.setActiveMode(null);
+      const fallbackLabel = state.modes[0]?.label ?? DEFAULT_MODE_LABEL;
+      setModeLabel(fallbackLabel);
+    }
+  };
+  const destroy = () => {
+    mapSurface.mapHost.removeEventListener("hex:click", onHexClick);
+    modeController?.destroy();
+    modeController = null;
+    modeRegistry?.destroy();
+    modeRegistry = null;
+    headerHandle.destroy();
+    mapSurface.destroy();
+    layout.destroy();
+  };
+  const handle = {
+    host,
+    mapHost: mapSurface.mapHost,
+    sidebarHost: layout.sidebarHost,
+    setFileLabel: (file) => {
+      headerHandle.setFileLabel(file);
+    },
+    setModeActive,
+    setModeLabel,
+    setModes,
+    registerMode,
+    deregisterMode,
+    setOverlay: (content) => {
+      mapSurface.setOverlay(content);
+    },
+    clearMap: () => {
+      mapSurface.clear();
+    },
+    destroy
+  };
+  return handle;
+}
+
+// src/apps/cartographer/mode-registry/registry.ts
+var defineCartographerModeProvider = (provider) => provider;
+var providers = /* @__PURE__ */ new Map();
+var listeners2 = /* @__PURE__ */ new Set();
+var MAP_INTERACTIONS = ["none", "hex-click"];
+var PERSISTENCE_MODES = ["read-only", "manual-save"];
+var SIDEBAR_USAGES = ["required", "optional", "hidden"];
+var normalizeCapabilities = (providerId, capabilities) => {
+  if (!capabilities) {
+    throw new Error(
+      `[cartographer:mode-registry] provider '${providerId}' must declare capabilities metadata`
+    );
+  }
+  const { mapInteraction, persistence, sidebar } = capabilities;
+  if (!MAP_INTERACTIONS.includes(mapInteraction)) {
+    throw new Error(
+      `[cartographer:mode-registry] provider '${providerId}' declared invalid mapInteraction capability '${mapInteraction}'`
+    );
+  }
+  if (!PERSISTENCE_MODES.includes(persistence)) {
+    throw new Error(
+      `[cartographer:mode-registry] provider '${providerId}' declared invalid persistence capability '${persistence}'`
+    );
+  }
+  if (!SIDEBAR_USAGES.includes(sidebar)) {
+    throw new Error(
+      `[cartographer:mode-registry] provider '${providerId}' declared invalid sidebar capability '${sidebar}'`
+    );
+  }
+  return Object.freeze({
+    mapInteraction,
+    persistence,
+    sidebar
+  });
+};
+var cloneMetadata = (metadata) => {
+  const keywords = metadata.keywords ? Object.freeze([...metadata.keywords]) : void 0;
+  const normalized = Object.freeze({
+    ...metadata,
+    keywords,
+    capabilities: normalizeCapabilities(metadata.id, metadata.capabilities)
+  });
+  return normalized;
+};
+var normalizeProvider = (provider) => {
+  if (!provider?.metadata?.id) {
+    throw new Error("[cartographer:mode-registry] provider metadata requires an id");
+  }
+  if (!provider.metadata.label) {
+    throw new Error(`[cartographer:mode-registry] provider '${provider.metadata.id}' requires a label`);
+  }
+  if (!provider.metadata.summary) {
+    throw new Error(`[cartographer:mode-registry] provider '${provider.metadata.id}' requires a summary`);
+  }
+  if (!provider.metadata.source) {
+    throw new Error(
+      `[cartographer:mode-registry] provider '${provider.metadata.id}' requires a source identifier`
+    );
+  }
+  const metadata = cloneMetadata(provider.metadata);
+  return {
+    provider: {
+      ...provider,
+      metadata
+    },
+    metadata
+  };
+};
+var validateModeCapabilities = (mode, metadata) => {
+  const { capabilities, id } = metadata;
+  if (capabilities.mapInteraction === "hex-click" && typeof mode.onHexClick !== "function") {
+    throw new Error(
+      `[cartographer:mode-registry] mode '${id}' declares mapInteraction 'hex-click' but does not implement onHexClick()`
+    );
+  }
+  if (capabilities.persistence === "manual-save" && typeof mode.onSave !== "function") {
+    throw new Error(
+      `[cartographer:mode-registry] mode '${id}' declares persistence 'manual-save' but does not implement onSave()`
+    );
+  }
+  if (capabilities.mapInteraction === "none" && typeof mode.onHexClick === "function") {
+    console.warn(
+      `[cartographer:mode-registry] mode '${id}' provides onHexClick(), but its capabilities declare mapInteraction 'none'`
+    );
+  }
+};
+var createLazyModeWrapper = (entry) => {
+  const { metadata, provider } = entry;
+  let cached = null;
+  let loading = null;
+  const load = async () => {
+    if (cached) return cached;
+    if (!loading) {
+      loading = provider.load().then((mode) => {
+        if (!mode) {
+          throw new Error(
+            `[cartographer:mode-registry] provider '${metadata.id}' returned an invalid mode instance`
+          );
+        }
+        if (mode.id && mode.id !== metadata.id) {
+          console.warn(
+            `[cartographer:mode-registry] mode id '${mode.id}' does not match provider id '${metadata.id}'`
+          );
+        }
+        validateModeCapabilities(mode, metadata);
+        cached = mode;
+        return mode;
+      }).catch((error) => {
+        console.error(
+          `[cartographer:mode-registry] failed to load mode '${metadata.id}' from '${metadata.source}'`,
+          error
+        );
+        loading = null;
+        throw error;
+      });
+    }
+    return loading;
+  };
+  const invoke = async (key, ...args) => {
+    const mode = await load();
+    const method = mode[key];
+    return await method.apply(mode, args);
+  };
+  const invokeIfLoaded = async (key, ...args) => {
+    if (!cached && !loading) {
+      await load();
+    }
+    const mode = cached;
+    if (!mode) return void 0;
+    const method = mode[key];
+    if (typeof method !== "function") {
+      return void 0;
+    }
+    return await method.apply(mode, args);
+  };
+  return {
+    id: metadata.id,
+    label: metadata.label,
+    async onEnter(ctx) {
+      return await invoke("onEnter", ctx);
+    },
+    async onExit(ctx) {
+      await invokeIfLoaded("onExit", ctx);
+    },
+    async onFileChange(file, handles, ctx) {
+      return await invoke("onFileChange", file, handles, ctx);
+    },
+    async onHexClick(coord, event, ctx) {
+      if (metadata.capabilities.mapInteraction !== "hex-click") {
+        return;
+      }
+      return await invokeIfLoaded("onHexClick", coord, event, ctx);
+    },
+    async onSave(mode, file, ctx) {
+      if (metadata.capabilities.persistence !== "manual-save") {
+        return void 0;
+      }
+      return await invokeIfLoaded("onSave", mode, file, ctx);
+    }
+  };
+};
+var createRegisteredProvider = (provider) => {
+  const entry = normalizeProvider(provider);
+  return {
+    ...entry,
+    mode: createLazyModeWrapper(entry)
+  };
+};
+var toRegistryEntry = (provider) => ({
+  metadata: provider.metadata,
+  mode: provider.mode
+});
+var notifyListeners = (event) => {
+  const snapshot = Array.from(listeners2);
+  for (const listener of snapshot) {
+    try {
+      listener(event);
+    } catch (error) {
+      console.error("[cartographer:mode-registry] listener failed", error);
+    }
+  }
+};
+var orderValue = (metadata) => {
+  if (metadata.order === void 0 || Number.isNaN(metadata.order)) return Number.POSITIVE_INFINITY;
+  return metadata.order;
+};
+var getSortedProviders = () => {
+  return Array.from(providers.values()).sort((a, b) => {
+    const orderDiff = orderValue(a.metadata) - orderValue(b.metadata);
+    if (orderDiff !== 0) return orderDiff;
+    return a.metadata.label.localeCompare(b.metadata.label, void 0, { sensitivity: "base" });
+  });
+};
+var getRegistryEntries = () => {
+  return getSortedProviders().map(toRegistryEntry);
+};
+var registerCartographerModeProvider = (provider) => {
+  const entry = createRegisteredProvider(provider);
+  const existing = providers.get(entry.metadata.id);
+  if (existing) {
+    throw new Error(
+      `[cartographer:mode-registry] provider with id '${entry.metadata.id}' is already registered by '${existing.metadata.source}'`
+    );
+  }
+  providers.set(entry.metadata.id, entry);
+  const entries = getRegistryEntries();
+  const index = entries.findIndex((candidate) => candidate.metadata.id === entry.metadata.id);
+  if (index >= 0) {
+    notifyListeners({
+      type: "registered",
+      entry: entries[index],
+      index,
+      entries
+    });
+  }
+  return () => {
+    const current = providers.get(entry.metadata.id);
+    if (current === entry) {
+      providers.delete(entry.metadata.id);
+      const remaining = getRegistryEntries();
+      notifyListeners({
+        type: "deregistered",
+        id: entry.metadata.id,
+        entries: remaining
+      });
+    }
+  };
+};
+var createCartographerModesSnapshot = () => {
+  return getSortedProviders().map((entry) => entry.mode);
+};
+var subscribeToCartographerModeRegistry = (listener) => {
+  listeners2.add(listener);
+  listener({ type: "initial", entries: getRegistryEntries() });
+  return () => {
+    listeners2.delete(listener);
+  };
+};
+
+// src/apps/cartographer/mode-registry/providers/editor.ts
+var createEditorModeProvider = () => defineCartographerModeProvider({
+  metadata: {
+    id: "editor",
+    label: "Editor",
+    summary: "Interaktiver Hex-Map Editor mit Werkzeugpalette und Live-Vorschau.",
+    keywords: ["map", "edit", "hex"],
+    order: 200,
+    source: "core/cartographer/editor",
+    version: "1.0.0",
+    capabilities: {
+      mapInteraction: "hex-click",
+      persistence: "read-only",
+      sidebar: "required"
+    }
+  },
+  async load() {
+    const { createEditorMode: createEditorMode2 } = await Promise.resolve().then(() => (init_editor(), editor_exports));
+    return createEditorMode2();
+  }
+});
+
+// src/apps/cartographer/mode-registry/providers/inspector.ts
+var createInspectorModeProvider = () => defineCartographerModeProvider({
+  metadata: {
+    id: "inspector",
+    label: "Inspector",
+    summary: "Liest bestehende Karten und stellt Metadaten sowie Hex-Details dar.",
+    keywords: ["inspect", "metadata", "analyze"],
+    order: 300,
+    source: "core/cartographer/inspector",
+    version: "1.0.0",
+    capabilities: {
+      mapInteraction: "hex-click",
+      persistence: "read-only",
+      sidebar: "required"
+    }
+  },
+  async load() {
+    const { createInspectorMode: createInspectorMode2 } = await Promise.resolve().then(() => (init_inspector(), inspector_exports));
+    return createInspectorMode2();
+  }
+});
+
+// src/apps/cartographer/mode-registry/providers/travel-guide.ts
+var createTravelGuideModeProvider = () => defineCartographerModeProvider({
+  metadata: {
+    id: "travel",
+    label: "Travel",
+    summary: "Pr\xE4sentiert Kurzinformationen und Kartenabschnitte f\xFCr Reisende.",
+    keywords: ["travel", "guide", "summary"],
+    order: 100,
+    source: "core/cartographer/travel-guide",
+    version: "1.0.0",
+    capabilities: {
+      mapInteraction: "hex-click",
+      persistence: "manual-save",
+      sidebar: "required"
+    }
+  },
+  async load() {
+    const { createTravelGuideMode: createTravelGuideMode2 } = await Promise.resolve().then(() => (init_travel_guide(), travel_guide_exports));
+    return createTravelGuideMode2();
+  }
+});
+
+// src/apps/cartographer/mode-registry/index.ts
+var coreProvidersRegistered = false;
+var ensureCoreProviders = () => {
+  if (coreProvidersRegistered) return;
+  registerCartographerModeProvider(createTravelGuideModeProvider());
+  registerCartographerModeProvider(createEditorModeProvider());
+  registerCartographerModeProvider(createInspectorModeProvider());
+  coreProvidersRegistered = true;
+};
+var provideCartographerModes = () => {
+  ensureCoreProviders();
+  return createCartographerModesSnapshot();
+};
+var subscribeToModeRegistry = (listener) => {
+  ensureCoreProviders();
+  return subscribeToCartographerModeRegistry(listener);
+};
+
+// src/apps/cartographer/presenter.ts
+var createDefaultDeps = (app) => ({
+  createShell: (options) => createCartographerShell(options),
+  createMapManager: (appInstance, options) => createMapManager(appInstance, options),
+  createMapLayer: (appInstance, host, file, opts) => createMapLayer(appInstance, host, file, opts),
+  loadHexOptions: async (appInstance, file) => {
+    const block = await getFirstHexBlock(appInstance, file);
+    if (!block) return null;
+    return parseOptions(block);
+  },
+  provideModes: () => provideCartographerModes(),
+  subscribeToModeRegistry: (listener) => subscribeToModeRegistry(listener)
+});
+var _CartographerPresenter = class _CartographerPresenter {
+  constructor(app, deps) {
+    this.shell = null;
+    this.mapManager = null;
+    this.currentFile = null;
+    this.currentOptions = null;
+    this.mapLayer = null;
+    this.activeMode = null;
+    this.hostEl = null;
+    this.modeChange = Promise.resolve();
+    this.transitionTasks = /* @__PURE__ */ new Set();
+    this.loadToken = 0;
+    this.isMounted = false;
+    this.requestedFile = void 0;
+    this.modeTransitionSeq = 0;
+    this.transition = null;
+    this.activeLifecycleController = null;
+    this.activeLifecycleContext = null;
+    this.unsubscribeModeRegistry = null;
+    this.app = app;
+    const defaults = createDefaultDeps(app);
+    this.deps = { ...defaults, ...deps };
+    this.modes = this.deps.provideModes();
+    try {
+      this.unsubscribeModeRegistry = this.deps.subscribeToModeRegistry((event) => {
+        this.handleModeRegistryEvent(event);
+      });
+    } catch (error) {
+      console.error("[cartographer] failed to subscribe to mode registry", error);
+    }
+  }
+  /** Öffnet den Presenter auf dem übergebenen Host. */
+  async onOpen(host, fallbackFile) {
+    await this.onClose();
+    this.hostEl = host;
+    const initialFile = this.requestedFile ?? fallbackFile ?? null;
+    this.currentFile = initialFile;
+    const shellModes = this.modes.map((mode) => ({ id: mode.id, label: mode.label }));
+    this.shell = this.deps.createShell({
+      app: this.app,
+      host,
+      initialFile,
+      modes: shellModes,
+      callbacks: {
+        onModeSelect: (id, context) => {
+          void this.setMode(id, context);
+        },
+        onOpen: async (file) => {
+          await this.mapManager?.setFile(file);
+        },
+        onCreate: async (file) => {
+          await this.mapManager?.setFile(file);
+        },
+        onDelete: async () => {
+          this.mapManager?.deleteCurrent();
+        },
+        onSave: async (mode, file) => {
+          return await this.handleSave(mode, file);
+        },
+        onHexClick: async (coord, event) => {
+          await this.handleHexClick(coord, event);
+        }
+      }
+    });
+    this.mapManager = this.deps.createMapManager(this.app, {
+      initialFile,
+      onChange: async (file) => {
+        await this.handleFileChange(file);
+      }
+    });
+    this.shell.setModeLabel(shellModes[0]?.label ?? "Mode");
+    this.shell.setModeActive(shellModes[0]?.id ?? "");
+    this.shell.setFileLabel(initialFile);
+    this.isMounted = true;
+    this.requestedFile = initialFile;
+    await this.setMode(shellModes[0]?.id ?? "");
+    await this.mapManager.setFile(initialFile);
+  }
+  /** Schließt den Presenter und räumt Ressourcen auf. */
+  async onClose() {
+    if (!this.isMounted) {
+      this.shell?.destroy();
+      this.shell = null;
+      this.hostEl = null;
+      return;
+    }
+    this.isMounted = false;
+    this.transition?.controller.abort();
+    await this.modeChange;
+    try {
+      const controller = this.activeLifecycleController ?? new AbortController();
+      if (!controller.signal.aborted) {
+        controller.abort();
+      }
+      const ctx = this.activeLifecycleContext && this.activeLifecycleContext.signal === controller.signal ? this.activeLifecycleContext : this.createLifecycleContext(controller.signal);
+      await this.activeMode?.onExit(ctx);
+    } catch (err) {
+      console.error("[cartographer] mode exit failed", err);
+    }
+    this.activeMode = null;
+    this.activeLifecycleController = null;
+    this.activeLifecycleContext = null;
+    await this.teardownLayer();
+    this.shell?.destroy();
+    this.shell = null;
+    this.hostEl = null;
+    this.mapManager = null;
+  }
+  /** Setzt (oder merkt) die gewünschte Karte. */
+  async setFile(file) {
+    this.requestedFile = file;
+    if (!this.isMounted || !this.mapManager) return;
+    await this.mapManager.setFile(file);
+  }
+  get baseModeCtx() {
+    if (!this.shell || !this.hostEl) {
+      throw new Error("CartographerPresenter is not mounted.");
+    }
+    return {
+      app: this.app,
+      host: this.hostEl,
+      mapHost: this.shell.mapHost,
+      sidebarHost: this.shell.sidebarHost,
+      getFile: () => this.currentFile,
+      getMapLayer: () => this.mapLayer,
+      getRenderHandles: () => this.mapLayer?.handles ?? null,
+      getOptions: () => this.currentOptions
+    };
+  }
+  createLifecycleContext(signal) {
+    const base = this.baseModeCtx;
+    return { ...base, signal };
+  }
+  ensureActiveLifecycleContext(signal) {
+    const current = this.activeLifecycleContext;
+    if (current && current.signal === signal) {
+      return current;
+    }
+    const context = this.createLifecycleContext(signal);
+    if (this.activeLifecycleController?.signal === signal) {
+      this.activeLifecycleContext = context;
+    }
+    return context;
+  }
+  getActiveLifecycleSignal() {
+    return this.activeLifecycleController?.signal ?? _CartographerPresenter.neverAbortSignal;
+  }
+  async handleFileChange(file) {
+    this.currentFile = file;
+    this.shell?.setFileLabel(file);
+    await this.refresh();
+  }
+  async handleSave(mode, file) {
+    if (!this.activeMode?.onSave) return false;
+    try {
+      const ctx = this.ensureActiveLifecycleContext(this.getActiveLifecycleSignal());
+      const handled = await this.activeMode.onSave(mode, file, ctx);
+      return handled === true;
+    } catch (err) {
+      console.error("[cartographer] mode onSave failed", err);
+      return false;
+    }
+  }
+  async handleHexClick(coord, event) {
+    if (!this.activeMode?.onHexClick) return;
+    try {
+      const ctx = this.ensureActiveLifecycleContext(this.getActiveLifecycleSignal());
+      await this.activeMode.onHexClick(coord, event, ctx);
+    } catch (err) {
+      console.error("[cartographer] mode onHexClick failed", err);
+    }
+  }
+  handleModeRegistryEvent(event) {
+    if (!event?.entries) return;
+    const previousActiveId = this.activeMode?.id ?? null;
+    const nextModes = event.entries.map((entry) => entry.mode);
+    this.modes = nextModes;
+    const activeMode = previousActiveId ? nextModes.find((mode) => mode.id === previousActiveId) ?? null : null;
+    if (!this.shell) {
+      if (!activeMode) {
+        this.activeMode = null;
+      }
+      return;
+    }
+    const shellModes = nextModes.map((mode) => ({ id: mode.id, label: mode.label }));
+    if (event.type === "registered") {
+      this.shell.registerMode({ id: event.entry.mode.id, label: event.entry.mode.label });
+    } else if (event.type === "deregistered") {
+      this.shell.deregisterMode(event.id);
+    }
+    this.shell.setModes(shellModes);
+    if (activeMode) {
+      this.activeMode = activeMode;
+      this.shell.setModeActive(activeMode.id);
+      this.shell.setModeLabel(activeMode.label);
+      return;
+    }
+    this.activeMode = null;
+    if (!this.isMounted) {
+      return;
+    }
+    const fallbackId = shellModes[0]?.id ?? null;
+    if (fallbackId) {
+      void this.setMode(fallbackId);
+    }
+  }
+  async setMode(id, ctx) {
+    const next = this.modes.find((mode) => mode.id === id) ?? this.modes[0];
+    if (!next) return;
+    const promise = this.executeModeTransition(next, ctx?.signal ?? null);
+    this.trackTransition(promise);
+    try {
+      await promise;
+    } catch (err) {
+      console.error("[cartographer] mode transition crashed", err);
+    }
+  }
+  recalcModeChangePromise() {
+    if (this.transitionTasks.size === 0) {
+      this.modeChange = Promise.resolve();
+      return;
+    }
+    this.modeChange = Promise.allSettled(Array.from(this.transitionTasks)).then(() => void 0);
+  }
+  trackTransition(promise) {
+    this.transitionTasks.add(promise);
+    this.recalcModeChangePromise();
+    promise.finally(() => {
+      this.transitionTasks.delete(promise);
+      this.recalcModeChangePromise();
+    }).catch(() => {
+    });
+  }
+  bindExternalAbort(transition) {
+    const { externalSignal, controller } = transition;
+    if (!externalSignal) return () => {
+    };
+    const abort = () => {
+      controller.abort();
+    };
+    if (externalSignal.aborted) {
+      abort();
+      return () => {
+      };
+    }
+    externalSignal.addEventListener("abort", abort, { once: true });
+    return () => {
+      externalSignal.removeEventListener("abort", abort);
+    };
+  }
+  isTransitionAborted(transition) {
+    if (transition.controller.signal.aborted) return true;
+    if (transition.externalSignal?.aborted) return true;
+    if (this.transition && this.transition.id !== transition.id) return true;
+    return false;
+  }
+  async runTransitionStep(transition, phase, action, errorMessage) {
+    if (this.isTransitionAborted(transition)) {
+      return "aborted";
+    }
+    transition.phase = phase;
+    try {
+      await action();
+    } catch (err) {
+      if (!this.isTransitionAborted(transition)) {
+        console.error(errorMessage, err);
+      }
+    }
+    if (this.isTransitionAborted(transition)) {
+      return "aborted";
+    }
+    return "completed";
+  }
+  async executeModeTransition(next, externalSignal) {
+    const previousTransition = this.transition;
+    if (previousTransition) {
+      previousTransition.controller.abort();
+    }
+    if (this.activeMode?.id === next.id) {
+      if (!(externalSignal?.aborted ?? false)) {
+        this.shell?.setModeActive(next.id);
+        this.shell?.setModeLabel(next.label);
+      }
+      return;
+    }
+    const previousLifecycleContext = this.activeLifecycleContext;
+    const previousLifecycleController = this.activeLifecycleController;
+    const controller = new AbortController();
+    const transition = {
+      id: ++this.modeTransitionSeq,
+      next,
+      previous: this.activeMode,
+      controller,
+      externalSignal,
+      phase: "idle"
+    };
+    this.transition = transition;
+    const detachAbort = this.bindExternalAbort(transition);
+    try {
+      if (this.isTransitionAborted(transition)) {
+        return;
+      }
+      const previous = transition.previous;
+      if (previous) {
+        const exitOutcome = await this.runTransitionStep(
+          transition,
+          "exiting",
+          () => {
+            if (previousLifecycleController && !previousLifecycleController.signal.aborted) {
+              try {
+                previousLifecycleController.abort();
+              } catch (err) {
+                console.error(
+                  "[cartographer] failed to abort lifecycle controller",
+                  err
+                );
+              }
+            }
+            const exitSignal = previousLifecycleContext?.signal ?? previousLifecycleController?.signal ?? _CartographerPresenter.neverAbortSignal;
+            const exitCtx = previousLifecycleContext && previousLifecycleContext.signal === exitSignal ? previousLifecycleContext : this.createLifecycleContext(exitSignal);
+            return previous.onExit(exitCtx);
+          },
+          "[cartographer] mode exit failed"
+        );
+        if (exitOutcome === "aborted") {
+          return;
+        }
+        this.activeMode = null;
+        this.activeLifecycleContext = null;
+      }
+      if (this.isTransitionAborted(transition)) {
+        return;
+      }
+      this.activeLifecycleController = controller;
+      const modeCtx = this.ensureActiveLifecycleContext(transition.controller.signal);
+      this.activeMode = transition.next;
+      if (this.isTransitionAborted(transition)) {
+        this.activeMode = null;
+        this.activeLifecycleController = null;
+        this.activeLifecycleContext = null;
+        return;
+      }
+      const enterOutcome = await this.runTransitionStep(
+        transition,
+        "entering",
+        () => transition.next.onEnter(modeCtx),
+        "[cartographer] mode enter failed"
+      );
+      if (enterOutcome === "aborted") {
+        this.activeMode = null;
+        this.activeLifecycleController = null;
+        this.activeLifecycleContext = null;
+        return;
+      }
+      if (this.isTransitionAborted(transition)) {
+        this.activeMode = null;
+        this.activeLifecycleController = null;
+        this.activeLifecycleContext = null;
+        return;
+      }
+      const fileChangeOutcome = await this.runTransitionStep(
+        transition,
+        "entering",
+        () => transition.next.onFileChange(
+          this.currentFile,
+          this.mapLayer?.handles ?? null,
+          modeCtx
+        ),
+        "[cartographer] mode file change failed"
+      );
+      if (fileChangeOutcome === "aborted" && this.activeMode?.id === transition.next.id) {
+        this.activeMode = null;
+        this.activeLifecycleController = null;
+        this.activeLifecycleContext = null;
+        return;
+      }
+      this.shell?.setModeActive(transition.next.id);
+      this.shell?.setModeLabel(transition.next.label);
+      transition.phase = "idle";
+    } catch (err) {
+      if (!this.isTransitionAborted(transition)) {
+        console.error("[cartographer] mode transition failed", err);
+      }
+    } finally {
+      detachAbort();
+      if (this.transition?.id === transition.id) {
+        this.transition = null;
+      }
+      if (!this.activeMode) {
+        this.activeLifecycleController = null;
+        this.activeLifecycleContext = null;
+      }
+    }
+  }
+  async refresh() {
+    const token = ++this.loadToken;
+    await this.renderMap(token);
+  }
+  async renderMap(token) {
+    await this.teardownLayer();
+    if (!this.shell) return;
+    const transition = this.transition;
+    const signal = transition?.controller.signal ?? this.getActiveLifecycleSignal();
+    const ctx = this.ensureActiveLifecycleContext(signal);
+    const isTransitionAborted = () => transition ? this.isTransitionAborted(transition) : false;
+    if (!this.currentFile) {
+      this.shell.clearMap();
+      this.shell.setOverlay("Keine Karte ausgew\xE4hlt.");
+      this.currentOptions = null;
+      if (!isTransitionAborted()) {
+        await this.activeMode?.onFileChange(null, null, ctx);
+      }
+      return;
+    }
+    let options = null;
+    try {
+      options = await this.deps.loadHexOptions(this.app, this.currentFile);
+    } catch (err) {
+      console.error("[cartographer] failed to parse map options", err);
+    }
+    if (!options) {
+      this.shell.clearMap();
+      this.shell.setOverlay("Kein hex3x3-Block in dieser Datei.");
+      this.currentOptions = null;
+      if (!isTransitionAborted()) {
+        await this.activeMode?.onFileChange(this.currentFile, null, ctx);
+      }
+      return;
+    }
+    try {
+      const layer = await this.deps.createMapLayer(this.app, this.shell.mapHost, this.currentFile, options);
+      if (token !== this.loadToken || !this.shell) {
+        layer.destroy();
+        return;
+      }
+      if (isTransitionAborted()) {
+        layer.destroy();
+        return;
+      }
+      this.mapLayer = layer;
+      this.currentOptions = options;
+      this.shell.setOverlay(null);
+      if (!isTransitionAborted()) {
+        await this.activeMode?.onFileChange(this.currentFile, this.mapLayer.handles, ctx);
+      }
+    } catch (err) {
+      console.error("[cartographer] failed to render map", err);
+      this.shell.clearMap();
+      this.shell.setOverlay("Karte konnte nicht geladen werden.");
+      this.currentOptions = null;
+      if (!isTransitionAborted()) {
+        await this.activeMode?.onFileChange(this.currentFile, null, ctx);
+      }
+    }
+  }
+  async teardownLayer() {
+    if (this.mapLayer) {
+      try {
+        this.mapLayer.destroy();
+      } catch (err) {
+        console.error("[cartographer] failed to destroy map layer", err);
+      }
+      this.mapLayer = null;
+    }
+    this.shell?.clearMap();
+    this.currentOptions = null;
+  }
+};
+_CartographerPresenter.neverAbortSignal = new AbortController().signal;
+var CartographerPresenter = _CartographerPresenter;
+
 // src/apps/cartographer/index.ts
 var VIEW_TYPE_CARTOGRAPHER = "cartographer-view";
 var VIEW_CARTOGRAPHER = VIEW_TYPE_CARTOGRAPHER;
-var CartographerView = class extends import_obsidian12.ItemView {
+var createProvideModes = () => {
+  return () => {
+    try {
+      return provideCartographerModes();
+    } catch (error) {
+      console.error("[cartographer] Failed to resolve mode registry", error);
+      return [];
+    }
+  };
+};
+var CartographerView = class extends import_obsidian14.ItemView {
   constructor(leaf) {
     super(leaf);
-    this.controller = null;
     this.hostEl = null;
-    this.initialFile = null;
+    this.pendingFile = null;
+    this.presenter = new CartographerPresenter(this.app, {
+      provideModes: createProvideModes()
+    });
   }
   getViewType() {
     return VIEW_TYPE_CARTOGRAPHER;
@@ -3603,20 +5918,19 @@ var CartographerView = class extends import_obsidian12.ItemView {
     return "compass";
   }
   setFile(file) {
-    this.initialFile = file;
-    void this.controller?.setFile(file ?? null);
+    this.pendingFile = file;
+    void this.presenter.setFile(file ?? null);
   }
   async onOpen() {
     const container = this.containerEl;
     const content = container.children[1];
     content.empty();
     this.hostEl = content.createDiv({ cls: "cartographer-host" });
-    const file = this.initialFile ?? this.app.workspace.getActiveFile() ?? null;
-    this.controller = await mountCartographer(this.app, this.hostEl, file);
+    const fallbackFile = this.pendingFile ?? this.app.workspace.getActiveFile() ?? null;
+    await this.presenter.onOpen(this.hostEl, fallbackFile);
   }
   async onClose() {
-    await this.controller?.destroy();
-    this.controller = null;
+    await this.presenter.onClose();
     this.hostEl = null;
   }
 };
@@ -3645,19 +5959,19 @@ async function detachCartographerLeaves(app) {
 }
 
 // src/apps/library/view.ts
-var import_obsidian21 = require("obsidian");
+var import_obsidian23 = require("obsidian");
 
 // src/apps/library/core/creature-files.ts
-var import_obsidian13 = require("obsidian");
+var import_obsidian15 = require("obsidian");
 var CREATURES_DIR = "SaltMarcher/Creatures";
 async function ensureCreatureDir(app) {
-  const p = (0, import_obsidian13.normalizePath)(CREATURES_DIR);
+  const p = (0, import_obsidian15.normalizePath)(CREATURES_DIR);
   let f = app.vault.getAbstractFileByPath(p);
-  if (f instanceof import_obsidian13.TFolder) return f;
+  if (f instanceof import_obsidian15.TFolder) return f;
   await app.vault.createFolder(p).catch(() => {
   });
   f = app.vault.getAbstractFileByPath(p);
-  if (f instanceof import_obsidian13.TFolder) return f;
+  if (f instanceof import_obsidian15.TFolder) return f;
   throw new Error("Could not create creatures directory");
 }
 function sanitizeFileName2(name) {
@@ -3669,16 +5983,16 @@ async function listCreatureFiles(app) {
   const out = [];
   const walk = (folder) => {
     for (const child of folder.children) {
-      if (child instanceof import_obsidian13.TFolder) walk(child);
-      else if (child instanceof import_obsidian13.TFile && child.extension === "md") out.push(child);
+      if (child instanceof import_obsidian15.TFolder) walk(child);
+      else if (child instanceof import_obsidian15.TFile && child.extension === "md") out.push(child);
     }
   };
   walk(dir);
   return out;
 }
 function watchCreatureDir(app, onChange) {
-  const base = (0, import_obsidian13.normalizePath)(CREATURES_DIR) + "/";
-  const isInDir = (f) => (f instanceof import_obsidian13.TFile || f instanceof import_obsidian13.TFolder) && (f.path + "/").startsWith(base);
+  const base = (0, import_obsidian15.normalizePath)(CREATURES_DIR) + "/";
+  const isInDir = (f) => (f instanceof import_obsidian15.TFile || f instanceof import_obsidian15.TFolder) && (f.path + "/").startsWith(base);
   const handler = (f) => {
     if (isInDir(f)) onChange?.();
   };
@@ -3938,11 +6252,11 @@ async function createCreatureFile(app, d) {
   const folder = await ensureCreatureDir(app);
   const baseName = sanitizeFileName2(d.name || "Creature");
   let fileName = `${baseName}.md`;
-  let path = (0, import_obsidian13.normalizePath)(`${folder.path}/${fileName}`);
+  let path = (0, import_obsidian15.normalizePath)(`${folder.path}/${fileName}`);
   let i = 2;
   while (app.vault.getAbstractFileByPath(path)) {
     fileName = `${baseName} (${i}).md`;
-    path = (0, import_obsidian13.normalizePath)(`${folder.path}/${fileName}`);
+    path = (0, import_obsidian15.normalizePath)(`${folder.path}/${fileName}`);
     i++;
   }
   const content = statblockToMarkdown(d);
@@ -3950,20 +6264,17 @@ async function createCreatureFile(app, d) {
   return file;
 }
 
-// src/apps/library/view.ts
-init_regions_store();
-
 // src/apps/library/core/spell-files.ts
-var import_obsidian14 = require("obsidian");
+var import_obsidian16 = require("obsidian");
 var SPELLS_DIR = "SaltMarcher/Spells";
 async function ensureSpellDir(app) {
-  const p = (0, import_obsidian14.normalizePath)(SPELLS_DIR);
+  const p = (0, import_obsidian16.normalizePath)(SPELLS_DIR);
   let f = app.vault.getAbstractFileByPath(p);
-  if (f instanceof import_obsidian14.TFolder) return f;
+  if (f instanceof import_obsidian16.TFolder) return f;
   await app.vault.createFolder(p).catch(() => {
   });
   f = app.vault.getAbstractFileByPath(p);
-  if (f instanceof import_obsidian14.TFolder) return f;
+  if (f instanceof import_obsidian16.TFolder) return f;
   throw new Error("Could not create spells directory");
 }
 async function listSpellFiles(app) {
@@ -3971,16 +6282,16 @@ async function listSpellFiles(app) {
   const out = [];
   const walk = (folder) => {
     for (const child of folder.children) {
-      if (child instanceof import_obsidian14.TFolder) walk(child);
-      else if (child instanceof import_obsidian14.TFile && child.extension === "md") out.push(child);
+      if (child instanceof import_obsidian16.TFolder) walk(child);
+      else if (child instanceof import_obsidian16.TFile && child.extension === "md") out.push(child);
     }
   };
   walk(dir);
   return out;
 }
 function watchSpellDir(app, onChange) {
-  const base = (0, import_obsidian14.normalizePath)(SPELLS_DIR) + "/";
-  const isInDir = (f) => (f instanceof import_obsidian14.TFile || f instanceof import_obsidian14.TFolder) && (f.path + "/").startsWith(base);
+  const base = (0, import_obsidian16.normalizePath)(SPELLS_DIR) + "/";
+  const isInDir = (f) => (f instanceof import_obsidian16.TFile || f instanceof import_obsidian16.TFolder) && (f.path + "/").startsWith(base);
   const handler = (f) => {
     if (isInDir(f)) onChange?.();
   };
@@ -4059,11 +6370,11 @@ async function createSpellFile(app, d) {
   const folder = await ensureSpellDir(app);
   const baseName = sanitizeFileName2(d.name || "Spell");
   let fileName = `${baseName}.md`;
-  let path = (0, import_obsidian14.normalizePath)(`${folder.path}/${fileName}`);
+  let path = (0, import_obsidian16.normalizePath)(`${folder.path}/${fileName}`);
   let i = 2;
   while (app.vault.getAbstractFileByPath(path)) {
     fileName = `${baseName} (${i}).md`;
-    path = (0, import_obsidian14.normalizePath)(`${folder.path}/${fileName}`);
+    path = (0, import_obsidian16.normalizePath)(`${folder.path}/${fileName}`);
     i++;
   }
   const content = spellToMarkdown(d);
@@ -4071,11 +6382,62 @@ async function createSpellFile(app, d) {
   return file;
 }
 
+// src/apps/library/view.ts
+init_terrain_store();
+init_regions_store();
+
+// src/apps/library/view/mode.ts
+function scoreName(name, q) {
+  if (!q) return 1e-4;
+  if (name === q) return 1e3;
+  if (name.startsWith(q)) return 900 - (name.length - q.length);
+  const idx = name.indexOf(q);
+  if (idx >= 0) return 700 - idx;
+  const tokenIdx = name.split(/\s+|[-_]/).findIndex((t) => t.startsWith(q));
+  if (tokenIdx >= 0) return 600 - tokenIdx * 5;
+  return -Infinity;
+}
+var BaseModeRenderer = class {
+  constructor(app, container) {
+    this.app = app;
+    this.container = container;
+    this.query = "";
+    this.cleanups = [];
+    this.disposed = false;
+  }
+  async init() {
+  }
+  setQuery(query) {
+    this.query = (query || "").toLowerCase();
+    this.render();
+  }
+  async handleCreate(_name) {
+  }
+  async destroy() {
+    if (this.disposed) return;
+    this.disposed = true;
+    for (const fn of this.cleanups.splice(0)) {
+      try {
+        fn();
+      } catch {
+      }
+    }
+    this.container.empty();
+  }
+  isDisposed() {
+    return this.disposed;
+  }
+  registerCleanup(fn) {
+    this.cleanups.push(fn);
+  }
+};
+
 // src/apps/library/create/creature/modal.ts
-var import_obsidian19 = require("obsidian");
+var import_obsidian21 = require("obsidian");
 
 // src/apps/library/create/creature/section-basics.ts
-var import_obsidian15 = require("obsidian");
+var import_obsidian17 = require("obsidian");
+init_search_dropdown();
 
 // src/apps/library/create/creature/presets.ts
 var CREATURE_SIZES = [
@@ -4262,14 +6624,14 @@ function mountCreatureBasicsSection(parent, data) {
     if (span === 3) setting.settingEl.classList.add("sm-cc-basics__grid-item--span-3");
     if (span === 4) setting.settingEl.classList.add("sm-cc-basics__grid-item--span-4");
   };
-  const idSetting = new import_obsidian15.Setting(grid).setName("Name");
+  const idSetting = new import_obsidian17.Setting(grid).setName("Name");
   registerGridItem(idSetting, 2);
   idSetting.addText((t) => {
     t.setPlaceholder("Aboleth").setValue(data.name || "").onChange((v) => data.name = v.trim());
     t.inputEl.classList.add("sm-cc-basics__text-input");
     t.inputEl.style.width = "100%";
   });
-  const typeSetting = new import_obsidian15.Setting(grid).setName("Typ");
+  const typeSetting = new import_obsidian17.Setting(grid).setName("Typ");
   registerGridItem(typeSetting, 2);
   typeSetting.addDropdown((dd) => {
     dd.addOption("", "");
@@ -4283,7 +6645,7 @@ function mountCreatureBasicsSection(parent, data) {
     } catch {
     }
   });
-  const sizeSetting = new import_obsidian15.Setting(grid).setName("Gr\xF6\xDFe");
+  const sizeSetting = new import_obsidian17.Setting(grid).setName("Gr\xF6\xDFe");
   registerGridItem(sizeSetting, 2);
   sizeSetting.addDropdown((dd) => {
     dd.addOption("", "");
@@ -4297,7 +6659,7 @@ function mountCreatureBasicsSection(parent, data) {
     } catch {
     }
   });
-  const alignSetting = new import_obsidian15.Setting(grid).setName("Gesinnung");
+  const alignSetting = new import_obsidian17.Setting(grid).setName("Gesinnung");
   registerGridItem(alignSetting, 2);
   alignSetting.settingEl.classList.add("sm-cc-basics__alignment");
   alignSetting.controlEl.classList.add("sm-cc-basics__alignment-controls");
@@ -4329,7 +6691,7 @@ function mountCreatureBasicsSection(parent, data) {
     } catch {
     }
   });
-  const speedSetting = new import_obsidian15.Setting(grid).setName("Bewegung");
+  const speedSetting = new import_obsidian17.Setting(grid).setName("Bewegung");
   registerGridItem(speedSetting, 4);
   const speedControl = speedSetting.controlEl.createDiv({ cls: "sm-cc-move-ctl" });
   const addRow = speedControl.createDiv({ cls: "sm-cc-searchbar sm-cc-move-row" });
@@ -4407,7 +6769,7 @@ function mountCreatureBasicsSection(parent, data) {
     renderSpeeds();
   };
   const mkStatSetting = (label, placeholder, key, span = 1) => {
-    const setting = new import_obsidian15.Setting(grid).setName(label);
+    const setting = new import_obsidian17.Setting(grid).setName(label);
     registerGridItem(setting, span);
     setting.addText((t) => {
       t.setPlaceholder(placeholder).setValue(data[key] ?? "").onChange((v) => data[key] = v.trim());
@@ -4425,7 +6787,8 @@ function mountCreatureBasicsSection(parent, data) {
 }
 
 // src/apps/library/create/creature/section-stats-and-skills.ts
-var import_obsidian16 = require("obsidian");
+var import_obsidian18 = require("obsidian");
+init_search_dropdown();
 
 // src/apps/library/create/shared/stat-utils.ts
 function parseIntSafe(value) {
@@ -4532,7 +6895,7 @@ function mountCreatureStatsAndSkillsSection(parent, data) {
     }
   }
   const skillAbilityMap = new Map(CREATURE_SKILLS);
-  const skillsSetting = new import_obsidian16.Setting(root).setName("Fertigkeiten");
+  const skillsSetting = new import_obsidian18.Setting(root).setName("Fertigkeiten");
   skillsSetting.settingEl.addClass("sm-cc-skills");
   const skillsControl = skillsSetting.controlEl;
   skillsControl.addClass("sm-cc-skill-editor");
@@ -4648,11 +7011,11 @@ function mountCreatureStatsAndSkillsSection(parent, data) {
 }
 
 // src/apps/library/create/shared/token-editor.ts
-var import_obsidian17 = require("obsidian");
+var import_obsidian19 = require("obsidian");
 function mountTokenEditor(parent, title, model, options = {}) {
   const placeholder = options.placeholder ?? "Begriff eingeben\u2026";
   const addLabel = options.addButtonLabel ?? "+";
-  const setting = new import_obsidian17.Setting(parent).setName(title);
+  const setting = new import_obsidian19.Setting(parent).setName(title);
   let inputEl;
   let renderChips = () => {
   };
@@ -4700,7 +7063,8 @@ function mountTokenEditor(parent, title, model, options = {}) {
 }
 
 // src/apps/library/create/creature/section-utils.ts
-var import_obsidian18 = require("obsidian");
+var import_obsidian20 = require("obsidian");
+init_search_dropdown();
 function mountPresetSelectEditor(parent, title, options, model, config) {
   const resolved = typeof config === "string" ? { placeholder: config } : config ?? {};
   const {
@@ -4711,7 +7075,7 @@ function mountPresetSelectEditor(parent, title, options, model, config) {
     addButtonLabel,
     settingClass
   } = resolved;
-  const setting = new import_obsidian18.Setting(parent).setName(title);
+  const setting = new import_obsidian20.Setting(parent).setName(title);
   if (settingClass) {
     const classes = Array.isArray(settingClass) ? settingClass : [settingClass];
     setting.settingEl.classList.add(...classes);
@@ -4826,7 +7190,7 @@ function mountDamageResponseEditor(parent, damageLists) {
       chipClass: "sm-cc-damage-chip--vuln"
     }
   ];
-  const setting = new import_obsidian18.Setting(parent).setName("Schadenstyp-Reaktionen");
+  const setting = new import_obsidian20.Setting(parent).setName("Schadenstyp-Reaktionen");
   const row = setting.controlEl.createDiv({ cls: "sm-cc-searchbar sm-cc-damage-row" });
   row.createEl("label", { cls: "sm-cc-damage-label", text: "Schadenstyp" });
   const select = row.createEl("select", { cls: "sm-cc-damage-select" });
@@ -5015,6 +7379,7 @@ function mountCreatureSensesAndDefensesSection(parent, data) {
 }
 
 // src/apps/library/create/creature/section-entries.ts
+init_search_dropdown();
 function mountEntriesSection(parent, data) {
   if (!data.entries) data.entries = [];
   const wrap = parent.createDiv({ cls: "setting-item sm-cc-entries" });
@@ -5286,7 +7651,7 @@ function mountSpellsKnownSection(parent, data, getAvailableSpells) {
 }
 
 // src/apps/library/create/creature/modal.ts
-var CreateCreatureModal = class extends import_obsidian19.Modal {
+var CreateCreatureModal = class extends import_obsidian21.Modal {
   constructor(app, presetName, onSubmit) {
     super(app);
     this.availableSpells = [];
@@ -5318,7 +7683,7 @@ var CreateCreatureModal = class extends import_obsidian19.Modal {
     mountCreatureSensesAndDefensesSection(contentEl, this.data);
     mountEntriesSection(contentEl, this.data);
     spellsSectionControls = mountSpellsKnownSection(contentEl, this.data, () => this.availableSpells);
-    new import_obsidian19.Setting(contentEl).addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close())).addButton((b) => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
+    new import_obsidian21.Setting(contentEl).addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close())).addButton((b) => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
   }
   onClose() {
     this.contentEl.empty();
@@ -5341,8 +7706,9 @@ var CreateCreatureModal = class extends import_obsidian19.Modal {
 };
 
 // src/apps/library/create/spell/modal.ts
-var import_obsidian20 = require("obsidian");
-var CreateSpellModal = class extends import_obsidian20.Modal {
+var import_obsidian22 = require("obsidian");
+init_search_dropdown();
+var CreateSpellModal = class extends import_obsidian22.Modal {
   constructor(app, presetName, onSubmit) {
     super(app);
     this.onSubmit = onSubmit;
@@ -5353,11 +7719,11 @@ var CreateSpellModal = class extends import_obsidian20.Modal {
     contentEl.empty();
     contentEl.addClass("sm-cc-create-modal");
     contentEl.createEl("h3", { text: "Neuen Zauber erstellen" });
-    new import_obsidian20.Setting(contentEl).setName("Name").addText((t) => {
+    new import_obsidian22.Setting(contentEl).setName("Name").addText((t) => {
       t.setPlaceholder("Fireball").setValue(this.data.name).onChange((v) => this.data.name = v.trim());
       t.inputEl.style.width = "28ch";
     });
-    new import_obsidian20.Setting(contentEl).setName("Grad").setDesc("0 = Zaubertrick").addDropdown((dd) => {
+    new import_obsidian22.Setting(contentEl).setName("Grad").setDesc("0 = Zaubertrick").addDropdown((dd) => {
       for (let i = 0; i <= 9; i++) dd.addOption(String(i), String(i));
       dd.onChange((v) => this.data.level = parseInt(v, 10));
       try {
@@ -5365,7 +7731,7 @@ var CreateSpellModal = class extends import_obsidian20.Modal {
       } catch {
       }
     });
-    new import_obsidian20.Setting(contentEl).setName("Schule").addDropdown((dd) => {
+    new import_obsidian22.Setting(contentEl).setName("Schule").addDropdown((dd) => {
       const schools = ["Abjuration", "Conjuration", "Divination", "Enchantment", "Evocation", "Illusion", "Necromancy", "Transmutation"];
       for (const s of schools) dd.addOption(s, s);
       dd.onChange((v) => this.data.school = v);
@@ -5374,15 +7740,15 @@ var CreateSpellModal = class extends import_obsidian20.Modal {
       } catch {
       }
     });
-    new import_obsidian20.Setting(contentEl).setName("Wirkzeit").addText((t) => {
+    new import_obsidian22.Setting(contentEl).setName("Wirkzeit").addText((t) => {
       t.setPlaceholder("1 Aktion").onChange((v) => this.data.casting_time = v.trim());
       t.inputEl.style.width = "12ch";
     });
-    new import_obsidian20.Setting(contentEl).setName("Reichweite").addText((t) => {
+    new import_obsidian22.Setting(contentEl).setName("Reichweite").addText((t) => {
       t.setPlaceholder("60 Fu\xDF").onChange((v) => this.data.range = v.trim());
       t.inputEl.style.width = "12ch";
     });
-    const comps = new import_obsidian20.Setting(contentEl).setName("Komponenten");
+    const comps = new import_obsidian22.Setting(contentEl).setName("Komponenten");
     let cV = false, cS = false, cM = false;
     const updateComps = () => {
       const arr = [];
@@ -5408,22 +7774,22 @@ var CreateSpellModal = class extends import_obsidian20.Modal {
       cM = v;
       updateComps();
     });
-    new import_obsidian20.Setting(contentEl).setName("Materialien").addText((t) => {
+    new import_obsidian22.Setting(contentEl).setName("Materialien").addText((t) => {
       t.setPlaceholder("winzige Kugel aus Guano und Schwefel").onChange((v) => this.data.materials = v.trim());
       t.inputEl.style.width = "34ch";
     });
-    new import_obsidian20.Setting(contentEl).setName("Dauer").addText((t) => {
+    new import_obsidian22.Setting(contentEl).setName("Dauer").addText((t) => {
       t.setPlaceholder("Augenblicklich / Konzentration, bis zu 1 Minute").onChange((v) => this.data.duration = v.trim());
       t.inputEl.style.width = "34ch";
     });
-    const flags = new import_obsidian20.Setting(contentEl).setName("Flags");
+    const flags = new import_obsidian22.Setting(contentEl).setName("Flags");
     const cbConc = flags.controlEl.createEl("input", { attr: { type: "checkbox" } });
     flags.controlEl.createEl("label", { text: "Konzentration" });
     const cbRit = flags.controlEl.createEl("input", { attr: { type: "checkbox" } });
     flags.controlEl.createEl("label", { text: "Ritual" });
     cbConc.addEventListener("change", () => this.data.concentration = cbConc.checked);
     cbRit.addEventListener("change", () => this.data.ritual = cbRit.checked);
-    new import_obsidian20.Setting(contentEl).setName("Angriff").addDropdown((dd) => {
+    new import_obsidian22.Setting(contentEl).setName("Angriff").addDropdown((dd) => {
       const opts = ["", "Melee Spell Attack", "Ranged Spell Attack", "Melee Weapon Attack", "Ranged Weapon Attack"];
       for (const s of opts) dd.addOption(s, s || "(kein)");
       dd.onChange((v) => this.data.attack = v || void 0);
@@ -5432,7 +7798,7 @@ var CreateSpellModal = class extends import_obsidian20.Modal {
       } catch {
       }
     });
-    const save = new import_obsidian20.Setting(contentEl).setName("Rettungswurf");
+    const save = new import_obsidian22.Setting(contentEl).setName("Rettungswurf");
     save.addDropdown((dd) => {
       const abil = ["", "STR", "DEX", "CON", "INT", "WIS", "CHA"];
       for (const a of abil) dd.addOption(a, a || "(kein)");
@@ -5447,7 +7813,7 @@ var CreateSpellModal = class extends import_obsidian20.Modal {
       t.setPlaceholder("Half on save / Negates \u2026").onChange((v) => this.data.save_effect = v.trim() || void 0);
       t.inputEl.style.width = "18ch";
     });
-    const dmg = new import_obsidian20.Setting(contentEl).setName("Schaden");
+    const dmg = new import_obsidian22.Setting(contentEl).setName("Schaden");
     dmg.controlEl.createEl("label", { text: "W\xFCrfel" });
     dmg.addText((t) => {
       t.setPlaceholder("8d6").onChange((v) => this.data.damage = v.trim() || void 0);
@@ -5466,7 +7832,7 @@ var CreateSpellModal = class extends import_obsidian20.Modal {
     });
     this.addTextArea(contentEl, "Beschreibung", "Beschreibung (Markdown)", (v) => this.data.description = v);
     this.addTextArea(contentEl, "H\xF6here Grade", "Bei h\xF6heren Graden (Markdown)", (v) => this.data.higher_levels = v);
-    new import_obsidian20.Setting(contentEl).addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close())).addButton((b) => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
+    new import_obsidian22.Setting(contentEl).addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close())).addButton((b) => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
     this.scope.register([], "Enter", () => this.submit());
   }
   onClose() {
@@ -5486,280 +7852,520 @@ var CreateSpellModal = class extends import_obsidian20.Modal {
   }
 };
 
-// src/apps/library/view.ts
-var VIEW_LIBRARY = "salt-library";
-var LibraryView = class extends import_obsidian21.ItemView {
+// src/apps/library/view/creatures.ts
+var CreaturesRenderer = class extends BaseModeRenderer {
   constructor() {
     super(...arguments);
     this.mode = "creatures";
-    this.cleanups = [];
-    this.query = "";
-    // data per mode
-    this.creatureFiles = [];
+    this.files = [];
+  }
+  async init() {
+    this.files = await listCreatureFiles(this.app);
+    const stop = watchCreatureDir(this.app, async () => {
+      this.files = await listCreatureFiles(this.app);
+      if (!this.isDisposed()) this.render();
+    });
+    this.registerCleanup(stop);
+  }
+  render() {
+    if (this.isDisposed()) return;
+    const list = this.container;
+    list.empty();
+    const q = this.query;
+    const items = this.files.map((f) => ({ name: f.basename, file: f, score: scoreName(f.basename.toLowerCase(), q) })).filter((x) => q ? x.score > -Infinity : true).sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+    for (const it of items) {
+      const row = list.createDiv({ cls: "sm-cc-item" });
+      row.createDiv({ cls: "sm-cc-item__name", text: it.name });
+      const openBtn = row.createEl("button", { text: "Open" });
+      openBtn.onclick = async () => {
+        await this.app.workspace.openLinkText(it.file.path, it.file.path, true);
+      };
+    }
+  }
+  async handleCreate(name) {
+    new CreateCreatureModal(this.app, name, async (data) => {
+      const file = await createCreatureFile(this.app, data);
+      this.files = await listCreatureFiles(this.app);
+      if (!this.isDisposed()) {
+        this.render();
+        await this.app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
+      }
+    }).open();
+  }
+};
+
+// src/apps/library/view/spells.ts
+var SpellsRenderer = class extends BaseModeRenderer {
+  constructor() {
+    super(...arguments);
+    this.mode = "spells";
+    this.files = [];
+  }
+  async init() {
+    this.files = await listSpellFiles(this.app);
+    const stop = watchSpellDir(this.app, async () => {
+      this.files = await listSpellFiles(this.app);
+      if (!this.isDisposed()) this.render();
+    });
+    this.registerCleanup(stop);
+  }
+  render() {
+    if (this.isDisposed()) return;
+    const list = this.container;
+    list.empty();
+    const q = this.query;
+    const items = this.files.map((f) => ({ name: f.basename, file: f, score: scoreName(f.basename.toLowerCase(), q) })).filter((x) => q ? x.score > -Infinity : true).sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+    for (const it of items) {
+      const row = list.createDiv({ cls: "sm-cc-item" });
+      row.createDiv({ cls: "sm-cc-item__name", text: it.name });
+      const openBtn = row.createEl("button", { text: "Open" });
+      openBtn.onclick = async () => {
+        await this.app.workspace.openLinkText(it.file.path, it.file.path, true);
+      };
+    }
+  }
+  async handleCreate(name) {
+    new CreateSpellModal(this.app, name, async (data) => {
+      const file = await createSpellFile(this.app, data);
+      this.files = await listSpellFiles(this.app);
+      if (!this.isDisposed()) {
+        this.render();
+        await this.app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
+      }
+    }).open();
+  }
+};
+
+// src/apps/library/view/terrains.ts
+init_terrain_store();
+var SAVE_DEBOUNCE_MS = 500;
+var TerrainsRenderer = class extends BaseModeRenderer {
+  constructor() {
+    super(...arguments);
+    this.mode = "terrains";
     this.terrains = {};
-    this.spellFiles = [];
+    this.saveTimer = null;
+    this.dirty = false;
+  }
+  async init() {
+    await ensureTerrainFile(this.app);
+    this.terrains = await loadTerrains(this.app);
+    this.ensureEmptyKey();
+    const stop = watchTerrains(this.app, async () => {
+      if (this.isDisposed()) return;
+      this.terrains = await loadTerrains(this.app);
+      this.ensureEmptyKey();
+      this.render();
+    });
+    this.registerCleanup(stop);
+  }
+  render() {
+    if (this.isDisposed()) return;
+    const list = this.container;
+    list.empty();
+    const q = this.query;
+    const names = Object.keys(this.terrains);
+    const order = ["", ...names.filter((n) => n !== "")];
+    const entries = order.map((name) => ({
+      name,
+      displayName: name || "",
+      score: scoreName(name.toLowerCase(), q)
+    })).filter((x) => x.name === "" || (q ? x.score > -Infinity : true)).sort((a, b) => a.name === "" ? -1 : b.name === "" ? 1 : b.score - a.score || a.name.localeCompare(b.name));
+    for (const entry of entries) {
+      let currentKey = entry.name;
+      const row = list.createDiv({ cls: "sm-cc-item" });
+      const nameInp = row.createEl("input", { attr: { type: "text", placeholder: "(Name)" } });
+      nameInp.value = currentKey;
+      const colorInp = row.createEl("input", { attr: { type: "color" } });
+      const speedInp = row.createEl("input", { attr: { type: "number", step: "0.1", min: "0" } });
+      const delBtn = row.createEl("button", { text: "\u{1F5D1}" });
+      const base = this.terrains[currentKey] ?? { color: "transparent", speed: 1 };
+      colorInp.value = /^#([0-9a-f]{6})$/i.test(base.color) ? base.color : "#999999";
+      speedInp.value = String(Number.isFinite(base.speed) ? base.speed : 1);
+      const updateFromInputs = () => {
+        const nextKey = nameInp.value.trim();
+        const color = colorInp.value || "#999999";
+        const speed = parseFloat(speedInp.value);
+        const normalizedNext = nextKey || "";
+        const normalizedCurrent = currentKey || "";
+        this.writeTerrain(currentKey, nextKey, {
+          color,
+          speed: Number.isFinite(speed) ? speed : 1
+        });
+        currentKey = normalizedNext;
+        if (normalizedNext !== normalizedCurrent) {
+          this.render();
+        }
+      };
+      nameInp.addEventListener("change", updateFromInputs);
+      nameInp.addEventListener("blur", updateFromInputs);
+      nameInp.addEventListener("keydown", (evt) => {
+        if (evt.key === "Enter") {
+          evt.preventDefault();
+          updateFromInputs();
+        }
+      });
+      colorInp.addEventListener("input", () => {
+        const speed = parseFloat(speedInp.value);
+        const nextKey = nameInp.value.trim();
+        this.writeTerrain(currentKey, nextKey, {
+          color: colorInp.value || "#999999",
+          speed: Number.isFinite(speed) ? speed : 1
+        });
+        currentKey = nextKey || "";
+      });
+      speedInp.addEventListener("change", updateFromInputs);
+      speedInp.addEventListener("blur", updateFromInputs);
+      delBtn.onclick = () => {
+        this.deleteTerrain(currentKey);
+        this.render();
+      };
+    }
+    if (!entries.length) {
+      list.createDiv({ cls: "sm-cc-item" }).setText("No terrains available.");
+    }
+  }
+  async handleCreate(name) {
+    const key = name.trim();
+    if (!key) return;
+    if (!this.terrains[key]) {
+      this.terrains[key] = { color: "#888888", speed: 1 };
+      this.ensureEmptyKey();
+      this.render();
+      this.scheduleSave();
+    }
+  }
+  async destroy() {
+    await this.flushSave();
+    await super.destroy();
+  }
+  ensureEmptyKey() {
+    if (!this.terrains[""]) {
+      this.terrains[""] = { color: "transparent", speed: 1 };
+    }
+  }
+  writeTerrain(oldKey, newKey, payload) {
+    const next = { ...this.terrains };
+    const normalizedOld = oldKey || "";
+    const normalizedNew = newKey || "";
+    delete next[normalizedOld];
+    next[normalizedNew] = payload;
+    this.terrains = next;
+    this.ensureEmptyKey();
+    this.scheduleSave();
+  }
+  deleteTerrain(key) {
+    const normalized = key || "";
+    if (normalized === "") return;
+    const next = { ...this.terrains };
+    delete next[normalized];
+    this.terrains = next;
+    this.ensureEmptyKey();
+    this.scheduleSave();
+  }
+  scheduleSave() {
+    if (this.isDisposed()) return;
+    this.dirty = true;
+    if (this.saveTimer) clearTimeout(this.saveTimer);
+    this.saveTimer = setTimeout(() => {
+      void this.flushSave();
+    }, SAVE_DEBOUNCE_MS);
+  }
+  async flushSave() {
+    if (!this.dirty) {
+      if (this.saveTimer) {
+        clearTimeout(this.saveTimer);
+        this.saveTimer = null;
+      }
+      return;
+    }
+    this.dirty = false;
+    if (this.saveTimer) {
+      clearTimeout(this.saveTimer);
+      this.saveTimer = null;
+    }
+    await saveTerrains(this.app, this.terrains);
+    this.terrains = await loadTerrains(this.app);
+    this.ensureEmptyKey();
+    if (!this.isDisposed()) this.render();
+  }
+};
+function describeTerrainsSource() {
+  return `Source: ${TERRAIN_FILE}`;
+}
+
+// src/apps/library/view/regions.ts
+init_search_dropdown();
+init_regions_store();
+init_terrain_store();
+var SAVE_DEBOUNCE_MS2 = 500;
+var RegionsRenderer = class extends BaseModeRenderer {
+  constructor() {
+    super(...arguments);
+    this.mode = "regions";
     this.regions = [];
+    this.terrainNames = [];
+    this.saveTimer = null;
+    this.dirty = false;
+  }
+  async init() {
+    await ensureRegionsFile(this.app);
+    [this.regions, this.terrainNames] = await Promise.all([
+      loadRegions(this.app),
+      this.loadTerrainNames()
+    ]);
+    const stopRegions = watchRegions(this.app, async () => {
+      if (this.isDisposed()) return;
+      this.regions = await loadRegions(this.app);
+      this.render();
+    });
+    const stopTerrains = watchTerrains(this.app, async () => {
+      if (this.isDisposed()) return;
+      this.terrainNames = await this.loadTerrainNames();
+      this.render();
+    });
+    this.registerCleanup(stopRegions);
+    this.registerCleanup(stopTerrains);
+  }
+  render() {
+    if (this.isDisposed()) return;
+    const list = this.container;
+    list.empty();
+    const q = this.query;
+    const entries = this.regions.map((region, index) => ({ region, index, score: scoreName((region.name || "").toLowerCase(), q) })).filter((item) => (item.region.name || "").trim()).filter((item) => q ? item.score > -Infinity : true).sort((a, b) => b.score - a.score || (a.region.name || "").localeCompare(b.region.name || ""));
+    for (const entry of entries) {
+      const region = entry.region;
+      const row = list.createDiv({ cls: "sm-cc-item" });
+      const nameInp = row.createEl("input", { attr: { type: "text", placeholder: "(Name)" } });
+      nameInp.value = region.name || "";
+      nameInp.addEventListener("input", () => {
+        region.name = nameInp.value;
+        this.scheduleSave();
+      });
+      const terrSel = row.createEl("select");
+      enhanceSelectToSearch(terrSel, "Search options\u2026");
+      this.populateTerrainOptions(terrSel, region.terrain || "");
+      terrSel.addEventListener("change", () => {
+        region.terrain = terrSel.value;
+        this.scheduleSave();
+      });
+      const encInp = row.createEl("input", { attr: { type: "number", min: "1", step: "1", placeholder: "Encounter 1/n" } });
+      encInp.value = region.encounterOdds && region.encounterOdds > 0 ? String(region.encounterOdds) : "";
+      encInp.addEventListener("input", () => {
+        const val = parseInt(encInp.value, 10);
+        region.encounterOdds = Number.isFinite(val) && val > 0 ? val : void 0;
+        this.scheduleSave();
+      });
+      const delBtn = row.createEl("button", { text: "\u{1F5D1}" });
+      delBtn.onclick = () => {
+        this.removeRegion(entry.index);
+      };
+    }
+    if (!entries.length) {
+      list.createDiv({ cls: "sm-cc-item" }).setText("No regions available.");
+    }
+  }
+  async handleCreate(name) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const exists = this.regions.some((r) => (r.name || "").toLowerCase() === trimmed.toLowerCase());
+    if (exists) return;
+    this.regions.push({ name: trimmed, terrain: "" });
+    this.render();
+    this.scheduleSave();
+  }
+  async destroy() {
+    await this.flushSave();
+    await super.destroy();
+  }
+  populateTerrainOptions(select, selected) {
+    select.empty();
+    const options = Array.from(/* @__PURE__ */ new Set(["", ...this.terrainNames]));
+    for (const name of options) {
+      const option = select.createEl("option", { text: name || "(empty)", value: name });
+      option.selected = name === selected;
+    }
+  }
+  async loadTerrainNames() {
+    const terrains = await loadTerrains(this.app);
+    return Object.keys(terrains || {});
+  }
+  removeRegion(index) {
+    if (!this.regions[index]) return;
+    this.regions.splice(index, 1);
+    this.render();
+    this.scheduleSave();
+  }
+  scheduleSave() {
+    if (this.isDisposed()) return;
+    this.dirty = true;
+    if (this.saveTimer) clearTimeout(this.saveTimer);
+    this.saveTimer = setTimeout(() => {
+      void this.flushSave();
+    }, SAVE_DEBOUNCE_MS2);
+  }
+  async flushSave() {
+    if (!this.dirty) {
+      if (this.saveTimer) {
+        clearTimeout(this.saveTimer);
+        this.saveTimer = null;
+      }
+      return;
+    }
+    this.dirty = false;
+    if (this.saveTimer) {
+      clearTimeout(this.saveTimer);
+      this.saveTimer = null;
+    }
+    await saveRegions(this.app, this.regions);
+    this.regions = await loadRegions(this.app);
+    if (!this.isDisposed()) this.render();
+  }
+};
+function describeRegionsSource() {
+  return `Source: ${REGIONS_FILE}`;
+}
+
+// src/apps/library/view.ts
+var LIBRARY_COPY = {
+  title: "Library",
+  searchPlaceholder: "Search the library or enter a name\u2026",
+  createButton: "Create entry",
+  modes: {
+    creatures: "Creatures",
+    spells: "Spells",
+    terrains: "Terrains",
+    regions: "Regions"
+  },
+  sources: {
+    prefix: "Source: ",
+    creatures: "SaltMarcher/Creatures/",
+    spells: "SaltMarcher/Spells/"
+  }
+};
+var VIEW_LIBRARY = "salt-library";
+var LibraryView = class extends import_obsidian23.ItemView {
+  constructor() {
+    super(...arguments);
+    this.mode = "creatures";
+    this.query = "";
+    this.headerButtons = /* @__PURE__ */ new Map();
   }
   getViewType() {
     return VIEW_LIBRARY;
   }
   getDisplayText() {
-    return "Library";
+    return LIBRARY_COPY.title;
   }
   getIcon() {
     return "library";
   }
   async onOpen() {
     this.contentEl.addClass("sm-library");
-    await ensureCreatureDir(this.app);
-    await ensureTerrainFile(this.app);
-    await ensureSpellDir(this.app);
-    await ensureRegionsFile(this.app);
-    await this.reloadAll();
-    this.render();
-    this.attachWatcher();
+    await Promise.all([
+      ensureCreatureDir(this.app),
+      ensureSpellDir(this.app),
+      ensureTerrainFile(this.app),
+      ensureRegionsFile(this.app)
+    ]);
+    this.renderShell();
+    await this.activateMode(this.mode);
   }
   async onClose() {
-    this.unwatch?.();
-    this.cleanups.forEach((fn) => {
-      try {
-        fn();
-      } catch {
-      }
-    });
-    this.cleanups = [];
+    await this.activeRenderer?.destroy();
+    this.activeRenderer = void 0;
     this.contentEl.removeClass("sm-library");
   }
-  attachWatcher() {
-    this.unwatch?.();
-    const off = [];
-    off.push(watchCreatureDir(this.app, () => this.onSourceChanged("creatures")));
-    off.push(watchSpellDir(this.app, () => this.onSourceChanged("spells")));
-    off.push(watchTerrains(this.app, () => this.onSourceChanged("terrains")));
-    off.push(watchRegions(this.app, () => this.onSourceChanged("regions")));
-    this.unwatch = () => off.forEach((fn) => fn());
-  }
-  async onSourceChanged(which) {
-    if (which === "creatures") this.creatureFiles = await listCreatureFiles(this.app);
-    if (which === "spells") this.spellFiles = await listSpellFiles(this.app);
-    if (which === "terrains") this.terrains = await loadTerrains(this.app);
-    if (which === "regions") this.regions = await loadRegions(this.app);
-    this.renderList();
-  }
-  async reloadAll() {
-    [this.creatureFiles, this.spellFiles, this.terrains, this.regions] = await Promise.all([
-      listCreatureFiles(this.app),
-      listSpellFiles(this.app),
-      loadTerrains(this.app),
-      loadRegions(this.app)
-    ]);
-  }
-  render() {
+  renderShell() {
     const root = this.contentEl;
     root.empty();
-    root.createEl("h2", { text: "Library" });
+    root.createEl("h2", { text: LIBRARY_COPY.title });
     const header = root.createDiv({ cls: "sm-lib-header" });
     const mkBtn = (label, m) => {
       const b = header.createEl("button", { text: label });
-      const update = () => b.classList.toggle("is-active", this.mode === m);
-      update();
+      this.headerButtons.set(m, b);
       b.onclick = () => {
-        this.mode = m;
-        updateAll();
+        void this.activateMode(m);
       };
       return b;
     };
-    mkBtn("Creatures", "creatures");
-    mkBtn("Spells", "spells");
-    mkBtn("Terrains", "terrains");
-    mkBtn("Regions", "regions");
+    mkBtn(LIBRARY_COPY.modes.creatures, "creatures");
+    mkBtn(LIBRARY_COPY.modes.spells, "spells");
+    mkBtn(LIBRARY_COPY.modes.terrains, "terrains");
+    mkBtn(LIBRARY_COPY.modes.regions, "regions");
     const bar = root.createDiv({ cls: "sm-cc-searchbar" });
-    const search = bar.createEl("input", { attr: { type: "text", placeholder: "Suche oder Name eingeben\u2026" } });
+    const search = bar.createEl("input", { attr: { type: "text", placeholder: LIBRARY_COPY.searchPlaceholder } });
     search.value = this.query;
     search.oninput = () => {
       this.query = search.value;
-      this.renderList();
+      this.activeRenderer?.setQuery(this.query);
     };
-    const createBtn = bar.createEl("button", { text: "Erstellen" });
-    createBtn.onclick = () => this.onCreate(search.value.trim());
-    const desc = root.createDiv({ cls: "desc" });
-    const updateDesc = () => {
-      desc.setText(
-        this.mode === "creatures" ? "Quelle: SaltMarcher/Creatures/" : this.mode === "spells" ? "Quelle: SaltMarcher/Spells/" : this.mode === "terrains" ? `Quelle: ${TERRAIN_FILE}` : `Quelle: ${REGIONS_FILE}`
-      );
+    this.searchInput = search;
+    const createBtn = bar.createEl("button", { text: LIBRARY_COPY.createButton });
+    createBtn.onclick = () => {
+      void this.onCreate(search.value.trim());
     };
-    updateDesc();
-    root.createDiv({ cls: "sm-cc-list" });
-    const updateAll = () => {
-      updateDesc();
-      this.renderList();
-      header.querySelectorAll("button").forEach((b) => b.classList.toggle("is-active", b.innerText.toLowerCase().startsWith(this.mode.slice(0, 3))));
-    };
-    this.renderList();
+    this.descEl = root.createDiv({ cls: "desc" });
+    this.listEl = root.createDiv({ cls: "sm-cc-list" });
   }
-  renderList() {
-    const root = this.contentEl;
-    const list = root.querySelector(".sm-cc-list");
-    if (!list) return;
-    list.empty();
-    const q = (this.query || "").toLowerCase();
-    const score = (name) => this.scoreName(name.toLowerCase(), q);
-    if (this.mode === "creatures") {
-      const items = this.creatureFiles.map((f) => ({ name: f.basename, f, s: score(f.basename) })).filter((x) => q ? x.s > -Infinity : true).sort((a, b) => b.s - a.s || a.name.localeCompare(b.name));
-      for (const it of items) {
-        const row = list.createDiv({ cls: "sm-cc-item" });
-        row.createDiv({ cls: "sm-cc-item__name", text: it.name });
-        const openBtn = row.createEl("button", { text: "\xD6ffnen" });
-        openBtn.onclick = async () => this.app.workspace.openLinkText(it.f.path, it.f.path, true);
-      }
+  async activateMode(mode) {
+    if (this.activeRenderer?.mode === mode) {
+      this.mode = mode;
+      this.updateHeaderButtons();
+      this.updateSourceDescription();
+      this.activeRenderer.setQuery(this.query);
+      this.activeRenderer.render();
       return;
     }
-    if (this.mode === "spells") {
-      const items = this.spellFiles.map((f) => ({ name: f.basename, f, s: score(f.basename) })).filter((x) => q ? x.s > -Infinity : true).sort((a, b) => b.s - a.s || a.name.localeCompare(b.name));
-      for (const it of items) {
-        const row = list.createDiv({ cls: "sm-cc-item" });
-        row.createDiv({ cls: "sm-cc-item__name", text: it.name });
-        const openBtn = row.createEl("button", { text: "\xD6ffnen" });
-        openBtn.onclick = async () => this.app.workspace.openLinkText(it.f.path, it.f.path, true);
-      }
-      return;
+    if (this.activeRenderer) {
+      await this.activeRenderer.destroy();
+      this.activeRenderer = void 0;
     }
-    if (this.mode === "terrains") {
-      const names = Object.keys(this.terrains || {});
-      const order = ["", ...names.filter((n) => n !== "")];
-      const items = order.map((name) => ({ name, s: score(name || "") })).filter((x) => x.name === "" || (q ? x.s > -Infinity : true)).sort((a, b) => a.name === "" ? -1 : b.name === "" ? 1 : b.s - a.s || a.name.localeCompare(b.name));
-      for (const it of items) {
-        const row = list.createDiv({ cls: "sm-cc-item" });
-        const nameInp = row.createEl("input", { attr: { type: "text", placeholder: "(Name)" } });
-        nameInp.value = it.name;
-        const colorInp = row.createEl("input", { attr: { type: "color" } });
-        const speedInp = row.createEl("input", { attr: { type: "number", step: "0.1", min: "0" } });
-        const delBtn = row.createEl("button", { text: "\u{1F5D1}" });
-        const v = this.terrains[it.name] || { color: "transparent", speed: 1 };
-        colorInp.value = /^#([0-9a-f]{6})$/i.test(v.color) ? v.color : "#999999";
-        speedInp.value = String(Number.isFinite(v.speed) ? v.speed : 1);
-        const commit = () => this.commitTerrains();
-        const upsert = () => {
-          const k = nameInp.value;
-          const color = colorInp.value;
-          const speed = parseFloat(speedInp.value) || 1;
-          this.upsertTerrain(it.name, k, color, speed);
-        };
-        nameInp.oninput = upsert;
-        colorInp.oninput = upsert;
-        speedInp.oninput = upsert;
-        delBtn.onclick = () => this.removeTerrain(nameInp.value);
-      }
-      return;
+    this.mode = mode;
+    this.updateHeaderButtons();
+    this.updateSourceDescription();
+    if (!this.listEl) return;
+    const renderer = this.createRenderer(mode, this.listEl);
+    this.activeRenderer = renderer;
+    await renderer.init();
+    renderer.setQuery(this.query);
+    renderer.render();
+  }
+  createRenderer(mode, container) {
+    switch (mode) {
+      case "creatures":
+        return new CreaturesRenderer(this.app, container);
+      case "spells":
+        return new SpellsRenderer(this.app, container);
+      case "terrains":
+        return new TerrainsRenderer(this.app, container);
+      case "regions":
+        return new RegionsRenderer(this.app, container);
+      default:
+        throw new Error(`Unsupported mode: ${mode}`);
     }
-    const entries = this.regions.map((r, i) => ({ ...r, _i: i })).filter((r) => (r.name || "").trim()).map((r) => ({ r, s: score(r.name) })).filter((x) => q ? x.s > -Infinity : true).sort((a, b) => b.s - a.s || a.r.name.localeCompare(b.r.name));
-    for (const it of entries) {
-      const row = list.createDiv({ cls: "sm-cc-item" });
-      const nameInp = row.createEl("input", { attr: { type: "text", placeholder: "(Name)" } });
-      nameInp.value = it.r.name;
-      const terrSel = row.createEl("select");
-      enhanceSelectToSearch(terrSel, "Such-dropdown\u2026");
-      const terrNames = Object.keys(this.terrains || {});
-      for (const t of terrNames) {
-        const opt = terrSel.createEl("option", { text: t || "(leer)", value: t });
-        if (t === it.r.terrain) opt.selected = true;
-      }
-      const encInp = row.createEl("input", { attr: { type: "number", min: "1", step: "1", placeholder: "Encounter 1/n" } });
-      encInp.value = it.r.encounterOdds && it.r.encounterOdds > 0 ? String(it.r.encounterOdds) : "";
-      const delBtn = row.createEl("button", { text: "\u{1F5D1}" });
-      const update = () => {
-        const n = parseInt(encInp.value, 10);
-        const odds = Number.isFinite(n) && n > 0 ? n : void 0;
-        this.upsertRegion(it.r._i, nameInp.value, terrSel.value, odds);
-      };
-      nameInp.oninput = update;
-      terrSel.onchange = update;
-      encInp.oninput = update;
-      delBtn.onclick = () => this.removeRegion(it.r._i);
+  }
+  updateHeaderButtons() {
+    for (const [mode, btn] of this.headerButtons.entries()) {
+      btn.classList.toggle("is-active", this.mode === mode);
     }
+  }
+  updateSourceDescription() {
+    if (!this.descEl) return;
+    const text = this.mode === "creatures" ? `${LIBRARY_COPY.sources.prefix}${LIBRARY_COPY.sources.creatures}` : this.mode === "spells" ? `${LIBRARY_COPY.sources.prefix}${LIBRARY_COPY.sources.spells}` : this.mode === "terrains" ? describeTerrainsSource() : describeRegionsSource();
+    this.descEl.setText(text);
   }
   async onCreate(name) {
-    if (this.mode === "creatures") {
-      new CreateCreatureModal(this.app, name, async (data) => {
-        const f = await createCreatureFile(this.app, data);
-        await this.onSourceChanged("creatures");
-        await this.app.workspace.openLinkText(f.path, f.path, true, { state: { mode: "source" } });
-      }).open();
-      return;
-    }
-    if (this.mode === "spells") {
-      new CreateSpellModal(this.app, name, async (data) => {
-        const f = await createSpellFile(this.app, data);
-        await this.onSourceChanged("spells");
-        await this.app.workspace.openLinkText(f.path, f.path, true, { state: { mode: "source" } });
-      }).open();
-      return;
-    }
-    if (!name) return;
-    if (this.mode === "terrains") {
-      const map = { ...this.terrains };
-      if (!map[name]) map[name] = { color: "#888888", speed: 1 };
-      await saveTerrains(this.app, map);
-      this.terrains = await loadTerrains(this.app);
-      this.renderList();
-      return;
-    }
-    const exists = this.regions.some((r) => (r.name || "").toLowerCase() === name.toLowerCase());
-    if (!exists) {
-      const next = [...this.regions, { name, terrain: "" }];
-      await saveRegions(this.app, next);
-      this.regions = await loadRegions(this.app);
-      this.renderList();
-    }
-  }
-  scoreName(name, q) {
-    if (!q) return 1e-4;
-    if (name === q) return 1e3;
-    if (name.startsWith(q)) return 900 - (name.length - q.length);
-    const idx = name.indexOf(q);
-    if (idx >= 0) return 700 - idx;
-    const tokenIdx = name.split(/\s+|[-_]/).findIndex((t) => t.startsWith(q));
-    if (tokenIdx >= 0) return 600 - tokenIdx * 5;
-    return -Infinity;
-  }
-  // --- Terrains helpers ---
-  async commitTerrains() {
-    await saveTerrains(this.app, this.terrains);
-    this.terrains = await loadTerrains(this.app);
-  }
-  upsertTerrain(oldKey, newKey, color, speed) {
-    if (!Number.isFinite(speed)) speed = 1;
-    const next = { ...this.terrains };
-    if (oldKey !== newKey) delete next[oldKey];
-    if (newKey === "") next[""] = { color: "transparent", speed: 1 };
-    else next[newKey] = { color, speed };
-    this.terrains = next;
-    void this.commitTerrains();
-  }
-  removeTerrain(key) {
-    if (key === "") return;
-    const next = { ...this.terrains };
-    delete next[key];
-    this.terrains = next;
-    void this.commitTerrains();
-    this.renderList();
-  }
-  // --- Regions helpers ---
-  async commitRegions() {
-    await saveRegions(this.app, this.regions);
-  }
-  upsertRegion(idx, name, terrain, encounterOdds) {
-    if (!this.regions[idx]) return;
-    this.regions[idx] = { name, terrain, encounterOdds };
-    void this.commitRegions();
-  }
-  removeRegion(idx) {
-    if (!this.regions[idx]) return;
-    this.regions.splice(idx, 1);
-    void this.commitRegions();
-    this.renderList();
+    if (!name && this.mode !== "creatures" && this.mode !== "spells") return;
+    if (!this.activeRenderer) return;
+    await this.activeRenderer.handleCreate(name);
+    this.searchInput?.focus();
   }
 };
+
+// src/app/main.ts
+init_terrain_store();
+init_terrain();
 
 // src/app/css.ts
 var HEX_PLUGIN_CSS = `
@@ -6545,71 +9151,8 @@ var HEX_PLUGIN_CSS = `
 .sm-cartographer--travel .hex3x3-map polyline { pointer-events: none; }
 `;
 
-// src/app/layout-editor-bridge.ts
-var LAYOUT_EDITOR_PLUGIN_ID = "layout-editor";
-var MAP_VIEW_BINDING_ID = "salt-marcher.cartographer-map";
-function resolveLayoutEditorApi(app) {
-  const layoutEditor = app.plugins.getPlugin(LAYOUT_EDITOR_PLUGIN_ID);
-  if (!layoutEditor || typeof layoutEditor !== "object") return null;
-  const api = layoutEditor.getApi?.();
-  if (!api || typeof api !== "object") return null;
-  return api;
-}
-function setupLayoutEditorBridge(plugin) {
-  const { app } = plugin;
-  let unregister = null;
-  const tryRegister = () => {
-    if (unregister) return;
-    const api = resolveLayoutEditorApi(app);
-    if (!api?.registerViewBinding) return;
-    try {
-      api.registerViewBinding({
-        id: MAP_VIEW_BINDING_ID,
-        label: "Salt Marcher \u2013 Hex Map",
-        description: "Cartographer-View mit renderHexMap & Token-Workflow."
-      });
-      unregister = () => {
-        try {
-          api.unregisterViewBinding?.(MAP_VIEW_BINDING_ID);
-        } catch (err) {
-          console.error("[salt-marcher] failed to unregister layout binding", err);
-        }
-        unregister = null;
-      };
-    } catch (err) {
-      console.error("[salt-marcher] failed to register layout binding", err);
-    }
-  };
-  tryRegister();
-  plugin.registerEvent(app.workspace.on("layout-ready", tryRegister));
-  const manager = app.plugins;
-  let enabledRef = null;
-  let disabledRef = null;
-  if (typeof manager?.on === "function") {
-    enabledRef = manager.on("plugin-enabled", (id) => {
-      if (id === LAYOUT_EDITOR_PLUGIN_ID) {
-        tryRegister();
-      }
-    });
-    disabledRef = manager.on("plugin-disabled", (id) => {
-      if (id === LAYOUT_EDITOR_PLUGIN_ID) {
-        unregister?.();
-      }
-    });
-  }
-  return () => {
-    unregister?.();
-    if (enabledRef && typeof manager?.off === "function") {
-      manager.off("plugin-enabled", enabledRef);
-    }
-    if (disabledRef && typeof manager?.off === "function") {
-      manager.off("plugin-disabled", disabledRef);
-    }
-  };
-}
-
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian22.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian24.Plugin {
   async onload() {
     this.registerView(VIEW_CARTOGRAPHER, (leaf) => new CartographerView(leaf));
     this.registerView(VIEW_ENCOUNTER, (leaf) => new EncounterView(leaf));
@@ -6628,14 +9171,14 @@ var SaltMarcherPlugin = class extends import_obsidian22.Plugin {
     });
     this.addCommand({
       id: "open-cartographer",
-      name: "Cartographer \xF6ffnen",
+      name: "Open Cartographer",
       callback: async () => {
         await openCartographer(this.app);
       }
     });
     this.addCommand({
       id: "open-library",
-      name: "Library \xF6ffnen",
+      name: "Open Library",
       callback: async () => {
         const leaf = this.app.workspace.getLeaf(true);
         await leaf.setViewState({ type: VIEW_LIBRARY, active: true });
@@ -6643,11 +9186,9 @@ var SaltMarcherPlugin = class extends import_obsidian22.Plugin {
       }
     });
     this.injectCss();
-    this.teardownLayoutBridge = setupLayoutEditorBridge(this);
   }
   async onunload() {
     this.unwatchTerrains?.();
-    this.teardownLayoutBridge?.();
     await detachCartographerLeaves(this.app);
     this.removeCss();
   }

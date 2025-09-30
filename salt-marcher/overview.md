@@ -36,7 +36,7 @@ salt-marcher/
 1. **Bootstrap (`src/app/main.ts`):** Registriert Views, Commands und Ribbon-Icons, initialisiert Terrain-Daten und CSS. Detailstandards und offene Fragen findest du im [App-Bootstrap-Dokument](docs/app/README.md).
 2. **Datenhaltung:** `core/terrain-store.ts`, `core/regions-store.ts` sowie Map-Helfer synchronisieren Vault-Dateien mit den Views.
 3. **Workspaces:** Cartographer-, Library- und Encounter-Apps beobachten die Stores, aktualisieren UI-Zustand und lösen Aktionen wie Encounter-Starts oder Map-Saves aus.
-4. **Integrationen:** Die optionale `layout-editor-bridge.ts` bindet den Cartographer an den Layout Editor, während UI-Komponenten (`src/ui/*`) konsistente Dialoge und Header bereitstellen.
+4. **Integrationen:** Optionale Erweiterungen werden defensiv angebunden, während UI-Komponenten (`src/ui/*`) konsistente Dialoge und Header bereitstellen.
 
 ## Dokumentation & Standards
 Die Bereichsdokumente unter [`docs/`](docs/README.md) werden nach jedem Feature-Update gepflegt. Der repository-weite Einstieg steht im [Documentation Hub](../DOCUMENTATION.md). Für neue Beiträge bitte den projektspezifischen [Style Guide](../style-guide.md) beachten und Querverlinkungen zu bestehenden Overviews setzen. Bootstrap-bezogene Refactorings sind im [Plugin Bootstrap Review](../todo/plugin-bootstrap-review.md) dokumentiert.
