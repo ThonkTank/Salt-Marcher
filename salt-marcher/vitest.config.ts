@@ -1,3 +1,5 @@
+// salt-marcher/vitest.config.ts
+// Konfiguriert Vitest mit Aliasauflösung und jsdom-Umgebung für Plugin-Tests.
 import { defineConfig } from "vitest/config";
 import { fileURLToPath } from "node:url";
 
