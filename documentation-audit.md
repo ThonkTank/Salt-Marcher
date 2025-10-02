@@ -1,16 +1,41 @@
-# Dokumentationslücken
-
-Liste aller aktuell fehlenden Dokumentationsstellen im Repository.
-
-## Ordner ohne `AGENTS.md`
-
-- Keine (Stand: aktuelle Änderungen eingepflegt, erneut geprüft am 2025-10-02).
-
-## Skripte ohne Kopfkommentar
-
-- Keine (Stand: aktuelle Änderungen eingepflegt, erneut geprüft am 2025-10-02).
-
-## Prüfmethodik
-
-- Ordner-Scan: `python - <<'PY' ... if 'AGENTS.md' not in filenames ...` (siehe Shell-Historie).
-- Skript-Scan: `python - <<'PY' ... if not first.startswith('// ') ...`.
+- ./AGENTS.md
+- ./salt-marcher/AGENTS.md
+- ./salt-marcher/src/AGENTS.md
+- ./salt-marcher/src/app/AGENTS.md
+- ./salt-marcher/src/apps/AGENTS.md
+- ./salt-marcher/src/apps/cartographer/AGENTS.md
+- ./salt-marcher/src/apps/cartographer/editor/AGENTS.md
+- ./salt-marcher/src/apps/cartographer/editor/tools/AGENTS.md
+- ./salt-marcher/src/apps/cartographer/editor/tools/terrain-brush/AGENTS.md
+- ./salt-marcher/src/apps/cartographer/mode-registry/AGENTS.md
+- ./salt-marcher/src/apps/cartographer/mode-registry/providers/AGENTS.md
+- ./salt-marcher/src/apps/cartographer/modes/AGENTS.md
+- ./salt-marcher/src/apps/cartographer/modes/travel-guide/AGENTS.md
+- ./salt-marcher/src/apps/cartographer/travel/AGENTS.md
+- ./salt-marcher/src/apps/cartographer/travel/domain/AGENTS.md
+- ./salt-marcher/src/apps/cartographer/travel/infra/AGENTS.md
+- ./salt-marcher/src/apps/cartographer/travel/render/AGENTS.md
+- ./salt-marcher/src/apps/cartographer/travel/ui/AGENTS.md
+- ./salt-marcher/src/apps/cartographer/view-shell/AGENTS.md
+- ./salt-marcher/src/apps/encounter/AGENTS.md
+- ./salt-marcher/src/apps/library/AGENTS.md
+- ./salt-marcher/src/apps/library/core/AGENTS.md
+- ./salt-marcher/src/apps/library/create/AGENTS.md
+- ./salt-marcher/src/apps/library/create/creature/AGENTS.md
+- ./salt-marcher/src/apps/library/create/shared/AGENTS.md
+- ./salt-marcher/src/apps/library/create/spell/AGENTS.md
+- ./salt-marcher/src/apps/library/view/AGENTS.md
+- ./salt-marcher/src/core/AGENTS.md
+- ./salt-marcher/src/core/hex-mapper/AGENTS.md
+- ./salt-marcher/src/core/hex-mapper/render/AGENTS.md
+- ./salt-marcher/src/ui/AGENTS.md
+- ./salt-marcher/tests/AGENTS.md
+- ./salt-marcher/tests/app/AGENTS.md
+- ./salt-marcher/tests/cartographer/AGENTS.md
+- ./salt-marcher/tests/cartographer/editor/AGENTS.md
+- ./salt-marcher/tests/cartographer/travel/AGENTS.md
+- ./salt-marcher/tests/core/AGENTS.md
+- ./salt-marcher/tests/encounter/AGENTS.md
+- ./salt-marcher/tests/library/AGENTS.md
+- ./salt-marcher/tests/mocks/AGENTS.md
+- ./salt-marcher/tests/ui/AGENTS.md
