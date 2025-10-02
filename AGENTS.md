@@ -7,3 +7,4 @@ Arbeite ordentlich und nachhaltig. Überlege dir langfristige Lösungen. Dokumen
 Jedes Skript sollte einen kurzen header haben, der eine ähnliche Funkoin hat. Ggf. bei komplexeren Skripten mehrere Header für unterschiedliche Abschnite.
 
 Halte Dokumentation so kurz und präzise wie möglich. Nutze die geringst mögliche Menge an Worten.
+Ergänze fehlende Dokumentation sofort.
