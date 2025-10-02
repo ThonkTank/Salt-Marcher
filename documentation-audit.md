@@ -4,11 +4,6 @@ Liste aller aktuell fehlenden Dokumentationsstellen im Repository.
 
 ## Ordner ohne `AGENTS.md`
 
-- `salt-marcher/src/apps/cartographer/editor`
-- `salt-marcher/src/apps/cartographer/editor/tools`
-- `salt-marcher/src/apps/cartographer/editor/tools/terrain-brush`
-- `salt-marcher/src/apps/cartographer/mode-registry`
-- `salt-marcher/src/apps/cartographer/mode-registry/providers`
 - `salt-marcher/src/apps/cartographer/modes`
 - `salt-marcher/src/apps/cartographer/modes/travel-guide`
 - `salt-marcher/src/apps/cartographer/travel`
@@ -38,10 +33,7 @@ Liste aller aktuell fehlenden Dokumentationsstellen im Repository.
 
 ## Skripte ohne Kopfkommentar
 
-- `salt-marcher/tests/app/main.integration.test.ts`
-- `salt-marcher/tests/app/terrain-bootstrap.test.ts`
 - `salt-marcher/tests/app/terrain-watcher.test.ts`
-- `salt-marcher/tests/cartographer/editor/editor-mode.test.ts`
 - `salt-marcher/tests/cartographer/editor/terrain-brush-options.test.ts`
 - `salt-marcher/tests/cartographer/editor/tool-manager.test.ts`
 - `salt-marcher/tests/cartographer/mode-registry.test.ts`

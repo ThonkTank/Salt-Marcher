@@ -1,3 +1,5 @@
+// salt-marcher/tests/app/main.integration.test.ts
+// Übt das Plugin-Bootstrap durch und prüft Terrain- sowie View-Verkabelung.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App, PluginManifest } from "obsidian";
 
