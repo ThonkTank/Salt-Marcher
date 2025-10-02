@@ -1,4 +1,5 @@
 // src/apps/library/create/creature/section-utils.ts
+// Gemeinsame Formular-Helfer für Preset-Auswahl und Schadenswiderstands-Editoren.
 import { Setting } from "obsidian";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import { CREATURE_DAMAGE_PRESETS } from "./presets";
@@ -41,6 +42,7 @@ export function mountPresetSelectEditor(
     settingClass,
   } = resolved;
   const setting = new Setting(parent).setName(title);
+  setting.settingEl.addClass("sm-cc-setting");
   if (settingClass) {
     const classes = Array.isArray(settingClass) ? settingClass : [settingClass];
     setting.settingEl.classList.add(...classes);
@@ -181,6 +183,7 @@ export function mountDamageResponseEditor(
   ];
 
   const setting = new Setting(parent).setName("Schadenstyp-Reaktionen");
+  setting.settingEl.addClass("sm-cc-setting");
   const row = setting.controlEl.createDiv({ cls: "sm-cc-searchbar sm-cc-damage-row" });
   row.createEl("label", { cls: "sm-cc-damage-label", text: "Schadenstyp" });
 

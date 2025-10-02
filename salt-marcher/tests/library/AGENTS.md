@@ -7,6 +7,7 @@
 # ToDo
 - Snapshot-Tests für Tabellenansichten hinzufügen.
 - Store-Mocks mit realistischen Fixtures erweitern.
+- Statblock-Fixtures in Builder-Funktionen überführen, um Duplikate zu reduzieren.
 
 # Standards
 - Testdateien erklären im Kopf den geprüften Library-Aspekt.

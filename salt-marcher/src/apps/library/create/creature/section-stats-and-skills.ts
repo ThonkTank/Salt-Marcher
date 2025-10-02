@@ -1,4 +1,5 @@
 // src/apps/library/create/creature/section-stats-and-skills.ts
+// Erfasst Attributswerte, Rettungswurf-Profizienzen und Fertigkeiten (inkl. Expertise).
 import { Setting } from "obsidian";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import { abilityMod, formatSigned, parseIntSafe } from "../shared/stat-utils";

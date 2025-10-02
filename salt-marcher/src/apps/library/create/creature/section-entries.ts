@@ -1,4 +1,5 @@
 // src/apps/library/create/creature/section-entries.ts
+// Pflegt strukturierte Einträge für Traits, Aktionen, Bonusaktionen, Reaktionen und Legendäres.
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import type { StatblockData } from "../../core/creature-files";
 import { abilityMod, formatSigned, parseIntSafe } from "../shared/stat-utils";

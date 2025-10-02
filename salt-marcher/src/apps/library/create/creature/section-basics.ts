@@ -1,94 +1,102 @@
 // src/apps/library/create/creature/section-basics.ts
-import { Setting } from "obsidian";
+// Erfasst Name, Typ, Gesinnung, Kernwerte (HP, AC, PB, CR, XP) sowie alle Bewegungsarten.
+import { Setting, ToggleComponent } from "obsidian";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import type { StatblockData } from "../../core/creature-files";
 import {
   CREATURE_ALIGNMENT_GOOD_EVIL,
   CREATURE_ALIGNMENT_LAW_CHAOS,
-  CREATURE_MOVEMENT_TYPES,
   CREATURE_SIZES,
   CREATURE_TYPES,
-  type CreatureMovementType,
 } from "./presets";
+import { mountTokenEditor } from "../shared/token-editor";
 
-function ensureSpeedList(data: StatblockData): string[] {
+function ensureSpeedExtras(data: StatblockData): string[] {
   if (!Array.isArray(data.speedList)) data.speedList = [];
   return data.speedList;
 }
 
+type SpeedKey =
+  | "speedWalk"
+  | "speedClimb"
+  | "speedFly"
+  | "speedSwim"
+  | "speedBurrow";
+
+const SPEED_FIELD_DEFS: Array<{ key: SpeedKey; label: string; placeholder: string; hoverToggle?: boolean }> = [
+  { key: "speedWalk", label: "Gehen", placeholder: "30 ft." },
+  { key: "speedClimb", label: "Klettern", placeholder: "30 ft." },
+  { key: "speedFly", label: "Fliegen", placeholder: "60 ft.", hoverToggle: true },
+  { key: "speedSwim", label: "Schwimmen", placeholder: "40 ft." },
+  { key: "speedBurrow", label: "Graben", placeholder: "20 ft." },
+];
+
 export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockData) {
   const root = parent.createDiv({ cls: "sm-cc-basics" });
 
-  const grid = root.createDiv({ cls: "sm-cc-basics__grid" });
-  const registerGridItem = (setting: Setting, span: 1 | 2 | 3 | 4 = 1) => {
-    setting.settingEl.classList.add("sm-cc-basics__grid-item");
-    if (span === 2) setting.settingEl.classList.add("sm-cc-basics__grid-item--span-2");
-    if (span === 3) setting.settingEl.classList.add("sm-cc-basics__grid-item--span-3");
-    if (span === 4) setting.settingEl.classList.add("sm-cc-basics__grid-item--span-4");
+  const identity = root.createDiv({ cls: "sm-cc-basics__group" });
+  identity.createEl("h5", { text: "Identität", cls: "sm-cc-basics__subtitle" });
+  const identityGrid = identity.createDiv({ cls: "sm-cc-field-grid sm-cc-field-grid--identity" });
+
+  const createSetting = (container: HTMLElement, label: string) => {
+    const setting = new Setting(container).setName(label);
+    setting.settingEl.addClass("sm-cc-setting");
+    return setting;
   };
 
-  const idSetting = new Setting(grid).setName("Name");
-  registerGridItem(idSetting, 2);
-  idSetting.addText((t) => {
+  const nameSetting = createSetting(identityGrid, "Name");
+  nameSetting.addText((t) => {
     t.setPlaceholder("Aboleth")
       .setValue(data.name || "")
       .onChange((v: string) => (data.name = v.trim()));
-    t.inputEl.classList.add("sm-cc-basics__text-input");
-    t.inputEl.style.width = "100%";
+    t.inputEl.classList.add("sm-cc-input");
   });
 
-  const typeSetting = new Setting(grid).setName("Typ");
-  registerGridItem(typeSetting, 2);
+  const typeSetting = createSetting(identityGrid, "Typ");
   typeSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_TYPES) dd.addOption(option, option);
     dd.setValue(data.type ?? "");
     dd.onChange((v: string) => (data.type = v));
-    dd.selectEl.classList.add("sm-cc-basics__select");
-    dd.selectEl.style.width = "100%";
+    dd.selectEl.classList.add("sm-cc-select");
     try {
       enhanceSelectToSearch(dd.selectEl, "Such-dropdown…");
     } catch {}
   });
 
-  const sizeSetting = new Setting(grid).setName("Größe");
-  registerGridItem(sizeSetting, 2);
+  const sizeSetting = createSetting(identityGrid, "Größe");
   sizeSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_SIZES) dd.addOption(option, option);
     dd.setValue(data.size ?? "");
     dd.onChange((v: string) => (data.size = v));
-    dd.selectEl.classList.add("sm-cc-basics__select");
-    dd.selectEl.style.width = "100%";
+    dd.selectEl.classList.add("sm-cc-select");
     try {
       enhanceSelectToSearch(dd.selectEl, "Such-dropdown…");
     } catch {}
   });
 
-  const alignSetting = new Setting(grid).setName("Gesinnung");
-  registerGridItem(alignSetting, 2);
-  alignSetting.settingEl.classList.add("sm-cc-basics__alignment");
-  alignSetting.controlEl.classList.add("sm-cc-basics__alignment-controls");
-  alignSetting.addDropdown((dd) => {
+  const alignmentSetting = createSetting(identityGrid, "Gesinnung");
+  alignmentSetting.settingEl.addClass("sm-cc-setting--inline");
+  alignmentSetting.controlEl.addClass("sm-cc-alignment");
+  alignmentSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_ALIGNMENT_LAW_CHAOS) dd.addOption(option, option);
     dd.setValue(data.alignmentLawChaos ?? "");
     dd.onChange((v: string) => (data.alignmentLawChaos = v));
-    dd.selectEl.classList.add("sm-cc-basics__alignment-select", "sm-cc-basics__select");
-    dd.selectEl.style.width = "100%";
+    dd.selectEl.classList.add("sm-cc-select");
     try {
       const el = dd.selectEl;
       el.dataset.sdOpenAll = "0";
       enhanceSelectToSearch(el, "Such-dropdown…");
     } catch {}
   });
-  alignSetting.addDropdown((dd) => {
+  alignmentSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_ALIGNMENT_GOOD_EVIL) dd.addOption(option, option);
     dd.setValue(data.alignmentGoodEvil ?? "");
     dd.onChange((v: string) => (data.alignmentGoodEvil = v));
-    dd.selectEl.classList.add("sm-cc-basics__alignment-select", "sm-cc-basics__select");
-    dd.selectEl.style.width = "100%";
+    dd.selectEl.classList.add("sm-cc-select");
     try {
       const el = dd.selectEl;
       el.dataset.sdOpenAll = "0";
@@ -96,116 +104,83 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
     } catch {}
   });
 
-  const speedSetting = new Setting(grid).setName("Bewegung");
-  registerGridItem(speedSetting, 4);
-  const speedControl = speedSetting.controlEl.createDiv({ cls: "sm-cc-move-ctl" });
+  const stats = root.createDiv({ cls: "sm-cc-basics__group" });
+  stats.createEl("h5", { text: "Kernwerte", cls: "sm-cc-basics__subtitle" });
+  const statsGrid = stats.createDiv({ cls: "sm-cc-field-grid sm-cc-field-grid--summary" });
 
-  const addRow = speedControl.createDiv({ cls: "sm-cc-searchbar sm-cc-move-row" });
-  const typeSelect = addRow.createEl("select", { cls: "sm-sd" }) as HTMLSelectElement;
-  for (const [value, label] of CREATURE_MOVEMENT_TYPES) {
-    const option = typeSelect.createEl("option", { text: label }) as HTMLOptionElement;
-    option.value = value;
-  }
-  typeSelect.classList.add("sm-cc-basics__select");
-  try {
-    enhanceSelectToSearch(typeSelect, "Such-dropdown…");
-  } catch {}
-
-  const hoverWrap = addRow.createDiv({ cls: "sm-cc-move-hover" });
-  const hoverId = `sm-cc-hover-${Math.random().toString(36).slice(2)}`;
-  const hoverCb = hoverWrap.createEl("input", {
-    attr: { type: "checkbox", id: hoverId },
-  }) as HTMLInputElement;
-  hoverWrap.createEl("label", { text: "Hover", attr: { for: hoverId } });
-  const updateHover = () => {
-    const cur = typeSelect.value as CreatureMovementType;
-    const isFly = cur === "fly";
-    hoverWrap.style.display = isFly ? "" : "none";
-    if (!isFly) hoverCb.checked = false;
-  };
-  updateHover();
-  typeSelect.addEventListener("change", updateHover);
-
-  const numWrap = addRow.createDiv({ cls: "sm-inline-number" });
-  const valInput = numWrap.createEl("input", {
-    attr: { type: "number", min: "0", step: "5", placeholder: "30" },
-  }) as HTMLInputElement;
-  valInput.classList.add("sm-cc-basics__text-input");
-  const decBtn = numWrap.createEl("button", { text: "−", cls: "btn-compact" });
-  const incBtn = numWrap.createEl("button", { text: "+", cls: "btn-compact" });
-  const step = (dir: 1 | -1) => {
-    const cur = parseInt(valInput.value, 10) || 0;
-    const next = Math.max(0, cur + 5 * dir);
-    valInput.value = String(next);
-  };
-  decBtn.onclick = () => step(-1);
-  incBtn.onclick = () => step(1);
-
-  const addSpeedBtn = addRow.createEl("button", {
-    text: "+",
-    cls: "sm-cc-move-add",
-    attr: { "aria-label": "Geschwindigkeitswert hinzufügen" },
-  });
-  const speedChips = speedControl.createDiv({ cls: "sm-cc-chips" });
-
-  const speeds = ensureSpeedList(data);
-  const renderSpeeds = () => {
-    speedChips.empty();
-    speeds.forEach((txt, i) => {
-      const chip = speedChips.createDiv({ cls: "sm-cc-chip" });
-      chip.createSpan({ text: txt });
-      const removeBtn = chip.createEl("button", {
-        text: "×",
-        cls: "sm-cc-chip__remove",
-        attr: { "aria-label": `${txt} entfernen` },
-      });
-      removeBtn.onclick = () => {
-        speeds.splice(i, 1);
-        renderSpeeds();
-      };
-    });
-  };
-  renderSpeeds();
-
-  addSpeedBtn.onclick = () => {
-    const n = parseInt(valInput.value, 10);
-    if (!Number.isFinite(n) || n <= 0) return;
-    const kind = typeSelect.value as CreatureMovementType;
-    const unit = "ft.";
-    const label =
-      kind === "walk"
-        ? `${n} ${unit}`
-        : kind === "fly" && hoverCb.checked
-        ? `fly ${n} ${unit} (hover)`
-        : `${kind} ${n} ${unit}`;
-    speeds.push(label);
-    valInput.value = "";
-    hoverCb.checked = false;
-    renderSpeeds();
-  };
-
-  const mkStatSetting = (
-    label: string,
-    placeholder: string,
-    key: keyof StatblockData,
-    span: 1 | 2 = 1,
-  ) => {
-    const setting = new Setting(grid).setName(label);
-    registerGridItem(setting, span);
+  const createStatField = (label: string, placeholder: string, key: keyof StatblockData) => {
+    const setting = createSetting(statsGrid, label);
     setting.addText((t) => {
       t.setPlaceholder(placeholder)
         .setValue((data[key] as string) ?? "")
         .onChange((v: string) => ((data as any)[key] = v.trim()));
-      t.inputEl.classList.add("sm-cc-basics__text-input");
-      t.inputEl.style.width = "100%";
+      t.inputEl.classList.add("sm-cc-input");
     });
   };
 
-  mkStatSetting("HP", "150", "hp");
-  mkStatSetting("AC", "17", "ac");
-  mkStatSetting("Init", "+7", "initiative");
-  mkStatSetting("PB", "+4", "pb");
-  mkStatSetting("HD", "20d10 + 40", "hitDice", 2);
-  mkStatSetting("CR", "10", "cr");
-  mkStatSetting("XP", "5900", "xp");
+  createStatField("HP", "150", "hp");
+  createStatField("AC", "17", "ac");
+  createStatField("Init", "+7", "initiative");
+  createStatField("PB", "+4", "pb");
+  createStatField("HD", "20d10 + 40", "hitDice");
+  createStatField("CR", "10", "cr");
+  createStatField("XP", "5900", "xp");
+
+  const movement = root.createDiv({ cls: "sm-cc-basics__group" });
+  movement.createEl("h5", { text: "Bewegung", cls: "sm-cc-basics__subtitle" });
+  const speedGrid = movement.createDiv({ cls: "sm-cc-field-grid sm-cc-field-grid--speeds" });
+
+  SPEED_FIELD_DEFS.forEach((def) => {
+    const setting = createSetting(speedGrid, def.label);
+    setting.settingEl.addClass("sm-cc-setting--speed");
+    const text = setting.addText((t) => {
+      t.setPlaceholder(def.placeholder)
+        .setValue(((data as any)[def.key] as string) ?? "")
+        .onChange((v: string) => {
+          (data as any)[def.key] = v.trim() || undefined;
+        });
+      t.inputEl.classList.add("sm-cc-input");
+    });
+
+    if (def.hoverToggle) {
+      let toggle: ToggleComponent | null = null;
+      toggle = setting.addToggle((tg) => {
+        tg.setValue(((data.speedFly ?? "").toLowerCase().includes("hover")));
+        tg.onChange((checked) => {
+          const raw = text.getValue().replace(/\s*\(hover\)$/i, "").trim();
+          if (!raw) return;
+          const next = checked ? `${raw} (hover)` : raw;
+          text.setValue(next);
+          data.speedFly = next;
+        });
+      });
+      const hoverWrap = setting.controlEl.createDiv({ cls: "sm-cc-hover-wrap" });
+      hoverWrap.appendChild(toggle.toggleEl);
+      toggle.toggleEl.addClass("sm-cc-hover-toggle");
+      toggle.toggleEl.setAttr("aria-label", "Hover markieren");
+      hoverWrap.createSpan({ text: "Hover", cls: "sm-cc-hover-label" });
+      text.inputEl.addEventListener("blur", () => {
+        const hasHover = /\(hover\)/i.test(text.getValue());
+        toggle?.setValue(hasHover);
+      });
+    }
+  });
+
+  const extras = ensureSpeedExtras(data);
+  const extrasEditor = mountTokenEditor(
+    movement,
+    "Weitere Bewegungen",
+    {
+      getItems: () => extras,
+      add: (value) => {
+        if (!extras.includes(value)) extras.push(value);
+      },
+      remove: (index) => extras.splice(index, 1),
+    },
+    {
+      placeholder: "z. B. teleport 30 ft.",
+      addButtonLabel: "+ Hinzufügen",
+    },
+  );
+  extrasEditor.setting.settingEl.addClass("sm-cc-setting");
 }

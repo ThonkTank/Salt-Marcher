@@ -8,6 +8,7 @@
 # ToDo
 - Snapshot-Tests für neue UI-Layer ergänzen.
 - Integration mit Hex-Mapper simulieren.
+- Presenter-/Shell-Stubs in `tests/mocks` zentralisieren, um Setup-Duplikate zu vermeiden.
 
 # Standards
 - Testdateien beschreiben im Kopf, welche Komponente/Flow sie abdecken.

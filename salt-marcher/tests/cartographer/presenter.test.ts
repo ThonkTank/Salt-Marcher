@@ -24,20 +24,47 @@ import type {
     CartographerModeRegistryEvent,
 } from "../../src/apps/cartographer/mode-registry";
 
-const createRegistryEntry = (mode: CartographerMode): CartographerModeRegistryEntry => ({
-    metadata: {
+type RegistryMetadata = CartographerModeRegistryEntry["metadata"];
+
+type RegistryEntryOverrides = Partial<Omit<RegistryMetadata, "capabilities">> & {
+    readonly capabilities?: Partial<RegistryMetadata["capabilities"]>;
+};
+
+const createRegistryEntry = (
+    mode: CartographerMode,
+    overrides: RegistryEntryOverrides = {},
+): CartographerModeRegistryEntry => {
+    const { capabilities: capabilitiesOverride, ...metaOverrides } = overrides;
+
+    const baseCapabilities = {
+        mapInteraction: typeof mode.onHexClick === "function" ? "hex-click" : "none",
+        persistence: typeof mode.onSave === "function" ? "manual-save" : "read-only",
+        sidebar: "required",
+    } satisfies RegistryMetadata["capabilities"];
+
+    const capabilities = Object.freeze({
+        ...baseCapabilities,
+        ...capabilitiesOverride,
+    }) as RegistryMetadata["capabilities"];
+
+    const metadata = Object.freeze({
         id: mode.id,
         label: mode.label,
         summary: `${mode.label} summary`,
         source: "tests/presenter",
-        capabilities: {
-            mapInteraction: typeof mode.onHexClick === "function" ? "hex-click" : "none",
-            persistence: typeof mode.onSave === "function" ? "manual-save" : "read-only",
-            sidebar: "required",
-        },
-    },
-    mode,
-});
+        ...metaOverrides,
+        capabilities,
+    }) as RegistryMetadata;
+
+    const wrappedMode: CartographerMode = {
+        ...mode,
+        onHexClick:
+            capabilities.mapInteraction === "hex-click" ? mode.onHexClick : undefined,
+        onSave: capabilities.persistence === "manual-save" ? mode.onSave : undefined,
+    };
+
+    return { metadata, mode: wrappedMode } satisfies CartographerModeRegistryEntry;
+};
 
 const createRegistryController = (initialEvents: CartographerModeRegistryEvent[] = []) => {
     let listener: ((event: CartographerModeRegistryEvent) => void) | null = null;
@@ -457,14 +484,11 @@ describe("CartographerPresenter", () => {
             onSave: saveHandler,
         };
 
-        const entry = createRegistryEntry(mode);
-        entry.metadata = {
-            ...entry.metadata,
+        const entry = createRegistryEntry(mode, {
             capabilities: {
-                ...entry.metadata.capabilities,
                 persistence: "read-only",
             },
-        };
+        });
 
         const registry = createRegistryController();
 
@@ -503,14 +527,11 @@ describe("CartographerPresenter", () => {
             onHexClick: hexClick,
         };
 
-        const entry = createRegistryEntry(mode);
-        entry.metadata = {
-            ...entry.metadata,
+        const entry = createRegistryEntry(mode, {
             capabilities: {
-                ...entry.metadata.capabilities,
                 mapInteraction: "none",
             },
-        };
+        });
 
         const registry = createRegistryController();
 

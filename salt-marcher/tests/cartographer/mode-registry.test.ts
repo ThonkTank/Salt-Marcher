@@ -36,6 +36,7 @@ describe("cartographer mode registry", () => {
             onEnter: vi.fn(),
             onExit: vi.fn(),
             onFileChange: vi.fn(),
+            onHexClick: vi.fn(),
         }) satisfies CartographerMode);
 
         const provider: CartographerModeProvider = {
@@ -77,6 +78,11 @@ describe("cartographer mode registry", () => {
                 label: "Dup",
                 summary: "first",
                 source: "tests/dup",
+                capabilities: {
+                    mapInteraction: "none",
+                    persistence: "read-only",
+                    sidebar: "required",
+                },
             },
             async load() {
                 return {
@@ -222,7 +228,7 @@ describe("cartographer mode registry", () => {
                 summary: "missing save handler",
                 source: "tests/broken",
                 capabilities: {
-                    mapInteraction: "hex-click",
+                    mapInteraction: "none",
                     persistence: "manual-save",
                     sidebar: "required",
                 },

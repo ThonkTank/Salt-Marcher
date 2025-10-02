@@ -1,4 +1,5 @@
 // src/apps/library/create/creature/section-spells-known.ts
+// Erfasst bekannte Zauber inkl. Grad, Nutzungen und optionale Notizen.
 import type { StatblockData } from "../../core/creature-files";
 
 export function mountSpellsKnownSection(
