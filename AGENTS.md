@@ -6,5 +6,7 @@ Arbeite ordentlich und nachhaltig. Überlege dir langfristige Lösungen. Dokumen
 
 Jedes Skript sollte einen kurzen header haben, der eine ähnliche Funkoin hat. Ggf. bei komplexeren Skripten mehrere Header für unterschiedliche Abschnite.
 
+Wenn Sinnvoll sollten Ordner eine README.md enthalten, in der aus User Sicht Funktionen, UI Interaktionen und Arbeitsabläufe erklärt werden. Diese READMEs sollen reine Endnutzer Anleitungen sein und dementsprechend keine technischen Details enthalten.
+
 Halte Dokumentation so kurz und präzise wie möglich. Nutze die geringst mögliche Menge an Worten.
 Ergänze fehlende Dokumentation sofort.
