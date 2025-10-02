@@ -1,3 +1,5 @@
+// salt-marcher/tests/ui/map-manager.test.ts
+// Prüft den Map-Manager auf Dateiaktionen, Notizen und Fehlerpfade.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { App, TFile } from "obsidian";
 import { createMapManager, MAP_MANAGER_COPY } from "../../src/ui/map-manager";

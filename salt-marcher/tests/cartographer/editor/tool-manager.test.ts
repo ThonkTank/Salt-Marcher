@@ -1,3 +1,5 @@
+// salt-marcher/tests/cartographer/editor/tool-manager.test.ts
+// Testet den Tool-Manager auf Lifecycle-Events und Aktivierungslogik.
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { createToolManager } from "../../../src/apps/cartographer/editor/tools/tool-manager";
 import type { ToolContext, ToolModule } from "../../../src/apps/cartographer/editor/tools/tools-api";

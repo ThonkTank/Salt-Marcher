@@ -1,3 +1,5 @@
+// salt-marcher/tests/cartographer/editor/editor-mode.test.ts
+// Überprüft den Editor-Modus auf DOM-Aufbau und Karteninteraktion.
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { App, TFile } from "obsidian";
 import type { CartographerModeLifecycleContext, HexCoord } from "../../../src/apps/cartographer/presenter";

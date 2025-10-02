@@ -1,3 +1,5 @@
+// salt-marcher/tests/cartographer/editor/terrain-brush-options.test.ts
+// Prüft das Terrain-Brush-Modul auf DOM-Setup und Tool-Konfiguration.
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { App } from "obsidian";
 import type { ToolContext } from "../../../src/apps/cartographer/editor/tools/tools-api";

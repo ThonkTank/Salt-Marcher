@@ -1,3 +1,5 @@
+// salt-marcher/tests/core/regions-store.test.ts
+// Prüft Regions-Store auf Datei-Lifecycle, Watcher und Datenpersistenz.
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as Obsidian from "obsidian";
 import { App, TFile } from "obsidian";

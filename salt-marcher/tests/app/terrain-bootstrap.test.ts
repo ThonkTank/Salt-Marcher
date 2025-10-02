@@ -1,3 +1,5 @@
+// salt-marcher/tests/app/terrain-bootstrap.test.ts
+// Testet den Terrain-Bootstrap-Service samt Watcher-Setup.
 import { describe, expect, it, vi } from "vitest";
 import { App } from "obsidian";
 import { createTerrainBootstrap } from "../../src/app/bootstrap-services";

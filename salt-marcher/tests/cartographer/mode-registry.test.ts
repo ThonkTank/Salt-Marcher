@@ -1,3 +1,5 @@
+// salt-marcher/tests/cartographer/mode-registry.test.ts
+// Prüft Registrierung, Snapshot und Events der Cartographer-Mode-Registry.
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { CartographerMode, CartographerModeContext } from "../../src/apps/cartographer/presenter";
 import {
