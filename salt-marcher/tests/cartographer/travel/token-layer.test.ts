@@ -1,3 +1,5 @@
+// salt-marcher/tests/cartographer/travel/token-layer.test.ts
+// Testet den Token-Layer auf Animationsabläufe und DOM-Updates.
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 import { createTokenLayer } from "../../../src/apps/cartographer/travel/ui/token-layer";

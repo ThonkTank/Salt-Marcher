@@ -1,3 +1,5 @@
+// salt-marcher/tests/library/view.test.ts
+// Prüft den Library-View auf Initialisierung, Kopien und Moduswechsel.
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mode } from "../../src/apps/library/view/mode";
 import { LIBRARY_COPY, LibraryView } from "../../src/apps/library/view";

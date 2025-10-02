@@ -1,3 +1,5 @@
+// salt-marcher/tests/app/terrain-watcher.test.ts
+// Überprüft das Terrain-Watcher-Setup rund um Datei-Events und Store-Aufrufe.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App, TFile } from "obsidian";
 import * as terrainStore from "../../src/core/terrain-store";

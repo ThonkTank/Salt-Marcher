@@ -1,3 +1,5 @@
+// salt-marcher/tests/mocks/obsidian.ts
+// Stellt schlanke Mock-Typen und Klassen für Obsidian-APIs bereit.
 export type EventRef = { off: () => void };
 
 export interface PluginManifest {

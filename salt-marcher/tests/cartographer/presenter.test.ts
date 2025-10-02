@@ -1,3 +1,5 @@
+// salt-marcher/tests/cartographer/presenter.test.ts
+// Validiert den Cartographer-Presenter hinsichtlich Mode-Lifecycle und Shell-Bindung.
 import { describe, expect, it, vi } from "vitest";
 import type { App, TFile } from "obsidian";
 import {

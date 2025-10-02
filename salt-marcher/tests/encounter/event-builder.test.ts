@@ -1,3 +1,5 @@
+// salt-marcher/tests/encounter/event-builder.test.ts
+// Prüft Encounter-Event-Builder vom Travel-Kontext bis zur Notizauflösung.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { App, TFile } from "obsidian";
 import { createEncounterEventFromTravel, type TravelEncounterContext } from "../../src/apps/encounter/event-builder";

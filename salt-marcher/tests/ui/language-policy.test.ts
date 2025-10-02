@@ -1,3 +1,5 @@
+// salt-marcher/tests/ui/language-policy.test.ts
+// Überwacht Einhaltung der Sprachrichtlinie ohne Umlaute in Zielskripten.
 import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
