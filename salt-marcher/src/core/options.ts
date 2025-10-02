@@ -1,3 +1,5 @@
+// src/core/options.ts
+// Parser und Typen für Hex-Map Optionen.
 export type HexOptions = {
     folder: string;
     /**

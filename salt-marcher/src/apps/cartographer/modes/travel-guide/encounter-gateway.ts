@@ -1,3 +1,5 @@
+// src/apps/cartographer/modes/travel-guide/encounter-gateway.ts
+// Öffnet Begegnungen aus dem Travel-Guide heraus.
 import { Notice, type App, type WorkspaceLeaf } from "obsidian";
 import { publishEncounterEvent } from "../../../encounter/session-store";
 import { createEncounterEventFromTravel, type TravelEncounterContext } from "../../../encounter/event-builder";

@@ -1,3 +1,5 @@
+// src/apps/cartographer/editor/tools/tool-manager.ts
+// Verwaltet aktiviertes Werkzeug im Karten-Editor.
 import type { CleanupFn, ToolContext, ToolManager as ToolManagerContract, ToolModule } from "./tools-api";
 
 const yieldMicrotask = () => Promise.resolve();

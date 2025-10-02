@@ -1,3 +1,5 @@
+// src/apps/cartographer/travel/domain/state.store.ts
+// Einfacher Zustandsspeicher für Travel-Logik.
 import type { LogicStateSnapshot, Coord, RouteNode } from "./types";
 
 export type Store = {

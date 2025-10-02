@@ -1,3 +1,5 @@
+// src/apps/cartographer/mode-registry/index.ts
+// Stellt zentrale Mode-Registry-APIs bereit.
 import {
     clearCartographerModeRegistry,
     createCartographerModeRegistrySnapshot,
