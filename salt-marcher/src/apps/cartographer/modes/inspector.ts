@@ -1,3 +1,5 @@
+// src/apps/cartographer/modes/inspector.ts
+// Hex-Inspector zur Bearbeitung einzelner Tiles.
 import type { TFile } from "obsidian";
 import { loadTile, saveTile } from "../../../core/hex-mapper/hex-notes";
 import { TERRAIN_COLORS } from "../../../core/terrain";

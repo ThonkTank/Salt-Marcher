@@ -1,3 +1,5 @@
+// src/apps/library/view/terrains.ts
+// Bearbeitet Terrain-Konfigurationen mit Auto-Speichern.
 import type { ModeRenderer } from "./mode";
 import { BaseModeRenderer, scoreName } from "./mode";
 import { loadTerrains, saveTerrains, watchTerrains, ensureTerrainFile, TERRAIN_FILE } from "../../../core/terrain-store";

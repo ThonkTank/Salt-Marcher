@@ -1,3 +1,5 @@
+// src/apps/cartographer/view-shell/layout.ts
+// Baut Grundlayout für Cartographer-Ansicht.
 export type CartographerLayout = {
     readonly host: HTMLElement;
     readonly headerHost: HTMLElement;

@@ -1,3 +1,5 @@
+// src/apps/cartographer/mode-registry/providers/editor.ts
+// Provider-Beschreibung für den Editor-Modus.
 import { defineCartographerModeProvider } from "../registry";
 
 export const createEditorModeProvider = () =>

@@ -1,3 +1,5 @@
+// src/apps/cartographer/view-shell/mode-registry.ts
+// Dropdown zur Verwaltung verfügbarer Modi.
 import type { CartographerShellMode } from "../view-shell";
 
 export type ModeRegistryHandle = {

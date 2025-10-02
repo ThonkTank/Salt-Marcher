@@ -1,3 +1,5 @@
+// src/app/integration-telemetry.ts
+// Dedupliziert Meldungen über Integrationsfehler.
 import { Notice } from "obsidian";
 
 /** Identifies the bridge/integration that surfaced an operational issue. */

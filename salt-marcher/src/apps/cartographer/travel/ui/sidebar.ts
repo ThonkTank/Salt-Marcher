@@ -1,3 +1,5 @@
+// src/apps/cartographer/travel/ui/sidebar.ts
+// Sidebar-Layout und Steuerung für Travel-Modus.
 export type Sidebar = {
     root: HTMLElement;
     controlsHost: HTMLElement;

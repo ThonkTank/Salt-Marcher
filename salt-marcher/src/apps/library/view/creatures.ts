@@ -1,3 +1,5 @@
+// src/apps/library/view/creatures.ts
+// Rendert Kreaturen und legt neue Dateien an.
 import type { TFile } from "obsidian";
 import type { ModeRenderer } from "./mode";
 import { BaseModeRenderer, scoreName } from "./mode";

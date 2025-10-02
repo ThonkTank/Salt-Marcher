@@ -1,3 +1,5 @@
+// src/apps/cartographer/mode-registry/registry.ts
+// Kernlogik zur Registrierung von Cartographer-Modi.
 import type {
     CartographerMode,
     CartographerModeLifecycleContext,
