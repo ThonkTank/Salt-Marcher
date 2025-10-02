@@ -78,14 +78,19 @@ class FakeApp extends App {
 }
 
 describe("regions-store watcher", () => {
+    let normalizePathSpy: ReturnType<typeof vi.spyOn<typeof Obsidian, "normalizePath">>;
+
     beforeEach(() => {
         vi.useFakeTimers();
-        vi.restoreAllMocks();
-        (Obsidian as any).normalizePath = (value: string) => value;
+        normalizePathSpy = vi
+            .spyOn(Obsidian, "normalizePath")
+            .mockImplementation((value: string) => value);
     });
 
     afterEach(() => {
+        normalizePathSpy.mockRestore();
         vi.useRealTimers();
+        vi.restoreAllMocks();
     });
 
     it("recreates Regions.md after deletion and alerts the user", async () => {

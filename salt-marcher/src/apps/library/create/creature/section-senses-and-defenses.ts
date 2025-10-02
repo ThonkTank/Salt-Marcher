@@ -1,4 +1,5 @@
 // src/apps/library/create/creature/section-senses-and-defenses.ts
+// Erfasst Sinne, Sprachen, Passive Werte, Resistenz-/Immunitätslisten sowie Ausrüstung.
 import type { StatblockData } from "../../core/creature-files";
 import { mountTokenEditor } from "../shared/token-editor";
 import {

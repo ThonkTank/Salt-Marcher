@@ -1,4 +1,5 @@
 // src/app/css.ts
+// Bündelt globale Styles für Plugin-Views inkl. Bibliotheks-Editoren.
 export const HEX_PLUGIN_CSS = `
 /* === View Container === */
 .sm-view-container {
@@ -137,37 +138,70 @@ export const HEX_PLUGIN_CSS = `
 .sm-cc-item { display:flex; gap:.5rem; align-items:center; justify-content:space-between; padding:.35rem .5rem; border:1px solid var(--background-modifier-border); border-radius:8px; background: var(--background-primary); }
 .sm-cc-item__name { font-weight: 500; }
 
+/* Creature Creator – Modal Layout */
+.sm-cc-modal-header { display:flex; flex-direction:column; gap:.35rem; margin-bottom:1rem; }
+.sm-cc-modal-header h2 { margin:0; font-size:1.35rem; }
+.sm-cc-modal-subtitle { margin:0; color: var(--text-muted); font-size:.95em; }
+.sm-cc-layout { display:grid; grid-template-columns:minmax(0, 3fr) minmax(0, 2fr); gap:1rem; align-items:flex-start; }
+.sm-cc-layout__col { display:flex; flex-direction:column; gap:1rem; min-width:0; }
+.sm-cc-layout__col--full { grid-column:1 / -1; }
+@media (max-width: 1100px) {
+    .sm-cc-layout { grid-template-columns:minmax(0, 1fr); }
+    .sm-cc-layout__col--side { order:2; }
+    .sm-cc-layout__col--main { order:1; }
+    .sm-cc-layout__col--full { order:3; }
+}
+.sm-cc-card {
+    border:1px solid var(--background-modifier-border);
+    border-radius:12px;
+    background:var(--background-primary);
+    box-shadow:0 6px 18px rgba(0,0,0,.06);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+}
+.sm-cc-card__head { padding:.85rem .95rem .6rem; border-bottom:1px solid var(--background-modifier-border); display:flex; flex-direction:column; gap:.3rem; }
+.sm-cc-card__title { margin:0; font-size:1.05rem; }
+.sm-cc-card__subtitle { margin:0; font-size:.9em; color: var(--text-muted); }
+.sm-cc-card__body { padding:.95rem; display:flex; flex-direction:column; gap:1.1rem; }
+.sm-cc-modal-footer { margin-top:1.25rem; display:flex; justify-content:flex-end; }
+.sm-cc-modal-footer .setting-item { margin:0; padding:0; border:none; background:none; }
+.sm-cc-modal-footer .setting-item-control { margin-left:0; display:flex; gap:.6rem; }
+.sm-cc-modal-footer button { min-width:120px; }
+
 /* Creature Creator – Basics Section */
-.sm-cc-basics { display:flex; flex-direction:column; gap:.75rem; }
-.sm-cc-basics__grid { display:grid; gap:.75rem; grid-template-columns:repeat(4, minmax(0, 1fr)); align-items:stretch; }
-.sm-cc-basics__grid-item { margin:0; height:100%; }
-.sm-cc-basics__grid-item.setting-item { border:1px solid var(--background-modifier-border); border-radius:8px; background: var(--background-primary); padding:.6rem .65rem; display:flex; flex-direction:column; gap:.4rem; box-sizing:border-box; border-top:none; }
-.sm-cc-basics__grid-item .setting-item-info { align-self:stretch; margin-right:0; }
-.sm-cc-basics__grid-item .setting-item-name { font-weight:600; }
-.sm-cc-basics__grid-item .setting-item-control { width:100%; margin-left:0; display:flex; flex-direction:column; gap:.35rem; }
-.sm-cc-basics__grid-item select,
-.sm-cc-basics__grid-item input[type="text"],
-.sm-cc-basics__grid-item input[type="number"] { width:100%; box-sizing:border-box; }
-.sm-cc-basics__grid-item--span-2 { grid-column:span 2; }
-.sm-cc-basics__grid-item--span-3 { grid-column:span 3; }
-.sm-cc-basics__grid-item--span-4 { grid-column:1 / -1; }
-.sm-cc-basics__alignment-controls { display:grid; gap:.5rem; grid-template-columns:repeat(2, minmax(0, 1fr)); }
-.sm-cc-basics__alignment-select { min-width:0; }
-.sm-cc-basics__select { min-height:32px; }
-.sm-cc-basics__text-input { min-height:32px; box-sizing:border-box; }
-@media (max-width: 1080px) {
-    .sm-cc-basics__grid { grid-template-columns:repeat(3, minmax(0, 1fr)); }
-    .sm-cc-basics__grid-item--span-3,
-    .sm-cc-basics__grid-item--span-4 { grid-column:1 / -1; }
+.sm-cc-basics { display:flex; flex-direction:column; gap:1rem; }
+.sm-cc-basics__group { display:flex; flex-direction:column; gap:.65rem; }
+.sm-cc-basics__subtitle { margin:0; font-size:.78rem; letter-spacing:.08em; text-transform:uppercase; color: var(--text-muted); }
+.sm-cc-field-grid { display:grid; gap:.75rem; }
+.sm-cc-field-grid--identity { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+.sm-cc-field-grid--summary { grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); }
+.sm-cc-field-grid--speeds { grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); }
+@media (max-width: 900px) {
+    .sm-cc-field-grid--identity { grid-template-columns:minmax(0, 1fr); }
 }
-@media (max-width: 860px) {
-    .sm-cc-basics__grid { grid-template-columns:repeat(2, minmax(0, 1fr)); }
-    .sm-cc-basics__grid-item--span-2 { grid-column:1 / -1; }
+@media (max-width: 720px) {
+    .sm-cc-field-grid--speeds { grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); }
 }
-@media (max-width: 620px) {
-    .sm-cc-basics__grid { grid-template-columns:minmax(0, 1fr); }
-    .sm-cc-basics__alignment-controls { grid-template-columns:minmax(0, 1fr); }
+.sm-cc-setting.setting-item { border:none; padding:0; margin:0; background:none; }
+.sm-cc-setting .setting-item-info { display:none; }
+.sm-cc-setting .setting-item-name { font-weight:600; font-size:.9em; color: var(--text-muted); }
+.sm-cc-setting .setting-item-control { margin-left:0; width:100%; display:flex; flex-direction:column; gap:.4rem; }
+.sm-cc-setting--inline .setting-item-control { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:.5rem; }
+.sm-cc-setting--speed .setting-item-control { flex-direction:row; align-items:center; gap:.45rem; }
+@media (max-width: 680px) {
+    .sm-cc-setting--inline .setting-item-control { grid-template-columns:minmax(0, 1fr); }
 }
+@media (max-width: 520px) {
+    .sm-cc-setting--speed .setting-item-control { flex-direction:column; align-items:flex-start; }
+    .sm-cc-setting--speed .sm-cc-hover-wrap { margin-left:0; }
+}
+.sm-cc-input { width:100%; min-height:32px; box-sizing:border-box; border-radius:6px; }
+.sm-cc-select { width:100%; min-height:32px; box-sizing:border-box; border-radius:6px; }
+.sm-cc-alignment select { min-width:0; }
+.sm-cc-hover-wrap { display:flex; align-items:center; gap:.35rem; margin-left:auto; }
+.sm-cc-hover-toggle { margin:0; }
+.sm-cc-hover-label { font-size:.8em; color: var(--text-muted); }
 
 /* Create Creature Modal helpers */
 .sm-cc-create-modal .sm-cc-grid {
@@ -199,18 +233,42 @@ export const HEX_PLUGIN_CSS = `
 .sm-cc-damage-chip { align-items:center; gap:.4rem; padding-right:.5rem; }
 .sm-cc-damage-chip__name { font-weight:500; }
 .sm-cc-damage-chip__badge { font-size:.75em; font-weight:600; border-radius:999px; padding:.1rem .45rem; text-transform:uppercase; letter-spacing:.03em; }
-.sm-cc-damage-chip--res { border-color: rgba(37,99,235,.45); background-color: rgba(37,99,235,.08); }
-.sm-cc-damage-chip--res { border-color: color-mix(in srgb, var(--interactive-accent) 45%, transparent); background-color: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-secondary)); }
-.sm-cc-damage-chip--res .sm-cc-damage-chip__badge { background-color: rgba(37,99,235,.18); color:#2563eb; }
-.sm-cc-damage-chip--res .sm-cc-damage-chip__badge { background-color: color-mix(in srgb, var(--interactive-accent) 22%, transparent); color: var(--interactive-accent); }
-.sm-cc-damage-chip--imm { border-color: rgba(124,58,237,.45); background-color: rgba(124,58,237,.08); }
-.sm-cc-damage-chip--imm { border-color: color-mix(in srgb, var(--color-purple, #7c3aed) 45%, transparent); background-color: color-mix(in srgb, var(--color-purple, #7c3aed) 12%, var(--background-secondary)); }
-.sm-cc-damage-chip--imm .sm-cc-damage-chip__badge { background-color: rgba(124,58,237,.18); color:#7c3aed; }
-.sm-cc-damage-chip--imm .sm-cc-damage-chip__badge { background-color: color-mix(in srgb, var(--color-purple, #7c3aed) 22%, transparent); color: var(--color-purple, #7c3aed); }
-.sm-cc-damage-chip--vuln { border-color: rgba(234,88,12,.45); background-color: rgba(234,88,12,.08); }
-.sm-cc-damage-chip--vuln { border-color: color-mix(in srgb, var(--color-orange, #ea580c) 45%, transparent); background-color: color-mix(in srgb, var(--color-orange, #ea580c) 12%, var(--background-secondary)); }
-.sm-cc-damage-chip--vuln .sm-cc-damage-chip__badge { background-color: rgba(234,88,12,.18); color:#ea580c; }
-.sm-cc-damage-chip--vuln .sm-cc-damage-chip__badge { background-color: color-mix(in srgb, var(--color-orange, #ea580c) 22%, transparent); color: var(--color-orange, #ea580c); }
+.sm-cc-damage-chip--res {
+    border-color: rgba(37,99,235,.45);
+    background-color: rgba(37,99,235,.08);
+    border-color: color-mix(in srgb, var(--interactive-accent) 45%, transparent);
+    background-color: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-secondary));
+}
+.sm-cc-damage-chip--res .sm-cc-damage-chip__badge {
+    background-color: rgba(37,99,235,.18);
+    color:#2563eb;
+    background-color: color-mix(in srgb, var(--interactive-accent) 22%, transparent);
+    color: var(--interactive-accent);
+}
+.sm-cc-damage-chip--imm {
+    border-color: rgba(124,58,237,.45);
+    background-color: rgba(124,58,237,.08);
+    border-color: color-mix(in srgb, var(--color-purple, #7c3aed) 45%, transparent);
+    background-color: color-mix(in srgb, var(--color-purple, #7c3aed) 12%, var(--background-secondary));
+}
+.sm-cc-damage-chip--imm .sm-cc-damage-chip__badge {
+    background-color: rgba(124,58,237,.18);
+    color:#7c3aed;
+    background-color: color-mix(in srgb, var(--color-purple, #7c3aed) 22%, transparent);
+    color: var(--color-purple, #7c3aed);
+}
+.sm-cc-damage-chip--vuln {
+    border-color: rgba(234,88,12,.45);
+    background-color: rgba(234,88,12,.08);
+    border-color: color-mix(in srgb, var(--color-orange, #ea580c) 45%, transparent);
+    background-color: color-mix(in srgb, var(--color-orange, #ea580c) 12%, var(--background-secondary));
+}
+.sm-cc-damage-chip--vuln .sm-cc-damage-chip__badge {
+    background-color: rgba(234,88,12,.18);
+    color:#ea580c;
+    background-color: color-mix(in srgb, var(--color-orange, #ea580c) 22%, transparent);
+    color: var(--color-orange, #ea580c);
+}
 .sm-cc-skill-editor { display:flex; flex-direction:column; gap:.35rem; }
 .sm-cc-skill-search {
     display:flex;

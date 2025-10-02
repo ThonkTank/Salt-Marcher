@@ -1,9 +1,21 @@
-// Re-export to keep feature-local import path while core still holds implementation
 // src/apps/library/core/creature-files.ts
+// Verwaltet das Vault-Verzeichnis "SaltMarcher/Creatures" ohne Cache und exportiert das Statblock-Schema.
+// Wird aus Feature-Ordnern re-exportiert, bis die Core-Dienste konsolidiert sind.
 import { App, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
 
 export const CREATURES_DIR = "SaltMarcher/Creatures";
 
+/**
+ * Normalised creature data used for persistence and Markdown export.
+ * The structure intentionally mirrors the reference stat blocks in
+ * `References/rulebooks/Statblocks/Creatures/Monsters`, covering:
+ * - identity (name, size, type, alignment)
+ * - initiative, defenses, hit points and movement (Standard-Lanes + `speedList` für Teleport/sonstige Werte)
+ * - abilities, saving throws, skills and passive perceptions
+ * - languages, gear and any resistances/immunities
+ * - trait/action style entries including bonus & reaction sections
+ * - spellcasting lists grouped by level or usage frequency
+ */
 export type StatblockData = {
     name: string;
     size?: string;
@@ -18,6 +30,7 @@ export type StatblockData = {
     speedSwim?: string;
     speedFly?: string;
     speedBurrow?: string;
+    speedClimb?: string;
     speedList?: string[];
     str?: string; dex?: string; con?: string; int?: string; wis?: string; cha?: string;
     pb?: string;
@@ -85,7 +98,7 @@ function statblockToMarkdown(d: StatblockData): string {
     lines.push("---"); lines.push("smType: creature"); lines.push(`name: "${name.replace(/"/g, '\\"')}"`);
     if (d.size) lines.push(`size: "${d.size}"`); if (d.type) lines.push(`type: "${d.type}"`); const align = composeAlignment(d); if (align) lines.push(`alignment: "${align}"`);
     if (d.ac) lines.push(`ac: "${d.ac}"`); if (d.initiative) lines.push(`initiative: "${d.initiative}"`); if (d.hp) lines.push(`hp: "${d.hp}"`); if (d.hitDice) lines.push(`hit_dice: "${d.hitDice}"`);
-    if (d.speedWalk) lines.push(`speed_walk: "${d.speedWalk}"`); if (d.speedSwim) lines.push(`speed_swim: "${d.speedSwim}"`); if (d.speedFly) lines.push(`speed_fly: "${d.speedFly}"`); if (d.speedBurrow) lines.push(`speed_burrow: "${d.speedBurrow}"`);
+    if (d.speedWalk) lines.push(`speed_walk: "${d.speedWalk}"`); if (d.speedSwim) lines.push(`speed_swim: "${d.speedSwim}"`); if (d.speedFly) lines.push(`speed_fly: "${d.speedFly}"`); if (d.speedBurrow) lines.push(`speed_burrow: "${d.speedBurrow}"`); if (d.speedClimb) lines.push(`speed_climb: "${d.speedClimb}"`);
     const speedsYaml = yamlList(d.speedList); if (speedsYaml) lines.push(`speeds: ${speedsYaml}`);
     if (d.str) lines.push(`str: "${d.str}"`); if (d.dex) lines.push(`dex: "${d.dex}"`); if (d.con) lines.push(`con: "${d.con}"`); if (d.int) lines.push(`int: "${d.int}"`); if (d.wis) lines.push(`wis: "${d.wis}"`); if (d.cha) lines.push(`cha: "${d.cha}"`); if (d.pb) lines.push(`pb: "${d.pb}"`);
     if (d.saveProf) { const profs = Object.entries(d.saveProf).filter(([, v]) => !!v).map(([k]) => k.toUpperCase()); if (profs.length) lines.push(`saves_prof: ${yamlList(profs)}`); }
@@ -106,7 +119,7 @@ function statblockToMarkdown(d: StatblockData): string {
     lines.push(`# ${name}`); if (hdr) lines.push(hdr); lines.push("");
     if (d.ac || d.initiative) lines.push(`AC ${d.ac ?? "-"}    Initiative ${d.initiative ?? "-"}`);
     if (d.hp || d.hitDice) lines.push(`HP ${d.hp ?? "-"}${d.hitDice ? ` (${d.hitDice})` : ""}`);
-    let speedsLine: string[] = []; if (d.speedList && d.speedList.length) speedsLine = d.speedList.slice(); else { if (d.speedWalk) speedsLine.push(`${d.speedWalk}`); if (d.speedSwim) speedsLine.push(`swim ${d.speedSwim}`); if (d.speedFly) speedsLine.push(`fly ${d.speedFly}`); if (d.speedBurrow) speedsLine.push(`burrow ${d.speedBurrow}`); } if (speedsLine.length) lines.push(`Speed ${speedsLine.join(", ")}`);
+    let speedsLine: string[] = []; if (d.speedList && d.speedList.length) speedsLine = d.speedList.slice(); else { if (d.speedWalk) speedsLine.push(`${d.speedWalk}`); if (d.speedClimb) speedsLine.push(`climb ${d.speedClimb}`); if (d.speedSwim) speedsLine.push(`swim ${d.speedSwim}`); if (d.speedFly) speedsLine.push(`fly ${d.speedFly}`); if (d.speedBurrow) speedsLine.push(`burrow ${d.speedBurrow}`); } if (speedsLine.length) lines.push(`Speed ${speedsLine.join(", ")}`);
     lines.push("");
     const abilities = [["STR", d.str],["DEX", d.dex],["CON", d.con],["INT", d.int],["WIS", d.wis],["CHA", d.cha]] as const; if (abilities.some(([_,v])=>!!v)) { lines.push("| Ability | Score |"); lines.push("| ------: | :---- |"); for (const [k,v] of abilities) if (v) lines.push(`| ${k} | ${v} |`); lines.push(""); }
     const pbNum = parseNum(d.pb) ?? 0; if (d.saveProf) { const parts: string[] = []; const map: Array<[keyof typeof d.saveProf, string, string|undefined]> = [['str','Str',d.str],['dex','Dex',d.dex],['con','Con',d.con],['int','Int',d.int],['wis','Wis',d.wis],['cha','Cha',d.cha]]; for (const [key,label,score] of map) { if (d.saveProf[key]) { const mod = abilityMod(score) ?? 0; parts.push(`${label} ${fmtSigned(mod + pbNum)}`); } } if (parts.length) lines.push(`Saves ${parts.join(", ")}`); }
