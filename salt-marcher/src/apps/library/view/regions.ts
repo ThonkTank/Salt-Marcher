@@ -1,3 +1,5 @@
+// src/apps/library/view/regions.ts
+// Verwalten von Regionenlisten samt Persistenz.
 import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
 import type { ModeRenderer } from "./mode";
 import { BaseModeRenderer, scoreName } from "./mode";

@@ -1,3 +1,5 @@
+// src/apps/cartographer/view-shell/map-surface.ts
+// Baut die Kartenfläche inklusive Overlay-API.
 import { createViewContainer, type ViewContainerHandle } from "../../../ui/view-container";
 
 export type MapSurfaceHandle = {

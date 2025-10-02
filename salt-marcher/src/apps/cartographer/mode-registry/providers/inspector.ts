@@ -1,3 +1,5 @@
+// src/apps/cartographer/mode-registry/providers/inspector.ts
+// Provider-Beschreibung für den Inspector-Modus.
 import { defineCartographerModeProvider } from "../registry";
 
 export const createInspectorModeProvider = () =>

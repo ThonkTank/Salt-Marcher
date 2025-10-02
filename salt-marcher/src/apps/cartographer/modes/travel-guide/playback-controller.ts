@@ -1,3 +1,5 @@
+// src/apps/cartographer/modes/travel-guide/playback-controller.ts
+// Steuert Wiedergabe-UI des Reise-Modus.
 import type { Sidebar } from "../../travel/ui/sidebar";
 import {
     createPlaybackControls,

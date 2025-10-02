@@ -1,3 +1,5 @@
+// src/apps/cartographer/modes/editor.ts
+// Hex-Editor mit Tool-Manager für Karten.
 import type { TFile } from "obsidian";
 import type {
     CartographerMode,

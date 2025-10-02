@@ -1,3 +1,5 @@
+// src/apps/cartographer/view-shell/mode-controller.ts
+// Koordiniert Moduswechsel mit Abbruchsteuerung.
 export type ModeSwitchContext = {
     readonly signal: AbortSignal;
 };

@@ -1,3 +1,5 @@
+// src/apps/library/view/spells.ts
+// Rendert und erstellt Zauber-Einträge.
 import type { TFile } from "obsidian";
 import type { ModeRenderer } from "./mode";
 import { BaseModeRenderer, scoreName } from "./mode";

@@ -1,3 +1,5 @@
+// src/apps/cartographer/travel/domain/actions.ts
+// State- und Playback-Logik für den Travel-Modus.
 import type { App, TFile } from "obsidian";
 import type { RenderAdapter } from "../infra/adapter";
 import { createStore, type Store } from "./state.store";

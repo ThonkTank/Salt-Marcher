@@ -1,3 +1,5 @@
+// src/apps/cartographer/mode-registry/providers/travel-guide.ts
+// Provider-Beschreibung für den Travel-Modus.
 import { defineCartographerModeProvider } from "../registry";
 
 export const createTravelGuideModeProvider = () =>

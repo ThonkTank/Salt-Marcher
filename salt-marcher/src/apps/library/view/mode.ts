@@ -1,3 +1,5 @@
+// src/apps/library/view/mode.ts
+// Basistypen für Library-Ansichtsmodi.
 import type { App } from "obsidian";
 
 export type Mode = "creatures" | "spells" | "terrains" | "regions";
