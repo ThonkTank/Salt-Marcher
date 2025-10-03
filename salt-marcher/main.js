@@ -44,6 +44,9 @@ function subscribeToEncounterEvents(listener) {
     listeners.delete(listener);
   };
 }
+function peekLatestEncounterEvent() {
+  return latestEvent;
+}
 var latestEvent, listeners;
 var init_session_store = __esm({
   "src/apps/encounter/session-store.ts"() {
@@ -481,24 +484,81 @@ var init_map_list = __esm({
 });
 
 // src/core/terrain.ts
-function setTerrains(next) {
-  const colors = {};
-  const speeds = {};
-  for (const [name, val] of Object.entries(next)) {
-    const n = (name ?? "").trim();
-    const color = (val?.color ?? "").trim() || "transparent";
-    const sp = Number.isFinite(val?.speed) ? val.speed : 1;
-    colors[n] = color;
-    speeds[n] = sp;
+function validateTerrainSchema(next) {
+  const validated = {};
+  const issues = [];
+  for (const [rawName, rawValue] of Object.entries(next ?? {})) {
+    const name = (rawName ?? "").trim();
+    const color = (rawValue?.color ?? "").trim();
+    if (!name && rawName !== "") {
+      issues.push(`Terrain name must not be empty (received: "${rawName}")`);
+      continue;
+    }
+    if (name.length > TERRAIN_NAME_MAX_LENGTH) {
+      issues.push(`Terrain name "${name}" exceeds ${TERRAIN_NAME_MAX_LENGTH} characters`);
+      continue;
+    }
+    if (/[:\n\r]/.test(name)) {
+      issues.push(`Terrain name "${name}" must not contain colons or line breaks`);
+      continue;
+    }
+    if (!color) {
+      issues.push(`Terrain "${name}" requires a color value`);
+      continue;
+    }
+    if (color !== "transparent" && !HEX_COLOR_RE.test(color) && !CSS_VAR_RE.test(color) && !CSS_FUNCTION_RE.test(color)) {
+      issues.push(`Terrain "${name}" uses unsupported color "${color}"`);
+      continue;
+    }
+    let numericSpeed;
+    if (rawValue?.speed === void 0) {
+      numericSpeed = 1;
+    } else {
+      numericSpeed = Number(rawValue.speed);
+    }
+    if (!Number.isFinite(numericSpeed)) {
+      issues.push(`Terrain "${name}" speed must be a finite number`);
+      continue;
+    }
+    if (numericSpeed < REGION_SPEED_MIN || numericSpeed > REGION_SPEED_MAX) {
+      issues.push(
+        `Terrain "${name}" speed ${numericSpeed} must be between ${REGION_SPEED_MIN} and ${REGION_SPEED_MAX}`
+      );
+      continue;
+    }
+    validated[name] = { color, speed: numericSpeed };
   }
-  const mergedColors = { ...DEFAULT_TERRAIN_COLORS, ...colors, "": "transparent" };
-  const mergedSpeeds = { ...DEFAULT_TERRAIN_SPEEDS, ...speeds, "": 1 };
-  for (const k of Object.keys(TERRAIN_COLORS)) if (!(k in mergedColors)) delete TERRAIN_COLORS[k];
+  if (!("" in validated)) {
+    validated[""] = { color: "transparent", speed: 1 };
+  }
+  if (issues.length) {
+    throw new TerrainValidationError(issues);
+  }
+  return validated;
+}
+function applyTerrainSchema(map) {
+  const mergedColors = { ...DEFAULT_TERRAIN_COLORS, ...Object.fromEntries(
+    Object.entries(map).map(([name, value]) => [name, value.color])
+  ) };
+  const mergedSpeeds = { ...DEFAULT_TERRAIN_SPEEDS, ...Object.fromEntries(
+    Object.entries(map).map(([name, value]) => [name, value.speed])
+  ) };
+  mergedColors[""] = map[""]?.color ?? "transparent";
+  mergedSpeeds[""] = map[""]?.speed ?? 1;
+  for (const key of Object.keys(TERRAIN_COLORS)) {
+    if (!(key in mergedColors)) delete TERRAIN_COLORS[key];
+  }
   Object.assign(TERRAIN_COLORS, mergedColors);
-  for (const k of Object.keys(TERRAIN_SPEEDS)) if (!(k in mergedSpeeds)) delete TERRAIN_SPEEDS[k];
+  for (const key of Object.keys(TERRAIN_SPEEDS)) {
+    if (!(key in mergedSpeeds)) delete TERRAIN_SPEEDS[key];
+  }
   Object.assign(TERRAIN_SPEEDS, mergedSpeeds);
 }
-var DEFAULT_TERRAIN_COLORS, DEFAULT_TERRAIN_SPEEDS, TERRAIN_COLORS, TERRAIN_SPEEDS;
+function setTerrains(next) {
+  const validated = validateTerrainSchema(next ?? {});
+  applyTerrainSchema(validated);
+}
+var DEFAULT_TERRAIN_COLORS, DEFAULT_TERRAIN_SPEEDS, TERRAIN_COLORS, TERRAIN_SPEEDS, TERRAIN_NAME_MAX_LENGTH, REGION_SPEED_MIN, REGION_SPEED_MAX, HEX_COLOR_RE, CSS_VAR_RE, CSS_FUNCTION_RE, TerrainValidationError;
 var init_terrain = __esm({
   "src/core/terrain.ts"() {
     "use strict";
@@ -517,6 +577,19 @@ var init_terrain = __esm({
     });
     TERRAIN_COLORS = { ...DEFAULT_TERRAIN_COLORS };
     TERRAIN_SPEEDS = { ...DEFAULT_TERRAIN_SPEEDS };
+    TERRAIN_NAME_MAX_LENGTH = 64;
+    REGION_SPEED_MIN = 0;
+    REGION_SPEED_MAX = 10;
+    HEX_COLOR_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
+    CSS_VAR_RE = /^var\(--[a-z0-9_-]+\)$/i;
+    CSS_FUNCTION_RE = /^(?:rgb|rgba|hsl|hsla)\(/i;
+    TerrainValidationError = class extends Error {
+      constructor(issues) {
+        super(`Invalid terrain schema: ${issues.join(", ")}`);
+        this.issues = issues;
+        this.name = "TerrainValidationError";
+      }
+    };
   }
 });
 
@@ -1046,12 +1119,40 @@ var init_layout = __esm({
 // src/core/hex-mapper/hex-notes.ts
 var hex_notes_exports = {};
 __export(hex_notes_exports, {
+  TileValidationError: () => TileValidationError,
   deleteTile: () => deleteTile,
   initTilesForNewMap: () => initTilesForNewMap,
   listTilesForMap: () => listTilesForMap,
   loadTile: () => loadTile,
-  saveTile: () => saveTile
+  saveTile: () => saveTile,
+  validateTileData: () => validateTileData
 });
+function validateTileData(data, options = {}) {
+  const { allowUnknownTerrain = false } = options;
+  const issues = [];
+  const terrain = typeof data.terrain === "string" ? data.terrain.trim() : "";
+  if (terrain.length > TILE_TERRAIN_MAX_LENGTH) {
+    issues.push(`terrain exceeds ${TILE_TERRAIN_MAX_LENGTH} characters`);
+  }
+  if (!allowUnknownTerrain && terrain && !(terrain in TERRAIN_COLORS)) {
+    issues.push(`unknown terrain "${terrain}"`);
+  }
+  const regionRaw = typeof data.region === "string" ? data.region : "";
+  const region = regionRaw.trim();
+  if (region.length > TILE_REGION_MAX_LENGTH) {
+    issues.push(`region exceeds ${TILE_REGION_MAX_LENGTH} characters`);
+  }
+  const noteRaw = typeof data.note === "string" ? data.note : void 0;
+  const note = noteRaw?.trim();
+  if (issues.length) {
+    throw new TileValidationError(issues);
+  }
+  return {
+    terrain,
+    region,
+    note: note || void 0
+  };
+}
 function mapNameFromPath(mapPath) {
   const base = mapPath.replace(/\\/g, "/").split("/").pop() || "Map";
   return base.replace(/\.md$/i, "");
@@ -1070,6 +1171,28 @@ function legacyFilenames(folderPrefix, coord) {
     `${folderPrefix}-r${coord.r}-c${coord.c}.md`
     // z.B. "Hex-r1-c2.md"
   ];
+}
+function escapeRegex(src) {
+  return src.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+function coordFromFrontmatter(fmc) {
+  if (!fmc) return null;
+  const r = Number(fmc.row);
+  const c = Number(fmc.col);
+  if (!Number.isInteger(r) || !Number.isInteger(c)) return null;
+  return { r, c };
+}
+function coordFromLegacyName(file, folderPrefix) {
+  const base = file.path.replace(/\\/g, "/").split("/").pop() ?? file.path;
+  const prefix = folderPrefix.trim();
+  if (!prefix) return null;
+  const spaced = new RegExp(`^${escapeRegex(prefix)}s+(-?\\d+),(-?\\d+)\\.md$`, "i");
+  const dashed = new RegExp(`^${escapeRegex(prefix)}-r(-?\\d+)-c(-?\\d+)\\.md$`, "i");
+  let match = base.match(spaced);
+  if (match) return { r: Number(match[1]), c: Number(match[2]) };
+  match = base.match(dashed);
+  if (match) return { r: Number(match[1]), c: Number(match[2]) };
+  return null;
 }
 async function readOptions(app, mapFile) {
   const raw = await app.vault.read(mapFile);
@@ -1092,10 +1215,11 @@ function fm(app, file) {
   return app.metadataCache.getFileCache(file)?.frontmatter ?? null;
 }
 function buildMarkdown(coord, mapPath, folderPrefix, data) {
-  const terrain = data.terrain ?? "";
-  const region = (data.region ?? "").trim();
+  const validated = validateTileData(data, { allowUnknownTerrain: true });
+  const terrain = validated.terrain ?? "";
+  const region = (validated.region ?? "").trim();
   const mapName = mapNameFromPath(mapPath);
-  const bodyNote = (data.note ?? "Notizen hier \u2026").trim();
+  const bodyNote = (validated.note ?? "Notizen hier \u2026").trim();
   return [
     "---",
     `type: ${FM_TYPE}`,
@@ -1152,27 +1276,97 @@ async function fmFromFile(app, file) {
   const raw = await app.vault.read(file);
   return parseFrontmatterBlock(raw);
 }
-async function listTilesForMap(app, mapFile) {
-  const { folder } = await readOptions(app, mapFile);
-  const folderPath = (0, import_obsidian3.normalizePath)(folder);
-  const folderPrefix = (folderPath.endsWith("/") ? folderPath : folderPath + "/").toLowerCase();
-  const out = [];
-  for (const child of app.vault.getFiles()) {
-    const p = child.path.toLowerCase();
-    if (!p.startsWith(folderPrefix)) continue;
-    if (!p.endsWith(".md")) continue;
-    let fmc = fm(app, child);
-    if (!fmc || fmc.type !== FM_TYPE) {
-      fmc = await fmFromFile(app, child);
+async function ensureTileSchema(app, mapFile, file, coord, cached) {
+  const mapPath = mapFile.path;
+  const current = cached ?? await fmFromFile(app, file) ?? {};
+  const needsType = current.type !== FM_TYPE;
+  const needsMarker = current.smHexTile !== true;
+  const needsRow = Number(current.row) !== coord.r;
+  const needsCol = Number(current.col) !== coord.c;
+  const needsMap = current.map_path !== mapPath;
+  if (needsType || needsMarker || needsRow || needsCol || needsMap) {
+    await app.fileManager.processFrontMatter(file, (f) => {
+      f.type = FM_TYPE;
+      f.smHexTile = true;
+      f.row = coord.r;
+      f.col = coord.c;
+      f.map_path = mapPath;
+    });
+    return await fmFromFile(app, file) ?? { type: FM_TYPE, row: coord.r, col: coord.c, map_path: mapPath };
+  }
+  return current;
+}
+async function adoptLegacyTile(app, mapFile, file, folderPath, folderPrefix, cached) {
+  if (cached && typeof cached.map_path === "string") return null;
+  let coord = coordFromFrontmatter(cached);
+  if (!coord) {
+    coord = coordFromLegacyName(file, folderPrefix);
+  }
+  if (!coord) return null;
+  const raw = await app.vault.read(file);
+  const mapName = mapNameFromPath(mapFile.path);
+  const backlinkNeedle = `[[${mapName.toLowerCase()}|`;
+  if (!raw.toLowerCase().includes(backlinkNeedle)) return null;
+  const desiredPath = (0, import_obsidian3.normalizePath)(`${folderPath}/${fileNameForMap(mapFile, coord)}`);
+  if ((0, import_obsidian3.normalizePath)(file.path) !== desiredPath) {
+    const existing = app.vault.getAbstractFileByPath(desiredPath);
+    if (existing && existing !== file) {
+      return null;
     }
-    if (!fmc || fmc.type !== FM_TYPE) continue;
-    if (typeof fmc.map_path !== "string" || fmc.map_path !== mapFile.path) continue;
-    const r = Number(fmc.row), c = Number(fmc.col);
-    if (!Number.isInteger(r) || !Number.isInteger(c)) continue;
+    await app.fileManager.renameFile(file, desiredPath);
+    const renamed = app.vault.getAbstractFileByPath(desiredPath);
+    if (renamed && renamed instanceof import_obsidian3.TFile) {
+      file = renamed;
+    }
+  }
+  const ensured = await ensureTileSchema(app, mapFile, file, coord, cached);
+  return { file, fmc: ensured, coord };
+}
+async function listTilesForMap(app, mapFile) {
+  const { folder, folderPrefix } = await readOptions(app, mapFile);
+  const folderPath = (0, import_obsidian3.normalizePath)(folder);
+  const folderPathLower = (folderPath.endsWith("/") ? folderPath : folderPath + "/").toLowerCase();
+  const out = [];
+  for (const file of app.vault.getFiles()) {
+    let tileFile = file;
+    const p = tileFile.path.toLowerCase();
+    if (!p.startsWith(folderPathLower)) continue;
+    if (!p.endsWith(".md")) continue;
+    let fmc = fm(app, tileFile);
+    if (!fmc || fmc.type !== FM_TYPE) {
+      fmc = await fmFromFile(app, tileFile);
+    }
+    let coord = coordFromFrontmatter(fmc ?? null);
+    const mapPath = mapFile.path;
+    const hasTargetMap = !!(fmc && fmc.type === FM_TYPE && typeof fmc.map_path === "string" && fmc.map_path === mapPath);
+    if (!hasTargetMap) {
+      if (fmc && typeof fmc.map_path === "string" && fmc.map_path !== mapPath) {
+        continue;
+      }
+      const adoption = await adoptLegacyTile(app, mapFile, tileFile, folderPath, folderPrefix, fmc ?? null);
+      if (!adoption) continue;
+      tileFile = adoption.file;
+      fmc = adoption.fmc;
+      coord = adoption.coord;
+    } else if (coord) {
+      fmc = await ensureTileSchema(app, mapFile, tileFile, coord, fmc ?? null);
+    }
+    if (!coord) coord = coordFromFrontmatter(fmc ?? null);
+    if (!coord) continue;
     out.push({
-      coord: { r, c },
-      file: child,
-      data: { terrain: (typeof fmc.terrain === "string" ? fmc.terrain : "") ?? "" }
+      coord,
+      file: tileFile,
+      data: (() => {
+        const terrain = typeof fmc?.terrain === "string" ? fmc.terrain : "";
+        const region = typeof fmc?.region === "string" ? fmc.region : "";
+        try {
+          const validated = validateTileData({ terrain, region }, { allowUnknownTerrain: true });
+          return { terrain: validated.terrain, region: validated.region ?? "" };
+        } catch (error) {
+          console.warn("[salt-marcher] Ignoring invalid tile data", error);
+          return { terrain: terrain.trim(), region: region.trim() };
+        }
+      })()
     });
   }
   return out;
@@ -1184,23 +1378,29 @@ async function loadTile(app, mapFile, coord) {
   if (!fmc || fmc.type !== FM_TYPE) {
     fmc = await fmFromFile(app, file);
   }
+  fmc = await ensureTileSchema(app, mapFile, file, coord, fmc ?? null);
   if (!fmc || fmc.type !== FM_TYPE) return null;
   const raw = await app.vault.read(file);
   const body = raw.replace(/^---[\s\S]*?---\s*/m, "");
   const note = (body.split(/\n{2,}/).map((s) => s.trim()).find(Boolean) ?? "").trim();
-  return {
-    terrain: (typeof fmc.terrain === "string" ? fmc.terrain : "") ?? "",
-    region: (typeof fmc.region === "string" ? fmc.region : "") ?? "",
-    note: note || void 0
-  };
+  const terrain = typeof fmc.terrain === "string" ? fmc.terrain : "";
+  const region = typeof fmc.region === "string" ? fmc.region : "";
+  try {
+    const validated = validateTileData({ terrain, region, note }, { allowUnknownTerrain: true });
+    return validated;
+  } catch (error) {
+    console.warn("[salt-marcher] Loaded tile contains invalid data", error);
+    return { terrain: terrain.trim(), region: region.trim(), note: note || void 0 };
+  }
 }
 async function saveTile(app, mapFile, coord, data) {
+  const sanitized = validateTileData(data);
   const mapPath = mapFile.path;
   const { folder, newPath, file } = await resolveTilePath(app, mapFile, coord);
   await ensureFolder(app, folder);
   if (!file) {
     const { folderPrefix } = await readOptions(app, mapFile);
-    const md = buildMarkdown(coord, mapPath, folderPrefix, data);
+    const md = buildMarkdown(coord, mapPath, folderPrefix, sanitized);
     return await app.vault.create(newPath, md);
   }
   await app.fileManager.processFrontMatter(file, (f) => {
@@ -1209,18 +1409,18 @@ async function saveTile(app, mapFile, coord, data) {
     f.row = coord.r;
     f.col = coord.c;
     f.map_path = mapPath;
-    if (data.region !== void 0) f.region = data.region ?? "";
-    if (data.terrain !== void 0) f.terrain = data.terrain ?? "";
+    if (sanitized.region !== void 0) f.region = sanitized.region ?? "";
+    if (sanitized.terrain !== void 0) f.terrain = sanitized.terrain ?? "";
     if (typeof f.terrain !== "string") f.terrain = "";
   });
-  if (data.note !== void 0) {
+  if (sanitized.note !== void 0) {
     const raw = await app.vault.read(file);
     const hasFM = /^---[\s\S]*?---/m.test(raw);
     const fmPart = hasFM ? (raw.match(/^---[\s\S]*?---/m) || [""])[0] : "";
     const body = hasFM ? raw.slice(fmPart.length).trimStart() : raw;
     const lines = body.split("\n");
     const keepBacklink = lines.find((l) => /\[\[.*\|\s*↩ Zur Karte\s*\]\]/.test(l));
-    const newBody = [keepBacklink ?? "", data.note.trim(), ""].filter(Boolean).join("\n");
+    const newBody = [keepBacklink ?? "", sanitized.note.trim(), ""].filter(Boolean).join("\n");
     await app.vault.modify(file, `${fmPart}
 ${newBody}`.trim() + "\n");
   }
@@ -1238,12 +1438,22 @@ async function initTilesForNewMap(app, mapFile) {
     }
   }
 }
-var import_obsidian3, FM_TYPE;
+var import_obsidian3, TILE_TERRAIN_MAX_LENGTH, TILE_REGION_MAX_LENGTH, TileValidationError, FM_TYPE;
 var init_hex_notes = __esm({
   "src/core/hex-mapper/hex-notes.ts"() {
     "use strict";
     import_obsidian3 = require("obsidian");
+    init_terrain();
     init_options();
+    TILE_TERRAIN_MAX_LENGTH = 64;
+    TILE_REGION_MAX_LENGTH = 120;
+    TileValidationError = class extends Error {
+      constructor(issues) {
+        super(`Invalid tile data: ${issues.join(", ")}`);
+        this.issues = issues;
+        this.name = "TileValidationError";
+      }
+    };
     FM_TYPE = "hex";
   }
 });
@@ -2271,6 +2481,31 @@ var init_tool_manager = __esm({
   }
 });
 
+// src/apps/cartographer/modes/lifecycle.ts
+function createModeLifecycle() {
+  let signal = null;
+  return {
+    bind(ctx) {
+      signal = ctx.signal;
+      return signal;
+    },
+    get() {
+      return signal;
+    },
+    isAborted() {
+      return signal?.aborted ?? false;
+    },
+    reset() {
+      signal = null;
+    }
+  };
+}
+var init_lifecycle = __esm({
+  "src/apps/cartographer/modes/lifecycle.ts"() {
+    "use strict";
+  }
+});
+
 // src/apps/cartographer/modes/editor.ts
 var editor_exports = {};
 __export(editor_exports, {
@@ -2311,24 +2546,24 @@ function createEditorMode() {
       setStatus("");
     }
   };
+  const lifecycle = createModeLifecycle();
   const ensureToolCtx = (ctx) => {
     toolCtx = {
       app: ctx.app,
       getFile: () => state.file,
       getHandles: () => state.handles,
       getOptions: () => state.options,
-      getAbortSignal: () => lifecycleSignal,
+      getAbortSignal: () => lifecycle.get(),
       setStatus
     };
     return toolCtx;
   };
-  let lifecycleSignal = null;
-  const isAborted = () => lifecycleSignal?.aborted ?? false;
+  const isAborted = () => lifecycle.isAborted();
   return {
     id: "editor",
     label: "Editor",
     async onEnter(ctx) {
-      lifecycleSignal = ctx.signal;
+      lifecycle.bind(ctx);
       state = { ...state };
       ctx.sidebarHost.empty();
       panel = ctx.sidebarHost.createDiv({ cls: "sm-cartographer__panel sm-cartographer__panel--editor" });
@@ -2352,7 +2587,7 @@ function createEditorMode() {
       manager = createToolManager(tools, {
         getContext: () => toolCtx,
         getPanelHost: () => toolBody,
-        getLifecycleSignal: () => lifecycleSignal,
+        getLifecycleSignal: () => lifecycle.get(),
         onToolChanged: (tool) => {
           if (!toolSelect) return;
           toolSelect.value = tool?.id ?? "";
@@ -2364,7 +2599,7 @@ function createEditorMode() {
       await manager.switchTo(tools[0].id);
     },
     async onExit(ctx) {
-      lifecycleSignal = ctx.signal;
+      lifecycle.bind(ctx);
       manager?.destroy();
       manager = null;
       toolCtx = null;
@@ -2374,10 +2609,10 @@ function createEditorMode() {
       toolSelect = null;
       toolBody = null;
       statusLabel = null;
-      lifecycleSignal = null;
+      lifecycle.reset();
     },
     async onFileChange(file, handles, ctx) {
-      lifecycleSignal = ctx.signal;
+      lifecycle.bind(ctx);
       state.file = file;
       state.handles = handles;
       state.options = ctx.getOptions();
@@ -2389,7 +2624,7 @@ function createEditorMode() {
       manager?.notifyMapRendered();
     },
     async onHexClick(coord, _event, ctx) {
-      lifecycleSignal = ctx.signal;
+      lifecycle.bind(ctx);
       if (isAborted()) return;
       const active = manager?.getActive();
       if (!toolCtx || !active?.onHexClick) return;
@@ -2407,6 +2642,7 @@ var init_editor = __esm({
     init_search_dropdown();
     init_brush_options();
     init_tool_manager();
+    init_lifecycle();
   }
 });
 
@@ -2429,8 +2665,8 @@ function createInspectorMode() {
     selection: null,
     saveTimer: null
   };
-  let lifecycleSignal = null;
-  const isAborted = () => lifecycleSignal?.aborted ?? false;
+  const lifecycle = createModeLifecycle();
+  const isAborted = () => lifecycle.isAborted();
   const clearSaveTimer = () => {
     if (state.saveTimer !== null) {
       window.clearTimeout(state.saveTimer);
@@ -2520,7 +2756,7 @@ function createInspectorMode() {
     id: "inspector",
     label: "Inspector",
     async onEnter(ctx) {
-      lifecycleSignal = ctx.signal;
+      lifecycle.bind(ctx);
       ui = { panel: null, fileLabel: null, message: null, terrain: null, note: null };
       state = { ...state, selection: null };
       ctx.sidebarHost.empty();
@@ -2548,15 +2784,15 @@ function createInspectorMode() {
       updatePanelState();
     },
     async onExit(ctx) {
-      lifecycleSignal = ctx.signal;
+      lifecycle.bind(ctx);
       clearSaveTimer();
       ui.panel?.remove();
       ui = { panel: null, fileLabel: null, message: null, terrain: null, note: null };
       state = { file: null, handles: null, selection: null, saveTimer: null };
-      lifecycleSignal = null;
+      lifecycle.reset();
     },
     async onFileChange(file, handles, ctx) {
-      lifecycleSignal = ctx.signal;
+      lifecycle.bind(ctx);
       state.file = file;
       state.handles = handles;
       clearSaveTimer();
@@ -2568,7 +2804,7 @@ function createInspectorMode() {
       }
     },
     async onHexClick(coord, _event, ctx) {
-      lifecycleSignal = ctx.signal;
+      lifecycle.bind(ctx);
       if (isAborted()) return;
       if (!state.file || !state.handles) return;
       clearSaveTimer();
@@ -2585,6 +2821,7 @@ var init_inspector = __esm({
     init_hex_notes();
     init_terrain();
     init_search_dropdown();
+    init_lifecycle();
   }
 });
 
@@ -3740,28 +3977,48 @@ var init_drag_controller = __esm({
 function bindContextMenu(routeLayerEl, logic) {
   const onContextMenu = (ev) => {
     const target = ev.target;
-    if (!(target instanceof SVGCircleElement)) return;
-    const idxAttr = target.getAttribute("data-idx");
+    if (!(target instanceof SVGElement)) return;
+    const dot = target.closest(".tg-route-dot, .tg-route-dot-hitbox");
+    if (!dot) return;
+    const idxAttr = dot.getAttribute("data-idx");
     if (!idxAttr) return;
     const idx = Number(idxAttr);
     if (!Number.isFinite(idx) || idx < 0) return;
     const route = logic.getState().route;
     const node = route[idx];
     if (!node) return;
-    if (node.kind !== "user") {
-      ev.preventDefault();
+    const allowDelete = node.kind === "user";
+    const canTriggerEncounter = typeof logic.triggerEncounterAt === "function";
+    if (!allowDelete && !canTriggerEncounter) {
       return;
     }
     ev.preventDefault();
     ev.stopPropagation();
-    logic.deleteUserAt(idx);
+    const menu = new import_obsidian13.Menu();
+    if (allowDelete) {
+      menu.addItem(
+        (item) => item.setTitle("Wegpunkt entfernen").setIcon("trash").onClick(() => {
+          logic.deleteUserAt(idx);
+        })
+      );
+    }
+    if (canTriggerEncounter) {
+      menu.addItem(
+        (item) => item.setTitle("Encounter hier starten").setIcon("sparkles").onClick(() => {
+          void logic.triggerEncounterAt?.(idx);
+        })
+      );
+    }
+    menu.showAtMouseEvent(ev);
   };
   routeLayerEl.addEventListener("contextmenu", onContextMenu, { capture: true });
   return () => routeLayerEl.removeEventListener("contextmenu", onContextMenu, { capture: true });
 }
+var import_obsidian13;
 var init_context_menu_controller = __esm({
   "src/apps/cartographer/travel/ui/context-menu.controller.ts"() {
     "use strict";
+    import_obsidian13 = require("obsidian");
   }
 });
 
@@ -3803,7 +4060,8 @@ var init_interaction_controller = __esm({
         this.drag.bind();
         this.unbindContext = bindContextMenu(env.routeLayerEl, {
           getState: () => logic.getState(),
-          deleteUserAt: (idx) => logic.deleteUserAt(idx)
+          deleteUserAt: (idx) => logic.deleteUserAt(idx),
+          triggerEncounterAt: (idx) => logic.triggerEncounterAt?.(idx)
         });
       }
       consumeClickSuppression() {
@@ -3824,9 +4082,9 @@ var init_interaction_controller = __esm({
 });
 
 // src/apps/encounter/event-builder.ts
-async function createEncounterEventFromTravel(app, ctx) {
-  const triggeredAt = (/* @__PURE__ */ new Date()).toISOString();
-  const coord = ctx?.state?.currentTile ?? ctx?.state?.tokenRC ?? null;
+async function createEncounterEventFromTravel(app, ctx, options = {}) {
+  const triggeredAt = options.triggeredAt ?? (/* @__PURE__ */ new Date()).toISOString();
+  const coord = options.coordOverride ?? ctx?.state?.currentTile ?? ctx?.state?.tokenRC ?? null;
   const mapFile = ctx?.mapFile ?? null;
   let regionName;
   let encounterOdds;
@@ -3854,9 +4112,11 @@ async function createEncounterEventFromTravel(app, ctx) {
     }
   }
   const travelClock = ctx?.state?.clockHours;
+  const source = options.source ?? "travel";
+  const idPrefix = options.idPrefix ?? source;
   const event = {
-    id: `travel-${Date.now()}`,
-    source: "travel",
+    id: `${idPrefix}-${Date.now()}`,
+    source,
     triggeredAt,
     coord,
     regionName,
@@ -3883,7 +4143,7 @@ function loadEncounterModule() {
     VIEW_ENCOUNTER: encounter.VIEW_ENCOUNTER
   })).catch((err) => {
     console.error("[travel-mode] failed to load encounter module", err);
-    new import_obsidian13.Notice("Encounter-Modul konnte nicht geladen werden.");
+    new import_obsidian14.Notice("Encounter-Modul konnte nicht geladen werden.");
     return null;
   });
 }
@@ -3899,7 +4159,11 @@ function preloadEncounterModule() {
 async function openEncounter(app, context) {
   const mod = await ensureEncounterModule();
   if (!mod) return false;
-  if (context) {
+  const issue = describeEncounterContextIssue(context);
+  if (issue) {
+    console.warn(`[travel-mode] ${issue.log}`, context);
+    new import_obsidian14.Notice(issue.message);
+  } else if (context) {
     try {
       const event = await createEncounterEventFromTravel(app, context);
       if (event) {
@@ -3914,14 +4178,96 @@ async function openEncounter(app, context) {
   app.workspace.revealLeaf(leaf);
   return true;
 }
-var import_obsidian13, encounterModule;
+function describeEncounterContextIssue(context) {
+  if (!context) {
+    return {
+      message: "Begegnung konnte nicht ge\xF6ffnet werden: Es liegen keine Reisedaten vor.",
+      log: "missing travel context for encounter"
+    };
+  }
+  if (!context.mapFile) {
+    return {
+      message: "Begegnung enth\xE4lt keine Kartendatei. \xD6ffne die Karte erneut und versuche es nochmal.",
+      log: "missing map file for encounter context"
+    };
+  }
+  if (!context.state) {
+    return {
+      message: "Begegnung enth\xE4lt keinen Reisezustand. Aktualisiere den Travel-Guide und versuche es erneut.",
+      log: "missing travel state snapshot for encounter context"
+    };
+  }
+  return null;
+}
+async function publishManualEncounter(app, context, options = {}) {
+  try {
+    const event = await createEncounterEventFromTravel(app, context, {
+      source: "manual",
+      idPrefix: options.idPrefix ?? "manual",
+      coordOverride: options.coordOverride,
+      triggeredAt: options.triggeredAt
+    });
+    if (event) {
+      publishEncounterEvent(event);
+    }
+  } catch (err) {
+    console.error("[travel-mode] failed to publish manual encounter", err);
+  }
+}
+var import_obsidian14, encounterModule;
 var init_encounter_gateway = __esm({
   "src/apps/cartographer/modes/travel-guide/encounter-gateway.ts"() {
     "use strict";
-    import_obsidian13 = require("obsidian");
+    import_obsidian14 = require("obsidian");
     init_session_store();
     init_event_builder();
     encounterModule = null;
+  }
+});
+
+// src/apps/cartographer/travel/infra/encounter-sync.ts
+function createEncounterSync(cfg) {
+  let disposed = false;
+  let lastHandledId = peekLatestEncounterEvent()?.id ?? null;
+  const unsubscribe = subscribeToEncounterEvents((event) => {
+    if (disposed) return;
+    if (event.id === lastHandledId) return;
+    lastHandledId = event.id;
+    if (event.source === "travel") {
+      return;
+    }
+    cfg.pausePlayback();
+    const shouldOpen = cfg.onExternalEncounter?.(event);
+    if (shouldOpen === false) {
+      return;
+    }
+    void cfg.openEncounter();
+  });
+  return {
+    async handleTravelEncounter() {
+      cfg.pausePlayback();
+      const context = {
+        mapFile: cfg.getMapFile(),
+        state: cfg.getState()
+      };
+      const ok = await cfg.openEncounter(context);
+      if (!ok) return;
+      const latest = peekLatestEncounterEvent();
+      if (latest) {
+        lastHandledId = latest.id;
+      }
+    },
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      unsubscribe();
+    }
+  };
+}
+var init_encounter_sync = __esm({
+  "src/apps/cartographer/travel/infra/encounter-sync.ts"() {
+    "use strict";
+    init_session_store();
   }
 });
 
@@ -3941,6 +4287,7 @@ function createTravelGuideMode() {
   let hostEl = null;
   let terrainEvent = null;
   let lifecycleSignal = null;
+  let encounterSync = null;
   const isAborted = () => lifecycleSignal?.aborted ?? false;
   const bailIfAborted = async () => {
     if (!isAborted()) {
@@ -3995,6 +4342,8 @@ function createTravelGuideMode() {
   };
   const disposeFile = () => {
     interactions.dispose();
+    encounterSync?.dispose();
+    encounterSync = null;
     if (tokenLayer) {
       tokenLayer.destroy?.();
       tokenLayer = null;
@@ -4121,18 +4470,48 @@ function createTravelGuideMode() {
         adapter,
         onChange: (state) => handleStateChange(state),
         onEncounter: async () => {
-          try {
-            activeLogic.pause();
-          } catch {
+          if (isAborted()) {
+            return;
           }
-          if (!isAborted()) {
-            const mapFile = ctx.getFile?.() ?? null;
-            const state = activeLogic.getState();
-            void openEncounter(ctx.app, { mapFile, state });
+          if (encounterSync) {
+            await encounterSync.handleTravelEncounter();
           }
         }
       });
       logic = activeLogic;
+      encounterSync = createEncounterSync({
+        getMapFile: () => ctx.getFile?.() ?? null,
+        getState: () => activeLogic.getState(),
+        pausePlayback: () => {
+          try {
+            activeLogic.pause();
+          } catch (err) {
+            console.error("[travel-mode] pause during encounter sync failed", err);
+          }
+        },
+        openEncounter: (context) => openEncounter(ctx.app, context),
+        onExternalEncounter: () => !isAborted()
+      });
+      const triggerManualEncounterAt = async (idx) => {
+        if (!encounterSync || isAborted()) {
+          return;
+        }
+        const state = activeLogic.getState();
+        const node = state.route[idx];
+        if (!node) {
+          return;
+        }
+        await publishManualEncounter(
+          ctx.app,
+          {
+            mapFile: ctx.getFile?.() ?? null,
+            state
+          },
+          {
+            coordOverride: { r: node.r, c: node.c }
+          }
+        );
+      };
       handleStateChange(activeLogic.getState());
       await activeLogic.initTokenFromTiles();
       if (isAborted() || logic !== activeLogic) {
@@ -4153,11 +4532,14 @@ function createTravelGuideMode() {
           selectDot: (idx) => activeLogic.selectDot(idx),
           moveSelectedTo: (rc) => activeLogic.moveSelectedTo(rc),
           moveTokenTo: (rc) => activeLogic.moveTokenTo(rc),
-          deleteUserAt: (idx) => activeLogic.deleteUserAt(idx)
+          deleteUserAt: (idx) => activeLogic.deleteUserAt(idx),
+          triggerEncounterAt: (idx) => triggerManualEncounterAt(idx)
         }
       );
       cleanupFile = async () => {
         interactions.dispose();
+        encounterSync?.dispose();
+        encounterSync = null;
         if (logic === activeLogic) {
           logic = null;
         }
@@ -4221,6 +4603,7 @@ var init_travel_guide = __esm({
     init_playback_controller();
     init_interaction_controller();
     init_encounter_gateway();
+    init_encounter_sync();
   }
 });
 
@@ -4234,7 +4617,7 @@ var import_obsidian24 = require("obsidian");
 init_view();
 
 // src/apps/cartographer/index.ts
-var import_obsidian14 = require("obsidian");
+var import_obsidian15 = require("obsidian");
 
 // src/apps/cartographer/presenter.ts
 init_options();
@@ -5899,7 +6282,7 @@ var createProvideModes = () => {
     }
   };
 };
-var CartographerView = class extends import_obsidian14.ItemView {
+var CartographerView = class extends import_obsidian15.ItemView {
   constructor(leaf) {
     super(leaf);
     this.hostEl = null;
@@ -5961,56 +6344,147 @@ async function detachCartographerLeaves(app) {
 // src/apps/library/view.ts
 var import_obsidian23 = require("obsidian");
 
-// src/apps/library/core/creature-files.ts
-var import_obsidian15 = require("obsidian");
-var CREATURES_DIR = "SaltMarcher/Creatures";
-async function ensureCreatureDir(app) {
-  const p = (0, import_obsidian15.normalizePath)(CREATURES_DIR);
-  let f = app.vault.getAbstractFileByPath(p);
-  if (f instanceof import_obsidian15.TFolder) return f;
-  await app.vault.createFolder(p).catch(() => {
-  });
-  f = app.vault.getAbstractFileByPath(p);
-  if (f instanceof import_obsidian15.TFolder) return f;
-  throw new Error("Could not create creatures directory");
+// src/apps/library/view/mode.ts
+function scoreName(name, q) {
+  if (!q) return 1e-4;
+  if (name === q) return 1e3;
+  if (name.startsWith(q)) return 900 - (name.length - q.length);
+  const idx = name.indexOf(q);
+  if (idx >= 0) return 700 - idx;
+  const tokenIdx = name.split(/\s+|[-_]/).findIndex((t) => t.startsWith(q));
+  if (tokenIdx >= 0) return 600 - tokenIdx * 5;
+  return -Infinity;
 }
-function sanitizeFileName2(name) {
-  const trimmed = (name || "Creature").trim();
-  return trimmed.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").replace(/^\.+$/, "Creature").slice(0, 120);
-}
-async function listCreatureFiles(app) {
-  const dir = await ensureCreatureDir(app);
-  const out = [];
-  const walk = (folder) => {
-    for (const child of folder.children) {
-      if (child instanceof import_obsidian15.TFolder) walk(child);
-      else if (child instanceof import_obsidian15.TFile && child.extension === "md") out.push(child);
+var BaseModeRenderer = class {
+  constructor(app, container) {
+    this.app = app;
+    this.container = container;
+    this.query = "";
+    this.cleanups = [];
+    this.disposed = false;
+  }
+  async init() {
+  }
+  setQuery(query) {
+    this.query = (query || "").toLowerCase();
+    this.render();
+  }
+  async handleCreate(_name) {
+  }
+  async destroy() {
+    if (this.disposed) return;
+    this.disposed = true;
+    for (const fn of this.cleanups.splice(0)) {
+      try {
+        fn();
+      } catch {
+      }
     }
-  };
-  walk(dir);
-  return out;
+    this.container.empty();
+  }
+  isDisposed() {
+    return this.disposed;
+  }
+  registerCleanup(fn) {
+    this.cleanups.push(fn);
+  }
+};
+
+// src/apps/library/core/file-pipeline.ts
+var import_obsidian16 = require("obsidian");
+function sanitizeVaultFileName(name, fallback) {
+  const trimmed = (name ?? "").trim();
+  const safeFallback = fallback && fallback.trim() ? fallback.trim() : "Entry";
+  if (!trimmed) return safeFallback;
+  return trimmed.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").replace(/^\.+$/, safeFallback).slice(0, 120);
 }
-function watchCreatureDir(app, onChange) {
-  const base = (0, import_obsidian15.normalizePath)(CREATURES_DIR) + "/";
-  const isInDir = (f) => (f instanceof import_obsidian15.TFile || f instanceof import_obsidian15.TFolder) && (f.path + "/").startsWith(base);
-  const handler = (f) => {
-    if (isInDir(f)) onChange?.();
-  };
-  app.vault.on("create", handler);
-  app.vault.on("delete", handler);
-  app.vault.on("rename", handler);
-  app.vault.on("modify", handler);
-  return () => {
-    app.vault.off("create", handler);
-    app.vault.off("delete", handler);
-    app.vault.off("rename", handler);
-    app.vault.off("modify", handler);
-  };
+function createVaultFilePipeline(options) {
+  const normalizedDir = (0, import_obsidian16.normalizePath)(options.dir);
+  const extension = (options.extension || "md").replace(/^\.+/, "");
+  const sanitize = options.sanitizeName ? options.sanitizeName : (name) => sanitizeVaultFileName(name, options.defaultBaseName);
+  async function ensure(app) {
+    let file = app.vault.getAbstractFileByPath(normalizedDir);
+    if (file instanceof import_obsidian16.TFolder) return file;
+    await app.vault.createFolder(normalizedDir).catch(() => {
+    });
+    file = app.vault.getAbstractFileByPath(normalizedDir);
+    if (file instanceof import_obsidian16.TFolder) return file;
+    throw new Error(`Could not create directory ${normalizedDir}`);
+  }
+  async function list(app) {
+    const dir = await ensure(app);
+    const out = [];
+    const walk = (folder) => {
+      for (const child of folder.children) {
+        if (child instanceof import_obsidian16.TFolder) walk(child);
+        else if (child instanceof import_obsidian16.TFile && child.extension === extension) out.push(child);
+      }
+    };
+    walk(dir);
+    return out;
+  }
+  function watch(app, onChange) {
+    const base = `${normalizedDir}/`;
+    const isRelevant = (file) => {
+      if (!(file instanceof import_obsidian16.TFile || file instanceof import_obsidian16.TFolder)) return false;
+      const path = file.path.endsWith("/") ? file.path : `${file.path}/`;
+      return path.startsWith(base);
+    };
+    const handler = (file) => {
+      if (isRelevant(file)) onChange?.();
+    };
+    app.vault.on("create", handler);
+    app.vault.on("delete", handler);
+    app.vault.on("rename", handler);
+    app.vault.on("modify", handler);
+    return () => {
+      app.vault.off("create", handler);
+      app.vault.off("delete", handler);
+      app.vault.off("rename", handler);
+      app.vault.off("modify", handler);
+    };
+  }
+  async function create(app, data) {
+    const dir = await ensure(app);
+    const baseName = sanitize(options.getBaseName(data) ?? options.defaultBaseName);
+    let fileName = `${baseName}.${extension}`;
+    let path = (0, import_obsidian16.normalizePath)(`${dir.path}/${fileName}`);
+    let i = 2;
+    while (app.vault.getAbstractFileByPath(path)) {
+      fileName = `${baseName} (${i}).${extension}`;
+      path = (0, import_obsidian16.normalizePath)(`${dir.path}/${fileName}`);
+      i += 1;
+    }
+    const content = options.toContent(data);
+    const file = await app.vault.create(path, content);
+    return file;
+  }
+  return { ensure, list, watch, create };
 }
+
+// src/apps/library/core/creature-files.ts
+var CREATURES_DIR = "SaltMarcher/Creatures";
+var CREATURE_PIPELINE = createVaultFilePipeline({
+  dir: CREATURES_DIR,
+  defaultBaseName: "Creature",
+  getBaseName: (data) => data.name,
+  toContent: statblockToMarkdown,
+  sanitizeName: (name) => sanitizeVaultFileName(name, "Creature")
+});
+var ensureCreatureDir = CREATURE_PIPELINE.ensure;
+var listCreatureFiles = CREATURE_PIPELINE.list;
+var watchCreatureDir = CREATURE_PIPELINE.watch;
 function yamlList(items) {
   if (!items || items.length === 0) return void 0;
   const safe = items.map((s) => `"${(s ?? "").replace(/"/g, '\\"')}"`).join(", ");
   return `[${safe}]`;
+}
+function formatSpeedExtra(entry) {
+  const parts = [entry.label];
+  if (entry.distance) parts.push(entry.distance);
+  if (entry.note) parts.push(entry.note);
+  if (entry.hover) parts.push("(hover)");
+  return parts.map((p) => p?.trim()).filter((p) => Boolean(p && p.length)).join(" ");
 }
 function parseNum(v) {
   if (!v) return null;
@@ -6050,12 +6524,26 @@ function statblockToMarkdown(d) {
   if (d.initiative) lines.push(`initiative: "${d.initiative}"`);
   if (d.hp) lines.push(`hp: "${d.hp}"`);
   if (d.hitDice) lines.push(`hit_dice: "${d.hitDice}"`);
-  if (d.speedWalk) lines.push(`speed_walk: "${d.speedWalk}"`);
-  if (d.speedSwim) lines.push(`speed_swim: "${d.speedSwim}"`);
-  if (d.speedFly) lines.push(`speed_fly: "${d.speedFly}"`);
-  if (d.speedBurrow) lines.push(`speed_burrow: "${d.speedBurrow}"`);
-  const speedsYaml = yamlList(d.speedList);
+  const speeds = d.speeds;
+  const walkSpeed = speeds?.walk?.distance;
+  const swimSpeed = speeds?.swim?.distance;
+  const flySpeed = speeds?.fly?.distance;
+  const flyHover = speeds?.fly?.hover;
+  const burrowSpeed = speeds?.burrow?.distance;
+  const climbSpeed = speeds?.climb?.distance;
+  if (walkSpeed) lines.push(`speed_walk: "${walkSpeed}"`);
+  if (swimSpeed) lines.push(`speed_swim: "${swimSpeed}"`);
+  if (flySpeed) lines.push(`speed_fly: "${flySpeed}"`);
+  if (flyHover) lines.push(`speed_fly_hover: true`);
+  if (burrowSpeed) lines.push(`speed_burrow: "${burrowSpeed}"`);
+  if (climbSpeed) lines.push(`speed_climb: "${climbSpeed}"`);
+  const extraSpeedStrings = speeds?.extras?.map(formatSpeedExtra) ?? [];
+  const speedsYaml = yamlList(extraSpeedStrings);
   if (speedsYaml) lines.push(`speeds: ${speedsYaml}`);
+  if (speeds) {
+    const json = JSON.stringify(speeds).replace(/"/g, '\\"');
+    lines.push(`speeds_json: "${json}"`);
+  }
   if (d.str) lines.push(`str: "${d.str}"`);
   if (d.dex) lines.push(`dex: "${d.dex}"`);
   if (d.con) lines.push(`con: "${d.con}"`);
@@ -6103,12 +6591,13 @@ function statblockToMarkdown(d) {
   if (d.ac || d.initiative) lines.push(`AC ${d.ac ?? "-"}    Initiative ${d.initiative ?? "-"}`);
   if (d.hp || d.hitDice) lines.push(`HP ${d.hp ?? "-"}${d.hitDice ? ` (${d.hitDice})` : ""}`);
   let speedsLine = [];
-  if (d.speedList && d.speedList.length) speedsLine = d.speedList.slice();
+  if (extraSpeedStrings.length) speedsLine = extraSpeedStrings.slice();
   else {
-    if (d.speedWalk) speedsLine.push(`${d.speedWalk}`);
-    if (d.speedSwim) speedsLine.push(`swim ${d.speedSwim}`);
-    if (d.speedFly) speedsLine.push(`fly ${d.speedFly}`);
-    if (d.speedBurrow) speedsLine.push(`burrow ${d.speedBurrow}`);
+    if (walkSpeed) speedsLine.push(`${walkSpeed}`);
+    if (climbSpeed) speedsLine.push(`climb ${climbSpeed}`);
+    if (swimSpeed) speedsLine.push(`swim ${swimSpeed}`);
+    if (flySpeed) speedsLine.push(`fly ${flySpeed}${flyHover ? " (hover)" : ""}`.trim());
+    if (burrowSpeed) speedsLine.push(`burrow ${burrowSpeed}`);
   }
   if (speedsLine.length) lines.push(`Speed ${speedsLine.join(", ")}`);
   lines.push("");
@@ -6249,63 +6738,24 @@ function statblockToMarkdown(d) {
   return lines.join("\n");
 }
 async function createCreatureFile(app, d) {
-  const folder = await ensureCreatureDir(app);
-  const baseName = sanitizeFileName2(d.name || "Creature");
-  let fileName = `${baseName}.md`;
-  let path = (0, import_obsidian15.normalizePath)(`${folder.path}/${fileName}`);
-  let i = 2;
-  while (app.vault.getAbstractFileByPath(path)) {
-    fileName = `${baseName} (${i}).md`;
-    path = (0, import_obsidian15.normalizePath)(`${folder.path}/${fileName}`);
-    i++;
-  }
-  const content = statblockToMarkdown(d);
-  const file = await app.vault.create(path, content);
-  return file;
+  return CREATURE_PIPELINE.create(app, d);
 }
 
+// src/apps/library/create/creature/modal.ts
+var import_obsidian21 = require("obsidian");
+
 // src/apps/library/core/spell-files.ts
-var import_obsidian16 = require("obsidian");
 var SPELLS_DIR = "SaltMarcher/Spells";
-async function ensureSpellDir(app) {
-  const p = (0, import_obsidian16.normalizePath)(SPELLS_DIR);
-  let f = app.vault.getAbstractFileByPath(p);
-  if (f instanceof import_obsidian16.TFolder) return f;
-  await app.vault.createFolder(p).catch(() => {
-  });
-  f = app.vault.getAbstractFileByPath(p);
-  if (f instanceof import_obsidian16.TFolder) return f;
-  throw new Error("Could not create spells directory");
-}
-async function listSpellFiles(app) {
-  const dir = await ensureSpellDir(app);
-  const out = [];
-  const walk = (folder) => {
-    for (const child of folder.children) {
-      if (child instanceof import_obsidian16.TFolder) walk(child);
-      else if (child instanceof import_obsidian16.TFile && child.extension === "md") out.push(child);
-    }
-  };
-  walk(dir);
-  return out;
-}
-function watchSpellDir(app, onChange) {
-  const base = (0, import_obsidian16.normalizePath)(SPELLS_DIR) + "/";
-  const isInDir = (f) => (f instanceof import_obsidian16.TFile || f instanceof import_obsidian16.TFolder) && (f.path + "/").startsWith(base);
-  const handler = (f) => {
-    if (isInDir(f)) onChange?.();
-  };
-  app.vault.on("create", handler);
-  app.vault.on("delete", handler);
-  app.vault.on("rename", handler);
-  app.vault.on("modify", handler);
-  return () => {
-    app.vault.off("create", handler);
-    app.vault.off("delete", handler);
-    app.vault.off("rename", handler);
-    app.vault.off("modify", handler);
-  };
-}
+var SPELL_PIPELINE = createVaultFilePipeline({
+  dir: SPELLS_DIR,
+  defaultBaseName: "Spell",
+  getBaseName: (data) => data.name,
+  toContent: spellToMarkdown,
+  sanitizeName: (name) => sanitizeVaultFileName(name, "Spell")
+});
+var ensureSpellDir = SPELL_PIPELINE.ensure;
+var listSpellFiles = SPELL_PIPELINE.list;
+var watchSpellDir = SPELL_PIPELINE.watch;
 function yamlList2(items) {
   if (!items || items.length === 0) return void 0;
   const safe = items.map((s) => `"${(s ?? "").replace(/"/g, '\\"')}"`).join(", ");
@@ -6367,76 +6817,10 @@ function spellToMarkdown(d) {
   return lines.join("\n");
 }
 async function createSpellFile(app, d) {
-  const folder = await ensureSpellDir(app);
-  const baseName = sanitizeFileName2(d.name || "Spell");
-  let fileName = `${baseName}.md`;
-  let path = (0, import_obsidian16.normalizePath)(`${folder.path}/${fileName}`);
-  let i = 2;
-  while (app.vault.getAbstractFileByPath(path)) {
-    fileName = `${baseName} (${i}).md`;
-    path = (0, import_obsidian16.normalizePath)(`${folder.path}/${fileName}`);
-    i++;
-  }
-  const content = spellToMarkdown(d);
-  const file = await app.vault.create(path, content);
-  return file;
+  return SPELL_PIPELINE.create(app, d);
 }
-
-// src/apps/library/view.ts
-init_terrain_store();
-init_regions_store();
-
-// src/apps/library/view/mode.ts
-function scoreName(name, q) {
-  if (!q) return 1e-4;
-  if (name === q) return 1e3;
-  if (name.startsWith(q)) return 900 - (name.length - q.length);
-  const idx = name.indexOf(q);
-  if (idx >= 0) return 700 - idx;
-  const tokenIdx = name.split(/\s+|[-_]/).findIndex((t) => t.startsWith(q));
-  if (tokenIdx >= 0) return 600 - tokenIdx * 5;
-  return -Infinity;
-}
-var BaseModeRenderer = class {
-  constructor(app, container) {
-    this.app = app;
-    this.container = container;
-    this.query = "";
-    this.cleanups = [];
-    this.disposed = false;
-  }
-  async init() {
-  }
-  setQuery(query) {
-    this.query = (query || "").toLowerCase();
-    this.render();
-  }
-  async handleCreate(_name) {
-  }
-  async destroy() {
-    if (this.disposed) return;
-    this.disposed = true;
-    for (const fn of this.cleanups.splice(0)) {
-      try {
-        fn();
-      } catch {
-      }
-    }
-    this.container.empty();
-  }
-  isDisposed() {
-    return this.disposed;
-  }
-  registerCleanup(fn) {
-    this.cleanups.push(fn);
-  }
-};
-
-// src/apps/library/create/creature/modal.ts
-var import_obsidian21 = require("obsidian");
 
 // src/apps/library/create/creature/section-basics.ts
-var import_obsidian17 = require("obsidian");
 init_search_dropdown();
 
 // src/apps/library/create/creature/presets.ts
@@ -6519,13 +6903,6 @@ var CREATURE_ABILITY_SELECTIONS = [
 var CREATURE_SAVE_OPTIONS = [
   "",
   ...CREATURE_ABILITY_LABELS
-];
-var CREATURE_MOVEMENT_TYPES = [
-  ["walk", "Gehen"],
-  ["climb", "Klettern"],
-  ["fly", "Fliegen"],
-  ["swim", "Schwimmen"],
-  ["burrow", "Graben"]
 ];
 var CREATURE_DAMAGE_PRESETS = [
   "Acid",
@@ -6610,66 +6987,211 @@ var CREATURE_LANGUAGE_PRESETS = [
   "Thieves' Cant"
 ];
 
+// src/apps/library/create/shared/token-editor.ts
+var import_obsidian17 = require("obsidian");
+function mountTokenEditor(parent, title, model, options = {}) {
+  const placeholder = options.placeholder ?? "Begriff eingeben\u2026";
+  const addLabel = options.addButtonLabel ?? "+";
+  const setting = new import_obsidian17.Setting(parent).setName(title);
+  let inputEl;
+  let renderChips = () => {
+  };
+  const commitValue = (value) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    model.add(trimmed);
+    options.onAdd?.(trimmed);
+    renderChips();
+  };
+  setting.addText((t) => {
+    t.setPlaceholder(placeholder);
+    inputEl = t.inputEl;
+    t.inputEl.style.minWidth = "260px";
+    t.inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        commitValue((inputEl?.value ?? "").trim());
+        if (inputEl) inputEl.value = "";
+      }
+    });
+  });
+  setting.addButton(
+    (b) => b.setButtonText(addLabel).onClick(() => {
+      commitValue((inputEl?.value ?? "").trim());
+      if (inputEl) inputEl.value = "";
+    })
+  );
+  const chips = parent.createDiv({ cls: "sm-cc-chips" });
+  renderChips = () => {
+    chips.empty();
+    const items = model.getItems();
+    items.forEach((txt, index) => {
+      const chip = chips.createDiv({ cls: "sm-cc-chip" });
+      chip.createSpan({ text: txt });
+      const removeBtn = chip.createEl("button", { text: "\xD7" });
+      removeBtn.onclick = () => {
+        model.remove(index);
+        options.onRemove?.(txt, index);
+        renderChips();
+      };
+    });
+  };
+  renderChips();
+  return { setting, chipsEl: chips, refresh: renderChips };
+}
+
+// src/apps/library/create/shared/layouts.ts
+var import_obsidian18 = require("obsidian");
+function createFormCard(parent, options) {
+  const { title, subtitle, registerValidator } = options;
+  const card = parent.createDiv({ cls: "sm-cc-card" });
+  const head = card.createDiv({ cls: "sm-cc-card__head" });
+  head.createEl("h3", { text: title, cls: "sm-cc-card__title" });
+  if (subtitle) head.createEl("p", { text: subtitle, cls: "sm-cc-card__subtitle" });
+  const validation = card.createDiv({ cls: "sm-cc-card__validation", attr: { hidden: "" } });
+  const validationList = validation.createEl("ul", { cls: "sm-cc-card__validation-list" });
+  const applyValidation = (issues) => {
+    const hasIssues = issues.length > 0;
+    card.toggleClass("is-invalid", hasIssues);
+    if (!hasIssues) {
+      validation.setAttribute("hidden", "");
+      validation.classList.remove("is-visible");
+      validationList.empty();
+      return;
+    }
+    validation.removeAttribute("hidden");
+    validation.classList.add("is-visible");
+    validationList.empty();
+    for (const message of issues) {
+      validationList.createEl("li", { text: message });
+    }
+  };
+  const body = card.createDiv({ cls: "sm-cc-card__body" });
+  const registerValidation = (compute) => {
+    const runner = () => {
+      const issues = compute();
+      applyValidation(issues);
+      return issues;
+    };
+    return registerValidator ? registerValidator(runner) : runner;
+  };
+  return { card, body, registerValidation };
+}
+function createFieldGrid(parent, options) {
+  const classes = ["sm-cc-field-grid"];
+  if (options?.variant) classes.push(`sm-cc-field-grid--${options.variant}`);
+  if (options?.className) {
+    const extras = Array.isArray(options.className) ? options.className : [options.className];
+    classes.push(...extras);
+  }
+  const grid = parent.createDiv({ cls: classes.join(" ") });
+  const createSetting = (label, settingOptions) => {
+    const setting = new import_obsidian18.Setting(grid).setName(label);
+    setting.settingEl.addClass("sm-cc-setting");
+    const additional = settingOptions?.className;
+    if (additional) {
+      const extras = Array.isArray(additional) ? additional : [additional];
+      setting.settingEl.classList.add(...extras);
+    }
+    return setting;
+  };
+  return { grid, createSetting };
+}
+
 // src/apps/library/create/creature/section-basics.ts
-function ensureSpeedList(data) {
-  if (!Array.isArray(data.speedList)) data.speedList = [];
-  return data.speedList;
+var SPEED_FIELD_DEFS = [
+  { key: "walk", label: "Gehen", placeholder: "30 ft." },
+  { key: "climb", label: "Klettern", placeholder: "30 ft." },
+  { key: "fly", label: "Fliegen", placeholder: "60 ft.", hoverToggle: true },
+  { key: "swim", label: "Schwimmen", placeholder: "40 ft." },
+  { key: "burrow", label: "Graben", placeholder: "20 ft." }
+];
+function ensureSpeeds(data) {
+  const speeds = data.speeds ?? (data.speeds = {});
+  if (!Array.isArray(speeds.extras)) speeds.extras = [];
+  return speeds;
+}
+function ensureSpeedExtras(data) {
+  const speeds = ensureSpeeds(data);
+  if (!Array.isArray(speeds.extras)) speeds.extras = [];
+  return speeds.extras;
+}
+function applySpeedValue(data, key, patch) {
+  const speeds = ensureSpeeds(data);
+  const prev = speeds[key] ?? {};
+  const next = { ...prev, ...patch };
+  const hasContent = Boolean(next.distance?.trim()) || next.hover || Boolean(next.note?.trim());
+  if (hasContent) speeds[key] = next;
+  else delete speeds[key];
+}
+function parseExtraInput(raw) {
+  let text = raw.trim();
+  if (!text) return null;
+  let hover = false;
+  const hoverMatch = text.match(/\(hover\)$/i);
+  if (hoverMatch?.index != null) {
+    hover = true;
+    text = text.slice(0, hoverMatch.index).trim();
+  }
+  const distanceMatch = text.match(/(\d.*)$/);
+  let label = text;
+  let distance;
+  if (distanceMatch?.index != null) {
+    label = text.slice(0, distanceMatch.index).trim() || text;
+    distance = distanceMatch[0].trim();
+  }
+  return { label, distance, hover };
+}
+function formatExtra(extra) {
+  const parts = [extra.label];
+  if (extra.distance) parts.push(extra.distance);
+  if (extra.note) parts.push(extra.note);
+  if (extra.hover) parts.push("(hover)");
+  return parts.map((part) => part?.trim()).filter((part) => Boolean(part && part.length)).join(" ");
 }
 function mountCreatureBasicsSection(parent, data) {
   const root = parent.createDiv({ cls: "sm-cc-basics" });
-  const grid = root.createDiv({ cls: "sm-cc-basics__grid" });
-  const registerGridItem = (setting, span = 1) => {
-    setting.settingEl.classList.add("sm-cc-basics__grid-item");
-    if (span === 2) setting.settingEl.classList.add("sm-cc-basics__grid-item--span-2");
-    if (span === 3) setting.settingEl.classList.add("sm-cc-basics__grid-item--span-3");
-    if (span === 4) setting.settingEl.classList.add("sm-cc-basics__grid-item--span-4");
-  };
-  const idSetting = new import_obsidian17.Setting(grid).setName("Name");
-  registerGridItem(idSetting, 2);
-  idSetting.addText((t) => {
+  const identity = root.createDiv({ cls: "sm-cc-basics__group" });
+  identity.createEl("h5", { text: "Identit\xE4t", cls: "sm-cc-basics__subtitle" });
+  const identityGrid = createFieldGrid(identity, { variant: "identity" });
+  const nameSetting = identityGrid.createSetting("Name");
+  nameSetting.addText((t) => {
     t.setPlaceholder("Aboleth").setValue(data.name || "").onChange((v) => data.name = v.trim());
-    t.inputEl.classList.add("sm-cc-basics__text-input");
-    t.inputEl.style.width = "100%";
+    t.inputEl.classList.add("sm-cc-input");
   });
-  const typeSetting = new import_obsidian17.Setting(grid).setName("Typ");
-  registerGridItem(typeSetting, 2);
+  const typeSetting = identityGrid.createSetting("Typ");
   typeSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_TYPES) dd.addOption(option, option);
     dd.setValue(data.type ?? "");
     dd.onChange((v) => data.type = v);
-    dd.selectEl.classList.add("sm-cc-basics__select");
-    dd.selectEl.style.width = "100%";
+    dd.selectEl.classList.add("sm-cc-select");
     try {
       enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
     } catch {
     }
   });
-  const sizeSetting = new import_obsidian17.Setting(grid).setName("Gr\xF6\xDFe");
-  registerGridItem(sizeSetting, 2);
+  const sizeSetting = identityGrid.createSetting("Gr\xF6\xDFe");
   sizeSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_SIZES) dd.addOption(option, option);
     dd.setValue(data.size ?? "");
     dd.onChange((v) => data.size = v);
-    dd.selectEl.classList.add("sm-cc-basics__select");
-    dd.selectEl.style.width = "100%";
+    dd.selectEl.classList.add("sm-cc-select");
     try {
       enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
     } catch {
     }
   });
-  const alignSetting = new import_obsidian17.Setting(grid).setName("Gesinnung");
-  registerGridItem(alignSetting, 2);
-  alignSetting.settingEl.classList.add("sm-cc-basics__alignment");
-  alignSetting.controlEl.classList.add("sm-cc-basics__alignment-controls");
-  alignSetting.addDropdown((dd) => {
+  const alignmentSetting = identityGrid.createSetting("Gesinnung", {
+    className: "sm-cc-setting--inline"
+  });
+  alignmentSetting.controlEl.addClass("sm-cc-alignment");
+  alignmentSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_ALIGNMENT_LAW_CHAOS) dd.addOption(option, option);
     dd.setValue(data.alignmentLawChaos ?? "");
     dd.onChange((v) => data.alignmentLawChaos = v);
-    dd.selectEl.classList.add("sm-cc-basics__alignment-select", "sm-cc-basics__select");
-    dd.selectEl.style.width = "100%";
+    dd.selectEl.classList.add("sm-cc-select");
     try {
       const el = dd.selectEl;
       el.dataset.sdOpenAll = "0";
@@ -6677,13 +7199,12 @@ function mountCreatureBasicsSection(parent, data) {
     } catch {
     }
   });
-  alignSetting.addDropdown((dd) => {
+  alignmentSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_ALIGNMENT_GOOD_EVIL) dd.addOption(option, option);
     dd.setValue(data.alignmentGoodEvil ?? "");
     dd.onChange((v) => data.alignmentGoodEvil = v);
-    dd.selectEl.classList.add("sm-cc-basics__alignment-select", "sm-cc-basics__select");
-    dd.selectEl.style.width = "100%";
+    dd.selectEl.classList.add("sm-cc-select");
     try {
       const el = dd.selectEl;
       el.dataset.sdOpenAll = "0";
@@ -6691,103 +7212,89 @@ function mountCreatureBasicsSection(parent, data) {
     } catch {
     }
   });
-  const speedSetting = new import_obsidian17.Setting(grid).setName("Bewegung");
-  registerGridItem(speedSetting, 4);
-  const speedControl = speedSetting.controlEl.createDiv({ cls: "sm-cc-move-ctl" });
-  const addRow = speedControl.createDiv({ cls: "sm-cc-searchbar sm-cc-move-row" });
-  const typeSelect = addRow.createEl("select", { cls: "sm-sd" });
-  for (const [value, label] of CREATURE_MOVEMENT_TYPES) {
-    const option = typeSelect.createEl("option", { text: label });
-    option.value = value;
-  }
-  typeSelect.classList.add("sm-cc-basics__select");
-  try {
-    enhanceSelectToSearch(typeSelect, "Such-dropdown\u2026");
-  } catch {
-  }
-  const hoverWrap = addRow.createDiv({ cls: "sm-cc-move-hover" });
-  const hoverId = `sm-cc-hover-${Math.random().toString(36).slice(2)}`;
-  const hoverCb = hoverWrap.createEl("input", {
-    attr: { type: "checkbox", id: hoverId }
-  });
-  hoverWrap.createEl("label", { text: "Hover", attr: { for: hoverId } });
-  const updateHover = () => {
-    const cur = typeSelect.value;
-    const isFly = cur === "fly";
-    hoverWrap.style.display = isFly ? "" : "none";
-    if (!isFly) hoverCb.checked = false;
-  };
-  updateHover();
-  typeSelect.addEventListener("change", updateHover);
-  const numWrap = addRow.createDiv({ cls: "sm-inline-number" });
-  const valInput = numWrap.createEl("input", {
-    attr: { type: "number", min: "0", step: "5", placeholder: "30" }
-  });
-  valInput.classList.add("sm-cc-basics__text-input");
-  const decBtn = numWrap.createEl("button", { text: "\u2212", cls: "btn-compact" });
-  const incBtn = numWrap.createEl("button", { text: "+", cls: "btn-compact" });
-  const step = (dir) => {
-    const cur = parseInt(valInput.value, 10) || 0;
-    const next = Math.max(0, cur + 5 * dir);
-    valInput.value = String(next);
-  };
-  decBtn.onclick = () => step(-1);
-  incBtn.onclick = () => step(1);
-  const addSpeedBtn = addRow.createEl("button", {
-    text: "+",
-    cls: "sm-cc-move-add",
-    attr: { "aria-label": "Geschwindigkeitswert hinzuf\xFCgen" }
-  });
-  const speedChips = speedControl.createDiv({ cls: "sm-cc-chips" });
-  const speeds = ensureSpeedList(data);
-  const renderSpeeds = () => {
-    speedChips.empty();
-    speeds.forEach((txt, i) => {
-      const chip = speedChips.createDiv({ cls: "sm-cc-chip" });
-      chip.createSpan({ text: txt });
-      const removeBtn = chip.createEl("button", {
-        text: "\xD7",
-        cls: "sm-cc-chip__remove",
-        attr: { "aria-label": `${txt} entfernen` }
-      });
-      removeBtn.onclick = () => {
-        speeds.splice(i, 1);
-        renderSpeeds();
-      };
-    });
-  };
-  renderSpeeds();
-  addSpeedBtn.onclick = () => {
-    const n = parseInt(valInput.value, 10);
-    if (!Number.isFinite(n) || n <= 0) return;
-    const kind = typeSelect.value;
-    const unit = "ft.";
-    const label = kind === "walk" ? `${n} ${unit}` : kind === "fly" && hoverCb.checked ? `fly ${n} ${unit} (hover)` : `${kind} ${n} ${unit}`;
-    speeds.push(label);
-    valInput.value = "";
-    hoverCb.checked = false;
-    renderSpeeds();
-  };
-  const mkStatSetting = (label, placeholder, key, span = 1) => {
-    const setting = new import_obsidian17.Setting(grid).setName(label);
-    registerGridItem(setting, span);
+  const stats = root.createDiv({ cls: "sm-cc-basics__group" });
+  stats.createEl("h5", { text: "Kernwerte", cls: "sm-cc-basics__subtitle" });
+  const statsGrid = createFieldGrid(stats, { variant: "summary" });
+  const createStatField = (label, placeholder, key) => {
+    const setting = statsGrid.createSetting(label);
     setting.addText((t) => {
       t.setPlaceholder(placeholder).setValue(data[key] ?? "").onChange((v) => data[key] = v.trim());
-      t.inputEl.classList.add("sm-cc-basics__text-input");
-      t.inputEl.style.width = "100%";
+      t.inputEl.classList.add("sm-cc-input");
     });
   };
-  mkStatSetting("HP", "150", "hp");
-  mkStatSetting("AC", "17", "ac");
-  mkStatSetting("Init", "+7", "initiative");
-  mkStatSetting("PB", "+4", "pb");
-  mkStatSetting("HD", "20d10 + 40", "hitDice", 2);
-  mkStatSetting("CR", "10", "cr");
-  mkStatSetting("XP", "5900", "xp");
+  createStatField("HP", "150", "hp");
+  createStatField("AC", "17", "ac");
+  createStatField("Init", "+7", "initiative");
+  createStatField("PB", "+4", "pb");
+  createStatField("HD", "20d10 + 40", "hitDice");
+  createStatField("CR", "10", "cr");
+  createStatField("XP", "5900", "xp");
+  const movement = root.createDiv({ cls: "sm-cc-basics__group" });
+  movement.createEl("h5", { text: "Bewegung", cls: "sm-cc-basics__subtitle" });
+  const speedGrid = createFieldGrid(movement, { variant: "speeds" });
+  SPEED_FIELD_DEFS.forEach((def) => {
+    const setting = speedGrid.createSetting(def.label, {
+      className: "sm-cc-setting--speed"
+    });
+    const current = ensureSpeeds(data)[def.key];
+    const text = setting.addText((t) => {
+      t.setPlaceholder(def.placeholder).setValue(current?.distance ?? "").onChange((v) => {
+        const trimmed = v.trim();
+        applySpeedValue(data, def.key, { distance: trimmed || void 0 });
+      });
+      t.inputEl.classList.add("sm-cc-input");
+    });
+    if (def.hoverToggle) {
+      let toggle = null;
+      toggle = setting.addToggle((tg) => {
+        tg.setValue(Boolean(current?.hover));
+        tg.onChange((checked) => {
+          applySpeedValue(data, def.key, { hover: checked });
+        });
+      });
+      const hoverWrap = setting.controlEl.createDiv({ cls: "sm-cc-hover-wrap" });
+      hoverWrap.appendChild(toggle.toggleEl);
+      toggle.toggleEl.addClass("sm-cc-hover-toggle");
+      toggle.toggleEl.setAttr("aria-label", "Hover markieren");
+      hoverWrap.createSpan({ text: "Hover", cls: "sm-cc-hover-label" });
+      text.inputEl.addEventListener("blur", () => {
+        const speeds = ensureSpeeds(data);
+        const target = speeds[def.key];
+        text.setValue(target?.distance ?? "");
+        toggle?.setValue(Boolean(target?.hover));
+      });
+    }
+  });
+  const extras = ensureSpeedExtras(data);
+  const extrasEditor = mountTokenEditor(
+    movement,
+    "Weitere Bewegungen",
+    {
+      getItems: () => extras.map(formatExtra),
+      add: (value) => {
+        const parsed = parseExtraInput(value);
+        if (!parsed) return;
+        const exists = extras.some(
+          (entry) => entry.label.toLowerCase() === parsed.label.toLowerCase() && (entry.distance ?? "") === (parsed.distance ?? "") && Boolean(entry.hover) === Boolean(parsed.hover)
+        );
+        if (!exists) extras.push(parsed);
+        extrasEditor.refresh();
+      },
+      remove: (index) => {
+        extras.splice(index, 1);
+        extrasEditor.refresh();
+      }
+    },
+    {
+      placeholder: "z. B. teleport 30 ft.",
+      addButtonLabel: "+ Hinzuf\xFCgen"
+    }
+  );
+  extrasEditor.setting.settingEl.addClass("sm-cc-setting");
 }
 
 // src/apps/library/create/creature/section-stats-and-skills.ts
-var import_obsidian18 = require("obsidian");
+var import_obsidian19 = require("obsidian");
 init_search_dropdown();
 
 // src/apps/library/create/shared/stat-utils.ts
@@ -6808,7 +7315,17 @@ function formatSigned(value) {
 }
 
 // src/apps/library/create/creature/section-stats-and-skills.ts
-function mountCreatureStatsAndSkillsSection(parent, data) {
+function collectStatsAndSkillsIssues(data) {
+  const issues = [];
+  const profs = new Set(data.skillsProf ?? []);
+  for (const name of data.skillsExpertise ?? []) {
+    if (!profs.has(name)) {
+      issues.push(`Expertise f\xFCr "${name}" setzt eine Profizient voraus.`);
+    }
+  }
+  return issues;
+}
+function mountCreatureStatsAndSkillsSection(parent, data, registerValidation) {
   const root = parent.createDiv({ cls: "sm-cc-stats" });
   const abilityElems = /* @__PURE__ */ new Map();
   const ensureSets = () => {
@@ -6895,7 +7412,7 @@ function mountCreatureStatsAndSkillsSection(parent, data) {
     }
   }
   const skillAbilityMap = new Map(CREATURE_SKILLS);
-  const skillsSetting = new import_obsidian18.Setting(root).setName("Fertigkeiten");
+  const skillsSetting = new import_obsidian19.Setting(root).setName("Fertigkeiten");
   skillsSetting.settingEl.addClass("sm-cc-skills");
   const skillsControl = skillsSetting.controlEl;
   skillsControl.addClass("sm-cc-skill-editor");
@@ -6928,6 +7445,7 @@ function mountCreatureStatsAndSkillsSection(parent, data) {
   });
   const skillChips = skillsControl.createDiv({ cls: "sm-cc-chips sm-cc-skill-chips" });
   const skillRefs = /* @__PURE__ */ new Map();
+  const revalidate = registerValidation?.(() => collectStatsAndSkillsIssues(data)) ?? (() => []);
   const addSkillByName = (rawName) => {
     const name = rawName.trim();
     if (!name) return;
@@ -6971,6 +7489,7 @@ function mountCreatureStatsAndSkillsSection(parent, data) {
           data.skillsExpertise = data.skillsExpertise.filter((s) => s !== name);
         }
         updateMods();
+        revalidate();
       });
       const removeBtn = chip.createEl("button", {
         cls: "sm-cc-chip__remove",
@@ -6986,6 +7505,7 @@ function mountCreatureStatsAndSkillsSection(parent, data) {
       skillRefs.set(name, { mod: modOut, expertise: expertiseCb });
     }
     updateMods();
+    revalidate();
   }
   const updateMods = () => {
     const pb = parseIntSafe(data.pb) || 0;
@@ -7006,60 +7526,9 @@ function mountCreatureStatsAndSkillsSection(parent, data) {
       refs.mod.textContent = formatSigned(mod + bonus);
       if (refs.expertise.checked !== hasExpertise) refs.expertise.checked = hasExpertise;
     }
+    revalidate();
   };
   renderSkillChips();
-}
-
-// src/apps/library/create/shared/token-editor.ts
-var import_obsidian19 = require("obsidian");
-function mountTokenEditor(parent, title, model, options = {}) {
-  const placeholder = options.placeholder ?? "Begriff eingeben\u2026";
-  const addLabel = options.addButtonLabel ?? "+";
-  const setting = new import_obsidian19.Setting(parent).setName(title);
-  let inputEl;
-  let renderChips = () => {
-  };
-  const commitValue = (value) => {
-    const trimmed = value.trim();
-    if (!trimmed) return;
-    model.add(trimmed);
-    options.onAdd?.(trimmed);
-    renderChips();
-  };
-  setting.addText((t) => {
-    t.setPlaceholder(placeholder);
-    inputEl = t.inputEl;
-    t.inputEl.style.minWidth = "260px";
-    t.inputEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        commitValue((inputEl?.value ?? "").trim());
-        if (inputEl) inputEl.value = "";
-      }
-    });
-  });
-  setting.addButton(
-    (b) => b.setButtonText(addLabel).onClick(() => {
-      commitValue((inputEl?.value ?? "").trim());
-      if (inputEl) inputEl.value = "";
-    })
-  );
-  const chips = parent.createDiv({ cls: "sm-cc-chips" });
-  renderChips = () => {
-    chips.empty();
-    const items = model.getItems();
-    items.forEach((txt, index) => {
-      const chip = chips.createDiv({ cls: "sm-cc-chip" });
-      chip.createSpan({ text: txt });
-      const removeBtn = chip.createEl("button", { text: "\xD7" });
-      removeBtn.onclick = () => {
-        model.remove(index);
-        options.onRemove?.(txt, index);
-        renderChips();
-      };
-    });
-  };
-  renderChips();
-  return { setting, chipsEl: chips, refresh: renderChips };
 }
 
 // src/apps/library/create/creature/section-utils.ts
@@ -7076,6 +7545,7 @@ function mountPresetSelectEditor(parent, title, options, model, config) {
     settingClass
   } = resolved;
   const setting = new import_obsidian20.Setting(parent).setName(title);
+  setting.settingEl.addClass("sm-cc-setting");
   if (settingClass) {
     const classes = Array.isArray(settingClass) ? settingClass : [settingClass];
     setting.settingEl.classList.add(...classes);
@@ -7191,6 +7661,7 @@ function mountDamageResponseEditor(parent, damageLists) {
     }
   ];
   const setting = new import_obsidian20.Setting(parent).setName("Schadenstyp-Reaktionen");
+  setting.settingEl.addClass("sm-cc-setting");
   const row = setting.controlEl.createDiv({ cls: "sm-cc-searchbar sm-cc-damage-row" });
   row.createEl("label", { cls: "sm-cc-damage-label", text: "Schadenstyp" });
   const select = row.createEl("select", { cls: "sm-cc-damage-select" });
@@ -7380,7 +7851,30 @@ function mountCreatureSensesAndDefensesSection(parent, data) {
 
 // src/apps/library/create/creature/section-entries.ts
 init_search_dropdown();
-function mountEntriesSection(parent, data) {
+function collectEntryDependencyIssues(data) {
+  const issues = [];
+  const entries = data.entries ?? [];
+  entries.forEach((entry, index) => {
+    const label = entry.name?.trim() || `Eintrag ${index + 1}`;
+    if (entry.save_ability && (entry.save_dc == null || Number.isNaN(entry.save_dc))) {
+      issues.push(`${label}: Save-DC angeben, wenn ein Attribut gew\xE4hlt wurde.`);
+    }
+    if (entry.save_dc != null && !Number.isNaN(entry.save_dc) && !entry.save_ability) {
+      issues.push(`${label}: Ein Save-DC ben\xF6tigt ein Attribut.`);
+    }
+    if (entry.save_effect && !entry.save_ability) {
+      issues.push(`${label}: Save-Effekt ohne Attribut ist unklar.`);
+    }
+    if (entry.to_hit_from && !entry.to_hit_from.ability) {
+      issues.push(`${label}: Automatische Attacke ben\xF6tigt ein Attribut.`);
+    }
+    if (entry.damage_from && !entry.damage_from.dice?.trim()) {
+      issues.push(`${label}: Automatischer Schaden ben\xF6tigt W\xFCrfelangaben.`);
+    }
+  });
+  return issues;
+}
+function mountEntriesSection(parent, data, registerValidation) {
   if (!data.entries) data.entries = [];
   const wrap = parent.createDiv({ cls: "setting-item sm-cc-entries" });
   wrap.createDiv({ cls: "setting-item-info", text: "Eintr\xE4ge (Traits, Aktionen, \u2026)" });
@@ -7398,6 +7892,7 @@ function mountEntriesSection(parent, data) {
   const addEntryBtn = addBar.createEl("button", { text: "+ Eintrag" });
   const host = ctl.createDiv();
   let focusIdx = null;
+  const revalidate = registerValidation?.(() => collectEntryDependencyIssues(data)) ?? (() => []);
   const render = () => {
     host.empty();
     data.entries.forEach((e, i) => {
@@ -7461,7 +7956,10 @@ function mountEntriesSection(parent, data) {
       const hit = hitGroup.createEl("input", { cls: "sm-auto-tohit", attr: { type: "text", placeholder: "+7", "aria-label": "To hit" } });
       hit.style.width = "6ch";
       hit.value = e.to_hit || "";
-      hit.addEventListener("input", () => e.to_hit = hit.value.trim() || void 0);
+      hit.addEventListener("input", () => {
+        e.to_hit = hit.value.trim() || void 0;
+        revalidate();
+      });
       const dmgGroup = autoRow.createDiv({ cls: "sm-auto-group" });
       dmgGroup.createSpan({ text: "Damage:" });
       const dmgDice = dmgGroup.createEl("input", { attr: { type: "text", placeholder: "1d8", "aria-label": "W\xFCrfel" } });
@@ -7480,7 +7978,10 @@ function mountEntriesSection(parent, data) {
       const dmg = dmgGroup.createEl("input", { cls: "sm-auto-dmg", attr: { type: "text", placeholder: "1d8 +3 piercing", "aria-label": "Schaden" } });
       dmg.style.width = "20ch";
       dmg.value = e.damage || "";
-      dmg.addEventListener("input", () => e.damage = dmg.value.trim() || void 0);
+      dmg.addEventListener("input", () => {
+        e.damage = dmg.value.trim() || void 0;
+        revalidate();
+      });
       const applyAuto = () => {
         const pb = parseIntSafe(data.pb) || 0;
         if (e.to_hit_from) {
@@ -7498,6 +7999,7 @@ function mountEntriesSection(parent, data) {
           e.damage = `${base}${tail}`.trim();
           dmg.value = e.damage;
         }
+        revalidate();
       };
       if (e.to_hit_from) {
         toHitAbil.value = e.to_hit_from.ability;
@@ -7536,26 +8038,42 @@ function mountEntriesSection(parent, data) {
         option.value = value;
         if (value === (e.save_ability || "")) option.selected = true;
       }
-      saveAb.onchange = () => e.save_ability = saveAb.value || void 0;
+      saveAb.onchange = () => {
+        e.save_ability = saveAb.value || void 0;
+        revalidate();
+      };
       misc.createEl("label", { text: "DC" });
       const saveDc = misc.createEl("input", { attr: { type: "number", placeholder: "DC", "aria-label": "DC" } });
       saveDc.value = e.save_dc ? String(e.save_dc) : "";
-      saveDc.oninput = () => e.save_dc = saveDc.value ? parseInt(saveDc.value, 10) : void 0;
+      saveDc.oninput = () => {
+        e.save_dc = saveDc.value ? parseInt(saveDc.value, 10) : void 0;
+        revalidate();
+      };
       saveDc.style.width = "4ch";
       misc.createEl("label", { text: "Save-Effekt" });
       const saveFx = misc.createEl("input", { attr: { type: "text", placeholder: "half on save \u2026", "aria-label": "Save-Effekt" } });
       saveFx.value = e.save_effect || "";
-      saveFx.oninput = () => e.save_effect = saveFx.value.trim() || void 0;
+      saveFx.oninput = () => {
+        e.save_effect = saveFx.value.trim() || void 0;
+        revalidate();
+      };
       saveFx.style.width = "18ch";
       misc.createEl("label", { text: "Recharge" });
       const rech = misc.createEl("input", { attr: { type: "text", placeholder: "Recharge 5\u20136 / 1/day" } });
       rech.value = e.recharge || "";
-      rech.oninput = () => e.recharge = rech.value.trim() || void 0;
+      rech.oninput = () => {
+        e.recharge = rech.value.trim() || void 0;
+        revalidate();
+      };
       box.createEl("label", { text: "Details" });
       const ta = box.createEl("textarea", { cls: "sm-cc-entry-text", attr: { placeholder: "Details (Markdown)" } });
       ta.value = e.text || "";
-      ta.addEventListener("input", () => e.text = ta.value);
+      ta.addEventListener("input", () => {
+        e.text = ta.value;
+        revalidate();
+      });
     });
+    revalidate();
   };
   addEntryBtn.onclick = () => {
     data.entries.unshift({ category: catSel.value, name: "" });
@@ -7655,6 +8173,7 @@ var CreateCreatureModal = class extends import_obsidian21.Modal {
   constructor(app, presetName, onSubmit) {
     super(app);
     this.availableSpells = [];
+    this.validators = [];
     this.onSubmit = onSubmit;
     this.data = { name: presetName?.trim() || "Neue Kreatur" };
   }
@@ -7662,13 +8181,28 @@ var CreateCreatureModal = class extends import_obsidian21.Modal {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass("sm-cc-create-modal");
+    this.validators = [];
     const bg = document.querySelector(".modal-bg");
     if (bg) {
       this._bgEl = bg;
       this._bgPrevPointer = bg.style.pointerEvents;
       bg.style.pointerEvents = "none";
     }
-    contentEl.createEl("h3", { text: "Neuen Statblock erstellen" });
+    const header = contentEl.createDiv({ cls: "sm-cc-modal-header" });
+    header.createEl("h2", { text: "Neuen Statblock erstellen" });
+    header.createEl("p", {
+      cls: "sm-cc-modal-subtitle",
+      text: "Pflege zuerst Grundlagen und Attribute, anschlie\xDFend Sinne, Verteidigungen und Aktionen."
+    });
+    const layout = contentEl.createDiv({ cls: "sm-cc-layout" });
+    const mainColumn = layout.createDiv({ cls: "sm-cc-layout__col sm-cc-layout__col--main" });
+    const sideColumn = layout.createDiv({ cls: "sm-cc-layout__col sm-cc-layout__col--side" });
+    const fullColumn = layout.createDiv({ cls: "sm-cc-layout__col sm-cc-layout__col--full" });
+    const createCard = (column, title, subtitle) => createFormCard(column, {
+      title,
+      subtitle,
+      registerValidator: (runner) => this.addValidator(runner)
+    });
     let spellsSectionControls = null;
     void (async () => {
       try {
@@ -7678,12 +8212,18 @@ var CreateCreatureModal = class extends import_obsidian21.Modal {
       } catch {
       }
     })();
-    mountCreatureBasicsSection(contentEl, this.data);
-    mountCreatureStatsAndSkillsSection(contentEl, this.data);
-    mountCreatureSensesAndDefensesSection(contentEl, this.data);
-    mountEntriesSection(contentEl, this.data);
-    spellsSectionControls = mountSpellsKnownSection(contentEl, this.data, () => this.availableSpells);
-    new import_obsidian21.Setting(contentEl).addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close())).addButton((b) => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
+    const basicsCard = createCard(mainColumn, "Grunddaten", "Name, Typ, Gesinnung und Basiswerte");
+    mountCreatureBasicsSection(basicsCard.body, this.data);
+    const statsCard = createCard(mainColumn, "Attribute & Fertigkeiten");
+    mountCreatureStatsAndSkillsSection(statsCard.body, this.data, statsCard.registerValidation);
+    const defensesCard = createCard(sideColumn, "Sinne & Verteidigungen");
+    mountCreatureSensesAndDefensesSection(defensesCard.body, this.data);
+    const spellsCard = createCard(sideColumn, "Zauber & F\xE4higkeiten");
+    spellsSectionControls = mountSpellsKnownSection(spellsCard.body, this.data, () => this.availableSpells);
+    const entriesCard = createCard(fullColumn, "Eintr\xE4ge", "Traits, Aktionen, Bonusaktionen, Reaktionen und Legend\xE4res");
+    mountEntriesSection(entriesCard.body, this.data, entriesCard.registerValidation);
+    const footer = contentEl.createDiv({ cls: "sm-cc-modal-footer" });
+    new import_obsidian21.Setting(footer).addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close())).addButton((b) => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
   }
   onClose() {
     this.contentEl.empty();
@@ -7699,18 +8239,57 @@ var CreateCreatureModal = class extends import_obsidian21.Modal {
     }
   }
   submit() {
+    const issues = this.runValidators();
+    if (issues.length) {
+      const firstInvalid = this.contentEl.querySelector(".sm-cc-card.is-invalid");
+      if (firstInvalid) firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     if (!this.data.name || !this.data.name.trim()) return;
     this.close();
     this.onSubmit(this.data);
+  }
+  addValidator(run) {
+    this.validators.push(run);
+    return run;
+  }
+  runValidators() {
+    const collected = [];
+    for (const validator of this.validators) {
+      collected.push(...validator());
+    }
+    return collected;
   }
 };
 
 // src/apps/library/create/spell/modal.ts
 var import_obsidian22 = require("obsidian");
 init_search_dropdown();
+
+// src/apps/library/create/spell/validation.ts
+var SCALING_REQUIRES_LEVEL_MESSAGE = "Skalierende Effekte ben\xF6tigen einen Zaubergrad zwischen 1 und 9.";
+var SCALING_DISALLOWS_CANTRIPS_MESSAGE = "Zaubertricks verwenden keine h\xF6heren Zauberstufen \u2013 entferne den Abschnitt oder w\xE4hle Grad 1\u20139.";
+function collectSpellScalingIssues(data) {
+  const issues = [];
+  const scalingText = data.higher_levels?.trim();
+  if (!scalingText) return issues;
+  const level = data.level;
+  if (!Number.isFinite(level)) {
+    issues.push(SCALING_REQUIRES_LEVEL_MESSAGE);
+    return issues;
+  }
+  if ((level ?? 0) <= 0) {
+    issues.push(SCALING_DISALLOWS_CANTRIPS_MESSAGE);
+  }
+  return issues;
+}
+
+// src/apps/library/create/spell/modal.ts
 var CreateSpellModal = class extends import_obsidian22.Modal {
   constructor(app, presetName, onSubmit) {
     super(app);
+    this.scalingIssues = [];
+    this.runScalingValidation = null;
     this.onSubmit = onSubmit;
     this.data = { name: presetName?.trim() || "Neuer Zauber" };
   }
@@ -7718,6 +8297,8 @@ var CreateSpellModal = class extends import_obsidian22.Modal {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass("sm-cc-create-modal");
+    this.scalingIssues = [];
+    this.runScalingValidation = null;
     contentEl.createEl("h3", { text: "Neuen Zauber erstellen" });
     new import_obsidian22.Setting(contentEl).setName("Name").addText((t) => {
       t.setPlaceholder("Fireball").setValue(this.data.name).onChange((v) => this.data.name = v.trim());
@@ -7725,7 +8306,10 @@ var CreateSpellModal = class extends import_obsidian22.Modal {
     });
     new import_obsidian22.Setting(contentEl).setName("Grad").setDesc("0 = Zaubertrick").addDropdown((dd) => {
       for (let i = 0; i <= 9; i++) dd.addOption(String(i), String(i));
-      dd.onChange((v) => this.data.level = parseInt(v, 10));
+      dd.onChange((v) => {
+        this.data.level = parseInt(v, 10);
+        this.runScalingValidation?.();
+      });
       try {
         enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
       } catch {
@@ -7830,22 +8414,63 @@ var CreateSpellModal = class extends import_obsidian22.Modal {
       add: (value) => this.data.classes.push(value),
       remove: (index) => this.data.classes.splice(index, 1)
     });
-    this.addTextArea(contentEl, "Beschreibung", "Beschreibung (Markdown)", (v) => this.data.description = v);
-    this.addTextArea(contentEl, "H\xF6here Grade", "Bei h\xF6heren Graden (Markdown)", (v) => this.data.higher_levels = v);
+    this.addTextArea(
+      contentEl,
+      "Beschreibung",
+      "Beschreibung (Markdown)",
+      (v) => this.data.description = v,
+      this.data.description
+    );
+    const higherLevelsField = this.addTextArea(
+      contentEl,
+      "H\xF6here Grade",
+      "Bei h\xF6heren Graden (Markdown)",
+      (v) => {
+        const trimmed = v.trim();
+        this.data.higher_levels = trimmed ? trimmed : void 0;
+        this.runScalingValidation?.();
+      },
+      this.data.higher_levels
+    );
+    const scalingValidation = higherLevelsField.controlEl.createDiv({ cls: "sm-setting-validation", attr: { hidden: "" } });
+    const applyScalingValidation = (issues) => {
+      const hasIssues = issues.length > 0;
+      higherLevelsField.wrapper.toggleClass("is-invalid", hasIssues);
+      if (!hasIssues) {
+        scalingValidation.setAttribute("hidden", "");
+        scalingValidation.classList.remove("is-visible");
+        scalingValidation.empty();
+        return;
+      }
+      scalingValidation.removeAttribute("hidden");
+      scalingValidation.classList.add("is-visible");
+      scalingValidation.empty();
+      const list = scalingValidation.createEl("ul");
+      for (const issue of issues) list.createEl("li", { text: issue });
+    };
+    this.runScalingValidation = () => {
+      this.scalingIssues = collectSpellScalingIssues(this.data);
+      applyScalingValidation(this.scalingIssues);
+    };
+    this.runScalingValidation();
     new import_obsidian22.Setting(contentEl).addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close())).addButton((b) => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
     this.scope.register([], "Enter", () => this.submit());
   }
   onClose() {
     this.contentEl.empty();
   }
-  addTextArea(parent, label, placeholder, onChange) {
+  addTextArea(parent, label, placeholder, onChange, initialValue) {
     const wrap = parent.createDiv({ cls: "setting-item" });
     wrap.createDiv({ cls: "setting-item-info", text: label });
     const ctl = wrap.createDiv({ cls: "setting-item-control" });
     const ta = ctl.createEl("textarea", { attr: { placeholder } });
+    if (initialValue != null) ta.value = initialValue;
     ta.addEventListener("input", () => onChange(ta.value));
+    return { wrapper: wrap, controlEl: ctl, textarea: ta };
   }
   submit() {
+    this.runScalingValidation?.();
+    if (this.scalingIssues.length) return;
     if (!this.data.name || !this.data.name.trim()) return;
     this.close();
     this.onSubmit(this.data);
@@ -8090,9 +8715,6 @@ var TerrainsRenderer = class extends BaseModeRenderer {
     if (!this.isDisposed()) this.render();
   }
 };
-function describeTerrainsSource() {
-  return `Source: ${TERRAIN_FILE}`;
-}
 
 // src/apps/library/view/regions.ts
 init_search_dropdown();
@@ -8222,8 +8844,42 @@ var RegionsRenderer = class extends BaseModeRenderer {
     if (!this.isDisposed()) this.render();
   }
 };
-function describeRegionsSource() {
-  return `Source: ${REGIONS_FILE}`;
+
+// src/apps/library/core/sources.ts
+init_terrain_store();
+init_regions_store();
+var SOURCE_MAP = Object.freeze({
+  creatures: {
+    ensure: ensureCreatureDir,
+    description: `${CREATURES_DIR}/`
+  },
+  spells: {
+    ensure: ensureSpellDir,
+    description: `${SPELLS_DIR}/`
+  },
+  terrains: {
+    ensure: ensureTerrainFile,
+    description: TERRAIN_FILE
+  },
+  regions: {
+    ensure: ensureRegionsFile,
+    description: REGIONS_FILE
+  }
+});
+var LIBRARY_SOURCE_IDS = Object.freeze(Object.keys(SOURCE_MAP));
+async function ensureLibrarySource(app, source) {
+  const spec = SOURCE_MAP[source];
+  if (!spec) throw new Error(`Unknown library source: ${source}`);
+  await spec.ensure(app);
+}
+async function ensureLibrarySources(app, sources) {
+  const requested = sources ? Array.from(new Set(sources)) : LIBRARY_SOURCE_IDS;
+  await Promise.all(requested.map((source) => ensureLibrarySource(app, source)));
+}
+function describeLibrarySource(source) {
+  const spec = SOURCE_MAP[source];
+  if (!spec) throw new Error(`Unknown library source: ${source}`);
+  return spec.description;
 }
 
 // src/apps/library/view.ts
@@ -8238,9 +8894,7 @@ var LIBRARY_COPY = {
     regions: "Regions"
   },
   sources: {
-    prefix: "Source: ",
-    creatures: "SaltMarcher/Creatures/",
-    spells: "SaltMarcher/Spells/"
+    prefix: "Source: "
   }
 };
 var VIEW_LIBRARY = "salt-library";
@@ -8262,12 +8916,7 @@ var LibraryView = class extends import_obsidian23.ItemView {
   }
   async onOpen() {
     this.contentEl.addClass("sm-library");
-    await Promise.all([
-      ensureCreatureDir(this.app),
-      ensureSpellDir(this.app),
-      ensureTerrainFile(this.app),
-      ensureRegionsFile(this.app)
-    ]);
+    await ensureLibrarySources(this.app);
     this.renderShell();
     await this.activateMode(this.mode);
   }
@@ -8352,7 +9001,7 @@ var LibraryView = class extends import_obsidian23.ItemView {
   }
   updateSourceDescription() {
     if (!this.descEl) return;
-    const text = this.mode === "creatures" ? `${LIBRARY_COPY.sources.prefix}${LIBRARY_COPY.sources.creatures}` : this.mode === "spells" ? `${LIBRARY_COPY.sources.prefix}${LIBRARY_COPY.sources.spells}` : this.mode === "terrains" ? describeTerrainsSource() : describeRegionsSource();
+    const text = `${LIBRARY_COPY.sources.prefix}${describeLibrarySource(this.mode)}`;
     this.descEl.setText(text);
   }
   async onCreate(name) {
@@ -8368,7 +9017,7 @@ init_terrain_store();
 init_terrain();
 
 // src/app/css.ts
-var HEX_PLUGIN_CSS = `
+var viewContainerCss = `
 /* === View Container === */
 .sm-view-container {
     position: relative;
@@ -8433,7 +9082,8 @@ var HEX_PLUGIN_CSS = `
     font-size: 0.95rem;
     line-height: 1.4;
 }
-
+`;
+var mapAndPreviewCss = `
 /* === Map-Container & SVG === */
 .hex3x3-container {
     width: 100%;
@@ -8480,7 +9130,8 @@ var HEX_PLUGIN_CSS = `
 .markdown-source-view .cm-preview-code-block .hex3x3-container,
 .markdown-source-view .cm-preview-code-block .hex3x3-map { pointer-events: auto; }
 .markdown-source-view .cm-preview-code-block .edit-block-button { pointer-events: none; }
-
+`;
+var editorLayoutsCss = `
 /* === Terrain Editor === */
 .sm-terrain-editor { padding:.5rem 0; }
 .sm-terrain-editor .desc { color: var(--text-muted); margin-bottom:.25rem; }
@@ -8506,37 +9157,74 @@ var HEX_PLUGIN_CSS = `
 .sm-cc-item { display:flex; gap:.5rem; align-items:center; justify-content:space-between; padding:.35rem .5rem; border:1px solid var(--background-modifier-border); border-radius:8px; background: var(--background-primary); }
 .sm-cc-item__name { font-weight: 500; }
 
+/* Creature Creator \u2013 Modal Layout */
+.sm-cc-modal-header { display:flex; flex-direction:column; gap:.35rem; margin-bottom:1rem; }
+.sm-cc-modal-header h2 { margin:0; font-size:1.35rem; }
+.sm-cc-modal-subtitle { margin:0; color: var(--text-muted); font-size:.95em; }
+.sm-cc-layout { display:grid; grid-template-columns:minmax(0, 3fr) minmax(0, 2fr); gap:1rem; align-items:flex-start; }
+.sm-cc-layout__col { display:flex; flex-direction:column; gap:1rem; min-width:0; }
+.sm-cc-layout__col--full { grid-column:1 / -1; }
+@media (max-width: 1100px) {
+    .sm-cc-layout { grid-template-columns:minmax(0, 1fr); }
+    .sm-cc-layout__col--side { order:2; }
+    .sm-cc-layout__col--main { order:1; }
+    .sm-cc-layout__col--full { order:3; }
+}
+.sm-cc-card {
+    border:1px solid var(--background-modifier-border);
+    border-radius:12px;
+    background:var(--background-primary);
+    box-shadow:0 6px 18px rgba(0,0,0,.06);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+}
+.sm-cc-card__head { padding:.85rem .95rem .6rem; border-bottom:1px solid var(--background-modifier-border); display:flex; flex-direction:column; gap:.3rem; }
+.sm-cc-card__title { margin:0; font-size:1.05rem; }
+.sm-cc-card__subtitle { margin:0; font-size:.9em; color: var(--text-muted); }
+.sm-cc-card__validation { display:none; padding:.6rem .95rem; border-top:1px solid color-mix(in srgb, var(--color-red, #e11d48) 30%, transparent); background:color-mix(in srgb, var(--color-red, #e11d48) 12%, var(--background-secondary)); color: var(--color-red, #e11d48); font-size:.9em; }
+.sm-cc-card__validation.is-visible { display:block; }
+.sm-cc-card__validation-list { margin:0; padding-left:1.2rem; display:flex; flex-direction:column; gap:.25rem; }
+.sm-cc-card__body { padding:.95rem; display:flex; flex-direction:column; gap:1.1rem; }
+.sm-cc-card.is-invalid { border-color: color-mix(in srgb, var(--color-red, #e11d48) 35%, transparent); box-shadow:0 0 0 1px color-mix(in srgb, var(--color-red, #e11d48) 22%, transparent) inset; }
+.sm-cc-modal-footer { margin-top:1.25rem; display:flex; justify-content:flex-end; }
+.sm-cc-modal-footer .setting-item { margin:0; padding:0; border:none; background:none; }
+.sm-cc-modal-footer .setting-item-control { margin-left:0; display:flex; gap:.6rem; }
+.sm-cc-modal-footer button { min-width:120px; }
+
 /* Creature Creator \u2013 Basics Section */
-.sm-cc-basics { display:flex; flex-direction:column; gap:.75rem; }
-.sm-cc-basics__grid { display:grid; gap:.75rem; grid-template-columns:repeat(4, minmax(0, 1fr)); align-items:stretch; }
-.sm-cc-basics__grid-item { margin:0; height:100%; }
-.sm-cc-basics__grid-item.setting-item { border:1px solid var(--background-modifier-border); border-radius:8px; background: var(--background-primary); padding:.6rem .65rem; display:flex; flex-direction:column; gap:.4rem; box-sizing:border-box; border-top:none; }
-.sm-cc-basics__grid-item .setting-item-info { align-self:stretch; margin-right:0; }
-.sm-cc-basics__grid-item .setting-item-name { font-weight:600; }
-.sm-cc-basics__grid-item .setting-item-control { width:100%; margin-left:0; display:flex; flex-direction:column; gap:.35rem; }
-.sm-cc-basics__grid-item select,
-.sm-cc-basics__grid-item input[type="text"],
-.sm-cc-basics__grid-item input[type="number"] { width:100%; box-sizing:border-box; }
-.sm-cc-basics__grid-item--span-2 { grid-column:span 2; }
-.sm-cc-basics__grid-item--span-3 { grid-column:span 3; }
-.sm-cc-basics__grid-item--span-4 { grid-column:1 / -1; }
-.sm-cc-basics__alignment-controls { display:grid; gap:.5rem; grid-template-columns:repeat(2, minmax(0, 1fr)); }
-.sm-cc-basics__alignment-select { min-width:0; }
-.sm-cc-basics__select { min-height:32px; }
-.sm-cc-basics__text-input { min-height:32px; box-sizing:border-box; }
-@media (max-width: 1080px) {
-    .sm-cc-basics__grid { grid-template-columns:repeat(3, minmax(0, 1fr)); }
-    .sm-cc-basics__grid-item--span-3,
-    .sm-cc-basics__grid-item--span-4 { grid-column:1 / -1; }
+.sm-cc-basics { display:flex; flex-direction:column; gap:1rem; }
+.sm-cc-basics__group { display:flex; flex-direction:column; gap:.65rem; }
+.sm-cc-basics__subtitle { margin:0; font-size:.78rem; letter-spacing:.08em; text-transform:uppercase; color: var(--text-muted); }
+.sm-cc-field-grid { display:grid; gap:.75rem; }
+.sm-cc-field-grid--identity { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+.sm-cc-field-grid--summary { grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); }
+.sm-cc-field-grid--speeds { grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); }
+@media (max-width: 900px) {
+    .sm-cc-field-grid--identity { grid-template-columns:minmax(0, 1fr); }
 }
-@media (max-width: 860px) {
-    .sm-cc-basics__grid { grid-template-columns:repeat(2, minmax(0, 1fr)); }
-    .sm-cc-basics__grid-item--span-2 { grid-column:1 / -1; }
+@media (max-width: 720px) {
+    .sm-cc-field-grid--speeds { grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); }
 }
-@media (max-width: 620px) {
-    .sm-cc-basics__grid { grid-template-columns:minmax(0, 1fr); }
-    .sm-cc-basics__alignment-controls { grid-template-columns:minmax(0, 1fr); }
+.sm-cc-setting.setting-item { border:none; padding:0; margin:0; background:none; }
+.sm-cc-setting .setting-item-info { display:none; }
+.sm-cc-setting .setting-item-name { font-weight:600; font-size:.9em; color: var(--text-muted); }
+.sm-cc-setting .setting-item-control { margin-left:0; width:100%; display:flex; flex-direction:column; gap:.4rem; }
+.sm-cc-setting--inline .setting-item-control { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:.5rem; }
+.sm-cc-setting--speed .setting-item-control { flex-direction:row; align-items:center; gap:.45rem; }
+@media (max-width: 680px) {
+    .sm-cc-setting--inline .setting-item-control { grid-template-columns:minmax(0, 1fr); }
 }
+@media (max-width: 520px) {
+    .sm-cc-setting--speed .setting-item-control { flex-direction:column; align-items:flex-start; }
+    .sm-cc-setting--speed .sm-cc-hover-wrap { margin-left:0; }
+}
+.sm-cc-input { width:100%; min-height:32px; box-sizing:border-box; border-radius:6px; }
+.sm-cc-select { width:100%; min-height:32px; box-sizing:border-box; border-radius:6px; }
+.sm-cc-alignment select { min-width:0; }
+.sm-cc-hover-wrap { display:flex; align-items:center; gap:.35rem; margin-left:auto; }
+.sm-cc-hover-toggle { margin:0; }
+.sm-cc-hover-label { font-size:.8em; color: var(--text-muted); }
 
 /* Create Creature Modal helpers */
 .sm-cc-create-modal .sm-cc-grid {
@@ -8568,18 +9256,42 @@ var HEX_PLUGIN_CSS = `
 .sm-cc-damage-chip { align-items:center; gap:.4rem; padding-right:.5rem; }
 .sm-cc-damage-chip__name { font-weight:500; }
 .sm-cc-damage-chip__badge { font-size:.75em; font-weight:600; border-radius:999px; padding:.1rem .45rem; text-transform:uppercase; letter-spacing:.03em; }
-.sm-cc-damage-chip--res { border-color: rgba(37,99,235,.45); background-color: rgba(37,99,235,.08); }
-.sm-cc-damage-chip--res { border-color: color-mix(in srgb, var(--interactive-accent) 45%, transparent); background-color: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-secondary)); }
-.sm-cc-damage-chip--res .sm-cc-damage-chip__badge { background-color: rgba(37,99,235,.18); color:#2563eb; }
-.sm-cc-damage-chip--res .sm-cc-damage-chip__badge { background-color: color-mix(in srgb, var(--interactive-accent) 22%, transparent); color: var(--interactive-accent); }
-.sm-cc-damage-chip--imm { border-color: rgba(124,58,237,.45); background-color: rgba(124,58,237,.08); }
-.sm-cc-damage-chip--imm { border-color: color-mix(in srgb, var(--color-purple, #7c3aed) 45%, transparent); background-color: color-mix(in srgb, var(--color-purple, #7c3aed) 12%, var(--background-secondary)); }
-.sm-cc-damage-chip--imm .sm-cc-damage-chip__badge { background-color: rgba(124,58,237,.18); color:#7c3aed; }
-.sm-cc-damage-chip--imm .sm-cc-damage-chip__badge { background-color: color-mix(in srgb, var(--color-purple, #7c3aed) 22%, transparent); color: var(--color-purple, #7c3aed); }
-.sm-cc-damage-chip--vuln { border-color: rgba(234,88,12,.45); background-color: rgba(234,88,12,.08); }
-.sm-cc-damage-chip--vuln { border-color: color-mix(in srgb, var(--color-orange, #ea580c) 45%, transparent); background-color: color-mix(in srgb, var(--color-orange, #ea580c) 12%, var(--background-secondary)); }
-.sm-cc-damage-chip--vuln .sm-cc-damage-chip__badge { background-color: rgba(234,88,12,.18); color:#ea580c; }
-.sm-cc-damage-chip--vuln .sm-cc-damage-chip__badge { background-color: color-mix(in srgb, var(--color-orange, #ea580c) 22%, transparent); color: var(--color-orange, #ea580c); }
+.sm-cc-damage-chip--res {
+    border-color: rgba(37,99,235,.45);
+    background-color: rgba(37,99,235,.08);
+    border-color: color-mix(in srgb, var(--interactive-accent) 45%, transparent);
+    background-color: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-secondary));
+}
+.sm-cc-damage-chip--res .sm-cc-damage-chip__badge {
+    background-color: rgba(37,99,235,.18);
+    color:#2563eb;
+    background-color: color-mix(in srgb, var(--interactive-accent) 22%, transparent);
+    color: var(--interactive-accent);
+}
+.sm-cc-damage-chip--imm {
+    border-color: rgba(124,58,237,.45);
+    background-color: rgba(124,58,237,.08);
+    border-color: color-mix(in srgb, var(--color-purple, #7c3aed) 45%, transparent);
+    background-color: color-mix(in srgb, var(--color-purple, #7c3aed) 12%, var(--background-secondary));
+}
+.sm-cc-damage-chip--imm .sm-cc-damage-chip__badge {
+    background-color: rgba(124,58,237,.18);
+    color:#7c3aed;
+    background-color: color-mix(in srgb, var(--color-purple, #7c3aed) 22%, transparent);
+    color: var(--color-purple, #7c3aed);
+}
+.sm-cc-damage-chip--vuln {
+    border-color: rgba(234,88,12,.45);
+    background-color: rgba(234,88,12,.08);
+    border-color: color-mix(in srgb, var(--color-orange, #ea580c) 45%, transparent);
+    background-color: color-mix(in srgb, var(--color-orange, #ea580c) 12%, var(--background-secondary));
+}
+.sm-cc-damage-chip--vuln .sm-cc-damage-chip__badge {
+    background-color: rgba(234,88,12,.18);
+    color:#ea580c;
+    background-color: color-mix(in srgb, var(--color-orange, #ea580c) 22%, transparent);
+    color: var(--color-orange, #ea580c);
+}
 .sm-cc-skill-editor { display:flex; flex-direction:column; gap:.35rem; }
 .sm-cc-skill-search {
     display:flex;
@@ -8674,6 +9386,29 @@ var HEX_PLUGIN_CSS = `
 .sm-cc-create-modal .sm-cc-entries .sm-cc-searchbar,
 .sm-cc-create-modal .sm-cc-spells .sm-cc-searchbar { width: 100%; }
 .sm-cc-create-modal .setting-item-control > * { max-width: 100%; }
+
+/* Spell Creator \u2013 Validierung f\xFCr h\xF6here Grade */
+.sm-cc-create-modal .setting-item.is-invalid textarea {
+    border-color: color-mix(in srgb, var(--color-red, #e11d48) 35%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-red, #e11d48) 25%, transparent) inset;
+}
+.sm-setting-validation {
+    display: none;
+    margin-top: .35rem;
+    padding: .45rem .6rem;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--color-red, #e11d48) 12%, var(--background-secondary));
+    color: var(--color-red, #e11d48);
+    font-size: .85em;
+}
+.sm-setting-validation.is-visible { display: block; }
+.sm-setting-validation ul {
+    margin: 0;
+    padding-left: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+}
 
 /* Entry header layout: [category | name (flex) | delete] */
 .sm-cc-create-modal .sm-cc-entry-head {
@@ -8810,7 +9545,8 @@ var HEX_PLUGIN_CSS = `
 .sm-region-compendium .row input[type="text"] { flex:1; min-width:0; }
 .sm-region-compendium .addbar { display:flex; gap:.5rem; margin-top:.5rem; }
 .sm-region-compendium .addbar input[type="text"] { flex:1; min-width:0; }
-
+`;
+var cartographerShellCss = `
 /* === Cartographer Shell === */
 .cartographer-host {
     display: flex;
@@ -8964,7 +9700,8 @@ var HEX_PLUGIN_CSS = `
     background: var(--interactive-accent, var(--color-accent));
     color: var(--text-on-accent, #fff);
 }
-
+`;
+var cartographerPanelsCss = `
 /* === Cartographer Panels (Editor & Inspector) === */
 
 /* Library header */
@@ -9040,7 +9777,8 @@ var HEX_PLUGIN_CSS = `
 .sm-cartographer__panel-row textarea {
     resize: vertical;
 }
-
+`;
+var travelModeCss = `
 /* === Travel Mode (Cartographer & Legacy Shell) === */
 .sm-cartographer--travel {
     --tg-color-token: var(--color-purple, #9c6dfb);
@@ -9150,6 +9888,15 @@ var HEX_PLUGIN_CSS = `
 .sm-cartographer--travel .hex3x3-map circle[data-token] { opacity: .95; }
 .sm-cartographer--travel .hex3x3-map polyline { pointer-events: none; }
 `;
+var HEX_PLUGIN_CSS_SECTIONS = {
+  viewContainer: viewContainerCss,
+  mapAndPreview: mapAndPreviewCss,
+  editorLayouts: editorLayoutsCss,
+  cartographerShell: cartographerShellCss,
+  cartographerPanels: cartographerPanelsCss,
+  travelMode: travelModeCss
+};
+var HEX_PLUGIN_CSS = Object.values(HEX_PLUGIN_CSS_SECTIONS).join("\n\n");
 
 // src/app/main.ts
 var SaltMarcherPlugin = class extends import_obsidian24.Plugin {
