@@ -9,7 +9,6 @@ Die Aufgaben sind nach Priorität sortiert. Dezimalstellen kennzeichnen die Reih
 - keine offenen ToDos.
 
 ## 2. Robustheit & Wartbarkeit
-- 2.14 [src/apps/library/AGENTS.md] Datenquelle der Bibliothek konsolidieren.
 - 2.15 [src/apps/library/core/AGENTS.md] Gemeinsame Datei-Pipeline für weitere Kategorien vorbereiten.
 - 2.16 [src/apps/library/core/AGENTS.md] Validierungsregeln für Eingabedateien dokumentieren.
 - 2.17 [src/apps/library/create/AGENTS.md] Wiederkehrende Formular-Layouts (Cards, Field-Grids) in gemeinsame Builder überführen.

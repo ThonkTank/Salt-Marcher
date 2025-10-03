@@ -5,20 +5,16 @@ import type { Mode } from "../../src/apps/library/view/mode";
 import { LIBRARY_COPY, LibraryView } from "../../src/apps/library/view";
 import { App, WorkspaceLeaf } from "obsidian";
 
-vi.mock("../../src/apps/library/core/creature-files", () => ({
-    ensureCreatureDir: vi.fn().mockResolvedValue(undefined),
-}));
+const SOURCE_LABELS: Record<Mode, string> = {
+    creatures: "SaltMarcher/Creatures/",
+    spells: "SaltMarcher/Spells/",
+    terrains: "SaltMarcher/Terrains.md",
+    regions: "SaltMarcher/Regions.md",
+};
 
-vi.mock("../../src/apps/library/core/spell-files", () => ({
-    ensureSpellDir: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("../../src/core/terrain-store", () => ({
-    ensureTerrainFile: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("../../src/core/regions-store", () => ({
-    ensureRegionsFile: vi.fn().mockResolvedValue(undefined),
+vi.mock("../../src/apps/library/core/sources", () => ({
+    ensureLibrarySources: vi.fn().mockResolvedValue(undefined),
+    describeLibrarySource: (mode: Mode) => SOURCE_LABELS[mode],
 }));
 
 const noop = () => {};
@@ -46,17 +42,12 @@ vi.mock("../../src/apps/library/view/spells", () => ({
     SpellsRenderer: createRenderer("spells" as Mode),
 }));
 
-const terrainsSource = "Source: SaltMarcher/Terrains/";
-const regionsSource = "Source: SaltMarcher/Regions.json";
-
 vi.mock("../../src/apps/library/view/terrains", () => ({
     TerrainsRenderer: createRenderer("terrains" as Mode),
-    describeTerrainsSource: () => terrainsSource,
 }));
 
 vi.mock("../../src/apps/library/view/regions", () => ({
     RegionsRenderer: createRenderer("regions" as Mode),
-    describeRegionsSource: () => regionsSource,
 }));
 
 const ensureObsidianDomHelpers = () => {
@@ -148,7 +139,7 @@ describe("LibraryView copy", () => {
         expect(createBtn?.textContent).toBe(LIBRARY_COPY.createButton);
 
         const desc = root.querySelector(".desc");
-        expect(desc?.textContent).toBe(`${LIBRARY_COPY.sources.prefix}${LIBRARY_COPY.sources.creatures}`);
+        expect(desc?.textContent).toBe(`${LIBRARY_COPY.sources.prefix}${SOURCE_LABELS.creatures}`);
     });
 
     it("updates the source description when switching modes", async () => {
@@ -159,11 +150,11 @@ describe("LibraryView copy", () => {
         terrainsButton.dispatchEvent(new Event("click"));
         await flush();
         const descAfterTerrains = root.querySelector(".desc")?.textContent;
-        expect(descAfterTerrains).toBe(terrainsSource);
+        expect(descAfterTerrains).toBe(`${LIBRARY_COPY.sources.prefix}${SOURCE_LABELS.terrains}`);
 
         regionsButton.dispatchEvent(new Event("click"));
         await flush();
         const descAfterRegions = root.querySelector(".desc")?.textContent;
-        expect(descAfterRegions).toBe(regionsSource);
+        expect(descAfterRegions).toBe(`${LIBRARY_COPY.sources.prefix}${SOURCE_LABELS.regions}`);
     });
 });

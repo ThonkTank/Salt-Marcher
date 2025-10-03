@@ -6,7 +6,6 @@
 
 # ToDo
 - Filter-/Suchfunktionen beschreiben und später implementieren.
-- Datenquelle der Bibliothek konsolidieren.
 
 # Standards
 - View-Skripte erläutern welche Datensammlung sie präsentieren.

@@ -2,7 +2,7 @@
 // Bearbeitet Terrain-Konfigurationen mit Auto-Speichern.
 import type { ModeRenderer } from "./mode";
 import { BaseModeRenderer, scoreName } from "./mode";
-import { loadTerrains, saveTerrains, watchTerrains, ensureTerrainFile, TERRAIN_FILE } from "../../../core/terrain-store";
+import { loadTerrains, saveTerrains, watchTerrains, ensureTerrainFile } from "../../../core/terrain-store";
 
 interface TerrainConfig { color: string; speed: number; }
 
@@ -174,8 +174,4 @@ export class TerrainsRenderer extends BaseModeRenderer implements ModeRenderer {
         this.ensureEmptyKey();
         if (!this.isDisposed()) this.render();
     }
-}
-
-export function describeTerrainsSource(): string {
-    return `Source: ${TERRAIN_FILE}`;
 }
