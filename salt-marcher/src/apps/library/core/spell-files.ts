@@ -1,7 +1,7 @@
 // Re-export to keep feature-local import path while core still holds implementation
 // src/apps/library/core/spell-files.ts
-import { App, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
-import { sanitizeFileName } from "./creature-files";
+import { App, TFile } from "obsidian";
+import { createVaultFilePipeline, sanitizeVaultFileName } from "./file-pipeline";
 
 export const SPELLS_DIR = "SaltMarcher/Spells";
 
@@ -9,31 +9,19 @@ export type SpellData = {
     name: string; level?: number; school?: string; casting_time?: string; range?: string; components?: string[]; materials?: string; duration?: string; concentration?: boolean; ritual?: boolean; classes?: string[]; save_ability?: string; save_effect?: string; attack?: string; damage?: string; damage_type?: string; description?: string; higher_levels?: string;
 };
 
-export async function ensureSpellDir(app: App): Promise<TFolder> {
-    const p = normalizePath(SPELLS_DIR);
-    let f = app.vault.getAbstractFileByPath(p);
-    if (f instanceof TFolder) return f;
-    await app.vault.createFolder(p).catch(() => {});
-    f = app.vault.getAbstractFileByPath(p);
-    if (f instanceof TFolder) return f;
-    throw new Error("Could not create spells directory");
-}
+const SPELL_PIPELINE = createVaultFilePipeline<SpellData>({
+    dir: SPELLS_DIR,
+    defaultBaseName: "Spell",
+    getBaseName: data => data.name,
+    toContent: spellToMarkdown,
+    sanitizeName: name => sanitizeVaultFileName(name, "Spell"),
+});
 
-export async function listSpellFiles(app: App): Promise<TFile[]> {
-    const dir = await ensureSpellDir(app);
-    const out: TFile[] = [];
-    const walk = (folder: TFolder) => { for (const child of folder.children) { if (child instanceof TFolder) walk(child); else if (child instanceof TFile && child.extension === "md") out.push(child); } };
-    walk(dir);
-    return out;
-}
+export const ensureSpellDir = SPELL_PIPELINE.ensure;
 
-export function watchSpellDir(app: App, onChange: () => void): () => void {
-    const base = normalizePath(SPELLS_DIR) + "/";
-    const isInDir = (f: TAbstractFile) => (f instanceof TFile || f instanceof TFolder) && (f.path + "/").startsWith(base);
-    const handler = (f: TAbstractFile) => { if (isInDir(f)) onChange?.(); };
-    app.vault.on("create", handler); app.vault.on("delete", handler); app.vault.on("rename", handler); app.vault.on("modify", handler);
-    return () => { app.vault.off("create", handler); app.vault.off("delete", handler); app.vault.off("rename", handler); app.vault.off("modify", handler); };
-}
+export const listSpellFiles = SPELL_PIPELINE.list;
+
+export const watchSpellDir = SPELL_PIPELINE.watch;
 
 function yamlList(items?: string[]): string | undefined { if (!items || items.length === 0) return undefined; const safe = items.map(s => `"${(s ?? "").replace(/"/g, '\\"')}"`).join(", "); return `[${safe}]`; }
 
@@ -51,12 +39,6 @@ function spellToMarkdown(d: SpellData): string {
 }
 
 export async function createSpellFile(app: App, d: SpellData): Promise<TFile> {
-    const folder = await ensureSpellDir(app);
-    const baseName = sanitizeFileName(d.name || "Spell");
-    let fileName = `${baseName}.md`; let path = normalizePath(`${folder.path}/${fileName}`); let i = 2;
-    while (app.vault.getAbstractFileByPath(path)) { fileName = `${baseName} (${i}).md`; path = normalizePath(`${folder.path}/${fileName}`); i++; }
-    const content = spellToMarkdown(d);
-    const file = await app.vault.create(path, content);
-    return file;
+    return SPELL_PIPELINE.create(app, d);
 }
 

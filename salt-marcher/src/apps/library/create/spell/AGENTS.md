@@ -6,7 +6,7 @@
 - `modal` verhindert fehlerhafte Angaben zu skalierenden Zaubergraden.
 
 # ToDo
-- Komponenten für Ritual-spezifische Felder ergänzen.
+- [P3.5] Komponenten für Ritual-spezifische Felder ergänzen.
 
 # Standards
 - Dateien starten mit einem Satz zum dargestellten Formularumfang.

@@ -8,6 +8,7 @@ import { createInteractionController } from "./render/interactions";
 import { createCoordinateTranslator } from "./render/coordinates";
 import { createInteractionAdapter } from "./render/interaction-adapter";
 import { bootstrapHexTiles } from "./render/bootstrap";
+import { selectRenderSurface, type HexRenderSurfaceSelection } from "./render/surface";
 import type { HexCoord, HexInteractionDelegate } from "./render/types";
 export type { HexInteractionDelegate, HexInteractionOutcome } from "./render/types";
 export { createEventBackedInteractionDelegate } from "./render/interaction-delegate";
@@ -17,6 +18,7 @@ export type RenderHandles = {
     readonly contentG: SVGGElement;
     readonly overlay: SVGRectElement;
     readonly polyByCoord: ReadonlyMap<string, SVGPolygonElement>;
+    readonly surface: HexRenderSurfaceSelection;
     setFill(coord: HexCoord, color: string): void;
     /** Fügt fehlende Polygone für die angegebenen Koordinaten hinzu und erweitert viewBox/Overlay. */
     ensurePolys(coords: readonly HexCoord[]): void;
@@ -38,6 +40,7 @@ export async function renderHexMap(
     const padding = DEFAULT_PADDING;
 
     const { tiles, base, initialCoords } = await bootstrapHexTiles(app, mapPath);
+    const surface = selectRenderSurface();
 
     const scene = createHexScene({
         host,
@@ -89,6 +92,7 @@ export async function renderHexMap(
         contentG: scene.contentG,
         overlay: scene.overlay,
         polyByCoord: scene.polyByCoord,
+        surface,
         setFill: (coord, color) => scene.setFill(coord, color),
         ensurePolys,
         setInteractionDelegate: (delegate) => {

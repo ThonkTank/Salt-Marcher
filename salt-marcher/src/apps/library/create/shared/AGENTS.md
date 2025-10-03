@@ -5,7 +5,7 @@
 - `stat-utils` berechnet Wertebereiche, `token-editor` pflegt Token-Grafiken.
 
 # ToDo
-- Token-Editor um Drag&Drop-Upload erweitern.
+- [P4.4] Token-Editor um Drag&Drop-Upload erweitern.
 
 # Standards
 - Shared-Dateien erläutern, welche Editoren sie beliefern.

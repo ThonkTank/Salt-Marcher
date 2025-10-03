@@ -45,7 +45,11 @@ export function preloadEncounterModule() {
 export async function openEncounter(app: App, context?: TravelEncounterContext): Promise<boolean> {
     const mod = await ensureEncounterModule();
     if (!mod) return false;
-    if (context) {
+    const issue = describeEncounterContextIssue(context);
+    if (issue) {
+        console.warn(`[travel-mode] ${issue.log}`, context);
+        new Notice(issue.message);
+    } else if (context) {
         try {
             const event = await createEncounterEventFromTravel(app, context);
             if (event) {
@@ -59,6 +63,35 @@ export async function openEncounter(app: App, context?: TravelEncounterContext):
     await leaf.setViewState({ type: mod.VIEW_ENCOUNTER, active: true });
     app.workspace.revealLeaf(leaf);
     return true;
+}
+
+interface EncounterContextIssue {
+    message: string;
+    log: string;
+}
+
+function describeEncounterContextIssue(
+    context?: TravelEncounterContext,
+): EncounterContextIssue | null {
+    if (!context) {
+        return {
+            message: "Begegnung konnte nicht geöffnet werden: Es liegen keine Reisedaten vor.",
+            log: "missing travel context for encounter",
+        };
+    }
+    if (!context.mapFile) {
+        return {
+            message: "Begegnung enthält keine Kartendatei. Öffne die Karte erneut und versuche es nochmal.",
+            log: "missing map file for encounter context",
+        };
+    }
+    if (!context.state) {
+        return {
+            message: "Begegnung enthält keinen Reisezustand. Aktualisiere den Travel-Guide und versuche es erneut.",
+            log: "missing travel state snapshot for encounter context",
+        };
+    }
+    return null;
 }
 
 export async function publishManualEncounter(

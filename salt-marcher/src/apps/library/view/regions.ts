@@ -3,7 +3,7 @@
 import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
 import type { ModeRenderer } from "./mode";
 import { BaseModeRenderer, scoreName } from "./mode";
-import { ensureRegionsFile, loadRegions, saveRegions, watchRegions, REGIONS_FILE, type Region } from "../../../core/regions-store";
+import { ensureRegionsFile, loadRegions, saveRegions, watchRegions, type Region } from "../../../core/regions-store";
 import { loadTerrains, watchTerrains } from "../../../core/terrain-store";
 
 const SAVE_DEBOUNCE_MS = 500;
@@ -146,8 +146,4 @@ export class RegionsRenderer extends BaseModeRenderer implements ModeRenderer {
         this.regions = await loadRegions(this.app);
         if (!this.isDisposed()) this.render();
     }
-}
-
-export function describeRegionsSource(): string {
-    return `Source: ${REGIONS_FILE}`;
 }

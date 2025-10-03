@@ -1,14 +1,11 @@
 // src/apps/library/view.ts
 import { ItemView, WorkspaceLeaf } from "obsidian";
-import { ensureCreatureDir } from "./core/creature-files";
-import { ensureSpellDir } from "./core/spell-files";
-import { ensureTerrainFile } from "../../core/terrain-store";
-import { ensureRegionsFile } from "../../core/regions-store";
 import type { ModeRenderer, Mode } from "./view/mode";
 import { CreaturesRenderer } from "./view/creatures";
 import { SpellsRenderer } from "./view/spells";
-import { TerrainsRenderer, describeTerrainsSource } from "./view/terrains";
-import { RegionsRenderer, describeRegionsSource } from "./view/regions";
+import { TerrainsRenderer } from "./view/terrains";
+import { RegionsRenderer } from "./view/regions";
+import { describeLibrarySource, ensureLibrarySources } from "./core/sources";
 
 /**
  * Authoritative UI copy for the library view. Keep aligned with `docs/ui/terminology.md`.
@@ -25,8 +22,6 @@ export const LIBRARY_COPY = {
     },
     sources: {
         prefix: "Source: ",
-        creatures: "SaltMarcher/Creatures/",
-        spells: "SaltMarcher/Spells/",
     },
 } as const;
 
@@ -49,12 +44,7 @@ export class LibraryView extends ItemView {
 
     async onOpen() {
         this.contentEl.addClass("sm-library");
-        await Promise.all([
-            ensureCreatureDir(this.app),
-            ensureSpellDir(this.app),
-            ensureTerrainFile(this.app),
-            ensureRegionsFile(this.app),
-        ]);
+        await ensureLibrarySources(this.app);
         this.renderShell();
         await this.activateMode(this.mode);
     }
@@ -148,13 +138,7 @@ export class LibraryView extends ItemView {
 
     private updateSourceDescription() {
         if (!this.descEl) return;
-        const text = this.mode === "creatures"
-            ? `${LIBRARY_COPY.sources.prefix}${LIBRARY_COPY.sources.creatures}`
-            : this.mode === "spells"
-                ? `${LIBRARY_COPY.sources.prefix}${LIBRARY_COPY.sources.spells}`
-                : this.mode === "terrains"
-                    ? describeTerrainsSource()
-                    : describeRegionsSource();
+        const text = `${LIBRARY_COPY.sources.prefix}${describeLibrarySource(this.mode)}`;
         this.descEl.setText(text);
     }
 

@@ -1,50 +1,99 @@
 // src/apps/library/create/creature/section-basics.ts
 // Erfasst Name, Typ, Gesinnung, Kernwerte (HP, AC, PB, CR, XP) sowie alle Bewegungsarten.
-import { Setting, ToggleComponent } from "obsidian";
+import { ToggleComponent } from "obsidian";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
-import type { StatblockData } from "../../core/creature-files";
+import type {
+  CreatureSpeedExtra,
+  CreatureSpeedValue,
+  StatblockData,
+} from "../../core/creature-files";
 import {
   CREATURE_ALIGNMENT_GOOD_EVIL,
   CREATURE_ALIGNMENT_LAW_CHAOS,
   CREATURE_SIZES,
   CREATURE_TYPES,
+  type CreatureMovementType,
 } from "./presets";
 import { mountTokenEditor } from "../shared/token-editor";
+import { createFieldGrid } from "../shared/layouts";
 
-function ensureSpeedExtras(data: StatblockData): string[] {
-  if (!Array.isArray(data.speedList)) data.speedList = [];
-  return data.speedList;
+type SpeedFieldKey = Exclude<CreatureMovementType, never>;
+
+const SPEED_FIELD_DEFS: Array<{ key: SpeedFieldKey; label: string; placeholder: string; hoverToggle?: boolean }> = [
+  { key: "walk", label: "Gehen", placeholder: "30 ft." },
+  { key: "climb", label: "Klettern", placeholder: "30 ft." },
+  { key: "fly", label: "Fliegen", placeholder: "60 ft.", hoverToggle: true },
+  { key: "swim", label: "Schwimmen", placeholder: "40 ft." },
+  { key: "burrow", label: "Graben", placeholder: "20 ft." },
+];
+
+type SpeedRecord = Record<SpeedFieldKey, CreatureSpeedValue | undefined> & {
+  extras?: CreatureSpeedExtra[];
+};
+
+function ensureSpeeds(data: StatblockData): SpeedRecord {
+  const speeds = (data.speeds ??= {});
+  if (!Array.isArray(speeds.extras)) speeds.extras = [];
+  return speeds as SpeedRecord;
 }
 
-type SpeedKey =
-  | "speedWalk"
-  | "speedClimb"
-  | "speedFly"
-  | "speedSwim"
-  | "speedBurrow";
+function ensureSpeedExtras(data: StatblockData): CreatureSpeedExtra[] {
+  const speeds = ensureSpeeds(data);
+  if (!Array.isArray(speeds.extras)) speeds.extras = [];
+  return speeds.extras!;
+}
 
-const SPEED_FIELD_DEFS: Array<{ key: SpeedKey; label: string; placeholder: string; hoverToggle?: boolean }> = [
-  { key: "speedWalk", label: "Gehen", placeholder: "30 ft." },
-  { key: "speedClimb", label: "Klettern", placeholder: "30 ft." },
-  { key: "speedFly", label: "Fliegen", placeholder: "60 ft.", hoverToggle: true },
-  { key: "speedSwim", label: "Schwimmen", placeholder: "40 ft." },
-  { key: "speedBurrow", label: "Graben", placeholder: "20 ft." },
-];
+function applySpeedValue(
+  data: StatblockData,
+  key: SpeedFieldKey,
+  patch: Partial<CreatureSpeedValue>,
+) {
+  const speeds = ensureSpeeds(data);
+  const prev = speeds[key] ?? {};
+  const next: CreatureSpeedValue = { ...prev, ...patch };
+  const hasContent = Boolean(next.distance?.trim()) || next.hover || Boolean(next.note?.trim());
+  if (hasContent) speeds[key] = next;
+  else delete speeds[key];
+}
+
+function parseExtraInput(raw: string): CreatureSpeedExtra | null {
+  let text = raw.trim();
+  if (!text) return null;
+  let hover = false;
+  const hoverMatch = text.match(/\(hover\)$/i);
+  if (hoverMatch?.index != null) {
+    hover = true;
+    text = text.slice(0, hoverMatch.index).trim();
+  }
+  const distanceMatch = text.match(/(\d.*)$/);
+  let label = text;
+  let distance: string | undefined;
+  if (distanceMatch?.index != null) {
+    label = text.slice(0, distanceMatch.index).trim() || text;
+    distance = distanceMatch[0].trim();
+  }
+  return { label, distance, hover };
+}
+
+function formatExtra(extra: CreatureSpeedExtra): string {
+  const parts = [extra.label];
+  if (extra.distance) parts.push(extra.distance);
+  if (extra.note) parts.push(extra.note);
+  if (extra.hover) parts.push("(hover)");
+  return parts
+    .map((part) => part?.trim())
+    .filter((part): part is string => Boolean(part && part.length))
+    .join(" ");
+}
 
 export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockData) {
   const root = parent.createDiv({ cls: "sm-cc-basics" });
 
   const identity = root.createDiv({ cls: "sm-cc-basics__group" });
   identity.createEl("h5", { text: "Identität", cls: "sm-cc-basics__subtitle" });
-  const identityGrid = identity.createDiv({ cls: "sm-cc-field-grid sm-cc-field-grid--identity" });
+  const identityGrid = createFieldGrid(identity, { variant: "identity" });
 
-  const createSetting = (container: HTMLElement, label: string) => {
-    const setting = new Setting(container).setName(label);
-    setting.settingEl.addClass("sm-cc-setting");
-    return setting;
-  };
-
-  const nameSetting = createSetting(identityGrid, "Name");
+  const nameSetting = identityGrid.createSetting("Name");
   nameSetting.addText((t) => {
     t.setPlaceholder("Aboleth")
       .setValue(data.name || "")
@@ -52,7 +101,7 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
     t.inputEl.classList.add("sm-cc-input");
   });
 
-  const typeSetting = createSetting(identityGrid, "Typ");
+  const typeSetting = identityGrid.createSetting("Typ");
   typeSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_TYPES) dd.addOption(option, option);
@@ -64,7 +113,7 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
     } catch {}
   });
 
-  const sizeSetting = createSetting(identityGrid, "Größe");
+  const sizeSetting = identityGrid.createSetting("Größe");
   sizeSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_SIZES) dd.addOption(option, option);
@@ -76,8 +125,9 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
     } catch {}
   });
 
-  const alignmentSetting = createSetting(identityGrid, "Gesinnung");
-  alignmentSetting.settingEl.addClass("sm-cc-setting--inline");
+  const alignmentSetting = identityGrid.createSetting("Gesinnung", {
+    className: "sm-cc-setting--inline",
+  });
   alignmentSetting.controlEl.addClass("sm-cc-alignment");
   alignmentSetting.addDropdown((dd) => {
     dd.addOption("", "");
@@ -106,10 +156,10 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
 
   const stats = root.createDiv({ cls: "sm-cc-basics__group" });
   stats.createEl("h5", { text: "Kernwerte", cls: "sm-cc-basics__subtitle" });
-  const statsGrid = stats.createDiv({ cls: "sm-cc-field-grid sm-cc-field-grid--summary" });
+  const statsGrid = createFieldGrid(stats, { variant: "summary" });
 
   const createStatField = (label: string, placeholder: string, key: keyof StatblockData) => {
-    const setting = createSetting(statsGrid, label);
+    const setting = statsGrid.createSetting(label);
     setting.addText((t) => {
       t.setPlaceholder(placeholder)
         .setValue((data[key] as string) ?? "")
@@ -128,16 +178,19 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
 
   const movement = root.createDiv({ cls: "sm-cc-basics__group" });
   movement.createEl("h5", { text: "Bewegung", cls: "sm-cc-basics__subtitle" });
-  const speedGrid = movement.createDiv({ cls: "sm-cc-field-grid sm-cc-field-grid--speeds" });
+  const speedGrid = createFieldGrid(movement, { variant: "speeds" });
 
   SPEED_FIELD_DEFS.forEach((def) => {
-    const setting = createSetting(speedGrid, def.label);
-    setting.settingEl.addClass("sm-cc-setting--speed");
+    const setting = speedGrid.createSetting(def.label, {
+      className: "sm-cc-setting--speed",
+    });
+    const current = ensureSpeeds(data)[def.key];
     const text = setting.addText((t) => {
       t.setPlaceholder(def.placeholder)
-        .setValue(((data as any)[def.key] as string) ?? "")
+        .setValue(current?.distance ?? "")
         .onChange((v: string) => {
-          (data as any)[def.key] = v.trim() || undefined;
+          const trimmed = v.trim();
+          applySpeedValue(data, def.key, { distance: trimmed || undefined });
         });
       t.inputEl.classList.add("sm-cc-input");
     });
@@ -145,13 +198,9 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
     if (def.hoverToggle) {
       let toggle: ToggleComponent | null = null;
       toggle = setting.addToggle((tg) => {
-        tg.setValue(((data.speedFly ?? "").toLowerCase().includes("hover")));
+        tg.setValue(Boolean(current?.hover));
         tg.onChange((checked) => {
-          const raw = text.getValue().replace(/\s*\(hover\)$/i, "").trim();
-          if (!raw) return;
-          const next = checked ? `${raw} (hover)` : raw;
-          text.setValue(next);
-          data.speedFly = next;
+          applySpeedValue(data, def.key, { hover: checked });
         });
       });
       const hoverWrap = setting.controlEl.createDiv({ cls: "sm-cc-hover-wrap" });
@@ -160,8 +209,10 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
       toggle.toggleEl.setAttr("aria-label", "Hover markieren");
       hoverWrap.createSpan({ text: "Hover", cls: "sm-cc-hover-label" });
       text.inputEl.addEventListener("blur", () => {
-        const hasHover = /\(hover\)/i.test(text.getValue());
-        toggle?.setValue(hasHover);
+        const speeds = ensureSpeeds(data);
+        const target = speeds[def.key];
+        text.setValue(target?.distance ?? "");
+        toggle?.setValue(Boolean(target?.hover));
       });
     }
   });
@@ -171,11 +222,23 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
     movement,
     "Weitere Bewegungen",
     {
-      getItems: () => extras,
+      getItems: () => extras.map(formatExtra),
       add: (value) => {
-        if (!extras.includes(value)) extras.push(value);
+        const parsed = parseExtraInput(value);
+        if (!parsed) return;
+        const exists = extras.some(
+          (entry) =>
+            entry.label.toLowerCase() === parsed.label.toLowerCase() &&
+            (entry.distance ?? "") === (parsed.distance ?? "") &&
+            Boolean(entry.hover) === Boolean(parsed.hover),
+        );
+        if (!exists) extras.push(parsed);
+        extrasEditor.refresh();
       },
-      remove: (index) => extras.splice(index, 1),
+      remove: (index) => {
+        extras.splice(index, 1);
+        extrasEditor.refresh();
+      },
     },
     {
       placeholder: "z. B. teleport 30 ft.",

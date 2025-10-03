@@ -7,8 +7,7 @@
 - Root-Dateien (`package.json`, `tsconfig`, Buildskripte) steuern Bundling, Typen und Laufzeitkonfiguration.
 
 # ToDo
-- Build-Dokumentation ergänzen, sobald weitere Bundler/Targets unterstützt werden.
-- Automatisierte Prüfung für fehlende AGENTS- oder Header-Kommentare ins CI überführen.
+- keine offenen ToDos.
 
 # Standards
 - Neue Verzeichnisse müssen direkt eine `AGENTS.md` erhalten.

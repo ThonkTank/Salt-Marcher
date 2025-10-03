@@ -2,11 +2,8 @@
 - Bündelt Arbeitsmodi (Editor, Inspector, Travel Guide) des Cartographer.
 
 # Aktueller Stand
-- `editor` und `inspector` initialisieren UI-Panels rund um Hex-Bearbeitung.
+- `editor` und `inspector` initialisieren UI-Panels rund um Hex-Bearbeitung und teilen einen Lifecycle-Helfer.
 - `travel-guide` startet Interaktions-Controller für Routen und Begegnungen.
-
-# ToDo
-- Gemeinsame Lifecycle-Helfer extrahieren.
 
 # Standards
 - Jede Modulfunktion beschreibt ihr Nutzerziel im Kopfkommentar.

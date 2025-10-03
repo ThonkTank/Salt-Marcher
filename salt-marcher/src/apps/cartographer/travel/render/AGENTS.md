@@ -5,7 +5,7 @@
 - `draw-route` erzeugt Layer und Styles für Wegpunkte.
 
 # ToDo
-- Animierte Routen und Status-Indikatoren ergänzen.
+- [P4.1] Animierte Routen und Status-Indikatoren ergänzen.
 
 # Standards
 - Render-Helfer dokumentieren ihre Canvas-/SVG-Abhängigkeiten im Kopf.

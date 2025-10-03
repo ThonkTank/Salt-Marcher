@@ -10,6 +10,30 @@ export const CREATURE_SIZES = [
 ] as const;
 export type CreatureSize = (typeof CREATURE_SIZES)[number];
 
+export const CREATURE_DIFFICULTY_TIERS = [
+  {
+    id: "tier1",
+    label: "Tier 1 (CR 0–4)",
+    description: "Standard-Gegner, Scouts und Begleiter mit begrenzter Magie.",
+  },
+  {
+    id: "tier2",
+    label: "Tier 2 (CR 5–10)",
+    description: "Veteranen, Elite-Wachen und Zauberwirker mit flexiblen Ressourcen.",
+  },
+  {
+    id: "tier3",
+    label: "Tier 3 (CR 11–16)",
+    description: "Anführer und große Bedrohungen mit signifikanten defensiven Reserven.",
+  },
+  {
+    id: "tier4",
+    label: "Tier 4 (CR 17+)",
+    description: "Legendäre Gegner, die Encounter-Building und Skalierung beeinflussen.",
+  },
+] as const;
+export type CreatureDifficultyTier = (typeof CREATURE_DIFFICULTY_TIERS)[number];
+
 export const CREATURE_TYPES = [
   "Aberration",
   "Beast",

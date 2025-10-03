@@ -7,9 +7,8 @@
 - `shared` enthält modulübergreifende Editoren wie Token- und Stat-Helfer.
 
 # ToDo
-- Validierungsfeedback konsolidieren und zentral beschreiben.
-- Speicherroutinen mit Autosave ergänzen.
-- Wiederkehrende Formular-Layouts (Cards, Field-Grids) in gemeinsame Builder überführen.
+- [P4.2] Validierungsfeedback konsolidieren und zentral beschreiben.
+- [P3.4] Speicherroutinen mit Autosave ergänzen.
 
 # Standards
 - Editor-Module erläutern, welche Felder sie erfassen.

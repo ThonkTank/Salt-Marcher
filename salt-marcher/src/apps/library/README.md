@@ -18,3 +18,8 @@ Die Library bündelt alle Nachschlagewerke der Kampagne in einem Obsidian-Panel.
 ## Regions
 - Verwalte Regionenlisten samt zugehörigem Terrain und Encounter-Wahrscheinlichkeiten. Die Daten leben in `SaltMarcher/Regions.md`.
 - Kombiniere Regionen mit den Terrain-Namen aus der Terrains-Liste; Anpassungen werden automatisch übernommen und gespeichert.
+
+## Event-Flow
+1. Beim Öffnen lädt die Library Kernservices aus `library/core` und stellt ihnen den aktiven Vault zur Verfügung.
+2. Tabs lösen Renderer in `library/view` aus, die Listen rendern, Filter anwenden und Aktionen anreichern.
+3. `library/create` erzeugt neue Dateien und sendet Fertigstellungs-Events zurück an die Views, die anschließend neu laden.

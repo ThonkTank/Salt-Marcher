@@ -4,9 +4,10 @@
 # Aktueller Stand
 - Kernmodule (`camera`, `hex-geom`, `hex-notes`, `hex-render`) bieten Steuerung und Datenmodelle.
 - Unterordner `render` kapselt WebGL/SVG-spezifische Implementierungen.
+- `PERFORMANCE.md` beschreibt aktuelle Profiling-Werte, Engpässe und Beobachtungsplan.
 
 # ToDo
-- Performance-Profile dokumentieren und optimieren.
+- keine offenen ToDos.
 
 # Standards
 - Dateien notieren im Kopf die wichtigsten Eingaben/Ausgaben.
