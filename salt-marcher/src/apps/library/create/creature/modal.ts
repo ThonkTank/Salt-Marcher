@@ -8,6 +8,7 @@ import { mountCreatureStatsAndSkillsSection } from "./section-stats-and-skills";
 import { mountCreatureSensesAndDefensesSection } from "./section-senses-and-defenses";
 import { mountEntriesSection } from "./section-entries";
 import { mountSpellsKnownSection } from "./section-spells-known";
+import { createFormCard } from "../shared/layouts";
 
 /**
  * Layoutplan des Editors:
@@ -55,38 +56,12 @@ export class CreateCreatureModal extends Modal {
         const sideColumn = layout.createDiv({ cls: "sm-cc-layout__col sm-cc-layout__col--side" });
         const fullColumn = layout.createDiv({ cls: "sm-cc-layout__col sm-cc-layout__col--full" });
 
-        const createCard = (column: HTMLElement, title: string, subtitle?: string) => {
-            const card = column.createDiv({ cls: "sm-cc-card" });
-            const head = card.createDiv({ cls: "sm-cc-card__head" });
-            head.createEl("h3", { text: title, cls: "sm-cc-card__title" });
-            if (subtitle) head.createEl("p", { text: subtitle, cls: "sm-cc-card__subtitle" });
-            const validation = card.createDiv({ cls: "sm-cc-card__validation", attr: { hidden: "" } });
-            const validationList = validation.createEl("ul", { cls: "sm-cc-card__validation-list" });
-            const applyValidation = (issues: string[]) => {
-                const hasIssues = issues.length > 0;
-                card.toggleClass("is-invalid", hasIssues);
-                if (!hasIssues) {
-                    validation.setAttribute("hidden", "");
-                    validation.classList.remove("is-visible");
-                    validationList.empty();
-                    return;
-                }
-                validation.removeAttribute("hidden");
-                validation.classList.add("is-visible");
-                validationList.empty();
-                for (const message of issues) {
-                    validationList.createEl("li", { text: message });
-                }
-            };
-            const registerValidation = (compute: () => string[]) =>
-                this.addValidator(() => {
-                    const issues = compute();
-                    applyValidation(issues);
-                    return issues;
-                });
-            const body = card.createDiv({ cls: "sm-cc-card__body" });
-            return { body, registerValidation } as const;
-        };
+        const createCard = (column: HTMLElement, title: string, subtitle?: string) =>
+            createFormCard(column, {
+                title,
+                subtitle,
+                registerValidator: (runner) => this.addValidator(runner),
+            });
 
         // Asynchron: verfügbare Zauber laden (best effort)
         let spellsSectionControls: ReturnType<typeof mountSpellsKnownSection> | null = null;

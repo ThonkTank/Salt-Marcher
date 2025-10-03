@@ -1,6 +1,6 @@
 // src/apps/library/create/creature/section-basics.ts
 // Erfasst Name, Typ, Gesinnung, Kernwerte (HP, AC, PB, CR, XP) sowie alle Bewegungsarten.
-import { Setting, ToggleComponent } from "obsidian";
+import { ToggleComponent } from "obsidian";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import type { StatblockData } from "../../core/creature-files";
 import {
@@ -10,6 +10,7 @@ import {
   CREATURE_TYPES,
 } from "./presets";
 import { mountTokenEditor } from "../shared/token-editor";
+import { createFieldGrid } from "../shared/layouts";
 
 function ensureSpeedExtras(data: StatblockData): string[] {
   if (!Array.isArray(data.speedList)) data.speedList = [];
@@ -36,15 +37,9 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
 
   const identity = root.createDiv({ cls: "sm-cc-basics__group" });
   identity.createEl("h5", { text: "Identität", cls: "sm-cc-basics__subtitle" });
-  const identityGrid = identity.createDiv({ cls: "sm-cc-field-grid sm-cc-field-grid--identity" });
+  const identityGrid = createFieldGrid(identity, { variant: "identity" });
 
-  const createSetting = (container: HTMLElement, label: string) => {
-    const setting = new Setting(container).setName(label);
-    setting.settingEl.addClass("sm-cc-setting");
-    return setting;
-  };
-
-  const nameSetting = createSetting(identityGrid, "Name");
+  const nameSetting = identityGrid.createSetting("Name");
   nameSetting.addText((t) => {
     t.setPlaceholder("Aboleth")
       .setValue(data.name || "")
@@ -52,7 +47,7 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
     t.inputEl.classList.add("sm-cc-input");
   });
 
-  const typeSetting = createSetting(identityGrid, "Typ");
+  const typeSetting = identityGrid.createSetting("Typ");
   typeSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_TYPES) dd.addOption(option, option);
@@ -64,7 +59,7 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
     } catch {}
   });
 
-  const sizeSetting = createSetting(identityGrid, "Größe");
+  const sizeSetting = identityGrid.createSetting("Größe");
   sizeSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_SIZES) dd.addOption(option, option);
@@ -76,8 +71,9 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
     } catch {}
   });
 
-  const alignmentSetting = createSetting(identityGrid, "Gesinnung");
-  alignmentSetting.settingEl.addClass("sm-cc-setting--inline");
+  const alignmentSetting = identityGrid.createSetting("Gesinnung", {
+    className: "sm-cc-setting--inline",
+  });
   alignmentSetting.controlEl.addClass("sm-cc-alignment");
   alignmentSetting.addDropdown((dd) => {
     dd.addOption("", "");
@@ -106,10 +102,10 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
 
   const stats = root.createDiv({ cls: "sm-cc-basics__group" });
   stats.createEl("h5", { text: "Kernwerte", cls: "sm-cc-basics__subtitle" });
-  const statsGrid = stats.createDiv({ cls: "sm-cc-field-grid sm-cc-field-grid--summary" });
+  const statsGrid = createFieldGrid(stats, { variant: "summary" });
 
   const createStatField = (label: string, placeholder: string, key: keyof StatblockData) => {
-    const setting = createSetting(statsGrid, label);
+    const setting = statsGrid.createSetting(label);
     setting.addText((t) => {
       t.setPlaceholder(placeholder)
         .setValue((data[key] as string) ?? "")
@@ -128,11 +124,12 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
 
   const movement = root.createDiv({ cls: "sm-cc-basics__group" });
   movement.createEl("h5", { text: "Bewegung", cls: "sm-cc-basics__subtitle" });
-  const speedGrid = movement.createDiv({ cls: "sm-cc-field-grid sm-cc-field-grid--speeds" });
+  const speedGrid = createFieldGrid(movement, { variant: "speeds" });
 
   SPEED_FIELD_DEFS.forEach((def) => {
-    const setting = createSetting(speedGrid, def.label);
-    setting.settingEl.addClass("sm-cc-setting--speed");
+    const setting = speedGrid.createSetting(def.label, {
+      className: "sm-cc-setting--speed",
+    });
     const text = setting.addText((t) => {
       t.setPlaceholder(def.placeholder)
         .setValue(((data as any)[def.key] as string) ?? "")

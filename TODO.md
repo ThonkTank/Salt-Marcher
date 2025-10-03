@@ -9,7 +9,6 @@ Die Aufgaben sind nach Priorität sortiert. Dezimalstellen kennzeichnen die Reih
 - keine offenen ToDos.
 
 ## 2. Robustheit & Wartbarkeit
-- 2.17 [src/apps/library/create/AGENTS.md] Wiederkehrende Formular-Layouts (Cards, Field-Grids) in gemeinsame Builder überführen.
 - 2.18 [src/apps/library/create/creature/AGENTS.md] Bewegungs- und Geschwindigkeitseinträge in strukturierte Objekte mit Flags (z. B. Hover) überführen.
 - 2.19 [src/apps/library/create/creature/AGENTS.md] Presets mit Schwierigkeitsgraden dokumentieren.
 - 2.21 [src/core/hex-mapper/render/AGENTS.md] GPU/Canvas-Auswahl dokumentieren und abstrahieren.
