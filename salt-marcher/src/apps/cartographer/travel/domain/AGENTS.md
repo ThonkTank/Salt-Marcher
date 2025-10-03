@@ -9,9 +9,13 @@
 - `state.store` hält den zentralen Zustand, `terrain.service` lädt Geländedaten.
 - `types` definiert DTOs für öffentliche Nutzung.
 
+# Persistenzformate
+- `travel-token@1`: setzt an genau einem Hex das Frontmatter-Flag `token_travel: true`; fehlende oder falsche Werte zählen als "kein Token".
+- Versionserkennung: existiert `token_travel` als Boolean, gilt Version 1. Ältere Karten ohne Flag werden als Version 0 interpretiert und bleiben unverändert.
+- Migration: neue Formate sollen `travel-token@<n>` im Frontmatter spiegeln (z. B. via `token_travel_version`) und Abwärtskonvertierungen in `persistence.ts` kapseln.
+
 # ToDo
 - Mehrstufige Undo/Redo-Strategien entwerfen.
-- Persistente Speicherformate mit Versionierung dokumentieren.
 
 # Standards
 - Store- und Service-Dateien beginnen mit Zweck und gelesenen Quellen.
