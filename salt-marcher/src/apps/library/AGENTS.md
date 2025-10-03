@@ -5,7 +5,7 @@
 - `view` enthält Renderer pro Kategorie, Zustandslogik lebt im Wurzelordner.
 
 # ToDo
-- Filter-/Suchfunktionen beschreiben und später implementieren.
+- [P3.3] Filter-/Suchfunktionen beschreiben und später implementieren.
 
 # Standards
 - View-Skripte erläutern welche Datensammlung sie präsentieren.

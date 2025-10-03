@@ -8,7 +8,7 @@
 - `search-dropdown.ts` und `copy.ts` kapseln Interaktionstexte.
 
 # ToDo
-- Such- und Filter-UI für größere Datenmengen erweitern.
+- [P4.6] Such- und Filter-UI für größere Datenmengen erweitern.
 
 # Standards
 - Jede UI-Datei startet mit Zweck und Nutzeraktion im Kopfkommentar.

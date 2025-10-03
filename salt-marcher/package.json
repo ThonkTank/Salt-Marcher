@@ -6,7 +6,8 @@
   "main": "main.js",
   "scripts": {
     "build": "node esbuild.config.mjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "sync:todos": "node tools/sync-todos.mjs"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",

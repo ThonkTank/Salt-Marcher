@@ -6,8 +6,8 @@
 - `mode` koordiniert Umschalten zwischen den View-Komponenten.
 
 # ToDo
-- Filter- und Sortierparameter dokumentieren und implementieren.
-- Regions-View um Karten-Preview erweitern.
+- [P3.6] Filter- und Sortierparameter dokumentieren und implementieren.
+- [P4.5] Regions-View um Karten-Preview erweitern.
 
 # Standards
 - Views beschreiben im Kopf, welche Datensammlung sie anzeigen.

@@ -4,6 +4,7 @@
 - `npm install`: installiert Dev-Abhängigkeiten für Bundler und Tests.
 - `npm run build`: führt `esbuild.config.mjs` aus und erzeugt `main.js` im Plugin-Stamm.
 - `npm test`: nutzt Vitest/Jsdom, um die gebündelte Oberfläche gegen Mocks zu prüfen.
+- `npm run sync:todos`: sammelt Aufgaben aus allen `AGENTS.md`-Dateien und schreibt die priorisierte `TODO.md` im Reporoot.
 
 ## Targets
 - `main.js`: Renderer-Bundle (CommonJS, Ziel `es2020`), externe Abhängigkeiten bleiben ungebündelt (`obsidian`, `electron`, `codemirror`).

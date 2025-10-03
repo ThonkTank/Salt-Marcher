@@ -8,7 +8,7 @@
 - `section-basics` speichert Standardbewegungen in `data.speeds` und pflegt Hover-Flags getrennt von den Distanzangaben.
 
 # ToDo
-- Spell-Ladeprozess im Modal mit Lade-/Fehlerzustand versehen.
+- [P4.3] Spell-Ladeprozess im Modal mit Lade-/Fehlerzustand versehen.
 
 # Preset-Schwierigkeitsstufen
 - Tier 1 (CR 0–4): Grundlinien für Scouts, Begleiter und Minions ohne ausgedehnte Ressourcen.

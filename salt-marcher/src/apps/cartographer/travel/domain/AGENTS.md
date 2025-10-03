@@ -15,7 +15,7 @@
 - Migration: neue Formate sollen `travel-token@<n>` im Frontmatter spiegeln (z. B. via `token_travel_version`) und Abwärtskonvertierungen in `persistence.ts` kapseln.
 
 # ToDo
-- Mehrstufige Undo/Redo-Strategien entwerfen.
+- [P3.2] Mehrstufige Undo/Redo-Strategien entwerfen.
 
 # Standards
 - Store- und Service-Dateien beginnen mit Zweck und gelesenen Quellen.
