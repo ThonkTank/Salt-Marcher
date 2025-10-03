@@ -8,9 +8,7 @@
 - `session-store.ts` hält Zustand, Persistenz und Playbackposition.
 
 # ToDo
-- Encounter-Ansicht für Split-View und Mobile optimieren.
-- Session-Store mit Tests für Race-Conditions absichern.
-- Ereignisformate gegen kommende Travel-APIs abgleichen.
+- keine offenen ToDos.
 
 # Standards
 - Presenter- und Store-Dateien dokumentieren Seiteneffekte im Kopfkommentar.

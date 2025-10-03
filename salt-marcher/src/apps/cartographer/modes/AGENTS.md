@@ -6,7 +6,6 @@
 - `travel-guide` startet Interaktions-Controller für Routen und Begegnungen.
 
 # ToDo
-- Fehlende Modus-Dokumentation ergänzen, wenn neue Modi entstehen.
 - Gemeinsame Lifecycle-Helfer extrahieren.
 
 # Standards

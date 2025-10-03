@@ -5,8 +5,7 @@
 - Tests decken Sprachrichtlinien, Map-Manager und weitere Controller ab.
 
 # ToDo
-- Interaktions- und Accessibility-Tests ergänzen.
-- UI-Mocks mit realistischen DOM-Strukturen erweitern.
+- keine offenen ToDos.
 
 # Standards
 - Testdateien beschreiben im Kopf den geprüften UI-Workflow.

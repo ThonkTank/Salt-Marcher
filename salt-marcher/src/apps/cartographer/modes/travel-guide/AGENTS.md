@@ -7,7 +7,6 @@
 - `playback-controller` synchronisiert Timeline, Route und Audio-Hooks.
 
 # ToDo
-- Offene Hooks für Koop-Reisende dokumentieren und später anbinden.
 - Fehlerzustände für fehlende Begegnungsdaten skizzieren.
 
 # Standards

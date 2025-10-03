@@ -7,8 +7,7 @@
 - `types` sammelt UI-spezifische Contracts.
 
 # ToDo
-- Touch-Gesten und Barrierefreiheitssignale ergänzen.
-- Kontextmenüs auf neue Encounter-Ereignisse erweitern.
+- keine offenen ToDos.
 
 # Standards
 - UI-Dateien beginnen mit kurzer Beschreibung der sichtbaren Elemente.

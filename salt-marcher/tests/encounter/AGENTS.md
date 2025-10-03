@@ -5,8 +5,7 @@
 - Tests fokussieren Event-Builder-Logik und Presenter-Verhalten.
 
 # ToDo
-- Mehrstufige Encounter mit verzögerten Events simulieren.
-- Builder-Validierung für optionale Felder ergänzen.
+- keine offenen ToDos.
 
 # Standards
 - Testdateien notieren im Kopf die geprüfte Encounter-Komponente.

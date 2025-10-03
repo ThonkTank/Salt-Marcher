@@ -8,8 +8,7 @@
 - `ui` stellt Controller und Layer für Benutzerinteraktionen.
 
 # ToDo
-- Audio- und Licht-Stimmung je Reiseabschnitt ergänzen.
-- Synchronisation mit Encounter-Module automatisieren.
+- keine offenen ToDos.
 
 # Standards
 - Services beschreiben kurz welche Daten sie lesen/schreiben.

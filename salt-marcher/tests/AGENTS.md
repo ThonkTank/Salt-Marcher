@@ -5,8 +5,7 @@
 - Unterordner spiegeln Hauptbereiche des Plugins (App, Cartographer, Core, etc.).
 
 # ToDo
-- Testabdeckung pro Bereich dokumentieren und gezielt ausbauen.
-- Gemeinsame Helfer zentralisieren, um Dubletten zu vermeiden.
+- keine offenen ToDos.
 
 # Standards
 - Jede Testdatei startet mit Pfadkommentar und einem Satz zum Prüffokus.

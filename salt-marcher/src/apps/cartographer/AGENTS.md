@@ -5,8 +5,7 @@
 - `modes` und `mode-registry` kapseln Arbeitsmodi, `travel` bündelt Playback/Encounter-Flüsse, `view-shell` stellt UI-Rahmen.
 
 # ToDo
-- Kollaborative Features (Mehrbenutzer) vorbereiten.
-- Reisemodus-Interaktionen gegen neue Encounter-APIs testen.
+- keine offenen ToDos.
 
 # Standards
 - Modus-Dateien erklären ihr Nutzerziel im Kopfkommentar.

@@ -5,8 +5,7 @@
 - Enthält Provider für Editor-, Inspector- und Travel-Guide-Flüsse.
 
 # ToDo
-- Abhängigkeiten der Provider klar dokumentieren, sobald weitere Services hinzukommen.
-- Gemeinsame Mock-Helfer für Tests hinzufügen.
+- Gemeinsame Mock-Helfer dokumentieren.
 
 # Standards
 - Provider-Dateien listen zuerst ihre externen Services in einem Satz.

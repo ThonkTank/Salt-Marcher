@@ -8,9 +8,7 @@
 - `css.ts` bündelt alle Styles als Export-String.
 
 # ToDo
-- Mobile-spezifische Bootstrap-Sequenzen definieren.
 - Telemetrie auf weitere Integrationen ausweiten.
-- Theme-Hooks (dark/light) dokumentieren, sobald vorhanden.
 - CSS-Bundle in modulare Abschnitte zerlegen, um Teilbereiche gezielt warten zu können.
 
 # Standards

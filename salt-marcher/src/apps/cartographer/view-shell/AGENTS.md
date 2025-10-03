@@ -8,8 +8,7 @@
 - `mode-registry` verbindet Shell und `mode-registry`-Modul.
 
 # ToDo
-- Responsive Layoutvarianten dokumentieren und implementieren.
-- Shell-Hooks für Kollaborationszustände vorbereiten.
+- keine offenen ToDos.
 
 # Standards
 - Shell-Komponenten erklären ihre Slots und Lebenszyklen im Kopf.

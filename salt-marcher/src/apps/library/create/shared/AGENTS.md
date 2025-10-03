@@ -5,7 +5,6 @@
 - `stat-utils` berechnet Wertebereiche, `token-editor` pflegt Token-Grafiken.
 
 # ToDo
-- Utility-Funktionen mit Tests absichern.
 - Token-Editor um Drag&Drop-Upload erweitern.
 
 # Standards

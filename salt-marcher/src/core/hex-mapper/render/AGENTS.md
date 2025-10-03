@@ -7,7 +7,6 @@
 
 # ToDo
 - GPU/Canvas-Auswahl dokumentieren und abstrahieren.
-- Interaktionsdelegation um Mehrbenutzer-Events erweitern.
 
 # Standards
 - Jede Datei benennt im Kopf, welchen Teil der Render-Pipeline sie verantwortet.

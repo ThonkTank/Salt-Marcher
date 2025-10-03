@@ -5,8 +5,7 @@
 - Tests prüfen Terrain-Brush-Optionen, Tool-Manager und Editor-Modi.
 
 # ToDo
-- UI-Event-Simulationen für Drag/Drop ergänzen.
-- Tool-Registrierung gegen Regressionen absichern.
+- keine offenen ToDos.
 
 # Standards
 - Testdateien beschreiben ihren Tool- oder Lifecycle-Fokus im Kopf.
