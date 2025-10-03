@@ -11,7 +11,6 @@ Die Aufgaben sind nach Priorität sortiert. Dezimalstellen kennzeichnen die Reih
 ## 2. Robustheit & Wartbarkeit
 
 ## 3. Neue Features
-- 3.1 [src/app/AGENTS.md] Telemetrie auf weitere Integrationen ausweiten.
 - 3.2 [src/apps/cartographer/travel/domain/AGENTS.md] Mehrstufige Undo/Redo-Strategien entwerfen.
 - 3.3 [src/apps/library/AGENTS.md] Filter-/Suchfunktionen beschreiben und später implementieren.
 - 3.4 [src/apps/library/create/AGENTS.md] Speicherroutinen mit Autosave ergänzen.

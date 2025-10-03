@@ -5,11 +5,18 @@ import { Notice } from "obsidian";
 /** Identifies the bridge/integration that surfaced an operational issue. */
 export type IntegrationId = string;
 
-/** Supported failure modes emitted by layout/editor style integrations. */
+/** Supported failure modes emitted by shared plugin integrations. */
 export type IntegrationOperation =
     | "resolve-api"
     | "register-view-binding"
-    | "unregister-view-binding";
+    | "unregister-view-binding"
+    | "register-view"
+    | "activate-view"
+    | "detach-view"
+    | "register-ribbon"
+    | "register-command"
+    | "prime-dataset"
+    | "watch-dataset";
 
 export interface IntegrationIssuePayload {
     /** Stable integration identifier (e.g. the external plugin id). */
