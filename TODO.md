@@ -9,7 +9,6 @@ Die Aufgaben sind nach Priorität sortiert. Dezimalstellen kennzeichnen die Reih
 - keine offenen ToDos.
 
 ## 2. Robustheit & Wartbarkeit
-- 2.12 [src/apps/cartographer/modes/travel-guide/AGENTS.md] Fehlerzustände für fehlende Begegnungsdaten skizzieren.
 - 2.13 [src/apps/cartographer/travel/domain/AGENTS.md] Persistente Speicherformate mit Versionierung dokumentieren.
 - 2.14 [src/apps/library/AGENTS.md] Datenquelle der Bibliothek konsolidieren.
 - 2.15 [src/apps/library/core/AGENTS.md] Gemeinsame Datei-Pipeline für weitere Kategorien vorbereiten.
