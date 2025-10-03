@@ -5,7 +5,7 @@
 - `hex-mapper` liefert Render-/Speicher-Helfer, übrige Dateien bilden Speicherdienste und Übersetzer.
 
 # ToDo
-- Tile- und Terrain-Schemata um Validierungsregeln ergänzen.
+- keine offenen ToDos.
 
 # Standards
 - Öffentliche APIs exportieren benannte Typen/Funktionen.

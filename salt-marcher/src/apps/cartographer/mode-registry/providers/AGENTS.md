@@ -3,9 +3,11 @@
 
 # Aktueller Stand
 - Enthält Provider für Editor-, Inspector- und Travel-Guide-Flüsse.
+- Tests nutzen `defineCartographerModeProvider` zusammen mit `tests/cartographer/mode-registry.test.ts` (`createStubContext`) und
+  `tests/cartographer/presenter.test.ts` (`createRegistryEntry`), um Provider- und Metadata-Mocks konsistent aufzubauen.
 
 # ToDo
-- Gemeinsame Mock-Helfer dokumentieren.
+- keine offenen ToDos.
 
 # Standards
 - Provider-Dateien listen zuerst ihre externen Services in einem Satz.

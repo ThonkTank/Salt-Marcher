@@ -1,6 +1,7 @@
 // src/app/css.ts
 // Bündelt globale Styles für Plugin-Views inkl. Bibliotheks-Editoren.
-export const HEX_PLUGIN_CSS = `
+// Abschnitte getrennt halten, damit einzelne Bereiche gezielt ergänzt werden können.
+const viewContainerCss = `
 /* === View Container === */
 .sm-view-container {
     position: relative;
@@ -65,7 +66,8 @@ export const HEX_PLUGIN_CSS = `
     font-size: 0.95rem;
     line-height: 1.4;
 }
-
+`;
+const mapAndPreviewCss = `
 /* === Map-Container & SVG === */
 .hex3x3-container {
     width: 100%;
@@ -112,7 +114,8 @@ export const HEX_PLUGIN_CSS = `
 .markdown-source-view .cm-preview-code-block .hex3x3-container,
 .markdown-source-view .cm-preview-code-block .hex3x3-map { pointer-events: auto; }
 .markdown-source-view .cm-preview-code-block .edit-block-button { pointer-events: none; }
-
+`;
+const editorLayoutsCss = `
 /* === Terrain Editor === */
 .sm-terrain-editor { padding:.5rem 0; }
 .sm-terrain-editor .desc { color: var(--text-muted); margin-bottom:.25rem; }
@@ -526,7 +529,8 @@ export const HEX_PLUGIN_CSS = `
 .sm-region-compendium .row input[type="text"] { flex:1; min-width:0; }
 .sm-region-compendium .addbar { display:flex; gap:.5rem; margin-top:.5rem; }
 .sm-region-compendium .addbar input[type="text"] { flex:1; min-width:0; }
-
+`;
+const cartographerShellCss = `
 /* === Cartographer Shell === */
 .cartographer-host {
     display: flex;
@@ -680,7 +684,8 @@ export const HEX_PLUGIN_CSS = `
     background: var(--interactive-accent, var(--color-accent));
     color: var(--text-on-accent, #fff);
 }
-
+`;
+const cartographerPanelsCss = `
 /* === Cartographer Panels (Editor & Inspector) === */
 
 /* Library header */
@@ -756,7 +761,8 @@ export const HEX_PLUGIN_CSS = `
 .sm-cartographer__panel-row textarea {
     resize: vertical;
 }
-
+`;
+const travelModeCss = `
 /* === Travel Mode (Cartographer & Legacy Shell) === */
 .sm-cartographer--travel {
     --tg-color-token: var(--color-purple, #9c6dfb);
@@ -866,3 +872,15 @@ export const HEX_PLUGIN_CSS = `
 .sm-cartographer--travel .hex3x3-map circle[data-token] { opacity: .95; }
 .sm-cartographer--travel .hex3x3-map polyline { pointer-events: none; }
 `;
+
+// Exportiert alle Module einzeln, um gezielt überschrieben oder getestet zu werden.
+export const HEX_PLUGIN_CSS_SECTIONS = {
+    viewContainer: viewContainerCss,
+    mapAndPreview: mapAndPreviewCss,
+    editorLayouts: editorLayoutsCss,
+    cartographerShell: cartographerShellCss,
+    cartographerPanels: cartographerPanelsCss,
+    travelMode: travelModeCss
+} as const;
+
+export const HEX_PLUGIN_CSS = Object.values(HEX_PLUGIN_CSS_SECTIONS).join("\n\n");

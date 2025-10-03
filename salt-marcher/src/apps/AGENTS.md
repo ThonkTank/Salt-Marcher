@@ -5,8 +5,7 @@
 - Jede App besitzt Unterordner für Modi, Views und Shell-Komponenten.
 
 # ToDo
-- Fehlende Modusbeschreibungen in Unterordnern ergänzen.
-- Event-Flows der Apps in README- oder Header-Form dokumentieren.
+- keine offenen ToDos.
 
 # Standards
 - Komponenten- und Controller-Dateien starten mit einem Kontextsatz zum Workflow.

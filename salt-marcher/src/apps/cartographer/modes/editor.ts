@@ -13,6 +13,7 @@ import { createToolManager } from "../editor/tools/tool-manager";
 import type { ToolModule, ToolContext, ToolManager } from "../editor/tools/tools-api";
 import type { RenderHandles } from "../../../core/hex-mapper/hex-render";
 import type { HexOptions } from "../../../core/options";
+import { createModeLifecycle } from "./lifecycle";
 
 export function createEditorMode(): CartographerMode {
     let panel: HTMLElement | null = null;
@@ -61,27 +62,27 @@ export function createEditorMode(): CartographerMode {
         }
     };
 
+    const lifecycle = createModeLifecycle();
+
     const ensureToolCtx = (ctx: CartographerModeContext) => {
         toolCtx = {
             app: ctx.app,
             getFile: () => state.file,
             getHandles: () => state.handles,
             getOptions: () => state.options,
-            getAbortSignal: () => lifecycleSignal,
+            getAbortSignal: () => lifecycle.get(),
             setStatus,
         } satisfies ToolContext;
         return toolCtx;
     };
 
-    let lifecycleSignal: AbortSignal | null = null;
-
-    const isAborted = () => lifecycleSignal?.aborted ?? false;
+    const isAborted = () => lifecycle.isAborted();
 
     return {
         id: "editor",
         label: "Editor",
         async onEnter(ctx: CartographerModeLifecycleContext) {
-            lifecycleSignal = ctx.signal;
+            lifecycle.bind(ctx);
             state = { ...state };
             ctx.sidebarHost.empty();
             panel = ctx.sidebarHost.createDiv({ cls: "sm-cartographer__panel sm-cartographer__panel--editor" });
@@ -109,7 +110,7 @@ export function createEditorMode(): CartographerMode {
             manager = createToolManager(tools, {
                 getContext: () => toolCtx,
                 getPanelHost: () => toolBody,
-                getLifecycleSignal: () => lifecycleSignal,
+                getLifecycleSignal: () => lifecycle.get(),
                 onToolChanged: (tool) => {
                     if (!toolSelect) return;
                     toolSelect.value = tool?.id ?? "";
@@ -122,7 +123,7 @@ export function createEditorMode(): CartographerMode {
             await manager.switchTo(tools[0].id);
         },
         async onExit(ctx: CartographerModeLifecycleContext) {
-            lifecycleSignal = ctx.signal;
+            lifecycle.bind(ctx);
             manager?.destroy();
             manager = null;
             toolCtx = null;
@@ -132,10 +133,10 @@ export function createEditorMode(): CartographerMode {
             toolSelect = null;
             toolBody = null;
             statusLabel = null;
-            lifecycleSignal = null;
+            lifecycle.reset();
         },
         async onFileChange(file, handles, ctx: CartographerModeLifecycleContext) {
-            lifecycleSignal = ctx.signal;
+            lifecycle.bind(ctx);
             state.file = file;
             state.handles = handles;
             state.options = ctx.getOptions();
@@ -147,7 +148,7 @@ export function createEditorMode(): CartographerMode {
             manager?.notifyMapRendered();
         },
         async onHexClick(coord: HexCoord, _event, ctx: CartographerModeLifecycleContext) {
-            lifecycleSignal = ctx.signal;
+            lifecycle.bind(ctx);
             if (isAborted()) return;
             const active = manager?.getActive();
             if (!toolCtx || !active?.onHexClick) return;

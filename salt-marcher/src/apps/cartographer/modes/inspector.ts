@@ -7,10 +7,10 @@ import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
 import type { RenderHandles } from "../../../core/hex-mapper/hex-render";
 import type {
     CartographerMode,
-    CartographerModeContext,
     CartographerModeLifecycleContext,
     HexCoord,
 } from "../presenter";
+import { createModeLifecycle } from "./lifecycle";
 
 type InspectorUI = {
     panel: HTMLElement | null;
@@ -43,9 +43,9 @@ export function createInspectorMode(): CartographerMode {
         saveTimer: null,
     };
 
-    let lifecycleSignal: AbortSignal | null = null;
+    const lifecycle = createModeLifecycle();
 
-    const isAborted = () => lifecycleSignal?.aborted ?? false;
+    const isAborted = () => lifecycle.isAborted();
 
     const clearSaveTimer = () => {
         if (state.saveTimer !== null) {
@@ -143,7 +143,7 @@ export function createInspectorMode(): CartographerMode {
         id: "inspector",
         label: "Inspector",
         async onEnter(ctx: CartographerModeLifecycleContext) {
-            lifecycleSignal = ctx.signal;
+            lifecycle.bind(ctx);
             ui = { panel: null, fileLabel: null, message: null, terrain: null, note: null };
             state = { ...state, selection: null };
 
@@ -176,15 +176,15 @@ export function createInspectorMode(): CartographerMode {
             updatePanelState();
         },
         async onExit(ctx: CartographerModeLifecycleContext) {
-            lifecycleSignal = ctx.signal;
+            lifecycle.bind(ctx);
             clearSaveTimer();
             ui.panel?.remove();
             ui = { panel: null, fileLabel: null, message: null, terrain: null, note: null };
             state = { file: null, handles: null, selection: null, saveTimer: null };
-            lifecycleSignal = null;
+            lifecycle.reset();
         },
         async onFileChange(file, handles, ctx: CartographerModeLifecycleContext) {
-            lifecycleSignal = ctx.signal;
+            lifecycle.bind(ctx);
             state.file = file;
             state.handles = handles;
             clearSaveTimer();
@@ -196,7 +196,7 @@ export function createInspectorMode(): CartographerMode {
             }
         },
         async onHexClick(coord, _event, ctx: CartographerModeLifecycleContext) {
-            lifecycleSignal = ctx.signal;
+            lifecycle.bind(ctx);
             if (isAborted()) return;
             if (!state.file || !state.handles) return;
             clearSaveTimer();

@@ -17,3 +17,8 @@ Der Encounter-Arbeitsbereich sammelt Reiseereignisse und hilft, laufende Begegnu
 2. Sobald ein Encounter ausgelöst wird, füllt sich der Bereich automatisch.
 3. Ergänze Notizen während der Begegnung.
 4. Schließe die Begegnung mit „Mark encounter resolved“, um sie später nachzulesen.
+
+## Event-Flow
+1. `cartographer/modes/travel-guide/encounter-gateway` publiziert neue Ereignisse im Encounter-Store.
+2. `encounter/presenter.ts` transformiert sie für die UI, pflegt Status und erlaubt das Schließen.
+3. `encounter/view.ts` zeigt den aktuellen Status an, schreibt Notizen zurück in den Store und meldet Abschlussmeldungen an Obsidian.

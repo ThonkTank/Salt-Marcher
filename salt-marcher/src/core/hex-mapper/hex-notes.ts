@@ -1,9 +1,59 @@
 // src/core/hex-mapper/hex-notes.ts
 import { App, TFile, TFolder, normalizePath } from "obsidian";
+import { TERRAIN_COLORS } from "../terrain";
 import { parseOptions } from "../options";
 
 export type TileCoord = { r: number; c: number };
 export type TileData  = { terrain: string; region?: string; note?: string };
+
+const TILE_TERRAIN_MAX_LENGTH = 64;
+const TILE_REGION_MAX_LENGTH = 120;
+
+export class TileValidationError extends Error {
+    constructor(public readonly issues: string[]) {
+        super(`Invalid tile data: ${issues.join(", ")}`);
+        this.name = "TileValidationError";
+    }
+}
+
+export interface ValidateTileDataOptions {
+    allowUnknownTerrain?: boolean;
+}
+
+export function validateTileData(
+    data: TileData,
+    options: ValidateTileDataOptions = {}
+): TileData {
+    const { allowUnknownTerrain = false } = options;
+    const issues: string[] = [];
+
+    const terrain = typeof data.terrain === "string" ? data.terrain.trim() : "";
+    if (terrain.length > TILE_TERRAIN_MAX_LENGTH) {
+        issues.push(`terrain exceeds ${TILE_TERRAIN_MAX_LENGTH} characters`);
+    }
+    if (!allowUnknownTerrain && terrain && !(terrain in TERRAIN_COLORS)) {
+        issues.push(`unknown terrain "${terrain}"`);
+    }
+
+    const regionRaw = typeof data.region === "string" ? data.region : "";
+    const region = regionRaw.trim();
+    if (region.length > TILE_REGION_MAX_LENGTH) {
+        issues.push(`region exceeds ${TILE_REGION_MAX_LENGTH} characters`);
+    }
+
+    const noteRaw = typeof data.note === "string" ? data.note : undefined;
+    const note = noteRaw?.trim();
+
+    if (issues.length) {
+        throw new TileValidationError(issues);
+    }
+
+    return {
+        terrain,
+        region,
+        note: note || undefined,
+    };
+}
 
 const FM_TYPE = "hex";
 
@@ -77,10 +127,11 @@ function matchesThisMap(app: App, file: TFile, mapPath: string): boolean {
 }
 
 function buildMarkdown(coord: TileCoord, mapPath: string, folderPrefix: string, data: TileData): string {
-    const terrain = data.terrain ?? "";
-    const region = (data.region ?? "").trim();
+    const validated = validateTileData(data, { allowUnknownTerrain: true });
+    const terrain = validated.terrain ?? "";
+    const region = (validated.region ?? "").trim();
     const mapName = mapNameFromPath(mapPath);
-    const bodyNote = (data.note ?? "Notizen hier …").trim();
+    const bodyNote = (validated.note ?? "Notizen hier …").trim();
     return [
         "---",
         `type: ${FM_TYPE}`,
@@ -276,10 +327,17 @@ export async function listTilesForMap(
         out.push({
             coord,
             file: tileFile,
-            data: {
-                terrain: (typeof fmc?.terrain === "string" ? fmc.terrain : "") ?? "",
-                region: (typeof (fmc as any)?.region === "string" ? (fmc as any).region : "") ?? "",
-            },
+            data: ((): TileData => {
+                const terrain = typeof fmc?.terrain === "string" ? fmc.terrain : "";
+                const region = typeof (fmc as any)?.region === "string" ? (fmc as any).region : "";
+                try {
+                    const validated = validateTileData({ terrain, region }, { allowUnknownTerrain: true });
+                    return { terrain: validated.terrain, region: validated.region ?? "" };
+                } catch (error) {
+                    console.warn("[salt-marcher] Ignoring invalid tile data", error);
+                    return { terrain: terrain.trim(), region: region.trim() };
+                }
+            })(),
         });
     }
 
@@ -308,11 +366,15 @@ export async function loadTile(
     const body = raw.replace(/^---[\s\S]*?---\s*/m, "");
     const note = (body.split(/\n{2,}/).map(s => s.trim()).find(Boolean) ?? "").trim();
 
-    return {
-        terrain: (typeof fmc.terrain === "string" ? fmc.terrain : "") ?? "",
-        region: (typeof (fmc as any).region === "string" ? (fmc as any).region : "") ?? "",
-        note: note || undefined,
-    };
+    const terrain = typeof fmc.terrain === "string" ? fmc.terrain : "";
+    const region = typeof (fmc as any).region === "string" ? (fmc as any).region : "";
+    try {
+        const validated = validateTileData({ terrain, region, note }, { allowUnknownTerrain: true });
+        return validated;
+    } catch (error) {
+        console.warn("[salt-marcher] Loaded tile contains invalid data", error);
+        return { terrain: terrain.trim(), region: region.trim(), note: note || undefined };
+    }
 }
 
 /** Tile speichern – legt Datei an oder aktualisiert Frontmatter/Body. */
@@ -322,13 +384,14 @@ export async function saveTile(
     coord: TileCoord,
     data: TileData
 ): Promise<TFile> {
+    const sanitized = validateTileData(data);
     const mapPath = mapFile.path;
     const { folder, newPath, file } = await resolveTilePath(app, mapFile, coord);
     await ensureFolder(app, folder);
 
     if (!file) {
         const { folderPrefix } = await readOptions(app, mapFile);
-        const md = buildMarkdown(coord, mapPath, folderPrefix, data);
+        const md = buildMarkdown(coord, mapPath, folderPrefix, sanitized);
         return await app.vault.create(newPath, md);
     }
 
@@ -339,13 +402,13 @@ export async function saveTile(
         f.row = coord.r;
         f.col = coord.c;
         f.map_path = mapPath;
-        if (data.region !== undefined) (f as any).region = data.region ?? "";
-        if (data.terrain !== undefined) f.terrain = data.terrain ?? "";
+        if (sanitized.region !== undefined) (f as any).region = sanitized.region ?? "";
+        if (sanitized.terrain !== undefined) f.terrain = sanitized.terrain ?? "";
         if (typeof f.terrain !== "string") f.terrain = "";
     });
 
         // Note (Body) optional aktualisieren – ersetzt nur, wenn data.note gesetzt ist
-        if (data.note !== undefined) {
+        if (sanitized.note !== undefined) {
             const raw = await app.vault.read(file);
             const hasFM = /^---[\s\S]*?---/m.test(raw);
             const fmPart = hasFM ? (raw.match(/^---[\s\S]*?---/m) || [""])[0] : "";
@@ -354,7 +417,7 @@ export async function saveTile(
             // Erhalte optionalen Backlink, ersetze restlichen Body durch neue Note
             const lines = body.split("\n");
             const keepBacklink = lines.find((l) => /\[\[.*\|\s*↩ Zur Karte\s*\]\]/.test(l));
-            const newBody = [keepBacklink ?? "", data.note.trim(), ""].filter(Boolean).join("\n");
+            const newBody = [keepBacklink ?? "", sanitized.note.trim(), ""].filter(Boolean).join("\n");
 
             await app.vault.modify(file, `${fmPart}\n${newBody}`.trim() + "\n");
         }

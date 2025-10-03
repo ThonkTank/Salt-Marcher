@@ -20,6 +20,16 @@ Der Drop-down rechts neben dem Titel öffnet die Moduswahl. Standardmäßig steh
 - **Editor** – Bietet den Terrain-Pinsel, Werkzeugleisten und Live-Vorschau, um Hexfelder zu bearbeiten.
 - **Inspector** – Lies bestehende Karten, prüfe Metadaten und untersuche einzelne Hexfelder ohne versehentliche Änderungen.
 
+### Modus-Module
+- `modes/editor.ts` verbindet die Tool-Manager-Infrastruktur mit Hex-Rendering und reagiert auf Kartenwechsel.
+- `modes/inspector.ts` liest Hex-Notizen, erlaubt Terrain-Anpassungen und speichert Änderungen sofort.
+- `modes/travel-guide.ts` startet Sidebar, Playback-Controller und Encounter-Sync für Reiseverläufe.
+
+### Event-Flow
+1. `view-shell` initialisiert die Karte und übergibt das Lifecycle-Context-Objekt an den gewählten Modus.
+2. Der Modus bindet seine Controller (Tools, Inspector oder Travel) an Render- und Storage-Services.
+3. Aktionen wie „Encounter öffnen“ oder „Terrain speichern“ laufen über `travel/infra` bzw. `core/hex-mapper` zurück in den Store.
+
 ## Tipps für den Travel-Modus
 - Die Sidebar zeigt den aktuellen Hex, das Tempo und den Status des Reiseverlaufs.
 - Über die Wiedergabesteuerung kannst du Reisen pausieren, fortsetzen oder zurücksetzen.

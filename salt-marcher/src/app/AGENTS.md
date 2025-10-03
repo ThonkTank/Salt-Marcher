@@ -9,7 +9,6 @@
 
 # ToDo
 - Telemetrie auf weitere Integrationen ausweiten.
-- CSS-Bundle in modulare Abschnitte zerlegen, um Teilbereiche gezielt warten zu können.
 
 # Standards
 - Einstiegspunkte dokumentieren Lifecycle-Schritte im Kopfkommentar.
