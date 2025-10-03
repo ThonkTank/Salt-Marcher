@@ -4,6 +4,10 @@ import { Setting } from "obsidian";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import { CREATURE_DAMAGE_PRESETS } from "./presets";
 
+export type SectionValidationRegistrar = (
+  computeIssues: () => string[],
+) => () => string[];
+
 export interface PresetSelectModel {
   get(): string[];
   add(value: string): void;

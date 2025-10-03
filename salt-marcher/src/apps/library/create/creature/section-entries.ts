@@ -4,8 +4,37 @@ import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import type { StatblockData } from "../../core/creature-files";
 import { abilityMod, formatSigned, parseIntSafe } from "../shared/stat-utils";
 import { CREATURE_ABILITY_SELECTIONS, CREATURE_ENTRY_CATEGORIES, CREATURE_SAVE_OPTIONS } from "./presets";
+import type { SectionValidationRegistrar } from "./section-utils";
 
-export function mountEntriesSection(parent: HTMLElement, data: StatblockData) {
+export function collectEntryDependencyIssues(data: StatblockData): string[] {
+  const issues: string[] = [];
+  const entries = data.entries ?? [];
+  entries.forEach((entry, index) => {
+    const label = entry.name?.trim() || `Eintrag ${index + 1}`;
+    if (entry.save_ability && (entry.save_dc == null || Number.isNaN(entry.save_dc))) {
+      issues.push(`${label}: Save-DC angeben, wenn ein Attribut gewählt wurde.`);
+    }
+    if (entry.save_dc != null && !Number.isNaN(entry.save_dc) && !entry.save_ability) {
+      issues.push(`${label}: Ein Save-DC benötigt ein Attribut.`);
+    }
+    if (entry.save_effect && !entry.save_ability) {
+      issues.push(`${label}: Save-Effekt ohne Attribut ist unklar.`);
+    }
+    if (entry.to_hit_from && !entry.to_hit_from.ability) {
+      issues.push(`${label}: Automatische Attacke benötigt ein Attribut.`);
+    }
+    if (entry.damage_from && !entry.damage_from.dice?.trim()) {
+      issues.push(`${label}: Automatischer Schaden benötigt Würfelangaben.`);
+    }
+  });
+  return issues;
+}
+
+export function mountEntriesSection(
+  parent: HTMLElement,
+  data: StatblockData,
+  registerValidation?: SectionValidationRegistrar,
+) {
   if (!data.entries) data.entries = [] as any;
 
   const wrap = parent.createDiv({ cls: "setting-item sm-cc-entries" });
@@ -23,6 +52,8 @@ export function mountEntriesSection(parent: HTMLElement, data: StatblockData) {
 
   const host = ctl.createDiv();
   let focusIdx: number | null = null;
+  const revalidate =
+    registerValidation?.(() => collectEntryDependencyIssues(data)) ?? (() => []);
 
   const render = () => {
     host.empty();
@@ -70,7 +101,11 @@ export function mountEntriesSection(parent: HTMLElement, data: StatblockData) {
       const toHitProf = hitGroup.createEl('input', { attr: { type: 'checkbox', id: `hit-prof-${i}` } }) as HTMLInputElement;
       hitGroup.createEl('label', { text: 'Prof', attr: { for: `hit-prof-${i}` } });
       const hit = hitGroup.createEl('input', { cls: 'sm-auto-tohit', attr: { type: 'text', placeholder: '+7', 'aria-label': 'To hit' } }) as HTMLInputElement; (hit.style as any).width = '6ch';
-      hit.value = e.to_hit || ''; hit.addEventListener('input', () => e.to_hit = hit.value.trim() || undefined);
+      hit.value = e.to_hit || '';
+      hit.addEventListener('input', () => {
+        e.to_hit = hit.value.trim() || undefined;
+        revalidate();
+      });
 
       const dmgGroup = autoRow.createDiv({ cls: 'sm-auto-group' });
       dmgGroup.createSpan({ text: 'Damage:' });
@@ -83,7 +118,11 @@ export function mountEntriesSection(parent: HTMLElement, data: StatblockData) {
       try { enhanceSelectToSearch(dmgAbil, 'Such-dropdown…'); } catch {}
       const dmgBonus = dmgGroup.createEl('input', { attr: { type: 'text', placeholder: 'piercing / slashing …', 'aria-label': 'Art' } }) as HTMLInputElement; (dmgBonus.style as any).width = '12ch';
       const dmg = dmgGroup.createEl('input', { cls: 'sm-auto-dmg', attr: { type: 'text', placeholder: '1d8 +3 piercing', 'aria-label': 'Schaden' } }) as HTMLInputElement; (dmg.style as any).width = '20ch';
-      dmg.value = e.damage || ''; dmg.addEventListener('input', () => e.damage = dmg.value.trim() || undefined);
+      dmg.value = e.damage || '';
+      dmg.addEventListener('input', () => {
+        e.damage = dmg.value.trim() || undefined;
+        revalidate();
+      });
 
       const applyAuto = () => {
         const pb = parseIntSafe(data.pb as any) || 0;
@@ -100,6 +139,7 @@ export function mountEntriesSection(parent: HTMLElement, data: StatblockData) {
           const tail = (abilMod ? ` ${formatSigned(abilMod)}` : '') + (e.damage_from.bonus ? ` ${e.damage_from.bonus}` : '');
           e.damage = `${base}${tail}`.trim(); dmg.value = e.damage;
         }
+        revalidate();
       };
       if (e.to_hit_from) { toHitAbil.value = e.to_hit_from.ability as any; toHitProf.checked = !!e.to_hit_from.proficient; }
       if (e.damage_from) { dmgDice.value = e.damage_from.dice; dmgAbil.value = (e.damage_from.ability as any) || ''; dmgBonus.value = e.damage_from.bonus || ''; }
@@ -117,16 +157,42 @@ export function mountEntriesSection(parent: HTMLElement, data: StatblockData) {
         (option as HTMLOptionElement).value = value;
         if (value === (e.save_ability || "")) (option as HTMLOptionElement).selected = true;
       }
-      saveAb.onchange = () => e.save_ability = saveAb.value || undefined;
+      saveAb.onchange = () => {
+        e.save_ability = saveAb.value || undefined;
+        revalidate();
+      };
       misc.createEl('label', { text: 'DC' });
-      const saveDc = misc.createEl("input", { attr: { type: "number", placeholder: "DC", 'aria-label': 'DC' } }) as HTMLInputElement; saveDc.value = e.save_dc ? String(e.save_dc) : ""; saveDc.oninput = () => e.save_dc = saveDc.value ? parseInt(saveDc.value,10) : undefined as any; (saveDc.style as any).width = '4ch';
+      const saveDc = misc.createEl("input", { attr: { type: "number", placeholder: "DC", 'aria-label': 'DC' } }) as HTMLInputElement;
+      saveDc.value = e.save_dc ? String(e.save_dc) : "";
+      saveDc.oninput = () => {
+        e.save_dc = saveDc.value ? parseInt(saveDc.value, 10) : (undefined as any);
+        revalidate();
+      };
+      (saveDc.style as any).width = '4ch';
       misc.createEl('label', { text: 'Save-Effekt' });
-      const saveFx = misc.createEl("input", { attr: { type: "text", placeholder: "half on save …", 'aria-label': 'Save-Effekt' } }) as HTMLInputElement; saveFx.value = e.save_effect || ""; saveFx.oninput = () => e.save_effect = saveFx.value.trim() || undefined; (saveFx.style as any).width = '18ch';
+      const saveFx = misc.createEl("input", { attr: { type: "text", placeholder: "half on save …", 'aria-label': 'Save-Effekt' } }) as HTMLInputElement;
+      saveFx.value = e.save_effect || "";
+      saveFx.oninput = () => {
+        e.save_effect = saveFx.value.trim() || undefined;
+        revalidate();
+      };
+      (saveFx.style as any).width = '18ch';
       misc.createEl('label', { text: 'Recharge' });
-      const rech = misc.createEl("input", { attr: { type: "text", placeholder: "Recharge 5–6 / 1/day" } }) as HTMLInputElement; rech.value = e.recharge || ""; rech.oninput = () => e.recharge = rech.value.trim() || undefined;
+      const rech = misc.createEl("input", { attr: { type: "text", placeholder: "Recharge 5–6 / 1/day" } }) as HTMLInputElement;
+      rech.value = e.recharge || "";
+      rech.oninput = () => {
+        e.recharge = rech.value.trim() || undefined;
+        revalidate();
+      };
       box.createEl('label', { text: 'Details' });
-      const ta = box.createEl("textarea", { cls: "sm-cc-entry-text", attr: { placeholder: "Details (Markdown)" } }); ta.value = e.text || ""; ta.addEventListener("input", () => e.text = (ta as HTMLTextAreaElement).value);
+      const ta = box.createEl("textarea", { cls: "sm-cc-entry-text", attr: { placeholder: "Details (Markdown)" } });
+      ta.value = e.text || "";
+      ta.addEventListener("input", () => {
+        e.text = (ta as HTMLTextAreaElement).value;
+        revalidate();
+      });
     });
+    revalidate();
   };
 
   addEntryBtn.onclick = () => { (data.entries as any[]).unshift({ category: catSel.value as any, name: "" }); focusIdx = 0; render(); };

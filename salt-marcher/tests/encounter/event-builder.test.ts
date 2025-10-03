@@ -2,7 +2,10 @@
 // Prüft Encounter-Event-Builder vom Travel-Kontext bis zur Notizauflösung.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { App, TFile } from "obsidian";
-import { createEncounterEventFromTravel, type TravelEncounterContext } from "../../src/apps/encounter/event-builder";
+import {
+    createEncounterEventFromTravel,
+    type TravelEncounterContext,
+} from "../../src/apps/encounter/event-builder";
 
 const loadTile = vi.fn();
 const loadRegions = vi.fn();
@@ -83,5 +86,35 @@ describe("createEncounterEventFromTravel", () => {
         expect(event?.regionName).toBeUndefined();
         expect(event?.encounterOdds).toBeUndefined();
         expect(event?.coord).toEqual({ r: 1, c: 1 });
+    });
+
+    it("allows overriding source and coordinate for manual events", async () => {
+        loadTile.mockResolvedValue({ region: "Vale" });
+        loadRegions.mockResolvedValue([{ name: "Vale", encounterOdds: 6 }]);
+
+        const ctx: TravelEncounterContext = {
+            mapFile,
+            state: {
+                tokenRC: { r: 0, c: 0 },
+                route: [],
+                editIdx: null,
+                tokenSpeed: 3,
+                currentTile: { r: 1, c: 1 },
+                playing: false,
+            },
+        };
+
+        const event = await createEncounterEventFromTravel(app, ctx, {
+            source: "manual",
+            idPrefix: "manual",
+            coordOverride: { r: 9, c: 9 },
+            triggeredAt: "2024-07-01T12:00:00.000Z",
+        });
+
+        expect(event?.source).toBe("manual");
+        expect(event?.id.startsWith("manual-")).toBe(true);
+        expect(event?.triggeredAt).toBe("2024-07-01T12:00:00.000Z");
+        expect(event?.coord).toEqual({ r: 9, c: 9 });
+        expect(event?.regionName).toBe("Vale");
     });
 });

@@ -20,6 +20,7 @@ export type RouteEditSnapshot = {
 export type ContextMenuLogicPort = {
     getState(): Pick<RouteEditSnapshot, "route">;
     deleteUserAt(idx: number): void;
+    triggerEncounterAt?(idx: number): void | Promise<void>;
 };
 
 /**

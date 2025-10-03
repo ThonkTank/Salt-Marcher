@@ -25,6 +25,28 @@ function legacyFilenames(folderPrefix: string, coord: TileCoord): string[] {
         `${folderPrefix}-r${coord.r}-c${coord.c}.md`, // z.B. "Hex-r1-c2.md"
     ];
 }
+function escapeRegex(src: string): string {
+    return src.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+function coordFromFrontmatter(fmc: Record<string, any> | null): TileCoord | null {
+    if (!fmc) return null;
+    const r = Number((fmc as any).row);
+    const c = Number((fmc as any).col);
+    if (!Number.isInteger(r) || !Number.isInteger(c)) return null;
+    return { r, c };
+}
+function coordFromLegacyName(file: TFile, folderPrefix: string): TileCoord | null {
+    const base = file.path.replace(/\\/g, "/").split("/").pop() ?? file.path;
+    const prefix = folderPrefix.trim();
+    if (!prefix) return null;
+    const spaced = new RegExp(`^${escapeRegex(prefix)}\s+(-?\\d+),(-?\\d+)\\.md$`, "i");
+    const dashed = new RegExp(`^${escapeRegex(prefix)}-r(-?\\d+)-c(-?\\d+)\\.md$`, "i");
+    let match = base.match(spaced);
+    if (match) return { r: Number(match[1]), c: Number(match[2]) };
+    match = base.match(dashed);
+    if (match) return { r: Number(match[1]), c: Number(match[2]) };
+    return null;
+}
 
 async function readOptions(app: App, mapFile: TFile): Promise<{ folder: string; folderPrefix: string }> {
     const raw = await app.vault.read(mapFile);
@@ -135,6 +157,73 @@ async function fmFromFile(app: App, file: TFile): Promise<Record<string, any> | 
     const raw = await app.vault.read(file);
     return parseFrontmatterBlock(raw);
 }
+
+async function ensureTileSchema(
+    app: App,
+    mapFile: TFile,
+    file: TFile,
+    coord: TileCoord,
+    cached?: Record<string, any> | null
+): Promise<Record<string, any>> {
+    const mapPath = mapFile.path;
+    const current = cached ?? (await fmFromFile(app, file)) ?? {};
+    const needsType = current.type !== FM_TYPE;
+    const needsMarker = (current as any).smHexTile !== true;
+    const needsRow = Number((current as any).row) !== coord.r;
+    const needsCol = Number((current as any).col) !== coord.c;
+    const needsMap = (current as any).map_path !== mapPath;
+
+    if (needsType || needsMarker || needsRow || needsCol || needsMap) {
+        await app.fileManager.processFrontMatter(file, (f) => {
+            f.type = FM_TYPE;
+            (f as any).smHexTile = true;
+            f.row = coord.r;
+            f.col = coord.c;
+            f.map_path = mapPath;
+        });
+        return (await fmFromFile(app, file)) ?? { type: FM_TYPE, row: coord.r, col: coord.c, map_path: mapPath };
+    }
+
+    return current;
+}
+
+async function adoptLegacyTile(
+    app: App,
+    mapFile: TFile,
+    file: TFile,
+    folderPath: string,
+    folderPrefix: string,
+    cached: Record<string, any> | null
+): Promise<{ file: TFile; fmc: Record<string, any>; coord: TileCoord } | null> {
+    if (cached && typeof (cached as any).map_path === "string") return null;
+
+    let coord = coordFromFrontmatter(cached);
+    if (!coord) {
+        coord = coordFromLegacyName(file, folderPrefix);
+    }
+    if (!coord) return null;
+
+    const raw = await app.vault.read(file);
+    const mapName = mapNameFromPath(mapFile.path);
+    const backlinkNeedle = `[[${mapName.toLowerCase()}|`;
+    if (!raw.toLowerCase().includes(backlinkNeedle)) return null;
+
+    const desiredPath = normalizePath(`${folderPath}/${fileNameForMap(mapFile, coord)}`);
+    if (normalizePath(file.path) !== desiredPath) {
+        const existing = app.vault.getAbstractFileByPath(desiredPath) as TFile | null;
+        if (existing && existing !== file) {
+            return null;
+        }
+        await app.fileManager.renameFile(file, desiredPath);
+        const renamed = app.vault.getAbstractFileByPath(desiredPath);
+        if (renamed && renamed instanceof TFile) {
+            file = renamed;
+        }
+    }
+
+    const ensured = await ensureTileSchema(app, mapFile, file, coord, cached);
+    return { file, fmc: ensured, coord };
+}
 // ===== Öffentliche API =====
 
 /** Alle Tiles für eine Map auflisten (scannt nur den Ziel-Ordner). */
@@ -142,34 +231,55 @@ export async function listTilesForMap(
     app: App,
     mapFile: TFile
 ): Promise<Array<{ coord: TileCoord; file: TFile; data: TileData }>> {
-    const { folder } = await readOptions(app, mapFile);
+    const { folder, folderPrefix } = await readOptions(app, mapFile);
     const folderPath = normalizePath(folder);
-    const folderPrefix = (folderPath.endsWith("/") ? folderPath : folderPath + "/").toLowerCase();
+    const folderPathLower = (folderPath.endsWith("/") ? folderPath : folderPath + "/").toLowerCase();
 
     const out: Array<{ coord: TileCoord; file: TFile; data: TileData }> = [];
 
-    // Scan über alle Dateien im Vault; filtere Pfad-Prefix + .md
-    for (const child of app.vault.getFiles()) {
-        const p = child.path.toLowerCase();
-        if (!p.startsWith(folderPrefix)) continue;
+    for (const file of app.vault.getFiles()) {
+        let tileFile = file;
+        const p = tileFile.path.toLowerCase();
+        if (!p.startsWith(folderPathLower)) continue;
         if (!p.endsWith(".md")) continue;
 
-        // 1) metadataCache
-        let fmc = fm(app, child);
-        // 2) Fallback: direkt aus Datei lesen, wenn Cache fehlt/leer
+        let fmc = fm(app, tileFile);
         if (!fmc || fmc.type !== FM_TYPE) {
-            fmc = await fmFromFile(app, child);
+            fmc = await fmFromFile(app, tileFile);
         }
-        if (!fmc || fmc.type !== FM_TYPE) continue;
-        if (typeof fmc.map_path !== "string" || fmc.map_path !== mapFile.path) continue;
 
-        const r = Number(fmc.row), c = Number(fmc.col);
-        if (!Number.isInteger(r) || !Number.isInteger(c)) continue;
+        let coord = coordFromFrontmatter(fmc ?? null);
+        const mapPath = mapFile.path;
+        const hasTargetMap = !!(
+            fmc &&
+            fmc.type === FM_TYPE &&
+            typeof (fmc as any).map_path === "string" &&
+            (fmc as any).map_path === mapPath
+        );
+
+        if (!hasTargetMap) {
+            if (fmc && typeof (fmc as any).map_path === "string" && (fmc as any).map_path !== mapPath) {
+                continue;
+            }
+            const adoption = await adoptLegacyTile(app, mapFile, tileFile, folderPath, folderPrefix, fmc ?? null);
+            if (!adoption) continue;
+            tileFile = adoption.file;
+            fmc = adoption.fmc;
+            coord = adoption.coord;
+        } else if (coord) {
+            fmc = await ensureTileSchema(app, mapFile, tileFile, coord, fmc ?? null);
+        }
+
+        if (!coord) coord = coordFromFrontmatter(fmc ?? null);
+        if (!coord) continue;
 
         out.push({
-            coord: { r, c },
-            file: child,
-            data: { terrain: (typeof fmc.terrain === "string" ? fmc.terrain : "") ?? "" },
+            coord,
+            file: tileFile,
+            data: {
+                terrain: (typeof fmc?.terrain === "string" ? fmc.terrain : "") ?? "",
+                region: (typeof (fmc as any)?.region === "string" ? (fmc as any).region : "") ?? "",
+            },
         });
     }
 
@@ -191,6 +301,7 @@ export async function loadTile(
     if (!fmc || fmc.type !== FM_TYPE) {
         fmc = await fmFromFile(app, file);
     }
+    fmc = await ensureTileSchema(app, mapFile, file, coord, fmc ?? null);
     if (!fmc || fmc.type !== FM_TYPE) return null;
 
     const raw = await app.vault.read(file);

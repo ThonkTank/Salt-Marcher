@@ -4,16 +4,27 @@
 
 import type { App, TFile } from "obsidian";
 import type { LogicStateSnapshot } from "../cartographer/travel/domain/types";
-import type { EncounterEvent } from "./session-store";
+import type { EncounterEvent, EncounterEventSource } from "./session-store";
 
 export interface TravelEncounterContext {
     mapFile: TFile | null;
     state: LogicStateSnapshot | null;
 }
 
-export async function createEncounterEventFromTravel(app: App, ctx: TravelEncounterContext | null): Promise<EncounterEvent | null> {
-    const triggeredAt = new Date().toISOString();
-    const coord = ctx?.state?.currentTile ?? ctx?.state?.tokenRC ?? null;
+export interface EncounterEventBuildOptions {
+    source?: EncounterEventSource;
+    idPrefix?: string;
+    coordOverride?: LogicStateSnapshot["currentTile"];
+    triggeredAt?: string;
+}
+
+export async function createEncounterEventFromTravel(
+    app: App,
+    ctx: TravelEncounterContext | null,
+    options: EncounterEventBuildOptions = {},
+): Promise<EncounterEvent | null> {
+    const triggeredAt = options.triggeredAt ?? new Date().toISOString();
+    const coord = options.coordOverride ?? ctx?.state?.currentTile ?? ctx?.state?.tokenRC ?? null;
     const mapFile = ctx?.mapFile ?? null;
     let regionName: string | undefined;
     let encounterOdds: number | undefined;
@@ -43,10 +54,12 @@ export async function createEncounterEventFromTravel(app: App, ctx: TravelEncoun
     }
 
     const travelClock = ctx?.state?.clockHours;
+    const source = options.source ?? "travel";
+    const idPrefix = options.idPrefix ?? source;
 
     const event: EncounterEvent = {
-        id: `travel-${Date.now()}`,
-        source: "travel",
+        id: `${idPrefix}-${Date.now()}`,
+        source,
         triggeredAt,
         coord,
         regionName,

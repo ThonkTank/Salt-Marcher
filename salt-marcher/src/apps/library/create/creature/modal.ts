@@ -23,6 +23,7 @@ export class CreateCreatureModal extends Modal {
     private onSubmit: (d: StatblockData) => void;
     private availableSpells: string[] = [];
     private _bgEl?: HTMLElement; private _bgPrevPointer?: string;
+    private validators: Array<() => string[]> = [];
 
     constructor(app: App, presetName: string | undefined, onSubmit: (d: StatblockData) => void) {
         super(app);
@@ -34,6 +35,7 @@ export class CreateCreatureModal extends Modal {
         const { contentEl } = this;
         contentEl.empty();
         contentEl.addClass("sm-cc-create-modal");
+        this.validators = [];
 
         // Prevent closing on outside click by disabling background pointer events
         const bg = document.querySelector('.modal-bg') as HTMLElement | null;
@@ -58,7 +60,32 @@ export class CreateCreatureModal extends Modal {
             const head = card.createDiv({ cls: "sm-cc-card__head" });
             head.createEl("h3", { text: title, cls: "sm-cc-card__title" });
             if (subtitle) head.createEl("p", { text: subtitle, cls: "sm-cc-card__subtitle" });
-            return card.createDiv({ cls: "sm-cc-card__body" });
+            const validation = card.createDiv({ cls: "sm-cc-card__validation", attr: { hidden: "" } });
+            const validationList = validation.createEl("ul", { cls: "sm-cc-card__validation-list" });
+            const applyValidation = (issues: string[]) => {
+                const hasIssues = issues.length > 0;
+                card.toggleClass("is-invalid", hasIssues);
+                if (!hasIssues) {
+                    validation.setAttribute("hidden", "");
+                    validation.classList.remove("is-visible");
+                    validationList.empty();
+                    return;
+                }
+                validation.removeAttribute("hidden");
+                validation.classList.add("is-visible");
+                validationList.empty();
+                for (const message of issues) {
+                    validationList.createEl("li", { text: message });
+                }
+            };
+            const registerValidation = (compute: () => string[]) =>
+                this.addValidator(() => {
+                    const issues = compute();
+                    applyValidation(issues);
+                    return issues;
+                });
+            const body = card.createDiv({ cls: "sm-cc-card__body" });
+            return { body, registerValidation } as const;
         };
 
         // Asynchron: verfügbare Zauber laden (best effort)
@@ -73,19 +100,19 @@ export class CreateCreatureModal extends Modal {
         })();
 
         const basicsCard = createCard(mainColumn, "Grunddaten", "Name, Typ, Gesinnung und Basiswerte");
-        mountCreatureBasicsSection(basicsCard, this.data);
+        mountCreatureBasicsSection(basicsCard.body, this.data);
 
         const statsCard = createCard(mainColumn, "Attribute & Fertigkeiten");
-        mountCreatureStatsAndSkillsSection(statsCard, this.data);
+        mountCreatureStatsAndSkillsSection(statsCard.body, this.data, statsCard.registerValidation);
 
         const defensesCard = createCard(sideColumn, "Sinne & Verteidigungen");
-        mountCreatureSensesAndDefensesSection(defensesCard, this.data);
+        mountCreatureSensesAndDefensesSection(defensesCard.body, this.data);
 
         const spellsCard = createCard(sideColumn, "Zauber & Fähigkeiten");
-        spellsSectionControls = mountSpellsKnownSection(spellsCard, this.data, () => this.availableSpells);
+        spellsSectionControls = mountSpellsKnownSection(spellsCard.body, this.data, () => this.availableSpells);
 
         const entriesCard = createCard(fullColumn, "Einträge", "Traits, Aktionen, Bonusaktionen, Reaktionen und Legendäres");
-        mountEntriesSection(entriesCard, this.data);
+        mountEntriesSection(entriesCard.body, this.data, entriesCard.registerValidation);
 
         // Buttons
         const footer = contentEl.createDiv({ cls: "sm-cc-modal-footer" });
@@ -103,8 +130,27 @@ export class CreateCreatureModal extends Modal {
     }
 
     private submit() {
+        const issues = this.runValidators();
+        if (issues.length) {
+            const firstInvalid = this.contentEl.querySelector(".sm-cc-card.is-invalid") as HTMLElement | null;
+            if (firstInvalid) firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
+            return;
+        }
         if (!this.data.name || !this.data.name.trim()) return;
         this.close();
         this.onSubmit(this.data);
+    }
+
+    private addValidator(run: () => string[]): () => string[] {
+        this.validators.push(run);
+        return run;
+    }
+
+    private runValidators(): string[] {
+        const collected: string[] = [];
+        for (const validator of this.validators) {
+            collected.push(...validator());
+        }
+        return collected;
     }
 }

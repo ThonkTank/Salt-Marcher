@@ -9,10 +9,23 @@ import {
   CREATURE_SKILLS,
   type CreatureAbilityKey,
 } from "./presets";
+import type { SectionValidationRegistrar } from "./section-utils";
+
+export function collectStatsAndSkillsIssues(data: StatblockData): string[] {
+  const issues: string[] = [];
+  const profs = new Set(data.skillsProf ?? []);
+  for (const name of data.skillsExpertise ?? []) {
+    if (!profs.has(name)) {
+      issues.push(`Expertise für "${name}" setzt eine Profizient voraus.`);
+    }
+  }
+  return issues;
+}
 
 export function mountCreatureStatsAndSkillsSection(
   parent: HTMLElement,
   data: StatblockData,
+  registerValidation?: SectionValidationRegistrar,
 ) {
   const root = parent.createDiv({ cls: "sm-cc-stats" });
 
@@ -151,6 +164,8 @@ export function mountCreatureStatsAndSkillsSection(
   const skillChips = skillsControl.createDiv({ cls: "sm-cc-chips sm-cc-skill-chips" });
 
   const skillRefs = new Map<string, { mod: HTMLElement; expertise: HTMLInputElement }>();
+  const revalidate =
+    registerValidation?.(() => collectStatsAndSkillsIssues(data)) ?? (() => []);
 
   const addSkillByName = (rawName: string) => {
     const name = rawName.trim();
@@ -197,6 +212,7 @@ export function mountCreatureStatsAndSkillsSection(
           data.skillsExpertise = data.skillsExpertise!.filter((s) => s !== name);
         }
         updateMods();
+        revalidate();
       });
       const removeBtn = chip.createEl("button", {
         cls: "sm-cc-chip__remove",
@@ -212,6 +228,7 @@ export function mountCreatureStatsAndSkillsSection(
       skillRefs.set(name, { mod: modOut, expertise: expertiseCb });
     }
     updateMods();
+    revalidate();
   }
 
   const updateMods = () => {
@@ -233,6 +250,7 @@ export function mountCreatureStatsAndSkillsSection(
       refs.mod.textContent = formatSigned(mod + bonus);
       if (refs.expertise.checked !== hasExpertise) refs.expertise.checked = hasExpertise;
     }
+    revalidate();
   };
 
   renderSkillChips();

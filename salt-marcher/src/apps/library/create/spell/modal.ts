@@ -3,10 +3,13 @@ import { App, Modal, Setting } from "obsidian";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import { mountTokenEditor } from "../shared/token-editor";
 import type { SpellData } from "../../core/spell-files";
+import { collectSpellScalingIssues } from "./validation";
 
 export class CreateSpellModal extends Modal {
     private data: SpellData;
     private onSubmit: (d: SpellData) => void;
+    private scalingIssues: string[] = [];
+    private runScalingValidation: (() => void) | null = null;
 
     constructor(app: App, presetName: string | undefined, onSubmit: (d: SpellData) => void) {
         super(app);
@@ -18,6 +21,8 @@ export class CreateSpellModal extends Modal {
         const { contentEl } = this;
         contentEl.empty();
         contentEl.addClass("sm-cc-create-modal");
+        this.scalingIssues = [];
+        this.runScalingValidation = null;
 
         contentEl.createEl("h3", { text: "Neuen Zauber erstellen" });
 
@@ -29,7 +34,10 @@ export class CreateSpellModal extends Modal {
         });
         new Setting(contentEl).setName("Grad").setDesc("0 = Zaubertrick").addDropdown(dd => {
             for (let i = 0; i <= 9; i++) dd.addOption(String(i), String(i));
-            dd.onChange(v => this.data.level = parseInt(v, 10));
+            dd.onChange(v => {
+                this.data.level = parseInt(v, 10);
+                this.runScalingValidation?.();
+            });
             try { enhanceSelectToSearch((dd as any).selectEl, 'Such-dropdown…'); } catch {}
         });
         new Setting(contentEl).setName("Schule").addDropdown(dd => {
@@ -100,8 +108,45 @@ export class CreateSpellModal extends Modal {
         });
 
         // Text
-        this.addTextArea(contentEl, "Beschreibung", "Beschreibung (Markdown)", v => this.data.description = v);
-        this.addTextArea(contentEl, "Höhere Grade", "Bei höheren Graden (Markdown)", v => this.data.higher_levels = v);
+        this.addTextArea(
+            contentEl,
+            "Beschreibung",
+            "Beschreibung (Markdown)",
+            v => this.data.description = v,
+            this.data.description,
+        );
+        const higherLevelsField = this.addTextArea(
+            contentEl,
+            "Höhere Grade",
+            "Bei höheren Graden (Markdown)",
+            v => {
+                const trimmed = v.trim();
+                this.data.higher_levels = trimmed ? trimmed : undefined;
+                this.runScalingValidation?.();
+            },
+            this.data.higher_levels,
+        );
+        const scalingValidation = higherLevelsField.controlEl.createDiv({ cls: "sm-setting-validation", attr: { hidden: "" } });
+        const applyScalingValidation = (issues: string[]) => {
+            const hasIssues = issues.length > 0;
+            higherLevelsField.wrapper.toggleClass("is-invalid", hasIssues);
+            if (!hasIssues) {
+                scalingValidation.setAttribute("hidden", "");
+                scalingValidation.classList.remove("is-visible");
+                scalingValidation.empty();
+                return;
+            }
+            scalingValidation.removeAttribute("hidden");
+            scalingValidation.classList.add("is-visible");
+            scalingValidation.empty();
+            const list = scalingValidation.createEl("ul");
+            for (const issue of issues) list.createEl("li", { text: issue });
+        };
+        this.runScalingValidation = () => {
+            this.scalingIssues = collectSpellScalingIssues(this.data);
+            applyScalingValidation(this.scalingIssues);
+        };
+        this.runScalingValidation();
 
         new Setting(contentEl)
             .addButton(b => b.setButtonText("Abbrechen").onClick(() => this.close()))
@@ -112,15 +157,25 @@ export class CreateSpellModal extends Modal {
 
     onClose() { this.contentEl.empty(); }
 
-    private addTextArea(parent: HTMLElement, label: string, placeholder: string, onChange: (v: string) => void) {
+    private addTextArea(
+        parent: HTMLElement,
+        label: string,
+        placeholder: string,
+        onChange: (v: string) => void,
+        initialValue?: string,
+    ) {
         const wrap = parent.createDiv({ cls: "setting-item" });
         wrap.createDiv({ cls: "setting-item-info", text: label });
         const ctl = wrap.createDiv({ cls: "setting-item-control" });
         const ta = ctl.createEl("textarea", { attr: { placeholder } });
+        if (initialValue != null) ta.value = initialValue;
         ta.addEventListener("input", () => onChange(ta.value));
+        return { wrapper: wrap, controlEl: ctl, textarea: ta } as const;
     }
 
     private submit() {
+        this.runScalingValidation?.();
+        if (this.scalingIssues.length) return;
         if (!this.data.name || !this.data.name.trim()) return;
         this.close();
         this.onSubmit(this.data);

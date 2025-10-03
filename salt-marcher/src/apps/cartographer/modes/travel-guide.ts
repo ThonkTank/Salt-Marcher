@@ -15,7 +15,9 @@ import { TravelInteractionController } from "./travel-guide/interaction-controll
 import {
     openEncounter,
     preloadEncounterModule,
+    publishManualEncounter,
 } from "./travel-guide/encounter-gateway";
+import { createEncounterSync } from "../travel/infra/encounter-sync";
 
 export function createTravelGuideMode(): CartographerMode {
     let sidebar: Sidebar | null = null;
@@ -28,6 +30,7 @@ export function createTravelGuideMode(): CartographerMode {
     let hostEl: HTMLElement | null = null;
     let terrainEvent: { off(): void } | null = null;
     let lifecycleSignal: AbortSignal | null = null;
+    let encounterSync: ReturnType<typeof createEncounterSync> | null = null;
 
     const isAborted = () => lifecycleSignal?.aborted ?? false;
 
@@ -92,6 +95,8 @@ export function createTravelGuideMode(): CartographerMode {
 
     const disposeFile = () => {
         interactions.dispose();
+        encounterSync?.dispose();
+        encounterSync = null;
         if (tokenLayer) {
             tokenLayer.destroy?.();
             tokenLayer = null;
@@ -239,17 +244,50 @@ export function createTravelGuideMode(): CartographerMode {
                 adapter,
                 onChange: (state) => handleStateChange(state),
                 onEncounter: async () => {
-                    try {
-                        activeLogic.pause();
-                    } catch {}
-                    if (!isAborted()) {
-                        const mapFile = ctx.getFile?.() ?? null;
-                        const state = activeLogic.getState();
-                        void openEncounter(ctx.app, { mapFile, state });
+                    if (isAborted()) {
+                        return;
+                    }
+                    if (encounterSync) {
+                        await encounterSync.handleTravelEncounter();
                     }
                 },
             });
             logic = activeLogic;
+
+            encounterSync = createEncounterSync({
+                getMapFile: () => ctx.getFile?.() ?? null,
+                getState: () => activeLogic.getState(),
+                pausePlayback: () => {
+                    try {
+                        activeLogic.pause();
+                    } catch (err) {
+                        console.error("[travel-mode] pause during encounter sync failed", err);
+                    }
+                },
+                openEncounter: (context) => openEncounter(ctx.app, context),
+                onExternalEncounter: () => !isAborted(),
+            });
+
+            const triggerManualEncounterAt = async (idx: number) => {
+                if (!encounterSync || isAborted()) {
+                    return;
+                }
+                const state = activeLogic.getState();
+                const node = state.route[idx];
+                if (!node) {
+                    return;
+                }
+                await publishManualEncounter(
+                    ctx.app,
+                    {
+                        mapFile: ctx.getFile?.() ?? null,
+                        state,
+                    },
+                    {
+                        coordOverride: { r: node.r, c: node.c },
+                    },
+                );
+            };
 
             handleStateChange(activeLogic.getState());
             await activeLogic.initTokenFromTiles();
@@ -273,11 +311,14 @@ export function createTravelGuideMode(): CartographerMode {
                     moveSelectedTo: (rc) => activeLogic.moveSelectedTo(rc),
                     moveTokenTo: (rc) => activeLogic.moveTokenTo(rc),
                     deleteUserAt: (idx) => activeLogic.deleteUserAt(idx),
+                    triggerEncounterAt: (idx) => triggerManualEncounterAt(idx),
                 }
             );
 
             cleanupFile = async () => {
                 interactions.dispose();
+                encounterSync?.dispose();
+                encounterSync = null;
                 if (logic === activeLogic) {
                     logic = null;
                 }
