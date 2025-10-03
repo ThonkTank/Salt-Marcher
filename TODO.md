@@ -6,8 +6,7 @@ Die Aufgaben sind nach Priorität sortiert. Dezimalstellen kennzeichnen die Reih
 - keine offenen ToDos.
 
 ## 1. Funktionalität absichern
-- 1.2 [src/core/AGENTS.md] Konvertierung zwischen Legacy- und neuen Speichern abstimmen.
-- 1.3 [src/core/AGENTS.md] Tile- und Terrain-Schemata um Validierungsregeln ergänzen.
+- 1.2 [src/core/AGENTS.md] Tile- und Terrain-Schemata um Validierungsregeln ergänzen.
 
 ## 2. Robustheit & Wartbarkeit
 - 2.1 [AGENTS.md] Automatisierte Prüfung für fehlende AGENTS- oder Header-Kommentare ins CI überführen.

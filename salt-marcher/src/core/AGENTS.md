@@ -6,7 +6,6 @@
 
 # ToDo
 - Tile- und Terrain-Schemata um Validierungsregeln ergänzen.
-- Konvertierung zwischen Legacy- und neuen Speichern abstimmen.
 
 # Standards
 - Öffentliche APIs exportieren benannte Typen/Funktionen.
