@@ -1,7 +1,8 @@
 // src/apps/library/core/creature-files.ts
 // Verwaltet das Vault-Verzeichnis "SaltMarcher/Creatures" ohne Cache und exportiert das Statblock-Schema.
 // Wird aus Feature-Ordnern re-exportiert, bis die Core-Dienste konsolidiert sind.
-import { App, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
+import { App, TFile } from "obsidian";
+import { createVaultFilePipeline, sanitizeVaultFileName } from "./file-pipeline";
 
 export const CREATURES_DIR = "SaltMarcher/Creatures";
 
@@ -53,36 +54,23 @@ export type StatblockData = {
     spellsKnown?: Array<{ name: string; level?: number; uses?: string; notes?: string }>;
 };
 
-export async function ensureCreatureDir(app: App): Promise<TFolder> {
-    const p = normalizePath(CREATURES_DIR);
-    let f = app.vault.getAbstractFileByPath(p);
-    if (f instanceof TFolder) return f;
-    await app.vault.createFolder(p).catch(() => {});
-    f = app.vault.getAbstractFileByPath(p);
-    if (f instanceof TFolder) return f;
-    throw new Error("Could not create creatures directory");
-}
+const CREATURE_PIPELINE = createVaultFilePipeline<StatblockData>({
+    dir: CREATURES_DIR,
+    defaultBaseName: "Creature",
+    getBaseName: data => data.name,
+    toContent: statblockToMarkdown,
+    sanitizeName: name => sanitizeVaultFileName(name, "Creature"),
+});
+
+export const ensureCreatureDir = CREATURE_PIPELINE.ensure;
 
 export function sanitizeFileName(name: string): string {
-    const trimmed = (name || "Creature").trim();
-    return trimmed.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").replace(/^\.+$/, "Creature").slice(0, 120);
+    return sanitizeVaultFileName(name, "Creature");
 }
 
-export async function listCreatureFiles(app: App): Promise<TFile[]> {
-    const dir = await ensureCreatureDir(app);
-    const out: TFile[] = [];
-    const walk = (folder: TFolder) => { for (const child of folder.children) { if (child instanceof TFolder) walk(child); else if (child instanceof TFile && child.extension === "md") out.push(child); } };
-    walk(dir);
-    return out;
-}
+export const listCreatureFiles = CREATURE_PIPELINE.list;
 
-export function watchCreatureDir(app: App, onChange: () => void): () => void {
-    const base = normalizePath(CREATURES_DIR) + "/";
-    const isInDir = (f: TAbstractFile) => (f instanceof TFile || f instanceof TFolder) && (f.path + "/").startsWith(base);
-    const handler = (f: TAbstractFile) => { if (isInDir(f)) onChange?.(); };
-    app.vault.on("create", handler); app.vault.on("delete", handler); app.vault.on("rename", handler); app.vault.on("modify", handler);
-    return () => { app.vault.off("create", handler); app.vault.off("delete", handler); app.vault.off("rename", handler); app.vault.off("modify", handler); };
-}
+export const watchCreatureDir = CREATURE_PIPELINE.watch;
 
 function yamlList(items?: string[]): string | undefined { if (!items || items.length === 0) return undefined; const safe = items.map(s => `"${(s ?? "").replace(/"/g, '\\"')}"`).join(", "); return `[${safe}]`; }
 function parseNum(v?: string): number | null { if (!v) return null; const m = String(v).match(/-?\d+/); if (!m) return null; return Number(m[0]); }
@@ -154,12 +142,6 @@ function statblockToMarkdown(d: StatblockData): string {
 }
 
 export async function createCreatureFile(app: App, d: StatblockData): Promise<TFile> {
-    const folder = await ensureCreatureDir(app);
-    const baseName = sanitizeFileName(d.name || "Creature");
-    let fileName = `${baseName}.md`; let path = normalizePath(`${folder.path}/${fileName}`); let i = 2;
-    while (app.vault.getAbstractFileByPath(path)) { fileName = `${baseName} (${i}).md`; path = normalizePath(`${folder.path}/${fileName}`); i++; }
-    const content = statblockToMarkdown(d);
-    const file = await app.vault.create(path, content);
-    return file;
+    return CREATURE_PIPELINE.create(app, d);
 }
 
