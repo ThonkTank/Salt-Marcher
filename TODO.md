@@ -9,7 +9,6 @@ Die Aufgaben sind nach Priorität sortiert. Dezimalstellen kennzeichnen die Reih
 - keine offenen ToDos.
 
 ## 2. Robustheit & Wartbarkeit
-- 2.21 [src/core/hex-mapper/render/AGENTS.md] GPU/Canvas-Auswahl dokumentieren und abstrahieren.
 
 ## 3. Neue Features
 - 3.1 [src/app/AGENTS.md] Telemetrie auf weitere Integrationen ausweiten.
