@@ -15,6 +15,7 @@ import { TravelInteractionController } from "./travel-guide/interaction-controll
 import {
     openEncounter,
     preloadEncounterModule,
+    publishManualEncounter,
 } from "./travel-guide/encounter-gateway";
 import { createEncounterSync } from "../travel/infra/encounter-sync";
 
@@ -267,6 +268,27 @@ export function createTravelGuideMode(): CartographerMode {
                 onExternalEncounter: () => !isAborted(),
             });
 
+            const triggerManualEncounterAt = async (idx: number) => {
+                if (!encounterSync || isAborted()) {
+                    return;
+                }
+                const state = activeLogic.getState();
+                const node = state.route[idx];
+                if (!node) {
+                    return;
+                }
+                await publishManualEncounter(
+                    ctx.app,
+                    {
+                        mapFile: ctx.getFile?.() ?? null,
+                        state,
+                    },
+                    {
+                        coordOverride: { r: node.r, c: node.c },
+                    },
+                );
+            };
+
             handleStateChange(activeLogic.getState());
             await activeLogic.initTokenFromTiles();
             if (isAborted() || logic !== activeLogic) {
@@ -289,6 +311,7 @@ export function createTravelGuideMode(): CartographerMode {
                     moveSelectedTo: (rc) => activeLogic.moveSelectedTo(rc),
                     moveTokenTo: (rc) => activeLogic.moveTokenTo(rc),
                     deleteUserAt: (idx) => activeLogic.deleteUserAt(idx),
+                    triggerEncounterAt: (idx) => triggerManualEncounterAt(idx),
                 }
             );
 

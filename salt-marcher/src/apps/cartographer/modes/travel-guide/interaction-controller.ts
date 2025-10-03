@@ -11,6 +11,7 @@ export interface InteractionLogicPort {
     moveSelectedTo(rc: { r: number; c: number }): void;
     moveTokenTo(rc: { r: number; c: number }): void;
     deleteUserAt(index: number): void;
+    triggerEncounterAt?(index: number): void | Promise<void>;
 }
 
 export interface InteractionEnvironment {
@@ -44,6 +45,7 @@ export class TravelInteractionController {
         this.unbindContext = bindContextMenu(env.routeLayerEl, {
             getState: () => logic.getState(),
             deleteUserAt: (idx) => logic.deleteUserAt(idx),
+            triggerEncounterAt: (idx) => logic.triggerEncounterAt?.(idx),
         });
     }
 

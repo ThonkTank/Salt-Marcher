@@ -6,12 +6,10 @@ Die Aufgaben sind nach Priorität sortiert. Dezimalstellen kennzeichnen die Reih
 - keine offenen ToDos.
 
 ## 1. Funktionalität absichern
-- 1.1 [src/apps/cartographer/travel/ui/AGENTS.md] Kontextmenüs auf neue Encounter-Ereignisse erweitern.
-- 1.2 [src/apps/encounter/AGENTS.md] Ereignisformate gegen kommende Travel-APIs abgleichen.
-- 1.3 [src/apps/library/create/creature/AGENTS.md] Abschnittsvalidierung für abhängige Felder ergänzen.
-- 1.4 [src/apps/library/create/spell/AGENTS.md] Validierung für skalierende Zauberstufen ausarbeiten.
-- 1.5 [src/core/AGENTS.md] Konvertierung zwischen Legacy- und neuen Speichern abstimmen.
-- 1.6 [src/core/AGENTS.md] Tile- und Terrain-Schemata um Validierungsregeln ergänzen.
+- 1.1 [src/apps/library/create/creature/AGENTS.md] Abschnittsvalidierung für abhängige Felder ergänzen.
+- 1.2 [src/apps/library/create/spell/AGENTS.md] Validierung für skalierende Zauberstufen ausarbeiten.
+- 1.3 [src/core/AGENTS.md] Konvertierung zwischen Legacy- und neuen Speichern abstimmen.
+- 1.4 [src/core/AGENTS.md] Tile- und Terrain-Schemata um Validierungsregeln ergänzen.
 
 ## 2. Robustheit & Wartbarkeit
 - 2.1 [AGENTS.md] Automatisierte Prüfung für fehlende AGENTS- oder Header-Kommentare ins CI überführen.
