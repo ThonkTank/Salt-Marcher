@@ -6,7 +6,6 @@ Die Aufgaben sind nach Priorität sortiert. Dezimalstellen kennzeichnen die Reih
 - keine offenen ToDos.
 
 ## 1. Funktionalität absichern
-- 1.1 [src/apps/library/create/spell/AGENTS.md] Validierung für skalierende Zauberstufen ausarbeiten.
 - 1.2 [src/core/AGENTS.md] Konvertierung zwischen Legacy- und neuen Speichern abstimmen.
 - 1.3 [src/core/AGENTS.md] Tile- und Terrain-Schemata um Validierungsregeln ergänzen.
 
