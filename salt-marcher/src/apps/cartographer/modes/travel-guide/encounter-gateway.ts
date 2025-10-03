@@ -2,7 +2,11 @@
 // Öffnet Begegnungen aus dem Travel-Guide heraus.
 import { Notice, type App, type WorkspaceLeaf } from "obsidian";
 import { publishEncounterEvent } from "../../../encounter/session-store";
-import { createEncounterEventFromTravel, type TravelEncounterContext } from "../../../encounter/event-builder";
+import {
+    createEncounterEventFromTravel,
+    type EncounterEventBuildOptions,
+    type TravelEncounterContext,
+} from "../../../encounter/event-builder";
 
 interface EncounterModule {
     getRightLeaf(app: App): WorkspaceLeaf;
@@ -55,4 +59,24 @@ export async function openEncounter(app: App, context?: TravelEncounterContext):
     await leaf.setViewState({ type: mod.VIEW_ENCOUNTER, active: true });
     app.workspace.revealLeaf(leaf);
     return true;
+}
+
+export async function publishManualEncounter(
+    app: App,
+    context: TravelEncounterContext,
+    options: EncounterEventBuildOptions = {},
+) {
+    try {
+        const event = await createEncounterEventFromTravel(app, context, {
+            source: "manual",
+            idPrefix: options.idPrefix ?? "manual",
+            coordOverride: options.coordOverride,
+            triggeredAt: options.triggeredAt,
+        });
+        if (event) {
+            publishEncounterEvent(event);
+        }
+    } catch (err) {
+        console.error("[travel-mode] failed to publish manual encounter", err);
+    }
 }

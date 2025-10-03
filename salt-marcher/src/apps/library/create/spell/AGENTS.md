@@ -3,10 +3,10 @@
 
 # Aktueller Stand
 - `index` orchestriert Formularfelder, `modal` kapselt Anzeige und Speichern.
+- `modal` verhindert fehlerhafte Angaben zu skalierenden Zaubergraden.
 
 # ToDo
 - Komponenten für Ritual-spezifische Felder ergänzen.
-- Validierung für skalierende Zauberstufen ausarbeiten.
 
 # Standards
 - Dateien starten mit einem Satz zum dargestellten Formularumfang.

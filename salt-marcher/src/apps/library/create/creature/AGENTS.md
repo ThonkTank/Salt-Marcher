@@ -8,7 +8,6 @@
 
 # ToDo
 - Presets mit Schwierigkeitsgraden dokumentieren.
-- Abschnittsvalidierung für abhängige Felder ergänzen.
 - Bewegungs- und Geschwindigkeitseinträge in strukturierte Objekte mit Flags (z. B. Hover) überführen.
 - Spell-Ladeprozess im Modal mit Lade-/Fehlerzustand versehen.
 

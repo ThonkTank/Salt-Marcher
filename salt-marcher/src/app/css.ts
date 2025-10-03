@@ -163,7 +163,11 @@ export const HEX_PLUGIN_CSS = `
 .sm-cc-card__head { padding:.85rem .95rem .6rem; border-bottom:1px solid var(--background-modifier-border); display:flex; flex-direction:column; gap:.3rem; }
 .sm-cc-card__title { margin:0; font-size:1.05rem; }
 .sm-cc-card__subtitle { margin:0; font-size:.9em; color: var(--text-muted); }
+.sm-cc-card__validation { display:none; padding:.6rem .95rem; border-top:1px solid color-mix(in srgb, var(--color-red, #e11d48) 30%, transparent); background:color-mix(in srgb, var(--color-red, #e11d48) 12%, var(--background-secondary)); color: var(--color-red, #e11d48); font-size:.9em; }
+.sm-cc-card__validation.is-visible { display:block; }
+.sm-cc-card__validation-list { margin:0; padding-left:1.2rem; display:flex; flex-direction:column; gap:.25rem; }
 .sm-cc-card__body { padding:.95rem; display:flex; flex-direction:column; gap:1.1rem; }
+.sm-cc-card.is-invalid { border-color: color-mix(in srgb, var(--color-red, #e11d48) 35%, transparent); box-shadow:0 0 0 1px color-mix(in srgb, var(--color-red, #e11d48) 22%, transparent) inset; }
 .sm-cc-modal-footer { margin-top:1.25rem; display:flex; justify-content:flex-end; }
 .sm-cc-modal-footer .setting-item { margin:0; padding:0; border:none; background:none; }
 .sm-cc-modal-footer .setting-item-control { margin-left:0; display:flex; gap:.6rem; }
@@ -363,6 +367,29 @@ export const HEX_PLUGIN_CSS = `
 .sm-cc-create-modal .sm-cc-entries .sm-cc-searchbar,
 .sm-cc-create-modal .sm-cc-spells .sm-cc-searchbar { width: 100%; }
 .sm-cc-create-modal .setting-item-control > * { max-width: 100%; }
+
+/* Spell Creator – Validierung für höhere Grade */
+.sm-cc-create-modal .setting-item.is-invalid textarea {
+    border-color: color-mix(in srgb, var(--color-red, #e11d48) 35%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-red, #e11d48) 25%, transparent) inset;
+}
+.sm-setting-validation {
+    display: none;
+    margin-top: .35rem;
+    padding: .45rem .6rem;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--color-red, #e11d48) 12%, var(--background-secondary));
+    color: var(--color-red, #e11d48);
+    font-size: .85em;
+}
+.sm-setting-validation.is-visible { display: block; }
+.sm-setting-validation ul {
+    margin: 0;
+    padding-left: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+}
 
 /* Entry header layout: [category | name (flex) | delete] */
 .sm-cc-create-modal .sm-cc-entry-head {
