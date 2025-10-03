@@ -5,8 +5,7 @@
 - Tests fokussieren Route-/Token-Layer sowie Playback-Interaktionen.
 
 # ToDo
-- Edge-Cases für Fog-of-War und Koordinatenwechsel ergänzen.
-- UI-Synchronisation mit Domain-Store simulieren.
+- keine offenen ToDos.
 
 # Standards
 - Testdateien nennen im Kopf die geprüfte Travel-Komponente.

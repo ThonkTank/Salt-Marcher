@@ -7,7 +7,6 @@
 
 # ToDo
 - Performance-Profile dokumentieren und optimieren.
-- Notiz-Synchronisierung mit Library/Encounter vorbereiten.
 
 # Standards
 - Dateien notieren im Kopf die wichtigsten Eingaben/Ausgaben.

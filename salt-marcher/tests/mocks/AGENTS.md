@@ -5,8 +5,7 @@
 - Beinhaltet Mock-Dateien für Obsidian-APIs und weitere Integrationen.
 
 # ToDo
-- Zusätzliche Mocks für Audio/Settings ergänzen.
-- Mock-Schnittstellen gegen die echten Typen abgleichen.
+- keine offenen ToDos.
 
 # Standards
 - Mock-Dateien notieren im Kopf, welche echten APIs sie ersetzen.

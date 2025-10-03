@@ -5,7 +5,7 @@
 - `adapter` koppelt Travel-Events an den Cartographer-Presenter und Obsidian.
 
 # ToDo
-- Zusätzliche Adapter für Audio- und Automationsmodule vorbereiten.
+- keine offenen ToDos.
 
 # Standards
 - Adapter beschreiben die Quell- und Zielsysteme im Kopfkommentar.

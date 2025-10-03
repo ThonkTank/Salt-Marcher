@@ -5,8 +5,7 @@
 - Integrationstests prüfen Bootstrap, Terrain-Watcher und Presenter-Ketten.
 
 # ToDo
-- Weitere Regressionstests für Plugin-Settings ergänzen.
-- Mock-Strukturen dokumentieren und vereinheitlichen.
+- keine offenen ToDos.
 
 # Standards
 - Tests erläutern im Kopf, welche App-Flows sie validieren.

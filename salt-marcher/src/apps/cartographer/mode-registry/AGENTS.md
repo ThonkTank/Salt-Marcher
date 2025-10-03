@@ -5,7 +5,6 @@
 - `registry.ts` verwaltet Registrierungen, `providers` liefert konkrete Fabriken.
 
 # ToDo
-- Ereignis-Hooks für dynamische Moduladaption ergänzen, sobald nötig.
 - Übergreifende Fehlerbehandlung für fehlende Provider dokumentieren.
 
 # Standards

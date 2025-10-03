@@ -5,8 +5,7 @@
 - Stellt Brush-Geometrie, Optionsmodell und Ausführungslogik bereit.
 
 # ToDo
-- Farbmischung und Geschwindigkeitsprofil im Optionsmodell dokumentieren, sobald unterstützt.
-- Beispielwerte in Tests hinterlegen, um Regressionen zu verhindern.
+- keine offenen ToDos.
 
 # Standards
 - Funktionen beschreiben ihren Effekt auf Terrain-Arrays in einem Satz vor der Implementierung.

@@ -5,8 +5,7 @@
 - Enthält Brush-Geometrien, einen Tool-Manager und API-Adapter für den Editor.
 
 # ToDo
-- Zusätzliche Werkzeuge wie Radier- oder Messfunktionen dokumentieren, sobald implementiert.
-- Tool-API mit Beispiel-Fluss in Tests abdecken.
+- keine offenen ToDos.
 
 # Standards
 - Jede Tool-Datei startet mit Dateipfad plus Satz zur Interaktion.

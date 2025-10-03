@@ -8,9 +8,7 @@
 - `search-dropdown.ts` und `copy.ts` kapseln Interaktionstexte.
 
 # ToDo
-- Komponenten auf Responsiveness und mobile Layouts prüfen.
 - Such- und Filter-UI für größere Datenmengen erweitern.
-- Kopierte Texte zentralisieren, sobald Übersetzungen nötig werden.
 
 # Standards
 - Jede UI-Datei startet mit Zweck und Nutzeraktion im Kopfkommentar.
