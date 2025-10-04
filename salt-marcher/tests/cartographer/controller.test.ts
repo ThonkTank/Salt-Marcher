@@ -141,6 +141,8 @@ describe("CartographerController", () => {
         const travel = createModeStub("travel");
         const editor = createModeStub("editor");
         const layer = createLayerStub();
+        const travelLoad = vi.fn(async () => travel.mode);
+        const editorLoad = vi.fn(async () => editor.mode);
 
         let managerOnChange: ((file: TFile | null) => void | Promise<void>) | null = null;
         const mapManager = {
@@ -163,12 +165,19 @@ describe("CartographerController", () => {
             createMapLayer: vi.fn(async () => layer),
             loadHexOptions: vi.fn(async () => hexOptions),
             modeDescriptors: [
-                { id: travel.mode.id, label: travel.mode.label, load: async () => travel.mode },
-                { id: editor.mode.id, label: editor.mode.label, load: async () => editor.mode },
+                { id: travel.mode.id, label: travel.mode.label, load: travelLoad },
+                { id: editor.mode.id, label: editor.mode.label, load: editorLoad },
             ],
         });
 
-        return { controller, travel, editor, mapManager, layer };
+        return {
+            controller,
+            travel,
+            editor,
+            mapManager,
+            layer,
+            loads: { travel: travelLoad, editor: editorLoad },
+        };
     };
 
     it("mounts with the first mode and renders the current map", async () => {
@@ -221,5 +230,31 @@ describe("CartographerController", () => {
         const event = new CustomEvent("hex:click", { detail: { r: 1, c: 2 } });
         await controller.callbacks.onHexClick(event.detail, event);
         expect(travel.spies.onHexClick).toHaveBeenCalledWith(event.detail, event, expect.anything());
+    });
+
+    it("loads modes once and reuses cached instances", async () => {
+        const { controller, travel, editor, loads } = setupController();
+        const host = document.createElement("div");
+        const file = createFile("Maps/cache.md");
+
+        await controller.onOpen(host, file);
+
+        expect(loads.travel).toHaveBeenCalledTimes(1);
+        expect(loads.editor).toHaveBeenCalledTimes(1);
+
+        await controller.setMode(travel.mode.id);
+        expect(travel.spies.onEnter).toHaveBeenCalledTimes(1);
+
+        await controller.setMode(editor.mode.id);
+        expect(editor.spies.onEnter).toHaveBeenCalledTimes(1);
+
+        await controller.setMode(editor.mode.id);
+        expect(editor.spies.onEnter).toHaveBeenCalledTimes(1);
+
+        await controller.setMode("unknown");
+        expect(travel.spies.onEnter).toHaveBeenCalledTimes(2);
+
+        expect(loads.travel).toHaveBeenCalledTimes(1);
+        expect(loads.editor).toHaveBeenCalledTimes(1);
     });
 });
