@@ -4,12 +4,15 @@ export type Destroyable = { destroy(): void };
 
 export type HexCoord = { r: number; c: number };
 
+export type HexViewBox = { minX: number; minY: number; width: number; height: number };
+
 export interface HexSceneConfig {
     host: HTMLElement;
     radius: number;
     padding: number;
     base: HexCoord;
     initialCoords: HexCoord[];
+    onViewBoxChange?: (change: { prev: HexViewBox | null; next: HexViewBox }) => void;
 }
 
 export interface HexScene extends Destroyable {
@@ -19,10 +22,12 @@ export interface HexScene extends Destroyable {
     polyByCoord: Map<string, SVGPolygonElement>;
     ensurePolys(coords: HexCoord[]): void;
     setFill(coord: HexCoord, color: string): void;
-    getViewBox(): { minX: number; minY: number; width: number; height: number };
+    getViewBox(): HexViewBox;
 }
 
-export type HexCameraController = Destroyable;
+export interface HexCameraController extends Destroyable {
+    syncViewBox(change: { prev: HexViewBox; next: HexViewBox }): void;
+}
 
 export type HexInteractionController = Destroyable;
 

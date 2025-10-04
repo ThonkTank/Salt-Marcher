@@ -1,6 +1,6 @@
 // src/core/hex-mapper/render/scene.ts
 import { hexPolygonPoints } from "../hex-geom";
-import type { HexCoord, HexScene, HexSceneConfig } from "./types";
+import type { HexCoord, HexScene, HexSceneConfig, HexViewBox } from "./types";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -8,18 +8,16 @@ const keyOf = (coord: HexCoord) => `${coord.r},${coord.c}`;
 
 type Rect = { minX: number; minY: number; maxX: number; maxY: number };
 
-type ViewBox = { minX: number; minY: number; width: number; height: number };
-
 type SceneInternals = {
     bounds: Rect | null;
-    viewBox: ViewBox | null;
+    viewBox: HexViewBox | null;
     updateViewBox(): void;
     centerOf(coord: HexCoord): { cx: number; cy: number };
     bboxOf(coord: HexCoord): Rect;
 };
 
 export function createHexScene(config: HexSceneConfig): HexScene {
-    const { host, radius, padding, base, initialCoords } = config;
+    const { host, radius, padding, base, initialCoords, onViewBoxChange } = config;
 
     const hexW = Math.sqrt(3) * radius;
     const hexH = 2 * radius;
@@ -54,44 +52,20 @@ export function createHexScene(config: HexSceneConfig): HexScene {
             const paddedMinY = Math.floor(minY - padding);
             const paddedMaxX = Math.ceil(maxX + padding);
             const paddedMaxY = Math.ceil(maxY + padding);
-            const spanWidth = Math.max(1, paddedMaxX - paddedMinX);
-            const spanHeight = Math.max(1, paddedMaxY - paddedMinY);
+            const width = Math.max(1, paddedMaxX - paddedMinX);
+            const height = Math.max(1, paddedMaxY - paddedMinY);
+            const previous = internals.viewBox ? { ...internals.viewBox } : null;
+            const next = { minX: paddedMinX, minY: paddedMinY, width, height };
 
-            let centerX = paddedMinX + spanWidth / 2;
-            let centerY = paddedMinY + spanHeight / 2;
-            let halfWidth = spanWidth / 2;
-            let halfHeight = spanHeight / 2;
+            internals.viewBox = next;
 
-            if (internals.viewBox) {
-                const prev = internals.viewBox;
-                centerX = prev.minX + prev.width / 2;
-                centerY = prev.minY + prev.height / 2;
-                halfWidth = Math.max(
-                    prev.width / 2,
-                    spanWidth / 2,
-                    paddedMaxX - centerX,
-                    centerX - paddedMinX,
-                );
-                halfHeight = Math.max(
-                    prev.height / 2,
-                    spanHeight / 2,
-                    paddedMaxY - centerY,
-                    centerY - paddedMinY,
-                );
-            }
+            svg.setAttribute("viewBox", `${paddedMinX} ${paddedMinY} ${width} ${height}`);
+            overlay.setAttribute("x", String(paddedMinX));
+            overlay.setAttribute("y", String(paddedMinY));
+            overlay.setAttribute("width", String(width));
+            overlay.setAttribute("height", String(height));
 
-            const viewWidth = Math.max(1, halfWidth * 2);
-            const viewHeight = Math.max(1, halfHeight * 2);
-            const viewMinX = centerX - viewWidth / 2;
-            const viewMinY = centerY - viewHeight / 2;
-
-            internals.viewBox = { minX: viewMinX, minY: viewMinY, width: viewWidth, height: viewHeight };
-
-            svg.setAttribute("viewBox", `${viewMinX} ${viewMinY} ${viewWidth} ${viewHeight}`);
-            overlay.setAttribute("x", String(viewMinX));
-            overlay.setAttribute("y", String(viewMinY));
-            overlay.setAttribute("width", String(viewWidth));
-            overlay.setAttribute("height", String(viewHeight));
+            onViewBoxChange?.({ prev: previous, next });
         },
         centerOf(coord: HexCoord) {
             const { r, c } = coord;
@@ -188,11 +162,10 @@ export function createHexScene(config: HexSceneConfig): HexScene {
         ensurePolys,
         setFill,
         getViewBox: () => {
-            if (!internals.bounds) {
+            if (!internals.viewBox) {
                 return { minX: 0, minY: 0, width: 0, height: 0 };
             }
-            const { minX, minY, maxX, maxY } = internals.bounds;
-            return { minX, minY, width: maxX - minX, height: maxY - minY };
+            return { ...internals.viewBox };
         },
         destroy: () => {
             polyByCoord.clear();

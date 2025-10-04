@@ -1,20 +1,16 @@
 // tests/core/hex-render-scene.test.ts
-// Exercises the SVG scene builder to ensure viewBox updates stay anchored while expanding bounds.
+// Verifies that the SVG scene notifies callers about viewBox changes when bounds expand.
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { createHexScene } from "../../src/core/hex-mapper/render/scene";
 
-const parseViewBox = (value: string | null) => {
-    if (!value) throw new Error("Expected viewBox attribute to be set");
-    const [minX, minY, width, height] = value.split(" ").map(Number);
-    return { minX, minY, width, height };
-};
-
 describe("createHexScene", () => {
-    it("keeps the viewBox center stable when expanding horizontally", () => {
+    it("emits viewBox change events for new polygons", () => {
         const host = document.createElement("div");
         document.body.appendChild(host);
+
+        const onViewBoxChange = vi.fn();
 
         const scene = createHexScene({
             host,
@@ -22,31 +18,28 @@ describe("createHexScene", () => {
             padding: 12,
             base: { r: 0, c: 0 },
             initialCoords: [{ r: 0, c: 0 }],
+            onViewBoxChange,
         });
 
-        const initialViewBox = parseViewBox(scene.svg.getAttribute("viewBox"));
-        const initialCenterX = initialViewBox.minX + initialViewBox.width / 2;
-        const initialCenterY = initialViewBox.minY + initialViewBox.height / 2;
+        onViewBoxChange.mockClear();
 
         scene.ensurePolys([
             { r: 0, c: 1 },
             { r: 0, c: -1 },
         ]);
 
-        const expandedViewBox = parseViewBox(scene.svg.getAttribute("viewBox"));
-        const expandedCenterX = expandedViewBox.minX + expandedViewBox.width / 2;
-        const expandedCenterY = expandedViewBox.minY + expandedViewBox.height / 2;
-
-        expect(expandedViewBox.width).toBeGreaterThan(initialViewBox.width);
-        expect(expandedViewBox.height).toBe(initialViewBox.height);
-        expect(expandedCenterX).toBeCloseTo(initialCenterX, 6);
-        expect(expandedCenterY).toBeCloseTo(initialCenterY, 6);
+        expect(onViewBoxChange).toHaveBeenCalledTimes(1);
+        const [{ prev, next }] = onViewBoxChange.mock.calls[0];
+        expect(prev).not.toBeNull();
+        expect(next.width).toBeGreaterThan(prev!.width);
+        expect(next.minX).toBeLessThanOrEqual(prev!.minX);
+        expect(next.width).toBeGreaterThan(0);
 
         scene.destroy();
         host.remove();
     });
 
-    it("keeps the viewBox center stable when expanding vertically", () => {
+    it("returns the latest viewBox snapshot", () => {
         const host = document.createElement("div");
         document.body.appendChild(host);
 
@@ -58,23 +51,14 @@ describe("createHexScene", () => {
             initialCoords: [{ r: 0, c: 0 }],
         });
 
-        const initialViewBox = parseViewBox(scene.svg.getAttribute("viewBox"));
-        const initialCenterX = initialViewBox.minX + initialViewBox.width / 2;
-        const initialCenterY = initialViewBox.minY + initialViewBox.height / 2;
+        const initial = scene.getViewBox();
+        expect(initial.width).toBeGreaterThan(0);
 
-        scene.ensurePolys([
-            { r: 1, c: 0 },
-            { r: -1, c: 0 },
-        ]);
+        scene.ensurePolys([{ r: 1, c: 0 }]);
+        const updated = scene.getViewBox();
 
-        const expandedViewBox = parseViewBox(scene.svg.getAttribute("viewBox"));
-        const expandedCenterX = expandedViewBox.minX + expandedViewBox.width / 2;
-        const expandedCenterY = expandedViewBox.minY + expandedViewBox.height / 2;
-
-        expect(expandedViewBox.height).toBeGreaterThan(initialViewBox.height);
-        expect(expandedViewBox.width).toBeGreaterThanOrEqual(initialViewBox.width);
-        expect(expandedCenterX).toBeCloseTo(initialCenterX, 6);
-        expect(expandedCenterY).toBeCloseTo(initialCenterY, 6);
+        expect(updated.width).toBeGreaterThan(initial.width);
+        expect(updated.minY).toBeLessThanOrEqual(initial.minY);
 
         scene.destroy();
         host.remove();

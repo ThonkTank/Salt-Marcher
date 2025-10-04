@@ -2,6 +2,8 @@
 export type CameraOptions = { minScale: number; maxScale: number; zoomSpeed: number };
 
 /** Mittlere Maustaste: Pan, Wheel/Touchpad: Zoom zum Cursor. */
+export type CameraState = { scale: number; tx: number; ty: number };
+
 export function attachCameraControls(
     svg: SVGSVGElement,
     contentG: SVGGElement,
@@ -90,7 +92,7 @@ export function attachCameraControls(
     window.addEventListener("blur", endPan);
 
     // Cleanup für späteres Unmounten
-    return () => {
+    const destroy = () => {
         for (const t of targets) {
             t.removeEventListener("wheel", onWheel as any);
             t.removeEventListener("pointerdown", onPointerDown as any);
@@ -101,4 +103,14 @@ export function attachCameraControls(
         }
         window.removeEventListener("blur", endPan as any);
     };
+
+    const getState = (): CameraState => ({ scale, tx, ty });
+    const setState = (state: CameraState) => {
+        scale = state.scale;
+        tx = state.tx;
+        ty = state.ty;
+        apply();
+    };
+
+    return { destroy, getState, setState };
 }
