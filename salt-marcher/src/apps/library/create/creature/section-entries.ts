@@ -3,8 +3,24 @@
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import type { StatblockData } from "../../core/creature-files";
 import { abilityMod, formatSigned, parseIntSafe } from "../shared/stat-utils";
-import { CREATURE_ABILITY_SELECTIONS, CREATURE_ENTRY_CATEGORIES, CREATURE_SAVE_OPTIONS } from "./presets";
+import {
+  CREATURE_ABILITY_SELECTIONS,
+  CREATURE_ENTRY_CATEGORIES,
+  CREATURE_SAVE_OPTIONS,
+} from "./presets";
+import type { CreatureEntryCategory } from "./presets";
 import type { SectionValidationRegistrar } from "./section-utils";
+
+type EntryFilter = CreatureEntryCategory | "all";
+
+const ENTRY_FILTER_OPTIONS: readonly { value: EntryFilter; label: string; hint: string }[] = [
+  { value: "all", label: "Alle", hint: "Alle Einträge anzeigen" },
+  { value: "trait", label: "Traits", hint: "Nur Eigenschaften anzeigen" },
+  { value: "action", label: "Actions", hint: "Nur Aktionen anzeigen" },
+  { value: "bonus", label: "Bonus", hint: "Nur Bonusaktionen anzeigen" },
+  { value: "reaction", label: "Reactions", hint: "Nur Reaktionen anzeigen" },
+  { value: "legendary", label: "Legendary", hint: "Nur legendäre Aktionen anzeigen" },
+] as const;
 
 export function collectEntryDependencyIssues(data: StatblockData): string[] {
   const issues: string[] = [];
@@ -50,12 +66,46 @@ export function mountEntriesSection(
   try { enhanceSelectToSearch(catSel, 'Such-dropdown…'); } catch {}
   const addEntryBtn = addBar.createEl("button", { text: "+ Eintrag" });
 
+  let activeFilter: EntryFilter = "all";
+  const filterBar = ctl.createDiv({
+    cls: "sm-cc-entry-filter",
+    attr: { role: "toolbar", "aria-label": "Eintragsliste filtern" },
+  });
+  const filterButtons = new Map<EntryFilter, HTMLButtonElement>();
+  const updateFilterButtons = () => {
+    for (const opt of ENTRY_FILTER_OPTIONS) {
+      const btn = filterButtons.get(opt.value);
+      if (!btn) continue;
+      const isActive = opt.value === activeFilter;
+      btn.setAttr("aria-pressed", isActive ? "true" : "false");
+      btn.toggleClass("is-active", isActive);
+    }
+  };
+  for (const opt of ENTRY_FILTER_OPTIONS) {
+    const btn = filterBar.createEl("button", {
+      text: opt.label,
+      attr: {
+        type: "button",
+        title: opt.hint,
+        "aria-label": opt.hint,
+        "aria-pressed": opt.value === activeFilter ? "true" : "false",
+      },
+    }) as HTMLButtonElement;
+    btn.onclick = () => {
+      activeFilter = opt.value;
+      updateFilterButtons();
+      render();
+    };
+    filterButtons.set(opt.value, btn);
+  }
+
   const host = ctl.createDiv();
   let focusIdx: number | null = null;
   const revalidate =
     registerValidation?.(() => collectEntryDependencyIssues(data)) ?? (() => []);
 
   const render = () => {
+    updateFilterButtons();
     host.empty();
     (data.entries as any[]).forEach((e, i) => {
       const box = host.createDiv({ cls: "sm-cc-skill-group" });
@@ -191,11 +241,24 @@ export function mountEntriesSection(
         e.text = (ta as HTMLTextAreaElement).value;
         revalidate();
       });
+      const isVisible = activeFilter === "all" || e.category === activeFilter;
+      box.toggleClass("sm-cc-entry-hidden", !isVisible);
+      (box.style as any).display = isVisible ? "" : "none";
+      box.setAttr("aria-hidden", isVisible ? "false" : "true");
     });
     revalidate();
   };
 
-  addEntryBtn.onclick = () => { (data.entries as any[]).unshift({ category: catSel.value as any, name: "" }); focusIdx = 0; render(); };
+  addEntryBtn.onclick = () => {
+    const category = catSel.value as CreatureEntryCategory;
+    (data.entries as any[]).unshift({ category: category as any, name: "" });
+    if (activeFilter !== "all" && activeFilter !== category) {
+      activeFilter = "all";
+      updateFilterButtons();
+    }
+    focusIdx = 0;
+    render();
+  };
   render();
 }
 
