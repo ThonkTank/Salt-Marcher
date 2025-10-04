@@ -40,8 +40,10 @@ export type StatblockData = {
     name: string;
     size?: string;
     type?: string;
+    typeTags?: string[];
     alignmentLawChaos?: string;
     alignmentGoodEvil?: string;
+    alignmentOverride?: string;
     ac?: string;
     initiative?: string;
     hp?: string;
@@ -92,14 +94,38 @@ function parseNum(v?: string): number | null { if (!v) return null; const m = St
 function abilityMod(score?: string): number | null { const n = parseNum(score); if (n == null || Number.isNaN(n)) return null; return Math.floor((n - 10) / 2); }
 function fmtSigned(n: number): string { return (n >= 0 ? "+" : "") + n; }
 const SKILL_TO_ABILITY: Record<string, keyof Pick<StatblockData, 'str'|'dex'|'int'|'wis'|'cha'|'con'>> = { Athletics: 'str', Acrobatics: 'dex', 'Sleight of Hand': 'dex', Stealth: 'dex', Arcana: 'int', History: 'int', Investigation: 'int', Nature: 'int', Religion: 'int', 'Animal Handling': 'wis', Insight: 'wis', Medicine: 'wis', Perception: 'wis', Survival: 'wis', Deception: 'cha', Intimidation: 'cha', Performance: 'cha', Persuasion: 'cha', };
-function composeAlignment(d: StatblockData): string | undefined { const a = d.alignmentLawChaos?.trim(); const b = d.alignmentGoodEvil?.trim(); if (!a && !b) return undefined; if ((a?.toLowerCase() === 'neutral') && (b?.toLowerCase() === 'neutral')) return 'Neutral'; return [a, b].filter(Boolean).join(' '); }
+function composeAlignment(d: StatblockData): string | undefined {
+    const override = d.alignmentOverride?.trim();
+    if (override) return override;
+    const a = d.alignmentLawChaos?.trim();
+    const b = d.alignmentGoodEvil?.trim();
+    if (!a && !b) return undefined;
+    if ((a?.toLowerCase() === "neutral") && (b?.toLowerCase() === "neutral")) return "Neutral";
+    return [a, b].filter(Boolean).join(" ");
+}
+
+function composeTypeLine(d: StatblockData): string | undefined {
+    const base = d.type?.trim();
+    const tags = (d.typeTags ?? []).map(tag => tag.trim()).filter(Boolean);
+    if (base && tags.length) return `${base} (${tags.join(", ")})`;
+    if (base) return base;
+    if (tags.length) return tags.join(", ");
+    return undefined;
+}
 
 function statblockToMarkdown(d: StatblockData): string {
-    const hdr = [d.size || "", d.type || "", composeAlignment(d) || ""].filter(Boolean).join(", ");
+    const identity = [d.size?.trim(), composeTypeLine(d)].filter(Boolean).join(" ");
+    const alignment = composeAlignment(d);
+    const header = [identity, alignment].filter(Boolean).join(", ");
     const name = d.name || "Unnamed Creature";
     const lines: string[] = [];
     lines.push("---"); lines.push("smType: creature"); lines.push(`name: "${name.replace(/"/g, '\\"')}"`);
-    if (d.size) lines.push(`size: "${d.size}"`); if (d.type) lines.push(`type: "${d.type}"`); const align = composeAlignment(d); if (align) lines.push(`alignment: "${align}"`);
+    if (d.size) lines.push(`size: "${d.size}"`);
+    if (d.type) lines.push(`type: "${d.type}"`);
+    const typeTagsYaml = yamlList((d.typeTags ?? []).map(tag => tag?.trim()).filter((tag): tag is string => Boolean(tag && tag.length)));
+    if (typeTagsYaml) lines.push(`type_tags: ${typeTagsYaml}`);
+    if (alignment) lines.push(`alignment: "${alignment}"`);
+    if (d.alignmentOverride) lines.push(`alignment_override: "${d.alignmentOverride.replace(/"/g, '\\"')}"`);
     if (d.ac) lines.push(`ac: "${d.ac}"`); if (d.initiative) lines.push(`initiative: "${d.initiative}"`); if (d.hp) lines.push(`hp: "${d.hp}"`); if (d.hitDice) lines.push(`hit_dice: "${d.hitDice}"`);
     const speeds = d.speeds;
     const walkSpeed = speeds?.walk?.distance;
@@ -134,7 +160,9 @@ function statblockToMarkdown(d: StatblockData): string {
     if (entries && entries.length) { const json = JSON.stringify(entries).replace(/"/g, '\\"'); lines.push(`entries_structured_json: "${json}"`); }
     if (d.spellsKnown && d.spellsKnown.length) { const json = JSON.stringify(d.spellsKnown).replace(/"/g, '\\"'); lines.push(`spells_known_json: "${json}"`); }
     lines.push("---\n");
-    lines.push(`# ${name}`); if (hdr) lines.push(hdr); lines.push("");
+    lines.push(`# ${name}`);
+    if (header) lines.push(`*${header}*`);
+    lines.push("");
     if (d.ac || d.initiative) lines.push(`AC ${d.ac ?? "-"}    Initiative ${d.initiative ?? "-"}`);
     if (d.hp || d.hitDice) lines.push(`HP ${d.hp ?? "-"}${d.hitDice ? ` (${d.hitDice})` : ""}`);
     let speedsLine: string[] = [];
