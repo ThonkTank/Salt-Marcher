@@ -12,7 +12,7 @@
 - `travel-guide/` beherbergt Controller (Playback, Interaction, Encounter-Gateway), die beim Lazy-Load des Modus nachgeladen werden.
 
 ## Integrationen & Beobachtungen
-- Alle Modi werden über Provider in `mode-registry/providers` geladen; IDs und Labels sind derzeit manuell in Modus- und Provider-Dateien gepflegt.
+- Alle Modi werden über die in `controller.ts` hinterlegte Deskriptor-Liste lazy geladen; IDs und Labels sind weiterhin manuell in den Modus-Dateien gepflegt.
 - Editor & Inspector verlassen sich auf `ToolManager`- und Hex-Persistenz-Helfer. Fehler werden bislang nur mit `console.error` geloggt und führen nicht zu UI-Hinweisen oder Telemetrie.
 - Travel Guide lädt Terrains, initialisiert Domain-Logik und Encounter-Synchronisation sequentiell. Schlägt ein Schritt fehl, bleibt der Modus ohne sichtbaren Hinweis oder Rückfallebene.
 - Die README dokumentiert Nutzerflüsse, verweist aber nicht auf technische Risiken wie Abort-Signale oder die Abhängigkeit von `travel/infra`.
@@ -26,4 +26,4 @@
 - Jede Modus-Fabrik exportiert `create<Name>Mode`, startet mit einem Kopfkommentar zum Nutzerziel und räumt registrierte Listener sowie DOM-Knoten in `onExit` konsequent auf.
 - Asynchrone Schritte prüfen `ctx.signal.aborted` oder das Lifecycle-Signal vor und nach Await-Punkten und melden Fehler sowohl im UI (Status/Notice) als auch per Logger/Telemetry.
 - Tool- und Persistenzfehler setzen Panel-Status, triggern definierte Telemetrie-Hooks und verlassen sich nicht ausschließlich auf `console.error`.
-- Mode-Metadaten (ID, Label, Capabilities) werden an einer Stelle gepflegt und beim Hinzufügen neuer Modi gegen Registry-/Provider-Kontrakte gespiegelt.
+- Mode-Metadaten (ID, Label, Capabilities) werden in `controller.ts` gepflegt und beim Hinzufügen neuer Modi gegen die Implementierung gespiegelt.

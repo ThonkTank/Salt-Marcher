@@ -9,7 +9,7 @@ import type {
     CartographerMode,
     CartographerModeLifecycleContext,
     HexCoord,
-} from "../presenter";
+} from "../controller";
 import { createModeLifecycle } from "./lifecycle";
 
 type InspectorUI = {

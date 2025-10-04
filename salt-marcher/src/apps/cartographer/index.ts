@@ -1,26 +1,21 @@
 // src/apps/cartographer/index.ts
 import { ItemView, WorkspaceLeaf, TFile } from "obsidian";
 import type { App } from "obsidian";
-import { CartographerPresenter } from "./presenter";
-import { provideCartographerModes } from "./mode-registry";
+import { CartographerController, type CartographerControllerCallbacks } from "./controller";
 
 export const VIEW_TYPE_CARTOGRAPHER = "cartographer-view";
 export const VIEW_CARTOGRAPHER = VIEW_TYPE_CARTOGRAPHER;
 
-const createProvideModes = () => {
-    return () => provideCartographerModes();
-};
-
 export class CartographerView extends ItemView {
-    presenter: CartographerPresenter;
+    controller: CartographerController;
+    readonly callbacks: CartographerControllerCallbacks;
     hostEl: HTMLElement | null = null;
     pendingFile: TFile | null = null;
 
     constructor(leaf: WorkspaceLeaf) {
         super(leaf);
-        this.presenter = new CartographerPresenter(this.app as App, {
-            provideModes: createProvideModes(),
-        });
+        this.controller = new CartographerController(this.app as App);
+        this.callbacks = this.controller.callbacks;
     }
 
     getViewType(): string {
@@ -37,7 +32,7 @@ export class CartographerView extends ItemView {
 
     setFile(file: TFile | null) {
         this.pendingFile = file;
-        void this.presenter.setFile(file ?? null);
+        void this.controller.setFile(file ?? null);
     }
 
     async onOpen(): Promise<void> {
@@ -48,11 +43,11 @@ export class CartographerView extends ItemView {
         this.hostEl = content.createDiv({ cls: "cartographer-host" });
 
         const fallbackFile = this.pendingFile ?? this.app.workspace.getActiveFile() ?? null;
-        await this.presenter.onOpen(this.hostEl, fallbackFile);
+        await this.controller.onOpen(this.hostEl, fallbackFile);
     }
 
     async onClose(): Promise<void> {
-        await this.presenter.onClose();
+        await this.controller.onClose();
         this.hostEl = null;
     }
 }

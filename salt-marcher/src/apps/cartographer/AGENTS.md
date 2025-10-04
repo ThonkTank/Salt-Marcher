@@ -1,21 +1,19 @@
 # Ziele
 - Liefert den zentralen Arbeitsbereich zum Erstellen, Inspizieren und Reisen über Hexkarten.
 - Orchestriert den Wechsel zwischen Arbeitsmodi sowie Datei-/Map-Management für alle Cartographer-Flows.
-- Stellt stabile Verträge für View-Shell, Presenter und Mode-Registry bereit, damit Tests und andere Apps gezielt integrieren können.
+- Stellt einen fokussierten Controller bereit, der Modi, Map-Management und UI-Rendering bündelt.
 
 # Aktueller Stand
 ## Strukturüberblick
-- `index.ts` registriert die `CartographerView`, kapselt die ItemView-Metadaten und verbindet Obsidian-Leaves mit dem Presenter.
-- `presenter.ts` verwaltet Lifecycle, Mode-Wechsel, Map-Rendering und die Anbindung an Shell, Map-Manager und Registry.
-- `mode-registry/` pflegt Provider für Travel-, Editor- und Inspector-Modus und erlaubt externe Erweiterungen.
-- `view-shell/` stellt das UI-Skelett (Header, Sidebar, Map-Container) sowie Ereignis-Callbacks für Presenter und Modi bereit.
+- `index.ts` registriert die `CartographerView`, kapselt die ItemView-Metadaten und verbindet Obsidian-Leaves mit dem Controller.
+- `controller.ts` hält aktives File, Karten-Handles und Modusstatus zusammen und rendert Header, Map und Sidebar direkt.
+- Der Controller verwaltet ein statisches Array aus Mode-Deskriptoren mit Lazy-Imports für Travel-, Editor- und Inspector-Modus.
 - `editor/` und `travel/` liefern die jeweiligen Tooling-, Playback- und Encounter-Integrationen.
 
 ## Integration & Beobachtungen
-- `CartographerPresenter` initialisiert seine Modi über `provideCartographerModes()` und hört via `subscribeToModeRegistry()` auf spätere Registry-Änderungen.
-- Schlägt das Laden der Registry fehl, fällt `createProvideModes()` auf ein leeres Array zurück – die View bleibt dann ohne Modi und liefert keine Nutzerhinweise.
-- Wiederholtes Öffnen der View ruft `onOpen()` erneut auf, ohne den Mode-Registry-Listener aus einem früheren Mount abzubestellen.
-- Map-Rendering zeigt Overlays bei fehlenden Hex-Blöcken oder Rendering-Fehlern, signalisiert Registry-Probleme jedoch nicht im UI.
+- `CartographerController` lädt Modi lazy aus den fest verdrahteten Deskriptoren und hält deren Handles für Tests bereit.
+- Fehlschläge beim Laden oder Rendern aktivieren eine Overlay-Notiz im Controller und erzeugen zusätzlich eine Obsidian-Notice.
+- Mode-Wechsel nutzen eigene AbortController, sodass lange laufende `onEnter`-/`onFileChange`-Routinen sauber abgebrochen werden können.
 
 # ToDo
 - keine offenen ToDos.

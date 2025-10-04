@@ -1,7 +1,7 @@
 // src/apps/cartographer/modes/travel-guide.ts
 // Komplettmodus für Reisen inkl. UI und Logik.
 import type { MapHeaderSaveMode } from "../../../ui/map-header";
-import type { CartographerMode, CartographerModeLifecycleContext } from "../presenter";
+import type { CartographerMode, CartographerModeLifecycleContext } from "../controller";
 import { loadTerrains } from "../../../core/terrain-store";
 import { setTerrains } from "../../../core/terrain";
 import { createSidebar, type Sidebar } from "../travel/ui/sidebar";

@@ -1,6 +1,6 @@
 // src/apps/cartographer/modes/lifecycle.ts
 // Teilt Lifecycle-Helfer für Cartographer-Modi.
-import type { CartographerModeLifecycleContext } from "../presenter";
+import type { CartographerModeLifecycleContext } from "../controller";
 
 export type ModeLifecycle = {
     bind: (ctx: CartographerModeLifecycleContext) => AbortSignal;

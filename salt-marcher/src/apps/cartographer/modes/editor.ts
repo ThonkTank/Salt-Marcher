@@ -6,7 +6,7 @@ import type {
     CartographerModeContext,
     CartographerModeLifecycleContext,
     HexCoord,
-} from "../presenter";
+} from "../controller";
 import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
 import { reportEditorToolIssue } from "../editor/editor-telemetry";
 import { createBrushTool } from "../editor/tools/terrain-brush/brush-options";
