@@ -80,11 +80,34 @@ export function createHexScene(config: HexSceneConfig): HexScene {
             internals.bounds = { ...next };
             return;
         }
-        const current = internals.bounds;
-        current.minX = Math.min(current.minX, next.minX);
-        current.minY = Math.min(current.minY, next.minY);
-        current.maxX = Math.max(current.maxX, next.maxX);
-        current.maxY = Math.max(current.maxY, next.maxY);
+
+        const previous = internals.bounds;
+        // Expand symmetrically around the previous center so that the map does not
+        // jump under the cursor when new polygons extend the bounds to one side.
+        const prevCenterX = (previous.minX + previous.maxX) / 2;
+        const prevCenterY = (previous.minY + previous.maxY) / 2;
+        const prevHalfWidth = (previous.maxX - previous.minX) / 2;
+        const prevHalfHeight = (previous.maxY - previous.minY) / 2;
+
+        const rawMinX = Math.min(previous.minX, next.minX);
+        const rawMaxX = Math.max(previous.maxX, next.maxX);
+        const rawMinY = Math.min(previous.minY, next.minY);
+        const rawMaxY = Math.max(previous.maxY, next.maxY);
+
+        const leftSpan = Math.max(0, prevCenterX - rawMinX);
+        const rightSpan = Math.max(0, rawMaxX - prevCenterX);
+        const topSpan = Math.max(0, prevCenterY - rawMinY);
+        const bottomSpan = Math.max(0, rawMaxY - prevCenterY);
+
+        const halfWidth = Math.max(prevHalfWidth, leftSpan, rightSpan);
+        const halfHeight = Math.max(prevHalfHeight, topSpan, bottomSpan);
+
+        internals.bounds = {
+            minX: prevCenterX - halfWidth,
+            maxX: prevCenterX + halfWidth,
+            minY: prevCenterY - halfHeight,
+            maxY: prevCenterY + halfHeight,
+        };
     }
 
     function addHex(coord: HexCoord): void {
