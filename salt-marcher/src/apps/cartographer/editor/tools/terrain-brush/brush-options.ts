@@ -8,6 +8,13 @@ import type { RenderHandles } from "../../../../../core/hex-mapper/hex-render";
 import type { HexOptions } from "../../../../../core/options";
 import { loadRegions } from "../../../../../core/regions-store";
 import { enhanceSelectToSearch } from "../../../../../ui/search-dropdown";
+import {
+    buildForm,
+    type FormButtonHandle,
+    type FormHintHandle,
+    type FormSelectHandle,
+    type FormSliderHandle,
+} from "../../../../../ui/form-builder";
 import type { HexCoord } from "../../../controller";
 
 const MANAGE_REGIONS_COMMAND_ID = "salt-marcher:open-library";
@@ -52,21 +59,27 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
     let fillSeq = 0;
     let circle: ReturnType<typeof attachBrushCircle> | null = null;
 
-    let radiusInput!: HTMLInputElement;
-    let regionSelect!: HTMLSelectElement;
-    let editRegionsBtn!: HTMLButtonElement;
-    let modeSelect!: HTMLSelectElement;
-
     let panelDisabled = false;
     let manageCommandAvailable = false;
 
+    let radiusControl: FormSliderHandle | null = null;
+    let regionControl: FormSelectHandle | null = null;
+    let modeControl: FormSelectHandle | null = null;
+    let manageButton: FormButtonHandle | null = null;
+    let inlineHint: FormHintHandle | null = null;
+    let manageHint: FormHintHandle | null = null;
+
     const setPanelDisabled = (disabled: boolean) => {
         panelDisabled = disabled;
-        root.toggleClass("is-disabled", disabled);
-        if (radiusInput) radiusInput.disabled = disabled;
-        if (regionSelect) regionSelect.disabled = disabled;
-        if (modeSelect) modeSelect.disabled = disabled;
-        if (editRegionsBtn) editRegionsBtn.disabled = disabled || !manageCommandAvailable;
+        if (disabled) {
+            root.classList.add("is-disabled");
+        } else {
+            root.classList.remove("is-disabled");
+        }
+        radiusControl?.setDisabled(disabled);
+        regionControl?.setDisabled(disabled);
+        modeControl?.setDisabled(disabled);
+        manageButton?.setDisabled(disabled || !manageCommandAvailable);
     };
 
     const updateStatus = (message: string) => {
@@ -77,55 +90,109 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
         }
     };
 
-    root.createEl("h3", { text: "Region Brush" });
-
     type HintTone = "info" | "loading" | "error" | "warning";
-    const inlineHint = root.createEl("p", { cls: "sm-inline-hint" });
-    inlineHint.style.display = "none";
+
+    const form = buildForm(root, {
+        sections: [
+            { kind: "header", text: "Region Brush" },
+            { kind: "hint", id: "inline", cls: "sm-inline-hint", hidden: true },
+            {
+                kind: "row",
+                label: "Radius:",
+                controls: [
+                    {
+                        kind: "slider",
+                        id: "radius",
+                        min: 1,
+                        max: 6,
+                        step: 1,
+                        value: state.radius,
+                        valueFormatter: (value) => String(value),
+                        onInput: ({ value }) => {
+                            state.radius = value;
+                            circle?.updateRadius(effectiveRadius());
+                        },
+                    },
+                ],
+            },
+            {
+                kind: "row",
+                label: "Region:",
+                controls: [
+                    {
+                        kind: "select",
+                        id: "region",
+                        options: [],
+                        enhance: (select) => enhanceSelectToSearch(select, "Search dropdown…"),
+                        onChange: ({ element }) => {
+                            state.region = element.value;
+                            const opt = element.selectedOptions[0] as HTMLOptionElement | undefined;
+                            state.terrain = opt?.dataset?.terrain ?? "";
+                        },
+                    },
+                    {
+                        kind: "button",
+                        id: "manage",
+                        label: "Manage…",
+                    },
+                ],
+            },
+            { kind: "hint", id: "manageHint", cls: "sm-inline-hint", hidden: true },
+            {
+                kind: "row",
+                label: "Mode:",
+                controls: [
+                    {
+                        kind: "select",
+                        id: "mode",
+                        value: state.mode,
+                        options: [
+                            { label: "Paint", value: "paint" },
+                            { label: "Erase", value: "erase" },
+                        ],
+                        enhance: (select) => enhanceSelectToSearch(select, "Search dropdown…"),
+                        onChange: ({ element }) => {
+                            state.mode = element.value as "paint" | "erase";
+                        },
+                    },
+                ],
+            },
+        ],
+    });
+
+    radiusControl = form.getControl("radius") as FormSliderHandle;
+    regionControl = form.getControl("region") as FormSelectHandle;
+    modeControl = form.getControl("mode") as FormSelectHandle;
+    manageButton = form.getControl("manage") as FormButtonHandle;
+    inlineHint = form.getHint("inline");
+    manageHint = form.getHint("manageHint");
+
     const applyInlineHint = (details: { text: string; tone: HintTone } | null) => {
-        if (!details || !details.text) {
-            inlineHint.style.display = "none";
-            inlineHint.empty();
-            inlineHint.removeAttribute("data-tone");
-            return;
-        }
-        inlineHint.style.display = "";
-        inlineHint.setText(details.text);
-        inlineHint.setAttr("data-tone", details.tone);
+        inlineHint?.set(details ? { text: details.text, tone: details.tone } : null);
     };
-
-    const radiusRow = root.createDiv({ cls: "sm-row" });
-    radiusRow.createEl("label", { text: "Radius:" });
-    radiusInput = radiusRow.createEl("input", {
-        attr: { type: "range", min: "1", max: "6", step: "1" },
-    }) as HTMLInputElement;
-    radiusInput.value = String(state.radius);
-    const radiusVal = radiusRow.createEl("span", { text: radiusInput.value });
-
-    radiusInput.oninput = () => {
-        state.radius = Number(radiusInput.value);
-        radiusVal.textContent = radiusInput.value;
-        circle?.updateRadius(effectiveRadius());
-    };
-
-    const regionRow = root.createDiv({ cls: "sm-row" });
-    regionRow.createEl("label", { text: "Region:" });
-    regionSelect = regionRow.createEl("select") as HTMLSelectElement;
-    enhanceSelectToSearch(regionSelect, "Search dropdown…");
-
-    editRegionsBtn = regionRow.createEl("button", { text: "Manage…" });
-    const manageHint = root.createEl("p", { cls: "sm-inline-hint" });
-    manageHint.style.display = "none";
     const applyManageHint = (details: { text: string; tone: HintTone } | null) => {
-        if (!details || !details.text) {
-            manageHint.style.display = "none";
-            manageHint.empty();
-            manageHint.removeAttribute("data-tone");
+        manageHint?.set(details ? { text: details.text, tone: details.tone } : null);
+    };
+
+    const handleManageClick = () => {
+        if (!manageCommandAvailable) {
+            updateStatus("The Library command is unavailable. Follow the manual steps below to add regions.");
             return;
         }
-        manageHint.style.display = "";
-        manageHint.setText(details.text);
-        manageHint.setAttr("data-tone", details.tone);
+
+        try {
+            const result = (ctx.app as any).commands?.executeCommandById?.(MANAGE_REGIONS_COMMAND_ID);
+            if (result instanceof Promise) {
+                result.catch((err: unknown) => handleManageError(err));
+                updateStatus("Opening the Library to manage regions…");
+            } else if (result === false) {
+                handleManageError();
+            } else {
+                updateStatus("Opening the Library to manage regions…");
+            }
+        } catch (err) {
+            handleManageError(err);
+        }
     };
 
     const refreshManageCommandAvailability = () => {
@@ -133,8 +200,10 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
         manageCommandAvailable = Boolean(
             commandsApi?.executeCommandById && commandsApi?.commands?.[MANAGE_REGIONS_COMMAND_ID]
         );
-        editRegionsBtn.disabled = panelDisabled || !manageCommandAvailable;
-        editRegionsBtn.toggleClass("is-missing-command", !manageCommandAvailable);
+        manageButton?.setDisabled(panelDisabled || !manageCommandAvailable);
+        if (manageButton) {
+            manageButton.element.classList.toggle("is-missing-command", !manageCommandAvailable);
+        }
         if (!manageCommandAvailable) {
             applyManageHint({
                 text: "The “Open Library” command is unavailable. Open the Library view from the ribbon (book icon) and add Region entries under Library → Regions, then refresh this list.",
@@ -156,39 +225,11 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
         updateStatus("Failed to open the Library command. Check the console for details.");
     };
 
-    editRegionsBtn.onclick = () => {
-        if (!manageCommandAvailable) {
-            updateStatus("The Library command is unavailable. Follow the manual steps below to add regions.");
-            return;
-        }
-
-        try {
-            const result = (ctx.app as any).commands?.executeCommandById?.(MANAGE_REGIONS_COMMAND_ID);
-            if (result instanceof Promise) {
-                result.catch((err: unknown) => handleManageError(err));
-                updateStatus("Opening the Library to manage regions…");
-            } else if (result === false) {
-                handleManageError();
-            } else {
-                updateStatus("Opening the Library to manage regions…");
-            }
-        } catch (err) {
-            handleManageError(err);
-        }
-    };
+    if (manageButton) {
+        manageButton.element.addEventListener("click", handleManageClick);
+    }
 
     refreshManageCommandAvailability();
-
-    const modeRow = root.createDiv({ cls: "sm-row" });
-    modeRow.createEl("label", { text: "Mode:" });
-    modeSelect = modeRow.createEl("select") as HTMLSelectElement;
-    modeSelect.createEl("option", { text: "Paint", value: "paint" });
-    modeSelect.createEl("option", { text: "Erase", value: "erase" });
-    modeSelect.value = state.mode;
-    modeSelect.onchange = () => {
-        state.mode = modeSelect.value as "paint" | "erase";
-    };
-    enhanceSelectToSearch(modeSelect, "Search dropdown…");
 
     const fillOptions = async (reason: "initial" | "refresh") => {
         const seq = ++fillSeq;
@@ -205,7 +246,7 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
         } catch (err) {
             console.error("[terrain-brush] failed to load regions", err);
             if (seq === fillSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
-                regionSelect.empty();
+                regionControl?.setOptions([]);
                 state.region = "";
                 state.terrain = "";
                 applyInlineHint({
@@ -226,30 +267,36 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
             return;
         }
 
-        regionSelect.empty();
-        regionSelect.createEl("option", { text: "(none)", value: "" });
+        regionControl?.setOptions([
+            { label: "(none)", value: "" },
+            ...regions.map((r) => ({
+                label: r.name || "(unnamed)",
+                value: r.name ?? "",
+                data: r.terrain ? { terrain: r.terrain } : undefined,
+            })),
+        ]);
+
+        const regionSelect = regionControl?.element;
+        if (!regionSelect) return;
 
         let matchedTerrain = state.terrain;
         let matchedRegion = state.region;
         let preservedSelection = false;
 
-        for (const r of regions) {
-            const value = r.name ?? "";
-            const label = r.name || "(unnamed)";
-            const opt = regionSelect.createEl("option", { text: label, value });
-            if (r.terrain) opt.dataset.terrain = r.terrain;
-            if (value === state.region && value) {
-                opt.selected = true;
-                matchedRegion = value;
+        for (const opt of Array.from(regionSelect.options)) {
+            if (!opt.value) continue;
+            if (opt.value === state.region) {
+                matchedRegion = opt.value;
                 matchedTerrain = opt.dataset.terrain ?? "";
                 preservedSelection = true;
+                break;
             }
         }
 
         if (state.region && !preservedSelection) {
             state.region = "";
             state.terrain = "";
-            regionSelect.value = "";
+            regionControl.setValue("");
             applyInlineHint({
                 text: "The previously selected region is no longer available and was cleared.",
                 tone: "warning",
@@ -258,7 +305,7 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
         } else {
             state.region = matchedRegion;
             state.terrain = matchedTerrain;
-            regionSelect.value = matchedRegion;
+            regionControl.setValue(matchedRegion);
             if (regions.length === 0) {
                 applyInlineHint({
                     text: "No regions found. Open the Library (Manage… button or ribbon icon) and add Region entries before painting.",
@@ -273,12 +320,6 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
     };
 
     void fillOptions("initial");
-
-    regionSelect.onchange = () => {
-        state.region = regionSelect.value;
-        const opt = regionSelect.selectedOptions[0] as HTMLOptionElement | undefined;
-        state.terrain = opt?.dataset?.terrain ?? "";
-    };
 
     const workspace = ctx.app.workspace as any;
     const unsubscribe: Array<() => void> = [];
@@ -317,13 +358,15 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
             }
         });
         unsubscribe.length = 0;
-        radiusInput.oninput = null;
-        regionSelect.onchange = null;
-        modeSelect.onchange = null;
-        editRegionsBtn.onclick = null;
+        if (manageButton) {
+            manageButton.element.removeEventListener("click", handleManageClick);
+        }
+        form.destroy();
         circle?.destroy();
         circle = null;
-        root.empty();
+        while (root.firstChild) {
+            root.removeChild(root.firstChild);
+        }
     };
 
     const handleHexClick = async (rc: HexCoord): Promise<boolean> => {

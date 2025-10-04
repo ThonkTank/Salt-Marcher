@@ -11,13 +11,21 @@ import type {
     HexCoord,
 } from "../controller";
 import { createModeLifecycle } from "./lifecycle";
+import {
+    buildForm,
+    type FormBuilderInstance,
+    type FormSelectHandle,
+    type FormStatusHandle,
+    type FormTextareaHandle,
+} from "../../../ui/form-builder";
 
 type InspectorUI = {
     panel: HTMLElement | null;
+    form: FormBuilderInstance<"file" | "terrain" | "note", never, never, "message"> | null;
     fileLabel: HTMLElement | null;
-    message: HTMLElement | null;
-    terrain: HTMLSelectElement | null;
-    note: HTMLTextAreaElement | null;
+    message: FormStatusHandle | null;
+    terrain: FormSelectHandle | null;
+    note: FormTextareaHandle | null;
 };
 
 type InspectorState = {
@@ -30,6 +38,7 @@ type InspectorState = {
 export function createInspectorMode(): CartographerMode {
     let ui: InspectorUI = {
         panel: null,
+        form: null,
         fileLabel: null,
         message: null,
         terrain: null,
@@ -55,24 +64,20 @@ export function createInspectorMode(): CartographerMode {
     };
 
     const resetInputs = () => {
-        if (ui.terrain) {
-            ui.terrain.value = "";
-            ui.terrain.disabled = true;
-        }
-        if (ui.note) {
-            ui.note.value = "";
-            ui.note.disabled = true;
-        }
+        ui.terrain?.setValue("");
+        ui.terrain?.setDisabled(true);
+        ui.note?.setValue("");
+        ui.note?.setDisabled(true);
     };
 
     const updateMessage = () => {
         if (!ui.message) return;
         if (!state.file || !state.handles) {
-            ui.message.setText(state.file ? "Karte wird geladen …" : "Keine Karte ausgewählt.");
+            ui.message.set({ message: state.file ? "Karte wird geladen …" : "Keine Karte ausgewählt.", tone: "info" });
         } else if (!state.selection) {
-            ui.message.setText("Hex anklicken, um Terrain & Notiz zu bearbeiten.");
+            ui.message.set({ message: "Hex anklicken, um Terrain & Notiz zu bearbeiten.", tone: "info" });
         } else {
-            ui.message.setText(`Hex r${state.selection.r}, c${state.selection.c}`);
+            ui.message.set({ message: `Hex r${state.selection.r}, c${state.selection.c}`, tone: "info" });
         }
     };
 
@@ -83,7 +88,7 @@ export function createInspectorMode(): CartographerMode {
 
     const updatePanelState = () => {
         const hasMap = !!state.file && !!state.handles;
-        ui.panel?.toggleClass("is-disabled", !hasMap);
+        ui.panel?.classList.toggle("is-disabled", !hasMap);
         if (!hasMap) {
             state.selection = null;
             resetInputs();
@@ -100,8 +105,8 @@ export function createInspectorMode(): CartographerMode {
         clearSaveTimer();
         state.saveTimer = window.setTimeout(async () => {
             if (ctx.signal.aborted) return;
-            const terrain = ui.terrain?.value ?? "";
-            const note = ui.note?.value ?? "";
+            const terrain = ui.terrain?.getValue() ?? "";
+            const note = ui.note?.getValue() ?? "";
             try {
                 await saveTile(ctx.app, file, state.selection!, { terrain, note });
             } catch (err) {
@@ -128,15 +133,17 @@ export function createInspectorMode(): CartographerMode {
             data = null;
         }
         if (ctx.signal.aborted) return;
-        if (ui.terrain) {
-            ui.terrain.value = data?.terrain ?? "";
-            ui.terrain.disabled = false;
-        }
-        if (ui.note) {
-            ui.note.value = data?.note ?? "";
-            ui.note.disabled = false;
-        }
+        ui.terrain?.setValue(data?.terrain ?? "");
+        ui.terrain?.setDisabled(false);
+        ui.note?.setValue(data?.note ?? "");
+        ui.note?.setDisabled(false);
         updateMessage();
+    };
+
+    const clearHost = (host: HTMLElement) => {
+        while (host.firstChild) {
+            host.removeChild(host.firstChild);
+        }
     };
 
     return {
@@ -144,33 +151,58 @@ export function createInspectorMode(): CartographerMode {
         label: "Inspector",
         async onEnter(ctx: CartographerModeLifecycleContext) {
             lifecycle.bind(ctx);
-            ui = { panel: null, fileLabel: null, message: null, terrain: null, note: null };
+            ui = { panel: null, form: null, fileLabel: null, message: null, terrain: null, note: null };
             state = { ...state, selection: null };
 
-            ctx.sidebarHost.empty();
-            ui.panel = ctx.sidebarHost.createDiv({ cls: "sm-cartographer__panel sm-cartographer__panel--inspector" });
-            ui.panel.createEl("h3", { text: "Inspektor" });
-            ui.fileLabel = ui.panel.createEl("div", { cls: "sm-cartographer__panel-file" });
+            clearHost(ctx.sidebarHost);
+            ui.panel = document.createElement("div");
+            ui.panel.className = "sm-cartographer__panel sm-cartographer__panel--inspector";
+            ctx.sidebarHost.appendChild(ui.panel);
 
-            const messageRow = ui.panel.createEl("div", { cls: "sm-cartographer__panel-info" });
-            ui.message = messageRow;
+            ui.form = buildForm(ui.panel, {
+                sections: [
+                    { kind: "header", text: "Inspektor" },
+                    { kind: "static", id: "file", cls: "sm-cartographer__panel-file" },
+                    { kind: "status", id: "message", cls: "sm-cartographer__panel-info" },
+                    {
+                        kind: "row",
+                        label: "Terrain:",
+                        rowCls: "sm-cartographer__panel-row",
+                        controls: [
+                            {
+                                kind: "select",
+                                id: "terrain",
+                                options: Object.keys(TERRAIN_COLORS).map((key) => ({
+                                    value: key,
+                                    label: key || "(leer)",
+                                })),
+                                disabled: true,
+                                enhance: (select) => enhanceSelectToSearch(select, "Such-dropdown…"),
+                                onChange: () => scheduleSave(ctx),
+                            },
+                        ],
+                    },
+                    {
+                        kind: "row",
+                        label: "Notiz:",
+                        rowCls: "sm-cartographer__panel-row",
+                        controls: [
+                            {
+                                kind: "textarea",
+                                id: "note",
+                                rows: 6,
+                                disabled: true,
+                                onInput: () => scheduleSave(ctx),
+                            },
+                        ],
+                    },
+                ],
+            });
 
-            const terrRow = ui.panel.createDiv({ cls: "sm-cartographer__panel-row" });
-            terrRow.createEl("label", { text: "Terrain:" });
-            ui.terrain = terrRow.createEl("select") as HTMLSelectElement;
-            for (const key of Object.keys(TERRAIN_COLORS)) {
-                const opt = ui.terrain.createEl("option", { text: key || "(leer)" }) as HTMLOptionElement;
-                opt.value = key;
-            }
-            enhanceSelectToSearch(ui.terrain, 'Such-dropdown…');
-            ui.terrain.disabled = true;
-            ui.terrain.onchange = () => scheduleSave(ctx);
-
-            const noteRow = ui.panel.createDiv({ cls: "sm-cartographer__panel-row" });
-            noteRow.createEl("label", { text: "Notiz:" });
-            ui.note = noteRow.createEl("textarea", { attr: { rows: "6" } }) as HTMLTextAreaElement;
-            ui.note.disabled = true;
-            ui.note.oninput = () => scheduleSave(ctx);
+            ui.fileLabel = ui.form.getElement("file");
+            ui.message = ui.form.getStatus("message");
+            ui.terrain = ui.form.getControl("terrain") as FormSelectHandle | null;
+            ui.note = ui.form.getControl("note") as FormTextareaHandle | null;
 
             updateFileLabel();
             updatePanelState();
@@ -178,8 +210,9 @@ export function createInspectorMode(): CartographerMode {
         async onExit(ctx: CartographerModeLifecycleContext) {
             lifecycle.bind(ctx);
             clearSaveTimer();
+            ui.form?.destroy();
             ui.panel?.remove();
-            ui = { panel: null, fileLabel: null, message: null, terrain: null, note: null };
+            ui = { panel: null, form: null, fileLabel: null, message: null, terrain: null, note: null };
             state = { file: null, handles: null, selection: null, saveTimer: null };
             lifecycle.reset();
         },

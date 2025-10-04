@@ -1,6 +1,6 @@
 // salt-marcher/tests/cartographer/editor/editor-mode.test.ts
 // Überprüft den Editor-Modus auf DOM-Aufbau und Brush-Interaktionen.
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { App, TFile } from "obsidian";
 import type { CartographerModeLifecycleContext, HexCoord } from "../../../src/apps/cartographer/presenter";
 import type { RenderHandles } from "../../../src/core/hex-mapper/hex-render";
@@ -39,63 +39,6 @@ vi.mock("../../../src/apps/cartographer/editor/tools/brush-circle", () => ({
 }));
 
 import { createEditorMode } from "../../../src/apps/cartographer/modes/editor";
-
-const ensureObsidianDomHelpers = () => {
-    const proto = HTMLElement.prototype as any;
-    if (!proto.createEl) {
-        proto.createEl = function (tag: string, options?: { text?: string; cls?: string; attr?: Record<string, string> }) {
-            const el = document.createElement(tag);
-            if (options?.text) el.textContent = options.text;
-            if (options?.cls) {
-                for (const cls of options.cls.split(/\s+/).filter(Boolean)) {
-                    el.classList.add(cls);
-                }
-            }
-            if (options?.attr) {
-                for (const [key, value] of Object.entries(options.attr)) {
-                    el.setAttribute(key, value);
-                }
-            }
-            this.appendChild(el);
-            return el;
-        };
-    }
-    if (!proto.createDiv) {
-        proto.createDiv = function (options?: { text?: string; cls?: string; attr?: Record<string, string> }) {
-            return this.createEl("div", options);
-        };
-    }
-    if (!proto.empty) {
-        proto.empty = function () {
-            while (this.firstChild) {
-                this.removeChild(this.firstChild);
-            }
-            return this;
-        };
-    }
-    if (!proto.toggleClass) {
-        proto.toggleClass = function (cls: string, force?: boolean) {
-            this.classList.toggle(cls, force);
-            return this;
-        };
-    }
-    if (!proto.setText) {
-        proto.setText = function (text: string) {
-            this.textContent = text;
-            return this;
-        };
-    }
-    if (!proto.setAttr) {
-        proto.setAttr = function (name: string, value: string) {
-            this.setAttribute(name, value);
-            return this;
-        };
-    }
-};
-
-beforeAll(() => {
-    ensureObsidianDomHelpers();
-});
 
 beforeEach(() => {
     vi.clearAllMocks();
