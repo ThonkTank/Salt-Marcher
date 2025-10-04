@@ -57,4 +57,14 @@ describe("terrain schema validation", () => {
         expect(TERRAIN_COLORS.Hochebene).toBe("#333333");
         expect(TERRAIN_SPEEDS.Hochebene).toBe(1);
     });
+
+    it("normalises stray punctuation in stored color values", () => {
+        const schema = validateTerrainSchema({
+            Moor: { color: ": : : transparent", speed: 0.8 },
+            Steppe: { color: "'#123456'", speed: 0.9 },
+        });
+
+        expect(schema.Moor.color).toBe("transparent");
+        expect(schema.Steppe.color).toBe("#123456");
+    });
 });
