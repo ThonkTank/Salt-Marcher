@@ -33,6 +33,7 @@ export function mountTokenEditor(
   const addLabel = options.addButtonLabel ?? "+";
 
   const setting = new Setting(parent).setName(title);
+  setting.settingEl.addClass("sm-cc-setting", "sm-cc-setting--show-name", "sm-cc-setting--token-editor");
   let inputEl: HTMLInputElement | undefined;
   let renderChips: () => void = () => {};
 
@@ -47,7 +48,6 @@ export function mountTokenEditor(
   setting.addText((t) => {
     t.setPlaceholder(placeholder);
     inputEl = t.inputEl;
-    t.inputEl.style.minWidth = "260px";
     t.inputEl.addEventListener("keydown", (e: KeyboardEvent) => {
       if (e.key === "Enter") {
         commitValue((inputEl?.value ?? "").trim());

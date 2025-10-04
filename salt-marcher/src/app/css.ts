@@ -269,42 +269,52 @@ const editorLayoutsCss = `
 .sm-cc-modal-footer button { min-width:120px; }
 
 /* Creature Creator – Basics Section */
-.sm-cc-basics {
-    display: grid;
-    gap: 1rem;
-}
-.sm-cc-basics--classification,
-.sm-cc-basics--vitals {
-    grid-template-columns: repeat(2, minmax(260px, 1fr));
-    align-items: stretch;
-}
-.sm-cc-basics__group {
-    display: flex;
-    flex-direction: column;
-    gap: .75rem;
-    padding: .85rem .95rem 1rem;
-    border-radius: 12px;
+.sm-cc-card--basics {
     border: 1px solid var(--background-modifier-border);
+    border-radius: 12px;
     background: color-mix(in srgb, var(--background-secondary) 78%, transparent);
-    box-shadow: 0 4px 14px rgba(15, 23, 42, .05);
+    box-shadow: 0 6px 18px rgba(15, 23, 42, .05);
 }
-.sm-cc-basics__subtitle {
-    margin: 0;
+.sm-cc-card--basics + .sm-cc-card--basics {
+    margin-top: 1.1rem;
+}
+.sm-cc-card--basics .sm-cc-card__head {
+    padding: .85rem .95rem .4rem;
+}
+.sm-cc-card--basics .sm-cc-card__title {
+    font-size: .95rem;
+    letter-spacing: .02em;
+}
+.sm-cc-card--basics .sm-cc-card__subtitle {
+    margin-top: .35rem;
     font-size: .78rem;
-    letter-spacing: .08em;
+    letter-spacing: .04em;
     text-transform: uppercase;
     color: var(--text-muted);
+}
+.sm-cc-card__body--basics {
+    display: flex;
+    flex-direction: column;
+    gap: 1.35rem;
+    padding: .85rem .95rem 1.15rem;
+}
+.sm-cc-card__section--basics {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 .sm-cc-field-grid {
     display: grid;
     gap: .75rem;
-    grid-template-columns: repeat(2, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
-.sm-cc-field-grid--identity { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
-.sm-cc-field-grid--summary { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
-.sm-cc-field-grid--classification { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
-.sm-cc-field-grid--vitals { grid-template-columns: repeat(2, minmax(180px, 1fr)); }
-.sm-cc-field-grid--speeds { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+.sm-cc-field-grid--basics {
+    gap: 1rem;
+}
+.sm-cc-field-grid--summary { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.sm-cc-field-grid--classification { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.sm-cc-field-grid--vitals { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.sm-cc-field-grid--speeds { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
 .sm-cc-setting.setting-item {
     border: none;
     padding: 0;
@@ -314,7 +324,7 @@ const editorLayoutsCss = `
 .sm-cc-setting .setting-item-info { display: none; }
 .sm-cc-setting .setting-item-name {
     font-weight: 600;
-    font-size: .9em;
+    font-size: .88rem;
     color: var(--text-muted);
 }
 .sm-cc-setting .setting-item-control {
@@ -334,6 +344,21 @@ const editorLayoutsCss = `
     text-transform: uppercase;
 }
 .sm-cc-setting--span-2 { grid-column: 1 / -1; }
+.sm-cc-setting--stack .setting-item-control {
+    gap: .6rem;
+}
+.sm-cc-setting--token-editor .setting-item-control {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+.sm-cc-setting--token-editor .setting-item-control input {
+    flex: 1 1 240px;
+    min-width: 200px;
+}
+.sm-cc-setting--token-editor .setting-item-control button {
+    align-self: flex-start;
+}
 
 .sm-cc-input {
     width: 100%;
@@ -401,7 +426,7 @@ const editorLayoutsCss = `
 .sm-cc-speeds-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: .85rem;
+    gap: 1rem;
 }
 @media (max-width: 680px) {
     .sm-cc-speeds-grid { grid-template-columns: minmax(0, 1fr); }

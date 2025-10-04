@@ -91,6 +91,7 @@ export function createFormCard(parent: HTMLElement, options: FormCardOptions): F
 export interface FieldGridOptions {
   variant?: string;
   className?: string | string[];
+  minColumnWidth?: string;
 }
 
 export interface FieldSettingOptions {
@@ -111,6 +112,9 @@ export function createFieldGrid(parent: HTMLElement, options?: FieldGridOptions)
   }
 
   const grid = parent.createDiv({ cls: classes.join(" ") });
+  if (options?.minColumnWidth) {
+    grid.style.gridTemplateColumns = `repeat(auto-fit, minmax(${options.minColumnWidth}, 1fr))`;
+  }
 
   const createSetting = (label: string, settingOptions?: FieldSettingOptions) => {
     const setting = new Setting(grid).setName(label);
