@@ -4,11 +4,26 @@ import type { CleanupFn, ToolContext, ToolManager as ToolManagerContract, ToolMo
 
 const yieldMicrotask = () => Promise.resolve();
 
+type ToolErrorStage =
+    | "resolve"
+    | "mount-panel"
+    | "activate"
+    | "render"
+    | "deactivate"
+    | "cleanup";
+
 type ToolManagerOptions = {
     getContext(): ToolContext | null;
     getPanelHost(): HTMLElement | null;
     getLifecycleSignal(): AbortSignal | null;
     onToolChanged?(tool: ToolModule | null): void;
+    onToolError?(options: { stage: ToolErrorStage; tool: ToolModule | null; error: unknown; toolId: string }): void;
+    onToolFallback?(options: {
+        stage: "resolve" | "mount-panel";
+        requestedId: string;
+        fallback: ToolModule | null;
+        error: unknown;
+    }): void;
 };
 
 type ActiveToolState = {
@@ -40,25 +55,76 @@ export function createToolManager(
                 active.module.onDeactivate?.(ctx);
             } catch (err) {
                 console.error("[tool-manager] onDeactivate failed", err);
+                options.onToolError?.({
+                    stage: "deactivate",
+                    tool: active.module,
+                    error: err,
+                    toolId: active.module.id,
+                });
             }
         }
         try {
             (active.cleanup ?? SAFE_CLEANUP)();
         } catch (err) {
             console.error("[tool-manager] cleanup failed", err);
+            options.onToolError?.({
+                stage: "cleanup",
+                tool: active.module,
+                error: err,
+                toolId: active.module.id,
+            });
         }
         active = null;
         options.onToolChanged?.(null);
     };
 
-    const switchTo = async (id: string): Promise<void> => {
+    const emitToolError = (
+        stage: ToolErrorStage,
+        error: unknown,
+        tool: ToolModule | null,
+        requestedId: string
+    ) => {
+        const toolId = tool?.id ?? requestedId;
+        options.onToolError?.({ stage, tool, error, toolId });
+    };
+
+    const attemptSwitch = async (requestedId: string, attempted: Set<string>): Promise<void> => {
         const ctx = options.getContext();
         const host = options.getPanelHost();
         if (!ctx || !host || tools.length === 0) {
+            const error = !ctx
+                ? new Error("Tool context is unavailable")
+                : !host
+                ? new Error("Tool panel host is missing")
+                : new Error("No tools have been registered");
+            emitToolError("resolve", error, null, requestedId);
             return;
         }
 
-        const next = tools.find((tool) => tool.id === id) ?? tools[0];
+        let id = requestedId;
+        let next = tools.find((tool) => tool.id === id) ?? null;
+        if (!next) {
+            const fallback = tools[0] ?? null;
+            const error = new Error(`Tool with id "${requestedId}" is not registered`);
+            emitToolError("resolve", error, null, requestedId);
+            options.onToolFallback?.({
+                stage: "resolve",
+                requestedId,
+                fallback,
+                error,
+            });
+            if (!fallback) {
+                return;
+            }
+            id = fallback.id;
+            next = fallback;
+        }
+
+        if (attempted.has(id)) {
+            return;
+        }
+        attempted.add(id);
+
         if (active?.module === next && !switchController) {
             return;
         }
@@ -79,12 +145,28 @@ export function createToolManager(
         }
 
         let cleanup: CleanupFn | null = null;
+        let encounteredError = false;
         try {
             const result = next.mountPanel(host, ctx);
             cleanup = typeof result === "function" ? result : null;
         } catch (err) {
             console.error("[tool-manager] mountPanel failed", err);
             cleanup = null;
+            encounteredError = true;
+            emitToolError("mount-panel", err, next, id);
+            const fallback = tools.find((tool) => tool !== next && !attempted.has(tool.id)) ?? null;
+            options.onToolFallback?.({
+                stage: "mount-panel",
+                requestedId: id,
+                fallback,
+                error: err,
+            });
+            if (fallback) {
+                controller.abort();
+                switchController = null;
+                await attemptSwitch(fallback.id, attempted);
+                return;
+            }
         }
 
         await yieldMicrotask();
@@ -93,16 +175,34 @@ export function createToolManager(
                 (cleanup ?? SAFE_CLEANUP)();
             } catch (err) {
                 console.error("[tool-manager] cleanup failed", err);
+                emitToolError("cleanup", err, next, id);
             }
             host.empty();
             switchController = null;
             return;
         }
 
-        try {
-            next.onActivate?.(ctx);
-        } catch (err) {
-            console.error("[tool-manager] onActivate failed", err);
+        if (!encounteredError) {
+            try {
+                next.onActivate?.(ctx);
+            } catch (err) {
+                console.error("[tool-manager] onActivate failed", err);
+                encounteredError = true;
+                emitToolError("activate", err, next, id);
+            }
+        }
+
+        if (encounteredError) {
+            try {
+                (cleanup ?? SAFE_CLEANUP)();
+            } catch (err) {
+                console.error("[tool-manager] cleanup failed", err);
+                emitToolError("cleanup", err, next, id);
+            }
+            host.empty();
+            switchController = null;
+            options.onToolChanged?.(null);
+            return;
         }
 
         active = { module: next, cleanup };
@@ -113,12 +213,17 @@ export function createToolManager(
                 next.onMapRendered?.(ctx);
             } catch (err) {
                 console.error("[tool-manager] onMapRendered failed", err);
+                emitToolError("render", err, next, id);
             }
         }
 
         if (switchController === controller) {
             switchController = null;
         }
+    };
+
+    const switchTo = async (id: string): Promise<void> => {
+        await attemptSwitch(id, new Set());
     };
 
     const notifyMapRendered = () => {
@@ -131,6 +236,7 @@ export function createToolManager(
             active.module.onMapRendered?.(ctx);
         } catch (err) {
             console.error("[tool-manager] onMapRendered failed", err);
+            emitToolError("render", err, active.module, active.module.id);
         }
     };
 

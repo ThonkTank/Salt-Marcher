@@ -8,14 +8,7 @@ export const VIEW_TYPE_CARTOGRAPHER = "cartographer-view";
 export const VIEW_CARTOGRAPHER = VIEW_TYPE_CARTOGRAPHER;
 
 const createProvideModes = () => {
-    return () => {
-        try {
-            return provideCartographerModes();
-        } catch (error) {
-            console.error("[cartographer] Failed to resolve mode registry", error);
-            return [];
-        }
-    };
+    return () => provideCartographerModes();
 };
 
 export class CartographerView extends ItemView {

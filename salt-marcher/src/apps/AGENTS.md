@@ -30,7 +30,6 @@
 
 # ToDo
 - [P2.34] Kapsle View-Metadaten (Typ, Icon, Display-Name, Ribbon-Konfiguration) in einem gemeinsamen Manifest (`apps/view-manifest.ts`) und nutze es in `src/app/main.ts`, um Registrierungen, Ribbons und Commands generisch aufzubauen.
-- [P2.35] Ergänze `apps/README.md` um eine Tabelle der jeweils exportierten Klassen/Helfer (View, Presenter, open-/detach-Funktionen), sodass Änderungen an Entry-Points zentral nachvollziehbar bleiben.
 
 # Standards
 - Komponenten- und Controller-Dateien starten mit einem Kontextsatz zum Workflow.

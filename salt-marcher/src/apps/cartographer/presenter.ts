@@ -1,7 +1,7 @@
 // src/apps/cartographer/presenter.ts
 // Presenter: Kapselt Statusverwaltung, Mode-Lifecycle und Map-Rendering für den Cartographer.
 
-import type { App, TFile } from "obsidian";
+import { Notice, type App, type TFile } from "obsidian";
 import { parseOptions, type HexOptions } from "../../core/options";
 import { getFirstHexBlock } from "../../core/map-list";
 import type { RenderHandles } from "../../core/hex-mapper/hex-render";
@@ -82,6 +82,15 @@ const createDefaultDeps = (app: App): CartographerPresenterDeps => ({
     subscribeToModeRegistry: (listener) => subscribeToModeRegistry(listener),
 });
 
+const MODE_PROVISION_OVERLAY_MESSAGE = "Cartographer-Modi konnten nicht geladen werden.";
+const MODE_PROVISION_NOTICE_MESSAGE =
+    "Cartographer-Modi konnten nicht geladen werden. Bitte die Konsole prüfen.";
+
+type ModeProvisionIssueState = {
+    noticeIssued: boolean;
+    overlayActive: boolean;
+};
+
 type ModeTransitionPhase = "idle" | "exiting" | "entering";
 
 /**
@@ -121,24 +130,21 @@ export class CartographerPresenter {
     private activeLifecycleController: AbortController | null = null;
     private activeLifecycleContext: CartographerModeLifecycleContext | null = null;
     private unsubscribeModeRegistry: (() => void) | null = null;
+    private modeProvisionIssue: ModeProvisionIssueState | null = null;
 
     constructor(app: App, deps?: Partial<CartographerPresenterDeps>) {
         this.app = app;
         const defaults = createDefaultDeps(app);
         this.deps = { ...defaults, ...deps } as CartographerPresenterDeps;
-        this.modes = this.deps.provideModes();
-        try {
-            this.unsubscribeModeRegistry = this.deps.subscribeToModeRegistry((event) => {
-                this.handleModeRegistryEvent(event);
-            });
-        } catch (error) {
-            console.error("[cartographer] failed to subscribe to mode registry", error);
-        }
+        this.modes = this.snapshotProvidedModes();
     }
 
     /** Öffnet den Presenter auf dem übergebenen Host. */
     async onOpen(host: HTMLElement, fallbackFile: TFile | null): Promise<void> {
         await this.onClose();
+
+        this.ensureModeRegistrySubscription();
+        this.modes = this.snapshotProvidedModes();
 
         this.hostEl = host;
         const initialFile = this.requestedFile ?? fallbackFile ?? null;
@@ -173,6 +179,8 @@ export class CartographerPresenter {
             },
         });
 
+        this.applyModeProvisionOverlay();
+
         this.mapManager = this.deps.createMapManager(this.app, {
             initialFile,
             onChange: async (file) => {
@@ -193,6 +201,8 @@ export class CartographerPresenter {
 
     /** Schließt den Presenter und räumt Ressourcen auf. */
     async onClose(): Promise<void> {
+        this.teardownModeRegistrySubscription();
+
         if (!this.isMounted) {
             this.shell?.destroy();
             this.shell = null;
@@ -303,6 +313,11 @@ export class CartographerPresenter {
     private handleModeRegistryEvent(event: CartographerModeRegistryEvent): void {
         if (!event?.entries) return;
 
+        const hadProvisionIssue = this.modeProvisionIssue !== null;
+        if (hadProvisionIssue) {
+            this.clearModeProvisionIssue();
+        }
+
         const previousActiveId = this.activeMode?.id ?? null;
         const nextModes = event.entries.map((entry) => entry.mode);
         this.modes = nextModes;
@@ -345,6 +360,113 @@ export class CartographerPresenter {
         if (fallbackId) {
             void this.setMode(fallbackId);
         }
+
+        if (hadProvisionIssue) {
+            void this.refresh();
+        }
+    }
+
+    private ensureModeRegistrySubscription(): void {
+        if (this.unsubscribeModeRegistry) {
+            return;
+        }
+
+        try {
+            this.unsubscribeModeRegistry = this.deps.subscribeToModeRegistry((event) => {
+                this.handleModeRegistryEvent(event);
+            });
+        } catch (error) {
+            console.error("[cartographer] failed to subscribe to mode registry", error);
+            this.unsubscribeModeRegistry = null;
+        }
+    }
+
+    private teardownModeRegistrySubscription(): void {
+        const unsubscribe = this.unsubscribeModeRegistry;
+        this.unsubscribeModeRegistry = null;
+        if (!unsubscribe) {
+            return;
+        }
+
+        try {
+            unsubscribe();
+        } catch (error) {
+            console.error("[cartographer] failed to unsubscribe from mode registry", error);
+        }
+    }
+
+    private snapshotProvidedModes(): CartographerMode[] {
+        try {
+            const provided = this.deps.provideModes() as readonly (
+                CartographerMode | { mode: CartographerMode; metadata?: unknown }
+            )[];
+            this.clearModeProvisionIssue();
+            return provided.map((entry) => (this.isRegistryEntry(entry) ? entry.mode : entry));
+        } catch (error) {
+            this.handleModeProvisionFailure(error);
+            return [];
+        }
+    }
+
+    private isRegistryEntry(
+        entry: CartographerMode | { mode: CartographerMode; metadata?: unknown },
+    ): entry is { mode: CartographerMode; metadata?: unknown } {
+        if (typeof entry !== "object" || entry === null) {
+            return false;
+        }
+        if (!("mode" in entry)) {
+            return false;
+        }
+        if (!("metadata" in entry)) {
+            return false;
+        }
+        const candidate = (entry as { mode?: unknown }).mode;
+        return typeof candidate === "object" && candidate !== null;
+    }
+
+    private handleModeProvisionFailure(error: unknown): void {
+        console.error("[cartographer] failed to provide modes", error);
+
+        const issue: ModeProvisionIssueState = this.modeProvisionIssue ?? {
+            noticeIssued: false,
+            overlayActive: false,
+        };
+
+        if (!issue.noticeIssued) {
+            new Notice(MODE_PROVISION_NOTICE_MESSAGE);
+            issue.noticeIssued = true;
+        }
+
+        issue.overlayActive = false;
+
+        if (this.shell) {
+            this.shell.setOverlay(MODE_PROVISION_OVERLAY_MESSAGE);
+            issue.overlayActive = true;
+        } else {
+            issue.overlayActive = false;
+        }
+
+        this.modeProvisionIssue = issue;
+    }
+
+    private applyModeProvisionOverlay(): void {
+        if (!this.modeProvisionIssue || !this.shell) {
+            return;
+        }
+
+        this.shell.setOverlay(MODE_PROVISION_OVERLAY_MESSAGE);
+        this.modeProvisionIssue.overlayActive = true;
+    }
+
+    private clearModeProvisionIssue(): void {
+        const issue = this.modeProvisionIssue;
+        if (!issue) return;
+
+        if (issue.overlayActive) {
+            this.shell?.setOverlay(null);
+        }
+
+        this.modeProvisionIssue = null;
     }
 
     async setMode(id: string, ctx?: ModeSelectContext): Promise<void> {
@@ -601,6 +723,10 @@ export class CartographerPresenter {
         await this.teardownLayer();
 
         if (!this.shell) return;
+        if (this.modeProvisionIssue) {
+            this.applyModeProvisionOverlay();
+            return;
+        }
         const transition = this.transition;
         const signal = transition?.controller.signal ?? this.getActiveLifecycleSignal();
         const ctx = this.ensureActiveLifecycleContext(signal);

@@ -1,6 +1,7 @@
 // salt-marcher/tests/cartographer/presenter.test.ts
 // Validiert den Cartographer-Presenter hinsichtlich Mode-Lifecycle und Shell-Bindung.
 import { describe, expect, it, vi } from "vitest";
+import * as Obsidian from "obsidian";
 import type { App, TFile } from "obsidian";
 import {
     CartographerPresenter,
@@ -254,6 +255,95 @@ describe("CartographerPresenter", () => {
         expect(shell.setModeLabel).toHaveBeenLastCalledWith("Mode B");
     });
 
+    it("surfaces mode provision failures via overlay and notice", async () => {
+        const shell = createShellStub();
+        const registry = createRegistryController();
+
+        const noticeSpy = vi.spyOn(Obsidian, "Notice").mockImplementation(function (this: unknown, message?: string) {
+            (this as { message?: string }).message = message;
+        });
+        const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+        try {
+            const provideModes = vi.fn(() => {
+                throw new Error("registry unavailable");
+            });
+
+            const presenter = new CartographerPresenter(appStub, {
+                createShell: shell.factory,
+                createMapManager: createMapManagerFactory(),
+                createMapLayer: vi.fn(async () => {
+                    throw new Error("layer should not be created during mode failures");
+                }),
+                loadHexOptions: vi.fn(async () => null as HexOptions | null),
+                provideModes,
+                subscribeToModeRegistry: registry.subscribe,
+            });
+
+            await presenter.onOpen(shell.host, null);
+
+            expect(shell.setOverlay).toHaveBeenLastCalledWith("Cartographer-Modi konnten nicht geladen werden.");
+            expect(noticeSpy).toHaveBeenCalledTimes(1);
+            expect(noticeSpy).toHaveBeenCalledWith(
+                "Cartographer-Modi konnten nicht geladen werden. Bitte die Konsole prüfen.",
+            );
+            expect(consoleError).toHaveBeenCalledWith("[cartographer] failed to provide modes", expect.any(Error));
+        } finally {
+            noticeSpy.mockRestore();
+            consoleError.mockRestore();
+        }
+    });
+
+    it("replaces the failure overlay once the registry recovers", async () => {
+        const shell = createShellStub();
+        const registry = createRegistryController();
+
+        const noticeSpy = vi.spyOn(Obsidian, "Notice").mockImplementation(function (this: unknown, message?: string) {
+            (this as { message?: string }).message = message;
+        });
+
+        try {
+            const provideModes = vi.fn(() => {
+                throw new Error("registry still failing");
+            });
+
+            const presenter = new CartographerPresenter(appStub, {
+                createShell: shell.factory,
+                createMapManager: createMapManagerFactory(),
+                createMapLayer: vi.fn(async () => {
+                    throw new Error("layer should not render while registry fails");
+                }),
+                loadHexOptions: vi.fn(async () => null as HexOptions | null),
+                provideModes,
+                subscribeToModeRegistry: registry.subscribe,
+            });
+
+            await presenter.onOpen(shell.host, null);
+
+            expect(shell.setOverlay).toHaveBeenLastCalledWith("Cartographer-Modi konnten nicht geladen werden.");
+            const initialNoticeCount = noticeSpy.mock.calls.length;
+
+            shell.setOverlay.mockClear();
+
+            const recoveredMode: CartographerMode = {
+                id: "travel",
+                label: "Travel",
+                onEnter: vi.fn(),
+                onExit: vi.fn(),
+                onFileChange: vi.fn(),
+            };
+            const entry = createRegistryEntry(recoveredMode);
+            registry.emit({ type: "initial", entries: [entry] });
+
+            await new Promise((resolve) => setTimeout(resolve, 0));
+
+            expect(shell.setOverlay).toHaveBeenLastCalledWith("Keine Karte ausgewählt.");
+            expect(noticeSpy).toHaveBeenCalledTimes(initialNoticeCount);
+        } finally {
+            noticeSpy.mockRestore();
+        }
+    });
+
     it("continues switching when onExit fails", async () => {
         const shell = createShellStub();
         const exitError = new Error("boom");
@@ -414,6 +504,67 @@ describe("CartographerPresenter", () => {
         expect(modeB.onEnter).not.toHaveBeenCalled();
         expect(shell.setModeActive).not.toHaveBeenLastCalledWith("b");
         expect(shell.setModeLabel).not.toHaveBeenLastCalledWith("Mode B");
+    });
+
+    it("tears down and recreates the mode registry subscription when reopening", async () => {
+        const shell = createShellStub();
+
+        const mode: CartographerMode = {
+            id: "main",
+            label: "Main",
+            onEnter: vi.fn(),
+            onExit: vi.fn(),
+            onFileChange: vi.fn(),
+        };
+
+        const entry = createRegistryEntry(mode);
+
+        let listener: ((event: CartographerModeRegistryEvent) => void) | null = null;
+        const unsubscribe = vi.fn();
+        const subscribe = vi.fn((handler: (event: CartographerModeRegistryEvent) => void) => {
+            listener = handler;
+            return () => {
+                unsubscribe();
+                if (listener === handler) {
+                    listener = null;
+                }
+            };
+        });
+
+        const presenter = new CartographerPresenter(appStub, {
+            createShell: shell.factory,
+            createMapManager: createMapManagerFactory(),
+            createMapLayer: vi.fn(async () => {
+                throw new Error("layer should not be created in this scenario");
+            }),
+            loadHexOptions: vi.fn(async () => null as HexOptions | null),
+            provideModes: () => [entry],
+            subscribeToModeRegistry: subscribe,
+        });
+
+        await presenter.onOpen(shell.host, null);
+
+        expect(subscribe).toHaveBeenCalledTimes(1);
+        expect(listener).not.toBeNull();
+
+        await presenter.onClose();
+
+        expect(unsubscribe).toHaveBeenCalledTimes(1);
+        expect(listener).toBeNull();
+
+        await presenter.onOpen(shell.host, null);
+
+        expect(subscribe).toHaveBeenCalledTimes(2);
+        expect(unsubscribe).toHaveBeenCalledTimes(1);
+        expect(listener).not.toBeNull();
+
+        shell.setModes.mockClear();
+
+        listener?.({ type: "registered", entry, entries: [entry], index: 0 });
+
+        expect(shell.setModes).toHaveBeenCalledWith([{ id: mode.id, label: mode.label }]);
+
+        await presenter.onClose();
     });
 
     it("loads map data when file changes and notifies active mode", async () => {

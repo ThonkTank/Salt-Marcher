@@ -95,6 +95,17 @@ const toolMock: ToolMock = (() => {
     } satisfies ToolMock;
 })();
 
+const telemetryMocks = vi.hoisted(() => ({
+    reportEditorToolIssue: vi.fn((payload: { stage: string; toolId?: string }) => {
+        const { stage, toolId } = payload;
+        return `issue:${stage}:${toolId ?? "unknown"}`;
+    }),
+}));
+
+vi.mock("../../../src/apps/cartographer/editor/editor-telemetry", () => telemetryMocks);
+
+const { reportEditorToolIssue } = telemetryMocks;
+
 vi.mock("../../../src/apps/cartographer/editor/tools/terrain-brush/brush-options", () => ({
     createBrushTool: () => ({
         id: "mock-tool",
@@ -145,6 +156,12 @@ describe("editor mode", () => {
         expect(tool.mountPanel).toHaveBeenCalledOnce();
         expect(tool.onActivate).toHaveBeenCalledOnce();
         expect(tool.onMapRendered).not.toHaveBeenCalled();
+
+        const statusEl = ctx.sidebarHost.querySelector(".sm-cartographer__panel-status");
+        expect(statusEl?.textContent).toBe("No map selected.");
+        const panelEl = ctx.sidebarHost.querySelector(".sm-cartographer__panel");
+        expect(panelEl?.classList.contains("has-tool-error")).toBe(false);
+        expect(reportEditorToolIssue).not.toHaveBeenCalled();
 
         const select = ctx.sidebarHost.querySelector("select") as HTMLSelectElement;
         expect(select.disabled).toBe(true);
@@ -222,5 +239,32 @@ describe("editor mode", () => {
         }));
 
         expect(tool.onHexClick).toHaveBeenCalledWith(coord, expect.any(Object));
+    });
+
+    it("surfaces mount failures via status message and telemetry", async () => {
+        const ctx = createLifecycleContext({});
+        const mode = createEditorMode();
+        const failure = new Error("mount failed");
+        toolMock.mountPanel.mockImplementationOnce(() => {
+            throw failure;
+        });
+
+        await mode.onEnter(ctx);
+
+        expect(reportEditorToolIssue).toHaveBeenCalledTimes(1);
+        expect(reportEditorToolIssue).toHaveBeenCalledWith({
+            stage: "mount-panel",
+            toolId: "Mock Tool",
+            error: failure,
+        });
+
+        const statusEl = ctx.sidebarHost.querySelector(".sm-cartographer__panel-status");
+        expect(statusEl?.textContent).toBe("issue:mount-panel:Mock Tool");
+        const panelEl = ctx.sidebarHost.querySelector(".sm-cartographer__panel");
+        expect(panelEl?.classList.contains("has-tool-error")).toBe(true);
+
+        const select = ctx.sidebarHost.querySelector("select") as HTMLSelectElement;
+        expect(select.disabled).toBe(true);
+        expect(toolMock.onActivate).not.toHaveBeenCalled();
     });
 });
