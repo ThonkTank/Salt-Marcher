@@ -20,7 +20,7 @@ export type RenderHandles = {
     readonly polyByCoord: ReadonlyMap<string, SVGPolygonElement>;
     readonly surface: HexRenderSurfaceSelection;
     setFill(coord: HexCoord, color: string): void;
-    /** Fügt fehlende Polygone für die angegebenen Koordinaten hinzu und erweitert viewBox/Overlay. */
+    /** Fügt fehlende Polygone für die angegebenen Koordinaten hinzu und erweitert das Overlay (viewBox nur initial). */
     ensurePolys(coords: readonly HexCoord[]): void;
     /** Ersetzt den aktiven Interaktions-Delegate (z. B. für Editor-Tools). */
     setInteractionDelegate(delegate: HexInteractionDelegate | null): void;

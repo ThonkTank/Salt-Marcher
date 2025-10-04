@@ -8,13 +8,6 @@ const keyOf = (coord: HexCoord) => `${coord.r},${coord.c}`;
 
 type Rect = { minX: number; minY: number; maxX: number; maxY: number };
 
-type SceneInternals = {
-    bounds: Rect | null;
-    updateViewBox(): void;
-    centerOf(coord: HexCoord): { cx: number; cy: number };
-    bboxOf(coord: HexCoord): Rect;
-};
-
 export function createHexScene(config: HexSceneConfig): HexScene {
     const { host, radius, padding, base, initialCoords } = config;
 
@@ -41,9 +34,10 @@ export function createHexScene(config: HexSceneConfig): HexScene {
 
     const polyByCoord = new Map<string, SVGPolygonElement>();
 
-    const internals: SceneInternals = {
-        bounds: null,
-        updateViewBox() {
+    const internals = {
+        bounds: null as Rect | null,
+        viewBoxInitialized: false,
+        applyFrame(adjustViewBox: boolean) {
             if (!internals.bounds) return;
             const { minX, minY, maxX, maxY } = internals.bounds;
             const paddedMinX = Math.floor(minX - padding);
@@ -52,7 +46,10 @@ export function createHexScene(config: HexSceneConfig): HexScene {
             const paddedMaxY = Math.ceil(maxY + padding);
             const width = Math.max(1, paddedMaxX - paddedMinX);
             const height = Math.max(1, paddedMaxY - paddedMinY);
-            svg.setAttribute("viewBox", `${paddedMinX} ${paddedMinY} ${width} ${height}`);
+            if (adjustViewBox || !internals.viewBoxInitialized) {
+                svg.setAttribute("viewBox", `${paddedMinX} ${paddedMinY} ${width} ${height}`);
+                internals.viewBoxInitialized = true;
+            }
             overlay.setAttribute("x", String(paddedMinX));
             overlay.setAttribute("y", String(paddedMinY));
             overlay.setAttribute("width", String(width));
@@ -87,8 +84,8 @@ export function createHexScene(config: HexSceneConfig): HexScene {
         current.maxY = Math.max(current.maxY, next.maxY);
     }
 
-    function addHex(coord: HexCoord): void {
-        if (polyByCoord.has(keyOf(coord))) return;
+    function addHex(coord: HexCoord): boolean {
+        if (polyByCoord.has(keyOf(coord))) return false;
         const { cx, cy } = internals.centerOf(coord);
         const poly = document.createElementNS(SVG_NS, "polygon");
         poly.setAttribute("points", hexPolygonPoints(cx, cy, radius));
@@ -112,6 +109,7 @@ export function createHexScene(config: HexSceneConfig): HexScene {
         contentG.appendChild(label);
 
         mergeBounds(internals.bboxOf(coord));
+        return true;
     }
 
     function ensurePolys(coords: HexCoord[]): void {
@@ -119,10 +117,10 @@ export function createHexScene(config: HexSceneConfig): HexScene {
         for (const coord of coords) {
             const key = keyOf(coord);
             if (polyByCoord.has(key)) continue;
-            addHex(coord);
-            added = true;
+            const created = addHex(coord);
+            added = added || created;
         }
-        if (added) internals.updateViewBox();
+        if (added) internals.applyFrame(false);
     }
 
     function setFill(coord: HexCoord, color: string): void {
@@ -141,7 +139,7 @@ export function createHexScene(config: HexSceneConfig): HexScene {
     const initial = initialCoords.length ? initialCoords : [];
     if (initial.length) {
         for (const coord of initial) addHex(coord);
-        internals.updateViewBox();
+        internals.applyFrame(true);
     }
 
     return {
