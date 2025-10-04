@@ -3,7 +3,7 @@
 import { App, Modal, Setting } from "obsidian";
 import type { StatblockData } from "../../core/creature-files";
 import { listSpellFiles } from "../../core/spell-files";
-import { mountCreatureBasicsSection } from "./section-basics";
+import { mountCreatureClassificationSection, mountCreatureVitalSection } from "./section-basics";
 import { mountCreatureStatsAndSkillsSection } from "./section-stats-and-skills";
 import { mountCreatureSensesAndDefensesSection } from "./section-senses-and-defenses";
 import { mountEntriesSection } from "./section-entries";
@@ -75,7 +75,8 @@ export class CreateCreatureModal extends Modal {
         })();
 
         const basicsCard = createCard(mainColumn, "Grunddaten", "Name, Typ, Gesinnung und Basiswerte");
-        mountCreatureBasicsSection(basicsCard.body, this.data);
+        mountCreatureClassificationSection(basicsCard.body, this.data);
+        mountCreatureVitalSection(basicsCard.body, this.data);
 
         const statsCard = createCard(mainColumn, "Attribute & Fertigkeiten");
         mountCreatureStatsAndSkillsSection(statsCard.body, this.data, statsCard.registerValidation);

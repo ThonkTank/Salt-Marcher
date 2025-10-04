@@ -1,5 +1,5 @@
 // src/apps/library/create/creature/section-basics.ts
-// Erfasst Name, Typ, Gesinnung, Kernwerte (HP, AC, PB, CR, XP) sowie alle Bewegungsarten.
+// Stellt separate Mount-Funktionen für Klassifikation (Name, Typ, Alignment, PB/CR/XP) und Vitaldaten (AC, HP, Bewegung) bereit.
 import { ToggleComponent } from "obsidian";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import type {
@@ -8,8 +8,6 @@ import type {
   StatblockData,
 } from "../../core/creature-files";
 import {
-  CREATURE_ALIGNMENT_GOOD_EVIL,
-  CREATURE_ALIGNMENT_LAW_CHAOS,
   CREATURE_SIZES,
   CREATURE_TYPES,
   type CreatureMovementType,
@@ -25,6 +23,24 @@ const SPEED_FIELD_DEFS: Array<{ key: SpeedFieldKey; label: string; placeholder: 
   { key: "fly", label: "Fliegen", placeholder: "60 ft.", hoverToggle: true },
   { key: "swim", label: "Schwimmen", placeholder: "40 ft." },
   { key: "burrow", label: "Graben", placeholder: "20 ft." },
+];
+
+type AlignmentOption = {
+  label: string;
+  lawChaos: string;
+  goodEvil: string;
+};
+
+const ALIGNMENT_OPTIONS: AlignmentOption[] = [
+  { label: "Lawful Good", lawChaos: "Lawful", goodEvil: "Good" },
+  { label: "Neutral Good", lawChaos: "Neutral", goodEvil: "Good" },
+  { label: "Chaotic Good", lawChaos: "Chaotic", goodEvil: "Good" },
+  { label: "Lawful Neutral", lawChaos: "Lawful", goodEvil: "Neutral" },
+  { label: "Neutral", lawChaos: "Neutral", goodEvil: "Neutral" },
+  { label: "Chaotic Neutral", lawChaos: "Chaotic", goodEvil: "Neutral" },
+  { label: "Lawful Evil", lawChaos: "Lawful", goodEvil: "Evil" },
+  { label: "Neutral Evil", lawChaos: "Neutral", goodEvil: "Evil" },
+  { label: "Chaotic Evil", lawChaos: "Chaotic", goodEvil: "Evil" },
 ];
 
 type SpeedRecord = Record<SpeedFieldKey, CreatureSpeedValue | undefined> & {
@@ -86,14 +102,20 @@ function formatExtra(extra: CreatureSpeedExtra): string {
     .join(" ");
 }
 
-export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockData) {
-  const root = parent.createDiv({ cls: "sm-cc-basics" });
+function ensureTypeTags(data: StatblockData): string[] {
+  if (!Array.isArray(data.typeTags)) data.typeTags = [];
+  return data.typeTags!;
+}
+
+export function mountCreatureClassificationSection(parent: HTMLElement, data: StatblockData) {
+  const root = parent.createDiv({ cls: "sm-cc-basics sm-cc-basics--classification" });
 
   const identity = root.createDiv({ cls: "sm-cc-basics__group" });
   identity.createEl("h5", { text: "Identität", cls: "sm-cc-basics__subtitle" });
   const identityGrid = createFieldGrid(identity, { variant: "identity" });
 
   const nameSetting = identityGrid.createSetting("Name");
+  nameSetting.settingEl.addClass("sm-cc-setting--show-name");
   nameSetting.addText((t) => {
     t.setPlaceholder("Aboleth")
       .setValue(data.name || "")
@@ -102,6 +124,7 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
   });
 
   const typeSetting = identityGrid.createSetting("Typ");
+  typeSetting.settingEl.addClass("sm-cc-setting--show-name");
   typeSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_TYPES) dd.addOption(option, option);
@@ -114,6 +137,7 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
   });
 
   const sizeSetting = identityGrid.createSetting("Größe");
+  sizeSetting.settingEl.addClass("sm-cc-setting--show-name");
   sizeSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_SIZES) dd.addOption(option, option);
@@ -125,41 +149,94 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
     } catch {}
   });
 
-  const alignmentSetting = identityGrid.createSetting("Gesinnung", {
-    className: "sm-cc-setting--inline",
+  const tags = ensureTypeTags(data);
+  const typeTagsEditor = mountTokenEditor(identity, "Typ-Tags", {
+    getItems: () => tags.slice(),
+    add: (value) => {
+      const normalized = value.trim();
+      if (!normalized) return;
+      const exists = tags.some((entry) => entry.toLowerCase() === normalized.toLowerCase());
+      if (!exists) tags.push(normalized);
+      typeTagsEditor.refresh();
+    },
+    remove: (index) => {
+      tags.splice(index, 1);
+      typeTagsEditor.refresh();
+    },
+  }, {
+    placeholder: "z. B. shapechanger",
+    addButtonLabel: "+ Tag",
   });
-  alignmentSetting.controlEl.addClass("sm-cc-alignment");
-  alignmentSetting.addDropdown((dd) => {
-    dd.addOption("", "");
-    for (const option of CREATURE_ALIGNMENT_LAW_CHAOS) dd.addOption(option, option);
-    dd.setValue(data.alignmentLawChaos ?? "");
-    dd.onChange((v: string) => (data.alignmentLawChaos = v));
-    dd.selectEl.classList.add("sm-cc-select");
-    try {
-      const el = dd.selectEl;
-      el.dataset.sdOpenAll = "0";
-      enhanceSelectToSearch(el, "Such-dropdown…");
-    } catch {}
+  typeTagsEditor.setting.settingEl.addClass("sm-cc-setting");
+  typeTagsEditor.setting.settingEl.addClass("sm-cc-setting--show-name");
+
+  const classification = root.createDiv({ cls: "sm-cc-basics__group" });
+  classification.createEl("h5", { text: "Klassifikation", cls: "sm-cc-basics__subtitle" });
+  const classificationGrid = createFieldGrid(classification, { variant: "classification" });
+
+  const alignmentSetting = classificationGrid.createSetting("Gesinnung", {
+    className: ["sm-cc-setting--span-2", "sm-cc-setting--show-name"],
   });
-  alignmentSetting.addDropdown((dd) => {
-    dd.addOption("", "");
-    for (const option of CREATURE_ALIGNMENT_GOOD_EVIL) dd.addOption(option, option);
-    dd.setValue(data.alignmentGoodEvil ?? "");
-    dd.onChange((v: string) => (data.alignmentGoodEvil = v));
-    dd.selectEl.classList.add("sm-cc-select");
-    try {
-      const el = dd.selectEl;
-      el.dataset.sdOpenAll = "0";
-      enhanceSelectToSearch(el, "Such-dropdown…");
-    } catch {}
+  const alignmentGrid = alignmentSetting.controlEl.createDiv({ cls: "sm-cc-alignment-grid" });
+  const alignmentButtons: HTMLButtonElement[] = [];
+
+  const applyAlignment = (option: AlignmentOption) => {
+    data.alignmentOverride = undefined;
+    data.alignmentLawChaos = option.lawChaos;
+    data.alignmentGoodEvil = option.goodEvil;
+    updateAlignmentUI();
+  };
+
+  ALIGNMENT_OPTIONS.forEach((option) => {
+    const button = alignmentGrid.createEl("button", {
+      text: option.label,
+      cls: "sm-cc-alignment-button",
+      attr: { type: "button" },
+    });
+    button.addEventListener("click", () => applyAlignment(option));
+    alignmentButtons.push(button);
   });
 
-  const stats = root.createDiv({ cls: "sm-cc-basics__group" });
-  stats.createEl("h5", { text: "Kernwerte", cls: "sm-cc-basics__subtitle" });
-  const statsGrid = createFieldGrid(stats, { variant: "summary" });
+  const overrideRow = alignmentSetting.controlEl.createDiv({ cls: "sm-cc-alignment-override" });
+  const overrideToggleContainer = overrideRow.createDiv({ cls: "sm-cc-alignment-override__toggle" });
+  const overrideToggle = new ToggleComponent(overrideToggleContainer);
+  overrideRow.createSpan({ text: "Override: „Unaligned“", cls: "sm-cc-alignment-override__label" });
 
-  const createStatField = (label: string, placeholder: string, key: keyof StatblockData) => {
-    const setting = statsGrid.createSetting(label);
+  const isUnaligned = () => (data.alignmentOverride ?? "").toLowerCase() === "unaligned";
+
+  const updateAlignmentUI = () => {
+    const currentLaw = data.alignmentLawChaos?.trim() ?? "";
+    const currentGood = data.alignmentGoodEvil?.trim() ?? "";
+    const unaligned = isUnaligned();
+    alignmentButtons.forEach((button, index) => {
+      const option = ALIGNMENT_OPTIONS[index];
+      const active = !unaligned && option.lawChaos === currentLaw && option.goodEvil === currentGood;
+      button.toggleClass("is-active", active);
+      if (unaligned) {
+        button.setAttr("disabled", "true");
+        button.setAttr("aria-disabled", "true");
+      } else {
+        button.removeAttribute("disabled");
+        button.removeAttribute("aria-disabled");
+      }
+    });
+    if (overrideToggle.getValue() !== unaligned) overrideToggle.setValue(unaligned);
+  };
+
+  overrideToggle.onChange((checked) => {
+    if (checked) {
+      data.alignmentOverride = "Unaligned";
+    } else {
+      data.alignmentOverride = undefined;
+    }
+    updateAlignmentUI();
+  });
+
+  updateAlignmentUI();
+
+  const createClassificationField = (label: string, placeholder: string, key: keyof StatblockData) => {
+    const setting = classificationGrid.createSetting(label);
+    setting.settingEl.addClass("sm-cc-setting--show-name");
     setting.addText((t) => {
       t.setPlaceholder(placeholder)
         .setValue((data[key] as string) ?? "")
@@ -168,53 +245,88 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
     });
   };
 
-  createStatField("HP", "150", "hp");
-  createStatField("AC", "17", "ac");
-  createStatField("Init", "+7", "initiative");
-  createStatField("PB", "+4", "pb");
-  createStatField("HD", "20d10 + 40", "hitDice");
-  createStatField("CR", "10", "cr");
-  createStatField("XP", "5900", "xp");
+  createClassificationField("PB", "+4", "pb");
+  createClassificationField("CR", "10", "cr");
+  createClassificationField("XP", "5900", "xp");
+}
+
+export function mountCreatureVitalSection(parent: HTMLElement, data: StatblockData) {
+  const root = parent.createDiv({ cls: "sm-cc-basics sm-cc-basics--vitals" });
+
+  const vitals = root.createDiv({ cls: "sm-cc-basics__group" });
+  vitals.createEl("h5", { text: "Vitalwerte", cls: "sm-cc-basics__subtitle" });
+  const vitalsGrid = createFieldGrid(vitals, { variant: "identity", className: "sm-cc-field-grid--vitals" });
+
+  const createVitalField = (label: string, placeholder: string, key: keyof StatblockData) => {
+    const setting = vitalsGrid.createSetting(label);
+    setting.settingEl.addClass("sm-cc-setting--show-name");
+    setting.addText((t) => {
+      t.setPlaceholder(placeholder)
+        .setValue((data[key] as string) ?? "")
+        .onChange((v: string) => ((data as any)[key] = v.trim()));
+      t.inputEl.classList.add("sm-cc-input");
+    });
+  };
+
+  createVitalField("AC", "17", "ac");
+  createVitalField("HP", "150", "hp");
+  createVitalField("Initiative", "+7", "initiative");
+  createVitalField("Hit Dice", "20d10 + 40", "hitDice");
 
   const movement = root.createDiv({ cls: "sm-cc-basics__group" });
   movement.createEl("h5", { text: "Bewegung", cls: "sm-cc-basics__subtitle" });
-  const speedGrid = createFieldGrid(movement, { variant: "speeds" });
+
+  const speedGrid = movement.createDiv({ cls: "sm-cc-speeds-grid" });
+
+  const syncDistance = (input: HTMLInputElement, key: SpeedFieldKey) => {
+    const target = ensureSpeeds(data)[key];
+    input.value = target?.distance ?? "";
+  };
+
+  const syncHoverBadge = (badge: HTMLButtonElement | null, key: SpeedFieldKey) => {
+    if (!badge) return;
+    const target = ensureSpeeds(data)[key];
+    const active = Boolean(target?.hover);
+    badge.toggleClass("is-active", active);
+    badge.setAttr("aria-pressed", active ? "true" : "false");
+  };
 
   SPEED_FIELD_DEFS.forEach((def) => {
-    const setting = speedGrid.createSetting(def.label, {
-      className: "sm-cc-setting--speed",
-    });
     const current = ensureSpeeds(data)[def.key];
-    const text = setting.addText((t) => {
-      t.setPlaceholder(def.placeholder)
-        .setValue(current?.distance ?? "")
-        .onChange((v: string) => {
-          const trimmed = v.trim();
-          applySpeedValue(data, def.key, { distance: trimmed || undefined });
-        });
-      t.inputEl.classList.add("sm-cc-input");
-    });
+    const item = speedGrid.createDiv({ cls: "sm-cc-speed" });
+    const head = item.createDiv({ cls: "sm-cc-speed__head" });
+    head.createSpan({ text: def.label, cls: "sm-cc-speed__label" });
 
+    let hoverBadge: HTMLButtonElement | null = null;
     if (def.hoverToggle) {
-      let toggle: ToggleComponent | null = null;
-      toggle = setting.addToggle((tg) => {
-        tg.setValue(Boolean(current?.hover));
-        tg.onChange((checked) => {
-          applySpeedValue(data, def.key, { hover: checked });
-        });
+      hoverBadge = head.createEl("button", {
+        text: "Hover",
+        cls: "sm-cc-speed__badge",
+        attr: { type: "button" },
       });
-      const hoverWrap = setting.controlEl.createDiv({ cls: "sm-cc-hover-wrap" });
-      hoverWrap.appendChild(toggle.toggleEl);
-      toggle.toggleEl.addClass("sm-cc-hover-toggle");
-      toggle.toggleEl.setAttr("aria-label", "Hover markieren");
-      hoverWrap.createSpan({ text: "Hover", cls: "sm-cc-hover-label" });
-      text.inputEl.addEventListener("blur", () => {
-        const speeds = ensureSpeeds(data);
-        const target = speeds[def.key];
-        text.setValue(target?.distance ?? "");
-        toggle?.setValue(Boolean(target?.hover));
+      hoverBadge.addEventListener("click", () => {
+        const target = ensureSpeeds(data)[def.key];
+        const next = !target?.hover;
+        applySpeedValue(data, def.key, { hover: next });
+        syncHoverBadge(hoverBadge, def.key);
       });
     }
+
+    const input = item.createEl("input", {
+      attr: { type: "text", placeholder: def.placeholder },
+      cls: "sm-cc-speed__input sm-cc-input",
+    }) as HTMLInputElement;
+    input.value = current?.distance ?? "";
+    input.addEventListener("change", () => {
+      const trimmed = input.value.trim();
+      applySpeedValue(data, def.key, { distance: trimmed || undefined });
+    });
+    input.addEventListener("blur", () => {
+      syncDistance(input, def.key);
+      syncHoverBadge(hoverBadge, def.key);
+    });
+
+    syncHoverBadge(hoverBadge, def.key);
   });
 
   const extras = ensureSpeedExtras(data);
@@ -246,4 +358,5 @@ export function mountCreatureBasicsSection(parent: HTMLElement, data: StatblockD
     },
   );
   extrasEditor.setting.settingEl.addClass("sm-cc-setting");
+  extrasEditor.setting.settingEl.addClass("sm-cc-setting--show-name");
 }
