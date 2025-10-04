@@ -5,10 +5,6 @@ import {
   type SpellcastingAbility,
   type SpellcastingData,
   type SpellcastingGroup,
-  type SpellcastingGroupAtWill,
-  type SpellcastingGroupCustom,
-  type SpellcastingGroupLevel,
-  type SpellcastingGroupPerDay,
   type SpellcastingSpell,
   type StatblockData,
   calculateAttackBonus,
@@ -21,15 +17,7 @@ import type { ValidationRegistrar, ValidationRunner } from "../shared/layouts";
 
 const DEFAULT_TITLE = "Spellcasting";
 
-type SpellcastingGroupWithSpells = SpellcastingGroup & { spells?: SpellcastingSpell[] };
-
 type SpellTypeaheadHandle = { refreshMatches(): void };
-
-type SpellcastingGroupMutable =
-  | SpellcastingGroupAtWill
-  | SpellcastingGroupPerDay
-  | SpellcastingGroupLevel
-  | SpellcastingGroupCustom;
 
 export interface CreatureSpellcastingSectionOptions {
   getAvailableSpells?: () => readonly string[] | null | undefined;
@@ -42,28 +30,20 @@ export interface CreatureSpellcastingSectionHandles {
   setAvailableSpells(spells: readonly string[]): void;
 }
 
+function ensureGroupSpells(group: SpellcastingGroup): SpellcastingSpell[] {
+  if (group.type === "custom") {
+    if (!Array.isArray(group.spells)) group.spells = [];
+    return group.spells;
+  }
+  return group.spells;
+}
+
 function ensureSpellcastingGroups(spellcasting: SpellcastingData): SpellcastingData {
   if (!Array.isArray(spellcasting.groups)) {
     spellcasting.groups = [];
   }
-  spellcasting.groups = spellcasting.groups.map((group) => {
-    switch (group.type) {
-      case "at-will":
-      case "per-day":
-      case "level": {
-        if (!Array.isArray(group.spells)) group.spells = [];
-        return group;
-      }
-      case "custom": {
-        if (group.spells && !Array.isArray(group.spells)) {
-          group.spells = [];
-        }
-        if (!group.spells) group.spells = [];
-        return group;
-      }
-      default:
-        return group as SpellcastingGroupMutable;
-    }
+  spellcasting.groups.forEach((group) => {
+    ensureGroupSpells(group);
   });
   return spellcasting;
 }
@@ -87,7 +67,7 @@ function formatSlots(slots: number | string | undefined): string | undefined {
   return trimmed || undefined;
 }
 
-function getGroupHeading(group: SpellcastingGroupWithSpells): string {
+function getGroupHeading(group: SpellcastingGroup): string {
   switch (group.type) {
     case "at-will":
       return group.title?.trim() || "At Will";
@@ -139,7 +119,7 @@ export function collectSpellcastingIssues(data: StatblockData): string[] {
         break;
     }
 
-    const spells = (group as SpellcastingGroupWithSpells).spells ?? [];
+    const spells = ensureGroupSpells(group);
     spells.forEach((spell, spellIndex) => {
       const name = ensureSpellName(spell?.name);
       if (!name) {
@@ -263,23 +243,23 @@ function renderPreviewContent(container: HTMLElement, spellcasting: Spellcasting
   spellcasting.groups.forEach((group) => {
     const groupBox = groupsWrap.createDiv({ cls: "sm-cc-spellcasting-preview__group" });
     groupBox.createEl("h5", { text: getGroupHeading(group) });
-    if (group.type === "per-day" && group.note?.trim()) {
-      groupBox.createDiv({ cls: "sm-cc-spellcasting-preview__note", text: group.note.trim() });
-    }
-    if (group.type === "level" && group.note?.trim()) {
-      groupBox.createDiv({ cls: "sm-cc-spellcasting-preview__note", text: group.note.trim() });
-    }
-    if (group.type === "custom" && group.description?.trim()) {
-      groupBox.createDiv({ cls: "sm-cc-spellcasting-preview__note", text: group.description.trim() });
+    const note =
+      group.type === "custom"
+        ? group.description?.trim()
+        : group.type === "per-day" || group.type === "level"
+        ? group.note?.trim()
+        : undefined;
+    if (note) {
+      groupBox.createDiv({ cls: "sm-cc-spellcasting-preview__note", text: note });
     }
 
-    const spells = (group as SpellcastingGroupWithSpells).spells ?? [];
+    const spells = ensureGroupSpells(group);
     if (spells.length) {
       const ul = groupBox.createEl("ul");
       spells.forEach((spell) => {
         ul.createEl("li", { text: renderSpellPreviewText(spell) });
       });
-    } else if (group.type !== "custom" || !group.description?.trim()) {
+    } else if (group.type !== "custom" || !note) {
       groupBox.createDiv({ cls: "sm-cc-spellcasting-preview__empty", text: "Keine Zauber hinterlegt." });
     }
   });
@@ -305,7 +285,7 @@ export function mountCreatureSpellcastingSection(
       .onChange((value) => {
         const trimmed = value.trim();
         spellcasting.title = trimmed || undefined;
-        renderPreview();
+        updatePreview();
       });
     component.inputEl.classList.add("sm-cc-input");
   });
@@ -320,7 +300,7 @@ export function mountCreatureSpellcastingSection(
   summaryArea.addEventListener("input", () => {
     const trimmed = summaryArea.value.trim();
     spellcasting.summary = trimmed || undefined;
-    renderPreview();
+    updatePreview();
   });
 
   const notesSetting = new Setting(root).setName("Notizen");
@@ -336,7 +316,7 @@ export function mountCreatureSpellcastingSection(
       .map((line) => line.trim())
       .filter((line) => line.length);
     spellcasting.notes = lines;
-    renderPreview();
+    updatePreview();
   });
 
   const abilitySetting = new Setting(root).setName("Spellcasting-Fokus");
@@ -390,23 +370,19 @@ export function mountCreatureSpellcastingSection(
   };
   addGroupButton("+ At Will", () => {
     spellcasting.groups.push({ type: "at-will", title: "At Will", spells: [] });
-    renderGroups();
-    triggerValidation();
+    refreshGroups();
   });
   addGroupButton("+ X/Day (each)", () => {
     spellcasting.groups.push({ type: "per-day", uses: "1/day each", spells: [] });
-    renderGroups();
-    triggerValidation();
+    refreshGroups();
   });
   addGroupButton("+ Spell Level", () => {
     spellcasting.groups.push({ type: "level", level: 1, slots: 1, spells: [] });
-    renderGroups();
-    triggerValidation();
+    refreshGroups();
   });
   addGroupButton("+ Custom", () => {
     spellcasting.groups.push({ type: "custom", title: "Custom", description: "", spells: [] });
-    renderGroups();
-    triggerValidation();
+    refreshGroups();
   });
 
   const groupsContainer = root.createDiv({ cls: "sm-cc-spellcasting__groups" });
@@ -422,16 +398,20 @@ export function mountCreatureSpellcastingSection(
 
   const resolveAvailableSpells = () => {
     const provided = options.getAvailableSpells?.();
-    if (provided && provided.length) return Array.from(provided);
-    return availableSpells.slice();
+    return provided && provided.length ? Array.from(provided) : availableSpells.slice();
   };
 
-  const renderGroups = () => {
+  const updatePreview = (validate = false) => {
+    renderPreviewContent(previewContainer, spellcasting);
+    if (validate) triggerValidation();
+  };
+
+  function renderGroups() {
     typeaheadHandles.length = 0;
     groupsContainer.empty();
     if (!spellcasting.groups.length) {
       groupsContainer.createDiv({ cls: "sm-cc-spellcasting__groups-empty", text: "Noch keine Gruppen." });
-      renderPreview();
+      updatePreview();
       return;
     }
     spellcasting.groups.forEach((group, index) => {
@@ -449,8 +429,7 @@ export function mountCreatureSpellcastingSection(
         } else {
           group.title = value || undefined;
         }
-        renderPreview();
-        triggerValidation();
+        updatePreview(true);
       });
 
       const controls = head.createDiv({ cls: "sm-cc-spell-group__controls" });
@@ -463,23 +442,17 @@ export function mountCreatureSpellcastingSection(
         if (index === 0) return;
         const [item] = spellcasting.groups.splice(index, 1);
         spellcasting.groups.splice(index - 1, 0, item);
-        renderGroups();
-        renderPreview();
-        triggerValidation();
+        refreshGroups();
       };
       moveDown.onclick = () => {
         if (index >= spellcasting.groups.length - 1) return;
         const [item] = spellcasting.groups.splice(index, 1);
         spellcasting.groups.splice(index + 1, 0, item);
-        renderGroups();
-        renderPreview();
-        triggerValidation();
+        refreshGroups();
       };
       remove.onclick = () => {
         spellcasting.groups.splice(index, 1);
-        renderGroups();
-        renderPreview();
-        triggerValidation();
+        refreshGroups();
       };
 
       const meta = groupBox.createDiv({ cls: "sm-cc-spell-group__meta" });
@@ -491,8 +464,7 @@ export function mountCreatureSpellcastingSection(
         usesInput.value = group.uses ?? "";
         usesInput.addEventListener("input", () => {
           group.uses = usesInput.value.trim();
-          renderPreview();
-          triggerValidation();
+          updatePreview(true);
         });
         const noteInput = meta.createEl("input", {
           cls: "sm-cc-input",
@@ -501,7 +473,7 @@ export function mountCreatureSpellcastingSection(
         noteInput.value = group.note ?? "";
         noteInput.addEventListener("input", () => {
           group.note = noteInput.value.trim() || undefined;
-          renderPreview();
+          updatePreview();
         });
       } else if (group.type === "level") {
         const levelInput = meta.createEl("input", {
@@ -512,8 +484,7 @@ export function mountCreatureSpellcastingSection(
         levelInput.addEventListener("input", () => {
           const parsed = Number(levelInput.value);
           group.level = Number.isFinite(parsed) ? parsed : (group.level ?? 0);
-          renderPreview();
-          triggerValidation();
+          updatePreview(true);
         });
         const slotsInput = meta.createEl("input", {
           cls: "sm-cc-input sm-cc-input--small",
@@ -528,7 +499,7 @@ export function mountCreatureSpellcastingSection(
             const parsed = Number(value);
             group.slots = Number.isFinite(parsed) ? parsed : value;
           }
-          renderPreview();
+          updatePreview();
         });
         const noteInput = meta.createEl("input", {
           cls: "sm-cc-input",
@@ -537,7 +508,7 @@ export function mountCreatureSpellcastingSection(
         noteInput.value = group.note ?? "";
         noteInput.addEventListener("input", () => {
           group.note = noteInput.value.trim() || undefined;
-          renderPreview();
+          updatePreview();
         });
       } else if (group.type === "custom") {
         const descArea = meta.createEl("textarea", {
@@ -547,12 +518,12 @@ export function mountCreatureSpellcastingSection(
         descArea.value = group.description ?? "";
         descArea.addEventListener("input", () => {
           group.description = descArea.value.trim() || undefined;
-          renderPreview();
+          updatePreview();
         });
       }
 
       const spellsList = groupBox.createDiv({ cls: "sm-cc-spell-group__spells" });
-      const spells = (group as SpellcastingGroupWithSpells).spells ?? [];
+      const spells = ensureGroupSpells(group);
       spells.forEach((spell, spellIndex) => {
         const row = spellsList.createDiv({ cls: "sm-cc-spell-row" });
         const nameCell = row.createDiv({ cls: "sm-cc-spell-row__name" });
@@ -560,8 +531,7 @@ export function mountCreatureSpellcastingSection(
         spellHandle.input.value = spell.name ?? "";
         spellHandle.input.addEventListener("input", () => {
           spell.name = spellHandle.input.value;
-          renderPreview();
-          triggerValidation();
+          updatePreview(true);
         });
         typeaheadHandles.push(spellHandle);
 
@@ -574,15 +544,13 @@ export function mountCreatureSpellcastingSection(
         notesInput.addEventListener("input", () => {
           const trimmed = notesInput.value.trim();
           spell.notes = trimmed || undefined;
-          renderPreview();
+          updatePreview();
         });
 
         const removeSpell = row.createEl("button", { text: "×", cls: "btn-compact" });
         removeSpell.onclick = () => {
           spells.splice(spellIndex, 1);
-          renderGroups();
-          renderPreview();
-          triggerValidation();
+          refreshGroups();
         };
       });
 
@@ -602,9 +570,7 @@ export function mountCreatureSpellcastingSection(
         spells.push({ name, notes: ensureSpellName(addNotesInput.value) });
         addHandle.input.value = "";
         addNotesInput.value = "";
-        renderGroups();
-        renderPreview();
-        triggerValidation();
+        refreshGroups();
       };
       addButton.onclick = addSpell;
       addHandle.input.addEventListener("keydown", (event) => {
@@ -614,12 +580,13 @@ export function mountCreatureSpellcastingSection(
         }
       });
     });
-    renderPreview();
-  };
+    updatePreview();
+  }
 
-  const renderPreview = () => {
-    renderPreviewContent(previewContainer, spellcasting);
-  };
+  function refreshGroups() {
+    renderGroups();
+    triggerValidation();
+  }
 
   const updateComputed = (refreshPreview: boolean) => {
     const abilityMod = spellcasting.ability ? getAbilityModifier(data, spellcasting.ability) : null;
@@ -634,7 +601,7 @@ export function mountCreatureSpellcastingSection(
     };
     saveLabel.textContent = `Save DC: ${saveDc != null ? saveDc : "—"}`;
     attackLabel.textContent = `Attack: ${attackBonus != null ? (attackBonus >= 0 ? "+" : "") + attackBonus : "—"}`;
-    if (refreshPreview) renderPreview();
+    if (refreshPreview) updatePreview();
   };
 
   const host = parent.closest(".modal") ?? parent;

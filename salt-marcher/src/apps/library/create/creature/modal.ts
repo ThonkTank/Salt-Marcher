@@ -23,7 +23,7 @@ export class CreateCreatureModal extends Modal {
     private data: StatblockData;
     private onSubmit: (d: StatblockData) => void;
     private availableSpells: string[] = [];
-    private _bgEl?: HTMLElement; private _bgPrevPointer?: string;
+    private bgLock: { el: HTMLElement; pointer: string } | null = null;
     private validators: Array<() => string[]> = [];
 
     constructor(app: App, presetName: string | undefined, onSubmit: (d: StatblockData) => void) {
@@ -38,9 +38,7 @@ export class CreateCreatureModal extends Modal {
         contentEl.addClass("sm-cc-create-modal");
         this.validators = [];
 
-        // Prevent closing on outside click by disabling background pointer events
-        const bg = document.querySelector('.modal-bg') as HTMLElement | null;
-        if (bg) { this._bgEl = bg; this._bgPrevPointer = bg.style.pointerEvents; bg.style.pointerEvents = 'none'; }
+        this.lockBackgroundPointer();
 
         // (Dropdown-Suche entfernt — stattdessen echte Typeahead an Stellen mit vielen Optionen)
 
@@ -65,14 +63,13 @@ export class CreateCreatureModal extends Modal {
 
         // Asynchron: verfügbare Zauber laden (best effort)
         let spellcastingControls: ReturnType<typeof mountCreatureSpellcastingSection> | null = null;
-        void (async () => {
-            try {
-                const spells = (await listSpellFiles(this.app)).map((f) => f.basename).sort((a, b) => a.localeCompare(b));
+        void listSpellFiles(this.app)
+            .then(files => files.map(f => f.basename).sort((a, b) => a.localeCompare(b)))
+            .then(spells => {
                 this.availableSpells.splice(0, this.availableSpells.length, ...spells);
                 spellcastingControls?.setAvailableSpells(spells);
-            }
-            catch {}
-        })();
+            })
+            .catch(() => {});
 
         const classificationCard = createCard(mainColumn, "Grunddaten", "Name, Typ, Gesinnung und Tags");
         mountCreatureClassificationSection(classificationCard.body, this.data);
@@ -104,11 +101,9 @@ export class CreateCreatureModal extends Modal {
         // Enter bestätigt NICHT automatisch (nur Button "Erstellen")
     }
 
-    onClose() { this.contentEl.empty(); if (this._bgEl) { this._bgEl.style.pointerEvents = this._bgPrevPointer ?? ''; this._bgEl = undefined; } }
+    onClose() { this.contentEl.empty(); this.restoreBackgroundPointer(); }
 
-    onunload() {
-        if (this._bgEl) { this._bgEl.style.pointerEvents = this._bgPrevPointer ?? ''; this._bgEl = undefined; }
-    }
+    onunload() { this.restoreBackgroundPointer(); }
 
     private submit() {
         const issues = this.runValidators();
@@ -133,5 +128,18 @@ export class CreateCreatureModal extends Modal {
             collected.push(...validator());
         }
         return collected;
+    }
+
+    private lockBackgroundPointer() {
+        const bg = document.querySelector('.modal-bg') as HTMLElement | null;
+        if (!bg) return;
+        this.bgLock = { el: bg, pointer: bg.style.pointerEvents };
+        bg.style.pointerEvents = 'none';
+    }
+
+    private restoreBackgroundPointer() {
+        if (!this.bgLock) return;
+        this.bgLock.el.style.pointerEvents = this.bgLock.pointer || '';
+        this.bgLock = null;
     }
 }
