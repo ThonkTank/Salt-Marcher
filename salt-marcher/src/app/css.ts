@@ -342,6 +342,11 @@ const editorLayoutsCss = `
     font-size: .75rem;
     letter-spacing: .06em;
     text-transform: uppercase;
+    white-space: normal;
+    word-break: break-word;
+    overflow: visible;
+    text-overflow: unset;
+    line-height: 1.25;
 }
 .sm-cc-setting--span-2 { grid-column: 1 / -1; }
 .sm-cc-setting--stack .setting-item-control {
