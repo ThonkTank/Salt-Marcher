@@ -137,7 +137,12 @@ describe("CartographerController", () => {
         ensureObsidianDomHelpers();
     });
 
-    const setupController = () => {
+    type SetupOptions = {
+        loadHexOptions?: () => Promise<HexOptions | null>;
+        createMapLayer?: () => Promise<MapLayer>;
+    };
+
+    const setupController = (options: SetupOptions = {}) => {
         const travel = createModeStub("travel");
         const editor = createModeStub("editor");
         const layer = createLayerStub();
@@ -157,13 +162,16 @@ describe("CartographerController", () => {
             deleteCurrent: vi.fn(),
         };
 
+        const createMapLayer = vi.fn(options.createMapLayer ?? (async () => layer));
+        const loadOptions = vi.fn(options.loadHexOptions ?? (async () => hexOptions));
+
         const controller = new CartographerController(app, {
             createMapManager: (_app, options) => {
                 managerOnChange = options.onChange ?? null;
                 return mapManager;
             },
-            createMapLayer: vi.fn(async () => layer),
-            loadHexOptions: vi.fn(async () => hexOptions),
+            createMapLayer,
+            loadHexOptions: loadOptions,
             modeDescriptors: [
                 { id: travel.mode.id, label: travel.mode.label, load: travelLoad },
                 { id: editor.mode.id, label: editor.mode.label, load: editorLoad },
@@ -176,6 +184,8 @@ describe("CartographerController", () => {
             editor,
             mapManager,
             layer,
+            createMapLayer,
+            loadOptions,
             loads: { travel: travelLoad, editor: editorLoad },
         };
     };
@@ -232,6 +242,38 @@ describe("CartographerController", () => {
         expect(travel.spies.onHexClick).toHaveBeenCalledWith(event.detail, event, expect.anything());
     });
 
+    it("shows overlay states for missing file and options", async () => {
+        const { controller, travel, mapManager, createMapLayer, loadOptions } = setupController({
+            loadHexOptions: async () => null,
+        });
+        const host = document.createElement("div");
+        const file = createFile("Maps/empty.md");
+
+        await controller.onOpen(host, file);
+
+        expect(loadOptions).toHaveBeenCalled();
+        expect(createMapLayer).not.toHaveBeenCalled();
+        expect(travel.spies.onFileChange).toHaveBeenLastCalledWith(
+            file,
+            null,
+            expect.objectContaining({ getFile: expect.any(Function) }),
+        );
+
+        const firstOverlay = host.querySelector(".sm-view-container__overlay-message");
+        expect(firstOverlay?.textContent?.trim()).toBe("Kein hex3x3-Block in dieser Datei.");
+
+        await mapManager.setFile(null);
+
+        expect(travel.spies.onFileChange).toHaveBeenLastCalledWith(
+            null,
+            null,
+            expect.objectContaining({ getFile: expect.any(Function) }),
+        );
+
+        const secondOverlay = host.querySelector(".sm-view-container__overlay-message");
+        expect(secondOverlay?.textContent?.trim()).toBe("Keine Karte ausgewählt.");
+    });
+
     it("loads modes once and reuses cached instances", async () => {
         const { controller, travel, editor, loads } = setupController();
         const host = document.createElement("div");
@@ -256,5 +298,47 @@ describe("CartographerController", () => {
 
         expect(loads.travel).toHaveBeenCalledTimes(1);
         expect(loads.editor).toHaveBeenCalledTimes(1);
+    });
+
+    it("aborts a previous render when a new one starts", async () => {
+        const initialLayer = createLayerStub();
+        let callCount = 0;
+        const { controller, travel, createMapLayer } = setupController({
+            createMapLayer: async () => {
+                callCount += 1;
+                if (callCount === 1) return initialLayer;
+                return createLayerStub();
+            },
+        });
+        const host = document.createElement("div");
+        const firstFile = createFile("Maps/initial.md");
+
+        await controller.onOpen(host, firstFile);
+        const initialCalls = createMapLayer.mock.calls.length;
+        expect(initialCalls).toBeGreaterThan(0);
+        expect(travel.spies.onFileChange).toHaveBeenCalledWith(
+            firstFile,
+            initialLayer.handles,
+            expect.anything(),
+        );
+
+        const controllerInternals = controller as unknown as {
+            applyCurrentFile(file: TFile | null, ctx?: CartographerModeLifecycleContext | null): Promise<void>;
+            lifecycle: { ctx: CartographerModeLifecycleContext } | null;
+            renderAbort?: AbortController;
+        };
+
+        const lifecycleCtx = controllerInternals.lifecycle?.ctx;
+        expect(lifecycleCtx).toBeTruthy();
+
+        const previousAbort = new AbortController();
+        previousAbort.abort = vi.fn(previousAbort.abort.bind(previousAbort));
+        controllerInternals.renderAbort = previousAbort;
+
+        const pendingFile = createFile("Maps/pending.md");
+        await controllerInternals.applyCurrentFile(pendingFile, lifecycleCtx ?? null);
+
+        expect(previousAbort.abort).toHaveBeenCalledTimes(1);
+        expect(createMapLayer.mock.calls.length).toBe(initialCalls + 1);
     });
 });
