@@ -7,15 +7,15 @@ import { mountCreatureClassificationSection, mountCreatureVitalSection } from ".
 import { mountCreatureStatsAndSkillsSection } from "./section-stats-and-skills";
 import { mountCreatureSensesAndDefensesSection } from "./section-senses-and-defenses";
 import { mountEntriesSection } from "./section-entries";
-import { mountSpellsKnownSection } from "./section-spells-known";
+import { mountCreatureSpellcastingSection } from "./section-spellcasting";
 import { createFormCard } from "../shared/layouts";
 
 /**
  * Layoutplan des Editors:
  * - Kopfbereich mit Titel und kurzem Hinweis
- * - Zweispaltiges Grid: linke Spalte für Stammdaten & Attribute,
- *   rechte Spalte für Sinne/Verteidigung sowie Zauberlisten
- * - Einträge (Traits, Aktionen, …) spannen über beide Spalten
+ * - Zweispaltiges Grid: linke Spalte für Stammdaten & Vitalwerte,
+ *   rechte Spalte für Sinne/Verteidigung sowie Spellcasting
+ * - Attribute/Fertigkeiten und Einträge spannen über beide Spalten
  * - Abschlussbereich mit klar getrennten Aktionsbuttons
  */
 
@@ -64,28 +64,33 @@ export class CreateCreatureModal extends Modal {
             });
 
         // Asynchron: verfügbare Zauber laden (best effort)
-        let spellsSectionControls: ReturnType<typeof mountSpellsKnownSection> | null = null;
+        let spellcastingControls: ReturnType<typeof mountCreatureSpellcastingSection> | null = null;
         void (async () => {
             try {
-                const spells = (await listSpellFiles(this.app)).map(f => f.basename).sort((a,b)=>a.localeCompare(b));
+                const spells = (await listSpellFiles(this.app)).map((f) => f.basename).sort((a, b) => a.localeCompare(b));
                 this.availableSpells.splice(0, this.availableSpells.length, ...spells);
-                spellsSectionControls?.refreshSpellMatches();
+                spellcastingControls?.setAvailableSpells(spells);
             }
             catch {}
         })();
 
-        const basicsCard = createCard(mainColumn, "Grunddaten", "Name, Typ, Gesinnung und Basiswerte");
-        mountCreatureClassificationSection(basicsCard.body, this.data);
-        mountCreatureVitalSection(basicsCard.body, this.data);
+        const classificationCard = createCard(mainColumn, "Grunddaten", "Name, Typ, Gesinnung und Tags");
+        mountCreatureClassificationSection(classificationCard.body, this.data);
 
-        const statsCard = createCard(mainColumn, "Attribute & Fertigkeiten");
-        mountCreatureStatsAndSkillsSection(statsCard.body, this.data, statsCard.registerValidation);
+        const vitalsCard = createCard(mainColumn, "Vitalwerte", "AC, HP, Initiative und Bewegung");
+        mountCreatureVitalSection(vitalsCard.body, this.data);
 
         const defensesCard = createCard(sideColumn, "Sinne & Verteidigungen");
         mountCreatureSensesAndDefensesSection(defensesCard.body, this.data);
 
-        const spellsCard = createCard(sideColumn, "Zauber & Fähigkeiten");
-        spellsSectionControls = mountSpellsKnownSection(spellsCard.body, this.data, () => this.availableSpells);
+        const spellcastingCard = createCard(sideColumn, "Spellcasting", "Zauberlisten, Nutzungen und Notizen");
+        spellcastingControls = mountCreatureSpellcastingSection(spellcastingCard.body, this.data, {
+            getAvailableSpells: () => this.availableSpells,
+            registerValidation: spellcastingCard.registerValidation,
+        });
+
+        const statsCard = createCard(fullColumn, "Attribute & Fertigkeiten");
+        mountCreatureStatsAndSkillsSection(statsCard.body, this.data, statsCard.registerValidation);
 
         const entriesCard = createCard(fullColumn, "Einträge", "Traits, Aktionen, Bonusaktionen, Reaktionen und Legendäres");
         mountEntriesSection(entriesCard.body, this.data, entriesCard.registerValidation);
