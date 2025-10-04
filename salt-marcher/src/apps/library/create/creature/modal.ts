@@ -38,6 +38,7 @@ export class CreateCreatureModal extends Modal {
         const { contentEl } = this;
         contentEl.empty();
         contentEl.addClass("sm-cc-create-modal");
+        this.applyModalLayout();
         this.validators = [];
         this.sectionObserver?.disconnect();
         this.sectionObserver = null;
@@ -182,6 +183,7 @@ export class CreateCreatureModal extends Modal {
     onClose() {
         this.sectionObserver?.disconnect();
         this.sectionObserver = null;
+        this.resetModalLayout();
         this.contentEl.empty();
         this.restoreBackgroundPointer();
     }
@@ -189,6 +191,7 @@ export class CreateCreatureModal extends Modal {
     onunload() {
         this.sectionObserver?.disconnect();
         this.sectionObserver = null;
+        this.resetModalLayout();
         this.restoreBackgroundPointer();
     }
 
@@ -228,5 +231,13 @@ export class CreateCreatureModal extends Modal {
         if (!this.bgLock) return;
         this.bgLock.el.style.pointerEvents = this.bgLock.pointer || '';
         this.bgLock = null;
+    }
+
+    private applyModalLayout() {
+        this.modalEl.addClass("sm-cc-create-modal-host");
+    }
+
+    private resetModalLayout() {
+        this.modalEl.removeClass("sm-cc-create-modal-host");
     }
 }
