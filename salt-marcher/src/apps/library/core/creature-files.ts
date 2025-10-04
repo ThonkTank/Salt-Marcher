@@ -194,7 +194,7 @@ function composeTypeLine(d: StatblockData): string | undefined {
 }
 
 
-function statblockToMarkdown(d: StatblockData): string {
+export function statblockToMarkdown(d: StatblockData): string {
     const identity = [d.size?.trim(), composeTypeLine(d)].filter(Boolean).join(" ");
     const alignment = composeAlignment(d);
     const header = [identity, alignment].filter(Boolean).join(", ");
