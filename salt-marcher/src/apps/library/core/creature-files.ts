@@ -100,8 +100,6 @@ export type SpellcastingData = {
     computed?: SpellcastingComputedValues;
 };
 
-export type LegacySpellcastingEntry = { name: string; level?: number; uses?: string; notes?: string };
-
 export type StatblockData = {
     name: string;
     size?: string;
@@ -134,8 +132,6 @@ export type StatblockData = {
     entries?: Array<{ category: 'trait'|'action'|'bonus'|'reaction'|'legendary'; name: string; kind?: string; to_hit?: string; to_hit_from?: { ability: 'str'|'dex'|'con'|'int'|'wis'|'cha'|'best_of_str_dex'; proficient?: boolean }; range?: string; target?: string; save_ability?: string; save_dc?: number; save_effect?: string; damage?: string; damage_from?: { dice: string; ability?: 'str'|'dex'|'con'|'int'|'wis'|'cha'|'best_of_str_dex'; bonus?: string }; recharge?: string; text?: string; }>;
     actionsList?: Array<{ name: string; kind?: string; to_hit?: string; range?: string; target?: string; save_ability?: string; save_dc?: number; save_effect?: string; damage?: string; recharge?: string; text?: string; }>;
     spellcasting?: SpellcastingData;
-    /** @deprecated Legacy fallback until create-Dialoge aktualisiert sind. */
-    spellsKnown?: LegacySpellcastingEntry[];
 };
 
 const CREATURE_PIPELINE = createVaultFilePipeline<StatblockData>({
@@ -335,13 +331,8 @@ export function statblockToMarkdown(d: StatblockData): string {
 }
 
 function resolveSpellcastingData(d: StatblockData): SpellcastingData | undefined {
-    if (d.spellcasting) {
-        return withComputedSpellcasting(d, d.spellcasting);
-    }
-    const legacy = (d.spellsKnown ?? []).filter((s): s is LegacySpellcastingEntry => Boolean(s && s.name && s.name.trim().length));
-    if (!legacy.length) return undefined;
-    const converted = convertLegacySpells(legacy);
-    return withComputedSpellcasting(d, converted);
+    if (!d.spellcasting) return undefined;
+    return withComputedSpellcasting(d, d.spellcasting);
 }
 
 function withComputedSpellcasting(d: StatblockData, base: SpellcastingData): SpellcastingData {
@@ -357,48 +348,6 @@ function withComputedSpellcasting(d: StatblockData, base: SpellcastingData): Spe
             saveDc,
             attackBonus,
         },
-    };
-}
-
-function convertLegacySpells(legacy: LegacySpellcastingEntry[]): SpellcastingData {
-    const atWill: SpellcastingSpell[] = [];
-    const perDay: Map<string, SpellcastingSpell[]> = new Map();
-    const byLevel: Map<number, SpellcastingSpell[]> = new Map();
-    const custom: SpellcastingSpell[] = [];
-    for (const entry of legacy) {
-        const spell: SpellcastingSpell = { name: entry.name, notes: entry.notes };
-        const uses = entry.uses?.trim();
-        if (uses) {
-            const normalized = uses.toLowerCase();
-            if (normalized.includes("at will")) {
-                atWill.push(spell);
-                continue;
-            }
-            const existing = perDay.get(uses) ?? [];
-            existing.push(spell);
-            perDay.set(uses, existing);
-            continue;
-        }
-        if (typeof entry.level === "number") {
-            const existing = byLevel.get(entry.level) ?? [];
-            existing.push(spell);
-            byLevel.set(entry.level, existing);
-            continue;
-        }
-        custom.push(spell);
-    }
-    const groups: SpellcastingGroup[] = [];
-    if (atWill.length) groups.push({ type: "at-will", spells: atWill });
-    for (const [uses, spells] of Array.from(perDay.entries()).sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true }))) {
-        groups.push({ type: "per-day", uses, spells });
-    }
-    for (const level of Array.from(byLevel.keys()).sort((a, b) => a - b)) {
-        groups.push({ type: "level", level, spells: byLevel.get(level) ?? [] });
-    }
-    if (custom.length) groups.push({ type: "custom", title: "Additional Spells", spells: custom });
-    return {
-        title: "Spellcasting",
-        groups,
     };
 }
 
