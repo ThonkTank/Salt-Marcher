@@ -2,10 +2,11 @@
 // Gemeinsame Formular-Helfer für Preset-Auswahl und Schadenswiderstands-Editoren.
 import { Setting } from "obsidian";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
+import { ValidationResult } from "../shared/layouts";
 import { CREATURE_DAMAGE_PRESETS } from "./presets";
 
 export type SectionValidationRegistrar = (
-  computeIssues: () => string[],
+  computeIssues: () => ValidationResult,
 ) => () => string[];
 
 export interface PresetSelectModel {

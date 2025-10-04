@@ -164,8 +164,12 @@ const editorLayoutsCss = `
     overflow:hidden;
 }
 .sm-cc-card__head { padding:.85rem .95rem .6rem; border-bottom:1px solid var(--background-modifier-border); display:flex; flex-direction:column; gap:.3rem; }
+.sm-cc-card__heading { display:flex; align-items:flex-start; gap:.65rem; justify-content:space-between; }
 .sm-cc-card__title { margin:0; font-size:1.05rem; }
 .sm-cc-card__subtitle { margin:0; font-size:.9em; color: var(--text-muted); }
+.sm-cc-card__status { font-size:.7rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase; border-radius:999px; padding:.2rem .65rem; background:color-mix(in srgb, var(--color-red, #e11d48) 18%, transparent); color: color-mix(in srgb, var(--color-red, #e11d48) 85%, var(--text-normal)); border:1px solid color-mix(in srgb, var(--color-red, #e11d48) 45%, transparent); display:inline-flex; align-items:center; white-space:nowrap; }
+.sm-cc-card__status[hidden] { display:none; }
+.sm-cc-card__status.is-active { box-shadow:0 0 0 1px color-mix(in srgb, var(--color-red, #e11d48) 35%, transparent); }
 .sm-cc-card__validation { display:none; padding:.6rem .95rem; border-top:1px solid color-mix(in srgb, var(--color-red, #e11d48) 30%, transparent); background:color-mix(in srgb, var(--color-red, #e11d48) 12%, var(--background-secondary)); color: var(--color-red, #e11d48); font-size:.9em; }
 .sm-cc-card__validation.is-visible { display:block; }
 .sm-cc-card__validation-list { margin:0; padding-left:1.2rem; display:flex; flex-direction:column; gap:.25rem; }
