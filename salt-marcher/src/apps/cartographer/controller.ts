@@ -137,8 +137,6 @@ const MODE_PROVISION_NOTICE_MESSAGE =
 const DEFAULT_MODE_LABEL = "Mode";
 
 export class CartographerController {
-    private static readonly neverAbortSignal: AbortSignal = new AbortController().signal;
-
     private readonly app: App;
     private readonly deps: CartographerControllerDeps;
 
@@ -156,7 +154,7 @@ export class CartographerController {
     private activeMode: CartographerMode | null = null;
     private lifecycle: { controller: AbortController; ctx: CartographerModeLifecycleContext } | null = null;
 
-    private renderToken = 0;
+    private renderAbort?: AbortController;
     private modeLoad?: Promise<Map<string, CartographerMode>>;
     private activeModeId?: string;
 
@@ -216,7 +214,7 @@ export class CartographerController {
         this.mapManager = this.deps.createMapManager(this.app, {
             initialFile,
             onChange: async (file) => {
-                await this.handleFileChange(file);
+                await this.applyCurrentFile(file);
             },
         });
 
@@ -271,7 +269,10 @@ export class CartographerController {
         this.lifecycle = null;
         this.activeModeId = undefined;
 
-        await this.teardownLayer();
+        this.renderAbort?.abort();
+        this.destroyMapLayer();
+        this.view?.clearMap();
+        this.currentOptions = null;
 
         this.view?.destroy();
         this.view = null;
@@ -391,14 +392,7 @@ export class CartographerController {
 
         if (controller.signal.aborted) return;
 
-        await this.refresh();
-    }
-
-    private async handleFileChange(file: TFile | null): Promise<void> {
-        this.currentFile = file;
-        this.requestedFile = file;
-        this.view?.setFileLabel(file);
-        await this.refresh();
+        await this.applyCurrentFile(this.currentFile, lifecycleCtx);
     }
 
     private async handleSave(mode: MapHeaderSaveMode, file: TFile | null): Promise<boolean> {
@@ -441,86 +435,122 @@ export class CartographerController {
         return { ...this.baseModeCtx, signal } satisfies CartographerModeLifecycleContext;
     }
 
-    private async refresh(): Promise<void> {
+    private async applyCurrentFile(
+        file: TFile | null = this.currentFile,
+        lifecycleCtx?: CartographerModeLifecycleContext | null,
+    ): Promise<void> {
+        this.currentFile = file ?? null;
+        this.requestedFile = file ?? null;
+
         const view = this.view;
         if (!view) return;
-        if (!this.activeMode || !this.lifecycle) return;
 
-        const token = ++this.renderToken;
-        await this.teardownLayer();
-        if (token !== this.renderToken) return;
+        view.setFileLabel(this.currentFile);
 
-        const lifecycle = this.lifecycle;
-        const ctx = lifecycle?.ctx ?? null;
-        const signal = lifecycle?.controller.signal ?? CartographerController.neverAbortSignal;
-
-        if (!this.currentFile) {
+        if (!this.activeMode || !this.lifecycle) {
+            this.destroyMapLayer();
             view.clearMap();
-            view.setOverlay("Keine Karte ausgewählt.");
             this.currentOptions = null;
-            if (ctx) {
-                await this.activeMode?.onFileChange(null, null, ctx);
-            }
             return;
         }
 
-        let options: HexOptions | null = null;
-        try {
-            options = await this.deps.loadHexOptions(this.app, this.currentFile);
-        } catch (error) {
-            console.error("[cartographer] failed to parse map options", error);
+        if (this.renderAbort) {
+            this.renderAbort.abort();
         }
+        const controller = new AbortController();
+        this.renderAbort = controller;
+        const signal = controller.signal;
 
-        if (token !== this.renderToken) return;
+        const ctx = lifecycleCtx ?? this.lifecycle.ctx ?? null;
 
-        if (!options) {
-            view.clearMap();
-            view.setOverlay("Kein hex3x3-Block in dieser Datei.");
-            this.currentOptions = null;
-            if (ctx) {
-                await this.activeMode?.onFileChange(this.currentFile, null, ctx);
+        let provisionalLayer: MapLayer | null = null;
+        const destroyProvisionalLayer = () => {
+            if (!provisionalLayer) return;
+            try {
+                provisionalLayer.destroy();
+            } catch (error) {
+                console.error("[cartographer] failed to destroy map layer", error);
             }
-            return;
-        }
+            provisionalLayer = null;
+        };
+
+        this.destroyMapLayer();
+        view.clearMap();
+        this.currentOptions = null;
 
         try {
-            const layer = await this.deps.createMapLayer(this.app, view.mapHost, this.currentFile, options);
-            if (token !== this.renderToken || !this.view) {
-                layer.destroy();
+            if (!this.currentFile) {
+                view.setOverlay("Keine Karte ausgewählt.");
+                if (ctx) {
+                    await this.activeMode.onFileChange(null, null, ctx);
+                }
                 return;
             }
-            if (signal.aborted) {
-                layer.destroy();
+
+            let options: HexOptions | null = null;
+            try {
+                options = await this.deps.loadHexOptions(this.app, this.currentFile);
+            } catch (error) {
+                console.error("[cartographer] failed to parse map options", error);
+            }
+
+            if (signal.aborted) return;
+
+            if (!options) {
+                view.setOverlay("Kein hex3x3-Block in dieser Datei.");
+                if (ctx) {
+                    await this.activeMode.onFileChange(this.currentFile, null, ctx);
+                }
                 return;
             }
-            this.mapLayer = layer;
+
+            try {
+                provisionalLayer = await this.deps.createMapLayer(
+                    this.app,
+                    view.mapHost,
+                    this.currentFile,
+                    options,
+                );
+            } catch (error) {
+                console.error("[cartographer] failed to render map", error);
+                view.setOverlay("Karte konnte nicht geladen werden.");
+                if (ctx) {
+                    await this.activeMode.onFileChange(this.currentFile, null, ctx);
+                }
+                return;
+            }
+
+            if (signal.aborted || !this.view) return;
+
+            this.mapLayer = provisionalLayer;
+            provisionalLayer = null;
             this.currentOptions = options;
             view.setOverlay(null);
             if (ctx) {
-                await this.activeMode?.onFileChange(this.currentFile, layer.handles, ctx);
+                await this.activeMode.onFileChange(this.currentFile, this.mapLayer.handles, ctx);
             }
-        } catch (error) {
-            console.error("[cartographer] failed to render map", error);
-            view.clearMap();
-            view.setOverlay("Karte konnte nicht geladen werden.");
-            this.currentOptions = null;
-            if (ctx) {
-                await this.activeMode?.onFileChange(this.currentFile, null, ctx);
+        } finally {
+            if (signal.aborted) {
+                this.destroyMapLayer();
+                view.clearMap();
+                this.currentOptions = null;
+            }
+            destroyProvisionalLayer();
+            if (this.renderAbort === controller) {
+                this.renderAbort = undefined;
             }
         }
     }
 
-    private async teardownLayer(): Promise<void> {
-        if (this.mapLayer) {
-            try {
-                this.mapLayer.destroy();
-            } catch (error) {
-                console.error("[cartographer] failed to destroy map layer", error);
-            }
-            this.mapLayer = null;
+    private destroyMapLayer(): void {
+        const layer = this.mapLayer;
+        if (!layer) return;
+        this.mapLayer = null;
+        try {
+            layer.destroy();
+        } catch (error) {
+            console.error("[cartographer] failed to destroy map layer", error);
         }
-        this.view?.clearMap();
-        this.currentOptions = null;
     }
 }
 
