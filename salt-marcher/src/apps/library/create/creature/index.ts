@@ -4,5 +4,5 @@ export { mountCreatureClassificationSection, mountCreatureVitalSection } from ".
 export { mountCreatureStatsAndSkillsSection } from "./section-stats-and-skills";
 export { mountCreatureSensesAndDefensesSection } from "./section-senses-and-defenses";
 export { mountEntriesSection } from "./section-entries";
-export { mountCreatureSpellcastingSection, mountSpellsKnownSection } from "./section-spellcasting";
+export { mountCreatureSpellcastingSection, ensureSpellcasting } from "./section-spellcasting";
 export * from "./presets";
