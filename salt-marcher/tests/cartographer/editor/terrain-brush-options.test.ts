@@ -1,15 +1,17 @@
 // salt-marcher/tests/cartographer/editor/terrain-brush-options.test.ts
-// Prüft das Terrain-Brush-Modul auf DOM-Setup und Tool-Konfiguration.
+// Prüft das Terrain-Brush-Panel auf DOM-Setup und Brush-Interaktionen.
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { App } from "obsidian";
-import type { ToolContext } from "../../../src/apps/cartographer/editor/tools/tools-api";
 import type { RenderHandles } from "../../../src/core/hex-mapper/hex-render";
-import { createBrushTool } from "../../../src/apps/cartographer/editor/tools/terrain-brush/brush-options";
+import {
+    mountBrushPanel,
+    type BrushPanelContext,
+} from "../../../src/apps/cartographer/editor/tools/terrain-brush/brush-options";
 
 const ensureObsidianDomHelpers = () => {
     const proto = HTMLElement.prototype as any;
     if (!proto.createEl) {
-        proto.createEl = function(tag: string, options?: { text?: string; cls?: string; attr?: Record<string, string> }) {
+        proto.createEl = function (tag: string, options?: { text?: string; cls?: string; attr?: Record<string, string> }) {
             const el = document.createElement(tag);
             if (options?.text) el.textContent = options.text;
             if (options?.cls) {
@@ -27,12 +29,12 @@ const ensureObsidianDomHelpers = () => {
         };
     }
     if (!proto.createDiv) {
-        proto.createDiv = function(options?: { text?: string; cls?: string; attr?: Record<string, string> }) {
+        proto.createDiv = function (options?: { text?: string; cls?: string; attr?: Record<string, string> }) {
             return this.createEl("div", options);
         };
     }
     if (!proto.empty) {
-        proto.empty = function() {
+        proto.empty = function () {
             while (this.firstChild) {
                 this.removeChild(this.firstChild);
             }
@@ -40,20 +42,20 @@ const ensureObsidianDomHelpers = () => {
         };
     }
     if (!proto.toggleClass) {
-        proto.toggleClass = function(className: string, force?: boolean) {
+        proto.toggleClass = function (className: string, force?: boolean) {
             const shouldHave = force ?? !this.classList.contains(className);
             this.classList.toggle(className, shouldHave);
             return this;
         };
     }
     if (!proto.setText) {
-        proto.setText = function(text: string) {
+        proto.setText = function (text: string) {
             this.textContent = text;
             return this;
         };
     }
     if (!proto.setAttr) {
-        proto.setAttr = function(name: string, value: string) {
+        proto.setAttr = function (name: string, value: string) {
             this.setAttribute(name, value);
             return this;
         };
@@ -64,18 +66,18 @@ beforeAll(() => {
     ensureObsidianDomHelpers();
 });
 
-beforeEach(() => {
-    vi.clearAllMocks();
-    loadRegions.mockReset();
-    applyBrush.mockReset();
-});
-
 const loadRegions = vi.fn();
 const applyBrush = vi.fn(() => Promise.resolve());
 
-vi.mock("../../../src/apps/cartographer/editor/tools/terrain-brush/brush", () => ({
-    applyBrush: (...args: unknown[]) => applyBrush(...args),
-}));
+vi.mock("../../../src/apps/cartographer/editor/tools/terrain-brush/brush-core", async () => {
+    const actual = await vi.importActual<
+        typeof import("../../../src/apps/cartographer/editor/tools/terrain-brush/brush-core")
+    >("../../../src/apps/cartographer/editor/tools/terrain-brush/brush-core");
+    return {
+        ...actual,
+        applyBrush: (...args: unknown[]) => applyBrush(...args),
+    };
+});
 
 vi.mock("../../../src/core/regions-store", () => ({
     loadRegions: (...args: unknown[]) => loadRegions(...args),
@@ -99,7 +101,13 @@ const createHandles = (): RenderHandles => ({
     destroy: vi.fn(),
 });
 
-describe("terrain brush options", () => {
+describe("terrain brush panel", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        loadRegions.mockReset();
+        applyBrush.mockReset();
+    });
+
     it("populates regions, tracks terrain, and resets when selections disappear", async () => {
         const listeners: Record<string, () => void> = {};
         loadRegions.mockResolvedValueOnce([
@@ -113,7 +121,7 @@ describe("terrain brush options", () => {
             }),
             offref: vi.fn(),
         };
-        const ctx: ToolContext = {
+        const ctx: BrushPanelContext = {
             app: { workspace } as unknown as App,
             getFile: () => null,
             getHandles: () => null,
@@ -122,14 +130,13 @@ describe("terrain brush options", () => {
             setStatus: () => {},
         };
 
-        const tool = createBrushTool();
         const root = document.createElement("div");
-        const cleanup = tool.mountPanel(root, ctx);
+        const controls = mountBrushPanel(root, ctx);
         await flushPromises();
 
         const selects = root.querySelectorAll("select");
         const regionSelect = selects[0] as HTMLSelectElement;
-        expect(regionSelect.options.length).toBe(3); // (none) + two regions
+        expect(regionSelect.options.length).toBe(3);
 
         regionSelect.value = "Forest";
         regionSelect.onchange?.(new Event("change"));
@@ -140,9 +147,9 @@ describe("terrain brush options", () => {
         await flushPromises();
 
         expect(regionSelect.value).toBe("");
-        expect(regionSelect.options.length).toBe(1); // only (none)
+        expect(regionSelect.options.length).toBe(1);
 
-        cleanup();
+        controls.destroy();
         expect(workspace.offref).toHaveBeenCalledWith("salt:terrains-updated-token");
         expect(workspace.offref).toHaveBeenCalledWith("salt:regions-updated-token");
     });
@@ -154,7 +161,7 @@ describe("terrain brush options", () => {
             resolveRegions = resolve;
         });
         loadRegions.mockReturnValueOnce(pending as unknown as Promise<unknown>);
-        const ctx: ToolContext = {
+        const ctx: BrushPanelContext = {
             app: { workspace: {} } as unknown as App,
             getFile: () => null,
             getHandles: () => null,
@@ -163,9 +170,8 @@ describe("terrain brush options", () => {
             setStatus: () => {},
         };
 
-        const tool = createBrushTool();
         const root = document.createElement("div");
-        void tool.mountPanel(root, ctx);
+        void mountBrushPanel(root, ctx);
         abortController.abort();
         resolveRegions?.([]);
         await flushPromises();
@@ -177,7 +183,7 @@ describe("terrain brush options", () => {
     it("ensures missing polygons before applying brush actions", async () => {
         loadRegions.mockResolvedValue([]);
         const handles = createHandles();
-        const ctx: ToolContext = {
+        const ctx: BrushPanelContext = {
             app: { workspace: {} } as unknown as App,
             getFile: () => ({ path: "map.md" }) as any,
             getHandles: () => handles,
@@ -186,15 +192,14 @@ describe("terrain brush options", () => {
             setStatus: () => {},
         };
 
-        const tool = createBrushTool();
         const root = document.createElement("div");
-        void tool.mountPanel(root, ctx);
+        const controls = mountBrushPanel(root, ctx);
         await flushPromises();
 
         const ensurePolys = vi.spyOn(handles, "ensurePolys");
 
         const coord = { r: 0, c: 0 };
-        await tool.onHexClick?.(coord, ctx);
+        await controls.handleHexClick(coord);
 
         expect(ensurePolys).toHaveBeenCalled();
         expect(applyBrush).toHaveBeenCalledWith(
@@ -206,7 +211,10 @@ describe("terrain brush options", () => {
             }),
             handles,
             expect.objectContaining({
-                tool: ctx,
+                tool: expect.objectContaining({
+                    getAbortSignal: expect.any(Function),
+                    setStatus: expect.any(Function),
+                }),
                 toolName: "Brush",
             })
         );

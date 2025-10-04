@@ -1,15 +1,49 @@
 // salt-marcher/tests/cartographer/editor/editor-mode.test.ts
-// Überprüft den Editor-Modus auf DOM-Aufbau und Karteninteraktion.
+// Überprüft den Editor-Modus auf DOM-Aufbau und Brush-Interaktionen.
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { App, TFile } from "obsidian";
 import type { CartographerModeLifecycleContext, HexCoord } from "../../../src/apps/cartographer/presenter";
 import type { RenderHandles } from "../../../src/core/hex-mapper/hex-render";
+
+const telemetryMocks = vi.hoisted(() => ({
+    reportEditorToolIssue: vi.fn(({ stage, toolId }: { stage: string; toolId?: string }) => `issue:${stage}:${toolId ?? "unknown"}`),
+}));
+
+vi.mock("../../../src/apps/cartographer/editor/editor-telemetry", () => telemetryMocks);
+
+const loadRegions = vi.fn();
+const applyBrush = vi.fn(() => Promise.resolve());
+
+vi.mock("../../../src/apps/cartographer/editor/tools/terrain-brush/brush-core", async () => {
+    const actual = await vi.importActual<
+        typeof import("../../../src/apps/cartographer/editor/tools/terrain-brush/brush-core")
+    >("../../../src/apps/cartographer/editor/tools/terrain-brush/brush-core");
+    return {
+        ...actual,
+        applyBrush: (...args: unknown[]) => applyBrush(...args),
+    };
+});
+
+vi.mock("../../../src/core/regions-store", () => ({
+    loadRegions: (...args: unknown[]) => loadRegions(...args),
+}));
+
+const attachBrushCircle = vi.fn(() => ({
+    updateRadius: vi.fn(),
+    show: vi.fn(),
+    destroy: vi.fn(),
+}));
+
+vi.mock("../../../src/apps/cartographer/editor/tools/brush-circle", () => ({
+    attachBrushCircle: (...args: unknown[]) => attachBrushCircle(...args),
+}));
+
 import { createEditorMode } from "../../../src/apps/cartographer/modes/editor";
 
 const ensureObsidianDomHelpers = () => {
     const proto = HTMLElement.prototype as any;
     if (!proto.createEl) {
-        proto.createEl = function(tag: string, options?: { text?: string; cls?: string; attr?: Record<string, string> }) {
+        proto.createEl = function (tag: string, options?: { text?: string; cls?: string; attr?: Record<string, string> }) {
             const el = document.createElement(tag);
             if (options?.text) el.textContent = options.text;
             if (options?.cls) {
@@ -27,27 +61,33 @@ const ensureObsidianDomHelpers = () => {
         };
     }
     if (!proto.createDiv) {
-        proto.createDiv = function(options?: { text?: string; cls?: string; attr?: Record<string, string> }) {
+        proto.createDiv = function (options?: { text?: string; cls?: string; attr?: Record<string, string> }) {
             return this.createEl("div", options);
         };
     }
     if (!proto.empty) {
-        proto.empty = function() {
+        proto.empty = function () {
             while (this.firstChild) {
                 this.removeChild(this.firstChild);
             }
             return this;
         };
     }
+    if (!proto.toggleClass) {
+        proto.toggleClass = function (cls: string, force?: boolean) {
+            this.classList.toggle(cls, force);
+            return this;
+        };
+    }
     if (!proto.setText) {
-        proto.setText = function(text: string) {
+        proto.setText = function (text: string) {
             this.textContent = text;
             return this;
         };
     }
-    if (!proto.toggleClass) {
-        proto.toggleClass = function(cls: string, force?: boolean) {
-            this.classList.toggle(cls, force);
+    if (!proto.setAttr) {
+        proto.setAttr = function (name: string, value: string) {
+            this.setAttribute(name, value);
             return this;
         };
     }
@@ -59,6 +99,9 @@ beforeAll(() => {
 
 beforeEach(() => {
     vi.clearAllMocks();
+    loadRegions.mockReset();
+    applyBrush.mockReset();
+    telemetryMocks.reportEditorToolIssue.mockClear();
 });
 
 const svgNS = "http://www.w3.org/2000/svg";
@@ -74,57 +117,13 @@ const createHandles = (): RenderHandles => ({
     destroy: vi.fn(),
 });
 
-type ToolMock = {
-    mountPanel: ReturnType<typeof vi.fn>;
-    onActivate: ReturnType<typeof vi.fn>;
-    onDeactivate: ReturnType<typeof vi.fn>;
-    onMapRendered: ReturnType<typeof vi.fn>;
-    onHexClick: ReturnType<typeof vi.fn>;
-    cleanup: ReturnType<typeof vi.fn>;
-};
-
-const toolMock: ToolMock = (() => {
-    const cleanup = vi.fn();
-    return {
-        mountPanel: vi.fn(() => cleanup),
-        onActivate: vi.fn(),
-        onDeactivate: vi.fn(),
-        onMapRendered: vi.fn(),
-        onHexClick: vi.fn(async () => true),
-        cleanup,
-    } satisfies ToolMock;
-})();
-
-const telemetryMocks = vi.hoisted(() => ({
-    reportEditorToolIssue: vi.fn((payload: { stage: string; toolId?: string }) => {
-        const { stage, toolId } = payload;
-        return `issue:${stage}:${toolId ?? "unknown"}`;
-    }),
-}));
-
-vi.mock("../../../src/apps/cartographer/editor/editor-telemetry", () => telemetryMocks);
-
-const { reportEditorToolIssue } = telemetryMocks;
-
-vi.mock("../../../src/apps/cartographer/editor/tools/terrain-brush/brush-options", () => ({
-    createBrushTool: () => ({
-        id: "mock-tool",
-        label: "Mock Tool",
-        mountPanel: toolMock.mountPanel,
-        onActivate: toolMock.onActivate,
-        onDeactivate: toolMock.onDeactivate,
-        onMapRendered: toolMock.onMapRendered,
-        onHexClick: toolMock.onHexClick,
-    }),
-}));
-
 const createLifecycleContext = (options: {
     app?: App;
     sidebarHost?: HTMLElement;
     signal?: AbortSignal;
     file?: TFile | null;
     handles?: RenderHandles | null;
-}) => {
+}): CartographerModeLifecycleContext => {
     const app: App = options.app ?? ({ workspace: {} } as any);
     const sidebar = options.sidebarHost ?? document.createElement("div");
     const signal = options.signal ?? new AbortController().signal;
@@ -143,128 +142,128 @@ const createLifecycleContext = (options: {
     } satisfies CartographerModeLifecycleContext;
 };
 
+const cloneLifecycleContext = (
+    base: CartographerModeLifecycleContext,
+    overrides: { file?: TFile | null; handles?: RenderHandles | null }
+): CartographerModeLifecycleContext => ({
+    app: base.app,
+    host: base.host,
+    mapHost: base.mapHost,
+    sidebarHost: base.sidebarHost,
+    signal: base.signal,
+    getFile: () => overrides.file ?? base.getFile(),
+    getMapLayer: () => null,
+    getRenderHandles: () => overrides.handles ?? base.getRenderHandles(),
+    getOptions: () => null,
+});
+
+const flushAsync = async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+};
+
 describe("editor mode", () => {
-    it("mounts panel UI and activates the default tool", async () => {
-        const ctx = createLifecycleContext({});
+    it("mounts panel UI and activates the brush when handles arrive", async () => {
+        loadRegions.mockResolvedValue([]);
+        const baseCtx = createLifecycleContext({});
         const mode = createEditorMode();
-        const tool = toolMock;
 
-        await mode.onEnter(ctx);
+        await mode.onEnter(baseCtx);
+        await flushAsync();
 
-        expect(ctx.sidebarHost.querySelector(".sm-cartographer__panel"))
-            .not.toBeNull();
-        expect(tool.mountPanel).toHaveBeenCalledOnce();
-        expect(tool.onActivate).toHaveBeenCalledOnce();
-        expect(tool.onMapRendered).not.toHaveBeenCalled();
-
-        const statusEl = ctx.sidebarHost.querySelector(".sm-cartographer__panel-status");
-        expect(statusEl?.textContent).toBe("No map selected.");
-        const panelEl = ctx.sidebarHost.querySelector(".sm-cartographer__panel");
-        expect(panelEl?.classList.contains("has-tool-error")).toBe(false);
-        expect(reportEditorToolIssue).not.toHaveBeenCalled();
-
-        const select = ctx.sidebarHost.querySelector("select") as HTMLSelectElement;
-        expect(select.disabled).toBe(true);
+        const panelEl = baseCtx.sidebarHost.querySelector(".sm-cartographer__panel");
+        expect(panelEl).not.toBeNull();
+        const statusEl = baseCtx.sidebarHost.querySelector(".sm-cartographer__panel-status");
+        expect(statusEl?.textContent).toBe("No regions available yet.");
 
         const file = { path: "map.md", basename: "map" } as TFile;
         const handles = createHandles();
-        await mode.onFileChange(file, handles, createLifecycleContext({
-            sidebarHost: ctx.sidebarHost,
-            signal: ctx.signal,
+        await mode.onFileChange(
             file,
             handles,
-            app: ctx.app,
-        }));
+            cloneLifecycleContext(baseCtx, { file, handles })
+        );
 
-        expect(tool.onMapRendered).toHaveBeenCalledTimes(1);
-        expect(select.disabled).toBe(false);
-        const fileLabel = ctx.sidebarHost.querySelector(".sm-cartographer__panel-file");
-        expect(fileLabel?.textContent).toBe("map");
+        expect(attachBrushCircle).toHaveBeenCalled();
+        expect(panelEl?.classList.contains("is-disabled")).toBe(false);
+        expect(statusEl?.classList.contains("is-error")).toBe(false);
     });
 
-    it("tears down the active tool on exit and guards against aborted signals", async () => {
-        const ctx = createLifecycleContext({});
-        const mode = createEditorMode();
-        const tool = toolMock;
-
-        await mode.onEnter(ctx);
-
-        const handles = createHandles();
-        await mode.onFileChange(null, handles, createLifecycleContext({
-            sidebarHost: ctx.sidebarHost,
-            signal: ctx.signal,
-            handles,
-            app: ctx.app,
-        }));
-
-        const abortController = new AbortController();
-        abortController.abort();
-        await mode.onFileChange(null, handles, createLifecycleContext({
-            sidebarHost: ctx.sidebarHost,
-            signal: abortController.signal,
-            handles,
-            app: ctx.app,
-        }));
-        expect(tool.onMapRendered).toHaveBeenCalledTimes(1);
-
-        await mode.onExit(createLifecycleContext({
-            sidebarHost: ctx.sidebarHost,
-            signal: ctx.signal,
-            app: ctx.app,
-        }));
-        expect(tool.onDeactivate).toHaveBeenCalled();
-        expect(tool.cleanup).toHaveBeenCalled();
-    });
-
-    it("routes hex click events to the active tool", async () => {
-        const ctx = createLifecycleContext({});
-        const mode = createEditorMode();
-        const tool = toolMock;
-
-        await mode.onEnter(ctx);
-        const handles = createHandles();
-        await mode.onFileChange(null, handles, createLifecycleContext({
-            sidebarHost: ctx.sidebarHost,
-            signal: ctx.signal,
-            handles,
-            app: ctx.app,
-        }));
-
-        const coord: HexCoord = { r: 1, c: 2 };
-        await mode.onHexClick(coord, new CustomEvent("hex"), createLifecycleContext({
-            sidebarHost: ctx.sidebarHost,
-            signal: ctx.signal,
-            handles,
-            app: ctx.app,
-        }));
-
-        expect(tool.onHexClick).toHaveBeenCalledWith(coord, expect.any(Object));
-    });
-
-    it("surfaces mount failures via status message and telemetry", async () => {
-        const ctx = createLifecycleContext({});
-        const mode = createEditorMode();
-        const failure = new Error("mount failed");
-        toolMock.mountPanel.mockImplementationOnce(() => {
-            throw failure;
+    it("relays brush clicks to applyBrush and reflects status messages", async () => {
+        loadRegions.mockResolvedValue([]);
+        applyBrush.mockImplementation(async (...args: unknown[]) => {
+            const ctx = args[5] as { tool?: { setStatus?: (msg: string) => void } } | undefined;
+            ctx?.tool?.setStatus?.("Applied brush.");
         });
 
-        await mode.onEnter(ctx);
+        const baseCtx = createLifecycleContext({});
+        const mode = createEditorMode();
+        await mode.onEnter(baseCtx);
 
-        expect(reportEditorToolIssue).toHaveBeenCalledTimes(1);
-        expect(reportEditorToolIssue).toHaveBeenCalledWith({
-            stage: "mount-panel",
-            toolId: "Mock Tool",
+        const file = { path: "map.md", basename: "map" } as TFile;
+        const handles = createHandles();
+        await mode.onFileChange(
+            file,
+            handles,
+            cloneLifecycleContext(baseCtx, { file, handles })
+        );
+
+        const coord: HexCoord = { r: 0, c: 0 };
+        await mode.onHexClick(
+            coord,
+            new MouseEvent("click"),
+            cloneLifecycleContext(baseCtx, { file, handles })
+        );
+        await flushAsync();
+        await flushAsync();
+
+        expect(applyBrush).toHaveBeenCalledWith(
+            baseCtx.app,
+            file,
+            coord,
+            expect.any(Object),
+            handles,
+            expect.objectContaining({ toolName: "Brush" })
+        );
+
+        const statusEl = baseCtx.sidebarHost.querySelector(".sm-cartographer__panel-status");
+        expect(statusEl?.classList.contains("is-error")).toBe(false);
+        expect(statusEl?.classList.contains("is-empty")).toBe(false);
+        expect(telemetryMocks.reportEditorToolIssue).not.toHaveBeenCalled();
+    });
+
+    it("surfaces brush failures via telemetry status", async () => {
+        loadRegions.mockResolvedValue([]);
+        const failure = new Error("apply failed");
+        applyBrush.mockRejectedValueOnce(failure);
+
+        const baseCtx = createLifecycleContext({});
+        const mode = createEditorMode();
+        await mode.onEnter(baseCtx);
+
+        const file = { path: "map.md", basename: "map" } as TFile;
+        const handles = createHandles();
+        await mode.onFileChange(
+            file,
+            handles,
+            cloneLifecycleContext(baseCtx, { file, handles })
+        );
+
+        await mode.onHexClick(
+            { r: 0, c: 0 },
+            new MouseEvent("click"),
+            cloneLifecycleContext(baseCtx, { file, handles })
+        );
+
+        expect(telemetryMocks.reportEditorToolIssue).toHaveBeenCalledWith({
+            stage: "operation",
+            toolId: "Brush",
             error: failure,
         });
 
-        const statusEl = ctx.sidebarHost.querySelector(".sm-cartographer__panel-status");
-        expect(statusEl?.textContent).toBe("issue:mount-panel:Mock Tool");
-        const panelEl = ctx.sidebarHost.querySelector(".sm-cartographer__panel");
+        const statusEl = baseCtx.sidebarHost.querySelector(".sm-cartographer__panel-status");
+        expect(statusEl?.textContent).toBe("issue:operation:Brush");
+        const panelEl = baseCtx.sidebarHost.querySelector(".sm-cartographer__panel");
         expect(panelEl?.classList.contains("has-tool-error")).toBe(true);
-
-        const select = ctx.sidebarHost.querySelector("select") as HTMLSelectElement;
-        expect(select.disabled).toBe(true);
-        expect(toolMock.onActivate).not.toHaveBeenCalled();
     });
 });
