@@ -18,8 +18,7 @@
 - Map-Rendering zeigt Overlays bei fehlenden Hex-Blöcken oder Rendering-Fehlern, signalisiert Registry-Probleme jedoch nicht im UI.
 
 # ToDo
-- [P2.36] Mode-Registry-Abos im Presenter beim Schließen zuverlässig lösen und einen Regressionstest für mehrmaliges Öffnen/Schließen ergänzen.
-- [P2.37] Für fehlgeschlagene `provideCartographerModes()`-Aufrufe eine sichtbare Nutzer-Rückmeldung (Overlay/Notice) hinzufügen und Logging/Telemetry harmonisieren.
+- keine offenen ToDos.
 
 # Standards
 - Modus-Dateien starten mit einem Satz zum Nutzerziel; Handler bündeln Ereignisketten über Imperativ-Verben (activate, hydrate, teardown).

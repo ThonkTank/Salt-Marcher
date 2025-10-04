@@ -15,6 +15,14 @@ Durchsuche und erweiter die Nachschlagewerke für Kreaturen, Zauber, Gelände un
 - Ribbon-Symbole in Obsidian öffnen Cartographer (Kompass) und Library (Buch).
 - Der Encounter-Bereich erscheint automatisch, sobald der Travel-Modus eine Begegnung auslöst.
 
+## Entry-Points
+
+| App | View-Klasse & Typ | Presenter | Öffnen/Detach-Helfer |
+| --- | --- | --- | --- |
+| Cartographer | `CartographerView` (`VIEW_CARTOGRAPHER`) | `CartographerPresenter` | `openCartographer(app, file?)`, `detachCartographerLeaves(app)` |
+| Encounter | `EncounterView` (`VIEW_ENCOUNTER`) | `EncounterPresenter` | – |
+| Library | `LibraryView` (`VIEW_LIBRARY`) | – (Renderer pro Modus) | `openLibrary(app)` |
+
 ## Event-Flows
 
 ### Cartographer

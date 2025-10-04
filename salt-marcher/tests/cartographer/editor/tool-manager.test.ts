@@ -121,6 +121,151 @@ describe("createToolManager", () => {
         expect(events).toEqual([]);
         expect(manager.getActive()).toBeNull();
     });
+
+    it("emits onToolError and fallback metadata when a tool fails to mount", async () => {
+        const events: ToolEvents = [];
+        const tool = createTool("faulty", events);
+        const failure = new Error("mount failed");
+        tool.mountPanel.mockImplementationOnce(() => {
+            throw failure;
+        });
+
+        const host = document.createElement("div");
+        const handles = createHandles();
+        const abortController = new AbortController();
+        const context: ToolContext = {
+            app: { workspace: {} } as any,
+            getFile: () => null,
+            getHandles: () => handles,
+            getOptions: () => null,
+            getAbortSignal: () => abortController.signal,
+            setStatus: () => {},
+        };
+
+        const onToolError = vi.fn();
+        const onToolFallback = vi.fn();
+
+        const manager = createToolManager([tool], {
+            getContext: () => context,
+            getPanelHost: () => host,
+            getLifecycleSignal: () => abortController.signal,
+            onToolChanged: vi.fn(),
+            onToolError,
+            onToolFallback,
+        });
+
+        await manager.switchTo("faulty");
+
+        expect(onToolError).toHaveBeenCalledTimes(1);
+        expect(onToolError).toHaveBeenCalledWith({
+            stage: "mount-panel",
+            tool,
+            error: failure,
+            toolId: "faulty",
+        });
+        expect(onToolFallback).toHaveBeenCalledTimes(1);
+        expect(onToolFallback).toHaveBeenCalledWith({
+            stage: "mount-panel",
+            requestedId: "faulty",
+            fallback: null,
+            error: failure,
+        });
+        expect(manager.getActive()).toBeNull();
+        expect(events).toEqual([]);
+    });
+
+    it("falls back to the first tool when an unknown id is requested", async () => {
+        const events: ToolEvents = [];
+        const toolA = createTool("a", events);
+        const toolB = createTool("b", events);
+        const host = document.createElement("div");
+        const handles = createHandles();
+        const abortController = new AbortController();
+
+        const context: ToolContext = {
+            app: { workspace: {} } as any,
+            getFile: () => null,
+            getHandles: () => handles,
+            getOptions: () => null,
+            getAbortSignal: () => abortController.signal,
+            setStatus: () => {},
+        };
+
+        const onToolError = vi.fn();
+        const onToolFallback = vi.fn();
+
+        const manager = createToolManager([toolA, toolB], {
+            getContext: () => context,
+            getPanelHost: () => host,
+            getLifecycleSignal: () => abortController.signal,
+            onToolError,
+            onToolFallback,
+        });
+
+        await manager.switchTo("missing");
+
+        expect(onToolError).toHaveBeenCalledWith({
+            stage: "resolve",
+            tool: null,
+            error: expect.any(Error),
+            toolId: "missing",
+        });
+        expect(onToolFallback).toHaveBeenCalledWith({
+            stage: "resolve",
+            requestedId: "missing",
+            fallback: toolA,
+            error: expect.any(Error),
+        });
+        expect(manager.getActive()).toBe(toolA);
+        expect(events).toEqual(["a:mount", "a:activate", "a:render"]);
+    });
+
+    it("switches to an alternative tool when the requested one fails to mount", async () => {
+        const events: ToolEvents = [];
+        const failing = createTool("broken", events);
+        const fallback = createTool("working", events);
+        const failure = new Error("mount failed");
+        failing.mountPanel.mockImplementationOnce(() => {
+            throw failure;
+        });
+
+        const host = document.createElement("div");
+        const handles = createHandles();
+        const abortController = new AbortController();
+
+        const context: ToolContext = {
+            app: { workspace: {} } as any,
+            getFile: () => null,
+            getHandles: () => handles,
+            getOptions: () => null,
+            getAbortSignal: () => abortController.signal,
+            setStatus: () => {},
+        };
+
+        const onToolFallback = vi.fn();
+
+        const manager = createToolManager([failing, fallback], {
+            getContext: () => context,
+            getPanelHost: () => host,
+            getLifecycleSignal: () => abortController.signal,
+            onToolFallback,
+        });
+
+        await manager.switchTo("broken");
+
+        expect(onToolFallback).toHaveBeenCalledWith({
+            stage: "mount-panel",
+            requestedId: "broken",
+            fallback,
+            error: failure,
+        });
+        expect(manager.getActive()).toBe(fallback);
+        expect(events).toEqual([
+            "working:mount",
+            "working:activate",
+            "working:render",
+        ]);
+    });
 });
 const ensureObsidianDomHelpers = () => {
     const proto = HTMLElement.prototype as any;

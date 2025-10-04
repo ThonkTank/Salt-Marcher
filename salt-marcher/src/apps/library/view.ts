@@ -1,5 +1,6 @@
 // src/apps/library/view.ts
 import { ItemView, WorkspaceLeaf } from "obsidian";
+import type { App } from "obsidian";
 import type { ModeRenderer, Mode } from "./view/mode";
 import { CreaturesRenderer } from "./view/creatures";
 import { SpellsRenderer } from "./view/spells";
@@ -148,4 +149,11 @@ export class LibraryView extends ItemView {
         await this.activeRenderer.handleCreate(name);
         this.searchInput?.focus();
     }
+}
+
+/** Opens the library view in a dedicated workspace leaf. */
+export async function openLibrary(app: App): Promise<void> {
+    const leaf = app.workspace.getLeaf(true);
+    await leaf.setViewState({ type: VIEW_LIBRARY, active: true });
+    app.workspace.revealLeaf(leaf);
 }

@@ -39,6 +39,25 @@ const ensureObsidianDomHelpers = () => {
             return this;
         };
     }
+    if (!proto.toggleClass) {
+        proto.toggleClass = function(className: string, force?: boolean) {
+            const shouldHave = force ?? !this.classList.contains(className);
+            this.classList.toggle(className, shouldHave);
+            return this;
+        };
+    }
+    if (!proto.setText) {
+        proto.setText = function(text: string) {
+            this.textContent = text;
+            return this;
+        };
+    }
+    if (!proto.setAttr) {
+        proto.setAttr = function(name: string, value: string) {
+            this.setAttribute(name, value);
+            return this;
+        };
+    }
 };
 
 beforeAll(() => {
@@ -178,8 +197,18 @@ describe("terrain brush options", () => {
         await tool.onHexClick?.(coord, ctx);
 
         expect(ensurePolys).toHaveBeenCalled();
-        expect(applyBrush).toHaveBeenCalledWith(ctx.app, ctx.getFile(), coord, expect.objectContaining({
-            mode: expect.any(String),
-        }), handles);
+        expect(applyBrush).toHaveBeenCalledWith(
+            ctx.app,
+            ctx.getFile(),
+            coord,
+            expect.objectContaining({
+                mode: expect.any(String),
+            }),
+            handles,
+            expect.objectContaining({
+                tool: ctx,
+                toolName: "Brush",
+            })
+        );
     });
 });

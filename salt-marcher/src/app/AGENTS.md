@@ -21,7 +21,6 @@
 - Exportiert das komplette Stylesheet als String, das von `injectCss`/`removeCss` im Plugin verwaltet wird.
 
 # ToDo
-- [P2.33] CSS-Injektion absichern, indem vor dem Append vorhandene `hex-css`-Nodes entfernt werden, um Doppel-Einträge nach Fehler-Recovery zu vermeiden.
 - [P2.65] Terrain-Bootstrap-Logger so erweitern, dass Vault-Änderungen über `watchTerrains.onError` Telemetrie- und Notice-Hooks triggern statt nur Konsolenfehler zu schreiben.
 - [P2.66] Terrain-Bootstrap mit `this.register` am Plugin-Lifecycle anbinden, damit `stop()` auch nach abgebrochenen `onload`-Sequenzen zuverlässig läuft.
 

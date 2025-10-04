@@ -1,9 +1,8 @@
 // src/app/main.ts
-import { Plugin, WorkspaceLeaf } from "obsidian";
+import { Plugin } from "obsidian";
 // Legacy views removed (consolidated into Library)
-import { EncounterView, VIEW_ENCOUNTER } from "../apps/encounter/view";
-import { VIEW_CARTOGRAPHER, CartographerView, openCartographer, detachCartographerLeaves } from "../apps/cartographer";
-import { VIEW_LIBRARY, LibraryView } from "../apps/library/view";
+import { detachCartographerLeaves } from "../apps/cartographer";
+import { VIEW_MANIFEST } from "../apps/view-manifest";
 import { HEX_PLUGIN_CSS } from "./css";
 import { reportIntegrationIssue, type IntegrationId, type IntegrationOperation } from "./integration-telemetry";
 import { createTerrainBootstrap, type TerrainBootstrapHandle } from "./bootstrap-services";
@@ -12,20 +11,12 @@ export default class SaltMarcherPlugin extends Plugin {
     private terrainBootstrap?: TerrainBootstrapHandle;
     async onload() {
         // Views
-        try {
-            this.registerView(VIEW_CARTOGRAPHER, (leaf: WorkspaceLeaf) => new CartographerView(leaf));
-        } catch (error: unknown) {
-            this.failIntegration("register-view", "obsidian:cartographer-view", error, "Cartographer-Ansicht konnte nicht registriert werden. Bitte die Konsole pruefen.");
-        }
-        try {
-            this.registerView(VIEW_ENCOUNTER, (leaf: WorkspaceLeaf) => new EncounterView(leaf));
-        } catch (error: unknown) {
-            this.failIntegration("register-view", "obsidian:encounter-view", error, "Encounter-Ansicht konnte nicht registriert werden. Bitte die Konsole pruefen.");
-        }
-        try {
-            this.registerView(VIEW_LIBRARY, (leaf: WorkspaceLeaf) => new LibraryView(leaf));
-        } catch (error: unknown) {
-            this.failIntegration("register-view", "obsidian:library-view", error, "Library-Ansicht konnte nicht registriert werden. Bitte die Konsole pruefen.");
+        for (const manifestEntry of VIEW_MANIFEST) {
+            try {
+                this.registerView(manifestEntry.viewType, manifestEntry.createView);
+            } catch (error: unknown) {
+                this.failIntegration("register-view", manifestEntry.integrationId, error, `${manifestEntry.displayName}-Ansicht konnte nicht registriert werden. Bitte die Konsole pruefen.`);
+            }
         }
 
         // Load terrain data and keep it synchronised with the filesystem.
@@ -41,63 +32,45 @@ export default class SaltMarcherPlugin extends Plugin {
         }
 
         // Ribbons
-        try {
-            this.addRibbonIcon("compass", "Open Cartographer", async () => {
-                try {
-                    await openCartographer(this.app);
-                } catch (error: unknown) {
-                    this.failIntegration("activate-view", "obsidian:cartographer-view", error, "Cartographer konnte nicht geoeffnet werden. Bitte die Konsole pruefen.");
-                }
-            });
-        } catch (error: unknown) {
-            this.failIntegration("register-ribbon", "obsidian:cartographer-view", error, "Cartographer-Ribbon konnte nicht erstellt werden. Bitte die Konsole pruefen.");
-        }
-        try {
-            this.addRibbonIcon("book", "Open Library", async () => {
-                try {
-                    const leaf = this.app.workspace.getLeaf(true);
-                    await leaf.setViewState({ type: VIEW_LIBRARY, active: true });
-                    this.app.workspace.revealLeaf(leaf);
-                } catch (error: unknown) {
-                    this.failIntegration("activate-view", "obsidian:library-view", error, "Library konnte nicht geoeffnet werden. Bitte die Konsole pruefen.");
-                }
-            });
-        } catch (error: unknown) {
-            this.failIntegration("register-ribbon", "obsidian:library-view", error, "Library-Ribbon konnte nicht erstellt werden. Bitte die Konsole pruefen.");
+        for (const manifestEntry of VIEW_MANIFEST) {
+            const activation = manifestEntry.activation;
+            if (!activation?.ribbon) continue;
+
+            try {
+                this.addRibbonIcon(activation.ribbon.icon, activation.ribbon.title, async () => {
+                    try {
+                        await activation.open(this.app);
+                    } catch (error: unknown) {
+                        this.failIntegration("activate-view", manifestEntry.integrationId, error, `${manifestEntry.displayName} konnte nicht geoeffnet werden. Bitte die Konsole pruefen.`);
+                    }
+                });
+            } catch (error: unknown) {
+                this.failIntegration("register-ribbon", manifestEntry.integrationId, error, `${manifestEntry.displayName}-Ribbon konnte nicht erstellt werden. Bitte die Konsole pruefen.`);
+            }
         }
 
         // Commands
-        try {
-            this.addCommand({
-                id: "open-cartographer",
-                name: "Open Cartographer",
-                callback: async () => {
-                    try {
-                        await openCartographer(this.app);
-                    } catch (error: unknown) {
-                        this.failIntegration("activate-view", "obsidian:cartographer-view", error, "Cartographer konnte nicht geoeffnet werden. Bitte die Konsole pruefen.");
-                    }
-                },
-            });
-        } catch (error: unknown) {
-            this.failIntegration("register-command", "obsidian:cartographer-view", error, "Cartographer-Kommando konnte nicht registriert werden. Bitte die Konsole pruefen.");
-        }
-        try {
-            this.addCommand({
-                id: "open-library",
-                name: "Open Library",
-                callback: async () => {
-                    try {
-                        const leaf = this.app.workspace.getLeaf(true);
-                        await leaf.setViewState({ type: VIEW_LIBRARY, active: true });
-                        this.app.workspace.revealLeaf(leaf);
-                    } catch (error: unknown) {
-                        this.failIntegration("activate-view", "obsidian:library-view", error, "Library konnte nicht geoeffnet werden. Bitte die Konsole pruefen.");
-                    }
-                },
-            });
-        } catch (error: unknown) {
-            this.failIntegration("register-command", "obsidian:library-view", error, "Library-Kommando konnte nicht registriert werden. Bitte die Konsole pruefen.");
+        for (const manifestEntry of VIEW_MANIFEST) {
+            const activation = manifestEntry.activation;
+            if (!activation?.commands?.length) continue;
+
+            for (const command of activation.commands) {
+                try {
+                    this.addCommand({
+                        id: command.id,
+                        name: command.name,
+                        callback: async () => {
+                            try {
+                                await activation.open(this.app);
+                            } catch (error: unknown) {
+                                this.failIntegration("activate-view", manifestEntry.integrationId, error, `${manifestEntry.displayName} konnte nicht geoeffnet werden. Bitte die Konsole pruefen.`);
+                            }
+                        },
+                    });
+                } catch (error: unknown) {
+                    this.failIntegration("register-command", manifestEntry.integrationId, error, `${manifestEntry.displayName}-Kommando konnte nicht registriert werden. Bitte die Konsole pruefen.`);
+                }
+            }
         }
 
         this.injectCss();
@@ -120,6 +93,7 @@ export default class SaltMarcherPlugin extends Plugin {
     }
 
     private injectCss() {
+        document.querySelectorAll("#hex-css").forEach((existingStyle) => existingStyle.remove());
         const style = document.createElement("style");
         style.id = "hex-css";
         style.textContent = HEX_PLUGIN_CSS;

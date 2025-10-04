@@ -11,20 +11,16 @@
 
 ## Lifecycle & Datenflüsse
 - `createBrushTool` hält lokalen State für Radius, Region, Terrain und Modus und synchronisiert UI-Interaktionen direkt in diese Struktur.
-- `mountPanel` lädt Regionen sequentiell über `loadRegions(app)` und reagiert auf Workspace-Events (`salt:terrains-updated`, `salt:regions-updated`), setzt aber keine Statusmeldungen im Panel.
+- `mountPanel` lädt Regionen sequentiell über `loadRegions(app)`, zeigt währenddessen Lade-/Fehlerstatus an, sperrt das Panel bei Refreshes und reagiert auf Workspace-Events (`salt:terrains-updated`, `salt:regions-updated`).
 - Der Tool-Kontext reicht `getHandles()` und `getOptions()` weiter; bei `onActivate` und `onMapRendered` wird der Brush-Kreis jedes Mal neu angeheftet.
-- `onHexClick` ruft `applyBrush` ohne eigene Fehlerbehandlung auf; Ausnahmen landen nur in der Konsole, Abort-Signale aus dem Tool-Kontext werden nicht berücksichtigt.
+- `onHexClick` ruft `applyBrush` auf, das Fehler meldet, UI/Persistenz rollt und seit kurzem auch das Abort-Signal des Tool-Kontexts respektiert.
 
 ## Beobachtungen
-- Fehlschläge beim Laden der Regionen oder beim Command-Aufruf „Manage…“ bleiben für Nutzer unsichtbar, obwohl `ToolContext.setStatus` verfügbar wäre.
-- Panel-Reloads können mehrfach parallel laufen (Event-Loop + manuelle Klicks); ältere Promises werden zwar durch `fillSeq` verworfen, aber es fehlt ein visuelles Feedback für laufende Aktualisierungen.
-- `applyBrush` hat keinen Guard für aufeinanderfolgende Klicks und propagiert weder Partial-Fehler noch Telemetrie, wodurch inkonsistente Terrain-Zustände unbemerkt bleiben können.
+- Der „Manage…“-Button deaktiviert sich bei fehlendem Library-Command, liefert Statusmeldungen zum Command-Aufruf und verweist auf den manuellen Weg über den Library-View.
+- Parallel gestartete Panel-Reloads werden sequentiell verarbeitet; `applyBrush` meldet Schreibfehler, rollt UI/Persistenz bei Teilerfolgen zurück und bricht laufende Operationen nun über das Tool-Abort-Signal sauber ab.
 
 # ToDo
-- [P2.41] `brush-options.ts`: Statusmeldungen und Inline-Hinweise nutzen, um Lade-/Fehlerzustände sichtbar zu machen und das Panel während `loadRegions`-Zyklen zu sperren.
-- [P2.42] `brush-options.ts`: Command-Aufruf für „Manage…“ absichern (Existenz prüfen, sonst degradieren) und Nutzer*innen erklären, wie sie Bibliothekseinträge nachpflegen.
-- [P2.43] `brush.ts`: Fehler beim Anwenden des Brushes (save/delete) an den Tool-Kontext melden, Telemetrie auslösen und sicherstellen, dass UI/Hex-Fills bei Teilerfolg zurückgerollt werden.
-- [P2.44] `brush.ts`: Abort-Signal des Tool-Kontexts berücksichtigen, um laufende Schreibvorgänge bei Toolwechseln abzubrechen und Race-Conditions zu vermeiden.
+- keine offenen ToDos.
 
 # Standards
 - Funktionen beschreiben ihren Effekt auf Terrain-Arrays in einem Satz vor der Implementierung.

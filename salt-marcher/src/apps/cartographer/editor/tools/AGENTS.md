@@ -11,21 +11,17 @@
 - `terrain-brush/` stellt das einzige derzeit aktive Tool mit Panel, Options-State, Regions-Loading, Brush-Mathematik und Hex-Anwendung bereit.
 
 ## Lifecycle & Datenflüsse
-- Der Editor-Modus reicht `ToolContext`-Instanzen mit Datei-, Render- und Optionshandles sowie `setStatus` an den Manager, der sie ungeprüft an Tools weitergibt.
-- `switchTo` leert das Panel, mountet das gewünschte Tool und ruft Hooks sequenziell nach Microtasks auf; Fehler werden ausschließlich über `console.error` protokolliert.
-- Fällt ein Tool beim Panel-Mount oder Aktivieren aus, signalisiert der Manager dies weder per Statusmeldung noch per Telemetrie und hinterlässt ein leeres Panel.
-- Der Terrain-Brush lädt Regionen asynchron, nutzt `loadRegions` und Workspace-Events, aktualisiert jedoch keine Statusanzeige bei Lade- oder Fehlerzuständen und verliert stillschweigend vorausgewählte Regionen.
+- Der Editor-Modus reicht `ToolContext`-Instanzen mit Datei-, Render- und Optionshandles sowie `setStatus` an den Manager, der sie an Tools weitergibt und Status-/Fallback-Metadaten via Hooks zurückmeldet.
+- `switchTo` leert das Panel, mountet das gewünschte Tool, ruft Hooks sequenziell nach Microtasks auf und informiert den Editor über Telemetrie- sowie Fallback-Hooks.
+- Der Terrain-Brush zeigt Statusmeldungen für Lade-, Fehler- und Reset-Zustände an, validiert den „Manage…“-Button gegen das Command und blendet bei Bedarf Hinweise zur manuellen Pflege ein.
 
 # Beobachtungen
-- Tool-Umschaltungen ohne Treffer (unbekannte ID, leere Tool-Liste) resultieren in stummen Rückgaben; ein sichtbarer Hinweis oder Telemetrie fehlt.
-- `createToolManager` kennt keinen Hook, um Fehler an den Editor-Modus weiterzuleiten, obwohl `ToolContext.setStatus` für Panel-Feedback vorgesehen ist.
-- Der Terrain-Brush meldet Ladefehler nur in der Konsole; Nutzer erkennen nicht, ob Regionen nachgeladen werden oder warum Dropdowns leer bleiben.
-- Der „Manage…“-Button vertraut auf den globalen Command, prüft aber dessen Existenz nicht und kann Nutzer ohne Feedback zurücklassen.
+- Tool-Umschaltungen ohne Treffer (unbekannte ID, leere Tool-Liste) melden ihren Fallback inzwischen an den Editor; der Terrain-Brush blockt Panel & Statusmeldungen sauber und deaktiviert den „Manage…“-Button bei fehlendem Command.
+- `createToolManager` reicht Telemetrie an den Editor weiter; `brush.ts` sendet allerdings weiterhin keine Fehler- oder Abort-Hooks zurück.
+- Der Terrain-Brush erklärt Nutzer*innen nun, wie sie Regionen im Library-View anlegen, muss aber weiterhin Fehler der Schreiblogik und Abort-Signale adressieren.
 
 # ToDo
-- [P2.40] `tool-manager.ts`: Status-/Fallback-Hook ergänzen, der bei unbekannten Tool-IDs oder fehlgeschlagenem Mount eine Nutzerhinweis- und Telemetrie-Pipeline triggert.
-- [P2.41] `terrain-brush/brush-options.ts`: Panel-Status (`ctx.setStatus`) während Regionsladezyklen nutzen, Fehlermeldungen anzeigen und verlorene Vorauswahl begründet zurücksetzen.
-- [P2.42] `terrain-brush/brush-options.ts`: Command-Aufruf für „Manage…“ absichern (Existenz prüfen, andernfalls UI-Hinweis setzen).
+- keine offenen ToDos.
 
 # Standards
 - Jede Tool-Datei startet mit Dateipfad plus einem Satz zur Nutzerinteraktion.
