@@ -165,6 +165,7 @@ export interface DamageResponseLists {
 export function mountDamageResponseEditor(
   parent: HTMLElement,
   damageLists: DamageResponseLists,
+  onChange?: (lists: DamageResponseLists) => void,
 ) {
   const configs: DamageResponseConfig[] = [
     {
@@ -255,6 +256,7 @@ export function mountDamageResponseEditor(
         };
       });
     }
+    onChange?.(damageLists);
   };
 
   const addEntry = () => {
