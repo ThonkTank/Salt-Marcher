@@ -215,16 +215,6 @@ const editorLayoutsCss = `
 .sm-cc-shell__nav-button:focus-visible { outline:2px solid var(--interactive-accent); outline-offset:2px; }
 .sm-cc-shell__nav-button.is-active { background:var(--interactive-accent); color:var(--text-on-accent, #fff); box-shadow:0 8px 20px color-mix(in srgb, var(--interactive-accent) 35%, transparent); }
 .sm-cc-shell__content { display:flex; flex-direction:column; gap:1.5rem; min-width:0; }
-@media (max-width: 1180px) {
-    .sm-cc-shell { grid-template-columns:minmax(0, 1fr); }
-    .sm-cc-shell__nav { position:static; padding:.85rem; }
-    .sm-cc-shell__nav-list { flex-direction:row; flex-wrap:wrap; gap:.5rem; }
-    .sm-cc-shell__nav-button { flex:1 1 180px; justify-content:center; }
-}
-@media (max-width: 720px) {
-    .sm-cc-shell__nav-list { flex-wrap:nowrap; overflow:auto; padding-bottom:.25rem; }
-    .sm-cc-shell__nav-button { flex:0 0 auto; white-space:nowrap; }
-}
 .sm-cc-card {
     border:1px solid var(--background-modifier-border);
     border-radius:12px;
