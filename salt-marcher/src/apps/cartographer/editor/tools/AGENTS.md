@@ -5,26 +5,25 @@
 
 # Aktueller Stand
 ## Strukturüberblick
-- `tools-api.ts` definiert `ToolModule`, den gemeinsam genutzten `ToolContext` (inklusive `setStatus`) sowie die Manager-Signatur.
-- `tool-manager.ts` schaltet Tools, mountet deren Panels, ruft Lifecycle-Hooks (`onActivate`, `onDeactivate`, `onMapRendered`) und verwaltet Abbruch-Controller.
+- `brush-core.ts` liefert Radius-/Distanzmathematik sowie `applyBrush`, das Persistenz und Live-Fills kapselt.
 - `brush-circle.ts` rendert den Vorschaukreis über SVG, throttlet Pointer-Events und unterstützt dynamische Radien.
-- `terrain-brush/` stellt das einzige derzeit aktive Tool mit Panel, Options-State, Regions-Loading, Brush-Mathematik und Hex-Anwendung bereit.
+- `terrain-brush/` bündelt Panel, Options-State, Regions-Loading und Hex-Anwendung auf Basis des Brush-Cores.
 
 ## Lifecycle & Datenflüsse
-- Der Editor-Modus reicht `ToolContext`-Instanzen mit Datei-, Render- und Optionshandles sowie `setStatus` an den Manager, der sie an Tools weitergibt und Status-/Fallback-Metadaten via Hooks zurückmeldet.
-- `switchTo` leert das Panel, mountet das gewünschte Tool, ruft Hooks sequenziell nach Microtasks auf und informiert den Editor über Telemetrie- sowie Fallback-Hooks.
+- Der Editor-Modus reicht Datei-, Render- und Optionshandles sowie `setStatus` direkt an das Brush-Panel weiter.
+- Das Panel mountet UI, lädt Regionen, reagiert auf Workspace-Events und steuert über `setDisabled`/`handleHexClick` den Brush-Kreis sowie `applyBrush`.
 - Der Terrain-Brush zeigt Statusmeldungen für Lade-, Fehler- und Reset-Zustände an, validiert den „Manage…“-Button gegen das Command und blendet bei Bedarf Hinweise zur manuellen Pflege ein.
 
 # Beobachtungen
-- Tool-Umschaltungen ohne Treffer (unbekannte ID, leere Tool-Liste) melden ihren Fallback inzwischen an den Editor; der Terrain-Brush blockt Panel & Statusmeldungen sauber und deaktiviert den „Manage…“-Button bei fehlendem Command.
-- `createToolManager` reicht Telemetrie an den Editor weiter; `brush.ts` sendet allerdings weiterhin keine Fehler- oder Abort-Hooks zurück.
-- Der Terrain-Brush erklärt Nutzer*innen nun, wie sie Regionen im Library-View anlegen, muss aber weiterhin Fehler der Schreiblogik und Abort-Signale adressieren.
+- Der Terrain-Brush blockt Panel & Statusmeldungen sauber und deaktiviert den „Manage…“-Button bei fehlendem Command.
+- `applyBrush` meldet Fehler über Telemetrie und respektiert Abort-Signale, liefert aber weiterhin keine automatische Recovery jenseits des Rollbacks.
+- Der Terrain-Brush erklärt Nutzer*innen, wie sie Regionen im Library-View anlegen, muss aber weiterhin Fehler der Schreiblogik und Abort-Signale adressieren.
 
 # ToDo
 - keine offenen ToDos.
 
 # Standards
 - Jede Tool-Datei startet mit Dateipfad plus einem Satz zur Nutzerinteraktion.
-- Tool-Module räumen eigene DOM- und Workspace-Abos konsequent im Cleanup bzw. `onDeactivate` ab.
-- Asynchrone Operationen veröffentlichen Fortschritt und Fehler über `ToolContext.setStatus` und nutzen `AbortSignal`, um Arbeiten nach Mode-Wechseln einzustellen.
+- Tool-Module räumen eigene DOM- und Workspace-Abos konsequent im Cleanup bzw. in `destroy`/`setDisabled(false)` ab.
+- Asynchrone Operationen veröffentlichen Fortschritt und Fehler über die vom Modus gereichten Status-Helfer und nutzen `AbortSignal`, um Arbeiten nach Mode-Wechseln einzustellen.
 - Buttons oder globale Integrationen validieren abhängige Commands/Services und degradieren andernfalls mit sichtbarem Hinweis.

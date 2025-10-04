@@ -5,7 +5,7 @@
 
 # Aktueller Stand
 ## Strukturüberblick
-- `editor.ts` baut das Bearbeitungspanel mit Tool-Auswahl auf, nutzt `createToolManager()` aus `editor/tools` und hält Statusmeldungen über `setStatus` aktuell.
+- `editor.ts` baut das Bearbeitungspanel mit Tool-Auswahl auf, mountet den Terrain-Brush direkt und aktualisiert Statusmeldungen ohne Tool-Manager-Zwischenschicht.
 - `inspector.ts` stellt Formularfelder für Terrain und Notizen bereit, lädt Daten aus `core/hex-mapper/hex-notes` und schreibt Änderungen verzögert über einen Auto-Save-Timeout zurück.
 - `travel-guide.ts` orchestriert Sidebar, Playback, Routen- & Token-Layer sowie Encounter-Sync und interagiert eng mit `travel/domain`, `travel/ui` und `travel/infra`.
 - `lifecycle.ts` kapselt die Verwaltung des jeweils letzten `AbortSignal` und wird von Editor und Inspector genutzt, um Tool-/Form-Interaktionen sauber abzubrechen.
@@ -13,7 +13,7 @@
 
 ## Integrationen & Beobachtungen
 - Alle Modi werden über die in `controller.ts` hinterlegte Deskriptor-Liste lazy geladen; IDs und Labels sind weiterhin manuell in den Modus-Dateien gepflegt.
-- Editor & Inspector verlassen sich auf `ToolManager`- und Hex-Persistenz-Helfer. Fehler werden bislang nur mit `console.error` geloggt und führen nicht zu UI-Hinweisen oder Telemetrie.
+- Der Editor koppelt den Brush direkt an Lifecycle- und Status-Hooks, Inspector nutzt weiterhin Hex-Persistenz-Helfer. Fehler werden bislang nur mit `console.error` geloggt und führen nicht zu UI-Hinweisen oder Telemetrie.
 - Travel Guide lädt Terrains, initialisiert Domain-Logik und Encounter-Synchronisation sequentiell. Schlägt ein Schritt fehl, bleibt der Modus ohne sichtbaren Hinweis oder Rückfallebene.
 - Die README dokumentiert Nutzerflüsse, verweist aber nicht auf technische Risiken wie Abort-Signale oder die Abhängigkeit von `travel/infra`.
 

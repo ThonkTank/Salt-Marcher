@@ -2,7 +2,7 @@
 - Validiert Editor-spezifische Tools und Moduslogik des Cartographer.
 
 # Aktueller Stand
-- Tests prüfen Terrain-Brush-Optionen, Tool-Manager und Editor-Modi.
+- Tests prüfen Terrain-Brush-Panel, Brush-Anwendung und Editor-Modi.
 
 # ToDo
 - keine offenen ToDos.

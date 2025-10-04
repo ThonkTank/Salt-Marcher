@@ -3,8 +3,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { App, TFile } from "obsidian";
 import type { RenderHandles } from "../../../src/core/hex-mapper/hex-render";
-import type { ToolContext } from "../../../src/apps/cartographer/editor/tools/tools-api";
-import { applyBrush } from "../../../src/apps/cartographer/editor/tools/terrain-brush/brush";
+import {
+    applyBrush,
+    type BrushExecutionContext,
+    type BrushToolAdapter,
+} from "../../../src/apps/cartographer/editor/tools/terrain-brush/brush-core";
 
 const telemetryMocks = vi.hoisted(() => ({
     reportEditorToolIssue: vi.fn(() => "issue:operation:Brush"),
@@ -64,13 +67,16 @@ const createHandles = (initial: Record<string, string>): TestHandles => {
     } satisfies TestHandles;
 };
 
-const createToolContext = (app: App, signal: AbortSignal | null = null): ToolContext => ({
-    app,
-    getFile: () => null,
-    getHandles: () => null,
-    getOptions: () => null,
+const createToolAdapter = (signal: AbortSignal | null = null): BrushToolAdapter & {
+    setStatus: ReturnType<typeof vi.fn>;
+} => ({
     getAbortSignal: () => signal,
     setStatus: vi.fn(),
+});
+
+const createExecutionContext = (tool: BrushToolAdapter | null): BrushExecutionContext => ({
+    tool,
+    toolName: "Brush",
 });
 
 describe("applyBrush", () => {
@@ -83,7 +89,7 @@ describe("applyBrush", () => {
 
     it("rolls back painted tiles and fills when a save fails", async () => {
         const handles = createHandles({ "0,0": "#0288d1" });
-        const toolCtx = createToolContext(app);
+        const tool = createToolAdapter();
         const error = new Error("save failed");
 
         loadTile.mockResolvedValueOnce({ terrain: "Meer", region: "Old" });
@@ -98,7 +104,7 @@ describe("applyBrush", () => {
                 { r: 0, c: 0 },
                 { radius: 1, terrain: "Wald", mode: "paint" },
                 handles,
-                { tool: toolCtx, toolName: "Brush" }
+                createExecutionContext(tool)
             )
         ).rejects.toThrow(error);
 
@@ -107,7 +113,7 @@ describe("applyBrush", () => {
             toolId: "Brush",
             error,
         });
-        expect(toolCtx.setStatus).toHaveBeenCalledWith("issue:operation:Brush");
+        expect(tool.setStatus).toHaveBeenCalledWith("issue:operation:Brush");
 
         expect(handles.colors.get("0,0")).toBe("#0288d1");
         expect(saveTile).toHaveBeenNthCalledWith(3, app, mapFile, { r: 0, c: 0 }, { terrain: "Meer", region: "Old" });
@@ -116,7 +122,7 @@ describe("applyBrush", () => {
 
     it("restores deleted tiles when an erase fails", async () => {
         const handles = createHandles({ "0,0": "#0288d1" });
-        const toolCtx = createToolContext(app);
+        const tool = createToolAdapter();
         const error = new Error("delete failed");
 
         loadTile.mockResolvedValueOnce({ terrain: "Meer", region: "Old" });
@@ -132,7 +138,7 @@ describe("applyBrush", () => {
                 { r: 0, c: 0 },
                 { radius: 1, terrain: "", mode: "erase" },
                 handles,
-                { tool: toolCtx, toolName: "Brush" }
+                createExecutionContext(tool)
             )
         ).rejects.toThrow(error);
 
@@ -141,7 +147,7 @@ describe("applyBrush", () => {
             toolId: "Brush",
             error,
         });
-        expect(toolCtx.setStatus).toHaveBeenCalledWith("issue:operation:Brush");
+        expect(tool.setStatus).toHaveBeenCalledWith("issue:operation:Brush");
 
         expect(handles.colors.get("0,0")).toBe("#0288d1");
         expect(saveTile).toHaveBeenCalledWith(app, mapFile, { r: 0, c: 0 }, { terrain: "Meer", region: "Old" });
@@ -149,7 +155,7 @@ describe("applyBrush", () => {
 
     it("applies changes without telemetry when all operations succeed", async () => {
         const handles = createHandles({ "0,0": "transparent" });
-        const toolCtx = createToolContext(app);
+        const tool = createToolAdapter();
 
         loadTile.mockResolvedValue(null);
         saveTile.mockResolvedValue({} as TFile);
@@ -160,11 +166,11 @@ describe("applyBrush", () => {
             { r: 0, c: 0 },
             { radius: 0, terrain: "Wald", mode: "paint" },
             handles,
-            { tool: toolCtx, toolName: "Brush" }
+            createExecutionContext(tool)
         );
 
         expect(reportEditorToolIssue).not.toHaveBeenCalled();
-        expect(toolCtx.setStatus).not.toHaveBeenCalled();
+        expect(tool.setStatus).not.toHaveBeenCalled();
         expect(handles.colors.get("0,0")).toBe("#2e7d32");
     });
 
@@ -172,7 +178,7 @@ describe("applyBrush", () => {
         const handles = createHandles({ "0,0": "transparent" });
         const controller = new AbortController();
         controller.abort();
-        const toolCtx = createToolContext(app, controller.signal);
+        const tool = createToolAdapter(controller.signal);
 
         await expect(
             applyBrush(
@@ -181,7 +187,7 @@ describe("applyBrush", () => {
                 { r: 0, c: 0 },
                 { radius: 0, terrain: "Wald", mode: "paint" },
                 handles,
-                { tool: toolCtx, toolName: "Brush" }
+                createExecutionContext(tool)
             )
         ).resolves.toBeUndefined();
 
@@ -189,20 +195,19 @@ describe("applyBrush", () => {
         expect(saveTile).not.toHaveBeenCalled();
         expect(deleteTile).not.toHaveBeenCalled();
         expect(reportEditorToolIssue).not.toHaveBeenCalled();
-        expect(toolCtx.setStatus).not.toHaveBeenCalled();
+        expect(tool.setStatus).not.toHaveBeenCalled();
         expect(handles.colors.get("0,0")).toBe("transparent");
     });
 
     it("rolls back changes and suppresses telemetry when the operation aborts mid-application", async () => {
         const handles = createHandles({ "0,0": "transparent" });
         const controller = new AbortController();
-        const toolCtx = createToolContext(app, controller.signal);
+        const tool = createToolAdapter(controller.signal);
 
         loadTile.mockResolvedValue(null);
-        saveTile.mockImplementationOnce(async (...args) => {
-            const result = {} as TFile;
+        saveTile.mockImplementationOnce(async () => {
             controller.abort();
-            return result;
+            return {} as TFile;
         });
 
         await expect(
@@ -212,7 +217,7 @@ describe("applyBrush", () => {
                 { r: 0, c: 0 },
                 { radius: 1, terrain: "Wald", mode: "paint" },
                 handles,
-                { tool: toolCtx, toolName: "Brush" }
+                createExecutionContext(tool)
             )
         ).resolves.toBeUndefined();
 
@@ -220,6 +225,6 @@ describe("applyBrush", () => {
         expect(saveTile).toHaveBeenCalledTimes(1);
         expect(handles.colors.get("0,0")).toBe("transparent");
         expect(reportEditorToolIssue).not.toHaveBeenCalled();
-        expect(toolCtx.setStatus).not.toHaveBeenCalled();
+        expect(tool.setStatus).not.toHaveBeenCalled();
     });
 });

@@ -1,5 +1,5 @@
 // src/apps/cartographer/modes/editor.ts
-// Hex-Editor mit Tool-Manager für Karten.
+// Hex-Editor mit direkter Brush-Integration ohne Tool-Manager.
 import type { TFile } from "obsidian";
 import type {
     CartographerMode,
@@ -9,23 +9,24 @@ import type {
 } from "../controller";
 import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
 import { reportEditorToolIssue } from "../editor/editor-telemetry";
-import { createBrushTool } from "../editor/tools/terrain-brush/brush-options";
-import { createToolManager } from "../editor/tools/tool-manager";
-import type { ToolModule, ToolContext, ToolManager } from "../editor/tools/tools-api";
+import {
+    mountBrushPanel,
+    type BrushPanelControls,
+} from "../editor/tools/terrain-brush/brush-options";
 import type { RenderHandles } from "../../../core/hex-mapper/hex-render";
 import type { HexOptions } from "../../../core/options";
 import { createModeLifecycle } from "./lifecycle";
 
+const BRUSH_LABEL = "Brush";
+
 export function createEditorMode(): CartographerMode {
     let panel: HTMLElement | null = null;
     let fileLabel: HTMLElement | null = null;
-    let toolSelect: HTMLSelectElement | null = null;
-    let toolBody: HTMLElement | null = null;
     let statusLabel: HTMLElement | null = null;
+    let toolBody: HTMLElement | null = null;
 
-    const tools: ToolModule[] = [createBrushTool()];
-
-    let manager: ToolManager | null = null;
+    let brush: BrushPanelControls | null = null;
+    let brushActive = false;
 
     let state: {
         file: TFile | null;
@@ -44,10 +45,11 @@ export function createEditorMode(): CartographerMode {
     const BASE_STATUS_NO_MAP: PanelStatus = { message: "No map selected.", tone: "info" };
     const BASE_STATUS_LOADING: PanelStatus = { message: "Loading map…", tone: "loading" };
 
-    let toolCtx: ToolContext | null = null;
     let baseStatus: PanelStatus = BASE_STATUS_NO_MAP;
     let contextualStatus: PanelStatus | null = null;
     let errorStatus: PanelStatus | null = null;
+
+    const lifecycle = createModeLifecycle();
 
     const applyStatus = () => {
         if (!statusLabel) return;
@@ -56,18 +58,6 @@ export function createEditorMode(): CartographerMode {
         statusLabel.toggleClass("is-empty", !status.message);
         statusLabel.toggleClass("is-error", status.tone === "error");
         statusLabel.toggleClass("is-loading", status.tone === "loading");
-    };
-
-    const refreshPanelState = () => {
-        const hasHandles = !!state.handles;
-        baseStatus = hasHandles ? BASE_STATUS_READY : state.file ? BASE_STATUS_LOADING : BASE_STATUS_NO_MAP;
-        const toolsBlocked = !!errorStatus;
-        panel?.toggleClass("is-disabled", !hasHandles || toolsBlocked);
-        panel?.toggleClass("has-tool-error", toolsBlocked);
-        if (toolSelect) {
-            toolSelect.disabled = !hasHandles || toolsBlocked || tools.length === 0;
-        }
-        applyStatus();
     };
 
     const setContextualStatus = (status: PanelStatus | null) => {
@@ -92,20 +82,48 @@ export function createEditorMode(): CartographerMode {
         fileLabel.textContent = state.file ? state.file.basename : "No map";
     };
 
-    const lifecycle = createModeLifecycle();
+    const ensureBrush = (ctx: CartographerModeContext) => {
+        if (brush) return brush;
+        if (!toolBody) return null;
+        try {
+            brush = mountBrushPanel(toolBody, {
+                app: ctx.app,
+                getFile: () => state.file,
+                getHandles: () => state.handles,
+                getOptions: () => state.options,
+                getAbortSignal: () => lifecycle.get(),
+                setStatus: (message) => setContextualMessage(message),
+            });
+            brush.setDisabled(!state.handles || !!errorStatus);
+            return brush;
+        } catch (error) {
+            const message = reportEditorToolIssue({
+                stage: "mount-panel",
+                toolId: BRUSH_LABEL,
+                error,
+            });
+            setErrorStatus({ message, tone: "error" });
+            return null;
+        }
+    };
 
-    const ensureToolCtx = (ctx: CartographerModeContext) => {
-        toolCtx = {
-            app: ctx.app,
-            getFile: () => state.file,
-            getHandles: () => state.handles,
-            getOptions: () => state.options,
-            getAbortSignal: () => lifecycle.get(),
-            setStatus: (message) => {
-                setContextualMessage(message);
-            },
-        } satisfies ToolContext;
-        return toolCtx;
+    const refreshPanelState = () => {
+        const hasHandles = !!state.handles;
+        baseStatus = hasHandles ? BASE_STATUS_READY : state.file ? BASE_STATUS_LOADING : BASE_STATUS_NO_MAP;
+        const toolsBlocked = !!errorStatus;
+        panel?.toggleClass("is-disabled", !hasHandles || toolsBlocked);
+        panel?.toggleClass("has-tool-error", toolsBlocked);
+        brush?.setDisabled(!hasHandles || toolsBlocked);
+        if (!brush || toolsBlocked || !hasHandles) {
+            if (brushActive) {
+                brush?.deactivate();
+                brushActive = false;
+            }
+        } else if (!brushActive) {
+            brush.activate();
+            brushActive = true;
+        }
+        applyStatus();
     };
 
     const isAborted = () => lifecycle.isAborted();
@@ -123,92 +141,33 @@ export function createEditorMode(): CartographerMode {
 
             const toolsRow = panel.createDiv({ cls: "sm-cartographer__panel-tools" });
             toolsRow.createEl("label", { text: "Tool:" });
-            toolSelect = toolsRow.createEl("select") as HTMLSelectElement;
-            for (const tool of tools) {
-                toolSelect.createEl("option", { value: tool.id, text: tool.label });
-            }
-            enhanceSelectToSearch(toolSelect, 'Search dropdown…');
-            toolSelect.onchange = () => {
-                if (isAborted() || !manager) return;
-                const targetId = toolSelect?.value ?? tools[0]?.id;
-                if (!targetId) return;
-                const selected = tools.find((tool) => tool.id === targetId) ?? null;
-                if (selected) {
-                    setContextualMessage(`Loading "${selected.label}"…`, "loading");
-                    setErrorStatus(null);
-                }
-                void manager.switchTo(targetId);
-            };
+            const toolSelect = toolsRow.createEl("select") as HTMLSelectElement;
+            toolSelect.createEl("option", { value: "brush", text: BRUSH_LABEL });
+            toolSelect.value = "brush";
+            toolSelect.disabled = true;
+            enhanceSelectToSearch(toolSelect, "Search dropdown…");
 
             toolBody = panel.createDiv({ cls: "sm-cartographer__panel-body" });
             statusLabel = panel.createDiv({ cls: "sm-cartographer__panel-status" });
 
-            ensureToolCtx(ctx);
-
-            if (tools.length === 0) {
-                const message = reportEditorToolIssue({
-                    stage: "resolve",
-                    toolId: "none",
-                    error: new Error("No editor tools are registered"),
-                });
-                setErrorStatus({ message, tone: "error" });
-            }
-
-            manager = createToolManager(tools, {
-                getContext: () => toolCtx,
-                getPanelHost: () => toolBody,
-                getLifecycleSignal: () => lifecycle.get(),
-                onToolChanged: (tool) => {
-                    if (!toolSelect) return;
-                    toolSelect.value = tool?.id ?? "";
-                    if (tool) {
-                        setErrorStatus(null);
-                        setContextualStatus(null);
-                    }
-                },
-                onToolError: ({ stage, tool, error, toolId }) => {
-                    const message = reportEditorToolIssue({
-                        stage,
-                        toolId: tool?.label ?? tool?.id ?? toolId,
-                        error,
-                    });
-                    setErrorStatus({ message, tone: "error" });
-                },
-                onToolFallback: ({ stage, requestedId, fallback }) => {
-                    const fallbackLabel = fallback?.label ?? fallback?.id ?? null;
-                    if (!fallbackLabel) return;
-                    const messagePrefix =
-                        stage === "resolve"
-                            ? `Tool "${requestedId}" is unavailable.`
-                            : `Failed to load "${requestedId}".`;
-                    setContextualStatus({
-                        message: `${messagePrefix} Loading "${fallbackLabel}" instead…`,
-                        tone: "loading",
-                    });
-                },
-            });
+            ensureBrush(ctx);
 
             updateFileLabel();
             refreshPanelState();
-            if (isAborted() || tools.length === 0) return;
-            const defaultTool = tools[0];
-            setContextualMessage(`Loading "${defaultTool.label}"…`, "loading");
-            await manager.switchTo(defaultTool.id);
         },
         async onExit(ctx: CartographerModeLifecycleContext) {
             lifecycle.bind(ctx);
-            manager?.destroy();
-            manager = null;
-            toolCtx = null;
+            brush?.destroy();
+            brush = null;
+            brushActive = false;
             contextualStatus = null;
             errorStatus = null;
             baseStatus = BASE_STATUS_NO_MAP;
             panel?.remove();
             panel = null;
             fileLabel = null;
-            toolSelect = null;
-            toolBody = null;
             statusLabel = null;
+            toolBody = null;
             lifecycle.reset();
         },
         async onFileChange(file, handles, ctx: CartographerModeLifecycleContext) {
@@ -217,21 +176,26 @@ export function createEditorMode(): CartographerMode {
             state.handles = handles;
             state.options = ctx.getOptions();
             updateFileLabel();
+            ensureBrush(ctx);
             refreshPanelState();
-            if (!handles) return;
-            if (!toolCtx) ensureToolCtx(ctx);
-            if (isAborted()) return;
-            manager?.notifyMapRendered();
+            if (!handles || isAborted()) return;
+            brush?.onMapRendered();
         },
         async onHexClick(coord: HexCoord, _event, ctx: CartographerModeLifecycleContext) {
             lifecycle.bind(ctx);
             if (isAborted()) return;
-            const active = manager?.getActive();
-            if (!toolCtx || !active?.onHexClick) return;
+            const activeBrush = ensureBrush(ctx);
+            if (!activeBrush) return;
             try {
-                await active.onHexClick(coord, toolCtx);
+                await activeBrush.handleHexClick(coord);
             } catch (err) {
-                console.error("[editor-mode] onHexClick failed", err);
+                console.error("[editor-mode] brush interaction failed", err);
+                const message = reportEditorToolIssue({
+                    stage: "operation",
+                    toolId: BRUSH_LABEL,
+                    error: err,
+                });
+                setErrorStatus({ message, tone: "error" });
             }
         },
     } satisfies CartographerMode;
