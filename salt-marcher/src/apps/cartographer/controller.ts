@@ -104,9 +104,7 @@ type CartographerViewHandle = {
     readonly mapHost: HTMLElement;
     readonly sidebarHost: HTMLElement;
     setFileLabel(file: TFile | null): void;
-    setModeActive(id: string | null): void;
-    setModeLabel(label: string): void;
-    setModes(modes: ModeShellEntry[]): void;
+    setModes(modes: ModeShellEntry[], activeId?: string | null): void;
     setOverlay(content: string | null): void;
     clearMap(): void;
     destroy(): void;
@@ -157,6 +155,7 @@ export class CartographerController {
     private renderAbort?: AbortController;
     private modeLoad?: Promise<Map<string, CartographerMode>>;
     private activeModeId?: string;
+    private shellModes: ModeShellEntry[] = [];
 
     constructor(app: App, deps?: Partial<CartographerControllerDeps>) {
         this.app = app;
@@ -202,6 +201,7 @@ export class CartographerController {
             id: descriptor.id,
             label: descriptor.label,
         }));
+        this.shellModes = [...shellModes];
 
         this.view = createControllerView({
             app: this.app,
@@ -218,9 +218,7 @@ export class CartographerController {
             },
         });
 
-        this.view.setModes(shellModes);
-        this.view.setModeActive(shellModes[0]?.id ?? null);
-        this.view.setModeLabel(shellModes[0]?.label ?? DEFAULT_MODE_LABEL);
+        this.view.setModes(this.shellModes, this.shellModes[0]?.id ?? null);
         this.view.setFileLabel(initialFile);
 
         let initialModeId = shellModes[0]?.id ?? null;
@@ -273,6 +271,7 @@ export class CartographerController {
         this.destroyMapLayer();
         this.view?.clearMap();
         this.currentOptions = null;
+        this.shellModes = [];
 
         this.view?.destroy();
         this.view = null;
@@ -305,7 +304,8 @@ export class CartographerController {
                     if (map.size === 0) {
                         throw new Error("No cartographer modes available");
                     }
-                    this.view?.setModes(shellModes);
+                    this.shellModes = [...shellModes];
+                    this.view?.setModes(this.shellModes, this.activeModeId ?? this.shellModes[0]?.id ?? null);
                     this.view?.setOverlay(null);
                     return map;
                 })
@@ -340,8 +340,7 @@ export class CartographerController {
         const [nextId, nextMode] = nextEntry;
 
         if (this.activeModeId === nextId) {
-            this.view?.setModeActive(nextMode.id);
-            this.view?.setModeLabel(nextMode.label);
+            this.view?.setModes(this.shellModes, nextMode.id);
             return;
         }
 
@@ -379,8 +378,7 @@ export class CartographerController {
         this.activeMode = nextMode;
         this.activeModeId = nextId;
 
-        this.view.setModeActive(nextMode.id);
-        this.view.setModeLabel(nextMode.label);
+        this.view.setModes(this.shellModes, nextMode.id);
 
         try {
             await nextMode.onEnter(lifecycleCtx);
@@ -562,12 +560,6 @@ type CreateControllerViewOptions = {
     callbacks: CartographerControllerCallbacks;
 };
 
-type ModeState = {
-    modes: ModeShellEntry[];
-    active: string | null;
-    label: string;
-};
-
 function createControllerView(options: CreateControllerViewOptions): CartographerViewHandle {
     const { app, host, initialFile, modes, callbacks } = options;
 
@@ -580,85 +572,9 @@ function createControllerView(options: CreateControllerViewOptions): Cartographe
     const sidebarHost = bodyHost.createDiv({ cls: "sm-cartographer__sidebar" });
 
     const surface = createViewContainer(mapWrapper, { camera: false });
-
-    const state: ModeState = {
-        modes: [...modes],
-        active: modes[0]?.id ?? null,
-        label: modes[0]?.label ?? DEFAULT_MODE_LABEL,
-    };
-
-    let selectEl: HTMLSelectElement | null = null;
-    let labelEl: HTMLElement | null = null;
-    let modeChangeHandler: (() => void) | null = null;
-
-    const updateLabel = (label: string) => {
-        state.label = label;
-        labelEl?.setText(label);
-        if (selectEl) {
-            selectEl.title = label;
-        }
-    };
-
-    const ensureLabel = () => {
-        if (state.active) {
-            const active = state.modes.find((mode) => mode.id === state.active);
-            if (active) {
-                updateLabel(active.label);
-                return;
-            }
-        }
-        if (state.modes[0]) {
-            updateLabel(state.modes[0].label);
-        } else {
-            updateLabel(DEFAULT_MODE_LABEL);
-        }
-    };
-
-    const applyModes = () => {
-        if (!selectEl) return;
-        selectEl.empty();
-        if (state.modes.length === 0) {
-            const option = selectEl.createEl("option", { text: "Keine Modi" });
-            option.value = "";
-            option.disabled = true;
-            option.selected = true;
-            selectEl.disabled = true;
-            return;
-        }
-        selectEl.disabled = false;
-        for (const mode of state.modes) {
-            const option = selectEl.createEl("option", { text: mode.label });
-            option.value = mode.id;
-        }
-        if (state.active && state.modes.some((mode) => mode.id === state.active)) {
-            selectEl.value = state.active;
-        } else {
-            selectEl.value = state.modes[0]?.id ?? "";
-        }
-    };
-
-    const setModeActive = (id: string | null) => {
-        state.active = id;
-        if (!selectEl) return;
-        if (id && state.modes.some((mode) => mode.id === id)) {
-            selectEl.value = id;
-        } else {
-            selectEl.value = "";
-        }
-    };
-
-    const setModes = (nextModes: ModeShellEntry[]) => {
-        state.modes = [...nextModes];
-        applyModes();
-        ensureLabel();
-        if (state.active && !state.modes.some((mode) => mode.id === state.active)) {
-            state.active = null;
-        }
-    };
-
-    const setModeLabel = (label: string) => {
-        updateLabel(label);
-    };
+    let modeHandle: ModeSelectHandle | null = null;
+    let currentModes = [...modes];
+    let currentActiveId: string | null = modes[0]?.id ?? null;
 
     const invokeModeSelect = (id: string) => {
         try {
@@ -673,25 +589,14 @@ function createControllerView(options: CreateControllerViewOptions): Cartographe
         }
     };
 
-    const initModeControls = (slot: HTMLElement) => {
-        slot.empty();
-        slot.addClass("sm-cartographer__mode-slot");
-        labelEl = slot.createEl("span", { cls: "sm-cartographer__mode-label", text: state.label });
-        selectEl = slot.createEl("select", { cls: "sm-cartographer__mode-select" });
-        selectEl.setAttribute("aria-label", "Cartographer mode");
-        modeChangeHandler = () => {
-            if (!selectEl) return;
-            const id = selectEl.value;
-            if (!id) return;
+    const createModeControls = (slot: HTMLElement) => {
+        modeHandle?.destroy();
+
+        modeHandle = renderModeSelect(slot, currentModes, currentActiveId, (id) => {
+            currentActiveId = id;
             invokeModeSelect(id);
-        };
-        selectEl.addEventListener("change", modeChangeHandler);
-        selectEl.addEventListener("input", modeChangeHandler);
-        applyModes();
-        ensureLabel();
-        if (state.active && selectEl) {
-            selectEl.value = state.active;
-        }
+        });
+        currentActiveId = modeHandle.getActiveId();
     };
 
     const headerHandle: MapHeaderHandle = createMapHeader(app, headerHost, {
@@ -710,12 +615,12 @@ function createControllerView(options: CreateControllerViewOptions): Cartographe
             return await callbacks.onSave(mode, file);
         },
         titleRightSlot: (slot) => {
-            initModeControls(slot);
+            createModeControls(slot);
         },
     });
 
-    if (!selectEl) {
-        initModeControls(headerHandle.titleRightSlot);
+    if (!modeHandle) {
+        createModeControls(headerHandle.titleRightSlot);
     }
 
     const handleHexClick = (event: Event) => {
@@ -741,19 +646,18 @@ function createControllerView(options: CreateControllerViewOptions): Cartographe
 
     const destroy = () => {
         surface.stageEl.removeEventListener("hex:click", handleHexClick as EventListener);
-        if (selectEl && modeChangeHandler) {
-            selectEl.removeEventListener("change", modeChangeHandler);
-            selectEl.removeEventListener("input", modeChangeHandler);
-        }
+        modeHandle?.destroy();
+        modeHandle = null;
+        currentActiveId = null;
+        currentModes = [];
         headerHandle.destroy();
         surface.destroy();
         host.empty();
         host.removeClass("sm-cartographer");
     };
 
-    setModes(modes);
-    setModeActive(state.active);
-    setModeLabel(state.label);
+    modeHandle?.setModes(currentModes, currentActiveId);
+    currentActiveId = modeHandle?.getActiveId() ?? currentActiveId;
 
     return {
         host,
@@ -762,9 +666,20 @@ function createControllerView(options: CreateControllerViewOptions): Cartographe
         setFileLabel: (file) => {
             headerHandle.setFileLabel(file);
         },
-        setModeActive,
-        setModeLabel,
-        setModes,
+        setModes: (nextModes, activeId) => {
+            currentModes = [...nextModes];
+            const requestedActive = activeId !== undefined ? activeId : currentActiveId;
+            if (modeHandle) {
+                modeHandle.setModes(currentModes, requestedActive);
+                currentActiveId = modeHandle.getActiveId();
+            } else {
+                const fallbackActive =
+                    requestedActive && currentModes.some((mode) => mode.id === requestedActive)
+                        ? requestedActive
+                        : currentModes[0]?.id ?? null;
+                currentActiveId = fallbackActive ?? null;
+            }
+        },
         setOverlay: (content) => {
             surface.setOverlay(content);
         },
@@ -773,5 +688,113 @@ function createControllerView(options: CreateControllerViewOptions): Cartographe
         },
         destroy,
     } satisfies CartographerViewHandle;
+}
+
+type ModeSelectHandle = {
+    setModes(modes: ModeShellEntry[], activeId?: string | null): void;
+    getActiveId(): string | null;
+    destroy(): void;
+};
+
+function renderModeSelect(
+    slot: HTMLElement,
+    modes: ModeShellEntry[],
+    initialActiveId: string | null,
+    onChange: (id: string) => void | Promise<unknown>,
+): ModeSelectHandle {
+    slot.empty();
+    slot.addClass("sm-cartographer__mode-slot");
+
+    const labelEl = slot.createEl("span", {
+        cls: "sm-cartographer__mode-label",
+        text: DEFAULT_MODE_LABEL,
+    });
+    const selectEl = slot.createEl("select", { cls: "sm-cartographer__mode-select" });
+    selectEl.setAttribute("aria-label", "Cartographer mode");
+
+    const updateLabel = () => {
+        const label = selectEl.selectedOptions[0]?.textContent ?? DEFAULT_MODE_LABEL;
+        labelEl.setText(label);
+        selectEl.title = label;
+    };
+
+    let currentModes: ModeShellEntry[] | null = null;
+    let activeId: string | null = null;
+
+    const rebuildOptions = (list: ModeShellEntry[]) => {
+        selectEl.empty();
+        if (list.length === 0) {
+            const option = selectEl.createEl("option", { text: "Keine Modi" });
+            option.value = "";
+            option.disabled = true;
+            option.selected = true;
+            selectEl.disabled = true;
+            selectEl.value = "";
+            activeId = null;
+            updateLabel();
+            return;
+        }
+
+        selectEl.disabled = false;
+        for (const mode of list) {
+            const option = selectEl.createEl("option", { text: mode.label });
+            option.value = mode.id;
+        }
+    };
+
+    const syncSelection = (list: ModeShellEntry[], nextActiveId: string | null) => {
+        if (list.length === 0) {
+            activeId = null;
+            updateLabel();
+            return;
+        }
+        const fallbackId = nextActiveId && list.some((mode) => mode.id === nextActiveId)
+            ? nextActiveId
+            : list[0]?.id ?? "";
+        selectEl.value = fallbackId ?? "";
+        activeId = selectEl.value || null;
+        updateLabel();
+    };
+
+    const applyModes = (list: ModeShellEntry[], nextActiveId: string | null) => {
+        const shouldRebuild =
+            currentModes === null ||
+            currentModes.length !== list.length ||
+            currentModes.some((prev, index) => {
+                const next = list[index];
+                return !next || prev.id !== next.id || prev.label !== next.label;
+            });
+        currentModes = [...list];
+        if (shouldRebuild) {
+            rebuildOptions(list);
+        }
+        syncSelection(list, nextActiveId);
+    };
+
+    const handleChange = () => {
+        const id = selectEl.value;
+        activeId = id || null;
+        updateLabel();
+        if (!id) return;
+        onChange(id);
+    };
+
+    selectEl.addEventListener("change", handleChange);
+
+    applyModes(modes, initialActiveId);
+
+    return {
+        setModes: (nextModes, nextActiveId) => {
+            const requested = nextActiveId !== undefined ? nextActiveId : selectEl.value || null;
+            applyModes(nextModes, requested);
+        },
+        getActiveId: () => activeId,
+        destroy: () => {
+            selectEl.removeEventListener("change", handleChange);
+            slot.empty();
+            activeId = null;
+            currentModes = null;
+        },
+    };
 }
 
