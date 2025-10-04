@@ -7040,11 +7040,18 @@ function mountTokenEditor(parent, title, model, options = {}) {
 // src/apps/library/create/shared/layouts.ts
 var import_obsidian20 = require("obsidian");
 function createFormCard(parent, options) {
-  const { title, subtitle, registerValidator } = options;
+  const { title, subtitle, registerValidator, id, headingId, role } = options;
   const card = parent.createDiv({ cls: "sm-cc-card" });
+  if (id) card.id = id;
+  const computedHeadingId = headingId ?? (id ? `${id}__title` : void 0);
+  card.setAttribute("role", role ?? "region");
+  if (computedHeadingId) {
+    card.setAttribute("aria-labelledby", computedHeadingId);
+  }
   const head = card.createDiv({ cls: "sm-cc-card__head" });
   const heading = head.createDiv({ cls: "sm-cc-card__heading" });
-  heading.createEl("h3", { text: title, cls: "sm-cc-card__title" });
+  const headingTitle = heading.createEl("h3", { text: title, cls: "sm-cc-card__title" });
+  if (computedHeadingId) headingTitle.id = computedHeadingId;
   const status = heading.createSpan({
     cls: "sm-cc-card__status",
     attr: { hidden: "" }
@@ -7085,7 +7092,7 @@ function createFormCard(parent, options) {
     };
     return registerValidator ? registerValidator(runner) : runner;
   };
-  return { card, body, registerValidation };
+  return { card, body, heading: headingTitle, registerValidation };
 }
 function createFieldGrid(parent, options) {
   const classes = ["sm-cc-field-grid"];
@@ -7131,11 +7138,6 @@ function ensureSpeeds(data) {
   const speeds = data.speeds ?? (data.speeds = {});
   if (!Array.isArray(speeds.extras)) speeds.extras = [];
   return speeds;
-}
-function ensureSpeedExtras(data) {
-  const speeds = ensureSpeeds(data);
-  if (!Array.isArray(speeds.extras)) speeds.extras = [];
-  return speeds.extras;
 }
 function applySpeedValue(data, key, patch) {
   const speeds = ensureSpeeds(data);
@@ -7363,7 +7365,7 @@ function mountCreatureVitalSection(parent, data) {
     });
     syncHoverBadge(hoverBadge, def.key);
   });
-  const extras = ensureSpeedExtras(data);
+  const extras = ensureSpeeds(data).extras;
   const extrasEditor = mountTokenEditor(
     movement,
     "Weitere Bewegungen",
@@ -7991,7 +7993,7 @@ function mountCreatureSensesAndDefensesSection(parent, data) {
       resistances,
       immunities
     },
-    () => refreshSummary()
+    refreshSummary
   );
   mountPresetSelectEditor(
     root,
@@ -8313,28 +8315,19 @@ function mountEntriesSection(parent, data, registerValidation) {
 // src/apps/library/create/creature/section-spellcasting.ts
 var import_obsidian24 = require("obsidian");
 var DEFAULT_TITLE = "Spellcasting";
+function ensureGroupSpells(group) {
+  if (group.type === "custom") {
+    if (!Array.isArray(group.spells)) group.spells = [];
+    return group.spells;
+  }
+  return group.spells;
+}
 function ensureSpellcastingGroups(spellcasting) {
   if (!Array.isArray(spellcasting.groups)) {
     spellcasting.groups = [];
   }
-  spellcasting.groups = spellcasting.groups.map((group) => {
-    switch (group.type) {
-      case "at-will":
-      case "per-day":
-      case "level": {
-        if (!Array.isArray(group.spells)) group.spells = [];
-        return group;
-      }
-      case "custom": {
-        if (group.spells && !Array.isArray(group.spells)) {
-          group.spells = [];
-        }
-        if (!group.spells) group.spells = [];
-        return group;
-      }
-      default:
-        return group;
-    }
+  spellcasting.groups.forEach((group) => {
+    ensureGroupSpells(group);
   });
   return spellcasting;
 }
@@ -8403,7 +8396,7 @@ function collectSpellcastingIssues(data) {
       default:
         break;
     }
-    const spells = group.spells ?? [];
+    const spells = ensureGroupSpells(group);
     spells.forEach((spell, spellIndex) => {
       const name = ensureSpellName(spell?.name);
       if (!name) {
@@ -8505,22 +8498,17 @@ function renderPreviewContent(container, spellcasting) {
   spellcasting.groups.forEach((group) => {
     const groupBox = groupsWrap.createDiv({ cls: "sm-cc-spellcasting-preview__group" });
     groupBox.createEl("h5", { text: getGroupHeading(group) });
-    if (group.type === "per-day" && group.note?.trim()) {
-      groupBox.createDiv({ cls: "sm-cc-spellcasting-preview__note", text: group.note.trim() });
+    const note = group.type === "custom" ? group.description?.trim() : group.type === "per-day" || group.type === "level" ? group.note?.trim() : void 0;
+    if (note) {
+      groupBox.createDiv({ cls: "sm-cc-spellcasting-preview__note", text: note });
     }
-    if (group.type === "level" && group.note?.trim()) {
-      groupBox.createDiv({ cls: "sm-cc-spellcasting-preview__note", text: group.note.trim() });
-    }
-    if (group.type === "custom" && group.description?.trim()) {
-      groupBox.createDiv({ cls: "sm-cc-spellcasting-preview__note", text: group.description.trim() });
-    }
-    const spells = group.spells ?? [];
+    const spells = ensureGroupSpells(group);
     if (spells.length) {
       const ul = groupBox.createEl("ul");
       spells.forEach((spell) => {
         ul.createEl("li", { text: renderSpellPreviewText(spell) });
       });
-    } else if (group.type !== "custom" || !group.description?.trim()) {
+    } else if (group.type !== "custom" || !note) {
       groupBox.createDiv({ cls: "sm-cc-spellcasting-preview__empty", text: "Keine Zauber hinterlegt." });
     }
   });
@@ -8536,7 +8524,7 @@ function mountCreatureSpellcastingSection(parent, data, options = {}) {
     component.setPlaceholder(DEFAULT_TITLE).setValue(spellcasting.title ?? "").onChange((value) => {
       const trimmed = value.trim();
       spellcasting.title = trimmed || void 0;
-      renderPreview();
+      updatePreview();
     });
     component.inputEl.classList.add("sm-cc-input");
   });
@@ -8550,7 +8538,7 @@ function mountCreatureSpellcastingSection(parent, data, options = {}) {
   summaryArea.addEventListener("input", () => {
     const trimmed = summaryArea.value.trim();
     spellcasting.summary = trimmed || void 0;
-    renderPreview();
+    updatePreview();
   });
   const notesSetting = new import_obsidian24.Setting(root).setName("Notizen");
   notesSetting.settingEl.addClass("sm-cc-setting sm-cc-setting--textarea");
@@ -8562,7 +8550,7 @@ function mountCreatureSpellcastingSection(parent, data, options = {}) {
   notesArea.addEventListener("input", () => {
     const lines = notesArea.value.split(/\n+/).map((line) => line.trim()).filter((line) => line.length);
     spellcasting.notes = lines;
-    renderPreview();
+    updatePreview();
   });
   const abilitySetting = new import_obsidian24.Setting(root).setName("Spellcasting-Fokus");
   abilitySetting.settingEl.addClass("sm-cc-setting sm-cc-spellcasting__ability");
@@ -8612,23 +8600,19 @@ function mountCreatureSpellcastingSection(parent, data, options = {}) {
   };
   addGroupButton("+ At Will", () => {
     spellcasting.groups.push({ type: "at-will", title: "At Will", spells: [] });
-    renderGroups();
-    triggerValidation();
+    refreshGroups();
   });
   addGroupButton("+ X/Day (each)", () => {
     spellcasting.groups.push({ type: "per-day", uses: "1/day each", spells: [] });
-    renderGroups();
-    triggerValidation();
+    refreshGroups();
   });
   addGroupButton("+ Spell Level", () => {
     spellcasting.groups.push({ type: "level", level: 1, slots: 1, spells: [] });
-    renderGroups();
-    triggerValidation();
+    refreshGroups();
   });
   addGroupButton("+ Custom", () => {
     spellcasting.groups.push({ type: "custom", title: "Custom", description: "", spells: [] });
-    renderGroups();
-    triggerValidation();
+    refreshGroups();
   });
   const groupsContainer = root.createDiv({ cls: "sm-cc-spellcasting__groups" });
   const previewContainer = root.createDiv({ cls: "sm-cc-spellcasting__preview" });
@@ -8638,15 +8622,18 @@ function mountCreatureSpellcastingSection(parent, data, options = {}) {
   };
   const resolveAvailableSpells = () => {
     const provided = options.getAvailableSpells?.();
-    if (provided && provided.length) return Array.from(provided);
-    return availableSpells.slice();
+    return provided && provided.length ? Array.from(provided) : availableSpells.slice();
   };
-  const renderGroups = () => {
+  const updatePreview = (validate = false) => {
+    renderPreviewContent(previewContainer, spellcasting);
+    if (validate) triggerValidation();
+  };
+  function renderGroups() {
     typeaheadHandles.length = 0;
     groupsContainer.empty();
     if (!spellcasting.groups.length) {
       groupsContainer.createDiv({ cls: "sm-cc-spellcasting__groups-empty", text: "Noch keine Gruppen." });
-      renderPreview();
+      updatePreview();
       return;
     }
     spellcasting.groups.forEach((group, index) => {
@@ -8664,8 +8651,7 @@ function mountCreatureSpellcastingSection(parent, data, options = {}) {
         } else {
           group.title = value || void 0;
         }
-        renderPreview();
-        triggerValidation();
+        updatePreview(true);
       });
       const controls = head.createDiv({ cls: "sm-cc-spell-group__controls" });
       const moveUp = controls.createEl("button", { text: "\u2191", cls: "btn-compact", attr: { type: "button" } });
@@ -8677,23 +8663,17 @@ function mountCreatureSpellcastingSection(parent, data, options = {}) {
         if (index === 0) return;
         const [item] = spellcasting.groups.splice(index, 1);
         spellcasting.groups.splice(index - 1, 0, item);
-        renderGroups();
-        renderPreview();
-        triggerValidation();
+        refreshGroups();
       };
       moveDown.onclick = () => {
         if (index >= spellcasting.groups.length - 1) return;
         const [item] = spellcasting.groups.splice(index, 1);
         spellcasting.groups.splice(index + 1, 0, item);
-        renderGroups();
-        renderPreview();
-        triggerValidation();
+        refreshGroups();
       };
       remove.onclick = () => {
         spellcasting.groups.splice(index, 1);
-        renderGroups();
-        renderPreview();
-        triggerValidation();
+        refreshGroups();
       };
       const meta = groupBox.createDiv({ cls: "sm-cc-spell-group__meta" });
       if (group.type === "per-day") {
@@ -8704,8 +8684,7 @@ function mountCreatureSpellcastingSection(parent, data, options = {}) {
         usesInput.value = group.uses ?? "";
         usesInput.addEventListener("input", () => {
           group.uses = usesInput.value.trim();
-          renderPreview();
-          triggerValidation();
+          updatePreview(true);
         });
         const noteInput = meta.createEl("input", {
           cls: "sm-cc-input",
@@ -8714,7 +8693,7 @@ function mountCreatureSpellcastingSection(parent, data, options = {}) {
         noteInput.value = group.note ?? "";
         noteInput.addEventListener("input", () => {
           group.note = noteInput.value.trim() || void 0;
-          renderPreview();
+          updatePreview();
         });
       } else if (group.type === "level") {
         const levelInput = meta.createEl("input", {
@@ -8725,8 +8704,7 @@ function mountCreatureSpellcastingSection(parent, data, options = {}) {
         levelInput.addEventListener("input", () => {
           const parsed = Number(levelInput.value);
           group.level = Number.isFinite(parsed) ? parsed : group.level ?? 0;
-          renderPreview();
-          triggerValidation();
+          updatePreview(true);
         });
         const slotsInput = meta.createEl("input", {
           cls: "sm-cc-input sm-cc-input--small",
@@ -8741,7 +8719,7 @@ function mountCreatureSpellcastingSection(parent, data, options = {}) {
             const parsed = Number(value);
             group.slots = Number.isFinite(parsed) ? parsed : value;
           }
-          renderPreview();
+          updatePreview();
         });
         const noteInput = meta.createEl("input", {
           cls: "sm-cc-input",
@@ -8750,7 +8728,7 @@ function mountCreatureSpellcastingSection(parent, data, options = {}) {
         noteInput.value = group.note ?? "";
         noteInput.addEventListener("input", () => {
           group.note = noteInput.value.trim() || void 0;
-          renderPreview();
+          updatePreview();
         });
       } else if (group.type === "custom") {
         const descArea = meta.createEl("textarea", {
@@ -8760,11 +8738,11 @@ function mountCreatureSpellcastingSection(parent, data, options = {}) {
         descArea.value = group.description ?? "";
         descArea.addEventListener("input", () => {
           group.description = descArea.value.trim() || void 0;
-          renderPreview();
+          updatePreview();
         });
       }
       const spellsList = groupBox.createDiv({ cls: "sm-cc-spell-group__spells" });
-      const spells = group.spells ?? [];
+      const spells = ensureGroupSpells(group);
       spells.forEach((spell, spellIndex) => {
         const row = spellsList.createDiv({ cls: "sm-cc-spell-row" });
         const nameCell = row.createDiv({ cls: "sm-cc-spell-row__name" });
@@ -8772,8 +8750,7 @@ function mountCreatureSpellcastingSection(parent, data, options = {}) {
         spellHandle.input.value = spell.name ?? "";
         spellHandle.input.addEventListener("input", () => {
           spell.name = spellHandle.input.value;
-          renderPreview();
-          triggerValidation();
+          updatePreview(true);
         });
         typeaheadHandles.push(spellHandle);
         const notesCell = row.createDiv({ cls: "sm-cc-spell-row__notes" });
@@ -8785,14 +8762,12 @@ function mountCreatureSpellcastingSection(parent, data, options = {}) {
         notesInput.addEventListener("input", () => {
           const trimmed = notesInput.value.trim();
           spell.notes = trimmed || void 0;
-          renderPreview();
+          updatePreview();
         });
         const removeSpell = row.createEl("button", { text: "\xD7", cls: "btn-compact" });
         removeSpell.onclick = () => {
           spells.splice(spellIndex, 1);
-          renderGroups();
-          renderPreview();
-          triggerValidation();
+          refreshGroups();
         };
       });
       const addRow = spellsList.createDiv({ cls: "sm-cc-spell-row sm-cc-spell-row--add" });
@@ -8811,9 +8786,7 @@ function mountCreatureSpellcastingSection(parent, data, options = {}) {
         spells.push({ name, notes: ensureSpellName(addNotesInput.value) });
         addHandle.input.value = "";
         addNotesInput.value = "";
-        renderGroups();
-        renderPreview();
-        triggerValidation();
+        refreshGroups();
       };
       addButton.onclick = addSpell;
       addHandle.input.addEventListener("keydown", (event) => {
@@ -8823,11 +8796,12 @@ function mountCreatureSpellcastingSection(parent, data, options = {}) {
         }
       });
     });
-    renderPreview();
-  };
-  const renderPreview = () => {
-    renderPreviewContent(previewContainer, spellcasting);
-  };
+    updatePreview();
+  }
+  function refreshGroups() {
+    renderGroups();
+    triggerValidation();
+  }
   const updateComputed = (refreshPreview) => {
     const abilityMod2 = spellcasting.ability ? getAbilityModifier(data, spellcasting.ability) : null;
     const proficiency = getProficiencyBonus(data);
@@ -8841,7 +8815,7 @@ function mountCreatureSpellcastingSection(parent, data, options = {}) {
     };
     saveLabel.textContent = `Save DC: ${saveDc != null ? saveDc : "\u2014"}`;
     attackLabel.textContent = `Attack: ${attackBonus != null ? (attackBonus >= 0 ? "+" : "") + attackBonus : "\u2014"}`;
-    if (refreshPreview) renderPreview();
+    if (refreshPreview) updatePreview();
   };
   const host = parent.closest(".modal") ?? parent;
   const hostInputListener = () => updateComputed(true);
@@ -8871,7 +8845,9 @@ var CreateCreatureModal = class extends import_obsidian25.Modal {
   constructor(app, presetName, onSubmit) {
     super(app);
     this.availableSpells = [];
+    this.bgLock = null;
     this.validators = [];
+    this.sectionObserver = null;
     this.onSubmit = onSubmit;
     this.data = { name: presetName?.trim() || "Neue Kreatur" };
   }
@@ -8879,67 +8855,131 @@ var CreateCreatureModal = class extends import_obsidian25.Modal {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass("sm-cc-create-modal");
+    this.applyModalLayout();
     this.validators = [];
-    const bg = document.querySelector(".modal-bg");
-    if (bg) {
-      this._bgEl = bg;
-      this._bgPrevPointer = bg.style.pointerEvents;
-      bg.style.pointerEvents = "none";
-    }
+    this.sectionObserver?.disconnect();
+    this.sectionObserver = null;
+    this.lockBackgroundPointer();
     const header = contentEl.createDiv({ cls: "sm-cc-modal-header" });
     header.createEl("h2", { text: "Neuen Statblock erstellen" });
     header.createEl("p", {
       cls: "sm-cc-modal-subtitle",
       text: "Pflege zuerst Grundlagen und Attribute, anschlie\xDFend Sinne, Verteidigungen und Aktionen."
     });
-    const layout = contentEl.createDiv({ cls: "sm-cc-layout" });
-    const mainColumn = layout.createDiv({ cls: "sm-cc-layout__col sm-cc-layout__col--main" });
-    const sideColumn = layout.createDiv({ cls: "sm-cc-layout__col sm-cc-layout__col--side" });
-    const fullColumn = layout.createDiv({ cls: "sm-cc-layout__col sm-cc-layout__col--full" });
-    const createCard = (column, title, subtitle) => createFormCard(column, {
-      title,
-      subtitle,
-      registerValidator: (runner) => this.addValidator(runner)
-    });
-    let spellcastingControls = null;
-    void (async () => {
-      try {
-        const spells = (await listSpellFiles(this.app)).map((f) => f.basename).sort((a, b) => a.localeCompare(b));
-        this.availableSpells.splice(0, this.availableSpells.length, ...spells);
-        spellcastingControls?.setAvailableSpells(spells);
-      } catch {
+    const shell = contentEl.createDiv({ cls: "sm-cc-shell" });
+    const nav = shell.createEl("nav", { cls: "sm-cc-shell__nav", attr: { "aria-label": "Abschnitte" } });
+    nav.createEl("p", { cls: "sm-cc-shell__nav-label", text: "Abschnitte" });
+    const navList = nav.createDiv({ cls: "sm-cc-shell__nav-list" });
+    const content = shell.createDiv({ cls: "sm-cc-shell__content" });
+    const navEntries = [];
+    const setActive = (sectionId) => {
+      for (const entry of navEntries) {
+        const isActive = entry.id === sectionId;
+        entry.button.classList.toggle("is-active", isActive);
+        if (isActive) {
+          entry.button.setAttribute("aria-current", "true");
+        } else {
+          entry.button.removeAttribute("aria-current");
+        }
       }
-    })();
-    const classificationCard = createCard(mainColumn, "Grunddaten", "Name, Typ, Gesinnung und Tags");
-    mountCreatureClassificationSection(classificationCard.body, this.data);
-    const vitalsCard = createCard(mainColumn, "Vitalwerte", "AC, HP, Initiative und Bewegung");
-    mountCreatureVitalSection(vitalsCard.body, this.data);
-    const defensesCard = createCard(sideColumn, "Sinne & Verteidigungen");
-    mountCreatureSensesAndDefensesSection(defensesCard.body, this.data);
-    const spellcastingCard = createCard(sideColumn, "Spellcasting", "Zauberlisten, Nutzungen und Notizen");
-    spellcastingControls = mountCreatureSpellcastingSection(spellcastingCard.body, this.data, {
-      getAvailableSpells: () => this.availableSpells,
-      registerValidation: spellcastingCard.registerValidation
+    };
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.filter((entry) => entry.isIntersecting);
+      if (!visible.length) return;
+      visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+      const next = visible[0].target.id;
+      if (next) setActive(next);
+    }, { root: contentEl, rootMargin: "-45% 0px -45% 0px", threshold: 0 });
+    this.sectionObserver = observer;
+    const createSection = (plan) => {
+      const handles = createFormCard(content, {
+        title: plan.title,
+        subtitle: plan.subtitle,
+        registerValidator: (runner) => this.addValidator(runner),
+        id: plan.id
+      });
+      const navButton = navList.createEl("button", {
+        cls: "sm-cc-shell__nav-button",
+        text: plan.navLabel ?? plan.title
+      });
+      navButton.type = "button";
+      navButton.setAttribute("aria-controls", handles.card.id);
+      navEntries.push({ id: handles.card.id, button: navButton });
+      navButton.addEventListener("click", () => {
+        setActive(handles.card.id);
+        handles.card.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      observer.observe(handles.card);
+      plan.mount(handles);
+    };
+    let spellcastingControls = null;
+    void listSpellFiles(this.app).then((files) => files.map((f) => f.basename).sort((a, b) => a.localeCompare(b))).then((spells) => {
+      this.availableSpells.splice(0, this.availableSpells.length, ...spells);
+      spellcastingControls?.setAvailableSpells(spells);
+    }).catch(() => {
     });
-    const statsCard = createCard(fullColumn, "Attribute & Fertigkeiten");
-    mountCreatureStatsAndSkillsSection(statsCard.body, this.data, statsCard.registerValidation);
-    const entriesCard = createCard(fullColumn, "Eintr\xE4ge", "Traits, Aktionen, Bonusaktionen, Reaktionen und Legend\xE4res");
-    mountEntriesSection(entriesCard.body, this.data, entriesCard.registerValidation);
+    const sectionPlans = [
+      {
+        id: "sm-cc-section-classification",
+        title: "Grunddaten",
+        subtitle: "Name, Typ, Gesinnung und Tags",
+        mount: (handles) => mountCreatureClassificationSection(handles.body, this.data)
+      },
+      {
+        id: "sm-cc-section-vitals",
+        title: "Vitalwerte",
+        subtitle: "AC, HP, Initiative und Bewegung",
+        mount: (handles) => mountCreatureVitalSection(handles.body, this.data)
+      },
+      {
+        id: "sm-cc-section-defenses",
+        title: "Sinne & Verteidigungen",
+        mount: (handles) => mountCreatureSensesAndDefensesSection(handles.body, this.data)
+      },
+      {
+        id: "sm-cc-section-spellcasting",
+        title: "Spellcasting",
+        subtitle: "Zauberlisten, Nutzungen und Notizen",
+        mount: (handles) => {
+          spellcastingControls = mountCreatureSpellcastingSection(handles.body, this.data, {
+            getAvailableSpells: () => this.availableSpells,
+            registerValidation: handles.registerValidation
+          });
+        }
+      },
+      {
+        id: "sm-cc-section-stats",
+        title: "Attribute & Fertigkeiten",
+        mount: (handles) => mountCreatureStatsAndSkillsSection(handles.body, this.data, handles.registerValidation)
+      },
+      {
+        id: "sm-cc-section-entries",
+        title: "Eintr\xE4ge",
+        subtitle: "Traits, Aktionen, Bonusaktionen, Reaktionen und Legend\xE4res",
+        mount: (handles) => mountEntriesSection(handles.body, this.data, handles.registerValidation)
+      }
+    ];
+    for (const plan of sectionPlans) {
+      createSection(plan);
+    }
+    if (sectionPlans.length) {
+      setActive(sectionPlans[0].id);
+    }
     const footer = contentEl.createDiv({ cls: "sm-cc-modal-footer" });
     new import_obsidian25.Setting(footer).addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close())).addButton((b) => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
   }
   onClose() {
+    this.sectionObserver?.disconnect();
+    this.sectionObserver = null;
+    this.resetModalLayout();
     this.contentEl.empty();
-    if (this._bgEl) {
-      this._bgEl.style.pointerEvents = this._bgPrevPointer ?? "";
-      this._bgEl = void 0;
-    }
+    this.restoreBackgroundPointer();
   }
   onunload() {
-    if (this._bgEl) {
-      this._bgEl.style.pointerEvents = this._bgPrevPointer ?? "";
-      this._bgEl = void 0;
-    }
+    this.sectionObserver?.disconnect();
+    this.sectionObserver = null;
+    this.resetModalLayout();
+    this.restoreBackgroundPointer();
   }
   submit() {
     const issues = this.runValidators();
@@ -8962,6 +9002,23 @@ var CreateCreatureModal = class extends import_obsidian25.Modal {
       collected.push(...validator());
     }
     return collected;
+  }
+  lockBackgroundPointer() {
+    const bg = document.querySelector(".modal-bg");
+    if (!bg) return;
+    this.bgLock = { el: bg, pointer: bg.style.pointerEvents };
+    bg.style.pointerEvents = "none";
+  }
+  restoreBackgroundPointer() {
+    if (!this.bgLock) return;
+    this.bgLock.el.style.pointerEvents = this.bgLock.pointer || "";
+    this.bgLock = null;
+  }
+  applyModalLayout() {
+    this.modalEl.addClass("sm-cc-create-modal-host");
+  }
+  resetModalLayout() {
+    this.modalEl.removeClass("sm-cc-create-modal-host");
   }
 };
 
@@ -9974,18 +10031,24 @@ var editorLayoutsCss = `
 .sm-cc-item__name { font-weight: 600; }
 
 /* Creature Creator \u2013 Modal Layout */
+.modal.sm-cc-create-modal-host {
+    width: min(1120px, calc(100vw - 32px));
+    max-width: min(1120px, calc(100vw - 32px));
+    min-width: min(880px, calc(100vw - 32px));
+}
+.modal.sm-cc-create-modal-host .modal-content { max-height: calc(100vh - 96px); }
 .sm-cc-modal-header { display:flex; flex-direction:column; gap:.35rem; margin-bottom:1rem; }
 .sm-cc-modal-header h2 { margin:0; font-size:1.35rem; }
 .sm-cc-modal-subtitle { margin:0; color: var(--text-muted); font-size:.95em; }
-.sm-cc-layout { display:grid; grid-template-columns:minmax(0, 3fr) minmax(0, 2fr); gap:1rem; align-items:flex-start; }
-.sm-cc-layout__col { display:flex; flex-direction:column; gap:1rem; min-width:0; }
-.sm-cc-layout__col--full { grid-column:1 / -1; }
-@media (max-width: 1100px) {
-    .sm-cc-layout { grid-template-columns:minmax(0, 1fr); }
-    .sm-cc-layout__col--side { order:2; }
-    .sm-cc-layout__col--main { order:1; }
-    .sm-cc-layout__col--full { order:3; }
-}
+.sm-cc-shell { display:grid; grid-template-columns:minmax(0, 260px) minmax(0, 1fr); gap:1.5rem; align-items:flex-start; }
+.sm-cc-shell__nav { position:sticky; top:0; align-self:start; display:flex; flex-direction:column; gap:.75rem; padding:1rem; border:1px solid var(--background-modifier-border); border-radius:16px; background:color-mix(in srgb, var(--background-secondary) 88%, transparent); box-shadow:0 12px 28px rgba(15,23,42,.08); }
+.sm-cc-shell__nav-label { margin:0; font-size:.75rem; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted); }
+.sm-cc-shell__nav-list { display:flex; flex-direction:column; gap:.4rem; }
+.sm-cc-shell__nav-button { display:flex; align-items:center; gap:.45rem; width:100%; padding:.45rem .75rem; border-radius:999px; border:1px solid transparent; background:transparent; color:var(--text-muted); font-size:.82rem; letter-spacing:.06em; text-transform:uppercase; font-weight:600; cursor:pointer; transition:background 160ms ease, color 160ms ease, border 160ms ease, box-shadow 160ms ease; }
+.sm-cc-shell__nav-button:hover { color:var(--text-normal); }
+.sm-cc-shell__nav-button:focus-visible { outline:2px solid var(--interactive-accent); outline-offset:2px; }
+.sm-cc-shell__nav-button.is-active { background:var(--interactive-accent); color:var(--text-on-accent, #fff); box-shadow:0 8px 20px color-mix(in srgb, var(--interactive-accent) 35%, transparent); }
+.sm-cc-shell__content { display:flex; flex-direction:column; gap:1.5rem; min-width:0; }
 .sm-cc-card {
     border:1px solid var(--background-modifier-border);
     border-radius:12px;
@@ -10040,7 +10103,7 @@ var editorLayoutsCss = `
 }
 .sm-cc-basics--classification,
 .sm-cc-basics--vitals {
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
     align-items: stretch;
 }
 .sm-cc-basics__group {
@@ -10063,20 +10126,13 @@ var editorLayoutsCss = `
 .sm-cc-field-grid {
     display: grid;
     gap: .75rem;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(2, minmax(200px, 1fr));
 }
-.sm-cc-field-grid--identity { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-.sm-cc-field-grid--summary { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
-.sm-cc-field-grid--classification { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
-.sm-cc-field-grid--vitals { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
-.sm-cc-field-grid--speeds { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
-@media (max-width: 860px) {
-    .sm-cc-basics--classification,
-    .sm-cc-basics--vitals { grid-template-columns: minmax(0, 1fr); }
-}
-@media (max-width: 720px) {
-    .sm-cc-field-grid { grid-template-columns: minmax(0, 1fr); }
-}
+.sm-cc-field-grid--identity { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+.sm-cc-field-grid--summary { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+.sm-cc-field-grid--classification { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+.sm-cc-field-grid--vitals { grid-template-columns: repeat(2, minmax(180px, 1fr)); }
+.sm-cc-field-grid--speeds { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
 .sm-cc-setting.setting-item {
     border: none;
     padding: 0;
