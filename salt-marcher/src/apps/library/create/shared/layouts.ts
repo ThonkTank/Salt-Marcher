@@ -6,6 +6,8 @@ export type ValidationRunner = () => string[];
 
 export type ValidationRegistrar = (runner: ValidationRunner) => ValidationRunner;
 
+export type ValidationResult = string[] | { issues: string[]; summary?: string };
+
 export interface FormCardOptions {
   title: string;
   subtitle?: string;
@@ -15,7 +17,7 @@ export interface FormCardOptions {
 export interface FormCardHandles {
   card: HTMLElement;
   body: HTMLElement;
-  registerValidation: (compute: () => string[]) => ValidationRunner;
+  registerValidation: (compute: () => ValidationResult) => ValidationRunner;
 }
 
 export function createFormCard(parent: HTMLElement, options: FormCardOptions): FormCardHandles {
@@ -23,19 +25,27 @@ export function createFormCard(parent: HTMLElement, options: FormCardOptions): F
 
   const card = parent.createDiv({ cls: "sm-cc-card" });
   const head = card.createDiv({ cls: "sm-cc-card__head" });
-  head.createEl("h3", { text: title, cls: "sm-cc-card__title" });
+  const heading = head.createDiv({ cls: "sm-cc-card__heading" });
+  heading.createEl("h3", { text: title, cls: "sm-cc-card__title" });
+  const status = heading.createSpan({
+    cls: "sm-cc-card__status",
+    attr: { hidden: "" },
+  });
   if (subtitle) head.createEl("p", { text: subtitle, cls: "sm-cc-card__subtitle" });
 
   const validation = card.createDiv({ cls: "sm-cc-card__validation", attr: { hidden: "" } });
   const validationList = validation.createEl("ul", { cls: "sm-cc-card__validation-list" });
 
-  const applyValidation = (issues: string[]) => {
+  const applyValidation = (issues: string[], summary?: string) => {
     const hasIssues = issues.length > 0;
     card.toggleClass("is-invalid", hasIssues);
     if (!hasIssues) {
       validation.setAttribute("hidden", "");
       validation.classList.remove("is-visible");
       validationList.empty();
+      status.textContent = "";
+      status.setAttribute("hidden", "");
+      status.classList.remove("is-active");
       return;
     }
     validation.removeAttribute("hidden");
@@ -44,15 +54,22 @@ export function createFormCard(parent: HTMLElement, options: FormCardOptions): F
     for (const message of issues) {
       validationList.createEl("li", { text: message });
     }
+    const fallbackSummary = issues.length === 1 ? issues[0] : `${issues.length} Probleme`;
+    status.textContent = summary?.trim() || fallbackSummary;
+    status.removeAttribute("hidden");
+    status.classList.add("is-active");
   };
 
   const body = card.createDiv({ cls: "sm-cc-card__body" });
 
-  const registerValidation = (compute: () => string[]) => {
+  const registerValidation = (compute: () => ValidationResult) => {
     const runner: ValidationRunner = () => {
-      const issues = compute();
-      applyValidation(issues);
-      return issues;
+      const result = compute();
+      const normalized = Array.isArray(result)
+        ? { issues: result, summary: undefined }
+        : result ?? { issues: [], summary: undefined };
+      applyValidation(normalized.issues, normalized.summary);
+      return normalized.issues;
     };
     return registerValidator ? registerValidator(runner) : runner;
   };
