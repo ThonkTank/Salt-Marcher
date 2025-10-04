@@ -9,8 +9,6 @@ export const EXAMPLE_CREATURE_STATBLOCKS: StatblockData[] = [
     size: "Medium",
     type: "Plant",
     typeTags: ["fungus", "myconid"],
-    alignmentLawChaos: "Neutral",
-    alignmentGoodEvil: "Neutral",
     alignmentOverride: "Unaligned",
     ac: "13 (natürliche Rüstung)",
     hp: "45 (6d8 + 18)",

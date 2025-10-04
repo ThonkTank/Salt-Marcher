@@ -1,6 +1,6 @@
 // src/apps/library/create/creature/section-basics.ts
 // Stellt separate Mount-Funktionen für Klassifikation (Name, Typ, Alignment, PB/CR/XP) und Vitaldaten (AC, HP, Bewegung) bereit.
-import { ToggleComponent } from "obsidian";
+import { DropdownComponent } from "obsidian";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import type {
   CreatureSpeedExtra,
@@ -25,22 +25,18 @@ const SPEED_FIELD_DEFS: Array<{ key: SpeedFieldKey; label: string; placeholder: 
   { key: "burrow", label: "Graben", placeholder: "20 ft." },
 ];
 
-type AlignmentOption = {
-  label: string;
-  lawChaos: string;
-  goodEvil: string;
-};
+const LAW_CHAOS_DROPDOWN_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "", label: "" },
+  { value: "Lawful", label: "Rechtschaffen" },
+  { value: "Neutral", label: "Neutral" },
+  { value: "Chaotic", label: "Chaotisch" },
+];
 
-const ALIGNMENT_OPTIONS: AlignmentOption[] = [
-  { label: "Lawful Good", lawChaos: "Lawful", goodEvil: "Good" },
-  { label: "Neutral Good", lawChaos: "Neutral", goodEvil: "Good" },
-  { label: "Chaotic Good", lawChaos: "Chaotic", goodEvil: "Good" },
-  { label: "Lawful Neutral", lawChaos: "Lawful", goodEvil: "Neutral" },
-  { label: "Neutral", lawChaos: "Neutral", goodEvil: "Neutral" },
-  { label: "Chaotic Neutral", lawChaos: "Chaotic", goodEvil: "Neutral" },
-  { label: "Lawful Evil", lawChaos: "Lawful", goodEvil: "Evil" },
-  { label: "Neutral Evil", lawChaos: "Neutral", goodEvil: "Evil" },
-  { label: "Chaotic Evil", lawChaos: "Chaotic", goodEvil: "Evil" },
+const GOOD_EVIL_DROPDOWN_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "", label: "" },
+  { value: "Good", label: "Gut" },
+  { value: "Neutral", label: "Neutral" },
+  { value: "Evil", label: "Böse" },
 ];
 
 type SpeedRecord = Record<SpeedFieldKey, CreatureSpeedValue | undefined> & {
@@ -178,65 +174,80 @@ export function mountCreatureClassificationSection(parent: HTMLElement, data: St
     minColumnWidth: "16rem",
   });
 
-  const alignmentSetting = classificationGrid.createSetting("Gesinnung", {
-    className: ["sm-cc-setting--span-2", "sm-cc-setting--show-name"],
-  });
-  const alignmentGrid = alignmentSetting.controlEl.createDiv({ cls: "sm-cc-alignment-grid" });
-  const alignmentButtons: HTMLButtonElement[] = [];
-
-  const applyAlignment = (option: AlignmentOption) => {
-    data.alignmentOverride = undefined;
-    data.alignmentLawChaos = option.lawChaos;
-    data.alignmentGoodEvil = option.goodEvil;
-    updateAlignmentUI();
-  };
-
-  ALIGNMENT_OPTIONS.forEach((option) => {
-    const button = alignmentGrid.createEl("button", {
-      text: option.label,
-      cls: "sm-cc-alignment-button",
-      attr: { type: "button" },
-    });
-    button.addEventListener("click", () => applyAlignment(option));
-    alignmentButtons.push(button);
-  });
-
-  const overrideRow = alignmentSetting.controlEl.createDiv({ cls: "sm-cc-alignment-override" });
-  const overrideToggleContainer = overrideRow.createDiv({ cls: "sm-cc-alignment-override__toggle" });
-  const overrideToggle = new ToggleComponent(overrideToggleContainer);
-  overrideRow.createSpan({ text: "Override: „Unaligned“", cls: "sm-cc-alignment-override__label" });
-
-  const isUnaligned = () => (data.alignmentOverride ?? "").toLowerCase() === "unaligned";
-
-  const updateAlignmentUI = () => {
-    const currentLaw = data.alignmentLawChaos?.trim() ?? "";
-    const currentGood = data.alignmentGoodEvil?.trim() ?? "";
-    const unaligned = isUnaligned();
-    alignmentButtons.forEach((button, index) => {
-      const option = ALIGNMENT_OPTIONS[index];
-      const active = !unaligned && option.lawChaos === currentLaw && option.goodEvil === currentGood;
-      button.toggleClass("is-active", active);
-      if (unaligned) {
-        button.setAttr("disabled", "true");
-        button.setAttr("aria-disabled", "true");
+  let lawChaosDropdown: DropdownComponent | null = null;
+  let goodEvilDropdown: DropdownComponent | null = null;
+  const refreshAlignmentControls = () => {
+    const hasOverride = Boolean((data.alignmentOverride ?? "").trim());
+    const toggleDropdown = (dropdown: DropdownComponent | null) => {
+      if (!dropdown) return;
+      if (hasOverride) {
+        dropdown.selectEl.setAttribute("disabled", "true");
+        dropdown.selectEl.setAttribute("aria-disabled", "true");
       } else {
-        button.removeAttribute("disabled");
-        button.removeAttribute("aria-disabled");
+        dropdown.selectEl.removeAttribute("disabled");
+        dropdown.selectEl.removeAttribute("aria-disabled");
       }
-    });
-    if (overrideToggle.getValue() !== unaligned) overrideToggle.setValue(unaligned);
+    };
+    toggleDropdown(lawChaosDropdown);
+    toggleDropdown(goodEvilDropdown);
   };
 
-  overrideToggle.onChange((checked) => {
-    if (checked) {
-      data.alignmentOverride = "Unaligned";
-    } else {
-      data.alignmentOverride = undefined;
-    }
-    updateAlignmentUI();
+  const lawChaosSetting = classificationGrid.createSetting("Rechtschaffen/Neutral/Chaotisch", {
+    className: "sm-cc-setting--show-name",
+  });
+  lawChaosSetting.addDropdown((dd) => {
+    lawChaosDropdown = dd;
+    for (const option of LAW_CHAOS_DROPDOWN_OPTIONS) dd.addOption(option.value, option.label);
+    dd.setValue(data.alignmentLawChaos ?? "");
+    dd.onChange((value: string) => {
+      data.alignmentLawChaos = value || undefined;
+    });
+    dd.selectEl.classList.add("sm-cc-select");
+    try {
+      enhanceSelectToSearch(dd.selectEl, "Such-dropdown…");
+    } catch {}
+    refreshAlignmentControls();
   });
 
-  updateAlignmentUI();
+  const goodEvilSetting = classificationGrid.createSetting("Gut/Neutral/Böse", {
+    className: "sm-cc-setting--show-name",
+  });
+  goodEvilSetting.addDropdown((dd) => {
+    goodEvilDropdown = dd;
+    for (const option of GOOD_EVIL_DROPDOWN_OPTIONS) dd.addOption(option.value, option.label);
+    dd.setValue(data.alignmentGoodEvil ?? "");
+    dd.onChange((value: string) => {
+      data.alignmentGoodEvil = value || undefined;
+    });
+    dd.selectEl.classList.add("sm-cc-select");
+    try {
+      enhanceSelectToSearch(dd.selectEl, "Such-dropdown…");
+    } catch {}
+    refreshAlignmentControls();
+  });
+
+  const alignmentOverrideSetting = classificationGrid.createSetting("Alignment-Override", {
+    className: [
+      "sm-cc-setting--span-2",
+      "sm-cc-setting--show-name",
+      "sm-cc-setting--alignment-override",
+    ],
+  });
+  alignmentOverrideSetting.addText((t) => {
+    const applyOverride = (raw: string) => {
+      const trimmed = raw.trim();
+      if (trimmed) data.alignmentOverride = trimmed;
+      else data.alignmentOverride = undefined;
+      refreshAlignmentControls();
+    };
+    t.setPlaceholder("z. B. Unaligned oder „Lawful Neutral“")
+      .setValue(data.alignmentOverride ?? "")
+      .onChange(applyOverride);
+    t.inputEl.addEventListener("input", () => applyOverride(t.inputEl.value));
+    t.inputEl.classList.add("sm-cc-input", "sm-cc-input--alignment-override");
+  });
+
+  refreshAlignmentControls();
 
   const createClassificationField = (label: string, placeholder: string, key: keyof StatblockData) => {
     const setting = classificationGrid.createSetting(label);

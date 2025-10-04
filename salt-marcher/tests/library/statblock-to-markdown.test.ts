@@ -19,13 +19,13 @@ describe("statblockToMarkdown", () => {
         size: "Large",
         type: "Construct",
         typeTags: ["warforged", "soldier"],
-        alignmentLawChaos: "Neutral",
+        alignmentLawChaos: "Lawful",
         alignmentGoodEvil: "Good",
       }),
     );
 
     expect(markdown).toContain('type_tags: ["warforged", "soldier"]');
-    expect(markdown).toContain("*Large Construct (warforged, soldier), Neutral Good*");
+    expect(markdown).toContain("*Large Construct (warforged, soldier), Lawful Good*");
   });
 
   it("nutzt Alignment-Override für Unaligned-Ausgabe", () => {
@@ -34,8 +34,6 @@ describe("statblockToMarkdown", () => {
         size: "Tiny",
         type: "Beast",
         typeTags: ["familiar"],
-        alignmentLawChaos: "Chaotic",
-        alignmentGoodEvil: "Evil",
         alignmentOverride: "Unaligned",
       }),
     );
