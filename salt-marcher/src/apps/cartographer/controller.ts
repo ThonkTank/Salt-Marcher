@@ -1,5 +1,5 @@
 // src/apps/cartographer/controller.ts
-// Controller: Verwaltet Cartographer-Zustand und rendert Layout ohne separate View-Shell.
+// Controller: Verwaltet Cartographer-Zustand mit minimaler Lifecycle-Logik und direkter View-Anbindung.
 
 import { Notice, type App, type TFile } from "obsidian";
 import { parseOptions, type HexOptions } from "../../core/options";
@@ -12,7 +12,7 @@ import {
     type MapHeaderHandle,
     type MapHeaderSaveMode,
 } from "../../ui/map-header";
-import { createViewContainer, type ViewContainerHandle } from "../../ui/view-container";
+import { createViewContainer } from "../../ui/view-container";
 
 export type HexCoord = { r: number; c: number };
 
@@ -134,21 +134,8 @@ const MODE_PROVISION_OVERLAY_MESSAGE = "Cartographer-Modi konnten nicht geladen 
 const MODE_PROVISION_NOTICE_MESSAGE =
     "Cartographer-Modi konnten nicht geladen werden. Bitte die Konsole prüfen.";
 
-type ModeProvisionIssueState = {
-    noticeIssued: boolean;
-    overlayActive: boolean;
-};
+const DEFAULT_MODE_LABEL = "Mode";
 
-type ModeTransitionPhase = "idle" | "exiting" | "entering";
-
-type ModeTransition = {
-    readonly id: number;
-    readonly next: CartographerMode;
-    readonly previous: CartographerMode | null;
-    readonly controller: AbortController;
-    readonly externalSignal: AbortSignal | null;
-    phase: ModeTransitionPhase;
-};
 export class CartographerController {
     private static readonly neverAbortSignal: AbortSignal = new AbortController().signal;
 
@@ -157,25 +144,25 @@ export class CartographerController {
 
     readonly callbacks: CartographerControllerCallbacks;
 
+    private host: HTMLElement | null = null;
     private view: CartographerViewHandle | null = null;
     private mapManager: MapManagerHandle | null = null;
     private currentFile: TFile | null = null;
     private currentOptions: HexOptions | null = null;
     private mapLayer: MapLayer | null = null;
-    private activeMode: CartographerMode | null = null;
+    private requestedFile: TFile | null = null;
+    private isMounted = false;
+
     private readonly modeDescriptors: readonly CartographerModeDescriptor[];
     private modes: CartographerMode[] = [];
-    private hostEl: HTMLElement | null = null;
+    private modeLoadFailed = false;
+    private modeNoticeIssued = false;
+
+    private activeMode: CartographerMode | null = null;
+    private lifecycle: { controller: AbortController; ctx: CartographerModeLifecycleContext } | null = null;
+
+    private renderToken = 0;
     private modeChange: Promise<void> = Promise.resolve();
-    private readonly transitionTasks = new Set<Promise<void>>();
-    private loadToken = 0;
-    private isMounted = false;
-    private requestedFile: TFile | null | undefined = undefined;
-    private modeTransitionSeq = 0;
-    private transition: ModeTransition | null = null;
-    private activeLifecycleController: AbortController | null = null;
-    private activeLifecycleContext: CartographerModeLifecycleContext | null = null;
-    private modeProvisionIssue: ModeProvisionIssueState | null = null;
 
     constructor(app: App, deps?: Partial<CartographerControllerDeps>) {
         this.app = app;
@@ -210,9 +197,12 @@ export class CartographerController {
     async onOpen(host: HTMLElement, fallbackFile: TFile | null): Promise<void> {
         await this.onClose();
 
-        this.hostEl = host;
+        this.host = host;
+        this.isMounted = true;
+
         const initialFile = this.requestedFile ?? fallbackFile ?? null;
         this.currentFile = initialFile;
+        this.requestedFile = initialFile;
 
         const shellModes: ModeShellEntry[] = this.modeDescriptors.map((descriptor) => ({
             id: descriptor.id,
@@ -227,7 +217,9 @@ export class CartographerController {
             callbacks: this.callbacks,
         });
 
-        this.applyModeProvisionOverlay();
+        if (this.modeLoadFailed) {
+            this.view.setOverlay(MODE_PROVISION_OVERLAY_MESSAGE);
+        }
 
         this.mapManager = this.deps.createMapManager(this.app, {
             initialFile,
@@ -236,18 +228,19 @@ export class CartographerController {
             },
         });
 
-        this.view.setModeLabel(shellModes[0]?.label ?? "Mode");
+        this.view.setModes(shellModes);
         this.view.setModeActive(shellModes[0]?.id ?? null);
+        this.view.setModeLabel(shellModes[0]?.label ?? DEFAULT_MODE_LABEL);
         this.view.setFileLabel(initialFile);
-
-        this.isMounted = true;
-        this.requestedFile = initialFile;
 
         await this.ensureModesLoaded();
         const firstMode = this.modes[0] ?? null;
         if (firstMode) {
             await this.setMode(firstMode.id);
+        } else if (this.modeLoadFailed) {
+            this.view.setOverlay(MODE_PROVISION_OVERLAY_MESSAGE);
         }
+
         await this.mapManager.setFile(initialFile);
     }
 
@@ -255,79 +248,49 @@ export class CartographerController {
         if (!this.isMounted) {
             this.view?.destroy();
             this.view = null;
-            this.hostEl = null;
+            this.host = null;
+            this.mapManager = null;
             return;
         }
 
         this.isMounted = false;
-        this.transition?.controller.abort();
-        await this.modeChange;
-        try {
-            const controller = this.activeLifecycleController ?? new AbortController();
-            if (!controller.signal.aborted) {
-                controller.abort();
-            }
-            const ctx =
-                this.activeLifecycleContext && this.activeLifecycleContext.signal === controller.signal
-                    ? this.activeLifecycleContext
-                    : this.createLifecycleContext(controller.signal);
-            await this.activeMode?.onExit(ctx);
-        } catch (err) {
-            console.error("[cartographer] mode exit failed", err);
+
+        const lifecycle = this.lifecycle;
+        if (lifecycle) {
+            lifecycle.controller.abort();
         }
+
+        const pending = this.modeChange;
+        this.modeChange = Promise.resolve();
+        try {
+            await pending;
+        } catch (error) {
+            console.error("[cartographer] pending mode change failed", error);
+        }
+
+        if (this.activeMode && lifecycle) {
+            try {
+                await this.activeMode.onExit(lifecycle.ctx);
+            } catch (error) {
+                console.error("[cartographer] mode exit failed", error);
+            }
+        }
+
         this.activeMode = null;
-        this.activeLifecycleController = null;
-        this.activeLifecycleContext = null;
+        this.lifecycle = null;
+
         await this.teardownLayer();
+
         this.view?.destroy();
         this.view = null;
-        this.hostEl = null;
+        this.host = null;
         this.mapManager = null;
     }
 
     async setFile(file: TFile | null): Promise<void> {
         this.requestedFile = file;
-        if (!this.isMounted || !this.mapManager) return;
+        if (!this.mapManager) return;
         await this.mapManager.setFile(file);
-    }
-
-    private get baseModeCtx(): CartographerModeContext {
-        if (!this.view || !this.hostEl) {
-            throw new Error("CartographerController is not mounted.");
-        }
-        return {
-            app: this.app,
-            host: this.hostEl,
-            mapHost: this.view.mapHost,
-            sidebarHost: this.view.sidebarHost,
-            getFile: () => this.currentFile,
-            getMapLayer: () => this.mapLayer,
-            getRenderHandles: () => this.mapLayer?.handles ?? null,
-            getOptions: () => this.currentOptions,
-        } satisfies CartographerModeContext;
-    }
-
-    private createLifecycleContext(signal: AbortSignal): CartographerModeLifecycleContext {
-        const base = this.baseModeCtx;
-        return { ...base, signal } satisfies CartographerModeLifecycleContext;
-    }
-
-    private ensureActiveLifecycleContext(signal: AbortSignal): CartographerModeLifecycleContext {
-        const current = this.activeLifecycleContext;
-        if (current && current.signal === signal) {
-            return current;
-        }
-
-        const context = this.createLifecycleContext(signal);
-        if (this.activeLifecycleController?.signal === signal) {
-            this.activeLifecycleContext = context;
-        }
-
-        return context;
-    }
-
-    private getActiveLifecycleSignal(): AbortSignal {
-        return this.activeLifecycleController?.signal ?? CartographerController.neverAbortSignal;
     }
 
     private async ensureModesLoaded(): Promise<void> {
@@ -346,352 +309,172 @@ export class CartographerController {
             }
         }
 
+        this.modes = loaded;
+        this.view?.setModes(loaded.map((mode) => ({ id: mode.id, label: mode.label })));
+
         if (loaded.length === 0) {
-            this.modes = [];
-            this.handleModeProvisionFailure(new Error("no modes available"));
-            this.view?.setModes([]);
+            this.modeLoadFailed = true;
+            this.showModeProvisionFailure();
+        } else {
+            this.modeLoadFailed = false;
+            this.view?.setOverlay(null);
+        }
+    }
+
+    private showModeProvisionFailure(): void {
+        if (!this.modeNoticeIssued) {
+            new Notice(MODE_PROVISION_NOTICE_MESSAGE);
+            this.modeNoticeIssued = true;
+        }
+        this.view?.setOverlay(MODE_PROVISION_OVERLAY_MESSAGE);
+    }
+
+    private queueModeChange(task: () => Promise<void>): Promise<void> {
+        const next = this.modeChange.then(task, task);
+        this.modeChange = next.catch(() => {});
+        return next;
+    }
+
+    async setMode(id: string, ctx?: ModeSelectContext): Promise<void> {
+        const change = this.queueModeChange(async () => {
+            await this.performModeChange(id, ctx);
+        });
+        try {
+            await change;
+        } catch (error) {
+            console.error("[cartographer] mode transition failed", error);
+        }
+    }
+
+    private async performModeChange(id: string, ctx?: ModeSelectContext): Promise<void> {
+        if (!this.isMounted || !this.view) return;
+
+        await this.ensureModesLoaded();
+        if (this.modeLoadFailed) {
+            this.showModeProvisionFailure();
             return;
         }
 
-        this.modes = loaded;
-        this.clearModeProvisionIssue();
-        this.view?.setModes(loaded.map((mode) => ({ id: mode.id, label: mode.label })));
+        const next = this.modes.find((mode) => mode.id === id) ?? this.modes[0] ?? null;
+        if (!next) return;
+
+        if (next === this.activeMode) {
+            this.view.setModeActive(next.id);
+            this.view.setModeLabel(next.label);
+            return;
+        }
+
+        const previous = this.activeMode;
+        const previousLifecycle = this.lifecycle;
+        if (previousLifecycle) {
+            previousLifecycle.controller.abort();
+        }
+        this.activeMode = null;
+        this.lifecycle = null;
+
+        if (previous && previousLifecycle) {
+            try {
+                await previous.onExit(previousLifecycle.ctx);
+            } catch (error) {
+                console.error("[cartographer] mode exit failed", error);
+            }
+        }
+
+        const controller = new AbortController();
+        const external = ctx?.signal;
+        if (external) {
+            if (external.aborted) controller.abort();
+            else external.addEventListener("abort", () => controller.abort(), { once: true });
+        }
+
+        const lifecycleCtx = this.createLifecycleContext(controller.signal);
+        this.lifecycle = { controller, ctx: lifecycleCtx };
+        this.activeMode = next;
+
+        this.view.setModeActive(next.id);
+        this.view.setModeLabel(next.label);
+
+        try {
+            await next.onEnter(lifecycleCtx);
+        } catch (error) {
+            if (!controller.signal.aborted) {
+                console.error("[cartographer] mode enter failed", error);
+            }
+        }
+
+        if (controller.signal.aborted) return;
+
+        await this.refresh();
     }
 
     private async handleFileChange(file: TFile | null): Promise<void> {
         this.currentFile = file;
+        this.requestedFile = file;
         this.view?.setFileLabel(file);
         await this.refresh();
     }
 
     private async handleSave(mode: MapHeaderSaveMode, file: TFile | null): Promise<boolean> {
-        if (!this.activeMode?.onSave) return false;
+        if (!this.activeMode?.onSave || !this.lifecycle) return false;
         try {
-            const ctx = this.ensureActiveLifecycleContext(this.getActiveLifecycleSignal());
-            const handled = await this.activeMode.onSave(mode, file, ctx);
+            const handled = await this.activeMode.onSave(mode, file, this.lifecycle.ctx);
             return handled === true;
-        } catch (err) {
-            console.error("[cartographer] mode onSave failed", err);
+        } catch (error) {
+            console.error("[cartographer] mode onSave failed", error);
             return false;
         }
     }
 
     private async handleHexClick(coord: HexCoord, event: CustomEvent<HexCoord>): Promise<void> {
-        if (!this.activeMode?.onHexClick) return;
+        if (!this.activeMode?.onHexClick || !this.lifecycle) return;
         try {
-            const ctx = this.ensureActiveLifecycleContext(this.getActiveLifecycleSignal());
-            await this.activeMode.onHexClick(coord, event, ctx);
-        } catch (err) {
-            console.error("[cartographer] mode onHexClick failed", err);
+            await this.activeMode.onHexClick(coord, event, this.lifecycle.ctx);
+        } catch (error) {
+            console.error("[cartographer] mode onHexClick failed", error);
         }
     }
 
-    private handleModeProvisionFailure(error: unknown): void {
-        console.error("[cartographer] failed to provide modes", error);
-
-        const issue: ModeProvisionIssueState = this.modeProvisionIssue ?? {
-            noticeIssued: false,
-            overlayActive: false,
-        };
-
-        if (!issue.noticeIssued) {
-            new Notice(MODE_PROVISION_NOTICE_MESSAGE);
-            issue.noticeIssued = true;
+    private get baseModeCtx(): CartographerModeContext {
+        if (!this.view || !this.host) {
+            throw new Error("CartographerController is not mounted.");
         }
-
-        issue.overlayActive = false;
-
-        if (this.view) {
-            this.view.setOverlay(MODE_PROVISION_OVERLAY_MESSAGE);
-            issue.overlayActive = true;
-        } else {
-            issue.overlayActive = false;
-        }
-
-        this.modeProvisionIssue = issue;
+        return {
+            app: this.app,
+            host: this.host,
+            mapHost: this.view.mapHost,
+            sidebarHost: this.view.sidebarHost,
+            getFile: () => this.currentFile,
+            getMapLayer: () => this.mapLayer,
+            getRenderHandles: () => this.mapLayer?.handles ?? null,
+            getOptions: () => this.currentOptions,
+        } satisfies CartographerModeContext;
     }
 
-    private applyModeProvisionOverlay(): void {
-        if (!this.modeProvisionIssue || !this.view) {
-            return;
-        }
-
-        this.view.setOverlay(MODE_PROVISION_OVERLAY_MESSAGE);
-        this.modeProvisionIssue.overlayActive = true;
-    }
-
-    private clearModeProvisionIssue(): void {
-        const issue = this.modeProvisionIssue;
-        if (!issue) return;
-
-        if (issue.overlayActive) {
-            this.view?.setOverlay(null);
-        }
-
-        this.modeProvisionIssue = null;
-    }
-
-    async setMode(id: string, ctx?: ModeSelectContext): Promise<void> {
-        const next = this.modes.find((mode) => mode.id === id) ?? this.modes[0];
-        if (!next) return;
-
-        const promise = this.executeModeTransition(next, ctx?.signal ?? null);
-        this.trackTransition(promise);
-
-        try {
-            await promise;
-        } catch (err) {
-            console.error("[cartographer] mode transition crashed", err);
-        }
-    }
-
-    private recalcModeChangePromise(): void {
-        if (this.transitionTasks.size === 0) {
-            this.modeChange = Promise.resolve();
-            return;
-        }
-
-        this.modeChange = Promise.allSettled(Array.from(this.transitionTasks)).then(() => undefined);
-    }
-
-    private trackTransition(promise: Promise<void>): void {
-        this.transitionTasks.add(promise);
-        this.recalcModeChangePromise();
-
-        promise
-            .finally(() => {
-                this.transitionTasks.delete(promise);
-                this.recalcModeChangePromise();
-            })
-            .catch(() => {
-                // intentionally ignored
-            });
-    }
-
-    private bindExternalAbort(transition: ModeTransition): () => void {
-        const { externalSignal, controller } = transition;
-        if (!externalSignal) return () => {};
-
-        const abort = () => {
-            controller.abort();
-        };
-
-        if (externalSignal.aborted) {
-            abort();
-            return () => {};
-        }
-
-        externalSignal.addEventListener("abort", abort, { once: true });
-        return () => {
-            externalSignal.removeEventListener("abort", abort);
-        };
-    }
-
-    private isTransitionAborted(transition: ModeTransition): boolean {
-        if (transition.controller.signal.aborted) return true;
-        if (transition.externalSignal?.aborted) return true;
-        if (this.transition && this.transition.id !== transition.id) return true;
-        return false;
-    }
-
-    private async runTransitionStep(
-        transition: ModeTransition,
-        phase: ModeTransitionPhase,
-        action: () => Promise<void> | void,
-        errorMessage: string,
-    ): Promise<"completed" | "aborted"> {
-        if (this.isTransitionAborted(transition)) {
-            return "aborted";
-        }
-
-        transition.phase = phase;
-
-        try {
-            await action();
-        } catch (err) {
-            if (!this.isTransitionAborted(transition)) {
-                console.error(errorMessage, err);
-            }
-        }
-
-        if (this.isTransitionAborted(transition)) {
-            return "aborted";
-        }
-
-        return "completed";
-    }
-
-    private async executeModeTransition(next: CartographerMode, externalSignal: AbortSignal | null): Promise<void> {
-        const previousTransition = this.transition;
-        if (previousTransition) {
-            previousTransition.controller.abort();
-        }
-
-        if (this.activeMode?.id === next.id) {
-            if (!(externalSignal?.aborted ?? false)) {
-                this.view?.setModeActive(next.id);
-                this.view?.setModeLabel(next.label);
-            }
-            return;
-        }
-
-        const previousLifecycleContext = this.activeLifecycleContext;
-        const previousLifecycleController = this.activeLifecycleController;
-
-        const controller = new AbortController();
-
-        const transition: ModeTransition = {
-            id: ++this.modeTransitionSeq,
-            next,
-            previous: this.activeMode,
-            controller,
-            externalSignal,
-            phase: "idle",
-        };
-
-        this.transition = transition;
-        const detachAbort = this.bindExternalAbort(transition);
-
-        try {
-            if (this.isTransitionAborted(transition)) {
-                return;
-            }
-
-            const previous = transition.previous;
-            if (previous) {
-                const exitOutcome = await this.runTransitionStep(
-                    transition,
-                    "exiting",
-                    () => {
-                        if (previousLifecycleController && !previousLifecycleController.signal.aborted) {
-                            try {
-                                previousLifecycleController.abort();
-                            } catch (err) {
-                                console.error("[cartographer] failed to abort lifecycle controller", err);
-                            }
-                        }
-
-                        const exitSignal =
-                            previousLifecycleContext?.signal ??
-                            previousLifecycleController?.signal ??
-                            CartographerController.neverAbortSignal;
-                        const exitCtx =
-                            previousLifecycleContext && previousLifecycleContext.signal === exitSignal
-                                ? previousLifecycleContext
-                                : this.createLifecycleContext(exitSignal);
-
-                        return previous.onExit(exitCtx);
-                    },
-                    "[cartographer] mode exit failed",
-                );
-
-                if (exitOutcome === "aborted") {
-                    return;
-                }
-
-                this.activeMode = null;
-                this.activeLifecycleContext = null;
-            }
-
-            if (this.isTransitionAborted(transition)) {
-                return;
-            }
-
-            this.activeLifecycleController = controller;
-            const modeCtx = this.ensureActiveLifecycleContext(transition.controller.signal);
-
-            this.activeMode = transition.next;
-
-            if (this.isTransitionAborted(transition)) {
-                this.activeMode = null;
-                this.activeLifecycleController = null;
-                this.activeLifecycleContext = null;
-                return;
-            }
-
-            const enterOutcome = await this.runTransitionStep(
-                transition,
-                "entering",
-                () => transition.next.onEnter(modeCtx),
-                "[cartographer] mode enter failed",
-            );
-
-            if (enterOutcome === "aborted") {
-                this.activeMode = null;
-                this.activeLifecycleController = null;
-                this.activeLifecycleContext = null;
-                return;
-            }
-
-            if (this.isTransitionAborted(transition)) {
-                this.activeMode = null;
-                this.activeLifecycleController = null;
-                this.activeLifecycleContext = null;
-                return;
-            }
-
-            const fileChangeOutcome = await this.runTransitionStep(
-                transition,
-                "entering",
-                () =>
-                    transition.next.onFileChange(
-                        this.currentFile,
-                        this.mapLayer?.handles ?? null,
-                        modeCtx,
-                    ),
-                "[cartographer] mode file change failed",
-            );
-
-            if (fileChangeOutcome === "aborted" && this.activeMode?.id === transition.next.id) {
-                this.activeMode = null;
-                this.activeLifecycleController = null;
-                this.activeLifecycleContext = null;
-                return;
-            }
-
-            this.view?.setModeActive(transition.next.id);
-            this.view?.setModeLabel(transition.next.label);
-
-            transition.phase = "idle";
-        } catch (err) {
-            if (!this.isTransitionAborted(transition)) {
-                console.error("[cartographer] mode transition failed", err);
-            }
-        } finally {
-            detachAbort();
-            if (this.transition?.id === transition.id) {
-                this.transition = null;
-            }
-            if (!this.activeMode) {
-                this.activeLifecycleController = null;
-                this.activeLifecycleContext = null;
-            }
-        }
+    private createLifecycleContext(signal: AbortSignal): CartographerModeLifecycleContext {
+        return { ...this.baseModeCtx, signal } satisfies CartographerModeLifecycleContext;
     }
 
     private async refresh(): Promise<void> {
-        const token = ++this.loadToken;
-        await this.renderMap(token);
-    }
-
-    private async renderMap(token: number): Promise<void> {
-        await this.teardownLayer();
-
-        if (!this.view) return;
-        if (this.modeProvisionIssue) {
-            this.applyModeProvisionOverlay();
+        const view = this.view;
+        if (!view) return;
+        if (this.modeLoadFailed) {
+            view.setOverlay(MODE_PROVISION_OVERLAY_MESSAGE);
             return;
         }
-        const transition = this.transition;
-        const signal = transition?.controller.signal ?? this.getActiveLifecycleSignal();
-        const ctx = this.ensureActiveLifecycleContext(signal);
-        const isTransitionAborted = () => (transition ? this.isTransitionAborted(transition) : false);
+
+        const token = ++this.renderToken;
+        await this.teardownLayer();
+        if (token !== this.renderToken) return;
+
+        const lifecycle = this.lifecycle;
+        const ctx = lifecycle?.ctx ?? null;
+        const signal = lifecycle?.controller.signal ?? CartographerController.neverAbortSignal;
 
         if (!this.currentFile) {
-            this.view.clearMap();
-            this.view.setOverlay("Keine Karte ausgewählt.");
+            view.clearMap();
+            view.setOverlay("Keine Karte ausgewählt.");
             this.currentOptions = null;
-            if (!isTransitionAborted()) {
+            if (ctx) {
                 await this.activeMode?.onFileChange(null, null, ctx);
             }
             return;
@@ -700,42 +483,44 @@ export class CartographerController {
         let options: HexOptions | null = null;
         try {
             options = await this.deps.loadHexOptions(this.app, this.currentFile);
-        } catch (err) {
-            console.error("[cartographer] failed to parse map options", err);
+        } catch (error) {
+            console.error("[cartographer] failed to parse map options", error);
         }
 
+        if (token !== this.renderToken) return;
+
         if (!options) {
-            this.view.clearMap();
-            this.view.setOverlay("Kein hex3x3-Block in dieser Datei.");
+            view.clearMap();
+            view.setOverlay("Kein hex3x3-Block in dieser Datei.");
             this.currentOptions = null;
-            if (!isTransitionAborted()) {
+            if (ctx) {
                 await this.activeMode?.onFileChange(this.currentFile, null, ctx);
             }
             return;
         }
 
         try {
-            const layer = await this.deps.createMapLayer(this.app, this.view.mapHost, this.currentFile, options);
-            if (token !== this.loadToken || !this.view) {
+            const layer = await this.deps.createMapLayer(this.app, view.mapHost, this.currentFile, options);
+            if (token !== this.renderToken || !this.view) {
                 layer.destroy();
                 return;
             }
-            if (isTransitionAborted()) {
+            if (signal.aborted) {
                 layer.destroy();
                 return;
             }
             this.mapLayer = layer;
             this.currentOptions = options;
-            this.view.setOverlay(null);
-            if (!isTransitionAborted()) {
-                await this.activeMode?.onFileChange(this.currentFile, this.mapLayer.handles, ctx);
+            view.setOverlay(null);
+            if (ctx) {
+                await this.activeMode?.onFileChange(this.currentFile, layer.handles, ctx);
             }
-        } catch (err) {
-            console.error("[cartographer] failed to render map", err);
-            this.view.clearMap();
-            this.view.setOverlay("Karte konnte nicht geladen werden.");
+        } catch (error) {
+            console.error("[cartographer] failed to render map", error);
+            view.clearMap();
+            view.setOverlay("Karte konnte nicht geladen werden.");
             this.currentOptions = null;
-            if (!isTransitionAborted()) {
+            if (ctx) {
                 await this.activeMode?.onFileChange(this.currentFile, null, ctx);
             }
         }
@@ -745,8 +530,8 @@ export class CartographerController {
         if (this.mapLayer) {
             try {
                 this.mapLayer.destroy();
-            } catch (err) {
-                console.error("[cartographer] failed to destroy map layer", err);
+            } catch (error) {
+                console.error("[cartographer] failed to destroy map layer", error);
             }
             this.mapLayer = null;
         }
@@ -754,18 +539,24 @@ export class CartographerController {
         this.currentOptions = null;
     }
 }
-const DEFAULT_MODE_LABEL = "Mode";
 
-type CartographerLayout = {
-    readonly host: HTMLElement;
-    readonly headerHost: HTMLElement;
-    readonly bodyHost: HTMLElement;
-    readonly mapWrapper: HTMLElement;
-    readonly sidebarHost: HTMLElement;
-    destroy(): void;
+type CreateControllerViewOptions = {
+    app: App;
+    host: HTMLElement;
+    initialFile: TFile | null;
+    modes: ModeShellEntry[];
+    callbacks: CartographerControllerCallbacks;
 };
 
-function createCartographerLayout(host: HTMLElement): CartographerLayout {
+type ModeState = {
+    modes: ModeShellEntry[];
+    active: string | null;
+    label: string;
+};
+
+function createControllerView(options: CreateControllerViewOptions): CartographerViewHandle {
+    const { app, host, initialFile, modes, callbacks } = options;
+
     host.empty();
     host.addClass("sm-cartographer");
 
@@ -774,303 +565,122 @@ function createCartographerLayout(host: HTMLElement): CartographerLayout {
     const mapWrapper = bodyHost.createDiv({ cls: "sm-cartographer__map" });
     const sidebarHost = bodyHost.createDiv({ cls: "sm-cartographer__sidebar" });
 
-    return {
-        host,
-        headerHost,
-        bodyHost,
-        mapWrapper,
-        sidebarHost,
-        destroy: () => {
-            host.empty();
-            host.removeClass("sm-cartographer");
-        },
-    };
-}
+    const surface = createViewContainer(mapWrapper, { camera: false });
 
-type MapSurfaceHandle = {
-    readonly view: ViewContainerHandle;
-    readonly mapHost: HTMLElement;
-    setOverlay(content: string | null): void;
-    clear(): void;
-    destroy(): void;
-};
-
-function createMapSurface(container: HTMLElement): MapSurfaceHandle {
-    const view = createViewContainer(container, { camera: false });
-    const mapHost = view.stageEl;
-
-    return {
-        view,
-        mapHost,
-        setOverlay: (content) => {
-            view.setOverlay(content);
-        },
-        clear: () => {
-            mapHost.empty();
-        },
-        destroy: () => {
-            view.destroy();
-            container.empty();
-        },
-    };
-}
-
-type ModeSwitchContext = ModeSelectContext;
-
-type ModeSwitchHandler = (modeId: string, ctx: ModeSwitchContext) => Promise<void> | void;
-
-type ModeControllerHandle = {
-    requestMode(modeId: string): Promise<void>;
-    abortActive(): void;
-    destroy(): void;
-};
-
-function createModeController(options: { onSwitch: ModeSwitchHandler }): ModeControllerHandle {
-    const { onSwitch } = options;
-    let currentController: AbortController | null = null;
-    let destroyed = false;
-    let sequence = 0;
-
-    const abortActive = () => {
-        if (currentController) {
-            currentController.abort();
-            currentController = null;
-        }
-    };
-
-    const requestMode = async (modeId: string): Promise<void> => {
-        if (destroyed) return;
-
-        sequence += 1;
-        const token = sequence;
-
-        if (currentController) {
-            currentController.abort();
-        }
-        const controller = new AbortController();
-        currentController = controller;
-
-        try {
-            await onSwitch(modeId, { signal: controller.signal });
-        } catch (error) {
-            if (!controller.signal.aborted) {
-                throw error;
-            }
-        } finally {
-            if (currentController === controller && token === sequence) {
-                currentController = null;
-            }
-        }
-    };
-
-    const destroy = () => {
-        if (destroyed) return;
-        destroyed = true;
-        abortActive();
-    };
-
-    return {
-        requestMode,
-        abortActive,
-        destroy,
-    };
-}
-
-type ModeMenuHandle = {
-    setModes(modes: ModeShellEntry[]): void;
-    setActiveMode(id: string | null): void;
-    setTriggerLabel(label: string): void;
-    destroy(): void;
-};
-
-type ModeMenuOptions = {
-    host: HTMLElement;
-    initialLabel: string;
-    onSelect(modeId: string): void;
-};
-
-type ModeEntry = {
-    mode: ModeShellEntry;
-    button: HTMLButtonElement;
-};
-
-function createModeMenu(options: ModeMenuOptions): ModeMenuHandle {
-    const { host, initialLabel, onSelect } = options;
-    host.addClass("sm-cartographer__mode-switch");
-
-    const dropdown = host.createDiv({ cls: "sm-mode-dropdown" });
-    const trigger = dropdown.createEl("button", {
-        text: initialLabel,
-        attr: { type: "button", "aria-haspopup": "listbox", "aria-expanded": "false" },
-    });
-    trigger.addClass("sm-mode-dropdown__trigger");
-
-    const menu = dropdown.createDiv({ cls: "sm-mode-dropdown__menu", attr: { role: "listbox" } });
-
-    const entries = new Map<string, ModeEntry>();
-    let activeId: string | null = null;
-    let unbindOutsideClick: (() => void) | null = null;
-    let destroyed = false;
-
-    const closeMenu = () => {
-        dropdown.removeClass("is-open");
-        trigger.setAttr("aria-expanded", "false");
-        if (unbindOutsideClick) {
-            unbindOutsideClick();
-            unbindOutsideClick = null;
-        }
-    };
-
-    const openMenu = () => {
-        dropdown.addClass("is-open");
-        trigger.setAttr("aria-expanded", "true");
-        const onDocClick = (event: MouseEvent) => {
-            if (!dropdown.contains(event.target as Node)) closeMenu();
-        };
-        document.addEventListener("mousedown", onDocClick);
-        unbindOutsideClick = () => document.removeEventListener("mousedown", onDocClick);
-    };
-
-    trigger.onclick = () => {
-        const isOpen = dropdown.classList.contains("is-open");
-        if (isOpen) closeMenu();
-        else openMenu();
-    };
-
-    const updateActive = () => {
-        for (const entry of entries.values()) {
-            const isActive = entry.mode.id === activeId;
-            entry.button.classList.toggle("is-active", isActive);
-            entry.button.ariaSelected = isActive ? "true" : "false";
-        }
-    };
-
-    const ensureEntry = (mode: ModeShellEntry): ModeEntry => {
-        const button = menu.createEl("button", {
-            text: mode.label,
-            attr: { role: "option", type: "button", "data-id": mode.id },
-        });
-        button.addClass("sm-mode-dropdown__item");
-        button.onclick = () => {
-            closeMenu();
-            onSelect(mode.id);
-        };
-        const entry: ModeEntry = { mode, button };
-        entries.set(mode.id, entry);
-        return entry;
-    };
-
-    const removeEntry = (id: string) => {
-        const entry = entries.get(id);
-        if (!entry) return;
-        entry.button.remove();
-        entries.delete(id);
-        if (activeId === id) {
-            activeId = null;
-        }
-    };
-
-    const setModes = (modes: ModeShellEntry[]) => {
-        const incoming = new Set<string>();
-        for (const mode of modes) {
-            incoming.add(mode.id);
-            const existing = entries.get(mode.id);
-            if (existing) {
-                existing.mode = mode;
-                existing.button.setText(mode.label);
-            } else {
-                ensureEntry(mode);
-            }
-        }
-        for (const id of Array.from(entries.keys())) {
-            if (!incoming.has(id)) {
-                removeEntry(id);
-            }
-        }
-        updateActive();
-    };
-
-    const setActiveMode = (id: string | null) => {
-        activeId = id;
-        updateActive();
-        if (activeId) {
-            const entry = entries.get(activeId);
-            if (entry) {
-                trigger.setText(entry.mode.label);
-            }
-        }
-    };
-
-    const setTriggerLabel = (label: string) => {
-        trigger.setText(label);
-    };
-
-    const destroy = () => {
-        if (destroyed) return;
-        destroyed = true;
-        closeMenu();
-        trigger.onclick = null;
-        for (const entry of entries.values()) {
-            entry.button.onclick = null;
-            entry.button.remove();
-        }
-        entries.clear();
-        dropdown.remove();
-    };
-
-    return {
-        setModes,
-        setActiveMode,
-        setTriggerLabel,
-        destroy,
-    };
-}
-
-type ControllerViewOptions = {
-    app: App;
-    host: HTMLElement;
-    initialFile: TFile | null;
-    modes: ModeShellEntry[];
-    callbacks: CartographerControllerCallbacks;
-};
-
-function createControllerView(options: ControllerViewOptions): CartographerViewHandle {
-    const { app, host, initialFile, modes, callbacks } = options;
-
-    const layout = createCartographerLayout(host);
-    const mapSurface = createMapSurface(layout.mapWrapper);
-
-    const state: { modes: ModeShellEntry[]; activeId: string | null; label: string } = {
+    const state: ModeState = {
         modes: [...modes],
-        activeId: modes[0]?.id ?? null,
+        active: modes[0]?.id ?? null,
         label: modes[0]?.label ?? DEFAULT_MODE_LABEL,
     };
 
-    const modeController = createModeController({
-        onSwitch: async (modeId, ctx) => {
-            await callbacks.onModeSelect(modeId, ctx);
-        },
-    });
+    let selectEl: HTMLSelectElement | null = null;
+    let labelEl: HTMLElement | null = null;
+    let modeChangeHandler: (() => void) | null = null;
 
-    let modeMenu: ModeMenuHandle | null = null;
-
-    const createMenu = (slot: HTMLElement) => {
-        slot.addClass("sm-cartographer__mode-slot");
-        modeMenu?.destroy();
-        modeMenu = createModeMenu({
-            host: slot,
-            initialLabel: state.label,
-            onSelect: (modeId) => {
-                void modeController.requestMode(modeId).catch((error) => {
-                    console.error("[cartographer] failed to request mode", error);
-                });
-            },
-        });
-        modeMenu.setModes(state.modes);
-        modeMenu.setActiveMode(state.activeId);
+    const updateLabel = (label: string) => {
+        state.label = label;
+        labelEl?.setText(label);
+        if (selectEl) {
+            selectEl.title = label;
+        }
     };
 
-    const headerHandle: MapHeaderHandle = createMapHeader(app, layout.headerHost, {
+    const ensureLabel = () => {
+        if (state.active) {
+            const active = state.modes.find((mode) => mode.id === state.active);
+            if (active) {
+                updateLabel(active.label);
+                return;
+            }
+        }
+        if (state.modes[0]) {
+            updateLabel(state.modes[0].label);
+        } else {
+            updateLabel(DEFAULT_MODE_LABEL);
+        }
+    };
+
+    const applyModes = () => {
+        if (!selectEl) return;
+        selectEl.empty();
+        if (state.modes.length === 0) {
+            const option = selectEl.createEl("option", { text: "Keine Modi" });
+            option.value = "";
+            option.disabled = true;
+            option.selected = true;
+            selectEl.disabled = true;
+            return;
+        }
+        selectEl.disabled = false;
+        for (const mode of state.modes) {
+            const option = selectEl.createEl("option", { text: mode.label });
+            option.value = mode.id;
+        }
+        if (state.active && state.modes.some((mode) => mode.id === state.active)) {
+            selectEl.value = state.active;
+        } else {
+            selectEl.value = state.modes[0]?.id ?? "";
+        }
+    };
+
+    const setModeActive = (id: string | null) => {
+        state.active = id;
+        if (!selectEl) return;
+        if (id && state.modes.some((mode) => mode.id === id)) {
+            selectEl.value = id;
+        } else {
+            selectEl.value = "";
+        }
+    };
+
+    const setModes = (nextModes: ModeShellEntry[]) => {
+        state.modes = [...nextModes];
+        applyModes();
+        ensureLabel();
+        if (state.active && !state.modes.some((mode) => mode.id === state.active)) {
+            state.active = null;
+        }
+    };
+
+    const setModeLabel = (label: string) => {
+        updateLabel(label);
+    };
+
+    const invokeModeSelect = (id: string) => {
+        try {
+            const result = callbacks.onModeSelect(id);
+            if (result && typeof (result as Promise<unknown>).then === "function") {
+                void (result as Promise<unknown>).catch((error) => {
+                    console.error("[cartographer] failed to select mode", error);
+                });
+            }
+        } catch (error) {
+            console.error("[cartographer] failed to select mode", error);
+        }
+    };
+
+    const initModeControls = (slot: HTMLElement) => {
+        slot.empty();
+        slot.addClass("sm-cartographer__mode-slot");
+        labelEl = slot.createEl("span", { cls: "sm-cartographer__mode-label", text: state.label });
+        selectEl = slot.createEl("select", { cls: "sm-cartographer__mode-select" });
+        selectEl.setAttribute("aria-label", "Cartographer mode");
+        modeChangeHandler = () => {
+            if (!selectEl) return;
+            const id = selectEl.value;
+            if (!id) return;
+            invokeModeSelect(id);
+        };
+        selectEl.addEventListener("change", modeChangeHandler);
+        selectEl.addEventListener("input", modeChangeHandler);
+        applyModes();
+        ensureLabel();
+        if (state.active && selectEl) {
+            selectEl.value = state.active;
+        }
+    };
+
+    const headerHandle: MapHeaderHandle = createMapHeader(app, headerHost, {
         title: "Cartographer",
         initialFile,
         onOpen: async (file) => {
@@ -1086,67 +696,55 @@ function createControllerView(options: ControllerViewOptions): CartographerViewH
             return await callbacks.onSave(mode, file);
         },
         titleRightSlot: (slot) => {
-            createMenu(slot);
+            initModeControls(slot);
         },
     });
 
-    if (!modeMenu) {
-        createMenu(headerHandle.titleRightSlot);
+    if (!selectEl) {
+        initModeControls(headerHandle.titleRightSlot);
     }
 
-    const onHexClick = async (event: Event) => {
+    const handleHexClick = (event: Event) => {
         if (!(event instanceof CustomEvent)) return;
         const custom = event as CustomEvent<HexCoord>;
         if (custom.cancelable) custom.preventDefault();
         event.stopPropagation();
-        await callbacks.onHexClick(custom.detail, custom);
-    };
-    mapSurface.mapHost.addEventListener("hex:click", onHexClick as EventListener, { passive: false });
-
-    const setModeActive = (id: string | null) => {
-        state.activeId = id;
-        const activeMode = id ? state.modes.find((mode) => mode.id === id) ?? null : null;
-        if (activeMode) {
-            state.label = activeMode.label;
-        }
-        modeMenu?.setActiveMode(id);
-    };
-
-    const setModeLabel = (label: string) => {
-        state.label = label;
-        modeMenu?.setTriggerLabel(label);
-    };
-
-    const setModes = (nextModes: ModeShellEntry[]) => {
-        state.modes = [...nextModes];
-        modeMenu?.setModes(state.modes);
-        const activeMode = state.activeId
-            ? state.modes.find((mode) => mode.id === state.activeId)
-            : null;
-        if (!activeMode) {
-            state.activeId = null;
-            modeMenu?.setActiveMode(null);
-            const fallbackLabel = state.modes[0]?.label ?? DEFAULT_MODE_LABEL;
-            setModeLabel(fallbackLabel);
-        } else {
-            setModeLabel(activeMode.label);
+        const detail = custom.detail;
+        if (!detail) return;
+        try {
+            const result = callbacks.onHexClick(detail, custom);
+            if (result && typeof (result as Promise<unknown>).then === "function") {
+                void (result as Promise<unknown>).catch((error) => {
+                    console.error("[cartographer] hex click handler failed", error);
+                });
+            }
+        } catch (error) {
+            console.error("[cartographer] hex click handler failed", error);
         }
     };
+
+    surface.stageEl.addEventListener("hex:click", handleHexClick as EventListener, { passive: false });
 
     const destroy = () => {
-        mapSurface.mapHost.removeEventListener("hex:click", onHexClick as EventListener);
-        modeController.destroy();
-        modeMenu?.destroy();
-        modeMenu = null;
+        surface.stageEl.removeEventListener("hex:click", handleHexClick as EventListener);
+        if (selectEl && modeChangeHandler) {
+            selectEl.removeEventListener("change", modeChangeHandler);
+            selectEl.removeEventListener("input", modeChangeHandler);
+        }
         headerHandle.destroy();
-        mapSurface.destroy();
-        layout.destroy();
+        surface.destroy();
+        host.empty();
+        host.removeClass("sm-cartographer");
     };
+
+    setModes(modes);
+    setModeActive(state.active);
+    setModeLabel(state.label);
 
     return {
         host,
-        mapHost: mapSurface.mapHost,
-        sidebarHost: layout.sidebarHost,
+        mapHost: surface.stageEl,
+        sidebarHost,
         setFileLabel: (file) => {
             headerHandle.setFileLabel(file);
         },
@@ -1154,11 +752,12 @@ function createControllerView(options: ControllerViewOptions): CartographerViewH
         setModeLabel,
         setModes,
         setOverlay: (content) => {
-            mapSurface.setOverlay(content);
+            surface.setOverlay(content);
         },
         clearMap: () => {
-            mapSurface.clear();
+            surface.stageEl.empty();
         },
         destroy,
-    };
+    } satisfies CartographerViewHandle;
 }
+
