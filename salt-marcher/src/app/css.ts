@@ -184,11 +184,17 @@ const editorLayoutsCss = `
 .sm-cc-field-grid--identity { grid-template-columns:repeat(2, minmax(0, 1fr)); }
 .sm-cc-field-grid--summary { grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); }
 .sm-cc-field-grid--speeds { grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); }
+.sm-cc-field-grid--classification { grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); }
+.sm-cc-field-grid--vitals { grid-template-columns:repeat(2, minmax(0, 1fr)); }
 @media (max-width: 900px) {
     .sm-cc-field-grid--identity { grid-template-columns:minmax(0, 1fr); }
 }
 @media (max-width: 720px) {
     .sm-cc-field-grid--speeds { grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); }
+}
+@media (max-width: 720px) {
+    .sm-cc-field-grid--classification { grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); }
+    .sm-cc-field-grid--vitals { grid-template-columns:minmax(0, 1fr); }
 }
 .sm-cc-setting.setting-item { border:none; padding:0; margin:0; background:none; }
 .sm-cc-setting .setting-item-info { display:none; }
@@ -196,6 +202,9 @@ const editorLayoutsCss = `
 .sm-cc-setting .setting-item-control { margin-left:0; width:100%; display:flex; flex-direction:column; gap:.4rem; }
 .sm-cc-setting--inline .setting-item-control { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:.5rem; }
 .sm-cc-setting--speed .setting-item-control { flex-direction:row; align-items:center; gap:.45rem; }
+.sm-cc-setting--show-name .setting-item-info { display:block; }
+.sm-cc-setting--show-name .setting-item-name { font-size:.75rem; letter-spacing:.06em; text-transform:uppercase; }
+.sm-cc-setting--span-2 { grid-column:1 / -1; }
 @media (max-width: 680px) {
     .sm-cc-setting--inline .setting-item-control { grid-template-columns:minmax(0, 1fr); }
 }
@@ -206,9 +215,27 @@ const editorLayoutsCss = `
 .sm-cc-input { width:100%; min-height:32px; box-sizing:border-box; border-radius:6px; }
 .sm-cc-select { width:100%; min-height:32px; box-sizing:border-box; border-radius:6px; }
 .sm-cc-alignment select { min-width:0; }
+.sm-cc-alignment-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:.4rem; }
+.sm-cc-alignment-button { border:1px solid var(--background-modifier-border); border-radius:8px; padding:.4rem .6rem; background:var(--background-primary); font-size:.85em; color: var(--text-muted); cursor:pointer; transition:background 120ms ease, color 120ms ease, border 120ms ease; }
+.sm-cc-alignment-button:hover { color: var(--text-normal); }
+.sm-cc-alignment-button.is-active { background: var(--interactive-accent); color: var(--text-on-accent, #fff); border-color: color-mix(in srgb, var(--interactive-accent) 55%, transparent); }
+.sm-cc-alignment-button[disabled] { opacity:.55; cursor:not-allowed; }
+.sm-cc-alignment-override { display:flex; align-items:center; gap:.5rem; margin-top:.35rem; font-size:.8em; color: var(--text-muted); }
+.sm-cc-alignment-override__toggle .checkbox-container { margin:0; }
+.sm-cc-alignment-override__label { text-transform:uppercase; letter-spacing:.06em; }
 .sm-cc-hover-wrap { display:flex; align-items:center; gap:.35rem; margin-left:auto; }
 .sm-cc-hover-toggle { margin:0; }
 .sm-cc-hover-label { font-size:.8em; color: var(--text-muted); }
+.sm-cc-speeds-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:.85rem; }
+@media (max-width: 640px) {
+    .sm-cc-speeds-grid { grid-template-columns:minmax(0, 1fr); }
+}
+.sm-cc-speed { display:flex; flex-direction:column; gap:.4rem; }
+.sm-cc-speed__head { display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
+.sm-cc-speed__label { font-size:.8rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color: var(--text-muted); }
+.sm-cc-speed__badge { border:1px solid var(--background-modifier-border); border-radius:999px; padding:.1rem .55rem; font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; background:var(--background-secondary); color: var(--text-muted); cursor:pointer; transition:background 120ms ease, color 120ms ease, border 120ms ease; }
+.sm-cc-speed__badge.is-active { background: var(--interactive-accent); color: var(--text-on-accent, #fff); border-color: color-mix(in srgb, var(--interactive-accent) 55%, transparent); }
+.sm-cc-speed__input { width:100%; }
 
 /* Create Creature Modal helpers */
 .sm-cc-create-modal .sm-cc-grid {
