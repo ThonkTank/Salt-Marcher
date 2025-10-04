@@ -20,296 +20,6 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/apps/encounter/session-store.ts
-function publishEncounterEvent(event) {
-  latestEvent = event;
-  for (const listener of [...listeners]) {
-    try {
-      listener(event);
-    } catch (err) {
-      console.error("[encounter] listener failed", err);
-    }
-  }
-}
-function subscribeToEncounterEvents(listener) {
-  listeners.add(listener);
-  if (latestEvent) {
-    try {
-      listener(latestEvent);
-    } catch (err) {
-      console.error("[encounter] listener failed", err);
-    }
-  }
-  return () => {
-    listeners.delete(listener);
-  };
-}
-function peekLatestEncounterEvent() {
-  return latestEvent;
-}
-var latestEvent, listeners;
-var init_session_store = __esm({
-  "src/apps/encounter/session-store.ts"() {
-    "use strict";
-    latestEvent = null;
-    listeners = /* @__PURE__ */ new Set();
-  }
-});
-
-// src/apps/encounter/presenter.ts
-var defaultDeps, EncounterPresenter;
-var init_presenter = __esm({
-  "src/apps/encounter/presenter.ts"() {
-    "use strict";
-    init_session_store();
-    defaultDeps = {
-      now: () => (/* @__PURE__ */ new Date()).toISOString()
-    };
-    EncounterPresenter = class _EncounterPresenter {
-      constructor(initial, deps) {
-        this.listeners = /* @__PURE__ */ new Set();
-        this.deps = { ...defaultDeps, ...deps };
-        this.state = _EncounterPresenter.normalise(initial);
-        this.unsubscribeStore = subscribeToEncounterEvents((event) => this.applyEvent(event));
-      }
-      dispose() {
-        this.unsubscribeStore?.();
-        this.listeners.clear();
-      }
-      /** Restores persisted state (e.g. when `setViewData` fires before `onOpen`). */
-      restore(state) {
-        this.state = _EncounterPresenter.normalise(state);
-        this.emit();
-      }
-      getState() {
-        return this.state;
-      }
-      subscribe(listener) {
-        this.listeners.add(listener);
-        listener(this.state);
-        return () => {
-          this.listeners.delete(listener);
-        };
-      }
-      setNotes(notes) {
-        if (!this.state.session) return;
-        if (this.state.session.notes === notes) return;
-        this.state = {
-          session: {
-            ...this.state.session,
-            notes
-          }
-        };
-        this.emit();
-      }
-      markResolved() {
-        const session = this.state.session;
-        if (!session) return;
-        if (session.status === "resolved") return;
-        this.state = {
-          session: {
-            ...session,
-            status: "resolved",
-            resolvedAt: this.deps.now()
-          }
-        };
-        this.emit();
-      }
-      reset() {
-        if (!this.state.session) return;
-        this.state = { session: null };
-        this.emit();
-      }
-      applyEvent(event) {
-        const prev = this.state.session;
-        if (!prev || prev.event.id !== event.id) {
-          this.state = {
-            session: {
-              event,
-              notes: "",
-              status: "pending"
-            }
-          };
-        } else {
-          this.state = {
-            session: {
-              ...prev,
-              event
-            }
-          };
-        }
-        this.emit();
-      }
-      emit() {
-        for (const listener of [...this.listeners]) {
-          listener(this.state);
-        }
-      }
-      static normalise(initial) {
-        if (!initial || !initial.session || !initial.session.event) {
-          return { session: null };
-        }
-        const { event, notes, status, resolvedAt } = initial.session;
-        return {
-          session: {
-            event,
-            notes: notes ?? "",
-            status: status === "resolved" ? "resolved" : "pending",
-            resolvedAt: resolvedAt ?? null
-          }
-        };
-      }
-    };
-  }
-});
-
-// src/apps/encounter/view.ts
-var view_exports = {};
-__export(view_exports, {
-  EncounterView: () => EncounterView,
-  VIEW_ENCOUNTER: () => VIEW_ENCOUNTER
-});
-var import_obsidian, VIEW_ENCOUNTER, EncounterView;
-var init_view = __esm({
-  "src/apps/encounter/view.ts"() {
-    "use strict";
-    import_obsidian = require("obsidian");
-    init_presenter();
-    VIEW_ENCOUNTER = "salt-encounter";
-    EncounterView = class extends import_obsidian.ItemView {
-      constructor(leaf) {
-        super(leaf);
-        this.presenter = null;
-        this.pendingState = null;
-      }
-      getViewType() {
-        return VIEW_ENCOUNTER;
-      }
-      getDisplayText() {
-        return "Encounter";
-      }
-      getIcon() {
-        return "swords";
-      }
-      async onOpen() {
-        this.contentEl.addClass("sm-encounter-view");
-        this.renderShell();
-        this.presenter = new EncounterPresenter(this.pendingState);
-        this.pendingState = null;
-        this.detachPresenter = this.presenter.subscribe((state) => this.render(state));
-      }
-      async onClose() {
-        this.detachPresenter?.();
-        this.presenter?.dispose();
-        this.detachPresenter = void 0;
-        this.presenter = null;
-        this.pendingState = null;
-        this.contentEl.empty();
-        this.contentEl.removeClass("sm-encounter-view");
-      }
-      getViewData() {
-        return this.presenter?.getState() ?? this.pendingState;
-      }
-      setViewData(data) {
-        if (this.presenter) {
-          this.presenter.restore(data);
-        } else {
-          this.pendingState = data;
-        }
-      }
-      renderShell() {
-        this.contentEl.empty();
-        const header = this.contentEl.createEl("div", { cls: "sm-encounter-header" });
-        this.headerEl = header.createEl("h2", { text: "Encounter" });
-        this.statusEl = header.createDiv({ cls: "status", text: "Waiting for travel events\u2026" });
-        this.summaryListEl = this.contentEl.createEl("ul", { cls: "sm-encounter-summary" });
-        this.emptyEl = this.contentEl.createDiv({
-          cls: "sm-encounter-empty",
-          text: "No active encounter. Travel mode will populate this workspace when an encounter triggers."
-        });
-        this.emptyEl.style.display = "";
-        const notesSection = this.contentEl.createDiv({ cls: "sm-encounter-notes" });
-        notesSection.createEl("label", { text: "Notes", attr: { for: "encounter-notes" } });
-        this.notesEl = notesSection.createEl("textarea", {
-          cls: "notes-input",
-          attr: {
-            id: "encounter-notes",
-            placeholder: "Record tactical notes, initiative order, or follow-up tasks\u2026",
-            rows: "6"
-          }
-        });
-        this.notesEl.disabled = true;
-        this.notesEl.addEventListener("input", () => {
-          if (!this.presenter) return;
-          this.presenter.setNotes(this.notesEl.value);
-        });
-        this.resolveBtn = this.contentEl.createEl("button", { cls: "sm-encounter-resolve", text: "Mark encounter resolved" });
-        this.resolveBtn.disabled = true;
-        this.resolveBtn.addEventListener("click", () => {
-          this.presenter?.markResolved();
-        });
-      }
-      render(state) {
-        const session = state.session;
-        if (!session) {
-          this.headerEl.setText("Encounter");
-          this.statusEl.setText("Waiting for travel events\u2026");
-          this.summaryListEl.empty();
-          this.emptyEl.style.display = "";
-          this.notesEl.value = "";
-          this.notesEl.disabled = true;
-          this.resolveBtn.disabled = true;
-          this.resolveBtn.setText("Mark encounter resolved");
-          return;
-        }
-        this.emptyEl.style.display = "none";
-        const { event, notes, status, resolvedAt } = session;
-        const region = event.regionName ?? "Unknown region";
-        this.headerEl.setText(`Encounter \u2013 ${region}`);
-        if (status === "resolved") {
-          this.statusEl.setText(resolvedAt ? `Resolved ${resolvedAt}` : "Resolved");
-        } else {
-          this.statusEl.setText("Awaiting resolution");
-        }
-        this.summaryListEl.empty();
-        const summaryEntries = [];
-        if (event.coord) {
-          summaryEntries.push(["Hex", `${event.coord.r}, ${event.coord.c}`]);
-        }
-        if (event.mapName) {
-          summaryEntries.push(["Map", event.mapName]);
-        }
-        if (event.mapPath) {
-          summaryEntries.push(["Map path", event.mapPath]);
-        }
-        summaryEntries.push(["Triggered", event.triggeredAt]);
-        if (typeof event.travelClockHours === "number") {
-          summaryEntries.push(["Travel clock", `${event.travelClockHours.toFixed(2)} h`]);
-        }
-        if (typeof event.encounterOdds === "number") {
-          summaryEntries.push(["Encounter odds", `1 in ${event.encounterOdds}`]);
-        }
-        for (const [label, value] of summaryEntries) {
-          const li = this.summaryListEl.createEl("li");
-          li.createSpan({ cls: "label", text: `${label}: ` });
-          li.createSpan({ cls: "value", text: value });
-        }
-        if (this.notesEl.value !== notes) {
-          this.notesEl.value = notes;
-        }
-        this.notesEl.disabled = false;
-        if (status === "resolved") {
-          this.resolveBtn.disabled = true;
-          this.resolveBtn.setText("Encounter resolved");
-        } else {
-          this.resolveBtn.disabled = false;
-          this.resolveBtn.setText("Mark encounter resolved");
-        }
-      }
-    };
-  }
-});
-
 // src/core/options.ts
 function parseOptions(src) {
   const blockMatch = src.match(/```[\t ]*hex3x3\b[\s\S]*?\n([\s\S]*?)\n```/i);
@@ -398,13 +108,13 @@ var init_copy = __esm({
 });
 
 // src/ui/modals.ts
-var import_obsidian2, NameInputModal, MapSelectModal;
+var import_obsidian, NameInputModal, MapSelectModal;
 var init_modals = __esm({
   "src/ui/modals.ts"() {
     "use strict";
-    import_obsidian2 = require("obsidian");
+    import_obsidian = require("obsidian");
     init_copy();
-    NameInputModal = class extends import_obsidian2.Modal {
+    NameInputModal = class extends import_obsidian.Modal {
       constructor(app, onSubmit, options) {
         super(app);
         this.onSubmit = onSubmit;
@@ -421,7 +131,7 @@ var init_modals = __esm({
         contentEl.empty();
         contentEl.createEl("h3", { text: this.title });
         let inputEl;
-        new import_obsidian2.Setting(contentEl).addText((t) => {
+        new import_obsidian.Setting(contentEl).addText((t) => {
           t.setPlaceholder(this.placeholder).onChange((v) => this.value = v.trim());
           inputEl = t.inputEl;
           if (this.value) {
@@ -440,7 +150,7 @@ var init_modals = __esm({
         this.onSubmit(name);
       }
     };
-    MapSelectModal = class extends import_obsidian2.FuzzySuggestModal {
+    MapSelectModal = class extends import_obsidian.FuzzySuggestModal {
       constructor(app, files, onChoose) {
         super(app);
         this.files = files;
@@ -484,12 +194,22 @@ var init_map_list = __esm({
 });
 
 // src/core/terrain.ts
+function normalizeTerrainColor(input) {
+  if (typeof input !== "string") return "";
+  let color = input.trim();
+  if (!color) return "";
+  if (color.startsWith('"') && color.endsWith('"') || color.startsWith("'") && color.endsWith("'")) {
+    color = color.slice(1, -1).trim();
+  }
+  color = color.replace(/^[\s:]+/, "");
+  return color.trim();
+}
 function validateTerrainSchema(next) {
   const validated = {};
   const issues = [];
   for (const [rawName, rawValue] of Object.entries(next ?? {})) {
     const name = (rawName ?? "").trim();
-    const color = (rawValue?.color ?? "").trim();
+    const color = normalizeTerrainColor(rawValue?.color);
     if (!name && rawName !== "") {
       issues.push(`Terrain name must not be empty (received: "${rawName}")`);
       continue;
@@ -1202,13 +922,13 @@ async function readOptions(app, mapFile) {
   return { folder, folderPrefix };
 }
 async function ensureFolder(app, folderPath) {
-  const path = (0, import_obsidian3.normalizePath)(folderPath);
+  const path = (0, import_obsidian2.normalizePath)(folderPath);
   const existing = app.vault.getAbstractFileByPath(path);
-  if (existing && existing instanceof import_obsidian3.TFolder) return existing;
+  if (existing && existing instanceof import_obsidian2.TFolder) return existing;
   if (existing) throw new Error(`Pfad existiert, ist aber kein Ordner: ${path}`);
   await app.vault.createFolder(path);
   const created = app.vault.getAbstractFileByPath(path);
-  if (!(created && created instanceof import_obsidian3.TFolder)) throw new Error(`Ordner konnte nicht erstellt werden: ${path}`);
+  if (!(created && created instanceof import_obsidian2.TFolder)) throw new Error(`Ordner konnte nicht erstellt werden: ${path}`);
   return created;
 }
 function fm(app, file) {
@@ -1239,7 +959,7 @@ function buildMarkdown(coord, mapPath, folderPrefix, data) {
 }
 async function resolveTilePath(app, mapFile, coord) {
   const { folder, folderPrefix } = await readOptions(app, mapFile);
-  const folderPath = (0, import_obsidian3.normalizePath)(folder);
+  const folderPath = (0, import_obsidian2.normalizePath)(folder);
   const newName = fileNameForMap(mapFile, coord);
   const newPath = `${folderPath}/${newName}`;
   const legacy = legacyFilenames(folderPrefix, coord).map((n) => `${folderPath}/${n}`);
@@ -1307,15 +1027,15 @@ async function adoptLegacyTile(app, mapFile, file, folderPath, folderPrefix, cac
   const mapName = mapNameFromPath(mapFile.path);
   const backlinkNeedle = `[[${mapName.toLowerCase()}|`;
   if (!raw.toLowerCase().includes(backlinkNeedle)) return null;
-  const desiredPath = (0, import_obsidian3.normalizePath)(`${folderPath}/${fileNameForMap(mapFile, coord)}`);
-  if ((0, import_obsidian3.normalizePath)(file.path) !== desiredPath) {
+  const desiredPath = (0, import_obsidian2.normalizePath)(`${folderPath}/${fileNameForMap(mapFile, coord)}`);
+  if ((0, import_obsidian2.normalizePath)(file.path) !== desiredPath) {
     const existing = app.vault.getAbstractFileByPath(desiredPath);
     if (existing && existing !== file) {
       return null;
     }
     await app.fileManager.renameFile(file, desiredPath);
     const renamed = app.vault.getAbstractFileByPath(desiredPath);
-    if (renamed && renamed instanceof import_obsidian3.TFile) {
+    if (renamed && renamed instanceof import_obsidian2.TFile) {
       file = renamed;
     }
   }
@@ -1324,7 +1044,7 @@ async function adoptLegacyTile(app, mapFile, file, folderPath, folderPrefix, cac
 }
 async function listTilesForMap(app, mapFile) {
   const { folder, folderPrefix } = await readOptions(app, mapFile);
-  const folderPath = (0, import_obsidian3.normalizePath)(folder);
+  const folderPath = (0, import_obsidian2.normalizePath)(folder);
   const folderPathLower = (folderPath.endsWith("/") ? folderPath : folderPath + "/").toLowerCase();
   const out = [];
   for (const file of app.vault.getFiles()) {
@@ -1438,11 +1158,11 @@ async function initTilesForNewMap(app, mapFile) {
     }
   }
 }
-var import_obsidian3, TILE_TERRAIN_MAX_LENGTH, TILE_REGION_MAX_LENGTH, TileValidationError, FM_TYPE;
+var import_obsidian2, TILE_TERRAIN_MAX_LENGTH, TILE_REGION_MAX_LENGTH, TileValidationError, FM_TYPE;
 var init_hex_notes = __esm({
   "src/core/hex-mapper/hex-notes.ts"() {
     "use strict";
-    import_obsidian3 = require("obsidian");
+    import_obsidian2 = require("obsidian");
     init_terrain();
     init_options();
     TILE_TERRAIN_MAX_LENGTH = 64;
@@ -1509,7 +1229,7 @@ var init_interaction_delegate = __esm({
 // src/core/hex-mapper/render/interaction-adapter.ts
 function resolveMapFile(app, mapPath) {
   const abstract = app.vault.getAbstractFileByPath(mapPath);
-  return abstract instanceof import_obsidian4.TFile ? abstract : null;
+  return abstract instanceof import_obsidian3.TFile ? abstract : null;
 }
 function createInteractionAdapter(config) {
   const { app, host, mapPath } = config;
@@ -1531,11 +1251,11 @@ function createInteractionAdapter(config) {
     setDelegate
   };
 }
-var import_obsidian4;
+var import_obsidian3;
 var init_interaction_adapter = __esm({
   "src/core/hex-mapper/render/interaction-adapter.ts"() {
     "use strict";
-    import_obsidian4 = require("obsidian");
+    import_obsidian3 = require("obsidian");
     init_layout();
     init_hex_notes();
     init_interaction_delegate();
@@ -1573,7 +1293,7 @@ function buildFallback(bounds) {
 }
 async function loadTiles(app, mapPath) {
   const file = app.vault.getAbstractFileByPath(mapPath);
-  if (!(file instanceof import_obsidian5.TFile)) {
+  if (!(file instanceof import_obsidian4.TFile)) {
     return [];
   }
   try {
@@ -1596,13 +1316,46 @@ async function bootstrapHexTiles(app, mapPath) {
     initialCoords
   };
 }
-var import_obsidian5, DEFAULT_FALLBACK_SPAN;
+var import_obsidian4, DEFAULT_FALLBACK_SPAN;
 var init_bootstrap = __esm({
   "src/core/hex-mapper/render/bootstrap.ts"() {
     "use strict";
-    import_obsidian5 = require("obsidian");
+    import_obsidian4 = require("obsidian");
     init_hex_notes();
     DEFAULT_FALLBACK_SPAN = 2;
+  }
+});
+
+// src/core/hex-mapper/render/surface.ts
+function detectContext(canvas, type) {
+  try {
+    const ctx = canvas.getContext(type);
+    return ctx != null;
+  } catch {
+    return false;
+  }
+}
+function selectRenderSurface(options = {}) {
+  const { preferGpu = true } = options;
+  const canvas = document.createElement("canvas");
+  const webgl2 = preferGpu ? detectContext(canvas, "webgl2") : false;
+  const webgl = preferGpu ? !webgl2 && detectContext(canvas, "webgl") : false;
+  const canvas2d = detectContext(canvas, "2d");
+  let preferred = "svg";
+  if (preferGpu && (webgl2 || webgl)) {
+    preferred = webgl2 ? "webgl2" : "webgl";
+  } else if (canvas2d) {
+    preferred = "canvas2d";
+  }
+  return {
+    preferred,
+    actual: "svg",
+    capabilities: { webgl2, webgl, canvas2d }
+  };
+}
+var init_surface = __esm({
+  "src/core/hex-mapper/render/surface.ts"() {
+    "use strict";
   }
 });
 
@@ -1611,6 +1364,7 @@ async function renderHexMap(app, host, opts, mapPath) {
   const radius = opts.radius;
   const padding = DEFAULT_PADDING;
   const { tiles, base, initialCoords } = await bootstrapHexTiles(app, mapPath);
+  const surface = selectRenderSurface();
   const scene = createHexScene({
     host,
     radius,
@@ -1654,6 +1408,7 @@ async function renderHexMap(app, host, opts, mapPath) {
     contentG: scene.contentG,
     overlay: scene.overlay,
     polyByCoord: scene.polyByCoord,
+    surface,
     setFill: (coord, color) => scene.setFill(coord, color),
     ensurePolys,
     setInteractionDelegate: (delegate) => {
@@ -1677,6 +1432,7 @@ var init_hex_render = __esm({
     init_coordinates();
     init_interaction_adapter();
     init_bootstrap();
+    init_surface();
     init_interaction_delegate();
     DEFAULT_PADDING = 12;
     CAMERA_OPTIONS = { minScale: 0.15, maxScale: 16, zoomSpeed: 1.01 };
@@ -1750,7 +1506,7 @@ function applyMapButtonStyle(button) {
 async function promptMapSelection(app, onSelect, options) {
   const files = await getAllMapFiles(app);
   if (!files.length) {
-    new import_obsidian6.Notice(options?.emptyMessage ?? MAP_WORKFLOWS_COPY.notices.emptyMaps);
+    new import_obsidian5.Notice(options?.emptyMessage ?? MAP_WORKFLOWS_COPY.notices.emptyMaps);
     return;
   }
   new MapSelectModal(app, files, async (file) => {
@@ -1760,15 +1516,15 @@ async function promptMapSelection(app, onSelect, options) {
 function promptCreateMap(app, onCreate, options) {
   new NameInputModal(app, async (name) => {
     const file = await createHexMapFile(app, name);
-    new import_obsidian6.Notice(options?.successMessage ?? MAP_WORKFLOWS_COPY.notices.createSuccess);
+    new import_obsidian5.Notice(options?.successMessage ?? MAP_WORKFLOWS_COPY.notices.createSuccess);
     await onCreate(file);
   }).open();
 }
-var import_obsidian6;
+var import_obsidian5;
 var init_map_workflows = __esm({
   "src/ui/map-workflows.ts"() {
     "use strict";
-    import_obsidian6 = require("obsidian");
+    import_obsidian5 = require("obsidian");
     init_map_maker();
     init_map_list();
     init_options();
@@ -1880,956 +1636,11 @@ var init_search_dropdown = __esm({
   }
 });
 
-// src/apps/cartographer/editor/tools/brush-circle.ts
-function attachBrushCircle(handles, opts) {
-  const { svg, contentG, overlay } = handles;
-  const R = opts.hexRadiusPx;
-  const vStep = 1.5 * R;
-  const toPx = (d) => R + Math.max(0, d) * vStep;
-  const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-  circle.setAttribute("cx", "0");
-  circle.setAttribute("cy", "0");
-  circle.setAttribute("r", String(toPx(opts.initialRadius)));
-  circle.setAttribute("fill", "none");
-  circle.setAttribute("stroke", "var(--interactive-accent)");
-  circle.setAttribute("stroke-width", "2");
-  circle.setAttribute("pointer-events", "none");
-  circle.style.opacity = "0.6";
-  contentG.appendChild(circle);
-  const svgPt = svg.createSVGPoint();
-  let lastEvt = null;
-  let raf = 0;
-  function toContent() {
-    const m = contentG.getScreenCTM();
-    if (!m) return null;
-    return svgPt.matrixTransform(m.inverse());
-  }
-  function bringToFront() {
-    contentG.appendChild(circle);
-  }
-  function tick() {
-    raf = 0;
-    if (!lastEvt) return;
-    svgPt.x = lastEvt.clientX;
-    svgPt.y = lastEvt.clientY;
-    const pt = toContent();
-    if (!pt) return;
-    circle.setAttribute("cx", String(pt.x));
-    circle.setAttribute("cy", String(pt.y));
-    bringToFront();
-  }
-  function onPointerMove(ev) {
-    lastEvt = ev;
-    if (!raf) raf = requestAnimationFrame(tick);
-  }
-  function onPointerEnter() {
-    circle.style.opacity = "0.6";
-  }
-  function onPointerLeave() {
-    circle.style.opacity = "0";
-  }
-  svg.addEventListener("pointermove", onPointerMove, { passive: true });
-  svg.addEventListener("pointerenter", onPointerEnter, { passive: true });
-  svg.addEventListener("pointerleave", onPointerLeave, { passive: true });
-  function updateRadius(hexDist) {
-    circle.setAttribute("r", String(toPx(hexDist)));
-    bringToFront();
-  }
-  function show() {
-    circle.style.display = "";
-    circle.style.opacity = "0.6";
-    bringToFront();
-  }
-  function hide() {
-    circle.style.opacity = "0";
-  }
-  function destroy() {
-    svg.removeEventListener("pointermove", onPointerMove);
-    svg.removeEventListener("pointerenter", onPointerEnter);
-    svg.removeEventListener("pointerleave", onPointerLeave);
-    if (raf) cancelAnimationFrame(raf);
-    circle.remove();
-  }
-  return { updateRadius, show, hide, destroy };
-}
-var init_brush_circle = __esm({
-  "src/apps/cartographer/editor/tools/brush-circle.ts"() {
-    "use strict";
-  }
-});
-
-// src/apps/cartographer/editor/tools/terrain-brush/brush-math.ts
-function oddR_toAxial(rc) {
-  const q = rc.c - (rc.r - (rc.r & 1) >> 1);
-  return { q, r: rc.r };
-}
-function axialDistance(a, b) {
-  const dq = Math.abs(a.q - b.q);
-  const dr = Math.abs(a.r - b.r);
-  const ds = Math.abs(-a.q - a.r - (-b.q - b.r));
-  return Math.max(dq, dr, ds);
-}
-function hexDistanceOddR(a, b) {
-  const A = oddR_toAxial(a);
-  const B = oddR_toAxial(b);
-  return axialDistance(A, B);
-}
-function coordsInRadius(center, radius) {
-  const out = [];
-  for (let dr = -radius; dr <= radius; dr++) {
-    for (let dc = -radius; dc <= radius; dc++) {
-      const r = center.r + dr;
-      const c = center.c + dc + (center.r & 1 ? Math.floor((dr + 1) / 2) : Math.floor(dr / 2));
-      if (hexDistanceOddR(center, { r, c }) <= radius) {
-        out.push({ r, c });
-      }
-    }
-  }
-  out.sort((A, B) => {
-    const da = hexDistanceOddR(center, A);
-    const db = hexDistanceOddR(center, B);
-    if (da !== db) return da - db;
-    if (A.r !== B.r) return A.r - B.r;
-    return A.c - B.c;
-  });
-  return out;
-}
-var init_brush_math = __esm({
-  "src/apps/cartographer/editor/tools/terrain-brush/brush-math.ts"() {
-    "use strict";
-  }
-});
-
-// src/apps/cartographer/editor/tools/terrain-brush/brush.ts
-async function applyBrush(app, mapFile, center, opts, handles) {
-  const mode = opts.mode ?? "paint";
-  const radius = Math.max(0, opts.radius | 0);
-  const raw = coordsInRadius(center, radius);
-  const seen = /* @__PURE__ */ new Set();
-  for (const coord of raw) {
-    const key = `${coord.r},${coord.c}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    if (mode === "erase") {
-      await deleteTile(app, mapFile, coord);
-      handles.setFill(coord, "transparent");
-      continue;
-    }
-    const terrain = opts.terrain ?? "";
-    await saveTile(app, mapFile, coord, { terrain, region: opts.region ?? "" });
-    const color = TERRAIN_COLORS[terrain] ?? "transparent";
-    handles.setFill(coord, color);
-  }
-}
-var init_brush = __esm({
-  "src/apps/cartographer/editor/tools/terrain-brush/brush.ts"() {
-    "use strict";
-    init_hex_notes();
-    init_brush_math();
-    init_terrain();
-  }
-});
-
-// src/core/regions-store.ts
-var regions_store_exports = {};
-__export(regions_store_exports, {
-  REGIONS_FILE: () => REGIONS_FILE,
-  ensureRegionsFile: () => ensureRegionsFile,
-  loadRegions: () => loadRegions,
-  parseRegionsBlock: () => parseRegionsBlock,
-  saveRegions: () => saveRegions,
-  stringifyRegionsBlock: () => stringifyRegionsBlock,
-  watchRegions: () => watchRegions
-});
-async function ensureRegionsFile(app) {
-  const p = (0, import_obsidian10.normalizePath)(REGIONS_FILE);
-  const existing = app.vault.getAbstractFileByPath(p);
-  if (existing instanceof import_obsidian10.TFile) return existing;
-  await app.vault.createFolder(p.split("/").slice(0, -1).join("/")).catch(() => {
-  });
-  const body = [
-    "---",
-    "smList: true",
-    "---",
-    "# Regions",
-    "",
-    "```regions",
-    "# Name: Terrain",
-    "# Beispiel:",
-    "# Saltmarsh: K\xFCste",
-    "```",
-    ""
-  ].join("\n");
-  return await app.vault.create(p, body);
-}
-function parseRegionsBlock(md) {
-  const m = md.match(BLOCK_RE);
-  if (!m) return [];
-  const out = [];
-  for (const raw of m[1].split(/\r?\n/)) {
-    const line = raw.trim();
-    if (!line || line.startsWith("#")) continue;
-    const mm = line.match(/^("?)(.*?)\1\s*:\s*(.*)$/);
-    if (!mm) continue;
-    const name = (mm[2] || "").trim();
-    const rest = (mm[3] || "").trim();
-    let terrain = rest;
-    let encounterOdds = void 0;
-    const em = rest.match(/,\s*encounter\s*:\s*([^,]+)\s*$/i);
-    if (em) {
-      terrain = rest.slice(0, em.index).trim();
-      const spec = em[1].trim();
-      const frac = spec.match(/^1\s*\/\s*(\d+)$/);
-      if (frac) encounterOdds = parseInt(frac[1], 10) || void 0;
-      else {
-        const n = parseInt(spec, 10);
-        if (Number.isFinite(n) && n > 0) encounterOdds = n;
-      }
-    }
-    out.push({ name, terrain, encounterOdds });
-  }
-  return out;
-}
-function stringifyRegionsBlock(list) {
-  const lines = list.map((r) => {
-    const base = `${r.name}: ${r.terrain || ""}`;
-    const n = r.encounterOdds;
-    return n && n > 0 ? `${base}, encounter: 1/${n}` : base;
-  });
-  return ["```regions", ...lines, "```"].join("\n");
-}
-async function loadRegions(app) {
-  const f = await ensureRegionsFile(app);
-  const md = await app.vault.read(f);
-  return parseRegionsBlock(md);
-}
-async function saveRegions(app, list) {
-  const f = await ensureRegionsFile(app);
-  const md = await app.vault.read(f);
-  const block = stringifyRegionsBlock(list);
-  const replaced = md.match(BLOCK_RE) ? md.replace(BLOCK_RE, block) : md + "\n\n" + block + "\n";
-  await app.vault.modify(f, replaced);
-}
-function watchRegions(app, onChange) {
-  const targetPath = (0, import_obsidian10.normalizePath)(REGIONS_FILE);
-  const emitUpdate = () => {
-    app.workspace.trigger?.("salt:regions-updated");
-    onChange?.();
-  };
-  let notifyTimer = null;
-  const scheduleUpdate = () => {
-    if (notifyTimer) clearTimeout(notifyTimer);
-    notifyTimer = setTimeout(() => {
-      notifyTimer = null;
-      emitUpdate();
-    }, 200);
-  };
-  const handleModify = (file) => {
-    if ((0, import_obsidian10.normalizePath)(file.path) !== targetPath) return;
-    scheduleUpdate();
-  };
-  const handleDelete = async (file) => {
-    if (!(file instanceof import_obsidian10.TFile) || (0, import_obsidian10.normalizePath)(file.path) !== targetPath) return;
-    console.warn(
-      "Salt Marcher regions store detected Regions.md deletion; attempting automatic recreation."
-    );
-    try {
-      await ensureRegionsFile(app);
-      new import_obsidian10.Notice("Regions.md wurde automatisch neu erstellt.");
-    } catch (error) {
-      console.error(
-        "Salt Marcher regions store failed to recreate Regions.md automatically.",
-        error
-      );
-      new import_obsidian10.Notice("Regions.md konnte nicht automatisch neu erstellt werden. Bitte manuell wiederherstellen.");
-    }
-    scheduleUpdate();
-  };
-  app.vault.on("modify", handleModify);
-  app.vault.on("delete", handleDelete);
-  return () => {
-    if (notifyTimer) {
-      clearTimeout(notifyTimer);
-      notifyTimer = null;
-    }
-    app.vault.off("modify", handleModify);
-    app.vault.off("delete", handleDelete);
-  };
-}
-var import_obsidian10, REGIONS_FILE, BLOCK_RE;
-var init_regions_store = __esm({
-  "src/core/regions-store.ts"() {
-    "use strict";
-    import_obsidian10 = require("obsidian");
-    REGIONS_FILE = "SaltMarcher/Regions.md";
-    BLOCK_RE = /```regions\s*([\s\S]*?)```/i;
-  }
-});
-
-// src/apps/cartographer/editor/tools/terrain-brush/brush-options.ts
-function createBrushTool() {
-  let state = {
-    radius: 1,
-    // UI zeigt 1 = nur Mitte
-    region: "",
-    terrain: "",
-    mode: "paint"
-  };
-  const eff = () => Math.max(0, state.radius - 1);
-  let circle = null;
-  return {
-    id: "brush",
-    label: "Brush",
-    // Options-Panel (nur UI & State)
-    mountPanel(root, ctx) {
-      let disposed = false;
-      let fillSeq = 0;
-      root.createEl("h3", { text: "Region Brush" });
-      const radiusRow = root.createDiv({ cls: "sm-row" });
-      radiusRow.createEl("label", { text: "Radius:" });
-      const radiusInput = radiusRow.createEl("input", {
-        attr: { type: "range", min: "1", max: "6", step: "1" }
-      });
-      radiusInput.value = String(state.radius);
-      const radiusVal = radiusRow.createEl("span", { text: radiusInput.value });
-      radiusInput.oninput = () => {
-        state.radius = Number(radiusInput.value);
-        radiusVal.textContent = radiusInput.value;
-        circle?.updateRadius(eff());
-      };
-      const regionRow = root.createDiv({ cls: "sm-row" });
-      regionRow.createEl("label", { text: "Region:" });
-      const regionSelect = regionRow.createEl("select");
-      enhanceSelectToSearch(regionSelect, "Search dropdown\u2026");
-      const editRegionsBtn = regionRow.createEl("button", { text: "Manage\u2026" });
-      editRegionsBtn.onclick = () => ctx.app.commands?.executeCommandById?.("salt-marcher:open-library");
-      const fillOptions = async () => {
-        const seq = ++fillSeq;
-        let regions;
-        try {
-          regions = await loadRegions(ctx.app);
-        } catch (err) {
-          console.error("[terrain-brush] failed to load regions", err);
-          if (seq === fillSeq) {
-            regionSelect.empty();
-            state.region = "";
-            state.terrain = "";
-          }
-          return;
-        }
-        if (disposed || ctx.getAbortSignal()?.aborted || seq !== fillSeq) {
-          return;
-        }
-        regionSelect.empty();
-        regionSelect.createEl("option", { text: "(none)", value: "" });
-        let matchedTerrain = state.terrain;
-        let matchedRegion = state.region;
-        for (const r of regions) {
-          const value = r.name ?? "";
-          const label = r.name || "(unnamed)";
-          const opt = regionSelect.createEl("option", { text: label, value });
-          if (r.terrain) opt.dataset.terrain = r.terrain;
-          if (value === state.region && value) {
-            opt.selected = true;
-            matchedRegion = value;
-            matchedTerrain = opt.dataset.terrain ?? "";
-          }
-        }
-        if (!matchedRegion && state.region) {
-          state.region = "";
-          state.terrain = "";
-          regionSelect.value = "";
-        } else {
-          state.region = matchedRegion;
-          state.terrain = matchedTerrain;
-          regionSelect.value = matchedRegion;
-        }
-      };
-      void fillOptions();
-      regionSelect.onchange = () => {
-        state.region = regionSelect.value;
-        const opt = regionSelect.selectedOptions[0];
-        state.terrain = opt?.dataset?.terrain ?? "";
-      };
-      const workspace = ctx.app.workspace;
-      const unsubscribe = [];
-      const subscribe = (event) => {
-        const handler = () => {
-          if (!disposed) void fillOptions();
-        };
-        const token = workspace?.on?.(event, handler);
-        if (typeof workspace?.offref === "function" && token) {
-          unsubscribe.push(() => workspace.offref(token));
-        } else if (typeof token === "function") {
-          unsubscribe.push(() => token());
-        }
-      };
-      subscribe("salt:terrains-updated");
-      subscribe("salt:regions-updated");
-      const modeRow = root.createDiv({ cls: "sm-row" });
-      modeRow.createEl("label", { text: "Mode:" });
-      const modeSelect = modeRow.createEl("select");
-      modeSelect.createEl("option", { text: "Paint", value: "paint" });
-      modeSelect.createEl("option", { text: "Erase", value: "erase" });
-      modeSelect.value = state.mode;
-      modeSelect.onchange = () => {
-        state.mode = modeSelect.value;
-      };
-      enhanceSelectToSearch(modeSelect, "Search dropdown\u2026");
-      return () => {
-        disposed = true;
-        fillSeq += 1;
-        unsubscribe.forEach((off) => {
-          try {
-            off();
-          } catch (err) {
-            console.error("[terrain-brush] failed to unsubscribe", err);
-          }
-        });
-        radiusInput.oninput = null;
-        regionSelect.onchange = null;
-        modeSelect.onchange = null;
-        editRegionsBtn.onclick = null;
-        root.empty();
-      };
-    },
-    // Aktivierung/Deaktivierung → Kreis steuern
-    onActivate(ctx) {
-      const handles = ctx.getHandles();
-      if (!handles) return;
-      circle?.destroy();
-      circle = attachBrushCircle(
-        { svg: handles.svg, contentG: handles.contentG, overlay: handles.overlay },
-        { initialRadius: eff(), hexRadiusPx: ctx.getOptions()?.radius ?? 42 }
-      );
-      circle.show();
-    },
-    onDeactivate() {
-      circle?.destroy();
-      circle = null;
-    },
-    onMapRendered(ctx) {
-      const handles = ctx.getHandles();
-      if (!handles) return;
-      circle?.destroy();
-      circle = attachBrushCircle(
-        { svg: handles.svg, contentG: handles.contentG, overlay: handles.overlay },
-        { initialRadius: eff(), hexRadiusPx: ctx.getOptions()?.radius ?? 42 }
-      );
-      circle.show();
-    },
-    // Hex-Klick: schreiben + live färben; neue Polys nur gezielt ergänzen
-    async onHexClick(rc, ctx) {
-      const file = ctx.getFile();
-      const handles = ctx.getHandles();
-      if (!file || !handles) return false;
-      const raw = coordsInRadius(rc, eff());
-      const targets = [...new Map(raw.map((k) => [`${k.r},${k.c}`, k])).values()];
-      if (state.mode === "paint") {
-        const missing = targets.filter((k) => !handles.polyByCoord.has(`${k.r},${k.c}`));
-        if (missing.length) handles.ensurePolys(missing);
-      }
-      await applyBrush(
-        ctx.app,
-        file,
-        rc,
-        { radius: eff(), terrain: state.terrain, region: state.region, mode: state.mode },
-        // Distanz reinschreiben
-        handles
-      );
-      return true;
-    }
-  };
-}
-var init_brush_options = __esm({
-  "src/apps/cartographer/editor/tools/terrain-brush/brush-options.ts"() {
-    "use strict";
-    init_brush_circle();
-    init_brush();
-    init_regions_store();
-    init_search_dropdown();
-    init_brush_math();
-  }
-});
-
-// src/apps/cartographer/editor/tools/tool-manager.ts
-function createToolManager(tools, options) {
-  let active = null;
-  let switchController = null;
-  let destroyed = false;
-  const getLifecycleAborted = (localSignal) => {
-    if (destroyed) return true;
-    if (localSignal?.aborted) return true;
-    const lifecycle = options.getLifecycleSignal();
-    return lifecycle?.aborted ?? false;
-  };
-  const teardownActive = (ctx) => {
-    if (!active) return;
-    if (ctx) {
-      try {
-        active.module.onDeactivate?.(ctx);
-      } catch (err) {
-        console.error("[tool-manager] onDeactivate failed", err);
-      }
-    }
-    try {
-      (active.cleanup ?? SAFE_CLEANUP)();
-    } catch (err) {
-      console.error("[tool-manager] cleanup failed", err);
-    }
-    active = null;
-    options.onToolChanged?.(null);
-  };
-  const switchTo = async (id) => {
-    const ctx = options.getContext();
-    const host = options.getPanelHost();
-    if (!ctx || !host || tools.length === 0) {
-      return;
-    }
-    const next = tools.find((tool) => tool.id === id) ?? tools[0];
-    if (active?.module === next && !switchController) {
-      return;
-    }
-    const controller = new AbortController();
-    if (switchController) {
-      switchController.abort();
-    }
-    switchController = controller;
-    teardownActive(ctx);
-    host.empty();
-    await yieldMicrotask();
-    if (getLifecycleAborted(controller.signal)) {
-      switchController = null;
-      return;
-    }
-    let cleanup = null;
-    try {
-      const result = next.mountPanel(host, ctx);
-      cleanup = typeof result === "function" ? result : null;
-    } catch (err) {
-      console.error("[tool-manager] mountPanel failed", err);
-      cleanup = null;
-    }
-    await yieldMicrotask();
-    if (getLifecycleAborted(controller.signal)) {
-      try {
-        (cleanup ?? SAFE_CLEANUP)();
-      } catch (err) {
-        console.error("[tool-manager] cleanup failed", err);
-      }
-      host.empty();
-      switchController = null;
-      return;
-    }
-    try {
-      next.onActivate?.(ctx);
-    } catch (err) {
-      console.error("[tool-manager] onActivate failed", err);
-    }
-    active = { module: next, cleanup };
-    options.onToolChanged?.(next);
-    if (!getLifecycleAborted(controller.signal) && ctx.getHandles()) {
-      try {
-        next.onMapRendered?.(ctx);
-      } catch (err) {
-        console.error("[tool-manager] onMapRendered failed", err);
-      }
-    }
-    if (switchController === controller) {
-      switchController = null;
-    }
-  };
-  const notifyMapRendered = () => {
-    if (!active) return;
-    const ctx = options.getContext();
-    if (!ctx || getLifecycleAborted(null) || !ctx.getHandles()) {
-      return;
-    }
-    try {
-      active.module.onMapRendered?.(ctx);
-    } catch (err) {
-      console.error("[tool-manager] onMapRendered failed", err);
-    }
-  };
-  const deactivate = () => {
-    const ctx = options.getContext();
-    switchController?.abort();
-    switchController = null;
-    teardownActive(ctx);
-  };
-  const destroy = () => {
-    if (destroyed) return;
-    destroyed = true;
-    deactivate();
-  };
-  const getActive = () => active?.module ?? null;
-  return {
-    getActive,
-    switchTo,
-    notifyMapRendered,
-    deactivate,
-    destroy
-  };
-}
-var yieldMicrotask, SAFE_CLEANUP;
-var init_tool_manager = __esm({
-  "src/apps/cartographer/editor/tools/tool-manager.ts"() {
-    "use strict";
-    yieldMicrotask = () => Promise.resolve();
-    SAFE_CLEANUP = () => {
-    };
-  }
-});
-
-// src/apps/cartographer/modes/lifecycle.ts
-function createModeLifecycle() {
-  let signal = null;
-  return {
-    bind(ctx) {
-      signal = ctx.signal;
-      return signal;
-    },
-    get() {
-      return signal;
-    },
-    isAborted() {
-      return signal?.aborted ?? false;
-    },
-    reset() {
-      signal = null;
-    }
-  };
-}
-var init_lifecycle = __esm({
-  "src/apps/cartographer/modes/lifecycle.ts"() {
-    "use strict";
-  }
-});
-
-// src/apps/cartographer/modes/editor.ts
-var editor_exports = {};
-__export(editor_exports, {
-  createEditorMode: () => createEditorMode
-});
-function createEditorMode() {
-  let panel = null;
-  let fileLabel = null;
-  let toolSelect = null;
-  let toolBody = null;
-  let statusLabel = null;
-  const tools = [createBrushTool()];
-  let manager = null;
-  let state = {
-    file: null,
-    handles: null,
-    options: null
-  };
-  let toolCtx = null;
-  const setStatus = (msg) => {
-    if (!statusLabel) return;
-    statusLabel.setText(msg ?? "");
-    statusLabel.toggleClass("is-empty", !msg);
-  };
-  const updateFileLabel = () => {
-    if (!fileLabel) return;
-    fileLabel.textContent = state.file ? state.file.basename : "No map";
-  };
-  const updatePanelState = () => {
-    const hasHandles = !!state.handles;
-    panel?.toggleClass("is-disabled", !hasHandles);
-    if (toolSelect) {
-      toolSelect.disabled = !hasHandles;
-    }
-    if (!hasHandles) {
-      setStatus(state.file ? "Loading map\u2026" : "No map selected.");
-    } else {
-      setStatus("");
-    }
-  };
-  const lifecycle = createModeLifecycle();
-  const ensureToolCtx = (ctx) => {
-    toolCtx = {
-      app: ctx.app,
-      getFile: () => state.file,
-      getHandles: () => state.handles,
-      getOptions: () => state.options,
-      getAbortSignal: () => lifecycle.get(),
-      setStatus
-    };
-    return toolCtx;
-  };
-  const isAborted = () => lifecycle.isAborted();
-  return {
-    id: "editor",
-    label: "Editor",
-    async onEnter(ctx) {
-      lifecycle.bind(ctx);
-      state = { ...state };
-      ctx.sidebarHost.empty();
-      panel = ctx.sidebarHost.createDiv({ cls: "sm-cartographer__panel sm-cartographer__panel--editor" });
-      panel.createEl("h3", { text: "Map Editor" });
-      fileLabel = panel.createEl("div", { cls: "sm-cartographer__panel-file" });
-      const toolsRow = panel.createDiv({ cls: "sm-cartographer__panel-tools" });
-      toolsRow.createEl("label", { text: "Tool:" });
-      toolSelect = toolsRow.createEl("select");
-      for (const tool of tools) {
-        toolSelect.createEl("option", { value: tool.id, text: tool.label });
-      }
-      enhanceSelectToSearch(toolSelect, "Search dropdown\u2026");
-      toolSelect.onchange = () => {
-        if (isAborted() || !manager) return;
-        const target = toolSelect?.value ?? tools[0].id;
-        void manager.switchTo(target);
-      };
-      toolBody = panel.createDiv({ cls: "sm-cartographer__panel-body" });
-      statusLabel = panel.createDiv({ cls: "sm-cartographer__panel-status" });
-      ensureToolCtx(ctx);
-      manager = createToolManager(tools, {
-        getContext: () => toolCtx,
-        getPanelHost: () => toolBody,
-        getLifecycleSignal: () => lifecycle.get(),
-        onToolChanged: (tool) => {
-          if (!toolSelect) return;
-          toolSelect.value = tool?.id ?? "";
-        }
-      });
-      updateFileLabel();
-      updatePanelState();
-      if (isAborted()) return;
-      await manager.switchTo(tools[0].id);
-    },
-    async onExit(ctx) {
-      lifecycle.bind(ctx);
-      manager?.destroy();
-      manager = null;
-      toolCtx = null;
-      panel?.remove();
-      panel = null;
-      fileLabel = null;
-      toolSelect = null;
-      toolBody = null;
-      statusLabel = null;
-      lifecycle.reset();
-    },
-    async onFileChange(file, handles, ctx) {
-      lifecycle.bind(ctx);
-      state.file = file;
-      state.handles = handles;
-      state.options = ctx.getOptions();
-      updateFileLabel();
-      updatePanelState();
-      if (!handles) return;
-      if (!toolCtx) ensureToolCtx(ctx);
-      if (isAborted()) return;
-      manager?.notifyMapRendered();
-    },
-    async onHexClick(coord, _event, ctx) {
-      lifecycle.bind(ctx);
-      if (isAborted()) return;
-      const active = manager?.getActive();
-      if (!toolCtx || !active?.onHexClick) return;
-      try {
-        await active.onHexClick(coord, toolCtx);
-      } catch (err) {
-        console.error("[editor-mode] onHexClick failed", err);
-      }
-    }
-  };
-}
-var init_editor = __esm({
-  "src/apps/cartographer/modes/editor.ts"() {
-    "use strict";
-    init_search_dropdown();
-    init_brush_options();
-    init_tool_manager();
-    init_lifecycle();
-  }
-});
-
-// src/apps/cartographer/modes/inspector.ts
-var inspector_exports = {};
-__export(inspector_exports, {
-  createInspectorMode: () => createInspectorMode
-});
-function createInspectorMode() {
-  let ui = {
-    panel: null,
-    fileLabel: null,
-    message: null,
-    terrain: null,
-    note: null
-  };
-  let state = {
-    file: null,
-    handles: null,
-    selection: null,
-    saveTimer: null
-  };
-  const lifecycle = createModeLifecycle();
-  const isAborted = () => lifecycle.isAborted();
-  const clearSaveTimer = () => {
-    if (state.saveTimer !== null) {
-      window.clearTimeout(state.saveTimer);
-      state.saveTimer = null;
-    }
-  };
-  const resetInputs = () => {
-    if (ui.terrain) {
-      ui.terrain.value = "";
-      ui.terrain.disabled = true;
-    }
-    if (ui.note) {
-      ui.note.value = "";
-      ui.note.disabled = true;
-    }
-  };
-  const updateMessage = () => {
-    if (!ui.message) return;
-    if (!state.file || !state.handles) {
-      ui.message.setText(state.file ? "Karte wird geladen \u2026" : "Keine Karte ausgew\xE4hlt.");
-    } else if (!state.selection) {
-      ui.message.setText("Hex anklicken, um Terrain & Notiz zu bearbeiten.");
-    } else {
-      ui.message.setText(`Hex r${state.selection.r}, c${state.selection.c}`);
-    }
-  };
-  const updateFileLabel = () => {
-    if (!ui.fileLabel) return;
-    ui.fileLabel.textContent = state.file ? state.file.basename : "Keine Karte";
-  };
-  const updatePanelState = () => {
-    const hasMap = !!state.file && !!state.handles;
-    ui.panel?.toggleClass("is-disabled", !hasMap);
-    if (!hasMap) {
-      state.selection = null;
-      resetInputs();
-    }
-    updateMessage();
-  };
-  const scheduleSave = (ctx) => {
-    if (ctx.signal.aborted) return;
-    if (!state.selection) return;
-    const file = ctx.getFile();
-    if (!file) return;
-    const handles = ctx.getRenderHandles();
-    clearSaveTimer();
-    state.saveTimer = window.setTimeout(async () => {
-      if (ctx.signal.aborted) return;
-      const terrain = ui.terrain?.value ?? "";
-      const note = ui.note?.value ?? "";
-      try {
-        await saveTile(ctx.app, file, state.selection, { terrain, note });
-      } catch (err) {
-        console.error("[inspector-mode] saveTile failed", err);
-      }
-      const color = TERRAIN_COLORS[terrain] ?? "transparent";
-      try {
-        handles?.setFill(state.selection, color);
-      } catch (err) {
-        console.error("[inspector-mode] setFill failed", err);
-      }
-    }, 250);
-  };
-  const loadSelection = async (ctx) => {
-    if (!state.selection) return;
-    const file = ctx.getFile();
-    if (!file) return;
-    let data = null;
-    try {
-      data = await loadTile(ctx.app, file, state.selection);
-    } catch (err) {
-      console.error("[inspector-mode] loadTile failed", err);
-      data = null;
-    }
-    if (ctx.signal.aborted) return;
-    if (ui.terrain) {
-      ui.terrain.value = data?.terrain ?? "";
-      ui.terrain.disabled = false;
-    }
-    if (ui.note) {
-      ui.note.value = data?.note ?? "";
-      ui.note.disabled = false;
-    }
-    updateMessage();
-  };
-  return {
-    id: "inspector",
-    label: "Inspector",
-    async onEnter(ctx) {
-      lifecycle.bind(ctx);
-      ui = { panel: null, fileLabel: null, message: null, terrain: null, note: null };
-      state = { ...state, selection: null };
-      ctx.sidebarHost.empty();
-      ui.panel = ctx.sidebarHost.createDiv({ cls: "sm-cartographer__panel sm-cartographer__panel--inspector" });
-      ui.panel.createEl("h3", { text: "Inspektor" });
-      ui.fileLabel = ui.panel.createEl("div", { cls: "sm-cartographer__panel-file" });
-      const messageRow = ui.panel.createEl("div", { cls: "sm-cartographer__panel-info" });
-      ui.message = messageRow;
-      const terrRow = ui.panel.createDiv({ cls: "sm-cartographer__panel-row" });
-      terrRow.createEl("label", { text: "Terrain:" });
-      ui.terrain = terrRow.createEl("select");
-      for (const key of Object.keys(TERRAIN_COLORS)) {
-        const opt = ui.terrain.createEl("option", { text: key || "(leer)" });
-        opt.value = key;
-      }
-      enhanceSelectToSearch(ui.terrain, "Such-dropdown\u2026");
-      ui.terrain.disabled = true;
-      ui.terrain.onchange = () => scheduleSave(ctx);
-      const noteRow = ui.panel.createDiv({ cls: "sm-cartographer__panel-row" });
-      noteRow.createEl("label", { text: "Notiz:" });
-      ui.note = noteRow.createEl("textarea", { attr: { rows: "6" } });
-      ui.note.disabled = true;
-      ui.note.oninput = () => scheduleSave(ctx);
-      updateFileLabel();
-      updatePanelState();
-    },
-    async onExit(ctx) {
-      lifecycle.bind(ctx);
-      clearSaveTimer();
-      ui.panel?.remove();
-      ui = { panel: null, fileLabel: null, message: null, terrain: null, note: null };
-      state = { file: null, handles: null, selection: null, saveTimer: null };
-      lifecycle.reset();
-    },
-    async onFileChange(file, handles, ctx) {
-      lifecycle.bind(ctx);
-      state.file = file;
-      state.handles = handles;
-      clearSaveTimer();
-      resetInputs();
-      updateFileLabel();
-      updatePanelState();
-      if (state.selection && state.file && state.handles && !isAborted()) {
-        await loadSelection(ctx);
-      }
-    },
-    async onHexClick(coord, _event, ctx) {
-      lifecycle.bind(ctx);
-      if (isAborted()) return;
-      if (!state.file || !state.handles) return;
-      clearSaveTimer();
-      state.selection = coord;
-      updateMessage();
-      if (isAborted()) return;
-      await loadSelection(ctx);
-    }
-  };
-}
-var init_inspector = __esm({
-  "src/apps/cartographer/modes/inspector.ts"() {
-    "use strict";
-    init_hex_notes();
-    init_terrain();
-    init_search_dropdown();
-    init_lifecycle();
-  }
-});
-
 // src/core/terrain-store.ts
 async function ensureTerrainFile(app) {
-  const p = (0, import_obsidian11.normalizePath)(TERRAIN_FILE);
+  const p = (0, import_obsidian9.normalizePath)(TERRAIN_FILE);
   const existing = app.vault.getAbstractFileByPath(p);
-  if (existing instanceof import_obsidian11.TFile) return existing;
+  if (existing instanceof import_obsidian9.TFile) return existing;
   await app.vault.createFolder(p.split("/").slice(0, -1).join("/")).catch(() => {
   });
   const body = [
@@ -2849,7 +1660,7 @@ async function ensureTerrainFile(app) {
   return await app.vault.create(p, body);
 }
 function parseTerrainBlock(md) {
-  const m = md.match(BLOCK_RE2);
+  const m = md.match(BLOCK_RE);
   if (!m) return {};
   const out = {};
   for (const raw of m[1].split(/\r?\n/)) {
@@ -2880,7 +1691,7 @@ async function saveTerrains(app, next) {
   const f = await ensureTerrainFile(app);
   const md = await app.vault.read(f);
   const block = stringifyTerrainBlock(next);
-  const replaced = md.match(BLOCK_RE2) ? md.replace(BLOCK_RE2, block) : md + "\n\n" + block + "\n";
+  const replaced = md.match(BLOCK_RE) ? md.replace(BLOCK_RE, block) : md + "\n\n" + block + "\n";
   await app.vault.modify(f, replaced);
 }
 function resolveWatcherOptions(maybeCallback) {
@@ -2916,7 +1727,7 @@ function watchTerrains(app, onChangeOrOptions) {
     }
   };
   const maybeUpdate = (reason, file) => {
-    if (!(file instanceof import_obsidian11.TFile) || file.path !== TERRAIN_FILE) return;
+    if (!(file instanceof import_obsidian9.TFile) || file.path !== TERRAIN_FILE) return;
     void update(reason);
   };
   const refs = ["modify", "delete"].map(
@@ -2931,14 +1742,14 @@ function watchTerrains(app, onChangeOrOptions) {
     }
   };
 }
-var import_obsidian11, TERRAIN_FILE, BLOCK_RE2;
+var import_obsidian9, TERRAIN_FILE, BLOCK_RE;
 var init_terrain_store = __esm({
   "src/core/terrain-store.ts"() {
     "use strict";
-    import_obsidian11 = require("obsidian");
+    import_obsidian9 = require("obsidian");
     init_terrain();
     TERRAIN_FILE = "SaltMarcher/Terrains.md";
-    BLOCK_RE2 = /```terrain\s*([\s\S]*?)```/i;
+    BLOCK_RE = /```terrain\s*([\s\S]*?)```/i;
   }
 });
 
@@ -3306,6 +2117,142 @@ var init_persistence = __esm({
   }
 });
 
+// src/core/regions-store.ts
+var regions_store_exports = {};
+__export(regions_store_exports, {
+  REGIONS_FILE: () => REGIONS_FILE,
+  ensureRegionsFile: () => ensureRegionsFile,
+  loadRegions: () => loadRegions,
+  parseRegionsBlock: () => parseRegionsBlock,
+  saveRegions: () => saveRegions,
+  stringifyRegionsBlock: () => stringifyRegionsBlock,
+  watchRegions: () => watchRegions
+});
+async function ensureRegionsFile(app) {
+  const p = (0, import_obsidian10.normalizePath)(REGIONS_FILE);
+  const existing = app.vault.getAbstractFileByPath(p);
+  if (existing instanceof import_obsidian10.TFile) return existing;
+  await app.vault.createFolder(p.split("/").slice(0, -1).join("/")).catch(() => {
+  });
+  const body = [
+    "---",
+    "smList: true",
+    "---",
+    "# Regions",
+    "",
+    "```regions",
+    "# Name: Terrain",
+    "# Beispiel:",
+    "# Saltmarsh: K\xFCste",
+    "```",
+    ""
+  ].join("\n");
+  return await app.vault.create(p, body);
+}
+function parseRegionsBlock(md) {
+  const m = md.match(BLOCK_RE2);
+  if (!m) return [];
+  const out = [];
+  for (const raw of m[1].split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    const mm = line.match(/^("?)(.*?)\1\s*:\s*(.*)$/);
+    if (!mm) continue;
+    const name = (mm[2] || "").trim();
+    const rest = (mm[3] || "").trim();
+    let terrain = rest;
+    let encounterOdds = void 0;
+    const em = rest.match(/,\s*encounter\s*:\s*([^,]+)\s*$/i);
+    if (em) {
+      terrain = rest.slice(0, em.index).trim();
+      const spec = em[1].trim();
+      const frac = spec.match(/^1\s*\/\s*(\d+)$/);
+      if (frac) encounterOdds = parseInt(frac[1], 10) || void 0;
+      else {
+        const n = parseInt(spec, 10);
+        if (Number.isFinite(n) && n > 0) encounterOdds = n;
+      }
+    }
+    out.push({ name, terrain, encounterOdds });
+  }
+  return out;
+}
+function stringifyRegionsBlock(list) {
+  const lines = list.map((r) => {
+    const base = `${r.name}: ${r.terrain || ""}`;
+    const n = r.encounterOdds;
+    return n && n > 0 ? `${base}, encounter: 1/${n}` : base;
+  });
+  return ["```regions", ...lines, "```"].join("\n");
+}
+async function loadRegions(app) {
+  const f = await ensureRegionsFile(app);
+  const md = await app.vault.read(f);
+  return parseRegionsBlock(md);
+}
+async function saveRegions(app, list) {
+  const f = await ensureRegionsFile(app);
+  const md = await app.vault.read(f);
+  const block = stringifyRegionsBlock(list);
+  const replaced = md.match(BLOCK_RE2) ? md.replace(BLOCK_RE2, block) : md + "\n\n" + block + "\n";
+  await app.vault.modify(f, replaced);
+}
+function watchRegions(app, onChange) {
+  const targetPath = (0, import_obsidian10.normalizePath)(REGIONS_FILE);
+  const emitUpdate = () => {
+    app.workspace.trigger?.("salt:regions-updated");
+    onChange?.();
+  };
+  let notifyTimer = null;
+  const scheduleUpdate = () => {
+    if (notifyTimer) clearTimeout(notifyTimer);
+    notifyTimer = setTimeout(() => {
+      notifyTimer = null;
+      emitUpdate();
+    }, 200);
+  };
+  const handleModify = (file) => {
+    if ((0, import_obsidian10.normalizePath)(file.path) !== targetPath) return;
+    scheduleUpdate();
+  };
+  const handleDelete = async (file) => {
+    if (!(file instanceof import_obsidian10.TFile) || (0, import_obsidian10.normalizePath)(file.path) !== targetPath) return;
+    console.warn(
+      "Salt Marcher regions store detected Regions.md deletion; attempting automatic recreation."
+    );
+    try {
+      await ensureRegionsFile(app);
+      new import_obsidian10.Notice("Regions.md wurde automatisch neu erstellt.");
+    } catch (error) {
+      console.error(
+        "Salt Marcher regions store failed to recreate Regions.md automatically.",
+        error
+      );
+      new import_obsidian10.Notice("Regions.md konnte nicht automatisch neu erstellt werden. Bitte manuell wiederherstellen.");
+    }
+    scheduleUpdate();
+  };
+  app.vault.on("modify", handleModify);
+  app.vault.on("delete", handleDelete);
+  return () => {
+    if (notifyTimer) {
+      clearTimeout(notifyTimer);
+      notifyTimer = null;
+    }
+    app.vault.off("modify", handleModify);
+    app.vault.off("delete", handleDelete);
+  };
+}
+var import_obsidian10, REGIONS_FILE, BLOCK_RE2;
+var init_regions_store = __esm({
+  "src/core/regions-store.ts"() {
+    "use strict";
+    import_obsidian10 = require("obsidian");
+    REGIONS_FILE = "SaltMarcher/Regions.md";
+    BLOCK_RE2 = /```regions\s*([\s\S]*?)```/i;
+  }
+});
+
 // src/apps/cartographer/travel/domain/playback.ts
 function createPlayback(cfg) {
   const { app, getMapFile, adapter, store, minSecondsPerTile, onEncounter } = cfg;
@@ -3660,7 +2607,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--play",
     text: "Start"
   });
-  (0, import_obsidian12.setIcon)(playBtn, "play");
+  (0, import_obsidian11.setIcon)(playBtn, "play");
   applyMapButtonStyle(playBtn);
   playBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -3671,7 +2618,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--stop",
     text: "Stopp"
   });
-  (0, import_obsidian12.setIcon)(stopBtn, "square");
+  (0, import_obsidian11.setIcon)(stopBtn, "square");
   applyMapButtonStyle(stopBtn);
   stopBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -3682,7 +2629,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--reset",
     text: "Reset"
   });
-  (0, import_obsidian12.setIcon)(resetBtn, "rotate-ccw");
+  (0, import_obsidian11.setIcon)(resetBtn, "rotate-ccw");
   applyMapButtonStyle(resetBtn);
   resetBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -3731,11 +2678,11 @@ function createPlaybackControls(host, callbacks) {
     setTempo
   };
 }
-var import_obsidian12;
+var import_obsidian11;
 var init_controls = __esm({
   "src/apps/cartographer/travel/ui/controls.ts"() {
     "use strict";
-    import_obsidian12 = require("obsidian");
+    import_obsidian11 = require("obsidian");
     init_map_workflows();
   }
 });
@@ -3994,7 +2941,7 @@ function bindContextMenu(routeLayerEl, logic) {
     }
     ev.preventDefault();
     ev.stopPropagation();
-    const menu = new import_obsidian13.Menu();
+    const menu = new import_obsidian12.Menu();
     if (allowDelete) {
       menu.addItem(
         (item) => item.setTitle("Wegpunkt entfernen").setIcon("trash").onClick(() => {
@@ -4014,11 +2961,11 @@ function bindContextMenu(routeLayerEl, logic) {
   routeLayerEl.addEventListener("contextmenu", onContextMenu, { capture: true });
   return () => routeLayerEl.removeEventListener("contextmenu", onContextMenu, { capture: true });
 }
-var import_obsidian13;
+var import_obsidian12;
 var init_context_menu_controller = __esm({
   "src/apps/cartographer/travel/ui/context-menu.controller.ts"() {
     "use strict";
-    import_obsidian13 = require("obsidian");
+    import_obsidian12 = require("obsidian");
   }
 });
 
@@ -4081,6 +3028,42 @@ var init_interaction_controller = __esm({
   }
 });
 
+// src/apps/encounter/session-store.ts
+function publishEncounterEvent(event) {
+  latestEvent = event;
+  for (const listener of [...listeners]) {
+    try {
+      listener(event);
+    } catch (err) {
+      console.error("[encounter] listener failed", err);
+    }
+  }
+}
+function subscribeToEncounterEvents(listener) {
+  listeners.add(listener);
+  if (latestEvent) {
+    try {
+      listener(latestEvent);
+    } catch (err) {
+      console.error("[encounter] listener failed", err);
+    }
+  }
+  return () => {
+    listeners.delete(listener);
+  };
+}
+function peekLatestEncounterEvent() {
+  return latestEvent;
+}
+var latestEvent, listeners;
+var init_session_store = __esm({
+  "src/apps/encounter/session-store.ts"() {
+    "use strict";
+    latestEvent = null;
+    listeners = /* @__PURE__ */ new Set();
+  }
+});
+
 // src/apps/encounter/event-builder.ts
 async function createEncounterEventFromTravel(app, ctx, options = {}) {
   const triggeredAt = options.triggeredAt ?? (/* @__PURE__ */ new Date()).toISOString();
@@ -4130,6 +3113,260 @@ async function createEncounterEventFromTravel(app, ctx, options = {}) {
 var init_event_builder = __esm({
   "src/apps/encounter/event-builder.ts"() {
     "use strict";
+  }
+});
+
+// src/apps/encounter/presenter.ts
+var defaultDeps, EncounterPresenter;
+var init_presenter = __esm({
+  "src/apps/encounter/presenter.ts"() {
+    "use strict";
+    init_session_store();
+    defaultDeps = {
+      now: () => (/* @__PURE__ */ new Date()).toISOString()
+    };
+    EncounterPresenter = class _EncounterPresenter {
+      constructor(initial, deps) {
+        this.listeners = /* @__PURE__ */ new Set();
+        this.deps = { ...defaultDeps, ...deps };
+        this.state = _EncounterPresenter.normalise(initial);
+        this.unsubscribeStore = subscribeToEncounterEvents((event) => this.applyEvent(event));
+      }
+      dispose() {
+        this.unsubscribeStore?.();
+        this.listeners.clear();
+      }
+      /** Restores persisted state (e.g. when `setViewData` fires before `onOpen`). */
+      restore(state) {
+        this.state = _EncounterPresenter.normalise(state);
+        this.emit();
+      }
+      getState() {
+        return this.state;
+      }
+      subscribe(listener) {
+        this.listeners.add(listener);
+        listener(this.state);
+        return () => {
+          this.listeners.delete(listener);
+        };
+      }
+      setNotes(notes) {
+        if (!this.state.session) return;
+        if (this.state.session.notes === notes) return;
+        this.state = {
+          session: {
+            ...this.state.session,
+            notes
+          }
+        };
+        this.emit();
+      }
+      markResolved() {
+        const session = this.state.session;
+        if (!session) return;
+        if (session.status === "resolved") return;
+        this.state = {
+          session: {
+            ...session,
+            status: "resolved",
+            resolvedAt: this.deps.now()
+          }
+        };
+        this.emit();
+      }
+      reset() {
+        if (!this.state.session) return;
+        this.state = { session: null };
+        this.emit();
+      }
+      applyEvent(event) {
+        const prev = this.state.session;
+        if (!prev || prev.event.id !== event.id) {
+          this.state = {
+            session: {
+              event,
+              notes: "",
+              status: "pending"
+            }
+          };
+        } else {
+          this.state = {
+            session: {
+              ...prev,
+              event
+            }
+          };
+        }
+        this.emit();
+      }
+      emit() {
+        for (const listener of [...this.listeners]) {
+          listener(this.state);
+        }
+      }
+      static normalise(initial) {
+        if (!initial || !initial.session || !initial.session.event) {
+          return { session: null };
+        }
+        const { event, notes, status, resolvedAt } = initial.session;
+        return {
+          session: {
+            event,
+            notes: notes ?? "",
+            status: status === "resolved" ? "resolved" : "pending",
+            resolvedAt: resolvedAt ?? null
+          }
+        };
+      }
+    };
+  }
+});
+
+// src/apps/encounter/view.ts
+var view_exports = {};
+__export(view_exports, {
+  EncounterView: () => EncounterView,
+  VIEW_ENCOUNTER: () => VIEW_ENCOUNTER
+});
+var import_obsidian13, VIEW_ENCOUNTER, EncounterView;
+var init_view = __esm({
+  "src/apps/encounter/view.ts"() {
+    "use strict";
+    import_obsidian13 = require("obsidian");
+    init_presenter();
+    VIEW_ENCOUNTER = "salt-encounter";
+    EncounterView = class extends import_obsidian13.ItemView {
+      constructor(leaf) {
+        super(leaf);
+        this.presenter = null;
+        this.pendingState = null;
+      }
+      getViewType() {
+        return VIEW_ENCOUNTER;
+      }
+      getDisplayText() {
+        return "Encounter";
+      }
+      getIcon() {
+        return "swords";
+      }
+      async onOpen() {
+        this.contentEl.addClass("sm-encounter-view");
+        this.renderShell();
+        this.presenter = new EncounterPresenter(this.pendingState);
+        this.pendingState = null;
+        this.detachPresenter = this.presenter.subscribe((state) => this.render(state));
+      }
+      async onClose() {
+        this.detachPresenter?.();
+        this.presenter?.dispose();
+        this.detachPresenter = void 0;
+        this.presenter = null;
+        this.pendingState = null;
+        this.contentEl.empty();
+        this.contentEl.removeClass("sm-encounter-view");
+      }
+      getViewData() {
+        return this.presenter?.getState() ?? this.pendingState;
+      }
+      setViewData(data) {
+        if (this.presenter) {
+          this.presenter.restore(data);
+        } else {
+          this.pendingState = data;
+        }
+      }
+      renderShell() {
+        this.contentEl.empty();
+        const header = this.contentEl.createEl("div", { cls: "sm-encounter-header" });
+        this.headerEl = header.createEl("h2", { text: "Encounter" });
+        this.statusEl = header.createDiv({ cls: "status", text: "Waiting for travel events\u2026" });
+        this.summaryListEl = this.contentEl.createEl("ul", { cls: "sm-encounter-summary" });
+        this.emptyEl = this.contentEl.createDiv({
+          cls: "sm-encounter-empty",
+          text: "No active encounter. Travel mode will populate this workspace when an encounter triggers."
+        });
+        this.emptyEl.style.display = "";
+        const notesSection = this.contentEl.createDiv({ cls: "sm-encounter-notes" });
+        notesSection.createEl("label", { text: "Notes", attr: { for: "encounter-notes" } });
+        this.notesEl = notesSection.createEl("textarea", {
+          cls: "notes-input",
+          attr: {
+            id: "encounter-notes",
+            placeholder: "Record tactical notes, initiative order, or follow-up tasks\u2026",
+            rows: "6"
+          }
+        });
+        this.notesEl.disabled = true;
+        this.notesEl.addEventListener("input", () => {
+          if (!this.presenter) return;
+          this.presenter.setNotes(this.notesEl.value);
+        });
+        this.resolveBtn = this.contentEl.createEl("button", { cls: "sm-encounter-resolve", text: "Mark encounter resolved" });
+        this.resolveBtn.disabled = true;
+        this.resolveBtn.addEventListener("click", () => {
+          this.presenter?.markResolved();
+        });
+      }
+      render(state) {
+        const session = state.session;
+        if (!session) {
+          this.headerEl.setText("Encounter");
+          this.statusEl.setText("Waiting for travel events\u2026");
+          this.summaryListEl.empty();
+          this.emptyEl.style.display = "";
+          this.notesEl.value = "";
+          this.notesEl.disabled = true;
+          this.resolveBtn.disabled = true;
+          this.resolveBtn.setText("Mark encounter resolved");
+          return;
+        }
+        this.emptyEl.style.display = "none";
+        const { event, notes, status, resolvedAt } = session;
+        const region = event.regionName ?? "Unknown region";
+        this.headerEl.setText(`Encounter \u2013 ${region}`);
+        if (status === "resolved") {
+          this.statusEl.setText(resolvedAt ? `Resolved ${resolvedAt}` : "Resolved");
+        } else {
+          this.statusEl.setText("Awaiting resolution");
+        }
+        this.summaryListEl.empty();
+        const summaryEntries = [];
+        if (event.coord) {
+          summaryEntries.push(["Hex", `${event.coord.r}, ${event.coord.c}`]);
+        }
+        if (event.mapName) {
+          summaryEntries.push(["Map", event.mapName]);
+        }
+        if (event.mapPath) {
+          summaryEntries.push(["Map path", event.mapPath]);
+        }
+        summaryEntries.push(["Triggered", event.triggeredAt]);
+        if (typeof event.travelClockHours === "number") {
+          summaryEntries.push(["Travel clock", `${event.travelClockHours.toFixed(2)} h`]);
+        }
+        if (typeof event.encounterOdds === "number") {
+          summaryEntries.push(["Encounter odds", `1 in ${event.encounterOdds}`]);
+        }
+        for (const [label, value] of summaryEntries) {
+          const li = this.summaryListEl.createEl("li");
+          li.createSpan({ cls: "label", text: `${label}: ` });
+          li.createSpan({ cls: "value", text: value });
+        }
+        if (this.notesEl.value !== notes) {
+          this.notesEl.value = notes;
+        }
+        this.notesEl.disabled = false;
+        if (status === "resolved") {
+          this.resolveBtn.disabled = true;
+          this.resolveBtn.setText("Encounter resolved");
+        } else {
+          this.resolveBtn.disabled = false;
+          this.resolveBtn.setText("Mark encounter resolved");
+        }
+      }
+    };
   }
 });
 
@@ -4607,19 +3844,1418 @@ var init_travel_guide = __esm({
   }
 });
 
+// src/apps/cartographer/editor/editor-telemetry.ts
+function reportEditorToolIssue(payload) {
+  const { stage, error } = payload;
+  const toolId = payload.toolId ?? "unknown";
+  const logPrefix = `[cartographer:editor] tool(${toolId}) stage(${stage}) failed`;
+  console.error(logPrefix, error);
+  const messageFactory = TOOL_STAGE_MESSAGES[stage];
+  const userMessage = messageFactory(toolId);
+  const dedupeKey = `${stage}:${toolId}`;
+  if (!noticedIssues.has(dedupeKey)) {
+    noticedIssues.add(dedupeKey);
+    new import_obsidian15.Notice(userMessage);
+  }
+  return userMessage;
+}
+var import_obsidian15, noticedIssues, TOOL_STAGE_MESSAGES;
+var init_editor_telemetry = __esm({
+  "src/apps/cartographer/editor/editor-telemetry.ts"() {
+    "use strict";
+    import_obsidian15 = require("obsidian");
+    noticedIssues = /* @__PURE__ */ new Set();
+    TOOL_STAGE_MESSAGES = {
+      resolve: () => "No editor tools are available right now. Please ensure at least one tool module loads correctly.",
+      "mount-panel": (toolId) => `Failed to mount the panel for "${toolId}". Please check the developer console.`,
+      activate: (toolId) => `The tool "${toolId}" could not be activated. Please check the developer console.`,
+      render: (toolId) => `The tool "${toolId}" failed to react to the rendered map. Please check the developer console.`,
+      deactivate: (toolId) => `The tool "${toolId}" could not be deactivated cleanly. Please check the developer console.`,
+      cleanup: (toolId) => `The tool "${toolId}" failed to clean up its panel. Please check the developer console.`,
+      operation: (toolId) => `Applying changes with "${toolId}" failed. Please check the developer console.`
+    };
+  }
+});
+
+// src/apps/cartographer/editor/tools/brush-circle.ts
+function attachBrushCircle(handles, opts) {
+  const { svg, contentG, overlay } = handles;
+  const R = opts.hexRadiusPx;
+  const vStep = 1.5 * R;
+  const toPx = (d) => R + Math.max(0, d) * vStep;
+  const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  circle.setAttribute("cx", "0");
+  circle.setAttribute("cy", "0");
+  circle.setAttribute("r", String(toPx(opts.initialRadius)));
+  circle.setAttribute("fill", "none");
+  circle.setAttribute("stroke", "var(--interactive-accent)");
+  circle.setAttribute("stroke-width", "2");
+  circle.setAttribute("pointer-events", "none");
+  circle.style.opacity = "0.6";
+  contentG.appendChild(circle);
+  const svgPt = svg.createSVGPoint();
+  let lastEvt = null;
+  let raf = 0;
+  function toContent() {
+    const m = contentG.getScreenCTM();
+    if (!m) return null;
+    return svgPt.matrixTransform(m.inverse());
+  }
+  function bringToFront() {
+    contentG.appendChild(circle);
+  }
+  function tick() {
+    raf = 0;
+    if (!lastEvt) return;
+    svgPt.x = lastEvt.clientX;
+    svgPt.y = lastEvt.clientY;
+    const pt = toContent();
+    if (!pt) return;
+    circle.setAttribute("cx", String(pt.x));
+    circle.setAttribute("cy", String(pt.y));
+    bringToFront();
+  }
+  function onPointerMove(ev) {
+    lastEvt = ev;
+    if (!raf) raf = requestAnimationFrame(tick);
+  }
+  function onPointerEnter() {
+    circle.style.opacity = "0.6";
+  }
+  function onPointerLeave() {
+    circle.style.opacity = "0";
+  }
+  svg.addEventListener("pointermove", onPointerMove, { passive: true });
+  svg.addEventListener("pointerenter", onPointerEnter, { passive: true });
+  svg.addEventListener("pointerleave", onPointerLeave, { passive: true });
+  function updateRadius(hexDist) {
+    circle.setAttribute("r", String(toPx(hexDist)));
+    bringToFront();
+  }
+  function show() {
+    circle.style.display = "";
+    circle.style.opacity = "0.6";
+    bringToFront();
+  }
+  function hide() {
+    circle.style.opacity = "0";
+  }
+  function destroy() {
+    svg.removeEventListener("pointermove", onPointerMove);
+    svg.removeEventListener("pointerenter", onPointerEnter);
+    svg.removeEventListener("pointerleave", onPointerLeave);
+    if (raf) cancelAnimationFrame(raf);
+    circle.remove();
+  }
+  return { updateRadius, show, hide, destroy };
+}
+var init_brush_circle = __esm({
+  "src/apps/cartographer/editor/tools/brush-circle.ts"() {
+    "use strict";
+  }
+});
+
+// src/apps/cartographer/editor/tools/terrain-brush/brush-core.ts
+async function applyBrush(app, mapFile, center, opts, handles, context) {
+  const mode = opts.mode ?? "paint";
+  const radius = Math.max(0, opts.radius | 0);
+  const targets = /* @__PURE__ */ new Map();
+  for (const coord of coordsInRadius(center, radius)) {
+    targets.set(`${coord.r},${coord.c}`, coord);
+  }
+  const applied = [];
+  const tool = context?.tool ?? null;
+  const toolName = context?.toolName ?? "brush";
+  const abortSignal = tool?.getAbortSignal?.() ?? null;
+  const throwIfAborted = () => {
+    if (!abortSignal) return;
+    if (abortSignal.aborted) {
+      throw createAbortError();
+    }
+  };
+  const getFillSnapshot = (coord) => {
+    const key = `${coord.r},${coord.c}`;
+    const poly = handles.polyByCoord.get(key);
+    if (!poly) return "transparent";
+    const styleFill = poly.style?.fill;
+    const attrFill = poly.getAttribute("fill");
+    const value = styleFill ?? attrFill;
+    return value && value.trim().length > 0 ? value : "transparent";
+  };
+  try {
+    throwIfAborted();
+    for (const coord of targets.values()) {
+      throwIfAborted();
+      const key = `${coord.r},${coord.c}`;
+      const previousFill = getFillSnapshot(coord);
+      const previousData = await loadTile(app, mapFile, coord).catch((error) => {
+        console.error(`[terrain-brush] failed to load tile ${key} before applying brush`, error);
+        return null;
+      });
+      throwIfAborted();
+      if (mode === "erase") {
+        await deleteTile(app, mapFile, coord);
+        handles.setFill(coord, "transparent");
+        applied.push({
+          coord,
+          rollback: async () => {
+            if (!previousData) return;
+            await saveTile(app, mapFile, coord, previousData);
+          },
+          restoreFill: () => {
+            handles.setFill(coord, previousFill);
+          }
+        });
+        continue;
+      }
+      const terrain = opts.terrain ?? "";
+      const region = opts.region ?? "";
+      await saveTile(app, mapFile, coord, { terrain, region });
+      const color = TERRAIN_COLORS[terrain] ?? "transparent";
+      handles.setFill(coord, color);
+      applied.push({
+        coord,
+        rollback: async () => {
+          if (!previousData) {
+            await deleteTile(app, mapFile, coord);
+            return;
+          }
+          await saveTile(app, mapFile, coord, previousData);
+        },
+        restoreFill: () => {
+          handles.setFill(coord, previousFill);
+        }
+      });
+      throwIfAborted();
+    }
+  } catch (error) {
+    const aborted = isAbortError(error);
+    if (!aborted) {
+      console.error("[terrain-brush] applyBrush failed", error);
+    }
+    for (const step of applied.reverse()) {
+      try {
+        step.restoreFill();
+      } catch (restoreErr) {
+        console.error("[terrain-brush] failed to restore hex fill", restoreErr);
+      }
+      try {
+        await step.rollback();
+      } catch (rollbackErr) {
+        console.error("[terrain-brush] failed to rollback tile changes", rollbackErr);
+      }
+    }
+    if (!aborted) {
+      const message = reportEditorToolIssue({
+        stage: "operation",
+        toolId: toolName ?? "brush",
+        error
+      });
+      if (typeof error === "object" && error) {
+        error.__smToolMessage = message;
+      }
+      try {
+        tool?.setStatus?.(message);
+      } catch (statusErr) {
+        console.error("[terrain-brush] failed to publish tool status", statusErr);
+      }
+      throw error;
+    }
+  }
+}
+var oddRToAxial, axialDistance, hexDistanceOddR, coordsInRadius, ABORT_ERROR_NAME, createAbortError, isAbortError;
+var init_brush_core = __esm({
+  "src/apps/cartographer/editor/tools/terrain-brush/brush-core.ts"() {
+    "use strict";
+    init_hex_notes();
+    init_terrain();
+    init_editor_telemetry();
+    oddRToAxial = (rc) => {
+      const q = rc.c - (rc.r - (rc.r & 1) >> 1);
+      return { q, r: rc.r };
+    };
+    axialDistance = (a, b) => {
+      const dq = Math.abs(a.q - b.q);
+      const dr = Math.abs(a.r - b.r);
+      const ds = Math.abs(-a.q - a.r - (-b.q - b.r));
+      return Math.max(dq, dr, ds);
+    };
+    hexDistanceOddR = (a, b) => {
+      return axialDistance(oddRToAxial(a), oddRToAxial(b));
+    };
+    coordsInRadius = (center, radius) => {
+      const out = [];
+      for (let dr = -radius; dr <= radius; dr++) {
+        for (let dc = -radius; dc <= radius; dc++) {
+          const r = center.r + dr;
+          const c = center.c + dc + (center.r & 1 ? Math.floor((dr + 1) / 2) : Math.floor(dr / 2));
+          if (hexDistanceOddR(center, { r, c }) <= radius) {
+            out.push({ r, c });
+          }
+        }
+      }
+      out.sort((A, B) => {
+        const da = hexDistanceOddR(center, A);
+        const db = hexDistanceOddR(center, B);
+        if (da !== db) return da - db;
+        if (A.r !== B.r) return A.r - B.r;
+        return A.c - B.c;
+      });
+      return out;
+    };
+    ABORT_ERROR_NAME = "AbortError";
+    createAbortError = () => {
+      if (typeof DOMException === "function") {
+        return new DOMException("Terrain brush application aborted", ABORT_ERROR_NAME);
+      }
+      const error = new Error("Terrain brush application aborted");
+      error.name = ABORT_ERROR_NAME;
+      return error;
+    };
+    isAbortError = (error) => {
+      if (!error) return false;
+      if (typeof DOMException === "function" && error instanceof DOMException) {
+        return error.name === ABORT_ERROR_NAME;
+      }
+      return error instanceof Error && error.name === ABORT_ERROR_NAME;
+    };
+  }
+});
+
+// src/ui/form-builder.ts
+function buildForm(root, config) {
+  const controls = /* @__PURE__ */ new Map();
+  const elements = /* @__PURE__ */ new Map();
+  const containers = /* @__PURE__ */ new Map();
+  const hints = /* @__PURE__ */ new Map();
+  const statuses = /* @__PURE__ */ new Map();
+  const cleanup = [];
+  const createRow = (section) => {
+    const row = createElement("div");
+    applyClasses(row, section.rowCls ?? "sm-row");
+    const label = createElement("label");
+    label.textContent = section.label;
+    applyClasses(label, section.labelCls);
+    row.appendChild(label);
+    section.controls.forEach((control, index) => {
+      if (control.kind === "select") {
+        const select = createElement("select", control.cls);
+        applyAttributes(select, control.attr);
+        if (control.options) {
+          for (const option of control.options) {
+            const opt = document.createElement("option");
+            opt.text = option.label;
+            opt.value = option.value;
+            if (option.data) {
+              for (const [key, value] of Object.entries(option.data)) {
+                opt.dataset[key] = value;
+              }
+            }
+            select.appendChild(opt);
+          }
+        }
+        if (typeof control.value === "string") {
+          select.value = control.value;
+        }
+        select.disabled = Boolean(control.disabled);
+        select.id = control.id;
+        const handler = (event) => {
+          control.onChange?.({ value: select.value, element: select, event });
+        };
+        select.addEventListener("change", handler);
+        cleanup.push(() => select.removeEventListener("change", handler));
+        row.appendChild(select);
+        control.enhance?.(select);
+        const handle = {
+          kind: "select",
+          element: select,
+          setOptions(options) {
+            select.innerHTML = "";
+            for (const option of options) {
+              const opt = document.createElement("option");
+              opt.text = option.label;
+              opt.value = option.value;
+              if (option.data) {
+                for (const [key, value] of Object.entries(option.data)) {
+                  opt.dataset[key] = value;
+                }
+              }
+              select.appendChild(opt);
+            }
+          },
+          setValue(value) {
+            select.value = value;
+          },
+          getValue() {
+            return select.value;
+          },
+          setDisabled(disabled) {
+            select.disabled = disabled;
+          }
+        };
+        controls.set(control.id, handle);
+        if (index === 0) {
+          label.htmlFor = control.id;
+        }
+      } else if (control.kind === "slider") {
+        const input = createElement("input", control.cls);
+        applyAttributes(input, control.attr);
+        input.type = "range";
+        input.min = String(control.min);
+        input.max = String(control.max);
+        input.step = String(control.step ?? 1);
+        input.value = String(control.value);
+        input.disabled = Boolean(control.disabled);
+        input.id = control.id;
+        const valueFormatter = control.valueFormatter ?? ((value) => String(value));
+        let valueEl = null;
+        const showValue = control.showValue !== false;
+        if (showValue) {
+          valueEl = createElement("span");
+          valueEl.textContent = valueFormatter(Number(input.value));
+        }
+        const handleInput = (event) => {
+          const value = Number(input.value);
+          if (valueEl) valueEl.textContent = valueFormatter(value);
+          control.onInput?.({ value, element: input, event });
+        };
+        const handleChange = (event) => {
+          const value = Number(input.value);
+          if (valueEl) valueEl.textContent = valueFormatter(value);
+          control.onChange?.({ value, element: input, event });
+        };
+        input.addEventListener("input", handleInput);
+        input.addEventListener("change", handleChange);
+        cleanup.push(() => {
+          input.removeEventListener("input", handleInput);
+          input.removeEventListener("change", handleChange);
+        });
+        row.appendChild(input);
+        if (valueEl) row.appendChild(valueEl);
+        const handle = {
+          kind: "slider",
+          element: input,
+          valueElement: valueEl,
+          setValue(value) {
+            input.value = String(value);
+            if (valueEl) valueEl.textContent = valueFormatter(value);
+          },
+          getValue() {
+            return Number(input.value);
+          },
+          setDisabled(disabled) {
+            input.disabled = disabled;
+          }
+        };
+        controls.set(control.id, handle);
+        if (index === 0) {
+          label.htmlFor = control.id;
+        }
+      } else if (control.kind === "textarea") {
+        const textarea = createElement("textarea", control.cls);
+        applyAttributes(textarea, control.attr);
+        textarea.value = control.value ?? "";
+        textarea.disabled = Boolean(control.disabled);
+        if (control.rows) textarea.rows = control.rows;
+        if (control.placeholder) textarea.placeholder = control.placeholder;
+        textarea.id = control.id;
+        const handleInput = (event) => {
+          control.onInput?.({ value: textarea.value, element: textarea, event });
+        };
+        textarea.addEventListener("input", handleInput);
+        cleanup.push(() => textarea.removeEventListener("input", handleInput));
+        row.appendChild(textarea);
+        const handle = {
+          kind: "textarea",
+          element: textarea,
+          setValue(value) {
+            textarea.value = value;
+          },
+          getValue() {
+            return textarea.value;
+          },
+          setDisabled(disabled) {
+            textarea.disabled = disabled;
+          }
+        };
+        controls.set(control.id, handle);
+        if (index === 0) {
+          label.htmlFor = control.id;
+        }
+      } else if (control.kind === "button") {
+        const button = createElement("button", control.cls);
+        applyAttributes(button, control.attr);
+        button.type = "button";
+        button.textContent = control.label;
+        button.disabled = Boolean(control.disabled);
+        button.id = control.id;
+        const handler = (event) => {
+          control.onClick?.({ element: button, event });
+        };
+        button.addEventListener("click", handler);
+        cleanup.push(() => button.removeEventListener("click", handler));
+        row.appendChild(button);
+        const handle = {
+          kind: "button",
+          element: button,
+          setDisabled(disabled) {
+            button.disabled = disabled;
+          }
+        };
+        controls.set(control.id, handle);
+      }
+    });
+    root.appendChild(row);
+  };
+  const createHint = (section) => {
+    const hint = createElement("p", section.cls ?? "sm-inline-hint");
+    const handle = {
+      element: hint,
+      set(details) {
+        if (!details || !details.text) {
+          hint.style.display = "none";
+          hint.textContent = "";
+          hint.removeAttribute("data-tone");
+          return;
+        }
+        hint.style.display = "";
+        hint.textContent = details.text;
+        if (details.tone) {
+          hint.setAttribute("data-tone", details.tone);
+        } else {
+          hint.removeAttribute("data-tone");
+        }
+      }
+    };
+    if (section.hidden !== false) {
+      hint.style.display = "none";
+    }
+    if (section.tone) {
+      hint.setAttribute("data-tone", section.tone);
+    }
+    root.appendChild(hint);
+    hints.set(section.id, handle);
+  };
+  const createStatus = (section) => {
+    const status = createElement("div", section.cls);
+    const handle = {
+      element: status,
+      set(details) {
+        const message = details?.message ?? "";
+        status.textContent = message;
+        status.classList.toggle("is-empty", !message);
+        status.classList.toggle("is-loading", details?.tone === "loading");
+        status.classList.toggle("is-error", details?.tone === "error");
+      }
+    };
+    status.classList.add("is-empty");
+    root.appendChild(status);
+    statuses.set(section.id, handle);
+  };
+  for (const section of config.sections) {
+    switch (section.kind) {
+      case "header": {
+        const level = section.level ?? 3;
+        const header = createElement(`h${level}`, section.cls);
+        header.textContent = section.text;
+        root.appendChild(header);
+        break;
+      }
+      case "row": {
+        createRow(section);
+        break;
+      }
+      case "static": {
+        const tag = section.tag ?? "div";
+        const el = createElement(tag, section.cls);
+        if (section.text) el.textContent = section.text;
+        root.appendChild(el);
+        elements.set(section.id, el);
+        break;
+      }
+      case "hint": {
+        createHint(section);
+        break;
+      }
+      case "status": {
+        createStatus(section);
+        break;
+      }
+      case "container": {
+        const tag = section.tag ?? "div";
+        const el = createElement(tag, section.cls);
+        root.appendChild(el);
+        containers.set(section.id, el);
+        break;
+      }
+    }
+  }
+  return {
+    root,
+    getControl(id) {
+      return controls.get(id) ?? null;
+    },
+    getElement(id) {
+      return elements.get(id) ?? null;
+    },
+    getContainer(id) {
+      return containers.get(id) ?? null;
+    },
+    getHint(id) {
+      return hints.get(id) ?? null;
+    },
+    getStatus(id) {
+      return statuses.get(id) ?? null;
+    },
+    destroy() {
+      cleanup.forEach((fn) => {
+        try {
+          fn();
+        } catch (err) {
+          console.error("[form-builder] cleanup failed", err);
+        }
+      });
+      cleanup.length = 0;
+    }
+  };
+}
+var applyClasses, createElement, applyAttributes;
+var init_form_builder = __esm({
+  "src/ui/form-builder.ts"() {
+    "use strict";
+    applyClasses = (el, cls) => {
+      if (!cls) return;
+      const values = Array.isArray(cls) ? cls : cls.split(/\s+/).filter(Boolean);
+      for (const value of values) {
+        el.classList.add(value);
+      }
+    };
+    createElement = (tag, cls) => {
+      const el = document.createElement(tag);
+      applyClasses(el, cls);
+      return el;
+    };
+    applyAttributes = (el, attr) => {
+      if (!attr) return;
+      for (const [key, value] of Object.entries(attr)) {
+        el.setAttribute(key, value);
+      }
+    };
+  }
+});
+
+// src/apps/cartographer/editor/tools/terrain-brush/brush-options.ts
+function mountBrushPanel(root, ctx) {
+  const state = {
+    radius: 1,
+    region: "",
+    terrain: "",
+    mode: "paint"
+  };
+  const effectiveRadius = () => Math.max(0, state.radius - 1);
+  let disposed = false;
+  let fillSeq = 0;
+  let circle = null;
+  let panelDisabled = false;
+  let manageCommandAvailable = false;
+  let radiusControl = null;
+  let regionControl = null;
+  let modeControl = null;
+  let manageButton = null;
+  let inlineHint = null;
+  let manageHint = null;
+  const setPanelDisabled = (disabled) => {
+    panelDisabled = disabled;
+    if (disabled) {
+      root.classList.add("is-disabled");
+    } else {
+      root.classList.remove("is-disabled");
+    }
+    radiusControl?.setDisabled(disabled);
+    regionControl?.setDisabled(disabled);
+    modeControl?.setDisabled(disabled);
+    manageButton?.setDisabled(disabled || !manageCommandAvailable);
+  };
+  const updateStatus = (message) => {
+    try {
+      ctx.setStatus(message);
+    } catch (err) {
+      console.error("[terrain-brush] failed to set status", err);
+    }
+  };
+  const form = buildForm(root, {
+    sections: [
+      { kind: "header", text: "Region Brush" },
+      { kind: "hint", id: "inline", cls: "sm-inline-hint", hidden: true },
+      {
+        kind: "row",
+        label: "Radius:",
+        controls: [
+          {
+            kind: "slider",
+            id: "radius",
+            min: 1,
+            max: 6,
+            step: 1,
+            value: state.radius,
+            valueFormatter: (value) => String(value),
+            onInput: ({ value }) => {
+              state.radius = value;
+              circle?.updateRadius(effectiveRadius());
+            }
+          }
+        ]
+      },
+      {
+        kind: "row",
+        label: "Region:",
+        controls: [
+          {
+            kind: "select",
+            id: "region",
+            options: [],
+            enhance: (select) => enhanceSelectToSearch(select, "Search dropdown\u2026"),
+            onChange: ({ element }) => {
+              state.region = element.value;
+              const opt = element.selectedOptions[0];
+              state.terrain = opt?.dataset?.terrain ?? "";
+            }
+          },
+          {
+            kind: "button",
+            id: "manage",
+            label: "Manage\u2026"
+          }
+        ]
+      },
+      { kind: "hint", id: "manageHint", cls: "sm-inline-hint", hidden: true },
+      {
+        kind: "row",
+        label: "Mode:",
+        controls: [
+          {
+            kind: "select",
+            id: "mode",
+            value: state.mode,
+            options: [
+              { label: "Paint", value: "paint" },
+              { label: "Erase", value: "erase" }
+            ],
+            enhance: (select) => enhanceSelectToSearch(select, "Search dropdown\u2026"),
+            onChange: ({ element }) => {
+              state.mode = element.value;
+            }
+          }
+        ]
+      }
+    ]
+  });
+  radiusControl = form.getControl("radius");
+  regionControl = form.getControl("region");
+  modeControl = form.getControl("mode");
+  manageButton = form.getControl("manage");
+  inlineHint = form.getHint("inline");
+  manageHint = form.getHint("manageHint");
+  const applyInlineHint = (details) => {
+    inlineHint?.set(details ? { text: details.text, tone: details.tone } : null);
+  };
+  const applyManageHint = (details) => {
+    manageHint?.set(details ? { text: details.text, tone: details.tone } : null);
+  };
+  const handleManageClick = () => {
+    if (!manageCommandAvailable) {
+      updateStatus("The Library command is unavailable. Follow the manual steps below to add regions.");
+      return;
+    }
+    try {
+      const result = ctx.app.commands?.executeCommandById?.(MANAGE_REGIONS_COMMAND_ID);
+      if (result instanceof Promise) {
+        result.catch((err) => handleManageError(err));
+        updateStatus("Opening the Library to manage regions\u2026");
+      } else if (result === false) {
+        handleManageError();
+      } else {
+        updateStatus("Opening the Library to manage regions\u2026");
+      }
+    } catch (err) {
+      handleManageError(err);
+    }
+  };
+  const refreshManageCommandAvailability = () => {
+    const commandsApi = ctx.app.commands;
+    manageCommandAvailable = Boolean(
+      commandsApi?.executeCommandById && commandsApi?.commands?.[MANAGE_REGIONS_COMMAND_ID]
+    );
+    manageButton?.setDisabled(panelDisabled || !manageCommandAvailable);
+    if (manageButton) {
+      manageButton.element.classList.toggle("is-missing-command", !manageCommandAvailable);
+    }
+    if (!manageCommandAvailable) {
+      applyManageHint({
+        text: "The \u201COpen Library\u201D command is unavailable. Open the Library view from the ribbon (book icon) and add Region entries under Library \u2192 Regions, then refresh this list.",
+        tone: "warning"
+      });
+    } else {
+      applyManageHint(null);
+    }
+  };
+  const handleManageError = (err) => {
+    if (err) {
+      console.error("[terrain-brush] failed to open Library command", err);
+    }
+    applyManageHint({
+      text: "Opening the Library command failed. Use the ribbon icon to open the Library manually and add Region entries under Library \u2192 Regions before refreshing.",
+      tone: "error"
+    });
+    updateStatus("Failed to open the Library command. Check the console for details.");
+  };
+  if (manageButton) {
+    manageButton.element.addEventListener("click", handleManageClick);
+  }
+  refreshManageCommandAvailability();
+  const fillOptions = async (reason) => {
+    const seq = ++fillSeq;
+    setPanelDisabled(true);
+    applyInlineHint({
+      text: reason === "initial" ? "Loading regions\u2026" : "Refreshing regions\u2026",
+      tone: "loading"
+    });
+    updateStatus(reason === "initial" ? "Loading regions\u2026" : "Refreshing regions\u2026");
+    let regions = [];
+    try {
+      regions = await loadRegions(ctx.app);
+    } catch (err) {
+      console.error("[terrain-brush] failed to load regions", err);
+      if (seq === fillSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
+        regionControl?.setOptions([]);
+        state.region = "";
+        state.terrain = "";
+        applyInlineHint({
+          text: "Regions could not be loaded. Please retry once your vault is synced.",
+          tone: "error"
+        });
+        updateStatus("Failed to load regions. Check the console for details.");
+      }
+      return;
+    } finally {
+      if (seq === fillSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
+        setPanelDisabled(false);
+        refreshManageCommandAvailability();
+      }
+    }
+    if (disposed || ctx.getAbortSignal()?.aborted || seq !== fillSeq) {
+      return;
+    }
+    regionControl?.setOptions([
+      { label: "(none)", value: "" },
+      ...regions.map((r) => ({
+        label: r.name || "(unnamed)",
+        value: r.name ?? "",
+        data: r.terrain ? { terrain: r.terrain } : void 0
+      }))
+    ]);
+    const regionSelect = regionControl?.element;
+    if (!regionSelect) return;
+    let matchedTerrain = state.terrain;
+    let matchedRegion = state.region;
+    let preservedSelection = false;
+    for (const opt of Array.from(regionSelect.options)) {
+      if (!opt.value) continue;
+      if (opt.value === state.region) {
+        matchedRegion = opt.value;
+        matchedTerrain = opt.dataset.terrain ?? "";
+        preservedSelection = true;
+        break;
+      }
+    }
+    if (state.region && !preservedSelection) {
+      state.region = "";
+      state.terrain = "";
+      regionControl.setValue("");
+      applyInlineHint({
+        text: "The previously selected region is no longer available and was cleared.",
+        tone: "warning"
+      });
+      updateStatus("Region selection cleared because the entry is missing.");
+    } else {
+      state.region = matchedRegion;
+      state.terrain = matchedTerrain;
+      regionControl.setValue(matchedRegion);
+      if (regions.length === 0) {
+        applyInlineHint({
+          text: "No regions found. Open the Library (Manage\u2026 button or ribbon icon) and add Region entries before painting.",
+          tone: "info"
+        });
+        updateStatus("No regions available yet.");
+      } else {
+        applyInlineHint(null);
+        updateStatus("Regions loaded.");
+      }
+    }
+  };
+  void fillOptions("initial");
+  const workspace = ctx.app.workspace;
+  const unsubscribe = [];
+  const subscribe = (event) => {
+    const handler = () => {
+      if (!disposed) void fillOptions("refresh");
+    };
+    const token = workspace?.on?.(event, handler);
+    if (typeof workspace?.offref === "function" && token) {
+      unsubscribe.push(() => workspace.offref(token));
+    } else if (typeof token === "function") {
+      unsubscribe.push(() => token());
+    }
+  };
+  subscribe("salt:terrains-updated");
+  subscribe("salt:regions-updated");
+  const ensureCircle = (handles, options) => {
+    if (!handles) return;
+    circle?.destroy();
+    circle = attachBrushCircle(
+      { svg: handles.svg, contentG: handles.contentG, overlay: handles.overlay },
+      { initialRadius: effectiveRadius(), hexRadiusPx: options?.radius ?? 42 }
+    );
+    circle.show();
+  };
+  const dispose = () => {
+    disposed = true;
+    fillSeq += 1;
+    unsubscribe.forEach((off) => {
+      try {
+        off();
+      } catch (err) {
+        console.error("[terrain-brush] failed to unsubscribe", err);
+      }
+    });
+    unsubscribe.length = 0;
+    if (manageButton) {
+      manageButton.element.removeEventListener("click", handleManageClick);
+    }
+    form.destroy();
+    circle?.destroy();
+    circle = null;
+    while (root.firstChild) {
+      root.removeChild(root.firstChild);
+    }
+  };
+  const handleHexClick = async (rc) => {
+    const file = ctx.getFile();
+    const handles = ctx.getHandles();
+    if (!file || !handles) return false;
+    const raw = coordsInRadius(rc, effectiveRadius());
+    const targets = [...new Map(raw.map((k) => [`${k.r},${k.c}`, k])).values()];
+    if (state.mode === "paint") {
+      const missing = targets.filter((k) => !handles.polyByCoord.has(`${k.r},${k.c}`));
+      if (missing.length) handles.ensurePolys(missing);
+    }
+    await applyBrush(
+      ctx.app,
+      file,
+      rc,
+      {
+        radius: effectiveRadius(),
+        terrain: state.terrain,
+        region: state.region,
+        mode: state.mode
+      },
+      handles,
+      {
+        tool: {
+          getAbortSignal: () => ctx.getAbortSignal(),
+          setStatus: (message) => ctx.setStatus(message)
+        },
+        toolName: TOOL_LABEL
+      }
+    );
+    return true;
+  };
+  return {
+    activate() {
+      ensureCircle(ctx.getHandles(), ctx.getOptions());
+    },
+    deactivate() {
+      circle?.destroy();
+      circle = null;
+    },
+    onMapRendered() {
+      ensureCircle(ctx.getHandles(), ctx.getOptions());
+    },
+    async handleHexClick(coord) {
+      return handleHexClick(coord);
+    },
+    setDisabled(disabled) {
+      setPanelDisabled(disabled);
+      if (disabled) {
+        circle?.destroy();
+        circle = null;
+      } else {
+        ensureCircle(ctx.getHandles(), ctx.getOptions());
+      }
+    },
+    destroy() {
+      dispose();
+    }
+  };
+}
+var MANAGE_REGIONS_COMMAND_ID, TOOL_LABEL;
+var init_brush_options = __esm({
+  "src/apps/cartographer/editor/tools/terrain-brush/brush-options.ts"() {
+    "use strict";
+    init_brush_circle();
+    init_brush_core();
+    init_regions_store();
+    init_search_dropdown();
+    init_form_builder();
+    MANAGE_REGIONS_COMMAND_ID = "salt-marcher:open-library";
+    TOOL_LABEL = "Brush";
+  }
+});
+
+// src/apps/cartographer/modes/lifecycle.ts
+function createModeLifecycle() {
+  let signal = null;
+  return {
+    bind(ctx) {
+      signal = ctx.signal;
+      return signal;
+    },
+    get() {
+      return signal;
+    },
+    isAborted() {
+      return signal?.aborted ?? false;
+    },
+    reset() {
+      signal = null;
+    }
+  };
+}
+var init_lifecycle = __esm({
+  "src/apps/cartographer/modes/lifecycle.ts"() {
+    "use strict";
+  }
+});
+
+// src/apps/cartographer/modes/editor.ts
+var editor_exports = {};
+__export(editor_exports, {
+  createEditorMode: () => createEditorMode
+});
+function createEditorMode() {
+  let panel = null;
+  let form = null;
+  let fileLabel = null;
+  let statusField = null;
+  let toolBody = null;
+  let brush = null;
+  let brushActive = false;
+  let state = {
+    file: null,
+    handles: null,
+    options: null
+  };
+  const BASE_STATUS_READY = { message: "", tone: "info" };
+  const BASE_STATUS_NO_MAP = { message: "No map selected.", tone: "info" };
+  const BASE_STATUS_LOADING = { message: "Loading map\u2026", tone: "loading" };
+  let baseStatus = BASE_STATUS_NO_MAP;
+  let contextualStatus = null;
+  let errorStatus = null;
+  const lifecycle = createModeLifecycle();
+  const applyStatus = () => {
+    if (!statusField) return;
+    const status = errorStatus ?? contextualStatus ?? baseStatus;
+    statusField.set(status);
+  };
+  const setContextualStatus = (status) => {
+    contextualStatus = status;
+    refreshPanelState();
+  };
+  const setContextualMessage = (message, tone = "info") => {
+    setContextualStatus(message ? { message, tone } : null);
+  };
+  const setErrorStatus = (status) => {
+    errorStatus = status;
+    if (status) {
+      contextualStatus = null;
+    }
+    refreshPanelState();
+  };
+  const updateFileLabel = () => {
+    if (!fileLabel) return;
+    fileLabel.textContent = state.file ? state.file.basename : "No map";
+  };
+  const ensureBrush = (ctx) => {
+    if (brush) return brush;
+    if (!toolBody) return null;
+    try {
+      brush = mountBrushPanel(toolBody, {
+        app: ctx.app,
+        getFile: () => state.file,
+        getHandles: () => state.handles,
+        getOptions: () => state.options,
+        getAbortSignal: () => lifecycle.get(),
+        setStatus: (message) => setContextualMessage(message)
+      });
+      brush.setDisabled(!state.handles || !!errorStatus);
+      return brush;
+    } catch (error) {
+      const message = reportEditorToolIssue({
+        stage: "mount-panel",
+        toolId: BRUSH_LABEL,
+        error
+      });
+      setErrorStatus({ message, tone: "error" });
+      return null;
+    }
+  };
+  const refreshPanelState = () => {
+    const hasHandles = !!state.handles;
+    baseStatus = hasHandles ? BASE_STATUS_READY : state.file ? BASE_STATUS_LOADING : BASE_STATUS_NO_MAP;
+    const toolsBlocked = !!errorStatus;
+    panel?.classList.toggle("is-disabled", !hasHandles || toolsBlocked);
+    panel?.classList.toggle("has-tool-error", toolsBlocked);
+    brush?.setDisabled(!hasHandles || toolsBlocked);
+    if (!brush || toolsBlocked || !hasHandles) {
+      if (brushActive) {
+        brush?.deactivate();
+        brushActive = false;
+      }
+    } else if (!brushActive) {
+      brush.activate();
+      brushActive = true;
+    }
+    applyStatus();
+  };
+  const isAborted = () => lifecycle.isAborted();
+  const clearHost = (host) => {
+    while (host.firstChild) {
+      host.removeChild(host.firstChild);
+    }
+  };
+  return {
+    id: "editor",
+    label: "Editor",
+    async onEnter(ctx) {
+      lifecycle.bind(ctx);
+      state = { ...state };
+      clearHost(ctx.sidebarHost);
+      panel = document.createElement("div");
+      panel.className = "sm-cartographer__panel sm-cartographer__panel--editor";
+      ctx.sidebarHost.appendChild(panel);
+      form = buildForm(panel, {
+        sections: [
+          { kind: "header", text: "Map Editor" },
+          { kind: "static", id: "file", cls: "sm-cartographer__panel-file" },
+          {
+            kind: "row",
+            label: "Tool:",
+            rowCls: "sm-cartographer__panel-tools",
+            controls: [
+              {
+                kind: "select",
+                id: "toolSelect",
+                options: [{ value: "brush", label: BRUSH_LABEL }],
+                value: "brush",
+                disabled: true,
+                enhance: (select) => enhanceSelectToSearch(select, "Search dropdown\u2026")
+              }
+            ]
+          },
+          { kind: "container", id: "toolBody", cls: "sm-cartographer__panel-body" },
+          { kind: "status", id: "status", cls: "sm-cartographer__panel-status" }
+        ]
+      });
+      fileLabel = form.getElement("file");
+      statusField = form.getStatus("status");
+      toolBody = form.getContainer("toolBody");
+      const toolSelectHandle = form.getControl("toolSelect");
+      toolSelectHandle?.setValue("brush");
+      toolSelectHandle?.setDisabled(true);
+      ensureBrush(ctx);
+      updateFileLabel();
+      refreshPanelState();
+    },
+    async onExit(ctx) {
+      lifecycle.bind(ctx);
+      brush?.destroy();
+      brush = null;
+      brushActive = false;
+      contextualStatus = null;
+      errorStatus = null;
+      baseStatus = BASE_STATUS_NO_MAP;
+      form?.destroy();
+      form = null;
+      if (panel && panel.parentElement) {
+        panel.parentElement.removeChild(panel);
+      }
+      panel = null;
+      fileLabel = null;
+      statusField = null;
+      toolBody = null;
+      lifecycle.reset();
+    },
+    async onFileChange(file, handles, ctx) {
+      lifecycle.bind(ctx);
+      state.file = file;
+      state.handles = handles;
+      state.options = ctx.getOptions();
+      updateFileLabel();
+      ensureBrush(ctx);
+      refreshPanelState();
+      if (!handles || isAborted()) return;
+      brush?.onMapRendered();
+    },
+    async onHexClick(coord, _event, ctx) {
+      lifecycle.bind(ctx);
+      if (isAborted()) return;
+      const activeBrush = ensureBrush(ctx);
+      if (!activeBrush) return;
+      try {
+        await activeBrush.handleHexClick(coord);
+      } catch (err) {
+        console.error("[editor-mode] brush interaction failed", err);
+        const message = reportEditorToolIssue({
+          stage: "operation",
+          toolId: BRUSH_LABEL,
+          error: err
+        });
+        setErrorStatus({ message, tone: "error" });
+      }
+    }
+  };
+}
+var BRUSH_LABEL;
+var init_editor = __esm({
+  "src/apps/cartographer/modes/editor.ts"() {
+    "use strict";
+    init_editor_telemetry();
+    init_brush_options();
+    init_lifecycle();
+    init_form_builder();
+    init_search_dropdown();
+    BRUSH_LABEL = "Brush";
+  }
+});
+
+// src/apps/cartographer/modes/inspector.ts
+var inspector_exports = {};
+__export(inspector_exports, {
+  createInspectorMode: () => createInspectorMode
+});
+function createInspectorMode() {
+  let ui = {
+    panel: null,
+    form: null,
+    fileLabel: null,
+    message: null,
+    terrain: null,
+    note: null
+  };
+  let state = {
+    file: null,
+    handles: null,
+    selection: null,
+    saveTimer: null
+  };
+  const lifecycle = createModeLifecycle();
+  const isAborted = () => lifecycle.isAborted();
+  const clearSaveTimer = () => {
+    if (state.saveTimer !== null) {
+      window.clearTimeout(state.saveTimer);
+      state.saveTimer = null;
+    }
+  };
+  const resetInputs = () => {
+    ui.terrain?.setValue("");
+    ui.terrain?.setDisabled(true);
+    ui.note?.setValue("");
+    ui.note?.setDisabled(true);
+  };
+  const updateMessage = () => {
+    if (!ui.message) return;
+    if (!state.file || !state.handles) {
+      ui.message.set({ message: state.file ? "Karte wird geladen \u2026" : "Keine Karte ausgew\xE4hlt.", tone: "info" });
+    } else if (!state.selection) {
+      ui.message.set({ message: "Hex anklicken, um Terrain & Notiz zu bearbeiten.", tone: "info" });
+    } else {
+      ui.message.set({ message: `Hex r${state.selection.r}, c${state.selection.c}`, tone: "info" });
+    }
+  };
+  const updateFileLabel = () => {
+    if (!ui.fileLabel) return;
+    ui.fileLabel.textContent = state.file ? state.file.basename : "Keine Karte";
+  };
+  const updatePanelState = () => {
+    const hasMap = !!state.file && !!state.handles;
+    ui.panel?.classList.toggle("is-disabled", !hasMap);
+    if (!hasMap) {
+      state.selection = null;
+      resetInputs();
+    }
+    updateMessage();
+  };
+  const scheduleSave = (ctx) => {
+    if (ctx.signal.aborted) return;
+    if (!state.selection) return;
+    const file = ctx.getFile();
+    if (!file) return;
+    const handles = ctx.getRenderHandles();
+    clearSaveTimer();
+    state.saveTimer = window.setTimeout(async () => {
+      if (ctx.signal.aborted) return;
+      const terrain = ui.terrain?.getValue() ?? "";
+      const note = ui.note?.getValue() ?? "";
+      try {
+        await saveTile(ctx.app, file, state.selection, { terrain, note });
+      } catch (err) {
+        console.error("[inspector-mode] saveTile failed", err);
+      }
+      const color = TERRAIN_COLORS[terrain] ?? "transparent";
+      try {
+        handles?.setFill(state.selection, color);
+      } catch (err) {
+        console.error("[inspector-mode] setFill failed", err);
+      }
+    }, 250);
+  };
+  const loadSelection = async (ctx) => {
+    if (!state.selection) return;
+    const file = ctx.getFile();
+    if (!file) return;
+    let data = null;
+    try {
+      data = await loadTile(ctx.app, file, state.selection);
+    } catch (err) {
+      console.error("[inspector-mode] loadTile failed", err);
+      data = null;
+    }
+    if (ctx.signal.aborted) return;
+    ui.terrain?.setValue(data?.terrain ?? "");
+    ui.terrain?.setDisabled(false);
+    ui.note?.setValue(data?.note ?? "");
+    ui.note?.setDisabled(false);
+    updateMessage();
+  };
+  const clearHost = (host) => {
+    while (host.firstChild) {
+      host.removeChild(host.firstChild);
+    }
+  };
+  return {
+    id: "inspector",
+    label: "Inspector",
+    async onEnter(ctx) {
+      lifecycle.bind(ctx);
+      ui = { panel: null, form: null, fileLabel: null, message: null, terrain: null, note: null };
+      state = { ...state, selection: null };
+      clearHost(ctx.sidebarHost);
+      ui.panel = document.createElement("div");
+      ui.panel.className = "sm-cartographer__panel sm-cartographer__panel--inspector";
+      ctx.sidebarHost.appendChild(ui.panel);
+      ui.form = buildForm(ui.panel, {
+        sections: [
+          { kind: "header", text: "Inspektor" },
+          { kind: "static", id: "file", cls: "sm-cartographer__panel-file" },
+          { kind: "status", id: "message", cls: "sm-cartographer__panel-info" },
+          {
+            kind: "row",
+            label: "Terrain:",
+            rowCls: "sm-cartographer__panel-row",
+            controls: [
+              {
+                kind: "select",
+                id: "terrain",
+                options: Object.keys(TERRAIN_COLORS).map((key) => ({
+                  value: key,
+                  label: key || "(leer)"
+                })),
+                disabled: true,
+                enhance: (select) => enhanceSelectToSearch(select, "Such-dropdown\u2026"),
+                onChange: () => scheduleSave(ctx)
+              }
+            ]
+          },
+          {
+            kind: "row",
+            label: "Notiz:",
+            rowCls: "sm-cartographer__panel-row",
+            controls: [
+              {
+                kind: "textarea",
+                id: "note",
+                rows: 6,
+                disabled: true,
+                onInput: () => scheduleSave(ctx)
+              }
+            ]
+          }
+        ]
+      });
+      ui.fileLabel = ui.form.getElement("file");
+      ui.message = ui.form.getStatus("message");
+      ui.terrain = ui.form.getControl("terrain");
+      ui.note = ui.form.getControl("note");
+      updateFileLabel();
+      updatePanelState();
+    },
+    async onExit(ctx) {
+      lifecycle.bind(ctx);
+      clearSaveTimer();
+      ui.form?.destroy();
+      ui.panel?.remove();
+      ui = { panel: null, form: null, fileLabel: null, message: null, terrain: null, note: null };
+      state = { file: null, handles: null, selection: null, saveTimer: null };
+      lifecycle.reset();
+    },
+    async onFileChange(file, handles, ctx) {
+      lifecycle.bind(ctx);
+      state.file = file;
+      state.handles = handles;
+      clearSaveTimer();
+      resetInputs();
+      updateFileLabel();
+      updatePanelState();
+      if (state.selection && state.file && state.handles && !isAborted()) {
+        await loadSelection(ctx);
+      }
+    },
+    async onHexClick(coord, _event, ctx) {
+      lifecycle.bind(ctx);
+      if (isAborted()) return;
+      if (!state.file || !state.handles) return;
+      clearSaveTimer();
+      state.selection = coord;
+      updateMessage();
+      if (isAborted()) return;
+      await loadSelection(ctx);
+    }
+  };
+}
+var init_inspector = __esm({
+  "src/apps/cartographer/modes/inspector.ts"() {
+    "use strict";
+    init_hex_notes();
+    init_terrain();
+    init_search_dropdown();
+    init_lifecycle();
+    init_form_builder();
+  }
+});
+
 // src/app/main.ts
 var main_exports = {};
 __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian24 = require("obsidian");
-init_view();
+var import_obsidian27 = require("obsidian");
 
 // src/apps/cartographer/index.ts
-var import_obsidian15 = require("obsidian");
+var import_obsidian17 = require("obsidian");
 
-// src/apps/cartographer/presenter.ts
+// src/apps/cartographer/controller.ts
+var import_obsidian16 = require("obsidian");
 init_options();
 init_map_list();
 
@@ -4662,13 +5298,13 @@ async function createMapLayer(app, host, mapFile, opts) {
 }
 
 // src/ui/map-manager.ts
-var import_obsidian8 = require("obsidian");
+var import_obsidian7 = require("obsidian");
 init_map_workflows();
 
 // src/ui/confirm-delete.ts
-var import_obsidian7 = require("obsidian");
+var import_obsidian6 = require("obsidian");
 init_copy();
-var ConfirmDeleteModal = class extends import_obsidian7.Modal {
+var ConfirmDeleteModal = class extends import_obsidian6.Modal {
   constructor(app, mapFile, onConfirm) {
     super(app);
     this.mapFile = mapFile;
@@ -4691,7 +5327,7 @@ var ConfirmDeleteModal = class extends import_obsidian7.Modal {
     const btnRow = contentEl.createDiv({ cls: "modal-button-container" });
     const cancelBtn = btnRow.createEl("button", { text: CONFIRM_DELETE_COPY.buttons.cancel });
     const confirmBtn = btnRow.createEl("button", { text: CONFIRM_DELETE_COPY.buttons.confirm });
-    (0, import_obsidian7.setIcon)(confirmBtn, "trash");
+    (0, import_obsidian6.setIcon)(confirmBtn, "trash");
     confirmBtn.classList.add("mod-warning");
     confirmBtn.disabled = true;
     input.addEventListener("input", () => {
@@ -4702,10 +5338,10 @@ var ConfirmDeleteModal = class extends import_obsidian7.Modal {
       confirmBtn.disabled = true;
       try {
         await this.onConfirm();
-        new import_obsidian7.Notice(CONFIRM_DELETE_COPY.notices.success);
+        new import_obsidian6.Notice(CONFIRM_DELETE_COPY.notices.success);
       } catch (e) {
         console.error(e);
-        new import_obsidian7.Notice(CONFIRM_DELETE_COPY.notices.error);
+        new import_obsidian6.Notice(CONFIRM_DELETE_COPY.notices.error);
       } finally {
         this.close();
       }
@@ -4779,7 +5415,7 @@ function createMapManager(app, options = {}) {
   const deleteCurrent = () => {
     const target = current;
     if (!target) {
-      new import_obsidian8.Notice(notices.missingSelection);
+      new import_obsidian7.Notice(notices.missingSelection);
       return;
     }
     new ConfirmDeleteModal(app, target, async () => {
@@ -4790,7 +5426,7 @@ function createMapManager(app, options = {}) {
         }
       } catch (error) {
         console.error(MAP_MANAGER_COPY.logs.deleteFailed, error);
-        new import_obsidian8.Notice(notices.deleteFailed);
+        new import_obsidian7.Notice(notices.deleteFailed);
       }
     }).open();
   };
@@ -4804,7 +5440,7 @@ function createMapManager(app, options = {}) {
 }
 
 // src/ui/map-header.ts
-var import_obsidian9 = require("obsidian");
+var import_obsidian8 = require("obsidian");
 init_map_workflows();
 init_search_dropdown();
 
@@ -4860,7 +5496,7 @@ function createMapHeader(app, host, options) {
     titleRightSlot.style.display = "none";
   }
   const openBtn = row1.createEl("button", { text: labels.open });
-  (0, import_obsidian9.setIcon)(openBtn, "folder-open");
+  (0, import_obsidian8.setIcon)(openBtn, "folder-open");
   applyMapButtonStyle(openBtn);
   openBtn.onclick = () => {
     if (destroyed) return;
@@ -4871,7 +5507,7 @@ function createMapHeader(app, host, options) {
     });
   };
   const createBtn = row1.createEl("button", { text: labels.create });
-  (0, import_obsidian9.setIcon)(createBtn, "plus");
+  (0, import_obsidian8.setIcon)(createBtn, "plus");
   applyMapButtonStyle(createBtn);
   createBtn.onclick = () => {
     if (destroyed) return;
@@ -4883,12 +5519,12 @@ function createMapHeader(app, host, options) {
   };
   const deleteBtn = options.onDelete ? row1.createEl("button", { text: labels.delete, attr: { "aria-label": labels.delete } }) : null;
   if (deleteBtn) {
-    (0, import_obsidian9.setIcon)(deleteBtn, "trash");
+    (0, import_obsidian8.setIcon)(deleteBtn, "trash");
     applyMapButtonStyle(deleteBtn);
     deleteBtn.onclick = () => {
       if (destroyed) return;
       if (!currentFile) {
-        new import_obsidian9.Notice(notices.missingFile);
+        new import_obsidian8.Notice(notices.missingFile);
         return;
       }
       void options.onDelete?.(currentFile);
@@ -4924,7 +5560,7 @@ function createMapHeader(app, host, options) {
     const file = currentFile;
     if (!file) {
       await options.onSave?.(mode, null);
-      new import_obsidian9.Notice(notices.missingFile);
+      new import_obsidian8.Notice(notices.missingFile);
       return;
     }
     try {
@@ -4933,10 +5569,10 @@ function createMapHeader(app, host, options) {
         if (mode === "save") await saveMap(app, file);
         else await saveMapAs(app, file);
       }
-      new import_obsidian9.Notice(notices.saveSuccess);
+      new import_obsidian8.Notice(notices.saveSuccess);
     } catch (err) {
       console.error("[map-header] save failed", err);
-      new import_obsidian9.Notice(notices.saveError);
+      new import_obsidian8.Notice(notices.saveError);
     }
   };
   function setFileLabel(file) {
@@ -4964,27 +5600,6 @@ function createMapHeader(app, host, options) {
   }
   setFileLabel(currentFile);
   return { root, secondaryLeftSlot, titleRightSlot, setFileLabel, setTitle, destroy };
-}
-
-// src/apps/cartographer/view-shell/layout.ts
-function createCartographerLayout(host) {
-  host.empty();
-  host.addClass("sm-cartographer");
-  const headerHost = host.createDiv({ cls: "sm-cartographer__header" });
-  const bodyHost = host.createDiv({ cls: "sm-cartographer__body" });
-  const mapWrapper = bodyHost.createDiv({ cls: "sm-cartographer__map" });
-  const sidebarHost = bodyHost.createDiv({ cls: "sm-cartographer__sidebar" });
-  return {
-    host,
-    headerHost,
-    bodyHost,
-    mapWrapper,
-    sidebarHost,
-    destroy: () => {
-      host.empty();
-      host.removeClass("sm-cartographer");
-    }
-  };
 }
 
 // src/ui/view-container.ts
@@ -5122,239 +5737,422 @@ function createViewContainer(parent, options = {}) {
   };
 }
 
-// src/apps/cartographer/view-shell/map-surface.ts
-function createMapSurface(container) {
-  const view = createViewContainer(container, { camera: false });
-  const mapHost = view.stageEl;
-  return {
-    containerEl: container,
-    view,
-    mapHost,
-    setOverlay: (content) => {
-      view.setOverlay(content);
-    },
-    clear: () => {
-      mapHost.empty();
-    },
-    destroy: () => {
-      view.destroy();
-      container.empty();
+// src/apps/cartographer/controller.ts
+var DEFAULT_MODE_DESCRIPTORS = [
+  {
+    id: "travel",
+    label: "Travel",
+    async load() {
+      const { createTravelGuideMode: createTravelGuideMode2 } = await Promise.resolve().then(() => (init_travel_guide(), travel_guide_exports));
+      return createTravelGuideMode2();
     }
-  };
-}
-
-// src/apps/cartographer/view-shell/mode-controller.ts
-function createModeController(options) {
-  const { onSwitch } = options;
-  let currentController = null;
-  let destroyed = false;
-  let sequence = 0;
-  const abortActive = () => {
-    if (currentController) {
-      currentController.abort();
-      currentController = null;
+  },
+  {
+    id: "editor",
+    label: "Editor",
+    async load() {
+      const { createEditorMode: createEditorMode2 } = await Promise.resolve().then(() => (init_editor(), editor_exports));
+      return createEditorMode2();
     }
-  };
-  const requestMode = async (modeId) => {
-    if (destroyed) return;
-    sequence += 1;
-    const token = sequence;
-    if (currentController) {
-      currentController.abort();
+  },
+  {
+    id: "inspector",
+    label: "Inspector",
+    async load() {
+      const { createInspectorMode: createInspectorMode2 } = await Promise.resolve().then(() => (init_inspector(), inspector_exports));
+      return createInspectorMode2();
     }
-    const controller = new AbortController();
-    currentController = controller;
-    try {
-      await onSwitch(modeId, { signal: controller.signal });
-    } catch (error) {
-      if (!controller.signal.aborted) {
-        throw error;
-      }
-    } finally {
-      if (currentController === controller && token === sequence) {
-        currentController = null;
-      }
-    }
-  };
-  const destroy = () => {
-    if (destroyed) return;
-    destroyed = true;
-    abortActive();
-  };
-  return {
-    requestMode,
-    abortActive,
-    destroy
-  };
-}
-
-// src/apps/cartographer/view-shell/mode-registry.ts
-function createModeRegistry(options) {
-  const { host, onSelect } = options;
-  host.addClass("sm-cartographer__mode-switch");
-  const dropdown = host.createDiv({ cls: "sm-mode-dropdown" });
-  const trigger = dropdown.createEl("button", {
-    text: options.initialLabel ?? "Mode",
-    attr: { type: "button", "aria-haspopup": "listbox", "aria-expanded": "false" }
-  });
-  trigger.addClass("sm-mode-dropdown__trigger");
-  const menu = dropdown.createDiv({ cls: "sm-mode-dropdown__menu", attr: { role: "listbox" } });
-  const entries = /* @__PURE__ */ new Map();
-  let activeId = null;
-  let unbindOutsideClick = null;
-  let destroyed = false;
-  const closeMenu = () => {
-    dropdown.removeClass("is-open");
-    trigger.setAttr("aria-expanded", "false");
-    if (unbindOutsideClick) {
-      unbindOutsideClick();
-      unbindOutsideClick = null;
-    }
-  };
-  const openMenu = () => {
-    dropdown.addClass("is-open");
-    trigger.setAttr("aria-expanded", "true");
-    const onDocClick = (event) => {
-      if (!dropdown.contains(event.target)) closeMenu();
+  }
+];
+var createDefaultDeps = (app) => ({
+  createMapManager: (appInstance, options) => createMapManager(appInstance, options),
+  createMapLayer: (appInstance, host, file, opts) => createMapLayer(appInstance, host, file, opts),
+  loadHexOptions: async (appInstance, file) => {
+    const block = await getFirstHexBlock(appInstance, file);
+    if (!block) return null;
+    return parseOptions(block);
+  },
+  modeDescriptors: DEFAULT_MODE_DESCRIPTORS
+});
+var MODE_PROVISION_OVERLAY_MESSAGE = "Cartographer-Modi konnten nicht geladen werden.";
+var MODE_PROVISION_NOTICE_MESSAGE = "Cartographer-Modi konnten nicht geladen werden. Bitte die Konsole pr\xFCfen.";
+var DEFAULT_MODE_LABEL = "Mode";
+var CartographerController = class {
+  constructor(app, deps) {
+    this.host = null;
+    this.view = null;
+    this.mapManager = null;
+    this.currentFile = null;
+    this.currentOptions = null;
+    this.mapLayer = null;
+    this.requestedFile = null;
+    this.isMounted = false;
+    this.activeMode = null;
+    this.lifecycle = null;
+    this.shellModes = [];
+    this.app = app;
+    const defaults = createDefaultDeps(app);
+    this.deps = {
+      ...defaults,
+      ...deps,
+      modeDescriptors: deps?.modeDescriptors ?? defaults.modeDescriptors
     };
-    document.addEventListener("mousedown", onDocClick);
-    unbindOutsideClick = () => document.removeEventListener("mousedown", onDocClick);
-  };
-  trigger.onclick = () => {
-    const isOpen = dropdown.classList.contains("is-open");
-    if (isOpen) closeMenu();
-    else openMenu();
-  };
-  const updateActive = () => {
-    for (const entry of entries.values()) {
-      const isActive = entry.mode.id === activeId;
-      entry.button.classList.toggle("is-active", isActive);
-      entry.button.ariaSelected = isActive ? "true" : "false";
-    }
-  };
-  const ensureEntry = (mode) => {
-    const button = menu.createEl("button", {
-      text: mode.label,
-      attr: { role: "option", type: "button", "data-id": mode.id }
+    this.callbacks = {
+      onModeSelect: (id, ctx) => this.setMode(id, ctx),
+      onOpen: async (file) => {
+        await this.mapManager?.setFile(file);
+      },
+      onCreate: async (file) => {
+        await this.mapManager?.setFile(file);
+      },
+      onDelete: async () => {
+        this.mapManager?.deleteCurrent();
+      },
+      onSave: async (mode, file) => {
+        return await this.handleSave(mode, file);
+      },
+      onHexClick: async (coord, event) => {
+        await this.handleHexClick(coord, event);
+      }
+    };
+  }
+  async onOpen(host, fallbackFile) {
+    await this.onClose();
+    this.host = host;
+    this.isMounted = true;
+    const initialFile = this.requestedFile ?? fallbackFile ?? null;
+    this.currentFile = initialFile;
+    this.requestedFile = initialFile;
+    const descriptors = this.deps.modeDescriptors;
+    const shellModes = descriptors.map((descriptor) => ({
+      id: descriptor.id,
+      label: descriptor.label
+    }));
+    this.shellModes = [...shellModes];
+    this.view = createControllerView({
+      app: this.app,
+      host,
+      initialFile,
+      modes: shellModes,
+      callbacks: this.callbacks
     });
-    button.addClass("sm-mode-dropdown__item");
-    button.onclick = () => {
-      closeMenu();
-      onSelect(mode.id);
-    };
-    const entry = { mode, button };
-    entries.set(mode.id, entry);
-    return entry;
-  };
-  const removeEntry = (id) => {
-    const entry = entries.get(id);
-    if (!entry) return;
-    entry.button.remove();
-    entries.delete(id);
-    if (activeId === id) {
-      activeId = null;
-    }
-  };
-  const setModes = (modes) => {
-    const incoming = /* @__PURE__ */ new Set();
-    for (const mode of modes) {
-      incoming.add(mode.id);
-      const existing = entries.get(mode.id);
-      if (existing) {
-        existing.mode = mode;
-        existing.button.setText(mode.label);
-      } else {
-        ensureEntry(mode);
+    this.mapManager = this.deps.createMapManager(this.app, {
+      initialFile,
+      onChange: async (file) => {
+        await this.applyCurrentFile(file);
       }
-    }
-    for (const id of Array.from(entries.keys())) {
-      if (!incoming.has(id)) {
-        removeEntry(id);
+    });
+    this.view.setModes(this.shellModes, this.shellModes[0]?.id ?? null);
+    this.view.setFileLabel(initialFile);
+    let initialModeId = shellModes[0]?.id ?? null;
+    try {
+      const modes = await this.loadModesOnce();
+      const firstEntry = modes.keys().next();
+      if (!firstEntry.done) {
+        initialModeId = firstEntry.value;
       }
+    } catch {
     }
-    updateActive();
-  };
-  const registerMode = (mode) => {
-    if (entries.has(mode.id)) {
-      setModes([mode]);
+    if (initialModeId) {
+      await this.setMode(initialModeId);
+    }
+    await this.mapManager.setFile(initialFile);
+  }
+  async onClose() {
+    if (!this.isMounted) {
+      this.view?.destroy();
+      this.view = null;
+      this.host = null;
+      this.mapManager = null;
       return;
     }
-    ensureEntry(mode);
-    updateActive();
-  };
-  const deregisterMode = (id) => {
-    removeEntry(id);
-    updateActive();
-  };
-  const setActiveMode = (id) => {
-    activeId = id;
-    updateActive();
-    if (activeId) {
-      const entry = entries.get(activeId);
-      if (entry) {
-        trigger.setText(entry.mode.label);
+    this.isMounted = false;
+    const lifecycle = this.lifecycle;
+    if (lifecycle) {
+      lifecycle.controller.abort();
+    }
+    if (this.activeMode && lifecycle) {
+      try {
+        await this.activeMode.onExit(lifecycle.ctx);
+      } catch (error) {
+        console.error("[cartographer] mode exit failed", error);
       }
     }
-  };
-  const setTriggerLabel = (label) => {
-    trigger.setText(label);
-  };
-  const destroy = () => {
-    if (destroyed) return;
-    destroyed = true;
-    closeMenu();
-    trigger.onclick = null;
-    for (const entry of entries.values()) {
-      entry.button.onclick = null;
-      entry.button.remove();
+    this.activeMode = null;
+    this.lifecycle = null;
+    this.activeModeId = void 0;
+    this.renderAbort?.abort();
+    this.destroyMapLayer();
+    this.view?.clearMap();
+    this.currentOptions = null;
+    this.shellModes = [];
+    this.view?.destroy();
+    this.view = null;
+    this.host = null;
+    this.mapManager = null;
+  }
+  async setFile(file) {
+    this.requestedFile = file;
+    if (!this.mapManager) return;
+    await this.mapManager.setFile(file);
+  }
+  async loadModesOnce() {
+    if (!this.modeLoad) {
+      const descriptors = this.deps.modeDescriptors;
+      this.modeLoad = Promise.all(
+        descriptors.map(async (descriptor) => {
+          const mode = await descriptor.load();
+          return { descriptor, mode };
+        })
+      ).then((entries) => {
+        const map = /* @__PURE__ */ new Map();
+        const shellModes = [];
+        for (const { mode } of entries) {
+          map.set(mode.id, mode);
+          shellModes.push({ id: mode.id, label: mode.label });
+        }
+        if (map.size === 0) {
+          throw new Error("No cartographer modes available");
+        }
+        this.shellModes = [...shellModes];
+        this.view?.setModes(this.shellModes, this.activeModeId ?? this.shellModes[0]?.id ?? null);
+        this.view?.setOverlay(null);
+        return map;
+      }).catch((error) => {
+        console.error("[cartographer] failed to load modes", error);
+        this.view?.setOverlay(MODE_PROVISION_OVERLAY_MESSAGE);
+        new import_obsidian16.Notice(MODE_PROVISION_NOTICE_MESSAGE);
+        this.modeLoad = void 0;
+        throw error;
+      });
     }
-    entries.clear();
-    dropdown.remove();
-  };
-  return {
-    setModes,
-    registerMode,
-    deregisterMode,
-    setActiveMode,
-    setTriggerLabel,
-    destroy
-  };
-}
-
-// src/apps/cartographer/view-shell.ts
-var DEFAULT_MODE_LABEL = "Mode";
-function createCartographerShell(options) {
+    return this.modeLoad;
+  }
+  async setMode(id, ctx) {
+    let modes;
+    try {
+      modes = await this.loadModesOnce();
+    } catch {
+      return;
+    }
+    const requested = modes.get(id) ?? null;
+    const fallbackEntry = modes.entries().next();
+    const nextEntry = requested ? [requested.id, requested] : fallbackEntry.done ? null : fallbackEntry.value;
+    if (!nextEntry) return;
+    const [nextId, nextMode] = nextEntry;
+    if (this.activeModeId === nextId) {
+      this.view?.setModes(this.shellModes, nextMode.id);
+      return;
+    }
+    if (!this.isMounted || !this.view) {
+      this.activeModeId = nextId;
+      return;
+    }
+    const previous = this.activeMode;
+    const previousLifecycle = this.lifecycle;
+    if (previousLifecycle) {
+      previousLifecycle.controller.abort();
+    }
+    this.activeMode = null;
+    this.lifecycle = null;
+    this.activeModeId = void 0;
+    if (previous && previousLifecycle) {
+      try {
+        await previous.onExit(previousLifecycle.ctx);
+      } catch (error) {
+        console.error("[cartographer] mode exit failed", error);
+      }
+    }
+    const controller = new AbortController();
+    const external = ctx?.signal;
+    if (external) {
+      if (external.aborted) controller.abort();
+      else external.addEventListener("abort", () => controller.abort(), { once: true });
+    }
+    const lifecycleCtx = this.createLifecycleContext(controller.signal);
+    this.lifecycle = { controller, ctx: lifecycleCtx };
+    this.activeMode = nextMode;
+    this.activeModeId = nextId;
+    this.view.setModes(this.shellModes, nextMode.id);
+    try {
+      await nextMode.onEnter(lifecycleCtx);
+    } catch (error) {
+      if (!controller.signal.aborted) {
+        console.error("[cartographer] mode enter failed", error);
+      }
+    }
+    if (controller.signal.aborted) return;
+    await this.applyCurrentFile(this.currentFile, lifecycleCtx);
+  }
+  async handleSave(mode, file) {
+    if (!this.activeMode?.onSave || !this.lifecycle) return false;
+    try {
+      const handled = await this.activeMode.onSave(mode, file, this.lifecycle.ctx);
+      return handled === true;
+    } catch (error) {
+      console.error("[cartographer] mode onSave failed", error);
+      return false;
+    }
+  }
+  async handleHexClick(coord, event) {
+    if (!this.activeMode?.onHexClick || !this.lifecycle) return;
+    try {
+      await this.activeMode.onHexClick(coord, event, this.lifecycle.ctx);
+    } catch (error) {
+      console.error("[cartographer] mode onHexClick failed", error);
+    }
+  }
+  get baseModeCtx() {
+    if (!this.view || !this.host) {
+      throw new Error("CartographerController is not mounted.");
+    }
+    return {
+      app: this.app,
+      host: this.host,
+      mapHost: this.view.mapHost,
+      sidebarHost: this.view.sidebarHost,
+      getFile: () => this.currentFile,
+      getMapLayer: () => this.mapLayer,
+      getRenderHandles: () => this.mapLayer?.handles ?? null,
+      getOptions: () => this.currentOptions
+    };
+  }
+  createLifecycleContext(signal) {
+    return { ...this.baseModeCtx, signal };
+  }
+  async applyCurrentFile(file = this.currentFile, lifecycleCtx) {
+    this.currentFile = file ?? null;
+    this.requestedFile = file ?? null;
+    const view = this.view;
+    if (!view) return;
+    view.setFileLabel(this.currentFile);
+    if (!this.activeMode || !this.lifecycle) {
+      this.destroyMapLayer();
+      view.clearMap();
+      this.currentOptions = null;
+      return;
+    }
+    if (this.renderAbort) {
+      this.renderAbort.abort();
+    }
+    const controller = new AbortController();
+    this.renderAbort = controller;
+    const signal = controller.signal;
+    const ctx = lifecycleCtx ?? this.lifecycle.ctx ?? null;
+    let provisionalLayer = null;
+    const destroyProvisionalLayer = () => {
+      if (!provisionalLayer) return;
+      try {
+        provisionalLayer.destroy();
+      } catch (error) {
+        console.error("[cartographer] failed to destroy map layer", error);
+      }
+      provisionalLayer = null;
+    };
+    this.destroyMapLayer();
+    view.clearMap();
+    this.currentOptions = null;
+    try {
+      if (!this.currentFile) {
+        view.setOverlay("Keine Karte ausgew\xE4hlt.");
+        if (ctx) {
+          await this.activeMode.onFileChange(null, null, ctx);
+        }
+        return;
+      }
+      let options = null;
+      try {
+        options = await this.deps.loadHexOptions(this.app, this.currentFile);
+      } catch (error) {
+        console.error("[cartographer] failed to parse map options", error);
+      }
+      if (signal.aborted) return;
+      if (!options) {
+        view.setOverlay("Kein hex3x3-Block in dieser Datei.");
+        if (ctx) {
+          await this.activeMode.onFileChange(this.currentFile, null, ctx);
+        }
+        return;
+      }
+      try {
+        provisionalLayer = await this.deps.createMapLayer(
+          this.app,
+          view.mapHost,
+          this.currentFile,
+          options
+        );
+      } catch (error) {
+        console.error("[cartographer] failed to render map", error);
+        view.setOverlay("Karte konnte nicht geladen werden.");
+        if (ctx) {
+          await this.activeMode.onFileChange(this.currentFile, null, ctx);
+        }
+        return;
+      }
+      if (signal.aborted || !this.view) return;
+      this.mapLayer = provisionalLayer;
+      provisionalLayer = null;
+      this.currentOptions = options;
+      view.setOverlay(null);
+      if (ctx) {
+        await this.activeMode.onFileChange(this.currentFile, this.mapLayer.handles, ctx);
+      }
+    } finally {
+      if (signal.aborted) {
+        this.destroyMapLayer();
+        view.clearMap();
+        this.currentOptions = null;
+      }
+      destroyProvisionalLayer();
+      if (this.renderAbort === controller) {
+        this.renderAbort = void 0;
+      }
+    }
+  }
+  destroyMapLayer() {
+    const layer = this.mapLayer;
+    if (!layer) return;
+    this.mapLayer = null;
+    try {
+      layer.destroy();
+    } catch (error) {
+      console.error("[cartographer] failed to destroy map layer", error);
+    }
+  }
+};
+function createControllerView(options) {
   const { app, host, initialFile, modes, callbacks } = options;
-  const layout = createCartographerLayout(host);
-  const mapSurface = createMapSurface(layout.mapWrapper);
-  const state = {
-    modes: [...modes],
-    activeId: modes[0]?.id ?? null,
-    label: modes[0]?.label ?? DEFAULT_MODE_LABEL
-  };
-  let modeRegistry = null;
-  let modeController = null;
-  const ensureModeRegistry = (slot) => {
-    modeRegistry?.destroy();
-    modeRegistry = createModeRegistry({
-      host: slot,
-      initialLabel: state.label,
-      onSelect: (modeId) => {
-        if (!modeController) return;
-        void modeController.requestMode(modeId).catch((error) => {
-          console.error("[cartographer] failed to request mode", error);
+  host.empty();
+  host.addClass("sm-cartographer");
+  const headerHost = host.createDiv({ cls: "sm-cartographer__header" });
+  const bodyHost = host.createDiv({ cls: "sm-cartographer__body" });
+  const mapWrapper = bodyHost.createDiv({ cls: "sm-cartographer__map" });
+  const sidebarHost = bodyHost.createDiv({ cls: "sm-cartographer__sidebar" });
+  const surface = createViewContainer(mapWrapper, { camera: false });
+  let modeHandle = null;
+  let currentModes = [...modes];
+  let currentActiveId = modes[0]?.id ?? null;
+  const invokeModeSelect = (id) => {
+    try {
+      const result = callbacks.onModeSelect(id);
+      if (result && typeof result.then === "function") {
+        void result.catch((error) => {
+          console.error("[cartographer] failed to select mode", error);
         });
       }
-    });
-    modeRegistry.setModes(state.modes);
-    modeRegistry.setActiveMode(state.activeId);
-  };
-  modeController = createModeController({
-    onSwitch: async (modeId, ctx) => {
-      await callbacks.onModeSelect(modeId, ctx);
+    } catch (error) {
+      console.error("[cartographer] failed to select mode", error);
     }
-  });
-  const headerHandle = createMapHeader(app, layout.headerHost, {
+  };
+  const createModeControls = (slot) => {
+    modeHandle?.destroy();
+    modeHandle = renderModeSelect(slot, currentModes, currentActiveId, (id) => {
+      currentActiveId = id;
+      invokeModeSelect(id);
+    });
+    currentActiveId = modeHandle.getActiveId();
+  };
+  const headerHandle = createMapHeader(app, headerHost, {
     title: "Cartographer",
     initialFile,
     onOpen: async (file) => {
@@ -5370,926 +6168,162 @@ function createCartographerShell(options) {
       return await callbacks.onSave(mode, file);
     },
     titleRightSlot: (slot) => {
-      ensureModeRegistry(slot);
+      createModeControls(slot);
     }
   });
-  const onHexClick = async (event) => {
-    if (event.cancelable) event.preventDefault();
+  if (!modeHandle) {
+    createModeControls(headerHandle.titleRightSlot);
+  }
+  const handleHexClick = (event) => {
+    if (!(event instanceof CustomEvent)) return;
+    const custom = event;
+    if (custom.cancelable) custom.preventDefault();
     event.stopPropagation();
-    await callbacks.onHexClick(event.detail, event);
-  };
-  mapSurface.mapHost.addEventListener("hex:click", onHexClick, { passive: false });
-  const setModeActive = (id) => {
-    state.activeId = id;
-    const activeMode = state.modes.find((mode) => mode.id === id);
-    if (activeMode) {
-      state.label = activeMode.label;
-    }
-    modeRegistry?.setActiveMode(id);
-  };
-  const setModeLabel = (label) => {
-    state.label = label;
-    modeRegistry?.setTriggerLabel(label);
-  };
-  const setModes = (nextModes) => {
-    state.modes = [...nextModes];
-    modeRegistry?.setModes(state.modes);
-    const activeMode = state.activeId ? state.modes.find((mode) => mode.id === state.activeId) : null;
-    if (!activeMode) {
-      state.activeId = null;
-      modeRegistry?.setActiveMode(null);
-      const fallbackLabel = state.modes[0]?.label ?? DEFAULT_MODE_LABEL;
-      setModeLabel(fallbackLabel);
-    } else {
-      setModeLabel(activeMode.label);
+    const detail = custom.detail;
+    if (!detail) return;
+    try {
+      const result = callbacks.onHexClick(detail, custom);
+      if (result && typeof result.then === "function") {
+        void result.catch((error) => {
+          console.error("[cartographer] hex click handler failed", error);
+        });
+      }
+    } catch (error) {
+      console.error("[cartographer] hex click handler failed", error);
     }
   };
-  const registerMode = (mode) => {
-    const existingIndex = state.modes.findIndex((entry) => entry.id === mode.id);
-    if (existingIndex >= 0) {
-      state.modes[existingIndex] = mode;
-    } else {
-      state.modes.push(mode);
-    }
-    modeRegistry?.registerMode(mode);
-    if (state.activeId === mode.id) {
-      setModeLabel(mode.label);
-    } else if (!state.activeId) {
-      const fallbackLabel = state.modes[0]?.label ?? DEFAULT_MODE_LABEL;
-      setModeLabel(fallbackLabel);
-    }
-  };
-  const deregisterMode = (id) => {
-    state.modes = state.modes.filter((mode) => mode.id !== id);
-    modeRegistry?.deregisterMode(id);
-    if (state.activeId === id) {
-      state.activeId = null;
-      modeRegistry?.setActiveMode(null);
-      const fallbackLabel = state.modes[0]?.label ?? DEFAULT_MODE_LABEL;
-      setModeLabel(fallbackLabel);
-    }
-  };
+  surface.stageEl.addEventListener("hex:click", handleHexClick, { passive: false });
   const destroy = () => {
-    mapSurface.mapHost.removeEventListener("hex:click", onHexClick);
-    modeController?.destroy();
-    modeController = null;
-    modeRegistry?.destroy();
-    modeRegistry = null;
+    surface.stageEl.removeEventListener("hex:click", handleHexClick);
+    modeHandle?.destroy();
+    modeHandle = null;
+    currentActiveId = null;
+    currentModes = [];
     headerHandle.destroy();
-    mapSurface.destroy();
-    layout.destroy();
+    surface.destroy();
+    host.empty();
+    host.removeClass("sm-cartographer");
   };
-  const handle = {
+  modeHandle?.setModes(currentModes, currentActiveId);
+  currentActiveId = modeHandle?.getActiveId() ?? currentActiveId;
+  return {
     host,
-    mapHost: mapSurface.mapHost,
-    sidebarHost: layout.sidebarHost,
+    mapHost: surface.stageEl,
+    sidebarHost,
     setFileLabel: (file) => {
       headerHandle.setFileLabel(file);
     },
-    setModeActive,
-    setModeLabel,
-    setModes,
-    registerMode,
-    deregisterMode,
+    setModes: (nextModes, activeId) => {
+      currentModes = [...nextModes];
+      const requestedActive = activeId !== void 0 ? activeId : currentActiveId;
+      if (modeHandle) {
+        modeHandle.setModes(currentModes, requestedActive);
+        currentActiveId = modeHandle.getActiveId();
+      } else {
+        const fallbackActive = requestedActive && currentModes.some((mode) => mode.id === requestedActive) ? requestedActive : currentModes[0]?.id ?? null;
+        currentActiveId = fallbackActive ?? null;
+      }
+    },
     setOverlay: (content) => {
-      mapSurface.setOverlay(content);
+      surface.setOverlay(content);
     },
     clearMap: () => {
-      mapSurface.clear();
+      surface.stageEl.empty();
     },
     destroy
   };
-  return handle;
 }
-
-// src/apps/cartographer/mode-registry/registry.ts
-var defineCartographerModeProvider = (provider) => provider;
-var providers = /* @__PURE__ */ new Map();
-var listeners2 = /* @__PURE__ */ new Set();
-var MAP_INTERACTIONS = ["none", "hex-click"];
-var PERSISTENCE_MODES = ["read-only", "manual-save"];
-var SIDEBAR_USAGES = ["required", "optional", "hidden"];
-var normalizeCapabilities = (providerId, capabilities) => {
-  if (!capabilities) {
-    throw new Error(
-      `[cartographer:mode-registry] provider '${providerId}' must declare capabilities metadata`
-    );
-  }
-  const { mapInteraction, persistence, sidebar } = capabilities;
-  if (!MAP_INTERACTIONS.includes(mapInteraction)) {
-    throw new Error(
-      `[cartographer:mode-registry] provider '${providerId}' declared invalid mapInteraction capability '${mapInteraction}'`
-    );
-  }
-  if (!PERSISTENCE_MODES.includes(persistence)) {
-    throw new Error(
-      `[cartographer:mode-registry] provider '${providerId}' declared invalid persistence capability '${persistence}'`
-    );
-  }
-  if (!SIDEBAR_USAGES.includes(sidebar)) {
-    throw new Error(
-      `[cartographer:mode-registry] provider '${providerId}' declared invalid sidebar capability '${sidebar}'`
-    );
-  }
-  return Object.freeze({
-    mapInteraction,
-    persistence,
-    sidebar
+function renderModeSelect(slot, modes, initialActiveId, onChange) {
+  slot.empty();
+  slot.addClass("sm-cartographer__mode-slot");
+  const labelEl = slot.createEl("span", {
+    cls: "sm-cartographer__mode-label",
+    text: DEFAULT_MODE_LABEL
   });
-};
-var cloneMetadata = (metadata) => {
-  const keywords = metadata.keywords ? Object.freeze([...metadata.keywords]) : void 0;
-  const normalized = Object.freeze({
-    ...metadata,
-    keywords,
-    capabilities: normalizeCapabilities(metadata.id, metadata.capabilities)
-  });
-  return normalized;
-};
-var normalizeProvider = (provider) => {
-  if (!provider?.metadata?.id) {
-    throw new Error("[cartographer:mode-registry] provider metadata requires an id");
-  }
-  if (!provider.metadata.label) {
-    throw new Error(`[cartographer:mode-registry] provider '${provider.metadata.id}' requires a label`);
-  }
-  if (!provider.metadata.summary) {
-    throw new Error(`[cartographer:mode-registry] provider '${provider.metadata.id}' requires a summary`);
-  }
-  if (!provider.metadata.source) {
-    throw new Error(
-      `[cartographer:mode-registry] provider '${provider.metadata.id}' requires a source identifier`
-    );
-  }
-  const metadata = cloneMetadata(provider.metadata);
+  const selectEl = slot.createEl("select", { cls: "sm-cartographer__mode-select" });
+  selectEl.setAttribute("aria-label", "Cartographer mode");
+  const updateLabel = () => {
+    const label = selectEl.selectedOptions[0]?.textContent ?? DEFAULT_MODE_LABEL;
+    labelEl.setText(label);
+    selectEl.title = label;
+  };
+  let currentModes = null;
+  let activeId = null;
+  const rebuildOptions = (list) => {
+    selectEl.empty();
+    if (list.length === 0) {
+      const option = selectEl.createEl("option", { text: "Keine Modi" });
+      option.value = "";
+      option.disabled = true;
+      option.selected = true;
+      selectEl.disabled = true;
+      selectEl.value = "";
+      activeId = null;
+      updateLabel();
+      return;
+    }
+    selectEl.disabled = false;
+    for (const mode of list) {
+      const option = selectEl.createEl("option", { text: mode.label });
+      option.value = mode.id;
+    }
+  };
+  const syncSelection = (list, nextActiveId) => {
+    if (list.length === 0) {
+      activeId = null;
+      updateLabel();
+      return;
+    }
+    const fallbackId = nextActiveId && list.some((mode) => mode.id === nextActiveId) ? nextActiveId : list[0]?.id ?? "";
+    selectEl.value = fallbackId ?? "";
+    activeId = selectEl.value || null;
+    updateLabel();
+  };
+  const applyModes = (list, nextActiveId) => {
+    const shouldRebuild = currentModes === null || currentModes.length !== list.length || currentModes.some((prev, index) => {
+      const next = list[index];
+      return !next || prev.id !== next.id || prev.label !== next.label;
+    });
+    currentModes = [...list];
+    if (shouldRebuild) {
+      rebuildOptions(list);
+    }
+    syncSelection(list, nextActiveId);
+  };
+  const handleChange = () => {
+    const id = selectEl.value;
+    activeId = id || null;
+    updateLabel();
+    if (!id) return;
+    onChange(id);
+  };
+  selectEl.addEventListener("change", handleChange);
+  applyModes(modes, initialActiveId);
   return {
-    provider: {
-      ...provider,
-      metadata
+    setModes: (nextModes, nextActiveId) => {
+      const requested = nextActiveId !== void 0 ? nextActiveId : selectEl.value || null;
+      applyModes(nextModes, requested);
     },
-    metadata
-  };
-};
-var validateModeCapabilities = (mode, metadata) => {
-  const { capabilities, id } = metadata;
-  if (capabilities.mapInteraction === "hex-click" && typeof mode.onHexClick !== "function") {
-    throw new Error(
-      `[cartographer:mode-registry] mode '${id}' declares mapInteraction 'hex-click' but does not implement onHexClick()`
-    );
-  }
-  if (capabilities.persistence === "manual-save" && typeof mode.onSave !== "function") {
-    throw new Error(
-      `[cartographer:mode-registry] mode '${id}' declares persistence 'manual-save' but does not implement onSave()`
-    );
-  }
-  if (capabilities.mapInteraction === "none" && typeof mode.onHexClick === "function") {
-    console.warn(
-      `[cartographer:mode-registry] mode '${id}' provides onHexClick(), but its capabilities declare mapInteraction 'none'`
-    );
-  }
-};
-var createLazyModeWrapper = (entry) => {
-  const { metadata, provider } = entry;
-  let cached = null;
-  let loading = null;
-  const load = async () => {
-    if (cached) return cached;
-    if (!loading) {
-      loading = provider.load().then((mode) => {
-        if (!mode) {
-          throw new Error(
-            `[cartographer:mode-registry] provider '${metadata.id}' returned an invalid mode instance`
-          );
-        }
-        if (mode.id && mode.id !== metadata.id) {
-          console.warn(
-            `[cartographer:mode-registry] mode id '${mode.id}' does not match provider id '${metadata.id}'`
-          );
-        }
-        validateModeCapabilities(mode, metadata);
-        cached = mode;
-        return mode;
-      }).catch((error) => {
-        console.error(
-          `[cartographer:mode-registry] failed to load mode '${metadata.id}' from '${metadata.source}'`,
-          error
-        );
-        loading = null;
-        throw error;
-      });
-    }
-    return loading;
-  };
-  const invoke = async (key, ...args) => {
-    const mode = await load();
-    const method = mode[key];
-    return await method.apply(mode, args);
-  };
-  const invokeIfLoaded = async (key, ...args) => {
-    if (!cached && !loading) {
-      await load();
-    }
-    const mode = cached;
-    if (!mode) return void 0;
-    const method = mode[key];
-    if (typeof method !== "function") {
-      return void 0;
-    }
-    return await method.apply(mode, args);
-  };
-  return {
-    id: metadata.id,
-    label: metadata.label,
-    async onEnter(ctx) {
-      return await invoke("onEnter", ctx);
-    },
-    async onExit(ctx) {
-      await invokeIfLoaded("onExit", ctx);
-    },
-    async onFileChange(file, handles, ctx) {
-      return await invoke("onFileChange", file, handles, ctx);
-    },
-    async onHexClick(coord, event, ctx) {
-      if (metadata.capabilities.mapInteraction !== "hex-click") {
-        return;
-      }
-      return await invokeIfLoaded("onHexClick", coord, event, ctx);
-    },
-    async onSave(mode, file, ctx) {
-      if (metadata.capabilities.persistence !== "manual-save") {
-        return void 0;
-      }
-      return await invokeIfLoaded("onSave", mode, file, ctx);
+    getActiveId: () => activeId,
+    destroy: () => {
+      selectEl.removeEventListener("change", handleChange);
+      slot.empty();
+      activeId = null;
+      currentModes = null;
     }
   };
-};
-var createRegisteredProvider = (provider) => {
-  const entry = normalizeProvider(provider);
-  return {
-    ...entry,
-    mode: createLazyModeWrapper(entry)
-  };
-};
-var toRegistryEntry = (provider) => ({
-  metadata: provider.metadata,
-  mode: provider.mode
-});
-var notifyListeners = (event) => {
-  const snapshot = Array.from(listeners2);
-  for (const listener of snapshot) {
-    try {
-      listener(event);
-    } catch (error) {
-      console.error("[cartographer:mode-registry] listener failed", error);
-    }
-  }
-};
-var orderValue = (metadata) => {
-  if (metadata.order === void 0 || Number.isNaN(metadata.order)) return Number.POSITIVE_INFINITY;
-  return metadata.order;
-};
-var getSortedProviders = () => {
-  return Array.from(providers.values()).sort((a, b) => {
-    const orderDiff = orderValue(a.metadata) - orderValue(b.metadata);
-    if (orderDiff !== 0) return orderDiff;
-    return a.metadata.label.localeCompare(b.metadata.label, void 0, { sensitivity: "base" });
-  });
-};
-var getRegistryEntries = () => {
-  return getSortedProviders().map(toRegistryEntry);
-};
-var registerCartographerModeProvider = (provider) => {
-  const entry = createRegisteredProvider(provider);
-  const existing = providers.get(entry.metadata.id);
-  if (existing) {
-    throw new Error(
-      `[cartographer:mode-registry] provider with id '${entry.metadata.id}' is already registered by '${existing.metadata.source}'`
-    );
-  }
-  providers.set(entry.metadata.id, entry);
-  const entries = getRegistryEntries();
-  const index = entries.findIndex((candidate) => candidate.metadata.id === entry.metadata.id);
-  if (index >= 0) {
-    notifyListeners({
-      type: "registered",
-      entry: entries[index],
-      index,
-      entries
-    });
-  }
-  return () => {
-    const current = providers.get(entry.metadata.id);
-    if (current === entry) {
-      providers.delete(entry.metadata.id);
-      const remaining = getRegistryEntries();
-      notifyListeners({
-        type: "deregistered",
-        id: entry.metadata.id,
-        entries: remaining
-      });
-    }
-  };
-};
-var createCartographerModesSnapshot = () => {
-  return getSortedProviders().map((entry) => entry.mode);
-};
-var subscribeToCartographerModeRegistry = (listener) => {
-  listeners2.add(listener);
-  listener({ type: "initial", entries: getRegistryEntries() });
-  return () => {
-    listeners2.delete(listener);
-  };
-};
-
-// src/apps/cartographer/mode-registry/providers/editor.ts
-var createEditorModeProvider = () => defineCartographerModeProvider({
-  metadata: {
-    id: "editor",
-    label: "Editor",
-    summary: "Interaktiver Hex-Map Editor mit Werkzeugpalette und Live-Vorschau.",
-    keywords: ["map", "edit", "hex"],
-    order: 200,
-    source: "core/cartographer/editor",
-    version: "1.0.0",
-    capabilities: {
-      mapInteraction: "hex-click",
-      persistence: "read-only",
-      sidebar: "required"
-    }
-  },
-  async load() {
-    const { createEditorMode: createEditorMode2 } = await Promise.resolve().then(() => (init_editor(), editor_exports));
-    return createEditorMode2();
-  }
-});
-
-// src/apps/cartographer/mode-registry/providers/inspector.ts
-var createInspectorModeProvider = () => defineCartographerModeProvider({
-  metadata: {
-    id: "inspector",
-    label: "Inspector",
-    summary: "Liest bestehende Karten und stellt Metadaten sowie Hex-Details dar.",
-    keywords: ["inspect", "metadata", "analyze"],
-    order: 300,
-    source: "core/cartographer/inspector",
-    version: "1.0.0",
-    capabilities: {
-      mapInteraction: "hex-click",
-      persistence: "read-only",
-      sidebar: "required"
-    }
-  },
-  async load() {
-    const { createInspectorMode: createInspectorMode2 } = await Promise.resolve().then(() => (init_inspector(), inspector_exports));
-    return createInspectorMode2();
-  }
-});
-
-// src/apps/cartographer/mode-registry/providers/travel-guide.ts
-var createTravelGuideModeProvider = () => defineCartographerModeProvider({
-  metadata: {
-    id: "travel",
-    label: "Travel",
-    summary: "Pr\xE4sentiert Kurzinformationen und Kartenabschnitte f\xFCr Reisende.",
-    keywords: ["travel", "guide", "summary"],
-    order: 100,
-    source: "core/cartographer/travel-guide",
-    version: "1.0.0",
-    capabilities: {
-      mapInteraction: "hex-click",
-      persistence: "manual-save",
-      sidebar: "required"
-    }
-  },
-  async load() {
-    const { createTravelGuideMode: createTravelGuideMode2 } = await Promise.resolve().then(() => (init_travel_guide(), travel_guide_exports));
-    return createTravelGuideMode2();
-  }
-});
-
-// src/apps/cartographer/mode-registry/index.ts
-var coreProvidersRegistered = false;
-var ensureCoreProviders = () => {
-  if (coreProvidersRegistered) return;
-  registerCartographerModeProvider(createTravelGuideModeProvider());
-  registerCartographerModeProvider(createEditorModeProvider());
-  registerCartographerModeProvider(createInspectorModeProvider());
-  coreProvidersRegistered = true;
-};
-var provideCartographerModes = () => {
-  ensureCoreProviders();
-  return createCartographerModesSnapshot();
-};
-var subscribeToModeRegistry = (listener) => {
-  ensureCoreProviders();
-  return subscribeToCartographerModeRegistry(listener);
-};
-
-// src/apps/cartographer/presenter.ts
-var createDefaultDeps = (app) => ({
-  createShell: (options) => createCartographerShell(options),
-  createMapManager: (appInstance, options) => createMapManager(appInstance, options),
-  createMapLayer: (appInstance, host, file, opts) => createMapLayer(appInstance, host, file, opts),
-  loadHexOptions: async (appInstance, file) => {
-    const block = await getFirstHexBlock(appInstance, file);
-    if (!block) return null;
-    return parseOptions(block);
-  },
-  provideModes: () => provideCartographerModes(),
-  subscribeToModeRegistry: (listener) => subscribeToModeRegistry(listener)
-});
-var _CartographerPresenter = class _CartographerPresenter {
-  constructor(app, deps) {
-    this.shell = null;
-    this.mapManager = null;
-    this.currentFile = null;
-    this.currentOptions = null;
-    this.mapLayer = null;
-    this.activeMode = null;
-    this.hostEl = null;
-    this.modeChange = Promise.resolve();
-    this.transitionTasks = /* @__PURE__ */ new Set();
-    this.loadToken = 0;
-    this.isMounted = false;
-    this.requestedFile = void 0;
-    this.modeTransitionSeq = 0;
-    this.transition = null;
-    this.activeLifecycleController = null;
-    this.activeLifecycleContext = null;
-    this.unsubscribeModeRegistry = null;
-    this.app = app;
-    const defaults = createDefaultDeps(app);
-    this.deps = { ...defaults, ...deps };
-    this.modes = this.deps.provideModes();
-    try {
-      this.unsubscribeModeRegistry = this.deps.subscribeToModeRegistry((event) => {
-        this.handleModeRegistryEvent(event);
-      });
-    } catch (error) {
-      console.error("[cartographer] failed to subscribe to mode registry", error);
-    }
-  }
-  /** Öffnet den Presenter auf dem übergebenen Host. */
-  async onOpen(host, fallbackFile) {
-    await this.onClose();
-    this.hostEl = host;
-    const initialFile = this.requestedFile ?? fallbackFile ?? null;
-    this.currentFile = initialFile;
-    const shellModes = this.modes.map((mode) => ({ id: mode.id, label: mode.label }));
-    this.shell = this.deps.createShell({
-      app: this.app,
-      host,
-      initialFile,
-      modes: shellModes,
-      callbacks: {
-        onModeSelect: (id, context) => {
-          void this.setMode(id, context);
-        },
-        onOpen: async (file) => {
-          await this.mapManager?.setFile(file);
-        },
-        onCreate: async (file) => {
-          await this.mapManager?.setFile(file);
-        },
-        onDelete: async () => {
-          this.mapManager?.deleteCurrent();
-        },
-        onSave: async (mode, file) => {
-          return await this.handleSave(mode, file);
-        },
-        onHexClick: async (coord, event) => {
-          await this.handleHexClick(coord, event);
-        }
-      }
-    });
-    this.mapManager = this.deps.createMapManager(this.app, {
-      initialFile,
-      onChange: async (file) => {
-        await this.handleFileChange(file);
-      }
-    });
-    this.shell.setModeLabel(shellModes[0]?.label ?? "Mode");
-    this.shell.setModeActive(shellModes[0]?.id ?? "");
-    this.shell.setFileLabel(initialFile);
-    this.isMounted = true;
-    this.requestedFile = initialFile;
-    await this.setMode(shellModes[0]?.id ?? "");
-    await this.mapManager.setFile(initialFile);
-  }
-  /** Schließt den Presenter und räumt Ressourcen auf. */
-  async onClose() {
-    if (!this.isMounted) {
-      this.shell?.destroy();
-      this.shell = null;
-      this.hostEl = null;
-      return;
-    }
-    this.isMounted = false;
-    this.transition?.controller.abort();
-    await this.modeChange;
-    try {
-      const controller = this.activeLifecycleController ?? new AbortController();
-      if (!controller.signal.aborted) {
-        controller.abort();
-      }
-      const ctx = this.activeLifecycleContext && this.activeLifecycleContext.signal === controller.signal ? this.activeLifecycleContext : this.createLifecycleContext(controller.signal);
-      await this.activeMode?.onExit(ctx);
-    } catch (err) {
-      console.error("[cartographer] mode exit failed", err);
-    }
-    this.activeMode = null;
-    this.activeLifecycleController = null;
-    this.activeLifecycleContext = null;
-    await this.teardownLayer();
-    this.shell?.destroy();
-    this.shell = null;
-    this.hostEl = null;
-    this.mapManager = null;
-  }
-  /** Setzt (oder merkt) die gewünschte Karte. */
-  async setFile(file) {
-    this.requestedFile = file;
-    if (!this.isMounted || !this.mapManager) return;
-    await this.mapManager.setFile(file);
-  }
-  get baseModeCtx() {
-    if (!this.shell || !this.hostEl) {
-      throw new Error("CartographerPresenter is not mounted.");
-    }
-    return {
-      app: this.app,
-      host: this.hostEl,
-      mapHost: this.shell.mapHost,
-      sidebarHost: this.shell.sidebarHost,
-      getFile: () => this.currentFile,
-      getMapLayer: () => this.mapLayer,
-      getRenderHandles: () => this.mapLayer?.handles ?? null,
-      getOptions: () => this.currentOptions
-    };
-  }
-  createLifecycleContext(signal) {
-    const base = this.baseModeCtx;
-    return { ...base, signal };
-  }
-  ensureActiveLifecycleContext(signal) {
-    const current = this.activeLifecycleContext;
-    if (current && current.signal === signal) {
-      return current;
-    }
-    const context = this.createLifecycleContext(signal);
-    if (this.activeLifecycleController?.signal === signal) {
-      this.activeLifecycleContext = context;
-    }
-    return context;
-  }
-  getActiveLifecycleSignal() {
-    return this.activeLifecycleController?.signal ?? _CartographerPresenter.neverAbortSignal;
-  }
-  async handleFileChange(file) {
-    this.currentFile = file;
-    this.shell?.setFileLabel(file);
-    await this.refresh();
-  }
-  async handleSave(mode, file) {
-    if (!this.activeMode?.onSave) return false;
-    try {
-      const ctx = this.ensureActiveLifecycleContext(this.getActiveLifecycleSignal());
-      const handled = await this.activeMode.onSave(mode, file, ctx);
-      return handled === true;
-    } catch (err) {
-      console.error("[cartographer] mode onSave failed", err);
-      return false;
-    }
-  }
-  async handleHexClick(coord, event) {
-    if (!this.activeMode?.onHexClick) return;
-    try {
-      const ctx = this.ensureActiveLifecycleContext(this.getActiveLifecycleSignal());
-      await this.activeMode.onHexClick(coord, event, ctx);
-    } catch (err) {
-      console.error("[cartographer] mode onHexClick failed", err);
-    }
-  }
-  handleModeRegistryEvent(event) {
-    if (!event?.entries) return;
-    const previousActiveId = this.activeMode?.id ?? null;
-    const nextModes = event.entries.map((entry) => entry.mode);
-    this.modes = nextModes;
-    const activeMode = previousActiveId ? nextModes.find((mode) => mode.id === previousActiveId) ?? null : null;
-    if (!this.shell) {
-      if (!activeMode) {
-        this.activeMode = null;
-      }
-      return;
-    }
-    const shellModes = nextModes.map((mode) => ({ id: mode.id, label: mode.label }));
-    if (event.type === "registered") {
-      this.shell.registerMode({ id: event.entry.mode.id, label: event.entry.mode.label });
-    } else if (event.type === "deregistered") {
-      this.shell.deregisterMode(event.id);
-    }
-    this.shell.setModes(shellModes);
-    if (activeMode) {
-      this.activeMode = activeMode;
-      this.shell.setModeActive(activeMode.id);
-      this.shell.setModeLabel(activeMode.label);
-      return;
-    }
-    this.activeMode = null;
-    if (!this.isMounted) {
-      return;
-    }
-    const fallbackId = shellModes[0]?.id ?? null;
-    if (fallbackId) {
-      void this.setMode(fallbackId);
-    }
-  }
-  async setMode(id, ctx) {
-    const next = this.modes.find((mode) => mode.id === id) ?? this.modes[0];
-    if (!next) return;
-    const promise = this.executeModeTransition(next, ctx?.signal ?? null);
-    this.trackTransition(promise);
-    try {
-      await promise;
-    } catch (err) {
-      console.error("[cartographer] mode transition crashed", err);
-    }
-  }
-  recalcModeChangePromise() {
-    if (this.transitionTasks.size === 0) {
-      this.modeChange = Promise.resolve();
-      return;
-    }
-    this.modeChange = Promise.allSettled(Array.from(this.transitionTasks)).then(() => void 0);
-  }
-  trackTransition(promise) {
-    this.transitionTasks.add(promise);
-    this.recalcModeChangePromise();
-    promise.finally(() => {
-      this.transitionTasks.delete(promise);
-      this.recalcModeChangePromise();
-    }).catch(() => {
-    });
-  }
-  bindExternalAbort(transition) {
-    const { externalSignal, controller } = transition;
-    if (!externalSignal) return () => {
-    };
-    const abort = () => {
-      controller.abort();
-    };
-    if (externalSignal.aborted) {
-      abort();
-      return () => {
-      };
-    }
-    externalSignal.addEventListener("abort", abort, { once: true });
-    return () => {
-      externalSignal.removeEventListener("abort", abort);
-    };
-  }
-  isTransitionAborted(transition) {
-    if (transition.controller.signal.aborted) return true;
-    if (transition.externalSignal?.aborted) return true;
-    if (this.transition && this.transition.id !== transition.id) return true;
-    return false;
-  }
-  async runTransitionStep(transition, phase, action, errorMessage) {
-    if (this.isTransitionAborted(transition)) {
-      return "aborted";
-    }
-    transition.phase = phase;
-    try {
-      await action();
-    } catch (err) {
-      if (!this.isTransitionAborted(transition)) {
-        console.error(errorMessage, err);
-      }
-    }
-    if (this.isTransitionAborted(transition)) {
-      return "aborted";
-    }
-    return "completed";
-  }
-  async executeModeTransition(next, externalSignal) {
-    const previousTransition = this.transition;
-    if (previousTransition) {
-      previousTransition.controller.abort();
-    }
-    if (this.activeMode?.id === next.id) {
-      if (!(externalSignal?.aborted ?? false)) {
-        this.shell?.setModeActive(next.id);
-        this.shell?.setModeLabel(next.label);
-      }
-      return;
-    }
-    const previousLifecycleContext = this.activeLifecycleContext;
-    const previousLifecycleController = this.activeLifecycleController;
-    const controller = new AbortController();
-    const transition = {
-      id: ++this.modeTransitionSeq,
-      next,
-      previous: this.activeMode,
-      controller,
-      externalSignal,
-      phase: "idle"
-    };
-    this.transition = transition;
-    const detachAbort = this.bindExternalAbort(transition);
-    try {
-      if (this.isTransitionAborted(transition)) {
-        return;
-      }
-      const previous = transition.previous;
-      if (previous) {
-        const exitOutcome = await this.runTransitionStep(
-          transition,
-          "exiting",
-          () => {
-            if (previousLifecycleController && !previousLifecycleController.signal.aborted) {
-              try {
-                previousLifecycleController.abort();
-              } catch (err) {
-                console.error(
-                  "[cartographer] failed to abort lifecycle controller",
-                  err
-                );
-              }
-            }
-            const exitSignal = previousLifecycleContext?.signal ?? previousLifecycleController?.signal ?? _CartographerPresenter.neverAbortSignal;
-            const exitCtx = previousLifecycleContext && previousLifecycleContext.signal === exitSignal ? previousLifecycleContext : this.createLifecycleContext(exitSignal);
-            return previous.onExit(exitCtx);
-          },
-          "[cartographer] mode exit failed"
-        );
-        if (exitOutcome === "aborted") {
-          return;
-        }
-        this.activeMode = null;
-        this.activeLifecycleContext = null;
-      }
-      if (this.isTransitionAborted(transition)) {
-        return;
-      }
-      this.activeLifecycleController = controller;
-      const modeCtx = this.ensureActiveLifecycleContext(transition.controller.signal);
-      this.activeMode = transition.next;
-      if (this.isTransitionAborted(transition)) {
-        this.activeMode = null;
-        this.activeLifecycleController = null;
-        this.activeLifecycleContext = null;
-        return;
-      }
-      const enterOutcome = await this.runTransitionStep(
-        transition,
-        "entering",
-        () => transition.next.onEnter(modeCtx),
-        "[cartographer] mode enter failed"
-      );
-      if (enterOutcome === "aborted") {
-        this.activeMode = null;
-        this.activeLifecycleController = null;
-        this.activeLifecycleContext = null;
-        return;
-      }
-      if (this.isTransitionAborted(transition)) {
-        this.activeMode = null;
-        this.activeLifecycleController = null;
-        this.activeLifecycleContext = null;
-        return;
-      }
-      const fileChangeOutcome = await this.runTransitionStep(
-        transition,
-        "entering",
-        () => transition.next.onFileChange(
-          this.currentFile,
-          this.mapLayer?.handles ?? null,
-          modeCtx
-        ),
-        "[cartographer] mode file change failed"
-      );
-      if (fileChangeOutcome === "aborted" && this.activeMode?.id === transition.next.id) {
-        this.activeMode = null;
-        this.activeLifecycleController = null;
-        this.activeLifecycleContext = null;
-        return;
-      }
-      this.shell?.setModeActive(transition.next.id);
-      this.shell?.setModeLabel(transition.next.label);
-      transition.phase = "idle";
-    } catch (err) {
-      if (!this.isTransitionAborted(transition)) {
-        console.error("[cartographer] mode transition failed", err);
-      }
-    } finally {
-      detachAbort();
-      if (this.transition?.id === transition.id) {
-        this.transition = null;
-      }
-      if (!this.activeMode) {
-        this.activeLifecycleController = null;
-        this.activeLifecycleContext = null;
-      }
-    }
-  }
-  async refresh() {
-    const token = ++this.loadToken;
-    await this.renderMap(token);
-  }
-  async renderMap(token) {
-    await this.teardownLayer();
-    if (!this.shell) return;
-    const transition = this.transition;
-    const signal = transition?.controller.signal ?? this.getActiveLifecycleSignal();
-    const ctx = this.ensureActiveLifecycleContext(signal);
-    const isTransitionAborted = () => transition ? this.isTransitionAborted(transition) : false;
-    if (!this.currentFile) {
-      this.shell.clearMap();
-      this.shell.setOverlay("Keine Karte ausgew\xE4hlt.");
-      this.currentOptions = null;
-      if (!isTransitionAborted()) {
-        await this.activeMode?.onFileChange(null, null, ctx);
-      }
-      return;
-    }
-    let options = null;
-    try {
-      options = await this.deps.loadHexOptions(this.app, this.currentFile);
-    } catch (err) {
-      console.error("[cartographer] failed to parse map options", err);
-    }
-    if (!options) {
-      this.shell.clearMap();
-      this.shell.setOverlay("Kein hex3x3-Block in dieser Datei.");
-      this.currentOptions = null;
-      if (!isTransitionAborted()) {
-        await this.activeMode?.onFileChange(this.currentFile, null, ctx);
-      }
-      return;
-    }
-    try {
-      const layer = await this.deps.createMapLayer(this.app, this.shell.mapHost, this.currentFile, options);
-      if (token !== this.loadToken || !this.shell) {
-        layer.destroy();
-        return;
-      }
-      if (isTransitionAborted()) {
-        layer.destroy();
-        return;
-      }
-      this.mapLayer = layer;
-      this.currentOptions = options;
-      this.shell.setOverlay(null);
-      if (!isTransitionAborted()) {
-        await this.activeMode?.onFileChange(this.currentFile, this.mapLayer.handles, ctx);
-      }
-    } catch (err) {
-      console.error("[cartographer] failed to render map", err);
-      this.shell.clearMap();
-      this.shell.setOverlay("Karte konnte nicht geladen werden.");
-      this.currentOptions = null;
-      if (!isTransitionAborted()) {
-        await this.activeMode?.onFileChange(this.currentFile, null, ctx);
-      }
-    }
-  }
-  async teardownLayer() {
-    if (this.mapLayer) {
-      try {
-        this.mapLayer.destroy();
-      } catch (err) {
-        console.error("[cartographer] failed to destroy map layer", err);
-      }
-      this.mapLayer = null;
-    }
-    this.shell?.clearMap();
-    this.currentOptions = null;
-  }
-};
-_CartographerPresenter.neverAbortSignal = new AbortController().signal;
-var CartographerPresenter = _CartographerPresenter;
+}
 
 // src/apps/cartographer/index.ts
 var VIEW_TYPE_CARTOGRAPHER = "cartographer-view";
 var VIEW_CARTOGRAPHER = VIEW_TYPE_CARTOGRAPHER;
-var createProvideModes = () => {
-  return () => {
-    try {
-      return provideCartographerModes();
-    } catch (error) {
-      console.error("[cartographer] Failed to resolve mode registry", error);
-      return [];
-    }
-  };
-};
-var CartographerView = class extends import_obsidian15.ItemView {
+var CartographerView = class extends import_obsidian17.ItemView {
   constructor(leaf) {
     super(leaf);
     this.hostEl = null;
     this.pendingFile = null;
-    this.presenter = new CartographerPresenter(this.app, {
-      provideModes: createProvideModes()
-    });
+    this.controller = new CartographerController(this.app);
+    this.callbacks = this.controller.callbacks;
   }
   getViewType() {
     return VIEW_TYPE_CARTOGRAPHER;
@@ -6302,7 +6336,7 @@ var CartographerView = class extends import_obsidian15.ItemView {
   }
   setFile(file) {
     this.pendingFile = file;
-    void this.presenter.setFile(file ?? null);
+    void this.controller.setFile(file ?? null);
   }
   async onOpen() {
     const container = this.containerEl;
@@ -6310,10 +6344,10 @@ var CartographerView = class extends import_obsidian15.ItemView {
     content.empty();
     this.hostEl = content.createDiv({ cls: "cartographer-host" });
     const fallbackFile = this.pendingFile ?? this.app.workspace.getActiveFile() ?? null;
-    await this.presenter.onOpen(this.hostEl, fallbackFile);
+    await this.controller.onOpen(this.hostEl, fallbackFile);
   }
   async onClose() {
-    await this.presenter.onClose();
+    await this.controller.onClose();
     this.hostEl = null;
   }
 };
@@ -6341,8 +6375,11 @@ async function detachCartographerLeaves(app) {
   }
 }
 
+// src/apps/view-manifest.ts
+init_view();
+
 // src/apps/library/view.ts
-var import_obsidian23 = require("obsidian");
+var import_obsidian25 = require("obsidian");
 
 // src/apps/library/view/mode.ts
 function scoreName(name, q) {
@@ -6391,7 +6428,7 @@ var BaseModeRenderer = class {
 };
 
 // src/apps/library/core/file-pipeline.ts
-var import_obsidian16 = require("obsidian");
+var import_obsidian18 = require("obsidian");
 function sanitizeVaultFileName(name, fallback) {
   const trimmed = (name ?? "").trim();
   const safeFallback = fallback && fallback.trim() ? fallback.trim() : "Entry";
@@ -6399,16 +6436,16 @@ function sanitizeVaultFileName(name, fallback) {
   return trimmed.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").replace(/^\.+$/, safeFallback).slice(0, 120);
 }
 function createVaultFilePipeline(options) {
-  const normalizedDir = (0, import_obsidian16.normalizePath)(options.dir);
+  const normalizedDir = (0, import_obsidian18.normalizePath)(options.dir);
   const extension = (options.extension || "md").replace(/^\.+/, "");
   const sanitize = options.sanitizeName ? options.sanitizeName : (name) => sanitizeVaultFileName(name, options.defaultBaseName);
   async function ensure(app) {
     let file = app.vault.getAbstractFileByPath(normalizedDir);
-    if (file instanceof import_obsidian16.TFolder) return file;
+    if (file instanceof import_obsidian18.TFolder) return file;
     await app.vault.createFolder(normalizedDir).catch(() => {
     });
     file = app.vault.getAbstractFileByPath(normalizedDir);
-    if (file instanceof import_obsidian16.TFolder) return file;
+    if (file instanceof import_obsidian18.TFolder) return file;
     throw new Error(`Could not create directory ${normalizedDir}`);
   }
   async function list(app) {
@@ -6416,8 +6453,8 @@ function createVaultFilePipeline(options) {
     const out = [];
     const walk = (folder) => {
       for (const child of folder.children) {
-        if (child instanceof import_obsidian16.TFolder) walk(child);
-        else if (child instanceof import_obsidian16.TFile && child.extension === extension) out.push(child);
+        if (child instanceof import_obsidian18.TFolder) walk(child);
+        else if (child instanceof import_obsidian18.TFile && child.extension === extension) out.push(child);
       }
     };
     walk(dir);
@@ -6426,7 +6463,7 @@ function createVaultFilePipeline(options) {
   function watch(app, onChange) {
     const base = `${normalizedDir}/`;
     const isRelevant = (file) => {
-      if (!(file instanceof import_obsidian16.TFile || file instanceof import_obsidian16.TFolder)) return false;
+      if (!(file instanceof import_obsidian18.TFile || file instanceof import_obsidian18.TFolder)) return false;
       const path = file.path.endsWith("/") ? file.path : `${file.path}/`;
       return path.startsWith(base);
     };
@@ -6448,11 +6485,11 @@ function createVaultFilePipeline(options) {
     const dir = await ensure(app);
     const baseName = sanitize(options.getBaseName(data) ?? options.defaultBaseName);
     let fileName = `${baseName}.${extension}`;
-    let path = (0, import_obsidian16.normalizePath)(`${dir.path}/${fileName}`);
+    let path = (0, import_obsidian18.normalizePath)(`${dir.path}/${fileName}`);
     let i = 2;
     while (app.vault.getAbstractFileByPath(path)) {
       fileName = `${baseName} (${i}).${extension}`;
-      path = (0, import_obsidian16.normalizePath)(`${dir.path}/${fileName}`);
+      path = (0, import_obsidian18.normalizePath)(`${dir.path}/${fileName}`);
       i += 1;
     }
     const content = options.toContent(data);
@@ -6742,7 +6779,7 @@ async function createCreatureFile(app, d) {
 }
 
 // src/apps/library/create/creature/modal.ts
-var import_obsidian21 = require("obsidian");
+var import_obsidian23 = require("obsidian");
 
 // src/apps/library/core/spell-files.ts
 var SPELLS_DIR = "SaltMarcher/Spells";
@@ -6988,11 +7025,11 @@ var CREATURE_LANGUAGE_PRESETS = [
 ];
 
 // src/apps/library/create/shared/token-editor.ts
-var import_obsidian17 = require("obsidian");
+var import_obsidian19 = require("obsidian");
 function mountTokenEditor(parent, title, model, options = {}) {
   const placeholder = options.placeholder ?? "Begriff eingeben\u2026";
   const addLabel = options.addButtonLabel ?? "+";
-  const setting = new import_obsidian17.Setting(parent).setName(title);
+  const setting = new import_obsidian19.Setting(parent).setName(title);
   let inputEl;
   let renderChips = () => {
   };
@@ -7040,7 +7077,7 @@ function mountTokenEditor(parent, title, model, options = {}) {
 }
 
 // src/apps/library/create/shared/layouts.ts
-var import_obsidian18 = require("obsidian");
+var import_obsidian20 = require("obsidian");
 function createFormCard(parent, options) {
   const { title, subtitle, registerValidator } = options;
   const card = parent.createDiv({ cls: "sm-cc-card" });
@@ -7085,7 +7122,7 @@ function createFieldGrid(parent, options) {
   }
   const grid = parent.createDiv({ cls: classes.join(" ") });
   const createSetting = (label, settingOptions) => {
-    const setting = new import_obsidian18.Setting(grid).setName(label);
+    const setting = new import_obsidian20.Setting(grid).setName(label);
     setting.settingEl.addClass("sm-cc-setting");
     const additional = settingOptions?.className;
     if (additional) {
@@ -7294,7 +7331,7 @@ function mountCreatureBasicsSection(parent, data) {
 }
 
 // src/apps/library/create/creature/section-stats-and-skills.ts
-var import_obsidian19 = require("obsidian");
+var import_obsidian21 = require("obsidian");
 init_search_dropdown();
 
 // src/apps/library/create/shared/stat-utils.ts
@@ -7412,7 +7449,7 @@ function mountCreatureStatsAndSkillsSection(parent, data, registerValidation) {
     }
   }
   const skillAbilityMap = new Map(CREATURE_SKILLS);
-  const skillsSetting = new import_obsidian19.Setting(root).setName("Fertigkeiten");
+  const skillsSetting = new import_obsidian21.Setting(root).setName("Fertigkeiten");
   skillsSetting.settingEl.addClass("sm-cc-skills");
   const skillsControl = skillsSetting.controlEl;
   skillsControl.addClass("sm-cc-skill-editor");
@@ -7532,7 +7569,7 @@ function mountCreatureStatsAndSkillsSection(parent, data, registerValidation) {
 }
 
 // src/apps/library/create/creature/section-utils.ts
-var import_obsidian20 = require("obsidian");
+var import_obsidian22 = require("obsidian");
 init_search_dropdown();
 function mountPresetSelectEditor(parent, title, options, model, config) {
   const resolved = typeof config === "string" ? { placeholder: config } : config ?? {};
@@ -7544,7 +7581,7 @@ function mountPresetSelectEditor(parent, title, options, model, config) {
     addButtonLabel,
     settingClass
   } = resolved;
-  const setting = new import_obsidian20.Setting(parent).setName(title);
+  const setting = new import_obsidian22.Setting(parent).setName(title);
   setting.settingEl.addClass("sm-cc-setting");
   if (settingClass) {
     const classes = Array.isArray(settingClass) ? settingClass : [settingClass];
@@ -7660,7 +7697,7 @@ function mountDamageResponseEditor(parent, damageLists) {
       chipClass: "sm-cc-damage-chip--vuln"
     }
   ];
-  const setting = new import_obsidian20.Setting(parent).setName("Schadenstyp-Reaktionen");
+  const setting = new import_obsidian22.Setting(parent).setName("Schadenstyp-Reaktionen");
   setting.settingEl.addClass("sm-cc-setting");
   const row = setting.controlEl.createDiv({ cls: "sm-cc-searchbar sm-cc-damage-row" });
   row.createEl("label", { cls: "sm-cc-damage-label", text: "Schadenstyp" });
@@ -8169,7 +8206,7 @@ function mountSpellsKnownSection(parent, data, getAvailableSpells) {
 }
 
 // src/apps/library/create/creature/modal.ts
-var CreateCreatureModal = class extends import_obsidian21.Modal {
+var CreateCreatureModal = class extends import_obsidian23.Modal {
   constructor(app, presetName, onSubmit) {
     super(app);
     this.availableSpells = [];
@@ -8223,7 +8260,7 @@ var CreateCreatureModal = class extends import_obsidian21.Modal {
     const entriesCard = createCard(fullColumn, "Eintr\xE4ge", "Traits, Aktionen, Bonusaktionen, Reaktionen und Legend\xE4res");
     mountEntriesSection(entriesCard.body, this.data, entriesCard.registerValidation);
     const footer = contentEl.createDiv({ cls: "sm-cc-modal-footer" });
-    new import_obsidian21.Setting(footer).addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close())).addButton((b) => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
+    new import_obsidian23.Setting(footer).addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close())).addButton((b) => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
   }
   onClose() {
     this.contentEl.empty();
@@ -8263,7 +8300,7 @@ var CreateCreatureModal = class extends import_obsidian21.Modal {
 };
 
 // src/apps/library/create/spell/modal.ts
-var import_obsidian22 = require("obsidian");
+var import_obsidian24 = require("obsidian");
 init_search_dropdown();
 
 // src/apps/library/create/spell/validation.ts
@@ -8285,7 +8322,7 @@ function collectSpellScalingIssues(data) {
 }
 
 // src/apps/library/create/spell/modal.ts
-var CreateSpellModal = class extends import_obsidian22.Modal {
+var CreateSpellModal = class extends import_obsidian24.Modal {
   constructor(app, presetName, onSubmit) {
     super(app);
     this.scalingIssues = [];
@@ -8300,11 +8337,11 @@ var CreateSpellModal = class extends import_obsidian22.Modal {
     this.scalingIssues = [];
     this.runScalingValidation = null;
     contentEl.createEl("h3", { text: "Neuen Zauber erstellen" });
-    new import_obsidian22.Setting(contentEl).setName("Name").addText((t) => {
+    new import_obsidian24.Setting(contentEl).setName("Name").addText((t) => {
       t.setPlaceholder("Fireball").setValue(this.data.name).onChange((v) => this.data.name = v.trim());
       t.inputEl.style.width = "28ch";
     });
-    new import_obsidian22.Setting(contentEl).setName("Grad").setDesc("0 = Zaubertrick").addDropdown((dd) => {
+    new import_obsidian24.Setting(contentEl).setName("Grad").setDesc("0 = Zaubertrick").addDropdown((dd) => {
       for (let i = 0; i <= 9; i++) dd.addOption(String(i), String(i));
       dd.onChange((v) => {
         this.data.level = parseInt(v, 10);
@@ -8315,7 +8352,7 @@ var CreateSpellModal = class extends import_obsidian22.Modal {
       } catch {
       }
     });
-    new import_obsidian22.Setting(contentEl).setName("Schule").addDropdown((dd) => {
+    new import_obsidian24.Setting(contentEl).setName("Schule").addDropdown((dd) => {
       const schools = ["Abjuration", "Conjuration", "Divination", "Enchantment", "Evocation", "Illusion", "Necromancy", "Transmutation"];
       for (const s of schools) dd.addOption(s, s);
       dd.onChange((v) => this.data.school = v);
@@ -8324,15 +8361,15 @@ var CreateSpellModal = class extends import_obsidian22.Modal {
       } catch {
       }
     });
-    new import_obsidian22.Setting(contentEl).setName("Wirkzeit").addText((t) => {
+    new import_obsidian24.Setting(contentEl).setName("Wirkzeit").addText((t) => {
       t.setPlaceholder("1 Aktion").onChange((v) => this.data.casting_time = v.trim());
       t.inputEl.style.width = "12ch";
     });
-    new import_obsidian22.Setting(contentEl).setName("Reichweite").addText((t) => {
+    new import_obsidian24.Setting(contentEl).setName("Reichweite").addText((t) => {
       t.setPlaceholder("60 Fu\xDF").onChange((v) => this.data.range = v.trim());
       t.inputEl.style.width = "12ch";
     });
-    const comps = new import_obsidian22.Setting(contentEl).setName("Komponenten");
+    const comps = new import_obsidian24.Setting(contentEl).setName("Komponenten");
     let cV = false, cS = false, cM = false;
     const updateComps = () => {
       const arr = [];
@@ -8358,22 +8395,22 @@ var CreateSpellModal = class extends import_obsidian22.Modal {
       cM = v;
       updateComps();
     });
-    new import_obsidian22.Setting(contentEl).setName("Materialien").addText((t) => {
+    new import_obsidian24.Setting(contentEl).setName("Materialien").addText((t) => {
       t.setPlaceholder("winzige Kugel aus Guano und Schwefel").onChange((v) => this.data.materials = v.trim());
       t.inputEl.style.width = "34ch";
     });
-    new import_obsidian22.Setting(contentEl).setName("Dauer").addText((t) => {
+    new import_obsidian24.Setting(contentEl).setName("Dauer").addText((t) => {
       t.setPlaceholder("Augenblicklich / Konzentration, bis zu 1 Minute").onChange((v) => this.data.duration = v.trim());
       t.inputEl.style.width = "34ch";
     });
-    const flags = new import_obsidian22.Setting(contentEl).setName("Flags");
+    const flags = new import_obsidian24.Setting(contentEl).setName("Flags");
     const cbConc = flags.controlEl.createEl("input", { attr: { type: "checkbox" } });
     flags.controlEl.createEl("label", { text: "Konzentration" });
     const cbRit = flags.controlEl.createEl("input", { attr: { type: "checkbox" } });
     flags.controlEl.createEl("label", { text: "Ritual" });
     cbConc.addEventListener("change", () => this.data.concentration = cbConc.checked);
     cbRit.addEventListener("change", () => this.data.ritual = cbRit.checked);
-    new import_obsidian22.Setting(contentEl).setName("Angriff").addDropdown((dd) => {
+    new import_obsidian24.Setting(contentEl).setName("Angriff").addDropdown((dd) => {
       const opts = ["", "Melee Spell Attack", "Ranged Spell Attack", "Melee Weapon Attack", "Ranged Weapon Attack"];
       for (const s of opts) dd.addOption(s, s || "(kein)");
       dd.onChange((v) => this.data.attack = v || void 0);
@@ -8382,7 +8419,7 @@ var CreateSpellModal = class extends import_obsidian22.Modal {
       } catch {
       }
     });
-    const save = new import_obsidian22.Setting(contentEl).setName("Rettungswurf");
+    const save = new import_obsidian24.Setting(contentEl).setName("Rettungswurf");
     save.addDropdown((dd) => {
       const abil = ["", "STR", "DEX", "CON", "INT", "WIS", "CHA"];
       for (const a of abil) dd.addOption(a, a || "(kein)");
@@ -8397,7 +8434,7 @@ var CreateSpellModal = class extends import_obsidian22.Modal {
       t.setPlaceholder("Half on save / Negates \u2026").onChange((v) => this.data.save_effect = v.trim() || void 0);
       t.inputEl.style.width = "18ch";
     });
-    const dmg = new import_obsidian22.Setting(contentEl).setName("Schaden");
+    const dmg = new import_obsidian24.Setting(contentEl).setName("Schaden");
     dmg.controlEl.createEl("label", { text: "W\xFCrfel" });
     dmg.addText((t) => {
       t.setPlaceholder("8d6").onChange((v) => this.data.damage = v.trim() || void 0);
@@ -8453,7 +8490,7 @@ var CreateSpellModal = class extends import_obsidian22.Modal {
       applyScalingValidation(this.scalingIssues);
     };
     this.runScalingValidation();
-    new import_obsidian22.Setting(contentEl).addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close())).addButton((b) => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
+    new import_obsidian24.Setting(contentEl).addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close())).addButton((b) => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
     this.scope.register([], "Enter", () => this.submit());
   }
   onClose() {
@@ -8898,7 +8935,7 @@ var LIBRARY_COPY = {
   }
 };
 var VIEW_LIBRARY = "salt-library";
-var LibraryView = class extends import_obsidian23.ItemView {
+var LibraryView = class extends import_obsidian25.ItemView {
   constructor() {
     super(...arguments);
     this.mode = "creatures";
@@ -9011,10 +9048,62 @@ var LibraryView = class extends import_obsidian23.ItemView {
     this.searchInput?.focus();
   }
 };
+async function openLibrary(app) {
+  const leaf = app.workspace.getLeaf(true);
+  await leaf.setViewState({ type: VIEW_LIBRARY, active: true });
+  app.workspace.revealLeaf(leaf);
+}
 
-// src/app/main.ts
-init_terrain_store();
-init_terrain();
+// src/apps/view-manifest.ts
+var VIEW_MANIFEST = [
+  {
+    viewType: VIEW_CARTOGRAPHER,
+    integrationId: "obsidian:cartographer-view",
+    displayName: "Cartographer",
+    viewIcon: "compass",
+    createView: (leaf) => new CartographerView(leaf),
+    activation: {
+      open: (app) => openCartographer(app),
+      ribbon: {
+        icon: "compass",
+        title: "Open Cartographer"
+      },
+      commands: [
+        {
+          id: "open-cartographer",
+          name: "Open Cartographer"
+        }
+      ]
+    }
+  },
+  {
+    viewType: VIEW_ENCOUNTER,
+    integrationId: "obsidian:encounter-view",
+    displayName: "Encounter",
+    viewIcon: "swords",
+    createView: (leaf) => new EncounterView(leaf)
+  },
+  {
+    viewType: VIEW_LIBRARY,
+    integrationId: "obsidian:library-view",
+    displayName: "Library",
+    viewIcon: "library",
+    createView: (leaf) => new LibraryView(leaf),
+    activation: {
+      open: (app) => openLibrary(app),
+      ribbon: {
+        icon: "book",
+        title: "Open Library"
+      },
+      commands: [
+        {
+          id: "open-library",
+          name: "Open Library"
+        }
+      ]
+    }
+  }
+];
 
 // src/app/css.ts
 var viewContainerCss = `
@@ -9898,48 +9987,173 @@ var HEX_PLUGIN_CSS_SECTIONS = {
 };
 var HEX_PLUGIN_CSS = Object.values(HEX_PLUGIN_CSS_SECTIONS).join("\n\n");
 
+// src/app/integration-telemetry.ts
+var import_obsidian26 = require("obsidian");
+var notifiedOperations = /* @__PURE__ */ new Set();
+function reportIntegrationIssue(payload) {
+  const { integrationId, operation, error, userMessage } = payload;
+  const logPrefix = `[salt-marcher] integration(${integrationId}) ${operation} failed`;
+  console.error(logPrefix, error);
+  const dedupeKey = `${integrationId}:${operation}`;
+  if (notifiedOperations.has(dedupeKey)) return;
+  notifiedOperations.add(dedupeKey);
+  new import_obsidian26.Notice(userMessage);
+}
+
+// src/app/bootstrap-services.ts
+init_terrain_store();
+init_terrain();
+var defaultLogger = {
+  info: (message, context) => {
+    if (context) {
+      console.info(`[salt-marcher] ${message}`, context);
+    } else {
+      console.info(`[salt-marcher] ${message}`);
+    }
+  },
+  warn: (message, context) => {
+    if (context) {
+      console.warn(`[salt-marcher] ${message}`, context);
+    } else {
+      console.warn(`[salt-marcher] ${message}`);
+    }
+  },
+  error: (message, context) => {
+    if (context) {
+      console.error(`[salt-marcher] ${message}`, context);
+    } else {
+      console.error(`[salt-marcher] ${message}`);
+    }
+  }
+};
+function createTerrainBootstrap(app, config = {}) {
+  const deps = {
+    ensureTerrainFile: config.ensureTerrainFile ?? ensureTerrainFile,
+    loadTerrains: config.loadTerrains ?? loadTerrains,
+    setTerrains: config.setTerrains ?? setTerrains,
+    watchTerrains: config.watchTerrains ?? watchTerrains,
+    logger: config.logger ?? defaultLogger
+  };
+  let disposeWatcher = null;
+  const stop = () => {
+    if (disposeWatcher) {
+      try {
+        disposeWatcher();
+      } catch (error) {
+        deps.logger.warn?.("Failed to dispose terrain watcher", { error });
+      }
+    }
+    disposeWatcher = null;
+  };
+  const start = async () => {
+    stop();
+    let primeError;
+    let watchError;
+    try {
+      await deps.ensureTerrainFile(app);
+      const map = await deps.loadTerrains(app);
+      deps.setTerrains(map);
+    } catch (error) {
+      primeError = error;
+      deps.logger.error?.("Failed to prime terrain palette from vault", { error });
+    }
+    try {
+      disposeWatcher = deps.watchTerrains(app, {
+        onError: (error, meta) => {
+          deps.logger.error?.("Terrain watcher failed to apply vault change", {
+            error,
+            reason: meta.reason
+          });
+        }
+      });
+    } catch (error) {
+      watchError = error;
+      deps.logger.error?.("Failed to register terrain watcher", { error });
+      disposeWatcher = null;
+    }
+    return {
+      primed: !primeError && !watchError,
+      primeError,
+      watchError
+    };
+  };
+  return {
+    start,
+    stop
+  };
+}
+
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian24.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian27.Plugin {
   async onload() {
-    this.registerView(VIEW_CARTOGRAPHER, (leaf) => new CartographerView(leaf));
-    this.registerView(VIEW_ENCOUNTER, (leaf) => new EncounterView(leaf));
-    this.registerView(VIEW_LIBRARY, (leaf) => new LibraryView(leaf));
-    await ensureTerrainFile(this.app);
-    setTerrains(await loadTerrains(this.app));
-    this.unwatchTerrains = watchTerrains(this.app, () => {
-    });
-    this.addRibbonIcon("compass", "Open Cartographer", async () => {
-      await openCartographer(this.app);
-    });
-    this.addRibbonIcon("book", "Open Library", async () => {
-      const leaf = this.app.workspace.getLeaf(true);
-      await leaf.setViewState({ type: VIEW_LIBRARY, active: true });
-      this.app.workspace.revealLeaf(leaf);
-    });
-    this.addCommand({
-      id: "open-cartographer",
-      name: "Open Cartographer",
-      callback: async () => {
-        await openCartographer(this.app);
+    for (const manifestEntry of VIEW_MANIFEST) {
+      try {
+        this.registerView(manifestEntry.viewType, manifestEntry.createView);
+      } catch (error) {
+        this.failIntegration("register-view", manifestEntry.integrationId, error, `${manifestEntry.displayName}-Ansicht konnte nicht registriert werden. Bitte die Konsole pruefen.`);
       }
-    });
-    this.addCommand({
-      id: "open-library",
-      name: "Open Library",
-      callback: async () => {
-        const leaf = this.app.workspace.getLeaf(true);
-        await leaf.setViewState({ type: VIEW_LIBRARY, active: true });
-        this.app.workspace.revealLeaf(leaf);
+    }
+    this.terrainBootstrap = createTerrainBootstrap(this.app);
+    const terrainBootstrapResult = await this.terrainBootstrap.start();
+    if (!terrainBootstrapResult.primed) {
+      const operation = terrainBootstrapResult.primeError ? "prime-dataset" : "watch-dataset";
+      const error = terrainBootstrapResult.primeError ?? terrainBootstrapResult.watchError ?? new Error("Terrain bootstrap failed");
+      const userMessage = operation === "prime-dataset" ? "Terrain-Daten konnten nicht geladen werden. Bitte die Vault-Dateien pruefen." : "Terrain-Aenderungen koennen nicht ueberwacht werden. Bitte die Konsole pruefen.";
+      this.failIntegration(operation, "obsidian:terrain-palette", error, userMessage);
+    }
+    for (const manifestEntry of VIEW_MANIFEST) {
+      const activation = manifestEntry.activation;
+      if (!activation?.ribbon) continue;
+      try {
+        this.addRibbonIcon(activation.ribbon.icon, activation.ribbon.title, async () => {
+          try {
+            await activation.open(this.app);
+          } catch (error) {
+            this.failIntegration("activate-view", manifestEntry.integrationId, error, `${manifestEntry.displayName} konnte nicht geoeffnet werden. Bitte die Konsole pruefen.`);
+          }
+        });
+      } catch (error) {
+        this.failIntegration("register-ribbon", manifestEntry.integrationId, error, `${manifestEntry.displayName}-Ribbon konnte nicht erstellt werden. Bitte die Konsole pruefen.`);
       }
-    });
+    }
+    for (const manifestEntry of VIEW_MANIFEST) {
+      const activation = manifestEntry.activation;
+      if (!activation?.commands?.length) continue;
+      for (const command of activation.commands) {
+        try {
+          this.addCommand({
+            id: command.id,
+            name: command.name,
+            callback: async () => {
+              try {
+                await activation.open(this.app);
+              } catch (error) {
+                this.failIntegration("activate-view", manifestEntry.integrationId, error, `${manifestEntry.displayName} konnte nicht geoeffnet werden. Bitte die Konsole pruefen.`);
+              }
+            }
+          });
+        } catch (error) {
+          this.failIntegration("register-command", manifestEntry.integrationId, error, `${manifestEntry.displayName}-Kommando konnte nicht registriert werden. Bitte die Konsole pruefen.`);
+        }
+      }
+    }
     this.injectCss();
   }
   async onunload() {
-    this.unwatchTerrains?.();
-    await detachCartographerLeaves(this.app);
+    this.terrainBootstrap?.stop();
+    try {
+      await detachCartographerLeaves(this.app);
+    } catch (error) {
+      this.failIntegration("detach-view", "obsidian:cartographer-view", error, "Cartographer-Ansichten konnten nicht geschlossen werden. Bitte die Konsole pruefen.");
+    }
     this.removeCss();
   }
+  failIntegration(operation, integrationId, error, userMessage) {
+    reportIntegrationIssue({ integrationId, operation, error, userMessage });
+    throw error;
+  }
   injectCss() {
+    document.querySelectorAll("#hex-css").forEach((existingStyle) => existingStyle.remove());
     const style = document.createElement("style");
     style.id = "hex-css";
     style.textContent = HEX_PLUGIN_CSS;
