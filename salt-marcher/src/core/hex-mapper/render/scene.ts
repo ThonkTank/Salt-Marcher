@@ -1,6 +1,6 @@
 // src/core/hex-mapper/render/scene.ts
 import { hexPolygonPoints } from "../hex-geom";
-import type { HexCoord, HexScene, HexSceneConfig } from "./types";
+import type { HexCoord, HexScene, HexSceneConfig, HexViewBox } from "./types";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -10,13 +10,14 @@ type Rect = { minX: number; minY: number; maxX: number; maxY: number };
 
 type SceneInternals = {
     bounds: Rect | null;
+    viewBox: HexViewBox | null;
     updateViewBox(): void;
     centerOf(coord: HexCoord): { cx: number; cy: number };
     bboxOf(coord: HexCoord): Rect;
 };
 
 export function createHexScene(config: HexSceneConfig): HexScene {
-    const { host, radius, padding, base, initialCoords } = config;
+    const { host, radius, padding, base, initialCoords, onViewBoxChange } = config;
 
     const hexW = Math.sqrt(3) * radius;
     const hexH = 2 * radius;
@@ -43,6 +44,7 @@ export function createHexScene(config: HexSceneConfig): HexScene {
 
     const internals: SceneInternals = {
         bounds: null,
+        viewBox: null,
         updateViewBox() {
             if (!internals.bounds) return;
             const { minX, minY, maxX, maxY } = internals.bounds;
@@ -52,11 +54,18 @@ export function createHexScene(config: HexSceneConfig): HexScene {
             const paddedMaxY = Math.ceil(maxY + padding);
             const width = Math.max(1, paddedMaxX - paddedMinX);
             const height = Math.max(1, paddedMaxY - paddedMinY);
+            const previous = internals.viewBox ? { ...internals.viewBox } : null;
+            const next = { minX: paddedMinX, minY: paddedMinY, width, height };
+
+            internals.viewBox = next;
+
             svg.setAttribute("viewBox", `${paddedMinX} ${paddedMinY} ${width} ${height}`);
             overlay.setAttribute("x", String(paddedMinX));
             overlay.setAttribute("y", String(paddedMinY));
             overlay.setAttribute("width", String(width));
             overlay.setAttribute("height", String(height));
+
+            onViewBoxChange?.({ prev: previous, next });
         },
         centerOf(coord: HexCoord) {
             const { r, c } = coord;
@@ -80,6 +89,7 @@ export function createHexScene(config: HexSceneConfig): HexScene {
             internals.bounds = { ...next };
             return;
         }
+
         const current = internals.bounds;
         current.minX = Math.min(current.minX, next.minX);
         current.minY = Math.min(current.minY, next.minY);
@@ -152,11 +162,10 @@ export function createHexScene(config: HexSceneConfig): HexScene {
         ensurePolys,
         setFill,
         getViewBox: () => {
-            if (!internals.bounds) {
+            if (!internals.viewBox) {
                 return { minX: 0, minY: 0, width: 0, height: 0 };
             }
-            const { minX, minY, maxX, maxY } = internals.bounds;
-            return { minX, minY, width: maxX - minX, height: maxY - minY };
+            return { ...internals.viewBox };
         },
         destroy: () => {
             polyByCoord.clear();

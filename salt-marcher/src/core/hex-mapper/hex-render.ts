@@ -9,7 +9,12 @@ import { createCoordinateTranslator } from "./render/coordinates";
 import { createInteractionAdapter } from "./render/interaction-adapter";
 import { bootstrapHexTiles } from "./render/bootstrap";
 import { selectRenderSurface, type HexRenderSurfaceSelection } from "./render/surface";
-import type { HexCoord, HexInteractionDelegate } from "./render/types";
+import type {
+    HexCameraController,
+    HexCoord,
+    HexInteractionDelegate,
+    HexViewBox,
+} from "./render/types";
 export type { HexInteractionDelegate, HexInteractionOutcome } from "./render/types";
 export { createEventBackedInteractionDelegate } from "./render/interaction-delegate";
 
@@ -42,21 +47,39 @@ export async function renderHexMap(
     const { tiles, base, initialCoords } = await bootstrapHexTiles(app, mapPath);
     const surface = selectRenderSurface();
 
+    const pendingViewBoxChanges: Array<{ prev: HexViewBox; next: HexViewBox }> = [];
+    let camera: HexCameraController | null = null;
+
     const scene = createHexScene({
         host,
         radius,
         padding,
         base,
         initialCoords,
+        onViewBoxChange: (change) => {
+            if (!change.prev) return;
+            if (camera) {
+                camera.syncViewBox(change);
+                return;
+            }
+            pendingViewBoxChanges.push(change);
+        },
     });
 
-    const camera = createCameraController(
+    camera = createCameraController(
         scene.svg,
         scene.contentG,
         scene.overlay,
         host,
         { ...CAMERA_OPTIONS }
     );
+
+    if (pendingViewBoxChanges.length) {
+        for (const change of pendingViewBoxChanges) {
+            camera?.syncViewBox(change);
+        }
+        pendingViewBoxChanges.length = 0;
+    }
 
     const coordinates = createCoordinateTranslator({
         svg: scene.svg,
@@ -100,7 +123,7 @@ export async function renderHexMap(
         },
         destroy: () => {
             interactions.destroy();
-            camera.destroy();
+            camera?.destroy();
             scene.destroy();
         },
     };

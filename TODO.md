@@ -9,6 +9,7 @@ Die Aufgaben sind nach Priorität sortiert. Dezimalstellen kennzeichnen die Reih
 - keine offenen ToDos.
 
 ## 2. Robustheit & Wartbarkeit
+- 2.34 [salt-marcher/src/apps/AGENTS.md] Kapsle View-Metadaten (Typ, Icon, Display-Name, Ribbon-Konfiguration) in einem gemeinsamen Manifest (`apps/view-manifest.ts`) und nutze es in `src/app/main.ts`, um Registrierungen, Ribbons und Commands generisch aufzubauen.
 - 2.47 [salt-marcher/src/apps/cartographer/mode-registry/AGENTS.md] Kernprovider-Registrierung in `ensureCoreProviders()` transaktional absichern: erfolgreiche Registrierungen bei Fehlern wieder entfernen oder gar nicht erst eintragen, damit Folgeaufrufe nicht auf Duplicate-IDs laufen.
 - 2.47 [salt-marcher/src/apps/cartographer/mode-registry/providers/AGENTS.md] Provider-Metadaten zentralisieren (z.B. über ein gemeinsames Manifest), `metadata.source` auf die aktuellen Module (`apps/cartographer/modes/*`) aktualisieren und die `version` aus `package.json` ableiten, damit Fehlerlogs und Telemetrie konsistent bleiben.
 - 2.48 [salt-marcher/src/apps/cartographer/mode-registry/providers/AGENTS.md] Persistenz-Capabilities der Registry um eine Variante für Auto-Saves erweitern, den Inspector-Provider darauf umstellen und Tests ergänzen, die `capabilities` gegen die tatsächlichen Modusmethoden validieren.
