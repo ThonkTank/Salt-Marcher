@@ -13,7 +13,7 @@ import {
   type CreatureMovementType,
 } from "./presets";
 import { mountTokenEditor } from "../shared/token-editor";
-import { createFieldGrid } from "../shared/layouts";
+import { createFormCard, createFieldGrid } from "../shared/layouts";
 
 type SpeedFieldKey = Exclude<CreatureMovementType, never>;
 
