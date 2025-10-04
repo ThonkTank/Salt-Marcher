@@ -14,8 +14,14 @@ export interface TerrainBootstrapLogger {
     error?(message: string, context?: Record<string, unknown>): void;
 }
 
+export interface TerrainBootstrapResult {
+    primed: boolean;
+    primeError?: unknown;
+    watchError?: unknown;
+}
+
 export interface TerrainBootstrapHandle {
-    start(): Promise<boolean>;
+    start(): Promise<TerrainBootstrapResult>;
     stop(): void;
 }
 
@@ -73,15 +79,16 @@ export function createTerrainBootstrap(app: App, config: TerrainBootstrapConfig 
         disposeWatcher = null;
     };
 
-    const start = async (): Promise<boolean> => {
+    const start = async (): Promise<TerrainBootstrapResult> => {
         stop();
-        let primed = true;
+        let primeError: unknown | undefined;
+        let watchError: unknown | undefined;
         try {
             await deps.ensureTerrainFile(app);
             const map = await deps.loadTerrains(app);
             deps.setTerrains(map);
         } catch (error) {
-            primed = false;
+            primeError = error;
             deps.logger.error?.("Failed to prime terrain palette from vault", { error: error as unknown });
         }
 
@@ -95,12 +102,16 @@ export function createTerrainBootstrap(app: App, config: TerrainBootstrapConfig 
                 },
             });
         } catch (error) {
-            primed = false;
+            watchError = error;
             deps.logger.error?.("Failed to register terrain watcher", { error: error as unknown });
             disposeWatcher = null;
         }
 
-        return primed;
+        return {
+            primed: !primeError && !watchError,
+            primeError,
+            watchError,
+        };
     };
 
     return {

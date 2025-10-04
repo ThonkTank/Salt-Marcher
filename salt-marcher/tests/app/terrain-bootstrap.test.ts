@@ -28,9 +28,11 @@ describe("createTerrainBootstrap", () => {
             logger,
         });
 
-        const primed = await bootstrap.start();
+        const result = await bootstrap.start();
 
-        expect(primed).toBe(true);
+        expect(result.primed).toBe(true);
+        expect(result.primeError).toBeUndefined();
+        expect(result.watchError).toBeUndefined();
         expect(ensureTerrainFile).toHaveBeenCalledWith(app);
         expect(loadTerrains).toHaveBeenCalledWith(app);
         expect(setTerrains).toHaveBeenCalledWith({ Forest: { color: "#0f0", speed: 0.5 } });
@@ -64,9 +66,11 @@ describe("createTerrainBootstrap", () => {
             logger,
         });
 
-        const primed = await bootstrap.start();
+        const result = await bootstrap.start();
 
-        expect(primed).toBe(false);
+        expect(result.primed).toBe(false);
+        expect(result.primeError).toBe(failure);
+        expect(result.watchError).toBeUndefined();
         expect(logger.error).toHaveBeenCalledWith(
             "Failed to prime terrain palette from vault",
             expect.objectContaining({ error: failure })
@@ -127,9 +131,11 @@ describe("createTerrainBootstrap", () => {
             logger,
         });
 
-        const primed = await bootstrap.start();
+        const result = await bootstrap.start();
 
-        expect(primed).toBe(false);
+        expect(result.primed).toBe(false);
+        expect(result.primeError).toBeUndefined();
+        expect(result.watchError).toBe(error);
         expect(logger.error).toHaveBeenCalledWith(
             "Failed to register terrain watcher",
             expect.objectContaining({ error })

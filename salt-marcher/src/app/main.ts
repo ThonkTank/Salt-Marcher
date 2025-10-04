@@ -4,13 +4,12 @@ import { Plugin, WorkspaceLeaf } from "obsidian";
 import { EncounterView, VIEW_ENCOUNTER } from "../apps/encounter/view";
 import { VIEW_CARTOGRAPHER, CartographerView, openCartographer, detachCartographerLeaves } from "../apps/cartographer";
 import { VIEW_LIBRARY, LibraryView } from "../apps/library/view";
-import { ensureTerrainFile, loadTerrains, watchTerrains } from "../core/terrain-store";
-import { setTerrains } from "../core/terrain";
 import { HEX_PLUGIN_CSS } from "./css";
 import { reportIntegrationIssue, type IntegrationId, type IntegrationOperation } from "./integration-telemetry";
+import { createTerrainBootstrap, type TerrainBootstrapHandle } from "./bootstrap-services";
 
 export default class SaltMarcherPlugin extends Plugin {
-    private unwatchTerrains?: () => void;
+    private terrainBootstrap?: TerrainBootstrapHandle;
     async onload() {
         // Views
         try {
@@ -30,19 +29,15 @@ export default class SaltMarcherPlugin extends Plugin {
         }
 
         // Load terrain data and keep it synchronised with the filesystem.
-        try {
-            await ensureTerrainFile(this.app);
-            const palette = await loadTerrains(this.app);
-            setTerrains(palette);
-        } catch (error: unknown) {
-            this.failIntegration("prime-dataset", "obsidian:terrain-palette", error, "Terrain-Daten konnten nicht geladen werden. Bitte die Vault-Dateien pruefen.");
-        }
-        try {
-            this.unwatchTerrains = watchTerrains(this.app, () => {
-                /* Views react through events */
-            });
-        } catch (error: unknown) {
-            this.failIntegration("watch-dataset", "obsidian:terrain-palette", error, "Terrain-Aenderungen koennen nicht ueberwacht werden. Bitte die Konsole pruefen.");
+        this.terrainBootstrap = createTerrainBootstrap(this.app);
+        const terrainBootstrapResult = await this.terrainBootstrap.start();
+        if (!terrainBootstrapResult.primed) {
+            const operation: IntegrationOperation = terrainBootstrapResult.primeError ? "prime-dataset" : "watch-dataset";
+            const error = terrainBootstrapResult.primeError ?? terrainBootstrapResult.watchError ?? new Error("Terrain bootstrap failed");
+            const userMessage = operation === "prime-dataset"
+                ? "Terrain-Daten konnten nicht geladen werden. Bitte die Vault-Dateien pruefen."
+                : "Terrain-Aenderungen koennen nicht ueberwacht werden. Bitte die Konsole pruefen.";
+            this.failIntegration(operation, "obsidian:terrain-palette", error, userMessage);
         }
 
         // Ribbons
@@ -110,11 +105,7 @@ export default class SaltMarcherPlugin extends Plugin {
     }
 
     async onunload() {
-        try {
-            this.unwatchTerrains?.();
-        } catch (error: unknown) {
-            this.failIntegration("watch-dataset", "obsidian:terrain-palette", error, "Terrain-Ueberwachung konnte nicht beendet werden. Bitte die Konsole pruefen.");
-        }
+        this.terrainBootstrap?.stop();
         try {
             await detachCartographerLeaves(this.app);
         } catch (error: unknown) {

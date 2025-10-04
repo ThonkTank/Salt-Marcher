@@ -1,12 +1,25 @@
-Arbeite ordentlich und nachhaltig. Überlege dir langfristige Lösungen. Dokumentiere Code gründlich. Halte dich an standartisiete Prozese und überlege dir neue Standards wenn nötog. Jeder Ordner sollte eine AGENTS.md Datei enthalten, in der folgendes steht:
-1. Eine Übersicht der Ziele, die in dem Ordner erreicht werden sollen. Features, Workflows, user-erlebnisse etc.
-2. Wie diese Ziele momentan vom Inhalt des Ordners umgesetzt werden.
-3. Eine ToDo Liste für alles, was dazu noch getan werden muss.
-4. Eine Liste aller Standards, die in dem Ordner verwendet werden.
+# Repository-Leitplanken
 
-Jedes Skript sollte einen kurzen header haben, der eine ähnliche Funkoin hat. Ggf. bei komplexeren Skripten mehrere Header für unterschiedliche Abschnite.
+Arbeite ordentlich, nachhaltig und mit Blick auf langfristige Lösungen. Dokumentiere Code und Entscheidungen so, dass sie für zukünftige Maintainer*innen nachvollziehbar bleiben. Halte dich an etablierte Standards und verbessere sie nur, wenn der Nutzen klar belegt ist.
 
-Wenn Sinnvoll sollten Ordner eine README.md enthalten, in der aus User Sicht Funktionen, UI Interaktionen und Arbeitsabläufe erklärt werden. Diese READMEs sollen reine Endnutzer Anleitungen sein und dementsprechend keine technischen Details enthalten. Verlinken ggf. READMEs, wenn sie sich auf Funktionen beziehen welche anderswo erklärt werden.
+## 1. Ziele dieses Repositories
+- Einheitliche Dokumentation der Arbeitsweise für alle Unterordner schaffen.
+- Klare Erwartungen an Codequalität, Struktur und Dokumentation festhalten.
+- Nachhaltige Verbesserungen anstoßen und Aufgaben transparent priorisieren.
 
-Halte Dokumentation so kurz und präzise wie möglich. Nutze die geringst mögliche Menge an Worten.
-Ergänze fehlende Dokumentation sofort.
+## 2. Aktueller Umsetzungsstand
+- Dieses Dokument definiert die globalen Standards für das Projekt.
+- Viele Unterordner verfügen bereits über eigene `AGENTS.md`, die diese Standards konkretisieren.
+- README-Dateien und Dokumentation existieren teilweise, sind jedoch nicht überall konsistent gepflegt.
+
+## 3. Offene Aufgaben
+- Ergänze in allen relevanten Ordnern eine `AGENTS.md`, falls sie noch fehlt.
+- Sorge dafür, dass jede vorhandene `AGENTS.md` die Abschnitte Ziele, aktueller Stand, ToDos und Standards enthält.
+- Ergänze fehlende README-Dateien für Endnutzer*innen, sobald ein Ordner user-facing Funktionalität bereitstellt.
+
+## 4. Standards und Arbeitsweisen
+- Dokumentation stets knapp, präzise und aktuell halten.
+- Jeder Ordner erhält eine eigene `AGENTS.md` mit den oben genannten vier Abschnitten.
+- Jedes Skript bekommt einen Header mit Zweck, Inputs/Outputs und Besonderheiten; komplexe Skripte nutzen Abschnitts-Header.
+- README-Dateien beschränken sich auf die Nutzerperspektive und verlinken technische Details nur bei Bedarf.
+- Fehlende Dokumentation wird umgehend ergänzt, statt als offene Aufgabe liegen zu bleiben.

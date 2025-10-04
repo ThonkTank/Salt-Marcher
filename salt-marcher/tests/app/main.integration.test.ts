@@ -103,10 +103,13 @@ describe("SaltMarcherPlugin bootstrap integration", () => {
         expect(setTerrains).toHaveBeenCalledTimes(1);
         expect(setTerrains).toHaveBeenCalledWith({ plains: { color: "#ccc", speed: 1 } });
         expect(watchTerrains).toHaveBeenCalledTimes(1);
-        expect(watchTerrains).toHaveBeenCalledWith(plugin.app, expect.any(Function));
+        expect(watchTerrains).toHaveBeenCalledWith(
+            plugin.app,
+            expect.objectContaining({ onError: expect.any(Function) })
+        );
 
-        const [, callback] = watchTerrains.mock.calls[0];
-        await expect(Promise.resolve((callback as () => Promise<void> | void)?.()))
+        const [, options] = watchTerrains.mock.calls[0];
+        await expect(Promise.resolve(options?.onError?.(undefined, { reason: "modify" })))
             .resolves.toBeUndefined();
 
         expect(watchTerrains.mock.results[0]?.value).toBe(unwatch);
@@ -186,5 +189,21 @@ describe("SaltMarcherPlugin bootstrap integration", () => {
         });
     });
 
-    it.todo("integrates createTerrainBootstrap once the merge conflict around main.ts is resolved");
+    it("reports telemetry when terrain watching fails to start", async () => {
+        const plugin = createPlugin();
+        const failure = new Error("watch failed");
+        watchTerrains.mockImplementationOnce(() => {
+            throw failure;
+        });
+
+        await expect(plugin.onload()).rejects.toBe(failure);
+
+        expect(reportIntegrationIssue).toHaveBeenCalledTimes(1);
+        expect(reportIntegrationIssue).toHaveBeenCalledWith({
+            integrationId: "obsidian:terrain-palette",
+            operation: "watch-dataset",
+            error: failure,
+            userMessage: "Terrain-Aenderungen koennen nicht ueberwacht werden. Bitte die Konsole pruefen.",
+        });
+    });
 });
