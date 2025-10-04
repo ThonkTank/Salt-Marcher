@@ -1,70 +1,12 @@
 // salt-marcher/tests/cartographer/editor/terrain-brush-options.test.ts
 // Prüft das Terrain-Brush-Panel auf DOM-Setup und Brush-Interaktionen.
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { App } from "obsidian";
 import type { RenderHandles } from "../../../src/core/hex-mapper/hex-render";
 import {
     mountBrushPanel,
     type BrushPanelContext,
 } from "../../../src/apps/cartographer/editor/tools/terrain-brush/brush-options";
-
-const ensureObsidianDomHelpers = () => {
-    const proto = HTMLElement.prototype as any;
-    if (!proto.createEl) {
-        proto.createEl = function (tag: string, options?: { text?: string; cls?: string; attr?: Record<string, string> }) {
-            const el = document.createElement(tag);
-            if (options?.text) el.textContent = options.text;
-            if (options?.cls) {
-                for (const cls of options.cls.split(/\s+/).filter(Boolean)) {
-                    el.classList.add(cls);
-                }
-            }
-            if (options?.attr) {
-                for (const [key, value] of Object.entries(options.attr)) {
-                    el.setAttribute(key, value);
-                }
-            }
-            this.appendChild(el);
-            return el;
-        };
-    }
-    if (!proto.createDiv) {
-        proto.createDiv = function (options?: { text?: string; cls?: string; attr?: Record<string, string> }) {
-            return this.createEl("div", options);
-        };
-    }
-    if (!proto.empty) {
-        proto.empty = function () {
-            while (this.firstChild) {
-                this.removeChild(this.firstChild);
-            }
-            return this;
-        };
-    }
-    if (!proto.toggleClass) {
-        proto.toggleClass = function (className: string, force?: boolean) {
-            const shouldHave = force ?? !this.classList.contains(className);
-            this.classList.toggle(className, shouldHave);
-            return this;
-        };
-    }
-    if (!proto.setText) {
-        proto.setText = function (text: string) {
-            this.textContent = text;
-            return this;
-        };
-    }
-    if (!proto.setAttr) {
-        proto.setAttr = function (name: string, value: string) {
-            this.setAttribute(name, value);
-            return this;
-        };
-    }
-};
-
-beforeAll(() => {
-    ensureObsidianDomHelpers();
-});
 
 const loadRegions = vi.fn();
 const applyBrush = vi.fn(() => Promise.resolve());
@@ -139,7 +81,7 @@ describe("terrain brush panel", () => {
         expect(regionSelect.options.length).toBe(3);
 
         regionSelect.value = "Forest";
-        regionSelect.onchange?.(new Event("change"));
+        regionSelect.dispatchEvent(new Event("change"));
         expect(regionSelect.selectedOptions[0].dataset.terrain).toBe("forest");
 
         loadRegions.mockResolvedValueOnce([]);

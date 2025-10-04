@@ -7,7 +7,6 @@ import type {
     CartographerModeLifecycleContext,
     HexCoord,
 } from "../controller";
-import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
 import { reportEditorToolIssue } from "../editor/editor-telemetry";
 import {
     mountBrushPanel,
@@ -16,13 +15,21 @@ import {
 import type { RenderHandles } from "../../../core/hex-mapper/hex-render";
 import type { HexOptions } from "../../../core/options";
 import { createModeLifecycle } from "./lifecycle";
+import {
+    buildForm,
+    type FormBuilderInstance,
+    type FormSelectHandle,
+    type FormStatusHandle,
+} from "../../../ui/form-builder";
+import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
 
 const BRUSH_LABEL = "Brush";
 
 export function createEditorMode(): CartographerMode {
     let panel: HTMLElement | null = null;
+    let form: FormBuilderInstance<"file" | "toolSelect", never, "toolBody", "status"> | null = null;
     let fileLabel: HTMLElement | null = null;
-    let statusLabel: HTMLElement | null = null;
+    let statusField: FormStatusHandle | null = null;
     let toolBody: HTMLElement | null = null;
 
     let brush: BrushPanelControls | null = null;
@@ -52,12 +59,9 @@ export function createEditorMode(): CartographerMode {
     const lifecycle = createModeLifecycle();
 
     const applyStatus = () => {
-        if (!statusLabel) return;
+        if (!statusField) return;
         const status = errorStatus ?? contextualStatus ?? baseStatus;
-        statusLabel.setText(status.message);
-        statusLabel.toggleClass("is-empty", !status.message);
-        statusLabel.toggleClass("is-error", status.tone === "error");
-        statusLabel.toggleClass("is-loading", status.tone === "loading");
+        statusField.set(status);
     };
 
     const setContextualStatus = (status: PanelStatus | null) => {
@@ -111,8 +115,8 @@ export function createEditorMode(): CartographerMode {
         const hasHandles = !!state.handles;
         baseStatus = hasHandles ? BASE_STATUS_READY : state.file ? BASE_STATUS_LOADING : BASE_STATUS_NO_MAP;
         const toolsBlocked = !!errorStatus;
-        panel?.toggleClass("is-disabled", !hasHandles || toolsBlocked);
-        panel?.toggleClass("has-tool-error", toolsBlocked);
+        panel?.classList.toggle("is-disabled", !hasHandles || toolsBlocked);
+        panel?.classList.toggle("has-tool-error", toolsBlocked);
         brush?.setDisabled(!hasHandles || toolsBlocked);
         if (!brush || toolsBlocked || !hasHandles) {
             if (brushActive) {
@@ -128,27 +132,53 @@ export function createEditorMode(): CartographerMode {
 
     const isAborted = () => lifecycle.isAborted();
 
+    const clearHost = (host: HTMLElement) => {
+        while (host.firstChild) {
+            host.removeChild(host.firstChild);
+        }
+    };
+
     return {
         id: "editor",
         label: "Editor",
         async onEnter(ctx: CartographerModeLifecycleContext) {
             lifecycle.bind(ctx);
             state = { ...state };
-            ctx.sidebarHost.empty();
-            panel = ctx.sidebarHost.createDiv({ cls: "sm-cartographer__panel sm-cartographer__panel--editor" });
-            panel.createEl("h3", { text: "Map Editor" });
-            fileLabel = panel.createEl("div", { cls: "sm-cartographer__panel-file" });
+            clearHost(ctx.sidebarHost);
+            panel = document.createElement("div");
+            panel.className = "sm-cartographer__panel sm-cartographer__panel--editor";
+            ctx.sidebarHost.appendChild(panel);
 
-            const toolsRow = panel.createDiv({ cls: "sm-cartographer__panel-tools" });
-            toolsRow.createEl("label", { text: "Tool:" });
-            const toolSelect = toolsRow.createEl("select") as HTMLSelectElement;
-            toolSelect.createEl("option", { value: "brush", text: BRUSH_LABEL });
-            toolSelect.value = "brush";
-            toolSelect.disabled = true;
-            enhanceSelectToSearch(toolSelect, "Search dropdown…");
+            form = buildForm(panel, {
+                sections: [
+                    { kind: "header", text: "Map Editor" },
+                    { kind: "static", id: "file", cls: "sm-cartographer__panel-file" },
+                    {
+                        kind: "row",
+                        label: "Tool:",
+                        rowCls: "sm-cartographer__panel-tools",
+                        controls: [
+                            {
+                                kind: "select",
+                                id: "toolSelect",
+                                options: [{ value: "brush", label: BRUSH_LABEL }],
+                                value: "brush",
+                                disabled: true,
+                                enhance: (select) => enhanceSelectToSearch(select, "Search dropdown…"),
+                            },
+                        ],
+                    },
+                    { kind: "container", id: "toolBody", cls: "sm-cartographer__panel-body" },
+                    { kind: "status", id: "status", cls: "sm-cartographer__panel-status" },
+                ],
+            });
 
-            toolBody = panel.createDiv({ cls: "sm-cartographer__panel-body" });
-            statusLabel = panel.createDiv({ cls: "sm-cartographer__panel-status" });
+            fileLabel = form.getElement("file");
+            statusField = form.getStatus("status");
+            toolBody = form.getContainer("toolBody");
+            const toolSelectHandle = form.getControl("toolSelect") as FormSelectHandle | null;
+            toolSelectHandle?.setValue("brush");
+            toolSelectHandle?.setDisabled(true);
 
             ensureBrush(ctx);
 
@@ -163,10 +193,14 @@ export function createEditorMode(): CartographerMode {
             contextualStatus = null;
             errorStatus = null;
             baseStatus = BASE_STATUS_NO_MAP;
-            panel?.remove();
+            form?.destroy();
+            form = null;
+            if (panel && panel.parentElement) {
+                panel.parentElement.removeChild(panel);
+            }
             panel = null;
             fileLabel = null;
-            statusLabel = null;
+            statusField = null;
             toolBody = null;
             lifecycle.reset();
         },
