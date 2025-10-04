@@ -1,5 +1,5 @@
 // src/apps/library/create/creature/modal.ts
-// Erstellt den zweispaltigen Kreaturen-Editor und koordiniert Abschnitts-Mounting.
+// Organisiert den Kreaturen-Editor als Shell-Layout mit Abschnittsnavigation und koordiniert Mounting.
 import { App, Modal, Setting } from "obsidian";
 import type { StatblockData } from "../../core/creature-files";
 import { listSpellFiles } from "../../core/spell-files";
@@ -9,13 +9,14 @@ import { mountCreatureSensesAndDefensesSection } from "./section-senses-and-defe
 import { mountEntriesSection } from "./section-entries";
 import { mountCreatureSpellcastingSection } from "./section-spellcasting";
 import { createFormCard } from "../shared/layouts";
+import type { FormCardHandles } from "../shared/layouts";
 
 /**
  * Layoutplan des Editors:
  * - Kopfbereich mit Titel und kurzem Hinweis
- * - Zweispaltiges Grid: linke Spalte für Stammdaten & Vitalwerte,
- *   rechte Spalte für Sinne/Verteidigung sowie Spellcasting
- * - Attribute/Fertigkeiten und Einträge spannen über beide Spalten
+ * - Shell-Layout mit fixer Navigation links und Karten-Stack im Inhaltsbereich
+ * - Abschnitte belegen standardmäßig die volle Inhaltsbreite; Navigation scrollt zu Kartenzielen
+ * - Validierungspfade bleiben bei den Karten verankert und werden über die Navigation zugänglich
  * - Abschlussbereich mit klar getrennten Aktionsbuttons
  */
 
@@ -25,6 +26,7 @@ export class CreateCreatureModal extends Modal {
     private availableSpells: string[] = [];
     private bgLock: { el: HTMLElement; pointer: string } | null = null;
     private validators: Array<() => string[]> = [];
+    private sectionObserver: IntersectionObserver | null = null;
 
     constructor(app: App, presetName: string | undefined, onSubmit: (d: StatblockData) => void) {
         super(app);
@@ -37,6 +39,8 @@ export class CreateCreatureModal extends Modal {
         contentEl.empty();
         contentEl.addClass("sm-cc-create-modal");
         this.validators = [];
+        this.sectionObserver?.disconnect();
+        this.sectionObserver = null;
 
         this.lockBackgroundPointer();
 
@@ -49,17 +53,63 @@ export class CreateCreatureModal extends Modal {
             text: "Pflege zuerst Grundlagen und Attribute, anschließend Sinne, Verteidigungen und Aktionen.",
         });
 
-        const layout = contentEl.createDiv({ cls: "sm-cc-layout" });
-        const mainColumn = layout.createDiv({ cls: "sm-cc-layout__col sm-cc-layout__col--main" });
-        const sideColumn = layout.createDiv({ cls: "sm-cc-layout__col sm-cc-layout__col--side" });
-        const fullColumn = layout.createDiv({ cls: "sm-cc-layout__col sm-cc-layout__col--full" });
+        const shell = contentEl.createDiv({ cls: "sm-cc-shell" });
+        const nav = shell.createEl("nav", { cls: "sm-cc-shell__nav", attr: { "aria-label": "Abschnitte" } });
+        nav.createEl("p", { cls: "sm-cc-shell__nav-label", text: "Abschnitte" });
+        const navList = nav.createDiv({ cls: "sm-cc-shell__nav-list" });
+        const content = shell.createDiv({ cls: "sm-cc-shell__content" });
 
-        const createCard = (column: HTMLElement, title: string, subtitle?: string) =>
-            createFormCard(column, {
-                title,
-                subtitle,
+        const navEntries: Array<{ id: string; button: HTMLButtonElement }> = [];
+        const setActive = (sectionId: string | null) => {
+            for (const entry of navEntries) {
+                const isActive = entry.id === sectionId;
+                entry.button.classList.toggle("is-active", isActive);
+                if (isActive) {
+                    entry.button.setAttribute("aria-current", "true");
+                } else {
+                    entry.button.removeAttribute("aria-current");
+                }
+            }
+        };
+
+        const observer = new IntersectionObserver(entries => {
+            const visible = entries.filter(entry => entry.isIntersecting);
+            if (!visible.length) return;
+            visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+            const next = (visible[0].target as HTMLElement).id;
+            if (next) setActive(next);
+        }, { root: contentEl, rootMargin: "-45% 0px -45% 0px", threshold: 0 });
+        this.sectionObserver = observer;
+
+        type SectionPlan = {
+            id: string;
+            title: string;
+            subtitle?: string;
+            navLabel?: string;
+            mount: (handles: FormCardHandles) => void;
+        };
+
+        const createSection = (plan: SectionPlan) => {
+            const handles = createFormCard(content, {
+                title: plan.title,
+                subtitle: plan.subtitle,
                 registerValidator: (runner) => this.addValidator(runner),
+                id: plan.id,
             });
+            const navButton = navList.createEl("button", {
+                cls: "sm-cc-shell__nav-button",
+                text: plan.navLabel ?? plan.title,
+            }) as HTMLButtonElement;
+            navButton.type = "button";
+            navButton.setAttribute("aria-controls", handles.card.id);
+            navEntries.push({ id: handles.card.id, button: navButton });
+            navButton.addEventListener("click", () => {
+                setActive(handles.card.id);
+                handles.card.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+            observer.observe(handles.card);
+            plan.mount(handles);
+        };
 
         // Asynchron: verfügbare Zauber laden (best effort)
         let spellcastingControls: ReturnType<typeof mountCreatureSpellcastingSection> | null = null;
@@ -71,26 +121,54 @@ export class CreateCreatureModal extends Modal {
             })
             .catch(() => {});
 
-        const classificationCard = createCard(mainColumn, "Grunddaten", "Name, Typ, Gesinnung und Tags");
-        mountCreatureClassificationSection(classificationCard.body, this.data);
+        const sectionPlans: SectionPlan[] = [
+            {
+                id: "sm-cc-section-classification",
+                title: "Grunddaten",
+                subtitle: "Name, Typ, Gesinnung und Tags",
+                mount: handles => mountCreatureClassificationSection(handles.body, this.data),
+            },
+            {
+                id: "sm-cc-section-vitals",
+                title: "Vitalwerte",
+                subtitle: "AC, HP, Initiative und Bewegung",
+                mount: handles => mountCreatureVitalSection(handles.body, this.data),
+            },
+            {
+                id: "sm-cc-section-defenses",
+                title: "Sinne & Verteidigungen",
+                mount: handles => mountCreatureSensesAndDefensesSection(handles.body, this.data),
+            },
+            {
+                id: "sm-cc-section-spellcasting",
+                title: "Spellcasting",
+                subtitle: "Zauberlisten, Nutzungen und Notizen",
+                mount: handles => {
+                    spellcastingControls = mountCreatureSpellcastingSection(handles.body, this.data, {
+                        getAvailableSpells: () => this.availableSpells,
+                        registerValidation: handles.registerValidation,
+                    });
+                },
+            },
+            {
+                id: "sm-cc-section-stats",
+                title: "Attribute & Fertigkeiten",
+                mount: handles => mountCreatureStatsAndSkillsSection(handles.body, this.data, handles.registerValidation),
+            },
+            {
+                id: "sm-cc-section-entries",
+                title: "Einträge",
+                subtitle: "Traits, Aktionen, Bonusaktionen, Reaktionen und Legendäres",
+                mount: handles => mountEntriesSection(handles.body, this.data, handles.registerValidation),
+            },
+        ];
 
-        const vitalsCard = createCard(mainColumn, "Vitalwerte", "AC, HP, Initiative und Bewegung");
-        mountCreatureVitalSection(vitalsCard.body, this.data);
-
-        const defensesCard = createCard(sideColumn, "Sinne & Verteidigungen");
-        mountCreatureSensesAndDefensesSection(defensesCard.body, this.data);
-
-        const spellcastingCard = createCard(sideColumn, "Spellcasting", "Zauberlisten, Nutzungen und Notizen");
-        spellcastingControls = mountCreatureSpellcastingSection(spellcastingCard.body, this.data, {
-            getAvailableSpells: () => this.availableSpells,
-            registerValidation: spellcastingCard.registerValidation,
-        });
-
-        const statsCard = createCard(fullColumn, "Attribute & Fertigkeiten");
-        mountCreatureStatsAndSkillsSection(statsCard.body, this.data, statsCard.registerValidation);
-
-        const entriesCard = createCard(fullColumn, "Einträge", "Traits, Aktionen, Bonusaktionen, Reaktionen und Legendäres");
-        mountEntriesSection(entriesCard.body, this.data, entriesCard.registerValidation);
+        for (const plan of sectionPlans) {
+            createSection(plan);
+        }
+        if (sectionPlans.length) {
+            setActive(sectionPlans[0].id);
+        }
 
         // Buttons
         const footer = contentEl.createDiv({ cls: "sm-cc-modal-footer" });
@@ -101,9 +179,18 @@ export class CreateCreatureModal extends Modal {
         // Enter bestätigt NICHT automatisch (nur Button "Erstellen")
     }
 
-    onClose() { this.contentEl.empty(); this.restoreBackgroundPointer(); }
+    onClose() {
+        this.sectionObserver?.disconnect();
+        this.sectionObserver = null;
+        this.contentEl.empty();
+        this.restoreBackgroundPointer();
+    }
 
-    onunload() { this.restoreBackgroundPointer(); }
+    onunload() {
+        this.sectionObserver?.disconnect();
+        this.sectionObserver = null;
+        this.restoreBackgroundPointer();
+    }
 
     private submit() {
         const issues = this.runValidators();

@@ -12,21 +12,32 @@ export interface FormCardOptions {
   title: string;
   subtitle?: string;
   registerValidator?: ValidationRegistrar;
+  id?: string;
+  headingId?: string;
+  role?: string;
 }
 
 export interface FormCardHandles {
   card: HTMLElement;
   body: HTMLElement;
+  heading: HTMLHeadingElement;
   registerValidation: (compute: () => ValidationResult) => ValidationRunner;
 }
 
 export function createFormCard(parent: HTMLElement, options: FormCardOptions): FormCardHandles {
-  const { title, subtitle, registerValidator } = options;
+  const { title, subtitle, registerValidator, id, headingId, role } = options;
 
   const card = parent.createDiv({ cls: "sm-cc-card" });
+  if (id) card.id = id;
+  const computedHeadingId = headingId ?? (id ? `${id}__title` : undefined);
+  card.setAttribute("role", role ?? "region");
+  if (computedHeadingId) {
+    card.setAttribute("aria-labelledby", computedHeadingId);
+  }
   const head = card.createDiv({ cls: "sm-cc-card__head" });
   const heading = head.createDiv({ cls: "sm-cc-card__heading" });
-  heading.createEl("h3", { text: title, cls: "sm-cc-card__title" });
+  const headingTitle = heading.createEl("h3", { text: title, cls: "sm-cc-card__title" });
+  if (computedHeadingId) headingTitle.id = computedHeadingId;
   const status = heading.createSpan({
     cls: "sm-cc-card__status",
     attr: { hidden: "" },
@@ -74,7 +85,7 @@ export function createFormCard(parent: HTMLElement, options: FormCardOptions): F
     return registerValidator ? registerValidator(runner) : runner;
   };
 
-  return { card, body, registerValidation };
+  return { card, body, heading: headingTitle, registerValidation };
 }
 
 export interface FieldGridOptions {
