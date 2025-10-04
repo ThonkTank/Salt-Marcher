@@ -23,6 +23,24 @@ const HEX_COLOR_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
 const CSS_VAR_RE = /^var\(--[a-z0-9_-]+\)$/i;
 const CSS_FUNCTION_RE = /^(?:rgb|rgba|hsl|hsla)\(/i;
 
+function normalizeTerrainColor(input: unknown): string {
+    if (typeof input !== "string") return "";
+
+    let color = input.trim();
+    if (!color) return "";
+
+    if (
+        (color.startsWith("\"") && color.endsWith("\"")) ||
+        (color.startsWith("'") && color.endsWith("'"))
+    ) {
+        color = color.slice(1, -1).trim();
+    }
+
+    color = color.replace(/^[\s:]+/, "");
+
+    return color.trim();
+}
+
 export class TerrainValidationError extends Error {
     constructor(public readonly issues: string[]) {
         super(`Invalid terrain schema: ${issues.join(", ")}`);
@@ -38,7 +56,7 @@ export function validateTerrainSchema(
 
     for (const [rawName, rawValue] of Object.entries(next ?? {})) {
         const name = (rawName ?? "").trim();
-        const color = (rawValue?.color ?? "").trim();
+        const color = normalizeTerrainColor(rawValue?.color);
 
         if (!name && rawName !== "") {
             issues.push(`Terrain name must not be empty (received: "${rawName}")`);
