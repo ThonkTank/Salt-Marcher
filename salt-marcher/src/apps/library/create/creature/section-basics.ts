@@ -102,11 +102,19 @@ function ensureTypeTags(data: StatblockData): string[] {
 }
 
 export function mountCreatureClassificationSection(parent: HTMLElement, data: StatblockData) {
-  const root = parent.createDiv({ cls: "sm-cc-basics sm-cc-basics--classification" });
+  const card = createFormCard(parent, {
+    title: "Identität & Klassifikation",
+    role: "group",
+  });
+  card.card.addClass("sm-cc-card--basics");
+  card.body.addClass("sm-cc-card__body--basics");
 
-  const identity = root.createDiv({ cls: "sm-cc-basics__group" });
-  identity.createEl("h5", { text: "Identität", cls: "sm-cc-basics__subtitle" });
-  const identityGrid = createFieldGrid(identity, { variant: "identity" });
+  const identitySection = card.body.createDiv({ cls: "sm-cc-card__section sm-cc-card__section--basics" });
+  const identityGrid = createFieldGrid(identitySection, {
+    variant: "identity",
+    className: "sm-cc-field-grid--basics",
+    minColumnWidth: "18rem",
+  });
 
   const nameSetting = identityGrid.createSetting("Name");
   nameSetting.settingEl.addClass("sm-cc-setting--show-name");
@@ -144,7 +152,7 @@ export function mountCreatureClassificationSection(parent: HTMLElement, data: St
   });
 
   const tags = ensureTypeTags(data);
-  const typeTagsEditor = mountTokenEditor(identity, "Typ-Tags", {
+  const typeTagsEditor = mountTokenEditor(identitySection, "Typ-Tags", {
     getItems: () => tags.slice(),
     add: (value) => {
       const normalized = value.trim();
@@ -161,12 +169,14 @@ export function mountCreatureClassificationSection(parent: HTMLElement, data: St
     placeholder: "z. B. shapechanger",
     addButtonLabel: "+ Tag",
   });
-  typeTagsEditor.setting.settingEl.addClass("sm-cc-setting");
-  typeTagsEditor.setting.settingEl.addClass("sm-cc-setting--show-name");
+  typeTagsEditor.setting.settingEl.addClass("sm-cc-setting--stack");
 
-  const classification = root.createDiv({ cls: "sm-cc-basics__group" });
-  classification.createEl("h5", { text: "Klassifikation", cls: "sm-cc-basics__subtitle" });
-  const classificationGrid = createFieldGrid(classification, { variant: "classification" });
+  const classificationSection = card.body.createDiv({ cls: "sm-cc-card__section sm-cc-card__section--basics" });
+  const classificationGrid = createFieldGrid(classificationSection, {
+    variant: "classification",
+    className: "sm-cc-field-grid--basics",
+    minColumnWidth: "16rem",
+  });
 
   const alignmentSetting = classificationGrid.createSetting("Gesinnung", {
     className: ["sm-cc-setting--span-2", "sm-cc-setting--show-name"],
@@ -245,11 +255,19 @@ export function mountCreatureClassificationSection(parent: HTMLElement, data: St
 }
 
 export function mountCreatureVitalSection(parent: HTMLElement, data: StatblockData) {
-  const root = parent.createDiv({ cls: "sm-cc-basics sm-cc-basics--vitals" });
+  const card = createFormCard(parent, {
+    title: "Vitalwerte & Bewegung",
+    role: "group",
+  });
+  card.card.addClass("sm-cc-card--basics");
+  card.body.addClass("sm-cc-card__body--basics");
 
-  const vitals = root.createDiv({ cls: "sm-cc-basics__group" });
-  vitals.createEl("h5", { text: "Vitalwerte", cls: "sm-cc-basics__subtitle" });
-  const vitalsGrid = createFieldGrid(vitals, { variant: "identity", className: "sm-cc-field-grid--vitals" });
+  const vitalsSection = card.body.createDiv({ cls: "sm-cc-card__section sm-cc-card__section--basics" });
+  const vitalsGrid = createFieldGrid(vitalsSection, {
+    variant: "vitals",
+    className: "sm-cc-field-grid--basics",
+    minColumnWidth: "16rem",
+  });
 
   const createVitalField = (label: string, placeholder: string, key: keyof StatblockData) => {
     const setting = vitalsGrid.createSetting(label);
@@ -267,10 +285,9 @@ export function mountCreatureVitalSection(parent: HTMLElement, data: StatblockDa
   createVitalField("Initiative", "+7", "initiative");
   createVitalField("Hit Dice", "20d10 + 40", "hitDice");
 
-  const movement = root.createDiv({ cls: "sm-cc-basics__group" });
-  movement.createEl("h5", { text: "Bewegung", cls: "sm-cc-basics__subtitle" });
+  const movementSection = card.body.createDiv({ cls: "sm-cc-card__section sm-cc-card__section--basics" });
 
-  const speedGrid = movement.createDiv({ cls: "sm-cc-speeds-grid" });
+  const speedGrid = movementSection.createDiv({ cls: "sm-cc-speeds-grid sm-cc-field-grid sm-cc-field-grid--basics" });
 
   const syncDistance = (input: HTMLInputElement, key: SpeedFieldKey) => {
     const target = ensureSpeeds(data)[key];
@@ -325,7 +342,7 @@ export function mountCreatureVitalSection(parent: HTMLElement, data: StatblockDa
 
   const extras = ensureSpeeds(data).extras!;
   const extrasEditor = mountTokenEditor(
-    movement,
+    movementSection,
     "Weitere Bewegungen",
     {
       getItems: () => extras.map(formatExtra),
@@ -351,6 +368,5 @@ export function mountCreatureVitalSection(parent: HTMLElement, data: StatblockDa
       addButtonLabel: "+ Hinzufügen",
     },
   );
-  extrasEditor.setting.settingEl.addClass("sm-cc-setting");
-  extrasEditor.setting.settingEl.addClass("sm-cc-setting--show-name");
+  extrasEditor.setting.settingEl.addClass("sm-cc-setting--stack");
 }
