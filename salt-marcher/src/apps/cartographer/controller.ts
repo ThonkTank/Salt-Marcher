@@ -153,16 +153,12 @@ export class CartographerController {
     private requestedFile: TFile | null = null;
     private isMounted = false;
 
-    private readonly modeDescriptors: readonly CartographerModeDescriptor[];
-    private modes: CartographerMode[] = [];
-    private modeLoadFailed = false;
-    private modeNoticeIssued = false;
-
     private activeMode: CartographerMode | null = null;
     private lifecycle: { controller: AbortController; ctx: CartographerModeLifecycleContext } | null = null;
 
     private renderToken = 0;
-    private modeChange: Promise<void> = Promise.resolve();
+    private modeLoad?: Promise<Map<string, CartographerMode>>;
+    private activeModeId?: string;
 
     constructor(app: App, deps?: Partial<CartographerControllerDeps>) {
         this.app = app;
@@ -172,7 +168,6 @@ export class CartographerController {
             ...deps,
             modeDescriptors: deps?.modeDescriptors ?? defaults.modeDescriptors,
         } as CartographerControllerDeps;
-        this.modeDescriptors = this.deps.modeDescriptors;
 
         this.callbacks = {
             onModeSelect: (id, ctx) => this.setMode(id, ctx),
@@ -204,7 +199,8 @@ export class CartographerController {
         this.currentFile = initialFile;
         this.requestedFile = initialFile;
 
-        const shellModes: ModeShellEntry[] = this.modeDescriptors.map((descriptor) => ({
+        const descriptors = this.deps.modeDescriptors;
+        const shellModes: ModeShellEntry[] = descriptors.map((descriptor) => ({
             id: descriptor.id,
             label: descriptor.label,
         }));
@@ -216,10 +212,6 @@ export class CartographerController {
             modes: shellModes,
             callbacks: this.callbacks,
         });
-
-        if (this.modeLoadFailed) {
-            this.view.setOverlay(MODE_PROVISION_OVERLAY_MESSAGE);
-        }
 
         this.mapManager = this.deps.createMapManager(this.app, {
             initialFile,
@@ -233,12 +225,19 @@ export class CartographerController {
         this.view.setModeLabel(shellModes[0]?.label ?? DEFAULT_MODE_LABEL);
         this.view.setFileLabel(initialFile);
 
-        await this.ensureModesLoaded();
-        const firstMode = this.modes[0] ?? null;
-        if (firstMode) {
-            await this.setMode(firstMode.id);
-        } else if (this.modeLoadFailed) {
-            this.view.setOverlay(MODE_PROVISION_OVERLAY_MESSAGE);
+        let initialModeId = shellModes[0]?.id ?? null;
+        try {
+            const modes = await this.loadModesOnce();
+            const firstEntry = modes.keys().next();
+            if (!firstEntry.done) {
+                initialModeId = firstEntry.value;
+            }
+        } catch {
+            // overlay and notice already handled in loadModesOnce
+        }
+
+        if (initialModeId) {
+            await this.setMode(initialModeId);
         }
 
         await this.mapManager.setFile(initialFile);
@@ -260,14 +259,6 @@ export class CartographerController {
             lifecycle.controller.abort();
         }
 
-        const pending = this.modeChange;
-        this.modeChange = Promise.resolve();
-        try {
-            await pending;
-        } catch (error) {
-            console.error("[cartographer] pending mode change failed", error);
-        }
-
         if (this.activeMode && lifecycle) {
             try {
                 await this.activeMode.onExit(lifecycle.ctx);
@@ -278,6 +269,7 @@ export class CartographerController {
 
         this.activeMode = null;
         this.lifecycle = null;
+        this.activeModeId = undefined;
 
         await this.teardownLayer();
 
@@ -293,74 +285,67 @@ export class CartographerController {
         await this.mapManager.setFile(file);
     }
 
-    private async ensureModesLoaded(): Promise<void> {
-        if (this.modes.length > 0) {
-            this.view?.setModes(this.modes.map((mode) => ({ id: mode.id, label: mode.label })));
-            return;
+    private async loadModesOnce(): Promise<Map<string, CartographerMode>> {
+        if (!this.modeLoad) {
+            const descriptors = this.deps.modeDescriptors;
+            this.modeLoad = Promise.all(
+                descriptors.map(async (descriptor) => {
+                    const mode = await descriptor.load();
+                    return { descriptor, mode } as const;
+                }),
+            )
+                .then((entries) => {
+                    const map = new Map<string, CartographerMode>();
+                    const shellModes: ModeShellEntry[] = [];
+                    for (const { mode } of entries) {
+                        map.set(mode.id, mode);
+                        shellModes.push({ id: mode.id, label: mode.label });
+                    }
+                    if (map.size === 0) {
+                        throw new Error("No cartographer modes available");
+                    }
+                    this.view?.setModes(shellModes);
+                    this.view?.setOverlay(null);
+                    return map;
+                })
+                .catch((error) => {
+                    console.error("[cartographer] failed to load modes", error);
+                    this.view?.setOverlay(MODE_PROVISION_OVERLAY_MESSAGE);
+                    new Notice(MODE_PROVISION_NOTICE_MESSAGE);
+                    this.modeLoad = undefined;
+                    throw error;
+                });
         }
-
-        const loaded: CartographerMode[] = [];
-        for (const descriptor of this.modeDescriptors) {
-            try {
-                const mode = await descriptor.load();
-                loaded.push(mode);
-            } catch (error) {
-                console.error(`[cartographer] failed to load mode '${descriptor.id}'`, error);
-            }
-        }
-
-        this.modes = loaded;
-        this.view?.setModes(loaded.map((mode) => ({ id: mode.id, label: mode.label })));
-
-        if (loaded.length === 0) {
-            this.modeLoadFailed = true;
-            this.showModeProvisionFailure();
-        } else {
-            this.modeLoadFailed = false;
-            this.view?.setOverlay(null);
-        }
-    }
-
-    private showModeProvisionFailure(): void {
-        if (!this.modeNoticeIssued) {
-            new Notice(MODE_PROVISION_NOTICE_MESSAGE);
-            this.modeNoticeIssued = true;
-        }
-        this.view?.setOverlay(MODE_PROVISION_OVERLAY_MESSAGE);
-    }
-
-    private queueModeChange(task: () => Promise<void>): Promise<void> {
-        const next = this.modeChange.then(task, task);
-        this.modeChange = next.catch(() => {});
-        return next;
+        return this.modeLoad;
     }
 
     async setMode(id: string, ctx?: ModeSelectContext): Promise<void> {
-        const change = this.queueModeChange(async () => {
-            await this.performModeChange(id, ctx);
-        });
+        let modes: Map<string, CartographerMode>;
         try {
-            await change;
-        } catch (error) {
-            console.error("[cartographer] mode transition failed", error);
-        }
-    }
-
-    private async performModeChange(id: string, ctx?: ModeSelectContext): Promise<void> {
-        if (!this.isMounted || !this.view) return;
-
-        await this.ensureModesLoaded();
-        if (this.modeLoadFailed) {
-            this.showModeProvisionFailure();
+            modes = await this.loadModesOnce();
+        } catch {
             return;
         }
 
-        const next = this.modes.find((mode) => mode.id === id) ?? this.modes[0] ?? null;
-        if (!next) return;
+        const requested = modes.get(id) ?? null;
+        const fallbackEntry = modes.entries().next();
+        const nextEntry = requested
+            ? ([requested.id, requested] as const)
+            : fallbackEntry.done
+              ? null
+              : fallbackEntry.value;
+        if (!nextEntry) return;
 
-        if (next === this.activeMode) {
-            this.view.setModeActive(next.id);
-            this.view.setModeLabel(next.label);
+        const [nextId, nextMode] = nextEntry;
+
+        if (this.activeModeId === nextId) {
+            this.view?.setModeActive(nextMode.id);
+            this.view?.setModeLabel(nextMode.label);
+            return;
+        }
+
+        if (!this.isMounted || !this.view) {
+            this.activeModeId = nextId;
             return;
         }
 
@@ -371,6 +356,7 @@ export class CartographerController {
         }
         this.activeMode = null;
         this.lifecycle = null;
+        this.activeModeId = undefined;
 
         if (previous && previousLifecycle) {
             try {
@@ -389,13 +375,14 @@ export class CartographerController {
 
         const lifecycleCtx = this.createLifecycleContext(controller.signal);
         this.lifecycle = { controller, ctx: lifecycleCtx };
-        this.activeMode = next;
+        this.activeMode = nextMode;
+        this.activeModeId = nextId;
 
-        this.view.setModeActive(next.id);
-        this.view.setModeLabel(next.label);
+        this.view.setModeActive(nextMode.id);
+        this.view.setModeLabel(nextMode.label);
 
         try {
-            await next.onEnter(lifecycleCtx);
+            await nextMode.onEnter(lifecycleCtx);
         } catch (error) {
             if (!controller.signal.aborted) {
                 console.error("[cartographer] mode enter failed", error);
@@ -457,10 +444,7 @@ export class CartographerController {
     private async refresh(): Promise<void> {
         const view = this.view;
         if (!view) return;
-        if (this.modeLoadFailed) {
-            view.setOverlay(MODE_PROVISION_OVERLAY_MESSAGE);
-            return;
-        }
+        if (!this.activeMode || !this.lifecycle) return;
 
         const token = ++this.renderToken;
         await this.teardownLayer();
