@@ -1,5 +1,5 @@
 // src/apps/cartographer/controller.ts
-// Controller: Verwaltet Cartographer-Zustand mit minimaler Lifecycle-Logik und direkter View-Anbindung.
+// Controller: Reduziert den Cartographer-Lifecycle auf eine klar strukturierte, minimalistische Implementierung.
 
 import { Notice, type App, type TFile } from "obsidian";
 import { parseOptions, type HexOptions } from "../../core/options";
@@ -15,7 +15,6 @@ import {
 import { createViewContainer } from "../../ui/view-container";
 
 export type HexCoord = { r: number; c: number };
-
 export type CartographerModeContext = {
     readonly app: App;
     readonly host: HTMLElement;
@@ -26,32 +25,31 @@ export type CartographerModeContext = {
     getRenderHandles(): RenderHandles | null;
     getOptions(): HexOptions | null;
 };
+export type CartographerModeLifecycleContext = CartographerModeContext & { readonly signal: AbortSignal };
 
-export type CartographerModeLifecycleContext = CartographerModeContext & {
-    readonly signal: AbortSignal;
-};
+type MaybePromise<T> = T | Promise<T>;
 
-export interface CartographerMode {
+export type CartographerMode = {
     readonly id: string;
     readonly label: string;
-    onEnter(ctx: CartographerModeLifecycleContext): void | Promise<void>;
-    onExit(ctx: CartographerModeLifecycleContext): void | Promise<void>;
+    onEnter(ctx: CartographerModeLifecycleContext): MaybePromise<void>;
+    onExit(ctx: CartographerModeLifecycleContext): MaybePromise<void>;
     onFileChange(
         file: TFile | null,
         handles: RenderHandles | null,
         ctx: CartographerModeLifecycleContext,
-    ): void | Promise<void>;
+    ): MaybePromise<void>;
     onHexClick?(
         coord: HexCoord,
         event: CustomEvent<HexCoord>,
         ctx: CartographerModeLifecycleContext,
-    ): void | Promise<void>;
+    ): MaybePromise<void>;
     onSave?(
         mode: MapHeaderSaveMode,
         file: TFile | null,
         ctx: CartographerModeLifecycleContext,
-    ): void | Promise<void | boolean> | boolean;
-}
+    ): MaybePromise<boolean>;
+};
 
 export type CartographerModeDescriptor = {
     readonly id: string;
@@ -87,20 +85,16 @@ const DEFAULT_MODE_DESCRIPTORS: readonly CartographerModeDescriptor[] = [
 ];
 
 export type CartographerControllerCallbacks = {
-    onModeSelect(id: string, ctx?: ModeSelectContext): Promise<void> | void;
-    onOpen(file: TFile): Promise<void> | void;
-    onCreate(file: TFile): Promise<void> | void;
-    onDelete(file: TFile): Promise<void> | void;
-    onSave(mode: MapHeaderSaveMode, file: TFile | null): Promise<boolean> | boolean;
-    onHexClick(coord: HexCoord, event: CustomEvent<HexCoord>): Promise<void> | void;
+    onModeSelect(id: string, ctx?: { readonly signal: AbortSignal }): MaybePromise<void>;
+    onOpen(file: TFile): MaybePromise<void>;
+    onCreate(file: TFile): MaybePromise<void>;
+    onDelete(file: TFile): MaybePromise<void>;
+    onSave(mode: MapHeaderSaveMode, file: TFile | null): MaybePromise<boolean>;
+    onHexClick(coord: HexCoord, event: CustomEvent<HexCoord>): MaybePromise<void>;
 };
 
-type ModeSelectContext = { readonly signal: AbortSignal };
-
-type ModeShellEntry = { id: string; label: string };
-
+type ModeShellEntry = { readonly id: string; readonly label: string };
 type CartographerViewHandle = {
-    readonly host: HTMLElement;
     readonly mapHost: HTMLElement;
     readonly sidebarHost: HTMLElement;
     setFileLabel(file: TFile | null): void;
@@ -122,8 +116,7 @@ const createDefaultDeps = (app: App): CartographerControllerDeps => ({
     createMapLayer: (appInstance, host, file, opts) => createMapLayer(appInstance, host, file, opts),
     loadHexOptions: async (appInstance, file) => {
         const block = await getFirstHexBlock(appInstance, file);
-        if (!block) return null;
-        return parseOptions(block);
+        return block ? parseOptions(block) : null;
     },
     modeDescriptors: DEFAULT_MODE_DESCRIPTORS,
 });
@@ -132,57 +125,43 @@ const MODE_PROVISION_OVERLAY_MESSAGE = "Cartographer-Modi konnten nicht geladen 
 const MODE_PROVISION_NOTICE_MESSAGE =
     "Cartographer-Modi konnten nicht geladen werden. Bitte die Konsole prüfen.";
 
-const DEFAULT_MODE_LABEL = "Mode";
-
 export class CartographerController {
     private readonly app: App;
     private readonly deps: CartographerControllerDeps;
-
     readonly callbacks: CartographerControllerCallbacks;
 
-    private host: HTMLElement | null = null;
     private view: CartographerViewHandle | null = null;
+    private host: HTMLElement | null = null;
     private mapManager: MapManagerHandle | null = null;
     private currentFile: TFile | null = null;
+    private requestedFile: TFile | null = null;
     private currentOptions: HexOptions | null = null;
     private mapLayer: MapLayer | null = null;
-    private requestedFile: TFile | null = null;
     private isMounted = false;
 
-    private activeMode: CartographerMode | null = null;
-    private lifecycle: { controller: AbortController; ctx: CartographerModeLifecycleContext } | null = null;
-
-    private renderAbort?: AbortController;
     private modeLoad?: Promise<Map<string, CartographerMode>>;
-    private activeModeId?: string;
     private shellModes: ModeShellEntry[] = [];
+    private activeMode: CartographerMode | null = null;
+    private activeModeId: string | null = null;
+    private lifecycle: { controller: AbortController; ctx: CartographerModeLifecycleContext } | null = null;
+    renderAbort?: AbortController;
 
-    constructor(app: App, deps?: Partial<CartographerControllerDeps>) {
+    constructor(app: App, deps: Partial<CartographerControllerDeps> = {}) {
         this.app = app;
         const defaults = createDefaultDeps(app);
         this.deps = {
             ...defaults,
             ...deps,
-            modeDescriptors: deps?.modeDescriptors ?? defaults.modeDescriptors,
-        } as CartographerControllerDeps;
+            modeDescriptors: deps.modeDescriptors ?? defaults.modeDescriptors,
+        };
 
         this.callbacks = {
             onModeSelect: (id, ctx) => this.setMode(id, ctx),
-            onOpen: async (file) => {
-                await this.mapManager?.setFile(file);
-            },
-            onCreate: async (file) => {
-                await this.mapManager?.setFile(file);
-            },
-            onDelete: async () => {
-                this.mapManager?.deleteCurrent();
-            },
-            onSave: async (mode, file) => {
-                return await this.handleSave(mode, file);
-            },
-            onHexClick: async (coord, event) => {
-                await this.handleHexClick(coord, event);
-            },
+            onOpen: (file) => this.mapManager?.setFile(file),
+            onCreate: (file) => this.mapManager?.setFile(file),
+            onDelete: () => this.mapManager?.deleteCurrent(),
+            onSave: (mode, file) => this.handleSave(mode, file),
+            onHexClick: (coord, event) => this.handleHexClick(coord, event),
         } satisfies CartographerControllerCallbacks;
     }
 
@@ -191,25 +170,18 @@ export class CartographerController {
 
         this.host = host;
         this.isMounted = true;
-
         const initialFile = this.requestedFile ?? fallbackFile ?? null;
         this.currentFile = initialFile;
         this.requestedFile = initialFile;
 
-        const descriptors = this.deps.modeDescriptors;
-        const shellModes: ModeShellEntry[] = descriptors.map((descriptor) => ({
-            id: descriptor.id,
-            label: descriptor.label,
-        }));
-        this.shellModes = [...shellModes];
-
-        this.view = createControllerView({
+        const view = createControllerView({
             app: this.app,
             host,
             initialFile,
-            modes: shellModes,
+            modes: this.shellModes,
             callbacks: this.callbacks,
         });
+        this.view = view;
 
         this.mapManager = this.deps.createMapManager(this.app, {
             initialFile,
@@ -218,65 +190,55 @@ export class CartographerController {
             },
         });
 
-        this.view.setModes(this.shellModes, this.shellModes[0]?.id ?? null);
-        this.view.setFileLabel(initialFile);
+        view.setModes(this.shellModes, this.activeModeId);
+        view.setFileLabel(initialFile);
 
-        let initialModeId = shellModes[0]?.id ?? null;
+        let initialMode = this.activeModeId;
         try {
             const modes = await this.loadModesOnce();
-            const firstEntry = modes.keys().next();
-            if (!firstEntry.done) {
-                initialModeId = firstEntry.value;
+            if (!initialMode) {
+                const first = modes.keys().next();
+                initialMode = first.done ? null : first.value;
             }
         } catch {
-            // overlay and notice already handled in loadModesOnce
+            // overlay already set
         }
 
-        if (initialModeId) {
-            await this.setMode(initialModeId);
+        if (initialMode) {
+            await this.setMode(initialMode);
         }
 
         await this.mapManager.setFile(initialFile);
     }
 
     async onClose(): Promise<void> {
-        if (!this.isMounted) {
-            this.view?.destroy();
-            this.view = null;
-            this.host = null;
-            this.mapManager = null;
-            return;
-        }
-
-        this.isMounted = false;
-
         const lifecycle = this.lifecycle;
-        if (lifecycle) {
-            lifecycle.controller.abort();
-        }
+        const active = this.activeMode;
+        this.lifecycle = null;
+        this.activeModeId = null;
+        this.activeMode = null;
+        this.shellModes = [];
 
-        if (this.activeMode && lifecycle) {
+        if (lifecycle) lifecycle.controller.abort();
+        if (active && lifecycle) {
             try {
-                await this.activeMode.onExit(lifecycle.ctx);
+                await active.onExit(lifecycle.ctx);
             } catch (error) {
                 console.error("[cartographer] mode exit failed", error);
             }
         }
 
-        this.activeMode = null;
-        this.lifecycle = null;
-        this.activeModeId = undefined;
-
-        this.renderAbort?.abort();
-        this.destroyMapLayer();
-        this.view?.clearMap();
-        this.currentOptions = null;
-        this.shellModes = [];
-
-        this.view?.destroy();
-        this.view = null;
+        if (this.view) {
+            this.view.destroy();
+            this.view = null;
+        }
         this.host = null;
+        this.renderAbort?.abort();
+        this.renderAbort = undefined;
+        this.destroyMapLayer();
+        this.currentOptions = null;
         this.mapManager = null;
+        this.isMounted = false;
     }
 
     async setFile(file: TFile | null): Promise<void> {
@@ -287,25 +249,19 @@ export class CartographerController {
 
     private async loadModesOnce(): Promise<Map<string, CartographerMode>> {
         if (!this.modeLoad) {
-            const descriptors = this.deps.modeDescriptors;
             this.modeLoad = Promise.all(
-                descriptors.map(async (descriptor) => {
-                    const mode = await descriptor.load();
-                    return { descriptor, mode } as const;
-                }),
+                this.deps.modeDescriptors.map(async (descriptor) => ({
+                    descriptor,
+                    mode: await descriptor.load(),
+                })),
             )
                 .then((entries) => {
                     const map = new Map<string, CartographerMode>();
-                    const shellModes: ModeShellEntry[] = [];
-                    for (const { mode } of entries) {
+                    this.shellModes = entries.map(({ mode }) => {
                         map.set(mode.id, mode);
-                        shellModes.push({ id: mode.id, label: mode.label });
-                    }
-                    if (map.size === 0) {
-                        throw new Error("No cartographer modes available");
-                    }
-                    this.shellModes = [...shellModes];
-                    this.view?.setModes(this.shellModes, this.activeModeId ?? this.shellModes[0]?.id ?? null);
+                        return { id: mode.id, label: mode.label } satisfies ModeShellEntry;
+                    });
+                    this.view?.setModes(this.shellModes, this.activeModeId);
                     this.view?.setOverlay(null);
                     return map;
                 })
@@ -320,7 +276,7 @@ export class CartographerController {
         return this.modeLoad;
     }
 
-    async setMode(id: string, ctx?: ModeSelectContext): Promise<void> {
+    async setMode(id: string, ctx?: { readonly signal: AbortSignal }): Promise<void> {
         let modes: Map<string, CartographerMode>;
         try {
             modes = await this.loadModesOnce();
@@ -328,36 +284,19 @@ export class CartographerController {
             return;
         }
 
-        const requested = modes.get(id) ?? null;
-        const fallbackEntry = modes.entries().next();
-        const nextEntry = requested
-            ? ([requested.id, requested] as const)
-            : fallbackEntry.done
-              ? null
-              : fallbackEntry.value;
-        if (!nextEntry) return;
-
-        const [nextId, nextMode] = nextEntry;
-
-        if (this.activeModeId === nextId) {
-            this.view?.setModes(this.shellModes, nextMode.id);
+        const next = modes.get(id) ?? modes.values().next().value ?? null;
+        if (!next) return;
+        if (this.activeModeId === next.id) {
+            this.view?.setModes(this.shellModes, next.id);
             return;
         }
 
-        if (!this.isMounted || !this.view) {
-            this.activeModeId = nextId;
-            return;
-        }
-
-        const previous = this.activeMode;
         const previousLifecycle = this.lifecycle;
-        if (previousLifecycle) {
-            previousLifecycle.controller.abort();
-        }
+        if (previousLifecycle) previousLifecycle.controller.abort();
+        const previous = this.activeMode;
         this.activeMode = null;
         this.lifecycle = null;
-        this.activeModeId = undefined;
-
+        this.activeModeId = null;
         if (previous && previousLifecycle) {
             try {
                 await previous.onExit(previousLifecycle.ctx);
@@ -366,38 +305,37 @@ export class CartographerController {
             }
         }
 
-        const controller = new AbortController();
-        const external = ctx?.signal;
-        if (external) {
-            if (external.aborted) controller.abort();
-            else external.addEventListener("abort", () => controller.abort(), { once: true });
+        if (!this.isMounted || !this.view) {
+            this.activeMode = next;
+            this.activeModeId = next.id;
+            return;
         }
 
+        const controller = new AbortController();
+        if (ctx?.signal) {
+            if (ctx.signal.aborted) controller.abort();
+            else ctx.signal.addEventListener("abort", () => controller.abort(), { once: true });
+        }
         const lifecycleCtx = this.createLifecycleContext(controller.signal);
         this.lifecycle = { controller, ctx: lifecycleCtx };
-        this.activeMode = nextMode;
-        this.activeModeId = nextId;
-
-        this.view.setModes(this.shellModes, nextMode.id);
+        this.activeMode = next;
+        this.activeModeId = next.id;
+        this.view.setModes(this.shellModes, next.id);
 
         try {
-            await nextMode.onEnter(lifecycleCtx);
+            await next.onEnter(lifecycleCtx);
         } catch (error) {
-            if (!controller.signal.aborted) {
-                console.error("[cartographer] mode enter failed", error);
-            }
+            if (!controller.signal.aborted) console.error("[cartographer] mode enter failed", error);
         }
 
         if (controller.signal.aborted) return;
-
         await this.applyCurrentFile(this.currentFile, lifecycleCtx);
     }
 
     private async handleSave(mode: MapHeaderSaveMode, file: TFile | null): Promise<boolean> {
         if (!this.activeMode?.onSave || !this.lifecycle) return false;
         try {
-            const handled = await this.activeMode.onSave(mode, file, this.lifecycle.ctx);
-            return handled === true;
+            return (await this.activeMode.onSave(mode, file, this.lifecycle.ctx)) === true;
         } catch (error) {
             console.error("[cartographer] mode onSave failed", error);
             return false;
@@ -414,9 +352,7 @@ export class CartographerController {
     }
 
     private get baseModeCtx(): CartographerModeContext {
-        if (!this.view || !this.host) {
-            throw new Error("CartographerController is not mounted.");
-        }
+        if (!this.view || !this.host) throw new Error("CartographerController is not mounted.");
         return {
             app: this.app,
             host: this.host,
@@ -435,53 +371,28 @@ export class CartographerController {
 
     private async applyCurrentFile(
         file: TFile | null = this.currentFile,
-        lifecycleCtx?: CartographerModeLifecycleContext | null,
+        lifecycleCtx: CartographerModeLifecycleContext | null = this.lifecycle?.ctx ?? null,
     ): Promise<void> {
         this.currentFile = file ?? null;
         this.requestedFile = file ?? null;
 
         const view = this.view;
-        if (!view) return;
+        const ctx = lifecycleCtx;
+        if (!view || !ctx || !this.activeMode) return;
 
         view.setFileLabel(this.currentFile);
-
-        if (!this.activeMode || !this.lifecycle) {
-            this.destroyMapLayer();
-            view.clearMap();
-            this.currentOptions = null;
-            return;
-        }
-
-        if (this.renderAbort) {
-            this.renderAbort.abort();
-        }
+        this.renderAbort?.abort();
         const controller = new AbortController();
         this.renderAbort = controller;
-        const signal = controller.signal;
-
-        const ctx = lifecycleCtx ?? this.lifecycle.ctx ?? null;
-
-        let provisionalLayer: MapLayer | null = null;
-        const destroyProvisionalLayer = () => {
-            if (!provisionalLayer) return;
-            try {
-                provisionalLayer.destroy();
-            } catch (error) {
-                console.error("[cartographer] failed to destroy map layer", error);
-            }
-            provisionalLayer = null;
-        };
-
-        this.destroyMapLayer();
-        view.clearMap();
-        this.currentOptions = null;
+        const { signal } = controller;
 
         try {
             if (!this.currentFile) {
+                this.destroyMapLayer();
+                view.clearMap();
+                this.currentOptions = null;
                 view.setOverlay("Keine Karte ausgewählt.");
-                if (ctx) {
-                    await this.activeMode.onFileChange(null, null, ctx);
-                }
+                await this.safeFileChange(null, null, ctx);
                 return;
             }
 
@@ -491,59 +402,72 @@ export class CartographerController {
             } catch (error) {
                 console.error("[cartographer] failed to parse map options", error);
             }
-
-            if (signal.aborted) return;
-
-            if (!options) {
-                view.setOverlay("Kein hex3x3-Block in dieser Datei.");
-                if (ctx) {
-                    await this.activeMode.onFileChange(this.currentFile, null, ctx);
-                }
-                return;
-            }
-
-            try {
-                provisionalLayer = await this.deps.createMapLayer(
-                    this.app,
-                    view.mapHost,
-                    this.currentFile,
-                    options,
-                );
-            } catch (error) {
-                console.error("[cartographer] failed to render map", error);
-                view.setOverlay("Karte konnte nicht geladen werden.");
-                if (ctx) {
-                    await this.activeMode.onFileChange(this.currentFile, null, ctx);
-                }
-                return;
-            }
-
             if (signal.aborted || !this.view) return;
 
-            this.mapLayer = provisionalLayer;
-            provisionalLayer = null;
-            this.currentOptions = options;
-            view.setOverlay(null);
-            if (ctx) {
-                await this.activeMode.onFileChange(this.currentFile, this.mapLayer.handles, ctx);
-            }
-        } finally {
-            if (signal.aborted) {
+            if (!options) {
                 this.destroyMapLayer();
                 view.clearMap();
                 this.currentOptions = null;
+                view.setOverlay("Kein hex3x3-Block in dieser Datei.");
+                await this.safeFileChange(this.currentFile, null, ctx);
+                return;
             }
-            destroyProvisionalLayer();
+
+            let layer: MapLayer | null = null;
+            try {
+                layer = await this.deps.createMapLayer(this.app, view.mapHost, this.currentFile, options);
+            } catch (error) {
+                console.error("[cartographer] failed to render map", error);
+                layer = null;
+            }
+
+            if (signal.aborted || !this.view) {
+                layer?.destroy();
+                return;
+            }
+
+            if (!layer) {
+                this.destroyMapLayer();
+                view.clearMap();
+                this.currentOptions = null;
+                view.setOverlay("Karte konnte nicht geladen werden.");
+                await this.safeFileChange(this.currentFile, null, ctx);
+                return;
+            }
+
+            this.destroyMapLayer();
+            this.mapLayer = layer;
+            this.currentOptions = options;
+            view.setOverlay(null);
+            await this.safeFileChange(this.currentFile, layer.handles, ctx);
+        } finally {
+            if (signal.aborted) {
+                this.destroyMapLayer();
+                this.currentOptions = null;
+                view.clearMap();
+            }
             if (this.renderAbort === controller) {
                 this.renderAbort = undefined;
             }
         }
     }
 
+    private async safeFileChange(
+        file: TFile | null,
+        handles: RenderHandles | null,
+        ctx: CartographerModeLifecycleContext,
+    ): Promise<void> {
+        try {
+            await this.activeMode?.onFileChange(file, handles, ctx);
+        } catch (error) {
+            console.error("[cartographer] mode onFileChange failed", error);
+        }
+    }
+
     private destroyMapLayer(): void {
         const layer = this.mapLayer;
-        if (!layer) return;
         this.mapLayer = null;
+        if (!layer) return;
         try {
             layer.destroy();
         } catch (error) {
@@ -560,6 +484,11 @@ type CreateControllerViewOptions = {
     callbacks: CartographerControllerCallbacks;
 };
 
+type ModeSelectHandle = {
+    setModes(modes: ModeShellEntry[], activeId?: string | null): void;
+    destroy(): void;
+};
+
 function createControllerView(options: CreateControllerViewOptions): CartographerViewHandle {
     const { app, host, initialFile, modes, callbacks } = options;
 
@@ -570,231 +499,102 @@ function createControllerView(options: CreateControllerViewOptions): Cartographe
     const bodyHost = host.createDiv({ cls: "sm-cartographer__body" });
     const mapWrapper = bodyHost.createDiv({ cls: "sm-cartographer__map" });
     const sidebarHost = bodyHost.createDiv({ cls: "sm-cartographer__sidebar" });
-
     const surface = createViewContainer(mapWrapper, { camera: false });
-    let modeHandle: ModeSelectHandle | null = null;
-    let currentModes = [...modes];
-    let currentActiveId: string | null = modes[0]?.id ?? null;
 
-    const invokeModeSelect = (id: string) => {
-        try {
-            const result = callbacks.onModeSelect(id);
-            if (result && typeof (result as Promise<unknown>).then === "function") {
-                void (result as Promise<unknown>).catch((error) => {
-                    console.error("[cartographer] failed to select mode", error);
-                });
-            }
-        } catch (error) {
-            console.error("[cartographer] failed to select mode", error);
-        }
-    };
-
-    const createModeControls = (slot: HTMLElement) => {
-        modeHandle?.destroy();
-
-        modeHandle = renderModeSelect(slot, currentModes, currentActiveId, (id) => {
-            currentActiveId = id;
-            invokeModeSelect(id);
-        });
-        currentActiveId = modeHandle.getActiveId();
-    };
-
+    let selectHandle: ModeSelectHandle | null = null;
     const headerHandle: MapHeaderHandle = createMapHeader(app, headerHost, {
         title: "Cartographer",
         initialFile,
-        onOpen: async (file) => {
-            await callbacks.onOpen(file);
-        },
-        onCreate: async (file) => {
-            await callbacks.onCreate(file);
-        },
-        onDelete: async (file) => {
-            await callbacks.onDelete(file);
-        },
-        onSave: async (mode, file) => {
-            return await callbacks.onSave(mode, file);
-        },
+        onOpen: (file) => callbacks.onOpen(file),
+        onCreate: (file) => callbacks.onCreate(file),
+        onDelete: (file) => callbacks.onDelete(file),
+        onSave: (mode, file) => callbacks.onSave(mode, file),
         titleRightSlot: (slot) => {
-            createModeControls(slot);
+            selectHandle = renderModeSelect(slot, modes, (id) => callbacks.onModeSelect(id));
         },
     });
 
-    if (!modeHandle) {
-        createModeControls(headerHandle.titleRightSlot);
+    if (!selectHandle) {
+        selectHandle = renderModeSelect(headerHandle.titleRightSlot, modes, (id) => callbacks.onModeSelect(id));
     }
 
-    const handleHexClick = (event: Event) => {
+    const hexListener = (event: Event) => {
         if (!(event instanceof CustomEvent)) return;
-        const custom = event as CustomEvent<HexCoord>;
-        if (custom.cancelable) custom.preventDefault();
-        event.stopPropagation();
-        const detail = custom.detail;
+        const detail = event.detail as HexCoord | undefined;
         if (!detail) return;
-        try {
-            const result = callbacks.onHexClick(detail, custom);
-            if (result && typeof (result as Promise<unknown>).then === "function") {
-                void (result as Promise<unknown>).catch((error) => {
-                    console.error("[cartographer] hex click handler failed", error);
-                });
-            }
-        } catch (error) {
+        event.stopPropagation();
+        if (event.cancelable) event.preventDefault();
+        void Promise.resolve(callbacks.onHexClick(detail, event as CustomEvent<HexCoord>)).catch((error) => {
             console.error("[cartographer] hex click handler failed", error);
-        }
+        });
     };
-
-    surface.stageEl.addEventListener("hex:click", handleHexClick as EventListener, { passive: false });
-
-    const destroy = () => {
-        surface.stageEl.removeEventListener("hex:click", handleHexClick as EventListener);
-        modeHandle?.destroy();
-        modeHandle = null;
-        currentActiveId = null;
-        currentModes = [];
-        headerHandle.destroy();
-        surface.destroy();
-        host.empty();
-        host.removeClass("sm-cartographer");
-    };
-
-    modeHandle?.setModes(currentModes, currentActiveId);
-    currentActiveId = modeHandle?.getActiveId() ?? currentActiveId;
+    surface.stageEl.addEventListener("hex:click", hexListener as EventListener, { passive: false });
 
     return {
-        host,
         mapHost: surface.stageEl,
         sidebarHost,
-        setFileLabel: (file) => {
-            headerHandle.setFileLabel(file);
+        setFileLabel: (file) => headerHandle.setFileLabel(file),
+        setModes: (nextModes, activeId) => selectHandle?.setModes(nextModes, activeId),
+        setOverlay: (content) => surface.setOverlay(content),
+        clearMap: () => surface.stageEl.empty(),
+        destroy: () => {
+            surface.stageEl.removeEventListener("hex:click", hexListener as EventListener);
+            selectHandle?.destroy();
+            headerHandle.destroy();
+            surface.destroy();
+            host.empty();
+            host.removeClass("sm-cartographer");
         },
-        setModes: (nextModes, activeId) => {
-            currentModes = [...nextModes];
-            const requestedActive = activeId !== undefined ? activeId : currentActiveId;
-            if (modeHandle) {
-                modeHandle.setModes(currentModes, requestedActive);
-                currentActiveId = modeHandle.getActiveId();
-            } else {
-                const fallbackActive =
-                    requestedActive && currentModes.some((mode) => mode.id === requestedActive)
-                        ? requestedActive
-                        : currentModes[0]?.id ?? null;
-                currentActiveId = fallbackActive ?? null;
-            }
-        },
-        setOverlay: (content) => {
-            surface.setOverlay(content);
-        },
-        clearMap: () => {
-            surface.stageEl.empty();
-        },
-        destroy,
     } satisfies CartographerViewHandle;
 }
 
-type ModeSelectHandle = {
-    setModes(modes: ModeShellEntry[], activeId?: string | null): void;
-    getActiveId(): string | null;
-    destroy(): void;
-};
-
 function renderModeSelect(
     slot: HTMLElement,
-    modes: ModeShellEntry[],
-    initialActiveId: string | null,
-    onChange: (id: string) => void | Promise<unknown>,
+    initialModes: ModeShellEntry[],
+    onChange: (id: string) => MaybePromise<void>,
 ): ModeSelectHandle {
     slot.empty();
     slot.addClass("sm-cartographer__mode-slot");
-
-    const labelEl = slot.createEl("span", {
-        cls: "sm-cartographer__mode-label",
-        text: DEFAULT_MODE_LABEL,
-    });
     const selectEl = slot.createEl("select", { cls: "sm-cartographer__mode-select" });
     selectEl.setAttribute("aria-label", "Cartographer mode");
 
-    const updateLabel = () => {
-        const label = selectEl.selectedOptions[0]?.textContent ?? DEFAULT_MODE_LABEL;
-        labelEl.setText(label);
-        selectEl.title = label;
-    };
-
-    let currentModes: ModeShellEntry[] | null = null;
-    let activeId: string | null = null;
-
-    const rebuildOptions = (list: ModeShellEntry[]) => {
+    let modes = [...initialModes];
+    const sync = (list: ModeShellEntry[], activeId?: string | null) => {
+        modes = [...list];
         selectEl.empty();
-        if (list.length === 0) {
+        if (modes.length === 0) {
             const option = selectEl.createEl("option", { text: "Keine Modi" });
-            option.value = "";
             option.disabled = true;
             option.selected = true;
             selectEl.disabled = true;
-            selectEl.value = "";
-            activeId = null;
-            updateLabel();
             return;
         }
-
-        selectEl.disabled = false;
-        for (const mode of list) {
+        for (const mode of modes) {
             const option = selectEl.createEl("option", { text: mode.label });
             option.value = mode.id;
         }
+        selectEl.disabled = false;
+        const requested = activeId && modes.some((mode) => mode.id === activeId) ? activeId : modes[0]?.id ?? "";
+        selectEl.value = requested ?? "";
     };
 
-    const syncSelection = (list: ModeShellEntry[], nextActiveId: string | null) => {
-        if (list.length === 0) {
-            activeId = null;
-            updateLabel();
-            return;
-        }
-        const fallbackId = nextActiveId && list.some((mode) => mode.id === nextActiveId)
-            ? nextActiveId
-            : list[0]?.id ?? "";
-        selectEl.value = fallbackId ?? "";
-        activeId = selectEl.value || null;
-        updateLabel();
-    };
-
-    const applyModes = (list: ModeShellEntry[], nextActiveId: string | null) => {
-        const shouldRebuild =
-            currentModes === null ||
-            currentModes.length !== list.length ||
-            currentModes.some((prev, index) => {
-                const next = list[index];
-                return !next || prev.id !== next.id || prev.label !== next.label;
-            });
-        currentModes = [...list];
-        if (shouldRebuild) {
-            rebuildOptions(list);
-        }
-        syncSelection(list, nextActiveId);
-    };
+    sync(modes);
 
     const handleChange = () => {
         const id = selectEl.value;
-        activeId = id || null;
-        updateLabel();
         if (!id) return;
-        onChange(id);
+        void Promise.resolve(onChange(id)).catch((error) => {
+            console.error("[cartographer] failed to select mode", error);
+        });
     };
-
     selectEl.addEventListener("change", handleChange);
 
-    applyModes(modes, initialActiveId);
-
     return {
-        setModes: (nextModes, nextActiveId) => {
-            const requested = nextActiveId !== undefined ? nextActiveId : selectEl.value || null;
-            applyModes(nextModes, requested);
-        },
-        getActiveId: () => activeId,
+        setModes: (nextModes, activeId) => sync(nextModes, activeId),
         destroy: () => {
             selectEl.removeEventListener("change", handleChange);
             slot.empty();
-            activeId = null;
-            currentModes = null;
+            modes = [];
         },
-    };
+    } satisfies ModeSelectHandle;
 }
-
