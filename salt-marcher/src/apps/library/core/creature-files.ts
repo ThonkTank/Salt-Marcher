@@ -36,6 +36,72 @@ export type CreatureSpeeds = {
     extras?: CreatureSpeedExtra[];
 };
 
+export type AbilityScoreKey = "str" | "dex" | "con" | "int" | "wis" | "cha";
+
+export type SpellcastingAbility = AbilityScoreKey;
+
+export type SpellcastingSpell = {
+    name: string;
+    notes?: string;
+    prepared?: boolean;
+};
+
+export type SpellcastingGroupAtWill = {
+    type: "at-will";
+    title?: string;
+    spells: SpellcastingSpell[];
+};
+
+export type SpellcastingGroupPerDay = {
+    type: "per-day";
+    uses: string;
+    title?: string;
+    note?: string;
+    spells: SpellcastingSpell[];
+};
+
+export type SpellcastingGroupLevel = {
+    type: "level";
+    level: number;
+    title?: string;
+    slots?: number | string;
+    note?: string;
+    spells: SpellcastingSpell[];
+};
+
+export type SpellcastingGroupCustom = {
+    type: "custom";
+    title: string;
+    description?: string;
+    spells?: SpellcastingSpell[];
+};
+
+export type SpellcastingGroup =
+    | SpellcastingGroupAtWill
+    | SpellcastingGroupPerDay
+    | SpellcastingGroupLevel
+    | SpellcastingGroupCustom;
+
+export type SpellcastingComputedValues = {
+    abilityMod?: number | null;
+    proficiencyBonus?: number | null;
+    saveDc?: number | null;
+    attackBonus?: number | null;
+};
+
+export type SpellcastingData = {
+    title?: string;
+    summary?: string;
+    ability?: SpellcastingAbility;
+    saveDcOverride?: number;
+    attackBonusOverride?: number;
+    notes?: string[];
+    groups: SpellcastingGroup[];
+    computed?: SpellcastingComputedValues;
+};
+
+export type LegacySpellcastingEntry = { name: string; level?: number; uses?: string; notes?: string };
+
 export type StatblockData = {
     name: string;
     size?: string;
@@ -67,7 +133,9 @@ export type StatblockData = {
     traits?: string; actions?: string; legendary?: string;
     entries?: Array<{ category: 'trait'|'action'|'bonus'|'reaction'|'legendary'; name: string; kind?: string; to_hit?: string; to_hit_from?: { ability: 'str'|'dex'|'con'|'int'|'wis'|'cha'|'best_of_str_dex'; proficient?: boolean }; range?: string; target?: string; save_ability?: string; save_dc?: number; save_effect?: string; damage?: string; damage_from?: { dice: string; ability?: 'str'|'dex'|'con'|'int'|'wis'|'cha'|'best_of_str_dex'; bonus?: string }; recharge?: string; text?: string; }>;
     actionsList?: Array<{ name: string; kind?: string; to_hit?: string; range?: string; target?: string; save_ability?: string; save_dc?: number; save_effect?: string; damage?: string; recharge?: string; text?: string; }>;
-    spellsKnown?: Array<{ name: string; level?: number; uses?: string; notes?: string }>;
+    spellcasting?: SpellcastingData;
+    /** @deprecated Legacy fallback until create-Dialoge aktualisiert sind. */
+    spellsKnown?: LegacySpellcastingEntry[];
 };
 
 const CREATURE_PIPELINE = createVaultFilePipeline<StatblockData>({
@@ -90,10 +158,22 @@ export const watchCreatureDir = CREATURE_PIPELINE.watch;
 
 function yamlList(items?: string[]): string | undefined { if (!items || items.length === 0) return undefined; const safe = items.map(s => `"${(s ?? "").replace(/"/g, '\\"')}"`).join(", "); return `[${safe}]`; }
 function formatSpeedExtra(entry: CreatureSpeedExtra): string { const parts = [entry.label]; if (entry.distance) parts.push(entry.distance); if (entry.note) parts.push(entry.note); if (entry.hover) parts.push("(hover)"); return parts.map(p => p?.trim()).filter((p): p is string => Boolean(p && p.length)).join(" "); }
-function parseNum(v?: string): number | null { if (!v) return null; const m = String(v).match(/-?\d+/); if (!m) return null; return Number(m[0]); }
-function abilityMod(score?: string): number | null { const n = parseNum(score); if (n == null || Number.isNaN(n)) return null; return Math.floor((n - 10) / 2); }
+export function parseNumericValue(v?: string): number | null { if (!v) return null; const m = String(v).match(/-?\d+/); if (!m) return null; return Number(m[0]); }
+export function abilityModifierFromScore(score?: string): number | null { const n = parseNumericValue(score); if (n == null || Number.isNaN(n)) return null; return Math.floor((n - 10) / 2); }
+export function getAbilityModifier(data: StatblockData, ability: AbilityScoreKey): number | null { return abilityModifierFromScore((data as Record<string, string | undefined>)[ability]); }
+export function getProficiencyBonus(data: Pick<StatblockData, "pb">): number | null { return parseNumericValue(data.pb); }
+export function calculateSaveDc({ abilityMod, proficiencyBonus, override }: { abilityMod: number | null | undefined; proficiencyBonus: number | null | undefined; override?: number | null; }): number | null {
+    if (override != null) return override;
+    if (abilityMod == null || proficiencyBonus == null) return null;
+    return 8 + abilityMod + proficiencyBonus;
+}
+export function calculateAttackBonus({ abilityMod, proficiencyBonus, override }: { abilityMod: number | null | undefined; proficiencyBonus: number | null | undefined; override?: number | null; }): number | null {
+    if (override != null) return override;
+    if (abilityMod == null || proficiencyBonus == null) return null;
+    return abilityMod + proficiencyBonus;
+}
 function fmtSigned(n: number): string { return (n >= 0 ? "+" : "") + n; }
-const SKILL_TO_ABILITY: Record<string, keyof Pick<StatblockData, 'str'|'dex'|'int'|'wis'|'cha'|'con'>> = { Athletics: 'str', Acrobatics: 'dex', 'Sleight of Hand': 'dex', Stealth: 'dex', Arcana: 'int', History: 'int', Investigation: 'int', Nature: 'int', Religion: 'int', 'Animal Handling': 'wis', Insight: 'wis', Medicine: 'wis', Perception: 'wis', Survival: 'wis', Deception: 'cha', Intimidation: 'cha', Performance: 'cha', Persuasion: 'cha', };
+const SKILL_TO_ABILITY: Record<string, AbilityScoreKey> = { Athletics: 'str', Acrobatics: 'dex', 'Sleight of Hand': 'dex', Stealth: 'dex', Arcana: 'int', History: 'int', Investigation: 'int', Nature: 'int', Religion: 'int', 'Animal Handling': 'wis', Insight: 'wis', Medicine: 'wis', Perception: 'wis', Survival: 'wis', Deception: 'cha', Intimidation: 'cha', Performance: 'cha', Persuasion: 'cha', };
 function composeAlignment(d: StatblockData): string | undefined {
     const override = d.alignmentOverride?.trim();
     if (override) return override;
@@ -112,6 +192,7 @@ function composeTypeLine(d: StatblockData): string | undefined {
     if (tags.length) return tags.join(", ");
     return undefined;
 }
+
 
 function statblockToMarkdown(d: StatblockData): string {
     const identity = [d.size?.trim(), composeTypeLine(d)].filter(Boolean).join(" ");
@@ -158,7 +239,11 @@ function statblockToMarkdown(d: StatblockData): string {
     if (d.cr) lines.push(`cr: "${d.cr}"`); if (d.xp) lines.push(`xp: "${d.xp}"`);
     const entries = (d.entries && d.entries.length) ? d.entries : (d.actionsList && d.actionsList.length ? d.actionsList.map(a => ({ category: 'action' as const, ...a })) : undefined);
     if (entries && entries.length) { const json = JSON.stringify(entries).replace(/"/g, '\\"'); lines.push(`entries_structured_json: "${json}"`); }
-    if (d.spellsKnown && d.spellsKnown.length) { const json = JSON.stringify(d.spellsKnown).replace(/"/g, '\\"'); lines.push(`spells_known_json: "${json}"`); }
+    const spellcasting = resolveSpellcastingData(d);
+    if (spellcasting && spellcasting.groups.length) {
+        const json = JSON.stringify(spellcasting).replace(/"/g, '\\"');
+        lines.push(`spellcasting_json: "${json}"`);
+    }
     lines.push("---\n");
     lines.push(`# ${name}`);
     if (header) lines.push(`*${header}*`);
@@ -177,9 +262,11 @@ function statblockToMarkdown(d: StatblockData): string {
     if (speedsLine.length) lines.push(`Speed ${speedsLine.join(", ")}`);
     lines.push("");
     const abilities = [["STR", d.str],["DEX", d.dex],["CON", d.con],["INT", d.int],["WIS", d.wis],["CHA", d.cha]] as const; if (abilities.some(([_,v])=>!!v)) { lines.push("| Ability | Score |"); lines.push("| ------: | :---- |"); for (const [k,v] of abilities) if (v) lines.push(`| ${k} | ${v} |`); lines.push(""); }
-    const pbNum = parseNum(d.pb) ?? 0; if (d.saveProf) { const parts: string[] = []; const map: Array<[keyof typeof d.saveProf, string, string|undefined]> = [['str','Str',d.str],['dex','Dex',d.dex],['con','Con',d.con],['int','Int',d.int],['wis','Wis',d.wis],['cha','Cha',d.cha]]; for (const [key,label,score] of map) { if (d.saveProf[key]) { const mod = abilityMod(score) ?? 0; parts.push(`${label} ${fmtSigned(mod + pbNum)}`); } } if (parts.length) lines.push(`Saves ${parts.join(", ")}`); }
+    const pbValue = parseNumericValue(d.pb);
+    const pbNum = pbValue ?? 0;
+    if (d.saveProf) { const parts: string[] = []; const map: Array<[keyof typeof d.saveProf,string, string|undefined]> = [['str','Str',d.str],['dex','Dex',d.dex],['con','Con',d.con],['int','Int',d.int],['wis','Wis',d.wis],['cha','Cha',d.cha]]; for (const [key,label,score] of map) { if (d.saveProf[key]) { const mod = abilityModifierFromScore(score) ?? 0; parts.push(`${label} ${fmtSigned(mod + pbNum)}`); } } if (parts.length) lines.push(`Saves ${parts.join(", ")}`); }
     const getSet = (arr?: string[]) => new Set((arr || []).map(s => s.trim()).filter(Boolean)); const profSet = getSet(d.skillsProf); const expSet = getSet(d.skillsExpertise);
-    if (profSet.size || expSet.size) { const parts: string[] = []; const allSkills = Array.from(new Set([...Object.keys(SKILL_TO_ABILITY)])); for (const sk of allSkills) { const hasProf = profSet.has(sk) || expSet.has(sk); if (!hasProf) continue; const abilKey = SKILL_TO_ABILITY[sk]; const mod = abilityMod((d as any)[abilKey]) ?? 0; const bonus = expSet.has(sk) ? pbNum * 2 : pbNum; parts.push(`${sk} ${fmtSigned(mod + bonus)}`); } if (parts.length) lines.push(`Skills ${parts.join(", ")}`); }
+    if (profSet.size || expSet.size) { const parts: string[] = []; const allSkills = Array.from(new Set([...Object.keys(SKILL_TO_ABILITY)])); for (const sk of allSkills) { const hasProf = profSet.has(sk) || expSet.has(sk); if (!hasProf) continue; const abilKey = SKILL_TO_ABILITY[sk]; const mod = abilityModifierFromScore((d as any)[abilKey]) ?? 0; const bonus = expSet.has(sk) ? pbNum * 2 : pbNum; parts.push(`${sk} ${fmtSigned(mod + bonus)}`); } if (parts.length) lines.push(`Skills ${parts.join(", ")}`); }
     const sensesParts: string[] = [];
     if (d.sensesList && d.sensesList.length) sensesParts.push(d.sensesList.join(", "));
     const passiveChunk = d.passivesList && d.passivesList.length ? d.passivesList.join("; ") : "";
@@ -193,21 +280,208 @@ function statblockToMarkdown(d: StatblockData): string {
     if (d.conditionImmunitiesList && d.conditionImmunitiesList.length) lines.push(`Condition Immunities ${d.conditionImmunitiesList.join(", ")}`);
     if (d.languagesList && d.languagesList.length) lines.push(`Languages ${d.languagesList.join(", ")}`);
     if (d.gearList && d.gearList.length) lines.push(`Gear ${d.gearList.join(", ")}`);
-    if (d.cr || d.pb || d.xp) { const bits: string[] = []; if (d.cr) bits.push(`CR ${d.cr}`); if (pbNum) bits.push(`PB ${fmtSigned(pbNum)}`); if (d.xp) bits.push(`XP ${d.xp}`); if (bits.length) lines.push(bits.join("; ")); } lines.push("");
+    if (d.cr || d.pb || d.xp) { const bits: string[] = []; if (d.cr) bits.push(`CR ${d.cr}`); if (pbValue != null && !Number.isNaN(pbValue) && pbValue !== 0) bits.push(`PB ${fmtSigned(pbValue)}`); if (d.xp) bits.push(`XP ${d.xp}`); if (bits.length) lines.push(bits.join("; ")); } lines.push("");
     if (entries && entries.length) {
         const groups: Record<string, typeof entries> = { trait: [], action: [], bonus: [], reaction: [], legendary: [] } as any;
         for (const e of entries) { (groups[e.category] ||= []).push(e); }
-        const renderGroup = (title: string, arr: typeof entries) => { if (!arr || arr.length === 0) return; lines.push(`## ${title}\n`); for (const a of arr) { const headParts = [a.name, a.recharge].filter(Boolean).join(" "); lines.push(`- **${headParts}**`); const sub: string[] = []; if (a.kind) sub.push(a.kind); if (a.to_hit) sub.push(`to hit ${a.to_hit}`); else if (a.to_hit_from) { const abil = a.to_hit_from.ability; const abilMod = abil === 'best_of_str_dex' ? Math.max(abilityMod(d.str) ?? 0, abilityMod(d.dex) ?? 0) : (abilityMod((d as any)[abil]) ?? 0); const pb = parseNum(d.pb) ?? 0; const total = abilMod + (a.to_hit_from.proficient ? pb : 0); sub.push(`to hit ${fmtSigned(total)}`); } if (a.range) sub.push(a.range); if (a.target) sub.push(a.target); if (a.damage) sub.push(a.damage); else if (a.damage_from) { const abilKey = a.damage_from.ability; const abilMod = abilKey ? (abilKey === 'best_of_str_dex' ? Math.max(abilityMod(d.str) ?? 0, abilityMod(d.dex) ?? 0) : (abilityMod((d as any)[abilKey]) ?? 0)) : 0; const bonus = a.damage_from.bonus ? ` ${a.damage_from.bonus}` : ''; const modTxt = abilMod ? ` ${fmtSigned(abilMod)}` : ''; sub.push(`${a.damage_from.dice}${modTxt}${bonus}`.trim()); } if (a.save_ability) sub.push(`Save ${a.save_ability}${a.save_dc ? ` DC ${a.save_dc}` : ''}${a.save_effect ? ` (${a.save_effect})` : ''}`); if (sub.length) lines.push(`  - ${sub.join(", ")}`); if (a.text && a.text.trim()) lines.push(`  ${a.text.trim()}`); } lines.push(""); };
+        const renderGroup = (title: string, arr: typeof entries) => {
+            if (!arr || arr.length === 0) return;
+            lines.push(`## ${title}\n`);
+            for (const a of arr) {
+                const headParts = [a.name, a.recharge].filter(Boolean).join(" ");
+                lines.push(`- **${headParts}**`);
+                const sub: string[] = [];
+                if (a.kind) sub.push(a.kind);
+                if (a.to_hit) sub.push(`to hit ${a.to_hit}`);
+                else if (a.to_hit_from) {
+                    const abil = a.to_hit_from.ability;
+                    const abilMod = abil === 'best_of_str_dex'
+                        ? Math.max(abilityModifierFromScore(d.str) ?? 0, abilityModifierFromScore(d.dex) ?? 0)
+                        : (abilityModifierFromScore((d as any)[abil]) ?? 0);
+                    const pb = parseNumericValue(d.pb) ?? 0;
+                    const total = abilMod + (a.to_hit_from.proficient ? pb : 0);
+                    sub.push(`to hit ${fmtSigned(total)}`);
+                }
+                if (a.range) sub.push(a.range);
+                if (a.target) sub.push(a.target);
+                if (a.damage) sub.push(a.damage);
+                else if (a.damage_from) {
+                    const abilKey = a.damage_from.ability;
+                    const abilMod = abilKey
+                        ? (abilKey === 'best_of_str_dex'
+                            ? Math.max(abilityModifierFromScore(d.str) ?? 0, abilityModifierFromScore(d.dex) ?? 0)
+                            : (abilityModifierFromScore((d as any)[abilKey]) ?? 0))
+                        : 0;
+                    const bonus = a.damage_from.bonus ? ` ${a.damage_from.bonus}` : '';
+                    const modTxt = abilMod ? ` ${fmtSigned(abilMod)}` : '';
+                    sub.push(`${a.damage_from.dice}${modTxt}${bonus}`.trim());
+                }
+                if (a.save_ability) sub.push(`Save ${a.save_ability}${a.save_dc ? ` DC ${a.save_dc}` : ''}${a.save_effect ? ` (${a.save_effect})` : ''}`);
+                if (sub.length) lines.push(`  - ${sub.join(", ")}`);
+                if (a.text && a.text.trim()) lines.push(`  ${a.text.trim()}`);
+            }
+            lines.push("");
+        };
         renderGroup("Traits", groups.trait); renderGroup("Actions", groups.action); renderGroup("Bonus Actions", groups.bonus); renderGroup("Reactions", groups.reaction); renderGroup("Legendary Actions", groups.legendary);
     } else {
         if (d.traits) { lines.push("## Traits\n"); lines.push(d.traits.trim()); lines.push(""); }
         if (d.actions) { lines.push("## Actions\n"); lines.push(d.actions.trim()); lines.push(""); }
         if (d.legendary) { lines.push("## Legendary Actions\n"); lines.push(d.legendary.trim()); lines.push(""); }
     }
-    if (d.spellsKnown && d.spellsKnown.length) { lines.push("## Spellcasting\n"); const byLevel: Record<string, Array<{ name: string; uses?: string; notes?: string }>> = {}; for (const s of d.spellsKnown) { const key = s.level == null ? "unknown" : String(s.level); (byLevel[key] ||= []).push({ name: s.name, uses: s.uses, notes: s.notes }); } const order = Object.keys(byLevel).map(k => (k === 'unknown' ? Infinity : parseInt(k,10))).sort((a,b)=>a-b).map(n => n === Infinity ? 'unknown' : String(n)); for (const k of order) { const lvl = k === 'unknown' ? 'Spells' : (k === '0' ? 'Cantrips' : `Level ${k}`); lines.push(`- ${lvl}:`); for (const s of byLevel[k]) { const extra = [s.uses, s.notes].filter(Boolean).join('; '); lines.push(`  - ${s.name}${extra ? ` (${extra})` : ''}`); } } lines.push(""); }
+    if (spellcasting && spellcasting.groups.length) {
+        renderSpellcasting(lines, d, spellcasting);
+    }
     return lines.join("\n");
 }
 
+function resolveSpellcastingData(d: StatblockData): SpellcastingData | undefined {
+    if (d.spellcasting) {
+        return withComputedSpellcasting(d, d.spellcasting);
+    }
+    const legacy = (d.spellsKnown ?? []).filter((s): s is LegacySpellcastingEntry => Boolean(s && s.name && s.name.trim().length));
+    if (!legacy.length) return undefined;
+    const converted = convertLegacySpells(legacy);
+    return withComputedSpellcasting(d, converted);
+}
+
+function withComputedSpellcasting(d: StatblockData, base: SpellcastingData): SpellcastingData {
+    const abilityMod = base.ability ? getAbilityModifier(d, base.ability) : null;
+    const proficiencyBonus = getProficiencyBonus(d);
+    const saveDc = calculateSaveDc({ abilityMod, proficiencyBonus, override: base.saveDcOverride });
+    const attackBonus = calculateAttackBonus({ abilityMod, proficiencyBonus, override: base.attackBonusOverride });
+    return {
+        ...base,
+        computed: {
+            abilityMod,
+            proficiencyBonus,
+            saveDc,
+            attackBonus,
+        },
+    };
+}
+
+function convertLegacySpells(legacy: LegacySpellcastingEntry[]): SpellcastingData {
+    const atWill: SpellcastingSpell[] = [];
+    const perDay: Map<string, SpellcastingSpell[]> = new Map();
+    const byLevel: Map<number, SpellcastingSpell[]> = new Map();
+    const custom: SpellcastingSpell[] = [];
+    for (const entry of legacy) {
+        const spell: SpellcastingSpell = { name: entry.name, notes: entry.notes };
+        const uses = entry.uses?.trim();
+        if (uses) {
+            const normalized = uses.toLowerCase();
+            if (normalized.includes("at will")) {
+                atWill.push(spell);
+                continue;
+            }
+            const existing = perDay.get(uses) ?? [];
+            existing.push(spell);
+            perDay.set(uses, existing);
+            continue;
+        }
+        if (typeof entry.level === "number") {
+            const existing = byLevel.get(entry.level) ?? [];
+            existing.push(spell);
+            byLevel.set(entry.level, existing);
+            continue;
+        }
+        custom.push(spell);
+    }
+    const groups: SpellcastingGroup[] = [];
+    if (atWill.length) groups.push({ type: "at-will", spells: atWill });
+    for (const [uses, spells] of Array.from(perDay.entries()).sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true }))) {
+        groups.push({ type: "per-day", uses, spells });
+    }
+    for (const level of Array.from(byLevel.keys()).sort((a, b) => a - b)) {
+        groups.push({ type: "level", level, spells: byLevel.get(level) ?? [] });
+    }
+    if (custom.length) groups.push({ type: "custom", title: "Additional Spells", spells: custom });
+    return {
+        title: "Spellcasting",
+        groups,
+    };
+}
+
+function renderSpellcasting(lines: string[], d: StatblockData, spellcasting: SpellcastingData): void {
+    const title = spellcasting.title?.trim() || "Spellcasting";
+    lines.push(`## ${title}`);
+    lines.push("");
+    if (spellcasting.summary) {
+        lines.push(spellcasting.summary.trim());
+        lines.push("");
+    }
+    const saveDc = spellcasting.computed?.saveDc;
+    const attackBonus = spellcasting.computed?.attackBonus;
+    const summaryParts: string[] = [];
+    if (saveDc != null) summaryParts.push(`Spell save DC ${saveDc}`);
+    if (attackBonus != null) summaryParts.push(`${fmtSigned(attackBonus)} to hit with spell attacks`);
+    if (summaryParts.length) {
+        lines.push(`*${summaryParts.join(", ")}`);
+        lines.push("");
+    }
+    if (spellcasting.notes && spellcasting.notes.length) {
+        for (const note of spellcasting.notes) {
+            if (note && note.trim()) {
+                lines.push(note.trim());
+            }
+        }
+        if (spellcasting.notes.some(note => note && note.trim())) {
+            lines.push("");
+        }
+    }
+    for (const group of spellcasting.groups) {
+        switch (group.type) {
+            case "at-will":
+                renderSpellGroup(lines, group.title ?? "At Will", group.spells);
+                break;
+            case "per-day": {
+                const heading = group.title ?? group.uses;
+                renderSpellGroup(lines, heading, group.spells, group.note);
+                break;
+            }
+            case "level": {
+                const base = group.title ?? formatSpellLevelHeading(group.level);
+                const slots = group.slots == null ? undefined : (typeof group.slots === "number" ? `${group.slots} slot${group.slots === 1 ? "" : "s"}` : String(group.slots));
+                const heading = slots ? `${base} (${slots})` : base;
+                renderSpellGroup(lines, heading, group.spells, group.note);
+                break;
+            }
+            case "custom": {
+                renderSpellGroup(lines, group.title, group.spells ?? [], group.description);
+                break;
+            }
+        }
+    }
+    if (lines[lines.length - 1] !== "") lines.push("");
+}
+
+function renderSpellGroup(lines: string[], heading: string, spells: SpellcastingSpell[], note?: string): void {
+    lines.push(`### ${heading}`);
+    lines.push("");
+    if (note && note.trim()) {
+        lines.push(note.trim());
+        lines.push("");
+    }
+    if (!spells.length) {
+        lines.push("- none");
+        lines.push("");
+        return;
+    }
+    for (const spell of spells) {
+        const details: string[] = [];
+        if (spell.prepared != null) details.push(spell.prepared ? "prepared" : "known");
+        if (spell.notes) details.push(spell.notes);
+        const suffix = details.length ? ` (${details.join(", ")})` : "";
+        lines.push(`- ${spell.name}${suffix}`);
+    }
+    lines.push("");
+}
+
+function formatSpellLevelHeading(level: number): string {
+    if (level <= 0) return "Cantrips";
+    const suffix = level === 1 ? "st" : level === 2 ? "nd" : level === 3 ? "rd" : "th";
+    return `${level}${suffix} Level`;
+}
 export async function createCreatureFile(app: App, d: StatblockData): Promise<TFile> {
     return CREATURE_PIPELINE.create(app, d);
 }
