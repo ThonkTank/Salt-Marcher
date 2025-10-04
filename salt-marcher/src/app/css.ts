@@ -334,6 +334,72 @@ const editorLayoutsCss = `
     display: flex;
     justify-content: flex-end;
 }
+.sm-cc-defense-summary {
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:.4rem;
+    margin:.35rem 0 .75rem;
+}
+.sm-cc-defense-pill {
+    display:inline-flex;
+    align-items:center;
+    gap:.35rem;
+    border:1px solid var(--background-modifier-border);
+    border-radius:999px;
+    padding:.15rem .6rem;
+    background: var(--background-secondary);
+    font-size:.85em;
+    color: var(--text-muted);
+    transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.sm-cc-defense-pill__label {
+    font-weight:600;
+    color: var(--text-normal);
+}
+.sm-cc-defense-pill__count {
+    font-weight:700;
+    font-variant-numeric: tabular-nums;
+}
+.sm-cc-defense-pill.is-empty {
+    opacity:.65;
+}
+.sm-cc-defense-pill--res {
+    border-color: color-mix(in srgb, var(--interactive-accent) 45%, transparent);
+    background: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-secondary));
+}
+.sm-cc-defense-pill--res .sm-cc-defense-pill__label,
+.sm-cc-defense-pill--res .sm-cc-defense-pill__count {
+    color: var(--interactive-accent);
+}
+.sm-cc-defense-pill--imm {
+    border-color: color-mix(in srgb, var(--color-purple, #7c3aed) 45%, transparent);
+    background: color-mix(in srgb, var(--color-purple, #7c3aed) 12%, var(--background-secondary));
+}
+.sm-cc-defense-pill--imm .sm-cc-defense-pill__label,
+.sm-cc-defense-pill--imm .sm-cc-defense-pill__count {
+    color: var(--color-purple, #7c3aed);
+}
+.sm-cc-defense-pill--vuln {
+    border-color: color-mix(in srgb, var(--color-orange, #ea580c) 45%, transparent);
+    background: color-mix(in srgb, var(--color-orange, #ea580c) 12%, var(--background-secondary));
+}
+.sm-cc-defense-pill--vuln .sm-cc-defense-pill__label,
+.sm-cc-defense-pill--vuln .sm-cc-defense-pill__count {
+    color: var(--color-orange, #ea580c);
+}
+.sm-cc-defense-pill--cond {
+    border-color: color-mix(in srgb, var(--color-green, #10b981) 45%, transparent);
+    background: color-mix(in srgb, var(--color-green, #10b981) 12%, var(--background-secondary));
+}
+.sm-cc-defense-pill--cond .sm-cc-defense-pill__label,
+.sm-cc-defense-pill--cond .sm-cc-defense-pill__count {
+    color: var(--color-green, #10b981);
+}
+.sm-cc-defense-pill__empty {
+    font-size:.85em;
+    color: var(--text-muted);
+}
 .sm-cc-defenses .sm-cc-senses-search {
     display: flex;
     align-items: center;
