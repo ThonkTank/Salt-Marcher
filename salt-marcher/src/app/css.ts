@@ -203,6 +203,8 @@ const editorLayoutsCss = `
 .sm-cc-item__name { font-weight: 600; }
 
 /* Creature Creator – Modal Layout */
+.modal.sm-cc-create-modal-host { width: min(1120px, calc(100vw - 72px)); max-width: min(1120px, calc(100vw - 72px)); }
+.modal.sm-cc-create-modal-host .modal-content { max-height: calc(100vh - 96px); }
 .sm-cc-modal-header { display:flex; flex-direction:column; gap:.35rem; margin-bottom:1rem; }
 .sm-cc-modal-header h2 { margin:0; font-size:1.35rem; }
 .sm-cc-modal-subtitle { margin:0; color: var(--text-muted); font-size:.95em; }
