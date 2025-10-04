@@ -8,8 +8,11 @@ const keyOf = (coord: HexCoord) => `${coord.r},${coord.c}`;
 
 type Rect = { minX: number; minY: number; maxX: number; maxY: number };
 
+type ViewBox = { minX: number; minY: number; width: number; height: number };
+
 type SceneInternals = {
     bounds: Rect | null;
+    viewBox: ViewBox | null;
     updateViewBox(): void;
     centerOf(coord: HexCoord): { cx: number; cy: number };
     bboxOf(coord: HexCoord): Rect;
@@ -43,6 +46,7 @@ export function createHexScene(config: HexSceneConfig): HexScene {
 
     const internals: SceneInternals = {
         bounds: null,
+        viewBox: null,
         updateViewBox() {
             if (!internals.bounds) return;
             const { minX, minY, maxX, maxY } = internals.bounds;
@@ -50,13 +54,44 @@ export function createHexScene(config: HexSceneConfig): HexScene {
             const paddedMinY = Math.floor(minY - padding);
             const paddedMaxX = Math.ceil(maxX + padding);
             const paddedMaxY = Math.ceil(maxY + padding);
-            const width = Math.max(1, paddedMaxX - paddedMinX);
-            const height = Math.max(1, paddedMaxY - paddedMinY);
-            svg.setAttribute("viewBox", `${paddedMinX} ${paddedMinY} ${width} ${height}`);
-            overlay.setAttribute("x", String(paddedMinX));
-            overlay.setAttribute("y", String(paddedMinY));
-            overlay.setAttribute("width", String(width));
-            overlay.setAttribute("height", String(height));
+            const spanWidth = Math.max(1, paddedMaxX - paddedMinX);
+            const spanHeight = Math.max(1, paddedMaxY - paddedMinY);
+
+            let centerX = paddedMinX + spanWidth / 2;
+            let centerY = paddedMinY + spanHeight / 2;
+            let halfWidth = spanWidth / 2;
+            let halfHeight = spanHeight / 2;
+
+            if (internals.viewBox) {
+                const prev = internals.viewBox;
+                centerX = prev.minX + prev.width / 2;
+                centerY = prev.minY + prev.height / 2;
+                halfWidth = Math.max(
+                    prev.width / 2,
+                    spanWidth / 2,
+                    paddedMaxX - centerX,
+                    centerX - paddedMinX,
+                );
+                halfHeight = Math.max(
+                    prev.height / 2,
+                    spanHeight / 2,
+                    paddedMaxY - centerY,
+                    centerY - paddedMinY,
+                );
+            }
+
+            const viewWidth = Math.max(1, halfWidth * 2);
+            const viewHeight = Math.max(1, halfHeight * 2);
+            const viewMinX = centerX - viewWidth / 2;
+            const viewMinY = centerY - viewHeight / 2;
+
+            internals.viewBox = { minX: viewMinX, minY: viewMinY, width: viewWidth, height: viewHeight };
+
+            svg.setAttribute("viewBox", `${viewMinX} ${viewMinY} ${viewWidth} ${viewHeight}`);
+            overlay.setAttribute("x", String(viewMinX));
+            overlay.setAttribute("y", String(viewMinY));
+            overlay.setAttribute("width", String(viewWidth));
+            overlay.setAttribute("height", String(viewHeight));
         },
         centerOf(coord: HexCoord) {
             const { r, c } = coord;
@@ -81,33 +116,11 @@ export function createHexScene(config: HexSceneConfig): HexScene {
             return;
         }
 
-        const previous = internals.bounds;
-        // Expand symmetrically around the previous center so that the map does not
-        // jump under the cursor when new polygons extend the bounds to one side.
-        const prevCenterX = (previous.minX + previous.maxX) / 2;
-        const prevCenterY = (previous.minY + previous.maxY) / 2;
-        const prevHalfWidth = (previous.maxX - previous.minX) / 2;
-        const prevHalfHeight = (previous.maxY - previous.minY) / 2;
-
-        const rawMinX = Math.min(previous.minX, next.minX);
-        const rawMaxX = Math.max(previous.maxX, next.maxX);
-        const rawMinY = Math.min(previous.minY, next.minY);
-        const rawMaxY = Math.max(previous.maxY, next.maxY);
-
-        const leftSpan = Math.max(0, prevCenterX - rawMinX);
-        const rightSpan = Math.max(0, rawMaxX - prevCenterX);
-        const topSpan = Math.max(0, prevCenterY - rawMinY);
-        const bottomSpan = Math.max(0, rawMaxY - prevCenterY);
-
-        const halfWidth = Math.max(prevHalfWidth, leftSpan, rightSpan);
-        const halfHeight = Math.max(prevHalfHeight, topSpan, bottomSpan);
-
-        internals.bounds = {
-            minX: prevCenterX - halfWidth,
-            maxX: prevCenterX + halfWidth,
-            minY: prevCenterY - halfHeight,
-            maxY: prevCenterY + halfHeight,
-        };
+        const current = internals.bounds;
+        current.minX = Math.min(current.minX, next.minX);
+        current.minY = Math.min(current.minY, next.minY);
+        current.maxX = Math.max(current.maxX, next.maxX);
+        current.maxY = Math.max(current.maxY, next.maxY);
     }
 
     function addHex(coord: HexCoord): void {
