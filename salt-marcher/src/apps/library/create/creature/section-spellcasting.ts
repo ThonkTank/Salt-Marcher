@@ -2,7 +2,6 @@
 // Erfasst Spellcasting-Einträge inkl. Gruppenverwaltung, Kopfbereich und Markdown-Vorschau.
 import { Setting } from "obsidian";
 import {
-  type LegacySpellcastingEntry,
   type SpellcastingAbility,
   type SpellcastingData,
   type SpellcastingGroup,
@@ -69,46 +68,6 @@ function ensureSpellcastingGroups(spellcasting: SpellcastingData): SpellcastingD
   return spellcasting;
 }
 
-function convertLegacySpellcasting(entries: LegacySpellcastingEntry[]): SpellcastingData {
-  const atWill: SpellcastingSpell[] = [];
-  const perDay = new Map<string, SpellcastingSpell[]>();
-  const byLevel = new Map<number, SpellcastingSpell[]>();
-  const custom: SpellcastingSpell[] = [];
-  for (const entry of entries) {
-    if (!entry || !entry.name || !entry.name.trim()) continue;
-    const spell: SpellcastingSpell = { name: entry.name.trim(), notes: entry.notes?.trim() || undefined };
-    const uses = entry.uses?.trim();
-    if (uses) {
-      const normalized = uses.toLowerCase();
-      if (normalized.includes("at will")) {
-        atWill.push(spell);
-        continue;
-      }
-      const existing = perDay.get(uses) ?? [];
-      existing.push(spell);
-      perDay.set(uses, existing);
-      continue;
-    }
-    if (typeof entry.level === "number" && Number.isFinite(entry.level)) {
-      const existing = byLevel.get(entry.level) ?? [];
-      existing.push(spell);
-      byLevel.set(entry.level, existing);
-      continue;
-    }
-    custom.push(spell);
-  }
-  const groups: SpellcastingGroupMutable[] = [];
-  if (atWill.length) groups.push({ type: "at-will", title: "At Will", spells: atWill });
-  for (const [uses, spells] of Array.from(perDay.entries()).sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true }))) {
-    groups.push({ type: "per-day", uses, spells });
-  }
-  for (const level of Array.from(byLevel.keys()).sort((a, b) => a - b)) {
-    groups.push({ type: "level", level, spells: byLevel.get(level) ?? [] });
-  }
-  if (custom.length) groups.push({ type: "custom", title: "Additional Spells", spells: custom });
-  return ensureSpellcastingGroups({ title: DEFAULT_TITLE, groups });
-}
-
 export function ensureSpellcasting(data: StatblockData): SpellcastingData {
   if (data.spellcasting) {
     const target = ensureSpellcastingGroups(data.spellcasting);
@@ -116,10 +75,9 @@ export function ensureSpellcasting(data: StatblockData): SpellcastingData {
     if (!Array.isArray(target.notes)) target.notes = [];
     return target;
   }
-  const legacy = Array.isArray(data.spellsKnown) ? data.spellsKnown.filter((entry): entry is LegacySpellcastingEntry => Boolean(entry && entry.name && entry.name.trim())) : [];
-  const converted = legacy.length ? convertLegacySpellcasting(legacy) : ensureSpellcastingGroups({ title: DEFAULT_TITLE, groups: [] });
-  data.spellcasting = converted;
-  return converted;
+  const ensured = ensureSpellcastingGroups({ title: DEFAULT_TITLE, groups: [] });
+  data.spellcasting = ensured;
+  return ensured;
 }
 
 function formatSlots(slots: number | string | undefined): string | undefined {

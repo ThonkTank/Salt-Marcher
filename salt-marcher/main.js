@@ -5254,7 +5254,7 @@ __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian27 = require("obsidian");
+var import_obsidian29 = require("obsidian");
 
 // src/apps/cartographer/index.ts
 var import_obsidian17 = require("obsidian");
@@ -6235,7 +6235,7 @@ async function detachCartographerLeaves(app) {
 init_view();
 
 // src/apps/library/view.ts
-var import_obsidian25 = require("obsidian");
+var import_obsidian27 = require("obsidian");
 
 // src/apps/library/view/mode.ts
 function scoreName(name, q) {
@@ -6648,13 +6648,8 @@ function statblockToMarkdown(d) {
   return lines.join("\n");
 }
 function resolveSpellcastingData(d) {
-  if (d.spellcasting) {
-    return withComputedSpellcasting(d, d.spellcasting);
-  }
-  const legacy = (d.spellsKnown ?? []).filter((s) => Boolean(s && s.name && s.name.trim().length));
-  if (!legacy.length) return void 0;
-  const converted = convertLegacySpells(legacy);
-  return withComputedSpellcasting(d, converted);
+  if (!d.spellcasting) return void 0;
+  return withComputedSpellcasting(d, d.spellcasting);
 }
 function withComputedSpellcasting(d, base) {
   const abilityMod2 = base.ability ? getAbilityModifier(d, base.ability) : null;
@@ -6669,47 +6664,6 @@ function withComputedSpellcasting(d, base) {
       saveDc,
       attackBonus
     }
-  };
-}
-function convertLegacySpells(legacy) {
-  const atWill = [];
-  const perDay = /* @__PURE__ */ new Map();
-  const byLevel = /* @__PURE__ */ new Map();
-  const custom = [];
-  for (const entry of legacy) {
-    const spell = { name: entry.name, notes: entry.notes };
-    const uses = entry.uses?.trim();
-    if (uses) {
-      const normalized = uses.toLowerCase();
-      if (normalized.includes("at will")) {
-        atWill.push(spell);
-        continue;
-      }
-      const existing = perDay.get(uses) ?? [];
-      existing.push(spell);
-      perDay.set(uses, existing);
-      continue;
-    }
-    if (typeof entry.level === "number") {
-      const existing = byLevel.get(entry.level) ?? [];
-      existing.push(spell);
-      byLevel.set(entry.level, existing);
-      continue;
-    }
-    custom.push(spell);
-  }
-  const groups = [];
-  if (atWill.length) groups.push({ type: "at-will", spells: atWill });
-  for (const [uses, spells] of Array.from(perDay.entries()).sort((a, b) => a[0].localeCompare(b[0], void 0, { numeric: true }))) {
-    groups.push({ type: "per-day", uses, spells });
-  }
-  for (const level of Array.from(byLevel.keys()).sort((a, b) => a - b)) {
-    groups.push({ type: "level", level, spells: byLevel.get(level) ?? [] });
-  }
-  if (custom.length) groups.push({ type: "custom", title: "Additional Spells", spells: custom });
-  return {
-    title: "Spellcasting",
-    groups
   };
 }
 function renderSpellcasting(lines, d, spellcasting) {
@@ -6795,7 +6749,7 @@ async function createCreatureFile(app, d) {
 }
 
 // src/apps/library/create/creature/modal.ts
-var import_obsidian23 = require("obsidian");
+var import_obsidian25 = require("obsidian");
 
 // src/apps/library/core/spell-files.ts
 var SPELLS_DIR = "SaltMarcher/Spells";
@@ -6874,6 +6828,7 @@ async function createSpellFile(app, d) {
 }
 
 // src/apps/library/create/creature/section-basics.ts
+var import_obsidian21 = require("obsidian");
 init_search_dropdown();
 
 // src/apps/library/create/creature/presets.ts
@@ -6900,16 +6855,6 @@ var CREATURE_TYPES = [
   "Ooze",
   "Plant",
   "Undead"
-];
-var CREATURE_ALIGNMENT_LAW_CHAOS = [
-  "Lawful",
-  "Neutral",
-  "Chaotic"
-];
-var CREATURE_ALIGNMENT_GOOD_EVIL = [
-  "Good",
-  "Neutral",
-  "Evil"
 ];
 var CREATURE_ABILITY_KEYS = ["str", "dex", "con", "int", "wis", "cha"];
 var CREATURE_ABILITY_LABELS = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
@@ -7098,17 +7043,25 @@ function createFormCard(parent, options) {
   const { title, subtitle, registerValidator } = options;
   const card = parent.createDiv({ cls: "sm-cc-card" });
   const head = card.createDiv({ cls: "sm-cc-card__head" });
-  head.createEl("h3", { text: title, cls: "sm-cc-card__title" });
+  const heading = head.createDiv({ cls: "sm-cc-card__heading" });
+  heading.createEl("h3", { text: title, cls: "sm-cc-card__title" });
+  const status = heading.createSpan({
+    cls: "sm-cc-card__status",
+    attr: { hidden: "" }
+  });
   if (subtitle) head.createEl("p", { text: subtitle, cls: "sm-cc-card__subtitle" });
   const validation = card.createDiv({ cls: "sm-cc-card__validation", attr: { hidden: "" } });
   const validationList = validation.createEl("ul", { cls: "sm-cc-card__validation-list" });
-  const applyValidation = (issues) => {
+  const applyValidation = (issues, summary) => {
     const hasIssues = issues.length > 0;
     card.toggleClass("is-invalid", hasIssues);
     if (!hasIssues) {
       validation.setAttribute("hidden", "");
       validation.classList.remove("is-visible");
       validationList.empty();
+      status.textContent = "";
+      status.setAttribute("hidden", "");
+      status.classList.remove("is-active");
       return;
     }
     validation.removeAttribute("hidden");
@@ -7117,13 +7070,18 @@ function createFormCard(parent, options) {
     for (const message of issues) {
       validationList.createEl("li", { text: message });
     }
+    const fallbackSummary = issues.length === 1 ? issues[0] : `${issues.length} Probleme`;
+    status.textContent = summary?.trim() || fallbackSummary;
+    status.removeAttribute("hidden");
+    status.classList.add("is-active");
   };
   const body = card.createDiv({ cls: "sm-cc-card__body" });
   const registerValidation = (compute) => {
     const runner = () => {
-      const issues = compute();
-      applyValidation(issues);
-      return issues;
+      const result = compute();
+      const normalized = Array.isArray(result) ? { issues: result, summary: void 0 } : result ?? { issues: [], summary: void 0 };
+      applyValidation(normalized.issues, normalized.summary);
+      return normalized.issues;
     };
     return registerValidator ? registerValidator(runner) : runner;
   };
@@ -7157,6 +7115,17 @@ var SPEED_FIELD_DEFS = [
   { key: "fly", label: "Fliegen", placeholder: "60 ft.", hoverToggle: true },
   { key: "swim", label: "Schwimmen", placeholder: "40 ft." },
   { key: "burrow", label: "Graben", placeholder: "20 ft." }
+];
+var ALIGNMENT_OPTIONS = [
+  { label: "Lawful Good", lawChaos: "Lawful", goodEvil: "Good" },
+  { label: "Neutral Good", lawChaos: "Neutral", goodEvil: "Good" },
+  { label: "Chaotic Good", lawChaos: "Chaotic", goodEvil: "Good" },
+  { label: "Lawful Neutral", lawChaos: "Lawful", goodEvil: "Neutral" },
+  { label: "Neutral", lawChaos: "Neutral", goodEvil: "Neutral" },
+  { label: "Chaotic Neutral", lawChaos: "Chaotic", goodEvil: "Neutral" },
+  { label: "Lawful Evil", lawChaos: "Lawful", goodEvil: "Evil" },
+  { label: "Neutral Evil", lawChaos: "Neutral", goodEvil: "Evil" },
+  { label: "Chaotic Evil", lawChaos: "Chaotic", goodEvil: "Evil" }
 ];
 function ensureSpeeds(data) {
   const speeds = data.speeds ?? (data.speeds = {});
@@ -7201,17 +7170,23 @@ function formatExtra(extra) {
   if (extra.hover) parts.push("(hover)");
   return parts.map((part) => part?.trim()).filter((part) => Boolean(part && part.length)).join(" ");
 }
-function mountCreatureBasicsSection(parent, data) {
-  const root = parent.createDiv({ cls: "sm-cc-basics" });
+function ensureTypeTags(data) {
+  if (!Array.isArray(data.typeTags)) data.typeTags = [];
+  return data.typeTags;
+}
+function mountCreatureClassificationSection(parent, data) {
+  const root = parent.createDiv({ cls: "sm-cc-basics sm-cc-basics--classification" });
   const identity = root.createDiv({ cls: "sm-cc-basics__group" });
   identity.createEl("h5", { text: "Identit\xE4t", cls: "sm-cc-basics__subtitle" });
   const identityGrid = createFieldGrid(identity, { variant: "identity" });
   const nameSetting = identityGrid.createSetting("Name");
+  nameSetting.settingEl.addClass("sm-cc-setting--show-name");
   nameSetting.addText((t) => {
     t.setPlaceholder("Aboleth").setValue(data.name || "").onChange((v) => data.name = v.trim());
     t.inputEl.classList.add("sm-cc-input");
   });
   const typeSetting = identityGrid.createSetting("Typ");
+  typeSetting.settingEl.addClass("sm-cc-setting--show-name");
   typeSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_TYPES) dd.addOption(option, option);
@@ -7224,6 +7199,7 @@ function mountCreatureBasicsSection(parent, data) {
     }
   });
   const sizeSetting = identityGrid.createSetting("Gr\xF6\xDFe");
+  sizeSetting.settingEl.addClass("sm-cc-setting--show-name");
   sizeSetting.addDropdown((dd) => {
     dd.addOption("", "");
     for (const option of CREATURE_SIZES) dd.addOption(option, option);
@@ -7235,88 +7211,157 @@ function mountCreatureBasicsSection(parent, data) {
     } catch {
     }
   });
-  const alignmentSetting = identityGrid.createSetting("Gesinnung", {
-    className: "sm-cc-setting--inline"
-  });
-  alignmentSetting.controlEl.addClass("sm-cc-alignment");
-  alignmentSetting.addDropdown((dd) => {
-    dd.addOption("", "");
-    for (const option of CREATURE_ALIGNMENT_LAW_CHAOS) dd.addOption(option, option);
-    dd.setValue(data.alignmentLawChaos ?? "");
-    dd.onChange((v) => data.alignmentLawChaos = v);
-    dd.selectEl.classList.add("sm-cc-select");
-    try {
-      const el = dd.selectEl;
-      el.dataset.sdOpenAll = "0";
-      enhanceSelectToSearch(el, "Such-dropdown\u2026");
-    } catch {
+  const tags = ensureTypeTags(data);
+  const typeTagsEditor = mountTokenEditor(identity, "Typ-Tags", {
+    getItems: () => tags.slice(),
+    add: (value) => {
+      const normalized = value.trim();
+      if (!normalized) return;
+      const exists = tags.some((entry) => entry.toLowerCase() === normalized.toLowerCase());
+      if (!exists) tags.push(normalized);
+      typeTagsEditor.refresh();
+    },
+    remove: (index) => {
+      tags.splice(index, 1);
+      typeTagsEditor.refresh();
     }
+  }, {
+    placeholder: "z. B. shapechanger",
+    addButtonLabel: "+ Tag"
   });
-  alignmentSetting.addDropdown((dd) => {
-    dd.addOption("", "");
-    for (const option of CREATURE_ALIGNMENT_GOOD_EVIL) dd.addOption(option, option);
-    dd.setValue(data.alignmentGoodEvil ?? "");
-    dd.onChange((v) => data.alignmentGoodEvil = v);
-    dd.selectEl.classList.add("sm-cc-select");
-    try {
-      const el = dd.selectEl;
-      el.dataset.sdOpenAll = "0";
-      enhanceSelectToSearch(el, "Such-dropdown\u2026");
-    } catch {
+  typeTagsEditor.setting.settingEl.addClass("sm-cc-setting");
+  typeTagsEditor.setting.settingEl.addClass("sm-cc-setting--show-name");
+  const classification = root.createDiv({ cls: "sm-cc-basics__group" });
+  classification.createEl("h5", { text: "Klassifikation", cls: "sm-cc-basics__subtitle" });
+  const classificationGrid = createFieldGrid(classification, { variant: "classification" });
+  const alignmentSetting = classificationGrid.createSetting("Gesinnung", {
+    className: ["sm-cc-setting--span-2", "sm-cc-setting--show-name"]
+  });
+  const alignmentGrid = alignmentSetting.controlEl.createDiv({ cls: "sm-cc-alignment-grid" });
+  const alignmentButtons = [];
+  const applyAlignment = (option) => {
+    data.alignmentOverride = void 0;
+    data.alignmentLawChaos = option.lawChaos;
+    data.alignmentGoodEvil = option.goodEvil;
+    updateAlignmentUI();
+  };
+  ALIGNMENT_OPTIONS.forEach((option) => {
+    const button = alignmentGrid.createEl("button", {
+      text: option.label,
+      cls: "sm-cc-alignment-button",
+      attr: { type: "button" }
+    });
+    button.addEventListener("click", () => applyAlignment(option));
+    alignmentButtons.push(button);
+  });
+  const overrideRow = alignmentSetting.controlEl.createDiv({ cls: "sm-cc-alignment-override" });
+  const overrideToggleContainer = overrideRow.createDiv({ cls: "sm-cc-alignment-override__toggle" });
+  const overrideToggle = new import_obsidian21.ToggleComponent(overrideToggleContainer);
+  overrideRow.createSpan({ text: "Override: \u201EUnaligned\u201C", cls: "sm-cc-alignment-override__label" });
+  const isUnaligned = () => (data.alignmentOverride ?? "").toLowerCase() === "unaligned";
+  const updateAlignmentUI = () => {
+    const currentLaw = data.alignmentLawChaos?.trim() ?? "";
+    const currentGood = data.alignmentGoodEvil?.trim() ?? "";
+    const unaligned = isUnaligned();
+    alignmentButtons.forEach((button, index) => {
+      const option = ALIGNMENT_OPTIONS[index];
+      const active = !unaligned && option.lawChaos === currentLaw && option.goodEvil === currentGood;
+      button.toggleClass("is-active", active);
+      if (unaligned) {
+        button.setAttr("disabled", "true");
+        button.setAttr("aria-disabled", "true");
+      } else {
+        button.removeAttribute("disabled");
+        button.removeAttribute("aria-disabled");
+      }
+    });
+    if (overrideToggle.getValue() !== unaligned) overrideToggle.setValue(unaligned);
+  };
+  overrideToggle.onChange((checked) => {
+    if (checked) {
+      data.alignmentOverride = "Unaligned";
+    } else {
+      data.alignmentOverride = void 0;
     }
+    updateAlignmentUI();
   });
-  const stats = root.createDiv({ cls: "sm-cc-basics__group" });
-  stats.createEl("h5", { text: "Kernwerte", cls: "sm-cc-basics__subtitle" });
-  const statsGrid = createFieldGrid(stats, { variant: "summary" });
-  const createStatField = (label, placeholder, key) => {
-    const setting = statsGrid.createSetting(label);
+  updateAlignmentUI();
+  const createClassificationField = (label, placeholder, key) => {
+    const setting = classificationGrid.createSetting(label);
+    setting.settingEl.addClass("sm-cc-setting--show-name");
     setting.addText((t) => {
       t.setPlaceholder(placeholder).setValue(data[key] ?? "").onChange((v) => data[key] = v.trim());
       t.inputEl.classList.add("sm-cc-input");
     });
   };
-  createStatField("HP", "150", "hp");
-  createStatField("AC", "17", "ac");
-  createStatField("Init", "+7", "initiative");
-  createStatField("PB", "+4", "pb");
-  createStatField("HD", "20d10 + 40", "hitDice");
-  createStatField("CR", "10", "cr");
-  createStatField("XP", "5900", "xp");
-  const movement = root.createDiv({ cls: "sm-cc-basics__group" });
-  movement.createEl("h5", { text: "Bewegung", cls: "sm-cc-basics__subtitle" });
-  const speedGrid = createFieldGrid(movement, { variant: "speeds" });
-  SPEED_FIELD_DEFS.forEach((def) => {
-    const setting = speedGrid.createSetting(def.label, {
-      className: "sm-cc-setting--speed"
-    });
-    const current = ensureSpeeds(data)[def.key];
-    const text = setting.addText((t) => {
-      t.setPlaceholder(def.placeholder).setValue(current?.distance ?? "").onChange((v) => {
-        const trimmed = v.trim();
-        applySpeedValue(data, def.key, { distance: trimmed || void 0 });
-      });
+  createClassificationField("PB", "+4", "pb");
+  createClassificationField("CR", "10", "cr");
+  createClassificationField("XP", "5900", "xp");
+}
+function mountCreatureVitalSection(parent, data) {
+  const root = parent.createDiv({ cls: "sm-cc-basics sm-cc-basics--vitals" });
+  const vitals = root.createDiv({ cls: "sm-cc-basics__group" });
+  vitals.createEl("h5", { text: "Vitalwerte", cls: "sm-cc-basics__subtitle" });
+  const vitalsGrid = createFieldGrid(vitals, { variant: "identity", className: "sm-cc-field-grid--vitals" });
+  const createVitalField = (label, placeholder, key) => {
+    const setting = vitalsGrid.createSetting(label);
+    setting.settingEl.addClass("sm-cc-setting--show-name");
+    setting.addText((t) => {
+      t.setPlaceholder(placeholder).setValue(data[key] ?? "").onChange((v) => data[key] = v.trim());
       t.inputEl.classList.add("sm-cc-input");
     });
+  };
+  createVitalField("AC", "17", "ac");
+  createVitalField("HP", "150", "hp");
+  createVitalField("Initiative", "+7", "initiative");
+  createVitalField("Hit Dice", "20d10 + 40", "hitDice");
+  const movement = root.createDiv({ cls: "sm-cc-basics__group" });
+  movement.createEl("h5", { text: "Bewegung", cls: "sm-cc-basics__subtitle" });
+  const speedGrid = movement.createDiv({ cls: "sm-cc-speeds-grid" });
+  const syncDistance = (input, key) => {
+    const target = ensureSpeeds(data)[key];
+    input.value = target?.distance ?? "";
+  };
+  const syncHoverBadge = (badge, key) => {
+    if (!badge) return;
+    const target = ensureSpeeds(data)[key];
+    const active = Boolean(target?.hover);
+    badge.toggleClass("is-active", active);
+    badge.setAttr("aria-pressed", active ? "true" : "false");
+  };
+  SPEED_FIELD_DEFS.forEach((def) => {
+    const current = ensureSpeeds(data)[def.key];
+    const item = speedGrid.createDiv({ cls: "sm-cc-speed" });
+    const head = item.createDiv({ cls: "sm-cc-speed__head" });
+    head.createSpan({ text: def.label, cls: "sm-cc-speed__label" });
+    let hoverBadge = null;
     if (def.hoverToggle) {
-      let toggle = null;
-      toggle = setting.addToggle((tg) => {
-        tg.setValue(Boolean(current?.hover));
-        tg.onChange((checked) => {
-          applySpeedValue(data, def.key, { hover: checked });
-        });
+      hoverBadge = head.createEl("button", {
+        text: "Hover",
+        cls: "sm-cc-speed__badge",
+        attr: { type: "button" }
       });
-      const hoverWrap = setting.controlEl.createDiv({ cls: "sm-cc-hover-wrap" });
-      hoverWrap.appendChild(toggle.toggleEl);
-      toggle.toggleEl.addClass("sm-cc-hover-toggle");
-      toggle.toggleEl.setAttr("aria-label", "Hover markieren");
-      hoverWrap.createSpan({ text: "Hover", cls: "sm-cc-hover-label" });
-      text.inputEl.addEventListener("blur", () => {
-        const speeds = ensureSpeeds(data);
-        const target = speeds[def.key];
-        text.setValue(target?.distance ?? "");
-        toggle?.setValue(Boolean(target?.hover));
+      hoverBadge.addEventListener("click", () => {
+        const target = ensureSpeeds(data)[def.key];
+        const next = !target?.hover;
+        applySpeedValue(data, def.key, { hover: next });
+        syncHoverBadge(hoverBadge, def.key);
       });
     }
+    const input = item.createEl("input", {
+      attr: { type: "text", placeholder: def.placeholder },
+      cls: "sm-cc-speed__input sm-cc-input"
+    });
+    input.value = current?.distance ?? "";
+    input.addEventListener("change", () => {
+      const trimmed = input.value.trim();
+      applySpeedValue(data, def.key, { distance: trimmed || void 0 });
+    });
+    input.addEventListener("blur", () => {
+      syncDistance(input, def.key);
+      syncHoverBadge(hoverBadge, def.key);
+    });
+    syncHoverBadge(hoverBadge, def.key);
   });
   const extras = ensureSpeedExtras(data);
   const extrasEditor = mountTokenEditor(
@@ -7344,10 +7389,11 @@ function mountCreatureBasicsSection(parent, data) {
     }
   );
   extrasEditor.setting.settingEl.addClass("sm-cc-setting");
+  extrasEditor.setting.settingEl.addClass("sm-cc-setting--show-name");
 }
 
 // src/apps/library/create/creature/section-stats-and-skills.ts
-var import_obsidian21 = require("obsidian");
+var import_obsidian22 = require("obsidian");
 init_search_dropdown();
 
 // src/apps/library/create/shared/stat-utils.ts
@@ -7465,7 +7511,7 @@ function mountCreatureStatsAndSkillsSection(parent, data, registerValidation) {
     }
   }
   const skillAbilityMap = new Map(CREATURE_SKILLS);
-  const skillsSetting = new import_obsidian21.Setting(root).setName("Fertigkeiten");
+  const skillsSetting = new import_obsidian22.Setting(root).setName("Fertigkeiten");
   skillsSetting.settingEl.addClass("sm-cc-skills");
   const skillsControl = skillsSetting.controlEl;
   skillsControl.addClass("sm-cc-skill-editor");
@@ -7585,7 +7631,7 @@ function mountCreatureStatsAndSkillsSection(parent, data, registerValidation) {
 }
 
 // src/apps/library/create/creature/section-utils.ts
-var import_obsidian22 = require("obsidian");
+var import_obsidian23 = require("obsidian");
 init_search_dropdown();
 function mountPresetSelectEditor(parent, title, options, model, config) {
   const resolved = typeof config === "string" ? { placeholder: config } : config ?? {};
@@ -7597,7 +7643,7 @@ function mountPresetSelectEditor(parent, title, options, model, config) {
     addButtonLabel,
     settingClass
   } = resolved;
-  const setting = new import_obsidian22.Setting(parent).setName(title);
+  const setting = new import_obsidian23.Setting(parent).setName(title);
   setting.settingEl.addClass("sm-cc-setting");
   if (settingClass) {
     const classes = Array.isArray(settingClass) ? settingClass : [settingClass];
@@ -7692,7 +7738,7 @@ function mountPresetSelectEditor(parent, title, options, model, config) {
   }
   renderChips();
 }
-function mountDamageResponseEditor(parent, damageLists) {
+function mountDamageResponseEditor(parent, damageLists, onChange) {
   const configs = [
     {
       kind: "res",
@@ -7713,7 +7759,7 @@ function mountDamageResponseEditor(parent, damageLists) {
       chipClass: "sm-cc-damage-chip--vuln"
     }
   ];
-  const setting = new import_obsidian22.Setting(parent).setName("Schadenstyp-Reaktionen");
+  const setting = new import_obsidian23.Setting(parent).setName("Schadenstyp-Reaktionen");
   setting.settingEl.addClass("sm-cc-setting");
   const row = setting.controlEl.createDiv({ cls: "sm-cc-searchbar sm-cc-damage-row" });
   row.createEl("label", { cls: "sm-cc-damage-label", text: "Schadenstyp" });
@@ -7775,6 +7821,7 @@ function mountDamageResponseEditor(parent, damageLists) {
         };
       });
     }
+    onChange?.(damageLists);
   };
   const addEntry = () => {
     const selectedValue = select.value.trim();
@@ -7821,26 +7868,96 @@ function ensureStringList(data, key) {
   data[key] = arr;
   return arr;
 }
-var makeModel = (list) => ({
+var makeModel = (list, onMutate) => ({
   get: () => list,
   add: (value) => {
     const trimmed = value.trim();
     if (!trimmed) return;
-    if (!list.includes(trimmed)) list.push(trimmed);
+    if (list.includes(trimmed)) return;
+    list.push(trimmed);
+    onMutate?.();
   },
   remove: (index) => {
+    if (index < 0 || index >= list.length) return;
     list.splice(index, 1);
+    onMutate?.();
   }
 });
 function mountCreatureSensesAndDefensesSection(parent, data) {
   const root = parent.createDiv({ cls: "sm-cc-defenses" });
-  const sensesLanguages = root.createDiv({ cls: "sm-cc-senses-block" });
   const senses = ensureStringList(data, "sensesList");
+  const languages = ensureStringList(data, "languagesList");
+  const passives = ensureStringList(data, "passivesList");
+  const vulnerabilities = ensureStringList(data, "damageVulnerabilitiesList");
+  const resistances = ensureStringList(data, "damageResistancesList");
+  const immunities = ensureStringList(data, "damageImmunitiesList");
+  const conditionImmunities = ensureStringList(data, "conditionImmunitiesList");
+  const summary = root.createDiv({ cls: "sm-cc-defense-summary" });
+  const summaryEntries = [
+    {
+      label: "Resistenzen",
+      list: resistances,
+      className: "sm-cc-defense-pill--res",
+      emptyMessage: "Keine Resistenzen hinterlegt"
+    },
+    {
+      label: "Immunit\xE4ten",
+      list: immunities,
+      className: "sm-cc-defense-pill--imm",
+      emptyMessage: "Keine Immunit\xE4ten hinterlegt"
+    },
+    {
+      label: "Verwundbarkeiten",
+      list: vulnerabilities,
+      className: "sm-cc-defense-pill--vuln",
+      emptyMessage: "Keine Verwundbarkeiten hinterlegt"
+    },
+    {
+      label: "Zustandsimmunit\xE4ten",
+      list: conditionImmunities,
+      className: "sm-cc-defense-pill--cond",
+      emptyMessage: "Keine Zustandsimmunit\xE4ten hinterlegt",
+      optional: true
+    }
+  ];
+  const refreshSummary = () => {
+    summary.empty();
+    summary.setAttribute("role", "list");
+    for (const entry of summaryEntries) {
+      if (entry.optional && entry.list.length === 0) continue;
+      const pill = summary.createDiv({
+        cls: `sm-cc-defense-pill ${entry.className}`
+      });
+      const isEmpty = entry.list.length === 0;
+      if (isEmpty) pill.addClass("is-empty");
+      const tooltip = entry.list.length ? entry.list.join(", ") : entry.emptyMessage;
+      pill.setAttribute("title", tooltip);
+      pill.setAttribute(
+        "aria-label",
+        `${entry.label}: ${entry.list.length ? tooltip : entry.emptyMessage}`
+      );
+      pill.setAttribute("role", "listitem");
+      pill.createSpan({ cls: "sm-cc-defense-pill__label", text: entry.label });
+      pill.createSpan({
+        cls: "sm-cc-defense-pill__count",
+        text: entry.list.length.toString()
+      });
+    }
+    if (!summary.hasChildNodes()) {
+      summary.createSpan({
+        cls: "sm-cc-defense-pill__empty",
+        text: "Keine Verteidigungsmerkmale erfasst"
+      });
+    }
+  };
+  refreshSummary();
+  const connectModel = (list) => makeModel(list, refreshSummary);
+  const sensesLanguages = root.createDiv({ cls: "sm-cc-senses-block" });
   mountPresetSelectEditor(
     sensesLanguages,
     "Sinne",
     CREATURE_SENSE_PRESETS,
-    makeModel(senses),
+    connectModel(senses),
     {
       placeholder: "Sinn suchen oder eingeben\u2026",
       rowClass: "sm-cc-senses-search",
@@ -7848,12 +7965,11 @@ function mountCreatureSensesAndDefensesSection(parent, data) {
       settingClass: "sm-cc-senses-setting"
     }
   );
-  const languages = ensureStringList(data, "languagesList");
   mountPresetSelectEditor(
     sensesLanguages,
     "Sprachen",
     CREATURE_LANGUAGE_PRESETS,
-    makeModel(languages),
+    connectModel(languages),
     {
       placeholder: "Sprache suchen oder eingeben\u2026",
       rowClass: "sm-cc-senses-search",
@@ -7861,28 +7977,27 @@ function mountCreatureSensesAndDefensesSection(parent, data) {
       settingClass: "sm-cc-senses-setting"
     }
   );
-  const passives = ensureStringList(data, "passivesList");
   mountPresetSelectEditor(
     root,
     "Passive Werte",
     CREATURE_PASSIVE_PRESETS,
-    makeModel(passives),
+    connectModel(passives),
     "Passiven Wert suchen oder eingeben\u2026"
   );
-  const vulnerabilities = ensureStringList(data, "damageVulnerabilitiesList");
-  const resistances = ensureStringList(data, "damageResistancesList");
-  const immunities = ensureStringList(data, "damageImmunitiesList");
-  mountDamageResponseEditor(root, {
-    vulnerabilities,
-    resistances,
-    immunities
-  });
-  const conditionImmunities = ensureStringList(data, "conditionImmunitiesList");
+  mountDamageResponseEditor(
+    root,
+    {
+      vulnerabilities,
+      resistances,
+      immunities
+    },
+    () => refreshSummary()
+  );
   mountPresetSelectEditor(
     root,
     "Zustandsimmunit\xE4ten",
     CREATURE_CONDITION_PRESETS,
-    makeModel(conditionImmunities),
+    connectModel(conditionImmunities),
     "Zustandsimmunit\xE4t suchen oder eingeben\u2026"
   );
   const gear = ensureStringList(data, "gearList");
@@ -7894,16 +8009,33 @@ function mountCreatureSensesAndDefensesSection(parent, data) {
       add: (value) => {
         const trimmed = value.trim();
         if (!trimmed) return;
-        if (!gear.includes(trimmed)) gear.push(trimmed);
+        if (gear.includes(trimmed)) return;
+        gear.push(trimmed);
+        refreshSummary();
       },
-      remove: (index) => gear.splice(index, 1)
+      remove: (index) => {
+        if (index < 0 || index >= gear.length) return;
+        gear.splice(index, 1);
+        refreshSummary();
+      }
     },
-    { placeholder: "Gegenstand oder Hinweis\u2026", addButtonLabel: "+ Hinzuf\xFCgen" }
+    {
+      placeholder: "Gegenstand oder Hinweis\u2026",
+      addButtonLabel: "+ Hinzuf\xFCgen"
+    }
   );
 }
 
 // src/apps/library/create/creature/section-entries.ts
 init_search_dropdown();
+var ENTRY_FILTER_OPTIONS = [
+  { value: "all", label: "Alle", hint: "Alle Eintr\xE4ge anzeigen" },
+  { value: "trait", label: "Traits", hint: "Nur Eigenschaften anzeigen" },
+  { value: "action", label: "Actions", hint: "Nur Aktionen anzeigen" },
+  { value: "bonus", label: "Bonus", hint: "Nur Bonusaktionen anzeigen" },
+  { value: "reaction", label: "Reactions", hint: "Nur Reaktionen anzeigen" },
+  { value: "legendary", label: "Legendary", hint: "Nur legend\xE4re Aktionen anzeigen" }
+];
 function collectEntryDependencyIssues(data) {
   const issues = [];
   const entries = data.entries ?? [];
@@ -7943,10 +8075,43 @@ function mountEntriesSection(parent, data, registerValidation) {
   } catch {
   }
   const addEntryBtn = addBar.createEl("button", { text: "+ Eintrag" });
+  let activeFilter = "all";
+  const filterBar = ctl.createDiv({
+    cls: "sm-cc-entry-filter",
+    attr: { role: "toolbar", "aria-label": "Eintragsliste filtern" }
+  });
+  const filterButtons = /* @__PURE__ */ new Map();
+  const updateFilterButtons = () => {
+    for (const opt of ENTRY_FILTER_OPTIONS) {
+      const btn = filterButtons.get(opt.value);
+      if (!btn) continue;
+      const isActive = opt.value === activeFilter;
+      btn.setAttr("aria-pressed", isActive ? "true" : "false");
+      btn.toggleClass("is-active", isActive);
+    }
+  };
+  for (const opt of ENTRY_FILTER_OPTIONS) {
+    const btn = filterBar.createEl("button", {
+      text: opt.label,
+      attr: {
+        type: "button",
+        title: opt.hint,
+        "aria-label": opt.hint,
+        "aria-pressed": opt.value === activeFilter ? "true" : "false"
+      }
+    });
+    btn.onclick = () => {
+      activeFilter = opt.value;
+      updateFilterButtons();
+      render();
+    };
+    filterButtons.set(opt.value, btn);
+  }
   const host = ctl.createDiv();
   let focusIdx = null;
   const revalidate = registerValidation?.(() => collectEntryDependencyIssues(data)) ?? (() => []);
   const render = () => {
+    updateFilterButtons();
     host.empty();
     data.entries.forEach((e, i) => {
       const box = host.createDiv({ cls: "sm-cc-skill-group" });
@@ -8125,104 +8290,584 @@ function mountEntriesSection(parent, data, registerValidation) {
         e.text = ta.value;
         revalidate();
       });
+      const isVisible = activeFilter === "all" || e.category === activeFilter;
+      box.toggleClass("sm-cc-entry-hidden", !isVisible);
+      box.style.display = isVisible ? "" : "none";
+      box.setAttr("aria-hidden", isVisible ? "false" : "true");
     });
     revalidate();
   };
   addEntryBtn.onclick = () => {
-    data.entries.unshift({ category: catSel.value, name: "" });
+    const category = catSel.value;
+    data.entries.unshift({ category, name: "" });
+    if (activeFilter !== "all" && activeFilter !== category) {
+      activeFilter = "all";
+      updateFilterButtons();
+    }
     focusIdx = 0;
     render();
   };
   render();
 }
 
-// src/apps/library/create/creature/section-spells-known.ts
-function mountSpellsKnownSection(parent, data, getAvailableSpells) {
-  if (!data.spellsKnown) data.spellsKnown = [];
-  const wrap = parent.createDiv({ cls: "setting-item sm-cc-spells" });
-  wrap.createDiv({ cls: "setting-item-info", text: "Bekannte Zauber" });
-  const ctl = wrap.createDiv({ cls: "setting-item-control" });
-  const row1 = ctl.createDiv({ cls: "sm-cc-searchbar" });
-  row1.createEl("label", { text: "Zauber" });
-  const spellBox = row1.createDiv({ cls: "sm-preset-box", attr: { style: "flex:1 1 auto; min-width: 180px;" } });
-  const spellInput = spellBox.createEl("input", { cls: "sm-preset-input", attr: { type: "text", placeholder: "Zauber suchen\u2026" } });
-  const spellMenu = spellBox.createDiv({ cls: "sm-preset-menu" });
-  let chosenSpell = "";
-  const renderSpellMenu = () => {
-    const q = (spellInput.value || "").toLowerCase();
-    spellMenu.empty();
-    const matches = (getAvailableSpells()?.slice() || []).filter((n) => !q || n.toLowerCase().includes(q)).slice(0, 24);
-    if (matches.length === 0) {
-      spellBox.removeClass("is-open");
+// src/apps/library/create/creature/section-spellcasting.ts
+var import_obsidian24 = require("obsidian");
+var DEFAULT_TITLE = "Spellcasting";
+function ensureSpellcastingGroups(spellcasting) {
+  if (!Array.isArray(spellcasting.groups)) {
+    spellcasting.groups = [];
+  }
+  spellcasting.groups = spellcasting.groups.map((group) => {
+    switch (group.type) {
+      case "at-will":
+      case "per-day":
+      case "level": {
+        if (!Array.isArray(group.spells)) group.spells = [];
+        return group;
+      }
+      case "custom": {
+        if (group.spells && !Array.isArray(group.spells)) {
+          group.spells = [];
+        }
+        if (!group.spells) group.spells = [];
+        return group;
+      }
+      default:
+        return group;
+    }
+  });
+  return spellcasting;
+}
+function ensureSpellcasting(data) {
+  if (data.spellcasting) {
+    const target = ensureSpellcastingGroups(data.spellcasting);
+    if (!target.title) target.title = DEFAULT_TITLE;
+    if (!Array.isArray(target.notes)) target.notes = [];
+    return target;
+  }
+  const ensured = ensureSpellcastingGroups({ title: DEFAULT_TITLE, groups: [] });
+  data.spellcasting = ensured;
+  return ensured;
+}
+function formatSlots(slots) {
+  if (slots == null || slots === "") return void 0;
+  if (typeof slots === "number") return `${slots}`;
+  const trimmed = slots.toString().trim();
+  return trimmed || void 0;
+}
+function getGroupHeading(group) {
+  switch (group.type) {
+    case "at-will":
+      return group.title?.trim() || "At Will";
+    case "per-day":
+      return group.title?.trim() || group.uses?.trim() || "X/Day";
+    case "level": {
+      const levelLabel = group.title?.trim() || `${group.level}th Level`;
+      const slotsLabel = formatSlots(group.slots);
+      return slotsLabel ? `${levelLabel} (${slotsLabel} slots)` : levelLabel;
+    }
+    case "custom":
+      return group.title?.trim() || "Custom";
+    default:
+      return "Spell Group";
+  }
+}
+function ensureSpellName(value) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : void 0;
+}
+function collectSpellcastingIssues(data) {
+  const spellcasting = ensureSpellcasting(data);
+  const issues = [];
+  const seen = /* @__PURE__ */ new Map();
+  spellcasting.groups.forEach((group, groupIndex) => {
+    if (!group) return;
+    switch (group.type) {
+      case "per-day": {
+        const uses = group.uses?.trim();
+        if (!uses) issues.push(`Gruppe ${groupIndex + 1}: \u201EX/Day\u201C ben\xF6tigt eine Nutzungsangabe.`);
+        break;
+      }
+      case "level": {
+        const level = Number(group.level);
+        if (!Number.isFinite(level) || level < 0 || level > 9) {
+          issues.push(`Gruppe ${groupIndex + 1}: Zaubergrad muss zwischen 0 und 9 liegen.`);
+        }
+        break;
+      }
+      case "custom": {
+        const title = group.title?.trim();
+        if (!title) issues.push(`Gruppe ${groupIndex + 1}: Custom-Gruppen ben\xF6tigen einen Titel.`);
+        break;
+      }
+      default:
+        break;
+    }
+    const spells = group.spells ?? [];
+    spells.forEach((spell, spellIndex) => {
+      const name = ensureSpellName(spell?.name);
+      if (!name) {
+        issues.push(`Gruppe ${groupIndex + 1}: Eintrag ${spellIndex + 1} ben\xF6tigt einen Namen.`);
+        return;
+      }
+      const key = name.toLowerCase();
+      const duplicate = seen.get(key);
+      if (duplicate) {
+        issues.push(
+          `Zauber \u201E${name}" erscheint mehrfach (Gruppen ${duplicate.groupIndex + 1} und ${groupIndex + 1}).`
+        );
+      } else {
+        seen.set(key, { groupIndex, spellIndex });
+      }
+    });
+  });
+  return issues;
+}
+function mountSpellInput(parent, getCandidates, placeholder) {
+  const box = parent.createDiv({ cls: "sm-preset-box sm-cc-spellcasting__input" });
+  const input = box.createEl("input", {
+    cls: "sm-preset-input",
+    attr: { type: "text", placeholder }
+  });
+  const menu = box.createDiv({ cls: "sm-preset-menu" });
+  const renderMatches = () => {
+    const query = (input.value || "").toLowerCase();
+    menu.empty();
+    const matches = getCandidates().filter((name) => !query || name.toLowerCase().includes(query)).slice(0, 24);
+    if (!matches.length) {
+      box.removeClass("is-open");
       return;
     }
-    for (const name of matches) {
-      const it = spellMenu.createDiv({ cls: "sm-preset-item", text: name });
-      it.onclick = () => {
-        chosenSpell = name;
-        spellInput.value = name;
-        spellBox.removeClass("is-open");
-      };
-    }
-    spellBox.addClass("is-open");
-  };
-  spellInput.addEventListener("focus", renderSpellMenu);
-  spellInput.addEventListener("input", renderSpellMenu);
-  spellInput.addEventListener("keydown", (ev) => {
-    if (ev.key === "Escape") {
-      spellInput.value = "";
-      chosenSpell = "";
-      spellBox.removeClass("is-open");
-    }
-  });
-  spellInput.addEventListener("blur", () => {
-    setTimeout(() => spellBox.removeClass("is-open"), 120);
-  });
-  row1.createEl("label", { text: "Grad" });
-  const lvl = row1.createEl("input", { attr: { type: "number", min: "0", max: "9", placeholder: "Grad", "aria-label": "Grad" } });
-  lvl.style.width = "4ch";
-  const row2 = ctl.createDiv({ cls: "sm-cc-searchbar" });
-  row2.createEl("label", { text: "Nutzung" });
-  const uses = row2.createEl("input", { attr: { type: "text", placeholder: "at will / 3/day / slots", "aria-label": "Nutzung" } });
-  uses.style.width = "14ch";
-  row2.createEl("label", { text: "Notizen" });
-  const notes = row2.createEl("input", { attr: { type: "text", placeholder: "Notizen", "aria-label": "Notizen" } });
-  notes.style.width = "16ch";
-  const addSpell = row2.createEl("button", { text: "+ Hinzuf\xFCgen" });
-  addSpell.onclick = () => {
-    let name = chosenSpell?.trim();
-    if (!name) name = (spellInput.value || "").trim();
-    if (!name) return;
-    data.spellsKnown.push({ name, level: lvl.value ? parseInt(lvl.value, 10) : void 0, uses: uses.value.trim() || void 0, notes: notes.value.trim() || void 0 });
-    spellInput.value = "";
-    chosenSpell = "";
-    lvl.value = uses.value = notes.value = "";
-    renderList();
-  };
-  const list = ctl.createDiv({ cls: "sm-cc-list" });
-  const renderList = () => {
-    list.empty();
-    data.spellsKnown.forEach((s, i) => {
-      const item = list.createDiv({ cls: "sm-cc-item" });
-      item.createDiv({ cls: "sm-cc-item__name", text: `${s.name}${s.level != null ? ` (Lvl ${s.level})` : ""}${s.uses ? ` \u2013 ${s.uses}` : ""}` });
-      const rm = item.createEl("button", { text: "\xD7" });
-      rm.onclick = () => {
-        data.spellsKnown.splice(i, 1);
-        renderList();
+    matches.forEach((name) => {
+      const item = menu.createDiv({ cls: "sm-preset-item", text: name });
+      item.onclick = () => {
+        input.value = name;
+        box.removeClass("is-open");
+        input.dispatchEvent(new Event("input"));
       };
     });
+    box.addClass("is-open");
   };
-  renderList();
-  const refreshSpellMatches = () => {
-    if (document.activeElement === spellInput || spellBox.hasClass("is-open")) {
-      renderSpellMenu();
+  input.addEventListener("focus", renderMatches);
+  input.addEventListener("input", () => {
+    if (document.activeElement === input) renderMatches();
+  });
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      input.value = "";
+      box.removeClass("is-open");
+    }
+  });
+  input.addEventListener("blur", () => {
+    window.setTimeout(() => box.removeClass("is-open"), 120);
+  });
+  return {
+    input,
+    refreshMatches: () => {
+      if (document.activeElement === input || box.hasClass("is-open")) {
+        renderMatches();
+      }
     }
   };
-  return { refreshSpellMatches };
+}
+function renderSpellPreviewText(spell) {
+  const name = spell.name?.trim() || "Unbenannter Zauber";
+  const note = spell.notes?.trim();
+  return note ? `${name} (${note})` : name;
+}
+function renderPreviewContent(container, spellcasting) {
+  container.empty();
+  const title = spellcasting.title?.trim() || DEFAULT_TITLE;
+  const header = container.createDiv({ cls: "sm-cc-spellcasting-preview__header" });
+  header.createEl("h4", { text: title });
+  const summaryParts = [];
+  const saveDc = spellcasting.computed?.saveDc;
+  const attackBonus = spellcasting.computed?.attackBonus;
+  if (saveDc != null) summaryParts.push(`Spell save DC ${saveDc}`);
+  if (attackBonus != null) summaryParts.push(`${attackBonus >= 0 ? "+" : ""}${attackBonus} to hit`);
+  if (summaryParts.length) {
+    container.createEl("p", { text: summaryParts.join(", ") });
+  }
+  if (spellcasting.summary?.trim()) {
+    container.createEl("p", { text: spellcasting.summary.trim() });
+  }
+  if (spellcasting.notes && spellcasting.notes.length) {
+    const list = container.createEl("ul", { cls: "sm-cc-spellcasting-preview__notes" });
+    for (const note of spellcasting.notes) {
+      if (note && note.trim()) list.createEl("li", { text: note.trim() });
+    }
+  }
+  if (!spellcasting.groups.length) {
+    container.createDiv({ cls: "sm-cc-spellcasting-preview__empty", text: "Keine Spellcasting-Gruppen angelegt." });
+    return;
+  }
+  const groupsWrap = container.createDiv({ cls: "sm-cc-spellcasting-preview__groups" });
+  spellcasting.groups.forEach((group) => {
+    const groupBox = groupsWrap.createDiv({ cls: "sm-cc-spellcasting-preview__group" });
+    groupBox.createEl("h5", { text: getGroupHeading(group) });
+    if (group.type === "per-day" && group.note?.trim()) {
+      groupBox.createDiv({ cls: "sm-cc-spellcasting-preview__note", text: group.note.trim() });
+    }
+    if (group.type === "level" && group.note?.trim()) {
+      groupBox.createDiv({ cls: "sm-cc-spellcasting-preview__note", text: group.note.trim() });
+    }
+    if (group.type === "custom" && group.description?.trim()) {
+      groupBox.createDiv({ cls: "sm-cc-spellcasting-preview__note", text: group.description.trim() });
+    }
+    const spells = group.spells ?? [];
+    if (spells.length) {
+      const ul = groupBox.createEl("ul");
+      spells.forEach((spell) => {
+        ul.createEl("li", { text: renderSpellPreviewText(spell) });
+      });
+    } else if (group.type !== "custom" || !group.description?.trim()) {
+      groupBox.createDiv({ cls: "sm-cc-spellcasting-preview__empty", text: "Keine Zauber hinterlegt." });
+    }
+  });
+}
+function mountCreatureSpellcastingSection(parent, data, options = {}) {
+  const spellcasting = ensureSpellcasting(data);
+  const availableSpells = [];
+  const typeaheadHandles = [];
+  const root = parent.createDiv({ cls: "sm-cc-spellcasting" });
+  const titleSetting = new import_obsidian24.Setting(root).setName("\xDCberschrift");
+  titleSetting.settingEl.addClass("sm-cc-setting");
+  titleSetting.addText((component) => {
+    component.setPlaceholder(DEFAULT_TITLE).setValue(spellcasting.title ?? "").onChange((value) => {
+      const trimmed = value.trim();
+      spellcasting.title = trimmed || void 0;
+      renderPreview();
+    });
+    component.inputEl.classList.add("sm-cc-input");
+  });
+  const summarySetting = new import_obsidian24.Setting(root).setName("Kurzbeschreibung");
+  summarySetting.settingEl.addClass("sm-cc-setting sm-cc-setting--textarea");
+  const summaryArea = summarySetting.controlEl.createEl("textarea", {
+    cls: "sm-cc-textarea",
+    attr: { placeholder: "Kurzer beschreibender Satz\u2026" }
+  });
+  summaryArea.value = spellcasting.summary ?? "";
+  summaryArea.addEventListener("input", () => {
+    const trimmed = summaryArea.value.trim();
+    spellcasting.summary = trimmed || void 0;
+    renderPreview();
+  });
+  const notesSetting = new import_obsidian24.Setting(root).setName("Notizen");
+  notesSetting.settingEl.addClass("sm-cc-setting sm-cc-setting--textarea");
+  const notesArea = notesSetting.controlEl.createEl("textarea", {
+    cls: "sm-cc-textarea",
+    attr: { placeholder: "Zus\xE4tzliche Hinweise (ein Eintrag pro Zeile)\u2026" }
+  });
+  notesArea.value = (spellcasting.notes ?? []).join("\n");
+  notesArea.addEventListener("input", () => {
+    const lines = notesArea.value.split(/\n+/).map((line) => line.trim()).filter((line) => line.length);
+    spellcasting.notes = lines;
+    renderPreview();
+  });
+  const abilitySetting = new import_obsidian24.Setting(root).setName("Spellcasting-Fokus");
+  abilitySetting.settingEl.addClass("sm-cc-setting sm-cc-spellcasting__ability");
+  abilitySetting.addDropdown((dropdown) => {
+    dropdown.addOption("", "\u2014");
+    for (const ability of CREATURE_ABILITIES) {
+      dropdown.addOption(ability.key, ability.label);
+    }
+    dropdown.setValue(spellcasting.ability ?? "");
+    dropdown.onChange((value) => {
+      spellcasting.ability = value || void 0;
+      updateComputed(true);
+    });
+  });
+  const computedWrap = abilitySetting.controlEl.createDiv({ cls: "sm-cc-spellcasting__computed" });
+  const saveLabel = computedWrap.createSpan({ cls: "sm-cc-spellcasting__computed-save", text: "Save DC: \u2014" });
+  const attackLabel = computedWrap.createSpan({ cls: "sm-cc-spellcasting__computed-attack", text: "Attack: \u2014" });
+  const overrideWrap = abilitySetting.controlEl.createDiv({ cls: "sm-cc-spellcasting__overrides" });
+  const saveOverrideInput = overrideWrap.createEl("input", {
+    cls: "sm-cc-input sm-cc-input--small",
+    attr: { type: "number", placeholder: "Override DC", "aria-label": "Spell Save DC Override" }
+  });
+  const attackOverrideInput = overrideWrap.createEl("input", {
+    cls: "sm-cc-input sm-cc-input--small",
+    attr: { type: "number", placeholder: "Override ATK", "aria-label": "Spell Attack Override" }
+  });
+  if (spellcasting.saveDcOverride != null) saveOverrideInput.value = String(spellcasting.saveDcOverride);
+  if (spellcasting.attackBonusOverride != null) attackOverrideInput.value = String(spellcasting.attackBonusOverride);
+  saveOverrideInput.addEventListener("input", () => {
+    const value = saveOverrideInput.value.trim();
+    spellcasting.saveDcOverride = value === "" ? void 0 : Number(value);
+    updateComputed(true);
+  });
+  attackOverrideInput.addEventListener("input", () => {
+    const value = attackOverrideInput.value.trim();
+    spellcasting.attackBonusOverride = value === "" ? void 0 : Number(value);
+    updateComputed(true);
+  });
+  const toolbar = root.createDiv({ cls: "sm-cc-spellcasting__toolbar" });
+  const addGroupButton = (label, onClick) => {
+    const btn = toolbar.createEl("button", {
+      cls: "sm-cc-button",
+      text: label,
+      attr: { type: "button" }
+    });
+    btn.addEventListener("click", onClick);
+  };
+  addGroupButton("+ At Will", () => {
+    spellcasting.groups.push({ type: "at-will", title: "At Will", spells: [] });
+    renderGroups();
+    triggerValidation();
+  });
+  addGroupButton("+ X/Day (each)", () => {
+    spellcasting.groups.push({ type: "per-day", uses: "1/day each", spells: [] });
+    renderGroups();
+    triggerValidation();
+  });
+  addGroupButton("+ Spell Level", () => {
+    spellcasting.groups.push({ type: "level", level: 1, slots: 1, spells: [] });
+    renderGroups();
+    triggerValidation();
+  });
+  addGroupButton("+ Custom", () => {
+    spellcasting.groups.push({ type: "custom", title: "Custom", description: "", spells: [] });
+    renderGroups();
+    triggerValidation();
+  });
+  const groupsContainer = root.createDiv({ cls: "sm-cc-spellcasting__groups" });
+  const previewContainer = root.createDiv({ cls: "sm-cc-spellcasting__preview" });
+  const runValidation = options.registerValidation ? options.registerValidation(() => collectSpellcastingIssues(data)) : null;
+  const triggerValidation = () => {
+    runValidation?.();
+  };
+  const resolveAvailableSpells = () => {
+    const provided = options.getAvailableSpells?.();
+    if (provided && provided.length) return Array.from(provided);
+    return availableSpells.slice();
+  };
+  const renderGroups = () => {
+    typeaheadHandles.length = 0;
+    groupsContainer.empty();
+    if (!spellcasting.groups.length) {
+      groupsContainer.createDiv({ cls: "sm-cc-spellcasting__groups-empty", text: "Noch keine Gruppen." });
+      renderPreview();
+      return;
+    }
+    spellcasting.groups.forEach((group, index) => {
+      const groupBox = groupsContainer.createDiv({ cls: "sm-cc-spell-group" });
+      const head = groupBox.createDiv({ cls: "sm-cc-spell-group__head" });
+      const titleInput = head.createEl("input", {
+        cls: "sm-cc-input sm-cc-spell-group__title",
+        attr: { type: "text", placeholder: getGroupHeading(group) }
+      });
+      titleInput.value = group.title ?? "";
+      titleInput.addEventListener("input", () => {
+        const value = titleInput.value.trim();
+        if (group.type === "custom") {
+          group.title = value || "";
+        } else {
+          group.title = value || void 0;
+        }
+        renderPreview();
+        triggerValidation();
+      });
+      const controls = head.createDiv({ cls: "sm-cc-spell-group__controls" });
+      const moveUp = controls.createEl("button", { text: "\u2191", cls: "btn-compact", attr: { type: "button" } });
+      const moveDown = controls.createEl("button", { text: "\u2193", cls: "btn-compact", attr: { type: "button" } });
+      const remove = controls.createEl("button", { text: "\xD7", cls: "btn-compact", attr: { type: "button" } });
+      moveUp.disabled = index === 0;
+      moveDown.disabled = index === spellcasting.groups.length - 1;
+      moveUp.onclick = () => {
+        if (index === 0) return;
+        const [item] = spellcasting.groups.splice(index, 1);
+        spellcasting.groups.splice(index - 1, 0, item);
+        renderGroups();
+        renderPreview();
+        triggerValidation();
+      };
+      moveDown.onclick = () => {
+        if (index >= spellcasting.groups.length - 1) return;
+        const [item] = spellcasting.groups.splice(index, 1);
+        spellcasting.groups.splice(index + 1, 0, item);
+        renderGroups();
+        renderPreview();
+        triggerValidation();
+      };
+      remove.onclick = () => {
+        spellcasting.groups.splice(index, 1);
+        renderGroups();
+        renderPreview();
+        triggerValidation();
+      };
+      const meta = groupBox.createDiv({ cls: "sm-cc-spell-group__meta" });
+      if (group.type === "per-day") {
+        const usesInput = meta.createEl("input", {
+          cls: "sm-cc-input sm-cc-input--small",
+          attr: { type: "text", placeholder: "3/day", "aria-label": "Nutzungen" }
+        });
+        usesInput.value = group.uses ?? "";
+        usesInput.addEventListener("input", () => {
+          group.uses = usesInput.value.trim();
+          renderPreview();
+          triggerValidation();
+        });
+        const noteInput = meta.createEl("input", {
+          cls: "sm-cc-input",
+          attr: { type: "text", placeholder: "Notiz", "aria-label": "Notiz" }
+        });
+        noteInput.value = group.note ?? "";
+        noteInput.addEventListener("input", () => {
+          group.note = noteInput.value.trim() || void 0;
+          renderPreview();
+        });
+      } else if (group.type === "level") {
+        const levelInput = meta.createEl("input", {
+          cls: "sm-cc-input sm-cc-input--small",
+          attr: { type: "number", min: "0", max: "9", "aria-label": "Zaubergrad" }
+        });
+        levelInput.value = group.level != null ? String(group.level) : "";
+        levelInput.addEventListener("input", () => {
+          const parsed = Number(levelInput.value);
+          group.level = Number.isFinite(parsed) ? parsed : group.level ?? 0;
+          renderPreview();
+          triggerValidation();
+        });
+        const slotsInput = meta.createEl("input", {
+          cls: "sm-cc-input sm-cc-input--small",
+          attr: { type: "text", placeholder: "Slots", "aria-label": "Slots" }
+        });
+        if (group.slots != null) slotsInput.value = String(group.slots);
+        slotsInput.addEventListener("input", () => {
+          const value = slotsInput.value.trim();
+          if (!value) {
+            group.slots = void 0;
+          } else {
+            const parsed = Number(value);
+            group.slots = Number.isFinite(parsed) ? parsed : value;
+          }
+          renderPreview();
+        });
+        const noteInput = meta.createEl("input", {
+          cls: "sm-cc-input",
+          attr: { type: "text", placeholder: "Notiz", "aria-label": "Notiz" }
+        });
+        noteInput.value = group.note ?? "";
+        noteInput.addEventListener("input", () => {
+          group.note = noteInput.value.trim() || void 0;
+          renderPreview();
+        });
+      } else if (group.type === "custom") {
+        const descArea = meta.createEl("textarea", {
+          cls: "sm-cc-textarea",
+          attr: { placeholder: "Beschreibung" }
+        });
+        descArea.value = group.description ?? "";
+        descArea.addEventListener("input", () => {
+          group.description = descArea.value.trim() || void 0;
+          renderPreview();
+        });
+      }
+      const spellsList = groupBox.createDiv({ cls: "sm-cc-spell-group__spells" });
+      const spells = group.spells ?? [];
+      spells.forEach((spell, spellIndex) => {
+        const row = spellsList.createDiv({ cls: "sm-cc-spell-row" });
+        const nameCell = row.createDiv({ cls: "sm-cc-spell-row__name" });
+        const spellHandle = mountSpellInput(nameCell, resolveAvailableSpells, "Zaubername");
+        spellHandle.input.value = spell.name ?? "";
+        spellHandle.input.addEventListener("input", () => {
+          spell.name = spellHandle.input.value;
+          renderPreview();
+          triggerValidation();
+        });
+        typeaheadHandles.push(spellHandle);
+        const notesCell = row.createDiv({ cls: "sm-cc-spell-row__notes" });
+        const notesInput = notesCell.createEl("input", {
+          cls: "sm-cc-input",
+          attr: { type: "text", placeholder: "Notiz" }
+        });
+        notesInput.value = spell.notes ?? "";
+        notesInput.addEventListener("input", () => {
+          const trimmed = notesInput.value.trim();
+          spell.notes = trimmed || void 0;
+          renderPreview();
+        });
+        const removeSpell = row.createEl("button", { text: "\xD7", cls: "btn-compact" });
+        removeSpell.onclick = () => {
+          spells.splice(spellIndex, 1);
+          renderGroups();
+          renderPreview();
+          triggerValidation();
+        };
+      });
+      const addRow = spellsList.createDiv({ cls: "sm-cc-spell-row sm-cc-spell-row--add" });
+      const addNameCell = addRow.createDiv({ cls: "sm-cc-spell-row__name" });
+      const addHandle = mountSpellInput(addNameCell, resolveAvailableSpells, "Zauber hinzuf\xFCgen\u2026");
+      typeaheadHandles.push(addHandle);
+      const addNotesCell = addRow.createDiv({ cls: "sm-cc-spell-row__notes" });
+      const addNotesInput = addNotesCell.createEl("input", {
+        cls: "sm-cc-input",
+        attr: { type: "text", placeholder: "Notiz (optional)" }
+      });
+      const addButton = addRow.createEl("button", { text: "+", cls: "btn-compact" });
+      const addSpell = () => {
+        const name = ensureSpellName(addHandle.input.value);
+        if (!name) return;
+        spells.push({ name, notes: ensureSpellName(addNotesInput.value) });
+        addHandle.input.value = "";
+        addNotesInput.value = "";
+        renderGroups();
+        renderPreview();
+        triggerValidation();
+      };
+      addButton.onclick = addSpell;
+      addHandle.input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          addSpell();
+        }
+      });
+    });
+    renderPreview();
+  };
+  const renderPreview = () => {
+    renderPreviewContent(previewContainer, spellcasting);
+  };
+  const updateComputed = (refreshPreview) => {
+    const abilityMod2 = spellcasting.ability ? getAbilityModifier(data, spellcasting.ability) : null;
+    const proficiency = getProficiencyBonus(data);
+    const saveDc = calculateSaveDc({ abilityMod: abilityMod2, proficiencyBonus: proficiency, override: spellcasting.saveDcOverride });
+    const attackBonus = calculateAttackBonus({ abilityMod: abilityMod2, proficiencyBonus: proficiency, override: spellcasting.attackBonusOverride });
+    spellcasting.computed = {
+      abilityMod: abilityMod2,
+      proficiencyBonus: proficiency,
+      saveDc,
+      attackBonus
+    };
+    saveLabel.textContent = `Save DC: ${saveDc != null ? saveDc : "\u2014"}`;
+    attackLabel.textContent = `Attack: ${attackBonus != null ? (attackBonus >= 0 ? "+" : "") + attackBonus : "\u2014"}`;
+    if (refreshPreview) renderPreview();
+  };
+  const host = parent.closest(".modal") ?? parent;
+  const hostInputListener = () => updateComputed(true);
+  host.addEventListener("input", hostInputListener);
+  const refreshSpellMatches = () => {
+    typeaheadHandles.forEach((handle) => handle.refreshMatches());
+  };
+  const setAvailableSpells = (spells) => {
+    availableSpells.splice(0, availableSpells.length, ...spells);
+    refreshSpellMatches();
+  };
+  const revalidate = () => {
+    triggerValidation();
+    return collectSpellcastingIssues(data);
+  };
+  renderGroups();
+  updateComputed(true);
+  return {
+    refreshSpellMatches,
+    revalidate,
+    setAvailableSpells
+  };
 }
 
 // src/apps/library/create/creature/modal.ts
-var CreateCreatureModal = class extends import_obsidian23.Modal {
+var CreateCreatureModal = class extends import_obsidian25.Modal {
   constructor(app, presetName, onSubmit) {
     super(app);
     this.availableSpells = [];
@@ -8256,27 +8901,32 @@ var CreateCreatureModal = class extends import_obsidian23.Modal {
       subtitle,
       registerValidator: (runner) => this.addValidator(runner)
     });
-    let spellsSectionControls = null;
+    let spellcastingControls = null;
     void (async () => {
       try {
         const spells = (await listSpellFiles(this.app)).map((f) => f.basename).sort((a, b) => a.localeCompare(b));
         this.availableSpells.splice(0, this.availableSpells.length, ...spells);
-        spellsSectionControls?.refreshSpellMatches();
+        spellcastingControls?.setAvailableSpells(spells);
       } catch {
       }
     })();
-    const basicsCard = createCard(mainColumn, "Grunddaten", "Name, Typ, Gesinnung und Basiswerte");
-    mountCreatureBasicsSection(basicsCard.body, this.data);
-    const statsCard = createCard(mainColumn, "Attribute & Fertigkeiten");
-    mountCreatureStatsAndSkillsSection(statsCard.body, this.data, statsCard.registerValidation);
+    const classificationCard = createCard(mainColumn, "Grunddaten", "Name, Typ, Gesinnung und Tags");
+    mountCreatureClassificationSection(classificationCard.body, this.data);
+    const vitalsCard = createCard(mainColumn, "Vitalwerte", "AC, HP, Initiative und Bewegung");
+    mountCreatureVitalSection(vitalsCard.body, this.data);
     const defensesCard = createCard(sideColumn, "Sinne & Verteidigungen");
     mountCreatureSensesAndDefensesSection(defensesCard.body, this.data);
-    const spellsCard = createCard(sideColumn, "Zauber & F\xE4higkeiten");
-    spellsSectionControls = mountSpellsKnownSection(spellsCard.body, this.data, () => this.availableSpells);
+    const spellcastingCard = createCard(sideColumn, "Spellcasting", "Zauberlisten, Nutzungen und Notizen");
+    spellcastingControls = mountCreatureSpellcastingSection(spellcastingCard.body, this.data, {
+      getAvailableSpells: () => this.availableSpells,
+      registerValidation: spellcastingCard.registerValidation
+    });
+    const statsCard = createCard(fullColumn, "Attribute & Fertigkeiten");
+    mountCreatureStatsAndSkillsSection(statsCard.body, this.data, statsCard.registerValidation);
     const entriesCard = createCard(fullColumn, "Eintr\xE4ge", "Traits, Aktionen, Bonusaktionen, Reaktionen und Legend\xE4res");
     mountEntriesSection(entriesCard.body, this.data, entriesCard.registerValidation);
     const footer = contentEl.createDiv({ cls: "sm-cc-modal-footer" });
-    new import_obsidian23.Setting(footer).addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close())).addButton((b) => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
+    new import_obsidian25.Setting(footer).addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close())).addButton((b) => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
   }
   onClose() {
     this.contentEl.empty();
@@ -8316,7 +8966,7 @@ var CreateCreatureModal = class extends import_obsidian23.Modal {
 };
 
 // src/apps/library/create/spell/modal.ts
-var import_obsidian24 = require("obsidian");
+var import_obsidian26 = require("obsidian");
 init_search_dropdown();
 
 // src/apps/library/create/spell/validation.ts
@@ -8338,7 +8988,7 @@ function collectSpellScalingIssues(data) {
 }
 
 // src/apps/library/create/spell/modal.ts
-var CreateSpellModal = class extends import_obsidian24.Modal {
+var CreateSpellModal = class extends import_obsidian26.Modal {
   constructor(app, presetName, onSubmit) {
     super(app);
     this.scalingIssues = [];
@@ -8353,11 +9003,11 @@ var CreateSpellModal = class extends import_obsidian24.Modal {
     this.scalingIssues = [];
     this.runScalingValidation = null;
     contentEl.createEl("h3", { text: "Neuen Zauber erstellen" });
-    new import_obsidian24.Setting(contentEl).setName("Name").addText((t) => {
+    new import_obsidian26.Setting(contentEl).setName("Name").addText((t) => {
       t.setPlaceholder("Fireball").setValue(this.data.name).onChange((v) => this.data.name = v.trim());
       t.inputEl.style.width = "28ch";
     });
-    new import_obsidian24.Setting(contentEl).setName("Grad").setDesc("0 = Zaubertrick").addDropdown((dd) => {
+    new import_obsidian26.Setting(contentEl).setName("Grad").setDesc("0 = Zaubertrick").addDropdown((dd) => {
       for (let i = 0; i <= 9; i++) dd.addOption(String(i), String(i));
       dd.onChange((v) => {
         this.data.level = parseInt(v, 10);
@@ -8368,7 +9018,7 @@ var CreateSpellModal = class extends import_obsidian24.Modal {
       } catch {
       }
     });
-    new import_obsidian24.Setting(contentEl).setName("Schule").addDropdown((dd) => {
+    new import_obsidian26.Setting(contentEl).setName("Schule").addDropdown((dd) => {
       const schools = ["Abjuration", "Conjuration", "Divination", "Enchantment", "Evocation", "Illusion", "Necromancy", "Transmutation"];
       for (const s of schools) dd.addOption(s, s);
       dd.onChange((v) => this.data.school = v);
@@ -8377,15 +9027,15 @@ var CreateSpellModal = class extends import_obsidian24.Modal {
       } catch {
       }
     });
-    new import_obsidian24.Setting(contentEl).setName("Wirkzeit").addText((t) => {
+    new import_obsidian26.Setting(contentEl).setName("Wirkzeit").addText((t) => {
       t.setPlaceholder("1 Aktion").onChange((v) => this.data.casting_time = v.trim());
       t.inputEl.style.width = "12ch";
     });
-    new import_obsidian24.Setting(contentEl).setName("Reichweite").addText((t) => {
+    new import_obsidian26.Setting(contentEl).setName("Reichweite").addText((t) => {
       t.setPlaceholder("60 Fu\xDF").onChange((v) => this.data.range = v.trim());
       t.inputEl.style.width = "12ch";
     });
-    const comps = new import_obsidian24.Setting(contentEl).setName("Komponenten");
+    const comps = new import_obsidian26.Setting(contentEl).setName("Komponenten");
     let cV = false, cS = false, cM = false;
     const updateComps = () => {
       const arr = [];
@@ -8411,22 +9061,22 @@ var CreateSpellModal = class extends import_obsidian24.Modal {
       cM = v;
       updateComps();
     });
-    new import_obsidian24.Setting(contentEl).setName("Materialien").addText((t) => {
+    new import_obsidian26.Setting(contentEl).setName("Materialien").addText((t) => {
       t.setPlaceholder("winzige Kugel aus Guano und Schwefel").onChange((v) => this.data.materials = v.trim());
       t.inputEl.style.width = "34ch";
     });
-    new import_obsidian24.Setting(contentEl).setName("Dauer").addText((t) => {
+    new import_obsidian26.Setting(contentEl).setName("Dauer").addText((t) => {
       t.setPlaceholder("Augenblicklich / Konzentration, bis zu 1 Minute").onChange((v) => this.data.duration = v.trim());
       t.inputEl.style.width = "34ch";
     });
-    const flags = new import_obsidian24.Setting(contentEl).setName("Flags");
+    const flags = new import_obsidian26.Setting(contentEl).setName("Flags");
     const cbConc = flags.controlEl.createEl("input", { attr: { type: "checkbox" } });
     flags.controlEl.createEl("label", { text: "Konzentration" });
     const cbRit = flags.controlEl.createEl("input", { attr: { type: "checkbox" } });
     flags.controlEl.createEl("label", { text: "Ritual" });
     cbConc.addEventListener("change", () => this.data.concentration = cbConc.checked);
     cbRit.addEventListener("change", () => this.data.ritual = cbRit.checked);
-    new import_obsidian24.Setting(contentEl).setName("Angriff").addDropdown((dd) => {
+    new import_obsidian26.Setting(contentEl).setName("Angriff").addDropdown((dd) => {
       const opts = ["", "Melee Spell Attack", "Ranged Spell Attack", "Melee Weapon Attack", "Ranged Weapon Attack"];
       for (const s of opts) dd.addOption(s, s || "(kein)");
       dd.onChange((v) => this.data.attack = v || void 0);
@@ -8435,7 +9085,7 @@ var CreateSpellModal = class extends import_obsidian24.Modal {
       } catch {
       }
     });
-    const save = new import_obsidian24.Setting(contentEl).setName("Rettungswurf");
+    const save = new import_obsidian26.Setting(contentEl).setName("Rettungswurf");
     save.addDropdown((dd) => {
       const abil = ["", "STR", "DEX", "CON", "INT", "WIS", "CHA"];
       for (const a of abil) dd.addOption(a, a || "(kein)");
@@ -8450,7 +9100,7 @@ var CreateSpellModal = class extends import_obsidian24.Modal {
       t.setPlaceholder("Half on save / Negates \u2026").onChange((v) => this.data.save_effect = v.trim() || void 0);
       t.inputEl.style.width = "18ch";
     });
-    const dmg = new import_obsidian24.Setting(contentEl).setName("Schaden");
+    const dmg = new import_obsidian26.Setting(contentEl).setName("Schaden");
     dmg.controlEl.createEl("label", { text: "W\xFCrfel" });
     dmg.addText((t) => {
       t.setPlaceholder("8d6").onChange((v) => this.data.damage = v.trim() || void 0);
@@ -8506,7 +9156,7 @@ var CreateSpellModal = class extends import_obsidian24.Modal {
       applyScalingValidation(this.scalingIssues);
     };
     this.runScalingValidation();
-    new import_obsidian24.Setting(contentEl).addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close())).addButton((b) => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
+    new import_obsidian26.Setting(contentEl).addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close())).addButton((b) => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
     this.scope.register([], "Enter", () => this.submit());
   }
   onClose() {
@@ -8951,7 +9601,7 @@ var LIBRARY_COPY = {
   }
 };
 var VIEW_LIBRARY = "salt-library";
-var LibraryView = class extends import_obsidian25.ItemView {
+var LibraryView = class extends import_obsidian27.ItemView {
   constructor() {
     super(...arguments);
     this.mode = "creatures";
@@ -9255,12 +9905,73 @@ var editorLayoutsCss = `
 .sm-creature-compendium .addbar { display:flex; gap:.5rem; margin-top:.5rem; }
 .sm-creature-compendium .addbar input[type="text"] { flex:1; min-width:0; }
 
-/* Creature Compendium \u2013 Search + list */
-.sm-cc-searchbar { display:flex; gap:.5rem; margin:.5rem 0; }
-.sm-cc-searchbar input[type="text"] { flex:1; min-width:0; }
-.sm-cc-list { display:flex; flex-direction:column; gap:.25rem; margin-top:.25rem; }
-.sm-cc-item { display:flex; gap:.5rem; align-items:center; justify-content:space-between; padding:.35rem .5rem; border:1px solid var(--background-modifier-border); border-radius:8px; background: var(--background-primary); }
-.sm-cc-item__name { font-weight: 500; }
+/* Creature Compendium \u2013 Search, Lists & Filters */
+.sm-cc-searchbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    margin: .5rem 0;
+}
+.sm-cc-searchbar > * {
+    flex: 1 1 200px;
+    min-width: 160px;
+}
+.sm-cc-searchbar button {
+    flex: 0 0 auto;
+}
+
+.sm-cc-entry-filter {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .35rem;
+    padding: .35rem;
+    margin: .35rem 0 .65rem;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--background-secondary) 85%, transparent);
+}
+.sm-cc-entry-filter button {
+    border: none;
+    background: transparent;
+    padding: .25rem .75rem;
+    border-radius: 999px;
+    font-size: .85em;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
+}
+.sm-cc-entry-filter button:hover {
+    color: var(--text-normal);
+}
+.sm-cc-entry-filter button.is-active {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent, #fff);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 55%, transparent);
+}
+
+.sm-cc-list {
+    display: flex;
+    flex-direction: column;
+    gap: .45rem;
+    margin-top: .35rem;
+}
+.sm-cc-item {
+    display: flex;
+    gap: .5rem;
+    align-items: center;
+    justify-content: space-between;
+    padding: .45rem .65rem;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 10px;
+    background: var(--background-primary);
+    box-shadow: 0 3px 10px rgba(15, 23, 42, .04);
+}
+.sm-cc-item__name { font-weight: 600; }
 
 /* Creature Creator \u2013 Modal Layout */
 .sm-cc-modal-header { display:flex; flex-direction:column; gap:.35rem; margin-bottom:1rem; }
@@ -9284,9 +9995,34 @@ var editorLayoutsCss = `
     flex-direction:column;
     overflow:hidden;
 }
-.sm-cc-card__head { padding:.85rem .95rem .6rem; border-bottom:1px solid var(--background-modifier-border); display:flex; flex-direction:column; gap:.3rem; }
+.sm-cc-card__head { padding:.9rem 1rem .65rem; border-bottom:1px solid var(--background-modifier-border); display:flex; flex-direction:column; gap:.35rem; }
+.sm-cc-card__heading { display:flex; align-items:flex-start; gap:.65rem; justify-content:space-between; }
 .sm-cc-card__title { margin:0; font-size:1.05rem; }
 .sm-cc-card__subtitle { margin:0; font-size:.9em; color: var(--text-muted); }
+.sm-cc-card__status {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .25rem .65rem;
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    background: color-mix(in srgb, var(--color-red, #e11d48) 12%, var(--background-secondary));
+    color: color-mix(in srgb, var(--color-red, #e11d48) 85%, var(--text-normal));
+    border: 1px solid color-mix(in srgb, var(--color-red, #e11d48) 45%, transparent);
+    white-space: nowrap;
+    transition: background 120ms ease, color 120ms ease, border 120ms ease, box-shadow 120ms ease;
+}
+.sm-cc-card__status::before {
+    content: "!";
+    font-weight: 700;
+    font-size: .85em;
+    line-height: 1;
+}
+.sm-cc-card__status[hidden] { display:none; }
+.sm-cc-card__status.is-active { box-shadow:0 0 0 1px color-mix(in srgb, var(--color-red, #e11d48) 35%, transparent); }
 .sm-cc-card__validation { display:none; padding:.6rem .95rem; border-top:1px solid color-mix(in srgb, var(--color-red, #e11d48) 30%, transparent); background:color-mix(in srgb, var(--color-red, #e11d48) 12%, var(--background-secondary)); color: var(--color-red, #e11d48); font-size:.9em; }
 .sm-cc-card__validation.is-visible { display:block; }
 .sm-cc-card__validation-list { margin:0; padding-left:1.2rem; display:flex; flex-direction:column; gap:.25rem; }
@@ -9298,38 +10034,192 @@ var editorLayoutsCss = `
 .sm-cc-modal-footer button { min-width:120px; }
 
 /* Creature Creator \u2013 Basics Section */
-.sm-cc-basics { display:flex; flex-direction:column; gap:1rem; }
-.sm-cc-basics__group { display:flex; flex-direction:column; gap:.65rem; }
-.sm-cc-basics__subtitle { margin:0; font-size:.78rem; letter-spacing:.08em; text-transform:uppercase; color: var(--text-muted); }
-.sm-cc-field-grid { display:grid; gap:.75rem; }
-.sm-cc-field-grid--identity { grid-template-columns:repeat(2, minmax(0, 1fr)); }
-.sm-cc-field-grid--summary { grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); }
-.sm-cc-field-grid--speeds { grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); }
-@media (max-width: 900px) {
-    .sm-cc-field-grid--identity { grid-template-columns:minmax(0, 1fr); }
+.sm-cc-basics {
+    display: grid;
+    gap: 1rem;
+}
+.sm-cc-basics--classification,
+.sm-cc-basics--vitals {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    align-items: stretch;
+}
+.sm-cc-basics__group {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+    padding: .85rem .95rem 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--background-modifier-border);
+    background: color-mix(in srgb, var(--background-secondary) 78%, transparent);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, .05);
+}
+.sm-cc-basics__subtitle {
+    margin: 0;
+    font-size: .78rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.sm-cc-field-grid {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+.sm-cc-field-grid--identity { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.sm-cc-field-grid--summary { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.sm-cc-field-grid--classification { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.sm-cc-field-grid--vitals { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.sm-cc-field-grid--speeds { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+@media (max-width: 860px) {
+    .sm-cc-basics--classification,
+    .sm-cc-basics--vitals { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 720px) {
-    .sm-cc-field-grid--speeds { grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); }
+    .sm-cc-field-grid { grid-template-columns: minmax(0, 1fr); }
 }
-.sm-cc-setting.setting-item { border:none; padding:0; margin:0; background:none; }
-.sm-cc-setting .setting-item-info { display:none; }
-.sm-cc-setting .setting-item-name { font-weight:600; font-size:.9em; color: var(--text-muted); }
-.sm-cc-setting .setting-item-control { margin-left:0; width:100%; display:flex; flex-direction:column; gap:.4rem; }
-.sm-cc-setting--inline .setting-item-control { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:.5rem; }
-.sm-cc-setting--speed .setting-item-control { flex-direction:row; align-items:center; gap:.45rem; }
+.sm-cc-setting.setting-item {
+    border: none;
+    padding: 0;
+    margin: 0;
+    background: none;
+}
+.sm-cc-setting .setting-item-info { display: none; }
+.sm-cc-setting .setting-item-name {
+    font-weight: 600;
+    font-size: .9em;
+    color: var(--text-muted);
+}
+.sm-cc-setting .setting-item-control {
+    margin-left: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: .45rem;
+}
+.sm-cc-setting--textarea .setting-item-control { align-items: stretch; }
+.sm-cc-setting--textarea .sm-cc-textarea { min-height: 120px; }
+.sm-cc-setting--show-name .setting-item-info { display: block; }
+.sm-cc-setting--show-name .setting-item-name {
+    font-size: .75rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+.sm-cc-setting--span-2 { grid-column: 1 / -1; }
+
+.sm-cc-input {
+    width: 100%;
+    min-height: 34px;
+    padding: .3rem .55rem;
+    box-sizing: border-box;
+    border-radius: 8px;
+}
+.sm-cc-input--small { max-width: 120px; }
+.sm-cc-select {
+    width: 100%;
+    min-height: 34px;
+    box-sizing: border-box;
+    border-radius: 8px;
+}
+.sm-cc-textarea {
+    width: 100%;
+    min-height: 140px;
+    resize: vertical;
+    padding: .45rem .6rem;
+    border-radius: 8px;
+}
+
+.sm-cc-alignment-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: .45rem;
+}
+.sm-cc-alignment-button {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 10px;
+    padding: .45rem .65rem;
+    background: var(--background-primary);
+    font-size: .85em;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 120ms ease, color 120ms ease, border 120ms ease, box-shadow 120ms ease;
+}
+.sm-cc-alignment-button:hover { color: var(--text-normal); }
+.sm-cc-alignment-button.is-active {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent, #fff);
+    border-color: color-mix(in srgb, var(--interactive-accent) 55%, transparent);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--interactive-accent) 35%, transparent);
+}
+.sm-cc-alignment-button[disabled] {
+    opacity: .55;
+    cursor: not-allowed;
+}
+.sm-cc-alignment-override {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin-top: .4rem;
+    padding: .45rem .65rem;
+    font-size: .8em;
+    color: var(--text-muted);
+    border-radius: 10px;
+    border: 1px dashed var(--background-modifier-border);
+    background: color-mix(in srgb, var(--background-secondary) 65%, transparent);
+}
+.sm-cc-alignment-override__toggle .checkbox-container { margin: 0; }
+.sm-cc-alignment-override__label { text-transform: uppercase; letter-spacing: .06em; }
+
+.sm-cc-speeds-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: .85rem;
+}
 @media (max-width: 680px) {
-    .sm-cc-setting--inline .setting-item-control { grid-template-columns:minmax(0, 1fr); }
+    .sm-cc-speeds-grid { grid-template-columns: minmax(0, 1fr); }
 }
-@media (max-width: 520px) {
-    .sm-cc-setting--speed .setting-item-control { flex-direction:column; align-items:flex-start; }
-    .sm-cc-setting--speed .sm-cc-hover-wrap { margin-left:0; }
+.sm-cc-speed {
+    display: flex;
+    flex-direction: column;
+    gap: .45rem;
+    padding: .55rem .6rem;
+    border-radius: 10px;
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, .04);
 }
-.sm-cc-input { width:100%; min-height:32px; box-sizing:border-box; border-radius:6px; }
-.sm-cc-select { width:100%; min-height:32px; box-sizing:border-box; border-radius:6px; }
-.sm-cc-alignment select { min-width:0; }
-.sm-cc-hover-wrap { display:flex; align-items:center; gap:.35rem; margin-left:auto; }
-.sm-cc-hover-toggle { margin:0; }
-.sm-cc-hover-label { font-size:.8em; color: var(--text-muted); }
+.sm-cc-speed__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+}
+.sm-cc-speed__label {
+    font-size: .8rem;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.sm-cc-speed__badge {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 999px;
+    padding: .1rem .6rem;
+    font-size: .7rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    background: var(--background-secondary);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 120ms ease, color 120ms ease, border 120ms ease, box-shadow 120ms ease;
+}
+.sm-cc-speed__badge.is-active {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent, #fff);
+    border-color: color-mix(in srgb, var(--interactive-accent) 55%, transparent);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--interactive-accent) 35%, transparent);
+}
+.sm-cc-speed__input { width: 100%; }
 
 /* Create Creature Modal helpers */
 .sm-cc-create-modal .sm-cc-grid {
@@ -9347,8 +10237,19 @@ var editorLayoutsCss = `
 .sm-cc-skill-group__title { font-weight: 600; margin-bottom: .25rem; }
 .sm-cc-skill { display: grid; grid-template-columns: 1fr max-content max-content; gap: .5rem; align-items: center; margin: .15rem 0; }
 
-.sm-cc-chips { display:flex; gap:.35rem; flex-wrap:wrap; margin:.25rem 0 .5rem; }
-.sm-cc-chip { display:inline-flex; align-items:center; gap:.25rem; border:1px solid var(--background-modifier-border); border-radius:999px; padding:.1rem .4rem; background: var(--background-secondary); }
+.sm-cc-chips { display:flex; gap:.4rem; flex-wrap:wrap; margin:.35rem 0 .6rem; }
+.sm-cc-chip {
+    display:inline-flex;
+    align-items:center;
+    gap:.3rem;
+    border:1px solid var(--background-modifier-border);
+    border-radius:999px;
+    padding:.2rem .6rem;
+    background: color-mix(in srgb, var(--background-secondary) 80%, transparent);
+    font-size:.85em;
+    color: var(--text-muted);
+    box-shadow:0 3px 8px rgba(15,23,42,.04);
+}
 .sm-cc-damage-row { align-items:center; }
 .sm-cc-damage-type { display:inline-flex; align-items:center; gap:.35rem; flex-wrap:wrap; justify-content:flex-start; }
 .sm-cc-damage-type__label { font-size:.85em; color: var(--text-muted); }
@@ -9424,6 +10325,74 @@ var editorLayoutsCss = `
     display: flex;
     justify-content: flex-end;
 }
+.sm-cc-defense-summary {
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:.4rem;
+    margin:.35rem 0 .75rem;
+}
+.sm-cc-defense-pill {
+    display:inline-flex;
+    align-items:center;
+    gap:.35rem;
+    border:1px solid var(--background-modifier-border);
+    border-radius:999px;
+    padding:.2rem .7rem;
+    background: color-mix(in srgb, var(--background-secondary) 80%, transparent);
+    font-size:.85em;
+    color: var(--text-muted);
+    box-shadow:0 3px 8px rgba(15,23,42,.05);
+    transition: background 120ms ease, border-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+}
+.sm-cc-defense-pill__label {
+    font-weight:600;
+    color: var(--text-normal);
+}
+.sm-cc-defense-pill__count {
+    font-weight:700;
+    font-variant-numeric: tabular-nums;
+}
+.sm-cc-defense-pill.is-empty {
+    opacity:.65;
+}
+.sm-cc-defense-pill--res {
+    border-color: color-mix(in srgb, var(--interactive-accent) 45%, transparent);
+    background: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-secondary));
+}
+.sm-cc-defense-pill--res .sm-cc-defense-pill__label,
+.sm-cc-defense-pill--res .sm-cc-defense-pill__count {
+    color: var(--interactive-accent);
+}
+.sm-cc-defense-pill--imm {
+    border-color: color-mix(in srgb, var(--color-purple, #7c3aed) 45%, transparent);
+    background: color-mix(in srgb, var(--color-purple, #7c3aed) 12%, var(--background-secondary));
+}
+.sm-cc-defense-pill--imm .sm-cc-defense-pill__label,
+.sm-cc-defense-pill--imm .sm-cc-defense-pill__count {
+    color: var(--color-purple, #7c3aed);
+}
+.sm-cc-defense-pill--vuln {
+    border-color: color-mix(in srgb, var(--color-orange, #ea580c) 45%, transparent);
+    background: color-mix(in srgb, var(--color-orange, #ea580c) 12%, var(--background-secondary));
+}
+.sm-cc-defense-pill--vuln .sm-cc-defense-pill__label,
+.sm-cc-defense-pill--vuln .sm-cc-defense-pill__count {
+    color: var(--color-orange, #ea580c);
+}
+.sm-cc-defense-pill--cond {
+    border-color: color-mix(in srgb, var(--color-green, #10b981) 45%, transparent);
+    background: color-mix(in srgb, var(--color-green, #10b981) 12%, var(--background-secondary));
+}
+.sm-cc-defense-pill--cond .sm-cc-defense-pill__label,
+.sm-cc-defense-pill--cond .sm-cc-defense-pill__count {
+    color: var(--color-green, #10b981);
+}
+.sm-cc-defense-pill__empty {
+    font-size:.85em;
+    color: var(--text-muted);
+    font-style: italic;
+}
 .sm-cc-defenses .sm-cc-senses-search {
     display: flex;
     align-items: center;
@@ -9457,9 +10426,226 @@ var editorLayoutsCss = `
 .sm-cc-skill-chip__mod { font-weight:600; color: var(--text-normal); }
 .sm-cc-skill-chip__exp { display:inline-flex; align-items:center; gap:.25rem; font-size:.85em; color: var(--text-muted); }
 .sm-cc-skill-chip__exp input { margin:0; }
-.sm-cc-chip__remove { background:none; border:none; cursor:pointer; font-size:1rem; line-height:1; padding:0; color: var(--text-muted); }
+.sm-cc-chip__remove { background:none; border:none; cursor:pointer; font-size:.85rem; line-height:1; padding:0; color: var(--text-muted); }
 .sm-cc-chip__remove:hover { color: var(--text-normal); }
 
+/* Creature Spellcasting \u2013 Layout & Preview */
+.sm-cc-spellcasting {
+    display: grid;
+    gap: 1.25rem;
+}
+@media (min-width: 1080px) {
+    .sm-cc-spellcasting {
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+        align-items: start;
+    }
+}
+.sm-cc-spellcasting__ability .setting-item-control {
+    gap: .65rem;
+    align-items: flex-start;
+}
+.sm-cc-spellcasting__computed {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: .35rem;
+    align-items: center;
+    margin-top: .25rem;
+}
+.sm-cc-spellcasting__computed-save,
+.sm-cc-spellcasting__computed-attack {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .2rem .6rem;
+    border-radius: 999px;
+    font-size: .75rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    font-weight: 600;
+    background: color-mix(in srgb, var(--background-secondary) 85%, transparent);
+    border: 1px solid var(--background-modifier-border);
+    color: var(--text-muted);
+}
+.sm-cc-spellcasting__overrides {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin-top: .35rem;
+}
+.sm-cc-spellcasting__overrides .sm-cc-input--small {
+    flex: 0 0 120px;
+}
+
+.sm-cc-spellcasting__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    align-items: center;
+    margin: .75rem 0 .5rem;
+}
+.sm-cc-button {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 999px;
+    padding: .35rem .9rem;
+    background: var(--background-primary);
+    font-weight: 600;
+    font-size: .85em;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 120ms ease, color 120ms ease, border 120ms ease, box-shadow 120ms ease;
+}
+.sm-cc-button:hover { color: var(--text-normal); }
+.sm-cc-button:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 1px; }
+
+.sm-cc-spellcasting__groups {
+    display: flex;
+    flex-direction: column;
+    gap: .85rem;
+}
+.sm-cc-spellcasting__groups-empty {
+    border: 1px dashed var(--background-modifier-border);
+    border-radius: 10px;
+    padding: .75rem;
+    text-align: center;
+    font-size: .9em;
+    color: var(--text-muted);
+    background: color-mix(in srgb, var(--background-secondary) 70%, transparent);
+}
+.sm-cc-spellcasting__preview {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 12px;
+    padding: 1rem;
+    background: color-mix(in srgb, var(--background-secondary) 80%, transparent);
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+}
+.sm-cc-spellcasting-preview__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+}
+.sm-cc-spellcasting-preview__header h4 { margin: 0; }
+.sm-cc-spellcasting-preview__notes {
+    margin: 0;
+    padding-left: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+}
+.sm-cc-spellcasting-preview__groups {
+    display: flex;
+    flex-direction: column;
+    gap: .65rem;
+}
+.sm-cc-spellcasting-preview__group {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 10px;
+    padding: .6rem .75rem;
+    background: var(--background-primary);
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+}
+.sm-cc-spellcasting-preview__group h5 { margin: 0; }
+.sm-cc-spellcasting-preview__group ul {
+    margin: 0;
+    padding-left: 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+}
+.sm-cc-spellcasting-preview__note {
+    font-size: .85em;
+    color: var(--text-muted);
+}
+.sm-cc-spellcasting-preview__empty {
+    font-size: .9em;
+    font-style: italic;
+    color: var(--text-muted);
+}
+
+.sm-cc-spell-group {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 12px;
+    background: var(--background-primary);
+    box-shadow: 0 6px 14px rgba(15, 23, 42, .05);
+    padding: .85rem .95rem;
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+}
+.sm-cc-spell-group__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: .6rem;
+}
+.sm-cc-spell-group__title {
+    flex: 1 1 240px;
+    min-width: 200px;
+    font-weight: 600;
+}
+.sm-cc-spell-group__controls {
+    display: inline-flex;
+    gap: .35rem;
+}
+.sm-cc-spell-group__meta {
+    display: grid;
+    gap: .5rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+.sm-cc-spell-group__meta textarea {
+    min-height: 96px;
+}
+.sm-cc-spell-group__spells {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+}
+.sm-cc-spell-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) max-content;
+    gap: .5rem;
+    align-items: center;
+    padding: .45rem .55rem;
+    border-radius: 10px;
+    border: 1px solid var(--background-modifier-border);
+    background: color-mix(in srgb, var(--background-secondary) 85%, transparent);
+}
+.sm-cc-spell-row__name,
+.sm-cc-spell-row__notes { min-width: 0; }
+.sm-cc-spell-row__name .sm-preset-box,
+.sm-cc-spell-row__notes .sm-cc-input { width: 100%; }
+.sm-cc-spell-row > button { justify-self: end; }
+.sm-cc-spell-row--add {
+    border-style: dashed;
+    background: color-mix(in srgb, var(--background-secondary) 65%, transparent);
+}
+.sm-cc-spell-row--add > button { border-radius: 999px; }
+@media (max-width: 900px) {
+    .sm-cc-spell-row {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+    .sm-cc-spell-row > button {
+        grid-column: 1 / -1;
+        justify-self: flex-end;
+    }
+}
+@media (max-width: 640px) {
+    .sm-cc-spell-row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .sm-cc-spell-row > button {
+        justify-self: flex-start;
+    }
+}
+
+.sm-cc-spellcasting__input { width: 100%; }
+.sm-cc-spellcasting__input .sm-preset-input { width: 100%; }
 /* Creature modal layout improvements */
 .sm-cc-create-modal .setting-item-control { flex: 1 1 auto; min-width: 0; }
 .sm-cc-create-modal textarea { width: 100%; min-height: 140px; }
@@ -9482,14 +10668,10 @@ var editorLayoutsCss = `
 .sm-cc-create-modal .sm-cc-searchbar label { align-self: center; }
 
 /* Ensure entry and spell controls stack vertically */
-.sm-cc-create-modal .sm-cc-entries,
-.sm-cc-create-modal .sm-cc-spells { display: block; }
-.sm-cc-create-modal .sm-cc-entries .setting-item-info,
-.sm-cc-create-modal .sm-cc-spells .setting-item-info { display: block; width: 100%; margin-bottom: .35rem; }
-.sm-cc-create-modal .sm-cc-entries .setting-item-control,
-.sm-cc-create-modal .sm-cc-spells .setting-item-control { display: flex; flex-direction: column; align-items: stretch; gap: .5rem; width: 100%; }
-.sm-cc-create-modal .sm-cc-entries .sm-cc-searchbar,
-.sm-cc-create-modal .sm-cc-spells .sm-cc-searchbar { width: 100%; }
+.sm-cc-create-modal .sm-cc-entries { display: block; }
+.sm-cc-create-modal .sm-cc-entries .setting-item-info { display: block; width: 100%; margin-bottom: .35rem; }
+.sm-cc-create-modal .sm-cc-entries .setting-item-control { display: flex; flex-direction: column; align-items: stretch; gap: .5rem; width: 100%; }
+.sm-cc-create-modal .sm-cc-entries .sm-cc-searchbar { width: 100%; }
 .sm-cc-create-modal .setting-item-control > * { max-width: 100%; }
 
 /* Spell Creator \u2013 Validierung f\xFCr h\xF6here Grade */
@@ -10004,7 +11186,7 @@ var HEX_PLUGIN_CSS_SECTIONS = {
 var HEX_PLUGIN_CSS = Object.values(HEX_PLUGIN_CSS_SECTIONS).join("\n\n");
 
 // src/app/integration-telemetry.ts
-var import_obsidian26 = require("obsidian");
+var import_obsidian28 = require("obsidian");
 var notifiedOperations = /* @__PURE__ */ new Set();
 function reportIntegrationIssue(payload) {
   const { integrationId, operation, error, userMessage } = payload;
@@ -10013,7 +11195,7 @@ function reportIntegrationIssue(payload) {
   const dedupeKey = `${integrationId}:${operation}`;
   if (notifiedOperations.has(dedupeKey)) return;
   notifiedOperations.add(dedupeKey);
-  new import_obsidian26.Notice(userMessage);
+  new import_obsidian28.Notice(userMessage);
 }
 
 // src/app/bootstrap-services.ts
@@ -10100,7 +11282,7 @@ function createTerrainBootstrap(app, config = {}) {
 }
 
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian27.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian29.Plugin {
   async onload() {
     for (const manifestEntry of VIEW_MANIFEST) {
       try {
