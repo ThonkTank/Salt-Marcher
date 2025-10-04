@@ -398,7 +398,8 @@ function createHexScene(config) {
   const polyByCoord = /* @__PURE__ */ new Map();
   const internals = {
     bounds: null,
-    updateViewBox() {
+    viewBoxInitialized: false,
+    applyFrame(adjustViewBox) {
       if (!internals.bounds) return;
       const { minX, minY, maxX, maxY } = internals.bounds;
       const paddedMinX = Math.floor(minX - padding);
@@ -407,7 +408,10 @@ function createHexScene(config) {
       const paddedMaxY = Math.ceil(maxY + padding);
       const width = Math.max(1, paddedMaxX - paddedMinX);
       const height = Math.max(1, paddedMaxY - paddedMinY);
-      svg.setAttribute("viewBox", `${paddedMinX} ${paddedMinY} ${width} ${height}`);
+      if (adjustViewBox || !internals.viewBoxInitialized) {
+        svg.setAttribute("viewBox", `${paddedMinX} ${paddedMinY} ${width} ${height}`);
+        internals.viewBoxInitialized = true;
+      }
       overlay.setAttribute("x", String(paddedMinX));
       overlay.setAttribute("y", String(paddedMinY));
       overlay.setAttribute("width", String(width));
@@ -441,7 +445,7 @@ function createHexScene(config) {
     current.maxY = Math.max(current.maxY, next.maxY);
   }
   function addHex(coord) {
-    if (polyByCoord.has(keyOf(coord))) return;
+    if (polyByCoord.has(keyOf(coord))) return false;
     const { cx, cy } = internals.centerOf(coord);
     const poly = document.createElementNS(SVG_NS, "polygon");
     poly.setAttribute("points", hexPolygonPoints(cx, cy, radius));
@@ -462,16 +466,17 @@ function createHexScene(config) {
     label.textContent = `${coord.r},${coord.c}`;
     contentG.appendChild(label);
     mergeBounds(internals.bboxOf(coord));
+    return true;
   }
   function ensurePolys(coords) {
     let added = false;
     for (const coord of coords) {
       const key = keyOf(coord);
       if (polyByCoord.has(key)) continue;
-      addHex(coord);
-      added = true;
+      const created = addHex(coord);
+      added = added || created;
     }
-    if (added) internals.updateViewBox();
+    if (added) internals.applyFrame(false);
   }
   function setFill(coord, color) {
     const poly = polyByCoord.get(keyOf(coord));
@@ -488,7 +493,7 @@ function createHexScene(config) {
   const initial = initialCoords.length ? initialCoords : [];
   if (initial.length) {
     for (const coord of initial) addHex(coord);
-    internals.updateViewBox();
+    internals.applyFrame(true);
   }
   return {
     svg,
@@ -5769,51 +5774,40 @@ var createDefaultDeps = (app) => ({
   createMapLayer: (appInstance, host, file, opts) => createMapLayer(appInstance, host, file, opts),
   loadHexOptions: async (appInstance, file) => {
     const block = await getFirstHexBlock(appInstance, file);
-    if (!block) return null;
-    return parseOptions(block);
+    return block ? parseOptions(block) : null;
   },
   modeDescriptors: DEFAULT_MODE_DESCRIPTORS
 });
 var MODE_PROVISION_OVERLAY_MESSAGE = "Cartographer-Modi konnten nicht geladen werden.";
 var MODE_PROVISION_NOTICE_MESSAGE = "Cartographer-Modi konnten nicht geladen werden. Bitte die Konsole pr\xFCfen.";
-var DEFAULT_MODE_LABEL = "Mode";
 var CartographerController = class {
-  constructor(app, deps) {
-    this.host = null;
+  constructor(app, deps = {}) {
     this.view = null;
+    this.host = null;
     this.mapManager = null;
     this.currentFile = null;
+    this.requestedFile = null;
     this.currentOptions = null;
     this.mapLayer = null;
-    this.requestedFile = null;
     this.isMounted = false;
-    this.activeMode = null;
-    this.lifecycle = null;
     this.shellModes = [];
+    this.activeMode = null;
+    this.activeModeId = null;
+    this.lifecycle = null;
     this.app = app;
     const defaults = createDefaultDeps(app);
     this.deps = {
       ...defaults,
       ...deps,
-      modeDescriptors: deps?.modeDescriptors ?? defaults.modeDescriptors
+      modeDescriptors: deps.modeDescriptors ?? defaults.modeDescriptors
     };
     this.callbacks = {
       onModeSelect: (id, ctx) => this.setMode(id, ctx),
-      onOpen: async (file) => {
-        await this.mapManager?.setFile(file);
-      },
-      onCreate: async (file) => {
-        await this.mapManager?.setFile(file);
-      },
-      onDelete: async () => {
-        this.mapManager?.deleteCurrent();
-      },
-      onSave: async (mode, file) => {
-        return await this.handleSave(mode, file);
-      },
-      onHexClick: async (coord, event) => {
-        await this.handleHexClick(coord, event);
-      }
+      onOpen: (file) => this.mapManager?.setFile(file),
+      onCreate: (file) => this.mapManager?.setFile(file),
+      onDelete: () => this.mapManager?.deleteCurrent(),
+      onSave: (mode, file) => this.handleSave(mode, file),
+      onHexClick: (coord, event) => this.handleHexClick(coord, event)
     };
   }
   async onOpen(host, fallbackFile) {
@@ -5823,73 +5817,62 @@ var CartographerController = class {
     const initialFile = this.requestedFile ?? fallbackFile ?? null;
     this.currentFile = initialFile;
     this.requestedFile = initialFile;
-    const descriptors = this.deps.modeDescriptors;
-    const shellModes = descriptors.map((descriptor) => ({
-      id: descriptor.id,
-      label: descriptor.label
-    }));
-    this.shellModes = [...shellModes];
-    this.view = createControllerView({
+    const view = createControllerView({
       app: this.app,
       host,
       initialFile,
-      modes: shellModes,
+      modes: this.shellModes,
       callbacks: this.callbacks
     });
+    this.view = view;
     this.mapManager = this.deps.createMapManager(this.app, {
       initialFile,
       onChange: async (file) => {
         await this.applyCurrentFile(file);
       }
     });
-    this.view.setModes(this.shellModes, this.shellModes[0]?.id ?? null);
-    this.view.setFileLabel(initialFile);
-    let initialModeId = shellModes[0]?.id ?? null;
+    view.setModes(this.shellModes, this.activeModeId);
+    view.setFileLabel(initialFile);
+    let initialMode = this.activeModeId;
     try {
       const modes = await this.loadModesOnce();
-      const firstEntry = modes.keys().next();
-      if (!firstEntry.done) {
-        initialModeId = firstEntry.value;
+      if (!initialMode) {
+        const first = modes.keys().next();
+        initialMode = first.done ? null : first.value;
       }
     } catch {
     }
-    if (initialModeId) {
-      await this.setMode(initialModeId);
+    if (initialMode) {
+      await this.setMode(initialMode);
     }
     await this.mapManager.setFile(initialFile);
   }
   async onClose() {
-    if (!this.isMounted) {
-      this.view?.destroy();
-      this.view = null;
-      this.host = null;
-      this.mapManager = null;
-      return;
-    }
-    this.isMounted = false;
     const lifecycle = this.lifecycle;
-    if (lifecycle) {
-      lifecycle.controller.abort();
-    }
-    if (this.activeMode && lifecycle) {
+    const active = this.activeMode;
+    this.lifecycle = null;
+    this.activeModeId = null;
+    this.activeMode = null;
+    this.shellModes = [];
+    if (lifecycle) lifecycle.controller.abort();
+    if (active && lifecycle) {
       try {
-        await this.activeMode.onExit(lifecycle.ctx);
+        await active.onExit(lifecycle.ctx);
       } catch (error) {
         console.error("[cartographer] mode exit failed", error);
       }
     }
-    this.activeMode = null;
-    this.lifecycle = null;
-    this.activeModeId = void 0;
-    this.renderAbort?.abort();
-    this.destroyMapLayer();
-    this.view?.clearMap();
-    this.currentOptions = null;
-    this.shellModes = [];
-    this.view?.destroy();
-    this.view = null;
+    if (this.view) {
+      this.view.destroy();
+      this.view = null;
+    }
     this.host = null;
+    this.renderAbort?.abort();
+    this.renderAbort = void 0;
+    this.destroyMapLayer();
+    this.currentOptions = null;
     this.mapManager = null;
+    this.isMounted = false;
   }
   async setFile(file) {
     this.requestedFile = file;
@@ -5898,24 +5881,18 @@ var CartographerController = class {
   }
   async loadModesOnce() {
     if (!this.modeLoad) {
-      const descriptors = this.deps.modeDescriptors;
       this.modeLoad = Promise.all(
-        descriptors.map(async (descriptor) => {
-          const mode = await descriptor.load();
-          return { descriptor, mode };
-        })
+        this.deps.modeDescriptors.map(async (descriptor) => ({
+          descriptor,
+          mode: await descriptor.load()
+        }))
       ).then((entries) => {
         const map = /* @__PURE__ */ new Map();
-        const shellModes = [];
-        for (const { mode } of entries) {
+        this.shellModes = entries.map(({ mode }) => {
           map.set(mode.id, mode);
-          shellModes.push({ id: mode.id, label: mode.label });
-        }
-        if (map.size === 0) {
-          throw new Error("No cartographer modes available");
-        }
-        this.shellModes = [...shellModes];
-        this.view?.setModes(this.shellModes, this.activeModeId ?? this.shellModes[0]?.id ?? null);
+          return { id: mode.id, label: mode.label };
+        });
+        this.view?.setModes(this.shellModes, this.activeModeId);
         this.view?.setOverlay(null);
         return map;
       }).catch((error) => {
@@ -5935,27 +5912,18 @@ var CartographerController = class {
     } catch {
       return;
     }
-    const requested = modes.get(id) ?? null;
-    const fallbackEntry = modes.entries().next();
-    const nextEntry = requested ? [requested.id, requested] : fallbackEntry.done ? null : fallbackEntry.value;
-    if (!nextEntry) return;
-    const [nextId, nextMode] = nextEntry;
-    if (this.activeModeId === nextId) {
-      this.view?.setModes(this.shellModes, nextMode.id);
+    const next = modes.get(id) ?? modes.values().next().value ?? null;
+    if (!next) return;
+    if (this.activeModeId === next.id) {
+      this.view?.setModes(this.shellModes, next.id);
       return;
     }
-    if (!this.isMounted || !this.view) {
-      this.activeModeId = nextId;
-      return;
-    }
-    const previous = this.activeMode;
     const previousLifecycle = this.lifecycle;
-    if (previousLifecycle) {
-      previousLifecycle.controller.abort();
-    }
+    if (previousLifecycle) previousLifecycle.controller.abort();
+    const previous = this.activeMode;
     this.activeMode = null;
     this.lifecycle = null;
-    this.activeModeId = void 0;
+    this.activeModeId = null;
     if (previous && previousLifecycle) {
       try {
         await previous.onExit(previousLifecycle.ctx);
@@ -5963,23 +5931,25 @@ var CartographerController = class {
         console.error("[cartographer] mode exit failed", error);
       }
     }
+    if (!this.isMounted || !this.view) {
+      this.activeMode = next;
+      this.activeModeId = next.id;
+      return;
+    }
     const controller = new AbortController();
-    const external = ctx?.signal;
-    if (external) {
-      if (external.aborted) controller.abort();
-      else external.addEventListener("abort", () => controller.abort(), { once: true });
+    if (ctx?.signal) {
+      if (ctx.signal.aborted) controller.abort();
+      else ctx.signal.addEventListener("abort", () => controller.abort(), { once: true });
     }
     const lifecycleCtx = this.createLifecycleContext(controller.signal);
     this.lifecycle = { controller, ctx: lifecycleCtx };
-    this.activeMode = nextMode;
-    this.activeModeId = nextId;
-    this.view.setModes(this.shellModes, nextMode.id);
+    this.activeMode = next;
+    this.activeModeId = next.id;
+    this.view.setModes(this.shellModes, next.id);
     try {
-      await nextMode.onEnter(lifecycleCtx);
+      await next.onEnter(lifecycleCtx);
     } catch (error) {
-      if (!controller.signal.aborted) {
-        console.error("[cartographer] mode enter failed", error);
-      }
+      if (!controller.signal.aborted) console.error("[cartographer] mode enter failed", error);
     }
     if (controller.signal.aborted) return;
     await this.applyCurrentFile(this.currentFile, lifecycleCtx);
@@ -5987,8 +5957,7 @@ var CartographerController = class {
   async handleSave(mode, file) {
     if (!this.activeMode?.onSave || !this.lifecycle) return false;
     try {
-      const handled = await this.activeMode.onSave(mode, file, this.lifecycle.ctx);
-      return handled === true;
+      return await this.activeMode.onSave(mode, file, this.lifecycle.ctx) === true;
     } catch (error) {
       console.error("[cartographer] mode onSave failed", error);
       return false;
@@ -6003,9 +5972,7 @@ var CartographerController = class {
     }
   }
   get baseModeCtx() {
-    if (!this.view || !this.host) {
-      throw new Error("CartographerController is not mounted.");
-    }
+    if (!this.view || !this.host) throw new Error("CartographerController is not mounted.");
     return {
       app: this.app,
       host: this.host,
@@ -6020,44 +5987,24 @@ var CartographerController = class {
   createLifecycleContext(signal) {
     return { ...this.baseModeCtx, signal };
   }
-  async applyCurrentFile(file = this.currentFile, lifecycleCtx) {
+  async applyCurrentFile(file = this.currentFile, lifecycleCtx = this.lifecycle?.ctx ?? null) {
     this.currentFile = file ?? null;
     this.requestedFile = file ?? null;
     const view = this.view;
-    if (!view) return;
+    const ctx = lifecycleCtx;
+    if (!view || !ctx || !this.activeMode) return;
     view.setFileLabel(this.currentFile);
-    if (!this.activeMode || !this.lifecycle) {
-      this.destroyMapLayer();
-      view.clearMap();
-      this.currentOptions = null;
-      return;
-    }
-    if (this.renderAbort) {
-      this.renderAbort.abort();
-    }
+    this.renderAbort?.abort();
     const controller = new AbortController();
     this.renderAbort = controller;
-    const signal = controller.signal;
-    const ctx = lifecycleCtx ?? this.lifecycle.ctx ?? null;
-    let provisionalLayer = null;
-    const destroyProvisionalLayer = () => {
-      if (!provisionalLayer) return;
-      try {
-        provisionalLayer.destroy();
-      } catch (error) {
-        console.error("[cartographer] failed to destroy map layer", error);
-      }
-      provisionalLayer = null;
-    };
-    this.destroyMapLayer();
-    view.clearMap();
-    this.currentOptions = null;
+    const { signal } = controller;
     try {
       if (!this.currentFile) {
+        this.destroyMapLayer();
+        view.clearMap();
+        this.currentOptions = null;
         view.setOverlay("Keine Karte ausgew\xE4hlt.");
-        if (ctx) {
-          await this.activeMode.onFileChange(null, null, ctx);
-        }
+        await this.safeFileChange(null, null, ctx);
         return;
       }
       let options = null;
@@ -6066,53 +6013,61 @@ var CartographerController = class {
       } catch (error) {
         console.error("[cartographer] failed to parse map options", error);
       }
-      if (signal.aborted) return;
-      if (!options) {
-        view.setOverlay("Kein hex3x3-Block in dieser Datei.");
-        if (ctx) {
-          await this.activeMode.onFileChange(this.currentFile, null, ctx);
-        }
-        return;
-      }
-      try {
-        provisionalLayer = await this.deps.createMapLayer(
-          this.app,
-          view.mapHost,
-          this.currentFile,
-          options
-        );
-      } catch (error) {
-        console.error("[cartographer] failed to render map", error);
-        view.setOverlay("Karte konnte nicht geladen werden.");
-        if (ctx) {
-          await this.activeMode.onFileChange(this.currentFile, null, ctx);
-        }
-        return;
-      }
       if (signal.aborted || !this.view) return;
-      this.mapLayer = provisionalLayer;
-      provisionalLayer = null;
-      this.currentOptions = options;
-      view.setOverlay(null);
-      if (ctx) {
-        await this.activeMode.onFileChange(this.currentFile, this.mapLayer.handles, ctx);
-      }
-    } finally {
-      if (signal.aborted) {
+      if (!options) {
         this.destroyMapLayer();
         view.clearMap();
         this.currentOptions = null;
+        view.setOverlay("Kein hex3x3-Block in dieser Datei.");
+        await this.safeFileChange(this.currentFile, null, ctx);
+        return;
       }
-      destroyProvisionalLayer();
+      let layer = null;
+      try {
+        layer = await this.deps.createMapLayer(this.app, view.mapHost, this.currentFile, options);
+      } catch (error) {
+        console.error("[cartographer] failed to render map", error);
+        layer = null;
+      }
+      if (signal.aborted || !this.view) {
+        layer?.destroy();
+        return;
+      }
+      if (!layer) {
+        this.destroyMapLayer();
+        view.clearMap();
+        this.currentOptions = null;
+        view.setOverlay("Karte konnte nicht geladen werden.");
+        await this.safeFileChange(this.currentFile, null, ctx);
+        return;
+      }
+      this.destroyMapLayer();
+      this.mapLayer = layer;
+      this.currentOptions = options;
+      view.setOverlay(null);
+      await this.safeFileChange(this.currentFile, layer.handles, ctx);
+    } finally {
+      if (signal.aborted) {
+        this.destroyMapLayer();
+        this.currentOptions = null;
+        view.clearMap();
+      }
       if (this.renderAbort === controller) {
         this.renderAbort = void 0;
       }
     }
   }
+  async safeFileChange(file, handles, ctx) {
+    try {
+      await this.activeMode?.onFileChange(file, handles, ctx);
+    } catch (error) {
+      console.error("[cartographer] mode onFileChange failed", error);
+    }
+  }
   destroyMapLayer() {
     const layer = this.mapLayer;
-    if (!layer) return;
     this.mapLayer = null;
+    if (!layer) return;
     try {
       layer.destroy();
     } catch (error) {
@@ -6129,187 +6084,88 @@ function createControllerView(options) {
   const mapWrapper = bodyHost.createDiv({ cls: "sm-cartographer__map" });
   const sidebarHost = bodyHost.createDiv({ cls: "sm-cartographer__sidebar" });
   const surface = createViewContainer(mapWrapper, { camera: false });
-  let modeHandle = null;
-  let currentModes = [...modes];
-  let currentActiveId = modes[0]?.id ?? null;
-  const invokeModeSelect = (id) => {
-    try {
-      const result = callbacks.onModeSelect(id);
-      if (result && typeof result.then === "function") {
-        void result.catch((error) => {
-          console.error("[cartographer] failed to select mode", error);
-        });
-      }
-    } catch (error) {
-      console.error("[cartographer] failed to select mode", error);
-    }
-  };
-  const createModeControls = (slot) => {
-    modeHandle?.destroy();
-    modeHandle = renderModeSelect(slot, currentModes, currentActiveId, (id) => {
-      currentActiveId = id;
-      invokeModeSelect(id);
-    });
-    currentActiveId = modeHandle.getActiveId();
-  };
+  let selectHandle = null;
   const headerHandle = createMapHeader(app, headerHost, {
     title: "Cartographer",
     initialFile,
-    onOpen: async (file) => {
-      await callbacks.onOpen(file);
-    },
-    onCreate: async (file) => {
-      await callbacks.onCreate(file);
-    },
-    onDelete: async (file) => {
-      await callbacks.onDelete(file);
-    },
-    onSave: async (mode, file) => {
-      return await callbacks.onSave(mode, file);
-    },
+    onOpen: (file) => callbacks.onOpen(file),
+    onCreate: (file) => callbacks.onCreate(file),
+    onDelete: (file) => callbacks.onDelete(file),
+    onSave: (mode, file) => callbacks.onSave(mode, file),
     titleRightSlot: (slot) => {
-      createModeControls(slot);
+      selectHandle = renderModeSelect(slot, modes, (id) => callbacks.onModeSelect(id));
     }
   });
-  if (!modeHandle) {
-    createModeControls(headerHandle.titleRightSlot);
+  if (!selectHandle) {
+    selectHandle = renderModeSelect(headerHandle.titleRightSlot, modes, (id) => callbacks.onModeSelect(id));
   }
-  const handleHexClick = (event) => {
+  const hexListener = (event) => {
     if (!(event instanceof CustomEvent)) return;
-    const custom = event;
-    if (custom.cancelable) custom.preventDefault();
-    event.stopPropagation();
-    const detail = custom.detail;
+    const detail = event.detail;
     if (!detail) return;
-    try {
-      const result = callbacks.onHexClick(detail, custom);
-      if (result && typeof result.then === "function") {
-        void result.catch((error) => {
-          console.error("[cartographer] hex click handler failed", error);
-        });
-      }
-    } catch (error) {
+    event.stopPropagation();
+    if (event.cancelable) event.preventDefault();
+    void Promise.resolve(callbacks.onHexClick(detail, event)).catch((error) => {
       console.error("[cartographer] hex click handler failed", error);
-    }
+    });
   };
-  surface.stageEl.addEventListener("hex:click", handleHexClick, { passive: false });
-  const destroy = () => {
-    surface.stageEl.removeEventListener("hex:click", handleHexClick);
-    modeHandle?.destroy();
-    modeHandle = null;
-    currentActiveId = null;
-    currentModes = [];
-    headerHandle.destroy();
-    surface.destroy();
-    host.empty();
-    host.removeClass("sm-cartographer");
-  };
-  modeHandle?.setModes(currentModes, currentActiveId);
-  currentActiveId = modeHandle?.getActiveId() ?? currentActiveId;
+  surface.stageEl.addEventListener("hex:click", hexListener, { passive: false });
   return {
-    host,
     mapHost: surface.stageEl,
     sidebarHost,
-    setFileLabel: (file) => {
-      headerHandle.setFileLabel(file);
-    },
-    setModes: (nextModes, activeId) => {
-      currentModes = [...nextModes];
-      const requestedActive = activeId !== void 0 ? activeId : currentActiveId;
-      if (modeHandle) {
-        modeHandle.setModes(currentModes, requestedActive);
-        currentActiveId = modeHandle.getActiveId();
-      } else {
-        const fallbackActive = requestedActive && currentModes.some((mode) => mode.id === requestedActive) ? requestedActive : currentModes[0]?.id ?? null;
-        currentActiveId = fallbackActive ?? null;
-      }
-    },
-    setOverlay: (content) => {
-      surface.setOverlay(content);
-    },
-    clearMap: () => {
-      surface.stageEl.empty();
-    },
-    destroy
+    setFileLabel: (file) => headerHandle.setFileLabel(file),
+    setModes: (nextModes, activeId) => selectHandle?.setModes(nextModes, activeId),
+    setOverlay: (content) => surface.setOverlay(content),
+    clearMap: () => surface.stageEl.empty(),
+    destroy: () => {
+      surface.stageEl.removeEventListener("hex:click", hexListener);
+      selectHandle?.destroy();
+      headerHandle.destroy();
+      surface.destroy();
+      host.empty();
+      host.removeClass("sm-cartographer");
+    }
   };
 }
-function renderModeSelect(slot, modes, initialActiveId, onChange) {
+function renderModeSelect(slot, initialModes, onChange) {
   slot.empty();
   slot.addClass("sm-cartographer__mode-slot");
-  const labelEl = slot.createEl("span", {
-    cls: "sm-cartographer__mode-label",
-    text: DEFAULT_MODE_LABEL
-  });
   const selectEl = slot.createEl("select", { cls: "sm-cartographer__mode-select" });
   selectEl.setAttribute("aria-label", "Cartographer mode");
-  const updateLabel = () => {
-    const label = selectEl.selectedOptions[0]?.textContent ?? DEFAULT_MODE_LABEL;
-    labelEl.setText(label);
-    selectEl.title = label;
-  };
-  let currentModes = null;
-  let activeId = null;
-  const rebuildOptions = (list) => {
+  let modes = [...initialModes];
+  const sync = (list, activeId) => {
+    modes = [...list];
     selectEl.empty();
-    if (list.length === 0) {
+    if (modes.length === 0) {
       const option = selectEl.createEl("option", { text: "Keine Modi" });
-      option.value = "";
       option.disabled = true;
       option.selected = true;
       selectEl.disabled = true;
-      selectEl.value = "";
-      activeId = null;
-      updateLabel();
       return;
     }
-    selectEl.disabled = false;
-    for (const mode of list) {
+    for (const mode of modes) {
       const option = selectEl.createEl("option", { text: mode.label });
       option.value = mode.id;
     }
+    selectEl.disabled = false;
+    const requested = activeId && modes.some((mode) => mode.id === activeId) ? activeId : modes[0]?.id ?? "";
+    selectEl.value = requested ?? "";
   };
-  const syncSelection = (list, nextActiveId) => {
-    if (list.length === 0) {
-      activeId = null;
-      updateLabel();
-      return;
-    }
-    const fallbackId = nextActiveId && list.some((mode) => mode.id === nextActiveId) ? nextActiveId : list[0]?.id ?? "";
-    selectEl.value = fallbackId ?? "";
-    activeId = selectEl.value || null;
-    updateLabel();
-  };
-  const applyModes = (list, nextActiveId) => {
-    const shouldRebuild = currentModes === null || currentModes.length !== list.length || currentModes.some((prev, index) => {
-      const next = list[index];
-      return !next || prev.id !== next.id || prev.label !== next.label;
-    });
-    currentModes = [...list];
-    if (shouldRebuild) {
-      rebuildOptions(list);
-    }
-    syncSelection(list, nextActiveId);
-  };
+  sync(modes);
   const handleChange = () => {
     const id = selectEl.value;
-    activeId = id || null;
-    updateLabel();
     if (!id) return;
-    onChange(id);
+    void Promise.resolve(onChange(id)).catch((error) => {
+      console.error("[cartographer] failed to select mode", error);
+    });
   };
   selectEl.addEventListener("change", handleChange);
-  applyModes(modes, initialActiveId);
   return {
-    setModes: (nextModes, nextActiveId) => {
-      const requested = nextActiveId !== void 0 ? nextActiveId : selectEl.value || null;
-      applyModes(nextModes, requested);
-    },
-    getActiveId: () => activeId,
+    setModes: (nextModes, activeId) => sync(nextModes, activeId),
     destroy: () => {
       selectEl.removeEventListener("change", handleChange);
       slot.empty();
-      activeId = null;
-      currentModes = null;
+      modes = [];
     }
   };
 }
@@ -6523,31 +6379,59 @@ function formatSpeedExtra(entry) {
   if (entry.hover) parts.push("(hover)");
   return parts.map((p) => p?.trim()).filter((p) => Boolean(p && p.length)).join(" ");
 }
-function parseNum(v) {
+function parseNumericValue(v) {
   if (!v) return null;
   const m = String(v).match(/-?\d+/);
   if (!m) return null;
   return Number(m[0]);
 }
-function abilityMod(score) {
-  const n = parseNum(score);
+function abilityModifierFromScore(score) {
+  const n = parseNumericValue(score);
   if (n == null || Number.isNaN(n)) return null;
   return Math.floor((n - 10) / 2);
+}
+function getAbilityModifier(data, ability) {
+  return abilityModifierFromScore(data[ability]);
+}
+function getProficiencyBonus(data) {
+  return parseNumericValue(data.pb);
+}
+function calculateSaveDc({ abilityMod: abilityMod2, proficiencyBonus, override }) {
+  if (override != null) return override;
+  if (abilityMod2 == null || proficiencyBonus == null) return null;
+  return 8 + abilityMod2 + proficiencyBonus;
+}
+function calculateAttackBonus({ abilityMod: abilityMod2, proficiencyBonus, override }) {
+  if (override != null) return override;
+  if (abilityMod2 == null || proficiencyBonus == null) return null;
+  return abilityMod2 + proficiencyBonus;
 }
 function fmtSigned(n) {
   return (n >= 0 ? "+" : "") + n;
 }
 var SKILL_TO_ABILITY = { Athletics: "str", Acrobatics: "dex", "Sleight of Hand": "dex", Stealth: "dex", Arcana: "int", History: "int", Investigation: "int", Nature: "int", Religion: "int", "Animal Handling": "wis", Insight: "wis", Medicine: "wis", Perception: "wis", Survival: "wis", Deception: "cha", Intimidation: "cha", Performance: "cha", Persuasion: "cha" };
 function composeAlignment(d) {
+  const override = d.alignmentOverride?.trim();
+  if (override) return override;
   const a = d.alignmentLawChaos?.trim();
   const b = d.alignmentGoodEvil?.trim();
   if (!a && !b) return void 0;
   if (a?.toLowerCase() === "neutral" && b?.toLowerCase() === "neutral") return "Neutral";
   return [a, b].filter(Boolean).join(" ");
 }
+function composeTypeLine(d) {
+  const base = d.type?.trim();
+  const tags = (d.typeTags ?? []).map((tag) => tag.trim()).filter(Boolean);
+  if (base && tags.length) return `${base} (${tags.join(", ")})`;
+  if (base) return base;
+  if (tags.length) return tags.join(", ");
+  return void 0;
+}
 function statblockToMarkdown(d) {
   var _a;
-  const hdr = [d.size || "", d.type || "", composeAlignment(d) || ""].filter(Boolean).join(", ");
+  const identity = [d.size?.trim(), composeTypeLine(d)].filter(Boolean).join(" ");
+  const alignment = composeAlignment(d);
+  const header = [identity, alignment].filter(Boolean).join(", ");
   const name = d.name || "Unnamed Creature";
   const lines = [];
   lines.push("---");
@@ -6555,8 +6439,10 @@ function statblockToMarkdown(d) {
   lines.push(`name: "${name.replace(/"/g, '\\"')}"`);
   if (d.size) lines.push(`size: "${d.size}"`);
   if (d.type) lines.push(`type: "${d.type}"`);
-  const align = composeAlignment(d);
-  if (align) lines.push(`alignment: "${align}"`);
+  const typeTagsYaml = yamlList((d.typeTags ?? []).map((tag) => tag?.trim()).filter((tag) => Boolean(tag && tag.length)));
+  if (typeTagsYaml) lines.push(`type_tags: ${typeTagsYaml}`);
+  if (alignment) lines.push(`alignment: "${alignment}"`);
+  if (d.alignmentOverride) lines.push(`alignment_override: "${d.alignmentOverride.replace(/"/g, '\\"')}"`);
   if (d.ac) lines.push(`ac: "${d.ac}"`);
   if (d.initiative) lines.push(`initiative: "${d.initiative}"`);
   if (d.hp) lines.push(`hp: "${d.hp}"`);
@@ -6617,13 +6503,14 @@ function statblockToMarkdown(d) {
     const json = JSON.stringify(entries).replace(/"/g, '\\"');
     lines.push(`entries_structured_json: "${json}"`);
   }
-  if (d.spellsKnown && d.spellsKnown.length) {
-    const json = JSON.stringify(d.spellsKnown).replace(/"/g, '\\"');
-    lines.push(`spells_known_json: "${json}"`);
+  const spellcasting = resolveSpellcastingData(d);
+  if (spellcasting && spellcasting.groups.length) {
+    const json = JSON.stringify(spellcasting).replace(/"/g, '\\"');
+    lines.push(`spellcasting_json: "${json}"`);
   }
   lines.push("---\n");
   lines.push(`# ${name}`);
-  if (hdr) lines.push(hdr);
+  if (header) lines.push(`*${header}*`);
   lines.push("");
   if (d.ac || d.initiative) lines.push(`AC ${d.ac ?? "-"}    Initiative ${d.initiative ?? "-"}`);
   if (d.hp || d.hitDice) lines.push(`HP ${d.hp ?? "-"}${d.hitDice ? ` (${d.hitDice})` : ""}`);
@@ -6645,13 +6532,14 @@ function statblockToMarkdown(d) {
     for (const [k, v] of abilities) if (v) lines.push(`| ${k} | ${v} |`);
     lines.push("");
   }
-  const pbNum = parseNum(d.pb) ?? 0;
+  const pbValue = parseNumericValue(d.pb);
+  const pbNum = pbValue ?? 0;
   if (d.saveProf) {
     const parts = [];
     const map = [["str", "Str", d.str], ["dex", "Dex", d.dex], ["con", "Con", d.con], ["int", "Int", d.int], ["wis", "Wis", d.wis], ["cha", "Cha", d.cha]];
     for (const [key, label, score] of map) {
       if (d.saveProf[key]) {
-        const mod = abilityMod(score) ?? 0;
+        const mod = abilityModifierFromScore(score) ?? 0;
         parts.push(`${label} ${fmtSigned(mod + pbNum)}`);
       }
     }
@@ -6667,7 +6555,7 @@ function statblockToMarkdown(d) {
       const hasProf = profSet.has(sk) || expSet.has(sk);
       if (!hasProf) continue;
       const abilKey = SKILL_TO_ABILITY[sk];
-      const mod = abilityMod(d[abilKey]) ?? 0;
+      const mod = abilityModifierFromScore(d[abilKey]) ?? 0;
       const bonus = expSet.has(sk) ? pbNum * 2 : pbNum;
       parts.push(`${sk} ${fmtSigned(mod + bonus)}`);
     }
@@ -6689,7 +6577,7 @@ function statblockToMarkdown(d) {
   if (d.cr || d.pb || d.xp) {
     const bits = [];
     if (d.cr) bits.push(`CR ${d.cr}`);
-    if (pbNum) bits.push(`PB ${fmtSigned(pbNum)}`);
+    if (pbValue != null && !Number.isNaN(pbValue) && pbValue !== 0) bits.push(`PB ${fmtSigned(pbValue)}`);
     if (d.xp) bits.push(`XP ${d.xp}`);
     if (bits.length) lines.push(bits.join("; "));
   }
@@ -6711,8 +6599,8 @@ function statblockToMarkdown(d) {
         if (a.to_hit) sub.push(`to hit ${a.to_hit}`);
         else if (a.to_hit_from) {
           const abil = a.to_hit_from.ability;
-          const abilMod = abil === "best_of_str_dex" ? Math.max(abilityMod(d.str) ?? 0, abilityMod(d.dex) ?? 0) : abilityMod(d[abil]) ?? 0;
-          const pb = parseNum(d.pb) ?? 0;
+          const abilMod = abil === "best_of_str_dex" ? Math.max(abilityModifierFromScore(d.str) ?? 0, abilityModifierFromScore(d.dex) ?? 0) : abilityModifierFromScore(d[abil]) ?? 0;
+          const pb = parseNumericValue(d.pb) ?? 0;
           const total = abilMod + (a.to_hit_from.proficient ? pb : 0);
           sub.push(`to hit ${fmtSigned(total)}`);
         }
@@ -6721,7 +6609,7 @@ function statblockToMarkdown(d) {
         if (a.damage) sub.push(a.damage);
         else if (a.damage_from) {
           const abilKey = a.damage_from.ability;
-          const abilMod = abilKey ? abilKey === "best_of_str_dex" ? Math.max(abilityMod(d.str) ?? 0, abilityMod(d.dex) ?? 0) : abilityMod(d[abilKey]) ?? 0 : 0;
+          const abilMod = abilKey ? abilKey === "best_of_str_dex" ? Math.max(abilityModifierFromScore(d.str) ?? 0, abilityModifierFromScore(d.dex) ?? 0) : abilityModifierFromScore(d[abilKey]) ?? 0 : 0;
           const bonus = a.damage_from.bonus ? ` ${a.damage_from.bonus}` : "";
           const modTxt = abilMod ? ` ${fmtSigned(abilMod)}` : "";
           sub.push(`${a.damage_from.dice}${modTxt}${bonus}`.trim());
@@ -6754,25 +6642,153 @@ function statblockToMarkdown(d) {
       lines.push("");
     }
   }
-  if (d.spellsKnown && d.spellsKnown.length) {
-    lines.push("## Spellcasting\n");
-    const byLevel = {};
-    for (const s of d.spellsKnown) {
-      const key = s.level == null ? "unknown" : String(s.level);
-      (byLevel[key] || (byLevel[key] = [])).push({ name: s.name, uses: s.uses, notes: s.notes });
-    }
-    const order = Object.keys(byLevel).map((k) => k === "unknown" ? Infinity : parseInt(k, 10)).sort((a, b) => a - b).map((n) => n === Infinity ? "unknown" : String(n));
-    for (const k of order) {
-      const lvl = k === "unknown" ? "Spells" : k === "0" ? "Cantrips" : `Level ${k}`;
-      lines.push(`- ${lvl}:`);
-      for (const s of byLevel[k]) {
-        const extra = [s.uses, s.notes].filter(Boolean).join("; ");
-        lines.push(`  - ${s.name}${extra ? ` (${extra})` : ""}`);
-      }
-    }
-    lines.push("");
+  if (spellcasting && spellcasting.groups.length) {
+    renderSpellcasting(lines, d, spellcasting);
   }
   return lines.join("\n");
+}
+function resolveSpellcastingData(d) {
+  if (d.spellcasting) {
+    return withComputedSpellcasting(d, d.spellcasting);
+  }
+  const legacy = (d.spellsKnown ?? []).filter((s) => Boolean(s && s.name && s.name.trim().length));
+  if (!legacy.length) return void 0;
+  const converted = convertLegacySpells(legacy);
+  return withComputedSpellcasting(d, converted);
+}
+function withComputedSpellcasting(d, base) {
+  const abilityMod2 = base.ability ? getAbilityModifier(d, base.ability) : null;
+  const proficiencyBonus = getProficiencyBonus(d);
+  const saveDc = calculateSaveDc({ abilityMod: abilityMod2, proficiencyBonus, override: base.saveDcOverride });
+  const attackBonus = calculateAttackBonus({ abilityMod: abilityMod2, proficiencyBonus, override: base.attackBonusOverride });
+  return {
+    ...base,
+    computed: {
+      abilityMod: abilityMod2,
+      proficiencyBonus,
+      saveDc,
+      attackBonus
+    }
+  };
+}
+function convertLegacySpells(legacy) {
+  const atWill = [];
+  const perDay = /* @__PURE__ */ new Map();
+  const byLevel = /* @__PURE__ */ new Map();
+  const custom = [];
+  for (const entry of legacy) {
+    const spell = { name: entry.name, notes: entry.notes };
+    const uses = entry.uses?.trim();
+    if (uses) {
+      const normalized = uses.toLowerCase();
+      if (normalized.includes("at will")) {
+        atWill.push(spell);
+        continue;
+      }
+      const existing = perDay.get(uses) ?? [];
+      existing.push(spell);
+      perDay.set(uses, existing);
+      continue;
+    }
+    if (typeof entry.level === "number") {
+      const existing = byLevel.get(entry.level) ?? [];
+      existing.push(spell);
+      byLevel.set(entry.level, existing);
+      continue;
+    }
+    custom.push(spell);
+  }
+  const groups = [];
+  if (atWill.length) groups.push({ type: "at-will", spells: atWill });
+  for (const [uses, spells] of Array.from(perDay.entries()).sort((a, b) => a[0].localeCompare(b[0], void 0, { numeric: true }))) {
+    groups.push({ type: "per-day", uses, spells });
+  }
+  for (const level of Array.from(byLevel.keys()).sort((a, b) => a - b)) {
+    groups.push({ type: "level", level, spells: byLevel.get(level) ?? [] });
+  }
+  if (custom.length) groups.push({ type: "custom", title: "Additional Spells", spells: custom });
+  return {
+    title: "Spellcasting",
+    groups
+  };
+}
+function renderSpellcasting(lines, d, spellcasting) {
+  const title = spellcasting.title?.trim() || "Spellcasting";
+  lines.push(`## ${title}`);
+  lines.push("");
+  if (spellcasting.summary) {
+    lines.push(spellcasting.summary.trim());
+    lines.push("");
+  }
+  const saveDc = spellcasting.computed?.saveDc;
+  const attackBonus = spellcasting.computed?.attackBonus;
+  const summaryParts = [];
+  if (saveDc != null) summaryParts.push(`Spell save DC ${saveDc}`);
+  if (attackBonus != null) summaryParts.push(`${fmtSigned(attackBonus)} to hit with spell attacks`);
+  if (summaryParts.length) {
+    lines.push(`*${summaryParts.join(", ")}`);
+    lines.push("");
+  }
+  if (spellcasting.notes && spellcasting.notes.length) {
+    for (const note of spellcasting.notes) {
+      if (note && note.trim()) {
+        lines.push(note.trim());
+      }
+    }
+    if (spellcasting.notes.some((note) => note && note.trim())) {
+      lines.push("");
+    }
+  }
+  for (const group of spellcasting.groups) {
+    switch (group.type) {
+      case "at-will":
+        renderSpellGroup(lines, group.title ?? "At Will", group.spells);
+        break;
+      case "per-day": {
+        const heading = group.title ?? group.uses;
+        renderSpellGroup(lines, heading, group.spells, group.note);
+        break;
+      }
+      case "level": {
+        const base = group.title ?? formatSpellLevelHeading(group.level);
+        const slots = group.slots == null ? void 0 : typeof group.slots === "number" ? `${group.slots} slot${group.slots === 1 ? "" : "s"}` : String(group.slots);
+        const heading = slots ? `${base} (${slots})` : base;
+        renderSpellGroup(lines, heading, group.spells, group.note);
+        break;
+      }
+      case "custom": {
+        renderSpellGroup(lines, group.title, group.spells ?? [], group.description);
+        break;
+      }
+    }
+  }
+  if (lines[lines.length - 1] !== "") lines.push("");
+}
+function renderSpellGroup(lines, heading, spells, note) {
+  lines.push(`### ${heading}`);
+  lines.push("");
+  if (note && note.trim()) {
+    lines.push(note.trim());
+    lines.push("");
+  }
+  if (!spells.length) {
+    lines.push("- none");
+    lines.push("");
+    return;
+  }
+  for (const spell of spells) {
+    const details = [];
+    if (spell.prepared != null) details.push(spell.prepared ? "prepared" : "known");
+    if (spell.notes) details.push(spell.notes);
+    const suffix = details.length ? ` (${details.join(", ")})` : "";
+    lines.push(`- ${spell.name}${suffix}`);
+  }
+  lines.push("");
+}
+function formatSpellLevelHeading(level) {
+  if (level <= 0) return "Cantrips";
+  const suffix = level === 1 ? "st" : level === 2 ? "nd" : level === 3 ? "rd" : "th";
+  return `${level}${suffix} Level`;
 }
 async function createCreatureFile(app, d) {
   return CREATURE_PIPELINE.create(app, d);
@@ -7342,7 +7358,7 @@ function parseIntSafe(value) {
   const match = String(value ?? "").match(/-?\d+/);
   return match ? parseInt(match[0], 10) : NaN;
 }
-function abilityMod2(score) {
+function abilityMod(score) {
   const numeric = typeof score === "number" ? score : parseIntSafe(score);
   if (Number.isNaN(numeric)) return 0;
   return Math.floor((numeric - 10) / 2);
@@ -7547,7 +7563,7 @@ function mountCreatureStatsAndSkillsSection(parent, data, registerValidation) {
   const updateMods = () => {
     const pb = parseIntSafe(data.pb) || 0;
     for (const [key, refs] of abilityElems) {
-      const mod = abilityMod2(data[key]);
+      const mod = abilityMod(data[key]);
       refs.mod.textContent = formatSigned(mod);
       const saveBonus = data.saveProf?.[key] ? pb : 0;
       refs.saveMod.textContent = formatSigned(mod + saveBonus);
@@ -7557,7 +7573,7 @@ function mountCreatureStatsAndSkillsSection(parent, data, registerValidation) {
     data.skillsExpertise = (data.skillsExpertise ?? []).filter((name) => profs.has(name));
     for (const [name, refs] of skillRefs) {
       const ability = skillAbilityMap.get(name);
-      const mod = ability ? abilityMod2(data[ability]) : 0;
+      const mod = ability ? abilityMod(data[ability]) : 0;
       const hasExpertise = data.skillsExpertise?.includes(name) ?? false;
       const bonus = hasExpertise ? pb * 2 : pb;
       refs.mod.textContent = formatSigned(mod + bonus);
@@ -8023,14 +8039,14 @@ function mountEntriesSection(parent, data, registerValidation) {
         const pb = parseIntSafe(data.pb) || 0;
         if (e.to_hit_from) {
           const abil = e.to_hit_from.ability;
-          const abilMod = abil === "best_of_str_dex" ? Math.max(abilityMod2(data.str), abilityMod2(data.dex)) : abilityMod2(data[abil]);
+          const abilMod = abil === "best_of_str_dex" ? Math.max(abilityMod(data.str), abilityMod(data.dex)) : abilityMod(data[abil]);
           const total = abilMod + (e.to_hit_from.proficient ? pb : 0);
           e.to_hit = formatSigned(total);
           hit.value = e.to_hit;
         }
         if (e.damage_from) {
           const abil = e.damage_from.ability;
-          const abilMod = abil ? abil === "best_of_str_dex" ? Math.max(abilityMod2(data.str), abilityMod2(data.dex)) : abilityMod2(data[abil]) : 0;
+          const abilMod = abil ? abil === "best_of_str_dex" ? Math.max(abilityMod(data.str), abilityMod(data.dex)) : abilityMod(data[abil]) : 0;
           const base = e.damage_from.dice;
           const tail = (abilMod ? ` ${formatSigned(abilMod)}` : "") + (e.damage_from.bonus ? ` ${e.damage_from.bonus}` : "");
           e.damage = `${base}${tail}`.trim();
