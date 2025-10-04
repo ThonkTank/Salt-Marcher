@@ -53,12 +53,6 @@ function ensureSpeeds(data: StatblockData): SpeedRecord {
   return speeds as SpeedRecord;
 }
 
-function ensureSpeedExtras(data: StatblockData): CreatureSpeedExtra[] {
-  const speeds = ensureSpeeds(data);
-  if (!Array.isArray(speeds.extras)) speeds.extras = [];
-  return speeds.extras!;
-}
-
 function applySpeedValue(
   data: StatblockData,
   key: SpeedFieldKey,
@@ -329,7 +323,7 @@ export function mountCreatureVitalSection(parent: HTMLElement, data: StatblockDa
     syncHoverBadge(hoverBadge, def.key);
   });
 
-  const extras = ensureSpeedExtras(data);
+  const extras = ensureSpeeds(data).extras!;
   const extrasEditor = mountTokenEditor(
     movement,
     "Weitere Bewegungen",

@@ -160,7 +160,7 @@ export function mountCreatureSensesAndDefensesSection(
       resistances,
       immunities,
     },
-    () => refreshSummary(),
+    refreshSummary,
   );
 
   mountPresetSelectEditor(
