@@ -26,7 +26,7 @@ Der Drop-down rechts neben dem Titel öffnet die Moduswahl. Standardmäßig steh
 - `modes/travel-guide.ts` startet Sidebar, Playback-Controller und Encounter-Sync für Reiseverläufe.
 
 ### Event-Flow
-1. `view-shell` initialisiert die Karte und übergibt das Lifecycle-Context-Objekt an den gewählten Modus.
+1. `controller.ts` baut Header, Kartenfläche und Sidebar auf, lädt die statisch hinterlegten Modi und übergibt ihnen das Lifecycle-Context-Objekt.
 2. Der Modus bindet seine Controller (Tools, Inspector oder Travel) an Render- und Storage-Services.
 3. Aktionen wie „Encounter öffnen“ oder „Terrain speichern“ laufen über `travel/infra` bzw. `core/hex-mapper` zurück in den Store.
 

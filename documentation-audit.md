@@ -9,8 +9,6 @@
 | ./salt-marcher/src/apps/cartographer/editor | Nein | Nutzung wird besser im Cartographer-Überblick erklärt. |
 | ./salt-marcher/src/apps/cartographer/editor/tools | Nein | Einzelfunktionen folgen der Editor-Anleitung. |
 | ./salt-marcher/src/apps/cartographer/editor/tools/terrain-brush | Nein | Spezifisches Werkzeug, UI erklärt sich innerhalb des Editors. |
-| ./salt-marcher/src/apps/cartographer/mode-registry | Nein | Registrierungslogik ohne unmittelbare Nutzerinteraktion. |
-| ./salt-marcher/src/apps/cartographer/mode-registry/providers | Nein | Technische Ableitungen für Registry, nicht nutzerrelevant. |
 | ./salt-marcher/src/apps/cartographer/modes | Nein | Nutzerführung besser zentral im Cartographer-README. |
 | ./salt-marcher/src/apps/cartographer/modes/travel-guide | Nein | Reiseleitfaden wird bereits im Gesamtworkflow adressiert. |
 | ./salt-marcher/src/apps/cartographer/travel | Nein | Reisefunktionen gehören zur Cartographer-Dokumentation. |
@@ -18,7 +16,6 @@
 | ./salt-marcher/src/apps/cartographer/travel/infra | Nein | Infrastruktur, nicht für Endnutzer bestimmt. |
 | ./salt-marcher/src/apps/cartographer/travel/render | Nein | Rendering-Hilfen, keine eigenständige Bedienung. |
 | ./salt-marcher/src/apps/cartographer/travel/ui | Nein | UI-Unterbau wird in der übergeordneten Anleitung beschrieben. |
-| ./salt-marcher/src/apps/cartographer/view-shell | Nein | Shell-Komponenten dienen nur der Implementation. |
 | ./salt-marcher/src/apps/encounter | Ja | Begegnungs-App benötigt Anwenderführung. |
 | ./salt-marcher/src/apps/library | Ja | Bibliotheks-App bündelt mehrere Nutzerflüsse. |
 | ./salt-marcher/src/apps/library/core | Nein | Backend-Logik ohne Nutzersicht. |

@@ -17,16 +17,16 @@ Durchsuche und erweiter die Nachschlagewerke für Kreaturen, Zauber, Gelände un
 
 ## Entry-Points
 
-| App | View-Klasse & Typ | Presenter | Öffnen/Detach-Helfer |
+| App | View-Klasse & Typ | Controller/Presenter | Öffnen/Detach-Helfer |
 | --- | --- | --- | --- |
-| Cartographer | `CartographerView` (`VIEW_CARTOGRAPHER`) | `CartographerPresenter` | `openCartographer(app, file?)`, `detachCartographerLeaves(app)` |
+| Cartographer | `CartographerView` (`VIEW_CARTOGRAPHER`) | `CartographerController` | `openCartographer(app, file?)`, `detachCartographerLeaves(app)` |
 | Encounter | `EncounterView` (`VIEW_ENCOUNTER`) | `EncounterPresenter` | – |
 | Library | `LibraryView` (`VIEW_LIBRARY`) | – (Renderer pro Modus) | `openLibrary(app)` |
 
 ## Event-Flows
 
 ### Cartographer
-1. `src/app/main.ts` lädt den Cartographer und liest den aktiven Markdown-Tab als Karte ein.
+1. `src/app/main.ts` lädt den Cartographer, `controller.ts` baut Layout und Header auf und liest den aktiven Markdown-Tab als Karte ein.
 2. Der gewählte Modus aus `cartographer/modes` aktiviert seine Lifecycle-Hooks und erhält Hex-Daten aus `core/hex-mapper`.
 3. Travel-Trigger delegieren über `travel/infra/encounter-sync` an die Encounter-App und aktualisieren Routen über `travel/domain`.
 
