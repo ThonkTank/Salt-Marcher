@@ -4,6 +4,7 @@ import type { App, ItemView, WorkspaceLeaf } from "obsidian";
 import { CartographerView, VIEW_CARTOGRAPHER, openCartographer } from "./cartographer";
 import { EncounterView, VIEW_ENCOUNTER } from "./encounter/view";
 import { LibraryView, VIEW_LIBRARY, openLibrary } from "./library/view";
+import { AlmanacView, VIEW_ALMANAC, openAlmanac } from "./almanac";
 import type { IntegrationId } from "../app/integration-telemetry";
 
 export interface ViewActivationManifest {
@@ -85,6 +86,26 @@ export const VIEW_MANIFEST: ReadonlyArray<ViewManifestEntry> = [
                 {
                     id: "open-library",
                     name: "Open Library",
+                },
+            ],
+        },
+    },
+    {
+        viewType: VIEW_ALMANAC,
+        integrationId: "obsidian:almanac-view",
+        displayName: "Almanac",
+        viewIcon: "calendar",
+        createView: (leaf) => new AlmanacView(leaf),
+        activation: {
+            open: (app) => openAlmanac(app),
+            ribbon: {
+                icon: "calendar",
+                title: "Open Almanac (MVP)",
+            },
+            commands: [
+                {
+                    id: "open-almanac",
+                    name: "Open Almanac",
                 },
             ],
         },

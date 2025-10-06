@@ -1,0 +1,126 @@
+/**
+ * Minimal MVP Styles for Almanac
+ */
+
+.almanac-host {
+  padding: 20px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.almanac-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.almanac-header {
+  margin-bottom: 30px;
+  border-bottom: 2px solid var(--background-modifier-border);
+  padding-bottom: 15px;
+}
+
+.almanac-header h1 {
+  margin: 0 0 5px 0;
+  font-size: 28px;
+}
+
+.almanac-subtitle {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.almanac-section {
+  margin-bottom: 30px;
+}
+
+.almanac-section h2 {
+  font-size: 18px;
+  margin-bottom: 15px;
+  color: var(--text-normal);
+}
+
+.almanac-time-card {
+  background: var(--background-secondary);
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.almanac-time-display {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-accent);
+}
+
+.almanac-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.almanac-actions button {
+  padding: 10px 20px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.almanac-actions button:hover {
+  background: var(--interactive-accent-hover);
+}
+
+.almanac-event-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.almanac-event-item {
+  padding: 12px;
+  margin-bottom: 8px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+  border-left: 3px solid var(--interactive-accent);
+}
+
+.almanac-event-item strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.almanac-event-time {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.almanac-event-desc {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.almanac-empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.almanac-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.almanac-empty-state h2 {
+  margin-bottom: 10px;
+  color: var(--text-muted);
+}
+
+.almanac-empty-state p {
+  color: var(--text-faint);
+}

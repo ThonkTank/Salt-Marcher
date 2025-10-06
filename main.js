@@ -39182,7 +39182,7 @@ async function importPluginPresets(app) {
     let skippedCount = 0;
     let errorCount = 0;
     for (const fileName of fileNames) {
-      const targetPath = (0, import_obsidian32.normalizePath)(`${CREATURES_DIR}/${fileName}`);
+      const targetPath = (0, import_obsidian33.normalizePath)(`${CREATURES_DIR}/${fileName}`);
       if (existingCreatures.has(fileName.toLowerCase())) {
         skippedCount++;
         continue;
@@ -39198,19 +39198,19 @@ async function importPluginPresets(app) {
       }
     }
     if (importedCount > 0) {
-      new import_obsidian32.Notice(`Imported ${importedCount} preset creatures`);
+      new import_obsidian33.Notice(`Imported ${importedCount} preset creatures`);
       console.log(`Import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
     } else if (skippedCount > 0) {
       console.log(`All ${skippedCount} preset creatures already exist`);
     } else if (errorCount > 0) {
-      new import_obsidian32.Notice(`Failed to import presets. Check console for details.`);
+      new import_obsidian33.Notice(`Failed to import presets. Check console for details.`);
     }
   } catch (err) {
     console.error("Failed to import plugin presets:", err);
     if (err instanceof Error && err.message.includes("Cannot find module")) {
       console.log("No preset data module found - skipping preset import");
     } else {
-      new import_obsidian32.Notice("Failed to import preset creatures. Check console for details.");
+      new import_obsidian33.Notice("Failed to import preset creatures. Check console for details.");
     }
   }
 }
@@ -39251,7 +39251,7 @@ async function importSpellPresets(app) {
     let skippedCount = 0;
     let errorCount = 0;
     for (const fileName of fileNames) {
-      const targetPath = (0, import_obsidian32.normalizePath)(`${SPELLS_DIR}/${fileName}`);
+      const targetPath = (0, import_obsidian33.normalizePath)(`${SPELLS_DIR}/${fileName}`);
       if (existingSpells.has(fileName.toLowerCase())) {
         skippedCount++;
         continue;
@@ -39267,19 +39267,19 @@ async function importSpellPresets(app) {
       }
     }
     if (importedCount > 0) {
-      new import_obsidian32.Notice(`Imported ${importedCount} spell presets`);
+      new import_obsidian33.Notice(`Imported ${importedCount} spell presets`);
       console.log(`Spell import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
     } else if (skippedCount > 0) {
       console.log(`All ${skippedCount} spell presets already exist`);
     } else if (errorCount > 0) {
-      new import_obsidian32.Notice(`Failed to import spell presets. Check console for details.`);
+      new import_obsidian33.Notice(`Failed to import spell presets. Check console for details.`);
     }
   } catch (err) {
     console.error("Failed to import spell presets:", err);
     if (err instanceof Error && err.message.includes("Cannot find module")) {
       console.log("No spell preset data found - skipping spell import");
     } else {
-      new import_obsidian32.Notice("Failed to import spell presets. Check console for details.");
+      new import_obsidian33.Notice("Failed to import spell presets. Check console for details.");
     }
   }
 }
@@ -39321,7 +39321,7 @@ async function importItemPresets(app) {
     let skippedCount = 0;
     let errorCount = 0;
     for (const fileName of fileNames) {
-      const targetPath = (0, import_obsidian32.normalizePath)(`${ITEMS_DIR}/${fileName}`);
+      const targetPath = (0, import_obsidian33.normalizePath)(`${ITEMS_DIR}/${fileName}`);
       if (existingItems.has(fileName.toLowerCase())) {
         skippedCount++;
         continue;
@@ -39337,19 +39337,19 @@ async function importItemPresets(app) {
       }
     }
     if (importedCount > 0) {
-      new import_obsidian32.Notice(`Imported ${importedCount} item presets`);
+      new import_obsidian33.Notice(`Imported ${importedCount} item presets`);
       console.log(`Item import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
     } else if (skippedCount > 0) {
       console.log(`All ${skippedCount} item presets already exist`);
     } else if (errorCount > 0) {
-      new import_obsidian32.Notice(`Failed to import item presets. Check console for details.`);
+      new import_obsidian33.Notice(`Failed to import item presets. Check console for details.`);
     }
   } catch (err) {
     console.error("Failed to import item presets:", err);
     if (err instanceof Error && err.message.includes("Cannot find module")) {
       console.log("No item preset data found - skipping item import");
     } else {
-      new import_obsidian32.Notice("Failed to import item presets. Check console for details.");
+      new import_obsidian33.Notice("Failed to import item presets. Check console for details.");
     }
   }
 }
@@ -39391,7 +39391,7 @@ async function importEquipmentPresets(app) {
     let skippedCount = 0;
     let errorCount = 0;
     for (const fileName of fileNames) {
-      const targetPath = (0, import_obsidian32.normalizePath)(`${EQUIPMENT_DIR}/${fileName}`);
+      const targetPath = (0, import_obsidian33.normalizePath)(`${EQUIPMENT_DIR}/${fileName}`);
       if (existingEquipment.has(fileName.toLowerCase())) {
         skippedCount++;
         continue;
@@ -39407,19 +39407,19 @@ async function importEquipmentPresets(app) {
       }
     }
     if (importedCount > 0) {
-      new import_obsidian32.Notice(`Imported ${importedCount} equipment presets`);
+      new import_obsidian33.Notice(`Imported ${importedCount} equipment presets`);
       console.log(`Equipment import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
     } else if (skippedCount > 0) {
       console.log(`All ${skippedCount} equipment presets already exist`);
     } else if (errorCount > 0) {
-      new import_obsidian32.Notice(`Failed to import equipment presets. Check console for details.`);
+      new import_obsidian33.Notice(`Failed to import equipment presets. Check console for details.`);
     }
   } catch (err) {
     console.error("Failed to import equipment presets:", err);
     if (err instanceof Error && err.message.includes("Cannot find module")) {
       console.log("No equipment preset data found - skipping equipment import");
     } else {
-      new import_obsidian32.Notice("Failed to import equipment presets. Check console for details.");
+      new import_obsidian33.Notice("Failed to import equipment presets. Check console for details.");
     }
   }
 }
@@ -39437,11 +39437,11 @@ async function shouldImportEquipmentPresets(app) {
   }
   return true;
 }
-var import_obsidian32, PRESET_FILES;
+var import_obsidian33, PRESET_FILES;
 var init_plugin_presets = __esm({
   "src/apps/library/core/plugin-presets.ts"() {
     "use strict";
-    import_obsidian32 = require("obsidian");
+    import_obsidian33 = require("obsidian");
     init_creature_files();
     init_spell_files();
     init_item_files();
@@ -39462,16 +39462,16 @@ __export(index_files_exports, {
 });
 async function createIndexFile(app, filePath, title, description, directory) {
   const folder = app.vault.getAbstractFileByPath(directory);
-  if (!(folder instanceof import_obsidian33.TFolder)) {
+  if (!(folder instanceof import_obsidian34.TFolder)) {
     console.log(`[Index] Directory ${directory} not found, skipping index generation`);
     return;
   }
   const files = [];
   const collectFiles = (folder2) => {
     for (const child of folder2.children) {
-      if (child instanceof import_obsidian33.TFile && child.extension === "md") {
+      if (child instanceof import_obsidian34.TFile && child.extension === "md") {
         files.push(child);
-      } else if (child instanceof import_obsidian33.TFolder) {
+      } else if (child instanceof import_obsidian34.TFolder) {
         collectFiles(child);
       }
     }
@@ -39508,7 +39508,7 @@ async function createIndexFile(app, filePath, title, description, directory) {
   }
   const content = lines.join("\n");
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian33.TFile) {
+  if (existingFile instanceof import_obsidian34.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -39566,7 +39566,7 @@ async function generateLibraryHub(app) {
   const content = lines.join("\n");
   const filePath = `${SALTMARCHER_DIR}/Library.md`;
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian33.TFile) {
+  if (existingFile instanceof import_obsidian34.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -39587,11 +39587,11 @@ async function generateAllIndexes(app) {
   ]);
   console.log("[Index] All indexes generated successfully");
 }
-var import_obsidian33, SALTMARCHER_DIR, CREATURES_DIR2, EQUIPMENT_DIR2, SPELLS_DIR2, ITEMS_DIR2;
+var import_obsidian34, SALTMARCHER_DIR, CREATURES_DIR2, EQUIPMENT_DIR2, SPELLS_DIR2, ITEMS_DIR2;
 var init_index_files = __esm({
   "src/apps/library/core/index-files.ts"() {
     "use strict";
-    import_obsidian33 = require("obsidian");
+    import_obsidian34 = require("obsidian");
     SALTMARCHER_DIR = "SaltMarcher";
     CREATURES_DIR2 = "SaltMarcher/Creatures";
     EQUIPMENT_DIR2 = "SaltMarcher/Equipment";
@@ -40223,11 +40223,11 @@ async function convertAllReferences(app, options = {}) {
   };
   const referenceFiles = await findReferenceFiles(app);
   if (referenceFiles.length === 0) {
-    new import_obsidian34.Notice("Keine Reference Statbl\xF6cke gefunden");
+    new import_obsidian35.Notice("Keine Reference Statbl\xF6cke gefunden");
     return result;
   }
   const filesToProcess = limit ? referenceFiles.slice(0, limit) : referenceFiles;
-  new import_obsidian34.Notice(`Konvertiere ${filesToProcess.length} Statbl\xF6cke${dryRun ? " (Dry Run)" : ""}...`);
+  new import_obsidian35.Notice(`Konvertiere ${filesToProcess.length} Statbl\xF6cke${dryRun ? " (Dry Run)" : ""}...`);
   if (!dryRun) {
     await ensureDir(app, CREATURES_PRESETS_DIR);
   }
@@ -40247,7 +40247,7 @@ async function convertAllReferences(app, options = {}) {
     }
   }
   const summary = `Konvertierung abgeschlossen: ${result.success} erfolgreich, ${result.failed} fehlgeschlagen`;
-  new import_obsidian34.Notice(summary);
+  new import_obsidian35.Notice(summary);
   console.log(summary);
   if (result.errors.length > 0) {
     console.log("Fehler:", result.errors);
@@ -40336,17 +40336,17 @@ async function convertAllSpells(app, options = {}) {
   };
   const spellsFile = app.vault.getAbstractFileByPath(SPELLS_REFERENCES_FILE);
   if (!spellsFile || !("extension" in spellsFile)) {
-    new import_obsidian34.Notice("Spells Reference Datei nicht gefunden");
+    new import_obsidian35.Notice("Spells Reference Datei nicht gefunden");
     return result;
   }
   const content = await app.vault.read(spellsFile);
   const spellSections = extractSpellSections(content);
   if (spellSections.length === 0) {
-    new import_obsidian34.Notice("Keine Spells in Reference Datei gefunden");
+    new import_obsidian35.Notice("Keine Spells in Reference Datei gefunden");
     return result;
   }
   const sectionsToProcess = limit ? spellSections.slice(0, limit) : spellSections;
-  new import_obsidian34.Notice(`Konvertiere ${sectionsToProcess.length} Spells${dryRun ? " (Dry Run)" : ""}...`);
+  new import_obsidian35.Notice(`Konvertiere ${sectionsToProcess.length} Spells${dryRun ? " (Dry Run)" : ""}...`);
   if (!dryRun) {
     await ensureDir(app, SPELLS_PRESETS_DIR);
   }
@@ -40366,7 +40366,7 @@ async function convertAllSpells(app, options = {}) {
     }
   }
   const summary = `Spell-Konvertierung abgeschlossen: ${result.success} erfolgreich, ${result.failed} fehlgeschlagen`;
-  new import_obsidian34.Notice(summary);
+  new import_obsidian35.Notice(summary);
   console.log(summary);
   if (result.errors.length > 0) {
     console.log("Fehler:", result.errors);
@@ -40408,7 +40408,7 @@ async function convertSpellSection(app, spellMarkdown, dryRun) {
     await app.vault.create(targetPath, presetMarkdown);
   }
 }
-var import_obsidian34, CREATURES_REFERENCES_DIR, CREATURES_PRESETS_DIR, SPELLS_REFERENCES_FILE, SPELLS_PRESETS_DIR;
+var import_obsidian35, CREATURES_REFERENCES_DIR, CREATURES_PRESETS_DIR, SPELLS_REFERENCES_FILE, SPELLS_PRESETS_DIR;
 var init_convert_references = __esm({
   "src/apps/library/tools/convert-references.ts"() {
     "use strict";
@@ -40416,7 +40416,7 @@ var init_convert_references = __esm({
     init_spell_reference_parser();
     init_creature_files();
     init_spell_files();
-    import_obsidian34 = require("obsidian");
+    import_obsidian35 = require("obsidian");
     CREATURES_REFERENCES_DIR = "References/rulebooks/Statblocks/Creatures";
     CREATURES_PRESETS_DIR = "SaltMarcher/Presets/Creatures";
     SPELLS_REFERENCES_FILE = "References/rulebooks/Spells/07_Spells.md";
@@ -40430,7 +40430,7 @@ __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian35 = require("obsidian");
+var import_obsidian36 = require("obsidian");
 
 // src/apps/cartographer/index.ts
 var import_obsidian17 = require("obsidian");
@@ -46703,6 +46703,602 @@ async function openLibrary(app) {
   app.workspace.revealLeaf(leaf);
 }
 
+// src/apps/almanac/index.ts
+var import_obsidian31 = require("obsidian");
+
+// src/apps/almanac/domain/calendar-schema.ts
+function getMonthById(schema, monthId) {
+  return schema.months.find((m) => m.id === monthId) ?? null;
+}
+function getMonthIndex(schema, monthId) {
+  return schema.months.findIndex((m) => m.id === monthId);
+}
+function getMonthByIndex(schema, index) {
+  if (index < 0 || index >= schema.months.length) {
+    return null;
+  }
+  return schema.months[index];
+}
+
+// src/apps/almanac/domain/calendar-timestamp.ts
+function createDayTimestamp(calendarId, year, monthId, day) {
+  return {
+    calendarId,
+    year,
+    monthId,
+    day,
+    precision: "day"
+  };
+}
+function createHourTimestamp(calendarId, year, monthId, day, hour) {
+  return {
+    calendarId,
+    year,
+    monthId,
+    day,
+    hour,
+    precision: "hour"
+  };
+}
+function compareTimestampsWithSchema(schema, a, b) {
+  if (a.year !== b.year) {
+    return a.year - b.year;
+  }
+  if (a.monthId !== b.monthId) {
+    const aMonthIndex = getMonthIndex(schema, a.monthId);
+    const bMonthIndex = getMonthIndex(schema, b.monthId);
+    if (aMonthIndex === -1 || bMonthIndex === -1) {
+      return a.monthId.localeCompare(b.monthId);
+    }
+    return aMonthIndex - bMonthIndex;
+  }
+  if (a.day !== b.day) {
+    return a.day - b.day;
+  }
+  const aHour = a.hour ?? 0;
+  const bHour = b.hour ?? 0;
+  return aHour - bHour;
+}
+function formatTimestamp(ts, monthName) {
+  const month = monthName ?? ts.monthId;
+  if (ts.precision === "day") {
+    return `Year ${ts.year}, Day ${ts.day} of ${month}`;
+  }
+  return `Year ${ts.year}, Day ${ts.day} of ${month}, ${String(ts.hour).padStart(2, "0")}:00`;
+}
+
+// src/apps/almanac/data/in-memory-repository.ts
+var InMemoryCalendarRepository = class {
+  constructor() {
+    this.calendars = /* @__PURE__ */ new Map();
+  }
+  async listCalendars() {
+    return Array.from(this.calendars.values());
+  }
+  async getCalendar(id) {
+    return this.calendars.get(id) ?? null;
+  }
+  async createCalendar(schema) {
+    if (this.calendars.has(schema.id)) {
+      throw new Error(`Calendar with ID ${schema.id} already exists`);
+    }
+    this.calendars.set(schema.id, schema);
+  }
+  async updateCalendar(id, updates) {
+    const existing = this.calendars.get(id);
+    if (!existing) {
+      throw new Error(`Calendar with ID ${id} not found`);
+    }
+    this.calendars.set(id, { ...existing, ...updates });
+  }
+  async deleteCalendar(id) {
+    if (!this.calendars.has(id)) {
+      throw new Error(`Calendar with ID ${id} not found`);
+    }
+    this.calendars.delete(id);
+  }
+  // Helper: Initialize with test data
+  seed(schemas) {
+    schemas.forEach((schema) => {
+      this.calendars.set(schema.id, schema);
+    });
+  }
+  // Helper: Clear all data
+  clear() {
+    this.calendars.clear();
+  }
+};
+var InMemoryEventRepository = class {
+  constructor() {
+    this.events = /* @__PURE__ */ new Map();
+  }
+  async listEvents(calendarId, schema) {
+    const events = Array.from(this.events.values()).filter((e) => e.calendarId === calendarId).sort((a, b) => compareTimestampsWithSchema(schema, a.date, b.date));
+    return events;
+  }
+  async getUpcomingEvents(calendarId, schema, from, limit) {
+    const allEvents = await this.listEvents(calendarId, schema);
+    return allEvents.filter((e) => compareTimestampsWithSchema(schema, e.date, from) >= 0).slice(0, limit);
+  }
+  async createEvent(event) {
+    if (this.events.has(event.id)) {
+      throw new Error(`Event with ID ${event.id} already exists`);
+    }
+    this.events.set(event.id, event);
+  }
+  async updateEvent(id, updates) {
+    const existing = this.events.get(id);
+    if (!existing) {
+      throw new Error(`Event with ID ${id} not found`);
+    }
+    this.events.set(id, { ...existing, ...updates });
+  }
+  async deleteEvent(id) {
+    if (!this.events.has(id)) {
+      throw new Error(`Event with ID ${id} not found`);
+    }
+    this.events.delete(id);
+  }
+  // Helper: Initialize with test data
+  seed(events) {
+    events.forEach((event) => {
+      this.events.set(event.id, event);
+    });
+  }
+  // Helper: Clear all data
+  clear() {
+    this.events.clear();
+  }
+};
+
+// src/apps/almanac/domain/time-arithmetic.ts
+function advanceTime(schema, current, amount, unit) {
+  if (unit === "day") {
+    return advanceByDays(schema, current, amount);
+  }
+  return advanceByHours(schema, current, amount);
+}
+function advanceByDays(schema, current, days) {
+  let year = current.year;
+  let monthId = current.monthId;
+  let day = current.day;
+  const hour = current.hour;
+  let remainingDays = days;
+  let normalized = false;
+  while (remainingDays !== 0) {
+    const month = getMonthById(schema, monthId);
+    if (!month) {
+      throw new Error(`Invalid month ID: ${monthId}`);
+    }
+    if (remainingDays > 0) {
+      const daysLeftInMonth = month.length - day + 1;
+      if (remainingDays < daysLeftInMonth) {
+        day += remainingDays;
+        remainingDays = 0;
+      } else {
+        remainingDays -= daysLeftInMonth;
+        day = 1;
+        const nextMonth = getNextMonth(schema, monthId);
+        if (!nextMonth) {
+          year += 1;
+          monthId = schema.months[0].id;
+          normalized = true;
+        } else {
+          monthId = nextMonth.id;
+        }
+      }
+    } else {
+      const daysToBoundary = day - 1;
+      if (Math.abs(remainingDays) <= daysToBoundary) {
+        day += remainingDays;
+        remainingDays = 0;
+      } else {
+        remainingDays += daysToBoundary + 1;
+        const prevMonth = getPreviousMonth(schema, monthId);
+        if (!prevMonth) {
+          year -= 1;
+          const lastMonth = schema.months[schema.months.length - 1];
+          monthId = lastMonth.id;
+          day = lastMonth.length;
+          normalized = true;
+        } else {
+          monthId = prevMonth.id;
+          day = prevMonth.length;
+        }
+      }
+    }
+  }
+  const result = hour !== void 0 ? createHourTimestamp(current.calendarId, year, monthId, day, hour) : createDayTimestamp(current.calendarId, year, monthId, day);
+  return { timestamp: result, normalized };
+}
+function advanceByHours(schema, current, hours) {
+  const currentHour = current.hour ?? 0;
+  let totalHours = currentHour + hours;
+  let carriedDays = 0;
+  let normalized = false;
+  if (totalHours >= schema.hoursPerDay) {
+    carriedDays = Math.floor(totalHours / schema.hoursPerDay);
+    totalHours = totalHours % schema.hoursPerDay;
+    normalized = true;
+  } else if (totalHours < 0) {
+    const daysNeeded = Math.ceil(Math.abs(totalHours) / schema.hoursPerDay);
+    carriedDays = -daysNeeded;
+    totalHours = totalHours + daysNeeded * schema.hoursPerDay;
+    normalized = true;
+  }
+  let baseTimestamp = current;
+  if (carriedDays !== 0) {
+    const dayResult = advanceByDays(schema, current, carriedDays);
+    baseTimestamp = dayResult.timestamp;
+    normalized = normalized || dayResult.normalized;
+  }
+  const result = createHourTimestamp(
+    baseTimestamp.calendarId,
+    baseTimestamp.year,
+    baseTimestamp.monthId,
+    baseTimestamp.day,
+    totalHours
+  );
+  return { timestamp: result, normalized, carriedDays: carriedDays !== 0 ? carriedDays : void 0, carriedHours: hours };
+}
+function getNextMonth(schema, currentMonthId) {
+  const index = getMonthIndex(schema, currentMonthId);
+  if (index === -1) {
+    throw new Error(`Month not found: ${currentMonthId}`);
+  }
+  if (index === schema.months.length - 1) {
+    return null;
+  }
+  return getMonthByIndex(schema, index + 1);
+}
+function getPreviousMonth(schema, currentMonthId) {
+  const index = getMonthIndex(schema, currentMonthId);
+  if (index === -1) {
+    throw new Error(`Month not found: ${currentMonthId}`);
+  }
+  if (index === 0) {
+    return null;
+  }
+  return getMonthByIndex(schema, index - 1);
+}
+
+// src/apps/almanac/data/in-memory-gateway.ts
+var InMemoryStateGateway = class {
+  constructor(calendarRepo, eventRepo) {
+    this.calendarRepo = calendarRepo;
+    this.eventRepo = eventRepo;
+    this.state = {
+      activeCalendarId: null,
+      currentTimestamp: null
+    };
+  }
+  /**
+   * Load current state snapshot
+   */
+  async loadSnapshot() {
+    const { activeCalendarId, currentTimestamp } = this.state;
+    if (!activeCalendarId) {
+      return {
+        activeCalendar: null,
+        currentTimestamp: null,
+        upcomingEvents: []
+      };
+    }
+    const activeCalendar = await this.calendarRepo.getCalendar(activeCalendarId);
+    if (!activeCalendar) {
+      return {
+        activeCalendar: null,
+        currentTimestamp: null,
+        upcomingEvents: []
+      };
+    }
+    const upcomingEvents = currentTimestamp ? await this.eventRepo.getUpcomingEvents(activeCalendarId, activeCalendar, currentTimestamp, 5) : [];
+    return {
+      activeCalendar,
+      currentTimestamp,
+      upcomingEvents
+    };
+  }
+  /**
+   * Set active calendar
+   */
+  async setActiveCalendar(calendarId, initialTimestamp) {
+    const calendar = await this.calendarRepo.getCalendar(calendarId);
+    if (!calendar) {
+      throw new Error(`Calendar with ID ${calendarId} not found`);
+    }
+    this.state.activeCalendarId = calendarId;
+    this.state.currentTimestamp = initialTimestamp;
+  }
+  /**
+   * Advance time by amount
+   */
+  async advanceTimeBy(amount, unit) {
+    const { activeCalendarId, currentTimestamp } = this.state;
+    if (!activeCalendarId || !currentTimestamp) {
+      throw new Error("No active calendar or current timestamp set");
+    }
+    const calendar = await this.calendarRepo.getCalendar(activeCalendarId);
+    if (!calendar) {
+      throw new Error(`Calendar ${activeCalendarId} not found`);
+    }
+    const result = advanceTime(calendar, currentTimestamp, amount, unit);
+    this.state.currentTimestamp = result.timestamp;
+    return result.timestamp;
+  }
+  /**
+   * Get current state (for debugging)
+   */
+  getCurrentState() {
+    return { ...this.state };
+  }
+  /**
+   * Reset state (for testing)
+   */
+  reset() {
+    this.state = {
+      activeCalendarId: null,
+      currentTimestamp: null
+    };
+  }
+};
+
+// src/apps/almanac/domain/calendar-event.ts
+function createEvent(id, calendarId, title, date, options) {
+  return {
+    id,
+    calendarId,
+    title,
+    description: options?.description,
+    date,
+    allDay: options?.allDay ?? date.precision === "day",
+    category: options?.category,
+    tags: options?.tags
+  };
+}
+
+// src/apps/almanac/fixtures/gregorian.fixture.ts
+var GREGORIAN_CALENDAR_ID = "gregorian-standard";
+var gregorianSchema = {
+  id: GREGORIAN_CALENDAR_ID,
+  name: "Gregorian Calendar",
+  description: "Standard Earth calendar with 12 months and 24-hour days",
+  daysPerWeek: 7,
+  hoursPerDay: 24,
+  months: [
+    { id: "jan", name: "January", length: 31 },
+    { id: "feb", name: "February", length: 28 },
+    // Simplified: no leap years for MVP
+    { id: "mar", name: "March", length: 31 },
+    { id: "apr", name: "April", length: 30 },
+    { id: "may", name: "May", length: 31 },
+    { id: "jun", name: "June", length: 30 },
+    { id: "jul", name: "July", length: 31 },
+    { id: "aug", name: "August", length: 31 },
+    { id: "sep", name: "September", length: 30 },
+    { id: "oct", name: "October", length: 31 },
+    { id: "nov", name: "November", length: 30 },
+    { id: "dec", name: "December", length: 31 }
+  ],
+  epoch: {
+    year: 1,
+    monthId: "jan",
+    day: 1
+  },
+  schemaVersion: "1.0.0"
+};
+function createSampleEvents(year = 2024) {
+  return [
+    createEvent(
+      "evt-1",
+      GREGORIAN_CALENDAR_ID,
+      "New Year's Day",
+      createDayTimestamp(GREGORIAN_CALENDAR_ID, year, "jan", 1),
+      {
+        description: "Start of the new year",
+        allDay: true,
+        category: "holiday",
+        tags: ["holiday", "celebration"]
+      }
+    ),
+    createEvent(
+      "evt-2",
+      GREGORIAN_CALENDAR_ID,
+      "Team Meeting",
+      createHourTimestamp(GREGORIAN_CALENDAR_ID, year, "jan", 15, 10),
+      {
+        description: "Weekly team sync",
+        allDay: false,
+        category: "work",
+        tags: ["meeting"]
+      }
+    ),
+    createEvent(
+      "evt-3",
+      GREGORIAN_CALENDAR_ID,
+      "Valentine's Day",
+      createDayTimestamp(GREGORIAN_CALENDAR_ID, year, "feb", 14),
+      {
+        description: "Day of love",
+        allDay: true,
+        category: "holiday",
+        tags: ["holiday"]
+      }
+    ),
+    createEvent(
+      "evt-4",
+      GREGORIAN_CALENDAR_ID,
+      "Spring Equinox",
+      createDayTimestamp(GREGORIAN_CALENDAR_ID, year, "mar", 20),
+      {
+        description: "First day of spring",
+        allDay: true,
+        category: "season",
+        tags: ["season", "astronomy"]
+      }
+    ),
+    createEvent(
+      "evt-5",
+      GREGORIAN_CALENDAR_ID,
+      "Project Deadline",
+      createHourTimestamp(GREGORIAN_CALENDAR_ID, year, "mar", 31, 17),
+      {
+        description: "Q1 project deliverable",
+        allDay: false,
+        category: "work",
+        tags: ["deadline", "important"]
+      }
+    )
+  ];
+}
+function getDefaultCurrentTimestamp(year = 2024) {
+  return createHourTimestamp(GREGORIAN_CALENDAR_ID, year, "jan", 1, 0);
+}
+
+// src/apps/almanac/mode/almanac-controller.ts
+var AlmanacController = class {
+  constructor(app) {
+    this.app = app;
+    this.containerEl = null;
+    this.calendarRepo = new InMemoryCalendarRepository();
+    this.eventRepo = new InMemoryEventRepository();
+    this.gateway = new InMemoryStateGateway(this.calendarRepo, this.eventRepo);
+    this.calendarRepo.seed([gregorianSchema]);
+    this.eventRepo.seed(createSampleEvents(2024));
+  }
+  async onOpen(container) {
+    this.containerEl = container;
+    container.empty();
+    container.addClass("almanac-container");
+    await this.gateway.setActiveCalendar(
+      gregorianSchema.id,
+      getDefaultCurrentTimestamp(2024)
+    );
+    await this.render();
+  }
+  async onClose() {
+    this.containerEl = null;
+  }
+  async render() {
+    if (!this.containerEl) return;
+    this.containerEl.empty();
+    const snapshot = await this.gateway.loadSnapshot();
+    if (!snapshot.activeCalendar) {
+      this.renderEmptyState();
+      return;
+    }
+    this.renderDashboard(snapshot.activeCalendar, snapshot.currentTimestamp, snapshot.upcomingEvents);
+  }
+  renderEmptyState() {
+    if (!this.containerEl) return;
+    const empty = this.containerEl.createDiv({ cls: "almanac-empty-state" });
+    empty.createEl("h2", { text: "No Active Calendar" });
+    empty.createEl("p", { text: "Please create or select a calendar to begin." });
+  }
+  renderDashboard(calendar, currentTimestamp, upcomingEvents) {
+    if (!this.containerEl) return;
+    const header = this.containerEl.createDiv({ cls: "almanac-header" });
+    header.createEl("h1", { text: "Almanac Dashboard" });
+    header.createEl("p", { text: `Calendar: ${calendar.name}`, cls: "almanac-subtitle" });
+    this.renderCurrentTime(calendar, currentTimestamp);
+    this.renderQuickActions();
+    this.renderUpcomingEvents(calendar, upcomingEvents);
+  }
+  renderCurrentTime(calendar, timestamp) {
+    if (!this.containerEl || !timestamp) return;
+    const section = this.containerEl.createDiv({ cls: "almanac-section" });
+    section.createEl("h2", { text: "Current Date & Time" });
+    const month = getMonthById(calendar, timestamp.monthId);
+    const formatted = formatTimestamp(timestamp, month?.name);
+    const timeCard = section.createDiv({ cls: "almanac-time-card" });
+    timeCard.createEl("div", { text: formatted, cls: "almanac-time-display" });
+  }
+  renderQuickActions() {
+    if (!this.containerEl) return;
+    const section = this.containerEl.createDiv({ cls: "almanac-section" });
+    section.createEl("h2", { text: "Quick Actions" });
+    const actions = section.createDiv({ cls: "almanac-actions" });
+    const dayBtn = actions.createEl("button", { text: "+1 Day" });
+    dayBtn.addEventListener("click", async () => {
+      await this.handleAdvanceTime(1, "day");
+    });
+    const hourBtn = actions.createEl("button", { text: "+1 Hour" });
+    hourBtn.addEventListener("click", async () => {
+      await this.handleAdvanceTime(1, "hour");
+    });
+  }
+  renderUpcomingEvents(calendar, events) {
+    if (!this.containerEl) return;
+    const section = this.containerEl.createDiv({ cls: "almanac-section" });
+    section.createEl("h2", { text: "Upcoming Events" });
+    if (events.length === 0) {
+      section.createEl("p", { text: "No upcoming events", cls: "almanac-empty" });
+      return;
+    }
+    const list = section.createEl("ul", { cls: "almanac-event-list" });
+    events.forEach((event) => {
+      const item = list.createEl("li", { cls: "almanac-event-item" });
+      const month = getMonthById(calendar, event.date.monthId);
+      const timeStr = formatTimestamp(event.date, month?.name);
+      item.createEl("strong", { text: event.title });
+      item.createEl("span", { text: ` \u2014 ${timeStr}`, cls: "almanac-event-time" });
+      if (event.description) {
+        item.createEl("div", { text: event.description, cls: "almanac-event-desc" });
+      }
+    });
+  }
+  async handleAdvanceTime(amount, unit) {
+    try {
+      await this.gateway.advanceTimeBy(amount, unit);
+      await this.render();
+    } catch (error) {
+      console.error("Failed to advance time:", error);
+    }
+  }
+};
+
+// src/apps/almanac/index.ts
+var VIEW_TYPE_ALMANAC = "almanac-view";
+var VIEW_ALMANAC = VIEW_TYPE_ALMANAC;
+var AlmanacView = class extends import_obsidian31.ItemView {
+  constructor(leaf) {
+    super(leaf);
+    this.hostEl = null;
+    this.controller = new AlmanacController(this.app);
+  }
+  getViewType() {
+    return VIEW_TYPE_ALMANAC;
+  }
+  getDisplayText() {
+    return "Almanac";
+  }
+  getIcon() {
+    return "calendar";
+  }
+  async onOpen() {
+    const container = this.containerEl;
+    const content = container.children[1];
+    content.empty();
+    this.hostEl = content.createDiv({ cls: "almanac-host" });
+    await this.controller.onOpen(this.hostEl);
+  }
+  async onClose() {
+    await this.controller.onClose();
+    this.hostEl = null;
+  }
+};
+async function openAlmanac(app) {
+  const { workspace } = app;
+  const existingLeaves = workspace.getLeavesOfType(VIEW_TYPE_ALMANAC);
+  if (existingLeaves.length > 0) {
+    workspace.revealLeaf(existingLeaves[0]);
+    return;
+  }
+  const leaf = workspace.getLeaf(true);
+  await leaf.setViewState({ type: VIEW_TYPE_ALMANAC, active: true });
+  workspace.revealLeaf(leaf);
+}
+
 // src/apps/view-manifest.ts
 var VIEW_MANIFEST = [
   {
@@ -46748,6 +47344,26 @@ var VIEW_MANIFEST = [
         {
           id: "open-library",
           name: "Open Library"
+        }
+      ]
+    }
+  },
+  {
+    viewType: VIEW_ALMANAC,
+    integrationId: "obsidian:almanac-view",
+    displayName: "Almanac",
+    viewIcon: "calendar",
+    createView: (leaf) => new AlmanacView(leaf),
+    activation: {
+      open: (app) => openAlmanac(app),
+      ribbon: {
+        icon: "calendar",
+        title: "Open Almanac (MVP)"
+      },
+      commands: [
+        {
+          id: "open-almanac",
+          name: "Open Almanac"
         }
       ]
     }
@@ -48811,7 +49427,7 @@ var HEX_PLUGIN_CSS_SECTIONS = {
 var HEX_PLUGIN_CSS = Object.values(HEX_PLUGIN_CSS_SECTIONS).join("\n\n");
 
 // src/app/integration-telemetry.ts
-var import_obsidian31 = require("obsidian");
+var import_obsidian32 = require("obsidian");
 var notifiedOperations = /* @__PURE__ */ new Set();
 function reportIntegrationIssue(payload) {
   const { integrationId, operation, error, userMessage } = payload;
@@ -48820,7 +49436,7 @@ function reportIntegrationIssue(payload) {
   const dedupeKey = `${integrationId}:${operation}`;
   if (notifiedOperations.has(dedupeKey)) return;
   notifiedOperations.add(dedupeKey);
-  new import_obsidian31.Notice(userMessage);
+  new import_obsidian32.Notice(userMessage);
 }
 
 // src/app/bootstrap-services.ts
@@ -48907,7 +49523,7 @@ function createTerrainBootstrap(app, config = {}) {
 }
 
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian35.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian36.Plugin {
   async onload() {
     try {
       const { shouldImportPluginPresets: shouldImportPluginPresets2, importPluginPresets: importPluginPresets2 } = await Promise.resolve().then(() => (init_plugin_presets(), plugin_presets_exports));
