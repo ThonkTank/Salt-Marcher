@@ -2,6 +2,10 @@
 
 ## Ready for Phase 4
 - [ ] LIB-TD-0001 – Vertragstest-Harness (keine Abhängigkeiten)
+    - Einstiegspunkt `tests/contracts/library-harness.ts` mit `createLibraryHarness` für Legacy/v2-Portumschaltung.
+    - Fixture-Struktur unter `tests/contracts/library-fixtures/{creatures,items,equipment,terrains,regions}` konsolidieren.
+    - Vertrags- und Regressionstests (`tests/contracts/library-contracts.test.ts`) für Renderer-, Storage-, Serializer- und Event-Ports pflegen.
+    - `npm run test:contracts` in `npm run ci:tests` integrieren, `BUILD.md` aktualisieren und DoR-Artefakte ablegen.
 
 ## Backlog (wartet auf vorgelagerte ToDos)
 - [ ] LIB-TD-0002 – Golden-Files (wartet auf LIB-TD-0001)
