@@ -1,0 +1,17 @@
+ID,Title,Category,WorkPackage,Epic,Debts,Risks,ADRs,Dependencies,TShirt,PriorityScore
+LIB-TD-0001,Richte portübergreifenden Vertragstest-Harness ein,Tests,WP-D1,EPIC-D,D-LIB-011,R-LIB-002,"ADR-0002|ADR-0003",,M,35
+LIB-TD-0002,Hinterlege Golden-Files für Serializer-Roundtrips,Tests,WP-D1,EPIC-D,"D-LIB-004|D-LIB-006",R-LIB-002,ADR-0003,LIB-TD-0001,S,56
+LIB-TD-0003,Definiere Application-Service-Port für Bibliotheksrendering,Architektur,WP-A1,EPIC-A,D-LIB-001,"R-LIB-001|R-LIB-005","ADR-0001|ADR-0002",LIB-TD-0001,M,35
+LIB-TD-0004,Kapsle Persistenzadapter hinter StoragePort,Persistenz/IO,WP-A1,EPIC-A,"D-LIB-004|D-LIB-006|D-LIB-010",R-LIB-002,ADR-0003,"LIB-TD-0003|LIB-TD-0001",M,31.5
+LIB-TD-0005,Baue Renderer-Kernel mit Lifecycle-Orchestrierung,Renderer,WP-B1,EPIC-B,"D-LIB-001|D-LIB-008","R-LIB-001|R-LIB-007",ADR-0002,"LIB-TD-0003|LIB-TD-0001",L,20
+LIB-TD-0006,Migriere Bibliotheksrenderer auf Kernel-Plugins,Renderer,WP-B1,EPIC-B,"D-LIB-001|D-LIB-002|D-LIB-008","R-LIB-001|R-LIB-005|R-LIB-007",ADR-0002,"LIB-TD-0005|LIB-TD-0003|LIB-TD-0004",L,15
+LIB-TD-0007,Etabliere Event-Bus-Port für Watcher-Orchestrierung,Architektur,WP-A2,EPIC-A,D-LIB-008,"R-LIB-004|R-LIB-007",ADR-0004,"LIB-TD-0005|LIB-TD-0003",M,27
+LIB-TD-0008,Binde Create-Modals an Renderer-Lifecycle an,Contracts,WP-A2,EPIC-A,D-LIB-008,"R-LIB-004|R-LIB-007","ADR-0002|ADR-0004","LIB-TD-0007|LIB-TD-0006",M,24
+LIB-TD-0009,Implementiere Serializer-Template-Policies,Serializer,WP-B2,EPIC-B,"D-LIB-002|D-LIB-012","R-LIB-002|R-LIB-005",ADR-0003,"LIB-TD-0001|LIB-TD-0004",M,27
+LIB-TD-0010,Portiere Creature/Item/Equipment-Serializer auf Template,Serializer,WP-B2,EPIC-B,"D-LIB-002|D-LIB-004|D-LIB-005|D-LIB-006|D-LIB-007|D-LIB-012","R-LIB-002|R-LIB-005",ADR-0003,"LIB-TD-0009|LIB-TD-0004|LIB-TD-0003",L,15
+LIB-TD-0011,Führe Validation-DSL für Domain-Daten ein,Validation,WP-B2,EPIC-B,D-LIB-009,"R-LIB-002|R-LIB-006",ADR-0003,"LIB-TD-0009|LIB-TD-0001",M,24
+LIB-TD-0012,Härte Preset-Import über Storage-Service ab,Persistenz/IO,WP-B2,EPIC-B,D-LIB-010,R-LIB-003,ADR-0003,"LIB-TD-0004|LIB-TD-0009",M,24
+LIB-TD-0013,Vereinheitliche Query- und Filter-Pipeline,Architektur,WP-C1,EPIC-C,"D-LIB-001|D-LIB-002","R-LIB-001|R-LIB-005",ADR-0002,"LIB-TD-0005|LIB-TD-0003",M,18
+LIB-TD-0014,Straffe Library-Stores und Watcher-States,Architektur,WP-C2,EPIC-C,D-LIB-008,R-LIB-004,ADR-0004,"LIB-TD-0007|LIB-TD-0005",M,20
+LIB-TD-0015,Entferne Debug-Logging und obsolet gewordene Watcher-Hooks,Cleanup,WP-C2,EPIC-C,"D-LIB-003|D-LIB-008",R-LIB-004,ADR-0004,"LIB-TD-0007|LIB-TD-0014",S,16
+LIB-TD-0016,Etabliere Feature-Flag-Registry und Paritäts-Telemetrie,Build/Infra,WP-D2,EPIC-D,,"R-LIB-001|R-LIB-003|R-LIB-004","ADR-0002|ADR-0003|ADR-0004","LIB-TD-0005|LIB-TD-0009|LIB-TD-0007",M,21
