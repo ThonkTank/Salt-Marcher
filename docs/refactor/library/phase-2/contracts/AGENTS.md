@@ -5,7 +5,7 @@
 - Enthält TypeScript-Vertragsdateien und begleitende Markdown-Beschreibungen.
 
 # ToDo
-- Bei Änderungen an Schnittstellen ist die zugehörige Markdown-Spezifikation zu aktualisieren und ein ADR hinzuzufügen.
+- [P4] Bei Änderungen an Schnittstellen ist die zugehörige Markdown-Spezifikation zu aktualisieren und ein ADR hinzuzufügen.
 
 # Standards
 - TypeScript-Dateien dienen als Referenz für Implementierungen, Kommentare bleiben auf Englisch.

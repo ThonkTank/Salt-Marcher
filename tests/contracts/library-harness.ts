@@ -547,28 +547,50 @@ class V2RendererAdapter implements RendererPort {
 }
 
 class LegacySerializerAdapter implements SerializerPort {
+    private activated = false;
+
+    constructor(
+        protected readonly telemetry?: LibraryHarnessTelemetry,
+        private readonly kind: LibraryAdapterKind = "legacy"
+    ) {}
+
     creatureToMarkdown(data: StatblockData): string {
+        this.notifyActivation();
         return statblockToMarkdown(data);
     }
 
     itemToMarkdown(data: ItemData): string {
+        this.notifyActivation();
         return itemToMarkdown(data);
     }
 
     equipmentToMarkdown(data: EquipmentData): string {
+        this.notifyActivation();
         return equipmentToMarkdown(data);
     }
 
     terrainToMarkdown(map: Record<string, { color: string; speed: number }>): string {
+        this.notifyActivation();
         return stringifyTerrainBlock(map);
     }
 
     normalizeFileName(name: string, fallback: string): string {
+        this.notifyActivation();
         return sanitizeName(name, fallback);
+    }
+
+    private notifyActivation(): void {
+        if (this.activated) return;
+        this.activated = true;
+        this.telemetry?.onAdapterActivated?.({ port: "serializer", kind: this.kind });
     }
 }
 
 class V2SerializerAdapter extends LegacySerializerAdapter {
+    constructor(telemetry?: LibraryHarnessTelemetry) {
+        super(telemetry, "v2");
+    }
+
     override creatureToMarkdown(data: StatblockData): string {
         return super.creatureToMarkdown({ ...data, traits: data.traits?.trim() ?? data.traits });
     }
@@ -578,7 +600,8 @@ class LegacyStorageAdapter implements StoragePort {
     constructor(
         protected readonly app: HarnessApp,
         private readonly vault: MemoryVault,
-        protected readonly telemetry?: LibraryHarnessTelemetry
+        protected readonly telemetry?: LibraryHarnessTelemetry,
+        private readonly kind: LibraryAdapterKind = "legacy"
     ) {}
 
     async seed(fixtures: LibraryFixtureSet, serializer: SerializerPort): Promise<void> {
@@ -588,7 +611,7 @@ class LegacyStorageAdapter implements StoragePort {
         await this.seedSpellPresets(fixtures.spellPresets.entries);
         await this.seedTerrains(fixtures.terrains.entries);
         await this.seedRegions(fixtures.regions.entries);
-        this.telemetry?.onAdapterActivated?.({ port: "storage", kind: "legacy" });
+        this.telemetry?.onAdapterActivated?.({ port: "storage", kind: this.kind });
     }
 
     async list(domain: LibraryStorageDomain): Promise<string[]> {
@@ -687,12 +710,7 @@ class LegacyStorageAdapter implements StoragePort {
 
 class V2StorageAdapter extends LegacyStorageAdapter {
     constructor(app: HarnessApp, vault: MemoryVault, telemetry?: LibraryHarnessTelemetry) {
-        super(app, vault, telemetry);
-    }
-
-    override async seed(fixtures: LibraryFixtureSet, serializer: SerializerPort): Promise<void> {
-        await super.seed(fixtures, serializer);
-        this.telemetry?.onAdapterActivated?.({ port: "storage", kind: "v2" });
+        super(app, vault, telemetry, "v2");
     }
 }
 
@@ -703,10 +721,15 @@ class LegacyEventAdapter implements EventPort {
         Array<{ waitMs: number; handler: (payload: unknown) => void; timer: ReturnType<typeof setTimeout> | null }>
     >();
     private pendingPromises: Promise<void>[] = [];
+    private activated = false;
 
-    constructor(private readonly telemetry?: LibraryHarnessTelemetry) {}
+    constructor(
+        protected readonly telemetry?: LibraryHarnessTelemetry,
+        private readonly kind: LibraryAdapterKind = "legacy"
+    ) {}
 
     emit(event: string, payload?: unknown): void {
+        this.notifyActivation();
         this.telemetry?.onEvent?.({ event, payload });
         for (const handler of this.listeners.get(event) ?? []) {
             handler(payload);
@@ -728,6 +751,7 @@ class LegacyEventAdapter implements EventPort {
     }
 
     subscribe(event: string, handler: (payload: unknown) => void): () => void {
+        this.notifyActivation();
         const set = this.listeners.get(event) ?? new Set();
         set.add(handler);
         this.listeners.set(event, set);
@@ -737,6 +761,7 @@ class LegacyEventAdapter implements EventPort {
     }
 
     debounce(event: string, handler: (payload: unknown) => void, waitMs: number): () => void {
+        this.notifyActivation();
         const list = this.debounced.get(event) ?? [];
         const entry = { waitMs, handler, timer: null as ReturnType<typeof setTimeout> | null };
         list.push(entry);
@@ -761,17 +786,31 @@ class LegacyEventAdapter implements EventPort {
         }
         this.debounced.clear();
         this.pendingPromises = [];
+        this.activated = false;
     }
 
     async flushDebounce(): Promise<void> {
         const pending = this.pendingPromises.splice(0);
         await Promise.all(pending);
     }
+
+    private notifyActivation(): void {
+        if (this.activated) return;
+        this.activated = true;
+        this.telemetry?.onAdapterActivated?.({ port: "event", kind: this.kind });
+    }
 }
 
 class V2EventAdapter extends LegacyEventAdapter {
     constructor(telemetry?: LibraryHarnessTelemetry) {
-        super(telemetry);
+        super(telemetry, "v2");
+    }
+
+    override emit(event: string, payload?: unknown): void {
+        if (event === "library:save") {
+            this.telemetry?.onEvent?.({ event: "library:save:debounced", payload });
+        }
+        super.emit(event, payload);
     }
 }
 
@@ -797,8 +836,8 @@ export function createLibraryHarness(options: LibraryHarnessOptions = {}): Libra
             v2: () => new V2StorageAdapter(app, vault, telemetry),
         },
         serializer: {
-            legacy: () => new LegacySerializerAdapter(),
-            v2: () => new V2SerializerAdapter(),
+            legacy: () => new LegacySerializerAdapter(telemetry),
+            v2: () => new V2SerializerAdapter(telemetry),
         },
         event: {
             legacy: () => new LegacyEventAdapter(telemetry),

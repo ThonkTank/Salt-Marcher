@@ -5,7 +5,7 @@
 - Enthält je Domäne eine Typscript-Datei mit Ownership- und Datenangaben.
 
 # ToDo
-- Bei Schemaänderungen der Library-Domäne Fixtures synchronisieren und dokumentieren.
+- [P2] Bei Schemaänderungen der Library-Domäne Fixtures synchronisieren und dokumentieren.
 
 # Standards
 - Jede Fixture-Datei exportiert `owner`-Metadaten und unveränderliche Beispieldatensätze.

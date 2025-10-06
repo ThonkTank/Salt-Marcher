@@ -5,7 +5,7 @@
 - Enthält RFC, Arbeitsplanung, Verträge, Migration-, Test- und Erfolgsmessungs-Strategien sowie ADRs.
 
 # ToDo
-- Laufende Pflege der Inhalte bei Anpassungen des Refactor-Plans.
+- [P5] Laufende Pflege der Inhalte bei Anpassungen des Refactor-Plans.
 
 # Standards
 - Alle Dateien in diesem Verzeichnis sind rein textbasiert (Markdown, TypeScript, DOT/JSON) ohne Binäranhänge.

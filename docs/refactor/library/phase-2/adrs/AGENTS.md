@@ -5,7 +5,7 @@
 - Enthält ADRs ab Nummer 0002 zu Architektur- und Vertragsänderungen.
 
 # ToDo
-- Neue Entscheidungen fortlaufend mit steigenden Nummern ergänzen und Querverweise pflegen.
+- [P5] Neue Entscheidungen fortlaufend mit steigenden Nummern ergänzen und Querverweise pflegen.
 
 # Standards
 - ADRs folgen dem Format Kontext → Entscheidung → Konsequenzen → Status.
