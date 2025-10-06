@@ -11,3 +11,4 @@
 # Standards
 - Test-Harness exportiert eine `createLibraryHarness`-Factory und kapselt Adapterumschaltung.
 - Vertrags-Tests nutzen ausschließlich die bereitgestellten Fixtures/Fakes aus `library-fixtures`.
+- Spell-Preset-Fixtures enthalten YAML-konformes Frontmatter (Booleans, Zahlen, Listen) und werden bei neuen Domains mitgepflegt.

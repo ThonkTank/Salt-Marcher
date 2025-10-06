@@ -3,6 +3,7 @@
 import { creatureFixtures } from "./creatures";
 import { equipmentFixtures } from "./equipment";
 import { itemFixtures } from "./items";
+import { spellPresetFixtures } from "./spell-presets";
 import { regionFixtures } from "./regions";
 import { terrainFixtures } from "./terrains";
 
@@ -10,6 +11,7 @@ export const libraryFixtures = Object.freeze({
     creatures: creatureFixtures,
     equipment: equipmentFixtures,
     items: itemFixtures,
+    spellPresets: spellPresetFixtures,
     regions: regionFixtures,
     terrains: terrainFixtures,
 });
