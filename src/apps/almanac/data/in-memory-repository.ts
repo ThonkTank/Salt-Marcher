@@ -21,6 +21,12 @@ export interface CalendarRepository {
 export interface EventRepository {
   listEvents(calendarId: string, schema: CalendarSchema): Promise<CalendarEvent[]>;
   getUpcomingEvents(calendarId: string, schema: CalendarSchema, from: CalendarTimestamp, limit: number): Promise<CalendarEvent[]>;
+  getEventsInRange(
+    calendarId: string,
+    schema: CalendarSchema,
+    start: CalendarTimestamp,
+    end: CalendarTimestamp
+  ): Promise<CalendarEvent[]>;
   createEvent(event: CalendarEvent): Promise<void>;
   updateEvent(id: string, event: Partial<CalendarEvent>): Promise<void>;
   deleteEvent(id: string): Promise<void>;
@@ -95,6 +101,25 @@ export class InMemoryEventRepository implements EventRepository {
     return allEvents
       .filter(e => compareTimestampsWithSchema(schema, e.date, from) >= 0)
       .slice(0, limit);
+  }
+
+  async getEventsInRange(
+    calendarId: string,
+    schema: CalendarSchema,
+    start: CalendarTimestamp,
+    end: CalendarTimestamp
+  ): Promise<CalendarEvent[]> {
+    const allEvents = await this.listEvents(calendarId, schema);
+
+    const rangeStart =
+      compareTimestampsWithSchema(schema, start, end) <= 0 ? start : end;
+    const rangeEnd = rangeStart === start ? end : start;
+
+    return allEvents.filter(event => {
+      const afterStart = compareTimestampsWithSchema(schema, event.date, rangeStart) > 0;
+      const beforeOrEqualEnd = compareTimestampsWithSchema(schema, event.date, rangeEnd) <= 0;
+      return afterStart && beforeOrEqualEnd;
+    });
   }
 
   async createEvent(event: CalendarEvent): Promise<void> {

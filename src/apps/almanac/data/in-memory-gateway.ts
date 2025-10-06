@@ -22,6 +22,11 @@ export interface StateSnapshot {
   upcomingEvents: CalendarEvent[];
 }
 
+export interface AdvanceTimeResult {
+  timestamp: CalendarTimestamp;
+  triggeredEvents: CalendarEvent[];
+}
+
 export class InMemoryStateGateway {
   private state: AlmanacState = {
     activeCalendarId: null,
@@ -85,7 +90,7 @@ export class InMemoryStateGateway {
   /**
    * Advance time by amount
    */
-  async advanceTimeBy(amount: number, unit: TimeUnit): Promise<CalendarTimestamp> {
+  async advanceTimeBy(amount: number, unit: TimeUnit): Promise<AdvanceTimeResult> {
     const { activeCalendarId, currentTimestamp } = this.state;
 
     if (!activeCalendarId || !currentTimestamp) {
@@ -100,7 +105,14 @@ export class InMemoryStateGateway {
     const result = advanceTime(calendar, currentTimestamp, amount, unit);
     this.state.currentTimestamp = result.timestamp;
 
-    return result.timestamp;
+    const triggeredEvents = await this.eventRepo.getEventsInRange(
+      activeCalendarId,
+      calendar,
+      currentTimestamp,
+      result.timestamp
+    );
+
+    return { timestamp: result.timestamp, triggeredEvents };
   }
 
   /**

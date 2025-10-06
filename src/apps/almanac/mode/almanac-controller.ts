@@ -12,7 +12,7 @@ import type { CalendarTimestamp } from '../domain/calendar-timestamp';
 import { formatTimestamp } from '../domain/calendar-timestamp';
 import type { CalendarEvent } from '../domain/calendar-event';
 import { InMemoryCalendarRepository, InMemoryEventRepository } from '../data/in-memory-repository';
-import { InMemoryStateGateway } from '../data/in-memory-gateway';
+import { InMemoryStateGateway, type AdvanceTimeResult } from '../data/in-memory-gateway';
 import { gregorianSchema, createSampleEvents, getDefaultCurrentTimestamp } from '../fixtures/gregorian.fixture';
 
 export class AlmanacController {
@@ -20,6 +20,7 @@ export class AlmanacController {
   private calendarRepo: InMemoryCalendarRepository;
   private eventRepo: InMemoryEventRepository;
   private gateway: InMemoryStateGateway;
+  private recentlyTriggeredEvents: CalendarEvent[] = [];
 
   constructor(private app: App) {
     // Initialize repositories
@@ -62,7 +63,12 @@ export class AlmanacController {
       return;
     }
 
-    this.renderDashboard(snapshot.activeCalendar, snapshot.currentTimestamp, snapshot.upcomingEvents);
+    this.renderDashboard(
+      snapshot.activeCalendar,
+      snapshot.currentTimestamp,
+      snapshot.upcomingEvents,
+      this.recentlyTriggeredEvents
+    );
   }
 
   private renderEmptyState(): void {
@@ -76,7 +82,8 @@ export class AlmanacController {
   private renderDashboard(
     calendar: CalendarSchema,
     currentTimestamp: CalendarTimestamp | null,
-    upcomingEvents: CalendarEvent[]
+    upcomingEvents: CalendarEvent[],
+    triggeredEvents: CalendarEvent[]
   ): void {
     if (!this.containerEl) return;
 
@@ -93,6 +100,7 @@ export class AlmanacController {
 
     // Upcoming events
     this.renderUpcomingEvents(calendar, upcomingEvents);
+    this.renderTriggeredEvents(calendar, triggeredEvents);
   }
 
   private renderCurrentTime(calendar: CalendarSchema, timestamp: CalendarTimestamp | null): void {
@@ -140,6 +148,19 @@ export class AlmanacController {
       return;
     }
 
+    this.renderEventList(section, calendar, events);
+  }
+
+  private renderTriggeredEvents(calendar: CalendarSchema, events: CalendarEvent[]): void {
+    if (!this.containerEl || events.length === 0) return;
+
+    const section = this.containerEl.createDiv({ cls: 'almanac-section' });
+    section.createEl('h2', { text: 'Recently Triggered' });
+
+    this.renderEventList(section, calendar, events);
+  }
+
+  private renderEventList(section: HTMLElement, calendar: CalendarSchema, events: CalendarEvent[]): void {
     const list = section.createEl('ul', { cls: 'almanac-event-list' });
 
     events.forEach(event => {
@@ -159,7 +180,8 @@ export class AlmanacController {
 
   private async handleAdvanceTime(amount: number, unit: 'day' | 'hour'): Promise<void> {
     try {
-      await this.gateway.advanceTimeBy(amount, unit);
+      const result: AdvanceTimeResult = await this.gateway.advanceTimeBy(amount, unit);
+      this.recentlyTriggeredEvents = result.triggeredEvents;
       await this.render();
     } catch (error) {
       console.error('Failed to advance time:', error);
