@@ -8,6 +8,7 @@
     "build": "node esbuild.config.mjs",
     "test": "vitest run",
     "test:contracts": "vitest run tests/contracts",
+    "golden:update": "tsx tests/contracts/update-library-golden.ts",
     "ci:tests": "npm test && npm run test:contracts",
     "sync:todos": "node tools/sync-todos.mjs"
   },
@@ -16,6 +17,7 @@
     "esbuild": "^0.21.5",
     "jsdom": "^27.0.0",
     "obsidian": "^1.6.0",
+    "tsx": "^4.15.7",
     "typescript": "^5.5.4",
     "vitest": "^1.6.0"
   }

@@ -30,5 +30,15 @@ export const equipmentFixtures: EquipmentFixtureSet = Object.freeze({
             properties: ["Resistance (cold) while submerged"],
             description: "Armor woven from kelp strands treated with alchemical resin.",
         }),
+        Object.freeze({
+            fixtureId: "equipment.gamma",
+            name: "Thundercoil Net",
+            cost: "65 gp",
+            weight: "3 lb.",
+            category: "Martial Ranged Weapons",
+            damage: "1d6 bludgeoning",
+            properties: ["Thrown (20/60)", "Special"],
+            description: "Braided with resonant wire, this net delivers a concussive jolt when it ensnares a creature.",
+        }),
     ],
 });

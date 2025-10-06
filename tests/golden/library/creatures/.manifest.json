@@ -1,0 +1,30 @@
+{
+    "schemaVersion": 1,
+    "domain": "creatures",
+    "generatedBy": "LIB-TD-0002",
+    "generatedAt": "2025-10-06T20:07:39.582Z",
+    "owner": "QA",
+    "samples": [
+        {
+            "fixtureId": "creature.alpha",
+            "name": "Azure Manticore",
+            "storagePath": "SaltMarcher/Creatures/Azure Manticore.md",
+            "goldenFile": "creature.alpha.md",
+            "checksum": "09e7d196072d2683a9da499ba85ce77fc3cfdcef9fca288b91d7d5bbcdfd9f22"
+        },
+        {
+            "fixtureId": "creature.beta",
+            "name": "Brinebound Sage",
+            "storagePath": "SaltMarcher/Creatures/Brinebound Sage.md",
+            "goldenFile": "creature.beta.md",
+            "checksum": "dc9b69e462a49857e7709899098c2bd01f8718d405744db0a4fc37545165b056"
+        },
+        {
+            "fixtureId": "creature.gamma",
+            "name": "Glimmerfen Stalker",
+            "storagePath": "SaltMarcher/Creatures/Glimmerfen Stalker.md",
+            "goldenFile": "creature.gamma.md",
+            "checksum": "106dcb1300bd457b4e626c21939da4a4f5a9a804ac84f402c3fe8a9e91ec6fa3"
+        }
+    ]
+}

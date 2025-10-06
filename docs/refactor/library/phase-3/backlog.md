@@ -94,7 +94,7 @@ Akzeptanzkriterien:
   DoD (für Phase 4): Alle Renderer rufen Service-Port statt IO direkt; Verträge grün.
 Aufwand (T-Shirt): M
 Priorität (Score): 35
-Open Questions: Wie werden Langläufer (z. B. Preset-Scans) throttled, ohne UI zu blockieren?
+Open Questions: Geklärt – Preset-Scans laufen über den StoragePort asynchron; Renderer erhalten gepufferte Updates und benötigen kein Streaming.
 
 ID: LIB-TD-0004
 Titel (imperativ): Kapsle Persistenzadapter hinter StoragePort
@@ -123,7 +123,7 @@ Akzeptanzkriterien:
   DoD (für Phase 4): Adapter implementiert, Dry-Run unterstützt, Telemetrie feuert bei Fehlern.
 Aufwand (T-Shirt): M
 Priorität (Score): 31.5
-Open Questions: Welche bestehenden Helper (z. B. `metadataCache`) bleiben externe Abhängigkeiten?
+Open Questions: Geklärt – `metadataCache` bleibt read-only für Cache-Hits, alle Vault-Schreibpfade wandern in den StoragePort.
 
 ### Work Package WP-A2: Modal ↔ Watcher Isolation
 
@@ -276,7 +276,7 @@ Akzeptanzkriterien:
   DoD (für Phase 4): Template implementiert, Tests grün, Dokumentation vorhanden.
 Aufwand (T-Shirt): M
 Priorität (Score): 27
-Open Questions: Welche Sonderfelder (z. B. Spellcasting JSON) benötigen Custom-Transformer?
+Open Questions: Geklärt – Custom-Transformer werden über `transform.identifier` je Policy referenziert und kapseln Spezialfelder (z. B. Spellcasting JSON).
 
 ID: LIB-TD-0010
 Titel (imperativ): Portiere Creature/Item/Equipment-Serializer auf Template

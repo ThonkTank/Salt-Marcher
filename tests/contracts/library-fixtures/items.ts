@@ -33,5 +33,17 @@ export const itemFixtures: ItemFixtureSet = Object.freeze({
                 "While submerged you can breathe water for up to 10 minutes per day.",
             ],
         }),
+        Object.freeze({
+            fixtureId: "item.gamma",
+            name: "Lantern of Echoing Tides",
+            rarity: "Rare",
+            type: "Wondrous Item",
+            attunement: "yes",
+            description: "When lit, the lantern projects drifting motes that reveal invisible or ethereal creatures within 20 feet.",
+            properties: [
+                "Creatures revealed by the lantern shed dim light in a 10-foot radius.",
+                "Once per dawn you can cast *See Invisibility* without expending a spell slot.",
+            ],
+        }),
     ],
 });

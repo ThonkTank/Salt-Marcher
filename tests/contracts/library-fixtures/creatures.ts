@@ -95,5 +95,66 @@ export const creatureFixtures: CreatureFixtureSet = Object.freeze({
                 ],
             },
         }),
+        Object.freeze({
+            fixtureId: "creature.gamma",
+            name: "Glimmerfen Stalker",
+            size: "Medium",
+            type: "Plant",
+            alignmentLawChaos: "Neutral",
+            alignmentGoodEvil: "Evil",
+            ac: "15 (natural armor)",
+            hp: "88 (16d8 + 16)",
+            speeds: {
+                walk: { distance: "30 ft." },
+                climb: { distance: "20 ft." },
+                extras: [
+                    { label: "swampstride", distance: "40 ft.", note: "difficult terrain" },
+                ],
+            },
+            abilities: [
+                { ability: "str", score: 16 },
+                { ability: "dex", score: 14 },
+                { ability: "con", score: 12 },
+                { ability: "int", score: 7 },
+                { ability: "wis", score: 15 },
+                { ability: "cha", score: 8 },
+            ],
+            saves: [
+                { ability: "wis", bonus: 5 },
+            ],
+            skills: [
+                { name: "Stealth", bonus: 6 },
+                { name: "Survival", bonus: 5 },
+            ],
+            sensesList: ["darkvision 60 ft.", "passive Perception 15"],
+            languagesList: ["Understands Sylvan, can't speak"],
+            damageImmunitiesList: ["poison"],
+            conditionImmunitiesList: ["poisoned"],
+            traits:
+                "***Choking Spores.*** When reduced to half hit points the stalker releases spores; creatures within 10 ft. must succeed on a DC 13 Con save or be poisoned until the end of their next turn.",
+            actionsList: [
+                { name: "Multiattack", text: "The stalker makes two vine lash attacks." },
+                {
+                    name: "Vine Lash",
+                    to_hit: "+6",
+                    range: "10 ft.",
+                    damage: "10 (2d6 + 3) bludgeoning",
+                    text: "On a hit, the target is grappled (escape DC 14).",
+                },
+            ],
+            spellcasting: {
+                ability: "wis",
+                groups: [
+                    {
+                        type: "per-day",
+                        uses: "3/day",
+                        spells: [
+                            { name: "Entangle" },
+                            { name: "Spike Growth" },
+                        ],
+                    },
+                ],
+            },
+        }),
     ],
 });

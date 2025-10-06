@@ -5,7 +5,10 @@
     "moduleResolution": "bundler",
     "strict": true,
     "baseUrl": ".",
-    "paths": { "*": ["./*", "./src/*"] },
+    "paths": {
+      "obsidian": ["tests/mocks/obsidian.ts"],
+      "*": ["./*", "./src/*"]
+    },
     "types": ["obsidian", "node"]   // <- wichtig für die Typen
   },
   "include": ["src", "tests"]

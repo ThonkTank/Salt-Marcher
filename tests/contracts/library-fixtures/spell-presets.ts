@@ -48,5 +48,23 @@ export const spellPresetFixtures: SpellPresetFixtureSet = Object.freeze({
             higher_levels:
                 "The bonus damage increases by 1 when you reach 5th level (2 cold), 11th level (3 cold), and 17th level (4 cold).",
         }),
+        Object.freeze({
+            fixtureId: "spell-preset.coralmind-bastion",
+            name: "Coralmind Bastion",
+            level: 4,
+            school: "Abjuration",
+            casting_time: "1 action",
+            range: "60 feet",
+            components: ["V", "S", "M"],
+            materials: "a miniature coral crown worth 50 gp",
+            duration: "Concentration, up to 10 minutes",
+            concentration: true,
+            ritual: false,
+            classes: ["Cleric", "Druid"],
+            description:
+                "You raise a shimmering reef of thought coral that grants allies within a 20-foot radius resistance to psychic damage.",
+            higher_levels:
+                "When you cast this spell using a spell slot of 6th level or higher, creatures in the area also gain advantage on Wisdom saving throws.",
+        }),
     ],
 });
