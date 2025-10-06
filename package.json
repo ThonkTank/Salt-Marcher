@@ -1,0 +1,20 @@
+{
+  "name": "Salt Marcher",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "build": "node esbuild.config.mjs",
+    "test": "vitest run",
+    "sync:todos": "node tools/sync-todos.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "esbuild": "^0.21.5",
+    "jsdom": "^27.0.0",
+    "obsidian": "^1.6.0",
+    "typescript": "^5.5.4",
+    "vitest": "^1.6.0"
+  }
+}

@@ -1,0 +1,302 @@
+/* src/apps/library/create/creature/components/damage-component.css */
+/* Styling for the modular damage component */
+
+/* Component container */
+.sm-cc-damage-component {
+  margin: 0.75rem 0;
+  padding: 0.5rem;
+  background: var(--background-secondary);
+  border-radius: 4px;
+}
+
+.sm-cc-damage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.sm-cc-damage-title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+/* Instances container */
+.sm-cc-damage-instances {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Single damage instance */
+.sm-cc-damage-instance {
+  padding: 0.75rem;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  transition: border-color 0.2s ease;
+}
+
+.sm-cc-damage-instance--primary {
+  border-left: 3px solid var(--interactive-accent);
+}
+
+.sm-cc-damage-instance--additional {
+  border-left: 3px solid var(--text-accent);
+  opacity: 0.95;
+}
+
+.sm-cc-damage-instance:hover {
+  border-color: var(--interactive-accent);
+}
+
+/* Instance header */
+.sm-cc-damage-instance-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.sm-cc-damage-instance-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.sm-cc-damage-delete-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.sm-cc-damage-delete-btn:hover {
+  background: var(--background-modifier-error);
+  color: var(--text-error);
+}
+
+.sm-cc-damage-delete-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Damage grid layout */
+.sm-cc-damage-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+}
+
+.sm-cc-damage-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-normal);
+  white-space: nowrap;
+}
+
+/* Dice input with validation */
+.sm-cc-damage-dice-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.sm-cc-damage-dice-input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-monospace);
+  font-size: 0.875rem;
+}
+
+.sm-cc-damage-dice-wrapper.sm-cc-damage-dice-invalid .sm-cc-damage-dice-input {
+  border-color: var(--background-modifier-error);
+  background: var(--background-modifier-error-hover);
+}
+
+.sm-cc-damage-dice-validation {
+  color: var(--text-error);
+  display: none;
+}
+
+.sm-cc-damage-dice-wrapper.sm-cc-damage-dice-invalid .sm-cc-damage-dice-validation {
+  display: flex;
+  align-items: center;
+}
+
+.sm-cc-damage-dice-validation svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Bonus input */
+.sm-cc-damage-bonus-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sm-cc-damage-bonus-input {
+  width: 6ch;
+  font-family: var(--font-monospace);
+  font-size: 0.875rem;
+}
+
+/* Ability selector */
+.sm-cc-damage-ability-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.sm-cc-damage-ability-select {
+  min-width: 120px;
+  font-size: 0.875rem;
+}
+
+/* Damage type selector */
+.sm-cc-damage-type-select {
+  min-width: 140px;
+  font-size: 0.875rem;
+}
+
+/* Condition input */
+.sm-cc-damage-condition-input {
+  font-size: 0.875rem;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.sm-cc-damage-condition-input::placeholder {
+  font-style: italic;
+  opacity: 0.6;
+}
+
+/* Preview display */
+.sm-cc-damage-preview {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: var(--background-secondary);
+  border-radius: 3px;
+  font-size: 0.875rem;
+  font-family: var(--font-text);
+  color: var(--text-muted);
+  border-left: 3px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.sm-cc-damage-preview--valid {
+  color: var(--text-normal);
+  border-left-color: var(--interactive-accent);
+  font-weight: 500;
+}
+
+/* Add damage button */
+.sm-cc-damage-add-btn {
+  padding: 0.5rem 1rem;
+  background: var(--interactive-normal);
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: 4px;
+  color: var(--text-normal);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.sm-cc-damage-add-btn:hover {
+  background: var(--interactive-hover);
+  border-color: var(--interactive-accent);
+  border-style: solid;
+}
+
+.sm-cc-damage-add-btn:active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .sm-cc-damage-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .sm-cc-damage-label {
+    margin-top: 0.5rem;
+  }
+
+  .sm-cc-damage-label:first-child {
+    margin-top: 0;
+  }
+}
+
+/* Dark mode adjustments */
+.theme-dark .sm-cc-damage-component {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.theme-dark .sm-cc-damage-instance {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.theme-dark .sm-cc-damage-preview {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* Compact mode (for inline usage) */
+.sm-cc-damage-component--compact {
+  padding: 0.25rem;
+}
+
+.sm-cc-damage-component--compact .sm-cc-damage-instance {
+  padding: 0.5rem;
+}
+
+.sm-cc-damage-component--compact .sm-cc-damage-grid {
+  gap: 0.25rem 0.5rem;
+}
+
+.sm-cc-damage-component--compact .sm-cc-damage-preview {
+  margin-top: 0.25rem;
+  padding: 0.25rem 0.5rem;
+}
+
+/* Animation for new instances */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sm-cc-damage-instance {
+  animation: slideIn 0.2s ease-out;
+}

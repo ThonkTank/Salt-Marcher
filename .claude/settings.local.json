@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(npm test:*)",
+      "Bash(mkdir:*)",
+      "Bash(find:*)",
+      "Bash(npx tsx:*)",
+      "Read(//home/aaron/ObsVaults/DnD/SaltMarcher/**)",
+      "Read(//home/aaron/ObsVaults/DnD/**)",
+      "Bash(chmod:*)",
+      "Bash(node:*)",
+      "Bash(npx tsc:*)",
+      "Read(//dev/**)",
+      "Bash(xargs:*)",
+      "Bash(ls:*)",
+      "Bash(awk:*)",
+      "Bash(cat:*)",
+      "Bash(sed:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

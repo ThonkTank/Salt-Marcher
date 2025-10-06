@@ -1,0 +1,386 @@
+/* src/apps/library/create/creature/components/area-component.css */
+/* Styling for the modular area-of-effect component */
+
+/* Component container */
+.sm-cc-area-component {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  background: var(--background-secondary);
+  border-radius: 4px;
+  border-left: 3px solid var(--color-blue);
+}
+
+/* Header */
+.sm-cc-area-header {
+  margin-bottom: 0.75rem;
+}
+
+.sm-cc-area-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sm-cc-area-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+/* Grid layout for form fields */
+.sm-cc-area-grid {
+  display: grid;
+  grid-template-columns: minmax(100px, auto) 1fr;
+  gap: 0.75rem 1rem;
+  align-items: start;
+}
+
+/* Labels */
+.sm-cc-area-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-normal);
+  padding-top: 0.375rem;
+  white-space: nowrap;
+}
+
+/* Shape selector */
+.sm-cc-area-shape-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.sm-cc-area-shape-select {
+  min-width: 140px;
+  font-size: 0.875rem;
+}
+
+/* Size inputs */
+.sm-cc-area-size-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sm-cc-area-size-input {
+  font-size: 0.875rem;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  transition: border-color 0.2s ease;
+}
+
+.sm-cc-area-size-input:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+}
+
+.sm-cc-area-unit-indicator {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+  font-weight: 500;
+}
+
+/* Unit selector */
+.sm-cc-area-unit-select {
+  min-width: 100px;
+  font-size: 0.875rem;
+}
+
+/* Origin selector and custom input */
+.sm-cc-area-origin-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sm-cc-area-origin-select {
+  min-width: 160px;
+  font-size: 0.875rem;
+}
+
+.sm-cc-area-origin-custom {
+  width: 100%;
+  font-size: 0.875rem;
+  padding: 0.5rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  transition: border-color 0.2s ease;
+  margin-top: 0.25rem;
+}
+
+.sm-cc-area-origin-custom:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+}
+
+/* Preview section */
+.sm-cc-area-preview-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--background-modifier-border);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1rem;
+  align-items: start;
+}
+
+/* Output text box */
+.sm-cc-area-output {
+  padding: 0.75rem;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  transition: border-color 0.2s ease;
+}
+
+.sm-cc-area-output--invalid {
+  border-color: var(--text-error);
+  background: var(--background-modifier-error-hover);
+}
+
+.sm-cc-area-output-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sm-cc-area-output-main {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--interactive-accent);
+  font-family: var(--font-text);
+}
+
+.sm-cc-area-output-main.sm-cc-area-output--error {
+  color: var(--text-error);
+  font-weight: 500;
+}
+
+.sm-cc-area-output-origin {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ASCII diagram box */
+.sm-cc-area-diagram {
+  padding: 0.75rem;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 140px;
+}
+
+.sm-cc-area-diagram-ascii {
+  font-family: var(--font-monospace);
+  font-size: 0.75rem;
+  line-height: 1.2;
+  color: var(--interactive-accent);
+  margin: 0;
+  white-space: pre;
+  text-align: center;
+}
+
+/* Responsive layout */
+@media (max-width: 768px) {
+  .sm-cc-area-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .sm-cc-area-label {
+    padding-top: 0;
+    padding-bottom: 0.25rem;
+  }
+
+  .sm-cc-area-preview-section {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .sm-cc-area-diagram {
+    order: -1; /* Show diagram first on mobile */
+  }
+}
+
+/* Dark mode adjustments */
+.theme-dark .sm-cc-area-component {
+  background: rgba(0, 0, 0, 0.2);
+  border-left-color: var(--color-blue);
+}
+
+.theme-dark .sm-cc-area-size-input,
+.theme-dark .sm-cc-area-origin-custom {
+  background: rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.theme-dark .sm-cc-area-output,
+.theme-dark .sm-cc-area-diagram {
+  background: rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Compact mode (for inline usage) */
+.sm-cc-area-component--compact {
+  padding: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.sm-cc-area-component--compact .sm-cc-area-grid {
+  gap: 0.5rem 0.75rem;
+}
+
+.sm-cc-area-component--compact .sm-cc-area-preview-section {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+/* Validation states */
+.sm-cc-area-component--invalid {
+  border-left-color: var(--text-error);
+}
+
+.sm-cc-area-component--invalid .sm-cc-area-label {
+  color: var(--text-error);
+}
+
+.sm-cc-area-size-input:invalid {
+  border-color: var(--text-error);
+  background: var(--background-modifier-error-hover);
+}
+
+/* Focus states for accessibility */
+.sm-cc-area-shape-select:focus,
+.sm-cc-area-unit-select:focus,
+.sm-cc-area-origin-select:focus {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.sm-cc-area-size-input:focus,
+.sm-cc-area-origin-custom:focus {
+  box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.3);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .sm-cc-area-component {
+    border-width: 2px;
+  }
+
+  .sm-cc-area-output,
+  .sm-cc-area-diagram {
+    border-width: 2px;
+  }
+
+  .sm-cc-area-output-main {
+    font-weight: 700;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .sm-cc-area-size-input,
+  .sm-cc-area-origin-custom,
+  .sm-cc-area-output {
+    transition: none;
+  }
+}
+
+/* Hover effects */
+.sm-cc-area-size-input:hover,
+.sm-cc-area-origin-custom:hover {
+  border-color: var(--interactive-accent-hover);
+}
+
+/* Empty state */
+.sm-cc-area-output-text:empty::before {
+  content: "Configure area dimensions to see preview";
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+/* Loading state (if needed for async operations) */
+.sm-cc-area-component--loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.sm-cc-area-component--loading::after {
+  content: "Loading...";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Tooltip for dimension labels */
+.sm-cc-area-label[title]:hover {
+  cursor: help;
+  text-decoration: underline dotted;
+}
+
+/* Animation for preview updates */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sm-cc-area-output-text > * {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sm-cc-area-output-text > * {
+    animation: none;
+  }
+}
+
+/* Special styling for emanation shape (aura) */
+.sm-cc-area-component[data-shape="emanation"] .sm-cc-area-output-main {
+  color: var(--color-green);
+}
+
+/* Special styling for dangerous shapes */
+.sm-cc-area-component[data-shape="cone"] .sm-cc-area-output-main,
+.sm-cc-area-component[data-shape="line"] .sm-cc-area-output-main {
+  color: var(--color-red);
+}
+
+/* Print styles */
+@media print {
+  .sm-cc-area-component {
+    border: 1px solid #000;
+    page-break-inside: avoid;
+  }
+
+  .sm-cc-area-diagram {
+    border: 1px solid #000;
+  }
+
+  .sm-cc-area-output {
+    border: 1px solid #000;
+  }
+}
