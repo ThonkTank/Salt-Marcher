@@ -1,198 +1,248 @@
-# Calendar Workmode – Textuelle Wireframes
-Dieses Dokument beschreibt Blocklayouts, Zustandsvarianten und Responsive-Verhalten der Screens. Es ergänzt die [UX-Spezifikation](./UX_SPEC.md) und dient als Referenz für das Styling mit Komponenten aus `src/ui`.
+# Calendar Workmode – Wireframes
+Dieses Dokument beschreibt die textuellen Wireframes für den Calendar-Workmode. Es ergänzt [UX_SPEC.md](./UX_SPEC.md) und verweist auf Komponenten in [COMPONENTS.md](./COMPONENTS.md).
 
-## 1. Dashboard (Normalzustand)
+## 1. Hinweise
+- Alle Layouts basieren auf Obsidian-Panes mit 960px Breite (Standard) und beschreiben zusätzlich das Verhalten unter 520px (schmale Pane).
+- Komponenten-Bezeichner entsprechen denen in der Komponenten-Spezifikation.
+- Legende: `[ ]` Interaktive Elemente, `( )` Statusflächen, `{ }` Toolbars.
+
+## 2. Dashboard
+### 2.1 Normalzustand (Breit)
 ```
-┌───────────────────────────────────────────────────────────────────────┐
-│ Header: [Kalender-Dropdown] [Quick Actions: +1 Tag | +1 Woche | Datum] │
-├───────────────┬───────────────────────────────────────────────────────┤
-│ Aktuelles     │ Kommende Ereignisse                                   │
-│ Datum Panel   │ ┌───────────────────────────────────────────────────┐ │
-│ ┌───────────┐ │ │ Tabellenkopf: Datum | Titel | Typ | Aktionen      │ │
-│ │ Tag 123   │ │ │---------------------------------------------------│ │
-│ │ Monat XYZ │ │ │ Zeilen mit Badge, Hook-Icons, Button „Öffnen“     │ │
-│ │ Woche KW  │ │ └───────────────────────────────────────────────────┘ │
-│ └───────────┘ │                                                       │
-├───────────────┴───────────────────────────────────────────────────────┤
-│ Quick Actions Secondary: [Kalender verwalten] [Ereignisse verwalten]  │
-├───────────────────────────────────────────────────────────────────────┤
-│ Ereignislog (Accordion)                                               │
-│ ┌───────────────────────────────────────────────────────────────────┐ │
-│ │ Liste ausgelöster Ereignisse mit Zeitstempel, Hook-Status         │ │
-│ └───────────────────────────────────────────────────────────────────┘ │
-└───────────────────────────────────────────────────────────────────────┘
-```
-
-### Leerstaaten
-- **Keine Kalender**: Header zeigt Callout „Kein Kalender“ mit CTA „Kalender anlegen“.
-- **Keine kommenden Ereignisse**: Panel ersetzt Tabelle durch Icon + Text „Keine kommenden Ereignisse“ + CTA „Ereignis hinzufügen“.
-
-### Fehlerzustand
-- Banner am oberen Rand bei `io_error`; Quick Actions disabled bis Retry.
-
-### Responsive (schmale Pane ≤ 480px)
-- Quick Actions in Overflow-Menü (Kebab).
-- Panel „Kommende Ereignisse“ unter „Aktuelles Datum“ gestapelt.
-- Tabelle ersetzt durch Cards (Datum, Titel, Aktionen). Scrollbar vertikal.
-
-## 2. Kalender-Manager
-### Listenansicht
-```
-┌─────────────────────────────────────────────┐
-│ Header: „Kalender verwalten“ [Neu] [Import] │
-├─────────────┬───────────────┬───────────────┬──────────┬─────────────┤
-│ Name        │ Wochenlänge   │ Monate        │ Nutzung  │ Aktionen    │
-│-------------│---------------│---------------│----------│-------------│
-│ Hauptreich  │ 7             │ 12            │ Global   │ Bearbeiten  │
-│ Handelsbund │ 10            │ 8             │ Reise x2 │ Duplizieren │
-└─────────────┴───────────────┴───────────────┴──────────┴─────────────┘
-```
-- Footer mit Hinweis „Kalender werden in `/data/calendar.json` gespeichert“.
-
-### Formular (Neu/Bearbeiten)
-```
-┌───────────────────────────── Modal ─────────────────────────────┐
-│ Titel: Kalender anlegen                                        │
-├─────────────────────────────────────────────────────────────────┤
-│ Tab-Leiste: [Grunddaten] [Monate] [Schaltregeln]                │
-│                                                                 │
-│ Grunddaten:                                                     │
-│ Name [________]  Wochenlänge [__]  Startdatum [Datepicker]      │
-│ Checkbox [ ] Als aktiv setzen                                   │
-│                                                                 │
-│ Vorschau (rechte Spalte, sticky):                               │
-│ ┌──────────────┐                                                │
-│ │ Wochenansicht│                                                │
-│ │ Monatsliste  │                                                │
-│ └──────────────┘                                                │
-│                                                                 │
-│ Footer: [Abbrechen] [Speichern] [Mehr Optionen ▾]               │
-└─────────────────────────────────────────────────────────────────┘
++-------------------------------------------------------------+
+| {Toolbar: [Kalender ▼] [Manager öffnen] [Ereignisse verwalten]}|
++-------------------------------------------------------------+
+| [CurrentDateCard]   | [UpcomingEventsList (max 5)]          |
+| (Today: 14 Rainfall)|---------------------------------------|
+| Buttons: [+1 Tag]   | Item: [Badge Type] Event Name  D-2    |
+| [+1 Woche] [Datum…] | Item: ...                             |
++---------------------+---------------------------------------+
+| [EventFilterPanel]                                        []|
+| Tags ▢  Zeitraum ▢  Suche [__________]  [Filter zurücksetzen]|
++-------------------------------------------------------------+
+| [EventLog]                                               []|
+| • 14 Rainfall +1 Tag → 1 Event ausgelöst                   |
+| • ...                                                     |
++-------------------------------------------------------------+
 ```
 
-### Varianten
-- **Duplizieren**: Info-Banner „Basierend auf XYZ“ unter Titel.
-- **Konfliktwarnung**: Inline-Table unter Formular mit Konfliktliste.
-
-### Responsive
-- Modal nutzt vertikales Layout: Tabs als Dropdown, Vorschau unter Formular, Buttons in zwei Reihen.
-
-## 3. Event-Manager
-### Tab-Container
+### 2.2 Leerstaat (keine Kalender)
 ```
-┌──────────────────────────────────────────────┐
-│ Header: „Ereignisse“ [Neu] [Filter ▾] [Vorlagen importieren]   │
-├──────────────┬──────────────┬──────────────┬────────────────────┤
-│ Tabs: Kommend│ Alle         │ Vorlagen     │ Suche [🔍 ____]     │
-├──────────────┴──────────────┴──────────────┴────────────────────┤
-│ Tab-Inhalt (Beispiel „Kommend“):                               │
-│ ┌────────────────────────────────────────────────────────────┐ │
-│ │ Tabelle mit Datum, Titel, Regeltyp, Tags, Aktionen        │ │
-│ └────────────────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────────────┘
++-------------------------------------------------------------+
+| {Toolbar disabled}                                         |
++-------------------------------------------------------------+
+| (Illustration)                                             |
+| "Noch kein Kalender erstellt"                              |
+| [Kalender anlegen]  [Mehr erfahren]                        |
++-------------------------------------------------------------+
 ```
 
-### Leerstaaten
-- **Keine Events**: Illu-Placeholder + CTA „Ereignis hinzufügen“.
-- **Vorlagen leer**: Hinweis „Noch keine Vorlagen importiert“ + CTA „Vorlage laden“.
-
-### Fehlerzustände
-- Recurrence-Konflikt: Banner über Tabelle „Konflikt erkannt“ mit Button „Konflikte anzeigen“.
-
-### Formulare
-#### Einmalig
+### 2.3 Schmale Breite (<520px)
 ```
-┌─────────────── Modal: Ereignis hinzufügen ────────────────┐
-│ Tabs: [Einmalig] [Wiederkehrend] [Vorlage laden]          │
-├───────────────────────────────────────────────────────────┤
-│ Titel [___________]                                       │
-│ Datum [DayPicker ▾]                                       │
-│ Kategorie [Dropdown]  Tags [TagInput]                     │
-│ Notiz [Textarea]                                          │
-│ [ ] Weitere Ereignis direkt anlegen                       │
-├───────────────────────────────────────────────────────────┤
-│ Footer: [Abbrechen] [Speichern]                           │
-└───────────────────────────────────────────────────────────┘
++-----------------------------------+
+| {Toolbar: [Kal ▼] [Mgr] [Evt]}    |
++-----------------------------------+
+| [CurrentDateCard]                 |
+| Buttons als IconRow: [+1][+7][⋯]  |
++-----------------------------------+
+| Accordion "Kommende Ereignisse"   |
+|  > Item                           |
++-----------------------------------+
+| Accordion "Filter"               |
+|  > Tags/Zeitraum/Search           |
++-----------------------------------+
 ```
 
-#### Wiederkehrend
+## 3. Kalender-Manager
+### 3.1 Header & Moduswechsel
 ```
-┌──────── Modal: Wiederkehrendes Ereignis ────────┐
-│ Titel [________]                                │
-│ Regeltyp [Dropdown]                             │
-│ ┌─ Regelparameter Pane ───────────────────────┐ │
-│ │ Annual Offset: Monat [▾] Tag [▾]            │ │
-│ │ oder Monthly: Woche #[▾] Tag [▾]            │ │
-│ │ Weekly: Tag [▾]                              │ │
-│ │ Custom: Hook-ID [____] Payload [JSON editor] │ │
-│ └──────────────────────────────────────────────┘ │
-│ Startdatum optional [Datepicker]               │
-│ Endbedingungen [Checkbox + Inputs]             │
-├────────────────────────────────────────────────┤
-│ Vorschau Panel rechts: Liste nächster 5 Termine│
-├────────────────────────────────────────────────┤
-│ Footer: [Abbrechen] [Speichern]                │
-└────────────────────────────────────────────────┘
++----------------------------------------------------------------+
+| {ManagerToolbar: [← Zurück] [Kalenderansicht | Übersicht] (Tabs)}|
+| {ZoomToolbar (wenn Kalenderansicht): [Monat] [Woche] [Tag] [Heute]}|
+| {Actions: [Neuer Kalender] [Import] [Default setzen ▼]}         |
++----------------------------------------------------------------+
 ```
 
-### Responsive
-- Tabs in Dropdown, Tabelle als Cards; Vorschau Panel unter Formular.
-
-## 4. Zeit-Dialoge
-### Advance Dialog
+### 3.2 Kalenderansicht – Monatsmodus (Breit)
 ```
-┌─────────────── Zeit fortschreiten ───────────────┐
-│ Radiogroup:                                     │
-│ (•) +1 Tag  ( ) +1 Woche  ( ) Benutzerdefiniert │
-│ Benutzerdefiniert: Wert [__] Einheit [▾]        │
-│ Checkbox [x] Ereignisse automatisch auslösen    │
-│ Zusammenfassung Panel                           │
-│ ┌─────────────────────────────────────────────┐ │
-│ │ Neuer Datum: Tag 125 Monat 5                │ │
-│ │ Ausgelöste Events: 2 (Liste einklappbar)    │ │
-│ └─────────────────────────────────────────────┘ │
-├────────────────────────────────────────────────┤
-│ Footer: [Abbrechen] [Fortschreiten]             │
-└────────────────────────────────────────────────┘
++----------------------------------------------------------------+
+| {Breadcrumb: Kalenderansicht > Monat (Oberwasser)}             |
+| {Secondary: [◀] [Heute] [▶]  Datum-Picker [···]}               |
++----------------------------------------------------------------+
+|  Mo   Tu   We   Th   Fr   Sa   Su                              |
+|+----+----+----+----+----+----+----+                           |
+||14  |15  |16  |17  |18  |19  |20  |  Hover: Tooltip           |
+|| evt|    |    |evt |    |    |    |                           |
+|+----+----+----+----+----+----+----+                           |
+| ...                                                          |
++----------------------------------------------------------------+
+| {Inline creation hint: "Doppelklick für neues Ereignis"}      |
++----------------------------------------------------------------+
 ```
 
-### Jump Dialog
+#### Variante Woche
 ```
-┌────────────── Datum setzen ──────────────┐
-│ Datepicker (Monat ▾ Tag ▾ Jahr ▾)        │
-│ Checkbox [x] Übersprungene Events ausführen │
-│ Hinweisbox bei >500 Events Warnung       │
-│ Liste übersprungener Events (scrollbar)  │
-├──────────────────────────────────────────┤
-│ Footer: [Abbrechen] [Setzen]             │
-└──────────────────────────────────────────┘
++----------------------------------------------------------------+
+| {Toolbar wie oben + Pill "Woche 5"}                            |
++----------------------------------------------------------------+
+|Day Header| Timeline 00-24h                                     |
+|----------|-----------------------------------------------------|
+|Mo 14     | [EventCard] [EventCard overlapping stack]           |
+|Di 15     | ...                                                 |
++----------------------------------------------------------------+
 ```
 
-### Fehlerzustände
-- Inline unter Datepicker: „Datum existiert nicht im aktuellen Schema“.
-- Warnbanner bei Hook-Fehler: „3 Ereignisse konnten nicht ausgelöst werden“ + Retry.
-
-### Responsive
-- Dialoge Vollbreite (Mobile-Modal), Zusammenfassung unter Inputs.
-
-## 5. Reise-Sync Feedback im Travel-Panel
+#### Variante Tag
 ```
-┌────────────── Travel-Panel Feedback ─────────────┐
-│ Badge: [Kalender aktiv: Handelsbund]             │
-│ Aktuelles Datum: Tag 42 Monat 3                  │
-│ Zeitbuttons: [-1 Tag] [+1 Tag] [Datum setzen]    │
-│ Ereignis-Benachrichtigungen (Stacked Cards):    │
-│ ┌─────────────────────────────────────────────┐ │
-│ │ Titel: Markttag                              │ │
-│ │ Datum & Hook-Status                          │ │
-│ │ Actions: [Bestätigen] [Details]              │ │
-│ └─────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────┘
++----------------------------------------------------------------+
+| {Toolbar + Buttons [-1 Tag] [+1 Tag] [Zeitsprung…]}            |
++----------------------------------------------------------------+
+| 00:00 |                                                        |
+| 02:00 |                                                        |
+| 04:00 | [EventCard timeline marker]                            |
+| ...                                                           |
++----------------------------------------------------------------+
 ```
-- Bei Fehlern rotes Banner „Kalendersync fehlgeschlagen“.
-- Responsive: Buttons als Icon-Only, Cards collapse zu Liste.
 
-## 6. Interaktionshinweise
-- Tooltips für Quick Actions: „Shift+Alt+. für +1 Tag“.
-- Kontextmenüs (Right-Click) auf Ereignislisten: „Bearbeiten“, „Duplizieren“, „Löschen“.
-- Drag & Drop nicht vorgesehen (Assumption: Priorität gering, kann später ergänzt werden).
+#### Leerstaat
+```
++----------------------------------------------------------------+
+| (Illustration) "Keine Ereignisse im ausgewählten Zeitraum."    |
+| [Ereignis hinzufügen]                                         |
++----------------------------------------------------------------+
+```
+
+### 3.3 Kalenderansicht – Fehlerzustand
+```
++----------------------------------------------------------------+
+| {Toolbar + Banner [Fehler beim Laden der Ereignisse] [Retry]}  |
+| Grid bleibt leer (Schraffur)                                   |
++----------------------------------------------------------------+
+```
+
+### 3.4 Kalender-Übersicht (Breit)
+```
++----------------------------------------------------------------+
+| {FilterBar: Suche [_____]  Filter [Schema ▼] [Default ▼]      }|
+| {BulkActions: [Löschen] [Export] [Als Default setzen]}         |
++----------------------------------------------------------------+
+|[Card] Name     Badge: Default                                 |
+| Schema: 10 Tage, 4 Monate                                     |
+| Actions: [Öffnen] [Bearbeiten] [Löschen]                      |
++----------------------------------------------------------------+
+|[Card] ...                                                     |
++----------------------------------------------------------------+
+```
+
+#### Listenmodus (Toggle)
+```
++----------------------------------------------------------------+
+| Name        | Schema           | Default | Aktionen           |
+|-------------|------------------|---------|--------------------|
+| Ocean Tide  | 12 Monate, W=10  | ✔       | [Öffnen][Bearbeiten]|
+| Desert Sun  | ...              |         | ...                |
++----------------------------------------------------------------+
+```
+
+#### Leerstaat
+```
++----------------------------------------------------------------+
+| (Hero) "Noch keine Kalender"                                   |
+| [Kalender anlegen]  [Importieren]                              |
++----------------------------------------------------------------+
+```
+
+#### Fehlerzustand
+```
++----------------------------------------------------------------+
+| Banner (rot): "Kalender konnten nicht geladen werden." [Retry] |
++----------------------------------------------------------------+
+```
+
+### 3.5 Schmale Breite
+```
++-----------------------------------+
+| {Toolbar: [←] [Ansicht ▼] [⋮]}    |
++-----------------------------------+
+| Kalenderansicht: horizontales Scroll-Grid, Tageslabel untereinander|
+| Übersicht: vertikale Karten, Filter als Accordion.            |
++-----------------------------------+
+```
+
+## 4. Travel-Leaf
+### 4.1 Monatsmodus (Breit 360px Leaf)
+```
++----------------------------------------+
+| {Header: Travel-Kalender  [Mon][Woc][Tag][Next] [×]}|
+| {Sub: [◀] [Heute] [▶]  [+1 Tag] [-1 Tag]}            |
++----------------------------------------+
+|Mo Tu We Th Fr Sa Su|                      |
+|14 15 16 17 18 19 20|  (kompaktes Grid)    |
+|-- evt markers --   |                      |
++----------------------------------------+
+| Banner? z.B. "2 Ereignisse übersprungen" |
++----------------------------------------+
+| [ActionRow: Nacharbeiten]               |
++----------------------------------------+
+```
+
+### 4.2 Wochenmodus
+```
++----------------------------------------+
+| Header wie oben (Woche Tab aktiv)      |
++----------------------------------------+
+|Mo 14 | [EvtBadge]                      |
+|Di 15 |                                 |
+|...                                     |
++----------------------------------------+
+```
+
+### 4.3 Tagmodus
+```
++----------------------------------------+
+| Header wie oben (Tag Tab aktiv)        |
+| {Controls: [-1] [+1] [Zeitsprung…]}    |
++----------------------------------------+
+|00:00 |                                 |
+|06:00 | [Evt timeline marker]           |
+|12:00 |                                 |
+|18:00 |                                 |
++----------------------------------------+
+```
+
+### 4.4 „Nächste Ereignisse“
+```
++----------------------------------------+
+| Header wie oben (Next Tab aktiv)       |
++----------------------------------------+
+|• Event Name (in 2 Tagen) [Nacharbeiten]|
+|• Event Name (Heute) [Öffnen]           |
+|• ...                                   |
++----------------------------------------+
+```
+
+### 4.5 Leerstaat
+```
++----------------------------------------+
+| (Icon) "Kein Kalender ausgewählt"      |
+| [Kalender wählen]                      |
++----------------------------------------+
+```
+
+### 4.6 Fehlerzustand
+```
++----------------------------------------+
+| Banner (rot): "Travel-Daten nicht verfügbar." [Retry]|
+| Link: [Manager öffnen]                               |
++----------------------------------------+
+```
+
+### 4.7 Schmale Breite (<300px)
+- Header Buttons werden zu Icons ohne Text.
+- Grid zeigt nur 3 Spalten, horizontales Scrollen.
+- Banner collapsible.
+
+## 5. Verweise
+- Komponenten: [COMPONENTS.md](./COMPONENTS.md#calendar-ui-komponenten)
+- State: [STATE_MACHINE.md](./STATE_MACHINE.md#zustandsuebersicht)
+- UX-Flows: [UX_SPEC.md](./UX_SPEC.md)

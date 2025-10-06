@@ -2,9 +2,9 @@
 Diese Spezifikation definiert UI-Verhalten, Nutzer:innenflüsse und Interaktionen für den Calendar-Workmode. Sie ergänzt den [Implementierungsplan](../IMPLEMENTATION_PLAN.md) und verweist auf [Wireframes](./WIREFRAMES.md), [Komponenten](./COMPONENTS.md) sowie die [Zustandsmaschine](./STATE_MACHINE.md).
 
 ## 1. Übersicht
-- Primary Persona: Spielleitung, die Reisen im Cartographer plant und Ereignisse verwaltet.
-- Kontext: Obsidian-Leaf im Calendar-Workmode oder eingebettet in das Cartographer-Travel-Panel.
-- UI-Bausteine: Verwendung vorhandener Komponenten aus `src/ui` (Tables, Buttons, Toggles, Modals) mit ergänzenden Calendar-spezifischen Wrappern.
+- Primary Persona: Spielleitung, die Reisen im Cartographer plant, Default-Kalender verwaltet und Ereignisse pflegt.
+- Kontext: Obsidian-Leaf im Calendar-Workmode, eigenständiger Kalender-Manager (Kalenderansicht/Übersicht) sowie kompaktes Travel-Leaf im Cartographer-Reisemodus.
+- UI-Bausteine: Nutzung vorhandener Komponenten aus `src/ui` (Tables, Buttons, Toggles, Modals) kombiniert mit neuen Calendar-spezifischen Grids, Toolbars und Leaf-Komponenten.
 
 ## 2. Artefakt-Mapping
 | Artefakt | Zweck | Referenz |
@@ -16,297 +16,291 @@ Diese Spezifikation definiert UI-Verhalten, Nutzer:innenflüsse und Interaktione
 | Testplan | Abdeckung & Akzeptanzprüfung | [../../tests/apps/calendar/TEST_PLAN.md](../../../tests/apps/calendar/TEST_PLAN.md) |
 
 ## 3. Workflows
-Jeder Workflow beschreibt Ziel, Trigger, Vorbedingungen, Flüsse, Fehler und Postbedingungen. Akzeptanzkriterien sind als Gherkin-nahe Checkliste angefügt.
+Jeder Workflow beschreibt Ziel, Trigger, Vorbedingungen, Flüsse, Fehler, Postbedingungen und Datenänderungen. Akzeptanzkriterien siehe [Implementierungsplan §Akzeptanzkriterien](../IMPLEMENTATION_PLAN.md#akzeptanzkriterien-kurzform).
 
 ### 3.1 Aktiven Kalender wählen
 | Element | Beschreibung |
 | --- | --- |
-| Ziel | Nutzer:in wählt den aktiven Kalender für den globalen Kontext oder eine Reise. |
-| Trigger | Dropdown in der Dashboard-Toolbar, Command Palette (`calendar:select-active`), Reise-Setup im Travel-Panel. |
-| Vorbedingungen | Mindestens ein Kalender ist vorhanden; Reise kann optional einen vordefinierten Kalender haben. |
-| Postbedingungen | `activeCalendarId` im `CalendarStateGateway` aktualisiert; Dashboard lädt `currentDate` und Ereignisse neu. |
-| Datenänderungen | Persistenter Status `activeCalendarId`; optional Reise-Metadatum (`travel.activeCalendarId`). |
+| Ziel | Aktiven Kalender im globalen Kontext oder für eine Reise setzen. |
+| Trigger | Toolbar-Dropdown im Dashboard, Command Palette (`calendar:select-active`), Reise-Setup im Travel-Panel. |
+| Vorbedingungen | Mindestens ein Kalender existiert. Für Reisen kann ein Default vorgegeben sein. |
+| Postbedingungen | `activeCalendarId` (Scope: global oder Reise) aktualisiert, Dashboard/Travel-Leaf laden Daten neu. |
+| Datenänderungen | Persistenter Status im `CalendarStateGateway` (`activeCalendarId`, optional `travel.activeCalendarId`). |
 
 **Hauptfluss**
-1. Nutzer:in öffnet Auswahl (Dropdown oder Command Palette).
-2. Liste zeigt alle Kalender + Metadaten (Name, Wochenlänge, Kennzeichnung "Reise"/"Global").
-3. Auswahl speichert `activeCalendarId` via Gateway.
-4. Presenter lädt Schema, Datum, Events; UI zeigt Ladeindikator, dann aktualisierte Ansicht.
+1. Nutzer:in öffnet Dropdown/Command.
+2. Liste zeigt alle Kalender mit Labels (Default, Reise-Override) und Tooltips für Schema-Zusammenfassung.
+3. Auswahl setzt `activeCalendarId` im passenden Scope (global ohne Reise, sonst Reise-spezifisch).
+4. Presenter zeigt Ladezustand, ruft Domain/Gateway, aktualisiert Dashboard & Travel-Leaf.
 
 **Alternativflüsse**
-- *Kein Kalender verfügbar*: Dropdown zeigt Leerstaat mit CTA „Kalender anlegen“ (Modal öffnet). Auswahl ist disabled.
-- *Reisespezifisch*: Wenn Workflow innerhalb einer Reise ausgelöst wird, erscheint Option „Reise überschreibt globalen Kalender“. Bestätigung erfordert Toggle.
+- *Kein Kalender vorhanden*: Dropdown zeigt Leerstaat mit CTA „Kalender anlegen“ (öffnet Manager in Modus „Kalender erstellen“).
+- *Reisespezifischer Override*: Checkbox „Reise-spezifischen Kalender verwenden“ blendet Liste für Reise-Overrides ein.
 
 **Fehlerzustände**
-- Persistenzfehler → Inline-Banner „Kalender konnte nicht geladen werden. [Erneut versuchen]“.
-- Konflikt: Reise nutzt Kalender, der gelöscht wurde → Dialog fordert Neuauswahl.
+- Gateway-Fehler → Inline-Banner „Kalender konnte nicht geladen werden. [Erneut versuchen]“.
+- Ausgewählter Kalender gelöscht → Dialog fordert Neuauswahl (Fallback auf Default, siehe §3.2).
 
-**Ablaufdiagramm (textuell)**
-`Start → Auswahl öffnen → (Kalender vorhanden?) → [Nein] Leerstaat anzeigen → Ende` / `[Ja] Kalender auswählen → Gateway.updateActiveCalendar → UI reload → Ende`
+**Textuelles Ablaufdiagramm**
+`Start → Auswahl öffnen → Kalenderliste laden → (Liste leer?) → [Ja] Leerstaat → Ende / [Nein] Kalender wählen → Scope bestimmen → Gateway.updateActiveCalendar → UI refresh → Ende`
 
-**Akzeptanzkriterien**
-- [ ] Given ein aktiver Reise- oder globaler Kontext, When Nutzer:in einen Kalender wählt, Then Dashboard wird aktualisiert und Auswahl bleibt persistent.
-- [ ] Given keine Kalender existieren, When Nutzer:in das Dropdown öffnet, Then erscheint der Leerstaat mit CTA und keine Auswahl ist möglich.
-
-### 3.2 Neuen Kalender anlegen
+### 3.2 Default-Kalender verwalten
 | Element | Beschreibung |
 | --- | --- |
-| Ziel | Kalender-Schema (Monate, Wochenlänge, Schaltregeln) definieren und speichern. |
-| Trigger | CTA im Dashboard-Leerstaat, Button „Kalender anlegen“ im Manager, Command `calendar:new`. |
-| Vorbedingungen | Nutzer:in befindet sich im Calendar-Workmode oder Reise-Setup. |
-| Postbedingungen | Neuer Eintrag im Repository; optional direkt als aktiv markiert. |
-| Datenänderungen | Insert in `CalendarRepository` (`CalendarSchema`, Defaultdatum, optionale Startereignisse). |
+| Ziel | Genau einen globalen Default definieren und optionale Reise-Defaults verwalten. |
+| Trigger | Toggle „Als Standard festlegen“ in Formularen, Kontextmenü „Als Default setzen“ in Übersicht, Reise-Einstellungen. |
+| Vorbedingungen | Mindestens ein Kalender existiert. |
+| Postbedingungen | `defaultCalendarId` (global) bzw. `travel.defaultCalendarId` aktualisiert, UI kennzeichnet Default. |
+| Datenänderungen | Persistente Flags im Repository und Gateway (`isDefaultGlobal`, `defaultForTravelId`). |
 
-**Hauptfluss**
-1. Modal öffnet Formular mit Tabs „Grunddaten“, „Monate“, „Schaltregeln“.
-2. Nutzer:in füllt Pflichtfelder aus (Name, Wochenlänge, Startdatum, Monate mit Länge und Bezeichnung).
-3. Live-Vorschau rechts zeigt resultierende Wochen/Monatsstruktur.
-4. Validierung prüft Summen, Wochenlänge (>0), eindeutige Monatsnamen.
-5. Speichern persistiert Schema, schließt Modal und zeigt Toast „Kalender erstellt“.
+**Hauptfluss (Global)**
+1. Nutzer:in aktiviert Toggle „Globaler Standard“ im Kalenderformular oder Kontextmenü.
+2. System prüft vorhandenen Default; falls anderer Default existiert, deaktiviert ihn.
+3. Repository aktualisiert Flags atomar (Transaktion oder sequenziell mit Rollback).
+4. UI zeigt Badge „Default“ in Listen, Dropdowns und Travel-Leaf.
 
-**Alternativflüsse**
-- Klick auf „Duplizieren“ (aus Manager) füllt Formular mit bestehenden Werten.
-- „Als aktiv setzen“ Checkbox: nach Speichern `activeCalendarId` aktualisieren.
+**Hauptfluss (Reise)**
+1. In Reise-Setup toggelt Nutzer:in „Reise-Standard“.
+2. `travel.defaultCalendarId` wird gespeichert; Travel-Leaf aktualisiert Kennzeichnung.
 
-**Fehlerzustände**
-- Validierungsfehler: Inline unter Feld, z.B. „Monatslänge muss ≥1 sein“.
-- Persistenzfehler: Modal bleibt offen, Banner „Speichern fehlgeschlagen“ mit Retry.
+**Alternativ-/Fehlerflüsse**
+- Löschen eines Default-Kalenders → Dialog: „Bitte neuen Standard wählen“ (Liste + CTA). Ohne Auswahl fallbackt System auf anderen Kalender oder markiert „Kein Standard“ mit Hinweis.
+- Persistenzfehler → Toast „Standard konnte nicht gesetzt werden“ + Undo.
 
-**Ablaufdiagramm (textuell)**
-`Start → Formular ausfüllen → Validierung OK? → [Nein] Fehler anzeigen → zurück zu Formular` / `[Ja] Repository.createCalendar → (Als aktiv?) → Gateway.setActive → Modal schließen → Ende`
+**Textuelles Ablaufdiagramm**
+`Start → Toggle aktivieren → bisherigen Default ermitteln → Flag entfernen (wenn vorhanden) → neuen Default setzen → persistieren → UI aktualisieren → Ende`
 
-**Akzeptanzkriterien**
-- [ ] Given der Kalender-Manager ist geöffnet, When valide Daten gespeichert werden, Then erstellt das System den Kalender und zeigt Erfolgsmeldung.
-- [ ] Given ungültige Eingaben vorliegen, When Speichern ausgelöst wird, Then bleibt Modal offen und markiert fehlerhafte Felder.
-
-### 3.3 Ereignis anlegen
-#### 3.3.1 Einmaliges Ereignis
+### 3.3 Kalender-Manager – Modus wechseln
 | Element | Beschreibung |
 | --- | --- |
-| Ziel | Einzelnes Ereignis an einem absoluten Datum hinzufügen. |
-| Trigger | Button „Ereignis hinzufügen“ im Event-Manager → Tab „Einmalig“. |
-| Vorbedingungen | Aktiver Kalender vorhanden; Datum innerhalb Schema. |
-| Postbedingungen | Ereignis in Listen „Alle“ und (falls zukünftig) „Kommend“; Hooks registriert. |
-| Datenänderungen | Insert `CalendarEventSingle` im Repository.
+| Ziel | Zwischen vollformatiger Kalenderansicht (Monat/Woche/Tag) und Kalender-Übersicht (Listen/Kacheln) wechseln. |
+| Trigger | Tabs oder segmented Control in der Manager-Headerleiste. |
+| Vorbedingungen | Manager-Leaf geöffnet. |
+| Postbedingungen | `managerViewMode` aktualisiert, entsprechende Daten (Events, Filter) geladen. |
+| Datenänderungen | UI-Status (`managerViewMode`, `calendarViewZoom`, Filterpersistenz). |
 
 **Hauptfluss**
-1. Modal zeigt Formular (Titel, Datum-Picker, Kategorie, Tags, Notiz).
-2. Datum-Picker nutzt Schema (Monats-/Tagesauswahl basierend auf Kalender).
-3. Speichern persistiert Event, schließt Modal, UI aktualisiert Listen.
+1. Nutzer:in wählt Tab „Kalenderansicht“ oder „Übersicht“.
+2. Presenter speichert Modus, lädt benötigte Daten (Events per Zoom, Filterresultate, Default-Flags).
+3. UI animiert Übergang, Fokus bleibt auf Toolbar (ARIA `aria-live="polite"` für Screenreader-Hinweis).
+
+**Kalenderansicht-Details**
+- Zoom-Stufen: Monat, Woche, Tag (Toolbar mit Buttons und Shortcuts: `Ctrl+Alt+1/2/3`).
+- Navigation: Vor/Zurück, Heute, Datums-Picker, Inline-Erstellung per Doppelklick (öffnet Event-Dialog mit vorausgefülltem Datum).
+- Hover zeigt Tooltip mit Event-Details, Klick auf Event öffnet Detail-Popover (Bearbeiten, Löschen, Als Default?).
+
+**Übersichts-Details**
+- Layout ähnlich `apps/library`: Filterleisten (Tagging, Schema-Typ, Default-Status), Suchfeld, Listen- oder Kachelumschaltung.
+- Stapelaktionen: Löschen, Export, In Editor öffnen, Als Default setzen.
+- Import in Editor: Button „Im Editor öffnen“ → übergibt Kalenderdaten an Formular-Dialog.
+
+**Fehler-/Leerstaaten**
+- Keine Kalender → hero section mit CTA „Neuen Kalender anlegen“.
+- Datenladefehler → Inline-Error mit Retry.
+
+### 3.4 Neuen Kalender anlegen
+| Element | Beschreibung |
+| --- | --- |
+| Ziel | Schema konfigurieren, Default-Status optional setzen und speichern. |
+| Trigger | CTA im Dashboard, Manager-Leerstaat, Button „Kalender anlegen“, Command `calendar:new`. |
+| Vorbedingungen | Nutzer:in besitzt Schreibrechte. |
+| Postbedingungen | Neuer Eintrag im Repository, optional als Default markiert und ggf. sofort aktiv. |
+| Datenänderungen | Insert in `CalendarRepository` (`CalendarSchema`, Default-Flags, Startdatum), optional `activeCalendarId` Update. |
+
+**Hauptfluss**
+1. Modal mit Tabs „Grunddaten“, „Monate“, „Schaltregeln“, „Vorschau“ öffnet.
+2. Pflichtfelder: Name (Text), Wochenlänge (Number), Startdatum (Schema-spezifischer DatePicker), Monate (Liste mit Name & Länge), Optional: Schaltregel-Konfigurator (JSON-ähnliche Controls).
+3. Vorschau aktualisiert sich live (Mini-Kalender, Event-Slots).
+4. Toggle „Als globalen Standard festlegen“ (Standard: aus) und „Für aktuelle Reise übernehmen“ (sichtbar falls Reise aktiv).
+5. Speichern → Validierung → Persistenz → Toast „Kalender erstellt“.
 
 **Alternativflüsse**
-- „Weitere Ereignis anlegen“ Checkbox: speichert und leert Formular (Modal bleibt offen).
-- Datum in Vergangenheit: UI markiert mit Badge „Vergangen“ und fragt „Jetzt nacharbeiten?“.
+- Duplizieren existierender Kalender (Formular prefilled, Name mit Suffix „Copy“).
+- Speichern als Vorlage (kein sofortiger Aktiv-Status, markiert `isTemplate`).
 
 **Fehlerzustände**
-- Datum außerhalb Schema → Inline-Fehler.
-- Persistenzfehler → Banner oben im Modal.
+- Feldvalidierung (siehe §5 Accessibility & i18n) → Inline-Fehler, Submit bleibt disabled.
+- Persistenzfehler → Banner im Modal, Retry möglich.
 
-**Ablaufdiagramm (textuell)**
-`Start → Formular ausfüllen → validateDateWithinSchema → (Fehler?) → [Ja] Inline Error → Ende` / `[Nein] Repository.createSingleEvent → Hooks.register → Modal schließen → Ende`
+### 3.5 Ereignis anlegen
+#### 3.5.1 Einmalig
+| Element | Beschreibung |
+| --- | --- |
+| Ziel | Einzelnes Ereignis an einem Datum hinzufügen. |
+| Trigger | Button „Ereignis hinzufügen“ → Tab „Einmalig“. |
+| Vorbedingungen | Aktiver Kalender existiert, Datum innerhalb Schema. |
+| Postbedingungen | Ereignis in Listen „Alle“ & „Kommend“ (falls zukünftig) sowie optional Travel-Leaf-Vorschau. |
+| Datenänderungen | Insert `CalendarEventSingle`, optional Hooks. |
 
-**Akzeptanzkriterien**
-- [ ] Given ein aktiver Kalender, When ein gültiges Datum gespeichert wird, Then erscheint das Ereignis in den Listen mit korrekter Sortierung.
-- [ ] Given Datum liegt in Vergangenheit, When gespeichert, Then wird es als „Vergangen“ markiert und optional nachgearbeitet.
+**Hauptfluss**
+1. Formularfelder: Titel (Text), Datum (Schema-abhängiger Picker), Typ (Dropdown), Tags (TokenInput), Notiz (Markdown).
+2. Checkbox „Bei Zeitfortschritt nachholen falls übersprungen“ (Default: an).
+3. Speichern → Validierung (Datum >= 0, existiert) → Persistenz → Modal schließt.
 
-#### 3.3.2 Wiederkehrendes Ereignis
+**Alternativ-/Fehlerflüsse**
+- Datum in Vergangenheit → Hinweis „Vergangenes Ereignis – jetzt nacharbeiten?“ + Button `triggerNow`.
+- Konflikt mit anderem Ereignis (gleicher Slot, exclusiv) → Warnbanner, Option „Trotzdem speichern“.
+
+#### 3.5.2 Wiederkehrend
 | Element | Beschreibung |
 | --- | --- |
 | Ziel | Regelbasiertes Ereignis mit Vorschau definieren. |
 | Trigger | Button „Ereignis hinzufügen“ → Tab „Wiederkehrend“. |
-| Vorbedingungen | Aktiver Kalender, definierte Monate/Wochen. |
-| Postbedingungen | Ereignis in Listen, Recurrence-Engine aktualisiert Caches. |
+| Vorbedingungen | Aktiver Kalender mit definierten Monaten/Wochen. |
+| Postbedingungen | Ereignis erstellt, Recurrence-Cache aktualisiert, Vorschau in Manager & Travel-Leaf. |
 | Datenänderungen | Insert `CalendarEventRecurring` (inkl. `RepeatRule`). |
 
 **Hauptfluss**
-1. Formular sammelt: Titel, Startdatum (optional), Regeltyp (Dropdown), regelabhängige Felder (Annual Offset, Monthly by position, Weekly dayIndex, Custom Hook-ID), Endkriterium (z.B. limit count).
-2. Regeländerungen aktualisieren Live-Vorschau (nächste 5 Vorkommen) über Domain-Service.
-3. Speichern persistiert Event und aktualisiert Recurrence-Caches.
-
-**Alternativflüsse**
-- Wechsel Regeltyp bewahrt kompatible Felder, invalidiert andere.
-- Custom Hook: Modal fordert Hook-ID + Parameter JSON.
+1. Regel-Picker mit Modi: `annual_offset`, `monthly_position`, `weekly_dayIndex`, `custom_hook` (JSON textarea + Validator).
+2. Vorschau (nächste 5 Vorkommen) aktualisiert on-change; Countdown zeigt Tage bis zum nächsten Auftreten.
+3. Optional: „Nur zwischen Datum A/B“ (Begrenzung), „Endlos“.
+4. Speichern → Validierung (z.B. Position existiert) → Persistenz.
 
 **Fehlerzustände**
-- Regel kollidiert mit bestehender (identisch) → Dialog fragt „Duplikat zulassen?“; Standard: Blockieren.
-- Custom Hook invalid JSON → Inline-Fehler.
+- Kollidierende Regel → Warnung „Regel überschneidet sich mit {eventName}“ + Link „Konflikte anzeigen“.
+- Custom Hook invalid JSON → Inline-Error, Speichern disabled.
 
-**Ablaufdiagramm (textuell)**
-`Start → Regel auswählen → Eingaben validieren → generatePreview → (Konflikte?) → [Ja] Konflikt-Dialog → (Bestätigt?) → [Nein] zurück → Ende / [Ja] fortsetzen` → `Repository.createRecurringEvent → Cache.update → Ende`
-
-**Akzeptanzkriterien**
-- [ ] Given valide Regelwerte, When gespeichert, Then zeigt Vorschau korrekte zukünftige Vorkommen.
-- [ ] Given Konflikt erkannt, When Nutzer:in nicht bestätigt, Then wird kein Event gespeichert.
-
-### 3.4 Zeit fortschreiten
+### 3.6 Zeit fortschreiten
 | Element | Beschreibung |
 | --- | --- |
-| Ziel | Datum um definierte Schritte (Tag/Woche/Custom) verändern und Ereignisse prüfen. |
-| Trigger | Quick-Actions im Dashboard („+1 Tag“, „+1 Woche“, „Benutzerdefiniert…“), Tastenkürzel (`Shift+Alt+.`), Cartographer `advanceTime` Hook. |
-| Vorbedingungen | Aktiver Kalender, `currentDate` gesetzt. |
-| Postbedingungen | `currentDate` aktualisiert, ausgelöste Events geloggt, Hooks dispatcht. |
-| Datenänderungen | Update `currentDate`, Append zu `eventLog`, Option Persistenz der letzten Advance-Operation. |
+| Ziel | Datum vor-/zurückbewegen, Ereignisse auslösen. |
+| Trigger | Dashboard Quick-Actions („+1 Tag“, „+1 Woche“, „Benutzerdefiniert…“), Keyboard (Ctrl+Alt+Arrow), Travel-Leaf Buttons, Cartographer-Hooks. |
+| Vorbedingungen | Aktiver Kalender, Travel-Leaf optional sichtbar. |
+| Postbedingungen | `currentDate` aktualisiert, ausgelöste Events in Log, Travel-Leaf synchronisiert. |
+| Datenänderungen | Mutationen im Gateway (`currentDate`, `triggeredEvents`, `pendingFollowUps`). |
 
 **Hauptfluss**
-1. Nutzer:in wählt Quick-Action oder öffnet Dialog „Zeit anpassen“.
-2. Domain-Service `advanceTime(step)` berechnet neues Datum und Events.
-3. UI zeigt Spinner bis Operation abgeschlossen.
-4. Ergebnisse: Dashboard aktualisiert Datum, Panel „Ausgelöste Ereignisse“ listet Items; optional Buttons „Event öffnen“.
-
-**Alternativflüsse**
-- Benutzerdefinierter Dialog: Eingabe `stepValue` + Einheit (Tag/Woche/Monat) + Richtung (Vor/Zurück).
-- Option „Ereignisse automatisch quittieren“ in Einstellungen.
+1. Nutzer:in wählt Aktion oder nutzt Shortcut.
+2. Dialog für benutzerdefinierten Schritt: Felder „Anzahl“, „Einheit (Tag/Woche/Monat/Benutzerdefiniert)“, Option „Ereignisse nachholen“.
+3. Domain prüft Event-Konflikte, generiert Liste `triggeredEvents`.
+4. UI zeigt Ergebnis im Panel „Ereignislog“ + optional Travel-Leaf-Badges.
 
 **Fehlerzustände**
-- Step ungültig (0) → Inline-Fehler im Dialog.
-- Hook-Dispatch schlägt fehl → Log-Badge + Retry.
+- Keine aktiven Kalender → Quick-Actions disabled + Tooltip.
+- Persistenzfehler beim Speichern neuer `currentDate` → Toast + Undo.
 
-**Ablaufdiagramm (textuell)**
-`Start → Step auswählen → Domain.advance → (Fehler?) → [Ja] Fehlerbanner → Ende / [Nein] updateDate → updateEventLog → Trigger hooks → Ende`
-
-**Akzeptanzkriterien**
-- [ ] Given Quick-Action, When Zeit voranschreitet, Then aktualisiert Dashboard Datum und Ereignislog synchron.
-- [ ] Given Hook-Dispatch scheitert, When Advance abgeschlossen, Then sieht Nutzer:in Hinweis mit Retry.
-
-### 3.5 Datum setzen/Jump
+### 3.7 Datum setzen/jump
 | Element | Beschreibung |
 | --- | --- |
-| Ziel | Direktes Datum festlegen und übersprungene Ereignisse behandeln. |
-| Trigger | Button „Datum setzen“ im Dashboard, Command `calendar:set-date`, Cartographer-API-Aufruf. |
-| Vorbedingungen | Aktiver Kalender, Ziel-Datum im Schema. |
-| Postbedingungen | `currentDate` entspricht Ziel; Liste „Übersprungene Ereignisse“ optional zur Nachbearbeitung. |
-| Datenänderungen | Update `currentDate`, Markierung `skippedEvents[]`, optional `backfillQueue`. |
+| Ziel | Datum direkt setzen mit Konfliktauflösung. |
+| Trigger | Quick-Action „Datum setzen“, Travel-Leaf Option „Datum springen“, Command `calendar:set-date`. |
+| Vorbedingungen | Aktiver Kalender, Ziel-Datum innerhalb Schema. |
+| Postbedingungen | Datum gesetzt, übersprungene Ereignisse optional nachgeholt, Travel-Leaf aktualisiert. |
+| Datenänderungen | `currentDate`, `skippedEvents`, optional `followUpTasks`. |
 
 **Hauptfluss**
-1. Dialog zeigt Schema-konformen Datepicker + Checkbox „Übersprungene Ereignisse nachträglich auslösen“ (default aktiv).
-2. Nach Auswahl berechnet Domain alle Events zwischen alt und neu.
-3. UI zeigt Zusammenfassung (#Events, Hooks) und fragt Bestätigung.
-4. Bei Bestätigung: `currentDate` gesetzt, `skippedEvents` ggf. in Nachbearbeitung übergeben.
-
-**Alternativflüsse**
-- Checkbox deaktiviert → Events werden nicht ausgelöst, aber im Nacharbeitungs-Panel markiert.
-- Ziel-Datum vor aktuellem Datum → markiert Operation als Rücksprung.
+1. Dialog mit DatePicker (Schema-basiert) und Info-Box „Übersprungene Ereignisse“ (live berechnet).
+2. Checkbox „Nachträgliche Auslösung erzwingen“.
+3. Bestätigung → Domain setzt Datum → UI zeigt Summary (Badge „N Ereignisse nachzuholen“).
 
 **Fehlerzustände**
-- Datum außerhalb Schema → Inline-Fehler „Datum existiert in diesem Kalender nicht“.
-- Zu viele Events (Limit >500) → Warnung, erfordert Bestätigung „Trotzdem fortfahren“.
+- Datum außerhalb Schema → Inline-Error.
+- Konflikt mit gesperrtem Datum (z.B. Reise-Lock) → Blockiert, Hinweis „Reise kann nicht übersprungen werden“.
 
-**Ablaufdiagramm (textuell)**
-`Start → Datum auswählen → Domain.calculateJump → (Limit überschritten?) → [Ja] Warnung anzeigen → (Bestätigt?) ...` etc.
-
-**Akzeptanzkriterien**
-- [ ] Given Ziel-Datum, When gesetzt wird, Then werden übersprungene Ereignisse angezeigt und optional nachträglich ausgelöst.
-- [ ] Given Datum ist ungültig, When Bestätigung versucht wird, Then blockiert Dialog und bleibt offen.
-
-### 3.6 Ereignisliste filtern/suchen
+### 3.8 Ereignisliste filtern/suchen
 | Element | Beschreibung |
 | --- | --- |
-| Ziel | Ereignisse nach Zeitraum, Typ, Tags filtern und durchsuchen. |
-| Trigger | Filterpanel auf Dashboard/Event-Manager, Shortcut `Ctrl/Cmd+F`. |
-| Vorbedingungen | Mindestens ein Ereignis vorhanden. |
-| Postbedingungen | Gefilterte Listen persistieren Sitzungslokal; optional Favoritenfilter speichern. |
-| Datenänderungen | Update `eventListFilter` im UI-State; optional Persistenz im lokalen Storage. |
+| Ziel | Ereignisse nach Zeitraum, Typ, Tagging filtern. |
+| Trigger | Filterpanel im Dashboard/Manager-Übersicht, Suche (Ctrl+F), Tag-Chips. |
+| Vorbedingungen | Ereignisse vorhanden. |
+| Postbedingungen | Gefilterte Liste, Filterzustand persistiert pro Benutzer:in. |
+| Datenänderungen | `eventListFilter`, `searchTerm`, `selectedTags`. |
 
-**Hauptfluss**
-1. Filterpanel klappt auf (Accordion).
-2. Nutzer:in setzt Parameter: Zeitraum (Datepicker oder Quick Range), Typ (Einmalig/Wiederkehrend/Vorlagen), Tags.
-3. Presenter filtert via Domain-Service (Lazy Query) und aktualisiert Tabelle live.
+**Details**
+- Filteroptionen: Zeitraum (letzte 30/90 Tage, kommende 30/90 Tage, benutzerdefiniert), Ereignistyp, Tags, „Nur Default-Kalender“.
+- Live-Filter (debounced 200ms) mit Ergebniszähler.
+- Keine Treffer → Leerstaat (siehe §4).
 
-**Alternativflüsse**
-- Quick-Filter Chips („Nächste 30 Tage“, „Feiertage“).
-- Speichern als Ansicht (Button „Als Ansicht speichern“ → Name + optional Standard machen).
-
-**Fehlerzustände**
-- Keine Treffer → Leerstaat mit CTA „Filter zurücksetzen“.
-- Persistenz der gespeicherten Ansicht schlägt fehl → Toast „Ansicht konnte nicht gespeichert werden“.
-
-**Ablaufdiagramm (textuell)**
-`Start → Filter öffnen → Parameter setzen → Domain.filterEvents → UI aktualisiert Liste → (0 Treffer?) → [Ja] Leerstaat → Ende`.
-
-**Akzeptanzkriterien**
-- [ ] Given aktive Filter, When Kriterien geändert werden, Then aktualisiert sich die Liste ohne Reload.
-- [ ] Given keine Treffer, When Filter aktiv sind, Then erscheint Leerstaat mit Reset-Option.
-
-### 3.7 Kalender bearbeiten (Schemaänderung + Migration)
+### 3.9 Kalender bearbeiten
 | Element | Beschreibung |
 | --- | --- |
-| Ziel | Bestehenden Kalender anpassen und Ereignisse migrieren/validieren. |
-| Trigger | Button „Bearbeiten“ im Kalender-Manager, Command `calendar:edit`. |
-| Vorbedingungen | Kalender existiert; keine schreibenden Operationen laufen (Lock). |
-| Postbedingungen | Schema aktualisiert; Migrationsergebnis (Erfolg/Fehlerliste) angezeigt. |
-| Datenänderungen | Update `CalendarSchema`, `CalendarEvent` Re-Mapping (z.B. Tage verschoben). |
+| Ziel | Schema ändern, Migration durchführen, Default anpassen. |
+| Trigger | Kontextmenü „Bearbeiten“ in Übersicht, Button im Kalenderformular, Travel-Leaf Badge (öffnet Editor). |
+| Vorbedingungen | Ausgewählter Kalender existiert. |
+| Postbedingungen | Schema aktualisiert, Events migriert oder Konfliktliste erstellt. |
+| Datenänderungen | Update `CalendarSchema`, Migrationstasks, Default-Flags. |
 
 **Hauptfluss**
-1. Modal öffnet sich mit Formular (wie „Neu“, aber pre-filled).
-2. Beim Ändern von Monaten/Wochen wird Migration-Vorschau berechnet (Tabelle: Event → Status).
-3. Speichern löst Domain-Migration aus (Mapping alter Daten auf neues Schema).
-4. Ergebnisdialog zeigt: Anzahl migrierter Events, Konflikte (z.B. Datum nicht mehr gültig) mit Option „Konflikte öffnen“.
-
-**Alternativflüsse**
-- Nutzer:in kann Schema als neue Kopie speichern statt bestehendes zu überschreiben („Als neuen Kalender speichern“).
-- Konflikte: Checkbox „Ungültige Ereignisse als Notiz behalten“.
+1. Editor-Dialog wie bei Neuanlage, mit zusätzlichen Warnhinweisen („Änderungen wirken sich auf alle Ereignisse aus“).
+2. Migration Wizard: Schritt 1 Schema ändern, Schritt 2 Konflikte prüfen (Liste, Option „Automatisch anpassen“), Schritt 3 Zusammenfassung.
+3. Speichern führt Migration aus, zeigt Status (Progressbar) und Ergebnis.
 
 **Fehlerzustände**
-- Migration bricht ab → Modal zeigt Fehlermeldung und belässt Originaldaten.
-- Lock aktiv → Hinweis „Kalender wird aktuell bearbeitet“. Save disabled.
+- Migration scheitert → Dialog mit Fehlerdetails, Option „Rollback“ (Repository restore).
+- Default-Flag auf entferntem Kalender → UI zwingt neue Auswahl.
 
-**Ablaufdiagramm (textuell)**
-`Start → Formular ändern → previewMigration → Speichern → Domain.migrateSchema → (Fehler?) → [Ja] Fehlerdialog → Ende / [Nein] Erfolg + Konfliktliste → Ende`
-
-**Akzeptanzkriterien**
-- [ ] Given Schemaänderung, When gespeichert, Then zeigt System Migrationsergebnis und aktualisiert Schema.
-- [ ] Given Migration schlägt fehl, When bestätigt, Then bleiben Daten unverändert und Fehlerdetails werden angezeigt.
-
-### 3.8 Reise-Sync (Cartographer)
+### 3.10 Travel-Kalender
 | Element | Beschreibung |
 | --- | --- |
-| Ziel | Zeitfortschritt der Reise synchronisieren und Feedback in Travel-Panel geben. |
-| Trigger | `CartographerController.advanceTime`, Travel-Panel Buttons, Hooks aus Calendar (z.B. event-triggered). |
-| Vorbedingungen | Aktive Reise, `CalendarStateGateway` verbunden, Kalender ausgewählt. |
-| Postbedingungen | Reisezeit aktualisiert, Kalender-Events ausgelöst, UI-Feedback (Toast, Panel-Update). |
-| Datenänderungen | Update `travelState.currentDate`, Append `travel.timelineEvents[]`, optional Notizen. |
+| Ziel | Kompaktes Leaf im Reisemodus anzeigen, das Zeitfortschritt und nächste Ereignisse visualisiert. |
+| Trigger | Reisemodus startet (Cartographer Hook), Nutzer:in öffnet/ schließt Leaf, Toolbar-Buttons (Monat/Woche/Tag/Nächste). |
+| Vorbedingungen | Reise aktiv, Kalender verfügbar (Default oder ausgewählt). |
+| Postbedingungen | Leaf sichtbar, `travelLeafMode` gesetzt, Daten synchronisiert. |
+| Datenänderungen | `travelLeafVisible`, `travelLeafMode`, `travelRange`, `travelPendingEvents`. |
 
 **Hauptfluss**
-1. Cartographer löst `advanceTime` aus.
-2. Gateway ruft Calendar-Domain `advance` auf; Ergebnisse beinhalten neue Zeit, ausgelöste Events, Hook-Benachrichtigungen.
-3. Travel-Panel zeigt Banner mit Datum & Ereignissen, Calendar-Workmode synchronisiert `currentDate`.
-4. Wenn Events Hooks mit Encounter/Library auslösen, werden diese Gateways benachrichtigt.
+1. Bei Reise-Start sendet Cartographer Hook → Leaf mountet automatisch (Split-pane neben Travel-Hauptansicht).
+2. Toolbar (Icon Buttons) ermöglicht Moduswechsel (Monat/Woche/Tag/Nächste Ereignisse). Shortcuts: `Ctrl+Alt+Shift+1..4`.
+3. Inhalt pro Modus (siehe [Wireframes §Travel](./WIREFRAMES.md#travel-leaf))
+   - Monat: komprimiertes Grid, maximal 4 Wochen sichtbar, horizontales Scrollen falls nötig.
+   - Woche: Listen-Layout mit Tagen, Ereigniskarten.
+   - Tag: vertikale Timeline, Buttons „-1 Tag“, „+1 Tag“, „Zeitsprung…“.
+   - Nächste Ereignisse: Liste mit Prioritätsbadges und Buttons „Nacharbeiten“.
+4. Travel-Leaf zeigt Statusbanner (z.B. „Kein Default verfügbar“) und synchronisiert Quick-Actions.
+5. Beim Reise-Ende → Leaf unmountet automatisch, Zustand persistiert für nächsten Start.
 
-**Alternativflüsse**
-- Reise ohne zugewiesenen Kalender → Cartographer fordert Auswahl an (Modal) bevor Advance fortgesetzt wird.
-- Calendar offline (Persistenzfehler) → Cartographer zeigt Warnung und setzt Advance zurück.
+**Fehler-/Leerstaaten**
+- Kein Kalender → Kompakter Leerstaat „Kein Kalender ausgewählt“ + CTA „Manager öffnen“.
+- Ladefehler → Banner „Daten konnten nicht geladen werden“ mit Retry.
+
+### 3.11 Reise-Sync (Cartographer)
+| Element | Beschreibung |
+| --- | --- |
+| Ziel | Bidirektionale Synchronisation von Zeitfortschritt, Hooks und UI-Feedback zwischen Cartographer und Calendar. |
+| Trigger | `advanceTime`, `setDate`, Reise-Start/-Ende Hooks, Travel-Leaf Interaktionen. |
+| Vorbedingungen | Cartographer-Reise aktiv. |
+| Postbedingungen | Zeitwerte synchronisiert, Ereignisse im Travel-Panel angezeigt, Hooks dispatcht. |
+| Datenänderungen | `currentDate`, `triggeredEvents`, `cartographerStatus`. |
+
+**Hauptfluss**
+1. Cartographer ruft `CalendarStateGateway.advanceTime` auf.
+2. Domain berechnet neue Zeit, Events, Hooks. Travel-Leaf zeigt Loading Spinner.
+3. Ergebnisse werden an Cartographer zurückgegeben → Travel-Panel & Calendar-Leaf aktualisieren.
+4. UI zeigt Confirmations (Toast + Log).
 
 **Fehlerzustände**
-- Hook-Dispatch schlägt fehl → Travel-Panel zeigt Badge „1 Ereignis konnte nicht ausgeführt werden“.
-- Cartographer sendet Advance ohne Kalender → Abbruch mit Fehlercode `calendar_missing`.
-
-**Ablaufdiagramm (textuell)**
-`Start → Cartographer.advance → Gateway.ensureCalendar → Domain.advance → Hooks.dispatch → UI Sync → Ende`
-
-**Akzeptanzkriterien**
-- [ ] Given Cartographer advanceTime, When erfolgreich, Then Travel-Panel und Calendar-Workmode zeigen synchronisierte Daten.
-- [ ] Given kein aktiver Kalender, When advanceTime aufgerufen wird, Then bricht der Prozess mit Fehlercode `calendar_missing` ab und fordert Auswahl.
+- Gateway wirft `io_error` → Cartographer erhält Fehlermeldung, Travel-Leaf zeigt rotes Banner.
+- Hook schlägt fehl → Retry-Button „Erneut dispatchen“.
 
 ## 4. Fehler und Leerstaaten
-| Kontext | Leerstaat-Text | CTA | Sekundäraktion |
-| --- | --- | --- | --- |
-| Keine Kalender | „Noch kein Kalender vorhanden.“ | „Kalender anlegen“ → öffnet Manager | Link „Mehr über Kalender“ (Docs) |
-| Keine Events | „Dieser Kalender hat noch keine Ereignisse.“ | „Ereignis hinzufügen“ | Import aus Vorlage |
-| Keine kommenden Events | „Keine Ereignisse im gewählten Zeitraum.“ | „Filter ändern“ | Toggle „Vergangene zeigen“ |
-| Persistenzfehler | Banner: „Speichern fehlgeschlagen.“ | „Erneut versuchen“ | „Details anzeigen“ (Modal) |
-| Schema invalid | Inline-Callout im Formular | Feld fokussieren | Reset auf ursprüngliche Werte |
-| Recurrence-Konflikt | Dialog „Regel kollidiert mit …“ | „Trotzdem speichern“ (disabled bis Checkbox „Konflikt akzeptieren“) | „Konfliktliste öffnen“ |
+| Kontext | Zustand | Darstellung |
+| --- | --- | --- |
+| Dashboard | Keine Kalender | Illustration + Text „Noch kein Kalender erstellt“ + Button „Kalender anlegen“ |
+| Dashboard | Keine kommenden Ereignisse | Card mit Copy „Du bist frei von Verpflichtungen“ + Button „Ereignis hinzufügen“ |
+| Manager – Kalenderansicht | Laden fehlgeschlagen | Inline-Error-Badge in Toolbar + Retry |
+| Manager – Übersicht | Filter ohne Treffer | Tabelle ersetzt durch Card „Keine Treffer“ + Button „Filter zurücksetzen“ |
+| Travel-Leaf | Kein Kalender/Default | Kompakter Text + CTA „Kalender wählen“ (öffnet Dropdown) |
+| Travel-Leaf | Events übersprungen | Sticky-Banner mit Liste (max 3 Items) + Button „Nacharbeiten“ |
+| Formular | Validierungsfehler | Inline-Message unter Feld, rote Outline, Screenreader-Text `aria-live="assertive"` |
+| Global | Persistenzfehler | Toast + Link „Details anzeigen“ → öffnet Modal mit Fehlercode |
 
-## 5. Accessibility & Internationalisierung
-- Tastatur: Alle modalen Dialoge fokussieren erstes interaktives Element; `Esc` schließt, `Ctrl+Enter` speichert.
-- Tab-Reihenfolge siehe Komponenten-Spezifikationen; Filter-Chips sind `role="button"` mit `aria-pressed` Zuständen.
-- ARIA-Rollen: Dashboard Panels als `region` mit `aria-labelledby` Überschriften; Eventlisten als `table`.
-- Screenreader: Toasts nutzen `aria-live="polite"`; Fehlerbanner `aria-live="assertive"`.
-- i18n: Alle sichtbaren Texte verwenden Keys `calendar.mode.*`. Platzhalter (z.B. `{count}`) unterstützen Mehrzahl; Datumswerte formatiert über Calendar-Domain (nicht locale-abhängig).
-- High-Contrast: Buttons verwenden `ui/button` Variants; Status-Badges definieren `data-state` Attribute für CSS.
-- Fokusmanagement bei Dialogschließung kehrt zum Trigger-Element zurück.
+Fehlertexte sind in `i18n` unter `calendar.mode.errors.*` gepflegt. Leerstaaten verweisen auf Manager oder Event-Dialog.
 
-## 6. Referenzen & Annahmen
-- Assumption: Pro Reise kann genau ein aktiver Kalender gesetzt werden; globale Auswahl gilt für neue Reisen als Default.
-- Assumption: Hook-Ausführung ist synchron mit Advance, jedoch darf UI nicht blockieren → Spinner zeigt Busy-State.
-- Änderungen an Domain/APIs sind in [API_CONTRACTS.md](./API_CONTRACTS.md) reflektiert.
+## 5. Accessibility & i18n
+- **Fokusmanagement**: Modale fangen Fokus (`FocusTrap`), schließen per `Esc`. Travel-Leaf setzt Fokus auf Toolbar beim Mount, Quick-Actions erhalten sichtbaren Fokusrahmen.
+- **Shortcuts**: Dokumentiert in Tooltip (`aria-keyshortcuts`).
+- **Screenreader**: Alle Buttons mit `aria-label`, Events in Kalenderansicht als `role="button"` + `aria-describedby` für Tooltip-Inhalte. Grid nutzt `aria-roledescription="calendar"`.
+- **Tab-Reihenfolge**: Header → Toolbar → Hauptinhalte → Sidebar; in Kalenderansicht rotiert Tab durch Events, Shift+Tab zurück zur Toolbar.
+- **Kontraste**: Verwendung `ui/tokens` (primär 4.5:1), Travel-Leaf komprimierte Typografie min 12px/0.75rem.
+- **i18n**: Keys `calendar.manager.*`, `calendar.travel.*`. Datumsausgabe nutzt Domain-Formatter (schemaabhängig), keine locale-spezifischen Monatsnamen (werden aus Schema bezogen). Mehrzahl via ICU.
+- **Announcements**: Moduswechsel (Manager Tabs, Travel-Leaf) triggern `aria-live="polite"` Meldungen „Kalenderansicht – Monatsansicht geladen“.
+
+## 6. Telemetrie-Hinweise
+- Zentrale User-Aktionen (Default setzen, Moduswechsel, Travel-Leaf mount/unmount) dispatchen Events `calendar.telemetry.*` (Details siehe [STATE_MACHINE.md §Effekte](./STATE_MACHINE.md#effekte)).
+- Fehler werden mit `scope` (dashboard/manager/travel) annotiert.
+
+## 7. Verweise
+- Umsetzungshinweise zu Komponenten: [COMPONENTS.md](./COMPONENTS.md)
+- State- und Effektmodell: [STATE_MACHINE.md](./STATE_MACHINE.md)
+- API und Persistenz: [API_CONTRACTS.md](./API_CONTRACTS.md)
+- Testabdeckung: [../../tests/apps/calendar/TEST_PLAN.md](../../../tests/apps/calendar/TEST_PLAN.md)

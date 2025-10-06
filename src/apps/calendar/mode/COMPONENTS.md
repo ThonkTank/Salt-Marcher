@@ -1,331 +1,289 @@
-# Calendar Workmode – Komponenten-Spezifikation
-Dieses Dokument listet alle Calendar-Workmode Komponenten, beschreibt Props/Events und verknüpft sie mit der [UX-Spezifikation](./UX_SPEC.md) sowie der [Zustandsmaschine](./STATE_MACHINE.md).
+# Calendar Workmode – Komponenten
+Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänzt [UX_SPEC.md](./UX_SPEC.md), [WIREFRAMES.md](./WIREFRAMES.md) und die State-Definitionen in [STATE_MACHINE.md](./STATE_MACHINE.md).
 
 ## 1. Übersicht
-- Komponenten sind in `src/apps/calendar/mode/components/*` zu platzieren.
-- Styling basiert auf `src/ui` Tokens (`Stack`, `Table`, `Button`, `Modal`, `Callout`).
-- Namen folgen Präfix `Calendar` oder `Event` zur Wiedererkennung.
+- Alle Komponenten sind in `src/apps/calendar/mode/components` zu platzieren.
+- Styling erfolgt primär über bestehende Tokens aus `src/ui/tokens` und Utility-Klassen (`ui/Flex`, `ui/Grid`).
+- Props werden mit `Readonly`-Interfaces versehen; Events folgen dem Muster `on<Event>` und liefern Domain-DTOs aus [API_CONTRACTS.md](./API_CONTRACTS.md).
 
-## 2. Komponentenliste
-
-### 2.1 `CalendarDashboardView`
-- **Responsibility**: Container für Dashboard-Screen inkl. Header, Panels, Eventlog.
+## 2. Calendar UI Komponenten {#calendar-ui-komponenten}
+### 2.1 `CalendarDashboard`
+- **Responsibility**: Container des Dashboard-Leaves inkl. Toolbar, Datumskarte, Upcoming-Liste, Filter, Log.
 - **Props**
   ```ts
-  interface CalendarDashboardViewProps {
-    state: CalendarDashboardState; // siehe STATE_MACHINE.md
-    onSelectCalendar: (calendarId: string) => void;
-    onQuickAdvance: (step: AdvanceStep) => void;
-    onOpenAdvanceDialog: () => void;
-    onOpenJumpDialog: () => void;
-    onOpenCalendarManager: () => void;
-    onOpenEventManager: () => void;
+  interface CalendarDashboardProps {
+    activeCalendar?: CalendarSummaryDTO;
+    currentDate: CalendarDateDTO;
+    upcomingEvents: ReadonlyArray<CalendarUpcomingEventDTO>;
+    filters: CalendarEventFilterState;
+    logEntries: ReadonlyArray<CalendarLogEntryDTO>;
+    isLoading: boolean;
+    onSelectCalendar: () => void;
+    onOpenManager: () => void;
+    onManageEvents: () => void;
+    onAdvance: (payload: AdvanceRequestDTO) => void;
+    onSetDate: () => void;
+    onFilterChange: (next: CalendarEventFilterState) => void;
   }
   ```
-- **Events/Callbacks**: siehe Props; zusätzlich `onRetryLoad` (für Fehlerbanner).
-- **Interner Zustand**: keiner (Pure Presenter); Loading/Empty über Props gesteuert.
-- **Styling**: nutzt `ui/layout/Stack`, `ui/panels/Card`, `ui/table/Table`.
-- **Fehler/Leerstaaten**: Rendert `state.errors` als `Callout`; `state.calendars.length === 0` zeigt Leerstaat.
+- **Events/Callbacks**: siehe Props; `onAdvance` dispatcht `TIME_ADVANCE_REQUESTED` (vgl. [STATE_MACHINE.md](./STATE_MACHINE.md#eventsactions)).
+- **Interner Zustand**: UI-Only (z.B. Expanded Panels).
+- **Styling**: Layout via `Flex`/`Grid`, Quick-Action-Buttons nutzen `PrimaryButton`/`SecondaryButton` aus `src/ui`.
+- **Fehler/Leer**: Wenn `activeCalendar` fehlt → `EmptyState`-Slot (siehe [UX_SPEC §4](./UX_SPEC.md#4-fehler-und-leerstaaten)).
 
-### 2.2 `CalendarHeaderBar`
-- **Responsibility**: Header mit Dropdown, Quick Actions, Secondary Actions.
+### 2.2 `CalendarManagerHeader`
+- **Responsibility**: Headerleiste des Manager-Leaves (Zurück, Tabs, Aktionen, Zoom-Toolbar).
 - **Props**
   ```ts
-  interface CalendarHeaderBarProps {
-    calendars: Array<{ id: string; name: string; scope: 'global' | 'travel'; active: boolean }>;
-    onSelect: (id: string) => void;
+  interface CalendarManagerHeaderProps {
+    viewMode: CalendarManagerViewMode; // 'calendar' | 'overview'
+    zoom: CalendarViewZoom; // 'month' | 'week' | 'day'
+    canZoom: boolean;
+    isTravelContext: boolean;
+    onBack: () => void;
+    onViewModeChange: (mode: CalendarManagerViewMode) => void;
+    onZoomChange: (zoom: CalendarViewZoom) => void;
     onCreateCalendar: () => void;
-    onQuickAdvance: (step: AdvanceStep) => void;
-    onOpenJump: () => void;
-    shortcuts: HeaderShortcutConfig; // labels + key hints
-    disabled?: boolean;
+    onImportCalendar: () => void;
+    onDefaultAction: () => void;
   }
   ```
-- **Events**: `onSelect`, `onQuickAdvance`, `onOpenJump`, `onCreateCalendar`.
-- **Interner Zustand**: Dropdown open/close (via `useState`), Quick Action loading indicator.
-- **Styling**: `ui/toolbar/Toolbar`, Buttons mit `variant="primary"` für Quick Actions.
-- **Fehler/Leerstaat**: Wenn `calendars` leer, Dropdown zeigt CTA (prop `disabled` true).
+- **Events**: dispatchen `MANAGER_VIEW_MODE_CHANGED`, `MANAGER_ZOOM_CHANGED`.
+- **Styling**: Sticky Header, Buttons mit Icon+Label; unter 520px Icon-only.
+- **Accessibility**: Tabs als `role="tablist"`, Buttons mit `aria-keyshortcuts` (siehe [UX_SPEC §5](./UX_SPEC.md#5-accessibility--i18n)).
 
-### 2.3 `CalendarDatePanel`
-- **Responsibility**: Zeigt aktuelles Datum, Woche, Schema-spezifische Infos.
+### 2.3 `CalendarGridView`
+- **Responsibility**: Visualisiert Monat/Woche/Tag gemäß Zoom, inkl. Inline-Interaktion.
 - **Props**
   ```ts
-  interface CalendarDatePanelProps {
-    date: CalendarDateDisplay;
-    schemaSummary: SchemaSummary;
-    onCopyToClipboard?: () => void;
+  interface CalendarGridViewProps {
+    zoom: CalendarViewZoom;
+    range: CalendarRangeDTO; // Start/End inkl. Schema-Infos
+    events: ReadonlyArray<CalendarGridEventDTO>;
+    localeSchema: CalendarSchemaDTO;
+    selection?: CalendarGridSelection;
+    onNavigate: (direction: 'prev' | 'next' | 'today') => void;
+    onDatePick: (target: CalendarDateDTO) => void;
+    onCreateInline: (target: CalendarDateDTO) => void;
+    onSelectEvent: (eventId: string) => void;
+    onHoverEvent?: (eventId: string | null) => void;
   }
   ```
-- **Events**: optional Copy.
-- **Styling**: `ui/panels/MetricCard` + `ui/badge/Badge`.
-- **Leerstaat**: Rendert Placeholder wenn `date` null (z.B. beim Laden).
+- **Events**: `onCreateInline` → öffnet Event-Dialog; `onSelectEvent` dispatcht `EVENT_SELECTED`.
+- **Interner Zustand**: Drag-Selection (nur UI, optional), Hover.
+- **Styling**: Verwendung `Grid`-Layout, Multi-day Events stapeln per `position: relative`; Schema-spezifische Labels (z.B. 10-Tage-Woche) aus Props.
+- **Fehler/Leer**: Wenn `events` leer → Textoverlay „Keine Ereignisse“. Ladefehler via `ErrorBoundary`-Slot.
 
-### 2.4 `UpcomingEventsTable`
-- **Responsibility**: Liste kommender Ereignisse mit Aktionen.
+### 2.4 `CalendarEventPopover`
+- **Responsibility**: Kontextmenü für Ereignisse in Grid/Woche/Tag.
 - **Props**
   ```ts
-  interface UpcomingEventsTableProps {
-    events: UpcomingEventRow[];
-    loading: boolean;
-    onOpenEvent: (eventId: string) => void;
-    onMarkComplete: (eventId: string) => void;
-    filterSummary: string;
-  }
-  ```
-- **Events**: `onOpenEvent`, `onMarkComplete`.
-- **Styling**: `ui/table/Table`, `ui/button/IconButton`.
-- **Fehler/Leerstaaten**: Wenn `events.length === 0`, zeigt Leerstaat mit CTA „Ereignis hinzufügen“ (via Render Prop `onCreateEvent`).
-
-### 2.5 `EventLogAccordion`
-- **Responsibility**: Expand/Collapse Liste ausgelöster Events.
-- **Props**
-  ```ts
-  interface EventLogAccordionProps {
-    log: TriggeredEventLogEntry[];
-    isOpen: boolean;
-    onToggle: () => void;
-    onInspectEvent: (eventId: string) => void;
-  }
-  ```
-- **Styling**: `ui/accordion/Accordion`, `ui/badge/StatusBadge` für Hook-Status.
-
-### 2.6 `CalendarManagerModal`
-- **Responsibility**: Umbrella-Komponente für Listen- und Formularzustände im Modal.
-- **Props**
-  ```ts
-  interface CalendarManagerModalProps {
-    view: 'list' | 'form';
-    listProps?: CalendarManagerListProps;
-    formProps?: CalendarFormProps;
+  interface CalendarEventPopoverProps {
+    event: CalendarEventSummaryDTO;
+    anchorRect: DOMRect;
+    isDefaultCalendar: boolean;
+    onEdit: (id: string) => void;
+    onDelete: (id: string) => void;
+    onMarkDefault: (calendarId: string) => void;
     onClose: () => void;
   }
   ```
-- **Styling**: `ui/modal/Modal` mit `size="large"`.
-- **Fehler**: Zeigt `formProps?.errors` als Inline-Alerts.
+- **Events**: `onMarkDefault` nur sichtbar, wenn Nutzer:in Default ändern darf.
+- **Styling**: `Popover` aus `src/ui`, Buttons im Footer.
 
-### 2.7 `CalendarManagerList`
-- **Responsibility**: Tabelle aller Kalender.
+### 2.5 `CalendarOverviewList`
+- **Responsibility**: Listen-/Kachelansicht der Kalender inkl. Filter, Bulk-Actions.
 - **Props**
   ```ts
-  interface CalendarManagerListProps {
-    calendars: CalendarListRow[];
-    onCreate: () => void;
-    onEdit: (calendarId: string) => void;
-    onDuplicate: (calendarId: string) => void;
-    onDelete: (calendarId: string) => void;
+  interface CalendarOverviewListProps {
+    calendars: ReadonlyArray<CalendarOverviewItemDTO>;
+    filters: CalendarOverviewFilterState;
+    selection: ReadonlySet<string>;
+    layout: 'grid' | 'list';
+    isLoading: boolean;
+    onFilterChange: (next: CalendarOverviewFilterState) => void;
+    onSelectionChange: (ids: ReadonlySet<string>) => void;
+    onOpenCalendar: (id: string) => void;
+    onEditCalendar: (id: string) => void;
+    onDeleteCalendars: (ids: ReadonlyArray<string>) => void;
+    onSetDefault: (id: string) => void;
+    onImportToEditor: (id: string) => void;
   }
   ```
-- **Styling**: `ui/table/Table` + `ui/button/ButtonGroup`.
-- **Fehler**: Delete-Confirm via `ui/modal/ConfirmDialog`.
+- **Events**: Bulk-Löschen, Default-Setzen, Import → dispatchen entsprechende STATE_MACHINE-Events.
+- **Styling**: Responsive Breakpoints (Grid zu 1 Spalte <640px). Badges `Default`/`Reise`.
+- **Fehler/Leer**: Props `isLoading` + `calendars.length===0` → `EmptyState` (Hero). Fehler-Banner per Slot.
 
-### 2.8 `CalendarForm`
-- **Responsibility**: Formular für Neu/Bearbeiten.
+### 2.6 `CalendarFormDialog`
+- **Responsibility**: Formular zum Erstellen/Bearbeiten eines Kalenders (Tabs, Validierung, Vorschau).
 - **Props**
   ```ts
-  interface CalendarFormProps {
-    value: CalendarFormValue;
-    errors: Partial<Record<CalendarFormFieldKey, string>>;
-    mode: 'create' | 'edit' | 'duplicate';
-    preview: CalendarSchemaPreview;
-    onChange: (value: CalendarFormValue) => void;
-    onSubmit: () => void;
+  interface CalendarFormDialogProps {
+    mode: 'create' | 'edit';
+    initialValue?: CalendarSchemaFormState;
+    isDefaultGlobal: boolean;
+    isTravelContext: boolean;
+    isSaving: boolean;
+    errors: Partial<Record<keyof CalendarSchemaFormState, string>>;
+    onSubmit: (value: CalendarSchemaFormState) => void;
     onCancel: () => void;
-    onAdvancedOptions?: () => void;
+    onToggleDefaultGlobal: (next: boolean) => void;
+    onToggleDefaultTravel?: (next: boolean) => void;
   }
   ```
-- **Events**: `onChange`, `onSubmit`, `onCancel`.
-- **Styling**: `ui/form/FormLayout`, `ui/tabs/Tabs`.
-- **Leerstaaten**: Default Monat-Liste mit einem vorbefüllten Monat; Buttons „Monat hinzufügen“.
+- **Interner Zustand**: Tab-Index, Vorschau-Scroll.
+- **Styling**: Modal über `ui/Modal`, Tabs `ui/Tabs`.
+- **Fehler/Leer**: Validierungsfehler inline; bei Laden `Skeleton`.
 
-### 2.9 `EventManagerView`
-- **Responsibility**: Tabs für „Kommend“, „Alle“, „Vorlagen“ + Filter.
+### 2.7 `EventFormDialog`
+- **Responsibility**: Formular für einmalige/wiederkehrende Ereignisse.
 - **Props**
   ```ts
-  interface EventManagerViewProps {
-    state: EventManagerState;
-    onCreate: (type: 'single' | 'recurring') => void;
-    onEdit: (eventId: string) => void;
-    onDuplicate: (eventId: string) => void;
-    onDelete: (eventId: string) => void;
-    onFilterChange: (filter: EventFilter) => void;
-    onImportTemplate: () => void;
-  }
-  ```
-- **Styling**: `ui/tabs/Tabs`, `ui/table/Table`, `ui/tag/TagInput`.
-- **Fehler/Leerstaat**: Tab-spezifische Callouts; `state.errors.recurringConflict` zeigt Banner.
-
-### 2.10 `EventFormModal`
-- **Responsibility**: Modal für Einmalig/Wiederkehrend.
-- **Props**
-  ```ts
-  interface EventFormModalProps {
+  interface EventFormDialogProps {
     mode: 'single' | 'recurring';
-    singleProps?: SingleEventFormProps;
-    recurringProps?: RecurringEventFormProps;
-    templateOptions: EventTemplateOption[];
-    onSwitchMode: (mode: 'single' | 'recurring') => void;
-    onClose: () => void;
+    initialValue?: CalendarEventFormState;
+    schema: CalendarSchemaDTO;
+    isSaving: boolean;
+    preview: ReadonlyArray<CalendarDateDTO>;
+    errors: CalendarEventFormErrors;
+    onSubmit: (value: CalendarEventFormState) => void;
+    onCancel: () => void;
+    onValidateCustomRule?: (input: string) => ValidationResult;
   }
   ```
-- **Styling**: `ui/modal/Modal`.
-- **Fehler**: Zeigt JSON-Parsing-Fehler im Custom-Hook-Feld als Inline-Alert.
+- **Events**: `onSubmit` dispatcht `EVENT_SAVE_REQUESTED`; `onValidateCustomRule` optional async.
+- **Styling**: `ui/Form`, `ui/SegmentedControl` für Modus, `ui/CodeEditor` für Custom-Hooks.
 
-### 2.11 `SingleEventForm`
-- **Props**
-  ```ts
-  interface SingleEventFormProps {
-    value: SingleEventFormValue;
-    errors: Partial<Record<'title' | 'date' | 'category', string>>;
-    schema: CalendarSchemaPreview;
-    onChange: (value: SingleEventFormValue) => void;
-    onSubmit: () => void;
-    onAddAnotherChange: (checked: boolean) => void;
-  }
-  ```
-- **Styling**: `ui/form/FormSection`, `ui/date/CalendarPicker` (schema-aware Variante).
-
-### 2.12 `RecurringEventForm`
-- **Props**
-  ```ts
-  interface RecurringEventFormProps {
-    value: RecurringEventFormValue;
-    errors: Partial<Record<string, string>>;
-    schema: CalendarSchemaPreview;
-    preview: RecurrencePreview;
-    onChange: (value: RecurringEventFormValue) => void;
-    onSubmit: () => void;
-    onValidateRule: (rule: RepeatRuleDraft) => void;
-  }
-  ```
-- **Styling**: `ui/form/Fieldset`, `ui/code/CodeInput` für Custom-Hook Payload.
-
-### 2.13 `RecurrencePreviewPanel`
-- **Responsibility**: Zeigt nächste fünf Vorkommen + Konfliktstatus.
-- **Props**
-  ```ts
-  interface RecurrencePreviewPanelProps {
-    preview: RecurrencePreview;
-    conflicts: RecurrenceConflict[];
-  }
-  ```
-- **Styling**: `ui/list/List`, `ui/callout/WarningCallout`.
-
-### 2.14 `TimeAdvanceDialog`
-- **Responsibility**: Dialog für Zeitfortschritt.
+### 2.8 `TimeAdvanceDialog`
+- **Responsibility**: Dialog für benutzerdefinierten Zeitfortschritt/Datumssprung.
 - **Props**
   ```ts
   interface TimeAdvanceDialogProps {
-    options: AdvanceOption[]; // +1 Tag etc.
-    customValue: AdvanceCustomValue;
-    errors: Partial<Record<'custom', string>>;
-    summary: AdvanceSummary | null;
-    isSubmitting: boolean;
-    onSelectOption: (optionId: string) => void;
-    onCustomChange: (value: AdvanceCustomValue) => void;
-    onToggleAutoTrigger: (enabled: boolean) => void;
-    onSubmit: () => void;
+    mode: 'advance' | 'jump';
+    currentDate: CalendarDateDTO;
+    schema: CalendarSchemaDTO;
+    pendingEvents: ReadonlyArray<CalendarEventSummaryDTO>;
+    isApplying: boolean;
+    onConfirm: (payload: AdvanceRequestDTO | JumpRequestDTO) => void;
     onCancel: () => void;
   }
   ```
-- **Styling**: `ui/modal/Dialog`, `ui/radio/RadioGroup`.
-- **Fehler**: Inline bei `errors.custom`; Summary Panel zeigt Hook-Fehler.
+- **Fehler**: Wenn `pendingEvents` > 50 → Hinweis „Viele Ereignisse“.
 
-### 2.15 `TimeJumpDialog`
+### 2.9 `CalendarEventLog`
+- **Responsibility**: Zeigt ausgelöste/übersprungene Ereignisse.
 - **Props**
   ```ts
-  interface TimeJumpDialogProps {
-    targetDate: CalendarDateInput;
-    errors: Partial<Record<'date', string>>;
-    summary: JumpSummary | null;
-    skippedEvents: TriggeredEventLogEntry[];
-    warnOversized: boolean;
-    onDateChange: (value: CalendarDateInput) => void;
-    onToggleBackfill: (enabled: boolean) => void;
-    onConfirm: () => void;
-    onCancel: () => void;
+  interface CalendarEventLogProps {
+    entries: ReadonlyArray<CalendarLogEntryDTO>;
+    scope: 'dashboard' | 'travel';
+    onFollowUp?: (entryId: string) => void;
   }
   ```
-- **Styling**: `ui/modal/Dialog`, `ui/date/CalendarPicker`.
+- **Styling**: `ui/List`, farbliche Badges pro Event-Typ.
 
-### 2.16 `TravelSyncBanner`
-- **Responsibility**: Feedback im Travel-Panel.
+### 2.10 `TravelCalendarLeaf`
+- **Responsibility**: Kompaktes Leaf im Reisemodus (Monat/Woche/Tag/Nächste).
 - **Props**
   ```ts
-  interface TravelSyncBannerProps {
-    calendarName: string;
-    date: CalendarDateDisplay;
-    pendingEvents: TriggeredEventLogEntry[];
-    status: 'ok' | 'error';
-    onResolveEvent: (eventId: string) => void;
-    onOpenCalendarMode: () => void;
+  interface TravelCalendarLeafProps {
+    mode: TravelCalendarMode; // 'month' | 'week' | 'day' | 'upcoming'
+    visible: boolean;
+    activeCalendar?: CalendarSummaryDTO;
+    date: CalendarDateDTO;
+    range: CalendarRangeDTO;
+    events: ReadonlyArray<CalendarTravelEventDTO>;
+    skippedEvents: ReadonlyArray<CalendarEventSummaryDTO>;
+    isLoading: boolean;
+    onModeChange: (mode: TravelCalendarMode) => void;
+    onAdvance: (payload: AdvanceRequestDTO) => void;
+    onJump: () => void;
+    onClose: () => void;
+    onFollowUp: (eventId: string) => void;
   }
   ```
-- **Styling**: `ui/banner/Banner`.
+- **Events**: `onAdvance` dispatcht `TRAVEL_TIME_ADVANCE_REQUESTED`; `onModeChange` → `TRAVEL_MODE_CHANGED`.
+- **Styling**: Pane-Breite 320-360px; Buttons icon-only bei <320px.
+- **Fehler/Leer**: Zeigt Banner/EmptyState analog [UX_SPEC §4](./UX_SPEC.md#4-fehler-und-leerstaaten).
 
-### 2.17 `EventFilterPanel`
-- **Responsibility**: Filter/Suche.
+### 2.11 `TravelCalendarToolbar`
+- **Responsibility**: Toolbar innerhalb des Travel-Leafs.
 - **Props**
   ```ts
-  interface EventFilterPanelProps {
-    filter: EventFilter;
-    quickFilters: QuickFilterChip[];
-    onFilterChange: (filter: EventFilter) => void;
-    onReset: () => void;
+  interface TravelCalendarToolbarProps {
+    mode: TravelCalendarMode;
+    canStepBackward: boolean;
+    canStepForward: boolean;
+    onChangeMode: (mode: TravelCalendarMode) => void;
+    onStepBackward: () => void;
+    onStepForward: () => void;
+    onJump: () => void;
+    onClose: () => void;
   }
   ```
-- **Styling**: `ui/filter/FilterPanel`, `ui/chip/Chip`.
+- **Accessibility**: Buttons mit `aria-keyshortcuts` (`Ctrl+Alt+Shift+1..4`).
 
-## 3. Kompositionsdiagramm (textuell)
+### 2.12 `DefaultBadge`
+- **Responsibility**: Kennzeichnet Default-Kalender in Listen/Dropdowns.
+- **Props**
+  ```ts
+  interface DefaultBadgeProps {
+    scope: 'global' | 'travel';
+    label?: string; // optional override via i18n
+  }
+  ```
+- **Styling**: `Badge` aus `src/ui`, Farbe `--color-accent` für global, `--color-secondary` für Reise.
+
+## 3. Komposition
+Textuelles Diagramm (→ inkludiert/enthält):
 ```
-CalendarModeRoot
-└── CalendarDashboardView
-    ├── CalendarHeaderBar
-    ├── CalendarDatePanel
-    ├── UpcomingEventsTable
-    ├── EventLogAccordion
-    └── TravelSyncBanner (optional, wenn in Travel-Kontext eingebettet)
+CalendarDashboard
+ ├─ CalendarDashboardToolbar (Teil von Header, reuse ui/ButtonGroup)
+ ├─ CurrentDateCard
+ ├─ UpcomingEventsList
+ ├─ EventFilterPanel
+ └─ CalendarEventLog
 
-CalendarManagerModal
-├── CalendarManagerList
-└── CalendarForm (je nach view)
+CalendarManagerView
+ ├─ CalendarManagerHeader
+ ├─ (viewMode === 'calendar') CalendarGridView
+ │    └─ CalendarEventPopover (on demand)
+ └─ (viewMode === 'overview') CalendarOverviewList
 
-EventManagerView
-├── EventFilterPanel
-├── UpcomingEventsTable (Tab „Kommend“)
-├── GenericEventsTable (Tab „Alle“)
-├── TemplateLibraryTable (Tab „Vorlagen“)
-└── EventFormModal (als Portalled)
+CalendarDialogs
+ ├─ CalendarFormDialog (nutzt CalendarPreview, DefaultBadge)
+ ├─ EventFormDialog
+ └─ TimeAdvanceDialog
 
-EventFormModal
-├── SingleEventForm
-├── RecurringEventForm
-└── RecurrencePreviewPanel
-
-TimeAdvanceDialog & TimeJumpDialog → nutzen Domain-Services via Presenter und aktualisieren CalendarModeRoot-State.
+TravelCalendarLeaf
+ ├─ TravelCalendarToolbar
+ ├─ TravelCalendarModeView (intern: MonthGrid | WeekList | DayTimeline | UpcomingList)
+ └─ CalendarEventLog (scope='travel')
 ```
 
-## 4. Fehler- & Leerstaaten pro Komponente
-| Komponente | Leerstaat | Fehlerverhalten |
-| --- | --- | --- |
-| `CalendarDashboardView` | Zeigt `ui/empty/EmptyState` mit CTA „Kalender anlegen“ wenn `state.hasCalendars === false`. | Banner `ui/alert/Error` mit `onRetryLoad`. |
-| `UpcomingEventsTable` | Render Prop `emptyContent` mit CTA „Ereignis hinzufügen“. | Fehlertooltip pro Zeile bei Hook-Fehler, globaler Banner bei Ladefehler. |
-| `CalendarForm` | Erstellt automatisch einen Standardmonat „Monat 1“ | Zeigt Feldfehler, Focus auf erstes invalides Feld. |
-| `RecurringEventForm` | Vorschau zeigt Platzhalter „Keine Vorschau“. | Konflikte als Liste mit Checkbox „Konflikt akzeptieren“. |
-| `TimeAdvanceDialog` | Zusammenfassung zeigt „Noch keine Vorschau“ | Inline-Fehler im benutzerdefinierten Feld, Banner bei Hook-Dispatch-Fehler. |
-| `TimeJumpDialog` | Skipped-Liste zeigt Text „Keine Ereignisse übersprungen“ | Warnbanner bei >500 Events, Feldfehler bei ungültigem Datum. |
-| `TravelSyncBanner` | Wenn keine Events, zeigt Status „Keine Aktionen erforderlich“. | Wechselt zu `status="error"`, zeigt Retry-Button. |
+## 4. Fehler- & Leerstaat-Slots
+- Alle Hauptcontainer (`CalendarDashboard`, `CalendarGridView`, `CalendarOverviewList`, `TravelCalendarLeaf`) besitzen Props `error?: UIErrorState` und `emptyState?: UIEmptyStateConfig` (siehe unten) zur Konsistenz.
+  ```ts
+  interface UIErrorState {
+    message: string;
+    actionLabel?: string;
+    onAction?: () => void;
+  }
+  interface UIEmptyStateConfig {
+    icon?: string;
+    title: string;
+    description?: string;
+    primaryAction?: { label: string; onAction: () => void };
+    secondaryAction?: { label: string; onAction: () => void };
+  }
+  ```
+- Travel-spezifische Banner erhalten `scope: 'travel'` für Telemetrie (siehe [STATE_MACHINE.md](./STATE_MACHINE.md#effekte)).
 
-## 5. Accessibility Hooks
-- Alle Dialoge nutzen `ui/modal` Fokus-Trap; Buttons liefern `aria-label` bei Icon-Only Varianten.
-- Tabellen unterstützen Tastatur (Pfeiltasten, `Enter` für Aktionen). `UpcomingEventsTable` liefert `rowProps.getKeyHandlers()` aus Presenter.
+## 5. Persistenz-Touchpoints
+- Komponenten selbst speichern nichts; Events rufen Presenter-Logik, die Gateways aus [API_CONTRACTS.md](./API_CONTRACTS.md) verwendet.
+- Default-Toggle in `CalendarFormDialog`/`CalendarOverviewList` ruft `CalendarRepository.updateDefault` über Presenter.
 
-## 6. Internationalisierung
-- Props enthalten keine lokalisierten Strings; Presenter wandelt Domaindaten in `LocalizedString` mittels `i18n.t('calendar.mode.*')` um.
-- Datumsanzeigen nutzen `formatCalendarDate(date, schema)` (siehe [API_CONTRACTS](./API_CONTRACTS.md#helper-funktionen)).
-
-## 7. Persistenz-Touchpoints
-- `CalendarManagerModal` → `CalendarRepository` (`create`, `update`, `delete`).
-- `EventManagerView` → `CalendarEventRepository` Methoden (`list`, `filter`, `create`, `update`).
-- `TimeAdvanceDialog`/`TimeJumpDialog` → `CalendarStateGateway.advance` / `setDate`.
-
-Assumption: Komponenten bleiben Presenter-getrieben und speichern keinen Persistenzstatus lokal.
+## 6. Verweise
+- State-Events: [STATE_MACHINE.md](./STATE_MACHINE.md#eventsactions)
+- API-DTOs: [API_CONTRACTS.md](./API_CONTRACTS.md#dtos)
+- Testszenarien: [../../tests/apps/calendar/TEST_PLAN.md](../../../tests/apps/calendar/TEST_PLAN.md)

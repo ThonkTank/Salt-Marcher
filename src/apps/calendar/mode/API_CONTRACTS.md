@@ -1,201 +1,239 @@
-# Calendar Workmode – API & Persistenzverträge
-Dieses Dokument definiert Contracts zwischen UI, Domain, Persistenz und Cartographer-Integration. Es ergänzt [STATE_MACHINE.md](./STATE_MACHINE.md) und [COMPONENTS.md](./COMPONENTS.md).
+# Calendar Workmode – API Contracts
+Dieses Dokument beschreibt Schnittstellen zwischen UI, Domain, Persistenz und Cartographer. Es ergänzt [UX_SPEC.md](./UX_SPEC.md), [STATE_MACHINE.md](./STATE_MACHINE.md) und [COMPONENTS.md](./COMPONENTS.md).
 
-## 1. Domain-Typen
+## 1. Übersicht
+- Alle Typen sind in `src/apps/calendar/mode/contracts.ts` zu zentralisieren.
+- JSON-Schemas dienen als Persistenzformat (z.B. `JsonStore`).
+- Versionierung erfolgt über `schemaVersion`-Felder (SemVer). Migrationen dokumentiert in §7.
+
+## 2. DTOs {#dtos}
+### 2.1 Kalender
 ```ts
-// src/apps/calendar/domain/types.ts
-export interface CalendarSchema {
+interface CalendarSchemaDTO {
   id: string;
   name: string;
   description?: string;
-  weekLength: number; // z.B. 10 für 10-Tage-Woche
-  months: Array<{
-    id: string;
-    name: string;
-    length: number; // Tage pro Monat
-    intercalary?: boolean; // Schaltmonat
-  }>;
-  leapRules?: Array<LeapRule>; // z.B. alle 4 Jahre zusätzlicher Tag
-  startYear: number;
-  epochDate: CalendarDate; // 0-basierter Startpunkt
-  metadata: Record<string, unknown>;
+  weeksPerMonth?: number; // optional für spezielle Systeme
+  daysPerWeek: number;
+  months: ReadonlyArray<{ id: string; name: string; length: number }>;
+  leapRules?: ReadonlyArray<LeapRuleDTO>;
+  epoch: {
+    year: number;
+    monthId: string;
+    day: number;
+  };
+  schemaVersion: string; // e.g. "1.1.0"
 }
+interface CalendarSummaryDTO {
+  id: string;
+  name: string;
+  schema: Pick<CalendarSchemaDTO, 'daysPerWeek' | 'months' | 'schemaVersion'>;
+  isDefaultGlobal: boolean;
+  defaultTravelIds: ReadonlyArray<string>; // Reisen, die diesen Kalender als Default nutzen
+  isActive?: boolean;
+}
+```
 
-export interface CalendarDate {
+### 2.2 Datum & Range
+```ts
+interface CalendarDateDTO {
+  calendarId: string;
   year: number;
-  monthIndex: number; // 0-basiert
-  day: number; // 1-basiert
+  monthId: string;
+  day: number;
 }
+interface CalendarRangeDTO {
+  calendarId: string;
+  start: CalendarDateDTO;
+  end: CalendarDateDTO;
+  zoom: 'month' | 'week' | 'day' | 'upcoming';
+}
+```
 
-export type CalendarDateDisplay = CalendarDate & {
-  dayOfWeek: number;
-  formatted: string; // Presenter setzt via Domain helper
-};
-
-export interface CalendarEventBase {
+### 2.3 Ereignisse
+```ts
+type CalendarEventDTO = CalendarEventSingleDTO | CalendarEventRecurringDTO;
+interface CalendarEventSingleDTO {
+  id: string;
+  calendarId: string;
+  title: string;
+  date: CalendarDateDTO;
+  category?: string;
+  tags?: ReadonlyArray<string>;
+  note?: string;
+  followUpPolicy: 'auto' | 'manual';
+  hooks?: ReadonlyArray<HookDescriptorDTO>;
+}
+interface CalendarEventRecurringDTO {
+  id: string;
+  calendarId: string;
+  title: string;
+  rule: RepeatRuleDTO;
+  category?: string;
+  tags?: ReadonlyArray<string>;
+  note?: string;
+  bounds?: {
+    start?: CalendarDateDTO;
+    end?: CalendarDateDTO;
+  };
+  hooks?: ReadonlyArray<HookDescriptorDTO>;
+}
+interface CalendarUpcomingEventDTO {
   id: string;
   title: string;
+  occurrence: CalendarDateDTO;
+  daysUntil: number; // negative = vergangen
+  type: 'single' | 'recurring';
   category?: string;
-  tags?: string[];
-  notes?: string;
-  color?: string;
-  createdAt: string;
-  updatedAt: string;
 }
-
-export interface CalendarEventSingle extends CalendarEventBase {
-  type: 'single';
-  date: CalendarDate;
+interface CalendarGridEventDTO {
+  id: string;
+  title: string;
+  start: CalendarDateDTO;
+  end?: CalendarDateDTO;
+  allDay: boolean;
+  category?: string;
+  isRecurring: boolean;
 }
-
-export interface CalendarEventRecurring extends CalendarEventBase {
-  type: 'recurring';
-  rule: RepeatRule;
-  start?: CalendarDate;
-  end?: CalendarDate | { occurrences: number };
-}
-
-export type CalendarEvent = CalendarEventSingle | CalendarEventRecurring;
-
-export type RepeatRule =
-  | { type: 'annual'; offset: number } // offset ab Jahresanfang
-  | { type: 'monthly_position'; monthIndex?: number; week: number; dayIndex: number }
-  | { type: 'weekly'; dayIndex: number }
-  | { type: 'custom_hook'; hookId: string; payload?: Record<string, unknown> };
-
-export interface LeapRule {
-  type: 'interval' | 'custom';
-  intervalYears?: number;
-  customEvaluatorHook?: string; // hookId
+interface CalendarTravelEventDTO extends CalendarUpcomingEventDTO {
+  priority: 'high' | 'medium' | 'low';
+  followUpRequired: boolean;
 }
 ```
 
-## 2. Repository-Schnittstellen
+### 2.4 Regeln & Hooks
 ```ts
-// src/apps/calendar/CalendarRepository.ts
-export interface CalendarRepository {
-  list(): Promise<CalendarSchema[]>;
-  get(calendarId: string): Promise<CalendarSchema | null>;
-  create(input: CalendarSchemaInput): Promise<CalendarSchema>;
-  update(calendarId: string, input: CalendarSchemaInput): Promise<CalendarSchema>;
-  delete(calendarId: string): Promise<void>;
+interface RepeatRuleDTO {
+  type: 'annual_offset' | 'monthly_position' | 'weekly_dayIndex' | 'custom';
+  payload: Record<string, unknown>; // je nach Typ
+  timezoneAgnostic?: boolean; // bleibt true, da Kalender schema-basiert
 }
-
-export interface CalendarSchemaInput {
-  name: string;
-  description?: string;
-  weekLength: number;
-  months: CalendarSchema['months'];
-  leapRules?: LeapRule[];
-  startYear: number;
-  epochDate: CalendarDate;
-  metadata?: Record<string, unknown>;
+interface LeapRuleDTO {
+  interval: number; // z.B. alle 4 Jahre
+  addDayToMonthId: string;
 }
-
-// src/apps/calendar/CalendarEventRepository.ts
-export interface CalendarEventRepository {
-  list(calendarId: string): Promise<CalendarEventCollection>;
-  listByFilter(calendarId: string, filter: EventFilter): Promise<CalendarEventCollection>;
-  create(calendarId: string, input: CalendarEventInput): Promise<CalendarEvent>;
-  update(calendarId: string, eventId: string, input: CalendarEventInput): Promise<CalendarEvent>;
-  delete(calendarId: string, eventId: string): Promise<void>;
+interface HookDescriptorDTO {
+  id: string;
+  type: 'webhook' | 'script' | 'cartographer_event';
+  config: Record<string, unknown>;
 }
-
-export type CalendarEventCollection = {
-  single: CalendarEventSingle[];
-  recurring: CalendarEventRecurring[];
-  templates: CalendarEvent[];
-};
-
-export type CalendarEventInput =
-  | { type: 'single'; value: Omit<CalendarEventSingle, 'id' | 'createdAt' | 'updatedAt'> }
-  | { type: 'recurring'; value: Omit<CalendarEventRecurring, 'id' | 'createdAt' | 'updatedAt'> };
 ```
 
-## 3. Gateway & Services
+### 2.5 Filter & Log
 ```ts
-// src/apps/calendar/domain/CalendarStateGateway.ts
-export interface CalendarStateGateway {
-  loadActiveCalendar(scope: 'global' | { travelId: string }): Promise<CalendarSnapshot | null>;
-  setActiveCalendar(scope: 'global' | { travelId: string }, calendarId: string): Promise<void>;
-  advance(request: AdvanceRequest): Promise<AdvanceResult>;
-  jump(request: JumpRequest): Promise<JumpResult>;
-  getEventLog(calendarId: string, limit?: number): Promise<TriggeredEventLogEntry[]>;
+interface CalendarEventFilterState {
+  timeRange: { preset: 'next30' | 'next90' | 'prev30' | 'custom'; start?: CalendarDateDTO; end?: CalendarDateDTO };
+  types: ReadonlyArray<'single' | 'recurring'>;
+  tags: ReadonlyArray<string>;
+  includeDefaultOnly: boolean;
 }
-
-export interface CalendarSnapshot {
-  calendarId: string;
-  schema: CalendarSchema;
-  currentDate: CalendarDate;
-  pendingEvents: TriggeredEventSummary[];
+interface CalendarOverviewFilterState {
+  query: string;
+  schemaTypes: ReadonlyArray<'gregorian' | 'custom' | 'tenDay'>;
+  defaultScope?: 'global' | 'travel';
 }
-
-export interface AdvanceRequest {
-  calendarId: string;
-  step: { value: number; unit: 'day' | 'week' | 'month'; direction: 'forward' | 'backward' };
-  autoTriggerEvents: boolean;
-  context: 'mode' | { travelId: string };
-}
-
-export interface AdvanceResult {
-  calendarId: string;
-  previousDate: CalendarDate;
-  newDate: CalendarDate;
-  triggeredEvents: TriggeredEventLogEntry[];
-  hookDispatch: HookDispatchResult;
-  telemetry: AdvanceTelemetry;
-}
-
-export interface JumpRequest {
-  calendarId: string;
-  targetDate: CalendarDate;
-  autoTriggerEvents: boolean;
-  context: 'mode' | { travelId: string };
-}
-
-export interface JumpResult {
-  calendarId: string;
-  previousDate: CalendarDate;
-  newDate: CalendarDate;
-  skippedEvents: TriggeredEventLogEntry[];
-  hookDispatch: HookDispatchResult;
-}
-
-export interface HookDispatchResult {
-  dispatched: string[]; // hookIds
-  failed: Array<{ hookId: string; error: string }>;
-}
-
-export interface AdvanceTelemetry {
-  durationMs: number;
-  triggeredCount: number;
-  skippedCount: number;
+interface CalendarLogEntryDTO {
+  id: string;
+  timestamp: string; // ISO
+  message: string;
+  severity: 'info' | 'warning' | 'error';
+  linkedEventId?: string;
 }
 ```
 
-## 4. Cartographer Hooks
+## 3. Gateways {#gateways}
+### 3.1 `CalendarStateGateway`
 ```ts
-// src/apps/cartographer/travel/calendar-integration.ts
-export interface CartographerCalendarHooks {
-  onCalendarAdvance(result: AdvanceResult): Promise<void>;
-  onCalendarError(error: CalendarGatewayError): Promise<void>;
+interface CalendarStateGateway {
+  loadSnapshot(scope: 'global' | 'travel', travelId?: string): Promise<CalendarStateSnapshotDTO>;
+  setActiveCalendar(input: { calendarId: string; scope: 'global' | 'travel'; travelId?: string }): Promise<void>;
+  setDefaultCalendar(input: { calendarId: string; scope: 'global' | 'travel'; travelId?: string }): Promise<void>;
+  advanceTime(input: AdvanceRequestDTO & { scope: 'global' | 'travel'; travelId?: string }): Promise<AdvanceResultDTO>;
+  setDate(input: JumpRequestDTO & { scope: 'global' | 'travel'; travelId?: string }): Promise<JumpResultDTO>;
+  getTravelLeafPreferences(travelId: string): Promise<TravelLeafPrefsDTO>;
+  setTravelLeafPreferences(travelId: string, prefs: TravelLeafPrefsDTO): Promise<void>;
 }
 ```
-- `CartographerController` ruft `CalendarStateGateway.advance`/`jump` auf und übergibt Rückgaben an diese Hooks.
-- Travel-Panel konsumiert `AdvanceResult` (Datum, Events, HookStatus).
 
-## 5. DTO- & JSON-Schemas
-### CalendarSchema JSON
+### 3.2 `CalendarRepository`
+```ts
+interface CalendarRepository {
+  listCalendars(): Promise<ReadonlyArray<CalendarSchemaDTO>>;
+  getCalendar(id: string): Promise<CalendarSchemaDTO | null>;
+  createCalendar(input: CalendarSchemaDTO & { isDefaultGlobal?: boolean }): Promise<void>;
+  updateCalendar(id: string, input: Partial<CalendarSchemaDTO>): Promise<void>;
+  deleteCalendar(id: string): Promise<void>;
+  setDefault(input: { calendarId: string; scope: 'global' | 'travel'; travelId?: string }): Promise<void>;
+}
+```
+
+### 3.3 `EventRepository`
+```ts
+interface EventRepository {
+  listEvents(calendarId: string, range?: CalendarRangeDTO): Promise<ReadonlyArray<CalendarEventDTO>>;
+  listUpcoming(calendarId: string, limit: number): Promise<ReadonlyArray<CalendarUpcomingEventDTO>>;
+  createEvent(event: CalendarEventDTO): Promise<void>;
+  updateEvent(id: string, event: Partial<CalendarEventDTO>): Promise<void>;
+  deleteEvent(id: string): Promise<void>;
+}
+```
+
+### 3.4 `CartographerHookGateway`
+```ts
+interface CartographerHookGateway {
+  dispatchHooks(events: ReadonlyArray<CalendarEventDTO>, context: { travelId?: string; scope: 'global' | 'travel' }): Promise<void>;
+  notifyTravelPanel(payload: TravelPanelUpdateDTO): Promise<void>;
+}
+```
+
+## 4. Request/Response DTOs für Zeitfortschritt
+```ts
+interface AdvanceRequestDTO {
+  calendarId: string;
+  amount: number; // kann negativ sein
+  unit: 'day' | 'week' | 'month' | 'custom';
+  customRange?: { start: CalendarDateDTO; end: CalendarDateDTO };
+  followUpMode: 'auto' | 'manual';
+}
+interface AdvanceResultDTO {
+  newDate: CalendarDateDTO;
+  triggered: ReadonlyArray<CalendarEventDTO>;
+  skipped: ReadonlyArray<CalendarEventDTO>;
+}
+interface JumpRequestDTO {
+  calendarId: string;
+  target: CalendarDateDTO;
+  followUpMode: 'auto' | 'manual';
+}
+interface JumpResultDTO {
+  date: CalendarDateDTO;
+  skipped: ReadonlyArray<CalendarEventDTO>;
+}
+interface TravelLeafPrefsDTO {
+  mode: TravelCalendarMode;
+  visible: boolean;
+  lastViewedDate: CalendarDateDTO;
+}
+interface TravelPanelUpdateDTO {
+  currentDate: CalendarDateDTO;
+  triggeredEvents: ReadonlyArray<CalendarEventDTO>;
+  skippedEvents: ReadonlyArray<CalendarEventDTO>;
+  message?: string;
+}
+```
+
+## 5. JSON-Schemas {#schemas}
+### 5.1 Kalenderpersistenz
 ```json
 {
-  "$id": "calendar.schema.v1",
+  "$id": "calendar.schema",
   "type": "object",
-  "required": ["id", "name", "weekLength", "months", "startYear", "epochDate"],
+  "required": ["id", "name", "daysPerWeek", "months", "epoch", "schemaVersion"],
   "properties": {
     "id": { "type": "string" },
     "name": { "type": "string", "minLength": 1 },
     "description": { "type": "string" },
-    "weekLength": { "type": "integer", "minimum": 1, "maximum": 20 },
+    "daysPerWeek": { "type": "integer", "minimum": 1 },
     "months": {
       "type": "array",
       "minItems": 1,
@@ -205,149 +243,123 @@ export interface CartographerCalendarHooks {
         "properties": {
           "id": { "type": "string" },
           "name": { "type": "string" },
-          "length": { "type": "integer", "minimum": 1, "maximum": 80 },
-          "intercalary": { "type": "boolean" }
+          "length": { "type": "integer", "minimum": 1 }
         }
       }
     },
-    "leapRules": { "type": "array", "items": { "$ref": "#/$defs/leapRule" } },
-    "startYear": { "type": "integer" },
-    "epochDate": { "$ref": "#/$defs/date" },
-    "metadata": { "type": "object", "additionalProperties": true }
-  },
-  "$defs": {
-    "date": {
+    "leapRules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["interval", "addDayToMonthId"],
+        "properties": {
+          "interval": { "type": "integer", "minimum": 1 },
+          "addDayToMonthId": { "type": "string" }
+        }
+      }
+    },
+    "epoch": {
       "type": "object",
-      "required": ["year", "monthIndex", "day"],
+      "required": ["year", "monthId", "day"],
       "properties": {
         "year": { "type": "integer" },
-        "monthIndex": { "type": "integer", "minimum": 0 },
+        "monthId": { "type": "string" },
         "day": { "type": "integer", "minimum": 1 }
       }
     },
-    "leapRule": {
-      "type": "object",
-      "required": ["type"],
-      "properties": {
-        "type": { "enum": ["interval", "custom"] },
-        "intervalYears": { "type": "integer", "minimum": 1 },
-        "customEvaluatorHook": { "type": "string" }
-      }
-    }
+    "schemaVersion": { "type": "string" }
   }
 }
 ```
 
-### CalendarEvent JSON
+### 5.2 Default-Status Persistenz
 ```json
 {
-  "$id": "calendar.event.v1",
-  "oneOf": [
-    {
+  "$id": "calendar.defaults",
+  "type": "object",
+  "required": ["global", "travel"],
+  "properties": {
+    "global": { "type": ["string", "null"] },
+    "travel": {
       "type": "object",
-      "required": ["id", "type", "title", "date"],
-      "properties": {
-        "id": { "type": "string" },
-        "type": { "const": "single" },
-        "title": { "type": "string" },
-        "date": { "$ref": "calendar.schema.v1#/$defs/date" },
-        "category": { "type": "string" },
-        "tags": { "type": "array", "items": { "type": "string" } },
-        "notes": { "type": "string" },
-        "color": { "type": "string" }
-      }
-    },
-    {
+      "additionalProperties": { "type": ["string", "null"] }
+    }
+  }
+}
+```
+
+### 5.3 Travel-Leaf Präferenzen
+```json
+{
+  "$id": "calendar.travelPrefs",
+  "type": "object",
+  "required": ["mode", "visible", "lastViewedDate"],
+  "properties": {
+    "mode": { "enum": ["month", "week", "day", "upcoming"] },
+    "visible": { "type": "boolean" },
+    "lastViewedDate": { "$ref": "#/definitions/date" }
+  },
+  "definitions": {
+    "date": {
       "type": "object",
-      "required": ["id", "type", "title", "rule"],
+      "required": ["calendarId", "year", "monthId", "day"],
       "properties": {
-        "id": { "type": "string" },
-        "type": { "const": "recurring" },
-        "title": { "type": "string" },
-        "rule": {
-          "oneOf": [
-            { "type": "object", "required": ["type", "offset"], "properties": { "type": { "const": "annual" }, "offset": { "type": "integer", "minimum": 0 } } },
-            { "type": "object", "required": ["type", "week", "dayIndex"], "properties": { "type": { "const": "monthly_position" }, "monthIndex": { "type": "integer", "minimum": 0 }, "week": { "type": "integer", "minimum": 1, "maximum": 6 }, "dayIndex": { "type": "integer", "minimum": 0 } } },
-            { "type": "object", "required": ["type", "dayIndex"], "properties": { "type": { "const": "weekly" }, "dayIndex": { "type": "integer", "minimum": 0 } } },
-            { "type": "object", "required": ["type", "hookId"], "properties": { "type": { "const": "custom_hook" }, "hookId": { "type": "string" }, "payload": { "type": "object", "additionalProperties": true } } }
-          ]
-        },
-        "start": { "$ref": "calendar.schema.v1#/$defs/date" },
-        "end": {
-          "oneOf": [
-            { "$ref": "calendar.schema.v1#/$defs/date" },
-            { "type": "object", "required": ["occurrences"], "properties": { "occurrences": { "type": "integer", "minimum": 1 } } }
-          ]
-        }
+        "calendarId": { "type": "string" },
+        "year": { "type": "integer" },
+        "monthId": { "type": "string" },
+        "day": { "type": "integer" }
       }
     }
-  ]
+  }
 }
 ```
 
-## 6. Fehlerobjekte & Codes
+## 6. Fehlerobjekte
 ```ts
-export type CalendarGatewayError =
-  | { code: 'validation_error'; field?: string; message: string }
-  | { code: 'conflict'; conflictType: 'duplicate_rule' | 'schema_migration'; details?: unknown }
-  | { code: 'io_error'; operation: string; message: string }
-  | { code: 'hook_failure'; hookId: string; message: string };
-```
-- UI mappt `code` auf Banner/Texte (siehe [UX_SPEC](./UX_SPEC.md#4-fehler-und-leerstaaten)).
-- `validation_error` enthält `field` Key (z.B. `months[2].length`).
-
-## 7. Helper-Funktionen
-```ts
-export interface CalendarFormattingService {
-  formatDate(date: CalendarDate, schema: CalendarSchema, options?: { withWeek?: boolean }): string;
-  formatRange(start: CalendarDate, end: CalendarDate, schema: CalendarSchema): string;
-  dayOfYear(date: CalendarDate, schema: CalendarSchema): number;
-}
-
-export interface RecurrenceEngine {
-  preview(rule: RepeatRule, schema: CalendarSchema, start: CalendarDate | undefined, limit: number): CalendarDate[];
-  conflicts(events: CalendarEventRecurring[], rule: RepeatRule): RecurrenceConflict[];
+interface CalendarError {
+  code: 'validation_error' | 'conflict' | 'io_error' | 'not_found';
+  scope: 'calendar' | 'event' | 'default' | 'travel';
+  message: string;
+  details?: Record<string, unknown>;
 }
 ```
+- `validation_error`: Feldfehler (z.B. Wochenlänge 0, Custom-Rule invalid).
+- `conflict`: Default-Verletzung (zwei globale Defaults) oder Eventkollision.
+- `io_error`: Persistenz-/Dateifehler.
+- `not_found`: Kalender/Ereignis existiert nicht (z.B. gelöscht).
 
-## 8. Versionierung & Migration
-- JSON-Dateien speichern `schemaVersion` (initial `1`).
-- Bei Schema-Änderung wird `CalendarSchemaMigration` angewandt:
+Fehler werden an UI via `ERROR_OCCURRED` (siehe [STATE_MACHINE.md](./STATE_MACHINE.md#eventsactions)) propagiert.
+
+## 7. Versionierung & Migrationen
+| Version | Änderung | Migration |
+| --- | --- | --- |
+| `1.0.0` | Basis-Schema (Kalender, Events) | Initiale Anlage |
+| `1.1.0` | Default-Flags (`isDefaultGlobal`, `defaultTravelIds`), Travel-Leaf-Präferenzen | Migration: `defaults.global`/`defaults.travel` Datei anlegen, vorhandene Kalender ohne Default → `null` |
+| `1.2.0` | Zoom-optimierte Event-Snapshots (Cached ranges) | Migration: Precompute Range-Caches (lazy on demand) |
+
+Migration-Schritte:
+1. `CalendarRepository` führt Schema-Version-Check aus (`schemaVersion`).
+2. Bei fehlendem Default-Speicher legt Migration `calendar.defaults.json` an und weist globalen Default heuristisch (erster Kalender) zu.
+3. Travel-Leaf Prefs: Standard `{ mode: 'upcoming', visible: false, lastViewedDate = currentDate }`.
+4. Fehlende Felder in Events werden mit Defaults ergänzt (`followUpPolicy = 'auto'`).
+
+## 8. Cartographer Integration
+- `CartographerHookGateway.notifyTravelPanel` sendet `TravelPanelUpdateDTO` an `apps/cartographer/travel/panel`.
+- Hooks `cartographer_event` erhalten Payload `{ travelId, calendarId, eventId, occurrence }`.
+- Travel-Leaf mount/unmount Signale:
   ```ts
-  interface CalendarSchemaMigration {
-    fromVersion: number;
-    toVersion: number;
-    migrateSchema(schema: CalendarSchema): CalendarSchema;
-    migrateEvents(events: CalendarEvent[], oldSchema: CalendarSchema, newSchema: CalendarSchema): MigrationResult;
-  }
-  interface MigrationResult {
-    migrated: CalendarEvent[];
-    conflicts: MigrationConflict[];
-  }
-  interface MigrationConflict {
-    eventId: string;
-    reason: 'date_out_of_range' | 'duplicate_after_migration' | 'custom';
-    suggestedFix?: string;
+  interface TravelLeafLifecycleGateway {
+    onTravelStart(callback: (travelId: string) => void): Unsubscribe;
+    onTravelEnd(callback: (travelId: string) => void): Unsubscribe;
   }
   ```
-- Persistenz speichert Konflikte im Event (`event.metadata.conflict=true`) bis Nutzer:in löst.
+- Default-Änderungen werden an Cartographer gemeldet, damit Reise-Dropdowns aktualisiert werden (`CartographerController.refreshCalendarOptions`).
 
-## 9. Persistenzspeicher
-- Standard: `JsonStore<CalendarSchema>` unter `data/calendar-schemas.json`, `JsonStore<CalendarEvent>` unter `data/calendar-events.json`.
-- Assumption: Repository kapselt File-Locks; Schreiboperationen atomar via temporäre Datei + rename.
+## 9. Testbare Verträge
+- Alle Gateways mit Interfaces + `__mock__` Implementierung für Tests (siehe [../../tests/apps/calendar/TEST_PLAN.md](../../../tests/apps/calendar/TEST_PLAN.md)).
+- Schemas validieren via `ajv` oder `zod` in Domain-Tests.
 
-## 10. Telemetriepayloads
-```ts
-export interface CalendarTelemetryPort {
-  log(event: {
-    name: 'calendar.time.advance' | 'calendar.time.jump' | 'calendar.schema.migrate' | 'calendar.event.create';
-    durationMs?: number;
-    metadata?: Record<string, unknown>;
-  }): void;
-}
-```
-- Presenter ruft `CalendarTelemetryPort.log` nach erfolgreichen Operationen auf.
-
-## 11. Assumptions & TODO
-- Assumption: Cartographer-Integration akzeptiert `AdvanceResult` unverändert (keine zusätzlichen Mapping nötig).
-- TODO (Implementierung): Konkrete Dateipfade in Repository finalisieren und mit `core/persistence` abstimmen.
+## 10. Verweise
+- UX-Flows: [UX_SPEC.md](./UX_SPEC.md)
+- Zustandslogik: [STATE_MACHINE.md](./STATE_MACHINE.md)
+- Komponenten: [COMPONENTS.md](./COMPONENTS.md)
