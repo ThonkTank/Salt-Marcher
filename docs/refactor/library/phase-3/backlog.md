@@ -16,6 +16,7 @@ Entwurfsleitlinien (Planung):
 - Definiere Fixture-Struktur für Domain-Daten (Creatures, Items, Equipment, Terrains, Regions) mit klarer Ownership.
 - Plane CI-Workflow-Integration (`npm run test:contracts`) inkl. Dokumentation in `BUILD.md`.
 - Lege Telemetrie-Hooks als optionalen Adapter an, um spätere Paritätsprüfungen einzubinden.
+- Finalisierte Harness-API (`createLibraryHarness`, `ports.*`) mit QA, Fixture-Ownern und DevOps abgestimmt (Smoke-Subset + CI-Takt).
 Abhängigkeiten: Keine.
 Risiken & Mitigation:
 - Gefahr fragmentierter Tests → Review der Harness-API mit QA-Team vor Implementierung.
@@ -27,11 +28,11 @@ Messgrößen (Erfolg):
 - Neue Testsuite deckt ≥ 4 Ports ab.
 - Baseline-Coverage in Hotspots steigt um ≥ 15 Prozentpunkte nach Integration.
 Akzeptanzkriterien:
-  DoR (Ready für Phase 4): Harness-API, Fixture-Design und CI-Integration sind beschrieben; Testdatenquellen abgestimmt.
+  DoR (Ready für Phase 4): Harness-API (`createLibraryHarness` inkl. Port-Signaturen), Fixture-Design (Owned-Datasets) und CI-Integration (`npm run test:contracts` + `npm run ci:tests`) sind mit QA sowie DevOps abgestimmt und dokumentiert.
   DoD (für Phase 4): Tests laufen grün, decken alle Ports ab und laufen automatisiert im CI.
 Aufwand (T-Shirt): M
 Priorität (Score): 35
-Open Questions: Benötigt das Team dedizierte Mock-Stubs für Telemetrie im Harness?
+Open Questions: Keine – Telemetrie lässt sich über optionale Hooks (`telemetry.onEvent`) mocken.
 
 ID: LIB-TD-0002
 Titel (imperativ): Hinterlege Golden-Files für Serializer-Roundtrips

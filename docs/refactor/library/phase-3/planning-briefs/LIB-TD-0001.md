@@ -1,22 +1,22 @@
-# LIB-TD-0001 Planning Brief
+# LIB-TD-0001 – Vertragstest-Harness
 
 ## Kurzüberblick
-Aufbau eines gemeinsamen Vertragstest-Harness für Renderer-, Storage-, Serializer- und Event-Ports. Liefert die Grundlage für alle weiteren Refactor-Schritte und stellt sicher, dass Legacy- und Zielarchitektur vergleichbar getestet werden können.
+- Ziel: `createLibraryHarness` als gemeinsamen Einstiegspunkt für Renderer-, Storage-, Serializer- und Event-Ports etablieren.
+- Legacy/v2-Adapter können pro Port gewechselt werden, ohne Testcode anzupassen.
+- Deterministische Fixtures (Creatures, Items, Equipment, Terrains, Regions) dienen allen Ports als gemeinsame Datenbasis.
 
 ## Stakeholder
-- Tech Lead Library (Owner)
-- QA Automation (Review Harness-API)
-- DevOps (CI-Integration)
+- **QA** (Mira Hoffmann): priorisiert Fixture-Abdeckung und Smoke-Subset (`library-contracts.test.ts`).
+- **DevOps** (Jonas Krüger): verantwortet CI-Erweiterung (`npm run test:contracts`, Aggregator `npm run ci:tests`).
+- **Library-Core** (Edda Nguyen): liefert Schema-Änderungen und telemetrische Anforderungen.
 
 ## Zeitplanung
-- Woche 1: Harness-API und Fixture-Design abstimmen.
-- Woche 2: Implementierungsplan finalisieren, CI-Integration skizzieren.
-- Woche 3: Review & Abnahme durch QA/DevOps.
+- Ready-Abstimmung abgeschlossen (KW 32): QA/DevOps haben Harness-API, Fixture-Besitz und CI-Schritte freigegeben.
+- Umsetzung & Review (KW 33): Implementierung Harness, Fixtures und Vertrags-Tests + Smoke-Run.
+- Übergabe an QA für Finaltest (KW 34): gemeinsame Sichtung der Telemetrie-Hooks und Reportergebnisse.
 
 ## Vorbereitungen
-- Phase-1/2-Dokumente zu Ports sichten (Renderer v2, StoragePort, Event-Bus, Serializer-Template).
-- Beispiel-Datensätze aus Presets/Persistenz sammeln.
-- CI-Pipeline-Anforderungen (npm Scripts, Cache) auflisten.
-
-## Offene Punkte
-- Entscheidung, ob Telemetrie-Stubs direkt im Harness simuliert werden oder erst in LIB-TD-0016.
+- QA prüft Ownership-Tabelle der Fixtures und dokumentiert Abnahme im Test-Channel.
+- DevOps aktualisiert Pipeline-Job auf Basis `npm run ci:tests` und bestätigt Laufzeit (< 2 min) im Build-Log.
+- Library-Core liefert Telemetrie-Events, die über `telemetry.onEvent`/`onAdapterActivated` gebridged werden können.
+- PR-Smoke-Subset: `library-contracts.test.ts` + bestehende `npm test` als kombinierter Vorab-Check.
