@@ -26,6 +26,10 @@ export class TFile extends TAbstractFile {
     basename = "";
 }
 
+export class TFolder extends TAbstractFile {
+    children: TAbstractFile[] = [];
+}
+
 export class WorkspaceLeaf {
     view: unknown = null;
     setViewState = async (_state: unknown) => {};

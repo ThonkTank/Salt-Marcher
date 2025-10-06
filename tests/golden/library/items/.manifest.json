@@ -1,0 +1,30 @@
+{
+    "schemaVersion": 1,
+    "domain": "items",
+    "generatedBy": "LIB-TD-0002",
+    "generatedAt": "2025-10-06T20:07:39.585Z",
+    "owner": "Library",
+    "samples": [
+        {
+            "fixtureId": "item.alpha",
+            "name": "Saltward Cloak",
+            "storagePath": "SaltMarcher/Items/Saltward Cloak.md",
+            "goldenFile": "item.alpha.md",
+            "checksum": "c88a5c275a13117c1992f3c83b5f981201cfc0da9a8bb282bc00e7c1a9869e7b"
+        },
+        {
+            "fixtureId": "item.beta",
+            "name": "Compass of the Deep",
+            "storagePath": "SaltMarcher/Items/Compass of the Deep.md",
+            "goldenFile": "item.beta.md",
+            "checksum": "5d640e00b2942265fe03d6fab4895b28469d15d8b4462c039b5988171f465ff8"
+        },
+        {
+            "fixtureId": "item.gamma",
+            "name": "Lantern of Echoing Tides",
+            "storagePath": "SaltMarcher/Items/Lantern of Echoing Tides.md",
+            "goldenFile": "item.gamma.md",
+            "checksum": "dde8e37c3605a73a0ddadf6c37206b0be1575f05c0bd0f02cc6fb67074df16b7"
+        }
+    ]
+}

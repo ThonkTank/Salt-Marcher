@@ -6,9 +6,12 @@
     - Fixture-Struktur unter `tests/contracts/library-fixtures/{creatures,items,equipment,terrains,regions}` konsolidieren.
     - Vertrags- und Regressionstests (`tests/contracts/library-contracts.test.ts`) für Renderer-, Storage-, Serializer- und Event-Ports pflegen.
     - `npm run test:contracts` in `npm run ci:tests` integrieren, `BUILD.md` aktualisieren und DoR-Artefakte ablegen.
+- [x] LIB-TD-0002 – Golden-Files für Roundtrips (wartete auf LIB-TD-0001)
+    - `tests/golden/library/<domain>` mit Manifesten (`.manifest.json`) und Markdown-Goldens für Creatures, Items, Equipment und Spells befüllt.
+    - Update-Skript `npm run golden:update` erzeugt deterministische Artefakte via Harness (`tests/contracts/update-library-golden.ts`).
+    - Vertrags-Test `tests/contracts/library-golden.test.ts` prüft Serializer- und Storage-Roundtrips gegen die Golden-Daten (≥3 Samples je Domäne).
 
 ## Backlog (wartet auf vorgelagerte ToDos)
-- [ ] LIB-TD-0002 – Golden-Files (wartet auf LIB-TD-0001)
 - [ ] LIB-TD-0003 – Application-Service-Port (wartet auf LIB-TD-0001)
 - [ ] LIB-TD-0004 – StoragePort-Kapselung (wartet auf LIB-TD-0003 & LIB-TD-0001)
 - [ ] LIB-TD-0005 – Renderer-Kernel (wartet auf LIB-TD-0003 & LIB-TD-0001)

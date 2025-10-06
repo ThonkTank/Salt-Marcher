@@ -5,6 +5,7 @@
 - `npm run build`: führt `esbuild.config.mjs` aus und erzeugt `main.js` im Plugin-Stamm.
 - `npm test`: nutzt Vitest/Jsdom, um die gebündelte Oberfläche gegen Mocks zu prüfen.
 - `npm run test:contracts`: startet die Library-Vertragstests (`tests/contracts`), Laufzeit ~90s.
+- `npm run golden:update`: generiert deterministische Golden-Files für Serializer-Roundtrips (`tests/golden/library`).
 - `npm run ci:tests`: führt `npm test` und `npm run test:contracts` sequenziell für CI-Pipelines aus.
 - `npm run sync:todos`: sammelt Aufgaben aus allen `AGENTS.md`-Dateien und schreibt die priorisierte `TODO.md` im Reporoot.
 
