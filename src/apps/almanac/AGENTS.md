@@ -1,11 +1,11 @@
 # Ziele
-- Plant den neuen Calendar-Workmode innerhalb der Apps-Schicht und dokumentiert Architekturentscheidungen vor dem ersten Code.
-- Beschreibt Zuständigkeiten, Integrationen und Migrationspfade für Kalender- und Zeitleistenfunktionen im Zusammenspiel mit Cartographer.
+- Plant den neuen Almanac-Workmode innerhalb der Apps-Schicht und dokumentiert Architekturentscheidungen vor dem ersten Code.
+- Beschreibt Zuständigkeiten, Integrationen und Migrationspfade für Kalender-, Phänomen- und Zeitleistenfunktionen im Zusammenspiel mit Cartographer.
 - Liefert eine verlässliche Referenz für spätere Implementierungsphasen inklusive Testankern und Persistenzüberlegungen.
 
 # Aktueller Stand
-- Nur Planungsdokumente vorhanden; es existiert noch keine Calendar-spezifische Logik oder UI.
-- Anforderungen orientieren sich an wiederkehrenden und einmaligen Ereignissen, eigener Kalenderdefinition und Zeitfortschritt im Cartographer.
+- Nur Planungsdokumente vorhanden; es existiert noch keine Almanac-spezifische Logik oder UI.
+- Anforderungen orientieren sich an wiederkehrenden und einmaligen Ereignissen, eigener Kalenderdefinition, Almanac-Phänomenen und Zeitfortschritt im Cartographer.
 - Als Inspirationsquelle steht das separate "Calendarium"-Plugin bereit, das ähnliche Konzepte nutzt (mehrere Kalender, Feiertage, Ereignisse).
 
 # ToDo

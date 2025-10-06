@@ -1,5 +1,5 @@
-# Calendar Workmode – Zustandsmaschine
-Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Calendar-Workmodes. Es ergänzt [UX_SPEC.md](./UX_SPEC.md), [COMPONENTS.md](./COMPONENTS.md) und [API_CONTRACTS.md](./API_CONTRACTS.md).
+# Almanac Workmode – Zustandsmaschine
+Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Almanac-Workmodes. Es ergänzt [UX_SPEC.md](./UX_SPEC.md), [COMPONENTS.md](./COMPONENTS.md) und [API_CONTRACTS.md](./API_CONTRACTS.md).
 
 ## 1. Überblick
 - Architektur: Presenter (StateMachine) + ViewModel. State wird über `immer` oder äquivalent immutable gehalten.
@@ -195,4 +195,4 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Ca
 - UX-Flows: [UX_SPEC.md §3](./UX_SPEC.md#3-workflows)
 - Komponenten: [COMPONENTS.md](./COMPONENTS.md)
 - API: [API_CONTRACTS.md](./API_CONTRACTS.md)
-- Tests: [../../tests/apps/calendar/TEST_PLAN.md](../../../tests/apps/calendar/TEST_PLAN.md)
+- Tests: [../../tests/apps/almanac/TEST_PLAN.md](../../../tests/apps/almanac/TEST_PLAN.md)

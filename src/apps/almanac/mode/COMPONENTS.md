@@ -1,8 +1,8 @@
-# Calendar Workmode – Komponenten
-Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänzt [UX_SPEC.md](./UX_SPEC.md), [WIREFRAMES.md](./WIREFRAMES.md) und die State-Definitionen in [STATE_MACHINE.md](./STATE_MACHINE.md).
+# Almanac Workmode – Komponenten
+Dieses Dokument beschreibt UI-Komponenten für den Almanac-Workmode. Es ergänzt [UX_SPEC.md](./UX_SPEC.md), [WIREFRAMES.md](./WIREFRAMES.md) und die State-Definitionen in [STATE_MACHINE.md](./STATE_MACHINE.md).
 
 ## 1. Übersicht
-- Alle Komponenten sind in `src/apps/calendar/mode/components` zu platzieren.
+- Alle Komponenten sind in `src/apps/almanac/mode/components` zu platzieren.
 - Styling erfolgt primär über bestehende Tokens aus `src/ui/tokens` und Utility-Klassen (`ui/Flex`, `ui/Grid`).
 - Props werden mit `Readonly`-Interfaces versehen; Events folgen dem Muster `on<Event>` und liefern Domain-DTOs aus [API_CONTRACTS.md](./API_CONTRACTS.md).
 
@@ -578,7 +578,7 @@ TravelCalendarLeaf (Cartographer)
 ## 10. Verweise
 - State-Events: [STATE_MACHINE.md](./STATE_MACHINE.md#eventsactions)
 - API-DTOs: [API_CONTRACTS.md](./API_CONTRACTS.md#dtos)
-- Testszenarien: [../../tests/apps/calendar/TEST_PLAN.md](../../../tests/apps/calendar/TEST_PLAN.md)
+- Testszenarien: [../../tests/apps/almanac/TEST_PLAN.md](../../../tests/apps/almanac/TEST_PLAN.md)
 
 ## 11. Naming & Styling Konventionen {#20-naming--styling-konventionen}
 - Präfixe laut [§1.1](#11-layer--prefix-naming) beibehalten; Komponenten aus anderen Layern nicht importieren (Shell → Mode → Shared → Travel).

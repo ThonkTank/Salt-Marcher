@@ -1,15 +1,15 @@
-# Calendar Workmode – UX Spezifikation
-Diese Spezifikation definiert UI-Verhalten, Nutzer:innenflüsse und Interaktionen für den Calendar-Workmode. Sie ergänzt den [Implementierungsplan](../IMPLEMENTATION_PLAN.md) und verweist auf [Wireframes](./WIREFRAMES.md), [Komponenten](./COMPONENTS.md) sowie die [Zustandsmaschine](./STATE_MACHINE.md).
+# Almanac Workmode – UX Spezifikation
+Diese Spezifikation definiert UI-Verhalten, Nutzer:innenflüsse und Interaktionen für den Almanac-Workmode. Sie ergänzt den [Implementierungsplan](../IMPLEMENTATION_PLAN.md) und verweist auf [Wireframes](./WIREFRAMES.md), [Komponenten](./COMPONENTS.md) sowie die [Zustandsmaschine](./STATE_MACHINE.md).
 
 ## 1. Übersicht
 - Primary Persona: Spielleitung, die Reisen im Cartographer plant, Default-Kalender verwaltet und Ereignisse pflegt.
-- Kontext: Obsidian-Leaf im Calendar-Workmode (Almanac-Shell) mit Dashboard, Manager, Events sowie separat montiertes Travel-Leaf im Cartographer-Reisemodus.
+- Kontext: Obsidian-Leaf im Almanac-Workmode (Almanac-Shell) mit Dashboard, Manager, Events sowie separat montiertes Travel-Leaf im Cartographer-Reisemodus.
 - UI-Bausteine: Nutzung vorhandener Komponenten aus `src/ui` (Tables, Buttons, Toggles, Modals) kombiniert mit neuen Calendar-spezifischen Grids, Toolbars und Leaf-Komponenten.
 
 ### 1.1 Navigationshierarchie & Terminologie
 | Ebene | Label | Beschreibung | Persistenter State | Breadcrumb |
 | --- | --- | --- | --- | --- |
-| Parent | Almanac | Shell-Lean-Leaf im Calendar-Workmode | `ui.almanacNavigation.shell` | `Almanac` |
+| Parent | Almanac | Shell-Lean-Leaf im Almanac-Workmode | `ui.almanacNavigation.shell` | `Almanac` |
 | Submodus | Almanac › Dashboard | Timestamp, Quick-Actions, Ereignislog | `ui.almanacMode = "dashboard"` | `Almanac › Dashboard` |
 | Submodus | Almanac › Manager | Kalenderansicht + Übersicht | `ui.almanacMode = "manager"` | `Almanac › Manager` |
 | Submodus | Almanac › Events | Phänomen-Hub (Timeline, Tabelle, Karte) | `ui.almanacMode = "events"` | `Almanac › Events` |
@@ -25,7 +25,7 @@ Diese Spezifikation definiert UI-Verhalten, Nutzer:innenflüsse und Interaktione
 | Komponenten | Props/Events & Composition | [./COMPONENTS.md](./COMPONENTS.md) |
 | Zustandsmaschine | State-Slices, Events, Effekte | [./STATE_MACHINE.md](./STATE_MACHINE.md) |
 | API-Contracts | Domain- & Gateway-Schnittstellen | [./API_CONTRACTS.md](./API_CONTRACTS.md) |
-| Testplan | Abdeckung & Akzeptanzprüfung | [../../tests/apps/calendar/TEST_PLAN.md](../../../tests/apps/calendar/TEST_PLAN.md) |
+| Testplan | Abdeckung & Akzeptanzprüfung | [../../tests/apps/almanac/TEST_PLAN.md](../../../tests/apps/almanac/TEST_PLAN.md) |
 
 ## 3. Workflows
 Jeder Workflow beschreibt Ziel, Trigger, Vorbedingungen, Flüsse, Fehler, Postbedingungen und Datenänderungen. Akzeptanzkriterien siehe [Implementierungsplan §Akzeptanzkriterien](../IMPLEMENTATION_PLAN.md#akzeptanzkriterien-kurzform).
@@ -429,4 +429,4 @@ Fehlertexte sind in `i18n` unter `calendar.mode.errors.*` gepflegt. Leerstaaten 
 - Umsetzungshinweise zu Komponenten: [COMPONENTS.md](./COMPONENTS.md)
 - State- und Effektmodell: [STATE_MACHINE.md](./STATE_MACHINE.md)
 - API und Persistenz: [API_CONTRACTS.md](./API_CONTRACTS.md)
-- Testabdeckung: [../../tests/apps/calendar/TEST_PLAN.md](../../../tests/apps/calendar/TEST_PLAN.md)
+- Testabdeckung: [../../tests/apps/almanac/TEST_PLAN.md](../../../tests/apps/almanac/TEST_PLAN.md)

@@ -1,8 +1,8 @@
-# Calendar Workmode – API Contracts
+# Almanac Workmode – API Contracts
 Dieses Dokument beschreibt Schnittstellen zwischen UI, Domain, Persistenz und Cartographer. Es ergänzt [UX_SPEC.md](./UX_SPEC.md), [STATE_MACHINE.md](./STATE_MACHINE.md) und [COMPONENTS.md](./COMPONENTS.md).
 
 ## 1. Übersicht
-- Alle Typen sind in `src/apps/calendar/mode/contracts.ts` zu zentralisieren.
+- Alle Typen sind in `src/apps/almanac/mode/contracts.ts` zu zentralisieren.
 - JSON-Schemas dienen als Persistenzformat (z.B. `JsonStore`).
 - Versionierung erfolgt über `schemaVersion`-Felder (SemVer). Migrationen dokumentiert in §7.
 
@@ -616,7 +616,7 @@ Migration-Schritte:
 - Default-Änderungen werden an Cartographer gemeldet, damit Reise-Dropdowns aktualisiert werden (`CartographerController.refreshCalendarOptions`).
 
 ## 9. Testbare Verträge
-- Alle Gateways mit Interfaces + `__mock__` Implementierung für Tests (siehe [../../tests/apps/calendar/TEST_PLAN.md](../../../tests/apps/calendar/TEST_PLAN.md)).
+- Alle Gateways mit Interfaces + `__mock__` Implementierung für Tests (siehe [../../tests/apps/almanac/TEST_PLAN.md](../../../tests/apps/almanac/TEST_PLAN.md)).
 - Schemas validieren via `ajv` oder `zod` in Domain-Tests.
 
 ## 10. Verweise

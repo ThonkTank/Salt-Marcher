@@ -1,5 +1,5 @@
-# Calendar Workmode – Wireframes
-Dieses Dokument beschreibt die textuellen Wireframes für den Calendar-Workmode. Es ergänzt [UX_SPEC.md](./UX_SPEC.md) und verweist auf Komponenten in [COMPONENTS.md](./COMPONENTS.md).
+# Almanac Workmode – Wireframes
+Dieses Dokument beschreibt die textuellen Wireframes für den Almanac-Workmode. Es ergänzt [UX_SPEC.md](./UX_SPEC.md) und verweist auf Komponenten in [COMPONENTS.md](./COMPONENTS.md).
 
 ## 1. Hinweise
 - Alle Layouts basieren auf Obsidian-Panes mit 960px Breite (Standard) und beschreiben zusätzlich das Verhalten unter 520px (schmale Pane).

@@ -1,5 +1,5 @@
 # Ziele
-- Spezifiziert UI-, Workflow- und Presenter-Anforderungen für den Calendar-Workmode.
+- Spezifiziert UI-, Workflow- und Presenter-Anforderungen für den Almanac-Workmode.
 - Verknüpft Designartefakte (UX, Wireframes, Komponenten) mit Domain- und Gateway-Schnittstellen.
 
 # Aktueller Stand

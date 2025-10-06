@@ -1,5 +1,5 @@
-# Calendar Workmode – Implementierungsplan
-Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Calendar-Workmode zusammen und beschreibt Architektur, Abhängigkeiten sowie Testanker im Austausch mit bestehenden Apps (insbesondere Cartographer).
+# Almanac Workmode – Implementierungsplan
+Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Almanac-Workmode zusammen und beschreibt Architektur, Abhängigkeiten sowie Testanker im Austausch mit bestehenden Apps (insbesondere Cartographer).
 
 ## Problem
 - Reisen im Cartographer benötigen eine robuste Zeitleiste, die Tagesfortschritt und Ereignisse abbildet – sowohl im regulären Workmode als auch in einem kompakten Travel-Leaf.
@@ -9,7 +9,7 @@ Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Calendar-Workmo
 - Zusätzlich gibt es keine übergreifende Steuerzentrale („Almanac“), in der mehrere Kalender-Workmodes und ein kalenderübergreifender Events-Hub (Jahreszeiten, astronomische Phänomene, Wetter, Gezeiten) orchestriert werden.
 
 ## Ziel
-- Bereitstellen eines Calendar-Workmodes innerhalb der Apps-Schicht, der sich nahtlos in `CartographerController` einklinkt und dort den Zeitfortschritt steuert.
+- Bereitstellen eines Almanac-Workmodes innerhalb der Apps-Schicht, der sich nahtlos in `CartographerController` einklinkt und dort den Zeitfortschritt steuert.
 - Ermöglichen, eigene Kalender zu definieren, inklusive benutzerdefinierter Monate, Wochenlängen, Schaltregeln und Default-Markierung (global oder reisespezifisch).
 - Verwaltung sowohl wiederkehrender als auch einmaliger Ereignisse mit klaren Persistenz-, Vorschau- und Trigger-Regeln.
 - Anzeige eines Dashboards, eines vollformatigen Kalender-Managers (Kalenderansicht & Übersicht) sowie eines Travel-Leaves mit anpassbaren Zoomstufen (Monat, Woche, Tag, Nächste Ereignisse) und Quick-Actions.
@@ -18,12 +18,12 @@ Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Calendar-Workmo
 
 ## Lösung
 ### Architekturüberblick
-1. **Almanac-Shell & Mode-Orchestrierung (`src/apps/calendar/mode/almanac`)**
+1. **Almanac-Shell & Mode-Orchestrierung (`src/apps/almanac/mode`)**
    - Stellt Parent-Komponenten (`AlmanacShell`, `AlmanacModeSwitcher`) bereit, die **ausschließlich** die Almanac-Untermodi `Almanac › Dashboard`, `Almanac › Manager` und `Almanac › Events` kapseln.
    - Persistiert zuletzt genutzte Modi, Zoom-Stufen und Auswahl-Kontexte pro Almanac-Leaf (z.B. `managerViewMode`, `eventsViewMode`) über `CalendarStateGateway`.
    - Steuert Lazy-Loading der einzelnen Almanac-Modi, Routedaten (z.B. `?mode=events&view=timeline`) und sorgt für konsistente Breadcrumbs/Back-Targets. Travel bleibt als Cartographer-Leaf separat (siehe Punkt 4).
 
-2. **Domain-Layer (`src/apps/calendar/domain`)**
+2. **Domain-Layer (`src/apps/almanac/domain`)**
    - Enthält `CalendarSchema` (Monate, Wochen, Schaltjahre) sowie `CalendarEvent` (Recurring vs. Single) mit Default-Flag-Support und Links zu globalen Phänomenen.
    - Führt `AlmanacEvent`/`Phenomenon`-Modelle ein: Kategorien (Season, Astronomy, Weather, Tide, Holiday, Custom), Prioritäten, Gültigkeitsbereiche (`appliesToCalendarIds`, `visibilityRules`), Auswirkungen (`effects`).
    - Modelliert Zeitpunkte über `CalendarTimestamp` (`year`, `monthId`, `day`, `hour`, `minute`, `second?`, `precision`) inklusive Normalisierung auf Schema-spezifische Tageslängen (`hoursPerDay`, `minutesPerHour`; Default 24×60) und astronomischer Offsets (z.B. Sonnenaufgang).
@@ -35,7 +35,7 @@ Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Calendar-Workmo
    - Schnittstelle `CalendarStateGateway`, die Cartographer-Reisen Zugriff auf aktiven/globalen Default, aktuelles Datum, Travel-Leaf-Status und aktive Phenomenon-Filter gibt.
    - Synchronisationspunkte mit `apps/cartographer/travel` (z.B. beim Start einer Reise Travel-Leaf öffnen, bei Zeitsprüngen Ereignisse und Phänomene prüfen; Hooks für Wetter- oder Gezeitenänderungen).
 
-4. **UI/Workmode Layer (`src/apps/calendar/mode`)**
+4. **UI/Workmode Layer (`src/apps/almanac/mode`)**
    - Presenter rendert `Almanac › Dashboard` mit aktuellem Timestamp, kommenden Ereignissen und Quick-Actions.
    - `Almanac › Manager` verfügt über zwei Modi: **Kalenderansicht** (Grid mit Jahr/Monat/Woche/Tag/Stunde, Inline-Erstellung, Tooltips) und **Kalender-Übersicht** (Filter- und Listenansicht ähnlich `apps/library`).
    - `Almanac › Events` stellt Timeline, Tabellen- und Karten-Layouts bereit, bietet Filter (Kategorie, Kalender, Auswirkungen), Bulk-Aktionen, Import/Export und Vorschauen je Kalender.
@@ -231,16 +231,16 @@ Persistence (JsonStore / Obsidian vault)
 - Metriken: Anzahl ausgelöster Events/Phänomene pro Advance (Tag/Stunde/Minute), Dauer der Ereignisberechnung je Zoom-Level, Dauer von astronomischen/meteorologischen Simulationen, Fehlerquote pro Operation, Anzahl Default-/Modus-Wechsel pro Sitzung, Anteil teil-täglicher Schritte (`advance.subday_share`), Cache-Trefferquote im Events-Modus.
 - Fehlertracking: persistente io-Fehler werden mit Kontext (`calendarId`, `operation`, `scope` = global/reise) erfasst; Hook-Dispatches melden Erfolg/Fehlschlag an Cartographer (siehe [`mode/API_CONTRACTS.md#cartographer-hooks`](./mode/API_CONTRACTS.md#cartographer-hooks)). Travel-Leaf meldet Renderdauer und Shortcut-Nutzung; Events-Modus sendet Telemetrie zu Filterkombinationen & Ladezeiten.
 ## Dokumentverweise & Testplanung
-- Teststrategie detailliert in [`tests/apps/calendar/TEST_PLAN.md`](../../tests/apps/calendar/TEST_PLAN.md); bildet Use-Cases, neue Modi (Kalenderansicht/Übersicht/Travel) und Regressionen ab.
+- Teststrategie detailliert in [`tests/apps/almanac/TEST_PLAN.md`](../../tests/apps/almanac/TEST_PLAN.md); bildet Use-Cases, neue Modi (Kalenderansicht/Übersicht/Travel) und Regressionen ab.
 - Komponenten- und API-Verträge sind in den Mode-Unterdokumenten verknüpft, Implementierende folgen der Reihenfolge Domain → Repository/Gateway → Presenter/Components → Mode-Integration → Tests → Polish.
 
 ## TODO-Reihenfolge (Implementierungsleitfaden)
-1. Domain-Modelle und Regeln implementieren (`src/apps/calendar/domain`) inklusive Phänomen-Engine.
+1. Domain-Modelle und Regeln implementieren (`src/apps/almanac/domain`) inklusive Phänomen-Engine.
 2. Persistenzschicht + Gateways (`CalendarRepository`, `AlmanacRepository`, `CalendarStateGateway`, Default-/Modus-Persistenz, Migrationen).
 3. Almanac-Shell & Kalender-Leaves (`AlmanacShell`, Dashboard, Manager) nach [`mode/COMPONENTS.md`](./mode/COMPONENTS.md).
 4. Events-Modus & Phänomen-Editor (Timeline, Bulk-Aktionen, Import/Export) gemäß [`mode/COMPONENTS.md#events-komponenten`](./mode/COMPONENTS.md#events-komponenten).
 5. Cartographer-Integration & Travel-Leaf (Hooks, Leaf-Lifecycle) inkl. Bidirektionalem Sync.
-6. Tests laut [`tests/apps/calendar/TEST_PLAN.md`](../../tests/apps/calendar/TEST_PLAN.md) schreiben (Domain, Gateway, UI, Travel, Events).
+6. Tests laut [`tests/apps/almanac/TEST_PLAN.md`](../../tests/apps/almanac/TEST_PLAN.md) schreiben (Domain, Gateway, UI, Travel, Events).
 7. Observability & Polish (Telemetrie, Dokumentation, Übersetzungen, Accessibility/i18n Review).
 ## Offene Fragen
 - Müssen Kalender global oder pro Vault gespeichert werden? (Entscheidung beeinflusst `core/persistence` und Default-Fallback).
