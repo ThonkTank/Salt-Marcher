@@ -21,6 +21,9 @@ export interface StateSnapshot {
   activeCalendar: CalendarSchema | null;
   currentTimestamp: CalendarTimestamp | null;
   upcomingEvents: CalendarEvent[];
+  defaultCalendarId: string | null;
+  isGlobalDefault: boolean;
+  wasAutoSelected: boolean; // True if calendar was auto-selected due to missing default
 }
 
 export interface AdvanceTimeResult {
@@ -42,35 +45,49 @@ export class InMemoryStateGateway {
   /**
    * Load current state snapshot
    */
-  async loadSnapshot(): Promise<StateSnapshot> {
+  async loadSnapshot(travelId?: string): Promise<StateSnapshot> {
     const { activeCalendarId, currentTimestamp } = this.state;
 
-    if (!activeCalendarId) {
+    // Get effective calendar (respects travel defaults)
+    const effectiveCalendar = await this.getEffectiveCalendar(travelId);
+
+    if (!effectiveCalendar) {
       return {
         activeCalendar: null,
         currentTimestamp: null,
         upcomingEvents: [],
+        defaultCalendarId: null,
+        isGlobalDefault: false,
+        wasAutoSelected: false,
       };
     }
 
-    const activeCalendar = await this.calendarRepo.getCalendar(activeCalendarId);
+    const activeCalendar = activeCalendarId
+      ? await this.calendarRepo.getCalendar(activeCalendarId)
+      : effectiveCalendar.calendar;
 
     if (!activeCalendar) {
       return {
         activeCalendar: null,
         currentTimestamp: null,
         upcomingEvents: [],
+        defaultCalendarId: effectiveCalendar.calendar?.id ?? null,
+        isGlobalDefault: effectiveCalendar.isGlobalDefault,
+        wasAutoSelected: effectiveCalendar.wasAutoSelected,
       };
     }
 
     const upcomingEvents = currentTimestamp
-      ? await this.eventRepo.getUpcomingEvents(activeCalendarId, activeCalendar, currentTimestamp, 5)
+      ? await this.eventRepo.getUpcomingEvents(activeCalendar.id, activeCalendar, currentTimestamp, 5)
       : [];
 
     return {
       activeCalendar,
       currentTimestamp,
       upcomingEvents,
+      defaultCalendarId: effectiveCalendar.calendar.id,
+      isGlobalDefault: effectiveCalendar.isGlobalDefault,
+      wasAutoSelected: effectiveCalendar.wasAutoSelected,
     };
   }
 
@@ -131,5 +148,40 @@ export class InMemoryStateGateway {
       activeCalendarId: null,
       currentTimestamp: null,
     };
+  }
+
+  /**
+   * Get effective calendar with default resolution
+   * Priority: Travel Default > Global Default > First Available > null
+   */
+  async getEffectiveCalendar(travelId?: string): Promise<{
+    calendar: CalendarSchema;
+    isGlobalDefault: boolean;
+    wasAutoSelected: boolean;
+  } | null> {
+    // Try travel-specific default first
+    if (travelId) {
+      const travelDefaultId = await this.calendarRepo.getTravelDefault(travelId);
+      if (travelDefaultId) {
+        const calendar = await this.calendarRepo.getCalendar(travelDefaultId);
+        if (calendar) {
+          return { calendar, isGlobalDefault: false, wasAutoSelected: false };
+        }
+      }
+    }
+
+    // Try global default
+    const globalDefault = await this.calendarRepo.getGlobalDefault();
+    if (globalDefault) {
+      return { calendar: globalDefault, isGlobalDefault: true, wasAutoSelected: false };
+    }
+
+    // Fallback: Use first available calendar
+    const allCalendars = await this.calendarRepo.listCalendars();
+    if (allCalendars.length > 0) {
+      return { calendar: allCalendars[0], isGlobalDefault: false, wasAutoSelected: true };
+    }
+
+    return null;
   }
 }

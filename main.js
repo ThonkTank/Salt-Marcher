@@ -46794,7 +46794,9 @@ function formatTimestamp(ts, monthName) {
 var InMemoryCalendarRepository = class {
   constructor() {
     this.calendars = /* @__PURE__ */ new Map();
+    this.travelDefaults = /* @__PURE__ */ new Map();
   }
+  // travelId -> calendarId
   async listCalendars() {
     return Array.from(this.calendars.values());
   }
@@ -46819,6 +46821,44 @@ var InMemoryCalendarRepository = class {
       throw new Error(`Calendar with ID ${id} not found`);
     }
     this.calendars.delete(id);
+    for (const [travelId, calendarId] of this.travelDefaults.entries()) {
+      if (calendarId === id) {
+        this.travelDefaults.delete(travelId);
+      }
+    }
+  }
+  async setGlobalDefault(calendarId) {
+    const calendar = this.calendars.get(calendarId);
+    if (!calendar) {
+      throw new Error(`Calendar with ID ${calendarId} not found`);
+    }
+    for (const [id, cal] of this.calendars.entries()) {
+      if (cal.isDefaultGlobal) {
+        this.calendars.set(id, { ...cal, isDefaultGlobal: false });
+      }
+    }
+    this.calendars.set(calendarId, { ...calendar, isDefaultGlobal: true });
+  }
+  async getGlobalDefault() {
+    for (const calendar of this.calendars.values()) {
+      if (calendar.isDefaultGlobal) {
+        return calendar;
+      }
+    }
+    return null;
+  }
+  async setTravelDefault(travelId, calendarId) {
+    const calendar = this.calendars.get(calendarId);
+    if (!calendar) {
+      throw new Error(`Calendar with ID ${calendarId} not found`);
+    }
+    this.travelDefaults.set(travelId, calendarId);
+  }
+  async getTravelDefault(travelId) {
+    return this.travelDefaults.get(travelId) ?? null;
+  }
+  async clearTravelDefault(travelId) {
+    this.travelDefaults.delete(travelId);
   }
   // Helper: Initialize with test data
   seed(schemas) {
@@ -46829,6 +46869,7 @@ var InMemoryCalendarRepository = class {
   // Helper: Clear all data
   clear() {
     this.calendars.clear();
+    this.travelDefaults.clear();
   }
 };
 var InMemoryEventRepository = class {
@@ -47043,28 +47084,38 @@ var InMemoryStateGateway = class {
   /**
    * Load current state snapshot
    */
-  async loadSnapshot() {
+  async loadSnapshot(travelId) {
     const { activeCalendarId, currentTimestamp } = this.state;
-    if (!activeCalendarId) {
+    const effectiveCalendar = await this.getEffectiveCalendar(travelId);
+    if (!effectiveCalendar) {
       return {
         activeCalendar: null,
         currentTimestamp: null,
-        upcomingEvents: []
+        upcomingEvents: [],
+        defaultCalendarId: null,
+        isGlobalDefault: false,
+        wasAutoSelected: false
       };
     }
-    const activeCalendar = await this.calendarRepo.getCalendar(activeCalendarId);
+    const activeCalendar = activeCalendarId ? await this.calendarRepo.getCalendar(activeCalendarId) : effectiveCalendar.calendar;
     if (!activeCalendar) {
       return {
         activeCalendar: null,
         currentTimestamp: null,
-        upcomingEvents: []
+        upcomingEvents: [],
+        defaultCalendarId: effectiveCalendar.calendar?.id ?? null,
+        isGlobalDefault: effectiveCalendar.isGlobalDefault,
+        wasAutoSelected: effectiveCalendar.wasAutoSelected
       };
     }
-    const upcomingEvents = currentTimestamp ? await this.eventRepo.getUpcomingEvents(activeCalendarId, activeCalendar, currentTimestamp, 5) : [];
+    const upcomingEvents = currentTimestamp ? await this.eventRepo.getUpcomingEvents(activeCalendar.id, activeCalendar, currentTimestamp, 5) : [];
     return {
       activeCalendar,
       currentTimestamp,
-      upcomingEvents
+      upcomingEvents,
+      defaultCalendarId: effectiveCalendar.calendar.id,
+      isGlobalDefault: effectiveCalendar.isGlobalDefault,
+      wasAutoSelected: effectiveCalendar.wasAutoSelected
     };
   }
   /**
@@ -47114,6 +47165,30 @@ var InMemoryStateGateway = class {
       activeCalendarId: null,
       currentTimestamp: null
     };
+  }
+  /**
+   * Get effective calendar with default resolution
+   * Priority: Travel Default > Global Default > First Available > null
+   */
+  async getEffectiveCalendar(travelId) {
+    if (travelId) {
+      const travelDefaultId = await this.calendarRepo.getTravelDefault(travelId);
+      if (travelDefaultId) {
+        const calendar = await this.calendarRepo.getCalendar(travelDefaultId);
+        if (calendar) {
+          return { calendar, isGlobalDefault: false, wasAutoSelected: false };
+        }
+      }
+    }
+    const globalDefault = await this.calendarRepo.getGlobalDefault();
+    if (globalDefault) {
+      return { calendar: globalDefault, isGlobalDefault: true, wasAutoSelected: false };
+    }
+    const allCalendars = await this.calendarRepo.listCalendars();
+    if (allCalendars.length > 0) {
+      return { calendar: allCalendars[0], isGlobalDefault: false, wasAutoSelected: true };
+    }
+    return null;
   }
 };
 

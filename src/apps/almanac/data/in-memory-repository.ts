@@ -5,7 +5,7 @@
  * Stores calendars and events in memory without file persistence.
  */
 
-import type { CalendarSchema } from '../domain/calendar-schema';
+import type { CalendarSchema, DefaultCalendarConfig } from '../domain/calendar-schema';
 import type { CalendarEvent } from '../domain/calendar-event';
 import type { CalendarTimestamp } from '../domain/calendar-timestamp';
 import { compareTimestampsWithSchema } from '../domain/calendar-timestamp';
@@ -16,6 +16,13 @@ export interface CalendarRepository {
   createCalendar(schema: CalendarSchema): Promise<void>;
   updateCalendar(id: string, schema: Partial<CalendarSchema>): Promise<void>;
   deleteCalendar(id: string): Promise<void>;
+
+  // Default calendar management
+  setGlobalDefault(calendarId: string): Promise<void>;
+  getGlobalDefault(): Promise<CalendarSchema | null>;
+  setTravelDefault(travelId: string, calendarId: string): Promise<void>;
+  getTravelDefault(travelId: string): Promise<string | null>;
+  clearTravelDefault(travelId: string): Promise<void>;
 }
 
 export interface EventRepository {
@@ -34,6 +41,7 @@ export interface EventRepository {
 
 export class InMemoryCalendarRepository implements CalendarRepository {
   private calendars: Map<string, CalendarSchema> = new Map();
+  private travelDefaults: Map<string, string> = new Map(); // travelId -> calendarId
 
   async listCalendars(): Promise<CalendarSchema[]> {
     return Array.from(this.calendars.values());
@@ -64,6 +72,56 @@ export class InMemoryCalendarRepository implements CalendarRepository {
       throw new Error(`Calendar with ID ${id} not found`);
     }
     this.calendars.delete(id);
+
+    // Clean up travel defaults pointing to deleted calendar
+    for (const [travelId, calendarId] of this.travelDefaults.entries()) {
+      if (calendarId === id) {
+        this.travelDefaults.delete(travelId);
+      }
+    }
+  }
+
+  async setGlobalDefault(calendarId: string): Promise<void> {
+    const calendar = this.calendars.get(calendarId);
+    if (!calendar) {
+      throw new Error(`Calendar with ID ${calendarId} not found`);
+    }
+
+    // Remove isDefaultGlobal from all calendars
+    for (const [id, cal] of this.calendars.entries()) {
+      if (cal.isDefaultGlobal) {
+        this.calendars.set(id, { ...cal, isDefaultGlobal: false });
+      }
+    }
+
+    // Set new default
+    this.calendars.set(calendarId, { ...calendar, isDefaultGlobal: true });
+  }
+
+  async getGlobalDefault(): Promise<CalendarSchema | null> {
+    for (const calendar of this.calendars.values()) {
+      if (calendar.isDefaultGlobal) {
+        return calendar;
+      }
+    }
+    return null;
+  }
+
+  async setTravelDefault(travelId: string, calendarId: string): Promise<void> {
+    const calendar = this.calendars.get(calendarId);
+    if (!calendar) {
+      throw new Error(`Calendar with ID ${calendarId} not found`);
+    }
+
+    this.travelDefaults.set(travelId, calendarId);
+  }
+
+  async getTravelDefault(travelId: string): Promise<string | null> {
+    return this.travelDefaults.get(travelId) ?? null;
+  }
+
+  async clearTravelDefault(travelId: string): Promise<void> {
+    this.travelDefaults.delete(travelId);
   }
 
   // Helper: Initialize with test data
@@ -76,6 +134,7 @@ export class InMemoryCalendarRepository implements CalendarRepository {
   // Helper: Clear all data
   clear(): void {
     this.calendars.clear();
+    this.travelDefaults.clear();
   }
 }
 

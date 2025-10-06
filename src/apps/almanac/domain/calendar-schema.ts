@@ -34,7 +34,18 @@ export interface CalendarSchema {
     readonly day: number;
   };
 
+  // Default calendar marker (global scope)
+  readonly isDefaultGlobal?: boolean;
+
   readonly schemaVersion: string;
+}
+
+/**
+ * Configuration for travel-specific default calendars
+ */
+export interface DefaultCalendarConfig {
+  readonly travelId: string;
+  readonly calendarId: string;
 }
 
 /**
