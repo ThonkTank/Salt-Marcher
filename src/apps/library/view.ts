@@ -2,6 +2,7 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import type { App } from "obsidian";
 import type { ModeRenderer, Mode } from "./view/mode";
+import { LibrarySourceWatcherHub } from "./view/mode";
 import { CreaturesRenderer } from "./view/creatures";
 import { SpellsRenderer } from "./view/spells";
 import { ItemsRenderer } from "./view/items";
@@ -36,12 +37,13 @@ export const VIEW_LIBRARY = "salt-library";
 
 export class LibraryView extends ItemView {
     private mode: Mode = "creatures";
-    private query = "";
+    private queries = new Map<Mode, string>();
     private headerButtons = new Map<Mode, HTMLButtonElement>();
     private listEl?: HTMLElement;
     private descEl?: HTMLElement;
     private activeRenderer?: ModeRenderer;
     private searchInput?: HTMLInputElement;
+    private readonly watchers = new LibrarySourceWatcherHub();
 
     getViewType() { return VIEW_LIBRARY; }
     getDisplayText() { return LIBRARY_COPY.title; }
@@ -82,10 +84,11 @@ export class LibraryView extends ItemView {
         // Search + create
         const bar = root.createDiv({ cls: "sm-cc-searchbar" });
         const search = bar.createEl("input", { attr: { type: "text", placeholder: LIBRARY_COPY.searchPlaceholder } }) as HTMLInputElement;
-        search.value = this.query;
+        search.value = this.getQueryForMode(this.mode);
         search.oninput = () => {
-            this.query = search.value;
-            this.activeRenderer?.setQuery(this.query);
+            const trimmed = search.value.trim();
+            this.queries.set(this.mode, trimmed);
+            this.activeRenderer?.setQuery(trimmed);
         };
         this.searchInput = search;
         const createBtn = bar.createEl("button", { text: LIBRARY_COPY.createButton });
@@ -103,7 +106,9 @@ export class LibraryView extends ItemView {
             this.mode = mode;
             this.updateHeaderButtons();
             this.updateSourceDescription();
-            this.activeRenderer.setQuery(this.query);
+            const query = this.getQueryForMode(mode);
+            if (this.searchInput) this.searchInput.value = query;
+            this.activeRenderer.setQuery(query);
             this.activeRenderer.render();
             return;
         }
@@ -118,20 +123,22 @@ export class LibraryView extends ItemView {
         const renderer = this.createRenderer(mode, this.listEl);
         this.activeRenderer = renderer;
         await renderer.init();
-        renderer.setQuery(this.query);
+        const query = this.getQueryForMode(mode);
+        if (this.searchInput) this.searchInput.value = query;
+        renderer.setQuery(query);
         renderer.render();
     }
 
     private createRenderer(mode: Mode, container: HTMLElement): ModeRenderer {
         switch (mode) {
             case "creatures":
-                return new CreaturesRenderer(this.app, container);
+                return new CreaturesRenderer(this.app, container, this.watchers);
             case "spells":
-                return new SpellsRenderer(this.app, container);
+                return new SpellsRenderer(this.app, container, this.watchers);
             case "items":
-                return new ItemsRenderer(this.app, container);
+                return new ItemsRenderer(this.app, container, this.watchers);
             case "equipment":
-                return new EquipmentRenderer(this.app, container);
+                return new EquipmentRenderer(this.app, container, this.watchers);
             case "terrains":
                 return new TerrainsRenderer(this.app, container);
             case "regions":
@@ -158,6 +165,10 @@ export class LibraryView extends ItemView {
         if (!this.activeRenderer) return;
         await this.activeRenderer.handleCreate(name);
         this.searchInput?.focus();
+    }
+
+    private getQueryForMode(mode: Mode): string {
+        return this.queries.get(mode) ?? "";
     }
 }
 

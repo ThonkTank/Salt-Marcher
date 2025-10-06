@@ -3,6 +3,13 @@
 import type { App } from "obsidian";
 import type { LibrarySourceId } from "../core/sources";
 
+type WatchFactory = (onChange: () => void) => () => void;
+
+type WatchRegistryEntry = {
+    stop?: () => void;
+    listeners: Set<() => void>;
+};
+
 export type Mode = LibrarySourceId;
 
 export interface ModeRenderer {
@@ -59,5 +66,47 @@ export abstract class BaseModeRenderer implements ModeRenderer {
 
     protected registerCleanup(fn: () => void): void {
         this.cleanups.push(fn);
+    }
+}
+
+/**
+ * Orchestriert Dateisystem-Watcher pro Library-Quelle, sodass mehrere Renderer
+ * dieselben Signale nutzen können ohne redundante Abos aufzubauen.
+ */
+export class LibrarySourceWatcherHub {
+    private readonly registry = new Map<LibrarySourceId, WatchRegistryEntry>();
+
+    subscribe(source: LibrarySourceId, factory: WatchFactory, listener: () => void): () => void {
+        let entry = this.registry.get(source);
+        if (!entry) {
+            const listeners = new Set<() => void>();
+            const stop = factory(() => {
+                for (const cb of listeners) {
+                    try {
+                        cb();
+                    } catch (err) {
+                        console.error("Library watch callback failed", err);
+                    }
+                }
+            });
+            entry = { stop, listeners };
+            this.registry.set(source, entry);
+        }
+
+        entry.listeners.add(listener);
+
+        return () => {
+            const current = this.registry.get(source);
+            if (!current) return;
+            current.listeners.delete(listener);
+            if (current.listeners.size === 0) {
+                try {
+                    current.stop?.();
+                } catch (err) {
+                    console.error("Failed to stop library watcher", err);
+                }
+                this.registry.delete(source);
+            }
+        };
     }
 }
