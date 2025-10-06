@@ -2,22 +2,93 @@
 // Verwaltet das Vault-Verzeichnis "SaltMarcher/Presets/Spells" für Spell-Presets
 
 import { App, TFile } from "obsidian";
-import { createVaultFilePipeline } from "./file-pipeline";
+import { createVaultFilePipeline, sanitizeVaultFileName } from "./file-pipeline";
 import type { SpellData } from "./spell-files";
 
 export const SPELL_PRESETS_DIR = "SaltMarcher/Presets/Spells";
 
-const SPELL_PRESET_PIPELINE = createVaultFilePipeline<SpellData>({
+type SpellPresetDocument = SpellData & { fixtureId?: string };
+
+const SPELL_PRESET_PIPELINE = createVaultFilePipeline<SpellPresetDocument>({
     dir: SPELL_PRESETS_DIR,
     defaultBaseName: "Spell Preset",
     getBaseName: data => data.name,
-    toContent: () => "", // Presets werden nicht geschrieben, nur gelesen
-    sanitizeName: name => name.replace(/[\\/:*?"<>|]/g, '-'),
+    toContent: data => spellPresetToMarkdown(data),
+    sanitizeName: name => sanitizeVaultFileName(name, "Spell Preset"),
 });
 
 export const ensureSpellPresetDir = SPELL_PRESET_PIPELINE.ensure;
 export const listSpellPresetFiles = SPELL_PRESET_PIPELINE.list;
 export const watchSpellPresetDir = SPELL_PRESET_PIPELINE.watch;
+
+export async function createSpellPresetFile(
+    app: App,
+    data: SpellPresetDocument
+): Promise<TFile> {
+    return SPELL_PRESET_PIPELINE.create(app, data);
+}
+
+export function spellPresetToMarkdown(
+    data: SpellPresetDocument,
+    options: { fixtureId?: string } = {}
+): string {
+    const lines: string[] = ["---", "smType: spell"];
+    const push = (key: string, value: unknown): void => {
+        if (value === undefined || value === null) return;
+        if (Array.isArray(value) && value.length === 0) return;
+        lines.push(`${key}: ${serializeFrontmatterValue(value)}`);
+    };
+
+    const fixtureId = options.fixtureId ?? data.fixtureId;
+    push("fixtureId", fixtureId);
+    push("name", data.name);
+    push("level", data.level);
+    push("school", data.school);
+    push("casting_time", data.casting_time);
+    push("range", data.range);
+    push("components", data.components);
+    push("materials", data.materials);
+    push("duration", data.duration);
+    push("concentration", data.concentration);
+    push("ritual", data.ritual);
+    push("classes", data.classes);
+    push("save_ability", data.save_ability);
+    push("save_effect", data.save_effect);
+    push("attack", data.attack);
+    push("damage", data.damage);
+    push("damage_type", data.damage_type);
+    push("description", data.description);
+    push("higher_levels", data.higher_levels);
+
+    lines.push("---", "");
+
+    const body: string[] = [];
+    if (data.description) {
+        body.push(data.description.trim(), "");
+    }
+    if (data.higher_levels) {
+        body.push("## At Higher Levels", "", data.higher_levels.trim(), "");
+    }
+
+    const content = [...lines, ...body];
+    if (body.length === 0) content.push("");
+    return content.join("\n");
+}
+
+function serializeFrontmatterValue(value: unknown): string {
+    if (Array.isArray(value)) {
+        return `[${value.map(entry => serializeScalar(entry)).join(", ")}]`;
+    }
+    return serializeScalar(value);
+}
+
+function serializeScalar(value: unknown): string {
+    if (typeof value === "string") return JSON.stringify(value);
+    if (typeof value === "number" && Number.isFinite(value)) return `${value}`;
+    if (typeof value === "boolean") return value ? "true" : "false";
+    if (value instanceof Date) return JSON.stringify(value.toISOString());
+    return JSON.stringify(value);
+}
 
 /**
  * Lädt einen Spell Preset aus einer Datei.

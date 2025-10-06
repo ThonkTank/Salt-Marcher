@@ -22,8 +22,7 @@ import {
     type EquipmentData,
 } from "../../src/apps/library/core/equipment-files";
 import {
-    SPELL_PRESETS_DIR,
-    ensureSpellPresetDir,
+    createSpellPresetFile,
     listSpellPresetFiles,
 } from "../../src/apps/library/core/spell-presets";
 import type { SpellData } from "../../src/apps/library/core/spell-files";
@@ -451,65 +450,6 @@ function instantiateFolder(path: string): TFolder {
     return folder;
 }
 
-function spellPresetToMarkdown(data: SpellData & { fixtureId?: string }): string {
-    const lines: string[] = ["---", "smType: spell"];
-
-    const push = (key: string, value: unknown): void => {
-        if (value === undefined || value === null) return;
-        if (Array.isArray(value) && value.length === 0) return;
-        lines.push(`${key}: ${serializeFrontmatterValue(value)}`);
-    };
-
-    push("fixtureId", data.fixtureId);
-    push("name", data.name);
-    push("level", data.level);
-    push("school", data.school);
-    push("casting_time", data.casting_time);
-    push("range", data.range);
-    push("components", data.components);
-    push("materials", data.materials);
-    push("duration", data.duration);
-    push("concentration", data.concentration);
-    push("ritual", data.ritual);
-    push("classes", data.classes);
-    push("save_ability", data.save_ability);
-    push("save_effect", data.save_effect);
-    push("attack", data.attack);
-    push("damage", data.damage);
-    push("damage_type", data.damage_type);
-    push("description", data.description);
-    push("higher_levels", data.higher_levels);
-
-    lines.push("---", "");
-
-    const body: string[] = [];
-    if (data.description) {
-        body.push(data.description.trim(), "");
-    }
-    if (data.higher_levels) {
-        body.push("## At Higher Levels", "", data.higher_levels.trim(), "");
-    }
-
-    const content = [...lines, ...body];
-    if (body.length === 0) content.push("");
-    return content.join("\n");
-}
-
-function serializeFrontmatterValue(value: unknown): string {
-    if (Array.isArray(value)) {
-        return `[${value.map(entry => serializeScalar(entry)).join(", ")}]`;
-    }
-    return serializeScalar(value);
-}
-
-function serializeScalar(value: unknown): string {
-    if (typeof value === "string") return JSON.stringify(value);
-    if (typeof value === "number" && Number.isFinite(value)) return `${value}`;
-    if (typeof value === "boolean") return value ? "true" : "false";
-    if (value instanceof Date) return JSON.stringify(value.toISOString());
-    return JSON.stringify(value);
-}
-
 class HarnessApp extends App {
     vault: MemoryVault;
     metadataCache: FakeMetadataCache;
@@ -688,19 +628,7 @@ class LegacyStorageAdapter implements StoragePort {
     }
 
     async writeSpellPreset(data: SpellData & { fixtureId?: string }): Promise<string> {
-        await ensureSpellPresetDir(this.app);
-        const dirPath = normalizeFolderPath(SPELL_PRESETS_DIR);
-        const baseName = sanitizeName(data.name, data.fixtureId ?? "Spell Preset");
-        let fileName = `${baseName}.md`;
-        let path = normalizePath(`${dirPath}/${fileName}`);
-        let counter = 2;
-        while (this.vault.getAbstractFileByPath(path)) {
-            fileName = `${baseName} (${counter}).md`;
-            path = normalizePath(`${dirPath}/${fileName}`);
-            counter += 1;
-        }
-        const content = spellPresetToMarkdown(data);
-        const file = await this.vault.create(path, content);
+        const file = await createSpellPresetFile(this.app, data);
         return file.path;
     }
 
