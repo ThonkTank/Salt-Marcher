@@ -1,12 +1,19 @@
 import { describe, it, expect } from 'vitest';
 import type { CalendarSchema } from '../calendar-schema';
-import { createDayTimestamp, compareTimestampsWithSchema } from '../calendar-timestamp';
+import {
+  createDayTimestamp,
+  createHourTimestamp,
+  createMinuteTimestamp,
+  compareTimestampsWithSchema,
+  formatTimestamp,
+} from '../calendar-timestamp';
 
 const testSchema: CalendarSchema = {
   id: 'test-cal',
   name: 'Test Calendar',
   daysPerWeek: 7,
   hoursPerDay: 24,
+  minutesPerHour: 60,
   months: [
     { id: 'jan', name: 'January', length: 31 },
     { id: 'feb', name: 'February', length: 28 },
@@ -99,5 +106,23 @@ describe('compareTimestampsWithSchema', () => {
 
     expect(upcoming[2].monthId).toBe('mar');
     expect(upcoming[2].day).toBe(31);
+  });
+
+  it('should compare timestamps down to minutes', () => {
+    const tenThirty = createMinuteTimestamp('test-cal', 2024, 'jan', 10, 10, 30);
+    const tenFortyFive = createMinuteTimestamp('test-cal', 2024, 'jan', 10, 10, 45);
+    const elevenSharp = createHourTimestamp('test-cal', 2024, 'jan', 10, 11);
+
+    expect(compareTimestampsWithSchema(testSchema, tenThirty, tenFortyFive)).toBeLessThan(0);
+    expect(compareTimestampsWithSchema(testSchema, tenFortyFive, elevenSharp)).toBeLessThan(0);
+    expect(compareTimestampsWithSchema(testSchema, elevenSharp, tenThirty)).toBeGreaterThan(0);
+  });
+
+  it('formats hour and minute precision as HH:MM', () => {
+    const hourStamp = createHourTimestamp('test-cal', 2024, 'feb', 3, 8);
+    const minuteStamp = createMinuteTimestamp('test-cal', 2024, 'feb', 3, 8, 45);
+
+    expect(formatTimestamp(hourStamp, 'February')).toContain('08:00');
+    expect(formatTimestamp(minuteStamp, 'February')).toContain('08:45');
   });
 });

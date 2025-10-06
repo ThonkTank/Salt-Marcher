@@ -11,6 +11,7 @@ import { createEvent } from "../../../src/apps/almanac/domain/calendar-event";
 import {
     createHourTimestamp,
     createDayTimestamp,
+    createMinuteTimestamp,
     type CalendarTimestamp,
 } from "../../../src/apps/almanac/domain/calendar-timestamp";
 import {
@@ -18,7 +19,7 @@ import {
     GREGORIAN_CALENDAR_ID,
 } from "../../../src/apps/almanac/fixtures/gregorian.fixture";
 
-const startOfJanFirst = createHourTimestamp(GREGORIAN_CALENDAR_ID, 2024, "jan", 1, 0);
+const startOfJanFirst = createMinuteTimestamp(GREGORIAN_CALENDAR_ID, 2024, "jan", 1, 0, 0);
 
 const toIdList = (events: Array<{ id: string }>) => events.map(event => event.id);
 
@@ -47,6 +48,12 @@ describe("InMemoryStateGateway.advanceTimeBy", () => {
                 createHourTimestamp(GREGORIAN_CALENDAR_ID, 2024, "jan", 1, 6)
             ),
             createEvent(
+                "evt-minute",
+                GREGORIAN_CALENDAR_ID,
+                "Morning Bell",
+                createMinuteTimestamp(GREGORIAN_CALENDAR_ID, 2024, "jan", 1, 0, 15)
+            ),
+            createEvent(
                 "evt-day",
                 GREGORIAN_CALENDAR_ID,
                 "Festival Day",
@@ -70,7 +77,7 @@ describe("InMemoryStateGateway.advanceTimeBy", () => {
         expect(result.timestamp.monthId).toBe("jan");
         expect(result.timestamp.day).toBe(2);
 
-        expect(toIdList(result.triggeredEvents)).toEqual(["evt-hour", "evt-day"]);
+        expect(toIdList(result.triggeredEvents)).toEqual(["evt-minute", "evt-hour", "evt-day"]);
     });
 
     it("behandelt auch umgekehrte Zeitspannen korrekt", async () => {
@@ -97,6 +104,14 @@ describe("InMemoryStateGateway.advanceTimeBy", () => {
             backwardsEnd
         );
 
-        expect(toIdList(reversed)).toEqual(["evt-hour", "evt-day"]);
+        expect(toIdList(reversed)).toEqual(["evt-minute", "evt-hour", "evt-day"]);
+    });
+
+    it("liefert bei Minutenfortschritt auch minutenpräzise Ereignisse", async () => {
+        const result = await gateway.advanceTimeBy(15, "minute");
+
+        expect(result.timestamp.hour).toBe(0);
+        expect(result.timestamp.minute).toBe(15);
+        expect(toIdList(result.triggeredEvents)).toEqual(["evt-minute"]);
     });
 });

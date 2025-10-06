@@ -19,6 +19,7 @@ export interface CalendarSchema {
   // Calendar structure
   readonly daysPerWeek: number;
   readonly hoursPerDay: number;
+  readonly minutesPerHour?: number; // defaults to 60 when omitted
   readonly months: ReadonlyArray<CalendarMonth>;
 
   // Starting point (epoch)

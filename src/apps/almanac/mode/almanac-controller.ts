@@ -13,6 +13,7 @@ import { formatTimestamp } from '../domain/calendar-timestamp';
 import type { CalendarEvent } from '../domain/calendar-event';
 import { InMemoryCalendarRepository, InMemoryEventRepository } from '../data/in-memory-repository';
 import { InMemoryStateGateway, type AdvanceTimeResult } from '../data/in-memory-gateway';
+import type { TimeUnit } from '../domain/time-arithmetic';
 import { gregorianSchema, createSampleEvents, getDefaultCurrentTimestamp } from '../fixtures/gregorian.fixture';
 
 export class AlmanacController {
@@ -135,6 +136,11 @@ export class AlmanacController {
     hourBtn.addEventListener('click', async () => {
       await this.handleAdvanceTime(1, 'hour');
     });
+
+    const minuteBtn = actions.createEl('button', { text: '+15 Minutes' });
+    minuteBtn.addEventListener('click', async () => {
+      await this.handleAdvanceTime(15, 'minute');
+    });
   }
 
   private renderUpcomingEvents(calendar: CalendarSchema, events: CalendarEvent[]): void {
@@ -178,7 +184,7 @@ export class AlmanacController {
     });
   }
 
-  private async handleAdvanceTime(amount: number, unit: 'day' | 'hour'): Promise<void> {
+  private async handleAdvanceTime(amount: number, unit: TimeUnit): Promise<void> {
     try {
       const result: AdvanceTimeResult = await this.gateway.advanceTimeBy(amount, unit);
       this.recentlyTriggeredEvents = result.triggeredEvents;

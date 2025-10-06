@@ -6,6 +6,7 @@ vi.mock("obsidian", async () => await import("../../mocks/obsidian"));
 
 import { App } from "obsidian";
 import { AlmanacController } from "../../../src/apps/almanac/mode/almanac-controller";
+import type { TimeUnit } from "../../../src/apps/almanac/domain/time-arithmetic";
 
 const ensureObsidianDomHelpers = () => {
     const proto = HTMLElement.prototype as any;
@@ -75,9 +76,24 @@ describe("AlmanacController Dashboard", () => {
 
         await controller.onOpen(container);
 
+        const quickActionLabels = Array.from(container.querySelectorAll("button")).map(
+            button => button.textContent ?? ""
+        );
+        expect(quickActionLabels).toContain("+15 Minutes");
+
+        const extractTime = () => container.querySelector(".almanac-time-display")?.textContent ?? "";
+        expect(extractTime()).toContain("00:00");
+
+        await (controller as unknown as { handleAdvanceTime: (amount: number, unit: TimeUnit) => Promise<void> }).handleAdvanceTime(
+            15,
+            "minute"
+        );
+
+        expect(extractTime()).toContain("00:15");
+
         expect(container.textContent?.includes("Recently Triggered")).toBe(false);
 
-        await (controller as unknown as { handleAdvanceTime: (amount: number, unit: "day" | "hour") => Promise<void> }).handleAdvanceTime(
+        await (controller as unknown as { handleAdvanceTime: (amount: number, unit: TimeUnit) => Promise<void> }).handleAdvanceTime(
             15,
             "day"
         );
