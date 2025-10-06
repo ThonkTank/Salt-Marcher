@@ -1,7 +1,7 @@
 // salt-marcher/tests/contracts/library-harness.ts
 // Bietet einen konfigurierbaren Vertragstest-Harness für Library-Ports inklusive Legacy/v2-Adapterumschaltung.
 import * as Obsidian from "obsidian";
-import { App, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
+import { App, TAbstractFile, TFile, TFolder, getFrontMatterInfo, normalizePath } from "obsidian";
 import { scoreName, type Mode as LibraryRendererMode } from "../../src/apps/library/view/mode";
 import {
     createCreatureFile,
@@ -37,6 +37,102 @@ import type { LibraryFixtureSet } from "./library-fixtures";
 import { libraryFixtures as defaultFixtures } from "./library-fixtures";
 
 type EventRef = { off: () => void };
+
+type CachedMetadata = {
+    frontmatter?: Record<string, unknown>;
+    frontmatterPosition?: {
+        start: { line: number; col: number; offset: number };
+        end: { line: number; col: number; offset: number };
+    };
+};
+
+type MetadataEvent = "changed" | "deleted";
+type MetadataHandler = (file: TAbstractFile) => void;
+
+class FakeMetadataCache {
+    resolvedLinks: Record<string, Record<string, number>> = {};
+
+    private byFile = new Map<TFile, CachedMetadata>();
+    private byPath = new Map<string, CachedMetadata>();
+    private listeners: Record<MetadataEvent, Set<MetadataHandler>> = {
+        changed: new Set(),
+        deleted: new Set(),
+    };
+
+    reset(): void {
+        this.byFile.clear();
+        this.byPath.clear();
+        this.resolvedLinks = {};
+    }
+
+    capture(file: TFile, data: string): void {
+        const info = getFrontMatterInfo(data ?? "");
+        if (!info.exists) {
+            this.byFile.delete(file);
+            this.byPath.delete(normalizeFolderPath(file.path));
+            this.emit("changed", file);
+            return;
+        }
+        const frontmatter = parseFrontmatterBlock(info.frontmatter);
+        const metadata: CachedMetadata = {
+            frontmatter,
+            frontmatterPosition: {
+                start: { line: 0, col: 0, offset: info.from },
+                end: { line: frontmatterLineCount(info.frontmatter), col: 0, offset: info.to },
+            },
+        };
+        this.byFile.set(file, metadata);
+        this.byPath.set(normalizeFolderPath(file.path), metadata);
+        this.emit("changed", file);
+    }
+
+    rename(file: TFile, previousPath: string): void {
+        const normalizedPrev = normalizeFolderPath(previousPath);
+        const metadata = this.byFile.get(file) ?? null;
+        this.byPath.delete(normalizedPrev);
+        if (metadata) {
+            this.byPath.set(normalizeFolderPath(file.path), metadata);
+        }
+        this.emit("changed", file);
+    }
+
+    forget(file: TFile, previousPath?: string): void {
+        this.byFile.delete(file);
+        if (previousPath) {
+            this.byPath.delete(normalizeFolderPath(previousPath));
+        }
+        this.byPath.delete(normalizeFolderPath(file.path));
+        this.emit("deleted", file);
+    }
+
+    getFileCache(file: TFile): CachedMetadata | null {
+        return this.byFile.get(file) ?? null;
+    }
+
+    getCache(path: string): CachedMetadata | null {
+        return this.byPath.get(normalizeFolderPath(path)) ?? null;
+    }
+
+    on(event: MetadataEvent, handler: MetadataHandler): EventRef {
+        const listeners = this.listeners[event];
+        listeners.add(handler);
+        return { off: () => listeners.delete(handler) };
+    }
+
+    off(event: MetadataEvent, handler: MetadataHandler): void {
+        this.listeners[event].delete(handler);
+    }
+
+    private emit(event: MetadataEvent, file: TAbstractFile): void {
+        for (const handler of this.listeners[event]) {
+            try {
+                handler(file);
+            } catch {
+                // Swallow errors to mimic Obsidian's permissive behavior in tests
+            }
+        }
+    }
+}
 
 if (!(Obsidian as any).TFolder) {
     (Obsidian as any).TFolder = class extends TAbstractFile {
@@ -135,6 +231,7 @@ class MemoryVault {
         delete: new Set(),
         rename: new Set(),
     };
+    private metadataCache: FakeMetadataCache | null = null;
 
     constructor() {
         this.registerFolder("");
@@ -145,11 +242,16 @@ class MemoryVault {
         this.folders.clear();
         this.folderPaths.clear();
         this.registerFolder("");
+        this.metadataCache?.reset();
     }
 
     getAbstractFileByPath(path: string): TAbstractFile | null {
         const normalized = normalizeFolderPath(path);
         return this.files.get(normalized)?.file ?? this.folders.get(normalized) ?? null;
+    }
+
+    attachMetadataCache(cache: FakeMetadataCache): void {
+        this.metadataCache = cache;
     }
 
     async create(path: string, data: string): Promise<TFile> {
@@ -162,8 +264,10 @@ class MemoryVault {
         const file = new TFile();
         file.path = normalized;
         file.basename = normalized.split("/").pop() ?? normalized;
+        file.extension = extractExtension(file.path);
         this.files.set(normalized, { file, data });
-        this.emit("create", file);
+        this.metadataCache?.capture(file, data);
+        await this.emit("create", file);
         return file;
     }
 
@@ -177,6 +281,7 @@ class MemoryVault {
         const entry = this.files.get(normalizeFolderPath(file.path));
         if (!entry) throw new Error(`Missing file: ${file.path}`);
         entry.data = data;
+        this.metadataCache?.capture(entry.file, data);
         await this.emit("modify", entry.file);
     }
 
@@ -185,6 +290,7 @@ class MemoryVault {
         const entry = this.files.get(normalized);
         if (!entry) return;
         this.files.delete(normalized);
+        this.metadataCache?.forget(entry.file, normalized);
         await this.emit("delete", entry.file);
     }
 
@@ -196,7 +302,9 @@ class MemoryVault {
         const nextPath = normalizeFolderPath(newPath);
         file.path = nextPath;
         file.basename = nextPath.split("/").pop() ?? nextPath;
+        file.extension = extractExtension(file.path);
         this.files.set(nextPath, { file, data: entry.data });
+        this.metadataCache?.rename(entry.file, normalized);
         await this.emit("rename", entry.file);
     }
 
@@ -267,6 +375,57 @@ class MemoryVault {
     }
 }
 
+function frontmatterLineCount(block: string): number {
+    if (!block) return 0;
+    return Math.max(block.split(/\r?\n/).length - 1, 0);
+}
+
+function parseFrontmatterBlock(block: string): Record<string, unknown> {
+    const result: Record<string, unknown> = {};
+    for (const rawLine of block.split(/\r?\n/)) {
+        const line = rawLine.trim();
+        if (!line) continue;
+        const colon = line.indexOf(":");
+        if (colon <= 0) continue;
+        const key = line.slice(0, colon).trim();
+        if (!key) continue;
+        let value = line.slice(colon + 1).trim();
+        let wasQuoted = false;
+        if ((value.startsWith("\"") && value.endsWith("\"")) || (value.startsWith("'") && value.endsWith("'"))) {
+            value = value.slice(1, -1);
+            wasQuoted = true;
+        }
+        let normalized = value.replace(/\\\"/g, '"').replace(/\\\\/g, "\\");
+        if (!wasQuoted) {
+            const lower = normalized.toLowerCase();
+            if (lower === "true" || lower === "false") {
+                result[key] = lower === "true";
+                continue;
+            }
+            if (/^-?\d+(?:\.\d+)?$/.test(normalized)) {
+                result[key] = Number(normalized);
+                continue;
+            }
+            const trimmed = normalized.trim();
+            if ((trimmed.startsWith("[") && trimmed.endsWith("]")) || (trimmed.startsWith("{") && trimmed.endsWith("}"))) {
+                try {
+                    result[key] = JSON.parse(trimmed);
+                    continue;
+                } catch {
+                    // Fall back to string representation
+                }
+            }
+        }
+        result[key] = normalized;
+    }
+    return result;
+}
+
+function extractExtension(path: string): string {
+    const idx = path.lastIndexOf(".");
+    return idx >= 0 ? path.slice(idx + 1) : "";
+}
+
 function normalizeFolderPath(path: string): string {
     if (!path) return "";
     return normalizePath(path);
@@ -287,12 +446,15 @@ function instantiateFolder(path: string): TFolder {
 
 class HarnessApp extends App {
     vault: MemoryVault;
+    metadataCache: FakeMetadataCache;
     workspace: { trigger: (event: string, ...args: unknown[]) => void; on: () => void; off: () => void };
     readonly workspaceEvents: Array<{ event: string; args: unknown[] }>; // historisiert Telemetrie
 
     constructor(vault: MemoryVault) {
         super();
         this.vault = vault as unknown as App["vault"];
+        this.metadataCache = new FakeMetadataCache();
+        vault.attachMetadataCache(this.metadataCache);
         this.workspaceEvents = [];
         this.workspace = {
             trigger: (event: string, ...args: unknown[]) => {
@@ -635,6 +797,7 @@ export function createLibraryHarness(options: LibraryHarnessOptions = {}): Libra
 
     async function reset(): Promise<void> {
         vault.reset();
+        app.metadataCache.reset();
         active.event.reset();
         active = instantiateAll(initialSelection);
         await active.storage.seed(fixtures, active.serializer);
@@ -643,6 +806,7 @@ export function createLibraryHarness(options: LibraryHarnessOptions = {}): Libra
     async function use(selection: Partial<Record<LibraryPortId, LibraryAdapterKind>>): Promise<void> {
         Object.assign(initialSelection, selection);
         vault.reset();
+        app.metadataCache.reset();
         active = instantiateAll(initialSelection);
         await active.storage.seed(fixtures, active.serializer);
     }

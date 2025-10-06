@@ -3,6 +3,7 @@
 
 # Aktueller Stand
 - Neues Test-Cluster, das Ports und Adapter gegen deterministische Fixtures prüft.
+- Der Harness initialisiert einen Fake-Metadata-Cache, der Frontmatter beim Seed ausliest; Fixtures benötigen gültige YAML-Header.
 
 # ToDo
 - Smoke-Subset für PR-Läufe dokumentieren und aktuell halten.

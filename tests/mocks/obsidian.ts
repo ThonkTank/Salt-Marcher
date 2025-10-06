@@ -43,10 +43,43 @@ export class ItemView {
     }
 }
 
+export interface FrontMatterInfo {
+    exists: boolean;
+    frontmatter: string;
+    from: number;
+    to: number;
+    contentStart: number;
+}
+
+export function getFrontMatterInfo(content: string): FrontMatterInfo {
+    const match = content.match(/^---\s*\n?([\s\S]*?)\n?---\s*/);
+    if (!match) {
+        return { exists: false, frontmatter: "", from: 0, to: 0, contentStart: 0 };
+    }
+    const block = match[1] ?? "";
+    const start = match.index ?? 0;
+    const prefix = match[0] ?? "";
+    return {
+        exists: true,
+        frontmatter: block,
+        from: start,
+        to: start + block.length,
+        contentStart: start + prefix.length,
+    };
+}
+
 export class App {
     vault: {
         on: (event: string, handler: (file: TAbstractFile) => void) => EventRef;
+        off: (event: string, handler: (file: TAbstractFile) => void) => void;
         offref: (ref: EventRef) => void;
+    };
+    metadataCache: {
+        getFileCache: (file: TFile) => unknown;
+        getCache: (path: string) => unknown;
+        on: (event: string, handler: (file: TAbstractFile) => void) => EventRef;
+        off: (event: string, handler: (file: TAbstractFile) => void) => void;
+        resolvedLinks: Record<string, Record<string, number>>;
     };
     workspace = {
         getLeavesOfType: (_type: string) => [] as WorkspaceLeaf[],
@@ -60,7 +93,15 @@ export class App {
     constructor() {
         this.vault = {
             on: (_event: string, _handler: (file: TAbstractFile) => void) => ({ off: () => {} }),
+            off: (_event: string, _handler: (file: TAbstractFile) => void) => {},
             offref: (_ref: EventRef) => {},
+        };
+        this.metadataCache = {
+            getFileCache: () => null,
+            getCache: () => null,
+            on: () => ({ off: () => {} }),
+            off: () => {},
+            resolvedLinks: {},
         };
     }
 }
