@@ -6,7 +6,7 @@
 - Der Harness initialisiert einen Fake-Metadata-Cache, der Frontmatter beim Seed ausliest; Fixtures benötigen gültige YAML-Header.
 
 # ToDo
-- Smoke-Subset für PR-Läufe dokumentieren und aktuell halten.
+- [P2] Smoke-Subset für PR-Läufe dokumentieren und aktuell halten.
 
 # Standards
 - Test-Harness exportiert eine `createLibraryHarness`-Factory und kapselt Adapterumschaltung.

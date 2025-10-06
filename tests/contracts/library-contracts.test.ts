@@ -6,7 +6,12 @@ import { ItemsRenderer } from "../../src/apps/library/view/items";
 import { EquipmentRenderer } from "../../src/apps/library/view/equipment";
 import { loadCreaturePreset } from "../../src/apps/library/core/creature-presets";
 import { findSpellPresets, getSpellLevels, loadSpellPreset } from "../../src/apps/library/core/spell-presets";
-import { createLibraryHarness, type LibraryHarness } from "./library-harness";
+import {
+    createLibraryHarness,
+    type LibraryAdapterKind,
+    type LibraryHarness,
+    type LibraryPortId,
+} from "./library-harness";
 
 let harness: LibraryHarness;
 
@@ -109,5 +114,40 @@ describe("library contract harness", () => {
         harness.ports.event.emit("library:save", { domain: "regions" });
         await harness.ports.event.flushDebounce();
         expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it("meldet Telemetrie für aktive Ports", async () => {
+        const activated: Array<{ port: LibraryPortId; kind: LibraryAdapterKind }> = [];
+        const onAdapterActivated = vi.fn((info: { port: LibraryPortId; kind: LibraryAdapterKind }) => {
+            activated.push(info);
+        });
+        const onEvent = vi.fn();
+        harness = createLibraryHarness({ telemetry: { onAdapterActivated, onEvent } });
+        await harness.reset();
+
+        // Default (v2) adapters should report usage when invoked.
+        harness.ports.renderer.render("items");
+        harness.ports.serializer.creatureToMarkdown(harness.fixtures.creatures.entries[0]);
+        harness.ports.event.emit("library:save", { domain: "items" });
+        await harness.ports.event.flushDebounce();
+
+        // Switch to legacy adapters and ensure telemetry fires again.
+        await harness.use({ renderer: "legacy", serializer: "legacy", storage: "legacy", event: "legacy" });
+        harness.ports.renderer.render("creatures");
+        harness.ports.serializer.itemToMarkdown(harness.fixtures.items.entries[0]);
+        harness.ports.event.emit("library:save", { domain: "creatures" });
+        await harness.ports.event.flushDebounce();
+
+        expect(onEvent).toHaveBeenCalledWith({ event: "library:save", payload: { domain: "items" } });
+        expect(onEvent).toHaveBeenCalledWith({ event: "library:save", payload: { domain: "creatures" } });
+        expect(onAdapterActivated).toHaveBeenCalledWith({ port: "storage", kind: "v2" });
+        expect(onAdapterActivated).toHaveBeenCalledWith({ port: "serializer", kind: "v2" });
+        expect(onAdapterActivated).toHaveBeenCalledWith({ port: "event", kind: "v2" });
+        expect(onAdapterActivated).toHaveBeenCalledWith({ port: "renderer", kind: "v2" });
+        expect(onAdapterActivated).toHaveBeenCalledWith({ port: "storage", kind: "legacy" });
+        expect(onAdapterActivated).toHaveBeenCalledWith({ port: "serializer", kind: "legacy" });
+        expect(onAdapterActivated).toHaveBeenCalledWith({ port: "event", kind: "legacy" });
+        expect(onAdapterActivated).toHaveBeenCalledWith({ port: "renderer", kind: "legacy" });
+        expect(activated.filter(info => info.port === "storage").length).toBe(2);
     });
 });

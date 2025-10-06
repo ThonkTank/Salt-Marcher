@@ -5,7 +5,7 @@
 - Verzeichnis ist neu angelegt und erwartet strukturierte Planungsdokumente nach Vorgaben aus Phase 1 & 2.
 
 # ToDo
-- Backlog, Traceability und Kanban pflegen, wenn sich Planungsannahmen ändern.
+- [P4] Backlog, Traceability und Kanban pflegen, wenn sich Planungsannahmen ändern.
 
 # Standards
 - Alle Inhalte sind textbasiert (Markdown/CSV) und referenzieren bei Bedarf Quellen aus Phase 1/2.
