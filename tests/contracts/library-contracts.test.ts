@@ -1,6 +1,10 @@
 // salt-marcher/tests/contracts/library-contracts.test.ts
 // Prüft den Library-Vertragstest-Harness auf Port-Parität, Persistenz und Debounce-Verhalten.
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { TFile } from "obsidian";
+import { ItemsRenderer } from "../../src/apps/library/view/items";
+import { EquipmentRenderer } from "../../src/apps/library/view/equipment";
+import { loadCreaturePreset } from "../../src/apps/library/core/creature-presets";
 import { createLibraryHarness, type LibraryHarness } from "./library-harness";
 
 let harness: LibraryHarness;
@@ -38,6 +42,35 @@ describe("library contract harness", () => {
         expect(stored).toContain(betaItem.name ?? "");
         expect(stored).toContain("nearest underwater ruin");
         expect(stored).toBe(expected);
+    });
+
+    it("parst Fixture-Frontmatter über Import-Helfer ohne Fehler", async () => {
+        // Arrange
+        const [creaturePath] = await harness.ports.storage.list("creatures");
+        const [itemPath] = await harness.ports.storage.list("items");
+        const [equipmentPath] = await harness.ports.storage.list("equipment");
+        const creatureFile = harness.app.vault.getAbstractFileByPath(creaturePath ?? "");
+        const itemFile = harness.app.vault.getAbstractFileByPath(itemPath ?? "");
+        const equipmentFile = harness.app.vault.getAbstractFileByPath(equipmentPath ?? "");
+        if (!(creatureFile instanceof TFile) || !(itemFile instanceof TFile) || !(equipmentFile instanceof TFile)) {
+            throw new Error("Expected seeded fixture files to exist");
+        }
+        const itemsRenderer = new ItemsRenderer(harness.app as any, document.createElement("div"));
+        const equipmentRenderer = new EquipmentRenderer(harness.app as any, document.createElement("div"));
+
+        // Act
+        const creaturePreset = await loadCreaturePreset(harness.app as any, creatureFile);
+        const itemData = await (itemsRenderer as any).parseItemFromFile(itemFile);
+        const equipmentData = await (equipmentRenderer as any).parseEquipmentFromFile(equipmentFile);
+
+        // Assert
+        expect(creaturePreset.entries?.length ?? 0).toBeGreaterThan(0);
+        expect(creaturePreset.entries?.some(entry => entry.name?.includes("Tail Spike"))).toBe(true);
+        expect(creaturePreset.saves?.[0]?.ability).toBe("str");
+        expect(Array.isArray(itemData.properties)).toBe(true);
+        expect(itemData.description).toContain("sea-silver thread");
+        expect(Array.isArray(equipmentData.properties)).toBe(true);
+        expect(equipmentData.description).toContain("stormglass");
     });
 
     it("übernimmt Terrain- und Regions-Fix­tures für Debounce-Save-Regressionen", async () => {
