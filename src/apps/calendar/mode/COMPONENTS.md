@@ -13,7 +13,8 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
   ```ts
   interface CalendarDashboardProps {
     activeCalendar?: CalendarSummaryDTO;
-    currentDate: CalendarDateDTO;
+    currentTimestamp: CalendarTimestampDTO;
+    timeDefinition: TimeDefinitionDTO;
     upcomingEvents: ReadonlyArray<CalendarUpcomingEventDTO>;
     filters: CalendarEventFilterState;
     logEntries: ReadonlyArray<CalendarLogEntryDTO>;
@@ -22,13 +23,13 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
     onOpenManager: () => void;
     onManageEvents: () => void;
     onAdvance: (payload: AdvanceRequestDTO) => void;
-    onSetDate: () => void;
+    onSetDateTime: () => void;
     onFilterChange: (next: CalendarEventFilterState) => void;
   }
   ```
 - **Events/Callbacks**: siehe Props; `onAdvance` dispatcht `TIME_ADVANCE_REQUESTED` (vgl. [STATE_MACHINE.md](./STATE_MACHINE.md#eventsactions)).
 - **Interner Zustand**: UI-Only (z.B. Expanded Panels).
-- **Styling**: Layout via `Flex`/`Grid`, Quick-Action-Buttons nutzen `PrimaryButton`/`SecondaryButton` aus `src/ui`.
+- **Styling**: Layout via `Flex`/`Grid`, Quick-Action-Buttons nutzen `PrimaryButton`/`SecondaryButton` aus `src/ui`; Sub-Day-Actions gruppiert als `ButtonGroup`.
 - **Fehler/Leer**: Wenn `activeCalendar` fehlt → `EmptyState`-Slot (siehe [UX_SPEC §4](./UX_SPEC.md#4-fehler-und-leerstaaten)).
 
 ### 2.2 `CalendarManagerHeader`
@@ -37,7 +38,7 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
   ```ts
   interface CalendarManagerHeaderProps {
     viewMode: CalendarManagerViewMode; // 'calendar' | 'overview'
-    zoom: CalendarViewZoom; // 'month' | 'week' | 'day'
+    zoom: CalendarViewZoom; // 'month' | 'week' | 'day' | 'hour'
     canZoom: boolean;
     isTravelContext: boolean;
     onBack: () => void;
@@ -58,20 +59,23 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
   ```ts
   interface CalendarGridViewProps {
     zoom: CalendarViewZoom;
-    range: CalendarRangeDTO; // Start/End inkl. Schema-Infos
+    range: CalendarRangeDTO; // Start/End inkl. Zeitfenster
     events: ReadonlyArray<CalendarGridEventDTO>;
     localeSchema: CalendarSchemaDTO;
+    hoursPerDay: number;
+    timeDefinition: TimeDefinitionDTO;
+    minuteStep: number;
     selection?: CalendarGridSelection;
     onNavigate: (direction: 'prev' | 'next' | 'today') => void;
-    onDatePick: (target: CalendarDateDTO) => void;
-    onCreateInline: (target: CalendarDateDTO) => void;
+    onDatePick: (target: CalendarTimestampDTO) => void;
+    onCreateInline: (target: CalendarTimestampDTO) => void;
     onSelectEvent: (eventId: string) => void;
     onHoverEvent?: (eventId: string | null) => void;
   }
   ```
-- **Events**: `onCreateInline` → öffnet Event-Dialog; `onSelectEvent` dispatcht `EVENT_SELECTED`.
+- **Events**: `onCreateInline` → öffnet Event-Dialog mit Timestamp; `onSelectEvent` dispatcht `EVENT_SELECTED`.
 - **Interner Zustand**: Drag-Selection (nur UI, optional), Hover.
-- **Styling**: Verwendung `Grid`-Layout, Multi-day Events stapeln per `position: relative`; Schema-spezifische Labels (z.B. 10-Tage-Woche) aus Props.
+- **Styling**: Verwendung `Grid`-Layout, Multi-day Events stapeln per `position: relative`; Stunden-/Minutenraster anhand `hoursPerDay` und `minuteStep`, Schema-spezifische Labels (z.B. 10-Tage-Woche) aus Props.
 - **Fehler/Leer**: Wenn `events` leer → Textoverlay „Keine Ereignisse“. Ladefehler via `ErrorBoundary`-Slot.
 
 ### 2.4 `CalendarEventPopover`
@@ -144,7 +148,7 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
     initialValue?: CalendarEventFormState;
     schema: CalendarSchemaDTO;
     isSaving: boolean;
-    preview: ReadonlyArray<CalendarDateDTO>;
+    preview: ReadonlyArray<CalendarTimestampDTO>;
     errors: CalendarEventFormErrors;
     onSubmit: (value: CalendarEventFormState) => void;
     onCancel: () => void;
@@ -152,7 +156,7 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
   }
   ```
 - **Events**: `onSubmit` dispatcht `EVENT_SAVE_REQUESTED`; `onValidateCustomRule` optional async.
-- **Styling**: `ui/Form`, `ui/SegmentedControl` für Modus, `ui/CodeEditor` für Custom-Hooks.
+- **Styling**: `ui/Form`, `ui/SegmentedControl` für Modus, `ui/CodeEditor` für Custom-Hooks`; Zeitfelder nutzen `CalendarTimePicker` (siehe §2.13) und `DurationInput`.
 
 ### 2.8 `TimeAdvanceDialog`
 - **Responsibility**: Dialog für benutzerdefinierten Zeitfortschritt/Datumssprung.
@@ -160,7 +164,7 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
   ```ts
   interface TimeAdvanceDialogProps {
     mode: 'advance' | 'jump';
-    currentDate: CalendarDateDTO;
+    currentTimestamp: CalendarTimestampDTO;
     schema: CalendarSchemaDTO;
     pendingEvents: ReadonlyArray<CalendarEventSummaryDTO>;
     isApplying: boolean;
@@ -168,7 +172,7 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
     onCancel: () => void;
   }
   ```
-- **Fehler**: Wenn `pendingEvents` > 50 → Hinweis „Viele Ereignisse“.
+- **Fehler**: Wenn `pendingEvents` > 50 → Hinweis „Viele Ereignisse“; wenn Zielzeit außerhalb `hoursPerDay` → Inline-Error.
 
 ### 2.9 `CalendarEventLog`
 - **Responsibility**: Zeigt ausgelöste/übersprungene Ereignisse.
@@ -190,10 +194,12 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
     mode: TravelCalendarMode; // 'month' | 'week' | 'day' | 'upcoming'
     visible: boolean;
     activeCalendar?: CalendarSummaryDTO;
-    date: CalendarDateDTO;
+    currentTimestamp: CalendarTimestampDTO;
     range: CalendarRangeDTO;
     events: ReadonlyArray<CalendarTravelEventDTO>;
     skippedEvents: ReadonlyArray<CalendarEventSummaryDTO>;
+    timeDefinition: TimeDefinitionDTO;
+    minuteStep: number;
     isLoading: boolean;
     onModeChange: (mode: TravelCalendarMode) => void;
     onAdvance: (payload: AdvanceRequestDTO) => void;
@@ -202,8 +208,8 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
     onFollowUp: (eventId: string) => void;
   }
   ```
-- **Events**: `onAdvance` dispatcht `TRAVEL_TIME_ADVANCE_REQUESTED`; `onModeChange` → `TRAVEL_MODE_CHANGED`.
-- **Styling**: Pane-Breite 320-360px; Buttons icon-only bei <320px.
+- **Events**: `onAdvance` dispatcht `TRAVEL_TIME_ADVANCE_REQUESTED`; `onModeChange` → `TRAVEL_MODE_CHANGED`; `onJump` öffnet `TimeAdvanceDialog` im Travel-Kontext.
+- **Styling**: Pane-Breite 320-360px; Buttons icon-only bei <320px; Quick-Steps gruppiert (`ButtonGroup` mit Tooltips „±1 Std“ etc.).
 - **Fehler/Leer**: Zeigt Banner/EmptyState analog [UX_SPEC §4](./UX_SPEC.md#4-fehler-und-leerstaaten).
 
 ### 2.11 `TravelCalendarToolbar`
@@ -215,13 +221,14 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
     canStepBackward: boolean;
     canStepForward: boolean;
     onChangeMode: (mode: TravelCalendarMode) => void;
-    onStepBackward: () => void;
-    onStepForward: () => void;
+    onStepDay: (direction: 'backward' | 'forward') => void;
+    onStepHour: (direction: 'backward' | 'forward') => void;
+    onStepMinute: (direction: 'backward' | 'forward', amount?: number) => void;
     onJump: () => void;
     onClose: () => void;
   }
   ```
-- **Accessibility**: Buttons mit `aria-keyshortcuts` (`Ctrl+Alt+Shift+1..4`).
+- **Accessibility**: Buttons mit `aria-keyshortcuts` (`Ctrl+Alt+Shift+1..4` für Modi, `Ctrl+Alt+.`/`,` für Stunden, `Ctrl+Alt+;`/`'` für Minuten). `aria-live`-Region kündigt neue Uhrzeit an.
 
 ### 2.12 `DefaultBadge`
 - **Responsibility**: Kennzeichnet Default-Kalender in Listen/Dropdowns.
@@ -234,12 +241,76 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
   ```
 - **Styling**: `Badge` aus `src/ui`, Farbe `--color-accent` für global, `--color-secondary` für Reise.
 
+### 2.13 `CurrentTimestampCard`
+- **Responsibility**: Zeigt aktuelles Datum/Uhrzeit inklusive Schema-Infos und Quick-Steps im Dashboard.
+- **Props**
+  ```ts
+  interface CurrentTimestampCardProps {
+    timestamp: CalendarTimestampDTO;
+    calendarName?: string;
+    timeDefinition: { hoursPerDay: number; minutesPerHour: number; minuteStep: number };
+    disabled?: boolean;
+    onAdvanceQuick: (payload: AdvanceRequestDTO) => void;
+    onOpenSetDateTime: () => void;
+  }
+  ```
+- **Styling**: Card mit `ui/Card`, sekundäre Actions als `ButtonGroup`. Zeitformat nutzt Formatter aus Domain.
+- **Fehler/Leer**: Wenn `disabled`, zeigt Hinweis „Kein aktiver Kalender“.
+
+### 2.14 `CalendarTimePicker`
+- **Responsibility**: Schema-spezifische Zeitwahl für Stunden/Minuten (optional Sekunden).
+- **Props**
+  ```ts
+  interface CalendarTimePickerProps {
+    value: { hour: number; minute: number; second?: number };
+    hoursPerDay: number;
+    minutesPerHour: number;
+    minuteStep: number;
+    secondsPerMinute?: number;
+    precision: 'minute' | 'second';
+    disabled?: boolean;
+    onChange: (value: { hour: number; minute: number; second?: number }) => void;
+    onBlur?: () => void;
+  }
+  ```
+- **Styling**: `ui/NumberInput` kombiniert mit `Dropdown` für Minuten; Pfeiltasten + Mousewheel unterstützen Step `minuteStep`.
+- **Fehler**: Anzeige roter Umrandung + `aria-live` Hinweis „Zeit außerhalb 0–{hoursPerDay-1}“.
+
+### 2.15 `DurationInput`
+- **Responsibility**: Konvertiert Dauerangaben (Minuten) in formularfreundliche Eingabe (z.B. Stunden + Minuten).
+- **Props**
+  ```ts
+  interface DurationInputProps {
+    valueMinutes: number;
+    minuteStep: number;
+    maxMinutes?: number;
+    onChange: (minutes: number) => void;
+  }
+  ```
+- **Styling**: Zwei `NumberInput`-Felder (Stunden/Minuten) mit Suffix-Labels, validiert gegen `maxMinutes`.
+- **Fehler**: Tooltip „Dauer überschreitet Tageslänge“.
+
+### 2.16 `TravelQuickStepGroup`
+- **Responsibility**: Rendert Quick-Step-Buttons (Tag/Stunde/Minute) im Travel-Leaf.
+- **Props**
+  ```ts
+  interface TravelQuickStepGroupProps {
+    minuteStep: number;
+    disabled?: boolean;
+    onAdvance: (payload: AdvanceRequestDTO) => void;
+    lastStep?: { label: string; delta: AdvanceRequestDTO };
+  }
+  ```
+- **Styling**: `ButtonGroup` mit IconButtons, Tooltips zeigen Tastaturkürzel.
+- **Fehler/Leer**: Wenn `disabled`, Buttons im `aria-disabled` Zustand.
+
 ## 3. Komposition
 Textuelles Diagramm (→ inkludiert/enthält):
 ```
 CalendarDashboard
  ├─ CalendarDashboardToolbar (Teil von Header, reuse ui/ButtonGroup)
- ├─ CurrentDateCard
+ ├─ CurrentTimestampCard
+ │    └─ (Quick-Steps) TravelQuickStepGroup (Dashboard-Variante)
  ├─ UpcomingEventsList
  ├─ EventFilterPanel
  └─ CalendarEventLog
@@ -251,13 +322,14 @@ CalendarManagerView
  └─ (viewMode === 'overview') CalendarOverviewList
 
 CalendarDialogs
- ├─ CalendarFormDialog (nutzt CalendarPreview, DefaultBadge)
- ├─ EventFormDialog
- └─ TimeAdvanceDialog
+ ├─ CalendarFormDialog (nutzt CalendarPreview, DefaultBadge, CalendarTimePicker)
+ ├─ EventFormDialog (nutzt CalendarTimePicker, DurationInput)
+ └─ TimeAdvanceDialog (nutzt CalendarTimePicker)
 
 TravelCalendarLeaf
  ├─ TravelCalendarToolbar
  ├─ TravelCalendarModeView (intern: MonthGrid | WeekList | DayTimeline | UpcomingList)
+ │    └─ (DayTimeline) CalendarTimePicker (readonly grid)
  └─ CalendarEventLog (scope='travel')
 ```
 

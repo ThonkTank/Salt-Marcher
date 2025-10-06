@@ -12,11 +12,11 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Ca
 ## 2. State-Slices
 | Slice | Schlüssel | Beschreibung | Persistenz |
 | --- | --- | --- | --- |
-| `calendarState` | `activeCalendarId`, `defaultCalendarId`, `travelDefaultCalendarId`, `currentDate`, `upcomingEvents`, `triggeredEvents`, `skippedEvents` | Domain-Daten, die vom Gateway geladen/geschrieben werden. | Persistiert (Gateway) |
+| `calendarState` | `activeCalendarId`, `defaultCalendarId`, `travelDefaultCalendarId`, `currentTimestamp`, `timeDefinition`, `minuteStep`, `pendingTimeSlice`, `lastAdvanceStep`, `upcomingEvents`, `triggeredEvents`, `skippedEvents` | Domain-Daten, die vom Gateway geladen/geschrieben werden. | Persistiert (Gateway) |
 | `calendarState.calendars` | Map `calendarId -> CalendarSummaryDTO` | Cache der bekannten Kalender (Name, Schema, Flags). | Persistiert (Repository) |
-| `managerUiState` | `viewMode`, `zoom`, `filters`, `overviewLayout`, `selection`, `isLoading`, `error` | UI-spezifische Flags für Manager/Übersicht. | Nicht persistiert (Session) |
+| `managerUiState` | `viewMode`, `zoom`, `filters`, `overviewLayout`, `selection`, `isLoading`, `error`, `timeControls` (`preset`, `customStep`) | UI-spezifische Flags für Manager/Übersicht inkl. Quick-Steps. | Nicht persistiert (Session) |
 | `managerUiState.form` | `currentDialog` (`'calendar' | 'event' | 'time' | null`), `dialogData` | Offene Dialoge und deren Parameter. | Nicht persistiert |
-| `travelLeafState` | `visible`, `mode`, `isLoading`, `error`, `range`, `events`, `skippedEvents`, `lastSync` | Zustand des Travel-Leaves. | Teilweise (sichtbarkeit/modus) |
+| `travelLeafState` | `visible`, `mode`, `isLoading`, `error`, `currentTimestamp`, `range`, `events`, `skippedEvents`, `lastQuickStep`, `lastSync` | Zustand des Travel-Leaves. | Teilweise (sichtbarkeit/modus) |
 | `telemetryState` | `lastEvents` | Meta-Informationen für Logging (z.B. Default-Wechsel). | Nicht persistiert |
 
 ## 3. Events/Actions {#eventsactions}
@@ -29,20 +29,23 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Ca
 | `DEFAULT_SET_REQUESTED` | `{ calendarId: string; scope: 'global' | 'travel'; travelId?: string }` | Toggle für Default. |
 | `DEFAULT_SET_CONFIRMED` | `{ defaultCalendarId: string; travelId?: string }` | Persistenz bestätigt neuen Default. |
 | `MANAGER_VIEW_MODE_CHANGED` | `{ viewMode: 'calendar' | 'overview' }` | Tab-Wechsel in Manager. |
-| `MANAGER_ZOOM_CHANGED` | `{ zoom: 'month' | 'week' | 'day' }` | Kalenderansicht Zoom. |
+| `MANAGER_ZOOM_CHANGED` | `{ zoom: 'month' | 'week' | 'day' | 'hour' }` | Kalenderansicht Zoom. |
 | `MANAGER_FILTER_CHANGED` | `CalendarOverviewFilterState` | Übersicht-Filter. |
-| `EVENT_FORM_OPENED` | `{ mode: 'single' | 'recurring'; date?: CalendarDateDTO }` | Öffnet Event-Dialog. |
+| `EVENT_FORM_OPENED` | `{ mode: 'single' | 'recurring'; timestamp?: CalendarTimestampDTO }` | Öffnet Event-Dialog. |
 | `EVENT_SAVE_REQUESTED` | `CalendarEventFormState` | Formular Submit. |
 | `EVENT_SAVE_CONFIRMED` | `CalendarEventDTO` | Persistenz bestätigt. |
 | `EVENT_DELETE_REQUESTED` | `{ eventId: string }` | Delete CTA. |
 | `EVENT_DELETE_CONFIRMED` | `{ eventId: string }` | Delete erfolgreich. |
-| `TIME_ADVANCE_REQUESTED` | `AdvanceRequestDTO` | Zeit voran. |
+| `TIME_ADVANCE_REQUESTED` | `AdvanceRequestDTO` | Zeit voran (inkl. Minuten/Stunden). |
 | `TIME_ADVANCE_CONFIRMED` | `AdvanceResultDTO` | Domain bestätigt Advance. |
-| `TIME_JUMP_REQUESTED` | `JumpRequestDTO` | Direktes Datum setzen. |
-| `TIME_JUMP_CONFIRMED` | `JumpResultDTO` | Ergebnis inkl. übersprungener Events. |
+| `TIME_JUMP_REQUESTED` | `JumpRequestDTO` | Direktes Datum & Uhrzeit setzen. |
+| `TIME_JUMP_CONFIRMED` | `JumpResultDTO` | Ergebnis inkl. übersprungener Events & Normalisierungshinweisen. |
+| `TIME_SLICE_PRESET_CHANGED` | `{ scope: 'dashboard' | 'travel'; preset: 'minute' | 'hour' | 'day'; amount: number }` | Aktualisiert Quick-Step-Voreinstellung. |
+| `TIME_DEFINITION_UPDATED` | `{ calendarId: string; timeDefinition: TimeDefinitionDTO }` | Schema-Anpassung ändert Stunden/Minuten. |
 | `TRAVEL_LEAF_MOUNTED` | `{ travelId: string }` | Travel-Modus gestartet. |
 | `TRAVEL_MODE_CHANGED` | `{ mode: TravelCalendarMode }` | Travel-Leaf Tab gewechselt. |
-| `TRAVEL_TIME_ADVANCE_REQUESTED` | `AdvanceRequestDTO` | Quick-Action im Travel-Leaf. |
+| `TRAVEL_TIME_ADVANCE_REQUESTED` | `AdvanceRequestDTO` | Quick-Action im Travel-Leaf (Minuten/Stunden/Tage). |
+| `TRAVEL_QUICK_STEP_APPLIED` | `{ delta: AdvanceRequestDTO }` | Travel-Leaf speichert letzten Quick-Step. |
 | `TRAVEL_LEAF_DISMISSED` | `void` | Leaf geschlossen (Nutzer:in oder Hook). |
 | `ERROR_OCCURRED` | `UIErrorState & { scope: 'dashboard' | 'manager' | 'travel' }` | Fehlerbanner anzeigen. |
 | `ERROR_RESOLVED` | `{ scope: 'dashboard' | 'manager' | 'travel' }` | Fehler zurücksetzen. |
@@ -57,6 +60,7 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Ca
 | `pendingDefault = B` | `DEFAULT_SET_CONFIRMED` | `defaultCalendarId = B`, `activeCalendarId` ggf. fallback | UI-Badge aktualisieren, Travel-Leaf re-render |
 | `travelDefaultCalendarId = A` | `DEFAULT_SET_REQUESTED(B, travel)` | `pendingTravelDefault = B` | Gateway Update starten |
 | `pendingTravelDefault` | `DEFAULT_SET_CONFIRMED` | `travelDefaultCalendarId = B` | Travel-Leaf highlight |
+| `timeDefinition = old` | `TIME_DEFINITION_UPDATED(newDef)` | `timeDefinition = newDef`, `minuteStep = derive(newDef.minuteStep)` | Normalisiere `currentTimestamp` & `travelLeafState.currentTimestamp`, invalide Caches |
 
 ### 4.2 Manager UI
 | Vorher | Event | Nachher | Aktionen |
@@ -70,12 +74,14 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Ca
 ### 4.3 Zeitfortschritt
 | Vorher | Event | Nachher | Aktionen |
 | --- | --- | --- | --- |
-| `currentDate = D` | `TIME_ADVANCE_REQUESTED` | `isLoading = true` | Call `Gateway.advanceTime`, Travel-Leaf Loading |
-| `isLoading = true` | `TIME_ADVANCE_CONFIRMED(result)` | `currentDate = result.newDate`, `triggeredEvents = result.triggered` | Append Log, Travel-Leaf refresh, Hooks dispatch |
-| `currentDate = D` | `TIME_JUMP_REQUESTED` | `isLoading = true` | Call `Gateway.setDate` |
-| `isLoading = true` | `TIME_JUMP_CONFIRMED(result)` | `currentDate = result.date`, `skippedEvents = result.skipped` | Zeige Dialog-Result, Travel-Leaf update |
-| `travelLeafState.visible = true` | `TRAVEL_TIME_ADVANCE_REQUESTED` | `travelLeafState.isLoading = true` | Gateway Advance mit `scope: travel` |
-| `travelLeafState.isLoading = true` | `TIME_ADVANCE_CONFIRMED` | `travelLeafState.isLoading = false`, `events` aktualisiert | Leaf UI refresh |
+| `currentTimestamp = T`, `pendingTimeSlice = S` | `TIME_SLICE_PRESET_CHANGED(preset)` | `pendingTimeSlice = preset` | Speichere in `managerUiState.timeControls`, Telemetrie `calendar.telemetry.slice_changed` |
+| `currentTimestamp = T` | `TIME_ADVANCE_REQUESTED(delta)` | `isLoading = true`, `calendarState.lastAdvanceStep = delta` | Call `Gateway.advanceTime`, Travel-Leaf Loading |
+| `isLoading = true` | `TIME_ADVANCE_CONFIRMED(result)` | `currentTimestamp = result.newTimestamp`, `triggeredEvents = result.triggered`, `skippedEvents = result.skipped` | Append Log (inkl. Minuten), Travel-Leaf refresh, Hooks dispatch |
+| `currentTimestamp = T` | `TIME_JUMP_REQUESTED` | `isLoading = true` | Call `Gateway.setDateTime` |
+| `isLoading = true` | `TIME_JUMP_CONFIRMED(result)` | `currentTimestamp = result.timestamp`, `skippedEvents = result.skipped`, `normalizationWarnings = result.warnings` | Zeige Dialog-Result, Travel-Leaf update |
+| `travelLeafState.visible = true` | `TRAVEL_TIME_ADVANCE_REQUESTED(delta)` | `travelLeafState.isLoading = true`, `travelLeafState.lastQuickStep = delta` | Gateway Advance mit `scope: travel` |
+| `travelLeafState.visible = true` | `TRAVEL_QUICK_STEP_APPLIED(delta)` | `travelLeafState.lastQuickStep = delta` | UI-Badge „zuletzt: ±X“ aktualisieren |
+| `travelLeafState.isLoading = true` | `TIME_ADVANCE_CONFIRMED` | `travelLeafState.isLoading = false`, `events` aktualisiert, `currentTimestamp = result.newTimestamp` | Leaf UI refresh |
 
 ### 4.4 Travel Leaf Lifecycle
 | Vorher | Event | Nachher | Aktionen |
@@ -94,6 +100,9 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Ca
 ### 5.3 Travel-Leaf Advance
 `Start → TRAVEL_TIME_ADVANCE_REQUESTED → travelLeafState.isLoading = true → Gateway.advanceTime(scope=travel) → (Erfolg?) → [Ja] TIME_ADVANCE_CONFIRMED → Update travelLeafState, calendarState → Ende / [Nein] ERROR_OCCURRED(scope=travel)`
 
+### 5.4 Quick-Step anpassen
+`Start → TIME_SLICE_PRESET_CHANGED(scope, preset) → Update managerUiState.timeControls → persistTimePreset → Ende`
+
 ## 6. Effekte {#effekte}
 | Effekt | Trigger | Beschreibung |
 | --- | --- | --- |
@@ -105,8 +114,11 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Ca
 | `saveCalendar` | `EVENT_SAVE_REQUESTED` (wenn `mode === 'calendar'` Dialog) | Verweist auf Domain-Service zum Erstellen/Bearbeiten (siehe [API_CONTRACTS.md](./API_CONTRACTS.md#repositories)). |
 | `saveEvent` | `EVENT_SAVE_REQUESTED` (wenn `mode === 'event'`) | Persistiert Event, aktualisiert Caches. |
 | `deleteEvent` | `EVENT_DELETE_REQUESTED` | Entfernt Event, aktualisiert Listen. |
-| `advanceTime` | `TIME_ADVANCE_REQUESTED`, `TRAVEL_TIME_ADVANCE_REQUESTED` | Führt Advance aus, löst Hooks (`CartographerHookGateway`) aus. |
-| `setDate` | `TIME_JUMP_REQUESTED` | Setzt Datum + Konfliktliste. |
+| `advanceTime` | `TIME_ADVANCE_REQUESTED`, `TRAVEL_TIME_ADVANCE_REQUESTED` | Führt Advance (Minuten/Stunden/Tage) aus, löst Hooks (`CartographerHookGateway`) aus. |
+| `setDate` | `TIME_JUMP_REQUESTED` | Setzt Datum/Uhrzeit + Konfliktliste. |
+| `persistTimePreset` | `TIME_SLICE_PRESET_CHANGED` | Speichert Quick-Step-Präferenz (`managerUiState.timeControls`) im Gateway (Scope global/travel). |
+| `normalizeTimestamp` | `TIME_DEFINITION_UPDATED` | Berechnet neue Zeitbasis, passt `currentTimestamp`, `pendingEvents` an. |
+| `syncTravelTimestamp` | `TIME_ADVANCE_CONFIRMED`, `TIME_JUMP_CONFIRMED` | Überträgt neue Zeitpunkte an Travel-Leaf und Cartographer. |
 | `mountTravelLeaf` | `TRAVEL_LEAF_MOUNTED` | Öffnet Leaf, lädt Daten, registriert Telemetrie. |
 | `unmountTravelLeaf` | `TRAVEL_LEAF_DISMISSED` | Persistiert Off-State, deregistriert Listener. |
 | `logTelemetry` | Diverse (Default, ModeChange, TravelMount) | Sendet `calendar.telemetry.*` (siehe [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md#telemetrie--observability)). |

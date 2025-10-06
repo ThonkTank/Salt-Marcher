@@ -15,6 +15,10 @@ interface CalendarSchemaDTO {
   description?: string;
   weeksPerMonth?: number; // optional für spezielle Systeme
   daysPerWeek: number;
+  hoursPerDay: number;
+  minutesPerHour: number;
+  secondsPerMinute?: number;
+  minuteStep: number;
   months: ReadonlyArray<{ id: string; name: string; length: number }>;
   leapRules?: ReadonlyArray<LeapRuleDTO>;
   epoch: {
@@ -28,6 +32,7 @@ interface CalendarSummaryDTO {
   id: string;
   name: string;
   schema: Pick<CalendarSchemaDTO, 'daysPerWeek' | 'months' | 'schemaVersion'>;
+  timeDefinition: TimeDefinitionDTO;
   isDefaultGlobal: boolean;
   defaultTravelIds: ReadonlyArray<string>; // Reisen, die diesen Kalender als Default nutzen
   isActive?: boolean;
@@ -41,12 +46,23 @@ interface CalendarDateDTO {
   year: number;
   monthId: string;
   day: number;
+  hour?: number; // 0..hoursPerDay-1, wenn precision >= minute
+  minute?: number; // 0..minutesPerHour-1
+  second?: number; // optional, Schemaabhängig
+  precision: 'day' | 'minute' | 'second';
 }
 interface CalendarRangeDTO {
   calendarId: string;
   start: CalendarDateDTO;
   end: CalendarDateDTO;
-  zoom: 'month' | 'week' | 'day' | 'upcoming';
+  zoom: 'month' | 'week' | 'day' | 'hour' | 'upcoming';
+  timeSlice?: 'day' | 'hour' | 'minute';
+}
+interface TimeDefinitionDTO {
+  hoursPerDay: number;
+  minutesPerHour: number;
+  secondsPerMinute?: number;
+  minuteStep: number; // kleinste auswählbare Einheit
 }
 ```
 
@@ -58,6 +74,11 @@ interface CalendarEventSingleDTO {
   calendarId: string;
   title: string;
   date: CalendarDateDTO;
+  allDay: boolean;
+  startTime?: { hour: number; minute: number; second?: number };
+  endTime?: { hour: number; minute: number; second?: number };
+  durationMinutes?: number;
+  timePrecision: 'day' | 'minute' | 'second';
   category?: string;
   tags?: ReadonlyArray<string>;
   note?: string;
@@ -69,6 +90,9 @@ interface CalendarEventRecurringDTO {
   calendarId: string;
   title: string;
   rule: RepeatRuleDTO;
+  timePolicy: 'all_day' | 'fixed' | 'offset';
+  startTime?: { hour: number; minute: number; second?: number };
+  durationMinutes?: number;
   category?: string;
   tags?: ReadonlyArray<string>;
   note?: string;
@@ -84,6 +108,7 @@ interface CalendarUpcomingEventDTO {
   occurrence: CalendarDateDTO;
   daysUntil: number; // negative = vergangen
   type: 'single' | 'recurring';
+  timeLabel: string; // formatierter Zeitstring, leer falls Ganztag
   category?: string;
 }
 interface CalendarGridEventDTO {
@@ -92,12 +117,14 @@ interface CalendarGridEventDTO {
   start: CalendarDateDTO;
   end?: CalendarDateDTO;
   allDay: boolean;
+  timePrecision: 'day' | 'minute' | 'second';
   category?: string;
   isRecurring: boolean;
 }
 interface CalendarTravelEventDTO extends CalendarUpcomingEventDTO {
   priority: 'high' | 'medium' | 'low';
   followUpRequired: boolean;
+  occurrencePrecision: 'day' | 'minute' | 'second';
 }
 ```
 
@@ -126,6 +153,7 @@ interface CalendarEventFilterState {
   types: ReadonlyArray<'single' | 'recurring'>;
   tags: ReadonlyArray<string>;
   includeDefaultOnly: boolean;
+  includeTimedOnly?: boolean;
 }
 interface CalendarOverviewFilterState {
   query: string;
@@ -138,6 +166,28 @@ interface CalendarLogEntryDTO {
   message: string;
   severity: 'info' | 'warning' | 'error';
   linkedEventId?: string;
+}
+```
+
+### 2.6 Snapshots & Präferenzen
+```ts
+interface CalendarStateSnapshotDTO {
+  calendars: ReadonlyArray<CalendarSummaryDTO>;
+  activeCalendarId?: string;
+  defaultCalendarId?: string;
+  travelDefaultCalendarId?: string;
+  currentTimestamp: CalendarDateDTO;
+  timeDefinition: TimeDefinitionDTO;
+  minuteStep: number;
+  upcomingEvents: ReadonlyArray<CalendarUpcomingEventDTO>;
+  triggeredEvents: ReadonlyArray<CalendarEventDTO>;
+  skippedEvents: ReadonlyArray<CalendarEventDTO>;
+  pendingFollowUps?: ReadonlyArray<CalendarEventDTO>;
+  travelState?: {
+    currentTimestamp?: CalendarDateDTO;
+    mode?: TravelCalendarMode;
+    lastQuickStep?: { preset: 'minute' | 'hour' | 'day'; amount: number };
+  };
 }
 ```
 
@@ -191,14 +241,15 @@ interface CartographerHookGateway {
 interface AdvanceRequestDTO {
   calendarId: string;
   amount: number; // kann negativ sein
-  unit: 'day' | 'week' | 'month' | 'custom';
-  customRange?: { start: CalendarDateDTO; end: CalendarDateDTO };
+  unit: 'minute' | 'hour' | 'day' | 'week' | 'month' | 'custom';
+  customRange?: { start: CalendarDateDTO; end: CalendarDateDTO; normalize?: boolean };
   followUpMode: 'auto' | 'manual';
 }
 interface AdvanceResultDTO {
-  newDate: CalendarDateDTO;
+  newTimestamp: CalendarDateDTO;
   triggered: ReadonlyArray<CalendarEventDTO>;
   skipped: ReadonlyArray<CalendarEventDTO>;
+  normalization?: { carriedMinutes: number; carriedHours: number };
 }
 interface JumpRequestDTO {
   calendarId: string;
@@ -206,16 +257,18 @@ interface JumpRequestDTO {
   followUpMode: 'auto' | 'manual';
 }
 interface JumpResultDTO {
-  date: CalendarDateDTO;
+  timestamp: CalendarDateDTO;
   skipped: ReadonlyArray<CalendarEventDTO>;
+  warnings?: ReadonlyArray<{ code: 'normalized' | 'out_of_bounds'; message: string }>;
 }
 interface TravelLeafPrefsDTO {
   mode: TravelCalendarMode;
   visible: boolean;
-  lastViewedDate: CalendarDateDTO;
+  lastViewedTimestamp: CalendarDateDTO;
+  quickStep?: { preset: 'minute' | 'hour' | 'day'; amount: number };
 }
 interface TravelPanelUpdateDTO {
-  currentDate: CalendarDateDTO;
+  currentTimestamp: CalendarDateDTO;
   triggeredEvents: ReadonlyArray<CalendarEventDTO>;
   skippedEvents: ReadonlyArray<CalendarEventDTO>;
   message?: string;
@@ -234,6 +287,10 @@ interface TravelPanelUpdateDTO {
     "name": { "type": "string", "minLength": 1 },
     "description": { "type": "string" },
     "daysPerWeek": { "type": "integer", "minimum": 1 },
+    "hoursPerDay": { "type": "integer", "minimum": 1, "default": 24 },
+    "minutesPerHour": { "type": "integer", "minimum": 1, "default": 60 },
+    "secondsPerMinute": { "type": "integer", "minimum": 1, "default": 60 },
+    "minuteStep": { "type": "integer", "minimum": 1, "default": 15 },
     "months": {
       "type": "array",
       "minItems": 1,
@@ -293,21 +350,33 @@ interface TravelPanelUpdateDTO {
 {
   "$id": "calendar.travelPrefs",
   "type": "object",
-  "required": ["mode", "visible", "lastViewedDate"],
+  "required": ["mode", "visible", "lastViewedTimestamp"],
   "properties": {
     "mode": { "enum": ["month", "week", "day", "upcoming"] },
     "visible": { "type": "boolean" },
-    "lastViewedDate": { "$ref": "#/definitions/date" }
+    "lastViewedTimestamp": { "$ref": "#/definitions/timestamp" },
+    "quickStep": {
+      "type": "object",
+      "required": ["preset", "amount"],
+      "properties": {
+        "preset": { "enum": ["minute", "hour", "day"] },
+        "amount": { "type": "integer" }
+      }
+    }
   },
   "definitions": {
-    "date": {
+    "timestamp": {
       "type": "object",
-      "required": ["calendarId", "year", "monthId", "day"],
+      "required": ["calendarId", "year", "monthId", "day", "precision"],
       "properties": {
         "calendarId": { "type": "string" },
         "year": { "type": "integer" },
         "monthId": { "type": "string" },
-        "day": { "type": "integer" }
+        "day": { "type": "integer" },
+        "hour": { "type": "integer", "minimum": 0 },
+        "minute": { "type": "integer", "minimum": 0 },
+        "second": { "type": "integer", "minimum": 0 },
+        "precision": { "enum": ["day", "minute", "second"] }
       }
     }
   }
@@ -317,7 +386,7 @@ interface TravelPanelUpdateDTO {
 ## 6. Fehlerobjekte
 ```ts
 interface CalendarError {
-  code: 'validation_error' | 'conflict' | 'io_error' | 'not_found';
+  code: 'validation_error' | 'conflict' | 'io_error' | 'not_found' | 'time_range_invalid';
   scope: 'calendar' | 'event' | 'default' | 'travel';
   message: string;
   details?: Record<string, unknown>;
@@ -327,6 +396,7 @@ interface CalendarError {
 - `conflict`: Default-Verletzung (zwei globale Defaults) oder Eventkollision.
 - `io_error`: Persistenz-/Dateifehler.
 - `not_found`: Kalender/Ereignis existiert nicht (z.B. gelöscht).
+- `time_range_invalid`: Uhrzeit außerhalb Schema (`hoursPerDay`, `minuteStep`).
 
 Fehler werden an UI via `ERROR_OCCURRED` (siehe [STATE_MACHINE.md](./STATE_MACHINE.md#eventsactions)) propagiert.
 
@@ -336,12 +406,14 @@ Fehler werden an UI via `ERROR_OCCURRED` (siehe [STATE_MACHINE.md](./STATE_MACHI
 | `1.0.0` | Basis-Schema (Kalender, Events) | Initiale Anlage |
 | `1.1.0` | Default-Flags (`isDefaultGlobal`, `defaultTravelIds`), Travel-Leaf-Präferenzen | Migration: `defaults.global`/`defaults.travel` Datei anlegen, vorhandene Kalender ohne Default → `null` |
 | `1.2.0` | Zoom-optimierte Event-Snapshots (Cached ranges) | Migration: Precompute Range-Caches (lazy on demand) |
+| `1.3.0` | Sub-Tages-Zeitmodell (Stunden/Minuten) | Migration: Felder `hoursPerDay`, `minutesPerHour`, `minuteStep` ergänzen; Events ohne Zeit → `allDay=true` |
 
 Migration-Schritte:
 1. `CalendarRepository` führt Schema-Version-Check aus (`schemaVersion`).
 2. Bei fehlendem Default-Speicher legt Migration `calendar.defaults.json` an und weist globalen Default heuristisch (erster Kalender) zu.
-3. Travel-Leaf Prefs: Standard `{ mode: 'upcoming', visible: false, lastViewedDate = currentDate }`.
-4. Fehlende Felder in Events werden mit Defaults ergänzt (`followUpPolicy = 'auto'`).
+3. Travel-Leaf Prefs: Standard `{ mode: 'upcoming', visible: false, lastViewedTimestamp = currentTimestamp }`; Quick-Step `{ preset: 'day', amount: 1 }`.
+4. Fehlende Felder in Events werden mit Defaults ergänzt (`followUpPolicy = 'auto'`, `allDay = true`, `timePrecision = 'day'`).
+5. Bei Migration auf 1.3.0: `minuteStep` = 60/`hoursPerDay` falls nicht angegeben, `secondsPerMinute` = 60.
 
 ## 8. Cartographer Integration
 - `CartographerHookGateway.notifyTravelPanel` sendet `TravelPanelUpdateDTO` an `apps/cartographer/travel/panel`.

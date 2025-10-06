@@ -17,8 +17,9 @@ Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Calendar-Workmo
 ### Architekturüberblick
 1. **Domain-Layer (`src/apps/calendar/domain`)**
    - Enthält `CalendarSchema` (Monate, Wochen, Schaltjahre) sowie `CalendarEvent` (Recurring vs. Single) mit Default-Flag-Support.
-   - Stellt Services zum Berechnen des nächsten Ereignisses, Normalisieren von Datumsangaben, Fortschreiben der Zeit und Ermitteln der Zoom-Ansichten bereit (Aggregationen für Monat/Woche/Tag).
-   - Nutzt Hilfen aus `core/time`; bei Bedarf wird ein dedizierter Zeitservice für Mehrkalenderlogik eingeführt.
+   - Modelliert Zeitpunkte über `CalendarTimestamp` (`year`, `monthId`, `day`, `hour`, `minute`, `second?`, `precision`) inklusive Normalisierung auf Schema-spezifische Tageslängen (`hoursPerDay`, `minutesPerHour`; Default 24×60).
+   - Stellt Services zum Berechnen des nächsten Ereignisses, Normalisieren von Datums- und Zeitangaben, Fortschreiben der Zeit (inklusive Teil-Tages-Schritten) und Ermitteln der Zoom-Ansichten bereit (Aggregationen für Monat/Woche/Tag/Stunde).
+   - Nutzt Hilfen aus `core/time`; bei Bedarf wird ein dedizierter Zeitservice für Mehrkalenderlogik eingeführt und stellt Roll-over-Regeln (z.B. Minuten→Stunden, Stunden→Tag) schemaabhängig bereit.
 
 2. **Persistence & Integration**
    - Nutzung von `core/persistence` (z.B. `JsonStore`) für Kalenderdefinitionen, Event-Sammlungen, Default-Status und Travel-Lean-State.
@@ -27,9 +28,9 @@ Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Calendar-Workmo
 
 3. **UI/Workmode Layer (`src/apps/calendar/mode`)**
    - Presenter rendert Dashboard mit aktuellem Datum, kommenden Ereignissen und Quick-Actions.
-   - Kalender-Manager verfügt über zwei Modi: **Kalenderansicht** (Grid mit Monat/Woche/Tag, Inline-Erstellung, Tooltips) und **Kalender-Übersicht** (Filter- und Listenansicht ähnlich `apps/library`).
-   - Editor-Dialoge für Kalenderdefinition und Eventverwaltung nutzen Patterns aus `apps/library` (Modal/Edit-Flow) und beinhalten Default-Toggle.
-   - Travel-Kalender als eigenes Leaf mit kompakten Layouts für Monat/Woche/Tag/Nächste Ereignisse, synchronisiert mit Cartographer.
+   - Kalender-Manager verfügt über zwei Modi: **Kalenderansicht** (Grid mit Monat/Woche/Tag/Stunde, Inline-Erstellung, Tooltips) und **Kalender-Übersicht** (Filter- und Listenansicht ähnlich `apps/library`).
+   - Editor-Dialoge für Kalenderdefinition und Eventverwaltung nutzen Patterns aus `apps/library` (Modal/Edit-Flow), beinhalten Default-Toggle sowie Time-Picker/All-Day-Optionen.
+   - Travel-Kalender als eigenes Leaf mit kompakten Layouts für Monat/Woche/Tag/Nächste Ereignisse, inklusive fein aufgelöster Quick-Steps (`±1 Tag`, `±1 Stunde`, `±15 Minuten`) und synchronisiert mit Cartographer.
 
 4. **Event Engine**
    - Wiederkehrende Ereignisse bekommen Regeln (z.B. `repeat: { type: "annual", offset: dayOfYear }` oder Custom-Hooks) mit Zoom-abhängigen Abfragen.
@@ -41,8 +42,8 @@ Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Calendar-Workmo
 
 ### Phasenplan
 1. **Phase 1 – Domain-Grundlage & Datenmodelle**
-   - Definiere `CalendarSchema`, `CalendarDate`, `CalendarEvent`, `RepeatRule`, Default-Markierungen.
-   - Implementiere Normalisierungs- und Vergleichslogik inkl. Zoom-Range-Generatoren.
+   - Definiere `CalendarSchema`, `CalendarTimestamp` (vormals `CalendarDate`), `CalendarEvent`, `RepeatRule`, Default-Markierungen.
+   - Implementiere Normalisierungs- und Vergleichslogik inkl. Zoom-Range-Generatoren (Monat/Woche/Tag/Stunde) und Roll-over-Regeln für Minuten/Stunden gemäß Schema (`hoursPerDay`, `minutesPerHour`).
    - Schreibe Unit-Tests (Vitest) für Berechnungen (inkl. Kantenfälle wie Monatsüberläufe, 10-Tage-Wochen).
    - Deliverable: Domain-Module + Tests, noch keine UI.
 
@@ -54,8 +55,8 @@ Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Calendar-Workmo
 
 3. **Phase 3 – Workmode UI & Interaktion**
    - Baue Calendar-Dashboard, Manager (Kalenderansicht + Übersicht) und Eventmanager inklusive Default-Toggles.
-   - Ergänze Dialoge für Kalenderdefinition/Eventverwaltung, Zoom-Toolbar, Filter, Inline-Erstellung.
-   - Stelle Quick-Actions bereit, die den Zeitservice nutzen und Cartographer benachrichtigen.
+   - Ergänze Dialoge für Kalenderdefinition/Eventverwaltung, Zoom-Toolbar, Filter, Inline-Erstellung (All-Day vs. Start-/Endzeit, Time-Picker, Tastatursteuerung).
+   - Stelle Quick-Actions bereit, die den Zeitservice nutzen und Cartographer benachrichtigen (`±1 Tag`, `±1 Stunde`, `±15 Minuten`, benutzerdefiniert).
    - Schreibe UI-nahe Tests (Presenter) und Storybook-/Screenshot-Anker falls vorhanden.
 
 4. **Phase 4 – Cartographer-Integration & Travel-Leaf**
@@ -83,8 +84,8 @@ Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Calendar-Workmo
 | Neuen Kalender anlegen | Schema konfigurieren & persistieren | CTA „Kalender anlegen“ | Erstellt Schema + Default-Status optional | [UX Spec §3.4](./mode/UX_SPEC.md#34-neuen-kalender-anlegen) |
 | Ereignis anlegen – einmalig | Einmaliges Datum pflegen | CTA „Ereignis hinzufügen“ → „Einmalig“ | Schreibt `CalendarEventSingle` | [UX Spec §3.5.1](./mode/UX_SPEC.md#351-ereignis-anlegen--einmalig) |
 | Ereignis anlegen – wiederkehrend | Regelbasierte Events abbilden | CTA „Ereignis hinzufügen“ → „Wiederkehrend“ | Schreibt `CalendarEventRecurring` | [UX Spec §3.5.2](./mode/UX_SPEC.md#352-ereignis-anlegen--wiederkehrend) |
-| Zeit fortschreiten | Zeitlinie anpassen & Events prüfen | Quick-Action oder Cartographer-Hook | Mutiert `currentDate`, generiert `triggeredEvents` | [UX Spec §3.6](./mode/UX_SPEC.md#36-zeit-fortschreiten) |
-| Datum setzen/jump | Direktes Datum mit Konfliktauflösung setzen | Quick-Action „Datum setzen“ | Setzt `currentDate`, markiert übersprungene Events | [UX Spec §3.7](./mode/UX_SPEC.md#37-datum-setzenjump) |
+| Zeit fortschreiten | Zeitlinie anpassen & Events prüfen | Quick-Action oder Cartographer-Hook | Mutiert `currentTimestamp`, generiert `triggeredEvents` | [UX Spec §3.6](./mode/UX_SPEC.md#36-zeit-fortschreiten) |
+| Datum/Zeit setzen | Direktes Datum & Uhrzeit mit Konfliktauflösung setzen | Quick-Action „Datum/Zeit setzen“ | Setzt `currentTimestamp`, markiert übersprungene Events | [UX Spec §3.7](./mode/UX_SPEC.md#37-datum-und-zeit-setzen) |
 | Ereignisliste filtern/suchen | Überblick fokussieren | Filterpanel/Quick-Filter | Anpassung von `eventListFilter` | [UX Spec §3.8](./mode/UX_SPEC.md#38-ereignisliste-filternsuchen) |
 | Kalender bearbeiten | Schema und Events migrieren | Aktion „Bearbeiten“ | Aktualisiert Schema, führt Migration aus | [UX Spec §3.9](./mode/UX_SPEC.md#39-kalender-bearbeiten) |
 | Travel-Kalender anzeigen | Kompaktes Leaf synchronisieren | Reise startet/endet, Leaf-Toolbar | Aktualisiert `travelLeafMode`, `travelLeafVisible` | [UX Spec §3.10](./mode/UX_SPEC.md#310-travel-kalender) |
@@ -108,17 +109,18 @@ Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Calendar-Workmo
   - [ ] Given Pflichtfelder valide, When gespeichert, Then entsteht persistierter Eintrag und optional Default-Status.
   - [ ] Given ungültige Parameter, When Speichern, Then erscheinen Inline-Fehler und Persistenz bleibt unverändert.
 - **Ereignis anlegen – einmalig**
-  - [ ] Given gültiges Datum, When gespeichert, Then erscheint in „Alle“ & „Kommend“ (falls zukünftig) mit Schema-basiertem Format.
+  - [ ] Given gültiges Datum/Zeit oder als ganztägig markiert, When gespeichert, Then erscheint in „Alle“ & „Kommend“ (falls zukünftig) mit Schema- und Zeitformat.
   - [ ] Given Datum liegt vor aktuellem Tag, When gespeichert, Then markiert als „Vergangen“ und optional nacharbeiten.
 - **Ereignis anlegen – wiederkehrend**
-  - [ ] Given gültige Wiederholungsregel, When gespeichert, Then Vorschau zeigt nächste fünf Vorkommen korrekt für aktuelles Schema.
+  - [ ] Given gültige Wiederholungsregel (inkl. Zeitkomponente oder All-Day), When gespeichert, Then Vorschau zeigt nächste fünf Vorkommen korrekt für aktuelles Schema.
   - [ ] Given kollidierende Regel, When gespeichert, Then UI warnt und verlangt Bestätigung oder Abbruch.
 - **Zeit fortschreiten**
-  - [ ] Given Quick-Actions oder Cartographer-Trigger, When Zeit voranschreitet, Then `currentDate` angepasst, Travel-Leaf aktualisiert, ausgelöste Events erscheinen im Log.
-  - [ ] Given Hooks registriert, When Zeit fortschreitet, Then werden alle Hooks exakt einmal dispatcht.
-- **Datum setzen/jump**
-  - [ ] Given Ziel-Datum, When gesetzt, Then übersprungene Events werden gelistet und optional nachträglich ausgelöst.
-  - [ ] Given Datum außerhalb Schema, When bestätigt, Then blockiert Validierung und verweist auf Schema-Anpassung.
+  - [ ] Given Quick-Actions oder Cartographer-Trigger, When Zeit voranschreitet, Then `currentTimestamp` wird inkl. Stunden/Minuten angepasst, Travel-Leaf aktualisiert, ausgelöste Events erscheinen im Log.
+  - [ ] Given Teil-Tages-Schritte (z.B. +15 Minuten), When angewendet, Then Ereignisse innerhalb derselben Tagesgrenze werden korrekt behandelt (Trigger oder Nacharbeiten).
+  - [ ] Given Hooks registriert, When Zeit fortschreitet, Then werden alle Hooks exakt einmal dispatcht, auch bei mehreren Ereignissen pro Stunde.
+- **Datum/Zeit setzen**
+  - [ ] Given Ziel-Datum und Uhrzeit, When gesetzt, Then übersprungene Events werden gelistet und optional nachträglich ausgelöst.
+  - [ ] Given Datum/Zeit außerhalb Schema (z.B. Stunde ≥ `hoursPerDay`), When bestätigt, Then blockiert Validierung und verweist auf Schema-Anpassung.
 - **Ereignisliste filtern/suchen**
   - [ ] Given Filterkriterien, When angewendet, Then reagiert Liste in Echtzeit und Filter bleiben Sitzungs-lokal gespeichert.
   - [ ] Given keine Treffer, When Filter aktiv, Then erscheint Leerstaat mit Option Filter zurückzusetzen.
@@ -126,7 +128,7 @@ Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Calendar-Workmo
   - [ ] Given Schemaänderung, When gespeichert, Then werden Ereignisse migriert oder mit Konfliktliste versehen.
   - [ ] Given Migration schlägt fehl, When bestätigt, Then wird nichts persistiert und UI zeigt Fehlerdetails.
 - **Travel-Kalender anzeigen**
-  - [ ] Given Reisemodus startet, When Calendar-Module reagiert, Then wird Travel-Leaf automatisch geöffnet und zeigt synchronisierte Daten.
+  - [ ] Given Reisemodus startet, When Calendar-Module reagiert, Then wird Travel-Leaf automatisch geöffnet und zeigt synchronisierte Daten inklusive aktueller Uhrzeit.
   - [ ] Given Reisemodus endet, When Signal empfangen, Then Leaf schließt sich und Zustand wird persistiert.
 - **Reise-Sync (Cartographer)**
   - [ ] Given Cartographer `advanceTime`, When aufgerufen, Then Calendar-UI und Travel-Panel zeigen identische Ereignisbenachrichtigungen.
@@ -144,14 +146,16 @@ Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Calendar-Workmo
 
 ## Edge Cases & Performance
 - Unterstützt flexible Wochenlängen (z.B. 10 Tage), variable Monatsanzahlen inklusive Schaltmonate sowie optional unregelmäßige Monate in Kalenderansicht (siehe [`mode/API_CONTRACTS.md#schemas`](./mode/API_CONTRACTS.md#schemas)).
+- Zeitdefinitionen je Schema: `hoursPerDay`, `minutesPerHour`, optional `secondsPerMinute` (Default 24/60/60). **Assumption:** Fehlen Angaben, wird 24h/60m/60s genutzt; **Alternative:** Schema liefert explizite Werte. Dokumentiert in [`mode/API_CONTRACTS.md#schemas`](./mode/API_CONTRACTS.md#schemas).
 - Default-Handling: Migration beim Löschen eines Default-Kalenders (globaler Fallback, Reise-Fallback) inklusive Benutzeraufforderung; Travel-Leaf zeigt Hinweis wenn kein Default verfügbar.
-- Zeitfortschritt erlaubt negative Werte (Rücksprung) und mehrfache Tage/Wochen; Event-Engine verarbeitet große Sprünge durch chunked Verarbeitung (Fenstergröße 365 Tage, konfigurierbar) und caches pro Zoom-Level.
+- Zeitfortschritt erlaubt negative Werte (Rücksprung) und mehrfache Tage/Wochen/Stunden/Minuten; Event-Engine verarbeitet große Sprünge durch chunked Verarbeitung (Fenstergröße 365 Tage bzw. 8.760 Stunden, konfigurierbar) und cached pro Zoom-Level.
+- Teil-Tageskonflikte: Ereignisse mit identischem Timestamp werden nach Priorität (Hook-Priorität, Kategorie) sortiert; UI bietet Merge-/Reschedule-Flow (siehe [`mode/UX_SPEC.md#36-zeit-fortschreiten`](./mode/UX_SPEC.md#36-zeit-fortschreiten)).
 - Doppelregeln werden durch Normalisierung erkannt; Konfliktauflösung via Merge-Dialog dokumentiert in [`mode/UX_SPEC.md#39-kalender-bearbeiten`](./mode/UX_SPEC.md#39-kalender-bearbeiten).
-- Performance: Vorschau zukünftiger Vorkommen berechnet maximal 24 Monate im Voraus (konfigurierbar) und cached Ergebnisse pro Schema/Rule-Hash; Travel-Leaf lädt initial 30 Tage, weitere Einträge lazy bei Scroll.
+- Performance: Vorschau zukünftiger Vorkommen berechnet maximal 24 Monate bzw. 2.000 Stunden im Voraus (konfigurierbar) und cached Ergebnisse pro Schema/Rule-Hash; Travel-Leaf lädt initial 30 Tage/72 Stunden, weitere Einträge lazy bei Scroll.
 
 ## Telemetrie & Observability
 - Loggingpunkte: Zeitfortschritt (`calendar.time.advance`), Schema-Migration (`calendar.schema.migrate`), Event-Konflikte (`calendar.event.conflict`), Default-Umschaltung (`calendar.default.change`), Travel-Leaf Lifecycle (`calendar.travel.leaf_mount`).
-- Metriken: Anzahl ausgelöster Events pro Advance, Dauer der Ereignisberechnung je Zoom-Level, Fehlerquote pro Operation, Anzahl Default-Wechsel pro Sitzung.
+- Metriken: Anzahl ausgelöster Events pro Advance (nach Auflösung Tag/Stunde/Minute), Dauer der Ereignisberechnung je Zoom-Level, Fehlerquote pro Operation, Anzahl Default-Wechsel pro Sitzung, Anteil teil-täglicher Schritte (`advance.subday_share`).
 - Fehlertracking: persistente io-Fehler werden mit Kontext (`calendarId`, `operation`, `scope` = global/reise) erfasst; Hook-Dispatches melden Erfolg/Fehlschlag an Cartographer (siehe [`mode/API_CONTRACTS.md#cartographer-hooks`](./mode/API_CONTRACTS.md#cartographer-hooks)). Travel-Leaf meldet Renderdauer und Shortcut-Nutzung.
 
 ## Dokumentverweise & Testplanung

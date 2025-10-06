@@ -12,17 +12,16 @@ Dieses Dokument beschreibt die textuellen Wireframes für den Calendar-Workmode.
 +-------------------------------------------------------------+
 | {Toolbar: [Kalender ▼] [Manager öffnen] [Ereignisse verwalten]}|
 +-------------------------------------------------------------+
-| [CurrentDateCard]   | [UpcomingEventsList (max 5)]          |
-| (Today: 14 Rainfall)|---------------------------------------|
-| Buttons: [+1 Tag]   | Item: [Badge Type] Event Name  D-2    |
-| [+1 Woche] [Datum…] | Item: ...                             |
-+---------------------+---------------------------------------+
-| [EventFilterPanel]                                        []|
+| [CurrentTimestampCard]   | [UpcomingEventsList (max 5)]     |
+| (Heute 14 Rainfall · 10:45)|--------------------------------|
+| Buttons: [+1 Tag] [+1 Woche] [+1 Stunde] [+15 Min] [Datum/Zeit…]|
++---------------------------+---------------------------------+
+| [EventFilterPanel]                                      []  |
 | Tags ▢  Zeitraum ▢  Suche [__________]  [Filter zurücksetzen]|
 +-------------------------------------------------------------+
-| [EventLog]                                               []|
-| • 14 Rainfall +1 Tag → 1 Event ausgelöst                   |
-| • ...                                                     |
+| [EventLog]                                                 []|
+| • 14 Rainfall +15 Min → 1 Event ausgelöst                   |
+| • ...                                                       |
 +-------------------------------------------------------------+
 ```
 
@@ -42,8 +41,8 @@ Dieses Dokument beschreibt die textuellen Wireframes für den Calendar-Workmode.
 +-----------------------------------+
 | {Toolbar: [Kal ▼] [Mgr] [Evt]}    |
 +-----------------------------------+
-| [CurrentDateCard]                 |
-| Buttons als IconRow: [+1][+7][⋯]  |
+| [CurrentTimestampCard]            |
+| Buttons als IconRow: [+1T][+7T][+1H][+15m][⋯]|
 +-----------------------------------+
 | Accordion "Kommende Ereignisse"   |
 |  > Item                           |
@@ -58,7 +57,7 @@ Dieses Dokument beschreibt die textuellen Wireframes für den Calendar-Workmode.
 ```
 +----------------------------------------------------------------+
 | {ManagerToolbar: [← Zurück] [Kalenderansicht | Übersicht] (Tabs)}|
-| {ZoomToolbar (wenn Kalenderansicht): [Monat] [Woche] [Tag] [Heute]}|
+| {ZoomToolbar (wenn Kalenderansicht): [Monat] [Woche] [Tag] [Stunde] [Heute]}|
 | {Actions: [Neuer Kalender] [Import] [Default setzen ▼]}         |
 +----------------------------------------------------------------+
 ```
@@ -85,7 +84,7 @@ Dieses Dokument beschreibt die textuellen Wireframes für den Calendar-Workmode.
 +----------------------------------------------------------------+
 | {Toolbar wie oben + Pill "Woche 5"}                            |
 +----------------------------------------------------------------+
-|Day Header| Timeline 00-24h                                     |
+|Day Header| Timeline Stunde 00..{hoursPerDay-1}                 |
 |----------|-----------------------------------------------------|
 |Mo 14     | [EventCard] [EventCard overlapping stack]           |
 |Di 15     | ...                                                 |
@@ -95,11 +94,11 @@ Dieses Dokument beschreibt die textuellen Wireframes für den Calendar-Workmode.
 #### Variante Tag
 ```
 +----------------------------------------------------------------+
-| {Toolbar + Buttons [-1 Tag] [+1 Tag] [Zeitsprung…]}            |
+| {Toolbar + Buttons [-1 Tag] [+1 Tag] [-1 Std] [+1 Std] [±15 Min] [Zeitsprung…]}|
 +----------------------------------------------------------------+
 | 00:00 |                                                        |
-| 02:00 |                                                        |
-| 04:00 | [EventCard timeline marker]                            |
+| 00:{minuteStep} | ...                                          |
+| 02:00 | [EventCard timeline marker]                            |
 | ...                                                           |
 +----------------------------------------------------------------+
 ```
@@ -174,7 +173,7 @@ Dieses Dokument beschreibt die textuellen Wireframes für den Calendar-Workmode.
 ```
 +----------------------------------------+
 | {Header: Travel-Kalender  [Mon][Woc][Tag][Next] [×]}|
-| {Sub: [◀] [Heute] [▶]  [+1 Tag] [-1 Tag]}            |
+| {Sub: [◀] [Heute] [▶]  [+1 Tag] [-1 Tag] [+1 Std] [-1 Std] [+15m]}|
 +----------------------------------------+
 |Mo Tu We Th Fr Sa Su|                      |
 |14 15 16 17 18 19 20|  (kompaktes Grid)    |
@@ -201,9 +200,10 @@ Dieses Dokument beschreibt die textuellen Wireframes für den Calendar-Workmode.
 ```
 +----------------------------------------+
 | Header wie oben (Tag Tab aktiv)        |
-| {Controls: [-1] [+1] [Zeitsprung…]}    |
+| {Controls: [-1 Tag] [+1 Tag] [-1 Std] [+1 Std] [±15m] [Zeitsprung…]}|
 +----------------------------------------+
 |00:00 |                                 |
+|00:{minuteStep}| ...                    |
 |06:00 | [Evt timeline marker]           |
 |12:00 |                                 |
 |18:00 |                                 |
@@ -215,8 +215,8 @@ Dieses Dokument beschreibt die textuellen Wireframes für den Calendar-Workmode.
 +----------------------------------------+
 | Header wie oben (Next Tab aktiv)       |
 +----------------------------------------+
-|• Event Name (in 2 Tagen) [Nacharbeiten]|
-|• Event Name (Heute) [Öffnen]           |
+|• Event Name · 10:45 (in 2 Tagen) [Nacharbeiten]|
+|• Event Name · 18:00 (Heute) [Öffnen]   |
 |• ...                                   |
 +----------------------------------------+
 ```
@@ -238,7 +238,7 @@ Dieses Dokument beschreibt die textuellen Wireframes für den Calendar-Workmode.
 ```
 
 ### 4.7 Schmale Breite (<300px)
-- Header Buttons werden zu Icons ohne Text.
+- Header Buttons werden zu Icons ohne Text, Quick-Steps bündeln sich in Dropdown „Zeit“ (Einträge ±1 Tag, ±1 Std, ±15m).
 - Grid zeigt nur 3 Spalten, horizontales Scrollen.
 - Banner collapsible.
 
