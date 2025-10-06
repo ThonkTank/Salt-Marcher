@@ -7,6 +7,8 @@
   "scripts": {
     "build": "node esbuild.config.mjs",
     "test": "vitest run",
+    "test:contracts": "vitest run tests/contracts",
+    "ci:tests": "npm test && npm run test:contracts",
     "sync:todos": "node tools/sync-todos.mjs"
   },
   "devDependencies": {
