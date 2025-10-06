@@ -18,6 +18,10 @@
     - `src/apps/library/core/library-storage-port.ts` spezifiziert Domain-Descriptoren, Fehlerkatalog, Telemetrie-Hooks sowie Dry-Run- und Backup-Pläne für Vault-Schreibpfade.
     - Legacy-Mapping-Tabelle dokumentiert bestehende Helper (Vault-Pipelines, Terrain-/Regions-Stores, Preset-Importer) samt Verantwortlichkeiten und Marker-Handling.
     - Vitest-Spezifikation (`tests/library/library-storage-port.test.ts`) prüft Domain-Abdeckung, Mapping-Vollständigkeit und die strukturierte Fehlererzeugung.
+- [x] LIB-TD-0009 – Serializer-Template-Policies (wartete auf LIB-TD-0001 & LIB-TD-0004)
+    - `src/apps/library/core/serializer-template/library-serializer-template.ts` modelliert Policy-Schema, Storage-Verknüpfung, Telemetrie-Events und Transformer-Pläne als eingefrorene Verträge.
+    - Vitest-Test (`tests/library/library-serializer-template.test.ts`) verifiziert Validierungsfehler, Default-Telemetrie und Immutabilität der Template-Objekte.
+    - Backlog/Briefing markieren Custom-Transformer-Frage als geklärt und dokumentieren die neue `transform.identifier`-Strategie.
 
 ## Backlog (wartet auf vorgelagerte ToDos)
 - [ ] LIB-TD-0005 – Renderer-Kernel (wartet auf LIB-TD-0003 & LIB-TD-0001)

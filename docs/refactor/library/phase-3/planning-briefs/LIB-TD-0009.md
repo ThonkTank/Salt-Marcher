@@ -19,4 +19,4 @@ Design eines Serializer-Templates mit deklarativen Policies, Dry-Run-Unterstütz
 - Telemetrie-Events und Logging-Konzept vorbereiten.
 
 ## Offene Punkte
-- Umfang von Custom-Transformern für Spezialfelder (z. B. Spellcasting JSON) abstimmen.
+- Geklärt – Spezialfelder (z. B. Spellcasting JSON) laufen über deklarative `transform.identifier`-Einträge pro Policy.

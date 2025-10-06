@@ -276,7 +276,7 @@ Akzeptanzkriterien:
   DoD (für Phase 4): Template implementiert, Tests grün, Dokumentation vorhanden.
 Aufwand (T-Shirt): M
 Priorität (Score): 27
-Open Questions: Welche Sonderfelder (z. B. Spellcasting JSON) benötigen Custom-Transformer?
+Open Questions: Geklärt – Custom-Transformer werden über `transform.identifier` je Policy referenziert und kapseln Spezialfelder (z. B. Spellcasting JSON).
 
 ID: LIB-TD-0010
 Titel (imperativ): Portiere Creature/Item/Equipment-Serializer auf Template
