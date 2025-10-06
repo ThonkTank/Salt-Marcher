@@ -10,14 +10,14 @@ Dieses Dokument beschreibt die textuellen Wireframes für den Calendar-Workmode.
 ### 2.1 Layout (Breit)
 ```
 +---------------------------------------------------------------+
-| {AlmanacToolbar: [Dashboard] [Manager] [Events] [Travel]     }|
+| {AlmanacToolbar: [Dashboard] [Manager] [Events]  | Travel ↗ } |
 | {Breadcrumbs: Almanac / <Modus>                     [Einstellungen]}|
 +---------------+-----------------------------------------------+
 | {Sidebar}     | {Content Area}                                |
 | [Dashboard]▶  | (gerenderter Modus, siehe jeweilige Abschnitte)|
 | [Manager]     |                                               |
 | [Events]      |                                               |
-| [Travel]      |                                               |
+| (Travel-Status: Aktiv · Öffnen ↗)                             |
 +---------------+-----------------------------------------------+
 | Statusleiste: Modus: Events · Zoom: Monat · Filter: 3 aktiv    |
 +---------------------------------------------------------------+
@@ -26,13 +26,14 @@ Dieses Dokument beschreibt die textuellen Wireframes für den Calendar-Workmode.
 ### 2.2 Layout (Schmal <520px)
 ```
 +------------------------------------------+
-| {CompactToolbar: [≡] [Modus ▼] [Einstellungen]}|
+| {CompactToolbar: [≡] [Modus ▼] [Einstellungen] (Travel ↗)}|
 +------------------------------------------+
 | [ModeSwitcherDrawer] (overlay)           |
 |  Dashboard                               |
 |  Manager                                 |
 |  Events                                  |
-|  Travel                                  |
+|------------------------------------------|
+| Hinweis: Travel-Kalender im Cartographer |
 +------------------------------------------+
 | {Content Area untereinander gestapelt}   |
 ```
@@ -274,11 +275,11 @@ Dieses Dokument beschreibt die textuellen Wireframes für den Calendar-Workmode.
 +-----------------------------------+
 ```
 
-## 6. Travel-Leaf
+## 6. Cartographer › Travel-Kalender {#cartographer-travel}
 ### 4.1 Monatsmodus (Breit 360px Leaf)
 ```
 +----------------------------------------+
-| {Header: Travel-Kalender  [Mon][Woc][Tag][Next] [×]}|
+| {Header: Cartographer › Travel-Kalender  [Mon][Woc][Tag][Next] [×]}|
 | {Sub: [◀] [Heute] [▶]  [+1 Tag] [-1 Tag] [+1 Std] [-1 Std] [+15m]}|
 +----------------------------------------+
 |Mo Tu We Th Fr Sa Su|                      |

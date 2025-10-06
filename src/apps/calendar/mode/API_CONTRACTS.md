@@ -6,6 +6,15 @@ Dieses Dokument beschreibt Schnittstellen zwischen UI, Domain, Persistenz und Ca
 - JSON-Schemas dienen als Persistenzformat (z.B. `JsonStore`).
 - Versionierung erfolgt über `schemaVersion`-Felder (SemVer). Migrationen dokumentiert in §7.
 
+### 1.1 Naming & Scope
+| Bereich | Typ/Enum | Werte | Hinweis |
+| --- | --- | --- | --- |
+| Almanac-Modus | `AlmanacMode` | `'dashboard' | 'manager' | 'events'` | Travel wird über `TravelLeafPrefsDTO` gesteuert. |
+| Manager-View | `CalendarManagerViewMode` | `'calendar' | 'overview'` | Persistiert in `managerUiState`. |
+| Events-View | `EventsViewMode` | `'timeline' | 'table' | 'map'` | Telemetrie-Labels folgen den Enum-Werten. |
+| Travel-Modus | `TravelCalendarMode` | `'month' | 'week' | 'day' | 'upcoming'` | Wird im Cartographer gespeichert. |
+| Default-Scopes | `DefaultScope` | `'global' | 'travel'` | `travelId` optional für reisenspezifische Defaults. |
+
 ## 2. DTOs {#dtos}
 ### 2.1 Kalender
 ```ts
@@ -246,7 +255,7 @@ interface CalendarLogEntryDTO {
 
 ### 2.6 Snapshots & Präferenzen
 ```ts
-type AlmanacMode = 'dashboard' | 'manager' | 'events' | 'travel';
+type AlmanacMode = 'dashboard' | 'manager' | 'events';
 interface AlmanacStatusSummary {
   zoomLabel?: string;
   filterCount?: number;

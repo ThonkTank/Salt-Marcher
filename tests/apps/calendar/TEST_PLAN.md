@@ -17,6 +17,16 @@ Dieser Testplan leitet sich aus den Spezifikationen unter `src/apps/calendar` ab
 | UI/Presenter | Komponenten-Interaktionen, Fokus, Shortcuts | [UX_SPEC.md](../../../src/apps/calendar/mode/UX_SPEC.md), [COMPONENTS.md](../../../src/apps/calendar/mode/COMPONENTS.md) |
 | Regression | Cartographer-Reise mit Hooks, Default-Wechsel während Reise | `apps/cartographer/travel` |
 
+### 2.1 Layer-/Modus-Coverage
+| Ebene | Fokus | Primäre Tests | Fixtures |
+| --- | --- | --- | --- |
+| Almanac Shell (`Almanac › Dashboard/Manager/Events`) | Mode-Wechsel, Breadcrumbs, Persistenz | Integration: Almanac Shell Presenter, UI Drawer Fokus | `gregorian.json`, `ten-day.json` |
+| Almanac › Dashboard | Quick-Actions, Filter, Log | UI Toolbar Navigation, TimeAdvanceDialog (Minute/Hour) | Ereignisse 1–4, Phänomene 1–2 |
+| Almanac › Manager | Kalenderansicht/Übersicht, Default-Toggles | Integration Manager View/Overview, CalendarFormDialog Submit | Kalender Fixtures, Ereignisse 1–7 |
+| Almanac › Events | Timeline/Tabelle/Karte, Link-Drawer | Integration Events Presenter Filter/Export | Phänomene 1–5 |
+| Shared Dialoge | Calendar/Event/Time Dialogs, TimePicker | UI Form Validation, Accessibility (Focus Trap) | Alle Kalender/Ereignisse |
+| Cartographer › Travel-Kalender | Leaf Lifecycle, Quick-Steps, Panel Sync | Integration Travel Presenter, Regression Travel Panel Sync | Reise-Szenarios in §7 |
+
 ## 3. Domain-Unit-Tests
 - **Kalenderarithmetik**
   - Berechnung von Datum + Offset bei 10-Tage-Wochen, Schaltmonaten.
@@ -159,7 +169,7 @@ Dieser Testplan leitet sich aus den Spezifikationen unter `src/apps/calendar` ab
 | Datum und Zeit setzen | TimeAdvanceDialog Jump (Minutenpräzision), Domain JumpValidation |
 | Ereignisliste filtern/suchen | Dashboard Filter Presenter, UI Filter Reset |
 | Kalender bearbeiten | Migration Test, Integration Editor Save |
-| Travel-Kalender anzeigen | Travel Mount Integration, UI Mode Shortcuts |
+| Cartographer › Travel-Kalender anzeigen | Travel Mount Integration, UI Mode Shortcuts |
 | Reise-Sync (Cartographer) | Regression Travel Panel Sync, Hook Dispatch |
 | Almanac-Modus wechseln | Integration Almanac Shell Presenter, Mobile Drawer Fokus-Test |
 | Events-Modus navigieren & filtern | Integration Events Presenter Filter, UI Accessibility (Timeline Navigation) |

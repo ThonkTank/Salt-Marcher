@@ -11,6 +11,16 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Ca
   - `travelLeafState` (Reisemodus-spezifische Sichtbarkeit und Modus)
 - Persistenz über `CalendarStateGateway` (siehe [API_CONTRACTS.md](./API_CONTRACTS.md#gateways)).
 
+### 1.1 Mode-Hierarchie & Naming
+| Ebene | State-Slice | Werte | Persistenz | Hinweise |
+| --- | --- | --- | --- | --- |
+| Almanac Shell | `almanacUiState.mode` | `'dashboard' | 'manager' | 'events'` | Gateway (`lastMode`) | Travel ist ausgeschlossen; Umschalten dispatcht `ALMANAC_MODE_SELECTED`. |
+| Almanac Detail | `managerUiState.viewMode` | `'calendar' | 'overview'` | Session | Gilt nur in `Almanac › Manager`. |
+| Almanac Detail | `eventsUiState.viewMode` | `'timeline' | 'table' | 'map'` | Gateway (lazy) | Spezifisch für `Almanac › Events`. |
+| Cartographer Leaf | `travelLeafState.mode` | `'month' | 'week' | 'day' | 'upcoming'` | Travel Settings | Eigenes Lifecycle (`TRAVEL_LEAF_MOUNTED`/`DISMISSED`). |
+
+- Breadcrumb-State (`almanacUiState.modeHistory`) speichert Parent → Child Pfade; Travel-Leaf verwaltet eigene Historie in `travelLeafState`.
+
 ## 2. State-Slices
 | Slice | Schlüssel | Beschreibung | Persistenz |
 | --- | --- | --- | --- |
@@ -46,7 +56,7 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Ca
 | `TIME_JUMP_CONFIRMED` | `JumpResultDTO` | Ergebnis inkl. übersprungener Events & Normalisierungshinweisen. |
 | `TIME_SLICE_PRESET_CHANGED` | `{ scope: 'dashboard' | 'travel'; preset: 'minute' | 'hour' | 'day'; amount: number }` | Aktualisiert Quick-Step-Voreinstellung. |
 | `TIME_DEFINITION_UPDATED` | `{ calendarId: string; timeDefinition: TimeDefinitionDTO }` | Schema-Anpassung ändert Stunden/Minuten. |
-| `ALMANAC_MODE_SELECTED` | `{ mode: AlmanacMode }` | Nutzer:in wählt Modus im Almanac (Dashboard/Manager/Events/Travel). |
+| `ALMANAC_MODE_SELECTED` | `{ mode: AlmanacMode }` | Nutzer:in wählt `Almanac › Dashboard`, `Almanac › Manager` oder `Almanac › Events`. |
 | `ALMANAC_MODE_RESTORED` | `AlmanacModeSnapshot` | Gateway stellt letzten Modus + Status wieder her. |
 | `EVENTS_VIEW_MODE_CHANGED` | `{ viewMode: EventsViewMode }` | Timeline/Tabelle/Karte umschalten. |
 | `EVENTS_FILTER_CHANGED` | `EventsFilterState` | Filterchips aktualisieren. |
@@ -125,7 +135,7 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Ca
 | `travelLeafState.visible = true` | `TRAVEL_QUICK_STEP_APPLIED(delta)` | `travelLeafState.lastQuickStep = delta` | UI-Badge „zuletzt: ±X“ aktualisieren |
 | `travelLeafState.isLoading = true` | `TIME_ADVANCE_CONFIRMED` | `travelLeafState.isLoading = false`, `events` aktualisiert, `currentTimestamp = result.newTimestamp` | Leaf UI refresh |
 
-### 4.6 Travel Leaf Lifecycle
+### 4.6 Travel Leaf Lifecycle {#cartographer-travel-leaf}
 | Vorher | Event | Nachher | Aktionen |
 | --- | --- | --- | --- |
 | `visible = false` | `TRAVEL_LEAF_MOUNTED(travelId)` | `visible = true`, `mode = storedMode || 'upcoming'`, `isLoading = true` | Lade Daten, Focus Toolbar |

@@ -3,8 +3,20 @@ Diese Spezifikation definiert UI-Verhalten, Nutzer:innenflüsse und Interaktione
 
 ## 1. Übersicht
 - Primary Persona: Spielleitung, die Reisen im Cartographer plant, Default-Kalender verwaltet und Ereignisse pflegt.
-- Kontext: Obsidian-Leaf im Calendar-Workmode, eigenständiger Kalender-Manager (Kalenderansicht/Übersicht) sowie kompaktes Travel-Leaf im Cartographer-Reisemodus.
+- Kontext: Obsidian-Leaf im Calendar-Workmode (Almanac-Shell) mit Dashboard, Manager, Events sowie separat montiertes Travel-Leaf im Cartographer-Reisemodus.
 - UI-Bausteine: Nutzung vorhandener Komponenten aus `src/ui` (Tables, Buttons, Toggles, Modals) kombiniert mit neuen Calendar-spezifischen Grids, Toolbars und Leaf-Komponenten.
+
+### 1.1 Navigationshierarchie & Terminologie
+| Ebene | Label | Beschreibung | Persistenter State | Breadcrumb |
+| --- | --- | --- | --- | --- |
+| Parent | Almanac | Shell-Lean-Leaf im Calendar-Workmode | `ui.almanacNavigation.shell` | `Almanac` |
+| Submodus | Almanac › Dashboard | Timestamp, Quick-Actions, Ereignislog | `ui.almanacMode = "dashboard"` | `Almanac › Dashboard` |
+| Submodus | Almanac › Manager | Kalenderansicht + Übersicht | `ui.almanacMode = "manager"` | `Almanac › Manager` |
+| Submodus | Almanac › Events | Phänomen-Hub (Timeline, Tabelle, Karte) | `ui.almanacMode = "events"` | `Almanac › Events` |
+| Extern | Cartographer › Travel-Kalender | Kompaktes Leaf im Reisemodus | `ui.travelLeaf` | `Cartographer › Reise › Travel-Kalender` |
+
+- Mode-Switcher (Tabs/Sidebar) zeigt Labels exakt wie oben; Breadcrumb unterhalb der Toolbar folgt `Almanac` → `<Submodus>` → optionale Detailpane (`Kalenderansicht`, `Übersicht`, `Timeline`, `Detail`).
+- Travel-Leaf wird im Dokument als Kurzform für **Cartographer › Travel-Kalender** verwendet, behält eigenes Breadcrumb im Cartographer-Layout; Switcher-Steuerung erfolgt über Travel-spezifische Toolbar (siehe §3.14).
 
 ## 2. Artefakt-Mapping
 | Artefakt | Zweck | Referenz |
@@ -21,7 +33,7 @@ Jeder Workflow beschreibt Ziel, Trigger, Vorbedingungen, Flüsse, Fehler, Postbe
 ### 3.1 Almanac-Modus wechseln
 | Element | Beschreibung |
 | --- | --- |
-| Ziel | Zwischen Dashboard, Manager, Events und Travel-Kalender wechseln ohne Kontextverlust. |
+| Ziel | Zwischen `Almanac › Dashboard`, `Almanac › Manager` und `Almanac › Events` wechseln ohne Kontextverlust. |
 | Trigger | Almanac-Tabbar/Sidebar, Command Palette (`almanac:switch-mode`), Deep-Link (`obsidian://saltmarcher?mode=events`). |
 | Vorbedingungen | Almanac-Leaf ist geöffnet; benötigte Daten können lazy geladen werden. |
 | Postbedingungen | `almanacMode` aktualisiert, letzter Zustand des Zielmodus (Zoom, Filter, Auswahl) wiederhergestellt. |
@@ -338,7 +350,7 @@ Jeder Workflow beschreibt Ziel, Trigger, Vorbedingungen, Flüsse, Fehler, Postbe
 - Default-Flag auf entferntem Kalender → UI zwingt neue Auswahl.
 - Stunden-/Minutenänderung kollidiert mit bestehenden Events → Liste der betroffenen Events, Option „Alle Events auf neue Tagesgrenze normalisieren“.
 
-### 3.14 Travel-Kalender
+### 3.14 Cartographer › Travel-Kalender
 | Element | Beschreibung |
 | --- | --- |
 | Ziel | Kompaktes Leaf im Reisemodus anzeigen, das Zeitfortschritt und nächste Ereignisse visualisiert. |
@@ -350,7 +362,7 @@ Jeder Workflow beschreibt Ziel, Trigger, Vorbedingungen, Flüsse, Fehler, Postbe
 **Hauptfluss**
 1. Bei Reise-Start sendet Cartographer Hook → Leaf mountet automatisch (Split-pane neben Travel-Hauptansicht).
 2. Toolbar (Icon Buttons) ermöglicht Moduswechsel (Monat/Woche/Tag/Nächste Ereignisse) sowie Quick-Steps „±1 Tag“, „±1 Stunde“, „±15 Minuten“. Shortcuts: `Ctrl+Alt+Shift+1..4` für Modi, `Ctrl+Alt+.`/`,` für Stunden, `Ctrl+Alt+;`/`'` für Minuten.
-3. Inhalt pro Modus (siehe [Wireframes §Travel](./WIREFRAMES.md#travel-leaf))
+3. Inhalt pro Modus (siehe [Wireframes §Cartographer › Travel](./WIREFRAMES.md#cartographer-travel))
    - Monat: komprimiertes Grid, maximal 4 Wochen sichtbar, horizontales Scrollen falls nötig, Tooltips zeigen Uhrzeiten der ersten Events pro Tag.
    - Woche: Listen-Layout mit Tagen, Ereigniskarten inklusive Startzeit-Badge.
    - Tag: vertikale Timeline (Minutenraster), Buttons „-1 Tag“, „+1 Tag“, „-1 Stunde“, „+1 Stunde“, „±15 Minuten“, „Zeitsprung…“.

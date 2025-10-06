@@ -6,25 +6,43 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
 - Styling erfolgt primär über bestehende Tokens aus `src/ui/tokens` und Utility-Klassen (`ui/Flex`, `ui/Grid`).
 - Props werden mit `Readonly`-Interfaces versehen; Events folgen dem Muster `on<Event>` und liefern Domain-DTOs aus [API_CONTRACTS.md](./API_CONTRACTS.md).
 
-## 2. Almanac-Komponenten {#almanac-komponenten}
+### 1.1 Layer & Prefix-Naming
+| Layer | Präfix | Inhalt | Notizen |
+| --- | --- | --- | --- |
+| Shell | `almanac` | `AlmanacShell`, Switcher, Breadcrumbs, Statusleiste | Kapselt ausschließlich `Almanac › Dashboard/Manager/Events`; bietet Travel-Indikator. |
+| Mode | `dashboard`, `manager`, `events` | Bildschirm-spezifische Container und Editor-Komponenten | Jede Mode-Komponente konsumiert Domain-DTOs, keine direkten Repository-Aufrufe. |
+| Shared | `calendar`, `event`, `phenomenon` | Tabellen, Filter, Dialoge, Rule-Editoren | Wiederverwendbar zwischen Modi. |
+| Travel (Cartographer) | `travel` | Kompakte Leaf-Komponenten für Reisemodus | Wird von `apps/cartographer/travel` gemountet; nutzt gemeinsame DTOs. |
+
+- Alle Komponenten exportieren zusätzlich `displayName` für Debugging (`AlmanacShell.displayName = 'AlmanacShell'`).
+- Cross-Layer-Komposition erfolgt nur top-down (Shell → Mode → Shared). Travel importiert ausschließlich Shared-Komponenten und eigene Travel-spezifische Wrapper.
+
+## 2. Shell-Layer {#almanac-komponenten}
 ### 2.1 `AlmanacShell`
-- **Responsibility**: Parent-Layout für alle Calendar-Modi (Dashboard, Manager, Events, Travel) inkl. Breadcrumbs, Mode-Persistenz und Statusleiste.
+- **Responsibility**: Parent-Layout für `Almanac › Dashboard`, `Almanac › Manager`, `Almanac › Events` inkl. Breadcrumbs, Mode-Persistenz, Statusleiste und Travel-Status-Indikator.
 - **Props**
   ```ts
   interface AlmanacShellProps {
-    activeMode: AlmanacMode; // 'dashboard' | 'manager' | 'events' | 'travel'
+    activeMode: AlmanacMode; // 'dashboard' | 'manager' | 'events'
     modeOptions: ReadonlyArray<{ mode: AlmanacMode; label: string; badgeCount?: number; icon: string }>;
     breadcrumbs: ReadonlyArray<AlmanacBreadcrumb>;
     statusSummary?: AlmanacStatusSummary; // z.B. { zoomLabel: string; filterCount: number }
     isLoading: boolean;
     onSelectMode: (mode: AlmanacMode) => void;
     onOpenSettings: () => void;
+    travelStatus: TravelPresenceSummary; // { isActive: boolean; label: string }
+    onOpenTravelLeaf: () => void;
     children: React.ReactNode;
+  }
+  interface TravelPresenceSummary {
+    isActive: boolean;
+    hasPendingFollowUps: boolean;
+    label: string; // i18n z.B. "Reise aktiv"
   }
   ```
 - **Events**: `onSelectMode` dispatcht `ALMANAC_MODE_SELECTED` (siehe [STATE_MACHINE.md](./STATE_MACHINE.md#eventsactions)).
 - **Interner Zustand**: Fokus-Management (lastFocusedElement), Drawer-Visibility für Mobile.
-- **Styling**: Container nutzt `ui/SplitPane` (Sidebar + Content); Statusleiste `ui/Badge` für Filtercount.
+- **Styling**: Container nutzt `ui/SplitPane` (Sidebar + Content); Statusleiste `ui/Badge` für Filtercount; Travel-Indikator als `ui/Pill` rechtsbündig.
 - **Fehler/Leer**: Slot `errorFallback` (Banner) und `emptyState` (CTA „Kalender anlegen“ / „Phänomen hinzufügen“).
 
 ### 2.2 `AlmanacModeSwitcher`
@@ -53,8 +71,9 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
   ```
 - **Styling**: basiert auf `ui/Breadcrumbs`, enthält optional sekundäre Aktionen (z.B. „Letzten Modus öffnen“).
 
-## 3. Calendar UI Komponenten {#calendar-ui-komponenten}
-### 2.1 `CalendarDashboard`
+## 3. Mode-Komponenten – Almanac {#calendar-ui-komponenten}
+### 3.1 Almanac › Dashboard
+#### 3.1.1 `CalendarDashboard`
 - **Responsibility**: Container des Dashboard-Leaves inkl. Toolbar, Datumskarte, Upcoming-Liste, Filter, Log.
 - **Props**
   ```ts
@@ -79,7 +98,8 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
 - **Styling**: Layout via `Flex`/`Grid`, Quick-Action-Buttons nutzen `PrimaryButton`/`SecondaryButton` aus `src/ui`; Sub-Day-Actions gruppiert als `ButtonGroup`.
 - **Fehler/Leer**: Wenn `activeCalendar` fehlt → `EmptyState`-Slot (siehe [UX_SPEC §4](./UX_SPEC.md#4-fehler-und-leerstaaten)).
 
-### 2.2 `CalendarManagerHeader`
+### 3.2 Almanac › Manager
+#### 3.2.1 `CalendarManagerHeader`
 - **Responsibility**: Headerleiste des Manager-Leaves (Zurück, Tabs, Aktionen, Zoom-Toolbar).
 - **Props**
   ```ts
@@ -100,7 +120,7 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
 - **Styling**: Sticky Header, Buttons mit Icon+Label; unter 520px Icon-only.
 - **Accessibility**: Tabs als `role="tablist"`, Buttons mit `aria-keyshortcuts` (siehe [UX_SPEC §5](./UX_SPEC.md#5-accessibility--i18n)).
 
-### 2.3 `CalendarGridView`
+#### 3.2.2 `CalendarGridView`
 - **Responsibility**: Visualisiert Monat/Woche/Tag gemäß Zoom, inkl. Inline-Interaktion.
 - **Props**
   ```ts
@@ -125,7 +145,7 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
 - **Styling**: Verwendung `Grid`-Layout, Multi-day Events stapeln per `position: relative`; Stunden-/Minutenraster anhand `hoursPerDay` und `minuteStep`, Schema-spezifische Labels (z.B. 10-Tage-Woche) aus Props.
 - **Fehler/Leer**: Wenn `events` leer → Textoverlay „Keine Ereignisse“. Ladefehler via `ErrorBoundary`-Slot.
 
-### 2.4 `CalendarEventPopover`
+#### 3.2.3 `CalendarEventPopover`
 - **Responsibility**: Kontextmenü für Ereignisse in Grid/Woche/Tag.
 - **Props**
   ```ts
@@ -142,7 +162,7 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
 - **Events**: `onMarkDefault` nur sichtbar, wenn Nutzer:in Default ändern darf.
 - **Styling**: `Popover` aus `src/ui`, Buttons im Footer.
 
-### 2.5 `CalendarOverviewList`
+#### 3.2.4 `CalendarOverviewList`
 - **Responsibility**: Listen-/Kachelansicht der Kalender inkl. Filter, Bulk-Actions.
 - **Props**
   ```ts
@@ -165,7 +185,8 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
 - **Styling**: Responsive Breakpoints (Grid zu 1 Spalte <640px). Badges `Default`/`Reise`.
 - **Fehler/Leer**: Props `isLoading` + `calendars.length===0` → `EmptyState` (Hero). Fehler-Banner per Slot.
 
-### 2.6 `CalendarFormDialog`
+## 5. Shared Komponenten {#shared-komponenten}
+### 5.1 `CalendarFormDialog`
 - **Responsibility**: Formular zum Erstellen/Bearbeiten eines Kalenders (Tabs, Validierung, Vorschau).
 - **Props**
   ```ts
@@ -186,7 +207,7 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
 - **Styling**: Modal über `ui/Modal`, Tabs `ui/Tabs`.
 - **Fehler/Leer**: Validierungsfehler inline; bei Laden `Skeleton`.
 
-### 2.7 `EventFormDialog`
+### 5.2 `EventFormDialog`
 - **Responsibility**: Formular für einmalige/wiederkehrende Ereignisse.
 - **Props**
   ```ts
@@ -203,9 +224,9 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
   }
   ```
 - **Events**: `onSubmit` dispatcht `EVENT_SAVE_REQUESTED`; `onValidateCustomRule` optional async.
-- **Styling**: `ui/Form`, `ui/SegmentedControl` für Modus, `ui/CodeEditor` für Custom-Hooks`; Zeitfelder nutzen `CalendarTimePicker` (siehe §2.13) und `DurationInput`.
+- **Styling**: `ui/Form`, `ui/SegmentedControl` für Modus, `ui/CodeEditor` für Custom-Hooks`; Zeitfelder nutzen `CalendarTimePicker` (siehe §5.7) und `DurationInput`.
 
-### 2.8 `TimeAdvanceDialog`
+### 5.3 `TimeAdvanceDialog`
 - **Responsibility**: Dialog für benutzerdefinierten Zeitfortschritt/Datumssprung.
 - **Props**
   ```ts
@@ -221,7 +242,7 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
   ```
 - **Fehler**: Wenn `pendingEvents` > 50 → Hinweis „Viele Ereignisse“; wenn Zielzeit außerhalb `hoursPerDay` → Inline-Error.
 
-### 2.9 `CalendarEventLog`
+### 5.4 `CalendarEventLog`
 - **Responsibility**: Zeigt ausgelöste/übersprungene Ereignisse.
 - **Props**
   ```ts
@@ -233,7 +254,82 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
   ```
 - **Styling**: `ui/List`, farbliche Badges pro Event-Typ.
 
-### 2.10 `TravelCalendarLeaf`
+### 5.5 `DefaultBadge`
+- **Responsibility**: Kennzeichnet Default-Kalender in Listen/Dropdowns.
+- **Props**
+  ```ts
+  interface DefaultBadgeProps {
+    scope: 'global' | 'travel';
+    label?: string; // optional override via i18n
+  }
+  ```
+- **Styling**: `Badge` aus `src/ui`, Farbe `--color-accent` für global, `--color-secondary` für Reise.
+
+### 5.6 `CurrentTimestampCard`
+- **Responsibility**: Zeigt aktuelles Datum/Uhrzeit inklusive Schema-Infos und Quick-Steps im Dashboard.
+- **Props**
+  ```ts
+  interface CurrentTimestampCardProps {
+    timestamp: CalendarTimestampDTO;
+    calendarName?: string;
+    timeDefinition: { hoursPerDay: number; minutesPerHour: number; minuteStep: number };
+    disabled?: boolean;
+    onAdvanceQuick: (payload: AdvanceRequestDTO) => void;
+    onOpenSetDateTime: () => void;
+  }
+  ```
+- **Styling**: Card mit `ui/Card`, sekundäre Actions als `ButtonGroup`. Zeitformat nutzt Formatter aus Domain.
+- **Fehler/Leer**: Wenn `disabled`, zeigt Hinweis „Kein aktiver Kalender“.
+
+### 5.7 `CalendarTimePicker`
+- **Responsibility**: Schema-spezifische Zeitwahl für Stunden/Minuten (optional Sekunden).
+- **Props**
+  ```ts
+  interface CalendarTimePickerProps {
+    value: { hour: number; minute: number; second?: number };
+    hoursPerDay: number;
+    minutesPerHour: number;
+    minuteStep: number;
+    secondsPerMinute?: number;
+    precision: 'minute' | 'second';
+    disabled?: boolean;
+    onChange: (value: { hour: number; minute: number; second?: number }) => void;
+    onBlur?: () => void;
+  }
+  ```
+- **Styling**: `ui/NumberInput` kombiniert mit `Dropdown` für Minuten; Pfeiltasten + Mousewheel unterstützen Step `minuteStep`.
+- **Fehler**: Anzeige roter Umrandung + `aria-live` Hinweis „Zeit außerhalb 0–{hoursPerDay-1}“.
+
+### 5.8 `DurationInput`
+- **Responsibility**: Konvertiert Dauerangaben (Minuten) in formularfreundliche Eingabe (z.B. Stunden + Minuten).
+- **Props**
+  ```ts
+  interface DurationInputProps {
+    valueMinutes: number;
+    minuteStep: number;
+    maxMinutes?: number;
+    onChange: (minutes: number) => void;
+  }
+  ```
+- **Styling**: Zwei `NumberInput`-Felder (Stunden/Minuten) mit Suffix-Labels, validiert gegen `maxMinutes`.
+- **Fehler**: Tooltip „Dauer überschreitet Tageslänge“.
+
+### 5.9 `TravelQuickStepGroup`
+- **Responsibility**: Rendert Quick-Step-Buttons (Tag/Stunde/Minute) im Travel-Leaf.
+- **Props**
+  ```ts
+  interface TravelQuickStepGroupProps {
+    minuteStep: number;
+    disabled?: boolean;
+    onAdvance: (payload: AdvanceRequestDTO) => void;
+    lastStep?: { label: string; delta: AdvanceRequestDTO };
+  }
+  ```
+- **Styling**: `ButtonGroup` mit IconButtons, Tooltips zeigen Tastaturkürzel.
+- **Fehler/Leer**: Wenn `disabled`, Buttons im `aria-disabled` Zustand.
+
+## 6. Cartographer Travel-Komponenten {#travel-komponenten}
+### 6.1 `TravelCalendarLeaf`
 - **Responsibility**: Kompaktes Leaf im Reisemodus (Monat/Woche/Tag/Nächste).
 - **Props**
   ```ts
@@ -259,7 +355,7 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
 - **Styling**: Pane-Breite 320-360px; Buttons icon-only bei <320px; Quick-Steps gruppiert (`ButtonGroup` mit Tooltips „±1 Std“ etc.).
 - **Fehler/Leer**: Zeigt Banner/EmptyState analog [UX_SPEC §4](./UX_SPEC.md#4-fehler-und-leerstaaten).
 
-### 2.11 `TravelCalendarToolbar`
+### 6.2 `TravelCalendarToolbar`
 - **Responsibility**: Toolbar innerhalb des Travel-Leafs.
 - **Props**
   ```ts
@@ -277,81 +373,8 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
   ```
 - **Accessibility**: Buttons mit `aria-keyshortcuts` (`Ctrl+Alt+Shift+1..4` für Modi, `Ctrl+Alt+.`/`,` für Stunden, `Ctrl+Alt+;`/`'` für Minuten). `aria-live`-Region kündigt neue Uhrzeit an.
 
-### 2.12 `DefaultBadge`
-- **Responsibility**: Kennzeichnet Default-Kalender in Listen/Dropdowns.
-- **Props**
-  ```ts
-  interface DefaultBadgeProps {
-    scope: 'global' | 'travel';
-    label?: string; // optional override via i18n
-  }
-  ```
-- **Styling**: `Badge` aus `src/ui`, Farbe `--color-accent` für global, `--color-secondary` für Reise.
 
-### 2.13 `CurrentTimestampCard`
-- **Responsibility**: Zeigt aktuelles Datum/Uhrzeit inklusive Schema-Infos und Quick-Steps im Dashboard.
-- **Props**
-  ```ts
-  interface CurrentTimestampCardProps {
-    timestamp: CalendarTimestampDTO;
-    calendarName?: string;
-    timeDefinition: { hoursPerDay: number; minutesPerHour: number; minuteStep: number };
-    disabled?: boolean;
-    onAdvanceQuick: (payload: AdvanceRequestDTO) => void;
-    onOpenSetDateTime: () => void;
-  }
-  ```
-- **Styling**: Card mit `ui/Card`, sekundäre Actions als `ButtonGroup`. Zeitformat nutzt Formatter aus Domain.
-- **Fehler/Leer**: Wenn `disabled`, zeigt Hinweis „Kein aktiver Kalender“.
-
-### 2.14 `CalendarTimePicker`
-- **Responsibility**: Schema-spezifische Zeitwahl für Stunden/Minuten (optional Sekunden).
-- **Props**
-  ```ts
-  interface CalendarTimePickerProps {
-    value: { hour: number; minute: number; second?: number };
-    hoursPerDay: number;
-    minutesPerHour: number;
-    minuteStep: number;
-    secondsPerMinute?: number;
-    precision: 'minute' | 'second';
-    disabled?: boolean;
-    onChange: (value: { hour: number; minute: number; second?: number }) => void;
-    onBlur?: () => void;
-  }
-  ```
-- **Styling**: `ui/NumberInput` kombiniert mit `Dropdown` für Minuten; Pfeiltasten + Mousewheel unterstützen Step `minuteStep`.
-- **Fehler**: Anzeige roter Umrandung + `aria-live` Hinweis „Zeit außerhalb 0–{hoursPerDay-1}“.
-
-### 2.15 `DurationInput`
-- **Responsibility**: Konvertiert Dauerangaben (Minuten) in formularfreundliche Eingabe (z.B. Stunden + Minuten).
-- **Props**
-  ```ts
-  interface DurationInputProps {
-    valueMinutes: number;
-    minuteStep: number;
-    maxMinutes?: number;
-    onChange: (minutes: number) => void;
-  }
-  ```
-- **Styling**: Zwei `NumberInput`-Felder (Stunden/Minuten) mit Suffix-Labels, validiert gegen `maxMinutes`.
-- **Fehler**: Tooltip „Dauer überschreitet Tageslänge“.
-
-### 2.16 `TravelQuickStepGroup`
-- **Responsibility**: Rendert Quick-Step-Buttons (Tag/Stunde/Minute) im Travel-Leaf.
-- **Props**
-  ```ts
-  interface TravelQuickStepGroupProps {
-    minuteStep: number;
-    disabled?: boolean;
-    onAdvance: (payload: AdvanceRequestDTO) => void;
-    lastStep?: { label: string; delta: AdvanceRequestDTO };
-  }
-  ```
-- **Styling**: `ButtonGroup` mit IconButtons, Tooltips zeigen Tastaturkürzel.
-- **Fehler/Leer**: Wenn `disabled`, Buttons im `aria-disabled` Zustand.
-
-## 4. Events-Komponenten {#events-komponenten}
+## 4. Mode-Komponenten – Almanac › Events {#events-komponenten}
 ### 4.1 `EventsModeView`
 - **Responsibility**: Container für Timeline/Tabelle/Karte inkl. Filterzustände.
 - **Props**
@@ -480,7 +503,7 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
   ```
 - **Styling**: `ui/Illustration` + `ui/ButtonGroup`.
 
-## 5. Komposition
+## 7. Komposition
 Textuelles Diagramm (→ inkludiert/enthält):
 ```
 AlmanacShell
@@ -490,8 +513,7 @@ AlmanacShell
  └─ {slot} ActiveModeContent
       ├─ (dashboard) CalendarDashboard
       ├─ (manager)   CalendarManagerView
-      ├─ (events)    EventsModeView
-      └─ (travel)    TravelCalendarLeaf
+      └─ (events)    EventsModeView
 
 CalendarDashboard
  ├─ CalendarDashboardToolbar (reuse ui/ButtonGroup)
@@ -523,14 +545,14 @@ CalendarDialogs
  ├─ EventFormDialog (nutzt CalendarTimePicker, DurationInput)
  └─ TimeAdvanceDialog (nutzt CalendarTimePicker)
 
-TravelCalendarLeaf
+TravelCalendarLeaf (Cartographer)
  ├─ TravelCalendarToolbar
  ├─ TravelCalendarModeView (MonthGrid | WeekList | DayTimeline | UpcomingList)
  │    └─ (DayTimeline) CalendarTimePicker (readonly grid)
  └─ CalendarEventLog (scope='travel')
 ```
 
-## 6. Fehler- & Leerstaat-Slots
+## 8. Fehler- & Leerstaat-Slots
 - Alle Hauptcontainer (`AlmanacShell`, `CalendarDashboard`, `CalendarGridView`, `CalendarOverviewList`, `EventsModeView`, `TravelCalendarLeaf`) besitzen Props `error?: UIErrorState` und `emptyState?: UIEmptyStateConfig` (siehe unten) zur Konsistenz.
   ```ts
   interface UIErrorState {
@@ -548,12 +570,18 @@ TravelCalendarLeaf
   ```
 - Travel-spezifische Banner erhalten `scope: 'travel'` für Telemetrie (siehe [STATE_MACHINE.md](./STATE_MACHINE.md#effekte)).
 
-## 7. Persistenz-Touchpoints
+## 9. Persistenz-Touchpoints
 - Komponenten selbst speichern nichts; Events rufen Presenter-Logik, die Gateways aus [API_CONTRACTS.md](./API_CONTRACTS.md) verwendet.
 - Default-Toggle in `CalendarFormDialog`/`CalendarOverviewList` ruft `CalendarRepository.updateDefault` über Presenter.
 - `PhenomenonEditor` speichert über `AlmanacRepository.upsertPhenomenon`; `PhenomenonLinkDrawer` nutzt `AlmanacRepository.updateLinks` und triggert Cache-Invalidierung.
 
-## 8. Verweise
+## 10. Verweise
 - State-Events: [STATE_MACHINE.md](./STATE_MACHINE.md#eventsactions)
 - API-DTOs: [API_CONTRACTS.md](./API_CONTRACTS.md#dtos)
 - Testszenarien: [../../tests/apps/calendar/TEST_PLAN.md](../../../tests/apps/calendar/TEST_PLAN.md)
+
+## 11. Naming & Styling Konventionen {#20-naming--styling-konventionen}
+- Präfixe laut [§1.1](#11-layer--prefix-naming) beibehalten; Komponenten aus anderen Layern nicht importieren (Shell → Mode → Shared → Travel).
+- CSS: Verwende nur Tokens aus `src/ui/tokens`. Zusätzliche Klassen erhalten Namespace `sm-<layer>-<component>` (z.B. `sm-almanac-shell`).
+- Events heißen `on<Event>` und dispatchen Actions aus [`STATE_MACHINE.md`](./STATE_MACHINE.md#eventsactions); keine anonymen inline-Funktionen bei Weitergabe.
+- Shared-Komponenten dürfen keine Shell-spezifischen Props erwarten; Mode-Komponenten injizieren Layout-Container (`ui/Panels`).

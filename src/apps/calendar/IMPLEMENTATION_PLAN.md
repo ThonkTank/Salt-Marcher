@@ -19,9 +19,9 @@ Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Calendar-Workmo
 ## Lösung
 ### Architekturüberblick
 1. **Almanac-Shell & Mode-Orchestrierung (`src/apps/calendar/mode/almanac`)**
-   - Stellt Parent-Komponenten (`AlmanacShell`, `AlmanacModeSwitcher`) bereit, die Dashboard, Manager, Events-Modus und Travel-Leaf als gleichberechtigte Modi kapseln.
-   - Persistiert zuletzt genutzte Modi, Zoom-Stufen und Auswahl-Kontexte pro Leaf (z.B. `managerViewMode`, `eventsViewMode`) über `CalendarStateGateway`.
-   - Steuert Lazy-Loading der einzelnen Modi, Routedaten (z.B. `?mode=events&view=timeline`) und sorgt für konsistente Breadcrumbs/Back-Targets.
+   - Stellt Parent-Komponenten (`AlmanacShell`, `AlmanacModeSwitcher`) bereit, die **ausschließlich** die Almanac-Untermodi `Almanac › Dashboard`, `Almanac › Manager` und `Almanac › Events` kapseln.
+   - Persistiert zuletzt genutzte Modi, Zoom-Stufen und Auswahl-Kontexte pro Almanac-Leaf (z.B. `managerViewMode`, `eventsViewMode`) über `CalendarStateGateway`.
+   - Steuert Lazy-Loading der einzelnen Almanac-Modi, Routedaten (z.B. `?mode=events&view=timeline`) und sorgt für konsistente Breadcrumbs/Back-Targets. Travel bleibt als Cartographer-Leaf separat (siehe Punkt 4).
 
 2. **Domain-Layer (`src/apps/calendar/domain`)**
    - Enthält `CalendarSchema` (Monate, Wochen, Schaltjahre) sowie `CalendarEvent` (Recurring vs. Single) mit Default-Flag-Support und Links zu globalen Phänomenen.
@@ -36,11 +36,11 @@ Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Calendar-Workmo
    - Synchronisationspunkte mit `apps/cartographer/travel` (z.B. beim Start einer Reise Travel-Leaf öffnen, bei Zeitsprüngen Ereignisse und Phänomene prüfen; Hooks für Wetter- oder Gezeitenänderungen).
 
 4. **UI/Workmode Layer (`src/apps/calendar/mode`)**
-   - Presenter rendert Dashboard mit aktuellem Datum, kommenden Ereignissen und Quick-Actions.
-   - Kalender-Manager verfügt über zwei Modi: **Kalenderansicht** (Grid mit Jahr/Monat/Woche/Tag/Stunde, Inline-Erstellung, Tooltips) und **Kalender-Übersicht** (Filter- und Listenansicht ähnlich `apps/library`).
-   - Events-Modus stellt Timeline, Tabellen- und Karten-Layouts bereit, bietet Filter (Kategorie, Kalender, Auswirkungen), Bulk-Aktionen, Import/Export und Vorschauen je Kalender.
+   - Presenter rendert `Almanac › Dashboard` mit aktuellem Timestamp, kommenden Ereignissen und Quick-Actions.
+   - `Almanac › Manager` verfügt über zwei Modi: **Kalenderansicht** (Grid mit Jahr/Monat/Woche/Tag/Stunde, Inline-Erstellung, Tooltips) und **Kalender-Übersicht** (Filter- und Listenansicht ähnlich `apps/library`).
+   - `Almanac › Events` stellt Timeline, Tabellen- und Karten-Layouts bereit, bietet Filter (Kategorie, Kalender, Auswirkungen), Bulk-Aktionen, Import/Export und Vorschauen je Kalender.
    - Editor-Dialoge für Kalenderdefinition, Eventverwaltung und Phänomen-Erstellung nutzen Patterns aus `apps/library` (Modal/Edit-Flow), beinhalten Default-Toggle, Time-Picker/All-Day-Optionen, Kategorieauswahl und Sichtbarkeitsregeln.
-   - Travel-Kalender als eigenes Leaf mit kompakten Layouts für Monat/Woche/Tag/Nächste Ereignisse, inklusive fein aufgelöster Quick-Steps (`±1 Tag`, `±1 Stunde`, `±15 Minuten`) und synchronisiert mit Cartographer.
+   - Cartographer-Travel-Kalender bleibt ein eigenes Leaf unter `apps/cartographer/travel`, nutzt jedoch geteilte Komponenten (`TravelCalendarLeaf`, `TravelQuickActions`) aus diesem Mode-Paket.
 
 5. **Event & Phenomenon Engine**
    - Wiederkehrende Ereignisse bekommen Regeln (z.B. `repeat: { type: "annual", offset: dayOfYear }` oder Custom-Hooks) mit Zoom-abhängigen Abfragen.
@@ -49,6 +49,47 @@ Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Calendar-Workmo
 
 6. **Inspirationsquelle**
    - Das vorhandene `calendarium/main.js` dient als Referenz für Eventmodelle, UI-Flows und Persistenz. Teile werden modularisiert und in TypeScript übertragen.
+
+
+### Benennung & Navigationshierarchie
+| Ebene | Benennung | Zweck | Persistenter Key | Referenzen |
+| --- | --- | --- | --- | --- |
+| Parent | **Almanac** | Oberste Shell für alle Calendar-Leaves im Apps-Kontext | `almanac.shell` | [`mode/COMPONENTS.md`](./mode/COMPONENTS.md#11-shell-layer) |
+| Submodus | **Almanac › Dashboard** | Übersicht zu aktuellem Timestamp, Quick-Actions, Ereignislog | `almanac.mode.dashboard` | [`mode/UX_SPEC.md`](./mode/UX_SPEC.md#31-almanac-modus-wechseln) |
+| Submodus | **Almanac › Manager** | Kalenderverwaltung (Kalenderansicht, Übersicht) | `almanac.mode.manager` | [`mode/WIREFRAMES.md`](./mode/WIREFRAMES.md#almanac--manager) |
+| Submodus | **Almanac › Events** | Kalenderübergreifender Phänomen-Hub | `almanac.mode.events` | [`mode/API_CONTRACTS.md`](./mode/API_CONTRACTS.md#phenomenon-endpunkte) |
+| Extern | **Cartographer › Travel-Kalender** | Kompaktes Leaf im Reisemodus, nutzt Almanac-Domain | `cartographer.travel.calendar` | [`mode/STATE_MACHINE.md`](./mode/STATE_MACHINE.md#cartographer-travel-leaf) |
+
+- Breadcrumb-Konvention: `Almanac` → `<Submodus>` → `<Detailpanel>`; Travel nutzt eigenes Breadcrumb `Cartographer` → `Reise` → `Travel-Kalender`.
+- Naming-Regeln: neue Komponenten/Events erhalten Präfix (`almanac`, `manager`, `events`, `travel`) gemäß Layer, siehe [`mode/COMPONENTS.md`](./mode/COMPONENTS.md#20-naming--styling-konventionen).
+
+### Architektur-Schichtenmodell & Dataflows
+```
+Obsidian Workspace
+  └─ Almanac Shell (Presenter)
+       ├─ Almanac › Dashboard
+       ├─ Almanac › Manager
+       └─ Almanac › Events
+  └─ Cartographer Travel Leaf (separates Plugin-Leaf)
+        ↕ (CalendarStateGateway)
+Domain Services (Calendar, Events, Phenomena)
+        ↕
+Repositories (CalendarRepository, AlmanacRepository, PhenomenaStore)
+        ↕
+Persistence (JsonStore / Obsidian vault)
+```
+
+| Interaktion | Initiator → Empfänger | Beschreibung | Boundary-Regeln | Telemetrie |
+| --- | --- | --- | --- | --- |
+| Moduswechsel | AlmanacShell → Domain | Lädt benötigte Daten lazy, cached via Gateway | UI-Schicht ruft nur Read-APIs; Mutation ausschließlich über Aktionen in Submodus | `calendar.almanac.mode_change` |
+| Ereignis-/Phänomen-CRUD | Manager/Events → Domain → Repository | Validierung + Persistenz, danach Cache-Invalidierung | Domain kapselt Normalisierung; Repository schreibt atomar | `calendar.event.write_duration`, `calendar.phenomenon.write_duration` |
+| Travel-Sync | Cartographer Leaf → CalendarStateGateway → Domain | Reise-Hooks (`advanceTime`, `jumpToTimestamp`) nutzen gemeinsame Services | Cartographer ruft keine UI-spezifischen Funktionen auf; Gateway vermittelt | `calendar.travel.sync_latency` |
+| Lazy Load | AlmanacShell → Mode Presenter | Submodus wird erst geladen, wenn Nutzer:in ihn öffnet | Jeder Submodus besitzt `dispose()`-Hook; Cross-Mode-Kommunikation ausschließlich über Gateway-Events | `calendar.almanac.lazy_load_time` |
+| Breadcrumb/Switcher | AlmanacShell → UI State | Aktualisiert `modeHistory` und `lastVisitedPanels` | State-Slice `ui.almanacNavigation` ist einzige Quelle für Navigationspfade | `calendar.almanac.navigation_depth` |
+
+- Lebenszyklus: Submodi implementieren `onMount`/`onUnmount`, um Listener (z.B. Cartographer Hooks) anzumelden bzw. zu entfernen. Travel-Leaf folgt `cartographer.travel`-Lifecycle (`openOnTravelStart`, `disposeOnTravelEnd`).
+- Lazy-Load-Strategie: `AlmanacShell` registriert Suspense-Punkte pro Modulpaket; Suspense darf ausschließlich UI betreffen, Domain-Aufrufe sind `Promise`-basiert mit Timeout (Default 5 s, Telemetrie).
+- Persistenzpunkte: `CalendarRepository` und `AlmanacRepository` arbeiten mit Batch-Commits (gfs. `writeMany`), `CalendarStateGateway` speichert UI-Präferenzen nach Debounce (500 ms) um Diskwrites zu minimieren.
 
 ### Phasenplan
 1. **Phase 1 – Domain-Grundlage & Datenmodelle**
@@ -94,7 +135,7 @@ Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Calendar-Workmo
 ### Workflow-Überblick
 | Workflow | Ziel | Primärer Trigger | Domain-Auswirkungen | Referenz |
 | --- | --- | --- | --- | --- |
-| Almanac-Modus wechseln | Zwischen Dashboard, Manager, Events und Travel wechseln und Zustände erhalten | Tabs/Sidebar im Almanac | Aktualisiert `almanacMode`, lädt benötigte Daten lazy | [UX Spec §3.1](./mode/UX_SPEC.md#31-almanac-modus-wechseln) |
+| Almanac-Modus wechseln | Zwischen `Almanac › Dashboard`, `Almanac › Manager` und `Almanac › Events` wechseln und Zustände erhalten | Tabs/Sidebar im Almanac | Aktualisiert `almanacMode`, lädt benötigte Daten lazy | [UX Spec §3.1](./mode/UX_SPEC.md#31-almanac-modus-wechseln) |
 | Events-Modus navigieren & filtern | Kalenderübergreifende Phänomene analysieren | Modus-Toolbar, Filter-Panel | Aktualisiert `eventFilters`, lädt batched Phenomenon-Resultsets | [UX Spec §3.2](./mode/UX_SPEC.md#32-events-modus-navigieren-und-filtern) |
 | Phänomen anlegen/bearbeiten | Jahreszeiten, astronomische & Wetterereignisse pflegen | CTA „Phänomen hinzufügen“ | Schreibt `AlmanacEvent` + Vorschau | [UX Spec §3.3](./mode/UX_SPEC.md#33-phaenomen-anlegenbearbeiten) |
 | Phänomen Kalender zuweisen & Hooks konfigurieren | Sichtbarkeit & Auswirkungen je Kalender definieren | Detail-Editor, Bulk-Aktion | Aktualisiert `phenomenon.links` & Hook-Mapping | [UX Spec §3.4](./mode/UX_SPEC.md#34-phaenomen-kalender-verknuepfen--hooks-konfigurieren) |
@@ -108,7 +149,7 @@ Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Calendar-Workmo
 | Datum/Zeit setzen | Direktes Datum & Uhrzeit mit Konfliktauflösung setzen | Quick-Action „Datum/Zeit setzen“ | Setzt `currentTimestamp`, markiert übersprungene Events/Phänomene | [UX Spec §3.11](./mode/UX_SPEC.md#311-datum-und-zeit-setzen) |
 | Ereignisliste filtern/suchen | Überblick fokussieren | Filterpanel/Quick-Filter | Anpassung von `eventListFilter` | [UX Spec §3.12](./mode/UX_SPEC.md#312-ereignisliste-filternsuchen) |
 | Kalender bearbeiten | Schema und Events migrieren | Aktion „Bearbeiten“ | Aktualisiert Schema, führt Migration aus | [UX Spec §3.13](./mode/UX_SPEC.md#313-kalender-bearbeiten) |
-| Travel-Kalender anzeigen | Kompaktes Leaf synchronisieren | Reise startet/endet, Leaf-Toolbar | Aktualisiert `travelLeafMode`, `travelLeafVisible` | [UX Spec §3.14](./mode/UX_SPEC.md#314-travel-kalender) |
+| Cartographer › Travel-Kalender anzeigen | Kompaktes Leaf synchronisieren | Reise startet/endet, Leaf-Toolbar | Aktualisiert `travelLeafMode`, `travelLeafVisible` | [UX Spec §3.14](./mode/UX_SPEC.md#314-cartographer--travel-kalender) |
 | Reise-Sync (Cartographer) | Cartographer-Timehooks bedienen | Cartographer `advanceTime` | Bidirektionaler Sync, UI-Feedback | [UX Spec §3.15](./mode/UX_SPEC.md#315-reise-sync-cartographer) |
 
 ### Ablaufdiagramme & Zustände
@@ -117,7 +158,7 @@ Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Calendar-Workmo
 
 ### Akzeptanzkriterien (Kurzform)
 - **Almanac-Modus wechseln**
-  - [ ] Given ein Almanac-Leaf ist geöffnet, When Nutzer:in zwischen Dashboard, Manager, Events oder Travel wechselt, Then der zuletzt genutzte Zustand (Zoom, Filter, Auswahl) wird geladen ohne erneut zu blinken.
+- [ ] Given ein Almanac-Leaf ist geöffnet, When Nutzer:in zwischen `Almanac › Dashboard`, `Almanac › Manager` oder `Almanac › Events` wechselt, Then der zuletzt genutzte Zustand (Zoom, Filter, Auswahl) wird geladen ohne erneut zu blinken.
   - [ ] Given ein Modus lädt Daten lazy, When Nutzer:in zurückkehrt, Then werden bereits geladene Datensätze gecacht und nur bei abgelaufenem TTL neu geholt.
 - **Events-Modus navigieren & filtern**
   - [ ] Given verschiedene Kategorien, When Filter/Kategorie geändert werden, Then Liste/Timeline aktualisieren sich live und zeigen ein Badge mit Anzahl aktiver Filter.
@@ -166,7 +207,7 @@ Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Calendar-Workmo
   - [ ] Given Cartographer `advanceTime`, When aufgerufen, Then Calendar-UI und Travel-Panel zeigen identische Ereignis- und Phänomenbenachrichtigungen.
   - [ ] Given Calendar meldet Fehler, When Sync läuft, Then Cartographer erhält Fehlercode und UI zeigt Hinweis.
 ## Fehler- & Leerstaaten
-- Vollständige Texte, Icons und Wiederherstellungsaktionen siehe [`mode/UX_SPEC.md#4-fehler-und-leerstaaten`](./mode/UX_SPEC.md#4-fehler-und-leerstaaten) sowie Travel-spezifische Varianten in [`mode/WIREFRAMES.md`](./mode/WIREFRAMES.md#travel-leaf).
+- Vollständige Texte, Icons und Wiederherstellungsaktionen siehe [`mode/UX_SPEC.md#4-fehler-und-leerstaaten`](./mode/UX_SPEC.md#4-fehler-und-leerstaaten) sowie Cartographer-Varianten in [`mode/WIREFRAMES.md`](./mode/WIREFRAMES.md#cartographer-travel).
 - Persistenzfehler (`io_error`) lösen Banner mit Retry aus; Validierungsfehler erscheinen Inline in Formularen. Travel-Leaf zeigt kompaktes Banner mit Close-Action.
 - Leerstaaten für „keine Kalender“, „keine Events“, „keine kommenden Events“ enthalten primäre CTA (z.B. „Kalender anlegen“) und Sekundärlinks zu Dokumentation; Travel-Leaf nutzt verkürzte Texte.
 
