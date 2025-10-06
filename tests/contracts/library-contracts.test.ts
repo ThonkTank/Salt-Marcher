@@ -5,6 +5,7 @@ import { TFile } from "obsidian";
 import { ItemsRenderer } from "../../src/apps/library/view/items";
 import { EquipmentRenderer } from "../../src/apps/library/view/equipment";
 import { loadCreaturePreset } from "../../src/apps/library/core/creature-presets";
+import { findSpellPresets, getSpellLevels, loadSpellPreset } from "../../src/apps/library/core/spell-presets";
 import { createLibraryHarness, type LibraryHarness } from "./library-harness";
 
 let harness: LibraryHarness;
@@ -49,10 +50,17 @@ describe("library contract harness", () => {
         const [creaturePath] = await harness.ports.storage.list("creatures");
         const [itemPath] = await harness.ports.storage.list("items");
         const [equipmentPath] = await harness.ports.storage.list("equipment");
+        const [spellPresetPath] = await harness.ports.storage.list("spell-presets");
         const creatureFile = harness.app.vault.getAbstractFileByPath(creaturePath ?? "");
         const itemFile = harness.app.vault.getAbstractFileByPath(itemPath ?? "");
         const equipmentFile = harness.app.vault.getAbstractFileByPath(equipmentPath ?? "");
-        if (!(creatureFile instanceof TFile) || !(itemFile instanceof TFile) || !(equipmentFile instanceof TFile)) {
+        const spellPresetFile = harness.app.vault.getAbstractFileByPath(spellPresetPath ?? "");
+        if (
+            !(creatureFile instanceof TFile) ||
+            !(itemFile instanceof TFile) ||
+            !(equipmentFile instanceof TFile) ||
+            !(spellPresetFile instanceof TFile)
+        ) {
             throw new Error("Expected seeded fixture files to exist");
         }
         const itemsRenderer = new ItemsRenderer(harness.app as any, document.createElement("div"));
@@ -62,6 +70,9 @@ describe("library contract harness", () => {
         const creaturePreset = await loadCreaturePreset(harness.app as any, creatureFile);
         const itemData = await (itemsRenderer as any).parseItemFromFile(itemFile);
         const equipmentData = await (equipmentRenderer as any).parseEquipmentFromFile(equipmentFile);
+        const spellPreset = await loadSpellPreset(harness.app as any, spellPresetFile);
+        const spellSearch = await findSpellPresets(harness.app as any, "Ember", { limit: 5 });
+        const spellLevels = await getSpellLevels(harness.app as any);
 
         // Assert
         expect(creaturePreset.entries?.length ?? 0).toBeGreaterThan(0);
@@ -71,6 +82,11 @@ describe("library contract harness", () => {
         expect(itemData.description).toContain("sea-silver thread");
         expect(Array.isArray(equipmentData.properties)).toBe(true);
         expect(equipmentData.description).toContain("stormglass");
+        expect(spellPreset.level).toBe(2);
+        expect(spellPreset.classes).toEqual(["Wizard", "Artificer"]);
+        expect(spellPreset.description).toContain("emberlight");
+        expect(spellSearch.map(entry => entry.data.name)).toContain("Ember Ward");
+        expect(spellLevels).toEqual(expect.arrayContaining([0, 2]));
     });
 
     it("übernimmt Terrain- und Regions-Fix­tures für Debounce-Save-Regressionen", async () => {
