@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { CalendarSchema } from '../calendar-schema';
-import { createDayTimestamp, createHourTimestamp } from '../calendar-timestamp';
+import { createDayTimestamp, createHourTimestamp, createMinuteTimestamp } from '../calendar-timestamp';
 import { advanceTime } from '../time-arithmetic';
 
 // Simple test schema: 2 months (30 days each), 7 days/week, 24 hours/day
@@ -9,6 +9,7 @@ const testSchema: CalendarSchema = {
   name: 'Test Calendar',
   daysPerWeek: 7,
   hoursPerDay: 24,
+  minutesPerHour: 60,
   months: [
     { id: 'month1', name: 'First', length: 30 },
     { id: 'month2', name: 'Second', length: 30 },
@@ -178,5 +179,55 @@ describe('advanceTime - edge cases', () => {
     expect(result.timestamp.monthId).toBe('month1');
     expect(result.timestamp.day).toBe(13);
     expect(result.timestamp.hour).toBe(15);
+    expect(result.timestamp.minute).toBe(0);
+  });
+});
+
+describe('advanceTime - minutes', () => {
+  it('should advance minutes within the same hour', () => {
+    const start = createMinuteTimestamp('test-cal', 100, 'month1', 5, 10, 15);
+    const result = advanceTime(testSchema, start, 20, 'minute');
+
+    expect(result.timestamp.day).toBe(5);
+    expect(result.timestamp.hour).toBe(10);
+    expect(result.timestamp.minute).toBe(35);
+    expect(result.normalized).toBe(false);
+    expect(result.carriedMinutes).toBe(35);
+  });
+
+  it('should roll minutes into the next hour', () => {
+    const start = createMinuteTimestamp('test-cal', 100, 'month1', 5, 10, 50);
+    const result = advanceTime(testSchema, start, 20, 'minute');
+
+    expect(result.timestamp.hour).toBe(11);
+    expect(result.timestamp.minute).toBe(10);
+    expect(result.carriedHours).toBe(1);
+    expect(result.normalized).toBe(true);
+  });
+
+  it('should roll minutes across day boundary', () => {
+    const start = createMinuteTimestamp('test-cal', 100, 'month1', 5, 23, 45);
+    const result = advanceTime(testSchema, start, 30, 'minute');
+
+    expect(result.timestamp.day).toBe(6);
+    expect(result.timestamp.hour).toBe(0);
+    expect(result.timestamp.minute).toBe(15);
+    expect(result.carriedDays).toBe(1);
+    expect(result.carriedHours).toBe(1);
+    expect(result.carriedMinutes).toBe(15);
+    expect(result.normalized).toBe(true);
+  });
+
+  it('should go backwards in minutes', () => {
+    const start = createMinuteTimestamp('test-cal', 100, 'month1', 5, 0, 30);
+    const result = advanceTime(testSchema, start, -45, 'minute');
+
+    expect(result.timestamp.day).toBe(4);
+    expect(result.timestamp.hour).toBe(23);
+    expect(result.timestamp.minute).toBe(45);
+    expect(result.carriedDays).toBe(-1);
+    expect(result.carriedHours).toBe(-1);
+    expect(result.carriedMinutes).toBe(45);
+    expect(result.normalized).toBe(true);
   });
 });

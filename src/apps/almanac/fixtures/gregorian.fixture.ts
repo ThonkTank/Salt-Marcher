@@ -6,7 +6,7 @@
 
 import type { CalendarSchema } from '../domain/calendar-schema';
 import type { CalendarEvent } from '../domain/calendar-event';
-import { createDayTimestamp, createHourTimestamp } from '../domain/calendar-timestamp';
+import { createDayTimestamp, createHourTimestamp, createMinuteTimestamp } from '../domain/calendar-timestamp';
 import { createEvent } from '../domain/calendar-event';
 
 export const GREGORIAN_CALENDAR_ID = 'gregorian-standard';
@@ -20,6 +20,7 @@ export const gregorianSchema: CalendarSchema = {
   description: 'Standard Earth calendar with 12 months and 24-hour days',
   daysPerWeek: 7,
   hoursPerDay: 24,
+  minutesPerHour: 60,
   months: [
     { id: 'jan', name: 'January', length: 31 },
     { id: 'feb', name: 'February', length: 28 }, // Simplified: no leap years for MVP
@@ -63,7 +64,7 @@ export function createSampleEvents(year: number = 2024): CalendarEvent[] {
       'evt-2',
       GREGORIAN_CALENDAR_ID,
       'Team Meeting',
-      createHourTimestamp(GREGORIAN_CALENDAR_ID, year, 'jan', 15, 10),
+      createMinuteTimestamp(GREGORIAN_CALENDAR_ID, year, 'jan', 15, 10, 30),
       {
         description: 'Weekly team sync',
         allDay: false,
@@ -107,6 +108,18 @@ export function createSampleEvents(year: number = 2024): CalendarEvent[] {
         tags: ['deadline', 'important'],
       }
     ),
+    createEvent(
+      'evt-6',
+      GREGORIAN_CALENDAR_ID,
+      'Morning Standup',
+      createMinuteTimestamp(GREGORIAN_CALENDAR_ID, year, 'jan', 2, 9, 15),
+      {
+        description: 'Daily check-in with the crew',
+        allDay: false,
+        category: 'work',
+        tags: ['meeting', 'daily'],
+      }
+    ),
   ];
 }
 
@@ -114,5 +127,5 @@ export function createSampleEvents(year: number = 2024): CalendarEvent[] {
  * Get a default "current" timestamp for testing
  */
 export function getDefaultCurrentTimestamp(year: number = 2024) {
-  return createHourTimestamp(GREGORIAN_CALENDAR_ID, year, 'jan', 1, 0);
+  return createMinuteTimestamp(GREGORIAN_CALENDAR_ID, year, 'jan', 1, 0, 0);
 }

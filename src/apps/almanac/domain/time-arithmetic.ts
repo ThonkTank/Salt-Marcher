@@ -8,15 +8,16 @@
 import type { CalendarSchema } from './calendar-schema';
 import type { CalendarTimestamp } from './calendar-timestamp';
 import { getMonthById, getMonthIndex, getMonthByIndex } from './calendar-schema';
-import { createDayTimestamp, createHourTimestamp } from './calendar-timestamp';
+import { createDayTimestamp, createHourTimestamp, createMinuteTimestamp } from './calendar-timestamp';
 
-export type TimeUnit = 'day' | 'hour';
+export type TimeUnit = 'day' | 'hour' | 'minute';
 
 export interface AdvanceResult {
   readonly timestamp: CalendarTimestamp;
   readonly normalized: boolean;
   readonly carriedDays?: number;
   readonly carriedHours?: number;
+  readonly carriedMinutes?: number;
 }
 
 /**
@@ -32,7 +33,11 @@ export function advanceTime(
     return advanceByDays(schema, current, amount);
   }
 
-  return advanceByHours(schema, current, amount);
+  if (unit === 'hour') {
+    return advanceByHours(schema, current, amount);
+  }
+
+  return advanceByMinutes(schema, current, amount);
 }
 
 /**
@@ -47,6 +52,7 @@ function advanceByDays(
   let monthId = current.monthId;
   let day = current.day;
   const hour = current.hour;
+  const minute = current.minute;
   let remainingDays = days;
   let normalized = false;
 
@@ -106,9 +112,11 @@ function advanceByDays(
   }
 
   const result: CalendarTimestamp =
-    hour !== undefined
-      ? createHourTimestamp(current.calendarId, year, monthId, day, hour)
-      : createDayTimestamp(current.calendarId, year, monthId, day);
+    minute !== undefined || current.precision === 'minute'
+      ? createMinuteTimestamp(current.calendarId, year, monthId, day, hour ?? 0, minute ?? 0)
+      : hour !== undefined || current.precision === 'hour'
+        ? createHourTimestamp(current.calendarId, year, monthId, day, hour ?? 0)
+        : createDayTimestamp(current.calendarId, year, monthId, day);
 
   return { timestamp: result, normalized };
 }
@@ -122,6 +130,7 @@ function advanceByHours(
   hours: number
 ): AdvanceResult {
   const currentHour = current.hour ?? 0;
+  const currentMinute = current.minute ?? 0;
   let totalHours = currentHour + hours;
   let carriedDays = 0;
   let normalized = false;
@@ -147,15 +156,91 @@ function advanceByHours(
     normalized = normalized || dayResult.normalized;
   }
 
-  const result = createHourTimestamp(
+  const result =
+    current.precision === 'minute' || current.minute !== undefined
+      ? createMinuteTimestamp(
+          baseTimestamp.calendarId,
+          baseTimestamp.year,
+          baseTimestamp.monthId,
+          baseTimestamp.day,
+          totalHours,
+          currentMinute
+        )
+      : createHourTimestamp(
+          baseTimestamp.calendarId,
+          baseTimestamp.year,
+          baseTimestamp.monthId,
+          baseTimestamp.day,
+          totalHours
+        );
+
+  return {
+    timestamp: result,
+    normalized,
+    carriedDays: carriedDays !== 0 ? carriedDays : undefined,
+    carriedHours: hours,
+  };
+}
+
+/**
+ * Advance by minutes
+ */
+function advanceByMinutes(
+  schema: CalendarSchema,
+  current: CalendarTimestamp,
+  minutes: number
+): AdvanceResult {
+  const minutesPerHour = schema.minutesPerHour ?? 60;
+  const minutesPerDay = minutesPerHour * schema.hoursPerDay;
+
+  const currentHour = current.hour ?? 0;
+  const currentMinute = current.minute ?? 0;
+
+  let totalMinutes = currentHour * minutesPerHour + currentMinute + minutes;
+  let carriedDays = 0;
+  let normalized = false;
+
+  if (totalMinutes >= minutesPerDay) {
+    carriedDays = Math.floor(totalMinutes / minutesPerDay);
+    totalMinutes = totalMinutes % minutesPerDay;
+    normalized = true;
+  } else if (totalMinutes < 0) {
+    const daysNeeded = Math.ceil(Math.abs(totalMinutes) / minutesPerDay);
+    carriedDays = -daysNeeded;
+    totalMinutes += daysNeeded * minutesPerDay;
+    normalized = true;
+  }
+
+  const newHour = Math.floor(totalMinutes / minutesPerHour);
+  const newMinute = totalMinutes % minutesPerHour;
+  const hourChange = carriedDays * schema.hoursPerDay + (newHour - currentHour);
+  if (hourChange !== 0) {
+    normalized = true;
+  }
+
+  let baseTimestamp: CalendarTimestamp = current;
+  if (carriedDays !== 0) {
+    const dayResult = advanceByDays(schema, current, carriedDays);
+    baseTimestamp = dayResult.timestamp;
+    normalized = normalized || dayResult.normalized;
+  }
+
+  const result = createMinuteTimestamp(
     baseTimestamp.calendarId,
     baseTimestamp.year,
     baseTimestamp.monthId,
     baseTimestamp.day,
-    totalHours
+    newHour,
+    newMinute
   );
 
-  return { timestamp: result, normalized, carriedDays: carriedDays !== 0 ? carriedDays : undefined, carriedHours: hours };
+  return {
+    timestamp: result,
+    normalized,
+    carriedDays: carriedDays !== 0 ? carriedDays : undefined,
+    carriedHours: hourChange !== 0 ? hourChange : undefined,
+    carriedMinutes: newMinute,
+  };
 }
 
 /**
