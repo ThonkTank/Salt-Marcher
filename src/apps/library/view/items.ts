@@ -1,72 +1,148 @@
 // src/apps/library/view/items.ts
-// Renders and creates item entries
+// Rendert Items mit einheitlicher Filter- und Sortierlogik.
 import type { TFile } from "obsidian";
 import type { ModeRenderer } from "./mode";
-import { BaseModeRenderer, scoreName } from "./mode";
-import { listItemFiles, watchItemDir, createItemFile, type ItemData } from "../core/item-files";
+import { FilterableLibraryRenderer, type FilterDefinition, type FilterableEntry, type SortDefinition } from "./filterable-mode";
+import { createItemFile, listItemFiles, watchItemDir, type ItemData } from "../core/item-files";
 import { CreateItemModal } from "../create";
 
-export class ItemsRenderer extends BaseModeRenderer implements ModeRenderer {
-    readonly mode = "items" as const;
-    private files: TFile[] = [];
+interface ItemMetadata extends FilterableEntry {
+    category?: string;
+    rarity?: string;
+}
 
-    async init(): Promise<void> {
-        this.files = await listItemFiles(this.app);
-        const stop = watchItemDir(this.app, async () => {
-            this.files = await listItemFiles(this.app);
-            if (!this.isDisposed()) this.render();
-        });
-        this.registerCleanup(stop);
+const RARITY_ORDER = new Map<string, number>([
+    ["common", 0],
+    ["uncommon", 1],
+    ["rare", 2],
+    ["very rare", 3],
+    ["legendary", 4],
+    ["artifact", 5],
+]);
+
+async function getItemMetadata(app: any, file: TFile): Promise<ItemMetadata> {
+    const cache = app.metadataCache.getFileCache(file);
+    const fm = cache?.frontmatter || {};
+
+    return {
+        name: file.basename,
+        file,
+        category: typeof fm.category === "string" ? fm.category : undefined,
+        rarity: typeof fm.rarity === "string" ? fm.rarity : undefined,
+    };
+}
+
+function raritySortValue(rarity?: string): number {
+    if (!rarity) return Number.POSITIVE_INFINITY;
+    const key = rarity.toLowerCase();
+    return RARITY_ORDER.get(key) ?? Number.POSITIVE_INFINITY;
+}
+
+export class ItemsRenderer extends FilterableLibraryRenderer<ItemMetadata> implements ModeRenderer {
+    readonly mode = "items" as const;
+
+    protected listSourceFiles(): Promise<TFile[]> {
+        return listItemFiles(this.app);
     }
 
-    render(): void {
-        if (this.isDisposed()) return;
-        const list = this.container;
-        list.empty();
-        const q = this.query;
-        const items = this.files.map(f => ({ name: f.basename, file: f, score: scoreName(f.basename.toLowerCase(), q) }))
-            .filter(x => q ? x.score > -Infinity : true)
-            .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+    protected watchSourceFiles(onChange: () => void): () => void {
+        return watchItemDir(this.app, onChange);
+    }
 
-        for (const it of items) {
-            const row = list.createDiv({ cls: "sm-cc-item" });
-            row.createDiv({ cls: "sm-cc-item__name", text: it.name });
+    protected loadEntry(file: TFile): Promise<ItemMetadata> {
+        return getItemMetadata(this.app, file);
+    }
 
-            const importBtn = row.createEl("button", { text: "Import" });
-            importBtn.onclick = async () => {
-                await this.handleImport(it.file);
-            };
+    protected getFilters(): FilterDefinition<ItemMetadata>[] {
+        return [
+            {
+                id: "category",
+                label: "Category",
+                getValues: entry => entry.category ? [entry.category] : [],
+            },
+            {
+                id: "rarity",
+                label: "Rarity",
+                getValues: entry => entry.rarity ? [entry.rarity] : [],
+                sortComparator: (a, b) => raritySortValue(a) - raritySortValue(b) || a.localeCompare(b),
+            },
+        ];
+    }
 
-            const openBtn = row.createEl("button", { text: "Open" });
-            openBtn.onclick = async () => {
-                await this.app.workspace.openLinkText(it.file.path, it.file.path, true);
-            };
+    protected getSortOptions(): SortDefinition<ItemMetadata>[] {
+        return [
+            {
+                id: "name",
+                label: "Name",
+                compare: (a, b) => a.name.localeCompare(b.name),
+            },
+            {
+                id: "rarity",
+                label: "Rarity",
+                compare: (a, b) => raritySortValue(a.rarity) - raritySortValue(b.rarity) || a.name.localeCompare(b.name),
+            },
+            {
+                id: "category",
+                label: "Category",
+                compare: (a, b) => (a.category || "").localeCompare(b.category || "") || a.name.localeCompare(b.name),
+            },
+        ];
+    }
+
+    protected getSearchCandidates(entry: ItemMetadata): string[] {
+        const extras = [entry.category, entry.rarity].filter((val): val is string => Boolean(val));
+        return [entry.name, ...extras];
+    }
+
+    protected renderEntry(row: HTMLElement, entry: ItemMetadata): void {
+        row.createDiv({ cls: "sm-cc-item__name", text: entry.name });
+
+        const info = row.createDiv({ cls: "sm-cc-item__info" });
+        if (entry.category) {
+            info.createEl("span", { cls: "sm-cc-item__type", text: entry.category });
         }
+        if (entry.rarity) {
+            info.createEl("span", { cls: "sm-cc-item__cr", text: entry.rarity });
+        }
+
+        const actions = row.createDiv({ cls: "sm-cc-item__actions" });
+        const importBtn = actions.createEl("button", { text: "Import", cls: "sm-cc-item__action" });
+        importBtn.onclick = async () => {
+            await this.handleImport(entry.file);
+        };
+
+        const openBtn = actions.createEl("button", { text: "Open", cls: "sm-cc-item__action" });
+        openBtn.onclick = async () => {
+            await this.app.workspace.openLinkText(entry.file.path, entry.file.path, true);
+        };
+    }
+
+    async handleCreate(name: string): Promise<void> {
+        new CreateItemModal(this.app, name, async (data) => {
+            const file = await createItemFile(this.app, data);
+            await this.refreshEntries();
+            if (!this.isDisposed()) {
+                this.render();
+                await this.app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
+            }
+        }).open();
     }
 
     private async handleImport(file: TFile): Promise<void> {
         try {
-            // Parse item data from file
             const itemData = await this.parseItemFromFile(file);
-
-            // Open in editor modal with existing data
             new CreateItemModal(this.app, itemData, async (updatedData) => {
-                // Import itemToMarkdown to generate updated content
                 const { itemToMarkdown } = await import("../core/item-files");
                 const newContent = itemToMarkdown(updatedData);
-
-                // Update the existing file
                 await this.app.vault.modify(file, newContent);
-
-                // Refresh and open
-                this.files = await listItemFiles(this.app);
+                await this.refreshEntries();
                 if (!this.isDisposed()) {
                     this.render();
                     await this.app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
                 }
             }).open();
         } catch (err) {
-            console.error("Failed to import item:", err);
+            console.error("Failed to import item", err);
         }
     }
 
@@ -74,7 +150,6 @@ export class ItemsRenderer extends BaseModeRenderer implements ModeRenderer {
         const cache = this.app.metadataCache.getFileCache(file);
         const frontmatter = cache?.frontmatter || {};
 
-        // Parse basic data from frontmatter
         const data: ItemData = {
             name: frontmatter.name || file.basename,
             category: frontmatter.category,
@@ -98,49 +173,31 @@ export class ItemsRenderer extends BaseModeRenderer implements ModeRenderer {
             value: frontmatter.value,
         };
 
-        // Parse JSON fields
         if (frontmatter.spells_json) {
-            try {
-                data.spells = JSON.parse(frontmatter.spells_json);
-            } catch {}
+            try { data.spells = JSON.parse(frontmatter.spells_json); } catch {}
         }
         if (frontmatter.bonuses_json) {
-            try {
-                data.bonuses = JSON.parse(frontmatter.bonuses_json);
-            } catch {}
+            try { data.bonuses = JSON.parse(frontmatter.bonuses_json); } catch {}
         }
         if (frontmatter.ability_changes_json) {
-            try {
-                data.ability_changes = JSON.parse(frontmatter.ability_changes_json);
-            } catch {}
+            try { data.ability_changes = JSON.parse(frontmatter.ability_changes_json); } catch {}
         }
         if (frontmatter.speed_changes_json) {
-            try {
-                data.speed_changes = JSON.parse(frontmatter.speed_changes_json);
-            } catch {}
+            try { data.speed_changes = JSON.parse(frontmatter.speed_changes_json); } catch {}
         }
         if (frontmatter.properties_json) {
-            try {
-                data.properties = JSON.parse(frontmatter.properties_json);
-            } catch {}
+            try { data.properties = JSON.parse(frontmatter.properties_json); } catch {}
         }
         if (frontmatter.usage_limit_json) {
-            try {
-                data.usage_limit = JSON.parse(frontmatter.usage_limit_json);
-            } catch {}
+            try { data.usage_limit = JSON.parse(frontmatter.usage_limit_json); } catch {}
         }
         if (frontmatter.tables_json) {
-            try {
-                data.tables = JSON.parse(frontmatter.tables_json);
-            } catch {}
+            try { data.tables = JSON.parse(frontmatter.tables_json); } catch {}
         }
         if (frontmatter.sentient_props_json) {
-            try {
-                data.sentient_props = JSON.parse(frontmatter.sentient_props_json);
-            } catch {}
+            try { data.sentient_props = JSON.parse(frontmatter.sentient_props_json); } catch {}
         }
 
-        // Read description from body (skip frontmatter)
         const content = await this.app.vault.read(file);
         const bodyMatch = content.match(/^---[\s\S]*?---\s*\n([\s\S]*)/);
         if (bodyMatch) {
@@ -148,16 +205,5 @@ export class ItemsRenderer extends BaseModeRenderer implements ModeRenderer {
         }
 
         return data;
-    }
-
-    async handleCreate(name: string): Promise<void> {
-        new CreateItemModal(this.app, name, async (data) => {
-            const file = await createItemFile(this.app, data);
-            this.files = await listItemFiles(this.app);
-            if (!this.isDisposed()) {
-                this.render();
-                await this.app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
-            }
-        }).open();
     }
 }
