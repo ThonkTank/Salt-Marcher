@@ -5,21 +5,10 @@ size: "Medium"
 type: "Plant"
 alignment: "Unaligned"
 ac: "5"
-initiative: "-5"
 hp: "13"
 hit_dice: "3d8"
-speed_walk: "5 ft."
 speeds_json: "{\"walk\":{\"distance\":\"5 ft.\"}}"
-str: "1"
-dex: "1"
-con: "10"
-int: "1"
-wis: "3"
-cha: "1"
-pb: "+2"
-senses: ["blindsight 30 ft."]
-passives: ["Passive Perception 6"]
-damage_immunities: ["Blinded", "Charmed", "Deafened", "Frightened"]
+abilities_json: "[{\"ability\":\"str\",\"score\":1},{\"ability\":\"dex\",\"score\":1},{\"ability\":\"con\",\"score\":10},{\"ability\":\"int\",\"score\":1},{\"ability\":\"wis\",\"score\":3},{\"ability\":\"cha\",\"score\":1}]"
 cr: "0"
 xp: "0"
 ---

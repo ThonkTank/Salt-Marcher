@@ -5,21 +5,11 @@ size: "Small"
 type: "Beast"
 alignment: "Unaligned"
 ac: "13"
-initiative: "+3"
 hp: "1"
 hit_dice: "1d4 - 1"
-speed_walk: "5 ft."
-speed_swim: "40 ft."
 speeds_json: "{\"walk\":{\"distance\":\"5 ft.\"},\"swim\":{\"distance\":\"40 ft.\"}}"
-str: "2"
-dex: "16"
-con: "9"
-int: "1"
-wis: "7"
-cha: "2"
+abilities_json: "[{\"ability\":\"str\",\"score\":2},{\"ability\":\"dex\",\"score\":16},{\"ability\":\"con\",\"score\":9},{\"ability\":\"int\",\"score\":1},{\"ability\":\"wis\",\"score\":7},{\"ability\":\"cha\",\"score\":2}]"
 pb: "+2"
-senses: ["darkvision 60 ft."]
-passives: ["Passive Perception 8"]
 cr: "0"
 xp: "0"
 entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Water Breathing\",\"text\":\"The piranha can breathe only underwater.\"},{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +5 (with Advantage if the target doesn't have all its Hit Points), reach 5 ft. 1 Piercing damage.\"}]"
@@ -36,7 +26,7 @@ entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Water Breathing\",
 | --- | --- | --- | --- | --- | --- |
 | 2 | 16 | 9 | 1 | 7 | 2 |
 
-CR 0, XP 0
+CR 0, PB +2, XP 0
 
 ## Traits
 

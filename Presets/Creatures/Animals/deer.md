@@ -5,24 +5,14 @@ size: "Medium"
 type: "Beast"
 alignment: "Unaligned"
 ac: "13"
-initiative: "+3"
 hp: "4"
 hit_dice: "1d8"
-speed_walk: "50 ft."
 speeds_json: "{\"walk\":{\"distance\":\"50 ft.\"}}"
-str: "11"
-dex: "16"
-con: "11"
-int: "2"
-wis: "14"
-cha: "5"
+abilities_json: "[{\"ability\":\"str\",\"score\":11},{\"ability\":\"dex\",\"score\":16},{\"ability\":\"con\",\"score\":11},{\"ability\":\"int\",\"score\":2},{\"ability\":\"wis\",\"score\":14},{\"ability\":\"cha\",\"score\":5}]"
 pb: "+2"
-skills_prof: ["Perception"]
-senses: ["darkvision 60 ft."]
-passives: ["Passive Perception 14"]
 cr: "0"
 xp: "0"
-entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Agile\",\"text\":\"The deer doesn't provoke an Opportunity Attack when it moves out of an enemy's reach.\"},{\"category\":\"action\",\"name\":\"Ram\",\"text\":\"*Melee Attack Roll:* +2, reach 5 ft. 2 (1d4) Bludgeoning damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+2\",\"range\":\"5 ft\",\"damage\":\"2 (1d4) Bludgeoning\"}]"
+entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Agile\",\"text\":\"The deer doesn't provoke an Opportunity Attack when it moves out of an enemy's reach.\"},{\"category\":\"action\",\"name\":\"Ram\",\"text\":\"*Melee Attack Roll:* +2, reach 5 ft. 2 (1d4) Bludgeoning damage.\"}]"
 ---
 
 # Deer
@@ -36,7 +26,7 @@ entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Agile\",\"text\":\
 | --- | --- | --- | --- | --- | --- |
 | 11 | 16 | 11 | 2 | 14 | 5 |
 
-CR 0, XP 0
+CR 0, PB +2, XP 0
 
 ## Traits
 

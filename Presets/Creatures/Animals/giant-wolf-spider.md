@@ -5,25 +5,14 @@ size: "Medium"
 type: "Beast"
 alignment: "Unaligned"
 ac: "13"
-initiative: "+3"
 hp: "11"
 hit_dice: "2d8 + 2"
-speed_walk: "40 ft."
-speed_climb: "40 ft."
 speeds_json: "{\"walk\":{\"distance\":\"40 ft.\"},\"climb\":{\"distance\":\"40 ft.\"}}"
-str: "12"
-dex: "16"
-con: "13"
-int: "3"
-wis: "12"
-cha: "4"
+abilities_json: "[{\"ability\":\"str\",\"score\":12},{\"ability\":\"dex\",\"score\":16},{\"ability\":\"con\",\"score\":13},{\"ability\":\"int\",\"score\":3},{\"ability\":\"wis\",\"score\":12},{\"ability\":\"cha\",\"score\":4}]"
 pb: "+2"
-skills_prof: ["Perception", "Stealth"]
-senses: ["blindsight 10 ft.", "darkvision 60 ft."]
-passives: ["Passive Perception 13"]
 cr: "1/4"
 xp: "50"
-entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Spider Climb\",\"text\":\"The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check.\"},{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +5, reach 5 ft. 5 (1d4 + 3) Piercing damage plus 5 (2d4) Poison damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+5\",\"range\":\"5 ft\",\"damage\":\"5 (1d4 + 3) Piercing\"}]"
+entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Spider Climb\",\"text\":\"The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check.\"},{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +5, reach 5 ft. 5 (1d4 + 3) Piercing damage plus 5 (2d4) Poison damage.\"}]"
 ---
 
 # Giant Wolf Spider
@@ -37,7 +26,7 @@ entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Spider Climb\",\"t
 | --- | --- | --- | --- | --- | --- |
 | 12 | 16 | 13 | 3 | 12 | 4 |
 
-CR 1/4, XP 50
+CR 1/4, PB +2, XP 50
 
 ## Traits
 

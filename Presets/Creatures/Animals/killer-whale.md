@@ -5,25 +5,14 @@ size: "Huge"
 type: "Beast"
 alignment: "Unaligned"
 ac: "12"
-initiative: "+2"
 hp: "90"
 hit_dice: "12d12 + 12"
-speed_walk: "5 ft."
-speed_swim: "60 ft."
 speeds_json: "{\"walk\":{\"distance\":\"5 ft.\"},\"swim\":{\"distance\":\"60 ft.\"}}"
-str: "19"
-dex: "14"
-con: "13"
-int: "3"
-wis: "12"
-cha: "7"
+abilities_json: "[{\"ability\":\"str\",\"score\":19},{\"ability\":\"dex\",\"score\":14},{\"ability\":\"con\",\"score\":13},{\"ability\":\"int\",\"score\":3},{\"ability\":\"wis\",\"score\":12},{\"ability\":\"cha\",\"score\":7}]"
 pb: "+2"
-skills_prof: ["Perception", "Stealth"]
-senses: ["blindsight 120 ft."]
-passives: ["Passive Perception 13"]
 cr: "3"
 xp: "700"
-entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Hold Breath\",\"text\":\"The whale can hold its breath for 30 minutes.\"},{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +6, reach 5 ft. 21 (5d6 + 4) Piercing damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+6\",\"range\":\"5 ft\",\"damage\":\"21 (5d6 + 4) Piercing\"}]"
+entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Hold Breath\",\"text\":\"The whale can hold its breath for 30 minutes.\"},{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +6, reach 5 ft. 21 (5d6 + 4) Piercing damage.\"}]"
 ---
 
 # Killer Whale
@@ -37,7 +26,7 @@ entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Hold Breath\",\"te
 | --- | --- | --- | --- | --- | --- |
 | 19 | 14 | 13 | 3 | 12 | 7 |
 
-CR 3, XP 700
+CR 3, PB +2, XP 700
 
 ## Traits
 

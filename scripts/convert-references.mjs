@@ -13,7 +13,7 @@ const __dirname = dirname(__filename);
 const PLUGIN_ROOT = join(__dirname, '..');
 const VAULT_ROOT = join(PLUGIN_ROOT, '..', '..', '..');
 const REFERENCES_DIR = join(PLUGIN_ROOT, 'References/rulebooks/Statblocks/Creatures');
-const PRESETS_DIR = join(VAULT_ROOT, 'SaltMarcher/Presets/Creatures');
+const PRESETS_DIR = join(PLUGIN_ROOT, 'Presets/Creatures');
 
 // Parse args
 const args = process.argv.slice(2);
@@ -56,35 +56,27 @@ function statblockToMarkdown(data) {
 
     // Speeds
     if (data.speeds) {
-        if (data.speeds.walk?.distance) lines.push(`speed_walk: "${data.speeds.walk.distance}"`);
-        if (data.speeds.climb?.distance) lines.push(`speed_climb: "${data.speeds.climb.distance}"`);
-        if (data.speeds.swim?.distance) lines.push(`speed_swim: "${data.speeds.swim.distance}"`);
-        if (data.speeds.fly?.distance) lines.push(`speed_fly: "${data.speeds.fly.distance}"`);
-        if (data.speeds.fly?.hover) lines.push(`speed_fly_hover: true`);
-        if (data.speeds.burrow?.distance) lines.push(`speed_burrow: "${data.speeds.burrow.distance}"`);
+        const json = JSON.stringify(data.speeds).replace(/"/g, '\\"');
+        lines.push(`speeds_json: "${json}"`);
     }
 
     // Abilities
-    if (data.str) lines.push(`str: "${data.str}"`);
-    if (data.dex) lines.push(`dex: "${data.dex}"`);
-    if (data.con) lines.push(`con: "${data.con}"`);
-    if (data.int) lines.push(`int: "${data.int}"`);
-    if (data.wis) lines.push(`wis: "${data.wis}"`);
-    if (data.cha) lines.push(`cha: "${data.cha}"`);
+    if (data.abilities && data.abilities.length > 0) {
+        const json = JSON.stringify(data.abilities).replace(/"/g, '\\"');
+        lines.push(`abilities_json: "${json}"`);
+    }
     if (data.pb) lines.push(`pb: "${data.pb}"`);
 
     // Saves
-    if (data.saveProf) {
-        const saves = Object.entries(data.saveProf)
-            .filter(([_, v]) => v)
-            .map(([k]) => `"${k.toUpperCase()}"`);
-        if (saves.length > 0) lines.push(`saves_prof: [${saves.join(', ')}]`);
+    if (data.saves && data.saves.length > 0) {
+        const json = JSON.stringify(data.saves).replace(/"/g, '\\"');
+        lines.push(`saves_json: "${json}"`);
     }
 
     // Skills
-    if (data.skillsProf && data.skillsProf.length > 0) {
-        const skills = data.skillsProf.map(s => `"${s}"`).join(', ');
-        lines.push(`skills_prof: [${skills}]`);
+    if (data.skills && data.skills.length > 0) {
+        const json = JSON.stringify(data.skills).replace(/"/g, '\\"');
+        lines.push(`skills_json: "${json}"`);
     }
 
     // Senses, Languages, etc.
@@ -157,10 +149,15 @@ function statblockToMarkdown(data) {
     lines.push('');
 
     // Abilities table
-    if (data.str || data.dex || data.con || data.int || data.wis || data.cha) {
+    if (data.abilities && data.abilities.length > 0) {
         lines.push('| STR | DEX | CON | INT | WIS | CHA |');
         lines.push('| --- | --- | --- | --- | --- | --- |');
-        lines.push(`| ${data.str || '-'} | ${data.dex || '-'} | ${data.con || '-'} | ${data.int || '-'} | ${data.wis || '-'} | ${data.cha || '-'} |`);
+        const abilityOrder = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+        const abilityValues = abilityOrder.map(key => {
+            const ability = data.abilities.find(a => a.ability === key);
+            return ability ? ability.score : '-';
+        });
+        lines.push(`| ${abilityValues.join(' | ')} |`);
         lines.push('');
     }
 
@@ -332,11 +329,16 @@ function parseReferenceStatblock(markdown) {
 
     const skillsText = bullets.get('skills');
     if (skillsText) {
-        data.skillsProf = [];
+        data.skills = [];
         const parts = skillsText.split(',').map(p => p.trim());
         for (const part of parts) {
-            const match = part.match(/^(.+?)\s+[+\-]\d+/);
-            if (match) data.skillsProf.push(match[1].trim());
+            const match = part.match(/^(.+?)\s+([+\-]\d+)/);
+            if (match) {
+                data.skills.push({
+                    name: match[1].trim(),
+                    bonus: parseInt(match[2])
+                });
+            }
         }
     }
 
@@ -382,23 +384,34 @@ function parseReferenceStatblock(markdown) {
     }
 
     if (tableStart !== -1) {
-        data.saveProf = {};
+        data.abilities = [];
+        data.saves = [];
         for (let i = tableStart + 2; i < tableStart + 8 && i < lines.length; i++) {
             const line = lines[i];
             const cells = line.split('|').map(c => c.trim()).filter(Boolean);
 
             if (cells.length >= 4) {
                 const stat = cells[0].toLowerCase();
-                const score = cells[1];
+                const scoreText = cells[1];
+                const scoreValue = parseInt(scoreText);
                 const mod = parseInt(cells[2].replace(/[+\-]/g, '')) || 0;
-                const save = parseInt(cells[3].replace(/[+\-]/g, '')) || 0;
+                const saveText = cells[3];
+                const saveMatch = saveText.match(/([+\-]?\d+)/);
+                const save = saveMatch ? parseInt(saveMatch[1]) : mod;
 
-                if (['str', 'dex', 'con', 'int', 'wis', 'cha'].includes(stat)) {
-                    data[stat] = score;
+                if (['str', 'dex', 'con', 'int', 'wis', 'cha'].includes(stat) && !isNaN(scoreValue)) {
+                    // Add to abilities array
+                    data.abilities.push({
+                        ability: stat,
+                        score: scoreValue
+                    });
 
-                    // Save proficiency wenn SAVE > MOD
+                    // Add save bonus if different from modifier (indicating proficiency)
                     if (Math.abs(save) > Math.abs(mod) + 0.5) {
-                        data.saveProf[stat] = true;
+                        data.saves.push({
+                            ability: stat,
+                            bonus: save
+                        });
                     }
                 }
             }

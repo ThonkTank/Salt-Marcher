@@ -5,25 +5,14 @@ size: "Medium"
 type: "Beast"
 alignment: "Unaligned"
 ac: "14"
-initiative: "+4"
 hp: "11"
 hit_dice: "2d8 + 2"
-speed_walk: "40 ft."
-speed_swim: "40 ft."
 speeds_json: "{\"walk\":{\"distance\":\"40 ft.\"},\"swim\":{\"distance\":\"40 ft.\"}}"
-str: "10"
-dex: "18"
-con: "13"
-int: "2"
-wis: "10"
-cha: "3"
+abilities_json: "[{\"ability\":\"str\",\"score\":10},{\"ability\":\"dex\",\"score\":18},{\"ability\":\"con\",\"score\":13},{\"ability\":\"int\",\"score\":2},{\"ability\":\"wis\",\"score\":10},{\"ability\":\"cha\",\"score\":3}]"
 pb: "+2"
-skills_prof: ["Perception"]
-senses: ["blindsight 10 ft."]
-passives: ["Passive Perception 12"]
 cr: "1/4"
 xp: "50"
-entries_structured_json: "[{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +6, reach 10 ft. 6 (1d4 + 4) Piercing damage plus 4 (1d8) Poison damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+6\",\"range\":\"10 ft\",\"damage\":\"6 (1d4 + 4) Piercing\"}]"
+entries_structured_json: "[{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +6, reach 10 ft. 6 (1d4 + 4) Piercing damage plus 4 (1d8) Poison damage.\"}]"
 ---
 
 # Giant Venomous Snake
@@ -37,7 +26,7 @@ entries_structured_json: "[{\"category\":\"action\",\"name\":\"Bite\",\"text\":\
 | --- | --- | --- | --- | --- | --- |
 | 10 | 18 | 13 | 2 | 10 | 3 |
 
-CR 1/4, XP 50
+CR 1/4, PB +2, XP 50
 
 ## Actions
 

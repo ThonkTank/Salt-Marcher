@@ -5,27 +5,14 @@ size: "Large"
 type: "Elemental"
 alignment: "Neutral Neutral"
 ac: "14"
-initiative: "+2"
 hp: "114"
 hit_dice: "12d10 + 48"
-speed_walk: "30 ft."
-speed_swim: "90 ft."
 speeds_json: "{\"walk\":{\"distance\":\"30 ft.\"},\"swim\":{\"distance\":\"90 ft.\"}}"
-str: "18"
-dex: "14"
-con: "18"
-int: "5"
-wis: "10"
-cha: "8"
+abilities_json: "[{\"ability\":\"str\",\"score\":18},{\"ability\":\"dex\",\"score\":14},{\"ability\":\"con\",\"score\":18},{\"ability\":\"int\",\"score\":5},{\"ability\":\"wis\",\"score\":10},{\"ability\":\"cha\",\"score\":8}]"
 pb: "+3"
-senses: ["darkvision 60 ft."]
-passives: ["Passive Perception 10"]
-languages: ["Primordial (Aquan)"]
-damage_resistances: ["Acid", "Fire"]
-damage_immunities: ["Poison", "Exhaustion", "Grappled", "Paralyzed", "Petrified", "Poisoned", "Prone", "Restrained", "Unconscious"]
 cr: "5"
 xp: "1800"
-entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Freeze\",\"text\":\"If the elemental takes Cold damage, its Speed decreases by 20 feet until the end of its next turn.\"},{\"category\":\"trait\",\"name\":\"Water Form\",\"text\":\"The elemental can enter an enemy's space and stop there. It can move through a space as narrow as 1 inch without expending extra movement to do so.\"},{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The elemental makes two Slam attacks.\"},{\"category\":\"action\",\"name\":\"Slam\",\"text\":\"*Melee Attack Roll:* +7, reach 5 ft. 13 (2d8 + 4) Bludgeoning damage. If the target is a Medium or smaller creature, it has the Prone condition.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+7\",\"range\":\"5 ft\",\"damage\":\"13 (2d8 + 4) Bludgeoning\"},{\"category\":\"action\",\"name\":\"Whelm\",\"recharge\":\"Recharge 4-6\",\"text\":\"*Strength Saving Throw*: DC 15, each creature in the elemental's space. *Failure:*  22 (4d8 + 4) Bludgeoning damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14). Until the grapple ends, the target has the Restrained condition, is suffocating unless it can breathe water, and takes 9 (2d8) Bludgeoning damage at the start of each of the elemental's turns. The elemental can grapple one Large creature or up to two Medium or smaller creatures at a time with Whelm. As an action, a creature within 5 feet of the elemental can pull a creature out of it by succeeding on a DC 14 Strength (Athletics) check. *Success:*  Half damage only.\",\"target\":\"each creature in the elemental's space\",\"damage\":\"22 (4d8 + 4) Bludgeoning\",\"save_ability\":\"STR\",\"save_dc\":15,\"save_effect\":\"Half damage only\"}]"
+entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Freeze\",\"text\":\"If the elemental takes Cold damage, its Speed decreases by 20 feet until the end of its next turn.\"},{\"category\":\"trait\",\"name\":\"Water Form\",\"text\":\"The elemental can enter an enemy's space and stop there. It can move through a space as narrow as 1 inch without expending extra movement to do so.\"},{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The elemental makes two Slam attacks.\"},{\"category\":\"action\",\"name\":\"Slam\",\"text\":\"*Melee Attack Roll:* +7, reach 5 ft. 13 (2d8 + 4) Bludgeoning damage. If the target is a Medium or smaller creature, it has the Prone condition.\"},{\"category\":\"action\",\"name\":\"Whelm (Recharge 4-6)\",\"text\":\"*Strength Saving Throw*: DC 15, each creature in the elemental's space. *Failure:*  22 (4d8 + 4) Bludgeoning damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14). Until the grapple ends, the target has the Restrained condition, is suffocating unless it can breathe water, and takes 9 (2d8) Bludgeoning damage at the start of each of the elemental's turns. The elemental can grapple one Large creature or up to two Medium or smaller creatures at a time with Whelm. As an action, a creature within 5 feet of the elemental can pull a creature out of it by succeeding on a DC 14 Strength (Athletics) check. *Success:*  Half damage only.\"}]"
 ---
 
 # Water Elemental
@@ -39,7 +26,7 @@ entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Freeze\",\"text\":
 | --- | --- | --- | --- | --- | --- |
 | 18 | 14 | 18 | 5 | 10 | 8 |
 
-CR 5, XP 1800
+CR 5, PB +3, XP 1800
 
 ## Traits
 

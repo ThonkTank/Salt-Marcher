@@ -5,23 +5,15 @@ size: "Medium"
 type: "Beast"
 alignment: "Unaligned"
 ac: "10"
-initiative: "+0"
 hp: "11"
 hit_dice: "2d8 + 2"
-speed_walk: "40 ft."
 speeds_json: "{\"walk\":{\"distance\":\"40 ft.\"}}"
-str: "15"
-dex: "10"
-con: "13"
-int: "2"
-wis: "11"
-cha: "7"
+abilities_json: "[{\"ability\":\"str\",\"score\":15},{\"ability\":\"dex\",\"score\":10},{\"ability\":\"con\",\"score\":13},{\"ability\":\"int\",\"score\":2},{\"ability\":\"wis\",\"score\":11},{\"ability\":\"cha\",\"score\":7}]"
 pb: "+2"
-saves_prof: ["STR"]
-passives: ["Passive Perception 10"]
+saves_json: "[{\"ability\":\"str\",\"bonus\":4}]"
 cr: "1/8"
 xp: "25"
-entries_structured_json: "[{\"category\":\"action\",\"name\":\"Hooves\",\"text\":\"*Melee Attack Roll:* +4, reach 5 ft. 4 (1d4 + 2) Bludgeoning damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+4\",\"range\":\"5 ft\",\"damage\":\"4 (1d4 + 2) Bludgeoning\"}]"
+entries_structured_json: "[{\"category\":\"action\",\"name\":\"Hooves\",\"text\":\"*Melee Attack Roll:* +4, reach 5 ft. 4 (1d4 + 2) Bludgeoning damage.\"}]"
 ---
 
 # Pony
@@ -35,7 +27,7 @@ entries_structured_json: "[{\"category\":\"action\",\"name\":\"Hooves\",\"text\"
 | --- | --- | --- | --- | --- | --- |
 | 15 | 10 | 13 | 2 | 11 | 7 |
 
-CR 1/8, XP 25
+CR 1/8, PB +2, XP 25
 
 ## Actions
 

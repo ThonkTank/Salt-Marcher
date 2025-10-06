@@ -6,30 +6,15 @@ type: "Dragon"
 type_tags: ["Chromatic"]
 alignment: "Chaotic Evil"
 ac: "17"
-initiative: "+3"
 hp: "123"
 hit_dice: "13d10 + 52"
-speed_walk: "40 ft."
-speed_swim: "40 ft."
-speed_fly: "80 ft."
-speed_burrow: "20 ft."
 speeds_json: "{\"walk\":{\"distance\":\"40 ft.\"},\"burrow\":{\"distance\":\"20 ft.\"},\"fly\":{\"distance\":\"80 ft.\"},\"swim\":{\"distance\":\"40 ft.\"}}"
-str: "18"
-dex: "10"
-con: "18"
-int: "6"
-wis: "11"
-cha: "12"
+abilities_json: "[{\"ability\":\"str\",\"score\":18},{\"ability\":\"dex\",\"score\":10},{\"ability\":\"con\",\"score\":18},{\"ability\":\"int\",\"score\":6},{\"ability\":\"wis\",\"score\":11},{\"ability\":\"cha\",\"score\":12}]"
 pb: "+3"
-saves_prof: ["DEX", "WIS"]
-skills_prof: ["Perception", "Stealth"]
-senses: ["blindsight 30 ft.", "darkvision 120 ft."]
-passives: ["Passive Perception 16"]
-languages: ["Common", "Draconic"]
-damage_immunities: ["Cold"]
+saves_json: "[{\"ability\":\"dex\",\"bonus\":3},{\"ability\":\"wis\",\"bonus\":3}]"
 cr: "6"
 xp: "2300"
-entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Ice Walk\",\"text\":\"The dragon can move across and climb icy surfaces without needing to make an ability check. Additionally, Difficult Terrain composed of ice or snow doesn't cost it extra movement.\"},{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The dragon makes three Rend attacks.\"},{\"category\":\"action\",\"name\":\"Rend\",\"text\":\"*Melee Attack Roll:* +7, reach 10 ft. 9 (2d4 + 4) Slashing damage plus 2 (1d4) Cold damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+7\",\"range\":\"10 ft\",\"damage\":\"9 (2d4 + 4) Slashing\"},{\"category\":\"action\",\"name\":\"Cold Breath\",\"recharge\":\"Recharge 5-6\",\"text\":\"*Constitution Saving Throw*: DC 15, each creature in a 30-foot Cone. *Failure:*  40 (9d8) Cold damage. *Success:*  Half damage.\",\"target\":\"each creature in a 30-foot Cone\",\"damage\":\"40 (9d8) Cold\",\"save_ability\":\"CON\",\"save_dc\":15,\"save_effect\":\"Half damage\"}]"
+entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Ice Walk\",\"text\":\"The dragon can move across and climb icy surfaces without needing to make an ability check. Additionally, Difficult Terrain composed of ice or snow doesn't cost it extra movement.\"},{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The dragon makes three Rend attacks.\"},{\"category\":\"action\",\"name\":\"Rend\",\"text\":\"*Melee Attack Roll:* +7, reach 10 ft. 9 (2d4 + 4) Slashing damage plus 2 (1d4) Cold damage.\"},{\"category\":\"action\",\"name\":\"Cold Breath (Recharge 5-6)\",\"text\":\"*Constitution Saving Throw*: DC 15, each creature in a 30-foot Cone. *Failure:*  40 (9d8) Cold damage. *Success:*  Half damage.\"}]"
 ---
 
 # Young White Dragon
@@ -43,7 +28,7 @@ entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Ice Walk\",\"text\
 | --- | --- | --- | --- | --- | --- |
 | 18 | 10 | 18 | 6 | 11 | 12 |
 
-CR 6, XP 2300
+CR 6, PB +3, XP 2300
 
 ## Traits
 

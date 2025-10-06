@@ -5,25 +5,14 @@ size: "Small"
 type: "Beast"
 alignment: "Unaligned"
 ac: "13"
-initiative: "+0"
 hp: "4"
 hit_dice: "1d6 + 1"
-speed_walk: "30 ft."
-speed_climb: "30 ft."
 speeds_json: "{\"walk\":{\"distance\":\"30 ft.\"},\"climb\":{\"distance\":\"30 ft.\"}}"
-str: "8"
-dex: "10"
-con: "12"
-int: "1"
-wis: "7"
-cha: "3"
+abilities_json: "[{\"ability\":\"str\",\"score\":8},{\"ability\":\"dex\",\"score\":10},{\"ability\":\"con\",\"score\":12},{\"ability\":\"int\",\"score\":1},{\"ability\":\"wis\",\"score\":7},{\"ability\":\"cha\",\"score\":3}]"
 pb: "+2"
-senses: ["blindsight 30 ft."]
-passives: ["Passive Perception 8"]
-damage_resistances: ["Fire"]
 cr: "0"
 xp: "0"
-entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Illumination\",\"text\":\"The beetle sheds Bright Light in a 10-foot radius and Dim Light for an additional 10 feet.\"},{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +1, reach 5 ft. 1 Fire damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+1\",\"range\":\"5 ft\"}]"
+entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Illumination\",\"text\":\"The beetle sheds Bright Light in a 10-foot radius and Dim Light for an additional 10 feet.\"},{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +1, reach 5 ft. 1 Fire damage.\"}]"
 ---
 
 # Giant Fire Beetle
@@ -37,7 +26,7 @@ entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Illumination\",\"t
 | --- | --- | --- | --- | --- | --- |
 | 8 | 10 | 12 | 1 | 7 | 3 |
 
-CR 0, XP 0
+CR 0, PB +2, XP 0
 
 ## Traits
 

@@ -5,24 +5,14 @@ size: "Medium"
 type: "Beast"
 alignment: "Unaligned"
 ac: "11"
-initiative: "+1"
 hp: "5"
 hit_dice: "1d8 + 1"
-speed_walk: "50 ft."
 speeds_json: "{\"walk\":{\"distance\":\"50 ft.\"}}"
-str: "11"
-dex: "13"
-con: "12"
-int: "2"
-wis: "12"
-cha: "5"
+abilities_json: "[{\"ability\":\"str\",\"score\":11},{\"ability\":\"dex\",\"score\":13},{\"ability\":\"con\",\"score\":12},{\"ability\":\"int\",\"score\":2},{\"ability\":\"wis\",\"score\":12},{\"ability\":\"cha\",\"score\":5}]"
 pb: "+2"
-skills_prof: ["Perception"]
-senses: ["darkvision 60 ft."]
-passives: ["Passive Perception 13"]
 cr: "0"
 xp: "0"
-entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Pack Tactics\",\"text\":\"The hyena has Advantage on an attack roll against a creature if at least one of the hyena's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.\"},{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +2, reach 5 ft. 3 (1d6) Piercing damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+2\",\"range\":\"5 ft\",\"damage\":\"3 (1d6) Piercing\"}]"
+entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Pack Tactics\",\"text\":\"The hyena has Advantage on an attack roll against a creature if at least one of the hyena's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.\"},{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +2, reach 5 ft. 3 (1d6) Piercing damage.\"}]"
 ---
 
 # Hyena
@@ -36,7 +26,7 @@ entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Pack Tactics\",\"t
 | --- | --- | --- | --- | --- | --- |
 | 11 | 13 | 12 | 2 | 12 | 5 |
 
-CR 0, XP 0
+CR 0, PB +2, XP 0
 
 ## Traits
 

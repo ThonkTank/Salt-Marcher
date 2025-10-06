@@ -5,24 +5,14 @@ size: "Small"
 type: "Humanoid"
 alignment: "Neutral Neutral"
 ac: "13"
-initiative: "+1"
 hp: "44"
 hit_dice: "8d8 + 8"
-speed_walk: "30 ft."
 speeds_json: "{\"walk\":{\"distance\":\"30 ft.\"}}"
-str: "10"
-dex: "12"
-con: "13"
-int: "12"
-wis: "16"
-cha: "11"
+abilities_json: "[{\"ability\":\"str\",\"score\":10},{\"ability\":\"dex\",\"score\":12},{\"ability\":\"con\",\"score\":13},{\"ability\":\"int\",\"score\":12},{\"ability\":\"wis\",\"score\":16},{\"ability\":\"cha\",\"score\":11}]"
 pb: "+2"
-skills_prof: ["Medicine", "Nature", "Perception"]
-passives: ["Passive Perception 15"]
-languages: ["Common", "Druidic", "Sylvan"]
 cr: "2"
 xp: "450"
-entries_structured_json: "[{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The druid makes two attacks, using Vine Staff or Verdant Wisp in any combination.\"},{\"category\":\"action\",\"name\":\"Vine Staff\",\"text\":\"*Melee Attack Roll:* +5, reach 5 ft. 7 (1d8 + 3) Bludgeoning damage plus 2 (1d4) Poison damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+5\",\"range\":\"5 ft\",\"damage\":\"7 (1d8 + 3) Bludgeoning\"},{\"category\":\"action\",\"name\":\"Verdant Wisp\",\"text\":\"*Ranged Attack Roll:* +5, range 90 ft. 10 (3d6) Radiant damage.\",\"kind\":\"Ranged Attack Roll\",\"to_hit\":\"+5\",\"range\":\"90 ft\",\"damage\":\"10 (3d6) Radiant\"},{\"category\":\"action\",\"name\":\"Spellcasting\",\"text\":\"The druid casts one of the following spells, using Wisdom as the spellcasting ability (spell save DC 13): - **At Will:** *Druidcraft*, *Speak with Animals* - **2e/Day Each:** *Entangle*, *Thunderwave* - **1e/Day Each:** *Animal Messenger*, *Longstrider*, *Moonbeam*\"}]"
+entries_structured_json: "[{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The druid makes two attacks, using Vine Staff or Verdant Wisp in any combination.\"},{\"category\":\"action\",\"name\":\"Vine Staff\",\"text\":\"*Melee Attack Roll:* +5, reach 5 ft. 7 (1d8 + 3) Bludgeoning damage plus 2 (1d4) Poison damage.\"},{\"category\":\"action\",\"name\":\"Verdant Wisp\",\"text\":\"*Ranged Attack Roll:* +5, range 90 ft. 10 (3d6) Radiant damage.\"},{\"category\":\"action\",\"name\":\"Spellcasting\",\"text\":\"The druid casts one of the following spells, using Wisdom as the spellcasting ability (spell save DC 13): - **At Will:** *Druidcraft*, *Speak with Animals* - **2e/Day Each:** *Entangle*, *Thunderwave* - **1e/Day Each:** *Animal Messenger*, *Longstrider*, *Moonbeam*\"}]"
 ---
 
 # Druid
@@ -36,7 +26,7 @@ entries_structured_json: "[{\"category\":\"action\",\"name\":\"Multiattack\",\"t
 | --- | --- | --- | --- | --- | --- |
 | 10 | 12 | 13 | 12 | 16 | 11 |
 
-CR 2, XP 450
+CR 2, PB +2, XP 450
 
 ## Actions
 

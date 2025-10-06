@@ -5,24 +5,14 @@ size: "Small"
 type: "Beast"
 alignment: "Unaligned"
 ac: "12"
-initiative: "+2"
 hp: "3"
 hit_dice: "1d6"
-speed_walk: "40 ft."
 speeds_json: "{\"walk\":{\"distance\":\"40 ft.\"}}"
-str: "8"
-dex: "15"
-con: "11"
-int: "3"
-wis: "12"
-cha: "6"
+abilities_json: "[{\"ability\":\"str\",\"score\":8},{\"ability\":\"dex\",\"score\":15},{\"ability\":\"con\",\"score\":11},{\"ability\":\"int\",\"score\":3},{\"ability\":\"wis\",\"score\":12},{\"ability\":\"cha\",\"score\":6}]"
 pb: "+2"
-skills_prof: ["Perception", "Stealth"]
-senses: ["darkvision 90 ft."]
-passives: ["Passive Perception 15"]
 cr: "0"
 xp: "0"
-entries_structured_json: "[{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +1, reach 5 ft. 1 (1d4 - 1) Piercing damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+1\",\"range\":\"5 ft\",\"damage\":\"1 (1d4 - 1) Piercing\"}]"
+entries_structured_json: "[{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +1, reach 5 ft. 1 (1d4 - 1) Piercing damage.\"}]"
 ---
 
 # Jackal
@@ -36,7 +26,7 @@ entries_structured_json: "[{\"category\":\"action\",\"name\":\"Bite\",\"text\":\
 | --- | --- | --- | --- | --- | --- |
 | 8 | 15 | 11 | 3 | 12 | 6 |
 
-CR 0, XP 0
+CR 0, PB +2, XP 0
 
 ## Actions
 

@@ -5,26 +5,15 @@ size: "Large"
 type: "Celestial"
 alignment: "Chaotic Good"
 ac: "12"
-initiative: "+2"
 hp: "59"
 hit_dice: "7d10 + 21"
-speed_walk: "60 ft."
-speed_fly: "90 ft."
 speeds_json: "{\"walk\":{\"distance\":\"60 ft.\"},\"fly\":{\"distance\":\"90 ft.\"}}"
-str: "18"
-dex: "15"
-con: "16"
-int: "10"
-wis: "15"
-cha: "13"
+abilities_json: "[{\"ability\":\"str\",\"score\":18},{\"ability\":\"dex\",\"score\":15},{\"ability\":\"con\",\"score\":16},{\"ability\":\"int\",\"score\":10},{\"ability\":\"wis\",\"score\":15},{\"ability\":\"cha\",\"score\":13}]"
 pb: "+2"
-saves_prof: ["DEX", "CON", "WIS", "CHA"]
-skills_prof: ["Perception"]
-passives: ["Passive Perception 16"]
-languages: ["Understands Celestial", "Common", "Elvish", "And Sylvan but can't speak"]
+saves_json: "[{\"ability\":\"dex\",\"bonus\":4},{\"ability\":\"con\",\"bonus\":5},{\"ability\":\"wis\",\"bonus\":4},{\"ability\":\"cha\",\"bonus\":3}]"
 cr: "2"
 xp: "450"
-entries_structured_json: "[{\"category\":\"action\",\"name\":\"Hooves\",\"text\":\"*Melee Attack Roll:* +6, reach 5 ft. 7 (1d6 + 4) Bludgeoning damage plus 5 (2d4) Radiant damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+6\",\"range\":\"5 ft\",\"damage\":\"7 (1d6 + 4) Bludgeoning\"}]"
+entries_structured_json: "[{\"category\":\"action\",\"name\":\"Hooves\",\"text\":\"*Melee Attack Roll:* +6, reach 5 ft. 7 (1d6 + 4) Bludgeoning damage plus 5 (2d4) Radiant damage.\"}]"
 ---
 
 # Pegasus
@@ -38,7 +27,7 @@ entries_structured_json: "[{\"category\":\"action\",\"name\":\"Hooves\",\"text\"
 | --- | --- | --- | --- | --- | --- |
 | 18 | 15 | 16 | 10 | 15 | 13 |
 
-CR 2, XP 450
+CR 2, PB +2, XP 450
 
 ## Actions
 

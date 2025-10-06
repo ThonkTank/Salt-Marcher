@@ -5,26 +5,14 @@ size: "Medium"
 type: "Undead"
 alignment: "Lawful Evil"
 ac: "14"
-initiative: "+3"
 hp: "13"
 hit_dice: "2d8 + 4"
-speed_walk: "30 ft."
 speeds_json: "{\"walk\":{\"distance\":\"30 ft.\"}}"
-str: "10"
-dex: "16"
-con: "15"
-int: "6"
-wis: "8"
-cha: "5"
+abilities_json: "[{\"ability\":\"str\",\"score\":10},{\"ability\":\"dex\",\"score\":16},{\"ability\":\"con\",\"score\":15},{\"ability\":\"int\",\"score\":6},{\"ability\":\"wis\",\"score\":8},{\"ability\":\"cha\",\"score\":5}]"
 pb: "+2"
-senses: ["darkvision 60 ft."]
-passives: ["Passive Perception 9"]
-languages: ["Understands Common plus one other language but can't speak"]
-damage_immunities: ["Poison", "Exhaustion", "Poisoned"]
-damage_vulnerabilities: ["Bludgeoning"]
 cr: "1/4"
 xp: "50"
-entries_structured_json: "[{\"category\":\"action\",\"name\":\"Shortsword\",\"text\":\"*Melee Attack Roll:* +5, reach 5 ft. 6 (1d6 + 3) Piercing damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+5\",\"range\":\"5 ft\",\"damage\":\"6 (1d6 + 3) Piercing\"},{\"category\":\"action\",\"name\":\"Shortbow\",\"text\":\"*Ranged Attack Roll:* +5, range 80/320 ft. 6 (1d6 + 3) Piercing damage.\",\"kind\":\"Ranged Attack Roll\",\"to_hit\":\"+5\",\"range\":\"80/320 ft\",\"damage\":\"6 (1d6 + 3) Piercing\"}]"
+entries_structured_json: "[{\"category\":\"action\",\"name\":\"Shortsword\",\"text\":\"*Melee Attack Roll:* +5, reach 5 ft. 6 (1d6 + 3) Piercing damage.\"},{\"category\":\"action\",\"name\":\"Shortbow\",\"text\":\"*Ranged Attack Roll:* +5, range 80/320 ft. 6 (1d6 + 3) Piercing damage.\"}]"
 ---
 
 # Skeleton
@@ -38,7 +26,7 @@ entries_structured_json: "[{\"category\":\"action\",\"name\":\"Shortsword\",\"te
 | --- | --- | --- | --- | --- | --- |
 | 10 | 16 | 15 | 6 | 8 | 5 |
 
-CR 1/4, XP 50
+CR 1/4, PB +2, XP 50
 
 ## Actions
 

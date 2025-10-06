@@ -6,28 +6,15 @@ type: "Elemental"
 type_tags: ["Genie"]
 alignment: "Neutral Neutral"
 ac: "17"
-initiative: "+1"
 hp: "212"
 hit_dice: "17d10 + 119"
-speed_walk: "40 ft."
-speed_fly: "60 ft."
-speed_fly_hover: true
 speeds_json: "{\"walk\":{\"distance\":\"40 ft.\"},\"fly\":{\"distance\":\"60 ft.\",\"hover\":true}}"
-str: "22"
-dex: "12"
-con: "24"
-int: "16"
-wis: "15"
-cha: "19"
+abilities_json: "[{\"ability\":\"str\",\"score\":22},{\"ability\":\"dex\",\"score\":12},{\"ability\":\"con\",\"score\":24},{\"ability\":\"int\",\"score\":16},{\"ability\":\"wis\",\"score\":15},{\"ability\":\"cha\",\"score\":19}]"
 pb: "+4"
-saves_prof: ["WIS", "CHA"]
-senses: ["darkvision 120 ft."]
-passives: ["Passive Perception 12"]
-languages: ["Primordial (Ignan)"]
-damage_immunities: ["Fire"]
+saves_json: "[{\"ability\":\"wis\",\"bonus\":6},{\"ability\":\"cha\",\"bonus\":8}]"
 cr: "11"
 xp: "7200"
-entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Elemental Restoration\",\"text\":\"If the efreeti dies outside the Elemental Plane of Fire, its body dissolves into ash, and it gains a new body in 1d4 days, reviving with all its Hit Points somewhere on the Plane of Fire.\"},{\"category\":\"trait\",\"name\":\"Magic Resistance\",\"text\":\"The efreeti has Advantage on saving throws against spells and other magical effects.\"},{\"category\":\"trait\",\"name\":\"Wishes\",\"text\":\"The efreeti has a 30 percent chance of knowing the *Wish* spell. If the efreeti knows it, the efreeti can cast it only on behalf of a non-genie creature who communicates a wish in a way the efreeti can understand. If the efreeti casts the spell for the creature, the efreeti suffers none of the spell's stress. Once the efreeti has cast it three times, the efreeti can't do so again for 365 days.\"},{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The efreeti makes three attacks, using Heated Blade or Hurl Flame in any combination.\"},{\"category\":\"action\",\"name\":\"Heated Blade\",\"text\":\"*Melee Attack Roll:* +10, reach 5 ft. 13 (2d6 + 6) Slashing damage plus 13 (2d12) Fire damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+10\",\"range\":\"5 ft\",\"damage\":\"13 (2d6 + 6) Slashing\"},{\"category\":\"action\",\"name\":\"Hurl Flame\",\"text\":\"*Ranged Attack Roll:* +8, range 120 ft. 24 (7d6) Fire damage.\",\"kind\":\"Ranged Attack Roll\",\"to_hit\":\"+8\",\"range\":\"120 ft\",\"damage\":\"24 (7d6) Fire\"},{\"category\":\"action\",\"name\":\"Spellcasting\",\"text\":\"The efreeti casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 16): - **At Will:** *Detect Magic*, *Elementalism* - **1e/Day Each:** *Gaseous Form*, *Invisibility*, *Major Image*, *Plane Shift*, *Tongues*, *Wall of Fire*\"}]"
+entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Elemental Restoration\",\"text\":\"If the efreeti dies outside the Elemental Plane of Fire, its body dissolves into ash, and it gains a new body in 1d4 days, reviving with all its Hit Points somewhere on the Plane of Fire.\"},{\"category\":\"trait\",\"name\":\"Magic Resistance\",\"text\":\"The efreeti has Advantage on saving throws against spells and other magical effects.\"},{\"category\":\"trait\",\"name\":\"Wishes\",\"text\":\"The efreeti has a 30 percent chance of knowing the *Wish* spell. If the efreeti knows it, the efreeti can cast it only on behalf of a non-genie creature who communicates a wish in a way the efreeti can understand. If the efreeti casts the spell for the creature, the efreeti suffers none of the spell's stress. Once the efreeti has cast it three times, the efreeti can't do so again for 365 days.\"},{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The efreeti makes three attacks, using Heated Blade or Hurl Flame in any combination.\"},{\"category\":\"action\",\"name\":\"Heated Blade\",\"text\":\"*Melee Attack Roll:* +10, reach 5 ft. 13 (2d6 + 6) Slashing damage plus 13 (2d12) Fire damage.\"},{\"category\":\"action\",\"name\":\"Hurl Flame\",\"text\":\"*Ranged Attack Roll:* +8, range 120 ft. 24 (7d6) Fire damage.\"},{\"category\":\"action\",\"name\":\"Spellcasting\",\"text\":\"The efreeti casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 16): - **At Will:** *Detect Magic*, *Elementalism* - **1e/Day Each:** *Gaseous Form*, *Invisibility*, *Major Image*, *Plane Shift*, *Tongues*, *Wall of Fire*\"}]"
 ---
 
 # Efreeti
@@ -41,7 +28,7 @@ entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Elemental Restorat
 | --- | --- | --- | --- | --- | --- |
 | 22 | 12 | 24 | 16 | 15 | 19 |
 
-CR 11, XP 7200
+CR 11, PB +4, XP 7200
 
 ## Traits
 

@@ -26,7 +26,7 @@ export interface SkillManagerOptions {
  */
 export interface SkillManagerHandle {
   /** References to skill chip elements (for external updates) */
-  refs: Map<string, { mod: HTMLElement; expertise: HTMLInputElement }>;
+  refs: Map<string, { mod: HTMLElement; bonusInput: HTMLInputElement }>;
   /** Re-renders all skill chips and updates modifiers */
   render: () => void;
   /** Adds a skill by name if not already present */
@@ -68,12 +68,11 @@ export function createSkillManager(options: SkillManagerOptions): SkillManagerHa
   const { parent, data, getAbilityMod, getProficiencyBonus, onUpdate } = options;
 
   const skillAbilityMap = new Map<string, CreatureAbilityKey>(CREATURE_SKILLS);
-  const refs = new Map<string, { mod: HTMLElement; expertise: HTMLInputElement }>();
+  const refs = new Map<string, { mod: HTMLElement; bonusInput: HTMLInputElement }>();
 
   // Ensure data structures
-  const ensureSets = () => {
-    if (!data.skillsProf) data.skillsProf = [];
-    if (!data.skillsExpertise) data.skillsExpertise = [];
+  const ensureSkills = () => {
+    if (!data.skills) data.skills = [];
   };
 
   // Search row
@@ -110,9 +109,14 @@ export function createSkillManager(options: SkillManagerOptions): SkillManagerHa
   const addSkill = (rawName: string) => {
     const name = rawName.trim();
     if (!name || !skillAbilityMap.has(name)) return;
-    ensureSets();
-    if (!data.skillsProf!.includes(name)) {
-      data.skillsProf!.push(name);
+    ensureSkills();
+    if (!data.skills!.find(s => s.name === name)) {
+      // Calculate auto bonus for new skill
+      const abilityKey = skillAbilityMap.get(name);
+      const mod = abilityKey ? getAbilityMod(abilityKey) : 0;
+      const pb = getProficiencyBonus();
+      const bonus = mod + pb;
+      data.skills!.push({ name, bonus });
       render();
     }
   };
@@ -135,66 +139,70 @@ export function createSkillManager(options: SkillManagerOptions): SkillManagerHa
   };
 
   const render = () => {
-    ensureSets();
+    ensureSkills();
     chipsContainer.empty();
     refs.clear();
 
-    const profs = data.skillsProf ?? [];
-    const pb = getProficiencyBonus();
+    const skills = data.skills ?? [];
 
-    // Clean up expertise for removed skills
-    data.skillsExpertise = (data.skillsExpertise ?? []).filter((name) => profs.includes(name));
-
-    for (const name of profs) {
+    for (const skill of skills) {
       const chip = chipsContainer.createDiv({ cls: "sm-cc-chip sm-cc-skill-chip" });
-      chip.createSpan({ cls: "sm-cc-skill-chip__name", text: name });
+      chip.createSpan({ cls: "sm-cc-skill-chip__name", text: skill.name });
+
+      // Bonus input with auto-calculated placeholder
+      const abilityKey = skillAbilityMap.get(skill.name);
+      const mod = abilityKey ? getAbilityMod(abilityKey) : 0;
+      const pb = getProficiencyBonus();
+      const autoBonus = mod + pb;
+
+      const bonusInput = chip.createEl("input", {
+        cls: "sm-cc-skill-chip__bonus-input",
+        attr: {
+          type: "number",
+          placeholder: String(autoBonus),
+          "aria-label": `${skill.name} Bonus`
+        }
+      }) as HTMLInputElement;
+      bonusInput.value = String(skill.bonus);
+
+      bonusInput.addEventListener("input", () => {
+        const value = bonusInput.value.trim();
+        if (value !== "") {
+          const newBonus = parseInt(value);
+          if (!isNaN(newBonus)) {
+            skill.bonus = newBonus;
+            updateMods();
+            onUpdate();
+          }
+        }
+      });
 
       const modOut = chip.createSpan({ cls: "sm-cc-skill-chip__mod", text: "+0" });
-
-      const expWrap = chip.createEl("label", { cls: "sm-cc-skill-chip__exp" });
-      const expCb = expWrap.createEl("input", { attr: { type: "checkbox" } }) as HTMLInputElement;
-      expWrap.createSpan({ text: "Expertise" });
-
-      expCb.checked = !!data.skillsExpertise?.includes(name);
-      expCb.addEventListener("change", () => {
-        ensureSets();
-        if (expCb.checked) {
-          if (!data.skillsExpertise!.includes(name)) data.skillsExpertise!.push(name);
-        } else {
-          data.skillsExpertise = data.skillsExpertise!.filter((s) => s !== name);
-        }
-        updateMods();
-        onUpdate();
-      });
 
       const removeBtn = chip.createEl("button", {
         cls: "sm-cc-chip__remove",
         text: "×",
-        attr: { "aria-label": `${name} entfernen` },
+        attr: { "aria-label": `${skill.name} entfernen` },
       }) as HTMLButtonElement;
       removeBtn.onclick = () => {
-        ensureSets();
-        data.skillsProf = data.skillsProf!.filter((s) => s !== name);
-        data.skillsExpertise = data.skillsExpertise!.filter((s) => s !== name);
+        ensureSkills();
+        data.skills = data.skills!.filter((s) => s.name !== skill.name);
         render();
       };
 
-      refs.set(name, { mod: modOut, expertise: expCb });
+      refs.set(skill.name, { mod: modOut, bonusInput });
     }
 
     updateMods();
   };
 
   const updateMods = () => {
-    const pb = getProficiencyBonus();
     for (const [name, ref] of refs) {
-      const abilityKey = skillAbilityMap.get(name);
-      const mod = abilityKey ? getAbilityMod(abilityKey) : 0;
-      const hasExpertise = data.skillsExpertise?.includes(name) ?? false;
-      const bonus = hasExpertise ? pb * 2 : pb;
-      const total = mod + bonus;
-      ref.mod.textContent = total >= 0 ? `+${total}` : String(total);
-      if (ref.expertise.checked !== hasExpertise) ref.expertise.checked = hasExpertise;
+      const skill = data.skills?.find(s => s.name === name);
+      if (skill) {
+        const total = skill.bonus;
+        ref.mod.textContent = total >= 0 ? `+${total}` : String(total);
+      }
     }
   };
 

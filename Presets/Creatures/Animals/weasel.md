@@ -5,25 +5,14 @@ size: "Small"
 type: "Beast"
 alignment: "Unaligned"
 ac: "13"
-initiative: "+3"
 hp: "1"
 hit_dice: "1d4 - 1"
-speed_walk: "30 ft."
-speed_climb: "30 ft."
 speeds_json: "{\"walk\":{\"distance\":\"30 ft.\"},\"climb\":{\"distance\":\"30 ft.\"}}"
-str: "3"
-dex: "16"
-con: "8"
-int: "2"
-wis: "12"
-cha: "3"
+abilities_json: "[{\"ability\":\"str\",\"score\":3},{\"ability\":\"dex\",\"score\":16},{\"ability\":\"con\",\"score\":8},{\"ability\":\"int\",\"score\":2},{\"ability\":\"wis\",\"score\":12},{\"ability\":\"cha\",\"score\":3}]"
 pb: "+2"
-skills_prof: ["Acrobatics", "Perception", "Stealth"]
-senses: ["darkvision 60 ft."]
-passives: ["Passive Perception 13"]
 cr: "0"
 xp: "0"
-entries_structured_json: "[{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +5, reach 5 ft. 1 Piercing damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+5\",\"range\":\"5 ft\"}]"
+entries_structured_json: "[{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +5, reach 5 ft. 1 Piercing damage.\"}]"
 ---
 
 # Weasel
@@ -37,7 +26,7 @@ entries_structured_json: "[{\"category\":\"action\",\"name\":\"Bite\",\"text\":\
 | --- | --- | --- | --- | --- | --- |
 | 3 | 16 | 8 | 2 | 12 | 3 |
 
-CR 0, XP 0
+CR 0, PB +2, XP 0
 
 ## Actions
 

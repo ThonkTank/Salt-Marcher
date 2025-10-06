@@ -124,6 +124,19 @@ export async function loadCreaturePreset(app: App, file: TFile): Promise<Statblo
     // Parse alignment if provided as single field
     const alignmentParts = parseAlignment(fm.alignment);
 
+    // Parse abilities first
+    const abilities = fm.abilities_json ? parseJson(fm.abilities_json, 'abilities_json') : undefined;
+
+    // Calculate initiative from DEX ability if not provided
+    let initiative = fm.initiative;
+    if (!initiative && abilities) {
+        const dexAbility = abilities.find((a: any) => a.ability === 'dex');
+        if (dexAbility) {
+            const modifier = Math.floor((dexAbility.score - 10) / 2);
+            initiative = modifier >= 0 ? `+${modifier}` : `${modifier}`;
+        }
+    }
+
     // Build StatblockData from frontmatter
     const data: StatblockData = {
         // Basic identity
@@ -139,17 +152,12 @@ export async function loadCreaturePreset(app: App, file: TFile): Promise<Statblo
 
         // Combat stats
         ac: fm.ac,
-        initiative: fm.initiative ?? calculateInitiativeFromDex(fm.dex), // Fallback: berechne aus DEX
+        initiative,
         hp: fm.hp,
         hitDice: fm.hit_dice ?? fm.hitDice,
 
         // Abilities
-        str: fm.str,
-        dex: fm.dex,
-        con: fm.con,
-        int: fm.int,
-        wis: fm.wis,
-        cha: fm.cha,
+        abilities,
         pb: fm.pb ?? calculatePBFromCR(fm.cr), // Fallback: berechne aus CR
 
         // CR & XP
@@ -160,16 +168,8 @@ export async function loadCreaturePreset(app: App, file: TFile): Promise<Statblo
         speeds: fm.speeds_json ? parseJson(fm.speeds_json, 'speeds_json') : undefined,
 
         // Saves & Skills
-        saveProf: fm.saves_prof
-            ? Object.fromEntries(
-                  (Array.isArray(fm.saves_prof) ? fm.saves_prof : [fm.saves_prof]).map((s: string) => [
-                      s.toLowerCase(),
-                      true,
-                  ])
-              )
-            : undefined,
-        skillsProf: fm.skills_prof,
-        skillsExpertise: fm.skills_expertise,
+        saves: fm.saves_json ? parseJson(fm.saves_json, 'saves_json') : undefined,
+        skills: fm.skills_json ? parseJson(fm.skills_json, 'skills_json') : undefined,
 
         // Senses & Languages
         sensesList: fm.senses,
@@ -286,8 +286,8 @@ export async function loadCreaturePreset(app: App, file: TFile): Promise<Statblo
         entriesCount: data.entries?.length ?? 0,
         hasSpellcasting: !!data.spellcasting,
         hasSpeeds: !!data.speeds,
-        hasSaves: !!data.saveProf,
-        hasSkills: !!data.skillsProf,
+        hasSaves: !!data.saves,
+        hasSkills: !!data.skills,
         hasSenses: !!data.sensesList,
         hasLanguages: !!data.languagesList,
         hasPassives: !!data.passivesList,

@@ -5,23 +5,14 @@ size: "Small"
 type: "Humanoid"
 alignment: "Neutral Neutral"
 ac: "10"
-initiative: "+0"
 hp: "4"
 hit_dice: "1d8"
-speed_walk: "30 ft."
 speeds_json: "{\"walk\":{\"distance\":\"30 ft.\"}}"
-str: "10"
-dex: "10"
-con: "10"
-int: "10"
-wis: "10"
-cha: "10"
+abilities_json: "[{\"ability\":\"str\",\"score\":10},{\"ability\":\"dex\",\"score\":10},{\"ability\":\"con\",\"score\":10},{\"ability\":\"int\",\"score\":10},{\"ability\":\"wis\",\"score\":10},{\"ability\":\"cha\",\"score\":10}]"
 pb: "+2"
-passives: ["Passive Perception 10"]
-languages: ["Common"]
 cr: "0"
 xp: "0"
-entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Training\",\"text\":\"The commoner has proficiency in one skill of the DM's choice and has Advantage whenever it makes an ability check using that skill.\"},{\"category\":\"action\",\"name\":\"Club\",\"text\":\"*Melee Attack Roll:* +2, reach 5 ft. 2 (1d4) Bludgeoning damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+2\",\"range\":\"5 ft\",\"damage\":\"2 (1d4) Bludgeoning\"}]"
+entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Training\",\"text\":\"The commoner has proficiency in one skill of the DM's choice and has Advantage whenever it makes an ability check using that skill.\"},{\"category\":\"action\",\"name\":\"Club\",\"text\":\"*Melee Attack Roll:* +2, reach 5 ft. 2 (1d4) Bludgeoning damage.\"}]"
 ---
 
 # Commoner
@@ -35,7 +26,7 @@ entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Training\",\"text\
 | --- | --- | --- | --- | --- | --- |
 | 10 | 10 | 10 | 10 | 10 | 10 |
 
-CR 0, XP 0
+CR 0, PB +2, XP 0
 
 ## Traits
 

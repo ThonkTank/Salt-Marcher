@@ -5,25 +5,15 @@ size: "Large"
 type: "Beast"
 alignment: "Unaligned"
 ac: "12"
-initiative: "+0"
 hp: "13"
 hit_dice: "2d10 + 2"
-speed_walk: "20 ft."
-speed_swim: "30 ft."
 speeds_json: "{\"walk\":{\"distance\":\"20 ft.\"},\"swim\":{\"distance\":\"30 ft.\"}}"
-str: "15"
-dex: "10"
-con: "13"
-int: "2"
-wis: "10"
-cha: "5"
+abilities_json: "[{\"ability\":\"str\",\"score\":15},{\"ability\":\"dex\",\"score\":10},{\"ability\":\"con\",\"score\":13},{\"ability\":\"int\",\"score\":2},{\"ability\":\"wis\",\"score\":10},{\"ability\":\"cha\",\"score\":5}]"
 pb: "+2"
-saves_prof: ["CON"]
-skills_prof: ["Stealth"]
-passives: ["Passive Perception 10"]
+saves_json: "[{\"ability\":\"con\",\"bonus\":3}]"
 cr: "1/2"
 xp: "100"
-entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Hold Breath\",\"text\":\"The crocodile can hold its breath for 1 hour.\"},{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +4, reach 5 ft. 6 (1d8 + 2) Piercing damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12). While Grappled, the target has the Restrained condition.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+4\",\"range\":\"5 ft\",\"damage\":\"6 (1d8 + 2) Piercing\"}]"
+entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Hold Breath\",\"text\":\"The crocodile can hold its breath for 1 hour.\"},{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +4, reach 5 ft. 6 (1d8 + 2) Piercing damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12). While Grappled, the target has the Restrained condition.\"}]"
 ---
 
 # Crocodile
@@ -37,7 +27,7 @@ entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Hold Breath\",\"te
 | --- | --- | --- | --- | --- | --- |
 | 15 | 10 | 13 | 2 | 10 | 5 |
 
-CR 1/2, XP 100
+CR 1/2, PB +2, XP 100
 
 ## Traits
 

@@ -5,25 +5,14 @@ size: "Medium"
 type: "Undead"
 alignment: "Chaotic Evil"
 ac: "12"
-initiative: "+2"
 hp: "22"
 hit_dice: "5d8"
-speed_walk: "30 ft."
 speeds_json: "{\"walk\":{\"distance\":\"30 ft.\"}}"
-str: "13"
-dex: "15"
-con: "10"
-int: "7"
-wis: "10"
-cha: "6"
+abilities_json: "[{\"ability\":\"str\",\"score\":13},{\"ability\":\"dex\",\"score\":15},{\"ability\":\"con\",\"score\":10},{\"ability\":\"int\",\"score\":7},{\"ability\":\"wis\",\"score\":10},{\"ability\":\"cha\",\"score\":6}]"
 pb: "+2"
-senses: ["darkvision 60 ft."]
-passives: ["Passive Perception 10"]
-languages: ["Common"]
-damage_immunities: ["Poison", "Charmed", "Exhaustion", "Poisoned"]
 cr: "1"
 xp: "200"
-entries_structured_json: "[{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The ghoul makes two Bite attacks.\"},{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +4, reach 5 ft. 5 (1d6 + 2) Piercing damage plus 3 (1d6) Necrotic damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+4\",\"range\":\"5 ft\",\"damage\":\"5 (1d6 + 2) Piercing\"},{\"category\":\"action\",\"name\":\"Claw\",\"text\":\"*Melee Attack Roll:* +4, reach 5 ft. 4 (1d4 + 2) Slashing damage. If the target is a creature that isn't an Undead or elf, it is subjected to the following effect. *Constitution Saving Throw*: DC 10. *Failure:*  The target has the Paralyzed condition until the end of its next turn.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+4\",\"range\":\"5 ft\",\"damage\":\"4 (1d4 + 2) Slashing\",\"save_ability\":\"CON\",\"save_dc\":10}]"
+entries_structured_json: "[{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The ghoul makes two Bite attacks.\"},{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +4, reach 5 ft. 5 (1d6 + 2) Piercing damage plus 3 (1d6) Necrotic damage.\"},{\"category\":\"action\",\"name\":\"Claw\",\"text\":\"*Melee Attack Roll:* +4, reach 5 ft. 4 (1d4 + 2) Slashing damage. If the target is a creature that isn't an Undead or elf, it is subjected to the following effect. *Constitution Saving Throw*: DC 10. *Failure:*  The target has the Paralyzed condition until the end of its next turn.\"}]"
 ---
 
 # Ghoul
@@ -37,7 +26,7 @@ entries_structured_json: "[{\"category\":\"action\",\"name\":\"Multiattack\",\"t
 | --- | --- | --- | --- | --- | --- |
 | 13 | 15 | 10 | 7 | 10 | 6 |
 
-CR 1, XP 200
+CR 1, PB +2, XP 200
 
 ## Actions
 

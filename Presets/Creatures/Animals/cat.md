@@ -5,26 +5,15 @@ size: "Small"
 type: "Beast"
 alignment: "Unaligned"
 ac: "12"
-initiative: "+2"
 hp: "2"
 hit_dice: "1d4"
-speed_walk: "40 ft."
-speed_climb: "40 ft."
 speeds_json: "{\"walk\":{\"distance\":\"40 ft.\"},\"climb\":{\"distance\":\"40 ft.\"}}"
-str: "3"
-dex: "15"
-con: "10"
-int: "3"
-wis: "12"
-cha: "7"
+abilities_json: "[{\"ability\":\"str\",\"score\":3},{\"ability\":\"dex\",\"score\":15},{\"ability\":\"con\",\"score\":10},{\"ability\":\"int\",\"score\":3},{\"ability\":\"wis\",\"score\":12},{\"ability\":\"cha\",\"score\":7}]"
 pb: "+2"
-saves_prof: ["DEX"]
-skills_prof: ["Perception", "Stealth"]
-senses: ["darkvision 60 ft."]
-passives: ["Passive Perception 13"]
+saves_json: "[{\"ability\":\"dex\",\"bonus\":4}]"
 cr: "0"
 xp: "0"
-entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Jumper\",\"text\":\"The cat's jump distance is determined using its Dexterity rather than its Strength.\"},{\"category\":\"action\",\"name\":\"Scratch\",\"text\":\"*Melee Attack Roll:* +4, reach 5 ft. 1 Slashing damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+4\",\"range\":\"5 ft\"}]"
+entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Jumper\",\"text\":\"The cat's jump distance is determined using its Dexterity rather than its Strength.\"},{\"category\":\"action\",\"name\":\"Scratch\",\"text\":\"*Melee Attack Roll:* +4, reach 5 ft. 1 Slashing damage.\"}]"
 ---
 
 # Cat
@@ -38,7 +27,7 @@ entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Jumper\",\"text\":
 | --- | --- | --- | --- | --- | --- |
 | 3 | 15 | 10 | 3 | 12 | 7 |
 
-CR 0, XP 0
+CR 0, PB +2, XP 0
 
 ## Traits
 

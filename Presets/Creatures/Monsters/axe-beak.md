@@ -5,22 +5,14 @@ size: "Large"
 type: "Monstrosity"
 alignment: "Unaligned"
 ac: "11"
-initiative: "+1"
 hp: "19"
 hit_dice: "3d10 + 3"
-speed_walk: "50 ft."
 speeds_json: "{\"walk\":{\"distance\":\"50 ft.\"}}"
-str: "14"
-dex: "12"
-con: "12"
-int: "2"
-wis: "10"
-cha: "5"
+abilities_json: "[{\"ability\":\"str\",\"score\":14},{\"ability\":\"dex\",\"score\":12},{\"ability\":\"con\",\"score\":12},{\"ability\":\"int\",\"score\":2},{\"ability\":\"wis\",\"score\":10},{\"ability\":\"cha\",\"score\":5}]"
 pb: "+2"
-passives: ["Passive Perception 10"]
 cr: "1/4"
 xp: "50"
-entries_structured_json: "[{\"category\":\"action\",\"name\":\"Beak\",\"text\":\"*Melee Attack Roll:* +4, reach 5 ft. 5 (1d6 + 2) Slashing damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+4\",\"range\":\"5 ft\",\"damage\":\"5 (1d6 + 2) Slashing\"}]"
+entries_structured_json: "[{\"category\":\"action\",\"name\":\"Beak\",\"text\":\"*Melee Attack Roll:* +4, reach 5 ft. 5 (1d6 + 2) Slashing damage.\"}]"
 ---
 
 # Axe Beak
@@ -34,7 +26,7 @@ entries_structured_json: "[{\"category\":\"action\",\"name\":\"Beak\",\"text\":\
 | --- | --- | --- | --- | --- | --- |
 | 14 | 12 | 12 | 2 | 10 | 5 |
 
-CR 1/4, XP 50
+CR 1/4, PB +2, XP 50
 
 ## Actions
 

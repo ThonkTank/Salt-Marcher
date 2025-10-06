@@ -5,28 +5,13 @@ size: "Large"
 type: "Celestial"
 alignment: "Lawful Neutral"
 ac: "17"
-initiative: "+6"
 hp: "170"
 hit_dice: "20d10 + 60"
-speed_walk: "40 ft."
-speed_fly: "60 ft."
 speeds_json: "{\"walk\":{\"distance\":\"40 ft.\"},\"fly\":{\"distance\":\"60 ft.\"}}"
-str: "18"
-dex: "15"
-con: "16"
-int: "18"
-wis: "18"
-cha: "18"
-pb: "+4"
-skills_prof: ["Arcana", "History", "Perception", "Religion"]
-senses: ["truesight 120 ft."]
-passives: ["Passive Perception 18"]
-languages: ["Celestial", "Common"]
-damage_resistances: ["Necrotic", "Radiant"]
-damage_immunities: ["Psychic", "Charmed", "Frightened"]
+abilities_json: "[{\"ability\":\"str\",\"score\":18},{\"ability\":\"dex\",\"score\":15},{\"ability\":\"con\",\"score\":16},{\"ability\":\"int\",\"score\":18},{\"ability\":\"wis\",\"score\":18},{\"ability\":\"cha\",\"score\":18}]"
 cr: "11"
 xp: "7200"
-entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Inscrutable\",\"text\":\"No magic can observe the sphinx remotely or detect its thoughts without its permission. Wisdom (Insight) checks made to ascertain its intentions or sincerity are made with Disadvantage.\"},{\"category\":\"trait\",\"name\":\"Legendary Resistance (3/Day, or 4/Day in Lair)\",\"text\":\"If the sphinx fails a saving throw, it can choose to succeed instead.\"},{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The sphinx makes three Claw attacks.\"},{\"category\":\"action\",\"name\":\"Claw\",\"text\":\"*Melee Attack Roll:* +8, reach 5 ft. 14 (3d6 + 4) Slashing damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+8\",\"range\":\"5 ft\",\"damage\":\"14 (3d6 + 4) Slashing\"},{\"category\":\"action\",\"name\":\"Mind-Rending Roar\",\"recharge\":\"Recharge 5-6\",\"text\":\"*Wisdom Saving Throw*: DC 16, each enemy in a 300-foot Emanation originating from the sphinx. *Failure:*  35 (10d6) Psychic damage, and the target has the Incapacitated condition until the start of the sphinx's next turn.\",\"damage\":\"35 (10d6) Psychic\",\"save_ability\":\"WIS\",\"save_dc\":16},{\"category\":\"action\",\"name\":\"Spellcasting\",\"text\":\"The sphinx casts one of the following spells, requiring no Material components and using Intelligence as the spellcasting ability (spell save DC 16): - **At Will:** *Detect Magic*, *Identify*, *Mage Hand*, *Minor Illusion*, *Prestidigitation* - **1e/Day Each:** *Dispel Magic*, *Legend Lore*, *Locate Object*, *Plane Shift*, *Remove Curse*, *Tongues*\"},{\"category\":\"legendary\",\"name\":\"Arcane Prowl\",\"text\":\"The sphinx can teleport up to 30 feet to an unoccupied space it can see, and it makes one Claw attack.\"},{\"category\":\"legendary\",\"name\":\"Weight of Years\",\"text\":\"*Constitution Saving Throw*: DC 16, one creature the sphinx can see within 120 feet. *Failure:*  The target gains 1 Exhaustion level. While the target has any Exhaustion levels, it appears 3d10 years older. *Failure or Success*:  The sphinx can't take this action again until the start of its next turn.\",\"target\":\"one creature\",\"save_ability\":\"CON\",\"save_dc\":16}]"
+entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Inscrutable\",\"text\":\"No magic can observe the sphinx remotely or detect its thoughts without its permission. Wisdom (Insight) checks made to ascertain its intentions or sincerity are made with Disadvantage.\"},{\"category\":\"trait\",\"name\":\"Legendary Resistance (3/Day, or 4/Day in Lair)\",\"text\":\"If the sphinx fails a saving throw, it can choose to succeed instead.\"},{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The sphinx makes three Claw attacks.\"},{\"category\":\"action\",\"name\":\"Claw\",\"text\":\"*Melee Attack Roll:* +8, reach 5 ft. 14 (3d6 + 4) Slashing damage.\"},{\"category\":\"action\",\"name\":\"Mind-Rending Roar (Recharge 5-6)\",\"text\":\"*Wisdom Saving Throw*: DC 16, each enemy in a 300-foot Emanation originating from the sphinx. *Failure:*  35 (10d6) Psychic damage, and the target has the Incapacitated condition until the start of the sphinx's next turn.\"},{\"category\":\"action\",\"name\":\"Spellcasting\",\"text\":\"The sphinx casts one of the following spells, requiring no Material components and using Intelligence as the spellcasting ability (spell save DC 16): - **At Will:** *Detect Magic*, *Identify*, *Mage Hand*, *Minor Illusion*, *Prestidigitation* - **1e/Day Each:** *Dispel Magic*, *Legend Lore*, *Locate Object*, *Plane Shift*, *Remove Curse*, *Tongues*\"},{\"category\":\"legendary\",\"name\":\"Arcane Prowl\",\"text\":\"The sphinx can teleport up to 30 feet to an unoccupied space it can see, and it makes one Claw attack.\"},{\"category\":\"legendary\",\"name\":\"Weight of Years\",\"text\":\"*Constitution Saving Throw*: DC 16, one creature the sphinx can see within 120 feet. *Failure:*  The target gains 1 Exhaustion level. While the target has any Exhaustion levels, it appears 3d10 years older. *Failure or Success*:  The sphinx can't take this action again until the start of its next turn.\"}]"
 ---
 
 # Sphinx of Lore

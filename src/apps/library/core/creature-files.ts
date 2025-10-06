@@ -101,6 +101,14 @@ export type SpellcastingData = {
 };
 
 /**
+ * Ability score with value
+ */
+export type AbilityScore = {
+    ability: AbilityScoreKey;
+    score: number;
+};
+
+/**
  * New format for saving throws with explicit bonuses
  * Replaces boolean-only saveProf to support custom modifiers
  */
@@ -131,20 +139,10 @@ export type StatblockData = {
     hp?: string;
     hitDice?: string;
     speeds?: CreatureSpeeds;
-    str?: string; dex?: string; con?: string; int?: string; wis?: string; cha?: string;
+    abilities?: AbilityScore[];
     pb?: string;
-
-    // === New formats (v2) - Support custom bonuses ===
     saves?: SaveBonus[];
     skills?: SkillBonus[];
-
-    // === Deprecated formats (v1) - Keep for backwards compatibility ===
-    /** @deprecated Use saves[] instead. Kept for migration/backwards compat. */
-    saveProf?: { str?: boolean; dex?: boolean; con?: boolean; int?: boolean; wis?: boolean; cha?: boolean };
-    /** @deprecated Use skills[] instead. Kept for migration/backwards compat. */
-    skillsProf?: string[];
-    /** @deprecated Use skills[] instead. Kept for migration/backwards compat. */
-    skillsExpertise?: string[];
 
     sensesList?: string[];
     languagesList?: string[];
@@ -183,8 +181,11 @@ export const watchCreatureDir = CREATURE_PIPELINE.watch;
 function yamlList(items?: string[]): string | undefined { if (!items || items.length === 0) return undefined; const safe = items.map(s => `"${(s ?? "").replace(/"/g, '\\"')}"`).join(", "); return `[${safe}]`; }
 function formatSpeedExtra(entry: CreatureSpeedExtra): string { const parts = [entry.label]; if (entry.distance) parts.push(entry.distance); if (entry.note) parts.push(entry.note); if (entry.hover) parts.push("(hover)"); return parts.map(p => p?.trim()).filter((p): p is string => Boolean(p && p.length)).join(" "); }
 export function parseNumericValue(v?: string): number | null { if (!v) return null; const m = String(v).match(/-?\d+/); if (!m) return null; return Number(m[0]); }
-export function abilityModifierFromScore(score?: string): number | null { const n = parseNumericValue(score); if (n == null || Number.isNaN(n)) return null; return Math.floor((n - 10) / 2); }
-export function getAbilityModifier(data: StatblockData, ability: AbilityScoreKey): number | null { return abilityModifierFromScore((data as Record<string, string | undefined>)[ability]); }
+export function abilityModifierFromScore(score?: number | string): number | null { const n = typeof score === 'number' ? score : parseNumericValue(score); if (n == null || Number.isNaN(n)) return null; return Math.floor((n - 10) / 2); }
+export function getAbilityModifier(data: StatblockData, ability: AbilityScoreKey): number | null {
+    const abilityScore = data.abilities?.find(a => a.ability === ability);
+    return abilityScore ? abilityModifierFromScore(abilityScore.score) : null;
+}
 export function getProficiencyBonus(data: Pick<StatblockData, "pb">): number | null { return parseNumericValue(data.pb); }
 export function calculateSaveDc({ abilityMod, proficiencyBonus, override }: { abilityMod: number | null | undefined; proficiencyBonus: number | null | undefined; override?: number | null; }): number | null {
     if (override != null) return override;
@@ -233,25 +234,11 @@ export function statblockToMarkdown(d: StatblockData): string {
     if (d.alignmentOverride) lines.push(`alignment_override: "${d.alignmentOverride.replace(/"/g, '\\"')}"`);
     if (d.ac) lines.push(`ac: "${d.ac}"`); if (d.initiative) lines.push(`initiative: "${d.initiative}"`); if (d.hp) lines.push(`hp: "${d.hp}"`); if (d.hitDice) lines.push(`hit_dice: "${d.hitDice}"`);
     const speeds = d.speeds;
-    const walkSpeed = speeds?.walk?.distance;
-    const swimSpeed = speeds?.swim?.distance;
-    const flySpeed = speeds?.fly?.distance;
-    const flyHover = speeds?.fly?.hover;
-    const burrowSpeed = speeds?.burrow?.distance;
-    const climbSpeed = speeds?.climb?.distance;
-    if (walkSpeed) lines.push(`speed_walk: "${walkSpeed}"`);
-    if (swimSpeed) lines.push(`speed_swim: "${swimSpeed}"`);
-    if (flySpeed) lines.push(`speed_fly: "${flySpeed}"`);
-    if (flyHover) lines.push(`speed_fly_hover: true`);
-    if (burrowSpeed) lines.push(`speed_burrow: "${burrowSpeed}"`);
-    if (climbSpeed) lines.push(`speed_climb: "${climbSpeed}"`);
-    const extraSpeedStrings = speeds?.extras?.map(formatSpeedExtra) ?? [];
-    const speedsYaml = yamlList(extraSpeedStrings);
-    if (speedsYaml) lines.push(`speeds: ${speedsYaml}`);
     if (speeds) { const json = JSON.stringify(speeds).replace(/"/g, '\\"'); lines.push(`speeds_json: "${json}"`); }
-    if (d.str) lines.push(`str: "${d.str}"`); if (d.dex) lines.push(`dex: "${d.dex}"`); if (d.con) lines.push(`con: "${d.con}"`); if (d.int) lines.push(`int: "${d.int}"`); if (d.wis) lines.push(`wis: "${d.wis}"`); if (d.cha) lines.push(`cha: "${d.cha}"`); if (d.pb) lines.push(`pb: "${d.pb}"`);
-    if (d.saveProf) { const profs = Object.entries(d.saveProf).filter(([, v]) => !!v).map(([k]) => k.toUpperCase()); if (profs.length) lines.push(`saves_prof: ${yamlList(profs)}`); }
-    if (d.skillsProf && d.skillsProf.length) lines.push(`skills_prof: ${yamlList(d.skillsProf)}`); if (d.skillsExpertise && d.skillsExpertise.length) lines.push(`skills_expertise: ${yamlList(d.skillsExpertise)}`);
+    if (d.abilities && d.abilities.length) { const json = JSON.stringify(d.abilities).replace(/"/g, '\\"'); lines.push(`abilities_json: "${json}"`); }
+    if (d.pb) lines.push(`pb: "${d.pb}"`);
+    if (d.saves && d.saves.length) { const json = JSON.stringify(d.saves).replace(/"/g, '\\"'); lines.push(`saves_json: "${json}"`); }
+    if (d.skills && d.skills.length) { const json = JSON.stringify(d.skills).replace(/"/g, '\\"'); lines.push(`skills_json: "${json}"`); }
     const sensesYaml = yamlList(d.sensesList); if (sensesYaml) lines.push(`senses: ${sensesYaml}`);
     const langsYaml = yamlList(d.languagesList); if (langsYaml) lines.push(`languages: ${langsYaml}`);
     const passivesYaml = yamlList(d.passivesList); if (passivesYaml) lines.push(`passives: ${passivesYaml}`);
@@ -274,23 +261,44 @@ export function statblockToMarkdown(d: StatblockData): string {
     lines.push("");
     if (d.ac || d.initiative) lines.push(`AC ${d.ac ?? "-"}    Initiative ${d.initiative ?? "-"}`);
     if (d.hp || d.hitDice) lines.push(`HP ${d.hp ?? "-"}${d.hitDice ? ` (${d.hitDice})` : ""}`);
-    let speedsLine: string[] = [];
-    if (extraSpeedStrings.length) speedsLine = extraSpeedStrings.slice();
-    else {
-        if (walkSpeed) speedsLine.push(`${walkSpeed}`);
-        if (climbSpeed) speedsLine.push(`climb ${climbSpeed}`);
-        if (swimSpeed) speedsLine.push(`swim ${swimSpeed}`);
-        if (flySpeed) speedsLine.push(`fly ${flySpeed}${flyHover ? " (hover)" : ""}`.trim());
-        if (burrowSpeed) speedsLine.push(`burrow ${burrowSpeed}`);
+    if (speeds) {
+        const speedParts: string[] = [];
+        if (speeds.walk?.distance) speedParts.push(speeds.walk.distance);
+        if (speeds.climb?.distance) speedParts.push(`climb ${speeds.climb.distance}`);
+        if (speeds.swim?.distance) speedParts.push(`swim ${speeds.swim.distance}`);
+        if (speeds.fly?.distance) speedParts.push(`fly ${speeds.fly.distance}${speeds.fly.hover ? " (hover)" : ""}`);
+        if (speeds.burrow?.distance) speedParts.push(`burrow ${speeds.burrow.distance}`);
+        if (speeds.extras) {
+            for (const extra of speeds.extras) {
+                speedParts.push(formatSpeedExtra(extra));
+            }
+        }
+        if (speedParts.length) lines.push(`Speed ${speedParts.join(", ")}`);
     }
-    if (speedsLine.length) lines.push(`Speed ${speedsLine.join(", ")}`);
     lines.push("");
-    const abilities = [["STR", d.str],["DEX", d.dex],["CON", d.con],["INT", d.int],["WIS", d.wis],["CHA", d.cha]] as const; if (abilities.some(([_,v])=>!!v)) { lines.push("| Ability | Score |"); lines.push("| ------: | :---- |"); for (const [k,v] of abilities) if (v) lines.push(`| ${k} | ${v} |`); lines.push(""); }
+    if (d.abilities && d.abilities.length) {
+        lines.push("| Ability | Score |");
+        lines.push("| ------: | :---- |");
+        const abilityLabels: Record<AbilityScoreKey, string> = { str: 'STR', dex: 'DEX', con: 'CON', int: 'INT', wis: 'WIS', cha: 'CHA' };
+        const orderedAbilities: AbilityScoreKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+        for (const key of orderedAbilities) {
+            const ability = d.abilities.find(a => a.ability === key);
+            if (ability) {
+                lines.push(`| ${abilityLabels[key]} | ${ability.score} |`);
+            }
+        }
+        lines.push("");
+    }
     const pbValue = parseNumericValue(d.pb);
-    const pbNum = pbValue ?? 0;
-    if (d.saveProf) { const parts: string[] = []; const map: Array<[keyof typeof d.saveProf,string, string|undefined]> = [['str','Str',d.str],['dex','Dex',d.dex],['con','Con',d.con],['int','Int',d.int],['wis','Wis',d.wis],['cha','Cha',d.cha]]; for (const [key,label,score] of map) { if (d.saveProf[key]) { const mod = abilityModifierFromScore(score) ?? 0; parts.push(`${label} ${fmtSigned(mod + pbNum)}`); } } if (parts.length) lines.push(`Saves ${parts.join(", ")}`); }
-    const getSet = (arr?: string[]) => new Set((arr || []).map(s => s.trim()).filter(Boolean)); const profSet = getSet(d.skillsProf); const expSet = getSet(d.skillsExpertise);
-    if (profSet.size || expSet.size) { const parts: string[] = []; const allSkills = Array.from(new Set([...Object.keys(SKILL_TO_ABILITY)])); for (const sk of allSkills) { const hasProf = profSet.has(sk) || expSet.has(sk); if (!hasProf) continue; const abilKey = SKILL_TO_ABILITY[sk]; const mod = abilityModifierFromScore((d as any)[abilKey]) ?? 0; const bonus = expSet.has(sk) ? pbNum * 2 : pbNum; parts.push(`${sk} ${fmtSigned(mod + bonus)}`); } if (parts.length) lines.push(`Skills ${parts.join(", ")}`); }
+    if (d.saves && d.saves.length) {
+        const abilityLabels: Record<AbilityScoreKey, string> = { str: 'Str', dex: 'Dex', con: 'Con', int: 'Int', wis: 'Wis', cha: 'Cha' };
+        const parts = d.saves.map(save => `${abilityLabels[save.ability]} ${fmtSigned(save.bonus)}`);
+        lines.push(`Saves ${parts.join(", ")}`);
+    }
+    if (d.skills && d.skills.length) {
+        const parts = d.skills.map(skill => `${skill.name} ${fmtSigned(skill.bonus)}`);
+        lines.push(`Skills ${parts.join(", ")}`);
+    }
     const sensesParts: string[] = [];
     if (d.sensesList && d.sensesList.length) sensesParts.push(d.sensesList.join(", "));
     const passiveChunk = d.passivesList && d.passivesList.length ? d.passivesList.join("; ") : "";

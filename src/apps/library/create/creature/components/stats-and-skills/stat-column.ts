@@ -24,7 +24,7 @@ export interface StatColumnRefs {
   score: HTMLInputElement;
   /** Modifier display element */
   mod: HTMLElement;
-  /** Save proficiency checkbox */
+  /** Save bonus input (custom override) */
   save: HTMLInputElement;
   /** Save modifier display element */
   saveMod: HTMLElement;
@@ -80,8 +80,9 @@ export function createStatColumn(
   saveHead.createSpan({ cls: "sm-cc-stats-col__header-save-label", text: "Save" });
   saveHead.createSpan({ cls: "sm-cc-stats-col__header-save-mod", text: "Mod" });
 
-  // Ensure saveProf exists
-  if (!data.saveProf) data.saveProf = {} as any;
+  // Ensure abilities and saves arrays exist
+  if (!data.abilities) data.abilities = [];
+  if (!data.saves) data.saves = [];
 
   // Stat rows
   for (const ability of abilities) {
@@ -97,41 +98,80 @@ export function createStatColumn(
     const dec = scoreWrap.createEl("button", { text: "−", cls: "btn-compact" });
     const inc = scoreWrap.createEl("button", { text: "+", cls: "btn-compact" });
 
-    score.value = (data as any)[ability.key] || "";
+    // Load existing ability score
+    const existingAbility = data.abilities.find(a => a.ability === ability.key);
+    score.value = existingAbility ? String(existingAbility.score) : "";
 
     const step = (delta: number) => {
       const cur = parseInt(score.value, 10) || 0;
       const next = Math.max(0, cur + delta);
       score.value = String(next);
-      (data as any)[ability.key] = score.value.trim();
+
+      // Update abilities array
+      data.abilities = data.abilities.filter(a => a.ability !== ability.key);
+      if (next > 0) {
+        data.abilities.push({ ability: ability.key, score: next });
+      }
+
       onUpdate();
     };
 
     dec.onclick = () => step(-1);
     inc.onclick = () => step(1);
     score.addEventListener("input", () => {
-      (data as any)[ability.key] = score.value.trim();
+      const value = score.value.trim();
+
+      // Update abilities array
+      data.abilities = data.abilities.filter(a => a.ability !== ability.key);
+      if (value !== "") {
+        const scoreValue = parseInt(value);
+        if (!isNaN(scoreValue) && scoreValue > 0) {
+          data.abilities.push({ ability: ability.key, score: scoreValue });
+        }
+      }
+
       onUpdate();
     });
 
     // Modifier display
     const modOut = row.createSpan({ cls: "sm-cc-stat-row__mod-value", text: "+0" });
 
-    // Save proficiency
+    // Save bonus input (custom override)
     const saveWrap = row.createDiv({ cls: "sm-cc-stat-row__save" });
-    const saveLabel = saveWrap.createEl("label", { cls: "sm-cc-stat-row__save-prof" });
-    const saveCb = saveLabel.createEl("input", {
-      attr: { type: "checkbox", "aria-label": `${ability.label} Save Proficiency` },
+    const saveInput = saveWrap.createEl("input", {
+      attr: {
+        type: "number",
+        placeholder: "Auto",
+        "aria-label": `${ability.label} Save Bonus (leave empty for auto-calculation)`
+      },
     }) as HTMLInputElement;
+    saveInput.addClass("sm-cc-stat-row__save-input");
     const saveOut = saveWrap.createSpan({ cls: "sm-cc-stat-row__save-mod", text: "+0" });
 
-    saveCb.checked = !!(data.saveProf as any)[ability.key];
-    saveCb.addEventListener("change", () => {
-      (data.saveProf as any)[ability.key] = saveCb.checked;
+    // Load existing save bonus
+    const existingSave = data.saves.find(s => s.ability === ability.key);
+    if (existingSave) {
+      saveInput.value = String(existingSave.bonus);
+    }
+
+    saveInput.addEventListener("input", () => {
+      const value = saveInput.value.trim();
+
+      // Remove existing save for this ability
+      data.saves = data.saves.filter(s => s.ability !== ability.key);
+
+      // Add new save if value is present
+      if (value !== "") {
+        const bonus = parseInt(value);
+        if (!isNaN(bonus)) {
+          data.saves.push({ ability: ability.key, bonus });
+        }
+      }
+
       onUpdate();
     });
 
-    refs.set(ability.key, { score, mod: modOut, save: saveCb, saveMod: saveOut });
+    refs.set(ability.key, { score, mod: modOut, save: saveInput, saveMod: saveOut });
   }
 
   return refs;

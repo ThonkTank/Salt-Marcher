@@ -5,24 +5,14 @@ size: "Large"
 type: "Monstrosity"
 alignment: "Unaligned"
 ac: "14"
-initiative: "+0"
 hp: "45"
 hit_dice: "6d10 + 12"
-speed_walk: "30 ft."
-speed_burrow: "10 ft."
 speeds_json: "{\"walk\":{\"distance\":\"30 ft.\"},\"burrow\":{\"distance\":\"10 ft.\"}}"
-str: "17"
-dex: "11"
-con: "14"
-int: "1"
-wis: "13"
-cha: "6"
+abilities_json: "[{\"ability\":\"str\",\"score\":17},{\"ability\":\"dex\",\"score\":11},{\"ability\":\"con\",\"score\":14},{\"ability\":\"int\",\"score\":1},{\"ability\":\"wis\",\"score\":13},{\"ability\":\"cha\",\"score\":6}]"
 pb: "+2"
-senses: ["darkvision 60 ft.", "tremorsense 60 ft."]
-passives: ["Passive Perception 11"]
 cr: "2"
 xp: "450"
-entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Tunneler\",\"text\":\"The ankheg can burrow through solid rock at half its Burrow Speed and leaves a 10-foot-diameter tunnel in its wake.\"},{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +5 (with Advantage if the target is Grappled by the ankheg), reach 5 ft. 10 (2d6 + 3) Slashing damage plus 3 (1d6) Acid damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13).\",\"damage\":\"10 (2d6 + 3) Slashing\"},{\"category\":\"action\",\"name\":\"Acid Spray\",\"recharge\":\"Recharge 6\",\"text\":\"*Dexterity Saving Throw*: DC 12, each creature in a 30-foot-long, 5-foot-wide Line. *Failure:*  14 (4d6) Acid damage. *Success:*  Half damage.\",\"target\":\"each creature in a 30-foot-long, 5-foot-wide Line\",\"damage\":\"14 (4d6) Acid\",\"save_ability\":\"DEX\",\"save_dc\":12,\"save_effect\":\"Half damage\"}]"
+entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Tunneler\",\"text\":\"The ankheg can burrow through solid rock at half its Burrow Speed and leaves a 10-foot-diameter tunnel in its wake.\"},{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +5 (with Advantage if the target is Grappled by the ankheg), reach 5 ft. 10 (2d6 + 3) Slashing damage plus 3 (1d6) Acid damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13).\"},{\"category\":\"action\",\"name\":\"Acid Spray\",\"recharge\":\"Recharge 6\",\"text\":\"*Dexterity Saving Throw*: DC 12, each creature in a 30-foot-long, 5-foot-wide Line. *Failure:*  14 (4d6) Acid damage. *Success:*  Half damage.\"}]"
 ---
 
 # Ankheg
@@ -36,7 +26,7 @@ entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Tunneler\",\"text\
 | --- | --- | --- | --- | --- | --- |
 | 17 | 11 | 14 | 1 | 13 | 6 |
 
-CR 2, XP 450
+CR 2, PB +2, XP 450
 
 ## Traits
 

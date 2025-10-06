@@ -9,6 +9,7 @@ import { createTerrainBootstrap, type TerrainBootstrapHandle } from "./bootstrap
 
 export default class SaltMarcherPlugin extends Plugin {
     private terrainBootstrap?: TerrainBootstrapHandle;
+
     async onload() {
         // Import preset creatures from plugin on first load
         try {
@@ -48,6 +49,91 @@ export default class SaltMarcherPlugin extends Plugin {
             }
         } catch (err) {
             console.error("Failed to import equipment presets:", err);
+        }
+
+        // Generate library index files
+        try {
+            const { generateAllIndexes } = await import('../apps/library/core/index-files');
+            await generateAllIndexes(this.app);
+        } catch (err) {
+            console.error("Failed to generate library indexes:", err);
+        }
+
+        // Watch library directories and regenerate indexes on changes
+        try {
+            const {
+                generateCreaturesIndex,
+                generateEquipmentIndex,
+                generateSpellsIndex,
+                generateItemsIndex,
+                generateLibraryHub
+            } = await import('../apps/library/core/index-files');
+
+            // Helper to debounce index updates
+            const createDebouncedIndexUpdater = (updateFn: () => Promise<void>, delay: number = 1000) => {
+                let timeoutId: NodeJS.Timeout | null = null;
+                return () => {
+                    if (timeoutId) clearTimeout(timeoutId);
+                    timeoutId = setTimeout(async () => {
+                        try {
+                            await updateFn();
+                        } catch (err) {
+                            console.error("Failed to update index:", err);
+                        }
+                    }, delay);
+                };
+            };
+
+            // Watch Creatures directory
+            const creaturesWatcher = createDebouncedIndexUpdater(() => generateCreaturesIndex(this.app));
+            this.registerEvent(this.app.vault.on("create", (file) => {
+                if (file.path.startsWith("SaltMarcher/Creatures/") && file.path !== "SaltMarcher/Creatures.md") creaturesWatcher();
+            }));
+            this.registerEvent(this.app.vault.on("delete", (file) => {
+                if (file.path.startsWith("SaltMarcher/Creatures/") && file.path !== "SaltMarcher/Creatures.md") creaturesWatcher();
+            }));
+            this.registerEvent(this.app.vault.on("rename", (file) => {
+                if (file.path.startsWith("SaltMarcher/Creatures/") && file.path !== "SaltMarcher/Creatures.md") creaturesWatcher();
+            }));
+
+            // Watch Equipment directory
+            const equipmentWatcher = createDebouncedIndexUpdater(() => generateEquipmentIndex(this.app));
+            this.registerEvent(this.app.vault.on("create", (file) => {
+                if (file.path.startsWith("SaltMarcher/Equipment/") && file.path !== "SaltMarcher/Equipment.md") equipmentWatcher();
+            }));
+            this.registerEvent(this.app.vault.on("delete", (file) => {
+                if (file.path.startsWith("SaltMarcher/Equipment/") && file.path !== "SaltMarcher/Equipment.md") equipmentWatcher();
+            }));
+            this.registerEvent(this.app.vault.on("rename", (file) => {
+                if (file.path.startsWith("SaltMarcher/Equipment/") && file.path !== "SaltMarcher/Equipment.md") equipmentWatcher();
+            }));
+
+            // Watch Spells directory
+            const spellsWatcher = createDebouncedIndexUpdater(() => generateSpellsIndex(this.app));
+            this.registerEvent(this.app.vault.on("create", (file) => {
+                if (file.path.startsWith("SaltMarcher/Spells/") && file.path !== "SaltMarcher/Spells.md") spellsWatcher();
+            }));
+            this.registerEvent(this.app.vault.on("delete", (file) => {
+                if (file.path.startsWith("SaltMarcher/Spells/") && file.path !== "SaltMarcher/Spells.md") spellsWatcher();
+            }));
+            this.registerEvent(this.app.vault.on("rename", (file) => {
+                if (file.path.startsWith("SaltMarcher/Spells/") && file.path !== "SaltMarcher/Spells.md") spellsWatcher();
+            }));
+
+            // Watch Items directory
+            const itemsWatcher = createDebouncedIndexUpdater(() => generateItemsIndex(this.app));
+            this.registerEvent(this.app.vault.on("create", (file) => {
+                if (file.path.startsWith("SaltMarcher/Items/") && file.path !== "SaltMarcher/Items.md") itemsWatcher();
+            }));
+            this.registerEvent(this.app.vault.on("delete", (file) => {
+                if (file.path.startsWith("SaltMarcher/Items/") && file.path !== "SaltMarcher/Items.md") itemsWatcher();
+            }));
+            this.registerEvent(this.app.vault.on("rename", (file) => {
+                if (file.path.startsWith("SaltMarcher/Items/") && file.path !== "SaltMarcher/Items.md") itemsWatcher();
+            }));
+
+        } catch (err) {
+            console.error("Failed to setup library index watchers:", err);
         }
 
         // Views

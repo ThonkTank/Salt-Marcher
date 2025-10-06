@@ -6,24 +6,14 @@ type: "Beast"
 type_tags: ["Dinosaur"]
 alignment: "Unaligned"
 ac: "17"
-initiative: "+3"
 hp: "90"
 hit_dice: "12d12 + 12"
-speed_walk: "20 ft."
-speed_swim: "80 ft."
 speeds_json: "{\"walk\":{\"distance\":\"20 ft.\"},\"swim\":{\"distance\":\"80 ft.\"}}"
-str: "18"
-dex: "16"
-con: "13"
-int: "4"
-wis: "14"
-cha: "6"
+abilities_json: "[{\"ability\":\"str\",\"score\":18},{\"ability\":\"dex\",\"score\":16},{\"ability\":\"con\",\"score\":13},{\"ability\":\"int\",\"score\":4},{\"ability\":\"wis\",\"score\":14},{\"ability\":\"cha\",\"score\":6}]"
 pb: "+2"
-skills_prof: ["Stealth"]
-passives: ["Passive Perception 12"]
 cr: "4"
 xp: "1100"
-entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Amphibious\",\"text\":\"The archelon can breathe air and water.\"},{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The archelon makes two Bite attacks.\"},{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +6, reach 5 ft. 14 (3d6 + 4) Piercing damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+6\",\"range\":\"5 ft\",\"damage\":\"14 (3d6 + 4) Piercing\"}]"
+entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Amphibious\",\"text\":\"The archelon can breathe air and water.\"},{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The archelon makes two Bite attacks.\"},{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +6, reach 5 ft. 14 (3d6 + 4) Piercing damage.\"}]"
 ---
 
 # Archelon
@@ -37,7 +27,7 @@ entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Amphibious\",\"tex
 | --- | --- | --- | --- | --- | --- |
 | 18 | 16 | 13 | 4 | 14 | 6 |
 
-CR 4, XP 1100
+CR 4, PB +2, XP 1100
 
 ## Traits
 

@@ -6,29 +6,15 @@ type: "Dragon"
 type_tags: ["Chromatic"]
 alignment: "Chaotic Evil"
 ac: "18"
-initiative: "+4"
 hp: "178"
 hit_dice: "17d10 + 85"
-speed_walk: "40 ft."
-speed_climb: "40 ft."
-speed_fly: "80 ft."
 speeds_json: "{\"walk\":{\"distance\":\"40 ft.\"},\"climb\":{\"distance\":\"40 ft.\"},\"fly\":{\"distance\":\"80 ft.\"}}"
-str: "23"
-dex: "10"
-con: "21"
-int: "14"
-wis: "11"
-cha: "19"
+abilities_json: "[{\"ability\":\"str\",\"score\":23},{\"ability\":\"dex\",\"score\":10},{\"ability\":\"con\",\"score\":21},{\"ability\":\"int\",\"score\":14},{\"ability\":\"wis\",\"score\":11},{\"ability\":\"cha\",\"score\":19}]"
 pb: "+4"
-saves_prof: ["DEX", "WIS"]
-skills_prof: ["Perception", "Stealth"]
-senses: ["blindsight 30 ft.", "darkvision 120 ft."]
-passives: ["Passive Perception 18"]
-languages: ["Common", "Draconic"]
-damage_immunities: ["Fire"]
+saves_json: "[{\"ability\":\"dex\",\"bonus\":4},{\"ability\":\"wis\",\"bonus\":4}]"
 cr: "10"
 xp: "5900"
-entries_structured_json: "[{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The dragon makes three Rend attacks.\"},{\"category\":\"action\",\"name\":\"Rend\",\"text\":\"*Melee Attack Roll:* +10, reach 10 ft. 13 (2d6 + 6) Slashing damage plus 3 (1d6) Fire damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+10\",\"range\":\"10 ft\",\"damage\":\"13 (2d6 + 6) Slashing\"},{\"category\":\"action\",\"name\":\"Fire Breath\",\"recharge\":\"Recharge 5-6\",\"text\":\"*Dexterity Saving Throw*: DC 17, each creature in a 30-foot Cone. *Failure:*  56 (16d6) Fire damage. *Success:*  Half damage.\",\"target\":\"each creature in a 30-foot Cone\",\"damage\":\"56 (16d6) Fire\",\"save_ability\":\"DEX\",\"save_dc\":17,\"save_effect\":\"Half damage\"}]"
+entries_structured_json: "[{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The dragon makes three Rend attacks.\"},{\"category\":\"action\",\"name\":\"Rend\",\"text\":\"*Melee Attack Roll:* +10, reach 10 ft. 13 (2d6 + 6) Slashing damage plus 3 (1d6) Fire damage.\"},{\"category\":\"action\",\"name\":\"Fire Breath (Recharge 5-6)\",\"text\":\"*Dexterity Saving Throw*: DC 17, each creature in a 30-foot Cone. *Failure:*  56 (16d6) Fire damage. *Success:*  Half damage.\"}]"
 ---
 
 # Young Red Dragon
@@ -36,13 +22,13 @@ entries_structured_json: "[{\"category\":\"action\",\"name\":\"Multiattack\",\"t
 
 **AC** 18
 **HP** 178 (17d10 + 85)
-**Speed** 40 ft., fly 80 ft., climb 40 ft.
+**Speed** 40 ft., climb 40 ft., fly 80 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
 | 23 | 10 | 21 | 14 | 11 | 19 |
 
-CR 10, XP 5900
+CR 10, PB +4, XP 5900
 
 ## Actions
 

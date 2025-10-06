@@ -5,25 +5,14 @@ size: "Small"
 type: "Beast"
 alignment: "Unaligned"
 ac: "11"
-initiative: "+1"
 hp: "1"
 hit_dice: "1d4 - 1"
-speed_walk: "5 ft."
-speed_fly: "60 ft."
 speeds_json: "{\"walk\":{\"distance\":\"5 ft.\"},\"fly\":{\"distance\":\"60 ft.\"}}"
-str: "3"
-dex: "13"
-con: "8"
-int: "2"
-wis: "12"
-cha: "7"
+abilities_json: "[{\"ability\":\"str\",\"score\":3},{\"ability\":\"dex\",\"score\":13},{\"ability\":\"con\",\"score\":8},{\"ability\":\"int\",\"score\":2},{\"ability\":\"wis\",\"score\":12},{\"ability\":\"cha\",\"score\":7}]"
 pb: "+2"
-skills_prof: ["Perception", "Stealth"]
-senses: ["darkvision 120 ft."]
-passives: ["Passive Perception 15"]
 cr: "0"
 xp: "0"
-entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Flyby\",\"text\":\"The owl doesn't provoke Opportunity Attacks when it flies out of an enemy's reach.\"},{\"category\":\"action\",\"name\":\"Talons\",\"text\":\"*Melee Attack Roll:* +3, reach 5 ft. 1 Slashing damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+3\",\"range\":\"5 ft\"}]"
+entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Flyby\",\"text\":\"The owl doesn't provoke Opportunity Attacks when it flies out of an enemy's reach.\"},{\"category\":\"action\",\"name\":\"Talons\",\"text\":\"*Melee Attack Roll:* +3, reach 5 ft. 1 Slashing damage.\"}]"
 ---
 
 # Owl
@@ -37,7 +26,7 @@ entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Flyby\",\"text\":\
 | --- | --- | --- | --- | --- | --- |
 | 3 | 13 | 8 | 2 | 12 | 7 |
 
-CR 0, XP 0
+CR 0, PB +2, XP 0
 
 ## Traits
 

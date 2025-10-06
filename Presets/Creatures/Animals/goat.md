@@ -5,26 +5,15 @@ size: "Medium"
 type: "Beast"
 alignment: "Unaligned"
 ac: "10"
-initiative: "+0"
 hp: "4"
 hit_dice: "1d8"
-speed_walk: "40 ft."
-speed_climb: "30 ft."
 speeds_json: "{\"walk\":{\"distance\":\"40 ft.\"},\"climb\":{\"distance\":\"30 ft.\"}}"
-str: "11"
-dex: "10"
-con: "11"
-int: "2"
-wis: "10"
-cha: "5"
+abilities_json: "[{\"ability\":\"str\",\"score\":11},{\"ability\":\"dex\",\"score\":10},{\"ability\":\"con\",\"score\":11},{\"ability\":\"int\",\"score\":2},{\"ability\":\"wis\",\"score\":10},{\"ability\":\"cha\",\"score\":5}]"
 pb: "+2"
-saves_prof: ["STR"]
-skills_prof: ["Perception"]
-senses: ["darkvision 60 ft."]
-passives: ["Passive Perception 12"]
+saves_json: "[{\"ability\":\"str\",\"bonus\":2}]"
 cr: "0"
 xp: "0"
-entries_structured_json: "[{\"category\":\"action\",\"name\":\"Ram\",\"text\":\"*Melee Attack Roll:* +2, reach 5 ft. 1 Bludgeoning damage, or 2 (1d4) Bludgeoning damage if the goat moved 20+ feet straight toward the target immediately before the hit.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+2\",\"range\":\"5 ft\",\"damage\":\"2 (1d4) Bludgeoning\"}]"
+entries_structured_json: "[{\"category\":\"action\",\"name\":\"Ram\",\"text\":\"*Melee Attack Roll:* +2, reach 5 ft. 1 Bludgeoning damage, or 2 (1d4) Bludgeoning damage if the goat moved 20+ feet straight toward the target immediately before the hit.\"}]"
 ---
 
 # Goat
@@ -38,7 +27,7 @@ entries_structured_json: "[{\"category\":\"action\",\"name\":\"Ram\",\"text\":\"
 | --- | --- | --- | --- | --- | --- |
 | 11 | 10 | 11 | 2 | 10 | 5 |
 
-CR 0, XP 0
+CR 0, PB +2, XP 0
 
 ## Actions
 

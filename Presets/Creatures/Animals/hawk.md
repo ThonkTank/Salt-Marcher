@@ -5,24 +5,14 @@ size: "Small"
 type: "Beast"
 alignment: "Unaligned"
 ac: "13"
-initiative: "+3"
 hp: "1"
 hit_dice: "1d4 - 1"
-speed_walk: "10 ft."
-speed_fly: "60 ft."
 speeds_json: "{\"walk\":{\"distance\":\"10 ft.\"},\"fly\":{\"distance\":\"60 ft.\"}}"
-str: "5"
-dex: "16"
-con: "8"
-int: "2"
-wis: "14"
-cha: "6"
+abilities_json: "[{\"ability\":\"str\",\"score\":5},{\"ability\":\"dex\",\"score\":16},{\"ability\":\"con\",\"score\":8},{\"ability\":\"int\",\"score\":2},{\"ability\":\"wis\",\"score\":14},{\"ability\":\"cha\",\"score\":6}]"
 pb: "+2"
-skills_prof: ["Perception"]
-passives: ["Passive Perception 16"]
 cr: "0"
 xp: "0"
-entries_structured_json: "[{\"category\":\"action\",\"name\":\"Talons\",\"text\":\"*Melee Attack Roll:* +5, reach 5 ft. 1 Slashing damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+5\",\"range\":\"5 ft\"}]"
+entries_structured_json: "[{\"category\":\"action\",\"name\":\"Talons\",\"text\":\"*Melee Attack Roll:* +5, reach 5 ft. 1 Slashing damage.\"}]"
 ---
 
 # Hawk
@@ -36,7 +26,7 @@ entries_structured_json: "[{\"category\":\"action\",\"name\":\"Talons\",\"text\"
 | --- | --- | --- | --- | --- | --- |
 | 5 | 16 | 8 | 2 | 14 | 6 |
 
-CR 0, XP 0
+CR 0, PB +2, XP 0
 
 ## Actions
 

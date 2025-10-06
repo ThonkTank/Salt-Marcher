@@ -5,26 +5,14 @@ size: "Small"
 type: "Beast"
 alignment: "Unaligned"
 ac: "11"
-initiative: "+0"
 hp: "5"
 hit_dice: "1d4 + 3"
-speed_walk: "20 ft."
-speed_burrow: "5 ft."
 speeds_json: "{\"walk\":{\"distance\":\"20 ft.\"},\"burrow\":{\"distance\":\"5 ft.\"}}"
-str: "10"
-dex: "11"
-con: "16"
-int: "2"
-wis: "12"
-cha: "5"
+abilities_json: "[{\"ability\":\"str\",\"score\":10},{\"ability\":\"dex\",\"score\":11},{\"ability\":\"con\",\"score\":16},{\"ability\":\"int\",\"score\":2},{\"ability\":\"wis\",\"score\":12},{\"ability\":\"cha\",\"score\":5}]"
 pb: "+2"
-skills_prof: ["Perception"]
-senses: ["darkvision 30 ft."]
-passives: ["Passive Perception 13"]
-damage_resistances: ["Poison"]
 cr: "0"
 xp: "0"
-entries_structured_json: "[{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +2, reach 5 ft. 1 Piercing damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+2\",\"range\":\"5 ft\"}]"
+entries_structured_json: "[{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +2, reach 5 ft. 1 Piercing damage.\"}]"
 ---
 
 # Badger
@@ -38,7 +26,7 @@ entries_structured_json: "[{\"category\":\"action\",\"name\":\"Bite\",\"text\":\
 | --- | --- | --- | --- | --- | --- |
 | 10 | 11 | 16 | 2 | 12 | 5 |
 
-CR 0, XP 0
+CR 0, PB +2, XP 0
 
 ## Actions
 

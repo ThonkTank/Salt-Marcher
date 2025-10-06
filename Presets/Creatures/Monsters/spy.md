@@ -5,25 +5,14 @@ size: "Small"
 type: "Humanoid"
 alignment: "Neutral Neutral"
 ac: "12"
-initiative: "+4"
 hp: "27"
 hit_dice: "6d8"
-speed_walk: "30 ft."
-speed_climb: "30 ft."
 speeds_json: "{\"walk\":{\"distance\":\"30 ft.\"},\"climb\":{\"distance\":\"30 ft.\"}}"
-str: "10"
-dex: "15"
-con: "10"
-int: "12"
-wis: "14"
-cha: "16"
+abilities_json: "[{\"ability\":\"str\",\"score\":10},{\"ability\":\"dex\",\"score\":15},{\"ability\":\"con\",\"score\":10},{\"ability\":\"int\",\"score\":12},{\"ability\":\"wis\",\"score\":14},{\"ability\":\"cha\",\"score\":16}]"
 pb: "+2"
-skills_prof: ["Deception", "Insight", "Investigation", "Perception", "Sleight of hand", "Stealth"]
-passives: ["Passive Perception 16"]
-languages: ["Common plus one other language"]
 cr: "1"
 xp: "200"
-entries_structured_json: "[{\"category\":\"action\",\"name\":\"Shortsword\",\"text\":\"*Melee Attack Roll:* +4, reach 5 ft. 5 (1d6 + 2) Piercing damage plus 7 (2d6) Poison damage.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+4\",\"range\":\"5 ft\",\"damage\":\"5 (1d6 + 2) Piercing\"},{\"category\":\"action\",\"name\":\"Hand Crossbow\",\"text\":\"*Ranged Attack Roll:* +4, range 30/120 ft. 5 (1d6 + 2) Piercing damage plus 7 (2d6) Poison damage.\",\"kind\":\"Ranged Attack Roll\",\"to_hit\":\"+4\",\"range\":\"30/120 ft\",\"damage\":\"5 (1d6 + 2) Piercing\"},{\"category\":\"bonus\",\"name\":\"Cunning Action\",\"text\":\"The spy takes the Dash, Disengage, or Hide action.\"}]"
+entries_structured_json: "[{\"category\":\"action\",\"name\":\"Shortsword\",\"text\":\"*Melee Attack Roll:* +4, reach 5 ft. 5 (1d6 + 2) Piercing damage plus 7 (2d6) Poison damage.\"},{\"category\":\"action\",\"name\":\"Hand Crossbow\",\"text\":\"*Ranged Attack Roll:* +4, range 30/120 ft. 5 (1d6 + 2) Piercing damage plus 7 (2d6) Poison damage.\"},{\"category\":\"bonus\",\"name\":\"Cunning Action\",\"text\":\"The spy takes the Dash, Disengage, or Hide action.\"}]"
 ---
 
 # Spy
@@ -37,7 +26,7 @@ entries_structured_json: "[{\"category\":\"action\",\"name\":\"Shortsword\",\"te
 | --- | --- | --- | --- | --- | --- |
 | 10 | 15 | 10 | 12 | 14 | 16 |
 
-CR 1, XP 200
+CR 1, PB +2, XP 200
 
 ## Actions
 

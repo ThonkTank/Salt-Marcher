@@ -5,23 +5,15 @@ size: "Huge"
 type: "Beast"
 alignment: "Unaligned"
 ac: "13"
-initiative: "+2"
 hp: "126"
 hit_dice: "11d12 + 55"
-speed_walk: "50 ft."
 speeds_json: "{\"walk\":{\"distance\":\"50 ft.\"}}"
-str: "24"
-dex: "9"
-con: "21"
-int: "3"
-wis: "11"
-cha: "6"
+abilities_json: "[{\"ability\":\"str\",\"score\":24},{\"ability\":\"dex\",\"score\":9},{\"ability\":\"con\",\"score\":21},{\"ability\":\"int\",\"score\":3},{\"ability\":\"wis\",\"score\":11},{\"ability\":\"cha\",\"score\":6}]"
 pb: "+3"
-saves_prof: ["STR", "CON"]
-passives: ["Passive Perception 10"]
+saves_json: "[{\"ability\":\"str\",\"bonus\":10},{\"ability\":\"con\",\"bonus\":8}]"
 cr: "6"
 xp: "2300"
-entries_structured_json: "[{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The mammoth makes two Gore attacks.\"},{\"category\":\"action\",\"name\":\"Gore\",\"text\":\"*Melee Attack Roll:* +10, reach 10 ft. 18 (2d10 + 7) Piercing damage. If the target is a Huge or smaller creature and the mammoth moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.\",\"kind\":\"Melee Attack Roll\",\"to_hit\":\"+10\",\"range\":\"10 ft\",\"damage\":\"18 (2d10 + 7) Piercing\"},{\"category\":\"bonus\",\"name\":\"Trample\",\"text\":\"*Dexterity Saving Throw*: DC 18, one creature within 5 feet that has the Prone condition. *Failure:*  29 (4d10 + 7) Bludgeoning damage. *Success:*  Half damage.\",\"target\":\"one creature\",\"damage\":\"29 (4d10 + 7) Bludgeoning\",\"save_ability\":\"DEX\",\"save_dc\":18,\"save_effect\":\"Half damage\"}]"
+entries_structured_json: "[{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The mammoth makes two Gore attacks.\"},{\"category\":\"action\",\"name\":\"Gore\",\"text\":\"*Melee Attack Roll:* +10, reach 10 ft. 18 (2d10 + 7) Piercing damage. If the target is a Huge or smaller creature and the mammoth moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.\"},{\"category\":\"bonus\",\"name\":\"Trample\",\"text\":\"*Dexterity Saving Throw*: DC 18, one creature within 5 feet that has the Prone condition. *Failure:*  29 (4d10 + 7) Bludgeoning damage. *Success:*  Half damage.\"}]"
 ---
 
 # Mammoth
@@ -35,7 +27,7 @@ entries_structured_json: "[{\"category\":\"action\",\"name\":\"Multiattack\",\"t
 | --- | --- | --- | --- | --- | --- |
 | 24 | 9 | 21 | 3 | 11 | 6 |
 
-CR 6, XP 2300
+CR 6, PB +3, XP 2300
 
 ## Actions
 
