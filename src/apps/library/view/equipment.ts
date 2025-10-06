@@ -1,72 +1,63 @@
 // src/apps/library/view/equipment.ts
-// Renders and creates equipment entries
-import type { TFile } from "obsidian";
+// Rendert Equipment mit konfigurierbaren Filtern für Typ und Einsatzbereich.
+import type { App, TFile } from "obsidian";
 import type { ModeRenderer } from "./mode";
-import { BaseModeRenderer, scoreName } from "./mode";
-import { listEquipmentFiles, watchEquipmentDir, createEquipmentFile, type EquipmentData } from "../core/equipment-files";
+import { FilterableLibraryRenderer } from "./filterable-mode";
+import { createEquipmentFile, type EquipmentData } from "../core/equipment-files";
 import { CreateEquipmentModal } from "../create/equipment";
+import type { LibrarySourceWatcherHub } from "./mode";
+import type { LibraryEntry } from "../core/data-sources";
 
-export class EquipmentRenderer extends BaseModeRenderer implements ModeRenderer {
-    readonly mode = "equipment" as const;
-    private files: TFile[] = [];
+type EquipmentEntry = LibraryEntry<"equipment">;
 
-    async init(): Promise<void> {
-        this.files = await listEquipmentFiles(this.app);
-        const stop = watchEquipmentDir(this.app, async () => {
-            this.files = await listEquipmentFiles(this.app);
-            if (!this.isDisposed()) this.render();
-        });
-        this.registerCleanup(stop);
+export class EquipmentRenderer extends FilterableLibraryRenderer<"equipment"> implements ModeRenderer {
+    constructor(app: App, container: HTMLElement, watchers: LibrarySourceWatcherHub) {
+        super(app, container, watchers, "equipment");
     }
 
-    render(): void {
-        if (this.isDisposed()) return;
-        const list = this.container;
-        list.empty();
-        const q = this.query;
-        const equipment = this.files.map(f => ({ name: f.basename, file: f, score: scoreName(f.basename.toLowerCase(), q) }))
-            .filter(x => q ? x.score > -Infinity : true)
-            .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+    protected renderEntry(row: HTMLElement, entry: EquipmentEntry): void {
+        row.createDiv({ cls: "sm-cc-item__name", text: entry.name });
 
-        for (const eq of equipment) {
-            const row = list.createDiv({ cls: "sm-cc-item" });
-            row.createDiv({ cls: "sm-cc-item__name", text: eq.name });
-
-            const importBtn = row.createEl("button", { text: "Import" });
-            importBtn.onclick = async () => {
-                await this.handleImport(eq.file);
-            };
-
-            const openBtn = row.createEl("button", { text: "Open" });
-            openBtn.onclick = async () => {
-                await this.app.workspace.openLinkText(eq.file.path, eq.file.path, true);
-            };
+        const info = row.createDiv({ cls: "sm-cc-item__info" });
+        if (entry.type) {
+            info.createEl("span", { cls: "sm-cc-item__type", text: entry.type });
         }
+        if (entry.role) {
+            info.createEl("span", { cls: "sm-cc-item__cr", text: entry.role });
+        }
+
+        const actions = row.createDiv({ cls: "sm-cc-item__actions" });
+        const importBtn = actions.createEl("button", { text: "Import", cls: "sm-cc-item__action" });
+        importBtn.onclick = async () => {
+            await this.handleImport(entry.file);
+        };
+
+        const openBtn = actions.createEl("button", { text: "Open", cls: "sm-cc-item__action" });
+        openBtn.onclick = async () => {
+            await this.app.workspace.openLinkText(entry.file.path, entry.file.path, true);
+        };
+    }
+
+    async handleCreate(name: string): Promise<void> {
+        new CreateEquipmentModal(this.app, name, async (data) => {
+            const file = await createEquipmentFile(this.app, data);
+            await this.reloadEntries();
+            await this.app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
+        }).open();
     }
 
     private async handleImport(file: TFile): Promise<void> {
         try {
-            // Parse equipment data from file
             const equipmentData = await this.parseEquipmentFromFile(file);
-
-            // Open in editor modal with existing data
             new CreateEquipmentModal(this.app, equipmentData, async (updatedData) => {
-                // Import equipmentToMarkdown to generate updated content
                 const { equipmentToMarkdown } = await import("../core/equipment-files");
                 const newContent = equipmentToMarkdown(updatedData);
-
-                // Update the existing file
                 await this.app.vault.modify(file, newContent);
-
-                // Refresh and open
-                this.files = await listEquipmentFiles(this.app);
-                if (!this.isDisposed()) {
-                    this.render();
-                    await this.app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
-                }
+                await this.reloadEntries();
+                await this.app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
             }).open();
         } catch (err) {
-            console.error("Failed to import equipment:", err);
+            console.error("Failed to import equipment", err);
         }
     }
 
@@ -74,43 +65,33 @@ export class EquipmentRenderer extends BaseModeRenderer implements ModeRenderer 
         const cache = this.app.metadataCache.getFileCache(file);
         const frontmatter = cache?.frontmatter || {};
 
-        // Parse basic data from frontmatter
         const data: EquipmentData = {
             name: frontmatter.name || file.basename,
             type: frontmatter.type || "weapon",
             cost: frontmatter.cost,
             weight: frontmatter.weight,
-
-            // Weapon fields
             weapon_category: frontmatter.weapon_category,
             weapon_type: frontmatter.weapon_type,
             damage: frontmatter.damage,
             properties: frontmatter.properties,
             mastery: frontmatter.mastery,
-
-            // Armor fields
             armor_category: frontmatter.armor_category,
             ac: frontmatter.ac,
             strength_requirement: frontmatter.strength_requirement,
             stealth_disadvantage: frontmatter.stealth_disadvantage,
             don_time: frontmatter.don_time,
             doff_time: frontmatter.doff_time,
-
-            // Tool fields
             tool_category: frontmatter.tool_category,
             ability: frontmatter.ability,
             utilize: frontmatter.utilize,
             craft: frontmatter.craft,
             variants: frontmatter.variants,
-
-            // Gear fields
             gear_category: frontmatter.gear_category,
             special_use: frontmatter.special_use,
             capacity: frontmatter.capacity,
             duration: frontmatter.duration,
         };
 
-        // Read description from body (skip frontmatter)
         const content = await this.app.vault.read(file);
         const bodyMatch = content.match(/^---[\s\S]*?---\s*\n([\s\S]*)/);
         if (bodyMatch) {
@@ -118,16 +99,5 @@ export class EquipmentRenderer extends BaseModeRenderer implements ModeRenderer 
         }
 
         return data;
-    }
-
-    async handleCreate(name: string): Promise<void> {
-        new CreateEquipmentModal(this.app, name, async (data) => {
-            const file = await createEquipmentFile(this.app, data);
-            this.files = await listEquipmentFiles(this.app);
-            if (!this.isDisposed()) {
-                this.render();
-                await this.app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
-            }
-        }).open();
     }
 }

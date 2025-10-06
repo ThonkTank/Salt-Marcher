@@ -3,6 +3,21 @@
 import { App, TFile } from "obsidian";
 import { createVaultFilePipeline, sanitizeVaultFileName } from "./file-pipeline";
 
+function asStringArray(value: unknown): string[] | undefined {
+    if (!Array.isArray(value)) return undefined;
+    return value.map(entry => typeof entry === "string" ? entry : String(entry ?? ""));
+}
+
+function asBoolean(value: unknown): boolean | undefined {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "string") {
+        const normalized = value.toLowerCase();
+        if (normalized === "true") return true;
+        if (normalized === "false") return false;
+    }
+    return undefined;
+}
+
 export const SPELLS_DIR = "SaltMarcher/Spells";
 
 export type SpellData = {
@@ -40,5 +55,41 @@ export function spellToMarkdown(d: SpellData): string {
 
 export async function createSpellFile(app: App, d: SpellData): Promise<TFile> {
     return SPELL_PIPELINE.create(app, d);
+}
+
+export async function loadSpellFile(app: App, file: TFile): Promise<SpellData> {
+    const cache = app.metadataCache.getFileCache(file);
+    const frontmatter = cache?.frontmatter ?? {};
+    const rawLevel = frontmatter.level;
+    const level = typeof rawLevel === "number"
+        ? rawLevel
+        : typeof rawLevel === "string"
+            ? Number(rawLevel)
+            : undefined;
+
+    const data: SpellData = {
+        name: typeof frontmatter.name === "string" && frontmatter.name.trim().length > 0
+            ? frontmatter.name.trim()
+            : file.basename,
+        level: Number.isFinite(level) ? level : undefined,
+        school: typeof frontmatter.school === "string" ? frontmatter.school : undefined,
+        casting_time: typeof frontmatter.casting_time === "string" ? frontmatter.casting_time : undefined,
+        range: typeof frontmatter.range === "string" ? frontmatter.range : undefined,
+        components: asStringArray(frontmatter.components),
+        materials: typeof frontmatter.materials === "string" ? frontmatter.materials : undefined,
+        duration: typeof frontmatter.duration === "string" ? frontmatter.duration : undefined,
+        concentration: asBoolean(frontmatter.concentration),
+        ritual: asBoolean(frontmatter.ritual),
+        classes: asStringArray(frontmatter.classes),
+        save_ability: typeof frontmatter.save_ability === "string" ? frontmatter.save_ability : undefined,
+        save_effect: typeof frontmatter.save_effect === "string" ? frontmatter.save_effect : undefined,
+        attack: typeof frontmatter.attack === "string" ? frontmatter.attack : undefined,
+        damage: typeof frontmatter.damage === "string" ? frontmatter.damage : undefined,
+        damage_type: typeof frontmatter.damage_type === "string" ? frontmatter.damage_type : undefined,
+        description: typeof frontmatter.description === "string" ? frontmatter.description : undefined,
+        higher_levels: typeof frontmatter.higher_levels === "string" ? frontmatter.higher_levels : undefined,
+    };
+
+    return data;
 }
 

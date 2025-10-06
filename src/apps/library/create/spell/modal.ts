@@ -11,10 +11,19 @@ export class CreateSpellModal extends Modal {
     private scalingIssues: string[] = [];
     private runScalingValidation: (() => void) | null = null;
 
-    constructor(app: App, presetName: string | undefined, onSubmit: (d: SpellData) => void) {
+    constructor(app: App, preset: string | SpellData | undefined, onSubmit: (d: SpellData) => void) {
         super(app);
         this.onSubmit = onSubmit;
-        this.data = { name: presetName?.trim() || "Neuer Zauber" };
+        if (typeof preset === "string" || preset === undefined) {
+            const presetName = typeof preset === "string" ? preset : undefined;
+            this.data = { name: presetName?.trim() || "Neuer Zauber" };
+        } else {
+            this.data = {
+                ...preset,
+                components: preset.components ? [...preset.components] : undefined,
+                classes: preset.classes ? [...preset.classes] : undefined,
+            };
+        }
     }
 
     onOpen() {
@@ -34,52 +43,76 @@ export class CreateSpellModal extends Modal {
         });
         new Setting(contentEl).setName("Grad").setDesc("0 = Zaubertrick").addDropdown(dd => {
             for (let i = 0; i <= 9; i++) dd.addOption(String(i), String(i));
+            const initial = Number.isFinite(this.data.level) ? String(this.data.level) : "0";
+            dd.setValue(initial);
+            this.data.level = parseInt(initial, 10);
             dd.onChange(v => {
-                this.data.level = parseInt(v, 10);
+                const parsed = parseInt(v, 10);
+                this.data.level = Number.isFinite(parsed) ? parsed : undefined;
                 this.runScalingValidation?.();
             });
             try { enhanceSelectToSearch((dd as any).selectEl, 'Such-dropdown…'); } catch {}
         });
         new Setting(contentEl).setName("Schule").addDropdown(dd => {
-            const schools = ["Abjuration","Conjuration","Divination","Enchantment","Evocation","Illusion","Necromancy","Transmutation"];
-            for (const s of schools) dd.addOption(s, s);
-            dd.onChange(v => this.data.school = v);
+            const schools = ["", "Abjuration","Conjuration","Divination","Enchantment","Evocation","Illusion","Necromancy","Transmutation"];
+            for (const s of schools) dd.addOption(s, s || "(keine)");
+            dd.setValue(this.data.school || "");
+            dd.onChange(v => this.data.school = v || undefined);
             try { enhanceSelectToSearch((dd as any).selectEl, 'Such-dropdown…'); } catch {}
         });
-        new Setting(contentEl).setName("Wirkzeit").addText(t => { t.setPlaceholder("1 Aktion").onChange(v => this.data.casting_time = v.trim()); /* @ts-ignore */ (t as any).inputEl.style.width = '12ch'; });
-        new Setting(contentEl).setName("Reichweite").addText(t => { t.setPlaceholder("60 Fuß").onChange(v => this.data.range = v.trim()); /* @ts-ignore */ (t as any).inputEl.style.width = '12ch'; });
+        new Setting(contentEl).setName("Wirkzeit").addText(t => {
+            t.setPlaceholder("1 Aktion").setValue(this.data.casting_time || "").onChange(v => this.data.casting_time = v.trim() || undefined);
+            /* @ts-ignore */ (t as any).inputEl.style.width = '12ch';
+        });
+        new Setting(contentEl).setName("Reichweite").addText(t => {
+            t.setPlaceholder("60 Fuß").setValue(this.data.range || "").onChange(v => this.data.range = v.trim() || undefined);
+            /* @ts-ignore */ (t as any).inputEl.style.width = '12ch';
+        });
 
         // Components
         const comps = new Setting(contentEl).setName("Komponenten");
-        let cV = false, cS = false, cM = false;
+        let cV = this.data.components?.includes("V") ?? false;
+        let cS = this.data.components?.includes("S") ?? false;
+        let cM = this.data.components?.includes("M") ?? false;
         const updateComps = () => {
             const arr: string[] = []; if (cV) arr.push("V"); if (cS) arr.push("S"); if (cM) arr.push("M");
             this.data.components = arr;
         };
         comps.controlEl.style.display = 'grid';
         comps.controlEl.style.gridTemplateColumns = 'repeat(6, max-content)';
-        const mkCb = (label: string, on: (v: boolean) => void) => {
+        const mkCb = (label: string, on: (v: boolean) => void, initial: boolean) => {
             const wrap = comps.controlEl.createDiv({ cls: "sm-cc-grid__save" });
             const cb = wrap.createEl("input", { attr: { type: "checkbox" } }) as HTMLInputElement;
             wrap.createEl("label", { text: label });
+            cb.checked = initial;
             cb.addEventListener("change", () => { on(cb.checked); updateComps(); });
         };
-        mkCb("V", v => cV = v);
-        mkCb("S", v => cS = v);
-        mkCb("M", v => { cM = v; updateComps(); });
-        new Setting(contentEl).setName("Materialien").addText(t => { t.setPlaceholder("winzige Kugel aus Guano und Schwefel").onChange(v => this.data.materials = v.trim()); /* @ts-ignore */ (t as any).inputEl.style.width = '34ch'; });
+        mkCb("V", v => cV = v, cV);
+        mkCb("S", v => cS = v, cS);
+        mkCb("M", v => { cM = v; }, cM);
+        updateComps();
+        new Setting(contentEl).setName("Materialien").addText(t => {
+            t.setPlaceholder("winzige Kugel aus Guano und Schwefel").setValue(this.data.materials || "").onChange(v => this.data.materials = v.trim() || undefined);
+            /* @ts-ignore */ (t as any).inputEl.style.width = '34ch';
+        });
 
-        new Setting(contentEl).setName("Dauer").addText(t => { t.setPlaceholder("Augenblicklich / Konzentration, bis zu 1 Minute").onChange(v => this.data.duration = v.trim()); /* @ts-ignore */ (t as any).inputEl.style.width = '34ch'; });
+        new Setting(contentEl).setName("Dauer").addText(t => {
+            t.setPlaceholder("Augenblicklich / Konzentration, bis zu 1 Minute").setValue(this.data.duration || "").onChange(v => this.data.duration = v.trim() || undefined);
+            /* @ts-ignore */ (t as any).inputEl.style.width = '34ch';
+        });
         const flags = new Setting(contentEl).setName("Flags");
         const cbConc = flags.controlEl.createEl("input", { attr: { type: "checkbox" } }) as HTMLInputElement; flags.controlEl.createEl("label", { text: "Konzentration" });
-        const cbRit = flags.controlEl.createEl("input", { attr: { type: "checkbox" } }) as HTMLInputElement; flags.controlEl.createEl("label", { text: "Ritual" });
+        cbConc.checked = !!this.data.concentration;
         cbConc.addEventListener("change", () => this.data.concentration = cbConc.checked);
+        const cbRit = flags.controlEl.createEl("input", { attr: { type: "checkbox" } }) as HTMLInputElement; flags.controlEl.createEl("label", { text: "Ritual" });
+        cbRit.checked = !!this.data.ritual;
         cbRit.addEventListener("change", () => this.data.ritual = cbRit.checked);
 
         // Targeting / Damage
         new Setting(contentEl).setName("Angriff").addDropdown(dd => {
             const opts = ["","Melee Spell Attack","Ranged Spell Attack","Melee Weapon Attack","Ranged Weapon Attack"];
             for (const s of opts) dd.addOption(s, s || "(kein)");
+            dd.setValue(this.data.attack || "");
             dd.onChange(v => this.data.attack = v || undefined);
             try { enhanceSelectToSearch((dd as any).selectEl, 'Such-dropdown…'); } catch {}
         });
@@ -87,17 +120,18 @@ export class CreateSpellModal extends Modal {
         save.addDropdown(dd => {
             const abil = ["","STR","DEX","CON","INT","WIS","CHA"];
             for (const a of abil) dd.addOption(a, a || "(kein)");
+            dd.setValue(this.data.save_ability || "");
             dd.onChange(v => this.data.save_ability = v || undefined);
             try { enhanceSelectToSearch((dd as any).selectEl, 'Such-dropdown…'); } catch {}
         });
         // Effekt (kompakt, klare Beschriftung)
         save.controlEl.createEl('label', { text: 'Effekt' });
-        save.addText(t => { t.setPlaceholder("Half on save / Negates …").onChange(v => this.data.save_effect = v.trim() || undefined); /* @ts-ignore */ (t as any).inputEl.style.width = '18ch'; });
+        save.addText(t => { t.setPlaceholder("Half on save / Negates …").setValue(this.data.save_effect || "").onChange(v => this.data.save_effect = v.trim() || undefined); /* @ts-ignore */ (t as any).inputEl.style.width = '18ch'; });
         const dmg = new Setting(contentEl).setName("Schaden");
         dmg.controlEl.createEl('label', { text: 'Würfel' });
-        dmg.addText(t => { t.setPlaceholder("8d6").onChange(v => this.data.damage = v.trim() || undefined); /* @ts-ignore */ (t as any).inputEl.style.width = '10ch'; });
+        dmg.addText(t => { t.setPlaceholder("8d6").setValue(this.data.damage || "").onChange(v => this.data.damage = v.trim() || undefined); /* @ts-ignore */ (t as any).inputEl.style.width = '10ch'; });
         dmg.controlEl.createEl('label', { text: 'Typ' });
-        dmg.addText(t => { t.setPlaceholder("fire / radiant …").onChange(v => this.data.damage_type = v.trim() || undefined); /* @ts-ignore */ (t as any).inputEl.style.width = '12ch'; });
+        dmg.addText(t => { t.setPlaceholder("fire / radiant …").setValue(this.data.damage_type || "").onChange(v => this.data.damage_type = v.trim() || undefined); /* @ts-ignore */ (t as any).inputEl.style.width = '12ch'; });
 
         // Classes (as chips)
         if (!this.data.classes) this.data.classes = [];
