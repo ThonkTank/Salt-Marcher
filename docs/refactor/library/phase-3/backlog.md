@@ -94,7 +94,7 @@ Akzeptanzkriterien:
   DoD (für Phase 4): Alle Renderer rufen Service-Port statt IO direkt; Verträge grün.
 Aufwand (T-Shirt): M
 Priorität (Score): 35
-Open Questions: Wie werden Langläufer (z. B. Preset-Scans) throttled, ohne UI zu blockieren?
+Open Questions: Geklärt – Preset-Scans laufen über den StoragePort asynchron; Renderer erhalten gepufferte Updates und benötigen kein Streaming.
 
 ID: LIB-TD-0004
 Titel (imperativ): Kapsle Persistenzadapter hinter StoragePort
