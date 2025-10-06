@@ -123,7 +123,7 @@ Akzeptanzkriterien:
   DoD (für Phase 4): Adapter implementiert, Dry-Run unterstützt, Telemetrie feuert bei Fehlern.
 Aufwand (T-Shirt): M
 Priorität (Score): 31.5
-Open Questions: Welche bestehenden Helper (z. B. `metadataCache`) bleiben externe Abhängigkeiten?
+Open Questions: Geklärt – `metadataCache` bleibt read-only für Cache-Hits, alle Vault-Schreibpfade wandern in den StoragePort.
 
 ### Work Package WP-A2: Modal ↔ Watcher Isolation
 

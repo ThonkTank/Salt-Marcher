@@ -19,4 +19,4 @@ Kapselung sämtlicher Dateizugriffe der Library hinter einem StoragePort inklusi
 - Evaluieren, welche bestehenden Caches weiter genutzt werden müssen.
 
 ## Offene Punkte
-- Entscheidung, ob Marker-Dateien transaktional oder via Locking abgesichert werden.
+- Keine – Marker werden idempotent über `ensureMarker` erzeugt und via Backup-Plan rückspielbar.

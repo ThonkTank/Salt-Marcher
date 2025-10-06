@@ -14,9 +14,12 @@
     - `src/apps/library/core/library-mode-service-port.ts` definiert Session-orientierte Interfaces, Domain-DTOs sowie Composition-Pläne für alle Library-Modi.
     - Feature-Flag-Helfer (`library.service.enabled`, `library.service.legacyFallback`) erlauben Renderer-seitige Kill-Switches inklusive Legacy-Fallback-Steuerung.
     - Vitest-Contract (`tests/library/library-mode-service-port.test.ts`) prüft Descriptor- und Composition-Abdeckung sowie die deterministische Kill-Switch-Auswertung.
+- [x] LIB-TD-0004 – StoragePort-Kapselung (wartete auf LIB-TD-0003 & LIB-TD-0001)
+    - `src/apps/library/core/library-storage-port.ts` spezifiziert Domain-Descriptoren, Fehlerkatalog, Telemetrie-Hooks sowie Dry-Run- und Backup-Pläne für Vault-Schreibpfade.
+    - Legacy-Mapping-Tabelle dokumentiert bestehende Helper (Vault-Pipelines, Terrain-/Regions-Stores, Preset-Importer) samt Verantwortlichkeiten und Marker-Handling.
+    - Vitest-Spezifikation (`tests/library/library-storage-port.test.ts`) prüft Domain-Abdeckung, Mapping-Vollständigkeit und die strukturierte Fehlererzeugung.
 
 ## Backlog (wartet auf vorgelagerte ToDos)
-- [ ] LIB-TD-0004 – StoragePort-Kapselung (wartet auf LIB-TD-0003 & LIB-TD-0001)
 - [ ] LIB-TD-0005 – Renderer-Kernel (wartet auf LIB-TD-0003 & LIB-TD-0001)
 - [ ] LIB-TD-0006 – Renderer-Migration (wartet auf LIB-TD-0005, LIB-TD-0003, LIB-TD-0004)
 - [ ] LIB-TD-0007 – Event-Bus-Port (wartet auf LIB-TD-0005 & LIB-TD-0003)
