@@ -11,6 +11,13 @@ export interface CalendarMonth {
   readonly length: number; // days in this month
 }
 
+/**
+ * Time constants - same for all calendars (real-world time units)
+ */
+export const HOURS_PER_DAY = 24;
+export const MINUTES_PER_HOUR = 60;
+export const SECONDS_PER_MINUTE = 60;
+
 export interface CalendarSchema {
   readonly id: string;
   readonly name: string;
@@ -18,7 +25,6 @@ export interface CalendarSchema {
 
   // Calendar structure
   readonly daysPerWeek: number;
-  readonly hoursPerDay: number;
   readonly months: ReadonlyArray<CalendarMonth>;
 
   // Starting point (epoch)

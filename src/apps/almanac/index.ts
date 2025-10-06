@@ -1,8 +1,7 @@
 /**
- * Almanac View
- *
- * Main view entry point for the Almanac workmode.
- * Registers as an Obsidian ItemView.
+ * @file Almanac View
+ * @description Main view entry point for the Almanac workmode. Registers as an Obsidian ItemView.
+ * @module apps/almanac
  */
 
 import { ItemView, WorkspaceLeaf } from 'obsidian';

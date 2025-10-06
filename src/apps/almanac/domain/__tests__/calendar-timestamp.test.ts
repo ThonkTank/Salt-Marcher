@@ -6,7 +6,6 @@ const testSchema: CalendarSchema = {
   id: 'test-cal',
   name: 'Test Calendar',
   daysPerWeek: 7,
-  hoursPerDay: 24,
   months: [
     { id: 'jan', name: 'January', length: 31 },
     { id: 'feb', name: 'February', length: 28 },

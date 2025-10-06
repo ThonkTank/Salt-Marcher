@@ -1,14 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import type { CalendarSchema } from '../calendar-schema';
-import { createDayTimestamp, createHourTimestamp } from '../calendar-timestamp';
+import { createDayTimestamp, createHourTimestamp, createMinuteTimestamp } from '../calendar-timestamp';
 import { advanceTime } from '../time-arithmetic';
 
-// Simple test schema: 2 months (30 days each), 7 days/week, 24 hours/day
+// Simple test schema: 2 months (30 days each), 7 days/week
 const testSchema: CalendarSchema = {
   id: 'test-cal',
   name: 'Test Calendar',
   daysPerWeek: 7,
-  hoursPerDay: 24,
   months: [
     { id: 'month1', name: 'First', length: 30 },
     { id: 'month2', name: 'Second', length: 30 },
@@ -178,5 +177,127 @@ describe('advanceTime - edge cases', () => {
     expect(result.timestamp.monthId).toBe('month1');
     expect(result.timestamp.day).toBe(13);
     expect(result.timestamp.hour).toBe(15);
+  });
+});
+
+describe('advanceTime - minutes', () => {
+  it('should advance by minutes within an hour', () => {
+    const start = createMinuteTimestamp('test-cal', 100, 'month1', 10, 14, 20);
+    const result = advanceTime(testSchema, start, 15, 'minute');
+
+    expect(result.timestamp.year).toBe(100);
+    expect(result.timestamp.monthId).toBe('month1');
+    expect(result.timestamp.day).toBe(10);
+    expect(result.timestamp.hour).toBe(14);
+    expect(result.timestamp.minute).toBe(35);
+    expect(result.normalized).toBe(false);
+  });
+
+  it('should roll over to next hour at 60 minutes', () => {
+    const start = createMinuteTimestamp('test-cal', 100, 'month1', 10, 14, 50);
+    const result = advanceTime(testSchema, start, 15, 'minute');
+
+    expect(result.timestamp.year).toBe(100);
+    expect(result.timestamp.monthId).toBe('month1');
+    expect(result.timestamp.day).toBe(10);
+    expect(result.timestamp.hour).toBe(15);
+    expect(result.timestamp.minute).toBe(5);
+    expect(result.normalized).toBe(true);
+  });
+
+  it('should roll over to next day via minutes (23:50 + 15min → 00:05)', () => {
+    const start = createMinuteTimestamp('test-cal', 100, 'month1', 10, 23, 50);
+    const result = advanceTime(testSchema, start, 15, 'minute');
+
+    expect(result.timestamp.year).toBe(100);
+    expect(result.timestamp.monthId).toBe('month1');
+    expect(result.timestamp.day).toBe(11);
+    expect(result.timestamp.hour).toBe(0);
+    expect(result.timestamp.minute).toBe(5);
+    expect(result.normalized).toBe(true);
+  });
+
+  it('should advance multiple hours via minutes', () => {
+    const start = createMinuteTimestamp('test-cal', 100, 'month1', 10, 10, 30);
+    const result = advanceTime(testSchema, start, 150, 'minute'); // +2.5 hours
+
+    expect(result.timestamp.year).toBe(100);
+    expect(result.timestamp.monthId).toBe('month1');
+    expect(result.timestamp.day).toBe(10);
+    expect(result.timestamp.hour).toBe(13);
+    expect(result.timestamp.minute).toBe(0);
+    expect(result.normalized).toBe(true);
+  });
+
+  it('should go backward by minutes within an hour', () => {
+    const start = createMinuteTimestamp('test-cal', 100, 'month1', 10, 14, 30);
+    const result = advanceTime(testSchema, start, -15, 'minute');
+
+    expect(result.timestamp.year).toBe(100);
+    expect(result.timestamp.monthId).toBe('month1');
+    expect(result.timestamp.day).toBe(10);
+    expect(result.timestamp.hour).toBe(14);
+    expect(result.timestamp.minute).toBe(15);
+    expect(result.normalized).toBe(false);
+  });
+
+  it('should roll back to previous hour', () => {
+    const start = createMinuteTimestamp('test-cal', 100, 'month1', 10, 14, 10);
+    const result = advanceTime(testSchema, start, -15, 'minute');
+
+    expect(result.timestamp.year).toBe(100);
+    expect(result.timestamp.monthId).toBe('month1');
+    expect(result.timestamp.day).toBe(10);
+    expect(result.timestamp.hour).toBe(13);
+    expect(result.timestamp.minute).toBe(55);
+    expect(result.normalized).toBe(true);
+  });
+
+  it('should roll back to previous day via minutes (00:05 - 15min → 23:50)', () => {
+    const start = createMinuteTimestamp('test-cal', 100, 'month1', 10, 0, 5);
+    const result = advanceTime(testSchema, start, -15, 'minute');
+
+    expect(result.timestamp.year).toBe(100);
+    expect(result.timestamp.monthId).toBe('month1');
+    expect(result.timestamp.day).toBe(9);
+    expect(result.timestamp.hour).toBe(23);
+    expect(result.timestamp.minute).toBe(50);
+    expect(result.normalized).toBe(true);
+  });
+
+  it('should handle minute advance across month boundary', () => {
+    const start = createMinuteTimestamp('test-cal', 100, 'month1', 30, 23, 50);
+    const result = advanceTime(testSchema, start, 15, 'minute');
+
+    expect(result.timestamp.year).toBe(100);
+    expect(result.timestamp.monthId).toBe('month2');
+    expect(result.timestamp.day).toBe(1);
+    expect(result.timestamp.hour).toBe(0);
+    expect(result.timestamp.minute).toBe(5);
+    expect(result.normalized).toBe(true);
+  });
+
+  it('should handle minute advance across year boundary', () => {
+    const start = createMinuteTimestamp('test-cal', 100, 'month2', 30, 23, 50);
+    const result = advanceTime(testSchema, start, 15, 'minute');
+
+    expect(result.timestamp.year).toBe(101);
+    expect(result.timestamp.monthId).toBe('month1');
+    expect(result.timestamp.day).toBe(1);
+    expect(result.timestamp.hour).toBe(0);
+    expect(result.timestamp.minute).toBe(5);
+    expect(result.normalized).toBe(true);
+  });
+
+  it('should handle large minute advances (1440 min = 1 day)', () => {
+    const start = createMinuteTimestamp('test-cal', 100, 'month1', 10, 12, 30);
+    const result = advanceTime(testSchema, start, 1440, 'minute');
+
+    expect(result.timestamp.year).toBe(100);
+    expect(result.timestamp.monthId).toBe('month1');
+    expect(result.timestamp.day).toBe(11);
+    expect(result.timestamp.hour).toBe(12);
+    expect(result.timestamp.minute).toBe(30);
+    expect(result.normalized).toBe(true);
   });
 });

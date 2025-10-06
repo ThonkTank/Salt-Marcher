@@ -135,6 +135,12 @@ export class AlmanacController {
     hourBtn.addEventListener('click', async () => {
       await this.handleAdvanceTime(1, 'hour');
     });
+
+    // +15 Minutes button
+    const minuteBtn = actions.createEl('button', { text: '+15 Min' });
+    minuteBtn.addEventListener('click', async () => {
+      await this.handleAdvanceTime(15, 'minute');
+    });
   }
 
   private renderUpcomingEvents(calendar: CalendarSchema, events: CalendarEvent[]): void {

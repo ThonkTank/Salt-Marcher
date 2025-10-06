@@ -16,7 +16,17 @@
       "Bash(ls:*)",
       "Bash(awk:*)",
       "Bash(cat:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(git rm:*)",
+      "Bash(npm install)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nAdd .gitignore and remove node_modules from repository\n\n- Added comprehensive .gitignore to exclude node_modules and build artifacts\n- Removed all node_modules files from git tracking\n- This fixes dependency installation issues in agent workspaces\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git restore:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nRefactor creature storage format and add library index system\n\n## Creature Format Refactoring\n- Replace individual ability fields with abilities array\n- Replace boolean save proficiencies with SaveBonus array (explicit bonuses)\n- Replace skill prof/expertise arrays with SkillBonus array (explicit bonuses)\n- Remove redundant speed fields, use only speeds_json\n- Update all 329 creature presets with new format\n\n## Library Index System\n- Add automatic index file generation (Library.md, Creatures.md, Equipment.md, Spells.md, Items.md)\n- Auto-update indexes on file create/delete/rename\n- Generate indexes on plugin load\n- Improve graph view organization\n\n## UI Updates\n- stat-column.ts: Checkbox → number input for save bonuses, abilities array support\n- skill-manager.ts: Expertise checkbox → bonus input\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git fetch:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

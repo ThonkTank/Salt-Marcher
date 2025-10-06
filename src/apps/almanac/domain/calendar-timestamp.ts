@@ -8,7 +8,7 @@
 import type { CalendarSchema } from './calendar-schema';
 import { getMonthIndex } from './calendar-schema';
 
-export type TimestampPrecision = 'day' | 'hour';
+export type TimestampPrecision = 'day' | 'hour' | 'minute';
 
 export interface CalendarTimestamp {
   readonly calendarId: string;
@@ -16,6 +16,7 @@ export interface CalendarTimestamp {
   readonly monthId: string;
   readonly day: number; // 1-indexed (1 = first day of month)
   readonly hour?: number; // 0-indexed (0 = first hour of day)
+  readonly minute?: number; // 0-indexed (0 = first minute of hour, 0-59)
   readonly precision: TimestampPrecision;
 }
 
@@ -58,6 +59,28 @@ export function createHourTimestamp(
 }
 
 /**
+ * Helper: Create a minute-precision timestamp
+ */
+export function createMinuteTimestamp(
+  calendarId: string,
+  year: number,
+  monthId: string,
+  day: number,
+  hour: number,
+  minute: number
+): CalendarTimestamp {
+  return {
+    calendarId,
+    year,
+    monthId,
+    day,
+    hour,
+    minute,
+    precision: 'minute',
+  };
+}
+
+/**
  * Helper: Compare two timestamps
  * Returns: -1 if a < b, 0 if equal, 1 if a > b
  *
@@ -81,7 +104,14 @@ export function compareTimestamps(a: CalendarTimestamp, b: CalendarTimestamp): n
   // Hour comparison
   const aHour = a.hour ?? 0;
   const bHour = b.hour ?? 0;
-  return aHour - bHour;
+  if (aHour !== bHour) {
+    return aHour - bHour;
+  }
+
+  // Minute comparison
+  const aMinute = a.minute ?? 0;
+  const bMinute = b.minute ?? 0;
+  return aMinute - bMinute;
 }
 
 /**
@@ -117,7 +147,14 @@ export function compareTimestampsWithSchema(
   // Hour comparison
   const aHour = a.hour ?? 0;
   const bHour = b.hour ?? 0;
-  return aHour - bHour;
+  if (aHour !== bHour) {
+    return aHour - bHour;
+  }
+
+  // Minute comparison
+  const aMinute = a.minute ?? 0;
+  const bMinute = b.minute ?? 0;
+  return aMinute - bMinute;
 }
 
 /**
@@ -125,9 +162,17 @@ export function compareTimestampsWithSchema(
  */
 export function formatTimestamp(ts: CalendarTimestamp, monthName?: string): string {
   const month = monthName ?? ts.monthId;
+
   if (ts.precision === 'day') {
     return `Year ${ts.year}, Day ${ts.day} of ${month}`;
   }
 
-  return `Year ${ts.year}, Day ${ts.day} of ${month}, ${String(ts.hour).padStart(2, '0')}:00`;
+  if (ts.precision === 'hour') {
+    return `Year ${ts.year}, Day ${ts.day} of ${month}, ${String(ts.hour).padStart(2, '0')}:00`;
+  }
+
+  // minute precision
+  const hourStr = String(ts.hour ?? 0).padStart(2, '0');
+  const minuteStr = String(ts.minute ?? 0).padStart(2, '0');
+  return `Year ${ts.year}, Day ${ts.day} of ${month}, ${hourStr}:${minuteStr}`;
 }

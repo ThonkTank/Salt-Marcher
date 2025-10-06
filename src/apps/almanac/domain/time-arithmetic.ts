@@ -6,11 +6,12 @@
  */
 
 import type { CalendarSchema } from './calendar-schema';
+import { HOURS_PER_DAY, MINUTES_PER_HOUR } from './calendar-schema';
 import type { CalendarTimestamp } from './calendar-timestamp';
 import { getMonthById, getMonthIndex, getMonthByIndex } from './calendar-schema';
-import { createDayTimestamp, createHourTimestamp } from './calendar-timestamp';
+import { createDayTimestamp, createHourTimestamp, createMinuteTimestamp } from './calendar-timestamp';
 
-export type TimeUnit = 'day' | 'hour';
+export type TimeUnit = 'day' | 'hour' | 'minute';
 
 export interface AdvanceResult {
   readonly timestamp: CalendarTimestamp;
@@ -32,7 +33,11 @@ export function advanceTime(
     return advanceByDays(schema, current, amount);
   }
 
-  return advanceByHours(schema, current, amount);
+  if (unit === 'hour') {
+    return advanceByHours(schema, current, amount);
+  }
+
+  return advanceByMinutes(schema, current, amount);
 }
 
 /**
@@ -127,15 +132,15 @@ function advanceByHours(
   let normalized = false;
 
   // Calculate day overflow
-  if (totalHours >= schema.hoursPerDay) {
-    carriedDays = Math.floor(totalHours / schema.hoursPerDay);
-    totalHours = totalHours % schema.hoursPerDay;
+  if (totalHours >= HOURS_PER_DAY) {
+    carriedDays = Math.floor(totalHours / HOURS_PER_DAY);
+    totalHours = totalHours % HOURS_PER_DAY;
     normalized = true;
   } else if (totalHours < 0) {
     // For negative hours, we need to borrow days
-    const daysNeeded = Math.ceil(Math.abs(totalHours) / schema.hoursPerDay);
+    const daysNeeded = Math.ceil(Math.abs(totalHours) / HOURS_PER_DAY);
     carriedDays = -daysNeeded;
-    totalHours = totalHours + (daysNeeded * schema.hoursPerDay);
+    totalHours = totalHours + (daysNeeded * HOURS_PER_DAY);
     normalized = true;
   }
 
@@ -188,4 +193,52 @@ function getPreviousMonth(schema: CalendarSchema, currentMonthId: string) {
   }
 
   return getMonthByIndex(schema, index - 1);
+}
+
+/**
+ * Advance by minutes
+ */
+function advanceByMinutes(
+  schema: CalendarSchema,
+  current: CalendarTimestamp,
+  minutes: number
+): AdvanceResult {
+  const currentMinute = current.minute ?? 0;
+  const currentHour = current.hour ?? 0;
+
+  let totalMinutes = currentMinute + minutes;
+  let carriedHours = 0;
+  let normalized = false;
+
+  // Calculate hour overflow
+  if (totalMinutes >= MINUTES_PER_HOUR) {
+    carriedHours = Math.floor(totalMinutes / MINUTES_PER_HOUR);
+    totalMinutes = totalMinutes % MINUTES_PER_HOUR;
+    normalized = true;
+  } else if (totalMinutes < 0) {
+    // For negative minutes, we need to borrow hours
+    const hoursNeeded = Math.ceil(Math.abs(totalMinutes) / MINUTES_PER_HOUR);
+    carriedHours = -hoursNeeded;
+    totalMinutes = totalMinutes + (hoursNeeded * MINUTES_PER_HOUR);
+    normalized = true;
+  }
+
+  // Advance hours if needed (this will handle day overflow)
+  let baseTimestamp: CalendarTimestamp = current;
+  if (carriedHours !== 0) {
+    const hourResult = advanceByHours(schema, current, carriedHours);
+    baseTimestamp = hourResult.timestamp;
+    normalized = normalized || hourResult.normalized;
+  }
+
+  const result = createMinuteTimestamp(
+    baseTimestamp.calendarId,
+    baseTimestamp.year,
+    baseTimestamp.monthId,
+    baseTimestamp.day,
+    baseTimestamp.hour ?? 0,
+    totalMinutes
+  );
+
+  return { timestamp: result, normalized };
 }

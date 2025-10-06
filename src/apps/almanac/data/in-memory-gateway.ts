@@ -8,7 +8,8 @@
 import type { CalendarSchema } from '../domain/calendar-schema';
 import type { CalendarTimestamp } from '../domain/calendar-timestamp';
 import type { CalendarEvent } from '../domain/calendar-event';
-import { advanceTime, type TimeUnit } from '../domain/time-arithmetic';
+import { advanceTime } from '../domain/time-arithmetic';
+import type { TimeUnit } from '../domain/time-arithmetic';
 import type { CalendarRepository, EventRepository } from './in-memory-repository';
 
 export interface AlmanacState {
