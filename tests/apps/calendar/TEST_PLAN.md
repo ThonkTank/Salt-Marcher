@@ -4,6 +4,7 @@ Dieser Testplan leitet sich aus den Spezifikationen unter `src/apps/calendar` ab
 ## 1. Ziele
 - Sicherstellen, dass Mehrkalenderschemata, Default-Logik und Zoom-Ansichten korrekt funktionieren.
 - Verifizieren, dass Sub-Tages-Zeitschritte (Stunden/Minuten) normalisiert, persistiert und in UI/Travel synchron angezeigt werden.
+- Prüfen, dass Almanac-Modus & Events-Hub (Phänomene, Kategorien, Filter) konsistent mit Kalenderdaten laufen und Hooks korrekt dispatchen.
 - Verifizieren, dass der Travel-Kalender mit Cartographer synchronisiert und Lifecycle-Events behandelt.
 - Abdecken von Accessibility, Tastatursteuerung und Fokusmanagement.
 
@@ -35,6 +36,11 @@ Dieser Testplan leitet sich aus den Spezifikationen unter `src/apps/calendar` ab
   - Setzen eines neuen globalen Defaults deaktiviert vorherigen.
   - Löschen eines Default-Kalenders wählt fallback (erster verbleibender) und markiert Flag.
   - Reise-Default überschreibt globalen Default, fällt zurück wenn gelöscht.
+- **Phänomen-Engine**
+  - Annual / Monthly / Weekly Regeln erzeugen korrekte Occurrences pro Kalender (inkl. Zeitanteilen).
+  - Astronomische Regel ohne Quelle → Fehler `astronomy_source_missing`.
+  - Prioritätssortierung: bei gleichem Timestamp entscheidet `priority` + Kategorie-Fallback.
+  - Hooks `cartographer_phenomenon` werden einmalig pro Trigger dispatcht.
 - **Zeitfortschritt**
   - Advance über 30 Tage chunked (max 365) ruft Hook pro Event exakt einmal.
   - Advance +120 Minuten → 2 Stunden Fortschritt inkl. Normalisierung.
@@ -52,6 +58,12 @@ Dieser Testplan leitet sich aus den Spezifikationen unter `src/apps/calendar` ab
   - `setActiveCalendar` schreibt global/ Reise-spezifisch (Mock-Storage prüft).
   - `setTravelLeafPreferences` persistiert `mode`/`visible`/`lastViewedTimestamp`/`quickStep`.
 - Travel-Prefs Speicher (`calendar.travelPrefs.json`) wird pro Reise isoliert.
+- `AlmanacRepository`
+  - `listPhenomena` respektiert Filter (Kategorie, Kalender, Zeitraum) und Pagination (`cursor`).
+  - `upsertPhenomenon` speichert neue/aktualisierte Phänomene inkl. `schemaVersion`.
+  - `updateLinks` überschreibt Prioritäten atomar und verhindert Entfernen des letzten Kalenders.
+  - Migration 1.3 → 1.4 erzeugt leere `almanac.phenomena.json` + `almanac.mode.json` falls nicht vorhanden.
+- Events-Präferenzen (`events.preferences.json`) persistieren `viewMode`/Filter und werden bei Snapshot geladen.
 
 ## 5. Integrationstests (Presenter)
 - **Dashboard Presenter**
@@ -62,6 +74,14 @@ Dieser Testplan leitet sich aus den Spezifikationen unter `src/apps/calendar` ab
   - Moduswechsel `calendar ↔ overview` erhält Filterzustand.
   - Zoom-Wechsel (Monat → Woche) ruft `fetchEventsForRange` mit korrektem `CalendarRangeDTO`.
   - Default-Toggle im Kontextmenü → `DEFAULT_SET_REQUESTED` → `DEFAULT_SET_CONFIRMED` → Badge.
+- **Almanac Shell Presenter**
+  - Moduswechsel `dashboard ↔ events` persistiert `AlmanacModeSnapshotDTO` und lädt Zustand nur beim ersten Eintritt.
+  - Mobile Drawer schließt nach Auswahl, Fokus springt auf Content Heading.
+- **Events Presenter**
+  - Filteränderung dispatcht `EVENTS_DATA_REQUESTED` und reduziert Ergebnisse nach Kategorie/Zeitraum.
+  - `PHENOMENON_SAVE_REQUESTED` mit neuem Draft → Mock `AlmanacRepository.upsertPhenomenon` aufgerufen, Snapshot aktualisiert, Timeline zeigt neuen Eintrag.
+  - Link-Drawer `updateLinks` verhindert Entfernen des letzten Kalenders (Expect Error Toast).
+  - Export-Flow: `EVENTS_EXPORT_REQUESTED` -> Mock Export liefert Blob, Presenter zeigt Toast & Download-Link.
 - **Event Flow**
   - Inline-Erstellung in Grid (Double-Click) öffnet Dialog mit Datum/Zeit (`precision='minute'`).
   - Speichern Recurring → `preview`-Mock validiert 5 Vorkommen inkl. Uhrzeit.
@@ -80,10 +100,12 @@ Dieser Testplan leitet sich aus den Spezifikationen unter `src/apps/calendar` ab
   - Kalenderansicht: Arrow-Keys navigieren zwischen Tagen (Focus Management), `Enter` öffnet Event.
   - Travel-Leaf Shortcuts `Ctrl+Alt+Shift+1..4` wechseln Modi.
   - Time-Picker: Pfeiltasten erhöhen Stunde/Minute, `PageUp/Down` ±10 Minuten, `Esc` schließt Dialog.
+  - Events-Modus Timeline: `j/k` oder `ArrowUp/Down` bewegt zwischen Phänomenen, `Enter` öffnet Editor, `Shift+Enter` Link-Drawer.
 - **Screenreader**
   - Kalender-Grid hat `aria-roledescription="calendar"`.
   - Default-Badge `aria-label="Globaler Standard"`.
   - Time-Picker gibt `aria-valuetext="Stunde 5 von 10"` wieder.
+  - Events-Timeline nutzt `role="list"` mit `aria-describedby` für Kategorie & Auswirkungen; Export-Toast `aria-live="polite"`.
 - **Focus Trap**
   - `CalendarFormDialog`, `EventFormDialog`, `TimeAdvanceDialog` lassen Fokus nicht entweichen.
 
@@ -94,6 +116,11 @@ Dieser Testplan leitet sich aus den Spezifikationen unter `src/apps/calendar` ab
 - **Default-Wechsel während Reise**
   - Reise startet mit globalem Default A → Travel-Leaf.
   - Nutzer:in setzt globalen Default auf B → Travel-Leaf zeigt Hinweis, Dropdown aktualisiert, Cartographer-Panel erhält Update.
+- **Almanac Events (Wetter & Gezeiten)**
+  - Setup: Phänomen `Sturmfront` (Weather, Dauer 12h) + `Spring Tide` (Tide).
+  - Szenario: Advance +6h löst Sturm-Hook → Travel-Panel erhält Wetter-Update; Jump über Zeitraum listet `skippedPhenomena`.
+- **Almanac Mode Persistenz**
+  - Nutzer:in wechselt zu Events, setzt Filter, verlässt Mode → `getAlmanacMode` Snapshot liefert Mode + Filter beim Neustart.
 - **Schemaänderung Migration**
   - Kalender bearbeitet (Monat eingefügt) → Migration migriert Ereignisse, zeigt Konfliktliste (Snapshot-Assertion).
 - **Sub-Tages-Aufgabe**
@@ -112,6 +139,12 @@ Dieser Testplan leitet sich aus den Spezifikationen unter `src/apps/calendar` ab
   6. Einmalig Vergangenheit: `Old War` (Markiert als nachzuholen).
   7. Zeitgebunden: `Council Briefing` (gregorian, Start 14:30, Dauer 60 Minuten).
   8. Zeitgebunden wiederkehrend: `Night Watch` (offset 22:00 täglich, Dauer 120 Minuten).
+- **Phänomene**
+  1. `Spring Bloom` (Season, all calendars, annual offset Tag 90).
+  2. `Stormfront` (Weather, selected calendars, Dauer 12h, Effekt `weather=storm`).
+  3. `Harvest Moon` (Astronomy, Mondphase, Offset +30 Minuten).
+  4. `Spring Tide` (Tide, priority 8, Hook `cartographer_phenomenon`).
+  5. `Aurora` (Custom Hook, nur Kalender Oberwasser).
 
 ## 9. Acceptance Mapping
 | Use Case | Tests |
@@ -128,6 +161,10 @@ Dieser Testplan leitet sich aus den Spezifikationen unter `src/apps/calendar` ab
 | Kalender bearbeiten | Migration Test, Integration Editor Save |
 | Travel-Kalender anzeigen | Travel Mount Integration, UI Mode Shortcuts |
 | Reise-Sync (Cartographer) | Regression Travel Panel Sync, Hook Dispatch |
+| Almanac-Modus wechseln | Integration Almanac Shell Presenter, Mobile Drawer Fokus-Test |
+| Events-Modus navigieren & filtern | Integration Events Presenter Filter, UI Accessibility (Timeline Navigation) |
+| Phänomen anlegen/bearbeiten | Domain Phänomen-Engine + UI Editor Submit + Preview Snapshot |
+| Phänomen Kalender verknüpfen | Integration Link-Drawer, Repository UpdateLinks Konflikttest |
 
 ## 10. Tools & Automatisierung
 - Test Runner: `vitest` (`npm run test`).

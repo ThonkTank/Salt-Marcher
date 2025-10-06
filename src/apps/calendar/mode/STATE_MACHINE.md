@@ -3,21 +3,25 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Ca
 
 ## 1. Überblick
 - Architektur: Presenter (StateMachine) + ViewModel. State wird über `immer` oder äquivalent immutable gehalten.
-- Gliederung in drei Hauptslices:
-  - `calendarState` (Domain-nah: aktive Kalender, Datum, Ereignisse)
+- Gliederung in fünf Hauptslices:
+  - `calendarState` (Domain-nah: aktive Kalender, Datum, Ereignisse, Phänomen-Vorschau)
+  - `almanacUiState` (Modus, Breadcrumbs, Persistenz letzter Zustände)
   - `managerUiState` (Workmode/Manager-spezifische UI-Flags)
+  - `eventsUiState` (Events-Modus: Filter, View-Mode, Pagination, Auswahl)
   - `travelLeafState` (Reisemodus-spezifische Sichtbarkeit und Modus)
 - Persistenz über `CalendarStateGateway` (siehe [API_CONTRACTS.md](./API_CONTRACTS.md#gateways)).
 
 ## 2. State-Slices
 | Slice | Schlüssel | Beschreibung | Persistenz |
 | --- | --- | --- | --- |
-| `calendarState` | `activeCalendarId`, `defaultCalendarId`, `travelDefaultCalendarId`, `currentTimestamp`, `timeDefinition`, `minuteStep`, `pendingTimeSlice`, `lastAdvanceStep`, `upcomingEvents`, `triggeredEvents`, `skippedEvents` | Domain-Daten, die vom Gateway geladen/geschrieben werden. | Persistiert (Gateway) |
+| `calendarState` | `activeCalendarId`, `defaultCalendarId`, `travelDefaultCalendarId`, `currentTimestamp`, `timeDefinition`, `minuteStep`, `pendingTimeSlice`, `lastAdvanceStep`, `upcomingEvents`, `upcomingPhenomena`, `triggeredEvents`, `triggeredPhenomena`, `skippedEvents` | Domain-Daten (Kalender + Phänomene), vom Gateway geladen/geschrieben. | Persistiert (Gateway) |
 | `calendarState.calendars` | Map `calendarId -> CalendarSummaryDTO` | Cache der bekannten Kalender (Name, Schema, Flags). | Persistiert (Repository) |
+| `almanacUiState` | `mode`, `modeHistory`, `statusSummary`, `drawerOpen`, `lastZoomByMode`, `lastFiltersByMode` | UI-Kontext für Moduswechsel, Breadcrumbs, Mobile-Drawer. | Persistiert (Gateway für Modus, rest Session) |
 | `managerUiState` | `viewMode`, `zoom`, `filters`, `overviewLayout`, `selection`, `isLoading`, `error`, `timeControls` (`preset`, `customStep`) | UI-spezifische Flags für Manager/Übersicht inkl. Quick-Steps. | Nicht persistiert (Session) |
 | `managerUiState.form` | `currentDialog` (`'calendar' | 'event' | 'time' | null`), `dialogData` | Offene Dialoge und deren Parameter. | Nicht persistiert |
-| `travelLeafState` | `visible`, `mode`, `isLoading`, `error`, `currentTimestamp`, `range`, `events`, `skippedEvents`, `lastQuickStep`, `lastSync` | Zustand des Travel-Leaves. | Teilweise (sichtbarkeit/modus) |
-| `telemetryState` | `lastEvents` | Meta-Informationen für Logging (z.B. Default-Wechsel). | Nicht persistiert |
+| `eventsUiState` | `viewMode`, `filters`, `sort`, `pagination`, `isLoading`, `error`, `selectedPhenomenonId`, `editorDraft`, `linkDrawerOpen` | Zustand des Events-Modus inkl. Formular/Drawer. | Modus/Filter persistiert, Rest Session |
+| `travelLeafState` | `visible`, `mode`, `isLoading`, `error`, `currentTimestamp`, `range`, `events`, `skippedEvents`, `phenomena`, `lastQuickStep`, `lastSync` | Zustand des Travel-Leaves inkl. Phänomen-Badges. | Teilweise (sichtbarkeit/modus) |
+| `telemetryState` | `lastEvents` | Meta-Informationen für Logging (z.B. Default-/Mode-Wechsel). | Nicht persistiert |
 
 ## 3. Events/Actions {#eventsactions}
 | Event | Payload | Beschreibung |
@@ -42,6 +46,23 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Ca
 | `TIME_JUMP_CONFIRMED` | `JumpResultDTO` | Ergebnis inkl. übersprungener Events & Normalisierungshinweisen. |
 | `TIME_SLICE_PRESET_CHANGED` | `{ scope: 'dashboard' | 'travel'; preset: 'minute' | 'hour' | 'day'; amount: number }` | Aktualisiert Quick-Step-Voreinstellung. |
 | `TIME_DEFINITION_UPDATED` | `{ calendarId: string; timeDefinition: TimeDefinitionDTO }` | Schema-Anpassung ändert Stunden/Minuten. |
+| `ALMANAC_MODE_SELECTED` | `{ mode: AlmanacMode }` | Nutzer:in wählt Modus im Almanac (Dashboard/Manager/Events/Travel). |
+| `ALMANAC_MODE_RESTORED` | `AlmanacModeSnapshot` | Gateway stellt letzten Modus + Status wieder her. |
+| `EVENTS_VIEW_MODE_CHANGED` | `{ viewMode: EventsViewMode }` | Timeline/Tabelle/Karte umschalten. |
+| `EVENTS_FILTER_CHANGED` | `EventsFilterState` | Filterchips aktualisieren. |
+| `EVENTS_SORT_CHANGED` | `EventsSort` | Sortierreihenfolge ändern. |
+| `EVENTS_DATA_REQUESTED` | `{ viewMode: EventsViewMode; filters: EventsFilterState }` | Startet Ladeprozess für Phänomene. |
+| `EVENTS_DATA_LOADED` | `EventsDataBatchDTO` | Ergebnis eines Loads (Phänomene + Pagination). |
+| `EVENTS_EXPORT_REQUESTED` | `{ format: 'csv' | 'json' }` | Export startet; Presenter ruft Gateway an. |
+| `PHENOMENON_EDIT_REQUESTED` | `{ phenomenonId?: string; templateId?: string }` | Öffnet Editor (neu/bearbeiten/vorlage). |
+| `PHENOMENON_DRAFT_UPDATED` | `PhenomenonDraftDTO` | Formularänderung. |
+| `PHENOMENON_SAVE_REQUESTED` | `PhenomenonDraftDTO` | Submit Editor. |
+| `PHENOMENON_SAVE_CONFIRMED` | `PhenomenonDTO` | Persistenz bestätigt; Liste aktualisieren. |
+| `PHENOMENON_LINKS_UPDATE_REQUESTED` | `PhenomenonLinkUpdate` | Drawer speichert Kalender/Hooks. |
+| `PHENOMENON_LINKS_UPDATE_CONFIRMED` | `PhenomenonDTO` | Links erfolgreich gespeichert. |
+| `PHENOMENON_DELETE_REQUESTED` | `{ phenomenonId: string }` | Entfernen eines Phänomens. |
+| `PHENOMENON_DELETE_CONFIRMED` | `{ phenomenonId: string }` | Erfolgreiches Löschen. |
+
 | `TRAVEL_LEAF_MOUNTED` | `{ travelId: string }` | Travel-Modus gestartet. |
 | `TRAVEL_MODE_CHANGED` | `{ mode: TravelCalendarMode }` | Travel-Leaf Tab gewechselt. |
 | `TRAVEL_TIME_ADVANCE_REQUESTED` | `AdvanceRequestDTO` | Quick-Action im Travel-Leaf (Minuten/Stunden/Tage). |
@@ -51,7 +72,28 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Ca
 | `ERROR_RESOLVED` | `{ scope: 'dashboard' | 'manager' | 'travel' }` | Fehler zurücksetzen. |
 
 ## 4. Transitionstabellen
-### 4.1 Kalenderauswahl & Defaults
+### 4.1 Almanac-Modus
+| Vorher | Event | Nachher | Aktionen |
+| --- | --- | --- | --- |
+| `almanacUiState.mode = m` | `ALMANAC_MODE_SELECTED(n)` | `mode = n`, `modeHistory.push(m)` | Persistiere Modus im Gateway, lade Zustand falls nötig |
+| `almanacUiState.mode` | `ALMANAC_MODE_RESTORED(snapshot)` | `mode = snapshot.mode`, `statusSummary = snapshot.statusSummary`, `lastZoomByMode = snapshot.lastZoom`, `lastFiltersByMode = snapshot.lastFilters` | Rehydrate UI, trigger Lazy-Load falls Cache leer |
+| `almanacUiState.drawerOpen = true` | `ALMANAC_MODE_SELECTED` (mobile) | `drawerOpen = false` | Drawer schließen nach Auswahl |
+
+### 4.2 Events-Modus
+| Vorher | Event | Nachher | Aktionen |
+| --- | --- | --- | --- |
+| `eventsUiState.viewMode = 'timeline'` | `EVENTS_VIEW_MODE_CHANGED('table')` | `viewMode = 'table'` | Persistiere ViewMode, starte `EVENTS_DATA_REQUESTED` falls Daten fehlen |
+| `eventsUiState.filters` | `EVENTS_FILTER_CHANGED(next)` | `filters = next`, `pagination.cursor = null`, `isLoading = true` | Debounced fetch → dispatch `EVENTS_DATA_REQUESTED` |
+| `eventsUiState.sort` | `EVENTS_SORT_CHANGED(next)` | `sort = next`, `isLoading = true` | Trigger Datenabruf |
+| `isLoading = true` | `EVENTS_DATA_LOADED(batch)` | `isLoading = false`, `pagination = batch.pagination`, `eventsCache = merge` | Aktualisiere `calendarState.upcomingPhenomena`, Telemetrie `events.load_duration` |
+| `eventsUiState.selectedPhenomenonId = null` | `PHENOMENON_EDIT_REQUESTED({ phenomenonId })` | `selectedPhenomenonId = phenomenonId`, `editorDraft = loadFromCache` | Öffne Editor, setze Fokus |
+| `eventsUiState.editorDraft` | `PHENOMENON_DRAFT_UPDATED(draft)` | `editorDraft = draft` | Kein zusätzlicher Effekt |
+| `eventsUiState.isSaving = false` | `PHENOMENON_SAVE_REQUESTED(draft)` | `isSaving = true` | Trigger Persistenz `upsertPhenomenon` |
+| `isSaving = true` | `PHENOMENON_SAVE_CONFIRMED(dto)` | `isSaving = false`, `editorDraft = null`, `selectedPhenomenonId = dto.id` | Aktualisiere Cache, Toast, schließe Modal |
+| `eventsUiState.linkDrawerOpen = true` | `PHENOMENON_LINKS_UPDATE_CONFIRMED` | `linkDrawerOpen = false` | Aktualisiere `calendarState.upcomingPhenomena` |
+| `eventsUiState` | `PHENOMENON_DELETE_CONFIRMED` | Entferne Phänomen aus Cache, `selectedPhenomenonId = null` | Telemetrie `events.delete` |
+
+### 4.3 Kalenderauswahl & Defaults
 | Vorher | Event | Nachher | Aktionen |
 | --- | --- | --- | --- |
 | `calendarState.activeCalendarId = A` | `CALENDAR_SELECT_REQUESTED(B)` | `pending` Flag | Trigger Persistenz (`Gateway.setActiveCalendar`) |
@@ -62,7 +104,7 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Ca
 | `pendingTravelDefault` | `DEFAULT_SET_CONFIRMED` | `travelDefaultCalendarId = B` | Travel-Leaf highlight |
 | `timeDefinition = old` | `TIME_DEFINITION_UPDATED(newDef)` | `timeDefinition = newDef`, `minuteStep = derive(newDef.minuteStep)` | Normalisiere `currentTimestamp` & `travelLeafState.currentTimestamp`, invalide Caches |
 
-### 4.2 Manager UI
+### 4.4 Manager UI
 | Vorher | Event | Nachher | Aktionen |
 | --- | --- | --- | --- |
 | `viewMode = 'calendar'` | `MANAGER_VIEW_MODE_CHANGED('overview')` | `viewMode = 'overview'` | Persistiere Modus in SessionStorage, lade Übersichtsdaten |
@@ -71,7 +113,7 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Ca
 | `form.currentDialog = null` | `EVENT_FORM_OPENED(mode)` | `form.currentDialog = 'event'`, `dialogData = mode` | Fokus setzen, Prefill | 
 | `form.currentDialog = 'event'` | `EVENT_SAVE_CONFIRMED` | `form.currentDialog = null` | Toast, Liste aktualisieren |
 
-### 4.3 Zeitfortschritt
+### 4.5 Zeitfortschritt
 | Vorher | Event | Nachher | Aktionen |
 | --- | --- | --- | --- |
 | `currentTimestamp = T`, `pendingTimeSlice = S` | `TIME_SLICE_PRESET_CHANGED(preset)` | `pendingTimeSlice = preset` | Speichere in `managerUiState.timeControls`, Telemetrie `calendar.telemetry.slice_changed` |
@@ -83,7 +125,7 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Ca
 | `travelLeafState.visible = true` | `TRAVEL_QUICK_STEP_APPLIED(delta)` | `travelLeafState.lastQuickStep = delta` | UI-Badge „zuletzt: ±X“ aktualisieren |
 | `travelLeafState.isLoading = true` | `TIME_ADVANCE_CONFIRMED` | `travelLeafState.isLoading = false`, `events` aktualisiert, `currentTimestamp = result.newTimestamp` | Leaf UI refresh |
 
-### 4.4 Travel Leaf Lifecycle
+### 4.6 Travel Leaf Lifecycle
 | Vorher | Event | Nachher | Aktionen |
 | --- | --- | --- | --- |
 | `visible = false` | `TRAVEL_LEAF_MOUNTED(travelId)` | `visible = true`, `mode = storedMode || 'upcoming'`, `isLoading = true` | Lade Daten, Focus Toolbar |
@@ -91,16 +133,22 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Ca
 | `visible = true` | `TRAVEL_LEAF_DISMISSED` | `visible = false` | Persistiere Sichtbarkeit, Telemetrie `calendar.travel.leaf_closed` |
 
 ## 5. Ablaufdiagramme {#ablaufdiagramme}
-### 5.1 Default setzen
+### 5.1 Almanac-Moduswechsel
+`Start → ALMANAC_MODE_SELECTED → Persistiere Modus → (Daten bereits geladen?) → [Ja] Zustand wiederherstellen → Ende / [Nein] EVENTS_DATA_REQUESTED (falls Ziel = Events) → Daten laden → Ende`
+
+### 5.2 Events-Daten laden
+`Start → EVENTS_FILTER_CHANGED/EVENTS_VIEW_MODE_CHANGED → isLoading = true → EVENTS_DATA_REQUESTED → Gateway.fetchPhenomena → (Erfolg?) → [Ja] EVENTS_DATA_LOADED → Cache aktualisieren → Ende / [Nein] ERROR_OCCURRED(scope=events)`
+
+### 5.3 Default setzen
 `Start → DEFAULT_SET_REQUESTED → Gateway.updateDefault → (Erfolg?) → [Ja] DEFAULT_SET_CONFIRMED → Update State/Broadcast → Ende / [Nein] ERROR_OCCURRED(scope=manager)`
 
-### 5.2 Manager Moduswechsel
+### 5.4 Manager Moduswechsel
 `Start → MANAGER_VIEW_MODE_CHANGED → Update viewMode → (Mode == 'calendar'?) → [Ja] ensure zoom data loaded → Ende / [Nein] load overview data → Ende`
 
-### 5.3 Travel-Leaf Advance
+### 5.5 Travel-Leaf Advance
 `Start → TRAVEL_TIME_ADVANCE_REQUESTED → travelLeafState.isLoading = true → Gateway.advanceTime(scope=travel) → (Erfolg?) → [Ja] TIME_ADVANCE_CONFIRMED → Update travelLeafState, calendarState → Ende / [Nein] ERROR_OCCURRED(scope=travel)`
 
-### 5.4 Quick-Step anpassen
+### 5.6 Quick-Step anpassen
 `Start → TIME_SLICE_PRESET_CHANGED(scope, preset) → Update managerUiState.timeControls → persistTimePreset → Ende`
 
 ## 6. Effekte {#effekte}
@@ -129,8 +177,9 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Ca
 - Bei `ERROR_OCCURRED` werden Loading-Flags zurückgesetzt, Dialoge geschlossen.
 
 ## 8. Persistenznotizen
-- `defaultCalendarId`, `travelDefaultCalendarId`, `travelLeafState.mode`, `travelLeafState.visible` werden im Gateway persistiert (Vault + Reise-spezifisch).
+- `defaultCalendarId`, `travelDefaultCalendarId`, `travelLeafState.mode`, `travelLeafState.visible`, `almanacUiState.mode` werden im Gateway persistiert (Vault + Reise-spezifisch).
 - `managerUiState.viewMode` optional in `localStorage` (User-Preference).
+- `eventsUiState.viewMode`, `eventsUiState.filters`, `eventsUiState.sort` werden im Gateway gespeichert (pro Vault) um Rückkehrpunkte zu ermöglichen.
 
 ## 9. Verweise
 - UX-Flows: [UX_SPEC.md §3](./UX_SPEC.md#3-workflows)

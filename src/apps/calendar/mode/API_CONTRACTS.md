@@ -128,7 +128,73 @@ interface CalendarTravelEventDTO extends CalendarUpcomingEventDTO {
 }
 ```
 
-### 2.4 Regeln & Hooks
+
+### 2.4 Phänomene
+```ts
+type PhenomenonCategory = 'season' | 'astronomy' | 'weather' | 'tide' | 'holiday' | 'custom';
+interface PhenomenonDTO {
+  id: string;
+  name: string;
+  category: PhenomenonCategory;
+  visibility: 'all_calendars' | 'selected';
+  appliesToCalendarIds: ReadonlyArray<string>;
+  rule: PhenomenonRuleDTO;
+  timePolicy: 'all_day' | 'fixed' | 'offset';
+  startTime?: { hour: number; minute: number; second?: number };
+  durationMinutes?: number;
+  effects?: ReadonlyArray<PhenomenonEffectDTO>;
+  priority: number; // 0 = niedrig, höhere Zahl = höhere Priorität
+  tags?: ReadonlyArray<string>;
+  notes?: string;
+  hooks?: ReadonlyArray<HookDescriptorDTO>;
+  template?: boolean;
+  schemaVersion: string;
+}
+interface PhenomenonRuleDTO {
+  type: 'annual' | 'monthly_position' | 'weekly_dayIndex' | 'astronomical' | 'custom';
+  offsetDayOfYear?: number;
+  monthId?: string;
+  weekIndex?: number; // z.B. 2 = zweite Woche
+  dayIndex?: number; // 0..daysPerWeek-1
+  customRuleId?: string; // Referenz auf Script/Hook
+  astronomical?: { source: 'sunrise' | 'sunset' | 'moon_phase' | 'eclipse'; referenceCalendarId?: string; offsetMinutes?: number };
+}
+interface PhenomenonEffectDTO {
+  type: 'weather' | 'narrative' | 'mechanical';
+  payload: Record<string, unknown>; // z.B. { weather: 'storm', intensity: 2 }
+  appliesTo?: ReadonlyArray<string>; // Kalender-IDs oder travel-IDs
+}
+interface PhenomenonSummaryDTO {
+  id: string;
+  name: string;
+  category: PhenomenonCategory;
+  nextOccurrence?: PhenomenonOccurrenceDTO;
+  linkedCalendars: ReadonlyArray<string>;
+  badge?: string;
+}
+interface PhenomenonOccurrenceDTO {
+  calendarId: string;
+  occurrence: CalendarDateDTO;
+  timeLabel: string;
+}
+interface PhenomenonTriggerDTO {
+  phenomenonId: string;
+  occurrence: PhenomenonOccurrenceDTO;
+  effects?: ReadonlyArray<PhenomenonEffectDTO>;
+}
+interface PhenomenonLinkUpdate {
+  phenomenonId: string;
+  calendarLinks: ReadonlyArray<{ calendarId: string; priority: number; hook?: HookDescriptorDTO }>;
+}
+interface PhenomenonTemplateDTO {
+  id: string;
+  name: string;
+  category: PhenomenonCategory;
+  rule: PhenomenonRuleDTO;
+  effects?: ReadonlyArray<PhenomenonEffectDTO>;
+}
+```
+### 2.5 Regeln & Hooks
 ```ts
 interface RepeatRuleDTO {
   type: 'annual_offset' | 'monthly_position' | 'weekly_dayIndex' | 'custom';
@@ -146,7 +212,7 @@ interface HookDescriptorDTO {
 }
 ```
 
-### 2.5 Filter & Log
+### 2.6 Filter & Log
 ```ts
 interface CalendarEventFilterState {
   timeRange: { preset: 'next30' | 'next90' | 'prev30' | 'custom'; start?: CalendarDateDTO; end?: CalendarDateDTO };
@@ -160,6 +226,15 @@ interface CalendarOverviewFilterState {
   schemaTypes: ReadonlyArray<'gregorian' | 'custom' | 'tenDay'>;
   defaultScope?: 'global' | 'travel';
 }
+type EventsViewMode = 'timeline' | 'table' | 'map';
+type EventsSort = 'next_occurrence' | 'priority_desc' | 'category_asc';
+interface EventsFilterState {
+  timeWindow: { start: CalendarDateDTO; end: CalendarDateDTO };
+  categories: ReadonlyArray<PhenomenonCategory>;
+  calendarIds: ReadonlyArray<string>;
+  effects: ReadonlyArray<string>;
+  includeTemplates?: boolean;
+}
 interface CalendarLogEntryDTO {
   id: string;
   timestamp: string; // ISO
@@ -171,6 +246,17 @@ interface CalendarLogEntryDTO {
 
 ### 2.6 Snapshots & Präferenzen
 ```ts
+type AlmanacMode = 'dashboard' | 'manager' | 'events' | 'travel';
+interface AlmanacStatusSummary {
+  zoomLabel?: string;
+  filterCount?: number;
+}
+interface AlmanacModeSnapshotDTO {
+  mode: AlmanacMode;
+  statusSummary?: AlmanacStatusSummary;
+  lastZoom?: Record<AlmanacMode, string | null>;
+  lastFilters?: Partial<Record<'manager' | 'events', unknown>>;
+}
 interface CalendarStateSnapshotDTO {
   calendars: ReadonlyArray<CalendarSummaryDTO>;
   activeCalendarId?: string;
@@ -180,14 +266,24 @@ interface CalendarStateSnapshotDTO {
   timeDefinition: TimeDefinitionDTO;
   minuteStep: number;
   upcomingEvents: ReadonlyArray<CalendarUpcomingEventDTO>;
+  upcomingPhenomena: ReadonlyArray<PhenomenonSummaryDTO>;
   triggeredEvents: ReadonlyArray<CalendarEventDTO>;
+  triggeredPhenomena: ReadonlyArray<PhenomenonTriggerDTO>;
   skippedEvents: ReadonlyArray<CalendarEventDTO>;
+  skippedPhenomena: ReadonlyArray<PhenomenonTriggerDTO>;
   pendingFollowUps?: ReadonlyArray<CalendarEventDTO>;
+  eventsPreferences?: EventsPreferenceDTO;
   travelState?: {
     currentTimestamp?: CalendarDateDTO;
     mode?: TravelCalendarMode;
     lastQuickStep?: { preset: 'minute' | 'hour' | 'day'; amount: number };
   };
+}
+interface EventsPreferenceDTO {
+  viewMode: EventsViewMode;
+  filters: EventsFilterState;
+  sort: EventsSort;
+  lastLoadedRange?: { start: CalendarDateDTO; end: CalendarDateDTO };
 }
 ```
 
@@ -202,6 +298,10 @@ interface CalendarStateGateway {
   setDate(input: JumpRequestDTO & { scope: 'global' | 'travel'; travelId?: string }): Promise<JumpResultDTO>;
   getTravelLeafPreferences(travelId: string): Promise<TravelLeafPrefsDTO>;
   setTravelLeafPreferences(travelId: string, prefs: TravelLeafPrefsDTO): Promise<void>;
+  getAlmanacMode(): Promise<AlmanacModeSnapshotDTO>;
+  setAlmanacMode(input: AlmanacModeSnapshotDTO): Promise<void>;
+  getEventsPreferences(): Promise<EventsPreferenceDTO | null>;
+  setEventsPreferences(prefs: EventsPreferenceDTO): Promise<void>;
 }
 ```
 
@@ -217,7 +317,28 @@ interface CalendarRepository {
 }
 ```
 
-### 3.3 `EventRepository`
+### 3.3 `AlmanacRepository`
+```ts
+interface AlmanacRepository {
+  listPhenomena(input: { viewMode: EventsViewMode; filters: EventsFilterState; sort: EventsSort; pagination?: EventsPaginationState }): Promise<EventsDataBatchDTO>;
+  getPhenomenon(id: string): Promise<PhenomenonDTO | null>;
+  upsertPhenomenon(draft: PhenomenonDTO): Promise<PhenomenonDTO>;
+  deletePhenomenon(id: string): Promise<void>;
+  updateLinks(update: PhenomenonLinkUpdate): Promise<PhenomenonDTO>;
+  listTemplates(): Promise<ReadonlyArray<PhenomenonTemplateDTO>>;
+}
+interface EventsPaginationState {
+  cursor?: string;
+  limit: number;
+}
+interface EventsDataBatchDTO {
+  items: ReadonlyArray<PhenomenonSummaryDTO>;
+  pagination: { cursor?: string; hasMore: boolean };
+  generatedAt: string;
+}
+```
+
+### 3.4 `EventRepository`
 ```ts
 interface EventRepository {
   listEvents(calendarId: string, range?: CalendarRangeDTO): Promise<ReadonlyArray<CalendarEventDTO>>;
@@ -228,10 +349,10 @@ interface EventRepository {
 }
 ```
 
-### 3.4 `CartographerHookGateway`
+### 3.5 `CartographerHookGateway`
 ```ts
 interface CartographerHookGateway {
-  dispatchHooks(events: ReadonlyArray<CalendarEventDTO>, context: { travelId?: string; scope: 'global' | 'travel' }): Promise<void>;
+  dispatchHooks(events: ReadonlyArray<CalendarEventDTO>, phenomena: ReadonlyArray<PhenomenonTriggerDTO>, context: { travelId?: string; scope: 'global' | 'travel' }): Promise<void>;
   notifyTravelPanel(payload: TravelPanelUpdateDTO): Promise<void>;
 }
 ```
@@ -248,7 +369,9 @@ interface AdvanceRequestDTO {
 interface AdvanceResultDTO {
   newTimestamp: CalendarDateDTO;
   triggered: ReadonlyArray<CalendarEventDTO>;
+  triggeredPhenomena: ReadonlyArray<PhenomenonTriggerDTO>;
   skipped: ReadonlyArray<CalendarEventDTO>;
+  skippedPhenomena: ReadonlyArray<PhenomenonTriggerDTO>;
   normalization?: { carriedMinutes: number; carriedHours: number };
 }
 interface JumpRequestDTO {
@@ -259,6 +382,7 @@ interface JumpRequestDTO {
 interface JumpResultDTO {
   timestamp: CalendarDateDTO;
   skipped: ReadonlyArray<CalendarEventDTO>;
+  skippedPhenomena: ReadonlyArray<PhenomenonTriggerDTO>;
   warnings?: ReadonlyArray<{ code: 'normalized' | 'out_of_bounds'; message: string }>;
 }
 interface TravelLeafPrefsDTO {
@@ -270,7 +394,9 @@ interface TravelLeafPrefsDTO {
 interface TravelPanelUpdateDTO {
   currentTimestamp: CalendarDateDTO;
   triggeredEvents: ReadonlyArray<CalendarEventDTO>;
+  triggeredPhenomena: ReadonlyArray<PhenomenonTriggerDTO>;
   skippedEvents: ReadonlyArray<CalendarEventDTO>;
+  skippedPhenomena: ReadonlyArray<PhenomenonTriggerDTO>;
   message?: string;
 }
 ```
@@ -382,18 +508,70 @@ interface TravelPanelUpdateDTO {
   }
 }
 ```
+### 5.4 Phänomenpersistenz
+```json
+{
+  "$id": "almanac.phenomena",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "name", "category", "rule", "priority", "schemaVersion"],
+    "properties": {
+      "id": { "type": "string" },
+      "name": { "type": "string", "minLength": 1 },
+      "category": { "enum": ["season", "astronomy", "weather", "tide", "holiday", "custom"] },
+      "visibility": { "enum": ["all_calendars", "selected"], "default": "all_calendars" },
+      "appliesToCalendarIds": { "type": "array", "items": { "type": "string" } },
+      "rule": { "type": "object", "properties": { "type": { "enum": ["annual", "monthly_position", "weekly_dayIndex", "astronomical", "custom"] } }, "additionalProperties": true },
+      "timePolicy": { "enum": ["all_day", "fixed", "offset"], "default": "all_day" },
+      "startTime": { "type": "object", "properties": { "hour": { "type": "integer" }, "minute": { "type": "integer" }, "second": { "type": "integer" } } },
+      "durationMinutes": { "type": "integer", "minimum": 0 },
+      "effects": { "type": "array", "items": { "type": "object", "required": ["type"], "properties": { "type": { "enum": ["weather", "narrative", "mechanical"] }, "payload": { "type": "object" } } } },
+      "priority": { "type": "integer", "minimum": 0 },
+      "tags": { "type": "array", "items": { "type": "string" } },
+      "hooks": { "type": "array" },
+      "template": { "type": "boolean", "default": false },
+      "schemaVersion": { "type": "string" }
+    }
+  }
+}
+```
+
+### 5.5 Almanac-Mode Persistenz
+```json
+{
+  "$id": "almanac.mode",
+  "type": "object",
+  "required": ["mode"],
+  "properties": {
+    "mode": { "enum": ["dashboard", "manager", "events", "travel"] },
+    "statusSummary": {
+      "type": "object",
+      "properties": {
+        "zoomLabel": { "type": "string" },
+        "filterCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "lastZoom": { "type": "object", "additionalProperties": { "type": ["string", "null"] } },
+    "lastFilters": { "type": "object", "additionalProperties": true }
+  }
+}
+```
+
 
 ## 6. Fehlerobjekte
 ```ts
 interface CalendarError {
-  code: 'validation_error' | 'conflict' | 'io_error' | 'not_found' | 'time_range_invalid';
-  scope: 'calendar' | 'event' | 'default' | 'travel';
+  code: 'validation_error' | 'conflict' | 'io_error' | 'not_found' | 'time_range_invalid' | 'phenomenon_conflict' | 'astronomy_source_missing';
+  scope: 'calendar' | 'event' | 'phenomenon' | 'default' | 'travel' | 'events';
   message: string;
   details?: Record<string, unknown>;
 }
 ```
 - `validation_error`: Feldfehler (z.B. Wochenlänge 0, Custom-Rule invalid).
 - `conflict`: Default-Verletzung (zwei globale Defaults) oder Eventkollision.
+- `phenomenon_conflict`: Phänomen kollidiert mit bestehendem Ereignis/Hook (siehe [UX_SPEC.md §3.4](./UX_SPEC.md#34-phaenomen-kalender-verknuepfen--hooks-konfigurieren)).
+- `astronomy_source_missing`: Astronomische Berechnung erfordert Quelle (z.B. Referenzkalender) – siehe [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md#edge-cases--performance).
 - `io_error`: Persistenz-/Dateifehler.
 - `not_found`: Kalender/Ereignis existiert nicht (z.B. gelöscht).
 - `time_range_invalid`: Uhrzeit außerhalb Schema (`hoursPerDay`, `minuteStep`).
@@ -407,6 +585,7 @@ Fehler werden an UI via `ERROR_OCCURRED` (siehe [STATE_MACHINE.md](./STATE_MACHI
 | `1.1.0` | Default-Flags (`isDefaultGlobal`, `defaultTravelIds`), Travel-Leaf-Präferenzen | Migration: `defaults.global`/`defaults.travel` Datei anlegen, vorhandene Kalender ohne Default → `null` |
 | `1.2.0` | Zoom-optimierte Event-Snapshots (Cached ranges) | Migration: Precompute Range-Caches (lazy on demand) |
 | `1.3.0` | Sub-Tages-Zeitmodell (Stunden/Minuten) | Migration: Felder `hoursPerDay`, `minutesPerHour`, `minuteStep` ergänzen; Events ohne Zeit → `allDay=true` |
+| `1.4.0` | Almanac-Modus, Phänomen-Repository, Events-Präferenzen | Migration: `almanac.phenomena.json` + `almanac.mode.json` anlegen; bestehende Daten initial leer; Events-Preferences optional migrieren |
 
 Migration-Schritte:
 1. `CalendarRepository` führt Schema-Version-Check aus (`schemaVersion`).
@@ -417,7 +596,7 @@ Migration-Schritte:
 
 ## 8. Cartographer Integration
 - `CartographerHookGateway.notifyTravelPanel` sendet `TravelPanelUpdateDTO` an `apps/cartographer/travel/panel`.
-- Hooks `cartographer_event` erhalten Payload `{ travelId, calendarId, eventId, occurrence }`.
+- Hooks `cartographer_event` erhalten Payload `{ travelId, calendarId, eventId, occurrence }`; Phänomene verwenden `cartographer_phenomenon` mit `{ travelId, phenomenonId, occurrence, effects }`.
 - Travel-Leaf mount/unmount Signale:
   ```ts
   interface TravelLeafLifecycleGateway {

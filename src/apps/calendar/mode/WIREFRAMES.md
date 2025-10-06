@@ -6,7 +6,51 @@ Dieses Dokument beschreibt die textuellen Wireframes für den Calendar-Workmode.
 - Komponenten-Bezeichner entsprechen denen in der Komponenten-Spezifikation.
 - Legende: `[ ]` Interaktive Elemente, `( )` Statusflächen, `{ }` Toolbars.
 
-## 2. Dashboard
+## 2. Almanac-Shell
+### 2.1 Layout (Breit)
+```
++---------------------------------------------------------------+
+| {AlmanacToolbar: [Dashboard] [Manager] [Events] [Travel]     }|
+| {Breadcrumbs: Almanac / <Modus>                     [Einstellungen]}|
++---------------+-----------------------------------------------+
+| {Sidebar}     | {Content Area}                                |
+| [Dashboard]▶  | (gerenderter Modus, siehe jeweilige Abschnitte)|
+| [Manager]     |                                               |
+| [Events]      |                                               |
+| [Travel]      |                                               |
++---------------+-----------------------------------------------+
+| Statusleiste: Modus: Events · Zoom: Monat · Filter: 3 aktiv    |
++---------------------------------------------------------------+
+```
+
+### 2.2 Layout (Schmal <520px)
+```
++------------------------------------------+
+| {CompactToolbar: [≡] [Modus ▼] [Einstellungen]}|
++------------------------------------------+
+| [ModeSwitcherDrawer] (overlay)           |
+|  Dashboard                               |
+|  Manager                                 |
+|  Events                                  |
+|  Travel                                  |
++------------------------------------------+
+| {Content Area untereinander gestapelt}   |
+```
+
+### 2.3 Fehler- & Leerstaaten
+```
++------------------------------------------------+
+| Banner: "Modus konnte nicht geladen werden" [↻] |
+| [Zurück zum Dashboard]                          |
++------------------------------------------------+
+```
+```
++------------------------------------------------+
+| (Illustration) "Noch keine Kalender oder Phänomene" |
+| [Kalender anlegen]  [Phänomen erstellen]            |
++------------------------------------------------+
+```
+## 3. Dashboard
 ### 2.1 Normalzustand (Breit)
 ```
 +-------------------------------------------------------------+
@@ -52,8 +96,70 @@ Dieses Dokument beschreibt die textuellen Wireframes für den Calendar-Workmode.
 +-----------------------------------+
 ```
 
-## 3. Kalender-Manager
-### 3.1 Header & Moduswechsel
+## 4. Kalender-Manager
+## 5. Events-Modus
+### 5.1 Timeline-Ansicht (Breit)
+```
++----------------------------------------------------------------+
+| {EventsToolbar: [Timeline] [Tabelle] [Karte]  Filterchips}     |
+| Zeitfenster: [◀ 90d] [Heute] [90d ▶]  [Export ▼]               |
++----------------------------------------------------------------+
+|  Frühling (Kategorie: Season)                                  |
+|  ├─ 14 Rainfall 10:45   [Kalender: Oberwasser] [Hook: Wetter=Regen] |
+|  └─ 18 Harvest Moon 20:00 [Kalender: Oberwasser, Tiefsee]      |
+|----------------------------------------------------------------|
+|  Wetterfront "Sturm" (Kategorie: Weather)                      |
+|  ├─ 15 Rainfall 06:00 -> 16 Rainfall 18:00                     |
+|  └─ Auswirkungen: -2 Sicht, +1 Wellengang                      |
++----------------------------------------------------------------+
+```
+
+### 5.2 Tabellenansicht
+```
++----------------------------------------------------------------+
+| Name           | Kategorie | Kalender        | Nächstes Auftreten | Aktionen |
+|----------------|-----------|-----------------|--------------------|----------|
+| Harvest Moon   | Astronomy | Oberwasser      | 18 Rainfall 20:00  | [Öffnen] |
+| Spring Bloom   | Season    | Alle            | 01 Bloom 08:00     | [Öffnen] |
+| Storm Surge    | Weather   | Tiefsee         | 15 Tide 03:00      | [Öffnen] |
++----------------------------------------------------------------+
+```
+
+### 5.3 Karten/Heatmap-Ansicht (optional)
+```
++------------------------------------------+
+| Karte (Raster pro Tag)                   |
+| [Day] [Night] Toggle                     |
+| ◼ = Phänomen vorhanden (Kategorie-Farbe) |
+| Tooltip: Name, Kalender, Auswirkungen    |
++------------------------------------------+
+```
+
+### 5.4 Leerstaat & Fehler
+```
++--------------------------------------------------+
+| (Illustration) "Noch keine Phänomene"             |
+| [Phänomen hinzufügen]  [Aus Vorlage importieren] |
++--------------------------------------------------+
+```
+```
++--------------------------------------------------+
+| Banner (rot): "Phänomene konnten nicht geladen werden." [Retry] |
++--------------------------------------------------+
+```
+
+### 5.5 Responsive (<520px)
+```
++--------------------------------------+
+| {Toolbar: [Tim][Tab][Map] [Filter]}  |
++--------------------------------------+
+| Accordion "Filter"                   |
+| Accordion "Nächste Phänomene"        |
+| Timeline-Karten stapeln vertikal     |
++--------------------------------------+
+```
+
+### 4.1 Header & Moduswechsel
 ```
 +----------------------------------------------------------------+
 | {ManagerToolbar: [← Zurück] [Kalenderansicht | Übersicht] (Tabs)}|
@@ -62,7 +168,7 @@ Dieses Dokument beschreibt die textuellen Wireframes für den Calendar-Workmode.
 +----------------------------------------------------------------+
 ```
 
-### 3.2 Kalenderansicht – Monatsmodus (Breit)
+### 4.2 Kalenderansicht – Monatsmodus (Breit)
 ```
 +----------------------------------------------------------------+
 | {Breadcrumb: Kalenderansicht > Monat (Oberwasser)}             |
@@ -111,7 +217,7 @@ Dieses Dokument beschreibt die textuellen Wireframes für den Calendar-Workmode.
 +----------------------------------------------------------------+
 ```
 
-### 3.3 Kalenderansicht – Fehlerzustand
+### 4.3 Kalenderansicht – Fehlerzustand
 ```
 +----------------------------------------------------------------+
 | {Toolbar + Banner [Fehler beim Laden der Ereignisse] [Retry]}  |
@@ -119,7 +225,7 @@ Dieses Dokument beschreibt die textuellen Wireframes für den Calendar-Workmode.
 +----------------------------------------------------------------+
 ```
 
-### 3.4 Kalender-Übersicht (Breit)
+### 4.4 Kalender-Übersicht (Breit)
 ```
 +----------------------------------------------------------------+
 | {FilterBar: Suche [_____]  Filter [Schema ▼] [Default ▼]      }|
@@ -168,7 +274,7 @@ Dieses Dokument beschreibt die textuellen Wireframes für den Calendar-Workmode.
 +-----------------------------------+
 ```
 
-## 4. Travel-Leaf
+## 6. Travel-Leaf
 ### 4.1 Monatsmodus (Breit 360px Leaf)
 ```
 +----------------------------------------+
@@ -242,7 +348,7 @@ Dieses Dokument beschreibt die textuellen Wireframes für den Calendar-Workmode.
 - Grid zeigt nur 3 Spalten, horizontales Scrollen.
 - Banner collapsible.
 
-## 5. Verweise
+## 7. Verweise
 - Komponenten: [COMPONENTS.md](./COMPONENTS.md#calendar-ui-komponenten)
 - State: [STATE_MACHINE.md](./STATE_MACHINE.md#zustandsuebersicht)
 - UX-Flows: [UX_SPEC.md](./UX_SPEC.md)

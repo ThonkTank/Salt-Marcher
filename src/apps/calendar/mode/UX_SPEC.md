@@ -18,7 +18,110 @@ Diese Spezifikation definiert UI-Verhalten, Nutzer:innenflüsse und Interaktione
 ## 3. Workflows
 Jeder Workflow beschreibt Ziel, Trigger, Vorbedingungen, Flüsse, Fehler, Postbedingungen und Datenänderungen. Akzeptanzkriterien siehe [Implementierungsplan §Akzeptanzkriterien](../IMPLEMENTATION_PLAN.md#akzeptanzkriterien-kurzform).
 
-### 3.1 Aktiven Kalender wählen
+### 3.1 Almanac-Modus wechseln
+| Element | Beschreibung |
+| --- | --- |
+| Ziel | Zwischen Dashboard, Manager, Events und Travel-Kalender wechseln ohne Kontextverlust. |
+| Trigger | Almanac-Tabbar/Sidebar, Command Palette (`almanac:switch-mode`), Deep-Link (`obsidian://saltmarcher?mode=events`). |
+| Vorbedingungen | Almanac-Leaf ist geöffnet; benötigte Daten können lazy geladen werden. |
+| Postbedingungen | `almanacMode` aktualisiert, letzter Zustand des Zielmodus (Zoom, Filter, Auswahl) wiederhergestellt. |
+| Datenänderungen | `ui.almanacMode`, `ui.modeHistory`, optional `ui.lastZoom[mode]`, `ui.lastFilters[mode]`. |
+
+**Hauptfluss**
+1. Nutzer:in klickt auf Tab/Sidebar-Item oder ruft Command auf.
+2. Presenter prüft, ob Modus bereits geladen wurde; wenn nein, zeigt Shimmer-Loader und lädt initiale Daten (via `CalendarStateGateway`).
+3. Sobald Daten verfügbar, wird Zielmodus gerendert; Fokus springt auf primäres Heading (`h1`) mit `tabindex="-1"`.
+4. Historie (`modeHistory`) aktualisiert Breadcrumb/Back-Aktion.
+
+**Alternativflüsse**
+- *Lazy Load aktiv*: Während Daten geladen werden, zeigt UI Progress-Bar; Nutzer:innen können andere Modi wählen (Queue verwirft laufende Requests bei Navigation).
+- *Deep-Link mit Zustand*: Query-Parameter `view=timeline&filter=weather` wird in `eventsViewMode`/`eventFilters` übertragen und persistiert.
+
+**Fehlerzustände**
+- Gateway-Fehler → Inline-Banner „Modus konnte nicht geladen werden“ mit Retry & Link zu Logs.
+- Unbekannter Modus → Fallback auf Dashboard + Toast „Modus nicht verfügbar“.
+
+**Textuelles Ablaufdiagramm**
+`Start → Modus-Auswahl → (Daten vorhanden?) → [Ja] Zustand wiederherstellen → Render → Ende / [Nein] Loader anzeigen → Daten laden → Zustand initialisieren → Render → Ende`
+
+### 3.2 Events-Modus navigieren und filtern
+| Element | Beschreibung |
+| --- | --- |
+| Ziel | Kalenderübergreifende Phänomene analysieren, filtern, sortieren und darstellen (Timeline, Tabelle, Karten). |
+| Trigger | Wechsel in Events-Modus, Interaktion mit Filterleiste, Toggle „Timeline/Tabelle/Karte“. |
+| Vorbedingungen | Mindestens ein Kalender und ein Phänomen existiert oder es liegt ein Leerstaat vor. |
+| Postbedingungen | `eventsViewMode`, `eventFilters`, `eventSort` aktualisiert; sichtbare Phänomene entsprechen Filter. |
+| Datenänderungen | Persistente Filter (`CalendarStateGateway`), Event-Paginierungscursor (`eventsPagination`). |
+
+**Hauptfluss**
+1. Beim Betreten lädt Presenter Standardfilter (z.B. `timeRange = next 90 days`).
+2. Nutzer:in ändert Ansicht (Timeline/Tabelle/Karte); Presenter berechnet erforderliche Datenfenster (Rolling Window) und cached Resultate.
+3. Filterchips (Kategorie, betroffene Kalender, Auswirkungen, Schlagworte) aktualisieren Query; UI zeigt Count-Badges.
+4. Liste/Timeline animiert sanft (`prefers-reduced-motion` berücksichtigt) und Scrollposition wird beibehalten.
+
+**Alternativflüsse**
+- *Keine Daten*: Leerstaat mit Illustration, CTA „Phänomen hinzufügen“, Sekundäraktion „Kalender verknüpfen“.
+- *Große Datenmenge*: Infinity-Scroll lädt weitere Batches; Preloader zeigt `+X weitere Treffer`. Nutzer:in kann `Export` starten (CSV/JSON) – UI zeigt Fortschrittsmodal.
+
+**Fehlerzustände**
+- Netzwerk/Persistenzfehler → Sticky-Banner „Phänomene konnten nicht geladen werden“ mit Retry.
+- Filter-Konflikt (z.B. Datum außerhalb Schema) → Inline-Warnung neben Filterchip, Option „Zurücksetzen“.
+
+**Textuelles Ablaufdiagramm**
+`Start → Events-Modus laden → Standardfilter anwenden → Nutzer:in ändert Ansicht/Filter → Query bauen → Daten laden → Render → (weitere Seiten?) → [Ja] Scroll-Observer lädt nach → Ende`
+
+### 3.3 Phänomen anlegen/bearbeiten
+| Element | Beschreibung |
+| --- | --- |
+| Ziel | Jahreszeiten, astronomische Phänomene, Wetterereignisse u. Ä. definieren und verwalten. |
+| Trigger | CTA „Phänomen hinzufügen“, Kontextmenü „Bearbeiten“, Import aus Datei. |
+| Vorbedingungen | Mindestens ein Kalender existiert; Kategorie-Liste ist konfiguriert (Default-Kategorien + Custom). |
+| Postbedingungen | Neuer oder aktualisierter `AlmanacEvent` ist gespeichert, Vorschau aktualisiert, Timeline markiert Änderungen. |
+| Datenänderungen | `AlmanacRepository` (CRUD), `phenomenon.previewOccurrences`, optional `phenomenon.templates`. |
+
+**Hauptfluss (Neu)**
+1. Modal öffnet mit Tabs „Stammdaten“, „Zeitdefinition“, „Auswirkungen“, „Vorschau“.
+2. Pflichtfelder: Name (Text), Kategorie (Dropdown mit Icons), Sichtbarkeit (All Calendars vs. Auswahl), Zeitdefinition (All-Day, Start/End `CalendarTimestamp`, Wiederholungsregel, astronomische Formel), Auswirkungen (z.B. `weather = storm`, `narrativeTag`).
+3. Vorschau-Panel berechnet nächste fünf Auftreten je verlinktem Kalender (unter Nutzung von Schema/Zeitzone).
+4. Speichern validiert Eingaben, schreibt in Repository, zeigt Toast „Phänomen gespeichert“. Timeline/Listen highlighten neuen Eintrag (`aria-live`).
+
+**Alternativflüsse**
+- *Import*: Nutzer:in wählt JSON/CSV → Parser zeigt Mapping-Dialog (Felder zu Kategorien). Bei Fehlern werden Zeilen markiert.
+- *Vorlage*: Speichern als Template (kein aktives Phänomen) – im Events-Modus im Tab „Vorlagen“ sichtbar.
+
+**Fehlerzustände**
+- Validierung: Fehlende Kategorie → Inline-Error „Bitte Kategorie wählen“. Inkonsistente Wiederholungsregel → Tooltip mit Beispiel.
+- Persistenzfehler → Modal bleibt offen, Banner + Retry.
+
+**Textuelles Ablaufdiagramm**
+`Start → Formular öffnen → Eingaben vornehmen → Vorschau berechnen → (Validierung ok?) → [Nein] Fehler anzeigen → zurück zu Formular / [Ja] speichern → Repository updaten → Toast → Ende`
+
+### 3.4 Phänomen Kalender verknüpfen & Hooks konfigurieren
+| Element | Beschreibung |
+| --- | --- |
+| Ziel | Sichtbarkeit eines Phänomens pro Kalender steuern, Prioritäten/Hooks definieren und Bulk-Aktionen durchführen. |
+| Trigger | Detail-Drawer „Kalenderzuordnung“, Multi-Select im Events-Modus, Kontextmenü „Hooks bearbeiten“. |
+| Vorbedingungen | Phänomen existiert; mindestens ein Kalender vorhanden. |
+| Postbedingungen | `phenomenon.links` aktualisiert (Kalender-ID, Priorität, Override-Regeln), Hook-Konfiguration gespeichert. |
+| Datenänderungen | `PhenomenonLinkDTO`, `HookConfig`, `calendarOverrides`. |
+
+**Hauptfluss**
+1. Nutzer:in öffnet Drawer; Liste aller Kalender erscheint mit Checkbox, Badges (Default, Reise-Override) und Tooltips (Schema-Zusammenfassung).
+2. Auswahl setzt Link-Objekte; optional Priorität (Drag-to-order) und Hook-Aktion (z.B. `dispatch travel.setWeather`).
+3. Beim Speichern aktualisiert Repository Links atomar, invalidiert Caches und zeigt Statushinweis.
+
+**Alternativflüsse**
+- *Bulk-Aktion*: Auswahl mehrerer Phänomene → Aktion „Kalender hinzufügen/entfernen“. UI zeigt Zusammenfassung (n Elemente geändert).
+- *Konflikt*: Wenn Kalenderschema unvereinbar (z.B. kein Mond), bietet UI Option „Schema-spezifische Anpassung definieren“ (z.B. alternative Berechnung).
+
+**Fehlerzustände**
+- Persistenz schlägt fehl → Drawer bleibt offen, Banner + Retry.
+- Benutzer versucht, letzten verknüpften Kalender zu entfernen → Warn-Dialog „Mindestens ein Kalender erforderlich“.
+
+**Textuelles Ablaufdiagramm**
+`Start → Drawer öffnen → Kalenderliste anzeigen → Nutzer:in wählt Kalender/Priorität → Hooks konfigurieren → Speichern → Repository aktualisieren → Cache invalidieren → Ende`
+
+### 3.5 Aktiven Kalender wählen
 | Element | Beschreibung |
 | --- | --- |
 | Ziel | Aktiven Kalender im globalen Kontext oder für eine Reise setzen. |
@@ -39,12 +142,12 @@ Jeder Workflow beschreibt Ziel, Trigger, Vorbedingungen, Flüsse, Fehler, Postbe
 
 **Fehlerzustände**
 - Gateway-Fehler → Inline-Banner „Kalender konnte nicht geladen werden. [Erneut versuchen]“.
-- Ausgewählter Kalender gelöscht → Dialog fordert Neuauswahl (Fallback auf Default, siehe §3.2).
+- Ausgewählter Kalender gelöscht → Dialog fordert Neuauswahl (Fallback auf Default, siehe §3.6).
 
 **Textuelles Ablaufdiagramm**
 `Start → Auswahl öffnen → Kalenderliste laden → (Liste leer?) → [Ja] Leerstaat → Ende / [Nein] Kalender wählen → Scope bestimmen → Gateway.updateActiveCalendar → UI refresh → Ende`
 
-### 3.2 Default-Kalender verwalten
+### 3.6 Default-Kalender verwalten
 | Element | Beschreibung |
 | --- | --- |
 | Ziel | Genau einen globalen Default definieren und optionale Reise-Defaults verwalten. |
@@ -70,7 +173,7 @@ Jeder Workflow beschreibt Ziel, Trigger, Vorbedingungen, Flüsse, Fehler, Postbe
 **Textuelles Ablaufdiagramm**
 `Start → Toggle aktivieren → bisherigen Default ermitteln → Flag entfernen (wenn vorhanden) → neuen Default setzen → persistieren → UI aktualisieren → Ende`
 
-### 3.3 Kalender-Manager – Modus wechseln
+### 3.7 Kalender-Manager – Modus wechseln
 | Element | Beschreibung |
 | --- | --- |
 | Ziel | Zwischen vollformatiger Kalenderansicht (Monat/Woche/Tag) und Kalender-Übersicht (Listen/Kacheln) wechseln. |
@@ -98,7 +201,7 @@ Jeder Workflow beschreibt Ziel, Trigger, Vorbedingungen, Flüsse, Fehler, Postbe
 - Keine Kalender → hero section mit CTA „Neuen Kalender anlegen“.
 - Datenladefehler → Inline-Error mit Retry.
 
-### 3.4 Neuen Kalender anlegen
+### 3.8 Neuen Kalender anlegen
 | Element | Beschreibung |
 | --- | --- |
 | Ziel | Schema konfigurieren, Default-Status optional setzen und speichern. |
@@ -122,8 +225,8 @@ Jeder Workflow beschreibt Ziel, Trigger, Vorbedingungen, Flüsse, Fehler, Postbe
 - Feldvalidierung (siehe §5 Accessibility & i18n) → Inline-Fehler, Submit bleibt disabled.
 - Persistenzfehler → Banner im Modal, Retry möglich.
 
-### 3.5 Ereignis anlegen
-#### 3.5.1 Einmalig
+### 3.9 Ereignis anlegen
+#### 3.9.1 Einmalig
 | Element | Beschreibung |
 | --- | --- |
 | Ziel | Einzelnes Ereignis an einem Datum/Uhrzeit hinzufügen. |
@@ -143,7 +246,7 @@ Jeder Workflow beschreibt Ziel, Trigger, Vorbedingungen, Flüsse, Fehler, Postbe
 - Konflikt mit anderem Ereignis (gleicher Timestamp, exklusiv) → Warnbanner, Option „Trotzdem speichern“ oder „Zeit anpassen“.
 - Ungültige Zeit (z.B. Stunde ≥ `hoursPerDay`) → Inline-Fehlermeldung unter Time-Picker.
 
-#### 3.5.2 Wiederkehrend
+#### 3.9.2 Wiederkehrend
 | Element | Beschreibung |
 | --- | --- |
 | Ziel | Regelbasiertes Ereignis mit Vorschau definieren. |
@@ -163,7 +266,7 @@ Jeder Workflow beschreibt Ziel, Trigger, Vorbedingungen, Flüsse, Fehler, Postbe
 - Custom Hook invalid JSON → Inline-Error, Speichern disabled.
 - Zeitzonen/Schema-Konflikt (z.B. Offset > Tageslänge) → Inline-Error „Offset überschreitet Tageslänge {hoursPerDay}.“
 
-### 3.6 Zeit fortschreiten
+### 3.10 Zeit fortschreiten
 | Element | Beschreibung |
 | --- | --- |
 | Ziel | Datum/Uhrzeit vor-/zurückbewegen, Ereignisse auslösen. |
@@ -183,7 +286,7 @@ Jeder Workflow beschreibt Ziel, Trigger, Vorbedingungen, Flüsse, Fehler, Postbe
 - Persistenzfehler beim Speichern neuer `currentTimestamp` → Toast + Undo.
 - Teil-Tageskonflikt → Dialog „Mehrere Ereignisse im selben Zeitfenster“ mit Optionen (alle auslösen / Auswahl).
 
-### 3.7 Datum und Zeit setzen
+### 3.11 Datum und Zeit setzen
 | Element | Beschreibung |
 | --- | --- |
 | Ziel | Datum/Uhrzeit direkt setzen mit Konfliktauflösung. |
@@ -202,7 +305,7 @@ Jeder Workflow beschreibt Ziel, Trigger, Vorbedingungen, Flüsse, Fehler, Postbe
 - Konflikt mit gesperrtem Zeitraum (z.B. Reise-Lock) → Blockiert, Hinweis „Reise kann nicht übersprungen werden“.
 - Ungültiges Minutenraster → Hinweis „Zeit muss im Schritt von {minuteStep} liegen“.
 
-### 3.8 Ereignisliste filtern/suchen
+### 3.12 Ereignisliste filtern/suchen
 | Element | Beschreibung |
 | --- | --- |
 | Ziel | Ereignisse nach Zeitraum, Typ, Tagging filtern. |
@@ -216,7 +319,7 @@ Jeder Workflow beschreibt Ziel, Trigger, Vorbedingungen, Flüsse, Fehler, Postbe
 - Live-Filter (debounced 200ms) mit Ergebniszähler.
 - Keine Treffer → Leerstaat (siehe §4).
 
-### 3.9 Kalender bearbeiten
+### 3.13 Kalender bearbeiten
 | Element | Beschreibung |
 | --- | --- |
 | Ziel | Schema ändern, Migration durchführen, Default anpassen. |
@@ -235,7 +338,7 @@ Jeder Workflow beschreibt Ziel, Trigger, Vorbedingungen, Flüsse, Fehler, Postbe
 - Default-Flag auf entferntem Kalender → UI zwingt neue Auswahl.
 - Stunden-/Minutenänderung kollidiert mit bestehenden Events → Liste der betroffenen Events, Option „Alle Events auf neue Tagesgrenze normalisieren“.
 
-### 3.10 Travel-Kalender
+### 3.14 Travel-Kalender
 | Element | Beschreibung |
 | --- | --- |
 | Ziel | Kompaktes Leaf im Reisemodus anzeigen, das Zeitfortschritt und nächste Ereignisse visualisiert. |
@@ -259,7 +362,7 @@ Jeder Workflow beschreibt Ziel, Trigger, Vorbedingungen, Flüsse, Fehler, Postbe
 - Kein Kalender → Kompakter Leerstaat „Kein Kalender ausgewählt“ + CTA „Manager öffnen“.
 - Ladefehler → Banner „Daten konnten nicht geladen werden“ mit Retry.
 
-### 3.11 Reise-Sync (Cartographer)
+### 3.15 Reise-Sync (Cartographer)
 | Element | Beschreibung |
 | --- | --- |
 | Ziel | Bidirektionale Synchronisation von Zeitfortschritt, Hooks und UI-Feedback zwischen Cartographer und Calendar. |
@@ -283,6 +386,10 @@ Jeder Workflow beschreibt Ziel, Trigger, Vorbedingungen, Flüsse, Fehler, Postbe
 | --- | --- | --- |
 | Dashboard | Keine Kalender | Illustration + Text „Noch kein Kalender erstellt“ + Button „Kalender anlegen“ |
 | Dashboard | Keine kommenden Ereignisse | Card mit Copy „Du bist frei von Verpflichtungen“ + Button „Ereignis hinzufügen“ |
+| Almanac (global) | Modus konnte nicht geladen werden | Full-width Banner + Button „Erneut versuchen“ (ruft `loadSnapshot`) |
+| Events-Modus | Keine Phänomene | Illustration + CTA „Phänomen hinzufügen“ + Sekundäraktion „Aus Vorlage importieren“ |
+| Events-Modus | Ladefehler | Sticky-Banner mit Retry + Link „Fehlerdetails“ (öffnet Log) |
+| Events-Modus | Export fertig | Toast „Export bereit“ + Button „Download“ |
 | Manager – Kalenderansicht | Laden fehlgeschlagen | Inline-Error-Badge in Toolbar + Retry |
 | Manager – Übersicht | Filter ohne Treffer | Tabelle ersetzt durch Card „Keine Treffer“ + Button „Filter zurücksetzen“ |
 | Travel-Leaf | Kein Kalender/Default | Kompakter Text + CTA „Kalender wählen“ (öffnet Dropdown) |
@@ -303,7 +410,7 @@ Fehlertexte sind in `i18n` unter `calendar.mode.errors.*` gepflegt. Leerstaaten 
 - **Announcements**: Moduswechsel (Manager Tabs, Travel-Leaf) triggern `aria-live="polite"` Meldungen „Kalenderansicht – Monatsansicht geladen“.
 
 ## 6. Telemetrie-Hinweise
-- Zentrale User-Aktionen (Default setzen, Moduswechsel, Travel-Leaf mount/unmount, Sub-Tages-Advance) dispatchen Events `calendar.telemetry.*` (Details siehe [STATE_MACHINE.md §Effekte](./STATE_MACHINE.md#effekte)).
+- Zentrale User-Aktionen (Default setzen, Almanac-/Events-Moduswechsel, Travel-Leaf mount/unmount, Sub-Tages-Advance) dispatchen Events `calendar.telemetry.*` (Details siehe [STATE_MACHINE.md §Effekte](./STATE_MACHINE.md#effekte)).
 - Fehler werden mit `scope` (dashboard/manager/travel) annotiert.
 
 ## 7. Verweise

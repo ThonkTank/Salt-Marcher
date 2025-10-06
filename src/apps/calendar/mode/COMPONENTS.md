@@ -6,7 +6,54 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
 - Styling erfolgt primär über bestehende Tokens aus `src/ui/tokens` und Utility-Klassen (`ui/Flex`, `ui/Grid`).
 - Props werden mit `Readonly`-Interfaces versehen; Events folgen dem Muster `on<Event>` und liefern Domain-DTOs aus [API_CONTRACTS.md](./API_CONTRACTS.md).
 
-## 2. Calendar UI Komponenten {#calendar-ui-komponenten}
+## 2. Almanac-Komponenten {#almanac-komponenten}
+### 2.1 `AlmanacShell`
+- **Responsibility**: Parent-Layout für alle Calendar-Modi (Dashboard, Manager, Events, Travel) inkl. Breadcrumbs, Mode-Persistenz und Statusleiste.
+- **Props**
+  ```ts
+  interface AlmanacShellProps {
+    activeMode: AlmanacMode; // 'dashboard' | 'manager' | 'events' | 'travel'
+    modeOptions: ReadonlyArray<{ mode: AlmanacMode; label: string; badgeCount?: number; icon: string }>;
+    breadcrumbs: ReadonlyArray<AlmanacBreadcrumb>;
+    statusSummary?: AlmanacStatusSummary; // z.B. { zoomLabel: string; filterCount: number }
+    isLoading: boolean;
+    onSelectMode: (mode: AlmanacMode) => void;
+    onOpenSettings: () => void;
+    children: React.ReactNode;
+  }
+  ```
+- **Events**: `onSelectMode` dispatcht `ALMANAC_MODE_SELECTED` (siehe [STATE_MACHINE.md](./STATE_MACHINE.md#eventsactions)).
+- **Interner Zustand**: Fokus-Management (lastFocusedElement), Drawer-Visibility für Mobile.
+- **Styling**: Container nutzt `ui/SplitPane` (Sidebar + Content); Statusleiste `ui/Badge` für Filtercount.
+- **Fehler/Leer**: Slot `errorFallback` (Banner) und `emptyState` (CTA „Kalender anlegen“ / „Phänomen hinzufügen“).
+
+### 2.2 `AlmanacModeSwitcher`
+- **Responsibility**: Sidebar/Dropdown zur Moduswahl mit Tastaturnavigation.
+- **Props**
+  ```ts
+  interface AlmanacModeSwitcherProps {
+    modes: ReadonlyArray<{ mode: AlmanacMode; label: string; description: string; hotkey?: string; disabled?: boolean; badgeCount?: number }>;
+    activeMode: AlmanacMode;
+    layout: 'sidebar' | 'dropdown';
+    onSelect: (mode: AlmanacMode) => void;
+  }
+  ```
+- **Events**: `onSelect` → `ALMANAC_MODE_SELECTED`.
+- **Styling**: Sidebar nutzt `ui/NavList`, Dropdown `ui/Menu`; aktive Einträge mit Accent-Border.
+- **Accessibility**: `role="tablist"` im Sidebar-Modus, `aria-activedescendant` für Screenreader.
+
+### 2.3 `AlmanacBreadcrumbs`
+- **Responsibility**: Breadcrumb + Zurück-Aktion pro Modus.
+- **Props**
+  ```ts
+  interface AlmanacBreadcrumbsProps {
+    items: ReadonlyArray<AlmanacBreadcrumb>;
+    onNavigate: (target: AlmanacBreadcrumb) => void;
+  }
+  ```
+- **Styling**: basiert auf `ui/Breadcrumbs`, enthält optional sekundäre Aktionen (z.B. „Letzten Modus öffnen“).
+
+## 3. Calendar UI Komponenten {#calendar-ui-komponenten}
 ### 2.1 `CalendarDashboard`
 - **Responsibility**: Container des Dashboard-Leaves inkl. Toolbar, Datumskarte, Upcoming-Liste, Filter, Log.
 - **Props**
@@ -304,11 +351,150 @@ Dieses Dokument beschreibt UI-Komponenten für den Calendar-Workmode. Es ergänz
 - **Styling**: `ButtonGroup` mit IconButtons, Tooltips zeigen Tastaturkürzel.
 - **Fehler/Leer**: Wenn `disabled`, Buttons im `aria-disabled` Zustand.
 
-## 3. Komposition
+## 4. Events-Komponenten {#events-komponenten}
+### 4.1 `EventsModeView`
+- **Responsibility**: Container für Timeline/Tabelle/Karte inkl. Filterzustände.
+- **Props**
+  ```ts
+  interface EventsModeViewProps {
+    viewMode: EventsViewMode; // 'timeline' | 'table' | 'map'
+    filters: EventsFilterState;
+    sort: EventsSort;
+    pagination: EventsPaginationState;
+    isLoading: boolean;
+    hasMore: boolean;
+    upcomingPhenomena: ReadonlyArray<PhenomenonSummaryDTO>;
+    onViewModeChange: (mode: EventsViewMode) => void;
+    onFilterChange: (next: EventsFilterState) => void;
+    onSortChange: (next: EventsSort) => void;
+    onLoadMore: () => void;
+    onExport: (format: 'csv' | 'json') => void;
+    onOpenPhenomenon: (phenomenonId: string) => void;
+  }
+  ```
+- **Styling**: Layout per `ui/Stack`; Filterchips `ui/Tag` mit Badges.
+
+### 4.2 `EventsToolbar`
+- **Responsibility**: Filterleiste, View-Mode-Toggle, Export/Import.
+- **Props**
+  ```ts
+  interface EventsToolbarProps {
+    viewMode: EventsViewMode;
+    filterCount: number;
+    activeFilters: EventsFilterState;
+    onToggleFilterPanel: () => void;
+    onViewModeChange: (mode: EventsViewMode) => void;
+    onExport: (format: 'csv' | 'json') => void;
+    onImport: () => void;
+  }
+  ```
+- **Accessibility**: Buttons mit `aria-pressed`; Filterpanel `aria-expanded`.
+
+### 4.3 `EventsTimeline`
+- **Responsibility**: Visualisiert Phänomene als chronologische Liste mit Gruppen.
+- **Props**
+  ```ts
+  interface EventsTimelineProps {
+    groups: ReadonlyArray<PhenomenonGroupDTO>; // { heading, items }
+    zoomLabel: string;
+    onNavigateRange: (direction: 'prev' | 'next' | 'today') => void;
+    onOpenPhenomenon: (phenomenonId: string) => void;
+  }
+  ```
+- **Styling**: Nutzt `ui/Timeline` (vertikal); Items mit Kategorie-Badge und Hook-Icons.
+- **Fehler/Leer**: Fallback-Slots `emptyState`, `errorState`.
+
+### 4.4 `EventsTable`
+- **Responsibility**: Tabellarische Ansicht mit Sortier- und Spaltenoptionen.
+- **Props**
+  ```ts
+  interface EventsTableProps {
+    rows: ReadonlyArray<PhenomenonRowDTO>;
+    sort: EventsSort;
+    onSortChange: (next: EventsSort) => void;
+    onOpenPhenomenon: (phenomenonId: string) => void;
+    onToggleColumn: (column: EventsTableColumn) => void;
+  }
+  ```
+- **Styling**: Basierend auf `ui/Table`; sticky Header; Sortiericons `ui/IconButton`.
+
+### 4.5 `EventsMap`
+- **Responsibility**: Raster-/Heatmap-Darstellung (optional, Feature-Flag).
+- **Props**
+  ```ts
+  interface EventsMapProps {
+    cells: ReadonlyArray<PhenomenonMapCellDTO>;
+    focusRange: CalendarRangeDTO;
+    onCellHover?: (cellId: string | null) => void;
+    onCellSelect?: (cellId: string) => void;
+  }
+  ```
+- **Styling**: Canvas/SVG mit `ui/Tooltip` für Hover.
+- **Error/Empty**: Standard-Props `emptyState`, `errorMessage`.
+
+### 4.6 `PhenomenonEditor`
+- **Responsibility**: Formular zum Erstellen/Bearbeiten inkl. Vorschau.
+- **Props**
+  ```ts
+  interface PhenomenonEditorProps {
+    value: PhenomenonDraftDTO;
+    calendars: ReadonlyArray<CalendarSummaryDTO>;
+    templates: ReadonlyArray<PhenomenonTemplateDTO>;
+    validationErrors?: PhenomenonValidationErrors;
+    isSaving: boolean;
+    onChange: (next: PhenomenonDraftDTO) => void;
+    onSave: () => void;
+    onCancel: () => void;
+    onPreviewRequest: (draft: PhenomenonDraftDTO) => void;
+  }
+  ```
+- **Styling**: Mehrspaltiges Formular (2-col grid), Time-Picker `ui/TimeField` (schema-aware), Kategorie-Icons `ui/IconSelect`.
+- **Fehler/Leer**: Inline-Errors pro Feld; `validationSummary` oben.
+
+### 4.7 `PhenomenonLinkDrawer`
+- **Responsibility**: Drawer zur Kalenderzuordnung, Prioritäten und Hook-Konfiguration.
+- **Props**
+  ```ts
+  interface PhenomenonLinkDrawerProps {
+    phenomenon: PhenomenonDetailDTO;
+    calendars: ReadonlyArray<CalendarSummaryDTO>;
+    hooks: ReadonlyArray<PhenomenonHookOption>;
+    isSaving: boolean;
+    onUpdateLink: (payload: PhenomenonLinkUpdate) => void;
+    onClose: () => void;
+  }
+  ```
+- **Styling**: `ui/Drawer` rechts, Listen `ui/CheckboxList`, Prioritäten via `ui/SortableList`.
+- **Fehler/Leer**: Zeigt Warning, wenn letzter Kalender entfernt werden soll.
+
+### 4.8 `EventsEmptyState`
+- **Responsibility**: Wiederverwendbarer Leerstaat mit CTA.
+- **Props**
+  ```ts
+  interface EventsEmptyStateProps {
+    headline: string;
+    description?: string;
+    primaryAction: ButtonProps;
+    secondaryAction?: ButtonProps;
+  }
+  ```
+- **Styling**: `ui/Illustration` + `ui/ButtonGroup`.
+
+## 5. Komposition
 Textuelles Diagramm (→ inkludiert/enthält):
 ```
+AlmanacShell
+ ├─ AlmanacModeSwitcher (sidebar/dropdown)
+ ├─ AlmanacBreadcrumbs
+ ├─ StatusBar (anzeigt Zoom/Filter)
+ └─ {slot} ActiveModeContent
+      ├─ (dashboard) CalendarDashboard
+      ├─ (manager)   CalendarManagerView
+      ├─ (events)    EventsModeView
+      └─ (travel)    TravelCalendarLeaf
+
 CalendarDashboard
- ├─ CalendarDashboardToolbar (Teil von Header, reuse ui/ButtonGroup)
+ ├─ CalendarDashboardToolbar (reuse ui/ButtonGroup)
  ├─ CurrentTimestampCard
  │    └─ (Quick-Steps) TravelQuickStepGroup (Dashboard-Variante)
  ├─ UpcomingEventsList
@@ -321,6 +507,17 @@ CalendarManagerView
  │    └─ CalendarEventPopover (on demand)
  └─ (viewMode === 'overview') CalendarOverviewList
 
+EventsModeView
+ ├─ EventsToolbar
+ ├─ (viewMode === 'timeline') EventsTimeline
+ ├─ (viewMode === 'table')    EventsTable
+ ├─ (viewMode === 'map')      EventsMap
+ └─ EventsEmptyState / ErrorBoundary
+
+EventsDialogs
+ ├─ PhenomenonEditor (Modal)
+ └─ PhenomenonLinkDrawer (Drawer)
+
 CalendarDialogs
  ├─ CalendarFormDialog (nutzt CalendarPreview, DefaultBadge, CalendarTimePicker)
  ├─ EventFormDialog (nutzt CalendarTimePicker, DurationInput)
@@ -328,13 +525,13 @@ CalendarDialogs
 
 TravelCalendarLeaf
  ├─ TravelCalendarToolbar
- ├─ TravelCalendarModeView (intern: MonthGrid | WeekList | DayTimeline | UpcomingList)
+ ├─ TravelCalendarModeView (MonthGrid | WeekList | DayTimeline | UpcomingList)
  │    └─ (DayTimeline) CalendarTimePicker (readonly grid)
  └─ CalendarEventLog (scope='travel')
 ```
 
-## 4. Fehler- & Leerstaat-Slots
-- Alle Hauptcontainer (`CalendarDashboard`, `CalendarGridView`, `CalendarOverviewList`, `TravelCalendarLeaf`) besitzen Props `error?: UIErrorState` und `emptyState?: UIEmptyStateConfig` (siehe unten) zur Konsistenz.
+## 6. Fehler- & Leerstaat-Slots
+- Alle Hauptcontainer (`AlmanacShell`, `CalendarDashboard`, `CalendarGridView`, `CalendarOverviewList`, `EventsModeView`, `TravelCalendarLeaf`) besitzen Props `error?: UIErrorState` und `emptyState?: UIEmptyStateConfig` (siehe unten) zur Konsistenz.
   ```ts
   interface UIErrorState {
     message: string;
@@ -351,11 +548,12 @@ TravelCalendarLeaf
   ```
 - Travel-spezifische Banner erhalten `scope: 'travel'` für Telemetrie (siehe [STATE_MACHINE.md](./STATE_MACHINE.md#effekte)).
 
-## 5. Persistenz-Touchpoints
+## 7. Persistenz-Touchpoints
 - Komponenten selbst speichern nichts; Events rufen Presenter-Logik, die Gateways aus [API_CONTRACTS.md](./API_CONTRACTS.md) verwendet.
 - Default-Toggle in `CalendarFormDialog`/`CalendarOverviewList` ruft `CalendarRepository.updateDefault` über Presenter.
+- `PhenomenonEditor` speichert über `AlmanacRepository.upsertPhenomenon`; `PhenomenonLinkDrawer` nutzt `AlmanacRepository.updateLinks` und triggert Cache-Invalidierung.
 
-## 6. Verweise
+## 8. Verweise
 - State-Events: [STATE_MACHINE.md](./STATE_MACHINE.md#eventsactions)
 - API-DTOs: [API_CONTRACTS.md](./API_CONTRACTS.md#dtos)
 - Testszenarien: [../../tests/apps/calendar/TEST_PLAN.md](../../../tests/apps/calendar/TEST_PLAN.md)
