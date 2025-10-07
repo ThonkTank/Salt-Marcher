@@ -62,6 +62,7 @@ export class AlmanacController {
     constructor(private readonly app: App) {
         this.calendarRepo = new InMemoryCalendarRepository();
         this.eventRepo = new InMemoryEventRepository();
+        this.eventRepo.bindCalendarRepository(this.calendarRepo);
         this.phenomenonRepo = new InMemoryPhenomenonRepository();
         this.gateway = new InMemoryStateGateway(this.calendarRepo, this.eventRepo, this.phenomenonRepo);
         this.stateMachine = new AlmanacStateMachine(

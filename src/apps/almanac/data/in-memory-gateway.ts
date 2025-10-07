@@ -21,7 +21,9 @@ import {
 } from '../domain/phenomenon-engine';
 import { advanceTime } from '../domain/time-arithmetic';
 import type { TimeUnit } from '../domain/time-arithmetic';
-import type { CalendarRepository, EventRepository, PhenomenonRepository } from './in-memory-repository';
+import type { CalendarDefaultsRepository, CalendarRepository } from './calendar-repository';
+import type { EventRepository } from './event-repository';
+import type { AlmanacRepository } from './almanac-repository';
 import type { AlmanacPreferencesSnapshot } from '../mode/contracts';
 
 export interface AlmanacState {
@@ -55,9 +57,9 @@ export class InMemoryStateGateway {
   private preferences: AlmanacPreferencesSnapshot = {};
 
   constructor(
-    private calendarRepo: CalendarRepository,
+    private calendarRepo: CalendarRepository & CalendarDefaultsRepository,
     private eventRepo: EventRepository,
-    private phenomenonRepo: PhenomenonRepository,
+    private phenomenonRepo: AlmanacRepository,
   ) {}
 
   /**

@@ -5,6 +5,7 @@
 # Aktueller Stand
 - Vitest-Suites für Domain-Layer (Kalenderarithmetik, Wiederholregeln, Phänomen-Engine) sowie Gateway-Integration vorhanden.
 - Dashboard-DOM-Test deckt Recently-Triggered-Rendering und Moduswechsel ab.
+- Persistenztests für die Vault-Repositories (`calendar-repository.test.ts`, `almanac-repository.test.ts`) sichern Schema- und Filterlogik.
 
 # ToDo
 - [P1] Ergänze UI-/Events-Tests nach Fertigstellung des Phänomen-Editors und Travel-Leaves.
