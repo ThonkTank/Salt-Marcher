@@ -32,7 +32,23 @@ const phenomenon: Phenomenon = {
   rule: { type: 'monthly_position', monthId: 'jan', day: 15 },
   timePolicy: 'fixed',
   startTime: { hour: 22, minute: 30 },
+  durationMinutes: 90,
+  hooks: [{ id: 'hook-aurora', type: 'script', config: { action: 'notify' }, priority: 2 }],
   priority: 4,
+  schemaVersion: '1.0.0',
+};
+
+const offsetPhenomenon: Phenomenon = {
+  id: 'phen-offset',
+  name: 'Deep Tide',
+  category: 'tide',
+  visibility: 'selected',
+  appliesToCalendarIds: ['simple'],
+  rule: { type: 'monthly_position', monthId: 'jan', day: 16 },
+  timePolicy: 'offset',
+  offsetMinutes: 45,
+  durationMinutes: 30,
+  priority: 2,
   schemaVersion: '1.0.0',
 };
 
@@ -46,6 +62,9 @@ describe('phenomenon-engine', () => {
     expect(next?.timestamp.day).toBe(15);
     expect(next?.timestamp.hour).toBe(22);
     expect(next?.timestamp.minute).toBe(30);
+    expect(next?.durationMinutes).toBe(90);
+    expect(next?.endTimestamp.hour).toBe(0);
+    expect(next?.hooks[0].id).toBe('hook-aurora');
   });
 
   it('collects range occurrences across years', () => {
@@ -65,5 +84,18 @@ describe('phenomenon-engine', () => {
     expect(occurrences[0].timestamp.year).toBe(1);
     expect(occurrences[1].timestamp.year).toBe(2);
     expect(occurrences[2].timestamp.year).toBe(3);
+    expect(occurrences[0].durationMinutes).toBe(90);
+  });
+
+  it('applies offset policy using minute arithmetic', () => {
+    const start = createDayTimestamp('simple', 2, 'jan', 14);
+
+    const next = computeNextPhenomenonOccurrence(offsetPhenomenon, schema, 'simple', start);
+
+    expect(next).not.toBeNull();
+    expect(next?.timestamp.hour).toBe(0);
+    expect(next?.timestamp.minute).toBe(45);
+    expect(next?.durationMinutes).toBe(30);
+    expect(next?.endTimestamp.minute).toBe(15);
   });
 });

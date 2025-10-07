@@ -1,15 +1,6 @@
 // src/apps/almanac/domain/repeat-rule.ts
 // Recurrence rule types and helpers for calendar events and phenomena.
 
-/**
- * Repeat Rules
- *
- * Defines recurrence rules used by calendar events and phenomena. The first
- * iteration focuses on annual, monthly position and weekly patterns – the
- * remaining rule types are scaffolded for later implementation (astronomical,
- * custom scripts).
- */
-
 import type { CalendarSchema } from './calendar-schema';
 import type { CalendarTimestamp } from './calendar-timestamp';
 import { createDayTimestamp, compareTimestampsWithSchema } from './calendar-timestamp';
@@ -23,22 +14,20 @@ import {
 } from './calendar-math';
 
 export type RepeatRule =
-  | AnnualRepeatRule
+  | AnnualOffsetRepeatRule
   | MonthlyPositionRepeatRule
   | WeeklyDayIndexRepeatRule
   | AstronomicalRepeatRule
   | CustomRepeatRule;
 
-export interface AnnualRepeatRule {
-  readonly type: 'annual';
+export interface AnnualOffsetRepeatRule {
+  readonly type: 'annual_offset';
   readonly offsetDayOfYear: number; // 1-based
 }
 
 export interface MonthlyPositionRepeatRule {
   readonly type: 'monthly_position';
-  /**
-   * Month identifier. The rule targets the day within this month each year.
-   */
+  /** Month identifier. The rule targets the day within this month each year. */
   readonly monthId: string;
   /** 1-based day number. Values outside the month-length are clamped. */
   readonly day: number;
@@ -48,16 +37,15 @@ export interface WeeklyDayIndexRepeatRule {
   readonly type: 'weekly_dayIndex';
   /** Day index within the schema week (0..daysPerWeek-1). */
   readonly dayIndex: number;
-  /**
-   * Optional weekly interval multiplier (1 = every week, 2 = every second week).
-   * Only positive integers are supported.
-   */
+  /** Optional weekly interval multiplier (1 = every week, 2 = every second week). */
   readonly interval?: number;
 }
 
+export type AstronomicalSource = 'sunrise' | 'sunset' | 'moon_phase' | 'eclipse';
+
 export interface AstronomicalRepeatRule {
   readonly type: 'astronomical';
-  readonly source: 'sunrise' | 'sunset' | 'moon_phase' | 'eclipse';
+  readonly source: AstronomicalSource;
   readonly referenceCalendarId?: string;
   readonly offsetMinutes?: number;
 }
@@ -75,6 +63,28 @@ export interface OccurrenceQueryOptions {
 export interface OccurrencesInRangeOptions extends OccurrenceQueryOptions {
   /** Maximum number of occurrences to return. Defaults to 12. */
   readonly limit?: number;
+}
+
+export interface AstronomicalEventCalculator {
+  resolveNextOccurrence(
+    schema: CalendarSchema,
+    calendarId: string,
+    rule: AstronomicalRepeatRule,
+    start: CalendarTimestamp,
+    options: OccurrenceQueryOptions,
+  ): CalendarTimestamp | null;
+  resolveOccurrencesInRange(
+    schema: CalendarSchema,
+    calendarId: string,
+    rule: AstronomicalRepeatRule,
+    rangeStart: CalendarTimestamp,
+    rangeEnd: CalendarTimestamp,
+    options: OccurrencesInRangeOptions,
+  ): CalendarTimestamp[];
+}
+
+export interface RepeatRuleServices {
+  readonly astronomicalCalculator?: AstronomicalEventCalculator;
 }
 
 export class UnsupportedRepeatRuleError extends Error {
@@ -99,24 +109,26 @@ export function calculateNextOccurrence(
   calendarId: string,
   rule: RepeatRule,
   start: CalendarTimestamp,
-  options: OccurrenceQueryOptions = {}
+  options: OccurrenceQueryOptions = {},
+  services: RepeatRuleServices = {},
 ): CalendarTimestamp | null {
   const includeStart = options.includeStart ?? false;
 
   switch (rule.type) {
-    case 'annual':
+    case 'annual_offset':
       return resolveNextAnnualOccurrence(schema, calendarId, rule, start, includeStart);
     case 'monthly_position':
       return resolveNextMonthlyOccurrence(schema, calendarId, rule, start, includeStart);
     case 'weekly_dayIndex':
       return resolveNextWeeklyOccurrence(schema, calendarId, rule, start, includeStart);
     case 'astronomical':
+      return resolveNextAstronomicalOccurrence(schema, calendarId, rule, start, options, services);
     case 'custom':
       throw new UnsupportedRepeatRuleError(rule.type);
-    default:
-      // Exhaustiveness protection
+    default: {
       const _never: never = rule;
       return _never;
+    }
   }
 }
 
@@ -130,7 +142,8 @@ export function calculateOccurrencesInRange(
   rule: RepeatRule,
   rangeStart: CalendarTimestamp,
   rangeEnd: CalendarTimestamp,
-  options: OccurrencesInRangeOptions = {}
+  options: OccurrencesInRangeOptions = {},
+  services: RepeatRuleServices = {},
 ): CalendarTimestamp[] {
   const limit = options.limit ?? 12;
   if (limit <= 0) return [];
@@ -138,15 +151,17 @@ export function calculateOccurrencesInRange(
   const compare = compareTimestampsWithSchema(schema, rangeStart, rangeEnd);
   const [start, end] = compare <= 0 ? [rangeStart, rangeEnd] : [rangeEnd, rangeStart];
 
+  if (rule.type === 'astronomical') {
+    return resolveAstronomicalRange(schema, calendarId, rule, start, end, options, services).slice(0, limit);
+  }
+
   const occurrences: CalendarTimestamp[] = [];
-  let cursor = calculateNextOccurrence(schema, calendarId, rule, start, options);
+  let cursor = calculateNextOccurrence(schema, calendarId, rule, start, options, services);
 
   while (cursor && occurrences.length < limit && compareTimestampsWithSchema(schema, cursor, end) <= 0) {
     occurrences.push(cursor);
-    cursor = calculateNextOccurrence(schema, calendarId, rule, cursor, { includeStart: false });
+    cursor = calculateNextOccurrence(schema, calendarId, rule, cursor, { includeStart: false }, services);
 
-    // Safety guard to avoid endless loops when an implementation accidentally
-    // yields identical timestamps repeatedly (e.g. unsupported rule).
     if (cursor && occurrences.length > 0) {
       const prev = occurrences[occurrences.length - 1];
       if (compareTimestampsWithSchema(schema, cursor, prev) === 0) {
@@ -161,9 +176,9 @@ export function calculateOccurrencesInRange(
 function resolveNextAnnualOccurrence(
   schema: CalendarSchema,
   calendarId: string,
-  rule: AnnualRepeatRule,
+  rule: AnnualOffsetRepeatRule,
   start: CalendarTimestamp,
-  includeStart: boolean
+  includeStart: boolean,
 ): CalendarTimestamp | null {
   const totalDays = getAnnualRange(schema);
   if (totalDays <= 0) {
@@ -188,7 +203,7 @@ function resolveNextMonthlyOccurrence(
   calendarId: string,
   rule: MonthlyPositionRepeatRule,
   start: CalendarTimestamp,
-  includeStart: boolean
+  includeStart: boolean,
 ): CalendarTimestamp | null {
   const monthLength = clampDayToMonth(schema, rule.monthId, rule.day);
   const initialCandidate = createDayTimestamp(calendarId, start.year, rule.monthId, monthLength);
@@ -206,7 +221,7 @@ function resolveNextWeeklyOccurrence(
   calendarId: string,
   rule: WeeklyDayIndexRepeatRule,
   start: CalendarTimestamp,
-  includeStart: boolean
+  includeStart: boolean,
 ): CalendarTimestamp {
   const daysPerWeek = schema.daysPerWeek;
   if (rule.dayIndex < 0 || rule.dayIndex >= daysPerWeek) {
@@ -223,7 +238,6 @@ function resolveNextWeeklyOccurrence(
     delta = daysPerWeek * interval;
   }
 
-  // Align with the requested interval (e.g. every second week)
   const intervalDays = daysPerWeek * interval;
   if (delta % daysPerWeek !== 0 && interval > 1) {
     delta += mod(intervalDays - (delta % intervalDays), intervalDays);
@@ -231,6 +245,37 @@ function resolveNextWeeklyOccurrence(
 
   const candidateAbsolute = absoluteStart + delta;
   return absoluteDayToTimestamp(schema, calendarId, candidateAbsolute);
+}
+
+function resolveNextAstronomicalOccurrence(
+  schema: CalendarSchema,
+  calendarId: string,
+  rule: AstronomicalRepeatRule,
+  start: CalendarTimestamp,
+  options: OccurrenceQueryOptions,
+  services: RepeatRuleServices,
+): CalendarTimestamp | null {
+  const calculator = services.astronomicalCalculator;
+  if (!calculator) {
+    throw new UnsupportedRepeatRuleError(rule.type);
+  }
+  return calculator.resolveNextOccurrence(schema, calendarId, rule, start, options);
+}
+
+function resolveAstronomicalRange(
+  schema: CalendarSchema,
+  calendarId: string,
+  rule: AstronomicalRepeatRule,
+  rangeStart: CalendarTimestamp,
+  rangeEnd: CalendarTimestamp,
+  options: OccurrencesInRangeOptions,
+  services: RepeatRuleServices,
+): CalendarTimestamp[] {
+  const calculator = services.astronomicalCalculator;
+  if (!calculator) {
+    throw new UnsupportedRepeatRuleError(rule.type);
+  }
+  return calculator.resolveOccurrencesInRange(schema, calendarId, rule, rangeStart, rangeEnd, options);
 }
 
 function getAnnualRange(schema: CalendarSchema): number {

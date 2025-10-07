@@ -1,22 +1,26 @@
 // src/apps/almanac/domain/phenomenon-engine.ts
 // Calculates phenomenon occurrences based on repeat rules and time policies.
 
-/**
- * Phenomenon Engine
- *
- * Bridges repeat rules with phenomenon-specific time policies to calculate
- * upcoming and in-range occurrences. The engine intentionally focuses on
- * day/minute precision to match the current Almanac MVP scope.
- */
-
 import type { CalendarSchema } from './calendar-schema';
 import { getTimeDefinition } from './calendar-schema';
 import type { CalendarTimestamp } from './calendar-timestamp';
 import { compareTimestampsWithSchema, createMinuteTimestamp } from './calendar-timestamp';
 import type { Phenomenon, PhenomenonOccurrence } from './phenomenon';
-import { requiresOffsetComputation } from './phenomenon';
-import type { OccurrenceQueryOptions, OccurrencesInRangeOptions, RepeatRule } from './repeat-rule';
+import {
+  getPhenomenonEffects,
+  getPhenomenonHooks,
+  getPhenomenonPriority,
+  requiresOffsetComputation,
+} from './phenomenon';
+import type {
+  OccurrenceQueryOptions,
+  OccurrencesInRangeOptions,
+  RepeatRule,
+  RepeatRuleServices,
+} from './repeat-rule';
 import { calculateNextOccurrence, calculateOccurrencesInRange } from './repeat-rule';
+import { advanceTime } from './time-arithmetic';
+import { sortHooksByPriority } from './hook-descriptor';
 
 export class UnsupportedTimePolicyError extends Error {
   constructor(policy: string) {
@@ -25,9 +29,13 @@ export class UnsupportedTimePolicyError extends Error {
   }
 }
 
-export interface PhenomenonOccurrenceOptions extends OccurrenceQueryOptions {}
+export interface PhenomenonOccurrenceOptions extends OccurrenceQueryOptions {
+  readonly services?: RepeatRuleServices;
+}
 
-export interface PhenomenonOccurrencesRangeOptions extends OccurrencesInRangeOptions {}
+export interface PhenomenonOccurrencesRangeOptions extends OccurrencesInRangeOptions {
+  readonly services?: RepeatRuleServices;
+}
 
 export function computeNextPhenomenonOccurrence(
   phenomenon: Phenomenon,
@@ -36,21 +44,20 @@ export function computeNextPhenomenonOccurrence(
   start: CalendarTimestamp,
   options: PhenomenonOccurrenceOptions = {}
 ): PhenomenonOccurrence | null {
-  const baseTimestamp = calculateNextOccurrence(schema, calendarId, phenomenon.rule, start, options);
+  const { services, ...ruleOptions } = options;
+  const baseTimestamp = calculateNextOccurrence(
+    schema,
+    calendarId,
+    phenomenon.rule,
+    start,
+    ruleOptions,
+    services,
+  );
   if (!baseTimestamp) {
     return null;
   }
 
-  const timestamp = applyTimePolicy(phenomenon, schema, calendarId, baseTimestamp);
-
-  return {
-    phenomenonId: phenomenon.id,
-    name: phenomenon.name,
-    calendarId,
-    timestamp,
-    category: phenomenon.category,
-    priority: phenomenon.priority,
-  };
+  return buildPhenomenonOccurrence(phenomenon, schema, calendarId, baseTimestamp);
 }
 
 export function computePhenomenonOccurrencesInRange(
@@ -61,23 +68,39 @@ export function computePhenomenonOccurrencesInRange(
   rangeEnd: CalendarTimestamp,
   options: PhenomenonOccurrencesRangeOptions = {}
 ): PhenomenonOccurrence[] {
+  const { services, ...ruleOptions } = options;
   const baseOccurrences = calculateOccurrencesInRange(
     schema,
     calendarId,
     phenomenon.rule,
     rangeStart,
     rangeEnd,
-    options,
+    ruleOptions,
+    services,
   );
 
-  return baseOccurrences.map(timestamp => ({
+  return baseOccurrences.map(timestamp => buildPhenomenonOccurrence(phenomenon, schema, calendarId, timestamp));
+}
+
+function buildPhenomenonOccurrence(
+  phenomenon: Phenomenon,
+  schema: CalendarSchema,
+  calendarId: string,
+  baseTimestamp: CalendarTimestamp,
+): PhenomenonOccurrence {
+  const { start, end, durationMinutes } = applyTimePolicy(phenomenon, schema, calendarId, baseTimestamp);
+  return {
     phenomenonId: phenomenon.id,
     name: phenomenon.name,
     calendarId,
-    timestamp: applyTimePolicy(phenomenon, schema, calendarId, timestamp),
+    timestamp: start,
+    endTimestamp: end,
     category: phenomenon.category,
-    priority: phenomenon.priority,
-  }));
+    priority: getPhenomenonPriority(phenomenon),
+    durationMinutes,
+    hooks: sortHooksByPriority(getPhenomenonHooks(phenomenon)),
+    effects: getPhenomenonEffects(phenomenon),
+  };
 }
 
 function applyTimePolicy(
@@ -85,29 +108,35 @@ function applyTimePolicy(
   schema: CalendarSchema,
   calendarId: string,
   baseTimestamp: CalendarTimestamp,
-): CalendarTimestamp {
-  if (requiresOffsetComputation(phenomenon)) {
+): { start: CalendarTimestamp; end: CalendarTimestamp; durationMinutes: number } {
+  const { hoursPerDay, minutesPerHour } = getTimeDefinition(schema);
+  const minutesPerDay = hoursPerDay * minutesPerHour;
+
+  if (phenomenon.timePolicy === 'all_day') {
+    const duration = phenomenon.durationMinutes ?? minutesPerDay;
+    const end = duration > 0 ? advanceTime(schema, baseTimestamp, duration, 'minute').timestamp : baseTimestamp;
+    return { start: baseTimestamp, end, durationMinutes: duration };
+  }
+
+  if (phenomenon.timePolicy === 'fixed') {
+    const startTime = phenomenon.startTime ?? { hour: 0, minute: 0 };
+    const hour = clamp(startTime.hour, 0, Math.max(0, hoursPerDay - 1));
+    const minute = clamp(startTime.minute ?? 0, 0, Math.max(0, minutesPerHour - 1));
+    const start = createMinuteTimestamp(calendarId, baseTimestamp.year, baseTimestamp.monthId, baseTimestamp.day, hour, minute);
+    const duration = phenomenon.durationMinutes ?? 0;
+    const end = duration > 0 ? advanceTime(schema, start, duration, 'minute').timestamp : start;
+    return { start, end, durationMinutes: duration };
+  }
+
+  if (!requiresOffsetComputation(phenomenon)) {
     throw new UnsupportedTimePolicyError(phenomenon.timePolicy);
   }
 
-  if (phenomenon.timePolicy === 'all_day') {
-    return baseTimestamp;
-  }
-
-  const startTime = phenomenon.startTime ?? { hour: 0, minute: 0 };
-  const { hoursPerDay, minutesPerHour } = getTimeDefinition(schema);
-
-  const hour = clamp(startTime.hour, 0, Math.max(0, hoursPerDay - 1));
-  const minute = clamp(startTime.minute ?? 0, 0, Math.max(0, minutesPerHour - 1));
-
-  return createMinuteTimestamp(
-    calendarId,
-    baseTimestamp.year,
-    baseTimestamp.monthId,
-    baseTimestamp.day,
-    hour,
-    minute,
-  );
+  const offset = phenomenon.offsetMinutes ?? 0;
+  const start = advanceTime(schema, baseTimestamp, offset, 'minute').timestamp;
+  const duration = phenomenon.durationMinutes ?? 0;
+  const end = duration > 0 ? advanceTime(schema, start, duration, 'minute').timestamp : start;
+  return { start, end, durationMinutes: duration };
 }
 
 function clamp(value: number | undefined, min: number, max: number): number {
