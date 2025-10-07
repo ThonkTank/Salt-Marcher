@@ -157,8 +157,12 @@ export interface PhenomenonDetailView {
 }
 
 export interface TravelLeafStateSlice {
+    readonly travelId: string | null;
     readonly visible: boolean;
     readonly mode: TravelCalendarMode;
+    readonly currentTimestamp: CalendarTimestamp | null;
+    readonly minuteStep: number;
+    readonly lastQuickStep?: { readonly amount: number; readonly unit: "day" | "hour" | "minute" };
     readonly isLoading: boolean;
     readonly error?: string;
 }
@@ -225,6 +229,9 @@ export type AlmanacEvent =
     | { readonly type: "TIME_ADVANCE_REQUESTED"; readonly amount: number; readonly unit: "day" | "hour" | "minute" }
     | { readonly type: "TIME_JUMP_REQUESTED"; readonly timestamp: CalendarTimestamp }
     | { readonly type: "CALENDAR_DATA_REFRESH_REQUESTED" }
+    | { readonly type: "TRAVEL_LEAF_MOUNTED"; readonly travelId: string }
+    | { readonly type: "TRAVEL_MODE_CHANGED"; readonly mode: TravelCalendarMode }
+    | { readonly type: "TRAVEL_TIME_ADVANCE_REQUESTED"; readonly amount: number; readonly unit: "day" | "hour" | "minute" }
     | { readonly type: "ERROR_OCCURRED"; readonly scope: "almanac" | "manager" | "events" | "travel"; readonly message: string };
 
 export const DEFAULT_ALMANAC_MODE: AlmanacMode = "dashboard";
@@ -310,8 +317,12 @@ export function createInitialAlmanacState(): AlmanacState {
             importSummary: null,
         },
         travelLeafState: {
+            travelId: null,
             visible: false,
             mode: "upcoming",
+            currentTimestamp: null,
+            minuteStep: 1,
+            lastQuickStep: undefined,
             isLoading: false,
             error: undefined,
         },

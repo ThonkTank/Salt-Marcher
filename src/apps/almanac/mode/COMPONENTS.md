@@ -315,7 +315,7 @@ Dieses Dokument beschreibt UI-Komponenten für den Almanac-Workmode. Es ergänzt
 - **Fehler**: Tooltip „Dauer überschreitet Tageslänge“.
 
 ### 5.9 `TravelQuickStepGroup`
-- **Responsibility**: Rendert Quick-Step-Buttons (Tag/Stunde/Minute) im Travel-Leaf.
+- **Responsibility**: Rendert Quick-Step-Buttons (Tag/Stunde/Minute) im Travel-Leaf. Implementiert in [`travel/travel-quick-step-group.ts`](./travel/travel-quick-step-group.ts).
 - **Props**
   ```ts
   interface TravelQuickStepGroupProps {
@@ -330,7 +330,7 @@ Dieses Dokument beschreibt UI-Komponenten für den Almanac-Workmode. Es ergänzt
 
 ## 6. Cartographer Travel-Komponenten {#travel-komponenten}
 ### 6.1 `TravelCalendarLeaf`
-- **Responsibility**: Kompaktes Leaf im Reisemodus (Monat/Woche/Tag/Nächste).
+- **Responsibility**: Kompaktes Leaf im Reisemodus (Monat/Woche/Tag/Nächste). Implementiert in [`travel/travel-calendar-leaf.ts`](./travel/travel-calendar-leaf.ts) und von der Cartographer-Sidebar eingebunden.
 - **Props**
   ```ts
   interface TravelCalendarLeafProps {
@@ -356,7 +356,7 @@ Dieses Dokument beschreibt UI-Komponenten für den Almanac-Workmode. Es ergänzt
 - **Fehler/Leer**: Zeigt Banner/EmptyState analog [UX_SPEC §4](./UX_SPEC.md#4-fehler-und-leerstaaten).
 
 ### 6.2 `TravelCalendarToolbar`
-- **Responsibility**: Toolbar innerhalb des Travel-Leafs.
+- **Responsibility**: Toolbar innerhalb des Travel-Leafs. Siehe [`travel/travel-calendar-toolbar.ts`](./travel/travel-calendar-toolbar.ts).
 - **Props**
   ```ts
   interface TravelCalendarToolbarProps {
@@ -371,7 +371,7 @@ Dieses Dokument beschreibt UI-Komponenten für den Almanac-Workmode. Es ergänzt
     onClose: () => void;
   }
   ```
-- **Accessibility**: Buttons mit `aria-keyshortcuts` (`Ctrl+Alt+Shift+1..4` für Modi, `Ctrl+Alt+.`/`,` für Stunden, `Ctrl+Alt+;`/`'` für Minuten). `aria-live`-Region kündigt neue Uhrzeit an.
+- **Accessibility**: Buttons mit `aria-keyshortcuts` (`Ctrl+Alt+Shift+1..4` für Modi, `Ctrl+Alt+.`/`,` für Stunden, `Ctrl+Alt+;`/`'` für Minuten). `aria-live`-Region kündigt neue Uhrzeit an. Wird indirekt über `TravelCalendarLeaf` angesprochen.
 
 
 ## 4. Mode-Komponenten – Almanac › Events {#events-komponenten}

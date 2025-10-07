@@ -30,7 +30,7 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Al
 | `managerUiState` | `viewMode`, `zoom`, `filters`, `overviewLayout`, `selection`, `isLoading`, `error`, `timeControls` (`preset`, `customStep`) | UI-spezifische Flags für Manager/Übersicht inkl. Quick-Steps. | Nicht persistiert (Session) |
 | `managerUiState.form` | `currentDialog` (`'calendar' | 'event' | 'time' | null`), `dialogData` | Offene Dialoge und deren Parameter. | Nicht persistiert |
 | `eventsUiState` | `viewMode`, `filters`, `sort`, `pagination`, `isLoading`, `error`, `selectedPhenomenonId`, `editorDraft`, `linkDrawerOpen` | Zustand des Events-Modus inkl. Formular/Drawer. | Modus/Filter persistiert, Rest Session |
-| `travelLeafState` | `visible`, `mode`, `isLoading`, `error`, `currentTimestamp`, `range`, `events`, `skippedEvents`, `phenomena`, `lastQuickStep`, `lastSync` | Zustand des Travel-Leaves inkl. Phänomen-Badges. | Teilweise (sichtbarkeit/modus) |
+| `travelLeafState` | `travelId`, `visible`, `mode`, `currentTimestamp`, `minuteStep`, `lastQuickStep`, `isLoading`, `error` | Zustand des Travel-Leaves inkl. Anzeigepräferenzen und letztem Quick-Step. | Teilweise (sichtbarkeit/modus) |
 | `telemetryState` | `lastEvents` | Meta-Informationen für Logging (z.B. Default-/Mode-Wechsel). | Nicht persistiert |
 
 ## 3. Events/Actions {#eventsactions}
@@ -73,8 +73,8 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Al
 | `PHENOMENON_DELETE_REQUESTED` | `{ phenomenonId: string }` | Entfernen eines Phänomens. |
 | `PHENOMENON_DELETE_CONFIRMED` | `{ phenomenonId: string }` | Erfolgreiches Löschen. |
 
-| `TRAVEL_LEAF_MOUNTED` | `{ travelId: string }` | Travel-Modus gestartet. |
-| `TRAVEL_MODE_CHANGED` | `{ mode: TravelCalendarMode }` | Travel-Leaf Tab gewechselt. |
+| `TRAVEL_LEAF_MOUNTED` | `{ travelId: string }` | Travel-Modus gestartet (`handleTravelLeafMounted` lädt Präferenzen). |
+| `TRAVEL_MODE_CHANGED` | `{ mode: TravelCalendarMode }` | Travel-Leaf Tab gewechselt; wird persistiert. |
 | `TRAVEL_TIME_ADVANCE_REQUESTED` | `AdvanceRequestDTO` | Quick-Action im Travel-Leaf (Minuten/Stunden/Tage). |
 | `TRAVEL_QUICK_STEP_APPLIED` | `{ delta: AdvanceRequestDTO }` | Travel-Leaf speichert letzten Quick-Step. |
 | `TRAVEL_LEAF_DISMISSED` | `void` | Leaf geschlossen (Nutzer:in oder Hook). |
@@ -131,14 +131,14 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Al
 | `isLoading = true` | `TIME_ADVANCE_CONFIRMED(result)` | `currentTimestamp = result.newTimestamp`, `triggeredEvents = result.triggered`, `skippedEvents = result.skipped` | Append Log (inkl. Minuten), Travel-Leaf refresh, Hooks dispatch |
 | `currentTimestamp = T` | `TIME_JUMP_REQUESTED` | `isLoading = true` | Call `Gateway.setDateTime` |
 | `isLoading = true` | `TIME_JUMP_CONFIRMED(result)` | `currentTimestamp = result.timestamp`, `skippedEvents = result.skipped`, `normalizationWarnings = result.warnings` | Zeige Dialog-Result, Travel-Leaf update |
-| `travelLeafState.visible = true` | `TRAVEL_TIME_ADVANCE_REQUESTED(delta)` | `travelLeafState.isLoading = true`, `travelLeafState.lastQuickStep = delta` | Gateway Advance mit `scope: travel` |
+| `travelLeafState.visible = true` | `TRAVEL_TIME_ADVANCE_REQUESTED(delta)` | `travelLeafState.isLoading = true`, `travelLeafState.lastQuickStep = delta` | Gateway Advance mit `scope: travel` (`handleTimeAdvance`)|
 | `travelLeafState.visible = true` | `TRAVEL_QUICK_STEP_APPLIED(delta)` | `travelLeafState.lastQuickStep = delta` | UI-Badge „zuletzt: ±X“ aktualisieren |
 | `travelLeafState.isLoading = true` | `TIME_ADVANCE_CONFIRMED` | `travelLeafState.isLoading = false`, `events` aktualisiert, `currentTimestamp = result.newTimestamp` | Leaf UI refresh |
 
 ### 4.6 Travel Leaf Lifecycle {#cartographer-travel-leaf}
 | Vorher | Event | Nachher | Aktionen |
 | --- | --- | --- | --- |
-| `visible = false` | `TRAVEL_LEAF_MOUNTED(travelId)` | `visible = true`, `mode = storedMode || 'upcoming'`, `isLoading = true` | Lade Daten, Focus Toolbar |
+| `visible = false` | `TRAVEL_LEAF_MOUNTED(travelId)` | `visible = true`, `mode = storedMode || 'upcoming'`, `isLoading = true` | Lade Daten (`handleTravelLeafMounted`) |
 | `visible = true` | `TRAVEL_MODE_CHANGED(mode)` | `mode = mode` | Persistiere Mode im Gateway (per-travel) |
 | `visible = true` | `TRAVEL_LEAF_DISMISSED` | `visible = false` | Persistiere Sichtbarkeit, Telemetrie `calendar.travel.leaf_closed` |
 
@@ -188,6 +188,7 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Al
 
 ## 8. Persistenznotizen
 - `defaultCalendarId`, `travelDefaultCalendarId`, `travelLeafState.mode`, `travelLeafState.visible`, `almanacUiState.mode` werden im Gateway persistiert (Vault + Reise-spezifisch).
+- Travel-Leaf-Präferenzen (inkl. `lastViewedTimestamp`) werden über `persistTravelLeafPreferences` pro Travel-ID gespeichert.
 - `managerUiState.viewMode` optional in `localStorage` (User-Preference).
 - `eventsUiState.viewMode`, `eventsUiState.filters`, `eventsUiState.sort` werden im Gateway gespeichert (pro Vault) um Rückkehrpunkte zu ermöglichen.
 

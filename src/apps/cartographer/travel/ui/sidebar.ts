@@ -1,6 +1,8 @@
 // src/apps/cartographer/travel/ui/sidebar.ts
 // Sidebar-Layout und Steuerung für Travel-Modus.
 import type { TravelPanelSnapshot } from "../../../almanac/mode/cartographer-gateway";
+import { TravelCalendarLeaf, type TravelAdvancePayload } from "../../../almanac/mode/travel";
+import type { TravelCalendarMode } from "../../../almanac/mode/contracts";
 export type Sidebar = {
     root: HTMLElement;
     controlsHost: HTMLElement;
@@ -9,6 +11,13 @@ export type Sidebar = {
     setSpeed(v: number): void;
     setTravelPanel(panel: TravelPanelSnapshot | null): void;
     onSpeedChange(fn: (v: number) => void): void;
+    setTravelHandlers(handlers: {
+        onAdvance?: (payload: TravelAdvancePayload) => void;
+        onModeChange?: (mode: TravelCalendarMode) => void;
+        onJump?: () => void;
+        onClose?: () => void;
+        onFollowUp?: (eventId: string) => void;
+    }): void;
     destroy(): void;
 };
 
@@ -35,25 +44,33 @@ export function createSidebar(host: HTMLElement): Sidebar {
         attr: { step: "0.1", min: "0.1", value: "1" },
     }) as HTMLInputElement;
 
-    const timeRow = root.createDiv({ cls: "sm-cartographer__travel-row" });
-    timeRow.createSpan({ cls: "sm-cartographer__travel-label", text: "Almanac" });
-    const timeValue = timeRow.createSpan({
-        cls: "sm-cartographer__travel-value",
-        text: "—",
+    const leafHost = root.createDiv({ cls: "sm-cartographer__travel-leaf" });
+    let travelHandlers: {
+        onAdvance: (payload: TravelAdvancePayload) => void;
+        onModeChange: (mode: TravelCalendarMode) => void;
+        onJump: () => void;
+        onClose: () => void;
+        onFollowUp: (eventId: string) => void;
+    } = {
+        onAdvance: () => {},
+        onModeChange: () => {},
+        onJump: () => {},
+        onClose: () => {},
+        onFollowUp: () => {},
+    };
+    const travelLeaf = new TravelCalendarLeaf({
+        host: leafHost,
+        mode: "upcoming",
+        visible: false,
+        minuteStep: 1,
+        currentTimestamp: null,
+        isLoading: false,
+        onModeChange: (mode) => travelHandlers.onModeChange(mode),
+        onAdvance: (payload) => travelHandlers.onAdvance(payload),
+        onJump: () => travelHandlers.onJump(),
+        onClose: () => travelHandlers.onClose(),
+        onFollowUp: (eventId) => travelHandlers.onFollowUp(eventId),
     });
-
-    const quickRow = root.createDiv({ cls: "sm-cartographer__travel-row" });
-    quickRow.createSpan({ cls: "sm-cartographer__travel-label", text: "Letzter Schritt" });
-    const quickValue = quickRow.createSpan({
-        cls: "sm-cartographer__travel-value",
-        text: "—",
-    });
-
-    const logSection = root.createDiv({ cls: "sm-cartographer__travel-log" });
-    logSection.createSpan({ cls: "sm-cartographer__travel-log-title", text: "Trigger-Log" });
-    const logList = logSection.createEl("ul", {
-        cls: "sm-cartographer__travel-log-list",
-    }) as HTMLUListElement;
 
     let onChange: (v: number) => void = () => {};
     speedInput.onchange = () => {
@@ -70,34 +87,10 @@ export function createSidebar(host: HTMLElement): Sidebar {
         const next = String(v);
         if (speedInput.value !== next) speedInput.value = next;
     };
-    const formatQuickStep = (step: TravelPanelSnapshot["lastAdvanceStep"]): string => {
-        if (!step) return "—";
-        const sign = step.amount >= 0 ? "+" : "";
-        const label =
-            step.unit === "day"
-                ? "Tag"
-                : step.unit === "hour"
-                  ? "Std"
-                  : "Min";
-        return `${sign}${step.amount} ${label}`;
-    };
     const setTravelPanel = (panel: TravelPanelSnapshot | null) => {
-        timeValue.textContent = panel?.timestampLabel ?? "—";
-        quickValue.textContent = formatQuickStep(panel?.lastAdvanceStep);
-        logList.empty();
-        const entries = panel?.logEntries ?? [];
-        if (entries.length === 0) {
-            logList.createEl("li", {
-                cls: "sm-cartographer__travel-log-item sm-cartographer__travel-log-item--empty",
-                text: panel?.reason === "jump" ? "Keine übersprungenen Ereignisse" : "Keine neuen Hooks",
-            });
-            return;
-        }
-        for (const entry of entries) {
-            const item = logList.createEl("li", { cls: "sm-cartographer__travel-log-item" });
-            const skipped = entry.skipped ? " • übersprungen" : "";
-            item.setText(`${entry.title} • ${entry.occurrenceLabel}${skipped}`);
-        }
+        travelLeaf.setPanel(panel);
+        travelLeaf.setVisible(Boolean(panel));
+        travelLeaf.setLoading(false);
     };
     const setTitle = (title: string) => {
         if (title && title.trim().length > 0) {
@@ -115,7 +108,17 @@ export function createSidebar(host: HTMLElement): Sidebar {
         setSpeed,
         setTravelPanel,
         onSpeedChange: (fn) => (onChange = fn),
+        setTravelHandlers: (handlers) => {
+            travelHandlers = {
+                onAdvance: handlers.onAdvance ?? travelHandlers.onAdvance,
+                onModeChange: handlers.onModeChange ?? travelHandlers.onModeChange,
+                onJump: handlers.onJump ?? travelHandlers.onJump,
+                onClose: handlers.onClose ?? travelHandlers.onClose,
+                onFollowUp: handlers.onFollowUp ?? travelHandlers.onFollowUp,
+            };
+        },
         destroy: () => {
+            travelLeaf.destroy();
             host.empty();
             host.classList.remove("sm-cartographer__sidebar--travel");
             delete host.dataset.mapTitle;

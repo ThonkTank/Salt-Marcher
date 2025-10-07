@@ -179,5 +179,64 @@ describe("Cartographer sync gateway", () => {
         expect(starts).toEqual(["maps/lifecycle.hex"]);
         expect(ends).toEqual(["maps/lifecycle.hex"]);
     });
+
+    it("restores travel leaf preferences on mount and persists visibility", async () => {
+        const travelPrefsGateway = new CartographerHookGateway();
+        const altGateway = new InMemoryStateGateway(
+            calendarRepo,
+            eventRepo,
+            phenomenonRepo,
+            travelPrefsGateway,
+        );
+
+        await altGateway.setActiveCalendar(gregorianSchema.id, { travelId, initialTimestamp: startTimestamp });
+        await altGateway.setCurrentTimestamp(startTimestamp, { travelId });
+        await altGateway.saveTravelLeafPreferences(travelId, {
+            visible: false,
+            mode: "day",
+            lastViewedTimestamp: startTimestamp,
+        });
+
+        const prefMachine = new AlmanacStateMachine(
+            calendarRepo,
+            eventRepo,
+            altGateway,
+            phenomenonRepo,
+            travelPrefsGateway,
+        );
+        await prefMachine.dispatch({ type: "INIT_ALMANAC", travelId });
+
+        expect(prefMachine.getState().travelLeafState.mode).toBe("day");
+        expect(prefMachine.getState().travelLeafState.visible).toBe(false);
+
+        await prefMachine.dispatch({ type: "TRAVEL_LEAF_MOUNTED", travelId });
+        expect(prefMachine.getState().travelLeafState.visible).toBe(true);
+
+        const prefs = await altGateway.getTravelLeafPreferences(travelId);
+        expect(prefs?.visible).toBe(true);
+    });
+
+    it("persists travel mode changes", async () => {
+        await machine.dispatch({ type: "TRAVEL_LEAF_MOUNTED", travelId });
+        await machine.dispatch({ type: "TRAVEL_MODE_CHANGED", mode: "day" });
+
+        expect(machine.getState().travelLeafState.mode).toBe("day");
+        const prefs = await gateway.getTravelLeafPreferences(travelId);
+        expect(prefs?.mode).toBe("day");
+    });
+
+    it("handles travel quick advances and updates preferences", async () => {
+        await machine.dispatch({ type: "TRAVEL_LEAF_MOUNTED", travelId });
+        await machine.dispatch({ type: "TRAVEL_TIME_ADVANCE_REQUESTED", amount: 1, unit: "hour" });
+
+        const state = machine.getState();
+        expect(state.travelLeafState.isLoading).toBe(false);
+        expect(state.travelLeafState.lastQuickStep).toEqual({ amount: 1, unit: "hour" });
+        const panel = cartographerGateway.getPanelSnapshot(travelId);
+        expect(panel?.lastAdvanceStep).toEqual({ amount: 1, unit: "hour" });
+
+        const prefs = await gateway.getTravelLeafPreferences(travelId);
+        expect(prefs?.lastViewedTimestamp?.hour).toBe(1);
+    });
 });
 
