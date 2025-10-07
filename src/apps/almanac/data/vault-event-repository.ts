@@ -9,6 +9,7 @@ import type { CalendarRepository } from "./calendar-repository";
 import type { EventRepository } from "./event-repository";
 import { JsonStore } from "./json-store";
 import type { VaultLike } from "./json-store";
+import { reportAlmanacGatewayIssue } from "../telemetry";
 
 interface EventStoreData {
   readonly eventsByCalendar: Record<string, CalendarEventDTO[]>;
@@ -56,54 +57,87 @@ export class VaultEventRepository implements EventRepository {
   }
 
   async createEvent(event: CalendarEventDTO): Promise<void> {
-    await this.store.update(state => {
-      const eventsByCalendar = { ...state.eventsByCalendar };
-      const events = [...(eventsByCalendar[event.calendarId] ?? [])];
-      if (events.some(entry => entry.id === event.id)) {
-        throw new Error(`Event with ID ${event.id} already exists`);
-      }
-      events.push(event);
-      eventsByCalendar[event.calendarId] = events;
-      return { eventsByCalendar };
-    });
+    try {
+      await this.store.update(state => {
+        const eventsByCalendar = { ...state.eventsByCalendar };
+        const events = [...(eventsByCalendar[event.calendarId] ?? [])];
+        if (events.some(entry => entry.id === event.id)) {
+          throw new Error(`Event with ID ${event.id} already exists`);
+        }
+        events.push(event);
+        eventsByCalendar[event.calendarId] = events;
+        return { eventsByCalendar };
+      });
+    } catch (error) {
+      reportAlmanacGatewayIssue({
+        operation: "event.repository.createEvent",
+        scope: "event",
+        code: isEventRepositoryValidationError(error) ? "validation_error" : "io_error",
+        error,
+        context: { calendarId: event.calendarId, eventId: event.id },
+      });
+      throw error;
+    }
   }
 
   async updateEvent(id: string, event: Partial<CalendarEventDTO>): Promise<void> {
-    await this.store.update(state => {
-      const eventsByCalendar = { ...state.eventsByCalendar };
-      let found = false;
-      for (const [calendarId, events] of Object.entries(eventsByCalendar)) {
-        const index = events.findIndex(entry => entry.id === id);
-        if (index === -1) {
-          continue;
+    try {
+      await this.store.update(state => {
+        const eventsByCalendar = { ...state.eventsByCalendar };
+        let found = false;
+        for (const [calendarId, events] of Object.entries(eventsByCalendar)) {
+          const index = events.findIndex(entry => entry.id === id);
+          if (index === -1) {
+            continue;
+          }
+          events[index] = { ...events[index], ...event } as CalendarEventDTO;
+          eventsByCalendar[calendarId] = [...events];
+          found = true;
         }
-        events[index] = { ...events[index], ...event } as CalendarEventDTO;
-        eventsByCalendar[calendarId] = [...events];
-        found = true;
-      }
-      if (!found) {
-        throw new Error(`Event with ID ${id} not found`);
-      }
-      return { eventsByCalendar };
-    });
+        if (!found) {
+          throw new Error(`Event with ID ${id} not found`);
+        }
+        return { eventsByCalendar };
+      });
+    } catch (error) {
+      reportAlmanacGatewayIssue({
+        operation: "event.repository.updateEvent",
+        scope: "event",
+        code: isEventRepositoryValidationError(error) ? "validation_error" : "io_error",
+        error,
+        context: { eventId: id },
+      });
+      throw error;
+    }
   }
 
   async deleteEvent(id: string): Promise<void> {
-    await this.store.update(state => {
-      const eventsByCalendar: Record<string, CalendarEventDTO[]> = {};
-      let found = false;
-      for (const [calendarId, events] of Object.entries(state.eventsByCalendar)) {
-        const remaining = events.filter(event => event.id !== id);
-        if (remaining.length !== events.length) {
-          found = true;
+    try {
+      await this.store.update(state => {
+        const eventsByCalendar: Record<string, CalendarEventDTO[]> = {};
+        let found = false;
+        for (const [calendarId, events] of Object.entries(state.eventsByCalendar)) {
+          const remaining = events.filter(event => event.id !== id);
+          if (remaining.length !== events.length) {
+            found = true;
+          }
+          eventsByCalendar[calendarId] = remaining;
         }
-        eventsByCalendar[calendarId] = remaining;
-      }
-      if (!found) {
-        throw new Error(`Event with ID ${id} not found`);
-      }
-      return { eventsByCalendar };
-    });
+        if (!found) {
+          throw new Error(`Event with ID ${id} not found`);
+        }
+        return { eventsByCalendar };
+      });
+    } catch (error) {
+      reportAlmanacGatewayIssue({
+        operation: "event.repository.deleteEvent",
+        scope: "event",
+        code: isEventRepositoryValidationError(error) ? "validation_error" : "io_error",
+        error,
+        context: { eventId: id },
+      });
+      throw error;
+    }
   }
 
   async getEventsInRange(
@@ -130,6 +164,13 @@ export class VaultEventRepository implements EventRepository {
       })
       .slice(0, limit);
   }
+
+function isEventRepositoryValidationError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  return /already exists|not found/i.test(error.message);
+}
 
   private async readCalendarEvents(calendarId: string): Promise<CalendarEventDTO[]> {
     const state = await this.store.read();

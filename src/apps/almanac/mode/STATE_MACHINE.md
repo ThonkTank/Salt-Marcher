@@ -31,7 +31,6 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Al
 | `managerUiState.form` | `currentDialog` (`'calendar' | 'event' | 'time' | null`), `dialogData` | Offene Dialoge und deren Parameter. | Nicht persistiert |
 | `eventsUiState` | `viewMode`, `filters`, `sort`, `pagination`, `isLoading`, `error`, `selectedPhenomenonId`, `editorDraft`, `linkDrawerOpen` | Zustand des Events-Modus inkl. Formular/Drawer. | Modus/Filter persistiert, Rest Session |
 | `travelLeafState` | `travelId`, `visible`, `mode`, `currentTimestamp`, `minuteStep`, `lastQuickStep`, `isLoading`, `error` | Zustand des Travel-Leaves inkl. Anzeigepräferenzen und letztem Quick-Step. | Teilweise (sichtbarkeit/modus) |
-| `telemetryState` | `lastEvents` | Meta-Informationen für Logging (z.B. Default-/Mode-Wechsel). | Nicht persistiert |
 
 ## 3. Events/Actions {#eventsactions}
 | Event | Payload | Beschreibung |
@@ -179,7 +178,7 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Al
 | `syncTravelTimestamp` | `TIME_ADVANCE_CONFIRMED`, `TIME_JUMP_CONFIRMED` | Überträgt neue Zeitpunkte an Travel-Leaf und Cartographer. |
 | `mountTravelLeaf` | `TRAVEL_LEAF_MOUNTED` | Öffnet Leaf, lädt Daten, registriert Telemetrie. |
 | `unmountTravelLeaf` | `TRAVEL_LEAF_DISMISSED` | Persistiert Off-State, deregistriert Listener. |
-| `logTelemetry` | Diverse (Default, ModeChange, TravelMount) | Sendet `calendar.telemetry.*` (siehe [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md#telemetrie--observability)). |
+| `logTelemetry` | Diverse (Default, ModeChange, TravelMount) | Nutzt `apps/almanac/telemetry.ts` um `calendar.*`-Events zu senden. |
 
 ## 7. Fehlerbehandlung
 - Jeder Effekt fangt Fehler und dispatcht `ERROR_OCCURRED` mit Scope.
@@ -197,3 +196,13 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Al
 - Komponenten: [COMPONENTS.md](./COMPONENTS.md)
 - API: [API_CONTRACTS.md](./API_CONTRACTS.md)
 - Tests: [../../tests/apps/almanac/TEST_PLAN.md](../../../tests/apps/almanac/TEST_PLAN.md)
+
+## 10. Telemetrie
+- `apps/almanac/telemetry.ts` stellt `emitAlmanacEvent` sowie `reportAlmanacGatewayIssue` bereit.
+- Die State-Machine emittiert folgende Events:
+  - `calendar.time.advance` für Advance- und Jump-Aktionen (mit `reason: 'advance' | 'jump'`).
+  - `calendar.default.change` nach erfolgreichem Wechsel des globalen Defaults.
+  - `calendar.almanac.mode_change` bei Moduswechseln (`dashboard`, `manager`, `events`).
+  - `calendar.travel.lifecycle` für Mount-/Mode-Change des Travel-Leaves.
+  - `calendar.event.conflict` bei Phänomen-Konflikten.
+- Fehler (`io_error`, `validation_error`, `phenomenon_conflict`) werden über `reportAlmanacGatewayIssue` geloggt und bei `io_error` an `reportIntegrationIssue` weitergeleitet.

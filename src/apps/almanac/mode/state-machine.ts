@@ -36,7 +36,11 @@ import {
 import type { CalendarRepository } from "../data/calendar-repository";
 import type { EventRepository } from "../data/event-repository";
 import type { PhenomenonRepository } from "../data/in-memory-repository";
-import type { CalendarStateGateway, TravelLeafPreferencesSnapshot } from "../data/calendar-state-gateway";
+import {
+    isCalendarGatewayError,
+    type CalendarStateGateway,
+    type TravelLeafPreferencesSnapshot,
+} from "../data/calendar-state-gateway";
 import type { PhenomenonDTO } from "../data/dto";
 import { formatPhenomenaExport, parsePhenomenaImport } from "../data/phenomena-serialization";
 import { getMonthById, getMonthIndex, getTimeDefinition, type CalendarSchema } from "../domain/calendar-schema";
@@ -56,6 +60,8 @@ import {
     type CartographerHookGateway,
     type TravelPanelUpdateInput,
 } from "./cartographer-gateway";
+import { emitAlmanacEvent, reportAlmanacGatewayIssue } from "../telemetry";
+import { AlmanacRepositoryError } from "../data/almanac-repository";
 
 const MAX_TRIGGERED_EVENTS = 10;
 const MAX_TRIGGERED_PHENOMENA = 10;
@@ -404,9 +410,6 @@ export class AlmanacStateMachine {
                     selectedPhenomenonDetail: initialDetail,
                     isDetailLoading: false,
                 };
-                draft.telemetryState = {
-                    lastEvents: [],
-                };
                 draft.travelLeafState = {
                     ...draft.travelLeafState,
                     travelId,
@@ -580,6 +583,7 @@ export class AlmanacStateMachine {
             return;
         }
 
+        const previousMode = this.state.almanacUiState.mode;
         this.setState(draft => {
             draft.almanacUiState = {
                 ...draft.almanacUiState,
@@ -587,6 +591,13 @@ export class AlmanacStateMachine {
                 modeHistory: [...draft.almanacUiState.modeHistory, mode].slice(-5),
                 error: undefined,
             };
+        });
+
+        emitAlmanacEvent({
+            type: "calendar.almanac.mode_change",
+            mode,
+            previousMode,
+            history: this.state.almanacUiState.modeHistory,
         });
 
         await this.persistPreferences({ lastMode: mode });
@@ -926,6 +937,22 @@ export class AlmanacStateMachine {
             });
         } catch (error) {
             const message = error instanceof Error ? error.message : "Speichern fehlgeschlagen";
+            const code = error instanceof AlmanacRepositoryError ? error.code : "io_error";
+            reportAlmanacGatewayIssue({
+                operation: "stateMachine.phenomenon.save",
+                scope: "phenomenon",
+                code,
+                error,
+                context: { phenomenonId: draft.id },
+            });
+            if (error instanceof AlmanacRepositoryError && error.code === "phenomenon_conflict") {
+                emitAlmanacEvent({
+                    type: "calendar.event.conflict",
+                    code: "phenomenon",
+                    message,
+                    context: error.details,
+                });
+            }
             this.setState(next => {
                 next.eventsUiState = {
                     ...next.eventsUiState,
@@ -979,6 +1006,22 @@ export class AlmanacStateMachine {
             });
         } catch (error) {
             const message = error instanceof Error ? error.message : "Bulk-Aktion fehlgeschlagen";
+            const code = error instanceof AlmanacRepositoryError ? error.code : "io_error";
+            reportAlmanacGatewayIssue({
+                operation: "stateMachine.phenomenon.bulk",
+                scope: "phenomenon",
+                code,
+                error,
+                context: { ids: unique },
+            });
+            if (error instanceof AlmanacRepositoryError && error.code === "phenomenon_conflict") {
+                emitAlmanacEvent({
+                    type: "calendar.event.conflict",
+                    code: "phenomenon",
+                    message,
+                    context: error.details,
+                });
+            }
             this.setState(next => {
                 next.eventsUiState = {
                     ...next.eventsUiState,
@@ -1061,6 +1104,22 @@ export class AlmanacStateMachine {
             });
         } catch (error) {
             const message = error instanceof Error ? error.message : "Import fehlgeschlagen";
+            const code = error instanceof AlmanacRepositoryError ? error.code : "io_error";
+            reportAlmanacGatewayIssue({
+                operation: "stateMachine.phenomenon.import",
+                scope: "phenomenon",
+                code,
+                error,
+                context: { imported: payload.slice(0, 32) },
+            });
+            if (error instanceof AlmanacRepositoryError && error.code === "phenomenon_conflict") {
+                emitAlmanacEvent({
+                    type: "calendar.event.conflict",
+                    code: "phenomenon",
+                    message,
+                    context: error.details,
+                });
+            }
             this.setState(next => {
                 next.eventsUiState = {
                     ...next.eventsUiState,
@@ -1168,6 +1227,14 @@ export class AlmanacStateMachine {
             });
         } catch (error) {
             const message = error instanceof Error ? error.message : "Failed to create calendar";
+            const code = isCalendarGatewayError(error) ? error.code : "io_error";
+            reportAlmanacGatewayIssue({
+                operation: "stateMachine.createCalendar",
+                scope: "calendar",
+                code,
+                error,
+                context: { calendarId: schema.id },
+            });
             this.setState(draftState => {
                 draftState.managerUiState = {
                     ...draftState.managerUiState,
@@ -1215,6 +1282,14 @@ export class AlmanacStateMachine {
             }
         } catch (error) {
             const message = error instanceof Error ? error.message : "Kalender konnte nicht gesetzt werden";
+            const code = isCalendarGatewayError(error) ? error.code : "io_error";
+            reportAlmanacGatewayIssue({
+                operation: "stateMachine.setActiveCalendar",
+                scope: this.travelId ? "travel" : "calendar",
+                code,
+                error,
+                context: { calendarId, travelId: this.travelId },
+            });
             this.setState(draft => {
                 draft.calendarState = {
                     ...draft.calendarState,
@@ -1230,6 +1305,7 @@ export class AlmanacStateMachine {
     }
 
     private async handleCalendarDefault(calendarId: string): Promise<void> {
+        const previousDefault = this.state.calendarState.defaultCalendarId ?? null;
         this.setState(draft => {
             draft.calendarState = {
                 ...draft.calendarState,
@@ -1255,8 +1331,24 @@ export class AlmanacStateMachine {
                     ),
                 };
             });
+            emitAlmanacEvent({
+                type: "calendar.default.change",
+                scope: "global",
+                calendarId,
+                previousDefaultId: previousDefault,
+                travelId: this.travelId,
+                wasAutoSelected: false,
+            });
         } catch (error) {
             const message = error instanceof Error ? error.message : "Standardkalender konnte nicht aktualisiert werden";
+            const code = isCalendarGatewayError(error) ? error.code : "io_error";
+            reportAlmanacGatewayIssue({
+                operation: "stateMachine.setDefault",
+                scope: "default",
+                code,
+                error,
+                context: { calendarId, travelId: this.travelId },
+            });
             this.setState(draft => {
                 draft.calendarState = {
                     ...draft.calendarState,
@@ -1304,8 +1396,25 @@ export class AlmanacStateMachine {
                 mode: this.state.travelLeafState.mode,
                 lastViewedTimestamp: this.state.calendarState.currentTimestamp ?? null,
             });
+
+            emitAlmanacEvent({
+                type: "calendar.travel.lifecycle",
+                phase: "mount",
+                travelId,
+                visible: true,
+                mode: this.state.travelLeafState.mode,
+                timestamp: this.state.calendarState.currentTimestamp,
+            });
         } catch (error) {
             const message = error instanceof Error ? error.message : "Travel-Leaf konnte nicht initialisiert werden";
+            const code = isCalendarGatewayError(error) ? error.code : "io_error";
+            reportAlmanacGatewayIssue({
+                operation: "stateMachine.travelLeaf.mount",
+                scope: "travel",
+                code,
+                error,
+                context: { travelId },
+            });
             this.setState(draft => {
                 draft.travelLeafState = {
                     ...draft.travelLeafState,
@@ -1325,6 +1434,14 @@ export class AlmanacStateMachine {
                 ...draft.travelLeafState,
                 mode,
             };
+        });
+        emitAlmanacEvent({
+            type: "calendar.travel.lifecycle",
+            phase: "mode-change",
+            travelId: this.state.travelLeafState.travelId,
+            visible: this.state.travelLeafState.visible,
+            mode,
+            timestamp: this.state.travelLeafState.currentTimestamp,
         });
         await this.persistTravelLeafPreferences({ mode });
     }
@@ -1444,10 +1561,6 @@ export class AlmanacStateMachine {
                         ? { isLoading: false, error: undefined, lastQuickStep: { amount, unit } }
                         : {}),
                 };
-                const telemetryLabel = `calendar.time.advance:${unit}:${amount}`;
-                draft.telemetryState = {
-                    lastEvents: [telemetryLabel, ...draft.telemetryState.lastEvents].slice(0, 5),
-                };
                 draft.eventsUiState = {
                     ...draft.eventsUiState,
                     filterCount,
@@ -1477,6 +1590,19 @@ export class AlmanacStateMachine {
                 reason: "advance",
             });
 
+            emitAlmanacEvent({
+                type: "calendar.time.advance",
+                scope: source,
+                reason: "advance",
+                unit,
+                amount,
+                triggeredEvents: result.triggeredEvents.length,
+                triggeredPhenomena: result.triggeredPhenomena.length,
+                skippedEvents: 0,
+                travelId: source === "travel" ? this.travelId : null,
+                timestamp: result.timestamp,
+            });
+
             void this.persistPreferences({
                 lastSelectedPhenomenonId: nextSelectedId ?? undefined,
             });
@@ -1485,6 +1611,26 @@ export class AlmanacStateMachine {
             }
         } catch (error) {
             const message = error instanceof Error ? error.message : "Zeitfortschritt fehlgeschlagen";
+            const code = error instanceof AlmanacRepositoryError
+                ? error.code
+                : isCalendarGatewayError(error)
+                ? error.code
+                : "io_error";
+            reportAlmanacGatewayIssue({
+                operation: "stateMachine.timeAdvance",
+                scope: source === "travel" ? "travel" : "calendar",
+                code,
+                error,
+                context: { amount, unit, travelId: this.travelId },
+            });
+            if (error instanceof AlmanacRepositoryError && error.code === "phenomenon_conflict") {
+                emitAlmanacEvent({
+                    type: "calendar.event.conflict",
+                    code: "phenomenon",
+                    message,
+                    context: error.details,
+                });
+            }
             this.setState(draft => {
                 if (source === "global") {
                     draft.almanacUiState = {
@@ -1635,11 +1781,44 @@ export class AlmanacStateMachine {
                 reason: "jump",
             });
 
+            emitAlmanacEvent({
+                type: "calendar.time.advance",
+                scope: this.travelId ? "travel" : "global",
+                reason: "jump",
+                unit: "day",
+                amount: 0,
+                triggeredEvents: 0,
+                triggeredPhenomena: 0,
+                skippedEvents: preview.length,
+                travelId: this.travelId,
+                timestamp: target,
+            });
+
             void this.persistPreferences({
                 lastSelectedPhenomenonId: nextSelectedId ?? undefined,
             });
         } catch (error) {
             const message = error instanceof Error ? error.message : "Zeit konnte nicht gesetzt werden";
+            const code = error instanceof AlmanacRepositoryError
+                ? error.code
+                : isCalendarGatewayError(error)
+                ? error.code
+                : "io_error";
+            reportAlmanacGatewayIssue({
+                operation: "stateMachine.timeJump",
+                scope: this.travelId ? "travel" : "calendar",
+                code,
+                error,
+                context: { travelId: this.travelId },
+            });
+            if (error instanceof AlmanacRepositoryError && error.code === "phenomenon_conflict") {
+                emitAlmanacEvent({
+                    type: "calendar.event.conflict",
+                    code: "phenomenon",
+                    message,
+                    context: error.details,
+                });
+            }
             this.setState(draft => {
                 draft.almanacUiState = {
                     ...draft.almanacUiState,

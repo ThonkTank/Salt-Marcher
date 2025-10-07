@@ -10,6 +10,7 @@ import {
 } from "./calendar-repository";
 import { JsonStore } from "./json-store";
 import type { VaultLike, VersionedPayload } from "./json-store";
+import { reportAlmanacGatewayIssue } from "../telemetry";
 
 interface CalendarStoreData {
   readonly calendars: CalendarSchemaDTO[];
@@ -56,64 +57,108 @@ export class VaultCalendarRepository implements CalendarRepository, CalendarDefa
   }
 
   async createCalendar(input: CalendarSchemaDTO & { readonly isDefaultGlobal?: boolean }): Promise<void> {
-    await this.store.update(state => {
-      if (state.calendars.some(calendar => calendar.id === input.id)) {
-        throw new Error(`Calendar with ID ${input.id} already exists`);
-      }
-      const calendars = [...state.calendars, { ...input }];
-      const defaults = ensureDefaultsState(state.defaults);
-      if (input.isDefaultGlobal) {
-        defaults.global = input.id;
-      }
-      return { calendars, defaults };
-    });
+    try {
+      await this.store.update(state => {
+        if (state.calendars.some(calendar => calendar.id === input.id)) {
+          throw new Error(`Calendar with ID ${input.id} already exists`);
+        }
+        const calendars = [...state.calendars, { ...input }];
+        const defaults = ensureDefaultsState(state.defaults);
+        if (input.isDefaultGlobal) {
+          defaults.global = input.id;
+        }
+        return { calendars, defaults };
+      });
+    } catch (error) {
+      reportAlmanacGatewayIssue({
+        operation: "calendar.repository.createCalendar",
+        scope: "calendar",
+        code: isCalendarRepositoryValidationError(error) ? "validation_error" : "io_error",
+        error,
+        context: { calendarId: input.id },
+      });
+      throw error;
+    }
   }
 
   async updateCalendar(id: string, input: Partial<CalendarSchemaDTO>): Promise<void> {
-    await this.store.update(state => {
-      const index = state.calendars.findIndex(calendar => calendar.id === id);
-      if (index === -1) {
-        throw new Error(`Calendar with ID ${id} not found`);
-      }
-      const calendars = [...state.calendars];
-      calendars[index] = { ...calendars[index], ...input };
-      return { calendars, defaults: ensureDefaultsState(state.defaults) };
-    });
+    try {
+      await this.store.update(state => {
+        const index = state.calendars.findIndex(calendar => calendar.id === id);
+        if (index === -1) {
+          throw new Error(`Calendar with ID ${id} not found`);
+        }
+        const calendars = [...state.calendars];
+        calendars[index] = { ...calendars[index], ...input };
+        return { calendars, defaults: ensureDefaultsState(state.defaults) };
+      });
+    } catch (error) {
+      reportAlmanacGatewayIssue({
+        operation: "calendar.repository.updateCalendar",
+        scope: "calendar",
+        code: isCalendarRepositoryValidationError(error) ? "validation_error" : "io_error",
+        error,
+        context: { calendarId: id },
+      });
+      throw error;
+    }
   }
 
   async deleteCalendar(id: string): Promise<void> {
-    await this.store.update(state => {
-      if (!state.calendars.some(calendar => calendar.id === id)) {
-        throw new Error(`Calendar with ID ${id} not found`);
-      }
-      const calendars = state.calendars.filter(calendar => calendar.id !== id);
-      const defaults = ensureDefaultsState(state.defaults);
-      if (defaults.global === id) {
-        defaults.global = null;
-      }
-      const travelEntries = Object.entries(defaults.travel);
-      for (const [travelId, calendarId] of travelEntries) {
-        if (calendarId === id) {
-          defaults.travel[travelId] = null;
+    try {
+      await this.store.update(state => {
+        if (!state.calendars.some(calendar => calendar.id === id)) {
+          throw new Error(`Calendar with ID ${id} not found`);
         }
-      }
-      return { calendars, defaults };
-    });
+        const calendars = state.calendars.filter(calendar => calendar.id !== id);
+        const defaults = ensureDefaultsState(state.defaults);
+        if (defaults.global === id) {
+          defaults.global = null;
+        }
+        const travelEntries = Object.entries(defaults.travel);
+        for (const [travelId, calendarId] of travelEntries) {
+          if (calendarId === id) {
+            defaults.travel[travelId] = null;
+          }
+        }
+        return { calendars, defaults };
+      });
+    } catch (error) {
+      reportAlmanacGatewayIssue({
+        operation: "calendar.repository.deleteCalendar",
+        scope: "calendar",
+        code: isCalendarRepositoryValidationError(error) ? "validation_error" : "io_error",
+        error,
+        context: { calendarId: id },
+      });
+      throw error;
+    }
   }
 
   async setDefault(input: CalendarDefaultUpdate): Promise<void> {
-    await this.store.update(state => {
-      if (!state.calendars.some(calendar => calendar.id === input.calendarId)) {
-        throw new Error(`Calendar with ID ${input.calendarId} not found`);
-      }
-      const defaults = ensureDefaultsState(state.defaults);
-      if (input.scope === "global") {
-        defaults.global = input.calendarId;
-      } else if (input.scope === "travel" && input.travelId) {
-        defaults.travel[input.travelId] = input.calendarId;
-      }
-      return { calendars: state.calendars, defaults };
-    });
+    try {
+      await this.store.update(state => {
+        if (!state.calendars.some(calendar => calendar.id === input.calendarId)) {
+          throw new Error(`Calendar with ID ${input.calendarId} not found`);
+        }
+        const defaults = ensureDefaultsState(state.defaults);
+        if (input.scope === "global") {
+          defaults.global = input.calendarId;
+        } else if (input.scope === "travel" && input.travelId) {
+          defaults.travel[input.travelId] = input.calendarId;
+        }
+        return { calendars: state.calendars, defaults };
+      });
+    } catch (error) {
+      reportAlmanacGatewayIssue({
+        operation: "calendar.repository.setDefault",
+        scope: input.scope === "travel" ? "travel" : "default",
+        code: isCalendarRepositoryValidationError(error) ? "validation_error" : "io_error",
+        error,
+        context: { calendarId: input.calendarId, travelId: input.travelId ?? null },
+      });
+      throw error;
+    }
   }
 
   async getDefaults(): Promise<CalendarDefaultSnapshot> {
@@ -133,13 +178,24 @@ export class VaultCalendarRepository implements CalendarRepository, CalendarDefa
   }
 
   async clearTravelDefault(travelId: string): Promise<void> {
-    await this.store.update(state => {
-      const defaults = ensureDefaultsState(state.defaults);
-      if (defaults.travel[travelId]) {
-        defaults.travel[travelId] = null;
-      }
-      return { calendars: state.calendars, defaults };
-    });
+    try {
+      await this.store.update(state => {
+        const defaults = ensureDefaultsState(state.defaults);
+        if (defaults.travel[travelId]) {
+          defaults.travel[travelId] = null;
+        }
+        return { calendars: state.calendars, defaults };
+      });
+    } catch (error) {
+      reportAlmanacGatewayIssue({
+        operation: "calendar.repository.clearTravelDefault",
+        scope: "travel",
+        code: isCalendarRepositoryValidationError(error) ? "validation_error" : "io_error",
+        error,
+        context: { travelId },
+      });
+      throw error;
+    }
   }
 }
 
@@ -165,4 +221,11 @@ function migrateLegacyCalendars(payload: VersionedPayload<CalendarStoreData>): V
       defaults,
     },
   };
+}
+
+function isCalendarRepositoryValidationError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  return /already exists|not found|required/i.test(error.message);
 }

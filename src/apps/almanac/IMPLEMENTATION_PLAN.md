@@ -228,6 +228,7 @@ Persistence (JsonStore / Obsidian vault)
 - Performance: Vorschau zukünftiger Vorkommen berechnet maximal 24 Monate bzw. 2.000 Stunden im Voraus (konfigurierbar) und cached Ergebnisse pro Schema/Rule-Hash; Travel-Leaf lädt initial 30 Tage/72 Stunden, weitere Einträge lazy bei Scroll.
 ## Telemetrie & Observability
 - Loggingpunkte: Zeitfortschritt (`calendar.time.advance`), Schema-Migration (`calendar.schema.migrate`), Event-/Phänomen-Konflikte (`calendar.event.conflict`), Default-Umschaltung (`calendar.default.change`), Travel-Leaf Lifecycle (`calendar.travel.leaf_mount`), Almanac-Moduswechsel (`calendar.almanac.mode_change`).
+- `apps/almanac/telemetry.ts` bündelt `emitAlmanacEvent` und `reportAlmanacGatewayIssue` und fungiert als zentrale Schnittstelle für Mode, Gateways und Repositories.
 - Metriken: Anzahl ausgelöster Events/Phänomene pro Advance (Tag/Stunde/Minute), Dauer der Ereignisberechnung je Zoom-Level, Dauer von astronomischen/meteorologischen Simulationen, Fehlerquote pro Operation, Anzahl Default-/Modus-Wechsel pro Sitzung, Anteil teil-täglicher Schritte (`advance.subday_share`), Cache-Trefferquote im Events-Modus.
 - Fehlertracking: persistente io-Fehler werden mit Kontext (`calendarId`, `operation`, `scope` = global/reise) erfasst; Hook-Dispatches melden Erfolg/Fehlschlag an Cartographer (siehe [`mode/API_CONTRACTS.md#cartographer-hooks`](./mode/API_CONTRACTS.md#cartographer-hooks)). Travel-Leaf meldet Renderdauer und Shortcut-Nutzung; Events-Modus sendet Telemetrie zu Filterkombinationen & Ladezeiten.
 ## Dokumentverweise & Testplanung
