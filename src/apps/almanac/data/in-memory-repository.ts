@@ -358,7 +358,7 @@ export class InMemoryPhenomenonRepository implements AlmanacRepository, Phenomen
       throw new AlmanacRepositoryError("phenomenon_conflict", "Duplicate calendar links", { duplicates });
     }
     if (existing.rule.type === "astronomical") {
-      const hasReference = Boolean(existing.rule.astronomical?.referenceCalendarId);
+      const hasReference = Boolean(existing.rule.referenceCalendarId);
       const hasHookReference = update.calendarLinks.some(link =>
         typeof link.hook?.config?.referenceCalendarId === "string",
       );
