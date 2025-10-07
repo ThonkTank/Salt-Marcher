@@ -1,5 +1,5 @@
-// src/apps/almanac/data/in-memory-gateway.ts
-// In-memory implementation of the Almanac calendar state gateway for tests and previews.
+// src/apps/almanac/data/vault-calendar-state-gateway.ts
+// Vault-backed implementation of the Almanac calendar state gateway.
 
 import type { CalendarEvent } from "../domain/calendar-event";
 import { getEventAnchorTimestamp } from "../domain/calendar-event";
@@ -31,29 +31,52 @@ import type {
   TravelLeafPreferencesSnapshot,
 } from "./calendar-state-gateway";
 import type { AlmanacPreferencesSnapshot } from "../mode/contracts";
+import { JsonStore, type VaultLike } from "./json-store";
 
 const GLOBAL_SCOPE = "__global__";
+const STATE_STORE_VERSION = "1.0.0";
+const STATE_STORE_PATH = "SaltMarcher/Almanac/state.json";
 
-interface ScopeState {
+interface ScopeRecord {
   activeCalendarId: string | null;
   currentTimestamp: CalendarTimestamp | null;
 }
 
-export class InMemoryStateGateway implements CalendarStateGateway {
-  private readonly scopeState = new Map<string, ScopeState>([
-    [GLOBAL_SCOPE, { activeCalendarId: null, currentTimestamp: null }],
-  ]);
-  private readonly travelLeafPrefs = new Map<string, TravelLeafPreferencesSnapshot>();
-  private preferences: AlmanacPreferencesSnapshot = {};
+interface GatewayStoreData {
+  scopes: Record<string, ScopeRecord>;
+  preferences: AlmanacPreferencesSnapshot;
+  travelLeaf: Record<string, TravelLeafPreferencesSnapshot>;
+}
+
+export class VaultCalendarStateGateway implements CalendarStateGateway {
+  private readonly store: JsonStore<GatewayStoreData>;
+  private cache: GatewayStoreData = createInitialStore();
+  private ready: Promise<void> | null;
+  private initialised = false;
 
   constructor(
     private readonly calendarRepo: CalendarRepository & CalendarDefaultsRepository,
     private readonly eventRepo: EventRepository,
     private readonly phenomenonRepo: AlmanacRepository,
+    vault: VaultLike,
     private readonly hookDispatcher?: HookDispatchGateway,
-  ) {}
+  ) {
+    this.store = new JsonStore<GatewayStoreData>(vault, {
+      path: STATE_STORE_PATH,
+      currentVersion: STATE_STORE_VERSION,
+      initialData: () => createInitialStore(),
+    });
+    this.ready = this.store.read().then(data => {
+      this.cache = normaliseStore(data);
+      this.initialised = true;
+    }).catch(error => {
+      console.warn("[almanac] Failed to load calendar state store", error);
+      this.initialised = true;
+    });
+  }
 
   async loadSnapshot(options?: { readonly travelId?: string | null }): Promise<CalendarStateSnapshot> {
+    await this.ensureReady();
     const travelId = options?.travelId ?? null;
     const scope = this.ensureScope(travelId);
 
@@ -124,31 +147,33 @@ export class InMemoryStateGateway implements CalendarStateGateway {
     calendarId: string,
     options?: { readonly travelId?: string | null; readonly initialTimestamp?: CalendarTimestamp },
   ): Promise<void> {
+    await this.ensureReady();
     const calendar = await this.calendarRepo.getCalendar(calendarId);
     if (!calendar) {
       throw new Error(`Calendar with ID ${calendarId} not found`);
     }
 
-    const scope = this.ensureScope(options?.travelId ?? null);
-    scope.activeCalendarId = calendarId;
+    await this.persistState(state => {
+      const scope = this.ensureScope(options?.travelId ?? null, state);
+      scope.activeCalendarId = calendarId;
 
-    if (options?.initialTimestamp) {
-      scope.currentTimestamp = { ...options.initialTimestamp };
-      return;
-    }
+      if (options?.initialTimestamp) {
+        scope.currentTimestamp = cloneTimestamp(options.initialTimestamp);
+        return;
+      }
 
-    if (scope.currentTimestamp && scope.currentTimestamp.calendarId === calendarId) {
-      return;
-    }
+      if (scope.currentTimestamp && scope.currentTimestamp.calendarId === calendarId) {
+        return;
+      }
 
-    const firstMonth = calendar.months[0] ?? getMonthById(calendar, calendar.epoch.monthId);
-    const fallback = createDayTimestamp(
-      calendar.id,
-      calendar.epoch.year,
-      firstMonth?.id ?? calendar.epoch.monthId,
-      calendar.epoch.day,
-    );
-    scope.currentTimestamp = fallback;
+      const firstMonth = calendar.months[0] ?? getMonthById(calendar, calendar.epoch.monthId);
+      scope.currentTimestamp = createDayTimestamp(
+        calendar.id,
+        calendar.epoch.year,
+        firstMonth?.id ?? calendar.epoch.monthId,
+        calendar.epoch.day,
+      );
+    });
   }
 
   async setDefaultCalendar(
@@ -171,14 +196,17 @@ export class InMemoryStateGateway implements CalendarStateGateway {
     timestamp: CalendarTimestamp,
     options?: { readonly travelId?: string | null },
   ): Promise<void> {
-    const scope = this.ensureScope(options?.travelId ?? null);
-    if (!scope.activeCalendarId) {
-      throw new Error("No active calendar set");
-    }
-    if (timestamp.calendarId !== scope.activeCalendarId) {
-      throw new Error("Timestamp calendar does not match active calendar");
-    }
-    scope.currentTimestamp = { ...timestamp };
+    await this.ensureReady();
+    await this.persistState(state => {
+      const scope = this.ensureScope(options?.travelId ?? null, state);
+      if (!scope.activeCalendarId) {
+        throw new Error("No active calendar set");
+      }
+      if (timestamp.calendarId !== scope.activeCalendarId) {
+        throw new Error("Timestamp calendar does not match active calendar");
+      }
+      scope.currentTimestamp = cloneTimestamp(timestamp);
+    });
   }
 
   async advanceTimeBy(
@@ -186,8 +214,9 @@ export class InMemoryStateGateway implements CalendarStateGateway {
     unit: TimeUnit,
     options?: { readonly travelId?: string | null; readonly hookContext?: HookDispatchContext },
   ): Promise<AdvanceTimeResult> {
-    const scopeId = options?.travelId ?? null;
-    const scope = this.ensureScope(scopeId);
+    await this.ensureReady();
+    const travelId = options?.travelId ?? null;
+    const scope = this.ensureScope(travelId);
     if (!scope.activeCalendarId || !scope.currentTimestamp) {
       throw new Error("No active calendar or current timestamp set");
     }
@@ -198,10 +227,8 @@ export class InMemoryStateGateway implements CalendarStateGateway {
     }
 
     const visiblePhenomena = await this.listVisiblePhenomena(calendar);
-
-    const previousTimestamp = { ...scope.currentTimestamp };
+    const previousTimestamp = cloneTimestamp(scope.currentTimestamp);
     const result = advanceTime(calendar, previousTimestamp, amount, unit);
-    scope.currentTimestamp = result.timestamp;
 
     const [triggeredEvents, triggeredPhenomena] = await Promise.all([
       this.eventRepo.getEventsInRange(
@@ -234,11 +261,16 @@ export class InMemoryStateGateway implements CalendarStateGateway {
       result.timestamp,
     );
 
+    await this.persistState(state => {
+      const scoped = this.ensureScope(travelId, state);
+      scoped.currentTimestamp = cloneTimestamp(result.timestamp);
+    });
+
     if (this.hookDispatcher && (relevantEvents.length > 0 || triggeredPhenomena.length > 0)) {
       try {
         await this.hookDispatcher.dispatchHooks(relevantEvents, triggeredPhenomena, {
-          scope: scopeId ? "travel" : "global",
-          travelId: scopeId,
+          scope: travelId ? "travel" : "global",
+          travelId,
           reason: "advance",
           ...options?.hookContext,
         });
@@ -247,63 +279,91 @@ export class InMemoryStateGateway implements CalendarStateGateway {
       }
     }
 
-    return { timestamp: result.timestamp, triggeredEvents: relevantEvents, triggeredPhenomena, upcomingPhenomena };
+    return {
+      timestamp: result.timestamp,
+      triggeredEvents: relevantEvents,
+      triggeredPhenomena,
+      upcomingPhenomena,
+    };
   }
 
   async loadPreferences(): Promise<AlmanacPreferencesSnapshot> {
-    return clonePreferences(this.preferences);
+    await this.ensureReady();
+    return clonePreferences(this.cache.preferences);
   }
 
   async savePreferences(partial: Partial<AlmanacPreferencesSnapshot>): Promise<void> {
-    const next: AlmanacPreferencesSnapshot = {
-      ...this.preferences,
-      ...partial,
-    };
-
-    if (partial.lastZoomByMode) {
-      next.lastZoomByMode = {
-        ...(this.preferences.lastZoomByMode ?? {}),
-        ...partial.lastZoomByMode,
+    await this.ensureReady();
+    await this.persistState(state => {
+      const merged: AlmanacPreferencesSnapshot = {
+        ...state.preferences,
+        ...partial,
       };
-    }
 
-    if (partial.eventsFilters) {
-      next.eventsFilters = {
-        categories: [...(partial.eventsFilters.categories ?? [])],
-        calendarIds: [...(partial.eventsFilters.calendarIds ?? [])],
-      };
-    }
+      if (partial.lastZoomByMode) {
+        merged.lastZoomByMode = {
+          ...(state.preferences.lastZoomByMode ?? {}),
+          ...partial.lastZoomByMode,
+        };
+      }
 
-    this.preferences = next;
+      if (partial.eventsFilters) {
+        merged.eventsFilters = {
+          categories: [...(partial.eventsFilters.categories ?? [])],
+          calendarIds: [...(partial.eventsFilters.calendarIds ?? [])],
+        };
+      }
+
+      state.preferences = merged;
+    });
   }
 
   getCurrentTimestamp(options?: { readonly travelId?: string | null }): CalendarTimestamp | null {
+    if (!this.initialised) {
+      return null;
+    }
     const scope = this.ensureScope(options?.travelId ?? null);
-    return scope.currentTimestamp ? { ...scope.currentTimestamp } : null;
+    return scope.currentTimestamp ? cloneTimestamp(scope.currentTimestamp) : null;
   }
 
   getActiveCalendarId(options?: { readonly travelId?: string | null }): string | null {
+    if (!this.initialised) {
+      return null;
+    }
     const scope = this.ensureScope(options?.travelId ?? null);
-    return scope.activeCalendarId;
+    return scope.activeCalendarId ?? null;
   }
 
   async getTravelLeafPreferences(travelId: string): Promise<TravelLeafPreferencesSnapshot | null> {
-    return this.travelLeafPrefs.get(travelId) ?? null;
+    await this.ensureReady();
+    const prefs = this.cache.travelLeaf[travelId];
+    return prefs ? { ...prefs } : null;
   }
 
-  async saveTravelLeafPreferences(
-    travelId: string,
-    prefs: TravelLeafPreferencesSnapshot,
-  ): Promise<void> {
-    this.travelLeafPrefs.set(travelId, { ...prefs });
+  async saveTravelLeafPreferences(travelId: string, prefs: TravelLeafPreferencesSnapshot): Promise<void> {
+    await this.ensureReady();
+    await this.persistState(state => {
+      state.travelLeaf[travelId] = { ...prefs };
+    });
   }
 
-  private ensureScope(travelId: string | null): ScopeState {
-    const key = travelId ?? GLOBAL_SCOPE;
-    if (!this.scopeState.has(key)) {
-      this.scopeState.set(key, { activeCalendarId: null, currentTimestamp: null });
+  private async ensureReady(): Promise<void> {
+    if (this.initialised) {
+      return;
     }
-    return this.scopeState.get(key)!;
+    await this.ready;
+    this.initialised = true;
+  }
+
+  private ensureScope(travelId: string | null, state: GatewayStoreData = this.cache): ScopeRecord {
+    const key = travelId ?? GLOBAL_SCOPE;
+    if (!state.scopes[key]) {
+      state.scopes[key] = { activeCalendarId: null, currentTimestamp: null };
+    }
+    if (state === this.cache) {
+      this.cache.scopes[key] = state.scopes[key];
+    }
+    return state.scopes[key];
   }
 
   private async resolveEffectiveCalendar(
@@ -348,6 +408,15 @@ export class InMemoryStateGateway implements CalendarStateGateway {
     }
 
     return null;
+  }
+
+  private async persistState(mutator: (state: GatewayStoreData) => void): Promise<void> {
+    await this.store.update(state => {
+      const draft = normaliseStore(state);
+      mutator(draft);
+      this.cache = normaliseStore(draft);
+      return this.cache;
+    });
   }
 
   private async listVisiblePhenomena(calendar: CalendarSchema): Promise<Phenomenon[]> {
@@ -414,19 +483,45 @@ export class InMemoryStateGateway implements CalendarStateGateway {
         continue;
       }
     }
+
     return sortOccurrencesByTimestamp(calendar, occurrences);
   }
 }
 
-function clonePreferences(preferences: AlmanacPreferencesSnapshot): AlmanacPreferencesSnapshot {
+function clonePreferences(preferences: AlmanacPreferencesSnapshot | undefined): AlmanacPreferencesSnapshot {
+  const base = preferences ?? {};
   return {
-    ...preferences,
-    lastZoomByMode: preferences.lastZoomByMode ? { ...preferences.lastZoomByMode } : undefined,
-    eventsFilters: preferences.eventsFilters
+    ...base,
+    lastZoomByMode: base.lastZoomByMode ? { ...base.lastZoomByMode } : undefined,
+    eventsFilters: base.eventsFilters
       ? {
-          categories: [...preferences.eventsFilters.categories],
-          calendarIds: [...preferences.eventsFilters.calendarIds],
+          categories: [...base.eventsFilters.categories],
+          calendarIds: [...base.eventsFilters.calendarIds],
         }
       : undefined,
+  };
+}
+
+function cloneTimestamp(timestamp: CalendarTimestamp): CalendarTimestamp {
+  return { ...timestamp };
+}
+
+function normaliseStore(input: GatewayStoreData): GatewayStoreData {
+  const scopes = { ...input.scopes };
+  if (!scopes[GLOBAL_SCOPE]) {
+    scopes[GLOBAL_SCOPE] = { activeCalendarId: null, currentTimestamp: null };
+  }
+  return {
+    scopes,
+    preferences: clonePreferences(input.preferences),
+    travelLeaf: { ...(input.travelLeaf ?? {}) },
+  };
+}
+
+function createInitialStore(): GatewayStoreData {
+  return {
+    scopes: { [GLOBAL_SCOPE]: { activeCalendarId: null, currentTimestamp: null } },
+    preferences: {},
+    travelLeaf: {},
   };
 }

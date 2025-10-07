@@ -80,6 +80,10 @@ describe("AlmanacController Dashboard", () => {
 
         const stateMachine = (controller as unknown as { stateMachine: AlmanacStateMachine }).stateMachine;
         await stateMachine.dispatch({ type: "TIME_ADVANCE_REQUESTED", amount: 15, unit: "day" });
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        const state = stateMachine.getState();
+        expect(state.calendarState.triggeredEvents.length).toBeGreaterThan(0);
 
         const triggeredHeading = Array.from(container.querySelectorAll("h2")).find(
             heading => heading.textContent === "Recently Triggered"

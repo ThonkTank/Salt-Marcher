@@ -300,17 +300,31 @@ interface EventsPreferenceDTO {
 ### 3.1 `CalendarStateGateway`
 ```ts
 interface CalendarStateGateway {
-  loadSnapshot(scope: 'global' | 'travel', travelId?: string): Promise<CalendarStateSnapshotDTO>;
-  setActiveCalendar(input: { calendarId: string; scope: 'global' | 'travel'; travelId?: string }): Promise<void>;
-  setDefaultCalendar(input: { calendarId: string; scope: 'global' | 'travel'; travelId?: string }): Promise<void>;
-  advanceTime(input: AdvanceRequestDTO & { scope: 'global' | 'travel'; travelId?: string }): Promise<AdvanceResultDTO>;
-  setDate(input: JumpRequestDTO & { scope: 'global' | 'travel'; travelId?: string }): Promise<JumpResultDTO>;
-  getTravelLeafPreferences(travelId: string): Promise<TravelLeafPrefsDTO>;
-  setTravelLeafPreferences(travelId: string, prefs: TravelLeafPrefsDTO): Promise<void>;
-  getAlmanacMode(): Promise<AlmanacModeSnapshotDTO>;
-  setAlmanacMode(input: AlmanacModeSnapshotDTO): Promise<void>;
-  getEventsPreferences(): Promise<EventsPreferenceDTO | null>;
-  setEventsPreferences(prefs: EventsPreferenceDTO): Promise<void>;
+  loadSnapshot(options?: { travelId?: string | null }): Promise<CalendarStateSnapshotDTO>;
+  setActiveCalendar(calendarId: string, options?: { travelId?: string | null; initialTimestamp?: CalendarDateDTO }): Promise<void>;
+  setDefaultCalendar(calendarId: string, options?: { scope: 'global' | 'travel'; travelId?: string | null }): Promise<void>;
+  setCurrentTimestamp(timestamp: CalendarDateDTO, options?: { travelId?: string | null }): Promise<void>;
+  advanceTimeBy(amount: number, unit: 'minute' | 'hour' | 'day', options?: { travelId?: string | null; hookContext?: HookDispatchContextDTO }): Promise<AdvanceResultDTO>;
+  loadPreferences(): Promise<AlmanacPreferencesDTO>;
+  savePreferences(partial: Partial<AlmanacPreferencesDTO>): Promise<void>;
+  getCurrentTimestamp(options?: { travelId?: string | null }): CalendarDateDTO | null;
+  getActiveCalendarId(options?: { travelId?: string | null }): string | null;
+  getTravelLeafPreferences(travelId: string): Promise<TravelLeafPrefsDTO | null>;
+  saveTravelLeafPreferences(travelId: string, prefs: TravelLeafPrefsDTO): Promise<void>;
+}
+```
+interface HookDispatchContextDTO {
+  scope: 'global' | 'travel';
+  travelId?: string | null;
+  reason: 'advance' | 'jump';
+}
+interface AlmanacPreferencesDTO {
+  lastMode?: AlmanacMode;
+  managerViewMode?: CalendarManagerViewMode;
+  eventsViewMode?: EventsViewMode;
+  lastZoomByMode?: Partial<Record<AlmanacMode, CalendarViewZoom>>;
+  eventsFilters?: EventsFilterState;
+  lastSelectedPhenomenonId?: string;
 }
 ```
 

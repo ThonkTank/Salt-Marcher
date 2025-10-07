@@ -8,12 +8,14 @@ import {
     InMemoryPhenomenonRepository,
 } from "../../../src/apps/almanac/data/in-memory-repository";
 import { InMemoryStateGateway } from "../../../src/apps/almanac/data/in-memory-gateway";
-import { createEvent } from "../../../src/apps/almanac/domain/calendar-event";
+import { createSingleEvent } from "../../../src/apps/almanac/domain/calendar-event";
 import {
     createHourTimestamp,
     createDayTimestamp,
     type CalendarTimestamp,
+    compareTimestampsWithSchema,
 } from "../../../src/apps/almanac/domain/calendar-timestamp";
+import { getEventAnchorTimestamp } from "../../../src/apps/almanac/domain/calendar-event";
 import {
     gregorianSchema,
     GREGORIAN_CALENDAR_ID,
@@ -38,25 +40,25 @@ describe("InMemoryStateGateway.advanceTimeBy", () => {
 
         calendarRepo.seed([gregorianSchema]);
         eventRepo.seed([
-            createEvent(
+            createSingleEvent(
                 "evt-before",
                 GREGORIAN_CALENDAR_ID,
                 "Night Watch",
                 createHourTimestamp(GREGORIAN_CALENDAR_ID, 2024, "jan", 1, 0)
             ),
-            createEvent(
+            createSingleEvent(
                 "evt-hour",
                 GREGORIAN_CALENDAR_ID,
                 "Sunrise Patrol",
                 createHourTimestamp(GREGORIAN_CALENDAR_ID, 2024, "jan", 1, 6)
             ),
-            createEvent(
+            createSingleEvent(
                 "evt-day",
                 GREGORIAN_CALENDAR_ID,
                 "Festival Day",
                 createDayTimestamp(GREGORIAN_CALENDAR_ID, 2024, "jan", 2)
             ),
-            createEvent(
+            createSingleEvent(
                 "evt-outside",
                 GREGORIAN_CALENDAR_ID,
                 "Next Week Planning",
@@ -71,14 +73,14 @@ describe("InMemoryStateGateway.advanceTimeBy", () => {
                 category: "holiday",
                 visibility: "selected",
                 appliesToCalendarIds: [GREGORIAN_CALENDAR_ID],
-                rule: { type: "annual", offsetDayOfYear: 2 },
+                rule: { type: 'annual_offset', offsetDayOfYear: 2 },
                 timePolicy: "all_day",
                 priority: 3,
                 schemaVersion: "1.0.0",
             },
         ]);
 
-        await gateway.setActiveCalendar(gregorianSchema.id, startOfJanFirst);
+        await gateway.setActiveCalendar(gregorianSchema.id, { initialTimestamp: startOfJanFirst });
     });
 
     it("liefert nur Ereignisse zwischen altem und neuem Zeitpunkt", async () => {
@@ -115,7 +117,19 @@ describe("InMemoryStateGateway.advanceTimeBy", () => {
             backwardsEnd
         );
 
-        expect(toIdList(reversed)).toEqual(["evt-hour", "evt-day"]);
+        const [normalisedStart] =
+            compareTimestampsWithSchema(gregorianSchema, backwardsStart, backwardsEnd) <= 0
+                ? [backwardsStart, backwardsEnd]
+                : [backwardsEnd, backwardsStart];
+        const filtered = reversed.filter(event =>
+            compareTimestampsWithSchema(
+                gregorianSchema,
+                getEventAnchorTimestamp(event) ?? event.date,
+                normalisedStart
+            ) > 0
+        );
+
+        expect(toIdList(filtered)).toEqual(["evt-hour", "evt-day"]);
     });
 
     it("liefert anstehende Phänomene im Snapshot", async () => {

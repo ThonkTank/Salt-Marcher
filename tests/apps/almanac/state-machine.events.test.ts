@@ -37,7 +37,7 @@ describe("AlmanacStateMachine events refresh", () => {
 
         await gateway.setActiveCalendar(
             gregorianSchema.id,
-            getDefaultCurrentTimestamp(2024),
+            { initialTimestamp: getDefaultCurrentTimestamp(2024) },
         );
 
         stateMachine = new AlmanacStateMachine(
@@ -86,5 +86,9 @@ describe("AlmanacStateMachine events refresh", () => {
         expect(
             state.eventsUiState.phenomena.every(item => item.category === "astronomy"),
         ).toBe(true);
+
+        const preferences = await gateway.loadPreferences();
+        expect(preferences.eventsFilters?.categories).toEqual(["astronomy"]);
+        expect(preferences.lastSelectedPhenomenonId).toBe("phen-harvest-moon");
     });
 });
