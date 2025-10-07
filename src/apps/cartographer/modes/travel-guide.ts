@@ -10,6 +10,7 @@ import { createTokenLayer } from "../travel/ui/token-layer";
 import { createTravelLogic } from "../travel/domain/actions";
 import type { LogicStateSnapshot } from "../travel/domain/types";
 import type { RenderAdapter } from "../travel/infra/adapter";
+import { cartographerHookGateway } from "../../almanac/mode/cartographer-gateway";
 import { TravelPlaybackController } from "./travel-guide/playback-controller";
 import { TravelInteractionController } from "./travel-guide/interaction-controller";
 import {
@@ -22,6 +23,8 @@ import { createEncounterSync } from "../travel/infra/encounter-sync";
 export function createTravelGuideMode(): CartographerMode {
     let sidebar: Sidebar | null = null;
     const playback = new TravelPlaybackController();
+    let activeTravelId: string | null = null;
+    let panelUnsubscribe: (() => void) | null = null;
     let logic = null as ReturnType<typeof createTravelLogic> | null;
     const interactions = new TravelInteractionController();
     let routeLayer: ReturnType<typeof createRouteLayer> | null = null;
@@ -54,7 +57,51 @@ export function createTravelGuideMode(): CartographerMode {
     const resetUi = () => {
         sidebar?.setTile(null);
         sidebar?.setSpeed(1);
+        sidebar?.setTravelPanel(null);
         playback.reset();
+    };
+
+    const detachPanelSubscription = () => {
+        if (!panelUnsubscribe) return;
+        try {
+            panelUnsubscribe();
+        } finally {
+            panelUnsubscribe = null;
+        }
+    };
+
+    const pushPanelSnapshot = (panel: ReturnType<typeof cartographerHookGateway.getPanelSnapshot>) => {
+        if (sidebar) {
+            sidebar.setTravelPanel(panel);
+        }
+    };
+
+    const updatePanelSnapshotFromGateway = (travelId: string | null) => {
+        pushPanelSnapshot(cartographerHookGateway.getPanelSnapshot(travelId));
+    };
+
+    const updateTravelContext = (file: ReturnType<CartographerModeLifecycleContext["getFile"]>) => {
+        const nextId = file ? file.path : null;
+        if (activeTravelId === nextId) {
+            updatePanelSnapshotFromGateway(nextId);
+            return;
+        }
+        if (activeTravelId) {
+            cartographerHookGateway.emitTravelEnd(activeTravelId);
+        }
+        detachPanelSubscription();
+        activeTravelId = nextId;
+        if (activeTravelId) {
+            cartographerHookGateway.emitTravelStart(activeTravelId);
+            panelUnsubscribe = cartographerHookGateway.onPanelUpdate(activeTravelId, (panel) => {
+                if (!isAborted()) {
+                    pushPanelSnapshot(panel);
+                }
+            });
+            updatePanelSnapshotFromGateway(activeTravelId);
+        } else {
+            pushPanelSnapshot(null);
+        }
     };
 
     const runCleanupFile = async () => {
@@ -94,6 +141,7 @@ export function createTravelGuideMode(): CartographerMode {
     };
 
     const disposeFile = () => {
+        updateTravelContext(null);
         interactions.dispose();
         encounterSync?.dispose();
         encounterSync = null;
@@ -220,6 +268,8 @@ export function createTravelGuideMode(): CartographerMode {
             if (!mapLayer) {
                 return;
             }
+
+            updateTravelContext(file);
 
             routeLayer = createRouteLayer(handles.contentG, (rc) => mapLayer.centerOf(rc));
             tokenLayer = createTokenLayer(handles.contentG);

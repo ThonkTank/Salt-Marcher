@@ -46,6 +46,11 @@ import {
 import { computeNextPhenomenonOccurrence } from "../domain/phenomenon-engine";
 import type { Phenomenon, PhenomenonOccurrence } from "../domain/phenomenon";
 import { advanceTime } from "../domain/time-arithmetic";
+import {
+    cartographerHookGateway as defaultCartographerGateway,
+    type CartographerHookGateway,
+    type TravelPanelUpdateInput,
+} from "./cartographer-gateway";
 
 const MAX_TRIGGERED_EVENTS = 10;
 const MAX_TRIGGERED_PHENOMENA = 10;
@@ -71,13 +76,18 @@ export class AlmanacStateMachine {
     private initialised = false;
     private phenomenaSource: PhenomenonViewModel[] = [];
     private phenomenaDefinitions: Phenomenon[] = [];
+    private travelId: string | null = null;
+    private readonly cartographerGateway: CartographerHookGateway;
 
     constructor(
         private readonly calendarRepo: CalendarRepository,
         private readonly eventRepo: EventRepository,
         private readonly gateway: CalendarStateGateway,
         private readonly phenomenonRepo: PhenomenonRepository,
-    ) {}
+        cartographerGateway: CartographerHookGateway = defaultCartographerGateway,
+    ) {
+        this.cartographerGateway = cartographerGateway;
+    }
 
     getState(): AlmanacState {
         return this.state;
@@ -221,6 +231,8 @@ export class AlmanacStateMachine {
     }
 
     private async handleInit(travelId: string | null): Promise<void> {
+        this.travelId = travelId;
+
         if (this.initialised) {
             await this.refreshCalendarData();
             return;
@@ -346,6 +358,17 @@ export class AlmanacStateMachine {
                 };
             });
 
+            const initialPanel: TravelPanelUpdateInput = {
+                travelId: this.travelId,
+                currentTimestamp: snapshot.currentTimestamp,
+                triggeredEvents: [],
+                triggeredPhenomena: [],
+                skippedEvents: [],
+                skippedPhenomena: [],
+                reason: "init",
+            };
+            await this.cartographerGateway.notifyTravelPanel(initialPanel);
+
             this.initialised = true;
             this.ensurePhenomenonSelection();
         } catch (error) {
@@ -372,7 +395,7 @@ export class AlmanacStateMachine {
         try {
             const [calendars, snapshot, phenomena] = await Promise.all([
                 this.calendarRepo.listCalendars(),
-                this.gateway.loadSnapshot(),
+                this.gateway.loadSnapshot(this.travelId ? { travelId: this.travelId } : undefined),
                 this.phenomenonRepo.listPhenomena(),
             ]);
             this.phenomenaDefinitions = phenomena;
@@ -928,7 +951,13 @@ export class AlmanacStateMachine {
         });
 
         try {
-            const result = await this.gateway.advanceTimeBy(amount, unit);
+            const advanceOptions = this.travelId
+                ? {
+                      travelId: this.travelId,
+                      hookContext: { scope: "travel" as const, travelId: this.travelId, reason: "advance" as const },
+                  }
+                : { hookContext: { scope: "global" as const, reason: "advance" as const } };
+            const result = await this.gateway.advanceTimeBy(amount, unit, advanceOptions);
             const schema = this.getCalendarSchema(activeCalendarId);
             let upcoming: CalendarEvent[] = this.state.calendarState.upcomingEvents;
             if (schema) {
@@ -1014,6 +1043,17 @@ export class AlmanacStateMachine {
                 };
             });
 
+            await this.cartographerGateway.notifyTravelPanel({
+                travelId: this.travelId,
+                currentTimestamp: result.timestamp,
+                triggeredEvents: result.triggeredEvents,
+                triggeredPhenomena: result.triggeredPhenomena,
+                skippedEvents: [],
+                skippedPhenomena: [],
+                lastAdvanceStep: { amount, unit },
+                reason: "advance",
+            });
+
             void this.persistPreferences({
                 lastSelectedPhenomenonId: nextSelectedId ?? undefined,
             });
@@ -1082,9 +1122,12 @@ export class AlmanacStateMachine {
                 preview = await this.eventRepo.getEventsInRange(activeCalendarId, schema, currentTimestamp, target);
             }
 
-            await this.gateway.setCurrentTimestamp(target);
+            const setOptions = this.travelId ? { travelId: this.travelId } : undefined;
+            await this.gateway.setCurrentTimestamp(target, setOptions);
 
-            const snapshotAfterJump = await this.gateway.loadSnapshot();
+            const snapshotAfterJump = await this.gateway.loadSnapshot(
+                this.travelId ? { travelId: this.travelId } : undefined,
+            );
             const upcoming = snapshotAfterJump.upcomingEvents;
             const upcomingPhenomena = snapshotAfterJump.upcomingPhenomena;
 
@@ -1145,6 +1188,16 @@ export class AlmanacStateMachine {
                     agendaItems: this.collectAgendaItems(target, draft.managerUiState.zoom, upcoming),
                     jumpPreview: [],
                 };
+            });
+
+            await this.cartographerGateway.notifyTravelPanel({
+                travelId: this.travelId,
+                currentTimestamp: target,
+                triggeredEvents: [],
+                triggeredPhenomena: [],
+                skippedEvents: preview,
+                skippedPhenomena: [],
+                reason: "jump",
             });
 
             void this.persistPreferences({
