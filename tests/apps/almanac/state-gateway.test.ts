@@ -32,6 +32,7 @@ describe("InMemoryStateGateway.advanceTimeBy", () => {
     beforeEach(async () => {
         calendarRepo = new InMemoryCalendarRepository();
         eventRepo = new InMemoryEventRepository();
+        eventRepo.bindCalendarRepository(calendarRepo);
         phenomenonRepo = new InMemoryPhenomenonRepository();
         gateway = new InMemoryStateGateway(calendarRepo, eventRepo, phenomenonRepo);
 

@@ -61,6 +61,7 @@ describe('Default Calendar Resolver', () => {
   beforeEach(() => {
     calendarRepo = new InMemoryCalendarRepository();
     eventRepo = new InMemoryEventRepository();
+    eventRepo.bindCalendarRepository(calendarRepo);
     phenomenonRepo = new InMemoryPhenomenonRepository();
     gateway = new InMemoryStateGateway(calendarRepo, eventRepo, phenomenonRepo);
   });
