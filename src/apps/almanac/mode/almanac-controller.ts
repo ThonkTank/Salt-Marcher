@@ -42,6 +42,7 @@ import {
     getDefaultCurrentTimestamp,
 } from '../fixtures/gregorian.fixture';
 import { createSamplePhenomena } from '../fixtures/phenomena.fixture';
+import { renderEventsMap as renderEventsMapComponent } from './events';
 
 const MODE_COPY: Record<AlmanacMode, { label: string; description: string }> = {
     dashboard: { label: 'Dashboard', description: 'Current date, quick actions and upcoming events' },
@@ -1422,7 +1423,7 @@ export class AlmanacController {
                 this.renderEventsTable(contentSection, state);
                 break;
             case 'map':
-                this.renderEventsMapPlaceholder(contentSection);
+                this.renderEventsMap(contentSection, state);
                 break;
         }
 
@@ -1584,10 +1585,14 @@ export class AlmanacController {
         });
     }
 
-    private renderEventsMapPlaceholder(section: HTMLElement): void {
-        section.createEl('p', {
-            text: 'Map view will plot phenomena across campaign regions (not yet implemented).',
-            cls: 'almanac-empty',
+    private renderEventsMap(section: HTMLElement, state: AlmanacState): void {
+        const wrapper = document.createElement('div');
+        wrapper.classList.add('almanac-events__map');
+        wrapper.dataset.role = 'events-map-container';
+        section.appendChild(wrapper);
+
+        renderEventsMapComponent(wrapper, {
+            markers: state.eventsUiState.mapMarkers,
         });
     }
 

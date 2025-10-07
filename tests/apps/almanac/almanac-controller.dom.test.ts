@@ -273,6 +273,47 @@ describe("AlmanacController Dashboard", () => {
         expect(eventsState.bulkSelection).toHaveLength(0);
     });
 
+    it("schaltet die Events-Ansicht um und rendert die Kartenansicht", async () => {
+        const app = new App();
+        const controller = new AlmanacController(app);
+        const container = document.createElement("div");
+
+        await controller.onOpen(container);
+
+        const stateMachine = (controller as unknown as { stateMachine: AlmanacStateMachine }).stateMachine;
+        await stateMachine.dispatch({ type: "ALMANAC_MODE_SELECTED", mode: "events" });
+        await Promise.resolve();
+
+        const toggleButtons = Array.from(
+            container.querySelectorAll(".almanac-toggle-group button"),
+        ) as HTMLButtonElement[];
+        expect(toggleButtons).toHaveLength(3);
+
+        const tableButton = toggleButtons.find(button => button.textContent === "Table");
+        expect(tableButton).toBeTruthy();
+        tableButton?.dispatchEvent(new Event("click"));
+        await Promise.resolve();
+
+        expect(container.querySelector("table.almanac-phenomena-table")).toBeTruthy();
+
+        const mapButton = toggleButtons.find(button => button.textContent === "Map");
+        expect(mapButton).toBeTruthy();
+        mapButton?.dispatchEvent(new Event("click"));
+        await Promise.resolve();
+
+        const mapComponent = container.querySelector('[data-component="events-map"]');
+        expect(mapComponent).toBeTruthy();
+
+        const markerNodes = mapComponent?.querySelectorAll('[data-role="map-marker"]') ?? [];
+        expect(markerNodes.length).toBeGreaterThan(0);
+
+        const legendItems = mapComponent?.querySelectorAll('[data-role="map-legend-item"]') ?? [];
+        expect(legendItems.length).toBe(markerNodes.length);
+
+        const summary = mapComponent?.querySelector('[data-role="map-summary"]');
+        expect(summary?.textContent ?? "").toContain("phenomena plotted");
+    });
+
     it("ermöglicht Kalenderauswahl und Default-Setzen", async () => {
         const app = new App();
         const controller = new AlmanacController(app);

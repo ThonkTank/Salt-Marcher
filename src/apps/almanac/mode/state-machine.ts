@@ -28,6 +28,7 @@ import {
     type CalendarStateSlice,
     type CalendarViewZoom,
     type EventsFilterState,
+    type EventsMapMarker,
     type ImportSummary,
     type PhenomenonDetailView,
     type PhenomenonEditorDraft,
@@ -374,6 +375,8 @@ export class AlmanacStateMachine {
                 isPersisting: false,
             };
 
+            const mapMarkers = this.buildPhenomenonMapMarkers(filteredPhenomena, calendars);
+
             this.setState(draft => {
                 draft.calendarState = calendarSlice;
                 draft.almanacUiState = {
@@ -405,6 +408,7 @@ export class AlmanacStateMachine {
                     filters: { ...filters },
                     availableCategories,
                     availableCalendars: calendars.map(schema => ({ id: schema.id, name: schema.name })),
+                    mapMarkers,
                     phenomena: filteredPhenomena,
                     selectedPhenomenonId: initialSelectedId,
                     selectedPhenomenonDetail: initialDetail,
@@ -516,6 +520,8 @@ export class AlmanacStateMachine {
                 ?? calendars.find(schema => schema.isDefaultGlobal)?.id
                 ?? null;
 
+            const mapMarkers = this.buildPhenomenonMapMarkers(filteredPhenomena, calendars);
+
             this.setState(draft => {
                 const anchor = draft.managerUiState.anchorTimestamp ?? snapshot.currentTimestamp ?? this.getAnchorFallback();
                 const agendaItems = anchor
@@ -550,6 +556,7 @@ export class AlmanacStateMachine {
                     filters: { ...filters },
                     availableCategories,
                     availableCalendars: calendars.map(schema => ({ id: schema.id, name: schema.name })),
+                    mapMarkers,
                     phenomena: filteredPhenomena,
                     selectedPhenomenonId: nextSelectedId,
                     selectedPhenomenonDetail: nextDetail,
@@ -734,11 +741,14 @@ export class AlmanacStateMachine {
             nextSelectedId = nextDetail ? firstId : null;
         }
 
+        const mapMarkers = this.buildPhenomenonMapMarkers(filteredPhenomena, calendars);
+
         this.setState(draft => {
             draft.eventsUiState = {
                 ...draft.eventsUiState,
                 filters: normalised,
                 filterCount,
+                mapMarkers,
                 phenomena: filteredPhenomena,
                 selectedPhenomenonId: nextSelectedId,
                 selectedPhenomenonDetail: nextDetail,
@@ -1526,6 +1536,8 @@ export class AlmanacStateMachine {
                 nextSelectedId = nextDetail ? firstId : null;
             }
 
+            const mapMarkers = this.buildPhenomenonMapMarkers(filteredPhenomena, calendars);
+
             this.setState(draft => {
                 const mergedTriggered = [
                     ...result.triggeredEvents,
@@ -1566,6 +1578,7 @@ export class AlmanacStateMachine {
                     filterCount,
                     filters: { ...filters },
                     availableCategories,
+                    mapMarkers,
                     phenomena: filteredPhenomena,
                     selectedPhenomenonId: nextSelectedId,
                     selectedPhenomenonDetail: nextDetail,
@@ -1741,6 +1754,8 @@ export class AlmanacStateMachine {
                 nextSelectedId = nextDetail ? firstId : null;
             }
 
+            const mapMarkers = this.buildPhenomenonMapMarkers(filteredPhenomena, calendars);
+
             this.setState(draft => {
                 draft.calendarState = {
                     ...draft.calendarState,
@@ -1758,6 +1773,7 @@ export class AlmanacStateMachine {
                     filterCount,
                     filters: { ...filters },
                     availableCategories,
+                    mapMarkers,
                     phenomena: filteredPhenomena,
                     selectedPhenomenonId: nextSelectedId,
                     selectedPhenomenonDetail: nextDetail,
@@ -1902,6 +1918,39 @@ export class AlmanacStateMachine {
                 linkedCalendars,
                 nextOccurrence: occurrences[0]?.label,
             } satisfies PhenomenonViewModel;
+        });
+    }
+
+    private buildPhenomenonMapMarkers(
+        phenomena: ReadonlyArray<PhenomenonViewModel>,
+        calendars: ReadonlyArray<CalendarSchema>,
+    ): EventsMapMarker[] {
+        if (phenomena.length === 0) {
+            return [];
+        }
+
+        const calendarNames = new Map(calendars.map(schema => [schema.id, schema.name] as const));
+        const total = phenomena.length;
+        const columns = Math.max(1, Math.ceil(Math.sqrt(total)));
+        const rows = Math.max(1, Math.ceil(total / columns));
+
+        return phenomena.map((phenomenon, index) => {
+            const column = index % columns;
+            const row = Math.floor(index / columns);
+            const x = clampCoordinate((column + 0.5) / columns);
+            const y = clampCoordinate((row + 0.5) / rows);
+
+            return {
+                id: phenomenon.id,
+                title: phenomenon.title,
+                category: phenomenon.category,
+                nextOccurrence: phenomenon.nextOccurrence,
+                coordinates: { x, y },
+                calendars: phenomenon.linkedCalendars.map(calendarId => ({
+                    id: calendarId,
+                    name: calendarNames.get(calendarId) ?? calendarId,
+                })),
+            } satisfies EventsMapMarker;
         });
     }
 
@@ -2081,10 +2130,13 @@ export class AlmanacStateMachine {
                 ? options.importSummary
                 : this.state.eventsUiState.importSummary ?? null;
 
+        const mapMarkers = this.buildPhenomenonMapMarkers(filtered, calendars);
+
         this.setState(draft => {
             draft.eventsUiState = {
                 ...draft.eventsUiState,
                 availableCategories,
+                mapMarkers,
                 phenomena: filtered,
                 filterCount,
                 selectedPhenomenonId: nextSelectedId,
@@ -2482,6 +2534,11 @@ function cloneState<T>(value: T): T {
     } catch (error) {
         return JSON.parse(JSON.stringify(value)) as T;
     }
+}
+
+function clampCoordinate(value: number): number {
+    const clamped = Math.min(0.95, Math.max(0.05, value));
+    return Number(clamped.toFixed(4));
 }
 
 function getUniqueCategories(phenomena: ReadonlyArray<{ category?: string }>): string[] {

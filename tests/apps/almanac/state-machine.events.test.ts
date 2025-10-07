@@ -92,6 +92,40 @@ describe("AlmanacStateMachine events refresh", () => {
         expect(preferences.lastSelectedPhenomenonId).toBe("phen-harvest-moon");
     });
 
+    it("generates map markers that track filtered phenomena", async () => {
+        await stateMachine.dispatch({ type: "ALMANAC_MODE_SELECTED", mode: "events" });
+
+        const initialState = stateMachine.getState();
+        expect(initialState.eventsUiState.mapMarkers).toHaveLength(
+            initialState.eventsUiState.phenomena.length,
+        );
+        const [firstMarker] = initialState.eventsUiState.mapMarkers;
+        expect(firstMarker).toBeDefined();
+        if (!firstMarker) throw new Error("expected first marker to exist");
+        expect(firstMarker.coordinates.x).toBeGreaterThanOrEqual(0.05);
+        expect(firstMarker.coordinates.x).toBeLessThanOrEqual(0.95);
+        expect(firstMarker.coordinates.y).toBeGreaterThanOrEqual(0.05);
+        expect(firstMarker.coordinates.y).toBeLessThanOrEqual(0.95);
+
+        await stateMachine.dispatch({
+            type: "EVENTS_FILTER_CHANGED",
+            filters: { categories: ["season"], calendarIds: [] },
+        });
+
+        const filteredState = stateMachine.getState();
+        expect(filteredState.eventsUiState.phenomena.every(item => item.category === "season")).toBe(
+            true,
+        );
+        expect(filteredState.eventsUiState.mapMarkers).toHaveLength(
+            filteredState.eventsUiState.phenomena.length,
+        );
+        expect(
+            filteredState.eventsUiState.mapMarkers.every(marker =>
+                marker.calendars.every(calendar => typeof calendar.name === "string"),
+            ),
+        ).toBe(true);
+    });
+
     it("allows creating a phenomenon through the editor", async () => {
         await stateMachine.dispatch({ type: "ALMANAC_MODE_SELECTED", mode: "events" });
 
