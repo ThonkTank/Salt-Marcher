@@ -20,6 +20,7 @@ import { AlmanacRepositoryError, type AlmanacRepository } from "./almanac-reposi
 import type { CalendarDefaultsRepository, CalendarRepository } from "./calendar-repository";
 import { JsonStore } from "./json-store";
 import type { VaultLike } from "./json-store";
+import { reportAlmanacGatewayIssue } from "../telemetry";
 
 interface PhenomenaStoreData {
   readonly phenomena: PhenomenonDTO[];
@@ -77,92 +78,134 @@ export class VaultAlmanacRepository implements AlmanacRepository {
   }
 
   async upsertPhenomenon(draft: PhenomenonDTO): Promise<PhenomenonDTO> {
-    await this.store.update(state => {
-      const phenomena = [...state.phenomena];
-      const index = phenomena.findIndex(entry => entry.id === draft.id);
-      if (index === -1) {
-        phenomena.push({ ...draft });
-      } else {
-        phenomena[index] = { ...phenomena[index], ...draft };
+    try {
+      await this.store.update(state => {
+        const phenomena = [...state.phenomena];
+        const index = phenomena.findIndex(entry => entry.id === draft.id);
+        if (index === -1) {
+          phenomena.push({ ...draft });
+        } else {
+          phenomena[index] = { ...phenomena[index], ...draft };
+        }
+        return { phenomena };
+      });
+      const stored = await this.getPhenomenon(draft.id);
+      if (!stored) {
+        throw new AlmanacRepositoryError("validation_error", `Phenomenon ${draft.id} disappeared during update`);
       }
-      return { phenomena };
-    });
-    const stored = await this.getPhenomenon(draft.id);
-    if (!stored) {
-      throw new Error(`Failed to persist phenomenon ${draft.id}`);
+      return stored;
+    } catch (error) {
+      const code = error instanceof AlmanacRepositoryError ? error.code : "io_error";
+      reportAlmanacGatewayIssue({
+        operation: "phenomenon.repository.upsert",
+        scope: "phenomenon",
+        code,
+        error,
+        context: { phenomenonId: draft.id },
+      });
+      throw error;
     }
-    return stored;
   }
 
   async deletePhenomenon(id: string): Promise<void> {
-    await this.store.update(state => {
-      const remaining = state.phenomena.filter(entry => entry.id !== id);
-      if (remaining.length === state.phenomena.length) {
-        throw new Error(`Phenomenon with ID ${id} not found`);
-      }
-      return { phenomena: remaining };
-    });
+    try {
+      await this.store.update(state => {
+        const remaining = state.phenomena.filter(entry => entry.id !== id);
+        if (remaining.length === state.phenomena.length) {
+          throw new AlmanacRepositoryError("validation_error", `Phenomenon ${id} not found`);
+        }
+        return { phenomena: remaining };
+      });
+    } catch (error) {
+      const code = error instanceof AlmanacRepositoryError ? error.code : "io_error";
+      reportAlmanacGatewayIssue({
+        operation: "phenomenon.repository.delete",
+        scope: "phenomenon",
+        code,
+        error,
+        context: { phenomenonId: id },
+      });
+      throw error;
+    }
   }
 
   async updateLinks(update: PhenomenonLinkUpdate): Promise<PhenomenonDTO> {
-    const phenomenon = await this.getPhenomenon(update.phenomenonId);
-    if (!phenomenon) {
-      throw new AlmanacRepositoryError("validation_error", `Phenomenon ${update.phenomenonId} not found`);
-    }
+    try {
+      const phenomenon = await this.getPhenomenon(update.phenomenonId);
+      if (!phenomenon) {
+        throw new AlmanacRepositoryError("validation_error", `Phenomenon ${update.phenomenonId} not found`);
+      }
 
-    const calendars = await this.calendars.listCalendars();
-    const calendarSet = new Set(calendars.map(calendar => calendar.id));
+      const calendars = await this.calendars.listCalendars();
+      const calendarSet = new Set(calendars.map(calendar => calendar.id));
 
-    const duplicates = findDuplicateCalendarIds(update.calendarLinks);
-    if (duplicates.length > 0) {
-      throw new AlmanacRepositoryError("phenomenon_conflict", "Calendar links contain duplicates", {
-        duplicates,
-      });
-    }
-
-    for (const link of update.calendarLinks) {
-      if (!calendarSet.has(link.calendarId)) {
-        throw new AlmanacRepositoryError("validation_error", `Calendar ${link.calendarId} not found`, {
-          calendarId: link.calendarId,
+      const duplicates = findDuplicateCalendarIds(update.calendarLinks);
+      if (duplicates.length > 0) {
+        throw new AlmanacRepositoryError("phenomenon_conflict", "Calendar links contain duplicates", {
+          duplicates,
         });
       }
-    }
 
-    if (phenomenon.rule.type === "astronomical") {
-      const hasReference = Boolean(phenomenon.rule.referenceCalendarId);
-      const hasHookReference = update.calendarLinks.some(link =>
-        link.hook && typeof link.hook.config?.referenceCalendarId === "string",
-      );
-      if (!hasReference && !hasHookReference) {
-        throw new AlmanacRepositoryError("astronomy_source_missing", "Astronomical phenomena require a reference calendar");
+      for (const link of update.calendarLinks) {
+        if (!calendarSet.has(link.calendarId)) {
+          throw new AlmanacRepositoryError("validation_error", `Calendar ${link.calendarId} not found`, {
+            calendarId: link.calendarId,
+          });
+        }
       }
-    }
 
-    await this.store.update(state => {
-      const phenomena = [...state.phenomena];
-      const index = phenomena.findIndex(entry => entry.id === phenomenon.id);
-      if (index === -1) {
-        throw new AlmanacRepositoryError("validation_error", `Phenomenon ${phenomenon.id} disappeared during update`);
+      if (phenomenon.rule.type === "astronomical") {
+        const hasReference = Boolean(phenomenon.rule.referenceCalendarId);
+        const hasHookReference = update.calendarLinks.some(link =>
+          link.hook && typeof link.hook.config?.referenceCalendarId === "string",
+        );
+        if (!hasReference && !hasHookReference) {
+          throw new AlmanacRepositoryError(
+            "astronomy_source_missing",
+            "Astronomical phenomena require a reference calendar",
+          );
+        }
       }
-      const appliesToCalendarIds = update.calendarLinks.map(link => link.calendarId);
-      const visibility = appliesToCalendarIds.length === 0 ? "all_calendars" : "selected";
-      const hooks = buildHooksFromLinks(update.calendarLinks, phenomenon);
-      const priority = update.calendarLinks.reduce((max, link) => Math.max(max, link.priority), phenomenon.priority);
-      phenomena[index] = {
-        ...phenomena[index],
-        appliesToCalendarIds,
-        visibility,
-        hooks,
-        priority,
-      };
-      return { phenomena };
-    });
 
-    const stored = await this.getPhenomenon(update.phenomenonId);
-    if (!stored) {
-      throw new Error(`Failed to update phenomenon ${update.phenomenonId}`);
+      await this.store.update(state => {
+        const phenomena = [...state.phenomena];
+        const index = phenomena.findIndex(entry => entry.id === phenomenon.id);
+        if (index === -1) {
+          throw new AlmanacRepositoryError("validation_error", `Phenomenon ${phenomenon.id} disappeared during update`);
+        }
+        const appliesToCalendarIds = update.calendarLinks.map(link => link.calendarId);
+        const visibility = appliesToCalendarIds.length === 0 ? "all_calendars" : "selected";
+        const hooks = buildHooksFromLinks(update.calendarLinks, phenomenon);
+        const priority = update.calendarLinks.reduce((max, link) => Math.max(max, link.priority), phenomenon.priority);
+        phenomena[index] = {
+          ...phenomena[index],
+          appliesToCalendarIds,
+          visibility,
+          hooks,
+          priority,
+        };
+        return { phenomena };
+      });
+
+      const stored = await this.getPhenomenon(update.phenomenonId);
+      if (!stored) {
+        throw new AlmanacRepositoryError(
+          "validation_error",
+          `Phenomenon ${update.phenomenonId} disappeared during update`,
+        );
+      }
+      return stored;
+    } catch (error) {
+      const code = error instanceof AlmanacRepositoryError ? error.code : "io_error";
+      reportAlmanacGatewayIssue({
+        operation: "phenomenon.repository.updateLinks",
+        scope: "phenomenon",
+        code,
+        error,
+        context: { phenomenonId: update.phenomenonId },
+      });
+      throw error;
     }
-    return stored;
   }
 
   async listTemplates(): Promise<ReadonlyArray<PhenomenonTemplateDTO>> {

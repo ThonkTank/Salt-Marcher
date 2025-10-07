@@ -22,15 +22,18 @@ import type {
 } from "./calendar-repository";
 import type { EventRepository } from "./event-repository";
 import type { AlmanacRepository } from "./almanac-repository";
-import type {
-  AdvanceTimeResult,
-  CalendarStateGateway,
-  CalendarStateSnapshot,
-  HookDispatchGateway,
-  HookDispatchContext,
-  TravelLeafPreferencesSnapshot,
+import {
+  CalendarGatewayError,
+  createGatewayValidationError,
+  type AdvanceTimeResult,
+  type CalendarStateGateway,
+  type CalendarStateSnapshot,
+  type HookDispatchGateway,
+  type HookDispatchContext,
+  type TravelLeafPreferencesSnapshot,
 } from "./calendar-state-gateway";
 import type { AlmanacPreferencesSnapshot } from "../mode/contracts";
+import { reportAlmanacGatewayIssue } from "../telemetry";
 
 const GLOBAL_SCOPE = "__global__";
 
@@ -126,7 +129,18 @@ export class InMemoryStateGateway implements CalendarStateGateway {
   ): Promise<void> {
     const calendar = await this.calendarRepo.getCalendar(calendarId);
     if (!calendar) {
-      throw new Error(`Calendar with ID ${calendarId} not found`);
+      const error = createGatewayValidationError(`Calendar with ID ${calendarId} not found`, {
+        calendarId,
+        travelId: options?.travelId ?? null,
+      });
+      reportAlmanacGatewayIssue({
+        operation: "calendar.gateway.setActiveCalendar",
+        scope: options?.travelId ? "travel" : "calendar",
+        code: error.code,
+        error,
+        context: error.context,
+      });
+      throw error;
     }
 
     const scope = this.ensureScope(options?.travelId ?? null);
@@ -159,7 +173,17 @@ export class InMemoryStateGateway implements CalendarStateGateway {
     if (scope === "travel") {
       const travelId = options?.travelId;
       if (!travelId) {
-        throw new Error("Travel ID required when persisting travel default");
+        const error = createGatewayValidationError("Travel ID required when persisting travel default", {
+          calendarId,
+        });
+        reportAlmanacGatewayIssue({
+          operation: "calendar.gateway.setDefaultCalendar",
+          scope: "travel",
+          code: error.code,
+          error,
+          context: error.context,
+        });
+        throw error;
       }
       await this.calendarRepo.setDefault({ calendarId, scope: "travel", travelId });
       return;
@@ -173,10 +197,32 @@ export class InMemoryStateGateway implements CalendarStateGateway {
   ): Promise<void> {
     const scope = this.ensureScope(options?.travelId ?? null);
     if (!scope.activeCalendarId) {
-      throw new Error("No active calendar set");
+      const error = createGatewayValidationError("No active calendar set", {
+        travelId: options?.travelId ?? null,
+      });
+      reportAlmanacGatewayIssue({
+        operation: "calendar.gateway.setCurrentTimestamp",
+        scope: options?.travelId ? "travel" : "calendar",
+        code: error.code,
+        error,
+        context: error.context,
+      });
+      throw error;
     }
     if (timestamp.calendarId !== scope.activeCalendarId) {
-      throw new Error("Timestamp calendar does not match active calendar");
+      const error = createGatewayValidationError("Timestamp calendar does not match active calendar", {
+        travelId: options?.travelId ?? null,
+        calendarId: timestamp.calendarId,
+        activeCalendarId: scope.activeCalendarId,
+      });
+      reportAlmanacGatewayIssue({
+        operation: "calendar.gateway.setCurrentTimestamp",
+        scope: options?.travelId ? "travel" : "calendar",
+        code: error.code,
+        error,
+        context: error.context,
+      });
+      throw error;
     }
     scope.currentTimestamp = { ...timestamp };
   }
@@ -189,12 +235,34 @@ export class InMemoryStateGateway implements CalendarStateGateway {
     const scopeId = options?.travelId ?? null;
     const scope = this.ensureScope(scopeId);
     if (!scope.activeCalendarId || !scope.currentTimestamp) {
-      throw new Error("No active calendar or current timestamp set");
+      const error = createGatewayValidationError("No active calendar or current timestamp set", {
+        travelId: scopeId,
+        activeCalendarId: scope.activeCalendarId,
+      });
+      reportAlmanacGatewayIssue({
+        operation: "calendar.gateway.advanceTimeBy",
+        scope: scopeId ? "travel" : "calendar",
+        code: error.code,
+        error,
+        context: error.context,
+      });
+      throw error;
     }
 
     const calendar = await this.calendarRepo.getCalendar(scope.activeCalendarId);
     if (!calendar) {
-      throw new Error(`Calendar ${scope.activeCalendarId} not found`);
+      const error = createGatewayValidationError(`Calendar ${scope.activeCalendarId} not found`, {
+        travelId: scopeId,
+        calendarId: scope.activeCalendarId,
+      });
+      reportAlmanacGatewayIssue({
+        operation: "calendar.gateway.advanceTimeBy",
+        scope: scopeId ? "travel" : "calendar",
+        code: error.code,
+        error,
+        context: error.context,
+      });
+      throw error;
     }
 
     const visiblePhenomena = await this.listVisiblePhenomena(calendar);
@@ -243,7 +311,23 @@ export class InMemoryStateGateway implements CalendarStateGateway {
           ...options?.hookContext,
         });
       } catch (error) {
-        throw new Error(`Failed to dispatch hooks for time advance: ${error instanceof Error ? error.message : String(error)}`);
+        const causeMessage = error instanceof Error && error.message ? `: ${error.message}` : "";
+        const gatewayError = new CalendarGatewayError(
+          "io_error",
+          `Failed to dispatch hooks for time advance${causeMessage}`,
+          {
+            travelId: scopeId,
+            scope: scopeId ? "travel" : "global",
+          },
+        );
+        reportAlmanacGatewayIssue({
+          operation: "calendar.gateway.advanceTimeBy",
+          scope: scopeId ? "travel" : "calendar",
+          code: gatewayError.code,
+          error,
+          context: gatewayError.context,
+        });
+        throw gatewayError;
       }
     }
 

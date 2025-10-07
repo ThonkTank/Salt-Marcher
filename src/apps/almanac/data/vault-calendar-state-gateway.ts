@@ -22,16 +22,20 @@ import type {
 } from "./calendar-repository";
 import type { EventRepository } from "./event-repository";
 import type { AlmanacRepository } from "./almanac-repository";
-import type {
-  AdvanceTimeResult,
-  CalendarStateGateway,
-  CalendarStateSnapshot,
-  HookDispatchGateway,
-  HookDispatchContext,
-  TravelLeafPreferencesSnapshot,
+import {
+  CalendarGatewayError,
+  createGatewayIoError,
+  createGatewayValidationError,
+  type AdvanceTimeResult,
+  type CalendarStateGateway,
+  type CalendarStateSnapshot,
+  type HookDispatchGateway,
+  type HookDispatchContext,
+  type TravelLeafPreferencesSnapshot,
 } from "./calendar-state-gateway";
 import type { AlmanacPreferencesSnapshot } from "../mode/contracts";
 import { JsonStore, type VaultLike } from "./json-store";
+import { reportAlmanacGatewayIssue } from "../telemetry";
 
 const GLOBAL_SCOPE = "__global__";
 const STATE_STORE_VERSION = "1.0.0";
@@ -70,7 +74,14 @@ export class VaultCalendarStateGateway implements CalendarStateGateway {
       this.cache = normaliseStore(data);
       this.initialised = true;
     }).catch(error => {
-      console.warn("[almanac] Failed to load calendar state store", error);
+      const gatewayError = createGatewayIoError("Failed to load calendar state store");
+      reportAlmanacGatewayIssue({
+        operation: "calendar.gateway.bootstrap",
+        scope: "calendar",
+        code: gatewayError.code,
+        error,
+        context: gatewayError.context,
+      });
       this.initialised = true;
     });
   }
@@ -150,7 +161,18 @@ export class VaultCalendarStateGateway implements CalendarStateGateway {
     await this.ensureReady();
     const calendar = await this.calendarRepo.getCalendar(calendarId);
     if (!calendar) {
-      throw new Error(`Calendar with ID ${calendarId} not found`);
+      const error = createGatewayValidationError(`Calendar with ID ${calendarId} not found`, {
+        calendarId,
+        travelId: options?.travelId ?? null,
+      });
+      reportAlmanacGatewayIssue({
+        operation: "calendar.gateway.setActiveCalendar",
+        scope: options?.travelId ? "travel" : "calendar",
+        code: error.code,
+        error,
+        context: error.context,
+      });
+      throw error;
     }
 
     await this.persistState(state => {
@@ -184,7 +206,17 @@ export class VaultCalendarStateGateway implements CalendarStateGateway {
     if (scope === "travel") {
       const travelId = options?.travelId;
       if (!travelId) {
-        throw new Error("Travel ID required when persisting travel default");
+        const error = createGatewayValidationError("Travel ID required when persisting travel default", {
+          calendarId,
+        });
+        reportAlmanacGatewayIssue({
+          operation: "calendar.gateway.setDefaultCalendar",
+          scope: "travel",
+          code: error.code,
+          error,
+          context: error.context,
+        });
+        throw error;
       }
       await this.calendarRepo.setDefault({ calendarId, scope: "travel", travelId });
       return;
@@ -200,10 +232,32 @@ export class VaultCalendarStateGateway implements CalendarStateGateway {
     await this.persistState(state => {
       const scope = this.ensureScope(options?.travelId ?? null, state);
       if (!scope.activeCalendarId) {
-        throw new Error("No active calendar set");
+        const error = createGatewayValidationError("No active calendar set", {
+          travelId: options?.travelId ?? null,
+        });
+        reportAlmanacGatewayIssue({
+          operation: "calendar.gateway.setCurrentTimestamp",
+          scope: options?.travelId ? "travel" : "calendar",
+          code: error.code,
+          error,
+          context: error.context,
+        });
+        throw error;
       }
       if (timestamp.calendarId !== scope.activeCalendarId) {
-        throw new Error("Timestamp calendar does not match active calendar");
+        const error = createGatewayValidationError("Timestamp calendar does not match active calendar", {
+          travelId: options?.travelId ?? null,
+          calendarId: timestamp.calendarId,
+          activeCalendarId: scope.activeCalendarId,
+        });
+        reportAlmanacGatewayIssue({
+          operation: "calendar.gateway.setCurrentTimestamp",
+          scope: options?.travelId ? "travel" : "calendar",
+          code: error.code,
+          error,
+          context: error.context,
+        });
+        throw error;
       }
       scope.currentTimestamp = cloneTimestamp(timestamp);
     });
@@ -218,12 +272,34 @@ export class VaultCalendarStateGateway implements CalendarStateGateway {
     const travelId = options?.travelId ?? null;
     const scope = this.ensureScope(travelId);
     if (!scope.activeCalendarId || !scope.currentTimestamp) {
-      throw new Error("No active calendar or current timestamp set");
+      const error = createGatewayValidationError("No active calendar or current timestamp set", {
+        travelId,
+        activeCalendarId: scope.activeCalendarId,
+      });
+      reportAlmanacGatewayIssue({
+        operation: "calendar.gateway.advanceTimeBy",
+        scope: travelId ? "travel" : "calendar",
+        code: error.code,
+        error,
+        context: error.context,
+      });
+      throw error;
     }
 
     const calendar = await this.calendarRepo.getCalendar(scope.activeCalendarId);
     if (!calendar) {
-      throw new Error(`Calendar ${scope.activeCalendarId} not found`);
+      const error = createGatewayValidationError(`Calendar ${scope.activeCalendarId} not found`, {
+        travelId,
+        calendarId: scope.activeCalendarId,
+      });
+      reportAlmanacGatewayIssue({
+        operation: "calendar.gateway.advanceTimeBy",
+        scope: travelId ? "travel" : "calendar",
+        code: error.code,
+        error,
+        context: error.context,
+      });
+      throw error;
     }
 
     const visiblePhenomena = await this.listVisiblePhenomena(calendar);
@@ -275,7 +351,23 @@ export class VaultCalendarStateGateway implements CalendarStateGateway {
           ...options?.hookContext,
         });
       } catch (error) {
-        throw new Error(`Failed to dispatch hooks for time advance: ${error instanceof Error ? error.message : String(error)}`);
+        const causeMessage = error instanceof Error && error.message ? `: ${error.message}` : "";
+        const gatewayError = new CalendarGatewayError(
+          "io_error",
+          `Failed to dispatch hooks for time advance${causeMessage}`,
+          {
+            travelId,
+            scope: travelId ? "travel" : "global",
+          },
+        );
+        reportAlmanacGatewayIssue({
+          operation: "calendar.gateway.advanceTimeBy",
+          scope: travelId ? "travel" : "calendar",
+          code: gatewayError.code,
+          error,
+          context: gatewayError.context,
+        });
+        throw gatewayError;
       }
     }
 
@@ -411,12 +503,24 @@ export class VaultCalendarStateGateway implements CalendarStateGateway {
   }
 
   private async persistState(mutator: (state: GatewayStoreData) => void): Promise<void> {
-    await this.store.update(state => {
-      const draft = normaliseStore(state);
-      mutator(draft);
-      this.cache = normaliseStore(draft);
-      return this.cache;
-    });
+    try {
+      await this.store.update(state => {
+        const draft = normaliseStore(state);
+        mutator(draft);
+        this.cache = normaliseStore(draft);
+        return this.cache;
+      });
+    } catch (error) {
+      const gatewayError = createGatewayIoError("Failed to persist calendar state");
+      reportAlmanacGatewayIssue({
+        operation: "calendar.gateway.persistState",
+        scope: "calendar",
+        code: gatewayError.code,
+        error,
+        context: gatewayError.context,
+      });
+      throw gatewayError;
+    }
   }
 
   private async listVisiblePhenomena(calendar: CalendarSchema): Promise<Phenomenon[]> {

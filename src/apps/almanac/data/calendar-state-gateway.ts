@@ -11,6 +11,38 @@ import type {
   TravelCalendarMode,
 } from "../mode/contracts";
 
+export type CalendarGatewayErrorCode = "validation_error" | "io_error";
+
+export class CalendarGatewayError extends Error {
+  readonly code: CalendarGatewayErrorCode;
+  readonly context?: Record<string, unknown>;
+
+  constructor(code: CalendarGatewayErrorCode, message: string, context?: Record<string, unknown>) {
+    super(message);
+    this.name = "CalendarGatewayError";
+    this.code = code;
+    this.context = context;
+  }
+}
+
+export function createGatewayValidationError(
+  message: string,
+  context?: Record<string, unknown>,
+): CalendarGatewayError {
+  return new CalendarGatewayError("validation_error", message, context);
+}
+
+export function createGatewayIoError(
+  message: string,
+  context?: Record<string, unknown>,
+): CalendarGatewayError {
+  return new CalendarGatewayError("io_error", message, context);
+}
+
+export function isCalendarGatewayError(error: unknown): error is CalendarGatewayError {
+  return error instanceof CalendarGatewayError;
+}
+
 export interface CalendarStateSnapshot {
   readonly activeCalendar: CalendarSchema | null;
   readonly currentTimestamp: CalendarTimestamp | null;

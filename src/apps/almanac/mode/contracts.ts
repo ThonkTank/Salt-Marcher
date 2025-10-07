@@ -167,10 +167,6 @@ export interface TravelLeafStateSlice {
     readonly error?: string;
 }
 
-export interface TelemetryStateSlice {
-    readonly lastEvents: ReadonlyArray<string>;
-}
-
 export interface ImportSummary {
     readonly imported: number;
     readonly failed: number;
@@ -182,7 +178,6 @@ export interface AlmanacState {
     readonly managerUiState: ManagerUiStateSlice;
     readonly eventsUiState: EventsUiStateSlice;
     readonly travelLeafState: TravelLeafStateSlice;
-    readonly telemetryState: TelemetryStateSlice;
 }
 
 export type AlmanacStateListener = (state: AlmanacState) => void;
@@ -325,9 +320,6 @@ export function createInitialAlmanacState(): AlmanacState {
             lastQuickStep: undefined,
             isLoading: false,
             error: undefined,
-        },
-        telemetryState: {
-            lastEvents: [],
         },
     };
 }
