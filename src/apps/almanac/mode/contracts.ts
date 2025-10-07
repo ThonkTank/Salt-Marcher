@@ -106,6 +106,7 @@ export interface EventsUiStateSlice {
     readonly filters: EventsFilterState;
     readonly availableCategories: ReadonlyArray<string>;
     readonly availableCalendars: ReadonlyArray<{ readonly id: string; readonly name: string }>;
+    readonly mapMarkers: ReadonlyArray<EventsMapMarker>;
     readonly phenomena: ReadonlyArray<{
         readonly id: string;
         readonly title: string;
@@ -130,6 +131,15 @@ export interface EventsUiStateSlice {
 export interface EventsFilterState {
     readonly categories: ReadonlyArray<string>;
     readonly calendarIds: ReadonlyArray<string>;
+}
+
+export interface EventsMapMarker {
+    readonly id: string;
+    readonly title: string;
+    readonly category?: string;
+    readonly nextOccurrence?: string;
+    readonly coordinates: { readonly x: number; readonly y: number };
+    readonly calendars: ReadonlyArray<{ readonly id: string; readonly name: string }>;
 }
 
 export interface PhenomenonEditorDraft {
@@ -297,6 +307,7 @@ export function createInitialAlmanacState(): AlmanacState {
             filters: { categories: [], calendarIds: [] },
             availableCategories: [],
             availableCalendars: [],
+            mapMarkers: [],
             phenomena: [],
             selectedPhenomenonId: null,
             selectedPhenomenonDetail: null,
