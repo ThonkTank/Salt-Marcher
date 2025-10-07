@@ -9,7 +9,7 @@
  * Dashboard, Manager and Events modes.
  */
 
-import type { App } from 'obsidian';
+import { App, Modal } from 'obsidian';
 import type { CalendarSchema } from '../domain/calendar-schema';
 import { getMonthById, getMonthIndex } from '../domain/calendar-schema';
 import type { CalendarEvent } from '../domain/calendar-event';
@@ -32,6 +32,8 @@ import {
     type CalendarViewZoom,
     type EventsViewMode,
     type CalendarManagerViewMode,
+    type PhenomenonEditorDraft,
+    type ImportSummary,
 } from './contracts';
 import { AlmanacStateMachine } from './state-machine';
 import {
@@ -51,6 +53,362 @@ const MANAGER_ZOOM_OPTIONS: CalendarViewZoom[] = ['month', 'week', 'day', 'hour'
 const MANAGER_VIEW_OPTIONS: CalendarManagerViewMode[] = ['calendar', 'overview'];
 const EVENT_VIEW_OPTIONS: EventsViewMode[] = ['timeline', 'table', 'map'];
 
+class PhenomenonEditorModal extends Modal {
+    private draft: PhenomenonEditorDraft;
+    private calendars: ReadonlyArray<{ id: string; name: string }>;
+    private isSaving: boolean;
+    private error?: string;
+    private readonly onSave: (draft: PhenomenonEditorDraft) => void;
+    private readonly onCancel: () => void;
+    private container: HTMLElement | null = null;
+    private nameInput: HTMLInputElement | null = null;
+    private categoryInput: HTMLInputElement | null = null;
+    private visibilitySelect: HTMLSelectElement | null = null;
+    private notesInput: HTMLTextAreaElement | null = null;
+    private calendarCheckboxes = new Map<string, HTMLInputElement>();
+    private saveButton: HTMLButtonElement | null = null;
+    private cancelButton: HTMLButtonElement | null = null;
+    private errorEl: HTMLElement | null = null;
+
+    constructor(
+        app: App,
+        draft: PhenomenonEditorDraft,
+        config: {
+            calendars: ReadonlyArray<{ id: string; name: string }>;
+            isSaving: boolean;
+            error?: string;
+            onSave: (draft: PhenomenonEditorDraft) => void;
+            onCancel: () => void;
+        },
+    ) {
+        super(app);
+        this.draft = { ...draft };
+        this.calendars = config.calendars;
+        this.isSaving = config.isSaving;
+        this.error = config.error;
+        this.onSave = config.onSave;
+        this.onCancel = config.onCancel;
+    }
+
+    open(): void {
+        super.open();
+        this.render();
+    }
+
+    update(
+        draft: PhenomenonEditorDraft,
+        config: {
+            isSaving: boolean;
+            error?: string;
+            calendars?: ReadonlyArray<{ id: string; name: string }>;
+        },
+    ): void {
+        this.draft = { ...draft };
+        if (config.calendars) {
+            this.calendars = config.calendars;
+            this.renderCalendars();
+        }
+        this.isSaving = config.isSaving;
+        this.error = config.error;
+        this.syncForm();
+    }
+
+    close(): void {
+        this.container?.remove();
+        this.container = null;
+        this.calendarCheckboxes.clear();
+        super.close();
+    }
+
+    private render(): void {
+        this.container = document.createElement('div');
+        this.container.classList.add('almanac-modal');
+        this.container.dataset.modal = 'phenomenon-editor';
+
+        const form = document.createElement('form');
+        form.classList.add('almanac-modal__form');
+        this.container.appendChild(form);
+
+        const heading = document.createElement('h2');
+        heading.textContent = 'Phenomenon Editor';
+        form.appendChild(heading);
+
+        const nameField = document.createElement('label');
+        nameField.classList.add('almanac-modal__field');
+        nameField.textContent = 'Name';
+        this.nameInput = document.createElement('input');
+        this.nameInput.type = 'text';
+        this.nameInput.required = true;
+        this.nameInput.addEventListener('input', () => {
+            this.draft = { ...this.draft, name: this.nameInput!.value };
+        });
+        nameField.appendChild(this.nameInput);
+        form.appendChild(nameField);
+
+        const categoryField = document.createElement('label');
+        categoryField.classList.add('almanac-modal__field');
+        categoryField.textContent = 'Category';
+        this.categoryInput = document.createElement('input');
+        this.categoryInput.type = 'text';
+        this.categoryInput.addEventListener('input', () => {
+            this.draft = { ...this.draft, category: this.categoryInput!.value };
+        });
+        categoryField.appendChild(this.categoryInput);
+        form.appendChild(categoryField);
+
+        const visibilityField = document.createElement('label');
+        visibilityField.classList.add('almanac-modal__field');
+        visibilityField.textContent = 'Visibility';
+        this.visibilitySelect = document.createElement('select');
+        const optionAll = document.createElement('option');
+        optionAll.value = 'all_calendars';
+        optionAll.textContent = 'All calendars';
+        this.visibilitySelect.appendChild(optionAll);
+        const optionSelected = document.createElement('option');
+        optionSelected.value = 'selected';
+        optionSelected.textContent = 'Selected calendars';
+        this.visibilitySelect.appendChild(optionSelected);
+        this.visibilitySelect.addEventListener('change', () => {
+            const visibility = this.visibilitySelect!.value as PhenomenonEditorDraft['visibility'];
+            const appliesTo = visibility === 'all_calendars' ? [] : this.draft.appliesToCalendarIds;
+            this.draft = { ...this.draft, visibility, appliesToCalendarIds: appliesTo };
+            this.syncCalendarCheckboxes();
+        });
+        visibilityField.appendChild(this.visibilitySelect);
+        form.appendChild(visibilityField);
+
+        const calendarWrapper = document.createElement('div');
+        calendarWrapper.classList.add('almanac-modal__field');
+        const calendarLabel = document.createElement('span');
+        calendarLabel.textContent = 'Calendars';
+        calendarWrapper.appendChild(calendarLabel);
+        const calendarList = document.createElement('div');
+        calendarList.classList.add('almanac-modal__checkboxes');
+        calendarWrapper.appendChild(calendarList);
+        form.appendChild(calendarWrapper);
+        this.renderCalendars(calendarList);
+
+        const notesField = document.createElement('label');
+        notesField.classList.add('almanac-modal__field');
+        notesField.textContent = 'Notes';
+        this.notesInput = document.createElement('textarea');
+        this.notesInput.rows = 4;
+        this.notesInput.addEventListener('input', () => {
+            this.draft = { ...this.draft, notes: this.notesInput!.value };
+        });
+        notesField.appendChild(this.notesInput);
+        form.appendChild(notesField);
+
+        this.errorEl = document.createElement('div');
+        this.errorEl.classList.add('almanac-modal__error');
+        form.appendChild(this.errorEl);
+
+        const actions = document.createElement('div');
+        actions.classList.add('almanac-modal__actions');
+        this.cancelButton = document.createElement('button');
+        this.cancelButton.type = 'button';
+        this.cancelButton.textContent = 'Cancel';
+        this.cancelButton.addEventListener('click', event => {
+            event.preventDefault();
+            this.onCancel();
+        });
+        actions.appendChild(this.cancelButton);
+        this.saveButton = document.createElement('button');
+        this.saveButton.type = 'submit';
+        this.saveButton.textContent = 'Save';
+        actions.appendChild(this.saveButton);
+        form.appendChild(actions);
+
+        form.addEventListener('submit', event => {
+            event.preventDefault();
+            this.onSave({ ...this.draft });
+        });
+
+        document.body.appendChild(this.container);
+        this.syncForm();
+    }
+
+    private renderCalendars(host?: HTMLElement): void {
+        const target = host ?? this.container?.querySelector('.almanac-modal__checkboxes');
+        if (!target) {
+            return;
+        }
+        target.textContent = '';
+        this.calendarCheckboxes.clear();
+        this.calendars.forEach(calendar => {
+            const label = document.createElement('label');
+            label.classList.add('almanac-modal__checkbox');
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.value = calendar.id;
+            input.addEventListener('change', () => {
+                const existing = new Set(this.draft.appliesToCalendarIds);
+                if (input.checked) {
+                    existing.add(calendar.id);
+                } else {
+                    existing.delete(calendar.id);
+                }
+                this.draft = { ...this.draft, appliesToCalendarIds: Array.from(existing) };
+            });
+            label.appendChild(input);
+            const span = document.createElement('span');
+            span.textContent = calendar.name;
+            label.appendChild(span);
+            target.appendChild(label);
+            this.calendarCheckboxes.set(calendar.id, input);
+        });
+        this.syncCalendarCheckboxes();
+    }
+
+    private syncCalendarCheckboxes(): void {
+        for (const [id, checkbox] of this.calendarCheckboxes.entries()) {
+            checkbox.checked = this.draft.appliesToCalendarIds.includes(id);
+            checkbox.disabled = this.draft.visibility === 'all_calendars';
+        }
+    }
+
+    private syncForm(): void {
+        if (!this.container) {
+            return;
+        }
+        if (this.nameInput) {
+            this.nameInput.value = this.draft.name;
+        }
+        if (this.categoryInput) {
+            this.categoryInput.value = this.draft.category;
+        }
+        if (this.visibilitySelect) {
+            this.visibilitySelect.value = this.draft.visibility;
+        }
+        if (this.notesInput) {
+            this.notesInput.value = this.draft.notes ?? '';
+        }
+        this.syncCalendarCheckboxes();
+        if (this.saveButton) {
+            this.saveButton.disabled = this.isSaving;
+        }
+        if (this.cancelButton) {
+            this.cancelButton.disabled = this.isSaving;
+        }
+        if (this.errorEl) {
+            this.errorEl.textContent = this.error ?? '';
+            this.errorEl.classList.toggle('is-visible', Boolean(this.error));
+        }
+    }
+}
+
+class EventImportDialog extends Modal {
+    private value = '';
+    private isLoading: boolean;
+    private error?: string;
+    private readonly onSubmit: (payload: string) => void;
+    private readonly onCancel: () => void;
+    private container: HTMLElement | null = null;
+    private textarea: HTMLTextAreaElement | null = null;
+    private saveButton: HTMLButtonElement | null = null;
+    private cancelButton: HTMLButtonElement | null = null;
+    private errorEl: HTMLElement | null = null;
+
+    constructor(
+        app: App,
+        config: {
+            isLoading: boolean;
+            error?: string;
+            onSubmit: (payload: string) => void;
+            onCancel: () => void;
+        },
+    ) {
+        super(app);
+        this.isLoading = config.isLoading;
+        this.error = config.error;
+        this.onSubmit = config.onSubmit;
+        this.onCancel = config.onCancel;
+    }
+
+    open(): void {
+        super.open();
+        this.render();
+    }
+
+    update(config: { isLoading: boolean; error?: string }): void {
+        this.isLoading = config.isLoading;
+        this.error = config.error;
+        this.sync();
+    }
+
+    close(): void {
+        this.container?.remove();
+        this.container = null;
+        super.close();
+    }
+
+    private render(): void {
+        this.container = document.createElement('div');
+        this.container.classList.add('almanac-modal');
+        this.container.dataset.modal = 'event-import';
+
+        const form = document.createElement('form');
+        form.classList.add('almanac-modal__form');
+        this.container.appendChild(form);
+
+        const heading = document.createElement('h2');
+        heading.textContent = 'Import Phenomena';
+        form.appendChild(heading);
+
+        this.textarea = document.createElement('textarea');
+        this.textarea.rows = 8;
+        this.textarea.dataset.role = 'import-input';
+        this.textarea.addEventListener('input', () => {
+            this.value = this.textarea!.value;
+        });
+        form.appendChild(this.textarea);
+
+        this.errorEl = document.createElement('div');
+        this.errorEl.classList.add('almanac-modal__error');
+        form.appendChild(this.errorEl);
+
+        const actions = document.createElement('div');
+        actions.classList.add('almanac-modal__actions');
+        this.cancelButton = document.createElement('button');
+        this.cancelButton.type = 'button';
+        this.cancelButton.textContent = 'Cancel';
+        this.cancelButton.addEventListener('click', event => {
+            event.preventDefault();
+            this.onCancel();
+        });
+        actions.appendChild(this.cancelButton);
+        this.saveButton = document.createElement('button');
+        this.saveButton.type = 'submit';
+        this.saveButton.textContent = 'Import';
+        actions.appendChild(this.saveButton);
+        form.appendChild(actions);
+
+        form.addEventListener('submit', event => {
+            event.preventDefault();
+            this.onSubmit(this.value);
+        });
+
+        document.body.appendChild(this.container);
+        this.sync();
+    }
+
+    private sync(): void {
+        if (this.textarea && this.textarea.value !== this.value) {
+            this.textarea.value = this.value;
+        }
+        if (this.saveButton) {
+            this.saveButton.disabled = this.isLoading;
+        }
+        if (this.cancelButton) {
+            this.cancelButton.disabled = this.isLoading;
+        }
+        if (this.errorEl) {
+            this.errorEl.textContent = this.error ?? '';
+            this.errorEl.classList.toggle('is-visible', Boolean(this.error));
+        }
+    }
+}
+
 interface AlmanacControllerDependencies {
     readonly calendarRepo?: CalendarRepository;
     readonly eventRepo?: EventRepository;
@@ -69,6 +427,8 @@ export class AlmanacController {
     private unsubscribe: (() => void) | null = null;
     private currentState: AlmanacState | null = null;
     private showTimeJumpForm = false;
+    private phenomenonEditorModal: PhenomenonEditorModal | null = null;
+    private eventImportModal: EventImportDialog | null = null;
 
     constructor(private readonly app: App, deps: AlmanacControllerDependencies = {}) {
         const calendarRepo = deps.calendarRepo ?? new InMemoryCalendarRepository();
@@ -152,6 +512,10 @@ export class AlmanacController {
     async onClose(): Promise<void> {
         this.unsubscribe?.();
         this.unsubscribe = null;
+        this.phenomenonEditorModal?.close();
+        this.phenomenonEditorModal = null;
+        this.eventImportModal?.close();
+        this.eventImportModal = null;
         this.containerEl = null;
     }
 
@@ -188,6 +552,8 @@ export class AlmanacController {
                 this.renderEvents(content, state);
                 break;
         }
+
+        this.syncDialogs(state);
     }
 
     private renderTitle(host: HTMLElement, state: AlmanacState): void {
@@ -1030,6 +1396,7 @@ export class AlmanacController {
             }));
         });
 
+        this.renderEventsActions(section, state);
         this.renderEventsFilters(section, state);
 
         if (state.eventsUiState.error) {
@@ -1043,6 +1410,7 @@ export class AlmanacController {
         if (!state.eventsUiState.phenomena.length) {
             contentSection.createEl('p', { text: 'No phenomena match the current filters.', cls: 'almanac-empty' });
             this.renderPhenomenonDetail(section, state);
+            this.renderEventsFooter(section, state);
             return;
         }
 
@@ -1059,6 +1427,7 @@ export class AlmanacController {
         }
 
         this.renderPhenomenonDetail(section, state);
+        this.renderEventsFooter(section, state);
     }
 
     private renderPhenomenonDetail(section: HTMLElement, state: AlmanacState): void {
@@ -1080,7 +1449,20 @@ export class AlmanacController {
         if (detail.category) {
             title.createEl('span', { text: ` (${detail.category})`, cls: 'almanac-phenomenon-detail__category' });
         }
-        const closeButton = header.createEl('button', { text: 'Close', cls: 'almanac-control-button' });
+        const actions = header.createDiv({ cls: 'almanac-phenomenon-detail__actions' });
+        const editButton = actions.createEl('button', {
+            text: 'Edit',
+            cls: 'almanac-control-button',
+            attr: { 'data-action': 'edit-phenomenon' },
+        });
+        editButton.addEventListener('click', () => {
+            this.runDispatch({ type: 'PHENOMENON_EDIT_REQUESTED', phenomenonId: detail.id });
+        });
+        const closeButton = actions.createEl('button', {
+            text: 'Close',
+            cls: 'almanac-control-button',
+            attr: { 'data-action': 'close-detail' },
+        });
         closeButton.addEventListener('click', () => this.runDispatch({ type: 'EVENTS_PHENOMENON_DETAIL_CLOSED' }));
 
         if (detail.notes) {
@@ -1129,6 +1511,14 @@ export class AlmanacController {
             entry.classList.toggle('is-active', item.id === selectedId);
             entry.tabIndex = 0;
             entry.setAttribute('role', 'button');
+            const selectWrapper = entry.createDiv({ cls: 'almanac-phenomena-timeline__select' });
+            const selectionCheckbox = selectWrapper.createEl('input', {
+                attr: { type: 'checkbox', value: item.id, 'data-role': 'bulk-select' },
+            }) as HTMLInputElement;
+            selectionCheckbox.checked = state.eventsUiState.bulkSelection.includes(item.id);
+            selectionCheckbox.addEventListener('change', () => {
+                this.toggleBulkSelection(item.id, selectionCheckbox.checked);
+            });
             const selectPhenomenon = () => {
                 this.runDispatch({ type: 'EVENTS_PHENOMENON_SELECTED', phenomenonId: item.id });
             };
@@ -1160,6 +1550,7 @@ export class AlmanacController {
         const table = section.createEl('table', { cls: 'almanac-phenomena-table' });
         const thead = table.createEl('thead');
         const headRow = thead.createEl('tr');
+        headRow.createEl('th', { text: 'Select' });
         ['Name', 'Category', 'Next Occurrence', 'Calendars'].forEach(label => headRow.createEl('th', { text: label }));
 
         const tbody = table.createEl('tbody');
@@ -1168,6 +1559,14 @@ export class AlmanacController {
             row.classList.toggle('is-active', item.id === state.eventsUiState.selectedPhenomenonId);
             row.tabIndex = 0;
             row.setAttribute('role', 'button');
+            const selectCell = row.createEl('td', { cls: 'almanac-phenomena-table__select' });
+            const selectCheckbox = selectCell.createEl('input', {
+                attr: { type: 'checkbox', value: item.id, 'data-role': 'bulk-select' },
+            }) as HTMLInputElement;
+            selectCheckbox.checked = state.eventsUiState.bulkSelection.includes(item.id);
+            selectCheckbox.addEventListener('change', () => {
+                this.toggleBulkSelection(item.id, selectCheckbox.checked);
+            });
             const selectPhenomenon = () => {
                 this.runDispatch({ type: 'EVENTS_PHENOMENON_SELECTED', phenomenonId: item.id });
             };
@@ -1258,6 +1657,151 @@ export class AlmanacController {
                 filters: { categories: [], calendarIds: [] },
             });
         });
+    }
+
+    private renderEventsActions(section: HTMLElement, state: AlmanacState): void {
+        const actions = section.createDiv({ cls: 'almanac-events__actions' });
+
+        const addButton = actions.createEl('button', {
+            text: 'Add phenomenon',
+            cls: 'almanac-control-button',
+            attr: { 'data-action': 'add-phenomenon' },
+        });
+        addButton.addEventListener('click', () => {
+            this.runDispatch({ type: 'PHENOMENON_EDIT_REQUESTED' });
+        });
+
+        const importButton = actions.createEl('button', {
+            text: 'Import',
+            cls: 'almanac-control-button',
+            attr: { 'data-action': 'import-phenomena' },
+        });
+        importButton.addEventListener('click', () => {
+            this.runDispatch({ type: 'EVENT_IMPORT_REQUESTED' });
+        });
+
+        const exportButton = actions.createEl('button', {
+            text: 'Export selected',
+            cls: 'almanac-control-button',
+            attr: { 'data-action': 'export-selected' },
+        });
+        exportButton.disabled = state.eventsUiState.bulkSelection.length === 0;
+        exportButton.addEventListener('click', () => {
+            this.runDispatch({ type: 'EVENT_BULK_ACTION_REQUESTED', action: 'export' });
+        });
+
+        const deleteButton = actions.createEl('button', {
+            text: 'Delete selected',
+            cls: 'almanac-control-button',
+            attr: { 'data-action': 'delete-selected' },
+        });
+        deleteButton.disabled = state.eventsUiState.bulkSelection.length === 0;
+        deleteButton.addEventListener('click', () => {
+            this.runDispatch({ type: 'EVENT_BULK_ACTION_REQUESTED', action: 'delete' });
+        });
+    }
+
+    private renderEventsFooter(section: HTMLElement, state: AlmanacState): void {
+        if (state.eventsUiState.lastExportPayload) {
+            const exportSection = section.createDiv({ cls: 'almanac-section almanac-events__export' });
+            exportSection.createEl('h3', { text: 'Export Preview' });
+            const preview = exportSection.createEl('textarea', {
+                cls: 'almanac-events__export-output',
+                attr: { readonly: 'true', 'data-role': 'export-output' },
+            }) as HTMLTextAreaElement;
+            preview.rows = 6;
+            preview.spellcheck = false;
+            preview.value = state.eventsUiState.lastExportPayload;
+            const clearButton = exportSection.createEl('button', {
+                text: 'Clear export',
+                cls: 'almanac-control-button',
+                attr: { 'data-action': 'clear-export' },
+            });
+            clearButton.addEventListener('click', () => {
+                this.runDispatch({ type: 'EVENT_EXPORT_CLEARED' });
+            });
+        }
+
+        const summary = state.eventsUiState.importSummary;
+        if (summary) {
+            const summarySection = section.createDiv({
+                cls: 'almanac-events__import-summary',
+                attr: { 'data-role': 'import-summary' },
+            });
+            const parts: string[] = [`Imported ${summary.imported} phenomena`];
+            if (summary.failed > 0) {
+                parts.push(`Failed: ${summary.failed}`);
+            }
+            summarySection.setText(parts.join(' • '));
+        }
+    }
+
+    private toggleBulkSelection(id: string, checked: boolean): void {
+        const current = new Set(this.currentState?.eventsUiState.bulkSelection ?? []);
+        if (checked) {
+            current.add(id);
+        } else {
+            current.delete(id);
+        }
+        void this.runDispatch({
+            type: 'EVENTS_BULK_SELECTION_UPDATED',
+            selection: Array.from(current),
+        });
+    }
+
+    private syncDialogs(state: AlmanacState): void {
+        const eventsState = state.eventsUiState;
+        const calendars = state.calendarState.calendars.map(schema => ({ id: schema.id, name: schema.name }));
+
+        if (eventsState.isEditorOpen && eventsState.editorDraft) {
+            if (!this.phenomenonEditorModal) {
+                this.phenomenonEditorModal = new PhenomenonEditorModal(this.app, eventsState.editorDraft, {
+                    calendars,
+                    isSaving: eventsState.isSaving,
+                    error: eventsState.editorError,
+                    onSave: draft => {
+                        void this.runDispatch({ type: 'PHENOMENON_SAVE_REQUESTED', draft });
+                    },
+                    onCancel: () => {
+                        void this.runDispatch({ type: 'PHENOMENON_EDIT_CANCELLED' });
+                    },
+                });
+                this.phenomenonEditorModal.open();
+            } else {
+                this.phenomenonEditorModal.update(eventsState.editorDraft, {
+                    isSaving: eventsState.isSaving,
+                    error: eventsState.editorError,
+                    calendars,
+                });
+            }
+        } else if (this.phenomenonEditorModal) {
+            this.phenomenonEditorModal.close();
+            this.phenomenonEditorModal = null;
+        }
+
+        if (eventsState.isImportDialogOpen) {
+            if (!this.eventImportModal) {
+                this.eventImportModal = new EventImportDialog(this.app, {
+                    isLoading: eventsState.isLoading,
+                    error: eventsState.importError,
+                    onSubmit: payload => {
+                        void this.runDispatch({ type: 'EVENT_IMPORT_SUBMITTED', payload });
+                    },
+                    onCancel: () => {
+                        void this.runDispatch({ type: 'EVENT_IMPORT_CANCELLED' });
+                    },
+                });
+                this.eventImportModal.open();
+            } else {
+                this.eventImportModal.update({
+                    isLoading: eventsState.isLoading,
+                    error: eventsState.importError,
+                });
+            }
+        } else if (this.eventImportModal) {
+            this.eventImportModal.close();
+            this.eventImportModal = null;
+        }
     }
 
     private getActiveCalendar(state: AlmanacState): CalendarSchema | null {

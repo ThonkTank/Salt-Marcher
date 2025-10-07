@@ -28,12 +28,16 @@ import {
     type CalendarStateSlice,
     type CalendarViewZoom,
     type EventsFilterState,
+    type ImportSummary,
     type PhenomenonDetailView,
+    type PhenomenonEditorDraft,
 } from "./contracts";
 import type { CalendarRepository } from "../data/calendar-repository";
 import type { EventRepository } from "../data/event-repository";
 import type { PhenomenonRepository } from "../data/in-memory-repository";
 import type { CalendarStateGateway } from "../data/calendar-state-gateway";
+import type { PhenomenonDTO } from "../data/dto";
+import { formatPhenomenaExport, parsePhenomenaImport } from "../data/phenomena-serialization";
 import { getMonthById, getMonthIndex, getTimeDefinition, type CalendarSchema } from "../domain/calendar-schema";
 import type { CalendarEvent } from "../domain/calendar-event";
 import {
@@ -63,6 +67,12 @@ type PhenomenonViewModel = {
     readonly nextOccurrence?: string;
 };
 
+type PhenomenaListingOptions = {
+    readonly bulkSelection?: ReadonlyArray<string>;
+    readonly exportPayload?: string | null;
+    readonly importSummary?: ImportSummary | null;
+};
+
 const ZOOM_LABEL: Record<CalendarViewZoom, string> = {
     month: "Month view",
     week: "Week view",
@@ -76,6 +86,7 @@ export class AlmanacStateMachine {
     private initialised = false;
     private phenomenaSource: PhenomenonViewModel[] = [];
     private phenomenaDefinitions: Phenomenon[] = [];
+    private phenomenonIdCounter = 0;
     private travelId: string | null = null;
     private readonly cartographerGateway: CartographerHookGateway;
 
@@ -136,6 +147,33 @@ export class AlmanacStateMachine {
                 break;
             case "EVENTS_PHENOMENON_DETAIL_CLOSED":
                 this.handlePhenomenonDetailClosed();
+                break;
+            case "EVENTS_BULK_SELECTION_UPDATED":
+                this.handleEventsBulkSelection(event.selection);
+                break;
+            case "PHENOMENON_EDIT_REQUESTED":
+                await this.handlePhenomenonEditRequest(event.phenomenonId ?? null);
+                break;
+            case "PHENOMENON_EDIT_CANCELLED":
+                this.handlePhenomenonEditCancelled();
+                break;
+            case "PHENOMENON_SAVE_REQUESTED":
+                await this.handlePhenomenonSave(event.draft);
+                break;
+            case "EVENT_BULK_ACTION_REQUESTED":
+                await this.handleEventBulkAction(event.action, event.ids);
+                break;
+            case "EVENT_EXPORT_CLEARED":
+                this.handleEventExportCleared();
+                break;
+            case "EVENT_IMPORT_REQUESTED":
+                this.handleEventImportRequested();
+                break;
+            case "EVENT_IMPORT_CANCELLED":
+                this.handleEventImportCancelled();
+                break;
+            case "EVENT_IMPORT_SUBMITTED":
+                await this.handleEventImportSubmitted(event.payload);
                 break;
             case "MANAGER_SELECTION_CHANGED":
                 this.handleManagerSelectionChanged(event.selection);
@@ -253,7 +291,7 @@ export class AlmanacStateMachine {
                 this.gateway.loadPreferences(),
                 this.phenomenonRepo.listPhenomena(),
             ]);
-            this.phenomenaDefinitions = phenomena;
+            this.phenomenaDefinitions = phenomena.map(item => this.toPhenomenon(item));
             this.phenomenaSource = this.buildPhenomenonViewModels(
                 this.phenomenaDefinitions,
                 calendars,
@@ -398,7 +436,7 @@ export class AlmanacStateMachine {
                 this.gateway.loadSnapshot(this.travelId ? { travelId: this.travelId } : undefined),
                 this.phenomenonRepo.listPhenomena(),
             ]);
-            this.phenomenaDefinitions = phenomena;
+            this.phenomenaDefinitions = phenomena.map(item => this.toPhenomenon(item));
             this.phenomenaSource = this.buildPhenomenonViewModels(
                 this.phenomenaDefinitions,
                 calendars,
@@ -684,18 +722,19 @@ export class AlmanacStateMachine {
         });
 
         try {
-            const phenomenon = await this.phenomenonRepo.getPhenomenon(phenomenonId);
-            if (!phenomenon) {
+            const phenomenonDto = await this.phenomenonRepo.getPhenomenon(phenomenonId);
+            if (!phenomenonDto) {
                 throw new Error(`Phenomenon ${phenomenonId} not found`);
             }
 
+            const normalised = this.toPhenomenon(phenomenonDto);
             this.phenomenaDefinitions = [
-                ...this.phenomenaDefinitions.filter(item => item.id !== phenomenon.id),
-                phenomenon,
+                ...this.phenomenaDefinitions.filter(item => item.id !== normalised.id),
+                normalised,
             ];
 
             const detail = this.buildPhenomenonDetailView(
-                phenomenon,
+                normalised,
                 this.state.calendarState.calendars,
                 this.state.calendarState.currentTimestamp,
             );
@@ -737,6 +776,275 @@ export class AlmanacStateMachine {
         });
 
         void this.persistPreferences({ lastSelectedPhenomenonId: undefined });
+    }
+
+    private handleEventsBulkSelection(selection: ReadonlyArray<string>): void {
+        const validIds = new Set(this.phenomenaDefinitions.map(item => item.id));
+        const unique = Array.from(new Set(selection)).filter(id => validIds.has(id));
+        this.setState(draft => {
+            draft.eventsUiState = {
+                ...draft.eventsUiState,
+                bulkSelection: unique,
+            };
+        });
+    }
+
+    private async handlePhenomenonEditRequest(phenomenonId: string | null): Promise<void> {
+        const base = phenomenonId
+            ? this.phenomenaDefinitions.find(item => item.id === phenomenonId) ?? null
+            : null;
+        const draft = base
+            ? this.createEditorDraftFromPhenomenon(base)
+            : this.createDefaultEditorDraft(phenomenonId);
+
+        this.setState(next => {
+            next.eventsUiState = {
+                ...next.eventsUiState,
+                isEditorOpen: true,
+                editorDraft: draft,
+                isSaving: false,
+                editorError: undefined,
+            };
+        });
+
+        if (phenomenonId && !base) {
+            try {
+                const loaded = await this.phenomenonRepo.getPhenomenon(phenomenonId);
+                if (!loaded) {
+                    throw new Error(`Phenomenon ${phenomenonId} not found`);
+                }
+                const normalised = this.toPhenomenon(loaded);
+                this.phenomenaDefinitions = [
+                    ...this.phenomenaDefinitions.filter(item => item.id !== normalised.id),
+                    normalised,
+                ];
+                this.setState(next => {
+                    next.eventsUiState = {
+                        ...next.eventsUiState,
+                        editorDraft: this.createEditorDraftFromPhenomenon(normalised),
+                    };
+                });
+            } catch (error) {
+                const message = error instanceof Error ? error.message : "Editor konnte nicht geöffnet werden";
+                this.setState(next => {
+                    next.eventsUiState = {
+                        ...next.eventsUiState,
+                        editorError: message,
+                    };
+                });
+            }
+        }
+    }
+
+    private handlePhenomenonEditCancelled(): void {
+        this.setState(draft => {
+            draft.eventsUiState = {
+                ...draft.eventsUiState,
+                isEditorOpen: false,
+                editorDraft: null,
+                isSaving: false,
+                editorError: undefined,
+            };
+        });
+    }
+
+    private async handlePhenomenonSave(draft: PhenomenonEditorDraft): Promise<void> {
+        const trimmedName = draft.name.trim();
+        if (!trimmedName) {
+            this.setState(next => {
+                next.eventsUiState = {
+                    ...next.eventsUiState,
+                    editorError: "Name darf nicht leer sein.",
+                };
+            });
+            return;
+        }
+
+        this.setState(next => {
+            next.eventsUiState = {
+                ...next.eventsUiState,
+                isSaving: true,
+                editorError: undefined,
+            };
+        });
+
+        try {
+            const existing = this.phenomenaDefinitions.find(item => item.id === draft.id) ?? null;
+            const dto = this.buildPhenomenonFromDraft(draft, existing);
+            const stored = await this.phenomenonRepo.upsertPhenomenon(dto);
+            const normalised = this.toPhenomenon(stored);
+
+            this.phenomenaDefinitions = [
+                ...this.phenomenaDefinitions.filter(item => item.id !== normalised.id),
+                normalised,
+            ];
+
+            this.rebuildPhenomenaListing(normalised.id, {
+                bulkSelection: this.state.eventsUiState.bulkSelection,
+                exportPayload: this.state.eventsUiState.lastExportPayload ?? undefined,
+                importSummary: this.state.eventsUiState.importSummary ?? null,
+            });
+
+            this.setState(next => {
+                next.eventsUiState = {
+                    ...next.eventsUiState,
+                    isEditorOpen: false,
+                    editorDraft: null,
+                    isSaving: false,
+                    editorError: undefined,
+                };
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Speichern fehlgeschlagen";
+            this.setState(next => {
+                next.eventsUiState = {
+                    ...next.eventsUiState,
+                    isSaving: false,
+                    editorError: message,
+                };
+            });
+        }
+    }
+
+    private async handleEventBulkAction(
+        action: "delete" | "export",
+        ids?: ReadonlyArray<string>,
+    ): Promise<void> {
+        const selection = ids && ids.length ? Array.from(ids) : [...this.state.eventsUiState.bulkSelection];
+        const unique = Array.from(new Set(selection));
+        if (unique.length === 0) {
+            return;
+        }
+
+        if (action === "export") {
+            const entries = this.phenomenaDefinitions.filter(item => unique.includes(item.id));
+            const payload = formatPhenomenaExport(entries as PhenomenonDTO[]);
+            this.setState(next => {
+                next.eventsUiState = {
+                    ...next.eventsUiState,
+                    lastExportPayload: payload,
+                    error: undefined,
+                };
+            });
+            return;
+        }
+
+        this.setState(next => {
+            next.eventsUiState = {
+                ...next.eventsUiState,
+                isLoading: true,
+                error: undefined,
+            };
+        });
+
+        try {
+            for (const id of unique) {
+                await this.phenomenonRepo.deletePhenomenon(id);
+            }
+            this.phenomenaDefinitions = this.phenomenaDefinitions.filter(item => !unique.includes(item.id));
+            this.rebuildPhenomenaListing(null, {
+                bulkSelection: [],
+                exportPayload: this.state.eventsUiState.lastExportPayload ?? undefined,
+                importSummary: this.state.eventsUiState.importSummary ?? null,
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Bulk-Aktion fehlgeschlagen";
+            this.setState(next => {
+                next.eventsUiState = {
+                    ...next.eventsUiState,
+                    error: message,
+                };
+            });
+        } finally {
+            this.setState(next => {
+                next.eventsUiState = {
+                    ...next.eventsUiState,
+                    isLoading: false,
+                };
+            });
+        }
+    }
+
+    private handleEventExportCleared(): void {
+        this.setState(next => {
+            next.eventsUiState = {
+                ...next.eventsUiState,
+                lastExportPayload: undefined,
+            };
+        });
+    }
+
+    private handleEventImportRequested(): void {
+        this.setState(next => {
+            next.eventsUiState = {
+                ...next.eventsUiState,
+                isImportDialogOpen: true,
+                importError: undefined,
+            };
+        });
+    }
+
+    private handleEventImportCancelled(): void {
+        this.setState(next => {
+            next.eventsUiState = {
+                ...next.eventsUiState,
+                isImportDialogOpen: false,
+                importError: undefined,
+            };
+        });
+    }
+
+    private async handleEventImportSubmitted(payload: string): Promise<void> {
+        this.setState(next => {
+            next.eventsUiState = {
+                ...next.eventsUiState,
+                isLoading: true,
+                importError: undefined,
+            };
+        });
+
+        try {
+            const parsed = parsePhenomenaImport(payload);
+            let imported = 0;
+            for (const entry of parsed) {
+                const stored = await this.phenomenonRepo.upsertPhenomenon(entry);
+                const normalised = this.toPhenomenon(stored);
+                this.phenomenaDefinitions = [
+                    ...this.phenomenaDefinitions.filter(item => item.id !== normalised.id),
+                    normalised,
+                ];
+                imported += 1;
+            }
+
+            const summary: ImportSummary = { imported, failed: 0 };
+            this.rebuildPhenomenaListing(null, {
+                bulkSelection: this.state.eventsUiState.bulkSelection,
+                exportPayload: this.state.eventsUiState.lastExportPayload ?? undefined,
+                importSummary: summary,
+            });
+
+            this.setState(next => {
+                next.eventsUiState = {
+                    ...next.eventsUiState,
+                    isImportDialogOpen: false,
+                };
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Import fehlgeschlagen";
+            this.setState(next => {
+                next.eventsUiState = {
+                    ...next.eventsUiState,
+                    importError: message,
+                };
+            });
+        } finally {
+            this.setState(next => {
+                next.eventsUiState = {
+                    ...next.eventsUiState,
+                    isLoading: false,
+                };
+            });
+        }
     }
 
     private handleManagerSelectionChanged(selection: ReadonlyArray<string>): void {
@@ -970,7 +1278,8 @@ export class AlmanacStateMachine {
             }
 
             if (this.phenomenaDefinitions.length === 0) {
-                this.phenomenaDefinitions = await this.phenomenonRepo.listPhenomena();
+                const freshPhenomena = await this.phenomenonRepo.listPhenomena();
+                this.phenomenaDefinitions = freshPhenomena.map(item => this.toPhenomenon(item));
             }
             this.phenomenaSource = this.buildPhenomenonViewModels(
                 this.phenomenaDefinitions,
@@ -1132,7 +1441,8 @@ export class AlmanacStateMachine {
             const upcomingPhenomena = snapshotAfterJump.upcomingPhenomena;
 
             if (this.phenomenaDefinitions.length === 0) {
-                this.phenomenaDefinitions = await this.phenomenonRepo.listPhenomena();
+                const freshPhenomena = await this.phenomenonRepo.listPhenomena();
+                this.phenomenaDefinitions = freshPhenomena.map(item => this.toPhenomenon(item));
             }
             this.phenomenaSource = this.buildPhenomenonViewModels(
                 this.phenomenaDefinitions,
@@ -1419,6 +1729,165 @@ export class AlmanacStateMachine {
                 phenomenon.linkedCalendars.some(calendarId => filters.calendarIds.includes(calendarId));
             return categoryMatch && calendarMatch;
         });
+    }
+
+    private rebuildPhenomenaListing(
+        preferredId: string | null = null,
+        options: PhenomenaListingOptions = {},
+    ): void {
+        const calendars = this.state.calendarState.calendars;
+        const activeCalendarId = this.state.calendarState.activeCalendarId;
+        const referenceTimestamp = this.state.calendarState.currentTimestamp;
+        this.phenomenaSource = this.buildPhenomenonViewModels(
+            this.phenomenaDefinitions,
+            calendars,
+            activeCalendarId,
+            referenceTimestamp,
+        );
+        const filters = this.state.eventsUiState.filters;
+        const filtered = this.applyPhenomenaFilters(filters);
+        const availableCategories = getUniqueCategories(this.phenomenaSource);
+        const filterCount = filters.categories.length + filters.calendarIds.length;
+        const validIds = new Set(this.phenomenaDefinitions.map(item => item.id));
+
+        let nextSelectedId = preferredId ?? this.state.eventsUiState.selectedPhenomenonId ?? null;
+        if (nextSelectedId && !validIds.has(nextSelectedId)) {
+            nextSelectedId = filtered[0]?.id ?? null;
+        }
+
+        const nextDetail = nextSelectedId
+            ? this.buildPhenomenonDetailForId(nextSelectedId, calendars, referenceTimestamp)
+            : null;
+
+        const selectionSource =
+            options.bulkSelection !== undefined
+                ? options.bulkSelection
+                : this.state.eventsUiState.bulkSelection;
+        const nextSelection = selectionSource.filter(id => validIds.has(id));
+
+        const exportPayload =
+            options.exportPayload !== undefined
+                ? options.exportPayload === null
+                    ? undefined
+                    : options.exportPayload
+                : this.state.eventsUiState.lastExportPayload;
+
+        const importSummary =
+            options.importSummary !== undefined
+                ? options.importSummary
+                : this.state.eventsUiState.importSummary ?? null;
+
+        this.setState(draft => {
+            draft.eventsUiState = {
+                ...draft.eventsUiState,
+                availableCategories,
+                phenomena: filtered,
+                filterCount,
+                selectedPhenomenonId: nextSelectedId,
+                selectedPhenomenonDetail: nextDetail,
+                bulkSelection: nextSelection,
+                lastExportPayload: exportPayload,
+                importSummary,
+            };
+        });
+
+        void this.persistPreferences({
+            lastSelectedPhenomenonId: nextSelectedId ?? undefined,
+        });
+    }
+
+    private createEditorDraftFromPhenomenon(phenomenon: Phenomenon): PhenomenonEditorDraft {
+        return {
+            id: phenomenon.id,
+            name: phenomenon.name,
+            category: phenomenon.category,
+            visibility: phenomenon.visibility,
+            appliesToCalendarIds: [...phenomenon.appliesToCalendarIds],
+            notes: phenomenon.notes ?? "",
+        };
+    }
+
+    private createDefaultEditorDraft(seedId?: string | null): PhenomenonEditorDraft {
+        const id = seedId && seedId.trim().length > 0 ? seedId : this.generatePhenomenonId();
+        const activeCalendarId = this.state.calendarState.activeCalendarId;
+        const appliesTo = activeCalendarId ? [activeCalendarId] : [];
+        return {
+            id,
+            name: "",
+            category: "custom",
+            visibility: appliesTo.length ? "selected" : "all_calendars",
+            appliesToCalendarIds: appliesTo,
+            notes: "",
+        };
+    }
+
+    private generatePhenomenonId(): string {
+        this.phenomenonIdCounter += 1;
+        return `phen-${Date.now().toString(36)}-${this.phenomenonIdCounter.toString(36)}`;
+    }
+
+    private buildPhenomenonFromDraft(
+        draft: PhenomenonEditorDraft,
+        base: Phenomenon | null,
+    ): PhenomenonDTO {
+        const trimmedName = draft.name.trim();
+        const category = this.normaliseCategory(draft.category);
+        const appliesTo =
+            draft.visibility === "all_calendars"
+                ? []
+                : Array.from(new Set(draft.appliesToCalendarIds.filter(Boolean)));
+
+        const defaults: Phenomenon = base ?? {
+            id: draft.id,
+            name: trimmedName,
+            category,
+            visibility: draft.visibility,
+            appliesToCalendarIds: appliesTo,
+            rule: { type: "annual", offsetDayOfYear: 0 },
+            timePolicy: "all_day",
+            priority: 0,
+            schemaVersion: "1.0.0",
+        };
+
+        const notes = draft.notes?.trim() ?? "";
+
+        return {
+            ...defaults,
+            id: draft.id,
+            name: trimmedName,
+            category,
+            visibility: draft.visibility,
+            appliesToCalendarIds: appliesTo,
+            notes: notes.length ? notes : undefined,
+        };
+    }
+
+    private normaliseCategory(value: string): Phenomenon["category"] {
+        const allowed: ReadonlyArray<Phenomenon["category"]> = [
+            "season",
+            "astronomy",
+            "weather",
+            "tide",
+            "holiday",
+            "custom",
+        ];
+        return allowed.includes(value as Phenomenon["category"])
+            ? (value as Phenomenon["category"])
+            : "custom";
+    }
+
+    private toPhenomenon(dto: PhenomenonDTO): Phenomenon {
+        const { template: _template, ...rest } = dto;
+        const base = rest as Phenomenon;
+        return {
+            ...base,
+            appliesToCalendarIds: [...base.appliesToCalendarIds],
+            hooks: base.hooks ? base.hooks.map(hook => ({ ...hook })) : base.hooks,
+            effects: base.effects
+                ? base.effects.map(effect => ({ ...effect, payload: { ...effect.payload } }))
+                : base.effects,
+            tags: base.tags ? [...base.tags] : base.tags,
+        };
     }
 
     private shiftAnchorTimestamp(
