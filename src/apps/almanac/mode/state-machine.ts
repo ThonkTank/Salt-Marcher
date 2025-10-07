@@ -31,11 +31,12 @@ import {
     type ImportSummary,
     type PhenomenonDetailView,
     type PhenomenonEditorDraft,
+    type TravelCalendarMode,
 } from "./contracts";
 import type { CalendarRepository } from "../data/calendar-repository";
 import type { EventRepository } from "../data/event-repository";
 import type { PhenomenonRepository } from "../data/in-memory-repository";
-import type { CalendarStateGateway } from "../data/calendar-state-gateway";
+import type { CalendarStateGateway, TravelLeafPreferencesSnapshot } from "../data/calendar-state-gateway";
 import type { PhenomenonDTO } from "../data/dto";
 import { formatPhenomenaExport, parsePhenomenaImport } from "../data/phenomena-serialization";
 import { getMonthById, getMonthIndex, getTimeDefinition, type CalendarSchema } from "../domain/calendar-schema";
@@ -88,6 +89,7 @@ export class AlmanacStateMachine {
     private phenomenaDefinitions: Phenomenon[] = [];
     private phenomenonIdCounter = 0;
     private travelId: string | null = null;
+    private travelLeafPreferences: TravelLeafPreferencesSnapshot | null = null;
     private readonly cartographerGateway: CartographerHookGateway;
 
     constructor(
@@ -193,6 +195,15 @@ export class AlmanacStateMachine {
             case "CALENDAR_DATA_REFRESH_REQUESTED":
                 await this.refreshCalendarData();
                 break;
+            case "TRAVEL_LEAF_MOUNTED":
+                await this.handleTravelLeafMounted(event.travelId);
+                break;
+            case "TRAVEL_MODE_CHANGED":
+                await this.handleTravelModeChanged(event.mode);
+                break;
+            case "TRAVEL_TIME_ADVANCE_REQUESTED":
+                await this.handleTimeAdvance(event.amount, event.unit, "travel");
+                break;
             case "ERROR_OCCURRED":
                 this.setState(draft => {
                     if (event.scope === "almanac") {
@@ -285,12 +296,14 @@ export class AlmanacStateMachine {
         });
 
         try {
-            const [calendars, snapshot, preferences, phenomena] = await Promise.all([
+            const [calendars, snapshot, preferences, phenomena, travelPreferences] = await Promise.all([
                 this.calendarRepo.listCalendars(),
                 this.gateway.loadSnapshot(travelId ? { travelId } : undefined),
                 this.gateway.loadPreferences(),
                 this.phenomenonRepo.listPhenomena(),
+                travelId ? this.gateway.getTravelLeafPreferences(travelId) : Promise.resolve(null),
             ]);
+            this.travelLeafPreferences = travelPreferences;
             this.phenomenaDefinitions = phenomena.map(item => this.toPhenomenon(item));
             this.phenomenaSource = this.buildPhenomenonViewModels(
                 this.phenomenaDefinitions,
@@ -393,6 +406,17 @@ export class AlmanacStateMachine {
                 };
                 draft.telemetryState = {
                     lastEvents: [],
+                };
+                draft.travelLeafState = {
+                    ...draft.travelLeafState,
+                    travelId,
+                    visible: travelPreferences?.visible ?? false,
+                    mode: travelPreferences?.mode ?? draft.travelLeafState.mode,
+                    currentTimestamp: calendarSlice.currentTimestamp,
+                    minuteStep: calendarSlice.timeDefinition?.minuteStep ?? draft.travelLeafState.minuteStep,
+                    lastQuickStep: undefined,
+                    isLoading: false,
+                    error: undefined,
                 };
             });
 
@@ -527,6 +551,12 @@ export class AlmanacStateMachine {
                     selectedPhenomenonId: nextSelectedId,
                     selectedPhenomenonDetail: nextDetail,
                     isDetailLoading: false,
+                };
+                draft.travelLeafState = {
+                    ...draft.travelLeafState,
+                    travelId: this.travelId,
+                    currentTimestamp: snapshot.currentTimestamp,
+                    minuteStep: timeDefinition?.minuteStep ?? draft.travelLeafState.minuteStep,
                 };
             });
         } catch (error) {
@@ -1240,22 +1270,94 @@ export class AlmanacStateMachine {
         }
     }
 
-    private async handleTimeAdvance(amount: number, unit: "day" | "hour" | "minute"): Promise<void> {
+    private async handleTravelLeafMounted(travelId: string): Promise<void> {
+        this.travelId = travelId;
+        this.setState(draft => {
+            draft.travelLeafState = {
+                ...draft.travelLeafState,
+                travelId,
+                visible: true,
+                isLoading: true,
+                error: undefined,
+            };
+        });
+
+        try {
+            const prefs = await this.gateway.getTravelLeafPreferences(travelId);
+            this.travelLeafPreferences = prefs;
+            this.setState(draft => {
+                draft.travelLeafState = {
+                    ...draft.travelLeafState,
+                    travelId,
+                    visible: true,
+                    mode: prefs?.mode ?? draft.travelLeafState.mode,
+                    currentTimestamp: draft.calendarState.currentTimestamp,
+                    minuteStep:
+                        draft.calendarState.timeDefinition?.minuteStep ?? draft.travelLeafState.minuteStep,
+                    isLoading: false,
+                    error: undefined,
+                };
+            });
+
+            await this.persistTravelLeafPreferences({
+                visible: true,
+                mode: this.state.travelLeafState.mode,
+                lastViewedTimestamp: this.state.calendarState.currentTimestamp ?? null,
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Travel-Leaf konnte nicht initialisiert werden";
+            this.setState(draft => {
+                draft.travelLeafState = {
+                    ...draft.travelLeafState,
+                    isLoading: false,
+                    error: message,
+                };
+            });
+        }
+    }
+
+    private async handleTravelModeChanged(mode: TravelCalendarMode): Promise<void> {
+        if (mode === this.state.travelLeafState.mode) {
+            return;
+        }
+        this.setState(draft => {
+            draft.travelLeafState = {
+                ...draft.travelLeafState,
+                mode,
+            };
+        });
+        await this.persistTravelLeafPreferences({ mode });
+    }
+
+    private async handleTimeAdvance(
+        amount: number,
+        unit: "day" | "hour" | "minute",
+        source: "global" | "travel" = "global",
+    ): Promise<void> {
         const activeCalendarId = this.state.calendarState.activeCalendarId;
         if (!activeCalendarId) {
             return;
         }
 
         this.setState(draft => {
-            draft.almanacUiState = {
-                ...draft.almanacUiState,
-                isLoading: true,
-                error: undefined,
-            };
             draft.calendarState = {
                 ...draft.calendarState,
                 lastAdvanceStep: { amount, unit },
             };
+            if (source === "global") {
+                draft.almanacUiState = {
+                    ...draft.almanacUiState,
+                    isLoading: true,
+                    error: undefined,
+                };
+            } else {
+                draft.travelLeafState = {
+                    ...draft.travelLeafState,
+                    isLoading: true,
+                    error: undefined,
+                    lastQuickStep: { amount, unit },
+                };
+            }
         });
 
         try {
@@ -1326,9 +1428,21 @@ export class AlmanacStateMachine {
                     upcomingPhenomena: result.upcomingPhenomena,
                     triggeredPhenomena: mergedPhenomena,
                 };
-                draft.almanacUiState = {
-                    ...draft.almanacUiState,
-                    isLoading: false,
+                if (source === "global") {
+                    draft.almanacUiState = {
+                        ...draft.almanacUiState,
+                        isLoading: false,
+                    };
+                }
+                const minuteStep = draft.calendarState.timeDefinition?.minuteStep ?? draft.travelLeafState.minuteStep;
+                draft.travelLeafState = {
+                    ...draft.travelLeafState,
+                    travelId: this.travelId,
+                    currentTimestamp: result.timestamp,
+                    minuteStep,
+                    ...(source === "travel"
+                        ? { isLoading: false, error: undefined, lastQuickStep: { amount, unit } }
+                        : {}),
                 };
                 const telemetryLabel = `calendar.time.advance:${unit}:${amount}`;
                 draft.telemetryState = {
@@ -1366,14 +1480,25 @@ export class AlmanacStateMachine {
             void this.persistPreferences({
                 lastSelectedPhenomenonId: nextSelectedId ?? undefined,
             });
+            if (this.travelId) {
+                void this.persistTravelLeafPreferences({ lastViewedTimestamp: result.timestamp });
+            }
         } catch (error) {
             const message = error instanceof Error ? error.message : "Zeitfortschritt fehlgeschlagen";
             this.setState(draft => {
-                draft.almanacUiState = {
-                    ...draft.almanacUiState,
-                    isLoading: false,
-                    error: message,
-                };
+                if (source === "global") {
+                    draft.almanacUiState = {
+                        ...draft.almanacUiState,
+                        isLoading: false,
+                        error: message,
+                    };
+                } else {
+                    draft.travelLeafState = {
+                        ...draft.travelLeafState,
+                        isLoading: false,
+                        error: message,
+                    };
+                }
             });
         }
     }
@@ -2129,6 +2254,38 @@ export class AlmanacStateMachine {
             .replace(/[^a-z0-9-]+/g, "-")
             .replace(/^-+|-+$/g, "")
             .replace(/--+/g, "-");
+    }
+
+    private async persistTravelLeafPreferences(
+        partial: Partial<TravelLeafPreferencesSnapshot>,
+    ): Promise<void> {
+        if (!this.travelId) {
+            return;
+        }
+
+        const base: TravelLeafPreferencesSnapshot = {
+            visible: this.state.travelLeafState.visible,
+            mode: this.state.travelLeafState.mode,
+            lastViewedTimestamp: this.state.travelLeafState.currentTimestamp ?? null,
+            ...this.travelLeafPreferences,
+        };
+
+        const next: TravelLeafPreferencesSnapshot = {
+            ...base,
+            ...partial,
+        };
+
+        if (partial.lastViewedTimestamp === undefined) {
+            next.lastViewedTimestamp =
+                base.lastViewedTimestamp ?? this.state.travelLeafState.currentTimestamp ?? null;
+        }
+
+        try {
+            await this.gateway.saveTravelLeafPreferences(this.travelId, next);
+            this.travelLeafPreferences = next;
+        } catch (error) {
+            console.warn("Failed to persist travel leaf preferences", error);
+        }
     }
 
     private async persistPreferences(partial: Partial<AlmanacPreferencesSnapshot>): Promise<void> {
