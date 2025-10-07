@@ -1,3 +1,6 @@
+// src/apps/almanac/data/in-memory-repository.ts
+// Lightweight in-memory repositories for calendars, events and phenomena.
+
 /**
  * In-Memory Calendar Repository
  *
@@ -5,10 +8,11 @@
  * Stores calendars and events in memory without file persistence.
  */
 
-import type { CalendarSchema, DefaultCalendarConfig } from '../domain/calendar-schema';
+import type { CalendarSchema } from '../domain/calendar-schema';
 import type { CalendarEvent } from '../domain/calendar-event';
 import type { CalendarTimestamp } from '../domain/calendar-timestamp';
 import { compareTimestampsWithSchema } from '../domain/calendar-timestamp';
+import type { Phenomenon } from '../domain/phenomenon';
 
 export interface CalendarRepository {
   listCalendars(): Promise<CalendarSchema[]>;
@@ -214,5 +218,42 @@ export class InMemoryEventRepository implements EventRepository {
   // Helper: Clear all data
   clear(): void {
     this.events.clear();
+  }
+}
+
+export interface PhenomenonRepository {
+  listPhenomena(): Promise<Phenomenon[]>;
+  getPhenomenon(id: string): Promise<Phenomenon | null>;
+  upsertPhenomenon(phenomenon: Phenomenon): Promise<void>;
+  deletePhenomenon(id: string): Promise<void>;
+}
+
+export class InMemoryPhenomenonRepository implements PhenomenonRepository {
+  private phenomena: Map<string, Phenomenon> = new Map();
+
+  async listPhenomena(): Promise<Phenomenon[]> {
+    return Array.from(this.phenomena.values());
+  }
+
+  async getPhenomenon(id: string): Promise<Phenomenon | null> {
+    return this.phenomena.get(id) ?? null;
+  }
+
+  async upsertPhenomenon(phenomenon: Phenomenon): Promise<void> {
+    this.phenomena.set(phenomenon.id, phenomenon);
+  }
+
+  async deletePhenomenon(id: string): Promise<void> {
+    this.phenomena.delete(id);
+  }
+
+  seed(phenomena: Phenomenon[]): void {
+    phenomena.forEach(phenomenon => {
+      this.phenomena.set(phenomenon.id, phenomenon);
+    });
+  }
+
+  clear(): void {
+    this.phenomena.clear();
   }
 }

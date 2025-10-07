@@ -1,35 +1,25 @@
 // src/apps/library/create/item/modal.ts
-import { App, Modal, Setting } from "obsidian";
+import { App, Setting } from "obsidian";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import type { ItemData } from "../../core/item-files";
 import { collectItemValidationIssues } from "./validation";
+import { BaseCreateModal } from "../shared/base-modal";
 
-export class CreateItemModal extends Modal {
-    private data: ItemData;
-    private onSubmit: (d: ItemData) => void;
-    private validationIssues: string[] = [];
-
+export class CreateItemModal extends BaseCreateModal<ItemData> {
     constructor(app: App, presetNameOrData: string | ItemData | undefined, onSubmit: (d: ItemData) => void) {
-        super(app);
-        this.onSubmit = onSubmit;
-
-        // Accept either a string name or full ItemData
-        if (typeof presetNameOrData === 'string') {
-            this.data = { name: presetNameOrData?.trim() || "New Item" };
-        } else if (presetNameOrData && typeof presetNameOrData === 'object') {
-            this.data = presetNameOrData;
-        } else {
-            this.data = { name: "New Item" };
-        }
+        super(app, presetNameOrData, onSubmit, {
+            title: "Create New Item",
+            defaultName: "New Item",
+            validate: collectItemValidationIssues,
+            submitButtonText: "Create Item",
+        });
     }
 
-    onOpen() {
-        const { contentEl } = this;
-        contentEl.empty();
-        contentEl.addClass("sm-cc-create-modal");
-        this.validationIssues = [];
+    protected createDefault(name: string): ItemData {
+        return { name };
+    }
 
-        contentEl.createEl("h3", { text: "Create New Item" });
+    protected buildFields(contentEl: HTMLElement): void {
 
         // === BASIC INFO ===
         contentEl.createEl("h4", { text: "Basic Information" });
@@ -112,21 +102,11 @@ export class CreateItemModal extends Modal {
         // === PROPERTIES ===
         contentEl.createEl("h4", { text: "Properties & Effects" });
 
-        new Setting(contentEl).setName("Description").setDesc("Main item description").addTextArea(ta => {
-            ta.setPlaceholder("While wearing this armor...").setValue(this.data.description || "").onChange(v => this.data.description = v.trim() || undefined);
-            // @ts-ignore
-            (ta as any).inputEl.rows = 6;
-            // @ts-ignore
-            (ta as any).inputEl.style.width = '100%';
-        });
+        this.addTextArea(contentEl, "Description", "While wearing this armor...",
+            v => this.data.description = v.trim() || undefined, this.data.description, 6);
 
-        new Setting(contentEl).setName("Notes").setDesc("Additional notes").addTextArea(ta => {
-            ta.setPlaceholder("Additional information...").setValue(this.data.notes || "").onChange(v => this.data.notes = v.trim() || undefined);
-            // @ts-ignore
-            (ta as any).inputEl.rows = 3;
-            // @ts-ignore
-            (ta as any).inputEl.style.width = '100%';
-        });
+        this.addTextArea(contentEl, "Notes", "Additional information...",
+            v => this.data.notes = v.trim() || undefined, this.data.notes, 3);
 
         // === WEIGHT & VALUE ===
         contentEl.createEl("h4", { text: "Weight & Value" });
@@ -152,41 +132,7 @@ export class CreateItemModal extends Modal {
             t.onChange(v => this.data.cursed = v || undefined);
         });
 
-        new Setting(contentEl).setName("Curse Description").addTextArea(ta => {
-            ta.setPlaceholder("This armor is cursed...").setValue(this.data.curse_description || "").onChange(v => this.data.curse_description = v.trim() || undefined);
-            // @ts-ignore
-            (ta as any).inputEl.rows = 3;
-            // @ts-ignore
-            (ta as any).inputEl.style.width = '100%';
-        });
-
-        // === VALIDATION & SUBMIT ===
-        const validationEl = contentEl.createDiv({ cls: "sm-cc-validation" });
-
-        const submit = new Setting(contentEl).addButton(btn => {
-            btn.setButtonText("Create Item").setCta().onClick(() => {
-                this.validationIssues = collectItemValidationIssues(this.data);
-                if (this.validationIssues.length > 0) {
-                    validationEl.empty();
-                    validationEl.createEl("p", { text: "Validation errors:", cls: "sm-cc-validation__title" });
-                    const ul = validationEl.createEl("ul");
-                    for (const issue of this.validationIssues) {
-                        ul.createEl("li", { text: issue });
-                    }
-                    return;
-                }
-                this.onSubmit(this.data);
-                this.close();
-            });
-        });
-
-        submit.addButton(btn => {
-            btn.setButtonText("Cancel").onClick(() => this.close());
-        });
-    }
-
-    onClose() {
-        const { contentEl } = this;
-        contentEl.empty();
+        this.addTextArea(contentEl, "Curse Description", "This armor is cursed...",
+            v => this.data.curse_description = v.trim() || undefined, this.data.curse_description, 3);
     }
 }

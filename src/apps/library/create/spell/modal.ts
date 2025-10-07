@@ -1,39 +1,40 @@
 // src/apps/library/create/spell/modal.ts
-import { App, Modal, Setting } from "obsidian";
+import { App, Setting } from "obsidian";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import { mountTokenEditor } from "../shared/token-editor";
 import type { SpellData } from "../../core/spell-files";
 import { collectSpellScalingIssues } from "./validation";
+import { BaseCreateModal } from "../shared/base-modal";
 
-export class CreateSpellModal extends Modal {
-    private data: SpellData;
-    private onSubmit: (d: SpellData) => void;
-    private scalingIssues: string[] = [];
+export class CreateSpellModal extends BaseCreateModal<SpellData> {
     private runScalingValidation: (() => void) | null = null;
 
     constructor(app: App, preset: string | SpellData | undefined, onSubmit: (d: SpellData) => void) {
-        super(app);
-        this.onSubmit = onSubmit;
-        if (typeof preset === "string" || preset === undefined) {
-            const presetName = typeof preset === "string" ? preset : undefined;
-            this.data = { name: presetName?.trim() || "Neuer Zauber" };
-        } else {
-            this.data = {
-                ...preset,
-                components: preset.components ? [...preset.components] : undefined,
-                classes: preset.classes ? [...preset.classes] : undefined,
-            };
-        }
+        super(app, preset, onSubmit, {
+            title: "Neuen Zauber erstellen",
+            defaultName: "Neuer Zauber",
+            submitButtonText: "Erstellen",
+        });
+    }
+
+    protected createDefault(name: string): SpellData {
+        return { name };
+    }
+
+    protected cloneData(data: SpellData): SpellData {
+        return {
+            ...data,
+            components: data.components ? [...data.components] : undefined,
+            classes: data.classes ? [...data.classes] : undefined,
+        };
     }
 
     onOpen() {
-        const { contentEl } = this;
-        contentEl.empty();
-        contentEl.addClass("sm-cc-create-modal");
-        this.scalingIssues = [];
+        super.onOpen();
         this.runScalingValidation = null;
+    }
 
-        contentEl.createEl("h3", { text: "Neuen Zauber erstellen" });
+    protected buildFields(contentEl: HTMLElement): void {
 
         // Basics
         new Setting(contentEl).setName("Name").addText(t => {
@@ -142,24 +143,16 @@ export class CreateSpellModal extends Modal {
         });
 
         // Text
-        this.addTextArea(
-            contentEl,
-            "Beschreibung",
-            "Beschreibung (Markdown)",
-            v => this.data.description = v,
-            this.data.description,
-        );
-        const higherLevelsField = this.addTextArea(
-            contentEl,
-            "Höhere Grade",
-            "Bei höheren Graden (Markdown)",
+        this.addTextArea(contentEl, "Beschreibung", "Beschreibung (Markdown)",
+            v => this.data.description = v, this.data.description);
+
+        const higherLevelsField = this.addTextArea(contentEl, "Höhere Grade", "Bei höheren Graden (Markdown)",
             v => {
                 const trimmed = v.trim();
                 this.data.higher_levels = trimmed ? trimmed : undefined;
                 this.runScalingValidation?.();
             },
-            this.data.higher_levels,
-        );
+            this.data.higher_levels);
         const scalingValidation = higherLevelsField.controlEl.createDiv({ cls: "sm-setting-validation", attr: { hidden: "" } });
         const applyScalingValidation = (issues: string[]) => {
             const hasIssues = issues.length > 0;
@@ -177,41 +170,19 @@ export class CreateSpellModal extends Modal {
             for (const issue of issues) list.createEl("li", { text: issue });
         };
         this.runScalingValidation = () => {
-            this.scalingIssues = collectSpellScalingIssues(this.data);
-            applyScalingValidation(this.scalingIssues);
+            const issues = collectSpellScalingIssues(this.data);
+            applyScalingValidation(issues);
+            return issues;
         };
         this.runScalingValidation();
-
-        new Setting(contentEl)
-            .addButton(b => b.setButtonText("Abbrechen").onClick(() => this.close()))
-            .addButton(b => b.setCta().setButtonText("Erstellen").onClick(() => this.submit()));
-
-        this.scope.register([], "Enter", () => this.submit());
     }
 
-    onClose() { this.contentEl.empty(); }
+    protected submit(): void {
+        // Run scaling validation
+        const scalingIssues = this.runScalingValidation?.() ?? [];
+        if (scalingIssues.length > 0) return;
 
-    private addTextArea(
-        parent: HTMLElement,
-        label: string,
-        placeholder: string,
-        onChange: (v: string) => void,
-        initialValue?: string,
-    ) {
-        const wrap = parent.createDiv({ cls: "setting-item" });
-        wrap.createDiv({ cls: "setting-item-info", text: label });
-        const ctl = wrap.createDiv({ cls: "setting-item-control" });
-        const ta = ctl.createEl("textarea", { attr: { placeholder } });
-        if (initialValue != null) ta.value = initialValue;
-        ta.addEventListener("input", () => onChange(ta.value));
-        return { wrapper: wrap, controlEl: ctl, textarea: ta } as const;
-    }
-
-    private submit() {
-        this.runScalingValidation?.();
-        if (this.scalingIssues.length) return;
-        if (!this.data.name || !this.data.name.trim()) return;
-        this.close();
-        this.onSubmit(this.data);
+        // Delegate to base class for standard validation and submit
+        super.submit();
     }
 }

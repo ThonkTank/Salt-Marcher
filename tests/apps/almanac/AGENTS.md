@@ -3,10 +3,11 @@
 - Spiegelt die Struktur und Use-Cases aus `src/apps/almanac`.
 
 # Aktueller Stand
-- Noch keine automatisierten Tests implementiert; dieser Ordner enthält zunächst den Testplan.
+- Vitest-Suites für Domain-Layer (Kalenderarithmetik, Wiederholregeln, Phänomen-Engine) sowie Gateway-Integration vorhanden.
+- Dashboard-DOM-Test deckt Recently-Triggered-Rendering und Moduswechsel ab.
 
 # ToDo
-- [P1] Ergänze Testdateien entsprechend `TEST_PLAN.md` sobald Implementierung beginnt.
+- [P1] Ergänze UI-/Events-Tests nach Fertigstellung des Phänomen-Editors und Travel-Leaves.
 
 # Standards
 - Testbeschreibungen verweisen auf zugehörige Spezifikationen unter `src/apps/almanac/mode`.

@@ -2,8 +2,8 @@
 // Tool zum Konvertieren von Reference Statblöcken und Spells zu Preset-Format
 
 import type { App, TFile } from "obsidian";
-import { parseReferenceStatblock } from "../core/reference-parser";
-import { parseReferenceSpell } from "../core/spell-reference-parser";
+import { parseReferenceStatblock } from "./parsers/reference-parser";
+import { parseReferenceSpell } from "./parsers/spell-reference-parser";
 import { statblockToMarkdown } from "../core/creature-files";
 import { spellToMarkdown } from "../core/spell-files";
 import { Notice } from "obsidian";

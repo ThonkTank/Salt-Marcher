@@ -1,3 +1,6 @@
+// src/apps/almanac/domain/calendar-timestamp.ts
+// Timestamp creation, comparison and formatting utilities for calendars.
+
 /**
  * Calendar Timestamp
  *

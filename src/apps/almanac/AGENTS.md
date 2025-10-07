@@ -4,14 +4,14 @@
 - Liefert eine verlässliche Referenz für spätere Implementierungsphasen inklusive Testankern und Persistenzüberlegungen.
 
 # Aktueller Stand
-- Nur Planungsdokumente vorhanden; es existiert noch keine Almanac-spezifische Logik oder UI.
-- Anforderungen orientieren sich an wiederkehrenden und einmaligen Ereignissen, eigener Kalenderdefinition, Almanac-Phänomenen und Zeitfortschritt im Cartographer.
-- Als Inspirationsquelle steht das separate "Calendarium"-Plugin bereit, das ähnliche Konzepte nutzt (mehrere Kalender, Feiertage, Ereignisse).
+- Domain-Layer für Kalenderarithmetik, Wiederholregeln und Phänomen-Engine ist umgesetzt und mit Vitest abgedeckt.
+- In-Memory-Repositories/Gateway liefern Demo-Daten (Kalender, Events, Phänomene) für den Controller.
+- Dashboard & Manager rendern erste Interaktionspfade inkl. Zeitfortschritt, Quick-Actions und Ereignislisten.
 
 # ToDo
-- [P1] Finalisiere den Implementierungsplan und stimme die Phasen mit dem Team ab.
-- [P2] Ergänze nach jeder Phase eine Fortschrittsnotiz mit Lessons Learned und offenen Fragen.
-- [P3] Halte Integrationsverträge mit Cartographer und Core-Modulen aktuell.
+- [P1] Events-Modus auf reale Daten umstellen (Phänomen-Editor, Filter, Import/Export).
+- [P2] Cartographer-Integration & Travel-Leaf mit bidirektionalem Sync fertigstellen.
+- [P3] Observability/Telemetrie ergänzen und Dokumentation (BUILD/README) synchronisieren.
 
 # Standards
 - Dokumente in diesem Ordner nutzen klare Abschnittsüberschriften (Problem, Ziel, Lösung, Tests) und verlinken relevante Core-/App-Module.

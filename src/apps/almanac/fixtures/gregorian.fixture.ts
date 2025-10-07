@@ -1,3 +1,6 @@
+// src/apps/almanac/fixtures/gregorian.fixture.ts
+// Provides the baseline Gregorian calendar schema and sample events for tests.
+
 /**
  * Gregorian Calendar Fixture
  *
@@ -19,6 +22,10 @@ export const gregorianSchema: CalendarSchema = {
   name: 'Gregorian Calendar',
   description: 'Standard Earth calendar with 12 months (24-hour days)',
   daysPerWeek: 7,
+  hoursPerDay: 24,
+  minutesPerHour: 60,
+  secondsPerMinute: 60,
+  minuteStep: 15,
   months: [
     { id: 'jan', name: 'January', length: 31 },
     { id: 'feb', name: 'February', length: 28 }, // Simplified: no leap years for MVP

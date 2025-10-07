@@ -1,3 +1,6 @@
+// src/apps/almanac/domain/time-arithmetic.ts
+// Normalises timestamps when advancing calendar time by days/hours/minutes.
+
 /**
  * Time Arithmetic
  *
@@ -6,7 +9,7 @@
  */
 
 import type { CalendarSchema } from './calendar-schema';
-import { HOURS_PER_DAY, MINUTES_PER_HOUR } from './calendar-schema';
+import { getHoursPerDay, getMinutesPerHour } from './calendar-schema';
 import type { CalendarTimestamp } from './calendar-timestamp';
 import { getMonthById, getMonthIndex, getMonthByIndex } from './calendar-schema';
 import { createDayTimestamp, createHourTimestamp, createMinuteTimestamp } from './calendar-timestamp';
@@ -126,21 +129,23 @@ function advanceByHours(
   current: CalendarTimestamp,
   hours: number
 ): AdvanceResult {
+  const hoursPerDay = getHoursPerDay(schema);
+
   const currentHour = current.hour ?? 0;
   let totalHours = currentHour + hours;
   let carriedDays = 0;
   let normalized = false;
 
   // Calculate day overflow
-  if (totalHours >= HOURS_PER_DAY) {
-    carriedDays = Math.floor(totalHours / HOURS_PER_DAY);
-    totalHours = totalHours % HOURS_PER_DAY;
+  if (totalHours >= hoursPerDay) {
+    carriedDays = Math.floor(totalHours / hoursPerDay);
+    totalHours = totalHours % hoursPerDay;
     normalized = true;
   } else if (totalHours < 0) {
     // For negative hours, we need to borrow days
-    const daysNeeded = Math.ceil(Math.abs(totalHours) / HOURS_PER_DAY);
+    const daysNeeded = Math.ceil(Math.abs(totalHours) / hoursPerDay);
     carriedDays = -daysNeeded;
-    totalHours = totalHours + (daysNeeded * HOURS_PER_DAY);
+    totalHours = totalHours + (daysNeeded * hoursPerDay);
     normalized = true;
   }
 
@@ -203,6 +208,8 @@ function advanceByMinutes(
   current: CalendarTimestamp,
   minutes: number
 ): AdvanceResult {
+  const minutesPerHour = getMinutesPerHour(schema);
+
   const currentMinute = current.minute ?? 0;
   const currentHour = current.hour ?? 0;
 
@@ -211,15 +218,15 @@ function advanceByMinutes(
   let normalized = false;
 
   // Calculate hour overflow
-  if (totalMinutes >= MINUTES_PER_HOUR) {
-    carriedHours = Math.floor(totalMinutes / MINUTES_PER_HOUR);
-    totalMinutes = totalMinutes % MINUTES_PER_HOUR;
+  if (totalMinutes >= minutesPerHour) {
+    carriedHours = Math.floor(totalMinutes / minutesPerHour);
+    totalMinutes = totalMinutes % minutesPerHour;
     normalized = true;
   } else if (totalMinutes < 0) {
     // For negative minutes, we need to borrow hours
-    const hoursNeeded = Math.ceil(Math.abs(totalMinutes) / MINUTES_PER_HOUR);
+    const hoursNeeded = Math.ceil(Math.abs(totalMinutes) / minutesPerHour);
     carriedHours = -hoursNeeded;
-    totalMinutes = totalMinutes + (hoursNeeded * MINUTES_PER_HOUR);
+    totalMinutes = totalMinutes + (hoursNeeded * minutesPerHour);
     normalized = true;
   }
 
@@ -236,6 +243,8 @@ function advanceByMinutes(
     baseTimestamp.year,
     baseTimestamp.monthId,
     baseTimestamp.day,
+    // The hour component might become undefined if the schema uses day precision only.
+    // Fallback to zero in that case.
     baseTimestamp.hour ?? 0,
     totalMinutes
   );

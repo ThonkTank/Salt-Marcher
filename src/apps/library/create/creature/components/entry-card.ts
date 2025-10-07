@@ -9,9 +9,7 @@ import type { StatblockData } from "../../../core/creature-files";
 import { CREATURE_ABILITY_SELECTIONS, CREATURE_SAVE_OPTIONS, CREATURE_ABILITY_LABELS } from "../presets";
 import { findEntryPresets, type EntryPreset } from "../entry-presets";
 import { setIcon } from "obsidian";
-import { createAttackComponent } from "./attack-component";
-import { createSaveComponent } from "./save-component";
-import { createDamageComponent, type DamageInstance, parseDamageString, damageInstancesToString } from "./damage-component";
+import { createAttackComponent, createSaveComponent, createDamageComponent, type DamageInstance, parseDamageString, damageInstancesToString } from "./entry-helpers";
 
 /**
  * Component type identifiers

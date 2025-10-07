@@ -1,37 +1,32 @@
 // src/apps/library/create/equipment/modal.ts
-import { App, Modal, Setting } from "obsidian";
+import { App, Setting } from "obsidian";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import type { EquipmentData, EquipmentType } from "../../core/equipment-files";
 import { collectEquipmentValidationIssues } from "./validation";
+import { BaseCreateModal } from "../shared/base-modal";
 
-export class CreateEquipmentModal extends Modal {
-    private data: EquipmentData;
-    private onSubmit: (d: EquipmentData) => void;
-    private validationIssues: string[] = [];
+export class CreateEquipmentModal extends BaseCreateModal<EquipmentData> {
     private containerEl: HTMLElement | null = null;
 
     constructor(app: App, presetNameOrData: string | EquipmentData | undefined, onSubmit: (d: EquipmentData) => void) {
-        super(app);
-        this.onSubmit = onSubmit;
+        super(app, presetNameOrData, onSubmit, {
+            title: "Create New Equipment",
+            defaultName: "New Equipment",
+            validate: collectEquipmentValidationIssues,
+            submitButtonText: "Create Equipment",
+        });
+    }
 
-        // Accept either a string name or full EquipmentData
-        if (typeof presetNameOrData === 'string') {
-            this.data = { name: presetNameOrData?.trim() || "New Equipment", type: "weapon" };
-        } else if (presetNameOrData && typeof presetNameOrData === 'object') {
-            this.data = presetNameOrData;
-        } else {
-            this.data = { name: "New Equipment", type: "weapon" };
-        }
+    protected createDefault(name: string): EquipmentData {
+        return { name, type: "weapon" };
     }
 
     onOpen() {
-        const { contentEl } = this;
-        contentEl.empty();
-        contentEl.addClass("sm-cc-create-modal");
-        this.containerEl = contentEl;
-        this.validationIssues = [];
+        super.onOpen();
+        this.containerEl = this.contentEl;
+    }
 
-        contentEl.createEl("h3", { text: "Create New Equipment" });
+    protected buildFields(contentEl: HTMLElement): void {
 
         // === BASIC INFO ===
         contentEl.createEl("h4", { text: "Basic Information" });
@@ -73,35 +68,8 @@ export class CreateEquipmentModal extends Modal {
         // === DESCRIPTION ===
         contentEl.createEl("h4", { text: "Description" });
 
-        new Setting(contentEl).setName("Description").addTextArea(ta => {
-            ta.setPlaceholder("Equipment description...").setValue(this.data.description || "").onChange(v => this.data.description = v.trim() || undefined);
-            (ta as any).inputEl.rows = 4;
-            (ta as any).inputEl.style.width = '100%';
-        });
-
-        // === VALIDATION & SUBMIT ===
-        const validationEl = contentEl.createDiv({ cls: "sm-cc-validation" });
-
-        const submit = new Setting(contentEl).addButton(btn => {
-            btn.setButtonText("Create Equipment").setCta().onClick(() => {
-                this.validationIssues = collectEquipmentValidationIssues(this.data);
-                if (this.validationIssues.length > 0) {
-                    validationEl.empty();
-                    validationEl.createEl("p", { text: "Validation errors:", cls: "sm-cc-validation__title" });
-                    const ul = validationEl.createEl("ul");
-                    for (const issue of this.validationIssues) {
-                        ul.createEl("li", { text: issue });
-                    }
-                    return;
-                }
-                this.onSubmit(this.data);
-                this.close();
-            });
-        });
-
-        submit.addButton(btn => {
-            btn.setButtonText("Cancel").onClick(() => this.close());
-        });
+        this.addTextArea(contentEl, "Description", "Equipment description...",
+            v => this.data.description = v.trim() || undefined, this.data.description);
     }
 
     private rebuildTypeSpecificFields() {
@@ -286,10 +254,5 @@ export class CreateEquipmentModal extends Modal {
             (ta as any).inputEl.rows = 3;
             (ta as any).inputEl.style.width = '100%';
         });
-    }
-
-    onClose() {
-        const { contentEl } = this;
-        contentEl.empty();
     }
 }

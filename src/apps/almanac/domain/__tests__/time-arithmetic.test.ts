@@ -1,3 +1,6 @@
+// src/apps/almanac/domain/__tests__/time-arithmetic.test.ts
+// Exercises time advancement logic across days, hours and minutes.
+
 import { describe, it, expect } from 'vitest';
 import type { CalendarSchema } from '../calendar-schema';
 import { createDayTimestamp, createHourTimestamp, createMinuteTimestamp } from '../calendar-timestamp';

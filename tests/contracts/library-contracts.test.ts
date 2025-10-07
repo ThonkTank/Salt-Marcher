@@ -2,10 +2,10 @@
 // Prüft den Library-Vertragstest-Harness auf Port-Parität, Persistenz und Debounce-Verhalten.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TFile } from "obsidian";
-import { ItemsRenderer } from "../../src/apps/library/view/items";
-import { EquipmentRenderer } from "../../src/apps/library/view/equipment";
 import { loadCreaturePreset } from "../../src/apps/library/core/creature-presets";
 import { findSpellPresets, getSpellLevels, loadSpellPreset } from "../../src/apps/library/core/spell-presets";
+import { loadItemFile } from "../../src/apps/library/core/item-files";
+import { loadEquipmentFile } from "../../src/apps/library/core/equipment-files";
 import {
     createLibraryHarness,
     type LibraryAdapterKind,
@@ -68,13 +68,10 @@ describe("library contract harness", () => {
         ) {
             throw new Error("Expected seeded fixture files to exist");
         }
-        const itemsRenderer = new ItemsRenderer(harness.app as any, document.createElement("div"));
-        const equipmentRenderer = new EquipmentRenderer(harness.app as any, document.createElement("div"));
-
         // Act
         const creaturePreset = await loadCreaturePreset(harness.app as any, creatureFile);
-        const itemData = await (itemsRenderer as any).parseItemFromFile(itemFile);
-        const equipmentData = await (equipmentRenderer as any).parseEquipmentFromFile(equipmentFile);
+        const itemData = await loadItemFile(harness.app as any, itemFile);
+        const equipmentData = await loadEquipmentFile(harness.app as any, equipmentFile);
         const spellPreset = await loadSpellPreset(harness.app as any, spellPresetFile);
         const spellSearch = await findSpellPresets(harness.app as any, "Ember", { limit: 5 });
         const spellLevels = await getSpellLevels(harness.app as any);

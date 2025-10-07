@@ -1,3 +1,6 @@
+// src/apps/almanac/domain/calendar-schema.ts
+// Core calendar schema definitions and helpers for month/time lookups.
+
 /**
  * Calendar Schema Definition
  *
@@ -12,11 +15,25 @@ export interface CalendarMonth {
 }
 
 /**
- * Time constants - same for all calendars (real-world time units)
+ * Default time constants used when a schema does not provide
+ * explicit time-definition overrides.
  */
-export const HOURS_PER_DAY = 24;
-export const MINUTES_PER_HOUR = 60;
-export const SECONDS_PER_MINUTE = 60;
+export const DEFAULT_HOURS_PER_DAY = 24;
+export const DEFAULT_MINUTES_PER_HOUR = 60;
+export const DEFAULT_SECONDS_PER_MINUTE = 60;
+export const DEFAULT_MINUTE_STEP = 1;
+
+// Backwards compatibility exports – legacy code still imports these names.
+export const HOURS_PER_DAY = DEFAULT_HOURS_PER_DAY;
+export const MINUTES_PER_HOUR = DEFAULT_MINUTES_PER_HOUR;
+export const SECONDS_PER_MINUTE = DEFAULT_SECONDS_PER_MINUTE;
+
+export interface TimeDefinition {
+  readonly hoursPerDay: number;
+  readonly minutesPerHour: number;
+  readonly secondsPerMinute: number;
+  readonly minuteStep: number;
+}
 
 export interface CalendarSchema {
   readonly id: string;
@@ -26,6 +43,15 @@ export interface CalendarSchema {
   // Calendar structure
   readonly daysPerWeek: number;
   readonly months: ReadonlyArray<CalendarMonth>;
+
+  /**
+   * Optional schema-specific overrides for handling sub-day time units.
+   * If omitted the defaults (24h/60m/60s, minute step 1) are used.
+   */
+  readonly hoursPerDay?: number;
+  readonly minutesPerHour?: number;
+  readonly secondsPerMinute?: number;
+  readonly minuteStep?: number;
 
   // Starting point (epoch)
   readonly epoch: {
@@ -77,4 +103,29 @@ export function getMonthByIndex(schema: CalendarSchema, index: number): Calendar
     return null;
   }
   return schema.months[index];
+}
+
+export function getHoursPerDay(schema: CalendarSchema): number {
+  return schema.hoursPerDay ?? DEFAULT_HOURS_PER_DAY;
+}
+
+export function getMinutesPerHour(schema: CalendarSchema): number {
+  return schema.minutesPerHour ?? DEFAULT_MINUTES_PER_HOUR;
+}
+
+export function getSecondsPerMinute(schema: CalendarSchema): number {
+  return schema.secondsPerMinute ?? DEFAULT_SECONDS_PER_MINUTE;
+}
+
+export function getMinuteStep(schema: CalendarSchema): number {
+  return schema.minuteStep ?? DEFAULT_MINUTE_STEP;
+}
+
+export function getTimeDefinition(schema: CalendarSchema): TimeDefinition {
+  return {
+    hoursPerDay: getHoursPerDay(schema),
+    minutesPerHour: getMinutesPerHour(schema),
+    secondsPerMinute: getSecondsPerMinute(schema),
+    minuteStep: getMinuteStep(schema),
+  };
 }

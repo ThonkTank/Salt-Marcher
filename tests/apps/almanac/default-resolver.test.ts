@@ -1,3 +1,6 @@
+// tests/apps/almanac/default-resolver.test.ts
+// Verifies default calendar resolution across global and travel contexts.
+
 /**
  * @file Default Calendar Resolver Tests
  * @description Tests for default calendar management and resolution logic
@@ -6,13 +9,18 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { CalendarSchema } from '../../../src/apps/almanac/domain/calendar-schema';
-import { InMemoryCalendarRepository, InMemoryEventRepository } from '../../../src/apps/almanac/data/in-memory-repository';
+import {
+  InMemoryCalendarRepository,
+  InMemoryEventRepository,
+  InMemoryPhenomenonRepository,
+} from '../../../src/apps/almanac/data/in-memory-repository';
 import { InMemoryStateGateway } from '../../../src/apps/almanac/data/in-memory-gateway';
 
 describe('Default Calendar Resolver', () => {
   let calendarRepo: InMemoryCalendarRepository;
   let eventRepo: InMemoryEventRepository;
   let gateway: InMemoryStateGateway;
+  let phenomenonRepo: InMemoryPhenomenonRepository;
 
   const calendar1: CalendarSchema = {
     id: 'cal-1',
@@ -53,7 +61,8 @@ describe('Default Calendar Resolver', () => {
   beforeEach(() => {
     calendarRepo = new InMemoryCalendarRepository();
     eventRepo = new InMemoryEventRepository();
-    gateway = new InMemoryStateGateway(calendarRepo, eventRepo);
+    phenomenonRepo = new InMemoryPhenomenonRepository();
+    gateway = new InMemoryStateGateway(calendarRepo, eventRepo, phenomenonRepo);
   });
 
   describe('Global Default', () => {
@@ -258,9 +267,10 @@ describe('Default Calendar Resolver', () => {
 
       const snapshot = await gateway.loadSnapshot();
 
-      expect(snapshot.defaultCalendarId).toBe('cal-1');
+      expect(snapshot.defaultCalendarId).toBeNull();
       expect(snapshot.isGlobalDefault).toBe(false);
       expect(snapshot.wasAutoSelected).toBe(true);
+      expect(snapshot.activeCalendar?.id).toBe('cal-1');
     });
 
     it('should respect travel default in snapshot', async () => {
@@ -272,9 +282,11 @@ describe('Default Calendar Resolver', () => {
 
       const snapshot = await gateway.loadSnapshot('travel-1');
 
-      expect(snapshot.defaultCalendarId).toBe('cal-2');
+      expect(snapshot.defaultCalendarId).toBeNull();
       expect(snapshot.isGlobalDefault).toBe(false);
       expect(snapshot.wasAutoSelected).toBe(false);
+      expect(snapshot.travelDefaultCalendarId).toBe('cal-2');
+      expect(snapshot.activeCalendar?.id).toBe('cal-2');
     });
   });
 });

@@ -1,3 +1,6 @@
+// src/apps/almanac/domain/calendar-event.ts
+// Defines single-event structures used by Almanac calendars.
+
 /**
  * Calendar Event
  *

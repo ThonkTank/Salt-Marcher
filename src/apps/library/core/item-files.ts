@@ -434,3 +434,64 @@ export function itemToMarkdown(d: ItemData): string {
 export async function createItemFile(app: App, d: ItemData): Promise<TFile> {
     return ITEM_PIPELINE.create(app, d);
 }
+
+export async function loadItemFile(app: App, file: TFile): Promise<ItemData> {
+    const cache = app.metadataCache.getFileCache(file);
+    const frontmatter = cache?.frontmatter || {};
+
+    const data: ItemData = {
+        name: frontmatter.name || file.basename,
+        category: frontmatter.category,
+        type: frontmatter.type,
+        rarity: frontmatter.rarity,
+        attunement: frontmatter.attunement,
+        attunement_req: frontmatter.attunement_req,
+        max_charges: frontmatter.max_charges,
+        recharge_formula: frontmatter.recharge_formula,
+        recharge_time: frontmatter.recharge_time,
+        destruction_risk: frontmatter.destruction_risk,
+        spell_storage_capacity: frontmatter.spell_storage_capacity,
+        resistances: frontmatter.resistances,
+        immunities: frontmatter.immunities,
+        cursed: frontmatter.cursed,
+        curse_description: frontmatter.curse_description,
+        has_variants: frontmatter.has_variants,
+        variant_info: frontmatter.variant_info,
+        sentient: frontmatter.sentient,
+        weight: frontmatter.weight,
+        value: frontmatter.value,
+    };
+
+    if (frontmatter.spells_json) {
+        try { data.spells = JSON.parse(frontmatter.spells_json); } catch {}
+    }
+    if (frontmatter.bonuses_json) {
+        try { data.bonuses = JSON.parse(frontmatter.bonuses_json); } catch {}
+    }
+    if (frontmatter.ability_changes_json) {
+        try { data.ability_changes = JSON.parse(frontmatter.ability_changes_json); } catch {}
+    }
+    if (frontmatter.speed_changes_json) {
+        try { data.speed_changes = JSON.parse(frontmatter.speed_changes_json); } catch {}
+    }
+    if (frontmatter.properties_json) {
+        try { data.properties = JSON.parse(frontmatter.properties_json); } catch {}
+    }
+    if (frontmatter.usage_limit_json) {
+        try { data.usage_limit = JSON.parse(frontmatter.usage_limit_json); } catch {}
+    }
+    if (frontmatter.tables_json) {
+        try { data.tables = JSON.parse(frontmatter.tables_json); } catch {}
+    }
+    if (frontmatter.sentient_props_json) {
+        try { data.sentient_props = JSON.parse(frontmatter.sentient_props_json); } catch {}
+    }
+
+    const content = await app.vault.read(file);
+    const bodyMatch = content.match(/^---[\s\S]*?---\s*\n([\s\S]*)/);
+    if (bodyMatch) {
+        data.description = bodyMatch[1].trim();
+    }
+
+    return data;
+}

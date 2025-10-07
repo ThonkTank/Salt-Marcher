@@ -1,6 +1,6 @@
 // Temporäres Test-Script für den Reference Parser
 import { readFileSync } from 'fs';
-import { parseReferenceStatblock } from './src/apps/library/core/reference-parser';
+import { parseReferenceStatblock } from './src/apps/library/tools/parsers/reference-parser';
 import { statblockToMarkdown } from './src/apps/library/core/creature-files';
 
 const apeMarkdown = readFileSync('./References/rulebooks/Statblocks/Creatures/Animals/ape.md', 'utf-8');

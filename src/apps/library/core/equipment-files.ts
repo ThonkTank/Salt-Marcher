@@ -251,3 +251,43 @@ export function equipmentToMarkdown(d: EquipmentData): string {
 export async function createEquipmentFile(app: App, d: EquipmentData): Promise<TFile> {
     return EQUIPMENT_PIPELINE.create(app, d);
 }
+
+export async function loadEquipmentFile(app: App, file: TFile): Promise<EquipmentData> {
+    const cache = app.metadataCache.getFileCache(file);
+    const frontmatter = cache?.frontmatter || {};
+
+    const data: EquipmentData = {
+        name: frontmatter.name || file.basename,
+        type: frontmatter.type || "weapon",
+        cost: frontmatter.cost,
+        weight: frontmatter.weight,
+        weapon_category: frontmatter.weapon_category,
+        weapon_type: frontmatter.weapon_type,
+        damage: frontmatter.damage,
+        properties: frontmatter.properties,
+        mastery: frontmatter.mastery,
+        armor_category: frontmatter.armor_category,
+        ac: frontmatter.ac,
+        strength_requirement: frontmatter.strength_requirement,
+        stealth_disadvantage: frontmatter.stealth_disadvantage,
+        don_time: frontmatter.don_time,
+        doff_time: frontmatter.doff_time,
+        tool_category: frontmatter.tool_category,
+        ability: frontmatter.ability,
+        utilize: frontmatter.utilize,
+        craft: frontmatter.craft,
+        variants: frontmatter.variants,
+        gear_category: frontmatter.gear_category,
+        special_use: frontmatter.special_use,
+        capacity: frontmatter.capacity,
+        duration: frontmatter.duration,
+    };
+
+    const content = await app.vault.read(file);
+    const bodyMatch = content.match(/^---[\s\S]*?---\s*\n([\s\S]*)/);
+    if (bodyMatch) {
+        data.description = bodyMatch[1].trim();
+    }
+
+    return data;
+}

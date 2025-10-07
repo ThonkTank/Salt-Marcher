@@ -1,3 +1,6 @@
+// src/apps/almanac/index.ts
+// Obsidian ItemView entry point for the Almanac workmode.
+
 /**
  * @file Almanac View
  * @description Main view entry point for the Almanac workmode. Registers as an Obsidian ItemView.

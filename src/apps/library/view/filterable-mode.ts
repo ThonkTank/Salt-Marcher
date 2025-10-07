@@ -4,6 +4,7 @@ import type { App } from "obsidian";
 import { BaseModeRenderer, scoreName, LibrarySourceWatcherHub } from "./mode";
 import { LIBRARY_DATA_SOURCES, type FilterableLibraryMode, type LibraryEntry, type LibraryDataSource } from "../core/data-sources";
 import { LIBRARY_LIST_SCHEMAS, type FilterDefinition, type SortDefinition, type LibraryListSchema } from "./filter-registry";
+import { LIBRARY_VIEW_CONFIGS, type LibraryViewConfig, type ActionContext } from "./view-registry";
 
 interface PreparedEntry<M extends FilterableLibraryMode> {
     entry: LibraryEntry<M>;
@@ -104,6 +105,7 @@ export abstract class FilterableLibraryRenderer<M extends FilterableLibraryMode>
     readonly mode: M;
     private readonly source: LibraryDataSource<M>;
     private readonly schema: LibraryListSchema<M>;
+    private readonly viewConfig: LibraryViewConfig<M>;
     private readonly state: LibraryListState<M>;
     private entries: LibraryEntry<M>[] = [];
     private loadError?: unknown;
@@ -119,6 +121,7 @@ export abstract class FilterableLibraryRenderer<M extends FilterableLibraryMode>
         this.mode = mode;
         this.source = LIBRARY_DATA_SOURCES[mode] as LibraryDataSource<M>;
         this.schema = LIBRARY_LIST_SCHEMAS[mode] as LibraryListSchema<M>;
+        this.viewConfig = LIBRARY_VIEW_CONFIGS[mode] as LibraryViewConfig<M>;
         this.state = new LibraryListState(this.schema);
     }
 
@@ -136,7 +139,55 @@ export abstract class FilterableLibraryRenderer<M extends FilterableLibraryMode>
         this.renderInternal();
     }
 
-    protected abstract renderEntry(row: HTMLElement, entry: LibraryEntry<M>): void;
+    protected renderEntry(row: HTMLElement, entry: LibraryEntry<M>): void {
+        const config = this.viewConfig;
+
+        // Name
+        const nameContainer = row.createDiv({ cls: "sm-cc-item__name-container" });
+        nameContainer.createDiv({ cls: "sm-cc-item__name", text: entry.name });
+
+        // Metadata
+        if (config.metadataFields.length > 0) {
+            const infoContainer = row.createDiv({ cls: "sm-cc-item__info" });
+            for (const field of config.metadataFields) {
+                const value = field.getValue(entry);
+                if (value) {
+                    infoContainer.createEl("span", { cls: field.cls, text: value });
+                }
+            }
+        }
+
+        // Actions
+        this.renderActions(row, entry);
+    }
+
+    private renderActions(container: HTMLElement, entry: LibraryEntry<M>): void {
+        const config = this.viewConfig;
+        const actions = container.createDiv({ cls: "sm-cc-item__actions" });
+
+        const context: ActionContext<M> = {
+            reloadEntries: () => this.reloadEntries(),
+            getRenderer: () => this.viewConfig,
+            getFilterSelection: (id) => this.getFilterSelection(id),
+        };
+
+        for (const action of config.actions) {
+            const cls = action.cls ? `sm-cc-item__action ${action.cls}` : "sm-cc-item__action";
+            const btn = actions.createEl("button", { text: action.label, cls });
+            btn.onclick = async () => {
+                await action.execute(this.app, entry, context);
+            };
+        }
+    }
+
+    async handleCreate(name: string): Promise<void> {
+        const context: ActionContext<M> = {
+            reloadEntries: () => this.reloadEntries(),
+            getRenderer: () => this.viewConfig,
+            getFilterSelection: (id) => this.getFilterSelection(id),
+        };
+        await this.viewConfig.handleCreate(this.app, name, context);
+    }
 
     protected getEmptyMessage(): string {
         return "No entries found.";
