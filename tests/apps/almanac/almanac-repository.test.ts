@@ -185,4 +185,32 @@ describe("VaultAlmanacRepository", () => {
             }),
         ).rejects.toMatchObject({ code: "astronomy_source_missing" });
     });
+
+    it("accepts astronomical phenomena with a configured reference calendar", async () => {
+        await repository.upsertPhenomenon({
+            id: "phen-astronomical-ref",
+            name: "Solar Alignment",
+            category: "astronomy",
+            visibility: "selected",
+            appliesToCalendarIds: [gregorianSchema.id],
+            rule: {
+                type: "astronomical",
+                source: "sunrise",
+                referenceCalendarId: gregorianSchema.id,
+            } as any,
+            timePolicy: "all_day",
+            priority: 2,
+            schemaVersion: "1.0.0",
+        });
+
+        const updated = await repository.updateLinks({
+            phenomenonId: "phen-astronomical-ref",
+            calendarLinks: [
+                { calendarId: gregorianSchema.id, priority: 5 },
+            ],
+        });
+
+        expect(updated.appliesToCalendarIds).toEqual([gregorianSchema.id]);
+        expect(updated.priority).toBe(5);
+    });
 });

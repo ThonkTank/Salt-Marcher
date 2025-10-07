@@ -129,7 +129,7 @@ export class VaultAlmanacRepository implements AlmanacRepository {
     }
 
     if (phenomenon.rule.type === "astronomical") {
-      const hasReference = Boolean(phenomenon.rule.astronomical?.referenceCalendarId);
+      const hasReference = Boolean(phenomenon.rule.referenceCalendarId);
       const hasHookReference = update.calendarLinks.some(link =>
         link.hook && typeof link.hook.config?.referenceCalendarId === "string",
       );
