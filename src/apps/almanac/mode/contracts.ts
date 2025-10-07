@@ -68,6 +68,22 @@ export interface AlmanacUiStateSlice {
     readonly error?: string;
 }
 
+export interface CalendarCreateDraft {
+    readonly id: string;
+    readonly name: string;
+    readonly description: string;
+    readonly daysPerWeek: string;
+    readonly monthCount: string;
+    readonly monthLength: string;
+    readonly hoursPerDay: string;
+    readonly minutesPerHour: string;
+    readonly minuteStep: string;
+    readonly epochYear: string;
+    readonly epochDay: string;
+}
+
+export type CalendarCreateField = keyof CalendarCreateDraft;
+
 export interface ManagerUiStateSlice {
     readonly viewMode: CalendarManagerViewMode;
     readonly zoom: CalendarViewZoom;
@@ -77,6 +93,9 @@ export interface ManagerUiStateSlice {
     readonly anchorTimestamp: CalendarTimestamp | null;
     readonly agendaItems: ReadonlyArray<CalendarEvent>;
     readonly jumpPreview: ReadonlyArray<CalendarEvent>;
+    readonly createDraft: CalendarCreateDraft;
+    readonly createErrors: ReadonlyArray<string>;
+    readonly isCreating: boolean;
 }
 
 export interface EventsUiStateSlice {
@@ -156,6 +175,7 @@ export type AlmanacEvent =
     | { readonly type: "MANAGER_VIEW_MODE_CHANGED"; readonly viewMode: CalendarManagerViewMode }
     | { readonly type: "MANAGER_ZOOM_CHANGED"; readonly zoom: CalendarViewZoom }
     | { readonly type: "MANAGER_NAVIGATION_REQUESTED"; readonly direction: 'prev' | 'next' | 'today' }
+    | { readonly type: "MANAGER_CREATE_FORM_UPDATED"; readonly field: CalendarCreateField; readonly value: string }
     | { readonly type: "TIME_JUMP_PREVIEW_REQUESTED"; readonly timestamp: CalendarTimestamp }
     | { readonly type: "MANAGER_AGENDA_REFRESH_REQUESTED" }
     | { readonly type: "EVENTS_VIEW_MODE_CHANGED"; readonly viewMode: EventsViewMode }
@@ -165,6 +185,7 @@ export type AlmanacEvent =
     | { readonly type: "MANAGER_SELECTION_CHANGED"; readonly selection: ReadonlyArray<string> }
     | { readonly type: "CALENDAR_SELECT_REQUESTED"; readonly calendarId: string }
     | { readonly type: "CALENDAR_DEFAULT_SET_REQUESTED"; readonly calendarId: string }
+    | { readonly type: "CALENDAR_CREATE_REQUESTED" }
     | { readonly type: "TIME_ADVANCE_REQUESTED"; readonly amount: number; readonly unit: "day" | "hour" | "minute" }
     | { readonly type: "TIME_JUMP_REQUESTED"; readonly timestamp: CalendarTimestamp }
     | { readonly type: "CALENDAR_DATA_REFRESH_REQUESTED" }
@@ -174,6 +195,22 @@ export const DEFAULT_ALMANAC_MODE: AlmanacMode = "dashboard";
 export const DEFAULT_MANAGER_VIEW_MODE: CalendarManagerViewMode = "calendar";
 export const DEFAULT_EVENTS_VIEW_MODE: EventsViewMode = "timeline";
 export const DEFAULT_MANAGER_ZOOM: CalendarViewZoom = "month";
+
+export function createDefaultCalendarDraft(): CalendarCreateDraft {
+    return {
+        id: "",
+        name: "",
+        description: "",
+        daysPerWeek: "7",
+        monthCount: "12",
+        monthLength: "30",
+        hoursPerDay: "24",
+        minutesPerHour: "60",
+        minuteStep: "1",
+        epochYear: "1",
+        epochDay: "1",
+    };
+}
 
 export function createInitialAlmanacState(): AlmanacState {
     return {
@@ -210,6 +247,9 @@ export function createInitialAlmanacState(): AlmanacState {
             anchorTimestamp: null,
             agendaItems: [],
             jumpPreview: [],
+            createDraft: createDefaultCalendarDraft(),
+            createErrors: [],
+            isCreating: false,
         },
         eventsUiState: {
             viewMode: DEFAULT_EVENTS_VIEW_MODE,

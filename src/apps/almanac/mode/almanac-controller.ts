@@ -527,6 +527,8 @@ export class AlmanacController {
 
     private renderManager(host: HTMLElement, state: AlmanacState): void {
         const section = host.createDiv({ cls: 'almanac-manager' });
+        const creationSection = section.createDiv({ cls: 'almanac-section almanac-manager__create' });
+        this.renderCalendarCreateForm(creationSection, state);
         const header = section.createDiv({ cls: 'almanac-manager__controls' });
 
         const modeGroup = header.createDiv({ cls: 'almanac-toggle-group' });
@@ -560,6 +562,93 @@ export class AlmanacController {
         } else {
             this.renderManagerCalendarView(section, state);
         }
+    }
+
+    private renderCalendarCreateForm(host: HTMLElement, state: AlmanacState): void {
+        host.createEl('h2', { text: 'Create calendar' });
+        host.createEl('p', {
+            text: 'Define a quick calendar skeleton. You can refine months and events later in the manager.',
+            cls: 'almanac-section__helper',
+        });
+
+        if (state.managerUiState.createErrors.length > 0) {
+            const errorList = host.createEl('ul', { cls: 'almanac-form-errors' });
+            state.managerUiState.createErrors.forEach(message => {
+                errorList.createEl('li', { text: message });
+            });
+        }
+
+        const form = host.createEl('form', { cls: 'almanac-create-form' });
+        form.addEventListener('submit', event => {
+            event.preventDefault();
+            void this.runDispatch({ type: 'CALENDAR_CREATE_REQUESTED' });
+        });
+
+        const grid = form.createDiv({ cls: 'almanac-create-form__grid' });
+        const { createDraft, isCreating } = state.managerUiState;
+        const isDisabled = isCreating || state.calendarState.isPersisting;
+
+        const buildInput = (
+            field: keyof typeof createDraft,
+            label: string,
+            options: { type?: string; min?: string; step?: string } = {},
+        ): HTMLInputElement => {
+            const wrapper = grid.createDiv({ cls: 'almanac-form-field' });
+            wrapper.createEl('label', { text: label, attr: { for: `almanac-${field}` } });
+            const input = wrapper.createEl('input', {
+                attr: {
+                    id: `almanac-${field}`,
+                    name: `almanac-${field}`,
+                    type: options.type ?? 'text',
+                    value: createDraft[field],
+                    ...(options.min ? { min: options.min } : {}),
+                    ...(options.step ? { step: options.step } : {}),
+                },
+            }) as HTMLInputElement;
+            input.disabled = isDisabled;
+            input.addEventListener('input', () => {
+                void this.runDispatch({
+                    type: 'MANAGER_CREATE_FORM_UPDATED',
+                    field: field,
+                    value: input.value,
+                });
+            });
+            return input;
+        };
+
+        buildInput('id', 'Identifier');
+        buildInput('name', 'Name');
+
+        const descriptionWrapper = grid.createDiv({ cls: 'almanac-form-field almanac-form-field--wide' });
+        descriptionWrapper.createEl('label', { text: 'Description', attr: { for: 'almanac-description' } });
+        const description = descriptionWrapper.createEl('textarea', {
+            attr: { id: 'almanac-description', rows: '2' },
+            text: createDraft.description,
+        }) as HTMLTextAreaElement;
+        description.disabled = isDisabled;
+        description.addEventListener('input', () => {
+            void this.runDispatch({
+                type: 'MANAGER_CREATE_FORM_UPDATED',
+                field: 'description',
+                value: description.value,
+            });
+        });
+
+        buildInput('daysPerWeek', 'Days per week', { type: 'number', min: '1', step: '1' });
+        buildInput('monthCount', 'Months per year', { type: 'number', min: '1', step: '1' });
+        buildInput('monthLength', 'Days per month', { type: 'number', min: '1', step: '1' });
+        buildInput('hoursPerDay', 'Hours per day', { type: 'number', min: '1', step: '1' });
+        buildInput('minutesPerHour', 'Minutes per hour', { type: 'number', min: '1', step: '1' });
+        buildInput('minuteStep', 'Minute step', { type: 'number', min: '1', step: '1' });
+        buildInput('epochYear', 'Epoch year', { type: 'number', min: '1', step: '1' });
+        buildInput('epochDay', 'Epoch day', { type: 'number', min: '1', step: '1' });
+
+        const actions = form.createDiv({ cls: 'almanac-create-form__actions' });
+        const submit = actions.createEl('button', {
+            text: isCreating ? 'Creating…' : 'Create calendar',
+            attr: { type: 'submit' },
+        });
+        submit.disabled = isDisabled;
     }
 
     private renderCalendarOverview(host: HTMLElement, state: AlmanacState): void {

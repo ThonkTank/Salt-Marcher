@@ -11,6 +11,7 @@
  */
 
 import {
+    createDefaultCalendarDraft,
     createInitialAlmanacState,
     DEFAULT_ALMANAC_MODE,
     DEFAULT_EVENTS_VIEW_MODE,
@@ -21,6 +22,8 @@ import {
     type AlmanacPreferencesSnapshot,
     type AlmanacState,
     type AlmanacStateListener,
+    type CalendarCreateDraft,
+    type CalendarCreateField,
     type CalendarManagerViewMode,
     type CalendarStateSlice,
     type CalendarViewZoom,
@@ -104,6 +107,12 @@ export class AlmanacStateMachine {
                 break;
             case "MANAGER_NAVIGATION_REQUESTED":
                 this.handleManagerNavigation(event.direction);
+                break;
+            case "MANAGER_CREATE_FORM_UPDATED":
+                this.handleCreateFormUpdated(event.field, event.value);
+                break;
+            case "CALENDAR_CREATE_REQUESTED":
+                await this.handleCalendarCreate();
                 break;
             case "TIME_JUMP_PREVIEW_REQUESTED":
                 await this.handleTimeJumpPreview(event.timestamp);
@@ -717,6 +726,97 @@ export class AlmanacStateMachine {
                 selection: unique,
             };
         });
+    }
+
+    private handleCreateFormUpdated(field: CalendarCreateField, value: string): void {
+        const numericFields: CalendarCreateField[] = [
+            "daysPerWeek",
+            "monthCount",
+            "monthLength",
+            "hoursPerDay",
+            "minutesPerHour",
+            "minuteStep",
+            "epochYear",
+            "epochDay",
+        ];
+
+        let nextValue = value;
+        if (field === "id") {
+            nextValue = this.slugify(value);
+        } else if (numericFields.includes(field)) {
+            nextValue = value.replace(/[^0-9]/g, "");
+        }
+
+        this.setState(draft => {
+            draft.managerUiState = {
+                ...draft.managerUiState,
+                createDraft: {
+                    ...draft.managerUiState.createDraft,
+                    [field]: nextValue,
+                },
+                createErrors: [],
+            };
+        });
+    }
+
+    private async handleCalendarCreate(): Promise<void> {
+        const draft = this.state.managerUiState.createDraft;
+
+        this.setState(draftState => {
+            draftState.managerUiState = {
+                ...draftState.managerUiState,
+                isCreating: true,
+                createErrors: [],
+            };
+        });
+
+        const { schema, errors } = await this.buildCalendarSchemaFromDraft(draft);
+
+        if (!schema || errors.length > 0) {
+            this.setState(draftState => {
+                draftState.managerUiState = {
+                    ...draftState.managerUiState,
+                    isCreating: false,
+                    createErrors: errors.length > 0 ? errors : ["Unable to create calendar with current data."],
+                };
+            });
+            return;
+        }
+
+        try {
+            const initialTimestamp = createDayTimestamp(
+                schema.id,
+                schema.epoch.year,
+                schema.epoch.monthId,
+                schema.epoch.day,
+            );
+
+            await this.calendarRepo.createCalendar(schema);
+            await this.gateway.setActiveCalendar(schema.id, initialTimestamp);
+            await this.refreshCalendarData();
+
+            const currentTimestamp = this.state.calendarState.currentTimestamp ?? initialTimestamp;
+
+            this.setState(draftState => {
+                draftState.managerUiState = {
+                    ...draftState.managerUiState,
+                    isCreating: false,
+                    createErrors: [],
+                    createDraft: createDefaultCalendarDraft(),
+                    anchorTimestamp: currentTimestamp,
+                    selection: [],
+                };
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Failed to create calendar";
+            this.setState(draftState => {
+                draftState.managerUiState = {
+                    ...draftState.managerUiState,
+                    isCreating: false,
+                    createErrors: [message],
+                };
+            });
+        }
     }
 
     private async handleCalendarSelect(calendarId: string): Promise<void> {
@@ -1386,6 +1486,128 @@ export class AlmanacStateMachine {
         }
         const firstMonth = schema.months[0] ?? { id: schema.epoch.monthId, length: schema.months[0]?.length ?? 30 };
         return createDayTimestamp(activeId, schema.epoch.year, firstMonth.id, schema.epoch.day);
+    }
+
+    private async buildCalendarSchemaFromDraft(
+        draft: CalendarCreateDraft,
+    ): Promise<{ schema: CalendarSchema | null; errors: string[] }> {
+        const errors: string[] = [];
+
+        const rawId = draft.id.trim();
+        const id = this.slugify(rawId);
+        if (!id) {
+            errors.push("Identifier is required.");
+        }
+
+        const name = draft.name.trim();
+        if (!name) {
+            errors.push("Name is required.");
+        }
+
+        const daysPerWeek = Number(draft.daysPerWeek || "0");
+        if (!Number.isFinite(daysPerWeek) || daysPerWeek < 1) {
+            errors.push("Days per week must be at least 1.");
+        }
+
+        const monthCount = Number(draft.monthCount || "0");
+        if (!Number.isFinite(monthCount) || monthCount < 1) {
+            errors.push("Month count must be at least 1.");
+        }
+
+        const monthLength = Number(draft.monthLength || "0");
+        if (!Number.isFinite(monthLength) || monthLength < 1) {
+            errors.push("Month length must be at least 1.");
+        }
+
+        const hoursPerDay = Number(draft.hoursPerDay || "24");
+        if (!Number.isFinite(hoursPerDay) || hoursPerDay < 1) {
+            errors.push("Hours per day must be at least 1.");
+        }
+
+        const minutesPerHour = Number(draft.minutesPerHour || "60");
+        if (!Number.isFinite(minutesPerHour) || minutesPerHour < 1) {
+            errors.push("Minutes per hour must be at least 1.");
+        }
+
+        const minuteStep = Number(draft.minuteStep || "1");
+        if (!Number.isFinite(minuteStep) || minuteStep < 1) {
+            errors.push("Minute step must be at least 1.");
+        } else if (minuteStep > minutesPerHour) {
+            errors.push("Minute step must not exceed minutes per hour.");
+        }
+
+        const epochYear = Number(draft.epochYear || "1");
+        if (!Number.isFinite(epochYear) || epochYear < 1) {
+            errors.push("Epoch year must be at least 1.");
+        }
+
+        const epochDay = Number(draft.epochDay || "1");
+        if (!Number.isFinite(epochDay) || epochDay < 1) {
+            errors.push("Epoch day must be at least 1.");
+        } else if (epochDay > monthLength) {
+            errors.push("Epoch day must not exceed the chosen month length.");
+        }
+
+        if (errors.length > 0) {
+            return { schema: null, errors };
+        }
+
+        const existing = await this.calendarRepo.getCalendar(id);
+        if (existing) {
+            return { schema: null, errors: [`Calendar with id "${id}" already exists.`] };
+        }
+
+        const safeMonthCount = Math.max(1, Math.floor(monthCount));
+        const safeMonthLength = Math.max(1, Math.floor(monthLength));
+        const safeDaysPerWeek = Math.max(1, Math.floor(daysPerWeek));
+        const safeHoursPerDay = Math.max(1, Math.floor(hoursPerDay));
+        const safeMinutesPerHour = Math.max(1, Math.floor(minutesPerHour));
+        const safeMinuteStep = Math.max(1, Math.floor(minuteStep));
+        const safeEpochYear = Math.max(1, Math.floor(epochYear));
+        const safeEpochDay = Math.max(1, Math.min(Math.floor(epochDay), safeMonthLength));
+
+        const monthPrefix = this.slugify(name || id) || "month";
+        const months = Array.from({ length: safeMonthCount }, (_, index) => ({
+            id: `${monthPrefix}-m${index + 1}`,
+            name: `Month ${index + 1}`,
+            length: safeMonthLength,
+        }));
+
+        if (months.length === 0) {
+            return { schema: null, errors: ["Calendar must include at least one month."] };
+        }
+
+        const epochMonthId = months[0]?.id ?? `${monthPrefix}-m1`;
+
+        const schema: CalendarSchema = {
+            id,
+            name,
+            description: draft.description.trim() || undefined,
+            daysPerWeek: safeDaysPerWeek,
+            months,
+            hoursPerDay: safeHoursPerDay,
+            minutesPerHour: safeMinutesPerHour,
+            minuteStep: safeMinuteStep,
+            secondsPerMinute: 60,
+            epoch: {
+                year: safeEpochYear,
+                monthId: epochMonthId,
+                day: safeEpochDay,
+            },
+            isDefaultGlobal: false,
+            schemaVersion: "1.0.0",
+        };
+
+        return { schema, errors: [] };
+    }
+
+    private slugify(value: string): string {
+        return value
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9-]+/g, "-")
+            .replace(/^-+|-+$/g, "")
+            .replace(/--+/g, "-");
     }
 
     private async persistPreferences(partial: Partial<AlmanacPreferencesSnapshot>): Promise<void> {

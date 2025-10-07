@@ -124,3 +124,81 @@
 .almanac-empty-state p {
   color: var(--text-faint);
 }
+
+.almanac-section__helper {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.almanac-create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.almanac-create-form__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.almanac-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.almanac-form-field label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.almanac-form-field input,
+.almanac-form-field textarea {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  color: var(--text-normal);
+}
+
+.almanac-form-field textarea {
+  resize: vertical;
+}
+
+.almanac-form-field--wide {
+  grid-column: span 2;
+}
+
+.almanac-create-form__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.almanac-create-form__actions button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  cursor: pointer;
+}
+
+.almanac-create-form__actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.almanac-form-errors {
+  margin: 0 0 12px 0;
+  padding-left: 18px;
+  color: var(--text-error);
+}
+
+.almanac-form-errors li {
+  margin-bottom: 4px;
+}
