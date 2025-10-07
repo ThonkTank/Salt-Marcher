@@ -116,11 +116,29 @@ export interface EventsUiStateSlice {
     readonly selectedPhenomenonId?: string | null;
     readonly selectedPhenomenonDetail?: PhenomenonDetailView | null;
     readonly isDetailLoading: boolean;
+    readonly isEditorOpen: boolean;
+    readonly editorDraft: PhenomenonEditorDraft | null;
+    readonly isSaving: boolean;
+    readonly editorError?: string;
+    readonly bulkSelection: ReadonlyArray<string>;
+    readonly lastExportPayload?: string;
+    readonly isImportDialogOpen: boolean;
+    readonly importError?: string;
+    readonly importSummary?: ImportSummary | null;
 }
 
 export interface EventsFilterState {
     readonly categories: ReadonlyArray<string>;
     readonly calendarIds: ReadonlyArray<string>;
+}
+
+export interface PhenomenonEditorDraft {
+    readonly id: string;
+    readonly name: string;
+    readonly category: string;
+    readonly visibility: "all_calendars" | "selected";
+    readonly appliesToCalendarIds: ReadonlyArray<string>;
+    readonly notes?: string;
 }
 
 export interface PhenomenonDetailView {
@@ -147,6 +165,11 @@ export interface TravelLeafStateSlice {
 
 export interface TelemetryStateSlice {
     readonly lastEvents: ReadonlyArray<string>;
+}
+
+export interface ImportSummary {
+    readonly imported: number;
+    readonly failed: number;
 }
 
 export interface AlmanacState {
@@ -182,6 +205,19 @@ export type AlmanacEvent =
     | { readonly type: "EVENTS_FILTER_CHANGED"; readonly filters: EventsFilterState }
     | { readonly type: "EVENTS_PHENOMENON_SELECTED"; readonly phenomenonId: string }
     | { readonly type: "EVENTS_PHENOMENON_DETAIL_CLOSED" }
+    | { readonly type: "EVENTS_BULK_SELECTION_UPDATED"; readonly selection: ReadonlyArray<string> }
+    | { readonly type: "PHENOMENON_EDIT_REQUESTED"; readonly phenomenonId?: string | null }
+    | { readonly type: "PHENOMENON_EDIT_CANCELLED" }
+    | { readonly type: "PHENOMENON_SAVE_REQUESTED"; readonly draft: PhenomenonEditorDraft }
+    | {
+          readonly type: "EVENT_BULK_ACTION_REQUESTED";
+          readonly action: "delete" | "export";
+          readonly ids?: ReadonlyArray<string>;
+      }
+    | { readonly type: "EVENT_EXPORT_CLEARED" }
+    | { readonly type: "EVENT_IMPORT_REQUESTED" }
+    | { readonly type: "EVENT_IMPORT_CANCELLED" }
+    | { readonly type: "EVENT_IMPORT_SUBMITTED"; readonly payload: string }
     | { readonly type: "MANAGER_SELECTION_CHANGED"; readonly selection: ReadonlyArray<string> }
     | { readonly type: "CALENDAR_SELECT_REQUESTED"; readonly calendarId: string }
     | { readonly type: "CALENDAR_DEFAULT_SET_REQUESTED"; readonly calendarId: string }
@@ -263,6 +299,15 @@ export function createInitialAlmanacState(): AlmanacState {
             selectedPhenomenonId: null,
             selectedPhenomenonDetail: null,
             isDetailLoading: false,
+            isEditorOpen: false,
+            editorDraft: null,
+            isSaving: false,
+            editorError: undefined,
+            bulkSelection: [],
+            lastExportPayload: undefined,
+            isImportDialogOpen: false,
+            importError: undefined,
+            importSummary: null,
         },
         travelLeafState: {
             visible: false,

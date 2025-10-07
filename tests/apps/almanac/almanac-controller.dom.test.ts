@@ -149,7 +149,7 @@ describe("AlmanacController Dashboard", () => {
         const detailTitle = container.querySelector('.almanac-phenomenon-detail__title');
         expect(detailTitle?.textContent).toContain('Harvest Moon');
 
-        const closeButton = container.querySelector('.almanac-phenomenon-detail__header button');
+        const closeButton = container.querySelector('[data-action="close-detail"]');
         expect(closeButton).toBeTruthy();
         closeButton?.dispatchEvent(new Event('click'));
         await Promise.resolve();
@@ -163,6 +163,114 @@ describe("AlmanacController Dashboard", () => {
 
         const resetState = stateMachine.getState();
         expect(resetState.eventsUiState.filterCount).toBe(0);
+    });
+
+    it("öffnet Editor- und Import-Dialoge und führt Bulk-Aktionen aus", async () => {
+        const app = new App();
+        const controller = new AlmanacController(app);
+        const container = document.createElement("div");
+
+        await controller.onOpen(container);
+
+        const stateMachine = (controller as unknown as { stateMachine: AlmanacStateMachine }).stateMachine;
+        await stateMachine.dispatch({ type: "ALMANAC_MODE_SELECTED", mode: "events" });
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        const addButton = container.querySelector('[data-action="add-phenomenon"]') as HTMLButtonElement | null;
+        expect(addButton).toBeTruthy();
+        addButton?.dispatchEvent(new Event('click'));
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        const editorModal = document.querySelector('[data-modal="phenomenon-editor"]');
+        expect(editorModal).toBeTruthy();
+        const [nameInput, categoryInput] = Array.from(
+            editorModal?.querySelectorAll('input[type="text"]') ?? [],
+        ) as HTMLInputElement[];
+        expect(nameInput).toBeTruthy();
+        if (nameInput) {
+            nameInput.value = 'Dialog Phenomenon';
+            nameInput.dispatchEvent(new Event('input'));
+        }
+        if (categoryInput) {
+            categoryInput.value = 'custom';
+            categoryInput.dispatchEvent(new Event('input'));
+        }
+        const saveButton = editorModal?.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+        expect(saveButton).toBeTruthy();
+        saveButton?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        expect(document.querySelector('[data-modal="phenomenon-editor"]')).toBeNull();
+        let eventsState = stateMachine.getState().eventsUiState;
+        expect(eventsState.phenomena.some(item => item.title === 'Dialog Phenomenon')).toBe(true);
+
+        const importButton = container.querySelector('[data-action="import-phenomena"]') as HTMLButtonElement | null;
+        expect(importButton).toBeTruthy();
+        importButton?.dispatchEvent(new Event('click'));
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        const importModal = document.querySelector('[data-modal="event-import"]');
+        expect(importModal).toBeTruthy();
+        const importTextarea = importModal?.querySelector('textarea[data-role="import-input"]') as HTMLTextAreaElement | null;
+        expect(importTextarea).toBeTruthy();
+        if (importTextarea) {
+            importTextarea.value = JSON.stringify([
+                {
+                    id: 'phen-import-ui',
+                    name: 'Imported via UI',
+                    category: 'custom',
+                    visibility: 'all_calendars',
+                    appliesToCalendarIds: [],
+                    rule: { type: 'annual', offsetDayOfYear: 8 },
+                    timePolicy: 'all_day',
+                    priority: 0,
+                    schemaVersion: '1.0.0',
+                },
+            ]);
+            importTextarea.dispatchEvent(new Event('input'));
+        }
+        const importSubmit = importModal?.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+        expect(importSubmit).toBeTruthy();
+        importSubmit?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        expect(document.querySelector('[data-modal="event-import"]')).toBeNull();
+        eventsState = stateMachine.getState().eventsUiState;
+        expect(eventsState.importSummary?.imported).toBeGreaterThan(0);
+        expect(eventsState.phenomena.some(item => item.id === 'phen-import-ui')).toBe(true);
+        const importSummary = container.querySelector('[data-role="import-summary"]');
+        expect(importSummary?.textContent).toContain('Imported');
+
+        const tableToggle = Array.from(container.querySelectorAll('.almanac-toggle-group button')).find(
+            button => button.textContent === 'Table',
+        );
+        tableToggle?.dispatchEvent(new Event('click'));
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        const selectionBoxes = Array.from(
+            container.querySelectorAll('.almanac-phenomena-table input[type="checkbox"][data-role="bulk-select"]'),
+        ) as HTMLInputElement[];
+        expect(selectionBoxes.length).toBeGreaterThan(1);
+        selectionBoxes.slice(0, 2).forEach(box => {
+            box.checked = true;
+            box.dispatchEvent(new Event('change'));
+        });
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        const exportButton = container.querySelector('[data-action="export-selected"]') as HTMLButtonElement | null;
+        exportButton?.dispatchEvent(new Event('click'));
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        const exportPreview = container.querySelector('textarea[data-role="export-output"]') as HTMLTextAreaElement | null;
+        expect(exportPreview).toBeTruthy();
+        expect(exportPreview?.value).toContain('phen-');
+
+        const deleteButton = container.querySelector('[data-action="delete-selected"]') as HTMLButtonElement | null;
+        deleteButton?.dispatchEvent(new Event('click'));
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        eventsState = stateMachine.getState().eventsUiState;
+        expect(eventsState.bulkSelection).toHaveLength(0);
     });
 
     it("ermöglicht Kalenderauswahl und Default-Setzen", async () => {

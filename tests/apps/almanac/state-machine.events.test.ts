@@ -91,4 +91,75 @@ describe("AlmanacStateMachine events refresh", () => {
         expect(preferences.eventsFilters?.categories).toEqual(["astronomy"]);
         expect(preferences.lastSelectedPhenomenonId).toBe("phen-harvest-moon");
     });
+
+    it("allows creating a phenomenon through the editor", async () => {
+        await stateMachine.dispatch({ type: "ALMANAC_MODE_SELECTED", mode: "events" });
+
+        await stateMachine.dispatch({ type: "PHENOMENON_EDIT_REQUESTED" });
+        const openState = stateMachine.getState();
+        expect(openState.eventsUiState.isEditorOpen).toBe(true);
+        const draft = openState.eventsUiState.editorDraft;
+        expect(draft).toBeTruthy();
+        if (!draft) throw new Error("expected draft to exist");
+
+        const updatedDraft = {
+            ...draft,
+            name: "Test Phenomenon",
+            category: "custom",
+        };
+
+        await stateMachine.dispatch({ type: "PHENOMENON_SAVE_REQUESTED", draft: updatedDraft });
+        const savedState = stateMachine.getState();
+        expect(savedState.eventsUiState.isEditorOpen).toBe(false);
+        expect(savedState.eventsUiState.editorDraft).toBeNull();
+        expect(savedState.eventsUiState.phenomena.some(item => item.title === "Test Phenomenon")).toBe(true);
+    });
+
+    it("supports cancelling the phenomenon editor", async () => {
+        await stateMachine.dispatch({ type: "ALMANAC_MODE_SELECTED", mode: "events" });
+        await stateMachine.dispatch({ type: "PHENOMENON_EDIT_REQUESTED" });
+        await stateMachine.dispatch({ type: "PHENOMENON_EDIT_CANCELLED" });
+        const state = stateMachine.getState();
+        expect(state.eventsUiState.isEditorOpen).toBe(false);
+        expect(state.eventsUiState.editorDraft).toBeNull();
+    });
+
+    it("exports and deletes phenomena via bulk actions", async () => {
+        await stateMachine.dispatch({ type: "ALMANAC_MODE_SELECTED", mode: "events" });
+        await stateMachine.dispatch({
+            type: "EVENTS_BULK_SELECTION_UPDATED",
+            selection: ["phen-spring-bloom", "phen-harvest-moon"],
+        });
+
+        await stateMachine.dispatch({ type: "EVENT_BULK_ACTION_REQUESTED", action: "export" });
+        let state = stateMachine.getState();
+        expect(state.eventsUiState.lastExportPayload).toContain("phen-spring-bloom");
+
+        await stateMachine.dispatch({ type: "EVENT_BULK_ACTION_REQUESTED", action: "delete" });
+        state = stateMachine.getState();
+        expect(state.eventsUiState.phenomena.some(item => item.id === "phen-spring-bloom")).toBe(false);
+        expect(state.eventsUiState.bulkSelection).toHaveLength(0);
+    });
+
+    it("imports phenomena payloads from JSON", async () => {
+        await stateMachine.dispatch({ type: "ALMANAC_MODE_SELECTED", mode: "events" });
+        const payload = JSON.stringify([
+            {
+                id: "phen-imported-ui",
+                name: "Imported via test",
+                category: "custom",
+                visibility: "all_calendars",
+                appliesToCalendarIds: [],
+                rule: { type: "annual", offsetDayOfYear: 12 },
+                timePolicy: "all_day",
+                priority: 0,
+                schemaVersion: "1.0.0",
+            },
+        ]);
+
+        await stateMachine.dispatch({ type: "EVENT_IMPORT_SUBMITTED", payload });
+        const state = stateMachine.getState();
+        expect(state.eventsUiState.importSummary?.imported).toBe(1);
+        expect(state.eventsUiState.phenomena.some(item => item.id === "phen-imported-ui")).toBe(true);
+    });
 });
