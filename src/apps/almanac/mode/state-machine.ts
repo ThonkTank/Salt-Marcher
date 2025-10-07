@@ -30,12 +30,10 @@ import {
     type EventsFilterState,
     type PhenomenonDetailView,
 } from "./contracts";
-import type {
-    CalendarRepository,
-    EventRepository,
-    PhenomenonRepository,
-} from "../data/in-memory-repository";
-import { InMemoryStateGateway } from "../data/in-memory-gateway";
+import type { CalendarRepository } from "../data/calendar-repository";
+import type { EventRepository } from "../data/event-repository";
+import type { PhenomenonRepository } from "../data/in-memory-repository";
+import type { CalendarStateGateway } from "../data/calendar-state-gateway";
 import { getMonthById, getMonthIndex, getTimeDefinition, type CalendarSchema } from "../domain/calendar-schema";
 import type { CalendarEvent } from "../domain/calendar-event";
 import {
@@ -77,7 +75,7 @@ export class AlmanacStateMachine {
     constructor(
         private readonly calendarRepo: CalendarRepository,
         private readonly eventRepo: EventRepository,
-        private readonly gateway: InMemoryStateGateway,
+        private readonly gateway: CalendarStateGateway,
         private readonly phenomenonRepo: PhenomenonRepository,
     ) {}
 
@@ -239,7 +237,7 @@ export class AlmanacStateMachine {
         try {
             const [calendars, snapshot, preferences, phenomena] = await Promise.all([
                 this.calendarRepo.listCalendars(),
-                this.gateway.loadSnapshot(travelId ?? undefined),
+                this.gateway.loadSnapshot(travelId ? { travelId } : undefined),
                 this.gateway.loadPreferences(),
                 this.phenomenonRepo.listPhenomena(),
             ]);
@@ -792,7 +790,7 @@ export class AlmanacStateMachine {
             );
 
             await this.calendarRepo.createCalendar(schema);
-            await this.gateway.setActiveCalendar(schema.id, initialTimestamp);
+            await this.gateway.setActiveCalendar(schema.id, { initialTimestamp });
             await this.refreshCalendarData();
 
             const currentTimestamp = this.state.calendarState.currentTimestamp ?? initialTimestamp;
@@ -841,7 +839,7 @@ export class AlmanacStateMachine {
         try {
             const existingTimestamp = this.state.calendarState.currentTimestamp;
             const timestamp = existingTimestamp?.calendarId === calendarId ? existingTimestamp : undefined;
-            await this.gateway.setActiveCalendar(calendarId, timestamp);
+            await this.gateway.setActiveCalendar(calendarId, { initialTimestamp: timestamp ?? undefined });
             await this.refreshCalendarData();
             const currentTimestamp = this.state.calendarState.currentTimestamp;
             if (currentTimestamp) {
@@ -883,7 +881,7 @@ export class AlmanacStateMachine {
         });
 
         try {
-            await this.calendarRepo.setGlobalDefault(calendarId);
+            await this.gateway.setDefaultCalendar(calendarId, { scope: "global" });
             await this.refreshCalendarData();
             this.setState(draft => {
                 draft.calendarState = {
@@ -994,8 +992,9 @@ export class AlmanacStateMachine {
                     ...draft.almanacUiState,
                     isLoading: false,
                 };
+                const telemetryLabel = `calendar.time.advance:${unit}:${amount}`;
                 draft.telemetryState = {
-                    lastEvents: ["calendar.time.advance", ...draft.telemetryState.lastEvents].slice(0, 5),
+                    lastEvents: [telemetryLabel, ...draft.telemetryState.lastEvents].slice(0, 5),
                 };
                 draft.eventsUiState = {
                     ...draft.eventsUiState,

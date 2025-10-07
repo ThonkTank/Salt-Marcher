@@ -73,7 +73,7 @@ describe('Default Calendar Resolver', () => {
 
       await calendarRepo.setGlobalDefault('cal-1');
 
-      const defaultCal = await calendarRepo.getGlobalDefault();
+      const defaultCal = await calendarRepo.getGlobalDefaultCalendar();
       expect(defaultCal).toBeTruthy();
       expect(defaultCal?.id).toBe('cal-1');
       expect(defaultCal?.isDefaultGlobal).toBe(true);
@@ -103,7 +103,7 @@ describe('Default Calendar Resolver', () => {
     it('should return null when no global default is set', async () => {
       await calendarRepo.createCalendar(calendar1);
 
-      const defaultCal = await calendarRepo.getGlobalDefault();
+      const defaultCal = await calendarRepo.getGlobalDefaultCalendar();
       expect(defaultCal).toBeNull();
     });
 
@@ -170,12 +170,11 @@ describe('Default Calendar Resolver', () => {
       await calendarRepo.setGlobalDefault('cal-1');
       await calendarRepo.setTravelDefault('travel-1', 'cal-2');
 
-      const effective = await gateway.getEffectiveCalendar('travel-1');
+      const snapshot = await gateway.loadSnapshot({ travelId: 'travel-1' });
 
-      expect(effective).toBeTruthy();
-      expect(effective?.calendar.id).toBe('cal-2');
-      expect(effective?.isGlobalDefault).toBe(false);
-      expect(effective?.wasAutoSelected).toBe(false);
+      expect(snapshot.activeCalendar?.id).toBe('cal-2');
+      expect(snapshot.isGlobalDefault).toBe(false);
+      expect(snapshot.wasAutoSelected).toBe(false);
     });
 
     it('should fall back to global default when no travel default exists', async () => {
@@ -184,30 +183,28 @@ describe('Default Calendar Resolver', () => {
 
       await calendarRepo.setGlobalDefault('cal-1');
 
-      const effective = await gateway.getEffectiveCalendar('travel-1');
+      const snapshot = await gateway.loadSnapshot({ travelId: 'travel-1' });
 
-      expect(effective).toBeTruthy();
-      expect(effective?.calendar.id).toBe('cal-1');
-      expect(effective?.isGlobalDefault).toBe(true);
-      expect(effective?.wasAutoSelected).toBe(false);
+      expect(snapshot.activeCalendar?.id).toBe('cal-1');
+      expect(snapshot.isGlobalDefault).toBe(true);
+      expect(snapshot.wasAutoSelected).toBe(false);
     });
 
     it('should auto-select first available calendar when no defaults exist', async () => {
       await calendarRepo.createCalendar(calendar1);
       await calendarRepo.createCalendar(calendar2);
 
-      const effective = await gateway.getEffectiveCalendar();
+      const snapshot = await gateway.loadSnapshot();
 
-      expect(effective).toBeTruthy();
-      expect(effective?.calendar.id).toBe('cal-1'); // First in list
-      expect(effective?.isGlobalDefault).toBe(false);
-      expect(effective?.wasAutoSelected).toBe(true);
+      expect(snapshot.activeCalendar?.id).toBe('cal-1'); // First in list
+      expect(snapshot.isGlobalDefault).toBe(false);
+      expect(snapshot.wasAutoSelected).toBe(true);
     });
 
     it('should return null when no calendars exist', async () => {
-      const effective = await gateway.getEffectiveCalendar();
+      const snapshot = await gateway.loadSnapshot();
 
-      expect(effective).toBeNull();
+      expect(snapshot.activeCalendar).toBeNull();
     });
   });
 
@@ -240,11 +237,10 @@ describe('Default Calendar Resolver', () => {
       await calendarRepo.deleteCalendar('cal-1');
 
       // Should auto-select remaining calendar
-      const effective = await gateway.getEffectiveCalendar();
+      const snapshot = await gateway.loadSnapshot();
 
-      expect(effective).toBeTruthy();
-      expect(effective?.calendar.id).toBe('cal-2');
-      expect(effective?.wasAutoSelected).toBe(true);
+      expect(snapshot.activeCalendar?.id).toBe('cal-2');
+      expect(snapshot.wasAutoSelected).toBe(true);
     });
   });
 
@@ -281,7 +277,7 @@ describe('Default Calendar Resolver', () => {
       await calendarRepo.setGlobalDefault('cal-1');
       await calendarRepo.setTravelDefault('travel-1', 'cal-2');
 
-      const snapshot = await gateway.loadSnapshot('travel-1');
+      const snapshot = await gateway.loadSnapshot({ travelId: 'travel-1' });
 
       expect(snapshot.defaultCalendarId).toBeNull();
       expect(snapshot.isGlobalDefault).toBe(false);

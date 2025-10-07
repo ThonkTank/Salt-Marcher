@@ -1,7 +1,7 @@
 // tests/apps/almanac/state-machine.manager.test.ts
 // Verifies calendar creation flows in the Almanac manager state machine.
 
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
     InMemoryCalendarRepository,
@@ -37,7 +37,7 @@ describe("AlmanacStateMachine calendar creation", () => {
 
         await gateway.setActiveCalendar(
             gregorianSchema.id,
-            getDefaultCurrentTimestamp(2024),
+            { initialTimestamp: getDefaultCurrentTimestamp(2024) },
         );
 
         stateMachine = new AlmanacStateMachine(
@@ -80,6 +80,14 @@ describe("AlmanacStateMachine calendar creation", () => {
         expect(state.managerUiState.createErrors).toEqual([]);
         expect(state.managerUiState.isCreating).toBe(false);
         expect(state.managerUiState.anchorTimestamp?.calendarId).toBe("travel-calendar");
+    });
+
+    it("persists mode selection via gateway preferences", async () => {
+        const saveSpy = vi.spyOn(gateway, 'savePreferences');
+        await stateMachine.dispatch({ type: "ALMANAC_MODE_SELECTED", mode: "events" });
+        const preferences = await gateway.loadPreferences();
+        expect(preferences.lastMode).toBe("events");
+        expect(saveSpy).toHaveBeenCalledWith(expect.objectContaining({ lastMode: "events" }));
     });
 
     it("surfaces validation errors for incomplete drafts", async () => {
