@@ -10,7 +10,7 @@
 import type { CalendarSchema } from '../domain/calendar-schema';
 import type { CalendarEvent } from '../domain/calendar-event';
 import { createDayTimestamp, createHourTimestamp, createMinuteTimestamp } from '../domain/calendar-timestamp';
-import { createEvent } from '../domain/calendar-event';
+import { createSingleEvent } from '../domain/calendar-event';
 
 export const GREGORIAN_CALENDAR_ID = 'gregorian-standard';
 
@@ -53,7 +53,7 @@ export const gregorianSchema: CalendarSchema = {
  */
 export function createSampleEvents(year: number = 2024): CalendarEvent[] {
   return [
-    createEvent(
+    createSingleEvent(
       'evt-1',
       GREGORIAN_CALENDAR_ID,
       'New Year\'s Day',
@@ -65,7 +65,7 @@ export function createSampleEvents(year: number = 2024): CalendarEvent[] {
         tags: ['holiday', 'celebration'],
       }
     ),
-    createEvent(
+    createSingleEvent(
       'evt-2',
       GREGORIAN_CALENDAR_ID,
       'Team Meeting',
@@ -77,7 +77,7 @@ export function createSampleEvents(year: number = 2024): CalendarEvent[] {
         tags: ['meeting'],
       }
     ),
-    createEvent(
+    createSingleEvent(
       'evt-3',
       GREGORIAN_CALENDAR_ID,
       'Valentine\'s Day',
@@ -89,7 +89,7 @@ export function createSampleEvents(year: number = 2024): CalendarEvent[] {
         tags: ['holiday'],
       }
     ),
-    createEvent(
+    createSingleEvent(
       'evt-4',
       GREGORIAN_CALENDAR_ID,
       'Spring Equinox',
@@ -101,7 +101,7 @@ export function createSampleEvents(year: number = 2024): CalendarEvent[] {
         tags: ['season', 'astronomy'],
       }
     ),
-    createEvent(
+    createSingleEvent(
       'evt-5',
       GREGORIAN_CALENDAR_ID,
       'Project Deadline',
@@ -113,7 +113,7 @@ export function createSampleEvents(year: number = 2024): CalendarEvent[] {
         tags: ['deadline', 'important'],
       }
     ),
-    createEvent(
+    createSingleEvent(
       'evt-6',
       GREGORIAN_CALENDAR_ID,
       'Daily Standup',

@@ -1,17 +1,9 @@
 // src/apps/almanac/domain/phenomenon.ts
 // Domain model for cross-calendar phenomena and related helpers.
 
-/**
- * Phenomenon Domain Model
- *
- * Describes cross-calendar phenomena such as seasons, astronomical events or
- * weather fronts. The model aligns with the API contracts drafted for the
- * Almanac events mode and intentionally keeps optional fields lightweight for
- * the first implementation pass.
- */
-
 import type { CalendarTimestamp } from './calendar-timestamp';
 import type { RepeatRule } from './repeat-rule';
+import type { HookDescriptor } from './hook-descriptor';
 
 export type PhenomenonCategory = 'season' | 'astronomy' | 'weather' | 'tide' | 'holiday' | 'custom';
 export type PhenomenonVisibility = 'all_calendars' | 'selected';
@@ -23,11 +15,6 @@ export interface PhenomenonEffect {
   readonly appliesTo?: ReadonlyArray<string>;
 }
 
-export interface PhenomenonHook {
-  readonly id: string;
-  readonly priority?: number;
-}
-
 export interface Phenomenon {
   readonly id: string;
   readonly name: string;
@@ -37,12 +24,13 @@ export interface Phenomenon {
   readonly rule: RepeatRule;
   readonly timePolicy: PhenomenonTimePolicy;
   readonly startTime?: PhenomenonStartTime;
+  readonly offsetMinutes?: number;
   readonly durationMinutes?: number;
   readonly effects?: ReadonlyArray<PhenomenonEffect>;
   readonly priority: number;
   readonly tags?: ReadonlyArray<string>;
   readonly notes?: string;
-  readonly hooks?: ReadonlyArray<PhenomenonHook>;
+  readonly hooks?: ReadonlyArray<HookDescriptor>;
   readonly schemaVersion: string;
 }
 
@@ -57,8 +45,12 @@ export interface PhenomenonOccurrence {
   readonly name: string;
   readonly calendarId: string;
   readonly timestamp: CalendarTimestamp;
+  readonly endTimestamp: CalendarTimestamp;
   readonly category: PhenomenonCategory;
   readonly priority: number;
+  readonly durationMinutes: number;
+  readonly hooks: ReadonlyArray<HookDescriptor>;
+  readonly effects: ReadonlyArray<PhenomenonEffect>;
 }
 
 export const DEFAULT_PHENOMENON_PRIORITY = 0;
@@ -91,4 +83,16 @@ export function getEffectiveStartTime(
 
 export function requiresOffsetComputation(phenomenon: Phenomenon): boolean {
   return phenomenon.timePolicy === 'offset';
+}
+
+export function getPhenomenonPriority(phenomenon: Phenomenon): number {
+  return phenomenon.priority ?? DEFAULT_PHENOMENON_PRIORITY;
+}
+
+export function getPhenomenonHooks(phenomenon: Phenomenon): ReadonlyArray<HookDescriptor> {
+  return phenomenon.hooks ?? [];
+}
+
+export function getPhenomenonEffects(phenomenon: Phenomenon): ReadonlyArray<PhenomenonEffect> {
+  return phenomenon.effects ?? [];
 }

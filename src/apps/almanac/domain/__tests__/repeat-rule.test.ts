@@ -3,7 +3,11 @@
 
 import { describe, it, expect } from 'vitest';
 
-import { calculateNextOccurrence, calculateOccurrencesInRange } from '../repeat-rule';
+import {
+  calculateNextOccurrence,
+  calculateOccurrencesInRange,
+  type AstronomicalEventCalculator,
+} from '../repeat-rule';
 import type { CalendarSchema } from '../calendar-schema';
 import { createDayTimestamp } from '../calendar-timestamp';
 
@@ -30,7 +34,7 @@ describe('repeat-rule.calculateNextOccurrence', () => {
     const sameDay = calculateNextOccurrence(
       simpleSchema,
       'simple',
-      { type: 'annual', offsetDayOfYear: 1 },
+      { type: 'annual_offset', offsetDayOfYear: 1 },
       start,
       { includeStart: true },
     );
@@ -40,7 +44,7 @@ describe('repeat-rule.calculateNextOccurrence', () => {
     const nextYear = calculateNextOccurrence(
       simpleSchema,
       'simple',
-      { type: 'annual', offsetDayOfYear: 1 },
+      { type: 'annual_offset', offsetDayOfYear: 1 },
       start,
       { includeStart: false },
     );
@@ -54,7 +58,7 @@ describe('repeat-rule.calculateNextOccurrence', () => {
     const occurrence = calculateNextOccurrence(
       simpleSchema,
       'simple',
-      { type: 'annual', offsetDayOfYear: 250 },
+      { type: 'annual_offset', offsetDayOfYear: 250 },
       start,
       { includeStart: false },
     );
@@ -104,7 +108,7 @@ describe('repeat-rule.calculateOccurrencesInRange', () => {
     const occurrences = calculateOccurrencesInRange(
       simpleSchema,
       'simple',
-      { type: 'annual', offsetDayOfYear: 70 },
+      { type: 'annual_offset', offsetDayOfYear: 70 },
       start,
       end,
       { includeStart: true, limit: 5 },
@@ -115,5 +119,44 @@ describe('repeat-rule.calculateOccurrencesInRange', () => {
     expect(occurrences[0].day).toBe(10);
     expect(occurrences[3].monthId).toBe('alpha');
     expect(occurrences[3].day).toBe(10);
+  });
+});
+
+describe('repeat-rule astronomical support', () => {
+  it('delegates astronomical occurrences to the provided calculator', () => {
+    const start = createDayTimestamp('simple', 3, 'beta', 5);
+    const calculator: AstronomicalEventCalculator = {
+      resolveNextOccurrence: (_, calendarId, __, current) =>
+        createDayTimestamp(calendarId, current.year, 'gamma', 10),
+      resolveOccurrencesInRange: (_, calendarId) => [
+        createDayTimestamp(calendarId, 3, 'gamma', 10),
+        createDayTimestamp(calendarId, 3, 'gamma', 15),
+      ],
+    };
+
+    const next = calculateNextOccurrence(
+      simpleSchema,
+      'simple',
+      { type: 'astronomical', source: 'sunrise', offsetMinutes: 30 },
+      start,
+      { includeStart: true },
+      { astronomicalCalculator: calculator },
+    );
+
+    expect(next?.monthId).toBe('gamma');
+    expect(next?.day).toBe(10);
+
+    const range = calculateOccurrencesInRange(
+      simpleSchema,
+      'simple',
+      { type: 'astronomical', source: 'sunset' },
+      createDayTimestamp('simple', 3, 'beta', 1),
+      createDayTimestamp('simple', 3, 'gamma', 20),
+      { limit: 5 },
+      { astronomicalCalculator: calculator },
+    );
+
+    expect(range).toHaveLength(2);
+    expect(range[1].day).toBe(15);
   });
 });
