@@ -251,6 +251,59 @@ describe("AlmanacController Dashboard", () => {
         expect(resetState.eventsUiState.filterCount).toBe(0);
     });
 
+    it("rendert Breadcrumbs und erlaubt Navigation über die Historie", async () => {
+        const app = new App();
+        const controller = await createController(app);
+        const container = document.createElement("div");
+
+        await controller.onOpen(container);
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        const initialCrumbs = Array.from(
+            container.querySelectorAll('[data-role="breadcrumb"]'),
+        ) as HTMLElement[];
+        expect(initialCrumbs).toHaveLength(1);
+        expect(initialCrumbs[0]?.textContent).toContain("Dashboard");
+        expect(initialCrumbs[0]?.getAttribute("aria-current")).toBe("page");
+
+        const stateMachine = (controller as unknown as { stateMachine: AlmanacStateMachine }).stateMachine;
+        await stateMachine.dispatch({ type: "ALMANAC_MODE_SELECTED", mode: "manager" });
+        await new Promise(resolve => setTimeout(resolve, 0));
+        await stateMachine.dispatch({ type: "ALMANAC_MODE_SELECTED", mode: "events" });
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        const breadcrumbs = Array.from(
+            container.querySelectorAll('[data-role="breadcrumb"]'),
+        ) as HTMLElement[];
+        const breadcrumbLabels = breadcrumbs.map(crumb => crumb.textContent?.trim());
+        expect(breadcrumbLabels).toEqual(["Dashboard", "Manager", "Events"]);
+
+        const activeCrumb = breadcrumbs.find(crumb => crumb.getAttribute("aria-current") === "page");
+        expect(activeCrumb?.textContent).toContain("Events");
+
+        const backButton = container.querySelector('[data-role="breadcrumb-back"]') as HTMLButtonElement | null;
+        expect(backButton).toBeTruthy();
+        expect(backButton?.textContent).toContain("Manager");
+        backButton?.dispatchEvent(new Event("click"));
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        let state = stateMachine.getState();
+        expect(state.almanacUiState.mode).toBe("manager");
+
+        const dashboardCrumb = container.querySelector(
+            '[data-role="breadcrumb"][data-mode="dashboard"]',
+        ) as HTMLButtonElement | null;
+        expect(dashboardCrumb?.tagName).toBe("BUTTON");
+        dashboardCrumb?.dispatchEvent(new Event("click"));
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        state = stateMachine.getState();
+        expect(state.almanacUiState.mode).toBe("dashboard");
+
+        const updatedActive = container.querySelector('[data-role="breadcrumb"][aria-current="page"]');
+        expect(updatedActive?.textContent).toContain("Dashboard");
+    });
+
     it("öffnet Editor- und Import-Dialoge und führt Bulk-Aktionen aus", async () => {
         const app = new App();
         const controller = await createController(app);

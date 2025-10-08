@@ -1057,10 +1057,12 @@ export class AlmanacController {
 
     private renderTitle(host: HTMLElement, state: AlmanacState): void {
         const titleRow = host.createDiv({ cls: 'almanac-shell__title-row' });
-        titleRow.createEl('h1', { text: 'Almanac' });
+        const titleGroup = titleRow.createDiv({ cls: 'almanac-shell__title-group' });
+        titleGroup.createEl('h1', { text: 'Almanac' });
+        this.renderBreadcrumbs(titleGroup, state);
 
         const activeCalendar = this.getActiveCalendar(state);
-        const subtitle = titleRow.createDiv({ cls: 'almanac-shell__subtitle' });
+        const subtitle = titleGroup.createDiv({ cls: 'almanac-shell__subtitle' });
         if (activeCalendar) {
             const isDefault = activeCalendar.id === state.calendarState.defaultCalendarId;
             subtitle.setText(`Active calendar: ${activeCalendar.name}${isDefault ? ' (Default)' : ''}`);
@@ -1070,6 +1072,61 @@ export class AlmanacController {
 
         const controls = titleRow.createDiv({ cls: 'almanac-shell__controls' });
         this.renderCalendarSelector(controls, state);
+    }
+
+    private renderBreadcrumbs(host: HTMLElement, state: AlmanacState): void {
+        const history = state.almanacUiState.modeHistory;
+        if (history.length === 0) {
+            return;
+        }
+
+        const breadcrumbBar = host.createDiv({ cls: 'almanac-shell__breadcrumbs' });
+
+        if (history.length > 1) {
+            const previousMode = history[history.length - 2];
+            const previousLabel = MODE_COPY[previousMode]?.label ?? previousMode;
+            const backButton = breadcrumbBar.createEl('button', {
+                text: `← ${previousLabel}`,
+                cls: 'almanac-breadcrumbs__back',
+                attr: { type: 'button', 'aria-label': `Go back to ${previousLabel}` },
+            }) as HTMLButtonElement;
+            backButton.dataset.role = 'breadcrumb-back';
+            backButton.dataset.mode = previousMode;
+            backButton.addEventListener('click', () => {
+                void this.runDispatch({ type: 'ALMANAC_MODE_SELECTED', mode: previousMode });
+            });
+        }
+
+        const items = breadcrumbBar.createDiv({ cls: 'almanac-breadcrumbs__items' });
+
+        history.forEach((mode, index) => {
+            if (index > 0) {
+                items.createEl('span', { cls: 'almanac-breadcrumbs__divider', text: '›' });
+            }
+
+            const label = MODE_COPY[mode]?.label ?? mode;
+            const isActive = index === history.length - 1;
+            if (isActive) {
+                const current = items.createEl('span', {
+                    cls: 'almanac-breadcrumbs__item almanac-breadcrumbs__item--active',
+                    text: label,
+                });
+                current.setAttribute('aria-current', 'page');
+                current.dataset.role = 'breadcrumb';
+                current.dataset.mode = mode;
+            } else {
+                const button = items.createEl('button', {
+                    cls: 'almanac-breadcrumbs__item',
+                    text: label,
+                    attr: { type: 'button' },
+                }) as HTMLButtonElement;
+                button.dataset.role = 'breadcrumb';
+                button.dataset.mode = mode;
+                button.addEventListener('click', () => {
+                    void this.runDispatch({ type: 'ALMANAC_MODE_SELECTED', mode });
+                });
+            }
+        });
     }
 
     private renderCalendarSelector(host: HTMLElement, state: AlmanacState): void {
