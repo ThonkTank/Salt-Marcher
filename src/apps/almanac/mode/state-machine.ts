@@ -12,6 +12,7 @@
 
 import {
     createDefaultCalendarDraft,
+    createCalendarDraftFromSchema,
     createEmptyRecurringEventDraft,
     createEmptySingleEventDraft,
     createInitialAlmanacState,
@@ -26,6 +27,9 @@ import {
     type AlmanacStateListener,
     type CalendarCreateDraft,
     type CalendarCreateField,
+    type CalendarConflictDialogState,
+    type CalendarDeleteDialogState,
+    type CalendarEditState,
     type CalendarManagerViewMode,
     type CalendarStateSlice,
     type CalendarViewZoom,
@@ -39,7 +43,7 @@ import {
     type PhenomenonEditorDraft,
     type TravelCalendarMode,
 } from "./contracts";
-import type { CalendarRepository } from "../data/calendar-repository";
+import type { CalendarDefaultsRepository, CalendarRepository } from "../data/calendar-repository";
 import type { EventRepository } from "../data/event-repository";
 import type { PhenomenonRepository } from "../data/in-memory-repository";
 import {
@@ -157,6 +161,30 @@ export class AlmanacStateMachine {
                 break;
             case "CALENDAR_CREATE_REQUESTED":
                 await this.handleCalendarCreate();
+                break;
+            case "CALENDAR_EDIT_REQUESTED":
+                this.handleCalendarEditRequested(event.calendarId);
+                break;
+            case "CALENDAR_EDIT_CANCELLED":
+                this.handleCalendarEditCancelled(event.calendarId);
+                break;
+            case "CALENDAR_EDIT_FORM_UPDATED":
+                this.handleCalendarEditFormUpdated(event.calendarId, event.field, event.value);
+                break;
+            case "CALENDAR_UPDATE_REQUESTED":
+                await this.handleCalendarUpdate(event.calendarId);
+                break;
+            case "CALENDAR_DELETE_REQUESTED":
+                await this.handleCalendarDeleteRequested(event.calendarId);
+                break;
+            case "CALENDAR_DELETE_CONFIRMED":
+                await this.handleCalendarDeleteConfirmed(event.calendarId);
+                break;
+            case "CALENDAR_DELETE_CANCELLED":
+                this.handleCalendarDeleteCancelled();
+                break;
+            case "CALENDAR_CONFLICT_DISMISSED":
+                this.handleConflictDismissed();
                 break;
             case "TIME_JUMP_PREVIEW_REQUESTED":
                 await this.handleTimeJumpPreview(event.timestamp);
@@ -1948,6 +1976,432 @@ export class AlmanacStateMachine {
         }
     }
 
+    private handleCalendarEditRequested(calendarId: string): void {
+        const schema = this.getCalendarSchema(calendarId);
+        if (!schema) {
+            return;
+        }
+
+        const draft = createCalendarDraftFromSchema(schema);
+        const warnings = this.computeEditWarnings(schema, draft);
+
+        this.setState(draftState => {
+            const current = draftState.managerUiState.editStateById[calendarId];
+            const nextState: CalendarEditState = {
+                draft,
+                errors: [],
+                warnings,
+                isSaving: false,
+            };
+            draftState.managerUiState = {
+                ...draftState.managerUiState,
+                editStateById: {
+                    ...draftState.managerUiState.editStateById,
+                    [calendarId]: current ? { ...current, ...nextState } : nextState,
+                },
+                conflictDialog:
+                    draftState.managerUiState.conflictDialog?.calendarId === calendarId
+                        ? null
+                        : draftState.managerUiState.conflictDialog,
+            };
+        });
+    }
+
+    private handleCalendarEditCancelled(calendarId: string): void {
+        this.setState(draft => {
+            const { [calendarId]: _removed, ...rest } = draft.managerUiState.editStateById;
+            draft.managerUiState = {
+                ...draft.managerUiState,
+                editStateById: rest,
+            };
+        });
+    }
+
+    private handleCalendarEditFormUpdated(
+        calendarId: string,
+        field: CalendarCreateField,
+        value: string,
+    ): void {
+        const editableFields: CalendarCreateField[] = [
+            "name",
+            "description",
+            "hoursPerDay",
+            "minutesPerHour",
+            "minuteStep",
+        ];
+
+        if (!editableFields.includes(field)) {
+            return;
+        }
+
+        const existing = this.state.managerUiState.editStateById[calendarId];
+        if (!existing) {
+            return;
+        }
+
+        const numericFields: CalendarCreateField[] = ["hoursPerDay", "minutesPerHour", "minuteStep"];
+        let nextValue = value;
+        if (numericFields.includes(field)) {
+            nextValue = value.replace(/[^0-9]/g, "");
+        }
+
+        const nextDraft: CalendarCreateDraft = {
+            ...existing.draft,
+            [field]: nextValue,
+        } as CalendarCreateDraft;
+
+        const schema = this.getCalendarSchema(calendarId);
+        const warnings = schema ? this.computeEditWarnings(schema, nextDraft) : [];
+
+        this.setState(draftState => {
+            const current = draftState.managerUiState.editStateById[calendarId];
+            if (!current) {
+                return;
+            }
+            draftState.managerUiState = {
+                ...draftState.managerUiState,
+                editStateById: {
+                    ...draftState.managerUiState.editStateById,
+                    [calendarId]: {
+                        ...current,
+                        draft: nextDraft,
+                        warnings,
+                        errors: [],
+                    },
+                },
+            };
+        });
+    }
+
+    private async handleCalendarUpdate(calendarId: string): Promise<void> {
+        const editState = this.state.managerUiState.editStateById[calendarId];
+        const schema = this.getCalendarSchema(calendarId);
+        if (!editState || !schema) {
+            return;
+        }
+
+        const errors: string[] = [];
+        const trimmedName = editState.draft.name.trim();
+        if (!trimmedName) {
+            errors.push("Name is required.");
+        }
+
+        const description = editState.draft.description.trim();
+        const hoursPerDay = Number(editState.draft.hoursPerDay || String(schema.hoursPerDay ?? 24));
+        const minutesPerHour = Number(editState.draft.minutesPerHour || String(schema.minutesPerHour ?? 60));
+        const minuteStep = Number(editState.draft.minuteStep || String(schema.minuteStep ?? 1));
+
+        if (!Number.isFinite(hoursPerDay) || hoursPerDay < 1) {
+            errors.push("Hours per day must be at least 1.");
+        }
+        if (!Number.isFinite(minutesPerHour) || minutesPerHour < 1) {
+            errors.push("Minutes per hour must be at least 1.");
+        }
+        if (!Number.isFinite(minuteStep) || minuteStep < 1) {
+            errors.push("Minute step must be at least 1.");
+        } else if (minuteStep > minutesPerHour) {
+            errors.push("Minute step must not exceed minutes per hour.");
+        }
+
+        if (errors.length > 0) {
+            this.setState(draftState => {
+                const current = draftState.managerUiState.editStateById[calendarId];
+                if (!current) {
+                    return;
+                }
+                draftState.managerUiState = {
+                    ...draftState.managerUiState,
+                    editStateById: {
+                        ...draftState.managerUiState.editStateById,
+                        [calendarId]: { ...current, errors, isSaving: false },
+                    },
+                };
+            });
+            return;
+        }
+
+        const updates: Partial<CalendarSchema> = {};
+        if (trimmedName !== schema.name) {
+            updates.name = trimmedName;
+        }
+        if ((schema.description ?? "") !== description) {
+            updates.description = description || undefined;
+        }
+
+        const safeHoursPerDay = Math.max(1, Math.floor(hoursPerDay));
+        const safeMinutesPerHour = Math.max(1, Math.floor(minutesPerHour));
+        const safeMinuteStep = Math.max(1, Math.floor(minuteStep));
+
+        if ((schema.hoursPerDay ?? 24) !== safeHoursPerDay) {
+            updates.hoursPerDay = safeHoursPerDay;
+        }
+        if ((schema.minutesPerHour ?? 60) !== safeMinutesPerHour) {
+            updates.minutesPerHour = safeMinutesPerHour;
+        }
+        if ((schema.minuteStep ?? 1) !== safeMinuteStep) {
+            updates.minuteStep = safeMinuteStep;
+        }
+
+        if (Object.keys(updates).length === 0) {
+            const warnings = this.computeEditWarnings(schema, editState.draft);
+            this.setState(draftState => {
+                const current = draftState.managerUiState.editStateById[calendarId];
+                if (!current) {
+                    return;
+                }
+                draftState.managerUiState = {
+                    ...draftState.managerUiState,
+                    editStateById: {
+                        ...draftState.managerUiState.editStateById,
+                        [calendarId]: { ...current, warnings, errors: [], isSaving: false },
+                    },
+                };
+            });
+            return;
+        }
+
+        const conflicts = await this.detectCalendarConflicts(calendarId, updates);
+        if (conflicts.length > 0) {
+            this.setState(draftState => {
+                const current = draftState.managerUiState.editStateById[calendarId];
+                if (!current) {
+                    return;
+                }
+                const conflictDialog: CalendarConflictDialogState = {
+                    calendarId,
+                    kind: "update",
+                    message: "Existing events conflict with the new time definition.",
+                    details: conflicts,
+                };
+                draftState.managerUiState = {
+                    ...draftState.managerUiState,
+                    conflictDialog,
+                    editStateById: {
+                        ...draftState.managerUiState.editStateById,
+                        [calendarId]: { ...current, errors: conflicts, isSaving: false },
+                    },
+                };
+            });
+            return;
+        }
+
+        this.setState(draftState => {
+            const current = draftState.managerUiState.editStateById[calendarId];
+            if (!current) {
+                return;
+            }
+            draftState.managerUiState = {
+                ...draftState.managerUiState,
+                conflictDialog:
+                    draftState.managerUiState.conflictDialog?.calendarId === calendarId
+                        ? null
+                        : draftState.managerUiState.conflictDialog,
+                editStateById: {
+                    ...draftState.managerUiState.editStateById,
+                    [calendarId]: { ...current, errors: [], isSaving: true },
+                },
+            };
+        });
+
+        try {
+            await this.calendarRepo.updateCalendar(calendarId, updates);
+            await this.refreshCalendarData();
+
+            const updatedSchema = this.getCalendarSchema(calendarId) ?? schema;
+            const nextDraft = createCalendarDraftFromSchema(updatedSchema);
+            const warnings = this.computeEditWarnings(updatedSchema, nextDraft);
+
+            this.setState(draftState => {
+                const current = draftState.managerUiState.editStateById[calendarId];
+                if (!current) {
+                    return;
+                }
+                draftState.managerUiState = {
+                    ...draftState.managerUiState,
+                    editStateById: {
+                        ...draftState.managerUiState.editStateById,
+                        [calendarId]: {
+                            draft: nextDraft,
+                            warnings,
+                            errors: [],
+                            isSaving: false,
+                        },
+                    },
+                };
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Failed to update calendar";
+            const code = isCalendarGatewayError(error) ? error.code : "io_error";
+            reportAlmanacGatewayIssue({
+                operation: "stateMachine.updateCalendar",
+                scope: "calendar",
+                code,
+                error,
+                context: { calendarId },
+            });
+            this.setState(draftState => {
+                const current = draftState.managerUiState.editStateById[calendarId];
+                if (!current) {
+                    return;
+                }
+                draftState.managerUiState = {
+                    ...draftState.managerUiState,
+                    editStateById: {
+                        ...draftState.managerUiState.editStateById,
+                        [calendarId]: { ...current, errors: [message], isSaving: false },
+                    },
+                };
+            });
+        }
+    }
+
+    private async handleCalendarDeleteRequested(calendarId: string): Promise<void> {
+        const schema = this.getCalendarSchema(calendarId);
+        if (!schema) {
+            return;
+        }
+
+        const linkedPhenomena = this.phenomenaDefinitions
+            .filter(phenomenon => phenomenon.appliesToCalendarIds.includes(calendarId))
+            .map(phenomenon => phenomenon.name);
+        const linkedTravelIds = await this.collectTravelDefaultIds(calendarId);
+        const requiresFallback = this.state.calendarState.defaultCalendarId === calendarId;
+
+        this.setState(draft => {
+            draft.managerUiState = {
+                ...draft.managerUiState,
+                deleteDialog: {
+                    calendarId,
+                    calendarName: schema.name,
+                    requiresFallback,
+                    linkedTravelIds,
+                    linkedPhenomena,
+                    isDeleting: false,
+                    error: undefined,
+                },
+            };
+        });
+    }
+
+    private handleCalendarDeleteCancelled(): void {
+        this.setState(draft => {
+            draft.managerUiState = {
+                ...draft.managerUiState,
+                deleteDialog: null,
+            };
+        });
+    }
+
+    private async handleCalendarDeleteConfirmed(calendarId: string): Promise<void> {
+        const dialog = this.state.managerUiState.deleteDialog;
+        if (!dialog || dialog.calendarId !== calendarId) {
+            return;
+        }
+
+        if (dialog.linkedPhenomena.length > 0) {
+            const message = "Calendar is linked to phenomena and cannot be deleted.";
+            this.setState(draft => {
+                draft.managerUiState = {
+                    ...draft.managerUiState,
+                    conflictDialog: {
+                        calendarId,
+                        kind: "delete",
+                        message,
+                        details: dialog.linkedPhenomena,
+                    },
+                    deleteDialog: { ...dialog, error: message },
+                };
+            });
+            return;
+        }
+
+        const fallbackCandidate = this.state.calendarState.calendars.find(schema => schema.id !== calendarId)?.id ?? null;
+        if (dialog.requiresFallback && !fallbackCandidate) {
+            const message = "Cannot delete the last remaining calendar.";
+            this.setState(draft => {
+                draft.managerUiState = {
+                    ...draft.managerUiState,
+                    conflictDialog: {
+                        calendarId,
+                        kind: "delete",
+                        message,
+                        details: [],
+                    },
+                    deleteDialog: { ...dialog, error: message },
+                };
+            });
+            return;
+        }
+
+        this.setState(draft => {
+            draft.managerUiState = {
+                ...draft.managerUiState,
+                deleteDialog: { ...dialog, isDeleting: true, error: undefined },
+            };
+        });
+
+        try {
+            const defaultsRepo = this.getCalendarDefaultsRepository();
+            if (defaultsRepo) {
+                for (const travelId of dialog.linkedTravelIds) {
+                    await defaultsRepo.clearTravelDefault(travelId);
+                }
+            }
+
+            await this.calendarRepo.deleteCalendar(calendarId);
+
+            if (dialog.requiresFallback && fallbackCandidate) {
+                await this.gateway.setDefaultCalendar(fallbackCandidate, { scope: "global" });
+            }
+
+            if (this.state.calendarState.activeCalendarId === calendarId && fallbackCandidate) {
+                await this.gateway.setActiveCalendar(fallbackCandidate);
+            }
+
+            await this.refreshCalendarData();
+
+            this.setState(draft => {
+                const { [calendarId]: _removed, ...rest } = draft.managerUiState.editStateById;
+                draft.managerUiState = {
+                    ...draft.managerUiState,
+                    deleteDialog: null,
+                    conflictDialog: null,
+                    selection: draft.managerUiState.selection.filter(id => id !== calendarId),
+                    editStateById: rest,
+                };
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Failed to delete calendar";
+            const code = isCalendarGatewayError(error) ? error.code : "io_error";
+            reportAlmanacGatewayIssue({
+                operation: "stateMachine.deleteCalendar",
+                scope: "calendar",
+                code,
+                error,
+                context: { calendarId },
+            });
+            this.setState(draft => {
+                const currentDialog: CalendarDeleteDialogState | null = draft.managerUiState.deleteDialog;
+                if (!currentDialog || currentDialog.calendarId !== calendarId) {
+                    return;
+                }
+                draft.managerUiState = {
+                    ...draft.managerUiState,
+                    deleteDialog: { ...currentDialog, isDeleting: false, error: message },
+                };
+            });
+        }
+    }
+
+    private handleConflictDismissed(): void {
+        this.setState(draft => {
+            draft.managerUiState = {
+                ...draft.managerUiState,
+                conflictDialog: null,
+            };
+        });
+    }
+
     private async handleCalendarSelect(calendarId: string): Promise<void> {
         if (calendarId === this.state.calendarState.activeCalendarId) {
             return;
@@ -3056,6 +3510,117 @@ export class AlmanacStateMachine {
         }
         const firstMonth = schema.months[0] ?? { id: schema.epoch.monthId, length: schema.months[0]?.length ?? 30 };
         return createDayTimestamp(activeId, schema.epoch.year, firstMonth.id, schema.epoch.day);
+    }
+
+    private computeEditWarnings(schema: CalendarSchema, draft: CalendarCreateDraft): string[] {
+        const warnings: string[] = [];
+        const currentHours = String(schema.hoursPerDay ?? 24);
+        const currentMinutes = String(schema.minutesPerHour ?? 60);
+        const currentStep = String(schema.minuteStep ?? 1);
+        if (
+            draft.hoursPerDay.trim() !== currentHours
+            || draft.minutesPerHour.trim() !== currentMinutes
+            || draft.minuteStep.trim() !== currentStep
+        ) {
+            warnings.push("Updating the time definition may require migrating existing events.");
+        }
+        return warnings;
+    }
+
+    private async detectCalendarConflicts(
+        calendarId: string,
+        updates: Partial<CalendarSchema>,
+    ): Promise<string[]> {
+        if (
+            !("hoursPerDay" in updates)
+            && !("minutesPerHour" in updates)
+            && !("minuteStep" in updates)
+        ) {
+            return [];
+        }
+
+        const schema = this.getCalendarSchema(calendarId);
+        if (!schema) {
+            return [];
+        }
+
+        const hoursPerDay = updates.hoursPerDay ?? schema.hoursPerDay ?? 24;
+        const minutesPerHour = updates.minutesPerHour ?? schema.minutesPerHour ?? 60;
+        const minuteStep = updates.minuteStep ?? schema.minuteStep ?? 1;
+
+        const events = await this.eventRepo.listEvents(calendarId);
+        const conflicts = new Set<string>();
+
+        const checkTime = (label: string, time: CalendarTimeOfDay | undefined, title: string) => {
+            if (!time) {
+                return;
+            }
+            if (time.hour >= hoursPerDay) {
+                conflicts.add(`${title}: ${label} hour ${time.hour} exceeds ${hoursPerDay - 1}.`);
+            }
+            if (time.minute >= minutesPerHour) {
+                conflicts.add(`${title}: ${label} minute ${time.minute} exceeds ${minutesPerHour - 1}.`);
+            }
+        };
+
+        for (const event of events) {
+            const title = event.title ?? event.id;
+            if (isSingleEvent(event)) {
+                checkTime("start", event.startTime, title);
+                checkTime("end", event.endTime, title);
+                const timestamp = event.date;
+                if (timestamp.precision === "hour" || timestamp.precision === "minute") {
+                    if (timestamp.hour >= hoursPerDay) {
+                        conflicts.add(`${title}: hour ${timestamp.hour} exceeds ${hoursPerDay - 1}.`);
+                    }
+                    if (timestamp.minute >= minutesPerHour) {
+                        conflicts.add(`${title}: minute ${timestamp.minute} exceeds ${minutesPerHour - 1}.`);
+                    }
+                    if (timestamp.precision === "minute" && timestamp.minute % minuteStep !== 0) {
+                        conflicts.add(`${title}: start time is not aligned with the new minute step.`);
+                    }
+                }
+                if (event.durationMinutes && event.durationMinutes % minuteStep !== 0) {
+                    conflicts.add(`${title}: duration is not aligned with the new minute step.`);
+                }
+            } else if (isRecurringEvent(event)) {
+                checkTime("start", event.startTime, title);
+                if (event.offsetMinutes && event.offsetMinutes % minuteStep !== 0) {
+                    conflicts.add(`${title}: offset is not aligned with the new minute step.`);
+                }
+                if (event.durationMinutes && event.durationMinutes % minuteStep !== 0) {
+                    conflicts.add(`${title}: duration is not aligned with the new minute step.`);
+                }
+            }
+        }
+
+        return Array.from(conflicts);
+    }
+
+    private getCalendarDefaultsRepository(): (CalendarRepository & CalendarDefaultsRepository) | null {
+        const candidate = this.calendarRepo as CalendarRepository & Partial<CalendarDefaultsRepository>;
+        if (
+            typeof candidate.getDefaults === "function"
+            && typeof candidate.clearTravelDefault === "function"
+        ) {
+            return candidate as CalendarRepository & CalendarDefaultsRepository;
+        }
+        return null;
+    }
+
+    private async collectTravelDefaultIds(calendarId: string): Promise<string[]> {
+        const defaultsRepo = this.getCalendarDefaultsRepository();
+        if (!defaultsRepo) {
+            return [];
+        }
+        try {
+            const defaults = await defaultsRepo.getDefaults();
+            return Object.entries(defaults.travel)
+                .filter(([, linkedId]) => linkedId === calendarId)
+                .map(([travelId]) => travelId);
+        } catch {
+            return [];
+        }
     }
 
     private async buildCalendarSchemaFromDraft(

@@ -84,6 +84,30 @@ export interface CalendarCreateDraft {
 
 export type CalendarCreateField = keyof CalendarCreateDraft;
 
+export interface CalendarEditState {
+    readonly draft: CalendarCreateDraft;
+    readonly errors: ReadonlyArray<string>;
+    readonly warnings: ReadonlyArray<string>;
+    readonly isSaving: boolean;
+}
+
+export interface CalendarDeleteDialogState {
+    readonly calendarId: string;
+    readonly calendarName: string;
+    readonly requiresFallback: boolean;
+    readonly linkedTravelIds: ReadonlyArray<string>;
+    readonly linkedPhenomena: ReadonlyArray<string>;
+    readonly isDeleting: boolean;
+    readonly error?: string;
+}
+
+export interface CalendarConflictDialogState {
+    readonly calendarId: string;
+    readonly kind: "update" | "delete";
+    readonly message: string;
+    readonly details: ReadonlyArray<string>;
+}
+
 export interface ManagerUiStateSlice {
     readonly viewMode: CalendarManagerViewMode;
     readonly zoom: CalendarViewZoom;
@@ -96,6 +120,9 @@ export interface ManagerUiStateSlice {
     readonly createDraft: CalendarCreateDraft;
     readonly createErrors: ReadonlyArray<string>;
     readonly isCreating: boolean;
+    readonly editStateById: Readonly<Record<string, CalendarEditState>>;
+    readonly deleteDialog: CalendarDeleteDialogState | null;
+    readonly conflictDialog: CalendarConflictDialogState | null;
 }
 
 export interface EventsUiStateSlice {
@@ -286,6 +313,19 @@ export type AlmanacEvent =
     | { readonly type: "MANAGER_SELECTION_CHANGED"; readonly selection: ReadonlyArray<string> }
     | { readonly type: "CALENDAR_SELECT_REQUESTED"; readonly calendarId: string }
     | { readonly type: "CALENDAR_DEFAULT_SET_REQUESTED"; readonly calendarId: string }
+    | { readonly type: "CALENDAR_EDIT_REQUESTED"; readonly calendarId: string }
+    | { readonly type: "CALENDAR_EDIT_CANCELLED"; readonly calendarId: string }
+    | {
+          readonly type: "CALENDAR_EDIT_FORM_UPDATED";
+          readonly calendarId: string;
+          readonly field: CalendarCreateField;
+          readonly value: string;
+      }
+    | { readonly type: "CALENDAR_UPDATE_REQUESTED"; readonly calendarId: string }
+    | { readonly type: "CALENDAR_DELETE_REQUESTED"; readonly calendarId: string }
+    | { readonly type: "CALENDAR_DELETE_CONFIRMED"; readonly calendarId: string }
+    | { readonly type: "CALENDAR_DELETE_CANCELLED" }
+    | { readonly type: "CALENDAR_CONFLICT_DISMISSED" }
     | { readonly type: "CALENDAR_CREATE_REQUESTED" }
     | { readonly type: "TIME_ADVANCE_REQUESTED"; readonly amount: number; readonly unit: "day" | "hour" | "minute" }
     | { readonly type: "TIME_JUMP_REQUESTED"; readonly timestamp: CalendarTimestamp }
@@ -368,6 +408,23 @@ export function createEmptyRecurringEventDraft(
     };
 }
 
+export function createCalendarDraftFromSchema(schema: CalendarSchema): CalendarCreateDraft {
+    const firstMonthLength = schema.months[0]?.length ?? 30;
+    return {
+        id: schema.id,
+        name: schema.name,
+        description: schema.description ?? "",
+        daysPerWeek: String(schema.daysPerWeek),
+        monthCount: String(schema.months.length),
+        monthLength: String(firstMonthLength),
+        hoursPerDay: String(schema.hoursPerDay ?? 24),
+        minutesPerHour: String(schema.minutesPerHour ?? 60),
+        minuteStep: String(schema.minuteStep ?? 1),
+        epochYear: String(schema.epoch.year),
+        epochDay: String(schema.epoch.day),
+    };
+}
+
 export function createInitialAlmanacState(): AlmanacState {
     return {
         calendarState: {
@@ -406,6 +463,9 @@ export function createInitialAlmanacState(): AlmanacState {
             createDraft: createDefaultCalendarDraft(),
             createErrors: [],
             isCreating: false,
+            editStateById: {},
+            deleteDialog: null,
+            conflictDialog: null,
         },
         eventsUiState: {
             viewMode: DEFAULT_EVENTS_VIEW_MODE,

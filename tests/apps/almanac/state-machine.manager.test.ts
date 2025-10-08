@@ -116,5 +116,103 @@ describe("AlmanacStateMachine calendar creation", () => {
         expect(state.managerUiState.createErrors).toContain("Month count must be at least 1.");
         expect(state.calendarState.calendars.some(schema => schema.id === "travel-calendar")).toBe(false);
     });
+
+    it("updates calendar time definition and persists changes", async () => {
+        await stateMachine.dispatch({ type: "CALENDAR_EDIT_REQUESTED", calendarId: gregorianSchema.id });
+        await stateMachine.dispatch({
+            type: "CALENDAR_EDIT_FORM_UPDATED",
+            calendarId: gregorianSchema.id,
+            field: "minuteStep",
+            value: "5",
+        });
+
+        await stateMachine.dispatch({ type: "CALENDAR_UPDATE_REQUESTED", calendarId: gregorianSchema.id });
+
+        const updated = await calendarRepo.getCalendar(gregorianSchema.id);
+        expect(updated?.minuteStep).toBe(5);
+
+        const state = stateMachine.getState();
+        expect(state.managerUiState.editStateById[gregorianSchema.id]?.draft.minuteStep).toBe("5");
+        expect(state.managerUiState.conflictDialog).toBeNull();
+    });
+
+    it("surfaces conflicts when minute step breaks existing events", async () => {
+        await stateMachine.dispatch({ type: "CALENDAR_EDIT_REQUESTED", calendarId: gregorianSchema.id });
+        await stateMachine.dispatch({
+            type: "CALENDAR_EDIT_FORM_UPDATED",
+            calendarId: gregorianSchema.id,
+            field: "minuteStep",
+            value: "7",
+        });
+
+        await stateMachine.dispatch({ type: "CALENDAR_UPDATE_REQUESTED", calendarId: gregorianSchema.id });
+
+        const state = stateMachine.getState();
+        const editState = state.managerUiState.editStateById[gregorianSchema.id];
+        expect(editState?.errors.length).toBeGreaterThan(0);
+        expect(state.managerUiState.conflictDialog?.kind).toBe("update");
+        const repoSnapshot = await calendarRepo.getCalendar(gregorianSchema.id);
+        expect(repoSnapshot?.minuteStep).toBe(gregorianSchema.minuteStep);
+    });
+
+    it("handles repository errors during calendar update", async () => {
+        const spy = vi.spyOn(calendarRepo, "updateCalendar").mockRejectedValue(new Error("write failed"));
+
+        await stateMachine.dispatch({ type: "CALENDAR_EDIT_REQUESTED", calendarId: gregorianSchema.id });
+        await stateMachine.dispatch({
+            type: "CALENDAR_EDIT_FORM_UPDATED",
+            calendarId: gregorianSchema.id,
+            field: "minutesPerHour",
+            value: "42",
+        });
+
+        await stateMachine.dispatch({ type: "CALENDAR_UPDATE_REQUESTED", calendarId: gregorianSchema.id });
+
+        const state = stateMachine.getState();
+        const editState = state.managerUiState.editStateById[gregorianSchema.id];
+        expect(editState?.errors).toContain("write failed");
+        spy.mockRestore();
+    });
+
+    it("deletes calendars and clears travel defaults", async () => {
+        const expeditionSchema = {
+            ...gregorianSchema,
+            id: "expedition-calendar",
+            name: "Expedition Calendar",
+            minuteStep: 10,
+            months: gregorianSchema.months.map(month => ({ ...month })),
+        };
+        await calendarRepo.createCalendar(expeditionSchema);
+        await calendarRepo.setDefault({ calendarId: expeditionSchema.id, scope: "travel", travelId: "travel-1" });
+
+        await stateMachine.dispatch({ type: "CALENDAR_DATA_REFRESH_REQUESTED" });
+        await stateMachine.dispatch({ type: "CALENDAR_DEFAULT_SET_REQUESTED", calendarId: expeditionSchema.id });
+
+        await stateMachine.dispatch({ type: "CALENDAR_DELETE_REQUESTED", calendarId: expeditionSchema.id });
+        await stateMachine.dispatch({ type: "CALENDAR_DELETE_CONFIRMED", calendarId: expeditionSchema.id });
+
+        const afterDelete = await calendarRepo.getCalendar(expeditionSchema.id);
+        expect(afterDelete).toBeNull();
+        const defaults = await calendarRepo.getDefaults();
+        expect(defaults.travel["travel-1"]).toBeUndefined();
+
+        const state = stateMachine.getState();
+        expect(state.managerUiState.deleteDialog).toBeNull();
+        expect(state.managerUiState.conflictDialog).toBeNull();
+        expect(state.calendarState.calendars.some(schema => schema.id === expeditionSchema.id)).toBe(false);
+        expect(state.calendarState.defaultCalendarId).not.toBe(expeditionSchema.id);
+    });
+
+    it("blocks deletion when phenomena are linked to the calendar", async () => {
+        await stateMachine.dispatch({ type: "CALENDAR_DELETE_REQUESTED", calendarId: gregorianSchema.id });
+        await stateMachine.dispatch({ type: "CALENDAR_DELETE_CONFIRMED", calendarId: gregorianSchema.id });
+
+        const state = stateMachine.getState();
+        expect(state.managerUiState.conflictDialog?.kind).toBe("delete");
+        expect(state.managerUiState.deleteDialog?.error).toContain("cannot be deleted");
+
+        const stillPresent = await calendarRepo.getCalendar(gregorianSchema.id);
+        expect(stillPresent).not.toBeNull();
+    });
 });
 
