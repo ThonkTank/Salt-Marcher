@@ -278,8 +278,21 @@ export interface AlmanacPreferencesSnapshot {
     readonly lastSelectedPhenomenonId?: string;
 }
 
+export interface AlmanacInitOverrides {
+    readonly travelId?: string | null;
+    readonly mode?: AlmanacMode;
+    readonly managerView?: CalendarManagerViewMode;
+    readonly managerZoom?: CalendarViewZoom;
+    readonly eventsView?: EventsViewMode;
+    readonly selectedPhenomenonId?: string | null;
+}
+
 export type AlmanacEvent =
-    | { readonly type: "INIT_ALMANAC"; readonly travelId?: string | null }
+    | {
+          readonly type: "INIT_ALMANAC";
+          readonly travelId?: string | null;
+          readonly overrides?: AlmanacInitOverrides | null;
+      }
     | { readonly type: "ALMANAC_MODE_SELECTED"; readonly mode: AlmanacMode }
     | { readonly type: "MANAGER_VIEW_MODE_CHANGED"; readonly viewMode: CalendarManagerViewMode }
     | { readonly type: "MANAGER_ZOOM_CHANGED"; readonly zoom: CalendarViewZoom }

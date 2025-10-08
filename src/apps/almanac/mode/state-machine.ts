@@ -21,6 +21,7 @@ import {
     DEFAULT_MANAGER_VIEW_MODE,
     DEFAULT_MANAGER_ZOOM,
     type AlmanacEvent,
+    type AlmanacInitOverrides,
     type AlmanacMode,
     type AlmanacPreferencesSnapshot,
     type AlmanacState,
@@ -142,7 +143,7 @@ export class AlmanacStateMachine {
     async dispatch(event: AlmanacEvent): Promise<void> {
         switch (event.type) {
             case "INIT_ALMANAC":
-                await this.handleInit(event.travelId ?? null);
+                await this.handleInit(event.travelId ?? null, event.overrides ?? null);
                 break;
             case "ALMANAC_MODE_SELECTED":
                 await this.handleModeSelected(event.mode);
@@ -348,10 +349,21 @@ export class AlmanacStateMachine {
         }
     }
 
-    private async handleInit(travelId: string | null): Promise<void> {
-        this.travelId = travelId;
+    private async handleInit(travelId: string | null, overrides: AlmanacInitOverrides | null): Promise<void> {
+        const effectiveTravelId = overrides?.travelId ?? travelId ?? this.travelId ?? null;
+        this.travelId = effectiveTravelId;
 
-        if (this.initialised) {
+        const hasOverrides = Boolean(
+            overrides &&
+                (overrides.mode !== undefined ||
+                    overrides.managerView !== undefined ||
+                    overrides.managerZoom !== undefined ||
+                    overrides.eventsView !== undefined ||
+                    overrides.travelId !== undefined ||
+                    Object.prototype.hasOwnProperty.call(overrides, "selectedPhenomenonId")),
+        );
+
+        if (this.initialised && !hasOverrides) {
             await this.refreshCalendarData();
             return;
         }
@@ -367,10 +379,12 @@ export class AlmanacStateMachine {
         try {
             const [calendars, snapshot, preferences, phenomena, travelPreferences] = await Promise.all([
                 this.calendarRepo.listCalendars(),
-                this.gateway.loadSnapshot(travelId ? { travelId } : undefined),
+                this.gateway.loadSnapshot(effectiveTravelId ? { travelId: effectiveTravelId } : undefined),
                 this.gateway.loadPreferences(),
                 this.phenomenonRepo.listPhenomena(),
-                travelId ? this.gateway.getTravelLeafPreferences(travelId) : Promise.resolve(null),
+                effectiveTravelId
+                    ? this.gateway.getTravelLeafPreferences(effectiveTravelId)
+                    : Promise.resolve(null),
             ]);
             this.travelLeafPreferences = travelPreferences;
             this.phenomenaDefinitions = phenomena.map(item => this.toPhenomenon(item));
@@ -384,7 +398,10 @@ export class AlmanacStateMachine {
             const filteredPhenomena = this.applyPhenomenaFilters(filters);
             const availableCategories = getUniqueCategories(this.phenomenaSource);
             const filterCount = filters.categories.length + filters.calendarIds.length;
-            const preferredPhenomenonId = preferences.lastSelectedPhenomenonId ?? null;
+            let preferredPhenomenonId = preferences.lastSelectedPhenomenonId ?? null;
+            if (overrides && Object.prototype.hasOwnProperty.call(overrides, "selectedPhenomenonId")) {
+                preferredPhenomenonId = overrides.selectedPhenomenonId ?? null;
+            }
             let initialSelectedId: string | null = null;
             let initialDetail: PhenomenonDetailView | null = null;
 
@@ -403,10 +420,12 @@ export class AlmanacStateMachine {
                 initialSelectedId = initialDetail ? firstId : null;
             }
 
-            const mode = preferences.lastMode ?? DEFAULT_ALMANAC_MODE;
-            const managerViewMode = preferences.managerViewMode ?? DEFAULT_MANAGER_VIEW_MODE;
-            const eventsViewMode = preferences.eventsViewMode ?? DEFAULT_EVENTS_VIEW_MODE;
-            const zoom = (preferences.lastZoomByMode?.["manager"] ?? DEFAULT_MANAGER_ZOOM) as CalendarViewZoom;
+            const mode = overrides?.mode ?? preferences.lastMode ?? DEFAULT_ALMANAC_MODE;
+            const managerViewMode = overrides?.managerView ?? preferences.managerViewMode ?? DEFAULT_MANAGER_VIEW_MODE;
+            const eventsViewMode = overrides?.eventsView ?? preferences.eventsViewMode ?? DEFAULT_EVENTS_VIEW_MODE;
+            const zoom = (
+                overrides?.managerZoom ?? preferences.lastZoomByMode?.["manager"] ?? DEFAULT_MANAGER_ZOOM
+            ) as CalendarViewZoom;
 
             const activeCalendarId = snapshot.activeCalendar?.id ?? null;
             const timeDefinition = snapshot.activeCalendar
@@ -441,13 +460,18 @@ export class AlmanacStateMachine {
 
             this.setState(draft => {
                 draft.calendarState = calendarSlice;
+                const lastZoomByMode = { ...(preferences.lastZoomByMode ?? {}) };
+                if (overrides?.managerZoom) {
+                    lastZoomByMode["manager"] = overrides.managerZoom;
+                }
+
                 draft.almanacUiState = {
                     ...draft.almanacUiState,
                     mode,
                     modeHistory: [mode],
                     isLoading: false,
                     error: undefined,
-                    lastZoomByMode: preferences.lastZoomByMode ?? {},
+                    lastZoomByMode,
                 };
                 draft.managerUiState = {
                     ...draft.managerUiState,
@@ -478,7 +502,7 @@ export class AlmanacStateMachine {
                 };
                 draft.travelLeafState = {
                     ...draft.travelLeafState,
-                    travelId,
+                    travelId: effectiveTravelId,
                     visible: travelPreferences?.visible ?? false,
                     mode: travelPreferences?.mode ?? draft.travelLeafState.mode,
                     currentTimestamp: calendarSlice.currentTimestamp,

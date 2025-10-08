@@ -9,7 +9,7 @@
  * Dashboard, Manager and Events modes.
  */
 
-import { App, Modal } from 'obsidian';
+import { App, Modal, type EventRef } from 'obsidian';
 import type { CalendarSchema } from '../domain/calendar-schema';
 import { getMonthById, getMonthIndex } from '../domain/calendar-schema';
 import type { CalendarEvent } from '../domain/calendar-event';
@@ -29,6 +29,7 @@ import {
 import { InMemoryStateGateway } from '../data/in-memory-gateway';
 import {
     type AlmanacMode,
+    type AlmanacInitOverrides,
     type AlmanacState,
     type CalendarManagerViewMode,
     type CalendarViewZoom,
@@ -56,6 +57,8 @@ const MODE_COPY: Record<AlmanacMode, { label: string; description: string }> = {
 const MANAGER_ZOOM_OPTIONS: CalendarViewZoom[] = ['month', 'week', 'day', 'hour'];
 const MANAGER_VIEW_OPTIONS: CalendarManagerViewMode[] = ['calendar', 'overview'];
 const EVENT_VIEW_OPTIONS: EventsViewMode[] = ['timeline', 'table', 'map'];
+const ALMANAC_PROTOCOL_BASE = 'obsidian://saltmarcher';
+const ALMANAC_PROTOCOL_HOSTS = new Set(['saltmarcher', 'salt-marcher']);
 
 interface EventEditorCalendarOption {
     readonly id: string;
@@ -949,6 +952,36 @@ export class AlmanacController {
     private eventEditorModal: EventEditorModal | null = null;
     private eventImportModal: EventImportDialog | null = null;
     private cartographerBridge: CartographerBridgeHandle | null = null;
+    private protocolRef: EventRef | null = null;
+    private pendingDeepLink: AlmanacInitOverrides | null = null;
+    private isSyncingDeepLink = false;
+    private lastDeepLinkUrl: string | null = null;
+    private allowDeepLinkSync = false;
+    private readonly handleProtocolUrl = (rawUrl: string): void => {
+        if (this.isSyncingDeepLink) {
+            return;
+        }
+        const overrides = this.parseDeepLink(rawUrl);
+        if (!overrides) {
+            return;
+        }
+        this.pendingDeepLink = overrides;
+        if (!this.containerEl) {
+            return;
+        }
+        this.allowDeepLinkSync = false;
+        const travelId =
+            overrides && Object.prototype.hasOwnProperty.call(overrides, 'travelId')
+                ? overrides.travelId ?? null
+                : undefined;
+        void this.runDispatch({ type: 'INIT_ALMANAC', travelId, overrides }).finally(() => {
+            this.pendingDeepLink = null;
+            this.allowDeepLinkSync = true;
+            if (this.currentState) {
+                this.syncDeepLink(this.currentState);
+            }
+        });
+    };
 
     constructor(private readonly app: App, deps: AlmanacControllerDependencies = {}) {
         const calendarRepo = deps.calendarRepo ?? new InMemoryCalendarRepository();
@@ -969,6 +1002,7 @@ export class AlmanacController {
             this.gateway,
             this.phenomenonRepo,
         );
+        this.ensureProtocolHandler();
     }
 
     async onOpen(container: HTMLElement): Promise<void> {
@@ -977,6 +1011,10 @@ export class AlmanacController {
         this.containerEl = container;
         container.empty();
         container.addClass('almanac-container');
+
+        this.lastDeepLinkUrl = null;
+        this.ensureProtocolHandler();
+        this.allowDeepLinkSync = false;
 
         this.cartographerBridge = registerCartographerBridge(this.stateMachine, {
             onRequestJump: () => this.openTimeJumpFromCartographer(),
@@ -1001,9 +1039,24 @@ export class AlmanacController {
         this.unsubscribe = this.stateMachine.subscribe(state => {
             this.currentState = state;
             this.render(state);
+            this.syncDeepLink(state);
         });
 
-        await this.stateMachine.dispatch({ type: 'INIT_ALMANAC' });
+        const overrides = this.pendingDeepLink ?? null;
+        const travelId =
+            overrides && Object.prototype.hasOwnProperty.call(overrides, 'travelId')
+                ? overrides.travelId ?? null
+                : undefined;
+        await this.stateMachine.dispatch({
+            type: 'INIT_ALMANAC',
+            travelId,
+            overrides: overrides ?? undefined,
+        });
+        this.pendingDeepLink = null;
+        this.allowDeepLinkSync = true;
+        if (this.currentState) {
+            this.syncDeepLink(this.currentState);
+        }
     }
 
     async onClose(): Promise<void> {
@@ -1016,6 +1069,7 @@ export class AlmanacController {
         this.containerEl = null;
         this.cartographerBridge?.release();
         this.cartographerBridge = null;
+        this.allowDeepLinkSync = false;
     }
 
     private render(state: AlmanacState): void {
@@ -2649,6 +2703,133 @@ export class AlmanacController {
     private formatCalendarTimestamp(schema: CalendarSchema, timestamp: CalendarTimestamp): string {
         const month = getMonthById(schema, timestamp.monthId);
         return formatTimestamp(timestamp, month?.name);
+    }
+
+    private ensureProtocolHandler(): void {
+        if (this.protocolRef || typeof this.app.workspace?.on !== 'function') {
+            return;
+        }
+        const ref = this.app.workspace.on('url', this.handleProtocolUrl);
+        if (ref && typeof this.app.workspace?.offref === 'function') {
+            this.protocolRef = ref;
+        }
+    }
+
+    private parseDeepLink(rawUrl: string): AlmanacInitOverrides | null {
+        if (!rawUrl) {
+            return null;
+        }
+        let url: URL;
+        try {
+            url = new URL(rawUrl);
+        } catch (error) {
+            return null;
+        }
+        if (url.protocol !== 'obsidian:') {
+            return null;
+        }
+        const host = url.hostname.toLowerCase();
+        if (!ALMANAC_PROTOCOL_HOSTS.has(host)) {
+            return null;
+        }
+        const overrides: AlmanacInitOverrides = {};
+        const segments = url.pathname
+            .split('/')
+            .map(segment => segment.trim().toLowerCase())
+            .filter(Boolean);
+        if (segments[0] === 'almanac') {
+            segments.shift();
+        }
+        if (segments[0]) {
+            const segmentMode = segments[0];
+            if (segmentMode === 'dashboard' || segmentMode === 'manager' || segmentMode === 'events') {
+                overrides.mode = segmentMode as AlmanacMode;
+            }
+        }
+
+        const params = url.searchParams;
+        const modeParam = params.get('mode');
+        if (modeParam === 'dashboard' || modeParam === 'manager' || modeParam === 'events') {
+            overrides.mode = modeParam;
+        }
+
+        const viewParam = params.get('view');
+        if (viewParam) {
+            if (MANAGER_VIEW_OPTIONS.includes(viewParam as CalendarManagerViewMode)) {
+                overrides.managerView = viewParam as CalendarManagerViewMode;
+            }
+            if (EVENT_VIEW_OPTIONS.includes(viewParam as EventsViewMode)) {
+                overrides.eventsView = viewParam as EventsViewMode;
+            }
+        }
+
+        const zoomParam = params.get('zoom');
+        if (zoomParam && MANAGER_ZOOM_OPTIONS.includes(zoomParam as CalendarViewZoom)) {
+            overrides.managerZoom = zoomParam as CalendarViewZoom;
+        }
+
+        if (params.has('phenomenon')) {
+            const focus = params.get('phenomenon');
+            overrides.selectedPhenomenonId = focus && focus.length > 0 ? focus : null;
+        }
+
+        if (params.has('travelId') || params.has('travel')) {
+            const travelId = params.get('travelId') ?? params.get('travel');
+            overrides.travelId = travelId && travelId.length > 0 ? travelId : null;
+        }
+
+        const hasValues =
+            overrides.mode !== undefined ||
+            overrides.managerView !== undefined ||
+            overrides.managerZoom !== undefined ||
+            overrides.eventsView !== undefined ||
+            overrides.travelId !== undefined ||
+            Object.prototype.hasOwnProperty.call(overrides, 'selectedPhenomenonId');
+
+        return hasValues ? overrides : null;
+    }
+
+    private syncDeepLink(state: AlmanacState): void {
+        if (!this.allowDeepLinkSync) {
+            return;
+        }
+        const url = this.buildDeepLinkUrl(state);
+        if (!url || url === this.lastDeepLinkUrl) {
+            return;
+        }
+        this.lastDeepLinkUrl = url;
+        if (typeof this.app.workspace?.trigger === 'function') {
+            this.isSyncingDeepLink = true;
+            try {
+                this.app.workspace.trigger('url', url);
+            } finally {
+                this.isSyncingDeepLink = false;
+            }
+        }
+    }
+
+    private buildDeepLinkUrl(state: AlmanacState): string {
+        const params: string[] = [];
+        const mode = state.almanacUiState.mode;
+        params.push(`mode=${encodeURIComponent(mode)}`);
+
+        const travelId = state.travelLeafState.travelId;
+        if (travelId) {
+            params.push(`travelId=${encodeURIComponent(travelId)}`);
+        }
+
+        if (mode === 'manager') {
+            params.push(`view=${encodeURIComponent(state.managerUiState.viewMode)}`);
+            params.push(`zoom=${encodeURIComponent(state.managerUiState.zoom)}`);
+        } else if (mode === 'events') {
+            params.push(`view=${encodeURIComponent(state.eventsUiState.viewMode)}`);
+            if (state.eventsUiState.selectedPhenomenonId) {
+                params.push(`phenomenon=${encodeURIComponent(state.eventsUiState.selectedPhenomenonId)}`);
+            }
+        }
+
+        const query = params.length > 0 ? `?${params.join('&')}` : '';
+        return `${ALMANAC_PROTOCOL_BASE}${query}`;
     }
 
     private runDispatch(event: Parameters<AlmanacStateMachine['dispatch']>[0]): Promise<void> {

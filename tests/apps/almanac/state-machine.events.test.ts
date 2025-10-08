@@ -92,6 +92,27 @@ describe("AlmanacStateMachine events refresh", () => {
         expect(preferences.lastSelectedPhenomenonId).toBe("phen-harvest-moon");
     });
 
+    it("applies deep link overrides when reinitialising the Almanac", async () => {
+        await stateMachine.dispatch({
+            type: "INIT_ALMANAC",
+            overrides: {
+                mode: "events",
+                eventsView: "map",
+                managerView: "overview",
+                managerZoom: "week",
+                selectedPhenomenonId: "phen-harvest-moon",
+            },
+        });
+
+        const state = stateMachine.getState();
+        expect(state.almanacUiState.mode).toBe("events");
+        expect(state.eventsUiState.viewMode).toBe("map");
+        expect(state.managerUiState.viewMode).toBe("overview");
+        expect(state.managerUiState.zoom).toBe("week");
+        expect(state.eventsUiState.selectedPhenomenonId).toBe("phen-harvest-moon");
+        expect(state.eventsUiState.selectedPhenomenonDetail?.id).toBe("phen-harvest-moon");
+    });
+
     it("generates map markers that track filtered phenomena", async () => {
         await stateMachine.dispatch({ type: "ALMANAC_MODE_SELECTED", mode: "events" });
 
