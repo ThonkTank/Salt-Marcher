@@ -11,6 +11,8 @@ import { createTravelLogic } from "../travel/domain/actions";
 import type { LogicStateSnapshot } from "../travel/domain/types";
 import type { RenderAdapter } from "../travel/infra/adapter";
 import { cartographerHookGateway } from "../../almanac/mode/cartographer-gateway";
+import { getCartographerBridge } from "../../almanac/mode/cartographer-bridge";
+import type { CartographerBridgeHandle } from "../../almanac/mode/cartographer-bridge";
 import { TravelPlaybackController } from "./travel-guide/playback-controller";
 import { TravelInteractionController } from "./travel-guide/interaction-controller";
 import {
@@ -34,6 +36,21 @@ export function createTravelGuideMode(): CartographerMode {
     let terrainEvent: { off(): void } | null = null;
     let lifecycleSignal: AbortSignal | null = null;
     let encounterSync: ReturnType<typeof createEncounterSync> | null = null;
+    let bridgeTravelId: string | null = null;
+
+    const runBridge = (
+        label: string,
+        fn: (bridge: CartographerBridgeHandle) => Promise<void> | void,
+    ): void => {
+        const bridge = getCartographerBridge();
+        if (!bridge) {
+            console.warn(`[cartographer:travel] skipped ${label} – no Almanac bridge available`);
+            return;
+        }
+        void Promise.resolve(fn(bridge)).catch(error => {
+            console.error(`[cartographer:travel] ${label} failed`, error);
+        });
+    };
 
     const isAborted = () => lifecycleSignal?.aborted ?? false;
 
@@ -89,6 +106,10 @@ export function createTravelGuideMode(): CartographerMode {
         if (activeTravelId) {
             cartographerHookGateway.emitTravelEnd(activeTravelId);
         }
+        if (bridgeTravelId) {
+            runBridge("travel unmount", (bridge) => bridge.unmount());
+            bridgeTravelId = null;
+        }
         detachPanelSubscription();
         activeTravelId = nextId;
         if (activeTravelId) {
@@ -99,8 +120,12 @@ export function createTravelGuideMode(): CartographerMode {
                 }
             });
             updatePanelSnapshotFromGateway(activeTravelId);
+            const travelIdToMount = activeTravelId;
+            runBridge("travel mount", (bridge) => bridge.mount(travelIdToMount));
+            bridgeTravelId = travelIdToMount;
         } else {
             pushPanelSnapshot(null);
+            runBridge("travel unmount", (bridge) => bridge.unmount());
         }
     };
 
@@ -224,6 +249,13 @@ export function createTravelGuideMode(): CartographerMode {
             }
 
             sidebar.setTitle?.(ctx.getFile()?.basename ?? "");
+            sidebar.setTravelHandlers({
+                onAdvance: (payload) => runBridge("travel advance", (bridge) => bridge.handlers.onAdvance(payload)),
+                onModeChange: (mode) => runBridge("travel mode change", (bridge) => bridge.handlers.onModeChange(mode)),
+                onJump: () => runBridge("time jump", (bridge) => bridge.handlers.onJump()),
+                onClose: () => runBridge("travel close", (bridge) => bridge.handlers.onClose()),
+                onFollowUp: (eventId) => runBridge("event follow-up", (bridge) => bridge.handlers.onFollowUp(eventId)),
+            });
             sidebar.onSpeedChange((value) => {
                 if (!isAborted()) {
                     logic?.setTokenSpeed(value);
