@@ -968,6 +968,7 @@ export class AlmanacController {
     private splitView: SplitViewHandle | null = null;
     private calendarView: CalendarViewContainerHandle | null = null;
     private contentContainer: AlmanacContentContainerHandle | null = null;
+    private lastCalendarViewMode: CalendarViewMode | null = null;
     private readonly handleProtocolUrl = (rawUrl: string): void => {
         if (this.isSyncingDeepLink) {
             return;
@@ -1090,6 +1091,7 @@ export class AlmanacController {
         this.contentContainer = null;
         this.splitView?.destroy();
         this.splitView = null;
+        this.lastCalendarViewMode = null;
 
         this.containerEl = null;
         this.cartographerBridge?.release();
@@ -1107,6 +1109,11 @@ export class AlmanacController {
 
         // Update calendar view
         if (this.calendarView && state.calendarViewState) {
+            const nextMode = state.calendarViewState.mode;
+            if (this.lastCalendarViewMode !== nextMode) {
+                this.calendarView.setMode(nextMode);
+                this.lastCalendarViewMode = nextMode;
+            }
             this.calendarView.update(state.calendarViewState);
         }
 
@@ -1151,19 +1158,23 @@ export class AlmanacController {
         });
 
         // Create calendar view (upper section)
-        const calendarMode: CalendarViewMode = 'month'; // Default mode
+        const calendarMode: CalendarViewMode = state.calendarViewState?.mode ?? 'month';
+        const initialCalendarViewState = state.calendarViewState ?? {
+            mode: calendarMode,
+            zoom: 'month',
+            anchorTimestamp: state.calendarState.currentTimestamp,
+            events: state.calendarState.upcomingEvents,
+            isLoading: false,
+            error: undefined,
+        };
         this.calendarView = createCalendarViewContainer(this.app, this.splitView.upperElement, {
             mode: calendarMode,
-            state: state.calendarViewState || {
-                mode: calendarMode,
-                zoom: 'month',
-                anchorTimestamp: state.calendarState.currentTimestamp,
-                events: state.calendarState.upcomingEvents,
-                isLoading: false,
-            },
+            state: initialCalendarViewState,
             onModeChange: (mode) => {
-                // TODO: Dispatch calendar view mode change event
-                console.log('Calendar view mode changed:', mode);
+                void this.runDispatch({
+                    type: 'CALENDAR_VIEW_MODE_CHANGED',
+                    mode,
+                });
             },
             onNavigate: (direction) => {
                 if (direction === 'prev' || direction === 'next') {
@@ -1192,6 +1203,7 @@ export class AlmanacController {
                 });
             },
         });
+        this.lastCalendarViewMode = calendarMode;
 
         // Create content container (lower section)
         const contentMode = state.almanacUiState.mode as AlmanacContentMode;

@@ -17,6 +17,7 @@ import {
     createEmptySingleEventDraft,
     createInitialAlmanacState,
     DEFAULT_ALMANAC_MODE,
+    DEFAULT_CALENDAR_VIEW_MODE,
     DEFAULT_EVENTS_VIEW_MODE,
     DEFAULT_MANAGER_VIEW_MODE,
     DEFAULT_MANAGER_ZOOM,
@@ -33,6 +34,7 @@ import {
     type CalendarEditState,
     type CalendarManagerViewMode,
     type CalendarStateSlice,
+    type CalendarViewMode,
     type CalendarViewZoom,
     type EventEditorDraft,
     type EventEditorMode,
@@ -147,6 +149,9 @@ export class AlmanacStateMachine {
                 break;
             case "ALMANAC_MODE_SELECTED":
                 await this.handleModeSelected(event.mode);
+                break;
+            case "CALENDAR_VIEW_MODE_CHANGED":
+                await this.handleCalendarViewMode(event.mode);
                 break;
             case "MANAGER_VIEW_MODE_CHANGED":
                 await this.handleManagerViewMode(event.viewMode);
@@ -356,6 +361,7 @@ export class AlmanacStateMachine {
         const hasOverrides = Boolean(
             overrides &&
                 (overrides.mode !== undefined ||
+                    overrides.calendarViewMode !== undefined ||
                     overrides.managerView !== undefined ||
                     overrides.managerZoom !== undefined ||
                     overrides.eventsView !== undefined ||
@@ -421,6 +427,8 @@ export class AlmanacStateMachine {
             }
 
             const mode = overrides?.mode ?? preferences.lastMode ?? DEFAULT_ALMANAC_MODE;
+            const calendarViewMode =
+                overrides?.calendarViewMode ?? preferences.calendarViewMode ?? DEFAULT_CALENDAR_VIEW_MODE;
             const managerViewMode = overrides?.managerView ?? preferences.managerViewMode ?? DEFAULT_MANAGER_VIEW_MODE;
             const eventsViewMode = overrides?.eventsView ?? preferences.eventsViewMode ?? DEFAULT_EVENTS_VIEW_MODE;
             const zoom = (
@@ -476,7 +484,7 @@ export class AlmanacStateMachine {
 
                 // Initialize calendar view state (upper split-view section)
                 draft.calendarViewState = {
-                    mode: 'month',
+                    mode: calendarViewMode,
                     zoom,
                     anchorTimestamp: calendarSlice.currentTimestamp,
                     events: calendarSlice.upcomingEvents,
@@ -519,6 +527,8 @@ export class AlmanacStateMachine {
                     error: undefined,
                 };
             });
+
+            await this.handleCalendarViewMode(calendarViewMode, { persist: false, force: true });
 
             const initialPanel: TravelPanelUpdateInput = {
                 travelId: this.travelId,
@@ -710,6 +720,124 @@ export class AlmanacStateMachine {
 
         if (mode === "events") {
             this.ensurePhenomenonSelection();
+        }
+    }
+
+    private async handleCalendarViewMode(
+        mode: CalendarViewMode,
+        options?: { readonly persist?: boolean; readonly force?: boolean },
+    ): Promise<void> {
+        const persist = options?.persist ?? true;
+        const force = options?.force ?? false;
+
+        if (!force && mode === this.state.calendarViewState.mode) {
+            return;
+        }
+
+        const anchorBase =
+            this.state.calendarViewState.anchorTimestamp
+            ?? this.state.calendarState.currentTimestamp
+            ?? this.getAnchorBase();
+        const resolvedAnchor = anchorBase ?? this.getAnchorFallback();
+
+        if (mode === "upcoming") {
+            const upcoming = Array.from(this.state.calendarState.upcomingEvents);
+            this.setState(draft => {
+                draft.calendarViewState = {
+                    ...draft.calendarViewState,
+                    mode,
+                    anchorTimestamp: resolvedAnchor ?? draft.calendarViewState.anchorTimestamp,
+                    events: upcoming,
+                    isLoading: false,
+                    error: undefined,
+                };
+            });
+            if (persist) {
+                await this.persistPreferences({ calendarViewMode: mode });
+            }
+            return;
+        }
+
+        const activeCalendarId =
+            resolvedAnchor?.calendarId
+            ?? this.state.calendarState.activeCalendarId
+            ?? this.gateway.getActiveCalendarId()
+            ?? this.state.calendarState.calendars[0]?.id
+            ?? null;
+
+        if (!activeCalendarId || !resolvedAnchor) {
+            this.setState(draft => {
+                draft.calendarViewState = {
+                    ...draft.calendarViewState,
+                    mode,
+                    anchorTimestamp: resolvedAnchor ?? draft.calendarViewState.anchorTimestamp,
+                    events: [],
+                    isLoading: false,
+                    error: undefined,
+                };
+            });
+            if (persist) {
+                await this.persistPreferences({ calendarViewMode: mode });
+            }
+            return;
+        }
+
+        const dayAnchor = createDayTimestamp(
+            activeCalendarId,
+            resolvedAnchor.year,
+            resolvedAnchor.monthId,
+            resolvedAnchor.day,
+        );
+
+        this.setState(draft => {
+            draft.calendarViewState = {
+                ...draft.calendarViewState,
+                mode,
+                anchorTimestamp: dayAnchor,
+                isLoading: true,
+                error: undefined,
+            };
+        });
+
+        try {
+            const schema =
+                this.getCalendarSchema(activeCalendarId)
+                ?? (await this.calendarRepo.getCalendar(activeCalendarId));
+            if (!schema) {
+                throw new Error(`Calendar schema for ${activeCalendarId} not available`);
+            }
+
+            const events = await this.eventRepo.listEvents(activeCalendarId);
+            const zoom = this.mapCalendarViewModeToZoom(mode);
+            const filtered = zoom
+                ? this.collectAgendaItems(dayAnchor, zoom, Array.from(events))
+                : Array.from(events);
+
+            this.setState(draft => {
+                draft.calendarViewState = {
+                    ...draft.calendarViewState,
+                    mode,
+                    anchorTimestamp: dayAnchor,
+                    events: filtered,
+                    isLoading: false,
+                    error: undefined,
+                };
+            });
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : "Kalenderansicht konnte nicht geladen werden";
+            this.setState(draft => {
+                draft.calendarViewState = {
+                    ...draft.calendarViewState,
+                    mode,
+                    isLoading: false,
+                    error: message,
+                };
+            });
+        }
+
+        if (persist) {
+            await this.persistPreferences({ calendarViewMode: mode });
         }
     }
 
@@ -3552,6 +3680,19 @@ export class AlmanacStateMachine {
         }
         const firstMonth = schema.months[0] ?? { id: schema.epoch.monthId, length: schema.months[0]?.length ?? 30 };
         return createDayTimestamp(activeId, schema.epoch.year, firstMonth.id, schema.epoch.day);
+    }
+
+    private mapCalendarViewModeToZoom(mode: CalendarViewMode): CalendarViewZoom | null {
+        switch (mode) {
+            case "month":
+                return "month";
+            case "week":
+                return "week";
+            case "day":
+                return "day";
+            default:
+                return null;
+        }
     }
 
     private computeEditWarnings(schema: CalendarSchema, draft: CalendarCreateDraft): string[] {

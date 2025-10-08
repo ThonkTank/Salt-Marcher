@@ -286,6 +286,7 @@ export type AlmanacStateListener = (state: AlmanacState) => void;
 
 export interface AlmanacPreferencesSnapshot {
     readonly lastMode?: AlmanacMode;
+    readonly calendarViewMode?: CalendarViewMode;
     readonly managerViewMode?: CalendarManagerViewMode;
     readonly eventsViewMode?: EventsViewMode;
     readonly lastZoomByMode?: Partial<Record<AlmanacMode, CalendarViewZoom>>;
@@ -296,6 +297,7 @@ export interface AlmanacPreferencesSnapshot {
 export interface AlmanacInitOverrides {
     readonly travelId?: string | null;
     readonly mode?: AlmanacMode;
+    readonly calendarViewMode?: CalendarViewMode;
     readonly managerView?: CalendarManagerViewMode;
     readonly managerZoom?: CalendarViewZoom;
     readonly eventsView?: EventsViewMode;
@@ -309,6 +311,7 @@ export type AlmanacEvent =
           readonly overrides?: AlmanacInitOverrides | null;
       }
     | { readonly type: "ALMANAC_MODE_SELECTED"; readonly mode: AlmanacMode }
+    | { readonly type: "CALENDAR_VIEW_MODE_CHANGED"; readonly mode: CalendarViewMode }
     | { readonly type: "MANAGER_VIEW_MODE_CHANGED"; readonly viewMode: CalendarManagerViewMode }
     | { readonly type: "MANAGER_ZOOM_CHANGED"; readonly zoom: CalendarViewZoom }
     | { readonly type: "MANAGER_NAVIGATION_REQUESTED"; readonly direction: 'prev' | 'next' | 'today' }
@@ -364,6 +367,7 @@ export type AlmanacEvent =
     | { readonly type: "ERROR_OCCURRED"; readonly scope: "almanac" | "manager" | "events" | "travel"; readonly message: string };
 
 export const DEFAULT_ALMANAC_MODE: AlmanacMode = "dashboard";
+export const DEFAULT_CALENDAR_VIEW_MODE: CalendarViewMode = "month";
 export const DEFAULT_MANAGER_VIEW_MODE: CalendarManagerViewMode = "calendar";
 export const DEFAULT_EVENTS_VIEW_MODE: EventsViewMode = "timeline";
 export const DEFAULT_MANAGER_ZOOM: CalendarViewZoom = "month";
@@ -480,7 +484,7 @@ export function createInitialAlmanacState(): AlmanacState {
             error: undefined,
         },
         calendarViewState: {
-            mode: 'month',
+            mode: DEFAULT_CALENDAR_VIEW_MODE,
             zoom: DEFAULT_MANAGER_ZOOM,
             anchorTimestamp: null,
             events: [],

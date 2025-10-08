@@ -101,6 +101,40 @@ describe("AlmanacStateMachine calendar creation", () => {
         expect(saveSpy).toHaveBeenCalledWith(expect.objectContaining({ lastMode: "events" }));
     });
 
+    it("updates calendar view mode and persists the preference", async () => {
+        const saveSpy = vi.spyOn(gateway, 'savePreferences');
+        await stateMachine.dispatch({ type: "CALENDAR_VIEW_MODE_CHANGED", mode: "day" });
+        await flushGateway(gateway);
+
+        const state = stateMachine.getState();
+        expect(state.calendarViewState.mode).toBe("day");
+        expect(state.calendarViewState.isLoading).toBe(false);
+        expect(state.calendarViewState.events.some(event => event.title === "New Year's Day")).toBe(true);
+
+        const preferences = await gateway.loadPreferences();
+        expect(preferences.calendarViewMode).toBe("day");
+        expect(saveSpy).toHaveBeenCalledWith(expect.objectContaining({ calendarViewMode: "day" }));
+        saveSpy.mockRestore();
+    });
+
+    it("restores the persisted calendar view mode on initialisation", async () => {
+        await gateway.savePreferences({ calendarViewMode: "week" });
+        await flushGateway(gateway);
+
+        const freshMachine = new AlmanacStateMachine(
+            calendarRepo,
+            eventRepo,
+            gateway,
+            phenomenonRepo,
+        );
+        await freshMachine.dispatch({ type: "INIT_ALMANAC" });
+
+        const restored = freshMachine.getState();
+        expect(restored.calendarViewState.mode).toBe("week");
+        expect(restored.calendarViewState.isLoading).toBe(false);
+        expect(restored.calendarViewState.events.length).toBeGreaterThan(0);
+    });
+
     it("surfaces validation errors for incomplete drafts", async () => {
         await stateMachine.dispatch({
             type: "MANAGER_CREATE_FORM_UPDATED",

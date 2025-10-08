@@ -174,6 +174,26 @@ describe("AlmanacController Dashboard", () => {
         expect(titles.some(title => title.includes("Team Meeting"))).toBe(true);
     });
 
+    it("dispatcht Kalenderansichtswechsel über die Tab-Navigation", async () => {
+        const app = new App();
+        const controller = await createController(app);
+        const container = document.createElement("div");
+
+        await controller.onOpen(container);
+
+        const stateMachine = (controller as unknown as { stateMachine: AlmanacStateMachine }).stateMachine;
+        const weekButton = container.querySelector(
+            '.almanac-calendar-view__tabs [data-tab-id="week"]'
+        ) as HTMLButtonElement | null;
+        expect(weekButton).toBeTruthy();
+        weekButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        const state = stateMachine.getState();
+        expect(state.calendarViewState.mode).toBe('week');
+        expect(weekButton?.classList.contains('is-active')).toBe(true);
+    });
+
     it("wechseln der Modi aktualisiert die Ansicht", async () => {
         const app = new App();
         const controller = await createController(app);
