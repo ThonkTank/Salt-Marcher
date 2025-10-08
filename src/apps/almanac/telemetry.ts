@@ -36,6 +36,11 @@ export type AlmanacTelemetryEvent =
       readonly history: ReadonlyArray<AlmanacMode>;
     }
   | {
+      readonly type: "calendar.almanac.create_flow";
+      readonly source: "calendar-selector" | "travel-follow-up" | "manager";
+      readonly availableCalendars: number;
+    }
+  | {
       readonly type: "calendar.travel.lifecycle";
       readonly phase: "mount" | "mode-change" | "visibility";
       readonly travelId: string | null;

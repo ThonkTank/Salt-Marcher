@@ -45,6 +45,7 @@ import {
     type CartographerBridgeHandle,
 } from './cartographer-bridge';
 import { renderEventsMap as renderEventsMapComponent } from './events';
+import { emitAlmanacEvent } from '../telemetry';
 
 const MODE_COPY: Record<AlmanacMode, { label: string; description: string }> = {
     dashboard: { label: 'Dashboard', description: 'Current date, quick actions and upcoming events' },
@@ -1073,7 +1074,28 @@ export class AlmanacController {
 
     private renderCalendarSelector(host: HTMLElement, state: AlmanacState): void {
         if (state.calendarState.calendars.length === 0) {
-            host.createEl('span', { text: 'No calendars available' });
+            const emptyState = host.createDiv({ cls: 'almanac-empty-state' });
+            emptyState.createEl('h2', { text: 'No calendars available' });
+            emptyState.createEl('p', {
+                text: 'Create your first calendar to start planning events.',
+            });
+
+            const createButton = emptyState.createEl('button', {
+                text: 'Create calendar',
+                cls: 'almanac-control-button',
+                attr: { 'data-action': 'create-first-calendar' },
+            }) as HTMLButtonElement;
+            createButton.disabled = state.almanacUiState.isLoading || state.calendarState.isPersisting;
+            createButton.addEventListener('click', () => {
+                emitAlmanacEvent({
+                    type: 'calendar.almanac.create_flow',
+                    source: 'calendar-selector',
+                    availableCalendars: state.calendarState.calendars.length,
+                });
+                void this.runDispatch({ type: 'ALMANAC_MODE_SELECTED', mode: 'manager' });
+                void this.runDispatch({ type: 'MANAGER_CREATE_FORM_UPDATED', field: 'name', value: '' });
+                void this.runDispatch({ type: 'MANAGER_CREATE_FORM_UPDATED', field: 'id', value: '' });
+            });
             return;
         }
 

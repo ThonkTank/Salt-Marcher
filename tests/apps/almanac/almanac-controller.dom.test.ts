@@ -1,5 +1,5 @@
 // salt-marcher/tests/apps/almanac/almanac-controller.dom.test.ts
-// Validiert das Rendering des Recently-Triggered-Abschnitts nach Zeitfortschritt.
+// Validiert das Recently-Triggered-Rendering und den CTA bei fehlenden Kalendern.
 import { beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("obsidian", async () => await import("../../mocks/obsidian"));
@@ -81,45 +81,79 @@ describe("AlmanacController Dashboard", () => {
         ensureObsidianDomHelpers();
     });
 
-    const createController = async (app: App) => {
+    const createController = async (app: App, options: { seedCalendars?: boolean } = {}) => {
+        const { seedCalendars = true } = options;
         const calendarRepo = new InMemoryCalendarRepository();
         const eventRepo = new InMemoryEventRepository();
         eventRepo.bindCalendarRepository(calendarRepo);
         const phenomenonRepo = new InMemoryPhenomenonRepository();
         const gateway = new InMemoryStateGateway(calendarRepo, eventRepo, phenomenonRepo);
 
-        calendarRepo.seed([
-            gregorianSchema,
-            {
-                id: "lunar-cycle",
-                name: "Lunar Cycle",
-                description: "Six-month seasonal calendar for travel campaigns",
-                daysPerWeek: 6,
-                hoursPerDay: 20,
-                minutesPerHour: 60,
-                minuteStep: 10,
-                months: [
-                    { id: "ember", name: "Ember", length: 30 },
-                    { id: "sleet", name: "Sleet", length: 30 },
-                    { id: "bloom", name: "Bloom", length: 30 },
-                    { id: "zenith", name: "Zenith", length: 30 },
-                    { id: "gale", name: "Gale", length: 30 },
-                    { id: "dusk", name: "Dusk", length: 30 },
-                ],
-                epoch: { year: 1, monthId: "ember", day: 1 },
-                schemaVersion: "1.0.0",
-            },
-        ]);
-        await calendarRepo.setDefault({ calendarId: gregorianSchema.id, scope: "global" });
-        eventRepo.seed(createSampleEvents(2024));
-        phenomenonRepo.seed(createSamplePhenomena());
+        if (seedCalendars) {
+            calendarRepo.seed([
+                gregorianSchema,
+                {
+                    id: "lunar-cycle",
+                    name: "Lunar Cycle",
+                    description: "Six-month seasonal calendar for travel campaigns",
+                    daysPerWeek: 6,
+                    hoursPerDay: 20,
+                    minutesPerHour: 60,
+                    minuteStep: 10,
+                    months: [
+                        { id: "ember", name: "Ember", length: 30 },
+                        { id: "sleet", name: "Sleet", length: 30 },
+                        { id: "bloom", name: "Bloom", length: 30 },
+                        { id: "zenith", name: "Zenith", length: 30 },
+                        { id: "gale", name: "Gale", length: 30 },
+                        { id: "dusk", name: "Dusk", length: 30 },
+                    ],
+                    epoch: { year: 1, monthId: "ember", day: 1 },
+                    schemaVersion: "1.0.0",
+                },
+            ]);
+            await calendarRepo.setDefault({ calendarId: gregorianSchema.id, scope: "global" });
+            eventRepo.seed(createSampleEvents(2024));
+            phenomenonRepo.seed(createSamplePhenomena());
 
-        const initialTimestamp = getDefaultCurrentTimestamp(2024);
-        await gateway.setActiveCalendar(gregorianSchema.id, { initialTimestamp });
-        await gateway.setCurrentTimestamp(initialTimestamp);
+            const initialTimestamp = getDefaultCurrentTimestamp(2024);
+            await gateway.setActiveCalendar(gregorianSchema.id, { initialTimestamp });
+            await gateway.setCurrentTimestamp(initialTimestamp);
+        }
 
         return new AlmanacController(app, { calendarRepo, eventRepo, phenomenonRepo, gateway });
     };
+
+    it("zeigt einen CTA zum Anlegen, wenn keine Kalender vorhanden sind", async () => {
+        const app = new App();
+        const controller = await createController(app, { seedCalendars: false });
+        const container = document.createElement("div");
+
+        await controller.onOpen(container);
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        const emptyState = container.querySelector(".almanac-empty-state");
+        expect(emptyState).toBeTruthy();
+
+        const cta = container.querySelector('button[data-action="create-first-calendar"]') as HTMLButtonElement | null;
+        expect(cta).toBeTruthy();
+        expect(cta?.disabled).toBe(false);
+
+        const stateMachine = (controller as unknown as { stateMachine: AlmanacStateMachine }).stateMachine;
+        const dispatchSpy = vi.spyOn(stateMachine, "dispatch");
+
+        cta?.click();
+        await Promise.resolve();
+
+        expect(dispatchSpy).toHaveBeenCalledWith(
+            expect.objectContaining({ type: "ALMANAC_MODE_SELECTED", mode: "manager" })
+        );
+        expect(dispatchSpy).toHaveBeenCalledWith(
+            expect.objectContaining({ type: "MANAGER_CREATE_FORM_UPDATED", field: "name", value: "" })
+        );
+
+        dispatchSpy.mockRestore();
+    });
 
     it("blendet ausgelöste Ereignisse nach Zeitfortschritt ein", async () => {
         const app = new App();
