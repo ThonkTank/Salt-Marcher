@@ -17,6 +17,16 @@ import {
 } from "../../../src/apps/almanac/fixtures/gregorian.fixture";
 import { createSamplePhenomena } from "../../../src/apps/almanac/fixtures/phenomena.fixture";
 
+const flushGateway = async (instance: unknown): Promise<void> => {
+    if (
+        instance &&
+        typeof instance === "object" &&
+        typeof (instance as { flushPendingPersistence?: () => Promise<void> }).flushPendingPersistence === "function"
+    ) {
+        await (instance as { flushPendingPersistence: () => Promise<void> }).flushPendingPersistence();
+    }
+};
+
 describe("AlmanacStateMachine events refresh", () => {
     let calendarRepo: InMemoryCalendarRepository;
     let eventRepo: InMemoryEventRepository;
@@ -87,6 +97,7 @@ describe("AlmanacStateMachine events refresh", () => {
             state.eventsUiState.phenomena.every(item => item.category === "astronomy"),
         ).toBe(true);
 
+        await flushGateway(gateway);
         const preferences = await gateway.loadPreferences();
         expect(preferences.eventsFilters?.categories).toEqual(["astronomy"]);
         expect(preferences.lastSelectedPhenomenonId).toBe("phen-harvest-moon");

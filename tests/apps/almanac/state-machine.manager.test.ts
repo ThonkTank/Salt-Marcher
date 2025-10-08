@@ -17,6 +17,16 @@ import {
 } from "../../../src/apps/almanac/fixtures/gregorian.fixture";
 import { createSamplePhenomena } from "../../../src/apps/almanac/fixtures/phenomena.fixture";
 
+const flushGateway = async (instance: unknown): Promise<void> => {
+    if (
+        instance &&
+        typeof instance === "object" &&
+        typeof (instance as { flushPendingPersistence?: () => Promise<void> }).flushPendingPersistence === "function"
+    ) {
+        await (instance as { flushPendingPersistence: () => Promise<void> }).flushPendingPersistence();
+    }
+};
+
 describe("AlmanacStateMachine calendar creation", () => {
     let calendarRepo: InMemoryCalendarRepository;
     let eventRepo: InMemoryEventRepository;
@@ -85,6 +95,7 @@ describe("AlmanacStateMachine calendar creation", () => {
     it("persists mode selection via gateway preferences", async () => {
         const saveSpy = vi.spyOn(gateway, 'savePreferences');
         await stateMachine.dispatch({ type: "ALMANAC_MODE_SELECTED", mode: "events" });
+        await flushGateway(gateway);
         const preferences = await gateway.loadPreferences();
         expect(preferences.lastMode).toBe("events");
         expect(saveSpy).toHaveBeenCalledWith(expect.objectContaining({ lastMode: "events" }));

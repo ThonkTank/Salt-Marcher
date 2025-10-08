@@ -32,6 +32,16 @@ const startOfJanFirst = createHourTimestamp(GREGORIAN_CALENDAR_ID, 2024, "jan", 
 
 const toIdList = (events: Array<{ id: string }>) => events.map(event => event.id);
 
+const flushGateway = async (instance: unknown): Promise<void> => {
+    if (
+        instance &&
+        typeof instance === "object" &&
+        typeof (instance as { flushPendingPersistence?: () => Promise<void> }).flushPendingPersistence === "function"
+    ) {
+        await (instance as { flushPendingPersistence: () => Promise<void> }).flushPendingPersistence();
+    }
+};
+
 describe("InMemoryStateGateway.advanceTimeBy", () => {
     let calendarRepo: InMemoryCalendarRepository;
     let eventRepo: InMemoryEventRepository;
@@ -316,5 +326,50 @@ describe("VaultCalendarStateGateway persistence", () => {
         expect(removedPhenomenon).toBeNull();
 
         expect(vault.readRaw("SaltMarcher/Almanac/state.json")).toContain("\"currentTimestamp\"");
+    });
+
+    it("debounced Updates für Präferenzen und Travel-Leaves bündelt", async () => {
+        vi.useFakeTimers();
+        const vault = new MemoryVault();
+        const calendarRepo = new VaultCalendarRepository(vault);
+        const eventRepo = new VaultEventRepository(calendarRepo, vault);
+        const almanacRepo = new VaultAlmanacRepository(calendarRepo, vault);
+        const gateway = new VaultCalendarStateGateway(
+            calendarRepo,
+            eventRepo,
+            almanacRepo,
+            vault,
+        );
+
+        try {
+            await calendarRepo.createCalendar({ ...gregorianSchema, isDefaultGlobal: true });
+            await calendarRepo.setDefault({ calendarId: gregorianSchema.id, scope: "global" });
+            await gateway.loadSnapshot();
+
+            const modifySpy = vi.spyOn(vault, "modify");
+            modifySpy.mockClear();
+
+            const preferencesPromise = gateway.savePreferences({ lastMode: "events" });
+            const travelPromise = gateway.saveTravelLeafPreferences("travel/bundle.hex", {
+                visible: false,
+                mode: "day",
+                lastViewedTimestamp: null,
+            });
+
+            expect(modifySpy).not.toHaveBeenCalled();
+
+            await vi.runAllTimersAsync();
+
+            await Promise.all([preferencesPromise, travelPromise]);
+            await flushGateway(gateway);
+
+            expect(modifySpy).toHaveBeenCalledTimes(1);
+
+            const payload = JSON.parse(vault.readRaw("SaltMarcher/Almanac/state.json"));
+            expect(payload.data.preferences.lastMode).toBe("events");
+            expect(payload.data.travelLeaf["travel/bundle.hex"].visible).toBe(false);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });
