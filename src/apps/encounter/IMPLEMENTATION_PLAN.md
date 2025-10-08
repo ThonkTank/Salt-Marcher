@@ -95,11 +95,11 @@ interface EncounterXpState {
 - Eventuelle Synchronisation mit Cartographer optional durch Flags, aktuell Fokus auf lokale Eingabe.
 
 ## Implementierungsschritte
-1. **State-Erweiterung**: Modelle und Aktionen im `session-store` für Party, Encounter-XP und Regeln ergänzen; XP-Schwellentabelle als Konstante hinterlegen.
-2. **Presenter-Anpassung**: Selektoren für Berechnungen, Validierung und Fehlermeldungen implementieren, inklusive Utility `calculateXpToNextLevel(level, currentXp?)`.
-3. **UI-Komponenten**: Neue Unterkomponenten für Party-Liste, Regel-Editor und Ergebnis-Panel in `view.ts` (oder ausgelagerte Dateien) aufbauen.
-4. **Interaktion & Persistenz**: Bindings zwischen View und Store herstellen, inklusive Formularvalidierung und Undo/Reset-Funktionen.
-5. **Tests & Dokumentation**: Unit-Tests für Berechnungslogik, README-Abschnitt zur Nutzung des XP-Tools ergänzen.
+1. ✅ **State-Erweiterung**: Modelle und Aktionen im `session-store` für Party, Encounter-XP und Regeln ergänzen; XP-Schwellentabelle als Konstante hinterlegen.
+2. ✅ **Presenter-Anpassung**: Selektoren für Berechnungen, Validierung und Fehlermeldungen implementieren, inklusive Utility `calculateXpToNextLevel(level, currentXp?)`.
+3. ✅ **UI-Komponenten**: Neue Unterkomponenten für Party-Liste, Regel-Editor und Ergebnis-Panel in `view.ts` (oder ausgelagerte Dateien) aufbauen.
+4. ✅ **Interaktion & Persistenz**: Bindings zwischen View und Store herstellen, inklusive Formularvalidierung und Undo/Reset-Funktionen.
+5. ✅ **Tests & Dokumentation**: Unit-Tests für Berechnungslogik, README-Abschnitt zur Nutzung des XP-Tools ergänzen.
 
 ## Offene Fragen
 - Sollen Level-/XP-Schwellen aus `core` importiert werden oder lokal konfigurierbar sein?
