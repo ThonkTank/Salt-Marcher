@@ -20,6 +20,7 @@ import type { CalendarRepository } from '../data/calendar-repository';
 import type { EventRepository } from '../data/event-repository';
 import type { PhenomenonRepository } from '../data/in-memory-repository';
 import type { CalendarStateGateway } from '../data/calendar-state-gateway';
+import type { AlmanacRepository } from '../data/almanac-repository';
 import {
     InMemoryCalendarRepository,
     InMemoryEventRepository,
@@ -36,12 +37,6 @@ import {
     type ImportSummary,
 } from './contracts';
 import { AlmanacStateMachine } from './state-machine';
-import {
-    gregorianSchema,
-    createSampleEvents,
-    getDefaultCurrentTimestamp,
-} from '../fixtures/gregorian.fixture';
-import { createSamplePhenomena } from '../fixtures/phenomena.fixture';
 import { renderEventsMap as renderEventsMapComponent } from './events';
 
 const MODE_COPY: Record<AlmanacMode, { label: string; description: string }> = {
@@ -410,17 +405,17 @@ class EventImportDialog extends Modal {
     }
 }
 
-interface AlmanacControllerDependencies {
+export interface AlmanacControllerDependencies {
     readonly calendarRepo?: CalendarRepository;
     readonly eventRepo?: EventRepository;
-    readonly phenomenonRepo?: PhenomenonRepository;
+    readonly phenomenonRepo?: PhenomenonRepository & AlmanacRepository;
     readonly gateway?: CalendarStateGateway;
 }
 
 export class AlmanacController {
     private readonly calendarRepo: CalendarRepository;
     private readonly eventRepo: EventRepository;
-    private readonly phenomenonRepo: PhenomenonRepository;
+    private readonly phenomenonRepo: PhenomenonRepository & AlmanacRepository;
     private readonly gateway: CalendarStateGateway;
     private readonly stateMachine: AlmanacStateMachine;
 
@@ -434,7 +429,7 @@ export class AlmanacController {
     constructor(private readonly app: App, deps: AlmanacControllerDependencies = {}) {
         const calendarRepo = deps.calendarRepo ?? new InMemoryCalendarRepository();
         const eventRepo = deps.eventRepo ?? new InMemoryEventRepository();
-        if (eventRepo instanceof InMemoryEventRepository && calendarRepo instanceof InMemoryCalendarRepository) {
+        if (eventRepo instanceof InMemoryEventRepository) {
             eventRepo.bindCalendarRepository(calendarRepo);
         }
         const phenomenonRepo = deps.phenomenonRepo ?? new InMemoryPhenomenonRepository();
@@ -450,40 +445,6 @@ export class AlmanacController {
             this.gateway,
             this.phenomenonRepo,
         );
-
-        if (!deps.calendarRepo && !deps.gateway) {
-            if (calendarRepo instanceof InMemoryCalendarRepository) {
-                calendarRepo.seed([
-                    gregorianSchema,
-                    {
-                        id: 'lunar-cycle',
-                        name: 'Lunar Cycle',
-                        description: 'Six-month seasonal calendar for travel campaigns',
-                        daysPerWeek: 6,
-                        hoursPerDay: 20,
-                        minutesPerHour: 60,
-                        minuteStep: 10,
-                        months: [
-                            { id: 'ember', name: 'Ember', length: 30 },
-                            { id: 'sleet', name: 'Sleet', length: 30 },
-                            { id: 'bloom', name: 'Bloom', length: 30 },
-                            { id: 'zenith', name: 'Zenith', length: 30 },
-                            { id: 'gale', name: 'Gale', length: 30 },
-                            { id: 'dusk', name: 'Dusk', length: 30 },
-                        ],
-                        epoch: { year: 1, monthId: 'ember', day: 1 },
-                        schemaVersion: '1.0.0',
-                    },
-                ]);
-                void calendarRepo.setDefault({ calendarId: gregorianSchema.id, scope: 'global' });
-            }
-            if (eventRepo instanceof InMemoryEventRepository) {
-                eventRepo.seed(createSampleEvents(2024));
-            }
-            if (phenomenonRepo instanceof InMemoryPhenomenonRepository) {
-                phenomenonRepo.seed(createSamplePhenomena());
-            }
-        }
     }
 
     async onOpen(container: HTMLElement): Promise<void> {
@@ -493,13 +454,19 @@ export class AlmanacController {
         container.empty();
         container.addClass('almanac-container');
 
-        // Ensure an initial active calendar exists for demo purposes
         const activeCalendarId = this.gateway.getActiveCalendarId();
         if (!activeCalendarId) {
-            await this.gateway.setActiveCalendar(
-                gregorianSchema.id,
-                { initialTimestamp: getDefaultCurrentTimestamp(2024) },
-            );
+            const calendars = await this.calendarRepo.listCalendars();
+            const fallback = calendars.find(calendar => calendar.isDefaultGlobal) ?? calendars[0];
+            if (fallback) {
+                const initialTimestamp = createDayTimestamp(
+                    fallback.id,
+                    fallback.epoch.year,
+                    fallback.epoch.monthId,
+                    fallback.epoch.day,
+                );
+                await this.gateway.setActiveCalendar(fallback.id, { initialTimestamp });
+            }
         }
 
         this.unsubscribe = this.stateMachine.subscribe(state => {

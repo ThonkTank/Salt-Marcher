@@ -1,6 +1,6 @@
 // salt-marcher/tests/apps/almanac/state-gateway.test.ts
 // Prüft die Bereichsfilterung des Almanac-State-Gateways bei Zeitfortschritt.
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
     InMemoryCalendarRepository,
@@ -8,6 +8,10 @@ import {
     InMemoryPhenomenonRepository,
 } from "../../../src/apps/almanac/data/in-memory-repository";
 import { InMemoryStateGateway } from "../../../src/apps/almanac/data/in-memory-gateway";
+import { VaultCalendarRepository } from "../../../src/apps/almanac/data/vault-calendar-repository";
+import { VaultEventRepository } from "../../../src/apps/almanac/data/vault-event-repository";
+import { VaultAlmanacRepository } from "../../../src/apps/almanac/data/vault-almanac-repository";
+import { VaultCalendarStateGateway } from "../../../src/apps/almanac/data/vault-calendar-state-gateway";
 import { createSingleEvent } from "../../../src/apps/almanac/domain/calendar-event";
 import {
     createHourTimestamp,
@@ -16,10 +20,13 @@ import {
     compareTimestampsWithSchema,
 } from "../../../src/apps/almanac/domain/calendar-timestamp";
 import { getEventAnchorTimestamp } from "../../../src/apps/almanac/domain/calendar-event";
+import { CartographerHookGateway } from "../../../src/apps/almanac/mode/cartographer-gateway";
 import {
     gregorianSchema,
     GREGORIAN_CALENDAR_ID,
 } from "../../../src/apps/almanac/fixtures/gregorian.fixture";
+import { TAbstractFile, TFile } from "obsidian";
+import type { VaultLike } from "../../../src/apps/almanac/data/json-store";
 
 const startOfJanFirst = createHourTimestamp(GREGORIAN_CALENDAR_ID, 2024, "jan", 1, 0);
 
@@ -146,5 +153,168 @@ describe("InMemoryStateGateway.advanceTimeBy", () => {
         expect(result.triggeredPhenomena).toHaveLength(1);
         expect(result.triggeredPhenomena[0]?.phenomenonId).toBe("phen-harvest");
         expect(result.upcomingPhenomena[0]?.phenomenonId).toBe("phen-harvest");
+    });
+});
+
+class MemoryFile extends TFile {
+    data = "";
+
+    constructor(path: string, data: string) {
+        super();
+        this.path = path;
+        this.basename = path.split("/").pop() ?? path;
+        this.data = data;
+    }
+}
+
+class MemoryVault implements VaultLike {
+    private readonly files = new Map<string, MemoryFile>();
+    private readonly folders = new Set<string>();
+
+    getAbstractFileByPath(path: string): TAbstractFile | null {
+        const file = this.files.get(path);
+        if (file) {
+            return file;
+        }
+        if (this.folders.has(path)) {
+            const folder = new TAbstractFile();
+            folder.path = path;
+            return folder;
+        }
+        return null;
+    }
+
+    async create(path: string, data: string): Promise<TFile> {
+        const file = new MemoryFile(path, data);
+        this.files.set(path, file);
+        return file;
+    }
+
+    async modify(file: TFile, data: string): Promise<void> {
+        const memory = this.files.get(file.path);
+        if (memory) {
+            memory.data = data;
+        }
+    }
+
+    async read(file: TFile): Promise<string> {
+        const memory = this.files.get(file.path);
+        return memory?.data ?? "";
+    }
+
+    async createFolder(path: string): Promise<void> {
+        this.folders.add(path);
+    }
+
+    readRaw(path: string): string {
+        return this.files.get(path)?.data ?? "";
+    }
+}
+
+describe("VaultCalendarStateGateway persistence", () => {
+    it("persistiert Zeitfortschritt, CRUD-Operationen und Cartographer-Hooks", async () => {
+        const vault = new MemoryVault();
+        const calendarRepo = new VaultCalendarRepository(vault);
+        const eventRepo = new VaultEventRepository(calendarRepo, vault);
+        const almanacRepo = new VaultAlmanacRepository(calendarRepo, vault);
+        const cartographer = new CartographerHookGateway();
+        const gateway = new VaultCalendarStateGateway(
+            calendarRepo,
+            eventRepo,
+            almanacRepo,
+            vault,
+            cartographer,
+        );
+
+        await calendarRepo.createCalendar({ ...gregorianSchema, isDefaultGlobal: true });
+        await calendarRepo.setDefault({ calendarId: gregorianSchema.id, scope: "global" });
+
+        const startTimestamp = createDayTimestamp(GREGORIAN_CALENDAR_ID, 2024, "jan", 1);
+        await gateway.setActiveCalendar(gregorianSchema.id, { initialTimestamp: startTimestamp });
+        await gateway.setCurrentTimestamp(startTimestamp);
+
+        const triggeredEvent = createSingleEvent(
+            "evt-vault",
+            GREGORIAN_CALENDAR_ID,
+            "Vault Hook",
+            createDayTimestamp(GREGORIAN_CALENDAR_ID, 2024, "jan", 2),
+        );
+        const removableEvent = createSingleEvent(
+            "evt-remove",
+            GREGORIAN_CALENDAR_ID,
+            "Remove Me",
+            createDayTimestamp(GREGORIAN_CALENDAR_ID, 2024, "jan", 3),
+        );
+        await eventRepo.createEvent(triggeredEvent);
+        await eventRepo.createEvent(removableEvent);
+
+        const persistentPhenomenon = {
+            id: "phen-persist",
+            name: "Vault Alignment",
+            category: "astronomy" as const,
+            visibility: "selected" as const,
+            appliesToCalendarIds: [GREGORIAN_CALENDAR_ID],
+            rule: { type: "annual_offset" as const, offsetDayOfYear: 2 },
+            timePolicy: "all_day" as const,
+            priority: 5,
+            schemaVersion: "1.0.0",
+        };
+        const transientPhenomenon = {
+            id: "phen-transient",
+            name: "Vault Tempest",
+            category: "weather" as const,
+            visibility: "selected" as const,
+            appliesToCalendarIds: [GREGORIAN_CALENDAR_ID],
+            rule: { type: "annual_offset" as const, offsetDayOfYear: 10 },
+            timePolicy: "all_day" as const,
+            priority: 2,
+            schemaVersion: "1.0.0",
+        };
+        await almanacRepo.upsertPhenomenon(persistentPhenomenon);
+        await almanacRepo.upsertPhenomenon(transientPhenomenon);
+
+        const hookListener = vi.fn();
+        const unsubscribe = cartographer.onHookDispatched(hookListener);
+
+        const result = await gateway.advanceTimeBy(1, "day");
+
+        await eventRepo.updateEvent(triggeredEvent.id, { title: "Vault Hook Updated" });
+        await eventRepo.deleteEvent(removableEvent.id);
+        await almanacRepo.deletePhenomenon(transientPhenomenon.id);
+        unsubscribe();
+
+        expect(result.triggeredEvents.map(event => event.id)).toContain("evt-vault");
+        expect(result.triggeredPhenomena.map(occurrence => occurrence.phenomenonId)).toContain(
+            persistentPhenomenon.id,
+        );
+        expect(hookListener).toHaveBeenCalledTimes(1);
+        const hookPayload = hookListener.mock.calls[0][0];
+        expect(hookPayload.scope).toBe("global");
+        expect(hookPayload.events.map(event => event.eventId)).toContain("evt-vault");
+
+        const reloadCalendarRepo = new VaultCalendarRepository(vault);
+        const reloadEventRepo = new VaultEventRepository(reloadCalendarRepo, vault);
+        const reloadPhenomenonRepo = new VaultAlmanacRepository(reloadCalendarRepo, vault);
+        const reloadGateway = new VaultCalendarStateGateway(
+            reloadCalendarRepo,
+            reloadEventRepo,
+            reloadPhenomenonRepo,
+            vault,
+        );
+
+        await reloadGateway.loadSnapshot();
+        const persistedTimestamp = reloadGateway.getCurrentTimestamp();
+        expect(persistedTimestamp?.day).toBe(2);
+
+        const storedEvents = await reloadEventRepo.listEvents(gregorianSchema.id);
+        expect(storedEvents.some(event => event.id === "evt-vault" && event.title === "Vault Hook Updated")).toBe(true);
+        expect(storedEvents.some(event => event.id === "evt-remove")).toBe(false);
+
+        const storedPhenomenon = await reloadPhenomenonRepo.getPhenomenon(persistentPhenomenon.id);
+        expect(storedPhenomenon?.name).toBe("Vault Alignment");
+        const removedPhenomenon = await reloadPhenomenonRepo.getPhenomenon(transientPhenomenon.id);
+        expect(removedPhenomenon).toBeNull();
+
+        expect(vault.readRaw("SaltMarcher/Almanac/state.json")).toContain("\"currentTimestamp\"");
     });
 });

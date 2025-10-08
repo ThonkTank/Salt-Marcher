@@ -10,6 +10,31 @@
 import { ItemView, WorkspaceLeaf } from 'obsidian';
 import type { App } from 'obsidian';
 import { AlmanacController } from './mode/almanac-controller';
+import { VaultCalendarRepository } from './data/vault-calendar-repository';
+import { VaultEventRepository } from './data/vault-event-repository';
+import { VaultAlmanacRepository } from './data/vault-almanac-repository';
+import { VaultCalendarStateGateway } from './data/vault-calendar-state-gateway';
+import { cartographerHookGateway } from './mode/cartographer-gateway';
+
+export function createAlmanacController(app: App): AlmanacController {
+  const calendarRepo = new VaultCalendarRepository(app.vault);
+  const eventRepo = new VaultEventRepository(calendarRepo, app.vault);
+  const almanacRepo = new VaultAlmanacRepository(calendarRepo, app.vault);
+  const gateway = new VaultCalendarStateGateway(
+    calendarRepo,
+    eventRepo,
+    almanacRepo,
+    app.vault,
+    cartographerHookGateway,
+  );
+
+  return new AlmanacController(app, {
+    calendarRepo,
+    eventRepo,
+    phenomenonRepo: almanacRepo,
+    gateway,
+  });
+}
 
 export const VIEW_TYPE_ALMANAC = 'almanac-view';
 export const VIEW_ALMANAC = VIEW_TYPE_ALMANAC;
@@ -20,7 +45,7 @@ export class AlmanacView extends ItemView {
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
-    this.controller = new AlmanacController(this.app as App);
+    this.controller = createAlmanacController(this.app as App);
   }
 
   getViewType(): string {
