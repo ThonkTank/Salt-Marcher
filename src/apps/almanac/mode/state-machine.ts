@@ -12,6 +12,8 @@
 
 import {
     createDefaultCalendarDraft,
+    createEmptyRecurringEventDraft,
+    createEmptySingleEventDraft,
     createInitialAlmanacState,
     DEFAULT_ALMANAC_MODE,
     DEFAULT_EVENTS_VIEW_MODE,
@@ -27,6 +29,9 @@ import {
     type CalendarManagerViewMode,
     type CalendarStateSlice,
     type CalendarViewZoom,
+    type EventEditorDraft,
+    type EventEditorMode,
+    type EventEditorPreviewItem,
     type EventsFilterState,
     type EventsMapMarker,
     type ImportSummary,
@@ -45,7 +50,16 @@ import {
 import type { PhenomenonDTO } from "../data/dto";
 import { formatPhenomenaExport, parsePhenomenaImport } from "../data/phenomena-serialization";
 import { getMonthById, getMonthIndex, getTimeDefinition, type CalendarSchema } from "../domain/calendar-schema";
-import type { CalendarEvent } from "../domain/calendar-event";
+import {
+    computeNextEventOccurrence,
+    createSingleEvent,
+    isRecurringEvent,
+    isSingleEvent,
+    type CalendarEvent,
+    type CalendarEventRecurring,
+    type CalendarEventSingle,
+    type CalendarTimeOfDay,
+} from "../domain/calendar-event";
 import {
     createDayTimestamp,
     createHourTimestamp,
@@ -56,6 +70,7 @@ import {
 import { computeNextPhenomenonOccurrence } from "../domain/phenomenon-engine";
 import type { Phenomenon, PhenomenonOccurrence } from "../domain/phenomenon";
 import { advanceTime } from "../domain/time-arithmetic";
+import type { RepeatRule } from "../domain/repeat-rule";
 import {
     cartographerHookGateway as defaultCartographerGateway,
     type CartographerHookGateway,
@@ -95,6 +110,7 @@ export class AlmanacStateMachine {
     private phenomenaSource: PhenomenonViewModel[] = [];
     private phenomenaDefinitions: Phenomenon[] = [];
     private phenomenonIdCounter = 0;
+    private eventIdCounter = 0;
     private travelId: string | null = null;
     private travelLeafPreferences: TravelLeafPreferencesSnapshot | null = null;
     private readonly cartographerGateway: CartographerHookGateway;
@@ -183,6 +199,24 @@ export class AlmanacStateMachine {
                 break;
             case "EVENT_IMPORT_SUBMITTED":
                 await this.handleEventImportSubmitted(event.payload);
+                break;
+            case "EVENT_CREATE_REQUESTED":
+                await this.handleEventCreateRequested(event.mode, event.calendarId);
+                break;
+            case "EVENT_EDIT_REQUESTED":
+                await this.handleEventEditRequested(event.eventId);
+                break;
+            case "EVENT_EDITOR_UPDATED":
+                this.handleEventEditorUpdated(event.update);
+                break;
+            case "EVENT_EDITOR_CANCELLED":
+                this.handleEventEditorCancelled();
+                break;
+            case "EVENT_EDITOR_SAVE_REQUESTED":
+                await this.handleEventEditorSave();
+                break;
+            case "EVENT_DELETE_REQUESTED":
+                await this.handleEventDelete(event.eventId);
                 break;
             case "MANAGER_SELECTION_CHANGED":
                 this.handleManagerSelectionChanged(event.selection);
@@ -971,6 +1005,665 @@ export class AlmanacStateMachine {
                 };
             });
         }
+    }
+
+    private async handleEventCreateRequested(
+        mode: EventEditorMode,
+        calendarId?: string,
+    ): Promise<void> {
+        const fallbackCalendarId =
+            calendarId
+            ?? this.state.calendarState.activeCalendarId
+            ?? this.state.calendarState.defaultCalendarId
+            ?? (this.state.calendarState.calendars[0]?.id ?? null);
+
+        if (!fallbackCalendarId) {
+            const message = "Kein Kalender verfügbar.";
+            this.setState(next => {
+                next.eventsUiState = {
+                    ...next.eventsUiState,
+                    isEventEditorOpen: true,
+                    eventEditorMode: mode,
+                    eventEditorDraft: null,
+                    eventEditorErrors: [message],
+                    eventEditorPreview: [],
+                    isEventSaving: false,
+                    eventEditorError: message,
+                };
+            });
+            return;
+        }
+
+        const schema = this.getCalendarSchema(fallbackCalendarId);
+        const referenceTimestamp = this.state.calendarState.currentTimestamp;
+        const reference = referenceTimestamp && referenceTimestamp.calendarId === fallbackCalendarId
+            ? { year: referenceTimestamp.year, monthId: referenceTimestamp.monthId, day: referenceTimestamp.day }
+            : schema
+            ? { year: schema.epoch.year, monthId: schema.epoch.monthId, day: schema.epoch.day }
+            : undefined;
+
+        const draft = mode === "single"
+            ? createEmptySingleEventDraft(fallbackCalendarId, reference)
+            : createEmptyRecurringEventDraft(fallbackCalendarId, reference);
+
+        const { errors, preview } = this.validateAndPreviewDraft(draft);
+
+        this.setState(next => {
+            next.eventsUiState = {
+                ...next.eventsUiState,
+                isEventEditorOpen: true,
+                eventEditorMode: mode,
+                eventEditorDraft: draft,
+                eventEditorErrors: errors,
+                eventEditorPreview: preview,
+                isEventSaving: false,
+                eventEditorError: undefined,
+            };
+        });
+    }
+
+    private async handleEventEditRequested(eventId: string): Promise<void> {
+        try {
+            const event = await this.loadEventById(eventId);
+            if (!event) {
+                throw new Error(`Event ${eventId} konnte nicht gefunden werden.`);
+            }
+            const draft = this.createDraftFromEvent(event);
+            const { errors, preview } = this.validateAndPreviewDraft(draft);
+
+            this.setState(next => {
+                next.eventsUiState = {
+                    ...next.eventsUiState,
+                    isEventEditorOpen: true,
+                    eventEditorMode: draft.kind === "recurring" ? "recurring" : "single",
+                    eventEditorDraft: draft,
+                    eventEditorErrors: errors,
+                    eventEditorPreview: preview,
+                    isEventSaving: false,
+                    eventEditorError: undefined,
+                };
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Ereignis konnte nicht geladen werden.";
+            reportAlmanacGatewayIssue({
+                operation: "stateMachine.event.load",
+                scope: "events",
+                code: "io_error",
+                error,
+                context: { eventId },
+            });
+            this.setState(next => {
+                next.eventsUiState = {
+                    ...next.eventsUiState,
+                    isEventEditorOpen: false,
+                    eventEditorMode: null,
+                    eventEditorDraft: null,
+                    eventEditorErrors: [message],
+                    eventEditorPreview: [],
+                    isEventSaving: false,
+                    eventEditorError: message,
+                };
+            });
+        }
+    }
+
+    private handleEventEditorUpdated(update: Partial<EventEditorDraft>): void {
+        const current = this.state.eventsUiState.eventEditorDraft;
+        if (!current) {
+            return;
+        }
+        const nextDraft = { ...current, ...update } as EventEditorDraft;
+        const { errors, preview } = this.validateAndPreviewDraft(nextDraft);
+        this.setState(next => {
+            next.eventsUiState = {
+                ...next.eventsUiState,
+                eventEditorDraft: nextDraft,
+                eventEditorMode: nextDraft.kind === "recurring" ? "recurring" : "single",
+                eventEditorErrors: errors,
+                eventEditorPreview: preview,
+                eventEditorError: undefined,
+            };
+        });
+    }
+
+    private handleEventEditorCancelled(): void {
+        this.setState(next => {
+            next.eventsUiState = {
+                ...next.eventsUiState,
+                isEventEditorOpen: false,
+                eventEditorMode: null,
+                eventEditorDraft: null,
+                eventEditorErrors: [],
+                eventEditorPreview: [],
+                isEventSaving: false,
+                eventEditorError: undefined,
+            };
+        });
+    }
+
+    private async handleEventEditorSave(): Promise<void> {
+        const draft = this.state.eventsUiState.eventEditorDraft;
+        if (!draft) {
+            return;
+        }
+
+        const validation = this.validateEventDraft(draft);
+        if (validation.errors.length > 0 || !validation.event) {
+            this.setState(next => {
+                next.eventsUiState = {
+                    ...next.eventsUiState,
+                    eventEditorErrors: validation.errors,
+                    eventEditorPreview: [],
+                    isEventSaving: false,
+                    eventEditorError: validation.errors[0] ?? undefined,
+                };
+            });
+            return;
+        }
+
+        const isNew = !draft.id;
+        const targetId = isNew ? this.generateEventId() : draft.id;
+        const event = validation.event;
+        const payload = isSingleEvent(event)
+            ? ({ ...event, id: targetId } as CalendarEventSingle)
+            : ({ ...event, id: targetId } as CalendarEventRecurring);
+
+        this.setState(next => {
+            next.eventsUiState = {
+                ...next.eventsUiState,
+                isEventSaving: true,
+                eventEditorErrors: validation.errors,
+                eventEditorPreview: validation.schema ? this.computeEventPreview(event, validation.schema) : [],
+                eventEditorError: undefined,
+            };
+        });
+
+        try {
+            if (isNew) {
+                await this.eventRepo.createEvent(payload);
+            } else {
+                await this.eventRepo.updateEvent(targetId, payload);
+            }
+
+            await this.refreshCalendarData();
+
+            this.setState(next => {
+                next.eventsUiState = {
+                    ...next.eventsUiState,
+                    isEventEditorOpen: false,
+                    eventEditorMode: null,
+                    eventEditorDraft: null,
+                    eventEditorErrors: [],
+                    eventEditorPreview: [],
+                    isEventSaving: false,
+                    eventEditorError: undefined,
+                };
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Ereignis konnte nicht gespeichert werden.";
+            reportAlmanacGatewayIssue({
+                operation: "stateMachine.event.save",
+                scope: "events",
+                code: "io_error",
+                error,
+                context: { eventId: targetId, mode: isNew ? "create" : "update" },
+            });
+            this.setState(next => {
+                next.eventsUiState = {
+                    ...next.eventsUiState,
+                    isEventSaving: false,
+                    eventEditorError: message,
+                };
+            });
+        }
+    }
+
+    private async handleEventDelete(eventId: string): Promise<void> {
+        try {
+            await this.eventRepo.deleteEvent(eventId);
+            await this.refreshCalendarData();
+            this.setState(next => {
+                const isEditingDeleted = next.eventsUiState.eventEditorDraft?.id === eventId;
+                next.eventsUiState = {
+                    ...next.eventsUiState,
+                    bulkSelection: next.eventsUiState.bulkSelection.filter(id => id !== eventId),
+                    ...(isEditingDeleted
+                        ? {
+                              isEventEditorOpen: false,
+                              eventEditorMode: null,
+                              eventEditorDraft: null,
+                              eventEditorErrors: [],
+                              eventEditorPreview: [],
+                              isEventSaving: false,
+                              eventEditorError: undefined,
+                          }
+                        : {}),
+                };
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Ereignis konnte nicht gelöscht werden.";
+            reportAlmanacGatewayIssue({
+                operation: "stateMachine.event.delete",
+                scope: "events",
+                code: "io_error",
+                error,
+                context: { eventId },
+            });
+            this.setState(next => {
+                next.eventsUiState = {
+                    ...next.eventsUiState,
+                    eventEditorError: message,
+                };
+            });
+        }
+    }
+
+    private validateAndPreviewDraft(
+        draft: EventEditorDraft,
+    ): {
+        readonly errors: ReadonlyArray<string>;
+        readonly preview: ReadonlyArray<EventEditorPreviewItem>;
+    } {
+        const validation = this.validateEventDraft(draft);
+        const preview = validation.event && validation.schema
+            ? this.computeEventPreview(validation.event, validation.schema)
+            : [];
+        return { errors: validation.errors, preview };
+    }
+
+    private validateEventDraft(
+        draft: EventEditorDraft,
+    ): { readonly errors: string[]; readonly event: CalendarEvent | null; readonly schema: CalendarSchema | null } {
+        const schema = this.getCalendarSchema(draft.calendarId);
+        if (!schema) {
+            return { errors: ["Kalender konnte nicht gefunden werden."], event: null, schema: null };
+        }
+
+        const errors: string[] = [];
+        const title = draft.title.trim();
+        if (!title) {
+            errors.push("Titel darf nicht leer sein.");
+        }
+        if (!draft.calendarId) {
+            errors.push("Kalender erforderlich.");
+        }
+
+        const year = Number.parseInt(draft.year, 10);
+        if (Number.isNaN(year)) {
+            errors.push("Jahr ist ungültig.");
+        }
+
+        const month = draft.monthId ? getMonthById(schema, draft.monthId) : null;
+        if (!month) {
+            errors.push("Monat ist ungültig.");
+        }
+
+        const day = Number.parseInt(draft.day, 10);
+        if (Number.isNaN(day)) {
+            errors.push("Tag ist ungültig.");
+        } else if (month && (day < 1 || day > month.length)) {
+            errors.push("Tag liegt außerhalb des Monats.");
+        }
+
+        const definition = getTimeDefinition(schema);
+        const hoursPerDay = definition.hoursPerDay;
+        const minutesPerHour = definition.minutesPerHour;
+        const minuteStep = definition.minuteStep;
+
+        let hourValue = 0;
+        let minuteValue = 0;
+
+        if (!draft.allDay) {
+            hourValue = Number.parseInt(draft.hour, 10);
+            if (Number.isNaN(hourValue)) {
+                errors.push("Stunde ist ungültig.");
+            } else if (hourValue < 0 || hourValue >= hoursPerDay) {
+                errors.push(`Stunde muss zwischen 0 und ${hoursPerDay - 1} liegen.`);
+            }
+
+            minuteValue = Number.parseInt(draft.minute, 10);
+            const requiresMinute = draft.kind === "single"
+                ? draft.timePrecision === "minute" && !draft.allDay
+                : !draft.allDay && draft.timePolicy !== "all_day";
+            if (requiresMinute) {
+                if (Number.isNaN(minuteValue)) {
+                    errors.push("Minute ist ungültig.");
+                } else if (minuteValue < 0 || minuteValue >= minutesPerHour) {
+                    errors.push(`Minute muss zwischen 0 und ${minutesPerHour - 1} liegen.`);
+                } else if (minuteValue % minuteStep !== 0) {
+                    errors.push(`Minute muss im Schritt von ${minuteStep} liegen.`);
+                }
+            } else {
+                minuteValue = 0;
+            }
+        }
+
+        const duration = draft.durationMinutes.trim() ? Number.parseInt(draft.durationMinutes, 10) : undefined;
+        if (duration !== undefined && (Number.isNaN(duration) || duration < 0)) {
+            errors.push("Dauer muss eine positive Zahl sein.");
+        }
+
+        if (draft.kind === "recurring" && draft.timePolicy === "offset" && (duration === undefined || duration < 0)) {
+            errors.push("Offset benötigt Minutenangabe.");
+        }
+
+        if (draft.kind === "recurring" && draft.allDay && draft.timePolicy !== "all_day") {
+            errors.push("Ganztägige Ereignisse benötigen die Zeitstrategie 'Ganztägig'.");
+        }
+
+        if (errors.length > 0 || !month || Number.isNaN(year) || Number.isNaN(day)) {
+            return { errors, event: null, schema };
+        }
+
+        const normalisedDay = Math.max(1, Math.min(day, month.length));
+
+        const note = draft.note.trim() || undefined;
+        const category = draft.category.trim() || undefined;
+        const durationMinutes = duration !== undefined && duration >= 0 ? duration : undefined;
+
+        if (draft.kind === "single") {
+            let timestamp: CalendarTimestamp;
+            if (draft.allDay || draft.timePrecision === "day") {
+                timestamp = createDayTimestamp(draft.calendarId, year, draft.monthId, normalisedDay);
+            } else if (draft.timePrecision === "hour") {
+                timestamp = createHourTimestamp(draft.calendarId, year, draft.monthId, normalisedDay, hourValue);
+            } else {
+                timestamp = createMinuteTimestamp(
+                    draft.calendarId,
+                    year,
+                    draft.monthId,
+                    normalisedDay,
+                    hourValue,
+                    minuteValue,
+                );
+            }
+
+            const startTime: CalendarTimeOfDay | undefined = draft.allDay
+                ? undefined
+                : {
+                      hour: hourValue,
+                      ...(draft.timePrecision === "minute" ? { minute: minuteValue } : {}),
+                  };
+
+            const event = createSingleEvent(draft.id || "__preview__", draft.calendarId, title, timestamp, {
+                allDay: draft.allDay,
+                category,
+                note,
+                durationMinutes,
+                startTime,
+                timePrecision: draft.timePrecision,
+            });
+
+            return { errors, event, schema };
+        }
+
+        let rule: RepeatRule | null = null;
+        if (draft.ruleType === "weekly_dayIndex") {
+            const dayIndex = Number.parseInt(draft.ruleDayIndex, 10);
+            if (Number.isNaN(dayIndex) || dayIndex < 0 || dayIndex >= schema.daysPerWeek) {
+                errors.push("Wochentag ist ungültig.");
+            } else {
+                const intervalValue = Number.parseInt(draft.ruleInterval, 10);
+                rule = {
+                    type: "weekly_dayIndex",
+                    dayIndex,
+                    ...(Number.isNaN(intervalValue) || intervalValue <= 1 ? {} : { interval: intervalValue }),
+                };
+            }
+        } else if (draft.ruleType === "monthly_position") {
+            const monthId = draft.ruleMonthId || draft.monthId;
+            const monthForRule = getMonthById(schema, monthId);
+            if (!monthForRule) {
+                errors.push("Monat für Regel ist ungültig.");
+            } else {
+                const ruleDay = Number.parseInt(draft.ruleDay, 10);
+                if (Number.isNaN(ruleDay) || ruleDay < 1) {
+                    errors.push("Tag der Regel ist ungültig.");
+                } else {
+                    const clamped = Math.min(ruleDay, monthForRule.length);
+                    rule = { type: "monthly_position", monthId, day: clamped };
+                }
+            }
+        } else {
+            const monthId = draft.ruleMonthId || draft.monthId;
+            const monthForRule = getMonthById(schema, monthId);
+            if (!monthForRule) {
+                errors.push("Monat für Offset ist ungültig.");
+            } else {
+                const ruleDay = Number.parseInt(draft.ruleDay, 10);
+                if (Number.isNaN(ruleDay) || ruleDay < 1) {
+                    errors.push("Tag für Offset ist ungültig.");
+                } else {
+                    const clamped = Math.min(ruleDay, monthForRule.length);
+                    const offset = this.getDayOfYearForMonth(schema, monthId, clamped);
+                    rule = { type: "annual_offset", offsetDayOfYear: offset };
+                }
+            }
+        }
+
+        const endRequested = Boolean(
+            draft.boundsEndYear || draft.boundsEndMonthId || draft.boundsEndDay,
+        );
+        let boundsEnd: CalendarTimestamp | undefined;
+        if (endRequested) {
+            if (!draft.boundsEndYear || !draft.boundsEndMonthId || !draft.boundsEndDay) {
+                errors.push("Enddatum muss Jahr, Monat und Tag enthalten.");
+            } else {
+                const endMonth = getMonthById(schema, draft.boundsEndMonthId);
+                const endYear = Number.parseInt(draft.boundsEndYear, 10);
+                const endDay = Number.parseInt(draft.boundsEndDay, 10);
+                if (!endMonth || Number.isNaN(endYear) || Number.isNaN(endDay)) {
+                    errors.push("Enddatum ist ungültig.");
+                } else {
+                    const clampedEnd = Math.min(Math.max(endDay, 1), endMonth.length);
+                    boundsEnd = createDayTimestamp(
+                        draft.calendarId,
+                        endYear,
+                        draft.boundsEndMonthId,
+                        clampedEnd,
+                    );
+                }
+            }
+        }
+
+        if (!rule) {
+            errors.push("Wiederholregel ist ungültig.");
+            return { errors, event: null, schema };
+        }
+
+        const anchorTimestamp = draft.allDay
+            ? createDayTimestamp(draft.calendarId, year, draft.monthId, normalisedDay)
+            : minuteValue > 0
+            ? createMinuteTimestamp(
+                  draft.calendarId,
+                  year,
+                  draft.monthId,
+                  normalisedDay,
+                  hourValue,
+                  minuteValue,
+              )
+            : createHourTimestamp(draft.calendarId, year, draft.monthId, normalisedDay, hourValue);
+
+        const startTime: CalendarTimeOfDay | undefined = draft.allDay
+            ? undefined
+            : { hour: hourValue, minute: minuteValue };
+
+        const recurring: CalendarEventRecurring = {
+            kind: "recurring",
+            id: draft.id || "__preview__",
+            calendarId: draft.calendarId,
+            title,
+            note,
+            category,
+            date: anchorTimestamp,
+            allDay: draft.allDay,
+            rule,
+            timePolicy: draft.timePolicy,
+            startTime: draft.allDay ? undefined : startTime,
+            offsetMinutes: draft.timePolicy === "offset" ? durationMinutes ?? 0 : undefined,
+            durationMinutes: draft.timePolicy === "offset" ? undefined : durationMinutes,
+            bounds: boundsEnd ? { start: anchorTimestamp, end: boundsEnd } : { start: anchorTimestamp },
+        };
+
+        return { errors, event: recurring, schema };
+    }
+
+    private computeEventPreview(event: CalendarEvent, schema: CalendarSchema): EventEditorPreviewItem[] {
+        const occurrences: EventEditorPreviewItem[] = [];
+        const reference =
+            this.state.calendarState.currentTimestamp &&
+            this.state.calendarState.currentTimestamp.calendarId === event.calendarId
+                ? this.state.calendarState.currentTimestamp
+                : event.date;
+
+        let cursor = reference;
+        let includeStart = true;
+
+        for (let index = 0; index < 5; index += 1) {
+            const next = computeNextEventOccurrence(event, schema, event.calendarId, cursor, { includeStart });
+            if (!next) {
+                break;
+            }
+            const monthName = getMonthById(schema, next.start.monthId)?.name ?? next.start.monthId;
+            occurrences.push({
+                id: `${event.id}-${index}`,
+                timestamp: next.start,
+                label: formatTimestamp(next.start, monthName),
+            });
+            includeStart = false;
+            const precision = next.start.precision;
+            const unit = precision === "minute" ? "minute" : precision === "hour" ? "hour" : "day";
+            cursor = advanceTime(schema, next.start, 1, unit).timestamp;
+        }
+
+        if (occurrences.length === 0 && isSingleEvent(event)) {
+            const monthName = getMonthById(schema, event.date.monthId)?.name ?? event.date.monthId;
+            occurrences.push({
+                id: `${event.id}-0`,
+                timestamp: event.date,
+                label: formatTimestamp(event.date, monthName),
+            });
+        }
+
+        return occurrences.slice(0, 5);
+    }
+
+    private createDraftFromEvent(event: CalendarEvent): EventEditorDraft {
+        const schema = this.getCalendarSchema(event.calendarId);
+        if (isSingleEvent(event)) {
+            const draft = createEmptySingleEventDraft(event.calendarId, {
+                year: event.date.year,
+                monthId: event.date.monthId,
+                day: event.date.day,
+            });
+            return {
+                ...draft,
+                id: event.id,
+                title: event.title,
+                category: event.category ?? "",
+                note: event.note ?? "",
+                allDay: event.allDay,
+                hour: String(event.startTime?.hour ?? event.date.hour ?? 0),
+                minute: String(event.startTime?.minute ?? event.date.minute ?? 0),
+                durationMinutes: event.durationMinutes != null ? String(event.durationMinutes) : "",
+                timePrecision: event.timePrecision,
+            };
+        }
+
+        const draft = createEmptyRecurringEventDraft(event.calendarId, {
+            year: event.date.year,
+            monthId: event.date.monthId,
+            day: event.date.day,
+        });
+
+        let ruleDayIndex = draft.ruleDayIndex;
+        let ruleInterval = draft.ruleInterval;
+        let ruleMonthId = draft.ruleMonthId;
+        let ruleDay = draft.ruleDay;
+
+        if (event.rule.type === "weekly_dayIndex") {
+            ruleDayIndex = String(event.rule.dayIndex);
+            ruleInterval = event.rule.interval ? String(event.rule.interval) : "1";
+        } else if (event.rule.type === "monthly_position") {
+            ruleMonthId = event.rule.monthId;
+            ruleDay = String(event.rule.day);
+        } else if (event.rule.type === "annual_offset" && schema) {
+            const months = schema.months;
+            let remaining = event.rule.offsetDayOfYear;
+            for (const monthSchema of months) {
+                if (remaining <= monthSchema.length) {
+                    ruleMonthId = monthSchema.id;
+                    ruleDay = String(remaining);
+                    break;
+                }
+                remaining -= monthSchema.length;
+            }
+        }
+
+        const boundsEnd = event.bounds?.end;
+        return {
+            ...draft,
+            id: event.id,
+            title: event.title,
+            category: event.category ?? "",
+            note: event.note ?? "",
+            allDay: event.allDay,
+            hour: String(event.startTime?.hour ?? event.date.hour ?? 0),
+            minute: String(event.startTime?.minute ?? event.date.minute ?? 0),
+            durationMinutes:
+                event.timePolicy === "offset"
+                    ? String(event.offsetMinutes ?? 0)
+                    : event.durationMinutes != null
+                    ? String(event.durationMinutes)
+                    : "",
+            ruleType: event.rule.type,
+            ruleDayIndex,
+            ruleInterval,
+            ruleMonthId: ruleMonthId || draft.ruleMonthId,
+            ruleDay,
+            timePolicy: event.timePolicy,
+            boundsEndYear: boundsEnd ? String(boundsEnd.year) : "",
+            boundsEndMonthId: boundsEnd ? boundsEnd.monthId : "",
+            boundsEndDay: boundsEnd ? String(boundsEnd.day) : "",
+        };
+    }
+
+    private async loadEventById(eventId: string): Promise<CalendarEvent | null> {
+        const known = [
+            ...this.state.calendarState.upcomingEvents,
+            ...this.state.calendarState.triggeredEvents,
+            ...this.state.managerUiState.agendaItems,
+        ].find(event => event.id === eventId);
+        if (known) {
+            return known;
+        }
+
+        for (const calendar of this.state.calendarState.calendars) {
+            const events = await this.eventRepo.listEvents(calendar.id);
+            const found = events.find(event => event.id === eventId);
+            if (found) {
+                return found;
+            }
+        }
+
+        return null;
+    }
+
+    private generateEventId(): string {
+        this.eventIdCounter += 1;
+        return `event-${this.eventIdCounter}`;
+    }
+
+    private getDayOfYearForMonth(schema: CalendarSchema, monthId: string, day: number): number {
+        const index = getMonthIndex(schema, monthId);
+        if (index === -1) {
+            return day;
+        }
+        let total = 0;
+        for (let i = 0; i < index; i += 1) {
+            total += schema.months[i]?.length ?? 0;
+        }
+        return total + day;
     }
 
     private async handleEventBulkAction(

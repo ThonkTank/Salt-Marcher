@@ -126,7 +126,57 @@ export interface EventsUiStateSlice {
     readonly isImportDialogOpen: boolean;
     readonly importError?: string;
     readonly importSummary?: ImportSummary | null;
+    readonly isEventEditorOpen: boolean;
+    readonly eventEditorMode: EventEditorMode | null;
+    readonly eventEditorDraft: EventEditorDraft | null;
+    readonly eventEditorErrors: ReadonlyArray<string>;
+    readonly eventEditorPreview: ReadonlyArray<EventEditorPreviewItem>;
+    readonly isEventSaving: boolean;
+    readonly eventEditorError?: string;
 }
+
+export type EventEditorMode = "single" | "recurring";
+
+export interface EventEditorPreviewItem {
+    readonly id: string;
+    readonly timestamp: CalendarTimestamp;
+    readonly label: string;
+}
+
+export interface EventEditorBaseDraft {
+    readonly id: string;
+    readonly calendarId: string;
+    readonly title: string;
+    readonly category: string;
+    readonly note: string;
+    readonly allDay: boolean;
+    readonly year: string;
+    readonly monthId: string;
+    readonly day: string;
+    readonly hour: string;
+    readonly minute: string;
+    readonly durationMinutes: string;
+}
+
+export interface SingleEventEditorDraft extends EventEditorBaseDraft {
+    readonly kind: "single";
+    readonly timePrecision: "day" | "hour" | "minute";
+}
+
+export interface RecurringEventEditorDraft extends EventEditorBaseDraft {
+    readonly kind: "recurring";
+    readonly ruleType: "weekly_dayIndex" | "monthly_position" | "annual_offset";
+    readonly ruleDayIndex: string;
+    readonly ruleInterval: string;
+    readonly ruleMonthId: string;
+    readonly ruleDay: string;
+    readonly timePolicy: "all_day" | "fixed" | "offset";
+    readonly boundsEndYear: string;
+    readonly boundsEndMonthId: string;
+    readonly boundsEndDay: string;
+}
+
+export type EventEditorDraft = SingleEventEditorDraft | RecurringEventEditorDraft;
 
 export interface EventsFilterState {
     readonly categories: ReadonlyArray<string>;
@@ -227,6 +277,12 @@ export type AlmanacEvent =
     | { readonly type: "EVENT_IMPORT_REQUESTED" }
     | { readonly type: "EVENT_IMPORT_CANCELLED" }
     | { readonly type: "EVENT_IMPORT_SUBMITTED"; readonly payload: string }
+    | { readonly type: "EVENT_CREATE_REQUESTED"; readonly mode: EventEditorMode; readonly calendarId?: string }
+    | { readonly type: "EVENT_EDIT_REQUESTED"; readonly eventId: string }
+    | { readonly type: "EVENT_EDITOR_UPDATED"; readonly update: Partial<EventEditorDraft> }
+    | { readonly type: "EVENT_EDITOR_CANCELLED" }
+    | { readonly type: "EVENT_EDITOR_SAVE_REQUESTED" }
+    | { readonly type: "EVENT_DELETE_REQUESTED"; readonly eventId: string }
     | { readonly type: "MANAGER_SELECTION_CHANGED"; readonly selection: ReadonlyArray<string> }
     | { readonly type: "CALENDAR_SELECT_REQUESTED"; readonly calendarId: string }
     | { readonly type: "CALENDAR_DEFAULT_SET_REQUESTED"; readonly calendarId: string }
@@ -257,6 +313,58 @@ export function createDefaultCalendarDraft(): CalendarCreateDraft {
         minuteStep: "1",
         epochYear: "1",
         epochDay: "1",
+    };
+}
+
+export function createEmptySingleEventDraft(
+    calendarId: string,
+    reference?: { readonly year: number; readonly monthId: string; readonly day: number },
+): SingleEventEditorDraft {
+    return {
+        kind: "single",
+        id: "",
+        calendarId,
+        title: "",
+        category: "",
+        note: "",
+        allDay: true,
+        year: reference ? String(reference.year) : "",
+        monthId: reference ? reference.monthId : "",
+        day: reference ? String(reference.day) : "",
+        hour: "0",
+        minute: "0",
+        durationMinutes: "",
+        timePrecision: "day",
+    };
+}
+
+export function createEmptyRecurringEventDraft(
+    calendarId: string,
+    reference?: { readonly year: number; readonly monthId: string; readonly day: number },
+): RecurringEventEditorDraft {
+    return {
+        kind: "recurring",
+        id: "",
+        calendarId,
+        title: "",
+        category: "",
+        note: "",
+        allDay: true,
+        year: reference ? String(reference.year) : "",
+        monthId: reference ? reference.monthId : "",
+        day: reference ? String(reference.day) : "",
+        hour: "0",
+        minute: "0",
+        durationMinutes: "",
+        ruleType: "weekly_dayIndex",
+        ruleDayIndex: "0",
+        ruleInterval: "1",
+        ruleMonthId: reference ? reference.monthId : "",
+        ruleDay: reference ? String(reference.day) : "1",
+        timePolicy: "all_day",
+        boundsEndYear: "",
+        boundsEndMonthId: "",
+        boundsEndDay: "",
     };
 }
 
@@ -321,6 +429,13 @@ export function createInitialAlmanacState(): AlmanacState {
             isImportDialogOpen: false,
             importError: undefined,
             importSummary: null,
+            isEventEditorOpen: false,
+            eventEditorMode: null,
+            eventEditorDraft: null,
+            eventEditorErrors: [],
+            eventEditorPreview: [],
+            isEventSaving: false,
+            eventEditorError: undefined,
         },
         travelLeafState: {
             travelId: null,
