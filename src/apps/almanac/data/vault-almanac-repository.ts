@@ -21,6 +21,7 @@ import type { CalendarDefaultsRepository, CalendarRepository } from "./calendar-
 import { JsonStore } from "./json-store";
 import type { VaultLike } from "./json-store";
 import { reportAlmanacGatewayIssue } from "../telemetry";
+import type { PhenomenonRepository } from "./in-memory-repository";
 
 interface PhenomenaStoreData {
   readonly phenomena: PhenomenonDTO[];
@@ -30,7 +31,7 @@ const PHENOMENA_STORE_VERSION = "1.4.0";
 const PHENOMENA_STORE_PATH = "SaltMarcher/Almanac/phenomena.json";
 const DEFAULT_PAGE_SIZE = 25;
 
-export class VaultAlmanacRepository implements AlmanacRepository {
+export class VaultAlmanacRepository implements AlmanacRepository, PhenomenonRepository {
   private readonly store: JsonStore<PhenomenaStoreData>;
 
   constructor(
@@ -44,12 +45,25 @@ export class VaultAlmanacRepository implements AlmanacRepository {
     });
   }
 
+  async listPhenomena(): Promise<PhenomenonDTO[]>;
   async listPhenomena(input: {
     readonly viewMode: string;
     readonly filters: EventsFilterState;
     readonly sort: EventsSort;
     readonly pagination?: EventsPaginationState;
-  }): Promise<EventsDataBatchDTO> {
+  }): Promise<EventsDataBatchDTO>;
+  async listPhenomena(
+    input?: {
+      readonly viewMode: string;
+      readonly filters: EventsFilterState;
+      readonly sort: EventsSort;
+      readonly pagination?: EventsPaginationState;
+    },
+  ): Promise<PhenomenonDTO[] | EventsDataBatchDTO> {
+    if (!input) {
+      const state = await this.store.read();
+      return state.phenomena.map(phenomenon => ({ ...phenomenon }));
+    }
     const state = await this.store.read();
     const calendars = await this.calendars.listCalendars();
     const calendarMap = new Map(calendars.map(calendar => [calendar.id, calendar]));

@@ -7,6 +7,18 @@ vi.mock("obsidian", async () => await import("../../mocks/obsidian"));
 import { App } from "obsidian";
 import { AlmanacController } from "../../../src/apps/almanac/mode/almanac-controller";
 import { AlmanacStateMachine } from "../../../src/apps/almanac/mode/state-machine";
+import {
+    InMemoryCalendarRepository,
+    InMemoryEventRepository,
+    InMemoryPhenomenonRepository,
+} from "../../../src/apps/almanac/data/in-memory-repository";
+import { InMemoryStateGateway } from "../../../src/apps/almanac/data/in-memory-gateway";
+import {
+    gregorianSchema,
+    createSampleEvents,
+    getDefaultCurrentTimestamp,
+} from "../../../src/apps/almanac/fixtures/gregorian.fixture";
+import { createSamplePhenomena } from "../../../src/apps/almanac/fixtures/phenomena.fixture";
 
 const ensureObsidianDomHelpers = () => {
     const proto = HTMLElement.prototype as any;
@@ -69,9 +81,49 @@ describe("AlmanacController Dashboard", () => {
         ensureObsidianDomHelpers();
     });
 
+    const createController = async (app: App) => {
+        const calendarRepo = new InMemoryCalendarRepository();
+        const eventRepo = new InMemoryEventRepository();
+        eventRepo.bindCalendarRepository(calendarRepo);
+        const phenomenonRepo = new InMemoryPhenomenonRepository();
+        const gateway = new InMemoryStateGateway(calendarRepo, eventRepo, phenomenonRepo);
+
+        calendarRepo.seed([
+            gregorianSchema,
+            {
+                id: "lunar-cycle",
+                name: "Lunar Cycle",
+                description: "Six-month seasonal calendar for travel campaigns",
+                daysPerWeek: 6,
+                hoursPerDay: 20,
+                minutesPerHour: 60,
+                minuteStep: 10,
+                months: [
+                    { id: "ember", name: "Ember", length: 30 },
+                    { id: "sleet", name: "Sleet", length: 30 },
+                    { id: "bloom", name: "Bloom", length: 30 },
+                    { id: "zenith", name: "Zenith", length: 30 },
+                    { id: "gale", name: "Gale", length: 30 },
+                    { id: "dusk", name: "Dusk", length: 30 },
+                ],
+                epoch: { year: 1, monthId: "ember", day: 1 },
+                schemaVersion: "1.0.0",
+            },
+        ]);
+        await calendarRepo.setDefault({ calendarId: gregorianSchema.id, scope: "global" });
+        eventRepo.seed(createSampleEvents(2024));
+        phenomenonRepo.seed(createSamplePhenomena());
+
+        const initialTimestamp = getDefaultCurrentTimestamp(2024);
+        await gateway.setActiveCalendar(gregorianSchema.id, { initialTimestamp });
+        await gateway.setCurrentTimestamp(initialTimestamp);
+
+        return new AlmanacController(app, { calendarRepo, eventRepo, phenomenonRepo, gateway });
+    };
+
     it("blendet ausgelöste Ereignisse nach Zeitfortschritt ein", async () => {
         const app = new App();
-        const controller = new AlmanacController(app);
+        const controller = await createController(app);
         const container = document.createElement("div");
 
         await controller.onOpen(container);
@@ -100,7 +152,7 @@ describe("AlmanacController Dashboard", () => {
 
     it("wechseln der Modi aktualisiert die Ansicht", async () => {
         const app = new App();
-        const controller = new AlmanacController(app);
+        const controller = await createController(app);
         const container = document.createElement("div");
 
         await controller.onOpen(container);
@@ -167,7 +219,7 @@ describe("AlmanacController Dashboard", () => {
 
     it("öffnet Editor- und Import-Dialoge und führt Bulk-Aktionen aus", async () => {
         const app = new App();
-        const controller = new AlmanacController(app);
+        const controller = await createController(app);
         const container = document.createElement("div");
 
         await controller.onOpen(container);
@@ -275,7 +327,7 @@ describe("AlmanacController Dashboard", () => {
 
     it("schaltet die Events-Ansicht um und rendert die Kartenansicht", async () => {
         const app = new App();
-        const controller = new AlmanacController(app);
+        const controller = await createController(app);
         const container = document.createElement("div");
 
         await controller.onOpen(container);
@@ -316,7 +368,7 @@ describe("AlmanacController Dashboard", () => {
 
     it("ermöglicht Kalenderauswahl und Default-Setzen", async () => {
         const app = new App();
-        const controller = new AlmanacController(app);
+        const controller = await createController(app);
         const container = document.createElement("div");
 
         await controller.onOpen(container);
@@ -355,7 +407,7 @@ describe("AlmanacController Dashboard", () => {
 
     it("erlaubt Zeitsprung über das Formular", async () => {
         const app = new App();
-        const controller = new AlmanacController(app);
+        const controller = await createController(app);
         const container = document.createElement("div");
 
         await controller.onOpen(container);

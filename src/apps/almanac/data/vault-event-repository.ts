@@ -165,13 +165,6 @@ export class VaultEventRepository implements EventRepository {
       .slice(0, limit);
   }
 
-function isEventRepositoryValidationError(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-  return /already exists|not found/i.test(error.message);
-}
-
   private async readCalendarEvents(calendarId: string): Promise<CalendarEventDTO[]> {
     const state = await this.store.read();
     return [...(state.eventsByCalendar[calendarId] ?? [])];
@@ -184,4 +177,11 @@ function isEventRepositoryValidationError(error: unknown): boolean {
     }
     return calendar;
   }
+}
+
+function isEventRepositoryValidationError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  return /already exists|not found/i.test(error.message);
 }
