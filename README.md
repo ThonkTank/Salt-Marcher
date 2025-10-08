@@ -11,7 +11,7 @@ Dieser Ordner entspricht genau dem Inhalt, den Obsidian unter `<Vault>/.obsidian
 ## Arbeitsbereiche öffnen
 - **Cartographer**: Kompass-Ribbon oder Befehl „Open Cartographer“. Der zuletzt aktive Hex-Map-File wird automatisch geladen.
 - **Library**: Buch-Ribbon oder Befehl „Open Library“. Tabs wechseln zwischen Kreaturen, Zaubern, Gelände und Regionen.
-- **Encounter**: Wird vom Travel-Modus automatisch geöffnet, kann aber dauerhaft als zweites Paneel fixiert werden.
+- **Encounter**: Wird vom Travel-Modus automatisch geöffnet, kann aber dauerhaft als zweites Paneel fixiert werden. Enthält einen XP-Manager für Party-Listen, Encounter-Basiswerte und stapelbare Regelmodifikatoren mit detailliertem Breakdown.
 - **Almanac**: Kalender-Ribbon oder Befehl „Open Almanac (MVP)“. Bündelt Dashboard, Manager und Events für Kalender & Phänomene und synchronisiert den Travel-Fortschritt.
 
 ## Datenablage
