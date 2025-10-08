@@ -1758,6 +1758,506 @@ var init_terrain_store = __esm({
   }
 });
 
+// src/apps/almanac/domain/calendar-schema.ts
+function getTotalDaysInYear(schema) {
+  return schema.months.reduce((sum, month) => sum + month.length, 0);
+}
+function getMonthById(schema, monthId) {
+  return schema.months.find((m) => m.id === monthId) ?? null;
+}
+function getMonthIndex(schema, monthId) {
+  return schema.months.findIndex((m) => m.id === monthId);
+}
+function getMonthByIndex(schema, index) {
+  if (index < 0 || index >= schema.months.length) {
+    return null;
+  }
+  return schema.months[index];
+}
+function getHoursPerDay(schema) {
+  return schema.hoursPerDay ?? DEFAULT_HOURS_PER_DAY;
+}
+function getMinutesPerHour(schema) {
+  return schema.minutesPerHour ?? DEFAULT_MINUTES_PER_HOUR;
+}
+function getSecondsPerMinute(schema) {
+  return schema.secondsPerMinute ?? DEFAULT_SECONDS_PER_MINUTE;
+}
+function getMinuteStep(schema) {
+  return schema.minuteStep ?? DEFAULT_MINUTE_STEP;
+}
+function getTimeDefinition(schema) {
+  return {
+    hoursPerDay: getHoursPerDay(schema),
+    minutesPerHour: getMinutesPerHour(schema),
+    secondsPerMinute: getSecondsPerMinute(schema),
+    minuteStep: getMinuteStep(schema)
+  };
+}
+var DEFAULT_HOURS_PER_DAY, DEFAULT_MINUTES_PER_HOUR, DEFAULT_SECONDS_PER_MINUTE, DEFAULT_MINUTE_STEP;
+var init_calendar_schema = __esm({
+  "src/apps/almanac/domain/calendar-schema.ts"() {
+    "use strict";
+    DEFAULT_HOURS_PER_DAY = 24;
+    DEFAULT_MINUTES_PER_HOUR = 60;
+    DEFAULT_SECONDS_PER_MINUTE = 60;
+    DEFAULT_MINUTE_STEP = 1;
+  }
+});
+
+// src/apps/almanac/domain/calendar-timestamp.ts
+function createDayTimestamp(calendarId, year, monthId, day) {
+  return {
+    calendarId,
+    year,
+    monthId,
+    day,
+    precision: "day"
+  };
+}
+function createHourTimestamp(calendarId, year, monthId, day, hour) {
+  return {
+    calendarId,
+    year,
+    monthId,
+    day,
+    hour,
+    precision: "hour"
+  };
+}
+function createMinuteTimestamp(calendarId, year, monthId, day, hour, minute) {
+  return {
+    calendarId,
+    year,
+    monthId,
+    day,
+    hour,
+    minute,
+    precision: "minute"
+  };
+}
+function compareTimestampsWithSchema(schema, a, b) {
+  if (a.year !== b.year) {
+    return a.year - b.year;
+  }
+  if (a.monthId !== b.monthId) {
+    const aMonthIndex = getMonthIndex(schema, a.monthId);
+    const bMonthIndex = getMonthIndex(schema, b.monthId);
+    if (aMonthIndex === -1 || bMonthIndex === -1) {
+      return a.monthId.localeCompare(b.monthId);
+    }
+    return aMonthIndex - bMonthIndex;
+  }
+  if (a.day !== b.day) {
+    return a.day - b.day;
+  }
+  const aHour = a.hour ?? 0;
+  const bHour = b.hour ?? 0;
+  if (aHour !== bHour) {
+    return aHour - bHour;
+  }
+  const aMinute = a.minute ?? 0;
+  const bMinute = b.minute ?? 0;
+  return aMinute - bMinute;
+}
+function formatTimestamp(ts, monthName) {
+  const month = monthName ?? ts.monthId;
+  if (ts.precision === "day") {
+    return `Year ${ts.year}, Day ${ts.day} of ${month}`;
+  }
+  if (ts.precision === "hour") {
+    return `Year ${ts.year}, Day ${ts.day} of ${month}, ${String(ts.hour).padStart(2, "0")}:00`;
+  }
+  const hourStr = String(ts.hour ?? 0).padStart(2, "0");
+  const minuteStr = String(ts.minute ?? 0).padStart(2, "0");
+  return `Year ${ts.year}, Day ${ts.day} of ${month}, ${hourStr}:${minuteStr}`;
+}
+var init_calendar_timestamp = __esm({
+  "src/apps/almanac/domain/calendar-timestamp.ts"() {
+    "use strict";
+    init_calendar_schema();
+  }
+});
+
+// src/apps/almanac/mode/travel/travel-calendar-toolbar.ts
+function createModeLabel(mode) {
+  switch (mode) {
+    case "day":
+      return "Tag";
+    case "week":
+      return "Woche";
+    case "month":
+      return "Monat";
+    default:
+      return "N\xE4chste";
+  }
+}
+var MODE_ORDER, TravelCalendarToolbar;
+var init_travel_calendar_toolbar = __esm({
+  "src/apps/almanac/mode/travel/travel-calendar-toolbar.ts"() {
+    "use strict";
+    MODE_ORDER = ["upcoming", "day", "week", "month"];
+    TravelCalendarToolbar = class {
+      constructor(options) {
+        this.modeButtons = /* @__PURE__ */ new Map();
+        this.disabled = false;
+        this.options = options;
+        this.mode = options.mode;
+        this.root = document.createElement("div");
+        this.root.classList.add("sm-almanac-travel__toolbar");
+        const modeGroup = document.createElement("div");
+        modeGroup.classList.add("sm-almanac-travel__toolbar-modes");
+        this.root.appendChild(modeGroup);
+        for (const mode of MODE_ORDER) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.classList.add("sm-almanac-travel__toolbar-mode");
+          button.dataset.mode = mode;
+          button.textContent = createModeLabel(mode);
+          button.addEventListener("click", () => {
+            if (this.disabled || this.mode === mode) {
+              return;
+            }
+            this.options.onChangeMode(mode);
+          });
+          modeGroup.appendChild(button);
+          this.modeButtons.set(mode, button);
+        }
+        const actions = document.createElement("div");
+        actions.classList.add("sm-almanac-travel__toolbar-actions");
+        this.root.appendChild(actions);
+        const createStepButton = (label, onClick, shortcut, direction) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.classList.add("sm-almanac-travel__toolbar-step");
+          btn.dataset.direction = direction;
+          btn.textContent = label;
+          if (shortcut) {
+            btn.setAttribute("aria-keyshortcuts", shortcut);
+          }
+          btn.addEventListener("click", () => {
+            if (!this.disabled && this.canUseDirection(direction)) {
+              onClick();
+            }
+          });
+          actions.appendChild(btn);
+          return btn;
+        };
+        createStepButton("\u2212Tag", () => this.options.onStepDay("backward"), "Ctrl+Alt+,", "backward");
+        createStepButton("+Tag", () => this.options.onStepDay("forward"), "Ctrl+Alt+.", "forward");
+        createStepButton("\u2212Std", () => this.options.onStepHour("backward"), "Ctrl+Alt+'", "backward");
+        createStepButton("+Std", () => this.options.onStepHour("forward"), "Ctrl+Alt+;", "forward");
+        createStepButton("\u2212Min", () => this.options.onStepMinute("backward"), "Ctrl+Alt+[", "backward");
+        createStepButton("+Min", () => this.options.onStepMinute("forward"), "Ctrl+Alt+]", "forward");
+        const jumpButton = createStepButton("Sprung", () => this.options.onJump(), void 0, "forward");
+        jumpButton.classList.add("sm-almanac-travel__toolbar-jump");
+        const closeButton = document.createElement("button");
+        closeButton.type = "button";
+        closeButton.classList.add("sm-almanac-travel__toolbar-close");
+        closeButton.textContent = "Schlie\xDFen";
+        closeButton.addEventListener("click", () => {
+          if (!this.disabled) {
+            this.options.onClose();
+          }
+        });
+        this.root.appendChild(closeButton);
+        this.setMode(options.mode);
+        this.updateStepAvailability();
+      }
+      setMode(mode) {
+        this.mode = mode;
+        for (const [value, button] of this.modeButtons.entries()) {
+          const active = value === mode;
+          button.classList.toggle("is-active", active);
+          button.setAttribute("aria-pressed", active ? "true" : "false");
+        }
+      }
+      setDisabled(disabled) {
+        this.disabled = disabled;
+        this.root.classList.toggle("is-disabled", disabled);
+        for (const button of this.modeButtons.values()) {
+          button.toggleAttribute("disabled", disabled);
+        }
+        this.updateStepAvailability();
+        const closeButton = this.root.querySelector(".sm-almanac-travel__toolbar-close");
+        closeButton?.toggleAttribute("disabled", disabled);
+      }
+      destroy() {
+        for (const button of this.modeButtons.values()) {
+          button.replaceWith();
+        }
+        this.modeButtons.clear();
+        this.root.replaceChildren();
+      }
+      updateStepAvailability() {
+        for (const btn of this.root.querySelectorAll(".sm-almanac-travel__toolbar-step")) {
+          const direction = btn.dataset.direction ?? "forward";
+          const usable = !this.disabled && this.canUseDirection(direction);
+          btn.toggleAttribute("disabled", !usable);
+        }
+      }
+      canUseDirection(direction) {
+        if (direction === "backward") {
+          return this.options.canStepBackward;
+        }
+        return this.options.canStepForward;
+      }
+    };
+    TravelCalendarToolbar.displayName = "TravelCalendarToolbar";
+  }
+});
+
+// src/apps/almanac/mode/travel/travel-quick-step-group.ts
+function formatStepLabel(step) {
+  if (!step) {
+    return "\u2014";
+  }
+  const sign = step.delta.amount >= 0 ? "+" : "";
+  const base = `${sign}${step.delta.amount}`;
+  const unit = step.delta.unit === "day" ? "Tag" : step.delta.unit === "hour" ? "Std" : "Min";
+  return step.label ? `${step.label} (${base} ${unit})` : `${base} ${unit}`;
+}
+var BUTTON_PRESETS, TravelQuickStepGroup;
+var init_travel_quick_step_group = __esm({
+  "src/apps/almanac/mode/travel/travel-quick-step-group.ts"() {
+    "use strict";
+    BUTTON_PRESETS = [
+      { label: "\u22121 Tag", amount: -1, unit: "day" },
+      { label: "\u22121 Std", amount: -1, unit: "hour" },
+      { label: "\u2212", amount: -1, unit: "minute" },
+      { label: "+", amount: 1, unit: "minute" },
+      { label: "+1 Std", amount: 1, unit: "hour" },
+      { label: "+1 Tag", amount: 1, unit: "day" }
+    ];
+    TravelQuickStepGroup = class {
+      constructor(options) {
+        this.buttons = [];
+        this.minuteStep = Math.max(1, Math.floor(options.minuteStep) || 1);
+        this.disabled = Boolean(options.disabled);
+        this.onAdvance = options.onAdvance;
+        this.root = document.createElement("div");
+        this.root.classList.add("sm-almanac-travel__quick-steps");
+        const buttonGroup = document.createElement("div");
+        buttonGroup.classList.add("sm-almanac-travel__quick-steps-group");
+        this.root.appendChild(buttonGroup);
+        for (const preset of BUTTON_PRESETS) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.classList.add("sm-almanac-travel__quick-steps-button");
+          button.textContent = preset.label;
+          button.addEventListener("click", () => {
+            if (this.disabled) {
+              return;
+            }
+            const amount = preset.unit === "minute" ? preset.amount * this.minuteStep : preset.amount;
+            this.onAdvance({ amount, unit: preset.unit });
+          });
+          buttonGroup.appendChild(button);
+          this.buttons.push(button);
+        }
+        this.lastStepLabel = document.createElement("div");
+        this.lastStepLabel.classList.add("sm-almanac-travel__quick-steps-last");
+        this.root.appendChild(this.lastStepLabel);
+        this.lastStepLabel.textContent = formatStepLabel(options.lastStep);
+        this.updateDisabledState();
+      }
+      update(options) {
+        if (typeof options.minuteStep === "number" && options.minuteStep > 0) {
+          this.minuteStep = Math.max(1, Math.floor(options.minuteStep));
+        }
+        if (typeof options.disabled === "boolean") {
+          this.disabled = options.disabled;
+          this.updateDisabledState();
+        }
+        if (options.lastStep !== void 0) {
+          this.lastStepLabel.textContent = formatStepLabel(options.lastStep);
+        }
+      }
+      destroy() {
+        for (const button of this.buttons) {
+          button.replaceWith();
+        }
+        this.lastStepLabel.replaceWith();
+        this.root.replaceChildren();
+      }
+      updateDisabledState() {
+        for (const button of this.buttons) {
+          button.toggleAttribute("disabled", this.disabled);
+          button.setAttribute("aria-disabled", this.disabled ? "true" : "false");
+        }
+        if (this.disabled) {
+          this.root.classList.add("sm-almanac-travel__quick-steps--disabled");
+        } else {
+          this.root.classList.remove("sm-almanac-travel__quick-steps--disabled");
+        }
+      }
+    };
+    TravelQuickStepGroup.displayName = "TravelQuickStepGroup";
+  }
+});
+
+// src/apps/almanac/mode/travel/travel-calendar-leaf.ts
+function formatAdvanceStep(step) {
+  if (!step) {
+    return "\u2014";
+  }
+  const sign = step.amount >= 0 ? "+" : "";
+  const unit = step.unit === "day" ? "Tag" : step.unit === "hour" ? "Std" : "Min";
+  return `${sign}${step.amount} ${unit}`;
+}
+var TravelCalendarLeaf;
+var init_travel_calendar_leaf = __esm({
+  "src/apps/almanac/mode/travel/travel-calendar-leaf.ts"() {
+    "use strict";
+    init_calendar_timestamp();
+    init_travel_calendar_toolbar();
+    init_travel_quick_step_group();
+    TravelCalendarLeaf = class {
+      constructor(options) {
+        this.currentMode = options.mode;
+        this.onFollowUp = options.onFollowUp;
+        this.root = document.createElement("div");
+        this.root.classList.add("sm-almanac-travel__leaf");
+        if (!options.visible) {
+          this.root.classList.add("is-hidden");
+        }
+        options.host.appendChild(this.root);
+        const toolbarOptions = {
+          mode: options.mode,
+          canStepBackward: true,
+          canStepForward: true,
+          onChangeMode: options.onModeChange,
+          onStepDay: (direction) => {
+            const amount = direction === "forward" ? 1 : -1;
+            options.onAdvance({ amount, unit: "day" });
+          },
+          onStepHour: (direction) => {
+            const amount = direction === "forward" ? 1 : -1;
+            options.onAdvance({ amount, unit: "hour" });
+          },
+          onStepMinute: (direction) => {
+            const amount = direction === "forward" ? options.minuteStep : -options.minuteStep;
+            options.onAdvance({ amount, unit: "minute" });
+          },
+          onJump: options.onJump,
+          onClose: options.onClose
+        };
+        this.toolbar = new TravelCalendarToolbar(toolbarOptions);
+        this.root.appendChild(this.toolbar.root);
+        this.quickSteps = new TravelQuickStepGroup({
+          minuteStep: options.minuteStep,
+          onAdvance: options.onAdvance,
+          lastStep: void 0
+        });
+        this.root.appendChild(this.quickSteps.root);
+        const infoSection = document.createElement("div");
+        infoSection.classList.add("sm-almanac-travel__leaf-info");
+        this.root.appendChild(infoSection);
+        this.timestampEl = document.createElement("div");
+        this.timestampEl.classList.add("sm-almanac-travel__leaf-timestamp");
+        this.timestampEl.textContent = options.currentTimestamp ? formatTimestamp(options.currentTimestamp) : "\u2014";
+        infoSection.appendChild(this.timestampEl);
+        this.messageEl = document.createElement("div");
+        this.messageEl.classList.add("sm-almanac-travel__leaf-message");
+        infoSection.appendChild(this.messageEl);
+        this.summaryEl = document.createElement("div");
+        this.summaryEl.classList.add("sm-almanac-travel__leaf-last-step");
+        infoSection.appendChild(this.summaryEl);
+        const listWrapper = document.createElement("div");
+        listWrapper.classList.add("sm-almanac-travel__leaf-log");
+        this.root.appendChild(listWrapper);
+        this.logList = document.createElement("ul");
+        this.logList.classList.add("sm-almanac-travel__leaf-log-list");
+        listWrapper.appendChild(this.logList);
+        if (options.isLoading) {
+          this.root.classList.add("is-loading");
+        }
+      }
+      setPanel(snapshot) {
+        this.timestampEl.textContent = snapshot?.timestampLabel ?? "\u2014";
+        this.messageEl.textContent = snapshot?.message ?? "";
+        if (snapshot?.lastAdvanceStep) {
+          this.quickSteps.update({
+            lastStep: {
+              delta: {
+                amount: snapshot.lastAdvanceStep.amount,
+                unit: snapshot.lastAdvanceStep.unit
+              }
+            }
+          });
+        } else {
+          this.quickSteps.update({ lastStep: void 0 });
+        }
+        this.summaryEl.textContent = formatAdvanceStep(snapshot?.lastAdvanceStep);
+        this.logList.replaceChildren();
+        const entries = snapshot?.logEntries ?? [];
+        if (entries.length === 0) {
+          const item = document.createElement("li");
+          item.classList.add("sm-almanac-travel__leaf-log-item", "sm-almanac-travel__leaf-log-item--empty");
+          item.textContent = snapshot?.reason === "jump" ? "Keine \xFCbersprungenen Ereignisse" : "Keine neuen Hooks";
+          this.logList.appendChild(item);
+          return;
+        }
+        for (const entry of entries) {
+          const item = document.createElement("li");
+          item.classList.add("sm-almanac-travel__leaf-log-item");
+          if (entry.skipped) {
+            item.classList.add("sm-almanac-travel__leaf-log-item--skipped");
+          }
+          const kind = entry.kind === "event" ? "Ereignis" : "Ph\xE4nomen";
+          item.textContent = `${kind}: ${entry.title} \u2022 ${entry.occurrenceLabel}${entry.skipped ? " \u2022 \xFCbersprungen" : ""}`;
+          item.addEventListener("click", () => {
+            if (entry.kind === "event") {
+              this.onFollowUp(entry.id);
+            }
+          });
+          this.logList.appendChild(item);
+        }
+      }
+      setMode(mode) {
+        this.currentMode = mode;
+        this.toolbar.setMode(mode);
+      }
+      setLoading(loading) {
+        this.root.classList.toggle("is-loading", loading);
+        this.toolbar.setDisabled(loading);
+        this.quickSteps.update({ disabled: loading });
+      }
+      setError(message) {
+        this.root.classList.toggle("has-error", Boolean(message));
+        this.messageEl.textContent = message ?? "";
+      }
+      setQuickStep(step) {
+        this.quickSteps.update({ lastStep: step ? { label: step.label ?? void 0, delta: step.delta } : void 0 });
+        this.summaryEl.textContent = step ? formatAdvanceStep({ amount: step.delta.amount, unit: step.delta.unit }) : "\u2014";
+      }
+      setMinuteStep(step) {
+        this.quickSteps.update({ minuteStep: step });
+      }
+      setVisible(visible) {
+        this.root.classList.toggle("is-hidden", !visible);
+      }
+      destroy() {
+        this.toolbar.destroy();
+        this.quickSteps.destroy();
+        this.root.replaceChildren();
+        this.root.remove();
+      }
+    };
+    TravelCalendarLeaf.displayName = "TravelCalendarLeaf";
+  }
+});
+
+// src/apps/almanac/mode/travel/index.ts
+var init_travel = __esm({
+  "src/apps/almanac/mode/travel/index.ts"() {
+    "use strict";
+    init_travel_calendar_leaf();
+    init_travel_calendar_toolbar();
+    init_travel_quick_step_group();
+  }
+});
+
 // src/apps/cartographer/travel/ui/sidebar.ts
 function createSidebar(host) {
   host.empty();
@@ -1777,6 +2277,32 @@ function createSidebar(host) {
     cls: "sm-cartographer__travel-input",
     attr: { step: "0.1", min: "0.1", value: "1" }
   });
+  const leafHost = root.createDiv({ cls: "sm-cartographer__travel-leaf" });
+  let travelHandlers = {
+    onAdvance: () => {
+    },
+    onModeChange: () => {
+    },
+    onJump: () => {
+    },
+    onClose: () => {
+    },
+    onFollowUp: () => {
+    }
+  };
+  const travelLeaf = new TravelCalendarLeaf({
+    host: leafHost,
+    mode: "upcoming",
+    visible: false,
+    minuteStep: 1,
+    currentTimestamp: null,
+    isLoading: false,
+    onModeChange: (mode) => travelHandlers.onModeChange(mode),
+    onAdvance: (payload) => travelHandlers.onAdvance(payload),
+    onJump: () => travelHandlers.onJump(),
+    onClose: () => travelHandlers.onClose(),
+    onFollowUp: (eventId) => travelHandlers.onFollowUp(eventId)
+  });
   let onChange = () => {
   };
   speedInput.onchange = () => {
@@ -1792,6 +2318,11 @@ function createSidebar(host) {
     const next = String(v);
     if (speedInput.value !== next) speedInput.value = next;
   };
+  const setTravelPanel = (panel) => {
+    travelLeaf.setPanel(panel);
+    travelLeaf.setVisible(Boolean(panel));
+    travelLeaf.setLoading(false);
+  };
   const setTitle = (title) => {
     if (title && title.trim().length > 0) {
       host.dataset.mapTitle = title;
@@ -1805,8 +2336,19 @@ function createSidebar(host) {
     controlsHost,
     setTile,
     setSpeed,
+    setTravelPanel,
     onSpeedChange: (fn) => onChange = fn,
+    setTravelHandlers: (handlers) => {
+      travelHandlers = {
+        onAdvance: handlers.onAdvance ?? travelHandlers.onAdvance,
+        onModeChange: handlers.onModeChange ?? travelHandlers.onModeChange,
+        onJump: handlers.onJump ?? travelHandlers.onJump,
+        onClose: handlers.onClose ?? travelHandlers.onClose,
+        onFollowUp: handlers.onFollowUp ?? travelHandlers.onFollowUp
+      };
+    },
     destroy: () => {
+      travelLeaf.destroy();
       host.empty();
       host.classList.remove("sm-cartographer__sidebar--travel");
       delete host.dataset.mapTitle;
@@ -1816,6 +2358,7 @@ function createSidebar(host) {
 var init_sidebar = __esm({
   "src/apps/cartographer/travel/ui/sidebar.ts"() {
     "use strict";
+    init_travel();
   }
 });
 
@@ -2604,6 +3147,882 @@ var init_actions = __esm({
   }
 });
 
+// src/apps/almanac/domain/calendar-math.ts
+function getMonthLength(schema, monthId) {
+  const month = getMonthById(schema, monthId);
+  return month?.length ?? null;
+}
+function getDayOfYear(schema, timestamp) {
+  const monthIndex = getMonthIndex(schema, timestamp.monthId);
+  if (monthIndex === -1) {
+    throw new Error(`Month with id ${timestamp.monthId} not found in schema ${schema.id}`);
+  }
+  let days = 0;
+  for (let index = 0; index < monthIndex; index++) {
+    days += schema.months[index].length;
+  }
+  return days + timestamp.day;
+}
+function resolveMonthAndDayByDayOfYear(schema, dayOfYear) {
+  if (dayOfYear < 1 || dayOfYear > getTotalDaysInYear(schema)) {
+    throw new RangeError(`Day-of-year ${dayOfYear} is out of range for schema ${schema.id}`);
+  }
+  let remaining = dayOfYear;
+  for (const month of schema.months) {
+    if (remaining <= month.length) {
+      return { monthId: month.id, day: remaining };
+    }
+    remaining -= month.length;
+  }
+  throw new RangeError(`Unable to resolve day-of-year ${dayOfYear} for schema ${schema.id}`);
+}
+function createTimestampFromDayOfYear(schema, calendarId, year, dayOfYear) {
+  const { monthId, day } = resolveMonthAndDayByDayOfYear(schema, dayOfYear);
+  return createDayTimestamp(calendarId, year, monthId, day);
+}
+function timestampToAbsoluteDay(schema, timestamp) {
+  const daysPerYear = getTotalDaysInYear(schema);
+  const dayOfYearIndex = getDayOfYear(schema, timestamp) - 1;
+  const yearOffset = timestamp.year - schema.epoch.year;
+  return yearOffset * daysPerYear + dayOfYearIndex;
+}
+function absoluteDayToTimestamp(schema, calendarId, absoluteDay) {
+  const daysPerYear = getTotalDaysInYear(schema);
+  let yearOffset = Math.floor(absoluteDay / daysPerYear);
+  let dayOfYearIndex = absoluteDay - yearOffset * daysPerYear;
+  if (dayOfYearIndex < 0) {
+    dayOfYearIndex += daysPerYear;
+    yearOffset -= 1;
+  }
+  const targetYear = schema.epoch.year + yearOffset;
+  return createTimestampFromDayOfYear(schema, calendarId, targetYear, dayOfYearIndex + 1);
+}
+function clampDayToMonth(schema, monthId, day) {
+  const monthLength = getMonthLength(schema, monthId);
+  if (monthLength === null) {
+    throw new Error(`Month with id ${monthId} not found in schema ${schema.id}`);
+  }
+  if (day < 1) return 1;
+  if (day > monthLength) return monthLength;
+  return day;
+}
+function mod(value, divisor) {
+  return (value % divisor + divisor) % divisor;
+}
+var init_calendar_math = __esm({
+  "src/apps/almanac/domain/calendar-math.ts"() {
+    "use strict";
+    init_calendar_schema();
+    init_calendar_timestamp();
+  }
+});
+
+// src/apps/almanac/domain/repeat-rule.ts
+function calculateNextOccurrence(schema, calendarId, rule, start, options = {}, services = {}) {
+  const includeStart = options.includeStart ?? false;
+  switch (rule.type) {
+    case "annual_offset":
+      return resolveNextAnnualOccurrence(schema, calendarId, rule, start, includeStart);
+    case "monthly_position":
+      return resolveNextMonthlyOccurrence(schema, calendarId, rule, start, includeStart);
+    case "weekly_dayIndex":
+      return resolveNextWeeklyOccurrence(schema, calendarId, rule, start, includeStart);
+    case "astronomical":
+      return resolveNextAstronomicalOccurrence(schema, calendarId, rule, start, options, services);
+    case "custom":
+      throw new UnsupportedRepeatRuleError(rule.type);
+    default: {
+      const _never = rule;
+      return _never;
+    }
+  }
+}
+function calculateOccurrencesInRange(schema, calendarId, rule, rangeStart, rangeEnd, options = {}, services = {}) {
+  const limit = options.limit ?? 12;
+  if (limit <= 0) return [];
+  const compare = compareTimestampsWithSchema(schema, rangeStart, rangeEnd);
+  const [start, end] = compare <= 0 ? [rangeStart, rangeEnd] : [rangeEnd, rangeStart];
+  if (rule.type === "astronomical") {
+    return resolveAstronomicalRange(schema, calendarId, rule, start, end, options, services).slice(0, limit);
+  }
+  const occurrences = [];
+  let cursor = calculateNextOccurrence(schema, calendarId, rule, start, options, services);
+  while (cursor && occurrences.length < limit && compareTimestampsWithSchema(schema, cursor, end) <= 0) {
+    occurrences.push(cursor);
+    cursor = calculateNextOccurrence(schema, calendarId, rule, cursor, { includeStart: false }, services);
+    if (cursor && occurrences.length > 0) {
+      const prev = occurrences[occurrences.length - 1];
+      if (compareTimestampsWithSchema(schema, cursor, prev) === 0) {
+        break;
+      }
+    }
+  }
+  return occurrences;
+}
+function resolveNextAnnualOccurrence(schema, calendarId, rule, start, includeStart) {
+  const totalDays = getAnnualRange(schema);
+  if (totalDays <= 0) {
+    throw new InvalidRepeatRuleError(`Calendar schema ${schema.id} has no days configured.`);
+  }
+  const zeroBased = ((rule.offsetDayOfYear - 1) % totalDays + totalDays) % totalDays;
+  const normalisedOffset = zeroBased + 1;
+  const candidateCurrentYear = createTimestampFromDayOfYear(schema, calendarId, start.year, normalisedOffset);
+  const comparison = compareTimestampsWithSchema(schema, candidateCurrentYear, start);
+  if (comparison > 0 || comparison === 0 && includeStart) {
+    return candidateCurrentYear;
+  }
+  return createTimestampFromDayOfYear(schema, calendarId, start.year + 1, normalisedOffset);
+}
+function resolveNextMonthlyOccurrence(schema, calendarId, rule, start, includeStart) {
+  const monthLength = clampDayToMonth(schema, rule.monthId, rule.day);
+  const initialCandidate = createDayTimestamp(calendarId, start.year, rule.monthId, monthLength);
+  const comparison = compareTimestampsWithSchema(schema, initialCandidate, start);
+  if (comparison > 0 || comparison === 0 && includeStart) {
+    return initialCandidate;
+  }
+  return createDayTimestamp(calendarId, start.year + 1, rule.monthId, monthLength);
+}
+function resolveNextWeeklyOccurrence(schema, calendarId, rule, start, includeStart) {
+  const daysPerWeek = schema.daysPerWeek;
+  if (rule.dayIndex < 0 || rule.dayIndex >= daysPerWeek) {
+    throw new InvalidRepeatRuleError(`dayIndex ${rule.dayIndex} is out of range for schema ${schema.id}`);
+  }
+  const interval = Math.max(1, rule.interval ?? 1);
+  const absoluteStart = timestampToAbsoluteDay(schema, start);
+  const currentDayIndex = mod(absoluteStart, daysPerWeek);
+  let delta = mod(rule.dayIndex - currentDayIndex, daysPerWeek);
+  if (delta === 0 && !includeStart) {
+    delta = daysPerWeek * interval;
+  }
+  const intervalDays = daysPerWeek * interval;
+  if (delta % daysPerWeek !== 0 && interval > 1) {
+    delta += mod(intervalDays - delta % intervalDays, intervalDays);
+  }
+  const candidateAbsolute = absoluteStart + delta;
+  return absoluteDayToTimestamp(schema, calendarId, candidateAbsolute);
+}
+function resolveNextAstronomicalOccurrence(schema, calendarId, rule, start, options, services) {
+  const calculator = services.astronomicalCalculator;
+  if (!calculator) {
+    throw new UnsupportedRepeatRuleError(rule.type);
+  }
+  return calculator.resolveNextOccurrence(schema, calendarId, rule, start, options);
+}
+function resolveAstronomicalRange(schema, calendarId, rule, rangeStart, rangeEnd, options, services) {
+  const calculator = services.astronomicalCalculator;
+  if (!calculator) {
+    throw new UnsupportedRepeatRuleError(rule.type);
+  }
+  return calculator.resolveOccurrencesInRange(schema, calendarId, rule, rangeStart, rangeEnd, options);
+}
+function getAnnualRange(schema) {
+  return schema.months.reduce((sum, month) => sum + month.length, 0);
+}
+var UnsupportedRepeatRuleError, InvalidRepeatRuleError;
+var init_repeat_rule = __esm({
+  "src/apps/almanac/domain/repeat-rule.ts"() {
+    "use strict";
+    init_calendar_timestamp();
+    init_calendar_math();
+    UnsupportedRepeatRuleError = class extends Error {
+      constructor(ruleType) {
+        super(`Repeat rule type "${ruleType}" is not supported yet.`);
+        this.name = "UnsupportedRepeatRuleError";
+      }
+    };
+    InvalidRepeatRuleError = class extends Error {
+      constructor(message) {
+        super(message);
+        this.name = "InvalidRepeatRuleError";
+      }
+    };
+  }
+});
+
+// src/apps/almanac/domain/time-arithmetic.ts
+function advanceTime(schema, current, amount, unit) {
+  if (unit === "day") {
+    return advanceByDays(schema, current, amount);
+  }
+  if (unit === "hour") {
+    return advanceByHours(schema, current, amount);
+  }
+  return advanceByMinutes(schema, current, amount);
+}
+function advanceByDays(schema, current, days) {
+  let year = current.year;
+  let monthId = current.monthId;
+  let day = current.day;
+  const hour = current.hour;
+  let remainingDays = days;
+  let normalized = false;
+  while (remainingDays !== 0) {
+    const month = getMonthById(schema, monthId);
+    if (!month) {
+      throw new Error(`Invalid month ID: ${monthId}`);
+    }
+    if (remainingDays > 0) {
+      const daysLeftInMonth = month.length - day + 1;
+      if (remainingDays < daysLeftInMonth) {
+        day += remainingDays;
+        remainingDays = 0;
+      } else {
+        remainingDays -= daysLeftInMonth;
+        day = 1;
+        const nextMonth = getNextMonth(schema, monthId);
+        if (!nextMonth) {
+          year += 1;
+          monthId = schema.months[0].id;
+          normalized = true;
+        } else {
+          monthId = nextMonth.id;
+        }
+      }
+    } else {
+      const daysToBoundary = day - 1;
+      if (Math.abs(remainingDays) <= daysToBoundary) {
+        day += remainingDays;
+        remainingDays = 0;
+      } else {
+        remainingDays += daysToBoundary + 1;
+        const prevMonth = getPreviousMonth(schema, monthId);
+        if (!prevMonth) {
+          year -= 1;
+          const lastMonth = schema.months[schema.months.length - 1];
+          monthId = lastMonth.id;
+          day = lastMonth.length;
+          normalized = true;
+        } else {
+          monthId = prevMonth.id;
+          day = prevMonth.length;
+        }
+      }
+    }
+  }
+  const result = hour !== void 0 ? createHourTimestamp(current.calendarId, year, monthId, day, hour) : createDayTimestamp(current.calendarId, year, monthId, day);
+  return { timestamp: result, normalized };
+}
+function advanceByHours(schema, current, hours) {
+  const hoursPerDay = getHoursPerDay(schema);
+  const currentHour = current.hour ?? 0;
+  let totalHours = currentHour + hours;
+  let carriedDays = 0;
+  let normalized = false;
+  if (totalHours >= hoursPerDay) {
+    carriedDays = Math.floor(totalHours / hoursPerDay);
+    totalHours = totalHours % hoursPerDay;
+    normalized = true;
+  } else if (totalHours < 0) {
+    const daysNeeded = Math.ceil(Math.abs(totalHours) / hoursPerDay);
+    carriedDays = -daysNeeded;
+    totalHours = totalHours + daysNeeded * hoursPerDay;
+    normalized = true;
+  }
+  let baseTimestamp = current;
+  if (carriedDays !== 0) {
+    const dayResult = advanceByDays(schema, current, carriedDays);
+    baseTimestamp = dayResult.timestamp;
+    normalized = normalized || dayResult.normalized;
+  }
+  const result = createHourTimestamp(
+    baseTimestamp.calendarId,
+    baseTimestamp.year,
+    baseTimestamp.monthId,
+    baseTimestamp.day,
+    totalHours
+  );
+  return { timestamp: result, normalized, carriedDays: carriedDays !== 0 ? carriedDays : void 0, carriedHours: hours };
+}
+function getNextMonth(schema, currentMonthId) {
+  const index = getMonthIndex(schema, currentMonthId);
+  if (index === -1) {
+    throw new Error(`Month not found: ${currentMonthId}`);
+  }
+  if (index === schema.months.length - 1) {
+    return null;
+  }
+  return getMonthByIndex(schema, index + 1);
+}
+function getPreviousMonth(schema, currentMonthId) {
+  const index = getMonthIndex(schema, currentMonthId);
+  if (index === -1) {
+    throw new Error(`Month not found: ${currentMonthId}`);
+  }
+  if (index === 0) {
+    return null;
+  }
+  return getMonthByIndex(schema, index - 1);
+}
+function advanceByMinutes(schema, current, minutes) {
+  const minutesPerHour = getMinutesPerHour(schema);
+  const currentMinute = current.minute ?? 0;
+  const currentHour = current.hour ?? 0;
+  let totalMinutes = currentMinute + minutes;
+  let carriedHours = 0;
+  let normalized = false;
+  if (totalMinutes >= minutesPerHour) {
+    carriedHours = Math.floor(totalMinutes / minutesPerHour);
+    totalMinutes = totalMinutes % minutesPerHour;
+    normalized = true;
+  } else if (totalMinutes < 0) {
+    const hoursNeeded = Math.ceil(Math.abs(totalMinutes) / minutesPerHour);
+    carriedHours = -hoursNeeded;
+    totalMinutes = totalMinutes + hoursNeeded * minutesPerHour;
+    normalized = true;
+  }
+  let baseTimestamp = current;
+  if (carriedHours !== 0) {
+    const hourResult = advanceByHours(schema, current, carriedHours);
+    baseTimestamp = hourResult.timestamp;
+    normalized = normalized || hourResult.normalized;
+  }
+  const result = createMinuteTimestamp(
+    baseTimestamp.calendarId,
+    baseTimestamp.year,
+    baseTimestamp.monthId,
+    baseTimestamp.day,
+    // The hour component might become undefined if the schema uses day precision only.
+    // Fallback to zero in that case.
+    baseTimestamp.hour ?? 0,
+    totalMinutes
+  );
+  return { timestamp: result, normalized };
+}
+var init_time_arithmetic = __esm({
+  "src/apps/almanac/domain/time-arithmetic.ts"() {
+    "use strict";
+    init_calendar_schema();
+    init_calendar_schema();
+    init_calendar_timestamp();
+  }
+});
+
+// src/apps/almanac/domain/hook-descriptor.ts
+function sortHooksByPriority(hooks) {
+  return [...hooks].sort((a, b) => {
+    const priorityA = a.priority ?? 0;
+    const priorityB = b.priority ?? 0;
+    if (priorityA !== priorityB) {
+      return priorityB - priorityA;
+    }
+    return a.id.localeCompare(b.id);
+  });
+}
+var init_hook_descriptor = __esm({
+  "src/apps/almanac/domain/hook-descriptor.ts"() {
+    "use strict";
+  }
+});
+
+// src/apps/almanac/domain/calendar-event.ts
+function isSingleEvent(event) {
+  return event.kind === "single";
+}
+function isRecurringEvent(event) {
+  return event.kind === "recurring";
+}
+function createSingleEvent(id, calendarId, title, date, options = {}) {
+  return {
+    kind: "single",
+    id,
+    calendarId,
+    title,
+    description: options.description,
+    note: options.note,
+    category: options.category,
+    tags: options.tags,
+    priority: options.priority,
+    followUpPolicy: options.followUpPolicy,
+    hooks: options.hooks,
+    date,
+    allDay: options.allDay ?? date.precision === "day",
+    startTime: options.startTime,
+    endTime: options.endTime,
+    durationMinutes: options.durationMinutes,
+    timePrecision: options.timePrecision ?? normalisePrecision(date.precision)
+  };
+}
+function getEventAnchorTimestamp(event) {
+  if (isSingleEvent(event)) {
+    return event.date;
+  }
+  return event.bounds?.start ?? event.date ?? null;
+}
+function getEventPriority(event) {
+  return event.priority ?? 0;
+}
+function getEventHooks(event) {
+  return event.hooks ? sortHooksByPriority(event.hooks) : [];
+}
+function computeNextEventOccurrence(event, schema, calendarId, start, options = {}) {
+  if (isSingleEvent(event)) {
+    const includeStart2 = options.includeStart ?? false;
+    const comparison = compareTimestampsWithSchema(schema, event.date, start);
+    if (comparison > 0 || comparison === 0 && includeStart2) {
+      return buildSingleEventOccurrence(event, schema);
+    }
+    return null;
+  }
+  const effectiveStart = resolveRecurringSearchStart(event, schema, start);
+  if (!effectiveStart) {
+    return null;
+  }
+  const { services, ...ruleOptions } = options;
+  const includeStart = ruleOptions.includeStart ?? false;
+  const next = calculateNextOccurrence(
+    schema,
+    calendarId,
+    event.rule,
+    effectiveStart,
+    { ...ruleOptions, includeStart },
+    services
+  );
+  if (!next) {
+    return null;
+  }
+  if (!isWithinBounds(event.bounds, schema, next)) {
+    const nextCursor = advanceCursorBeyondBounds(event, schema, next, ruleOptions, services, calendarId);
+    return nextCursor ? buildRecurringEventOccurrence(event, schema, calendarId, nextCursor) : null;
+  }
+  return buildRecurringEventOccurrence(event, schema, calendarId, next);
+}
+function normalisePrecision(precision) {
+  if (precision === "hour" || precision === "minute") {
+    return precision;
+  }
+  return "day";
+}
+function buildSingleEventOccurrence(event, schema) {
+  const { start, end, durationMinutes } = resolveSingleEventWindow(event, schema);
+  return {
+    eventId: event.id,
+    calendarId: event.calendarId,
+    eventType: "single",
+    title: event.title,
+    category: event.category,
+    start,
+    end,
+    durationMinutes,
+    allDay: event.allDay,
+    priority: getEventPriority(event),
+    hooks: getEventHooks(event),
+    source: event
+  };
+}
+function buildRecurringEventOccurrence(event, schema, calendarId, baseTimestamp) {
+  const { start, end, durationMinutes } = applyRecurringTimePolicy(event, schema, calendarId, baseTimestamp);
+  return {
+    eventId: event.id,
+    calendarId,
+    eventType: "recurring",
+    title: event.title,
+    category: event.category,
+    start,
+    end,
+    durationMinutes,
+    allDay: event.timePolicy === "all_day",
+    priority: getEventPriority(event),
+    hooks: getEventHooks(event),
+    source: event
+  };
+}
+function resolveSingleEventWindow(event, schema) {
+  const { minutesPerHour, hoursPerDay } = getTimeDefinition(schema);
+  const minutesPerDay = hoursPerDay * minutesPerHour;
+  const base = event.date;
+  let start = base;
+  if (!event.allDay) {
+    const hour = event.startTime?.hour ?? base.hour ?? 0;
+    const minute = event.startTime?.minute ?? base.minute ?? 0;
+    start = createMinuteTimestamp(base.calendarId, base.year, base.monthId, base.day, hour, minute);
+  }
+  let duration = event.durationMinutes ?? 0;
+  if (event.endTime) {
+    duration = Math.max(duration, calculateDurationFromTimes(event.startTime, event.endTime, minutesPerHour, hoursPerDay));
+  }
+  if (duration <= 0) {
+    duration = event.allDay ? minutesPerDay : 0;
+  }
+  const end = duration > 0 ? advanceTime(schema, start, duration, "minute").timestamp : start;
+  return { start, end, durationMinutes: duration };
+}
+function applyRecurringTimePolicy(event, schema, calendarId, baseTimestamp) {
+  const { minutesPerHour, hoursPerDay } = getTimeDefinition(schema);
+  const minutesPerDay = hoursPerDay * minutesPerHour;
+  if (event.timePolicy === "all_day") {
+    const start2 = baseTimestamp;
+    const duration2 = event.durationMinutes ?? minutesPerDay;
+    const end2 = duration2 > 0 ? advanceTime(schema, start2, duration2, "minute").timestamp : start2;
+    return { start: start2, end: end2, durationMinutes: duration2 };
+  }
+  if (event.timePolicy === "fixed") {
+    const hour = event.startTime?.hour ?? 0;
+    const minute = event.startTime?.minute ?? 0;
+    const start2 = createMinuteTimestamp(calendarId, baseTimestamp.year, baseTimestamp.monthId, baseTimestamp.day, hour, minute);
+    const duration2 = event.durationMinutes ?? 0;
+    const end2 = duration2 > 0 ? advanceTime(schema, start2, duration2, "minute").timestamp : start2;
+    return { start: start2, end: end2, durationMinutes: duration2 };
+  }
+  const offsetMinutes = event.offsetMinutes ?? 0;
+  const start = advanceTime(schema, baseTimestamp, offsetMinutes, "minute").timestamp;
+  const duration = event.durationMinutes ?? 0;
+  const end = duration > 0 ? advanceTime(schema, start, duration, "minute").timestamp : start;
+  return { start, end, durationMinutes: duration };
+}
+function calculateDurationFromTimes(startTime, endTime, minutesPerHour, hoursPerDay) {
+  const startMinutes = timeOfDayToMinutes(startTime ?? { hour: 0, minute: 0 }, minutesPerHour);
+  const endMinutes = timeOfDayToMinutes(endTime, minutesPerHour);
+  const dailyMinutes = hoursPerDay * minutesPerHour;
+  const raw = endMinutes - startMinutes;
+  if (raw <= 0) {
+    return dailyMinutes + raw;
+  }
+  return raw;
+}
+function timeOfDayToMinutes(time, minutesPerHour) {
+  return time.hour * minutesPerHour + (time.minute ?? 0);
+}
+function resolveRecurringSearchStart(event, schema, start) {
+  const boundsStart = event.bounds?.start;
+  if (!boundsStart) {
+    return start;
+  }
+  const comparison = compareTimestampsWithSchema(schema, start, boundsStart);
+  if (comparison >= 0) {
+    return start;
+  }
+  return boundsStart;
+}
+function isWithinBounds(bounds, schema, timestamp) {
+  if (!bounds) {
+    return true;
+  }
+  if (bounds.start && compareTimestampsWithSchema(schema, timestamp, bounds.start) < 0) {
+    return false;
+  }
+  if (bounds.end && compareTimestampsWithSchema(schema, timestamp, bounds.end) > 0) {
+    return false;
+  }
+  return true;
+}
+function advanceCursorBeyondBounds(event, schema, current, options, services, calendarId) {
+  if (!event.bounds?.end) {
+    return null;
+  }
+  if (compareTimestampsWithSchema(schema, current, event.bounds.end) >= 0) {
+    return null;
+  }
+  return calculateNextOccurrence(
+    schema,
+    calendarId,
+    event.rule,
+    current,
+    { ...options, includeStart: false },
+    services
+  );
+}
+var init_calendar_event = __esm({
+  "src/apps/almanac/domain/calendar-event.ts"() {
+    "use strict";
+    init_calendar_schema();
+    init_calendar_timestamp();
+    init_repeat_rule();
+    init_time_arithmetic();
+    init_hook_descriptor();
+  }
+});
+
+// src/apps/almanac/mode/cartographer-gateway.ts
+function normaliseTravelKey(travelId) {
+  return travelId ?? GLOBAL_TRAVEL_KEY;
+}
+function formatTimestampLabel(ts) {
+  if (!ts) return void 0;
+  const base = `${ts.year}-${ts.monthId}-${String(ts.day).padStart(2, "0")}`;
+  if (typeof ts.hour === "number" && typeof ts.minute === "number") {
+    const hh = String(ts.hour).padStart(2, "0");
+    const mm = String(ts.minute).padStart(2, "0");
+    return `${base} ${hh}:${mm}`;
+  }
+  return base;
+}
+function mapEvents(events, skipped = false) {
+  if (!events || events.length === 0) {
+    return [];
+  }
+  return events.map((event) => {
+    const occurrence = getEventAnchorTimestamp(event) ?? event.date;
+    return {
+      kind: "event",
+      id: event.id,
+      title: event.title,
+      occurrenceLabel: formatTimestampLabel(occurrence) ?? "\u2014",
+      skipped
+    };
+  });
+}
+function mapPhenomena(phenomena, skipped = false) {
+  if (!phenomena || phenomena.length === 0) {
+    return [];
+  }
+  return phenomena.map((occurrence) => ({
+    kind: "phenomenon",
+    id: occurrence.phenomenonId,
+    title: occurrence.title ?? occurrence.phenomenonId,
+    occurrenceLabel: formatTimestampLabel(occurrence.timestamp) ?? "\u2014",
+    skipped
+  }));
+}
+var GLOBAL_TRAVEL_KEY, CartographerHookGateway, cartographerHookGateway;
+var init_cartographer_gateway = __esm({
+  "src/apps/almanac/mode/cartographer-gateway.ts"() {
+    "use strict";
+    init_calendar_event();
+    GLOBAL_TRAVEL_KEY = "__global__";
+    CartographerHookGateway = class {
+      constructor() {
+        this.hookListeners = /* @__PURE__ */ new Set();
+        this.panelListeners = /* @__PURE__ */ new Map();
+        this.lifecycleStart = /* @__PURE__ */ new Set();
+        this.lifecycleEnd = /* @__PURE__ */ new Set();
+        this.latestSnapshots = /* @__PURE__ */ new Map();
+      }
+      onHookDispatched(listener) {
+        this.hookListeners.add(listener);
+        return () => this.hookListeners.delete(listener);
+      }
+      onTravelStart(listener) {
+        this.lifecycleStart.add(listener);
+        return () => this.lifecycleStart.delete(listener);
+      }
+      onTravelEnd(listener) {
+        this.lifecycleEnd.add(listener);
+        return () => this.lifecycleEnd.delete(listener);
+      }
+      onPanelUpdate(travelId, listener) {
+        const key = normaliseTravelKey(travelId);
+        if (!this.panelListeners.has(key)) {
+          this.panelListeners.set(key, /* @__PURE__ */ new Set());
+        }
+        const listeners2 = this.panelListeners.get(key);
+        listeners2.add(listener);
+        const snapshot = this.latestSnapshots.get(key);
+        if (snapshot) {
+          void listener(snapshot);
+        }
+        return () => {
+          const set = this.panelListeners.get(key);
+          set?.delete(listener);
+          if (set && set.size === 0) {
+            this.panelListeners.delete(key);
+          }
+        };
+      }
+      emitTravelStart(travelId) {
+        const key = normaliseTravelKey(travelId);
+        for (const listener of this.lifecycleStart) {
+          void listener(key === GLOBAL_TRAVEL_KEY ? null : travelId);
+        }
+      }
+      emitTravelEnd(travelId) {
+        const key = normaliseTravelKey(travelId);
+        for (const listener of this.lifecycleEnd) {
+          void listener(key === GLOBAL_TRAVEL_KEY ? null : travelId);
+        }
+      }
+      getPanelSnapshot(travelId) {
+        const key = normaliseTravelKey(travelId);
+        return this.latestSnapshots.get(key) ?? null;
+      }
+      reset() {
+        this.latestSnapshots.clear();
+        this.panelListeners.clear();
+        this.hookListeners.clear();
+        this.lifecycleStart.clear();
+        this.lifecycleEnd.clear();
+      }
+      async dispatchHooks(events, phenomena, context) {
+        if (this.hookListeners.size === 0) {
+          return;
+        }
+        const payload = {
+          scope: context.scope,
+          travelId: context.travelId ?? null,
+          reason: context.reason ?? "advance",
+          events: events.map((event) => ({
+            eventId: event.id,
+            calendarId: event.calendarId,
+            occurrence: getEventAnchorTimestamp(event) ?? event.date,
+            title: event.title
+          })),
+          phenomena: phenomena.map((occurrence) => ({
+            phenomenonId: occurrence.phenomenonId,
+            occurrence: occurrence.timestamp,
+            effects: occurrence.effects
+          }))
+        };
+        for (const listener of this.hookListeners) {
+          await listener(payload);
+        }
+      }
+      async notifyTravelPanel(update) {
+        const key = normaliseTravelKey(update.travelId);
+        const snapshot = {
+          travelId: key === GLOBAL_TRAVEL_KEY ? null : update.travelId ?? null,
+          timestampLabel: formatTimestampLabel(update.currentTimestamp),
+          message: update.message,
+          reason: update.reason ?? "advance",
+          lastAdvanceStep: update.lastAdvanceStep,
+          logEntries: [
+            ...mapEvents(update.triggeredEvents, false),
+            ...mapPhenomena(update.triggeredPhenomena, false),
+            ...mapEvents(update.skippedEvents, true),
+            ...mapPhenomena(update.skippedPhenomena, true)
+          ]
+        };
+        this.latestSnapshots.set(key, snapshot);
+        const listeners2 = this.panelListeners.get(key);
+        if (!listeners2 || listeners2.size === 0) {
+          return;
+        }
+        for (const listener of listeners2) {
+          await listener(snapshot);
+        }
+      }
+    };
+    cartographerHookGateway = new CartographerHookGateway();
+  }
+});
+
+// src/apps/almanac/mode/cartographer-bridge.ts
+function warnInactive(action) {
+  console.warn(`[almanac] cartographer bridge ignored ${action} \u2013 no active dispatcher registered.`);
+}
+function logDispatchError(event, error) {
+  console.error(`[almanac] cartographer bridge dispatch for ${event} failed`, error);
+}
+function registerCartographerBridge(machine, options = {}) {
+  const dispatch = machine.dispatch.bind(machine);
+  const getState = machine.getState.bind(machine);
+  let released = false;
+  let currentTravelId = null;
+  const safeDispatch = async (event, label) => {
+    if (released) {
+      warnInactive(label);
+      return;
+    }
+    try {
+      await dispatch(event);
+    } catch (error) {
+      logDispatchError(label, error);
+    }
+  };
+  let handle;
+  const handlers = {
+    async onAdvance(payload) {
+      if (!currentTravelId) {
+        warnInactive("travel advance");
+        return;
+      }
+      await safeDispatch(
+        { type: "TRAVEL_TIME_ADVANCE_REQUESTED", amount: payload.amount, unit: payload.unit },
+        "travel advance"
+      );
+    },
+    async onModeChange(mode) {
+      if (!currentTravelId) {
+        warnInactive("travel mode change");
+        return;
+      }
+      await safeDispatch({ type: "TRAVEL_MODE_CHANGED", mode }, "travel mode change");
+    },
+    async onJump() {
+      if (released) {
+        warnInactive("time jump");
+        return;
+      }
+      if (options.onRequestJump) {
+        await options.onRequestJump();
+        return;
+      }
+      const state = getState();
+      const timestamp = state.travelLeafState.currentTimestamp ?? state.calendarState.currentTimestamp;
+      if (!timestamp) {
+        warnInactive("time jump");
+        return;
+      }
+      await safeDispatch({ type: "TIME_JUMP_REQUESTED", timestamp }, "time jump");
+    },
+    async onClose() {
+      if (released) {
+        return;
+      }
+      if (options.onClose) {
+        await options.onClose();
+        return;
+      }
+      await handle.unmount();
+    },
+    async onFollowUp(eventId) {
+      if (released) {
+        warnInactive("event follow-up");
+        return;
+      }
+      if (options.onFollowUp) {
+        await options.onFollowUp(eventId);
+        return;
+      }
+      await safeDispatch({ type: "ALMANAC_MODE_SELECTED", mode: "events" }, "event follow-up");
+    }
+  };
+  handle = {
+    handlers,
+    async mount(travelId) {
+      if (released) {
+        warnInactive("travel mount");
+        return;
+      }
+      if (!travelId) {
+        currentTravelId = null;
+        return;
+      }
+      if (currentTravelId === travelId) {
+        return;
+      }
+      currentTravelId = travelId;
+      await safeDispatch({ type: "TRAVEL_LEAF_MOUNTED", travelId }, "travel leaf mount");
+    },
+    async unmount() {
+      currentTravelId = null;
+    },
+    async requestTimeJump(timestamp) {
+      await safeDispatch({ type: "TIME_JUMP_REQUESTED", timestamp }, "time jump");
+    },
+    release() {
+      if (released) {
+        return;
+      }
+      released = true;
+      currentTravelId = null;
+      if (activeBridge === handle) {
+        activeBridge = null;
+      }
+    }
+  };
+  activeBridge = handle;
+  return handle;
+}
+function getCartographerBridge() {
+  return activeBridge;
+}
+var activeBridge;
+var init_cartographer_bridge = __esm({
+  "src/apps/almanac/mode/cartographer-bridge.ts"() {
+    "use strict";
+    activeBridge = null;
+  }
+});
+
 // src/apps/cartographer/travel/ui/controls.ts
 function createPlaybackControls(host, callbacks) {
   const root = host.createDiv({ cls: "sm-cartographer__travel-buttons" });
@@ -3034,6 +4453,49 @@ var init_interaction_controller = __esm({
 });
 
 // src/apps/encounter/session-store.ts
+function createInitialEncounterXpState() {
+  return {
+    party: [],
+    encounterXp: 0,
+    rules: []
+  };
+}
+function clonePartyMember(member) {
+  return { ...member };
+}
+function cloneRule(rule) {
+  return { ...rule };
+}
+function cloneMutableEncounterXpState(state) {
+  return {
+    party: state.party.map(clonePartyMember),
+    encounterXp: state.encounterXp,
+    rules: state.rules.map(cloneRule)
+  };
+}
+function createImmutableEncounterXpState(state) {
+  const party = Object.freeze(state.party.map(clonePartyMember));
+  const rules = Object.freeze(state.rules.map(cloneRule));
+  return {
+    party,
+    encounterXp: state.encounterXp,
+    rules
+  };
+}
+function emitEncounterXpState() {
+  const snapshot = createImmutableEncounterXpState(encounterXpState);
+  if (!xpStateListeners.size) {
+    return snapshot;
+  }
+  for (const listener of [...xpStateListeners]) {
+    try {
+      listener(snapshot);
+    } catch (err) {
+      console.error("[encounter] xp listener failed", err);
+    }
+  }
+  return snapshot;
+}
 function publishEncounterEvent(event) {
   latestEvent = event;
   for (const listener of [...listeners]) {
@@ -3060,12 +4522,102 @@ function subscribeToEncounterEvents(listener) {
 function peekLatestEncounterEvent() {
   return latestEvent;
 }
-var latestEvent, listeners;
+function getEncounterXpState() {
+  return createImmutableEncounterXpState(encounterXpState);
+}
+function subscribeEncounterXpState(listener) {
+  xpStateListeners.add(listener);
+  try {
+    listener(getEncounterXpState());
+  } catch (err) {
+    console.error("[encounter] xp listener failed", err);
+  }
+  return () => {
+    xpStateListeners.delete(listener);
+  };
+}
+function updateEncounterXpState(mutator) {
+  const next = cloneMutableEncounterXpState(encounterXpState);
+  mutator(next);
+  encounterXpState = next;
+  return emitEncounterXpState();
+}
+function setEncounterXp(value) {
+  return updateEncounterXpState((draft) => {
+    draft.encounterXp = value;
+  });
+}
+function addPartyMember(member) {
+  return updateEncounterXpState((draft) => {
+    draft.party.push(clonePartyMember(member));
+  });
+}
+function updatePartyMember(id, patch) {
+  return updateEncounterXpState((draft) => {
+    const index = draft.party.findIndex((member) => member.id === id);
+    if (index === -1) {
+      return;
+    }
+    draft.party[index] = { ...draft.party[index], ...patch };
+  });
+}
+function removePartyMember(id) {
+  return updateEncounterXpState((draft) => {
+    draft.party = draft.party.filter((member) => member.id !== id);
+  });
+}
+function addRule(rule) {
+  return updateEncounterXpState((draft) => {
+    draft.rules.push(cloneRule(rule));
+  });
+}
+function updateRule(id, patch) {
+  return updateEncounterXpState((draft) => {
+    const index = draft.rules.findIndex((rule) => rule.id === id);
+    if (index === -1) {
+      return;
+    }
+    draft.rules[index] = { ...draft.rules[index], ...patch };
+  });
+}
+function replaceEncounterXpState(state) {
+  encounterXpState = {
+    party: state.party.map(clonePartyMember),
+    encounterXp: state.encounterXp,
+    rules: state.rules.map(cloneRule)
+  };
+  return emitEncounterXpState();
+}
+var DND5E_XP_THRESHOLDS, latestEvent, listeners, encounterXpState, xpStateListeners;
 var init_session_store = __esm({
   "src/apps/encounter/session-store.ts"() {
     "use strict";
+    DND5E_XP_THRESHOLDS = {
+      1: 0,
+      2: 300,
+      3: 900,
+      4: 2700,
+      5: 6500,
+      6: 14e3,
+      7: 23e3,
+      8: 34e3,
+      9: 48e3,
+      10: 64e3,
+      11: 85e3,
+      12: 1e5,
+      13: 12e4,
+      14: 14e4,
+      15: 165e3,
+      16: 195e3,
+      17: 225e3,
+      18: 265e3,
+      19: 305e3,
+      20: 355e3
+    };
     latestEvent = null;
     listeners = /* @__PURE__ */ new Set();
+    encounterXpState = createInitialEncounterXpState();
+    xpStateListeners = /* @__PURE__ */ new Set();
   }
 });
 
@@ -3122,6 +4674,236 @@ var init_event_builder = __esm({
 });
 
 // src/apps/encounter/presenter.ts
+function deriveEncounterXpView(state) {
+  const party = state.party ?? [];
+  const baseEncounterXp = sanitizeNonNegativeNumber(state.encounterXp ?? 0);
+  const partyCount = party.length;
+  const basePerMember = partyCount > 0 ? baseEncounterXp / partyCount : 0;
+  const globalWarnings = [];
+  if (partyCount === 0 && baseEncounterXp > 0) {
+    pushWarning(globalWarnings, "Encounter XP assigned but no party members present.");
+  }
+  const members = party.map((member) => {
+    const xpToNext = calculateXpToNextLevel(member.level, member.currentXp);
+    const warnings = [];
+    if (xpToNext === null) {
+      const sanitizedLevel = sanitizeLevel(member.level);
+      if (sanitizedLevel >= 20) {
+        pushWarning(warnings, "Maximum level reached.");
+      } else {
+        pushWarning(warnings, "XP threshold for next level unavailable.");
+      }
+    }
+    return {
+      member,
+      baseXp: basePerMember,
+      modifiersDelta: 0,
+      totalXp: basePerMember,
+      xpToNextLevel: xpToNext,
+      warnings
+    };
+  });
+  const ruleViews = [];
+  for (const rule of state.rules ?? []) {
+    const ruleWarnings = [];
+    const perMemberDeltas = [];
+    let totalDelta = 0;
+    if (!rule.enabled) {
+      for (const member of members) {
+        perMemberDeltas.push({
+          memberId: member.member.id,
+          memberName: member.member.name,
+          delta: 0
+        });
+      }
+      ruleViews.push({ rule, totalDelta, perMemberDeltas, warnings: ruleWarnings });
+      continue;
+    }
+    if (!partyCount) {
+      if (rule.modifierValue !== 0) {
+        pushWarning(ruleWarnings, "Rule effect ignored because no party members are present.");
+      }
+      ruleViews.push({ rule, totalDelta, perMemberDeltas, warnings: ruleWarnings });
+      for (const warning of ruleWarnings) {
+        pushWarning(globalWarnings, warning);
+      }
+      continue;
+    }
+    const appendMemberDelta = (member, delta) => {
+      member.modifiersDelta += delta;
+      member.totalXp += delta;
+      perMemberDeltas.push({
+        memberId: member.member.id,
+        memberName: member.member.name,
+        delta
+      });
+      totalDelta += delta;
+    };
+    if (rule.scope === "overall") {
+      switch (rule.modifierType) {
+        case "flat": {
+          const perMember = rule.modifierValue / partyCount;
+          for (const member of members) {
+            appendMemberDelta(member, perMember);
+          }
+          break;
+        }
+        case "percentTotal": {
+          const percent = rule.modifierValue / 100;
+          for (const member of members) {
+            const delta = member.totalXp * percent;
+            appendMemberDelta(member, delta);
+          }
+          break;
+        }
+        case "percentNextLevel": {
+          let aggregateNext = 0;
+          for (const member of members) {
+            if (member.xpToNextLevel == null) {
+              pushWarning(ruleWarnings, `${member.member.name} has no next-level XP threshold.`);
+              continue;
+            }
+            aggregateNext += member.xpToNextLevel;
+          }
+          if (aggregateNext === 0) {
+            for (const member of members) {
+              perMemberDeltas.push({
+                memberId: member.member.id,
+                memberName: member.member.name,
+                delta: 0
+              });
+            }
+            break;
+          }
+          const total = aggregateNext * (rule.modifierValue / 100);
+          const perMember = total / partyCount;
+          for (const member of members) {
+            appendMemberDelta(member, perMember);
+          }
+          break;
+        }
+      }
+    } else {
+      switch (rule.modifierType) {
+        case "flat": {
+          for (const member of members) {
+            appendMemberDelta(member, rule.modifierValue);
+          }
+          break;
+        }
+        case "percentTotal": {
+          const percent = rule.modifierValue / 100;
+          for (const member of members) {
+            const delta = member.totalXp * percent;
+            appendMemberDelta(member, delta);
+          }
+          break;
+        }
+        case "percentNextLevel": {
+          const percent = rule.modifierValue / 100;
+          for (const member of members) {
+            if (member.xpToNextLevel == null) {
+              pushWarning(ruleWarnings, `${member.member.name} has no next-level XP threshold.`);
+              perMemberDeltas.push({
+                memberId: member.member.id,
+                memberName: member.member.name,
+                delta: 0
+              });
+              continue;
+            }
+            const delta = member.xpToNextLevel * percent;
+            appendMemberDelta(member, delta);
+          }
+          break;
+        }
+      }
+    }
+    ruleViews.push({ rule, totalDelta, perMemberDeltas, warnings: ruleWarnings });
+    for (const warning of ruleWarnings) {
+      pushWarning(globalWarnings, warning);
+    }
+  }
+  const finalParty = members.map((member) => ({
+    member: member.member,
+    baseXp: member.baseXp,
+    modifiersDelta: member.modifiersDelta,
+    totalXp: member.totalXp,
+    xpToNextLevel: member.xpToNextLevel,
+    warnings: member.warnings
+  }));
+  const totalEncounterXp = finalParty.reduce((sum, member) => sum + member.totalXp, 0);
+  return {
+    baseEncounterXp,
+    totalEncounterXp,
+    party: finalParty,
+    rules: ruleViews,
+    warnings: globalWarnings
+  };
+}
+function calculateXpToNextLevel(level, currentXp) {
+  const sanitizedLevel = sanitizeLevel(level);
+  if (sanitizedLevel >= 20) {
+    return null;
+  }
+  const currentThreshold = DND5E_XP_THRESHOLDS[sanitizedLevel];
+  const nextThreshold = DND5E_XP_THRESHOLDS[sanitizedLevel + 1];
+  if (typeof currentThreshold !== "number" || typeof nextThreshold !== "number") {
+    return null;
+  }
+  const effectiveCurrentXp = sanitizeOptionalNonNegativeNumber(currentXp) ?? currentThreshold;
+  if (effectiveCurrentXp >= nextThreshold) {
+    return 0;
+  }
+  return nextThreshold - effectiveCurrentXp;
+}
+function sanitizeNumber(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return 0;
+  }
+  return value;
+}
+function sanitizeNonNegativeNumber(value) {
+  const numeric = sanitizeNumber(value);
+  return numeric < 0 ? 0 : numeric;
+}
+function sanitizeOptionalNonNegativeNumber(value) {
+  if (value === null || value === void 0) {
+    return void 0;
+  }
+  return sanitizeNonNegativeNumber(value);
+}
+function sanitizeLevel(level) {
+  const numeric = Math.floor(sanitizeNumber(level));
+  return numeric < 1 ? 1 : numeric;
+}
+function clampPercentage(value) {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  if (value > 100) return 100;
+  if (value < -100) return -100;
+  return value;
+}
+function clampIndex(index, length) {
+  if (length <= 0) return 0;
+  if (!Number.isFinite(index)) return 0;
+  const truncated = Math.trunc(index);
+  if (truncated < 0) return 0;
+  if (truncated >= length) return length - 1;
+  return truncated;
+}
+function pushWarning(collection, warning) {
+  if (!warning) return;
+  if (!collection.includes(warning)) {
+    collection.push(warning);
+  }
+}
+function shallowEqualPartyMembers(a, b) {
+  return a.id === b.id && a.name === b.name && a.level === b.level && (a.currentXp ?? void 0) === (b.currentXp ?? void 0);
+}
+function shallowEqualRules(a, b) {
+  return a.id === b.id && a.title === b.title && a.scope === b.scope && a.modifierType === b.modifierType && a.modifierValue === b.modifierValue && a.enabled === b.enabled && (a.notes ?? "") === (b.notes ?? "");
+}
 var defaultDeps, EncounterPresenter;
 var init_presenter = __esm({
   "src/apps/encounter/presenter.ts"() {
@@ -3134,44 +4916,60 @@ var init_presenter = __esm({
       constructor(initial, deps) {
         this.listeners = /* @__PURE__ */ new Set();
         this.deps = { ...defaultDeps, ...deps };
-        this.state = _EncounterPresenter.normalise(initial);
+        this.persisted = _EncounterPresenter.normalise(initial);
+        this.viewState = _EncounterPresenter.createViewState(this.persisted);
         this.unsubscribeStore = subscribeToEncounterEvents((event) => this.applyEvent(event));
+        this.unsubscribeXpStore = subscribeEncounterXpState((xp) => this.applyXpState(xp));
+        if (initial?.xp) {
+          replaceEncounterXpState(this.persisted.xp);
+        }
       }
       dispose() {
         this.unsubscribeStore?.();
+        this.unsubscribeXpStore?.();
         this.listeners.clear();
       }
       /** Restores persisted state (e.g. when `setViewData` fires before `onOpen`). */
       restore(state) {
-        this.state = _EncounterPresenter.normalise(state);
-        this.emit();
+        const normalisedSession = _EncounterPresenter.normaliseSession(state?.session);
+        this.persisted = {
+          ...this.persisted,
+          session: normalisedSession
+        };
+        if (state?.xp) {
+          replaceEncounterXpState(_EncounterPresenter.normaliseXpState(state.xp));
+        } else {
+          this.emit();
+        }
       }
       getState() {
-        return this.state;
+        return this.viewState;
       }
       subscribe(listener) {
         this.listeners.add(listener);
-        listener(this.state);
+        listener(this.viewState);
         return () => {
           this.listeners.delete(listener);
         };
       }
       setNotes(notes) {
-        if (!this.state.session) return;
-        if (this.state.session.notes === notes) return;
-        this.state = {
+        if (!this.persisted.session) return;
+        if (this.persisted.session.notes === notes) return;
+        this.persisted = {
+          ...this.persisted,
           session: {
-            ...this.state.session,
+            ...this.persisted.session,
             notes
           }
         };
         this.emit();
       }
       markResolved() {
-        const session = this.state.session;
+        const session = this.persisted.session;
         if (!session) return;
         if (session.status === "resolved") return;
-        this.state = {
+        this.persisted = {
+          ...this.persisted,
           session: {
             ...session,
             status: "resolved",
@@ -3181,14 +4979,83 @@ var init_presenter = __esm({
         this.emit();
       }
       reset() {
-        if (!this.state.session) return;
-        this.state = { session: null };
+        if (!this.persisted.session) return;
+        this.persisted = {
+          ...this.persisted,
+          session: null
+        };
         this.emit();
       }
+      setEncounterXp(value) {
+        const sanitized = sanitizeNonNegativeNumber(value);
+        if (sanitized === this.persisted.xp.encounterXp) return;
+        setEncounterXp(sanitized);
+      }
+      addPartyMember(member) {
+        const sanitized = _EncounterPresenter.normalisePartyMember(member);
+        if (this.persisted.xp.party.some((existing) => existing.id === sanitized.id)) {
+          this.updatePartyMember(sanitized.id, sanitized);
+          return;
+        }
+        addPartyMember(sanitized);
+      }
+      updatePartyMember(id, patch) {
+        const existing = this.persisted.xp.party.find((member) => member.id === id);
+        if (!existing) return;
+        const sanitizedPatch = _EncounterPresenter.normalisePartyMemberPatch(patch, existing);
+        const next = { ...existing, ...sanitizedPatch };
+        if (shallowEqualPartyMembers(existing, next)) return;
+        updatePartyMember(id, sanitizedPatch);
+      }
+      removePartyMember(id) {
+        if (!this.persisted.xp.party.some((member) => member.id === id)) return;
+        removePartyMember(id);
+      }
+      addRule(rule) {
+        const sanitized = _EncounterPresenter.normaliseRule(rule);
+        if (this.persisted.xp.rules.some((existing) => existing.id === sanitized.id)) {
+          this.updateRule(sanitized.id, sanitized);
+          return;
+        }
+        addRule(sanitized);
+      }
+      updateRule(id, patch) {
+        const existing = this.persisted.xp.rules.find((rule) => rule.id === id);
+        if (!existing) return;
+        const sanitizedPatch = _EncounterPresenter.normaliseRulePatch(patch, existing);
+        const next = { ...existing, ...sanitizedPatch };
+        if (shallowEqualRules(existing, next)) return;
+        updateRule(id, sanitizedPatch);
+      }
+      toggleRule(id, enabled) {
+        const existing = this.persisted.xp.rules.find((rule) => rule.id === id);
+        if (!existing) return;
+        const nextEnabled = enabled ?? !existing.enabled;
+        if (existing.enabled === nextEnabled) return;
+        updateRule(id, { enabled: nextEnabled });
+      }
+      moveRule(id, targetIndex) {
+        updateEncounterXpState((draft) => {
+          const currentIndex = draft.rules.findIndex((rule2) => rule2.id === id);
+          if (currentIndex === -1) return;
+          const normalisedIndex = clampIndex(targetIndex, draft.rules.length);
+          if (normalisedIndex === currentIndex) return;
+          const [rule] = draft.rules.splice(currentIndex, 1);
+          draft.rules.splice(normalisedIndex, 0, rule);
+        });
+      }
+      resetXpState() {
+        replaceEncounterXpState({
+          party: [],
+          encounterXp: 0,
+          rules: []
+        });
+      }
       applyEvent(event) {
-        const prev = this.state.session;
+        const prev = this.persisted.session;
         if (!prev || prev.event.id !== event.id) {
-          this.state = {
+          this.persisted = {
+            ...this.persisted,
             session: {
               event,
               notes: "",
@@ -3196,7 +5063,8 @@ var init_presenter = __esm({
             }
           };
         } else {
-          this.state = {
+          this.persisted = {
+            ...this.persisted,
             session: {
               ...prev,
               event
@@ -3205,24 +5073,125 @@ var init_presenter = __esm({
         }
         this.emit();
       }
+      applyXpState(xp) {
+        this.persisted = {
+          ...this.persisted,
+          xp: _EncounterPresenter.normaliseXpState(xp)
+        };
+        this.emit();
+      }
       emit() {
+        this.viewState = _EncounterPresenter.createViewState(this.persisted);
         for (const listener of [...this.listeners]) {
-          listener(this.state);
+          listener(this.viewState);
         }
       }
       static normalise(initial) {
-        if (!initial || !initial.session || !initial.session.event) {
-          return { session: null };
-        }
-        const { event, notes, status, resolvedAt } = initial.session;
         return {
-          session: {
-            event,
-            notes: notes ?? "",
-            status: status === "resolved" ? "resolved" : "pending",
-            resolvedAt: resolvedAt ?? null
-          }
+          session: _EncounterPresenter.normaliseSession(initial?.session),
+          xp: _EncounterPresenter.normaliseXpState(initial?.xp ?? getEncounterXpState())
         };
+      }
+      static createViewState(persisted) {
+        return {
+          session: persisted.session,
+          xp: persisted.xp,
+          xpView: deriveEncounterXpView(persisted.xp)
+        };
+      }
+      static normaliseSession(session) {
+        if (!session || !session.event) {
+          return null;
+        }
+        const status = session.status === "resolved" ? "resolved" : "pending";
+        return {
+          event: session.event,
+          notes: session.notes ?? "",
+          status,
+          resolvedAt: session.resolvedAt ?? null
+        };
+      }
+      static normaliseXpState(xp) {
+        const baseEncounterXp = sanitizeNonNegativeNumber(xp?.encounterXp ?? 0);
+        const party = Object.freeze((xp?.party ?? []).map((member) => ({
+          ..._EncounterPresenter.normalisePartyMember(member)
+        })));
+        const rules = Object.freeze((xp?.rules ?? []).map((rule) => ({
+          ..._EncounterPresenter.normaliseRule(rule)
+        })));
+        return {
+          party,
+          encounterXp: baseEncounterXp,
+          rules
+        };
+      }
+      static normalisePartyMember(member) {
+        return {
+          ...member,
+          level: sanitizeLevel(member.level),
+          currentXp: sanitizeOptionalNonNegativeNumber(member.currentXp)
+        };
+      }
+      static normalisePartyMemberPatch(patch, existing) {
+        const next = {};
+        if (patch.name !== void 0) {
+          next.name = patch.name;
+        }
+        if (patch.level !== void 0) {
+          next.level = sanitizeLevel(patch.level);
+        }
+        if (patch.currentXp !== void 0) {
+          next.currentXp = sanitizeOptionalNonNegativeNumber(patch.currentXp);
+        }
+        if (patch.currentXp === null) {
+          next.currentXp = void 0;
+        }
+        if (patch.id !== void 0 && patch.id !== existing.id) {
+          next.id = existing.id;
+        }
+        return next;
+      }
+      static normaliseRule(rule) {
+        return {
+          ...rule,
+          modifierValue: _EncounterPresenter.normaliseRuleModifierValue(rule.modifierType, rule.modifierValue),
+          enabled: rule.enabled !== false,
+          notes: rule.notes ?? (rule.notes === "" ? "" : void 0)
+        };
+      }
+      static normaliseRulePatch(patch, existing) {
+        const next = {};
+        if (patch.title !== void 0) {
+          next.title = patch.title;
+        }
+        if (patch.scope !== void 0) {
+          next.scope = patch.scope;
+        }
+        if (patch.modifierType !== void 0) {
+          next.modifierType = patch.modifierType;
+        }
+        if (patch.modifierValue !== void 0) {
+          const modifierType = patch.modifierType ?? existing.modifierType;
+          next.modifierValue = _EncounterPresenter.normaliseRuleModifierValue(modifierType, patch.modifierValue);
+        } else if (patch.modifierType !== void 0) {
+          next.modifierValue = _EncounterPresenter.normaliseRuleModifierValue(
+            patch.modifierType,
+            existing.modifierValue
+          );
+        }
+        if (patch.enabled !== void 0) {
+          next.enabled = !!patch.enabled;
+        }
+        if (patch.notes !== void 0) {
+          next.notes = patch.notes;
+        }
+        return next;
+      }
+      static normaliseRuleModifierValue(type, value) {
+        if (type === "flat") {
+          return sanitizeNumber(value);
+        }
+        return clampPercentage(sanitizeNumber(value));
       }
     };
   }
@@ -3234,7 +5203,92 @@ __export(view_exports, {
   EncounterView: () => EncounterView,
   VIEW_ENCOUNTER: () => VIEW_ENCOUNTER
 });
-var import_obsidian13, VIEW_ENCOUNTER, EncounterView;
+function createSection(parent, className) {
+  return parent.createDiv({ cls: `sm-encounter-section ${className}` });
+}
+function createTextInput(parent, options) {
+  const field = createFieldContainer(parent);
+  field.createEl("label", { attr: { for: options.id }, text: options.label });
+  return field.createEl("input", {
+    cls: "sm-encounter-input",
+    attr: {
+      id: options.id,
+      type: "text",
+      placeholder: options.placeholder ?? "",
+      value: options.value != null ? String(options.value) : ""
+    }
+  });
+}
+function createNumberInput(parent, options) {
+  const field = createFieldContainer(parent);
+  field.createEl("label", { attr: { for: options.id }, text: options.label });
+  const attrs = {
+    id: options.id,
+    type: "number"
+  };
+  if (options.min !== void 0) attrs.min = String(options.min);
+  if (options.max !== void 0) attrs.max = String(options.max);
+  if (options.step !== void 0) attrs.step = String(options.step);
+  if (options.placeholder) attrs.placeholder = options.placeholder;
+  if (options.value !== void 0) attrs.value = String(options.value);
+  return field.createEl("input", {
+    cls: "sm-encounter-input",
+    attr: attrs
+  });
+}
+function createSelect(parent, options) {
+  const field = createFieldContainer(parent);
+  field.createEl("label", { attr: { for: options.id }, text: options.label });
+  const select = field.createEl("select", {
+    cls: "sm-encounter-input",
+    attr: { id: options.id }
+  });
+  for (const option of options.options) {
+    select.createEl("option", { attr: { value: option.value }, text: option.label });
+  }
+  return select;
+}
+function createTextarea(parent, options) {
+  const field = createFieldContainer(parent);
+  field.createEl("label", { attr: { for: options.id }, text: options.label });
+  return field.createEl("textarea", {
+    cls: "sm-encounter-input",
+    attr: {
+      id: options.id,
+      rows: options.rows != null ? String(options.rows) : "3",
+      placeholder: options.placeholder ?? ""
+    }
+  });
+}
+function createFieldContainer(parent) {
+  return parent.createDiv({ cls: "sm-encounter-field" });
+}
+function createStatItem(list, label, value) {
+  const item = list.createEl("li");
+  item.createEl("span", { cls: "label", text: `${label}:` });
+  item.createEl("span", { cls: "value", text: value });
+}
+function formatNumber(value) {
+  if (!Number.isFinite(value)) {
+    return "0";
+  }
+  return numberFormatter.format(value);
+}
+function formatSignedNumber(value) {
+  const formatted = formatNumber(Math.abs(value));
+  if (value > 0) return `+${formatted}`;
+  if (value < 0) return `-${formatted}`;
+  return formatted;
+}
+function createId(prefix) {
+  const globalCrypto = globalThis.crypto;
+  if (globalCrypto?.randomUUID) {
+    return `${prefix}-${globalCrypto.randomUUID()}`;
+  }
+  const random = Math.random().toString(36).slice(2, 8);
+  return `${prefix}-${Date.now().toString(36)}-${random}`;
+}
+var import_obsidian13, VIEW_ENCOUNTER, EncounterView, numberFormatter;
 var init_view = __esm({
   "src/apps/encounter/view.ts"() {
     "use strict";
@@ -3284,19 +5338,167 @@ var init_view = __esm({
       }
       renderShell() {
         this.contentEl.empty();
-        const header = this.contentEl.createEl("div", { cls: "sm-encounter-header" });
-        this.headerEl = header.createEl("h2", { text: "Encounter" });
-        this.statusEl = header.createDiv({ cls: "status", text: "Waiting for travel events\u2026" });
-        this.summaryListEl = this.contentEl.createEl("ul", { cls: "sm-encounter-summary" });
-        this.emptyEl = this.contentEl.createDiv({
+        const headerSection = createSection(this.contentEl, "sm-encounter-header");
+        this.headerTitleEl = headerSection.createEl("h2", {
+          cls: "sm-encounter-heading",
+          text: "Encounter"
+        });
+        this.statusEl = headerSection.createDiv({
+          cls: "sm-encounter-status",
+          text: "Waiting for travel events\u2026"
+        });
+        const metaEl = headerSection.createDiv({ cls: "sm-encounter-meta" });
+        this.summaryListEl = metaEl.createEl("ul", { cls: "sm-encounter-summary" });
+        this.emptyStateEl = headerSection.createDiv({
           cls: "sm-encounter-empty",
           text: "No active encounter. Travel mode will populate this workspace when an encounter triggers."
         });
-        this.emptyEl.style.display = "";
-        const notesSection = this.contentEl.createDiv({ cls: "sm-encounter-notes" });
-        notesSection.createEl("label", { text: "Notes", attr: { for: "encounter-notes" } });
+        const partySection = createSection(this.contentEl, "sm-encounter-party");
+        partySection.createEl("h3", { cls: "sm-encounter-section-title", text: "Party" });
+        const partyForm = partySection.createEl("form", { cls: "sm-encounter-form" });
+        const partyFormGrid = partyForm.createDiv({ cls: "sm-encounter-form-grid" });
+        this.partyFormNameEl = createTextInput(partyFormGrid, {
+          id: "encounter-party-name",
+          label: "Name",
+          placeholder: "Character name"
+        });
+        this.partyFormLevelEl = createNumberInput(partyFormGrid, {
+          id: "encounter-party-level",
+          label: "Level",
+          min: 1,
+          step: 1,
+          value: 1
+        });
+        this.partyFormCurrentXpEl = createNumberInput(partyFormGrid, {
+          id: "encounter-party-current-xp",
+          label: "Current XP",
+          min: 0,
+          step: 1,
+          placeholder: "Optional"
+        });
+        const partySubmitWrapper = partyFormGrid.createDiv({ cls: "sm-encounter-field sm-encounter-field-actions" });
+        const partySubmitButton = partySubmitWrapper.createEl("button", {
+          cls: "sm-encounter-button",
+          text: "Add party member"
+        });
+        partySubmitButton.type = "submit";
+        this.partyFormErrorEl = partyForm.createDiv({ cls: "sm-encounter-error" });
+        partyForm.addEventListener("submit", (event) => {
+          event.preventDefault();
+          this.handleAddPartyMember();
+        });
+        partyForm.addEventListener("input", () => {
+          this.partyFormErrorEl.setText("");
+        });
+        this.partyListEl = partySection.createDiv({ cls: "sm-encounter-party-list" });
+        const xpSection = createSection(this.contentEl, "sm-encounter-xp");
+        xpSection.createEl("h3", { cls: "sm-encounter-section-title", text: "Encounter XP & Rules" });
+        const xpRow = xpSection.createDiv({ cls: "sm-encounter-xp-row" });
+        this.xpInputEl = createNumberInput(xpRow, {
+          id: "encounter-base-xp",
+          label: "Base encounter XP",
+          min: 0,
+          step: 1
+        });
+        this.xpInputEl.addEventListener("change", () => this.handleEncounterXpChange());
+        this.xpInputEl.addEventListener("input", () => {
+          this.xpErrorEl.setText("");
+        });
+        const xpControls = xpRow.createDiv({ cls: "sm-encounter-inline-actions" });
+        this.resetXpButton = xpControls.createEl("button", {
+          cls: "sm-encounter-button sm-encounter-button-secondary",
+          text: "Reset XP state"
+        });
+        this.resetXpButton.type = "button";
+        this.resetXpButton.addEventListener("click", () => {
+          this.presenter?.resetXpState();
+        });
+        this.xpErrorEl = xpSection.createDiv({ cls: "sm-encounter-error" });
+        this.ruleListEl = xpSection.createDiv({ cls: "sm-encounter-rule-list" });
+        const addRuleHeading = xpSection.createEl("h4", {
+          cls: "sm-encounter-subheading",
+          text: "Add rule"
+        });
+        addRuleHeading.setAttr("aria-hidden", "true");
+        const ruleForm = xpSection.createEl("form", { cls: "sm-encounter-form" });
+        const ruleFormGrid = ruleForm.createDiv({ cls: "sm-encounter-form-grid" });
+        this.ruleFormTitleEl = createTextInput(ruleFormGrid, {
+          id: "encounter-rule-title",
+          label: "Title",
+          placeholder: "Rule description"
+        });
+        this.ruleFormScopeEl = createSelect(ruleFormGrid, {
+          id: "encounter-rule-scope",
+          label: "Scope",
+          options: [
+            { value: "overall", label: "Entire encounter" },
+            { value: "perPlayer", label: "Per character" }
+          ]
+        });
+        this.ruleFormScopeEl.value = "overall";
+        this.ruleFormTypeEl = createSelect(ruleFormGrid, {
+          id: "encounter-rule-type",
+          label: "Modifier type",
+          options: [
+            { value: "flat", label: "Flat" },
+            { value: "percentTotal", label: "% of total" },
+            { value: "percentNextLevel", label: "% to next level" }
+          ]
+        });
+        this.ruleFormTypeEl.value = "flat";
+        this.ruleFormValueEl = createNumberInput(ruleFormGrid, {
+          id: "encounter-rule-value",
+          label: "Value",
+          step: 1,
+          value: 0
+        });
+        this.ruleFormValueEl.value = "0";
+        this.ruleFormNotesEl = createTextarea(ruleFormGrid, {
+          id: "encounter-rule-notes",
+          label: "Notes",
+          placeholder: "Optional notes",
+          rows: 2
+        });
+        const ruleEnabledWrapper = ruleFormGrid.createDiv({ cls: "sm-encounter-field sm-encounter-field-toggle" });
+        const enabledId = "encounter-rule-enabled";
+        const enabledLabel = ruleEnabledWrapper.createEl("label", {
+          attr: { for: enabledId },
+          text: "Enabled"
+        });
+        enabledLabel.addClass("sm-encounter-toggle-label");
+        this.ruleFormEnabledEl = ruleEnabledWrapper.createEl("input", {
+          attr: { id: enabledId, type: "checkbox" }
+        });
+        this.ruleFormEnabledEl.checked = true;
+        const ruleSubmitWrapper = ruleFormGrid.createDiv({ cls: "sm-encounter-field sm-encounter-field-actions" });
+        const ruleSubmitButton = ruleSubmitWrapper.createEl("button", {
+          cls: "sm-encounter-button",
+          text: "Add rule"
+        });
+        ruleSubmitButton.type = "submit";
+        this.ruleFormErrorEl = ruleForm.createDiv({ cls: "sm-encounter-error" });
+        ruleForm.addEventListener("submit", (event) => {
+          event.preventDefault();
+          this.handleAddRule();
+        });
+        ruleForm.addEventListener("input", () => {
+          this.ruleFormErrorEl.setText("");
+        });
+        const resultsSection = createSection(this.contentEl, "sm-encounter-results");
+        resultsSection.createEl("h3", { cls: "sm-encounter-section-title", text: "Results" });
+        this.resultTotalsEl = resultsSection.createDiv({ cls: "sm-encounter-result-totals" });
+        this.resultWarningsEl = resultsSection.createDiv({ cls: "sm-encounter-result-warnings" });
+        const breakdownWrapper = resultsSection.createDiv({ cls: "sm-encounter-breakdowns" });
+        this.resultPartyEl = breakdownWrapper.createDiv({ cls: "sm-encounter-result-party" });
+        this.resultRulesEl = breakdownWrapper.createDiv({ cls: "sm-encounter-result-rules" });
+        const notesSection = resultsSection.createDiv({ cls: "sm-encounter-notes" });
+        notesSection.createEl("label", {
+          cls: "sm-encounter-notes-label",
+          attr: { for: "encounter-notes" },
+          text: "Notes"
+        });
         this.notesEl = notesSection.createEl("textarea", {
-          cls: "notes-input",
+          cls: "sm-encounter-notes-input",
           attr: {
             id: "encounter-notes",
             placeholder: "Record tactical notes, initiative order, or follow-up tasks\u2026",
@@ -3308,29 +5510,40 @@ var init_view = __esm({
           if (!this.presenter) return;
           this.presenter.setNotes(this.notesEl.value);
         });
-        this.resolveBtn = this.contentEl.createEl("button", { cls: "sm-encounter-resolve", text: "Mark encounter resolved" });
+        const actionsRow = resultsSection.createDiv({ cls: "sm-encounter-actions" });
+        this.resolveBtn = actionsRow.createEl("button", {
+          cls: "sm-encounter-button sm-encounter-button-primary",
+          text: "Mark encounter resolved"
+        });
+        this.resolveBtn.type = "button";
         this.resolveBtn.disabled = true;
         this.resolveBtn.addEventListener("click", () => {
           this.presenter?.markResolved();
         });
       }
       render(state) {
+        this.renderHeader(state);
+        this.renderParty(state);
+        this.renderRules(state);
+        this.renderResults(state);
+      }
+      renderHeader(state) {
         const session = state.session;
         if (!session) {
-          this.headerEl.setText("Encounter");
+          this.headerTitleEl.setText("Encounter");
           this.statusEl.setText("Waiting for travel events\u2026");
           this.summaryListEl.empty();
-          this.emptyEl.style.display = "";
+          this.emptyStateEl.removeClass("sm-encounter-hidden");
           this.notesEl.value = "";
           this.notesEl.disabled = true;
           this.resolveBtn.disabled = true;
           this.resolveBtn.setText("Mark encounter resolved");
           return;
         }
-        this.emptyEl.style.display = "none";
-        const { event, notes, status, resolvedAt } = session;
+        this.emptyStateEl.addClass("sm-encounter-hidden");
+        const { event, status, resolvedAt } = session;
         const region = event.regionName ?? "Unknown region";
-        this.headerEl.setText(`Encounter \u2013 ${region}`);
+        this.headerTitleEl.setText(`Encounter \u2013 ${region}`);
         if (status === "resolved") {
           this.statusEl.setText(resolvedAt ? `Resolved ${resolvedAt}` : "Resolved");
         } else {
@@ -3359,8 +5572,8 @@ var init_view = __esm({
           li.createSpan({ cls: "label", text: `${label}: ` });
           li.createSpan({ cls: "value", text: value });
         }
-        if (this.notesEl.value !== notes) {
-          this.notesEl.value = notes;
+        if (this.notesEl.value !== session.notes) {
+          this.notesEl.value = session.notes;
         }
         this.notesEl.disabled = false;
         if (status === "resolved") {
@@ -3371,7 +5584,479 @@ var init_view = __esm({
           this.resolveBtn.setText("Mark encounter resolved");
         }
       }
+      renderParty(state) {
+        const { party } = state.xp;
+        this.partyListEl.empty();
+        if (!party.length) {
+          this.partyListEl.createDiv({
+            cls: "sm-encounter-empty-row",
+            text: "No party members added yet."
+          });
+        }
+        for (const member of party) {
+          const itemEl = this.partyListEl.createDiv({ cls: "sm-encounter-party-item" });
+          const nameField = createFieldContainer(itemEl);
+          const nameLabel = nameField.createEl("label", {
+            attr: { for: `party-${member.id}-name` },
+            text: "Name"
+          });
+          nameLabel.addClass("sm-encounter-inline-label");
+          const nameInput = nameField.createEl("input", {
+            cls: "sm-encounter-input",
+            attr: {
+              id: `party-${member.id}-name`,
+              type: "text",
+              value: member.name
+            }
+          });
+          nameInput.addEventListener("change", () => {
+            const presenter = this.presenter;
+            if (!presenter) return;
+            const nextName = nameInput.value.trim();
+            presenter.updatePartyMember(member.id, { name: nextName });
+          });
+          const levelField = createFieldContainer(itemEl);
+          const levelLabel = levelField.createEl("label", {
+            attr: { for: `party-${member.id}-level` },
+            text: "Level"
+          });
+          levelLabel.addClass("sm-encounter-inline-label");
+          const levelInput = levelField.createEl("input", {
+            cls: "sm-encounter-input",
+            attr: {
+              id: `party-${member.id}-level`,
+              type: "number",
+              min: "1",
+              step: "1",
+              value: String(member.level)
+            }
+          });
+          const memberErrorEl = itemEl.createDiv({ cls: "sm-encounter-error" });
+          levelInput.addEventListener("change", () => {
+            const presenter = this.presenter;
+            if (!presenter) return;
+            const numeric = Number(levelInput.value);
+            if (!Number.isFinite(numeric) || numeric < 1) {
+              memberErrorEl.setText("Level must be 1 or greater.");
+              return;
+            }
+            memberErrorEl.setText("");
+            presenter.updatePartyMember(member.id, { level: Math.floor(numeric) });
+          });
+          const xpField = createFieldContainer(itemEl);
+          const xpLabel = xpField.createEl("label", {
+            attr: { for: `party-${member.id}-xp` },
+            text: "Current XP"
+          });
+          xpLabel.addClass("sm-encounter-inline-label");
+          const xpInput = xpField.createEl("input", {
+            cls: "sm-encounter-input",
+            attr: {
+              id: `party-${member.id}-xp`,
+              type: "number",
+              min: "0",
+              step: "1",
+              value: member.currentXp != null ? String(member.currentXp) : ""
+            }
+          });
+          xpInput.addEventListener("change", () => {
+            const presenter = this.presenter;
+            if (!presenter) return;
+            const raw = xpInput.value.trim();
+            if (raw === "") {
+              memberErrorEl.setText("");
+              presenter.updatePartyMember(member.id, { currentXp: void 0 });
+              return;
+            }
+            const numeric = Number(raw);
+            if (!Number.isFinite(numeric) || numeric < 0) {
+              memberErrorEl.setText("Current XP must be a non-negative number.");
+              return;
+            }
+            memberErrorEl.setText("");
+            presenter.updatePartyMember(member.id, { currentXp: numeric });
+          });
+          const removeButton = itemEl.createEl("button", {
+            cls: "sm-encounter-button sm-encounter-button-danger",
+            text: "Remove"
+          });
+          removeButton.type = "button";
+          removeButton.addEventListener("click", () => {
+            this.presenter?.removePartyMember(member.id);
+          });
+        }
+      }
+      renderRules(state) {
+        const rules = state.xp.rules;
+        const ruleViews = new Map(state.xpView.rules.map((view) => [view.rule.id, view]));
+        this.ruleListEl.empty();
+        if (!rules.length) {
+          this.ruleListEl.createDiv({
+            cls: "sm-encounter-empty-row",
+            text: "No rules configured yet."
+          });
+          return;
+        }
+        rules.forEach((rule, index) => {
+          const ruleItem = this.ruleListEl.createDiv({ cls: "sm-encounter-rule" });
+          if (!rule.enabled) {
+            ruleItem.addClass("is-disabled");
+          }
+          const headerRow = ruleItem.createDiv({ cls: "sm-encounter-rule-header" });
+          const titleInput = headerRow.createEl("input", {
+            cls: "sm-encounter-input sm-encounter-rule-title",
+            attr: {
+              type: "text",
+              value: rule.title
+            }
+          });
+          titleInput.addEventListener("change", () => {
+            const presenter = this.presenter;
+            if (!presenter) return;
+            presenter.updateRule(rule.id, { title: titleInput.value.trim() });
+          });
+          const toggleWrapper = headerRow.createDiv({ cls: "sm-encounter-rule-toggle" });
+          const toggleId = `rule-${rule.id}-enabled`;
+          toggleWrapper.createEl("label", {
+            cls: "sm-encounter-toggle-label",
+            attr: { for: toggleId },
+            text: "Enabled"
+          });
+          const toggleInput = toggleWrapper.createEl("input", {
+            attr: {
+              id: toggleId,
+              type: "checkbox",
+              checked: rule.enabled ? "true" : void 0
+            }
+          });
+          toggleInput.checked = rule.enabled;
+          toggleInput.addEventListener("change", () => {
+            const presenter = this.presenter;
+            if (!presenter) return;
+            presenter.toggleRule(rule.id, toggleInput.checked);
+          });
+          const controls = ruleItem.createDiv({ cls: "sm-encounter-rule-controls" });
+          const scopeSelect = controls.createEl("select", {
+            cls: "sm-encounter-input"
+          });
+          const scopeOptions = [
+            { value: "overall", label: "Entire encounter" },
+            { value: "perPlayer", label: "Per character" }
+          ];
+          for (const option of scopeOptions) {
+            scopeSelect.createEl("option", {
+              attr: { value: option.value, selected: option.value === rule.scope ? "true" : void 0 },
+              text: option.label
+            });
+          }
+          scopeSelect.addEventListener("change", () => {
+            const presenter = this.presenter;
+            if (!presenter) return;
+            presenter.updateRule(rule.id, { scope: scopeSelect.value });
+          });
+          const typeSelect = controls.createEl("select", {
+            cls: "sm-encounter-input"
+          });
+          const typeOptions = [
+            { value: "flat", label: "Flat" },
+            { value: "percentTotal", label: "% of total" },
+            { value: "percentNextLevel", label: "% to next level" }
+          ];
+          for (const option of typeOptions) {
+            typeSelect.createEl("option", {
+              attr: { value: option.value, selected: option.value === rule.modifierType ? "true" : void 0 },
+              text: option.label
+            });
+          }
+          typeSelect.addEventListener("change", () => {
+            const presenter = this.presenter;
+            if (!presenter) return;
+            presenter.updateRule(rule.id, { modifierType: typeSelect.value });
+          });
+          const valueInput = controls.createEl("input", {
+            cls: "sm-encounter-input",
+            attr: {
+              type: "number",
+              step: "1",
+              value: String(rule.modifierValue)
+            }
+          });
+          valueInput.addEventListener("change", () => {
+            const presenter = this.presenter;
+            if (!presenter) return;
+            const numeric = Number(valueInput.value);
+            if (!Number.isFinite(numeric)) {
+              valueInput.value = String(rule.modifierValue);
+              return;
+            }
+            presenter.updateRule(rule.id, { modifierValue: numeric });
+          });
+          const notesInput = controls.createEl("textarea", {
+            cls: "sm-encounter-input sm-encounter-rule-notes",
+            attr: {
+              rows: "2",
+              placeholder: "Notes"
+            },
+            text: rule.notes ?? ""
+          });
+          notesInput.addEventListener("change", () => {
+            const presenter = this.presenter;
+            if (!presenter) return;
+            const trimmed = notesInput.value.trim();
+            presenter.updateRule(rule.id, { notes: trimmed === "" ? "" : trimmed });
+          });
+          const buttonBar = ruleItem.createDiv({ cls: "sm-encounter-inline-actions" });
+          const moveUpBtn = buttonBar.createEl("button", {
+            cls: "sm-encounter-button sm-encounter-button-secondary",
+            text: "Move up"
+          });
+          moveUpBtn.type = "button";
+          moveUpBtn.disabled = index === 0;
+          moveUpBtn.addEventListener("click", () => {
+            this.presenter?.moveRule(rule.id, index - 1);
+          });
+          const moveDownBtn = buttonBar.createEl("button", {
+            cls: "sm-encounter-button sm-encounter-button-secondary",
+            text: "Move down"
+          });
+          moveDownBtn.type = "button";
+          moveDownBtn.disabled = index === rules.length - 1;
+          moveDownBtn.addEventListener("click", () => {
+            this.presenter?.moveRule(rule.id, index + 1);
+          });
+          const deleteBtn = buttonBar.createEl("button", {
+            cls: "sm-encounter-button sm-encounter-button-danger",
+            text: "Delete"
+          });
+          deleteBtn.type = "button";
+          deleteBtn.addEventListener("click", () => {
+            this.presenter?.removeRule(rule.id);
+          });
+          const ruleView = ruleViews.get(rule.id);
+          if (ruleView) {
+            const effectEl = ruleItem.createDiv({ cls: "sm-encounter-rule-effect" });
+            effectEl.createEl("div", {
+              cls: "sm-encounter-rule-total",
+              text: `Total delta: ${formatSignedNumber(ruleView.totalDelta)}`
+            });
+            if (ruleView.perMemberDeltas.length) {
+              const perMemberList = effectEl.createEl("ul", { cls: "sm-encounter-rule-deltas" });
+              for (const delta of ruleView.perMemberDeltas) {
+                perMemberList.createEl("li", {
+                  text: `${delta.memberName}: ${formatSignedNumber(delta.delta)}`
+                });
+              }
+            }
+            if (ruleView.warnings.length) {
+              const warningEl = ruleItem.createDiv({ cls: "sm-encounter-callout" });
+              ruleView.warnings.forEach((warning) => {
+                warningEl.createEl("p", { text: warning });
+              });
+            }
+          }
+        });
+      }
+      renderResults(state) {
+        const { xp, xpView } = state;
+        const activeElement = this.xpInputEl.ownerDocument?.activeElement;
+        if (activeElement !== this.xpInputEl) {
+          this.xpInputEl.value = String(xp.encounterXp ?? 0);
+        }
+        this.resetXpButton.disabled = xp.party.length === 0 && xp.rules.length === 0 && (xp.encounterXp ?? 0) === 0;
+        this.resultTotalsEl.empty();
+        const baseSummary = this.resultTotalsEl.createDiv({ cls: "sm-encounter-result-total" });
+        baseSummary.createEl("span", { cls: "label", text: "Base XP:" });
+        baseSummary.createEl("span", { cls: "value", text: formatNumber(xpView.baseEncounterXp) });
+        const totalSummary = this.resultTotalsEl.createDiv({ cls: "sm-encounter-result-total" });
+        totalSummary.createEl("span", { cls: "label", text: "Total XP:" });
+        totalSummary.createEl("span", { cls: "value", text: formatNumber(xpView.totalEncounterXp) });
+        this.resultWarningsEl.empty();
+        if (xpView.warnings.length) {
+          const warningEl = this.resultWarningsEl.createDiv({ cls: "sm-encounter-callout" });
+          xpView.warnings.forEach((warning) => {
+            warningEl.createEl("p", { text: warning });
+          });
+        }
+        this.resultPartyEl.empty();
+        this.resultPartyEl.createEl("h4", {
+          cls: "sm-encounter-subheading",
+          text: "Party breakdown"
+        });
+        if (!xpView.party.length) {
+          this.resultPartyEl.createDiv({
+            cls: "sm-encounter-empty-row",
+            text: "No party members configured."
+          });
+        } else {
+          for (const memberView of xpView.party) {
+            const memberEl = this.resultPartyEl.createDiv({ cls: "sm-encounter-result-party-member" });
+            const header = memberEl.createDiv({ cls: "sm-encounter-result-party-header" });
+            header.createEl("span", {
+              cls: "name",
+              text: `${memberView.member.name} (Level ${memberView.member.level})`
+            });
+            const stats = memberEl.createEl("ul", { cls: "sm-encounter-result-stats" });
+            createStatItem(stats, "Base", formatNumber(memberView.baseXp));
+            createStatItem(stats, "Modifiers", formatSignedNumber(memberView.modifiersDelta));
+            createStatItem(stats, "Total", formatNumber(memberView.totalXp));
+            createStatItem(
+              stats,
+              "XP to next level",
+              memberView.xpToNextLevel == null ? "\u2014" : formatNumber(memberView.xpToNextLevel)
+            );
+            if (memberView.warnings.length) {
+              const warningEl = memberEl.createDiv({ cls: "sm-encounter-callout" });
+              memberView.warnings.forEach((warning) => {
+                warningEl.createEl("p", { text: warning });
+              });
+            }
+          }
+        }
+        this.resultRulesEl.empty();
+        this.resultRulesEl.createEl("h4", {
+          cls: "sm-encounter-subheading",
+          text: "Rule effects"
+        });
+        if (!xpView.rules.length) {
+          this.resultRulesEl.createDiv({
+            cls: "sm-encounter-empty-row",
+            text: "No rules applied."
+          });
+        } else {
+          for (const ruleView of xpView.rules) {
+            const ruleResult = this.resultRulesEl.createDiv({ cls: "sm-encounter-result-rule" });
+            const title = ruleResult.createEl("div", {
+              cls: "sm-encounter-result-rule-title",
+              text: ruleView.rule.title
+            });
+            if (!ruleView.rule.enabled) {
+              title.addClass("is-disabled");
+            }
+            const deltaSummary = ruleResult.createDiv({ cls: "sm-encounter-result-rule-total" });
+            deltaSummary.createEl("span", { cls: "label", text: "Total delta:" });
+            deltaSummary.createEl("span", { cls: "value", text: formatSignedNumber(ruleView.totalDelta) });
+            if (ruleView.perMemberDeltas.length) {
+              const perMemberList = ruleResult.createEl("ul", { cls: "sm-encounter-rule-deltas" });
+              ruleView.perMemberDeltas.forEach((delta) => {
+                perMemberList.createEl("li", {
+                  text: `${delta.memberName}: ${formatSignedNumber(delta.delta)}`
+                });
+              });
+            }
+            if (ruleView.warnings.length) {
+              const warningEl = ruleResult.createDiv({ cls: "sm-encounter-callout" });
+              ruleView.warnings.forEach((warning) => {
+                warningEl.createEl("p", { text: warning });
+              });
+            }
+          }
+        }
+      }
+      handleAddPartyMember() {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        const name = this.partyFormNameEl.value.trim();
+        const levelValue = Number(this.partyFormLevelEl.value);
+        const currentXpRaw = this.partyFormCurrentXpEl.value.trim();
+        const errors = [];
+        if (!name) {
+          errors.push("Name is required.");
+        }
+        if (!Number.isFinite(levelValue) || levelValue < 1) {
+          errors.push("Level must be 1 or greater.");
+        }
+        let currentXp;
+        if (currentXpRaw !== "") {
+          const numericCurrent = Number(currentXpRaw);
+          if (!Number.isFinite(numericCurrent) || numericCurrent < 0) {
+            errors.push("Current XP must be a non-negative number.");
+          } else {
+            currentXp = numericCurrent;
+          }
+        }
+        if (errors.length) {
+          this.partyFormErrorEl.setText(errors.join(" "));
+          return;
+        }
+        const member = {
+          id: createId("party"),
+          name,
+          level: Math.floor(levelValue)
+        };
+        if (currentXp !== void 0) {
+          member.currentXp = currentXp;
+        }
+        presenter.addPartyMember(member);
+        this.partyFormNameEl.value = "";
+        this.partyFormLevelEl.value = "1";
+        this.partyFormCurrentXpEl.value = "";
+        this.partyFormErrorEl.setText("");
+        this.partyFormNameEl.focus();
+      }
+      handleEncounterXpChange() {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        const raw = this.xpInputEl.value.trim();
+        if (raw === "") {
+          this.xpErrorEl.setText("");
+          presenter.setEncounterXp(0);
+          return;
+        }
+        const numeric = Number(raw);
+        if (!Number.isFinite(numeric) || numeric < 0) {
+          this.xpErrorEl.setText("Encounter XP must be a non-negative number.");
+          return;
+        }
+        this.xpErrorEl.setText("");
+        presenter.setEncounterXp(numeric);
+      }
+      handleAddRule() {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        const title = this.ruleFormTitleEl.value.trim();
+        const scope = this.ruleFormScopeEl.value;
+        const modifierType = this.ruleFormTypeEl.value;
+        const valueRaw = this.ruleFormValueEl.value.trim();
+        const notes = this.ruleFormNotesEl.value.trim();
+        const enabled = this.ruleFormEnabledEl.checked;
+        const numericValue = Number(valueRaw);
+        const errors = [];
+        if (!title) {
+          errors.push("Title is required.");
+        }
+        if (!Number.isFinite(numericValue)) {
+          errors.push("Modifier value must be a number.");
+        }
+        if (errors.length) {
+          this.ruleFormErrorEl.setText(errors.join(" "));
+          return;
+        }
+        const rule = {
+          id: createId("rule"),
+          title,
+          scope,
+          modifierType,
+          modifierValue: numericValue,
+          enabled
+        };
+        if (notes !== "") {
+          rule.notes = notes;
+        }
+        presenter.addRule(rule);
+        this.ruleFormTitleEl.value = "";
+        this.ruleFormScopeEl.value = "overall";
+        this.ruleFormTypeEl.value = "flat";
+        this.ruleFormValueEl.value = "0";
+        this.ruleFormNotesEl.value = "";
+        this.ruleFormEnabledEl.checked = true;
+        this.ruleFormErrorEl.setText("");
+        this.ruleFormTitleEl.focus();
+      }
     };
+    numberFormatter = new Intl.NumberFormat(void 0, {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 0
+    });
   }
 });
 
@@ -3521,6 +6206,8 @@ __export(travel_guide_exports, {
 function createTravelGuideMode() {
   let sidebar = null;
   const playback = new TravelPlaybackController();
+  let activeTravelId = null;
+  let panelUnsubscribe = null;
   let logic = null;
   const interactions = new TravelInteractionController();
   let routeLayer = null;
@@ -3530,6 +6217,17 @@ function createTravelGuideMode() {
   let terrainEvent = null;
   let lifecycleSignal = null;
   let encounterSync = null;
+  let bridgeTravelId = null;
+  const runBridge = (label, fn) => {
+    const bridge = getCartographerBridge();
+    if (!bridge) {
+      console.warn(`[cartographer:travel] skipped ${label} \u2013 no Almanac bridge available`);
+      return;
+    }
+    void Promise.resolve(fn(bridge)).catch((error) => {
+      console.error(`[cartographer:travel] ${label} failed`, error);
+    });
+  };
   const isAborted = () => lifecycleSignal?.aborted ?? false;
   const bailIfAborted = async () => {
     if (!isAborted()) {
@@ -3549,7 +6247,55 @@ function createTravelGuideMode() {
   const resetUi = () => {
     sidebar?.setTile(null);
     sidebar?.setSpeed(1);
+    sidebar?.setTravelPanel(null);
     playback.reset();
+  };
+  const detachPanelSubscription = () => {
+    if (!panelUnsubscribe) return;
+    try {
+      panelUnsubscribe();
+    } finally {
+      panelUnsubscribe = null;
+    }
+  };
+  const pushPanelSnapshot = (panel) => {
+    if (sidebar) {
+      sidebar.setTravelPanel(panel);
+    }
+  };
+  const updatePanelSnapshotFromGateway = (travelId) => {
+    pushPanelSnapshot(cartographerHookGateway.getPanelSnapshot(travelId));
+  };
+  const updateTravelContext = (file) => {
+    const nextId = file ? file.path : null;
+    if (activeTravelId === nextId) {
+      updatePanelSnapshotFromGateway(nextId);
+      return;
+    }
+    if (activeTravelId) {
+      cartographerHookGateway.emitTravelEnd(activeTravelId);
+    }
+    if (bridgeTravelId) {
+      runBridge("travel unmount", (bridge) => bridge.unmount());
+      bridgeTravelId = null;
+    }
+    detachPanelSubscription();
+    activeTravelId = nextId;
+    if (activeTravelId) {
+      cartographerHookGateway.emitTravelStart(activeTravelId);
+      panelUnsubscribe = cartographerHookGateway.onPanelUpdate(activeTravelId, (panel) => {
+        if (!isAborted()) {
+          pushPanelSnapshot(panel);
+        }
+      });
+      updatePanelSnapshotFromGateway(activeTravelId);
+      const travelIdToMount = activeTravelId;
+      runBridge("travel mount", (bridge) => bridge.mount(travelIdToMount));
+      bridgeTravelId = travelIdToMount;
+    } else {
+      pushPanelSnapshot(null);
+      runBridge("travel unmount", (bridge) => bridge.unmount());
+    }
   };
   const runCleanupFile = async () => {
     if (!cleanupFile) return;
@@ -3583,6 +6329,7 @@ function createTravelGuideMode() {
     removeTravelClass();
   };
   const disposeFile = () => {
+    updateTravelContext(null);
     interactions.dispose();
     encounterSync?.dispose();
     encounterSync = null;
@@ -3655,6 +6402,13 @@ function createTravelGuideMode() {
         return;
       }
       sidebar.setTitle?.(ctx.getFile()?.basename ?? "");
+      sidebar.setTravelHandlers({
+        onAdvance: (payload) => runBridge("travel advance", (bridge) => bridge.handlers.onAdvance(payload)),
+        onModeChange: (mode) => runBridge("travel mode change", (bridge) => bridge.handlers.onModeChange(mode)),
+        onJump: () => runBridge("time jump", (bridge) => bridge.handlers.onJump()),
+        onClose: () => runBridge("travel close", (bridge) => bridge.handlers.onClose()),
+        onFollowUp: (eventId) => runBridge("event follow-up", (bridge) => bridge.handlers.onFollowUp(eventId))
+      });
       sidebar.onSpeedChange((value) => {
         if (!isAborted()) {
           logic?.setTokenSpeed(value);
@@ -3692,6 +6446,7 @@ function createTravelGuideMode() {
       if (!mapLayer) {
         return;
       }
+      updateTravelContext(file);
       routeLayer = createRouteLayer(handles.contentG, (rc) => mapLayer.centerOf(rc));
       tokenLayer = createTokenLayer(handles.contentG);
       const adapter = {
@@ -3842,6 +6597,8 @@ var init_travel_guide = __esm({
     init_route_layer();
     init_token_layer();
     init_actions();
+    init_cartographer_gateway();
+    init_cartographer_bridge();
     init_playback_controller();
     init_interaction_controller();
     init_encounter_gateway();
@@ -39320,7 +42077,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir2) {
     let skippedCount = 0;
     let errorCount = 0;
     for (const fileName of fileNames) {
-      const targetPath = (0, import_obsidian32.normalizePath)(`${dir}/${fileName}`);
+      const targetPath = (0, import_obsidian34.normalizePath)(`${dir}/${fileName}`);
       if (existingFiles.has(fileName.toLowerCase())) {
         skippedCount++;
         continue;
@@ -39336,19 +42093,19 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir2) {
       }
     }
     if (importedCount > 0) {
-      new import_obsidian32.Notice(`Imported ${importedCount} ${typeName} presets`);
+      new import_obsidian34.Notice(`Imported ${importedCount} ${typeName} presets`);
       console.log(`${typeName} import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
     } else if (skippedCount > 0) {
       console.log(`All ${skippedCount} ${typeName} presets already exist`);
     } else if (errorCount > 0) {
-      new import_obsidian32.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian34.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   } catch (err) {
     console.error(`Failed to import ${typeName} presets:`, err);
     if (err instanceof Error && err.message.includes("Cannot find module")) {
       console.log(`No ${typeName} preset data found - skipping import`);
     } else {
-      new import_obsidian32.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian34.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   }
 }
@@ -39390,11 +42147,11 @@ async function importEquipmentPresets(app) {
 async function shouldImportEquipmentPresets(app) {
   return shouldImportPresetsForDir(app, EQUIPMENT_DIR, ".plugin-equipment-imported", "Equipment presets", ensureEquipmentDir);
 }
-var import_obsidian32, PRESET_FILES;
+var import_obsidian34, PRESET_FILES;
 var init_plugin_presets = __esm({
   "src/apps/library/core/plugin-presets.ts"() {
     "use strict";
-    import_obsidian32 = require("obsidian");
+    import_obsidian34 = require("obsidian");
     init_creature_files();
     init_spell_files();
     init_item_files();
@@ -39415,16 +42172,16 @@ __export(index_files_exports, {
 });
 async function createIndexFile(app, filePath, title, description, directory) {
   const folder = app.vault.getAbstractFileByPath(directory);
-  if (!(folder instanceof import_obsidian33.TFolder)) {
+  if (!(folder instanceof import_obsidian35.TFolder)) {
     console.log(`[Index] Directory ${directory} not found, skipping index generation`);
     return;
   }
   const files = [];
   const collectFiles = (folder2) => {
     for (const child of folder2.children) {
-      if (child instanceof import_obsidian33.TFile && child.extension === "md") {
+      if (child instanceof import_obsidian35.TFile && child.extension === "md") {
         files.push(child);
-      } else if (child instanceof import_obsidian33.TFolder) {
+      } else if (child instanceof import_obsidian35.TFolder) {
         collectFiles(child);
       }
     }
@@ -39461,7 +42218,7 @@ async function createIndexFile(app, filePath, title, description, directory) {
   }
   const content = lines.join("\n");
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian33.TFile) {
+  if (existingFile instanceof import_obsidian35.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -39519,7 +42276,7 @@ async function generateLibraryHub(app) {
   const content = lines.join("\n");
   const filePath = `${SALTMARCHER_DIR}/Library.md`;
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian33.TFile) {
+  if (existingFile instanceof import_obsidian35.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -39540,11 +42297,11 @@ async function generateAllIndexes(app) {
   ]);
   console.log("[Index] All indexes generated successfully");
 }
-var import_obsidian33, SALTMARCHER_DIR, CREATURES_DIR2, EQUIPMENT_DIR2, SPELLS_DIR2, ITEMS_DIR2;
+var import_obsidian35, SALTMARCHER_DIR, CREATURES_DIR2, EQUIPMENT_DIR2, SPELLS_DIR2, ITEMS_DIR2;
 var init_index_files = __esm({
   "src/apps/library/core/index-files.ts"() {
     "use strict";
-    import_obsidian33 = require("obsidian");
+    import_obsidian35 = require("obsidian");
     SALTMARCHER_DIR = "SaltMarcher";
     CREATURES_DIR2 = "SaltMarcher/Creatures";
     EQUIPMENT_DIR2 = "SaltMarcher/Equipment";
@@ -40176,11 +42933,11 @@ async function convertAllReferences(app, options = {}) {
   };
   const referenceFiles = await findReferenceFiles(app);
   if (referenceFiles.length === 0) {
-    new import_obsidian34.Notice("Keine Reference Statbl\xF6cke gefunden");
+    new import_obsidian36.Notice("Keine Reference Statbl\xF6cke gefunden");
     return result;
   }
   const filesToProcess = limit ? referenceFiles.slice(0, limit) : referenceFiles;
-  new import_obsidian34.Notice(`Konvertiere ${filesToProcess.length} Statbl\xF6cke${dryRun ? " (Dry Run)" : ""}...`);
+  new import_obsidian36.Notice(`Konvertiere ${filesToProcess.length} Statbl\xF6cke${dryRun ? " (Dry Run)" : ""}...`);
   if (!dryRun) {
     await ensureDir(app, CREATURES_PRESETS_DIR);
   }
@@ -40200,7 +42957,7 @@ async function convertAllReferences(app, options = {}) {
     }
   }
   const summary = `Konvertierung abgeschlossen: ${result.success} erfolgreich, ${result.failed} fehlgeschlagen`;
-  new import_obsidian34.Notice(summary);
+  new import_obsidian36.Notice(summary);
   console.log(summary);
   if (result.errors.length > 0) {
     console.log("Fehler:", result.errors);
@@ -40289,17 +43046,17 @@ async function convertAllSpells(app, options = {}) {
   };
   const spellsFile = app.vault.getAbstractFileByPath(SPELLS_REFERENCES_FILE);
   if (!spellsFile || !("extension" in spellsFile)) {
-    new import_obsidian34.Notice("Spells Reference Datei nicht gefunden");
+    new import_obsidian36.Notice("Spells Reference Datei nicht gefunden");
     return result;
   }
   const content = await app.vault.read(spellsFile);
   const spellSections = extractSpellSections(content);
   if (spellSections.length === 0) {
-    new import_obsidian34.Notice("Keine Spells in Reference Datei gefunden");
+    new import_obsidian36.Notice("Keine Spells in Reference Datei gefunden");
     return result;
   }
   const sectionsToProcess = limit ? spellSections.slice(0, limit) : spellSections;
-  new import_obsidian34.Notice(`Konvertiere ${sectionsToProcess.length} Spells${dryRun ? " (Dry Run)" : ""}...`);
+  new import_obsidian36.Notice(`Konvertiere ${sectionsToProcess.length} Spells${dryRun ? " (Dry Run)" : ""}...`);
   if (!dryRun) {
     await ensureDir(app, SPELLS_PRESETS_DIR);
   }
@@ -40319,7 +43076,7 @@ async function convertAllSpells(app, options = {}) {
     }
   }
   const summary = `Spell-Konvertierung abgeschlossen: ${result.success} erfolgreich, ${result.failed} fehlgeschlagen`;
-  new import_obsidian34.Notice(summary);
+  new import_obsidian36.Notice(summary);
   console.log(summary);
   if (result.errors.length > 0) {
     console.log("Fehler:", result.errors);
@@ -40361,7 +43118,7 @@ async function convertSpellSection(app, spellMarkdown, dryRun) {
     await app.vault.create(targetPath, presetMarkdown);
   }
 }
-var import_obsidian34, CREATURES_REFERENCES_DIR, CREATURES_PRESETS_DIR, SPELLS_REFERENCES_FILE, SPELLS_PRESETS_DIR;
+var import_obsidian36, CREATURES_REFERENCES_DIR, CREATURES_PRESETS_DIR, SPELLS_REFERENCES_FILE, SPELLS_PRESETS_DIR;
 var init_convert_references = __esm({
   "src/apps/library/tools/convert-references.ts"() {
     "use strict";
@@ -40369,7 +43126,7 @@ var init_convert_references = __esm({
     init_spell_reference_parser();
     init_creature_files();
     init_spell_files();
-    import_obsidian34 = require("obsidian");
+    import_obsidian36 = require("obsidian");
     CREATURES_REFERENCES_DIR = "References/rulebooks/Statblocks/Creatures";
     CREATURES_PRESETS_DIR = "SaltMarcher/Presets/Creatures";
     SPELLS_REFERENCES_FILE = "References/rulebooks/Spells/07_Spells.md";
@@ -40383,7 +43140,7 @@ __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian35 = require("obsidian");
+var import_obsidian37 = require("obsidian");
 
 // src/apps/cartographer/index.ts
 var import_obsidian17 = require("obsidian");
@@ -41366,57 +44123,231 @@ init_view();
 // src/apps/library/view.ts
 var import_obsidian29 = require("obsidian");
 
-// src/apps/library/view/mode.ts
-function scoreName(name, q) {
-  if (!q) return 1e-4;
-  if (name === q) return 1e3;
-  if (name.startsWith(q)) return 900 - (name.length - q.length);
-  const idx = name.indexOf(q);
-  if (idx >= 0) return 700 - idx;
-  const tokenIdx = name.split(/\s+|[-_]/).findIndex((t) => t.startsWith(q));
-  if (tokenIdx >= 0) return 600 - tokenIdx * 5;
-  return -Infinity;
+// src/ui/workmode/tab-navigation.ts
+function createTabNavigation(parent, config) {
+  const container = parent.createDiv({ cls: "sm-tab-nav" });
+  if (config.className) {
+    container.addClass(config.className);
+  }
+  const buttons = /* @__PURE__ */ new Map();
+  let currentActive = config.activeTab;
+  const updateActiveState = () => {
+    for (const [tabId, { button }] of buttons.entries()) {
+      button.classList.toggle("is-active", tabId === currentActive);
+      button.setAttribute("aria-selected", String(tabId === currentActive));
+    }
+  };
+  const createTabButton = (tab) => {
+    const button = container.createEl("button", {
+      cls: "sm-tab-nav__button",
+      attr: {
+        "data-tab-id": tab.id,
+        "role": "tab",
+        "aria-selected": String(tab.id === currentActive),
+        "tabindex": tab.id === currentActive ? "0" : "-1"
+      }
+    });
+    if (tab.disabled) {
+      button.disabled = true;
+      button.addClass("is-disabled");
+    }
+    if (tab.icon) {
+      const icon = button.createSpan({ cls: "sm-tab-nav__icon" });
+      icon.innerHTML = tab.icon;
+    }
+    button.createSpan({ cls: "sm-tab-nav__label", text: tab.label });
+    let badge;
+    if (tab.badgeCount !== void 0 && tab.badgeCount > 0) {
+      badge = button.createSpan({ cls: "sm-tab-nav__badge", text: String(tab.badgeCount) });
+    }
+    if (tab.description) {
+      button.setAttribute("aria-label", tab.description);
+      button.setAttribute("title", tab.description);
+    }
+    button.onclick = () => {
+      if (button.disabled) return;
+      currentActive = tab.id;
+      updateActiveState();
+      config.onSelect(tab.id);
+    };
+    return { button, badge };
+  };
+  for (const tab of config.tabs) {
+    const tabButton = createTabButton(tab);
+    buttons.set(tab.id, tabButton);
+  }
+  updateActiveState();
+  container.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    const tabIds = Array.from(buttons.keys());
+    const currentIndex = tabIds.indexOf(currentActive);
+    if (currentIndex === -1) return;
+    let nextIndex;
+    if (e.key === "ArrowRight") {
+      nextIndex = (currentIndex + 1) % tabIds.length;
+    } else {
+      nextIndex = (currentIndex - 1 + tabIds.length) % tabIds.length;
+    }
+    const nextTab = tabIds[nextIndex];
+    const nextButton = buttons.get(nextTab);
+    if (nextButton && !nextButton.button.disabled) {
+      currentActive = nextTab;
+      updateActiveState();
+      nextButton.button.focus();
+      config.onSelect(nextTab);
+    }
+  });
+  return {
+    element: container,
+    setActiveTab(tabId) {
+      if (!buttons.has(tabId)) {
+        console.warn(`Tab ${tabId} not found in navigation`);
+        return;
+      }
+      currentActive = tabId;
+      updateActiveState();
+    },
+    setBadgeCount(tabId, count) {
+      const entry = buttons.get(tabId);
+      if (!entry) return;
+      if (entry.badge) {
+        if (count !== void 0 && count > 0) {
+          entry.badge.setText(String(count));
+          entry.badge.style.display = "";
+        } else {
+          entry.badge.style.display = "none";
+        }
+      } else if (count !== void 0 && count > 0) {
+        entry.badge = entry.button.createSpan({ cls: "sm-tab-nav__badge", text: String(count) });
+      }
+    },
+    setDisabled(tabId, disabled) {
+      const entry = buttons.get(tabId);
+      if (!entry) return;
+      entry.button.disabled = disabled;
+      entry.button.classList.toggle("is-disabled", disabled);
+    },
+    destroy() {
+      container.remove();
+    }
+  };
 }
+
+// src/ui/workmode/mode-renderer.ts
 var BaseModeRenderer = class {
   constructor(app, container) {
     this.app = app;
     this.container = container;
     this.query = "";
-    this.cleanups = [];
     this.disposed = false;
+    this.cleanups = [];
   }
+  /**
+   * Initialize the renderer. Override to load initial data.
+   */
   async init() {
   }
+  /**
+   * Update the search query and trigger a re-render.
+   */
   setQuery(query) {
-    this.query = (query || "").toLowerCase();
+    this.query = (query || "").toLowerCase().trim();
     this.render();
   }
+  /**
+   * Handle creation of a new entry. Override if needed.
+   */
   async handleCreate(_name) {
   }
+  /**
+   * Clean up all resources and remove DOM elements.
+   */
   async destroy() {
     if (this.disposed) return;
     this.disposed = true;
     for (const fn of this.cleanups.splice(0)) {
       try {
         fn();
-      } catch {
+      } catch (err) {
+        console.error("Cleanup function failed:", err);
       }
     }
     this.container.empty();
   }
+  /**
+   * Check if this renderer has been disposed.
+   */
   isDisposed() {
     return this.disposed;
   }
+  /**
+   * Register a cleanup function to be called during destroy().
+   */
   registerCleanup(fn) {
+    if (this.disposed) {
+      console.warn("Attempted to register cleanup on disposed renderer");
+      return;
+    }
     this.cleanups.push(fn);
   }
+  /**
+   * Helper to create a simple message element in the container.
+   */
+  renderMessage(message, className) {
+    this.container.empty();
+    const el = this.container.createDiv({ text: message });
+    if (className) {
+      el.addClass(className);
+    }
+  }
+  /**
+   * Helper to render an empty state.
+   */
+  renderEmptyState(message) {
+    this.renderMessage(message, "sm-mode-empty");
+  }
+  /**
+   * Helper to render an error state.
+   */
+  renderErrorState(message) {
+    this.renderMessage(message, "sm-mode-error");
+  }
 };
-var LibrarySourceWatcherHub = class {
+function scoreName(name, query) {
+  if (!query) return 1e-4;
+  const lowerName = name.toLowerCase();
+  const lowerQuery = query.toLowerCase();
+  if (lowerName === lowerQuery) return 1e3;
+  if (lowerName.startsWith(lowerQuery)) {
+    return 900 - (name.length - query.length);
+  }
+  const idx = lowerName.indexOf(lowerQuery);
+  if (idx >= 0) {
+    return 700 - idx;
+  }
+  const tokens = lowerName.split(/\s+|[-_]/);
+  const tokenIdx = tokens.findIndex((t) => t.startsWith(lowerQuery));
+  if (tokenIdx >= 0) {
+    return 600 - tokenIdx * 5;
+  }
+  return -Infinity;
+}
+
+// src/ui/workmode/watcher-hub.ts
+var WatcherHub = class {
   constructor() {
     this.registry = /* @__PURE__ */ new Map();
   }
-  subscribe(source, factory, listener) {
-    let entry = this.registry.get(source);
+  /**
+   * Subscribe to changes for a specific source.
+   *
+   * @param key - The unique identifier for the watched resource
+   * @param factory - Factory function that creates the watcher
+   * @param listener - Callback to be invoked when changes occur
+   * @returns Unsubscribe function
+   */
+  subscribe(key, factory, listener) {
+    let entry = this.registry.get(key);
     if (!entry) {
       const listeners2 = /* @__PURE__ */ new Set();
       const stop = factory(() => {
@@ -41424,27 +44355,195 @@ var LibrarySourceWatcherHub = class {
           try {
             cb();
           } catch (err) {
-            console.error("Library watch callback failed", err);
+            console.error(`Watcher listener failed for key ${key}:`, err);
           }
         }
       });
       entry = { stop, listeners: listeners2 };
-      this.registry.set(source, entry);
+      this.registry.set(key, entry);
     }
     entry.listeners.add(listener);
     return () => {
-      const current = this.registry.get(source);
+      const current = this.registry.get(key);
       if (!current) return;
       current.listeners.delete(listener);
       if (current.listeners.size === 0) {
         try {
           current.stop?.();
         } catch (err) {
-          console.error("Failed to stop library watcher", err);
+          console.error(`Failed to stop watcher for key ${key}:`, err);
         }
-        this.registry.delete(source);
+        this.registry.delete(key);
       }
     };
+  }
+  /**
+   * Get the number of active watchers.
+   */
+  getActiveWatcherCount() {
+    return this.registry.size;
+  }
+  /**
+   * Get the number of listeners for a specific key.
+   */
+  getListenerCount(key) {
+    return this.registry.get(key)?.listeners.size ?? 0;
+  }
+  /**
+   * Stop all watchers and clear all listeners.
+   */
+  destroy() {
+    for (const [key, entry] of this.registry.entries()) {
+      try {
+        entry.stop?.();
+      } catch (err) {
+        console.error(`Failed to stop watcher for key ${key}:`, err);
+      }
+    }
+    this.registry.clear();
+  }
+};
+
+// src/ui/workmode/split-view-container.ts
+var DEFAULT_SPLIT = 0.6;
+var DEFAULT_MIN_SIZE = 100;
+function createSplitView(parent, config = {}) {
+  const {
+    className,
+    initialSplit = DEFAULT_SPLIT,
+    minUpperSize = DEFAULT_MIN_SIZE,
+    minLowerSize = DEFAULT_MIN_SIZE,
+    orientation = "horizontal",
+    resizable = true,
+    onSplitChange
+  } = config;
+  const container = parent.createDiv({ cls: "sm-split-view" });
+  container.dataset.orientation = orientation;
+  if (className) {
+    container.addClass(className);
+  }
+  const upperPane = container.createDiv({ cls: "sm-split-view__upper" });
+  const lowerPane = container.createDiv({ cls: "sm-split-view__lower" });
+  let currentSplit = Math.max(0.1, Math.min(0.9, initialSplit));
+  let isDragging = false;
+  let dragStartY = 0;
+  let dragStartSplit = 0;
+  const applySplit = () => {
+    if (orientation === "horizontal") {
+      upperPane.style.height = `${currentSplit * 100}%`;
+      lowerPane.style.height = `${(1 - currentSplit) * 100}%`;
+    } else {
+      upperPane.style.width = `${currentSplit * 100}%`;
+      lowerPane.style.width = `${(1 - currentSplit) * 100}%`;
+    }
+  };
+  applySplit();
+  let resizer;
+  if (resizable) {
+    resizer = container.createDiv({ cls: "sm-split-view__resizer" });
+    resizer.dataset.orientation = orientation;
+    container.insertBefore(resizer, lowerPane);
+    const handlePointerDown = (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      isDragging = true;
+      dragStartY = orientation === "horizontal" ? e.clientY : e.clientX;
+      dragStartSplit = currentSplit;
+      resizer.setPointerCapture(e.pointerId);
+      container.addClass("is-resizing");
+    };
+    const handlePointerMove = (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const containerRect = container.getBoundingClientRect();
+      const containerSize = orientation === "horizontal" ? containerRect.height : containerRect.width;
+      const currentPos = orientation === "horizontal" ? e.clientY : e.clientX;
+      const deltaPos = currentPos - dragStartY;
+      const deltaRatio = deltaPos / containerSize;
+      let newSplit = dragStartSplit + deltaRatio;
+      const minUpperRatio = minUpperSize / containerSize;
+      const minLowerRatio = minLowerSize / containerSize;
+      newSplit = Math.max(minUpperRatio, Math.min(1 - minLowerRatio, newSplit));
+      if (Math.abs(newSplit - currentSplit) > 1e-3) {
+        currentSplit = newSplit;
+        applySplit();
+        onSplitChange?.(currentSplit);
+      }
+    };
+    const stopDragging = (e) => {
+      if (!isDragging) return;
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        resizer.releasePointerCapture(e.pointerId);
+      }
+      isDragging = false;
+      container.removeClass("is-resizing");
+    };
+    resizer.addEventListener("pointerdown", handlePointerDown);
+    resizer.addEventListener("pointermove", handlePointerMove);
+    resizer.addEventListener("pointerup", stopDragging);
+    resizer.addEventListener("pointercancel", stopDragging);
+    resizer.addEventListener("pointerleave", (e) => {
+      if (isDragging) stopDragging(e);
+    });
+  }
+  return {
+    element: container,
+    upperElement: upperPane,
+    lowerElement: lowerPane,
+    resizerElement: resizer,
+    getSplitRatio() {
+      return currentSplit;
+    },
+    setSplitRatio(ratio) {
+      currentSplit = Math.max(0.1, Math.min(0.9, ratio));
+      applySplit();
+      onSplitChange?.(currentSplit);
+    },
+    toggleUpper(visible) {
+      const shouldShow = visible ?? upperPane.style.display === "none";
+      upperPane.style.display = shouldShow ? "" : "none";
+      if (resizer) {
+        resizer.style.display = shouldShow ? "" : "none";
+      }
+    },
+    toggleLower(visible) {
+      const shouldShow = visible ?? lowerPane.style.display === "none";
+      lowerPane.style.display = shouldShow ? "" : "none";
+      if (resizer) {
+        resizer.style.display = shouldShow ? "" : "none";
+      }
+    },
+    destroy() {
+      if (isDragging) {
+        isDragging = false;
+        container.removeClass("is-resizing");
+      }
+      container.remove();
+    }
+  };
+}
+
+// src/apps/library/view/mode.ts
+var BaseModeRenderer2 = class extends BaseModeRenderer {
+  // Override setQuery to trim the query (Library-specific behavior)
+  setQuery(query) {
+    this.query = (query || "").toLowerCase();
+    this.render();
+  }
+};
+var LibrarySourceWatcherHub = class {
+  constructor() {
+    this.hub = new WatcherHub();
+  }
+  subscribe(source, factory, listener) {
+    return this.hub.subscribe(source, factory, listener);
+  }
+  destroy() {
+    this.hub.destroy();
   }
 };
 
@@ -41742,7 +44841,7 @@ var import_obsidian24 = require("obsidian");
 
 // src/apps/library/create/shared/form-controls.ts
 init_search_dropdown();
-function createTextInput(parent, options = {}) {
+function createTextInput2(parent, options = {}) {
   const input = parent.createEl("input", {
     cls: options.className || "sm-cc-input",
     attr: {
@@ -41762,7 +44861,7 @@ function createTextInput(parent, options = {}) {
   }
   return input;
 }
-function createNumberInput(parent, options = {}) {
+function createNumberInput2(parent, options = {}) {
   const input = parent.createEl("input", {
     cls: options.className || "sm-cc-input",
     attr: {
@@ -43285,7 +46384,7 @@ function createDamageInstanceUI(parent, instance, index, data, onChange, onDelet
   const grid = container.createDiv({ cls: "sm-cc-damage-grid" });
   grid.createEl("label", { text: "Dice", cls: "sm-cc-damage-label" });
   const diceInputWrapper = grid.createDiv({ cls: "sm-cc-damage-dice-wrapper" });
-  const diceInput = createTextInput(diceInputWrapper, {
+  const diceInput = createTextInput2(diceInputWrapper, {
     className: "sm-cc-damage-dice-input",
     placeholder: "2d6",
     ariaLabel: "Damage Dice",
@@ -43307,7 +46406,7 @@ function createDamageInstanceUI(parent, instance, index, data, onChange, onDelet
   }
   grid.createEl("label", { text: "Bonus", cls: "sm-cc-damage-label" });
   const bonusWrapper = grid.createDiv({ cls: "sm-cc-damage-bonus-wrapper" });
-  const bonusInput = createTextInput(bonusWrapper, {
+  const bonusInput = createTextInput2(bonusWrapper, {
     className: "sm-cc-damage-bonus-input",
     placeholder: "auto",
     ariaLabel: "Damage Bonus",
@@ -43365,7 +46464,7 @@ function createDamageInstanceUI(parent, instance, index, data, onChange, onDelet
     }
   });
   grid.createEl("label", { text: "Condition", cls: "sm-cc-damage-label" });
-  createTextInput(grid, {
+  createTextInput2(grid, {
     className: "sm-cc-damage-condition-input",
     placeholder: "if target is prone",
     ariaLabel: "Damage Condition",
@@ -43688,7 +46787,7 @@ function renderComponentContent(parent, component, entry, data, onUpdate) {
 function renderAttackComponent(parent, data, entry, statblockData, onUpdate) {
   const grid = parent.createDiv({ cls: "sm-cc-component-grid" });
   grid.createEl("label", { text: "To Hit" });
-  const toHitInput = createTextInput(grid, {
+  const toHitInput = createTextInput2(grid, {
     placeholder: "Auto",
     ariaLabel: "To Hit",
     value: data.to_hit || "",
@@ -43698,7 +46797,7 @@ function renderAttackComponent(parent, data, entry, statblockData, onUpdate) {
     }
   });
   grid.createEl("label", { text: "Reach/Range" });
-  createTextInput(grid, {
+  createTextInput2(grid, {
     placeholder: "5 ft. / 30/120 ft.",
     ariaLabel: "Reach/Range",
     value: data.reach || "",
@@ -43708,7 +46807,7 @@ function renderAttackComponent(parent, data, entry, statblockData, onUpdate) {
     }
   });
   grid.createEl("label", { text: "Target" });
-  createTextInput(grid, {
+  createTextInput2(grid, {
     placeholder: "one target",
     ariaLabel: "Target",
     value: data.target || "",
@@ -43730,7 +46829,7 @@ function renderSaveComponent(parent, data, entry, statblockData, onUpdate) {
     }
   });
   grid.createEl("label", { text: "DC" });
-  createNumberInput(grid, {
+  createNumberInput2(grid, {
     placeholder: "DC",
     ariaLabel: "DC",
     value: data.save_dc,
@@ -43742,7 +46841,7 @@ function renderSaveComponent(parent, data, entry, statblockData, onUpdate) {
     }
   });
   grid.createEl("label", { text: "On Success" });
-  createTextInput(grid, {
+  createTextInput2(grid, {
     placeholder: "half damage",
     ariaLabel: "Save Effect",
     value: data.save_effect || "",
@@ -43768,7 +46867,7 @@ function renderDamageComponent(parent, data, entry, statblockData, onUpdate) {
 function renderConditionComponent(parent, data, onUpdate) {
   const grid = parent.createDiv({ cls: "sm-cc-component-grid" });
   grid.createEl("label", { text: "Condition" });
-  createTextInput(grid, {
+  createTextInput2(grid, {
     placeholder: "poisoned, stunned, etc.",
     ariaLabel: "Condition",
     value: data.condition || "",
@@ -43778,7 +46877,7 @@ function renderConditionComponent(parent, data, onUpdate) {
     }
   });
   grid.createEl("label", { text: "Duration" });
-  createTextInput(grid, {
+  createTextInput2(grid, {
     placeholder: "1 minute, until end of next turn",
     ariaLabel: "Duration",
     value: data.duration || "",
@@ -43817,7 +46916,7 @@ function renderAreaComponent(parent, data, onUpdate) {
     }
   });
   grid.createEl("label", { text: "Size" });
-  createTextInput(grid, {
+  createTextInput2(grid, {
     placeholder: "20 ft.",
     ariaLabel: "Size",
     value: data.size || "",
@@ -43830,7 +46929,7 @@ function renderAreaComponent(parent, data, onUpdate) {
 function renderRechargeComponent(parent, data, onUpdate) {
   const container = parent.createDiv({ cls: "sm-cc-component-field" });
   container.createEl("label", { text: "Recharge" });
-  createTextInput(container, {
+  createTextInput2(container, {
     placeholder: "Recharge 5-6",
     ariaLabel: "Recharge",
     value: data.recharge || "",
@@ -43843,7 +46942,7 @@ function renderRechargeComponent(parent, data, onUpdate) {
 function renderUsesComponent(parent, data, onUpdate) {
   const container = parent.createDiv({ cls: "sm-cc-component-field" });
   container.createEl("label", { text: "Uses" });
-  createTextInput(container, {
+  createTextInput2(container, {
     placeholder: "1/Day, 3/Day each",
     ariaLabel: "Uses",
     value: data.uses || "",
@@ -43979,7 +47078,7 @@ function createSpellcastingSection(parent, entry, data, onUpdate) {
     }
   });
   headerGrid.createEl("label", { text: "DC Override" });
-  createNumberInput(headerGrid, {
+  createNumberInput2(headerGrid, {
     placeholder: "Auto",
     ariaLabel: "DC Override",
     value: entry.spellDcOverride,
@@ -44104,7 +47203,7 @@ function createSpellcastingSection(parent, entry, data, onUpdate) {
         }
       });
       headerLeft.createSpan({ text: " - ", cls: "sm-cc-spell-group-separator" });
-      const slotsInput = createNumberInput(headerLeft, {
+      const slotsInput = createNumberInput2(headerLeft, {
         className: "sm-cc-spellcasting-slots",
         placeholder: "Slots",
         ariaLabel: "Spell Slots",
@@ -44119,7 +47218,7 @@ function createSpellcastingSection(parent, entry, data, onUpdate) {
       slotsInput.style.width = "4ch";
       headerLeft.createSpan({ text: " slots", cls: "sm-cc-spell-group-suffix" });
     } else {
-      const labelInput = createTextInput(headerLeft, {
+      const labelInput = createTextInput2(headerLeft, {
         className: "sm-cc-spellcasting-group-label",
         placeholder: groupType === "at-will" ? "At Will" : "1/Day each",
         ariaLabel: "Group Label",
@@ -44154,7 +47253,7 @@ function createSpellcastingSection(parent, entry, data, onUpdate) {
       spellsList.empty();
       group.spells.forEach((spell, spellIndex) => {
         const spellItem = spellsList.createDiv({ cls: "sm-cc-spell-item" });
-        const spellInput = createTextInput(spellItem, {
+        const spellInput = createTextInput2(spellItem, {
           className: "sm-cc-spellcasting-spell-input",
           placeholder: "Enter spell name...",
           ariaLabel: "Spell name",
@@ -44233,7 +47332,7 @@ function createEntryCard(parent, options) {
     text: categoryText.toUpperCase()
   });
   const nameBox = head.createDiv({ cls: "sm-cc-entry-name-box sm-preset-box" });
-  const nameInput = createTextInput(nameBox, {
+  const nameInput = createTextInput2(nameBox, {
     className: "sm-cc-entry-name sm-preset-input",
     placeholder: "Entry Name",
     ariaLabel: "Entry Name",
@@ -46103,7 +49202,7 @@ var LibraryListState = class {
 function renderFeedback(container, kind, message) {
   container.createDiv({ cls: `sm-cc-feedback sm-cc-feedback--${kind}`, text: message });
 }
-var FilterableLibraryRenderer = class extends BaseModeRenderer {
+var FilterableLibraryRenderer = class extends BaseModeRenderer2 {
   constructor(app, container, watchers, mode) {
     super(app, container);
     this.watchers = watchers;
@@ -46377,7 +49476,7 @@ var EquipmentRenderer = class extends FilterableLibraryRenderer {
 // src/apps/library/view/terrains.ts
 init_terrain_store();
 var SAVE_DEBOUNCE_MS = 500;
-var TerrainsRenderer = class extends BaseModeRenderer {
+var TerrainsRenderer = class extends BaseModeRenderer2 {
   constructor() {
     super(...arguments);
     this.mode = "terrains";
@@ -46534,7 +49633,7 @@ init_search_dropdown();
 init_regions_store();
 init_terrain_store();
 var SAVE_DEBOUNCE_MS2 = 500;
-var RegionsRenderer = class extends BaseModeRenderer {
+var RegionsRenderer = class extends BaseModeRenderer2 {
   constructor() {
     super(...arguments);
     this.mode = "regions";
@@ -46730,7 +49829,6 @@ var LibraryView = class extends import_obsidian29.ItemView {
     super(...arguments);
     this.mode = "creatures";
     this.queries = /* @__PURE__ */ new Map();
-    this.headerButtons = /* @__PURE__ */ new Map();
     this.watchers = new LibrarySourceWatcherHub();
   }
   getViewType() {
@@ -46751,27 +49849,30 @@ var LibraryView = class extends import_obsidian29.ItemView {
   async onClose() {
     await this.activeRenderer?.destroy();
     this.activeRenderer = void 0;
+    this.tabNav?.destroy();
+    this.watchers.destroy();
     this.contentEl.removeClass("sm-library");
   }
   renderShell() {
     const root = this.contentEl;
     root.empty();
     root.createEl("h2", { text: LIBRARY_COPY.title });
-    const header = root.createDiv({ cls: "sm-lib-header" });
-    const mkBtn = (label, m) => {
-      const b = header.createEl("button", { text: label });
-      this.headerButtons.set(m, b);
-      b.onclick = () => {
-        void this.activateMode(m);
-      };
-      return b;
-    };
-    mkBtn(LIBRARY_COPY.modes.creatures, "creatures");
-    mkBtn(LIBRARY_COPY.modes.spells, "spells");
-    mkBtn(LIBRARY_COPY.modes.items, "items");
-    mkBtn(LIBRARY_COPY.modes.equipment, "equipment");
-    mkBtn(LIBRARY_COPY.modes.terrains, "terrains");
-    mkBtn(LIBRARY_COPY.modes.regions, "regions");
+    const tabs = [
+      { id: "creatures", label: LIBRARY_COPY.modes.creatures },
+      { id: "spells", label: LIBRARY_COPY.modes.spells },
+      { id: "items", label: LIBRARY_COPY.modes.items },
+      { id: "equipment", label: LIBRARY_COPY.modes.equipment },
+      { id: "terrains", label: LIBRARY_COPY.modes.terrains },
+      { id: "regions", label: LIBRARY_COPY.modes.regions }
+    ];
+    this.tabNav = createTabNavigation(root, {
+      tabs,
+      activeTab: this.mode,
+      className: "sm-lib-header",
+      onSelect: (mode) => {
+        void this.activateMode(mode);
+      }
+    });
     const bar = root.createDiv({ cls: "sm-cc-searchbar" });
     const search = bar.createEl("input", { attr: { type: "text", placeholder: LIBRARY_COPY.searchPlaceholder } });
     search.value = this.getQueryForMode(this.mode);
@@ -46791,7 +49892,7 @@ var LibraryView = class extends import_obsidian29.ItemView {
   async activateMode(mode) {
     if (this.activeRenderer?.mode === mode) {
       this.mode = mode;
-      this.updateHeaderButtons();
+      this.tabNav?.setActiveTab(mode);
       this.updateSourceDescription();
       const query2 = this.getQueryForMode(mode);
       if (this.searchInput) this.searchInput.value = query2;
@@ -46804,7 +49905,7 @@ var LibraryView = class extends import_obsidian29.ItemView {
       this.activeRenderer = void 0;
     }
     this.mode = mode;
-    this.updateHeaderButtons();
+    this.tabNav?.setActiveTab(mode);
     this.updateSourceDescription();
     if (!this.listEl) return;
     const renderer = this.createRenderer(mode, this.listEl);
@@ -46833,11 +49934,6 @@ var LibraryView = class extends import_obsidian29.ItemView {
         throw new Error(`Unsupported mode: ${mode}`);
     }
   }
-  updateHeaderButtons() {
-    for (const [mode, btn] of this.headerButtons.entries()) {
-      btn.classList.toggle("is-active", this.mode === mode);
-    }
-  }
   updateSourceDescription() {
     if (!this.descEl) return;
     const text = `${LIBRARY_COPY.sources.prefix}${describeLibrarySource(this.mode)}`;
@@ -46846,7 +49942,9 @@ var LibraryView = class extends import_obsidian29.ItemView {
   async onCreate(name) {
     if (!name && this.mode !== "creatures" && this.mode !== "spells" && this.mode !== "items") return;
     if (!this.activeRenderer) return;
-    await this.activeRenderer.handleCreate(name);
+    if (this.activeRenderer.handleCreate) {
+      await this.activeRenderer.handleCreate(name);
+    }
     this.searchInput?.focus();
   }
   getQueryForMode(mode) {
@@ -46860,285 +49958,72 @@ async function openLibrary(app) {
 }
 
 // src/apps/almanac/index.ts
-var import_obsidian30 = require("obsidian");
+var import_obsidian33 = require("obsidian");
 
-// src/apps/almanac/domain/calendar-schema.ts
-var DEFAULT_HOURS_PER_DAY = 24;
-var DEFAULT_MINUTES_PER_HOUR = 60;
-var DEFAULT_SECONDS_PER_MINUTE = 60;
-var DEFAULT_MINUTE_STEP = 1;
-function getTotalDaysInYear(schema) {
-  return schema.months.reduce((sum, month) => sum + month.length, 0);
-}
-function getMonthById(schema, monthId) {
-  return schema.months.find((m) => m.id === monthId) ?? null;
-}
-function getMonthIndex(schema, monthId) {
-  return schema.months.findIndex((m) => m.id === monthId);
-}
-function getMonthByIndex(schema, index) {
-  if (index < 0 || index >= schema.months.length) {
-    return null;
-  }
-  return schema.months[index];
-}
-function getHoursPerDay(schema) {
-  return schema.hoursPerDay ?? DEFAULT_HOURS_PER_DAY;
-}
-function getMinutesPerHour(schema) {
-  return schema.minutesPerHour ?? DEFAULT_MINUTES_PER_HOUR;
-}
-function getSecondsPerMinute(schema) {
-  return schema.secondsPerMinute ?? DEFAULT_SECONDS_PER_MINUTE;
-}
-function getMinuteStep(schema) {
-  return schema.minuteStep ?? DEFAULT_MINUTE_STEP;
-}
-function getTimeDefinition(schema) {
-  return {
-    hoursPerDay: getHoursPerDay(schema),
-    minutesPerHour: getMinutesPerHour(schema),
-    secondsPerMinute: getSecondsPerMinute(schema),
-    minuteStep: getMinuteStep(schema)
-  };
-}
-
-// src/apps/almanac/domain/calendar-timestamp.ts
-function createDayTimestamp(calendarId, year, monthId, day) {
-  return {
-    calendarId,
-    year,
-    monthId,
-    day,
-    precision: "day"
-  };
-}
-function createHourTimestamp(calendarId, year, monthId, day, hour) {
-  return {
-    calendarId,
-    year,
-    monthId,
-    day,
-    hour,
-    precision: "hour"
-  };
-}
-function createMinuteTimestamp(calendarId, year, monthId, day, hour, minute) {
-  return {
-    calendarId,
-    year,
-    monthId,
-    day,
-    hour,
-    minute,
-    precision: "minute"
-  };
-}
-function compareTimestampsWithSchema(schema, a, b) {
-  if (a.year !== b.year) {
-    return a.year - b.year;
-  }
-  if (a.monthId !== b.monthId) {
-    const aMonthIndex = getMonthIndex(schema, a.monthId);
-    const bMonthIndex = getMonthIndex(schema, b.monthId);
-    if (aMonthIndex === -1 || bMonthIndex === -1) {
-      return a.monthId.localeCompare(b.monthId);
-    }
-    return aMonthIndex - bMonthIndex;
-  }
-  if (a.day !== b.day) {
-    return a.day - b.day;
-  }
-  const aHour = a.hour ?? 0;
-  const bHour = b.hour ?? 0;
-  if (aHour !== bHour) {
-    return aHour - bHour;
-  }
-  const aMinute = a.minute ?? 0;
-  const bMinute = b.minute ?? 0;
-  return aMinute - bMinute;
-}
-function formatTimestamp(ts, monthName) {
-  const month = monthName ?? ts.monthId;
-  if (ts.precision === "day") {
-    return `Year ${ts.year}, Day ${ts.day} of ${month}`;
-  }
-  if (ts.precision === "hour") {
-    return `Year ${ts.year}, Day ${ts.day} of ${month}, ${String(ts.hour).padStart(2, "0")}:00`;
-  }
-  const hourStr = String(ts.hour ?? 0).padStart(2, "0");
-  const minuteStr = String(ts.minute ?? 0).padStart(2, "0");
-  return `Year ${ts.year}, Day ${ts.day} of ${month}, ${hourStr}:${minuteStr}`;
-}
-
-// src/apps/almanac/domain/time-arithmetic.ts
-function advanceTime(schema, current, amount, unit) {
-  if (unit === "day") {
-    return advanceByDays(schema, current, amount);
-  }
-  if (unit === "hour") {
-    return advanceByHours(schema, current, amount);
-  }
-  return advanceByMinutes(schema, current, amount);
-}
-function advanceByDays(schema, current, days) {
-  let year = current.year;
-  let monthId = current.monthId;
-  let day = current.day;
-  const hour = current.hour;
-  let remainingDays = days;
-  let normalized = false;
-  while (remainingDays !== 0) {
-    const month = getMonthById(schema, monthId);
-    if (!month) {
-      throw new Error(`Invalid month ID: ${monthId}`);
-    }
-    if (remainingDays > 0) {
-      const daysLeftInMonth = month.length - day + 1;
-      if (remainingDays < daysLeftInMonth) {
-        day += remainingDays;
-        remainingDays = 0;
-      } else {
-        remainingDays -= daysLeftInMonth;
-        day = 1;
-        const nextMonth = getNextMonth(schema, monthId);
-        if (!nextMonth) {
-          year += 1;
-          monthId = schema.months[0].id;
-          normalized = true;
-        } else {
-          monthId = nextMonth.id;
-        }
-      }
-    } else {
-      const daysToBoundary = day - 1;
-      if (Math.abs(remainingDays) <= daysToBoundary) {
-        day += remainingDays;
-        remainingDays = 0;
-      } else {
-        remainingDays += daysToBoundary + 1;
-        const prevMonth = getPreviousMonth(schema, monthId);
-        if (!prevMonth) {
-          year -= 1;
-          const lastMonth = schema.months[schema.months.length - 1];
-          monthId = lastMonth.id;
-          day = lastMonth.length;
-          normalized = true;
-        } else {
-          monthId = prevMonth.id;
-          day = prevMonth.length;
-        }
-      }
-    }
-  }
-  const result = hour !== void 0 ? createHourTimestamp(current.calendarId, year, monthId, day, hour) : createDayTimestamp(current.calendarId, year, monthId, day);
-  return { timestamp: result, normalized };
-}
-function advanceByHours(schema, current, hours) {
-  const hoursPerDay = getHoursPerDay(schema);
-  const currentHour = current.hour ?? 0;
-  let totalHours = currentHour + hours;
-  let carriedDays = 0;
-  let normalized = false;
-  if (totalHours >= hoursPerDay) {
-    carriedDays = Math.floor(totalHours / hoursPerDay);
-    totalHours = totalHours % hoursPerDay;
-    normalized = true;
-  } else if (totalHours < 0) {
-    const daysNeeded = Math.ceil(Math.abs(totalHours) / hoursPerDay);
-    carriedDays = -daysNeeded;
-    totalHours = totalHours + daysNeeded * hoursPerDay;
-    normalized = true;
-  }
-  let baseTimestamp = current;
-  if (carriedDays !== 0) {
-    const dayResult = advanceByDays(schema, current, carriedDays);
-    baseTimestamp = dayResult.timestamp;
-    normalized = normalized || dayResult.normalized;
-  }
-  const result = createHourTimestamp(
-    baseTimestamp.calendarId,
-    baseTimestamp.year,
-    baseTimestamp.monthId,
-    baseTimestamp.day,
-    totalHours
-  );
-  return { timestamp: result, normalized, carriedDays: carriedDays !== 0 ? carriedDays : void 0, carriedHours: hours };
-}
-function getNextMonth(schema, currentMonthId) {
-  const index = getMonthIndex(schema, currentMonthId);
-  if (index === -1) {
-    throw new Error(`Month not found: ${currentMonthId}`);
-  }
-  if (index === schema.months.length - 1) {
-    return null;
-  }
-  return getMonthByIndex(schema, index + 1);
-}
-function getPreviousMonth(schema, currentMonthId) {
-  const index = getMonthIndex(schema, currentMonthId);
-  if (index === -1) {
-    throw new Error(`Month not found: ${currentMonthId}`);
-  }
-  if (index === 0) {
-    return null;
-  }
-  return getMonthByIndex(schema, index - 1);
-}
-function advanceByMinutes(schema, current, minutes) {
-  const minutesPerHour = getMinutesPerHour(schema);
-  const currentMinute = current.minute ?? 0;
-  const currentHour = current.hour ?? 0;
-  let totalMinutes = currentMinute + minutes;
-  let carriedHours = 0;
-  let normalized = false;
-  if (totalMinutes >= minutesPerHour) {
-    carriedHours = Math.floor(totalMinutes / minutesPerHour);
-    totalMinutes = totalMinutes % minutesPerHour;
-    normalized = true;
-  } else if (totalMinutes < 0) {
-    const hoursNeeded = Math.ceil(Math.abs(totalMinutes) / minutesPerHour);
-    carriedHours = -hoursNeeded;
-    totalMinutes = totalMinutes + hoursNeeded * minutesPerHour;
-    normalized = true;
-  }
-  let baseTimestamp = current;
-  if (carriedHours !== 0) {
-    const hourResult = advanceByHours(schema, current, carriedHours);
-    baseTimestamp = hourResult.timestamp;
-    normalized = normalized || hourResult.normalized;
-  }
-  const result = createMinuteTimestamp(
-    baseTimestamp.calendarId,
-    baseTimestamp.year,
-    baseTimestamp.monthId,
-    baseTimestamp.day,
-    // The hour component might become undefined if the schema uses day precision only.
-    // Fallback to zero in that case.
-    baseTimestamp.hour ?? 0,
-    totalMinutes
-  );
-  return { timestamp: result, normalized };
-}
+// src/apps/almanac/mode/almanac-controller.ts
+var import_obsidian31 = require("obsidian");
+init_calendar_schema();
+init_calendar_timestamp();
+init_time_arithmetic();
 
 // src/apps/almanac/data/in-memory-repository.ts
+init_calendar_event();
+init_calendar_timestamp();
+
+// src/apps/almanac/data/almanac-repository.ts
+var AlmanacRepositoryError = class extends Error {
+  constructor(code, message, details) {
+    super(message);
+    this.scope = "phenomenon";
+    this.name = "AlmanacRepositoryError";
+    this.code = code;
+    this.details = details;
+  }
+};
+
+// src/apps/almanac/data/in-memory-repository.ts
+function cloneCalendar(schema, defaults) {
+  return {
+    ...schema,
+    isDefaultGlobal: defaults.global === schema.id,
+    defaultTravelIds: Object.entries(defaults.travel).filter(([, calendarId]) => calendarId === schema.id).map(([travelId]) => travelId)
+  };
+}
+function toDefaultsSnapshot(global, travelDefaults) {
+  const travel = {};
+  for (const [travelId, calendarId] of travelDefaults.entries()) {
+    if (calendarId) {
+      travel[travelId] = calendarId;
+    }
+  }
+  return { global, travel };
+}
 var InMemoryCalendarRepository = class {
   constructor() {
     this.calendars = /* @__PURE__ */ new Map();
+    this.globalDefault = null;
     this.travelDefaults = /* @__PURE__ */ new Map();
   }
-  // travelId -> calendarId
   async listCalendars() {
-    return Array.from(this.calendars.values());
+    const snapshot = toDefaultsSnapshot(this.globalDefault, this.travelDefaults);
+    return Array.from(this.calendars.values()).map((calendar) => cloneCalendar(calendar, snapshot));
   }
   async getCalendar(id) {
-    return this.calendars.get(id) ?? null;
-  }
-  async createCalendar(schema) {
-    if (this.calendars.has(schema.id)) {
-      throw new Error(`Calendar with ID ${schema.id} already exists`);
+    const calendar = this.calendars.get(id);
+    if (!calendar) {
+      return null;
     }
-    this.calendars.set(schema.id, schema);
+    const snapshot = toDefaultsSnapshot(this.globalDefault, this.travelDefaults);
+    return cloneCalendar(calendar, snapshot);
+  }
+  async createCalendar(input) {
+    if (this.calendars.has(input.id)) {
+      throw new Error(`Calendar with ID ${input.id} already exists`);
+    }
+    this.calendars.set(input.id, { ...input });
+    if (input.isDefaultGlobal) {
+      this.globalDefault = input.id;
+    }
   }
   async updateCalendar(id, updates) {
     const existing = this.calendars.get(id);
@@ -47146,44 +50031,43 @@ var InMemoryCalendarRepository = class {
       throw new Error(`Calendar with ID ${id} not found`);
     }
     this.calendars.set(id, { ...existing, ...updates });
+    if (updates.isDefaultGlobal) {
+      this.globalDefault = id;
+    } else if (updates.isDefaultGlobal === false && this.globalDefault === id) {
+      this.globalDefault = null;
+    }
   }
   async deleteCalendar(id) {
-    if (!this.calendars.has(id)) {
+    if (!this.calendars.delete(id)) {
       throw new Error(`Calendar with ID ${id} not found`);
     }
-    this.calendars.delete(id);
+    if (this.globalDefault === id) {
+      this.globalDefault = null;
+    }
     for (const [travelId, calendarId] of this.travelDefaults.entries()) {
       if (calendarId === id) {
         this.travelDefaults.delete(travelId);
       }
     }
   }
-  async setGlobalDefault(calendarId) {
-    const calendar = this.calendars.get(calendarId);
-    if (!calendar) {
-      throw new Error(`Calendar with ID ${calendarId} not found`);
+  async setDefault(input) {
+    if (!this.calendars.has(input.calendarId)) {
+      throw new Error(`Calendar with ID ${input.calendarId} not found`);
     }
-    for (const [id, cal] of this.calendars.entries()) {
-      if (cal.isDefaultGlobal) {
-        this.calendars.set(id, { ...cal, isDefaultGlobal: false });
-      }
+    if (input.scope === "global") {
+      this.globalDefault = input.calendarId;
+      return;
     }
-    this.calendars.set(calendarId, { ...calendar, isDefaultGlobal: true });
+    if (!input.travelId) {
+      throw new Error("Travel ID required for travel scope");
+    }
+    this.travelDefaults.set(input.travelId, input.calendarId);
+  }
+  async getDefaults() {
+    return toDefaultsSnapshot(this.globalDefault, this.travelDefaults);
   }
   async getGlobalDefault() {
-    for (const calendar of this.calendars.values()) {
-      if (calendar.isDefaultGlobal) {
-        return calendar;
-      }
-    }
-    return null;
-  }
-  async setTravelDefault(travelId, calendarId) {
-    const calendar = this.calendars.get(calendarId);
-    if (!calendar) {
-      throw new Error(`Calendar with ID ${calendarId} not found`);
-    }
-    this.travelDefaults.set(travelId, calendarId);
+    return this.globalDefault;
   }
   async getTravelDefault(travelId) {
     return this.travelDefaults.get(travelId) ?? null;
@@ -47191,39 +50075,61 @@ var InMemoryCalendarRepository = class {
   async clearTravelDefault(travelId) {
     this.travelDefaults.delete(travelId);
   }
-  // Helper: Initialize with test data
+  async setGlobalDefault(calendarId) {
+    await this.setDefault({ calendarId, scope: "global" });
+  }
+  async setTravelDefault(travelId, calendarId) {
+    await this.setDefault({ calendarId, scope: "travel", travelId });
+  }
+  async getGlobalDefaultCalendar() {
+    const id = await this.getGlobalDefault();
+    return id ? this.getCalendar(id) : null;
+  }
   seed(schemas) {
     schemas.forEach((schema) => {
       this.calendars.set(schema.id, schema);
+      if (schema.isDefaultGlobal) {
+        this.globalDefault = schema.id;
+      }
     });
   }
-  // Helper: Clear all data
   clear() {
     this.calendars.clear();
     this.travelDefaults.clear();
+    this.globalDefault = null;
   }
 };
 var InMemoryEventRepository = class {
-  constructor() {
+  constructor(resolver) {
     this.events = /* @__PURE__ */ new Map();
+    this.resolveSchema = resolver ?? (() => null);
   }
-  async listEvents(calendarId, schema) {
-    const events = Array.from(this.events.values()).filter((e) => e.calendarId === calendarId).sort((a, b) => compareTimestampsWithSchema(schema, a.date, b.date));
-    return events;
+  bindCalendarRepository(repository) {
+    this.resolveSchema = async (id) => {
+      const calendar = await repository.getCalendar(id);
+      return calendar ?? null;
+    };
   }
-  async getUpcomingEvents(calendarId, schema, from, limit) {
-    const allEvents = await this.listEvents(calendarId, schema);
-    return allEvents.filter((e) => compareTimestampsWithSchema(schema, e.date, from) >= 0).slice(0, limit);
-  }
-  async getEventsInRange(calendarId, schema, start, end) {
-    const allEvents = await this.listEvents(calendarId, schema);
+  async listEvents(calendarId, range) {
+    const schema = await this.requireSchema(calendarId);
+    const events = this.collectForCalendar(calendarId, schema);
+    if (!range) {
+      return events;
+    }
+    const start = range.start;
+    const end = range.end;
     const rangeStart = compareTimestampsWithSchema(schema, start, end) <= 0 ? start : end;
     const rangeEnd = rangeStart === start ? end : start;
-    return allEvents.filter((event) => {
-      const afterStart = compareTimestampsWithSchema(schema, event.date, rangeStart) > 0;
-      const beforeOrEqualEnd = compareTimestampsWithSchema(schema, event.date, rangeEnd) <= 0;
-      return afterStart && beforeOrEqualEnd;
+    return events.filter((event) => {
+      const anchor = getEventAnchorTimestamp(event) ?? event.date;
+      const afterStart = compareTimestampsWithSchema(schema, anchor, rangeStart) >= 0;
+      const beforeEnd = compareTimestampsWithSchema(schema, anchor, rangeEnd) <= 0;
+      return afterStart && beforeEnd;
     });
+  }
+  async listUpcoming(calendarId, limit) {
+    const schema = await this.requireSchema(calendarId);
+    return this.collectForCalendar(calendarId, schema).slice(0, limit);
   }
   async createEvent(event) {
     if (this.events.has(event.id)) {
@@ -47239,49 +50145,188 @@ var InMemoryEventRepository = class {
     this.events.set(id, { ...existing, ...updates });
   }
   async deleteEvent(id) {
-    if (!this.events.has(id)) {
+    if (!this.events.delete(id)) {
       throw new Error(`Event with ID ${id} not found`);
     }
-    this.events.delete(id);
   }
-  // Helper: Initialize with test data
+  async getEventsInRange(calendarId, schema, start, end) {
+    const range = { calendarId, start, end };
+    return this.listEvents(calendarId, range);
+  }
+  async getUpcomingEvents(calendarId, schema, from, limit) {
+    const events = await this.listEvents(calendarId);
+    return events.filter((event) => compareTimestampsWithSchema(schema, getEventAnchorTimestamp(event) ?? event.date, from) >= 0).slice(0, limit);
+  }
   seed(events) {
     events.forEach((event) => {
       this.events.set(event.id, event);
     });
   }
-  // Helper: Clear all data
   clear() {
     this.events.clear();
   }
+  async requireSchema(calendarId) {
+    const resolved = await this.resolveSchema(calendarId);
+    if (!resolved) {
+      throw new Error(`Calendar schema for ${calendarId} not available`);
+    }
+    return resolved;
+  }
+  collectForCalendar(calendarId, schema) {
+    return Array.from(this.events.values()).filter((event) => event.calendarId === calendarId).sort((a, b) => {
+      const left = getEventAnchorTimestamp(a) ?? a.date;
+      const right = getEventAnchorTimestamp(b) ?? b.date;
+      return compareTimestampsWithSchema(schema, left, right);
+    });
+  }
 };
+var DEFAULT_PAGE_SIZE = 25;
 var InMemoryPhenomenonRepository = class {
   constructor() {
     this.phenomena = /* @__PURE__ */ new Map();
   }
-  async listPhenomena() {
-    return Array.from(this.phenomena.values());
+  async listPhenomena(input) {
+    if (!input) {
+      return Array.from(this.phenomena.values()).map((phenomenon) => ({ ...phenomenon }));
+    }
+    const filters = input.filters;
+    const filtered = Array.from(this.phenomena.values()).filter((phenomenon) => matchesPhenomenonFilters(phenomenon, filters));
+    const summaries = filtered.map((phenomenon) => toSummary(phenomenon));
+    const sorted = sortSummariesForInMemory(filtered, summaries, input.sort);
+    const { items, nextCursor } = paginate(sorted, input.pagination ?? { limit: DEFAULT_PAGE_SIZE });
+    return {
+      items: items.map((entry) => entry.summary),
+      pagination: { cursor: nextCursor, hasMore: nextCursor !== void 0 },
+      generatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
   }
   async getPhenomenon(id) {
-    return this.phenomena.get(id) ?? null;
+    const phenomenon = this.phenomena.get(id);
+    return phenomenon ? { ...phenomenon } : null;
   }
-  async upsertPhenomenon(phenomenon) {
-    this.phenomena.set(phenomenon.id, phenomenon);
+  async upsertPhenomenon(draft) {
+    this.phenomena.set(draft.id, { ...draft });
+    const stored = this.phenomena.get(draft.id);
+    if (!stored) {
+      throw new Error(`Failed to upsert phenomenon ${draft.id}`);
+    }
+    return { ...stored };
   }
   async deletePhenomenon(id) {
-    this.phenomena.delete(id);
+    if (!this.phenomena.delete(id)) {
+      throw new Error(`Phenomenon with ID ${id} not found`);
+    }
+  }
+  async updateLinks(update) {
+    const existing = this.phenomena.get(update.phenomenonId);
+    if (!existing) {
+      throw new AlmanacRepositoryError("validation_error", `Phenomenon ${update.phenomenonId} not found`);
+    }
+    const duplicates = findDuplicateCalendarIds(update.calendarLinks);
+    if (duplicates.length) {
+      throw new AlmanacRepositoryError("phenomenon_conflict", "Duplicate calendar links", { duplicates });
+    }
+    if (existing.rule.type === "astronomical") {
+      const hasReference = Boolean(existing.rule.referenceCalendarId);
+      const hasHookReference = update.calendarLinks.some(
+        (link) => typeof link.hook?.config?.referenceCalendarId === "string"
+      );
+      if (!hasReference && !hasHookReference) {
+        throw new AlmanacRepositoryError(
+          "astronomy_source_missing",
+          "Astronomical phenomena require a reference calendar"
+        );
+      }
+    }
+    const appliesToCalendarIds = update.calendarLinks.map((link) => link.calendarId);
+    const visibility = appliesToCalendarIds.length ? "selected" : "all_calendars";
+    const hooks = update.calendarLinks.filter((link) => Boolean(link.hook)).map((link) => ({ ...link.hook, priority: link.priority }));
+    const priority = update.calendarLinks.reduce((max, link) => Math.max(max, link.priority), existing.priority);
+    const updated = {
+      ...existing,
+      appliesToCalendarIds,
+      visibility,
+      hooks: hooks.length ? hooks : existing.hooks,
+      priority
+    };
+    this.phenomena.set(existing.id, updated);
+    return { ...updated };
+  }
+  async listTemplates() {
+    return Array.from(this.phenomena.values()).filter((phenomenon) => phenomenon.template).map((phenomenon) => ({
+      id: phenomenon.id,
+      name: phenomenon.name,
+      category: phenomenon.category,
+      rule: phenomenon.rule,
+      effects: phenomenon.effects
+    }));
   }
   seed(phenomena) {
     phenomena.forEach((phenomenon) => {
-      this.phenomena.set(phenomenon.id, phenomenon);
+      this.phenomena.set(phenomenon.id, { ...phenomenon });
     });
   }
   clear() {
     this.phenomena.clear();
   }
 };
+function matchesPhenomenonFilters(phenomenon, filters) {
+  if (filters.categories?.length && !filters.categories.includes(phenomenon.category)) {
+    return false;
+  }
+  if (filters.calendarIds?.length) {
+    if (phenomenon.visibility === "selected") {
+      return phenomenon.appliesToCalendarIds.some((id) => filters.calendarIds.includes(id));
+    }
+    return true;
+  }
+  return true;
+}
+function toSummary(phenomenon) {
+  return {
+    id: phenomenon.id,
+    name: phenomenon.name,
+    category: phenomenon.category,
+    linkedCalendars: phenomenon.appliesToCalendarIds,
+    badge: phenomenon.tags?.[0]
+  };
+}
+function sortSummariesForInMemory(phenomena, summaries, sort) {
+  const paired = phenomena.map((phenomenon, index) => ({ phenomenon, summary: summaries[index] }));
+  paired.sort((a, b) => {
+    if (sort === "priority_desc") {
+      return b.phenomenon.priority - a.phenomenon.priority || a.summary.name.localeCompare(b.summary.name);
+    }
+    if (sort === "category_asc") {
+      return a.summary.category.localeCompare(b.summary.category) || a.summary.name.localeCompare(b.summary.name);
+    }
+    return a.summary.name.localeCompare(b.summary.name);
+  });
+  return paired;
+}
+function paginate(entries, pagination) {
+  const offset = pagination.cursor ? Number.parseInt(pagination.cursor, 10) || 0 : 0;
+  const limit = pagination.limit ?? DEFAULT_PAGE_SIZE;
+  const slice = entries.slice(offset, offset + limit);
+  const nextOffset = offset + slice.length;
+  const hasMore = nextOffset < entries.length;
+  return { items: slice, nextCursor: hasMore ? String(nextOffset) : void 0 };
+}
+function findDuplicateCalendarIds(links) {
+  const counts = /* @__PURE__ */ new Map();
+  for (const link of links) {
+    counts.set(link.calendarId, (counts.get(link.calendarId) ?? 0) + 1);
+  }
+  return Array.from(counts.entries()).filter(([, count]) => count > 1).map(([calendarId]) => calendarId);
+}
+
+// src/apps/almanac/data/in-memory-gateway.ts
+init_calendar_event();
+init_calendar_schema();
+init_calendar_timestamp();
 
 // src/apps/almanac/domain/phenomenon.ts
+var DEFAULT_PHENOMENON_PRIORITY = 0;
 function isPhenomenonVisibleForCalendar(phenomenon, calendarId) {
   if (phenomenon.visibility === "all_calendars") {
     return true;
@@ -47291,166 +50336,22 @@ function isPhenomenonVisibleForCalendar(phenomenon, calendarId) {
 function requiresOffsetComputation(phenomenon) {
   return phenomenon.timePolicy === "offset";
 }
-
-// src/apps/almanac/domain/calendar-math.ts
-function getMonthLength(schema, monthId) {
-  const month = getMonthById(schema, monthId);
-  return month?.length ?? null;
+function getPhenomenonPriority(phenomenon) {
+  return phenomenon.priority ?? DEFAULT_PHENOMENON_PRIORITY;
 }
-function getDayOfYear(schema, timestamp) {
-  const monthIndex = getMonthIndex(schema, timestamp.monthId);
-  if (monthIndex === -1) {
-    throw new Error(`Month with id ${timestamp.monthId} not found in schema ${schema.id}`);
-  }
-  let days = 0;
-  for (let index = 0; index < monthIndex; index++) {
-    days += schema.months[index].length;
-  }
-  return days + timestamp.day;
+function getPhenomenonHooks(phenomenon) {
+  return phenomenon.hooks ?? [];
 }
-function resolveMonthAndDayByDayOfYear(schema, dayOfYear) {
-  if (dayOfYear < 1 || dayOfYear > getTotalDaysInYear(schema)) {
-    throw new RangeError(`Day-of-year ${dayOfYear} is out of range for schema ${schema.id}`);
-  }
-  let remaining = dayOfYear;
-  for (const month of schema.months) {
-    if (remaining <= month.length) {
-      return { monthId: month.id, day: remaining };
-    }
-    remaining -= month.length;
-  }
-  throw new RangeError(`Unable to resolve day-of-year ${dayOfYear} for schema ${schema.id}`);
-}
-function createTimestampFromDayOfYear(schema, calendarId, year, dayOfYear) {
-  const { monthId, day } = resolveMonthAndDayByDayOfYear(schema, dayOfYear);
-  return createDayTimestamp(calendarId, year, monthId, day);
-}
-function timestampToAbsoluteDay(schema, timestamp) {
-  const daysPerYear = getTotalDaysInYear(schema);
-  const dayOfYearIndex = getDayOfYear(schema, timestamp) - 1;
-  const yearOffset = timestamp.year - schema.epoch.year;
-  return yearOffset * daysPerYear + dayOfYearIndex;
-}
-function absoluteDayToTimestamp(schema, calendarId, absoluteDay) {
-  const daysPerYear = getTotalDaysInYear(schema);
-  let yearOffset = Math.floor(absoluteDay / daysPerYear);
-  let dayOfYearIndex = absoluteDay - yearOffset * daysPerYear;
-  if (dayOfYearIndex < 0) {
-    dayOfYearIndex += daysPerYear;
-    yearOffset -= 1;
-  }
-  const targetYear = schema.epoch.year + yearOffset;
-  return createTimestampFromDayOfYear(schema, calendarId, targetYear, dayOfYearIndex + 1);
-}
-function clampDayToMonth(schema, monthId, day) {
-  const monthLength = getMonthLength(schema, monthId);
-  if (monthLength === null) {
-    throw new Error(`Month with id ${monthId} not found in schema ${schema.id}`);
-  }
-  if (day < 1) return 1;
-  if (day > monthLength) return monthLength;
-  return day;
-}
-function mod(value, divisor) {
-  return (value % divisor + divisor) % divisor;
-}
-
-// src/apps/almanac/domain/repeat-rule.ts
-var UnsupportedRepeatRuleError = class extends Error {
-  constructor(ruleType) {
-    super(`Repeat rule type "${ruleType}" is not supported yet.`);
-    this.name = "UnsupportedRepeatRuleError";
-  }
-};
-var InvalidRepeatRuleError = class extends Error {
-  constructor(message) {
-    super(message);
-    this.name = "InvalidRepeatRuleError";
-  }
-};
-function calculateNextOccurrence(schema, calendarId, rule, start, options = {}) {
-  const includeStart = options.includeStart ?? false;
-  switch (rule.type) {
-    case "annual":
-      return resolveNextAnnualOccurrence(schema, calendarId, rule, start, includeStart);
-    case "monthly_position":
-      return resolveNextMonthlyOccurrence(schema, calendarId, rule, start, includeStart);
-    case "weekly_dayIndex":
-      return resolveNextWeeklyOccurrence(schema, calendarId, rule, start, includeStart);
-    case "astronomical":
-    case "custom":
-      throw new UnsupportedRepeatRuleError(rule.type);
-    default:
-      const _never = rule;
-      return _never;
-  }
-}
-function calculateOccurrencesInRange(schema, calendarId, rule, rangeStart, rangeEnd, options = {}) {
-  const limit = options.limit ?? 12;
-  if (limit <= 0) return [];
-  const compare = compareTimestampsWithSchema(schema, rangeStart, rangeEnd);
-  const [start, end] = compare <= 0 ? [rangeStart, rangeEnd] : [rangeEnd, rangeStart];
-  const occurrences = [];
-  let cursor = calculateNextOccurrence(schema, calendarId, rule, start, options);
-  while (cursor && occurrences.length < limit && compareTimestampsWithSchema(schema, cursor, end) <= 0) {
-    occurrences.push(cursor);
-    cursor = calculateNextOccurrence(schema, calendarId, rule, cursor, { includeStart: false });
-    if (cursor && occurrences.length > 0) {
-      const prev = occurrences[occurrences.length - 1];
-      if (compareTimestampsWithSchema(schema, cursor, prev) === 0) {
-        break;
-      }
-    }
-  }
-  return occurrences;
-}
-function resolveNextAnnualOccurrence(schema, calendarId, rule, start, includeStart) {
-  const totalDays = getAnnualRange(schema);
-  if (totalDays <= 0) {
-    throw new InvalidRepeatRuleError(`Calendar schema ${schema.id} has no days configured.`);
-  }
-  const zeroBased = ((rule.offsetDayOfYear - 1) % totalDays + totalDays) % totalDays;
-  const normalisedOffset = zeroBased + 1;
-  const candidateCurrentYear = createTimestampFromDayOfYear(schema, calendarId, start.year, normalisedOffset);
-  const comparison = compareTimestampsWithSchema(schema, candidateCurrentYear, start);
-  if (comparison > 0 || comparison === 0 && includeStart) {
-    return candidateCurrentYear;
-  }
-  return createTimestampFromDayOfYear(schema, calendarId, start.year + 1, normalisedOffset);
-}
-function resolveNextMonthlyOccurrence(schema, calendarId, rule, start, includeStart) {
-  const monthLength = clampDayToMonth(schema, rule.monthId, rule.day);
-  const initialCandidate = createDayTimestamp(calendarId, start.year, rule.monthId, monthLength);
-  const comparison = compareTimestampsWithSchema(schema, initialCandidate, start);
-  if (comparison > 0 || comparison === 0 && includeStart) {
-    return initialCandidate;
-  }
-  return createDayTimestamp(calendarId, start.year + 1, rule.monthId, monthLength);
-}
-function resolveNextWeeklyOccurrence(schema, calendarId, rule, start, includeStart) {
-  const daysPerWeek = schema.daysPerWeek;
-  if (rule.dayIndex < 0 || rule.dayIndex >= daysPerWeek) {
-    throw new InvalidRepeatRuleError(`dayIndex ${rule.dayIndex} is out of range for schema ${schema.id}`);
-  }
-  const interval = Math.max(1, rule.interval ?? 1);
-  const absoluteStart = timestampToAbsoluteDay(schema, start);
-  const currentDayIndex = mod(absoluteStart, daysPerWeek);
-  let delta = mod(rule.dayIndex - currentDayIndex, daysPerWeek);
-  if (delta === 0 && !includeStart) {
-    delta = daysPerWeek * interval;
-  }
-  const intervalDays = daysPerWeek * interval;
-  if (delta % daysPerWeek !== 0 && interval > 1) {
-    delta += mod(intervalDays - delta % intervalDays, intervalDays);
-  }
-  const candidateAbsolute = absoluteStart + delta;
-  return absoluteDayToTimestamp(schema, calendarId, candidateAbsolute);
-}
-function getAnnualRange(schema) {
-  return schema.months.reduce((sum, month) => sum + month.length, 0);
+function getPhenomenonEffects(phenomenon) {
+  return phenomenon.effects ?? [];
 }
 
 // src/apps/almanac/domain/phenomenon-engine.ts
+init_calendar_schema();
+init_calendar_timestamp();
+init_repeat_rule();
+init_time_arithmetic();
+init_hook_descriptor();
 var UnsupportedTimePolicyError = class extends Error {
   constructor(policy) {
     super(`Phenomenon time policy "${policy}" is not supported yet.`);
@@ -47458,57 +50359,73 @@ var UnsupportedTimePolicyError = class extends Error {
   }
 };
 function computeNextPhenomenonOccurrence(phenomenon, schema, calendarId, start, options = {}) {
-  const baseTimestamp = calculateNextOccurrence(schema, calendarId, phenomenon.rule, start, options);
+  const { services, ...ruleOptions } = options;
+  const baseTimestamp = calculateNextOccurrence(
+    schema,
+    calendarId,
+    phenomenon.rule,
+    start,
+    ruleOptions,
+    services
+  );
   if (!baseTimestamp) {
     return null;
   }
-  const timestamp = applyTimePolicy(phenomenon, schema, calendarId, baseTimestamp);
-  return {
-    phenomenonId: phenomenon.id,
-    name: phenomenon.name,
-    calendarId,
-    timestamp,
-    category: phenomenon.category,
-    priority: phenomenon.priority
-  };
+  return buildPhenomenonOccurrence(phenomenon, schema, calendarId, baseTimestamp);
 }
 function computePhenomenonOccurrencesInRange(phenomenon, schema, calendarId, rangeStart, rangeEnd, options = {}) {
+  const { services, ...ruleOptions } = options;
   const baseOccurrences = calculateOccurrencesInRange(
     schema,
     calendarId,
     phenomenon.rule,
     rangeStart,
     rangeEnd,
-    options
+    ruleOptions,
+    services
   );
-  return baseOccurrences.map((timestamp) => ({
+  return baseOccurrences.map((timestamp) => buildPhenomenonOccurrence(phenomenon, schema, calendarId, timestamp));
+}
+function buildPhenomenonOccurrence(phenomenon, schema, calendarId, baseTimestamp) {
+  const { start, end, durationMinutes } = applyTimePolicy(phenomenon, schema, calendarId, baseTimestamp);
+  return {
     phenomenonId: phenomenon.id,
     name: phenomenon.name,
     calendarId,
-    timestamp: applyTimePolicy(phenomenon, schema, calendarId, timestamp),
+    timestamp: start,
+    endTimestamp: end,
     category: phenomenon.category,
-    priority: phenomenon.priority
-  }));
+    priority: getPhenomenonPriority(phenomenon),
+    durationMinutes,
+    hooks: sortHooksByPriority(getPhenomenonHooks(phenomenon)),
+    effects: getPhenomenonEffects(phenomenon)
+  };
 }
 function applyTimePolicy(phenomenon, schema, calendarId, baseTimestamp) {
-  if (requiresOffsetComputation(phenomenon)) {
+  const { hoursPerDay, minutesPerHour } = getTimeDefinition(schema);
+  const minutesPerDay = hoursPerDay * minutesPerHour;
+  if (phenomenon.timePolicy === "all_day") {
+    const duration2 = phenomenon.durationMinutes ?? minutesPerDay;
+    const end2 = duration2 > 0 ? advanceTime(schema, baseTimestamp, duration2, "minute").timestamp : baseTimestamp;
+    return { start: baseTimestamp, end: end2, durationMinutes: duration2 };
+  }
+  if (phenomenon.timePolicy === "fixed") {
+    const startTime = phenomenon.startTime ?? { hour: 0, minute: 0 };
+    const hour = clamp(startTime.hour, 0, Math.max(0, hoursPerDay - 1));
+    const minute = clamp(startTime.minute ?? 0, 0, Math.max(0, minutesPerHour - 1));
+    const start2 = createMinuteTimestamp(calendarId, baseTimestamp.year, baseTimestamp.monthId, baseTimestamp.day, hour, minute);
+    const duration2 = phenomenon.durationMinutes ?? 0;
+    const end2 = duration2 > 0 ? advanceTime(schema, start2, duration2, "minute").timestamp : start2;
+    return { start: start2, end: end2, durationMinutes: duration2 };
+  }
+  if (!requiresOffsetComputation(phenomenon)) {
     throw new UnsupportedTimePolicyError(phenomenon.timePolicy);
   }
-  if (phenomenon.timePolicy === "all_day") {
-    return baseTimestamp;
-  }
-  const startTime = phenomenon.startTime ?? { hour: 0, minute: 0 };
-  const { hoursPerDay, minutesPerHour } = getTimeDefinition(schema);
-  const hour = clamp(startTime.hour, 0, Math.max(0, hoursPerDay - 1));
-  const minute = clamp(startTime.minute ?? 0, 0, Math.max(0, minutesPerHour - 1));
-  return createMinuteTimestamp(
-    calendarId,
-    baseTimestamp.year,
-    baseTimestamp.monthId,
-    baseTimestamp.day,
-    hour,
-    minute
-  );
+  const offset = phenomenon.offsetMinutes ?? 0;
+  const start = advanceTime(schema, baseTimestamp, offset, "minute").timestamp;
+  const duration = phenomenon.durationMinutes ?? 0;
+  const end = duration > 0 ? advanceTime(schema, start, duration, "minute").timestamp : start;
+  return { start, end, durationMinutes: duration };
 }
 function clamp(value, min, max) {
   if (value === void 0 || Number.isNaN(value)) return min;
@@ -47521,146 +50438,494 @@ function sortOccurrencesByTimestamp(schema, occurrences) {
 }
 
 // src/apps/almanac/data/in-memory-gateway.ts
+init_time_arithmetic();
+
+// src/apps/almanac/data/calendar-state-gateway.ts
+var CalendarGatewayError = class extends Error {
+  constructor(code, message, context) {
+    super(message);
+    this.name = "CalendarGatewayError";
+    this.code = code;
+    this.context = context;
+  }
+};
+function createGatewayValidationError(message, context) {
+  return new CalendarGatewayError("validation_error", message, context);
+}
+function createGatewayIoError(message, context) {
+  return new CalendarGatewayError("io_error", message, context);
+}
+function isCalendarGatewayError(error) {
+  return error instanceof CalendarGatewayError;
+}
+
+// src/app/integration-telemetry.ts
+var import_obsidian30 = require("obsidian");
+var notifiedOperations = /* @__PURE__ */ new Set();
+function reportIntegrationIssue(payload) {
+  const { integrationId, operation, error, userMessage } = payload;
+  const logPrefix = `[salt-marcher] integration(${integrationId}) ${operation} failed`;
+  console.error(logPrefix, error);
+  const dedupeKey = `${integrationId}:${operation}`;
+  if (notifiedOperations.has(dedupeKey)) return;
+  notifiedOperations.add(dedupeKey);
+  new import_obsidian30.Notice(userMessage);
+}
+
+// src/apps/almanac/telemetry.ts
+var ALMANAC_INTEGRATION_ID = "obsidian:almanac-view";
+var defaultReporter = (event) => {
+  const { type, ...payload } = event;
+  console.info("[almanac:telemetry]", type, payload);
+};
+var reporter = defaultReporter;
+function emitAlmanacEvent(event) {
+  reporter(event);
+}
+var DEFAULT_USER_MESSAGES = {
+  io_error: "The Almanac data store is currently unavailable. Please check the developer console for details.",
+  validation_error: "The Almanac input could not be validated. Please review the provided data and try again.",
+  conflict: "The Almanac detected a conflicting calendar configuration.",
+  phenomenon_conflict: "The phenomenon cannot be linked because it conflicts with existing calendar rules."
+};
+function reportAlmanacGatewayIssue(payload) {
+  const { operation, scope, code, error } = payload;
+  const userMessage = payload.userMessage ?? DEFAULT_USER_MESSAGES[code];
+  const logContext = { scope, code, ...payload.context ?? {} };
+  console.error(`[almanac] ${operation} failed`, logContext, error);
+  if (code === "io_error") {
+    reportIntegrationIssue({
+      integrationId: ALMANAC_INTEGRATION_ID,
+      operation: "prime-dataset",
+      error,
+      userMessage
+    });
+  }
+}
+
+// src/apps/almanac/data/in-memory-gateway.ts
+var GLOBAL_SCOPE = "__global__";
 var InMemoryStateGateway = class {
-  constructor(calendarRepo, eventRepo, phenomenonRepo) {
+  constructor(calendarRepo, eventRepo, phenomenonRepo, hookDispatcher) {
     this.calendarRepo = calendarRepo;
     this.eventRepo = eventRepo;
     this.phenomenonRepo = phenomenonRepo;
-    this.state = {
-      activeCalendarId: null,
-      currentTimestamp: null
-    };
+    this.hookDispatcher = hookDispatcher;
+    this.scopeState = /* @__PURE__ */ new Map([
+      [GLOBAL_SCOPE, { activeCalendarId: null, currentTimestamp: null }]
+    ]);
+    this.travelLeafPrefs = /* @__PURE__ */ new Map();
     this.preferences = {};
+    this.pendingMutations = [];
+    this.pendingFlushPromise = null;
+    this.pendingFlushResolve = null;
+    this.pendingFlushReject = null;
+    this.pendingFlushTimer = null;
+    this.activeFlush = null;
+    this.persistenceDebounceMs = 0;
   }
-  /**
-   * Load current state snapshot
-   */
-  async loadSnapshot(travelId) {
-    const { activeCalendarId, currentTimestamp } = this.state;
-    const effectiveCalendar = await this.getEffectiveCalendar(travelId);
+  async loadSnapshot(options) {
+    const travelId = options?.travelId ?? null;
+    const scope = this.ensureScope(travelId);
+    const effective = await this.resolveEffectiveCalendar(travelId);
     const travelDefaultCalendarId = travelId ? await this.calendarRepo.getTravelDefault(travelId) : null;
-    if (!effectiveCalendar) {
+    if (!effective?.calendar) {
       return {
         activeCalendar: null,
         currentTimestamp: null,
         upcomingEvents: [],
         upcomingPhenomena: [],
-        defaultCalendarId: null,
-        isGlobalDefault: false,
-        wasAutoSelected: false,
-        travelDefaultCalendarId
+        defaultCalendarId: effective?.isGlobalDefault ? effective.calendarId ?? null : null,
+        travelDefaultCalendarId,
+        isGlobalDefault: effective?.isGlobalDefault ?? false,
+        wasAutoSelected: effective?.wasAutoSelected ?? false
       };
     }
-    const activeCalendar = activeCalendarId ? await this.calendarRepo.getCalendar(activeCalendarId) : effectiveCalendar.calendar;
+    const activeCalendar = scope.activeCalendarId ? await this.calendarRepo.getCalendar(scope.activeCalendarId) : effective.calendar;
     if (!activeCalendar) {
-      const defaultCalendarId2 = effectiveCalendar.isGlobalDefault ? effectiveCalendar.calendar?.id ?? null : null;
       return {
         activeCalendar: null,
         currentTimestamp: null,
         upcomingEvents: [],
         upcomingPhenomena: [],
-        defaultCalendarId: defaultCalendarId2,
-        isGlobalDefault: effectiveCalendar.isGlobalDefault,
-        wasAutoSelected: effectiveCalendar.wasAutoSelected,
-        travelDefaultCalendarId
+        defaultCalendarId: effective.isGlobalDefault ? effective.calendar.id : null,
+        travelDefaultCalendarId,
+        isGlobalDefault: effective.isGlobalDefault,
+        wasAutoSelected: effective.wasAutoSelected
       };
     }
-    const upcomingEvents = currentTimestamp ? await this.eventRepo.getUpcomingEvents(activeCalendar.id, activeCalendar, currentTimestamp, 5) : [];
+    const upcomingEvents = scope.currentTimestamp ? await this.eventRepo.getUpcomingEvents(
+      activeCalendar.id,
+      activeCalendar,
+      scope.currentTimestamp,
+      5
+    ) : [];
     const visiblePhenomena = await this.listVisiblePhenomena(activeCalendar);
     const upcomingPhenomena = this.computeUpcomingPhenomenaForCalendar(
       activeCalendar,
       visiblePhenomena,
-      currentTimestamp
+      scope.currentTimestamp
     );
-    const defaultCalendarId = effectiveCalendar.isGlobalDefault ? effectiveCalendar.calendar.id : null;
     return {
       activeCalendar,
-      currentTimestamp,
+      currentTimestamp: scope.currentTimestamp,
       upcomingEvents,
       upcomingPhenomena,
-      defaultCalendarId,
-      isGlobalDefault: effectiveCalendar.isGlobalDefault,
-      wasAutoSelected: effectiveCalendar.wasAutoSelected,
-      travelDefaultCalendarId
+      defaultCalendarId: effective.isGlobalDefault ? effective.calendar.id : null,
+      travelDefaultCalendarId,
+      isGlobalDefault: effective.isGlobalDefault,
+      wasAutoSelected: effective.wasAutoSelected
     };
   }
-  /**
-   * Set active calendar
-   */
-  async setActiveCalendar(calendarId, initialTimestamp) {
+  async setActiveCalendar(calendarId, options) {
     const calendar = await this.calendarRepo.getCalendar(calendarId);
     if (!calendar) {
-      throw new Error(`Calendar with ID ${calendarId} not found`);
+      const error = createGatewayValidationError(`Calendar with ID ${calendarId} not found`, {
+        calendarId,
+        travelId: options?.travelId ?? null
+      });
+      reportAlmanacGatewayIssue({
+        operation: "calendar.gateway.setActiveCalendar",
+        scope: options?.travelId ? "travel" : "calendar",
+        code: error.code,
+        error,
+        context: error.context
+      });
+      throw error;
     }
-    this.state.activeCalendarId = calendarId;
-    if (initialTimestamp) {
-      this.state.currentTimestamp = initialTimestamp;
+    const scope = this.ensureScope(options?.travelId ?? null);
+    scope.activeCalendarId = calendarId;
+    if (options?.initialTimestamp) {
+      scope.currentTimestamp = { ...options.initialTimestamp };
       return;
     }
-    if (this.state.currentTimestamp && this.state.activeCalendarId === calendarId) {
+    if (scope.currentTimestamp && scope.currentTimestamp.calendarId === calendarId) {
       return;
     }
-    const firstMonth = calendar.months[0];
+    const firstMonth = calendar.months[0] ?? getMonthById(calendar, calendar.epoch.monthId);
     const fallback = createDayTimestamp(
       calendar.id,
       calendar.epoch.year,
       firstMonth?.id ?? calendar.epoch.monthId,
       calendar.epoch.day
     );
-    this.state.currentTimestamp = fallback;
+    scope.currentTimestamp = fallback;
   }
-  async setCurrentTimestamp(timestamp) {
-    if (!this.state.activeCalendarId) {
-      throw new Error("No active calendar set");
+  async setDefaultCalendar(calendarId, options) {
+    const scope = options?.scope ?? "global";
+    if (scope === "travel") {
+      const travelId = options?.travelId;
+      if (!travelId) {
+        const error = createGatewayValidationError("Travel ID required when persisting travel default", {
+          calendarId
+        });
+        reportAlmanacGatewayIssue({
+          operation: "calendar.gateway.setDefaultCalendar",
+          scope: "travel",
+          code: error.code,
+          error,
+          context: error.context
+        });
+        throw error;
+      }
+      await this.calendarRepo.setDefault({ calendarId, scope: "travel", travelId });
+      return;
     }
-    if (timestamp.calendarId !== this.state.activeCalendarId) {
-      throw new Error("Timestamp calendar does not match active calendar");
-    }
-    this.state.currentTimestamp = timestamp;
+    await this.calendarRepo.setDefault({ calendarId, scope: "global" });
   }
-  /**
-   * Advance time by amount
-   */
-  async advanceTimeBy(amount, unit) {
-    const { activeCalendarId, currentTimestamp } = this.state;
-    if (!activeCalendarId || !currentTimestamp) {
-      throw new Error("No active calendar or current timestamp set");
+  async setCurrentTimestamp(timestamp, options) {
+    const scope = this.ensureScope(options?.travelId ?? null);
+    if (!scope.activeCalendarId) {
+      const error = createGatewayValidationError("No active calendar set", {
+        travelId: options?.travelId ?? null
+      });
+      reportAlmanacGatewayIssue({
+        operation: "calendar.gateway.setCurrentTimestamp",
+        scope: options?.travelId ? "travel" : "calendar",
+        code: error.code,
+        error,
+        context: error.context
+      });
+      throw error;
     }
-    const calendar = await this.calendarRepo.getCalendar(activeCalendarId);
+    if (timestamp.calendarId !== scope.activeCalendarId) {
+      const error = createGatewayValidationError("Timestamp calendar does not match active calendar", {
+        travelId: options?.travelId ?? null,
+        calendarId: timestamp.calendarId,
+        activeCalendarId: scope.activeCalendarId
+      });
+      reportAlmanacGatewayIssue({
+        operation: "calendar.gateway.setCurrentTimestamp",
+        scope: options?.travelId ? "travel" : "calendar",
+        code: error.code,
+        error,
+        context: error.context
+      });
+      throw error;
+    }
+    scope.currentTimestamp = { ...timestamp };
+  }
+  async advanceTimeBy(amount, unit, options) {
+    const scopeId = options?.travelId ?? null;
+    const scope = this.ensureScope(scopeId);
+    if (!scope.activeCalendarId || !scope.currentTimestamp) {
+      const error = createGatewayValidationError("No active calendar or current timestamp set", {
+        travelId: scopeId,
+        activeCalendarId: scope.activeCalendarId
+      });
+      reportAlmanacGatewayIssue({
+        operation: "calendar.gateway.advanceTimeBy",
+        scope: scopeId ? "travel" : "calendar",
+        code: error.code,
+        error,
+        context: error.context
+      });
+      throw error;
+    }
+    const calendar = await this.calendarRepo.getCalendar(scope.activeCalendarId);
     if (!calendar) {
-      throw new Error(`Calendar ${activeCalendarId} not found`);
+      const error = createGatewayValidationError(`Calendar ${scope.activeCalendarId} not found`, {
+        travelId: scopeId,
+        calendarId: scope.activeCalendarId
+      });
+      reportAlmanacGatewayIssue({
+        operation: "calendar.gateway.advanceTimeBy",
+        scope: scopeId ? "travel" : "calendar",
+        code: error.code,
+        error,
+        context: error.context
+      });
+      throw error;
     }
     const visiblePhenomena = await this.listVisiblePhenomena(calendar);
-    const result = advanceTime(calendar, currentTimestamp, amount, unit);
-    this.state.currentTimestamp = result.timestamp;
+    const previousTimestamp = { ...scope.currentTimestamp };
+    const result = advanceTime(calendar, previousTimestamp, amount, unit);
+    scope.currentTimestamp = result.timestamp;
     const [triggeredEvents, triggeredPhenomena] = await Promise.all([
-      this.eventRepo.getEventsInRange(activeCalendarId, calendar, currentTimestamp, result.timestamp),
+      this.eventRepo.getEventsInRange(
+        scope.activeCalendarId,
+        calendar,
+        previousTimestamp,
+        result.timestamp
+      ),
       Promise.resolve(
-        this.computeTriggeredPhenomenaBetween(calendar, visiblePhenomena, currentTimestamp, result.timestamp)
+        this.computeTriggeredPhenomenaBetween(
+          calendar,
+          visiblePhenomena,
+          previousTimestamp,
+          result.timestamp
+        )
       )
     ]);
+    const relevantEvents = triggeredEvents.filter(
+      (event) => compareTimestampsWithSchema(
+        calendar,
+        getEventAnchorTimestamp(event) ?? event.date,
+        previousTimestamp
+      ) > 0
+    );
     const upcomingPhenomena = this.computeUpcomingPhenomenaForCalendar(
       calendar,
       visiblePhenomena,
       result.timestamp
     );
-    return { timestamp: result.timestamp, triggeredEvents, triggeredPhenomena, upcomingPhenomena };
+    if (this.hookDispatcher && (relevantEvents.length > 0 || triggeredPhenomena.length > 0)) {
+      try {
+        await this.hookDispatcher.dispatchHooks(relevantEvents, triggeredPhenomena, {
+          scope: scopeId ? "travel" : "global",
+          travelId: scopeId,
+          reason: "advance",
+          ...options?.hookContext
+        });
+      } catch (error) {
+        const causeMessage = error instanceof Error && error.message ? `: ${error.message}` : "";
+        const gatewayError = new CalendarGatewayError(
+          "io_error",
+          `Failed to dispatch hooks for time advance${causeMessage}`,
+          {
+            travelId: scopeId,
+            scope: scopeId ? "travel" : "global"
+          }
+        );
+        reportAlmanacGatewayIssue({
+          operation: "calendar.gateway.advanceTimeBy",
+          scope: scopeId ? "travel" : "calendar",
+          code: gatewayError.code,
+          error,
+          context: gatewayError.context
+        });
+        throw gatewayError;
+      }
+    }
+    return { timestamp: result.timestamp, triggeredEvents: relevantEvents, triggeredPhenomena, upcomingPhenomena };
   }
-  /**
-   * Get current state (for debugging)
-   */
-  getCurrentState() {
-    return { ...this.state };
+  async loadPreferences() {
+    return clonePreferences(this.preferences);
   }
-  getCurrentTimestamp() {
-    return this.state.currentTimestamp ? { ...this.state.currentTimestamp } : null;
+  async savePreferences(partial) {
+    await this.persistState((state) => {
+      const next = {
+        ...state.preferences,
+        ...partial
+      };
+      if (partial.lastZoomByMode) {
+        next.lastZoomByMode = {
+          ...state.preferences.lastZoomByMode ?? {},
+          ...partial.lastZoomByMode
+        };
+      }
+      if (partial.eventsFilters) {
+        next.eventsFilters = {
+          categories: [...partial.eventsFilters.categories ?? []],
+          calendarIds: [...partial.eventsFilters.calendarIds ?? []]
+        };
+      }
+      state.preferences = next;
+    }, { debounce: true });
   }
-  getActiveCalendarId() {
-    return this.state.activeCalendarId;
+  getCurrentTimestamp(options) {
+    const scope = this.ensureScope(options?.travelId ?? null);
+    return scope.currentTimestamp ? { ...scope.currentTimestamp } : null;
+  }
+  getActiveCalendarId(options) {
+    const scope = this.ensureScope(options?.travelId ?? null);
+    return scope.activeCalendarId;
+  }
+  async getTravelLeafPreferences(travelId) {
+    const prefs = this.travelLeafPrefs.get(travelId);
+    return prefs ? { ...prefs } : null;
+  }
+  async saveTravelLeafPreferences(travelId, prefs) {
+    await this.persistState((state) => {
+      state.travelLeaf.set(travelId, { ...prefs });
+    }, { debounce: true });
+  }
+  async flushPendingPersistence() {
+    await this.flushDebouncedPersist();
+  }
+  async persistState(mutator, options) {
+    if (options?.debounce) {
+      return this.enqueueDebouncedPersist(mutator);
+    }
+    await this.flushDebouncedPersist();
+    await this.commitMutations([mutator]);
+  }
+  enqueueDebouncedPersist(mutator) {
+    this.pendingMutations.push(mutator);
+    if (!this.pendingFlushPromise) {
+      this.pendingFlushPromise = new Promise((resolve, reject) => {
+        this.pendingFlushResolve = resolve;
+        this.pendingFlushReject = reject;
+      });
+    }
+    if (this.pendingFlushTimer) {
+      clearTimeout(this.pendingFlushTimer);
+    }
+    this.pendingFlushTimer = setTimeout(() => {
+      void this.flushDebouncedPersist();
+    }, this.persistenceDebounceMs);
+    return this.pendingFlushPromise;
+  }
+  async flushDebouncedPersist() {
+    if (this.pendingFlushTimer) {
+      clearTimeout(this.pendingFlushTimer);
+      this.pendingFlushTimer = null;
+    }
+    if (this.activeFlush) {
+      return this.activeFlush;
+    }
+    if (this.pendingMutations.length === 0) {
+      if (this.pendingFlushPromise) {
+        this.pendingFlushResolve?.();
+        this.pendingFlushPromise = null;
+        this.pendingFlushResolve = null;
+        this.pendingFlushReject = null;
+      }
+      return;
+    }
+    const mutations = this.pendingMutations;
+    this.pendingMutations = [];
+    const resolve = this.pendingFlushResolve;
+    const reject = this.pendingFlushReject;
+    this.pendingFlushPromise = null;
+    this.pendingFlushResolve = null;
+    this.pendingFlushReject = null;
+    const flushOperation = this.commitMutations(mutations).then(() => {
+      resolve?.();
+    }).catch((error) => {
+      reject?.(error);
+      throw error;
+    }).finally(() => {
+      this.activeFlush = null;
+      if (this.pendingMutations.length > 0) {
+        void this.flushDebouncedPersist();
+      }
+    });
+    this.activeFlush = flushOperation;
+    await flushOperation;
+  }
+  async commitMutations(mutations) {
+    const snapshot = {
+      preferences: clonePreferences(this.preferences),
+      travelLeaf: cloneTravelLeafMap(this.travelLeafPrefs)
+    };
+    for (const mutate of mutations) {
+      mutate(snapshot);
+    }
+    this.preferences = snapshot.preferences;
+    this.travelLeafPrefs.clear();
+    for (const [key, value] of snapshot.travelLeaf.entries()) {
+      this.travelLeafPrefs.set(key, { ...value });
+    }
+  }
+  ensureScope(travelId) {
+    const key = travelId ?? GLOBAL_SCOPE;
+    if (!this.scopeState.has(key)) {
+      this.scopeState.set(key, { activeCalendarId: null, currentTimestamp: null });
+    }
+    return this.scopeState.get(key);
+  }
+  async resolveEffectiveCalendar(travelId) {
+    if (travelId) {
+      const travelDefaultId = await this.calendarRepo.getTravelDefault(travelId);
+      if (travelDefaultId) {
+        const travelCalendar = await this.calendarRepo.getCalendar(travelDefaultId);
+        if (travelCalendar) {
+          return {
+            calendar: travelCalendar,
+            calendarId: travelDefaultId,
+            isGlobalDefault: false,
+            wasAutoSelected: false
+          };
+        }
+      }
+    }
+    const globalDefault = await this.calendarRepo.getGlobalDefault();
+    if (globalDefault) {
+      const calendar = await this.calendarRepo.getCalendar(globalDefault);
+      if (calendar) {
+        return {
+          calendar,
+          calendarId: globalDefault,
+          isGlobalDefault: true,
+          wasAutoSelected: false
+        };
+      }
+    }
+    const calendars = await this.calendarRepo.listCalendars();
+    if (calendars.length > 0) {
+      return {
+        calendar: calendars[0],
+        calendarId: calendars[0].id,
+        isGlobalDefault: false,
+        wasAutoSelected: true
+      };
+    }
+    return null;
   }
   async listVisiblePhenomena(calendar) {
-    const all = await this.phenomenonRepo.listPhenomena();
-    return all.filter((phenomenon) => isPhenomenonVisibleForCalendar(phenomenon, calendar.id));
+    const phenomena = await this.phenomenonRepo.listPhenomena();
+    return phenomena.filter((phenomenon) => isPhenomenonVisibleForCalendar(phenomenon, calendar.id));
   }
   computeUpcomingPhenomenaForCalendar(calendar, phenomena, from, limit = 5) {
     if (phenomena.length === 0) {
@@ -47693,85 +50958,120 @@ var InMemoryStateGateway = class {
     const occurrences = [];
     for (const phenomenon of phenomena) {
       try {
-        const matches = computePhenomenonOccurrencesInRange(
+        const result = computePhenomenonOccurrencesInRange(
           phenomenon,
           calendar,
           calendar.id,
           start,
-          end,
-          { includeStart: false, limit: 50 }
+          end
         );
-        occurrences.push(...matches);
+        occurrences.push(...result);
       } catch {
         continue;
       }
     }
     return sortOccurrencesByTimestamp(calendar, occurrences);
   }
-  /**
-   * Reset state (for testing)
-   */
-  reset() {
-    this.state = {
-      activeCalendarId: null,
-      currentTimestamp: null
-    };
-    this.preferences = {};
-  }
-  /**
-   * Get effective calendar with default resolution
-   * Priority: Travel Default > Global Default > First Available > null
-   */
-  async getEffectiveCalendar(travelId) {
-    if (travelId) {
-      const travelDefaultId = await this.calendarRepo.getTravelDefault(travelId);
-      if (travelDefaultId) {
-        const calendar = await this.calendarRepo.getCalendar(travelDefaultId);
-        if (calendar) {
-          return { calendar, isGlobalDefault: false, wasAutoSelected: false };
-        }
-      }
-    }
-    const globalDefault = await this.calendarRepo.getGlobalDefault();
-    if (globalDefault) {
-      return { calendar: globalDefault, isGlobalDefault: true, wasAutoSelected: false };
-    }
-    const allCalendars = await this.calendarRepo.listCalendars();
-    if (allCalendars.length > 0) {
-      return { calendar: allCalendars[0], isGlobalDefault: false, wasAutoSelected: true };
-    }
-    return null;
-  }
-  async loadPreferences() {
-    return {
-      ...this.preferences,
-      lastZoomByMode: this.preferences.lastZoomByMode ? { ...this.preferences.lastZoomByMode } : void 0,
-      eventsFilters: this.preferences.eventsFilters ? {
-        categories: [...this.preferences.eventsFilters.categories ?? []],
-        calendarIds: [...this.preferences.eventsFilters.calendarIds ?? []]
-      } : void 0
-    };
-  }
-  async savePreferences(partial) {
-    const next = {
-      ...this.preferences,
-      ...partial
-    };
-    if (partial.lastZoomByMode) {
-      next.lastZoomByMode = {
-        ...this.preferences.lastZoomByMode ?? {},
-        ...partial.lastZoomByMode
-      };
-    }
-    this.preferences = next;
-  }
 };
+function clonePreferences(preferences) {
+  const base = preferences ?? {};
+  return {
+    ...base,
+    lastZoomByMode: base.lastZoomByMode ? { ...base.lastZoomByMode } : void 0,
+    eventsFilters: base.eventsFilters ? {
+      categories: [...base.eventsFilters.categories],
+      calendarIds: [...base.eventsFilters.calendarIds]
+    } : void 0
+  };
+}
+function cloneTravelLeafMap(source) {
+  const clone2 = /* @__PURE__ */ new Map();
+  for (const [key, value] of source.entries()) {
+    clone2.set(key, { ...value });
+  }
+  return clone2;
+}
 
 // src/apps/almanac/mode/contracts.ts
 var DEFAULT_ALMANAC_MODE = "dashboard";
 var DEFAULT_MANAGER_VIEW_MODE = "calendar";
 var DEFAULT_EVENTS_VIEW_MODE = "timeline";
 var DEFAULT_MANAGER_ZOOM = "month";
+function createDefaultCalendarDraft() {
+  return {
+    id: "",
+    name: "",
+    description: "",
+    daysPerWeek: "7",
+    monthCount: "12",
+    monthLength: "30",
+    hoursPerDay: "24",
+    minutesPerHour: "60",
+    minuteStep: "1",
+    epochYear: "1",
+    epochDay: "1"
+  };
+}
+function createEmptySingleEventDraft(calendarId, reference) {
+  return {
+    kind: "single",
+    id: "",
+    calendarId,
+    title: "",
+    category: "",
+    note: "",
+    allDay: true,
+    year: reference ? String(reference.year) : "",
+    monthId: reference ? reference.monthId : "",
+    day: reference ? String(reference.day) : "",
+    hour: "0",
+    minute: "0",
+    durationMinutes: "",
+    timePrecision: "day"
+  };
+}
+function createEmptyRecurringEventDraft(calendarId, reference) {
+  return {
+    kind: "recurring",
+    id: "",
+    calendarId,
+    title: "",
+    category: "",
+    note: "",
+    allDay: true,
+    year: reference ? String(reference.year) : "",
+    monthId: reference ? reference.monthId : "",
+    day: reference ? String(reference.day) : "",
+    hour: "0",
+    minute: "0",
+    durationMinutes: "",
+    ruleType: "weekly_dayIndex",
+    ruleDayIndex: "0",
+    ruleInterval: "1",
+    ruleMonthId: reference ? reference.monthId : "",
+    ruleDay: reference ? String(reference.day) : "1",
+    timePolicy: "all_day",
+    boundsEndYear: "",
+    boundsEndMonthId: "",
+    boundsEndDay: ""
+  };
+}
+function createCalendarDraftFromSchema(schema) {
+  const firstMonthLength = schema.months[0]?.length ?? 30;
+  return {
+    id: schema.id,
+    name: schema.name,
+    description: schema.description ?? "",
+    daysPerWeek: String(schema.daysPerWeek),
+    monthCount: String(schema.months.length),
+    monthLength: String(firstMonthLength),
+    hoursPerDay: String(schema.hoursPerDay ?? 24),
+    minutesPerHour: String(schema.minutesPerHour ?? 60),
+    minuteStep: String(schema.minuteStep ?? 1),
+    epochYear: String(schema.epoch.year),
+    epochDay: String(schema.epoch.day)
+  };
+}
 function createInitialAlmanacState() {
   return {
     calendarState: {
@@ -47798,15 +51098,29 @@ function createInitialAlmanacState() {
       isLoading: false,
       error: void 0
     },
+    calendarViewState: {
+      mode: "month",
+      zoom: DEFAULT_MANAGER_ZOOM,
+      anchorTimestamp: null,
+      events: [],
+      isLoading: false,
+      error: void 0
+    },
     managerUiState: {
       viewMode: DEFAULT_MANAGER_VIEW_MODE,
-      zoom: DEFAULT_MANAGER_ZOOM,
       isLoading: false,
       error: void 0,
       selection: [],
+      layout: "grid",
       anchorTimestamp: null,
       agendaItems: [],
-      jumpPreview: []
+      jumpPreview: [],
+      createDraft: createDefaultCalendarDraft(),
+      createErrors: [],
+      isCreating: false,
+      editStateById: {},
+      deleteDialog: null,
+      conflictDialog: null
     },
     eventsUiState: {
       viewMode: DEFAULT_EVENTS_VIEW_MODE,
@@ -47816,24 +51130,149 @@ function createInitialAlmanacState() {
       filters: { categories: [], calendarIds: [] },
       availableCategories: [],
       availableCalendars: [],
+      mapMarkers: [],
       phenomena: [],
       selectedPhenomenonId: null,
       selectedPhenomenonDetail: null,
-      isDetailLoading: false
+      isDetailLoading: false,
+      isEditorOpen: false,
+      editorDraft: null,
+      isSaving: false,
+      editorError: void 0,
+      bulkSelection: [],
+      lastExportPayload: void 0,
+      isImportDialogOpen: false,
+      importError: void 0,
+      importSummary: null,
+      isEventEditorOpen: false,
+      eventEditorMode: null,
+      eventEditorDraft: null,
+      eventEditorErrors: [],
+      eventEditorPreview: [],
+      isEventSaving: false,
+      eventEditorError: void 0
     },
     travelLeafState: {
+      travelId: null,
       visible: false,
       mode: "upcoming",
+      currentTimestamp: null,
+      minuteStep: 1,
+      lastQuickStep: void 0,
       isLoading: false,
       error: void 0
-    },
-    telemetryState: {
-      lastEvents: []
     }
   };
 }
 
+// src/apps/almanac/data/phenomena-serialization.ts
+function assertString(value, path) {
+  if (typeof value !== "string") {
+    throw new Error(`${path} must be a string`);
+  }
+  return value;
+}
+function assertArray(value, path) {
+  if (!Array.isArray(value)) {
+    throw new Error(`${path} must be an array`);
+  }
+  return value;
+}
+function normalisePhenomenon(input, index) {
+  if (typeof input !== "object" || input === null) {
+    throw new Error(`Entry ${index + 1} must be an object`);
+  }
+  const record = input;
+  const id = assertString(record.id, `phenomena[${index}].id`).trim();
+  const name = assertString(record.name, `phenomena[${index}].name`).trim();
+  const category = assertString(record.category ?? "custom", `phenomena[${index}].category`).trim();
+  const visibility = assertString(
+    record.visibility ?? "all_calendars",
+    `phenomena[${index}].visibility`
+  );
+  const appliesTo = assertArray(
+    record.appliesToCalendarIds ?? [],
+    `phenomena[${index}].appliesToCalendarIds`
+  ).map((value) => assertString(value, `phenomena[${index}].appliesToCalendarIds[]`));
+  const rule = record.rule ?? { type: "annual", offsetDayOfYear: 0 };
+  const timePolicy = record.timePolicy ?? "all_day";
+  const priority = typeof record.priority === "number" ? record.priority : 0;
+  const schemaVersion = assertString(
+    record.schemaVersion ?? "1.0.0",
+    `phenomena[${index}].schemaVersion`
+  );
+  const base = {
+    id,
+    name,
+    category: category || "custom",
+    visibility: visibility === "selected" ? "selected" : "all_calendars",
+    appliesToCalendarIds: appliesTo,
+    rule,
+    timePolicy,
+    priority,
+    schemaVersion
+  };
+  const optionalKeys = [
+    "notes",
+    "tags",
+    "effects",
+    "hooks",
+    "startTime",
+    "offsetMinutes",
+    "durationMinutes"
+  ];
+  for (const key of optionalKeys) {
+    if (record[key] !== void 0) {
+      base[key] = record[key];
+    }
+  }
+  return base;
+}
+function parsePhenomenaImport(source) {
+  const trimmed = source.trim();
+  if (!trimmed) {
+    return [];
+  }
+  let data;
+  try {
+    data = JSON.parse(trimmed);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Import payload is not valid JSON: ${message}`);
+  }
+  if (!Array.isArray(data)) {
+    throw new Error("Import payload must be a JSON array");
+  }
+  return data.map((entry, index) => normalisePhenomenon(entry, index));
+}
+function formatPhenomenaExport(entries) {
+  const payload = entries.map((entry) => ({
+    id: entry.id,
+    name: entry.name,
+    category: entry.category,
+    visibility: entry.visibility,
+    appliesToCalendarIds: entry.appliesToCalendarIds,
+    rule: entry.rule,
+    timePolicy: entry.timePolicy,
+    priority: entry.priority,
+    schemaVersion: entry.schemaVersion,
+    notes: entry.notes,
+    tags: entry.tags,
+    effects: entry.effects,
+    hooks: entry.hooks,
+    startTime: entry.startTime,
+    offsetMinutes: entry.offsetMinutes,
+    durationMinutes: entry.durationMinutes
+  }));
+  return JSON.stringify(payload, null, 2);
+}
+
 // src/apps/almanac/mode/state-machine.ts
+init_calendar_schema();
+init_calendar_event();
+init_calendar_timestamp();
+init_time_arithmetic();
+init_cartographer_gateway();
 var MAX_TRIGGERED_EVENTS = 10;
 var MAX_TRIGGERED_PHENOMENA = 10;
 var ZOOM_LABEL = {
@@ -47843,7 +51282,7 @@ var ZOOM_LABEL = {
   hour: "Hour view"
 };
 var AlmanacStateMachine = class {
-  constructor(calendarRepo, eventRepo, gateway, phenomenonRepo) {
+  constructor(calendarRepo, eventRepo, gateway, phenomenonRepo, cartographerGateway = cartographerHookGateway) {
     this.calendarRepo = calendarRepo;
     this.eventRepo = eventRepo;
     this.gateway = gateway;
@@ -47853,6 +51292,11 @@ var AlmanacStateMachine = class {
     this.initialised = false;
     this.phenomenaSource = [];
     this.phenomenaDefinitions = [];
+    this.phenomenonIdCounter = 0;
+    this.eventIdCounter = 0;
+    this.travelId = null;
+    this.travelLeafPreferences = null;
+    this.cartographerGateway = cartographerGateway;
   }
   getState() {
     return this.state;
@@ -47865,7 +51309,7 @@ var AlmanacStateMachine = class {
   async dispatch(event) {
     switch (event.type) {
       case "INIT_ALMANAC":
-        await this.handleInit(event.travelId ?? null);
+        await this.handleInit(event.travelId ?? null, event.overrides ?? null);
         break;
       case "ALMANAC_MODE_SELECTED":
         await this.handleModeSelected(event.mode);
@@ -47878,6 +51322,36 @@ var AlmanacStateMachine = class {
         break;
       case "MANAGER_NAVIGATION_REQUESTED":
         this.handleManagerNavigation(event.direction);
+        break;
+      case "MANAGER_CREATE_FORM_UPDATED":
+        this.handleCreateFormUpdated(event.field, event.value);
+        break;
+      case "CALENDAR_CREATE_REQUESTED":
+        await this.handleCalendarCreate();
+        break;
+      case "CALENDAR_EDIT_REQUESTED":
+        this.handleCalendarEditRequested(event.calendarId);
+        break;
+      case "CALENDAR_EDIT_CANCELLED":
+        this.handleCalendarEditCancelled(event.calendarId);
+        break;
+      case "CALENDAR_EDIT_FORM_UPDATED":
+        this.handleCalendarEditFormUpdated(event.calendarId, event.field, event.value);
+        break;
+      case "CALENDAR_UPDATE_REQUESTED":
+        await this.handleCalendarUpdate(event.calendarId);
+        break;
+      case "CALENDAR_DELETE_REQUESTED":
+        await this.handleCalendarDeleteRequested(event.calendarId);
+        break;
+      case "CALENDAR_DELETE_CONFIRMED":
+        await this.handleCalendarDeleteConfirmed(event.calendarId);
+        break;
+      case "CALENDAR_DELETE_CANCELLED":
+        this.handleCalendarDeleteCancelled();
+        break;
+      case "CALENDAR_CONFLICT_DISMISSED":
+        this.handleConflictDismissed();
         break;
       case "TIME_JUMP_PREVIEW_REQUESTED":
         await this.handleTimeJumpPreview(event.timestamp);
@@ -47893,6 +51367,51 @@ var AlmanacStateMachine = class {
         break;
       case "EVENTS_PHENOMENON_DETAIL_CLOSED":
         this.handlePhenomenonDetailClosed();
+        break;
+      case "EVENTS_BULK_SELECTION_UPDATED":
+        this.handleEventsBulkSelection(event.selection);
+        break;
+      case "PHENOMENON_EDIT_REQUESTED":
+        await this.handlePhenomenonEditRequest(event.phenomenonId ?? null);
+        break;
+      case "PHENOMENON_EDIT_CANCELLED":
+        this.handlePhenomenonEditCancelled();
+        break;
+      case "PHENOMENON_SAVE_REQUESTED":
+        await this.handlePhenomenonSave(event.draft);
+        break;
+      case "EVENT_BULK_ACTION_REQUESTED":
+        await this.handleEventBulkAction(event.action, event.ids);
+        break;
+      case "EVENT_EXPORT_CLEARED":
+        this.handleEventExportCleared();
+        break;
+      case "EVENT_IMPORT_REQUESTED":
+        this.handleEventImportRequested();
+        break;
+      case "EVENT_IMPORT_CANCELLED":
+        this.handleEventImportCancelled();
+        break;
+      case "EVENT_IMPORT_SUBMITTED":
+        await this.handleEventImportSubmitted(event.payload);
+        break;
+      case "EVENT_CREATE_REQUESTED":
+        await this.handleEventCreateRequested(event.mode, event.calendarId);
+        break;
+      case "EVENT_EDIT_REQUESTED":
+        await this.handleEventEditRequested(event.eventId);
+        break;
+      case "EVENT_EDITOR_UPDATED":
+        this.handleEventEditorUpdated(event.update);
+        break;
+      case "EVENT_EDITOR_CANCELLED":
+        this.handleEventEditorCancelled();
+        break;
+      case "EVENT_EDITOR_SAVE_REQUESTED":
+        await this.handleEventEditorSave();
+        break;
+      case "EVENT_DELETE_REQUESTED":
+        await this.handleEventDelete(event.eventId);
         break;
       case "MANAGER_SELECTION_CHANGED":
         this.handleManagerSelectionChanged(event.selection);
@@ -47911,6 +51430,15 @@ var AlmanacStateMachine = class {
         break;
       case "CALENDAR_DATA_REFRESH_REQUESTED":
         await this.refreshCalendarData();
+        break;
+      case "TRAVEL_LEAF_MOUNTED":
+        await this.handleTravelLeafMounted(event.travelId);
+        break;
+      case "TRAVEL_MODE_CHANGED":
+        await this.handleTravelModeChanged(event.mode);
+        break;
+      case "TRAVEL_TIME_ADVANCE_REQUESTED":
+        await this.handleTimeAdvance(event.amount, event.unit, "travel");
         break;
       case "ERROR_OCCURRED":
         this.setState((draft) => {
@@ -47968,7 +51496,7 @@ var AlmanacStateMachine = class {
         return upcoming === 0 ? void 0 : { filterCount: upcoming };
       }
       case "manager": {
-        const zoomLabel = ZOOM_LABEL[state.managerUiState.zoom];
+        const zoomLabel = ZOOM_LABEL[state.calendarViewState.zoom];
         const filterCount = state.managerUiState.selection.length;
         return { zoomLabel, filterCount: filterCount > 0 ? filterCount : void 0 };
       }
@@ -47980,8 +51508,13 @@ var AlmanacStateMachine = class {
         return void 0;
     }
   }
-  async handleInit(travelId) {
-    if (this.initialised) {
+  async handleInit(travelId, overrides) {
+    const effectiveTravelId = overrides?.travelId ?? travelId ?? this.travelId ?? null;
+    this.travelId = effectiveTravelId;
+    const hasOverrides = Boolean(
+      overrides && (overrides.mode !== void 0 || overrides.managerView !== void 0 || overrides.managerZoom !== void 0 || overrides.eventsView !== void 0 || overrides.travelId !== void 0 || Object.prototype.hasOwnProperty.call(overrides, "selectedPhenomenonId"))
+    );
+    if (this.initialised && !hasOverrides) {
       await this.refreshCalendarData();
       return;
     }
@@ -47993,13 +51526,15 @@ var AlmanacStateMachine = class {
       };
     });
     try {
-      const [calendars, snapshot, preferences, phenomena] = await Promise.all([
+      const [calendars, snapshot, preferences, phenomena, travelPreferences] = await Promise.all([
         this.calendarRepo.listCalendars(),
-        this.gateway.loadSnapshot(travelId ?? void 0),
+        this.gateway.loadSnapshot(effectiveTravelId ? { travelId: effectiveTravelId } : void 0),
         this.gateway.loadPreferences(),
-        this.phenomenonRepo.listPhenomena()
+        this.phenomenonRepo.listPhenomena(),
+        effectiveTravelId ? this.gateway.getTravelLeafPreferences(effectiveTravelId) : Promise.resolve(null)
       ]);
-      this.phenomenaDefinitions = phenomena;
+      this.travelLeafPreferences = travelPreferences;
+      this.phenomenaDefinitions = phenomena.map((item) => this.toPhenomenon(item));
       this.phenomenaSource = this.buildPhenomenonViewModels(
         this.phenomenaDefinitions,
         calendars,
@@ -48010,7 +51545,10 @@ var AlmanacStateMachine = class {
       const filteredPhenomena = this.applyPhenomenaFilters(filters);
       const availableCategories = getUniqueCategories(this.phenomenaSource);
       const filterCount = filters.categories.length + filters.calendarIds.length;
-      const preferredPhenomenonId = preferences.lastSelectedPhenomenonId ?? null;
+      let preferredPhenomenonId = preferences.lastSelectedPhenomenonId ?? null;
+      if (overrides && Object.prototype.hasOwnProperty.call(overrides, "selectedPhenomenonId")) {
+        preferredPhenomenonId = overrides.selectedPhenomenonId ?? null;
+      }
       let initialSelectedId = null;
       let initialDetail = null;
       if (preferredPhenomenonId && filteredPhenomena.some((item) => item.id === preferredPhenomenonId)) {
@@ -48026,10 +51564,10 @@ var AlmanacStateMachine = class {
         initialDetail = this.buildPhenomenonDetailForId(firstId, calendars, snapshot.currentTimestamp);
         initialSelectedId = initialDetail ? firstId : null;
       }
-      const mode = preferences.lastMode ?? DEFAULT_ALMANAC_MODE;
-      const managerViewMode = preferences.managerViewMode ?? DEFAULT_MANAGER_VIEW_MODE;
-      const eventsViewMode = preferences.eventsViewMode ?? DEFAULT_EVENTS_VIEW_MODE;
-      const zoom = preferences.lastZoomByMode?.["manager"] ?? DEFAULT_MANAGER_ZOOM;
+      const mode = overrides?.mode ?? preferences.lastMode ?? DEFAULT_ALMANAC_MODE;
+      const managerViewMode = overrides?.managerView ?? preferences.managerViewMode ?? DEFAULT_MANAGER_VIEW_MODE;
+      const eventsViewMode = overrides?.eventsView ?? preferences.eventsViewMode ?? DEFAULT_EVENTS_VIEW_MODE;
+      const zoom = overrides?.managerZoom ?? preferences.lastZoomByMode?.["manager"] ?? DEFAULT_MANAGER_ZOOM;
       const activeCalendarId = snapshot.activeCalendar?.id ?? null;
       const timeDefinition = snapshot.activeCalendar ? (() => {
         const { hoursPerDay, minutesPerHour, minuteStep } = getTimeDefinition(
@@ -48052,25 +51590,36 @@ var AlmanacStateMachine = class {
         triggeredPhenomena: [],
         isPersisting: false
       };
+      const mapMarkers = this.buildPhenomenonMapMarkers(filteredPhenomena, calendars);
       this.setState((draft) => {
         draft.calendarState = calendarSlice;
+        const lastZoomByMode = { ...preferences.lastZoomByMode ?? {} };
+        if (overrides?.managerZoom) {
+          lastZoomByMode["manager"] = overrides.managerZoom;
+        }
         draft.almanacUiState = {
           ...draft.almanacUiState,
           mode,
           modeHistory: [mode],
           isLoading: false,
           error: void 0,
-          lastZoomByMode: preferences.lastZoomByMode ?? {}
+          lastZoomByMode
+        };
+        draft.calendarViewState = {
+          mode: "month",
+          zoom,
+          anchorTimestamp: calendarSlice.currentTimestamp,
+          events: calendarSlice.upcomingEvents,
+          isLoading: false,
+          error: void 0
         };
         draft.managerUiState = {
           ...draft.managerUiState,
           viewMode: managerViewMode,
-          zoom,
           isLoading: false,
           error: void 0,
           selection: [],
-          anchorTimestamp: calendarSlice.currentTimestamp,
-          agendaItems: calendarSlice.currentTimestamp ? this.collectAgendaItems(calendarSlice.currentTimestamp, zoom, calendarSlice.upcomingEvents) : []
+          layout: "grid"
         };
         draft.eventsUiState = {
           ...draft.eventsUiState,
@@ -48081,15 +51630,34 @@ var AlmanacStateMachine = class {
           filters: { ...filters },
           availableCategories,
           availableCalendars: calendars.map((schema) => ({ id: schema.id, name: schema.name })),
+          mapMarkers,
           phenomena: filteredPhenomena,
           selectedPhenomenonId: initialSelectedId,
           selectedPhenomenonDetail: initialDetail,
           isDetailLoading: false
         };
-        draft.telemetryState = {
-          lastEvents: []
+        draft.travelLeafState = {
+          ...draft.travelLeafState,
+          travelId: effectiveTravelId,
+          visible: travelPreferences?.visible ?? false,
+          mode: travelPreferences?.mode ?? draft.travelLeafState.mode,
+          currentTimestamp: calendarSlice.currentTimestamp,
+          minuteStep: calendarSlice.timeDefinition?.minuteStep ?? draft.travelLeafState.minuteStep,
+          lastQuickStep: void 0,
+          isLoading: false,
+          error: void 0
         };
       });
+      const initialPanel = {
+        travelId: this.travelId,
+        currentTimestamp: snapshot.currentTimestamp,
+        triggeredEvents: [],
+        triggeredPhenomena: [],
+        skippedEvents: [],
+        skippedPhenomena: [],
+        reason: "init"
+      };
+      await this.cartographerGateway.notifyTravelPanel(initialPanel);
       this.initialised = true;
       this.ensurePhenomenonSelection();
     } catch (error) {
@@ -48114,10 +51682,10 @@ var AlmanacStateMachine = class {
     try {
       const [calendars, snapshot, phenomena] = await Promise.all([
         this.calendarRepo.listCalendars(),
-        this.gateway.loadSnapshot(),
+        this.gateway.loadSnapshot(this.travelId ? { travelId: this.travelId } : void 0),
         this.phenomenonRepo.listPhenomena()
       ]);
-      this.phenomenaDefinitions = phenomena;
+      this.phenomenaDefinitions = phenomena.map((item) => this.toPhenomenon(item));
       this.phenomenaSource = this.buildPhenomenonViewModels(
         this.phenomenaDefinitions,
         calendars,
@@ -48155,11 +51723,12 @@ var AlmanacStateMachine = class {
         return { hoursPerDay, minutesPerHour, minuteStep };
       })() : void 0;
       const anchor = this.state.managerUiState.anchorTimestamp ?? snapshot.currentTimestamp ?? this.getAnchorFallback();
-      const agendaItems = anchor ? this.collectAgendaItems(anchor, this.state.managerUiState.zoom, snapshot.upcomingEvents) : [];
+      const agendaItems = anchor ? this.collectAgendaItems(anchor, this.state.calendarViewState.zoom, snapshot.upcomingEvents) : [];
       const defaultCalendarId = snapshot.defaultCalendarId ?? calendars.find((schema) => schema.isDefaultGlobal)?.id ?? null;
+      const mapMarkers = this.buildPhenomenonMapMarkers(filteredPhenomena, calendars);
       this.setState((draft) => {
         const anchor2 = draft.managerUiState.anchorTimestamp ?? snapshot.currentTimestamp ?? this.getAnchorFallback();
-        const agendaItems2 = anchor2 ? this.collectAgendaItems(anchor2, draft.managerUiState.zoom, snapshot.upcomingEvents) : [];
+        const agendaItems2 = anchor2 ? this.collectAgendaItems(anchor2, draft.calendarViewState.zoom, snapshot.upcomingEvents) : [];
         draft.calendarState = {
           ...draft.calendarState,
           calendars,
@@ -48177,6 +51746,11 @@ var AlmanacStateMachine = class {
           isLoading: false,
           error: void 0
         };
+        draft.calendarViewState = {
+          ...draft.calendarViewState,
+          anchorTimestamp: snapshot.currentTimestamp,
+          events: snapshot.upcomingEvents
+        };
         draft.managerUiState = {
           ...draft.managerUiState,
           anchorTimestamp: draft.managerUiState.anchorTimestamp ?? snapshot.currentTimestamp,
@@ -48189,10 +51763,17 @@ var AlmanacStateMachine = class {
           filters: { ...filters },
           availableCategories,
           availableCalendars: calendars.map((schema) => ({ id: schema.id, name: schema.name })),
+          mapMarkers,
           phenomena: filteredPhenomena,
           selectedPhenomenonId: nextSelectedId,
           selectedPhenomenonDetail: nextDetail,
           isDetailLoading: false
+        };
+        draft.travelLeafState = {
+          ...draft.travelLeafState,
+          travelId: this.travelId,
+          currentTimestamp: snapshot.currentTimestamp,
+          minuteStep: timeDefinition?.minuteStep ?? draft.travelLeafState.minuteStep
         };
       });
     } catch (error) {
@@ -48214,6 +51795,7 @@ var AlmanacStateMachine = class {
     if (mode === this.state.almanacUiState.mode) {
       return;
     }
+    const previousMode = this.state.almanacUiState.mode;
     this.setState((draft) => {
       draft.almanacUiState = {
         ...draft.almanacUiState,
@@ -48221,6 +51803,12 @@ var AlmanacStateMachine = class {
         modeHistory: [...draft.almanacUiState.modeHistory, mode].slice(-5),
         error: void 0
       };
+    });
+    emitAlmanacEvent({
+      type: "calendar.almanac.mode_change",
+      mode,
+      previousMode,
+      history: this.state.almanacUiState.modeHistory
     });
     await this.persistPreferences({ lastMode: mode });
     if (mode === "events") {
@@ -48239,21 +51827,24 @@ var AlmanacStateMachine = class {
         isLoading: false,
         error: void 0,
         anchorTimestamp: anchorBase ?? draft.managerUiState.anchorTimestamp,
-        agendaItems: anchorBase ? this.collectAgendaItems(anchorBase, draft.managerUiState.zoom) : []
+        agendaItems: anchorBase ? this.collectAgendaItems(anchorBase, draft.calendarViewState.zoom) : []
       };
     });
     await this.persistPreferences({ managerViewMode: viewMode });
   }
   async handleManagerZoom(zoom) {
-    if (zoom === this.state.managerUiState.zoom) {
+    if (zoom === this.state.calendarViewState.zoom) {
       return;
     }
     const anchorBase = this.getAnchorBase();
     const agendaItems = anchorBase ? this.collectAgendaItems(anchorBase, zoom) : [];
     this.setState((draft) => {
+      draft.calendarViewState = {
+        ...draft.calendarViewState,
+        zoom
+      };
       draft.managerUiState = {
         ...draft.managerUiState,
-        zoom,
         anchorTimestamp: anchorBase ?? draft.managerUiState.anchorTimestamp,
         agendaItems,
         jumpPreview: []
@@ -48283,12 +51874,12 @@ var AlmanacStateMachine = class {
       return;
     }
     const baseAnchor = this.state.managerUiState.anchorTimestamp ?? this.state.calendarState.currentTimestamp ?? createDayTimestamp(activeCalendarId, schema.epoch.year, schema.epoch.monthId, schema.epoch.day);
-    const nextAnchor = direction === "today" ? this.state.calendarState.currentTimestamp ?? baseAnchor : this.shiftAnchorTimestamp(schema, baseAnchor, this.state.managerUiState.zoom, direction);
+    const nextAnchor = direction === "today" ? this.state.calendarState.currentTimestamp ?? baseAnchor : this.shiftAnchorTimestamp(schema, baseAnchor, this.state.calendarViewState.zoom, direction);
     this.setState((draft) => {
       draft.managerUiState = {
         ...draft.managerUiState,
         anchorTimestamp: nextAnchor,
-        agendaItems: this.collectAgendaItems(nextAnchor, draft.managerUiState.zoom),
+        agendaItems: this.collectAgendaItems(nextAnchor, draft.calendarViewState.zoom),
         jumpPreview: []
       };
     });
@@ -48330,11 +51921,13 @@ var AlmanacStateMachine = class {
       nextDetail = this.buildPhenomenonDetailForId(firstId, calendars, referenceTimestamp);
       nextSelectedId = nextDetail ? firstId : null;
     }
+    const mapMarkers = this.buildPhenomenonMapMarkers(filteredPhenomena, calendars);
     this.setState((draft) => {
       draft.eventsUiState = {
         ...draft.eventsUiState,
         filters: normalised,
         filterCount,
+        mapMarkers,
         phenomena: filteredPhenomena,
         selectedPhenomenonId: nextSelectedId,
         selectedPhenomenonDetail: nextDetail,
@@ -48356,16 +51949,17 @@ var AlmanacStateMachine = class {
       };
     });
     try {
-      const phenomenon = await this.phenomenonRepo.getPhenomenon(phenomenonId);
-      if (!phenomenon) {
+      const phenomenonDto = await this.phenomenonRepo.getPhenomenon(phenomenonId);
+      if (!phenomenonDto) {
         throw new Error(`Phenomenon ${phenomenonId} not found`);
       }
+      const normalised = this.toPhenomenon(phenomenonDto);
       this.phenomenaDefinitions = [
-        ...this.phenomenaDefinitions.filter((item) => item.id !== phenomenon.id),
-        phenomenon
+        ...this.phenomenaDefinitions.filter((item) => item.id !== normalised.id),
+        normalised
       ];
       const detail = this.buildPhenomenonDetailView(
-        phenomenon,
+        normalised,
         this.state.calendarState.calendars,
         this.state.calendarState.currentTimestamp
       );
@@ -48403,12 +51997,1316 @@ var AlmanacStateMachine = class {
     });
     void this.persistPreferences({ lastSelectedPhenomenonId: void 0 });
   }
+  handleEventsBulkSelection(selection) {
+    const validIds = new Set(this.phenomenaDefinitions.map((item) => item.id));
+    const unique = Array.from(new Set(selection)).filter((id) => validIds.has(id));
+    this.setState((draft) => {
+      draft.eventsUiState = {
+        ...draft.eventsUiState,
+        bulkSelection: unique
+      };
+    });
+  }
+  async handlePhenomenonEditRequest(phenomenonId) {
+    const base = phenomenonId ? this.phenomenaDefinitions.find((item) => item.id === phenomenonId) ?? null : null;
+    const draft = base ? this.createEditorDraftFromPhenomenon(base) : this.createDefaultEditorDraft(phenomenonId);
+    this.setState((next) => {
+      next.eventsUiState = {
+        ...next.eventsUiState,
+        isEditorOpen: true,
+        editorDraft: draft,
+        isSaving: false,
+        editorError: void 0
+      };
+    });
+    if (phenomenonId && !base) {
+      try {
+        const loaded = await this.phenomenonRepo.getPhenomenon(phenomenonId);
+        if (!loaded) {
+          throw new Error(`Phenomenon ${phenomenonId} not found`);
+        }
+        const normalised = this.toPhenomenon(loaded);
+        this.phenomenaDefinitions = [
+          ...this.phenomenaDefinitions.filter((item) => item.id !== normalised.id),
+          normalised
+        ];
+        this.setState((next) => {
+          next.eventsUiState = {
+            ...next.eventsUiState,
+            editorDraft: this.createEditorDraftFromPhenomenon(normalised)
+          };
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Editor konnte nicht ge\xF6ffnet werden";
+        this.setState((next) => {
+          next.eventsUiState = {
+            ...next.eventsUiState,
+            editorError: message
+          };
+        });
+      }
+    }
+  }
+  handlePhenomenonEditCancelled() {
+    this.setState((draft) => {
+      draft.eventsUiState = {
+        ...draft.eventsUiState,
+        isEditorOpen: false,
+        editorDraft: null,
+        isSaving: false,
+        editorError: void 0
+      };
+    });
+  }
+  async handlePhenomenonSave(draft) {
+    const trimmedName = draft.name.trim();
+    if (!trimmedName) {
+      this.setState((next) => {
+        next.eventsUiState = {
+          ...next.eventsUiState,
+          editorError: "Name darf nicht leer sein."
+        };
+      });
+      return;
+    }
+    this.setState((next) => {
+      next.eventsUiState = {
+        ...next.eventsUiState,
+        isSaving: true,
+        editorError: void 0
+      };
+    });
+    try {
+      const existing = this.phenomenaDefinitions.find((item) => item.id === draft.id) ?? null;
+      const dto = this.buildPhenomenonFromDraft(draft, existing);
+      const stored = await this.phenomenonRepo.upsertPhenomenon(dto);
+      const normalised = this.toPhenomenon(stored);
+      this.phenomenaDefinitions = [
+        ...this.phenomenaDefinitions.filter((item) => item.id !== normalised.id),
+        normalised
+      ];
+      this.rebuildPhenomenaListing(normalised.id, {
+        bulkSelection: this.state.eventsUiState.bulkSelection,
+        exportPayload: this.state.eventsUiState.lastExportPayload ?? void 0,
+        importSummary: this.state.eventsUiState.importSummary ?? null
+      });
+      this.setState((next) => {
+        next.eventsUiState = {
+          ...next.eventsUiState,
+          isEditorOpen: false,
+          editorDraft: null,
+          isSaving: false,
+          editorError: void 0
+        };
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Speichern fehlgeschlagen";
+      const code = error instanceof AlmanacRepositoryError ? error.code : "io_error";
+      reportAlmanacGatewayIssue({
+        operation: "stateMachine.phenomenon.save",
+        scope: "phenomenon",
+        code,
+        error,
+        context: { phenomenonId: draft.id }
+      });
+      if (error instanceof AlmanacRepositoryError && error.code === "phenomenon_conflict") {
+        emitAlmanacEvent({
+          type: "calendar.event.conflict",
+          code: "phenomenon",
+          message,
+          context: error.details
+        });
+      }
+      this.setState((next) => {
+        next.eventsUiState = {
+          ...next.eventsUiState,
+          isSaving: false,
+          editorError: message
+        };
+      });
+    }
+  }
+  async handleEventCreateRequested(mode, calendarId) {
+    const fallbackCalendarId = calendarId ?? this.state.calendarState.activeCalendarId ?? this.state.calendarState.defaultCalendarId ?? (this.state.calendarState.calendars[0]?.id ?? null);
+    if (!fallbackCalendarId) {
+      const message = "Kein Kalender verf\xFCgbar.";
+      this.setState((next) => {
+        next.eventsUiState = {
+          ...next.eventsUiState,
+          isEventEditorOpen: true,
+          eventEditorMode: mode,
+          eventEditorDraft: null,
+          eventEditorErrors: [message],
+          eventEditorPreview: [],
+          isEventSaving: false,
+          eventEditorError: message
+        };
+      });
+      return;
+    }
+    const schema = this.getCalendarSchema(fallbackCalendarId);
+    const referenceTimestamp = this.state.calendarState.currentTimestamp;
+    const reference = referenceTimestamp && referenceTimestamp.calendarId === fallbackCalendarId ? { year: referenceTimestamp.year, monthId: referenceTimestamp.monthId, day: referenceTimestamp.day } : schema ? { year: schema.epoch.year, monthId: schema.epoch.monthId, day: schema.epoch.day } : void 0;
+    const draft = mode === "single" ? createEmptySingleEventDraft(fallbackCalendarId, reference) : createEmptyRecurringEventDraft(fallbackCalendarId, reference);
+    const { errors, preview } = this.validateAndPreviewDraft(draft);
+    this.setState((next) => {
+      next.eventsUiState = {
+        ...next.eventsUiState,
+        isEventEditorOpen: true,
+        eventEditorMode: mode,
+        eventEditorDraft: draft,
+        eventEditorErrors: errors,
+        eventEditorPreview: preview,
+        isEventSaving: false,
+        eventEditorError: void 0
+      };
+    });
+  }
+  async handleEventEditRequested(eventId) {
+    try {
+      const event = await this.loadEventById(eventId);
+      if (!event) {
+        throw new Error(`Event ${eventId} konnte nicht gefunden werden.`);
+      }
+      const draft = this.createDraftFromEvent(event);
+      const { errors, preview } = this.validateAndPreviewDraft(draft);
+      this.setState((next) => {
+        next.eventsUiState = {
+          ...next.eventsUiState,
+          isEventEditorOpen: true,
+          eventEditorMode: draft.kind === "recurring" ? "recurring" : "single",
+          eventEditorDraft: draft,
+          eventEditorErrors: errors,
+          eventEditorPreview: preview,
+          isEventSaving: false,
+          eventEditorError: void 0
+        };
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Ereignis konnte nicht geladen werden.";
+      reportAlmanacGatewayIssue({
+        operation: "stateMachine.event.load",
+        scope: "events",
+        code: "io_error",
+        error,
+        context: { eventId }
+      });
+      this.setState((next) => {
+        next.eventsUiState = {
+          ...next.eventsUiState,
+          isEventEditorOpen: false,
+          eventEditorMode: null,
+          eventEditorDraft: null,
+          eventEditorErrors: [message],
+          eventEditorPreview: [],
+          isEventSaving: false,
+          eventEditorError: message
+        };
+      });
+    }
+  }
+  handleEventEditorUpdated(update) {
+    const current = this.state.eventsUiState.eventEditorDraft;
+    if (!current) {
+      return;
+    }
+    const nextDraft = { ...current, ...update };
+    const { errors, preview } = this.validateAndPreviewDraft(nextDraft);
+    this.setState((next) => {
+      next.eventsUiState = {
+        ...next.eventsUiState,
+        eventEditorDraft: nextDraft,
+        eventEditorMode: nextDraft.kind === "recurring" ? "recurring" : "single",
+        eventEditorErrors: errors,
+        eventEditorPreview: preview,
+        eventEditorError: void 0
+      };
+    });
+  }
+  handleEventEditorCancelled() {
+    this.setState((next) => {
+      next.eventsUiState = {
+        ...next.eventsUiState,
+        isEventEditorOpen: false,
+        eventEditorMode: null,
+        eventEditorDraft: null,
+        eventEditorErrors: [],
+        eventEditorPreview: [],
+        isEventSaving: false,
+        eventEditorError: void 0
+      };
+    });
+  }
+  async handleEventEditorSave() {
+    const draft = this.state.eventsUiState.eventEditorDraft;
+    if (!draft) {
+      return;
+    }
+    const validation = this.validateEventDraft(draft);
+    if (validation.errors.length > 0 || !validation.event) {
+      this.setState((next) => {
+        next.eventsUiState = {
+          ...next.eventsUiState,
+          eventEditorErrors: validation.errors,
+          eventEditorPreview: [],
+          isEventSaving: false,
+          eventEditorError: validation.errors[0] ?? void 0
+        };
+      });
+      return;
+    }
+    const isNew = !draft.id;
+    const targetId = isNew ? this.generateEventId() : draft.id;
+    const event = validation.event;
+    const payload = isSingleEvent(event) ? { ...event, id: targetId } : { ...event, id: targetId };
+    this.setState((next) => {
+      next.eventsUiState = {
+        ...next.eventsUiState,
+        isEventSaving: true,
+        eventEditorErrors: validation.errors,
+        eventEditorPreview: validation.schema ? this.computeEventPreview(event, validation.schema) : [],
+        eventEditorError: void 0
+      };
+    });
+    try {
+      if (isNew) {
+        await this.eventRepo.createEvent(payload);
+      } else {
+        await this.eventRepo.updateEvent(targetId, payload);
+      }
+      await this.refreshCalendarData();
+      this.setState((next) => {
+        next.eventsUiState = {
+          ...next.eventsUiState,
+          isEventEditorOpen: false,
+          eventEditorMode: null,
+          eventEditorDraft: null,
+          eventEditorErrors: [],
+          eventEditorPreview: [],
+          isEventSaving: false,
+          eventEditorError: void 0
+        };
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Ereignis konnte nicht gespeichert werden.";
+      reportAlmanacGatewayIssue({
+        operation: "stateMachine.event.save",
+        scope: "events",
+        code: "io_error",
+        error,
+        context: { eventId: targetId, mode: isNew ? "create" : "update" }
+      });
+      this.setState((next) => {
+        next.eventsUiState = {
+          ...next.eventsUiState,
+          isEventSaving: false,
+          eventEditorError: message
+        };
+      });
+    }
+  }
+  async handleEventDelete(eventId) {
+    try {
+      await this.eventRepo.deleteEvent(eventId);
+      await this.refreshCalendarData();
+      this.setState((next) => {
+        const isEditingDeleted = next.eventsUiState.eventEditorDraft?.id === eventId;
+        next.eventsUiState = {
+          ...next.eventsUiState,
+          bulkSelection: next.eventsUiState.bulkSelection.filter((id) => id !== eventId),
+          ...isEditingDeleted ? {
+            isEventEditorOpen: false,
+            eventEditorMode: null,
+            eventEditorDraft: null,
+            eventEditorErrors: [],
+            eventEditorPreview: [],
+            isEventSaving: false,
+            eventEditorError: void 0
+          } : {}
+        };
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Ereignis konnte nicht gel\xF6scht werden.";
+      reportAlmanacGatewayIssue({
+        operation: "stateMachine.event.delete",
+        scope: "events",
+        code: "io_error",
+        error,
+        context: { eventId }
+      });
+      this.setState((next) => {
+        next.eventsUiState = {
+          ...next.eventsUiState,
+          eventEditorError: message
+        };
+      });
+    }
+  }
+  validateAndPreviewDraft(draft) {
+    const validation = this.validateEventDraft(draft);
+    const preview = validation.event && validation.schema ? this.computeEventPreview(validation.event, validation.schema) : [];
+    return { errors: validation.errors, preview };
+  }
+  validateEventDraft(draft) {
+    const schema = this.getCalendarSchema(draft.calendarId);
+    if (!schema) {
+      return { errors: ["Kalender konnte nicht gefunden werden."], event: null, schema: null };
+    }
+    const errors = [];
+    const title = draft.title.trim();
+    if (!title) {
+      errors.push("Titel darf nicht leer sein.");
+    }
+    if (!draft.calendarId) {
+      errors.push("Kalender erforderlich.");
+    }
+    const year = Number.parseInt(draft.year, 10);
+    if (Number.isNaN(year)) {
+      errors.push("Jahr ist ung\xFCltig.");
+    }
+    const month = draft.monthId ? getMonthById(schema, draft.monthId) : null;
+    if (!month) {
+      errors.push("Monat ist ung\xFCltig.");
+    }
+    const day = Number.parseInt(draft.day, 10);
+    if (Number.isNaN(day)) {
+      errors.push("Tag ist ung\xFCltig.");
+    } else if (month && (day < 1 || day > month.length)) {
+      errors.push("Tag liegt au\xDFerhalb des Monats.");
+    }
+    const definition = getTimeDefinition(schema);
+    const hoursPerDay = definition.hoursPerDay;
+    const minutesPerHour = definition.minutesPerHour;
+    const minuteStep = definition.minuteStep;
+    let hourValue = 0;
+    let minuteValue = 0;
+    if (!draft.allDay) {
+      hourValue = Number.parseInt(draft.hour, 10);
+      if (Number.isNaN(hourValue)) {
+        errors.push("Stunde ist ung\xFCltig.");
+      } else if (hourValue < 0 || hourValue >= hoursPerDay) {
+        errors.push(`Stunde muss zwischen 0 und ${hoursPerDay - 1} liegen.`);
+      }
+      minuteValue = Number.parseInt(draft.minute, 10);
+      const requiresMinute = draft.kind === "single" ? draft.timePrecision === "minute" && !draft.allDay : !draft.allDay && draft.timePolicy !== "all_day";
+      if (requiresMinute) {
+        if (Number.isNaN(minuteValue)) {
+          errors.push("Minute ist ung\xFCltig.");
+        } else if (minuteValue < 0 || minuteValue >= minutesPerHour) {
+          errors.push(`Minute muss zwischen 0 und ${minutesPerHour - 1} liegen.`);
+        } else if (minuteValue % minuteStep !== 0) {
+          errors.push(`Minute muss im Schritt von ${minuteStep} liegen.`);
+        }
+      } else {
+        minuteValue = 0;
+      }
+    }
+    const duration = draft.durationMinutes.trim() ? Number.parseInt(draft.durationMinutes, 10) : void 0;
+    if (duration !== void 0 && (Number.isNaN(duration) || duration < 0)) {
+      errors.push("Dauer muss eine positive Zahl sein.");
+    }
+    if (draft.kind === "recurring" && draft.timePolicy === "offset" && (duration === void 0 || duration < 0)) {
+      errors.push("Offset ben\xF6tigt Minutenangabe.");
+    }
+    if (draft.kind === "recurring" && draft.allDay && draft.timePolicy !== "all_day") {
+      errors.push("Ganzt\xE4gige Ereignisse ben\xF6tigen die Zeitstrategie 'Ganzt\xE4gig'.");
+    }
+    if (errors.length > 0 || !month || Number.isNaN(year) || Number.isNaN(day)) {
+      return { errors, event: null, schema };
+    }
+    const normalisedDay = Math.max(1, Math.min(day, month.length));
+    const note = draft.note.trim() || void 0;
+    const category = draft.category.trim() || void 0;
+    const durationMinutes = duration !== void 0 && duration >= 0 ? duration : void 0;
+    if (draft.kind === "single") {
+      let timestamp;
+      if (draft.allDay || draft.timePrecision === "day") {
+        timestamp = createDayTimestamp(draft.calendarId, year, draft.monthId, normalisedDay);
+      } else if (draft.timePrecision === "hour") {
+        timestamp = createHourTimestamp(draft.calendarId, year, draft.monthId, normalisedDay, hourValue);
+      } else {
+        timestamp = createMinuteTimestamp(
+          draft.calendarId,
+          year,
+          draft.monthId,
+          normalisedDay,
+          hourValue,
+          minuteValue
+        );
+      }
+      const startTime2 = draft.allDay ? void 0 : {
+        hour: hourValue,
+        ...draft.timePrecision === "minute" ? { minute: minuteValue } : {}
+      };
+      const event = createSingleEvent(draft.id || "__preview__", draft.calendarId, title, timestamp, {
+        allDay: draft.allDay,
+        category,
+        note,
+        durationMinutes,
+        startTime: startTime2,
+        timePrecision: draft.timePrecision
+      });
+      return { errors, event, schema };
+    }
+    let rule = null;
+    if (draft.ruleType === "weekly_dayIndex") {
+      const dayIndex = Number.parseInt(draft.ruleDayIndex, 10);
+      if (Number.isNaN(dayIndex) || dayIndex < 0 || dayIndex >= schema.daysPerWeek) {
+        errors.push("Wochentag ist ung\xFCltig.");
+      } else {
+        const intervalValue = Number.parseInt(draft.ruleInterval, 10);
+        rule = {
+          type: "weekly_dayIndex",
+          dayIndex,
+          ...Number.isNaN(intervalValue) || intervalValue <= 1 ? {} : { interval: intervalValue }
+        };
+      }
+    } else if (draft.ruleType === "monthly_position") {
+      const monthId = draft.ruleMonthId || draft.monthId;
+      const monthForRule = getMonthById(schema, monthId);
+      if (!monthForRule) {
+        errors.push("Monat f\xFCr Regel ist ung\xFCltig.");
+      } else {
+        const ruleDay = Number.parseInt(draft.ruleDay, 10);
+        if (Number.isNaN(ruleDay) || ruleDay < 1) {
+          errors.push("Tag der Regel ist ung\xFCltig.");
+        } else {
+          const clamped = Math.min(ruleDay, monthForRule.length);
+          rule = { type: "monthly_position", monthId, day: clamped };
+        }
+      }
+    } else {
+      const monthId = draft.ruleMonthId || draft.monthId;
+      const monthForRule = getMonthById(schema, monthId);
+      if (!monthForRule) {
+        errors.push("Monat f\xFCr Offset ist ung\xFCltig.");
+      } else {
+        const ruleDay = Number.parseInt(draft.ruleDay, 10);
+        if (Number.isNaN(ruleDay) || ruleDay < 1) {
+          errors.push("Tag f\xFCr Offset ist ung\xFCltig.");
+        } else {
+          const clamped = Math.min(ruleDay, monthForRule.length);
+          const offset = this.getDayOfYearForMonth(schema, monthId, clamped);
+          rule = { type: "annual_offset", offsetDayOfYear: offset };
+        }
+      }
+    }
+    const endRequested = Boolean(
+      draft.boundsEndYear || draft.boundsEndMonthId || draft.boundsEndDay
+    );
+    let boundsEnd;
+    if (endRequested) {
+      if (!draft.boundsEndYear || !draft.boundsEndMonthId || !draft.boundsEndDay) {
+        errors.push("Enddatum muss Jahr, Monat und Tag enthalten.");
+      } else {
+        const endMonth = getMonthById(schema, draft.boundsEndMonthId);
+        const endYear = Number.parseInt(draft.boundsEndYear, 10);
+        const endDay = Number.parseInt(draft.boundsEndDay, 10);
+        if (!endMonth || Number.isNaN(endYear) || Number.isNaN(endDay)) {
+          errors.push("Enddatum ist ung\xFCltig.");
+        } else {
+          const clampedEnd = Math.min(Math.max(endDay, 1), endMonth.length);
+          boundsEnd = createDayTimestamp(
+            draft.calendarId,
+            endYear,
+            draft.boundsEndMonthId,
+            clampedEnd
+          );
+        }
+      }
+    }
+    if (!rule) {
+      errors.push("Wiederholregel ist ung\xFCltig.");
+      return { errors, event: null, schema };
+    }
+    const anchorTimestamp = draft.allDay ? createDayTimestamp(draft.calendarId, year, draft.monthId, normalisedDay) : minuteValue > 0 ? createMinuteTimestamp(
+      draft.calendarId,
+      year,
+      draft.monthId,
+      normalisedDay,
+      hourValue,
+      minuteValue
+    ) : createHourTimestamp(draft.calendarId, year, draft.monthId, normalisedDay, hourValue);
+    const startTime = draft.allDay ? void 0 : { hour: hourValue, minute: minuteValue };
+    const recurring = {
+      kind: "recurring",
+      id: draft.id || "__preview__",
+      calendarId: draft.calendarId,
+      title,
+      note,
+      category,
+      date: anchorTimestamp,
+      allDay: draft.allDay,
+      rule,
+      timePolicy: draft.timePolicy,
+      startTime: draft.allDay ? void 0 : startTime,
+      offsetMinutes: draft.timePolicy === "offset" ? durationMinutes ?? 0 : void 0,
+      durationMinutes: draft.timePolicy === "offset" ? void 0 : durationMinutes,
+      bounds: boundsEnd ? { start: anchorTimestamp, end: boundsEnd } : { start: anchorTimestamp }
+    };
+    return { errors, event: recurring, schema };
+  }
+  computeEventPreview(event, schema) {
+    const occurrences = [];
+    const reference = this.state.calendarState.currentTimestamp && this.state.calendarState.currentTimestamp.calendarId === event.calendarId ? this.state.calendarState.currentTimestamp : event.date;
+    let cursor = reference;
+    let includeStart = true;
+    for (let index = 0; index < 5; index += 1) {
+      const next = computeNextEventOccurrence(event, schema, event.calendarId, cursor, { includeStart });
+      if (!next) {
+        break;
+      }
+      const monthName = getMonthById(schema, next.start.monthId)?.name ?? next.start.monthId;
+      occurrences.push({
+        id: `${event.id}-${index}`,
+        timestamp: next.start,
+        label: formatTimestamp(next.start, monthName)
+      });
+      includeStart = false;
+      const precision = next.start.precision;
+      const unit = precision === "minute" ? "minute" : precision === "hour" ? "hour" : "day";
+      cursor = advanceTime(schema, next.start, 1, unit).timestamp;
+    }
+    if (occurrences.length === 0 && isSingleEvent(event)) {
+      const monthName = getMonthById(schema, event.date.monthId)?.name ?? event.date.monthId;
+      occurrences.push({
+        id: `${event.id}-0`,
+        timestamp: event.date,
+        label: formatTimestamp(event.date, monthName)
+      });
+    }
+    return occurrences.slice(0, 5);
+  }
+  createDraftFromEvent(event) {
+    const schema = this.getCalendarSchema(event.calendarId);
+    if (isSingleEvent(event)) {
+      const draft2 = createEmptySingleEventDraft(event.calendarId, {
+        year: event.date.year,
+        monthId: event.date.monthId,
+        day: event.date.day
+      });
+      return {
+        ...draft2,
+        id: event.id,
+        title: event.title,
+        category: event.category ?? "",
+        note: event.note ?? "",
+        allDay: event.allDay,
+        hour: String(event.startTime?.hour ?? event.date.hour ?? 0),
+        minute: String(event.startTime?.minute ?? event.date.minute ?? 0),
+        durationMinutes: event.durationMinutes != null ? String(event.durationMinutes) : "",
+        timePrecision: event.timePrecision
+      };
+    }
+    const draft = createEmptyRecurringEventDraft(event.calendarId, {
+      year: event.date.year,
+      monthId: event.date.monthId,
+      day: event.date.day
+    });
+    let ruleDayIndex = draft.ruleDayIndex;
+    let ruleInterval = draft.ruleInterval;
+    let ruleMonthId = draft.ruleMonthId;
+    let ruleDay = draft.ruleDay;
+    if (event.rule.type === "weekly_dayIndex") {
+      ruleDayIndex = String(event.rule.dayIndex);
+      ruleInterval = event.rule.interval ? String(event.rule.interval) : "1";
+    } else if (event.rule.type === "monthly_position") {
+      ruleMonthId = event.rule.monthId;
+      ruleDay = String(event.rule.day);
+    } else if (event.rule.type === "annual_offset" && schema) {
+      const months = schema.months;
+      let remaining = event.rule.offsetDayOfYear;
+      for (const monthSchema of months) {
+        if (remaining <= monthSchema.length) {
+          ruleMonthId = monthSchema.id;
+          ruleDay = String(remaining);
+          break;
+        }
+        remaining -= monthSchema.length;
+      }
+    }
+    const boundsEnd = event.bounds?.end;
+    return {
+      ...draft,
+      id: event.id,
+      title: event.title,
+      category: event.category ?? "",
+      note: event.note ?? "",
+      allDay: event.allDay,
+      hour: String(event.startTime?.hour ?? event.date.hour ?? 0),
+      minute: String(event.startTime?.minute ?? event.date.minute ?? 0),
+      durationMinutes: event.timePolicy === "offset" ? String(event.offsetMinutes ?? 0) : event.durationMinutes != null ? String(event.durationMinutes) : "",
+      ruleType: event.rule.type,
+      ruleDayIndex,
+      ruleInterval,
+      ruleMonthId: ruleMonthId || draft.ruleMonthId,
+      ruleDay,
+      timePolicy: event.timePolicy,
+      boundsEndYear: boundsEnd ? String(boundsEnd.year) : "",
+      boundsEndMonthId: boundsEnd ? boundsEnd.monthId : "",
+      boundsEndDay: boundsEnd ? String(boundsEnd.day) : ""
+    };
+  }
+  async loadEventById(eventId) {
+    const known = [
+      ...this.state.calendarState.upcomingEvents,
+      ...this.state.calendarState.triggeredEvents,
+      ...this.state.managerUiState.agendaItems
+    ].find((event) => event.id === eventId);
+    if (known) {
+      return known;
+    }
+    for (const calendar of this.state.calendarState.calendars) {
+      const events = await this.eventRepo.listEvents(calendar.id);
+      const found = events.find((event) => event.id === eventId);
+      if (found) {
+        return found;
+      }
+    }
+    return null;
+  }
+  generateEventId() {
+    this.eventIdCounter += 1;
+    return `event-${this.eventIdCounter}`;
+  }
+  getDayOfYearForMonth(schema, monthId, day) {
+    const index = getMonthIndex(schema, monthId);
+    if (index === -1) {
+      return day;
+    }
+    let total = 0;
+    for (let i = 0; i < index; i += 1) {
+      total += schema.months[i]?.length ?? 0;
+    }
+    return total + day;
+  }
+  async handleEventBulkAction(action, ids) {
+    const selection = ids && ids.length ? Array.from(ids) : [...this.state.eventsUiState.bulkSelection];
+    const unique = Array.from(new Set(selection));
+    if (unique.length === 0) {
+      return;
+    }
+    if (action === "export") {
+      const entries = this.phenomenaDefinitions.filter((item) => unique.includes(item.id));
+      const payload = formatPhenomenaExport(entries);
+      this.setState((next) => {
+        next.eventsUiState = {
+          ...next.eventsUiState,
+          lastExportPayload: payload,
+          error: void 0
+        };
+      });
+      return;
+    }
+    this.setState((next) => {
+      next.eventsUiState = {
+        ...next.eventsUiState,
+        isLoading: true,
+        error: void 0
+      };
+    });
+    try {
+      for (const id of unique) {
+        await this.phenomenonRepo.deletePhenomenon(id);
+      }
+      this.phenomenaDefinitions = this.phenomenaDefinitions.filter((item) => !unique.includes(item.id));
+      this.rebuildPhenomenaListing(null, {
+        bulkSelection: [],
+        exportPayload: this.state.eventsUiState.lastExportPayload ?? void 0,
+        importSummary: this.state.eventsUiState.importSummary ?? null
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Bulk-Aktion fehlgeschlagen";
+      const code = error instanceof AlmanacRepositoryError ? error.code : "io_error";
+      reportAlmanacGatewayIssue({
+        operation: "stateMachine.phenomenon.bulk",
+        scope: "phenomenon",
+        code,
+        error,
+        context: { ids: unique }
+      });
+      if (error instanceof AlmanacRepositoryError && error.code === "phenomenon_conflict") {
+        emitAlmanacEvent({
+          type: "calendar.event.conflict",
+          code: "phenomenon",
+          message,
+          context: error.details
+        });
+      }
+      this.setState((next) => {
+        next.eventsUiState = {
+          ...next.eventsUiState,
+          error: message
+        };
+      });
+    } finally {
+      this.setState((next) => {
+        next.eventsUiState = {
+          ...next.eventsUiState,
+          isLoading: false
+        };
+      });
+    }
+  }
+  handleEventExportCleared() {
+    this.setState((next) => {
+      next.eventsUiState = {
+        ...next.eventsUiState,
+        lastExportPayload: void 0
+      };
+    });
+  }
+  handleEventImportRequested() {
+    this.setState((next) => {
+      next.eventsUiState = {
+        ...next.eventsUiState,
+        isImportDialogOpen: true,
+        importError: void 0
+      };
+    });
+  }
+  handleEventImportCancelled() {
+    this.setState((next) => {
+      next.eventsUiState = {
+        ...next.eventsUiState,
+        isImportDialogOpen: false,
+        importError: void 0
+      };
+    });
+  }
+  async handleEventImportSubmitted(payload) {
+    this.setState((next) => {
+      next.eventsUiState = {
+        ...next.eventsUiState,
+        isLoading: true,
+        importError: void 0
+      };
+    });
+    try {
+      const parsed = parsePhenomenaImport(payload);
+      let imported = 0;
+      for (const entry of parsed) {
+        const stored = await this.phenomenonRepo.upsertPhenomenon(entry);
+        const normalised = this.toPhenomenon(stored);
+        this.phenomenaDefinitions = [
+          ...this.phenomenaDefinitions.filter((item) => item.id !== normalised.id),
+          normalised
+        ];
+        imported += 1;
+      }
+      const summary = { imported, failed: 0 };
+      this.rebuildPhenomenaListing(null, {
+        bulkSelection: this.state.eventsUiState.bulkSelection,
+        exportPayload: this.state.eventsUiState.lastExportPayload ?? void 0,
+        importSummary: summary
+      });
+      this.setState((next) => {
+        next.eventsUiState = {
+          ...next.eventsUiState,
+          isImportDialogOpen: false
+        };
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Import fehlgeschlagen";
+      const code = error instanceof AlmanacRepositoryError ? error.code : "io_error";
+      reportAlmanacGatewayIssue({
+        operation: "stateMachine.phenomenon.import",
+        scope: "phenomenon",
+        code,
+        error,
+        context: { imported: payload.slice(0, 32) }
+      });
+      if (error instanceof AlmanacRepositoryError && error.code === "phenomenon_conflict") {
+        emitAlmanacEvent({
+          type: "calendar.event.conflict",
+          code: "phenomenon",
+          message,
+          context: error.details
+        });
+      }
+      this.setState((next) => {
+        next.eventsUiState = {
+          ...next.eventsUiState,
+          importError: message
+        };
+      });
+    } finally {
+      this.setState((next) => {
+        next.eventsUiState = {
+          ...next.eventsUiState,
+          isLoading: false
+        };
+      });
+    }
+  }
   handleManagerSelectionChanged(selection) {
     const unique = Array.from(new Set(selection));
     this.setState((draft) => {
       draft.managerUiState = {
         ...draft.managerUiState,
         selection: unique
+      };
+    });
+  }
+  handleCreateFormUpdated(field, value) {
+    const numericFields = [
+      "daysPerWeek",
+      "monthCount",
+      "monthLength",
+      "hoursPerDay",
+      "minutesPerHour",
+      "minuteStep",
+      "epochYear",
+      "epochDay"
+    ];
+    let nextValue = value;
+    if (field === "id") {
+      nextValue = this.slugify(value);
+    } else if (numericFields.includes(field)) {
+      nextValue = value.replace(/[^0-9]/g, "");
+    }
+    this.setState((draft) => {
+      draft.managerUiState = {
+        ...draft.managerUiState,
+        createDraft: {
+          ...draft.managerUiState.createDraft,
+          [field]: nextValue
+        },
+        createErrors: []
+      };
+    });
+  }
+  async handleCalendarCreate() {
+    const draft = this.state.managerUiState.createDraft;
+    this.setState((draftState) => {
+      draftState.managerUiState = {
+        ...draftState.managerUiState,
+        isCreating: true,
+        createErrors: []
+      };
+    });
+    const { schema, errors } = await this.buildCalendarSchemaFromDraft(draft);
+    if (!schema || errors.length > 0) {
+      this.setState((draftState) => {
+        draftState.managerUiState = {
+          ...draftState.managerUiState,
+          isCreating: false,
+          createErrors: errors.length > 0 ? errors : ["Unable to create calendar with current data."]
+        };
+      });
+      return;
+    }
+    try {
+      const initialTimestamp = createDayTimestamp(
+        schema.id,
+        schema.epoch.year,
+        schema.epoch.monthId,
+        schema.epoch.day
+      );
+      await this.calendarRepo.createCalendar(schema);
+      await this.gateway.setActiveCalendar(schema.id, { initialTimestamp });
+      await this.refreshCalendarData();
+      const currentTimestamp = this.state.calendarState.currentTimestamp ?? initialTimestamp;
+      this.setState((draftState) => {
+        draftState.managerUiState = {
+          ...draftState.managerUiState,
+          isCreating: false,
+          createErrors: [],
+          createDraft: createDefaultCalendarDraft(),
+          anchorTimestamp: currentTimestamp,
+          selection: []
+        };
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to create calendar";
+      const code = isCalendarGatewayError(error) ? error.code : "io_error";
+      reportAlmanacGatewayIssue({
+        operation: "stateMachine.createCalendar",
+        scope: "calendar",
+        code,
+        error,
+        context: { calendarId: schema.id }
+      });
+      this.setState((draftState) => {
+        draftState.managerUiState = {
+          ...draftState.managerUiState,
+          isCreating: false,
+          createErrors: [message]
+        };
+      });
+    }
+  }
+  handleCalendarEditRequested(calendarId) {
+    const schema = this.getCalendarSchema(calendarId);
+    if (!schema) {
+      return;
+    }
+    const draft = createCalendarDraftFromSchema(schema);
+    const warnings = this.computeEditWarnings(schema, draft);
+    this.setState((draftState) => {
+      const current = draftState.managerUiState.editStateById[calendarId];
+      const nextState = {
+        draft,
+        errors: [],
+        warnings,
+        isSaving: false
+      };
+      draftState.managerUiState = {
+        ...draftState.managerUiState,
+        editStateById: {
+          ...draftState.managerUiState.editStateById,
+          [calendarId]: current ? { ...current, ...nextState } : nextState
+        },
+        conflictDialog: draftState.managerUiState.conflictDialog?.calendarId === calendarId ? null : draftState.managerUiState.conflictDialog
+      };
+    });
+  }
+  handleCalendarEditCancelled(calendarId) {
+    this.setState((draft) => {
+      const { [calendarId]: _removed, ...rest } = draft.managerUiState.editStateById;
+      draft.managerUiState = {
+        ...draft.managerUiState,
+        editStateById: rest
+      };
+    });
+  }
+  handleCalendarEditFormUpdated(calendarId, field, value) {
+    const editableFields = [
+      "name",
+      "description",
+      "hoursPerDay",
+      "minutesPerHour",
+      "minuteStep"
+    ];
+    if (!editableFields.includes(field)) {
+      return;
+    }
+    const existing = this.state.managerUiState.editStateById[calendarId];
+    if (!existing) {
+      return;
+    }
+    const numericFields = ["hoursPerDay", "minutesPerHour", "minuteStep"];
+    let nextValue = value;
+    if (numericFields.includes(field)) {
+      nextValue = value.replace(/[^0-9]/g, "");
+    }
+    const nextDraft = {
+      ...existing.draft,
+      [field]: nextValue
+    };
+    const schema = this.getCalendarSchema(calendarId);
+    const warnings = schema ? this.computeEditWarnings(schema, nextDraft) : [];
+    this.setState((draftState) => {
+      const current = draftState.managerUiState.editStateById[calendarId];
+      if (!current) {
+        return;
+      }
+      draftState.managerUiState = {
+        ...draftState.managerUiState,
+        editStateById: {
+          ...draftState.managerUiState.editStateById,
+          [calendarId]: {
+            ...current,
+            draft: nextDraft,
+            warnings,
+            errors: []
+          }
+        }
+      };
+    });
+  }
+  async handleCalendarUpdate(calendarId) {
+    const editState = this.state.managerUiState.editStateById[calendarId];
+    const schema = this.getCalendarSchema(calendarId);
+    if (!editState || !schema) {
+      return;
+    }
+    const errors = [];
+    const trimmedName = editState.draft.name.trim();
+    if (!trimmedName) {
+      errors.push("Name is required.");
+    }
+    const description = editState.draft.description.trim();
+    const hoursPerDay = Number(editState.draft.hoursPerDay || String(schema.hoursPerDay ?? 24));
+    const minutesPerHour = Number(editState.draft.minutesPerHour || String(schema.minutesPerHour ?? 60));
+    const minuteStep = Number(editState.draft.minuteStep || String(schema.minuteStep ?? 1));
+    if (!Number.isFinite(hoursPerDay) || hoursPerDay < 1) {
+      errors.push("Hours per day must be at least 1.");
+    }
+    if (!Number.isFinite(minutesPerHour) || minutesPerHour < 1) {
+      errors.push("Minutes per hour must be at least 1.");
+    }
+    if (!Number.isFinite(minuteStep) || minuteStep < 1) {
+      errors.push("Minute step must be at least 1.");
+    } else if (minuteStep > minutesPerHour) {
+      errors.push("Minute step must not exceed minutes per hour.");
+    }
+    if (errors.length > 0) {
+      this.setState((draftState) => {
+        const current = draftState.managerUiState.editStateById[calendarId];
+        if (!current) {
+          return;
+        }
+        draftState.managerUiState = {
+          ...draftState.managerUiState,
+          editStateById: {
+            ...draftState.managerUiState.editStateById,
+            [calendarId]: { ...current, errors, isSaving: false }
+          }
+        };
+      });
+      return;
+    }
+    const updates = {};
+    if (trimmedName !== schema.name) {
+      updates.name = trimmedName;
+    }
+    if ((schema.description ?? "") !== description) {
+      updates.description = description || void 0;
+    }
+    const safeHoursPerDay = Math.max(1, Math.floor(hoursPerDay));
+    const safeMinutesPerHour = Math.max(1, Math.floor(minutesPerHour));
+    const safeMinuteStep = Math.max(1, Math.floor(minuteStep));
+    if ((schema.hoursPerDay ?? 24) !== safeHoursPerDay) {
+      updates.hoursPerDay = safeHoursPerDay;
+    }
+    if ((schema.minutesPerHour ?? 60) !== safeMinutesPerHour) {
+      updates.minutesPerHour = safeMinutesPerHour;
+    }
+    if ((schema.minuteStep ?? 1) !== safeMinuteStep) {
+      updates.minuteStep = safeMinuteStep;
+    }
+    if (Object.keys(updates).length === 0) {
+      const warnings = this.computeEditWarnings(schema, editState.draft);
+      this.setState((draftState) => {
+        const current = draftState.managerUiState.editStateById[calendarId];
+        if (!current) {
+          return;
+        }
+        draftState.managerUiState = {
+          ...draftState.managerUiState,
+          editStateById: {
+            ...draftState.managerUiState.editStateById,
+            [calendarId]: { ...current, warnings, errors: [], isSaving: false }
+          }
+        };
+      });
+      return;
+    }
+    const conflicts = await this.detectCalendarConflicts(calendarId, updates);
+    if (conflicts.length > 0) {
+      this.setState((draftState) => {
+        const current = draftState.managerUiState.editStateById[calendarId];
+        if (!current) {
+          return;
+        }
+        const conflictDialog = {
+          calendarId,
+          kind: "update",
+          message: "Existing events conflict with the new time definition.",
+          details: conflicts
+        };
+        draftState.managerUiState = {
+          ...draftState.managerUiState,
+          conflictDialog,
+          editStateById: {
+            ...draftState.managerUiState.editStateById,
+            [calendarId]: { ...current, errors: conflicts, isSaving: false }
+          }
+        };
+      });
+      return;
+    }
+    this.setState((draftState) => {
+      const current = draftState.managerUiState.editStateById[calendarId];
+      if (!current) {
+        return;
+      }
+      draftState.managerUiState = {
+        ...draftState.managerUiState,
+        conflictDialog: draftState.managerUiState.conflictDialog?.calendarId === calendarId ? null : draftState.managerUiState.conflictDialog,
+        editStateById: {
+          ...draftState.managerUiState.editStateById,
+          [calendarId]: { ...current, errors: [], isSaving: true }
+        }
+      };
+    });
+    try {
+      await this.calendarRepo.updateCalendar(calendarId, updates);
+      await this.refreshCalendarData();
+      const updatedSchema = this.getCalendarSchema(calendarId) ?? schema;
+      const nextDraft = createCalendarDraftFromSchema(updatedSchema);
+      const warnings = this.computeEditWarnings(updatedSchema, nextDraft);
+      this.setState((draftState) => {
+        const current = draftState.managerUiState.editStateById[calendarId];
+        if (!current) {
+          return;
+        }
+        draftState.managerUiState = {
+          ...draftState.managerUiState,
+          editStateById: {
+            ...draftState.managerUiState.editStateById,
+            [calendarId]: {
+              draft: nextDraft,
+              warnings,
+              errors: [],
+              isSaving: false
+            }
+          }
+        };
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to update calendar";
+      const code = isCalendarGatewayError(error) ? error.code : "io_error";
+      reportAlmanacGatewayIssue({
+        operation: "stateMachine.updateCalendar",
+        scope: "calendar",
+        code,
+        error,
+        context: { calendarId }
+      });
+      this.setState((draftState) => {
+        const current = draftState.managerUiState.editStateById[calendarId];
+        if (!current) {
+          return;
+        }
+        draftState.managerUiState = {
+          ...draftState.managerUiState,
+          editStateById: {
+            ...draftState.managerUiState.editStateById,
+            [calendarId]: { ...current, errors: [message], isSaving: false }
+          }
+        };
+      });
+    }
+  }
+  async handleCalendarDeleteRequested(calendarId) {
+    const schema = this.getCalendarSchema(calendarId);
+    if (!schema) {
+      return;
+    }
+    const linkedPhenomena = this.phenomenaDefinitions.filter((phenomenon) => phenomenon.appliesToCalendarIds.includes(calendarId)).map((phenomenon) => phenomenon.name);
+    const linkedTravelIds = await this.collectTravelDefaultIds(calendarId);
+    const requiresFallback = this.state.calendarState.defaultCalendarId === calendarId;
+    this.setState((draft) => {
+      draft.managerUiState = {
+        ...draft.managerUiState,
+        deleteDialog: {
+          calendarId,
+          calendarName: schema.name,
+          requiresFallback,
+          linkedTravelIds,
+          linkedPhenomena,
+          isDeleting: false,
+          error: void 0
+        }
+      };
+    });
+  }
+  handleCalendarDeleteCancelled() {
+    this.setState((draft) => {
+      draft.managerUiState = {
+        ...draft.managerUiState,
+        deleteDialog: null
+      };
+    });
+  }
+  async handleCalendarDeleteConfirmed(calendarId) {
+    const dialog = this.state.managerUiState.deleteDialog;
+    if (!dialog || dialog.calendarId !== calendarId) {
+      return;
+    }
+    if (dialog.linkedPhenomena.length > 0) {
+      const message = "Calendar is linked to phenomena and cannot be deleted.";
+      this.setState((draft) => {
+        draft.managerUiState = {
+          ...draft.managerUiState,
+          conflictDialog: {
+            calendarId,
+            kind: "delete",
+            message,
+            details: dialog.linkedPhenomena
+          },
+          deleteDialog: { ...dialog, error: message }
+        };
+      });
+      return;
+    }
+    const fallbackCandidate = this.state.calendarState.calendars.find((schema) => schema.id !== calendarId)?.id ?? null;
+    if (dialog.requiresFallback && !fallbackCandidate) {
+      const message = "Cannot delete the last remaining calendar.";
+      this.setState((draft) => {
+        draft.managerUiState = {
+          ...draft.managerUiState,
+          conflictDialog: {
+            calendarId,
+            kind: "delete",
+            message,
+            details: []
+          },
+          deleteDialog: { ...dialog, error: message }
+        };
+      });
+      return;
+    }
+    this.setState((draft) => {
+      draft.managerUiState = {
+        ...draft.managerUiState,
+        deleteDialog: { ...dialog, isDeleting: true, error: void 0 }
+      };
+    });
+    try {
+      const defaultsRepo = this.getCalendarDefaultsRepository();
+      if (defaultsRepo) {
+        for (const travelId of dialog.linkedTravelIds) {
+          await defaultsRepo.clearTravelDefault(travelId);
+        }
+      }
+      await this.calendarRepo.deleteCalendar(calendarId);
+      if (dialog.requiresFallback && fallbackCandidate) {
+        await this.gateway.setDefaultCalendar(fallbackCandidate, { scope: "global" });
+      }
+      if (this.state.calendarState.activeCalendarId === calendarId && fallbackCandidate) {
+        await this.gateway.setActiveCalendar(fallbackCandidate);
+      }
+      await this.refreshCalendarData();
+      this.setState((draft) => {
+        const { [calendarId]: _removed, ...rest } = draft.managerUiState.editStateById;
+        draft.managerUiState = {
+          ...draft.managerUiState,
+          deleteDialog: null,
+          conflictDialog: null,
+          selection: draft.managerUiState.selection.filter((id) => id !== calendarId),
+          editStateById: rest
+        };
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete calendar";
+      const code = isCalendarGatewayError(error) ? error.code : "io_error";
+      reportAlmanacGatewayIssue({
+        operation: "stateMachine.deleteCalendar",
+        scope: "calendar",
+        code,
+        error,
+        context: { calendarId }
+      });
+      this.setState((draft) => {
+        const currentDialog = draft.managerUiState.deleteDialog;
+        if (!currentDialog || currentDialog.calendarId !== calendarId) {
+          return;
+        }
+        draft.managerUiState = {
+          ...draft.managerUiState,
+          deleteDialog: { ...currentDialog, isDeleting: false, error: message }
+        };
+      });
+    }
+  }
+  handleConflictDismissed() {
+    this.setState((draft) => {
+      draft.managerUiState = {
+        ...draft.managerUiState,
+        conflictDialog: null
       };
     });
   }
@@ -48431,7 +53329,7 @@ var AlmanacStateMachine = class {
     try {
       const existingTimestamp = this.state.calendarState.currentTimestamp;
       const timestamp = existingTimestamp?.calendarId === calendarId ? existingTimestamp : void 0;
-      await this.gateway.setActiveCalendar(calendarId, timestamp);
+      await this.gateway.setActiveCalendar(calendarId, { initialTimestamp: timestamp ?? void 0 });
       await this.refreshCalendarData();
       const currentTimestamp = this.state.calendarState.currentTimestamp;
       if (currentTimestamp) {
@@ -48439,13 +53337,21 @@ var AlmanacStateMachine = class {
           draft.managerUiState = {
             ...draft.managerUiState,
             anchorTimestamp: currentTimestamp,
-            agendaItems: this.collectAgendaItems(currentTimestamp, draft.managerUiState.zoom),
+            agendaItems: this.collectAgendaItems(currentTimestamp, draft.calendarViewState.zoom),
             jumpPreview: []
           };
         });
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Kalender konnte nicht gesetzt werden";
+      const code = isCalendarGatewayError(error) ? error.code : "io_error";
+      reportAlmanacGatewayIssue({
+        operation: "stateMachine.setActiveCalendar",
+        scope: this.travelId ? "travel" : "calendar",
+        code,
+        error,
+        context: { calendarId, travelId: this.travelId }
+      });
       this.setState((draft) => {
         draft.calendarState = {
           ...draft.calendarState,
@@ -48460,6 +53366,7 @@ var AlmanacStateMachine = class {
     }
   }
   async handleCalendarDefault(calendarId) {
+    const previousDefault = this.state.calendarState.defaultCalendarId ?? null;
     this.setState((draft) => {
       draft.calendarState = {
         ...draft.calendarState,
@@ -48471,7 +53378,7 @@ var AlmanacStateMachine = class {
       };
     });
     try {
-      await this.calendarRepo.setGlobalDefault(calendarId);
+      await this.gateway.setDefaultCalendar(calendarId, { scope: "global" });
       await this.refreshCalendarData();
       this.setState((draft) => {
         draft.calendarState = {
@@ -48482,8 +53389,24 @@ var AlmanacStateMachine = class {
           )
         };
       });
+      emitAlmanacEvent({
+        type: "calendar.default.change",
+        scope: "global",
+        calendarId,
+        previousDefaultId: previousDefault,
+        travelId: this.travelId,
+        wasAutoSelected: false
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Standardkalender konnte nicht aktualisiert werden";
+      const code = isCalendarGatewayError(error) ? error.code : "io_error";
+      reportAlmanacGatewayIssue({
+        operation: "stateMachine.setDefault",
+        scope: "default",
+        code,
+        error,
+        context: { calendarId, travelId: this.travelId }
+      });
       this.setState((draft) => {
         draft.calendarState = {
           ...draft.calendarState,
@@ -48496,24 +53419,115 @@ var AlmanacStateMachine = class {
       });
     }
   }
-  async handleTimeAdvance(amount, unit) {
+  async handleTravelLeafMounted(travelId) {
+    this.travelId = travelId;
+    this.setState((draft) => {
+      draft.travelLeafState = {
+        ...draft.travelLeafState,
+        travelId,
+        visible: true,
+        isLoading: true,
+        error: void 0
+      };
+    });
+    try {
+      const prefs = await this.gateway.getTravelLeafPreferences(travelId);
+      this.travelLeafPreferences = prefs;
+      this.setState((draft) => {
+        draft.travelLeafState = {
+          ...draft.travelLeafState,
+          travelId,
+          visible: true,
+          mode: prefs?.mode ?? draft.travelLeafState.mode,
+          currentTimestamp: draft.calendarState.currentTimestamp,
+          minuteStep: draft.calendarState.timeDefinition?.minuteStep ?? draft.travelLeafState.minuteStep,
+          isLoading: false,
+          error: void 0
+        };
+      });
+      await this.persistTravelLeafPreferences({
+        visible: true,
+        mode: this.state.travelLeafState.mode,
+        lastViewedTimestamp: this.state.calendarState.currentTimestamp ?? null
+      });
+      emitAlmanacEvent({
+        type: "calendar.travel.lifecycle",
+        phase: "mount",
+        travelId,
+        visible: true,
+        mode: this.state.travelLeafState.mode,
+        timestamp: this.state.calendarState.currentTimestamp
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Travel-Leaf konnte nicht initialisiert werden";
+      const code = isCalendarGatewayError(error) ? error.code : "io_error";
+      reportAlmanacGatewayIssue({
+        operation: "stateMachine.travelLeaf.mount",
+        scope: "travel",
+        code,
+        error,
+        context: { travelId }
+      });
+      this.setState((draft) => {
+        draft.travelLeafState = {
+          ...draft.travelLeafState,
+          isLoading: false,
+          error: message
+        };
+      });
+    }
+  }
+  async handleTravelModeChanged(mode) {
+    if (mode === this.state.travelLeafState.mode) {
+      return;
+    }
+    this.setState((draft) => {
+      draft.travelLeafState = {
+        ...draft.travelLeafState,
+        mode
+      };
+    });
+    emitAlmanacEvent({
+      type: "calendar.travel.lifecycle",
+      phase: "mode-change",
+      travelId: this.state.travelLeafState.travelId,
+      visible: this.state.travelLeafState.visible,
+      mode,
+      timestamp: this.state.travelLeafState.currentTimestamp
+    });
+    await this.persistTravelLeafPreferences({ mode });
+  }
+  async handleTimeAdvance(amount, unit, source = "global") {
     const activeCalendarId = this.state.calendarState.activeCalendarId;
     if (!activeCalendarId) {
       return;
     }
     this.setState((draft) => {
-      draft.almanacUiState = {
-        ...draft.almanacUiState,
-        isLoading: true,
-        error: void 0
-      };
       draft.calendarState = {
         ...draft.calendarState,
         lastAdvanceStep: { amount, unit }
       };
+      if (source === "global") {
+        draft.almanacUiState = {
+          ...draft.almanacUiState,
+          isLoading: true,
+          error: void 0
+        };
+      } else {
+        draft.travelLeafState = {
+          ...draft.travelLeafState,
+          isLoading: true,
+          error: void 0,
+          lastQuickStep: { amount, unit }
+        };
+      }
     });
     try {
-      const result = await this.gateway.advanceTimeBy(amount, unit);
+      const advanceOptions = this.travelId ? {
+        travelId: this.travelId,
+        hookContext: { scope: "travel", travelId: this.travelId, reason: "advance" }
+      } : { hookContext: { scope: "global", reason: "advance" } };
+      const result = await this.gateway.advanceTimeBy(amount, unit, advanceOptions);
       const schema = this.getCalendarSchema(activeCalendarId);
       let upcoming = this.state.calendarState.upcomingEvents;
       if (schema) {
@@ -48525,7 +53539,8 @@ var AlmanacStateMachine = class {
         );
       }
       if (this.phenomenaDefinitions.length === 0) {
-        this.phenomenaDefinitions = await this.phenomenonRepo.listPhenomena();
+        const freshPhenomena = await this.phenomenonRepo.listPhenomena();
+        this.phenomenaDefinitions = freshPhenomena.map((item) => this.toPhenomenon(item));
       }
       this.phenomenaSource = this.buildPhenomenonViewModels(
         this.phenomenaDefinitions,
@@ -48550,6 +53565,7 @@ var AlmanacStateMachine = class {
         nextDetail = this.buildPhenomenonDetailForId(firstId, calendars, result.timestamp);
         nextSelectedId = nextDetail ? firstId : null;
       }
+      const mapMarkers = this.buildPhenomenonMapMarkers(filteredPhenomena, calendars);
       this.setState((draft) => {
         const mergedTriggered = [
           ...result.triggeredEvents,
@@ -48567,18 +53583,26 @@ var AlmanacStateMachine = class {
           upcomingPhenomena: result.upcomingPhenomena,
           triggeredPhenomena: mergedPhenomena
         };
-        draft.almanacUiState = {
-          ...draft.almanacUiState,
-          isLoading: false
-        };
-        draft.telemetryState = {
-          lastEvents: ["calendar.time.advance", ...draft.telemetryState.lastEvents].slice(0, 5)
+        if (source === "global") {
+          draft.almanacUiState = {
+            ...draft.almanacUiState,
+            isLoading: false
+          };
+        }
+        const minuteStep = draft.calendarState.timeDefinition?.minuteStep ?? draft.travelLeafState.minuteStep;
+        draft.travelLeafState = {
+          ...draft.travelLeafState,
+          travelId: this.travelId,
+          currentTimestamp: result.timestamp,
+          minuteStep,
+          ...source === "travel" ? { isLoading: false, error: void 0, lastQuickStep: { amount, unit } } : {}
         };
         draft.eventsUiState = {
           ...draft.eventsUiState,
           filterCount,
           filters: { ...filters },
           availableCategories,
+          mapMarkers,
           phenomena: filteredPhenomena,
           selectedPhenomenonId: nextSelectedId,
           selectedPhenomenonDetail: nextDetail,
@@ -48587,21 +53611,70 @@ var AlmanacStateMachine = class {
         draft.managerUiState = {
           ...draft.managerUiState,
           anchorTimestamp: result.timestamp,
-          agendaItems: this.collectAgendaItems(result.timestamp, draft.managerUiState.zoom, upcoming),
+          agendaItems: this.collectAgendaItems(result.timestamp, draft.calendarViewState.zoom, upcoming),
           jumpPreview: []
         };
+      });
+      await this.cartographerGateway.notifyTravelPanel({
+        travelId: this.travelId,
+        currentTimestamp: result.timestamp,
+        triggeredEvents: result.triggeredEvents,
+        triggeredPhenomena: result.triggeredPhenomena,
+        skippedEvents: [],
+        skippedPhenomena: [],
+        lastAdvanceStep: { amount, unit },
+        reason: "advance"
+      });
+      emitAlmanacEvent({
+        type: "calendar.time.advance",
+        scope: source,
+        reason: "advance",
+        unit,
+        amount,
+        triggeredEvents: result.triggeredEvents.length,
+        triggeredPhenomena: result.triggeredPhenomena.length,
+        skippedEvents: 0,
+        travelId: source === "travel" ? this.travelId : null,
+        timestamp: result.timestamp
       });
       void this.persistPreferences({
         lastSelectedPhenomenonId: nextSelectedId ?? void 0
       });
+      if (this.travelId) {
+        void this.persistTravelLeafPreferences({ lastViewedTimestamp: result.timestamp });
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Zeitfortschritt fehlgeschlagen";
+      const code = error instanceof AlmanacRepositoryError ? error.code : isCalendarGatewayError(error) ? error.code : "io_error";
+      reportAlmanacGatewayIssue({
+        operation: "stateMachine.timeAdvance",
+        scope: source === "travel" ? "travel" : "calendar",
+        code,
+        error,
+        context: { amount, unit, travelId: this.travelId }
+      });
+      if (error instanceof AlmanacRepositoryError && error.code === "phenomenon_conflict") {
+        emitAlmanacEvent({
+          type: "calendar.event.conflict",
+          code: "phenomenon",
+          message,
+          context: error.details
+        });
+      }
       this.setState((draft) => {
-        draft.almanacUiState = {
-          ...draft.almanacUiState,
-          isLoading: false,
-          error: message
-        };
+        if (source === "global") {
+          draft.almanacUiState = {
+            ...draft.almanacUiState,
+            isLoading: false,
+            error: message
+          };
+        } else {
+          draft.travelLeafState = {
+            ...draft.travelLeafState,
+            isLoading: false,
+            error: message
+          };
+        }
       });
     }
   }
@@ -48650,12 +53723,16 @@ var AlmanacStateMachine = class {
       if (schema && currentTimestamp) {
         preview = await this.eventRepo.getEventsInRange(activeCalendarId, schema, currentTimestamp, target);
       }
-      await this.gateway.setCurrentTimestamp(target);
-      const snapshotAfterJump = await this.gateway.loadSnapshot();
+      const setOptions = this.travelId ? { travelId: this.travelId } : void 0;
+      await this.gateway.setCurrentTimestamp(target, setOptions);
+      const snapshotAfterJump = await this.gateway.loadSnapshot(
+        this.travelId ? { travelId: this.travelId } : void 0
+      );
       const upcoming = snapshotAfterJump.upcomingEvents;
       const upcomingPhenomena = snapshotAfterJump.upcomingPhenomena;
       if (this.phenomenaDefinitions.length === 0) {
-        this.phenomenaDefinitions = await this.phenomenonRepo.listPhenomena();
+        const freshPhenomena = await this.phenomenonRepo.listPhenomena();
+        this.phenomenaDefinitions = freshPhenomena.map((item) => this.toPhenomenon(item));
       }
       this.phenomenaSource = this.buildPhenomenonViewModels(
         this.phenomenaDefinitions,
@@ -48680,6 +53757,7 @@ var AlmanacStateMachine = class {
         nextDetail = this.buildPhenomenonDetailForId(firstId, calendars, target);
         nextSelectedId = nextDetail ? firstId : null;
       }
+      const mapMarkers = this.buildPhenomenonMapMarkers(filteredPhenomena, calendars);
       this.setState((draft) => {
         draft.calendarState = {
           ...draft.calendarState,
@@ -48697,6 +53775,7 @@ var AlmanacStateMachine = class {
           filterCount,
           filters: { ...filters },
           availableCategories,
+          mapMarkers,
           phenomena: filteredPhenomena,
           selectedPhenomenonId: nextSelectedId,
           selectedPhenomenonDetail: nextDetail,
@@ -48705,15 +53784,52 @@ var AlmanacStateMachine = class {
         draft.managerUiState = {
           ...draft.managerUiState,
           anchorTimestamp: target,
-          agendaItems: this.collectAgendaItems(target, draft.managerUiState.zoom, upcoming),
+          agendaItems: this.collectAgendaItems(target, draft.calendarViewState.zoom, upcoming),
           jumpPreview: []
         };
+      });
+      await this.cartographerGateway.notifyTravelPanel({
+        travelId: this.travelId,
+        currentTimestamp: target,
+        triggeredEvents: [],
+        triggeredPhenomena: [],
+        skippedEvents: preview,
+        skippedPhenomena: [],
+        reason: "jump"
+      });
+      emitAlmanacEvent({
+        type: "calendar.time.advance",
+        scope: this.travelId ? "travel" : "global",
+        reason: "jump",
+        unit: "day",
+        amount: 0,
+        triggeredEvents: 0,
+        triggeredPhenomena: 0,
+        skippedEvents: preview.length,
+        travelId: this.travelId,
+        timestamp: target
       });
       void this.persistPreferences({
         lastSelectedPhenomenonId: nextSelectedId ?? void 0
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Zeit konnte nicht gesetzt werden";
+      const code = error instanceof AlmanacRepositoryError ? error.code : isCalendarGatewayError(error) ? error.code : "io_error";
+      reportAlmanacGatewayIssue({
+        operation: "stateMachine.timeJump",
+        scope: this.travelId ? "travel" : "calendar",
+        code,
+        error,
+        context: { travelId: this.travelId }
+      });
+      if (error instanceof AlmanacRepositoryError && error.code === "phenomenon_conflict") {
+        emitAlmanacEvent({
+          type: "calendar.event.conflict",
+          code: "phenomenon",
+          message,
+          context: error.details
+        });
+      }
       this.setState((draft) => {
         draft.almanacUiState = {
           ...draft.almanacUiState,
@@ -48773,6 +53889,32 @@ var AlmanacStateMachine = class {
         category: phenomenon.category,
         linkedCalendars,
         nextOccurrence: occurrences[0]?.label
+      };
+    });
+  }
+  buildPhenomenonMapMarkers(phenomena, calendars) {
+    if (phenomena.length === 0) {
+      return [];
+    }
+    const calendarNames = new Map(calendars.map((schema) => [schema.id, schema.name]));
+    const total = phenomena.length;
+    const columns = Math.max(1, Math.ceil(Math.sqrt(total)));
+    const rows = Math.max(1, Math.ceil(total / columns));
+    return phenomena.map((phenomenon, index) => {
+      const column = index % columns;
+      const row = Math.floor(index / columns);
+      const x = clampCoordinate((column + 0.5) / columns);
+      const y = clampCoordinate((row + 0.5) / rows);
+      return {
+        id: phenomenon.id,
+        title: phenomenon.title,
+        category: phenomenon.category,
+        nextOccurrence: phenomenon.nextOccurrence,
+        coordinates: { x, y },
+        calendars: phenomenon.linkedCalendars.map((calendarId) => ({
+          id: calendarId,
+          name: calendarNames.get(calendarId) ?? calendarId
+        }))
       };
     });
   }
@@ -48866,6 +54008,124 @@ var AlmanacStateMachine = class {
       return categoryMatch && calendarMatch;
     });
   }
+  rebuildPhenomenaListing(preferredId = null, options = {}) {
+    const calendars = this.state.calendarState.calendars;
+    const activeCalendarId = this.state.calendarState.activeCalendarId;
+    const referenceTimestamp = this.state.calendarState.currentTimestamp;
+    this.phenomenaSource = this.buildPhenomenonViewModels(
+      this.phenomenaDefinitions,
+      calendars,
+      activeCalendarId,
+      referenceTimestamp
+    );
+    const filters = this.state.eventsUiState.filters;
+    const filtered = this.applyPhenomenaFilters(filters);
+    const availableCategories = getUniqueCategories(this.phenomenaSource);
+    const filterCount = filters.categories.length + filters.calendarIds.length;
+    const validIds = new Set(this.phenomenaDefinitions.map((item) => item.id));
+    let nextSelectedId = preferredId ?? this.state.eventsUiState.selectedPhenomenonId ?? null;
+    if (nextSelectedId && !validIds.has(nextSelectedId)) {
+      nextSelectedId = filtered[0]?.id ?? null;
+    }
+    const nextDetail = nextSelectedId ? this.buildPhenomenonDetailForId(nextSelectedId, calendars, referenceTimestamp) : null;
+    const selectionSource = options.bulkSelection !== void 0 ? options.bulkSelection : this.state.eventsUiState.bulkSelection;
+    const nextSelection = selectionSource.filter((id) => validIds.has(id));
+    const exportPayload = options.exportPayload !== void 0 ? options.exportPayload === null ? void 0 : options.exportPayload : this.state.eventsUiState.lastExportPayload;
+    const importSummary = options.importSummary !== void 0 ? options.importSummary : this.state.eventsUiState.importSummary ?? null;
+    const mapMarkers = this.buildPhenomenonMapMarkers(filtered, calendars);
+    this.setState((draft) => {
+      draft.eventsUiState = {
+        ...draft.eventsUiState,
+        availableCategories,
+        mapMarkers,
+        phenomena: filtered,
+        filterCount,
+        selectedPhenomenonId: nextSelectedId,
+        selectedPhenomenonDetail: nextDetail,
+        bulkSelection: nextSelection,
+        lastExportPayload: exportPayload,
+        importSummary
+      };
+    });
+    void this.persistPreferences({
+      lastSelectedPhenomenonId: nextSelectedId ?? void 0
+    });
+  }
+  createEditorDraftFromPhenomenon(phenomenon) {
+    return {
+      id: phenomenon.id,
+      name: phenomenon.name,
+      category: phenomenon.category,
+      visibility: phenomenon.visibility,
+      appliesToCalendarIds: [...phenomenon.appliesToCalendarIds],
+      notes: phenomenon.notes ?? ""
+    };
+  }
+  createDefaultEditorDraft(seedId) {
+    const id = seedId && seedId.trim().length > 0 ? seedId : this.generatePhenomenonId();
+    const activeCalendarId = this.state.calendarState.activeCalendarId;
+    const appliesTo = activeCalendarId ? [activeCalendarId] : [];
+    return {
+      id,
+      name: "",
+      category: "custom",
+      visibility: appliesTo.length ? "selected" : "all_calendars",
+      appliesToCalendarIds: appliesTo,
+      notes: ""
+    };
+  }
+  generatePhenomenonId() {
+    this.phenomenonIdCounter += 1;
+    return `phen-${Date.now().toString(36)}-${this.phenomenonIdCounter.toString(36)}`;
+  }
+  buildPhenomenonFromDraft(draft, base) {
+    const trimmedName = draft.name.trim();
+    const category = this.normaliseCategory(draft.category);
+    const appliesTo = draft.visibility === "all_calendars" ? [] : Array.from(new Set(draft.appliesToCalendarIds.filter(Boolean)));
+    const defaults = base ?? {
+      id: draft.id,
+      name: trimmedName,
+      category,
+      visibility: draft.visibility,
+      appliesToCalendarIds: appliesTo,
+      rule: { type: "annual", offsetDayOfYear: 0 },
+      timePolicy: "all_day",
+      priority: 0,
+      schemaVersion: "1.0.0"
+    };
+    const notes = draft.notes?.trim() ?? "";
+    return {
+      ...defaults,
+      id: draft.id,
+      name: trimmedName,
+      category,
+      visibility: draft.visibility,
+      appliesToCalendarIds: appliesTo,
+      notes: notes.length ? notes : void 0
+    };
+  }
+  normaliseCategory(value) {
+    const allowed = [
+      "season",
+      "astronomy",
+      "weather",
+      "tide",
+      "holiday",
+      "custom"
+    ];
+    return allowed.includes(value) ? value : "custom";
+  }
+  toPhenomenon(dto) {
+    const { template: _template, ...rest } = dto;
+    const base = rest;
+    return {
+      ...base,
+      appliesToCalendarIds: [...base.appliesToCalendarIds],
+      hooks: base.hooks ? base.hooks.map((hook) => ({ ...hook })) : base.hooks,
+      effects: base.effects ? base.effects.map((effect) => ({ ...effect, payload: { ...effect.payload } })) : base.effects,
+      tags: base.tags ? [...base.tags] : base.tags
+    };
+  }
   shiftAnchorTimestamp(schema, anchor, zoom, direction) {
     const step = direction === "next" ? 1 : -1;
     if (zoom === "month") {
@@ -48951,6 +54211,210 @@ var AlmanacStateMachine = class {
     const firstMonth = schema.months[0] ?? { id: schema.epoch.monthId, length: schema.months[0]?.length ?? 30 };
     return createDayTimestamp(activeId, schema.epoch.year, firstMonth.id, schema.epoch.day);
   }
+  computeEditWarnings(schema, draft) {
+    const warnings = [];
+    const currentHours = String(schema.hoursPerDay ?? 24);
+    const currentMinutes = String(schema.minutesPerHour ?? 60);
+    const currentStep = String(schema.minuteStep ?? 1);
+    if (draft.hoursPerDay.trim() !== currentHours || draft.minutesPerHour.trim() !== currentMinutes || draft.minuteStep.trim() !== currentStep) {
+      warnings.push("Updating the time definition may require migrating existing events.");
+    }
+    return warnings;
+  }
+  async detectCalendarConflicts(calendarId, updates) {
+    if (!("hoursPerDay" in updates) && !("minutesPerHour" in updates) && !("minuteStep" in updates)) {
+      return [];
+    }
+    const schema = this.getCalendarSchema(calendarId);
+    if (!schema) {
+      return [];
+    }
+    const hoursPerDay = updates.hoursPerDay ?? schema.hoursPerDay ?? 24;
+    const minutesPerHour = updates.minutesPerHour ?? schema.minutesPerHour ?? 60;
+    const minuteStep = updates.minuteStep ?? schema.minuteStep ?? 1;
+    const events = await this.eventRepo.listEvents(calendarId);
+    const conflicts = /* @__PURE__ */ new Set();
+    const checkTime = (label, time, title) => {
+      if (!time) {
+        return;
+      }
+      if (time.hour >= hoursPerDay) {
+        conflicts.add(`${title}: ${label} hour ${time.hour} exceeds ${hoursPerDay - 1}.`);
+      }
+      if (time.minute >= minutesPerHour) {
+        conflicts.add(`${title}: ${label} minute ${time.minute} exceeds ${minutesPerHour - 1}.`);
+      }
+    };
+    for (const event of events) {
+      const title = event.title ?? event.id;
+      if (isSingleEvent(event)) {
+        checkTime("start", event.startTime, title);
+        checkTime("end", event.endTime, title);
+        const timestamp = event.date;
+        if (timestamp.precision === "hour" || timestamp.precision === "minute") {
+          if (timestamp.hour >= hoursPerDay) {
+            conflicts.add(`${title}: hour ${timestamp.hour} exceeds ${hoursPerDay - 1}.`);
+          }
+          if (timestamp.minute >= minutesPerHour) {
+            conflicts.add(`${title}: minute ${timestamp.minute} exceeds ${minutesPerHour - 1}.`);
+          }
+          if (timestamp.precision === "minute" && timestamp.minute % minuteStep !== 0) {
+            conflicts.add(`${title}: start time is not aligned with the new minute step.`);
+          }
+        }
+        if (event.durationMinutes && event.durationMinutes % minuteStep !== 0) {
+          conflicts.add(`${title}: duration is not aligned with the new minute step.`);
+        }
+      } else if (isRecurringEvent(event)) {
+        checkTime("start", event.startTime, title);
+        if (event.offsetMinutes && event.offsetMinutes % minuteStep !== 0) {
+          conflicts.add(`${title}: offset is not aligned with the new minute step.`);
+        }
+        if (event.durationMinutes && event.durationMinutes % minuteStep !== 0) {
+          conflicts.add(`${title}: duration is not aligned with the new minute step.`);
+        }
+      }
+    }
+    return Array.from(conflicts);
+  }
+  getCalendarDefaultsRepository() {
+    const candidate = this.calendarRepo;
+    if (typeof candidate.getDefaults === "function" && typeof candidate.clearTravelDefault === "function") {
+      return candidate;
+    }
+    return null;
+  }
+  async collectTravelDefaultIds(calendarId) {
+    const defaultsRepo = this.getCalendarDefaultsRepository();
+    if (!defaultsRepo) {
+      return [];
+    }
+    try {
+      const defaults = await defaultsRepo.getDefaults();
+      return Object.entries(defaults.travel).filter(([, linkedId]) => linkedId === calendarId).map(([travelId]) => travelId);
+    } catch {
+      return [];
+    }
+  }
+  async buildCalendarSchemaFromDraft(draft) {
+    const errors = [];
+    const rawId = draft.id.trim();
+    const id = this.slugify(rawId);
+    if (!id) {
+      errors.push("Identifier is required.");
+    }
+    const name = draft.name.trim();
+    if (!name) {
+      errors.push("Name is required.");
+    }
+    const daysPerWeek = Number(draft.daysPerWeek || "0");
+    if (!Number.isFinite(daysPerWeek) || daysPerWeek < 1) {
+      errors.push("Days per week must be at least 1.");
+    }
+    const monthCount = Number(draft.monthCount || "0");
+    if (!Number.isFinite(monthCount) || monthCount < 1) {
+      errors.push("Month count must be at least 1.");
+    }
+    const monthLength = Number(draft.monthLength || "0");
+    if (!Number.isFinite(monthLength) || monthLength < 1) {
+      errors.push("Month length must be at least 1.");
+    }
+    const hoursPerDay = Number(draft.hoursPerDay || "24");
+    if (!Number.isFinite(hoursPerDay) || hoursPerDay < 1) {
+      errors.push("Hours per day must be at least 1.");
+    }
+    const minutesPerHour = Number(draft.minutesPerHour || "60");
+    if (!Number.isFinite(minutesPerHour) || minutesPerHour < 1) {
+      errors.push("Minutes per hour must be at least 1.");
+    }
+    const minuteStep = Number(draft.minuteStep || "1");
+    if (!Number.isFinite(minuteStep) || minuteStep < 1) {
+      errors.push("Minute step must be at least 1.");
+    } else if (minuteStep > minutesPerHour) {
+      errors.push("Minute step must not exceed minutes per hour.");
+    }
+    const epochYear = Number(draft.epochYear || "1");
+    if (!Number.isFinite(epochYear) || epochYear < 1) {
+      errors.push("Epoch year must be at least 1.");
+    }
+    const epochDay = Number(draft.epochDay || "1");
+    if (!Number.isFinite(epochDay) || epochDay < 1) {
+      errors.push("Epoch day must be at least 1.");
+    } else if (epochDay > monthLength) {
+      errors.push("Epoch day must not exceed the chosen month length.");
+    }
+    if (errors.length > 0) {
+      return { schema: null, errors };
+    }
+    const existing = await this.calendarRepo.getCalendar(id);
+    if (existing) {
+      return { schema: null, errors: [`Calendar with id "${id}" already exists.`] };
+    }
+    const safeMonthCount = Math.max(1, Math.floor(monthCount));
+    const safeMonthLength = Math.max(1, Math.floor(monthLength));
+    const safeDaysPerWeek = Math.max(1, Math.floor(daysPerWeek));
+    const safeHoursPerDay = Math.max(1, Math.floor(hoursPerDay));
+    const safeMinutesPerHour = Math.max(1, Math.floor(minutesPerHour));
+    const safeMinuteStep = Math.max(1, Math.floor(minuteStep));
+    const safeEpochYear = Math.max(1, Math.floor(epochYear));
+    const safeEpochDay = Math.max(1, Math.min(Math.floor(epochDay), safeMonthLength));
+    const monthPrefix = this.slugify(name || id) || "month";
+    const months = Array.from({ length: safeMonthCount }, (_, index) => ({
+      id: `${monthPrefix}-m${index + 1}`,
+      name: `Month ${index + 1}`,
+      length: safeMonthLength
+    }));
+    if (months.length === 0) {
+      return { schema: null, errors: ["Calendar must include at least one month."] };
+    }
+    const epochMonthId = months[0]?.id ?? `${monthPrefix}-m1`;
+    const schema = {
+      id,
+      name,
+      description: draft.description.trim() || void 0,
+      daysPerWeek: safeDaysPerWeek,
+      months,
+      hoursPerDay: safeHoursPerDay,
+      minutesPerHour: safeMinutesPerHour,
+      minuteStep: safeMinuteStep,
+      secondsPerMinute: 60,
+      epoch: {
+        year: safeEpochYear,
+        monthId: epochMonthId,
+        day: safeEpochDay
+      },
+      isDefaultGlobal: false,
+      schemaVersion: "1.0.0"
+    };
+    return { schema, errors: [] };
+  }
+  slugify(value) {
+    return value.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").replace(/--+/g, "-");
+  }
+  async persistTravelLeafPreferences(partial) {
+    if (!this.travelId) {
+      return;
+    }
+    const base = {
+      visible: this.state.travelLeafState.visible,
+      mode: this.state.travelLeafState.mode,
+      lastViewedTimestamp: this.state.travelLeafState.currentTimestamp ?? null,
+      ...this.travelLeafPreferences
+    };
+    const next = {
+      ...base,
+      ...partial
+    };
+    if (partial.lastViewedTimestamp === void 0) {
+      next.lastViewedTimestamp = base.lastViewedTimestamp ?? this.state.travelLeafState.currentTimestamp ?? null;
+    }
+    try {
+      await this.gateway.saveTravelLeafPreferences(this.travelId, next);
+      this.travelLeafPreferences = next;
+    } catch (error) {
+      console.warn("Failed to persist travel leaf preferences", error);
+    }
+  }
   async persistPreferences(partial) {
     try {
       await this.gateway.savePreferences(partial);
@@ -48966,6 +54430,10 @@ function cloneState(value) {
     return JSON.parse(JSON.stringify(value));
   }
 }
+function clampCoordinate(value) {
+  const clamped = Math.min(0.95, Math.max(0.05, value));
+  return Number(clamped.toFixed(4));
+}
 function getUniqueCategories(phenomena) {
   const set = /* @__PURE__ */ new Set();
   for (const item of phenomena) {
@@ -48976,21 +54444,270 @@ function getUniqueCategories(phenomena) {
   return Array.from(set.values()).sort();
 }
 
-// src/apps/almanac/domain/calendar-event.ts
-function createEvent(id, calendarId, title, date, options) {
+// src/apps/almanac/mode/almanac-controller.ts
+init_cartographer_bridge();
+
+// src/apps/almanac/mode/events/events-map.ts
+function renderEventsMap(host, props) {
+  const container = document.createElement("div");
+  container.classList.add("almanac-events-map");
+  container.dataset.component = "events-map";
+  host.appendChild(container);
+  const summary = document.createElement("div");
+  summary.classList.add("almanac-events-map__summary");
+  summary.dataset.role = "map-summary";
+  const categorySet = /* @__PURE__ */ new Set();
+  const calendarSet = /* @__PURE__ */ new Set();
+  for (const marker of props.markers) {
+    if (marker.category) {
+      categorySet.add(marker.category);
+    }
+    for (const calendar of marker.calendars) {
+      calendarSet.add(calendar.name);
+    }
+  }
+  const summaryParts = [];
+  summaryParts.push(`${props.markers.length} phenomena plotted`);
+  if (categorySet.size > 0) {
+    summaryParts.push(`${categorySet.size} categories`);
+  }
+  if (calendarSet.size > 0) {
+    summaryParts.push(`${calendarSet.size} calendars`);
+  }
+  summary.textContent = summaryParts.join(" \u2022 ");
+  container.appendChild(summary);
+  const board = document.createElement("div");
+  board.classList.add("almanac-events-map__board");
+  board.dataset.role = "map-board";
+  board.style.position = "relative";
+  board.style.minHeight = "240px";
+  board.style.border = "1px solid var(--background-modifier-border, #3a3a3a)";
+  board.style.borderRadius = "12px";
+  board.style.background = "var(--background-secondary, rgba(255,255,255,0.02))";
+  board.style.overflow = "hidden";
+  board.style.isolation = "isolate";
+  container.appendChild(board);
+  props.markers.forEach((marker) => {
+    const markerButton = document.createElement("button");
+    markerButton.type = "button";
+    markerButton.classList.add("almanac-events-map__marker");
+    markerButton.dataset.role = "map-marker";
+    markerButton.dataset.phenomenonId = marker.id;
+    markerButton.style.position = "absolute";
+    markerButton.style.width = "20px";
+    markerButton.style.height = "20px";
+    markerButton.style.borderRadius = "50%";
+    markerButton.style.border = "2px solid var(--interactive-accent, #9c6bff)";
+    markerButton.style.background = "var(--background-primary, #1a1a1a)";
+    markerButton.style.transform = "translate(-50%, -50%)";
+    markerButton.style.left = `${(marker.coordinates.x * 100).toFixed(2)}%`;
+    markerButton.style.top = `${(marker.coordinates.y * 100).toFixed(2)}%`;
+    markerButton.setAttribute("aria-label", buildMarkerLabel(marker));
+    markerButton.title = buildMarkerLabel(marker);
+    const markerLabel = document.createElement("span");
+    markerLabel.classList.add("almanac-events-map__marker-label");
+    markerLabel.textContent = marker.title;
+    markerLabel.style.position = "absolute";
+    markerLabel.style.top = "100%";
+    markerLabel.style.left = "50%";
+    markerLabel.style.transform = "translate(-50%, 4px)";
+    markerLabel.style.whiteSpace = "nowrap";
+    markerLabel.style.fontSize = "10px";
+    markerLabel.style.pointerEvents = "none";
+    markerButton.appendChild(markerLabel);
+    board.appendChild(markerButton);
+  });
+  const legendHeading = document.createElement("h3");
+  legendHeading.classList.add("almanac-events-map__legend-heading");
+  legendHeading.textContent = "Map Markers";
+  container.appendChild(legendHeading);
+  const legendList = document.createElement("ul");
+  legendList.classList.add("almanac-events-map__legend");
+  legendList.dataset.role = "map-legend";
+  container.appendChild(legendList);
+  props.markers.forEach((marker) => {
+    const item = document.createElement("li");
+    item.classList.add("almanac-events-map__legend-item");
+    item.dataset.role = "map-legend-item";
+    item.dataset.phenomenonId = marker.id;
+    const title = document.createElement("strong");
+    title.textContent = marker.title;
+    item.appendChild(title);
+    if (marker.category) {
+      const category = document.createElement("span");
+      category.classList.add("almanac-events-map__legend-category");
+      category.textContent = ` (${marker.category})`;
+      item.appendChild(category);
+    }
+    const calendars = document.createElement("div");
+    calendars.classList.add("almanac-events-map__legend-calendars");
+    calendars.textContent = marker.calendars.length ? `Calendars: ${marker.calendars.map((calendar) => calendar.name).join(", ")}` : "Calendars: \u2014";
+    item.appendChild(calendars);
+    if (marker.nextOccurrence) {
+      const next = document.createElement("div");
+      next.classList.add("almanac-events-map__legend-occurrence");
+      next.textContent = `Next: ${marker.nextOccurrence}`;
+      item.appendChild(next);
+    }
+    const coordinates = document.createElement("div");
+    coordinates.classList.add("almanac-events-map__legend-coordinates");
+    coordinates.textContent = `Position: ${(marker.coordinates.x * 100).toFixed(1)}%, ${(marker.coordinates.y * 100).toFixed(1)}%`;
+    item.appendChild(coordinates);
+    legendList.appendChild(item);
+  });
+  return container;
+}
+function buildMarkerLabel(marker) {
+  const calendars = marker.calendars.length ? marker.calendars.map((calendar) => calendar.name).join(", ") : "No calendar link";
+  const segments = [marker.title];
+  if (marker.category) {
+    segments.push(marker.category);
+  }
+  if (marker.nextOccurrence) {
+    segments.push(marker.nextOccurrence);
+  }
+  segments.push(`Calendars: ${calendars}`);
+  return segments.join(" \u2022 ");
+}
+
+// src/apps/almanac/mode/components/calendar-view-container.ts
+function createCalendarViewContainer(app, parent, config) {
+  const container = parent.createDiv({ cls: "almanac-calendar-view" });
+  const header = container.createDiv({ cls: "almanac-calendar-view__header" });
+  const tabs = [
+    { id: "month", label: "Month", icon: "calendar-days" },
+    { id: "week", label: "Week", icon: "calendar-range" },
+    { id: "day", label: "Day", icon: "calendar-clock" },
+    { id: "upcoming", label: "Next", icon: "list-ordered" }
+  ];
+  const tabNav = createTabNavigation(header, {
+    tabs,
+    activeTab: config.mode,
+    className: "almanac-calendar-view__tabs",
+    onSelect: config.onModeChange
+  });
+  const navControls = header.createDiv({ cls: "almanac-calendar-view__nav" });
+  const prevBtn = navControls.createEl("button", { text: "\u25C0", attr: { "aria-label": "Previous" } });
+  const todayBtn = navControls.createEl("button", { text: "Today" });
+  const nextBtn = navControls.createEl("button", { text: "\u25B6", attr: { "aria-label": "Next" } });
+  prevBtn.onclick = () => config.onNavigate("prev");
+  todayBtn.onclick = () => config.onNavigate("today");
+  nextBtn.onclick = () => config.onNavigate("next");
+  const content = container.createDiv({ cls: "almanac-calendar-view__content" });
+  const renderContent = (state) => {
+    content.empty();
+    if (state.isLoading) {
+      content.createDiv({ cls: "sm-mode-loading", text: "Loading..." });
+      return;
+    }
+    if (state.error) {
+      content.createDiv({ cls: "sm-mode-error", text: state.error });
+      return;
+    }
+    switch (config.mode) {
+      case "month":
+        renderMonthView(content, state);
+        break;
+      case "week":
+        renderWeekView(content, state);
+        break;
+      case "day":
+        renderDayView(content, state);
+        break;
+      case "upcoming":
+        renderUpcomingView(content, state);
+        break;
+    }
+  };
+  const renderMonthView = (container2, state) => {
+    const grid = container2.createDiv({ cls: "almanac-calendar-grid almanac-calendar-grid--month" });
+    grid.createDiv({ text: `Month view - ${state.events.length} events` });
+  };
+  const renderWeekView = (container2, state) => {
+    const grid = container2.createDiv({ cls: "almanac-calendar-grid almanac-calendar-grid--week" });
+    grid.createDiv({ text: `Week view - ${state.events.length} events` });
+  };
+  const renderDayView = (container2, state) => {
+    const timeline = container2.createDiv({ cls: "almanac-calendar-timeline" });
+    timeline.createDiv({ text: `Day view - ${state.events.length} events` });
+  };
+  const renderUpcomingView = (container2, state) => {
+    const list = container2.createDiv({ cls: "almanac-upcoming-list" });
+    if (state.events.length === 0) {
+      list.createDiv({ cls: "sm-mode-empty", text: "No upcoming events" });
+      return;
+    }
+    for (const event of state.events) {
+      const item = list.createDiv({ cls: "almanac-upcoming-item" });
+      item.createDiv({ cls: "almanac-upcoming-item__title", text: event.title });
+      item.createDiv({ cls: "almanac-upcoming-item__time", text: "TODO: Format time" });
+      item.onclick = () => config.onEventSelect(event.id);
+    }
+  };
+  renderContent(config.state);
   return {
-    id,
-    calendarId,
-    title,
-    description: options?.description,
-    date,
-    allDay: options?.allDay ?? date.precision === "day",
-    category: options?.category,
-    tags: options?.tags
+    element: container,
+    setMode(mode) {
+      tabNav.setActiveTab(mode);
+    },
+    update(state) {
+      renderContent(state);
+    },
+    destroy() {
+      tabNav.destroy();
+      container.remove();
+    }
+  };
+}
+
+// src/apps/almanac/mode/components/almanac-content-container.ts
+function createAlmanacContentContainer(app, parent, config) {
+  const container = parent.createDiv({ cls: "almanac-content-tabs" });
+  const header = container.createDiv({ cls: "almanac-content-tabs__header" });
+  const tabs = [
+    { id: "dashboard", label: "Dashboard", icon: "layout-dashboard" },
+    { id: "events", label: "Events", icon: "calendar-search" },
+    { id: "manager", label: "Manager", icon: "settings" }
+  ];
+  const tabNav = createTabNavigation(header, {
+    tabs,
+    activeTab: config.mode,
+    className: "almanac-content-tabs__nav",
+    onSelect: config.onModeChange
+  });
+  const body = container.createDiv({ cls: "almanac-content-tabs__body" });
+  const dashboardContainer = body.createDiv({ cls: "almanac-dashboard-content" });
+  const eventsContainer = body.createDiv({ cls: "almanac-events-content" });
+  const managerContainer = body.createDiv({ cls: "almanac-manager-content" });
+  let currentMode = config.mode;
+  const updateVisibility = () => {
+    dashboardContainer.style.display = currentMode === "dashboard" ? "" : "none";
+    eventsContainer.style.display = currentMode === "events" ? "" : "none";
+    managerContainer.style.display = currentMode === "manager" ? "" : "none";
+  };
+  updateVisibility();
+  return {
+    element: container,
+    dashboardElement: dashboardContainer,
+    eventsElement: eventsContainer,
+    managerElement: managerContainer,
+    setMode(mode) {
+      currentMode = mode;
+      tabNav.setActiveTab(mode);
+      updateVisibility();
+    },
+    update(state) {
+    },
+    destroy() {
+      tabNav.destroy();
+      container.remove();
+    }
   };
 }
 
 // src/apps/almanac/fixtures/gregorian.fixture.ts
+init_calendar_timestamp();
+init_calendar_event();
 var GREGORIAN_CALENDAR_ID = "gregorian-standard";
 var gregorianSchema = {
   id: GREGORIAN_CALENDAR_ID,
@@ -49017,134 +54734,30 @@ var gregorianSchema = {
     { id: "dec", name: "December", length: 31 }
   ],
   epoch: {
-    year: 1,
+    year: 2024,
     monthId: "jan",
     day: 1
   },
   schemaVersion: "1.0.0"
 };
-function createSampleEvents(year = 2024) {
-  return [
-    createEvent(
-      "evt-1",
-      GREGORIAN_CALENDAR_ID,
-      "New Year's Day",
-      createDayTimestamp(GREGORIAN_CALENDAR_ID, year, "jan", 1),
-      {
-        description: "Start of the new year",
-        allDay: true,
-        category: "holiday",
-        tags: ["holiday", "celebration"]
-      }
-    ),
-    createEvent(
-      "evt-2",
-      GREGORIAN_CALENDAR_ID,
-      "Team Meeting",
-      createHourTimestamp(GREGORIAN_CALENDAR_ID, year, "jan", 15, 10),
-      {
-        description: "Weekly team sync",
-        allDay: false,
-        category: "work",
-        tags: ["meeting"]
-      }
-    ),
-    createEvent(
-      "evt-3",
-      GREGORIAN_CALENDAR_ID,
-      "Valentine's Day",
-      createDayTimestamp(GREGORIAN_CALENDAR_ID, year, "feb", 14),
-      {
-        description: "Day of love",
-        allDay: true,
-        category: "holiday",
-        tags: ["holiday"]
-      }
-    ),
-    createEvent(
-      "evt-4",
-      GREGORIAN_CALENDAR_ID,
-      "Spring Equinox",
-      createDayTimestamp(GREGORIAN_CALENDAR_ID, year, "mar", 20),
-      {
-        description: "First day of spring",
-        allDay: true,
-        category: "season",
-        tags: ["season", "astronomy"]
-      }
-    ),
-    createEvent(
-      "evt-5",
-      GREGORIAN_CALENDAR_ID,
-      "Project Deadline",
-      createHourTimestamp(GREGORIAN_CALENDAR_ID, year, "mar", 31, 17),
-      {
-        description: "Q1 project deliverable",
-        allDay: false,
-        category: "work",
-        tags: ["deadline", "important"]
-      }
-    ),
-    createEvent(
-      "evt-6",
-      GREGORIAN_CALENDAR_ID,
-      "Daily Standup",
-      createMinuteTimestamp(GREGORIAN_CALENDAR_ID, year, "jan", 2, 9, 30),
-      {
-        description: "Daily team standup meeting",
-        allDay: false,
-        category: "work",
-        tags: ["meeting", "daily"]
-      }
-    )
-  ];
-}
-function getDefaultCurrentTimestamp(year = 2024) {
-  return createMinuteTimestamp(GREGORIAN_CALENDAR_ID, year, "jan", 1, 0, 0);
-}
 
-// src/apps/almanac/fixtures/phenomena.fixture.ts
-function createSamplePhenomena() {
-  return [
-    {
-      id: "phen-spring-bloom",
-      name: "Spring Bloom",
-      category: "season",
-      visibility: "all_calendars",
-      appliesToCalendarIds: ["gregorian-standard"],
-      rule: { type: "annual", offsetDayOfYear: 80 },
-      timePolicy: "all_day",
-      priority: 5,
-      tags: ["nature", "seasonal"],
-      schemaVersion: "1.0.0"
-    },
-    {
-      id: "phen-harvest-moon",
-      name: "Harvest Moon",
-      category: "astronomy",
-      visibility: "selected",
-      appliesToCalendarIds: ["gregorian-standard", "lunar-cycle"],
-      rule: { type: "annual", offsetDayOfYear: 248 },
-      timePolicy: "fixed",
-      startTime: { hour: 20, minute: 30 },
-      priority: 7,
-      tags: ["astronomy"],
-      schemaVersion: "1.0.0"
-    },
-    {
-      id: "phen-spring-tide",
-      name: "Spring Tide",
-      category: "tide",
-      visibility: "selected",
-      appliesToCalendarIds: ["lunar-cycle"],
-      rule: { type: "monthly_position", monthId: "zenith", day: 14 },
-      timePolicy: "fixed",
-      startTime: { hour: 6, minute: 0 },
-      priority: 6,
-      tags: ["tide"],
-      schemaVersion: "1.0.0"
+// src/apps/almanac/data/calendar-presets.ts
+async function ensureDefaultCalendar(repo) {
+  const calendars = await repo.listCalendars();
+  if (calendars.length === 0) {
+    await repo.createCalendar({
+      ...gregorianSchema,
+      isDefaultGlobal: true
+    });
+  } else {
+    const hasDefault = calendars.some((cal) => cal.isDefaultGlobal);
+    if (!hasDefault) {
+      await repo.setDefault({
+        calendarId: calendars[0].id,
+        scope: "global"
+      });
     }
-  ];
+  }
 }
 
 // src/apps/almanac/mode/almanac-controller.ts
@@ -49156,106 +54769,958 @@ var MODE_COPY = {
 var MANAGER_ZOOM_OPTIONS = ["month", "week", "day", "hour"];
 var MANAGER_VIEW_OPTIONS = ["calendar", "overview"];
 var EVENT_VIEW_OPTIONS = ["timeline", "table", "map"];
+var ALMANAC_PROTOCOL_BASE = "obsidian://saltmarcher";
+var ALMANAC_PROTOCOL_HOSTS = /* @__PURE__ */ new Set(["saltmarcher", "salt-marcher"]);
+var EventEditorModal = class extends import_obsidian31.Modal {
+  constructor(app, draft, config) {
+    super(app);
+    this.container = null;
+    this.draft = { ...draft };
+    this.config = { ...config };
+  }
+  open() {
+    super.open();
+    this.render();
+  }
+  update(draft, config) {
+    this.draft = { ...draft };
+    this.config = { ...this.config, ...config };
+    this.render();
+  }
+  close() {
+    this.container?.remove();
+    this.container = null;
+    super.close();
+  }
+  ensureContainer() {
+    if (!this.container) {
+      this.container = document.createElement("div");
+      this.container.classList.add("almanac-modal");
+      this.container.dataset.modal = "event-editor";
+      document.body.appendChild(this.container);
+    }
+    return this.container;
+  }
+  getHost() {
+    const contentEl = this.contentEl;
+    if (contentEl) {
+      return contentEl;
+    }
+    return this.ensureContainer();
+  }
+  render() {
+    const host = this.getHost();
+    host.textContent = "";
+    const wrapper = document.createElement("div");
+    wrapper.classList.add("almanac-modal");
+    wrapper.dataset.modal = "event-editor";
+    host.appendChild(wrapper);
+    const form = document.createElement("form");
+    form.classList.add("almanac-modal__form");
+    wrapper.appendChild(form);
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (!this.config.isSaving) {
+        this.config.onSubmit();
+      }
+    });
+    const heading = document.createElement("h2");
+    heading.textContent = this.draft.kind === "recurring" ? "Recurring event" : "Single event";
+    heading.dataset.mode = this.draft.kind;
+    form.appendChild(heading);
+    if (this.config.submitError) {
+      const errorBanner = document.createElement("div");
+      errorBanner.classList.add("almanac-section", "almanac-section--error");
+      errorBanner.textContent = this.config.submitError;
+      form.appendChild(errorBanner);
+    }
+    if (this.config.errors.length > 0) {
+      const errorList = document.createElement("ul");
+      errorList.classList.add("almanac-form-errors");
+      this.config.errors.forEach((message) => {
+        const item = document.createElement("li");
+        item.textContent = message;
+        errorList.appendChild(item);
+      });
+      form.appendChild(errorList);
+    }
+    const calendarOption = this.config.calendars.find((option) => option.id === this.draft.calendarId) ?? this.config.calendars[0] ?? null;
+    const calendarField = document.createElement("label");
+    calendarField.classList.add("almanac-modal__field");
+    calendarField.textContent = "Calendar";
+    const calendarSelect = document.createElement("select");
+    calendarSelect.disabled = this.config.isSaving;
+    this.config.calendars.forEach((option) => {
+      const opt = document.createElement("option");
+      opt.value = option.id;
+      opt.textContent = option.name;
+      calendarSelect.appendChild(opt);
+    });
+    if (this.draft.calendarId) {
+      calendarSelect.value = this.draft.calendarId;
+    }
+    calendarSelect.addEventListener("change", () => {
+      this.config.onUpdate({ calendarId: calendarSelect.value });
+    });
+    calendarField.appendChild(calendarSelect);
+    form.appendChild(calendarField);
+    const titleField = document.createElement("label");
+    titleField.classList.add("almanac-modal__field");
+    titleField.textContent = "Title";
+    const titleInput = document.createElement("input");
+    titleInput.type = "text";
+    titleInput.required = true;
+    titleInput.value = this.draft.title;
+    titleInput.disabled = this.config.isSaving;
+    titleInput.addEventListener("input", () => {
+      this.config.onUpdate({ title: titleInput.value });
+    });
+    titleField.appendChild(titleInput);
+    form.appendChild(titleField);
+    const categoryField = document.createElement("label");
+    categoryField.classList.add("almanac-modal__field");
+    categoryField.textContent = "Category";
+    const categoryInput = document.createElement("input");
+    categoryInput.type = "text";
+    categoryInput.value = this.draft.category;
+    categoryInput.disabled = this.config.isSaving;
+    categoryInput.addEventListener("input", () => {
+      this.config.onUpdate({ category: categoryInput.value });
+    });
+    categoryField.appendChild(categoryInput);
+    form.appendChild(categoryField);
+    const noteField = document.createElement("label");
+    noteField.classList.add("almanac-modal__field");
+    noteField.textContent = "Notes";
+    const noteInput = document.createElement("textarea");
+    noteInput.rows = 3;
+    noteInput.value = this.draft.note;
+    noteInput.disabled = this.config.isSaving;
+    noteInput.addEventListener("input", () => {
+      this.config.onUpdate({ note: noteInput.value });
+    });
+    noteField.appendChild(noteInput);
+    form.appendChild(noteField);
+    const dateGroup = document.createElement("div");
+    dateGroup.classList.add("almanac-modal__field", "almanac-modal__field--inline");
+    const dateLabel = document.createElement("span");
+    dateLabel.textContent = "Date";
+    dateGroup.appendChild(dateLabel);
+    const yearInput = document.createElement("input");
+    yearInput.type = "number";
+    yearInput.min = "1";
+    yearInput.value = this.draft.year;
+    yearInput.disabled = this.config.isSaving;
+    yearInput.addEventListener("input", () => {
+      this.config.onUpdate({ year: yearInput.value });
+    });
+    dateGroup.appendChild(yearInput);
+    const monthSelect = document.createElement("select");
+    monthSelect.disabled = this.config.isSaving;
+    const months = calendarOption?.months ?? [];
+    months.forEach((month) => {
+      const opt = document.createElement("option");
+      opt.value = month.id;
+      opt.textContent = month.name;
+      monthSelect.appendChild(opt);
+    });
+    if (this.draft.monthId) {
+      monthSelect.value = this.draft.monthId;
+    }
+    const dayInput = document.createElement("input");
+    dayInput.type = "number";
+    dayInput.min = "1";
+    dayInput.value = this.draft.day;
+    dayInput.disabled = this.config.isSaving;
+    const updateDayLimit = () => {
+      const month = months.find((item) => item.id === monthSelect.value);
+      if (month) {
+        dayInput.max = String(month.length);
+      } else {
+        dayInput.removeAttribute("max");
+      }
+    };
+    updateDayLimit();
+    monthSelect.addEventListener("change", () => {
+      this.config.onUpdate({ monthId: monthSelect.value });
+      updateDayLimit();
+    });
+    dateGroup.appendChild(monthSelect);
+    dayInput.addEventListener("input", () => {
+      this.config.onUpdate({ day: dayInput.value });
+    });
+    dateGroup.appendChild(dayInput);
+    form.appendChild(dateGroup);
+    const allDayField = document.createElement("label");
+    allDayField.classList.add("almanac-modal__checkbox");
+    const allDayInput = document.createElement("input");
+    allDayInput.type = "checkbox";
+    allDayInput.checked = this.draft.allDay;
+    allDayInput.disabled = this.config.isSaving;
+    allDayInput.addEventListener("change", () => {
+      this.config.onUpdate({ allDay: allDayInput.checked });
+    });
+    allDayField.appendChild(allDayInput);
+    allDayField.appendChild(document.createTextNode("All-day event"));
+    form.appendChild(allDayField);
+    const needsTimeFields = !this.draft.allDay;
+    if (this.draft.kind === "single") {
+      const precisionField = document.createElement("label");
+      precisionField.classList.add("almanac-modal__field");
+      precisionField.textContent = "Time precision";
+      const precisionSelect = document.createElement("select");
+      precisionSelect.disabled = this.config.isSaving || this.draft.allDay;
+      ["day", "hour", "minute"].forEach((value) => {
+        const opt = document.createElement("option");
+        opt.value = value;
+        opt.textContent = value.charAt(0).toUpperCase() + value.slice(1);
+        precisionSelect.appendChild(opt);
+      });
+      precisionSelect.value = this.draft.timePrecision;
+      precisionSelect.addEventListener("change", () => {
+        this.config.onUpdate({ timePrecision: precisionSelect.value });
+      });
+      precisionField.appendChild(precisionSelect);
+      form.appendChild(precisionField);
+    }
+    if (needsTimeFields) {
+      const timeGroup = document.createElement("div");
+      timeGroup.classList.add("almanac-modal__field", "almanac-modal__field--inline");
+      const timeLabel = document.createElement("span");
+      timeLabel.textContent = "Time";
+      timeGroup.appendChild(timeLabel);
+      const hourInput = document.createElement("input");
+      hourInput.type = "number";
+      hourInput.min = "0";
+      hourInput.value = this.draft.hour;
+      hourInput.disabled = this.config.isSaving;
+      hourInput.addEventListener("input", () => {
+        this.config.onUpdate({ hour: hourInput.value });
+      });
+      timeGroup.appendChild(hourInput);
+      const minuteInput = document.createElement("input");
+      minuteInput.type = "number";
+      minuteInput.min = "0";
+      minuteInput.value = this.draft.minute;
+      minuteInput.disabled = this.config.isSaving;
+      minuteInput.addEventListener("input", () => {
+        this.config.onUpdate({ minute: minuteInput.value });
+      });
+      timeGroup.appendChild(minuteInput);
+      form.appendChild(timeGroup);
+    }
+    const durationField = document.createElement("label");
+    durationField.classList.add("almanac-modal__field");
+    durationField.textContent = "Duration (minutes)";
+    const durationInput = document.createElement("input");
+    durationInput.type = "number";
+    durationInput.min = "0";
+    durationInput.value = this.draft.durationMinutes;
+    durationInput.disabled = this.config.isSaving;
+    durationInput.addEventListener("input", () => {
+      this.config.onUpdate({ durationMinutes: durationInput.value });
+    });
+    durationField.appendChild(durationInput);
+    form.appendChild(durationField);
+    if (this.draft.kind === "recurring") {
+      const ruleField = document.createElement("label");
+      ruleField.classList.add("almanac-modal__field");
+      ruleField.textContent = "Rule type";
+      const ruleSelect = document.createElement("select");
+      ruleSelect.disabled = this.config.isSaving;
+      const ruleOptions = [
+        { value: "weekly_dayIndex", label: "Weekly" },
+        { value: "monthly_position", label: "Monthly position" },
+        { value: "annual_offset", label: "Annual offset" }
+      ];
+      ruleOptions.forEach((option) => {
+        const opt = document.createElement("option");
+        opt.value = option.value;
+        opt.textContent = option.label;
+        ruleSelect.appendChild(opt);
+      });
+      ruleSelect.value = this.draft.ruleType;
+      ruleSelect.addEventListener("change", () => {
+        this.config.onUpdate({ ruleType: ruleSelect.value });
+      });
+      ruleField.appendChild(ruleSelect);
+      form.appendChild(ruleField);
+      if (this.draft.ruleType === "weekly_dayIndex") {
+        const weeklyField = document.createElement("label");
+        weeklyField.classList.add("almanac-modal__field");
+        weeklyField.textContent = "Day of week";
+        const weeklySelect = document.createElement("select");
+        weeklySelect.disabled = this.config.isSaving;
+        const days = calendarOption ? calendarOption.daysPerWeek : 7;
+        for (let i = 0; i < days; i += 1) {
+          const opt = document.createElement("option");
+          opt.value = String(i);
+          opt.textContent = `Day ${i + 1}`;
+          weeklySelect.appendChild(opt);
+        }
+        weeklySelect.value = this.draft.ruleDayIndex;
+        weeklySelect.addEventListener("change", () => {
+          this.config.onUpdate({ ruleDayIndex: weeklySelect.value });
+        });
+        weeklyField.appendChild(weeklySelect);
+        const intervalInput = document.createElement("input");
+        intervalInput.type = "number";
+        intervalInput.min = "1";
+        intervalInput.value = this.draft.ruleInterval;
+        intervalInput.disabled = this.config.isSaving;
+        intervalInput.addEventListener("input", () => {
+          this.config.onUpdate({ ruleInterval: intervalInput.value });
+        });
+        weeklyField.appendChild(intervalInput);
+        form.appendChild(weeklyField);
+      } else {
+        const monthField = document.createElement("label");
+        monthField.classList.add("almanac-modal__field");
+        monthField.textContent = "Rule month";
+        const ruleMonthSelect = document.createElement("select");
+        ruleMonthSelect.disabled = this.config.isSaving;
+        (calendarOption?.months ?? []).forEach((month) => {
+          const opt = document.createElement("option");
+          opt.value = month.id;
+          opt.textContent = month.name;
+          ruleMonthSelect.appendChild(opt);
+        });
+        ruleMonthSelect.value = this.draft.ruleMonthId || this.draft.monthId || "";
+        ruleMonthSelect.addEventListener("change", () => {
+          this.config.onUpdate({ ruleMonthId: ruleMonthSelect.value });
+        });
+        monthField.appendChild(ruleMonthSelect);
+        const ruleDayInput = document.createElement("input");
+        ruleDayInput.type = "number";
+        ruleDayInput.min = "1";
+        ruleDayInput.value = this.draft.ruleDay;
+        ruleDayInput.disabled = this.config.isSaving;
+        ruleDayInput.addEventListener("input", () => {
+          this.config.onUpdate({ ruleDay: ruleDayInput.value });
+        });
+        monthField.appendChild(ruleDayInput);
+        form.appendChild(monthField);
+      }
+      const policyField = document.createElement("label");
+      policyField.classList.add("almanac-modal__field");
+      policyField.textContent = "Time policy";
+      const policySelect = document.createElement("select");
+      policySelect.disabled = this.config.isSaving;
+      const policies = [
+        { value: "all_day", label: "All day" },
+        { value: "fixed", label: "Fixed time" },
+        { value: "offset", label: "Offset from start" }
+      ];
+      policies.forEach((option) => {
+        const opt = document.createElement("option");
+        opt.value = option.value;
+        opt.textContent = option.label;
+        policySelect.appendChild(opt);
+      });
+      policySelect.value = this.draft.timePolicy;
+      policySelect.addEventListener("change", () => {
+        this.config.onUpdate({ timePolicy: policySelect.value });
+      });
+      policyField.appendChild(policySelect);
+      form.appendChild(policyField);
+      const boundsField = document.createElement("div");
+      boundsField.classList.add("almanac-modal__field", "almanac-modal__field--inline");
+      const boundsLabel = document.createElement("span");
+      boundsLabel.textContent = "End date";
+      boundsField.appendChild(boundsLabel);
+      const endYearInput = document.createElement("input");
+      endYearInput.type = "number";
+      endYearInput.min = "1";
+      endYearInput.value = this.draft.boundsEndYear;
+      endYearInput.disabled = this.config.isSaving;
+      endYearInput.addEventListener("input", () => {
+        this.config.onUpdate({ boundsEndYear: endYearInput.value });
+      });
+      boundsField.appendChild(endYearInput);
+      const endMonthSelect = document.createElement("select");
+      endMonthSelect.disabled = this.config.isSaving;
+      (calendarOption?.months ?? []).forEach((month) => {
+        const opt = document.createElement("option");
+        opt.value = month.id;
+        opt.textContent = month.name;
+        endMonthSelect.appendChild(opt);
+      });
+      endMonthSelect.value = this.draft.boundsEndMonthId || "";
+      endMonthSelect.addEventListener("change", () => {
+        this.config.onUpdate({ boundsEndMonthId: endMonthSelect.value });
+      });
+      boundsField.appendChild(endMonthSelect);
+      const endDayInput = document.createElement("input");
+      endDayInput.type = "number";
+      endDayInput.min = "1";
+      endDayInput.value = this.draft.boundsEndDay;
+      endDayInput.disabled = this.config.isSaving;
+      endDayInput.addEventListener("input", () => {
+        this.config.onUpdate({ boundsEndDay: endDayInput.value });
+      });
+      boundsField.appendChild(endDayInput);
+      form.appendChild(boundsField);
+    }
+    const previewSection = document.createElement("div");
+    previewSection.classList.add("almanac-modal__preview");
+    form.appendChild(previewSection);
+    const previewHeading = document.createElement("h3");
+    previewHeading.textContent = "Upcoming occurrences";
+    previewSection.appendChild(previewHeading);
+    if (this.config.preview.length === 0) {
+      const emptyPreview = document.createElement("p");
+      emptyPreview.textContent = "No preview available yet.";
+      previewSection.appendChild(emptyPreview);
+    } else {
+      const list = document.createElement("ul");
+      this.config.preview.slice(0, 5).forEach((item) => {
+        const listItem = document.createElement("li");
+        listItem.textContent = item.label;
+        list.appendChild(listItem);
+      });
+      previewSection.appendChild(list);
+    }
+    const actions = document.createElement("div");
+    actions.classList.add("almanac-modal__actions");
+    form.appendChild(actions);
+    const saveButton = document.createElement("button");
+    saveButton.type = "submit";
+    saveButton.textContent = this.config.isSaving ? "Saving\u2026" : "Save event";
+    saveButton.classList.add("almanac-control-button");
+    saveButton.dataset.role = "save-event";
+    saveButton.disabled = this.config.isSaving;
+    actions.appendChild(saveButton);
+    const cancelButton = document.createElement("button");
+    cancelButton.type = "button";
+    cancelButton.textContent = "Cancel";
+    cancelButton.classList.add("almanac-control-button");
+    cancelButton.disabled = this.config.isSaving;
+    cancelButton.addEventListener("click", () => {
+      this.config.onCancel();
+    });
+    actions.appendChild(cancelButton);
+    if (this.config.onDelete && this.draft.id) {
+      const deleteButton = document.createElement("button");
+      deleteButton.type = "button";
+      deleteButton.textContent = "Delete";
+      deleteButton.classList.add("almanac-control-button");
+      deleteButton.dataset.role = "delete-event";
+      deleteButton.disabled = this.config.isSaving;
+      deleteButton.addEventListener("click", () => {
+        this.config.onDelete?.();
+      });
+      actions.appendChild(deleteButton);
+    }
+  }
+};
+var PhenomenonEditorModal = class extends import_obsidian31.Modal {
+  constructor(app, draft, config) {
+    super(app);
+    this.container = null;
+    this.nameInput = null;
+    this.categoryInput = null;
+    this.visibilitySelect = null;
+    this.notesInput = null;
+    this.calendarCheckboxes = /* @__PURE__ */ new Map();
+    this.saveButton = null;
+    this.cancelButton = null;
+    this.errorEl = null;
+    this.draft = { ...draft };
+    this.calendars = config.calendars;
+    this.isSaving = config.isSaving;
+    this.error = config.error;
+    this.onSave = config.onSave;
+    this.onCancel = config.onCancel;
+  }
+  open() {
+    super.open();
+    this.render();
+  }
+  update(draft, config) {
+    this.draft = { ...draft };
+    if (config.calendars) {
+      this.calendars = config.calendars;
+      this.renderCalendars();
+    }
+    this.isSaving = config.isSaving;
+    this.error = config.error;
+    this.syncForm();
+  }
+  close() {
+    this.container?.remove();
+    this.container = null;
+    this.calendarCheckboxes.clear();
+    super.close();
+  }
+  render() {
+    this.container = document.createElement("div");
+    this.container.classList.add("almanac-modal");
+    this.container.dataset.modal = "phenomenon-editor";
+    const form = document.createElement("form");
+    form.classList.add("almanac-modal__form");
+    this.container.appendChild(form);
+    const heading = document.createElement("h2");
+    heading.textContent = "Phenomenon Editor";
+    form.appendChild(heading);
+    const nameField = document.createElement("label");
+    nameField.classList.add("almanac-modal__field");
+    nameField.textContent = "Name";
+    this.nameInput = document.createElement("input");
+    this.nameInput.type = "text";
+    this.nameInput.required = true;
+    this.nameInput.addEventListener("input", () => {
+      this.draft = { ...this.draft, name: this.nameInput.value };
+    });
+    nameField.appendChild(this.nameInput);
+    form.appendChild(nameField);
+    const categoryField = document.createElement("label");
+    categoryField.classList.add("almanac-modal__field");
+    categoryField.textContent = "Category";
+    this.categoryInput = document.createElement("input");
+    this.categoryInput.type = "text";
+    this.categoryInput.addEventListener("input", () => {
+      this.draft = { ...this.draft, category: this.categoryInput.value };
+    });
+    categoryField.appendChild(this.categoryInput);
+    form.appendChild(categoryField);
+    const visibilityField = document.createElement("label");
+    visibilityField.classList.add("almanac-modal__field");
+    visibilityField.textContent = "Visibility";
+    this.visibilitySelect = document.createElement("select");
+    const optionAll = document.createElement("option");
+    optionAll.value = "all_calendars";
+    optionAll.textContent = "All calendars";
+    this.visibilitySelect.appendChild(optionAll);
+    const optionSelected = document.createElement("option");
+    optionSelected.value = "selected";
+    optionSelected.textContent = "Selected calendars";
+    this.visibilitySelect.appendChild(optionSelected);
+    this.visibilitySelect.addEventListener("change", () => {
+      const visibility = this.visibilitySelect.value;
+      const appliesTo = visibility === "all_calendars" ? [] : this.draft.appliesToCalendarIds;
+      this.draft = { ...this.draft, visibility, appliesToCalendarIds: appliesTo };
+      this.syncCalendarCheckboxes();
+    });
+    visibilityField.appendChild(this.visibilitySelect);
+    form.appendChild(visibilityField);
+    const calendarWrapper = document.createElement("div");
+    calendarWrapper.classList.add("almanac-modal__field");
+    const calendarLabel = document.createElement("span");
+    calendarLabel.textContent = "Calendars";
+    calendarWrapper.appendChild(calendarLabel);
+    const calendarList = document.createElement("div");
+    calendarList.classList.add("almanac-modal__checkboxes");
+    calendarWrapper.appendChild(calendarList);
+    form.appendChild(calendarWrapper);
+    this.renderCalendars(calendarList);
+    const notesField = document.createElement("label");
+    notesField.classList.add("almanac-modal__field");
+    notesField.textContent = "Notes";
+    this.notesInput = document.createElement("textarea");
+    this.notesInput.rows = 4;
+    this.notesInput.addEventListener("input", () => {
+      this.draft = { ...this.draft, notes: this.notesInput.value };
+    });
+    notesField.appendChild(this.notesInput);
+    form.appendChild(notesField);
+    this.errorEl = document.createElement("div");
+    this.errorEl.classList.add("almanac-modal__error");
+    form.appendChild(this.errorEl);
+    const actions = document.createElement("div");
+    actions.classList.add("almanac-modal__actions");
+    this.cancelButton = document.createElement("button");
+    this.cancelButton.type = "button";
+    this.cancelButton.textContent = "Cancel";
+    this.cancelButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      this.onCancel();
+    });
+    actions.appendChild(this.cancelButton);
+    this.saveButton = document.createElement("button");
+    this.saveButton.type = "submit";
+    this.saveButton.textContent = "Save";
+    actions.appendChild(this.saveButton);
+    form.appendChild(actions);
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      this.onSave({ ...this.draft });
+    });
+    document.body.appendChild(this.container);
+    this.syncForm();
+  }
+  renderCalendars(host) {
+    const target = host ?? this.container?.querySelector(".almanac-modal__checkboxes");
+    if (!target) {
+      return;
+    }
+    target.textContent = "";
+    this.calendarCheckboxes.clear();
+    this.calendars.forEach((calendar) => {
+      const label = document.createElement("label");
+      label.classList.add("almanac-modal__checkbox");
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.value = calendar.id;
+      input.addEventListener("change", () => {
+        const existing = new Set(this.draft.appliesToCalendarIds);
+        if (input.checked) {
+          existing.add(calendar.id);
+        } else {
+          existing.delete(calendar.id);
+        }
+        this.draft = { ...this.draft, appliesToCalendarIds: Array.from(existing) };
+      });
+      label.appendChild(input);
+      const span = document.createElement("span");
+      span.textContent = calendar.name;
+      label.appendChild(span);
+      target.appendChild(label);
+      this.calendarCheckboxes.set(calendar.id, input);
+    });
+    this.syncCalendarCheckboxes();
+  }
+  syncCalendarCheckboxes() {
+    for (const [id, checkbox] of this.calendarCheckboxes.entries()) {
+      checkbox.checked = this.draft.appliesToCalendarIds.includes(id);
+      checkbox.disabled = this.draft.visibility === "all_calendars";
+    }
+  }
+  syncForm() {
+    if (!this.container) {
+      return;
+    }
+    if (this.nameInput) {
+      this.nameInput.value = this.draft.name;
+    }
+    if (this.categoryInput) {
+      this.categoryInput.value = this.draft.category;
+    }
+    if (this.visibilitySelect) {
+      this.visibilitySelect.value = this.draft.visibility;
+    }
+    if (this.notesInput) {
+      this.notesInput.value = this.draft.notes ?? "";
+    }
+    this.syncCalendarCheckboxes();
+    if (this.saveButton) {
+      this.saveButton.disabled = this.isSaving;
+    }
+    if (this.cancelButton) {
+      this.cancelButton.disabled = this.isSaving;
+    }
+    if (this.errorEl) {
+      this.errorEl.textContent = this.error ?? "";
+      this.errorEl.classList.toggle("is-visible", Boolean(this.error));
+    }
+  }
+};
+var EventImportDialog = class extends import_obsidian31.Modal {
+  constructor(app, config) {
+    super(app);
+    this.value = "";
+    this.container = null;
+    this.textarea = null;
+    this.saveButton = null;
+    this.cancelButton = null;
+    this.errorEl = null;
+    this.isLoading = config.isLoading;
+    this.error = config.error;
+    this.onSubmit = config.onSubmit;
+    this.onCancel = config.onCancel;
+  }
+  open() {
+    super.open();
+    this.render();
+  }
+  update(config) {
+    this.isLoading = config.isLoading;
+    this.error = config.error;
+    this.sync();
+  }
+  close() {
+    this.container?.remove();
+    this.container = null;
+    super.close();
+  }
+  render() {
+    this.container = document.createElement("div");
+    this.container.classList.add("almanac-modal");
+    this.container.dataset.modal = "event-import";
+    const form = document.createElement("form");
+    form.classList.add("almanac-modal__form");
+    this.container.appendChild(form);
+    const heading = document.createElement("h2");
+    heading.textContent = "Import Phenomena";
+    form.appendChild(heading);
+    this.textarea = document.createElement("textarea");
+    this.textarea.rows = 8;
+    this.textarea.dataset.role = "import-input";
+    this.textarea.addEventListener("input", () => {
+      this.value = this.textarea.value;
+    });
+    form.appendChild(this.textarea);
+    this.errorEl = document.createElement("div");
+    this.errorEl.classList.add("almanac-modal__error");
+    form.appendChild(this.errorEl);
+    const actions = document.createElement("div");
+    actions.classList.add("almanac-modal__actions");
+    this.cancelButton = document.createElement("button");
+    this.cancelButton.type = "button";
+    this.cancelButton.textContent = "Cancel";
+    this.cancelButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      this.onCancel();
+    });
+    actions.appendChild(this.cancelButton);
+    this.saveButton = document.createElement("button");
+    this.saveButton.type = "submit";
+    this.saveButton.textContent = "Import";
+    actions.appendChild(this.saveButton);
+    form.appendChild(actions);
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      this.onSubmit(this.value);
+    });
+    document.body.appendChild(this.container);
+    this.sync();
+  }
+  sync() {
+    if (this.textarea && this.textarea.value !== this.value) {
+      this.textarea.value = this.value;
+    }
+    if (this.saveButton) {
+      this.saveButton.disabled = this.isLoading;
+    }
+    if (this.cancelButton) {
+      this.cancelButton.disabled = this.isLoading;
+    }
+    if (this.errorEl) {
+      this.errorEl.textContent = this.error ?? "";
+      this.errorEl.classList.toggle("is-visible", Boolean(this.error));
+    }
+  }
+};
 var AlmanacController = class {
-  constructor(app) {
+  constructor(app, deps = {}) {
     this.app = app;
     this.containerEl = null;
     this.unsubscribe = null;
     this.currentState = null;
     this.showTimeJumpForm = false;
-    this.calendarRepo = new InMemoryCalendarRepository();
-    this.eventRepo = new InMemoryEventRepository();
-    this.phenomenonRepo = new InMemoryPhenomenonRepository();
-    this.gateway = new InMemoryStateGateway(this.calendarRepo, this.eventRepo, this.phenomenonRepo);
+    this.phenomenonEditorModal = null;
+    this.eventEditorModal = null;
+    this.eventImportModal = null;
+    this.cartographerBridge = null;
+    this.protocolRef = null;
+    this.pendingDeepLink = null;
+    this.isSyncingDeepLink = false;
+    this.lastDeepLinkUrl = null;
+    this.allowDeepLinkSync = false;
+    // Split-view components
+    this.splitView = null;
+    this.calendarView = null;
+    this.contentContainer = null;
+    this.handleProtocolUrl = (rawUrl) => {
+      if (this.isSyncingDeepLink) {
+        return;
+      }
+      const overrides = this.parseDeepLink(rawUrl);
+      if (!overrides) {
+        return;
+      }
+      this.pendingDeepLink = overrides;
+      if (!this.containerEl) {
+        return;
+      }
+      this.allowDeepLinkSync = false;
+      const travelId = overrides && Object.prototype.hasOwnProperty.call(overrides, "travelId") ? overrides.travelId ?? null : void 0;
+      void this.runDispatch({ type: "INIT_ALMANAC", travelId, overrides }).finally(() => {
+        this.pendingDeepLink = null;
+        this.allowDeepLinkSync = true;
+        if (this.currentState) {
+          this.syncDeepLink(this.currentState);
+        }
+      });
+    };
+    const calendarRepo = deps.calendarRepo ?? new InMemoryCalendarRepository();
+    const eventRepo = deps.eventRepo ?? new InMemoryEventRepository();
+    if (eventRepo instanceof InMemoryEventRepository) {
+      eventRepo.bindCalendarRepository(calendarRepo);
+    }
+    const phenomenonRepo = deps.phenomenonRepo ?? new InMemoryPhenomenonRepository();
+    const gateway = deps.gateway ?? new InMemoryStateGateway(calendarRepo, eventRepo, phenomenonRepo);
+    this.calendarRepo = calendarRepo;
+    this.eventRepo = eventRepo;
+    this.phenomenonRepo = phenomenonRepo;
+    this.gateway = gateway;
     this.stateMachine = new AlmanacStateMachine(
       this.calendarRepo,
       this.eventRepo,
       this.gateway,
       this.phenomenonRepo
     );
-    this.calendarRepo.seed([
-      gregorianSchema,
-      {
-        id: "lunar-cycle",
-        name: "Lunar Cycle",
-        description: "Six-month seasonal calendar for travel campaigns",
-        daysPerWeek: 6,
-        hoursPerDay: 20,
-        minutesPerHour: 60,
-        minuteStep: 10,
-        months: [
-          { id: "ember", name: "Ember", length: 30 },
-          { id: "sleet", name: "Sleet", length: 30 },
-          { id: "bloom", name: "Bloom", length: 30 },
-          { id: "zenith", name: "Zenith", length: 30 },
-          { id: "gale", name: "Gale", length: 30 },
-          { id: "dusk", name: "Dusk", length: 30 }
-        ],
-        epoch: { year: 1, monthId: "ember", day: 1 },
-        schemaVersion: "1.0.0"
-      }
-    ]);
-    void this.calendarRepo.setGlobalDefault(gregorianSchema.id);
-    this.eventRepo.seed(createSampleEvents(2024));
-    this.phenomenonRepo.seed(createSamplePhenomena());
+    this.ensureProtocolHandler();
   }
   async onOpen(container) {
     await this.onClose();
     this.containerEl = container;
     container.empty();
     container.addClass("almanac-container");
-    const current = this.gateway.getCurrentState();
-    if (!current.activeCalendarId) {
-      await this.gateway.setActiveCalendar(
-        gregorianSchema.id,
-        getDefaultCurrentTimestamp(2024)
-      );
+    this.lastDeepLinkUrl = null;
+    this.ensureProtocolHandler();
+    this.allowDeepLinkSync = false;
+    this.cartographerBridge = registerCartographerBridge(this.stateMachine, {
+      onRequestJump: () => this.openTimeJumpFromCartographer(),
+      onFollowUp: (eventId) => this.handleTravelFollowUp(eventId)
+    });
+    await ensureDefaultCalendar(this.calendarRepo);
+    const activeCalendarId = this.gateway.getActiveCalendarId();
+    if (!activeCalendarId) {
+      const calendars = await this.calendarRepo.listCalendars();
+      const fallback = calendars.find((calendar) => calendar.isDefaultGlobal) ?? calendars[0];
+      if (fallback) {
+        const initialTimestamp = createDayTimestamp(
+          fallback.id,
+          fallback.epoch.year,
+          fallback.epoch.monthId,
+          fallback.epoch.day
+        );
+        await this.gateway.setActiveCalendar(fallback.id, { initialTimestamp });
+      }
     }
     this.unsubscribe = this.stateMachine.subscribe((state) => {
       this.currentState = state;
       this.render(state);
+      this.syncDeepLink(state);
     });
-    await this.stateMachine.dispatch({ type: "INIT_ALMANAC" });
+    const overrides = this.pendingDeepLink ?? null;
+    const travelId = overrides && Object.prototype.hasOwnProperty.call(overrides, "travelId") ? overrides.travelId ?? null : void 0;
+    await this.stateMachine.dispatch({
+      type: "INIT_ALMANAC",
+      travelId,
+      overrides: overrides ?? void 0
+    });
+    this.pendingDeepLink = null;
+    this.allowDeepLinkSync = true;
+    if (this.currentState) {
+      this.syncDeepLink(this.currentState);
+    }
   }
   async onClose() {
     this.unsubscribe?.();
     this.unsubscribe = null;
+    this.phenomenonEditorModal?.close();
+    this.phenomenonEditorModal = null;
+    this.eventImportModal?.close();
+    this.eventImportModal = null;
+    this.eventEditorModal?.close();
+    this.eventEditorModal = null;
+    this.calendarView?.destroy();
+    this.calendarView = null;
+    this.contentContainer?.destroy();
+    this.contentContainer = null;
+    this.splitView?.destroy();
+    this.splitView = null;
     this.containerEl = null;
+    this.cartographerBridge?.release();
+    this.cartographerBridge = null;
+    this.allowDeepLinkSync = false;
   }
   render(state) {
     if (!this.containerEl) return;
+    if (!this.splitView || !this.calendarView || !this.contentContainer) {
+      this.initializeSplitView(state);
+    }
+    if (this.calendarView && state.calendarViewState) {
+      this.calendarView.update(state.calendarViewState);
+    }
+    if (this.contentContainer) {
+      const mode = state.almanacUiState.mode;
+      this.contentContainer.setMode(mode);
+      switch (mode) {
+        case "dashboard":
+          this.renderDashboard(this.contentContainer.dashboardElement, state);
+          break;
+        case "manager":
+          this.renderManager(this.contentContainer.managerElement, state);
+          break;
+        case "events":
+          this.renderEvents(this.contentContainer.eventsElement, state);
+          break;
+      }
+    }
+    this.syncDialogs(state);
+  }
+  initializeSplitView(state) {
+    if (!this.containerEl) return;
     this.containerEl.empty();
-    const shell = this.containerEl.createDiv({ cls: "almanac-shell" });
-    const header = shell.createDiv({ cls: "almanac-shell__header" });
-    this.renderTitle(header, state);
-    this.renderModeSwitcher(header, state);
-    this.renderStatusBar(header, state);
-    if (state.almanacUiState.error) {
-      const errorBanner = shell.createDiv({ cls: "almanac-shell__error" });
-      errorBanner.setText(state.almanacUiState.error);
-    }
-    if (state.almanacUiState.isLoading) {
-      const loader = shell.createDiv({ cls: "almanac-shell__loader" });
-      loader.setText("Loading\u2026");
-    }
-    const content = shell.createDiv({ cls: "almanac-shell__content" });
-    switch (state.almanacUiState.mode) {
-      case "dashboard":
-        this.renderDashboard(content, state);
-        break;
-      case "manager":
-        this.renderManager(content, state);
-        break;
-      case "events":
-        this.renderEvents(content, state);
-        break;
-    }
+    this.containerEl.addClass("almanac-container");
+    this.splitView = createSplitView(this.containerEl, {
+      className: "almanac-split-layout",
+      initialSplit: 0.6,
+      // 60% upper, 40% lower
+      minUpperSize: 200,
+      minLowerSize: 200,
+      orientation: "horizontal",
+      resizable: true
+    });
+    const calendarMode = "month";
+    this.calendarView = createCalendarViewContainer(this.app, this.splitView.upperElement, {
+      mode: calendarMode,
+      state: state.calendarViewState || {
+        mode: calendarMode,
+        zoom: "month",
+        anchorTimestamp: state.calendarState.currentTimestamp,
+        events: state.calendarState.upcomingEvents,
+        isLoading: false
+      },
+      onModeChange: (mode) => {
+        console.log("Calendar view mode changed:", mode);
+      },
+      onNavigate: (direction) => {
+        if (direction === "prev" || direction === "next") {
+          void this.runDispatch({
+            type: "MANAGER_NAVIGATION_REQUESTED",
+            direction
+          });
+        } else {
+          void this.runDispatch({
+            type: "MANAGER_NAVIGATION_REQUESTED",
+            direction: "today"
+          });
+        }
+      },
+      onEventCreate: (timestamp) => {
+        void this.runDispatch({
+          type: "EVENT_CREATE_REQUESTED",
+          mode: "single",
+          calendarId: state.calendarState.activeCalendarId ?? void 0
+        });
+      },
+      onEventSelect: (eventId) => {
+        void this.runDispatch({
+          type: "EVENT_EDIT_REQUESTED",
+          eventId
+        });
+      }
+    });
+    const contentMode = state.almanacUiState.mode;
+    this.contentContainer = createAlmanacContentContainer(this.app, this.splitView.lowerElement, {
+      mode: contentMode,
+      onModeChange: (mode) => {
+        void this.runDispatch({
+          type: "ALMANAC_MODE_SELECTED",
+          mode
+        });
+      }
+    });
   }
   renderTitle(host, state) {
     const titleRow = host.createDiv({ cls: "almanac-shell__title-row" });
-    titleRow.createEl("h1", { text: "Almanac" });
+    const titleGroup = titleRow.createDiv({ cls: "almanac-shell__title-group" });
+    titleGroup.createEl("h1", { text: "Almanac" });
     const activeCalendar = this.getActiveCalendar(state);
-    const subtitle = titleRow.createDiv({ cls: "almanac-shell__subtitle" });
+    const subtitle = titleGroup.createDiv({ cls: "almanac-shell__subtitle" });
     if (activeCalendar) {
       const isDefault = activeCalendar.id === state.calendarState.defaultCalendarId;
       subtitle.setText(`Active calendar: ${activeCalendar.name}${isDefault ? " (Default)" : ""}`);
@@ -49267,7 +55732,27 @@ var AlmanacController = class {
   }
   renderCalendarSelector(host, state) {
     if (state.calendarState.calendars.length === 0) {
-      host.createEl("span", { text: "No calendars available" });
+      const emptyState = host.createDiv({ cls: "almanac-empty-state" });
+      emptyState.createEl("h2", { text: "No calendars available" });
+      emptyState.createEl("p", {
+        text: "Create your first calendar to start planning events."
+      });
+      const createButton = emptyState.createEl("button", {
+        text: "Create calendar",
+        cls: "almanac-control-button",
+        attr: { "data-action": "create-first-calendar" }
+      });
+      createButton.disabled = state.almanacUiState.isLoading || state.calendarState.isPersisting;
+      createButton.addEventListener("click", () => {
+        emitAlmanacEvent({
+          type: "calendar.almanac.create_flow",
+          source: "calendar-selector",
+          availableCalendars: state.calendarState.calendars.length
+        });
+        void this.runDispatch({ type: "ALMANAC_MODE_SELECTED", mode: "manager" });
+        void this.runDispatch({ type: "MANAGER_CREATE_FORM_UPDATED", field: "name", value: "" });
+        void this.runDispatch({ type: "MANAGER_CREATE_FORM_UPDATED", field: "id", value: "" });
+      });
       return;
     }
     const select = host.createEl("select", { cls: "almanac-calendar-select" });
@@ -49560,6 +56045,27 @@ var AlmanacController = class {
   }
   renderManager(host, state) {
     const section = host.createDiv({ cls: "almanac-manager" });
+    const creationSection = section.createDiv({ cls: "almanac-section almanac-manager__create" });
+    this.renderCalendarCreateForm(creationSection, state);
+    const eventCreateSection = creationSection.createDiv({ cls: "almanac-manager__event-create" });
+    eventCreateSection.createEl("h3", { text: "Create event" });
+    const eventButtons = eventCreateSection.createDiv({ cls: "almanac-manager__event-buttons" });
+    const managerSingleButton = eventButtons.createEl("button", {
+      text: "Single event",
+      cls: "almanac-control-button",
+      attr: { "data-action": "manager-event-single" }
+    });
+    managerSingleButton.addEventListener("click", () => {
+      this.runDispatch({ type: "EVENT_CREATE_REQUESTED", mode: "single" });
+    });
+    const managerRecurringButton = eventButtons.createEl("button", {
+      text: "Recurring event",
+      cls: "almanac-control-button",
+      attr: { "data-action": "manager-event-recurring" }
+    });
+    managerRecurringButton.addEventListener("click", () => {
+      this.runDispatch({ type: "EVENT_CREATE_REQUESTED", mode: "recurring" });
+    });
     const header = section.createDiv({ cls: "almanac-manager__controls" });
     const modeGroup = header.createDiv({ cls: "almanac-toggle-group" });
     MANAGER_VIEW_OPTIONS.forEach((option) => {
@@ -49590,7 +56096,136 @@ var AlmanacController = class {
       this.renderManagerCalendarView(section, state);
     }
   }
+  renderCalendarCreateForm(host, state) {
+    host.createEl("h2", { text: "Create calendar" });
+    host.createEl("p", {
+      text: "Define a quick calendar skeleton. You can refine months and events later in the manager.",
+      cls: "almanac-section__helper"
+    });
+    if (state.managerUiState.createErrors.length > 0) {
+      const errorList = host.createEl("ul", { cls: "almanac-form-errors" });
+      state.managerUiState.createErrors.forEach((message) => {
+        errorList.createEl("li", { text: message });
+      });
+    }
+    const form = host.createEl("form", { cls: "almanac-create-form" });
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      void this.runDispatch({ type: "CALENDAR_CREATE_REQUESTED" });
+    });
+    const grid = form.createDiv({ cls: "almanac-create-form__grid" });
+    const { createDraft, isCreating } = state.managerUiState;
+    const isDisabled = isCreating || state.calendarState.isPersisting;
+    const buildInput = (field, label, options = {}) => {
+      const wrapper = grid.createDiv({ cls: "almanac-form-field" });
+      wrapper.createEl("label", { text: label, attr: { for: `almanac-${field}` } });
+      const input = wrapper.createEl("input", {
+        attr: {
+          id: `almanac-${field}`,
+          name: `almanac-${field}`,
+          type: options.type ?? "text",
+          value: createDraft[field],
+          ...options.min ? { min: options.min } : {},
+          ...options.step ? { step: options.step } : {}
+        }
+      });
+      input.disabled = isDisabled;
+      input.addEventListener("input", () => {
+        void this.runDispatch({
+          type: "MANAGER_CREATE_FORM_UPDATED",
+          field,
+          value: input.value
+        });
+      });
+      return input;
+    };
+    buildInput("id", "Identifier");
+    buildInput("name", "Name");
+    const descriptionWrapper = grid.createDiv({ cls: "almanac-form-field almanac-form-field--wide" });
+    descriptionWrapper.createEl("label", { text: "Description", attr: { for: "almanac-description" } });
+    const description = descriptionWrapper.createEl("textarea", {
+      attr: { id: "almanac-description", rows: "2" },
+      text: createDraft.description
+    });
+    description.disabled = isDisabled;
+    description.addEventListener("input", () => {
+      void this.runDispatch({
+        type: "MANAGER_CREATE_FORM_UPDATED",
+        field: "description",
+        value: description.value
+      });
+    });
+    buildInput("daysPerWeek", "Days per week", { type: "number", min: "1", step: "1" });
+    buildInput("monthCount", "Months per year", { type: "number", min: "1", step: "1" });
+    buildInput("monthLength", "Days per month", { type: "number", min: "1", step: "1" });
+    buildInput("hoursPerDay", "Hours per day", { type: "number", min: "1", step: "1" });
+    buildInput("minutesPerHour", "Minutes per hour", { type: "number", min: "1", step: "1" });
+    buildInput("minuteStep", "Minute step", { type: "number", min: "1", step: "1" });
+    buildInput("epochYear", "Epoch year", { type: "number", min: "1", step: "1" });
+    buildInput("epochDay", "Epoch day", { type: "number", min: "1", step: "1" });
+    const actions = form.createDiv({ cls: "almanac-create-form__actions" });
+    const submit = actions.createEl("button", {
+      text: isCreating ? "Creating\u2026" : "Create calendar",
+      attr: { type: "submit" }
+    });
+    submit.disabled = isDisabled;
+  }
   renderCalendarOverview(host, state) {
+    const conflict = state.managerUiState.conflictDialog;
+    if (conflict) {
+      const banner = host.createDiv({ cls: "almanac-section almanac-section--error" });
+      banner.createEl("h3", { text: "Calendar conflict" });
+      banner.createEl("p", { text: conflict.message });
+      if (conflict.details.length > 0) {
+        const list = banner.createEl("ul", { cls: "almanac-form-errors" });
+        conflict.details.forEach((detail) => list.createEl("li", { text: detail }));
+      }
+      const dismiss = banner.createEl("button", { text: "Dismiss" });
+      dismiss.addEventListener("click", () => {
+        void this.runDispatch({ type: "CALENDAR_CONFLICT_DISMISSED" });
+      });
+    }
+    const deleteDialog = state.managerUiState.deleteDialog;
+    if (deleteDialog) {
+      const dialog = host.createDiv({ cls: "almanac-section almanac-section--warning" });
+      dialog.createEl("h3", { text: `Delete ${deleteDialog.calendarName}?` });
+      dialog.createEl("p", {
+        text: "Deleting a calendar removes it from the Almanac. This action cannot be undone."
+      });
+      if (deleteDialog.requiresFallback) {
+        dialog.createEl("p", { text: "A different calendar will be promoted to the default selection." });
+      }
+      if (deleteDialog.linkedTravelIds.length > 0) {
+        const travelList = dialog.createEl("ul");
+        dialog.createEl("p", { text: "Travel defaults to clear:" });
+        deleteDialog.linkedTravelIds.forEach((travelId) => travelList.createEl("li", { text: travelId }));
+      }
+      if (deleteDialog.linkedPhenomena.length > 0) {
+        const phenomenaList = dialog.createEl("ul", { cls: "almanac-form-errors" });
+        dialog.createEl("p", { text: "Linked phenomena preventing deletion:" });
+        deleteDialog.linkedPhenomena.forEach((name) => phenomenaList.createEl("li", { text: name }));
+      }
+      if (deleteDialog.error) {
+        dialog.createEl("p", { text: deleteDialog.error, cls: "almanac-form-errors" });
+      }
+      const actions = dialog.createDiv({ cls: "almanac-create-form__actions" });
+      const confirm = actions.createEl("button", {
+        text: deleteDialog.isDeleting ? "Deleting\u2026" : "Delete calendar",
+        attr: { type: "button" }
+      });
+      confirm.disabled = deleteDialog.isDeleting || deleteDialog.linkedPhenomena.length > 0;
+      confirm.addEventListener("click", () => {
+        void this.runDispatch({
+          type: "CALENDAR_DELETE_CONFIRMED",
+          calendarId: deleteDialog.calendarId
+        });
+      });
+      const cancel = actions.createEl("button", { text: "Cancel", attr: { type: "button" } });
+      cancel.disabled = deleteDialog.isDeleting;
+      cancel.addEventListener("click", () => {
+        void this.runDispatch({ type: "CALENDAR_DELETE_CANCELLED" });
+      });
+    }
     const table = host.createEl("table", { cls: "almanac-table" });
     const thead = table.createEl("thead");
     const headRow = thead.createEl("tr");
@@ -49639,6 +56274,7 @@ var AlmanacController = class {
       defaultCell.setText(isDefault ? "Default" : "\u2014");
       row.createEl("td", { text: String(schema.months.length) });
       const actions = row.createEl("td");
+      const editState = state.managerUiState.editStateById[schema.id];
       const selectBtn = actions.createEl("button", { text: isActive ? "Active" : "Activate" });
       selectBtn.disabled = isActive || state.calendarState.isPersisting;
       if (!isActive) {
@@ -49655,9 +56291,100 @@ var AlmanacController = class {
           this.runDispatch({ type: "CALENDAR_DEFAULT_SET_REQUESTED", calendarId: schema.id });
         });
       }
+      const editBtn = actions.createEl("button", { text: "Edit" });
+      editBtn.disabled = Boolean(state.calendarState.isPersisting || editState?.isSaving);
+      editBtn.addEventListener("click", () => {
+        void this.runDispatch({ type: "CALENDAR_EDIT_REQUESTED", calendarId: schema.id });
+      });
+      const deleteBtn = actions.createEl("button", { text: "Delete" });
+      deleteBtn.classList.add("almanac-button--danger");
+      deleteBtn.disabled = Boolean(state.managerUiState.deleteDialog?.isDeleting);
+      deleteBtn.addEventListener("click", () => {
+        void this.runDispatch({ type: "CALENDAR_DELETE_REQUESTED", calendarId: schema.id });
+      });
+      if (editState) {
+        const editRow = body.createEl("tr", { cls: "almanac-calendar-edit-row" });
+        const editCell = editRow.createEl("td", { attr: { colspan: "6" } });
+        const form = editCell.createEl("form", { cls: "almanac-edit-form" });
+        form.addEventListener("submit", (event) => {
+          event.preventDefault();
+          void this.runDispatch({ type: "CALENDAR_UPDATE_REQUESTED", calendarId: schema.id });
+        });
+        form.createEl("h4", { text: `Edit ${schema.name}` });
+        if (editState.errors.length > 0) {
+          const errorList = form.createEl("ul", { cls: "almanac-form-errors" });
+          editState.errors.forEach((message) => errorList.createEl("li", { text: message }));
+        }
+        if (editState.warnings.length > 0) {
+          const warningList = form.createEl("ul", { cls: "almanac-form-errors almanac-form-errors--warning" });
+          editState.warnings.forEach((message) => warningList.createEl("li", { text: message }));
+        }
+        const buildField = (label, field, options) => {
+          const wrapper = form.createEl("label", { cls: "almanac-modal__field" });
+          wrapper.createEl("span", { text: label });
+          if (options.multiline) {
+            const textarea = wrapper.createEl("textarea");
+            textarea.value = editState.draft[field];
+            textarea.disabled = editState.isSaving;
+            textarea.addEventListener("input", () => {
+              void this.runDispatch({
+                type: "CALENDAR_EDIT_FORM_UPDATED",
+                calendarId: schema.id,
+                field,
+                value: textarea.value
+              });
+            });
+          } else {
+            const input = wrapper.createEl("input");
+            input.type = options.type;
+            if (options.min) input.min = options.min;
+            if (options.step) input.step = options.step;
+            input.value = editState.draft[field];
+            input.disabled = editState.isSaving;
+            input.addEventListener("input", () => {
+              void this.runDispatch({
+                type: "CALENDAR_EDIT_FORM_UPDATED",
+                calendarId: schema.id,
+                field,
+                value: input.value
+              });
+            });
+          }
+        };
+        buildField("Name", "name", { type: "text" });
+        buildField("Description", "description", { type: "text", multiline: true });
+        buildField("Hours per day", "hoursPerDay", { type: "number", min: "1", step: "1" });
+        buildField("Minutes per hour", "minutesPerHour", { type: "number", min: "1", step: "1" });
+        buildField("Minute step", "minuteStep", { type: "number", min: "1", step: "1" });
+        const formActions = form.createDiv({ cls: "almanac-create-form__actions" });
+        const save = formActions.createEl("button", {
+          text: editState.isSaving ? "Saving\u2026" : "Save changes",
+          attr: { type: "submit" }
+        });
+        save.disabled = editState.isSaving;
+        const cancel = formActions.createEl("button", { text: "Cancel", attr: { type: "button" } });
+        cancel.disabled = editState.isSaving;
+        cancel.addEventListener("click", () => {
+          void this.runDispatch({ type: "CALENDAR_EDIT_CANCELLED", calendarId: schema.id });
+        });
+      }
     });
   }
   renderManagerCalendarView(host, state) {
+    const conflict = state.managerUiState.conflictDialog;
+    if (conflict) {
+      const banner = host.createDiv({ cls: "almanac-section almanac-section--error" });
+      banner.createEl("h3", { text: "Calendar conflict" });
+      banner.createEl("p", { text: conflict.message });
+      if (conflict.details.length > 0) {
+        const list = banner.createEl("ul", { cls: "almanac-form-errors" });
+        conflict.details.forEach((detail) => list.createEl("li", { text: detail }));
+      }
+      const dismiss = banner.createEl("button", { text: "Dismiss" });
+      dismiss.addEventListener("click", () => {
+        void this.runDispatch({ type: "CALENDAR_CONFLICT_DISMISSED" });
+      });
+    }
     const calendar = this.getActiveCalendar(state);
     if (!calendar) {
       host.createEl("p", { text: "No calendar selected.", cls: "almanac-empty" });
@@ -49868,6 +56595,7 @@ var AlmanacController = class {
         viewMode: option
       }));
     });
+    this.renderEventsActions(section, state);
     this.renderEventsFilters(section, state);
     if (state.eventsUiState.error) {
       const err = section.createDiv({ cls: "almanac-section almanac-section--error" });
@@ -49878,6 +56606,7 @@ var AlmanacController = class {
     if (!state.eventsUiState.phenomena.length) {
       contentSection.createEl("p", { text: "No phenomena match the current filters.", cls: "almanac-empty" });
       this.renderPhenomenonDetail(section, state);
+      this.renderEventsFooter(section, state);
       return;
     }
     switch (state.eventsUiState.viewMode) {
@@ -49888,10 +56617,11 @@ var AlmanacController = class {
         this.renderEventsTable(contentSection, state);
         break;
       case "map":
-        this.renderEventsMapPlaceholder(contentSection);
+        this.renderEventsMap(contentSection, state);
         break;
     }
     this.renderPhenomenonDetail(section, state);
+    this.renderEventsFooter(section, state);
   }
   renderPhenomenonDetail(section, state) {
     const detailSection = section.createDiv({ cls: "almanac-section almanac-phenomenon-detail" });
@@ -49909,7 +56639,20 @@ var AlmanacController = class {
     if (detail.category) {
       title.createEl("span", { text: ` (${detail.category})`, cls: "almanac-phenomenon-detail__category" });
     }
-    const closeButton = header.createEl("button", { text: "Close", cls: "almanac-control-button" });
+    const actions = header.createDiv({ cls: "almanac-phenomenon-detail__actions" });
+    const editButton = actions.createEl("button", {
+      text: "Edit",
+      cls: "almanac-control-button",
+      attr: { "data-action": "edit-phenomenon" }
+    });
+    editButton.addEventListener("click", () => {
+      this.runDispatch({ type: "PHENOMENON_EDIT_REQUESTED", phenomenonId: detail.id });
+    });
+    const closeButton = actions.createEl("button", {
+      text: "Close",
+      cls: "almanac-control-button",
+      attr: { "data-action": "close-detail" }
+    });
     closeButton.addEventListener("click", () => this.runDispatch({ type: "EVENTS_PHENOMENON_DETAIL_CLOSED" }));
     if (detail.notes) {
       detailSection.createEl("p", { text: detail.notes, cls: "almanac-phenomenon-detail__notes" });
@@ -49953,6 +56696,14 @@ var AlmanacController = class {
       entry.classList.toggle("is-active", item.id === selectedId);
       entry.tabIndex = 0;
       entry.setAttribute("role", "button");
+      const selectWrapper = entry.createDiv({ cls: "almanac-phenomena-timeline__select" });
+      const selectionCheckbox = selectWrapper.createEl("input", {
+        attr: { type: "checkbox", value: item.id, "data-role": "bulk-select" }
+      });
+      selectionCheckbox.checked = state.eventsUiState.bulkSelection.includes(item.id);
+      selectionCheckbox.addEventListener("change", () => {
+        this.toggleBulkSelection(item.id, selectionCheckbox.checked);
+      });
       const selectPhenomenon = () => {
         this.runDispatch({ type: "EVENTS_PHENOMENON_SELECTED", phenomenonId: item.id });
       };
@@ -49983,6 +56734,7 @@ var AlmanacController = class {
     const table = section.createEl("table", { cls: "almanac-phenomena-table" });
     const thead = table.createEl("thead");
     const headRow = thead.createEl("tr");
+    headRow.createEl("th", { text: "Select" });
     ["Name", "Category", "Next Occurrence", "Calendars"].forEach((label) => headRow.createEl("th", { text: label }));
     const tbody = table.createEl("tbody");
     state.eventsUiState.phenomena.forEach((item) => {
@@ -49990,6 +56742,14 @@ var AlmanacController = class {
       row.classList.toggle("is-active", item.id === state.eventsUiState.selectedPhenomenonId);
       row.tabIndex = 0;
       row.setAttribute("role", "button");
+      const selectCell = row.createEl("td", { cls: "almanac-phenomena-table__select" });
+      const selectCheckbox = selectCell.createEl("input", {
+        attr: { type: "checkbox", value: item.id, "data-role": "bulk-select" }
+      });
+      selectCheckbox.checked = state.eventsUiState.bulkSelection.includes(item.id);
+      selectCheckbox.addEventListener("change", () => {
+        this.toggleBulkSelection(item.id, selectCheckbox.checked);
+      });
       const selectPhenomenon = () => {
         this.runDispatch({ type: "EVENTS_PHENOMENON_SELECTED", phenomenonId: item.id });
       };
@@ -50006,10 +56766,13 @@ var AlmanacController = class {
       row.createEl("td", { text: item.linkedCalendars?.join(", ") ?? "\u2014" });
     });
   }
-  renderEventsMapPlaceholder(section) {
-    section.createEl("p", {
-      text: "Map view will plot phenomena across campaign regions (not yet implemented).",
-      cls: "almanac-empty"
+  renderEventsMap(section, state) {
+    const wrapper = document.createElement("div");
+    wrapper.classList.add("almanac-events__map");
+    wrapper.dataset.role = "events-map-container";
+    section.appendChild(wrapper);
+    renderEventsMap(wrapper, {
+      markers: state.eventsUiState.mapMarkers
     });
   }
   renderEventsFilters(section, state) {
@@ -50072,6 +56835,209 @@ var AlmanacController = class {
       });
     });
   }
+  renderEventsActions(section, state) {
+    const actions = section.createDiv({ cls: "almanac-events__actions" });
+    const addButton = actions.createEl("button", {
+      text: "Add phenomenon",
+      cls: "almanac-control-button",
+      attr: { "data-action": "add-phenomenon" }
+    });
+    addButton.addEventListener("click", () => {
+      this.runDispatch({ type: "PHENOMENON_EDIT_REQUESTED" });
+    });
+    const addSingleEventButton = actions.createEl("button", {
+      text: "Add single event",
+      cls: "almanac-control-button",
+      attr: { "data-action": "add-event-single" }
+    });
+    addSingleEventButton.addEventListener("click", () => {
+      this.runDispatch({ type: "EVENT_CREATE_REQUESTED", mode: "single" });
+    });
+    const addRecurringEventButton = actions.createEl("button", {
+      text: "Add recurring event",
+      cls: "almanac-control-button",
+      attr: { "data-action": "add-event-recurring" }
+    });
+    addRecurringEventButton.addEventListener("click", () => {
+      this.runDispatch({ type: "EVENT_CREATE_REQUESTED", mode: "recurring" });
+    });
+    const importButton = actions.createEl("button", {
+      text: "Import",
+      cls: "almanac-control-button",
+      attr: { "data-action": "import-phenomena" }
+    });
+    importButton.addEventListener("click", () => {
+      this.runDispatch({ type: "EVENT_IMPORT_REQUESTED" });
+    });
+    const exportButton = actions.createEl("button", {
+      text: "Export selected",
+      cls: "almanac-control-button",
+      attr: { "data-action": "export-selected" }
+    });
+    exportButton.disabled = state.eventsUiState.bulkSelection.length === 0;
+    exportButton.addEventListener("click", () => {
+      this.runDispatch({ type: "EVENT_BULK_ACTION_REQUESTED", action: "export" });
+    });
+    const deleteButton = actions.createEl("button", {
+      text: "Delete selected",
+      cls: "almanac-control-button",
+      attr: { "data-action": "delete-selected" }
+    });
+    deleteButton.disabled = state.eventsUiState.bulkSelection.length === 0;
+    deleteButton.addEventListener("click", () => {
+      this.runDispatch({ type: "EVENT_BULK_ACTION_REQUESTED", action: "delete" });
+    });
+  }
+  renderEventsFooter(section, state) {
+    if (state.eventsUiState.lastExportPayload) {
+      const exportSection = section.createDiv({ cls: "almanac-section almanac-events__export" });
+      exportSection.createEl("h3", { text: "Export Preview" });
+      const preview = exportSection.createEl("textarea", {
+        cls: "almanac-events__export-output",
+        attr: { readonly: "true", "data-role": "export-output" }
+      });
+      preview.rows = 6;
+      preview.spellcheck = false;
+      preview.value = state.eventsUiState.lastExportPayload;
+      const clearButton = exportSection.createEl("button", {
+        text: "Clear export",
+        cls: "almanac-control-button",
+        attr: { "data-action": "clear-export" }
+      });
+      clearButton.addEventListener("click", () => {
+        this.runDispatch({ type: "EVENT_EXPORT_CLEARED" });
+      });
+    }
+    const summary = state.eventsUiState.importSummary;
+    if (summary) {
+      const summarySection = section.createDiv({
+        cls: "almanac-events__import-summary",
+        attr: { "data-role": "import-summary" }
+      });
+      const parts = [`Imported ${summary.imported} phenomena`];
+      if (summary.failed > 0) {
+        parts.push(`Failed: ${summary.failed}`);
+      }
+      summarySection.setText(parts.join(" \u2022 "));
+    }
+  }
+  toggleBulkSelection(id, checked) {
+    const current = new Set(this.currentState?.eventsUiState.bulkSelection ?? []);
+    if (checked) {
+      current.add(id);
+    } else {
+      current.delete(id);
+    }
+    void this.runDispatch({
+      type: "EVENTS_BULK_SELECTION_UPDATED",
+      selection: Array.from(current)
+    });
+  }
+  syncDialogs(state) {
+    const eventsState = state.eventsUiState;
+    const phenomenonCalendars = state.calendarState.calendars.map((schema) => ({ id: schema.id, name: schema.name }));
+    const calendarOptions = state.calendarState.calendars.map((schema) => ({
+      id: schema.id,
+      name: schema.name,
+      daysPerWeek: schema.daysPerWeek,
+      months: schema.months.map((month) => ({
+        id: month.id,
+        name: month.name,
+        length: month.length
+      }))
+    }));
+    if (eventsState.isEditorOpen && eventsState.editorDraft) {
+      if (!this.phenomenonEditorModal) {
+        this.phenomenonEditorModal = new PhenomenonEditorModal(this.app, eventsState.editorDraft, {
+          calendars: phenomenonCalendars,
+          isSaving: eventsState.isSaving,
+          error: eventsState.editorError,
+          onSave: (draft) => {
+            void this.runDispatch({ type: "PHENOMENON_SAVE_REQUESTED", draft });
+          },
+          onCancel: () => {
+            void this.runDispatch({ type: "PHENOMENON_EDIT_CANCELLED" });
+          }
+        });
+        this.phenomenonEditorModal.open();
+      } else {
+        this.phenomenonEditorModal.update(eventsState.editorDraft, {
+          isSaving: eventsState.isSaving,
+          error: eventsState.editorError,
+          calendars: phenomenonCalendars
+        });
+      }
+    } else if (this.phenomenonEditorModal) {
+      this.phenomenonEditorModal.close();
+      this.phenomenonEditorModal = null;
+    }
+    if (eventsState.isEventEditorOpen && eventsState.eventEditorDraft) {
+      const mode = eventsState.eventEditorDraft.kind === "recurring" ? "recurring" : "single";
+      const config = {
+        mode,
+        calendars: calendarOptions,
+        errors: eventsState.eventEditorErrors,
+        preview: eventsState.eventEditorPreview,
+        isSaving: eventsState.isEventSaving,
+        submitError: eventsState.eventEditorError,
+        onUpdate: (update) => {
+          void this.runDispatch({ type: "EVENT_EDITOR_UPDATED", update });
+        },
+        onSubmit: () => {
+          void this.runDispatch({ type: "EVENT_EDITOR_SAVE_REQUESTED" });
+        },
+        onCancel: () => {
+          void this.runDispatch({ type: "EVENT_EDITOR_CANCELLED" });
+        },
+        onDelete: eventsState.eventEditorDraft.id ? () => {
+          void this.runDispatch({
+            type: "EVENT_DELETE_REQUESTED",
+            eventId: eventsState.eventEditorDraft.id
+          });
+        } : void 0
+      };
+      if (!this.eventEditorModal) {
+        this.eventEditorModal = new EventEditorModal(this.app, eventsState.eventEditorDraft, config);
+        this.eventEditorModal.open();
+      } else {
+        this.eventEditorModal.update(eventsState.eventEditorDraft, {
+          mode: config.mode,
+          calendars: config.calendars,
+          errors: config.errors,
+          preview: config.preview,
+          isSaving: config.isSaving,
+          submitError: config.submitError,
+          onDelete: config.onDelete
+        });
+      }
+    } else if (this.eventEditorModal) {
+      this.eventEditorModal.close();
+      this.eventEditorModal = null;
+    }
+    if (eventsState.isImportDialogOpen) {
+      if (!this.eventImportModal) {
+        this.eventImportModal = new EventImportDialog(this.app, {
+          isLoading: eventsState.isLoading,
+          error: eventsState.importError,
+          onSubmit: (payload) => {
+            void this.runDispatch({ type: "EVENT_IMPORT_SUBMITTED", payload });
+          },
+          onCancel: () => {
+            void this.runDispatch({ type: "EVENT_IMPORT_CANCELLED" });
+          }
+        });
+        this.eventImportModal.open();
+      } else {
+        this.eventImportModal.update({
+          isLoading: eventsState.isLoading,
+          error: eventsState.importError
+        });
+      }
+    } else if (this.eventImportModal) {
+      this.eventImportModal.close();
+      this.eventImportModal = null;
+    }
+  }
   getActiveCalendar(state) {
     const activeId = state.calendarState.activeCalendarId;
     if (!activeId) return null;
@@ -50081,21 +57047,1492 @@ var AlmanacController = class {
     const month = getMonthById(schema, timestamp.monthId);
     return formatTimestamp(timestamp, month?.name);
   }
+  ensureProtocolHandler() {
+    if (this.protocolRef || typeof this.app.workspace?.on !== "function") {
+      return;
+    }
+    const ref = this.app.workspace.on("url", this.handleProtocolUrl);
+    if (ref && typeof this.app.workspace?.offref === "function") {
+      this.protocolRef = ref;
+    }
+  }
+  parseDeepLink(rawUrl) {
+    if (!rawUrl) {
+      return null;
+    }
+    let url;
+    try {
+      url = new URL(rawUrl);
+    } catch (error) {
+      return null;
+    }
+    if (url.protocol !== "obsidian:") {
+      return null;
+    }
+    const host = url.hostname.toLowerCase();
+    if (!ALMANAC_PROTOCOL_HOSTS.has(host)) {
+      return null;
+    }
+    const overrides = {};
+    const segments = url.pathname.split("/").map((segment) => segment.trim().toLowerCase()).filter(Boolean);
+    if (segments[0] === "almanac") {
+      segments.shift();
+    }
+    if (segments[0]) {
+      const segmentMode = segments[0];
+      if (segmentMode === "dashboard" || segmentMode === "manager" || segmentMode === "events") {
+        overrides.mode = segmentMode;
+      }
+    }
+    const params = url.searchParams;
+    const modeParam = params.get("mode");
+    if (modeParam === "dashboard" || modeParam === "manager" || modeParam === "events") {
+      overrides.mode = modeParam;
+    }
+    const viewParam = params.get("view");
+    if (viewParam) {
+      if (MANAGER_VIEW_OPTIONS.includes(viewParam)) {
+        overrides.managerView = viewParam;
+      }
+      if (EVENT_VIEW_OPTIONS.includes(viewParam)) {
+        overrides.eventsView = viewParam;
+      }
+    }
+    const zoomParam = params.get("zoom");
+    if (zoomParam && MANAGER_ZOOM_OPTIONS.includes(zoomParam)) {
+      overrides.managerZoom = zoomParam;
+    }
+    if (params.has("phenomenon")) {
+      const focus = params.get("phenomenon");
+      overrides.selectedPhenomenonId = focus && focus.length > 0 ? focus : null;
+    }
+    if (params.has("travelId") || params.has("travel")) {
+      const travelId = params.get("travelId") ?? params.get("travel");
+      overrides.travelId = travelId && travelId.length > 0 ? travelId : null;
+    }
+    const hasValues = overrides.mode !== void 0 || overrides.managerView !== void 0 || overrides.managerZoom !== void 0 || overrides.eventsView !== void 0 || overrides.travelId !== void 0 || Object.prototype.hasOwnProperty.call(overrides, "selectedPhenomenonId");
+    return hasValues ? overrides : null;
+  }
+  syncDeepLink(state) {
+    if (!this.allowDeepLinkSync) {
+      return;
+    }
+    const url = this.buildDeepLinkUrl(state);
+    if (!url || url === this.lastDeepLinkUrl) {
+      return;
+    }
+    this.lastDeepLinkUrl = url;
+    if (typeof this.app.workspace?.trigger === "function") {
+      this.isSyncingDeepLink = true;
+      try {
+        this.app.workspace.trigger("url", url);
+      } finally {
+        this.isSyncingDeepLink = false;
+      }
+    }
+  }
+  buildDeepLinkUrl(state) {
+    const params = [];
+    const mode = state.almanacUiState.mode;
+    params.push(`mode=${encodeURIComponent(mode)}`);
+    const travelId = state.travelLeafState.travelId;
+    if (travelId) {
+      params.push(`travelId=${encodeURIComponent(travelId)}`);
+    }
+    if (mode === "manager") {
+      params.push(`view=${encodeURIComponent(state.managerUiState.viewMode)}`);
+      params.push(`zoom=${encodeURIComponent(state.managerUiState.zoom)}`);
+    } else if (mode === "events") {
+      params.push(`view=${encodeURIComponent(state.eventsUiState.viewMode)}`);
+      if (state.eventsUiState.selectedPhenomenonId) {
+        params.push(`phenomenon=${encodeURIComponent(state.eventsUiState.selectedPhenomenonId)}`);
+      }
+    }
+    const query = params.length > 0 ? `?${params.join("&")}` : "";
+    return `${ALMANAC_PROTOCOL_BASE}${query}`;
+  }
   runDispatch(event) {
     return this.stateMachine.dispatch(event).catch((error) => {
       console.error("Almanac dispatch error", error);
     });
   }
+  async openTimeJumpFromCartographer() {
+    this.showTimeJumpForm = true;
+    if (this.currentState && this.containerEl) {
+      this.render(this.currentState);
+    }
+  }
+  async handleTravelFollowUp(eventId) {
+    console.info("[almanac] travel follow-up requested", { eventId });
+    await this.runDispatch({ type: "ALMANAC_MODE_SELECTED", mode: "events" });
+  }
 };
 
+// src/apps/almanac/data/json-store.ts
+var import_obsidian32 = require("obsidian");
+var JsonStore = class {
+  constructor(vault, config) {
+    this.vault = vault;
+    this.config = config;
+    this.normalizedPath = (0, import_obsidian32.normalizePath)(config.path);
+  }
+  async read() {
+    const payload = await this.ensurePayload();
+    return clone(payload.data);
+  }
+  async update(updater) {
+    const payload = await this.ensurePayload();
+    const draft = clone(payload.data);
+    const result = updater(draft);
+    const nextData = result !== void 0 ? result : draft;
+    const nextPayload = { version: this.config.currentVersion, data: clone(nextData) };
+    await this.writePayload(nextPayload);
+    return clone(nextData);
+  }
+  async ensurePayload() {
+    const file = await this.ensureFile();
+    const raw = await this.vault.read(file);
+    if (!raw.trim()) {
+      const fallback = { version: this.config.currentVersion, data: this.config.initialData() };
+      await this.writePayload(fallback);
+      return fallback;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      const normalized = this.normalisePayload(parsed);
+      if (normalized.version !== this.config.currentVersion) {
+        const migrated = this.applyMigrations(normalized);
+        if (migrated.version !== this.config.currentVersion) {
+          const coerced = {
+            version: this.config.currentVersion,
+            data: migrated.data ?? this.config.initialData()
+          };
+          await this.writePayload(coerced);
+          return coerced;
+        }
+        await this.writePayload(migrated);
+        return migrated;
+      }
+      return normalized;
+    } catch (error) {
+      console.warn(`[salt-marcher] Failed to parse ${this.normalizedPath}, resetting file`, error);
+      const fallback = { version: this.config.currentVersion, data: this.config.initialData() };
+      await this.writePayload(fallback);
+      return fallback;
+    }
+  }
+  applyMigrations(payload) {
+    const migrations = this.config.migrations ?? {};
+    let current = payload;
+    const visited = /* @__PURE__ */ new Set();
+    while (current.version !== this.config.currentVersion) {
+      if (visited.has(current.version)) {
+        break;
+      }
+      visited.add(current.version);
+      const migrate = migrations[current.version];
+      if (!migrate) {
+        break;
+      }
+      current = migrate(current);
+    }
+    return current;
+  }
+  normalisePayload(payload) {
+    if (!payload || typeof payload !== "object") {
+      return { version: "0.0.0", data: this.config.initialData() };
+    }
+    const version = typeof payload.version === "string" && payload.version ? payload.version : "0.0.0";
+    const data = payload.data ?? this.config.initialData();
+    return { version, data };
+  }
+  async ensureFile() {
+    const existing = this.vault.getAbstractFileByPath(this.normalizedPath);
+    if (existing instanceof import_obsidian32.TFile) {
+      return existing;
+    }
+    await this.ensureParentFolder(this.normalizedPath);
+    const payload = { version: this.config.currentVersion, data: this.config.initialData() };
+    return this.vault.create(this.normalizedPath, serialise(payload));
+  }
+  async ensureParentFolder(path) {
+    const segments = path.split("/").slice(0, -1);
+    let current = "";
+    for (const segment of segments) {
+      current = current ? `${current}/${segment}` : segment;
+      const normalised = (0, import_obsidian32.normalizePath)(current);
+      if (this.vault.getAbstractFileByPath(normalised)) {
+        continue;
+      }
+      try {
+        await this.vault.createFolder(normalised);
+      } catch (error) {
+        if (this.vault.getAbstractFileByPath(normalised)) {
+          continue;
+        }
+        throw error;
+      }
+    }
+  }
+  async writePayload(payload) {
+    const file = await this.ensureFile();
+    await this.vault.modify(file, serialise(payload));
+  }
+};
+function serialise(payload) {
+  return `${JSON.stringify(payload, null, 2)}
+`;
+}
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+// src/apps/almanac/data/vault-calendar-repository.ts
+var CALENDAR_STORE_VERSION = "1.4.0";
+var CALENDAR_STORE_PATH = "SaltMarcher/Almanac/calendars.json";
+var VaultCalendarRepository = class {
+  constructor(vault) {
+    this.store = new JsonStore(vault, {
+      path: CALENDAR_STORE_PATH,
+      currentVersion: CALENDAR_STORE_VERSION,
+      initialData: () => ({ calendars: [], defaults: { global: null, travel: {} } }),
+      migrations: {
+        "0.0.0": (payload) => migrateLegacyCalendars(payload)
+      }
+    });
+  }
+  async listCalendars() {
+    const { calendars, defaults } = await this.store.read();
+    return calendars.map((calendar) => ({
+      ...calendar,
+      isDefaultGlobal: defaults.global === calendar.id,
+      defaultTravelIds: computeDefaultTravelIds(calendar.id, defaults.travel)
+    }));
+  }
+  async getCalendar(id) {
+    const { calendars, defaults } = await this.store.read();
+    const calendar = calendars.find((entry) => entry.id === id);
+    if (!calendar) {
+      return null;
+    }
+    return {
+      ...calendar,
+      isDefaultGlobal: defaults.global === calendar.id,
+      defaultTravelIds: computeDefaultTravelIds(calendar.id, defaults.travel)
+    };
+  }
+  async createCalendar(input) {
+    try {
+      await this.store.update((state) => {
+        if (state.calendars.some((calendar) => calendar.id === input.id)) {
+          throw new Error(`Calendar with ID ${input.id} already exists`);
+        }
+        const calendars = [...state.calendars, { ...input }];
+        const defaults = ensureDefaultsState(state.defaults);
+        if (input.isDefaultGlobal) {
+          defaults.global = input.id;
+        }
+        return { calendars, defaults };
+      });
+    } catch (error) {
+      reportAlmanacGatewayIssue({
+        operation: "calendar.repository.createCalendar",
+        scope: "calendar",
+        code: isCalendarRepositoryValidationError(error) ? "validation_error" : "io_error",
+        error,
+        context: { calendarId: input.id }
+      });
+      throw error;
+    }
+  }
+  async updateCalendar(id, input) {
+    try {
+      await this.store.update((state) => {
+        const index = state.calendars.findIndex((calendar) => calendar.id === id);
+        if (index === -1) {
+          throw new Error(`Calendar with ID ${id} not found`);
+        }
+        const calendars = [...state.calendars];
+        calendars[index] = { ...calendars[index], ...input };
+        return { calendars, defaults: ensureDefaultsState(state.defaults) };
+      });
+    } catch (error) {
+      reportAlmanacGatewayIssue({
+        operation: "calendar.repository.updateCalendar",
+        scope: "calendar",
+        code: isCalendarRepositoryValidationError(error) ? "validation_error" : "io_error",
+        error,
+        context: { calendarId: id }
+      });
+      throw error;
+    }
+  }
+  async deleteCalendar(id) {
+    try {
+      await this.store.update((state) => {
+        if (!state.calendars.some((calendar) => calendar.id === id)) {
+          throw new Error(`Calendar with ID ${id} not found`);
+        }
+        const calendars = state.calendars.filter((calendar) => calendar.id !== id);
+        const defaults = ensureDefaultsState(state.defaults);
+        if (defaults.global === id) {
+          defaults.global = null;
+        }
+        const travelEntries = Object.entries(defaults.travel);
+        for (const [travelId, calendarId] of travelEntries) {
+          if (calendarId === id) {
+            defaults.travel[travelId] = null;
+          }
+        }
+        return { calendars, defaults };
+      });
+    } catch (error) {
+      reportAlmanacGatewayIssue({
+        operation: "calendar.repository.deleteCalendar",
+        scope: "calendar",
+        code: isCalendarRepositoryValidationError(error) ? "validation_error" : "io_error",
+        error,
+        context: { calendarId: id }
+      });
+      throw error;
+    }
+  }
+  async setDefault(input) {
+    try {
+      await this.store.update((state) => {
+        if (!state.calendars.some((calendar) => calendar.id === input.calendarId)) {
+          throw new Error(`Calendar with ID ${input.calendarId} not found`);
+        }
+        const defaults = ensureDefaultsState(state.defaults);
+        if (input.scope === "global") {
+          defaults.global = input.calendarId;
+        } else if (input.scope === "travel" && input.travelId) {
+          defaults.travel[input.travelId] = input.calendarId;
+        }
+        return { calendars: state.calendars, defaults };
+      });
+    } catch (error) {
+      reportAlmanacGatewayIssue({
+        operation: "calendar.repository.setDefault",
+        scope: input.scope === "travel" ? "travel" : "default",
+        code: isCalendarRepositoryValidationError(error) ? "validation_error" : "io_error",
+        error,
+        context: { calendarId: input.calendarId, travelId: input.travelId ?? null }
+      });
+      throw error;
+    }
+  }
+  async getDefaults() {
+    const { defaults } = await this.store.read();
+    return ensureDefaultsState(defaults);
+  }
+  async getGlobalDefault() {
+    const { defaults } = await this.store.read();
+    return ensureDefaultsState(defaults).global;
+  }
+  async getTravelDefault(travelId) {
+    const { defaults } = await this.store.read();
+    const snapshot = ensureDefaultsState(defaults);
+    return snapshot.travel[travelId] ?? null;
+  }
+  async clearTravelDefault(travelId) {
+    try {
+      await this.store.update((state) => {
+        const defaults = ensureDefaultsState(state.defaults);
+        if (defaults.travel[travelId]) {
+          defaults.travel[travelId] = null;
+        }
+        return { calendars: state.calendars, defaults };
+      });
+    } catch (error) {
+      reportAlmanacGatewayIssue({
+        operation: "calendar.repository.clearTravelDefault",
+        scope: "travel",
+        code: isCalendarRepositoryValidationError(error) ? "validation_error" : "io_error",
+        error,
+        context: { travelId }
+      });
+      throw error;
+    }
+  }
+};
+function ensureDefaultsState(snapshot) {
+  return {
+    global: snapshot?.global ?? null,
+    travel: { ...snapshot?.travel ?? {} }
+  };
+}
+function computeDefaultTravelIds(calendarId, travel) {
+  return Object.entries(travel).filter(([, linkedId]) => linkedId === calendarId).map(([travelId]) => travelId);
+}
+function migrateLegacyCalendars(payload) {
+  const defaults = ensureDefaultsState(payload.data.defaults);
+  return {
+    version: CALENDAR_STORE_VERSION,
+    data: {
+      calendars: payload.data.calendars ?? [],
+      defaults
+    }
+  };
+}
+function isCalendarRepositoryValidationError(error) {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  return /already exists|not found|required/i.test(error.message);
+}
+
+// src/apps/almanac/data/vault-event-repository.ts
+init_calendar_timestamp();
+init_calendar_event();
+var EVENT_STORE_VERSION = "1.4.0";
+var EVENT_STORE_PATH = "SaltMarcher/Almanac/events.json";
+var VaultEventRepository = class {
+  constructor(calendars, vault) {
+    this.calendars = calendars;
+    this.store = new JsonStore(vault, {
+      path: EVENT_STORE_PATH,
+      currentVersion: EVENT_STORE_VERSION,
+      initialData: () => ({ eventsByCalendar: {} })
+    });
+  }
+  async listEvents(calendarId, range) {
+    const schema = await this.requireCalendar(calendarId);
+    const events = await this.readCalendarEvents(calendarId);
+    if (!range) {
+      return events;
+    }
+    const start = range.start;
+    const end = range.end;
+    return events.filter((event) => {
+      const anchor = getEventAnchorTimestamp(event) ?? event.date;
+      const afterStart = compareTimestampsWithSchema(schema, anchor, start) >= 0;
+      const beforeEnd = compareTimestampsWithSchema(schema, anchor, end) <= 0;
+      return afterStart && beforeEnd;
+    });
+  }
+  async listUpcoming(calendarId, limit) {
+    const schema = await this.requireCalendar(calendarId);
+    const events = await this.readCalendarEvents(calendarId);
+    const sorted = [...events].sort((a, b) => {
+      const aAnchor = getEventAnchorTimestamp(a) ?? a.date;
+      const bAnchor = getEventAnchorTimestamp(b) ?? b.date;
+      return compareTimestampsWithSchema(schema, aAnchor, bAnchor);
+    });
+    return sorted.slice(0, limit);
+  }
+  async createEvent(event) {
+    try {
+      await this.store.update((state) => {
+        const eventsByCalendar = { ...state.eventsByCalendar };
+        const events = [...eventsByCalendar[event.calendarId] ?? []];
+        if (events.some((entry) => entry.id === event.id)) {
+          throw new Error(`Event with ID ${event.id} already exists`);
+        }
+        events.push(event);
+        eventsByCalendar[event.calendarId] = events;
+        return { eventsByCalendar };
+      });
+    } catch (error) {
+      reportAlmanacGatewayIssue({
+        operation: "event.repository.createEvent",
+        scope: "event",
+        code: isEventRepositoryValidationError(error) ? "validation_error" : "io_error",
+        error,
+        context: { calendarId: event.calendarId, eventId: event.id }
+      });
+      throw error;
+    }
+  }
+  async updateEvent(id, event) {
+    try {
+      await this.store.update((state) => {
+        const eventsByCalendar = { ...state.eventsByCalendar };
+        let found = false;
+        for (const [calendarId, events] of Object.entries(eventsByCalendar)) {
+          const index = events.findIndex((entry) => entry.id === id);
+          if (index === -1) {
+            continue;
+          }
+          events[index] = { ...events[index], ...event };
+          eventsByCalendar[calendarId] = [...events];
+          found = true;
+        }
+        if (!found) {
+          throw new Error(`Event with ID ${id} not found`);
+        }
+        return { eventsByCalendar };
+      });
+    } catch (error) {
+      reportAlmanacGatewayIssue({
+        operation: "event.repository.updateEvent",
+        scope: "event",
+        code: isEventRepositoryValidationError(error) ? "validation_error" : "io_error",
+        error,
+        context: { eventId: id }
+      });
+      throw error;
+    }
+  }
+  async deleteEvent(id) {
+    try {
+      await this.store.update((state) => {
+        const eventsByCalendar = {};
+        let found = false;
+        for (const [calendarId, events] of Object.entries(state.eventsByCalendar)) {
+          const remaining = events.filter((event) => event.id !== id);
+          if (remaining.length !== events.length) {
+            found = true;
+          }
+          eventsByCalendar[calendarId] = remaining;
+        }
+        if (!found) {
+          throw new Error(`Event with ID ${id} not found`);
+        }
+        return { eventsByCalendar };
+      });
+    } catch (error) {
+      reportAlmanacGatewayIssue({
+        operation: "event.repository.deleteEvent",
+        scope: "event",
+        code: isEventRepositoryValidationError(error) ? "validation_error" : "io_error",
+        error,
+        context: { eventId: id }
+      });
+      throw error;
+    }
+  }
+  async getEventsInRange(calendarId, schema, start, end) {
+    const range = { calendarId, start, end };
+    return this.listEvents(calendarId, range);
+  }
+  async getUpcomingEvents(calendarId, schema, from, limit) {
+    const events = await this.listEvents(calendarId);
+    return events.filter((event) => {
+      const anchor = getEventAnchorTimestamp(event) ?? event.date;
+      return compareTimestampsWithSchema(schema, anchor, from) >= 0;
+    }).slice(0, limit);
+  }
+  async readCalendarEvents(calendarId) {
+    const state = await this.store.read();
+    return [...state.eventsByCalendar[calendarId] ?? []];
+  }
+  async requireCalendar(calendarId) {
+    const calendar = await this.calendars.getCalendar(calendarId);
+    if (!calendar) {
+      throw new Error(`Calendar with ID ${calendarId} not found`);
+    }
+    return calendar;
+  }
+};
+function isEventRepositoryValidationError(error) {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  return /already exists|not found/i.test(error.message);
+}
+
+// src/apps/almanac/data/vault-almanac-repository.ts
+init_calendar_timestamp();
+var PHENOMENA_STORE_VERSION = "1.4.0";
+var PHENOMENA_STORE_PATH = "SaltMarcher/Almanac/phenomena.json";
+var DEFAULT_PAGE_SIZE2 = 25;
+var VaultAlmanacRepository = class {
+  constructor(calendars, vault) {
+    this.calendars = calendars;
+    this.store = new JsonStore(vault, {
+      path: PHENOMENA_STORE_PATH,
+      currentVersion: PHENOMENA_STORE_VERSION,
+      initialData: () => ({ phenomena: [] })
+    });
+  }
+  async listPhenomena(input) {
+    if (!input) {
+      const state2 = await this.store.read();
+      return state2.phenomena.map((phenomenon) => ({ ...phenomenon }));
+    }
+    const state = await this.store.read();
+    const calendars = await this.calendars.listCalendars();
+    const calendarMap = new Map(calendars.map((calendar) => [calendar.id, calendar]));
+    const visible = state.phenomena.filter((phenomenon) => matchesFilters(phenomenon, input.filters, calendarMap));
+    const decorated = await Promise.all(
+      visible.map(async (phenomenon) => ({
+        phenomenon,
+        summary: await this.buildSummary(phenomenon, calendars)
+      }))
+    );
+    const sorted = sortSummaries(decorated, input.sort);
+    const { items, nextCursor } = paginate2(sorted, input.pagination ?? { limit: DEFAULT_PAGE_SIZE2 });
+    return {
+      items: items.map((entry) => entry.summary),
+      pagination: { cursor: nextCursor, hasMore: nextCursor !== void 0 },
+      generatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+  }
+  async getPhenomenon(id) {
+    const state = await this.store.read();
+    return state.phenomena.find((entry) => entry.id === id) ?? null;
+  }
+  async upsertPhenomenon(draft) {
+    try {
+      await this.store.update((state) => {
+        const phenomena = [...state.phenomena];
+        const index = phenomena.findIndex((entry) => entry.id === draft.id);
+        if (index === -1) {
+          phenomena.push({ ...draft });
+        } else {
+          phenomena[index] = { ...phenomena[index], ...draft };
+        }
+        return { phenomena };
+      });
+      const stored = await this.getPhenomenon(draft.id);
+      if (!stored) {
+        throw new AlmanacRepositoryError("validation_error", `Phenomenon ${draft.id} disappeared during update`);
+      }
+      return stored;
+    } catch (error) {
+      const code = error instanceof AlmanacRepositoryError ? error.code : "io_error";
+      reportAlmanacGatewayIssue({
+        operation: "phenomenon.repository.upsert",
+        scope: "phenomenon",
+        code,
+        error,
+        context: { phenomenonId: draft.id }
+      });
+      throw error;
+    }
+  }
+  async deletePhenomenon(id) {
+    try {
+      await this.store.update((state) => {
+        const remaining = state.phenomena.filter((entry) => entry.id !== id);
+        if (remaining.length === state.phenomena.length) {
+          throw new AlmanacRepositoryError("validation_error", `Phenomenon ${id} not found`);
+        }
+        return { phenomena: remaining };
+      });
+    } catch (error) {
+      const code = error instanceof AlmanacRepositoryError ? error.code : "io_error";
+      reportAlmanacGatewayIssue({
+        operation: "phenomenon.repository.delete",
+        scope: "phenomenon",
+        code,
+        error,
+        context: { phenomenonId: id }
+      });
+      throw error;
+    }
+  }
+  async updateLinks(update) {
+    try {
+      const phenomenon = await this.getPhenomenon(update.phenomenonId);
+      if (!phenomenon) {
+        throw new AlmanacRepositoryError("validation_error", `Phenomenon ${update.phenomenonId} not found`);
+      }
+      const calendars = await this.calendars.listCalendars();
+      const calendarSet = new Set(calendars.map((calendar) => calendar.id));
+      const duplicates = findDuplicateCalendarIds2(update.calendarLinks);
+      if (duplicates.length > 0) {
+        throw new AlmanacRepositoryError("phenomenon_conflict", "Calendar links contain duplicates", {
+          duplicates
+        });
+      }
+      for (const link of update.calendarLinks) {
+        if (!calendarSet.has(link.calendarId)) {
+          throw new AlmanacRepositoryError("validation_error", `Calendar ${link.calendarId} not found`, {
+            calendarId: link.calendarId
+          });
+        }
+      }
+      if (phenomenon.rule.type === "astronomical") {
+        const hasReference = Boolean(phenomenon.rule.referenceCalendarId);
+        const hasHookReference = update.calendarLinks.some(
+          (link) => link.hook && typeof link.hook.config?.referenceCalendarId === "string"
+        );
+        if (!hasReference && !hasHookReference) {
+          throw new AlmanacRepositoryError(
+            "astronomy_source_missing",
+            "Astronomical phenomena require a reference calendar"
+          );
+        }
+      }
+      await this.store.update((state) => {
+        const phenomena = [...state.phenomena];
+        const index = phenomena.findIndex((entry) => entry.id === phenomenon.id);
+        if (index === -1) {
+          throw new AlmanacRepositoryError("validation_error", `Phenomenon ${phenomenon.id} disappeared during update`);
+        }
+        const appliesToCalendarIds = update.calendarLinks.map((link) => link.calendarId);
+        const visibility = appliesToCalendarIds.length === 0 ? "all_calendars" : "selected";
+        const hooks = buildHooksFromLinks(update.calendarLinks, phenomenon);
+        const priority = update.calendarLinks.reduce((max, link) => Math.max(max, link.priority), phenomenon.priority);
+        phenomena[index] = {
+          ...phenomena[index],
+          appliesToCalendarIds,
+          visibility,
+          hooks,
+          priority
+        };
+        return { phenomena };
+      });
+      const stored = await this.getPhenomenon(update.phenomenonId);
+      if (!stored) {
+        throw new AlmanacRepositoryError(
+          "validation_error",
+          `Phenomenon ${update.phenomenonId} disappeared during update`
+        );
+      }
+      return stored;
+    } catch (error) {
+      const code = error instanceof AlmanacRepositoryError ? error.code : "io_error";
+      reportAlmanacGatewayIssue({
+        operation: "phenomenon.repository.updateLinks",
+        scope: "phenomenon",
+        code,
+        error,
+        context: { phenomenonId: update.phenomenonId }
+      });
+      throw error;
+    }
+  }
+  async listTemplates() {
+    const state = await this.store.read();
+    return state.phenomena.filter((phenomenon) => phenomenon.template).map((phenomenon) => ({
+      id: phenomenon.id,
+      name: phenomenon.name,
+      category: phenomenon.category,
+      rule: phenomenon.rule,
+      effects: phenomenon.effects
+    }));
+  }
+  async buildSummary(phenomenon, calendars) {
+    const nextOccurrence = await this.computeNextOccurrence(phenomenon, calendars);
+    const linkedCalendars = phenomenon.visibility === "all_calendars" ? calendars.map((calendar) => calendar.id) : phenomenon.appliesToCalendarIds;
+    return {
+      id: phenomenon.id,
+      name: phenomenon.name,
+      category: phenomenon.category,
+      nextOccurrence,
+      linkedCalendars,
+      badge: phenomenon.tags?.[0]
+    };
+  }
+  async computeNextOccurrence(phenomenon, calendars) {
+    const candidates = [];
+    for (const calendar of calendars) {
+      if (!isPhenomenonVisibleForCalendar(phenomenon, calendar.id)) {
+        continue;
+      }
+      const start = createDayTimestamp(
+        calendar.id,
+        calendar.epoch.year,
+        calendar.epoch.monthId,
+        calendar.epoch.day
+      );
+      const occurrence = computeNextPhenomenonOccurrence(phenomenon, calendar, calendar.id, start);
+      if (!occurrence) {
+        continue;
+      }
+      candidates.push({
+        calendar,
+        occurrence: {
+          calendarId: occurrence.calendarId,
+          occurrence: occurrence.timestamp,
+          timeLabel: formatTimestamp(
+            occurrence.timestamp,
+            calendar.months.find((month) => month.id === occurrence.timestamp.monthId)?.name
+          )
+        }
+      });
+    }
+    candidates.sort((a, b) => compareOccurrencesWithSchema(a, b));
+    return candidates[0]?.occurrence;
+  }
+};
+function matchesFilters(phenomenon, filters, calendars) {
+  if (filters.categories?.length) {
+    if (!filters.categories.includes(phenomenon.category)) {
+      return false;
+    }
+  }
+  if (filters.calendarIds?.length) {
+    const visibleCalendars = phenomenon.visibility === "all_calendars" ? Array.from(calendars.keys()) : phenomenon.appliesToCalendarIds;
+    const hasOverlap = filters.calendarIds.some((calendarId) => visibleCalendars.includes(calendarId));
+    if (!hasOverlap) {
+      return false;
+    }
+  }
+  return true;
+}
+function sortSummaries(summaries, sort) {
+  const copy = [...summaries];
+  copy.sort((a, b) => {
+    if (sort === "priority_desc") {
+      return b.phenomenon.priority - a.phenomenon.priority || a.summary.name.localeCompare(b.summary.name);
+    }
+    if (sort === "category_asc") {
+      return a.summary.category.localeCompare(b.summary.category) || a.summary.name.localeCompare(b.summary.name);
+    }
+    const aTime = a.summary.nextOccurrence?.occurrence;
+    const bTime = b.summary.nextOccurrence?.occurrence;
+    if (!aTime && !bTime) {
+      return a.summary.name.localeCompare(b.summary.name);
+    }
+    if (!aTime) {
+      return 1;
+    }
+    if (!bTime) {
+      return -1;
+    }
+    return compareTimestampTuples(aTime, bTime);
+  });
+  return copy;
+}
+function paginate2(entries, pagination) {
+  const offset = pagination.cursor ? Number.parseInt(pagination.cursor, 10) || 0 : 0;
+  const limit = pagination.limit ?? DEFAULT_PAGE_SIZE2;
+  const slice = entries.slice(offset, offset + limit);
+  const nextOffset = offset + slice.length;
+  const hasMore = nextOffset < entries.length;
+  return {
+    items: slice,
+    nextCursor: hasMore ? String(nextOffset) : void 0
+  };
+}
+function compareTimestampTuples(a, b) {
+  if (a.year !== b.year) {
+    return a.year - b.year;
+  }
+  if (a.monthId !== b.monthId) {
+    return a.monthId.localeCompare(b.monthId);
+  }
+  if (a.day !== b.day) {
+    return a.day - b.day;
+  }
+  if ((a.hour ?? 0) !== (b.hour ?? 0)) {
+    return (a.hour ?? 0) - (b.hour ?? 0);
+  }
+  return (a.minute ?? 0) - (b.minute ?? 0);
+}
+function compareOccurrencesWithSchema(a, b) {
+  const first = a.occurrence.occurrence;
+  const second = b.occurrence.occurrence;
+  if (first.calendarId === second.calendarId) {
+    return compareTimestampsWithSchema(a.calendar, first, second);
+  }
+  return compareTimestampTuples(first, second);
+}
+function findDuplicateCalendarIds2(links) {
+  const counts = /* @__PURE__ */ new Map();
+  for (const link of links) {
+    counts.set(link.calendarId, (counts.get(link.calendarId) ?? 0) + 1);
+  }
+  return Array.from(counts.entries()).filter(([, count]) => count > 1).map(([calendarId]) => calendarId);
+}
+function buildHooksFromLinks(links, phenomenon) {
+  const existing = phenomenon.hooks ?? [];
+  const linkedHooks = links.filter((link) => Boolean(link.hook)).map((link) => ({ ...link.hook, priority: link.priority }));
+  if (linkedHooks.length === 0) {
+    return existing;
+  }
+  return linkedHooks;
+}
+
+// src/apps/almanac/data/vault-calendar-state-gateway.ts
+init_calendar_event();
+init_calendar_schema();
+init_calendar_timestamp();
+init_time_arithmetic();
+var GLOBAL_SCOPE2 = "__global__";
+var STATE_STORE_VERSION = "1.0.0";
+var STATE_STORE_PATH = "SaltMarcher/Almanac/state.json";
+var VaultCalendarStateGateway = class {
+  constructor(calendarRepo, eventRepo, phenomenonRepo, vault, hookDispatcher) {
+    this.calendarRepo = calendarRepo;
+    this.eventRepo = eventRepo;
+    this.phenomenonRepo = phenomenonRepo;
+    this.hookDispatcher = hookDispatcher;
+    this.cache = createInitialStore();
+    this.initialised = false;
+    this.pendingMutations = [];
+    this.pendingFlushPromise = null;
+    this.pendingFlushResolve = null;
+    this.pendingFlushReject = null;
+    this.pendingFlushTimer = null;
+    this.activeFlush = null;
+    this.persistenceDebounceMs = 25;
+    this.store = new JsonStore(vault, {
+      path: STATE_STORE_PATH,
+      currentVersion: STATE_STORE_VERSION,
+      initialData: () => createInitialStore()
+    });
+    this.ready = this.store.read().then((data) => {
+      this.cache = normaliseStore(data);
+      this.initialised = true;
+    }).catch((error) => {
+      const gatewayError = createGatewayIoError("Failed to load calendar state store");
+      reportAlmanacGatewayIssue({
+        operation: "calendar.gateway.bootstrap",
+        scope: "calendar",
+        code: gatewayError.code,
+        error,
+        context: gatewayError.context
+      });
+      this.initialised = true;
+    });
+  }
+  async loadSnapshot(options) {
+    await this.ensureReady();
+    const travelId = options?.travelId ?? null;
+    const scope = this.ensureScope(travelId);
+    const effective = await this.resolveEffectiveCalendar(travelId);
+    const travelDefaultCalendarId = travelId ? await this.calendarRepo.getTravelDefault(travelId) : null;
+    if (!effective?.calendar) {
+      return {
+        activeCalendar: null,
+        currentTimestamp: null,
+        upcomingEvents: [],
+        upcomingPhenomena: [],
+        defaultCalendarId: effective?.isGlobalDefault ? effective.calendarId ?? null : null,
+        travelDefaultCalendarId,
+        isGlobalDefault: effective?.isGlobalDefault ?? false,
+        wasAutoSelected: effective?.wasAutoSelected ?? false
+      };
+    }
+    const activeCalendar = scope.activeCalendarId ? await this.calendarRepo.getCalendar(scope.activeCalendarId) : effective.calendar;
+    if (!activeCalendar) {
+      return {
+        activeCalendar: null,
+        currentTimestamp: null,
+        upcomingEvents: [],
+        upcomingPhenomena: [],
+        defaultCalendarId: effective.isGlobalDefault ? effective.calendar.id : null,
+        travelDefaultCalendarId,
+        isGlobalDefault: effective.isGlobalDefault,
+        wasAutoSelected: effective.wasAutoSelected
+      };
+    }
+    const upcomingEvents = scope.currentTimestamp ? await this.eventRepo.getUpcomingEvents(
+      activeCalendar.id,
+      activeCalendar,
+      scope.currentTimestamp,
+      5
+    ) : [];
+    const visiblePhenomena = await this.listVisiblePhenomena(activeCalendar);
+    const upcomingPhenomena = this.computeUpcomingPhenomenaForCalendar(
+      activeCalendar,
+      visiblePhenomena,
+      scope.currentTimestamp
+    );
+    return {
+      activeCalendar,
+      currentTimestamp: scope.currentTimestamp,
+      upcomingEvents,
+      upcomingPhenomena,
+      defaultCalendarId: effective.isGlobalDefault ? effective.calendar.id : null,
+      travelDefaultCalendarId,
+      isGlobalDefault: effective.isGlobalDefault,
+      wasAutoSelected: effective.wasAutoSelected
+    };
+  }
+  async setActiveCalendar(calendarId, options) {
+    await this.ensureReady();
+    const calendar = await this.calendarRepo.getCalendar(calendarId);
+    if (!calendar) {
+      const error = createGatewayValidationError(`Calendar with ID ${calendarId} not found`, {
+        calendarId,
+        travelId: options?.travelId ?? null
+      });
+      reportAlmanacGatewayIssue({
+        operation: "calendar.gateway.setActiveCalendar",
+        scope: options?.travelId ? "travel" : "calendar",
+        code: error.code,
+        error,
+        context: error.context
+      });
+      throw error;
+    }
+    await this.persistState((state) => {
+      const scope = this.ensureScope(options?.travelId ?? null, state);
+      scope.activeCalendarId = calendarId;
+      if (options?.initialTimestamp) {
+        scope.currentTimestamp = cloneTimestamp(options.initialTimestamp);
+        return;
+      }
+      if (scope.currentTimestamp && scope.currentTimestamp.calendarId === calendarId) {
+        return;
+      }
+      const firstMonth = calendar.months[0] ?? getMonthById(calendar, calendar.epoch.monthId);
+      scope.currentTimestamp = createDayTimestamp(
+        calendar.id,
+        calendar.epoch.year,
+        firstMonth?.id ?? calendar.epoch.monthId,
+        calendar.epoch.day
+      );
+    });
+  }
+  async setDefaultCalendar(calendarId, options) {
+    const scope = options?.scope ?? "global";
+    if (scope === "travel") {
+      const travelId = options?.travelId;
+      if (!travelId) {
+        const error = createGatewayValidationError("Travel ID required when persisting travel default", {
+          calendarId
+        });
+        reportAlmanacGatewayIssue({
+          operation: "calendar.gateway.setDefaultCalendar",
+          scope: "travel",
+          code: error.code,
+          error,
+          context: error.context
+        });
+        throw error;
+      }
+      await this.calendarRepo.setDefault({ calendarId, scope: "travel", travelId });
+      return;
+    }
+    await this.calendarRepo.setDefault({ calendarId, scope: "global" });
+  }
+  async setCurrentTimestamp(timestamp, options) {
+    await this.ensureReady();
+    await this.persistState((state) => {
+      const scope = this.ensureScope(options?.travelId ?? null, state);
+      if (!scope.activeCalendarId) {
+        const error = createGatewayValidationError("No active calendar set", {
+          travelId: options?.travelId ?? null
+        });
+        reportAlmanacGatewayIssue({
+          operation: "calendar.gateway.setCurrentTimestamp",
+          scope: options?.travelId ? "travel" : "calendar",
+          code: error.code,
+          error,
+          context: error.context
+        });
+        throw error;
+      }
+      if (timestamp.calendarId !== scope.activeCalendarId) {
+        const error = createGatewayValidationError("Timestamp calendar does not match active calendar", {
+          travelId: options?.travelId ?? null,
+          calendarId: timestamp.calendarId,
+          activeCalendarId: scope.activeCalendarId
+        });
+        reportAlmanacGatewayIssue({
+          operation: "calendar.gateway.setCurrentTimestamp",
+          scope: options?.travelId ? "travel" : "calendar",
+          code: error.code,
+          error,
+          context: error.context
+        });
+        throw error;
+      }
+      scope.currentTimestamp = cloneTimestamp(timestamp);
+    });
+  }
+  async advanceTimeBy(amount, unit, options) {
+    await this.ensureReady();
+    const travelId = options?.travelId ?? null;
+    const scope = this.ensureScope(travelId);
+    if (!scope.activeCalendarId || !scope.currentTimestamp) {
+      const error = createGatewayValidationError("No active calendar or current timestamp set", {
+        travelId,
+        activeCalendarId: scope.activeCalendarId
+      });
+      reportAlmanacGatewayIssue({
+        operation: "calendar.gateway.advanceTimeBy",
+        scope: travelId ? "travel" : "calendar",
+        code: error.code,
+        error,
+        context: error.context
+      });
+      throw error;
+    }
+    const calendar = await this.calendarRepo.getCalendar(scope.activeCalendarId);
+    if (!calendar) {
+      const error = createGatewayValidationError(`Calendar ${scope.activeCalendarId} not found`, {
+        travelId,
+        calendarId: scope.activeCalendarId
+      });
+      reportAlmanacGatewayIssue({
+        operation: "calendar.gateway.advanceTimeBy",
+        scope: travelId ? "travel" : "calendar",
+        code: error.code,
+        error,
+        context: error.context
+      });
+      throw error;
+    }
+    const visiblePhenomena = await this.listVisiblePhenomena(calendar);
+    const previousTimestamp = cloneTimestamp(scope.currentTimestamp);
+    const result = advanceTime(calendar, previousTimestamp, amount, unit);
+    const [triggeredEvents, triggeredPhenomena] = await Promise.all([
+      this.eventRepo.getEventsInRange(
+        scope.activeCalendarId,
+        calendar,
+        previousTimestamp,
+        result.timestamp
+      ),
+      Promise.resolve(
+        this.computeTriggeredPhenomenaBetween(
+          calendar,
+          visiblePhenomena,
+          previousTimestamp,
+          result.timestamp
+        )
+      )
+    ]);
+    const relevantEvents = triggeredEvents.filter(
+      (event) => compareTimestampsWithSchema(
+        calendar,
+        getEventAnchorTimestamp(event) ?? event.date,
+        previousTimestamp
+      ) > 0
+    );
+    const upcomingPhenomena = this.computeUpcomingPhenomenaForCalendar(
+      calendar,
+      visiblePhenomena,
+      result.timestamp
+    );
+    await this.persistState((state) => {
+      const scoped = this.ensureScope(travelId, state);
+      scoped.currentTimestamp = cloneTimestamp(result.timestamp);
+    });
+    if (this.hookDispatcher && (relevantEvents.length > 0 || triggeredPhenomena.length > 0)) {
+      try {
+        await this.hookDispatcher.dispatchHooks(relevantEvents, triggeredPhenomena, {
+          scope: travelId ? "travel" : "global",
+          travelId,
+          reason: "advance",
+          ...options?.hookContext
+        });
+      } catch (error) {
+        const causeMessage = error instanceof Error && error.message ? `: ${error.message}` : "";
+        const gatewayError = new CalendarGatewayError(
+          "io_error",
+          `Failed to dispatch hooks for time advance${causeMessage}`,
+          {
+            travelId,
+            scope: travelId ? "travel" : "global"
+          }
+        );
+        reportAlmanacGatewayIssue({
+          operation: "calendar.gateway.advanceTimeBy",
+          scope: travelId ? "travel" : "calendar",
+          code: gatewayError.code,
+          error,
+          context: gatewayError.context
+        });
+        throw gatewayError;
+      }
+    }
+    return {
+      timestamp: result.timestamp,
+      triggeredEvents: relevantEvents,
+      triggeredPhenomena,
+      upcomingPhenomena
+    };
+  }
+  async loadPreferences() {
+    await this.ensureReady();
+    return clonePreferences2(this.cache.preferences);
+  }
+  async savePreferences(partial) {
+    await this.ensureReady();
+    await this.persistState((state) => {
+      const merged = {
+        ...state.preferences,
+        ...partial
+      };
+      if (partial.lastZoomByMode) {
+        merged.lastZoomByMode = {
+          ...state.preferences.lastZoomByMode ?? {},
+          ...partial.lastZoomByMode
+        };
+      }
+      if (partial.eventsFilters) {
+        merged.eventsFilters = {
+          categories: [...partial.eventsFilters.categories ?? []],
+          calendarIds: [...partial.eventsFilters.calendarIds ?? []]
+        };
+      }
+      state.preferences = merged;
+    }, { debounce: true });
+  }
+  getCurrentTimestamp(options) {
+    if (!this.initialised) {
+      return null;
+    }
+    const scope = this.ensureScope(options?.travelId ?? null);
+    return scope.currentTimestamp ? cloneTimestamp(scope.currentTimestamp) : null;
+  }
+  getActiveCalendarId(options) {
+    if (!this.initialised) {
+      return null;
+    }
+    const scope = this.ensureScope(options?.travelId ?? null);
+    return scope.activeCalendarId ?? null;
+  }
+  async getTravelLeafPreferences(travelId) {
+    await this.ensureReady();
+    const prefs = this.cache.travelLeaf[travelId];
+    return prefs ? { ...prefs } : null;
+  }
+  async saveTravelLeafPreferences(travelId, prefs) {
+    await this.ensureReady();
+    await this.persistState((state) => {
+      state.travelLeaf[travelId] = { ...prefs };
+    }, { debounce: true });
+  }
+  async ensureReady() {
+    if (this.initialised) {
+      return;
+    }
+    await this.ready;
+    this.initialised = true;
+  }
+  ensureScope(travelId, state = this.cache) {
+    const key = travelId ?? GLOBAL_SCOPE2;
+    if (!state.scopes[key]) {
+      state.scopes[key] = { activeCalendarId: null, currentTimestamp: null };
+    }
+    if (state === this.cache) {
+      this.cache.scopes[key] = state.scopes[key];
+    }
+    return state.scopes[key];
+  }
+  async resolveEffectiveCalendar(travelId) {
+    if (travelId) {
+      const travelDefaultId = await this.calendarRepo.getTravelDefault(travelId);
+      if (travelDefaultId) {
+        const travelCalendar = await this.calendarRepo.getCalendar(travelDefaultId);
+        if (travelCalendar) {
+          return {
+            calendar: travelCalendar,
+            calendarId: travelDefaultId,
+            isGlobalDefault: false,
+            wasAutoSelected: false
+          };
+        }
+      }
+    }
+    const globalDefault = await this.calendarRepo.getGlobalDefault();
+    if (globalDefault) {
+      const calendar = await this.calendarRepo.getCalendar(globalDefault);
+      if (calendar) {
+        return {
+          calendar,
+          calendarId: globalDefault,
+          isGlobalDefault: true,
+          wasAutoSelected: false
+        };
+      }
+    }
+    const calendars = await this.calendarRepo.listCalendars();
+    if (calendars.length > 0) {
+      return {
+        calendar: calendars[0],
+        calendarId: calendars[0].id,
+        isGlobalDefault: false,
+        wasAutoSelected: true
+      };
+    }
+    return null;
+  }
+  async flushPendingPersistence() {
+    await this.flushDebouncedPersist();
+  }
+  async persistState(mutator, options) {
+    if (options?.debounce) {
+      return this.enqueueDebouncedPersist(mutator);
+    }
+    await this.flushDebouncedPersist();
+    await this.commitMutations([mutator]);
+  }
+  enqueueDebouncedPersist(mutator) {
+    this.pendingMutations.push(mutator);
+    if (!this.pendingFlushPromise) {
+      this.pendingFlushPromise = new Promise((resolve, reject) => {
+        this.pendingFlushResolve = resolve;
+        this.pendingFlushReject = reject;
+      });
+    }
+    if (this.pendingFlushTimer) {
+      clearTimeout(this.pendingFlushTimer);
+    }
+    this.pendingFlushTimer = setTimeout(() => {
+      void this.flushDebouncedPersist();
+    }, this.persistenceDebounceMs);
+    return this.pendingFlushPromise;
+  }
+  async flushDebouncedPersist() {
+    if (this.pendingFlushTimer) {
+      clearTimeout(this.pendingFlushTimer);
+      this.pendingFlushTimer = null;
+    }
+    if (this.activeFlush) {
+      return this.activeFlush;
+    }
+    if (this.pendingMutations.length === 0) {
+      if (this.pendingFlushPromise) {
+        this.pendingFlushResolve?.();
+        this.pendingFlushPromise = null;
+        this.pendingFlushResolve = null;
+        this.pendingFlushReject = null;
+      }
+      return;
+    }
+    const mutations = this.pendingMutations;
+    this.pendingMutations = [];
+    const resolve = this.pendingFlushResolve;
+    const reject = this.pendingFlushReject;
+    this.pendingFlushPromise = null;
+    this.pendingFlushResolve = null;
+    this.pendingFlushReject = null;
+    const flushOperation = this.commitMutations(mutations).then(() => {
+      resolve?.();
+    }).catch((error) => {
+      reject?.(error);
+      throw error;
+    }).finally(() => {
+      this.activeFlush = null;
+      if (this.pendingMutations.length > 0) {
+        void this.flushDebouncedPersist();
+      }
+    });
+    this.activeFlush = flushOperation;
+    await flushOperation;
+  }
+  async commitMutations(mutations) {
+    try {
+      await this.store.update((state) => {
+        const draft = normaliseStore(state);
+        for (const mutate of mutations) {
+          mutate(draft);
+        }
+        this.cache = normaliseStore(draft);
+        return this.cache;
+      });
+    } catch (error) {
+      const gatewayError = createGatewayIoError("Failed to persist calendar state");
+      reportAlmanacGatewayIssue({
+        operation: "calendar.gateway.persistState",
+        scope: "calendar",
+        code: gatewayError.code,
+        error,
+        context: gatewayError.context
+      });
+      throw gatewayError;
+    }
+  }
+  async listVisiblePhenomena(calendar) {
+    const phenomena = await this.phenomenonRepo.listPhenomena();
+    return phenomena.filter((phenomenon) => isPhenomenonVisibleForCalendar(phenomenon, calendar.id));
+  }
+  computeUpcomingPhenomenaForCalendar(calendar, phenomena, from, limit = 5) {
+    if (phenomena.length === 0) {
+      return [];
+    }
+    const anchor = from ?? createDayTimestamp(calendar.id, calendar.epoch.year, calendar.epoch.monthId, calendar.epoch.day);
+    const occurrences = [];
+    for (const phenomenon of phenomena) {
+      try {
+        const occurrence = computeNextPhenomenonOccurrence(
+          phenomenon,
+          calendar,
+          calendar.id,
+          anchor,
+          { includeStart: true }
+        );
+        if (occurrence) {
+          occurrences.push(occurrence);
+        }
+      } catch {
+        continue;
+      }
+    }
+    return sortOccurrencesByTimestamp(calendar, occurrences).slice(0, limit);
+  }
+  computeTriggeredPhenomenaBetween(calendar, phenomena, start, end) {
+    if (phenomena.length === 0) {
+      return [];
+    }
+    const occurrences = [];
+    for (const phenomenon of phenomena) {
+      try {
+        const result = computePhenomenonOccurrencesInRange(
+          phenomenon,
+          calendar,
+          calendar.id,
+          start,
+          end
+        );
+        occurrences.push(...result);
+      } catch {
+        continue;
+      }
+    }
+    return sortOccurrencesByTimestamp(calendar, occurrences);
+  }
+};
+function clonePreferences2(preferences) {
+  const base = preferences ?? {};
+  return {
+    ...base,
+    lastZoomByMode: base.lastZoomByMode ? { ...base.lastZoomByMode } : void 0,
+    eventsFilters: base.eventsFilters ? {
+      categories: [...base.eventsFilters.categories],
+      calendarIds: [...base.eventsFilters.calendarIds]
+    } : void 0
+  };
+}
+function cloneTimestamp(timestamp) {
+  return { ...timestamp };
+}
+function normaliseStore(input) {
+  const scopes = { ...input.scopes };
+  if (!scopes[GLOBAL_SCOPE2]) {
+    scopes[GLOBAL_SCOPE2] = { activeCalendarId: null, currentTimestamp: null };
+  }
+  return {
+    scopes,
+    preferences: clonePreferences2(input.preferences),
+    travelLeaf: { ...input.travelLeaf ?? {} }
+  };
+}
+function createInitialStore() {
+  return {
+    scopes: { [GLOBAL_SCOPE2]: { activeCalendarId: null, currentTimestamp: null } },
+    preferences: {},
+    travelLeaf: {}
+  };
+}
+
 // src/apps/almanac/index.ts
+init_cartographer_gateway();
+function createAlmanacController(app) {
+  const calendarRepo = new VaultCalendarRepository(app.vault);
+  const eventRepo = new VaultEventRepository(calendarRepo, app.vault);
+  const almanacRepo = new VaultAlmanacRepository(calendarRepo, app.vault);
+  const gateway = new VaultCalendarStateGateway(
+    calendarRepo,
+    eventRepo,
+    almanacRepo,
+    app.vault,
+    cartographerHookGateway
+  );
+  return new AlmanacController(app, {
+    calendarRepo,
+    eventRepo,
+    phenomenonRepo: almanacRepo,
+    gateway
+  });
+}
 var VIEW_TYPE_ALMANAC = "almanac-view";
 var VIEW_ALMANAC = VIEW_TYPE_ALMANAC;
-var AlmanacView = class extends import_obsidian30.ItemView {
+var AlmanacView = class extends import_obsidian33.ItemView {
   constructor(leaf) {
     super(leaf);
     this.hostEl = null;
-    this.controller = new AlmanacController(this.app);
+    this.controller = createAlmanacController(this.app);
   }
   getViewType() {
     return VIEW_TYPE_ALMANAC;
@@ -52257,19 +60694,6 @@ var HEX_PLUGIN_CSS_SECTIONS = {
 };
 var HEX_PLUGIN_CSS = Object.values(HEX_PLUGIN_CSS_SECTIONS).join("\n\n");
 
-// src/app/integration-telemetry.ts
-var import_obsidian31 = require("obsidian");
-var notifiedOperations = /* @__PURE__ */ new Set();
-function reportIntegrationIssue(payload) {
-  const { integrationId, operation, error, userMessage } = payload;
-  const logPrefix = `[salt-marcher] integration(${integrationId}) ${operation} failed`;
-  console.error(logPrefix, error);
-  const dedupeKey = `${integrationId}:${operation}`;
-  if (notifiedOperations.has(dedupeKey)) return;
-  notifiedOperations.add(dedupeKey);
-  new import_obsidian31.Notice(userMessage);
-}
-
 // src/app/bootstrap-services.ts
 init_terrain_store();
 init_terrain();
@@ -52354,7 +60778,7 @@ function createTerrainBootstrap(app, config = {}) {
 }
 
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian35.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian37.Plugin {
   async onload() {
     try {
       const { shouldImportPluginPresets: shouldImportPluginPresets2, importPluginPresets: importPluginPresets2 } = await Promise.resolve().then(() => (init_plugin_presets(), plugin_presets_exports));

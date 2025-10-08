@@ -41,7 +41,7 @@ export const gregorianSchema: CalendarSchema = {
     { id: 'dec', name: 'December', length: 31 },
   ],
   epoch: {
-    year: 1,
+    year: 2024,
     monthId: 'jan',
     day: 1,
   },

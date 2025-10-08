@@ -14,15 +14,12 @@ import type { CalendarEvent } from "../domain/calendar-event";
 import type { PhenomenonOccurrence } from "../domain/phenomenon";
 
 export type AlmanacMode = "dashboard" | "manager" | "events";
-export type CalendarManagerViewMode = "calendar" | "overview";
+export type AlmanacContentMode = "dashboard" | "events" | "manager";
+export type CalendarViewMode = "month" | "week" | "day" | "upcoming";
+export type CalendarManagerViewMode = "overview"; // Note: "calendar" mode moved to top-level CalendarView
 export type CalendarViewZoom = "month" | "week" | "day" | "hour";
 export type EventsViewMode = "timeline" | "table" | "map";
 export type TravelCalendarMode = "month" | "week" | "day" | "upcoming";
-
-export interface AlmanacBreadcrumb {
-    readonly label: string;
-    readonly mode: AlmanacMode;
-}
 
 export interface AlmanacStatusSummary {
     readonly zoomLabel?: string;
@@ -68,6 +65,19 @@ export interface AlmanacUiStateSlice {
     readonly error?: string;
 }
 
+/**
+ * State for the persistent calendar view (upper section in split-view layout).
+ * This view is always visible and shows month/week/day/upcoming events.
+ */
+export interface CalendarViewState {
+    readonly mode: CalendarViewMode;
+    readonly zoom: CalendarViewZoom;
+    readonly anchorTimestamp: CalendarTimestamp | null;
+    readonly events: ReadonlyArray<CalendarEvent>;
+    readonly isLoading: boolean;
+    readonly error?: string;
+}
+
 export interface CalendarCreateDraft {
     readonly id: string;
     readonly name: string;
@@ -108,12 +118,16 @@ export interface CalendarConflictDialogState {
     readonly details: ReadonlyArray<string>;
 }
 
+/**
+ * State for the Manager content tab (lower section in split-view layout).
+ * Now only handles calendar overview (list/grid), not calendar view.
+ */
 export interface ManagerUiStateSlice {
-    readonly viewMode: CalendarManagerViewMode;
-    readonly zoom: CalendarViewZoom;
+    readonly viewMode: CalendarManagerViewMode; // Only "overview" now
     readonly isLoading: boolean;
     readonly error?: string;
     readonly selection: ReadonlyArray<string>;
+    readonly layout: "grid" | "list";
     readonly anchorTimestamp: CalendarTimestamp | null;
     readonly agendaItems: ReadonlyArray<CalendarEvent>;
     readonly jumpPreview: ReadonlyArray<CalendarEvent>;
@@ -262,6 +276,7 @@ export interface ImportSummary {
 export interface AlmanacState {
     readonly calendarState: CalendarStateSlice;
     readonly almanacUiState: AlmanacUiStateSlice;
+    readonly calendarViewState: CalendarViewState;
     readonly managerUiState: ManagerUiStateSlice;
     readonly eventsUiState: EventsUiStateSlice;
     readonly travelLeafState: TravelLeafStateSlice;
@@ -464,12 +479,20 @@ export function createInitialAlmanacState(): AlmanacState {
             isLoading: false,
             error: undefined,
         },
+        calendarViewState: {
+            mode: 'month',
+            zoom: DEFAULT_MANAGER_ZOOM,
+            anchorTimestamp: null,
+            events: [],
+            isLoading: false,
+            error: undefined,
+        },
         managerUiState: {
             viewMode: DEFAULT_MANAGER_VIEW_MODE,
-            zoom: DEFAULT_MANAGER_ZOOM,
             isLoading: false,
             error: undefined,
             selection: [],
+            layout: 'grid',
             anchorTimestamp: null,
             agendaItems: [],
             jumpPreview: [],

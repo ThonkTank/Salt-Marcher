@@ -9,7 +9,7 @@ Dieses Dokument beschreibt UI-Komponenten für den Almanac-Workmode. Es ergänzt
 ### 1.1 Layer & Prefix-Naming
 | Layer | Präfix | Inhalt | Notizen |
 | --- | --- | --- | --- |
-| Shell | `almanac` | `AlmanacShell`, Switcher, Breadcrumbs, Statusleiste | Kapselt ausschließlich `Almanac › Dashboard/Manager/Events`; bietet Travel-Indikator. |
+| Shell | `almanac` | `AlmanacShell`, Switcher, Statusleiste | Kapselt ausschließlich `Almanac › Dashboard/Manager/Events`; bietet Travel-Indikator. |
 | Mode | `dashboard`, `manager`, `events` | Bildschirm-spezifische Container und Editor-Komponenten | Jede Mode-Komponente konsumiert Domain-DTOs, keine direkten Repository-Aufrufe. |
 | Shared | `calendar`, `event`, `phenomenon` | Tabellen, Filter, Dialoge, Rule-Editoren | Wiederverwendbar zwischen Modi. |
 | Travel (Cartographer) | `travel` | Kompakte Leaf-Komponenten für Reisemodus | Wird von `apps/cartographer/travel` gemountet; nutzt gemeinsame DTOs. |
@@ -18,14 +18,55 @@ Dieses Dokument beschreibt UI-Komponenten für den Almanac-Workmode. Es ergänzt
 - Cross-Layer-Komposition erfolgt nur top-down (Shell → Mode → Shared). Travel importiert ausschließlich Shared-Komponenten und eigene Travel-spezifische Wrapper.
 
 ## 2. Shell-Layer {#almanac-komponenten}
-### 2.1 `AlmanacShell`
-- **Responsibility**: Parent-Layout für `Almanac › Dashboard`, `Almanac › Manager`, `Almanac › Events` inkl. Breadcrumbs, Mode-Persistenz, Statusleiste und Travel-Status-Indikator.
+
+### 2.1 Split-View-Layout (**NEU**)
+Ab der aktuellen Version nutzt Almanac ein Split-View-Layout mit zwei Hauptbereichen:
+
+#### 2.1.1 `CalendarViewContainer` (Oberer Bereich)
+- **Responsibility**: Persistente Kalenderansicht mit 4 Modi (Monat/Woche/Tag/Nächste Events)
+- **Location**: `src/apps/almanac/mode/components/calendar-view-container.ts`
+- **Verwendet**: Shared `createTabNavigation()` aus `ui/workmode`
+- **Props**:
+  ```ts
+  interface CalendarViewContainerConfig {
+    readonly mode: CalendarViewMode; // 'month' | 'week' | 'day' | 'upcoming'
+    readonly state: CalendarViewState;
+    readonly onModeChange: (mode: CalendarViewMode) => void;
+    readonly onNavigate: (direction: 'prev' | 'next' | 'today') => void;
+    readonly onEventCreate: (timestamp?: CalendarTimestamp) => void;
+    readonly onEventSelect: (eventId: string) => void;
+  }
+  ```
+- **Enthält**: Tab-Navigation, Kalender-Grid/Timeline/Liste, Navigation-Controls
+
+#### 2.1.2 `AlmanacContentContainer` (Unterer Bereich)
+- **Responsibility**: Tabbed Content-Bereich für Dashboard/Events/Manager
+- **Location**: `src/apps/almanac/mode/components/almanac-content-container.ts`
+- **Verwendet**: Shared `createTabNavigation()` aus `ui/workmode`
+- **Props**:
+  ```ts
+  interface AlmanacContentContainerConfig {
+    readonly mode: AlmanacContentMode; // 'dashboard' | 'events' | 'manager'
+    readonly onModeChange: (mode: AlmanacContentMode) => void;
+  }
+  ```
+- **Enthält**: Tab-Navigation, Container-Elemente für jeden Modus
+
+#### 2.1.3 Shared UI Infrastructure
+Die Split-View-Komponenten nutzen wiederverwendbare UI-Komponenten aus `src/ui/workmode`:
+- `createTabNavigation()` - Tab-Navigation mit Keyboard-Support
+- `createSplitView()` - Resizable Split-Container
+- `BaseModeRenderer` - Basis-Renderer-Pattern
+- `WatcherHub` - Generischer File-Watcher-Hub
+
+### 2.2 `AlmanacShell` (Legacy/Deprecated)
+- **Responsibility**: Parent-Layout für `Almanac › Dashboard`, `Almanac › Manager`, `Almanac › Events` inkl. Mode-Persistenz, Statusleiste und Travel-Status-Indikator.
+- **Note**: Diese Komponente wird durch das neue Split-View-Layout ersetzt.
 - **Props**
   ```ts
   interface AlmanacShellProps {
     activeMode: AlmanacMode; // 'dashboard' | 'manager' | 'events'
     modeOptions: ReadonlyArray<{ mode: AlmanacMode; label: string; badgeCount?: number; icon: string }>;
-    breadcrumbs: ReadonlyArray<AlmanacBreadcrumb>;
     statusSummary?: AlmanacStatusSummary; // z.B. { zoomLabel: string; filterCount: number }
     isLoading: boolean;
     onSelectMode: (mode: AlmanacMode) => void;
@@ -59,17 +100,6 @@ Dieses Dokument beschreibt UI-Komponenten für den Almanac-Workmode. Es ergänzt
 - **Events**: `onSelect` → `ALMANAC_MODE_SELECTED`.
 - **Styling**: Sidebar nutzt `ui/NavList`, Dropdown `ui/Menu`; aktive Einträge mit Accent-Border.
 - **Accessibility**: `role="tablist"` im Sidebar-Modus, `aria-activedescendant` für Screenreader.
-
-### 2.3 `AlmanacBreadcrumbs`
-- **Responsibility**: Breadcrumb + Zurück-Aktion pro Modus.
-- **Props**
-  ```ts
-  interface AlmanacBreadcrumbsProps {
-    items: ReadonlyArray<AlmanacBreadcrumb>;
-    onNavigate: (target: AlmanacBreadcrumb) => void;
-  }
-  ```
-- **Styling**: basiert auf `ui/Breadcrumbs`, enthält optional sekundäre Aktionen (z.B. „Letzten Modus öffnen“).
 
 ## 3. Mode-Komponenten – Almanac {#calendar-ui-komponenten}
 ### 3.1 Almanac › Dashboard
@@ -508,7 +538,6 @@ Textuelles Diagramm (→ inkludiert/enthält):
 ```
 AlmanacShell
  ├─ AlmanacModeSwitcher (sidebar/dropdown)
- ├─ AlmanacBreadcrumbs
  ├─ StatusBar (anzeigt Zoom/Filter)
  └─ {slot} ActiveModeContent
       ├─ (dashboard) CalendarDashboard

@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // Standalone Script zum Konvertieren von Reference Statblöcken zu Presets
 // Verwendung: node scripts/convert-references.mjs [--limit N] [--dry-run]
 

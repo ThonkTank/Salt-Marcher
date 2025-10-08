@@ -2,6 +2,8 @@
  * Minimal MVP Styles for Almanac
  */
 
+@import "../../ui/workmode/styles.css";
+
 .almanac-host {
   padding: 20px;
   height: 100%;
@@ -240,61 +242,4 @@
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-}
-
-.almanac-shell__breadcrumbs {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  color: var(--text-muted);
-  font-size: 12px;
-}
-
-.almanac-breadcrumbs__back {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--text-muted);
-  font-size: inherit;
-  cursor: pointer;
-}
-
-.almanac-breadcrumbs__back:hover,
-.almanac-breadcrumbs__back:focus {
-  color: var(--text-normal);
-}
-
-.almanac-breadcrumbs__items {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.almanac-breadcrumbs__divider {
-  color: var(--text-faint);
-}
-
-.almanac-breadcrumbs__item {
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--text-muted);
-  font-size: inherit;
-  cursor: pointer;
-}
-
-.almanac-breadcrumbs__item:hover,
-.almanac-breadcrumbs__item:focus {
-  color: var(--text-normal);
-}
-
-.almanac-breadcrumbs__item--active {
-  color: var(--text-normal);
-  font-weight: 600;
-  cursor: default;
 }

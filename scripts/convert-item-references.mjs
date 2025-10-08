@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // Standalone script to convert reference items to presets
 // Usage: node scripts/convert-item-references.mjs [--limit N] [--dry-run]
 

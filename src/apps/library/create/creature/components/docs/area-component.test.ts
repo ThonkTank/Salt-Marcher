@@ -11,8 +11,8 @@ import {
   fromAreaComponentType,
   validateAreaComponent,
   type AreaInstance,
-} from "./area-component";
-import type { AreaComponent } from "./types";
+} from "../ui-components";
+import type { AreaComponent } from "../types";
 
 // Mock DOM environment for testing
 const setupDOM = () => {

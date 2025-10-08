@@ -5,21 +5,33 @@ Dieses Dokument beschreibt die textuellen Wireframes für den Almanac-Workmode. 
 - Alle Layouts basieren auf Obsidian-Panes mit 960px Breite (Standard) und beschreiben zusätzlich das Verhalten unter 520px (schmale Pane).
 - Komponenten-Bezeichner entsprechen denen in der Komponenten-Spezifikation.
 - Legende: `[ ]` Interaktive Elemente, `( )` Statusflächen, `{ }` Toolbars.
+- **NEU**: Split-View-Layout mit persistenter Kalenderansicht oben und Content-Tabs unten.
 
-## 2. Almanac-Shell
+## 2. Almanac-Shell (Split-View-Layout)
 ### 2.1 Layout (Breit)
 ```
 +---------------------------------------------------------------+
-| {AlmanacToolbar: [Dashboard] [Manager] [Events]  | Travel ↗ } |
-| {Breadcrumbs: Almanac / <Modus>                     [Einstellungen]}|
-+---------------+-----------------------------------------------+
-| {Sidebar}     | {Content Area}                                |
-| [Dashboard]▶  | (gerenderter Modus, siehe jeweilige Abschnitte)|
-| [Manager]     |                                               |
-| [Events]      |                                               |
-| (Travel-Status: Aktiv · Öffnen ↗)                             |
-+---------------+-----------------------------------------------+
-| Statusleiste: Modus: Events · Zoom: Monat · Filter: 3 aktiv    |
+| {AlmanacShell}                                                |
++---------------------------------------------------------------+
+| {CalendarViewContainer - Oberer Bereich (60%)}               |
+| +-----------------------------------------------------------+ |
+| | Tabs: [Monat▶] [Woche] [Tag] [Nächste]      [◀][Heute][▶]| |
+| +-----------------------------------------------------------+ |
+| | (Kalenderansicht: Monat/Woche/Tag/Nächste Events)         | |
+| | Grid/Timeline/Liste mit Events                             | |
+| +-----------------------------------------------------------+ |
++---------------------------------------------------------------+
+| ═══════════════════════════ RESIZER ═════════════════════════|
++---------------------------------------------------------------+
+| {ContentContainer - Unterer Bereich (40%)}                   |
+| +-----------------------------------------------------------+ |
+| | Tabs: [Dashboard] [Events] [Manager]                      | |
+| +-----------------------------------------------------------+ |
+| | (Content Area: Aktiver Tab-Inhalt)                        | |
+| | - Dashboard: Aktuelle Zeit, Quick-Actions, Filter, Log     | |
+| | - Events: Phänomene-Liste, Timeline/Table/Map              | |
+| | - Manager: Kalender-Übersicht, Einstellungen              | |
+| +-----------------------------------------------------------+ |
 +---------------------------------------------------------------+
 ```
 
@@ -172,7 +184,7 @@ Dieses Dokument beschreibt die textuellen Wireframes für den Almanac-Workmode. 
 ### 4.2 Kalenderansicht – Monatsmodus (Breit)
 ```
 +----------------------------------------------------------------+
-| {Breadcrumb: Kalenderansicht > Monat (Oberwasser)}             |
+| {ManagerHeader: Kalenderansicht · Monat (Oberwasser)}             |
 | {Secondary: [◀] [Heute] [▶]  Datum-Picker [···]}               |
 +----------------------------------------------------------------+
 |  Mo   Tu   We   Th   Fr   Sa   Su                              |

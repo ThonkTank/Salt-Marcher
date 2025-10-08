@@ -401,7 +401,7 @@ function renderSpellcasting(lines: string[], d: StatblockData, spellcasting: Spe
     if (saveDc != null) summaryParts.push(`Spell save DC ${saveDc}`);
     if (attackBonus != null) summaryParts.push(`${fmtSigned(attackBonus)} to hit with spell attacks`);
     if (summaryParts.length) {
-        lines.push(`*${summaryParts.join(", ")}`);
+        lines.push(`*${summaryParts.join(", ")}*`);
         lines.push("");
     }
     if (spellcasting.notes && spellcasting.notes.length) {
@@ -470,4 +470,3 @@ function formatSpellLevelHeading(level: number): string {
 export async function createCreatureFile(app: App, d: StatblockData): Promise<TFile> {
     return CREATURE_PIPELINE.create(app, d);
 }
-

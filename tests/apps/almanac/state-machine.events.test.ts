@@ -119,7 +119,7 @@ describe("AlmanacStateMachine events refresh", () => {
         expect(state.almanacUiState.mode).toBe("events");
         expect(state.eventsUiState.viewMode).toBe("map");
         expect(state.managerUiState.viewMode).toBe("overview");
-        expect(state.managerUiState.zoom).toBe("week");
+        expect(state.calendarViewState.zoom).toBe("week");
         expect(state.eventsUiState.selectedPhenomenonId).toBe("phen-harvest-moon");
         expect(state.eventsUiState.selectedPhenomenonDetail?.id).toBe("phen-harvest-moon");
     });

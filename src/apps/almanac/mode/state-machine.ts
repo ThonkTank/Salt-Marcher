@@ -336,7 +336,7 @@ export class AlmanacStateMachine {
                     : { filterCount: upcoming };
             }
             case "manager": {
-                const zoomLabel = ZOOM_LABEL[state.managerUiState.zoom];
+                const zoomLabel = ZOOM_LABEL[state.calendarViewState.zoom];
                 const filterCount = state.managerUiState.selection.length;
                 return { zoomLabel, filterCount: filterCount > 0 ? filterCount : undefined };
             }
@@ -473,17 +473,24 @@ export class AlmanacStateMachine {
                     error: undefined,
                     lastZoomByMode,
                 };
+
+                // Initialize calendar view state (upper split-view section)
+                draft.calendarViewState = {
+                    mode: 'month',
+                    zoom,
+                    anchorTimestamp: calendarSlice.currentTimestamp,
+                    events: calendarSlice.upcomingEvents,
+                    isLoading: false,
+                    error: undefined,
+                };
+
                 draft.managerUiState = {
                     ...draft.managerUiState,
                     viewMode: managerViewMode,
-                    zoom,
                     isLoading: false,
                     error: undefined,
                     selection: [],
-                    anchorTimestamp: calendarSlice.currentTimestamp,
-                    agendaItems: calendarSlice.currentTimestamp
-                        ? this.collectAgendaItems(calendarSlice.currentTimestamp, zoom, calendarSlice.upcomingEvents)
-                        : [],
+                    layout: 'grid',
                 };
                 draft.eventsUiState = {
                     ...draft.eventsUiState,
@@ -599,7 +606,7 @@ export class AlmanacStateMachine {
 
             const anchor = this.state.managerUiState.anchorTimestamp ?? snapshot.currentTimestamp ?? this.getAnchorFallback();
             const agendaItems = anchor
-                ? this.collectAgendaItems(anchor, this.state.managerUiState.zoom, snapshot.upcomingEvents)
+                ? this.collectAgendaItems(anchor, this.state.calendarViewState.zoom, snapshot.upcomingEvents)
                 : [];
 
             const defaultCalendarId = snapshot.defaultCalendarId
@@ -611,7 +618,7 @@ export class AlmanacStateMachine {
             this.setState(draft => {
                 const anchor = draft.managerUiState.anchorTimestamp ?? snapshot.currentTimestamp ?? this.getAnchorFallback();
                 const agendaItems = anchor
-                    ? this.collectAgendaItems(anchor, draft.managerUiState.zoom, snapshot.upcomingEvents)
+                    ? this.collectAgendaItems(anchor, draft.calendarViewState.zoom, snapshot.upcomingEvents)
                     : [];
                 draft.calendarState = {
                     ...draft.calendarState,
@@ -629,6 +636,12 @@ export class AlmanacStateMachine {
                     ...draft.almanacUiState,
                     isLoading: false,
                     error: undefined,
+                };
+                // Update calendar view (upper section)
+                draft.calendarViewState = {
+                    ...draft.calendarViewState,
+                    anchorTimestamp: snapshot.currentTimestamp,
+                    events: snapshot.upcomingEvents,
                 };
                 draft.managerUiState = {
                     ...draft.managerUiState,
@@ -713,7 +726,7 @@ export class AlmanacStateMachine {
                 isLoading: false,
                 error: undefined,
                 anchorTimestamp: anchorBase ?? draft.managerUiState.anchorTimestamp,
-                agendaItems: anchorBase ? this.collectAgendaItems(anchorBase, draft.managerUiState.zoom) : [],
+                agendaItems: anchorBase ? this.collectAgendaItems(anchorBase, draft.calendarViewState.zoom) : [],
             };
         });
 
@@ -721,7 +734,7 @@ export class AlmanacStateMachine {
     }
 
     private async handleManagerZoom(zoom: CalendarViewZoom): Promise<void> {
-        if (zoom === this.state.managerUiState.zoom) {
+        if (zoom === this.state.calendarViewState.zoom) {
             return;
         }
 
@@ -729,9 +742,14 @@ export class AlmanacStateMachine {
         const agendaItems = anchorBase ? this.collectAgendaItems(anchorBase, zoom) : [];
 
         this.setState(draft => {
+            // Update calendar view zoom (upper section)
+            draft.calendarViewState = {
+                ...draft.calendarViewState,
+                zoom,
+            };
+            // Update manager agenda items (lower section)
             draft.managerUiState = {
                 ...draft.managerUiState,
-                zoom,
                 anchorTimestamp: anchorBase ?? draft.managerUiState.anchorTimestamp,
                 agendaItems,
                 jumpPreview: [],
@@ -770,13 +788,13 @@ export class AlmanacStateMachine {
 
         const nextAnchor = direction === 'today'
             ? (this.state.calendarState.currentTimestamp ?? baseAnchor)
-            : this.shiftAnchorTimestamp(schema, baseAnchor, this.state.managerUiState.zoom, direction);
+            : this.shiftAnchorTimestamp(schema, baseAnchor, this.state.calendarViewState.zoom, direction);
 
         this.setState(draft => {
             draft.managerUiState = {
                 ...draft.managerUiState,
                 anchorTimestamp: nextAnchor,
-                agendaItems: this.collectAgendaItems(nextAnchor, draft.managerUiState.zoom),
+                agendaItems: this.collectAgendaItems(nextAnchor, draft.calendarViewState.zoom),
                 jumpPreview: [],
             };
         });
@@ -2456,7 +2474,7 @@ export class AlmanacStateMachine {
                     draft.managerUiState = {
                         ...draft.managerUiState,
                         anchorTimestamp: currentTimestamp,
-                        agendaItems: this.collectAgendaItems(currentTimestamp, draft.managerUiState.zoom),
+                        agendaItems: this.collectAgendaItems(currentTimestamp, draft.calendarViewState.zoom),
                         jumpPreview: [],
                     };
                 });
@@ -2758,7 +2776,7 @@ export class AlmanacStateMachine {
                 draft.managerUiState = {
                     ...draft.managerUiState,
                     anchorTimestamp: result.timestamp,
-                    agendaItems: this.collectAgendaItems(result.timestamp, draft.managerUiState.zoom, upcoming),
+                    agendaItems: this.collectAgendaItems(result.timestamp, draft.calendarViewState.zoom, upcoming),
                     jumpPreview: [],
                 };
             });
@@ -2953,7 +2971,7 @@ export class AlmanacStateMachine {
                 draft.managerUiState = {
                     ...draft.managerUiState,
                     anchorTimestamp: target,
-                    agendaItems: this.collectAgendaItems(target, draft.managerUiState.zoom, upcoming),
+                    agendaItems: this.collectAgendaItems(target, draft.calendarViewState.zoom, upcoming),
                     jumpPreview: [],
                 };
             });

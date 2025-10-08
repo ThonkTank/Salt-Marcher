@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // Neu-Konvertierung aller Presets mit verbessertem Parser
 // Nutzt den Reference-Parser direkt über esbuild
 

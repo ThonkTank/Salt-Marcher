@@ -51,8 +51,7 @@ describe("statblockToMarkdown", () => {
 
     expect(markdown).toContain("## Prepared Spells");
     expect(markdown).toContain("The witch is a 9th-level spellcaster.");
-    expect(markdown).toContain("*Spell save DC");
-    expect(markdown).toContain("Spell save DC 15");
+    expect(markdown).toContain("Spell save DC 16, +8 to hit with spell attacks.");
     expect(markdown).toContain("### Cantrips");
     expect(markdown).toContain("- Ray of Frost (at will)");
     expect(markdown).toContain("### 3/Day Each");

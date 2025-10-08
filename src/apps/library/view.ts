@@ -10,6 +10,7 @@ import { EquipmentRenderer } from "./view/equipment";
 import { TerrainsRenderer } from "./view/terrains";
 import { RegionsRenderer } from "./view/regions";
 import { describeLibrarySource, ensureLibrarySources } from "./core/sources";
+import { createTabNavigation, type TabConfig, type TabNavigationHandle } from "../../ui/workmode";
 
 /**
  * Authoritative UI copy for the library view. Keep aligned with `docs/ui/terminology.md`.
@@ -38,7 +39,7 @@ export const VIEW_LIBRARY = "salt-library";
 export class LibraryView extends ItemView {
     private mode: Mode = "creatures";
     private queries = new Map<Mode, string>();
-    private headerButtons = new Map<Mode, HTMLButtonElement>();
+    private tabNav?: TabNavigationHandle<Mode>;
     private listEl?: HTMLElement;
     private descEl?: HTMLElement;
     private activeRenderer?: ModeRenderer;
@@ -59,6 +60,8 @@ export class LibraryView extends ItemView {
     async onClose() {
         await this.activeRenderer?.destroy();
         this.activeRenderer = undefined;
+        this.tabNav?.destroy();
+        this.watchers.destroy();
         this.contentEl.removeClass("sm-library");
     }
 
@@ -66,20 +69,22 @@ export class LibraryView extends ItemView {
         const root = this.contentEl; root.empty();
         root.createEl("h2", { text: LIBRARY_COPY.title });
 
-        // Mode header
-        const header = root.createDiv({ cls: "sm-lib-header" });
-        const mkBtn = (label: ModeCopy[Mode], m: Mode) => {
-            const b = header.createEl("button", { text: label });
-            this.headerButtons.set(m, b);
-            b.onclick = () => { void this.activateMode(m); };
-            return b;
-        };
-        mkBtn(LIBRARY_COPY.modes.creatures, "creatures");
-        mkBtn(LIBRARY_COPY.modes.spells, "spells");
-        mkBtn(LIBRARY_COPY.modes.items, "items");
-        mkBtn(LIBRARY_COPY.modes.equipment, "equipment");
-        mkBtn(LIBRARY_COPY.modes.terrains, "terrains");
-        mkBtn(LIBRARY_COPY.modes.regions, "regions");
+        // Tab navigation using shared infrastructure
+        const tabs: TabConfig<Mode>[] = [
+            { id: "creatures", label: LIBRARY_COPY.modes.creatures },
+            { id: "spells", label: LIBRARY_COPY.modes.spells },
+            { id: "items", label: LIBRARY_COPY.modes.items },
+            { id: "equipment", label: LIBRARY_COPY.modes.equipment },
+            { id: "terrains", label: LIBRARY_COPY.modes.terrains },
+            { id: "regions", label: LIBRARY_COPY.modes.regions },
+        ];
+
+        this.tabNav = createTabNavigation(root, {
+            tabs,
+            activeTab: this.mode,
+            className: "sm-lib-header",
+            onSelect: (mode) => { void this.activateMode(mode); },
+        });
 
         // Search + create
         const bar = root.createDiv({ cls: "sm-cc-searchbar" });
@@ -104,7 +109,7 @@ export class LibraryView extends ItemView {
     private async activateMode(mode: Mode) {
         if (this.activeRenderer?.mode === mode) {
             this.mode = mode;
-            this.updateHeaderButtons();
+            this.tabNav?.setActiveTab(mode);
             this.updateSourceDescription();
             const query = this.getQueryForMode(mode);
             if (this.searchInput) this.searchInput.value = query;
@@ -117,7 +122,7 @@ export class LibraryView extends ItemView {
             this.activeRenderer = undefined;
         }
         this.mode = mode;
-        this.updateHeaderButtons();
+        this.tabNav?.setActiveTab(mode);
         this.updateSourceDescription();
         if (!this.listEl) return;
         const renderer = this.createRenderer(mode, this.listEl);
@@ -148,12 +153,6 @@ export class LibraryView extends ItemView {
         }
     }
 
-    private updateHeaderButtons() {
-        for (const [mode, btn] of this.headerButtons.entries()) {
-            btn.classList.toggle("is-active", this.mode === mode);
-        }
-    }
-
     private updateSourceDescription() {
         if (!this.descEl) return;
         const text = `${LIBRARY_COPY.sources.prefix}${describeLibrarySource(this.mode)}`;
@@ -163,7 +162,9 @@ export class LibraryView extends ItemView {
     private async onCreate(name: string) {
         if (!name && this.mode !== "creatures" && this.mode !== "spells" && this.mode !== "items") return;
         if (!this.activeRenderer) return;
-        await this.activeRenderer.handleCreate(name);
+        if (this.activeRenderer.handleCreate) {
+            await this.activeRenderer.handleCreate(name);
+        }
         this.searchInput?.focus();
     }
 

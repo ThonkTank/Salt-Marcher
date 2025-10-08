@@ -1,112 +1,45 @@
 // src/apps/library/view/mode.ts
 // Basistypen für Library-Ansichtsmodi.
-import type { App } from "obsidian";
+// Verwendet shared workmode infrastructure
+
 import type { LibrarySourceId } from "../core/sources";
-
-type WatchFactory = (onChange: () => void) => () => void;
-
-type WatchRegistryEntry = {
-    stop?: () => void;
-    listeners: Set<() => void>;
-};
+import { BaseModeRenderer as SharedBaseModeRenderer, scoreName as sharedScoreName, WatcherHub } from "../../../ui/workmode";
+import type { ModeRenderer as SharedModeRenderer } from "../../../ui/workmode";
 
 export type Mode = LibrarySourceId;
 
-export interface ModeRenderer {
+export interface ModeRenderer extends SharedModeRenderer<Mode> {
     readonly mode: Mode;
-    init(): Promise<void>;
-    render(): void;
-    setQuery(query: string): void;
-    handleCreate(name: string): Promise<void>;
-    destroy(): Promise<void>;
 }
 
-export function scoreName(name: string, q: string): number {
-    if (!q) return 0.0001;
-    if (name === q) return 1000;
-    if (name.startsWith(q)) return 900 - (name.length - q.length);
-    const idx = name.indexOf(q);
-    if (idx >= 0) return 700 - idx;
-    const tokenIdx = name.split(/\s+|[-_]/).findIndex(t => t.startsWith(q));
-    if (tokenIdx >= 0) return 600 - tokenIdx * 5;
-    return -Infinity;
-}
+// Re-export shared utilities for backward compatibility
+export { scoreName } from "../../../ui/workmode";
 
-export abstract class BaseModeRenderer implements ModeRenderer {
+// Library-specific base renderer that extends shared base
+export abstract class BaseModeRenderer extends SharedBaseModeRenderer<Mode> implements ModeRenderer {
     readonly abstract mode: Mode;
-    protected query = "";
-    private cleanups: Array<() => void> = [];
-    private disposed = false;
 
-    constructor(protected readonly app: App, protected readonly container: HTMLElement) {}
-
-    async init(): Promise<void> { /* optional */ }
-
+    // Override setQuery to trim the query (Library-specific behavior)
     setQuery(query: string): void {
         this.query = (query || "").toLowerCase();
         this.render();
-    }
-
-    abstract render(): void;
-
-    async handleCreate(_name: string): Promise<void> { /* optional */ }
-
-    async destroy(): Promise<void> {
-        if (this.disposed) return;
-        this.disposed = true;
-        for (const fn of this.cleanups.splice(0)) {
-            try { fn(); } catch { /* noop */ }
-        }
-        this.container.empty();
-    }
-
-    protected isDisposed(): boolean {
-        return this.disposed;
-    }
-
-    protected registerCleanup(fn: () => void): void {
-        this.cleanups.push(fn);
     }
 }
 
 /**
  * Orchestriert Dateisystem-Watcher pro Library-Quelle, sodass mehrere Renderer
  * dieselben Signale nutzen können ohne redundante Abos aufzubauen.
+ *
+ * This is a typed wrapper around the generic WatcherHub.
  */
 export class LibrarySourceWatcherHub {
-    private readonly registry = new Map<LibrarySourceId, WatchRegistryEntry>();
+    private readonly hub = new WatcherHub<LibrarySourceId>();
 
-    subscribe(source: LibrarySourceId, factory: WatchFactory, listener: () => void): () => void {
-        let entry = this.registry.get(source);
-        if (!entry) {
-            const listeners = new Set<() => void>();
-            const stop = factory(() => {
-                for (const cb of listeners) {
-                    try {
-                        cb();
-                    } catch (err) {
-                        console.error("Library watch callback failed", err);
-                    }
-                }
-            });
-            entry = { stop, listeners };
-            this.registry.set(source, entry);
-        }
+    subscribe(source: LibrarySourceId, factory: (onChange: () => void) => () => void, listener: () => void): () => void {
+        return this.hub.subscribe(source, factory, listener);
+    }
 
-        entry.listeners.add(listener);
-
-        return () => {
-            const current = this.registry.get(source);
-            if (!current) return;
-            current.listeners.delete(listener);
-            if (current.listeners.size === 0) {
-                try {
-                    current.stop?.();
-                } catch (err) {
-                    console.error("Failed to stop library watcher", err);
-                }
-                this.registry.delete(source);
-            }
-        };
+    destroy(): void {
+        this.hub.destroy();
     }
 }

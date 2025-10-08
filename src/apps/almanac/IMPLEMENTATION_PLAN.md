@@ -21,7 +21,7 @@ Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Almanac-Workmod
 1. **Almanac-Shell & Mode-Orchestrierung (`src/apps/almanac/mode`)**
    - Stellt Parent-Komponenten (`AlmanacShell`, `AlmanacModeSwitcher`) bereit, die **ausschließlich** die Almanac-Untermodi `Almanac › Dashboard`, `Almanac › Manager` und `Almanac › Events` kapseln.
    - Persistiert zuletzt genutzte Modi, Zoom-Stufen und Auswahl-Kontexte pro Almanac-Leaf (z.B. `managerViewMode`, `eventsViewMode`) über `CalendarStateGateway`.
-   - Steuert Lazy-Loading der einzelnen Almanac-Modi, Routedaten (z.B. `?mode=events&view=timeline`) und sorgt für konsistente Breadcrumbs/Back-Targets. Travel bleibt als Cartographer-Leaf separat (siehe Punkt 4).
+   - Steuert Lazy-Loading der einzelnen Almanac-Modi, Routedaten (z.B. `?mode=events&view=timeline`) und pflegt `modeHistory` für Persistenz/Telemetrie (ohne separate Breadcrumb-Leiste). Travel bleibt als Cartographer-Leaf separat (siehe Punkt 4).
 
 2. **Domain-Layer (`src/apps/almanac/domain`)**
    - Enthält `CalendarSchema` (Monate, Wochen, Schaltjahre) sowie `CalendarEvent` (Recurring vs. Single) mit Default-Flag-Support und Links zu globalen Phänomenen.
@@ -60,7 +60,7 @@ Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Almanac-Workmod
 | Submodus | **Almanac › Events** | Kalenderübergreifender Phänomen-Hub | `almanac.mode.events` | [`mode/API_CONTRACTS.md`](./mode/API_CONTRACTS.md#phenomenon-endpunkte) |
 | Extern | **Cartographer › Travel-Kalender** | Kompaktes Leaf im Reisemodus, nutzt Almanac-Domain | `cartographer.travel.calendar` | [`mode/STATE_MACHINE.md`](./mode/STATE_MACHINE.md#cartographer-travel-leaf) |
 
-- Breadcrumb-Konvention: `Almanac` → `<Submodus>` → `<Detailpanel>`; Travel nutzt eigenes Breadcrumb `Cartographer` → `Reise` → `Travel-Kalender`.
+- Breadcrumb-Leiste verworfen: `modeHistory` bleibt für Persistenz und Telemetrie erhalten, aber es wird keine separate Breadcrumb-Anzeige mehr gerendert. Travel nutzt weiterhin das Cartographer-eigene Layout.
 - Naming-Regeln: neue Komponenten/Events erhalten Präfix (`almanac`, `manager`, `events`, `travel`) gemäß Layer, siehe [`mode/COMPONENTS.md`](./mode/COMPONENTS.md#20-naming--styling-konventionen).
 
 ### Architektur-Schichtenmodell & Dataflows
@@ -85,7 +85,7 @@ Persistence (JsonStore / Obsidian vault)
 | Ereignis-/Phänomen-CRUD | Manager/Events → Domain → Repository | Validierung + Persistenz, danach Cache-Invalidierung | Domain kapselt Normalisierung; Repository schreibt atomar | `calendar.event.write_duration`, `calendar.phenomenon.write_duration` |
 | Travel-Sync | Cartographer Leaf → CalendarStateGateway → Domain | Reise-Hooks (`advanceTime`, `jumpToTimestamp`) nutzen gemeinsame Services | Cartographer ruft keine UI-spezifischen Funktionen auf; Gateway vermittelt | `calendar.travel.sync_latency` |
 | Lazy Load | AlmanacShell → Mode Presenter | Submodus wird erst geladen, wenn Nutzer:in ihn öffnet | Jeder Submodus besitzt `dispose()`-Hook; Cross-Mode-Kommunikation ausschließlich über Gateway-Events | `calendar.almanac.lazy_load_time` |
-| Breadcrumb/Switcher | AlmanacShell → UI State | Aktualisiert `modeHistory` und `lastVisitedPanels` | State-Slice `ui.almanacNavigation` ist einzige Quelle für Navigationspfade | `calendar.almanac.navigation_depth` |
+| Mode-Switcher | AlmanacShell → UI State | Aktualisiert `modeHistory` und `lastVisitedPanels` | State-Slice `ui.almanacNavigation` ist einzige Quelle für Navigationspfade | `calendar.almanac.navigation_depth` |
 
 - Lebenszyklus: Submodi implementieren `onMount`/`onUnmount`, um Listener (z.B. Cartographer Hooks) anzumelden bzw. zu entfernen. Travel-Leaf folgt `cartographer.travel`-Lifecycle (`openOnTravelStart`, `disposeOnTravelEnd`).
 - Lazy-Load-Strategie: `AlmanacShell` registriert Suspense-Punkte pro Modulpaket; Suspense darf ausschließlich UI betreffen, Domain-Aufrufe sind `Promise`-basiert mit Timeout (Default 5 s, Telemetrie).
@@ -105,7 +105,7 @@ Persistence (JsonStore / Obsidian vault)
    - Deliverable: Persistenzlayer + Dokumentation in `AGENTS.md`.
 
 3. **Phase 3 – Almanac-Shell & Kalender-Workflows**
-   - Implementiere `AlmanacShell`, Mode-Switcher, Breadcrumbs sowie Calendar-Dashboard und Manager (Kalenderansicht + Übersicht) mit Default-Toggles.
+   - Implementiere `AlmanacShell`, Mode-Switcher sowie Calendar-Dashboard und Manager (Kalenderansicht + Übersicht) mit Default-Toggles. Breadcrumb-Leiste entfällt (Feature-Bloat).
    - Ergänze Dialoge für Kalenderdefinition/Eventverwaltung, Zoom-Toolbar, Filter, Inline-Erstellung (All-Day vs. Start-/Endzeit, Time-Picker, Tastatursteuerung).
    - Implementiere Modus-Persistenz (zuletzt genutzte Ansicht, Zoom) und Fokus-Management.
    - Schreibe Presenter-Tests für Moduswechsel und Kalenderpflege.

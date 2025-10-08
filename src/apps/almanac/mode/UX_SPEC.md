@@ -7,16 +7,16 @@ Diese Spezifikation definiert UI-Verhalten, Nutzer:innenflüsse und Interaktione
 - UI-Bausteine: Nutzung vorhandener Komponenten aus `src/ui` (Tables, Buttons, Toggles, Modals) kombiniert mit neuen Calendar-spezifischen Grids, Toolbars und Leaf-Komponenten.
 
 ### 1.1 Navigationshierarchie & Terminologie
-| Ebene | Label | Beschreibung | Persistenter State | Breadcrumb |
+| Ebene | Label | Beschreibung | Persistenter State | UI-Hinweis |
 | --- | --- | --- | --- | --- |
-| Parent | Almanac | Shell-Lean-Leaf im Almanac-Workmode | `ui.almanacNavigation.shell` | `Almanac` |
-| Submodus | Almanac › Dashboard | Timestamp, Quick-Actions, Ereignislog | `ui.almanacMode = "dashboard"` | `Almanac › Dashboard` |
-| Submodus | Almanac › Manager | Kalenderansicht + Übersicht | `ui.almanacMode = "manager"` | `Almanac › Manager` |
-| Submodus | Almanac › Events | Phänomen-Hub (Timeline, Tabelle, Karte) | `ui.almanacMode = "events"` | `Almanac › Events` |
-| Extern | Cartographer › Travel-Kalender | Kompaktes Leaf im Reisemodus | `ui.travelLeaf` | `Cartographer › Reise › Travel-Kalender` |
+| Parent | Almanac | Shell-Lean-Leaf im Almanac-Workmode | `ui.almanacNavigation.shell` | Heading `Almanac` |
+| Submodus | Almanac › Dashboard | Timestamp, Quick-Actions, Ereignislog | `ui.almanacMode = "dashboard"` | Mode-Switcher markiert aktiv |
+| Submodus | Almanac › Manager | Kalenderansicht + Übersicht | `ui.almanacMode = "manager"` | Mode-Switcher markiert aktiv |
+| Submodus | Almanac › Events | Phänomen-Hub (Timeline, Tabelle, Karte) | `ui.almanacMode = "events"` | Mode-Switcher markiert aktiv |
+| Extern | Cartographer › Travel-Kalender | Kompaktes Leaf im Reisemodus | `ui.travelLeaf` | Eigenes Cartographer-Layout |
 
-- Mode-Switcher (Tabs/Sidebar) zeigt Labels exakt wie oben; Breadcrumb unterhalb der Toolbar folgt `Almanac` → `<Submodus>` → optionale Detailpane (`Kalenderansicht`, `Übersicht`, `Timeline`, `Detail`).
-- Travel-Leaf wird im Dokument als Kurzform für **Cartographer › Travel-Kalender** verwendet, behält eigenes Breadcrumb im Cartographer-Layout; Switcher-Steuerung erfolgt über Travel-spezifische Toolbar (siehe §3.14).
+- Mode-Switcher (Tabs/Sidebar) zeigt Labels exakt wie oben; zusätzliche Breadcrumb-Leiste entfällt zugunsten einer reduzierten Shell.
+- Travel-Leaf wird im Dokument als Kurzform für **Cartographer › Travel-Kalender** verwendet und behält das Cartographer-eigene Layout; Switcher-Steuerung erfolgt über Travel-spezifische Toolbar (siehe §3.14).
 
 ## 2. Artefakt-Mapping
 | Artefakt | Zweck | Referenz |
@@ -43,7 +43,7 @@ Jeder Workflow beschreibt Ziel, Trigger, Vorbedingungen, Flüsse, Fehler, Postbe
 1. Nutzer:in klickt auf Tab/Sidebar-Item oder ruft Command auf.
 2. Presenter prüft, ob Modus bereits geladen wurde; wenn nein, zeigt Shimmer-Loader und lädt initiale Daten (via `CalendarStateGateway`).
 3. Sobald Daten verfügbar, wird Zielmodus gerendert; Fokus springt auf primäres Heading (`h1`) mit `tabindex="-1"`.
-4. Historie (`modeHistory`) aktualisiert Breadcrumb/Back-Aktion.
+4. Historie (`modeHistory`) aktualisiert Telemetrie und ermöglicht Modus-Resume (ohne separate Breadcrumb-Leiste).
 
 **Alternativflüsse**
 - *Lazy Load aktiv*: Während Daten geladen werden, zeigt UI Progress-Bar; Nutzer:innen können andere Modi wählen (Queue verwirft laufende Requests bei Navigation).

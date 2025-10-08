@@ -20,7 +20,7 @@ Dieser Testplan leitet sich aus den Spezifikationen unter `src/apps/almanac` ab.
 ### 2.1 Layer-/Modus-Coverage
 | Ebene | Fokus | Primäre Tests | Fixtures |
 | --- | --- | --- | --- |
-| Almanac Shell (`Almanac › Dashboard/Manager/Events`) | Mode-Wechsel, Breadcrumbs, Persistenz | Integration: Almanac Shell Presenter, UI Drawer Fokus | `gregorian.json`, `ten-day.json` |
+| Almanac Shell (`Almanac › Dashboard/Manager/Events`) | Mode-Wechsel, Statusleiste, Persistenz | Integration: Almanac Shell Presenter, UI Drawer Fokus | `gregorian.json`, `ten-day.json` |
 | Almanac › Dashboard | Quick-Actions, Filter, Log | UI Toolbar Navigation, TimeAdvanceDialog (Minute/Hour) | Ereignisse 1–4, Phänomene 1–2 |
 | Almanac › Manager | Kalenderansicht/Übersicht, Default-Toggles | Integration Manager View/Overview, CalendarFormDialog Submit | Kalender Fixtures, Ereignisse 1–7 |
 | Almanac › Events | Timeline/Tabelle/Karte, Link-Drawer | Integration Events Presenter Filter/Export | Phänomene 1–5 |

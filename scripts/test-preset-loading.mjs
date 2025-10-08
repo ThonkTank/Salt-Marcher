@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // Test ob die konvertierten Presets korrekt geladen werden können
 
 import { readFileSync } from 'fs';

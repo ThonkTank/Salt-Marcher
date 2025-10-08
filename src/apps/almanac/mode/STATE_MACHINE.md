@@ -5,7 +5,7 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Al
 - Architektur: Presenter (StateMachine) + ViewModel. State wird über `immer` oder äquivalent immutable gehalten.
 - Gliederung in fünf Hauptslices:
   - `calendarState` (Domain-nah: aktive Kalender, Datum, Ereignisse, Phänomen-Vorschau)
-  - `almanacUiState` (Modus, Breadcrumbs, Persistenz letzter Zustände)
+  - `almanacUiState` (Modus, Historie, Persistenz letzter Zustände)
   - `managerUiState` (Workmode/Manager-spezifische UI-Flags)
   - `eventsUiState` (Events-Modus: Filter, View-Mode, Pagination, Auswahl)
   - `travelLeafState` (Reisemodus-spezifische Sichtbarkeit und Modus)
@@ -19,15 +19,16 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Al
 | Almanac Detail | `eventsUiState.viewMode` | `'timeline' | 'table' | 'map'` | Gateway (lazy) | Spezifisch für `Almanac › Events`. |
 | Cartographer Leaf | `travelLeafState.mode` | `'month' | 'week' | 'day' | 'upcoming'` | Travel Settings | Eigenes Lifecycle (`TRAVEL_LEAF_MOUNTED`/`DISMISSED`). |
 
-- Breadcrumb-State (`almanacUiState.modeHistory`) speichert Parent → Child Pfade; Travel-Leaf verwaltet eigene Historie in `travelLeafState`.
+- Navigationshistorie (`almanacUiState.modeHistory`) speichert Parent → Child Pfade für Resume/Telemetry; Travel-Leaf verwaltet eigene Historie in `travelLeafState`.
 
 ## 2. State-Slices
 | Slice | Schlüssel | Beschreibung | Persistenz |
 | --- | --- | --- | --- |
 | `calendarState` | `activeCalendarId`, `defaultCalendarId`, `travelDefaultCalendarId`, `currentTimestamp`, `timeDefinition`, `minuteStep`, `pendingTimeSlice`, `lastAdvanceStep`, `upcomingEvents`, `upcomingPhenomena`, `triggeredEvents`, `triggeredPhenomena`, `skippedEvents` | Domain-Daten (Kalender + Phänomene), vom Gateway geladen/geschrieben. | Persistiert (Gateway) |
 | `calendarState.calendars` | Map `calendarId -> CalendarSummaryDTO` | Cache der bekannten Kalender (Name, Schema, Flags). | Persistiert (Repository) |
-| `almanacUiState` | `mode`, `modeHistory`, `statusSummary`, `drawerOpen`, `lastZoomByMode`, `lastFiltersByMode` | UI-Kontext für Moduswechsel, Breadcrumbs, Mobile-Drawer. | Persistiert (Gateway für Modus, rest Session) |
-| `managerUiState` | `viewMode`, `zoom`, `filters`, `overviewLayout`, `selection`, `isLoading`, `error`, `timeControls` (`preset`, `customStep`) | UI-spezifische Flags für Manager/Übersicht inkl. Quick-Steps. | Nicht persistiert (Session) |
+| `almanacUiState` | `mode`, `modeHistory`, `statusSummary`, `drawerOpen`, `lastZoomByMode`, `lastFiltersByMode` | UI-Kontext für Moduswechsel, Historie, Mobile-Drawer. | Persistiert (Gateway für Modus, rest Session) |
+| **`calendarViewState`** (**NEU**) | `mode`, `zoom`, `anchorTimestamp`, `events`, `isLoading`, `error` | State für persistente Kalenderansicht (oberer Split-View-Bereich). Modus: `'month' | 'week' | 'day' | 'upcoming'`. | Modus persistiert (Gateway) |
+| `managerUiState` | `viewMode` (`'overview'` only), `layout`, `selection`, `isLoading`, `error`, `createDraft`, `editStateById`, `deleteDialog`, `conflictDialog` | UI-spezifische Flags für Manager-Übersicht. **Note**: `zoom` und `anchorTimestamp` moved to `calendarViewState`. | Nicht persistiert (Session) |
 | `managerUiState.form` | `currentDialog` (`'calendar' | 'event' | 'time' | null`), `dialogData` | Offene Dialoge und deren Parameter. | Nicht persistiert |
 | `eventsUiState` | `viewMode`, `filters`, `sort`, `pagination`, `isLoading`, `error`, `selectedPhenomenonId`, `editorDraft`, `linkDrawerOpen` | Zustand des Events-Modus inkl. Formular/Drawer. | Modus/Filter persistiert, Rest Session |
 | `travelLeafState` | `travelId`, `visible`, `mode`, `currentTimestamp`, `minuteStep`, `lastQuickStep`, `isLoading`, `error` | Zustand des Travel-Leaves inkl. Anzeigepräferenzen und letztem Quick-Step. | Teilweise (sichtbarkeit/modus) |

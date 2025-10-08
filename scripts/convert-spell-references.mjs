@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // Standalone Script zum Konvertieren von Reference Spells zu Presets
 // Verwendung: node scripts/convert-spell-references.mjs [--limit N] [--dry-run]
 

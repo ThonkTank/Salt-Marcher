@@ -89,14 +89,18 @@ const ORIGIN_PRESETS: Array<{ value: OriginType; label: string }> = [
  */
 export function validateAreaSize(size: number | string): boolean {
   if (typeof size === "number") {
-    return size > 0 && Number.isFinite(size);
+    return Number.isFinite(size) && size > 0;
   }
 
   const trimmed = String(size).trim();
   if (!trimmed) return false;
 
-  const num = parseFloat(trimmed);
-  return !isNaN(num) && num > 0 && Number.isFinite(num);
+  if (!/^\d+(?:\.\d+)?$/.test(trimmed)) {
+    return false;
+  }
+
+  const num = Number(trimmed);
+  return Number.isFinite(num) && num > 0;
 }
 
 /**
@@ -663,29 +667,28 @@ export function validateAreaComponent(component: AreaComponentType): string[] {
     errors.push("Area shape is required");
   }
 
-  if (!component.size?.trim()) {
+  const rawSize = component.size?.trim() ?? "";
+
+  if (!rawSize) {
     errors.push("Area size is required");
   } else {
-    // Try to parse the size
-    const sizeMatch = component.size.match(/^(\d+(?:\.\d+)?)\s*(?:×|x)\s*(\d+(?:\.\d+)?)?$/i);
+    const separatorPattern = /[×x]/i;
 
-    if (sizeMatch) {
-      const primary = parseFloat(sizeMatch[1]);
-      if (isNaN(primary) || primary <= 0) {
-        errors.push("Primary area dimension must be a positive number");
-      }
-
-      if (sizeMatch[2]) {
-        const secondary = parseFloat(sizeMatch[2]);
-        if (isNaN(secondary) || secondary <= 0) {
+    if (separatorPattern.test(rawSize)) {
+      const parts = rawSize.split(separatorPattern).map(part => part.trim()).filter(Boolean);
+      if (parts.length !== 2) {
+        errors.push("Area size must contain two positive numbers when using a secondary dimension");
+      } else {
+        const [primaryRaw, secondaryRaw] = parts;
+        if (!validateAreaSize(primaryRaw)) {
+          errors.push("Primary area dimension must be a positive number");
+        }
+        if (!validateAreaSize(secondaryRaw)) {
           errors.push("Secondary area dimension must be a positive number");
         }
       }
-    } else {
-      const size = parseFloat(component.size);
-      if (isNaN(size) || size <= 0) {
-        errors.push("Area size must be a positive number");
-      }
+    } else if (!validateAreaSize(rawSize)) {
+      errors.push("Area size must be a positive number");
     }
   }
 
