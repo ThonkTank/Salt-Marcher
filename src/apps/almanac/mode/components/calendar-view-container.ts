@@ -39,9 +39,12 @@ export function createCalendarViewContainer(
         { id: "upcoming", label: "Next", icon: "list-ordered" },
     ];
 
+    let currentMode = config.mode;
+    let currentState: CalendarViewState = config.state;
+
     const tabNav = createTabNavigation<CalendarViewMode>(header, {
         tabs,
-        activeTab: config.mode,
+        activeTab: currentMode,
         className: "almanac-calendar-view__tabs",
         onSelect: config.onModeChange,
     });
@@ -73,7 +76,9 @@ export function createCalendarViewContainer(
         }
 
         // Render based on mode
-        switch (config.mode) {
+        const modeToRender = state.mode ?? currentMode;
+
+        switch (modeToRender) {
             case "month":
                 renderMonthView(content, state);
                 break;
@@ -124,17 +129,34 @@ export function createCalendarViewContainer(
     };
 
     // Initial render
-    renderContent(config.state);
+    renderContent(currentState);
 
     return {
         element: container,
 
         setMode(mode: CalendarViewMode) {
+            if (mode === currentMode) {
+                return;
+            }
+
+            currentMode = mode;
+            currentState = { ...currentState, mode };
             tabNav.setActiveTab(mode);
+            renderContent(currentState);
         },
 
         update(state: CalendarViewState) {
-            renderContent(state);
+            const nextMode = state.mode ?? currentMode;
+            const hasModeChanged = nextMode !== currentMode;
+
+            currentMode = nextMode;
+            currentState = state;
+
+            if (hasModeChanged) {
+                tabNav.setActiveTab(currentMode);
+            }
+
+            renderContent(currentState);
         },
 
         destroy() {
