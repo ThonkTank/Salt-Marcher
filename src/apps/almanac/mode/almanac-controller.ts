@@ -30,11 +30,14 @@ import { InMemoryStateGateway } from '../data/in-memory-gateway';
 import {
     type AlmanacMode,
     type AlmanacState,
-    type CalendarViewZoom,
-    type EventsViewMode,
     type CalendarManagerViewMode,
-    type PhenomenonEditorDraft,
+    type CalendarViewZoom,
+    type EventEditorDraft,
+    type EventEditorMode,
+    type EventEditorPreviewItem,
+    type EventsViewMode,
     type ImportSummary,
+    type PhenomenonEditorDraft,
 } from './contracts';
 import { AlmanacStateMachine } from './state-machine';
 import {
@@ -52,6 +55,520 @@ const MODE_COPY: Record<AlmanacMode, { label: string; description: string }> = {
 const MANAGER_ZOOM_OPTIONS: CalendarViewZoom[] = ['month', 'week', 'day', 'hour'];
 const MANAGER_VIEW_OPTIONS: CalendarManagerViewMode[] = ['calendar', 'overview'];
 const EVENT_VIEW_OPTIONS: EventsViewMode[] = ['timeline', 'table', 'map'];
+
+interface EventEditorCalendarOption {
+    readonly id: string;
+    readonly name: string;
+    readonly daysPerWeek: number;
+    readonly months: ReadonlyArray<{ readonly id: string; readonly name: string; readonly length: number }>;
+}
+
+type EventEditorModalConfig = {
+    readonly mode: EventEditorMode;
+    readonly calendars: ReadonlyArray<EventEditorCalendarOption>;
+    readonly errors: ReadonlyArray<string>;
+    readonly preview: ReadonlyArray<EventEditorPreviewItem>;
+    readonly isSaving: boolean;
+    readonly submitError?: string;
+    readonly onUpdate: (update: Partial<EventEditorDraft>) => void;
+    readonly onSubmit: () => void;
+    readonly onCancel: () => void;
+    readonly onDelete?: () => void;
+};
+
+class EventEditorModal extends Modal {
+    private draft: EventEditorDraft;
+    private config: EventEditorModalConfig;
+    private container: HTMLElement | null = null;
+
+    constructor(app: App, draft: EventEditorDraft, config: EventEditorModalConfig) {
+        super(app);
+        this.draft = { ...draft };
+        this.config = { ...config };
+    }
+
+    open(): void {
+        super.open();
+        this.render();
+    }
+
+    update(
+        draft: EventEditorDraft,
+        config: Partial<Omit<EventEditorModalConfig, 'onUpdate' | 'onSubmit' | 'onCancel'>> & {
+            readonly onDelete?: () => void;
+        },
+    ): void {
+        this.draft = { ...draft };
+        this.config = { ...this.config, ...config } as EventEditorModalConfig;
+        this.render();
+    }
+
+    close(): void {
+        this.container?.remove();
+        this.container = null;
+        super.close();
+    }
+
+    private ensureContainer(): HTMLElement {
+        if (!this.container) {
+            this.container = document.createElement('div');
+            this.container.classList.add('almanac-modal');
+            this.container.dataset.modal = 'event-editor';
+            document.body.appendChild(this.container);
+        }
+        return this.container;
+    }
+
+    private getHost(): HTMLElement {
+        const contentEl = (this as Partial<Modal> & { contentEl?: HTMLElement }).contentEl;
+        if (contentEl) {
+            return contentEl;
+        }
+        return this.ensureContainer();
+    }
+
+    private render(): void {
+        const host = this.getHost();
+        host.textContent = '';
+
+        const wrapper = document.createElement('div');
+        wrapper.classList.add('almanac-modal');
+        wrapper.dataset.modal = 'event-editor';
+        host.appendChild(wrapper);
+
+        const form = document.createElement('form');
+        form.classList.add('almanac-modal__form');
+        wrapper.appendChild(form);
+        form.addEventListener('submit', event => {
+            event.preventDefault();
+            if (!this.config.isSaving) {
+                this.config.onSubmit();
+            }
+        });
+
+        const heading = document.createElement('h2');
+        heading.textContent = this.draft.kind === 'recurring' ? 'Recurring event' : 'Single event';
+        heading.dataset.mode = this.draft.kind;
+        form.appendChild(heading);
+
+        if (this.config.submitError) {
+            const errorBanner = document.createElement('div');
+            errorBanner.classList.add('almanac-section', 'almanac-section--error');
+            errorBanner.textContent = this.config.submitError;
+            form.appendChild(errorBanner);
+        }
+
+        if (this.config.errors.length > 0) {
+            const errorList = document.createElement('ul');
+            errorList.classList.add('almanac-form-errors');
+            this.config.errors.forEach(message => {
+                const item = document.createElement('li');
+                item.textContent = message;
+                errorList.appendChild(item);
+            });
+            form.appendChild(errorList);
+        }
+
+        const calendarOption =
+            this.config.calendars.find(option => option.id === this.draft.calendarId) ?? this.config.calendars[0] ?? null;
+
+        const calendarField = document.createElement('label');
+        calendarField.classList.add('almanac-modal__field');
+        calendarField.textContent = 'Calendar';
+        const calendarSelect = document.createElement('select');
+        calendarSelect.disabled = this.config.isSaving;
+        this.config.calendars.forEach(option => {
+            const opt = document.createElement('option');
+            opt.value = option.id;
+            opt.textContent = option.name;
+            calendarSelect.appendChild(opt);
+        });
+        if (this.draft.calendarId) {
+            calendarSelect.value = this.draft.calendarId;
+        }
+        calendarSelect.addEventListener('change', () => {
+            this.config.onUpdate({ calendarId: calendarSelect.value });
+        });
+        calendarField.appendChild(calendarSelect);
+        form.appendChild(calendarField);
+        const titleField = document.createElement('label');
+        titleField.classList.add('almanac-modal__field');
+        titleField.textContent = 'Title';
+        const titleInput = document.createElement('input');
+        titleInput.type = 'text';
+        titleInput.required = true;
+        titleInput.value = this.draft.title;
+        titleInput.disabled = this.config.isSaving;
+        titleInput.addEventListener('input', () => {
+            this.config.onUpdate({ title: titleInput.value });
+        });
+        titleField.appendChild(titleInput);
+        form.appendChild(titleField);
+
+        const categoryField = document.createElement('label');
+        categoryField.classList.add('almanac-modal__field');
+        categoryField.textContent = 'Category';
+        const categoryInput = document.createElement('input');
+        categoryInput.type = 'text';
+        categoryInput.value = this.draft.category;
+        categoryInput.disabled = this.config.isSaving;
+        categoryInput.addEventListener('input', () => {
+            this.config.onUpdate({ category: categoryInput.value });
+        });
+        categoryField.appendChild(categoryInput);
+        form.appendChild(categoryField);
+
+        const noteField = document.createElement('label');
+        noteField.classList.add('almanac-modal__field');
+        noteField.textContent = 'Notes';
+        const noteInput = document.createElement('textarea');
+        noteInput.rows = 3;
+        noteInput.value = this.draft.note;
+        noteInput.disabled = this.config.isSaving;
+        noteInput.addEventListener('input', () => {
+            this.config.onUpdate({ note: noteInput.value });
+        });
+        noteField.appendChild(noteInput);
+        form.appendChild(noteField);
+
+        const dateGroup = document.createElement('div');
+        dateGroup.classList.add('almanac-modal__field', 'almanac-modal__field--inline');
+        const dateLabel = document.createElement('span');
+        dateLabel.textContent = 'Date';
+        dateGroup.appendChild(dateLabel);
+
+        const yearInput = document.createElement('input');
+        yearInput.type = 'number';
+        yearInput.min = '1';
+        yearInput.value = this.draft.year;
+        yearInput.disabled = this.config.isSaving;
+        yearInput.addEventListener('input', () => {
+            this.config.onUpdate({ year: yearInput.value });
+        });
+        dateGroup.appendChild(yearInput);
+
+        const monthSelect = document.createElement('select');
+        monthSelect.disabled = this.config.isSaving;
+        const months = calendarOption?.months ?? [];
+        months.forEach(month => {
+            const opt = document.createElement('option');
+            opt.value = month.id;
+            opt.textContent = month.name;
+            monthSelect.appendChild(opt);
+        });
+        if (this.draft.monthId) {
+            monthSelect.value = this.draft.monthId;
+        }
+
+        const dayInput = document.createElement('input');
+        dayInput.type = 'number';
+        dayInput.min = '1';
+        dayInput.value = this.draft.day;
+        dayInput.disabled = this.config.isSaving;
+
+        const updateDayLimit = () => {
+            const month = months.find(item => item.id === monthSelect.value);
+            if (month) {
+                dayInput.max = String(month.length);
+            } else {
+                dayInput.removeAttribute('max');
+            }
+        };
+        updateDayLimit();
+
+        monthSelect.addEventListener('change', () => {
+            this.config.onUpdate({ monthId: monthSelect.value });
+            updateDayLimit();
+        });
+        dateGroup.appendChild(monthSelect);
+
+        dayInput.addEventListener('input', () => {
+            this.config.onUpdate({ day: dayInput.value });
+        });
+        dateGroup.appendChild(dayInput);
+        form.appendChild(dateGroup);
+
+        const allDayField = document.createElement('label');
+        allDayField.classList.add('almanac-modal__checkbox');
+        const allDayInput = document.createElement('input');
+        allDayInput.type = 'checkbox';
+        allDayInput.checked = this.draft.allDay;
+        allDayInput.disabled = this.config.isSaving;
+        allDayInput.addEventListener('change', () => {
+            this.config.onUpdate({ allDay: allDayInput.checked });
+        });
+        allDayField.appendChild(allDayInput);
+        allDayField.appendChild(document.createTextNode('All-day event'));
+        form.appendChild(allDayField);
+
+        const needsTimeFields = !this.draft.allDay;
+        if (this.draft.kind === 'single') {
+            const precisionField = document.createElement('label');
+            precisionField.classList.add('almanac-modal__field');
+            precisionField.textContent = 'Time precision';
+            const precisionSelect = document.createElement('select');
+            precisionSelect.disabled = this.config.isSaving || this.draft.allDay;
+            ['day', 'hour', 'minute'].forEach(value => {
+                const opt = document.createElement('option');
+                opt.value = value;
+                opt.textContent = value.charAt(0).toUpperCase() + value.slice(1);
+                precisionSelect.appendChild(opt);
+            });
+            precisionSelect.value = this.draft.timePrecision;
+            precisionSelect.addEventListener('change', () => {
+                this.config.onUpdate({ timePrecision: precisionSelect.value as 'day' | 'hour' | 'minute' });
+            });
+            precisionField.appendChild(precisionSelect);
+            form.appendChild(precisionField);
+        }
+        if (needsTimeFields) {
+            const timeGroup = document.createElement('div');
+            timeGroup.classList.add('almanac-modal__field', 'almanac-modal__field--inline');
+            const timeLabel = document.createElement('span');
+            timeLabel.textContent = 'Time';
+            timeGroup.appendChild(timeLabel);
+
+            const hourInput = document.createElement('input');
+            hourInput.type = 'number';
+            hourInput.min = '0';
+            hourInput.value = this.draft.hour;
+            hourInput.disabled = this.config.isSaving;
+            hourInput.addEventListener('input', () => {
+                this.config.onUpdate({ hour: hourInput.value });
+            });
+            timeGroup.appendChild(hourInput);
+
+            const minuteInput = document.createElement('input');
+            minuteInput.type = 'number';
+            minuteInput.min = '0';
+            minuteInput.value = this.draft.minute;
+            minuteInput.disabled = this.config.isSaving;
+            minuteInput.addEventListener('input', () => {
+                this.config.onUpdate({ minute: minuteInput.value });
+            });
+            timeGroup.appendChild(minuteInput);
+
+            form.appendChild(timeGroup);
+        }
+
+        const durationField = document.createElement('label');
+        durationField.classList.add('almanac-modal__field');
+        durationField.textContent = 'Duration (minutes)';
+        const durationInput = document.createElement('input');
+        durationInput.type = 'number';
+        durationInput.min = '0';
+        durationInput.value = this.draft.durationMinutes;
+        durationInput.disabled = this.config.isSaving;
+        durationInput.addEventListener('input', () => {
+            this.config.onUpdate({ durationMinutes: durationInput.value });
+        });
+        durationField.appendChild(durationInput);
+        form.appendChild(durationField);
+
+        if (this.draft.kind === 'recurring') {
+            const ruleField = document.createElement('label');
+            ruleField.classList.add('almanac-modal__field');
+            ruleField.textContent = 'Rule type';
+            const ruleSelect = document.createElement('select');
+            ruleSelect.disabled = this.config.isSaving;
+            const ruleOptions: Array<{ value: EventEditorDraft['ruleType']; label: string }> = [
+                { value: 'weekly_dayIndex', label: 'Weekly' },
+                { value: 'monthly_position', label: 'Monthly position' },
+                { value: 'annual_offset', label: 'Annual offset' },
+            ];
+            ruleOptions.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option.value;
+                opt.textContent = option.label;
+                ruleSelect.appendChild(opt);
+            });
+            ruleSelect.value = this.draft.ruleType;
+            ruleSelect.addEventListener('change', () => {
+                this.config.onUpdate({ ruleType: ruleSelect.value as EventEditorDraft['ruleType'] });
+            });
+            ruleField.appendChild(ruleSelect);
+            form.appendChild(ruleField);
+
+            if (this.draft.ruleType === 'weekly_dayIndex') {
+                const weeklyField = document.createElement('label');
+                weeklyField.classList.add('almanac-modal__field');
+                weeklyField.textContent = 'Day of week';
+                const weeklySelect = document.createElement('select');
+                weeklySelect.disabled = this.config.isSaving;
+                const days = calendarOption ? calendarOption.daysPerWeek : 7;
+                for (let i = 0; i < days; i += 1) {
+                    const opt = document.createElement('option');
+                    opt.value = String(i);
+                    opt.textContent = `Day ${i + 1}`;
+                    weeklySelect.appendChild(opt);
+                }
+                weeklySelect.value = this.draft.ruleDayIndex;
+                weeklySelect.addEventListener('change', () => {
+                    this.config.onUpdate({ ruleDayIndex: weeklySelect.value });
+                });
+                weeklyField.appendChild(weeklySelect);
+
+                const intervalInput = document.createElement('input');
+                intervalInput.type = 'number';
+                intervalInput.min = '1';
+                intervalInput.value = this.draft.ruleInterval;
+                intervalInput.disabled = this.config.isSaving;
+                intervalInput.addEventListener('input', () => {
+                    this.config.onUpdate({ ruleInterval: intervalInput.value });
+                });
+                weeklyField.appendChild(intervalInput);
+                form.appendChild(weeklyField);
+            } else {
+                const monthField = document.createElement('label');
+                monthField.classList.add('almanac-modal__field');
+                monthField.textContent = 'Rule month';
+                const ruleMonthSelect = document.createElement('select');
+                ruleMonthSelect.disabled = this.config.isSaving;
+                (calendarOption?.months ?? []).forEach(month => {
+                    const opt = document.createElement('option');
+                    opt.value = month.id;
+                    opt.textContent = month.name;
+                    ruleMonthSelect.appendChild(opt);
+                });
+                ruleMonthSelect.value = this.draft.ruleMonthId || this.draft.monthId || '';
+                ruleMonthSelect.addEventListener('change', () => {
+                    this.config.onUpdate({ ruleMonthId: ruleMonthSelect.value });
+                });
+                monthField.appendChild(ruleMonthSelect);
+
+                const ruleDayInput = document.createElement('input');
+                ruleDayInput.type = 'number';
+                ruleDayInput.min = '1';
+                ruleDayInput.value = this.draft.ruleDay;
+                ruleDayInput.disabled = this.config.isSaving;
+                ruleDayInput.addEventListener('input', () => {
+                    this.config.onUpdate({ ruleDay: ruleDayInput.value });
+                });
+                monthField.appendChild(ruleDayInput);
+                form.appendChild(monthField);
+            }
+            const policyField = document.createElement('label');
+            policyField.classList.add('almanac-modal__field');
+            policyField.textContent = 'Time policy';
+            const policySelect = document.createElement('select');
+            policySelect.disabled = this.config.isSaving;
+            const policies: Array<{ value: EventEditorDraft['timePolicy']; label: string }> = [
+                { value: 'all_day', label: 'All day' },
+                { value: 'fixed', label: 'Fixed time' },
+                { value: 'offset', label: 'Offset from start' },
+            ];
+            policies.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option.value;
+                opt.textContent = option.label;
+                policySelect.appendChild(opt);
+            });
+            policySelect.value = this.draft.timePolicy;
+            policySelect.addEventListener('change', () => {
+                this.config.onUpdate({ timePolicy: policySelect.value as EventEditorDraft['timePolicy'] });
+            });
+            policyField.appendChild(policySelect);
+            form.appendChild(policyField);
+
+            const boundsField = document.createElement('div');
+            boundsField.classList.add('almanac-modal__field', 'almanac-modal__field--inline');
+            const boundsLabel = document.createElement('span');
+            boundsLabel.textContent = 'End date';
+            boundsField.appendChild(boundsLabel);
+
+            const endYearInput = document.createElement('input');
+            endYearInput.type = 'number';
+            endYearInput.min = '1';
+            endYearInput.value = this.draft.boundsEndYear;
+            endYearInput.disabled = this.config.isSaving;
+            endYearInput.addEventListener('input', () => {
+                this.config.onUpdate({ boundsEndYear: endYearInput.value });
+            });
+            boundsField.appendChild(endYearInput);
+
+            const endMonthSelect = document.createElement('select');
+            endMonthSelect.disabled = this.config.isSaving;
+            (calendarOption?.months ?? []).forEach(month => {
+                const opt = document.createElement('option');
+                opt.value = month.id;
+                opt.textContent = month.name;
+                endMonthSelect.appendChild(opt);
+            });
+            endMonthSelect.value = this.draft.boundsEndMonthId || '';
+            endMonthSelect.addEventListener('change', () => {
+                this.config.onUpdate({ boundsEndMonthId: endMonthSelect.value });
+            });
+            boundsField.appendChild(endMonthSelect);
+
+            const endDayInput = document.createElement('input');
+            endDayInput.type = 'number';
+            endDayInput.min = '1';
+            endDayInput.value = this.draft.boundsEndDay;
+            endDayInput.disabled = this.config.isSaving;
+            endDayInput.addEventListener('input', () => {
+                this.config.onUpdate({ boundsEndDay: endDayInput.value });
+            });
+            boundsField.appendChild(endDayInput);
+
+            form.appendChild(boundsField);
+        }
+
+        const previewSection = document.createElement('div');
+        previewSection.classList.add('almanac-modal__preview');
+        form.appendChild(previewSection);
+        const previewHeading = document.createElement('h3');
+        previewHeading.textContent = 'Upcoming occurrences';
+        previewSection.appendChild(previewHeading);
+        if (this.config.preview.length === 0) {
+            const emptyPreview = document.createElement('p');
+            emptyPreview.textContent = 'No preview available yet.';
+            previewSection.appendChild(emptyPreview);
+        } else {
+            const list = document.createElement('ul');
+            this.config.preview.slice(0, 5).forEach(item => {
+                const listItem = document.createElement('li');
+                listItem.textContent = item.label;
+                list.appendChild(listItem);
+            });
+            previewSection.appendChild(list);
+        }
+
+        const actions = document.createElement('div');
+        actions.classList.add('almanac-modal__actions');
+        form.appendChild(actions);
+
+        const saveButton = document.createElement('button');
+        saveButton.type = 'submit';
+        saveButton.textContent = this.config.isSaving ? 'Saving…' : 'Save event';
+        saveButton.classList.add('almanac-control-button');
+        saveButton.dataset.role = 'save-event';
+        saveButton.disabled = this.config.isSaving;
+        actions.appendChild(saveButton);
+
+        const cancelButton = document.createElement('button');
+        cancelButton.type = 'button';
+        cancelButton.textContent = 'Cancel';
+        cancelButton.classList.add('almanac-control-button');
+        cancelButton.disabled = this.config.isSaving;
+        cancelButton.addEventListener('click', () => {
+            this.config.onCancel();
+        });
+        actions.appendChild(cancelButton);
+
+        if (this.config.onDelete && this.draft.id) {
+            const deleteButton = document.createElement('button');
+            deleteButton.type = 'button';
+            deleteButton.textContent = 'Delete';
+            deleteButton.classList.add('almanac-control-button');
+            deleteButton.dataset.role = 'delete-event';
+            deleteButton.disabled = this.config.isSaving;
+            deleteButton.addEventListener('click', () => {
+                this.config.onDelete?.();
+            });
+            actions.appendChild(deleteButton);
+        }
+    }
+}
 
 class PhenomenonEditorModal extends Modal {
     private draft: PhenomenonEditorDraft;
@@ -428,6 +945,7 @@ export class AlmanacController {
     private currentState: AlmanacState | null = null;
     private showTimeJumpForm = false;
     private phenomenonEditorModal: PhenomenonEditorModal | null = null;
+    private eventEditorModal: EventEditorModal | null = null;
     private eventImportModal: EventImportDialog | null = null;
     private cartographerBridge: CartographerBridgeHandle | null = null;
 
@@ -901,6 +1419,25 @@ export class AlmanacController {
         const section = host.createDiv({ cls: 'almanac-manager' });
         const creationSection = section.createDiv({ cls: 'almanac-section almanac-manager__create' });
         this.renderCalendarCreateForm(creationSection, state);
+        const eventCreateSection = creationSection.createDiv({ cls: 'almanac-manager__event-create' });
+        eventCreateSection.createEl('h3', { text: 'Create event' });
+        const eventButtons = eventCreateSection.createDiv({ cls: 'almanac-manager__event-buttons' });
+        const managerSingleButton = eventButtons.createEl('button', {
+            text: 'Single event',
+            cls: 'almanac-control-button',
+            attr: { 'data-action': 'manager-event-single' },
+        });
+        managerSingleButton.addEventListener('click', () => {
+            this.runDispatch({ type: 'EVENT_CREATE_REQUESTED', mode: 'single' });
+        });
+        const managerRecurringButton = eventButtons.createEl('button', {
+            text: 'Recurring event',
+            cls: 'almanac-control-button',
+            attr: { 'data-action': 'manager-event-recurring' },
+        });
+        managerRecurringButton.addEventListener('click', () => {
+            this.runDispatch({ type: 'EVENT_CREATE_REQUESTED', mode: 'recurring' });
+        });
         const header = section.createDiv({ cls: 'almanac-manager__controls' });
 
         const modeGroup = header.createDiv({ cls: 'almanac-toggle-group' });
@@ -1655,6 +2192,24 @@ export class AlmanacController {
             this.runDispatch({ type: 'PHENOMENON_EDIT_REQUESTED' });
         });
 
+        const addSingleEventButton = actions.createEl('button', {
+            text: 'Add single event',
+            cls: 'almanac-control-button',
+            attr: { 'data-action': 'add-event-single' },
+        });
+        addSingleEventButton.addEventListener('click', () => {
+            this.runDispatch({ type: 'EVENT_CREATE_REQUESTED', mode: 'single' });
+        });
+
+        const addRecurringEventButton = actions.createEl('button', {
+            text: 'Add recurring event',
+            cls: 'almanac-control-button',
+            attr: { 'data-action': 'add-event-recurring' },
+        });
+        addRecurringEventButton.addEventListener('click', () => {
+            this.runDispatch({ type: 'EVENT_CREATE_REQUESTED', mode: 'recurring' });
+        });
+
         const importButton = actions.createEl('button', {
             text: 'Import',
             cls: 'almanac-control-button',
@@ -1735,12 +2290,22 @@ export class AlmanacController {
 
     private syncDialogs(state: AlmanacState): void {
         const eventsState = state.eventsUiState;
-        const calendars = state.calendarState.calendars.map(schema => ({ id: schema.id, name: schema.name }));
+        const phenomenonCalendars = state.calendarState.calendars.map(schema => ({ id: schema.id, name: schema.name }));
+        const calendarOptions: ReadonlyArray<EventEditorCalendarOption> = state.calendarState.calendars.map(schema => ({
+            id: schema.id,
+            name: schema.name,
+            daysPerWeek: schema.daysPerWeek,
+            months: schema.months.map(month => ({
+                id: month.id,
+                name: month.name,
+                length: month.length,
+            })),
+        }));
 
         if (eventsState.isEditorOpen && eventsState.editorDraft) {
             if (!this.phenomenonEditorModal) {
                 this.phenomenonEditorModal = new PhenomenonEditorModal(this.app, eventsState.editorDraft, {
-                    calendars,
+                    calendars: phenomenonCalendars,
                     isSaving: eventsState.isSaving,
                     error: eventsState.editorError,
                     onSave: draft => {
@@ -1755,12 +2320,59 @@ export class AlmanacController {
                 this.phenomenonEditorModal.update(eventsState.editorDraft, {
                     isSaving: eventsState.isSaving,
                     error: eventsState.editorError,
-                    calendars,
+                    calendars: phenomenonCalendars,
                 });
             }
         } else if (this.phenomenonEditorModal) {
             this.phenomenonEditorModal.close();
             this.phenomenonEditorModal = null;
+        }
+
+        if (eventsState.isEventEditorOpen && eventsState.eventEditorDraft) {
+            const mode: EventEditorMode = eventsState.eventEditorDraft.kind === 'recurring' ? 'recurring' : 'single';
+            const config: EventEditorModalConfig = {
+                mode,
+                calendars: calendarOptions,
+                errors: eventsState.eventEditorErrors,
+                preview: eventsState.eventEditorPreview,
+                isSaving: eventsState.isEventSaving,
+                submitError: eventsState.eventEditorError,
+                onUpdate: update => {
+                    void this.runDispatch({ type: 'EVENT_EDITOR_UPDATED', update });
+                },
+                onSubmit: () => {
+                    void this.runDispatch({ type: 'EVENT_EDITOR_SAVE_REQUESTED' });
+                },
+                onCancel: () => {
+                    void this.runDispatch({ type: 'EVENT_EDITOR_CANCELLED' });
+                },
+                onDelete: eventsState.eventEditorDraft.id
+                    ? () => {
+                          void this.runDispatch({
+                              type: 'EVENT_DELETE_REQUESTED',
+                              eventId: eventsState.eventEditorDraft!.id,
+                          });
+                      }
+                    : undefined,
+            };
+
+            if (!this.eventEditorModal) {
+                this.eventEditorModal = new EventEditorModal(this.app, eventsState.eventEditorDraft, config);
+                this.eventEditorModal.open();
+            } else {
+                this.eventEditorModal.update(eventsState.eventEditorDraft, {
+                    mode: config.mode,
+                    calendars: config.calendars,
+                    errors: config.errors,
+                    preview: config.preview,
+                    isSaving: config.isSaving,
+                    submitError: config.submitError,
+                    onDelete: config.onDelete,
+                });
+            }
+        } else if (this.eventEditorModal) {
+            this.eventEditorModal.close();
+            this.eventEditorModal = null;
         }
 
         if (eventsState.isImportDialogOpen) {

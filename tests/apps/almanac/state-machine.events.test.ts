@@ -196,4 +196,46 @@ describe("AlmanacStateMachine events refresh", () => {
         expect(state.eventsUiState.importSummary?.imported).toBe(1);
         expect(state.eventsUiState.phenomena.some(item => item.id === "phen-imported-ui")).toBe(true);
     });
+
+    it("creates single events via the editor", async () => {
+        await stateMachine.dispatch({ type: "ALMANAC_MODE_SELECTED", mode: "events" });
+        await stateMachine.dispatch({ type: "EVENT_CREATE_REQUESTED", mode: "single" });
+
+        let state = stateMachine.getState();
+        const draft = state.eventsUiState.eventEditorDraft;
+        expect(draft).toBeTruthy();
+        if (!draft) throw new Error("expected draft to exist");
+
+        await stateMachine.dispatch({
+            type: "EVENT_EDITOR_UPDATED",
+            update: { title: "Festival of Lights" },
+        });
+
+        await stateMachine.dispatch({ type: "EVENT_EDITOR_SAVE_REQUESTED" });
+
+        state = stateMachine.getState();
+        expect(state.eventsUiState.isEventEditorOpen).toBe(false);
+        const events = await eventRepo.listEvents(draft.calendarId);
+        expect(events.some(event => event.title === "Festival of Lights")).toBe(true);
+        expect(state.calendarState.upcomingEvents.some(event => event.title === "Festival of Lights")).toBe(true);
+    });
+
+    it("captures validation errors when saving incomplete events", async () => {
+        await stateMachine.dispatch({ type: "EVENT_CREATE_REQUESTED", mode: "single" });
+        await stateMachine.dispatch({ type: "EVENT_EDITOR_SAVE_REQUESTED" });
+
+        const state = stateMachine.getState();
+        expect(state.eventsUiState.isEventEditorOpen).toBe(true);
+        expect(state.eventsUiState.eventEditorErrors.some(error => error.includes("Titel"))).toBe(true);
+    });
+
+    it("deletes existing events through the editor", async () => {
+        await stateMachine.dispatch({ type: "EVENT_EDIT_REQUESTED", eventId: "evt-2" });
+        await stateMachine.dispatch({ type: "EVENT_DELETE_REQUESTED", eventId: "evt-2" });
+
+        const events = await eventRepo.listEvents(gregorianSchema.id);
+        expect(events.some(event => event.id === "evt-2")).toBe(false);
+        const state = stateMachine.getState();
+        expect(state.eventsUiState.bulkSelection).not.toContain("evt-2");
+    });
 });

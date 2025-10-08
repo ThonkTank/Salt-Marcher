@@ -442,4 +442,57 @@ describe("AlmanacController Dashboard", () => {
         const timeCard = container.querySelector(".almanac-time-card")?.textContent ?? "";
         expect(timeCard.includes("Day 15")).toBe(true);
     });
+
+    it("öffnet den Event-Editor und zeigt eine Vorschau", async () => {
+        const app = new App();
+        const controller = await createController(app);
+        const container = document.createElement("div");
+
+        await controller.onOpen(container);
+
+        const stateMachine = (controller as unknown as { stateMachine: AlmanacStateMachine }).stateMachine;
+        await stateMachine.dispatch({ type: "ALMANAC_MODE_SELECTED", mode: "events" });
+        await Promise.resolve();
+
+        const addButton = container.querySelector('[data-action="add-event-single"]') as HTMLButtonElement | null;
+        expect(addButton).toBeTruthy();
+        addButton?.click();
+        await Promise.resolve();
+
+        await stateMachine.dispatch({
+            type: "EVENT_EDITOR_UPDATED",
+            update: { title: "Harbor Festival" },
+        });
+        await Promise.resolve();
+
+        const modal = document.querySelector('[data-modal="event-editor"]');
+        expect(modal).toBeTruthy();
+        const previewItems = modal?.querySelectorAll('.almanac-modal__preview li') ?? [];
+        expect(previewItems.length).toBeGreaterThan(0);
+    });
+
+    it("zeigt Validierungsfehler im Event-Editor an", async () => {
+        const app = new App();
+        const controller = await createController(app);
+        const container = document.createElement("div");
+
+        await controller.onOpen(container);
+        const stateMachine = (controller as unknown as { stateMachine: AlmanacStateMachine }).stateMachine;
+        await stateMachine.dispatch({ type: "ALMANAC_MODE_SELECTED", mode: "events" });
+        await Promise.resolve();
+
+        const addButton = container.querySelector('[data-action="add-event-recurring"]') as HTMLButtonElement | null;
+        expect(addButton).toBeTruthy();
+        addButton?.click();
+        await Promise.resolve();
+
+        const saveButton = document.querySelector('[data-modal="event-editor"] [data-role="save-event"]') as HTMLButtonElement | null;
+        expect(saveButton).toBeTruthy();
+        saveButton?.click();
+        await Promise.resolve();
+
+        const errorList = document.querySelector('[data-modal="event-editor"] .almanac-form-errors');
+        expect(errorList).toBeTruthy();
+        expect(errorList?.textContent ?? "").toContain("Titel");
+    });
 });
