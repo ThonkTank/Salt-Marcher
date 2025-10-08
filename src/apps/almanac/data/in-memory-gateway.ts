@@ -42,12 +42,24 @@ interface ScopeState {
   currentTimestamp: CalendarTimestamp | null;
 }
 
+interface PersistenceState {
+  preferences: AlmanacPreferencesSnapshot;
+  travelLeaf: Map<string, TravelLeafPreferencesSnapshot>;
+}
+
 export class InMemoryStateGateway implements CalendarStateGateway {
   private readonly scopeState = new Map<string, ScopeState>([
     [GLOBAL_SCOPE, { activeCalendarId: null, currentTimestamp: null }],
   ]);
   private readonly travelLeafPrefs = new Map<string, TravelLeafPreferencesSnapshot>();
   private preferences: AlmanacPreferencesSnapshot = {};
+  private pendingMutations: Array<(state: PersistenceState) => void> = [];
+  private pendingFlushPromise: Promise<void> | null = null;
+  private pendingFlushResolve: (() => void) | null = null;
+  private pendingFlushReject: ((error: unknown) => void) | null = null;
+  private pendingFlushTimer: ReturnType<typeof setTimeout> | null = null;
+  private activeFlush: Promise<void> | null = null;
+  private readonly persistenceDebounceMs = 0;
 
   constructor(
     private readonly calendarRepo: CalendarRepository & CalendarDefaultsRepository,
@@ -339,26 +351,28 @@ export class InMemoryStateGateway implements CalendarStateGateway {
   }
 
   async savePreferences(partial: Partial<AlmanacPreferencesSnapshot>): Promise<void> {
-    const next: AlmanacPreferencesSnapshot = {
-      ...this.preferences,
-      ...partial,
-    };
-
-    if (partial.lastZoomByMode) {
-      next.lastZoomByMode = {
-        ...(this.preferences.lastZoomByMode ?? {}),
-        ...partial.lastZoomByMode,
+    await this.persistState(state => {
+      const next: AlmanacPreferencesSnapshot = {
+        ...state.preferences,
+        ...partial,
       };
-    }
 
-    if (partial.eventsFilters) {
-      next.eventsFilters = {
-        categories: [...(partial.eventsFilters.categories ?? [])],
-        calendarIds: [...(partial.eventsFilters.calendarIds ?? [])],
-      };
-    }
+      if (partial.lastZoomByMode) {
+        next.lastZoomByMode = {
+          ...(state.preferences.lastZoomByMode ?? {}),
+          ...partial.lastZoomByMode,
+        };
+      }
 
-    this.preferences = next;
+      if (partial.eventsFilters) {
+        next.eventsFilters = {
+          categories: [...(partial.eventsFilters.categories ?? [])],
+          calendarIds: [...(partial.eventsFilters.calendarIds ?? [])],
+        };
+      }
+
+      state.preferences = next;
+    }, { debounce: true });
   }
 
   getCurrentTimestamp(options?: { readonly travelId?: string | null }): CalendarTimestamp | null {
@@ -372,14 +386,120 @@ export class InMemoryStateGateway implements CalendarStateGateway {
   }
 
   async getTravelLeafPreferences(travelId: string): Promise<TravelLeafPreferencesSnapshot | null> {
-    return this.travelLeafPrefs.get(travelId) ?? null;
+    const prefs = this.travelLeafPrefs.get(travelId);
+    return prefs ? { ...prefs } : null;
   }
 
   async saveTravelLeafPreferences(
     travelId: string,
     prefs: TravelLeafPreferencesSnapshot,
   ): Promise<void> {
-    this.travelLeafPrefs.set(travelId, { ...prefs });
+    await this.persistState(state => {
+      state.travelLeaf.set(travelId, { ...prefs });
+    }, { debounce: true });
+  }
+
+  async flushPendingPersistence(): Promise<void> {
+    await this.flushDebouncedPersist();
+  }
+
+  private async persistState(
+    mutator: (state: PersistenceState) => void,
+    options?: { readonly debounce?: boolean },
+  ): Promise<void> {
+    if (options?.debounce) {
+      return this.enqueueDebouncedPersist(mutator);
+    }
+
+    await this.flushDebouncedPersist();
+    await this.commitMutations([mutator]);
+  }
+
+  private enqueueDebouncedPersist(mutator: (state: PersistenceState) => void): Promise<void> {
+    this.pendingMutations.push(mutator);
+
+    if (!this.pendingFlushPromise) {
+      this.pendingFlushPromise = new Promise((resolve, reject) => {
+        this.pendingFlushResolve = resolve;
+        this.pendingFlushReject = reject;
+      });
+    }
+
+    if (this.pendingFlushTimer) {
+      clearTimeout(this.pendingFlushTimer);
+    }
+
+    this.pendingFlushTimer = setTimeout(() => {
+      void this.flushDebouncedPersist();
+    }, this.persistenceDebounceMs);
+
+    return this.pendingFlushPromise;
+  }
+
+  private async flushDebouncedPersist(): Promise<void> {
+    if (this.pendingFlushTimer) {
+      clearTimeout(this.pendingFlushTimer);
+      this.pendingFlushTimer = null;
+    }
+
+    if (this.activeFlush) {
+      return this.activeFlush;
+    }
+
+    if (this.pendingMutations.length === 0) {
+      if (this.pendingFlushPromise) {
+        this.pendingFlushResolve?.();
+        this.pendingFlushPromise = null;
+        this.pendingFlushResolve = null;
+        this.pendingFlushReject = null;
+      }
+      return;
+    }
+
+    const mutations = this.pendingMutations;
+    this.pendingMutations = [];
+    const resolve = this.pendingFlushResolve;
+    const reject = this.pendingFlushReject;
+    this.pendingFlushPromise = null;
+    this.pendingFlushResolve = null;
+    this.pendingFlushReject = null;
+
+    const flushOperation = this.commitMutations(mutations)
+      .then(() => {
+        resolve?.();
+      })
+      .catch(error => {
+        reject?.(error);
+        throw error;
+      })
+      .finally(() => {
+        this.activeFlush = null;
+        if (this.pendingMutations.length > 0) {
+          void this.flushDebouncedPersist();
+        }
+      });
+
+    this.activeFlush = flushOperation;
+    await flushOperation;
+  }
+
+  private async commitMutations(
+    mutations: ReadonlyArray<(state: PersistenceState) => void>,
+  ): Promise<void> {
+    const snapshot: PersistenceState = {
+      preferences: clonePreferences(this.preferences),
+      travelLeaf: cloneTravelLeafMap(this.travelLeafPrefs),
+    };
+
+    for (const mutate of mutations) {
+      mutate(snapshot);
+    }
+
+    this.preferences = snapshot.preferences;
+    this.travelLeafPrefs.clear();
+    for (const [key, value] of snapshot.travelLeaf.entries()) {
+      this.travelLeafPrefs.set(key, { ...value });
+    }
   }
 
   private ensureScope(travelId: string | null): ScopeState {
@@ -502,15 +622,26 @@ export class InMemoryStateGateway implements CalendarStateGateway {
   }
 }
 
-function clonePreferences(preferences: AlmanacPreferencesSnapshot): AlmanacPreferencesSnapshot {
+function clonePreferences(preferences: AlmanacPreferencesSnapshot | undefined): AlmanacPreferencesSnapshot {
+  const base = preferences ?? {};
   return {
-    ...preferences,
-    lastZoomByMode: preferences.lastZoomByMode ? { ...preferences.lastZoomByMode } : undefined,
-    eventsFilters: preferences.eventsFilters
+    ...base,
+    lastZoomByMode: base.lastZoomByMode ? { ...base.lastZoomByMode } : undefined,
+    eventsFilters: base.eventsFilters
       ? {
-          categories: [...preferences.eventsFilters.categories],
-          calendarIds: [...preferences.eventsFilters.calendarIds],
+          categories: [...base.eventsFilters.categories],
+          calendarIds: [...base.eventsFilters.calendarIds],
         }
       : undefined,
   };
+}
+
+function cloneTravelLeafMap(
+  source: Map<string, TravelLeafPreferencesSnapshot>,
+): Map<string, TravelLeafPreferencesSnapshot> {
+  const clone = new Map<string, TravelLeafPreferencesSnapshot>();
+  for (const [key, value] of source.entries()) {
+    clone.set(key, { ...value });
+  }
+  return clone;
 }

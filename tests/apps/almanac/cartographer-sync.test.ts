@@ -25,6 +25,16 @@ import {
     GREGORIAN_CALENDAR_ID,
 } from "../../../src/apps/almanac/fixtures/gregorian.fixture";
 
+const flushGateway = async (instance: unknown): Promise<void> => {
+    if (
+        instance &&
+        typeof instance === "object" &&
+        typeof (instance as { flushPendingPersistence?: () => Promise<void> }).flushPendingPersistence === "function"
+    ) {
+        await (instance as { flushPendingPersistence: () => Promise<void> }).flushPendingPersistence();
+    }
+};
+
 describe("Cartographer sync gateway", () => {
     let calendarRepo: InMemoryCalendarRepository;
     let eventRepo: InMemoryEventRepository;
@@ -220,6 +230,7 @@ describe("Cartographer sync gateway", () => {
         await prefMachine.dispatch({ type: "TRAVEL_LEAF_MOUNTED", travelId });
         expect(prefMachine.getState().travelLeafState.visible).toBe(true);
 
+        await flushGateway(altGateway);
         const prefs = await altGateway.getTravelLeafPreferences(travelId);
         expect(prefs?.visible).toBe(true);
     });
@@ -229,6 +240,7 @@ describe("Cartographer sync gateway", () => {
         await machine.dispatch({ type: "TRAVEL_MODE_CHANGED", mode: "day" });
 
         expect(machine.getState().travelLeafState.mode).toBe("day");
+        await flushGateway(gateway);
         const prefs = await gateway.getTravelLeafPreferences(travelId);
         expect(prefs?.mode).toBe("day");
     });
@@ -243,6 +255,7 @@ describe("Cartographer sync gateway", () => {
         const panel = cartographerGateway.getPanelSnapshot(travelId);
         expect(panel?.lastAdvanceStep).toEqual({ amount: 1, unit: "hour" });
 
+        await flushGateway(gateway);
         const prefs = await gateway.getTravelLeafPreferences(travelId);
         expect(prefs?.lastViewedTimestamp?.hour).toBe(1);
     });

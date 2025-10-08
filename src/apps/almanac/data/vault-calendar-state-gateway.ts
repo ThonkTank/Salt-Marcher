@@ -57,6 +57,13 @@ export class VaultCalendarStateGateway implements CalendarStateGateway {
   private cache: GatewayStoreData = createInitialStore();
   private ready: Promise<void> | null;
   private initialised = false;
+  private pendingMutations: Array<(state: GatewayStoreData) => void> = [];
+  private pendingFlushPromise: Promise<void> | null = null;
+  private pendingFlushResolve: (() => void) | null = null;
+  private pendingFlushReject: ((error: unknown) => void) | null = null;
+  private pendingFlushTimer: ReturnType<typeof setTimeout> | null = null;
+  private activeFlush: Promise<void> | null = null;
+  private readonly persistenceDebounceMs = 25;
 
   constructor(
     private readonly calendarRepo: CalendarRepository & CalendarDefaultsRepository,
@@ -407,7 +414,7 @@ export class VaultCalendarStateGateway implements CalendarStateGateway {
       }
 
       state.preferences = merged;
-    });
+    }, { debounce: true });
   }
 
   getCurrentTimestamp(options?: { readonly travelId?: string | null }): CalendarTimestamp | null {
@@ -436,7 +443,7 @@ export class VaultCalendarStateGateway implements CalendarStateGateway {
     await this.ensureReady();
     await this.persistState(state => {
       state.travelLeaf[travelId] = { ...prefs };
-    });
+    }, { debounce: true });
   }
 
   private async ensureReady(): Promise<void> {
@@ -502,11 +509,99 @@ export class VaultCalendarStateGateway implements CalendarStateGateway {
     return null;
   }
 
-  private async persistState(mutator: (state: GatewayStoreData) => void): Promise<void> {
+  async flushPendingPersistence(): Promise<void> {
+    await this.flushDebouncedPersist();
+  }
+
+  private async persistState(
+    mutator: (state: GatewayStoreData) => void,
+    options?: { readonly debounce?: boolean },
+  ): Promise<void> {
+    if (options?.debounce) {
+      return this.enqueueDebouncedPersist(mutator);
+    }
+
+    await this.flushDebouncedPersist();
+    await this.commitMutations([mutator]);
+  }
+
+  private enqueueDebouncedPersist(mutator: (state: GatewayStoreData) => void): Promise<void> {
+    this.pendingMutations.push(mutator);
+
+    if (!this.pendingFlushPromise) {
+      this.pendingFlushPromise = new Promise((resolve, reject) => {
+        this.pendingFlushResolve = resolve;
+        this.pendingFlushReject = reject;
+      });
+    }
+
+    if (this.pendingFlushTimer) {
+      clearTimeout(this.pendingFlushTimer);
+    }
+
+    this.pendingFlushTimer = setTimeout(() => {
+      void this.flushDebouncedPersist();
+    }, this.persistenceDebounceMs);
+
+    return this.pendingFlushPromise;
+  }
+
+  private async flushDebouncedPersist(): Promise<void> {
+    if (this.pendingFlushTimer) {
+      clearTimeout(this.pendingFlushTimer);
+      this.pendingFlushTimer = null;
+    }
+
+    if (this.activeFlush) {
+      return this.activeFlush;
+    }
+
+    if (this.pendingMutations.length === 0) {
+      if (this.pendingFlushPromise) {
+        this.pendingFlushResolve?.();
+        this.pendingFlushPromise = null;
+        this.pendingFlushResolve = null;
+        this.pendingFlushReject = null;
+      }
+      return;
+    }
+
+    const mutations = this.pendingMutations;
+    this.pendingMutations = [];
+    const resolve = this.pendingFlushResolve;
+    const reject = this.pendingFlushReject;
+    this.pendingFlushPromise = null;
+    this.pendingFlushResolve = null;
+    this.pendingFlushReject = null;
+
+    const flushOperation = this.commitMutations(mutations)
+      .then(() => {
+        resolve?.();
+      })
+      .catch(error => {
+        reject?.(error);
+        throw error;
+      })
+      .finally(() => {
+        this.activeFlush = null;
+        if (this.pendingMutations.length > 0) {
+          void this.flushDebouncedPersist();
+        }
+      });
+
+    this.activeFlush = flushOperation;
+    await flushOperation;
+  }
+
+  private async commitMutations(
+    mutations: ReadonlyArray<(state: GatewayStoreData) => void>,
+  ): Promise<void> {
     try {
       await this.store.update(state => {
         const draft = normaliseStore(state);
-        mutator(draft);
+        for (const mutate of mutations) {
+          mutate(draft);
+        }
         this.cache = normaliseStore(draft);
         return this.cache;
       });
