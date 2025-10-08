@@ -1,6 +1,6 @@
 // tests/apps/almanac/cartographer-sync.test.ts
 // Prüft die Synchronisation zwischen Almanac-State-Machine und dem Cartographer-Hook-Gateway.
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { InMemoryStateGateway } from "../../../src/apps/almanac/data/in-memory-gateway";
 import {
@@ -16,6 +16,10 @@ import {
 } from "../../../src/apps/almanac/domain/calendar-timestamp";
 import { AlmanacStateMachine } from "../../../src/apps/almanac/mode/state-machine";
 import { CartographerHookGateway } from "../../../src/apps/almanac/mode/cartographer-gateway";
+import {
+    registerCartographerBridge,
+    resetCartographerBridge,
+} from "../../../src/apps/almanac/mode/cartographer-bridge";
 import {
     gregorianSchema,
     GREGORIAN_CALENDAR_ID,
@@ -75,6 +79,10 @@ describe("Cartographer sync gateway", () => {
 
         machine = new AlmanacStateMachine(calendarRepo, eventRepo, gateway, phenomenonRepo, cartographerGateway);
         await machine.dispatch({ type: "INIT_ALMANAC", travelId });
+    });
+
+    afterEach(() => {
+        resetCartographerBridge();
     });
 
     it("publishes an initial panel snapshot for travel context", () => {
@@ -237,6 +245,26 @@ describe("Cartographer sync gateway", () => {
 
         const prefs = await gateway.getTravelLeafPreferences(travelId);
         expect(prefs?.lastViewedTimestamp?.hour).toBe(1);
+    });
+
+    it("bridges cartographer quick steps into the Almanac state machine", async () => {
+        const bridge = registerCartographerBridge(machine);
+        await bridge.mount(travelId);
+
+        await bridge.handlers.onAdvance({ amount: 1, unit: "hour" });
+
+        const stateAfterAdvance = machine.getState();
+        expect(stateAfterAdvance.travelLeafState.lastQuickStep).toEqual({ amount: 1, unit: "hour" });
+        const panel = cartographerGateway.getPanelSnapshot(travelId);
+        expect(panel?.lastAdvanceStep).toEqual({ amount: 1, unit: "hour" });
+
+        await bridge.handlers.onModeChange("day");
+        expect(machine.getState().travelLeafState.mode).toBe("day");
+
+        await bridge.handlers.onFollowUp("evt-dawn");
+        expect(machine.getState().almanacUiState.mode).toBe("events");
+
+        bridge.release();
     });
 });
 

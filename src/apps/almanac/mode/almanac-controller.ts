@@ -37,6 +37,10 @@ import {
     type ImportSummary,
 } from './contracts';
 import { AlmanacStateMachine } from './state-machine';
+import {
+    registerCartographerBridge,
+    type CartographerBridgeHandle,
+} from './cartographer-bridge';
 import { renderEventsMap as renderEventsMapComponent } from './events';
 
 const MODE_COPY: Record<AlmanacMode, { label: string; description: string }> = {
@@ -425,6 +429,7 @@ export class AlmanacController {
     private showTimeJumpForm = false;
     private phenomenonEditorModal: PhenomenonEditorModal | null = null;
     private eventImportModal: EventImportDialog | null = null;
+    private cartographerBridge: CartographerBridgeHandle | null = null;
 
     constructor(private readonly app: App, deps: AlmanacControllerDependencies = {}) {
         const calendarRepo = deps.calendarRepo ?? new InMemoryCalendarRepository();
@@ -453,6 +458,11 @@ export class AlmanacController {
         this.containerEl = container;
         container.empty();
         container.addClass('almanac-container');
+
+        this.cartographerBridge = registerCartographerBridge(this.stateMachine, {
+            onRequestJump: () => this.openTimeJumpFromCartographer(),
+            onFollowUp: eventId => this.handleTravelFollowUp(eventId),
+        });
 
         const activeCalendarId = this.gateway.getActiveCalendarId();
         if (!activeCalendarId) {
@@ -485,6 +495,8 @@ export class AlmanacController {
         this.eventImportModal?.close();
         this.eventImportModal = null;
         this.containerEl = null;
+        this.cartographerBridge?.release();
+        this.cartographerBridge = null;
     }
 
     private render(state: AlmanacState): void {
@@ -1791,5 +1803,17 @@ export class AlmanacController {
         return this.stateMachine.dispatch(event).catch(error => {
             console.error('Almanac dispatch error', error);
         });
+    }
+
+    private async openTimeJumpFromCartographer(): Promise<void> {
+        this.showTimeJumpForm = true;
+        if (this.currentState && this.containerEl) {
+            this.render(this.currentState);
+        }
+    }
+
+    private async handleTravelFollowUp(eventId: string): Promise<void> {
+        console.info('[almanac] travel follow-up requested', { eventId });
+        await this.runDispatch({ type: 'ALMANAC_MODE_SELECTED', mode: 'events' });
     }
 }
