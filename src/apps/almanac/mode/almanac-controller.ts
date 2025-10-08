@@ -1561,6 +1561,63 @@ export class AlmanacController {
     }
 
     private renderCalendarOverview(host: HTMLElement, state: AlmanacState): void {
+        const conflict = state.managerUiState.conflictDialog;
+        if (conflict) {
+            const banner = host.createDiv({ cls: 'almanac-section almanac-section--error' });
+            banner.createEl('h3', { text: 'Calendar conflict' });
+            banner.createEl('p', { text: conflict.message });
+            if (conflict.details.length > 0) {
+                const list = banner.createEl('ul', { cls: 'almanac-form-errors' });
+                conflict.details.forEach(detail => list.createEl('li', { text: detail }));
+            }
+            const dismiss = banner.createEl('button', { text: 'Dismiss' });
+            dismiss.addEventListener('click', () => {
+                void this.runDispatch({ type: 'CALENDAR_CONFLICT_DISMISSED' });
+            });
+        }
+
+        const deleteDialog = state.managerUiState.deleteDialog;
+        if (deleteDialog) {
+            const dialog = host.createDiv({ cls: 'almanac-section almanac-section--warning' });
+            dialog.createEl('h3', { text: `Delete ${deleteDialog.calendarName}?` });
+            dialog.createEl('p', {
+                text: 'Deleting a calendar removes it from the Almanac. This action cannot be undone.',
+            });
+            if (deleteDialog.requiresFallback) {
+                dialog.createEl('p', { text: 'A different calendar will be promoted to the default selection.' });
+            }
+            if (deleteDialog.linkedTravelIds.length > 0) {
+                const travelList = dialog.createEl('ul');
+                dialog.createEl('p', { text: 'Travel defaults to clear:' });
+                deleteDialog.linkedTravelIds.forEach(travelId => travelList.createEl('li', { text: travelId }));
+            }
+            if (deleteDialog.linkedPhenomena.length > 0) {
+                const phenomenaList = dialog.createEl('ul', { cls: 'almanac-form-errors' });
+                dialog.createEl('p', { text: 'Linked phenomena preventing deletion:' });
+                deleteDialog.linkedPhenomena.forEach(name => phenomenaList.createEl('li', { text: name }));
+            }
+            if (deleteDialog.error) {
+                dialog.createEl('p', { text: deleteDialog.error, cls: 'almanac-form-errors' });
+            }
+            const actions = dialog.createDiv({ cls: 'almanac-create-form__actions' });
+            const confirm = actions.createEl('button', {
+                text: deleteDialog.isDeleting ? 'Deleting…' : 'Delete calendar',
+                attr: { type: 'button' },
+            });
+            confirm.disabled = deleteDialog.isDeleting || deleteDialog.linkedPhenomena.length > 0;
+            confirm.addEventListener('click', () => {
+                void this.runDispatch({
+                    type: 'CALENDAR_DELETE_CONFIRMED',
+                    calendarId: deleteDialog.calendarId,
+                });
+            });
+            const cancel = actions.createEl('button', { text: 'Cancel', attr: { type: 'button' } });
+            cancel.disabled = deleteDialog.isDeleting;
+            cancel.addEventListener('click', () => {
+                void this.runDispatch({ type: 'CALENDAR_DELETE_CANCELLED' });
+            });
+        }
+
         const table = host.createEl('table', { cls: 'almanac-table' });
         const thead = table.createEl('thead');
         const headRow = thead.createEl('tr');
@@ -1621,6 +1678,7 @@ export class AlmanacController {
             row.createEl('td', { text: String(schema.months.length) });
 
             const actions = row.createEl('td');
+            const editState = state.managerUiState.editStateById[schema.id];
             const selectBtn = actions.createEl('button', { text: isActive ? 'Active' : 'Activate' });
             selectBtn.disabled = isActive || state.calendarState.isPersisting;
             if (!isActive) {
@@ -1638,10 +1696,113 @@ export class AlmanacController {
                     this.runDispatch({ type: 'CALENDAR_DEFAULT_SET_REQUESTED', calendarId: schema.id });
                 });
             }
+
+            const editBtn = actions.createEl('button', { text: 'Edit' });
+            editBtn.disabled = Boolean(state.calendarState.isPersisting || editState?.isSaving);
+            editBtn.addEventListener('click', () => {
+                void this.runDispatch({ type: 'CALENDAR_EDIT_REQUESTED', calendarId: schema.id });
+            });
+
+            const deleteBtn = actions.createEl('button', { text: 'Delete' });
+            deleteBtn.classList.add('almanac-button--danger');
+            deleteBtn.disabled = Boolean(state.managerUiState.deleteDialog?.isDeleting);
+            deleteBtn.addEventListener('click', () => {
+                void this.runDispatch({ type: 'CALENDAR_DELETE_REQUESTED', calendarId: schema.id });
+            });
+
+            if (editState) {
+                const editRow = body.createEl('tr', { cls: 'almanac-calendar-edit-row' });
+                const editCell = editRow.createEl('td', { attr: { colspan: '6' } });
+                const form = editCell.createEl('form', { cls: 'almanac-edit-form' });
+                form.addEventListener('submit', event => {
+                    event.preventDefault();
+                    void this.runDispatch({ type: 'CALENDAR_UPDATE_REQUESTED', calendarId: schema.id });
+                });
+                form.createEl('h4', { text: `Edit ${schema.name}` });
+                if (editState.errors.length > 0) {
+                    const errorList = form.createEl('ul', { cls: 'almanac-form-errors' });
+                    editState.errors.forEach(message => errorList.createEl('li', { text: message }));
+                }
+                if (editState.warnings.length > 0) {
+                    const warningList = form.createEl('ul', { cls: 'almanac-form-errors almanac-form-errors--warning' });
+                    editState.warnings.forEach(message => warningList.createEl('li', { text: message }));
+                }
+
+                const buildField = (
+                    label: string,
+                    field: 'name' | 'description' | 'hoursPerDay' | 'minutesPerHour' | 'minuteStep',
+                    options: { type: 'text' | 'number'; multiline?: boolean; min?: string; step?: string },
+                ) => {
+                    const wrapper = form.createEl('label', { cls: 'almanac-modal__field' });
+                    wrapper.createEl('span', { text: label });
+                    if (options.multiline) {
+                        const textarea = wrapper.createEl('textarea');
+                        textarea.value = editState.draft[field];
+                        textarea.disabled = editState.isSaving;
+                        textarea.addEventListener('input', () => {
+                            void this.runDispatch({
+                                type: 'CALENDAR_EDIT_FORM_UPDATED',
+                                calendarId: schema.id,
+                                field,
+                                value: textarea.value,
+                            });
+                        });
+                    } else {
+                        const input = wrapper.createEl('input');
+                        input.type = options.type;
+                        if (options.min) input.min = options.min;
+                        if (options.step) input.step = options.step;
+                        input.value = editState.draft[field];
+                        input.disabled = editState.isSaving;
+                        input.addEventListener('input', () => {
+                            void this.runDispatch({
+                                type: 'CALENDAR_EDIT_FORM_UPDATED',
+                                calendarId: schema.id,
+                                field,
+                                value: input.value,
+                            });
+                        });
+                    }
+                };
+
+                buildField('Name', 'name', { type: 'text' });
+                buildField('Description', 'description', { type: 'text', multiline: true });
+                buildField('Hours per day', 'hoursPerDay', { type: 'number', min: '1', step: '1' });
+                buildField('Minutes per hour', 'minutesPerHour', { type: 'number', min: '1', step: '1' });
+                buildField('Minute step', 'minuteStep', { type: 'number', min: '1', step: '1' });
+
+                const formActions = form.createDiv({ cls: 'almanac-create-form__actions' });
+                const save = formActions.createEl('button', {
+                    text: editState.isSaving ? 'Saving…' : 'Save changes',
+                    attr: { type: 'submit' },
+                });
+                save.disabled = editState.isSaving;
+
+                const cancel = formActions.createEl('button', { text: 'Cancel', attr: { type: 'button' } });
+                cancel.disabled = editState.isSaving;
+                cancel.addEventListener('click', () => {
+                    void this.runDispatch({ type: 'CALENDAR_EDIT_CANCELLED', calendarId: schema.id });
+                });
+            }
         });
     }
 
     private renderManagerCalendarView(host: HTMLElement, state: AlmanacState): void {
+        const conflict = state.managerUiState.conflictDialog;
+        if (conflict) {
+            const banner = host.createDiv({ cls: 'almanac-section almanac-section--error' });
+            banner.createEl('h3', { text: 'Calendar conflict' });
+            banner.createEl('p', { text: conflict.message });
+            if (conflict.details.length > 0) {
+                const list = banner.createEl('ul', { cls: 'almanac-form-errors' });
+                conflict.details.forEach(detail => list.createEl('li', { text: detail }));
+            }
+            const dismiss = banner.createEl('button', { text: 'Dismiss' });
+            dismiss.addEventListener('click', () => {
+                void this.runDispatch({ type: 'CALENDAR_CONFLICT_DISMISSED' });
+            });
+        }
+
         const calendar = this.getActiveCalendar(state);
         if (!calendar) {
             host.createEl('p', { text: 'No calendar selected.', cls: 'almanac-empty' });
