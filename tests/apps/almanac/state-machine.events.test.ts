@@ -15,6 +15,7 @@ import {
     getDefaultCurrentTimestamp,
     gregorianSchema,
 } from "../../../src/apps/almanac/fixtures/gregorian.fixture";
+import { createDayTimestamp } from "../../../src/apps/almanac/domain/calendar-timestamp";
 import { createSamplePhenomena } from "../../../src/apps/almanac/fixtures/phenomena.fixture";
 
 const flushGateway = async (instance: unknown): Promise<void> => {
@@ -250,6 +251,28 @@ describe("AlmanacStateMachine events refresh", () => {
         const events = await eventRepo.listEvents(draft.calendarId);
         expect(events.some(event => event.title === "Festival of Lights")).toBe(true);
         expect(state.calendarState.upcomingEvents.some(event => event.title === "Festival of Lights")).toBe(true);
+    });
+
+    it("prefills event drafts with the provided timestamp anchor", async () => {
+        await stateMachine.dispatch({ type: "ALMANAC_MODE_SELECTED", mode: "events" });
+
+        const targetTimestamp = createDayTimestamp(gregorianSchema.id, 2025, "mar", 21);
+
+        await stateMachine.dispatch({
+            type: "EVENT_CREATE_REQUESTED",
+            mode: "single",
+            timestamp: targetTimestamp,
+        });
+
+        const state = stateMachine.getState();
+        const draft = state.eventsUiState.eventEditorDraft;
+        expect(draft).toBeTruthy();
+        if (!draft) throw new Error("expected draft to exist");
+
+        expect(draft.calendarId).toBe(targetTimestamp.calendarId);
+        expect(draft.year).toBe(String(targetTimestamp.year));
+        expect(draft.monthId).toBe(targetTimestamp.monthId);
+        expect(draft.day).toBe(String(targetTimestamp.day));
     });
 
     it("captures validation errors when saving incomplete events", async () => {

@@ -335,7 +335,12 @@ export type AlmanacEvent =
     | { readonly type: "EVENT_IMPORT_REQUESTED" }
     | { readonly type: "EVENT_IMPORT_CANCELLED" }
     | { readonly type: "EVENT_IMPORT_SUBMITTED"; readonly payload: string }
-    | { readonly type: "EVENT_CREATE_REQUESTED"; readonly mode: EventEditorMode; readonly calendarId?: string }
+    | {
+          readonly type: "EVENT_CREATE_REQUESTED";
+          readonly mode: EventEditorMode;
+          readonly calendarId?: string;
+          readonly timestamp?: CalendarTimestamp;
+      }
     | { readonly type: "EVENT_EDIT_REQUESTED"; readonly eventId: string }
     | { readonly type: "EVENT_EDITOR_UPDATED"; readonly update: Partial<EventEditorDraft> }
     | { readonly type: "EVENT_EDITOR_CANCELLED" }

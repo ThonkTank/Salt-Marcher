@@ -235,7 +235,7 @@ export class AlmanacStateMachine {
                 await this.handleEventImportSubmitted(event.payload);
                 break;
             case "EVENT_CREATE_REQUESTED":
-                await this.handleEventCreateRequested(event.mode, event.calendarId);
+                await this.handleEventCreateRequested(event.mode, event.calendarId, event.timestamp);
                 break;
             case "EVENT_EDIT_REQUESTED":
                 await this.handleEventEditRequested(event.eventId);
@@ -1235,9 +1235,11 @@ export class AlmanacStateMachine {
     private async handleEventCreateRequested(
         mode: EventEditorMode,
         calendarId?: string,
+        timestamp?: CalendarTimestamp,
     ): Promise<void> {
         const fallbackCalendarId =
             calendarId
+            ?? timestamp?.calendarId
             ?? this.state.calendarState.activeCalendarId
             ?? this.state.calendarState.defaultCalendarId
             ?? (this.state.calendarState.calendars[0]?.id ?? null);
@@ -1260,8 +1262,14 @@ export class AlmanacStateMachine {
         }
 
         const schema = this.getCalendarSchema(fallbackCalendarId);
-        const referenceTimestamp = this.state.calendarState.currentTimestamp;
-        const reference = referenceTimestamp && referenceTimestamp.calendarId === fallbackCalendarId
+        const currentTimestamp = this.state.calendarState.currentTimestamp;
+        const referenceTimestamp =
+            timestamp && timestamp.calendarId === fallbackCalendarId
+                ? timestamp
+                : currentTimestamp && currentTimestamp.calendarId === fallbackCalendarId
+                ? currentTimestamp
+                : undefined;
+        const reference = referenceTimestamp
             ? { year: referenceTimestamp.year, monthId: referenceTimestamp.monthId, day: referenceTimestamp.day }
             : schema
             ? { year: schema.epoch.year, monthId: schema.epoch.monthId, day: schema.epoch.day }
