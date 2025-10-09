@@ -117,6 +117,37 @@ describe("AlmanacStateMachine calendar creation", () => {
         saveSpy.mockRestore();
     });
 
+    it("keeps manager and calendar anchors in sync when navigating to the next period", async () => {
+        const initialState = stateMachine.getState();
+        const baseTimestamp = initialState.calendarState.currentTimestamp;
+        expect(baseTimestamp).not.toBeNull();
+
+        await stateMachine.dispatch({ type: "MANAGER_NAVIGATION_REQUESTED", direction: "next" });
+
+        const navigated = stateMachine.getState();
+        expect(navigated.managerUiState.anchorTimestamp).not.toBeNull();
+        expect(navigated.managerUiState.anchorTimestamp?.monthId).toBe("feb");
+        expect(navigated.calendarViewState.anchorTimestamp?.monthId).toBe("feb");
+        expect(navigated.calendarViewState.events).toEqual(navigated.managerUiState.agendaItems);
+        expect(navigated.calendarViewState.events.map(event => event.title)).toContain("Valentine's Day");
+        expect(navigated.managerUiState.jumpPreview).toEqual([]);
+    });
+
+    it("realigns both views when navigating back to today", async () => {
+        await stateMachine.dispatch({ type: "MANAGER_NAVIGATION_REQUESTED", direction: "next" });
+        const afterNext = stateMachine.getState();
+        const currentTimestamp = afterNext.calendarState.currentTimestamp;
+        expect(currentTimestamp).not.toBeNull();
+
+        await stateMachine.dispatch({ type: "MANAGER_NAVIGATION_REQUESTED", direction: "today" });
+
+        const reset = stateMachine.getState();
+        expect(reset.managerUiState.anchorTimestamp).toEqual(currentTimestamp);
+        expect(reset.calendarViewState.anchorTimestamp).toEqual(currentTimestamp);
+        expect(reset.calendarViewState.events).toEqual(reset.managerUiState.agendaItems);
+        expect(reset.calendarViewState.events.map(event => event.title)).toContain("New Year's Day");
+    });
+
     it("restores the persisted calendar view mode on initialisation", async () => {
         await gateway.savePreferences({ calendarViewMode: "week" });
         await flushGateway(gateway);
