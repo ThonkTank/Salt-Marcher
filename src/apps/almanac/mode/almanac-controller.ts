@@ -1193,7 +1193,8 @@ export class AlmanacController {
                 void this.runDispatch({
                     type: 'EVENT_CREATE_REQUESTED',
                     mode: 'single',
-                    calendarId: state.calendarState.activeCalendarId ?? undefined,
+                    calendarId: timestamp?.calendarId ?? state.calendarState.activeCalendarId ?? undefined,
+                    timestamp,
                 });
             },
             onEventSelect: (eventId) => {
