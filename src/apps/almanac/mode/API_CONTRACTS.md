@@ -322,7 +322,6 @@ interface AlmanacPreferencesDTO {
   lastMode?: AlmanacMode;
   managerViewMode?: CalendarManagerViewMode;
   eventsViewMode?: EventsViewMode;
-  lastZoomByMode?: Partial<Record<AlmanacMode, CalendarViewZoom>>;
   eventsFilters?: EventsFilterState;
   lastSelectedPhenomenonId?: string;
 }

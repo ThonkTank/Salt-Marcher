@@ -194,6 +194,26 @@ describe("AlmanacController Dashboard", () => {
         expect(weekButton?.classList.contains('is-active')).toBe(true);
     });
 
+    it("ändert den Kalenderzoom über das Dropdown", async () => {
+        const app = new App();
+        const controller = await createController(app);
+        const container = document.createElement("div");
+
+        await controller.onOpen(container);
+
+        const stateMachine = (controller as unknown as { stateMachine: AlmanacStateMachine }).stateMachine;
+        const weekTab = container.querySelector(
+            '.almanac-calendar-view__tabs [data-tab-id="week"]',
+        ) as HTMLButtonElement | null;
+        expect(weekTab).toBeTruthy();
+
+        weekTab?.click();
+
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        expect(stateMachine.getState().calendarViewState.mode).toBe('week');
+    });
+
     it("wechseln der Modi aktualisiert die Ansicht", async () => {
         const app = new App();
         const controller = await createController(app);
@@ -203,9 +223,6 @@ describe("AlmanacController Dashboard", () => {
 
         const stateMachine = (controller as unknown as { stateMachine: AlmanacStateMachine }).stateMachine;
         await stateMachine.dispatch({ type: "ALMANAC_MODE_SELECTED", mode: "manager" });
-        await new Promise(resolve => setTimeout(resolve, 0));
-
-        await stateMachine.dispatch({ type: "MANAGER_VIEW_MODE_CHANGED", viewMode: "overview" });
         await new Promise(resolve => setTimeout(resolve, 0));
 
         expect(container.querySelector('table.almanac-table')).toBeTruthy();

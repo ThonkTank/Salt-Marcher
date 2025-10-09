@@ -399,13 +399,6 @@ export class VaultCalendarStateGateway implements CalendarStateGateway {
         ...partial,
       };
 
-      if (partial.lastZoomByMode) {
-        merged.lastZoomByMode = {
-          ...(state.preferences.lastZoomByMode ?? {}),
-          ...partial.lastZoomByMode,
-        };
-      }
-
       if (partial.eventsFilters) {
         merged.eventsFilters = {
           categories: [...(partial.eventsFilters.categories ?? [])],
@@ -691,7 +684,6 @@ function clonePreferences(preferences: AlmanacPreferencesSnapshot | undefined): 
   const base = preferences ?? {};
   return {
     ...base,
-    lastZoomByMode: base.lastZoomByMode ? { ...base.lastZoomByMode } : undefined,
     eventsFilters: base.eventsFilters
       ? {
           categories: [...base.eventsFilters.categories],

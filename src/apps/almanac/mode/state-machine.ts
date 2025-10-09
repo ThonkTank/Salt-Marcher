@@ -11,6 +11,7 @@
  */
 
 import {
+    CALENDAR_VIEW_MODE_METADATA,
     createDefaultCalendarDraft,
     createCalendarDraftFromSchema,
     createEmptyRecurringEventDraft,
@@ -19,8 +20,6 @@ import {
     DEFAULT_ALMANAC_MODE,
     DEFAULT_CALENDAR_VIEW_MODE,
     DEFAULT_EVENTS_VIEW_MODE,
-    DEFAULT_MANAGER_VIEW_MODE,
-    DEFAULT_MANAGER_ZOOM,
     type AlmanacEvent,
     type AlmanacInitOverrides,
     type AlmanacMode,
@@ -32,7 +31,6 @@ import {
     type CalendarConflictDialogState,
     type CalendarDeleteDialogState,
     type CalendarEditState,
-    type CalendarManagerViewMode,
     type CalendarStateSlice,
     type CalendarViewMode,
     type CalendarViewZoom,
@@ -103,13 +101,6 @@ type PhenomenaListingOptions = {
     readonly importSummary?: ImportSummary | null;
 };
 
-const ZOOM_LABEL: Record<CalendarViewZoom, string> = {
-    month: "Month view",
-    week: "Week view",
-    day: "Day view",
-    hour: "Hour view",
-};
-
 export class AlmanacStateMachine {
     private state: AlmanacState = createInitialAlmanacState();
     private readonly listeners = new Set<AlmanacStateListener>();
@@ -152,12 +143,6 @@ export class AlmanacStateMachine {
                 break;
             case "CALENDAR_VIEW_MODE_CHANGED":
                 await this.handleCalendarViewMode(event.mode);
-                break;
-            case "MANAGER_VIEW_MODE_CHANGED":
-                await this.handleManagerViewMode(event.viewMode);
-                break;
-            case "MANAGER_ZOOM_CHANGED":
-                await this.handleManagerZoom(event.zoom);
                 break;
             case "MANAGER_NAVIGATION_REQUESTED":
                 this.handleManagerNavigation(event.direction);
@@ -341,7 +326,8 @@ export class AlmanacStateMachine {
                     : { filterCount: upcoming };
             }
             case "manager": {
-                const zoomLabel = ZOOM_LABEL[state.calendarViewState.zoom];
+                const modeMeta = CALENDAR_VIEW_MODE_METADATA[state.calendarViewState.mode];
+                const zoomLabel = modeMeta ? `${modeMeta.label} view` : undefined;
                 const filterCount = state.managerUiState.selection.length;
                 return { zoomLabel, filterCount: filterCount > 0 ? filterCount : undefined };
             }
@@ -362,8 +348,6 @@ export class AlmanacStateMachine {
             overrides &&
                 (overrides.mode !== undefined ||
                     overrides.calendarViewMode !== undefined ||
-                    overrides.managerView !== undefined ||
-                    overrides.managerZoom !== undefined ||
                     overrides.eventsView !== undefined ||
                     overrides.travelId !== undefined ||
                     Object.prototype.hasOwnProperty.call(overrides, "selectedPhenomenonId")),
@@ -429,11 +413,7 @@ export class AlmanacStateMachine {
             const mode = overrides?.mode ?? preferences.lastMode ?? DEFAULT_ALMANAC_MODE;
             const calendarViewMode =
                 overrides?.calendarViewMode ?? preferences.calendarViewMode ?? DEFAULT_CALENDAR_VIEW_MODE;
-            const managerViewMode = overrides?.managerView ?? preferences.managerViewMode ?? DEFAULT_MANAGER_VIEW_MODE;
             const eventsViewMode = overrides?.eventsView ?? preferences.eventsViewMode ?? DEFAULT_EVENTS_VIEW_MODE;
-            const zoom = (
-                overrides?.managerZoom ?? preferences.lastZoomByMode?.["manager"] ?? DEFAULT_MANAGER_ZOOM
-            ) as CalendarViewZoom;
 
             const activeCalendarId = snapshot.activeCalendar?.id ?? null;
             const timeDefinition = snapshot.activeCalendar
@@ -468,24 +448,17 @@ export class AlmanacStateMachine {
 
             this.setState(draft => {
                 draft.calendarState = calendarSlice;
-                const lastZoomByMode = { ...(preferences.lastZoomByMode ?? {}) };
-                if (overrides?.managerZoom) {
-                    lastZoomByMode["manager"] = overrides.managerZoom;
-                }
-
                 draft.almanacUiState = {
                     ...draft.almanacUiState,
                     mode,
                     modeHistory: [mode],
                     isLoading: false,
                     error: undefined,
-                    lastZoomByMode,
                 };
 
                 // Initialize calendar view state (upper split-view section)
                 draft.calendarViewState = {
                     mode: calendarViewMode,
-                    zoom,
                     anchorTimestamp: calendarSlice.currentTimestamp,
                     events: calendarSlice.upcomingEvents,
                     isLoading: false,
@@ -494,7 +467,6 @@ export class AlmanacStateMachine {
 
                 draft.managerUiState = {
                     ...draft.managerUiState,
-                    viewMode: managerViewMode,
                     isLoading: false,
                     error: undefined,
                     selection: [],
@@ -615,8 +587,9 @@ export class AlmanacStateMachine {
                 : undefined;
 
             const anchor = this.state.managerUiState.anchorTimestamp ?? snapshot.currentTimestamp ?? this.getAnchorFallback();
-            const agendaItems = anchor
-                ? this.collectAgendaItems(anchor, this.state.calendarViewState.zoom, snapshot.upcomingEvents)
+            const currentZoom = this.mapCalendarViewModeToZoom(this.state.calendarViewState.mode);
+            const agendaItems = anchor && currentZoom
+                ? this.collectAgendaItems(anchor, currentZoom, snapshot.upcomingEvents)
                 : [];
 
             const defaultCalendarId = snapshot.defaultCalendarId
@@ -627,8 +600,9 @@ export class AlmanacStateMachine {
 
             this.setState(draft => {
                 const anchor = draft.managerUiState.anchorTimestamp ?? snapshot.currentTimestamp ?? this.getAnchorFallback();
-                const agendaItems = anchor
-                    ? this.collectAgendaItems(anchor, draft.calendarViewState.zoom, snapshot.upcomingEvents)
+                const draftZoom = this.mapCalendarViewModeToZoom(draft.calendarViewState.mode);
+                const agendaItems = anchor && draftZoom
+                    ? this.collectAgendaItems(anchor, draftZoom, snapshot.upcomingEvents)
                     : [];
                 draft.calendarState = {
                     ...draft.calendarState,
@@ -841,76 +815,6 @@ export class AlmanacStateMachine {
         }
     }
 
-    private async handleManagerViewMode(viewMode: CalendarManagerViewMode): Promise<void> {
-        if (viewMode === this.state.managerUiState.viewMode) {
-            return;
-        }
-
-        this.setState(draft => {
-            draft.managerUiState = {
-                ...draft.managerUiState,
-                viewMode,
-                isLoading: false,
-                error: undefined,
-            };
-        });
-
-        const anchorBase = this.getAnchorBase();
-        if (anchorBase) {
-            this.refreshCalendarViewForAnchor(anchorBase);
-        } else {
-            this.setState(draft => {
-                draft.managerUiState = {
-                    ...draft.managerUiState,
-                    agendaItems: [],
-                    jumpPreview: [],
-                };
-            });
-        }
-
-        await this.persistPreferences({ managerViewMode: viewMode });
-    }
-
-    private async handleManagerZoom(zoom: CalendarViewZoom): Promise<void> {
-        if (zoom === this.state.calendarViewState.zoom) {
-            return;
-        }
-
-        const anchorBase = this.getAnchorBase();
-        if (anchorBase) {
-            this.refreshCalendarViewForAnchor(anchorBase, { zoom });
-        } else {
-            this.setState(draft => {
-                draft.calendarViewState = {
-                    ...draft.calendarViewState,
-                    zoom,
-                };
-                draft.managerUiState = {
-                    ...draft.managerUiState,
-                    agendaItems: [],
-                    jumpPreview: [],
-                };
-            });
-        }
-
-        this.setState(draft => {
-            draft.almanacUiState = {
-                ...draft.almanacUiState,
-                lastZoomByMode: {
-                    ...draft.almanacUiState.lastZoomByMode,
-                    manager: zoom,
-                },
-            };
-        });
-
-        await this.persistPreferences({
-            lastZoomByMode: {
-                ...this.state.almanacUiState.lastZoomByMode,
-                manager: zoom,
-            },
-        });
-    }
-
     private handleManagerNavigation(direction: 'prev' | 'next' | 'today'): void {
         const activeCalendarId = this.state.calendarState.activeCalendarId;
         if (!activeCalendarId) {
@@ -926,23 +830,30 @@ export class AlmanacStateMachine {
             ?? this.state.calendarState.currentTimestamp
             ?? createDayTimestamp(activeCalendarId, schema.epoch.year, schema.epoch.monthId, schema.epoch.day);
 
+        const mode = this.state.calendarViewState.mode;
+        const zoom = this.mapCalendarViewModeToZoom(mode);
+        if (!zoom) {
+            return;
+        }
+
         const nextAnchor = direction === 'today'
             ? (this.state.calendarState.currentTimestamp ?? baseAnchor)
-            : this.shiftAnchorTimestamp(schema, baseAnchor, this.state.calendarViewState.zoom, direction);
+            : this.shiftAnchorTimestamp(schema, baseAnchor, zoom, direction);
         this.refreshCalendarViewForAnchor(nextAnchor);
     }
 
     private refreshCalendarViewForAnchor(
         anchor: CalendarTimestamp,
-        options: { zoom?: CalendarViewZoom; eventsOverride?: ReadonlyArray<CalendarEvent> } = {},
+        options: { eventsOverride?: ReadonlyArray<CalendarEvent> } = {},
     ): void {
-        const targetZoom = options.zoom ?? this.state.calendarViewState.zoom;
-        const agendaItems = this.collectAgendaItems(anchor, targetZoom, options.eventsOverride);
+        const zoom = this.mapCalendarViewModeToZoom(this.state.calendarViewState.mode);
+        const agendaItems = zoom
+            ? this.collectAgendaItems(anchor, zoom, options.eventsOverride)
+            : Array.from(options.eventsOverride ?? this.state.calendarViewState.events);
 
         this.setState(draft => {
             draft.calendarViewState = {
                 ...draft.calendarViewState,
-                zoom: targetZoom,
                 anchorTimestamp: anchor,
                 events: agendaItems,
             };
@@ -2634,10 +2545,13 @@ export class AlmanacStateMachine {
             const currentTimestamp = this.state.calendarState.currentTimestamp;
             if (currentTimestamp) {
                 this.setState(draft => {
+                    const zoom = this.mapCalendarViewModeToZoom(draft.calendarViewState.mode);
                     draft.managerUiState = {
                         ...draft.managerUiState,
                         anchorTimestamp: currentTimestamp,
-                        agendaItems: this.collectAgendaItems(currentTimestamp, draft.calendarViewState.zoom),
+                        agendaItems: zoom
+                            ? this.collectAgendaItems(currentTimestamp, zoom)
+                            : draft.managerUiState.agendaItems,
                         jumpPreview: [],
                     };
                 });
@@ -2936,10 +2850,13 @@ export class AlmanacStateMachine {
                     selectedPhenomenonDetail: nextDetail,
                     isDetailLoading: false,
                 };
+                const zoom = this.mapCalendarViewModeToZoom(draft.calendarViewState.mode);
                 draft.managerUiState = {
                     ...draft.managerUiState,
                     anchorTimestamp: result.timestamp,
-                    agendaItems: this.collectAgendaItems(result.timestamp, draft.calendarViewState.zoom, upcoming),
+                    agendaItems: zoom
+                        ? this.collectAgendaItems(result.timestamp, zoom, upcoming)
+                        : draft.managerUiState.agendaItems,
                     jumpPreview: [],
                 };
             });
@@ -3131,10 +3048,13 @@ export class AlmanacStateMachine {
                     selectedPhenomenonDetail: nextDetail,
                     isDetailLoading: false,
                 };
+                const zoom = this.mapCalendarViewModeToZoom(draft.calendarViewState.mode);
                 draft.managerUiState = {
                     ...draft.managerUiState,
                     anchorTimestamp: target,
-                    agendaItems: this.collectAgendaItems(target, draft.calendarViewState.zoom, upcoming),
+                    agendaItems: zoom
+                        ? this.collectAgendaItems(target, zoom, upcoming)
+                        : draft.managerUiState.agendaItems,
                     jumpPreview: [],
                 };
             });
@@ -3718,16 +3638,7 @@ export class AlmanacStateMachine {
     }
 
     private mapCalendarViewModeToZoom(mode: CalendarViewMode): CalendarViewZoom | null {
-        switch (mode) {
-            case "month":
-                return "month";
-            case "week":
-                return "week";
-            case "day":
-                return "day";
-            default:
-                return null;
-        }
+        return CALENDAR_VIEW_MODE_METADATA[mode]?.defaultZoom ?? null;
     }
 
     private computeEditWarnings(schema: CalendarSchema, draft: CalendarCreateDraft): string[] {
