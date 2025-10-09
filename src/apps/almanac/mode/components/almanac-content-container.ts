@@ -1,43 +1,34 @@
 // src/apps/almanac/mode/components/almanac-content-container.ts
 // Lower section: Tabbed content for Dashboard/Events/Manager
 
-import type { App } from "obsidian";
-import type { AlmanacContentMode, AlmanacState } from "../contracts";
-import { createTabNavigation, type TabConfig, type TabNavigationHandle } from "../../../../ui/workmode";
+import { ALMANAC_MODE_METADATA, ALMANAC_MODE_ORDER, type AlmanacMode } from "../contracts";
+import { createTabNavigation } from "../../../../ui/workmode";
 
 export interface AlmanacContentContainerConfig {
-    readonly mode: AlmanacContentMode;
-    readonly onModeChange: (mode: AlmanacContentMode) => void;
-}
-
-export interface AlmanacContentContainerHandle {
-    readonly element: HTMLElement;
-    readonly dashboardElement: HTMLElement;
-    readonly eventsElement: HTMLElement;
-    readonly managerElement: HTMLElement;
-    setMode(mode: AlmanacContentMode): void;
-    update(state: AlmanacState): void;
-    destroy(): void;
+    readonly mode: AlmanacMode;
+    readonly onModeChange: (mode: AlmanacMode) => void;
 }
 
 export function createAlmanacContentContainer(
-    app: App,
     parent: HTMLElement,
-    config: AlmanacContentContainerConfig
-): AlmanacContentContainerHandle {
+    config: AlmanacContentContainerConfig,
+): {
+    readonly element: HTMLElement;
+    getSection(mode: AlmanacMode): HTMLElement;
+    setMode(mode: AlmanacMode): void;
+    destroy(): void;
+} {
     const container = parent.createDiv({ cls: "almanac-content-tabs" });
 
     // Header with tab navigation
     const header = container.createDiv({ cls: "almanac-content-tabs__header" });
 
-    const tabs: TabConfig<AlmanacContentMode>[] = [
-        { id: "dashboard", label: "Dashboard", icon: "layout-dashboard" },
-        { id: "events", label: "Events", icon: "calendar-search" },
-        { id: "manager", label: "Manager", icon: "settings" },
-    ];
-
-    const tabNav = createTabNavigation<AlmanacContentMode>(header, {
-        tabs,
+    const tabNav = createTabNavigation<AlmanacMode>(header, {
+        tabs: ALMANAC_MODE_ORDER.map(mode => ({
+            id: mode,
+            label: ALMANAC_MODE_METADATA[mode].label,
+            icon: ALMANAC_MODE_METADATA[mode].icon,
+        })),
         activeTab: config.mode,
         className: "almanac-content-tabs__nav",
         onSelect: config.onModeChange,
@@ -46,38 +37,31 @@ export function createAlmanacContentContainer(
     // Content body
     const body = container.createDiv({ cls: "almanac-content-tabs__body" });
 
-    // Create containers for each mode (hidden by default)
-    const dashboardContainer = body.createDiv({ cls: "almanac-dashboard-content" });
-    const eventsContainer = body.createDiv({ cls: "almanac-events-content" });
-    const managerContainer = body.createDiv({ cls: "almanac-manager-content" });
+    const sections = new Map<AlmanacMode, HTMLElement>();
+    ALMANAC_MODE_ORDER.forEach(mode => {
+        const section = body.createDiv({ cls: `almanac-${mode}-content` });
+        sections.set(mode, section);
+    });
 
-    // Track current mode
-    let currentMode = config.mode;
-
-    const updateVisibility = () => {
-        dashboardContainer.style.display = currentMode === "dashboard" ? "" : "none";
-        eventsContainer.style.display = currentMode === "events" ? "" : "none";
-        managerContainer.style.display = currentMode === "manager" ? "" : "none";
+    const setMode = (mode: AlmanacMode) => {
+        tabNav.setActiveTab(mode);
+        sections.forEach((element, key) => {
+            element.toggleAttribute("hidden", key !== mode);
+        });
     };
 
-    updateVisibility();
+    setMode(config.mode);
 
     return {
         element: container,
-        dashboardElement: dashboardContainer,
-        eventsElement: eventsContainer,
-        managerElement: managerContainer,
-
-        setMode(mode: AlmanacContentMode) {
-            currentMode = mode;
-            tabNav.setActiveTab(mode);
-            updateVisibility();
+        getSection(mode: AlmanacMode) {
+            const section = sections.get(mode);
+            if (!section) {
+                throw new Error(`Unknown Almanac content section: ${mode}`);
+            }
+            return section;
         },
-
-        update(state: AlmanacState) {
-            // Child components will be mounted in these containers
-            // and will handle their own updates
-        },
+        setMode,
 
         destroy() {
             tabNav.destroy();

@@ -11,11 +11,10 @@
 
 import { App, Modal, type EventRef } from 'obsidian';
 import type { CalendarSchema } from '../domain/calendar-schema';
-import { getMonthById, getMonthIndex } from '../domain/calendar-schema';
+import { getMonthById } from '../domain/calendar-schema';
 import type { CalendarEvent } from '../domain/calendar-event';
 import type { CalendarTimestamp } from '../domain/calendar-timestamp';
 import { formatTimestamp, createDayTimestamp, createHourTimestamp, createMinuteTimestamp } from '../domain/calendar-timestamp';
-import { advanceTime } from '../domain/time-arithmetic';
 import type { CalendarRepository } from '../data/calendar-repository';
 import type { EventRepository } from '../data/event-repository';
 import type { PhenomenonRepository } from '../data/in-memory-repository';
@@ -28,13 +27,12 @@ import {
 } from '../data/in-memory-repository';
 import { InMemoryStateGateway } from '../data/in-memory-gateway';
 import {
+    ALMANAC_MODE_ORDER,
+    EVENTS_VIEW_MODE_METADATA,
+    EVENTS_VIEW_MODE_ORDER,
     type AlmanacMode,
     type AlmanacInitOverrides,
     type AlmanacState,
-    type AlmanacContentMode,
-    type CalendarViewMode,
-    type CalendarManagerViewMode,
-    type CalendarViewZoom,
     type EventEditorDraft,
     type EventEditorMode,
     type EventEditorPreviewItem,
@@ -50,19 +48,10 @@ import {
 import { renderEventsMap as renderEventsMapComponent } from './events';
 import { emitAlmanacEvent } from '../telemetry';
 import { createSplitView, type SplitViewHandle } from '../../../ui/workmode';
-import { createCalendarViewContainer, type CalendarViewContainerHandle } from './components/calendar-view-container';
-import { createAlmanacContentContainer, type AlmanacContentContainerHandle } from './components/almanac-content-container';
+import { createCalendarViewContainer } from './components/calendar-view-container';
+import { createAlmanacContentContainer } from './components/almanac-content-container';
 import { ensureDefaultCalendar } from '../data/calendar-presets';
 
-const MODE_COPY: Record<AlmanacMode, { label: string; description: string }> = {
-    dashboard: { label: 'Dashboard', description: 'Current date, quick actions and upcoming events' },
-    manager: { label: 'Manager', description: 'Manage calendars, zoom levels and defaults' },
-    events: { label: 'Events', description: 'Cross-calendar phenomena overview and filters' },
-};
-
-const MANAGER_ZOOM_OPTIONS: CalendarViewZoom[] = ['month', 'week', 'day', 'hour'];
-const MANAGER_VIEW_OPTIONS: CalendarManagerViewMode[] = ['calendar', 'overview'];
-const EVENT_VIEW_OPTIONS: EventsViewMode[] = ['timeline', 'table', 'map'];
 const ALMANAC_PROTOCOL_BASE = 'obsidian://saltmarcher';
 const ALMANAC_PROTOCOL_HOSTS = new Set(['saltmarcher', 'salt-marcher']);
 
@@ -966,9 +955,13 @@ export class AlmanacController {
 
     // Split-view components
     private splitView: SplitViewHandle | null = null;
-    private calendarView: CalendarViewContainerHandle | null = null;
-    private contentContainer: AlmanacContentContainerHandle | null = null;
-    private lastCalendarViewMode: CalendarViewMode | null = null;
+    private calendarView: ReturnType<typeof createCalendarViewContainer> | null = null;
+    private contentContainer: ReturnType<typeof createAlmanacContentContainer> | null = null;
+    private readonly contentRenderers: Record<AlmanacMode, (container: HTMLElement, state: AlmanacState) => void> = {
+        dashboard: (container, state) => this.renderDashboard(container, state),
+        manager: (container, state) => this.renderManager(container, state),
+        events: (container, state) => this.renderEvents(container, state),
+    };
     private readonly handleProtocolUrl = (rawUrl: string): void => {
         if (this.isSyncingDeepLink) {
             return;
@@ -1096,7 +1089,6 @@ export class AlmanacController {
         this.contentContainer = null;
         this.splitView?.destroy();
         this.splitView = null;
-        this.lastCalendarViewMode = null;
 
         this.containerEl = null;
         this.cartographerBridge?.release();
@@ -1114,32 +1106,15 @@ export class AlmanacController {
 
         // Update calendar view
         if (this.calendarView && state.calendarViewState) {
-            const nextMode = state.calendarViewState.mode;
-            if (this.lastCalendarViewMode !== nextMode) {
-                this.calendarView.setMode(nextMode);
-                this.lastCalendarViewMode = nextMode;
-            }
             this.calendarView.update(state.calendarViewState);
         }
 
         // Update content based on mode
         if (this.contentContainer) {
-            // Clear and render the appropriate content
-            const mode = state.almanacUiState.mode as AlmanacContentMode;
+            const mode = state.almanacUiState.mode;
             this.contentContainer.setMode(mode);
-
-            // Render content for active mode
-            switch (mode) {
-                case 'dashboard':
-                    this.renderDashboard(this.contentContainer.dashboardElement, state);
-                    break;
-                case 'manager':
-                    this.renderManager(this.contentContainer.managerElement, state);
-                    break;
-                case 'events':
-                    this.renderEvents(this.contentContainer.eventsElement, state);
-                    break;
-            }
+            const host = this.contentContainer.getSection(mode);
+            this.contentRenderers[mode](host, state);
         }
 
         this.syncDialogs(state);
@@ -1163,17 +1138,14 @@ export class AlmanacController {
         });
 
         // Create calendar view (upper section)
-        const calendarMode: CalendarViewMode = state.calendarViewState?.mode ?? 'month';
         const initialCalendarViewState = state.calendarViewState ?? {
-            mode: calendarMode,
-            zoom: 'month',
+            mode: 'month',
             anchorTimestamp: state.calendarState.currentTimestamp,
             events: state.calendarState.upcomingEvents,
             isLoading: false,
             error: undefined,
         };
-        this.calendarView = createCalendarViewContainer(this.app, this.splitView.upperElement, {
-            mode: calendarMode,
+        this.calendarView = createCalendarViewContainer(this.splitView.upperElement, {
             state: initialCalendarViewState,
             onModeChange: (mode) => {
                 void this.runDispatch({
@@ -1182,24 +1154,9 @@ export class AlmanacController {
                 });
             },
             onNavigate: (direction) => {
-                if (direction === 'prev' || direction === 'next') {
-                    void this.runDispatch({
-                        type: 'MANAGER_NAVIGATION_REQUESTED',
-                        direction,
-                    });
-                } else {
-                    void this.runDispatch({
-                        type: 'MANAGER_NAVIGATION_REQUESTED',
-                        direction: 'today',
-                    });
-                }
-            },
-            onEventCreate: (timestamp) => {
                 void this.runDispatch({
-                    type: 'EVENT_CREATE_REQUESTED',
-                    mode: 'single',
-                    calendarId: timestamp?.calendarId ?? state.calendarState.activeCalendarId ?? undefined,
-                    timestamp,
+                    type: 'MANAGER_NAVIGATION_REQUESTED',
+                    direction,
                 });
             },
             onEventSelect: (eventId) => {
@@ -1209,16 +1166,15 @@ export class AlmanacController {
                 });
             },
         });
-        this.lastCalendarViewMode = calendarMode;
 
         // Create content container (lower section)
-        const contentMode = state.almanacUiState.mode as AlmanacContentMode;
-        this.contentContainer = createAlmanacContentContainer(this.app, this.splitView.lowerElement, {
+        const contentMode = state.almanacUiState.mode;
+        this.contentContainer = createAlmanacContentContainer(this.splitView.lowerElement, {
             mode: contentMode,
             onModeChange: (mode) => {
                 void this.runDispatch({
                     type: 'ALMANAC_MODE_SELECTED',
-                    mode: mode as AlmanacMode,
+                    mode,
                 });
             },
         });
@@ -1247,7 +1203,6 @@ export class AlmanacController {
         const shell = host.createDiv({ cls: 'almanac-shell' });
 
         this.renderTitle(shell, state);
-        this.renderModeSwitcher(shell, state);
         this.renderStatusBar(shell, state);
 
         const body = shell.createDiv({ cls: 'almanac-shell__body' });
@@ -1325,20 +1280,6 @@ export class AlmanacController {
         if (schema.id === state.calendarState.defaultCalendarId || schema.isDefaultGlobal) markers.push('default');
         const suffix = markers.length ? ` (${markers.join(', ')})` : '';
         return `${schema.name}${suffix}`;
-    }
-
-    private renderModeSwitcher(host: HTMLElement, state: AlmanacState): void {
-        const switcher = host.createDiv({ cls: 'almanac-mode-switcher' });
-        (['dashboard', 'manager', 'events'] as AlmanacMode[]).forEach(mode => {
-            const entry = MODE_COPY[mode];
-            const button = switcher.createEl('button', {
-                text: entry.label,
-                cls: 'almanac-mode-switcher__item',
-            });
-            button.setAttribute('title', entry.description);
-            button.classList.toggle('is-active', state.almanacUiState.mode === mode);
-            button.addEventListener('click', () => this.runDispatch({ type: 'ALMANAC_MODE_SELECTED', mode }));
-        });
     }
 
     private renderStatusBar(host: HTMLElement, state: AlmanacState): void {
@@ -1650,39 +1591,12 @@ export class AlmanacController {
         managerRecurringButton.addEventListener('click', () => {
             this.runDispatch({ type: 'EVENT_CREATE_REQUESTED', mode: 'recurring' });
         });
-        const header = section.createDiv({ cls: 'almanac-manager__controls' });
-
-        const modeGroup = header.createDiv({ cls: 'almanac-toggle-group' });
-        MANAGER_VIEW_OPTIONS.forEach(option => {
-            const btn = modeGroup.createEl('button', { text: option === 'calendar' ? 'Calendar' : 'Overview' });
-            btn.classList.toggle('is-active', state.managerUiState.viewMode === option);
-            btn.addEventListener('click', () => this.runDispatch({
-                type: 'MANAGER_VIEW_MODE_CHANGED',
-                viewMode: option,
-            }));
-        });
-
-        const zoomGroup = header.createDiv({ cls: 'almanac-toggle-group' });
-        MANAGER_ZOOM_OPTIONS.forEach(option => {
-            const label = option.charAt(0).toUpperCase() + option.slice(1);
-            const btn = zoomGroup.createEl('button', { text: label });
-            btn.classList.toggle('is-active', state.managerUiState.zoom === option);
-            btn.addEventListener('click', () => this.runDispatch({
-                type: 'MANAGER_ZOOM_CHANGED',
-                zoom: option,
-            }));
-        });
-
         if (state.managerUiState.error) {
             const err = section.createDiv({ cls: 'almanac-section almanac-section--error' });
             err.setText(state.managerUiState.error);
         }
 
-        if (state.managerUiState.viewMode === 'overview') {
-            this.renderCalendarOverview(section, state);
-        } else {
-            this.renderManagerCalendarView(section, state);
-        }
+        this.renderCalendarOverview(section, state);
     }
 
     private renderCalendarCreateForm(host: HTMLElement, state: AlmanacState): void {
@@ -1999,280 +1913,6 @@ export class AlmanacController {
         });
     }
 
-    private renderManagerCalendarView(host: HTMLElement, state: AlmanacState): void {
-        const conflict = state.managerUiState.conflictDialog;
-        if (conflict) {
-            const banner = host.createDiv({ cls: 'almanac-section almanac-section--error' });
-            banner.createEl('h3', { text: 'Calendar conflict' });
-            banner.createEl('p', { text: conflict.message });
-            if (conflict.details.length > 0) {
-                const list = banner.createEl('ul', { cls: 'almanac-form-errors' });
-                conflict.details.forEach(detail => list.createEl('li', { text: detail }));
-            }
-            const dismiss = banner.createEl('button', { text: 'Dismiss' });
-            dismiss.addEventListener('click', () => {
-                void this.runDispatch({ type: 'CALENDAR_CONFLICT_DISMISSED' });
-            });
-        }
-
-        const calendar = this.getActiveCalendar(state);
-        if (!calendar) {
-            host.createEl('p', { text: 'No calendar selected.', cls: 'almanac-empty' });
-            return;
-        }
-
-        const anchor = state.managerUiState.anchorTimestamp
-            ?? state.calendarState.currentTimestamp
-            ?? createDayTimestamp(calendar.id, calendar.epoch.year, calendar.epoch.monthId, calendar.epoch.day);
-        const zoom = state.managerUiState.zoom;
-
-        const navBar = host.createDiv({ cls: 'almanac-calendar-nav' });
-        const prevBtn = navBar.createEl('button', { text: 'Previous' });
-        prevBtn.disabled = state.almanacUiState.isLoading;
-        prevBtn.addEventListener('click', () => this.runDispatch({ type: 'MANAGER_NAVIGATION_REQUESTED', direction: 'prev' }));
-
-        const todayBtn = navBar.createEl('button', { text: 'Today' });
-        todayBtn.disabled = state.almanacUiState.isLoading;
-        todayBtn.addEventListener('click', () => this.runDispatch({ type: 'MANAGER_NAVIGATION_REQUESTED', direction: 'today' }));
-
-        const nextBtn = navBar.createEl('button', { text: 'Next' });
-        nextBtn.disabled = state.almanacUiState.isLoading;
-        nextBtn.addEventListener('click', () => this.runDispatch({ type: 'MANAGER_NAVIGATION_REQUESTED', direction: 'next' }));
-
-        if (state.managerUiState.selection.length > 0) {
-            const selectionSummary = navBar.createDiv({ cls: 'almanac-calendar-nav__selection' });
-            selectionSummary.setText(`${state.managerUiState.selection.length} selected`);
-        }
-
-        navBar.createEl('span', {
-            text: this.describeAnchorLabel(anchor, zoom, calendar),
-            cls: 'almanac-calendar-nav__label',
-        });
-
-        const container = host.createDiv({ cls: 'almanac-calendar-view' });
-        switch (zoom) {
-            case 'month':
-                this.renderMonthGrid(container, calendar, anchor, state);
-                break;
-            case 'week':
-                this.renderWeekView(container, calendar, anchor, state);
-                break;
-            case 'day':
-                this.renderDayView(container, calendar, anchor, state);
-                break;
-            case 'hour':
-                this.renderHourView(container, calendar, anchor, state);
-                break;
-        }
-    }
-
-    private describeAnchorLabel(anchor: CalendarTimestamp, zoom: CalendarViewZoom, calendar: CalendarSchema): string {
-        const monthName = getMonthById(calendar, anchor.monthId)?.name ?? anchor.monthId;
-        switch (zoom) {
-            case 'month':
-                return `${monthName} ${anchor.year}`;
-            case 'week':
-                return `Week of ${formatTimestamp(anchor, monthName)}`;
-            case 'day':
-                return `Day view – ${formatTimestamp(anchor, monthName)}`;
-            case 'hour':
-                return `Hour view – ${formatTimestamp(anchor, monthName)}`;
-            default:
-                return formatTimestamp(anchor, monthName);
-        }
-    }
-
-    private renderMonthGrid(
-        container: HTMLElement,
-        calendar: CalendarSchema,
-        anchor: CalendarTimestamp,
-        state: AlmanacState,
-    ): void {
-        const table = container.createEl('table', { cls: 'almanac-month-grid' });
-        const headerRow = table.createEl('thead').createEl('tr');
-        for (let i = 0; i < calendar.daysPerWeek; i++) {
-            headerRow.createEl('th', { text: `Day ${i + 1}` });
-        }
-
-        const body = table.createEl('tbody');
-        const monthIndex = getMonthIndex(calendar, anchor.monthId);
-        const month = monthIndex >= 0 ? calendar.months[monthIndex] : calendar.months[0];
-        const weeks: Array<Array<number | null>> = [];
-        let currentWeek: Array<number | null> = new Array(calendar.daysPerWeek).fill(null);
-        for (let day = 1; day <= month.length; day++) {
-            const slot = (day - 1) % calendar.daysPerWeek;
-            currentWeek[slot] = day;
-            if (slot === calendar.daysPerWeek - 1 || day === month.length) {
-                weeks.push(currentWeek);
-                currentWeek = new Array(calendar.daysPerWeek).fill(null);
-            }
-        }
-
-        const eventsByDay = this.groupEventsByDay(state, calendar.id, anchor.year, month.id);
-
-        weeks.forEach(week => {
-            const row = body.createEl('tr');
-            week.forEach(dayNumber => {
-                const cell = row.createEl('td', { cls: 'almanac-month-grid__cell' });
-                if (dayNumber === null) {
-                    cell.addClass('is-empty');
-                    return;
-                }
-                const dayHeader = cell.createDiv({ text: String(dayNumber), cls: 'almanac-month-grid__day' });
-                if (dayNumber === anchor.day) {
-                    cell.addClass('is-anchor');
-                    dayHeader.addClass('is-anchor');
-                }
-                const events = eventsByDay.get(dayNumber) ?? [];
-                events.slice(0, 2).forEach(event => {
-                    cell.createDiv({ text: `${this.formatEventTime(event)} • ${event.title}`, cls: 'almanac-month-grid__event' });
-                });
-                if (events.length > 2) {
-                    cell.createDiv({ text: `+${events.length - 2} more`, cls: 'almanac-month-grid__more' });
-                }
-            });
-        });
-    }
-
-    private renderWeekView(
-        container: HTMLElement,
-        calendar: CalendarSchema,
-        anchor: CalendarTimestamp,
-        state: AlmanacState,
-    ): void {
-        const list = container.createDiv({ cls: 'almanac-week-view' });
-        for (let offset = 0; offset < calendar.daysPerWeek; offset++) {
-            const dayTimestamp = this.getOffsetTimestamp(calendar, anchor, offset);
-            const dayBox = list.createDiv({ cls: 'almanac-week-view__day' });
-            const monthName = getMonthById(calendar, dayTimestamp.monthId)?.name ?? dayTimestamp.monthId;
-            dayBox.createDiv({ text: formatTimestamp(dayTimestamp, monthName), cls: 'almanac-week-view__heading' });
-            const events = this.getEventsForDate(state, calendar.id, dayTimestamp.year, dayTimestamp.monthId, dayTimestamp.day);
-            if (events.length === 0) {
-                dayBox.createDiv({ text: 'No events', cls: 'almanac-week-view__empty' });
-                continue;
-            }
-            events.forEach(event => {
-                dayBox.createDiv({ text: `${this.formatEventTime(event)} • ${event.title}`, cls: 'almanac-week-view__event' });
-            });
-        }
-    }
-
-    private renderDayView(
-        container: HTMLElement,
-        calendar: CalendarSchema,
-        anchor: CalendarTimestamp,
-        state: AlmanacState,
-    ): void {
-        const events = this.getEventsForDate(state, calendar.id, anchor.year, anchor.monthId, anchor.day);
-        const list = container.createDiv({ cls: 'almanac-day-view' });
-        list.createDiv({ text: `Events for ${formatTimestamp(anchor, getMonthById(calendar, anchor.monthId)?.name)}`, cls: 'almanac-day-view__heading' });
-        if (events.length === 0) {
-            list.createDiv({ text: 'No events scheduled.', cls: 'almanac-day-view__empty' });
-            return;
-        }
-        events
-            .slice()
-            .sort((a, b) => (a.date.hour ?? 0) - (b.date.hour ?? 0))
-            .forEach(event => {
-                list.createDiv({ text: `${this.formatEventTime(event)} • ${event.title}`, cls: 'almanac-day-view__event' });
-            });
-    }
-
-    private renderHourView(
-        container: HTMLElement,
-        calendar: CalendarSchema,
-        anchor: CalendarTimestamp,
-        state: AlmanacState,
-    ): void {
-        const events = this.getEventsForDate(state, calendar.id, anchor.year, anchor.monthId, anchor.day);
-        const segments = [0, 6, 12, 18];
-        const view = container.createDiv({ cls: 'almanac-hour-view' });
-        segments.forEach(startHour => {
-            const endHour = startHour + 5;
-            const bucket = view.createDiv({ cls: 'almanac-hour-view__segment' });
-            bucket.createDiv({ text: `${String(startHour).padStart(2, '0')}:00 – ${String(endHour + 1).padStart(2, '0')}:00`, cls: 'almanac-hour-view__segment-heading' });
-            const segmentEvents = events.filter(event => {
-                const hour = event.date.hour ?? 0;
-                return hour >= startHour && hour <= endHour;
-            });
-            if (segmentEvents.length === 0) {
-                bucket.createDiv({ text: '—', cls: 'almanac-hour-view__empty' });
-                return;
-            }
-            segmentEvents.forEach(event => {
-                bucket.createDiv({ text: `${this.formatEventTime(event)} • ${event.title}`, cls: 'almanac-hour-view__event' });
-            });
-        });
-    }
-
-    private getOffsetTimestamp(calendar: CalendarSchema, anchor: CalendarTimestamp, offsetDays: number): CalendarTimestamp {
-        if (offsetDays === 0) {
-            return anchor;
-        }
-        return advanceTime(calendar, anchor, offsetDays, 'day').timestamp;
-    }
-
-    private groupEventsByDay(
-        state: AlmanacState,
-        calendarId: string,
-        year: number,
-        monthId: string,
-    ): Map<number, CalendarEvent[]> {
-        const events = [...state.calendarState.upcomingEvents, ...state.calendarState.triggeredEvents];
-        const map = new Map<number, CalendarEvent[]>();
-        events.forEach(event => {
-            if (event.date.calendarId !== calendarId) return;
-            if (event.date.year !== year) return;
-            if (event.date.monthId !== monthId) return;
-            const day = event.date.day;
-            if (!map.has(day)) {
-                map.set(day, []);
-            }
-            map.get(day)!.push(event);
-        });
-        return map;
-    }
-
-    private getEventsForDate(
-        state: AlmanacState,
-        calendarId: string,
-        year: number,
-        monthId: string,
-        day: number,
-    ): CalendarEvent[] {
-        const pool = [...state.calendarState.upcomingEvents, ...state.calendarState.triggeredEvents];
-        return pool.filter(event =>
-            event.date.calendarId === calendarId &&
-            event.date.year === year &&
-            event.date.monthId === monthId &&
-            event.date.day === day,
-        );
-    }
-
-    private formatEventTime(event: CalendarEvent): string {
-        if (event.date.hour === undefined) {
-            return 'All day';
-        }
-        const hour = String(event.date.hour).padStart(2, '0');
-        const minute = String(event.date.minute ?? 0).padStart(2, '0');
-        return `${hour}:${minute}`;
-    }
-
-    private getFallbackTimestamp(state: AlmanacState): CalendarTimestamp | null {
-        if (state.managerUiState.anchorTimestamp) {
-            return state.managerUiState.anchorTimestamp;
-        }
-        if (state.calendarState.currentTimestamp) {
-            return state.calendarState.currentTimestamp;
-        }
-        const calendar = this.getActiveCalendar(state) ?? state.calendarState.calendars[0] ?? null;
-        if (!calendar) {
-            return null;
-        }
-        const firstMonth = calendar.months[0] ?? { id: calendar.epoch.monthId, length: calendar.months[0]?.length ?? 30 };
-        return createDayTimestamp(calendar.id, calendar.epoch.year, firstMonth.id, calendar.epoch.day);
-    }
-
     private renderEvents(host: HTMLElement, state: AlmanacState): void {
         this.renderShell(host, state, body => {
             this.renderEventsContent(body, state);
@@ -2282,14 +1922,17 @@ export class AlmanacController {
     private renderEventsContent(host: HTMLElement, state: AlmanacState): void {
         const section = host.createDiv({ cls: 'almanac-events' });
         const controls = section.createDiv({ cls: 'almanac-toggle-group' });
-        EVENT_VIEW_OPTIONS.forEach(option => {
-            const label = option.charAt(0).toUpperCase() + option.slice(1);
-            const btn = controls.createEl('button', { text: label });
+        EVENTS_VIEW_MODE_ORDER.forEach(option => {
+            const btn = controls.createEl('button', {
+                text: EVENTS_VIEW_MODE_METADATA[option].label,
+            });
             btn.classList.toggle('is-active', state.eventsUiState.viewMode === option);
-            btn.addEventListener('click', () => this.runDispatch({
-                type: 'EVENTS_VIEW_MODE_CHANGED',
-                viewMode: option,
-            }));
+            btn.addEventListener('click', () =>
+                this.runDispatch({
+                    type: 'EVENTS_VIEW_MODE_CHANGED',
+                    viewMode: option,
+                }),
+            );
         });
 
         this.renderEventsActions(section, state);
@@ -2839,18 +2482,8 @@ export class AlmanacController {
         }
 
         const viewParam = params.get('view');
-        if (viewParam) {
-            if (MANAGER_VIEW_OPTIONS.includes(viewParam as CalendarManagerViewMode)) {
-                overrides.managerView = viewParam as CalendarManagerViewMode;
-            }
-            if (EVENT_VIEW_OPTIONS.includes(viewParam as EventsViewMode)) {
-                overrides.eventsView = viewParam as EventsViewMode;
-            }
-        }
-
-        const zoomParam = params.get('zoom');
-        if (zoomParam && MANAGER_ZOOM_OPTIONS.includes(zoomParam as CalendarViewZoom)) {
-            overrides.managerZoom = zoomParam as CalendarViewZoom;
+        if (viewParam && EVENTS_VIEW_MODE_ORDER.includes(viewParam as EventsViewMode)) {
+            overrides.eventsView = viewParam as EventsViewMode;
         }
 
         if (params.has('phenomenon')) {
@@ -2865,8 +2498,6 @@ export class AlmanacController {
 
         const hasValues =
             overrides.mode !== undefined ||
-            overrides.managerView !== undefined ||
-            overrides.managerZoom !== undefined ||
             overrides.eventsView !== undefined ||
             overrides.travelId !== undefined ||
             Object.prototype.hasOwnProperty.call(overrides, 'selectedPhenomenonId');
@@ -2903,10 +2534,7 @@ export class AlmanacController {
             params.push(`travelId=${encodeURIComponent(travelId)}`);
         }
 
-        if (mode === 'manager') {
-            params.push(`view=${encodeURIComponent(state.managerUiState.viewMode)}`);
-            params.push(`zoom=${encodeURIComponent(state.managerUiState.zoom)}`);
-        } else if (mode === 'events') {
+        if (mode === 'events') {
             params.push(`view=${encodeURIComponent(state.eventsUiState.viewMode)}`);
             if (state.eventsUiState.selectedPhenomenonId) {
                 params.push(`phenomenon=${encodeURIComponent(state.eventsUiState.selectedPhenomenonId)}`);

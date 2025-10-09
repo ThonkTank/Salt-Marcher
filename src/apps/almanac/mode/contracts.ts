@@ -13,13 +13,59 @@ import type { CalendarTimestamp } from "../domain/calendar-timestamp";
 import type { CalendarEvent } from "../domain/calendar-event";
 import type { PhenomenonOccurrence } from "../domain/phenomenon";
 
-export type AlmanacMode = "dashboard" | "manager" | "events";
-export type AlmanacContentMode = "dashboard" | "events" | "manager";
-export type CalendarViewMode = "month" | "week" | "day" | "upcoming";
-export type CalendarManagerViewMode = "overview"; // Note: "calendar" mode moved to top-level CalendarView
+export const ALMANAC_MODE_METADATA = {
+    dashboard: {
+        label: "Dashboard",
+        description: "Current date, quick actions and upcoming events",
+        icon: "layout-dashboard",
+    },
+    manager: {
+        label: "Manager",
+        description: "Manage calendars, zoom levels and defaults",
+        icon: "settings",
+    },
+    events: {
+        label: "Events",
+        description: "Cross-calendar phenomena overview and filters",
+        icon: "calendar-search",
+    },
+} as const satisfies Record<string, { readonly label: string; readonly description: string; readonly icon: string }>;
+
+export type AlmanacMode = keyof typeof ALMANAC_MODE_METADATA;
+
+export const ALMANAC_MODE_ORDER = Object.keys(ALMANAC_MODE_METADATA) as ReadonlyArray<AlmanacMode>;
+
 export type CalendarViewZoom = "month" | "week" | "day" | "hour";
-export type EventsViewMode = "timeline" | "table" | "map";
-export type TravelCalendarMode = "month" | "week" | "day" | "upcoming";
+
+export const CALENDAR_VIEW_MODE_METADATA = {
+    month: { label: "Month", icon: "calendar-days", defaultZoom: "month" },
+    week: { label: "Week", icon: "calendar-range", defaultZoom: "week" },
+    day: { label: "Day", icon: "calendar-clock", defaultZoom: "day" },
+    upcoming: { label: "Next", icon: "list-ordered", defaultZoom: null },
+} as const satisfies Record<
+    string,
+    {
+        readonly label: string;
+        readonly icon: string;
+        readonly defaultZoom: CalendarViewZoom | null;
+    }
+>;
+
+export type CalendarViewMode = keyof typeof CALENDAR_VIEW_MODE_METADATA;
+
+export const CALENDAR_VIEW_MODE_ORDER = Object.keys(CALENDAR_VIEW_MODE_METADATA) as ReadonlyArray<CalendarViewMode>;
+
+export const EVENTS_VIEW_MODE_METADATA = {
+    timeline: { label: "Timeline" },
+    table: { label: "Table" },
+    map: { label: "Map" },
+} as const satisfies Record<string, { readonly label: string }>;
+
+export type EventsViewMode = keyof typeof EVENTS_VIEW_MODE_METADATA;
+
+export const EVENTS_VIEW_MODE_ORDER = Object.keys(EVENTS_VIEW_MODE_METADATA) as ReadonlyArray<EventsViewMode>;
+
+export type TravelCalendarMode = CalendarViewMode;
 
 export interface AlmanacStatusSummary {
     readonly zoomLabel?: string;
@@ -59,7 +105,6 @@ export interface AlmanacUiStateSlice {
     readonly modeHistory: ReadonlyArray<AlmanacMode>;
     readonly statusSummary?: AlmanacStatusSummary;
     readonly drawerOpen: boolean;
-    readonly lastZoomByMode: Partial<Record<AlmanacMode, CalendarViewZoom>>;
     readonly lastFiltersByMode: Partial<Record<AlmanacMode, number>>;
     readonly isLoading: boolean;
     readonly error?: string;
@@ -71,7 +116,6 @@ export interface AlmanacUiStateSlice {
  */
 export interface CalendarViewState {
     readonly mode: CalendarViewMode;
-    readonly zoom: CalendarViewZoom;
     readonly anchorTimestamp: CalendarTimestamp | null;
     readonly events: ReadonlyArray<CalendarEvent>;
     readonly isLoading: boolean;
@@ -123,7 +167,6 @@ export interface CalendarConflictDialogState {
  * Now only handles calendar overview (list/grid), not calendar view.
  */
 export interface ManagerUiStateSlice {
-    readonly viewMode: CalendarManagerViewMode; // Only "overview" now
     readonly isLoading: boolean;
     readonly error?: string;
     readonly selection: ReadonlyArray<string>;
@@ -287,9 +330,7 @@ export type AlmanacStateListener = (state: AlmanacState) => void;
 export interface AlmanacPreferencesSnapshot {
     readonly lastMode?: AlmanacMode;
     readonly calendarViewMode?: CalendarViewMode;
-    readonly managerViewMode?: CalendarManagerViewMode;
     readonly eventsViewMode?: EventsViewMode;
-    readonly lastZoomByMode?: Partial<Record<AlmanacMode, CalendarViewZoom>>;
     readonly eventsFilters?: EventsFilterState;
     readonly lastSelectedPhenomenonId?: string;
 }
@@ -298,8 +339,6 @@ export interface AlmanacInitOverrides {
     readonly travelId?: string | null;
     readonly mode?: AlmanacMode;
     readonly calendarViewMode?: CalendarViewMode;
-    readonly managerView?: CalendarManagerViewMode;
-    readonly managerZoom?: CalendarViewZoom;
     readonly eventsView?: EventsViewMode;
     readonly selectedPhenomenonId?: string | null;
 }
@@ -312,8 +351,6 @@ export type AlmanacEvent =
       }
     | { readonly type: "ALMANAC_MODE_SELECTED"; readonly mode: AlmanacMode }
     | { readonly type: "CALENDAR_VIEW_MODE_CHANGED"; readonly mode: CalendarViewMode }
-    | { readonly type: "MANAGER_VIEW_MODE_CHANGED"; readonly viewMode: CalendarManagerViewMode }
-    | { readonly type: "MANAGER_ZOOM_CHANGED"; readonly zoom: CalendarViewZoom }
     | { readonly type: "MANAGER_NAVIGATION_REQUESTED"; readonly direction: 'prev' | 'next' | 'today' }
     | { readonly type: "MANAGER_CREATE_FORM_UPDATED"; readonly field: CalendarCreateField; readonly value: string }
     | { readonly type: "TIME_JUMP_PREVIEW_REQUESTED"; readonly timestamp: CalendarTimestamp }
@@ -371,12 +408,9 @@ export type AlmanacEvent =
     | { readonly type: "TRAVEL_TIME_ADVANCE_REQUESTED"; readonly amount: number; readonly unit: "day" | "hour" | "minute" }
     | { readonly type: "ERROR_OCCURRED"; readonly scope: "almanac" | "manager" | "events" | "travel"; readonly message: string };
 
-export const DEFAULT_ALMANAC_MODE: AlmanacMode = "dashboard";
-export const DEFAULT_CALENDAR_VIEW_MODE: CalendarViewMode = "month";
-export const DEFAULT_MANAGER_VIEW_MODE: CalendarManagerViewMode = "calendar";
-export const DEFAULT_EVENTS_VIEW_MODE: EventsViewMode = "timeline";
-export const DEFAULT_MANAGER_ZOOM: CalendarViewZoom = "month";
-
+export const DEFAULT_ALMANAC_MODE: AlmanacMode = ALMANAC_MODE_ORDER[0];
+export const DEFAULT_CALENDAR_VIEW_MODE: CalendarViewMode = CALENDAR_VIEW_MODE_ORDER[0];
+export const DEFAULT_EVENTS_VIEW_MODE: EventsViewMode = EVENTS_VIEW_MODE_ORDER[0];
 export function createDefaultCalendarDraft(): CalendarCreateDraft {
     return {
         id: "",
@@ -483,21 +517,18 @@ export function createInitialAlmanacState(): AlmanacState {
             modeHistory: [DEFAULT_ALMANAC_MODE],
             statusSummary: undefined,
             drawerOpen: false,
-            lastZoomByMode: {},
             lastFiltersByMode: {},
             isLoading: false,
             error: undefined,
         },
         calendarViewState: {
             mode: DEFAULT_CALENDAR_VIEW_MODE,
-            zoom: DEFAULT_MANAGER_ZOOM,
             anchorTimestamp: null,
             events: [],
             isLoading: false,
             error: undefined,
         },
         managerUiState: {
-            viewMode: DEFAULT_MANAGER_VIEW_MODE,
             isLoading: false,
             error: undefined,
             selection: [],

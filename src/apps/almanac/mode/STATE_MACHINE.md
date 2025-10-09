@@ -26,9 +26,9 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Al
 | --- | --- | --- | --- |
 | `calendarState` | `activeCalendarId`, `defaultCalendarId`, `travelDefaultCalendarId`, `currentTimestamp`, `timeDefinition`, `minuteStep`, `pendingTimeSlice`, `lastAdvanceStep`, `upcomingEvents`, `upcomingPhenomena`, `triggeredEvents`, `triggeredPhenomena`, `skippedEvents` | Domain-Daten (Kalender + Phänomene), vom Gateway geladen/geschrieben. | Persistiert (Gateway) |
 | `calendarState.calendars` | Map `calendarId -> CalendarSummaryDTO` | Cache der bekannten Kalender (Name, Schema, Flags). | Persistiert (Repository) |
-| `almanacUiState` | `mode`, `modeHistory`, `statusSummary`, `drawerOpen`, `lastZoomByMode`, `lastFiltersByMode` | UI-Kontext für Moduswechsel, Historie, Mobile-Drawer. | Persistiert (Gateway für Modus, rest Session) |
-| **`calendarViewState`** (**NEU**) | `mode`, `zoom`, `anchorTimestamp`, `events`, `isLoading`, `error` | State für persistente Kalenderansicht (oberer Split-View-Bereich). Modus: `'month' | 'week' | 'day' | 'upcoming'`. | Modus persistiert (Gateway) |
-| `managerUiState` | `viewMode` (`'overview'` only), `layout`, `selection`, `isLoading`, `error`, `createDraft`, `editStateById`, `deleteDialog`, `conflictDialog` | UI-spezifische Flags für Manager-Übersicht. **Note**: `zoom` und `anchorTimestamp` moved to `calendarViewState`. | Nicht persistiert (Session) |
+| `almanacUiState` | `mode`, `modeHistory`, `statusSummary`, `drawerOpen`, `lastFiltersByMode` | UI-Kontext für Moduswechsel, Historie, Mobile-Drawer. | Persistiert (Gateway für Modus, rest Session) |
+| **`calendarViewState`** (**NEU**) | `mode`, `anchorTimestamp`, `events`, `isLoading`, `error` | State für persistente Kalenderansicht (oberer Split-View-Bereich). Modus: `'month' | 'week' | 'day' | 'upcoming'`. | Modus persistiert (Gateway) |
+| `managerUiState` | `viewMode` (`'overview'` only), `layout`, `selection`, `isLoading`, `error`, `createDraft`, `editStateById`, `deleteDialog`, `conflictDialog` | UI-spezifische Flags für Manager-Übersicht. **Note**: `anchorTimestamp` moved to `calendarViewState`. | Nicht persistiert (Session) |
 | `managerUiState.form` | `currentDialog` (`'calendar' | 'event' | 'time' | null`), `dialogData` | Offene Dialoge und deren Parameter. | Nicht persistiert |
 | `eventsUiState` | `viewMode`, `filters`, `sort`, `pagination`, `isLoading`, `error`, `selectedPhenomenonId`, `editorDraft`, `linkDrawerOpen` | Zustand des Events-Modus inkl. Formular/Drawer. | Modus/Filter persistiert, Rest Session |
 | `travelLeafState` | `travelId`, `visible`, `mode`, `currentTimestamp`, `minuteStep`, `lastQuickStep`, `isLoading`, `error` | Zustand des Travel-Leaves inkl. Anzeigepräferenzen und letztem Quick-Step. | Teilweise (sichtbarkeit/modus) |
@@ -43,7 +43,6 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Al
 | `DEFAULT_SET_REQUESTED` | `{ calendarId: string; scope: 'global' | 'travel'; travelId?: string }` | Toggle für Default. |
 | `DEFAULT_SET_CONFIRMED` | `{ defaultCalendarId: string; travelId?: string }` | Persistenz bestätigt neuen Default. |
 | `MANAGER_VIEW_MODE_CHANGED` | `{ viewMode: 'calendar' | 'overview' }` | Tab-Wechsel in Manager. |
-| `MANAGER_ZOOM_CHANGED` | `{ zoom: 'month' | 'week' | 'day' | 'hour' }` | Kalenderansicht Zoom. |
 | `MANAGER_FILTER_CHANGED` | `CalendarOverviewFilterState` | Übersicht-Filter. |
 | `EVENT_FORM_OPENED` | `{ mode: 'single' | 'recurring'; timestamp?: CalendarTimestampDTO }` | Öffnet Event-Dialog. |
 | `EVENT_SAVE_REQUESTED` | `CalendarEventFormState` | Formular Submit. |
@@ -86,7 +85,7 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Al
 | Vorher | Event | Nachher | Aktionen |
 | --- | --- | --- | --- |
 | `almanacUiState.mode = m` | `ALMANAC_MODE_SELECTED(n)` | `mode = n`, `modeHistory.push(m)` | Persistiere Modus im Gateway, lade Zustand falls nötig |
-| `almanacUiState.mode` | `ALMANAC_MODE_RESTORED(snapshot)` | `mode = snapshot.mode`, `statusSummary = snapshot.statusSummary`, `lastZoomByMode = snapshot.lastZoom`, `lastFiltersByMode = snapshot.lastFilters` | Rehydrate UI, trigger Lazy-Load falls Cache leer |
+| `almanacUiState.mode` | `ALMANAC_MODE_RESTORED(snapshot)` | `mode = snapshot.mode`, `statusSummary = snapshot.statusSummary`, `lastFiltersByMode = snapshot.lastFilters` | Rehydrate UI, trigger Lazy-Load falls Cache leer |
 | `almanacUiState.drawerOpen = true` | `ALMANAC_MODE_SELECTED` (mobile) | `drawerOpen = false` | Drawer schließen nach Auswahl |
 
 ### 4.2 Events-Modus
@@ -118,7 +117,6 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Al
 | Vorher | Event | Nachher | Aktionen |
 | --- | --- | --- | --- |
 | `viewMode = 'calendar'` | `MANAGER_VIEW_MODE_CHANGED('overview')` | `viewMode = 'overview'` | Persistiere Modus in SessionStorage, lade Übersichtsdaten |
-| `zoom = 'month'` | `MANAGER_ZOOM_CHANGED('week')` | `zoom = 'week'` | Re-request Range/Events (`Gateway.fetchEventsForRange`) |
 | `filters` | `MANAGER_FILTER_CHANGED(next)` | `filters = next` | Debounced fetch, Telemetrie `calendar.telemetry.filter_applied` |
 | `form.currentDialog = null` | `EVENT_FORM_OPENED(mode)` | `form.currentDialog = 'event'`, `dialogData = mode` | Fokus setzen, Prefill | 
 | `form.currentDialog = 'event'` | `EVENT_SAVE_CONFIRMED` | `form.currentDialog = null` | Toast, Liste aktualisieren |
@@ -153,7 +151,7 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Al
 `Start → DEFAULT_SET_REQUESTED → Gateway.updateDefault → (Erfolg?) → [Ja] DEFAULT_SET_CONFIRMED → Update State/Broadcast → Ende / [Nein] ERROR_OCCURRED(scope=manager)`
 
 ### 5.4 Manager Moduswechsel
-`Start → MANAGER_VIEW_MODE_CHANGED → Update viewMode → (Mode == 'calendar'?) → [Ja] ensure zoom data loaded → Ende / [Nein] load overview data → Ende`
+`Start → MANAGER_VIEW_MODE_CHANGED → Update viewMode → (Mode == 'calendar'?) → [Ja] ensure calendar snapshot loaded → Ende / [Nein] load overview data → Ende`
 
 ### 5.5 Travel-Leaf Advance
 `Start → TRAVEL_TIME_ADVANCE_REQUESTED → travelLeafState.isLoading = true → Gateway.advanceTime(scope=travel) → (Erfolg?) → [Ja] TIME_ADVANCE_CONFIRMED → Update travelLeafState, calendarState → Ende / [Nein] ERROR_OCCURRED(scope=travel)`
@@ -167,7 +165,7 @@ Dieses Dokument beschreibt State-Slices, Events, Transitionen und Effekte des Al
 | `loadCalendarData` | `INIT_CALENDAR_MODE` | Ruft Gateway (`CalendarStateGateway.loadSnapshot`) auf. |
 | `persistActiveCalendar` | `CALENDAR_SELECT_REQUESTED` | Speichert aktiven Kalender (global oder Reise). |
 | `persistDefault` | `DEFAULT_SET_REQUESTED` | Aktualisiert Default-Flags; bei globalem Default stellt sicher, dass kein zweiter Default existiert. |
-| `fetchCalendarRange` | `MANAGER_VIEW_MODE_CHANGED('calendar')`, `MANAGER_ZOOM_CHANGED` | Ruft `CalendarRepository.fetchEvents(range)` für Zoom.
+| `fetchCalendarRange` | `MANAGER_VIEW_MODE_CHANGED('calendar')` | Ruft `CalendarRepository.fetchEvents(range)` für Kalenderansicht.
 | `fetchOverviewData` | `MANAGER_VIEW_MODE_CHANGED('overview')`, `MANAGER_FILTER_CHANGED` | Lädt paginierte Übersichtsliste. |
 | `saveCalendar` | `EVENT_SAVE_REQUESTED` (wenn `mode === 'calendar'` Dialog) | Verweist auf Domain-Service zum Erstellen/Bearbeiten (siehe [API_CONTRACTS.md](./API_CONTRACTS.md#repositories)). |
 | `saveEvent` | `EVENT_SAVE_REQUESTED` (wenn `mode === 'event'`) | Persistiert Event, aktualisiert Caches. |

@@ -29,11 +29,9 @@ Ab der aktuellen Version nutzt Almanac ein Split-View-Layout mit zwei Hauptberei
 - **Props**:
   ```ts
   interface CalendarViewContainerConfig {
-    readonly mode: CalendarViewMode; // 'month' | 'week' | 'day' | 'upcoming'
     readonly state: CalendarViewState;
     readonly onModeChange: (mode: CalendarViewMode) => void;
     readonly onNavigate: (direction: 'prev' | 'next' | 'today') => void;
-    readonly onEventCreate: (timestamp?: CalendarTimestamp) => void;
     readonly onEventSelect: (eventId: string) => void;
   }
   ```
@@ -46,11 +44,11 @@ Ab der aktuellen Version nutzt Almanac ein Split-View-Layout mit zwei Hauptberei
 - **Props**:
   ```ts
   interface AlmanacContentContainerConfig {
-    readonly mode: AlmanacContentMode; // 'dashboard' | 'events' | 'manager'
-    readonly onModeChange: (mode: AlmanacContentMode) => void;
+    readonly mode: AlmanacMode; // 'dashboard' | 'events' | 'manager'
+    readonly onModeChange: (mode: AlmanacMode) => void;
   }
   ```
-- **Enthält**: Tab-Navigation, Container-Elemente für jeden Modus
+- **Enthält**: Tab-Navigation, Container-Elemente für jeden Modus (`getSection(mode)` liefert das Host-Element)
 
 #### 2.1.3 Shared UI Infrastructure
 Die Split-View-Komponenten nutzen wiederverwendbare UI-Komponenten aus `src/ui/workmode`:
@@ -130,23 +128,20 @@ Die Split-View-Komponenten nutzen wiederverwendbare UI-Komponenten aus `src/ui/w
 
 ### 3.2 Almanac › Manager
 #### 3.2.1 `CalendarManagerHeader`
-- **Responsibility**: Headerleiste des Manager-Leaves (Zurück, Tabs, Aktionen, Zoom-Toolbar).
+- **Responsibility**: Headerleiste des Manager-Leaves (Zurück, Tabs, Aktionen).
 - **Props**
   ```ts
   interface CalendarManagerHeaderProps {
     viewMode: CalendarManagerViewMode; // 'calendar' | 'overview'
-    zoom: CalendarViewZoom; // 'month' | 'week' | 'day' | 'hour'
-    canZoom: boolean;
     isTravelContext: boolean;
     onBack: () => void;
     onViewModeChange: (mode: CalendarManagerViewMode) => void;
-    onZoomChange: (zoom: CalendarViewZoom) => void;
     onCreateCalendar: () => void;
     onImportCalendar: () => void;
     onDefaultAction: () => void;
   }
   ```
-- **Events**: dispatchen `MANAGER_VIEW_MODE_CHANGED`, `MANAGER_ZOOM_CHANGED`.
+- **Events**: dispatchen `MANAGER_VIEW_MODE_CHANGED`.
 - **Styling**: Sticky Header, Buttons mit Icon+Label; unter 520px Icon-only.
 - **Accessibility**: Tabs als `role="tablist"`, Buttons mit `aria-keyshortcuts` (siehe [UX_SPEC §5](./UX_SPEC.md#5-accessibility--i18n)).
 

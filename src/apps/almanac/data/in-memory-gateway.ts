@@ -357,13 +357,6 @@ export class InMemoryStateGateway implements CalendarStateGateway {
         ...partial,
       };
 
-      if (partial.lastZoomByMode) {
-        next.lastZoomByMode = {
-          ...(state.preferences.lastZoomByMode ?? {}),
-          ...partial.lastZoomByMode,
-        };
-      }
-
       if (partial.eventsFilters) {
         next.eventsFilters = {
           categories: [...(partial.eventsFilters.categories ?? [])],
@@ -626,7 +619,6 @@ function clonePreferences(preferences: AlmanacPreferencesSnapshot | undefined): 
   const base = preferences ?? {};
   return {
     ...base,
-    lastZoomByMode: base.lastZoomByMode ? { ...base.lastZoomByMode } : undefined,
     eventsFilters: base.eventsFilters
       ? {
           categories: [...base.eventsFilters.categories],
