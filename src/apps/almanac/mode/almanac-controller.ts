@@ -1084,6 +1084,11 @@ export class AlmanacController {
         this.eventEditorModal?.close();
         this.eventEditorModal = null;
 
+        if (this.protocolRef && typeof this.app.workspace?.offref === 'function') {
+            this.app.workspace.offref(this.protocolRef);
+        }
+        this.protocolRef = null;
+
         // Clean up split-view components
         this.calendarView?.destroy();
         this.calendarView = null;
