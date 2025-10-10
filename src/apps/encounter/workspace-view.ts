@@ -100,6 +100,7 @@ export class EncounterWorkspaceView {
             min: 0,
             step: 1,
         });
+        this.xpInputEl.parentElement?.addClass("sm-encounter-field-inline");
         this.xpInputEl.addEventListener("change", () => this.handleEncounterXpChange());
         this.xpInputEl.addEventListener("input", () => {
             this.xpErrorEl.setText("");
