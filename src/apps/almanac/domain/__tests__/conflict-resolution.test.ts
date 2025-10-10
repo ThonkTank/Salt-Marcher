@@ -3,18 +3,20 @@
 
 import { describe, it, expect } from 'vitest';
 
-import { createMinuteTimestamp } from '../calendar-timestamp';
-import type { CalendarSchema } from '../calendar-schema';
-import { advanceTime } from '../time-arithmetic';
-import { createSingleEvent } from '../calendar-event';
-import type { CalendarEventOccurrence } from '../calendar-event';
-import type { PhenomenonOccurrence } from '../phenomenon';
 import {
+  advanceTime,
+  createMinuteTimestamp,
+  type CalendarSchema,
+} from '../calendar-core';
+import {
+  createSingleEvent,
   detectTemporalConflicts,
   resolveConflictsByPriority,
   fromEventOccurrence,
   fromPhenomenonOccurrence,
-} from '../conflict-resolution';
+  type CalendarEventOccurrence,
+  type PhenomenonOccurrence,
+} from '../scheduling';
 
 const schema: CalendarSchema = {
   id: 'conflict',

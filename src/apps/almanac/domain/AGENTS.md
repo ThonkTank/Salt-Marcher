@@ -3,10 +3,10 @@
 - Liefert pure Business-Logik ohne Obsidian-Abhängigkeiten, damit Tests schnell und deterministisch bleiben.
 
 # Aktueller Stand
-- Kalenderarithmetik, Timestamp-Vergleiche und In-Memory-Schema-Helfer sind umgesetzt.
-- Wiederholregeln (jährlich, Monatsposition, Wochenindex) und Phänomen-Engine berechnen Vorkommen auf Schema-Basis.
+- `calendar-core.ts` bündelt Schema-, Timestamp- und Zeitarithmetik-Helfer für alle Kalenderberechnungen.
+- `scheduling.ts` vereint Event-/Phänomen-Modelle, Wiederholregeln, Konfliktauflösung und Hook-Sortierung in einem Modul.
 - Vitest-Suites prüfen zentrale Kantenfälle (Sub-Tages-Schritte, Schema-Clamping, Prioritätensortierung).
-- Wiederkehrende Events inkl. Astronomie-Resolver (`calendar-event.ts`, `repeat-rule.ts`) und Konfliktauflösung (`conflict-resolution.ts`) stehen bereit.
+- Wiederkehrende Events inkl. Astronomie-Resolver und Konfliktauflösung sind über die konsolidierten Exporte verfügbar.
 
 # ToDo
 - [P1] Recurrence-Engine um astronomische & benutzerdefinierte Regeln erweitern.

@@ -1,9 +1,8 @@
 // src/apps/almanac/data/in-memory-repository.ts
 // Lightweight wrappers around the shared AlmanacMemoryBackend for tests and previews.
 
-import type { CalendarSchema } from '../domain/calendar-schema';
-import type { CalendarTimestamp } from '../domain/calendar-timestamp';
-import type { CalendarEvent } from '../domain/calendar-event';
+import type { CalendarSchema, CalendarTimestamp } from '../domain/calendar-core';
+import type { CalendarEvent } from '../domain/scheduling';
 import type { EventsFilterState } from '../mode/contracts';
 import type {
   CalendarSchemaDTO,

@@ -1,9 +1,8 @@
 // src/apps/almanac/mode/cartographer-gateway.ts
 // Gateway, der Almanac-Hooks und Travel-Panel-Updates an den Cartographer weiterleitet.
 
-import { getEventAnchorTimestamp, type CalendarEvent } from "../domain/calendar-event";
-import type { CalendarTimestamp } from "../domain/calendar-timestamp";
-import type { PhenomenonOccurrence } from "../domain/phenomenon";
+import type { CalendarTimestamp } from "../domain/calendar-core";
+import { getEventAnchorTimestamp, type CalendarEvent, type PhenomenonOccurrence } from "../domain/scheduling";
 import type { HookDispatchGateway, HookDispatchContext } from "../data/calendar-state-gateway";
 
 type TravelScope = "global" | "travel";

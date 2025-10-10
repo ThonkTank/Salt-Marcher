@@ -3,10 +3,12 @@
 
 import { describe, it, expect } from 'vitest';
 
-import { computeNextPhenomenonOccurrence, computePhenomenonOccurrencesInRange } from '../phenomenon-engine';
-import type { CalendarSchema } from '../calendar-schema';
-import { createDayTimestamp } from '../calendar-timestamp';
-import type { Phenomenon } from '../phenomenon';
+import { createDayTimestamp, type CalendarSchema } from '../calendar-core';
+import {
+  computeNextPhenomenonOccurrence,
+  computePhenomenonOccurrencesInRange,
+  type Phenomenon,
+} from '../scheduling';
 
 const schema: CalendarSchema = {
   id: 'simple',
