@@ -53,8 +53,6 @@ const DND5E_XP_THRESHOLDS: Record<number, number> = {
   20: 355000,
 };
 
-type EncounterRuleScope = "overall" | "perPlayer";
-
 type EncounterRuleModifierType =
   | "flat" // fixer Wert (kann negativ sein)
   | "flatPerLevel" // fixer Wert pro Stufe
@@ -64,7 +62,6 @@ type EncounterRuleModifierType =
 interface EncounterXpRule {
   id: string;
   title: string;
-  scope: EncounterRuleScope;
   modifierType: EncounterRuleModifierType;
   modifierValue: number; // Prozentwert oder fixer Wert je nach Typ
   enabled: boolean;

@@ -72,7 +72,6 @@ describe("EncounterPresenter XP-Verwaltung", () => {
                     {
                         id: "boost",
                         title: "Story Bonus",
-                        scope: "overall",
                         modifierType: "percentTotal",
                         modifierValue: 150,
                         enabled: true,

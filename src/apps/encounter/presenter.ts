@@ -376,9 +376,6 @@ export class EncounterPresenter {
         if (patch.title !== undefined) {
             next.title = patch.title;
         }
-        if (patch.scope !== undefined) {
-            next.scope = patch.scope;
-        }
         if (patch.modifierType !== undefined) {
             next.modifierType = patch.modifierType;
         }
@@ -489,102 +486,59 @@ function deriveEncounterXpView(state: EncounterXpState): EncounterXpViewModel {
             totalDelta += delta;
         };
 
-        if (rule.scope === "overall") {
-            switch (rule.modifierType) {
-                case "flat": {
-                    const perMember = rule.modifierValue / partyCount;
-                    for (const member of members) {
-                        appendMemberDelta(member, perMember);
-                    }
-                    break;
+        switch (rule.modifierType) {
+            case "flat": {
+                const perMember = rule.modifierValue / partyCount;
+                for (const member of members) {
+                    appendMemberDelta(member, perMember);
                 }
-                case "flatPerLevel": {
-                    let totalLevels = 0;
-                    for (const member of members) {
-                        totalLevels += sanitizeLevel(member.member.level);
-                    }
-                    const averageLevel = totalLevels / partyCount;
-                    const perMember = rule.modifierValue * averageLevel;
-                    for (const member of members) {
-                        appendMemberDelta(member, perMember);
-                    }
-                    break;
-                }
-                case "percentTotal": {
-                    const percent = rule.modifierValue / 100;
-                    for (const member of members) {
-                        const delta = member.totalXp * percent;
-                        appendMemberDelta(member, delta);
-                    }
-                    break;
-                }
-                case "percentNextLevel": {
-                    let aggregateNext = 0;
-                    for (const member of members) {
-                        if (member.xpToNextLevel == null) {
-                            pushWarning(ruleWarnings, `${member.member.name} has no next-level XP threshold.`);
-                            continue;
-                        }
-                        aggregateNext += member.xpToNextLevel;
-                    }
-                    if (aggregateNext === 0) {
-                        for (const member of members) {
-                            perMemberDeltas.push({
-                                memberId: member.member.id,
-                                memberName: member.member.name,
-                                delta: 0,
-                            });
-                        }
-                        break;
-                    }
-                    const total = aggregateNext * (rule.modifierValue / 100);
-                    const perMember = total / partyCount;
-                    for (const member of members) {
-                        appendMemberDelta(member, perMember);
-                    }
-                    break;
-                }
+                break;
             }
-        } else {
-            switch (rule.modifierType) {
-                case "flat": {
+            case "flatPerLevel": {
+                let totalLevels = 0;
+                for (const member of members) {
+                    totalLevels += sanitizeLevel(member.member.level);
+                }
+                const averageLevel = totalLevels / partyCount;
+                const perMember = rule.modifierValue * averageLevel;
+                for (const member of members) {
+                    appendMemberDelta(member, perMember);
+                }
+                break;
+            }
+            case "percentTotal": {
+                const percent = rule.modifierValue / 100;
+                for (const member of members) {
+                    const delta = member.totalXp * percent;
+                    appendMemberDelta(member, delta);
+                }
+                break;
+            }
+            case "percentNextLevel": {
+                let aggregateNext = 0;
+                for (const member of members) {
+                    if (member.xpToNextLevel == null) {
+                        pushWarning(ruleWarnings, `${member.member.name} has no next-level XP threshold.`);
+                        continue;
+                    }
+                    aggregateNext += member.xpToNextLevel;
+                }
+                if (aggregateNext === 0) {
                     for (const member of members) {
-                        appendMemberDelta(member, rule.modifierValue);
+                        perMemberDeltas.push({
+                            memberId: member.member.id,
+                            memberName: member.member.name,
+                            delta: 0,
+                        });
                     }
                     break;
                 }
-                case "flatPerLevel": {
-                    for (const member of members) {
-                        const delta = rule.modifierValue * sanitizeLevel(member.member.level);
-                        appendMemberDelta(member, delta);
-                    }
-                    break;
+                const total = aggregateNext * (rule.modifierValue / 100);
+                const perMember = total / partyCount;
+                for (const member of members) {
+                    appendMemberDelta(member, perMember);
                 }
-                case "percentTotal": {
-                    const percent = rule.modifierValue / 100;
-                    for (const member of members) {
-                        const delta = member.totalXp * percent;
-                        appendMemberDelta(member, delta);
-                    }
-                    break;
-                }
-                case "percentNextLevel": {
-                    const percent = rule.modifierValue / 100;
-                    for (const member of members) {
-                        if (member.xpToNextLevel == null) {
-                            pushWarning(ruleWarnings, `${member.member.name} has no next-level XP threshold.`);
-                            perMemberDeltas.push({
-                                memberId: member.member.id,
-                                memberName: member.member.name,
-                                delta: 0,
-                            });
-                            continue;
-                        }
-                        const delta = member.xpToNextLevel * percent;
-                        appendMemberDelta(member, delta);
-                    }
-                    break;
-                }
+                break;
             }
         }
 
@@ -693,7 +647,6 @@ function shallowEqualRules(a: EncounterXpRule, b: EncounterXpRule): boolean {
     return (
         a.id === b.id &&
         a.title === b.title &&
-        a.scope === b.scope &&
         a.modifierType === b.modifierType &&
         a.modifierValue === b.modifierValue &&
         a.enabled === b.enabled &&
