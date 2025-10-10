@@ -3,13 +3,14 @@
 
 import { describe, it, expect } from 'vitest';
 
-import { createDayTimestamp, type CalendarSchema } from '../calendar-core';
 import {
-  computeNextEventOccurrence,
   computeEventOccurrencesInRange,
+  computeNextEventOccurrence,
+  createDayTimestamp,
   type AstronomicalEventCalculator,
   type CalendarEvent,
-} from '../scheduling';
+  type CalendarSchema,
+} from '..';
 
 const schema: CalendarSchema = {
   id: 'lunar',

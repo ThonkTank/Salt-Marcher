@@ -4,22 +4,20 @@
 import {
   advanceTime,
   compareTimestampsWithSchema,
-  createDayTimestamp,
-  getMonthById,
-  type CalendarSchema,
-  type CalendarTimestamp,
-  type TimeUnit,
-} from "../domain/calendar-core";
-import {
   computeNextPhenomenonOccurrence,
   computePhenomenonOccurrencesInRange,
+  createDayTimestamp,
   getEventAnchorTimestamp,
+  getMonthById,
   isPhenomenonVisibleForCalendar,
   sortOccurrencesByTimestamp,
   type CalendarEvent,
+  type CalendarSchema,
+  type CalendarTimestamp,
   type Phenomenon,
   type PhenomenonOccurrence,
-} from "../domain/scheduling";
+  type TimeUnit,
+} from "../domain";
 import type {
   AlmanacPreferencesSnapshot,
   TravelCalendarMode,

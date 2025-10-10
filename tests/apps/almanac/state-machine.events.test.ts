@@ -16,7 +16,7 @@ import {
     getDefaultCurrentTimestamp,
     gregorianSchema,
 } from "../../../src/apps/almanac/fixtures/gregorian.fixture";
-import { createDayTimestamp } from "../../../src/apps/almanac/domain/calendar-core";
+import { createDayTimestamp } from "../../../src/apps/almanac/domain";
 import { createSamplePhenomena } from "../../../src/apps/almanac/fixtures/phenomena.fixture";
 
 const flushGateway = async (instance: unknown): Promise<void> => {

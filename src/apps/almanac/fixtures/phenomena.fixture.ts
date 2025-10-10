@@ -1,7 +1,7 @@
 // src/apps/almanac/fixtures/phenomena.fixture.ts
 // Supplies sample phenomena definitions and summaries for Almanac previews.
 
-import type { Phenomenon } from '../domain/scheduling';
+import type { Phenomenon } from '../domain';
 
 /**
  * Almanac Phenomena Fixture

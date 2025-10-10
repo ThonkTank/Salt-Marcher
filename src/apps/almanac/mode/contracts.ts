@@ -8,8 +8,12 @@
  * state machine, controller and persistence gateways.
  */
 
-import type { CalendarSchema, CalendarTimestamp } from "../domain/calendar-core";
-import type { CalendarEvent, PhenomenonOccurrence } from "../domain/scheduling";
+import type {
+    CalendarEvent,
+    CalendarSchema,
+    CalendarTimestamp,
+    PhenomenonOccurrence,
+} from "../domain";
 
 export const ALMANAC_MODE_METADATA = {
     dashboard: {

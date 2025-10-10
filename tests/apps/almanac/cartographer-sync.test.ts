@@ -12,9 +12,9 @@ import {
 import {
     createDayTimestamp,
     createHourTimestamp,
+    createSingleEvent,
     type CalendarTimestamp,
-} from "../../../src/apps/almanac/domain/calendar-core";
-import { createSingleEvent } from "../../../src/apps/almanac/domain/scheduling";
+} from "../../../src/apps/almanac/domain";
 import { AlmanacStateMachine } from "../../../src/apps/almanac/mode/state-machine";
 import { CartographerHookGateway } from "../../../src/apps/almanac/mode/cartographer-gateway";
 import {

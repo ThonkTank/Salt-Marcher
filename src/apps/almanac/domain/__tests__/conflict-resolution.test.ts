@@ -6,17 +6,15 @@ import { describe, it, expect } from 'vitest';
 import {
   advanceTime,
   createMinuteTimestamp,
-  type CalendarSchema,
-} from '../calendar-core';
-import {
   createSingleEvent,
   detectTemporalConflicts,
-  resolveConflictsByPriority,
   fromEventOccurrence,
   fromPhenomenonOccurrence,
+  resolveConflictsByPriority,
   type CalendarEventOccurrence,
+  type CalendarSchema,
   type PhenomenonOccurrence,
-} from '../scheduling';
+} from '..';
 
 const schema: CalendarSchema = {
   id: 'conflict',
