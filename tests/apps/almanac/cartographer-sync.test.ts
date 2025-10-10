@@ -8,6 +8,7 @@ import {
     InMemoryEventRepository,
     InMemoryPhenomenonRepository,
 } from "../../../src/apps/almanac/data/in-memory-repository";
+import { AlmanacMemoryBackend } from "../../../src/apps/almanac/data/memory-backend";
 import { createSingleEvent } from "../../../src/apps/almanac/domain/calendar-event";
 import {
     createDayTimestamp,
@@ -36,6 +37,7 @@ const flushGateway = async (instance: unknown): Promise<void> => {
 };
 
 describe("Cartographer sync gateway", () => {
+    let backend: AlmanacMemoryBackend;
     let calendarRepo: InMemoryCalendarRepository;
     let eventRepo: InMemoryEventRepository;
     let phenomenonRepo: InMemoryPhenomenonRepository;
@@ -54,10 +56,10 @@ describe("Cartographer sync gateway", () => {
 
     beforeEach(async () => {
         cartographerGateway = new CartographerHookGateway();
-        calendarRepo = new InMemoryCalendarRepository();
-        eventRepo = new InMemoryEventRepository();
-        eventRepo.bindCalendarRepository(calendarRepo);
-        phenomenonRepo = new InMemoryPhenomenonRepository();
+        backend = new AlmanacMemoryBackend();
+        calendarRepo = new InMemoryCalendarRepository(backend);
+        eventRepo = new InMemoryEventRepository(backend);
+        phenomenonRepo = new InMemoryPhenomenonRepository(backend);
         gateway = new InMemoryStateGateway(calendarRepo, eventRepo, phenomenonRepo, cartographerGateway);
 
         calendarRepo.seed([gregorianSchema]);
@@ -135,10 +137,10 @@ describe("Cartographer sync gateway", () => {
             throw new Error("cartographer offline");
         });
 
-        const altCalendarRepo = new InMemoryCalendarRepository();
-        const altEventRepo = new InMemoryEventRepository();
-        altEventRepo.bindCalendarRepository(altCalendarRepo);
-        const altPhenomenonRepo = new InMemoryPhenomenonRepository();
+        const altBackend = new AlmanacMemoryBackend();
+        const altCalendarRepo = new InMemoryCalendarRepository(altBackend);
+        const altEventRepo = new InMemoryEventRepository(altBackend);
+        const altPhenomenonRepo = new InMemoryPhenomenonRepository(altBackend);
         const altGateway = new InMemoryStateGateway(
             altCalendarRepo,
             altEventRepo,

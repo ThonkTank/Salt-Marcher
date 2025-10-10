@@ -19,6 +19,7 @@ import {
     InMemoryEventRepository,
     InMemoryPhenomenonRepository,
 } from "../../../src/apps/almanac/data/in-memory-repository";
+import { AlmanacMemoryBackend } from "../../../src/apps/almanac/data/memory-backend";
 import { AlmanacStateMachine } from "../../../src/apps/almanac/mode/state-machine";
 import { gregorianSchema, getDefaultCurrentTimestamp } from "../../../src/apps/almanac/fixtures/gregorian.fixture";
 import { createSampleEvents } from "../../../src/apps/almanac/fixtures/gregorian.fixture";
@@ -27,6 +28,10 @@ import { AlmanacRepositoryError } from "../../../src/apps/almanac/data/almanac-r
 import { createDayTimestamp } from "../../../src/apps/almanac/domain/calendar-timestamp";
 
 class ConflictPhenomenonRepository extends InMemoryPhenomenonRepository {
+    constructor(backend: AlmanacMemoryBackend) {
+        super(backend);
+    }
+
     override async upsertPhenomenon(): Promise<never> {
         throw new AlmanacRepositoryError("phenomenon_conflict", "Duplicate calendar links", {
             duplicates: ["cal-1"],
@@ -40,12 +45,12 @@ describe("AlmanacStateMachine telemetry", () => {
     });
 
     async function createMachine(options?: { conflictingPhenomena?: boolean }) {
-        const calendarRepo = new InMemoryCalendarRepository();
-        const eventRepo = new InMemoryEventRepository();
-        eventRepo.bindCalendarRepository(calendarRepo);
+        const backend = new AlmanacMemoryBackend();
+        const calendarRepo = new InMemoryCalendarRepository(backend);
+        const eventRepo = new InMemoryEventRepository(backend);
         const phenomenonRepo = options?.conflictingPhenomena
-            ? new ConflictPhenomenonRepository()
-            : new InMemoryPhenomenonRepository();
+            ? new ConflictPhenomenonRepository(backend)
+            : new InMemoryPhenomenonRepository(backend);
         const gateway = new InMemoryStateGateway(calendarRepo, eventRepo, phenomenonRepo);
 
         calendarRepo.seed([gregorianSchema]);

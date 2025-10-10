@@ -2,6 +2,9 @@
 Dieser Testplan leitet sich aus den Spezifikationen unter `src/apps/almanac` ab. Er adressiert Domain-, Persistenz-, UI- und Integrationsszenarien inklusive Travel-Leaf und Default-Handling.
 
 ## 1. Ziele
+
+> **Hinweis:** Das interaktive Almanac-Frontend wurde entfernt. UI-bezogene Ziele dienen nur noch als Historie und werden aktuell nicht getestet.
+
 - Sicherstellen, dass Mehrkalenderschemata, Default-Logik und Zoom-Ansichten korrekt funktionieren.
 - Verifizieren, dass Sub-Tages-Zeitschritte (Stunden/Minuten) normalisiert, persistiert und in UI/Travel synchron angezeigt werden.
 - Prüfen, dass Almanac-Modus & Events-Hub (Phänomene, Kategorien, Filter) konsistent mit Kalenderdaten laufen und Hooks korrekt dispatchen.

@@ -7,6 +7,7 @@ import {
     InMemoryEventRepository,
     InMemoryPhenomenonRepository,
 } from "../../../src/apps/almanac/data/in-memory-repository";
+import { AlmanacMemoryBackend } from "../../../src/apps/almanac/data/memory-backend";
 import { InMemoryStateGateway } from "../../../src/apps/almanac/data/in-memory-gateway";
 import { VaultCalendarRepository } from "../../../src/apps/almanac/data/vault-calendar-repository";
 import { VaultEventRepository } from "../../../src/apps/almanac/data/vault-event-repository";
@@ -49,10 +50,10 @@ describe("InMemoryStateGateway.advanceTimeBy", () => {
     let gateway: InMemoryStateGateway;
 
     beforeEach(async () => {
-        calendarRepo = new InMemoryCalendarRepository();
-        eventRepo = new InMemoryEventRepository();
-        eventRepo.bindCalendarRepository(calendarRepo);
-        phenomenonRepo = new InMemoryPhenomenonRepository();
+        const backend = new AlmanacMemoryBackend();
+        calendarRepo = new InMemoryCalendarRepository(backend);
+        eventRepo = new InMemoryEventRepository(backend);
+        phenomenonRepo = new InMemoryPhenomenonRepository(backend);
         gateway = new InMemoryStateGateway(calendarRepo, eventRepo, phenomenonRepo);
 
         calendarRepo.seed([gregorianSchema]);
