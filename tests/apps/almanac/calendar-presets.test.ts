@@ -2,7 +2,7 @@
 // Tests for calendar preset initialization
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { InMemoryCalendarRepository } from '../../../src/apps/almanac/data/in-memory-repository';
+import { InMemoryCalendarRepository } from '../../../src/apps/almanac/data/repositories';
 import { ensureDefaultCalendar, getAllPresetCalendars } from '../../../src/apps/almanac/data/calendar-presets';
 import { GREGORIAN_CALENDAR_ID } from '../../../src/apps/almanac/fixtures/gregorian.fixture';
 

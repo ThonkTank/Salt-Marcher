@@ -4,12 +4,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
-    InMemoryCalendarRepository,
-    InMemoryEventRepository,
-    InMemoryPhenomenonRepository,
-} from "../../../src/apps/almanac/data/in-memory-repository";
-import { AlmanacMemoryBackend } from "../../../src/apps/almanac/data/memory-backend";
-import { InMemoryStateGateway } from "../../../src/apps/almanac/data/in-memory-gateway";
+  AlmanacMemoryBackend,
+  InMemoryCalendarRepository,
+  InMemoryEventRepository,
+  InMemoryPhenomenonRepository,
+} from "../../../src/apps/almanac/data/repositories";
+import { InMemoryStateGateway } from "../../../src/apps/almanac/data/calendar-state-gateway";
 import { AlmanacStateMachine } from "../../../src/apps/almanac/mode/state-machine";
 import {
     createSampleEvents,

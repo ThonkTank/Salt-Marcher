@@ -2,13 +2,13 @@
 // Prüft die Synchronisation zwischen Almanac-State-Machine und dem Cartographer-Hook-Gateway.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { InMemoryStateGateway } from "../../../src/apps/almanac/data/in-memory-gateway";
+import { InMemoryStateGateway } from "../../../src/apps/almanac/data/calendar-state-gateway";
 import {
-    InMemoryCalendarRepository,
-    InMemoryEventRepository,
-    InMemoryPhenomenonRepository,
-} from "../../../src/apps/almanac/data/in-memory-repository";
-import { AlmanacMemoryBackend } from "../../../src/apps/almanac/data/memory-backend";
+  AlmanacMemoryBackend,
+  InMemoryCalendarRepository,
+  InMemoryEventRepository,
+  InMemoryPhenomenonRepository,
+} from "../../../src/apps/almanac/data/repositories";
 import {
     createDayTimestamp,
     createHourTimestamp,

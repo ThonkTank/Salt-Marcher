@@ -10,12 +10,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { CalendarSchema } from '../../../src/apps/almanac/domain/calendar-core';
 import {
+  AlmanacMemoryBackend,
   InMemoryCalendarRepository,
   InMemoryEventRepository,
   InMemoryPhenomenonRepository,
-} from '../../../src/apps/almanac/data/in-memory-repository';
-import { AlmanacMemoryBackend } from '../../../src/apps/almanac/data/memory-backend';
-import { InMemoryStateGateway } from '../../../src/apps/almanac/data/in-memory-gateway';
+} from '../../../src/apps/almanac/data/repositories';
+import { InMemoryStateGateway } from '../../../src/apps/almanac/data/calendar-state-gateway';
 
 describe('Default Calendar Resolver', () => {
   let backend: AlmanacMemoryBackend;
