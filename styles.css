@@ -280,10 +280,17 @@
     gap: 0.75rem;
 }
 
-.sm-encounter-main {
-    display: grid;
+.sm-encounter-columns {
+    display: flex;
+    flex-wrap: wrap;
     gap: 1.5rem;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.sm-encounter-column {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 320px;
+    gap: 1.5rem;
 }
 
 .sm-encounter-header {
@@ -681,6 +688,10 @@
 }
 
 @media (max-width: 720px) {
+    .sm-encounter-column {
+        flex-basis: 100%;
+    }
+
     .sm-encounter-breakdowns {
         grid-template-columns: 1fr;
     }
