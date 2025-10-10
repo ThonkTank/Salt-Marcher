@@ -1,8 +1,13 @@
 // src/apps/almanac/data/dto.ts
 // Shared DTO definitions bridging Almanac domain models with persistence contracts.
 
-import type { CalendarSchema, CalendarTimestamp } from "../domain/calendar-core";
-import type { CalendarEvent, HookDescriptor, Phenomenon } from "../domain/scheduling";
+import type {
+  CalendarEvent,
+  CalendarSchema,
+  CalendarTimestamp,
+  HookDescriptor,
+  Phenomenon,
+} from "../domain";
 
 export type CalendarSchemaDTO = CalendarSchema & {
   readonly description?: string;

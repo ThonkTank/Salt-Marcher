@@ -1,7 +1,7 @@
 // src/apps/almanac/mode/travel/travel-calendar-leaf.ts
 // Kompakte Leaf-Shell für den Cartographer-Travel-Modus.
 
-import { formatTimestamp, type CalendarTimestamp } from "../../domain/calendar-core";
+import { formatTimestamp, type CalendarTimestamp } from "../../domain";
 import type { TravelPanelSnapshot } from "../cartographer-gateway";
 import type { TravelCalendarMode } from "../contracts";
 import { TravelCalendarToolbar } from "./travel-calendar-toolbar";

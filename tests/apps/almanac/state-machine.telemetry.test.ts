@@ -25,7 +25,7 @@ import { gregorianSchema, getDefaultCurrentTimestamp } from "../../../src/apps/a
 import { createSampleEvents } from "../../../src/apps/almanac/fixtures/gregorian.fixture";
 import { CalendarGatewayError } from "../../../src/apps/almanac/data/calendar-state-gateway";
 import { AlmanacRepositoryError } from "../../../src/apps/almanac/data/repositories";
-import { createDayTimestamp } from "../../../src/apps/almanac/domain/calendar-core";
+import { createDayTimestamp } from "../../../src/apps/almanac/domain";
 
 class ConflictPhenomenonRepository extends InMemoryPhenomenonRepository {
     constructor(backend: AlmanacMemoryBackend) {

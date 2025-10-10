@@ -8,7 +8,7 @@ import {
   createHourTimestamp,
   createMinuteTimestamp,
   type CalendarSchema,
-} from '../calendar-core';
+} from '..';
 
 // Simple test schema: 2 months (30 days each), 7 days/week
 const testSchema: CalendarSchema = {

@@ -1,7 +1,7 @@
 // src/apps/almanac/mode/travel/travel-quick-step-group.ts
 // Button-Gruppe für schnelle Zeitfortschritt-Aktionen im Travel-Leaf.
 
-import type { TimeUnit } from "../../domain/calendar-core";
+import type { TimeUnit } from "../../domain";
 
 export type TravelAdvancePayload = { readonly amount: number; readonly unit: TimeUnit };
 

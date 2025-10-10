@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { CalendarSchema } from '../../../src/apps/almanac/domain/calendar-core';
+import type { CalendarSchema } from '../../../src/apps/almanac/domain';
 import {
   AlmanacMemoryBackend,
   InMemoryCalendarRepository,

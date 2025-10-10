@@ -3,19 +3,17 @@
 
 import {
   compareTimestampsWithSchema,
+  computeNextPhenomenonOccurrence,
   createDayTimestamp,
   formatTimestamp,
-  type CalendarSchema,
-  type CalendarSchemaDTO,
-  type CalendarTimestamp,
-} from "../domain/calendar-core";
-import {
-  computeNextPhenomenonOccurrence,
   getEventAnchorTimestamp,
   isPhenomenonVisibleForCalendar,
   type CalendarEvent,
   type CalendarEventDTO,
-} from "../domain/scheduling";
+  type CalendarSchema,
+  type CalendarSchemaDTO,
+  type CalendarTimestamp,
+} from "../domain";
 import type {
   AlmanacPreferencesSnapshot,
   EventsFilterState,
@@ -756,9 +754,13 @@ export class AlmanacMemoryBackend {
   listUpcomingEvents(calendarId: string, from: CalendarTimestamp, limit: number): EventDTO[] {
     const state = this.store.read();
     const schema = ensureCalendar(state, calendarId);
-    return listEvents(state, calendarId)
-      .filter(event => compareTimestampsWithSchema(schema, getEventAnchorTimestamp(event) ?? event.date, from) >= 0)
-      .slice(0, limit);
+    const upcoming = listEvents(state, calendarId)
+      .map(event => ({ event, anchor: getEventAnchorTimestamp(event) ?? event.date }))
+      .filter(entry => compareTimestampsWithSchema(schema, entry.anchor, from) >= 0);
+
+    upcoming.sort((a, b) => compareTimestampsWithSchema(schema, a.anchor, b.anchor));
+
+    return upcoming.slice(0, limit).map(entry => entry.event);
   }
 
   createEvent(event: EventDTO): void {

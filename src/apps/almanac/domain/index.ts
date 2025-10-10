@@ -1,20 +1,409 @@
-// src/apps/almanac/domain/scheduling.ts
-// Unified scheduling domain covering hooks, repeat rules, events, phenomena and conflicts.
+// src/apps/almanac/domain/index.ts
+// Consolidated calendar schema, scheduling and phenomenon utilities.
 
-import type { CalendarSchema, CalendarTimestamp } from './calendar-core';
-import {
-  advanceTime,
-  absoluteDayToTimestamp,
-  clampDayToMonth,
-  compareTimestampsWithSchema,
-  createDayTimestamp,
-  createMinuteTimestamp,
-  createTimestampFromDayOfYear,
-  getTimeDefinition,
-  mod,
-  timestampToAbsoluteDay,
-} from './calendar-core';
+/**
+ * Calendar schema structures
+ */
+export interface CalendarMonth {
+  readonly id: string;
+  readonly name: string;
+  readonly length: number;
+}
 
+const DEFAULT_TIME_DEFINITION: TimeDefinition = {
+  hoursPerDay: 24,
+  minutesPerHour: 60,
+  secondsPerMinute: 60,
+  minuteStep: 1,
+};
+
+export interface TimeDefinition {
+  readonly hoursPerDay: number;
+  readonly minutesPerHour: number;
+  readonly secondsPerMinute: number;
+  readonly minuteStep: number;
+}
+
+export interface CalendarSchema {
+  readonly id: string;
+  readonly name: string;
+  readonly description?: string;
+  readonly daysPerWeek: number;
+  readonly months: ReadonlyArray<CalendarMonth>;
+  readonly hoursPerDay?: number;
+  readonly minutesPerHour?: number;
+  readonly secondsPerMinute?: number;
+  readonly minuteStep?: number;
+  readonly epoch: {
+    readonly year: number;
+    readonly monthId: string;
+    readonly day: number;
+  };
+  readonly isDefaultGlobal?: boolean;
+  readonly schemaVersion: string;
+}
+
+export interface DefaultCalendarConfig {
+  readonly travelId: string;
+  readonly calendarId: string;
+}
+
+export function getTotalDaysInYear(schema: CalendarSchema): number {
+  return schema.months.reduce((sum, month) => sum + month.length, 0);
+}
+
+export function getMonthById(schema: CalendarSchema, monthId: string): CalendarMonth | null {
+  return schema.months.find(month => month.id === monthId) ?? null;
+}
+
+export function getMonthIndex(schema: CalendarSchema, monthId: string): number {
+  return schema.months.findIndex(month => month.id === monthId);
+}
+
+export function getTimeDefinition(schema: CalendarSchema): TimeDefinition {
+  return {
+    ...DEFAULT_TIME_DEFINITION,
+    ...(schema.hoursPerDay !== undefined ? { hoursPerDay: schema.hoursPerDay } : {}),
+    ...(schema.minutesPerHour !== undefined ? { minutesPerHour: schema.minutesPerHour } : {}),
+    ...(schema.secondsPerMinute !== undefined ? { secondsPerMinute: schema.secondsPerMinute } : {}),
+    ...(schema.minuteStep !== undefined ? { minuteStep: schema.minuteStep } : {}),
+  };
+}
+
+/**
+ * Calendar timestamp primitives
+ */
+export type TimestampPrecision = 'day' | 'hour' | 'minute';
+
+export interface CalendarTimestamp {
+  readonly calendarId: string;
+  readonly year: number;
+  readonly monthId: string;
+  readonly day: number;
+  readonly hour?: number;
+  readonly minute?: number;
+  readonly precision: TimestampPrecision;
+}
+
+export function createDayTimestamp(
+  calendarId: string,
+  year: number,
+  monthId: string,
+  day: number,
+): CalendarTimestamp {
+  return { calendarId, year, monthId, day, precision: 'day' };
+}
+
+export function createHourTimestamp(
+  calendarId: string,
+  year: number,
+  monthId: string,
+  day: number,
+  hour: number,
+): CalendarTimestamp {
+  return { calendarId, year, monthId, day, hour, precision: 'hour' };
+}
+
+export function createMinuteTimestamp(
+  calendarId: string,
+  year: number,
+  monthId: string,
+  day: number,
+  hour: number,
+  minute: number,
+): CalendarTimestamp {
+  return { calendarId, year, monthId, day, hour, minute, precision: 'minute' };
+}
+
+export function compareTimestamps(a: CalendarTimestamp, b: CalendarTimestamp): number {
+  return compareTimestampParts(a, b, (left, right) => left.localeCompare(right));
+}
+
+export function compareTimestampsWithSchema(
+  schema: CalendarSchema,
+  a: CalendarTimestamp,
+  b: CalendarTimestamp,
+): number {
+  return compareTimestampParts(a, b, (left, right) => {
+    const aIndex = getMonthIndex(schema, left);
+    const bIndex = getMonthIndex(schema, right);
+    if (aIndex === -1 || bIndex === -1) {
+      return left.localeCompare(right);
+    }
+    return aIndex - bIndex;
+  });
+}
+
+export function formatTimestamp(ts: CalendarTimestamp, monthName?: string): string {
+  const month = monthName ?? ts.monthId;
+  if (ts.precision === 'day') {
+    return `Year ${ts.year}, Day ${ts.day} of ${month}`;
+  }
+  if (ts.precision === 'hour') {
+    const hour = String(ts.hour ?? 0).padStart(2, '0');
+    return `Year ${ts.year}, Day ${ts.day} of ${month}, ${hour}:00`;
+  }
+  const hour = String(ts.hour ?? 0).padStart(2, '0');
+  const minute = String(ts.minute ?? 0).padStart(2, '0');
+  return `Year ${ts.year}, Day ${ts.day} of ${month}, ${hour}:${minute}`;
+}
+
+/**
+ * Calendar math helpers
+ */
+export function getMonthLength(schema: CalendarSchema, monthId: string): number | null {
+  const month = getMonthById(schema, monthId);
+  return month?.length ?? null;
+}
+
+export function getDayOfYear(schema: CalendarSchema, timestamp: CalendarTimestamp): number {
+  const monthIndex = getMonthIndex(schema, timestamp.monthId);
+  if (monthIndex === -1) {
+    throw new Error(`Month with id ${timestamp.monthId} not found in schema ${schema.id}`);
+  }
+  let days = 0;
+  for (let index = 0; index < monthIndex; index++) {
+    days += schema.months[index].length;
+  }
+  return days + timestamp.day;
+}
+
+export function resolveMonthAndDayByDayOfYear(
+  schema: CalendarSchema,
+  dayOfYear: number,
+): { monthId: string; day: number } {
+  if (dayOfYear < 1 || dayOfYear > getTotalDaysInYear(schema)) {
+    throw new RangeError(`Day-of-year ${dayOfYear} is out of range for schema ${schema.id}`);
+  }
+  let remaining = dayOfYear;
+  for (const month of schema.months) {
+    if (remaining <= month.length) {
+      return { monthId: month.id, day: remaining };
+    }
+    remaining -= month.length;
+  }
+  throw new RangeError(`Unable to resolve day-of-year ${dayOfYear} for schema ${schema.id}`);
+}
+
+export function createTimestampFromDayOfYear(
+  schema: CalendarSchema,
+  calendarId: string,
+  year: number,
+  dayOfYear: number,
+): CalendarTimestamp {
+  const { monthId, day } = resolveMonthAndDayByDayOfYear(schema, dayOfYear);
+  return createDayTimestamp(calendarId, year, monthId, day);
+}
+
+export function timestampToAbsoluteDay(schema: CalendarSchema, timestamp: CalendarTimestamp): number {
+  const daysPerYear = getTotalDaysInYear(schema);
+  const dayOfYearIndex = getDayOfYear(schema, timestamp) - 1;
+  const yearOffset = timestamp.year - schema.epoch.year;
+  return yearOffset * daysPerYear + dayOfYearIndex;
+}
+
+export function absoluteDayToTimestamp(
+  schema: CalendarSchema,
+  calendarId: string,
+  absoluteDay: number,
+): CalendarTimestamp {
+  const daysPerYear = getTotalDaysInYear(schema);
+  let yearOffset = Math.floor(absoluteDay / daysPerYear);
+  let dayOfYearIndex = absoluteDay - yearOffset * daysPerYear;
+  if (dayOfYearIndex < 0) {
+    dayOfYearIndex += daysPerYear;
+    yearOffset -= 1;
+  }
+  const targetYear = schema.epoch.year + yearOffset;
+  return createTimestampFromDayOfYear(schema, calendarId, targetYear, dayOfYearIndex + 1);
+}
+
+export function clampDayToMonth(schema: CalendarSchema, monthId: string, day: number): number {
+  const monthLength = getMonthLength(schema, monthId);
+  if (monthLength === null) {
+    throw new Error(`Month with id ${monthId} not found in schema ${schema.id}`);
+  }
+  if (day < 1) return 1;
+  if (day > monthLength) return monthLength;
+  return day;
+}
+
+export function mod(value: number, divisor: number): number {
+  return ((value % divisor) + divisor) % divisor;
+}
+
+/**
+ * Time arithmetic
+ */
+export type TimeUnit = 'day' | 'hour' | 'minute';
+
+export interface AdvanceResult {
+  readonly timestamp: CalendarTimestamp;
+  readonly normalized: boolean;
+  readonly carriedDays?: number;
+  readonly carriedHours?: number;
+}
+
+export function advanceTime(
+  schema: CalendarSchema,
+  current: CalendarTimestamp,
+  amount: number,
+  unit: TimeUnit,
+): AdvanceResult {
+  if (unit === 'day') {
+    return advanceByDays(schema, current, amount);
+  }
+  if (unit === 'hour') {
+    return advanceByHours(schema, current, amount);
+  }
+  return advanceByMinutes(schema, current, amount);
+}
+
+function advanceByDays(
+  schema: CalendarSchema,
+  current: CalendarTimestamp,
+  days: number,
+): AdvanceResult {
+  if (days === 0) {
+    return { timestamp: current, normalized: false };
+  }
+
+  const startDay = timestampToAbsoluteDay(schema, current);
+  const targetDay = startDay + days;
+  const base = absoluteDayToTimestamp(schema, current.calendarId, targetDay);
+  const timestamp = rebuildTimestamp(base, current);
+  return { timestamp, normalized: base.year !== current.year };
+}
+
+function advanceByHours(
+  schema: CalendarSchema,
+  current: CalendarTimestamp,
+  hours: number,
+): AdvanceResult {
+  if (hours === 0) {
+    return { timestamp: rebuildTimestamp(current, current), normalized: false };
+  }
+
+  const { hoursPerDay } = getTimeDefinition(schema);
+  const currentHour = current.hour ?? 0;
+  const totalHours = currentHour + hours;
+  const wrappedHour = mod(totalHours, hoursPerDay);
+  const dayShift = (totalHours - wrappedHour) / hoursPerDay;
+  const baseDay = advanceByDays(schema, current, dayShift);
+  const timestamp = current.minute !== undefined
+    ? createMinuteTimestamp(
+        current.calendarId,
+        baseDay.timestamp.year,
+        baseDay.timestamp.monthId,
+        baseDay.timestamp.day,
+        wrappedHour,
+        current.minute,
+      )
+    : createHourTimestamp(
+        current.calendarId,
+        baseDay.timestamp.year,
+        baseDay.timestamp.monthId,
+        baseDay.timestamp.day,
+        wrappedHour,
+      );
+
+  const normalized = dayShift !== 0 || baseDay.normalized;
+  return {
+    timestamp,
+    normalized,
+    carriedDays: dayShift !== 0 ? dayShift : undefined,
+    carriedHours: hours,
+  };
+}
+
+function advanceByMinutes(
+  schema: CalendarSchema,
+  current: CalendarTimestamp,
+  minutes: number,
+): AdvanceResult {
+  if (minutes === 0) {
+    return { timestamp: rebuildTimestamp(current, current), normalized: false };
+  }
+
+  const { hoursPerDay, minutesPerHour } = getTimeDefinition(schema);
+  const minutesPerDay = hoursPerDay * minutesPerHour;
+  const startDay = timestampToAbsoluteDay(schema, current);
+  const originalHour = current.hour ?? 0;
+  const startMinuteOfDay = originalHour * minutesPerHour + (current.minute ?? 0);
+  let totalMinutes = startDay * minutesPerDay + startMinuteOfDay + minutes;
+
+  let dayIndex = Math.floor(totalMinutes / minutesPerDay);
+  let minuteOfDay = totalMinutes - dayIndex * minutesPerDay;
+  if (minuteOfDay < 0) {
+    minuteOfDay += minutesPerDay;
+    dayIndex -= 1;
+  }
+
+  const hour = Math.floor(minuteOfDay / minutesPerHour);
+  const minute = minuteOfDay - hour * minutesPerHour;
+  const baseDay = absoluteDayToTimestamp(schema, current.calendarId, dayIndex);
+  const timestamp = createMinuteTimestamp(
+    current.calendarId,
+    baseDay.year,
+    baseDay.monthId,
+    baseDay.day,
+    hour,
+    minute,
+  );
+
+  const normalized = hour !== originalHour || dayIndex !== startDay;
+  return { timestamp, normalized };
+}
+
+function rebuildTimestamp(base: CalendarTimestamp, template: CalendarTimestamp): CalendarTimestamp {
+  if (template.minute !== undefined) {
+    return createMinuteTimestamp(
+      template.calendarId,
+      base.year,
+      base.monthId,
+      base.day,
+      template.hour ?? 0,
+      template.minute,
+    );
+  }
+  if (template.hour !== undefined) {
+    return createHourTimestamp(template.calendarId, base.year, base.monthId, base.day, template.hour);
+  }
+  return createDayTimestamp(template.calendarId, base.year, base.monthId, base.day);
+}
+
+function compareTimestampParts(
+  a: CalendarTimestamp,
+  b: CalendarTimestamp,
+  compareMonth: (left: string, right: string) => number,
+): number {
+  if (a.year !== b.year) {
+    return a.year - b.year;
+  }
+  if (a.monthId !== b.monthId) {
+    const monthComparison = compareMonth(a.monthId, b.monthId);
+    if (monthComparison !== 0) {
+      return monthComparison;
+    }
+  }
+  if (a.day !== b.day) {
+    return a.day - b.day;
+  }
+
+  const hourA = a.hour ?? 0;
+  const hourB = b.hour ?? 0;
+  if (hourA !== hourB) {
+    return hourA - hourB;
+  }
+
+  const minuteA = a.minute ?? 0;
+  const minuteB = b.minute ?? 0;
+  return minuteA - minuteB;
+}
+
+/**
+ * Scheduling, repeat rules and temporal entities
+ */
 /**
  * Hook descriptors shared across events and phenomena
  */
@@ -49,7 +438,7 @@ export type RepeatRule =
   | CustomRepeatRule;
 
 export interface AnnualOffsetRepeatRule {
-  readonly type: 'annual_offset';
+  readonly type: 'annual' | 'annual_offset';
   readonly offsetDayOfYear: number;
 }
 
@@ -133,6 +522,7 @@ export function calculateNextOccurrence(
 ): CalendarTimestamp | null {
   const includeStart = options.includeStart ?? false;
   switch (rule.type) {
+    case 'annual':
     case 'annual_offset':
       return resolveNextAnnualOccurrence(schema, calendarId, rule, start, includeStart);
     case 'monthly_position':
@@ -193,7 +583,7 @@ function resolveNextAnnualOccurrence(
   start: CalendarTimestamp,
   includeStart: boolean,
 ): CalendarTimestamp | null {
-  const totalDays = getAnnualRange(schema);
+  const totalDays = getTotalDaysInYear(schema);
   if (totalDays <= 0) {
     throw new InvalidRepeatRuleError(`Calendar schema ${schema.id} has no days configured.`);
   }
@@ -288,10 +678,6 @@ function resolveAstronomicalRange(
     throw new UnsupportedRepeatRuleError(rule.type);
   }
   return calculator.resolveOccurrencesInRange(schema, calendarId, rule, rangeStart, rangeEnd, options);
-}
-
-function getAnnualRange(schema: CalendarSchema): number {
-  return schema.months.reduce((sum, month) => sum + month.length, 0);
 }
 
 /**
@@ -396,24 +782,39 @@ export function createSingleEvent(
     timePrecision?: CalendarEventTimePrecision;
   } = {},
 ): CalendarEventSingle {
+  const {
+    description,
+    note,
+    allDay = date.precision === 'day',
+    category,
+    tags,
+    priority,
+    followUpPolicy,
+    hooks,
+    startTime,
+    endTime,
+    durationMinutes,
+    timePrecision = normalisePrecision(date.precision),
+  } = options;
+
   return {
     kind: 'single',
     id,
     calendarId,
     title,
-    description: options.description,
-    note: options.note,
-    category: options.category,
-    tags: options.tags,
-    priority: options.priority,
-    followUpPolicy: options.followUpPolicy,
-    hooks: options.hooks,
+    description,
+    note,
+    category,
+    tags,
+    priority,
+    followUpPolicy,
+    hooks,
     date,
-    allDay: options.allDay ?? date.precision === 'day',
-    startTime: options.startTime,
-    endTime: options.endTime,
-    durationMinutes: options.durationMinutes,
-    timePrecision: options.timePrecision ?? normalisePrecision(date.precision),
+    allDay,
+    startTime,
+    endTime,
+    durationMinutes,
+    timePrecision,
   };
 }
 
@@ -422,14 +823,6 @@ export function getEventAnchorTimestamp(event: CalendarEvent): CalendarTimestamp
     return event.date;
   }
   return event.bounds?.start ?? event.date ?? null;
-}
-
-export function getEventPriority(event: CalendarEvent): number {
-  return event.priority ?? 0;
-}
-
-export function getEventHooks(event: CalendarEvent): ReadonlyArray<HookDescriptor> {
-  return event.hooks ? sortHooksByPriority(event.hooks) : [];
 }
 
 export function computeNextEventOccurrence(
@@ -525,6 +918,7 @@ export function normalisePrecision(precision: CalendarTimestamp['precision']): C
 
 function buildSingleEventOccurrence(event: CalendarEventSingle, schema: CalendarSchema): CalendarEventOccurrence {
   const { start, end, durationMinutes } = resolveSingleEventWindow(event, schema);
+  const hooks = event.hooks ? sortHooksByPriority(event.hooks) : [];
   return {
     eventId: event.id,
     calendarId: event.calendarId,
@@ -535,8 +929,8 @@ function buildSingleEventOccurrence(event: CalendarEventSingle, schema: Calendar
     end,
     durationMinutes,
     allDay: event.allDay,
-    priority: getEventPriority(event),
-    hooks: getEventHooks(event),
+    priority: event.priority ?? 0,
+    hooks,
     source: event,
   };
 }
@@ -548,6 +942,7 @@ function buildRecurringEventOccurrence(
   baseTimestamp: CalendarTimestamp,
 ): CalendarEventOccurrence {
   const { start, end, durationMinutes } = applyRecurringTimePolicy(event, schema, calendarId, baseTimestamp);
+  const hooks = event.hooks ? sortHooksByPriority(event.hooks) : [];
   return {
     eventId: event.id,
     calendarId,
@@ -558,8 +953,8 @@ function buildRecurringEventOccurrence(
     end,
     durationMinutes,
     allDay: event.timePolicy === 'all_day',
-    priority: getEventPriority(event),
-    hooks: getEventHooks(event),
+    priority: event.priority ?? 0,
+    hooks,
     source: event,
   };
 }
@@ -771,8 +1166,6 @@ export interface PhenomenonOccurrence {
   readonly effects: ReadonlyArray<PhenomenonEffect>;
 }
 
-export const DEFAULT_PHENOMENON_PRIORITY = 0;
-
 export function isPhenomenonVisibleForCalendar(
   phenomenon: Phenomenon,
   calendarId: string,
@@ -783,34 +1176,11 @@ export function isPhenomenonVisibleForCalendar(
   return phenomenon.appliesToCalendarIds.includes(calendarId);
 }
 
-export function comparePhenomenaByPriority(a: Phenomenon, b: Phenomenon): number {
-  if (a.priority !== b.priority) {
-    return b.priority - a.priority;
-  }
-  return a.name.localeCompare(b.name);
-}
-
 export function getEffectiveStartTime(phenomenon: Phenomenon): PhenomenonStartTime | null {
   if (phenomenon.timePolicy !== 'fixed') {
     return null;
   }
   return phenomenon.startTime ?? { hour: 0, minute: 0 };
-}
-
-export function requiresOffsetComputation(phenomenon: Phenomenon): boolean {
-  return phenomenon.timePolicy === 'offset';
-}
-
-export function getPhenomenonPriority(phenomenon: Phenomenon): number {
-  return phenomenon.priority ?? DEFAULT_PHENOMENON_PRIORITY;
-}
-
-export function getPhenomenonHooks(phenomenon: Phenomenon): ReadonlyArray<HookDescriptor> {
-  return phenomenon.hooks ?? [];
-}
-
-export function getPhenomenonEffects(phenomenon: Phenomenon): ReadonlyArray<PhenomenonEffect> {
-  return phenomenon.effects ?? [];
 }
 
 export class UnsupportedTimePolicyError extends Error {
@@ -887,10 +1257,10 @@ function buildPhenomenonOccurrence(
     timestamp: start,
     endTimestamp: end,
     category: phenomenon.category,
-    priority: getPhenomenonPriority(phenomenon),
+    priority: phenomenon.priority ?? 0,
     durationMinutes,
-    hooks: sortHooksByPriority(getPhenomenonHooks(phenomenon)),
-    effects: getPhenomenonEffects(phenomenon),
+    hooks: sortHooksByPriority(phenomenon.hooks ?? []),
+    effects: phenomenon.effects ?? [],
   };
 }
 
@@ -919,7 +1289,7 @@ function applyPhenomenonTimePolicy(
     return { start, end, durationMinutes: duration };
   }
 
-  if (!requiresOffsetComputation(phenomenon)) {
+  if (phenomenon.timePolicy !== 'offset') {
     throw new UnsupportedTimePolicyError(phenomenon.timePolicy);
   }
 

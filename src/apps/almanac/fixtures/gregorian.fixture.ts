@@ -7,10 +7,14 @@
  * Standard 12-month calendar with 24-hour days for testing.
  */
 
-import type { CalendarSchema } from '../domain/calendar-core';
-import { createDayTimestamp, createHourTimestamp, createMinuteTimestamp } from '../domain/calendar-core';
-import type { CalendarEvent } from '../domain/scheduling';
-import { createSingleEvent } from '../domain/scheduling';
+import {
+  createDayTimestamp,
+  createHourTimestamp,
+  createMinuteTimestamp,
+  createSingleEvent,
+  type CalendarEvent,
+  type CalendarSchema,
+} from '../domain';
 
 export const GREGORIAN_CALENDAR_ID = 'gregorian-standard';
 

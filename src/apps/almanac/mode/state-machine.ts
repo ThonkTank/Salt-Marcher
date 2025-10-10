@@ -59,30 +59,28 @@ import type { PhenomenonDTO } from "../data/dto";
 import { formatPhenomenaExport, parsePhenomenaImport } from "../data/phenomena-serialization";
 import {
     advanceTime,
+    computeNextEventOccurrence,
+    computeNextPhenomenonOccurrence,
     createDayTimestamp,
     createHourTimestamp,
     createMinuteTimestamp,
+    createSingleEvent,
     formatTimestamp,
     getMonthById,
     getMonthIndex,
     getTimeDefinition,
-    type CalendarSchema,
-    type CalendarTimestamp,
-} from "../domain/calendar-core";
-import {
-    computeNextEventOccurrence,
-    computeNextPhenomenonOccurrence,
-    createSingleEvent,
     isRecurringEvent,
     isSingleEvent,
     type CalendarEvent,
     type CalendarEventRecurring,
     type CalendarEventSingle,
+    type CalendarSchema,
     type CalendarTimeOfDay,
+    type CalendarTimestamp,
     type Phenomenon,
     type PhenomenonOccurrence,
     type RepeatRule,
-} from "../domain/scheduling";
+} from "../domain";
 import {
     cartographerHookGateway as defaultCartographerGateway,
     type CartographerHookGateway,
