@@ -28,7 +28,9 @@ export class EncounterWorkspaceView {
     private resultTotalsEl!: HTMLDivElement;
     private resultWarningsEl!: HTMLDivElement;
     private resultPartyEl!: HTMLDivElement;
-    private resultRulesEl!: HTMLDivElement;
+    private debugSectionEl!: HTMLDivElement;
+    private debugRuleEffectsDetailsEl!: HTMLDetailsElement;
+    private debugRuleEffectsEl!: HTMLDivElement;
 
     private notesEl!: HTMLTextAreaElement;
     private resolveBtn!: HTMLButtonElement;
@@ -57,6 +59,7 @@ export class EncounterWorkspaceView {
         this.renderParty(state);
         this.renderRules(state);
         this.renderResults(state);
+        this.renderRuleEffectsDebug(state);
         this.syncSessionControls(session);
     }
 
@@ -199,7 +202,22 @@ export class EncounterWorkspaceView {
         this.resultWarningsEl = resultsSection.createDiv({ cls: "sm-encounter-result-warnings" });
         const breakdownWrapper = resultsSection.createDiv({ cls: "sm-encounter-breakdowns" });
         this.resultPartyEl = breakdownWrapper.createDiv({ cls: "sm-encounter-result-party" });
-        this.resultRulesEl = breakdownWrapper.createDiv({ cls: "sm-encounter-result-rules" });
+
+        this.debugSectionEl = createSection(rightColumn, "sm-encounter-debug");
+        this.debugSectionEl.createEl("h3", {
+            cls: "sm-encounter-section-title",
+            text: "Debug",
+        });
+        this.debugRuleEffectsDetailsEl = this.debugSectionEl.createEl("details", {
+            cls: "sm-encounter-debug-details",
+        }) as HTMLDetailsElement;
+        this.debugRuleEffectsDetailsEl.createEl("summary", {
+            cls: "sm-encounter-debug-summary",
+            text: "Rule effects",
+        });
+        this.debugRuleEffectsEl = this.debugRuleEffectsDetailsEl.createDiv({
+            cls: "sm-encounter-debug-rule-effects",
+        });
 
         const notesSection = resultsSection.createDiv({ cls: "sm-encounter-notes" });
         notesSection.createEl("label", {
@@ -495,18 +513,23 @@ export class EncounterWorkspaceView {
 
     private renderResults(state: EncounterViewState) {
         const { xpView } = state;
+        const partyViews = xpView.party;
+        const enabledRuleViews = xpView.rules.filter((ruleView) => ruleView.rule.enabled);
+        const totalModifierDelta = enabledRuleViews.reduce((sum, ruleView) => sum + ruleView.totalDelta, 0);
+        const xpPerMember = partyViews.length ? xpView.totalEncounterXp / partyViews.length : 0;
+
         this.resultTotalsEl.empty();
         this.resultTotalsEl.createDiv({
             cls: "sm-encounter-result-total",
-            text: `Base XP: ${formatNumber(xpView.baseXp)}`,
+            text: `Base XP: ${formatNumber(xpView.baseEncounterXp)}`,
         });
         this.resultTotalsEl.createDiv({
             cls: "sm-encounter-result-total",
-            text: `Total modifiers: ${formatSignedNumber(xpView.totalRuleDelta)}`,
+            text: `Total modifiers: ${formatSignedNumber(totalModifierDelta)}`,
         });
         this.resultTotalsEl.createDiv({
             cls: "sm-encounter-result-total",
-            text: `Total XP: ${formatNumber(xpView.totalXp)}`,
+            text: `Total XP: ${formatNumber(xpView.totalEncounterXp)}`,
         });
 
         this.resultWarningsEl.empty();
@@ -520,57 +543,93 @@ export class EncounterWorkspaceView {
         this.resultPartyEl.empty();
         this.resultPartyEl.createEl("h4", {
             cls: "sm-encounter-subheading",
-            text: "Per character",
+            text: "XP Result.",
         });
-        const partyViews = xpView.party;
+
+        const summaryCard = this.resultPartyEl.createDiv({
+            cls: "sm-encounter-result-party-member sm-encounter-result-party-member--xp-only",
+        });
+        const summaryList = summaryCard.createEl("ul", { cls: "sm-encounter-result-summary" });
+        createStatItem(summaryList, "Base XP", formatNumber(xpView.baseEncounterXp));
+
+        const modifiersItem = summaryList.createEl("li", {
+            cls: "sm-encounter-result-summary-item sm-encounter-result-summary-item--modifiers",
+        });
+        modifiersItem.createEl("span", { cls: "label", text: "Modifiers:" });
+        const modifiersValue = modifiersItem.createDiv({ cls: "value" });
+        if (enabledRuleViews.length) {
+            const modifiersList = modifiersValue.createEl("ul", { cls: "sm-encounter-result-modifier-list" });
+            for (const ruleView of enabledRuleViews) {
+                const modifierRow = modifiersList.createEl("li", { cls: "sm-encounter-result-modifier" });
+                const ruleTitle = ruleView.rule.title.trim();
+                modifierRow.createEl("span", {
+                    cls: "name",
+                    text: ruleTitle || "Untitled rule",
+                });
+                modifierRow.createEl("span", {
+                    cls: "delta",
+                    text: formatSignedNumber(ruleView.totalDelta),
+                });
+            }
+        } else {
+            modifiersValue.createEl("span", {
+                cls: "sm-encounter-result-modifier-empty",
+                text: "None",
+            });
+        }
+
+        createStatItem(summaryList, "Total Modifiers", formatSignedNumber(totalModifierDelta));
+        createStatItem(summaryList, "Total XP", formatNumber(xpView.totalEncounterXp));
+        createStatItem(summaryList, "XP per Character", formatNumber(xpPerMember));
+
         if (!partyViews.length) {
             this.resultPartyEl.createDiv({
                 cls: "sm-encounter-empty-row",
                 text: "No party members added yet.",
             });
-        } else {
-            const xpPerMember = partyViews.length ? xpView.totalXp / partyViews.length : 0;
-            const summary = this.resultPartyEl.createDiv({
-                cls: "sm-encounter-result-party-member sm-encounter-result-party-summary",
-            });
-            summary.createEl("span", { cls: "label", text: "XP per player" });
-            summary.createEl("span", { cls: "value", text: `${formatNumber(xpPerMember)} XP` });
-
-            const aggregatedWarnings: string[] = [];
-            for (const memberView of partyViews) {
-                for (const warning of memberView.warnings) {
-                    aggregatedWarnings.push(`${memberView.member.name}: ${warning}`);
-                }
-            }
-            if (aggregatedWarnings.length) {
-                const warningEl = this.resultPartyEl.createDiv({ cls: "sm-encounter-callout" });
-                aggregatedWarnings.forEach((warning) => {
-                    warningEl.createEl("p", { text: warning });
-                });
-            }
-        }
-
-        this.resultRulesEl.empty();
-        this.resultRulesEl.createEl("h4", {
-            cls: "sm-encounter-subheading",
-            text: "Rule effects",
-        });
-        if (!xpView.rules.length) {
-            this.resultRulesEl.createDiv({
-                cls: "sm-encounter-empty-row",
-                text: "No rules applied.",
-            });
             return;
         }
 
-        const orderedRuleViews = xpView.rules;
+        const aggregatedWarnings: string[] = [];
+        for (const memberView of partyViews) {
+            for (const warning of memberView.warnings) {
+                aggregatedWarnings.push(`${memberView.member.name}: ${warning}`);
+            }
+        }
+        if (aggregatedWarnings.length) {
+            const warningEl = this.resultPartyEl.createDiv({ cls: "sm-encounter-callout" });
+            aggregatedWarnings.forEach((warning) => {
+                warningEl.createEl("p", { text: warning });
+            });
+        }
+    }
+
+    private renderRuleEffectsDebug(state: EncounterViewState) {
+        if (!this.debugRuleEffectsEl || !this.debugSectionEl || !this.debugRuleEffectsDetailsEl) {
+            return;
+        }
+
+        const { xpView } = state;
+        const partyViews = xpView.party;
+        const ruleViews = xpView.rules;
+
+        this.debugRuleEffectsEl.empty();
+
+        if (!ruleViews.length) {
+            this.debugSectionEl.addClass("sm-encounter-hidden");
+            this.debugRuleEffectsDetailsEl.open = false;
+            return;
+        }
+
+        this.debugSectionEl.removeClass("sm-encounter-hidden");
+
         const runningTotals = new Map<string, number>();
         for (const memberView of partyViews) {
             runningTotals.set(memberView.member.id, memberView.baseXp);
         }
 
-        for (const ruleView of orderedRuleViews) {
-            const ruleResult = this.resultRulesEl.createDiv({ cls: "sm-encounter-result-rule" });
+        for (const ruleView of ruleViews) {
+            const ruleResult = this.debugRuleEffectsEl.createDiv({ cls: "sm-encounter-result-rule" });
             const title = ruleResult.createEl("div", {
                 cls: "sm-encounter-result-rule-title",
                 text: ruleView.rule.title,
@@ -810,10 +869,11 @@ function createFieldContainer(parent: HTMLElement): HTMLDivElement {
     return parent.createDiv({ cls: "sm-encounter-field" });
 }
 
-function createStatItem(list: HTMLUListElement, label: string, value: string) {
-    const item = list.createEl("li");
+function createStatItem(list: HTMLUListElement, label: string, value: string): HTMLLIElement {
+    const item = list.createEl("li", { cls: "sm-encounter-result-summary-item" });
     item.createEl("span", { cls: "label", text: `${label}:` });
     item.createEl("span", { cls: "value", text: value });
+    return item;
 }
 
 const numberFormatter = new Intl.NumberFormat(undefined, {
