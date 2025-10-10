@@ -463,17 +463,29 @@
 
 .sm-encounter-party-item {
     display: grid;
-    gap: 0.5rem;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    align-items: end;
+    grid-template-columns: minmax(0, 1fr) minmax(120px, max-content) auto;
+    align-items: center;
+    gap: 0.75rem;
     padding: 0.75rem;
     border-radius: 6px;
     border: 1px solid var(--background-modifier-border);
     background-color: var(--background-primary);
 }
 
-.sm-encounter-party-item .sm-encounter-error {
-    grid-column: 1 / -1;
+.sm-encounter-party-field {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sm-encounter-party-field label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.sm-encounter-party-remove {
+    justify-self: end;
 }
 
 .sm-encounter-inline-label {
