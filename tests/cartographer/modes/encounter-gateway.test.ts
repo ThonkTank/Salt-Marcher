@@ -36,12 +36,12 @@ import {
 
 describe("openEncounter", () => {
     const revealLeaf = vi.fn();
-    const getRightLeaf = vi.fn();
+    const getMostRecentLeaf = vi.fn();
     const getLeaf = vi.fn();
     const app = {
         workspace: {
             revealLeaf,
-            getRightLeaf,
+            getMostRecentLeaf,
             getLeaf,
         },
     } as unknown as App;
@@ -51,11 +51,11 @@ describe("openEncounter", () => {
         createEncounterEventFromTravel.mockReset();
         publishEncounterEvent.mockClear();
         revealLeaf.mockReset();
-        getRightLeaf.mockReset();
+        getMostRecentLeaf.mockReset();
         getLeaf.mockReset();
 
         const leaf = { setViewState: vi.fn().mockResolvedValue(undefined) } as unknown as WorkspaceLeaf;
-        getRightLeaf.mockReturnValue(leaf);
+        getMostRecentLeaf.mockReturnValue(leaf);
         getLeaf.mockReturnValue(leaf);
     });
 
@@ -101,6 +101,7 @@ describe("openEncounter", () => {
         expect(createEncounterEventFromTravel).toHaveBeenCalledWith(app, { mapFile: fakeFile, state });
         expect(publishEncounterEvent).toHaveBeenCalledWith({ id: "evt-1" });
         expect(noticeSpy).not.toHaveBeenCalled();
+        expect(getMostRecentLeaf).toHaveBeenCalled();
     });
 });
 

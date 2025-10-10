@@ -3,7 +3,7 @@ import { ItemView, WorkspaceLeaf, type App } from "obsidian";
 import { EncounterPresenter, type EncounterPersistedState } from "./presenter";
 import type { EncounterViewState } from "./presenter";
 import type { EncounterRuleModifierType, EncounterRuleScope } from "./session-store";
-import { getRightLeaf } from "../../core/layout";
+import { getCenterLeaf } from "../../core/layout";
 
 export const VIEW_ENCOUNTER = "salt-encounter";
 
@@ -846,9 +846,9 @@ export class EncounterView extends ItemView {
     }
 }
 
-/** Opens the encounter calculator in the right workspace pane. */
+/** Opens the encounter calculator in the centre workspace pane. */
 export async function openEncounter(app: App): Promise<void> {
-    const leaf = getRightLeaf(app);
+    const leaf = getCenterLeaf(app);
     await leaf.setViewState({ type: VIEW_ENCOUNTER, active: true });
     app.workspace.revealLeaf(leaf);
 }
