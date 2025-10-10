@@ -1,11 +1,8 @@
 // src/apps/almanac/data/calendar-state-gateway.ts
 // Shared gateway interface and types for persisting Almanac calendar state.
 
-import type { CalendarEvent } from "../domain/calendar-event";
-import type { CalendarSchema } from "../domain/calendar-schema";
-import type { CalendarTimestamp } from "../domain/calendar-timestamp";
-import type { PhenomenonOccurrence } from "../domain/phenomenon";
-import type { TimeUnit } from "../domain/time-arithmetic";
+import type { CalendarSchema, CalendarTimestamp, TimeUnit } from "../domain/calendar-core";
+import type { CalendarEvent, PhenomenonOccurrence } from "../domain/scheduling";
 import type {
   AlmanacPreferencesSnapshot,
   TravelCalendarMode,

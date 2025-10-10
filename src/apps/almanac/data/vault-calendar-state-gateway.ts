@@ -1,21 +1,25 @@
 // src/apps/almanac/data/vault-calendar-state-gateway.ts
 // Vault-backed implementation of the Almanac calendar state gateway.
 
-import type { CalendarEvent } from "../domain/calendar-event";
-import { getEventAnchorTimestamp } from "../domain/calendar-event";
-import type { CalendarSchema } from "../domain/calendar-schema";
-import { getMonthById } from "../domain/calendar-schema";
-import type { CalendarTimestamp } from "../domain/calendar-timestamp";
-import { createDayTimestamp, compareTimestampsWithSchema } from "../domain/calendar-timestamp";
-import type { Phenomenon, PhenomenonOccurrence } from "../domain/phenomenon";
-import { isPhenomenonVisibleForCalendar } from "../domain/phenomenon";
+import {
+  advanceTime,
+  compareTimestampsWithSchema,
+  createDayTimestamp,
+  getMonthById,
+  type CalendarSchema,
+  type CalendarTimestamp,
+  type TimeUnit,
+} from "../domain/calendar-core";
 import {
   computeNextPhenomenonOccurrence,
   computePhenomenonOccurrencesInRange,
+  getEventAnchorTimestamp,
+  isPhenomenonVisibleForCalendar,
   sortOccurrencesByTimestamp,
-} from "../domain/phenomenon-engine";
-import { advanceTime } from "../domain/time-arithmetic";
-import type { TimeUnit } from "../domain/time-arithmetic";
+  type CalendarEvent,
+  type Phenomenon,
+  type PhenomenonOccurrence,
+} from "../domain/scheduling";
 import type {
   AlmanacRepository,
   CalendarDefaultsRepository,

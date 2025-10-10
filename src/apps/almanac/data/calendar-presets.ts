@@ -1,7 +1,7 @@
 // src/apps/almanac/data/calendar-presets.ts
 // Calendar preset initialization and management
 
-import type { CalendarSchema } from '../domain/calendar-schema';
+import type { CalendarSchema } from '../domain/calendar-core';
 import { gregorianSchema } from '../fixtures/gregorian.fixture';
 import type { CalendarRepository } from './repositories';
 

@@ -1,12 +1,18 @@
 // src/apps/almanac/data/vault-repositories.ts
 // Vault-backed repositories for Almanac calendars, events and phenomena.
 
-import { compareTimestampsWithSchema, createDayTimestamp, formatTimestamp } from '../domain/calendar-timestamp';
-import { getEventAnchorTimestamp } from '../domain/calendar-event';
-import { computeNextPhenomenonOccurrence } from '../domain/phenomenon-engine';
-import { isPhenomenonVisibleForCalendar } from '../domain/phenomenon';
+import {
+  compareTimestampsWithSchema,
+  createDayTimestamp,
+  formatTimestamp,
+  type CalendarTimestamp,
+} from '../domain/calendar-core';
+import {
+  computeNextPhenomenonOccurrence,
+  getEventAnchorTimestamp,
+  isPhenomenonVisibleForCalendar,
+} from '../domain/scheduling';
 import type { EventsFilterState } from '../mode/contracts';
-import type { CalendarTimestamp } from '../domain/calendar-timestamp';
 import type {
   CalendarSchemaDTO,
   CalendarEventDTO,
