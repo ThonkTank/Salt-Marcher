@@ -71,7 +71,7 @@ describe("Encounter XP View", () => {
         presenter.dispose();
     });
 
-    it("verteilt per-player-Prozentregeln anhand des XP-Betrags bis zum Levelaufstieg", () => {
+    it("verteilt Prozentregeln anhand des XP-Bedarfs bis zum Levelaufstieg gleichmäßig", () => {
         // Arrange
         presenter.addPartyMember({ id: "p1", name: "Kara", level: 5, currentXp: 7000 });
         presenter.addPartyMember({ id: "p2", name: "Lio", level: 3, currentXp: 1100 });
@@ -79,7 +79,6 @@ describe("Encounter XP View", () => {
         presenter.addRule({
             id: "r-next",
             title: "Mentor Bonus",
-            scope: "perPlayer",
             modifierType: "percentNextLevel",
             modifierValue: 10,
             enabled: true,
@@ -93,9 +92,10 @@ describe("Encounter XP View", () => {
 
         // Assert
         expect(member1.baseXp).toBeCloseTo(200, 6);
-        expect(member1.modifiersDelta).toBeCloseTo(700, 6);
-        expect(member1.totalXp).toBeCloseTo(900, 6);
-        expect(member2.modifiersDelta).toBeCloseTo(160, 6);
+        expect(member1.modifiersDelta).toBeCloseTo(430, 6);
+        expect(member1.totalXp).toBeCloseTo(630, 6);
+        expect(member2.modifiersDelta).toBeCloseTo(430, 6);
+        expect(member2.totalXp).toBeCloseTo(630, 6);
         expect(ruleView?.totalDelta).toBeCloseTo(860, 6);
         expect(view.totalEncounterXp).toBeCloseTo(1260, 6);
     });
@@ -109,7 +109,6 @@ describe("Encounter XP View", () => {
         presenter.addRule({
             id: "flat",
             title: "Loot",
-            scope: "overall",
             modifierType: "flat",
             modifierValue: 120,
             enabled: true,
@@ -117,7 +116,6 @@ describe("Encounter XP View", () => {
         presenter.addRule({
             id: "percent",
             title: "Morale",
-            scope: "overall",
             modifierType: "percentTotal",
             modifierValue: 10,
             enabled: true,
@@ -154,7 +152,6 @@ describe("Encounter XP View", () => {
         presenter.addRule({
             id: "avg-flat",
             title: "Scaling Reward",
-            scope: "overall",
             modifierType: "flatPerLevel",
             modifierValue: 10,
             enabled: true,
@@ -172,31 +169,6 @@ describe("Encounter XP View", () => {
         expect(view.totalEncounterXp).toBeCloseTo(140, 6);
     });
 
-    it("gewichtet Flat-pro-Level-Regeln pro Charakter anhand des Levels", () => {
-        // Arrange
-        presenter.addPartyMember({ id: "p1", name: "Kara", level: 2 });
-        presenter.addPartyMember({ id: "p2", name: "Lio", level: 5 });
-        presenter.addPartyMember({ id: "p3", name: "Mira", level: 7 });
-        presenter.setEncounterXp(0);
-        presenter.addRule({
-            id: "per-flat",
-            title: "Mentor Scaling",
-            scope: "perPlayer",
-            modifierType: "flatPerLevel",
-            modifierValue: 10,
-            enabled: true,
-        });
-
-        // Act
-        const view = presenter.getState().xpView;
-        const ruleView = view.rules.find((rule) => rule.rule.id === "per-flat");
-
-        // Assert
-        expect(view.party.map((member) => member.modifiersDelta)).toEqual([20, 50, 70]);
-        expect(ruleView?.totalDelta).toBe(140);
-        expect(view.totalEncounterXp).toBe(140);
-    });
-
     it("meldet Warnungen, wenn Prozent-auf-Level-Aufstieg-Regeln keine Schwelle finden", () => {
         // Arrange
         presenter.addPartyMember({ id: "p1", name: "Veteran", level: 20 });
@@ -204,7 +176,6 @@ describe("Encounter XP View", () => {
         presenter.addRule({
             id: "next",
             title: "Epic Bonus",
-            scope: "perPlayer",
             modifierType: "percentNextLevel",
             modifierValue: 15,
             enabled: true,
