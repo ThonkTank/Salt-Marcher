@@ -19,7 +19,8 @@ export class EncounterWorkspaceView {
     private partyListEl!: HTMLDivElement;
 
     private resultWarningsEl!: HTMLDivElement;
-    private resultPartyEl!: HTMLDivElement;
+    private xpResultsEl!: HTMLDivElement;
+    private treasureResultsEl!: HTMLDivElement;
     private debugSectionEl!: HTMLDivElement;
     private debugRuleEffectsDetailsEl!: HTMLDetailsElement;
     private debugRuleEffectsEl!: HTMLDivElement;
@@ -138,7 +139,8 @@ export class EncounterWorkspaceView {
         resultsSection.createEl("h3", { cls: "sm-encounter-section-title", text: "Results" });
         this.resultWarningsEl = resultsSection.createDiv({ cls: "sm-encounter-result-warnings" });
         const breakdownWrapper = resultsSection.createDiv({ cls: "sm-encounter-breakdowns" });
-        this.resultPartyEl = breakdownWrapper.createDiv({ cls: "sm-encounter-result-party" });
+        this.xpResultsEl = breakdownWrapper.createDiv({ cls: "sm-encounter-result-party" });
+        this.treasureResultsEl = breakdownWrapper.createDiv({ cls: "sm-encounter-result-party" });
 
         this.debugSectionEl = createSection(rightColumn, "sm-encounter-debug");
         this.debugSectionEl.createEl("h3", {
@@ -460,25 +462,38 @@ export class EncounterWorkspaceView {
     private renderResults(state: EncounterViewState) {
         const { xpView } = state;
         const partyViews = xpView.party;
-        const enabledRuleViews = xpView.rules.filter((ruleView) => ruleView.rule.enabled);
-        const totalModifierDelta = enabledRuleViews.reduce((sum, ruleView) => sum + ruleView.totalDelta, 0);
+        const enabledXpRuleViews = xpView.rules.filter(
+            (ruleView) => ruleView.rule.enabled && ruleView.rule.scope === "xp",
+        );
+        const totalModifierDelta = enabledXpRuleViews.reduce((sum, ruleView) => sum + ruleView.totalDelta, 0);
         const xpPerMember = partyViews.length ? xpView.totalEncounterXp / partyViews.length : 0;
 
+        const treasureSummary = this.calculateTreasureSummary(state);
+        const warnings: string[] = [];
+        const pushWarning = (message: string) => {
+            if (!message) return;
+            if (!warnings.includes(message)) {
+                warnings.push(message);
+            }
+        };
+        xpView.warnings.forEach(pushWarning);
+        treasureSummary.warnings.forEach(pushWarning);
+
         this.resultWarningsEl.empty();
-        if (xpView.warnings.length) {
+        if (warnings.length) {
             const warning = this.resultWarningsEl.createDiv({ cls: "sm-encounter-callout" });
-            xpView.warnings.forEach((message) => {
+            warnings.forEach((message) => {
                 warning.createEl("p", { text: message });
             });
         }
 
-        this.resultPartyEl.empty();
-        this.resultPartyEl.createEl("h4", {
+        this.xpResultsEl.empty();
+        this.xpResultsEl.createEl("h4", {
             cls: "sm-encounter-subheading",
             text: "XP Result.",
         });
 
-        const summaryCard = this.resultPartyEl.createDiv({
+        const summaryCard = this.xpResultsEl.createDiv({
             cls: "sm-encounter-result-party-member sm-encounter-result-party-member--xp-only",
         });
         const summaryList = summaryCard.createEl("ul", { cls: "sm-encounter-result-summary" });
@@ -489,9 +504,9 @@ export class EncounterWorkspaceView {
         });
         modifiersItem.createEl("span", { cls: "label", text: "Modifiers:" });
         const modifiersValue = modifiersItem.createDiv({ cls: "value" });
-        if (enabledRuleViews.length) {
+        if (enabledXpRuleViews.length) {
             const modifiersList = modifiersValue.createEl("ul", { cls: "sm-encounter-result-modifier-list" });
-            for (const ruleView of enabledRuleViews) {
+            for (const ruleView of enabledXpRuleViews) {
                 const modifierRow = modifiersList.createEl("li", { cls: "sm-encounter-result-modifier" });
                 const ruleTitle = ruleView.rule.title.trim();
                 modifierRow.createEl("span", {
@@ -515,10 +530,11 @@ export class EncounterWorkspaceView {
         createStatItem(summaryList, "XP per Character", formatNumber(xpPerMember));
 
         if (!partyViews.length) {
-            this.resultPartyEl.createDiv({
+            this.xpResultsEl.createDiv({
                 cls: "sm-encounter-empty-row",
                 text: "No party members added yet.",
             });
+            this.renderTreasureResults(state, treasureSummary);
             return;
         }
 
@@ -529,11 +545,157 @@ export class EncounterWorkspaceView {
             }
         }
         if (aggregatedWarnings.length) {
-            const warningEl = this.resultPartyEl.createDiv({ cls: "sm-encounter-callout" });
+            const warningEl = this.xpResultsEl.createDiv({ cls: "sm-encounter-callout" });
             aggregatedWarnings.forEach((warning) => {
                 warningEl.createEl("p", { text: warning });
             });
         }
+
+        this.renderTreasureResults(state, treasureSummary);
+    }
+
+    private renderTreasureResults(state: EncounterViewState, summary: EncounterTreasureSummary) {
+        this.treasureResultsEl.empty();
+        this.treasureResultsEl.createEl("h4", {
+            cls: "sm-encounter-subheading",
+            text: "Treasure.",
+        });
+
+        const party = state.xp.party;
+        if (!party.length) {
+            this.treasureResultsEl.createDiv({
+                cls: "sm-encounter-empty-row",
+                text: "No party members added yet.",
+            });
+            return;
+        }
+
+        const summaryCard = this.treasureResultsEl.createDiv({
+            cls: "sm-encounter-result-party-member sm-encounter-result-party-member--xp-only",
+        });
+        const summaryList = summaryCard.createEl("ul", { cls: "sm-encounter-result-summary" });
+        createStatItem(summaryList, "Gold Base", formatNumber(summary.baseGold));
+
+        const modifiersItem = summaryList.createEl("li", {
+            cls: "sm-encounter-result-summary-item sm-encounter-result-summary-item--modifiers",
+        });
+        modifiersItem.createEl("span", { cls: "label", text: "Modifiers:" });
+        const modifiersValue = modifiersItem.createDiv({ cls: "value" });
+        if (summary.enabledRules.length) {
+            const modifiersList = modifiersValue.createEl("ul", { cls: "sm-encounter-result-modifier-list" });
+            for (const rule of summary.enabledRules) {
+                const modifierRow = modifiersList.createEl("li", { cls: "sm-encounter-result-modifier" });
+                const ruleTitle = rule.rule.title.trim();
+                modifierRow.createEl("span", {
+                    cls: "name",
+                    text: ruleTitle || "Untitled rule",
+                });
+                modifierRow.createEl("span", {
+                    cls: "delta",
+                    text: formatSignedNumber(rule.delta),
+                });
+            }
+        } else {
+            modifiersValue.createEl("span", {
+                cls: "sm-encounter-result-modifier-empty",
+                text: "None",
+            });
+        }
+
+        createStatItem(summaryList, "Total Modifiers", formatSignedNumber(summary.totalModifierDelta));
+        createStatItem(summaryList, "Total Gold", formatNumber(summary.totalGold));
+        const goldPerCharacter = party.length ? summary.totalGold / party.length : 0;
+        createStatItem(summaryList, "Gold per Character", formatNumber(goldPerCharacter));
+    }
+
+    private calculateTreasureSummary(state: EncounterViewState): EncounterTreasureSummary {
+        const xpState = state.xp;
+        const xpView = state.xpView;
+        const party = xpState.party ?? [];
+        const partyViews = xpView.party;
+        const partyCount = party.length;
+        const totalLevels = party.reduce((sum, member) => sum + member.level, 0);
+        const averageLevel = partyCount > 0 ? totalLevels / partyCount : 0;
+        const baseMultiplier = getGoldBaseMultiplier(averageLevel);
+        const baseGold = partyCount > 0 ? xpView.baseEncounterXp * baseMultiplier : 0;
+        let runningGold = baseGold;
+        let totalModifierDelta = 0;
+        const enabledRules: EncounterTreasureRuleView[] = [];
+        const warnings: string[] = [];
+        const pushWarning = (message: string) => {
+            if (!message) return;
+            if (!warnings.includes(message)) {
+                warnings.push(message);
+            }
+        };
+        const xpToNextByMember = new Map<string, number | null>(
+            partyViews.map((memberView) => [memberView.member.id, memberView.xpToNextLevel]),
+        );
+
+        for (const rule of xpState.rules ?? []) {
+            if (rule.scope !== "gold" || !rule.enabled) {
+                continue;
+            }
+
+            if (!partyCount) {
+                pushWarning(`Gold rule "${rule.title}" ignored because no party members are present.`);
+                enabledRules.push({ rule, delta: 0 });
+                continue;
+            }
+
+            let delta = 0;
+            switch (rule.modifierType) {
+                case "flat": {
+                    delta = rule.modifierValue;
+                    break;
+                }
+                case "flatPerAverageLevel": {
+                    delta = rule.modifierValue * averageLevel;
+                    break;
+                }
+                case "flatPerTotalLevel": {
+                    delta = rule.modifierValue * totalLevels;
+                    break;
+                }
+                case "percentTotal": {
+                    delta = runningGold * (rule.modifierValue / 100);
+                    break;
+                }
+                case "percentNextLevel": {
+                    let aggregateNext = 0;
+                    let applied = false;
+                    for (const member of party) {
+                        const xpToNext = xpToNextByMember.get(member.id);
+                        if (xpToNext == null) {
+                            pushWarning(
+                                `${member.name} has no next-level XP threshold; "${rule.title}" gold modifier ignored for them.`,
+                            );
+                            continue;
+                        }
+                        aggregateNext += xpToNext;
+                        applied = true;
+                    }
+                    if (!applied || aggregateNext === 0) {
+                        delta = 0;
+                    } else {
+                        delta = (aggregateNext * rule.modifierValue) / 100;
+                    }
+                    break;
+                }
+            }
+
+            totalModifierDelta += delta;
+            runningGold += delta;
+            enabledRules.push({ rule, delta });
+        }
+
+        return {
+            baseGold,
+            totalGold: baseGold + totalModifierDelta,
+            totalModifierDelta,
+            enabledRules,
+            warnings,
+        };
     }
 
     private renderRuleEffectsDebug(state: EncounterViewState) {
@@ -686,6 +848,35 @@ interface TextInputOptions {
     label: string;
     placeholder?: string;
     value?: string | number;
+}
+
+interface EncounterTreasureRuleView {
+    readonly rule: EncounterXpRule;
+    readonly delta: number;
+}
+
+interface EncounterTreasureSummary {
+    readonly baseGold: number;
+    readonly totalGold: number;
+    readonly totalModifierDelta: number;
+    readonly enabledRules: EncounterTreasureRuleView[];
+    readonly warnings: string[];
+}
+
+function getGoldBaseMultiplier(averageLevel: number): number {
+    if (averageLevel >= 17) {
+        return 3.2;
+    }
+    if (averageLevel >= 11) {
+        return 1.6;
+    }
+    if (averageLevel >= 5) {
+        return 0.415;
+    }
+    if (averageLevel > 0) {
+        return 0.475;
+    }
+    return 0;
 }
 
 function createTextInput(parent: HTMLElement, options: TextInputOptions): HTMLInputElement {
