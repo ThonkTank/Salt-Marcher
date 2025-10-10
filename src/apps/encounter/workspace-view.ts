@@ -93,7 +93,8 @@ export class EncounterWorkspaceView {
         const xpSection = createSection(this.containerEl, "sm-encounter-xp");
         xpSection.createEl("h3", { cls: "sm-encounter-section-title", text: "Encounter XP & Rules" });
         const xpRow = xpSection.createDiv({ cls: "sm-encounter-xp-row" });
-        this.xpInputEl = createNumberInput(xpRow, {
+        const xpLeftGroup = xpRow.createDiv({ cls: "sm-encounter-xp-group sm-encounter-xp-group-left" });
+        this.xpInputEl = createNumberInput(xpLeftGroup, {
             id: "encounter-base-xp",
             label: "Base encounter XP",
             min: 0,
@@ -103,8 +104,8 @@ export class EncounterWorkspaceView {
         this.xpInputEl.addEventListener("input", () => {
             this.xpErrorEl.setText("");
         });
-        const xpControls = xpRow.createDiv({ cls: "sm-encounter-inline-actions" });
-        this.resetXpButton = xpControls.createEl("button", {
+        const xpLeftActions = xpLeftGroup.createDiv({ cls: "sm-encounter-inline-actions sm-encounter-inline-actions-left" });
+        this.resetXpButton = xpLeftActions.createEl("button", {
             cls: "sm-encounter-button sm-encounter-button-secondary",
             text: "Reset XP state",
         });
@@ -112,7 +113,7 @@ export class EncounterWorkspaceView {
         this.resetXpButton.addEventListener("click", () => {
             this.presenter?.resetXpState();
         });
-        const addRuleButton = xpControls.createEl("button", {
+        const addRuleButton = xpLeftActions.createEl("button", {
             cls: "sm-encounter-button",
             text: "Add rule",
         });
@@ -120,14 +121,18 @@ export class EncounterWorkspaceView {
         addRuleButton.addEventListener("click", () => {
             this.handleAddRule();
         });
-        this.presetSelectEl = xpControls.createEl("select", {
+        const xpRightGroup = xpRow.createDiv({ cls: "sm-encounter-xp-group sm-encounter-xp-group-right" });
+        this.presetSelectEl = xpRightGroup.createEl("select", {
             cls: "sm-encounter-input sm-encounter-preset-select",
             attr: { "aria-label": "Encounter rule preset" },
         }) as HTMLSelectElement;
         this.presetSelectEl.addEventListener("change", () => {
             this.syncPresetControlsState();
         });
-        this.presetOpenButton = xpControls.createEl("button", {
+        const xpPresetActions = xpRightGroup.createDiv({
+            cls: "sm-encounter-inline-actions sm-encounter-inline-actions-right",
+        });
+        this.presetOpenButton = xpPresetActions.createEl("button", {
             cls: "sm-encounter-button",
             text: "Preset öffnen",
         });
@@ -135,7 +140,7 @@ export class EncounterWorkspaceView {
         this.presetOpenButton.addEventListener("click", () => {
             void this.handleOpenPreset();
         });
-        this.presetSaveButton = xpControls.createEl("button", {
+        this.presetSaveButton = xpPresetActions.createEl("button", {
             cls: "sm-encounter-button sm-encounter-button-primary",
             text: "Preset speichern",
         });
@@ -143,7 +148,7 @@ export class EncounterWorkspaceView {
         this.presetSaveButton.addEventListener("click", () => {
             void this.handleSavePreset();
         });
-        this.presetDeleteButton = xpControls.createEl("button", {
+        this.presetDeleteButton = xpPresetActions.createEl("button", {
             cls: "sm-encounter-button sm-encounter-button-danger",
             text: "Preset löschen",
         });
