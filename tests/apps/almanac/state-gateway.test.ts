@@ -3,18 +3,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+    AlmanacMemoryBackend,
     InMemoryCalendarRepository,
     InMemoryEventRepository,
     InMemoryPhenomenonRepository,
-} from "../../../src/apps/almanac/data/in-memory-repository";
-import { AlmanacMemoryBackend } from "../../../src/apps/almanac/data/memory-backend";
-import { InMemoryStateGateway } from "../../../src/apps/almanac/data/in-memory-gateway";
-import {
+    VaultAlmanacRepository,
     VaultCalendarRepository,
     VaultEventRepository,
-    VaultAlmanacRepository,
-} from "../../../src/apps/almanac/data/vault-repositories";
-import { VaultCalendarStateGateway } from "../../../src/apps/almanac/data/vault-calendar-state-gateway";
+} from "../../../src/apps/almanac/data/repositories";
+import {
+    InMemoryStateGateway,
+    VaultCalendarStateGateway,
+} from "../../../src/apps/almanac/data/calendar-state-gateway";
 import {
     compareTimestampsWithSchema,
     createDayTimestamp,
@@ -227,8 +227,8 @@ describe("VaultCalendarStateGateway persistence", () => {
     it("persistiert Zeitfortschritt, CRUD-Operationen und Cartographer-Hooks", async () => {
         const vault = new MemoryVault();
         const calendarRepo = new VaultCalendarRepository(vault);
-        const eventRepo = new VaultEventRepository(calendarRepo, vault);
-        const almanacRepo = new VaultAlmanacRepository(calendarRepo, vault);
+        const eventRepo = new VaultEventRepository(calendarRepo, calendarRepo);
+        const almanacRepo = new VaultAlmanacRepository(calendarRepo, calendarRepo);
         const cartographer = new CartographerHookGateway();
         const gateway = new VaultCalendarStateGateway(
             calendarRepo,
@@ -305,8 +305,8 @@ describe("VaultCalendarStateGateway persistence", () => {
         expect(hookPayload.events.map(event => event.eventId)).toContain("evt-vault");
 
         const reloadCalendarRepo = new VaultCalendarRepository(vault);
-        const reloadEventRepo = new VaultEventRepository(reloadCalendarRepo, vault);
-        const reloadPhenomenonRepo = new VaultAlmanacRepository(reloadCalendarRepo, vault);
+        const reloadEventRepo = new VaultEventRepository(reloadCalendarRepo, reloadCalendarRepo);
+        const reloadPhenomenonRepo = new VaultAlmanacRepository(reloadCalendarRepo, reloadCalendarRepo);
         const reloadGateway = new VaultCalendarStateGateway(
             reloadCalendarRepo,
             reloadEventRepo,
@@ -334,8 +334,8 @@ describe("VaultCalendarStateGateway persistence", () => {
         vi.useFakeTimers();
         const vault = new MemoryVault();
         const calendarRepo = new VaultCalendarRepository(vault);
-        const eventRepo = new VaultEventRepository(calendarRepo, vault);
-        const almanacRepo = new VaultAlmanacRepository(calendarRepo, vault);
+        const eventRepo = new VaultEventRepository(calendarRepo, calendarRepo);
+        const almanacRepo = new VaultAlmanacRepository(calendarRepo, calendarRepo);
         const gateway = new VaultCalendarStateGateway(
             calendarRepo,
             eventRepo,

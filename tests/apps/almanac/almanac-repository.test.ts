@@ -7,7 +7,7 @@ import { TAbstractFile, TFile } from "obsidian";
 import {
     VaultAlmanacRepository,
     VaultCalendarRepository,
-} from "../../../src/apps/almanac/data/vault-repositories";
+} from "../../../src/apps/almanac/data/repositories";
 import type { VaultLike } from "../../../src/apps/almanac/data/json-store";
 import { gregorianSchema } from "../../../src/apps/almanac/fixtures/gregorian.fixture";
 
@@ -70,7 +70,7 @@ describe("VaultAlmanacRepository", () => {
         vault = new MemoryVault();
         calendarRepo = new VaultCalendarRepository(vault);
         await calendarRepo.createCalendar({ ...gregorianSchema, isDefaultGlobal: true });
-        repository = new VaultAlmanacRepository(calendarRepo, vault);
+        repository = new VaultAlmanacRepository(calendarRepo, calendarRepo);
 
         const simplePhenomena = [
             {

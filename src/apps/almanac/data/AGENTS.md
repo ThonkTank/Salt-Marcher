@@ -3,10 +3,11 @@
 - Ermöglicht UI-/State-Machine-Prototyping ohne Persistenzabhängigkeiten.
 
 # Aktueller Stand
-- `InMemoryCalendarRepository`, `InMemoryEventRepository` und `InMemoryPhenomenonRepository` liefern Demo-Daten und Test-Doubles für den Mode-State-Machine Layer.
-- `VaultCalendarRepository`, `VaultEventRepository` und `VaultAlmanacRepository` persistieren produktive Daten in `SaltMarcher/Almanac/*.json` (verwaltet durch `JsonStore`).
+- `repositories.ts` bündelt Contracts sowie die In-Memory- und Vault-Implementierungen über einen gemeinsamen Datenstore.
+- `InMemoryCalendarRepository`, `InMemoryEventRepository` und `InMemoryPhenomenonRepository` teilen sich denselben Speicher und dienen als Test-Doubles.
+- `VaultCalendarRepository`, `VaultEventRepository` und `VaultAlmanacRepository` nutzen einen einheitlichen `SaltMarcher/Almanac/data.json`-Store (verwaltet durch `JsonStore`).
 - `InMemoryStateGateway` verwaltet aktiven Kalender, Zeitfortschritte sowie Event- und Phänomen-Snapshots.
-- `JsonStore` kapselt Vault-Zugriffe, Migrationen und Batch-Updates für die genannten JSON-Dateien.
+- `JsonStore` kapselt Vault-Zugriffe, Migrationen und Batch-Updates für den kombinierten Almanac-Datensatz.
 
 # ToDo
 - [P1] Dateibasierte Persistenzschicht ergänzen (JsonStore-Integration, Migrationen).

@@ -13,13 +13,13 @@ vi.mock("../../../src/apps/almanac/telemetry", () => {
 });
 
 import { emitAlmanacEvent, reportAlmanacGatewayIssue } from "../../../src/apps/almanac/telemetry";
-import { InMemoryStateGateway } from "../../../src/apps/almanac/data/in-memory-gateway";
+import { InMemoryStateGateway } from "../../../src/apps/almanac/data/calendar-state-gateway";
 import {
-    InMemoryCalendarRepository,
-    InMemoryEventRepository,
-    InMemoryPhenomenonRepository,
-} from "../../../src/apps/almanac/data/in-memory-repository";
-import { AlmanacMemoryBackend } from "../../../src/apps/almanac/data/memory-backend";
+  AlmanacMemoryBackend,
+  InMemoryCalendarRepository,
+  InMemoryEventRepository,
+  InMemoryPhenomenonRepository,
+} from "../../../src/apps/almanac/data/repositories";
 import { AlmanacStateMachine } from "../../../src/apps/almanac/mode/state-machine";
 import { gregorianSchema, getDefaultCurrentTimestamp } from "../../../src/apps/almanac/fixtures/gregorian.fixture";
 import { createSampleEvents } from "../../../src/apps/almanac/fixtures/gregorian.fixture";
