@@ -9,7 +9,7 @@ import {
 } from "../../../encounter/event-builder";
 
 interface EncounterModule {
-    getRightLeaf(app: App): WorkspaceLeaf;
+    getCenterLeaf(app: App): WorkspaceLeaf;
     VIEW_ENCOUNTER: string;
 }
 
@@ -21,7 +21,7 @@ function loadEncounterModule(): Promise<EncounterModule | null> {
         import("../../../encounter/view"),
     ])
         .then(([layout, encounter]) => ({
-            getRightLeaf: layout.getRightLeaf,
+            getCenterLeaf: layout.getCenterLeaf,
             VIEW_ENCOUNTER: encounter.VIEW_ENCOUNTER,
         }))
         .catch((err) => {
@@ -59,7 +59,7 @@ export async function openEncounter(app: App, context?: TravelEncounterContext):
             console.error("[travel-mode] failed to publish encounter payload", err);
         }
     }
-    const leaf = mod.getRightLeaf(app);
+    const leaf = mod.getCenterLeaf(app);
     await leaf.setViewState({ type: mod.VIEW_ENCOUNTER, active: true });
     app.workspace.revealLeaf(leaf);
     return true;
