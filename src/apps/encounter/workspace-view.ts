@@ -2,15 +2,13 @@
 // Stellt die Encounter-Oberfläche für das Zentrumspanel bereit.
 import type { EncounterPresenter, EncounterViewState } from "./presenter";
 import type { EncounterRuleModifierType, EncounterRuleScope } from "./session-store";
+import { EncounterSessionView } from "./session-view";
 
 export class EncounterWorkspaceView {
     private readonly containerEl: HTMLElement;
     private presenter: EncounterPresenter | null = null;
 
-    private headerTitleEl!: HTMLHeadingElement;
-    private statusEl!: HTMLDivElement;
-    private summaryListEl!: HTMLUListElement;
-    private emptyStateEl!: HTMLDivElement;
+    private sessionView: EncounterSessionView | null = null;
 
     private xpInputEl!: HTMLInputElement;
     private xpErrorEl!: HTMLDivElement;
@@ -49,6 +47,8 @@ export class EncounterWorkspaceView {
     }
 
     unmount() {
+        this.sessionView?.unmount();
+        this.sessionView = null;
         this.containerEl.empty();
         this.containerEl.removeClass("sm-encounter-view");
         this.presenter = null;
@@ -59,30 +59,16 @@ export class EncounterWorkspaceView {
     }
 
     render(state: EncounterViewState) {
-        this.renderHeader(state);
+        const session = state.session ?? null;
+        this.sessionView?.render(session);
         this.renderParty(state);
         this.renderRules(state);
         this.renderResults(state);
+        this.syncSessionControls(session);
     }
 
     private renderShell() {
         this.containerEl.empty();
-
-        const headerSection = createSection(this.containerEl, "sm-encounter-header");
-        this.headerTitleEl = headerSection.createEl("h2", {
-            cls: "sm-encounter-heading",
-            text: "Encounter",
-        });
-        this.statusEl = headerSection.createDiv({
-            cls: "sm-encounter-status",
-            text: "Waiting for travel events…",
-        });
-        const metaEl = headerSection.createDiv({ cls: "sm-encounter-meta" });
-        this.summaryListEl = metaEl.createEl("ul", { cls: "sm-encounter-summary" });
-        this.emptyStateEl = headerSection.createDiv({
-            cls: "sm-encounter-empty",
-            text: "No active encounter. Travel mode will populate this workspace when an encounter triggers.",
-        });
 
         const xpSection = createSection(this.containerEl, "sm-encounter-xp");
         xpSection.createEl("h3", { cls: "sm-encounter-section-title", text: "Encounter XP & Rules" });
@@ -179,9 +165,12 @@ export class EncounterWorkspaceView {
             this.ruleFormErrorEl.setText("");
         });
 
-        const mainLayout = this.containerEl.createDiv({ cls: "sm-encounter-main" });
+        const layoutEl = this.containerEl.createDiv({ cls: "sm-encounter-columns" });
+        const leftColumn = layoutEl.createDiv({ cls: "sm-encounter-column" });
+        this.sessionView = new EncounterSessionView(leftColumn);
+        this.sessionView.mount();
 
-        const partySection = createSection(mainLayout, "sm-encounter-party");
+        const partySection = createSection(leftColumn, "sm-encounter-party");
         partySection.createEl("h3", { cls: "sm-encounter-section-title", text: "Party" });
         const partyForm = partySection.createEl("form", { cls: "sm-encounter-form" });
         const partyFormGrid = partyForm.createDiv({ cls: "sm-encounter-form-grid" });
@@ -220,7 +209,8 @@ export class EncounterWorkspaceView {
         });
         this.partyListEl = partySection.createDiv({ cls: "sm-encounter-party-list" });
 
-        const resultsSection = createSection(mainLayout, "sm-encounter-results");
+        const rightColumn = layoutEl.createDiv({ cls: "sm-encounter-column" });
+        const resultsSection = createSection(rightColumn, "sm-encounter-results");
         resultsSection.createEl("h3", { cls: "sm-encounter-section-title", text: "Results" });
         this.resultTotalsEl = resultsSection.createDiv({ cls: "sm-encounter-result-totals" });
         this.resultWarningsEl = resultsSection.createDiv({ cls: "sm-encounter-result-warnings" });
@@ -260,13 +250,8 @@ export class EncounterWorkspaceView {
         });
     }
 
-    private renderHeader(state: EncounterViewState) {
-        const session = state.session;
+    private syncSessionControls(session: EncounterViewState["session"] | null) {
         if (!session) {
-            this.headerTitleEl.setText("Encounter");
-            this.statusEl.setText("Waiting for travel events…");
-            this.summaryListEl.empty();
-            this.emptyStateEl.removeClass("sm-encounter-hidden");
             this.notesEl.value = "";
             this.notesEl.disabled = true;
             this.resolveBtn.disabled = true;
@@ -274,48 +259,12 @@ export class EncounterWorkspaceView {
             return;
         }
 
-        this.emptyStateEl.addClass("sm-encounter-hidden");
-
-        const { event, status, resolvedAt } = session;
-        const region = event.regionName ?? "Unknown region";
-        this.headerTitleEl.setText(`Encounter – ${region}`);
-        if (status === "resolved") {
-            this.statusEl.setText(resolvedAt ? `Resolved ${resolvedAt}` : "Resolved");
-        } else {
-            this.statusEl.setText("Awaiting resolution");
-        }
-
-        this.summaryListEl.empty();
-        const summaryEntries: Array<[string, string]> = [];
-        if (event.coord) {
-            summaryEntries.push(["Hex", `${event.coord.r}, ${event.coord.c}`]);
-        }
-        if (event.mapName) {
-            summaryEntries.push(["Map", event.mapName]);
-        }
-        if (event.mapPath) {
-            summaryEntries.push(["Map path", event.mapPath]);
-        }
-        summaryEntries.push(["Triggered", event.triggeredAt]);
-        if (typeof event.travelClockHours === "number") {
-            summaryEntries.push(["Travel clock", `${event.travelClockHours.toFixed(2)} h`]);
-        }
-        if (typeof event.encounterOdds === "number") {
-            summaryEntries.push(["Encounter odds", `1 in ${event.encounterOdds}`]);
-        }
-
-        for (const [label, value] of summaryEntries) {
-            const li = this.summaryListEl.createEl("li");
-            li.createSpan({ cls: "label", text: `${label}: ` });
-            li.createSpan({ cls: "value", text: value });
-        }
-
         if (this.notesEl.value !== session.notes) {
             this.notesEl.value = session.notes;
         }
         this.notesEl.disabled = false;
 
-        if (status === "resolved") {
+        if (session.status === "resolved") {
             this.resolveBtn.disabled = true;
             this.resolveBtn.setText("Encounter resolved");
         } else {
