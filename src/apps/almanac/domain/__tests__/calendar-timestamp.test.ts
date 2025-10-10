@@ -2,8 +2,7 @@
 // Ensures calendar timestamp helpers respect schema month ordering.
 
 import { describe, it, expect } from 'vitest';
-import type { CalendarSchema } from '../calendar-schema';
-import { createDayTimestamp, compareTimestampsWithSchema } from '../calendar-timestamp';
+import { compareTimestampsWithSchema, createDayTimestamp, type CalendarSchema } from '../calendar-core';
 
 const testSchema: CalendarSchema = {
   id: 'test-cal',

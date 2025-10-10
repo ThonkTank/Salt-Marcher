@@ -1,11 +1,8 @@
 // src/apps/almanac/data/memory-backend.ts
 // Shared in-memory storage backing Almanac calendar, event and phenomenon repositories.
 
-import type { CalendarSchema } from '../domain/calendar-schema';
-import type { CalendarTimestamp } from '../domain/calendar-timestamp';
-import { compareTimestampsWithSchema } from '../domain/calendar-timestamp';
-import type { CalendarEvent } from '../domain/calendar-event';
-import { getEventAnchorTimestamp } from '../domain/calendar-event';
+import { compareTimestampsWithSchema, type CalendarSchema, type CalendarTimestamp } from '../domain/calendar-core';
+import { getEventAnchorTimestamp, type CalendarEvent } from '../domain/scheduling';
 import type { EventsFilterState } from '../mode/contracts';
 import type {
   CalendarEventDTO,

@@ -1,7 +1,7 @@
 // src/apps/almanac/mode/cartographer-bridge.ts
 // Bridge zwischen Cartographer-Travel-UI und der Almanac-State-Machine.
 
-import type { CalendarTimestamp } from "../domain/calendar-timestamp";
+import type { CalendarTimestamp } from "../domain/calendar-core";
 import type { TravelAdvancePayload } from "./travel";
 import type { TravelCalendarMode } from "./contracts";
 import type { AlmanacStateMachine } from "./state-machine";

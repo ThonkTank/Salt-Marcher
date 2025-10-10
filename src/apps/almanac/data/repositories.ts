@@ -1,8 +1,7 @@
 // src/apps/almanac/data/repositories.ts
 // Central Almanac repository contracts and shared helpers for calendars, events and phenomena.
 
-import type { CalendarSchema } from '../domain/calendar-schema';
-import type { CalendarTimestamp } from '../domain/calendar-timestamp';
+import type { CalendarSchema, CalendarTimestamp } from '../domain/calendar-core';
 import type { EventsFilterState } from '../mode/contracts';
 import type {
   CalendarEventDTO,

@@ -15,14 +15,13 @@ import {
     VaultAlmanacRepository,
 } from "../../../src/apps/almanac/data/vault-repositories";
 import { VaultCalendarStateGateway } from "../../../src/apps/almanac/data/vault-calendar-state-gateway";
-import { createSingleEvent } from "../../../src/apps/almanac/domain/calendar-event";
 import {
-    createHourTimestamp,
-    createDayTimestamp,
-    type CalendarTimestamp,
     compareTimestampsWithSchema,
-} from "../../../src/apps/almanac/domain/calendar-timestamp";
-import { getEventAnchorTimestamp } from "../../../src/apps/almanac/domain/calendar-event";
+    createDayTimestamp,
+    createHourTimestamp,
+    type CalendarTimestamp,
+} from "../../../src/apps/almanac/domain/calendar-core";
+import { createSingleEvent, getEventAnchorTimestamp } from "../../../src/apps/almanac/domain/scheduling";
 import { CartographerHookGateway } from "../../../src/apps/almanac/mode/cartographer-gateway";
 import {
     gregorianSchema,

@@ -9,12 +9,12 @@ import {
     InMemoryPhenomenonRepository,
 } from "../../../src/apps/almanac/data/in-memory-repository";
 import { AlmanacMemoryBackend } from "../../../src/apps/almanac/data/memory-backend";
-import { createSingleEvent } from "../../../src/apps/almanac/domain/calendar-event";
 import {
     createDayTimestamp,
     createHourTimestamp,
     type CalendarTimestamp,
-} from "../../../src/apps/almanac/domain/calendar-timestamp";
+} from "../../../src/apps/almanac/domain/calendar-core";
+import { createSingleEvent } from "../../../src/apps/almanac/domain/scheduling";
 import { AlmanacStateMachine } from "../../../src/apps/almanac/mode/state-machine";
 import { CartographerHookGateway } from "../../../src/apps/almanac/mode/cartographer-gateway";
 import {

@@ -3,7 +3,7 @@
 
 import { reportIntegrationIssue } from "../../app/integration-telemetry";
 import type { AlmanacMode, TravelCalendarMode } from "./mode/contracts";
-import type { CalendarTimestamp } from "./domain/calendar-timestamp";
+import type { CalendarTimestamp } from "./domain/calendar-core";
 
 /** Stable integration identifier used for Almanac notices. */
 export const ALMANAC_INTEGRATION_ID = "obsidian:almanac-view" as const;

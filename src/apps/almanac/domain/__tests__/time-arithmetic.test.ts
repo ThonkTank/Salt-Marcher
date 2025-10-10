@@ -2,9 +2,13 @@
 // Exercises time advancement logic across days, hours and minutes.
 
 import { describe, it, expect } from 'vitest';
-import type { CalendarSchema } from '../calendar-schema';
-import { createDayTimestamp, createHourTimestamp, createMinuteTimestamp } from '../calendar-timestamp';
-import { advanceTime } from '../time-arithmetic';
+import {
+  advanceTime,
+  createDayTimestamp,
+  createHourTimestamp,
+  createMinuteTimestamp,
+  type CalendarSchema,
+} from '../calendar-core';
 
 // Simple test schema: 2 months (30 days each), 7 days/week
 const testSchema: CalendarSchema = {
