@@ -57,6 +57,7 @@ type EncounterRuleScope = "overall" | "perPlayer";
 
 type EncounterRuleModifierType =
   | "flat" // fixer Wert (kann negativ sein)
+  | "flatPerLevel" // fixer Wert pro Stufe
   | "percentTotal" // % des aktuellen Gesamtwerts
   | "percentNextLevel"; // % des XP-Betrags bis zum nächsten Level
 

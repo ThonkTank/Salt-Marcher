@@ -30,7 +30,7 @@ export const DND5E_XP_THRESHOLDS: Record<number, number> = {
 
 export type EncounterRuleScope = "overall" | "perPlayer";
 
-export type EncounterRuleModifierType = "flat" | "percentTotal" | "percentNextLevel";
+export type EncounterRuleModifierType = "flat" | "flatPerLevel" | "percentTotal" | "percentNextLevel";
 
 export interface EncounterPartyMember {
     readonly id: string;
