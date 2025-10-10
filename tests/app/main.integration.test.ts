@@ -18,6 +18,10 @@ const cartographerMocks = vi.hoisted(() => ({
     detachCartographerLeaves: vi.fn().mockResolvedValue(undefined),
 }));
 
+const encounterMocks = vi.hoisted(() => ({
+    openEncounter: vi.fn(),
+}));
+
 const integrationTelemetry = vi.hoisted(() => ({
     reportIntegrationIssue: vi.fn(),
 }));
@@ -29,6 +33,7 @@ vi.mock("../../src/app/integration-telemetry", () => integrationTelemetry);
 const { ensureTerrainFile, loadTerrains, watchTerrains } = terrainStoreMocks;
 const { setTerrains } = terrainMocks;
 const { openCartographer, detachCartographerLeaves } = cartographerMocks;
+const { openEncounter } = encounterMocks;
 const { reportIntegrationIssue } = integrationTelemetry;
 let unwatch: ReturnType<typeof vi.fn>;
 
@@ -46,6 +51,7 @@ vi.mock("../../src/apps/encounter/view", () => ({
         }
     },
     VIEW_ENCOUNTER: "encounter",
+    openEncounter: encounterMocks.openEncounter,
 }));
 
 vi.mock("../../src/apps/library/view", () => ({
@@ -67,6 +73,7 @@ describe("SaltMarcherPlugin bootstrap integration", () => {
         setTerrains.mockReset();
         openCartographer.mockReset();
         detachCartographerLeaves.mockReset();
+        openEncounter.mockReset();
         reportIntegrationIssue.mockReset();
 
         ensureTerrainFile.mockResolvedValue({} as unknown);
@@ -75,6 +82,7 @@ describe("SaltMarcherPlugin bootstrap integration", () => {
         watchTerrains.mockReturnValue(unwatch);
         openCartographer.mockResolvedValue(undefined);
         detachCartographerLeaves.mockResolvedValue(undefined);
+        openEncounter.mockResolvedValue(undefined);
     });
 
     afterEach(() => {

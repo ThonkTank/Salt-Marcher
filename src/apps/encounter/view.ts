@@ -1,8 +1,9 @@
 // src/apps/encounter/view.ts
-import { ItemView, WorkspaceLeaf } from "obsidian";
+import { ItemView, WorkspaceLeaf, type App } from "obsidian";
 import { EncounterPresenter, type EncounterPersistedState } from "./presenter";
 import type { EncounterViewState } from "./presenter";
 import type { EncounterRuleModifierType, EncounterRuleScope } from "./session-store";
+import { getRightLeaf } from "../../core/layout";
 
 export const VIEW_ENCOUNTER = "salt-encounter";
 
@@ -843,6 +844,13 @@ export class EncounterView extends ItemView {
         this.ruleFormErrorEl.setText("");
         this.ruleFormTitleEl.focus();
     }
+}
+
+/** Opens the encounter calculator in the right workspace pane. */
+export async function openEncounter(app: App): Promise<void> {
+    const leaf = getRightLeaf(app);
+    await leaf.setViewState({ type: VIEW_ENCOUNTER, active: true });
+    app.workspace.revealLeaf(leaf);
 }
 
 function createSection(parent: HTMLElement, className: string): HTMLDivElement {

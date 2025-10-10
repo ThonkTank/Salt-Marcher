@@ -2,7 +2,7 @@
 // Centralises view metadata so plugin wiring can be generated from one source.
 import type { App, ItemView, WorkspaceLeaf } from "obsidian";
 import { CartographerView, VIEW_CARTOGRAPHER, openCartographer } from "./cartographer";
-import { EncounterView, VIEW_ENCOUNTER } from "./encounter/view";
+import { EncounterView, VIEW_ENCOUNTER, openEncounter } from "./encounter/view";
 import { LibraryView, VIEW_LIBRARY, openLibrary } from "./library/view";
 import { AlmanacView, VIEW_ALMANAC, openAlmanac } from "./almanac";
 import type { IntegrationId } from "../app/integration-telemetry";
@@ -69,6 +69,19 @@ export const VIEW_MANIFEST: ReadonlyArray<ViewManifestEntry> = [
         displayName: "Encounter",
         viewIcon: "swords",
         createView: (leaf) => new EncounterView(leaf),
+        activation: {
+            open: (app) => openEncounter(app),
+            ribbon: {
+                icon: "swords",
+                title: "Open Encounter Calculator",
+            },
+            commands: [
+                {
+                    id: "open-encounter",
+                    name: "Open Encounter Calculator",
+                },
+            ],
+        },
     },
     {
         viewType: VIEW_LIBRARY,
