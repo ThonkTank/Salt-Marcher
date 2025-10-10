@@ -115,6 +115,7 @@ export class EncounterWorkspaceView {
             label: "Modifier type",
             options: [
                 { value: "flat", label: "Flat" },
+                { value: "flatPerLevel", label: "Flat * lvl" },
                 { value: "percentTotal", label: "% of total" },
                 { value: "percentNextLevel", label: "% to next level" },
             ],
@@ -392,9 +393,13 @@ export class EncounterWorkspaceView {
                 presenter.toggleRule(rule.id, toggleInput.checked);
             });
 
-            const controls = ruleItem.createDiv({ cls: "sm-encounter-rule-controls" });
-            const scopeSelect = controls.createEl("select", {
+            const scopeId = `rule-${rule.id}-scope`;
+            const scopeField = createFieldContainer(headerRow);
+            scopeField.addClass("sm-encounter-rule-field");
+            scopeField.createEl("label", { attr: { for: scopeId }, text: "Scope" });
+            const scopeSelect = scopeField.createEl("select", {
                 cls: "sm-encounter-input",
+                attr: { id: scopeId },
             }) as HTMLSelectElement;
             const scopeOptions: Array<{ value: EncounterRuleScope; label: string }> = [
                 { value: "overall", label: "Entire encounter" },
@@ -406,17 +411,24 @@ export class EncounterWorkspaceView {
                     text: option.label,
                 });
             }
+            scopeSelect.value = rule.scope;
             scopeSelect.addEventListener("change", () => {
                 const presenter = this.presenter;
                 if (!presenter) return;
                 presenter.updateRule(rule.id, { scope: scopeSelect.value as EncounterRuleScope });
             });
 
-            const typeSelect = controls.createEl("select", {
+            const typeId = `rule-${rule.id}-type`;
+            const typeField = createFieldContainer(headerRow);
+            typeField.addClass("sm-encounter-rule-field");
+            typeField.createEl("label", { attr: { for: typeId }, text: "Modifier type" });
+            const typeSelect = typeField.createEl("select", {
                 cls: "sm-encounter-input",
+                attr: { id: typeId },
             }) as HTMLSelectElement;
             const typeOptions: Array<{ value: EncounterRuleModifierType; label: string }> = [
                 { value: "flat", label: "Flat" },
+                { value: "flatPerLevel", label: "Flat * lvl" },
                 { value: "percentTotal", label: "% of total" },
                 { value: "percentNextLevel", label: "% to next level" },
             ];
@@ -426,14 +438,16 @@ export class EncounterWorkspaceView {
                     text: option.label,
                 });
             }
+            typeSelect.value = rule.modifierType;
             typeSelect.addEventListener("change", () => {
                 const presenter = this.presenter;
                 if (!presenter) return;
                 presenter.updateRule(rule.id, { modifierType: typeSelect.value as EncounterRuleModifierType });
             });
 
-            const valueField = createFieldContainer(controls);
-            valueField.addClass("sm-encounter-field");
+            const valueField = createFieldContainer(headerRow);
+            valueField.addClass("sm-encounter-rule-field");
+            valueField.addClass("sm-encounter-rule-field-value");
             const valueLabel = valueField.createEl("label", {
                 attr: { for: `rule-${rule.id}-value` },
                 text: "Value",
@@ -460,7 +474,8 @@ export class EncounterWorkspaceView {
                 presenter.updateRule(rule.id, { modifierValue: numeric });
             });
 
-            const notesField = ruleItem.createDiv({ cls: "sm-encounter-field" });
+            const notesField = createFieldContainer(ruleItem);
+            notesField.addClass("sm-encounter-rule-notes");
             notesField.createEl("label", {
                 attr: { for: `rule-${rule.id}-notes` },
                 text: "Notes",
@@ -469,10 +484,23 @@ export class EncounterWorkspaceView {
                 cls: "sm-encounter-input",
                 attr: {
                     id: `rule-${rule.id}-notes`,
-                    rows: "2",
+                    rows: rule.notes?.trim() ? "2" : "1",
                 },
                 text: rule.notes ?? "",
             }) as HTMLTextAreaElement;
+            const syncNoteRows = () => {
+                const trimmed = notesInput.value.trim();
+                if (!trimmed) {
+                    notesInput.rows = 1;
+                    return;
+                }
+                const lineCount = trimmed.split(/\r?\n/).length;
+                notesInput.rows = Math.min(6, Math.max(2, lineCount));
+            };
+            syncNoteRows();
+            notesInput.addEventListener("input", () => {
+                syncNoteRows();
+            });
             notesInput.addEventListener("change", () => {
                 const presenter = this.presenter;
                 if (!presenter) return;
@@ -529,33 +557,48 @@ export class EncounterWorkspaceView {
             cls: "sm-encounter-subheading",
             text: "Per character",
         });
-        if (!xpView.party.length) {
+        const partyViews = xpView.party;
+        if (!partyViews.length) {
             this.resultPartyEl.createDiv({
                 cls: "sm-encounter-empty-row",
                 text: "No party members added yet.",
             });
         } else {
-            for (const memberView of xpView.party) {
-                const memberEl = this.resultPartyEl.createDiv({ cls: "sm-encounter-result-party-member" });
-                const header = memberEl.createDiv({ cls: "sm-encounter-result-party-header" });
-                header.createEl("span", {
-                    cls: "name",
-                    text: `${memberView.member.name} (Level ${memberView.member.level})`,
+            const hasEnabledPerPlayerRules = state.xp.rules.some((rule) => rule.scope === "perPlayer" && rule.enabled);
+            if (!hasEnabledPerPlayerRules) {
+                const xpPerMember = partyViews.length ? xpView.totalXp / partyViews.length : 0;
+                const summary = this.resultPartyEl.createDiv({
+                    cls: "sm-encounter-result-party-member sm-encounter-result-party-summary",
                 });
-                const stats = memberEl.createEl("ul", { cls: "sm-encounter-result-stats" });
-                createStatItem(stats, "Base", formatNumber(memberView.baseXp));
-                createStatItem(stats, "Modifiers", formatSignedNumber(memberView.modifiersDelta));
-                createStatItem(stats, "Total", formatNumber(memberView.totalXp));
-                createStatItem(
-                    stats,
-                    "XP to next level",
-                    memberView.xpToNextLevel == null ? "—" : formatNumber(memberView.xpToNextLevel),
-                );
-                if (memberView.warnings.length) {
-                    const warningEl = memberEl.createDiv({ cls: "sm-encounter-callout" });
-                    memberView.warnings.forEach((warning) => {
+                summary.createEl("span", { cls: "label", text: "XP per player" });
+                summary.createEl("span", { cls: "value", text: `${formatNumber(xpPerMember)} XP` });
+
+                const aggregatedWarnings: string[] = [];
+                for (const memberView of partyViews) {
+                    for (const warning of memberView.warnings) {
+                        aggregatedWarnings.push(`${memberView.member.name}: ${warning}`);
+                    }
+                }
+                if (aggregatedWarnings.length) {
+                    const warningEl = this.resultPartyEl.createDiv({ cls: "sm-encounter-callout" });
+                    aggregatedWarnings.forEach((warning) => {
                         warningEl.createEl("p", { text: warning });
                     });
+                }
+            } else {
+                for (const memberView of partyViews) {
+                    const memberEl = this.resultPartyEl.createDiv({
+                        cls: "sm-encounter-result-party-member sm-encounter-result-party-member--xp-only",
+                    });
+                    const summaryRow = memberEl.createDiv({ cls: "sm-encounter-result-party-member-row" });
+                    summaryRow.createEl("span", { cls: "name", text: memberView.member.name });
+                    summaryRow.createEl("span", { cls: "xp", text: `${formatNumber(memberView.totalXp)} XP` });
+                    if (memberView.warnings.length) {
+                        const warningEl = memberEl.createDiv({ cls: "sm-encounter-callout" });
+                        memberView.warnings.forEach((warning) => {
+                            warningEl.createEl("p", { text: warning });
+                        });
+                    }
                 }
             }
         }
@@ -570,33 +613,62 @@ export class EncounterWorkspaceView {
                 cls: "sm-encounter-empty-row",
                 text: "No rules applied.",
             });
-        } else {
-            for (const ruleView of xpView.rules) {
-                const ruleResult = this.resultRulesEl.createDiv({ cls: "sm-encounter-result-rule" });
-                const title = ruleResult.createEl("div", {
-                    cls: "sm-encounter-result-rule-title",
-                    text: ruleView.rule.title,
+            return;
+        }
+
+        const overallRuleViews = xpView.rules.filter((view) => view.rule.scope !== "perPlayer");
+        const perPlayerRuleViews = xpView.rules.filter((view) => view.rule.scope === "perPlayer");
+        const orderedRuleViews = [...overallRuleViews, ...perPlayerRuleViews];
+        const runningTotals = new Map<string, number>();
+        for (const memberView of partyViews) {
+            runningTotals.set(memberView.member.id, memberView.baseXp);
+        }
+
+        for (const ruleView of orderedRuleViews) {
+            const ruleResult = this.resultRulesEl.createDiv({ cls: "sm-encounter-result-rule" });
+            const title = ruleResult.createEl("div", {
+                cls: "sm-encounter-result-rule-title",
+                text: ruleView.rule.title,
+            });
+            if (!ruleView.rule.enabled) {
+                title.addClass("is-disabled");
+            }
+            const deltaSummary = ruleResult.createDiv({ cls: "sm-encounter-result-rule-total" });
+            deltaSummary.createEl("span", { cls: "label", text: "Total delta:" });
+            deltaSummary.createEl("span", { cls: "value", text: formatSignedNumber(ruleView.totalDelta) });
+
+            const perMemberFinals = ruleView.perMemberDeltas.map((delta) => {
+                const previous = runningTotals.get(delta.memberId) ?? 0;
+                const shouldApply = ruleView.rule.enabled;
+                const total = shouldApply ? previous + delta.delta : previous;
+                if (shouldApply) {
+                    runningTotals.set(delta.memberId, total);
+                }
+                return { ...delta, previous, total };
+            });
+
+            if (ruleView.rule.scope === "perPlayer" && perMemberFinals.length) {
+                const perMemberList = ruleResult.createEl("ul", { cls: "sm-encounter-rule-final-xp" });
+                perMemberFinals.forEach((delta) => {
+                    const item = perMemberList.createEl("li", {
+                        cls: "sm-encounter-rule-final-xp-item",
+                    });
+                    item.createEl("span", { cls: "name", text: delta.memberName });
+                    item.createEl("span", { cls: "xp", text: `${formatNumber(delta.total)} XP` });
                 });
-                if (!ruleView.rule.enabled) {
-                    title.addClass("is-disabled");
-                }
-                const deltaSummary = ruleResult.createDiv({ cls: "sm-encounter-result-rule-total" });
-                deltaSummary.createEl("span", { cls: "label", text: "Total delta:" });
-                deltaSummary.createEl("span", { cls: "value", text: formatSignedNumber(ruleView.totalDelta) });
-                if (ruleView.perMemberDeltas.length) {
-                    const perMemberList = ruleResult.createEl("ul", { cls: "sm-encounter-rule-deltas" });
-                    ruleView.perMemberDeltas.forEach((delta) => {
-                        perMemberList.createEl("li", {
-                            text: `${delta.memberName}: ${formatSignedNumber(delta.delta)}`,
-                        });
+            } else if (perMemberFinals.length) {
+                const perMemberList = ruleResult.createEl("ul", { cls: "sm-encounter-rule-deltas" });
+                perMemberFinals.forEach((delta) => {
+                    perMemberList.createEl("li", {
+                        text: `${delta.memberName}: ${formatSignedNumber(delta.delta)}`,
                     });
-                }
-                if (ruleView.warnings.length) {
-                    const warningEl = ruleResult.createDiv({ cls: "sm-encounter-callout" });
-                    ruleView.warnings.forEach((warning) => {
-                        warningEl.createEl("p", { text: warning });
-                    });
-                }
+                });
+            }
+            if (ruleView.warnings.length) {
+                const warningEl = ruleResult.createDiv({ cls: "sm-encounter-callout" });
+                ruleView.warnings.forEach((warning) => {
+                    warningEl.createEl("p", { text: warning });
+                });
             }
         }
     }

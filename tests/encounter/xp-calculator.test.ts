@@ -145,6 +145,58 @@ describe("Encounter XP View", () => {
         expect(view.totalEncounterXp).toBeCloseTo(792, 6);
     });
 
+    it("skaliert encounter-weite Flat-pro-Level-Regeln mit dem Durchschnittslevel", () => {
+        // Arrange
+        presenter.addPartyMember({ id: "p1", name: "Kara", level: 2 });
+        presenter.addPartyMember({ id: "p2", name: "Lio", level: 5 });
+        presenter.addPartyMember({ id: "p3", name: "Mira", level: 7 });
+        presenter.setEncounterXp(0);
+        presenter.addRule({
+            id: "avg-flat",
+            title: "Scaling Reward",
+            scope: "overall",
+            modifierType: "flatPerLevel",
+            modifierValue: 10,
+            enabled: true,
+        });
+
+        // Act
+        const view = presenter.getState().xpView;
+        const ruleView = view.rules.find((rule) => rule.rule.id === "avg-flat");
+
+        // Assert
+        expect(view.party[0]?.modifiersDelta).toBeCloseTo(46.6666666667, 6);
+        expect(view.party[1]?.modifiersDelta).toBeCloseTo(46.6666666667, 6);
+        expect(view.party[2]?.modifiersDelta).toBeCloseTo(46.6666666667, 6);
+        expect(ruleView?.totalDelta).toBeCloseTo(140, 6);
+        expect(view.totalEncounterXp).toBeCloseTo(140, 6);
+    });
+
+    it("gewichtet Flat-pro-Level-Regeln pro Charakter anhand des Levels", () => {
+        // Arrange
+        presenter.addPartyMember({ id: "p1", name: "Kara", level: 2 });
+        presenter.addPartyMember({ id: "p2", name: "Lio", level: 5 });
+        presenter.addPartyMember({ id: "p3", name: "Mira", level: 7 });
+        presenter.setEncounterXp(0);
+        presenter.addRule({
+            id: "per-flat",
+            title: "Mentor Scaling",
+            scope: "perPlayer",
+            modifierType: "flatPerLevel",
+            modifierValue: 10,
+            enabled: true,
+        });
+
+        // Act
+        const view = presenter.getState().xpView;
+        const ruleView = view.rules.find((rule) => rule.rule.id === "per-flat");
+
+        // Assert
+        expect(view.party.map((member) => member.modifiersDelta)).toEqual([20, 50, 70]);
+        expect(ruleView?.totalDelta).toBe(140);
+        expect(view.totalEncounterXp).toBe(140);
+    });
+
     it("meldet Warnungen, wenn Prozent-auf-Level-Aufstieg-Regeln keine Schwelle finden", () => {
         // Arrange
         presenter.addPartyMember({ id: "p1", name: "Veteran", level: 20 });
