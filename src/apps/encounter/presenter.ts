@@ -398,7 +398,7 @@ export class EncounterPresenter {
     }
 
     private static normaliseRuleModifierValue(type: EncounterXpRule["modifierType"], value: number): number {
-        if (type === "flat" || type === "flatPerLevel") {
+        if (type === "flat" || type === "flatPerAverageLevel" || type === "flatPerTotalLevel") {
             return sanitizeNumber(value);
         }
         return clampPercentage(sanitizeNumber(value));
@@ -494,7 +494,7 @@ function deriveEncounterXpView(state: EncounterXpState): EncounterXpViewModel {
                 }
                 break;
             }
-            case "flatPerLevel": {
+            case "flatPerAverageLevel": {
                 let totalLevels = 0;
                 for (const member of members) {
                     totalLevels += sanitizeLevel(member.member.level);
@@ -503,6 +503,14 @@ function deriveEncounterXpView(state: EncounterXpState): EncounterXpViewModel {
                 const perMember = rule.modifierValue * averageLevel;
                 for (const member of members) {
                     appendMemberDelta(member, perMember);
+                }
+                break;
+            }
+            case "flatPerTotalLevel": {
+                for (const member of members) {
+                    const sanitizedLevel = sanitizeLevel(member.member.level);
+                    const delta = rule.modifierValue * sanitizedLevel;
+                    appendMemberDelta(member, delta);
                 }
                 break;
             }

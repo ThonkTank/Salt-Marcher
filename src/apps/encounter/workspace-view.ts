@@ -25,7 +25,6 @@ export class EncounterWorkspaceView {
     private ruleFormEnabledEl!: HTMLInputElement;
     private ruleFormErrorEl!: HTMLDivElement;
 
-    private resultTotalsEl!: HTMLDivElement;
     private resultWarningsEl!: HTMLDivElement;
     private resultPartyEl!: HTMLDivElement;
     private debugSectionEl!: HTMLDivElement;
@@ -108,7 +107,8 @@ export class EncounterWorkspaceView {
             label: "Modifier type",
             options: [
                 { value: "flat", label: "Flat" },
-                { value: "flatPerLevel", label: "Flat * lvl" },
+                { value: "flatPerAverageLevel", label: "Flat * avrg lvl" },
+                { value: "flatPerTotalLevel", label: "Flat * total lvl" },
                 { value: "percentTotal", label: "% of total" },
                 { value: "percentNextLevel", label: "% to next level" },
             ],
@@ -198,7 +198,6 @@ export class EncounterWorkspaceView {
         const rightColumn = layoutEl.createDiv({ cls: "sm-encounter-column" });
         const resultsSection = createSection(rightColumn, "sm-encounter-results");
         resultsSection.createEl("h3", { cls: "sm-encounter-section-title", text: "Results" });
-        this.resultTotalsEl = resultsSection.createDiv({ cls: "sm-encounter-result-totals" });
         this.resultWarningsEl = resultsSection.createDiv({ cls: "sm-encounter-result-warnings" });
         const breakdownWrapper = resultsSection.createDiv({ cls: "sm-encounter-breakdowns" });
         this.resultPartyEl = breakdownWrapper.createDiv({ cls: "sm-encounter-result-party" });
@@ -411,7 +410,8 @@ export class EncounterWorkspaceView {
             }) as HTMLSelectElement;
             const typeOptions: Array<{ value: EncounterRuleModifierType; label: string }> = [
                 { value: "flat", label: "Flat" },
-                { value: "flatPerLevel", label: "Flat * lvl" },
+                { value: "flatPerAverageLevel", label: "Flat * avrg lvl" },
+                { value: "flatPerTotalLevel", label: "Flat * total lvl" },
                 { value: "percentTotal", label: "% of total" },
                 { value: "percentNextLevel", label: "% to next level" },
             ];
@@ -517,20 +517,6 @@ export class EncounterWorkspaceView {
         const enabledRuleViews = xpView.rules.filter((ruleView) => ruleView.rule.enabled);
         const totalModifierDelta = enabledRuleViews.reduce((sum, ruleView) => sum + ruleView.totalDelta, 0);
         const xpPerMember = partyViews.length ? xpView.totalEncounterXp / partyViews.length : 0;
-
-        this.resultTotalsEl.empty();
-        this.resultTotalsEl.createDiv({
-            cls: "sm-encounter-result-total",
-            text: `Base XP: ${formatNumber(xpView.baseEncounterXp)}`,
-        });
-        this.resultTotalsEl.createDiv({
-            cls: "sm-encounter-result-total",
-            text: `Total modifiers: ${formatSignedNumber(totalModifierDelta)}`,
-        });
-        this.resultTotalsEl.createDiv({
-            cls: "sm-encounter-result-total",
-            text: `Total XP: ${formatNumber(xpView.totalEncounterXp)}`,
-        });
 
         this.resultWarningsEl.empty();
         if (xpView.warnings.length) {

@@ -152,7 +152,7 @@ describe("Encounter XP View", () => {
         presenter.addRule({
             id: "avg-flat",
             title: "Scaling Reward",
-            modifierType: "flatPerLevel",
+            modifierType: "flatPerAverageLevel",
             modifierValue: 10,
             enabled: true,
         });
@@ -167,6 +167,32 @@ describe("Encounter XP View", () => {
         expect(view.party[2]?.modifiersDelta).toBeCloseTo(46.6666666667, 6);
         expect(ruleView?.totalDelta).toBeCloseTo(140, 6);
         expect(view.totalEncounterXp).toBeCloseTo(140, 6);
+    });
+
+    it("skaliert encounter-weite Flat-pro-Gesamtstufen-Regeln nach individuellem Level", () => {
+        // Arrange
+        presenter.addPartyMember({ id: "p1", name: "Kara", level: 2 });
+        presenter.addPartyMember({ id: "p2", name: "Lio", level: 5 });
+        presenter.addPartyMember({ id: "p3", name: "Mira", level: 7 });
+        presenter.setEncounterXp(0);
+        presenter.addRule({
+            id: "total-flat",
+            title: "Level Weighted Reward",
+            modifierType: "flatPerTotalLevel",
+            modifierValue: 5,
+            enabled: true,
+        });
+
+        // Act
+        const view = presenter.getState().xpView;
+        const ruleView = view.rules.find((rule) => rule.rule.id === "total-flat");
+
+        // Assert
+        expect(view.party[0]?.modifiersDelta).toBeCloseTo(10, 6);
+        expect(view.party[1]?.modifiersDelta).toBeCloseTo(25, 6);
+        expect(view.party[2]?.modifiersDelta).toBeCloseTo(35, 6);
+        expect(ruleView?.totalDelta).toBeCloseTo(70, 6);
+        expect(view.totalEncounterXp).toBeCloseTo(70, 6);
     });
 
     it("meldet Warnungen, wenn Prozent-auf-Level-Aufstieg-Regeln keine Schwelle finden", () => {

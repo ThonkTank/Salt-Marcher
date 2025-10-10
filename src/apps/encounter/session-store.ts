@@ -28,7 +28,12 @@ export const DND5E_XP_THRESHOLDS: Record<number, number> = {
     20: 355000,
 };
 
-export type EncounterRuleModifierType = "flat" | "flatPerLevel" | "percentTotal" | "percentNextLevel";
+export type EncounterRuleModifierType =
+    | "flat"
+    | "flatPerAverageLevel"
+    | "flatPerTotalLevel"
+    | "percentTotal"
+    | "percentNextLevel";
 
 export interface EncounterPartyMember {
     readonly id: string;
