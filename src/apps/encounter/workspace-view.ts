@@ -1,7 +1,7 @@
 // src/apps/encounter/workspace-view.ts
 // Stellt die Encounter-Oberfläche für das Zentrumspanel bereit.
 import type { EncounterPresenter, EncounterViewState } from "./presenter";
-import type { EncounterRuleModifierType } from "./session-store";
+import type { EncounterRuleModifierType, EncounterXpRule } from "./session-store";
 
 export class EncounterWorkspaceView {
     private readonly containerEl: HTMLElement;
@@ -17,13 +17,6 @@ export class EncounterWorkspaceView {
     private partyFormCurrentXpEl!: HTMLInputElement;
     private partyFormErrorEl!: HTMLDivElement;
     private partyListEl!: HTMLDivElement;
-
-    private ruleFormTitleEl!: HTMLInputElement;
-    private ruleFormTypeEl!: HTMLSelectElement;
-    private ruleFormValueEl!: HTMLInputElement;
-    private ruleFormNotesEl!: HTMLTextAreaElement;
-    private ruleFormEnabledEl!: HTMLInputElement;
-    private ruleFormErrorEl!: HTMLDivElement;
 
     private resultWarningsEl!: HTMLDivElement;
     private resultPartyEl!: HTMLDivElement;
@@ -87,71 +80,16 @@ export class EncounterWorkspaceView {
         this.resetXpButton.addEventListener("click", () => {
             this.presenter?.resetXpState();
         });
-        this.xpErrorEl = xpSection.createDiv({ cls: "sm-encounter-error" });
-        this.ruleListEl = xpSection.createDiv({ cls: "sm-encounter-rule-list" });
-
-        const addRuleHeading = xpSection.createEl("h4", {
-            cls: "sm-encounter-subheading",
-            text: "Add rule",
-        });
-        addRuleHeading.setAttr("aria-hidden", "true");
-        const ruleForm = xpSection.createEl("form", { cls: "sm-encounter-form" });
-        const ruleFormGrid = ruleForm.createDiv({ cls: "sm-encounter-form-grid" });
-        this.ruleFormTitleEl = createTextInput(ruleFormGrid, {
-            id: "encounter-rule-title",
-            label: "Title",
-            placeholder: "Rule description",
-        });
-        this.ruleFormTypeEl = createSelect(ruleFormGrid, {
-            id: "encounter-rule-type",
-            label: "Modifier type",
-            options: [
-                { value: "flat", label: "Flat" },
-                { value: "flatPerAverageLevel", label: "Flat * avrg lvl" },
-                { value: "flatPerTotalLevel", label: "Flat * total lvl" },
-                { value: "percentTotal", label: "% of total" },
-                { value: "percentNextLevel", label: "% to next level" },
-            ],
-        });
-        this.ruleFormTypeEl.value = "flat";
-        this.ruleFormValueEl = createNumberInput(ruleFormGrid, {
-            id: "encounter-rule-value",
-            label: "Value",
-            step: 1,
-            value: 0,
-        });
-        this.ruleFormValueEl.value = "0";
-        this.ruleFormNotesEl = createTextarea(ruleFormGrid, {
-            id: "encounter-rule-notes",
-            label: "Notes",
-            placeholder: "Optional notes",
-            rows: 2,
-        });
-        const ruleEnabledWrapper = ruleFormGrid.createDiv({ cls: "sm-encounter-field sm-encounter-field-toggle" });
-        const enabledId = "encounter-rule-enabled";
-        const enabledLabel = ruleEnabledWrapper.createEl("label", {
-            attr: { for: enabledId },
-            text: "Enabled",
-        });
-        enabledLabel.addClass("sm-encounter-toggle-label");
-        this.ruleFormEnabledEl = ruleEnabledWrapper.createEl("input", {
-            attr: { id: enabledId, type: "checkbox" },
-        }) as HTMLInputElement;
-        this.ruleFormEnabledEl.checked = true;
-        const ruleSubmitWrapper = ruleFormGrid.createDiv({ cls: "sm-encounter-field sm-encounter-field-actions" });
-        const ruleSubmitButton = ruleSubmitWrapper.createEl("button", {
+        const addRuleButton = xpControls.createEl("button", {
             cls: "sm-encounter-button",
             text: "Add rule",
         });
-        ruleSubmitButton.type = "submit";
-        this.ruleFormErrorEl = ruleForm.createDiv({ cls: "sm-encounter-error" });
-        ruleForm.addEventListener("submit", (event) => {
-            event.preventDefault();
+        addRuleButton.type = "button";
+        addRuleButton.addEventListener("click", () => {
             this.handleAddRule();
         });
-        ruleForm.addEventListener("input", () => {
-            this.ruleFormErrorEl.setText("");
-        });
+        this.xpErrorEl = xpSection.createDiv({ cls: "sm-encounter-error" });
+        this.ruleListEl = xpSection.createDiv({ cls: "sm-encounter-rule-list" });
 
         const layoutEl = this.containerEl.createDiv({ cls: "sm-encounter-columns" });
         const leftColumn = layoutEl.createDiv({ cls: "sm-encounter-column" });
@@ -366,30 +304,12 @@ export class EncounterWorkspaceView {
             }
 
             const headerRow = ruleItem.createDiv({ cls: "sm-encounter-rule-header" });
-            const titleInput = headerRow.createEl("input", {
-                cls: "sm-encounter-input sm-encounter-rule-title",
-                attr: {
-                    type: "text",
-                    value: rule.title,
-                },
-            }) as HTMLInputElement;
-            titleInput.addEventListener("change", () => {
-                const presenter = this.presenter;
-                if (!presenter) return;
-                presenter.updateRule(rule.id, { title: titleInput.value.trim() });
-            });
-
             const toggleWrapper = headerRow.createDiv({ cls: "sm-encounter-rule-toggle" });
-            const toggleId = `rule-${rule.id}-enabled`;
-            toggleWrapper.createEl("label", {
-                cls: "sm-encounter-toggle-label",
-                attr: { for: toggleId },
-                text: "Enabled",
-            });
             const toggleInput = toggleWrapper.createEl("input", {
+                cls: "sm-encounter-rule-toggle-input",
                 attr: {
-                    id: toggleId,
                     type: "checkbox",
+                    "aria-label": "Toggle rule",
                     checked: rule.enabled ? "true" : undefined,
                 },
             }) as HTMLInputElement;
@@ -400,13 +320,56 @@ export class EncounterWorkspaceView {
                 presenter.toggleRule(rule.id, toggleInput.checked);
             });
 
-            const typeId = `rule-${rule.id}-type`;
-            const typeField = createFieldContainer(headerRow);
-            typeField.addClass("sm-encounter-rule-field");
-            typeField.createEl("label", { attr: { for: typeId }, text: "Modifier type" });
-            const typeSelect = typeField.createEl("select", {
+            const titleInput = headerRow.createEl("input", {
+                cls: "sm-encounter-input sm-encounter-rule-title",
+                attr: {
+                    type: "text",
+                    value: rule.title,
+                    placeholder: "Rule name",
+                    "aria-label": "Rule name",
+                },
+            }) as HTMLInputElement;
+            titleInput.addEventListener("change", () => {
+                const presenter = this.presenter;
+                if (!presenter) return;
+                presenter.updateRule(rule.id, { title: titleInput.value.trim() });
+            });
+
+            const scopeWrapper = headerRow.createDiv({ cls: "sm-encounter-rule-scope" });
+            const scopeSelect = scopeWrapper.createEl("select", {
                 cls: "sm-encounter-input",
-                attr: { id: typeId },
+                attr: { "aria-label": "Rule scope" },
+            }) as HTMLSelectElement;
+            const scopeOptions: Array<{ value: EncounterXpRule["scope"]; label: string }> = [
+                { value: "xp", label: "XP" },
+                { value: "gold", label: "Gold" },
+            ];
+            for (const option of scopeOptions) {
+                scopeSelect.createEl("option", {
+                    attr: { value: option.value, selected: option.value === rule.scope ? "true" : undefined },
+                    text: option.label,
+                });
+            }
+            scopeSelect.value = rule.scope;
+            scopeSelect.addEventListener("change", () => {
+                const presenter = this.presenter;
+                if (!presenter) return;
+                presenter.updateRule(rule.id, { scope: scopeSelect.value as EncounterXpRule["scope"] });
+            });
+
+            const valueInput = headerRow.createEl("input", {
+                cls: "sm-encounter-input sm-encounter-rule-value",
+                attr: {
+                    id: `rule-${rule.id}-value`,
+                    type: "number",
+                    value: String(rule.modifierValue),
+                    "aria-label": "Modifier value",
+                },
+            }) as HTMLInputElement;
+
+            const typeSelect = headerRow.createEl("select", {
+                cls: "sm-encounter-input sm-encounter-rule-type",
+                attr: { "aria-label": "Modifier type" },
             }) as HTMLSelectElement;
             const typeOptions: Array<{ value: EncounterRuleModifierType; label: string }> = [
                 { value: "flat", label: "Flat" },
@@ -427,23 +390,6 @@ export class EncounterWorkspaceView {
                 if (!presenter) return;
                 presenter.updateRule(rule.id, { modifierType: typeSelect.value as EncounterRuleModifierType });
             });
-
-            const valueField = createFieldContainer(headerRow);
-            valueField.addClass("sm-encounter-rule-field");
-            valueField.addClass("sm-encounter-rule-field-value");
-            const valueLabel = valueField.createEl("label", {
-                attr: { for: `rule-${rule.id}-value` },
-                text: "Value",
-            });
-            valueLabel.addClass("sm-encounter-inline-label");
-            const valueInput = valueField.createEl("input", {
-                cls: "sm-encounter-input",
-                attr: {
-                    id: `rule-${rule.id}-value`,
-                    type: "number",
-                    value: String(rule.modifierValue),
-                },
-            }) as HTMLInputElement;
             const ruleErrorEl = ruleItem.createDiv({ cls: "sm-encounter-error" });
             valueInput.addEventListener("change", () => {
                 const presenter = this.presenter;
@@ -719,43 +665,15 @@ export class EncounterWorkspaceView {
     private handleAddRule() {
         const presenter = this.presenter;
         if (!presenter) return;
-        const title = this.ruleFormTitleEl.value.trim();
-        const modifierType = this.ruleFormTypeEl.value as EncounterRuleModifierType;
-        const valueRaw = this.ruleFormValueEl.value.trim();
-        const notes = this.ruleFormNotesEl.value.trim();
-        const enabled = this.ruleFormEnabledEl.checked;
-        const numericValue = Number(valueRaw);
-        const errors: string[] = [];
-        if (!title) {
-            errors.push("Title is required.");
-        }
-        if (!Number.isFinite(numericValue)) {
-            errors.push("Modifier value must be a number.");
-        }
-        if (errors.length) {
-            this.ruleFormErrorEl.setText(errors.join(" "));
-            return;
-        }
-
         const rule: Parameters<EncounterPresenter["addRule"]>[0] = {
             id: createId("rule"),
-            title,
-            modifierType,
-            modifierValue: numericValue,
-            enabled,
+            title: "",
+            modifierType: "flat",
+            modifierValue: 0,
+            enabled: true,
+            scope: "xp",
         };
-        if (notes !== "") {
-            rule.notes = notes;
-        }
         presenter.addRule(rule);
-
-        this.ruleFormTitleEl.value = "";
-        this.ruleFormTypeEl.value = "flat";
-        this.ruleFormValueEl.value = "0";
-        this.ruleFormNotesEl.value = "";
-        this.ruleFormEnabledEl.checked = true;
-        this.ruleFormErrorEl.setText("");
-        this.ruleFormTitleEl.focus();
     }
 }
 
