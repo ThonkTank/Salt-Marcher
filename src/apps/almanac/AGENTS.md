@@ -5,11 +5,11 @@
 
 # Aktueller Stand
 - Domain-Layer für Kalenderarithmetik, Wiederholregeln und Phänomen-Engine ist umgesetzt und mit Vitest abgedeckt.
-- In-Memory-Repositories/Gateway liefern Demo-Daten (Kalender, Events, Phänomene) für den Controller.
-- Dashboard & Manager rendern erste Interaktionspfade inkl. Zeitfortschritt, Quick-Actions und Ereignislisten.
+- In-Memory- und Vault-Repositories bleiben für Datenzugriffe sowie Travel-Sync verfügbar.
+- Das Obsidian-View rendert nur noch einen statischen Hinweis, da das Almanac-Frontend entfernt wurde.
 
 # ToDo
-- [P1] Events-Modus auf reale Daten umstellen (Phänomen-Editor, Filter, Import/Export).
+- [P1] Prüfe verbleibende Dokumentation und Testpläne auf Legacy-Verweise zum entfernten Frontend.
 - [P2] Cartographer-Integration & Travel-Leaf mit bidirektionalem Sync fertigstellen.
 - [P3] Observability/Telemetrie ergänzen und Dokumentation (BUILD/README) synchronisieren.
 

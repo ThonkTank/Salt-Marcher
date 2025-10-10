@@ -8,6 +8,7 @@ import {
     InMemoryEventRepository,
     InMemoryPhenomenonRepository,
 } from "../../../src/apps/almanac/data/in-memory-repository";
+import { AlmanacMemoryBackend } from "../../../src/apps/almanac/data/memory-backend";
 import { InMemoryStateGateway } from "../../../src/apps/almanac/data/in-memory-gateway";
 import { AlmanacStateMachine } from "../../../src/apps/almanac/mode/state-machine";
 import {
@@ -29,6 +30,7 @@ const flushGateway = async (instance: unknown): Promise<void> => {
 };
 
 describe("AlmanacStateMachine events refresh", () => {
+    let backend: AlmanacMemoryBackend;
     let calendarRepo: InMemoryCalendarRepository;
     let eventRepo: InMemoryEventRepository;
     let phenomenonRepo: InMemoryPhenomenonRepository;
@@ -36,10 +38,10 @@ describe("AlmanacStateMachine events refresh", () => {
     let stateMachine: AlmanacStateMachine;
 
     beforeEach(async () => {
-        calendarRepo = new InMemoryCalendarRepository();
-        eventRepo = new InMemoryEventRepository();
-        eventRepo.bindCalendarRepository(calendarRepo);
-        phenomenonRepo = new InMemoryPhenomenonRepository();
+        backend = new AlmanacMemoryBackend();
+        calendarRepo = new InMemoryCalendarRepository(backend);
+        eventRepo = new InMemoryEventRepository(backend);
+        phenomenonRepo = new InMemoryPhenomenonRepository(backend);
         gateway = new InMemoryStateGateway(calendarRepo, eventRepo, phenomenonRepo);
 
         calendarRepo.seed([gregorianSchema]);

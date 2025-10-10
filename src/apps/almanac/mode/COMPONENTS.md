@@ -2,9 +2,12 @@
 Dieses Dokument beschreibt UI-Komponenten für den Almanac-Workmode. Es ergänzt [UX_SPEC.md](./UX_SPEC.md), [WIREFRAMES.md](./WIREFRAMES.md) und die State-Definitionen in [STATE_MACHINE.md](./STATE_MACHINE.md).
 
 ## 1. Übersicht
-- Alle Komponenten sind in `src/apps/almanac/mode/components` zu platzieren.
-- Styling erfolgt primär über bestehende Tokens aus `src/ui/tokens` und Utility-Klassen (`ui/Flex`, `ui/Grid`).
-- Props werden mit `Readonly`-Interfaces versehen; Events folgen dem Muster `on<Event>` und liefern Domain-DTOs aus [API_CONTRACTS.md](./API_CONTRACTS.md).
+
+> **Hinweis:** Das Almanac-Frontend wurde vollständig entfernt. Die folgenden Abschnitte dokumentieren den vorherigen Stand und dienen nur noch als Archiv.
+
+- Alle Komponenten waren in `src/apps/almanac/mode/components` vorgesehen.
+- Styling erfolgte primär über bestehende Tokens aus `src/ui/tokens` und Utility-Klassen (`ui/Flex`, `ui/Grid`).
+- Props wurden mit `Readonly`-Interfaces versehen; Events folgten dem Muster `on<Event>` und lieferten Domain-DTOs aus [API_CONTRACTS.md](./API_CONTRACTS.md).
 
 ### 1.1 Layer & Prefix-Naming
 | Layer | Präfix | Inhalt | Notizen |

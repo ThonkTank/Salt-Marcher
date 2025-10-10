@@ -14,9 +14,11 @@ import {
   InMemoryEventRepository,
   InMemoryPhenomenonRepository,
 } from '../../../src/apps/almanac/data/in-memory-repository';
+import { AlmanacMemoryBackend } from '../../../src/apps/almanac/data/memory-backend';
 import { InMemoryStateGateway } from '../../../src/apps/almanac/data/in-memory-gateway';
 
 describe('Default Calendar Resolver', () => {
+  let backend: AlmanacMemoryBackend;
   let calendarRepo: InMemoryCalendarRepository;
   let eventRepo: InMemoryEventRepository;
   let gateway: InMemoryStateGateway;
@@ -59,10 +61,10 @@ describe('Default Calendar Resolver', () => {
   };
 
   beforeEach(() => {
-    calendarRepo = new InMemoryCalendarRepository();
-    eventRepo = new InMemoryEventRepository();
-    eventRepo.bindCalendarRepository(calendarRepo);
-    phenomenonRepo = new InMemoryPhenomenonRepository();
+    backend = new AlmanacMemoryBackend();
+    calendarRepo = new InMemoryCalendarRepository(backend);
+    eventRepo = new InMemoryEventRepository(backend);
+    phenomenonRepo = new InMemoryPhenomenonRepository(backend);
     gateway = new InMemoryStateGateway(calendarRepo, eventRepo, phenomenonRepo);
   });
 
