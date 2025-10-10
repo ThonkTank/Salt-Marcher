@@ -55,7 +55,8 @@ const DND5E_XP_THRESHOLDS: Record<number, number> = {
 
 type EncounterRuleModifierType =
   | "flat" // fixer Wert (kann negativ sein)
-  | "flatPerLevel" // fixer Wert pro Stufe
+  | "flatPerAverageLevel" // fixer Wert skaliert mit Durchschnittslevel
+  | "flatPerTotalLevel" // fixer Wert skaliert mit Gesamtstufen (individuell)
   | "percentTotal" // % des aktuellen Gesamtwerts
   | "percentNextLevel"; // % des XP-Betrags bis zum nächsten Level
 
