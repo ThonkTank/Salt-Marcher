@@ -1,6 +1,6 @@
 // salt-marcher/tests/encounter/xp-calculator.test.ts
 // Testet Encounter-XP-Kalkulationen und Ableitungen für Party & Regeln.
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
     EncounterPresenter,
     calculateXpToNextLevel,
@@ -69,6 +69,7 @@ describe("Encounter XP View", () => {
 
     afterEach(() => {
         presenter.dispose();
+        vi.restoreAllMocks();
     });
 
     it("verteilt Prozentregeln anhand des XP-Bedarfs bis zum Levelaufstieg gleichmäßig", () => {
@@ -81,6 +82,8 @@ describe("Encounter XP View", () => {
             title: "Mentor Bonus",
             modifierType: "percentNextLevel",
             modifierValue: 10,
+            modifierValueMin: 10,
+            modifierValueMax: 10,
             enabled: true,
             scope: "xp",
         });
@@ -112,6 +115,8 @@ describe("Encounter XP View", () => {
             title: "Loot",
             modifierType: "flat",
             modifierValue: 120,
+            modifierValueMin: 120,
+            modifierValueMax: 120,
             enabled: true,
             scope: "xp",
         });
@@ -120,6 +125,8 @@ describe("Encounter XP View", () => {
             title: "Morale",
             modifierType: "percentTotal",
             modifierValue: 10,
+            modifierValueMin: 10,
+            modifierValueMax: 10,
             enabled: true,
             scope: "xp",
         });
@@ -157,6 +164,8 @@ describe("Encounter XP View", () => {
             title: "Scaling Reward",
             modifierType: "flatPerAverageLevel",
             modifierValue: 10,
+            modifierValueMin: 10,
+            modifierValueMax: 10,
             enabled: true,
             scope: "xp",
         });
@@ -184,6 +193,8 @@ describe("Encounter XP View", () => {
             title: "Level Weighted Reward",
             modifierType: "flatPerTotalLevel",
             modifierValue: 5,
+            modifierValueMin: 5,
+            modifierValueMax: 5,
             enabled: true,
             scope: "xp",
         });
@@ -200,6 +211,36 @@ describe("Encounter XP View", () => {
         expect(view.totalEncounterXp).toBeCloseTo(70, 6);
     });
 
+    it("würfelt Regelwerte innerhalb der Spannengrenzen neu aus", () => {
+        // Arrange
+        presenter.addRule({
+            id: "random",
+            title: "Lucky Roll",
+            modifierType: "flat",
+            modifierValue: 5,
+            modifierValueMin: 5,
+            modifierValueMax: 5,
+            enabled: true,
+            scope: "xp",
+        });
+        const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+        // Act
+        presenter.updateRule("random", { modifierValueMin: 10, modifierValueMax: 20 });
+
+        // Assert
+        let rule = presenter.getState().xp.rules.find((entry) => entry.id === "random");
+        expect(rule?.modifierValue).toBeCloseTo(15, 6);
+
+        // Act
+        randomSpy.mockReturnValue(0.2);
+        presenter.updateRule("random", { modifierValueMin: 30, modifierValueMax: 30 });
+
+        // Assert
+        rule = presenter.getState().xp.rules.find((entry) => entry.id === "random");
+        expect(rule?.modifierValue).toBe(30);
+    });
+
     it("meldet Warnungen, wenn Prozent-auf-Level-Aufstieg-Regeln keine Schwelle finden", () => {
         // Arrange
         presenter.addPartyMember({ id: "p1", name: "Veteran", level: 20 });
@@ -209,6 +250,8 @@ describe("Encounter XP View", () => {
             title: "Epic Bonus",
             modifierType: "percentNextLevel",
             modifierValue: 15,
+            modifierValueMin: 15,
+            modifierValueMax: 15,
             enabled: true,
             scope: "xp",
         });
@@ -232,6 +275,8 @@ describe("Encounter XP View", () => {
             title: "Treasure",
             modifierType: "flat",
             modifierValue: 150,
+            modifierValueMin: 150,
+            modifierValueMax: 150,
             enabled: true,
             scope: "gold",
         });

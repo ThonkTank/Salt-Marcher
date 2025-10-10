@@ -359,15 +359,30 @@ export class EncounterWorkspaceView {
                 presenter.updateRule(rule.id, { scope: scopeSelect.value as EncounterXpRule["scope"] });
             });
 
-            const valueInput = headerRow.createEl("input", {
-                cls: "sm-encounter-input sm-encounter-rule-value",
+            const valueWrapper = headerRow.createDiv({ cls: "sm-encounter-rule-range" });
+            const minInput = valueWrapper.createEl("input", {
+                cls: "sm-encounter-input sm-encounter-rule-range-input",
                 attr: {
-                    id: `rule-${rule.id}-value`,
+                    id: `rule-${rule.id}-min`,
                     type: "number",
-                    value: String(rule.modifierValue),
-                    "aria-label": "Modifier value",
+                    value: String(rule.modifierValueMin),
+                    "aria-label": "Modifier minimum value",
                 },
             }) as HTMLInputElement;
+            valueWrapper.createSpan({ cls: "sm-encounter-rule-range-separator", text: "–" });
+            const maxInput = valueWrapper.createEl("input", {
+                cls: "sm-encounter-input sm-encounter-rule-range-input",
+                attr: {
+                    id: `rule-${rule.id}-max`,
+                    type: "number",
+                    value: String(rule.modifierValueMax),
+                    "aria-label": "Modifier maximum value",
+                },
+            }) as HTMLInputElement;
+            valueWrapper.createSpan({
+                cls: "sm-encounter-rule-range-result",
+                text: `→ ${formatNumber(rule.modifierValue)}`,
+            });
 
             const typeSelect = headerRow.createEl("select", {
                 cls: "sm-encounter-input sm-encounter-rule-type",
@@ -393,16 +408,41 @@ export class EncounterWorkspaceView {
                 presenter.updateRule(rule.id, { modifierType: typeSelect.value as EncounterRuleModifierType });
             });
             const ruleErrorEl = ruleItem.createDiv({ cls: "sm-encounter-error" });
-            valueInput.addEventListener("change", () => {
+            const handleRangeChange = () => {
                 const presenter = this.presenter;
                 if (!presenter) return;
-                const numeric = Number(valueInput.value);
-                if (!Number.isFinite(numeric)) {
-                    ruleErrorEl.setText("Modifier value must be a number.");
+                const minRaw = minInput.value.trim();
+                const maxRaw = maxInput.value.trim();
+                if (minRaw === "" || maxRaw === "") {
+                    ruleErrorEl.setText("Modifier range requires both values.");
+                    minInput.value = String(rule.modifierValueMin);
+                    maxInput.value = String(rule.modifierValueMax);
+                    return;
+                }
+                const minNumeric = Number(minRaw);
+                const maxNumeric = Number(maxRaw);
+                if (!Number.isFinite(minNumeric) || !Number.isFinite(maxNumeric)) {
+                    ruleErrorEl.setText("Modifier range values must be numbers.");
+                    minInput.value = String(rule.modifierValueMin);
+                    maxInput.value = String(rule.modifierValueMax);
                     return;
                 }
                 ruleErrorEl.setText("");
-                presenter.updateRule(rule.id, { modifierValue: numeric });
+                const nextMin = Math.min(minNumeric, maxNumeric);
+                const nextMax = Math.max(minNumeric, maxNumeric);
+                if (nextMin !== minNumeric || nextMax !== maxNumeric) {
+                    minInput.value = String(nextMin);
+                    maxInput.value = String(nextMax);
+                }
+                presenter.updateRule(rule.id, { modifierValueMin: nextMin, modifierValueMax: nextMax });
+            };
+            minInput.addEventListener("change", handleRangeChange);
+            maxInput.addEventListener("change", handleRangeChange);
+            minInput.addEventListener("input", () => {
+                ruleErrorEl.setText("");
+            });
+            maxInput.addEventListener("input", () => {
+                ruleErrorEl.setText("");
             });
 
             const notesField = createFieldContainer(ruleItem);
@@ -832,6 +872,8 @@ export class EncounterWorkspaceView {
             title: "",
             modifierType: "flat",
             modifierValue: 0,
+            modifierValueMin: 0,
+            modifierValueMax: 0,
             enabled: true,
             scope: "xp",
         };

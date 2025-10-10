@@ -361,9 +361,20 @@ export class EncounterPresenter {
     }
 
     private static normaliseRule(rule: EncounterXpRule): EncounterXpRule {
+        const modifierType = rule.modifierType;
+        const sanitizedValue = EncounterPresenter.normaliseRuleModifierValue(modifierType, rule.modifierValue);
+        const range = EncounterPresenter.normaliseRuleModifierRange(
+            modifierType,
+            rule.modifierValueMin,
+            rule.modifierValueMax,
+            sanitizedValue,
+        );
         return {
             ...rule,
-            modifierValue: EncounterPresenter.normaliseRuleModifierValue(rule.modifierType, rule.modifierValue),
+            modifierType,
+            modifierValue: clampToRange(sanitizedValue, range),
+            modifierValueMin: range.min,
+            modifierValueMax: range.max,
             enabled: rule.enabled !== false,
             scope: sanitizeRuleScope(rule.scope),
             notes: rule.notes ?? (rule.notes === "" ? "" : undefined),
@@ -381,23 +392,62 @@ export class EncounterPresenter {
         if (patch.scope !== undefined) {
             next.scope = sanitizeRuleScope(patch.scope);
         }
-        if (patch.modifierType !== undefined) {
-            next.modifierType = patch.modifierType;
-        }
-        if (patch.modifierValue !== undefined) {
-            const modifierType = patch.modifierType ?? existing.modifierType;
-            next.modifierValue = EncounterPresenter.normaliseRuleModifierValue(modifierType, patch.modifierValue);
-        } else if (patch.modifierType !== undefined) {
-            next.modifierValue = EncounterPresenter.normaliseRuleModifierValue(
-                patch.modifierType,
-                existing.modifierValue,
-            );
-        }
-        if (patch.enabled !== undefined) {
-            next.enabled = !!patch.enabled;
-        }
         if (patch.notes !== undefined) {
             next.notes = patch.notes;
+        }
+
+        const modifierType = patch.modifierType ?? existing.modifierType;
+        if (patch.modifierType !== undefined) {
+            next.modifierType = modifierType;
+        }
+
+        const hasRangeUpdate =
+            patch.modifierValueMin !== undefined || patch.modifierValueMax !== undefined || patch.modifierType !== undefined;
+        let range: { min: number; max: number } | null = null;
+        if (hasRangeUpdate) {
+            range = EncounterPresenter.normaliseRuleModifierRange(
+                modifierType,
+                patch.modifierValueMin ?? existing.modifierValueMin,
+                patch.modifierValueMax ?? existing.modifierValueMax,
+                existing.modifierValue,
+            );
+            next.modifierValueMin = range.min;
+            next.modifierValueMax = range.max;
+        }
+
+        if (patch.modifierValue !== undefined) {
+            const sanitized = EncounterPresenter.normaliseRuleModifierValue(modifierType, patch.modifierValue);
+            if (range) {
+                next.modifierValue = clampToRange(sanitized, range);
+            } else {
+                const currentRange = EncounterPresenter.normaliseRuleModifierRange(
+                    modifierType,
+                    existing.modifierValueMin,
+                    existing.modifierValueMax,
+                    existing.modifierValue,
+                );
+                next.modifierValue = clampToRange(sanitized, currentRange);
+            }
+        } else if (range) {
+            const sanitizedExisting = EncounterPresenter.normaliseRuleModifierValue(
+                modifierType,
+                existing.modifierValue,
+            );
+            if (
+                (patch.modifierValueMin !== undefined || patch.modifierValueMax !== undefined) &&
+                range.min !== range.max
+            ) {
+                next.modifierValue = rollBetween(range.min, range.max);
+            } else {
+                const clamped = clampToRange(sanitizedExisting, range);
+                if (clamped !== existing.modifierValue) {
+                    next.modifierValue = clamped;
+                }
+            }
+        }
+
+        if (patch.enabled !== undefined) {
+            next.enabled = !!patch.enabled;
         }
         return next;
     }
@@ -407,6 +457,27 @@ export class EncounterPresenter {
             return sanitizeNumber(value);
         }
         return clampPercentage(sanitizeNumber(value));
+    }
+
+    private static normaliseRuleModifierRange(
+        type: EncounterXpRule["modifierType"],
+        min: number | null | undefined,
+        max: number | null | undefined,
+        fallback: number,
+    ): { min: number; max: number } {
+        const sanitizedFallback = EncounterPresenter.normaliseRuleModifierValue(type, fallback);
+        const hasMin = min !== null && min !== undefined;
+        const hasMax = max !== null && max !== undefined;
+        const sanitizedMin = hasMin
+            ? EncounterPresenter.normaliseRuleModifierValue(type, min as number)
+            : sanitizedFallback;
+        const sanitizedMax = hasMax
+            ? EncounterPresenter.normaliseRuleModifierValue(type, max as number)
+            : sanitizedFallback;
+        if (sanitizedMin > sanitizedMax) {
+            return { min: sanitizedMax, max: sanitizedMin };
+        }
+        return { min: sanitizedMin, max: sanitizedMax };
     }
 }
 
@@ -660,6 +731,19 @@ function clampIndex(index: number, length: number): number {
     return truncated;
 }
 
+function clampToRange(value: number, range: { min: number; max: number }): number {
+    if (value < range.min) return range.min;
+    if (value > range.max) return range.max;
+    return value;
+}
+
+function rollBetween(min: number, max: number): number {
+    if (max <= min) {
+        return min;
+    }
+    return min + (max - min) * Math.random();
+}
+
 function pushWarning(collection: string[], warning: string) {
     if (!warning) return;
     if (!collection.includes(warning)) {
@@ -682,6 +766,8 @@ function shallowEqualRules(a: EncounterXpRule, b: EncounterXpRule): boolean {
         a.title === b.title &&
         a.modifierType === b.modifierType &&
         a.modifierValue === b.modifierValue &&
+        a.modifierValueMin === b.modifierValueMin &&
+        a.modifierValueMax === b.modifierValueMax &&
         a.enabled === b.enabled &&
         a.scope === b.scope &&
         (a.notes ?? "") === (b.notes ?? "")
