@@ -399,9 +399,15 @@
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
-    margin-left: auto;
-    justify-content: flex-end;
     align-items: center;
+}
+
+.sm-encounter-inline-actions-left {
+    justify-content: flex-start;
+}
+
+.sm-encounter-inline-actions-right {
+    justify-content: flex-end;
 }
 
 .sm-encounter-preset-select {
@@ -459,6 +465,18 @@
     flex-wrap: wrap;
     gap: 1rem;
     align-items: flex-end;
+}
+
+.sm-encounter-xp-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+.sm-encounter-xp-group-right {
+    margin-left: auto;
+    justify-content: flex-end;
 }
 
 .sm-encounter-party-list {
