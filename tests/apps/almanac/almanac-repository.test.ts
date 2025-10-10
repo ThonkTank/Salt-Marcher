@@ -4,8 +4,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { TAbstractFile, TFile } from "obsidian";
-import { VaultAlmanacRepository } from "../../../src/apps/almanac/data/vault-almanac-repository";
-import { VaultCalendarRepository } from "../../../src/apps/almanac/data/vault-calendar-repository";
+import {
+    VaultAlmanacRepository,
+    VaultCalendarRepository,
+} from "../../../src/apps/almanac/data/vault-repositories";
 import type { VaultLike } from "../../../src/apps/almanac/data/json-store";
 import { gregorianSchema } from "../../../src/apps/almanac/fixtures/gregorian.fixture";
 

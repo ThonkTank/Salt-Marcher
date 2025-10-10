@@ -24,7 +24,7 @@ import { AlmanacStateMachine } from "../../../src/apps/almanac/mode/state-machin
 import { gregorianSchema, getDefaultCurrentTimestamp } from "../../../src/apps/almanac/fixtures/gregorian.fixture";
 import { createSampleEvents } from "../../../src/apps/almanac/fixtures/gregorian.fixture";
 import { CalendarGatewayError } from "../../../src/apps/almanac/data/calendar-state-gateway";
-import { AlmanacRepositoryError } from "../../../src/apps/almanac/data/almanac-repository";
+import { AlmanacRepositoryError } from "../../../src/apps/almanac/data/repositories";
 import { createDayTimestamp } from "../../../src/apps/almanac/domain/calendar-timestamp";
 
 class ConflictPhenomenonRepository extends InMemoryPhenomenonRepository {

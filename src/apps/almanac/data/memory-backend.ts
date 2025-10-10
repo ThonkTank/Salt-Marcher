@@ -19,13 +19,16 @@ import type {
   PhenomenonSummaryDTO,
   PhenomenonTemplateDTO,
 } from './dto';
-import type {
-  CalendarDefaultSnapshot,
-  CalendarDefaultUpdate,
-} from './calendar-repository';
-import { AlmanacRepositoryError } from './almanac-repository';
-
-const DEFAULT_PAGE_SIZE = 25;
+import type { CalendarDefaultSnapshot, CalendarDefaultUpdate } from './repositories';
+import {
+  AlmanacRepositoryError,
+  PHENOMENON_PAGE_SIZE,
+  findDuplicateCalendarIds,
+  matchesPhenomenonFilters,
+  paginatePhenomena,
+  sortPhenomenonSummaries,
+  type PhenomenonSummaryEntry,
+} from './repositories';
 
 type CalendarRecord = CalendarSchemaDTO & { readonly id: string };
 type EventRecord = CalendarEventDTO & { readonly id: string };
@@ -69,22 +72,6 @@ function snapshotDefaults(
   return { global: defaults.global, travel };
 }
 
-function matchesPhenomenonFilters(
-  phenomenon: PhenomenonDTO,
-  filters: EventsFilterState,
-): boolean {
-  if (filters.categories?.length && !filters.categories.includes(phenomenon.category)) {
-    return false;
-  }
-  if (filters.calendarIds?.length) {
-    if (phenomenon.visibility === 'selected') {
-      return phenomenon.appliesToCalendarIds.some(id => filters.calendarIds.includes(id));
-    }
-    return true;
-  }
-  return true;
-}
-
 function toPhenomenonSummary(phenomenon: PhenomenonDTO): PhenomenonSummaryDTO {
   return {
     id: phenomenon.id,
@@ -93,50 +80,6 @@ function toPhenomenonSummary(phenomenon: PhenomenonDTO): PhenomenonSummaryDTO {
     linkedCalendars: phenomenon.appliesToCalendarIds,
     badge: phenomenon.tags?.[0],
   };
-}
-
-function sortSummaries(
-  phenomena: ReadonlyArray<PhenomenonDTO>,
-  summaries: ReadonlyArray<PhenomenonSummaryDTO>,
-  sort: EventsSort,
-): Array<{ phenomenon: PhenomenonDTO; summary: PhenomenonSummaryDTO }> {
-  const paired = phenomena.map((phenomenon, index) => ({ phenomenon, summary: summaries[index]! }));
-  paired.sort((a, b) => {
-    if (sort === 'priority_desc') {
-      return b.phenomenon.priority - a.phenomenon.priority || a.summary.name.localeCompare(b.summary.name);
-    }
-    if (sort === 'category_asc') {
-      return (
-        a.summary.category.localeCompare(b.summary.category) ||
-        a.summary.name.localeCompare(b.summary.name)
-      );
-    }
-    return a.summary.name.localeCompare(b.summary.name);
-  });
-  return paired;
-}
-
-function paginate<T>(
-  entries: ReadonlyArray<T>,
-  pagination: EventsPaginationState | undefined,
-): { items: ReadonlyArray<T>; nextCursor?: string } {
-  const limit = pagination?.limit ?? DEFAULT_PAGE_SIZE;
-  const offset = pagination?.cursor ? Number.parseInt(pagination.cursor, 10) || 0 : 0;
-  const slice = entries.slice(offset, offset + limit);
-  const nextOffset = offset + slice.length;
-  return { items: slice, nextCursor: nextOffset < entries.length ? String(nextOffset) : undefined };
-}
-
-function findDuplicateCalendarIds(
-  links: ReadonlyArray<PhenomenonLinkUpdate['calendarLinks'][number]>,
-): string[] {
-  const counts = new Map<string, number>();
-  for (const link of links) {
-    counts.set(link.calendarId, (counts.get(link.calendarId) ?? 0) + 1);
-  }
-  return Array.from(counts.entries())
-    .filter(([, count]) => count > 1)
-    .map(([calendarId]) => calendarId);
 }
 
 export class AlmanacMemoryBackend {
@@ -364,8 +307,12 @@ export class AlmanacMemoryBackend {
       matchesPhenomenonFilters(phenomenon, input.filters),
     );
     const summaries = filtered.map(toPhenomenonSummary);
-    const sorted = sortSummaries(filtered, summaries, input.sort);
-    const { items, nextCursor } = paginate(sorted, input.pagination);
+    const decorated: PhenomenonSummaryEntry[] = summaries.map((summary, index) => ({
+      summary,
+      phenomenon: filtered[index]!,
+    }));
+    const sorted = sortPhenomenonSummaries(decorated, input.sort);
+    const { items, nextCursor } = paginatePhenomena(sorted, input.pagination, PHENOMENON_PAGE_SIZE);
 
     return {
       items: items.map(entry => entry.summary),

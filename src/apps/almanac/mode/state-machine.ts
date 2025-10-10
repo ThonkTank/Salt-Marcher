@@ -44,9 +44,12 @@ import {
     type PhenomenonEditorDraft,
     type TravelCalendarMode,
 } from "./contracts";
-import type { CalendarDefaultsRepository, CalendarRepository } from "../data/calendar-repository";
-import type { EventRepository } from "../data/event-repository";
-import type { PhenomenonRepository } from "../data/in-memory-repository";
+import type {
+    CalendarDefaultsRepository,
+    CalendarRepository,
+    EventRepository,
+    PhenomenonRepository,
+} from "../data/repositories";
 import {
     isCalendarGatewayError,
     type CalendarStateGateway,
@@ -82,7 +85,7 @@ import {
     type TravelPanelUpdateInput,
 } from "./cartographer-gateway";
 import { emitAlmanacEvent, reportAlmanacGatewayIssue } from "../telemetry";
-import { AlmanacRepositoryError } from "../data/almanac-repository";
+import { AlmanacRepositoryError } from "../data/repositories";
 
 const MAX_TRIGGERED_EVENTS = 10;
 const MAX_TRIGGERED_PHENOMENA = 10;
