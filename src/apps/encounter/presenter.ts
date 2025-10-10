@@ -18,6 +18,7 @@ import {
     subscribeToEncounterEvents,
     type EncounterEvent,
     type EncounterPartyMember,
+    type EncounterRuleScope,
     type EncounterXpRule,
     type EncounterXpState,
     updateEncounterXpState,
@@ -364,6 +365,7 @@ export class EncounterPresenter {
             ...rule,
             modifierValue: EncounterPresenter.normaliseRuleModifierValue(rule.modifierType, rule.modifierValue),
             enabled: rule.enabled !== false,
+            scope: sanitizeRuleScope(rule.scope),
             notes: rule.notes ?? (rule.notes === "" ? "" : undefined),
         };
     }
@@ -375,6 +377,9 @@ export class EncounterPresenter {
         const next: Partial<EncounterXpRule> = {};
         if (patch.title !== undefined) {
             next.title = patch.title;
+        }
+        if (patch.scope !== undefined) {
+            next.scope = sanitizeRuleScope(patch.scope);
         }
         if (patch.modifierType !== undefined) {
             next.modifierType = patch.modifierType;
@@ -475,6 +480,18 @@ function deriveEncounterXpView(state: EncounterXpState): EncounterXpViewModel {
             continue;
         }
 
+        if (rule.scope !== "xp") {
+            for (const member of members) {
+                perMemberDeltas.push({
+                    memberId: member.member.id,
+                    memberName: member.member.name,
+                    delta: 0,
+                });
+            }
+            ruleViews.push({ rule, totalDelta, perMemberDeltas, warnings: ruleWarnings });
+            continue;
+        }
+
         const appendMemberDelta = (member: MutableEncounterXpPartyMemberView, delta: number) => {
             member.modifiersDelta += delta;
             member.totalXp += delta;
@@ -500,7 +517,8 @@ function deriveEncounterXpView(state: EncounterXpState): EncounterXpViewModel {
                     totalLevels += sanitizeLevel(member.member.level);
                 }
                 const averageLevel = totalLevels / partyCount;
-                const perMember = rule.modifierValue * averageLevel;
+                const totalAverageDelta = rule.modifierValue * averageLevel;
+                const perMember = totalAverageDelta / partyCount;
                 for (const member of members) {
                     appendMemberDelta(member, perMember);
                 }
@@ -593,6 +611,13 @@ export function calculateXpToNextLevel(level: number, currentXp?: number): numbe
     return nextThreshold - effectiveCurrentXp;
 }
 
+function sanitizeRuleScope(scope: unknown): EncounterRuleScope {
+    if (scope === "gold") {
+        return "gold";
+    }
+    return "xp";
+}
+
 function sanitizeNumber(value: unknown): number {
     if (typeof value !== "number" || !Number.isFinite(value)) {
         return 0;
@@ -658,6 +683,7 @@ function shallowEqualRules(a: EncounterXpRule, b: EncounterXpRule): boolean {
         a.modifierType === b.modifierType &&
         a.modifierValue === b.modifierValue &&
         a.enabled === b.enabled &&
+        a.scope === b.scope &&
         (a.notes ?? "") === (b.notes ?? "")
     );
 }

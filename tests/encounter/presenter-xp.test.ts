@@ -75,6 +75,7 @@ describe("EncounterPresenter XP-Verwaltung", () => {
                         modifierType: "percentTotal",
                         modifierValue: 150,
                         enabled: true,
+                        scope: "xp",
                     },
                 ],
             },

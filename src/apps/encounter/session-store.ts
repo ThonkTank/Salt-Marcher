@@ -42,12 +42,15 @@ export interface EncounterPartyMember {
     readonly currentXp?: number;
 }
 
+export type EncounterRuleScope = "xp" | "gold";
+
 export interface EncounterXpRule {
     readonly id: string;
     readonly title: string;
     readonly modifierType: EncounterRuleModifierType;
     readonly modifierValue: number;
     readonly enabled: boolean;
+    readonly scope: EncounterRuleScope;
     readonly notes?: string;
 }
 

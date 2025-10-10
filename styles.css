@@ -519,43 +519,45 @@
 .sm-encounter-rule-header {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem 0.75rem;
-    align-items: flex-end;
+    gap: 0.5rem;
+    align-items: stretch;
 }
 
 .sm-encounter-rule-title {
-    flex: 1 1 220px;
-    min-width: 200px;
+    flex: 1 1 180px;
+    min-width: 140px;
 }
 
 .sm-encounter-rule-toggle {
     display: flex;
     align-items: center;
-    gap: 0.35rem;
+    justify-content: center;
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    border: 1px solid var(--background-modifier-border);
+    background-color: var(--background-modifier-hover);
     flex: 0 0 auto;
-    white-space: nowrap;
+    align-self: stretch;
 }
 
-.sm-encounter-toggle-label {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-muted);
+.sm-encounter-rule-toggle-input {
+    width: 1.1rem;
+    height: 1.1rem;
+    margin: 0;
 }
 
-.sm-encounter-rule-header .sm-encounter-field {
-    flex: 0 1 180px;
-    min-width: 160px;
+.sm-encounter-rule-scope {
+    flex: 0 1 120px;
+    min-width: 110px;
 }
 
-.sm-encounter-rule-header .sm-encounter-field label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--text-muted);
+.sm-encounter-rule-value {
+    flex: 0 1 110px;
+    min-width: 100px;
 }
 
-.sm-encounter-rule-field-value {
-    flex: 0 1 140px;
+.sm-encounter-rule-type {
+    flex: 0 1 160px;
     min-width: 140px;
 }
 
