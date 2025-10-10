@@ -1,9 +1,21 @@
 // src/apps/encounter/workspace-view.ts
 // Stellt die Encounter-Oberfläche für das Zentrumspanel bereit.
+import { App, Notice, TAbstractFile, TFile, normalizePath } from "obsidian";
+import { NameInputModal } from "../../ui/modals";
 import type { EncounterPresenter, EncounterViewState } from "./presenter";
 import type { EncounterRuleModifierType, EncounterXpRule } from "./session-store";
+import {
+    ENCOUNTER_RULE_PRESET_DIR,
+    type EncounterRulePresetSummary,
+    deleteEncounterRulePreset,
+    isEncounterPresetFile,
+    listEncounterRulePresets,
+    loadEncounterRulePreset,
+    saveEncounterRulePreset,
+} from "./rule-presets";
 
 export class EncounterWorkspaceView {
+    private readonly app: App;
     private readonly containerEl: HTMLElement;
     private presenter: EncounterPresenter | null = null;
 
@@ -11,6 +23,13 @@ export class EncounterWorkspaceView {
     private xpErrorEl!: HTMLDivElement;
     private resetXpButton!: HTMLButtonElement;
     private ruleListEl!: HTMLDivElement;
+    private presetSelectEl!: HTMLSelectElement;
+    private presetOpenButton!: HTMLButtonElement;
+    private presetSaveButton!: HTMLButtonElement;
+    private presetDeleteButton!: HTMLButtonElement;
+    private presetOptions: EncounterRulePresetSummary[] = [];
+    private detachPresetWatcher?: () => void;
+    private presetRefreshTimeout: number | null = null;
 
     private partyFormNameEl!: HTMLInputElement;
     private partyFormLevelEl!: HTMLInputElement;
@@ -28,23 +47,35 @@ export class EncounterWorkspaceView {
     private notesEl!: HTMLTextAreaElement;
     private resolveBtn!: HTMLButtonElement;
 
-    constructor(containerEl: HTMLElement) {
+    constructor(app: App, containerEl: HTMLElement) {
+        this.app = app;
         this.containerEl = containerEl;
     }
 
     mount() {
         this.containerEl.addClass("sm-encounter-view");
         this.renderShell();
+        this.registerPresetWatcher();
+        void this.refreshPresetOptions();
+        this.syncPresetControlsState();
     }
 
     unmount() {
         this.containerEl.empty();
         this.containerEl.removeClass("sm-encounter-view");
         this.presenter = null;
+        this.detachPresetWatcher?.();
+        this.detachPresetWatcher = undefined;
+        if (this.presetRefreshTimeout != null) {
+            window.clearTimeout(this.presetRefreshTimeout);
+            this.presetRefreshTimeout = null;
+        }
+        this.presetOptions = [];
     }
 
     setPresenter(presenter: EncounterPresenter | null) {
         this.presenter = presenter;
+        this.syncPresetControlsState();
     }
 
     render(state: EncounterViewState) {
@@ -88,6 +119,37 @@ export class EncounterWorkspaceView {
         addRuleButton.type = "button";
         addRuleButton.addEventListener("click", () => {
             this.handleAddRule();
+        });
+        this.presetSelectEl = xpControls.createEl("select", {
+            cls: "sm-encounter-input sm-encounter-preset-select",
+            attr: { "aria-label": "Encounter rule preset" },
+        }) as HTMLSelectElement;
+        this.presetSelectEl.addEventListener("change", () => {
+            this.syncPresetControlsState();
+        });
+        this.presetOpenButton = xpControls.createEl("button", {
+            cls: "sm-encounter-button",
+            text: "Preset öffnen",
+        });
+        this.presetOpenButton.type = "button";
+        this.presetOpenButton.addEventListener("click", () => {
+            void this.handleOpenPreset();
+        });
+        this.presetSaveButton = xpControls.createEl("button", {
+            cls: "sm-encounter-button sm-encounter-button-primary",
+            text: "Preset speichern",
+        });
+        this.presetSaveButton.type = "button";
+        this.presetSaveButton.addEventListener("click", () => {
+            void this.handleSavePreset();
+        });
+        this.presetDeleteButton = xpControls.createEl("button", {
+            cls: "sm-encounter-button sm-encounter-button-danger",
+            text: "Preset löschen",
+        });
+        this.presetDeleteButton.type = "button";
+        this.presetDeleteButton.addEventListener("click", () => {
+            void this.handleDeletePreset();
         });
         this.xpErrorEl = xpSection.createDiv({ cls: "sm-encounter-error" });
         this.ruleListEl = xpSection.createDiv({ cls: "sm-encounter-rule-list" });
@@ -188,6 +250,199 @@ export class EncounterWorkspaceView {
         this.resolveBtn.addEventListener("click", () => {
             this.presenter?.markResolved();
         });
+    }
+
+    private registerPresetWatcher() {
+        this.detachPresetWatcher?.();
+        const baseDir = normalizePath(ENCOUNTER_RULE_PRESET_DIR);
+        const prefix = `${baseDir}/`;
+        const handler = (file: TAbstractFile) => {
+            if (file instanceof TFile) {
+                if (isEncounterPresetFile(file)) {
+                    this.schedulePresetRefresh();
+                }
+                return;
+            }
+            if (file.path === baseDir || file.path.startsWith(prefix)) {
+                this.schedulePresetRefresh();
+            }
+        };
+        this.app.vault.on("create", handler);
+        this.app.vault.on("delete", handler);
+        this.app.vault.on("rename", handler);
+        this.app.vault.on("modify", handler);
+        this.detachPresetWatcher = () => {
+            this.app.vault.off("create", handler);
+            this.app.vault.off("delete", handler);
+            this.app.vault.off("rename", handler);
+            this.app.vault.off("modify", handler);
+        };
+    }
+
+    private schedulePresetRefresh() {
+        if (this.presetRefreshTimeout != null) return;
+        this.presetRefreshTimeout = window.setTimeout(() => {
+            this.presetRefreshTimeout = null;
+            void this.refreshPresetOptions();
+        }, 100);
+    }
+
+    private async refreshPresetOptions() {
+        const select = this.presetSelectEl;
+        if (!select || !select.isConnected) return;
+        const previousValue = select.value;
+        try {
+            const entries = await listEncounterRulePresets(this.app);
+            this.presetOptions = entries;
+            while (select.firstChild) {
+                select.removeChild(select.firstChild);
+            }
+            const placeholder = select.createEl("option", {
+                attr: { value: "" },
+                text: entries.length ? "Preset auswählen…" : "Keine Presets gespeichert",
+            }) as HTMLOptionElement;
+            if (!entries.length) {
+                placeholder.selected = true;
+            }
+            for (const entry of entries) {
+                const option = select.createEl("option", {
+                    attr: { value: entry.file.path },
+                    text: entry.name,
+                }) as HTMLOptionElement;
+                if (entry.file.path === previousValue) {
+                    option.selected = true;
+                }
+            }
+            if (select.value !== previousValue) {
+                if (entries.some((entry) => entry.file.path === previousValue)) {
+                    select.value = previousValue;
+                } else {
+                    select.value = "";
+                }
+            }
+        } catch (error) {
+            console.error("[encounter] failed to list rule presets", error);
+        }
+        this.syncPresetControlsState();
+    }
+
+    private getSelectedPreset(): EncounterRulePresetSummary | null {
+        const value = this.presetSelectEl?.value;
+        if (!value) return null;
+        return this.presetOptions.find((entry) => entry.file.path === value) ?? null;
+    }
+
+    private syncPresetControlsState() {
+        const hasPresenter = !!this.presenter;
+        const selected = this.getSelectedPreset();
+        if (this.presetOpenButton) {
+            this.presetOpenButton.disabled = !hasPresenter || !selected;
+        }
+        if (this.presetDeleteButton) {
+            this.presetDeleteButton.disabled = !selected;
+        }
+        if (this.presetSaveButton) {
+            this.presetSaveButton.disabled = !hasPresenter;
+        }
+    }
+
+    private async handleOpenPreset() {
+        const presenter = this.presenter;
+        const selected = this.getSelectedPreset();
+        if (!presenter) {
+            new Notice("Encounter-Presenter nicht verfügbar.");
+            return;
+        }
+        if (!selected) {
+            new Notice("Bitte ein Preset auswählen.");
+            return;
+        }
+        try {
+            const preset = await loadEncounterRulePreset(this.app, selected.file);
+            const seen = new Set<string>();
+            const rules = preset.rules.map((rule) => {
+                let id = rule.id;
+                if (!id || seen.has(id)) {
+                    id = createId("rule");
+                }
+                seen.add(id);
+                return { ...rule, id };
+            });
+            presenter.replaceRules(rules);
+            if (typeof preset.encounterXp === "number" && Number.isFinite(preset.encounterXp)) {
+                presenter.setEncounterXp(preset.encounterXp);
+            }
+            new Notice(`Preset "${preset.name}" geladen.`);
+        } catch (error) {
+            console.error("[encounter] failed to load preset", error);
+            new Notice("Preset konnte nicht geladen werden.");
+        }
+    }
+
+    private async handleSavePreset() {
+        const presenter = this.presenter;
+        if (!presenter) {
+            new Notice("Encounter-Presenter nicht verfügbar.");
+            return;
+        }
+        const selected = this.getSelectedPreset();
+        const currentState = presenter.getState();
+        const rules = currentState.xp.rules.map((rule) => ({ ...rule }));
+        const encounterXp = currentState.xp.encounterXp;
+        const modal = new NameInputModal(
+            this.app,
+            async (rawName) => {
+                const name = rawName.trim();
+                const fallbackName = name || "Encounter Rule Preset";
+                try {
+                    const file = await saveEncounterRulePreset(
+                        this.app,
+                        { name: name || fallbackName, encounterXp, rules },
+                        {
+                            path: selected && selected.name === (name || fallbackName) ? selected.file.path : undefined,
+                        },
+                    );
+                    new Notice(`Preset "${name || fallbackName}" gespeichert.`);
+                    await this.refreshPresetOptions();
+                    if (this.presetSelectEl && this.presetSelectEl.isConnected) {
+                        this.presetSelectEl.value = file.path;
+                    }
+                } catch (error) {
+                    console.error("[encounter] failed to save preset", error);
+                    new Notice("Preset konnte nicht gespeichert werden.");
+                }
+                this.syncPresetControlsState();
+            },
+            {
+                title: "Preset speichern",
+                placeholder: "Preset-Name",
+                cta: "Speichern",
+                initialValue: selected?.name ?? "",
+            },
+        );
+        modal.open();
+    }
+
+    private async handleDeletePreset() {
+        const selected = this.getSelectedPreset();
+        if (!selected) {
+            new Notice("Bitte ein Preset auswählen.");
+            return;
+        }
+        const confirmed = window.confirm(`Preset "${selected.name}" löschen?`);
+        if (!confirmed) return;
+        try {
+            await deleteEncounterRulePreset(this.app, selected.file);
+            new Notice(`Preset "${selected.name}" gelöscht.`);
+            await this.refreshPresetOptions();
+            if (this.presetSelectEl && this.presetSelectEl.isConnected) {
+                this.presetSelectEl.value = "";
+            }
+        } catch (error) {
+            console.error("[encounter] failed to delete preset", error);
+            new Notice("Preset konnte nicht gelöscht werden.");
+        }
+        this.syncPresetControlsState();
     }
 
     private syncSessionControls(session: EncounterViewState["session"] | null) {

@@ -201,6 +201,11 @@ export class EncounterPresenter {
         storeRemovePartyMember(id);
     }
 
+    removeRule(id: string) {
+        if (!this.persisted.xp.rules.some((rule) => rule.id === id)) return;
+        storeRemoveRule(id);
+    }
+
     addRule(rule: EncounterXpRule) {
         const sanitized = EncounterPresenter.normaliseRule(rule);
         if (this.persisted.xp.rules.some((existing) => existing.id === sanitized.id)) {
@@ -225,6 +230,13 @@ export class EncounterPresenter {
         const nextEnabled = enabled ?? !existing.enabled;
         if (existing.enabled === nextEnabled) return;
         storeUpdateRule(id, { enabled: nextEnabled });
+    }
+
+    replaceRules(rules: ReadonlyArray<EncounterXpRule>) {
+        const sanitized = rules.map((rule) => EncounterPresenter.normaliseRule(rule));
+        updateEncounterXpState((draft) => {
+            draft.rules = sanitized.map((rule) => ({ ...rule }));
+        });
     }
 
     moveRule(id: string, targetIndex: number) {
