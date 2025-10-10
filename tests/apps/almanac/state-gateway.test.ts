@@ -9,9 +9,11 @@ import {
 } from "../../../src/apps/almanac/data/in-memory-repository";
 import { AlmanacMemoryBackend } from "../../../src/apps/almanac/data/memory-backend";
 import { InMemoryStateGateway } from "../../../src/apps/almanac/data/in-memory-gateway";
-import { VaultCalendarRepository } from "../../../src/apps/almanac/data/vault-calendar-repository";
-import { VaultEventRepository } from "../../../src/apps/almanac/data/vault-event-repository";
-import { VaultAlmanacRepository } from "../../../src/apps/almanac/data/vault-almanac-repository";
+import {
+    VaultCalendarRepository,
+    VaultEventRepository,
+    VaultAlmanacRepository,
+} from "../../../src/apps/almanac/data/vault-repositories";
 import { VaultCalendarStateGateway } from "../../../src/apps/almanac/data/vault-calendar-state-gateway";
 import { createSingleEvent } from "../../../src/apps/almanac/domain/calendar-event";
 import {

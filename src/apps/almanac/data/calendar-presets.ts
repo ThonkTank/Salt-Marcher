@@ -3,7 +3,7 @@
 
 import type { CalendarSchema } from '../domain/calendar-schema';
 import { gregorianSchema } from '../fixtures/gregorian.fixture';
-import type { CalendarRepository } from './calendar-repository';
+import type { CalendarRepository } from './repositories';
 
 /**
  * Available calendar presets

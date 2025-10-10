@@ -17,11 +17,11 @@ import {
 import { advanceTime } from "../domain/time-arithmetic";
 import type { TimeUnit } from "../domain/time-arithmetic";
 import type {
+  AlmanacRepository,
   CalendarDefaultsRepository,
   CalendarRepository,
-} from "./calendar-repository";
-import type { EventRepository } from "./event-repository";
-import type { AlmanacRepository } from "./almanac-repository";
+  EventRepository,
+} from "./repositories";
 import {
   CalendarGatewayError,
   createGatewayValidationError,

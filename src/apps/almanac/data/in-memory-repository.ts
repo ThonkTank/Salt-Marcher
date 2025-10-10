@@ -21,9 +21,10 @@ import type {
   CalendarRepository as CalendarRepositoryContract,
   CalendarDefaultSnapshot,
   CalendarDefaultUpdate,
-} from './calendar-repository';
-import type { EventRepository as EventRepositoryContract } from './event-repository';
-import { type AlmanacRepository } from './almanac-repository';
+  EventRepository as EventRepositoryContract,
+  PhenomenonRepository,
+  AlmanacRepository,
+} from './repositories';
 import { AlmanacMemoryBackend } from './memory-backend';
 
 export class InMemoryCalendarRepository
@@ -148,21 +149,6 @@ export class InMemoryEventRepository implements EventRepositoryContract {
   get memory(): AlmanacMemoryBackend {
     return this.backend;
   }
-}
-
-export interface PhenomenonRepository {
-  listPhenomena(): Promise<PhenomenonDTO[]>;
-  listPhenomena(input: {
-    readonly viewMode: string;
-    readonly filters: EventsFilterState;
-    readonly sort: EventsSort;
-    readonly pagination?: EventsPaginationState;
-  }): Promise<EventsDataBatchDTO>;
-  getPhenomenon(id: string): Promise<PhenomenonDTO | null>;
-  upsertPhenomenon(phenomenon: PhenomenonDTO): Promise<PhenomenonDTO>;
-  deletePhenomenon(id: string): Promise<void>;
-  updateLinks(update: PhenomenonLinkUpdate): Promise<PhenomenonDTO>;
-  listTemplates(): Promise<ReadonlyArray<PhenomenonTemplateDTO>>;
 }
 
 export class InMemoryPhenomenonRepository implements AlmanacRepository, PhenomenonRepository {
