@@ -22,7 +22,7 @@ export class EncounterView extends ItemView {
     getIcon() { return "swords" as any; }
 
     async onOpen() {
-        const workspaceView = new EncounterWorkspaceView(this.contentEl);
+        const workspaceView = new EncounterWorkspaceView(this.app, this.contentEl);
         workspaceView.mount();
         this.workspaceView = workspaceView;
 
