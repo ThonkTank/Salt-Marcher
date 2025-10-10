@@ -685,7 +685,7 @@ function resolveAstronomicalRange(
  */
 export type CalendarEvent = CalendarEventSingle | CalendarEventRecurring;
 export type CalendarEventKind = CalendarEvent['kind'];
-export type CalendarEventTimePrecision = 'day' | 'hour' | 'minute';
+export type CalendarEventTimePrecision = TimestampPrecision;
 
 export interface CalendarTimeOfDay {
   readonly hour: number;
@@ -964,27 +964,26 @@ function resolveSingleEventWindow(event: CalendarEventSingle, schema: CalendarSc
   const minutesPerDay = hoursPerDay * minutesPerHour;
 
   const base = event.date;
-  let start = base;
-  if (!event.allDay) {
-    const hour = event.startTime?.hour ?? base.hour ?? 0;
-    const minute = event.startTime?.minute ?? base.minute ?? 0;
-    start = createMinuteTimestamp(base.calendarId, base.year, base.monthId, base.day, hour, minute);
-  }
+  const start = event.allDay
+    ? base
+    : createMinuteTimestamp(
+        base.calendarId,
+        base.year,
+        base.monthId,
+        base.day,
+        event.startTime?.hour ?? base.hour ?? 0,
+        event.startTime?.minute ?? base.minute ?? 0,
+      );
 
-  let duration = event.durationMinutes ?? 0;
-  if (event.endTime) {
-    duration = Math.max(
-      duration,
-      calculateDurationFromTimes(event.startTime, event.endTime, minutesPerHour, hoursPerDay),
-    );
-  }
+  const requestedDuration = event.endTime
+    ? Math.max(
+        event.durationMinutes ?? 0,
+        calculateDurationFromTimes(event.startTime, event.endTime, minutesPerHour, hoursPerDay),
+      )
+    : event.durationMinutes ?? 0;
 
-  if (duration <= 0) {
-    duration = event.allDay ? minutesPerDay : 0;
-  }
-
-  const end = duration > 0 ? advanceTime(schema, start, duration, 'minute').timestamp : start;
-  return { start, end, durationMinutes: duration };
+  const duration = resolveDuration(requestedDuration, event.allDay ? minutesPerDay : 0);
+  return createWindow(schema, start, duration);
 }
 
 function applyRecurringTimePolicy(
@@ -996,27 +995,29 @@ function applyRecurringTimePolicy(
   const { minutesPerHour, hoursPerDay } = getTimeDefinition(schema);
   const minutesPerDay = hoursPerDay * minutesPerHour;
 
-  if (event.timePolicy === 'all_day') {
-    const start = baseTimestamp;
-    const duration = event.durationMinutes ?? minutesPerDay;
-    const end = duration > 0 ? advanceTime(schema, start, duration, 'minute').timestamp : start;
-    return { start, end, durationMinutes: duration };
+  switch (event.timePolicy) {
+    case 'all_day':
+      return createWindow(schema, baseTimestamp, resolveDuration(event.durationMinutes, minutesPerDay));
+    case 'fixed': {
+      const start = createMinuteTimestamp(
+        calendarId,
+        baseTimestamp.year,
+        baseTimestamp.monthId,
+        baseTimestamp.day,
+        event.startTime?.hour ?? 0,
+        event.startTime?.minute ?? 0,
+      );
+      return createWindow(schema, start, resolveDuration(event.durationMinutes, 0));
+    }
+    case 'offset': {
+      const start = advanceTime(schema, baseTimestamp, event.offsetMinutes ?? 0, 'minute').timestamp;
+      return createWindow(schema, start, resolveDuration(event.durationMinutes, 0));
+    }
+    default: {
+      const _never: never = event.timePolicy;
+      return _never;
+    }
   }
-
-  if (event.timePolicy === 'fixed') {
-    const hour = event.startTime?.hour ?? 0;
-    const minute = event.startTime?.minute ?? 0;
-    const start = createMinuteTimestamp(calendarId, baseTimestamp.year, baseTimestamp.monthId, baseTimestamp.day, hour, minute);
-    const duration = event.durationMinutes ?? 0;
-    const end = duration > 0 ? advanceTime(schema, start, duration, 'minute').timestamp : start;
-    return { start, end, durationMinutes: duration };
-  }
-
-  const offsetMinutes = event.offsetMinutes ?? 0;
-  const start = advanceTime(schema, baseTimestamp, offsetMinutes, 'minute').timestamp;
-  const duration = event.durationMinutes ?? 0;
-  const end = duration > 0 ? advanceTime(schema, start, duration, 'minute').timestamp : start;
-  return { start, end, durationMinutes: duration };
 }
 
 function calculateDurationFromTimes(
@@ -1273,31 +1274,42 @@ function applyPhenomenonTimePolicy(
   const { hoursPerDay, minutesPerHour } = getTimeDefinition(schema);
   const minutesPerDay = hoursPerDay * minutesPerHour;
 
-  if (phenomenon.timePolicy === 'all_day') {
-    const duration = phenomenon.durationMinutes ?? minutesPerDay;
-    const end = duration > 0 ? advanceTime(schema, baseTimestamp, duration, 'minute').timestamp : baseTimestamp;
-    return { start: baseTimestamp, end, durationMinutes: duration };
+  switch (phenomenon.timePolicy) {
+    case 'all_day':
+      return createWindow(
+        schema,
+        baseTimestamp,
+        resolveDuration(phenomenon.durationMinutes, minutesPerDay),
+      );
+    case 'fixed': {
+      const startTime = clampTimeOfDay(phenomenon.startTime, hoursPerDay, minutesPerHour);
+      const start = createMinuteTimestamp(
+        calendarId,
+        baseTimestamp.year,
+        baseTimestamp.monthId,
+        baseTimestamp.day,
+        startTime.hour,
+        startTime.minute,
+      );
+      return createWindow(schema, start, resolveDuration(phenomenon.durationMinutes, 0));
+    }
+    case 'offset': {
+      const start = advanceTime(schema, baseTimestamp, phenomenon.offsetMinutes ?? 0, 'minute').timestamp;
+      return createWindow(schema, start, resolveDuration(phenomenon.durationMinutes, 0));
+    }
+    default:
+      throw new UnsupportedTimePolicyError(phenomenon.timePolicy);
   }
+}
 
-  if (phenomenon.timePolicy === 'fixed') {
-    const startTime = phenomenon.startTime ?? { hour: 0, minute: 0 };
-    const hour = clamp(startTime.hour, 0, Math.max(0, hoursPerDay - 1));
-    const minute = clamp(startTime.minute ?? 0, 0, Math.max(0, minutesPerHour - 1));
-    const start = createMinuteTimestamp(calendarId, baseTimestamp.year, baseTimestamp.monthId, baseTimestamp.day, hour, minute);
-    const duration = phenomenon.durationMinutes ?? 0;
-    const end = duration > 0 ? advanceTime(schema, start, duration, 'minute').timestamp : start;
-    return { start, end, durationMinutes: duration };
-  }
-
-  if (phenomenon.timePolicy !== 'offset') {
-    throw new UnsupportedTimePolicyError(phenomenon.timePolicy);
-  }
-
-  const offset = phenomenon.offsetMinutes ?? 0;
-  const start = advanceTime(schema, baseTimestamp, offset, 'minute').timestamp;
-  const duration = phenomenon.durationMinutes ?? 0;
-  const end = duration > 0 ? advanceTime(schema, start, duration, 'minute').timestamp : start;
-  return { start, end, durationMinutes: duration };
+function clampTimeOfDay(
+  time: PhenomenonStartTime | undefined,
+  hoursPerDay: number,
+  minutesPerHour: number,
+): PhenomenonStartTime {
+  const safeHour = clamp(time?.hour, 0, Math.max(0, hoursPerDay - 1));
+  const safeMinute = clamp(time?.minute, 0, Math.max(0, minutesPerHour - 1));
+  return { hour: safeHour, minute: safeMinute };
 }
 
 function clamp(value: number | undefined, min: number, max: number): number {
@@ -1319,9 +1331,10 @@ export function filterUpcomingOccurrences(
   occurrences: ReadonlyArray<PhenomenonOccurrence>,
   from: CalendarTimestamp,
 ): PhenomenonOccurrence[] {
-  return occurrences
-    .filter(occurrence => compareTimestampsWithSchema(schema, occurrence.timestamp, from) >= 0)
-    .sort((a, b) => compareTimestampsWithSchema(schema, a.timestamp, b.timestamp));
+  const filtered = occurrences.filter(
+    occurrence => compareTimestampsWithSchema(schema, occurrence.timestamp, from) >= 0,
+  );
+  return sortOccurrencesByTimestamp(schema, filtered);
 }
 
 export type PhenomenonRule = RepeatRule;
@@ -1460,7 +1473,7 @@ export function resolveConflictsByPriority(groups: ReadonlyArray<ConflictGroup>)
       if (a.priority !== b.priority) {
         return b.priority - a.priority;
       }
-      const cmp = compareTimestampsWithSchemaInternal(a.start, b.start);
+      const cmp = compareOccurrenceStarts(a, b);
       if (cmp !== 0) {
         return cmp;
       }
@@ -1500,21 +1513,29 @@ function getWindowEnd(
   return latest;
 }
 
-function compareTimestampsWithSchemaInternal(a: CalendarTimestamp, b: CalendarTimestamp): number {
+function compareOccurrenceStarts(a: TemporalOccurrence, b: TemporalOccurrence): number {
   if (a.calendarId !== b.calendarId) {
     return a.calendarId.localeCompare(b.calendarId);
   }
-  if (a.year !== b.year) {
-    return a.year - b.year;
+  return compareTimestamps(a.start, b.start);
+}
+
+function resolveDuration(durationMinutes: number | undefined, fallback: number): number {
+  if (durationMinutes === undefined || durationMinutes <= 0) {
+    return fallback;
   }
-  if (a.monthId !== b.monthId) {
-    return a.monthId.localeCompare(b.monthId);
+  return durationMinutes;
+}
+
+function createWindow(
+  schema: CalendarSchema,
+  start: CalendarTimestamp,
+  durationMinutes: number,
+): { start: CalendarTimestamp; end: CalendarTimestamp; durationMinutes: number } {
+  const duration = Math.max(0, durationMinutes);
+  if (duration === 0) {
+    return { start, end: start, durationMinutes: 0 };
   }
-  if (a.day !== b.day) {
-    return a.day - b.day;
-  }
-  if ((a.hour ?? 0) !== (b.hour ?? 0)) {
-    return (a.hour ?? 0) - (b.hour ?? 0);
-  }
-  return (a.minute ?? 0) - (b.minute ?? 0);
+  const end = advanceTime(schema, start, duration, 'minute').timestamp;
+  return { start, end, durationMinutes: duration };
 }
