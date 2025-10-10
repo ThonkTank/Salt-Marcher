@@ -2,13 +2,10 @@
 // Stellt die Encounter-Oberfläche für das Zentrumspanel bereit.
 import type { EncounterPresenter, EncounterViewState } from "./presenter";
 import type { EncounterRuleModifierType, EncounterRuleScope } from "./session-store";
-import { EncounterSessionView } from "./session-view";
 
 export class EncounterWorkspaceView {
     private readonly containerEl: HTMLElement;
     private presenter: EncounterPresenter | null = null;
-
-    private sessionView: EncounterSessionView | null = null;
 
     private xpInputEl!: HTMLInputElement;
     private xpErrorEl!: HTMLDivElement;
@@ -47,8 +44,6 @@ export class EncounterWorkspaceView {
     }
 
     unmount() {
-        this.sessionView?.unmount();
-        this.sessionView = null;
         this.containerEl.empty();
         this.containerEl.removeClass("sm-encounter-view");
         this.presenter = null;
@@ -60,7 +55,6 @@ export class EncounterWorkspaceView {
 
     render(state: EncounterViewState) {
         const session = state.session ?? null;
-        this.sessionView?.render(session);
         this.renderParty(state);
         this.renderRules(state);
         this.renderResults(state);
@@ -167,8 +161,6 @@ export class EncounterWorkspaceView {
 
         const layoutEl = this.containerEl.createDiv({ cls: "sm-encounter-columns" });
         const leftColumn = layoutEl.createDiv({ cls: "sm-encounter-column" });
-        this.sessionView = new EncounterSessionView(leftColumn);
-        this.sessionView.mount();
 
         const partySection = createSection(leftColumn, "sm-encounter-party");
         partySection.createEl("h3", { cls: "sm-encounter-section-title", text: "Party" });
