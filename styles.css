@@ -551,9 +551,27 @@
     min-width: 110px;
 }
 
-.sm-encounter-rule-value {
-    flex: 0 1 110px;
-    min-width: 100px;
+.sm-encounter-rule-range {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex: 0 1 210px;
+    min-width: 160px;
+}
+
+.sm-encounter-rule-range-input {
+    flex: 1 1 0;
+    min-width: 60px;
+}
+
+.sm-encounter-rule-range-separator {
+    color: var(--text-muted);
+}
+
+.sm-encounter-rule-range-result {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    white-space: nowrap;
 }
 
 .sm-encounter-rule-type {

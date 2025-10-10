@@ -64,7 +64,9 @@ interface EncounterXpRule {
   id: string;
   title: string;
   modifierType: EncounterRuleModifierType;
-  modifierValue: number; // Prozentwert oder fixer Wert je nach Typ
+  modifierValue: number; // Gerollter Wert innerhalb der definierten Spanne
+  modifierValueMin: number; // Untergrenze für Zufallswürfe
+  modifierValueMax: number; // Obergrenze für Zufallswürfe
   enabled: boolean;
   notes?: string;
 }

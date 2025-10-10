@@ -49,6 +49,8 @@ export interface EncounterXpRule {
     readonly title: string;
     readonly modifierType: EncounterRuleModifierType;
     readonly modifierValue: number;
+    readonly modifierValueMin: number;
+    readonly modifierValueMax: number;
     readonly enabled: boolean;
     readonly scope: EncounterRuleScope;
     readonly notes?: string;
