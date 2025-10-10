@@ -6,7 +6,7 @@
 # Aktueller Stand
 ## Strukturüberblick
 - `travel-guide.ts` erstellt Sidebar, Route-/Token-Layer sowie Travel-Logik, synchronisiert UI-State und koppelt Encounter-Sync an die Modus-Lifecycle-Hooks.
-- `travel-guide/encounter-gateway.ts` lädt Encounter-View-Module on demand, baut Events aus dem Travel-Zustand und öffnet die Encounter-Ansicht im rechten Leaf.
+- `travel-guide/encounter-gateway.ts` lädt Encounter-View-Module on demand, baut Events aus dem Travel-Zustand und öffnet die Encounter-Ansicht im mittleren Leaf.
 - `travel-guide/interaction-controller.ts` verbindet Route- und Token-Layer mit Drag-/Context-Menu-Logik, damit Dots, Token und Encounter-Kontextmenüs interaktiv bleiben.
 - `travel-guide/playback-controller.ts` mountet die Playback-Controls im Sidebar-Host und hält Route-, Tempo- und Uhrzeit-Anzeige synchron.
 
