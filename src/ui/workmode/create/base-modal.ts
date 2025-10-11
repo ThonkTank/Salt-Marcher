@@ -1,6 +1,6 @@
-// src/apps/library/create/shared/base-modal.ts
-// Base class for simple create/edit modals (Spell, Item, Equipment)
-import { App, Modal, Setting } from "obsidian";
+// src/ui/workmode/create/base-modal.ts
+// Base class for workmode create/edit modals shared across apps
+import { App, Modal, Setting, Notice, type ButtonComponent } from "obsidian";
 import { createFormCard } from "./layouts";
 import type { FormCardHandles } from "./layouts";
 
@@ -12,7 +12,38 @@ export interface SectionDefinition {
     mount: (handles: FormCardHandles) => void;
 }
 
-export interface BaseModalConfig<TData> {
+export interface CreatePipelineContext<TDraft> {
+    /** Current Obsidian app instance */
+    app: App;
+    /** Draft data currently managed by the modal */
+    draft: TDraft;
+}
+
+export interface CreateModalPipeline<TDraft, TSerialized = TDraft, TResult = void> {
+    /**
+     * Transform the draft data into the serialized payload that should be persisted.
+     * Can be synchronous or asynchronous depending on the data preparation needs.
+     */
+    serialize: (draft: TDraft) => TSerialized | Promise<TSerialized>;
+    /**
+     * Persist the serialized payload (e.g. write a file or update a database).
+     * Receives the serialization result together with basic modal context.
+     */
+    persist: (
+        payload: TSerialized,
+        context: CreatePipelineContext<TDraft>
+    ) => Promise<TResult> | TResult;
+    /**
+     * Optional hook that is invoked after persistence succeeded.
+     * Useful for triggering reloads or opening newly created files.
+     */
+    onComplete?: (
+        result: TResult,
+        context: CreatePipelineContext<TDraft> & { serialized: TSerialized }
+    ) => Promise<void> | void;
+}
+
+export interface BaseModalConfig<TData, TSerialized = TData, TResult = void> {
     /** Title for the modal */
     title: string;
     /** Subtitle for the modal (optional) */
@@ -29,6 +60,18 @@ export interface BaseModalConfig<TData> {
     enableNavigation?: boolean;
     /** Sections for navigation layout (requires enableNavigation=true) */
     sections?: SectionDefinition[];
+    /** Optional hook to initialize the draft data */
+    initialize?: (
+        input: string | TData | undefined,
+        helpers: {
+            createDefault: (name: string) => TData;
+            clone: (data: TData) => TData;
+        }
+    ) => TData;
+    /** Optional legacy submit handler (used when no pipeline is supplied) */
+    onSubmit?: (data: TData) => Promise<void> | void;
+    /** Create/persist pipeline used by shared dialogs */
+    pipeline?: CreateModalPipeline<TData, TSerialized, TResult>;
 }
 
 /**
@@ -41,10 +84,13 @@ export interface BaseModalConfig<TData> {
  * - Set enableNavigation=true and provide sections array
  * - Use registerValidator() to add validators from sections
  */
-export abstract class BaseCreateModal<TData extends { name: string }> extends Modal {
+export abstract class BaseCreateModal<
+    TData extends { name: string },
+    TSerialized = TData,
+    TResult = void
+> extends Modal {
     protected data: TData;
-    protected onSubmit: (data: TData) => void;
-    protected config: BaseModalConfig<TData>;
+    protected config: BaseModalConfig<TData, TSerialized, TResult>;
     protected validationEl: HTMLElement | null = null;
     protected validationIssues: string[] = [];
 
@@ -56,14 +102,17 @@ export abstract class BaseCreateModal<TData extends { name: string }> extends Mo
     // Background pointer lock
     private bgLock: { el: HTMLElement; pointer: string } | null = null;
 
+    // Submission state
+    private submitButton: ButtonComponent | null = null;
+    private cancelButton: ButtonComponent | null = null;
+    private isSubmitting = false;
+
     constructor(
         app: App,
         presetOrName: string | TData | undefined,
-        onSubmit: (data: TData) => void,
-        config: BaseModalConfig<TData>
+        config: BaseModalConfig<TData, TSerialized, TResult>
     ) {
         super(app);
-        this.onSubmit = onSubmit;
         this.config = config;
         this.data = this.initializeData(presetOrName);
     }
@@ -73,6 +122,12 @@ export abstract class BaseCreateModal<TData extends { name: string }> extends Mo
      * Subclasses can override to add type-specific defaults.
      */
     protected initializeData(presetOrName: string | TData | undefined): TData {
+        if (this.config.initialize) {
+            return this.config.initialize(presetOrName, {
+                createDefault: (name: string) => this.createDefault(name),
+                clone: (data: TData) => this.cloneData(data),
+            });
+        }
         if (typeof presetOrName === 'string') {
             return this.createDefault(presetOrName?.trim() || this.config.defaultName);
         } else if (presetOrName && typeof presetOrName === 'object') {
@@ -140,7 +195,7 @@ export abstract class BaseCreateModal<TData extends { name: string }> extends Mo
         this.scope.register([], "Enter", (evt) => {
             // Only submit if not in a textarea
             if (!(evt.target instanceof HTMLTextAreaElement)) {
-                this.submit();
+                void this.submit();
             }
         });
     }
@@ -252,21 +307,28 @@ export abstract class BaseCreateModal<TData extends { name: string }> extends Mo
         const buttons = new Setting(container);
 
         buttons.addButton(btn => {
+            this.cancelButton = btn;
             btn.setButtonText(this.config.cancelButtonText || "Abbrechen")
-                .onClick(() => this.close());
+                .onClick(() => {
+                    if (this.isSubmitting) return;
+                    this.close();
+                });
         });
 
         buttons.addButton(btn => {
+            this.submitButton = btn;
             btn.setButtonText(this.config.submitButtonText || "Erstellen")
                 .setCta()
-                .onClick(() => this.submit());
+                .onClick(() => void this.submit());
         });
     }
 
     /**
      * Validate and submit the form.
      */
-    protected submit(): void {
+    protected async submit(): Promise<void> {
+        if (this.isSubmitting) return;
+
         // Run all validators (for navigation mode)
         const validatorIssues = this.runValidators();
 
@@ -300,9 +362,43 @@ export abstract class BaseCreateModal<TData extends { name: string }> extends Mo
         // Clear validation display
         this.clearValidationErrors();
 
-        // Submit and close
-        this.onSubmit(this.data);
-        this.close();
+        const pipeline = this.config.pipeline;
+        const fallback = this.config.onSubmit;
+
+        if (!pipeline && !fallback) {
+            console.warn("BaseCreateModal submit called without pipeline or onSubmit handler.");
+            this.close();
+            return;
+        }
+
+        this.setButtonsDisabled(true);
+        this.isSubmitting = true;
+
+        try {
+            if (pipeline) {
+                const serialized = await pipeline.serialize(this.data);
+                const result = await pipeline.persist(serialized, {
+                    app: this.app,
+                    draft: this.data,
+                });
+                if (pipeline.onComplete) {
+                    await pipeline.onComplete(result, {
+                        app: this.app,
+                        draft: this.data,
+                        serialized,
+                    });
+                }
+            } else if (fallback) {
+                await fallback(this.data);
+            }
+            this.close();
+        } catch (error) {
+            console.error("Failed to submit create modal", error);
+            this.handleSubmissionError(error);
+        } finally {
+            this.isSubmitting = false;
+            this.setButtonsDisabled(false);
+        }
     }
 
     /**
@@ -368,6 +464,9 @@ export abstract class BaseCreateModal<TData extends { name: string }> extends Mo
         this.restoreBackgroundPointer();
 
         this.contentEl.empty();
+        this.submitButton = null;
+        this.cancelButton = null;
+        this.isSubmitting = false;
     }
 
     /**
@@ -387,6 +486,20 @@ export abstract class BaseCreateModal<TData extends { name: string }> extends Mo
             collected.push(...validator());
         }
         return collected;
+    }
+
+    private setButtonsDisabled(disabled: boolean): void {
+        this.submitButton?.setDisabled(disabled);
+        this.cancelButton?.setDisabled(disabled);
+    }
+
+    private handleSubmissionError(error: unknown): void {
+        const message = error instanceof Error ? error.message : String(error ?? "Unbekannter Fehler");
+        if (!this.config.enableNavigation && this.validationEl) {
+            this.showValidationErrors([message]);
+        } else {
+            new Notice(`Fehler beim Speichern: ${message}`);
+        }
     }
 
     /**

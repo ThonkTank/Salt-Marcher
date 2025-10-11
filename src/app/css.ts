@@ -335,6 +335,8 @@ const editorLayoutsCss = `
 .sm-cc-field-grid--classification { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
 .sm-cc-field-grid--vitals { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 .sm-cc-field-grid--speeds { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.sm-cc-field-grid--irregular { grid-template-columns: initial; }
+.sm-cc-repeating-grid { display: grid; gap: .75rem; align-items: stretch; }
 .sm-cc-setting.setting-item {
     border: none;
     padding: 0;
@@ -486,6 +488,7 @@ const editorLayoutsCss = `
 }
 .sm-cc-grid__row { display: contents; }
 .sm-cc-grid__save { display: flex; align-items: center; gap: .35rem; }
+.sm-cc-component-grid { display: grid; grid-template-columns: repeat(6, max-content); gap: .35rem .5rem; align-items: center; }
 
 .sm-cc-skills { margin-top: .5rem; }
 .sm-cc-skill-group { border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: .5rem; margin: .35rem 0; }
@@ -493,7 +496,7 @@ const editorLayoutsCss = `
 .sm-cc-skill { display: grid; grid-template-columns: 1fr max-content max-content; gap: .5rem; align-items: center; margin: .15rem 0; }
 
 .sm-cc-chips { display:flex; gap:.4rem; flex-wrap:wrap; margin:.35rem 0 .6rem; }
-.sm-cc-chip {
+.sm-cc-chip { 
     display:inline-flex;
     align-items:center;
     gap:.3rem;
@@ -504,6 +507,18 @@ const editorLayoutsCss = `
     font-size:.85em;
     color: var(--text-muted);
     box-shadow:0 3px 8px rgba(15,23,42,.04);
+}
+.sm-cc-tag-actions {
+    display: flex;
+    margin-top: .5rem;
+}
+.sm-cc-tag-actions button {
+    border: 1px dashed var(--background-modifier-border);
+    border-radius: 8px;
+    background: transparent;
+    padding: .35rem .75rem;
+    cursor: pointer;
+    font-weight: 600;
 }
 .sm-cc-damage-row { align-items:center; }
 .sm-cc-damage-type { display:inline-flex; align-items:center; gap:.35rem; flex-wrap:wrap; justify-content:flex-start; }
@@ -1244,6 +1259,10 @@ const editorLayoutsCss = `
     display: flex;
     flex-wrap: wrap;
     gap: .5rem;
+}
+.sm-cc-entry-host {
+    display: flex;
+    flex-direction: column;
 }
 .sm-cc-entry-add-btn {
     border: 1px solid var(--background-modifier-border);

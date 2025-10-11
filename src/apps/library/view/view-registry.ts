@@ -1,6 +1,6 @@
 // src/apps/library/view/view-registry.ts
 // Definiert View-Konfigurationen für alle Library-Modi (Metadaten-Anzeige, Aktionen, Layout).
-import type { App, TFile } from "obsidian";
+import type { App } from "obsidian";
 import type { FilterableLibraryMode, LibraryEntry } from "../core/data-sources";
 import { loadCreaturePreset } from "../core/creature-presets";
 import { createCreatureFile, type StatblockData } from "../core/creature-files";
@@ -12,30 +12,23 @@ import { CreateSpellModal } from "../create";
 import { CreateItemModal } from "../create";
 import { CreateEquipmentModal } from "../create/equipment";
 import { formatSpellLevel } from "./filter-registry";
+import type { WorkmodeTileMetadata, WorkmodeTileAction } from "../../../ui/workmode/list-renderer";
 
-export interface MetadataField<M extends FilterableLibraryMode> {
-    readonly id: string;
-    readonly cls: string;
-    readonly getValue: (entry: LibraryEntry<M>) => string | undefined;
-}
+export type MetadataField<M extends FilterableLibraryMode> = WorkmodeTileMetadata<LibraryEntry<M>>;
 
-export interface ActionDefinition<M extends FilterableLibraryMode> {
-    readonly id: string;
-    readonly label: string;
-    readonly cls?: string;
-    readonly execute: (app: App, entry: LibraryEntry<M>, context: ActionContext<M>) => Promise<void>;
-}
-
-export interface ActionContext<M extends FilterableLibraryMode> {
+export interface LibraryActionContext<M extends FilterableLibraryMode> {
+    readonly app: App;
     reloadEntries: () => Promise<void>;
     getRenderer: () => LibraryViewConfig<M>;
     getFilterSelection?: (id: string) => string | undefined;
 }
 
+export type ActionDefinition<M extends FilterableLibraryMode> = WorkmodeTileAction<LibraryEntry<M>, LibraryActionContext<M>>;
+
 export interface LibraryViewConfig<M extends FilterableLibraryMode> {
     readonly metadataFields: MetadataField<M>[];
     readonly actions: ActionDefinition<M>[];
-    readonly handleCreate: (app: App, name: string, context: ActionContext<M>) => Promise<void>;
+    readonly handleCreate: (context: LibraryActionContext<M>, name: string) => Promise<void>;
 }
 
 export type LibraryViewConfigMap = {
@@ -50,8 +43,8 @@ function createOpenAction<M extends FilterableLibraryMode>(): ActionDefinition<M
     return {
         id: "open",
         label: "Open",
-        execute: async (app, entry) => {
-            await app.workspace.openLinkText(entry.file.path, entry.file.path, true);
+        execute: async (entry, context) => {
+            await context.app.workspace.openLinkText(entry.file.path, entry.file.path, true);
         },
     };
 }
@@ -60,14 +53,14 @@ function createDeleteAction<M extends FilterableLibraryMode>(typeName: string): 
     return {
         id: "delete",
         label: "Delete",
-        execute: async (app, entry, context) => {
+        execute: async (entry, context) => {
             const question = `Delete ${entry.name}? This moves the file to the trash.`;
             const confirmation = typeof window !== "undefined" && typeof window.confirm === "function"
                 ? window.confirm(question)
                 : true;
             if (!confirmation) return;
             try {
-                await app.vault.trash(entry.file, true);
+                await context.app.vault.trash(entry.file, true);
                 await context.reloadEntries();
             } catch (err) {
                 console.error(`Failed to delete ${typeName}`, err);
@@ -98,14 +91,23 @@ const creaturesActions: ActionDefinition<"creatures">[] = [
     {
         id: "edit",
         label: "Edit",
-        execute: async (app, entry, context) => {
+        execute: async (entry, context) => {
+            const { app } = context;
             try {
                 const creatureData = await loadCreaturePreset(app, entry.file);
-                new CreateCreatureModal(app, creatureData.name, async (data) => {
-                    const file = await createCreatureFile(app, data);
-                    await context.reloadEntries();
-                    await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
-                }, creatureData).open();
+                new CreateCreatureModal(app, creatureData.name, {
+                    preset: creatureData,
+                    pipeline: {
+                        serialize: (draft) => draft,
+                        persist: async (payload) => createCreatureFile(app, payload),
+                        onComplete: async (file) => {
+                            await context.reloadEntries();
+                            if (file) {
+                                await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
+                            }
+                        },
+                    },
+                }).open();
             } catch (err) {
                 console.error("Failed to load creature for editing", err);
             }
@@ -136,13 +138,21 @@ const spellsActions: ActionDefinition<"spells">[] = [
     {
         id: "edit",
         label: "Edit",
-        execute: async (app, entry, context) => {
+        execute: async (entry, context) => {
+            const { app } = context;
             try {
                 const spellData = await loadSpellFile(app, entry.file);
-                new CreateSpellModal(app, spellData, async (data) => {
-                    const content = spellToMarkdown(data);
-                    await app.vault.modify(entry.file, content);
-                    await context.reloadEntries();
+                new CreateSpellModal(app, spellData, {
+                    pipeline: {
+                        serialize: (draft) => spellToMarkdown(draft),
+                        persist: async (content) => {
+                            await app.vault.modify(entry.file, content);
+                            return entry.file;
+                        },
+                        onComplete: async () => {
+                            await context.reloadEntries();
+                        },
+                    },
                 }).open();
             } catch (err) {
                 console.error("Failed to load spell for editing", err);
@@ -174,14 +184,22 @@ const itemsActions: ActionDefinition<"items">[] = [
     {
         id: "edit",
         label: "Edit",
-        execute: async (app, entry, context) => {
+        execute: async (entry, context) => {
+            const { app } = context;
             try {
                 const itemData = await loadItemFile(app, entry.file);
-                new CreateItemModal(app, itemData, async (updatedData) => {
-                    const newContent = itemToMarkdown(updatedData);
-                    await app.vault.modify(entry.file, newContent);
-                    await context.reloadEntries();
-                    await app.workspace.openLinkText(entry.file.path, entry.file.path, true, { state: { mode: "source" } });
+                new CreateItemModal(app, itemData, {
+                    pipeline: {
+                        serialize: (draft) => itemToMarkdown(draft),
+                        persist: async (content) => {
+                            await app.vault.modify(entry.file, content);
+                            return entry.file;
+                        },
+                        onComplete: async () => {
+                            await context.reloadEntries();
+                            await app.workspace.openLinkText(entry.file.path, entry.file.path, true, { state: { mode: "source" } });
+                        },
+                    },
                 }).open();
             } catch (err) {
                 console.error("Failed to edit item", err);
@@ -213,14 +231,22 @@ const equipmentActions: ActionDefinition<"equipment">[] = [
     {
         id: "edit",
         label: "Edit",
-        execute: async (app, entry, context) => {
+        execute: async (entry, context) => {
+            const { app } = context;
             try {
                 const equipmentData = await loadEquipmentFile(app, entry.file);
-                new CreateEquipmentModal(app, equipmentData, async (updatedData) => {
-                    const newContent = equipmentToMarkdown(updatedData);
-                    await app.vault.modify(entry.file, newContent);
-                    await context.reloadEntries();
-                    await app.workspace.openLinkText(entry.file.path, entry.file.path, true, { state: { mode: "source" } });
+                new CreateEquipmentModal(app, equipmentData, {
+                    pipeline: {
+                        serialize: (draft) => equipmentToMarkdown(draft),
+                        persist: async (content) => {
+                            await app.vault.modify(entry.file, content);
+                            return entry.file;
+                        },
+                        onComplete: async () => {
+                            await context.reloadEntries();
+                            await app.workspace.openLinkText(entry.file.path, entry.file.path, true, { state: { mode: "source" } });
+                        },
+                    },
                 }).open();
             } catch (err) {
                 console.error("Failed to edit equipment", err);
@@ -238,18 +264,27 @@ export const LIBRARY_VIEW_CONFIGS: LibraryViewConfigMap = {
     creatures: {
         metadataFields: creaturesMetadata,
         actions: creaturesActions,
-        handleCreate: async (app, name, context) => {
-            new CreateCreatureModal(app, name, async (data) => {
-                const file = await createCreatureFile(app, data);
-                await context.reloadEntries();
-                await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
-            }, undefined).open();
+        handleCreate: async (context, name) => {
+            const { app } = context;
+            new CreateCreatureModal(app, name, {
+                pipeline: {
+                    serialize: (draft) => draft,
+                    persist: async (payload) => createCreatureFile(app, payload),
+                    onComplete: async (file) => {
+                        await context.reloadEntries();
+                        if (file) {
+                            await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
+                        }
+                    },
+                },
+            }).open();
         },
     },
     spells: {
         metadataFields: spellsMetadata,
         actions: spellsActions,
-        handleCreate: async (app, name, context) => {
+        handleCreate: async (context, name) => {
+            const { app } = context;
             const trimmed = name.trim();
             const preset: SpellData = { name: trimmed || "Neuer Zauber" };
 
@@ -266,32 +301,55 @@ export const LIBRARY_VIEW_CONFIGS: LibraryViewConfigMap = {
                 if (ritualFilter === "false") preset.ritual = false;
             }
 
-            new CreateSpellModal(app, preset, async (data) => {
-                const file = await createSpellFile(app, data);
-                await context.reloadEntries();
-                await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
+            new CreateSpellModal(app, preset, {
+                pipeline: {
+                    serialize: (draft) => draft,
+                    persist: async (payload) => createSpellFile(app, payload),
+                    onComplete: async (file) => {
+                        await context.reloadEntries();
+                        if (file) {
+                            await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
+                        }
+                    },
+                },
             }).open();
         },
     },
     items: {
         metadataFields: itemsMetadata,
         actions: itemsActions,
-        handleCreate: async (app, name, context) => {
-            new CreateItemModal(app, name, async (data) => {
-                const file = await createItemFile(app, data);
-                await context.reloadEntries();
-                await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
+        handleCreate: async (context, name) => {
+            const { app } = context;
+            new CreateItemModal(app, name, {
+                pipeline: {
+                    serialize: (draft) => draft,
+                    persist: async (payload) => createItemFile(app, payload),
+                    onComplete: async (file) => {
+                        await context.reloadEntries();
+                        if (file) {
+                            await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
+                        }
+                    },
+                },
             }).open();
         },
     },
     equipment: {
         metadataFields: equipmentMetadata,
         actions: equipmentActions,
-        handleCreate: async (app, name, context) => {
-            new CreateEquipmentModal(app, name, async (data) => {
-                const file = await createEquipmentFile(app, data);
-                await context.reloadEntries();
-                await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
+        handleCreate: async (context, name) => {
+            const { app } = context;
+            new CreateEquipmentModal(app, name, {
+                pipeline: {
+                    serialize: (draft) => draft,
+                    persist: async (payload) => createEquipmentFile(app, payload),
+                    onComplete: async (file) => {
+                        await context.reloadEntries();
+                        if (file) {
+                            await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
+                        }
+                    },
+                },
             }).open();
         },
     },

@@ -1,11 +1,12 @@
 # Ziele
-- Enthält gemeinsame Eingabekomponenten für alle Library-Editoren.
+- Enthält creature-spezifische Shared-Komponenten für die Library-Editoren.
 
 # Aktueller Stand
-- `stat-utils` berechnet Wertebereiche, `token-editor` pflegt Token-Grafiken.
+- `stat-utils` berechnet Wertebereiche, `creature-controls` kapselt Preset-/Resistenz-Editoren.
+- Dialog-Grundgerüst, Form-Controls und Token-Editor liegen jetzt unter `src/ui/workmode/create/`.
 
 # ToDo
-- [P4.4] Token-Editor um Drag&Drop-Upload erweitern.
+- [P4.4] Token-Editor um Drag&Drop-Upload erweitern (siehe neues Shared-Modul in `src/ui/workmode/create/`).
 
 # Standards
 - Shared-Dateien erläutern, welche Editoren sie beliefern.

@@ -1,21 +1,14 @@
 // src/apps/library/view/filter-registry.ts
 // Deklariert Filter-, Sortier- und Suchschemata für alle filterbaren Library-Ansichten.
 import type { LibraryEntry, FilterableLibraryMode } from "../core/data-sources";
+import type {
+    FilterDefinition as BaseFilterDefinition,
+    SortDefinition as BaseSortDefinition,
+} from "../../../ui/workmode/filter-controls";
 
-export interface FilterDefinition<M extends FilterableLibraryMode> {
-    readonly id: string;
-    readonly label: string;
-    readonly getValues: (entry: LibraryEntry<M>) => readonly (string | null | undefined)[];
-    readonly sortComparator?: (a: string, b: string) => number;
-    readonly formatOption?: (value: string) => string;
-    readonly emptyLabel?: string;
-}
+export type FilterDefinition<M extends FilterableLibraryMode> = BaseFilterDefinition<LibraryEntry<M>>;
 
-export interface SortDefinition<M extends FilterableLibraryMode> {
-    readonly id: string;
-    readonly label: string;
-    readonly compare: (a: LibraryEntry<M>, b: LibraryEntry<M>) => number;
-}
+export type SortDefinition<M extends FilterableLibraryMode> = BaseSortDefinition<LibraryEntry<M>>;
 
 export interface LibraryListSchema<M extends FilterableLibraryMode> {
     readonly filters: FilterDefinition<M>[];

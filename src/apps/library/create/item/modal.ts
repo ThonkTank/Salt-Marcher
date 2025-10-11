@@ -3,15 +3,25 @@ import { App, Setting } from "obsidian";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import type { ItemData } from "../../core/item-files";
 import { collectItemValidationIssues } from "./validation";
-import { BaseCreateModal } from "../shared/base-modal";
+import { BaseCreateModal, type CreateModalPipeline } from "../../../../ui/workmode/create";
 
-export class CreateItemModal extends BaseCreateModal<ItemData> {
-    constructor(app: App, presetNameOrData: string | ItemData | undefined, onSubmit: (d: ItemData) => void) {
-        super(app, presetNameOrData, onSubmit, {
+export interface ItemModalOptions<TSerialized = unknown, TResult = unknown> {
+    pipeline?: CreateModalPipeline<ItemData, TSerialized, TResult>;
+    onSubmit?: (data: ItemData) => Promise<void> | void;
+}
+
+export class CreateItemModal<
+    TSerialized = unknown,
+    TResult = unknown
+> extends BaseCreateModal<ItemData, TSerialized, TResult> {
+    constructor(app: App, presetNameOrData: string | ItemData | undefined, options: ItemModalOptions<TSerialized, TResult>) {
+        super(app, presetNameOrData, {
             title: "Create New Item",
             defaultName: "New Item",
             validate: collectItemValidationIssues,
             submitButtonText: "Create Item",
+            pipeline: options.pipeline,
+            onSubmit: options.onSubmit,
         });
     }
 

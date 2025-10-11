@@ -1,19 +1,28 @@
 // src/apps/library/create/spell/modal.ts
 import { App, Setting } from "obsidian";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
-import { mountTokenEditor } from "../shared/token-editor";
 import type { SpellData } from "../../core/spell-files";
 import { collectSpellScalingIssues } from "./validation";
-import { BaseCreateModal } from "../shared/base-modal";
+import { BaseCreateModal, createIrregularGrid, mountTokenEditor, type CreateModalPipeline } from "../../../../ui/workmode/create";
 
-export class CreateSpellModal extends BaseCreateModal<SpellData> {
+export interface SpellModalOptions<TSerialized = unknown, TResult = unknown> {
+    pipeline?: CreateModalPipeline<SpellData, TSerialized, TResult>;
+    onSubmit?: (data: SpellData) => Promise<void> | void;
+}
+
+export class CreateSpellModal<
+    TSerialized = unknown,
+    TResult = unknown
+> extends BaseCreateModal<SpellData, TSerialized, TResult> {
     private runScalingValidation: (() => void) | null = null;
 
-    constructor(app: App, preset: string | SpellData | undefined, onSubmit: (d: SpellData) => void) {
-        super(app, preset, onSubmit, {
+    constructor(app: App, preset: string | SpellData | undefined, options: SpellModalOptions<TSerialized, TResult>) {
+        super(app, preset, {
             title: "Neuen Zauber erstellen",
             defaultName: "Neuer Zauber",
             submitButtonText: "Erstellen",
+            pipeline: options.pipeline,
+            onSubmit: options.onSubmit,
         });
     }
 
@@ -79,10 +88,12 @@ export class CreateSpellModal extends BaseCreateModal<SpellData> {
             const arr: string[] = []; if (cV) arr.push("V"); if (cS) arr.push("S"); if (cM) arr.push("M");
             this.data.components = arr;
         };
-        comps.controlEl.style.display = 'grid';
-        comps.controlEl.style.gridTemplateColumns = 'repeat(6, max-content)';
+        const componentGrid = createIrregularGrid(comps.controlEl, {
+            columns: ["max-content", "max-content", "max-content", "max-content", "max-content", "max-content"],
+            className: "sm-cc-component-grid",
+        });
         const mkCb = (label: string, on: (v: boolean) => void, initial: boolean) => {
-            const wrap = comps.controlEl.createDiv({ cls: "sm-cc-grid__save" });
+            const wrap = componentGrid.createCell("sm-cc-grid__save");
             const cb = wrap.createEl("input", { attr: { type: "checkbox" } }) as HTMLInputElement;
             wrap.createEl("label", { text: label });
             cb.checked = initial;
@@ -177,12 +188,12 @@ export class CreateSpellModal extends BaseCreateModal<SpellData> {
         this.runScalingValidation();
     }
 
-    protected submit(): void {
+    protected async submit(): Promise<void> {
         // Run scaling validation
         const scalingIssues = this.runScalingValidation?.() ?? [];
         if (scalingIssues.length > 0) return;
 
         // Delegate to base class for standard validation and submit
-        super.submit();
+        await super.submit();
     }
 }

@@ -1,8 +1,14 @@
 // src/apps/library/create/creature/components/entry-card.ts
 // Reusable components for Entry Cards in Creature Creator with dynamic component system
 
-import { createTextInput, createSelectDropdown, createTextArea, createNumberInput } from "../../shared/form-controls";
-import { EntryAutoCalculator } from "../../shared/auto-calc";
+import {
+  createNumberInput,
+  createSelectDropdown,
+  createTextArea,
+  createTextInput,
+  type EntryCardConfigFactory,
+  type EntryCardContentOptions,
+} from "../../../../../ui/workmode/create";
 import type { CreatureEntry, SpellGroup } from "../entry-model";
 import { inferEntryType, type EntryType } from "../entry-model";
 import type { StatblockData } from "../../../core/creature-files";
@@ -115,22 +121,6 @@ export interface UsesComponentData {
  */
 export interface CreatureEntryWithComponents extends CreatureEntry {
   components?: EntryComponent[];
-}
-
-/**
- * Options for creating an entry card
- */
-export interface EntryCardOptions {
-  entry: CreatureEntryWithComponents;
-  index: number;
-  data: StatblockData;
-  onDelete: () => void;
-  onUpdate: () => void;
-  onMoveUp?: () => void;
-  onMoveDown?: () => void;
-  canMoveUp?: boolean;
-  canMoveDown?: boolean;
-  shouldFocus?: boolean;
 }
 
 /**
@@ -1187,181 +1177,145 @@ export function createSpellcastingSection(
   renderAllGroups();
 }
 
-/**
- * Creates a complete entry card with all sections
- */
-export function createEntryCard(
-  parent: HTMLElement,
-  options: EntryCardOptions
-): HTMLDivElement {
-  const { entry, index, data, onDelete, onMoveUp, onMoveDown, canMoveUp, canMoveDown, onUpdate, shouldFocus } = options;
+export function createCreatureEntryCardConfig(
+  data: StatblockData
+): EntryCardConfigFactory<CreatureEntryWithComponents> {
+  return (context) => {
+    const entry = context.entry;
+    const currentType = inferEntryType(entry);
+    const categoryText = entry.category || "action";
+    const handleUpdate = () => context.requestRender();
 
-  // Infer the current entry type
-  const currentType = inferEntryType(entry);
+    const config: EntryCardContentOptions<CreatureEntryWithComponents> = {
+      type: currentType,
+      badge: { text: categoryText.toUpperCase(), variant: categoryText },
+      nameBoxClassName: "sm-preset-box",
+      shouldFocus: context.shouldFocus,
+      actions: {
+        remove: context.remove,
+        moveUp: context.moveUp,
+        moveDown: context.moveDown,
+        canMoveUp: context.canMoveUp,
+        canMoveDown: context.canMoveDown,
+        deleteLabel: "×",
+        deleteAriaLabel: "Delete Entry",
+        moveUpAriaLabel: "Move Up",
+        moveDownAriaLabel: "Move Down",
+      },
+      renderName: (nameBox) => {
+        const nameInput = createTextInput(nameBox, {
+          className: "sm-cc-entry-name sm-preset-input",
+          placeholder: "Entry Name",
+          ariaLabel: "Entry Name",
+          value: entry.name || "",
+          onInput: (value) => {
+            entry.name = value;
+            handleUpdate();
+          },
+        });
 
-  const card = parent.createDiv({
-    cls: `sm-cc-entry-card sm-cc-entry-card--type-${currentType}`,
-  });
+        let presetMenu: HTMLElement | null = null;
+        let selectedPresetIndex = -1;
 
-  // === Header ===
-  const head = card.createDiv({ cls: "sm-cc-entry-head" });
+        const hidePresetMenu = () => {
+          nameBox.removeClass("is-open");
+          selectedPresetIndex = -1;
+        };
 
-  // Category badge
-  const categoryText = entry.category || "action";
-  const badge = head.createEl("span", {
-    cls: `sm-cc-entry-badge sm-cc-entry-badge--${categoryText}`,
-    text: categoryText.toUpperCase(),
-  });
+        const applyPreset = (preset: EntryPreset) => {
+          entry.name = preset.name;
+          if (preset.text !== undefined) entry.text = preset.text;
+          if (preset.to_hit !== undefined) entry.to_hit = preset.to_hit;
+          if (preset.reach !== undefined) entry.reach = preset.reach;
+          if (preset.target !== undefined) entry.target = preset.target;
+          if (preset.damage !== undefined) entry.damage = preset.damage;
+          if (preset.save_ability !== undefined) entry.save_ability = preset.save_ability;
+          if (preset.save_dc !== undefined) entry.save_dc = preset.save_dc;
+          if (preset.save_effect !== undefined) entry.save_effect = preset.save_effect;
+          if (preset.recharge !== undefined) entry.recharge = preset.recharge;
+          nameInput.value = preset.name;
+          handleUpdate();
+        };
 
-  // Name input with preset support
-  const nameBox = head.createDiv({ cls: "sm-cc-entry-name-box sm-preset-box" });
-  const nameInput = createTextInput(nameBox, {
-    className: "sm-cc-entry-name sm-preset-input",
-    placeholder: "Entry Name",
-    ariaLabel: "Entry Name",
-    value: entry.name || "",
-    onInput: (value) => {
-      entry.name = value;
-      onUpdate();
-    },
-  });
+        const showPresetMenu = (query: string) => {
+          const presets = findEntryPresets(query);
+          if (presets.length === 0) {
+            hidePresetMenu();
+            return;
+          }
 
-  if (shouldFocus) {
-    setTimeout(() => nameInput.focus(), 0);
-  }
+          if (!presetMenu) {
+            presetMenu = nameBox.createDiv({ cls: "sm-preset-menu" });
+          }
+          presetMenu.empty();
+          nameBox.addClass("is-open");
 
-  // Simple autocomplete for entry presets
-  let presetMenu: HTMLElement | null = null;
-  let selectedPresetIndex = -1;
+          presets.forEach((preset, idx) => {
+            const item = presetMenu!.createDiv({
+              cls: idx === selectedPresetIndex ? "sm-preset-item is-selected" : "sm-preset-item",
+            });
+            item.textContent = preset.name;
+            item.onclick = () => {
+              applyPreset(preset);
+              hidePresetMenu();
+            };
+          });
+        };
 
-  const showPresetMenu = (query: string) => {
-    const presets = findEntryPresets(query);
-    if (presets.length === 0) {
-      hidePresetMenu();
-      return;
-    }
+        nameInput.addEventListener("input", () => {
+          const query = nameInput.value.trim();
+          if (query.length > 1) {
+            showPresetMenu(query);
+          } else {
+            hidePresetMenu();
+          }
+        });
 
-    if (!presetMenu) {
-      presetMenu = nameBox.createDiv({ cls: "sm-preset-menu" });
-    }
-    presetMenu.empty();
-    nameBox.addClass("is-open");
+        nameInput.addEventListener("keydown", (e: KeyboardEvent) => {
+          if (!presetMenu || !nameBox.hasClass("is-open")) return;
+          const items = presetMenu.querySelectorAll(".sm-preset-item");
+          if (items.length === 0) return;
 
-    presets.forEach((preset, idx) => {
-      const item = presetMenu!.createDiv({
-        cls: idx === selectedPresetIndex ? "sm-preset-item is-selected" : "sm-preset-item",
-      });
-      item.textContent = preset.name;
-      item.onclick = () => {
-        applyPreset(preset);
-        hidePresetMenu();
-      };
-    });
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            selectedPresetIndex = Math.min(selectedPresetIndex + 1, items.length - 1);
+            items.forEach((el, i) => {
+              el.toggleClass("is-selected", i === selectedPresetIndex);
+            });
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            selectedPresetIndex = Math.max(selectedPresetIndex - 1, 0);
+            items.forEach((el, i) => {
+              el.toggleClass("is-selected", i === selectedPresetIndex);
+            });
+          } else if (e.key === "Enter" && selectedPresetIndex >= 0) {
+            e.preventDefault();
+            const presets = findEntryPresets(nameInput.value.trim());
+            if (presets[selectedPresetIndex]) {
+              applyPreset(presets[selectedPresetIndex]);
+              hidePresetMenu();
+            }
+          } else if (e.key === "Escape") {
+            hidePresetMenu();
+          }
+        });
+
+        nameInput.addEventListener("blur", () => {
+          window.setTimeout(() => hidePresetMenu(), 200);
+        });
+
+        return nameInput;
+      },
+      renderBody: (card) => {
+        migrateEntryToComponents(entry);
+        createComponentsSection(card, entry, data, handleUpdate);
+        if (currentType === "spellcasting") {
+          createSpellcastingSection(card, entry, data, handleUpdate);
+        }
+        createDetailsSection(card, entry, handleUpdate);
+      },
+    };
+
+    return config;
   };
-
-  const hidePresetMenu = () => {
-    nameBox.removeClass("is-open");
-    selectedPresetIndex = -1;
-  };
-
-  const applyPreset = (preset: EntryPreset) => {
-    entry.name = preset.name;
-    if (preset.text !== undefined) entry.text = preset.text;
-    if (preset.to_hit !== undefined) entry.to_hit = preset.to_hit;
-    if (preset.reach !== undefined) entry.reach = preset.reach;
-    if (preset.target !== undefined) entry.target = preset.target;
-    if (preset.damage !== undefined) entry.damage = preset.damage;
-    if (preset.save_ability !== undefined) entry.save_ability = preset.save_ability;
-    if (preset.save_dc !== undefined) entry.save_dc = preset.save_dc;
-    if (preset.save_effect !== undefined) entry.save_effect = preset.save_effect;
-    if (preset.recharge !== undefined) entry.recharge = preset.recharge;
-    nameInput.value = preset.name;
-    onUpdate();
-  };
-
-  nameInput.oninput = () => {
-    const query = nameInput.value.trim();
-    if (query.length > 1) {
-      showPresetMenu(query);
-    } else {
-      hidePresetMenu();
-    }
-  };
-
-  nameInput.onkeydown = (e: KeyboardEvent) => {
-    if (!presetMenu || !nameBox.hasClass("is-open")) return;
-    const items = presetMenu.querySelectorAll(".sm-preset-item");
-    if (items.length === 0) return;
-
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      selectedPresetIndex = Math.min(selectedPresetIndex + 1, items.length - 1);
-      items.forEach((el, i) => {
-        el.toggleClass("is-selected", i === selectedPresetIndex);
-      });
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      selectedPresetIndex = Math.max(selectedPresetIndex - 1, 0);
-      items.forEach((el, i) => {
-        el.toggleClass("is-selected", i === selectedPresetIndex);
-      });
-    } else if (e.key === "Enter" && selectedPresetIndex >= 0) {
-      e.preventDefault();
-      const presets = findEntryPresets(nameInput.value.trim());
-      if (presets[selectedPresetIndex]) {
-        applyPreset(presets[selectedPresetIndex]);
-        hidePresetMenu();
-      }
-    } else if (e.key === "Escape") {
-      hidePresetMenu();
-    }
-  };
-
-  nameInput.onblur = () => {
-    setTimeout(() => hidePresetMenu(), 200);
-  };
-
-  // Action buttons (move up, move down, delete)
-  const actions = head.createDiv({ cls: "sm-cc-entry-actions" });
-
-  if (onMoveUp) {
-    const moveUpBtn = actions.createEl("button", {
-      cls: "sm-cc-entry-move-btn",
-      attr: { type: "button", "aria-label": "Move Up", disabled: !canMoveUp ? "true" : undefined },
-    });
-    setIcon(moveUpBtn, "chevron-up");
-    moveUpBtn.onclick = onMoveUp;
-  }
-
-  if (onMoveDown) {
-    const moveDownBtn = actions.createEl("button", {
-      cls: "sm-cc-entry-move-btn",
-      attr: { type: "button", "aria-label": "Move Down", disabled: !canMoveDown ? "true" : undefined },
-    });
-    setIcon(moveDownBtn, "chevron-down");
-    moveDownBtn.onclick = onMoveDown;
-  }
-
-  const deleteBtn = actions.createEl("button", {
-    cls: "sm-cc-entry-delete",
-    text: "×",
-    attr: { type: "button", "aria-label": "Delete Entry" },
-  });
-  deleteBtn.onclick = onDelete;
-
-  // Force migration to components if needed
-  migrateEntryToComponents(entry as CreatureEntryWithComponents);
-
-  // Components section (only system now)
-  createComponentsSection(card, entry as CreatureEntryWithComponents, data, onUpdate);
-
-  // Spellcasting section (kept for complex spell management)
-  if (currentType === "spellcasting") {
-    createSpellcastingSection(card, entry, data, onUpdate);
-  }
-
-  // Details section (always shown)
-  createDetailsSection(card, entry, onUpdate);
-
-  return card;
 }

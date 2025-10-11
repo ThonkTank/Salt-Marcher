@@ -1,8 +1,10 @@
 // src/apps/library/create/shared/creature-controls.ts
 // Gemeinsame Formular-Helfer für Preset-Auswahl und Schadenswiderstands-Editoren (Creature-spezifisch).
 import { Setting } from "obsidian";
-import { enhanceExistingSelectDropdown } from "./form-controls";
-import { ValidationResult } from "./layouts";
+import {
+  ValidationResult,
+  enhanceExistingSelectDropdown,
+} from "../../../../ui/workmode/create";
 import { CREATURE_DAMAGE_PRESETS } from "../creature/presets";
 
 export type SectionValidationRegistrar = (

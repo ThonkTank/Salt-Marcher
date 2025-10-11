@@ -3,17 +3,27 @@ import { App, Setting } from "obsidian";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import type { EquipmentData, EquipmentType } from "../../core/equipment-files";
 import { collectEquipmentValidationIssues } from "./validation";
-import { BaseCreateModal } from "../shared/base-modal";
+import { BaseCreateModal, type CreateModalPipeline } from "../../../../ui/workmode/create";
 
-export class CreateEquipmentModal extends BaseCreateModal<EquipmentData> {
+export interface EquipmentModalOptions<TSerialized = unknown, TResult = unknown> {
+    pipeline?: CreateModalPipeline<EquipmentData, TSerialized, TResult>;
+    onSubmit?: (data: EquipmentData) => Promise<void> | void;
+}
+
+export class CreateEquipmentModal<
+    TSerialized = unknown,
+    TResult = unknown
+> extends BaseCreateModal<EquipmentData, TSerialized, TResult> {
     private containerEl: HTMLElement | null = null;
 
-    constructor(app: App, presetNameOrData: string | EquipmentData | undefined, onSubmit: (d: EquipmentData) => void) {
-        super(app, presetNameOrData, onSubmit, {
+    constructor(app: App, presetNameOrData: string | EquipmentData | undefined, options: EquipmentModalOptions<TSerialized, TResult>) {
+        super(app, presetNameOrData, {
             title: "Create New Equipment",
             defaultName: "New Equipment",
             validate: collectEquipmentValidationIssues,
             submitButtonText: "Create Equipment",
+            pipeline: options.pipeline,
+            onSubmit: options.onSubmit,
         });
     }
 
