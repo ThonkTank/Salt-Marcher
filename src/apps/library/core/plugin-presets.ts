@@ -37,10 +37,12 @@ async function importPresetsForDir(
         // Load presets from generated module
         const presetModule = await import('./preset-data');
         const rawPresetFiles = (presetModule as any)[presetKey] || {};
-        const presetEntries = Object.entries(rawPresetFiles).map(([fileName, content]) => [
-            normalizeRelativePath(fileName),
-            content as string,
-        ]);
+        const presetEntries = Object.entries(rawPresetFiles)
+            .map(([fileName, content]) => [
+                normalizeRelativePath(fileName),
+                content as string,
+            ] as const)
+            .filter(([fileName]) => !isOrganizationalPresetFile(fileName));
         const fileNames = presetEntries.map(([fileName]) => fileName);
 
         if (fileNames.length === 0) {
@@ -135,6 +137,11 @@ async function ensureParentFolders(
             await app.vault.createFolder(current).catch(() => {});
         }
     }
+}
+
+function isOrganizationalPresetFile(fileName: string): boolean {
+    const normalized = fileName.toLowerCase();
+    return normalized === "agents.md" || normalized.endsWith("/agents.md");
 }
 
 /**
