@@ -1,10 +1,9 @@
 // src/apps/library/create/spell/modal.ts
 import { App, Setting } from "obsidian";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
-import { mountTokenEditor } from "../shared/token-editor";
 import type { SpellData } from "../../core/spell-files";
 import { collectSpellScalingIssues } from "./validation";
-import { BaseCreateModal } from "../shared/base-modal";
+import { BaseCreateModal, mountTokenEditor } from "../../../../ui/workmode/create";
 
 export class CreateSpellModal extends BaseCreateModal<SpellData> {
     private runScalingValidation: (() => void) | null = null;

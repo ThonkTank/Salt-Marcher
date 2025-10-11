@@ -4,7 +4,11 @@
 // src/apps/library/create/creature/components/area-component.ts
 // Modular Area component for area-of-effect abilities (cones, spheres, lines, etc.)
 
-import { createTextInput, createSelectDropdown, createNumberInput } from "../../shared/form-controls";
+import {
+  createNumberInput,
+  createSelectDropdown,
+  createTextInput,
+} from "../../../../../ui/workmode/create";
 import type { AreaComponent as AreaComponentType, AreaShape } from "./types";
 import { setIcon } from "obsidian";
 
@@ -697,7 +701,13 @@ export function validateAreaComponent(component: AreaComponentType): string[] {
 // src/apps/library/create/creature/components/condition-component.ts
 // Modular Condition component for status effects in the creature creator entry system
 
-import { createTextInput, createSelectDropdown, createTextArea, createNumberInput, createCheckbox } from "../../shared/form-controls";
+import {
+  createCheckbox,
+  createNumberInput,
+  createSelectDropdown,
+  createTextArea,
+  createTextInput,
+} from "../../../../../ui/workmode/create";
 import type { StatblockData } from "../../../core/creature-files";
 import type { ConditionType, TimeUnit } from "./types";
 import { CREATURE_ABILITY_LABELS } from "../presets";
@@ -1506,7 +1516,10 @@ export function validateConditions(conditions: ConditionInstance[]): string[] {
 // src/apps/library/create/creature/components/recharge-component.ts
 // Modular Recharge component for abilities with dice-based recharge mechanics
 
-import { createSelectDropdown, createTextInput } from "../../shared/form-controls";
+import {
+  createSelectDropdown,
+  createTextInput,
+} from "../../../../../ui/workmode/create";
 import type { RechargeComponent } from "./types";
 
 /**
@@ -1938,7 +1951,11 @@ export function parseRechargeString(str: string): RechargeComponent | undefined 
 // src/apps/library/create/creature/components/uses-component.ts
 // Modular Uses component for abilities with limited uses per rest/day
 
-import { createNumberInput, createSelectDropdown, createTextInput } from "../../shared/form-controls";
+import {
+  createNumberInput,
+  createSelectDropdown,
+  createTextInput,
+} from "../../../../../ui/workmode/create";
 import type { UsesComponent } from "./types";
 
 /**

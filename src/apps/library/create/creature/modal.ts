@@ -9,7 +9,7 @@ import {
   mountEntriesSection
 } from "./sections";
 import { spellcastingDataToEntry } from "./entry-model";
-import { BaseCreateModal } from "../shared/base-modal";
+import { BaseCreateModal } from "../../../../ui/workmode/create";
 
 export class CreateCreatureModal extends BaseCreateModal<StatblockData> {
     constructor(app: App, presetName: string | undefined, onSubmit: (d: StatblockData) => void, preset?: StatblockData) {

@@ -3,7 +3,7 @@ import { App, Setting } from "obsidian";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import type { ItemData } from "../../core/item-files";
 import { collectItemValidationIssues } from "./validation";
-import { BaseCreateModal } from "../shared/base-modal";
+import { BaseCreateModal } from "../../../../ui/workmode/create";
 
 export class CreateItemModal extends BaseCreateModal<ItemData> {
     constructor(app: App, presetNameOrData: string | ItemData | undefined, onSubmit: (d: ItemData) => void) {

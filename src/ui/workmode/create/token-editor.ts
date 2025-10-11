@@ -1,4 +1,4 @@
-// src/apps/library/create/shared/token-editor.ts
+// src/ui/workmode/create/token-editor.ts
 import { Setting } from "obsidian";
 
 export interface TokenEditorModel {

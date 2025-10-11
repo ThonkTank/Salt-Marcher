@@ -1,5 +1,5 @@
-// src/apps/library/create/shared/base-modal.ts
-// Base class for simple create/edit modals (Spell, Item, Equipment)
+// src/ui/workmode/create/base-modal.ts
+// Base class for workmode create/edit modals shared across apps
 import { App, Modal, Setting } from "obsidian";
 import { createFormCard } from "./layouts";
 import type { FormCardHandles } from "./layouts";

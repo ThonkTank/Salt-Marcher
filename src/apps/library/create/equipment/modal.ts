@@ -3,7 +3,7 @@ import { App, Setting } from "obsidian";
 import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
 import type { EquipmentData, EquipmentType } from "../../core/equipment-files";
 import { collectEquipmentValidationIssues } from "./validation";
-import { BaseCreateModal } from "../shared/base-modal";
+import { BaseCreateModal } from "../../../../ui/workmode/create";
 
 export class CreateEquipmentModal extends BaseCreateModal<EquipmentData> {
     private containerEl: HTMLElement | null = null;

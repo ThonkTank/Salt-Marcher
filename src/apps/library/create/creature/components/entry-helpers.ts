@@ -2,7 +2,11 @@
 // Modular Attack Component for the entry system
 // Self-contained component with auto-calculation, attack type selection, and range/reach fields
 
-import { createTextInput, createSelectDropdown, createCheckbox } from "../../shared/form-controls";
+import {
+  createCheckbox,
+  createSelectDropdown,
+  createTextInput,
+} from "../../../../../ui/workmode/create";
 import { EntryAutoCalculator } from "../../shared/auto-calc";
 import type { CreatureEntry } from "../entry-model";
 import type { StatblockData } from "../../../core/creature-files";
@@ -454,7 +458,13 @@ export function migrateLegacyRangeData(entry: AttackEntry): void {
 // src/apps/library/create/creature/components/save-component.ts
 // Modular Save component for creature abilities that require saving throws
 
-import { createTextInput, createSelectDropdown, createTextArea, createNumberInput, createCheckbox } from "../../shared/form-controls";
+import {
+  createCheckbox,
+  createNumberInput,
+  createSelectDropdown,
+  createTextArea,
+  createTextInput,
+} from "../../../../../ui/workmode/create";
 import { abilityMod, formatSigned, parseIntSafe } from "../../shared/stat-utils";
 import type { CreatureEntry } from "../entry-model";
 import type { StatblockData } from "../../../core/creature-files";
@@ -875,7 +885,11 @@ export function validateSaveEntry(entry: CreatureEntry): string[] {
 // src/apps/library/create/creature/components/damage-component.ts
 // Modular damage component for the creature creator entry system
 
-import { createTextInput, createSelectDropdown, createNumberInput } from "../../shared/form-controls";
+import {
+  createNumberInput,
+  createSelectDropdown,
+  createTextInput,
+} from "../../../../../ui/workmode/create";
 import type { StatblockData } from "../../../core/creature-files";
 import { CREATURE_ABILITY_LABELS } from "../presets";
 import { abilityMod, formatSigned } from "../../shared/stat-utils";

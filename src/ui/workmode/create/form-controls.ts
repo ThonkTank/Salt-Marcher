@@ -1,7 +1,7 @@
-// src/apps/library/create/shared/form-controls.ts
-// Wiederverwendbare Form-Controls für Creature Creator und andere Dialoge
+// src/ui/workmode/create/form-controls.ts
+// Wiederverwendbare Form-Controls für Workmode Create-Dialoge
 
-import { enhanceSelectToSearch } from "../../../../ui/search-dropdown";
+import { enhanceSelectToSearch } from "../../search-dropdown";
 
 /**
  * Options for creating a text input field

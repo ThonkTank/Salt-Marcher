@@ -2,9 +2,11 @@
 // Alignment-Editor Komponente für Law/Chaos, Good/Evil und Override
 
 import { DropdownComponent } from "obsidian";
-import { enhanceExistingSelectDropdown } from "../../shared/form-controls";
 import type { StatblockData } from "../../../core/creature-files";
-import type { FieldGridHandle } from "../../../shared/layouts";
+import {
+  FieldGridHandles,
+  enhanceExistingSelectDropdown,
+} from "../../../../../ui/workmode/create";
 
 const LAW_CHAOS_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "", label: "" },
@@ -25,7 +27,7 @@ const GOOD_EVIL_OPTIONS: Array<{ value: string; label: string }> = [
  */
 export interface AlignmentEditorOptions {
   /** Field grid to add settings to */
-  grid: FieldGridHandle;
+  grid: FieldGridHandles;
   /** The statblock data to read/write */
   data: StatblockData;
 }
@@ -511,7 +513,7 @@ export function createStatColumn(
 // src/apps/library/create/creature/components/stats-and-skills/skill-manager.ts
 // Skill-Manager Komponente für Fertigkeiten-Verwaltung
 
-import { enhanceExistingSelectDropdown } from "../../shared/form-controls";
+import { enhanceExistingSelectDropdown } from "../../../../../ui/workmode/create";
 import type { StatblockData } from "../../../core/creature-files";
 import { CREATURE_SKILLS, type CreatureAbilityKey } from "../presets";
 

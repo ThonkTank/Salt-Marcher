@@ -1,7 +1,12 @@
 // src/apps/library/create/creature/components/entry-card.ts
 // Reusable components for Entry Cards in Creature Creator with dynamic component system
 
-import { createTextInput, createSelectDropdown, createTextArea, createNumberInput } from "../../shared/form-controls";
+import {
+  createNumberInput,
+  createSelectDropdown,
+  createTextArea,
+  createTextInput,
+} from "../../../../../ui/workmode/create";
 import { EntryAutoCalculator } from "../../shared/auto-calc";
 import type { CreatureEntry, SpellGroup } from "../entry-model";
 import { inferEntryType, type EntryType } from "../entry-model";

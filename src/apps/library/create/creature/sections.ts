@@ -2,10 +2,13 @@
 // Consolidated section mounting functions for creature modal
 
 import { Setting } from "obsidian";
-import { enhanceExistingSelectDropdown } from "../shared/form-controls";
 import type { StatblockData } from "../../core/creature-files";
-import { mountTokenEditor } from "../shared/token-editor";
-import { createFormCard, createFieldGrid } from "../shared/layouts";
+import {
+  createFormCard,
+  createFieldGrid,
+  enhanceExistingSelectDropdown,
+  mountTokenEditor,
+} from "../../../../ui/workmode/create";
 import {
   mountMovementEditor,
   mountPresetSelectEditor,

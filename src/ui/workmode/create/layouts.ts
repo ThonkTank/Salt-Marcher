@@ -1,5 +1,5 @@
-// src/apps/library/create/shared/layouts.ts
-// Bündelt Builder für Karten- und Grid-Layouts in den Library-Editoren.
+// src/ui/workmode/create/layouts.ts
+// Bündelt Builder für Karten- und Grid-Layouts in den Workmode-Create-Dialogen.
 import { Setting } from "obsidian";
 
 export type ValidationRunner = () => string[];
