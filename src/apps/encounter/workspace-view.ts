@@ -21,7 +21,6 @@ export class EncounterWorkspaceView {
 
     private xpInputEl!: HTMLInputElement;
     private xpErrorEl!: HTMLDivElement;
-    private resetXpButton!: HTMLButtonElement;
     private ruleListEl!: HTMLDivElement;
     private presetSelectEl!: HTMLSelectElement;
     private presetOpenButton!: HTMLButtonElement;
@@ -96,24 +95,17 @@ export class EncounterWorkspaceView {
         const xpLeftGroup = xpRow.createDiv({ cls: "sm-encounter-xp-group sm-encounter-xp-group-left" });
         this.xpInputEl = createNumberInput(xpLeftGroup, {
             id: "encounter-base-xp",
-            label: "Base encounter XP",
+            label: "Base XP",
             min: 0,
             step: 1,
         });
         this.xpInputEl.parentElement?.addClass("sm-encounter-field-inline");
+        this.xpInputEl.parentElement?.addClass("sm-encounter-field-base-xp");
         this.xpInputEl.addEventListener("change", () => this.handleEncounterXpChange());
         this.xpInputEl.addEventListener("input", () => {
             this.xpErrorEl.setText("");
         });
         const xpLeftActions = xpLeftGroup.createDiv({ cls: "sm-encounter-inline-actions sm-encounter-inline-actions-left" });
-        this.resetXpButton = xpLeftActions.createEl("button", {
-            cls: "sm-encounter-button sm-encounter-button-secondary",
-            text: "Reset XP state",
-        });
-        this.resetXpButton.type = "button";
-        this.resetXpButton.addEventListener("click", () => {
-            this.presenter?.resetXpState();
-        });
         const addRuleButton = xpLeftActions.createEl("button", {
             cls: "sm-encounter-button",
             text: "Add rule",
@@ -135,7 +127,7 @@ export class EncounterWorkspaceView {
         });
         this.presetOpenButton = xpPresetActions.createEl("button", {
             cls: "sm-encounter-button",
-            text: "Preset öffnen",
+            text: "Open preset",
         });
         this.presetOpenButton.type = "button";
         this.presetOpenButton.addEventListener("click", () => {
@@ -143,7 +135,7 @@ export class EncounterWorkspaceView {
         });
         this.presetSaveButton = xpPresetActions.createEl("button", {
             cls: "sm-encounter-button sm-encounter-button-primary",
-            text: "Preset speichern",
+            text: "Save preset",
         });
         this.presetSaveButton.type = "button";
         this.presetSaveButton.addEventListener("click", () => {
@@ -151,7 +143,7 @@ export class EncounterWorkspaceView {
         });
         this.presetDeleteButton = xpPresetActions.createEl("button", {
             cls: "sm-encounter-button sm-encounter-button-danger",
-            text: "Preset löschen",
+            text: "Delete preset",
         });
         this.presetDeleteButton.type = "button";
         this.presetDeleteButton.addEventListener("click", () => {

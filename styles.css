@@ -400,6 +400,10 @@
     min-width: 8rem;
 }
 
+.sm-encounter-field-base-xp .sm-encounter-input {
+    min-width: 6rem;
+}
+
 .sm-encounter-field-actions {
     display: flex;
     align-items: flex-end;
@@ -426,7 +430,7 @@
 }
 
 .sm-encounter-preset-select {
-    min-width: 12rem;
+    min-width: 10rem;
 }
 
 .sm-encounter-button {
