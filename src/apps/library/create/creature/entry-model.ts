@@ -2,7 +2,7 @@
 // Type-sichere Definitionen und Helper für Creature Entries
 
 import type { CreatureEntryCategory } from "./presets";
-import type { ToHitAutoConfig, DamageAutoConfig } from "../shared/auto-calc";
+import type { ToHitAutoConfig, DamageAutoConfig } from "./auto-calc";
 import type { AbilityScoreKey } from "../../core/creature-files";
 
 /**

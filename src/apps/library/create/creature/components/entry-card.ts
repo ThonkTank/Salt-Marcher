@@ -6,9 +6,11 @@ import {
   createSelectDropdown,
   createTextArea,
   createTextInput,
+} from "../../../../../ui/workmode/create/form-controls";
+import {
   type EntryCardConfigFactory,
   type EntryCardContentOptions,
-} from "../../../../../ui/workmode/create";
+} from "../../../../../ui/workmode/create/entry-card";
 import type { CreatureEntry, SpellGroup } from "../entry-model";
 import { inferEntryType, type EntryType } from "../entry-model";
 import type { StatblockData } from "../../../core/creature-files";

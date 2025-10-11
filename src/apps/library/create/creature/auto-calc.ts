@@ -1,4 +1,4 @@
-// src/apps/library/create/shared/auto-calc.ts
+// src/apps/library/create/creature/auto-calc.ts
 // Kapselt Auto-Calculation-Logik für To-Hit und Damage
 
 import type { StatblockData } from "../../core/creature-files";

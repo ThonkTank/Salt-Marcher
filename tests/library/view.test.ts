@@ -10,8 +10,6 @@ const SOURCE_LABELS: Record<Mode, string> = {
     spells: "SaltMarcher/Spells/",
     items: "SaltMarcher/Items/",
     equipment: "SaltMarcher/Equipment/",
-    terrains: "SaltMarcher/Terrains.md",
-    regions: "SaltMarcher/Regions.md",
 };
 
 vi.mock("../../src/apps/library/core/sources", () => ({
@@ -44,16 +42,8 @@ vi.mock("../../src/apps/library/view/spells", () => ({
     SpellsRenderer: createRenderer("spells" as Mode),
 }));
 
-vi.mock("../../src/apps/library/view/terrains", () => ({
-    TerrainsRenderer: createRenderer("terrains" as Mode),
-}));
-
 vi.mock("../../src/apps/library/view/equipment", () => ({
     EquipmentRenderer: createRenderer("equipment" as Mode),
-}));
-
-vi.mock("../../src/apps/library/view/regions", () => ({
-    RegionsRenderer: createRenderer("regions" as Mode),
 }));
 
 const ensureObsidianDomHelpers = () => {
@@ -62,7 +52,11 @@ const ensureObsidianDomHelpers = () => {
         proto.createEl = function(tag: string, options?: { text?: string; cls?: string; attr?: Record<string, string> }) {
             const el = document.createElement(tag);
             if (options?.text) el.textContent = options.text;
-            if (options?.cls) el.classList.add(options.cls);
+            if (options?.cls) {
+                for (const token of options.cls.split(/\s+/)) {
+                    if (token) el.classList.add(token);
+                }
+            }
             if (options?.attr) {
                 for (const [key, value] of Object.entries(options.attr)) {
                     el.setAttribute(key, value);
@@ -93,7 +87,9 @@ const ensureObsidianDomHelpers = () => {
     }
     if (!proto.addClass) {
         proto.addClass = function(cls: string) {
-            this.classList.add(cls);
+            for (const token of cls.split(/\s+/)) {
+                if (token) this.classList.add(token);
+            }
             return this;
         };
     }
@@ -136,8 +132,6 @@ describe("LibraryView copy", () => {
             LIBRARY_COPY.modes.spells,
             LIBRARY_COPY.modes.items,
             LIBRARY_COPY.modes.equipment,
-            LIBRARY_COPY.modes.terrains,
-            LIBRARY_COPY.modes.regions,
         ]);
 
         const search = root.querySelector("input[type=\"text\"]");
@@ -153,16 +147,18 @@ describe("LibraryView copy", () => {
     it("updates the source description when switching modes", async () => {
         await view.onOpen();
         const root = (view as unknown as { contentEl: HTMLElement }).contentEl;
-        const [_, __, ___, ____, terrainsButton, regionsButton] = Array.from(root.querySelectorAll(".sm-lib-header button"));
+        const buttons = Array.from(root.querySelectorAll(".sm-lib-header button"));
+        const itemsButton = buttons.find(button => button.textContent === LIBRARY_COPY.modes.items);
+        const equipmentButton = buttons.find(button => button.textContent === LIBRARY_COPY.modes.equipment);
 
-        terrainsButton.dispatchEvent(new Event("click"));
+        itemsButton?.dispatchEvent(new Event("click"));
         await flush();
-        const descAfterTerrains = root.querySelector(".desc")?.textContent;
-        expect(descAfterTerrains).toBe(`${LIBRARY_COPY.sources.prefix}${SOURCE_LABELS.terrains}`);
+        const descAfterItems = root.querySelector(".desc")?.textContent;
+        expect(descAfterItems).toBe(`${LIBRARY_COPY.sources.prefix}${SOURCE_LABELS.items}`);
 
-        regionsButton.dispatchEvent(new Event("click"));
+        equipmentButton?.dispatchEvent(new Event("click"));
         await flush();
-        const descAfterRegions = root.querySelector(".desc")?.textContent;
-        expect(descAfterRegions).toBe(`${LIBRARY_COPY.sources.prefix}${SOURCE_LABELS.regions}`);
+        const descAfterEquipment = root.querySelector(".desc")?.textContent;
+        expect(descAfterEquipment).toBe(`${LIBRARY_COPY.sources.prefix}${SOURCE_LABELS.equipment}`);
     });
 });

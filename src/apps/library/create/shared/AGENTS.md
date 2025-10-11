@@ -1,13 +1,12 @@
 # Ziele
-- Enthält creature-spezifische Shared-Komponenten für die Library-Editoren.
+- Platzhalter-Verzeichnis für verbleibende Library-spezifische Shared-Helfer.
 
 # Aktueller Stand
-- `stat-utils` berechnet Wertebereiche, `creature-controls` kapselt Preset-/Resistenz-Editoren.
-- Dialog-Grundgerüst, Form-Controls und Token-Editor liegen jetzt unter `src/ui/workmode/create/`.
+- Die Creature-spezifischen Controls liegen in `src/apps/library/create/creature`.
+- Dieses Verzeichnis hält aktuell nur die Dokumentation bereit.
 
 # ToDo
-- [P4.4] Token-Editor um Drag&Drop-Upload erweitern (siehe neues Shared-Modul in `src/ui/workmode/create/`).
+- Keine offenen Punkte – neue Shared-Utilities direkt im Workmode-Modul pflegen.
 
 # Standards
-- Shared-Dateien erläutern, welche Editoren sie beliefern.
-- Funktionen bleiben klein und wiederverwendbar ohne Editor-spezifische Annahmen.
+- Dokumentation anpassen, sobald wieder Hilfsfunktionen unter `shared/` landen.

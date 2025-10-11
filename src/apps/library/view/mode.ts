@@ -2,11 +2,11 @@
 // Basistypen für Library-Ansichtsmodi.
 // Verwendet shared workmode infrastructure
 
-import type { LibrarySourceId } from "../core/sources";
+import type { FilterableLibraryMode } from "../core/data-sources";
 import { BaseModeRenderer as SharedBaseModeRenderer, scoreName as sharedScoreName, WatcherHub } from "../../../ui/workmode";
 import type { ModeRenderer as SharedModeRenderer } from "../../../ui/workmode";
 
-export type Mode = LibrarySourceId;
+export type Mode = FilterableLibraryMode;
 
 export interface ModeRenderer extends SharedModeRenderer<Mode> {
     readonly mode: Mode;
@@ -33,9 +33,9 @@ export abstract class BaseModeRenderer extends SharedBaseModeRenderer<Mode> impl
  * This is a typed wrapper around the generic WatcherHub.
  */
 export class LibrarySourceWatcherHub {
-    private readonly hub = new WatcherHub<LibrarySourceId>();
+    private readonly hub = new WatcherHub<Mode>();
 
-    subscribe(source: LibrarySourceId, factory: (onChange: () => void) => () => void, listener: () => void): () => void {
+    subscribe(source: Mode, factory: (onChange: () => void) => () => void, listener: () => void): () => void {
         return this.hub.subscribe(source, factory, listener);
     }
 

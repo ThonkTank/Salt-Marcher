@@ -1,12 +1,7 @@
 // src/ui/workmode/create/layouts.ts
 // Bündelt Builder für Karten- und Grid-Layouts in den Workmode-Create-Dialogen.
 import { Setting } from "obsidian";
-
-export type ValidationRunner = () => string[];
-
-export type ValidationRegistrar = (runner: ValidationRunner) => ValidationRunner;
-
-export type ValidationResult = string[] | { issues: string[]; summary?: string };
+import type { ValidationRegistrar, ValidationResult, ValidationRunner } from "./types";
 
 export interface FormCardOptions {
   title: string;

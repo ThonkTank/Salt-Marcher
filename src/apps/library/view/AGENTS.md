@@ -1,13 +1,12 @@
 # Ziele
-- Präsentiert Bibliotheksdaten für Kreaturen, Regionen, Zauber, Gelände.
+- Präsentiert Bibliotheksdaten für Kreaturen, Zauber, Items und Equipment.
 
 # Aktueller Stand
-- Einzelne Dateien rendern Tabellen/Karten je Kategorie (`creatures`, `regions`, etc.).
+- Einzelne Dateien rendern Tabellen je Kategorie (`creatures`, `spells`, etc.).
 - `mode` koordiniert Umschalten zwischen den View-Komponenten.
 
 # ToDo
 - [P3.6] Filter- und Sortierparameter dokumentieren und implementieren.
-- [P4.5] Regions-View um Karten-Preview erweitern.
 
 # Standards
 - Views beschreiben im Kopf, welche Datensammlung sie anzeigen.

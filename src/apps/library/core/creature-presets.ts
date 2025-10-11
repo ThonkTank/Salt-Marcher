@@ -4,7 +4,7 @@
 import { App, TFile } from "obsidian";
 import { createVaultFilePipeline } from "./file-pipeline";
 import type { StatblockData } from "./creature-files";
-import { spellcastingDataToEntry } from "../create/creature/entry-model";
+import { spellcastingDataToEntry } from "../create/creature";
 
 export const PRESETS_DIR = "SaltMarcher/Presets/Creatures";
 

@@ -1,4 +1,4 @@
-// src/apps/library/create/shared/creature-controls.ts
+// src/apps/library/create/creature/creature-controls.ts
 // Gemeinsame Formular-Helfer für Preset-Auswahl und Schadenswiderstands-Editoren (Creature-spezifisch).
 import { Setting } from "obsidian";
 import {

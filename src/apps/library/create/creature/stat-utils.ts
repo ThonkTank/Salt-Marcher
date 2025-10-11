@@ -1,4 +1,4 @@
-// src/apps/library/create/shared/stat-utils.ts
+// src/apps/library/create/creature/stat-utils.ts
 // Gemeinsame Hilfsfunktionen für Ability-Scores und formatierte Ausgaben.
 
 /**

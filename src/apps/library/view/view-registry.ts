@@ -3,16 +3,16 @@
 import type { App } from "obsidian";
 import type { FilterableLibraryMode, LibraryEntry } from "../core/data-sources";
 import { loadCreaturePreset } from "../core/creature-presets";
-import { createCreatureFile, type StatblockData } from "../core/creature-files";
 import { createSpellFile, loadSpellFile, spellToMarkdown, type SpellData } from "../core/spell-files";
 import { createItemFile, loadItemFile, itemToMarkdown, type ItemData } from "../core/item-files";
 import { createEquipmentFile, loadEquipmentFile, equipmentToMarkdown, type EquipmentData } from "../core/equipment-files";
-import { CreateCreatureModal } from "../create";
+import { CREATURE_CREATE_SPEC } from "../create";
 import { CreateSpellModal } from "../create";
 import { CreateItemModal } from "../create";
 import { CreateEquipmentModal } from "../create/equipment";
 import { formatSpellLevel } from "./filter-registry";
 import type { WorkmodeTileMetadata, WorkmodeTileAction } from "../../../ui/workmode/list-renderer";
+import { openCreateModal } from "../../../ui/workmode/create";
 
 export type MetadataField<M extends FilterableLibraryMode> = WorkmodeTileMetadata<LibraryEntry<M>>;
 
@@ -95,19 +95,14 @@ const creaturesActions: ActionDefinition<"creatures">[] = [
             const { app } = context;
             try {
                 const creatureData = await loadCreaturePreset(app, entry.file);
-                new CreateCreatureModal(app, creatureData.name, {
-                    preset: creatureData,
-                    pipeline: {
-                        serialize: (draft) => draft,
-                        persist: async (payload) => createCreatureFile(app, payload),
-                        onComplete: async (file) => {
-                            await context.reloadEntries();
-                            if (file) {
-                                await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
-                            }
-                        },
-                    },
-                }).open();
+                const result = await openCreateModal(CREATURE_CREATE_SPEC, {
+                    app,
+                    preset: { ...creatureData, existingFilePath: entry.file.path },
+                    initialize: (draft) => ({ ...draft, existingFilePath: entry.file.path }),
+                });
+                if (!result) return;
+                await context.reloadEntries();
+                await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
             } catch (err) {
                 console.error("Failed to load creature for editing", err);
             }
@@ -266,18 +261,18 @@ export const LIBRARY_VIEW_CONFIGS: LibraryViewConfigMap = {
         actions: creaturesActions,
         handleCreate: async (context, name) => {
             const { app } = context;
-            new CreateCreatureModal(app, name, {
-                pipeline: {
-                    serialize: (draft) => draft,
-                    persist: async (payload) => createCreatureFile(app, payload),
-                    onComplete: async (file) => {
-                        await context.reloadEntries();
-                        if (file) {
-                            await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
-                        }
-                    },
-                },
-            }).open();
+            const presetName = name.trim();
+            try {
+                const result = await openCreateModal(CREATURE_CREATE_SPEC, {
+                    app,
+                    preset: presetName || undefined,
+                });
+                if (!result) return;
+                await context.reloadEntries();
+                await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
+            } catch (err) {
+                console.error("Failed to create creature", err);
+            }
         },
     },
     spells: {

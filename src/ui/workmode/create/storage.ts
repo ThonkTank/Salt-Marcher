@@ -177,7 +177,8 @@ export async function persistSerializedPayload(
 ): Promise<PersistResult> {
   await storage.hooks?.ensureDirectory?.(app);
   await ensureFolder(app, payload.path);
-  await storage.hooks?.beforeWrite?.(payload);
+  const metadata = payload.metadata as { values?: Record<string, unknown> } | undefined;
+  await storage.hooks?.beforeWrite?.(payload, { app, values: metadata?.values });
   const existing = app.vault.getAbstractFileByPath(payload.path);
   let file: TFile | undefined;
   const content = toContentString(payload.content);

@@ -28,8 +28,6 @@ export const LIBRARY_COPY = {
     },
 } as const;
 
-type ModeCopy = typeof LIBRARY_COPY.modes;
-
 export const VIEW_LIBRARY = "salt-library";
 
 const LIBRARY_VIEW_SOURCES: Mode[] = ["creatures", "spells", "items", "equipment"];
@@ -139,9 +137,9 @@ export class LibraryView extends ItemView {
                 return new ItemsRenderer(this.app, container, this.watchers);
             case "equipment":
                 return new EquipmentRenderer(this.app, container, this.watchers);
-            default:
-                throw new Error(`Unsupported mode: ${mode}`);
         }
+        const exhaustiveCheck: never = mode;
+        throw new Error(`Unsupported mode: ${exhaustiveCheck}`);
     }
 
     private updateSourceDescription() {

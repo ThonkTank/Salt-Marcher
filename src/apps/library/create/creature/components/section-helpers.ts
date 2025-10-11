@@ -3,11 +3,8 @@
 
 import { DropdownComponent } from "obsidian";
 import type { StatblockData } from "../../../core/creature-files";
-import {
-  FieldGridHandles,
-  createNumberStepper,
-  enhanceExistingSelectDropdown,
-} from "../../../../../ui/workmode/create";
+import type { FieldGridHandles } from "../../../../../ui/workmode/create/layouts";
+import { createNumberStepper, enhanceExistingSelectDropdown } from "../../../../../ui/workmode/create/form-controls";
 
 const LAW_CHAOS_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "", label: "" },
@@ -137,8 +134,8 @@ import type {
   CreatureSpeedValue,
   StatblockData,
 } from "../../../core/creature-files";
-import type { CreatureMovementType } from "../../presets";
-import type { MovementEditorModel, MovementEntry } from "../../section-utils";
+import type { CreatureMovementType } from "../presets";
+import type { MovementEditorModel, MovementEntry } from "../creature-controls";
 
 type SpeedFieldKey = Exclude<CreatureMovementType, never>;
 type SpeedRecord = Record<SpeedFieldKey, CreatureSpeedValue | undefined> & {
@@ -503,7 +500,7 @@ export function createStatColumn(
 // src/apps/library/create/creature/components/stats-and-skills/skill-manager.ts
 // Skill-Manager Komponente für Fertigkeiten-Verwaltung
 
-import { enhanceExistingSelectDropdown } from "../../../../../ui/workmode/create";
+import { enhanceExistingSelectDropdown } from "../../../../../ui/workmode/create/form-controls";
 import type { StatblockData } from "../../../core/creature-files";
 import { CREATURE_SKILLS, type CreatureAbilityKey } from "../presets";
 

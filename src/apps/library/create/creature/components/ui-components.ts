@@ -8,7 +8,7 @@ import {
   createNumberInput,
   createSelectDropdown,
   createTextInput,
-} from "../../../../../ui/workmode/create";
+} from "../../../../../ui/workmode/create/form-controls";
 import type { AreaComponent as AreaComponentType, AreaShape } from "./types";
 import { setIcon } from "obsidian";
 
@@ -707,7 +707,7 @@ import {
   createSelectDropdown,
   createTextArea,
   createTextInput,
-} from "../../../../../ui/workmode/create";
+} from "../../../../../ui/workmode/create/form-controls";
 import type { StatblockData } from "../../../core/creature-files";
 import type { ConditionType, TimeUnit } from "./types";
 import { CREATURE_ABILITY_LABELS } from "../presets";
@@ -1519,7 +1519,7 @@ export function validateConditions(conditions: ConditionInstance[]): string[] {
 import {
   createSelectDropdown,
   createTextInput,
-} from "../../../../../ui/workmode/create";
+} from "../../../../../ui/workmode/create/form-controls";
 import type { RechargeComponent } from "./types";
 
 /**
@@ -1955,7 +1955,7 @@ import {
   createNumberInput,
   createSelectDropdown,
   createTextInput,
-} from "../../../../../ui/workmode/create";
+} from "../../../../../ui/workmode/create/form-controls";
 import type { UsesComponent } from "./types";
 
 /**

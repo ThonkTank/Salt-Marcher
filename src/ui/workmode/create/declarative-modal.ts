@@ -12,8 +12,11 @@ import type {
   FieldRenderHandle,
   OpenCreateModalOptions,
   OpenCreateModalResult,
+  SectionMountContext,
+  SectionMountResult,
   SectionSpec,
   SerializedPayload,
+  ValidationRunner,
 } from "./types";
 
 interface NamedDraft extends Record<string, unknown> {
@@ -90,11 +93,15 @@ export class DeclarativeCreateModal<
   private readonly spec: CreateSpec<TDraft, TSerialized>;
   private readonly registry: FieldRegistryEntry[];
   private readonly resolveResult: (result: OpenCreateModalResult | null) => void;
+  private readonly openOptions: OpenCreateModalOptions | undefined;
   private readonly fieldInstances = new Map<string, FieldInstance>();
-  private readonly sectionOrder: SectionSpec[];
+  private readonly sectionOrder: SectionSpec<TDraft>[];
+  private readonly fieldValidators = new Map<string, Set<ValidationRunner>>();
+  private readonly sectionMounts = new Map<string, SectionMountResult>();
   private fieldIssues = new Map<string, string[]>();
   private completion: OpenCreateModalResult | null = null;
   private resolved = false;
+  private isRestarting = false;
 
   constructor(
     app: App,
@@ -161,6 +168,7 @@ export class DeclarativeCreateModal<
     this.spec = spec;
     this.registry = registry;
     this.resolveResult = resolve;
+    this.openOptions = options;
     this.sectionOrder = initialSections;
     this.config.validate = (data) => this.collectValidationIssues(data as TDraft);
     if (this.config.enableNavigation) {
@@ -201,53 +209,148 @@ export class DeclarativeCreateModal<
 
   onClose(): void {
     super.onClose();
+    for (const mount of this.sectionMounts.values()) {
+      mount.destroy?.();
+    }
+    this.sectionMounts.clear();
+    this.fieldValidators.clear();
+    if (this.isRestarting) {
+      this.isRestarting = false;
+      return;
+    }
     if (!this.resolved) {
       this.resolved = true;
       this.resolveResult(this.completion);
     }
   }
 
-  private mountSection(handles: FormCardHandles, section: SectionSpec): void {
-    const ordered = orderFields(this.spec.fields, section.fieldIds);
-    for (const field of ordered) {
-      this.renderField(handles.body, field);
-    }
-    handles.registerValidation(() => {
-      const issues: string[] = [];
-      for (const field of ordered) {
-        const fieldErrors = this.fieldIssues.get(field.id) ?? [];
-        if (fieldErrors.length) {
-          issues.push(`${field.label}: ${fieldErrors[0]}`);
-        }
+  private registerFieldValidator(fieldId: string, runner: () => string[]): ValidationRunner {
+    const wrapped: ValidationRunner = () => {
+      try {
+        const result = runner();
+        if (!Array.isArray(result)) return [];
+        return result;
+      } catch (error) {
+        console.error(`Field validator for ${fieldId} failed`, error);
+        return [String(error)];
       }
-      const summary = issues.length > 0 ? `${issues.length} Feld${issues.length > 1 ? "er" : ""} benötigt Aufmerksamkeit` : undefined;
-      return { issues, summary };
-    });
+    };
+    let validators = this.fieldValidators.get(fieldId);
+    if (!validators) {
+      validators = new Set();
+      this.fieldValidators.set(fieldId, validators);
+    }
+    validators.add(wrapped);
+    return wrapped;
   }
 
-  private renderFields(container: HTMLElement, fieldIds: string[] | undefined): void {
+  private restartWithDraft(draft: TDraft | Partial<TDraft>): void {
+    if (this.isRestarting) return;
+    this.isRestarting = true;
+    let presetDraft: TDraft;
+    if (typeof draft === "string") {
+      presetDraft = this.createDefault(draft);
+    } else {
+      const base = deepClone(this.data);
+      const merged = {
+        ...(base as Record<string, unknown>),
+        ...(draft as Record<string, unknown>),
+      } as Record<string, unknown>;
+      presetDraft = deepClone(merged as TDraft);
+    }
+
+    const nextOptions: OpenCreateModalOptions = { ...(this.openOptions ?? {}), preset: presetDraft };
+    const { app, spec, registry, resolveResult } = this;
+    window.setTimeout(() => {
+      const nextModal = new DeclarativeCreateModal(app, spec, nextOptions, resolveResult, registry);
+      nextModal.open();
+    }, 0);
+    this.close();
+  }
+
+  private mountSection(handles: FormCardHandles, section: SectionSpec<TDraft>): void {
+    const fieldIds = (section.fieldIds && section.fieldIds.length > 0)
+      ? [...section.fieldIds]
+      : this.spec.fields.filter((field) => field.section === section.id).map((field) => field.id);
+
+    const previousMount = this.sectionMounts.get(section.id);
+    previousMount?.destroy?.();
+    this.sectionMounts.delete(section.id);
+
+    if (section.mount) {
+      const context: SectionMountContext<TDraft> = {
+        app: this.app,
+        container: handles.body,
+        draft: this.data,
+        registerValidation: (compute) => handles.registerValidation(compute),
+        renderField: (fieldId, target) => {
+          const spec = this.spec.fields.find((entry) => entry.id === fieldId);
+          if (!spec) {
+            console.warn(`Section ${section.id} requested unknown field ${fieldId}`);
+            return;
+          }
+          this.renderField(target ?? handles.body, spec);
+          this.updateFieldVisibility();
+        },
+        restartWithDraft: (draft) => this.restartWithDraft(draft),
+      };
+      const result = section.mount(context);
+      if (result) {
+        this.sectionMounts.set(section.id, result);
+      }
+    } else {
+      this.renderFields(handles.body, fieldIds);
+    }
+
+    if (fieldIds.length > 0) {
+      handles.registerValidation(() => this.collectSectionIssues(fieldIds));
+    }
+  }
+
+  private collectSectionIssues(fieldIds: string[]): { issues: string[]; summary?: string } {
+    const issues: string[] = [];
+    for (const fieldId of fieldIds) {
+      const fieldErrors = this.fieldIssues.get(fieldId) ?? [];
+      if (fieldErrors.length === 0) continue;
+      const field = this.spec.fields.find((entry) => entry.id === fieldId);
+      const label = field?.label ?? fieldId;
+      issues.push(`${label}: ${fieldErrors[0]}`);
+    }
+    if (issues.length === 0) {
+      return { issues };
+    }
+    const summary = `${issues.length} Feld${issues.length > 1 ? "er" : ""} benötigt Aufmerksamkeit`;
+    return { issues, summary };
+  }
+
+  private renderFields(container: HTMLElement, fieldIds: string[] | undefined): AnyFieldSpec[] {
     const ordered = orderFields(this.spec.fields, fieldIds);
     for (const field of ordered) {
       this.renderField(container, field);
     }
-    this.updateFieldVisibility();
+    return ordered;
   }
 
   private renderField(container: HTMLElement, field: AnyFieldSpec): void {
-    const renderer = findRenderer(this.registry, field);
-    if (!renderer) {
+    const previous = this.fieldInstances.get(field.id);
+    previous?.handle.destroy?.();
+    this.fieldInstances.delete(field.id);
+    this.fieldValidators.delete(field.id);
+
+    const renderFn = field.render ?? findRenderer(this.registry, field)?.render;
+    if (!renderFn) {
       const fallback = container.createDiv({ cls: "sm-cc-field--unsupported" });
       fallback.createEl("label", { text: field.label });
       fallback.createEl("p", { text: `Unsupported field type: ${field.type}` });
       return;
     }
-    const handle = renderer.render({
+    const handle = renderFn({
       app: this.app,
       container,
       spec: field,
       values: this.data,
       onChange: (id, value) => this.handleFieldChange(id, value),
-      registerValidator: (runner) => runner(),
+      registerValidator: (runner) => this.registerFieldValidator(field.id, runner),
     });
     this.fieldInstances.set(field.id, {
       spec: field,
@@ -255,6 +358,7 @@ export class DeclarativeCreateModal<
       container: handle.container,
       isVisible: true,
     });
+    this.updateFieldVisibility();
   }
 
   private handleFieldChange(id: string, value: unknown): void {
@@ -317,6 +421,21 @@ export class DeclarativeCreateModal<
           issues.push(String(error));
         }
       }
+      const validators = this.fieldValidators.get(id);
+      if (validators) {
+        for (const validator of validators) {
+          try {
+            const validatorIssues = validator();
+            for (const message of validatorIssues) {
+              if (typeof message === "string" && message.trim()) {
+                issues.push(message.trim());
+              }
+            }
+          } catch (error) {
+            issues.push(String(error));
+          }
+        }
+      }
       instance.handle.setErrors?.(issues);
       fieldIssues.set(id, issues);
       if (issues.length) {
@@ -370,6 +489,8 @@ export class DeclarativeCreateModal<
     const parsed = this.spec.schema.parse(transformed) as TSerialized;
     const prepared = this.spec.transformers?.preSave ? this.spec.transformers.preSave(parsed) : parsed;
     const payload = buildSerializedPayload(this.spec.storage, prepared as unknown as Record<string, unknown>);
+    const baseMetadata = payload.metadata ?? {};
+    payload.metadata = { ...baseMetadata, values: prepared as unknown as Record<string, unknown> };
     return { values: prepared, payload };
   }
 

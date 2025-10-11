@@ -18,7 +18,7 @@ Die Library bündelt alle Nachschlagewerke der Kampagne in einem Obsidian-Panel.
 ## Tab-spezifische Sollzustände
 ### Creatures
 - Listet Kreaturen mit Name, Challenge Rating und Tags. Hover zeigt zusammengefasste Werte (HP, AC, Hauptaktionen).
-- `Create entry` öffnet den Kreaturen-Editor aus `library/create/creature`, übernimmt den Suchbegriff als Vorbelegung für den Namen und fokussiert das Namensfeld.
+- `Create entry` öffnet den Kreaturen-Editor auf Basis der Module in `apps/library/create/creature`, übernimmt den Suchbegriff als Vorbelegung für den Namen und fokussiert das Namensfeld.
 - Aktionen: Markdown-Datei öffnen, Duplizieren (kopiert Datei mit angepasstem Namen), Löschen (Dialog mit Rückfrage, verschiebt in Obsidian-Trash).
 - Datenaktualisierung: Nach dem Speichern eines Editors lädt die Liste die angepasste Datei und sortiert standardmäßig alphabetisch.
 

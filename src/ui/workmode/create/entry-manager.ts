@@ -2,7 +2,7 @@
 // Shared manager for Library-styled entry lists with add/filter controls.
 import type { EntryCardConfigFactory } from "./entry-card";
 import { renderEntryCard } from "./entry-card";
-import type { ValidationRegistrar } from "./layouts";
+import type { ValidationRegistrar } from "./types";
 
 export interface EntryCategoryDefinition<TCategory extends string> {
   id: TCategory;

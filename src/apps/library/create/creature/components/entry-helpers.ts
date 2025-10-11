@@ -1,13 +1,8 @@
-// src/apps/library/create/creature/components/attack-component.ts
-// Modular Attack Component for the entry system
-// Self-contained component with auto-calculation, attack type selection, and range/reach fields
+// src/apps/library/create/creature/components/entry-helpers.ts
+// Modular helper implementations for creature entry components used by the dynamic entry card.
 
-import {
-  createCheckbox,
-  createSelectDropdown,
-  createTextInput,
-} from "../../../../../ui/workmode/create";
-import { EntryAutoCalculator } from "../../shared/auto-calc";
+import { createCheckbox, createSelectDropdown, createTextInput } from "../../../../../ui/workmode/create/form-controls";
+import { EntryAutoCalculator } from "../auto-calc";
 import type { CreatureEntry } from "../entry-model";
 import type { StatblockData } from "../../../core/creature-files";
 import { CREATURE_ABILITY_SELECTIONS } from "../presets";
@@ -464,8 +459,8 @@ import {
   createSelectDropdown,
   createTextArea,
   createTextInput,
-} from "../../../../../ui/workmode/create";
-import { abilityMod, formatSigned, parseIntSafe } from "../../shared/stat-utils";
+} from "../../../../../ui/workmode/create/form-controls";
+import { abilityMod, formatSigned, parseIntSafe } from "../stat-utils";
 import type { CreatureEntry } from "../entry-model";
 import type { StatblockData } from "../../../core/creature-files";
 import { CREATURE_SAVE_OPTIONS, CREATURE_ABILITY_LABELS } from "../presets";
@@ -889,10 +884,10 @@ import {
   createNumberInput,
   createSelectDropdown,
   createTextInput,
-} from "../../../../../ui/workmode/create";
+} from "../../../../../ui/workmode/create/form-controls";
 import type { StatblockData } from "../../../core/creature-files";
 import { CREATURE_ABILITY_LABELS } from "../presets";
-import { abilityMod, formatSigned } from "../../shared/stat-utils";
+import { abilityMod, formatSigned } from "../stat-utils";
 import { setIcon } from "obsidian";
 
 /**

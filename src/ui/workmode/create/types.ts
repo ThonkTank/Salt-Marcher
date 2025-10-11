@@ -2,6 +2,12 @@
 // Type definitions for the declarative workmode create modal contract.
 import type { App } from "obsidian";
 
+export type ValidationRunner = () => string[];
+
+export type ValidationResult = string[] | { issues: string[]; summary?: string };
+
+export type ValidationRegistrar = (runner: () => ValidationResult) => ValidationRunner;
+
 export type FieldType =
   | "text" | "textarea" | "number-stepper"
   | "select" | "multiselect" | "tags"
@@ -31,6 +37,11 @@ export interface FieldSpec<T = unknown> extends FieldVisibilityRule {
   storageKey?: string;
   validate?: (value: T, all: Record<string, unknown>) => string | null;
   transform?: (value: T, all: Record<string, unknown>) => unknown;
+  widget?: string;
+  render?: (args: RenderFieldArgs) => FieldRenderHandle & {
+    setErrors?: (errors: string[]) => void;
+    container?: HTMLElement;
+  };
 }
 
 export interface CompositeFieldSpec<T = unknown> extends FieldSpec<T> {
@@ -47,7 +58,7 @@ export interface RenderFieldArgs {
   spec: AnyFieldSpec;
   values: Record<string, unknown>;
   onChange: (id: string, value: unknown) => void;
-  registerValidator: (runner: () => string[]) => void;
+  registerValidator: (runner: () => string[]) => ValidationRunner;
 }
 
 export interface FieldRenderHandle {
@@ -98,16 +109,34 @@ export interface StorageSpec {
   };
   hooks?: {
     ensureDirectory?: (app: App) => Promise<void>;
-    beforeWrite?: (payload: SerializedPayload) => Promise<void> | void;
+    beforeWrite?: (
+      payload: SerializedPayload,
+      context: { app: App; values?: Record<string, unknown> },
+    ) => Promise<void> | void;
     afterWrite?: (result: PersistResult) => Promise<void> | void;
   };
 }
 
-export interface SectionSpec {
+export interface SectionMountContext<TDraft extends Record<string, unknown>> {
+  app: App;
+  container: HTMLElement;
+  draft: TDraft;
+  registerValidation: ValidationRegistrar;
+  renderField: (fieldId: string, target?: HTMLElement) => void;
+  restartWithDraft: (draft: TDraft | Partial<TDraft>) => void;
+}
+
+export interface SectionMountResult {
+  destroy?: () => void;
+  update?: (draft: Record<string, unknown>) => void;
+}
+
+export interface SectionSpec<TDraft extends Record<string, unknown> = Record<string, unknown>> {
   id: string;
   label: string;
   description?: string;
-  fieldIds: string[];
+  fieldIds?: string[];
+  mount?: (context: SectionMountContext<TDraft>) => SectionMountResult | void;
 }
 
 export interface CreateSpec<
@@ -130,7 +159,7 @@ export interface CreateSpec<
     submitLabel?: string;
     cancelLabel?: string;
     enableNavigation?: boolean;
-    sections?: SectionSpec[];
+    sections?: SectionSpec<TDraft>[];
   };
   behavior?: {
     autoSlugify?: boolean;

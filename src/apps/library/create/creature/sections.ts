@@ -3,22 +3,18 @@
 
 import { Setting } from "obsidian";
 import type { StatblockData } from "../../core/creature-files";
-import {
-  createFormCard,
-  createFieldGrid,
-  createRepeatingGrid,
-  enhanceExistingSelectDropdown,
-  mountTokenEditor,
-  mountEntryManager,
-} from "../../../../ui/workmode/create";
+import { createFormCard, createFieldGrid, createRepeatingGrid } from "../../../../ui/workmode/create/layouts";
+import { enhanceExistingSelectDropdown } from "../../../../ui/workmode/create/form-controls";
+import { mountTokenEditor } from "../../../../ui/workmode/create/token-editor";
+import { mountEntryManager } from "../../../../ui/workmode/create/entry-manager";
 import {
   mountMovementEditor,
   mountPresetSelectEditor,
   mountDamageResponseEditor,
   type PresetSelectModel,
   type SectionValidationRegistrar
-} from "../shared/creature-controls";
-import { abilityMod, formatSigned, parseIntSafe } from "../shared/stat-utils";
+} from "./creature-controls";
+import { abilityMod, formatSigned, parseIntSafe } from "./stat-utils";
 import { createAlignmentEditor, createMovementModel, createStatColumn, type StatColumnRefs, createSkillManager } from "./components/section-helpers";
 import { validateEntry } from "./entry-model";
 import { createCreatureEntryCardConfig, type CreatureEntryWithComponents } from "./components/entry-card";
@@ -119,7 +115,7 @@ function setupCreatureAutocomplete({ app, inputEl, onSelect }: AutocompleteOptio
       return;
     }
 
-    const { findCreaturePresets } = await import('../../core/creature-presets');
+    const { findCreaturePresets } = await import("../../core/creature-presets");
     const results = await findCreaturePresets(app, query, { limit: 8 });
 
     if (results.length === 0) {

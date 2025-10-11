@@ -1,33 +1,16 @@
 # Ziele
-- Stellt den Kreaturen-Editor mit Abschnitten für Werte, Sinne und Zauber.
-- Modulare, wiederverwendbare Komponenten für bessere Wartbarkeit und Erweiterbarkeit.
+- Stellt das deklarative Create-Spec für Kreaturen bereit.
+- Bündelt alle Creature-spezifischen Controls, Sections und Presets in diesem Modul, sodass das Workmode-Create-Framework nur generische Infrastruktur enthält.
 
 # Aktueller Stand
-- `modal` erzeugt das Editor-Dialogfenster.
-- `index` und `section-*` rendern Formularabschnitte inkl. Presets.
-- `presets` liefert Vorlagewerte (inkl. dokumentierter Schwierigkeits-Tiers), `section-utils` kapselt Hilfsfunktionen.
-- `section-basics` speichert Standardbewegungen in `data.speeds` und pflegt Hover-Flags getrennt von den Distanzangaben.
-
-## Refactored Sections (Phase 2-4, 2025-01)
-- **section-entries.ts**: 393 → 134 Zeilen (-66%) durch Entry-Card-Komponente
-- **section-spellcasting.ts**: 636 → 444 Zeilen (-30%) durch Spell-Input, Spell-Row, Spell-Group Komponenten
-- **section-stats-and-skills.ts**: 257 → 121 Zeilen (-53%) durch Stat-Column und Skill-Manager Komponenten
-- **section-basics.ts**: 352 → 149 Zeilen (-58%) durch Alignment-Editor und Movement-Model Komponenten
-
-## Komponenten-Architektur
-- **components/spellcasting/**: Spell-Input (Autocomplete), Spell-Row, Spell-Group (4 Typen: at-will, per-day, level, custom)
-- **components/stats-and-skills/**: Stat-Column (Score/Mod/Save), Skill-Manager (Search, Chips, Expertise)
-- **components/basics/**: Alignment-Editor (Law/Chaos, Good/Evil, Override), Movement-Model (Standard + Custom)
-- **components/entry-card.ts**: Basis, Combat, Meta, Details Sections mit Preset-Autocomplete
-
-Alle Komponenten sind mit JSDoc dokumentiert und exportieren type-safe Interfaces und Handles.
+- `create-spec.ts` validiert Statblock-Daten und montiert die lokalen Section-Helfer.
+- `sections.ts`, `section-*.ts` und `components/` liefern Creature-spezifische UI-Elemente, die auch von Tests und Presets konsumiert werden können.
+- `index.ts` re-exportiert das Toolkit für Altskripte, die noch auf `library/create/creature` verweisen.
 
 # ToDo
 - [P4.3] Spell-Ladeprozess im Modal mit Lade-/Fehlerzustand versehen.
 
 # Standards
-- Jede Abschnittsdatei beschreibt im Kopf, welche Felder sie rendert.
-- Gemeinsame Utilities bleiben in `section-utils` und werden nicht dupliziert.
-- Komponenten exportieren klare Options-Interfaces und Handles für externe Updates.
-- JSDoc mit @param, @returns, @example für alle öffentlichen APIs.
-- Keine Breaking Changes bei Refactorings - bestehende APIs bleiben erhalten.
+- Das Spec beschreibt alle Felder des Formulars in der gemeinsamen Modal-API.
+- Neue UI-Helfer werden innerhalb dieses Verzeichnisses abgelegt und in `index.ts` exportiert.
+- JSDoc dokumentiert öffentliche Exporte und erläutert den Speicherpfad der erzeugten Dateien.

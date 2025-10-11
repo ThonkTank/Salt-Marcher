@@ -1,5 +1,5 @@
 # Ziele
-- Stellt ein Nachschlagewerk für Kreaturen, Regionen, Zauber und Gelände bereit.
+- Stellt ein Nachschlagewerk für Kreaturen, Zauber, Items und Equipment bereit.
 
 # Aktueller Stand
 - `view` enthält Renderer pro Kategorie, Zustandslogik lebt im Wurzelordner.
