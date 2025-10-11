@@ -8,7 +8,7 @@ import { SpellsRenderer } from "./view/spells";
 import { ItemsRenderer } from "./view/items";
 import { EquipmentRenderer } from "./view/equipment";
 import { describeLibrarySource, ensureLibrarySources } from "./core/sources";
-import { createTabNavigation, type TabConfig, type TabNavigationHandle } from "../../ui/workmode";
+import { createWorkmodeHeader, type WorkmodeHeaderHandle, type TabConfig } from "../../ui/workmode";
 
 /**
  * Authoritative UI copy for the library view. Keep aligned with `docs/ui/terminology.md`.
@@ -37,11 +37,10 @@ const LIBRARY_VIEW_SOURCES: Mode[] = ["creatures", "spells", "items", "equipment
 export class LibraryView extends ItemView {
     private mode: Mode = "creatures";
     private queries = new Map<Mode, string>();
-    private tabNav?: TabNavigationHandle<Mode>;
+    private header?: WorkmodeHeaderHandle<Mode>;
     private listEl?: HTMLElement;
     private descEl?: HTMLElement;
     private activeRenderer?: ModeRenderer;
-    private searchInput?: HTMLInputElement;
     private readonly watchers = new LibrarySourceWatcherHub();
 
     getViewType() { return VIEW_LIBRARY; }
@@ -58,16 +57,14 @@ export class LibraryView extends ItemView {
     async onClose() {
         await this.activeRenderer?.destroy();
         this.activeRenderer = undefined;
-        this.tabNav?.destroy();
+        this.header?.destroy();
+        this.header = undefined;
         this.watchers.destroy();
         this.contentEl.removeClass("sm-library");
     }
 
     private renderShell() {
         const root = this.contentEl; root.empty();
-        root.createEl("h2", { text: LIBRARY_COPY.title });
-
-        // Tab navigation using shared infrastructure
         const tabs: TabConfig<Mode>[] = [
             { id: "creatures", label: LIBRARY_COPY.modes.creatures },
             { id: "spells", label: LIBRARY_COPY.modes.spells },
@@ -75,25 +72,27 @@ export class LibraryView extends ItemView {
             { id: "equipment", label: LIBRARY_COPY.modes.equipment },
         ];
 
-        this.tabNav = createTabNavigation(root, {
-            tabs,
-            activeTab: this.mode,
-            className: "sm-lib-header",
-            onSelect: (mode) => { void this.activateMode(mode); },
+        this.header = createWorkmodeHeader(root, {
+            title: LIBRARY_COPY.title,
+            tabs: {
+                items: tabs,
+                active: this.mode,
+                className: "sm-lib-header",
+                onSelect: (mode) => { void this.activateMode(mode); },
+            },
+            search: {
+                placeholder: LIBRARY_COPY.searchPlaceholder,
+                value: this.getQueryForMode(this.mode),
+                onChange: (value) => {
+                    this.queries.set(this.mode, value);
+                    this.activeRenderer?.setQuery(value);
+                },
+            },
+            action: {
+                label: LIBRARY_COPY.createButton,
+                onClick: (value) => { void this.onCreate(value); },
+            },
         });
-
-        // Search + create
-        const bar = root.createDiv({ cls: "sm-cc-searchbar" });
-        const search = bar.createEl("input", { attr: { type: "text", placeholder: LIBRARY_COPY.searchPlaceholder } }) as HTMLInputElement;
-        search.value = this.getQueryForMode(this.mode);
-        search.oninput = () => {
-            const trimmed = search.value.trim();
-            this.queries.set(this.mode, trimmed);
-            this.activeRenderer?.setQuery(trimmed);
-        };
-        this.searchInput = search;
-        const createBtn = bar.createEl("button", { text: LIBRARY_COPY.createButton });
-        createBtn.onclick = () => { void this.onCreate(search.value.trim()); };
 
         // Source description
         this.descEl = root.createDiv({ cls: "desc" });
@@ -105,10 +104,10 @@ export class LibraryView extends ItemView {
     private async activateMode(mode: Mode) {
         if (this.activeRenderer?.mode === mode) {
             this.mode = mode;
-            this.tabNav?.setActiveTab(mode);
+            this.header?.setActiveTab(mode);
             this.updateSourceDescription();
             const query = this.getQueryForMode(mode);
-            if (this.searchInput) this.searchInput.value = query;
+            this.header?.setSearchValue(query);
             this.activeRenderer.setQuery(query);
             this.activeRenderer.render();
             return;
@@ -118,14 +117,14 @@ export class LibraryView extends ItemView {
             this.activeRenderer = undefined;
         }
         this.mode = mode;
-        this.tabNav?.setActiveTab(mode);
+        this.header?.setActiveTab(mode);
         this.updateSourceDescription();
         if (!this.listEl) return;
         const renderer = this.createRenderer(mode, this.listEl);
         this.activeRenderer = renderer;
         await renderer.init();
         const query = this.getQueryForMode(mode);
-        if (this.searchInput) this.searchInput.value = query;
+        this.header?.setSearchValue(query);
         renderer.setQuery(query);
         renderer.render();
     }
@@ -157,7 +156,7 @@ export class LibraryView extends ItemView {
         if (this.activeRenderer.handleCreate) {
             await this.activeRenderer.handleCreate(name);
         }
-        this.searchInput?.focus();
+        this.header?.focusSearch();
     }
 
     private getQueryForMode(mode: Mode): string {

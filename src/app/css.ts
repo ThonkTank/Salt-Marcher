@@ -1792,9 +1792,15 @@ const cartographerPanelsCss = `
 /* === Cartographer Panels (Editor & Inspector) === */
 
 /* Library header */
-.sm-library .sm-lib-header { display:flex; gap:.4rem; margin:.25rem 0 .25rem; }
-.sm-library .sm-lib-header button { border: 1px solid var(--background-modifier-border); background: var(--background-secondary); padding:.25rem .75rem; border-radius:6px; cursor:pointer; }
-.sm-library .sm-lib-header button.is-active { background: var(--interactive-accent); color: var(--text-on-accent,#fff); }
+.sm-library .sm-lib-header,
+.sm-atlas .sm-lib-header,
+.sm-almanac .sm-lib-header { display:flex; gap:.4rem; margin:.25rem 0 .25rem; }
+.sm-library .sm-lib-header button,
+.sm-atlas .sm-lib-header button,
+.sm-almanac .sm-lib-header button { border: 1px solid var(--background-modifier-border); background: var(--background-secondary); padding:.25rem .75rem; border-radius:6px; cursor:pointer; }
+.sm-library .sm-lib-header button.is-active,
+.sm-atlas .sm-lib-header button.is-active,
+.sm-almanac .sm-lib-header button.is-active { background: var(--interactive-accent); color: var(--text-on-accent,#fff); }
 .sm-cartographer__panel {
     display: flex;
     flex-direction: column;

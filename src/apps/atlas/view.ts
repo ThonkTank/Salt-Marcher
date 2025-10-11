@@ -7,7 +7,7 @@ import { TerrainsRenderer } from "./view/terrains";
 import { RegionsRenderer } from "./view/regions";
 import { ensureTerrainFile, TERRAIN_FILE } from "../../core/terrain-store";
 import { ensureRegionsFile, REGIONS_FILE } from "../../core/regions-store";
-import { createTabNavigation, type TabConfig, type TabNavigationHandle } from "../../ui/workmode";
+import { createWorkmodeHeader, type TabConfig, type WorkmodeHeaderHandle } from "../../ui/workmode";
 
 /**
  * UI copy for the atlas view covering terrains and regions.
@@ -32,11 +32,10 @@ export const VIEW_ATLAS = "salt-atlas";
 export class AtlasView extends ItemView {
     private mode: AtlasMode = "terrains";
     private queries = new Map<AtlasMode, string>();
-    private tabNav?: TabNavigationHandle<AtlasMode>;
+    private header?: WorkmodeHeaderHandle<AtlasMode>;
     private listEl?: HTMLElement;
     private descEl?: HTMLElement;
     private activeRenderer?: AtlasModeRenderer;
-    private searchInput?: HTMLInputElement;
 
     getViewType() { return VIEW_ATLAS; }
     getDisplayText() { return ATLAS_COPY.title; }
@@ -55,38 +54,39 @@ export class AtlasView extends ItemView {
     async onClose() {
         await this.activeRenderer?.destroy();
         this.activeRenderer = undefined;
-        this.tabNav?.destroy();
+        this.header?.destroy();
+        this.header = undefined;
         this.contentEl.removeClass("sm-atlas");
     }
 
     private renderShell() {
         const root = this.contentEl; root.empty();
-        root.createEl("h2", { text: ATLAS_COPY.title });
-
         const tabs: TabConfig<AtlasMode>[] = [
             { id: "terrains", label: ATLAS_COPY.modes.terrains },
             { id: "regions", label: ATLAS_COPY.modes.regions },
         ];
 
-        this.tabNav = createTabNavigation(root, {
-            tabs,
-            activeTab: this.mode,
-            className: "sm-atlas-header",
-            onSelect: (mode) => { void this.activateMode(mode); },
+        this.header = createWorkmodeHeader(root, {
+            title: ATLAS_COPY.title,
+            tabs: {
+                items: tabs,
+                active: this.mode,
+                className: "sm-lib-header",
+                onSelect: (mode) => { void this.activateMode(mode); },
+            },
+            search: {
+                placeholder: ATLAS_COPY.searchPlaceholder,
+                value: this.getQueryForMode(this.mode),
+                onChange: (value) => {
+                    this.queries.set(this.mode, value);
+                    this.activeRenderer?.setQuery(value);
+                },
+            },
+            action: {
+                label: ATLAS_COPY.createButton,
+                onClick: (value) => { void this.onCreate(value); },
+            },
         });
-
-        const bar = root.createDiv({ cls: "sm-cc-searchbar" });
-        const search = bar.createEl("input", { attr: { type: "text", placeholder: ATLAS_COPY.searchPlaceholder } }) as HTMLInputElement;
-        search.value = this.getQueryForMode(this.mode);
-        search.oninput = () => {
-            const trimmed = search.value.trim();
-            this.queries.set(this.mode, trimmed);
-            this.activeRenderer?.setQuery(trimmed);
-        };
-        this.searchInput = search;
-
-        const createBtn = bar.createEl("button", { text: ATLAS_COPY.createButton });
-        createBtn.onclick = () => { void this.onCreate(search.value.trim()); };
 
         this.descEl = root.createDiv({ cls: "desc" });
         this.listEl = root.createDiv({ cls: "sm-cc-list" });
@@ -95,10 +95,10 @@ export class AtlasView extends ItemView {
     private async activateMode(mode: AtlasMode) {
         if (this.activeRenderer?.mode === mode) {
             this.mode = mode;
-            this.tabNav?.setActiveTab(mode);
+            this.header?.setActiveTab(mode);
             this.updateSourceDescription();
             const query = this.getQueryForMode(mode);
-            if (this.searchInput) this.searchInput.value = query;
+            this.header?.setSearchValue(query);
             this.activeRenderer.setQuery(query);
             this.activeRenderer.render();
             return;
@@ -108,14 +108,14 @@ export class AtlasView extends ItemView {
             this.activeRenderer = undefined;
         }
         this.mode = mode;
-        this.tabNav?.setActiveTab(mode);
+        this.header?.setActiveTab(mode);
         this.updateSourceDescription();
         if (!this.listEl) return;
         const renderer = this.createRenderer(mode, this.listEl);
         this.activeRenderer = renderer;
         await renderer.init();
         const query = this.getQueryForMode(mode);
-        if (this.searchInput) this.searchInput.value = query;
+        this.header?.setSearchValue(query);
         renderer.setQuery(query);
         renderer.render();
     }
@@ -144,7 +144,7 @@ export class AtlasView extends ItemView {
         if (this.activeRenderer.handleCreate) {
             await this.activeRenderer.handleCreate(name);
         }
-        this.searchInput?.focus();
+        this.header?.focusSearch();
     }
 
     private getQueryForMode(mode: AtlasMode): string {
