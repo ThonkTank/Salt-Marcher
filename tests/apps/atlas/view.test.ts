@@ -117,5 +117,6 @@ describe("AtlasView terrain actions", () => {
         await Promise.resolve();
         expect(openCreateModalMock).toHaveBeenCalled();
         expect(openCreateModalMock.mock.calls[0]?.[1]).toMatchObject({ preset: "Forest" });
+        expect(openCreateModalMock.mock.calls[0]?.[1]?.app).toBe(app);
     });
 });

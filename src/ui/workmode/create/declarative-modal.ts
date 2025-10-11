@@ -86,6 +86,7 @@ export class DeclarativeCreateModal<
   ModalSerializationResult<TSerialized>,
   OpenCreateModalResult
 > {
+  private static pendingSpec: CreateSpec<NamedDraft, unknown> | null = null;
   private readonly spec: CreateSpec<TDraft, TSerialized>;
   private readonly registry: FieldRegistryEntry[];
   private readonly resolveResult: (result: OpenCreateModalResult | null) => void;
@@ -123,6 +124,7 @@ export class DeclarativeCreateModal<
       },
     };
     const modalRef: { instance: DeclarativeCreateModal<TDraft, TSerialized> | null } = { instance: null };
+    DeclarativeCreateModal.pendingSpec = spec as CreateSpec<NamedDraft, unknown>;
     super(app, preset, {
       title: spec.title,
       subtitle: spec.subtitle,
@@ -154,6 +156,7 @@ export class DeclarativeCreateModal<
       },
       pipeline,
     });
+    DeclarativeCreateModal.pendingSpec = null;
     modalRef.instance = this;
     this.spec = spec;
     this.registry = registry;
@@ -171,9 +174,13 @@ export class DeclarativeCreateModal<
   }
 
   protected createDefault(name: string): TDraft {
-    const defaults = resolveDefaults(this.spec, name);
+    const activeSpec = this.spec ?? (DeclarativeCreateModal.pendingSpec as CreateSpec<TDraft, TSerialized> | null);
+    if (!activeSpec) {
+      throw new Error("Create spec unavailable during initialization");
+    }
+    const defaults = resolveDefaults(activeSpec, name);
     const draft: Record<string, unknown> = { name };
-    for (const field of this.spec.fields) {
+    for (const field of activeSpec.fields) {
       if (defaults[field.id] !== undefined) {
         draft[field.id] = defaults[field.id];
         continue;
@@ -182,8 +189,8 @@ export class DeclarativeCreateModal<
         draft[field.id] = field.default;
       }
     }
-    if (draft[this.spec.storage.filenameFrom] === undefined) {
-      draft[this.spec.storage.filenameFrom] = draft.name;
+    if (draft[activeSpec.storage.filenameFrom] === undefined) {
+      draft[activeSpec.storage.filenameFrom] = draft.name;
     }
     return draft as TDraft;
   }
