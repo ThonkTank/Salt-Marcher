@@ -62,7 +62,11 @@ const ensureObsidianDomHelpers = () => {
         proto.createEl = function(tag: string, options?: { text?: string; cls?: string; attr?: Record<string, string> }) {
             const el = document.createElement(tag);
             if (options?.text) el.textContent = options.text;
-            if (options?.cls) el.classList.add(options.cls);
+            if (options?.cls) {
+                for (const cls of options.cls.split(/\s+/).filter(Boolean)) {
+                    el.classList.add(cls);
+                }
+            }
             if (options?.attr) {
                 for (const [key, value] of Object.entries(options.attr)) {
                     el.setAttribute(key, value);
@@ -130,14 +134,12 @@ describe("LibraryView copy", () => {
         const heading = root.querySelector("h2");
         expect(heading?.textContent).toBe(LIBRARY_COPY.title);
 
-        const buttons = Array.from(root.querySelectorAll(".sm-lib-header button"));
+        const buttons = Array.from(root.querySelectorAll(".sm-tab-nav__button"));
         expect(buttons.map(b => b.textContent)).toEqual([
             LIBRARY_COPY.modes.creatures,
             LIBRARY_COPY.modes.spells,
             LIBRARY_COPY.modes.items,
             LIBRARY_COPY.modes.equipment,
-            LIBRARY_COPY.modes.terrains,
-            LIBRARY_COPY.modes.regions,
         ]);
 
         const search = root.querySelector("input[type=\"text\"]");
@@ -146,23 +148,24 @@ describe("LibraryView copy", () => {
         const createBtn = root.querySelector(".sm-cc-searchbar button");
         expect(createBtn?.textContent).toBe(LIBRARY_COPY.createButton);
 
-        const desc = root.querySelector(".desc");
+        const desc = root.querySelector(".sm-workmode-header__description");
         expect(desc?.textContent).toBe(`${LIBRARY_COPY.sources.prefix}${SOURCE_LABELS.creatures}`);
     });
 
     it("updates the source description when switching modes", async () => {
         await view.onOpen();
         const root = (view as unknown as { contentEl: HTMLElement }).contentEl;
-        const [_, __, ___, ____, terrainsButton, regionsButton] = Array.from(root.querySelectorAll(".sm-lib-header button"));
+        const itemsButton = root.querySelector(".sm-tab-nav__button[data-tab-id=\"items\"]");
+        const equipmentButton = root.querySelector(".sm-tab-nav__button[data-tab-id=\"equipment\"]");
 
-        terrainsButton.dispatchEvent(new Event("click"));
+        itemsButton?.dispatchEvent(new Event("click"));
         await flush();
-        const descAfterTerrains = root.querySelector(".desc")?.textContent;
-        expect(descAfterTerrains).toBe(`${LIBRARY_COPY.sources.prefix}${SOURCE_LABELS.terrains}`);
+        const descAfterItems = root.querySelector(".sm-workmode-header__description")?.textContent;
+        expect(descAfterItems).toBe(`${LIBRARY_COPY.sources.prefix}${SOURCE_LABELS.items}`);
 
-        regionsButton.dispatchEvent(new Event("click"));
+        equipmentButton?.dispatchEvent(new Event("click"));
         await flush();
-        const descAfterRegions = root.querySelector(".desc")?.textContent;
-        expect(descAfterRegions).toBe(`${LIBRARY_COPY.sources.prefix}${SOURCE_LABELS.regions}`);
+        const descAfterEquipment = root.querySelector(".sm-workmode-header__description")?.textContent;
+        expect(descAfterEquipment).toBe(`${LIBRARY_COPY.sources.prefix}${SOURCE_LABELS.equipment}`);
     });
 });

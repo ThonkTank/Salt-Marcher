@@ -9,11 +9,14 @@
 
 import type { App } from "obsidian";
 import { ItemView, WorkspaceLeaf } from "obsidian";
+import { createWorkmodeHeader, type WorkmodeHeaderHandle } from "../../ui/workmode";
 
 export const VIEW_TYPE_ALMANAC = "almanac-view";
 export const VIEW_ALMANAC = VIEW_TYPE_ALMANAC;
 
 export class AlmanacView extends ItemView {
+    private header?: WorkmodeHeaderHandle;
+
     constructor(leaf: WorkspaceLeaf) {
         super(leaf);
     }
@@ -35,15 +38,23 @@ export class AlmanacView extends ItemView {
         const content = container.children[1] as HTMLElement;
         content.empty();
 
+        this.header?.destroy();
+        this.header = createWorkmodeHeader(content, {
+            title: this.getDisplayText(),
+            description: {
+                text: "The Almanac's interactive interface has been removed. Existing calendar data remains available for other modules.",
+            },
+        });
+
         const placeholder = content.createDiv({ cls: "almanac-placeholder" });
-        placeholder.createEl("h2", { text: "Almanac front-end removed" });
         placeholder.createEl("p", {
-            text: "The Almanac's interactive interface has been removed. Existing calendar data remains available for other modules.",
+            text: "This view will host the unified workmode UI once the Almanac front-end returns.",
         });
     }
 
     async onClose(): Promise<void> {
-        // No resources to release after the front-end removal.
+        this.header?.destroy();
+        this.header = undefined;
     }
 }
 

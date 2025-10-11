@@ -1791,10 +1791,16 @@ const cartographerShellCss = `
 const cartographerPanelsCss = `
 /* === Cartographer Panels (Editor & Inspector) === */
 
-/* Library header */
-.sm-library .sm-lib-header { display:flex; gap:.4rem; margin:.25rem 0 .25rem; }
-.sm-library .sm-lib-header button { border: 1px solid var(--background-modifier-border); background: var(--background-secondary); padding:.25rem .75rem; border-radius:6px; cursor:pointer; }
-.sm-library .sm-lib-header button.is-active { background: var(--interactive-accent); color: var(--text-on-accent,#fff); }
+/* Workmode header */
+.sm-workmode-header { display:flex; flex-direction:column; gap:.75rem; padding:.5rem 0 1rem; }
+.sm-workmode-header__title-row { display:flex; flex-wrap:wrap; align-items:center; gap:.75rem; }
+.sm-workmode-header__title { margin:0; font-size:1.5rem; font-weight:600; }
+.sm-workmode-header__tabs { margin-left:auto; }
+.sm-workmode-header__search { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; }
+.sm-workmode-header__search-label { font-weight:600; }
+.sm-workmode-header__search-input { flex:1 1 260px; min-width:180px; }
+.sm-workmode-header__action { white-space:nowrap; }
+.sm-workmode-header__description { color: var(--text-muted); font-size:.9rem; }
 .sm-cartographer__panel {
     display: flex;
     flex-direction: column;
