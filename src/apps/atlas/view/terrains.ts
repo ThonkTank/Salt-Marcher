@@ -2,11 +2,105 @@
 // Bearbeitet Terrain-Konfigurationen mit Auto-Speichern.
 import type { AtlasModeRenderer } from "./mode";
 import { BaseModeRenderer, scoreName } from "./mode";
-import { loadTerrains, saveTerrains, watchTerrains, ensureTerrainFile } from "../../../core/terrain-store";
+import {
+    loadTerrains,
+    saveTerrains,
+    watchTerrains,
+    ensureTerrainFile,
+    stringifyTerrainBlock,
+    TERRAIN_FILE,
+} from "../../../core/terrain-store";
+import {
+    openCreateModal,
+    type CreateSpec,
+    type DataSchema,
+} from "../../../ui/workmode/create";
 
 interface TerrainConfig { color: string; speed: number; }
 
 type TerrainMap = Record<string, TerrainConfig>;
+
+interface TerrainFormValues { name: string; color: string; speed: number; }
+
+interface TerrainPersistPayload extends TerrainFormValues {
+    terrains: TerrainMap;
+}
+
+interface TerrainSchemaIssue {
+    path?: Array<string | number>;
+    message?: string;
+}
+
+class TerrainSchemaError extends Error {
+    constructor(readonly issues: TerrainSchemaIssue[]) {
+        super(issues[0]?.message ?? "Ungültige Werte");
+        this.name = "TerrainSchemaError";
+    }
+}
+
+const COLOR_FALLBACK = "#999999" as const;
+const HEX_COLOR_RE = /^#[0-9a-f]{6}$/i;
+
+function normalizeColor(raw: unknown): string | null {
+    if (typeof raw !== "string") return null;
+    const trimmed = raw.trim();
+    return HEX_COLOR_RE.test(trimmed) ? trimmed : null;
+}
+
+function ensureEmptyEntry(map: TerrainMap): TerrainMap {
+    if (map[""]) return map;
+    return { ...map, "": { color: "transparent", speed: 1 } };
+}
+
+function createTerrainSchema(base: TerrainMap): DataSchema<TerrainFormValues, TerrainPersistPayload> {
+    const snapshot = ensureEmptyEntry({ ...base });
+    const parse = (input: unknown): TerrainPersistPayload => {
+        const issues: TerrainSchemaIssue[] = [];
+        const source = typeof input === "object" && input !== null ? input as Record<string, unknown> : {};
+
+        const rawName = typeof source.name === "string" ? source.name : "";
+        const name = rawName.trim();
+        if (!name) {
+            issues.push({ path: ["name"], message: "Name ist erforderlich" });
+        } else if (snapshot[name]) {
+            issues.push({ path: ["name"], message: "Terrain existiert bereits" });
+        }
+
+        const color = normalizeColor(source.color);
+        if (!color) {
+            issues.push({ path: ["color"], message: "Farbe muss im Format #RRGGBB vorliegen" });
+        }
+
+        const parsedSpeed = typeof source.speed === "number" ? source.speed : Number(source.speed);
+        const speed = Number.isFinite(parsedSpeed) ? Number(parsedSpeed) : NaN;
+        if (!Number.isFinite(speed) || speed < 0) {
+            issues.push({ path: ["speed"], message: "Geschwindigkeit muss mindestens 0 sein" });
+        }
+
+        if (issues.length > 0) {
+            throw new TerrainSchemaError(issues);
+        }
+
+        const terrains = ensureEmptyEntry({
+            ...snapshot,
+            [name]: { color: color!, speed },
+        });
+
+        return { name, color: color!, speed, terrains };
+    };
+
+    return {
+        parse,
+        safeParse: (value) => {
+            try {
+                const parsed = parse(value);
+                return { success: true, data: parsed };
+            } catch (error) {
+                return { success: false, error };
+            }
+        },
+    };
+}
 
 const SAVE_DEBOUNCE_MS = 500;
 
@@ -56,12 +150,12 @@ export class TerrainsRenderer extends BaseModeRenderer implements AtlasModeRende
             const delBtn = row.createEl("button", { text: "🗑" });
 
             const base = this.terrains[currentKey] ?? { color: "transparent", speed: 1 };
-            colorInp.value = /^#([0-9a-f]{6})$/i.test(base.color) ? base.color : "#999999";
+            colorInp.value = /^#([0-9a-f]{6})$/i.test(base.color) ? base.color : COLOR_FALLBACK;
             speedInp.value = String(Number.isFinite(base.speed) ? base.speed : 1);
 
             const updateFromInputs = () => {
                 const nextKey = nameInp.value.trim();
-                const color = colorInp.value || "#999999";
+                const color = colorInp.value || COLOR_FALLBACK;
                 const speed = parseFloat(speedInp.value);
                 const normalizedNext = nextKey || "";
                 const normalizedCurrent = currentKey || "";
@@ -87,7 +181,7 @@ export class TerrainsRenderer extends BaseModeRenderer implements AtlasModeRende
                 const speed = parseFloat(speedInp.value);
                 const nextKey = nameInp.value.trim();
                 this.writeTerrain(currentKey, nextKey, {
-                    color: colorInp.value || "#999999",
+                    color: colorInp.value || COLOR_FALLBACK,
                     speed: Number.isFinite(speed) ? speed : 1,
                 });
                 currentKey = nextKey || "";
@@ -107,13 +201,19 @@ export class TerrainsRenderer extends BaseModeRenderer implements AtlasModeRende
     }
 
     async handleCreate(name: string): Promise<void> {
-        const key = name.trim();
-        if (!key) return;
-        if (!this.terrains[key]) {
-            this.terrains[key] = { color: "#888888", speed: 1 };
+        const preset = name.trim();
+        const spec = this.createModalSpec(this.terrains);
+        try {
+            const result = await openCreateModal<TerrainFormValues, TerrainPersistPayload>(spec, {
+                app: this.app,
+                preset: preset || undefined,
+            });
+            if (!result) return;
+            this.terrains = await loadTerrains(this.app);
             this.ensureEmptyKey();
             this.render();
-            this.scheduleSave();
+        } catch (error) {
+            console.error("Terrain creation failed", error);
         }
     }
 
@@ -122,10 +222,66 @@ export class TerrainsRenderer extends BaseModeRenderer implements AtlasModeRende
         await super.destroy();
     }
 
+    private createModalSpec(existing: TerrainMap): CreateSpec<TerrainFormValues, TerrainPersistPayload> {
+        const snapshot = ensureEmptyEntry({ ...existing });
+        const schema = createTerrainSchema(snapshot);
+        const validateName = (value: unknown): string | null => {
+            const name = typeof value === "string" ? value.trim() : "";
+            if (!name) return "Name ist erforderlich";
+            if (snapshot[name]) return "Terrain existiert bereits";
+            return null;
+        };
+        return {
+            kind: "terrain",
+            title: "Neues Terrain",
+            schema,
+            defaults: { color: COLOR_FALLBACK, speed: 1 },
+            fields: [
+                {
+                    id: "name",
+                    label: "Name",
+                    type: "text",
+                    required: true,
+                    placeholder: "z. B. Wald",
+                    validate: validateName,
+                },
+                {
+                    id: "color",
+                    label: "Farbe",
+                    type: "color",
+                    required: true,
+                    default: COLOR_FALLBACK,
+                },
+                {
+                    id: "speed",
+                    label: "Geschwindigkeit",
+                    type: "number-stepper",
+                    required: true,
+                    min: 0,
+                    step: 0.1,
+                    default: 1,
+                },
+            ],
+            storage: {
+                format: "codeblock",
+                pathTemplate: TERRAIN_FILE,
+                filenameFrom: "name",
+                blockRenderer: {
+                    language: "terrain",
+                    serialize: (values) => {
+                        const payload = values as TerrainPersistPayload;
+                        return stringifyTerrainBlock(ensureEmptyEntry(payload.terrains ?? {}));
+                    },
+                },
+                hooks: {
+                    ensureDirectory: async (app) => { await ensureTerrainFile(app); },
+                },
+            },
+        } satisfies CreateSpec<TerrainFormValues, TerrainPersistPayload>;
+    }
+
     private ensureEmptyKey(): void {
-        if (!this.terrains[""]) {
-            this.terrains[""] = { color: "transparent", speed: 1 };
-        }
+        this.terrains = ensureEmptyEntry(this.terrains);
     }
 
     private writeTerrain(oldKey: string, newKey: string, payload: TerrainConfig): void {

@@ -110,7 +110,7 @@ export function createMapHeader(app: App, host: HTMLElement, options: MapHeaderO
         titleRightSlot.style.display = "none";
     }
 
-    const openBtn = row1.createEl("button", { text: labels.open });
+    const openBtn = row1.createEl("button", { text: labels.open, attr: { type: "button" } });
     setIcon(openBtn, "folder-open");
     applyMapButtonStyle(openBtn);
     openBtn.onclick = () => {
@@ -122,7 +122,7 @@ export function createMapHeader(app: App, host: HTMLElement, options: MapHeaderO
         });
     };
 
-    const createBtn = row1.createEl("button", { text: labels.create });
+    const createBtn = row1.createEl("button", { text: labels.create, attr: { type: "button" } });
     setIcon(createBtn, "plus");
     applyMapButtonStyle(createBtn);
     createBtn.onclick = () => {
@@ -135,7 +135,7 @@ export function createMapHeader(app: App, host: HTMLElement, options: MapHeaderO
     };
 
     const deleteBtn = options.onDelete
-        ? row1.createEl("button", { text: labels.delete, attr: { "aria-label": labels.delete } })
+        ? row1.createEl("button", { text: labels.delete, attr: { type: "button", "aria-label": labels.delete } })
         : null;
     if (deleteBtn) {
         setIcon(deleteBtn, "trash");
@@ -176,7 +176,7 @@ export function createMapHeader(app: App, host: HTMLElement, options: MapHeaderO
     select.createEl("option", { text: labels.saveAs }).value = "saveAs";
     enhanceSelectToSearch(select, MAP_HEADER_COPY.selectPlaceholder);
 
-    const triggerBtn = row2.createEl("button", { text: labels.trigger });
+    const triggerBtn = row2.createEl("button", { text: labels.trigger, attr: { type: "button" } });
     applyMapButtonStyle(triggerBtn);
     triggerBtn.onclick = async () => {
         if (destroyed) return;

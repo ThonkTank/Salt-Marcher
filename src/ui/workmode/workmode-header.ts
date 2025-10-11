@@ -2,6 +2,7 @@
 // Provides a shared header layout (title, tabs, search + action) for workmode views.
 
 import { createTabNavigation, type TabConfig, type TabNavigationHandle } from "./tab-navigation";
+import { applyMapButtonStyle } from "../map-workflows";
 
 export interface WorkmodeHeaderTabsConfig<T extends string> {
     readonly items: ReadonlyArray<TabConfig<T>>;
@@ -80,7 +81,8 @@ export function createWorkmodeHeader<T extends string = string>(
         }
 
         if (config.action) {
-            actionButton = bar.createEl("button", { text: config.action.label });
+            actionButton = bar.createEl("button", { text: config.action.label, attr: { type: "button" } });
+            applyMapButtonStyle(actionButton);
             actionButton.disabled = Boolean(config.action.disabled);
             actionButton.onclick = () => {
                 if (!config.action?.onClick || actionButton?.disabled) return;

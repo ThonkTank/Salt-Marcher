@@ -8,7 +8,7 @@
 - `mode.ts` typisiert Atlas-spezifische Workmode-Renderer auf Basis der gemeinsamen Infrastruktur.
 
 # ToDo
-- Regionen-Renderer um Karten-Vorschau ergänzen, sobald entsprechende Assets verfügbar sind.
+- [P2] Regionen-Renderer um Karten-Vorschau ergänzen, sobald entsprechende Assets verfügbar sind.
 
 # Standards
 - Jede Datei startet mit einem Kommentar zum dargestellten Datensatz.
