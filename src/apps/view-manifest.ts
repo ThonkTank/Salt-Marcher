@@ -5,6 +5,7 @@ import { CartographerView, VIEW_CARTOGRAPHER, openCartographer } from "./cartogr
 import { EncounterView, VIEW_ENCOUNTER, openEncounter } from "./encounter/view";
 import { LibraryView, VIEW_LIBRARY, openLibrary } from "./library/view";
 import { AlmanacView, VIEW_ALMANAC, openAlmanac } from "./almanac";
+import { SessionRunnerView, VIEW_SESSION_RUNNER, openSessionRunner } from "./session-runner";
 import type { IntegrationId } from "../app/integration-telemetry";
 
 export interface ViewActivationManifest {
@@ -59,6 +60,26 @@ export const VIEW_MANIFEST: ReadonlyArray<ViewManifestEntry> = [
                 {
                     id: "open-cartographer",
                     name: "Open Cartographer",
+                },
+            ],
+        },
+    },
+    {
+        viewType: VIEW_SESSION_RUNNER,
+        integrationId: "obsidian:session-runner-view",
+        displayName: "Session Runner",
+        viewIcon: "play",
+        createView: (leaf) => new SessionRunnerView(leaf),
+        activation: {
+            open: (app) => openSessionRunner(app),
+            ribbon: {
+                icon: "play",
+                title: "Open Session Runner",
+            },
+            commands: [
+                {
+                    id: "open-session-runner",
+                    name: "Open Session Runner",
                 },
             ],
         },

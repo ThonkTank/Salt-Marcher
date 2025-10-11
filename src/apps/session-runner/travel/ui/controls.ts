@@ -1,4 +1,4 @@
-// src/apps/travel-guide/ui/controls.ts
+// src/apps/session-runner/travel/ui/controls.ts
 // Playback-Buttons (Start/Stopp/Reset) im Sidebar-Controls-Host. Kapselt nur DOM + Button-State.
 
 import { setIcon } from "obsidian";

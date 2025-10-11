@@ -1,4 +1,4 @@
-// src/apps/cartographer/travel/domain/expansion.ts
+// src/apps/session-runner/travel/domain/expansion.ts
 // Hilfsfunktionen zur Routen-Interpolation.
 import { lineOddR } from "../../../../core/hex-mapper/hex-geom";
 import type { Coord, RouteNode } from "./types";

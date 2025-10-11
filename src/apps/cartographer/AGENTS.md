@@ -1,14 +1,14 @@
 # Ziele
-- Liefert den zentralen Arbeitsbereich zum Erstellen, Inspizieren und Reisen über Hexkarten.
-- Orchestriert den Wechsel zwischen Arbeitsmodi sowie Datei-/Map-Management für alle Cartographer-Flows.
+- Liefert den zentralen Arbeitsbereich zum Erstellen und Inspizieren von Hexkarten.
+- Orchestriert den Wechsel zwischen Editor- und Inspector-Modus sowie Datei-/Map-Management für beide Flows.
 - Stellt einen fokussierten Controller bereit, der Modi, Map-Management und UI-Rendering bündelt.
 
 # Aktueller Stand
 ## Strukturüberblick
 - `index.ts` registriert die `CartographerView`, kapselt die ItemView-Metadaten und verbindet Obsidian-Leaves mit dem Controller.
 - `controller.ts` hält aktives File, Karten-Handles und Modusstatus zusammen und rendert Header, Map und Sidebar direkt.
-- Der Controller verwaltet ein statisches Array aus Mode-Deskriptoren mit Lazy-Imports für Travel-, Editor- und Inspector-Modus.
-- `editor/` und `travel/` liefern die jeweiligen Tooling-, Playback- und Encounter-Integrationen.
+- Der Controller verwaltet ein statisches Array aus Mode-Deskriptoren mit Lazy-Imports für Editor- und Inspector-Modus.
+- `editor/` bündelt Kartenwerkzeuge; der Travel-Workflow liegt nun in `apps/session-runner`.
 
 ## Integration & Beobachtungen
 - `CartographerController` lädt Modi lazy aus den fest verdrahteten Deskriptoren und hält deren Handles für Tests bereit.

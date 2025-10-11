@@ -5,7 +5,7 @@ import { Notice, type App, type TFile } from "obsidian";
 import { parseOptions, type HexOptions } from "../../core/options";
 import { getFirstHexBlock } from "../../core/map-list";
 import type { RenderHandles } from "../../core/hex-mapper/hex-render";
-import { createMapLayer, type MapLayer } from "./travel/ui/map-layer";
+import { createMapLayer, type MapLayer } from "../session-runner/travel/ui/map-layer";
 import { createMapManager, type MapManagerHandle } from "../../ui/map-manager";
 import {
     createMapHeader,
@@ -58,14 +58,6 @@ export type CartographerModeDescriptor = {
 };
 
 const DEFAULT_MODE_DESCRIPTORS: readonly CartographerModeDescriptor[] = [
-    {
-        id: "travel",
-        label: "Travel",
-        async load() {
-            const { createTravelGuideMode } = await import("./modes/travel-guide");
-            return createTravelGuideMode();
-        },
-    },
     {
         id: "editor",
         label: "Editor",

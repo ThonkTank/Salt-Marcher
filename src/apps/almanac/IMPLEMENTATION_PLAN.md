@@ -32,15 +32,15 @@ Dieser Plan fasst die anstehenden Arbeitsschritte für den neuen Almanac-Workmod
 
 3. **Persistence & Integration**
    - Nutzung von `core/persistence` (z.B. `JsonStore`) für Kalenderdefinitionen, Event-Sammlungen, Default-Status, Travel-Leaf-State und neue Almanac-Stores (`AlmanacRepository`, `PhenomenaStore`).
-   - Schnittstelle `CalendarStateGateway`, die Cartographer-Reisen Zugriff auf aktiven/globalen Default, aktuelles Datum, Travel-Leaf-Status und aktive Phenomenon-Filter gibt.
-   - Synchronisationspunkte mit `apps/cartographer/travel` (z.B. beim Start einer Reise Travel-Leaf öffnen, bei Zeitsprüngen Ereignisse und Phänomene prüfen; Hooks für Wetter- oder Gezeitenänderungen).
+   - Schnittstelle `CalendarStateGateway`, die Session-Runner-Reisen Zugriff auf aktiven/globalen Default, aktuelles Datum, Travel-Leaf-Status und aktive Phenomenon-Filter gibt.
+   - Synchronisationspunkte mit `apps/session-runner/travel` (z.B. beim Start einer Reise Travel-Leaf öffnen, bei Zeitsprüngen Ereignisse und Phänomene prüfen; Hooks für Wetter- oder Gezeitenänderungen).
 
 4. **UI/Workmode Layer (`src/apps/almanac/mode`)**
    - Presenter rendert `Almanac › Dashboard` mit aktuellem Timestamp, kommenden Ereignissen und Quick-Actions.
    - `Almanac › Manager` verfügt über zwei Modi: **Kalenderansicht** (Grid mit Jahr/Monat/Woche/Tag/Stunde, Inline-Erstellung, Tooltips) und **Kalender-Übersicht** (Filter- und Listenansicht ähnlich `apps/library`).
    - `Almanac › Events` stellt Timeline, Tabellen- und Karten-Layouts bereit, bietet Filter (Kategorie, Kalender, Auswirkungen), Bulk-Aktionen, Import/Export und Vorschauen je Kalender.
    - Editor-Dialoge für Kalenderdefinition, Eventverwaltung und Phänomen-Erstellung nutzen Patterns aus `apps/library` (Modal/Edit-Flow), beinhalten Default-Toggle, Time-Picker/All-Day-Optionen, Kategorieauswahl und Sichtbarkeitsregeln.
-   - Cartographer-Travel-Kalender bleibt ein eigenes Leaf unter `apps/cartographer/travel`, nutzt jedoch geteilte Komponenten (`TravelCalendarLeaf`, `TravelQuickActions`) aus diesem Mode-Paket.
+   - Session-Runner-Travel-Kalender bleibt ein eigenes Leaf unter `apps/session-runner/travel`, nutzt jedoch geteilte Komponenten (`TravelCalendarLeaf`, `TravelQuickActions`) aus diesem Mode-Paket.
 
 5. **Event & Phenomenon Engine**
    - Wiederkehrende Ereignisse bekommen Regeln (z.B. `repeat: { type: "annual", offset: dayOfYear }` oder Custom-Hooks) mit Zoom-abhängigen Abfragen.

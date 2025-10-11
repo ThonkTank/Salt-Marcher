@@ -1,4 +1,4 @@
-// src/apps/cartographer/modes/travel-guide/interaction-controller.ts
+// src/apps/session-runner/view/controllers/interaction-controller.ts
 // Kapselt Interaktionen für den Travel-Guide.
 import { createDragController, type DragController } from "../../travel/ui/drag.controller";
 import { bindContextMenu } from "../../travel/ui/contextmenue";

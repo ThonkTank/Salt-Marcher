@@ -1,4 +1,4 @@
-// src/apps/cartographer/travel/ui/sidebar.ts
+// src/apps/session-runner/travel/ui/sidebar.ts
 // Sidebar-Layout und Steuerung für Travel-Modus.
 import type { TravelPanelSnapshot } from "../../../almanac/mode/cartographer-gateway";
 import { TravelCalendarLeaf, type TravelAdvancePayload } from "../../../almanac/mode/travel";

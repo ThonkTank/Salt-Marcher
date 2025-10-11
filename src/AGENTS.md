@@ -10,8 +10,8 @@
 - `ui/` liefert wiederverwendbare Container, Modals, Copy-Helfer und Styling-Bausteine, die keine App-spezifischen Seiteneffekte besitzen dürfen.
 
 ## Integrations- und Datenflüsse
-- Cartographer-Travel synchronisiert Begegnungen mit der Encounter-App über `apps/cartographer/modes/travel-guide/encounter-gateway` und `apps/encounter/session-store`; die Gateway-Schicht kapselt Remote-Zugriffe.
-- Travel-Domänenzustand (`apps/cartographer/travel/domain`) stellt seine Typen und Speicherhüllen den Encounter-Events (`apps/encounter/event-builder`) bereit. Änderungen an den Typen erfordern abgestimmte Anpassungen in beiden Ordnern.
+- Cartographer-Travel synchronisiert Begegnungen mit der Encounter-App über `apps/session-runner/view/controllers/encounter-gateway` und `apps/encounter/session-store`; die Gateway-Schicht kapselt Remote-Zugriffe.
+- Travel-Domänenzustand (`apps/session-runner/travel/domain`) stellt seine Typen und Speicherhüllen den Encounter-Events (`apps/encounter/event-builder`) bereit. Änderungen an den Typen erfordern abgestimmte Anpassungen in beiden Ordnern.
 - Library-Editoren geben ihre Persistenz über `apps/library/core` frei, sodass neue Views denselben Datei-Pipeline-Aufbau nutzen können. Speicherschnittstellen landen zentral in `core/persistence`.
 - UI-Komponenten mit App-spezifischer Logik müssen ihren Zustand in der jeweiligen App halten und dürfen nur über eindeutig benannte Props und Events mit `ui/`-Elementen sprechen.
 
