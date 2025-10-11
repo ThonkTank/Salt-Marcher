@@ -55,6 +55,7 @@ export interface NumberInputOptions {
   ariaLabel?: string;
   className?: string;
   onChange?: (value: number | undefined) => void;
+  onInput?: (value: number | undefined, rawValue: string) => void;
 }
 
 /**
@@ -75,15 +76,179 @@ export function createNumberInput(parent: HTMLElement, options: NumberInputOptio
   if (options.step !== undefined) input.step = String(options.step);
   if (options.value !== undefined) input.value = String(options.value);
 
+  const parseValue = () => {
+    const raw = input.value.trim();
+    if (!raw) return { value: undefined, raw } as const;
+    const parsed = Number(raw);
+    return { value: Number.isFinite(parsed) ? parsed : undefined, raw } as const;
+  };
+
   if (options.onChange) {
     input.addEventListener("change", () => {
-      const val = input.value.trim();
-      const num = val ? parseFloat(val) : undefined;
-      options.onChange!(num);
+      const { value } = parseValue();
+      options.onChange!(value);
+    });
+  }
+
+  if (options.onInput) {
+    input.addEventListener("input", () => {
+      const { value, raw } = parseValue();
+      options.onInput!(value, raw);
     });
   }
 
   return input;
+}
+
+/**
+ * Options for creating a number input with increment/decrement buttons
+ */
+export interface NumberStepperOptions extends NumberInputOptions {
+  wrapperClassName?: string;
+  buttonClassName?: string;
+  decrementClassName?: string;
+  incrementClassName?: string;
+  decrementLabel?: string;
+  decrementAriaLabel?: string;
+  incrementLabel?: string;
+  incrementAriaLabel?: string;
+}
+
+/** Handle returned by {@link createNumberStepper} */
+export interface NumberStepperHandle {
+  container: HTMLDivElement;
+  input: HTMLInputElement;
+  decrementButton: HTMLButtonElement;
+  incrementButton: HTMLButtonElement;
+  /** Returns the current numeric value of the input (undefined when empty/invalid) */
+  getValue: () => number | undefined;
+  /** Sets the current value without triggering change callbacks */
+  setValue: (value: number | undefined) => void;
+}
+
+/**
+ * Creates a number input with +/- buttons that respect min/max/step constraints
+ */
+export function createNumberStepper(
+  parent: HTMLElement,
+  options: NumberStepperOptions = {},
+): NumberStepperHandle {
+  const {
+    wrapperClassName,
+    buttonClassName,
+    decrementClassName,
+    incrementClassName,
+    decrementLabel = "−",
+    decrementAriaLabel = "Decrease value",
+    incrementLabel = "+",
+    incrementAriaLabel = "Increase value",
+    onChange,
+    onInput,
+    ...inputOptions
+  } = options;
+
+  const containerClasses = ["sm-inline-number"] as string[];
+  if (wrapperClassName) {
+    containerClasses.push(...wrapperClassName.split(" ").filter(Boolean));
+  }
+
+  const container = parent.createDiv({ cls: containerClasses });
+
+  const decrementButton = container.createEl("button", {
+    text: decrementLabel,
+    cls: decrementClassName ?? buttonClassName ?? "btn-compact",
+    attr: { type: "button", "aria-label": decrementAriaLabel },
+  }) as HTMLButtonElement;
+
+  const input = createNumberInput(container, {
+    ...inputOptions,
+    onChange: (value) => {
+      onChange?.(value);
+    },
+    onInput: (value, raw) => {
+      onInput?.(value, raw);
+    },
+  });
+
+  const incrementButton = container.createEl("button", {
+    text: incrementLabel,
+    cls: incrementClassName ?? buttonClassName ?? "btn-compact",
+    attr: { type: "button", "aria-label": incrementAriaLabel },
+  }) as HTMLButtonElement;
+
+  const decimalPlaces = (num: number) => {
+    if (!Number.isFinite(num)) return 0;
+    const parts = num.toString().split(".");
+    return parts[1]?.length ?? 0;
+  };
+
+  const getValue = () => {
+    const raw = input.value.trim();
+    if (!raw) return undefined;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  };
+
+  const setValue = (value: number | undefined) => {
+    if (value === undefined || Number.isNaN(value)) {
+      input.value = "";
+      return;
+    }
+    input.value = String(value);
+  };
+
+  const notify = () => {
+    const value = getValue();
+    if (onInput) {
+      onInput(value, input.value);
+    }
+    if (onChange) {
+      onChange(value);
+    }
+  };
+
+  const stepValue = (direction: number) => {
+    const stepSize = inputOptions.step ?? 1;
+    const precision = Math.max(decimalPlaces(stepSize), decimalPlaces(getValue() ?? 0));
+    const factor = Math.pow(10, precision);
+
+    const baseValue = getValue();
+    const current = baseValue ?? inputOptions.min ?? 0;
+    let next = (current * factor + direction * stepSize * factor) / factor;
+
+    if (inputOptions.min !== undefined) {
+      next = Math.max(inputOptions.min, next);
+    }
+    if (inputOptions.max !== undefined) {
+      next = Math.min(inputOptions.max, next);
+    }
+
+    const previousRaw = input.value;
+    const rounded = Number(next.toFixed(precision));
+    setValue(rounded);
+
+    if (input.value === previousRaw) {
+      return;
+    }
+
+    notify();
+  };
+
+  decrementButton.addEventListener("click", () => {
+    stepValue(-1);
+  });
+  incrementButton.addEventListener("click", () => {
+    stepValue(1);
+  });
+
+  return {
+    container,
+    input,
+    decrementButton,
+    incrementButton,
+    getValue,
+    setValue,
+  };
 }
 
 /**

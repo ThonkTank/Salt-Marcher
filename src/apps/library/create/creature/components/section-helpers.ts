@@ -5,6 +5,7 @@ import { DropdownComponent } from "obsidian";
 import type { StatblockData } from "../../../core/creature-files";
 import {
   FieldGridHandles,
+  createNumberStepper,
   enhanceExistingSelectDropdown,
 } from "../../../../../ui/workmode/create";
 
@@ -425,49 +426,36 @@ export function createStatColumn(
     const row = columnEl.createDiv({ cls: "sm-cc-stat-row" });
     row.createSpan({ cls: "sm-cc-stat-row__label", text: ability.label });
 
-    // Score input with +/- buttons
-    const scoreWrap = row.createDiv({ cls: "sm-inline-number sm-cc-stat-row__score" });
-    const score = scoreWrap.createEl("input", {
-      attr: { type: "number", placeholder: "10", min: "0", step: "1" },
-    }) as HTMLInputElement;
-    score.addClass("sm-cc-stat-row__score-input");
-    const dec = scoreWrap.createEl("button", { text: "−", cls: "btn-compact" });
-    const inc = scoreWrap.createEl("button", { text: "+", cls: "btn-compact" });
+    const existingAbility = data.abilities.find((a) => a.ability === ability.key);
 
-    // Load existing ability score
-    const existingAbility = data.abilities.find(a => a.ability === ability.key);
-    score.value = existingAbility ? String(existingAbility.score) : "";
+    const applyAbilityScore = (value: number | undefined, rawValue: string) => {
+      data.abilities = data.abilities.filter((a) => a.ability !== ability.key);
 
-    const step = (delta: number) => {
-      const cur = parseInt(score.value, 10) || 0;
-      const next = Math.max(0, cur + delta);
-      score.value = String(next);
-
-      // Update abilities array
-      data.abilities = data.abilities.filter(a => a.ability !== ability.key);
-      if (next > 0) {
-        data.abilities.push({ ability: ability.key, score: next });
+      const trimmed = rawValue.trim();
+      if (trimmed !== "") {
+        const parsed = parseInt(trimmed, 10);
+        if (!Number.isNaN(parsed) && parsed > 0) {
+          data.abilities.push({ ability: ability.key, score: parsed });
+        }
       }
 
       onUpdate();
     };
 
-    dec.onclick = () => step(-1);
-    inc.onclick = () => step(1);
-    score.addEventListener("input", () => {
-      const value = score.value.trim();
-
-      // Update abilities array
-      data.abilities = data.abilities.filter(a => a.ability !== ability.key);
-      if (value !== "") {
-        const scoreValue = parseInt(value);
-        if (!isNaN(scoreValue) && scoreValue > 0) {
-          data.abilities.push({ ability: ability.key, score: scoreValue });
-        }
-      }
-
-      onUpdate();
+    const scoreHandle = createNumberStepper(row, {
+      wrapperClassName: "sm-cc-stat-row__score",
+      className: "sm-cc-input sm-cc-stat-row__score-input",
+      buttonClassName: "btn-compact",
+      decrementAriaLabel: `Decrease ${ability.label} score`,
+      incrementAriaLabel: `Increase ${ability.label} score`,
+      min: 0,
+      step: 1,
+      value: existingAbility?.score,
+      onInput: (value, raw) => {
+        applyAbilityScore(value, raw);
+      },
     });
+    const score = scoreHandle.input;
 
     // Modifier display
     const modOut = row.createSpan({ cls: "sm-cc-stat-row__mod-value", text: "+0" });
