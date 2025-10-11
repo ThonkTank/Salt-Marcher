@@ -9,11 +9,14 @@
 
 import type { App } from "obsidian";
 import { ItemView, WorkspaceLeaf } from "obsidian";
+import { createWorkmodeHeader, type WorkmodeHeaderHandle } from "../../ui/workmode";
 
 export const VIEW_TYPE_ALMANAC = "almanac-view";
 export const VIEW_ALMANAC = VIEW_TYPE_ALMANAC;
 
 export class AlmanacView extends ItemView {
+    private header?: WorkmodeHeaderHandle;
+
     constructor(leaf: WorkspaceLeaf) {
         super(leaf);
     }
@@ -31,9 +34,21 @@ export class AlmanacView extends ItemView {
     }
 
     async onOpen(): Promise<void> {
-        const container = this.containerEl;
-        const content = container.children[1] as HTMLElement;
+        const content = this.contentEl;
         content.empty();
+        content.addClass("sm-almanac");
+
+        this.header = createWorkmodeHeader(content, {
+            title: "Almanac",
+            search: {
+                placeholder: "Search the almanac…",
+                disabled: true,
+            },
+            action: {
+                label: "Add entry",
+                disabled: true,
+            },
+        });
 
         const placeholder = content.createDiv({ cls: "almanac-placeholder" });
         placeholder.createEl("h2", { text: "Almanac front-end removed" });
@@ -43,7 +58,9 @@ export class AlmanacView extends ItemView {
     }
 
     async onClose(): Promise<void> {
-        // No resources to release after the front-end removal.
+        this.header?.destroy();
+        this.header = undefined;
+        this.contentEl.removeClass("sm-almanac");
     }
 }
 

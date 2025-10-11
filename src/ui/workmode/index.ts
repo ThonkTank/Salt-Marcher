@@ -5,3 +5,4 @@ export * from "./tab-navigation";
 export * from "./mode-renderer";
 export * from "./watcher-hub";
 export * from "./split-view-container";
+export * from "./workmode-header";
