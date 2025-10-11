@@ -7,7 +7,7 @@
 - Der View nutzt Renderer aus `view/` für Terrains und Regionen und verwaltet Tabs, Suche und Erstellung inline.
 
 # ToDo
-- Noch offen: Persistenz-Validierungen und optionale Karten-Previews für Regionen.
+- [P2] Persistenz-Validierungen und optionale Karten-Previews für Regionen ergänzen.
 
 # Standards
 - Neue Renderer werden in `view/` dokumentiert und folgen der geteilten Workmode-Infrastruktur aus `ui/workmode`.

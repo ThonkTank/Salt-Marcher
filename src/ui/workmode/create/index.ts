@@ -8,3 +8,7 @@ export * from "./token-editor";
 export * from "./entry-manager";
 export * from "./entry-card";
 export * from "./demo";
+export * from "./types";
+export * from "./field-registry";
+export * from "./declarative-modal";
+export * from "./open-create-modal";
