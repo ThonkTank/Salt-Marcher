@@ -4,22 +4,17 @@ import type { App } from "obsidian";
 import { BaseModeRenderer, scoreName, LibrarySourceWatcherHub } from "./mode";
 import { LIBRARY_DATA_SOURCES, type FilterableLibraryMode, type LibraryEntry, type LibraryDataSource } from "../core/data-sources";
 import { LIBRARY_LIST_SCHEMAS, type FilterDefinition, type SortDefinition, type LibraryListSchema } from "./filter-registry";
-import { LIBRARY_VIEW_CONFIGS, type LibraryViewConfig, type ActionContext } from "./view-registry";
+import { LIBRARY_VIEW_CONFIGS, type LibraryViewConfig, type LibraryActionContext } from "./view-registry";
 import {
     FilterSortState,
     collectFilterOptions,
     renderFilterSortControls,
 } from "../../../ui/workmode/filter-controls";
+import { renderWorkmodeFeedback, renderWorkmodeList } from "../../../ui/workmode/list-renderer";
 
 interface PreparedEntry<M extends FilterableLibraryMode> {
     entry: LibraryEntry<M>;
     score: number;
-}
-
-type FeedbackKind = "empty" | "error";
-
-function renderFeedback(container: HTMLElement, kind: FeedbackKind, message: string): void {
-    container.createDiv({ cls: `sm-cc-feedback sm-cc-feedback--${kind}`, text: message });
 }
 
 export abstract class FilterableLibraryRenderer<M extends FilterableLibraryMode> extends BaseModeRenderer {
@@ -60,54 +55,18 @@ export abstract class FilterableLibraryRenderer<M extends FilterableLibraryMode>
         this.renderInternal();
     }
 
-    protected renderEntry(row: HTMLElement, entry: LibraryEntry<M>): void {
-        const config = this.viewConfig;
-
-        // Name
-        const nameContainer = row.createDiv({ cls: "sm-cc-item__name-container" });
-        nameContainer.createDiv({ cls: "sm-cc-item__name", text: entry.name });
-
-        // Metadata
-        if (config.metadataFields.length > 0) {
-            const infoContainer = row.createDiv({ cls: "sm-cc-item__info" });
-            for (const field of config.metadataFields) {
-                const value = field.getValue(entry);
-                if (value) {
-                    infoContainer.createEl("span", { cls: field.cls, text: value });
-                }
-            }
-        }
-
-        // Actions
-        this.renderActions(row, entry);
-    }
-
-    private renderActions(container: HTMLElement, entry: LibraryEntry<M>): void {
-        const config = this.viewConfig;
-        const actions = container.createDiv({ cls: "sm-cc-item__actions" });
-
-        const context: ActionContext<M> = {
+    private createActionContext(): LibraryActionContext<M> {
+        return {
+            app: this.app,
             reloadEntries: () => this.reloadEntries(),
             getRenderer: () => this.viewConfig,
             getFilterSelection: (id) => this.getFilterSelection(id),
         };
-
-        for (const action of config.actions) {
-            const cls = action.cls ? `sm-cc-item__action ${action.cls}` : "sm-cc-item__action";
-            const btn = actions.createEl("button", { text: action.label, cls });
-            btn.onclick = async () => {
-                await action.execute(this.app, entry, context);
-            };
-        }
     }
 
     async handleCreate(name: string): Promise<void> {
-        const context: ActionContext<M> = {
-            reloadEntries: () => this.reloadEntries(),
-            getRenderer: () => this.viewConfig,
-            getFilterSelection: (id) => this.getFilterSelection(id),
-        };
-        await this.viewConfig.handleCreate(this.app, name, context);
+        const context = this.createActionContext();
+        await this.viewConfig.handleCreate(context, name);
     }
 
     protected getEmptyMessage(): string {
@@ -155,7 +114,7 @@ export abstract class FilterableLibraryRenderer<M extends FilterableLibraryMode>
         container.empty();
 
         if (this.loadError) {
-            renderFeedback(container, "error", this.getErrorMessage());
+            renderWorkmodeFeedback(container, "error", this.getErrorMessage());
             return;
         }
 
@@ -203,15 +162,22 @@ export abstract class FilterableLibraryRenderer<M extends FilterableLibraryMode>
             return;
         }
 
-        if (!visible.length) {
-            renderFeedback(container, "empty", this.getEmptyMessage());
+        const entriesToRender = visible.map(item => item.entry);
+
+        if (!entriesToRender.length) {
+            renderWorkmodeFeedback(container, "empty", this.getEmptyMessage());
             return;
         }
 
-        for (const item of visible) {
-            const row = container.createDiv({ cls: "sm-cc-item" });
-            this.renderEntry(row, item.entry);
-        }
+        const actionContext = this.createActionContext();
+        renderWorkmodeList({
+            container,
+            entries: entriesToRender,
+            getName: (entry) => entry.name,
+            metadata: this.viewConfig.metadataFields,
+            actions: this.viewConfig.actions,
+            actionContext,
+        });
     }
 
     private computeSearchScore(entry: LibraryEntry<M>, query: string): number {
