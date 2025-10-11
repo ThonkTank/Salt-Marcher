@@ -32,12 +32,16 @@ async function importPresetsForDir(
     try {
         // Ensure directory exists
         await ensureDir(app);
+        const normalizedDir = normalizePath(dir);
 
         // Load presets from generated module
         const presetModule = await import('./preset-data');
-        const presetFiles = (presetModule as any)[presetKey] || {};
-
-        const fileNames = Object.keys(presetFiles);
+        const rawPresetFiles = (presetModule as any)[presetKey] || {};
+        const presetEntries = Object.entries(rawPresetFiles).map(([fileName, content]) => [
+            normalizeRelativePath(fileName),
+            content as string,
+        ]);
+        const fileNames = presetEntries.map(([fileName]) => fileName);
 
         if (fileNames.length === 0) {
             console.log(`No preset ${typeName} found in plugin`);
@@ -49,10 +53,14 @@ async function importPresetsForDir(
         // Get existing files for comparison
         const existingFiles = new Set();
         try {
-            const existing = await app.vault.adapter.list(dir);
+            const existing = await app.vault.adapter.list(normalizedDir);
+            const prefix = `${normalizedDir}/`;
             existing.files.forEach(file => {
-                const fileName = file.split('/').pop()?.toLowerCase();
-                if (fileName) existingFiles.add(fileName);
+                const normalizedFile = normalizePath(file);
+                if (normalizedFile.startsWith(prefix)) {
+                    const relativePath = normalizedFile.slice(prefix.length).toLowerCase();
+                    if (relativePath) existingFiles.add(relativePath);
+                }
             });
         } catch {
             // Directory doesn't exist yet
@@ -61,21 +69,21 @@ async function importPresetsForDir(
         let importedCount = 0;
         let skippedCount = 0;
         let errorCount = 0;
+        const ensuredFolders = new Set<string>([normalizedDir]);
 
-        for (const fileName of fileNames) {
-            const targetPath = normalizePath(`${dir}/${fileName}`);
+        for (const [fileName, content] of presetEntries) {
+            const loweredName = fileName.toLowerCase();
+            const targetPath = normalizePath(`${normalizedDir}/${fileName}`);
 
             // Check if file already exists
-            if (existingFiles.has(fileName.toLowerCase())) {
+            if (existingFiles.has(loweredName)) {
                 skippedCount++;
                 continue;
             }
 
             try {
                 // Get preset content
-                const content = presetFiles[fileName];
-
-                // Create file in vault
+                await ensureParentFolders(app, normalizedDir, fileName, ensuredFolders);
                 await app.vault.create(targetPath, content);
                 importedCount++;
 
@@ -106,6 +114,29 @@ async function importPresetsForDir(
     }
 }
 
+function normalizeRelativePath(fileName: string): string {
+    return fileName.replace(/\\/g, '/');
+}
+
+async function ensureParentFolders(
+    app: App,
+    baseDir: string,
+    relativePath: string,
+    ensured: Set<string>
+): Promise<void> {
+    const parts = normalizeRelativePath(relativePath).split('/');
+    parts.pop();
+    let current = baseDir;
+    for (const part of parts) {
+        current = normalizePath(`${current}/${part}`);
+        if (ensured.has(current)) continue;
+        ensured.add(current);
+        if (!app.vault.getAbstractFileByPath(current)) {
+            await app.vault.createFolder(current).catch(() => {});
+        }
+    }
+}
+
 /**
  * Import preset creatures from bundled plugin files to vault
  */
@@ -123,7 +154,7 @@ async function shouldImportPresetsForDir(
     label: string,
     ensureDir: (app: App) => Promise<void>
 ): Promise<boolean> {
-    const markerPath = `${dir}/${markerName}`;
+    const markerPath = normalizePath(`${dir}/${markerName}`);
     const markerFile = app.vault.getAbstractFileByPath(markerPath);
 
     if (markerFile) {
