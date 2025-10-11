@@ -2,7 +2,13 @@
 // Bearbeitet Terrain-Konfigurationen mit Auto-Speichern.
 import type { AtlasModeRenderer } from "./mode";
 import { BaseModeRenderer, scoreName } from "./mode";
-import { loadTerrains, saveTerrains, watchTerrains, ensureTerrainFile } from "../../../core/terrain-store";
+import {
+    loadTerrains,
+    saveTerrains,
+    watchTerrains,
+    ensureTerrainFile,
+} from "../../../core/terrain-store";
+import { CreateTerrainModal } from "../create";
 
 interface TerrainConfig { color: string; speed: number; }
 
@@ -107,14 +113,48 @@ export class TerrainsRenderer extends BaseModeRenderer implements AtlasModeRende
     }
 
     async handleCreate(name: string): Promise<void> {
-        const key = name.trim();
-        if (!key) return;
-        if (!this.terrains[key]) {
-            this.terrains[key] = { color: "#888888", speed: 1 };
-            this.ensureEmptyKey();
-            this.render();
-            this.scheduleSave();
-        }
+        await this.flushSave();
+        if (this.isDisposed()) return;
+
+        const modal = new CreateTerrainModal(this.app, name, {
+            existingNames: Object.keys(this.terrains).filter((key) => key.trim()),
+            pipeline: {
+                serialize: (draft) => ({
+                    name: draft.name.trim(),
+                    color: this.normalizeColor(draft.color),
+                    speed: this.normalizeSpeed(draft.speed),
+                }),
+                persist: async (payload) => {
+                    const current = await loadTerrains(this.app);
+                    const normalizedName = payload.name;
+                    if (!normalizedName) {
+                        throw new Error("Name is required.");
+                    }
+                    if (current[normalizedName]) {
+                        throw new Error(`Terrain \"${normalizedName}\" already exists.`);
+                    }
+                    const next: TerrainMap = { ...current };
+                    next[normalizedName] = {
+                        color: payload.color,
+                        speed: payload.speed,
+                    };
+                    if (!next[""]) {
+                        next[""] = { color: "transparent", speed: 1 };
+                    }
+                    await saveTerrains(this.app, next);
+                    return next;
+                },
+                onComplete: async (next) => {
+                    this.terrains = next;
+                    this.ensureEmptyKey();
+                    if (!this.isDisposed()) {
+                        this.render();
+                    }
+                },
+            },
+        });
+
+        modal.open();
     }
 
     async destroy(): Promise<void> {
@@ -173,5 +213,21 @@ export class TerrainsRenderer extends BaseModeRenderer implements AtlasModeRende
         this.terrains = await loadTerrains(this.app);
         this.ensureEmptyKey();
         if (!this.isDisposed()) this.render();
+    }
+
+    private normalizeColor(value: string): string {
+        const trimmed = (value || "").trim();
+        if (/^#([0-9a-f]{6})$/i.test(trimmed)) return trimmed;
+        if (/^#([0-9a-f]{3})$/i.test(trimmed)) {
+            const hex = trimmed.slice(1);
+            return `#${hex.split("").map((ch) => ch + ch).join("")}`;
+        }
+        return "#999999";
+    }
+
+    private normalizeSpeed(value: number | undefined): number {
+        if (!Number.isFinite(value)) return 1;
+        const numeric = Number(value);
+        return numeric < 0 ? 0 : numeric;
     }
 }

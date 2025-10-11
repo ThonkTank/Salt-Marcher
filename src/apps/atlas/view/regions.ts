@@ -3,8 +3,15 @@
 import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
 import type { AtlasModeRenderer } from "./mode";
 import { BaseModeRenderer, scoreName } from "./mode";
-import { ensureRegionsFile, loadRegions, saveRegions, watchRegions, type Region } from "../../../core/regions-store";
+import {
+    ensureRegionsFile,
+    loadRegions,
+    saveRegions,
+    watchRegions,
+    type Region,
+} from "../../../core/regions-store";
 import { loadTerrains, watchTerrains } from "../../../core/terrain-store";
+import { CreateRegionModal } from "../create";
 
 const SAVE_DEBOUNCE_MS = 500;
 
@@ -87,13 +94,52 @@ export class RegionsRenderer extends BaseModeRenderer implements AtlasModeRender
     }
 
     async handleCreate(name: string): Promise<void> {
-        const trimmed = name.trim();
-        if (!trimmed) return;
-        const exists = this.regions.some(r => (r.name || "").toLowerCase() === trimmed.toLowerCase());
-        if (exists) return;
-        this.regions.push({ name: trimmed, terrain: "" });
-        this.render();
-        this.scheduleSave();
+        await this.flushSave();
+        if (this.isDisposed()) return;
+
+        const modal = new CreateRegionModal(this.app, name, {
+            existingNames: this.regions.map((region) => region.name || ""),
+            terrainOptions: this.terrainNames,
+            pipeline: {
+                serialize: (draft) => ({
+                    name: draft.name.trim(),
+                    terrain: draft.terrain.trim(),
+                    encounterOdds: this.normalizeEncounterOdds(draft.encounterOdds),
+                }),
+                persist: async (payload) => {
+                    const current = await loadRegions(this.app);
+                    const normalizedName = payload.name;
+                    if (!normalizedName) {
+                        throw new Error("Name is required.");
+                    }
+                    const duplicate = current.some(
+                        (region) => (region.name || "").toLowerCase() === normalizedName.toLowerCase()
+                    );
+                    if (duplicate) {
+                        throw new Error(`Region \"${normalizedName}\" already exists.`);
+                    }
+                    const next: Region[] = [
+                        ...current,
+                        {
+                            name: normalizedName,
+                            terrain: payload.terrain,
+                            encounterOdds: payload.encounterOdds ?? undefined,
+                        },
+                    ];
+                    next.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+                    await saveRegions(this.app, next);
+                    return next;
+                },
+                onComplete: async (next) => {
+                    this.regions = next;
+                    if (!this.isDisposed()) {
+                        this.render();
+                    }
+                },
+            },
+        });
+
+        modal.open();
     }
 
     async destroy(): Promise<void> {
@@ -145,5 +191,11 @@ export class RegionsRenderer extends BaseModeRenderer implements AtlasModeRender
         await saveRegions(this.app, this.regions);
         this.regions = await loadRegions(this.app);
         if (!this.isDisposed()) this.render();
+    }
+
+    private normalizeEncounterOdds(value: number | undefined): number | undefined {
+        if (!Number.isFinite(value)) return undefined;
+        const parsed = Math.round(Number(value));
+        return parsed > 0 ? parsed : undefined;
     }
 }
