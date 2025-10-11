@@ -1,6 +1,6 @@
-// src/apps/library/view/terrains.ts
+// src/apps/atlas/view/terrains.ts
 // Bearbeitet Terrain-Konfigurationen mit Auto-Speichern.
-import type { ModeRenderer } from "./mode";
+import type { AtlasModeRenderer } from "./mode";
 import { BaseModeRenderer, scoreName } from "./mode";
 import { loadTerrains, saveTerrains, watchTerrains, ensureTerrainFile } from "../../../core/terrain-store";
 
@@ -10,7 +10,7 @@ type TerrainMap = Record<string, TerrainConfig>;
 
 const SAVE_DEBOUNCE_MS = 500;
 
-export class TerrainsRenderer extends BaseModeRenderer implements ModeRenderer {
+export class TerrainsRenderer extends BaseModeRenderer implements AtlasModeRenderer {
     readonly mode = "terrains" as const;
     private terrains: TerrainMap = {};
     private saveTimer: ReturnType<typeof setTimeout> | null = null;

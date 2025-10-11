@@ -7,8 +7,6 @@ import { CreaturesRenderer } from "./view/creatures";
 import { SpellsRenderer } from "./view/spells";
 import { ItemsRenderer } from "./view/items";
 import { EquipmentRenderer } from "./view/equipment";
-import { TerrainsRenderer } from "./view/terrains";
-import { RegionsRenderer } from "./view/regions";
 import { describeLibrarySource, ensureLibrarySources } from "./core/sources";
 import { createTabNavigation, type TabConfig, type TabNavigationHandle } from "../../ui/workmode";
 
@@ -24,8 +22,6 @@ export const LIBRARY_COPY = {
         spells: "Spells",
         items: "Items",
         equipment: "Equipment",
-        terrains: "Terrains",
-        regions: "Regions",
     },
     sources: {
         prefix: "Source: ",
@@ -35,6 +31,8 @@ export const LIBRARY_COPY = {
 type ModeCopy = typeof LIBRARY_COPY.modes;
 
 export const VIEW_LIBRARY = "salt-library";
+
+const LIBRARY_VIEW_SOURCES: Mode[] = ["creatures", "spells", "items", "equipment"];
 
 export class LibraryView extends ItemView {
     private mode: Mode = "creatures";
@@ -52,7 +50,7 @@ export class LibraryView extends ItemView {
 
     async onOpen() {
         this.contentEl.addClass("sm-library");
-        await ensureLibrarySources(this.app);
+        await ensureLibrarySources(this.app, LIBRARY_VIEW_SOURCES);
         this.renderShell();
         await this.activateMode(this.mode);
     }
@@ -75,8 +73,6 @@ export class LibraryView extends ItemView {
             { id: "spells", label: LIBRARY_COPY.modes.spells },
             { id: "items", label: LIBRARY_COPY.modes.items },
             { id: "equipment", label: LIBRARY_COPY.modes.equipment },
-            { id: "terrains", label: LIBRARY_COPY.modes.terrains },
-            { id: "regions", label: LIBRARY_COPY.modes.regions },
         ];
 
         this.tabNav = createTabNavigation(root, {
@@ -144,10 +140,6 @@ export class LibraryView extends ItemView {
                 return new ItemsRenderer(this.app, container, this.watchers);
             case "equipment":
                 return new EquipmentRenderer(this.app, container, this.watchers);
-            case "terrains":
-                return new TerrainsRenderer(this.app, container);
-            case "regions":
-                return new RegionsRenderer(this.app, container);
             default:
                 throw new Error(`Unsupported mode: ${mode}`);
         }
