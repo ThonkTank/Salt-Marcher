@@ -2,7 +2,7 @@
 
 ## Kommandos
 - `npm install`: installiert Dev-Abhängigkeiten für Bundler und Tests.
-- `npm run build`: führt `esbuild.config.mjs` aus und erzeugt `main.js` im Plugin-Stamm.
+- `npm run build`: führt `esbuild.config.mjs` aus und erzeugt `main.js` im Plugin-Stamm. Meldet fehlende Dev-Abhängigkeiten (z. B. `esbuild`) sofort mit Hinweis auf `npm install`.
 - `npm test`: nutzt Vitest/Jsdom, um die gebündelte Oberfläche gegen Mocks zu prüfen.
 - `npm run test:contracts`: startet die Library-Vertragstests (`tests/contracts`), Laufzeit ~90s.
 - `npm run golden:update`: generiert deterministische Golden-Files für Serializer-Roundtrips (`tests/golden/library`).
