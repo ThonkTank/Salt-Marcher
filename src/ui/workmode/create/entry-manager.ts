@@ -1,5 +1,7 @@
 // src/ui/workmode/create/entry-manager.ts
 // Shared manager for Library-styled entry lists with add/filter controls.
+import type { EntryCardConfigFactory } from "./entry-card";
+import { renderEntryCard } from "./entry-card";
 import type { ValidationRegistrar } from "./layouts";
 
 export interface EntryCategoryDefinition<TCategory extends string> {
@@ -36,7 +38,8 @@ export interface EntryManagerOptions<TEntry, TCategory extends string, TFilter e
   filters?: ReadonlyArray<EntryFilterDefinition<TEntry, TFilter>>;
   defaultFilter?: TFilter | "all";
   createEntry: (category: TCategory) => TEntry;
-  renderEntry: (container: HTMLElement, context: EntryRenderContext<TEntry>) => HTMLElement;
+  renderEntry?: (container: HTMLElement, context: EntryRenderContext<TEntry>) => HTMLElement;
+  card?: EntryCardConfigFactory<TEntry>;
   registerValidation?: ValidationRegistrar;
   collectIssues?: (entries: TEntry[]) => string[];
   onEntriesChanged?: (entries: TEntry[]) => void;
@@ -55,6 +58,10 @@ export function mountEntryManager<TEntry, TCategory extends string, TFilter exte
   parent: HTMLElement,
   options: EntryManagerOptions<TEntry, TCategory, TFilter>
 ): EntryManagerHandles {
+  if (!options.renderEntry && !options.card) {
+    throw new Error("mountEntryManager requires either renderEntry or card configuration");
+  }
+
   const entries = options.entries;
   const wrap = parent.createDiv({ cls: "setting-item sm-cc-entries" });
   wrap.createDiv({ cls: "setting-item-info", text: options.label });
@@ -157,6 +164,15 @@ export function mountEntryManager<TEntry, TCategory extends string, TFilter exte
 
     const predicate = filterPredicates.get(activeFilter) ?? (() => true);
 
+    const renderEntry =
+      options.renderEntry ?? ((container: HTMLElement, context: EntryRenderContext<TEntry>) => {
+        if (!options.card) {
+          throw new Error("card factory missing for entry-manager render");
+        }
+        const config = options.card(context);
+        return renderEntryCard({ parent: container, context, ...config }).card;
+      });
+
     entries.forEach((entry, index) => {
       const shouldFocus = focusIndex === index;
       if (shouldFocus) focusIndex = null;
@@ -194,7 +210,7 @@ export function mountEntryManager<TEntry, TCategory extends string, TFilter exte
         },
       };
 
-      const card = options.renderEntry(host, context);
+      const card = renderEntry(host, context);
       const isVisible = predicate(entry);
       card.classList.toggle("sm-cc-entry-hidden", !isVisible);
       card.style.display = isVisible ? "" : "none";

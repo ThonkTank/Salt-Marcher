@@ -6,4 +6,5 @@ export * from "./layouts";
 export * from "./form-controls";
 export * from "./token-editor";
 export * from "./entry-manager";
+export * from "./entry-card";
 export * from "./demo";

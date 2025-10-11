@@ -159,4 +159,41 @@ describe("mountEntryManager", () => {
     expect(entries).toHaveLength(1);
     expect(entries[0].title).toBe("First");
   });
+
+  it("renders cards via shared card factory when provided", () => {
+    const entries: Array<{ category: "info"; title: string }> = [];
+    const factory = vi.fn(() => ({
+      type: "info",
+      badge: { text: "INFO", variant: "info" },
+      renderName: (nameBox: HTMLDivElement) => {
+        const input = document.createElement("input");
+        input.className = "name-input";
+        nameBox.appendChild(input);
+        return input;
+      },
+      renderBody: (card: HTMLDivElement, context: EntryRenderContext<{ category: "info"; title: string }>) => {
+        card.createDiv({ cls: "body", text: context.entry.title });
+      },
+    }));
+
+    mountEntryManager(host, {
+      label: "Einträge",
+      entries,
+      categories: [{ id: "info", label: "Info" }],
+      createEntry: (category) => ({ category, title: "" }),
+      card: (context) => factory(context),
+    });
+
+    host.querySelector<HTMLButtonElement>(".sm-cc-entry-add-btn")?.click();
+
+    expect(entries).toHaveLength(1);
+    expect(factory).toHaveBeenCalled();
+
+    const card = host.querySelector<HTMLElement>(".sm-cc-entry-card");
+    expect(card).not.toBeNull();
+    expect(card?.classList.contains("sm-cc-entry-card--type-info")).toBe(true);
+    expect(card?.querySelector(".sm-cc-entry-badge")?.textContent).toBe("INFO");
+    expect(card?.querySelector(".name-input")).toBeTruthy();
+    expect(card?.querySelector(".body")?.textContent).toBe("");
+  });
 });

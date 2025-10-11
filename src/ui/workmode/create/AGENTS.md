@@ -8,6 +8,7 @@
 - `layouts.ts` liefert Karten- und Grid-Builder mit den `sm-cc-*` Klassen der Library.
 - `form-controls.ts` bündelt Such-Selects, Text-/Zahlenfelder und Checkboxen.
 - `token-editor.ts` verwaltet Chips-basierte Token-Listen.
+- `entry-card.ts` erzeugt Library-formatierte Entry-Karten inkl. Aktionen für den Entry-Manager.
 
 # Offene Lücken vor dem produktiven Einsatz in allen Apps
 - keine; Pipeline, Grid-Helfer, Entry-Manager und Demo decken die bisherigen Migrationsaufgaben ab.

@@ -21,7 +21,7 @@ import {
 import { abilityMod, formatSigned, parseIntSafe } from "../shared/stat-utils";
 import { createAlignmentEditor, createMovementModel, createStatColumn, type StatColumnRefs, createSkillManager } from "./components/section-helpers";
 import { validateEntry } from "./entry-model";
-import { createEntryCard, type CreatureEntryWithComponents } from "./components/entry-card";
+import { createCreatureEntryCardConfig, type CreatureEntryWithComponents } from "./components/entry-card";
 import {
   CREATURE_SIZES,
   CREATURE_TYPES,
@@ -559,19 +559,7 @@ export function mountEntriesSection(
     defaultFilter: "all",
     insertPosition: "start",
     createEntry: (category) => ({ category: category as any, name: "" }) as CreatureEntryWithComponents,
-    renderEntry: (container, context) =>
-      createEntryCard(container, {
-        entry: context.entry,
-        index: context.index,
-        data,
-        onDelete: context.remove,
-        onMoveUp: context.moveUp,
-        onMoveDown: context.moveDown,
-        canMoveUp: context.canMoveUp,
-        canMoveDown: context.canMoveDown,
-        onUpdate: context.requestRender,
-        shouldFocus: context.shouldFocus,
-      }),
+    card: createCreatureEntryCardConfig(data),
     registerValidation,
     collectIssues: collectEntryDependencyIssues,
   });
