@@ -30,9 +30,10 @@ function getMarkdownFiles(dir, baseDir = dir) {
                 // Recursively search subdirectories
                 Object.assign(files, getMarkdownFiles(fullPath, baseDir));
             } else if (entry.isFile() && entry.name.endsWith('.md')) {
-                // Just use the filename as key, not the full path
+                // Preserve the relative path so nested folders remain intact
+                const relativePath = path.relative(baseDir, fullPath).split(path.sep).join('/');
                 const content = fs.readFileSync(fullPath, 'utf-8');
-                files[entry.name] = content;
+                files[relativePath] = content;
             }
         }
     } catch (err) {
@@ -79,48 +80,10 @@ function generatePresetModule() {
     moduleContent += '// This file contains all preset data bundled with the plugin\n\n';
 
     // Creatures
-    moduleContent += 'export const PRESET_CREATURES: { [key: string]: string } = {\n';
-    for (const [fileName, content] of Object.entries(creatureFiles)) {
-        const escapedContent = content
-            .replace(/\\/g, '\\\\')
-            .replace(/`/g, '\\`')
-            .replace(/\$/g, '\\$');
-        moduleContent += `  "${fileName}": \`${escapedContent}\`,\n`;
-    }
-    moduleContent += '};\n\n';
-
-    // Spells
-    moduleContent += 'export const PRESET_SPELLS: { [key: string]: string } = {\n';
-    for (const [fileName, content] of Object.entries(spellFiles)) {
-        const escapedContent = content
-            .replace(/\\/g, '\\\\')
-            .replace(/`/g, '\\`')
-            .replace(/\$/g, '\\$');
-        moduleContent += `  "${fileName}": \`${escapedContent}\`,\n`;
-    }
-    moduleContent += '};\n\n';
-
-    // Items
-    moduleContent += 'export const PRESET_ITEMS: { [key: string]: string } = {\n';
-    for (const [fileName, content] of Object.entries(itemFiles)) {
-        const escapedContent = content
-            .replace(/\\/g, '\\\\')
-            .replace(/`/g, '\\`')
-            .replace(/\$/g, '\\$');
-        moduleContent += `  "${fileName}": \`${escapedContent}\`,\n`;
-    }
-    moduleContent += '};\n\n';
-
-    // Equipment
-    moduleContent += 'export const PRESET_EQUIPMENT: { [key: string]: string } = {\n';
-    for (const [fileName, content] of Object.entries(equipmentFiles)) {
-        const escapedContent = content
-            .replace(/\\/g, '\\\\')
-            .replace(/`/g, '\\`')
-            .replace(/\$/g, '\\$');
-        moduleContent += `  "${fileName}": \`${escapedContent}\`,\n`;
-    }
-    moduleContent += '};\n';
+    moduleContent += formatPresetMap('PRESET_CREATURES', creatureFiles);
+    moduleContent += formatPresetMap('PRESET_SPELLS', spellFiles);
+    moduleContent += formatPresetMap('PRESET_ITEMS', itemFiles);
+    moduleContent += formatPresetMap('PRESET_EQUIPMENT', equipmentFiles, true);
 
     // Ensure output directory exists
     const outputDir = path.dirname(OUTPUT_FILE);
@@ -136,3 +99,20 @@ function generatePresetModule() {
 
 // Run the generator
 generatePresetModule();
+
+function formatPresetMap(constName, files, isLast = false) {
+    let content = `export const ${constName}: { [key: string]: string } = {\n`;
+    const entries = Object.entries(files).sort(([a], [b]) => a.localeCompare(b));
+    for (const [fileName, fileContent] of entries) {
+        const escapedContent = fileContent
+            .replace(/\\/g, '\\\\')
+            .replace(/`/g, '\\`')
+            .replace(/\$/g, '\\$');
+        content += `  "${fileName}": \`${escapedContent}\`,\n`;
+    }
+    content += '};\n';
+    if (!isLast) {
+        content += '\n';
+    }
+    return content;
+}
