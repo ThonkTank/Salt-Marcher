@@ -1,5 +1,5 @@
-// salt-marcher/tests/cartographer/modes/encounter-gateway.test.ts
-// Stellt sicher, dass Encounter-Gateway manuelle Ereignisse korrekt veröffentlicht und Fehlerpfade signalisiert.
+// salt-marcher/tests/session-runner/view/encounter-gateway.test.ts
+// Stellt sicher, dass das Session-Runner-Gateway manuelle Ereignisse korrekt veröffentlicht und Fehlerpfade signalisiert.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { App, WorkspaceLeaf } from "obsidian";
 
@@ -29,10 +29,7 @@ vi.mock("../../../src/apps/encounter/event-builder", () => ({
     createEncounterEventFromTravel,
 }));
 
-import {
-    openEncounter,
-    publishManualEncounter,
-} from "../../../src/apps/cartographer/modes/travel-guide/encounter-gateway";
+import { openEncounter, publishManualEncounter } from "../../../src/apps/session-runner/view/controllers/encounter-gateway";
 
 describe("openEncounter", () => {
     const revealLeaf = vi.fn();

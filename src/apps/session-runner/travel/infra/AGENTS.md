@@ -10,8 +10,8 @@
 
 ## Integrationspfade
 - `createTravelLogic()` injiziert beim Start einen `RenderAdapter` und ruft dessen `draw`-/`ensurePolys`-Methoden bei jeder Zustandsänderung auf.
-- `modes/travel-guide.ts` erzeugt `createEncounterSync()` und koppelt `pausePlayback` sowie `openEncounter()` an den Mode-Lifecycle.
-- Encounter-Events aus `travel-guide/encounter-gateway` landen zuerst im Session-Store; `createEncounterSync()` dedupliziert Events anhand der ID und sorgt dafür, dass externe Trigger den Encounter-View öffnen.
+- `view/experience.ts` erzeugt `createEncounterSync()` und koppelt `pausePlayback` sowie `openEncounter()` an den Lifecycle.
+- Encounter-Events aus `view/controllers/encounter-gateway` landen zuerst im Session-Store; `createEncounterSync()` dedupliziert Events anhand der ID und sorgt dafür, dass externe Trigger den Encounter-View öffnen.
 
 ## Beobachtungen & Risiken
 - Externe Encounter-Events pausieren das Playback sofort, auch wenn `onExternalEncounter` den View-Start verhindert (z. B. bei Abbruch). Ohne Gegenmaßnahme bleibt der Travel-Modus dann dauerhaft pausiert.

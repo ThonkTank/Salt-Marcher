@@ -18,7 +18,7 @@ Dieser Testplan leitet sich aus den Spezifikationen unter `src/apps/almanac` ab.
 | Persistence/Repository | Laden/Speichern von Kalendern, Defaults, Travel-Prefs | `CalendarRepository`, `AlmanacRepository`, `CalendarStateGateway` |
 | Integration | Presenter + Mock-Gateways (Workmode, Manager, Travel) | [STATE_MACHINE.md](../../../src/apps/almanac/mode/STATE_MACHINE.md) |
 | UI/Presenter | Komponenten-Interaktionen, Fokus, Shortcuts | [UX_SPEC.md](../../../src/apps/almanac/mode/UX_SPEC.md), [COMPONENTS.md](../../../src/apps/almanac/mode/COMPONENTS.md) |
-| Regression | Cartographer-Reise mit Hooks, Default-Wechsel während Reise | `apps/cartographer/travel` |
+| Regression | Session-Runner-Reise mit Hooks, Default-Wechsel während Reise | `apps/session-runner/travel` |
 
 ### 2.1 Layer-/Modus-Coverage
 | Ebene | Fokus | Primäre Tests | Fixtures |

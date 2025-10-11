@@ -15,7 +15,7 @@ Dieses Dokument beschreibt UI-Komponenten für den Almanac-Workmode. Es ergänzt
 | Shell | `almanac` | `AlmanacShell`, Switcher, Statusleiste | Kapselt ausschließlich `Almanac › Dashboard/Manager/Events`; bietet Travel-Indikator. |
 | Mode | `dashboard`, `manager`, `events` | Bildschirm-spezifische Container und Editor-Komponenten | Jede Mode-Komponente konsumiert Domain-DTOs, keine direkten Repository-Aufrufe. |
 | Shared | `calendar`, `event`, `phenomenon` | Tabellen, Filter, Dialoge, Rule-Editoren | Wiederverwendbar zwischen Modi. |
-| Travel (Cartographer) | `travel` | Kompakte Leaf-Komponenten für Reisemodus | Wird von `apps/cartographer/travel` gemountet; nutzt gemeinsame DTOs. |
+| Travel (Session Runner) | `travel` | Kompakte Leaf-Komponenten für Reisemodus | Wird von `apps/session-runner/travel` gemountet; nutzt gemeinsame DTOs. |
 
 - Alle Komponenten exportieren zusätzlich `displayName` für Debugging (`AlmanacShell.displayName = 'AlmanacShell'`).
 - Cross-Layer-Komposition erfolgt nur top-down (Shell → Mode → Shared). Travel importiert ausschließlich Shared-Komponenten und eigene Travel-spezifische Wrapper.

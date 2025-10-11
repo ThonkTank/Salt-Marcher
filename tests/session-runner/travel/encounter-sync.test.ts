@@ -1,7 +1,7 @@
-// salt-marcher/tests/cartographer/travel/encounter-sync.test.ts
-// Testet Encounter-Sync-Service für Travel-Modus.
+// salt-marcher/tests/session-runner/travel/encounter-sync.test.ts
+// Testet Encounter-Sync-Service für das Session-Runner-Reiseerlebnis.
 import { describe, expect, it, beforeEach, vi } from "vitest";
-import { createEncounterSync } from "../../../src/apps/cartographer/travel/infra/encounter-sync";
+import { createEncounterSync } from "../../../src/apps/session-runner/travel/infra/encounter-sync";
 import {
     publishEncounterEvent,
     __resetEncounterEventStore,

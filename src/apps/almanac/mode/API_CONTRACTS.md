@@ -617,7 +617,7 @@ Migration-Schritte:
 5. Bei Migration auf 1.3.0: `minuteStep` = 60/`hoursPerDay` falls nicht angegeben, `secondsPerMinute` = 60.
 
 ## 8. Cartographer Integration
-- `CartographerHookGateway.notifyTravelPanel` sendet `TravelPanelUpdateDTO` an `apps/cartographer/travel/panel`.
+- `CartographerHookGateway.notifyTravelPanel` sendet `TravelPanelUpdateDTO` an `apps/session-runner/travel/panel`.
 - Hooks `cartographer_event` erhalten Payload `{ travelId, calendarId, eventId, occurrence }`; Phänomene verwenden `cartographer_phenomenon` mit `{ travelId, phenomenonId, occurrence, effects }`.
 - Travel-Leaf mount/unmount Signale:
   ```ts

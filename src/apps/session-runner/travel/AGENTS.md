@@ -1,17 +1,17 @@
 # Ziele
-- Kapselt alle Reise-spezifischen Workflows des Cartographer – von der Routenplanung bis zur Encounter-Synchronisation.
-- Trennt Playback-, Rendering- und UI-Schichten so, dass Modi (`modes/travel-guide`) klar definierte Verträge konsumieren.
+- Kapselt alle Reise-spezifischen Workflows des Session Runners – von der Routenplanung bis zur Encounter-Synchronisation.
+- Trennt Playback-, Rendering- und UI-Schichten so, dass das Reise-Erlebnis (`view/experience.ts`) klar definierte Verträge konsumiert.
 - Sichert nachvollziehbare Dokumentation über Zustandsänderungen, Persistenz und Interaktionen mit der Encounter-App.
 
 # Aktueller Stand
 ## Strukturüberblick
 - `domain/` verwaltet Zustand, Aktionen und Persistenz. `actions.ts` bündelt die Travel-Logik (Route-Manipulation, Token-Steuerung, Playback) und nutzt `state.store.ts`, `expansion.ts` sowie `playback.ts` als Hilfsschichten.
 - `infra/` adaptiert Travel-Events auf Obsidian-APIs. `adapter.ts` definiert das Rendering-Contract, `encounter-sync.ts` leitet Reiseereignisse in Encounter-Sessions weiter.
-- `render/` zeichnet Routen, Token und Layer. Die Module werden von `modes/travel-guide.ts` instanziiert und über einen `RenderAdapter` in die Domain injiziert.
+- `render/` zeichnet Routen, Token und Layer. Die Module werden vom Session-Runner-Erlebnis instanziiert und über einen `RenderAdapter` in die Domain injiziert.
 - `ui/` stellt Controller, Interaktionen und Status-Widgets bereit. `controls.ts` bindet Playback-Ereignisse, `interactions.ts` orchestriert Klicks/Drags auf Route- und Token-Layer.
 
 ## Integrationspfade
-- `modes/travel-guide.ts` erstellt die Travel-UI, bindet `createTravelLogic()` und verbindet Encounter-Sync, Playback und Map-Layer.
+- `view/experience.ts` erstellt die Travel-UI, bindet `createTravelLogic()` und verbindet Encounter-Sync, Playback und Map-Layer.
 - Encounter-Handling greift auf `createEncounterSync()` zurück, das bei externen Events Playback pausiert, Encounter-Views öffnet und nach Abschluss fortsetzt.
 - Persistenzzugriffe (`loadTokenCoordFromMap`, `writeTokenToTiles`) benötigen Zugriff auf Obsidian-Dateien und müssen bei Map-Wechseln robust bleiben.
 

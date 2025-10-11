@@ -42,6 +42,6 @@ Der Encounter-Arbeitsbereich sammelt Reiseereignisse und hilft, laufende Begegnu
 - Unter **Total Encounter XP** findest du die Summe aller berechneten Werte – ideal für Copy & Paste in dein Session-Log.
 
 ## Event-Flow
-1. `cartographer/modes/travel-guide/encounter-gateway` publiziert neue Ereignisse im Encounter-Store.
+1. `session-runner/view/controllers/encounter-gateway` publiziert neue Ereignisse im Encounter-Store.
 2. `encounter/presenter.ts` transformiert sie für die UI, pflegt Status und erlaubt das Schließen.
 3. `encounter/view.ts` zeigt den aktuellen Status an, schreibt Notizen zurück in den Store und meldet Abschlussmeldungen an Obsidian.

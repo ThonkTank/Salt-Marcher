@@ -1,4 +1,4 @@
-// src/apps/cartographer/modes/travel-guide/encounter-gateway.ts
+// src/apps/session-runner/view/controllers/encounter-gateway.ts
 // Öffnet Begegnungen aus dem Travel-Guide heraus.
 import { Notice, type App, type WorkspaceLeaf } from "obsidian";
 import { publishEncounterEvent } from "../../../encounter/session-store";
@@ -25,7 +25,7 @@ function loadEncounterModule(): Promise<EncounterModule | null> {
             VIEW_ENCOUNTER: encounter.VIEW_ENCOUNTER,
         }))
         .catch((err) => {
-            console.error("[travel-mode] failed to load encounter module", err);
+            console.error("[session-runner] failed to load encounter module", err);
             new Notice("Encounter-Modul konnte nicht geladen werden.");
             return null;
         });
@@ -47,7 +47,7 @@ export async function openEncounter(app: App, context?: TravelEncounterContext):
     if (!mod) return false;
     const issue = describeEncounterContextIssue(context);
     if (issue) {
-        console.warn(`[travel-mode] ${issue.log}`, context);
+        console.warn(`[session-runner] ${issue.log}`, context);
         new Notice(issue.message);
     } else if (context) {
         try {
@@ -56,7 +56,7 @@ export async function openEncounter(app: App, context?: TravelEncounterContext):
                 publishEncounterEvent(event);
             }
         } catch (err) {
-            console.error("[travel-mode] failed to publish encounter payload", err);
+            console.error("[session-runner] failed to publish encounter payload", err);
         }
     }
     const leaf = mod.getCenterLeaf(app);
@@ -110,6 +110,6 @@ export async function publishManualEncounter(
             publishEncounterEvent(event);
         }
     } catch (err) {
-        console.error("[travel-mode] failed to publish manual encounter", err);
+        console.error("[session-runner] failed to publish manual encounter", err);
     }
 }

@@ -1,8 +1,8 @@
-// salt-marcher/tests/cartographer/travel/token-layer.test.ts
-// Testet den Token-Layer auf Animationsabläufe und DOM-Updates.
+// salt-marcher/tests/session-runner/travel/token-layer.test.ts
+// Testet den Token-Layer auf Animationsabläufe und DOM-Updates innerhalb des Session Runners.
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-import { createTokenLayer } from "../../../src/apps/cartographer/travel/ui/token-layer";
+import { createTokenLayer } from "../../../src/apps/session-runner/travel/ui/token-layer";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 

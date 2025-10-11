@@ -1,4 +1,4 @@
-// src/apps/travel-guide/domain/playback.ts
+// src/apps/session-runner/travel/domain/playback.ts
 // Abspiel-Logik (Domain): Terrain×Speed, Token animieren, passierte Knoten trimmen,
 // Token-Position persistieren (Tiles). Rendering via onChange() im Host (UI ruft draw).
 

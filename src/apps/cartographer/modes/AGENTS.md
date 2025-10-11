@@ -1,5 +1,5 @@
 # Ziele
-- Bündelt die Kernmodi (Editor, Inspector, Travel Guide) des Cartographer und beschreibt deren Verantwortlichkeiten.
+- Bündelt die verbleibenden Kernmodi (Editor, Inspector) des Cartographer und beschreibt deren Verantwortlichkeiten.
 - Dokumentiert, wie Modi Lifecycle, Tooling und Registry-Zugriffe koordinieren.
 - Sichert einheitliche Erwartungen an Fehlerbehandlung, Statusmeldungen und Metadaten über alle Modi hinweg.
 
@@ -7,19 +7,16 @@
 ## Strukturüberblick
 - `editor.ts` baut das Bearbeitungspanel mit Tool-Auswahl auf, mountet den Terrain-Brush direkt und aktualisiert Statusmeldungen ohne Tool-Manager-Zwischenschicht.
 - `inspector.ts` stellt Formularfelder für Terrain und Notizen bereit, lädt Daten aus `core/hex-mapper/hex-notes` und schreibt Änderungen verzögert über einen Auto-Save-Timeout zurück.
-- `travel-guide.ts` orchestriert Sidebar, Playback, Routen- & Token-Layer sowie Encounter-Sync und interagiert eng mit `travel/domain`, `travel/ui` und `travel/infra`.
 - `lifecycle.ts` kapselt die Verwaltung des jeweils letzten `AbortSignal` und wird von Editor und Inspector genutzt, um Tool-/Form-Interaktionen sauber abzubrechen.
-- `travel-guide/` beherbergt Controller (Playback, Interaction, Encounter-Gateway), die beim Lazy-Load des Modus nachgeladen werden.
+- Travel-spezifische Dateien liegen nach der Extraktion in `apps/session-runner`.
 
 ## Integrationen & Beobachtungen
 - Alle Modi werden über die in `controller.ts` hinterlegte Deskriptor-Liste lazy geladen; IDs und Labels sind weiterhin manuell in den Modus-Dateien gepflegt.
 - Der Editor koppelt den Brush direkt an Lifecycle- und Status-Hooks, Inspector nutzt weiterhin Hex-Persistenz-Helfer. Fehler werden bislang nur mit `console.error` geloggt und führen nicht zu UI-Hinweisen oder Telemetrie.
-- Travel Guide lädt Terrains, initialisiert Domain-Logik und Encounter-Synchronisation sequentiell. Schlägt ein Schritt fehl, bleibt der Modus ohne sichtbaren Hinweis oder Rückfallebene.
-- Die README dokumentiert Nutzerflüsse, verweist aber nicht auf technische Risiken wie Abort-Signale oder die Abhängigkeit von `travel/infra`.
+- Die README dokumentiert Nutzerflüsse, verweist aber nicht auf technische Risiken wie Abort-Signale.
 
 # ToDo
 - [P2.49] Auto-Save-Timeout des Inspectors an das Abort-Signal koppeln, Fehlermeldungen im Panel darstellen und Telemetrie für `saveTile`-/`setFill`-Fehler ergänzen.
-- [P2.50] Travel-Guide-Initialisierung gegen Terrain-/Logic-/Encounter-Ausfälle absichern und Nutzerhinweise + Logging vereinheitlichen.
 - [P2.51] Mode-IDs, Labels und Capabilities zentralisieren, damit Modusdefinitionen und Provider-Metadaten nicht auseinanderlaufen.
 
 # Standards

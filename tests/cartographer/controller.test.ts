@@ -10,7 +10,7 @@ import {
     type CartographerMode,
     type CartographerModeLifecycleContext,
 } from "../../src/apps/cartographer/controller";
-import type { MapLayer } from "../../src/apps/cartographer/travel/ui/map-layer";
+import type { MapLayer } from "../../src/apps/session-runner/travel/ui/map-layer";
 import type { HexOptions } from "../../src/core/options";
 import type { RenderHandles } from "../../src/core/hex-mapper/hex-render";
 

@@ -16,7 +16,7 @@
 ## Integrationspunkte
 - `src/app/main.ts` registriert alle Views und Commands direkt über die von hier exportierten Klassen und Hilfsfunktionen (z.B.
   `openCartographer`). Das erfordert konsistente View-Metadaten (Typ, Icon, Display-Text) innerhalb jeder App.
-- Cartographer-Modi interagieren mit Encounter über Gateways in `cartographer/modes/travel-guide/encounter-gateway` sowie den
+- Cartographer-Modi interagieren mit Encounter über Gateways in `session-runner/view/controllers/encounter-gateway` sowie den
   `encounter/session-store`. Library greift für Persistenz und Datenimporte auf `core/persistence` und die gemeinsamen Terrain-
   Ressourcen zu.
 - Ribbon-Icons und Commands existieren bisher als redundante Definitionen in `src/app/main.ts`. Änderungen an Bezeichnern müssen

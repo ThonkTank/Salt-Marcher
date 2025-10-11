@@ -3,7 +3,7 @@
 // the session store.
 
 import type { App, TFile } from "obsidian";
-import type { LogicStateSnapshot } from "../cartographer/travel/domain/types";
+import type { LogicStateSnapshot } from "../session-runner/travel/domain/types";
 import type { EncounterEvent, EncounterEventSource } from "./session-store";
 
 export interface TravelEncounterContext {

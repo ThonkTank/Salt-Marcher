@@ -1,6 +1,6 @@
 # Cartographer Modes
 
-Der Cartographer bietet drei Modi, die jeweils eine eigene Oberfläche aktivieren.
+Der Cartographer bietet zwei Modi, die jeweils eine eigene Oberfläche aktivieren. Der Travel-Workflow wurde in die Session-Runner-App ausgelagert.
 
 ## Editor
 - Aktiviert Werkzeugleisten und Brush-Optionen aus `editor/tools`.
@@ -10,6 +10,5 @@ Der Cartographer bietet drei Modi, die jeweils eine eigene Oberfläche aktiviere
 - Lädt bestehende Hex-Daten, zeigt Metadaten und erlaubt gezielte Anpassungen einzelner Tiles.
 - Nutzt Select-Felder mit Suche, um Terrain- oder Notizwerte schnell zu ändern.
 
-## Travel Guide
-- Startet Sidebar, Playback- und Interaktions-Controller für Reisen.
-- Synchronisiert Begegnungen mit der Encounter-App und aktualisiert Marker während der Route.
+## Session Runner (separate App)
+- Travel-spezifische Steuerung befindet sich in `apps/session-runner` und nutzt weiterhin dieselben Domain-/UI-Bausteine.

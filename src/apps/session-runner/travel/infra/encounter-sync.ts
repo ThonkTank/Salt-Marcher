@@ -1,4 +1,4 @@
-// src/apps/cartographer/travel/infra/encounter-sync.ts
+// src/apps/session-runner/travel/infra/encounter-sync.ts
 // Synchronisiert Travel-Playback mit Encounter-Events: liest Travel-State,
 // pausiert Wiedergabe und öffnet Encounter-Ansicht sobald externe Ereignisse
 // eintreffen oder Travel selbst eines auslöst.

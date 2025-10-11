@@ -1,7 +1,7 @@
-// src/apps/cartographer/modes/travel-guide.ts
-// Komplettmodus für Reisen inkl. UI und Logik.
+// src/apps/session-runner/view/experience.ts
+// Reiseerlebnis für den Session Runner inklusive UI, Logik und Encounter-Übergaben.
 import type { MapHeaderSaveMode } from "../../../ui/map-header";
-import type { CartographerMode, CartographerModeLifecycleContext } from "../controller";
+import type { SessionRunnerExperience, SessionRunnerLifecycleContext } from "../controller";
 import { loadTerrains } from "../../../core/terrain-store";
 import { setTerrains } from "../../../core/terrain";
 import { createSidebar, type Sidebar } from "../travel/ui/sidebar";
@@ -13,16 +13,16 @@ import type { RenderAdapter } from "../travel/infra/adapter";
 import { cartographerHookGateway } from "../../almanac/mode/cartographer-gateway";
 import { getCartographerBridge } from "../../almanac/mode/cartographer-bridge";
 import type { CartographerBridgeHandle } from "../../almanac/mode/cartographer-bridge";
-import { TravelPlaybackController } from "./travel-guide/playback-controller";
-import { TravelInteractionController } from "./travel-guide/interaction-controller";
+import { TravelPlaybackController } from "./controllers/playback-controller";
+import { TravelInteractionController } from "./controllers/interaction-controller";
 import {
     openEncounter,
     preloadEncounterModule,
     publishManualEncounter,
-} from "./travel-guide/encounter-gateway";
+} from "./controllers/encounter-gateway";
 import { createEncounterSync } from "../travel/infra/encounter-sync";
 
-export function createTravelGuideMode(): CartographerMode {
+export function createSessionRunnerExperience(): SessionRunnerExperience {
     let sidebar: Sidebar | null = null;
     const playback = new TravelPlaybackController();
     let activeTravelId: string | null = null;
@@ -44,11 +44,11 @@ export function createTravelGuideMode(): CartographerMode {
     ): void => {
         const bridge = getCartographerBridge();
         if (!bridge) {
-            console.warn(`[cartographer:travel] skipped ${label} – no Almanac bridge available`);
+            console.warn(`[session-runner] skipped ${label} – no Almanac bridge available`);
             return;
         }
         void Promise.resolve(fn(bridge)).catch(error => {
-            console.error(`[cartographer:travel] ${label} failed`, error);
+            console.error(`[session-runner] ${label} failed`, error);
         });
     };
 
@@ -97,7 +97,7 @@ export function createTravelGuideMode(): CartographerMode {
         pushPanelSnapshot(cartographerHookGateway.getPanelSnapshot(travelId));
     };
 
-    const updateTravelContext = (file: ReturnType<CartographerModeLifecycleContext["getFile"]>) => {
+    const updateTravelContext = (file: ReturnType<SessionRunnerLifecycleContext["getFile"]>) => {
         const nextId = file ? file.path : null;
         if (activeTravelId === nextId) {
             updatePanelSnapshotFromGateway(nextId);
@@ -136,7 +136,7 @@ export function createTravelGuideMode(): CartographerMode {
         try {
             await fn();
         } catch (err) {
-            console.error("[travel-mode] cleanupFile failed", err);
+            console.error("[session-runner] cleanupFile failed", err);
         }
     };
 
@@ -182,18 +182,18 @@ export function createTravelGuideMode(): CartographerMode {
             try {
                 logic.pause();
             } catch (err) {
-                console.error("[travel-mode] pause failed", err);
+                console.error("[session-runner] pause failed", err);
             }
             logic = null;
         }
     };
 
-    const ensureTerrains = async (ctx: CartographerModeLifecycleContext) => {
+    const ensureTerrains = async (ctx: SessionRunnerLifecycleContext) => {
         if (ctx.signal.aborted) return;
         await setTerrains(await loadTerrains(ctx.app));
     };
 
-    const subscribeToTerrains = (ctx: CartographerModeLifecycleContext) => {
+    const subscribeToTerrains = (ctx: SessionRunnerLifecycleContext) => {
         if (ctx.signal.aborted) {
             return null;
         }
@@ -214,7 +214,7 @@ export function createTravelGuideMode(): CartographerMode {
     return {
         id: "travel",
         label: "Travel",
-        async onEnter(ctx: CartographerModeLifecycleContext) {
+        async onEnter(ctx: SessionRunnerLifecycleContext) {
             lifecycleSignal = ctx.signal;
             if (await bailIfAborted()) {
                 return;
@@ -275,12 +275,12 @@ export function createTravelGuideMode(): CartographerMode {
 
             resetUi();
         },
-        async onExit(ctx: CartographerModeLifecycleContext) {
+        async onExit(ctx: SessionRunnerLifecycleContext) {
             lifecycleSignal = ctx.signal;
             await abortLifecycle();
             lifecycleSignal = null;
         },
-        async onFileChange(file, handles, ctx: CartographerModeLifecycleContext) {
+        async onFileChange(file, handles, ctx: SessionRunnerLifecycleContext) {
             lifecycleSignal = ctx.signal;
 
             await runCleanupFile();
@@ -343,7 +343,7 @@ export function createTravelGuideMode(): CartographerMode {
                     try {
                         activeLogic.pause();
                     } catch (err) {
-                        console.error("[travel-mode] pause during encounter sync failed", err);
+                        console.error("[session-runner] pause during encounter sync failed", err);
                     }
                 },
                 openEncounter: (context) => openEncounter(ctx.app, context),
@@ -407,7 +407,7 @@ export function createTravelGuideMode(): CartographerMode {
                 try {
                     activeLogic.pause();
                 } catch (err) {
-                    console.error("[travel-mode] pause during cleanup failed", err);
+                    console.error("[session-runner] pause during cleanup failed", err);
                 }
                 tokenLayer?.destroy?.();
                 tokenLayer = null;
@@ -419,7 +419,7 @@ export function createTravelGuideMode(): CartographerMode {
                 return;
             }
         },
-        async onHexClick(coord, event, ctx: CartographerModeLifecycleContext) {
+        async onHexClick(coord, event, ctx: SessionRunnerLifecycleContext) {
             lifecycleSignal = ctx.signal;
             if (await bailIfAborted()) {
                 return;
@@ -439,7 +439,7 @@ export function createTravelGuideMode(): CartographerMode {
             event.stopPropagation();
             logic.handleHexClick(coord);
         },
-        async onSave(_mode: MapHeaderSaveMode, file, ctx: CartographerModeLifecycleContext) {
+        async onSave(_mode: MapHeaderSaveMode, file, ctx: SessionRunnerLifecycleContext) {
             lifecycleSignal = ctx.signal;
             if (await bailIfAborted()) {
                 return false;
@@ -448,9 +448,9 @@ export function createTravelGuideMode(): CartographerMode {
             try {
                 await logic.persistTokenToTiles();
             } catch (err) {
-                console.error("[travel-mode] persistTokenToTiles failed", err);
+                console.error("[session-runner] persistTokenToTiles failed", err);
             }
             return false;
         },
-    } satisfies CartographerMode;
+    } satisfies SessionRunnerExperience;
 }

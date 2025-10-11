@@ -1,8 +1,8 @@
 # Ziele
-- Prüft Modus-spezifische Brücken im Cartographer, etwa den Encounter-Gateway.
+- Prüft Modus-spezifische Helfer im Cartographer (derzeit Inspector).
 
 # Aktueller Stand
-- `encounter-gateway.test.ts` stellt sicher, dass manuelle Begegnungen erstellt und publiziert werden.
+- `inspector-mode.test.ts` deckt Formularfluss, Statusmeldungen und Lifecycle-Abbrüche des Inspectors ab.
 
 # ToDo
 - keine offenen ToDos.

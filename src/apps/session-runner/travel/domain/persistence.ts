@@ -1,4 +1,4 @@
-// src/apps/cartographer/travel/domain/persistence.ts
+// src/apps/session-runner/travel/domain/persistence.ts
 // Persistiert Travel-Token in Hex-Notizen.
 import type { App, TFile } from "obsidian";
 import { listTilesForMap, loadTile, saveTile } from "../../../../core/hex-mapper/hex-notes";

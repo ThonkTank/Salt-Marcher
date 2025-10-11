@@ -3,7 +3,7 @@
 // Keeps the most recent encounter payload so that freshly mounted presenters can
 // render the last travel hand-off without waiting for another event.
 
-import type { Coord } from "../cartographer/travel/domain/types";
+import type { Coord } from "../session-runner/travel/domain/types";
 
 export const DND5E_XP_THRESHOLDS: Record<number, number> = {
     1: 0,
