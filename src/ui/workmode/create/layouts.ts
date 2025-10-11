@@ -103,12 +103,17 @@ export interface FieldGridHandles {
   createSetting(label: string, options?: FieldSettingOptions): Setting;
 }
 
+function collectClasses(base: string[], extra?: string | string[]): string[] {
+  if (!extra) return base;
+  const extras = Array.isArray(extra) ? extra : [extra];
+  return [...base, ...extras];
+}
+
 export function createFieldGrid(parent: HTMLElement, options?: FieldGridOptions): FieldGridHandles {
   const classes = ["sm-cc-field-grid"];
   if (options?.variant) classes.push(`sm-cc-field-grid--${options.variant}`);
   if (options?.className) {
-    const extras = Array.isArray(options.className) ? options.className : [options.className];
-    classes.push(...extras);
+    classes.push(...collectClasses([], options.className));
   }
 
   const grid = parent.createDiv({ cls: classes.join(" ") });
@@ -128,4 +133,61 @@ export function createFieldGrid(parent: HTMLElement, options?: FieldGridOptions)
   };
 
   return { grid, createSetting };
+}
+
+export interface IrregularGridOptions {
+  columns: Array<string>;
+  className?: string | string[];
+  columnGap?: string;
+  rowGap?: string;
+  role?: string;
+}
+
+export interface IrregularGridHandles {
+  grid: HTMLElement;
+  createCell(className?: string | string[]): HTMLElement;
+}
+
+export function createIrregularGrid(parent: HTMLElement, options: IrregularGridOptions): IrregularGridHandles {
+  const grid = parent.createDiv({
+    cls: collectClasses(["sm-cc-field-grid", "sm-cc-field-grid--irregular"], options.className).join(" "),
+  });
+  grid.style.gridTemplateColumns = options.columns.join(" ");
+  if (options.columnGap) grid.style.columnGap = options.columnGap;
+  if (options.rowGap) grid.style.rowGap = options.rowGap;
+  if (options.role) grid.setAttribute("role", options.role);
+
+  const createCell = (className?: string | string[]) => {
+    return grid.createDiv({ cls: collectClasses([], className).join(" ") });
+  };
+
+  return { grid, createCell };
+}
+
+export interface RepeatingGridOptions {
+  className?: string | string[];
+  itemClassName?: string | string[];
+  tag?: keyof HTMLElementTagNameMap;
+  role?: string;
+}
+
+export interface RepeatingGridHandles {
+  grid: HTMLElement;
+  createItem(options?: { className?: string | string[]; tag?: keyof HTMLElementTagNameMap }): HTMLElement;
+}
+
+export function createRepeatingGrid(parent: HTMLElement, options?: RepeatingGridOptions): RepeatingGridHandles {
+  const grid = parent.createDiv({
+    cls: collectClasses(["sm-cc-repeating-grid"], options?.className).join(" "),
+  });
+  if (options?.role) grid.setAttribute("role", options.role);
+
+  const createItem = (itemOptions?: { className?: string | string[]; tag?: keyof HTMLElementTagNameMap }) => {
+    const tag = itemOptions?.tag ?? options?.tag ?? "div";
+    const itemClasses = collectClasses([], options?.itemClassName);
+    const combined = collectClasses(itemClasses, itemOptions?.className).join(" ");
+    return grid.createEl(tag, { cls: combined });
+  };
+
+  return { grid, createItem };
 }

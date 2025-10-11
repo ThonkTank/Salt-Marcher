@@ -5,3 +5,5 @@ export * from "./base-modal";
 export * from "./layouts";
 export * from "./form-controls";
 export * from "./token-editor";
+export * from "./entry-manager";
+export * from "./demo";

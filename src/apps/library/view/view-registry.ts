@@ -95,11 +95,19 @@ const creaturesActions: ActionDefinition<"creatures">[] = [
             const { app } = context;
             try {
                 const creatureData = await loadCreaturePreset(app, entry.file);
-                new CreateCreatureModal(app, creatureData.name, async (data) => {
-                    const file = await createCreatureFile(app, data);
-                    await context.reloadEntries();
-                    await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
-                }, creatureData).open();
+                new CreateCreatureModal(app, creatureData.name, {
+                    preset: creatureData,
+                    pipeline: {
+                        serialize: (draft) => draft,
+                        persist: async (payload) => createCreatureFile(app, payload),
+                        onComplete: async (file) => {
+                            await context.reloadEntries();
+                            if (file) {
+                                await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
+                            }
+                        },
+                    },
+                }).open();
             } catch (err) {
                 console.error("Failed to load creature for editing", err);
             }
@@ -134,10 +142,17 @@ const spellsActions: ActionDefinition<"spells">[] = [
             const { app } = context;
             try {
                 const spellData = await loadSpellFile(app, entry.file);
-                new CreateSpellModal(app, spellData, async (data) => {
-                    const content = spellToMarkdown(data);
-                    await app.vault.modify(entry.file, content);
-                    await context.reloadEntries();
+                new CreateSpellModal(app, spellData, {
+                    pipeline: {
+                        serialize: (draft) => spellToMarkdown(draft),
+                        persist: async (content) => {
+                            await app.vault.modify(entry.file, content);
+                            return entry.file;
+                        },
+                        onComplete: async () => {
+                            await context.reloadEntries();
+                        },
+                    },
                 }).open();
             } catch (err) {
                 console.error("Failed to load spell for editing", err);
@@ -173,11 +188,18 @@ const itemsActions: ActionDefinition<"items">[] = [
             const { app } = context;
             try {
                 const itemData = await loadItemFile(app, entry.file);
-                new CreateItemModal(app, itemData, async (updatedData) => {
-                    const newContent = itemToMarkdown(updatedData);
-                    await app.vault.modify(entry.file, newContent);
-                    await context.reloadEntries();
-                    await app.workspace.openLinkText(entry.file.path, entry.file.path, true, { state: { mode: "source" } });
+                new CreateItemModal(app, itemData, {
+                    pipeline: {
+                        serialize: (draft) => itemToMarkdown(draft),
+                        persist: async (content) => {
+                            await app.vault.modify(entry.file, content);
+                            return entry.file;
+                        },
+                        onComplete: async () => {
+                            await context.reloadEntries();
+                            await app.workspace.openLinkText(entry.file.path, entry.file.path, true, { state: { mode: "source" } });
+                        },
+                    },
                 }).open();
             } catch (err) {
                 console.error("Failed to edit item", err);
@@ -213,11 +235,18 @@ const equipmentActions: ActionDefinition<"equipment">[] = [
             const { app } = context;
             try {
                 const equipmentData = await loadEquipmentFile(app, entry.file);
-                new CreateEquipmentModal(app, equipmentData, async (updatedData) => {
-                    const newContent = equipmentToMarkdown(updatedData);
-                    await app.vault.modify(entry.file, newContent);
-                    await context.reloadEntries();
-                    await app.workspace.openLinkText(entry.file.path, entry.file.path, true, { state: { mode: "source" } });
+                new CreateEquipmentModal(app, equipmentData, {
+                    pipeline: {
+                        serialize: (draft) => equipmentToMarkdown(draft),
+                        persist: async (content) => {
+                            await app.vault.modify(entry.file, content);
+                            return entry.file;
+                        },
+                        onComplete: async () => {
+                            await context.reloadEntries();
+                            await app.workspace.openLinkText(entry.file.path, entry.file.path, true, { state: { mode: "source" } });
+                        },
+                    },
                 }).open();
             } catch (err) {
                 console.error("Failed to edit equipment", err);
@@ -237,11 +266,18 @@ export const LIBRARY_VIEW_CONFIGS: LibraryViewConfigMap = {
         actions: creaturesActions,
         handleCreate: async (context, name) => {
             const { app } = context;
-            new CreateCreatureModal(app, name, async (data) => {
-                const file = await createCreatureFile(app, data);
-                await context.reloadEntries();
-                await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
-            }, undefined).open();
+            new CreateCreatureModal(app, name, {
+                pipeline: {
+                    serialize: (draft) => draft,
+                    persist: async (payload) => createCreatureFile(app, payload),
+                    onComplete: async (file) => {
+                        await context.reloadEntries();
+                        if (file) {
+                            await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
+                        }
+                    },
+                },
+            }).open();
         },
     },
     spells: {
@@ -265,10 +301,17 @@ export const LIBRARY_VIEW_CONFIGS: LibraryViewConfigMap = {
                 if (ritualFilter === "false") preset.ritual = false;
             }
 
-            new CreateSpellModal(app, preset, async (data) => {
-                const file = await createSpellFile(app, data);
-                await context.reloadEntries();
-                await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
+            new CreateSpellModal(app, preset, {
+                pipeline: {
+                    serialize: (draft) => draft,
+                    persist: async (payload) => createSpellFile(app, payload),
+                    onComplete: async (file) => {
+                        await context.reloadEntries();
+                        if (file) {
+                            await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
+                        }
+                    },
+                },
             }).open();
         },
     },
@@ -277,10 +320,17 @@ export const LIBRARY_VIEW_CONFIGS: LibraryViewConfigMap = {
         actions: itemsActions,
         handleCreate: async (context, name) => {
             const { app } = context;
-            new CreateItemModal(app, name, async (data) => {
-                const file = await createItemFile(app, data);
-                await context.reloadEntries();
-                await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
+            new CreateItemModal(app, name, {
+                pipeline: {
+                    serialize: (draft) => draft,
+                    persist: async (payload) => createItemFile(app, payload),
+                    onComplete: async (file) => {
+                        await context.reloadEntries();
+                        if (file) {
+                            await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
+                        }
+                    },
+                },
             }).open();
         },
     },
@@ -289,10 +339,17 @@ export const LIBRARY_VIEW_CONFIGS: LibraryViewConfigMap = {
         actions: equipmentActions,
         handleCreate: async (context, name) => {
             const { app } = context;
-            new CreateEquipmentModal(app, name, async (data) => {
-                const file = await createEquipmentFile(app, data);
-                await context.reloadEntries();
-                await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
+            new CreateEquipmentModal(app, name, {
+                pipeline: {
+                    serialize: (draft) => draft,
+                    persist: async (payload) => createEquipmentFile(app, payload),
+                    onComplete: async (file) => {
+                        await context.reloadEntries();
+                        if (file) {
+                            await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
+                        }
+                    },
+                },
             }).open();
         },
     },

@@ -1,5 +1,5 @@
 // src/apps/library/create/creature/modal.ts
-import { App } from "obsidian";
+import { App, type TFile } from "obsidian";
 import type { StatblockData } from "../../core/creature-files";
 import {
   mountCreatureClassificationSection,
@@ -9,11 +9,22 @@ import {
   mountEntriesSection
 } from "./sections";
 import { spellcastingDataToEntry } from "./entry-model";
-import { BaseCreateModal } from "../../../../ui/workmode/create";
+import { BaseCreateModal, type CreateModalPipeline } from "../../../../ui/workmode/create";
 
-export class CreateCreatureModal extends BaseCreateModal<StatblockData> {
-    constructor(app: App, presetName: string | undefined, onSubmit: (d: StatblockData) => void, preset?: StatblockData) {
-        super(app, preset || presetName, onSubmit, {
+export interface CreatureModalOptions {
+    pipeline?: CreateModalPipeline<StatblockData, StatblockData, TFile | void>;
+    onSubmit?: (data: StatblockData) => Promise<void> | void;
+}
+
+export interface CreatureModalArgs extends CreatureModalOptions {
+    preset?: StatblockData;
+}
+
+export class CreateCreatureModal extends BaseCreateModal<StatblockData, StatblockData, TFile | void> {
+    private readonly modalOptions: CreatureModalOptions;
+
+    constructor(app: App, presetName: string | undefined, options: CreatureModalArgs) {
+        super(app, options.preset || presetName, {
             title: "Neuen Statblock erstellen",
             subtitle: "Pflege zuerst Grundlagen und Attribute, anschließend Sinne, Verteidigungen und Aktionen.",
             defaultName: "Neue Kreatur",
@@ -29,7 +40,7 @@ export class CreateCreatureModal extends BaseCreateModal<StatblockData> {
                         app: this.app,
                         onPresetSelected: (newPreset) => {
                             this.close();
-                            new CreateCreatureModal(this.app, undefined, this.onSubmit, newPreset).open();
+                            new CreateCreatureModal(this.app, undefined, { ...this.modalOptions, preset: newPreset }).open();
                         }
                     }),
                 },
@@ -57,7 +68,10 @@ export class CreateCreatureModal extends BaseCreateModal<StatblockData> {
                     mount: handles => mountEntriesSection(handles.body, this.data, handles.registerValidation),
                 },
             ],
+            pipeline: options.pipeline,
+            onSubmit: options.onSubmit,
         });
+        this.modalOptions = { pipeline: options.pipeline, onSubmit: options.onSubmit };
     }
 
     protected createDefault(name: string): StatblockData {

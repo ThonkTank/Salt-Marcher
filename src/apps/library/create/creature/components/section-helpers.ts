@@ -348,6 +348,8 @@ export interface StatColumnOptions {
   data: StatblockData;
   /** Callback when any value changes (triggers recalculation) */
   onUpdate: () => void;
+  /** Optional container element (when columns are pre-created) */
+  container?: HTMLElement;
 }
 
 /**
@@ -397,10 +399,10 @@ export function createStatColumn(
   parent: HTMLElement,
   options: StatColumnOptions
 ): Map<CreatureAbilityKey, StatColumnRefs> {
-  const { abilities, data, onUpdate } = options;
+  const { abilities, data, onUpdate, container } = options;
   const refs = new Map<CreatureAbilityKey, StatColumnRefs>();
 
-  const columnEl = parent.createDiv({ cls: "sm-cc-stats-col" });
+  const columnEl = container ?? parent.createDiv({ cls: "sm-cc-stats-col" });
 
   // Header
   const header = columnEl.createDiv({ cls: "sm-cc-stats-col__header" });

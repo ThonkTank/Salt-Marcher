@@ -6,8 +6,10 @@ import type { StatblockData } from "../../core/creature-files";
 import {
   createFormCard,
   createFieldGrid,
+  createRepeatingGrid,
   enhanceExistingSelectDropdown,
   mountTokenEditor,
+  mountEntryManager,
 } from "../../../../ui/workmode/create";
 import {
   mountMovementEditor,
@@ -19,7 +21,7 @@ import {
 import { abilityMod, formatSigned, parseIntSafe } from "../shared/stat-utils";
 import { createAlignmentEditor, createMovementModel, createStatColumn, type StatColumnRefs, createSkillManager } from "./components/section-helpers";
 import { validateEntry } from "./entry-model";
-import { createEntryCard } from "./components/entry-card";
+import { createEntryCard, type CreatureEntryWithComponents } from "./components/entry-card";
 import {
   CREATURE_SIZES,
   CREATURE_TYPES,
@@ -343,7 +345,10 @@ export function mountCreatureStatsAndSkillsSection(
   const statsSection = root.createDiv({ cls: "sm-cc-stats-section" });
   statsSection.createEl("h4", { cls: "sm-cc-stats-section__title", text: "Stats" });
 
-  const statsGrid = statsSection.createDiv({ cls: "sm-cc-stats-grid" });
+  const statsGrid = createRepeatingGrid(statsSection, {
+    className: "sm-cc-stats-grid",
+    itemClassName: "sm-cc-stats-col",
+  });
 
   const abilityByKey = new Map(CREATURE_ABILITIES.map((def) => [def.key, def]));
   const statColumns: CreatureAbilityKey[][] = [
@@ -375,10 +380,12 @@ export function mountCreatureStatsAndSkillsSection(
       .map((key) => abilityByKey.get(key))
       .filter(Boolean) as Array<{ key: CreatureAbilityKey; label: string }>;
 
-    const refs = createStatColumn(statsGrid, {
+    const columnHost = statsGrid.createItem();
+    const refs = createStatColumn(statsGrid.grid, {
       abilities,
       data,
       onUpdate: updateMods,
+      container: columnHost,
     });
 
     for (const [key, ref] of refs) {
@@ -532,113 +539,40 @@ export function mountEntriesSection(
 ) {
   if (!data.entries) data.entries = [] as any;
 
-  const wrap = parent.createDiv({ cls: "setting-item sm-cc-entries" });
-  wrap.createDiv({ cls: "setting-item-info", text: "Einträge (Traits, Aktionen, …)" });
-  const ctl = wrap.createDiv({ cls: "setting-item-control" });
+  const categories = CREATURE_ENTRY_CATEGORIES.map(([value, label]) => ({
+    id: value,
+    label,
+  }));
 
-  let activeFilter: EntryFilter = "all";
-  let focusIdx: number | null = null;
+  const filters = ENTRY_FILTER_OPTIONS.filter((opt) => opt.value !== "all").map((opt) => ({
+    id: opt.value,
+    label: opt.label,
+    hint: opt.hint,
+    predicate: (entry: any) => entry.category === opt.value,
+  }));
 
-  // Add buttons
-  const addBar = ctl.createDiv({ cls: "sm-cc-entry-add-bar" });
-  addBar.createEl("span", { cls: "sm-cc-entry-add-label", text: "Hinzufügen:" });
-  const addButtonGroup = addBar.createDiv({ cls: "sm-cc-entry-add-group" });
-
-  for (const [value, label] of CREATURE_ENTRY_CATEGORIES) {
-    const btn = addButtonGroup.createEl("button", {
-      cls: `sm-cc-entry-add-btn sm-cc-entry-add-btn--${value}`,
-      text: label,
-      attr: { type: "button", "data-category": value }
-    });
-    btn.onclick = () => {
-      (data.entries as any[]).unshift({ category: value as any, name: "" });
-      if (activeFilter !== "all" && activeFilter !== value) {
-        activeFilter = "all";
-        updateFilterButtons();
-      }
-      focusIdx = 0;
-      render();
-    };
-  }
-
-  // Filter buttons
-  const filterBar = ctl.createDiv({ cls: "sm-cc-entry-filter", attr: { role: "toolbar", "aria-label": "Eintragsliste filtern" } });
-  const filterButtons = new Map<EntryFilter, HTMLButtonElement>();
-
-  const updateFilterButtons = () => {
-    for (const [value, btn] of filterButtons) {
-      const isActive = value === activeFilter;
-      btn.setAttr("aria-pressed", isActive ? "true" : "false");
-      btn.toggleClass("is-active", isActive);
-    }
-  };
-
-  for (const opt of ENTRY_FILTER_OPTIONS) {
-    const btn = filterBar.createEl("button", {
-      text: opt.label,
-      attr: { type: "button", title: opt.hint, "aria-label": opt.hint, "aria-pressed": opt.value === activeFilter ? "true" : "false" }
-    }) as HTMLButtonElement;
-    btn.onclick = () => {
-      activeFilter = opt.value;
-      updateFilterButtons();
-      render();
-    };
-    filterButtons.set(opt.value, btn);
-  }
-
-  const host = ctl.createDiv();
-  const revalidate = registerValidation?.(() => collectEntryDependencyIssues(data)) ?? (() => []);
-
-  const render = () => {
-    updateFilterButtons();
-    host.empty();
-
-    (data.entries as any[]).forEach((entry, index) => {
-      const shouldFocus = focusIdx === index;
-      if (shouldFocus) focusIdx = null;
-
-      const card = createEntryCard(host, {
-        entry,
-        index,
+  mountEntryManager<CreatureEntryWithComponents, CreatureEntryCategory, EntryFilter>(parent, {
+    label: "Einträge (Traits, Aktionen, …)",
+    entries: data.entries as CreatureEntryWithComponents[],
+    categories,
+    filters,
+    defaultFilter: "all",
+    insertPosition: "start",
+    createEntry: (category) => ({ category: category as any, name: "" }) as CreatureEntryWithComponents,
+    renderEntry: (container, context) =>
+      createEntryCard(container, {
+        entry: context.entry,
+        index: context.index,
         data,
-        onDelete: () => {
-          (data.entries as any[]).splice(index, 1);
-          render();
-        },
-        onMoveUp: () => {
-          if (index > 0) {
-            const entries = data.entries as any[];
-            [entries[index], entries[index - 1]] = [entries[index - 1], entries[index]];
-            revalidate();
-            render();
-          }
-        },
-        onMoveDown: () => {
-          const entries = data.entries as any[];
-          if (index < entries.length - 1) {
-            [entries[index], entries[index + 1]] = [entries[index + 1], entries[index]];
-            revalidate();
-            render();
-          }
-        },
-        canMoveUp: index > 0,
-        canMoveDown: index < (data.entries as any[]).length - 1,
-        onUpdate: () => {
-          revalidate();
-          render();
-        },
-        shouldFocus,
-      });
-
-      // Apply filter visibility
-      const isVisible = activeFilter === "all" || entry.category === activeFilter;
-      card.toggleClass("sm-cc-entry-hidden", !isVisible);
-      (card.style as any).display = isVisible ? "" : "none";
-      card.setAttr("aria-hidden", isVisible ? "false" : "true");
-    });
-
-    revalidate();
-  };
-
-  render();
+        onDelete: context.remove,
+        onMoveUp: context.moveUp,
+        onMoveDown: context.moveDown,
+        canMoveUp: context.canMoveUp,
+        canMoveDown: context.canMoveDown,
+        onUpdate: context.requestRender,
+        shouldFocus: context.shouldFocus,
+      }),
+    registerValidation,
+    collectIssues: collectEntryDependencyIssues,
+  });
 }
