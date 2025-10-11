@@ -1,6 +1,6 @@
 # Salt Marcher Apps
 
-Die Plugin-Oberfläche besteht aus vier spezialisierten Arbeitsbereichen.
+Die Plugin-Oberfläche besteht aus fünf spezialisierten Arbeitsbereichen.
 
 ## Cartographer
 Verwalte Hex-Karten, wechsle zwischen Editor- und Inspector-Modus und pflege Karten-Dateien über die Map-Header-Leiste. Der Travel-Workflow lebt in der Session-Runner-App. [Details](./cartographer/README.md)
@@ -12,13 +12,16 @@ Führt Reise-Sessions inklusive Playback, Sidebar und Encounter-Sync aus. Nutzt 
 Zeigt aktive Reisebegegnungen, ermöglicht Notizen und markiert Sessions als erledigt. [Details](./encounter/README.md)
 
 ## Library
-Durchsuche und erweiter die Nachschlagewerke für Kreaturen, Zauber, Gelände und Regionen. [Details](./library/README.md)
+Durchsuche und erweitere die Nachschlagewerke für Kreaturen, Zauber, Items und Ausrüstung. [Details](./library/README.md)
+
+## Atlas
+Pflege Gelände- und Regionsdaten mit Auto-Save und Filteroptionen in einer separaten Workmode-Ansicht. [Details](./atlas/README.md)
 
 ## Almanac
 Verwalte Kalender, Phänomene und Zeitfortschritt zentral, inklusive Dashboard-, Manager- und Events-Modi. [Details](./almanac/IMPLEMENTATION_PLAN.md)
 
 ### Schnellzugriff
-- Ribbon-Symbole in Obsidian öffnen Cartographer (Kompass), Session Runner (Play) und Library (Buch).
+- Ribbon-Symbole in Obsidian öffnen Cartographer (Kompass), Session Runner (Play), Library (Buch) und Atlas (Karte).
 - Der Encounter-Bereich erscheint automatisch, sobald der Session Runner eine Begegnung auslöst.
 - Almanac steht über ein Kalender-Ribbon sowie den Command „Open Almanac“ bereit und nutzt denselben Aktivierungs-Helfer wie die anderen Views.
 
@@ -30,6 +33,7 @@ Verwalte Kalender, Phänomene und Zeitfortschritt zentral, inklusive Dashboard-,
 | Session Runner | `SessionRunnerView` (`VIEW_SESSION_RUNNER`) | `SessionRunnerController` | `openSessionRunner(app, file?)`, `detachSessionRunnerLeaves(app)` |
 | Encounter | `EncounterView` (`VIEW_ENCOUNTER`) | `EncounterPresenter` | – |
 | Library | `LibraryView` (`VIEW_LIBRARY`) | – (Renderer pro Modus) | `openLibrary(app)` |
+| Atlas | `AtlasView` (`VIEW_ATLAS`) | – (Renderer pro Modus) | `openAtlas(app)` |
 | Almanac | `AlmanacView` (`VIEW_ALMANAC`) | `AlmanacController` | `openAlmanac(app)` |
 
 ## Event-Flows

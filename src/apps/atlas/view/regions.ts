@@ -1,14 +1,14 @@
-// src/apps/library/view/regions.ts
+// src/apps/atlas/view/regions.ts
 // Verwalten von Regionenlisten samt Persistenz.
 import { enhanceSelectToSearch } from "../../../ui/search-dropdown";
-import type { ModeRenderer } from "./mode";
+import type { AtlasModeRenderer } from "./mode";
 import { BaseModeRenderer, scoreName } from "./mode";
 import { ensureRegionsFile, loadRegions, saveRegions, watchRegions, type Region } from "../../../core/regions-store";
 import { loadTerrains, watchTerrains } from "../../../core/terrain-store";
 
 const SAVE_DEBOUNCE_MS = 500;
 
-export class RegionsRenderer extends BaseModeRenderer implements ModeRenderer {
+export class RegionsRenderer extends BaseModeRenderer implements AtlasModeRenderer {
     readonly mode = "regions" as const;
     private regions: Region[] = [];
     private terrainNames: string[] = [];

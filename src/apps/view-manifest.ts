@@ -4,6 +4,7 @@ import type { App, ItemView, WorkspaceLeaf } from "obsidian";
 import { CartographerView, VIEW_CARTOGRAPHER, openCartographer } from "./cartographer";
 import { EncounterView, VIEW_ENCOUNTER, openEncounter } from "./encounter/view";
 import { LibraryView, VIEW_LIBRARY, openLibrary } from "./library/view";
+import { AtlasView, VIEW_ATLAS, openAtlas } from "./atlas";
 import { AlmanacView, VIEW_ALMANAC, openAlmanac } from "./almanac";
 import { SessionRunnerView, VIEW_SESSION_RUNNER, openSessionRunner } from "./session-runner";
 import type { IntegrationId } from "../app/integration-telemetry";
@@ -120,6 +121,26 @@ export const VIEW_MANIFEST: ReadonlyArray<ViewManifestEntry> = [
                 {
                     id: "open-library",
                     name: "Open Library",
+                },
+            ],
+        },
+    },
+    {
+        viewType: VIEW_ATLAS,
+        integrationId: "obsidian:atlas-view",
+        displayName: "Atlas",
+        viewIcon: "map",
+        createView: (leaf) => new AtlasView(leaf),
+        activation: {
+            open: (app) => openAtlas(app),
+            ribbon: {
+                icon: "map",
+                title: "Open Atlas",
+            },
+            commands: [
+                {
+                    id: "open-atlas",
+                    name: "Open Atlas",
                 },
             ],
         },

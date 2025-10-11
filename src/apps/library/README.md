@@ -4,7 +4,7 @@ Die Library bündelt alle Nachschlagewerke der Kampagne in einem Obsidian-Panel.
 
 ## Bedien- und UX-Ziele
 - Öffne die Library über das Buch-Symbol in der Ribbon-Leiste oder per Befehl „Open Library“.
-- Oben stehen vier Tabs zur Auswahl: **Creatures**, **Spells**, **Terrains** und **Regions**.
+- Oben stehen vier Tabs zur Auswahl: **Creatures**, **Spells**, **Items** und **Equipment**.
 - Der aktive Tab bestimmt, welche Sammlung geladen wird und welche Aktionen im Primär-Button (`Create entry`) erscheinen.
 - Das Suchfeld filtert die aktuelle Liste live (case-insensitive, trimmt Leerzeichen) und bleibt zwischen Tabs getrennt gespeichert.
 - Ansichten reagieren auf Vault-Änderungen: Wenn Dateien außerhalb der Library angepasst werden, aktualisieren die Tabs ihre Daten innerhalb von zwei Sekunden.
@@ -12,8 +12,7 @@ Die Library bündelt alle Nachschlagewerke der Kampagne in einem Obsidian-Panel.
 ## Datenquellen & Persistenzziele
 - Creatures leben als einzelne Markdown-Dateien in `SaltMarcher/Creatures/`. Jede Datei enthält Frontmatter mit `smType: creature`, Namen, Attributlisten und optionale Werteblöcke (Geschwindigkeiten, Immunitäten, Aktionen).
 - Spells werden analog in `SaltMarcher/Spells/` gespeichert. Frontmatter muss `smType: spell`, einen numerischen `level` und boolesche Flags (`concentration`, `ritual`) liefern. Mehrzeilige Beschreibungen folgen nach dem Frontmatter.
-- Terrains werden in `SaltMarcher/Terrains.md` als YAML-Tabelle gepflegt. Jede Zeile hält Name, Farbcode und Bewegungskosten. Änderungen müssen ohne expliziten „Save“-Button persistieren.
-- Regions verwalten wir in `SaltMarcher/Regions.md`. Einträge verbinden Name, Standardterrain, optionale Encounter-Profile und zusätzliche Hinweise.
+- Gelände- und Regionen-Verwaltung ist in die Atlas-App ausgelagert (siehe `../atlas/README.md`).
 - Alle Schreiboperationen laufen über Services in `library/core` und nutzen dieselben Datei-Pipelines, damit Caching, Fehlerbehandlung und Konfliktauflösung konsistent bleiben.
 
 ## Tab-spezifische Sollzustände
@@ -29,16 +28,14 @@ Die Library bündelt alle Nachschlagewerke der Kampagne in einem Obsidian-Panel.
 - `Create entry` startet den Spell-Editor und setzt die zuletzt gewählten Filter als Defaults im Formular.
 - Persistenz: Neue Spells erhalten automatisch einen Dateinamen `Spell - <Name>.md` und landen in `SaltMarcher/Spells/`. Bestehende Dateien behalten ihre Frontmatter-Struktur.
 
-### Terrains
-- Rendert eine Liste editierbarer Zeilen mit Name, Hex-Farbe (Color-Picker) und Bewegungsfaktor. Jede Zeile validiert Eingaben sofort (z. B. hexadezimale Farbe, numerische Bewegung).
-- UX-Ziel: Änderungen werden nach 500 ms Inaktivität gespeichert und visuell mit einem Inline-Spinner quittiert. Fehler werden inline an der betroffenen Zelle angezeigt.
-- Datenpflege: Automatisch sortiert nach Terrain-Namen. Neue Zeilen entstehen durch `Enter` am Ende der Tabelle.
+### Items
+- Listet Gegenstände mit Kategorie- und Raritätsangaben. Filter steuern beide Werte unabhängig voneinander.
+- `Create entry` übernimmt den Suchbegriff als vorgeschlagenen Namen im Item-Dialog und aktualisiert die Liste nach dem Speichern automatisch.
 
-### Regions
-- Kombiniert Regionen mit Terrains; zeigt zusätzlich Encounter-Wahrscheinlichkeiten und optionale Notizen.
-- `Create entry` öffnet einen In-Place-Dialog, der bestehende Terrains zur Auswahl anbietet und Encounter-Profile aus dem Encounter-Modul referenziert.
-- Validierung: Referenzen auf Terrains und Encounter müssen existieren, ansonsten bleibt das Speichern deaktiviert und zeigt einen Hinweis.
-- Datenfluss: Änderungen synchronisieren sich mit Cartographer-Funktionen, indem `library/core` eine Benachrichtigung an `apps/cartographer` sendet.
+### Equipment
+- Gruppiert Ausrüstung nach Typ (Weapon, Armor, Tool, Gear) und stellt Rollensichtbarkeit über Badges dar.
+- Aktionen decken Öffnen, Duplizieren und Löschen ab; der Editor übernimmt vorhandene Frontmatter-Werte.
+
 
 ## Event-Flow
 1. Beim Öffnen lädt die Library Kernservices aus `library/core` und stellt ihnen den aktiven Vault zur Verfügung.

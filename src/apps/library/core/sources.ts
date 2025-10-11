@@ -7,7 +7,6 @@ import { ensureItemDir, ITEMS_DIR } from "./item-files";
 import { ensureEquipmentDir, EQUIPMENT_DIR } from "./equipment-files";
 import { ensureTerrainFile, TERRAIN_FILE } from "../../../core/terrain-store";
 import { ensureRegionsFile, REGIONS_FILE } from "../../../core/regions-store";
-
 export type LibrarySourceId = "creatures" | "spells" | "items" | "equipment" | "terrains" | "regions";
 
 type SourceSpec = {
