@@ -4,10 +4,10 @@ import type { App } from "obsidian";
 
 export type FieldType =
   | "text" | "textarea" | "number-stepper"
-  | "select" | "multiselect" | "tags"
+  | "select" | "multiselect" | "tags" | "structured-tags"
   | "toggle" | "date" | "color"
   | "markdown" | "array" | "object" | "composite-stat"
-  | "composite" | "repeating" | "autocomplete";
+  | "composite" | "repeating" | "autocomplete" | "display";
 
 export type FieldOption<T extends string = string> = { value: T; label: string };
 
@@ -33,6 +33,10 @@ export interface FieldSpec<T = unknown> extends FieldVisibilityRule {
   validate?: (value: T, all: Record<string, unknown>) => string | null;
   transform?: (value: T, all: Record<string, unknown>) => unknown;
   config?: Record<string, unknown>; // Widget-specific configuration
+
+  // Layout hints for dynamic grid layout
+  minWidth?: number;        // Minimum control width in pixels (overrides type defaults)
+  preferWide?: boolean;     // Prefer spanning full width when space allows
 }
 
 export interface CompositeFieldSpec<T = unknown> extends FieldSpec<T> {
@@ -52,7 +56,36 @@ export interface AutocompleteFieldSpec<T = unknown> extends FieldSpec<T> {
   };
 }
 
-export type AnyFieldSpec = FieldSpec | CompositeFieldSpec | AutocompleteFieldSpec;
+export interface StructuredTagsSuggestion {
+  key: string;
+  label: string;
+}
+
+export interface StructuredTagsValueConfig {
+  placeholder?: string;
+  unit?: string;
+  pattern?: string;
+}
+
+export interface StructuredTagsFieldSpec extends FieldSpec<Array<{type: string; value: string}>> {
+  type: "structured-tags";
+  config: {
+    suggestions: StructuredTagsSuggestion[];
+    valueConfig: StructuredTagsValueConfig;
+  };
+}
+
+export interface DisplayFieldSpec extends FieldSpec<string | number> {
+  type: "display";
+  config: {
+    compute: (data: Record<string, unknown>) => string | number;
+    prefix?: string | ((data: Record<string, unknown>) => string);    // e.g. "+", "-", or dynamic function
+    suffix?: string | ((data: Record<string, unknown>) => string);    // e.g. "ft.", or dynamic function
+    className?: string; // Additional CSS class for styling
+  };
+}
+
+export type AnyFieldSpec = FieldSpec | CompositeFieldSpec | AutocompleteFieldSpec | StructuredTagsFieldSpec | DisplayFieldSpec;
 
 export interface RenderFieldArgs {
   app: App;

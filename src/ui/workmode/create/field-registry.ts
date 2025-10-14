@@ -8,6 +8,7 @@ import type {
   AnyFieldSpec,
   FieldRegistryEntry,
   RenderFieldArgs,
+  DisplayFieldSpec,
 } from "./types";
 
 interface ValidationControls {
@@ -309,6 +310,65 @@ function registerTagsField(): FieldRegistryEntry {
   };
 }
 
+function registerDisplayField(): FieldRegistryEntry {
+  return {
+    supports: (spec) => spec.type === "display",
+    render: (args) => {
+      const { setting, validation } = baseSetting(args);
+      const spec = args.spec as DisplayFieldSpec;
+
+      // Compute initial value
+      const computeValue = () => {
+        try {
+          return spec.config.compute(args.values);
+        } catch (error) {
+          console.warn(`Display field ${spec.id} compute error:`, error);
+          return "";
+        }
+      };
+
+      // Format value with prefix/suffix (support both static strings and dynamic functions)
+      const formatValue = (value: string | number): string => {
+        const prefixVal = typeof spec.config.prefix === "function"
+          ? spec.config.prefix(args.values)
+          : (spec.config.prefix ?? "");
+        const suffixVal = typeof spec.config.suffix === "function"
+          ? spec.config.suffix(args.values)
+          : (spec.config.suffix ?? "");
+        return `${prefixVal}${value}${suffixVal}`;
+      };
+
+      // Create display element (disabled input styled as read-only)
+      const displayEl = setting.controlEl.createEl("input", {
+        cls: "sm-cc-display-field",
+        attr: {
+          type: "text",
+          disabled: "true",
+          readonly: "true",
+        },
+      }) as HTMLInputElement;
+
+      if (spec.config.className) {
+        displayEl.addClass(spec.config.className);
+      }
+
+      // Set initial computed value
+      const initialValue = computeValue();
+      displayEl.value = formatValue(initialValue);
+
+      return {
+        setErrors: validation.apply,
+        container: setting.settingEl,
+        update: (value, all) => {
+          // Recompute when data changes
+          const computed = computeValue();
+          displayEl.value = formatValue(computed);
+        },
+      };
+    },
+  };
+}
+
 export function createDefaultFieldRegistry(): FieldRegistryEntry[] {
   return [
     registerTextField(),
@@ -319,6 +379,7 @@ export function createDefaultFieldRegistry(): FieldRegistryEntry[] {
     registerSelectField(),
     registerMultiselectField(),
     registerTagsField(),
+    registerDisplayField(),
   ];
 }
 

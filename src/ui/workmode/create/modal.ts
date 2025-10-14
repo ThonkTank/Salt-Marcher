@@ -6,8 +6,9 @@ import type { FormCardHandles } from "./components/layouts";
 import { buildSerializedPayload, persistSerializedPayload } from "./storage";
 import { enhanceSelectToSearch } from "../../search-dropdown";
 import { createNumberStepper } from "./components/form-controls";
-import { mountTokenEditor } from "./components/token-editor";
+import { mountTokenEditor, type TokenItem } from "./components/token-editor";
 import { mountEntryManager, type EntryCategoryDefinition, type EntryFilterDefinition } from "./components/entry-system";
+import { FieldWidthCalculator } from "./layout-utils";
 import type {
   AnyFieldSpec,
   CreateSpec,
@@ -52,6 +53,131 @@ function resolveInitialValue(spec: AnyFieldSpec, values: Record<string, unknown>
   return undefined;
 }
 
+/**
+ * Renders just the input control without a Setting wrapper.
+ * Used for composite field children to avoid nested Settings.
+ */
+function renderFieldControl(
+  container: HTMLElement,
+  spec: AnyFieldSpec,
+  initial: unknown,
+  onChange: (value: unknown) => void,
+): FieldRenderHandle {
+  // Add label for the control
+  const label = container.createEl("label", {
+    cls: "sm-cc-field-label",
+    text: spec.label
+  });
+
+  const controlContainer = container.createDiv({ cls: "sm-cc-field-control" });
+
+  // Number stepper (most common for composite fields like abilities)
+  if (spec.type === "number-stepper") {
+    const handle = createNumberStepper(controlContainer, {
+      value: typeof initial === "number" ? initial : undefined,
+      min: spec.min,
+      max: spec.max,
+      step: spec.step,
+      onChange: (value) => {
+        onChange(value);
+      },
+    });
+    return {
+      focus: () => handle.input.focus(),
+      update: (value) => {
+        if (typeof value === "number") {
+          handle.setValue(value);
+        } else {
+          handle.setValue(undefined);
+        }
+      },
+    };
+  }
+
+  // Text field
+  if (spec.type === "text") {
+    const input = controlContainer.createEl("input", {
+      cls: "sm-cc-input",
+      attr: {
+        type: "text",
+        placeholder: spec.placeholder ?? "",
+      },
+    }) as HTMLInputElement;
+    const value = typeof initial === "string" ? initial : initial != null ? String(initial) : "";
+    input.value = value;
+    input.addEventListener("input", () => {
+      onChange(input.value);
+    });
+    return {
+      focus: () => input.focus(),
+      update: (value) => {
+        const next = value == null ? "" : String(value);
+        if (input.value !== next) input.value = next;
+      },
+    };
+  }
+
+  // Toggle field
+  if (spec.type === "toggle") {
+    const toggleContainer = controlContainer.createDiv({ cls: "checkbox-container" });
+    const checkbox = toggleContainer.createEl("input", {
+      attr: { type: "checkbox" }
+    }) as HTMLInputElement;
+    checkbox.checked = Boolean(initial);
+    checkbox.addEventListener("change", () => {
+      onChange(checkbox.checked);
+    });
+    return {
+      focus: () => checkbox.focus(),
+      update: (value) => {
+        checkbox.checked = Boolean(value);
+      },
+    };
+  }
+
+  // Display field (computed/read-only)
+  if (spec.type === "display") {
+    const displaySpec = spec as import("./types").DisplayFieldSpec;
+    const displayEl = controlContainer.createEl("input", {
+      cls: "sm-cc-display-field",
+      attr: {
+        type: "text",
+        disabled: "true",
+        readonly: "true",
+      },
+    }) as HTMLInputElement;
+
+    if (displaySpec.config.className) {
+      displayEl.addClass(displaySpec.config.className);
+    }
+
+    return {
+      update: (value, all) => {
+        try {
+          const computed = displaySpec.config.compute(all ?? {});
+          const prefixVal = typeof displaySpec.config.prefix === "function"
+            ? displaySpec.config.prefix(all ?? {})
+            : (displaySpec.config.prefix ?? "");
+          const suffixVal = typeof displaySpec.config.suffix === "function"
+            ? displaySpec.config.suffix(all ?? {})
+            : (displaySpec.config.suffix ?? "");
+          displayEl.value = `${prefixVal}${computed}${suffixVal}`;
+        } catch (error) {
+          console.warn(`Display field ${spec.id} compute error:`, error);
+          displayEl.value = "";
+        }
+      },
+    };
+  }
+
+  // Fallback: unsupported type
+  controlContainer.createEl("p", {
+    text: `Unsupported field type for composite: ${spec.type}`,
+    cls: "sm-cc-field--error"
+  });
+  return {};
+}
+
 function renderField(
   container: HTMLElement,
   spec: AnyFieldSpec,
@@ -84,6 +210,7 @@ function renderField(
 
   // Textarea / markdown field
   if (spec.type === "textarea" || spec.type === "markdown") {
+    setting.settingEl.addClass("sm-cc-setting--wide");
     const textarea = setting.controlEl.createEl("textarea", {
       cls: "sm-cc-textarea",
       attr: {
@@ -241,6 +368,8 @@ function renderField(
 
   // Tags field
   if (spec.type === "tags") {
+    setting.settingEl.addClass("sm-cc-setting--wide");
+    setting.settingEl.addClass("sm-cc-setting--tags");
     const tagValues = Array.isArray(values[spec.id])
       ? [...(values[spec.id] as string[])]
       : Array.isArray(spec.default)
@@ -261,7 +390,7 @@ function renderField(
         onChange(spec.id, [...tagValues]);
       },
     };
-    const handle = mountTokenEditor(setting.controlEl, spec.label, model, {
+    const handle = mountTokenEditor(setting.controlEl, "", model, {
       placeholder: spec.placeholder,
       suggestions, // Pass suggestions to token editor
     });
@@ -280,6 +409,77 @@ function renderField(
     };
   }
 
+  // Structured tags field (tokens with type + value)
+  if (spec.type === "structured-tags") {
+    setting.settingEl.addClass("sm-cc-setting--wide");
+    setting.settingEl.addClass("sm-cc-setting--structured-tags");
+
+    const structuredSpec = spec as import("./types").StructuredTagsFieldSpec;
+    const suggestions = structuredSpec.config.suggestions;
+    const valueConfig = structuredSpec.config.valueConfig;
+
+    // Initialize with existing values or default
+    const tokenValues: TokenItem[] = Array.isArray(values[spec.id])
+      ? (values[spec.id] as Array<{type: string; value: string}>).map(t => ({ type: t.type, value: t.value }))
+      : Array.isArray(spec.default)
+        ? (spec.default as Array<{type: string; value: string}>).map(t => ({ type: t.type, value: t.value }))
+        : [];
+
+    const model = {
+      getItems: () => tokenValues,
+      add: (value: TokenItem) => {
+        tokenValues.push(value);
+        onChange(spec.id, [...tokenValues]);
+      },
+      remove: (index: number) => {
+        tokenValues.splice(index, 1);
+        onChange(spec.id, [...tokenValues]);
+      },
+      update: (index: number, value: string) => {
+        const token = tokenValues[index];
+        if (token && typeof token === "object" && "type" in token) {
+          token.value = value;
+          onChange(spec.id, [...tokenValues]);
+        }
+      },
+    };
+
+    const handle = mountTokenEditor(setting.controlEl, "", model, {
+      placeholder: spec.placeholder,
+      structured: {
+        typeSuggestions: suggestions,
+        typePlaceholder: spec.placeholder ?? "Typ auswählen...",
+        valuePlaceholder: valueConfig.placeholder,
+        unit: valueConfig.unit,
+        autoSize: true,
+      },
+    });
+
+    return {
+      setErrors: validation.apply,
+      container: handle.setting.settingEl,
+      update: (value) => {
+        tokenValues.splice(0, tokenValues.length);
+        if (Array.isArray(value)) {
+          for (const entry of value) {
+            if (
+              typeof entry === "object" &&
+              entry !== null &&
+              "type" in entry &&
+              "value" in entry
+            ) {
+              tokenValues.push({
+                type: String(entry.type),
+                value: String(entry.value),
+              });
+            }
+          }
+        }
+        handle.refresh();
+      },
+    };
+  }
+
   // Composite field (nested fields in a grid/custom layout)
   if (spec.type === "composite") {
     const compositeSpec = spec as import("./types").CompositeFieldSpec;
@@ -288,31 +488,109 @@ function renderField(
 
     // Create container for composite fields
     setting.settingEl.addClass("sm-cc-composite");
+    setting.settingEl.addClass("sm-cc-setting--wide");
     const compositeContainer = setting.controlEl.createDiv({ cls: "sm-cc-composite-grid" });
 
-    // Render each child field
-    const childHandles: Array<ReturnType<typeof renderField>> = [];
+    // Get current composite value
+    const compositeValue = (values[spec.id] as Record<string, unknown>) ?? {};
+
+    // Track child field instances with visibility and initialization state
+    interface ChildFieldInstance {
+      id: string;
+      spec: import("./types").AnyFieldSpec;
+      handle: FieldRenderHandle;
+      wrapper: HTMLElement;
+      wasVisible: boolean;
+      initialized: boolean;
+    }
+    const childInstances: ChildFieldInstance[] = [];
+
+    // Helper to evaluate visibility for a child field
+    const evaluateChildVisibility = (childSpec: import("./types").AnyFieldSpec): boolean => {
+      if (!childSpec.visibleIf) return true;
+      try {
+        return childSpec.visibleIf(compositeValue);
+      } catch (error) {
+        console.error(`Failed to evaluate visibility for ${childSpec.id}:`, error);
+        return true;
+      }
+    };
+
+    // Helper to update child field visibility
+    const updateChildVisibility = () => {
+      for (const child of childInstances) {
+        const shouldBeVisible = evaluateChildVisibility(child.spec);
+
+        if (shouldBeVisible !== child.wasVisible) {
+          child.wrapper.toggleClass("is-hidden", !shouldBeVisible);
+          child.wasVisible = shouldBeVisible;
+
+          // Auto-initialize fields when they become visible for the first time
+          if (shouldBeVisible && !child.initialized) {
+            child.initialized = true;
+            // If field has an init config, use it to set initial value
+            const initConfig = (child.spec.config as any)?.init;
+            if (initConfig && typeof initConfig === "function") {
+              try {
+                const initValue = initConfig(compositeValue);
+                compositeValue[child.id] = initValue;
+                child.handle.update?.(initValue, compositeValue);
+                onChange(spec.id, compositeValue);
+              } catch (error) {
+                console.error(`Failed to initialize ${child.id}:`, error);
+              }
+            }
+          }
+        }
+      }
+    };
+
+    // Render each child field using renderFieldControl (no nested Settings)
     for (const childDef of childFields) {
+      const childId = childDef.id ?? "";
       const childSpec: import("./types").AnyFieldSpec = {
-        id: `${spec.id}.${childDef.id}`,
-        label: childDef.label ?? childDef.id ?? "",
+        id: childId,
+        label: childDef.label ?? childId,
         type: childDef.type ?? "text",
         ...childDef,
       };
 
-      const childHandle = renderField(
-        compositeContainer,
+      // Create wrapper for this child control
+      const childWrapper = compositeContainer.createDiv({ cls: "sm-cc-composite-item" });
+
+      // Get initial value for this child
+      const childInitial = compositeValue[childId] ?? childSpec.default;
+
+      const childHandle = renderFieldControl(
+        childWrapper,
         childSpec,
-        values,
-        (childId, childValue) => {
+        childInitial,
+        (childValue) => {
           // Update nested value in parent
           const currentValue = (values[spec.id] as Record<string, unknown>) ?? {};
-          const fieldName = childId.replace(`${spec.id}.`, "");
-          currentValue[fieldName] = childValue;
+          const oldValue = currentValue[childId];
+          currentValue[childId] = childValue;
           onChange(spec.id, currentValue);
+
+          // Update visibility when values change (only if value actually changed)
+          if (oldValue !== childValue) {
+            updateChildVisibility();
+          }
         }
       );
-      childHandles.push(childHandle);
+
+      // Check initial visibility
+      const initiallyVisible = evaluateChildVisibility(childSpec);
+      childWrapper.toggleClass("is-hidden", !initiallyVisible);
+
+      childInstances.push({
+        id: childId,
+        spec: childSpec,
+        handle: childHandle,
+        wrapper: childWrapper,
+        wasVisible: initiallyVisible,
+        initialized: initiallyVisible, // Mark as initialized if initially visible
+      });
     }
 
     return {
@@ -321,12 +599,12 @@ function renderField(
       update: (value) => {
         if (typeof value === "object" && value !== null) {
           // Update all child fields
-          for (const childHandle of childHandles) {
-            const fieldName = childHandle.container?.dataset.fieldId;
-            if (fieldName) {
-              childHandle.update?.((value as Record<string, unknown>)[fieldName], values);
-            }
+          const valueMap = value as Record<string, unknown>;
+          for (const child of childInstances) {
+            child.handle.update?.(valueMap[child.id], valueMap);
           }
+          // Update visibility after updating values
+          updateChildVisibility();
         }
       },
     };
@@ -432,6 +710,7 @@ function renderField(
 
   // Repeating field (entry lists with add/remove/reorder)
   if (spec.type === "repeating") {
+    setting.settingEl.addClass("sm-cc-setting--wide");
     const repeatingSpec = spec as import("./types").CompositeFieldSpec;
     const config = repeatingSpec.config ?? {};
 
@@ -479,7 +758,7 @@ function renderField(
     };
 
     const handle = mountEntryManager(setting.controlEl, {
-      label: spec.label,
+      label: "",
       entries,
       categories,
       filters,
@@ -553,15 +832,10 @@ function orderFields(fields: AnyFieldSpec[], ids: string[] | undefined): AnyFiel
   if (!ids || ids.length === 0) return fields;
   const lookup = new Map(fields.map((field) => [field.id, field] as const));
   const ordered: AnyFieldSpec[] = [];
-  const used = new Set<string>();
   for (const id of ids) {
     const entry = lookup.get(id);
     if (!entry) continue;
     ordered.push(entry);
-    used.add(id);
-  }
-  for (const field of fields) {
-    if (!used.has(field.id)) ordered.push(field);
   }
   return ordered;
 }
@@ -571,6 +845,105 @@ function extractSchemaIssues(error: unknown): SchemaErrorIssue[] {
   const maybeIssues = (error as { issues?: unknown }).issues;
   if (!Array.isArray(maybeIssues)) return [];
   return maybeIssues.filter((issue): issue is SchemaErrorIssue => typeof issue === "object" && issue !== null);
+}
+
+/**
+ * Manages dynamic grid layout for card__body based on field dimensions.
+ * Automatically calculates optimal column count based on available width and field requirements.
+ */
+class GridLayoutManager {
+  private container: HTMLElement;
+  private fields: AnyFieldSpec[];
+  private observer: ResizeObserver;
+
+  constructor(container: HTMLElement, fields: AnyFieldSpec[]) {
+    this.container = container;
+    this.fields = fields;
+    this.observer = new ResizeObserver(() => this.recalculate());
+    this.observer.observe(container);
+    this.recalculate();
+  }
+
+  private measureMaxLabelWidth(): number {
+    const labels = this.container.querySelectorAll('.setting-item-info');
+    let maxWidth = 0;
+    labels.forEach(label => {
+      const el = label as HTMLElement;
+      if (!el.offsetParent) return; // Skip hidden elements
+      const width = el.offsetWidth;
+      if (width > maxWidth) maxWidth = width;
+    });
+    return maxWidth || 100; // Fallback
+  }
+
+  private recalculate() {
+    const availableWidth = this.container.clientWidth - 30; // Account for padding
+
+    // Filter only normal (non-wide) fields
+    const normalFields = this.fields.filter(f => {
+      const dims = FieldWidthCalculator.calculate(f);
+      return !dims.isWide;
+    });
+
+    console.log('[GridLayoutManager] Recalculating layout:', {
+      totalFields: this.fields.length,
+      normalFields: normalFields.length,
+      availableWidth,
+      fieldTypes: this.fields.map(f => `${f.id}:${f.type}`),
+    });
+
+    if (normalFields.length === 0) {
+      // Only wide fields → single column
+      console.log('[GridLayoutManager] No normal fields, using single column');
+      this.container.style.gridTemplateColumns = 'max-content 1fr';
+      return;
+    }
+
+    const labelWidth = this.measureMaxLabelWidth();
+
+    // Find widest minControlWidth among normal fields
+    const maxControlWidth = Math.max(
+      ...normalFields.map(f => FieldWidthCalculator.calculate(f).minControlWidth)
+    );
+
+    const gap = 16; // column-gap in pixels (0.8rem * 2)
+    const minPairWidth = labelWidth + gap + maxControlWidth;
+
+    // Calculate optimal number of pairs (1-3)
+    let pairs = Math.floor(availableWidth / minPairWidth);
+    pairs = Math.max(1, Math.min(pairs, 3)); // Limit to 1-3 pairs
+
+    // Check for fixed-width fields and be more conservative
+    const hasFixedWidths = normalFields.some(f =>
+      FieldWidthCalculator.calculate(f).hasFixedWidth
+    );
+
+    if (hasFixedWidths && pairs > 1) {
+      // Add 10% buffer for fixed-width fields
+      const safeWidth = (labelWidth + gap + maxControlWidth) * 1.1;
+      pairs = Math.floor(availableWidth / safeWidth);
+      pairs = Math.max(1, Math.min(pairs, 3));
+    }
+
+    // Set grid template dynamically
+    const columns = pairs === 1
+      ? 'max-content 1fr'
+      : `repeat(${pairs}, max-content 1fr)`;
+
+    console.log('[GridLayoutManager] Layout calculated:', {
+      labelWidth,
+      maxControlWidth,
+      minPairWidth,
+      pairs,
+      columns,
+    });
+
+    this.container.style.gridTemplateColumns = columns;
+  }
+
+  destroy() {
+    this.observer.disconnect();
+  }
 }
 
 /**
@@ -594,6 +967,9 @@ export class CreateModal<
   private sectionObserver: IntersectionObserver | null = null;
   private navButtons: Array<{ id: string; button: HTMLButtonElement }> = [];
   private validators: Array<() => string[]> = [];
+
+  // Layout managers for dynamic grid
+  private layoutManagers: GridLayoutManager[] = [];
 
   // Background pointer lock
   private bgLock: { el: HTMLElement; pointer: string } | null = null;
@@ -798,9 +1174,17 @@ export class CreateModal<
 
   private mountSection(handles: FormCardHandles, section: SectionSpec): void {
     const ordered = orderFields(this.spec.fields, section.fieldIds);
+
+    // Render fields
     for (const field of ordered) {
       this.renderSingleField(handles.body, field);
     }
+
+    // Create layout manager for dynamic grid
+    const layoutManager = new GridLayoutManager(handles.body, ordered);
+    this.layoutManagers.push(layoutManager);
+
+    // Register validation
     handles.registerValidation(() => {
       const issues: string[] = [];
       for (const field of ordered) {
@@ -1042,6 +1426,12 @@ export class CreateModal<
     this.sectionObserver = null;
     this.navButtons = [];
     this.validators = [];
+
+    // Cleanup layout managers
+    for (const manager of this.layoutManagers) {
+      manager.destroy();
+    }
+    this.layoutManagers = [];
 
     // Cleanup modal layout
     this.modalEl.removeClass("sm-cc-create-modal-host");
