@@ -5,6 +5,7 @@ import { createNumberStepper } from "../layout/form-controls";
 import { enhanceSelectToSearch } from "../../../../ui/components/search-dropdown";
 import { mountEntryManager, type EntryCategoryDefinition, type EntryFilterDefinition } from "../storage/entry-system";
 import { RepeatingWidthSynchronizer } from "../layout/repeating-width-sync";
+import { renderTextCore, renderTextareaCore, renderToggleCore, renderColorCore, renderMultiselectCore } from "./field-rendering-core";
 import type { AnyFieldSpec, FieldRenderHandle, CompositeFieldSpec } from "../types";
 
 /**
@@ -43,49 +44,24 @@ export function renderFieldControl(
 
   // Text field
   if (spec.type === "text") {
-    const input = controlContainer.createEl("input", {
-      cls: "sm-cc-input",
-      attr: {
-        type: "text",
-        placeholder: spec.placeholder ?? "",
-      },
-    }) as HTMLInputElement;
-    const value = typeof initial === "string" ? initial : initial != null ? String(initial) : "";
-    input.value = value;
-    input.addEventListener("input", () => {
-      onChange(input.value);
+    return renderTextCore({
+      container: controlContainer,
+      placeholder: spec.placeholder,
+      value: initial,
+      onChange,
     });
-    return {
-      focus: () => input.focus(),
-      update: (value) => {
-        const next = value == null ? "" : String(value);
-        if (input.value !== next) input.value = next;
-      },
-    };
   }
 
   // Textarea / Markdown field
   if (spec.type === "textarea" || spec.type === "markdown") {
     const rows = spec.type === "markdown" ? 12 : 4;
-    const textarea = controlContainer.createEl("textarea", {
-      cls: "sm-cc-textarea",
-      attr: {
-        rows: String(rows),
-        placeholder: spec.placeholder ?? "",
-      },
-    }) as HTMLTextAreaElement;
-    const value = typeof initial === "string" ? initial : initial != null ? String(initial) : "";
-    textarea.value = value;
-    textarea.addEventListener("input", () => {
-      onChange(textarea.value);
+    return renderTextareaCore({
+      container: controlContainer,
+      placeholder: spec.placeholder,
+      value: initial,
+      rows,
+      onChange,
     });
-    return {
-      focus: () => textarea.focus(),
-      update: (value) => {
-        const next = value == null ? "" : String(value);
-        if (textarea.value !== next) textarea.value = next;
-      },
-    };
   }
 
   // Number stepper
@@ -116,19 +92,11 @@ export function renderFieldControl(
   // Toggle field
   if (spec.type === "toggle") {
     const toggleContainer = controlContainer.createDiv({ cls: "checkbox-container" });
-    const checkbox = toggleContainer.createEl("input", {
-      attr: { type: "checkbox" }
-    }) as HTMLInputElement;
-    checkbox.checked = Boolean(initial);
-    checkbox.addEventListener("change", () => {
-      onChange(checkbox.checked);
+    return renderToggleCore({
+      container: toggleContainer,
+      value: initial,
+      onChange,
     });
-    return {
-      focus: () => checkbox.focus(),
-      update: (value) => {
-        checkbox.checked = Boolean(value);
-      },
-    };
   }
 
   // Select field
@@ -169,62 +137,21 @@ export function renderFieldControl(
   if (spec.type === "multiselect") {
     const multiselectSpec = spec as import("../types").MultiselectFieldSpec;
     const options = multiselectSpec.options ?? [];
-    const selected = new Set<string>(
-      Array.isArray(initial) ? (initial as string[]) : []
-    );
-
-    const checkboxList = controlContainer.createDiv({ cls: "sm-cc-multiselect" });
-
-    const checkboxes: HTMLInputElement[] = [];
-    for (const opt of options) {
-      const itemContainer = checkboxList.createDiv({ cls: "sm-cc-multiselect-item" });
-      const checkbox = itemContainer.createEl("input", {
-        attr: { type: "checkbox" }
-      }) as HTMLInputElement;
-      checkbox.checked = selected.has(opt.value);
-      checkbox.addEventListener("change", () => {
-        if (checkbox.checked) {
-          selected.add(opt.value);
-        } else {
-          selected.delete(opt.value);
-        }
-        onChange(Array.from(selected));
-      });
-      itemContainer.createEl("label", { text: opt.label });
-      checkboxes.push(checkbox);
-    }
-
-    return {
-      update: (value) => {
-        const newSelected = new Set<string>(
-          Array.isArray(value) ? (value as string[]) : []
-        );
-        checkboxes.forEach((cb, index) => {
-          cb.checked = newSelected.has(options[index].value);
-        });
-      },
-    };
+    return renderMultiselectCore({
+      container: controlContainer,
+      options,
+      value: initial,
+      onChange,
+    });
   }
 
   // Color field
   if (spec.type === "color") {
-    const input = controlContainer.createEl("input", {
-      cls: "sm-cc-color-input",
-      attr: {
-        type: "color",
-      },
-    }) as HTMLInputElement;
-    const value = typeof initial === "string" ? initial : "#000000";
-    input.value = value;
-    input.addEventListener("input", () => {
-      onChange(input.value);
+    return renderColorCore({
+      container: controlContainer,
+      value: initial,
+      onChange,
     });
-    return {
-      focus: () => input.focus(),
-      update: (value) => {
-        input.value = typeof value === "string" ? value : "#000000";
-      },
-    };
   }
 
   // ═══════════════════════════════════════════════

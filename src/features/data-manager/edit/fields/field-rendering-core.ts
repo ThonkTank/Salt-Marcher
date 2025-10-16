@@ -1,0 +1,289 @@
+// src/features/data-manager/edit/fields/field-rendering-core.ts
+// Shared core rendering functions for field types
+// Used by both registry-based renderers (with Setting) and direct rendering (without Setting)
+
+import type { AnyFieldSpec, FieldRenderHandle } from "../types";
+
+/**
+ * Core handle for field controls.
+ * Provides minimal interface for updating and focusing fields.
+ */
+export interface CoreFieldHandle {
+  focus?: () => void;
+  update?: (value: unknown) => void;
+  destroy?: () => void;
+}
+
+/**
+ * Normalizes a value to string for text-based inputs
+ */
+function normalizeToString(value: unknown): string {
+  if (value == null) return "";
+  if (typeof value === "string") return value;
+  return String(value);
+}
+
+/**
+ * Normalizes a value to boolean
+ */
+function normalizeToBoolean(value: unknown): boolean {
+  if (typeof value === "boolean") return value;
+  if (value === "true" || value === 1) return true;
+  if (value === "false" || value === 0) return false;
+  return Boolean(value);
+}
+
+// ============================================================================
+// TEXT FIELD CORE
+// ============================================================================
+
+export interface TextFieldCoreOptions {
+  container: HTMLElement;
+  placeholder?: string;
+  value?: unknown;
+  className?: string;
+  onChange: (value: string) => void;
+}
+
+/**
+ * Core implementation for text input fields.
+ * Creates and manages a text input element without Setting wrapper.
+ */
+export function renderTextCore(options: TextFieldCoreOptions): CoreFieldHandle {
+  const { container, placeholder = "", value, className = "sm-cc-input", onChange } = options;
+
+  const input = container.createEl("input", {
+    cls: className,
+    attr: {
+      type: "text",
+      placeholder,
+    },
+  }) as HTMLInputElement;
+
+  const initialValue = normalizeToString(value);
+  input.value = initialValue;
+
+  input.addEventListener("input", () => {
+    onChange(input.value);
+  });
+
+  return {
+    focus: () => input.focus(),
+    update: (newValue) => {
+      const next = normalizeToString(newValue);
+      if (input.value !== next) {
+        input.value = next;
+      }
+    },
+  };
+}
+
+// ============================================================================
+// TEXTAREA FIELD CORE
+// ============================================================================
+
+export interface TextareaFieldCoreOptions {
+  container: HTMLElement;
+  placeholder?: string;
+  value?: unknown;
+  rows?: number;
+  className?: string;
+  onChange: (value: string) => void;
+}
+
+/**
+ * Core implementation for textarea fields.
+ * Creates and manages a textarea element without Setting wrapper.
+ */
+export function renderTextareaCore(options: TextareaFieldCoreOptions): CoreFieldHandle {
+  const { container, placeholder = "", value, rows = 4, className = "sm-cc-textarea", onChange } = options;
+
+  const textarea = container.createEl("textarea", {
+    cls: className,
+    attr: {
+      rows: String(rows),
+      placeholder,
+    },
+  }) as HTMLTextAreaElement;
+
+  const initialValue = normalizeToString(value);
+  textarea.value = initialValue;
+
+  textarea.addEventListener("input", () => {
+    onChange(textarea.value);
+  });
+
+  return {
+    focus: () => textarea.focus(),
+    update: (newValue) => {
+      const next = normalizeToString(newValue);
+      if (textarea.value !== next) {
+        textarea.value = next;
+      }
+    },
+  };
+}
+
+// ============================================================================
+// TOGGLE FIELD CORE
+// ============================================================================
+
+export interface ToggleFieldCoreOptions {
+  container: HTMLElement;
+  value?: unknown;
+  className?: string;
+  onChange: (value: boolean) => void;
+}
+
+/**
+ * Core implementation for toggle/checkbox fields.
+ * Creates and manages a checkbox input element without Setting wrapper.
+ */
+export function renderToggleCore(options: ToggleFieldCoreOptions): CoreFieldHandle {
+  const { container, value, className = "sm-cc-toggle", onChange } = options;
+
+  const checkbox = container.createEl("input", {
+    cls: className,
+    attr: {
+      type: "checkbox",
+    },
+  }) as HTMLInputElement;
+
+  const initialValue = normalizeToBoolean(value);
+  checkbox.checked = initialValue;
+
+  checkbox.addEventListener("change", () => {
+    onChange(checkbox.checked);
+  });
+
+  return {
+    focus: () => checkbox.focus(),
+    update: (newValue) => {
+      const next = normalizeToBoolean(newValue);
+      if (checkbox.checked !== next) {
+        checkbox.checked = next;
+      }
+    },
+  };
+}
+
+// ============================================================================
+// COLOR FIELD CORE
+// ============================================================================
+
+export interface ColorFieldCoreOptions {
+  container: HTMLElement;
+  value?: unknown;
+  className?: string;
+  onChange: (value: string) => void;
+}
+
+/**
+ * Core implementation for color picker fields.
+ * Creates and manages a color input element without Setting wrapper.
+ */
+export function renderColorCore(options: ColorFieldCoreOptions): CoreFieldHandle {
+  const { container, value, className = "sm-cc-color-input", onChange } = options;
+
+  const input = container.createEl("input", {
+    cls: className,
+    attr: {
+      type: "color",
+    },
+  }) as HTMLInputElement;
+
+  // Validate and normalize color value (hex format)
+  const normalizeColor = (val: unknown): string => {
+    if (typeof val === "string" && /^#[0-9a-fA-F]{6}$/.test(val)) {
+      return val;
+    }
+    return "#000000"; // Default black
+  };
+
+  const initialValue = normalizeColor(value);
+  input.value = initialValue;
+
+  input.addEventListener("input", () => {
+    onChange(input.value);
+  });
+
+  input.addEventListener("change", () => {
+    onChange(input.value);
+  });
+
+  return {
+    focus: () => input.focus(),
+    update: (newValue) => {
+      const next = normalizeColor(newValue);
+      if (input.value !== next) {
+        input.value = next;
+      }
+    },
+  };
+}
+
+// ============================================================================
+// MULTISELECT FIELD CORE
+// ============================================================================
+
+export interface MultiselectOption {
+  value: string;
+  label: string;
+}
+
+export interface MultiselectFieldCoreOptions {
+  container: HTMLElement;
+  options: MultiselectOption[];
+  value?: unknown;
+  className?: string;
+  onChange: (value: string[]) => void;
+}
+
+/**
+ * Core implementation for multiselect checkbox fields.
+ * Creates and manages a list of checkboxes without Setting wrapper.
+ */
+export function renderMultiselectCore(options: MultiselectFieldCoreOptions): CoreFieldHandle {
+  const { container, options: fieldOptions, value, className = "sm-cc-multiselect", onChange } = options;
+
+  const selected = new Set<string>(Array.isArray(value) ? (value as string[]) : []);
+  const multiContainer = container.createDiv({ cls: className });
+  const checkboxes: HTMLInputElement[] = [];
+
+  for (const option of fieldOptions) {
+    const item = multiContainer.createDiv({ cls: "sm-cc-multiselect-item" });
+    const checkbox = item.createEl("input", { attr: { type: "checkbox" } }) as HTMLInputElement;
+    checkbox.value = option.value;
+    checkbox.checked = selected.has(option.value);
+
+    const label = item.createEl("label");
+    label.textContent = option.label;
+
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) {
+        selected.add(option.value);
+      } else {
+        selected.delete(option.value);
+      }
+      onChange(Array.from(selected));
+    });
+
+    checkboxes.push(checkbox);
+  }
+
+  return {
+    update: (newValue) => {
+      selected.clear();
+      if (Array.isArray(newValue)) {
+        for (const entry of newValue) {
+          if (typeof entry === "string") {
+            selected.add(entry);
+          }
+        }
+      }
+      checkboxes.forEach((cb) => {
+        cb.checked = selected.has(cb.value);
+      });
+    },
+  };
+}

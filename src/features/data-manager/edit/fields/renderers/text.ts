@@ -5,6 +5,7 @@ import { Setting } from "obsidian";
 import type { FieldRegistryEntry } from "../types";
 import { createValidationControls } from "../../modal/modal-utils";
 import { resolveInitialValue } from "../field-utils";
+import { renderTextCore } from "../field-rendering-core";
 
 export const textFieldRenderer: FieldRegistryEntry = {
   supports: (spec) => spec.type === "text",
@@ -18,16 +19,16 @@ export const textFieldRenderer: FieldRegistryEntry = {
     const validation = createValidationControls(setting);
     const initial = resolveInitialValue(spec, values);
 
-    setting.addText((text) => {
-      text.setPlaceholder(spec.placeholder ?? "");
-      const value = typeof initial === "string" ? initial : initial != null ? String(initial) : "";
-      text.setValue(value);
-      text.onChange((next) => {
-        onChange(spec.id, next);
-      });
+    // Use core rendering function
+    const handle = renderTextCore({
+      container: setting.controlEl,
+      placeholder: spec.placeholder,
+      value: initial,
+      onChange: (value) => onChange(spec.id, value),
     });
 
     return {
+      ...handle,
       setErrors: validation.apply,
       container: setting.settingEl,
     };

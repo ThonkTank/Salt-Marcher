@@ -5,6 +5,7 @@ import { Setting } from "obsidian";
 import type { FieldRegistryEntry } from "../types";
 import { createValidationControls } from "../../modal/modal-utils";
 import { resolveInitialValue } from "../field-utils";
+import { renderColorCore } from "../field-rendering-core";
 
 export const colorFieldRenderer: FieldRegistryEntry = {
   supports: (spec) => spec.type === "color",
@@ -18,25 +19,17 @@ export const colorFieldRenderer: FieldRegistryEntry = {
     const validation = createValidationControls(setting);
     const initial = resolveInitialValue(spec, values);
 
-    const input = setting.controlEl.createEl("input", { attr: { type: "color" } }) as HTMLInputElement;
-    const defaultColor = typeof initial === "string" && /^#[0-9a-fA-F]{6}$/.test(initial) ? initial : "#999999";
-    input.value = defaultColor;
-    input.addEventListener("input", () => {
-      onChange(spec.id, input.value || "#999999");
-    });
-    input.addEventListener("change", () => {
-      onChange(spec.id, input.value || "#999999");
+    // Use core rendering function
+    const handle = renderColorCore({
+      container: setting.controlEl,
+      value: initial,
+      onChange: (value) => onChange(spec.id, value),
     });
 
     return {
+      ...handle,
       setErrors: validation.apply,
       container: setting.settingEl,
-      focus: () => input.focus(),
-      update: (value) => {
-        if (typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value)) {
-          input.value = value;
-        }
-      },
     };
   },
 };

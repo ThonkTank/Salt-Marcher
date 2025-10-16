@@ -45178,6 +45178,160 @@ var RepeatingWidthSynchronizer = class {
   }
 };
 
+// src/features/data-manager/edit/fields/field-rendering-core.ts
+function normalizeToString(value) {
+  if (value == null) return "";
+  if (typeof value === "string") return value;
+  return String(value);
+}
+function normalizeToBoolean(value) {
+  if (typeof value === "boolean") return value;
+  if (value === "true" || value === 1) return true;
+  if (value === "false" || value === 0) return false;
+  return Boolean(value);
+}
+function renderTextCore(options) {
+  const { container, placeholder = "", value, className = "sm-cc-input", onChange } = options;
+  const input = container.createEl("input", {
+    cls: className,
+    attr: {
+      type: "text",
+      placeholder
+    }
+  });
+  const initialValue = normalizeToString(value);
+  input.value = initialValue;
+  input.addEventListener("input", () => {
+    onChange(input.value);
+  });
+  return {
+    focus: () => input.focus(),
+    update: (newValue) => {
+      const next = normalizeToString(newValue);
+      if (input.value !== next) {
+        input.value = next;
+      }
+    }
+  };
+}
+function renderTextareaCore(options) {
+  const { container, placeholder = "", value, rows = 4, className = "sm-cc-textarea", onChange } = options;
+  const textarea = container.createEl("textarea", {
+    cls: className,
+    attr: {
+      rows: String(rows),
+      placeholder
+    }
+  });
+  const initialValue = normalizeToString(value);
+  textarea.value = initialValue;
+  textarea.addEventListener("input", () => {
+    onChange(textarea.value);
+  });
+  return {
+    focus: () => textarea.focus(),
+    update: (newValue) => {
+      const next = normalizeToString(newValue);
+      if (textarea.value !== next) {
+        textarea.value = next;
+      }
+    }
+  };
+}
+function renderToggleCore(options) {
+  const { container, value, className = "sm-cc-toggle", onChange } = options;
+  const checkbox = container.createEl("input", {
+    cls: className,
+    attr: {
+      type: "checkbox"
+    }
+  });
+  const initialValue = normalizeToBoolean(value);
+  checkbox.checked = initialValue;
+  checkbox.addEventListener("change", () => {
+    onChange(checkbox.checked);
+  });
+  return {
+    focus: () => checkbox.focus(),
+    update: (newValue) => {
+      const next = normalizeToBoolean(newValue);
+      if (checkbox.checked !== next) {
+        checkbox.checked = next;
+      }
+    }
+  };
+}
+function renderColorCore(options) {
+  const { container, value, className = "sm-cc-color-input", onChange } = options;
+  const input = container.createEl("input", {
+    cls: className,
+    attr: {
+      type: "color"
+    }
+  });
+  const normalizeColor2 = (val) => {
+    if (typeof val === "string" && /^#[0-9a-fA-F]{6}$/.test(val)) {
+      return val;
+    }
+    return "#000000";
+  };
+  const initialValue = normalizeColor2(value);
+  input.value = initialValue;
+  input.addEventListener("input", () => {
+    onChange(input.value);
+  });
+  input.addEventListener("change", () => {
+    onChange(input.value);
+  });
+  return {
+    focus: () => input.focus(),
+    update: (newValue) => {
+      const next = normalizeColor2(newValue);
+      if (input.value !== next) {
+        input.value = next;
+      }
+    }
+  };
+}
+function renderMultiselectCore(options) {
+  const { container, options: fieldOptions, value, className = "sm-cc-multiselect", onChange } = options;
+  const selected = new Set(Array.isArray(value) ? value : []);
+  const multiContainer = container.createDiv({ cls: className });
+  const checkboxes = [];
+  for (const option of fieldOptions) {
+    const item = multiContainer.createDiv({ cls: "sm-cc-multiselect-item" });
+    const checkbox = item.createEl("input", { attr: { type: "checkbox" } });
+    checkbox.value = option.value;
+    checkbox.checked = selected.has(option.value);
+    const label = item.createEl("label");
+    label.textContent = option.label;
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) {
+        selected.add(option.value);
+      } else {
+        selected.delete(option.value);
+      }
+      onChange(Array.from(selected));
+    });
+    checkboxes.push(checkbox);
+  }
+  return {
+    update: (newValue) => {
+      selected.clear();
+      if (Array.isArray(newValue)) {
+        for (const entry of newValue) {
+          if (typeof entry === "string") {
+            selected.add(entry);
+          }
+        }
+      }
+      checkboxes.forEach((cb) => {
+        cb.checked = selected.has(cb.value);
+      });
+    }
+  };
+}
+
 // src/features/data-manager/edit/fields/field-utils.ts
 function resolveInitialValue(spec, values) {
   if (values[spec.id] !== void 0) return values[spec.id];
@@ -45193,47 +45347,22 @@ function renderFieldControl(container, spec, initial, onChange) {
   }
   const controlContainer = container.createDiv({ cls: "sm-cc-field-control" });
   if (spec.type === "text") {
-    const input = controlContainer.createEl("input", {
-      cls: "sm-cc-input",
-      attr: {
-        type: "text",
-        placeholder: spec.placeholder ?? ""
-      }
+    return renderTextCore({
+      container: controlContainer,
+      placeholder: spec.placeholder,
+      value: initial,
+      onChange
     });
-    const value = typeof initial === "string" ? initial : initial != null ? String(initial) : "";
-    input.value = value;
-    input.addEventListener("input", () => {
-      onChange(input.value);
-    });
-    return {
-      focus: () => input.focus(),
-      update: (value2) => {
-        const next = value2 == null ? "" : String(value2);
-        if (input.value !== next) input.value = next;
-      }
-    };
   }
   if (spec.type === "textarea" || spec.type === "markdown") {
     const rows = spec.type === "markdown" ? 12 : 4;
-    const textarea = controlContainer.createEl("textarea", {
-      cls: "sm-cc-textarea",
-      attr: {
-        rows: String(rows),
-        placeholder: spec.placeholder ?? ""
-      }
+    return renderTextareaCore({
+      container: controlContainer,
+      placeholder: spec.placeholder,
+      value: initial,
+      rows,
+      onChange
     });
-    const value = typeof initial === "string" ? initial : initial != null ? String(initial) : "";
-    textarea.value = value;
-    textarea.addEventListener("input", () => {
-      onChange(textarea.value);
-    });
-    return {
-      focus: () => textarea.focus(),
-      update: (value2) => {
-        const next = value2 == null ? "" : String(value2);
-        if (textarea.value !== next) textarea.value = next;
-      }
-    };
   }
   if (spec.type === "number-stepper") {
     const numberStepperSpec = spec;
@@ -45260,19 +45389,11 @@ function renderFieldControl(container, spec, initial, onChange) {
   }
   if (spec.type === "toggle") {
     const toggleContainer = controlContainer.createDiv({ cls: "checkbox-container" });
-    const checkbox = toggleContainer.createEl("input", {
-      attr: { type: "checkbox" }
+    return renderToggleCore({
+      container: toggleContainer,
+      value: initial,
+      onChange
     });
-    checkbox.checked = Boolean(initial);
-    checkbox.addEventListener("change", () => {
-      onChange(checkbox.checked);
-    });
-    return {
-      focus: () => checkbox.focus(),
-      update: (value) => {
-        checkbox.checked = Boolean(value);
-      }
-    };
   }
   if (spec.type === "select") {
     const selectSpec = spec;
@@ -45304,57 +45425,19 @@ function renderFieldControl(container, spec, initial, onChange) {
   if (spec.type === "multiselect") {
     const multiselectSpec = spec;
     const options = multiselectSpec.options ?? [];
-    const selected = new Set(
-      Array.isArray(initial) ? initial : []
-    );
-    const checkboxList = controlContainer.createDiv({ cls: "sm-cc-multiselect" });
-    const checkboxes = [];
-    for (const opt of options) {
-      const itemContainer = checkboxList.createDiv({ cls: "sm-cc-multiselect-item" });
-      const checkbox = itemContainer.createEl("input", {
-        attr: { type: "checkbox" }
-      });
-      checkbox.checked = selected.has(opt.value);
-      checkbox.addEventListener("change", () => {
-        if (checkbox.checked) {
-          selected.add(opt.value);
-        } else {
-          selected.delete(opt.value);
-        }
-        onChange(Array.from(selected));
-      });
-      itemContainer.createEl("label", { text: opt.label });
-      checkboxes.push(checkbox);
-    }
-    return {
-      update: (value) => {
-        const newSelected = new Set(
-          Array.isArray(value) ? value : []
-        );
-        checkboxes.forEach((cb, index) => {
-          cb.checked = newSelected.has(options[index].value);
-        });
-      }
-    };
+    return renderMultiselectCore({
+      container: controlContainer,
+      options,
+      value: initial,
+      onChange
+    });
   }
   if (spec.type === "color") {
-    const input = controlContainer.createEl("input", {
-      cls: "sm-cc-color-input",
-      attr: {
-        type: "color"
-      }
+    return renderColorCore({
+      container: controlContainer,
+      value: initial,
+      onChange
     });
-    const value = typeof initial === "string" ? initial : "#000000";
-    input.value = value;
-    input.addEventListener("input", () => {
-      onChange(input.value);
-    });
-    return {
-      focus: () => input.focus(),
-      update: (value2) => {
-        input.value = typeof value2 === "string" ? value2 : "#000000";
-      }
-    };
   }
   if (spec.type === "display") {
     const displaySpec = spec;
@@ -45726,15 +45809,14 @@ var textFieldRenderer = {
     }
     const validation = createValidationControls(setting);
     const initial = resolveInitialValue(spec, values);
-    setting.addText((text) => {
-      text.setPlaceholder(spec.placeholder ?? "");
-      const value = typeof initial === "string" ? initial : initial != null ? String(initial) : "";
-      text.setValue(value);
-      text.onChange((next) => {
-        onChange(spec.id, next);
-      });
+    const handle = renderTextCore({
+      container: setting.controlEl,
+      placeholder: spec.placeholder,
+      value: initial,
+      onChange: (value) => onChange(spec.id, value)
     });
     return {
+      ...handle,
       setErrors: validation.apply,
       container: setting.settingEl
     };
@@ -45755,27 +45837,18 @@ var textareaFieldRenderer = {
     const validation = createValidationControls(setting);
     const initial = resolveInitialValue(spec, values);
     setting.settingEl.addClass("sm-cc-setting--wide");
-    const textarea = setting.controlEl.createEl("textarea", {
-      cls: "sm-cc-textarea",
-      attr: {
-        placeholder: spec.placeholder ?? "",
-        rows: spec.type === "markdown" ? "12" : "6"
-      }
-    });
-    if (initial != null) {
-      textarea.value = typeof initial === "string" ? initial : String(initial);
-    }
-    textarea.addEventListener("input", () => {
-      onChange(spec.id, textarea.value);
+    const rows = spec.type === "markdown" ? 12 : 6;
+    const handle = renderTextareaCore({
+      container: setting.controlEl,
+      placeholder: spec.placeholder,
+      value: initial,
+      rows,
+      onChange: (value) => onChange(spec.id, value)
     });
     return {
+      ...handle,
       setErrors: validation.apply,
-      container: setting.settingEl,
-      focus: () => textarea.focus(),
-      update: (value) => {
-        const next = value == null ? "" : String(value);
-        if (textarea.value !== next) textarea.value = next;
-      }
+      container: setting.settingEl
     };
   }
 };
@@ -45830,13 +45903,13 @@ var toggleFieldRenderer = {
     }
     const validation = createValidationControls(setting);
     const initial = resolveInitialValue(spec, values);
-    setting.addToggle((toggle) => {
-      toggle.setValue(Boolean(initial));
-      toggle.onChange((value) => {
-        onChange(spec.id, value);
-      });
+    const handle = renderToggleCore({
+      container: setting.controlEl,
+      value: initial,
+      onChange: (value) => onChange(spec.id, value)
     });
     return {
+      ...handle,
       setErrors: validation.apply,
       container: setting.settingEl
     };
@@ -45899,40 +45972,17 @@ var multiselectFieldRenderer = {
     }
     const validation = createValidationControls(setting);
     const initial = resolveInitialValue(spec, values);
-    const selected = new Set(Array.isArray(initial) ? initial : []);
     const options = spec.options ?? [];
-    const multiContainer = setting.controlEl.createDiv({ cls: "sm-cc-multiselect" });
-    for (const option of options) {
-      const item = multiContainer.createDiv({ cls: "sm-cc-multiselect__option" });
-      const checkbox = item.createEl("input", { attr: { type: "checkbox" } });
-      checkbox.value = option.value;
-      checkbox.checked = selected.has(option.value);
-      const label = item.createEl("label");
-      label.textContent = option.label;
-      checkbox.addEventListener("change", () => {
-        if (checkbox.checked) {
-          selected.add(option.value);
-        } else {
-          selected.delete(option.value);
-        }
-        onChange(spec.id, Array.from(selected));
-      });
-    }
+    const handle = renderMultiselectCore({
+      container: setting.controlEl,
+      options,
+      value: initial,
+      onChange: (value) => onChange(spec.id, value)
+    });
     return {
+      ...handle,
       setErrors: validation.apply,
-      container: setting.settingEl,
-      update: (value) => {
-        selected.clear();
-        if (Array.isArray(value)) {
-          for (const entry of value) {
-            if (typeof entry === "string") selected.add(entry);
-          }
-        }
-        const checkboxes = multiContainer.querySelectorAll("input[type=checkbox]");
-        checkboxes.forEach((cb) => {
-          cb.checked = selected.has(cb.value);
-        });
-      }
+      container: setting.settingEl
     };
   }
 };
@@ -45950,24 +46000,15 @@ var colorFieldRenderer = {
     }
     const validation = createValidationControls(setting);
     const initial = resolveInitialValue(spec, values);
-    const input = setting.controlEl.createEl("input", { attr: { type: "color" } });
-    const defaultColor = typeof initial === "string" && /^#[0-9a-fA-F]{6}$/.test(initial) ? initial : "#999999";
-    input.value = defaultColor;
-    input.addEventListener("input", () => {
-      onChange(spec.id, input.value || "#999999");
-    });
-    input.addEventListener("change", () => {
-      onChange(spec.id, input.value || "#999999");
+    const handle = renderColorCore({
+      container: setting.controlEl,
+      value: initial,
+      onChange: (value) => onChange(spec.id, value)
     });
     return {
+      ...handle,
       setErrors: validation.apply,
-      container: setting.settingEl,
-      focus: () => input.focus(),
-      update: (value) => {
-        if (typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value)) {
-          input.value = value;
-        }
-      }
+      container: setting.settingEl
     };
   }
 };

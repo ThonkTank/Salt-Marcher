@@ -5,6 +5,7 @@ import { Setting } from "obsidian";
 import type { FieldRegistryEntry } from "../types";
 import { createValidationControls } from "../../modal/modal-utils";
 import { resolveInitialValue } from "../field-utils";
+import { renderMultiselectCore } from "../field-rendering-core";
 
 export const multiselectFieldRenderer: FieldRegistryEntry = {
   supports: (spec) => spec.type === "multiselect",
@@ -18,41 +19,19 @@ export const multiselectFieldRenderer: FieldRegistryEntry = {
     const validation = createValidationControls(setting);
     const initial = resolveInitialValue(spec, values);
 
-    const selected = new Set<string>(Array.isArray(initial) ? (initial as string[]) : []);
+    // Use core rendering function
     const options = spec.options ?? [];
-    const multiContainer = setting.controlEl.createDiv({ cls: "sm-cc-multiselect" });
-    for (const option of options) {
-      const item = multiContainer.createDiv({ cls: "sm-cc-multiselect__option" });
-      const checkbox = item.createEl("input", { attr: { type: "checkbox" } }) as HTMLInputElement;
-      checkbox.value = option.value;
-      checkbox.checked = selected.has(option.value);
-      const label = item.createEl("label");
-      label.textContent = option.label;
-      checkbox.addEventListener("change", () => {
-        if (checkbox.checked) {
-          selected.add(option.value);
-        } else {
-          selected.delete(option.value);
-        }
-        onChange(spec.id, Array.from(selected));
-      });
-    }
+    const handle = renderMultiselectCore({
+      container: setting.controlEl,
+      options,
+      value: initial,
+      onChange: (value) => onChange(spec.id, value),
+    });
 
     return {
+      ...handle,
       setErrors: validation.apply,
       container: setting.settingEl,
-      update: (value) => {
-        selected.clear();
-        if (Array.isArray(value)) {
-          for (const entry of value) {
-            if (typeof entry === "string") selected.add(entry);
-          }
-        }
-        const checkboxes = multiContainer.querySelectorAll<HTMLInputElement>("input[type=checkbox]");
-        checkboxes.forEach((cb) => {
-          cb.checked = selected.has(cb.value);
-        });
-      },
     };
   },
 };
