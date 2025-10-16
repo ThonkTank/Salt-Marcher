@@ -5,7 +5,7 @@ import { Setting } from "obsidian";
 import type { FieldRegistryEntry } from "../types";
 import { createValidationControls } from "../../modal/modal-utils";
 import { resolveInitialValue } from "../field-utils";
-import { createNumberStepper } from "../../layout/form-controls";
+import { createNumberStepper } from "../../controls/number-stepper";
 
 export const numberStepperFieldRenderer: FieldRegistryEntry = {
   supports: (spec) => spec.type === "number-stepper",

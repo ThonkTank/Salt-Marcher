@@ -44630,8 +44630,7 @@ function extractSchemaIssues(error) {
   return maybeIssues.filter((issue) => typeof issue === "object" && issue !== null);
 }
 
-// src/features/data-manager/edit/layout/form-controls.ts
-init_search_dropdown();
+// src/features/data-manager/edit/controls/number-stepper.ts
 function createNumberInput2(parent, options = {}) {
   const input = parent.createEl("input", {
     cls: options.className || "sm-cc-input",

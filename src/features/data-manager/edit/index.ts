@@ -13,7 +13,7 @@ export * from "./storage/storage";
 
 // Components
 export * from "./layout/layouts";
-export * from "./layout/form-controls";
+export * from "./controls/number-stepper";
 export * from "./storage/entry-system";
 
 // ============================================================================

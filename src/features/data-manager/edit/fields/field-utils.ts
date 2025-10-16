@@ -1,7 +1,7 @@
 // src/ui/create/field-utils.ts
 // Field-level utility functions for create modal
 
-import { createNumberStepper } from "../layout/form-controls";
+import { createNumberStepper } from "../controls/number-stepper";
 import { enhanceSelectToSearch } from "../../../../ui/components/search-dropdown";
 import { mountEntryManager, type EntryCategoryDefinition, type EntryFilterDefinition } from "../storage/entry-system";
 import { RepeatingWidthSynchronizer } from "../layout/repeating-width-sync";
