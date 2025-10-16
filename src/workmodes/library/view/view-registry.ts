@@ -8,6 +8,7 @@ import { loadSpellFile, type SpellData } from "../core/spell-files";
 import { loadItemFile, type ItemData } from "../core/item-files";
 import { loadEquipmentFile, type EquipmentData } from "../core/equipment-files";
 import { openCreateModal } from "../../../features/data-manager/edit";
+import { createStandardActions } from "../../../features/data-manager/browse/action-factory";
 import { creatureSpec } from "../create/creature/creature-spec";
 import { spellSpec } from "../create/spell/spell-spec";
 import { itemSpec } from "../create/item/item-spec";
@@ -36,42 +37,6 @@ export type LibraryViewConfigMap = {
     [M in FilterableLibraryMode]: LibraryViewConfig<M>;
 };
 
-// ============================================================================
-// Shared Action Helpers
-// ============================================================================
-// NOTE: These action helpers follow the pattern defined in:
-// src/features/data-manager/browse/action-factory.ts
-// For new workmodes, consider using the generic action factory directly.
-
-function createOpenAction<M extends FilterableLibraryMode>(): ActionDefinition<M> {
-    return {
-        id: "open",
-        label: "Open",
-        execute: async (entry, context) => {
-            await context.app.workspace.openLinkText(entry.file.path, entry.file.path, true);
-        },
-    };
-}
-
-function createDeleteAction<M extends FilterableLibraryMode>(typeName: string): ActionDefinition<M> {
-    return {
-        id: "delete",
-        label: "Delete",
-        execute: async (entry, context) => {
-            const question = `Delete ${entry.name}? This moves the file to the trash.`;
-            const confirmation = typeof window !== "undefined" && typeof window.confirm === "function"
-                ? window.confirm(question)
-                : true;
-            if (!confirmation) return;
-            try {
-                await context.app.vault.trash(entry.file, true);
-                await context.reloadEntries();
-            } catch (err) {
-                console.error(`Failed to delete ${typeName}`, err);
-            }
-        },
-    };
-}
 
 // ============================================================================
 // Creatures Configuration
@@ -90,30 +55,26 @@ const creaturesMetadata: MetadataField<"creatures">[] = [
     },
 ];
 
-const creaturesActions: ActionDefinition<"creatures">[] = [
-    createOpenAction(),
-    {
-        id: "edit",
-        label: "Edit",
-        execute: async (entry, context) => {
-            const { app } = context;
-            try {
-                const creatureData = await loadCreaturePreset(app, entry.file);
-                const result = await openCreateModal(creatureSpec, {
-                    app,
-                    preset: creatureData,
-                });
-                if (result) {
-                    await context.reloadEntries();
-                    await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
-                }
-            } catch (err) {
-                console.error("Failed to load creature for editing", err);
+const creaturesActions: ActionDefinition<"creatures">[] = createStandardActions("creature", () => ({
+    id: "edit",
+    label: "Edit",
+    execute: async (entry, context) => {
+        const { app } = context;
+        try {
+            const creatureData = await loadCreaturePreset(app, entry.file);
+            const result = await openCreateModal(creatureSpec, {
+                app,
+                preset: creatureData,
+            });
+            if (result) {
+                await context.reloadEntries();
+                await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
             }
-        },
+        } catch (err) {
+            console.error("Failed to load creature for editing", err);
+        }
     },
-    createDeleteAction("creature"),
-];
+}));
 
 // ============================================================================
 // Spells Configuration
@@ -132,30 +93,26 @@ const spellsMetadata: MetadataField<"spells">[] = [
     },
 ];
 
-const spellsActions: ActionDefinition<"spells">[] = [
-    createOpenAction(),
-    {
-        id: "edit",
-        label: "Edit",
-        execute: async (entry, context) => {
-            const { app } = context;
-            try {
-                const spellData = await loadSpellFile(app, entry.file);
-                const result = await openCreateModal(spellSpec, {
-                    app,
-                    preset: spellData,
-                });
-                if (result) {
-                    await context.reloadEntries();
-                    await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
-                }
-            } catch (err) {
-                console.error("Failed to load spell for editing", err);
+const spellsActions: ActionDefinition<"spells">[] = createStandardActions("spell", () => ({
+    id: "edit",
+    label: "Edit",
+    execute: async (entry, context) => {
+        const { app } = context;
+        try {
+            const spellData = await loadSpellFile(app, entry.file);
+            const result = await openCreateModal(spellSpec, {
+                app,
+                preset: spellData,
+            });
+            if (result) {
+                await context.reloadEntries();
+                await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
             }
-        },
+        } catch (err) {
+            console.error("Failed to load spell for editing", err);
+        }
     },
-    createDeleteAction("spell"),
-];
+}));
 
 // ============================================================================
 // Items Configuration
@@ -174,30 +131,26 @@ const itemsMetadata: MetadataField<"items">[] = [
     },
 ];
 
-const itemsActions: ActionDefinition<"items">[] = [
-    createOpenAction(),
-    {
-        id: "edit",
-        label: "Edit",
-        execute: async (entry, context) => {
-            const { app } = context;
-            try {
-                const itemData = await loadItemFile(app, entry.file);
-                const result = await openCreateModal(itemSpec, {
-                    app,
-                    preset: itemData,
-                });
-                if (result) {
-                    await context.reloadEntries();
-                    await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
-                }
-            } catch (err) {
-                console.error("Failed to edit item", err);
+const itemsActions: ActionDefinition<"items">[] = createStandardActions("item", () => ({
+    id: "edit",
+    label: "Edit",
+    execute: async (entry, context) => {
+        const { app } = context;
+        try {
+            const itemData = await loadItemFile(app, entry.file);
+            const result = await openCreateModal(itemSpec, {
+                app,
+                preset: itemData,
+            });
+            if (result) {
+                await context.reloadEntries();
+                await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
             }
-        },
+        } catch (err) {
+            console.error("Failed to edit item", err);
+        }
     },
-    createDeleteAction("item"),
-];
+}));
 
 // ============================================================================
 // Equipment Configuration
@@ -216,30 +169,26 @@ const equipmentMetadata: MetadataField<"equipment">[] = [
     },
 ];
 
-const equipmentActions: ActionDefinition<"equipment">[] = [
-    createOpenAction(),
-    {
-        id: "edit",
-        label: "Edit",
-        execute: async (entry, context) => {
-            const { app } = context;
-            try {
-                const equipmentData = await loadEquipmentFile(app, entry.file);
-                const result = await openCreateModal(equipmentSpec, {
-                    app,
-                    preset: equipmentData,
-                });
-                if (result) {
-                    await context.reloadEntries();
-                    await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
-                }
-            } catch (err) {
-                console.error("Failed to edit equipment", err);
+const equipmentActions: ActionDefinition<"equipment">[] = createStandardActions("equipment", () => ({
+    id: "edit",
+    label: "Edit",
+    execute: async (entry, context) => {
+        const { app } = context;
+        try {
+            const equipmentData = await loadEquipmentFile(app, entry.file);
+            const result = await openCreateModal(equipmentSpec, {
+                app,
+                preset: equipmentData,
+            });
+            if (result) {
+                await context.reloadEntries();
+                await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
             }
-        },
+        } catch (err) {
+            console.error("Failed to edit equipment", err);
+        }
     },
-    createDeleteAction("equipment"),
-];
+}));
 
 // ============================================================================
 // View Config Registry

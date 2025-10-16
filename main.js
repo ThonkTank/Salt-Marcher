@@ -43567,6 +43567,41 @@ init_view();
 // src/workmodes/library/view.ts
 var import_obsidian34 = require("obsidian");
 
+// src/features/data-manager/browse/action-factory.ts
+function createOpenAction() {
+  return {
+    id: "open",
+    label: "Open",
+    execute: async (entry, context) => {
+      await context.app.workspace.openLinkText(entry.file.path, entry.file.path, true);
+    }
+  };
+}
+function createDeleteAction(typeName) {
+  return {
+    id: "delete",
+    label: "Delete",
+    execute: async (entry, context) => {
+      const question = `Delete ${entry.name}? This moves the file to the trash.`;
+      const confirmation = typeof window !== "undefined" && typeof window.confirm === "function" ? window.confirm(question) : true;
+      if (!confirmation) return;
+      try {
+        await context.app.vault.trash(entry.file, true);
+        await context.reloadEntries();
+      } catch (err) {
+        console.error(`Failed to delete ${typeName}`, err);
+      }
+    }
+  };
+}
+function createStandardActions(typeName, createEditAction) {
+  return [
+    createOpenAction(),
+    createEditAction(),
+    createDeleteAction(typeName)
+  ];
+}
+
 // src/features/data-manager/browse/frontmatter-utils.ts
 async function readFrontmatter(app, file, options = {}) {
   const { useCache = true } = options;
@@ -49392,32 +49427,6 @@ var equipmentSpec = {
 };
 
 // src/workmodes/library/view/view-registry.ts
-function createOpenAction() {
-  return {
-    id: "open",
-    label: "Open",
-    execute: async (entry, context) => {
-      await context.app.workspace.openLinkText(entry.file.path, entry.file.path, true);
-    }
-  };
-}
-function createDeleteAction(typeName) {
-  return {
-    id: "delete",
-    label: "Delete",
-    execute: async (entry, context) => {
-      const question = `Delete ${entry.name}? This moves the file to the trash.`;
-      const confirmation = typeof window !== "undefined" && typeof window.confirm === "function" ? window.confirm(question) : true;
-      if (!confirmation) return;
-      try {
-        await context.app.vault.trash(entry.file, true);
-        await context.reloadEntries();
-      } catch (err) {
-        console.error(`Failed to delete ${typeName}`, err);
-      }
-    }
-  };
-}
 var creaturesMetadata = [
   {
     id: "type",
@@ -49430,30 +49439,26 @@ var creaturesMetadata = [
     getValue: (entry) => entry.cr ? `CR ${entry.cr}` : void 0
   }
 ];
-var creaturesActions = [
-  createOpenAction(),
-  {
-    id: "edit",
-    label: "Edit",
-    execute: async (entry, context) => {
-      const { app } = context;
-      try {
-        const creatureData = await loadCreaturePreset(app, entry.file);
-        const result = await openCreateModal(creatureSpec, {
-          app,
-          preset: creatureData
-        });
-        if (result) {
-          await context.reloadEntries();
-          await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
-        }
-      } catch (err) {
-        console.error("Failed to load creature for editing", err);
+var creaturesActions = createStandardActions("creature", () => ({
+  id: "edit",
+  label: "Edit",
+  execute: async (entry, context) => {
+    const { app } = context;
+    try {
+      const creatureData = await loadCreaturePreset(app, entry.file);
+      const result = await openCreateModal(creatureSpec, {
+        app,
+        preset: creatureData
+      });
+      if (result) {
+        await context.reloadEntries();
+        await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
       }
+    } catch (err) {
+      console.error("Failed to load creature for editing", err);
     }
-  },
-  createDeleteAction("creature")
-];
+  }
+}));
 var spellsMetadata = [
   {
     id: "level",
@@ -49466,30 +49471,26 @@ var spellsMetadata = [
     getValue: (entry) => entry.school
   }
 ];
-var spellsActions = [
-  createOpenAction(),
-  {
-    id: "edit",
-    label: "Edit",
-    execute: async (entry, context) => {
-      const { app } = context;
-      try {
-        const spellData = await loadSpellFile(app, entry.file);
-        const result = await openCreateModal(spellSpec, {
-          app,
-          preset: spellData
-        });
-        if (result) {
-          await context.reloadEntries();
-          await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
-        }
-      } catch (err) {
-        console.error("Failed to load spell for editing", err);
+var spellsActions = createStandardActions("spell", () => ({
+  id: "edit",
+  label: "Edit",
+  execute: async (entry, context) => {
+    const { app } = context;
+    try {
+      const spellData = await loadSpellFile(app, entry.file);
+      const result = await openCreateModal(spellSpec, {
+        app,
+        preset: spellData
+      });
+      if (result) {
+        await context.reloadEntries();
+        await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
       }
+    } catch (err) {
+      console.error("Failed to load spell for editing", err);
     }
-  },
-  createDeleteAction("spell")
-];
+  }
+}));
 var itemsMetadata = [
   {
     id: "category",
@@ -49502,30 +49503,26 @@ var itemsMetadata = [
     getValue: (entry) => entry.rarity
   }
 ];
-var itemsActions = [
-  createOpenAction(),
-  {
-    id: "edit",
-    label: "Edit",
-    execute: async (entry, context) => {
-      const { app } = context;
-      try {
-        const itemData = await loadItemFile(app, entry.file);
-        const result = await openCreateModal(itemSpec, {
-          app,
-          preset: itemData
-        });
-        if (result) {
-          await context.reloadEntries();
-          await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
-        }
-      } catch (err) {
-        console.error("Failed to edit item", err);
+var itemsActions = createStandardActions("item", () => ({
+  id: "edit",
+  label: "Edit",
+  execute: async (entry, context) => {
+    const { app } = context;
+    try {
+      const itemData = await loadItemFile(app, entry.file);
+      const result = await openCreateModal(itemSpec, {
+        app,
+        preset: itemData
+      });
+      if (result) {
+        await context.reloadEntries();
+        await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
       }
+    } catch (err) {
+      console.error("Failed to edit item", err);
     }
-  },
-  createDeleteAction("item")
-];
+  }
+}));
 var equipmentMetadata = [
   {
     id: "type",
@@ -49538,30 +49535,26 @@ var equipmentMetadata = [
     getValue: (entry) => entry.role
   }
 ];
-var equipmentActions = [
-  createOpenAction(),
-  {
-    id: "edit",
-    label: "Edit",
-    execute: async (entry, context) => {
-      const { app } = context;
-      try {
-        const equipmentData = await loadEquipmentFile(app, entry.file);
-        const result = await openCreateModal(equipmentSpec, {
-          app,
-          preset: equipmentData
-        });
-        if (result) {
-          await context.reloadEntries();
-          await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
-        }
-      } catch (err) {
-        console.error("Failed to edit equipment", err);
+var equipmentActions = createStandardActions("equipment", () => ({
+  id: "edit",
+  label: "Edit",
+  execute: async (entry, context) => {
+    const { app } = context;
+    try {
+      const equipmentData = await loadEquipmentFile(app, entry.file);
+      const result = await openCreateModal(equipmentSpec, {
+        app,
+        preset: equipmentData
+      });
+      if (result) {
+        await context.reloadEntries();
+        await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
       }
+    } catch (err) {
+      console.error("Failed to edit equipment", err);
     }
-  },
-  createDeleteAction("equipment")
-];
+  }
+}));
 var LIBRARY_VIEW_CONFIGS = {
   creatures: {
     metadataFields: creaturesMetadata,
