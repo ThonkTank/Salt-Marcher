@@ -2,8 +2,12 @@
 // Manages the vault directory "SaltMarcher/Items" for magic item storage
 import { App, TFile } from "obsidian";
 import { createVaultFilePipeline, sanitizeVaultFileName } from "./file-pipeline";
+import { ENTITY_REGISTRY } from "./entity-registry";
 
-export const ITEMS_DIR = "SaltMarcher/Items";
+const entityConfig = ENTITY_REGISTRY.items;
+
+/** @deprecated Use ENTITY_REGISTRY.items.directory instead */
+export const ITEMS_DIR = entityConfig.directory;
 
 /**
  * Comprehensive item data structure covering all D&D 5e magic item mechanics
@@ -119,18 +123,20 @@ export type ItemData = {
     value?: string;             // "2,000 GP", "varies"
 };
 
-const ITEM_PIPELINE = createVaultFilePipeline<ItemData>({
-    dir: ITEMS_DIR,
-    defaultBaseName: "Item",
+export const ITEM_PIPELINE = createVaultFilePipeline<ItemData>({
+    dir: entityConfig.directory,
+    defaultBaseName: entityConfig.defaultBaseName,
     getBaseName: data => data.name,
     toContent: itemToMarkdown,
-    sanitizeName: name => sanitizeVaultFileName(name, "Item"),
+    sanitizeName: name => sanitizeVaultFileName(name, entityConfig.defaultBaseName),
 });
 
+// Legacy exports for backward compatibility - prefer using ITEM_PIPELINE directly
+/** @deprecated Use ITEM_PIPELINE.ensure instead */
 export const ensureItemDir = ITEM_PIPELINE.ensure;
-
+/** @deprecated Use ITEM_PIPELINE.list instead */
 export const listItemFiles = ITEM_PIPELINE.list;
-
+/** @deprecated Use ITEM_PIPELINE.watch instead */
 export const watchItemDir = ITEM_PIPELINE.watch;
 
 function yamlList(items?: string[]): string | undefined {

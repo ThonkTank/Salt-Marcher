@@ -2,6 +2,9 @@
 // src/workmodes/library/core/spell-files.ts
 import { App, TFile } from "obsidian";
 import { createVaultFilePipeline, sanitizeVaultFileName } from "./file-pipeline";
+import { ENTITY_REGISTRY } from "./entity-registry";
+
+const entityConfig = ENTITY_REGISTRY.spells;
 
 function asStringArray(value: unknown): string[] | undefined {
     if (!Array.isArray(value)) return undefined;
@@ -18,24 +21,27 @@ function asBoolean(value: unknown): boolean | undefined {
     return undefined;
 }
 
-export const SPELLS_DIR = "SaltMarcher/Spells";
+/** @deprecated Use ENTITY_REGISTRY.spells.directory instead */
+export const SPELLS_DIR = entityConfig.directory;
 
 export type SpellData = {
     name: string; level?: number; school?: string; casting_time?: string; range?: string; components?: string[]; materials?: string; duration?: string; concentration?: boolean; ritual?: boolean; classes?: string[]; save_ability?: string; save_effect?: string; attack?: string; damage?: string; damage_type?: string; description?: string; higher_levels?: string;
 };
 
-const SPELL_PIPELINE = createVaultFilePipeline<SpellData>({
-    dir: SPELLS_DIR,
-    defaultBaseName: "Spell",
+export const SPELL_PIPELINE = createVaultFilePipeline<SpellData>({
+    dir: entityConfig.directory,
+    defaultBaseName: entityConfig.defaultBaseName,
     getBaseName: data => data.name,
     toContent: spellToMarkdown,
-    sanitizeName: name => sanitizeVaultFileName(name, "Spell"),
+    sanitizeName: name => sanitizeVaultFileName(name, entityConfig.defaultBaseName),
 });
 
+// Legacy exports for backward compatibility - prefer using SPELL_PIPELINE directly
+/** @deprecated Use SPELL_PIPELINE.ensure instead */
 export const ensureSpellDir = SPELL_PIPELINE.ensure;
-
+/** @deprecated Use SPELL_PIPELINE.list instead */
 export const listSpellFiles = SPELL_PIPELINE.list;
-
+/** @deprecated Use SPELL_PIPELINE.watch instead */
 export const watchSpellDir = SPELL_PIPELINE.watch;
 
 function yamlList(items?: string[]): string | undefined { if (!items || items.length === 0) return undefined; const safe = items.map(s => `"${(s ?? "").replace(/"/g, '\\"')}"`).join(", "); return `[${safe}]`; }

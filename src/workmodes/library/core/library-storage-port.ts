@@ -3,10 +3,7 @@
 // Der Vertrag beschreibt Fehlercodes, Telemetrie-Events sowie die Legacy-Mapping-Tabelle für die anstehenden Adapter.
 import type { LibrarySourceId } from "./sources";
 import { LIBRARY_SOURCE_IDS } from "./sources";
-import { CREATURES_DIR } from "./creature-files";
-import { SPELLS_DIR } from "./spell-files";
-import { ITEMS_DIR } from "./item-files";
-import { EQUIPMENT_DIR } from "./equipment-files";
+import { ENTITY_REGISTRY } from "./entity-registry";
 import { TERRAIN_FILE } from "../../../features/maps/data/terrain-repository";
 import { REGIONS_FILE } from "../../../features/maps/data/region-repository";
 
@@ -22,25 +19,25 @@ export interface LibraryStorageDomainDescriptor {
 const LIBRARY_STORAGE_DOMAIN_DESCRIPTORS: ReadonlyArray<LibraryStorageDomainDescriptor> = Object.freeze([
     Object.freeze({
         id: "creatures" as const,
-        description: `${CREATURES_DIR}/`,
+        description: `${ENTITY_REGISTRY.creatures.directory}/`,
         kind: "directory" as const,
         defaultExtension: "md" as const,
     }),
     Object.freeze({
         id: "spells" as const,
-        description: `${SPELLS_DIR}/`,
+        description: `${ENTITY_REGISTRY.spells.directory}/`,
         kind: "directory" as const,
         defaultExtension: "md" as const,
     }),
     Object.freeze({
         id: "items" as const,
-        description: `${ITEMS_DIR}/`,
+        description: `${ENTITY_REGISTRY.items.directory}/`,
         kind: "directory" as const,
         defaultExtension: "md" as const,
     }),
     Object.freeze({
         id: "equipment" as const,
-        description: `${EQUIPMENT_DIR}/`,
+        description: `${ENTITY_REGISTRY.equipment.directory}/`,
         kind: "directory" as const,
         defaultExtension: "md" as const,
     }),

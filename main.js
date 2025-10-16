@@ -5344,6 +5344,48 @@ var init_file_pipeline = __esm({
   }
 });
 
+// src/workmodes/library/core/entity-registry.ts
+var ENTITY_REGISTRY;
+var init_entity_registry = __esm({
+  "src/workmodes/library/core/entity-registry.ts"() {
+    "use strict";
+    ENTITY_REGISTRY = {
+      creatures: {
+        id: "creatures",
+        displayName: "Creatures",
+        directory: "SaltMarcher/Creatures",
+        defaultBaseName: "Creature",
+        singular: "creature",
+        plural: "creatures"
+      },
+      spells: {
+        id: "spells",
+        displayName: "Spells",
+        directory: "SaltMarcher/Spells",
+        defaultBaseName: "Spell",
+        singular: "spell",
+        plural: "spells"
+      },
+      items: {
+        id: "items",
+        displayName: "Items",
+        directory: "SaltMarcher/Items",
+        defaultBaseName: "Item",
+        singular: "item",
+        plural: "items"
+      },
+      equipment: {
+        id: "equipment",
+        displayName: "Equipment",
+        directory: "SaltMarcher/Equipment",
+        defaultBaseName: "Equipment",
+        singular: "equipment",
+        plural: "equipment"
+      }
+    };
+  }
+});
+
 // src/workmodes/library/core/creature-files.ts
 function yamlList(items) {
   if (!items || items.length === 0) return void 0;
@@ -5698,18 +5740,20 @@ function formatSpellLevelHeading(level) {
   const suffix = level === 1 ? "st" : level === 2 ? "nd" : level === 3 ? "rd" : "th";
   return `${level}${suffix} Level`;
 }
-var CREATURES_DIR, CREATURE_PIPELINE, ensureCreatureDir, listCreatureFiles, watchCreatureDir;
+var entityConfig, CREATURES_DIR, CREATURE_PIPELINE, ensureCreatureDir, listCreatureFiles, watchCreatureDir;
 var init_creature_files = __esm({
   "src/workmodes/library/core/creature-files.ts"() {
     "use strict";
     init_file_pipeline();
-    CREATURES_DIR = "SaltMarcher/Creatures";
+    init_entity_registry();
+    entityConfig = ENTITY_REGISTRY.creatures;
+    CREATURES_DIR = entityConfig.directory;
     CREATURE_PIPELINE = createVaultFilePipeline({
-      dir: CREATURES_DIR,
-      defaultBaseName: "Creature",
+      dir: entityConfig.directory,
+      defaultBaseName: entityConfig.defaultBaseName,
       getBaseName: (data) => data.name,
       toContent: statblockToMarkdown,
-      sanitizeName: (name) => sanitizeVaultFileName(name, "Creature")
+      sanitizeName: (name) => sanitizeVaultFileName(name, entityConfig.defaultBaseName)
     });
     ensureCreatureDir = CREATURE_PIPELINE.ensure;
     listCreatureFiles = CREATURE_PIPELINE.list;
@@ -5791,9 +5835,6 @@ function spellToMarkdown(d) {
   }
   return lines.join("\n");
 }
-async function createSpellFile(app, d) {
-  return SPELL_PIPELINE.create(app, d);
-}
 async function loadSpellFile(app, file) {
   const cache = app.metadataCache.getFileCache(file);
   const frontmatter = cache?.frontmatter ?? {};
@@ -5821,18 +5862,20 @@ async function loadSpellFile(app, file) {
   };
   return data;
 }
-var SPELLS_DIR, SPELL_PIPELINE, ensureSpellDir, listSpellFiles, watchSpellDir;
+var entityConfig2, SPELLS_DIR, SPELL_PIPELINE, ensureSpellDir, listSpellFiles, watchSpellDir;
 var init_spell_files = __esm({
   "src/workmodes/library/core/spell-files.ts"() {
     "use strict";
     init_file_pipeline();
-    SPELLS_DIR = "SaltMarcher/Spells";
+    init_entity_registry();
+    entityConfig2 = ENTITY_REGISTRY.spells;
+    SPELLS_DIR = entityConfig2.directory;
     SPELL_PIPELINE = createVaultFilePipeline({
-      dir: SPELLS_DIR,
-      defaultBaseName: "Spell",
+      dir: entityConfig2.directory,
+      defaultBaseName: entityConfig2.defaultBaseName,
       getBaseName: (data) => data.name,
       toContent: spellToMarkdown,
-      sanitizeName: (name) => sanitizeVaultFileName(name, "Spell")
+      sanitizeName: (name) => sanitizeVaultFileName(name, entityConfig2.defaultBaseName)
     });
     ensureSpellDir = SPELL_PIPELINE.ensure;
     listSpellFiles = SPELL_PIPELINE.list;
@@ -6074,9 +6117,6 @@ function itemToMarkdown(d) {
   }
   return lines.join("\n");
 }
-async function createItemFile(app, d) {
-  return ITEM_PIPELINE.create(app, d);
-}
 async function loadItemFile(app, file) {
   const cache = app.metadataCache.getFileCache(file);
   const frontmatter = cache?.frontmatter || {};
@@ -6157,18 +6197,20 @@ async function loadItemFile(app, file) {
   }
   return data;
 }
-var ITEMS_DIR, ITEM_PIPELINE, ensureItemDir, listItemFiles, watchItemDir;
+var entityConfig3, ITEMS_DIR, ITEM_PIPELINE, ensureItemDir, listItemFiles, watchItemDir;
 var init_item_files = __esm({
   "src/workmodes/library/core/item-files.ts"() {
     "use strict";
     init_file_pipeline();
-    ITEMS_DIR = "SaltMarcher/Items";
+    init_entity_registry();
+    entityConfig3 = ENTITY_REGISTRY.items;
+    ITEMS_DIR = entityConfig3.directory;
     ITEM_PIPELINE = createVaultFilePipeline({
-      dir: ITEMS_DIR,
-      defaultBaseName: "Item",
+      dir: entityConfig3.directory,
+      defaultBaseName: entityConfig3.defaultBaseName,
       getBaseName: (data) => data.name,
       toContent: itemToMarkdown,
-      sanitizeName: (name) => sanitizeVaultFileName(name, "Item")
+      sanitizeName: (name) => sanitizeVaultFileName(name, entityConfig3.defaultBaseName)
     });
     ensureItemDir = ITEM_PIPELINE.ensure;
     listItemFiles = ITEM_PIPELINE.list;
@@ -6328,9 +6370,6 @@ function equipmentToMarkdown(d) {
   }
   return lines.join("\n");
 }
-async function createEquipmentFile(app, d) {
-  return EQUIPMENT_PIPELINE.create(app, d);
-}
 async function loadEquipmentFile(app, file) {
   const cache = app.metadataCache.getFileCache(file);
   const frontmatter = cache?.frontmatter || {};
@@ -6367,18 +6406,20 @@ async function loadEquipmentFile(app, file) {
   }
   return data;
 }
-var EQUIPMENT_DIR, EQUIPMENT_PIPELINE, ensureEquipmentDir, listEquipmentFiles, watchEquipmentDir;
+var entityConfig4, EQUIPMENT_DIR, EQUIPMENT_PIPELINE, ensureEquipmentDir, listEquipmentFiles, watchEquipmentDir;
 var init_equipment_files = __esm({
   "src/workmodes/library/core/equipment-files.ts"() {
     "use strict";
     init_file_pipeline();
-    EQUIPMENT_DIR = "SaltMarcher/Equipment";
+    init_entity_registry();
+    entityConfig4 = ENTITY_REGISTRY.equipment;
+    EQUIPMENT_DIR = entityConfig4.directory;
     EQUIPMENT_PIPELINE = createVaultFilePipeline({
-      dir: EQUIPMENT_DIR,
-      defaultBaseName: "Equipment",
+      dir: entityConfig4.directory,
+      defaultBaseName: entityConfig4.defaultBaseName,
       getBaseName: (data) => data.name,
       toContent: equipmentToMarkdown,
-      sanitizeName: (name) => sanitizeVaultFileName(name, "Equipment")
+      sanitizeName: (name) => sanitizeVaultFileName(name, entityConfig4.defaultBaseName)
     });
     ensureEquipmentDir = EQUIPMENT_PIPELINE.ensure;
     listEquipmentFiles = EQUIPMENT_PIPELINE.list;
@@ -6388,9 +6429,9 @@ var init_equipment_files = __esm({
 
 // src/features/maps/data/terrain-repository.ts
 async function ensureTerrainFile(app) {
-  const p = (0, import_obsidian36.normalizePath)(TERRAIN_FILE);
+  const p = (0, import_obsidian33.normalizePath)(TERRAIN_FILE);
   const existing = app.vault.getAbstractFileByPath(p);
-  if (existing instanceof import_obsidian36.TFile) return existing;
+  if (existing instanceof import_obsidian33.TFile) return existing;
   await app.vault.createFolder(p.split("/").slice(0, -1).join("/")).catch(() => {
   });
   const body = [
@@ -6477,7 +6518,7 @@ function watchTerrains(app, onChangeOrOptions) {
     }
   };
   const maybeUpdate = (reason, file) => {
-    if (!(file instanceof import_obsidian36.TFile) || file.path !== TERRAIN_FILE) return;
+    if (!(file instanceof import_obsidian33.TFile) || file.path !== TERRAIN_FILE) return;
     void update(reason);
   };
   const refs = ["modify", "delete"].map(
@@ -6492,11 +6533,11 @@ function watchTerrains(app, onChangeOrOptions) {
     }
   };
 }
-var import_obsidian36, TERRAIN_FILE, BLOCK_RE2;
+var import_obsidian33, TERRAIN_FILE, BLOCK_RE2;
 var init_terrain_repository = __esm({
   "src/features/maps/data/terrain-repository.ts"() {
     "use strict";
-    import_obsidian36 = require("obsidian");
+    import_obsidian33 = require("obsidian");
     init_terrain();
     TERRAIN_FILE = "SaltMarcher/Terrains.md";
     BLOCK_RE2 = /```terrain\s*([\s\S]*?)```/i;
@@ -7846,7 +7887,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--play",
     text: "Start"
   });
-  (0, import_obsidian40.setIcon)(playBtn, "play");
+  (0, import_obsidian37.setIcon)(playBtn, "play");
   applyMapButtonStyle(playBtn);
   playBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -7857,7 +7898,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--stop",
     text: "Stopp"
   });
-  (0, import_obsidian40.setIcon)(stopBtn, "square");
+  (0, import_obsidian37.setIcon)(stopBtn, "square");
   applyMapButtonStyle(stopBtn);
   stopBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -7868,7 +7909,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--reset",
     text: "Reset"
   });
-  (0, import_obsidian40.setIcon)(resetBtn, "rotate-ccw");
+  (0, import_obsidian37.setIcon)(resetBtn, "rotate-ccw");
   applyMapButtonStyle(resetBtn);
   resetBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -7917,11 +7958,11 @@ function createPlaybackControls(host, callbacks) {
     setTempo
   };
 }
-var import_obsidian40;
+var import_obsidian37;
 var init_controls = __esm({
   "src/workmodes/session-runner/travel/ui/controls.ts"() {
     "use strict";
-    import_obsidian40 = require("obsidian");
+    import_obsidian37 = require("obsidian");
     init_map_workflows();
   }
 });
@@ -8180,7 +8221,7 @@ function bindContextMenu(routeLayerEl, logic) {
     }
     ev.preventDefault();
     ev.stopPropagation();
-    const menu = new import_obsidian41.Menu();
+    const menu = new import_obsidian38.Menu();
     if (allowDelete) {
       menu.addItem(
         (item) => item.setTitle("Wegpunkt entfernen").setIcon("trash").onClick(() => {
@@ -8200,11 +8241,11 @@ function bindContextMenu(routeLayerEl, logic) {
   routeLayerEl.addEventListener("contextmenu", onContextMenu, { capture: true });
   return () => routeLayerEl.removeEventListener("contextmenu", onContextMenu, { capture: true });
 }
-var import_obsidian41;
+var import_obsidian38;
 var init_context_menu_controller = __esm({
   "src/workmodes/session-runner/travel/ui/context-menu.controller.ts"() {
     "use strict";
-    import_obsidian41 = require("obsidian");
+    import_obsidian38 = require("obsidian");
   }
 });
 
@@ -8329,7 +8370,7 @@ function loadEncounterModule() {
     VIEW_ENCOUNTER: encounter.VIEW_ENCOUNTER
   })).catch((err) => {
     console.error("[session-runner] failed to load encounter module", err);
-    new import_obsidian42.Notice("Encounter-Modul konnte nicht geladen werden.");
+    new import_obsidian39.Notice("Encounter-Modul konnte nicht geladen werden.");
     return null;
   });
 }
@@ -8348,7 +8389,7 @@ async function openEncounter2(app, context) {
   const issue = describeEncounterContextIssue(context);
   if (issue) {
     console.warn(`[session-runner] ${issue.log}`, context);
-    new import_obsidian42.Notice(issue.message);
+    new import_obsidian39.Notice(issue.message);
   } else if (context) {
     try {
       const event = await createEncounterEventFromTravel(app, context);
@@ -8400,11 +8441,11 @@ async function publishManualEncounter(app, context, options = {}) {
     console.error("[session-runner] failed to publish manual encounter", err);
   }
 }
-var import_obsidian42, encounterModule;
+var import_obsidian39, encounterModule;
 var init_encounter_gateway = __esm({
   "src/workmodes/session-runner/view/controllers/encounter-gateway.ts"() {
     "use strict";
-    import_obsidian42 = require("obsidian");
+    import_obsidian39 = require("obsidian");
     init_session_store();
     init_event_builder();
     encounterModule = null;
@@ -41456,7 +41497,7 @@ function registerPreset(fileName, content) {
 async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir2) {
   try {
     await ensureDir2(app);
-    const normalizedDir = (0, import_obsidian46.normalizePath)(dir);
+    const normalizedDir = (0, import_obsidian43.normalizePath)(dir);
     const presetModule = await Promise.resolve().then(() => (init_preset_data(), preset_data_exports));
     const rawPresetFiles = presetModule[presetKey] || {};
     const presetEntries = Object.entries(rawPresetFiles).map(([fileName, content]) => [
@@ -41474,7 +41515,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir2) {
       const existing = await app.vault.adapter.list(normalizedDir);
       const prefix = `${normalizedDir}/`;
       existing.files.forEach((file) => {
-        const normalizedFile = (0, import_obsidian46.normalizePath)(file);
+        const normalizedFile = (0, import_obsidian43.normalizePath)(file);
         if (normalizedFile.startsWith(prefix)) {
           const relativePath = normalizedFile.slice(prefix.length).toLowerCase();
           if (relativePath) existingFiles.add(relativePath);
@@ -41488,7 +41529,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir2) {
     const ensuredFolders = /* @__PURE__ */ new Set([normalizedDir]);
     for (const [fileName, content] of presetEntries) {
       const loweredName = fileName.toLowerCase();
-      const targetPath = (0, import_obsidian46.normalizePath)(`${normalizedDir}/${fileName}`);
+      const targetPath = (0, import_obsidian43.normalizePath)(`${normalizedDir}/${fileName}`);
       if (existingFiles.has(loweredName)) {
         skippedCount++;
         continue;
@@ -41504,19 +41545,19 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir2) {
       }
     }
     if (importedCount > 0) {
-      new import_obsidian46.Notice(`Imported ${importedCount} ${typeName} presets`);
+      new import_obsidian43.Notice(`Imported ${importedCount} ${typeName} presets`);
       console.log(`${typeName} import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
     } else if (skippedCount > 0) {
       console.log(`All ${skippedCount} ${typeName} presets already exist`);
     } else if (errorCount > 0) {
-      new import_obsidian46.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian43.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   } catch (err) {
     console.error(`Failed to import ${typeName} presets:`, err);
     if (err instanceof Error && err.message.includes("Cannot find module")) {
       console.log(`No ${typeName} preset data found - skipping import`);
     } else {
-      new import_obsidian46.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian43.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   }
 }
@@ -41528,7 +41569,7 @@ async function ensureParentFolders(app, baseDir, relativePath, ensured) {
   parts.pop();
   let current = baseDir;
   for (const part of parts) {
-    current = (0, import_obsidian46.normalizePath)(`${current}/${part}`);
+    current = (0, import_obsidian43.normalizePath)(`${current}/${part}`);
     if (ensured.has(current)) continue;
     ensured.add(current);
     if (!app.vault.getAbstractFileByPath(current)) {
@@ -41542,10 +41583,10 @@ function isOrganizationalPresetFile(fileName) {
   return normalized === "agents.md" || normalized.endsWith("/agents.md");
 }
 async function importPluginPresets(app) {
-  return importPresetsForDir(app, CREATURES_DIR, "PRESET_CREATURES", "creature", ensureCreatureDir);
+  return importPresetsForDir(app, ENTITY_REGISTRY.creatures.directory, "PRESET_CREATURES", "creature", ensureCreatureDir);
 }
 async function shouldImportPresetsForDir(app, dir, markerName, label, ensureDir2) {
-  const markerPath = (0, import_obsidian46.normalizePath)(`${dir}/${markerName}`);
+  const markerPath = (0, import_obsidian43.normalizePath)(`${dir}/${markerName}`);
   const markerFile = app.vault.getAbstractFileByPath(markerPath);
   if (markerFile) {
     return false;
@@ -41559,35 +41600,36 @@ async function shouldImportPresetsForDir(app, dir, markerName, label, ensureDir2
   return true;
 }
 async function shouldImportPluginPresets(app) {
-  return shouldImportPresetsForDir(app, CREATURES_DIR, ".plugin-presets-imported", "Plugin presets", ensureCreatureDir);
+  return shouldImportPresetsForDir(app, ENTITY_REGISTRY.creatures.directory, ".plugin-presets-imported", "Plugin presets", ensureCreatureDir);
 }
 async function importSpellPresets(app) {
-  return importPresetsForDir(app, SPELLS_DIR, "PRESET_SPELLS", "spell", ensureSpellDir);
+  return importPresetsForDir(app, ENTITY_REGISTRY.spells.directory, "PRESET_SPELLS", "spell", ensureSpellDir);
 }
 async function shouldImportSpellPresets(app) {
-  return shouldImportPresetsForDir(app, SPELLS_DIR, ".plugin-spells-imported", "Spell presets", ensureSpellDir);
+  return shouldImportPresetsForDir(app, ENTITY_REGISTRY.spells.directory, ".plugin-spells-imported", "Spell presets", ensureSpellDir);
 }
 async function importItemPresets(app) {
-  return importPresetsForDir(app, ITEMS_DIR, "PRESET_ITEMS", "item", ensureItemDir);
+  return importPresetsForDir(app, ENTITY_REGISTRY.items.directory, "PRESET_ITEMS", "item", ensureItemDir);
 }
 async function shouldImportItemPresets(app) {
-  return shouldImportPresetsForDir(app, ITEMS_DIR, ".plugin-items-imported", "Item presets", ensureItemDir);
+  return shouldImportPresetsForDir(app, ENTITY_REGISTRY.items.directory, ".plugin-items-imported", "Item presets", ensureItemDir);
 }
 async function importEquipmentPresets(app) {
-  return importPresetsForDir(app, EQUIPMENT_DIR, "PRESET_EQUIPMENT", "equipment", ensureEquipmentDir);
+  return importPresetsForDir(app, ENTITY_REGISTRY.equipment.directory, "PRESET_EQUIPMENT", "equipment", ensureEquipmentDir);
 }
 async function shouldImportEquipmentPresets(app) {
-  return shouldImportPresetsForDir(app, EQUIPMENT_DIR, ".plugin-equipment-imported", "Equipment presets", ensureEquipmentDir);
+  return shouldImportPresetsForDir(app, ENTITY_REGISTRY.equipment.directory, ".plugin-equipment-imported", "Equipment presets", ensureEquipmentDir);
 }
-var import_obsidian46, PRESET_FILES;
+var import_obsidian43, PRESET_FILES;
 var init_plugin_presets = __esm({
   "src/workmodes/library/core/plugin-presets.ts"() {
     "use strict";
-    import_obsidian46 = require("obsidian");
+    import_obsidian43 = require("obsidian");
     init_creature_files();
     init_spell_files();
     init_item_files();
     init_equipment_files();
+    init_entity_registry();
     PRESET_FILES = {};
   }
 });
@@ -41604,16 +41646,16 @@ __export(index_files_exports, {
 });
 async function createIndexFile(app, filePath, title, description, directory) {
   const folder = app.vault.getAbstractFileByPath(directory);
-  if (!(folder instanceof import_obsidian47.TFolder)) {
+  if (!(folder instanceof import_obsidian44.TFolder)) {
     console.log(`[Index] Directory ${directory} not found, skipping index generation`);
     return;
   }
   const files = [];
   const collectFiles = (folder2) => {
     for (const child of folder2.children) {
-      if (child instanceof import_obsidian47.TFile && child.extension === "md") {
+      if (child instanceof import_obsidian44.TFile && child.extension === "md") {
         files.push(child);
-      } else if (child instanceof import_obsidian47.TFolder) {
+      } else if (child instanceof import_obsidian44.TFolder) {
         collectFiles(child);
       }
     }
@@ -41650,7 +41692,7 @@ async function createIndexFile(app, filePath, title, description, directory) {
   }
   const content = lines.join("\n");
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian47.TFile) {
+  if (existingFile instanceof import_obsidian44.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -41662,7 +41704,7 @@ async function generateCreaturesIndex(app) {
     `${SALTMARCHER_DIR}/Creatures.md`,
     "Creatures",
     "Index of all creatures in the library.",
-    CREATURES_DIR2
+    ENTITY_REGISTRY.creatures.directory
   );
 }
 async function generateEquipmentIndex(app) {
@@ -41671,7 +41713,7 @@ async function generateEquipmentIndex(app) {
     `${SALTMARCHER_DIR}/Equipment.md`,
     "Equipment",
     "Index of all equipment in the library.",
-    EQUIPMENT_DIR2
+    ENTITY_REGISTRY.equipment.directory
   );
 }
 async function generateSpellsIndex(app) {
@@ -41680,7 +41722,7 @@ async function generateSpellsIndex(app) {
     `${SALTMARCHER_DIR}/Spells.md`,
     "Spells",
     "Index of all spells in the library.",
-    SPELLS_DIR2
+    ENTITY_REGISTRY.spells.directory
   );
 }
 async function generateItemsIndex(app) {
@@ -41689,7 +41731,7 @@ async function generateItemsIndex(app) {
     `${SALTMARCHER_DIR}/Items.md`,
     "Items",
     "Index of all magic items in the library.",
-    ITEMS_DIR2
+    ENTITY_REGISTRY.items.directory
   );
 }
 async function generateLibraryHub(app) {
@@ -41708,7 +41750,7 @@ async function generateLibraryHub(app) {
   const content = lines.join("\n");
   const filePath = `${SALTMARCHER_DIR}/Library.md`;
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian47.TFile) {
+  if (existingFile instanceof import_obsidian44.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -41729,16 +41771,13 @@ async function generateAllIndexes(app) {
   ]);
   console.log("[Index] All indexes generated successfully");
 }
-var import_obsidian47, SALTMARCHER_DIR, CREATURES_DIR2, EQUIPMENT_DIR2, SPELLS_DIR2, ITEMS_DIR2;
+var import_obsidian44, SALTMARCHER_DIR;
 var init_index_files = __esm({
   "src/workmodes/library/core/index-files.ts"() {
     "use strict";
-    import_obsidian47 = require("obsidian");
+    import_obsidian44 = require("obsidian");
+    init_entity_registry();
     SALTMARCHER_DIR = "SaltMarcher";
-    CREATURES_DIR2 = "SaltMarcher/Creatures";
-    EQUIPMENT_DIR2 = "SaltMarcher/Equipment";
-    SPELLS_DIR2 = "SaltMarcher/Spells";
-    ITEMS_DIR2 = "SaltMarcher/Items";
   }
 });
 
@@ -42365,11 +42404,11 @@ async function convertAllReferences(app, options = {}) {
   };
   const referenceFiles = await findReferenceFiles(app);
   if (referenceFiles.length === 0) {
-    new import_obsidian48.Notice("Keine Reference Statbl\xF6cke gefunden");
+    new import_obsidian45.Notice("Keine Reference Statbl\xF6cke gefunden");
     return result;
   }
   const filesToProcess = limit ? referenceFiles.slice(0, limit) : referenceFiles;
-  new import_obsidian48.Notice(`Konvertiere ${filesToProcess.length} Statbl\xF6cke${dryRun ? " (Dry Run)" : ""}...`);
+  new import_obsidian45.Notice(`Konvertiere ${filesToProcess.length} Statbl\xF6cke${dryRun ? " (Dry Run)" : ""}...`);
   if (!dryRun) {
     await ensureDir(app, CREATURES_PRESETS_DIR);
   }
@@ -42389,7 +42428,7 @@ async function convertAllReferences(app, options = {}) {
     }
   }
   const summary = `Konvertierung abgeschlossen: ${result.success} erfolgreich, ${result.failed} fehlgeschlagen`;
-  new import_obsidian48.Notice(summary);
+  new import_obsidian45.Notice(summary);
   console.log(summary);
   if (result.errors.length > 0) {
     console.log("Fehler:", result.errors);
@@ -42478,17 +42517,17 @@ async function convertAllSpells(app, options = {}) {
   };
   const spellsFile = app.vault.getAbstractFileByPath(SPELLS_REFERENCES_FILE);
   if (!spellsFile || !("extension" in spellsFile)) {
-    new import_obsidian48.Notice("Spells Reference Datei nicht gefunden");
+    new import_obsidian45.Notice("Spells Reference Datei nicht gefunden");
     return result;
   }
   const content = await app.vault.read(spellsFile);
   const spellSections = extractSpellSections(content);
   if (spellSections.length === 0) {
-    new import_obsidian48.Notice("Keine Spells in Reference Datei gefunden");
+    new import_obsidian45.Notice("Keine Spells in Reference Datei gefunden");
     return result;
   }
   const sectionsToProcess = limit ? spellSections.slice(0, limit) : spellSections;
-  new import_obsidian48.Notice(`Konvertiere ${sectionsToProcess.length} Spells${dryRun ? " (Dry Run)" : ""}...`);
+  new import_obsidian45.Notice(`Konvertiere ${sectionsToProcess.length} Spells${dryRun ? " (Dry Run)" : ""}...`);
   if (!dryRun) {
     await ensureDir(app, SPELLS_PRESETS_DIR);
   }
@@ -42508,7 +42547,7 @@ async function convertAllSpells(app, options = {}) {
     }
   }
   const summary = `Spell-Konvertierung abgeschlossen: ${result.success} erfolgreich, ${result.failed} fehlgeschlagen`;
-  new import_obsidian48.Notice(summary);
+  new import_obsidian45.Notice(summary);
   console.log(summary);
   if (result.errors.length > 0) {
     console.log("Fehler:", result.errors);
@@ -42550,7 +42589,7 @@ async function convertSpellSection(app, spellMarkdown, dryRun) {
     await app.vault.create(targetPath, presetMarkdown);
   }
 }
-var import_obsidian48, CREATURES_REFERENCES_DIR, CREATURES_PRESETS_DIR, SPELLS_REFERENCES_FILE, SPELLS_PRESETS_DIR;
+var import_obsidian45, CREATURES_REFERENCES_DIR, CREATURES_PRESETS_DIR, SPELLS_REFERENCES_FILE, SPELLS_PRESETS_DIR;
 var init_convert_references = __esm({
   "src/workmodes/library/tools/convert-references.ts"() {
     "use strict";
@@ -42558,7 +42597,7 @@ var init_convert_references = __esm({
     init_spell_reference_parser();
     init_creature_files();
     init_spell_files();
-    import_obsidian48 = require("obsidian");
+    import_obsidian45 = require("obsidian");
     CREATURES_REFERENCES_DIR = "References/rulebooks/Statblocks/Creatures";
     CREATURES_PRESETS_DIR = "SaltMarcher/Presets/Creatures";
     SPELLS_REFERENCES_FILE = "References/rulebooks/Spells/07_Spells.md";
@@ -42572,7 +42611,7 @@ __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian49 = require("obsidian");
+var import_obsidian46 = require("obsidian");
 
 // src/workmodes/cartographer/index.ts
 var import_obsidian12 = require("obsidian");
@@ -43526,7 +43565,204 @@ async function detachCartographerLeaves(app) {
 init_view();
 
 // src/workmodes/library/view.ts
-var import_obsidian37 = require("obsidian");
+var import_obsidian34 = require("obsidian");
+
+// src/features/data-manager/browse/frontmatter-utils.ts
+async function readFrontmatter(app, file, options = {}) {
+  const { useCache = true } = options;
+  if (useCache) {
+    const cached = app.metadataCache.getFileCache(file)?.frontmatter;
+    if (cached && typeof cached === "object") {
+      return cached;
+    }
+  }
+  return await parseFrontmatterFromContent(app, file);
+}
+async function parseFrontmatterFromContent(app, file) {
+  const content = await app.vault.read(file);
+  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  if (!match) return {};
+  const lines = match[1].split(/\r?\n/);
+  const data = {};
+  for (const line of lines) {
+    const idx = line.indexOf(":");
+    if (idx === -1) continue;
+    const rawKey = line.slice(0, idx).trim();
+    if (!rawKey) continue;
+    let rawValue = line.slice(idx + 1).trim();
+    if (!rawValue) {
+      data[rawKey] = rawValue;
+      continue;
+    }
+    if (/^".*"$/.test(rawValue)) {
+      rawValue = rawValue.slice(1, -1);
+    }
+    const num = Number(rawValue);
+    data[rawKey] = Number.isFinite(num) && rawValue === String(num) ? num : rawValue;
+  }
+  return data;
+}
+
+// src/features/data-manager/browse/schema-builder.ts
+var SchemaBuilder = class {
+  constructor() {
+    this._filters = [];
+    this._sorts = [];
+    this._searchFields = [];
+  }
+  /**
+   * Add a simple string field filter.
+   * Automatically creates filter with getValues that extracts the specified field.
+   *
+   * @param id - Filter ID (used in URL params, state management)
+   * @param field - Field key to filter on
+   * @param label - Display label (defaults to id)
+   */
+  addStringFilter(id, field, label) {
+    this._filters.push({
+      id,
+      label: label || String(id),
+      getValues: (entry) => [entry[field]]
+    });
+    return this;
+  }
+  /**
+   * Add a filter with custom options (comparator, formatter, etc.).
+   * Use for filters that need special sorting or display logic.
+   *
+   * @param id - Filter ID
+   * @param field - Field key to filter on
+   * @param options - Custom filter options
+   *
+   * @example
+   * ```typescript
+   * .addCustomFilter("cr", "cr", {
+   *   label: "CR",
+   *   sortComparator: (a, b) => parseCr(a) - parseCr(b)
+   * })
+   * ```
+   */
+  addCustomFilter(id, field, options) {
+    this._filters.push({
+      id,
+      label: options.label || String(id),
+      getValues: (entry) => [entry[field]],
+      sortComparator: options.sortComparator,
+      formatOption: options.formatOption,
+      emptyLabel: options.emptyLabel
+    });
+    return this;
+  }
+  /**
+   * Add a filter with completely custom getValue logic.
+   * Use when field extraction is complex or involves multiple fields.
+   *
+   * @param id - Filter ID
+   * @param label - Display label
+   * @param getValues - Function to extract filter values from entry
+   * @param options - Additional filter options
+   */
+  addFilter(id, label, getValues, options) {
+    this._filters.push({
+      id,
+      label,
+      getValues,
+      sortComparator: options?.sortComparator,
+      formatOption: options?.formatOption,
+      emptyLabel: options?.emptyLabel
+    });
+    return this;
+  }
+  /**
+   * Add standard name sort.
+   * Every entity has a name field, so this is a common pattern.
+   */
+  addNameSort() {
+    this._sorts.push({
+      id: "name",
+      label: "Name",
+      compare: (a, b) => a.name.localeCompare(b.name)
+    });
+    return this;
+  }
+  /**
+   * Add a string field sort with fallback to name.
+   * Standard pattern: sort by field, then by name for stability.
+   *
+   * @param id - Sort ID
+   * @param field - Field key to sort on
+   * @param label - Display label (defaults to id)
+   */
+  addStringFieldSort(id, field, label) {
+    this._sorts.push({
+      id,
+      label: label || String(id),
+      compare: (a, b) => {
+        const aVal = a[field] || "";
+        const bVal = b[field] || "";
+        const primary = aVal.localeCompare(bVal);
+        return primary !== 0 ? primary : a.name.localeCompare(b.name);
+      }
+    });
+    return this;
+  }
+  /**
+   * Add a custom sort with explicit compare function.
+   * Use when sorting logic is complex or involves calculations.
+   *
+   * @param id - Sort ID
+   * @param label - Display label
+   * @param compare - Comparison function (negative = a before b, positive = b before a)
+   */
+  addCustomSort(id, label, compare) {
+    this._sorts.push({ id, label, compare });
+    return this;
+  }
+  /**
+   * Add a search field (simple string field).
+   * Search will look for query in all added search fields.
+   *
+   * @param field - Field key to search in
+   */
+  searchField(field) {
+    this._searchFields.push((entry) => {
+      const value = entry[field];
+      return typeof value === "string" ? value : void 0;
+    });
+    return this;
+  }
+  /**
+   * Add a custom search field with extraction logic.
+   * Use when search value needs transformation or involves multiple fields.
+   *
+   * @param fn - Function to extract searchable string from entry
+   *
+   * @example
+   * ```typescript
+   * .searchCustom(entry =>
+   *   entry.level != null ? `Level ${entry.level}` : undefined
+   * )
+   * ```
+   */
+  searchCustom(fn) {
+    this._searchFields.push(fn);
+    return this;
+  }
+  /**
+   * Build the final schema object.
+   * Call this after adding all filters, sorts, and search fields.
+   */
+  build() {
+    return {
+      filters: this._filters,
+      sorts: this._sorts,
+      search: (entry) => this._searchFields.map((fn) => fn(entry)).filter((v) => Boolean(v))
+    };
+  }
+};
+function createSchema() {
+  return new SchemaBuilder();
+}
 
 // src/features/data-manager/browse/mode-renderer.ts
 var BaseModeRenderer = class {
@@ -47348,79 +47584,46 @@ init_creature_files();
 init_spell_files();
 init_item_files();
 init_equipment_files();
-async function readFrontmatter(app, file) {
-  const cached = app.metadataCache.getFileCache(file)?.frontmatter;
-  if (cached && typeof cached === "object") {
-    return cached;
-  }
-  const content = await app.vault.read(file);
-  const match = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!match) return {};
-  const lines = match[1].split(/\r?\n/);
-  const data = {};
-  for (const line of lines) {
-    const idx = line.indexOf(":");
-    if (idx === -1) continue;
-    const rawKey = line.slice(0, idx).trim();
-    if (!rawKey) continue;
-    let rawValue = line.slice(idx + 1).trim();
-    if (!rawValue) {
-      data[rawKey] = rawValue;
-      continue;
-    }
-    if (/^".*"$/.test(rawValue)) {
-      rawValue = rawValue.slice(1, -1);
-    }
-    const num = Number(rawValue);
-    data[rawKey] = Number.isFinite(num) && rawValue === String(num) ? num : rawValue;
-  }
-  return data;
-}
-async function loadCreatureEntry(app, file) {
-  const fm2 = await readFrontmatter(app, file);
-  const type = typeof fm2.type === "string" ? fm2.type : void 0;
-  const crValue = typeof fm2.cr === "string" ? fm2.cr : typeof fm2.cr === "number" ? String(fm2.cr) : void 0;
-  return { file, name: file.basename, type, cr: crValue };
-}
-async function loadSpellEntry(app, file) {
-  const fm2 = await readFrontmatter(app, file);
-  const school = typeof fm2.school === "string" ? fm2.school : void 0;
-  const rawLevel = fm2.level;
-  const level = typeof rawLevel === "number" ? rawLevel : typeof rawLevel === "string" ? Number(rawLevel) : void 0;
-  const casting_time = typeof fm2.casting_time === "string" ? fm2.casting_time : void 0;
-  const duration = typeof fm2.duration === "string" ? fm2.duration : void 0;
-  const concentration = typeof fm2.concentration === "boolean" ? fm2.concentration : void 0;
-  const ritual = typeof fm2.ritual === "boolean" ? fm2.ritual : void 0;
-  const description = typeof fm2.description === "string" ? fm2.description : void 0;
-  return {
-    file,
-    name: file.basename,
-    school,
-    level: Number.isFinite(level) ? level : void 0,
-    casting_time,
-    duration,
-    concentration,
-    ritual,
-    description
+function createEntryLoader(extractMeta) {
+  return async (app, file) => {
+    const fm2 = await readFrontmatter(app, file);
+    const meta = extractMeta(fm2);
+    return { file, name: file.basename, ...meta };
   };
 }
-async function loadItemEntry(app, file) {
-  const fm2 = await readFrontmatter(app, file);
-  const category = typeof fm2.category === "string" ? fm2.category : void 0;
-  const rarity = typeof fm2.rarity === "string" ? fm2.rarity : void 0;
-  return { file, name: file.basename, category, rarity };
-}
-async function loadEquipmentEntry(app, file) {
-  const fm2 = await readFrontmatter(app, file);
-  const type = typeof fm2.type === "string" ? fm2.type : void 0;
+var loadCreatureEntry = createEntryLoader((fm2) => ({
+  type: typeof fm2.type === "string" ? fm2.type : void 0,
+  cr: typeof fm2.cr === "string" ? fm2.cr : typeof fm2.cr === "number" ? String(fm2.cr) : void 0
+}));
+var loadSpellEntry = createEntryLoader((fm2) => {
+  const rawLevel = fm2.level;
+  const level = typeof rawLevel === "number" ? rawLevel : typeof rawLevel === "string" ? Number(rawLevel) : void 0;
+  return {
+    school: typeof fm2.school === "string" ? fm2.school : void 0,
+    level: Number.isFinite(level) ? level : void 0,
+    casting_time: typeof fm2.casting_time === "string" ? fm2.casting_time : void 0,
+    duration: typeof fm2.duration === "string" ? fm2.duration : void 0,
+    concentration: typeof fm2.concentration === "boolean" ? fm2.concentration : void 0,
+    ritual: typeof fm2.ritual === "boolean" ? fm2.ritual : void 0,
+    description: typeof fm2.description === "string" ? fm2.description : void 0
+  };
+});
+var loadItemEntry = createEntryLoader((fm2) => ({
+  category: typeof fm2.category === "string" ? fm2.category : void 0,
+  rarity: typeof fm2.rarity === "string" ? fm2.rarity : void 0
+}));
+var loadEquipmentEntry = createEntryLoader((fm2) => {
   const roleCandidate = [
     fm2.weapon_category,
     fm2.armor_category,
     fm2.tool_category,
     fm2.gear_category
   ].find((value) => typeof value === "string" && value.length > 0);
-  return { file, name: file.basename, type, role: roleCandidate };
-}
+  return {
+    type: typeof fm2.type === "string" ? fm2.type : void 0,
+    role: roleCandidate
+  };
+});
 var LIBRARY_DATA_SOURCES = {
   creatures: {
     id: "creatures",
@@ -47478,151 +47681,44 @@ function formatSpellLevel(level) {
   return `Level ${level}`;
 }
 var LIBRARY_LIST_SCHEMAS = {
-  creatures: {
-    filters: [
-      {
-        id: "type",
-        label: "Type",
-        getValues: (entry) => [entry.type]
-      },
-      {
-        id: "cr",
-        label: "CR",
-        getValues: (entry) => [entry.cr],
-        sortComparator: (a, b) => parseCr(a) - parseCr(b)
-      }
-    ],
-    sorts: [
-      {
-        id: "name",
-        label: "Name",
-        compare: (a, b) => a.name.localeCompare(b.name)
-      },
-      {
-        id: "type",
-        label: "Type",
-        compare: (a, b) => (a.type || "").localeCompare(b.type || "") || a.name.localeCompare(b.name)
-      },
-      {
-        id: "cr",
-        label: "CR",
-        compare: (a, b) => parseCr(a.cr) - parseCr(b.cr) || a.name.localeCompare(b.name)
-      }
-    ],
-    search: (entry) => [entry.type, entry.cr].filter((value) => Boolean(value))
-  },
-  spells: {
-    filters: [
-      {
-        id: "school",
-        label: "School",
-        getValues: (entry) => [entry.school]
-      },
-      {
-        id: "level",
-        label: "Level",
-        getValues: (entry) => [entry.level != null ? String(entry.level) : void 0],
-        sortComparator: (a, b) => Number(a) - Number(b),
-        formatOption: (value) => formatSpellLevel(Number(value))
-      },
-      {
-        id: "ritual",
-        label: "Ritual",
-        getValues: (entry) => [entry.ritual == null ? void 0 : entry.ritual ? "true" : "false"],
-        emptyLabel: "All",
-        formatOption: (value) => value === "true" ? "Only rituals" : "No rituals"
-      }
-    ],
-    sorts: [
-      {
-        id: "name",
-        label: "Name",
-        compare: (a, b) => a.name.localeCompare(b.name)
-      },
-      {
-        id: "level",
-        label: "Level",
-        compare: (a, b) => (a.level ?? 0) - (b.level ?? 0) || a.name.localeCompare(b.name)
-      },
-      {
-        id: "school",
-        label: "School",
-        compare: (a, b) => (a.school || "").localeCompare(b.school || "") || a.name.localeCompare(b.name)
-      }
-    ],
-    search: (entry) => [
-      entry.school,
-      entry.level != null ? formatSpellLevel(entry.level) : void 0,
-      entry.casting_time,
-      entry.duration,
-      entry.description
-    ].filter((value) => Boolean(value))
-  },
-  items: {
-    filters: [
-      {
-        id: "category",
-        label: "Category",
-        getValues: (entry) => [entry.category]
-      },
-      {
-        id: "rarity",
-        label: "Rarity",
-        getValues: (entry) => [entry.rarity],
-        sortComparator: (a, b) => rarityOrder(a) - rarityOrder(b) || a.localeCompare(b)
-      }
-    ],
-    sorts: [
-      {
-        id: "name",
-        label: "Name",
-        compare: (a, b) => a.name.localeCompare(b.name)
-      },
-      {
-        id: "rarity",
-        label: "Rarity",
-        compare: (a, b) => rarityOrder(a.rarity) - rarityOrder(b.rarity) || a.name.localeCompare(b.name)
-      },
-      {
-        id: "category",
-        label: "Category",
-        compare: (a, b) => (a.category || "").localeCompare(b.category || "") || a.name.localeCompare(b.name)
-      }
-    ],
-    search: (entry) => [entry.category, entry.rarity].filter((value) => Boolean(value))
-  },
-  equipment: {
-    filters: [
-      {
-        id: "type",
-        label: "Type",
-        getValues: (entry) => [entry.type]
-      },
-      {
-        id: "role",
-        label: "Role",
-        getValues: (entry) => [entry.role]
-      }
-    ],
-    sorts: [
-      {
-        id: "name",
-        label: "Name",
-        compare: (a, b) => a.name.localeCompare(b.name)
-      },
-      {
-        id: "type",
-        label: "Type",
-        compare: (a, b) => (a.type || "").localeCompare(b.type || "") || a.name.localeCompare(b.name)
-      },
-      {
-        id: "role",
-        label: "Role",
-        compare: (a, b) => (a.role || "").localeCompare(b.role || "") || a.name.localeCompare(b.name)
-      }
-    ],
-    search: (entry) => [entry.type, entry.role].filter((value) => Boolean(value))
-  }
+  creatures: createSchema().addStringFilter("type", "type", "Type").addCustomFilter("cr", "cr", {
+    label: "CR",
+    sortComparator: (a, b) => parseCr(a) - parseCr(b)
+  }).addNameSort().addStringFieldSort("type", "type", "Type").addCustomSort(
+    "cr",
+    "CR",
+    (a, b) => parseCr(a.cr) - parseCr(b.cr) || a.name.localeCompare(b.name)
+  ).searchField("type").searchField("cr").build(),
+  spells: createSchema().addStringFilter("school", "school", "School").addFilter(
+    "level",
+    "Level",
+    (entry) => [entry.level != null ? String(entry.level) : void 0],
+    {
+      sortComparator: (a, b) => Number(a) - Number(b),
+      formatOption: (value) => formatSpellLevel(Number(value))
+    }
+  ).addFilter(
+    "ritual",
+    "Ritual",
+    (entry) => [entry.ritual == null ? void 0 : entry.ritual ? "true" : "false"],
+    {
+      emptyLabel: "All",
+      formatOption: (value) => value === "true" ? "Only rituals" : "No rituals"
+    }
+  ).addNameSort().addCustomSort(
+    "level",
+    "Level",
+    (a, b) => (a.level ?? 0) - (b.level ?? 0) || a.name.localeCompare(b.name)
+  ).addStringFieldSort("school", "school", "School").searchField("school").searchCustom((entry) => entry.level != null ? formatSpellLevel(entry.level) : void 0).searchField("casting_time").searchField("duration").searchField("description").build(),
+  items: createSchema().addStringFilter("category", "category", "Category").addCustomFilter("rarity", "rarity", {
+    label: "Rarity",
+    sortComparator: (a, b) => rarityOrder(a) - rarityOrder(b) || a.localeCompare(b)
+  }).addNameSort().addCustomSort(
+    "rarity",
+    "Rarity",
+    (a, b) => rarityOrder(a.rarity) - rarityOrder(b.rarity) || a.name.localeCompare(b.name)
+  ).addStringFieldSort("category", "category", "Category").searchField("category").searchField("rarity").build(),
+  equipment: createSchema().addStringFilter("type", "type", "Type").addStringFilter("role", "role", "Role").addNameSort().addStringFieldSort("type", "type", "Type").addStringFieldSort("role", "role", "Role").searchField("type").searchField("role").build()
 };
 
 // src/workmodes/library/core/creature-presets.ts
@@ -48368,10 +48464,6 @@ var creatureSpec = {
   }
 };
 
-// src/workmodes/library/create/spell/modal.ts
-var import_obsidian33 = require("obsidian");
-init_search_dropdown();
-
 // src/workmodes/library/create/spell/validation.ts
 var SCALING_REQUIRES_LEVEL_MESSAGE = "Skalierende Effekte ben\xF6tigen einen Zaubergrad zwischen 1 und 9.";
 var SCALING_DISALLOWS_CANTRIPS_MESSAGE = "Zaubertricks verwenden keine h\xF6heren Zauberstufen \u2013 entferne den Abschnitt oder w\xE4hle Grad 1\u20139.";
@@ -48390,639 +48482,912 @@ function collectSpellScalingIssues(data) {
   return issues;
 }
 
-// src/workmodes/library/create/spell/modal.ts
-var CreateSpellModal = class extends CreateModal {
-  constructor(app, preset, options) {
-    super(app, preset, {
-      title: "Neuen Zauber erstellen",
-      defaultName: "Neuer Zauber",
-      submitButtonText: "Erstellen",
-      pipeline: options.pipeline,
-      onSubmit: options.onSubmit
-    });
-    this.runScalingValidation = null;
-  }
-  createDefault(name) {
-    return { name };
-  }
-  cloneData(data) {
-    return {
-      ...data,
-      components: data.components ? [...data.components] : void 0,
-      classes: data.classes ? [...data.classes] : void 0
-    };
-  }
-  onOpen() {
-    super.onOpen();
-    this.runScalingValidation = null;
-  }
-  buildFields(contentEl) {
-    new import_obsidian33.Setting(contentEl).setName("Name").addText((t) => {
-      t.setPlaceholder("Fireball").setValue(this.data.name).onChange((v) => this.data.name = v.trim());
-      t.inputEl.style.width = "28ch";
-    });
-    new import_obsidian33.Setting(contentEl).setName("Grad").setDesc("0 = Zaubertrick").addDropdown((dd) => {
-      for (let i = 0; i <= 9; i++) dd.addOption(String(i), String(i));
-      const initial = Number.isFinite(this.data.level) ? String(this.data.level) : "0";
-      dd.setValue(initial);
-      this.data.level = parseInt(initial, 10);
-      dd.onChange((v) => {
-        const parsed = parseInt(v, 10);
-        this.data.level = Number.isFinite(parsed) ? parsed : void 0;
-        this.runScalingValidation?.();
-      });
-      try {
-        enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
-      } catch {
+// src/workmodes/library/create/spell/spell-spec.ts
+var spellSchema = {
+  parse: (data) => data,
+  safeParse: (data) => {
+    try {
+      const spellData = data;
+      const scalingIssues = collectSpellScalingIssues(spellData);
+      if (scalingIssues.length > 0) {
+        return {
+          success: false,
+          error: new Error(scalingIssues.join("\n"))
+        };
       }
-    });
-    new import_obsidian33.Setting(contentEl).setName("Schule").addDropdown((dd) => {
-      const schools = ["", "Abjuration", "Conjuration", "Divination", "Enchantment", "Evocation", "Illusion", "Necromancy", "Transmutation"];
-      for (const s of schools) dd.addOption(s, s || "(keine)");
-      dd.setValue(this.data.school || "");
-      dd.onChange((v) => this.data.school = v || void 0);
-      try {
-        enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
-      } catch {
-      }
-    });
-    new import_obsidian33.Setting(contentEl).setName("Wirkzeit").addText((t) => {
-      t.setPlaceholder("1 Aktion").setValue(this.data.casting_time || "").onChange((v) => this.data.casting_time = v.trim() || void 0);
-      t.inputEl.style.width = "12ch";
-    });
-    new import_obsidian33.Setting(contentEl).setName("Reichweite").addText((t) => {
-      t.setPlaceholder("60 Fu\xDF").setValue(this.data.range || "").onChange((v) => this.data.range = v.trim() || void 0);
-      t.inputEl.style.width = "12ch";
-    });
-    const comps = new import_obsidian33.Setting(contentEl).setName("Komponenten");
-    let cV = this.data.components?.includes("V") ?? false;
-    let cS = this.data.components?.includes("S") ?? false;
-    let cM = this.data.components?.includes("M") ?? false;
-    const updateComps = () => {
-      const arr = [];
-      if (cV) arr.push("V");
-      if (cS) arr.push("S");
-      if (cM) arr.push("M");
-      this.data.components = arr;
-    };
-    const componentGrid = comps.controlEl.createDiv({ cls: "sm-cc-component-grid" });
-    componentGrid.style.display = "grid";
-    componentGrid.style.gridTemplateColumns = "max-content max-content max-content max-content max-content max-content";
-    const mkCb = (label, on, initial) => {
-      const wrap = componentGrid.createDiv({ cls: "sm-cc-grid__save" });
-      const cb = wrap.createEl("input", { attr: { type: "checkbox" } });
-      wrap.createEl("label", { text: label });
-      cb.checked = initial;
-      cb.addEventListener("change", () => {
-        on(cb.checked);
-        updateComps();
-      });
-    };
-    mkCb("V", (v) => cV = v, cV);
-    mkCb("S", (v) => cS = v, cS);
-    mkCb("M", (v) => {
-      cM = v;
-    }, cM);
-    updateComps();
-    new import_obsidian33.Setting(contentEl).setName("Materialien").addText((t) => {
-      t.setPlaceholder("winzige Kugel aus Guano und Schwefel").setValue(this.data.materials || "").onChange((v) => this.data.materials = v.trim() || void 0);
-      t.inputEl.style.width = "34ch";
-    });
-    new import_obsidian33.Setting(contentEl).setName("Dauer").addText((t) => {
-      t.setPlaceholder("Augenblicklich / Konzentration, bis zu 1 Minute").setValue(this.data.duration || "").onChange((v) => this.data.duration = v.trim() || void 0);
-      t.inputEl.style.width = "34ch";
-    });
-    const flags = new import_obsidian33.Setting(contentEl).setName("Flags");
-    const cbConc = flags.controlEl.createEl("input", { attr: { type: "checkbox" } });
-    flags.controlEl.createEl("label", { text: "Konzentration" });
-    cbConc.checked = !!this.data.concentration;
-    cbConc.addEventListener("change", () => this.data.concentration = cbConc.checked);
-    const cbRit = flags.controlEl.createEl("input", { attr: { type: "checkbox" } });
-    flags.controlEl.createEl("label", { text: "Ritual" });
-    cbRit.checked = !!this.data.ritual;
-    cbRit.addEventListener("change", () => this.data.ritual = cbRit.checked);
-    new import_obsidian33.Setting(contentEl).setName("Angriff").addDropdown((dd) => {
-      const opts = ["", "Melee Spell Attack", "Ranged Spell Attack", "Melee Weapon Attack", "Ranged Weapon Attack"];
-      for (const s of opts) dd.addOption(s, s || "(kein)");
-      dd.setValue(this.data.attack || "");
-      dd.onChange((v) => this.data.attack = v || void 0);
-      try {
-        enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
-      } catch {
-      }
-    });
-    const save = new import_obsidian33.Setting(contentEl).setName("Rettungswurf");
-    save.addDropdown((dd) => {
-      const abil = ["", "STR", "DEX", "CON", "INT", "WIS", "CHA"];
-      for (const a of abil) dd.addOption(a, a || "(kein)");
-      dd.setValue(this.data.save_ability || "");
-      dd.onChange((v) => this.data.save_ability = v || void 0);
-      try {
-        enhanceSelectToSearch(dd.selectEl, "Such-dropdown\u2026");
-      } catch {
-      }
-    });
-    save.controlEl.createEl("label", { text: "Effekt" });
-    save.addText((t) => {
-      t.setPlaceholder("Half on save / Negates \u2026").setValue(this.data.save_effect || "").onChange((v) => this.data.save_effect = v.trim() || void 0);
-      t.inputEl.style.width = "18ch";
-    });
-    const dmg = new import_obsidian33.Setting(contentEl).setName("Schaden");
-    dmg.controlEl.createEl("label", { text: "W\xFCrfel" });
-    dmg.addText((t) => {
-      t.setPlaceholder("8d6").setValue(this.data.damage || "").onChange((v) => this.data.damage = v.trim() || void 0);
-      t.inputEl.style.width = "10ch";
-    });
-    dmg.controlEl.createEl("label", { text: "Typ" });
-    dmg.addText((t) => {
-      t.setPlaceholder("fire / radiant \u2026").setValue(this.data.damage_type || "").onChange((v) => this.data.damage_type = v.trim() || void 0);
-      t.inputEl.style.width = "12ch";
-    });
-    this.addTextArea(
-      contentEl,
-      "Beschreibung",
-      "Beschreibung (Markdown)",
-      (v) => this.data.description = v,
-      this.data.description
-    );
-    const higherLevelsField = this.addTextArea(
-      contentEl,
-      "H\xF6here Grade",
-      "Bei h\xF6heren Graden (Markdown)",
-      (v) => {
-        const trimmed = v.trim();
-        this.data.higher_levels = trimmed ? trimmed : void 0;
-        this.runScalingValidation?.();
+      return { success: true, data: spellData };
+    } catch (error) {
+      return { success: false, error };
+    }
+  }
+};
+var SPELL_SCHOOLS = [
+  "Abjuration",
+  "Conjuration",
+  "Divination",
+  "Enchantment",
+  "Evocation",
+  "Illusion",
+  "Necromancy",
+  "Transmutation"
+];
+var SPELL_ATTACK_TYPES = [
+  "Melee Spell Attack",
+  "Ranged Spell Attack",
+  "Melee Weapon Attack",
+  "Ranged Weapon Attack"
+];
+var SPELL_SAVE_ABILITIES = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
+var SPELL_CLASS_SUGGESTIONS = [
+  "Bard",
+  "Cleric",
+  "Druid",
+  "Paladin",
+  "Ranger",
+  "Sorcerer",
+  "Warlock",
+  "Wizard",
+  "Artificer"
+];
+var basicInfoFields2 = [
+  {
+    id: "name",
+    label: "Name",
+    type: "text",
+    required: true,
+    placeholder: "Fireball"
+  },
+  {
+    id: "level",
+    label: "Grad",
+    type: "select",
+    description: "0 = Zaubertrick",
+    options: Array.from({ length: 10 }, (_, i) => ({
+      value: String(i),
+      label: i === 0 ? "Cantrip" : `Level ${i}`
+    })),
+    default: "0"
+  },
+  {
+    id: "school",
+    label: "Schule",
+    type: "select",
+    options: [
+      { value: "", label: "(keine)" },
+      ...SPELL_SCHOOLS.map((s) => ({ value: s, label: s }))
+    ]
+  }
+];
+var timingComponentsFields = [
+  {
+    id: "casting_time",
+    label: "Wirkzeit",
+    type: "text",
+    placeholder: "1 Aktion"
+  },
+  {
+    id: "range",
+    label: "Reichweite",
+    type: "text",
+    placeholder: "60 Fu\xDF"
+  },
+  {
+    id: "duration",
+    label: "Dauer",
+    type: "text",
+    placeholder: "Augenblicklich / Konzentration, bis zu 1 Minute"
+  },
+  {
+    id: "components",
+    label: "Komponenten",
+    type: "composite",
+    config: {
+      fields: [
+        {
+          id: "v",
+          label: "V",
+          type: "toggle"
+        },
+        {
+          id: "s",
+          label: "S",
+          type: "toggle"
+        },
+        {
+          id: "m",
+          label: "M",
+          type: "toggle"
+        }
+      ],
+      layout: "horizontal",
+      toData: (value) => {
+        const arr = [];
+        if (value.v) arr.push("V");
+        if (value.s) arr.push("S");
+        if (value.m) arr.push("M");
+        return arr.length > 0 ? arr : void 0;
       },
-      this.data.higher_levels
-    );
-    const scalingValidation = higherLevelsField.controlEl.createDiv({ cls: "sm-setting-validation", attr: { hidden: "" } });
-    const applyScalingValidation = (issues) => {
-      const hasIssues = issues.length > 0;
-      higherLevelsField.wrapper.toggleClass("is-invalid", hasIssues);
-      if (!hasIssues) {
-        scalingValidation.setAttribute("hidden", "");
-        scalingValidation.classList.remove("is-visible");
-        scalingValidation.empty();
-        return;
-      }
-      scalingValidation.removeAttribute("hidden");
-      scalingValidation.classList.add("is-visible");
-      scalingValidation.empty();
-      const list = scalingValidation.createEl("ul");
-      for (const issue of issues) list.createEl("li", { text: issue });
-    };
-    this.runScalingValidation = () => {
-      const issues = collectSpellScalingIssues(this.data);
-      applyScalingValidation(issues);
-      return issues;
-    };
-    this.runScalingValidation();
+      fromData: (data) => ({
+        v: data?.includes("V") ?? false,
+        s: data?.includes("S") ?? false,
+        m: data?.includes("M") ?? false
+      })
+    }
+  },
+  {
+    id: "materials",
+    label: "Materialien",
+    type: "text",
+    placeholder: "winzige Kugel aus Guano und Schwefel"
   }
-  async submit() {
-    const scalingIssues = this.runScalingValidation?.() ?? [];
-    if (scalingIssues.length > 0) return;
-    await super.submit();
+];
+var flagsFields = [
+  {
+    id: "concentration",
+    label: "Konzentration",
+    type: "toggle",
+    default: false
+  },
+  {
+    id: "ritual",
+    label: "Ritual",
+    type: "toggle",
+    default: false
+  }
+];
+var combatFields = [
+  {
+    id: "attack",
+    label: "Angriff",
+    type: "select",
+    options: [
+      { value: "", label: "(kein)" },
+      ...SPELL_ATTACK_TYPES.map((a) => ({ value: a, label: a }))
+    ]
+  },
+  {
+    id: "save_ability",
+    label: "Rettungswurf",
+    type: "select",
+    options: [
+      { value: "", label: "(kein)" },
+      ...SPELL_SAVE_ABILITIES.map((a) => ({ value: a, label: a }))
+    ]
+  },
+  {
+    id: "save_effect",
+    label: "Effekt",
+    type: "text",
+    placeholder: "Half on save / Negates \u2026",
+    visibleIf: (data) => Boolean(data.save_ability)
+  }
+];
+var damageFields = [
+  {
+    id: "damage",
+    label: "Schadensw\xFCrfel",
+    type: "text",
+    placeholder: "8d6"
+  },
+  {
+    id: "damage_type",
+    label: "Schadenstyp",
+    type: "text",
+    placeholder: "fire / radiant \u2026"
+  }
+];
+var classesFields = [
+  {
+    id: "classes",
+    label: "Klassen",
+    type: "tags",
+    placeholder: "Klasse hinzuf\xFCgen...",
+    config: {
+      suggestions: SPELL_CLASS_SUGGESTIONS
+    },
+    default: []
+  }
+];
+var descriptionFields = [
+  {
+    id: "description",
+    label: "Beschreibung",
+    type: "textarea",
+    placeholder: "Beschreibung (Markdown)"
+  },
+  {
+    id: "higher_levels",
+    label: "H\xF6here Grade",
+    type: "textarea",
+    placeholder: "Bei h\xF6heren Graden (Markdown)",
+    description: "Optional: Skalierung des Zaubers bei h\xF6heren Stufen"
+  }
+];
+var spellSpec = {
+  kind: "spell",
+  title: "Zauber erstellen",
+  subtitle: "Neuer Zauber f\xFCr deine Kampagne",
+  schema: spellSchema,
+  fields: [
+    ...basicInfoFields2,
+    ...timingComponentsFields,
+    ...flagsFields,
+    ...combatFields,
+    ...damageFields,
+    ...classesFields,
+    ...descriptionFields
+  ],
+  storage: {
+    format: "md-frontmatter",
+    pathTemplate: "SaltMarcher/Spells/{name}.md",
+    filenameFrom: "name",
+    directory: "SaltMarcher/Spells",
+    frontmatter: [
+      "name",
+      "level",
+      "school",
+      "casting_time",
+      "range",
+      "components",
+      "materials",
+      "duration",
+      "concentration",
+      "ritual",
+      "classes",
+      "attack",
+      "save_ability",
+      "save_effect",
+      "damage",
+      "damage_type"
+    ]
+  },
+  ui: {
+    submitLabel: "Zauber erstellen",
+    cancelLabel: "Abbrechen",
+    enableNavigation: true,
+    sections: [
+      {
+        id: "basic",
+        label: "Grunddaten",
+        description: "Name, Grad und Schule",
+        fieldIds: ["name", "level", "school"]
+      },
+      {
+        id: "timing",
+        label: "Timing & Komponenten",
+        description: "Wirkzeit, Reichweite, Dauer und Komponenten",
+        fieldIds: ["casting_time", "range", "duration", "components", "materials"]
+      },
+      {
+        id: "flags",
+        label: "Eigenschaften",
+        description: "Konzentration und Ritual",
+        fieldIds: ["concentration", "ritual"]
+      },
+      {
+        id: "combat",
+        label: "Kampf & Targeting",
+        description: "Angriffe und Rettungsw\xFCrfe",
+        fieldIds: ["attack", "save_ability", "save_effect"]
+      },
+      {
+        id: "damage",
+        label: "Schaden",
+        description: "Schadensw\xFCrfel und Typ",
+        fieldIds: ["damage", "damage_type"]
+      },
+      {
+        id: "classes",
+        label: "Klassen",
+        description: "Verf\xFCgbare Klassen",
+        fieldIds: ["classes"]
+      },
+      {
+        id: "description",
+        label: "Beschreibung",
+        description: "Zauberbeschreibung und Skalierung",
+        fieldIds: ["description", "higher_levels"]
+      }
+    ]
   }
 };
 
-// src/workmodes/library/create/item/modal.ts
-var import_obsidian34 = require("obsidian");
-init_search_dropdown();
-
-// src/workmodes/library/create/item/validation.ts
-var NAME_REQUIRED_MESSAGE = "Item name is required.";
-var CHARGES_INVALID_MESSAGE = "Max charges must be a positive number.";
-var SPELLS_REQUIRE_NAMES_MESSAGE = "All spells must have a name.";
-var BONUSES_REQUIRE_TYPE_MESSAGE = "All bonuses must have a type.";
-var ABILITY_CHANGES_INVALID_MESSAGE = "Ability changes must have a valid ability and value.";
-function collectItemValidationIssues(data) {
-  const issues = [];
-  if (!data.name || !data.name.trim()) {
-    issues.push(NAME_REQUIRED_MESSAGE);
-  }
-  if (data.max_charges != null) {
-    if (data.max_charges <= 0) {
-      issues.push(CHARGES_INVALID_MESSAGE);
+// src/workmodes/library/create/item/item-spec.ts
+var itemSchema = {
+  parse: (data) => data,
+  safeParse: (data) => {
+    try {
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error };
     }
   }
-  if (data.spells && data.spells.length > 0) {
-    for (const spell of data.spells) {
-      if (!spell.name || !spell.name.trim()) {
-        issues.push(SPELLS_REQUIRE_NAMES_MESSAGE);
-        break;
-      }
-    }
+};
+var ITEM_CATEGORIES = [
+  "Armor",
+  "Potion",
+  "Ring",
+  "Rod",
+  "Scroll",
+  "Staff",
+  "Wand",
+  "Weapon",
+  "Wondrous Item"
+];
+var ITEM_RARITIES = [
+  "Common",
+  "Uncommon",
+  "Rare",
+  "Very Rare",
+  "Legendary",
+  "Artifact"
+];
+var RECHARGE_TIMES = [
+  "Dawn",
+  "Dusk",
+  "Long Rest",
+  "Short Rest"
+];
+var basicInfoFields3 = [
+  {
+    id: "name",
+    label: "Name",
+    type: "text",
+    required: true,
+    placeholder: "Flaming Longsword"
+  },
+  {
+    id: "category",
+    label: "Category",
+    type: "select",
+    options: [
+      { value: "", label: "(none)" },
+      ...ITEM_CATEGORIES.map((c) => ({ value: c, label: c }))
+    ]
+  },
+  {
+    id: "type",
+    label: "Type",
+    type: "text",
+    description: "e.g., 'Armor (Plate)', 'Weapon (Longsword)'",
+    placeholder: "Weapon (Longsword)"
+  },
+  {
+    id: "rarity",
+    label: "Rarity",
+    type: "select",
+    options: [
+      { value: "", label: "(none)" },
+      ...ITEM_RARITIES.map((r) => ({ value: r, label: r }))
+    ]
   }
-  if (data.bonuses && data.bonuses.length > 0) {
-    for (const bonus of data.bonuses) {
-      if (!bonus.type || !bonus.type.trim()) {
-        issues.push(BONUSES_REQUIRE_TYPE_MESSAGE);
-        break;
-      }
-    }
+];
+var attunementFields = [
+  {
+    id: "attunement",
+    label: "Requires Attunement",
+    type: "toggle",
+    default: false
+  },
+  {
+    id: "attunement_req",
+    label: "Attunement Requirement",
+    type: "text",
+    description: "e.g., 'by a Cleric'",
+    placeholder: "by a Druid, Sorcerer, Warlock, or Wizard",
+    visibleIf: (data) => Boolean(data.attunement)
   }
-  if (data.ability_changes && data.ability_changes.length > 0) {
-    const validAbilities = ["str", "dex", "con", "int", "wis", "cha"];
-    for (const change of data.ability_changes) {
-      if (!change.ability || !validAbilities.includes(change.ability.toLowerCase())) {
-        issues.push(ABILITY_CHANGES_INVALID_MESSAGE);
-        break;
-      }
-      if (!change.value || change.value < 1 || change.value > 30) {
-        issues.push(ABILITY_CHANGES_INVALID_MESSAGE);
-        break;
-      }
-    }
+];
+var chargesFields = [
+  {
+    id: "max_charges",
+    label: "Max Charges",
+    type: "number-stepper",
+    min: 0,
+    max: 50,
+    step: 1,
+    placeholder: "10"
+  },
+  {
+    id: "recharge_formula",
+    label: "Recharge Formula",
+    type: "text",
+    description: "e.g., '1d6 + 4'",
+    placeholder: "1d6 + 4",
+    visibleIf: (data) => typeof data.max_charges === "number" && data.max_charges > 0
+  },
+  {
+    id: "recharge_time",
+    label: "Recharge Time",
+    type: "select",
+    options: [
+      { value: "", label: "(none)" },
+      ...RECHARGE_TIMES.map((t) => ({ value: t, label: t }))
+    ],
+    visibleIf: (data) => typeof data.max_charges === "number" && data.max_charges > 0
+  },
+  {
+    id: "destruction_risk",
+    label: "Destruction Risk",
+    type: "text",
+    description: "e.g., 'On 1, turns to water'",
+    placeholder: "On 1, turns to water and is destroyed",
+    visibleIf: (data) => typeof data.max_charges === "number" && data.max_charges > 0
   }
-  return issues;
-}
-
-// src/workmodes/library/create/item/modal.ts
-var CreateItemModal = class extends CreateModal {
-  constructor(app, presetNameOrData, options) {
-    super(app, presetNameOrData, {
-      title: "Create New Item",
-      defaultName: "New Item",
-      validate: collectItemValidationIssues,
-      submitButtonText: "Create Item",
-      pipeline: options.pipeline,
-      onSubmit: options.onSubmit
-    });
+];
+var propertiesFields = [
+  {
+    id: "description",
+    label: "Description",
+    type: "textarea",
+    placeholder: "While wearing this armor..."
+  },
+  {
+    id: "notes",
+    label: "Notes",
+    type: "textarea",
+    placeholder: "Additional information..."
   }
-  createDefault(name) {
-    return { name };
+];
+var metadataFields = [
+  {
+    id: "weight",
+    label: "Weight",
+    type: "text",
+    placeholder: "5 pounds"
+  },
+  {
+    id: "value",
+    label: "Value",
+    type: "text",
+    placeholder: "2,000 GP"
   }
-  buildFields(contentEl) {
-    contentEl.createEl("h4", { text: "Basic Information" });
-    new import_obsidian34.Setting(contentEl).setName("Name").addText((t) => {
-      t.setPlaceholder("Flaming Longsword").setValue(this.data.name).onChange((v) => this.data.name = v.trim());
-      t.inputEl.style.width = "28ch";
-    });
-    new import_obsidian34.Setting(contentEl).setName("Category").addDropdown((dd) => {
-      const categories = ["", "Armor", "Potion", "Ring", "Rod", "Scroll", "Staff", "Wand", "Weapon", "Wondrous Item"];
-      for (const c of categories) dd.addOption(c, c || "(none)");
-      dd.setValue(this.data.category || "");
-      dd.onChange((v) => this.data.category = v || void 0);
-      try {
-        enhanceSelectToSearch(dd.selectEl, "Search\u2026");
-      } catch {
+];
+var curseFields = [
+  {
+    id: "cursed",
+    label: "Cursed Item",
+    type: "toggle",
+    default: false
+  },
+  {
+    id: "curse_description",
+    label: "Curse Description",
+    type: "textarea",
+    placeholder: "This armor is cursed...",
+    visibleIf: (data) => Boolean(data.cursed)
+  }
+];
+var itemSpec = {
+  kind: "item",
+  title: "Item erstellen",
+  subtitle: "Neues magisches Item f\xFCr deine Kampagne",
+  schema: itemSchema,
+  fields: [
+    ...basicInfoFields3,
+    ...attunementFields,
+    ...chargesFields,
+    ...propertiesFields,
+    ...metadataFields,
+    ...curseFields
+  ],
+  storage: {
+    format: "md-frontmatter",
+    pathTemplate: "SaltMarcher/Items/{name}.md",
+    filenameFrom: "name",
+    directory: "SaltMarcher/Items",
+    frontmatter: [
+      "name",
+      "category",
+      "type",
+      "rarity",
+      "attunement",
+      "attunement_req",
+      "max_charges",
+      "recharge_formula",
+      "recharge_time",
+      "destruction_risk",
+      "weight",
+      "value",
+      "cursed",
+      "curse_description"
+    ]
+  },
+  ui: {
+    submitLabel: "Item erstellen",
+    cancelLabel: "Abbrechen",
+    enableNavigation: true,
+    sections: [
+      {
+        id: "basic",
+        label: "Grunddaten",
+        description: "Name, Kategorie, Typ und Seltenheit",
+        fieldIds: ["name", "category", "type", "rarity"]
+      },
+      {
+        id: "attunement",
+        label: "Einstimmung",
+        description: "Einstimmungsanforderungen",
+        fieldIds: ["attunement", "attunement_req"]
+      },
+      {
+        id: "charges",
+        label: "Ladungen",
+        description: "Ladungssystem und Aufladung",
+        fieldIds: ["max_charges", "recharge_formula", "recharge_time", "destruction_risk"]
+      },
+      {
+        id: "properties",
+        label: "Eigenschaften",
+        description: "Beschreibung und Notizen",
+        fieldIds: ["description", "notes"]
+      },
+      {
+        id: "metadata",
+        label: "Metadaten",
+        description: "Gewicht und Wert",
+        fieldIds: ["weight", "value"]
+      },
+      {
+        id: "curse",
+        label: "Fluch",
+        description: "Verfluchte Items",
+        fieldIds: ["cursed", "curse_description"]
       }
-    });
-    new import_obsidian34.Setting(contentEl).setName("Type").setDesc("e.g., 'Armor (Plate)', 'Weapon (Longsword)'").addText((t) => {
-      t.setPlaceholder("Weapon (Longsword)").setValue(this.data.type || "").onChange((v) => this.data.type = v.trim() || void 0);
-      t.inputEl.style.width = "28ch";
-    });
-    new import_obsidian34.Setting(contentEl).setName("Rarity").addDropdown((dd) => {
-      const rarities = ["", "Common", "Uncommon", "Rare", "Very Rare", "Legendary", "Artifact"];
-      for (const r of rarities) dd.addOption(r, r || "(none)");
-      dd.setValue(this.data.rarity || "");
-      dd.onChange((v) => this.data.rarity = v || void 0);
-      try {
-        enhanceSelectToSearch(dd.selectEl, "Search\u2026");
-      } catch {
-      }
-    });
-    const attuneSetting = new import_obsidian34.Setting(contentEl).setName("Requires Attunement");
-    attuneSetting.addToggle((t) => {
-      t.setValue(!!this.data.attunement);
-      t.onChange((v) => this.data.attunement = v || void 0);
-    });
-    new import_obsidian34.Setting(contentEl).setName("Attunement Requirement").setDesc("e.g., 'by a Cleric'").addText((t) => {
-      t.setPlaceholder("by a Druid, Sorcerer, Warlock, or Wizard").setValue(this.data.attunement_req || "").onChange((v) => this.data.attunement_req = v.trim() || void 0);
-      t.inputEl.style.width = "34ch";
-    });
-    contentEl.createEl("h4", { text: "Charges System" });
-    new import_obsidian34.Setting(contentEl).setName("Max Charges").addText((t) => {
-      t.setPlaceholder("10").setValue(this.data.max_charges?.toString() || "").onChange((v) => {
-        const num = parseInt(v);
-        this.data.max_charges = Number.isFinite(num) ? num : void 0;
-      });
-      t.inputEl.style.width = "8ch";
-      t.inputEl.type = "number";
-    });
-    new import_obsidian34.Setting(contentEl).setName("Recharge Formula").setDesc("e.g., '1d6 + 4'").addText((t) => {
-      t.setPlaceholder("1d6 + 4").setValue(this.data.recharge_formula || "").onChange((v) => this.data.recharge_formula = v.trim() || void 0);
-      t.inputEl.style.width = "12ch";
-    });
-    new import_obsidian34.Setting(contentEl).setName("Recharge Time").addDropdown((dd) => {
-      const times = ["", "Dawn", "Dusk", "Long Rest", "Short Rest"];
-      for (const time of times) dd.addOption(time, time || "(none)");
-      dd.setValue(this.data.recharge_time || "");
-      dd.onChange((v) => this.data.recharge_time = v || void 0);
-      try {
-        enhanceSelectToSearch(dd.selectEl, "Search\u2026");
-      } catch {
-      }
-    });
-    new import_obsidian34.Setting(contentEl).setName("Destruction Risk").setDesc("e.g., 'On 1, turns to water'").addText((t) => {
-      t.setPlaceholder("On 1, turns to water and is destroyed").setValue(this.data.destruction_risk || "").onChange((v) => this.data.destruction_risk = v.trim() || void 0);
-      t.inputEl.style.width = "34ch";
-    });
-    contentEl.createEl("h4", { text: "Properties & Effects" });
-    this.addTextArea(
-      contentEl,
-      "Description",
-      "While wearing this armor...",
-      (v) => this.data.description = v.trim() || void 0,
-      this.data.description,
-      6
-    );
-    this.addTextArea(
-      contentEl,
-      "Notes",
-      "Additional information...",
-      (v) => this.data.notes = v.trim() || void 0,
-      this.data.notes,
-      3
-    );
-    contentEl.createEl("h4", { text: "Weight & Value" });
-    new import_obsidian34.Setting(contentEl).setName("Weight").addText((t) => {
-      t.setPlaceholder("5 pounds").setValue(this.data.weight || "").onChange((v) => this.data.weight = v.trim() || void 0);
-      t.inputEl.style.width = "12ch";
-    });
-    new import_obsidian34.Setting(contentEl).setName("Value").addText((t) => {
-      t.setPlaceholder("2,000 GP").setValue(this.data.value || "").onChange((v) => this.data.value = v.trim() || void 0);
-      t.inputEl.style.width = "12ch";
-    });
-    contentEl.createEl("h4", { text: "Curse" });
-    const cursedSetting = new import_obsidian34.Setting(contentEl).setName("Cursed Item");
-    cursedSetting.addToggle((t) => {
-      t.setValue(!!this.data.cursed);
-      t.onChange((v) => this.data.cursed = v || void 0);
-    });
-    this.addTextArea(
-      contentEl,
-      "Curse Description",
-      "This armor is cursed...",
-      (v) => this.data.curse_description = v.trim() || void 0,
-      this.data.curse_description,
-      3
-    );
+    ]
   }
 };
 
-// src/workmodes/library/create/equipment/modal.ts
-var import_obsidian35 = require("obsidian");
-init_search_dropdown();
-
-// src/workmodes/library/create/equipment/validation.ts
-function collectEquipmentValidationIssues(d) {
-  const issues = [];
-  if (!d.name || !d.name.trim()) {
-    issues.push("Name is required");
-  }
-  if (!d.type) {
-    issues.push("Equipment type is required");
-  }
-  if (d.type === "weapon") {
-    if (d.weapon_category && !["Simple", "Martial"].includes(d.weapon_category)) {
-      issues.push("Weapon category must be 'Simple' or 'Martial'");
-    }
-    if (d.weapon_type && !["Melee", "Ranged"].includes(d.weapon_type)) {
-      issues.push("Weapon type must be 'Melee' or 'Ranged'");
+// src/workmodes/library/create/equipment/equipment-spec.ts
+var equipmentSchema = {
+  parse: (data) => data,
+  safeParse: (data) => {
+    try {
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error };
     }
   }
-  if (d.type === "armor") {
-    if (d.armor_category && !["Light", "Medium", "Heavy", "Shield"].includes(d.armor_category)) {
-      issues.push("Armor category must be 'Light', 'Medium', 'Heavy', or 'Shield'");
-    }
+};
+var EQUIPMENT_TYPES = ["weapon", "armor", "tool", "gear"];
+var WEAPON_CATEGORIES = ["Simple", "Martial"];
+var WEAPON_TYPES = ["Melee", "Ranged"];
+var ARMOR_CATEGORIES = ["Light", "Medium", "Heavy", "Shield"];
+var TOOL_CATEGORIES = ["Artisan", "Gaming", "Musical", "Other"];
+var basicInfoFields4 = [
+  {
+    id: "name",
+    label: "Name",
+    type: "text",
+    required: true,
+    placeholder: "Longsword"
+  },
+  {
+    id: "type",
+    label: "Type",
+    type: "select",
+    required: true,
+    options: EQUIPMENT_TYPES.map((type) => ({
+      value: type,
+      label: type.charAt(0).toUpperCase() + type.slice(1)
+    })),
+    default: "weapon"
+  },
+  {
+    id: "cost",
+    label: "Cost",
+    type: "text",
+    description: "e.g., '15 GP', '2 SP'",
+    placeholder: "15 GP"
+  },
+  {
+    id: "weight",
+    label: "Weight",
+    type: "text",
+    description: "e.g., '3 lb.', '\u2014'",
+    placeholder: "3 lb."
   }
-  if (d.type === "tool") {
-    if (d.tool_category && !["Artisan", "Gaming", "Musical", "Other"].includes(d.tool_category)) {
-      issues.push("Tool category must be 'Artisan', 'Gaming', 'Musical', or 'Other'");
-    }
+];
+var weaponFields = [
+  {
+    id: "weapon_category",
+    label: "Category",
+    type: "select",
+    options: [
+      { value: "", label: "(none)" },
+      ...WEAPON_CATEGORIES.map((c) => ({ value: c, label: c }))
+    ],
+    visibleIf: (data) => data.type === "weapon"
+  },
+  {
+    id: "weapon_type",
+    label: "Weapon Type",
+    type: "select",
+    options: [
+      { value: "", label: "(none)" },
+      ...WEAPON_TYPES.map((t) => ({ value: t, label: t }))
+    ],
+    visibleIf: (data) => data.type === "weapon"
+  },
+  {
+    id: "damage",
+    label: "Damage",
+    type: "text",
+    description: "e.g., '1d8 Slashing'",
+    placeholder: "1d8 Slashing",
+    visibleIf: (data) => data.type === "weapon"
+  },
+  {
+    id: "properties",
+    label: "Properties",
+    type: "tags",
+    description: "e.g., Finesse, Light, Thrown",
+    placeholder: "Property hinzuf\xFCgen...",
+    config: {
+      suggestions: [
+        "Finesse",
+        "Light",
+        "Heavy",
+        "Reach",
+        "Thrown",
+        "Two-Handed",
+        "Versatile",
+        "Loading",
+        "Ammunition"
+      ]
+    },
+    visibleIf: (data) => data.type === "weapon",
+    default: []
+  },
+  {
+    id: "mastery",
+    label: "Mastery",
+    type: "text",
+    description: "e.g., 'Sap', 'Vex'",
+    placeholder: "Sap",
+    visibleIf: (data) => data.type === "weapon"
   }
-  return issues;
-}
-
-// src/workmodes/library/create/equipment/modal.ts
-var CreateEquipmentModal = class extends CreateModal {
-  constructor(app, presetNameOrData, options) {
-    super(app, presetNameOrData, {
-      title: "Create New Equipment",
-      defaultName: "New Equipment",
-      validate: collectEquipmentValidationIssues,
-      submitButtonText: "Create Equipment",
-      pipeline: options.pipeline,
-      onSubmit: options.onSubmit
-    });
-    this.containerEl = null;
+];
+var armorFields = [
+  {
+    id: "armor_category",
+    label: "Category",
+    type: "select",
+    options: [
+      { value: "", label: "(none)" },
+      ...ARMOR_CATEGORIES.map((c) => ({ value: c, label: c }))
+    ],
+    visibleIf: (data) => data.type === "armor"
+  },
+  {
+    id: "ac",
+    label: "Armor Class (AC)",
+    type: "text",
+    description: "e.g., '11 + Dex modifier', '18'",
+    placeholder: "11 + Dex modifier",
+    visibleIf: (data) => data.type === "armor"
+  },
+  {
+    id: "strength_requirement",
+    label: "Strength Requirement",
+    type: "text",
+    description: "e.g., 'Str 13'",
+    placeholder: "Str 13",
+    visibleIf: (data) => data.type === "armor"
+  },
+  {
+    id: "stealth_disadvantage",
+    label: "Stealth Disadvantage",
+    type: "toggle",
+    visibleIf: (data) => data.type === "armor",
+    default: false
+  },
+  {
+    id: "don_time",
+    label: "Don Time",
+    type: "text",
+    description: "e.g., '1 Minute'",
+    placeholder: "1 Minute",
+    visibleIf: (data) => data.type === "armor"
+  },
+  {
+    id: "doff_time",
+    label: "Doff Time",
+    type: "text",
+    description: "e.g., '1 Minute'",
+    placeholder: "1 Minute",
+    visibleIf: (data) => data.type === "armor"
   }
-  createDefault(name) {
-    return { name, type: "weapon" };
+];
+var toolFields = [
+  {
+    id: "tool_category",
+    label: "Category",
+    type: "select",
+    options: [
+      { value: "", label: "(none)" },
+      ...TOOL_CATEGORIES.map((c) => ({ value: c, label: c }))
+    ],
+    visibleIf: (data) => data.type === "tool"
+  },
+  {
+    id: "ability",
+    label: "Ability",
+    type: "text",
+    description: "e.g., 'Intelligence', 'Dexterity'",
+    placeholder: "Intelligence",
+    visibleIf: (data) => data.type === "tool"
+  },
+  {
+    id: "utilize",
+    label: "Utilize",
+    type: "tags",
+    description: "Available utilize actions",
+    placeholder: "Action hinzuf\xFCgen...",
+    visibleIf: (data) => data.type === "tool",
+    default: []
+  },
+  {
+    id: "craft",
+    label: "Craft",
+    type: "tags",
+    description: "Craftable items",
+    placeholder: "Item hinzuf\xFCgen...",
+    config: {
+      suggestions: [
+        "Acid",
+        "Alchemist's Fire",
+        "Oil",
+        "Perfume",
+        "Soap"
+      ]
+    },
+    visibleIf: (data) => data.type === "tool",
+    default: []
+  },
+  {
+    id: "variants",
+    label: "Variants",
+    type: "tags",
+    description: "Available variants",
+    placeholder: "Variant hinzuf\xFCgen...",
+    visibleIf: (data) => data.type === "tool",
+    default: []
   }
-  onOpen() {
-    super.onOpen();
-    this.containerEl = this.contentEl;
+];
+var gearFields = [
+  {
+    id: "gear_category",
+    label: "Category",
+    type: "text",
+    description: "e.g., 'Container', 'Light Source'",
+    placeholder: "Container",
+    visibleIf: (data) => data.type === "gear"
+  },
+  {
+    id: "capacity",
+    label: "Capacity",
+    type: "text",
+    description: "For containers",
+    placeholder: "30 cubic feet / 300 lb.",
+    visibleIf: (data) => data.type === "gear"
+  },
+  {
+    id: "duration",
+    label: "Duration",
+    type: "text",
+    description: "For consumables",
+    placeholder: "1 hour",
+    visibleIf: (data) => data.type === "gear"
+  },
+  {
+    id: "special_use",
+    label: "Special Use",
+    type: "textarea",
+    description: "Special usage rules",
+    placeholder: "When you take the Attack action...",
+    visibleIf: (data) => data.type === "gear"
   }
-  buildFields(contentEl) {
-    contentEl.createEl("h4", { text: "Basic Information" });
-    new import_obsidian35.Setting(contentEl).setName("Name").addText((t) => {
-      t.setPlaceholder("Longsword").setValue(this.data.name).onChange((v) => this.data.name = v.trim());
-      t.inputEl.style.width = "28ch";
-    });
-    new import_obsidian35.Setting(contentEl).setName("Type").addDropdown((dd) => {
-      const types = ["weapon", "armor", "tool", "gear"];
-      for (const type of types) {
-        dd.addOption(type, type.charAt(0).toUpperCase() + type.slice(1));
+];
+var descriptionFields2 = [
+  {
+    id: "description",
+    label: "Description",
+    type: "textarea",
+    placeholder: "Equipment description..."
+  }
+];
+var equipmentSpec = {
+  kind: "equipment",
+  title: "Equipment erstellen",
+  subtitle: "Neue Ausr\xFCstung f\xFCr deine Kampagne",
+  schema: equipmentSchema,
+  fields: [
+    ...basicInfoFields4,
+    ...weaponFields,
+    ...armorFields,
+    ...toolFields,
+    ...gearFields,
+    ...descriptionFields2
+  ],
+  storage: {
+    format: "md-frontmatter",
+    pathTemplate: "SaltMarcher/Equipment/{name}.md",
+    filenameFrom: "name",
+    directory: "SaltMarcher/Equipment",
+    frontmatter: [
+      "name",
+      "type",
+      "cost",
+      "weight",
+      // Weapon fields
+      "weapon_category",
+      "weapon_type",
+      "damage",
+      "properties",
+      "mastery",
+      // Armor fields
+      "armor_category",
+      "ac",
+      "strength_requirement",
+      "stealth_disadvantage",
+      "don_time",
+      "doff_time",
+      // Tool fields
+      "tool_category",
+      "ability",
+      "utilize",
+      "craft",
+      "variants",
+      // Gear fields
+      "gear_category",
+      "capacity",
+      "duration",
+      "special_use"
+    ]
+  },
+  ui: {
+    submitLabel: "Equipment erstellen",
+    cancelLabel: "Abbrechen",
+    enableNavigation: true,
+    sections: [
+      {
+        id: "basic",
+        label: "Grunddaten",
+        description: "Name, Typ, Kosten und Gewicht",
+        fieldIds: ["name", "type", "cost", "weight"]
+      },
+      {
+        id: "weapon",
+        label: "Waffeneigenschaften",
+        description: "Kategorie, Schaden und Eigenschaften",
+        fieldIds: ["weapon_category", "weapon_type", "damage", "properties", "mastery"]
+      },
+      {
+        id: "armor",
+        label: "R\xFCstungseigenschaften",
+        description: "Kategorie, AC und Anforderungen",
+        fieldIds: ["armor_category", "ac", "strength_requirement", "stealth_disadvantage", "don_time", "doff_time"]
+      },
+      {
+        id: "tool",
+        label: "Werkzeugeigenschaften",
+        description: "Kategorie, F\xE4higkeit und Verwendungen",
+        fieldIds: ["tool_category", "ability", "utilize", "craft", "variants"]
+      },
+      {
+        id: "gear",
+        label: "Ausr\xFCstungseigenschaften",
+        description: "Kategorie, Kapazit\xE4t und spezielle Verwendung",
+        fieldIds: ["gear_category", "capacity", "duration", "special_use"]
+      },
+      {
+        id: "description",
+        label: "Beschreibung",
+        description: "Allgemeine Beschreibung",
+        fieldIds: ["description"]
       }
-      dd.setValue(this.data.type);
-      dd.onChange((v) => {
-        this.data.type = v;
-        this.rebuildTypeSpecificFields();
-      });
-      try {
-        enhanceSelectToSearch(dd.selectEl, "Search\u2026");
-      } catch {
-      }
-    });
-    new import_obsidian35.Setting(contentEl).setName("Cost").setDesc("e.g., '15 GP', '2 SP'").addText((t) => {
-      t.setPlaceholder("15 GP").setValue(this.data.cost || "").onChange((v) => this.data.cost = v.trim() || void 0);
-      t.inputEl.style.width = "12ch";
-    });
-    new import_obsidian35.Setting(contentEl).setName("Weight").setDesc("e.g., '3 lb.', '\u2014'").addText((t) => {
-      t.setPlaceholder("3 lb.").setValue(this.data.weight || "").onChange((v) => this.data.weight = v.trim() || void 0);
-      t.inputEl.style.width = "12ch";
-    });
-    const typeFieldsContainer = contentEl.createDiv({ cls: "sm-cc-type-fields" });
-    this.buildTypeSpecificFields(typeFieldsContainer);
-    contentEl.createEl("h4", { text: "Description" });
-    this.addTextArea(
-      contentEl,
-      "Description",
-      "Equipment description...",
-      (v) => this.data.description = v.trim() || void 0,
-      this.data.description
-    );
-  }
-  rebuildTypeSpecificFields() {
-    if (!this.containerEl) return;
-    const typeFieldsContainer = this.containerEl.querySelector(".sm-cc-type-fields");
-    if (typeFieldsContainer) {
-      typeFieldsContainer.empty();
-      this.buildTypeSpecificFields(typeFieldsContainer);
-    }
-  }
-  buildTypeSpecificFields(container) {
-    container.empty();
-    if (this.data.type === "weapon") {
-      this.buildWeaponFields(container);
-    } else if (this.data.type === "armor") {
-      this.buildArmorFields(container);
-    } else if (this.data.type === "tool") {
-      this.buildToolFields(container);
-    } else if (this.data.type === "gear") {
-      this.buildGearFields(container);
-    }
-  }
-  buildWeaponFields(container) {
-    container.createEl("h4", { text: "Weapon Properties" });
-    new import_obsidian35.Setting(container).setName("Category").addDropdown((dd) => {
-      const categories = ["", "Simple", "Martial"];
-      for (const cat of categories) dd.addOption(cat, cat || "(none)");
-      dd.setValue(this.data.weapon_category || "");
-      dd.onChange((v) => this.data.weapon_category = v || void 0);
-      try {
-        enhanceSelectToSearch(dd.selectEl, "Search\u2026");
-      } catch {
-      }
-    });
-    new import_obsidian35.Setting(container).setName("Weapon Type").addDropdown((dd) => {
-      const types = ["", "Melee", "Ranged"];
-      for (const type of types) dd.addOption(type, type || "(none)");
-      dd.setValue(this.data.weapon_type || "");
-      dd.onChange((v) => this.data.weapon_type = v || void 0);
-      try {
-        enhanceSelectToSearch(dd.selectEl, "Search\u2026");
-      } catch {
-      }
-    });
-    new import_obsidian35.Setting(container).setName("Damage").setDesc("e.g., '1d8 Slashing'").addText((t) => {
-      t.setPlaceholder("1d8 Slashing").setValue(this.data.damage || "").onChange((v) => this.data.damage = v.trim() || void 0);
-      t.inputEl.style.width = "18ch";
-    });
-    new import_obsidian35.Setting(container).setName("Properties").setDesc("Comma-separated: Finesse, Light, etc.").addText((t) => {
-      const propsStr = this.data.properties?.join(", ") || "";
-      t.setPlaceholder("Finesse, Light").setValue(propsStr).onChange((v) => {
-        if (v.trim()) {
-          this.data.properties = v.split(",").map((p) => p.trim()).filter(Boolean);
-        } else {
-          this.data.properties = void 0;
-        }
-      });
-      t.inputEl.style.width = "34ch";
-    });
-    new import_obsidian35.Setting(container).setName("Mastery").setDesc("e.g., 'Sap', 'Vex'").addText((t) => {
-      t.setPlaceholder("Sap").setValue(this.data.mastery || "").onChange((v) => this.data.mastery = v.trim() || void 0);
-      t.inputEl.style.width = "12ch";
-    });
-  }
-  buildArmorFields(container) {
-    container.createEl("h4", { text: "Armor Properties" });
-    new import_obsidian35.Setting(container).setName("Category").addDropdown((dd) => {
-      const categories = ["", "Light", "Medium", "Heavy", "Shield"];
-      for (const cat of categories) dd.addOption(cat, cat || "(none)");
-      dd.setValue(this.data.armor_category || "");
-      dd.onChange((v) => this.data.armor_category = v || void 0);
-      try {
-        enhanceSelectToSearch(dd.selectEl, "Search\u2026");
-      } catch {
-      }
-    });
-    new import_obsidian35.Setting(container).setName("Armor Class (AC)").setDesc("e.g., '11 + Dex modifier', '18'").addText((t) => {
-      t.setPlaceholder("11 + Dex modifier").setValue(this.data.ac || "").onChange((v) => this.data.ac = v.trim() || void 0);
-      t.inputEl.style.width = "22ch";
-    });
-    new import_obsidian35.Setting(container).setName("Strength Requirement").setDesc("e.g., 'Str 13'").addText((t) => {
-      t.setPlaceholder("Str 13").setValue(this.data.strength_requirement || "").onChange((v) => this.data.strength_requirement = v.trim() || void 0);
-      t.inputEl.style.width = "12ch";
-    });
-    new import_obsidian35.Setting(container).setName("Stealth Disadvantage").addToggle((t) => {
-      t.setValue(!!this.data.stealth_disadvantage);
-      t.onChange((v) => this.data.stealth_disadvantage = v || void 0);
-    });
-    new import_obsidian35.Setting(container).setName("Don Time").setDesc("e.g., '1 Minute'").addText((t) => {
-      t.setPlaceholder("1 Minute").setValue(this.data.don_time || "").onChange((v) => this.data.don_time = v.trim() || void 0);
-      t.inputEl.style.width = "18ch";
-    });
-    new import_obsidian35.Setting(container).setName("Doff Time").setDesc("e.g., '1 Minute'").addText((t) => {
-      t.setPlaceholder("1 Minute").setValue(this.data.doff_time || "").onChange((v) => this.data.doff_time = v.trim() || void 0);
-      t.inputEl.style.width = "18ch";
-    });
-  }
-  buildToolFields(container) {
-    container.createEl("h4", { text: "Tool Properties" });
-    new import_obsidian35.Setting(container).setName("Category").addDropdown((dd) => {
-      const categories = ["", "Artisan", "Gaming", "Musical", "Other"];
-      for (const cat of categories) dd.addOption(cat, cat || "(none)");
-      dd.setValue(this.data.tool_category || "");
-      dd.onChange((v) => this.data.tool_category = v || void 0);
-      try {
-        enhanceSelectToSearch(dd.selectEl, "Search\u2026");
-      } catch {
-      }
-    });
-    new import_obsidian35.Setting(container).setName("Ability").setDesc("e.g., 'Intelligence', 'Dexterity'").addText((t) => {
-      t.setPlaceholder("Intelligence").setValue(this.data.ability || "").onChange((v) => this.data.ability = v.trim() || void 0);
-      t.inputEl.style.width = "18ch";
-    });
-    new import_obsidian35.Setting(container).setName("Utilize").setDesc("Comma-separated actions").addTextArea((ta) => {
-      const utilizeStr = this.data.utilize?.join(", ") || "";
-      ta.setPlaceholder("Identify a substance (DC 15), Start a fire (DC 15)").setValue(utilizeStr).onChange((v) => {
-        if (v.trim()) {
-          this.data.utilize = v.split(",").map((u) => u.trim()).filter(Boolean);
-        } else {
-          this.data.utilize = void 0;
-        }
-      });
-      ta.inputEl.rows = 2;
-      ta.inputEl.style.width = "100%";
-    });
-    new import_obsidian35.Setting(container).setName("Craft").setDesc("Comma-separated craftable items").addTextArea((ta) => {
-      const craftStr = this.data.craft?.join(", ") || "";
-      ta.setPlaceholder("Acid, Alchemist's Fire, Oil").setValue(craftStr).onChange((v) => {
-        if (v.trim()) {
-          this.data.craft = v.split(",").map((c) => c.trim()).filter(Boolean);
-        } else {
-          this.data.craft = void 0;
-        }
-      });
-      ta.inputEl.rows = 2;
-      ta.inputEl.style.width = "100%";
-    });
-    new import_obsidian35.Setting(container).setName("Variants").setDesc("Comma-separated variants").addTextArea((ta) => {
-      const variantsStr = this.data.variants?.join(", ") || "";
-      ta.setPlaceholder("Dice (1 SP), Playing cards (5 SP)").setValue(variantsStr).onChange((v) => {
-        if (v.trim()) {
-          this.data.variants = v.split(",").map((va) => va.trim()).filter(Boolean);
-        } else {
-          this.data.variants = void 0;
-        }
-      });
-      ta.inputEl.rows = 2;
-      ta.inputEl.style.width = "100%";
-    });
-  }
-  buildGearFields(container) {
-    container.createEl("h4", { text: "Adventuring Gear Properties" });
-    new import_obsidian35.Setting(container).setName("Category").setDesc("e.g., 'Container', 'Light Source'").addText((t) => {
-      t.setPlaceholder("Container").setValue(this.data.gear_category || "").onChange((v) => this.data.gear_category = v.trim() || void 0);
-      t.inputEl.style.width = "18ch";
-    });
-    new import_obsidian35.Setting(container).setName("Capacity").setDesc("For containers").addText((t) => {
-      t.setPlaceholder("30 cubic feet / 300 lb.").setValue(this.data.capacity || "").onChange((v) => this.data.capacity = v.trim() || void 0);
-      t.inputEl.style.width = "22ch";
-    });
-    new import_obsidian35.Setting(container).setName("Duration").setDesc("For consumables").addText((t) => {
-      t.setPlaceholder("1 hour").setValue(this.data.duration || "").onChange((v) => this.data.duration = v.trim() || void 0);
-      t.inputEl.style.width = "12ch";
-    });
-    new import_obsidian35.Setting(container).setName("Special Use").setDesc("Special usage rules").addTextArea((ta) => {
-      ta.setPlaceholder("When you take the Attack action...").setValue(this.data.special_use || "").onChange((v) => this.data.special_use = v.trim() || void 0);
-      ta.inputEl.rows = 3;
-      ta.inputEl.style.width = "100%";
-    });
+    ]
   }
 };
 
@@ -49110,18 +49475,14 @@ var spellsActions = [
       const { app } = context;
       try {
         const spellData = await loadSpellFile(app, entry.file);
-        new CreateSpellModal(app, spellData, {
-          pipeline: {
-            serialize: (draft) => spellToMarkdown(draft),
-            persist: async (content) => {
-              await app.vault.modify(entry.file, content);
-              return entry.file;
-            },
-            onComplete: async () => {
-              await context.reloadEntries();
-            }
-          }
-        }).open();
+        const result = await openCreateModal(spellSpec, {
+          app,
+          preset: spellData
+        });
+        if (result) {
+          await context.reloadEntries();
+          await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
+        }
       } catch (err) {
         console.error("Failed to load spell for editing", err);
       }
@@ -49150,19 +49511,14 @@ var itemsActions = [
       const { app } = context;
       try {
         const itemData = await loadItemFile(app, entry.file);
-        new CreateItemModal(app, itemData, {
-          pipeline: {
-            serialize: (draft) => itemToMarkdown(draft),
-            persist: async (content) => {
-              await app.vault.modify(entry.file, content);
-              return entry.file;
-            },
-            onComplete: async () => {
-              await context.reloadEntries();
-              await app.workspace.openLinkText(entry.file.path, entry.file.path, true, { state: { mode: "source" } });
-            }
-          }
-        }).open();
+        const result = await openCreateModal(itemSpec, {
+          app,
+          preset: itemData
+        });
+        if (result) {
+          await context.reloadEntries();
+          await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
+        }
       } catch (err) {
         console.error("Failed to edit item", err);
       }
@@ -49191,19 +49547,14 @@ var equipmentActions = [
       const { app } = context;
       try {
         const equipmentData = await loadEquipmentFile(app, entry.file);
-        new CreateEquipmentModal(app, equipmentData, {
-          pipeline: {
-            serialize: (draft) => equipmentToMarkdown(draft),
-            persist: async (content) => {
-              await app.vault.modify(entry.file, content);
-              return entry.file;
-            },
-            onComplete: async () => {
-              await context.reloadEntries();
-              await app.workspace.openLinkText(entry.file.path, entry.file.path, true, { state: { mode: "source" } });
-            }
-          }
-        }).open();
+        const result = await openCreateModal(equipmentSpec, {
+          app,
+          preset: equipmentData
+        });
+        if (result) {
+          await context.reloadEntries();
+          await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
+        }
       } catch (err) {
         console.error("Failed to edit equipment", err);
       }
@@ -49246,18 +49597,14 @@ var LIBRARY_VIEW_CONFIGS = {
         if (ritualFilter === "true") preset.ritual = true;
         if (ritualFilter === "false") preset.ritual = false;
       }
-      new CreateSpellModal(app, preset, {
-        pipeline: {
-          serialize: (draft) => draft,
-          persist: async (payload) => createSpellFile(app, payload),
-          onComplete: async (file) => {
-            await context.reloadEntries();
-            if (file) {
-              await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
-            }
-          }
-        }
-      }).open();
+      const result = await openCreateModal(spellSpec, {
+        app,
+        preset
+      });
+      if (result) {
+        await context.reloadEntries();
+        await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
+      }
     }
   },
   items: {
@@ -49265,18 +49612,14 @@ var LIBRARY_VIEW_CONFIGS = {
     actions: itemsActions,
     handleCreate: async (context, name) => {
       const { app } = context;
-      new CreateItemModal(app, name, {
-        pipeline: {
-          serialize: (draft) => draft,
-          persist: async (payload) => createItemFile(app, payload),
-          onComplete: async (file) => {
-            await context.reloadEntries();
-            if (file) {
-              await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
-            }
-          }
-        }
-      }).open();
+      const result = await openCreateModal(itemSpec, {
+        app,
+        preset: name
+      });
+      if (result) {
+        await context.reloadEntries();
+        await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
+      }
     }
   },
   equipment: {
@@ -49284,18 +49627,14 @@ var LIBRARY_VIEW_CONFIGS = {
     actions: equipmentActions,
     handleCreate: async (context, name) => {
       const { app } = context;
-      new CreateEquipmentModal(app, name, {
-        pipeline: {
-          serialize: (draft) => draft,
-          persist: async (payload) => createEquipmentFile(app, payload),
-          onComplete: async (file) => {
-            await context.reloadEntries();
-            if (file) {
-              await app.workspace.openLinkText(file.path, file.path, true, { state: { mode: "source" } });
-            }
-          }
-        }
-      }).open();
+      const result = await openCreateModal(equipmentSpec, {
+        app,
+        preset: name
+      });
+      if (result) {
+        await context.reloadEntries();
+        await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
+      }
     }
   }
 };
@@ -49479,22 +49818,23 @@ init_item_files();
 init_equipment_files();
 init_terrain_repository();
 init_region_repository();
+init_entity_registry();
 var SOURCE_MAP = Object.freeze({
   creatures: {
     ensure: ensureCreatureDir,
-    description: `${CREATURES_DIR}/`
+    description: `${ENTITY_REGISTRY.creatures.directory}/`
   },
   spells: {
     ensure: ensureSpellDir,
-    description: `${SPELLS_DIR}/`
+    description: `${ENTITY_REGISTRY.spells.directory}/`
   },
   items: {
     ensure: ensureItemDir,
-    description: `${ITEMS_DIR}/`
+    description: `${ENTITY_REGISTRY.items.directory}/`
   },
   equipment: {
     ensure: ensureEquipmentDir,
-    description: `${EQUIPMENT_DIR}/`
+    description: `${ENTITY_REGISTRY.equipment.directory}/`
   },
   terrains: {
     ensure: ensureTerrainFile,
@@ -49538,7 +49878,7 @@ var LIBRARY_COPY = {
 };
 var VIEW_LIBRARY = "salt-library";
 var LIBRARY_VIEW_SOURCES = ["creatures", "spells", "items", "equipment"];
-var LibraryView = class extends import_obsidian37.ItemView {
+var LibraryView = class extends import_obsidian34.ItemView {
   constructor() {
     super(...arguments);
     this.mode = "creatures";
@@ -49670,7 +50010,7 @@ async function openLibrary(app) {
 }
 
 // src/workmodes/atlas/view.ts
-var import_obsidian38 = require("obsidian");
+var import_obsidian35 = require("obsidian");
 
 // src/workmodes/atlas/view/mode.ts
 var BaseModeRenderer3 = class extends BaseModeRenderer {
@@ -50241,7 +50581,7 @@ var ATLAS_COPY = {
   }
 };
 var VIEW_ATLAS = "salt-atlas";
-var AtlasView = class extends import_obsidian38.ItemView {
+var AtlasView = class extends import_obsidian35.ItemView {
   constructor() {
     super(...arguments);
     this.mode = "terrains";
@@ -50367,10 +50707,10 @@ async function openAtlas(app) {
 }
 
 // src/workmodes/almanac/index.ts
-var import_obsidian39 = require("obsidian");
+var import_obsidian36 = require("obsidian");
 var VIEW_TYPE_ALMANAC = "almanac-view";
 var VIEW_ALMANAC = VIEW_TYPE_ALMANAC;
-var AlmanacView = class extends import_obsidian39.ItemView {
+var AlmanacView = class extends import_obsidian36.ItemView {
   constructor(leaf) {
     super(leaf);
   }
@@ -50423,10 +50763,10 @@ async function openAlmanac(app) {
 }
 
 // src/workmodes/session-runner/index.ts
-var import_obsidian44 = require("obsidian");
+var import_obsidian41 = require("obsidian");
 
 // src/workmodes/session-runner/controller.ts
-var import_obsidian43 = require("obsidian");
+var import_obsidian40 = require("obsidian");
 init_options();
 init_map_list();
 var createDefaultDeps2 = (app) => ({
@@ -50515,7 +50855,7 @@ var SessionRunnerController = class {
     } catch (error) {
       console.error("[session-runner] failed to start experience", error);
       this.view?.setOverlay(EXPERIENCE_OVERLAY_MESSAGE);
-      new import_obsidian43.Notice(EXPERIENCE_NOTICE_MESSAGE);
+      new import_obsidian40.Notice(EXPERIENCE_NOTICE_MESSAGE);
     }
     if (this.mapManager) {
       await this.mapManager.setFile(initialFile);
@@ -50726,7 +51066,7 @@ function createSessionRunnerView(options) {
 // src/workmodes/session-runner/index.ts
 var VIEW_TYPE_SESSION_RUNNER = "session-runner-view";
 var VIEW_SESSION_RUNNER = VIEW_TYPE_SESSION_RUNNER;
-var SessionRunnerView = class extends import_obsidian44.ItemView {
+var SessionRunnerView = class extends import_obsidian41.ItemView {
   constructor(leaf) {
     super(leaf);
     this.hostEl = null;
@@ -53393,7 +53733,7 @@ var HEX_PLUGIN_CSS_SECTIONS = {
 var HEX_PLUGIN_CSS = Object.values(HEX_PLUGIN_CSS_SECTIONS).join("\n\n");
 
 // src/app/integration-telemetry.ts
-var import_obsidian45 = require("obsidian");
+var import_obsidian42 = require("obsidian");
 var notifiedOperations = /* @__PURE__ */ new Set();
 function reportIntegrationIssue(payload) {
   const { integrationId, operation, error, userMessage } = payload;
@@ -53402,7 +53742,7 @@ function reportIntegrationIssue(payload) {
   const dedupeKey = `${integrationId}:${operation}`;
   if (notifiedOperations.has(dedupeKey)) return;
   notifiedOperations.add(dedupeKey);
-  new import_obsidian45.Notice(userMessage);
+  new import_obsidian42.Notice(userMessage);
 }
 
 // src/app/bootstrap-services.ts
@@ -53489,7 +53829,7 @@ function createTerrainBootstrap(app, config = {}) {
 }
 
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian49.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian46.Plugin {
   async onload() {
     try {
       const { shouldImportPluginPresets: shouldImportPluginPresets2, importPluginPresets: importPluginPresets2 } = await Promise.resolve().then(() => (init_plugin_presets(), plugin_presets_exports));

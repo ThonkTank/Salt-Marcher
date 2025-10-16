@@ -2,8 +2,12 @@
 // Manages the vault directory "SaltMarcher/Equipment" for standard equipment storage
 import { App, TFile } from "obsidian";
 import { createVaultFilePipeline, sanitizeVaultFileName } from "./file-pipeline";
+import { ENTITY_REGISTRY } from "./entity-registry";
 
-export const EQUIPMENT_DIR = "SaltMarcher/Equipment";
+const entityConfig = ENTITY_REGISTRY.equipment;
+
+/** @deprecated Use ENTITY_REGISTRY.equipment.directory instead */
+export const EQUIPMENT_DIR = entityConfig.directory;
 
 /**
  * Equipment type categories
@@ -50,18 +54,20 @@ export type EquipmentData = {
     duration?: string;          // Duration for consumables
 };
 
-const EQUIPMENT_PIPELINE = createVaultFilePipeline<EquipmentData>({
-    dir: EQUIPMENT_DIR,
-    defaultBaseName: "Equipment",
+export const EQUIPMENT_PIPELINE = createVaultFilePipeline<EquipmentData>({
+    dir: entityConfig.directory,
+    defaultBaseName: entityConfig.defaultBaseName,
     getBaseName: data => data.name,
     toContent: equipmentToMarkdown,
-    sanitizeName: name => sanitizeVaultFileName(name, "Equipment"),
+    sanitizeName: name => sanitizeVaultFileName(name, entityConfig.defaultBaseName),
 });
 
+// Legacy exports for backward compatibility - prefer using EQUIPMENT_PIPELINE directly
+/** @deprecated Use EQUIPMENT_PIPELINE.ensure instead */
 export const ensureEquipmentDir = EQUIPMENT_PIPELINE.ensure;
-
+/** @deprecated Use EQUIPMENT_PIPELINE.list instead */
 export const listEquipmentFiles = EQUIPMENT_PIPELINE.list;
-
+/** @deprecated Use EQUIPMENT_PIPELINE.watch instead */
 export const watchEquipmentDir = EQUIPMENT_PIPELINE.watch;
 
 function yamlList(items?: string[]): string | undefined {

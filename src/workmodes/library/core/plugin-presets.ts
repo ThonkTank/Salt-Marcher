@@ -2,10 +2,11 @@
 // Loads preset creatures and spells from bundled presets or reference files
 
 import { App, Notice, Platform, normalizePath } from "obsidian";
-import { CREATURES_DIR, ensureCreatureDir } from "./creature-files";
-import { SPELLS_DIR, ensureSpellDir } from "./spell-files";
-import { ITEMS_DIR, ensureItemDir } from "./item-files";
-import { EQUIPMENT_DIR, ensureEquipmentDir } from "./equipment-files";
+import { ensureCreatureDir } from "./creature-files";
+import { ensureSpellDir } from "./spell-files";
+import { ensureItemDir } from "./item-files";
+import { ensureEquipmentDir } from "./equipment-files";
+import { ENTITY_REGISTRY } from "./entity-registry";
 
 // Define the preset files structure
 // This will be populated at build time with actual preset files
@@ -148,7 +149,7 @@ function isOrganizationalPresetFile(fileName: string): boolean {
  * Import preset creatures from bundled plugin files to vault
  */
 export async function importPluginPresets(app: App): Promise<void> {
-    return importPresetsForDir(app, CREATURES_DIR, "PRESET_CREATURES", "creature", ensureCreatureDir);
+    return importPresetsForDir(app, ENTITY_REGISTRY.creatures.directory, "PRESET_CREATURES", "creature", ensureCreatureDir);
 }
 
 /**
@@ -183,47 +184,47 @@ async function shouldImportPresetsForDir(
  * Check if presets should be imported (first time setup)
  */
 export async function shouldImportPluginPresets(app: App): Promise<boolean> {
-    return shouldImportPresetsForDir(app, CREATURES_DIR, ".plugin-presets-imported", "Plugin presets", ensureCreatureDir);
+    return shouldImportPresetsForDir(app, ENTITY_REGISTRY.creatures.directory, ".plugin-presets-imported", "Plugin presets", ensureCreatureDir);
 }
 
 /**
  * Import spell presets from bundled plugin files to vault
  */
 export async function importSpellPresets(app: App): Promise<void> {
-    return importPresetsForDir(app, SPELLS_DIR, "PRESET_SPELLS", "spell", ensureSpellDir);
+    return importPresetsForDir(app, ENTITY_REGISTRY.spells.directory, "PRESET_SPELLS", "spell", ensureSpellDir);
 }
 
 /**
  * Check if spell presets should be imported (first time setup)
  */
 export async function shouldImportSpellPresets(app: App): Promise<boolean> {
-    return shouldImportPresetsForDir(app, SPELLS_DIR, ".plugin-spells-imported", "Spell presets", ensureSpellDir);
+    return shouldImportPresetsForDir(app, ENTITY_REGISTRY.spells.directory, ".plugin-spells-imported", "Spell presets", ensureSpellDir);
 }
 
 /**
  * Import item presets from bundled plugin files to vault
  */
 export async function importItemPresets(app: App): Promise<void> {
-    return importPresetsForDir(app, ITEMS_DIR, "PRESET_ITEMS", "item", ensureItemDir);
+    return importPresetsForDir(app, ENTITY_REGISTRY.items.directory, "PRESET_ITEMS", "item", ensureItemDir);
 }
 
 /**
  * Check if item presets should be imported (first time setup)
  */
 export async function shouldImportItemPresets(app: App): Promise<boolean> {
-    return shouldImportPresetsForDir(app, ITEMS_DIR, ".plugin-items-imported", "Item presets", ensureItemDir);
+    return shouldImportPresetsForDir(app, ENTITY_REGISTRY.items.directory, ".plugin-items-imported", "Item presets", ensureItemDir);
 }
 
 /**
  * Import equipment presets from bundled plugin files to vault
  */
 export async function importEquipmentPresets(app: App): Promise<void> {
-    return importPresetsForDir(app, EQUIPMENT_DIR, "PRESET_EQUIPMENT", "equipment", ensureEquipmentDir);
+    return importPresetsForDir(app, ENTITY_REGISTRY.equipment.directory, "PRESET_EQUIPMENT", "equipment", ensureEquipmentDir);
 }
 
 /**
  * Check if equipment presets should be imported (first time setup)
  */
 export async function shouldImportEquipmentPresets(app: App): Promise<boolean> {
-    return shouldImportPresetsForDir(app, EQUIPMENT_DIR, ".plugin-equipment-imported", "Equipment presets", ensureEquipmentDir);
+    return shouldImportPresetsForDir(app, ENTITY_REGISTRY.equipment.directory, ".plugin-equipment-imported", "Equipment presets", ensureEquipmentDir);
 }

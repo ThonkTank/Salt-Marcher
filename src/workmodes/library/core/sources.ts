@@ -1,12 +1,14 @@
 // src/workmodes/library/core/sources.ts
 // Konsolidiert Bibliotheksquellen samt Setup- und Beschreibungs-Utilities.
 import type { App } from "obsidian";
-import { ensureCreatureDir, CREATURES_DIR } from "./creature-files";
-import { ensureSpellDir, SPELLS_DIR } from "./spell-files";
-import { ensureItemDir, ITEMS_DIR } from "./item-files";
-import { ensureEquipmentDir, EQUIPMENT_DIR } from "./equipment-files";
+import { ensureCreatureDir } from "./creature-files";
+import { ensureSpellDir } from "./spell-files";
+import { ensureItemDir } from "./item-files";
+import { ensureEquipmentDir } from "./equipment-files";
 import { ensureTerrainFile, TERRAIN_FILE } from "../../../features/maps/data/terrain-repository";
 import { ensureRegionsFile, REGIONS_FILE } from "../../../features/maps/data/region-repository";
+import { ENTITY_REGISTRY } from "./entity-registry";
+
 export type LibrarySourceId = "creatures" | "spells" | "items" | "equipment" | "terrains" | "regions";
 
 type SourceSpec = {
@@ -17,19 +19,19 @@ type SourceSpec = {
 const SOURCE_MAP: Record<LibrarySourceId, SourceSpec> = Object.freeze({
     creatures: {
         ensure: ensureCreatureDir,
-        description: `${CREATURES_DIR}/`,
+        description: `${ENTITY_REGISTRY.creatures.directory}/`,
     },
     spells: {
         ensure: ensureSpellDir,
-        description: `${SPELLS_DIR}/`,
+        description: `${ENTITY_REGISTRY.spells.directory}/`,
     },
     items: {
         ensure: ensureItemDir,
-        description: `${ITEMS_DIR}/`,
+        description: `${ENTITY_REGISTRY.items.directory}/`,
     },
     equipment: {
         ensure: ensureEquipmentDir,
-        description: `${EQUIPMENT_DIR}/`,
+        description: `${ENTITY_REGISTRY.equipment.directory}/`,
     },
     terrains: {
         ensure: ensureTerrainFile,

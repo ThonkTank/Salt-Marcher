@@ -1,6 +1,7 @@
 // src/workmodes/library/core/data-sources.ts
 // Stellt zentral konfigurierte Datenquellen für filterbare Library-Ansichten bereit.
 import type { App, TFile } from "obsidian";
+import { readFrontmatter } from "../../../features/data-manager/browse/frontmatter-utils";
 import { listCreatureFiles, watchCreatureDir } from "./creature-files";
 import { listSpellFiles, watchSpellDir } from "./spell-files";
 import { listItemFiles, watchItemDir } from "./item-files";
@@ -58,89 +59,65 @@ export type LibraryDataSourceMap = {
     [M in FilterableLibraryMode]: LibraryDataSource<M>;
 };
 
-async function readFrontmatter(app: App, file: TFile): Promise<Record<string, unknown>> {
-    const cached = app.metadataCache.getFileCache(file)?.frontmatter;
-    if (cached && typeof cached === "object") {
-        return cached as Record<string, unknown>;
-    }
-    const content = await app.vault.read(file);
-    const match = content.match(/^---\n([\s\S]*?)\n---/);
-    if (!match) return {};
-    const lines = match[1].split(/\r?\n/);
-    const data: Record<string, unknown> = {};
-    for (const line of lines) {
-        const idx = line.indexOf(":");
-        if (idx === -1) continue;
-        const rawKey = line.slice(0, idx).trim();
-        if (!rawKey) continue;
-        let rawValue = line.slice(idx + 1).trim();
-        if (!rawValue) {
-            data[rawKey] = rawValue;
-            continue;
-        }
-        if (/^".*"$/.test(rawValue)) {
-            rawValue = rawValue.slice(1, -1);
-        }
-        const num = Number(rawValue);
-        data[rawKey] = Number.isFinite(num) && rawValue === String(num)
-            ? num
-            : rawValue;
-    }
-    return data;
+/**
+ * Generic factory for creating entity loaders.
+ * Reduces boilerplate by extracting the common pattern of reading frontmatter
+ * and mapping it to entity metadata.
+ *
+ * @param extractMeta - Function that extracts entity-specific metadata from frontmatter
+ * @returns Entity loader function for use in LibraryDataSource
+ */
+function createEntryLoader<M extends FilterableLibraryMode>(
+    extractMeta: (fm: Record<string, unknown>) => LibraryEntryMetaMap[M]
+): (app: App, file: TFile) => Promise<LibraryEntry<M>> {
+    return async (app: App, file: TFile): Promise<LibraryEntry<M>> => {
+        const fm = await readFrontmatter(app, file);
+        const meta = extractMeta(fm);
+        return { file, name: file.basename, ...meta } as LibraryEntry<M>;
+    };
 }
 
-async function loadCreatureEntry(app: App, file: TFile): Promise<LibraryEntry<"creatures">> {
-    const fm = await readFrontmatter(app, file);
-    const type = typeof fm.type === "string" ? fm.type : undefined;
-    const crValue = typeof fm.cr === "string" ? fm.cr : typeof fm.cr === "number" ? String(fm.cr) : undefined;
-    return { file, name: file.basename, type, cr: crValue };
-}
+// Entity-specific metadata extractors
+const loadCreatureEntry = createEntryLoader<"creatures">(fm => ({
+    type: typeof fm.type === "string" ? fm.type : undefined,
+    cr: typeof fm.cr === "string" ? fm.cr : typeof fm.cr === "number" ? String(fm.cr) : undefined,
+}));
 
-async function loadSpellEntry(app: App, file: TFile): Promise<LibraryEntry<"spells">> {
-    const fm = await readFrontmatter(app, file);
-    const school = typeof fm.school === "string" ? fm.school : undefined;
+const loadSpellEntry = createEntryLoader<"spells">(fm => {
     const rawLevel = fm.level;
     const level = typeof rawLevel === "number"
         ? rawLevel
         : typeof rawLevel === "string"
             ? Number(rawLevel)
             : undefined;
-    const casting_time = typeof fm.casting_time === "string" ? fm.casting_time : undefined;
-    const duration = typeof fm.duration === "string" ? fm.duration : undefined;
-    const concentration = typeof fm.concentration === "boolean" ? fm.concentration : undefined;
-    const ritual = typeof fm.ritual === "boolean" ? fm.ritual : undefined;
-    const description = typeof fm.description === "string" ? fm.description : undefined;
     return {
-        file,
-        name: file.basename,
-        school,
+        school: typeof fm.school === "string" ? fm.school : undefined,
         level: Number.isFinite(level) ? level : undefined,
-        casting_time,
-        duration,
-        concentration,
-        ritual,
-        description,
+        casting_time: typeof fm.casting_time === "string" ? fm.casting_time : undefined,
+        duration: typeof fm.duration === "string" ? fm.duration : undefined,
+        concentration: typeof fm.concentration === "boolean" ? fm.concentration : undefined,
+        ritual: typeof fm.ritual === "boolean" ? fm.ritual : undefined,
+        description: typeof fm.description === "string" ? fm.description : undefined,
     };
-}
+});
 
-async function loadItemEntry(app: App, file: TFile): Promise<LibraryEntry<"items">> {
-    const fm = await readFrontmatter(app, file);
-    const category = typeof fm.category === "string" ? fm.category : undefined;
-    const rarity = typeof fm.rarity === "string" ? fm.rarity : undefined;
-    return { file, name: file.basename, category, rarity };
-}
+const loadItemEntry = createEntryLoader<"items">(fm => ({
+    category: typeof fm.category === "string" ? fm.category : undefined,
+    rarity: typeof fm.rarity === "string" ? fm.rarity : undefined,
+}));
 
-async function loadEquipmentEntry(app: App, file: TFile): Promise<LibraryEntry<"equipment">> {
-    const fm = await readFrontmatter(app, file);
-    const type = typeof fm.type === "string" ? fm.type : undefined;
+const loadEquipmentEntry = createEntryLoader<"equipment">(fm => {
     const roleCandidate = [
         fm.weapon_category,
         fm.armor_category,
         fm.tool_category,
         fm.gear_category,
     ].find((value): value is string => typeof value === "string" && value.length > 0);
-    return { file, name: file.basename, type, role: roleCandidate };
-}
+    return {
+        type: typeof fm.type === "string" ? fm.type : undefined,
+        role: roleCandidate,
+    };
+});
 
 export const LIBRARY_DATA_SOURCES: LibraryDataSourceMap = {
     creatures: {

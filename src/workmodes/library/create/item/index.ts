@@ -1,2 +1,3 @@
 // src/workmodes/library/create/item/index.ts
-export { CreateItemModal } from "./modal";
+export { itemSpec } from "./item-spec";
+export * from "./validation";

@@ -2,12 +2,9 @@
 // Generiert Index-Dateien für besseren Graph View
 
 import { App, TFile, TFolder } from "obsidian";
+import { ENTITY_REGISTRY } from "./entity-registry";
 
 const SALTMARCHER_DIR = "SaltMarcher";
-const CREATURES_DIR = "SaltMarcher/Creatures";
-const EQUIPMENT_DIR = "SaltMarcher/Equipment";
-const SPELLS_DIR = "SaltMarcher/Spells";
-const ITEMS_DIR = "SaltMarcher/Items";
 
 /**
  * Erstellt oder aktualisiert eine Index-Datei mit Links zu allen Einträgen
@@ -98,7 +95,7 @@ export async function generateCreaturesIndex(app: App): Promise<void> {
         `${SALTMARCHER_DIR}/Creatures.md`,
         "Creatures",
         "Index of all creatures in the library.",
-        CREATURES_DIR
+        ENTITY_REGISTRY.creatures.directory
     );
 }
 
@@ -111,7 +108,7 @@ export async function generateEquipmentIndex(app: App): Promise<void> {
         `${SALTMARCHER_DIR}/Equipment.md`,
         "Equipment",
         "Index of all equipment in the library.",
-        EQUIPMENT_DIR
+        ENTITY_REGISTRY.equipment.directory
     );
 }
 
@@ -124,7 +121,7 @@ export async function generateSpellsIndex(app: App): Promise<void> {
         `${SALTMARCHER_DIR}/Spells.md`,
         "Spells",
         "Index of all spells in the library.",
-        SPELLS_DIR
+        ENTITY_REGISTRY.spells.directory
     );
 }
 
@@ -137,7 +134,7 @@ export async function generateItemsIndex(app: App): Promise<void> {
         `${SALTMARCHER_DIR}/Items.md`,
         "Items",
         "Index of all magic items in the library.",
-        ITEMS_DIR
+        ENTITY_REGISTRY.items.directory
     );
 }
 

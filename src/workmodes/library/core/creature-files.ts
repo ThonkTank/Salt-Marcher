@@ -3,8 +3,12 @@
 // Wird aus Feature-Ordnern re-exportiert, bis die Core-Dienste konsolidiert sind.
 import { App, TFile } from "obsidian";
 import { createVaultFilePipeline, sanitizeVaultFileName } from "./file-pipeline";
+import { ENTITY_REGISTRY } from "./entity-registry";
 
-export const CREATURES_DIR = "SaltMarcher/Creatures";
+const entityConfig = ENTITY_REGISTRY.creatures;
+
+/** @deprecated Use ENTITY_REGISTRY.creatures.directory instead */
+export const CREATURES_DIR = entityConfig.directory;
 
 /**
  * Normalised creature data used for persistence and Markdown export.
@@ -160,22 +164,24 @@ export type StatblockData = {
     spellcasting?: SpellcastingData;
 };
 
-const CREATURE_PIPELINE = createVaultFilePipeline<StatblockData>({
-    dir: CREATURES_DIR,
-    defaultBaseName: "Creature",
+export const CREATURE_PIPELINE = createVaultFilePipeline<StatblockData>({
+    dir: entityConfig.directory,
+    defaultBaseName: entityConfig.defaultBaseName,
     getBaseName: data => data.name,
     toContent: statblockToMarkdown,
-    sanitizeName: name => sanitizeVaultFileName(name, "Creature"),
+    sanitizeName: name => sanitizeVaultFileName(name, entityConfig.defaultBaseName),
 });
-
-export const ensureCreatureDir = CREATURE_PIPELINE.ensure;
 
 export function sanitizeFileName(name: string): string {
     return sanitizeVaultFileName(name, "Creature");
 }
 
+// Legacy exports for backward compatibility - prefer using CREATURE_PIPELINE directly
+/** @deprecated Use CREATURE_PIPELINE.ensure instead */
+export const ensureCreatureDir = CREATURE_PIPELINE.ensure;
+/** @deprecated Use CREATURE_PIPELINE.list instead */
 export const listCreatureFiles = CREATURE_PIPELINE.list;
-
+/** @deprecated Use CREATURE_PIPELINE.watch instead */
 export const watchCreatureDir = CREATURE_PIPELINE.watch;
 
 function yamlList(items?: string[]): string | undefined { if (!items || items.length === 0) return undefined; const safe = items.map(s => `"${(s ?? "").replace(/"/g, '\\"')}"`).join(", "); return `[${safe}]`; }
