@@ -2,7 +2,7 @@
 // Ensures the render surface selector reports capabilities and preferences correctly.
 
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { selectRenderSurface } from "../../src/core/hex-mapper/render/surface";
+import { selectRenderSurface } from "../../src/features/maps/hex-mapper/render/surface";
 
 type GetContext = typeof HTMLCanvasElement.prototype.getContext;
 

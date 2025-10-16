@@ -1,29 +1,30 @@
-// tests/apps/almanac/cartographer-sync.test.ts
+// tests/workmodes/almanac/cartographer-sync.test.ts
 // Prüft die Synchronisation zwischen Almanac-State-Machine und dem Cartographer-Hook-Gateway.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { InMemoryStateGateway } from "../../../src/apps/almanac/data/in-memory-gateway";
+import { InMemoryStateGateway } from "../../../src/workmodes/almanac/data/calendar-state-gateway";
 import {
-    InMemoryCalendarRepository,
-    InMemoryEventRepository,
-    InMemoryPhenomenonRepository,
-} from "../../../src/apps/almanac/data/in-memory-repository";
-import { createSingleEvent } from "../../../src/apps/almanac/domain/calendar-event";
+  AlmanacMemoryBackend,
+  InMemoryCalendarRepository,
+  InMemoryEventRepository,
+  InMemoryPhenomenonRepository,
+} from "../../../src/workmodes/almanac/data/repositories";
 import {
     createDayTimestamp,
     createHourTimestamp,
+    createSingleEvent,
     type CalendarTimestamp,
-} from "../../../src/apps/almanac/domain/calendar-timestamp";
-import { AlmanacStateMachine } from "../../../src/apps/almanac/mode/state-machine";
-import { CartographerHookGateway } from "../../../src/apps/almanac/mode/cartographer-gateway";
+} from "../../../src/workmodes/almanac/domain";
+import { AlmanacStateMachine } from "../../../src/workmodes/almanac/mode/state-machine";
+import { CartographerHookGateway } from "../../../src/workmodes/almanac/mode/cartographer-gateway";
 import {
     registerCartographerBridge,
     resetCartographerBridge,
-} from "../../../src/apps/almanac/mode/cartographer-bridge";
+} from "../../../src/workmodes/almanac/mode/cartographer-bridge";
 import {
     gregorianSchema,
     GREGORIAN_CALENDAR_ID,
-} from "../../../src/apps/almanac/fixtures/gregorian.fixture";
+} from "../../../src/workmodes/almanac/fixtures/gregorian.fixture";
 
 const flushGateway = async (instance: unknown): Promise<void> => {
     if (
@@ -36,6 +37,7 @@ const flushGateway = async (instance: unknown): Promise<void> => {
 };
 
 describe("Cartographer sync gateway", () => {
+    let backend: AlmanacMemoryBackend;
     let calendarRepo: InMemoryCalendarRepository;
     let eventRepo: InMemoryEventRepository;
     let phenomenonRepo: InMemoryPhenomenonRepository;
@@ -54,10 +56,10 @@ describe("Cartographer sync gateway", () => {
 
     beforeEach(async () => {
         cartographerGateway = new CartographerHookGateway();
-        calendarRepo = new InMemoryCalendarRepository();
-        eventRepo = new InMemoryEventRepository();
-        eventRepo.bindCalendarRepository(calendarRepo);
-        phenomenonRepo = new InMemoryPhenomenonRepository();
+        backend = new AlmanacMemoryBackend();
+        calendarRepo = new InMemoryCalendarRepository(backend);
+        eventRepo = new InMemoryEventRepository(backend);
+        phenomenonRepo = new InMemoryPhenomenonRepository(backend);
         gateway = new InMemoryStateGateway(calendarRepo, eventRepo, phenomenonRepo, cartographerGateway);
 
         calendarRepo.seed([gregorianSchema]);
@@ -135,10 +137,10 @@ describe("Cartographer sync gateway", () => {
             throw new Error("cartographer offline");
         });
 
-        const altCalendarRepo = new InMemoryCalendarRepository();
-        const altEventRepo = new InMemoryEventRepository();
-        altEventRepo.bindCalendarRepository(altCalendarRepo);
-        const altPhenomenonRepo = new InMemoryPhenomenonRepository();
+        const altBackend = new AlmanacMemoryBackend();
+        const altCalendarRepo = new InMemoryCalendarRepository(altBackend);
+        const altEventRepo = new InMemoryEventRepository(altBackend);
+        const altPhenomenonRepo = new InMemoryPhenomenonRepository(altBackend);
         const altGateway = new InMemoryStateGateway(
             altCalendarRepo,
             altEventRepo,

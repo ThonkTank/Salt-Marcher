@@ -1,4 +1,4 @@
-// src/apps/library/core/reference-parser.ts
+// src/workmodes/library/core/reference-parser.ts
 function parseReferenceStatblock(markdown) {
   const lines = markdown.split("\n").map((line) => line.trim());
   const data = { name: "" };

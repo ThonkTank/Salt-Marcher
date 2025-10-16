@@ -2,10 +2,10 @@
 // Prüft den Library-Vertragstest-Harness auf Port-Parität, Persistenz und Debounce-Verhalten.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TFile } from "obsidian";
-import { loadCreaturePreset } from "../../src/apps/library/core/creature-presets";
-import { findSpellPresets, getSpellLevels, loadSpellPreset } from "../../src/apps/library/core/spell-presets";
-import { loadItemFile } from "../../src/apps/library/core/item-files";
-import { loadEquipmentFile } from "../../src/apps/library/core/equipment-files";
+import { loadCreaturePreset } from "../../src/workmodes/library/core/creature-presets";
+import { findSpellPresets, getSpellLevels, loadSpellPreset } from "../../src/workmodes/library/core/spell-presets";
+import { loadItemFile } from "../../src/workmodes/library/core/item-files";
+import { loadEquipmentFile } from "../../src/workmodes/library/core/equipment-files";
 import {
     createLibraryHarness,
     type LibraryAdapterKind,

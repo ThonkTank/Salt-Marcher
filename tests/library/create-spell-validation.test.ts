@@ -1,12 +1,12 @@
 // salt-marcher/tests/library/create-spell-validation.test.ts
 // Prüft die Validierungsregeln für skalierende Zauberstufen im Spell-Editor.
 import { describe, expect, it } from "vitest";
-import type { SpellData } from "../../src/apps/library/core/spell-files";
+import type { SpellData } from "../../src/workmodes/library/core/spell-files";
 import {
   SCALING_DISALLOWS_CANTRIPS_MESSAGE,
   SCALING_REQUIRES_LEVEL_MESSAGE,
   collectSpellScalingIssues,
-} from "../../src/apps/library/create/spell/validation";
+} from "../../src/workmodes/library/create/spell/validation";
 
 describe("collectSpellScalingIssues", () => {
   it("meldet fehlende Gradangaben bei gepflegtem Skalierungstext", () => {

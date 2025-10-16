@@ -2,9 +2,9 @@
 // Überprüft das Terrain-Watcher-Setup rund um Datei-Events und Store-Aufrufe.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App, TFile } from "obsidian";
-import * as terrainStore from "../../src/core/terrain-store";
-import { watchTerrains, TERRAIN_FILE } from "../../src/core/terrain-store";
-import * as terrain from "../../src/core/terrain";
+import * as terrainStore from "../../src/features/maps/data/terrain-repository";
+import { watchTerrains, TERRAIN_FILE } from "../../src/features/maps/data/terrain-repository";
+import * as terrain from "../../src/features/maps/domain/terrain";
 
 type Listener = (file: TFile) => void;
 

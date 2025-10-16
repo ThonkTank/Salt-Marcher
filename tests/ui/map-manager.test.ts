@@ -3,7 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { App, TFile } from "obsidian";
 import { createMapManager, MAP_MANAGER_COPY } from "../../src/ui/map-manager";
-import type { deleteMapAndTiles as DeleteMapAndTiles } from "../../src/core/map-delete";
+import type { deleteMapAndTiles as DeleteMapAndTiles } from "../../src/features/maps/data/map-repository";
 
 const notices: string[] = [];
 

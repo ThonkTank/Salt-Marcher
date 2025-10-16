@@ -1,6 +1,6 @@
 // salt-marcher/tests/contracts/library-fixtures/items.ts
 // Definiert deterministische Item-Daten mit Ownership-Angaben für Vertragstests.
-import type { ItemData } from "../../../../src/apps/library/core/item-files";
+import type { ItemData } from "../../../../src/workmodes/library/core/item-files";
 
 export interface ItemFixtureSet {
     owner: "Library" | "QA";

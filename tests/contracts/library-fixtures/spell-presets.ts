@@ -1,6 +1,6 @@
 // salt-marcher/tests/contracts/library-fixtures/spell-presets.ts
 // Definiert Spell-Preset-Datensätze inklusive Metadaten für Vertragstests.
-import type { SpellData } from "../../../../src/apps/library/core/spell-files";
+import type { SpellData } from "../../../../src/workmodes/library/core/spell-files";
 
 export interface SpellPresetFixtureSet {
     owner: "QA" | "Rules";

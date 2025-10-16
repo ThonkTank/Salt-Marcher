@@ -18,6 +18,10 @@ const cartographerMocks = vi.hoisted(() => ({
     detachCartographerLeaves: vi.fn().mockResolvedValue(undefined),
 }));
 
+const encounterMocks = vi.hoisted(() => ({
+    openEncounter: vi.fn(),
+}));
+
 const integrationTelemetry = vi.hoisted(() => ({
     reportIntegrationIssue: vi.fn(),
 }));
@@ -29,26 +33,28 @@ vi.mock("../../src/app/integration-telemetry", () => integrationTelemetry);
 const { ensureTerrainFile, loadTerrains, watchTerrains } = terrainStoreMocks;
 const { setTerrains } = terrainMocks;
 const { openCartographer, detachCartographerLeaves } = cartographerMocks;
+const { openEncounter } = encounterMocks;
 const { reportIntegrationIssue } = integrationTelemetry;
 let unwatch: ReturnType<typeof vi.fn>;
 
-vi.mock("../../src/apps/cartographer", () => ({
+vi.mock("../../src/workmodes/cartographer", () => ({
     VIEW_CARTOGRAPHER: "cartographer",
     CartographerView: class CartographerView {},
     openCartographer: cartographerMocks.openCartographer,
     detachCartographerLeaves: cartographerMocks.detachCartographerLeaves,
 }));
 
-vi.mock("../../src/apps/encounter/view", () => ({
+vi.mock("../../src/workmodes/encounter/view", () => ({
     EncounterView: class EncounterView {
         constructor(public leaf: unknown) {
             void leaf;
         }
     },
     VIEW_ENCOUNTER: "encounter",
+    openEncounter: encounterMocks.openEncounter,
 }));
 
-vi.mock("../../src/apps/library/view", () => ({
+vi.mock("../../src/workmodes/library/view", () => ({
     LibraryView: class LibraryView {
         constructor(public leaf: unknown) {
             void leaf;
@@ -67,6 +73,7 @@ describe("SaltMarcherPlugin bootstrap integration", () => {
         setTerrains.mockReset();
         openCartographer.mockReset();
         detachCartographerLeaves.mockReset();
+        openEncounter.mockReset();
         reportIntegrationIssue.mockReset();
 
         ensureTerrainFile.mockResolvedValue({} as unknown);
@@ -75,6 +82,7 @@ describe("SaltMarcherPlugin bootstrap integration", () => {
         watchTerrains.mockReturnValue(unwatch);
         openCartographer.mockResolvedValue(undefined);
         detachCartographerLeaves.mockResolvedValue(undefined);
+        openEncounter.mockResolvedValue(undefined);
     });
 
     afterEach(() => {

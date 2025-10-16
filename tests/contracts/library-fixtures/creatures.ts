@@ -1,6 +1,6 @@
 // salt-marcher/tests/contracts/library-fixtures/creatures.ts
 // Definiert deterministische Creature-Statblocks samt Ownership-Metadaten für Vertragstests.
-import type { StatblockData } from "../../../../src/apps/library/core/creature-files";
+import type { StatblockData } from "../../../../src/workmodes/library/core/creature-files";
 
 export interface CreatureFixtureSet {
     owner: "QA" | "Rules";

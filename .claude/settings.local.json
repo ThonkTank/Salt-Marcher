@@ -29,7 +29,13 @@
       "Bash(git commit:*)",
       "Bash(wc:*)",
       "Bash(sort:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(git stash push:*)",
+      "Bash(test:*)",
+      "Bash(readlink:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(tree:*)",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "ask": []

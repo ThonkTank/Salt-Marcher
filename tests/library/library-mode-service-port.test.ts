@@ -7,8 +7,8 @@ import {
     describeLibraryMode,
     listLibraryModeDescriptors,
     resolveLibraryModeKillSwitch,
-} from "../../src/apps/library/core/library-mode-service-port";
-import { LIBRARY_SOURCE_IDS, describeLibrarySource } from "../../src/apps/library/core/sources";
+} from "../../src/workmodes/library/core/library-mode-service-port";
+import { LIBRARY_SOURCE_IDS, describeLibrarySource } from "../../src/workmodes/library/core/sources";
 
 describe("library-mode-service-port", () => {
     it("stellt für jede Library-Quelle einen Descriptor bereit", () => {

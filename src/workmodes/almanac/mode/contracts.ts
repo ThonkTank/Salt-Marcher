@@ -1,0 +1,589 @@
+// src/workmodes/almanac/mode/contracts.ts
+// Shared Almanac state contracts, enums and DTO definitions.
+
+/**
+ * Almanac Workmode Contracts
+ *
+ * Centralises shared enums, state slices and DTOs used by the Almanac workmode
+ * state machine, controller and persistence gateways.
+ */
+
+import type {
+    CalendarEvent,
+    CalendarSchema,
+    CalendarTimestamp,
+    PhenomenonOccurrence,
+} from "../domain";
+
+export const ALMANAC_MODE_METADATA = {
+    dashboard: {
+        label: "Dashboard",
+        description: "Current date, quick actions and upcoming events",
+        icon: "layout-dashboard",
+    },
+    manager: {
+        label: "Manager",
+        description: "Manage calendars, zoom levels and defaults",
+        icon: "settings",
+    },
+    events: {
+        label: "Events",
+        description: "Cross-calendar phenomena overview and filters",
+        icon: "calendar-search",
+    },
+} as const satisfies Record<string, { readonly label: string; readonly description: string; readonly icon: string }>;
+
+export type AlmanacMode = keyof typeof ALMANAC_MODE_METADATA;
+
+export const ALMANAC_MODE_ORDER = Object.keys(ALMANAC_MODE_METADATA) as ReadonlyArray<AlmanacMode>;
+
+export type CalendarViewZoom = "month" | "week" | "day" | "hour";
+
+export const CALENDAR_VIEW_MODE_METADATA = {
+    month: { label: "Month", icon: "calendar-days", defaultZoom: "month" },
+    week: { label: "Week", icon: "calendar-range", defaultZoom: "week" },
+    day: { label: "Day", icon: "calendar-clock", defaultZoom: "day" },
+    upcoming: { label: "Next", icon: "list-ordered", defaultZoom: null },
+} as const satisfies Record<
+    string,
+    {
+        readonly label: string;
+        readonly icon: string;
+        readonly defaultZoom: CalendarViewZoom | null;
+    }
+>;
+
+export type CalendarViewMode = keyof typeof CALENDAR_VIEW_MODE_METADATA;
+
+export const CALENDAR_VIEW_MODE_ORDER = Object.keys(CALENDAR_VIEW_MODE_METADATA) as ReadonlyArray<CalendarViewMode>;
+
+export const EVENTS_VIEW_MODE_METADATA = {
+    timeline: { label: "Timeline" },
+    table: { label: "Table" },
+    map: { label: "Map" },
+} as const satisfies Record<string, { readonly label: string }>;
+
+export type EventsViewMode = keyof typeof EVENTS_VIEW_MODE_METADATA;
+
+export const EVENTS_VIEW_MODE_ORDER = Object.keys(EVENTS_VIEW_MODE_METADATA) as ReadonlyArray<EventsViewMode>;
+
+export type TravelCalendarMode = CalendarViewMode;
+
+export interface AlmanacStatusSummary {
+    readonly zoomLabel?: string;
+    readonly filterCount?: number;
+}
+
+export interface TravelPresenceSummary {
+    readonly isActive: boolean;
+    readonly hasPendingFollowUps: boolean;
+    readonly label: string;
+}
+
+export interface CalendarStateSlice {
+    readonly calendars: ReadonlyArray<CalendarSchema>;
+    readonly activeCalendarId: string | null;
+    readonly defaultCalendarId: string | null;
+    readonly travelDefaultCalendarId: string | null;
+    readonly currentTimestamp: CalendarTimestamp | null;
+    readonly timeDefinition?: {
+        readonly hoursPerDay: number;
+        readonly minutesPerHour: number;
+        readonly minuteStep: number;
+    };
+    readonly lastAdvanceStep?: {
+        readonly amount: number;
+        readonly unit: "day" | "hour" | "minute";
+    };
+    readonly upcomingEvents: ReadonlyArray<CalendarEvent>;
+    readonly triggeredEvents: ReadonlyArray<CalendarEvent>;
+    readonly upcomingPhenomena: ReadonlyArray<PhenomenonOccurrence>;
+    readonly triggeredPhenomena: ReadonlyArray<PhenomenonOccurrence>;
+    readonly isPersisting: boolean;
+}
+
+export interface AlmanacUiStateSlice {
+    readonly mode: AlmanacMode;
+    readonly modeHistory: ReadonlyArray<AlmanacMode>;
+    readonly statusSummary?: AlmanacStatusSummary;
+    readonly drawerOpen: boolean;
+    readonly lastFiltersByMode: Partial<Record<AlmanacMode, number>>;
+    readonly isLoading: boolean;
+    readonly error?: string;
+}
+
+/**
+ * State for the persistent calendar view (upper section in split-view layout).
+ * This view is always visible and shows month/week/day/upcoming events.
+ */
+export interface CalendarViewState {
+    readonly mode: CalendarViewMode;
+    readonly anchorTimestamp: CalendarTimestamp | null;
+    readonly events: ReadonlyArray<CalendarEvent>;
+    readonly isLoading: boolean;
+    readonly error?: string;
+}
+
+export interface CalendarCreateDraft {
+    readonly id: string;
+    readonly name: string;
+    readonly description: string;
+    readonly daysPerWeek: string;
+    readonly monthCount: string;
+    readonly monthLength: string;
+    readonly hoursPerDay: string;
+    readonly minutesPerHour: string;
+    readonly minuteStep: string;
+    readonly epochYear: string;
+    readonly epochDay: string;
+}
+
+export type CalendarCreateField = keyof CalendarCreateDraft;
+
+export interface CalendarEditState {
+    readonly draft: CalendarCreateDraft;
+    readonly errors: ReadonlyArray<string>;
+    readonly warnings: ReadonlyArray<string>;
+    readonly isSaving: boolean;
+}
+
+export interface CalendarDeleteDialogState {
+    readonly calendarId: string;
+    readonly calendarName: string;
+    readonly requiresFallback: boolean;
+    readonly linkedTravelIds: ReadonlyArray<string>;
+    readonly linkedPhenomena: ReadonlyArray<string>;
+    readonly isDeleting: boolean;
+    readonly error?: string;
+}
+
+export interface CalendarConflictDialogState {
+    readonly calendarId: string;
+    readonly kind: "update" | "delete";
+    readonly message: string;
+    readonly details: ReadonlyArray<string>;
+}
+
+/**
+ * State for the Manager content tab (lower section in split-view layout).
+ * Now only handles calendar overview (list/grid), not calendar view.
+ */
+export interface ManagerUiStateSlice {
+    readonly isLoading: boolean;
+    readonly error?: string;
+    readonly selection: ReadonlyArray<string>;
+    readonly layout: "grid" | "list";
+    readonly anchorTimestamp: CalendarTimestamp | null;
+    readonly agendaItems: ReadonlyArray<CalendarEvent>;
+    readonly jumpPreview: ReadonlyArray<CalendarEvent>;
+    readonly createDraft: CalendarCreateDraft;
+    readonly createErrors: ReadonlyArray<string>;
+    readonly isCreating: boolean;
+    readonly editStateById: Readonly<Record<string, CalendarEditState>>;
+    readonly deleteDialog: CalendarDeleteDialogState | null;
+    readonly conflictDialog: CalendarConflictDialogState | null;
+}
+
+export interface EventsUiStateSlice {
+    readonly viewMode: EventsViewMode;
+    readonly isLoading: boolean;
+    readonly filterCount: number;
+    readonly error?: string;
+    readonly filters: EventsFilterState;
+    readonly availableCategories: ReadonlyArray<string>;
+    readonly availableCalendars: ReadonlyArray<{ readonly id: string; readonly name: string }>;
+    readonly mapMarkers: ReadonlyArray<EventsMapMarker>;
+    readonly phenomena: ReadonlyArray<{
+        readonly id: string;
+        readonly title: string;
+        readonly category?: string;
+        readonly nextOccurrence?: string;
+        readonly linkedCalendars?: ReadonlyArray<string>;
+    }>;
+    readonly selectedPhenomenonId?: string | null;
+    readonly selectedPhenomenonDetail?: PhenomenonDetailView | null;
+    readonly isDetailLoading: boolean;
+    readonly isEditorOpen: boolean;
+    readonly editorDraft: PhenomenonEditorDraft | null;
+    readonly isSaving: boolean;
+    readonly editorError?: string;
+    readonly bulkSelection: ReadonlyArray<string>;
+    readonly lastExportPayload?: string;
+    readonly isImportDialogOpen: boolean;
+    readonly importError?: string;
+    readonly importSummary?: ImportSummary | null;
+    readonly isEventEditorOpen: boolean;
+    readonly eventEditorMode: EventEditorMode | null;
+    readonly eventEditorDraft: EventEditorDraft | null;
+    readonly eventEditorErrors: ReadonlyArray<string>;
+    readonly eventEditorPreview: ReadonlyArray<EventEditorPreviewItem>;
+    readonly isEventSaving: boolean;
+    readonly eventEditorError?: string;
+}
+
+export type EventEditorMode = "single" | "recurring";
+
+export interface EventEditorPreviewItem {
+    readonly id: string;
+    readonly timestamp: CalendarTimestamp;
+    readonly label: string;
+}
+
+export interface EventEditorBaseDraft {
+    readonly id: string;
+    readonly calendarId: string;
+    readonly title: string;
+    readonly category: string;
+    readonly note: string;
+    readonly allDay: boolean;
+    readonly year: string;
+    readonly monthId: string;
+    readonly day: string;
+    readonly hour: string;
+    readonly minute: string;
+    readonly durationMinutes: string;
+}
+
+export interface SingleEventEditorDraft extends EventEditorBaseDraft {
+    readonly kind: "single";
+    readonly timePrecision: "day" | "hour" | "minute";
+}
+
+export interface RecurringEventEditorDraft extends EventEditorBaseDraft {
+    readonly kind: "recurring";
+    readonly ruleType: "weekly_dayIndex" | "monthly_position" | "annual_offset";
+    readonly ruleDayIndex: string;
+    readonly ruleInterval: string;
+    readonly ruleMonthId: string;
+    readonly ruleDay: string;
+    readonly timePolicy: "all_day" | "fixed" | "offset";
+    readonly boundsEndYear: string;
+    readonly boundsEndMonthId: string;
+    readonly boundsEndDay: string;
+}
+
+export type EventEditorDraft = SingleEventEditorDraft | RecurringEventEditorDraft;
+
+export interface EventsFilterState {
+    readonly categories: ReadonlyArray<string>;
+    readonly calendarIds: ReadonlyArray<string>;
+}
+
+export interface EventsMapMarker {
+    readonly id: string;
+    readonly title: string;
+    readonly category?: string;
+    readonly nextOccurrence?: string;
+    readonly coordinates: { readonly x: number; readonly y: number };
+    readonly calendars: ReadonlyArray<{ readonly id: string; readonly name: string }>;
+}
+
+export interface PhenomenonEditorDraft {
+    readonly id: string;
+    readonly name: string;
+    readonly category: string;
+    readonly visibility: "all_calendars" | "selected";
+    readonly appliesToCalendarIds: ReadonlyArray<string>;
+    readonly notes?: string;
+}
+
+export interface PhenomenonDetailView {
+    readonly id: string;
+    readonly name: string;
+    readonly category?: string;
+    readonly notes?: string;
+    readonly linkedCalendars: ReadonlyArray<{ readonly id: string; readonly name: string }>;
+    readonly upcomingOccurrences: ReadonlyArray<{
+        readonly calendarId: string;
+        readonly calendarName: string;
+        readonly nextLabel: string;
+        readonly nextTimestamp: CalendarTimestamp;
+        readonly subsequent: ReadonlyArray<string>;
+    }>;
+}
+
+export interface TravelLeafStateSlice {
+    readonly travelId: string | null;
+    readonly visible: boolean;
+    readonly mode: TravelCalendarMode;
+    readonly currentTimestamp: CalendarTimestamp | null;
+    readonly minuteStep: number;
+    readonly lastQuickStep?: { readonly amount: number; readonly unit: "day" | "hour" | "minute" };
+    readonly isLoading: boolean;
+    readonly error?: string;
+}
+
+export interface ImportSummary {
+    readonly imported: number;
+    readonly failed: number;
+}
+
+export interface AlmanacState {
+    readonly calendarState: CalendarStateSlice;
+    readonly almanacUiState: AlmanacUiStateSlice;
+    readonly calendarViewState: CalendarViewState;
+    readonly managerUiState: ManagerUiStateSlice;
+    readonly eventsUiState: EventsUiStateSlice;
+    readonly travelLeafState: TravelLeafStateSlice;
+}
+
+export type AlmanacStateListener = (state: AlmanacState) => void;
+
+export interface AlmanacPreferencesSnapshot {
+    readonly lastMode?: AlmanacMode;
+    readonly calendarViewMode?: CalendarViewMode;
+    readonly eventsViewMode?: EventsViewMode;
+    readonly eventsFilters?: EventsFilterState;
+    readonly lastSelectedPhenomenonId?: string;
+}
+
+export interface AlmanacInitOverrides {
+    readonly travelId?: string | null;
+    readonly mode?: AlmanacMode;
+    readonly calendarViewMode?: CalendarViewMode;
+    readonly eventsView?: EventsViewMode;
+    readonly selectedPhenomenonId?: string | null;
+}
+
+export type AlmanacEvent =
+    | {
+          readonly type: "INIT_ALMANAC";
+          readonly travelId?: string | null;
+          readonly overrides?: AlmanacInitOverrides | null;
+      }
+    | { readonly type: "ALMANAC_MODE_SELECTED"; readonly mode: AlmanacMode }
+    | { readonly type: "CALENDAR_VIEW_MODE_CHANGED"; readonly mode: CalendarViewMode }
+    | { readonly type: "MANAGER_NAVIGATION_REQUESTED"; readonly direction: 'prev' | 'next' | 'today' }
+    | { readonly type: "MANAGER_CREATE_FORM_UPDATED"; readonly field: CalendarCreateField; readonly value: string }
+    | { readonly type: "TIME_JUMP_PREVIEW_REQUESTED"; readonly timestamp: CalendarTimestamp }
+    | { readonly type: "MANAGER_AGENDA_REFRESH_REQUESTED" }
+    | { readonly type: "EVENTS_VIEW_MODE_CHANGED"; readonly viewMode: EventsViewMode }
+    | { readonly type: "EVENTS_FILTER_CHANGED"; readonly filters: EventsFilterState }
+    | { readonly type: "EVENTS_PHENOMENON_SELECTED"; readonly phenomenonId: string }
+    | { readonly type: "EVENTS_PHENOMENON_DETAIL_CLOSED" }
+    | { readonly type: "EVENTS_BULK_SELECTION_UPDATED"; readonly selection: ReadonlyArray<string> }
+    | { readonly type: "PHENOMENON_EDIT_REQUESTED"; readonly phenomenonId?: string | null }
+    | { readonly type: "PHENOMENON_EDIT_CANCELLED" }
+    | { readonly type: "PHENOMENON_SAVE_REQUESTED"; readonly draft: PhenomenonEditorDraft }
+    | {
+          readonly type: "EVENT_BULK_ACTION_REQUESTED";
+          readonly action: "delete" | "export";
+          readonly ids?: ReadonlyArray<string>;
+      }
+    | { readonly type: "EVENT_EXPORT_CLEARED" }
+    | { readonly type: "EVENT_IMPORT_REQUESTED" }
+    | { readonly type: "EVENT_IMPORT_CANCELLED" }
+    | { readonly type: "EVENT_IMPORT_SUBMITTED"; readonly payload: string }
+    | {
+          readonly type: "EVENT_CREATE_REQUESTED";
+          readonly mode: EventEditorMode;
+          readonly calendarId?: string;
+          readonly timestamp?: CalendarTimestamp;
+      }
+    | { readonly type: "EVENT_EDIT_REQUESTED"; readonly eventId: string }
+    | { readonly type: "EVENT_EDITOR_UPDATED"; readonly update: Partial<EventEditorDraft> }
+    | { readonly type: "EVENT_EDITOR_CANCELLED" }
+    | { readonly type: "EVENT_EDITOR_SAVE_REQUESTED" }
+    | { readonly type: "EVENT_DELETE_REQUESTED"; readonly eventId: string }
+    | { readonly type: "MANAGER_SELECTION_CHANGED"; readonly selection: ReadonlyArray<string> }
+    | { readonly type: "CALENDAR_SELECT_REQUESTED"; readonly calendarId: string }
+    | { readonly type: "CALENDAR_DEFAULT_SET_REQUESTED"; readonly calendarId: string }
+    | { readonly type: "CALENDAR_EDIT_REQUESTED"; readonly calendarId: string }
+    | { readonly type: "CALENDAR_EDIT_CANCELLED"; readonly calendarId: string }
+    | {
+          readonly type: "CALENDAR_EDIT_FORM_UPDATED";
+          readonly calendarId: string;
+          readonly field: CalendarCreateField;
+          readonly value: string;
+      }
+    | { readonly type: "CALENDAR_UPDATE_REQUESTED"; readonly calendarId: string }
+    | { readonly type: "CALENDAR_DELETE_REQUESTED"; readonly calendarId: string }
+    | { readonly type: "CALENDAR_DELETE_CONFIRMED"; readonly calendarId: string }
+    | { readonly type: "CALENDAR_DELETE_CANCELLED" }
+    | { readonly type: "CALENDAR_CONFLICT_DISMISSED" }
+    | { readonly type: "CALENDAR_CREATE_REQUESTED" }
+    | { readonly type: "TIME_ADVANCE_REQUESTED"; readonly amount: number; readonly unit: "day" | "hour" | "minute" }
+    | { readonly type: "TIME_JUMP_REQUESTED"; readonly timestamp: CalendarTimestamp }
+    | { readonly type: "CALENDAR_DATA_REFRESH_REQUESTED" }
+    | { readonly type: "TRAVEL_LEAF_MOUNTED"; readonly travelId: string }
+    | { readonly type: "TRAVEL_MODE_CHANGED"; readonly mode: TravelCalendarMode }
+    | { readonly type: "TRAVEL_TIME_ADVANCE_REQUESTED"; readonly amount: number; readonly unit: "day" | "hour" | "minute" }
+    | { readonly type: "ERROR_OCCURRED"; readonly scope: "almanac" | "manager" | "events" | "travel"; readonly message: string };
+
+export const DEFAULT_ALMANAC_MODE: AlmanacMode = ALMANAC_MODE_ORDER[0];
+export const DEFAULT_CALENDAR_VIEW_MODE: CalendarViewMode = CALENDAR_VIEW_MODE_ORDER[0];
+export const DEFAULT_EVENTS_VIEW_MODE: EventsViewMode = EVENTS_VIEW_MODE_ORDER[0];
+export function createDefaultCalendarDraft(): CalendarCreateDraft {
+    return {
+        id: "",
+        name: "",
+        description: "",
+        daysPerWeek: "7",
+        monthCount: "12",
+        monthLength: "30",
+        hoursPerDay: "24",
+        minutesPerHour: "60",
+        minuteStep: "1",
+        epochYear: "1",
+        epochDay: "1",
+    };
+}
+
+export function createEmptySingleEventDraft(
+    calendarId: string,
+    reference?: { readonly year: number; readonly monthId: string; readonly day: number },
+): SingleEventEditorDraft {
+    return {
+        kind: "single",
+        id: "",
+        calendarId,
+        title: "",
+        category: "",
+        note: "",
+        allDay: true,
+        year: reference ? String(reference.year) : "",
+        monthId: reference ? reference.monthId : "",
+        day: reference ? String(reference.day) : "",
+        hour: "0",
+        minute: "0",
+        durationMinutes: "",
+        timePrecision: "day",
+    };
+}
+
+export function createEmptyRecurringEventDraft(
+    calendarId: string,
+    reference?: { readonly year: number; readonly monthId: string; readonly day: number },
+): RecurringEventEditorDraft {
+    return {
+        kind: "recurring",
+        id: "",
+        calendarId,
+        title: "",
+        category: "",
+        note: "",
+        allDay: true,
+        year: reference ? String(reference.year) : "",
+        monthId: reference ? reference.monthId : "",
+        day: reference ? String(reference.day) : "",
+        hour: "0",
+        minute: "0",
+        durationMinutes: "",
+        ruleType: "weekly_dayIndex",
+        ruleDayIndex: "0",
+        ruleInterval: "1",
+        ruleMonthId: reference ? reference.monthId : "",
+        ruleDay: reference ? String(reference.day) : "1",
+        timePolicy: "all_day",
+        boundsEndYear: "",
+        boundsEndMonthId: "",
+        boundsEndDay: "",
+    };
+}
+
+export function createCalendarDraftFromSchema(schema: CalendarSchema): CalendarCreateDraft {
+    const firstMonthLength = schema.months[0]?.length ?? 30;
+    return {
+        id: schema.id,
+        name: schema.name,
+        description: schema.description ?? "",
+        daysPerWeek: String(schema.daysPerWeek),
+        monthCount: String(schema.months.length),
+        monthLength: String(firstMonthLength),
+        hoursPerDay: String(schema.hoursPerDay ?? 24),
+        minutesPerHour: String(schema.minutesPerHour ?? 60),
+        minuteStep: String(schema.minuteStep ?? 1),
+        epochYear: String(schema.epoch.year),
+        epochDay: String(schema.epoch.day),
+    };
+}
+
+export function createInitialAlmanacState(): AlmanacState {
+    return {
+        calendarState: {
+            calendars: [],
+            activeCalendarId: null,
+            defaultCalendarId: null,
+            travelDefaultCalendarId: null,
+            currentTimestamp: null,
+            timeDefinition: undefined,
+            lastAdvanceStep: undefined,
+            upcomingEvents: [],
+            triggeredEvents: [],
+            upcomingPhenomena: [],
+            triggeredPhenomena: [],
+            isPersisting: false,
+        },
+        almanacUiState: {
+            mode: DEFAULT_ALMANAC_MODE,
+            modeHistory: [DEFAULT_ALMANAC_MODE],
+            statusSummary: undefined,
+            drawerOpen: false,
+            lastFiltersByMode: {},
+            isLoading: false,
+            error: undefined,
+        },
+        calendarViewState: {
+            mode: DEFAULT_CALENDAR_VIEW_MODE,
+            anchorTimestamp: null,
+            events: [],
+            isLoading: false,
+            error: undefined,
+        },
+        managerUiState: {
+            isLoading: false,
+            error: undefined,
+            selection: [],
+            layout: 'grid',
+            anchorTimestamp: null,
+            agendaItems: [],
+            jumpPreview: [],
+            createDraft: createDefaultCalendarDraft(),
+            createErrors: [],
+            isCreating: false,
+            editStateById: {},
+            deleteDialog: null,
+            conflictDialog: null,
+        },
+        eventsUiState: {
+            viewMode: DEFAULT_EVENTS_VIEW_MODE,
+            isLoading: false,
+            filterCount: 0,
+            error: undefined,
+            filters: { categories: [], calendarIds: [] },
+            availableCategories: [],
+            availableCalendars: [],
+            mapMarkers: [],
+            phenomena: [],
+            selectedPhenomenonId: null,
+            selectedPhenomenonDetail: null,
+            isDetailLoading: false,
+            isEditorOpen: false,
+            editorDraft: null,
+            isSaving: false,
+            editorError: undefined,
+            bulkSelection: [],
+            lastExportPayload: undefined,
+            isImportDialogOpen: false,
+            importError: undefined,
+            importSummary: null,
+            isEventEditorOpen: false,
+            eventEditorMode: null,
+            eventEditorDraft: null,
+            eventEditorErrors: [],
+            eventEditorPreview: [],
+            isEventSaving: false,
+            eventEditorError: undefined,
+        },
+        travelLeafState: {
+            travelId: null,
+            visible: false,
+            mode: "upcoming",
+            currentTimestamp: null,
+            minuteStep: 1,
+            lastQuickStep: undefined,
+            isLoading: false,
+            error: undefined,
+        },
+    };
+}

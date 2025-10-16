@@ -1,22 +1,23 @@
-// tests/apps/almanac/state-machine.events.test.ts
+// tests/workmodes/almanac/state-machine.events.test.ts
 // Validates that Almanac event filters and selections persist across refreshes.
 
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
-    InMemoryCalendarRepository,
-    InMemoryEventRepository,
-    InMemoryPhenomenonRepository,
-} from "../../../src/apps/almanac/data/in-memory-repository";
-import { InMemoryStateGateway } from "../../../src/apps/almanac/data/in-memory-gateway";
-import { AlmanacStateMachine } from "../../../src/apps/almanac/mode/state-machine";
+  AlmanacMemoryBackend,
+  InMemoryCalendarRepository,
+  InMemoryEventRepository,
+  InMemoryPhenomenonRepository,
+} from "../../../src/workmodes/almanac/data/repositories";
+import { InMemoryStateGateway } from "../../../src/workmodes/almanac/data/calendar-state-gateway";
+import { AlmanacStateMachine } from "../../../src/workmodes/almanac/mode/state-machine";
 import {
     createSampleEvents,
     getDefaultCurrentTimestamp,
     gregorianSchema,
-} from "../../../src/apps/almanac/fixtures/gregorian.fixture";
-import { createDayTimestamp } from "../../../src/apps/almanac/domain/calendar-timestamp";
-import { createSamplePhenomena } from "../../../src/apps/almanac/fixtures/phenomena.fixture";
+} from "../../../src/workmodes/almanac/fixtures/gregorian.fixture";
+import { createDayTimestamp } from "../../../src/workmodes/almanac/domain";
+import { createSamplePhenomena } from "../../../src/workmodes/almanac/fixtures/phenomena.fixture";
 
 const flushGateway = async (instance: unknown): Promise<void> => {
     if (
@@ -29,6 +30,7 @@ const flushGateway = async (instance: unknown): Promise<void> => {
 };
 
 describe("AlmanacStateMachine events refresh", () => {
+    let backend: AlmanacMemoryBackend;
     let calendarRepo: InMemoryCalendarRepository;
     let eventRepo: InMemoryEventRepository;
     let phenomenonRepo: InMemoryPhenomenonRepository;
@@ -36,10 +38,10 @@ describe("AlmanacStateMachine events refresh", () => {
     let stateMachine: AlmanacStateMachine;
 
     beforeEach(async () => {
-        calendarRepo = new InMemoryCalendarRepository();
-        eventRepo = new InMemoryEventRepository();
-        eventRepo.bindCalendarRepository(calendarRepo);
-        phenomenonRepo = new InMemoryPhenomenonRepository();
+        backend = new AlmanacMemoryBackend();
+        calendarRepo = new InMemoryCalendarRepository(backend);
+        eventRepo = new InMemoryEventRepository(backend);
+        phenomenonRepo = new InMemoryPhenomenonRepository(backend);
         gateway = new InMemoryStateGateway(calendarRepo, eventRepo, phenomenonRepo);
 
         calendarRepo.seed([gregorianSchema]);

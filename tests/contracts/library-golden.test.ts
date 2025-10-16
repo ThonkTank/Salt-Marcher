@@ -4,7 +4,7 @@ import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { createLibraryHarness, type LibraryHarness } from "./library-harness";
-import { spellPresetToMarkdown } from "../../src/apps/library/core/spell-presets";
+import { spellPresetToMarkdown } from "../../src/workmodes/library/core/spell-presets";
 
 const GOLDEN_ROOT = path.resolve(process.cwd(), "tests/golden/library");
 

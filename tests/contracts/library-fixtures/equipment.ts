@@ -1,6 +1,6 @@
 // salt-marcher/tests/contracts/library-fixtures/equipment.ts
 // Liefert deterministische Ausrüstungseinträge inklusive Ownership-Angaben.
-import type { EquipmentData } from "../../../../src/apps/library/core/equipment-files";
+import type { EquipmentData } from "../../../../src/workmodes/library/core/equipment-files";
 
 export interface EquipmentFixtureSet {
     owner: "Systems" | "QA";

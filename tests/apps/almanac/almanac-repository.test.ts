@@ -1,13 +1,15 @@
-// salt-marcher/tests/apps/almanac/almanac-repository.test.ts
+// salt-marcher/tests/workmodes/almanac/almanac-repository.test.ts
 // Exercises VaultAlmanacRepository filter, pagination and link update logic.
 
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { TAbstractFile, TFile } from "obsidian";
-import { VaultAlmanacRepository } from "../../../src/apps/almanac/data/vault-almanac-repository";
-import { VaultCalendarRepository } from "../../../src/apps/almanac/data/vault-calendar-repository";
-import type { VaultLike } from "../../../src/apps/almanac/data/json-store";
-import { gregorianSchema } from "../../../src/apps/almanac/fixtures/gregorian.fixture";
+import {
+    VaultAlmanacRepository,
+    VaultCalendarRepository,
+} from "../../../src/workmodes/almanac/data/repositories";
+import type { VaultLike } from "../../../src/workmodes/almanac/data/json-store";
+import { gregorianSchema } from "../../../src/workmodes/almanac/fixtures/gregorian.fixture";
 
 class MemoryFile extends TFile {
     data = "";
@@ -68,7 +70,7 @@ describe("VaultAlmanacRepository", () => {
         vault = new MemoryVault();
         calendarRepo = new VaultCalendarRepository(vault);
         await calendarRepo.createCalendar({ ...gregorianSchema, isDefaultGlobal: true });
-        repository = new VaultAlmanacRepository(calendarRepo, vault);
+        repository = new VaultAlmanacRepository(calendarRepo, calendarRepo);
 
         const simplePhenomena = [
             {

@@ -1,12 +1,12 @@
-// salt-marcher/tests/apps/almanac/calendar-repository.test.ts
+// salt-marcher/tests/workmodes/almanac/calendar-repository.test.ts
 // Validates vault-backed calendar repository persistence and default handling.
 
 import { describe, expect, it, beforeEach } from "vitest";
 
 import { TAbstractFile, TFile } from "obsidian";
-import { VaultCalendarRepository } from "../../../src/apps/almanac/data/vault-calendar-repository";
-import type { VaultLike } from "../../../src/apps/almanac/data/json-store";
-import { gregorianSchema } from "../../../src/apps/almanac/fixtures/gregorian.fixture";
+import { VaultCalendarRepository } from "../../../src/workmodes/almanac/data/repositories";
+import type { VaultLike } from "../../../src/workmodes/almanac/data/json-store";
+import { gregorianSchema } from "../../../src/workmodes/almanac/fixtures/gregorian.fixture";
 
 class MemoryFile extends TFile {
     data = "";

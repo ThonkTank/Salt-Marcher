@@ -1,22 +1,24 @@
-// tests/apps/almanac/default-resolver.test.ts
+// tests/workmodes/almanac/default-resolver.test.ts
 // Verifies default calendar resolution across global and travel contexts.
 
 /**
  * @file Default Calendar Resolver Tests
  * @description Tests for default calendar management and resolution logic
- * @module tests/apps/almanac
+ * @module tests/workmodes/almanac
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { CalendarSchema } from '../../../src/apps/almanac/domain/calendar-schema';
+import type { CalendarSchema } from '../../../src/workmodes/almanac/domain';
 import {
+  AlmanacMemoryBackend,
   InMemoryCalendarRepository,
   InMemoryEventRepository,
   InMemoryPhenomenonRepository,
-} from '../../../src/apps/almanac/data/in-memory-repository';
-import { InMemoryStateGateway } from '../../../src/apps/almanac/data/in-memory-gateway';
+} from '../../../src/workmodes/almanac/data/repositories';
+import { InMemoryStateGateway } from '../../../src/workmodes/almanac/data/calendar-state-gateway';
 
 describe('Default Calendar Resolver', () => {
+  let backend: AlmanacMemoryBackend;
   let calendarRepo: InMemoryCalendarRepository;
   let eventRepo: InMemoryEventRepository;
   let gateway: InMemoryStateGateway;
@@ -59,10 +61,10 @@ describe('Default Calendar Resolver', () => {
   };
 
   beforeEach(() => {
-    calendarRepo = new InMemoryCalendarRepository();
-    eventRepo = new InMemoryEventRepository();
-    eventRepo.bindCalendarRepository(calendarRepo);
-    phenomenonRepo = new InMemoryPhenomenonRepository();
+    backend = new AlmanacMemoryBackend();
+    calendarRepo = new InMemoryCalendarRepository(backend);
+    eventRepo = new InMemoryEventRepository(backend);
+    phenomenonRepo = new InMemoryPhenomenonRepository(backend);
     gateway = new InMemoryStateGateway(calendarRepo, eventRepo, phenomenonRepo);
   });
 

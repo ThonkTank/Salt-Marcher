@@ -2,9 +2,9 @@
 // Validiert die gemeinsame Filter- und Watcher-Logik der Library-Renderer.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { App, TFile } from "obsidian";
-import { CreaturesRenderer } from "../../src/apps/library/view/creatures";
-import { LibrarySourceWatcherHub } from "../../src/apps/library/view/mode";
-import { LIBRARY_DATA_SOURCES, type LibraryEntry } from "../../src/apps/library/core/data-sources";
+import { CreaturesRenderer } from "../../src/workmodes/library/view/creatures";
+import { LibrarySourceWatcherHub } from "../../src/workmodes/library/view/mode";
+import { LIBRARY_DATA_SOURCES, type LibraryEntry } from "../../src/workmodes/library/core/data-sources";
 
 const ensureObsidianDomHelpers = () => {
     const proto = HTMLElement.prototype as any;

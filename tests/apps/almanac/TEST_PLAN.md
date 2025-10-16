@@ -2,6 +2,9 @@
 Dieser Testplan leitet sich aus den Spezifikationen unter `src/apps/almanac` ab. Er adressiert Domain-, Persistenz-, UI- und Integrationsszenarien inklusive Travel-Leaf und Default-Handling.
 
 ## 1. Ziele
+
+> **Hinweis:** Das interaktive Almanac-Frontend wurde entfernt. UI-bezogene Ziele dienen nur noch als Historie und werden aktuell nicht getestet.
+
 - Sicherstellen, dass Mehrkalenderschemata, Default-Logik und Zoom-Ansichten korrekt funktionieren.
 - Verifizieren, dass Sub-Tages-Zeitschritte (Stunden/Minuten) normalisiert, persistiert und in UI/Travel synchron angezeigt werden.
 - Prüfen, dass Almanac-Modus & Events-Hub (Phänomene, Kategorien, Filter) konsistent mit Kalenderdaten laufen und Hooks korrekt dispatchen.
@@ -15,7 +18,7 @@ Dieser Testplan leitet sich aus den Spezifikationen unter `src/apps/almanac` ab.
 | Persistence/Repository | Laden/Speichern von Kalendern, Defaults, Travel-Prefs | `CalendarRepository`, `AlmanacRepository`, `CalendarStateGateway` |
 | Integration | Presenter + Mock-Gateways (Workmode, Manager, Travel) | [STATE_MACHINE.md](../../../src/apps/almanac/mode/STATE_MACHINE.md) |
 | UI/Presenter | Komponenten-Interaktionen, Fokus, Shortcuts | [UX_SPEC.md](../../../src/apps/almanac/mode/UX_SPEC.md), [COMPONENTS.md](../../../src/apps/almanac/mode/COMPONENTS.md) |
-| Regression | Cartographer-Reise mit Hooks, Default-Wechsel während Reise | `apps/cartographer/travel` |
+| Regression | Session-Runner-Reise mit Hooks, Default-Wechsel während Reise | `apps/session-runner/travel` |
 
 ### 2.1 Layer-/Modus-Coverage
 | Ebene | Fokus | Primäre Tests | Fixtures |

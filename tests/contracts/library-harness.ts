@@ -2,42 +2,42 @@
 // Bietet einen konfigurierbaren Vertragstest-Harness für Library-Ports inklusive Legacy/v2-Adapterumschaltung.
 import * as Obsidian from "obsidian";
 import { App, TAbstractFile, TFile, TFolder, getFrontMatterInfo, normalizePath } from "obsidian";
-import { scoreName, type Mode as LibraryRendererMode } from "../../src/apps/library/view/mode";
+import { scoreName, type Mode as LibraryRendererMode } from "../../src/workmodes/library/view/mode";
 import {
     createCreatureFile,
     listCreatureFiles,
     statblockToMarkdown,
     type StatblockData,
-} from "../../src/apps/library/core/creature-files";
+} from "../../src/workmodes/library/core/creature-files";
 import {
     createItemFile,
     listItemFiles,
     itemToMarkdown,
     type ItemData,
-} from "../../src/apps/library/core/item-files";
+} from "../../src/workmodes/library/core/item-files";
 import {
     createEquipmentFile,
     listEquipmentFiles,
     equipmentToMarkdown,
     type EquipmentData,
-} from "../../src/apps/library/core/equipment-files";
+} from "../../src/workmodes/library/core/equipment-files";
 import {
     createSpellPresetFile,
     listSpellPresetFiles,
-} from "../../src/apps/library/core/spell-presets";
-import type { SpellData } from "../../src/apps/library/core/spell-files";
+} from "../../src/workmodes/library/core/spell-presets";
+import type { SpellData } from "../../src/workmodes/library/core/spell-files";
 import {
     ensureTerrainFile,
     loadTerrains,
     saveTerrains,
     stringifyTerrainBlock,
-} from "../../src/core/terrain-store";
+} from "../../src/features/maps/data/terrain-repository";
 import {
     ensureRegionsFile,
     loadRegions,
     saveRegions,
     type Region,
-} from "../../src/core/regions-store";
+} from "../../src/features/maps/data/region-repository";
 import type { LibraryFixtureSet } from "./library-fixtures";
 import { libraryFixtures as defaultFixtures } from "./library-fixtures";
 

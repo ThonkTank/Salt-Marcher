@@ -1,8 +1,8 @@
 // src/app/main.ts
 import { Plugin } from "obsidian";
 // Legacy views removed (consolidated into Library)
-import { detachCartographerLeaves } from "../apps/cartographer";
-import { VIEW_MANIFEST } from "../apps/view-manifest";
+import { detachCartographerLeaves } from "../workmodes/cartographer";
+import { VIEW_MANIFEST } from "../workmodes/view-manifest";
 import { HEX_PLUGIN_CSS } from "./css";
 import { reportIntegrationIssue, type IntegrationId, type IntegrationOperation } from "./integration-telemetry";
 import { createTerrainBootstrap, type TerrainBootstrapHandle } from "./bootstrap-services";
@@ -13,7 +13,7 @@ export default class SaltMarcherPlugin extends Plugin {
     async onload() {
         // Import preset creatures from plugin on first load
         try {
-            const { shouldImportPluginPresets, importPluginPresets } = await import('../apps/library/core/plugin-presets');
+            const { shouldImportPluginPresets, importPluginPresets } = await import('../workmodes/library/core/plugin-presets');
             if (await shouldImportPluginPresets(this.app)) {
                 await importPluginPresets(this.app);
             }
@@ -23,7 +23,7 @@ export default class SaltMarcherPlugin extends Plugin {
 
         // Import spell presets from reference file on first load
         try {
-            const { shouldImportSpellPresets, importSpellPresets } = await import('../apps/library/core/plugin-presets');
+            const { shouldImportSpellPresets, importSpellPresets } = await import('../workmodes/library/core/plugin-presets');
             if (await shouldImportSpellPresets(this.app)) {
                 await importSpellPresets(this.app);
             }
@@ -33,7 +33,7 @@ export default class SaltMarcherPlugin extends Plugin {
 
         // Import item presets from plugin on first load
         try {
-            const { shouldImportItemPresets, importItemPresets } = await import('../apps/library/core/plugin-presets');
+            const { shouldImportItemPresets, importItemPresets } = await import('../workmodes/library/core/plugin-presets');
             if (await shouldImportItemPresets(this.app)) {
                 await importItemPresets(this.app);
             }
@@ -43,7 +43,7 @@ export default class SaltMarcherPlugin extends Plugin {
 
         // Import equipment presets from plugin on first load
         try {
-            const { shouldImportEquipmentPresets, importEquipmentPresets } = await import('../apps/library/core/plugin-presets');
+            const { shouldImportEquipmentPresets, importEquipmentPresets } = await import('../workmodes/library/core/plugin-presets');
             if (await shouldImportEquipmentPresets(this.app)) {
                 await importEquipmentPresets(this.app);
             }
@@ -53,7 +53,7 @@ export default class SaltMarcherPlugin extends Plugin {
 
         // Generate library index files
         try {
-            const { generateAllIndexes } = await import('../apps/library/core/index-files');
+            const { generateAllIndexes } = await import('../workmodes/library/core/index-files');
             await generateAllIndexes(this.app);
         } catch (err) {
             console.error("Failed to generate library indexes:", err);
@@ -67,7 +67,7 @@ export default class SaltMarcherPlugin extends Plugin {
                 generateSpellsIndex,
                 generateItemsIndex,
                 generateLibraryHub
-            } = await import('../apps/library/core/index-files');
+            } = await import('../workmodes/library/core/index-files');
 
             // Helper to debounce index updates
             const createDebouncedIndexUpdater = (updateFn: () => Promise<void>, delay: number = 1000) => {
@@ -204,7 +204,7 @@ export default class SaltMarcherPlugin extends Plugin {
             id: 'convert-reference-statblocks',
             name: 'Convert Reference Statblocks to Presets',
             callback: async () => {
-                const { convertSpecificFiles } = await import('../apps/library/tools/convert-references');
+                const { convertSpecificFiles } = await import('../workmodes/library/tools/convert-references');
 
                 // Teste mit Ape und Aboleth zuerst
                 const testFiles = [

@@ -3,7 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App, TFile } from "obsidian";
 import * as Obsidian from "obsidian";
-import { listTilesForMap, loadTile } from "../../src/core/hex-mapper/hex-notes";
+import { listTilesForMap, loadTile } from "../../src/features/maps/hex-mapper/hex-notes";
 
 type FileEntry = {
     file: TFile;

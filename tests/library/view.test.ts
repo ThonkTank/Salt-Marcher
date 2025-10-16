@@ -1,8 +1,8 @@
 // salt-marcher/tests/library/view.test.ts
 // Prüft den Library-View auf Initialisierung, Kopien und Moduswechsel.
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Mode } from "../../src/apps/library/view/mode";
-import { LIBRARY_COPY, LibraryView } from "../../src/apps/library/view";
+import type { Mode } from "../../src/workmodes/library/view/mode";
+import { LIBRARY_COPY, LibraryView } from "../../src/workmodes/library/view";
 import { App, WorkspaceLeaf } from "obsidian";
 
 const SOURCE_LABELS: Record<Mode, string> = {
@@ -14,7 +14,7 @@ const SOURCE_LABELS: Record<Mode, string> = {
     regions: "SaltMarcher/Regions.md",
 };
 
-vi.mock("../../src/apps/library/core/sources", () => ({
+vi.mock("../../src/workmodes/library/core/sources", () => ({
     ensureLibrarySources: vi.fn().mockResolvedValue(undefined),
     describeLibrarySource: (mode: Mode) => SOURCE_LABELS[mode],
 }));
@@ -36,23 +36,23 @@ function createRenderer(mode: Mode) {
     };
 }
 
-vi.mock("../../src/apps/library/view/creatures", () => ({
+vi.mock("../../src/workmodes/library/view/creatures", () => ({
     CreaturesRenderer: createRenderer("creatures" as Mode),
 }));
 
-vi.mock("../../src/apps/library/view/spells", () => ({
+vi.mock("../../src/workmodes/library/view/spells", () => ({
     SpellsRenderer: createRenderer("spells" as Mode),
 }));
 
-vi.mock("../../src/apps/library/view/terrains", () => ({
+vi.mock("../../src/workmodes/library/view/terrains", () => ({
     TerrainsRenderer: createRenderer("terrains" as Mode),
 }));
 
-vi.mock("../../src/apps/library/view/equipment", () => ({
+vi.mock("../../src/workmodes/library/view/equipment", () => ({
     EquipmentRenderer: createRenderer("equipment" as Mode),
 }));
 
-vi.mock("../../src/apps/library/view/regions", () => ({
+vi.mock("../../src/workmodes/library/view/regions", () => ({
     RegionsRenderer: createRenderer("regions" as Mode),
 }));
 

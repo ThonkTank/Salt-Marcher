@@ -5,8 +5,8 @@ import {
     loadTerrains,
     watchTerrains,
     type TerrainWatcherOptions,
-} from "../core/terrain-store";
-import { setTerrains } from "../core/terrain";
+} from "../features/maps/data/terrain-repository";
+import { setTerrains } from "../features/maps/domain/terrain";
 
 export interface TerrainBootstrapLogger {
     info?(message: string, context?: Record<string, unknown>): void;

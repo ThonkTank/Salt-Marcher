@@ -1,9 +1,9 @@
-// tests/apps/almanac/state-machine.telemetry.test.ts
+// tests/workmodes/almanac/state-machine.telemetry.test.ts
 // Validates that the Almanac state machine emits telemetry for advances, jumps and failures.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../../../src/apps/almanac/telemetry", () => {
+vi.mock("../../../src/workmodes/almanac/telemetry", () => {
     const emitAlmanacEvent = vi.fn();
     const reportAlmanacGatewayIssue = vi.fn();
     return {
@@ -12,21 +12,26 @@ vi.mock("../../../src/apps/almanac/telemetry", () => {
     };
 });
 
-import { emitAlmanacEvent, reportAlmanacGatewayIssue } from "../../../src/apps/almanac/telemetry";
-import { InMemoryStateGateway } from "../../../src/apps/almanac/data/in-memory-gateway";
+import { emitAlmanacEvent, reportAlmanacGatewayIssue } from "../../../src/workmodes/almanac/telemetry";
+import { InMemoryStateGateway } from "../../../src/workmodes/almanac/data/calendar-state-gateway";
 import {
-    InMemoryCalendarRepository,
-    InMemoryEventRepository,
-    InMemoryPhenomenonRepository,
-} from "../../../src/apps/almanac/data/in-memory-repository";
-import { AlmanacStateMachine } from "../../../src/apps/almanac/mode/state-machine";
-import { gregorianSchema, getDefaultCurrentTimestamp } from "../../../src/apps/almanac/fixtures/gregorian.fixture";
-import { createSampleEvents } from "../../../src/apps/almanac/fixtures/gregorian.fixture";
-import { CalendarGatewayError } from "../../../src/apps/almanac/data/calendar-state-gateway";
-import { AlmanacRepositoryError } from "../../../src/apps/almanac/data/almanac-repository";
-import { createDayTimestamp } from "../../../src/apps/almanac/domain/calendar-timestamp";
+  AlmanacMemoryBackend,
+  InMemoryCalendarRepository,
+  InMemoryEventRepository,
+  InMemoryPhenomenonRepository,
+} from "../../../src/workmodes/almanac/data/repositories";
+import { AlmanacStateMachine } from "../../../src/workmodes/almanac/mode/state-machine";
+import { gregorianSchema, getDefaultCurrentTimestamp } from "../../../src/workmodes/almanac/fixtures/gregorian.fixture";
+import { createSampleEvents } from "../../../src/workmodes/almanac/fixtures/gregorian.fixture";
+import { CalendarGatewayError } from "../../../src/workmodes/almanac/data/calendar-state-gateway";
+import { AlmanacRepositoryError } from "../../../src/workmodes/almanac/data/repositories";
+import { createDayTimestamp } from "../../../src/workmodes/almanac/domain";
 
 class ConflictPhenomenonRepository extends InMemoryPhenomenonRepository {
+    constructor(backend: AlmanacMemoryBackend) {
+        super(backend);
+    }
+
     override async upsertPhenomenon(): Promise<never> {
         throw new AlmanacRepositoryError("phenomenon_conflict", "Duplicate calendar links", {
             duplicates: ["cal-1"],
@@ -40,12 +45,12 @@ describe("AlmanacStateMachine telemetry", () => {
     });
 
     async function createMachine(options?: { conflictingPhenomena?: boolean }) {
-        const calendarRepo = new InMemoryCalendarRepository();
-        const eventRepo = new InMemoryEventRepository();
-        eventRepo.bindCalendarRepository(calendarRepo);
+        const backend = new AlmanacMemoryBackend();
+        const calendarRepo = new InMemoryCalendarRepository(backend);
+        const eventRepo = new InMemoryEventRepository(backend);
         const phenomenonRepo = options?.conflictingPhenomena
-            ? new ConflictPhenomenonRepository()
-            : new InMemoryPhenomenonRepository();
+            ? new ConflictPhenomenonRepository(backend)
+            : new InMemoryPhenomenonRepository(backend);
         const gateway = new InMemoryStateGateway(calendarRepo, eventRepo, phenomenonRepo);
 
         calendarRepo.seed([gregorianSchema]);

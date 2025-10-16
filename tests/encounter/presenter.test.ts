@@ -1,8 +1,8 @@
 // salt-marcher/tests/encounter/presenter.test.ts
 // Testet Encounter-Presenter auf Event-Verarbeitung und Persistenz.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { EncounterPresenter, publishManualEncounter, type EncounterPersistedState } from "../../src/apps/encounter/presenter";
-import { __resetEncounterEventStore, publishEncounterEvent, type EncounterEvent } from "../../src/apps/encounter/session-store";
+import { EncounterPresenter, publishManualEncounter, type EncounterPersistedState } from "../../src/workmodes/encounter/presenter";
+import { __resetEncounterEventStore, publishEncounterEvent, type EncounterEvent } from "../../src/workmodes/encounter/session-store";
 
 const baseEvent: EncounterEvent = {
     id: "travel-1",

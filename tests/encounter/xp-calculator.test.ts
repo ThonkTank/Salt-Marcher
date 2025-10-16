@@ -1,12 +1,12 @@
 // salt-marcher/tests/encounter/xp-calculator.test.ts
 // Testet Encounter-XP-Kalkulationen und Ableitungen für Party & Regeln.
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
     EncounterPresenter,
     calculateXpToNextLevel,
     type EncounterXpPartyMemberView,
-} from "../../src/apps/encounter/presenter";
-import { __resetEncounterEventStore } from "../../src/apps/encounter/session-store";
+} from "../../src/workmodes/encounter/presenter";
+import { __resetEncounterEventStore } from "../../src/workmodes/encounter/session-store";
 
 describe("calculateXpToNextLevel", () => {
     beforeEach(() => {
@@ -69,9 +69,10 @@ describe("Encounter XP View", () => {
 
     afterEach(() => {
         presenter.dispose();
+        vi.restoreAllMocks();
     });
 
-    it("verteilt per-player-Prozentregeln anhand des XP-Betrags bis zum Levelaufstieg", () => {
+    it("verteilt Prozentregeln anhand des XP-Bedarfs bis zum Levelaufstieg gleichmäßig", () => {
         // Arrange
         presenter.addPartyMember({ id: "p1", name: "Kara", level: 5, currentXp: 7000 });
         presenter.addPartyMember({ id: "p2", name: "Lio", level: 3, currentXp: 1100 });
@@ -79,10 +80,12 @@ describe("Encounter XP View", () => {
         presenter.addRule({
             id: "r-next",
             title: "Mentor Bonus",
-            scope: "perPlayer",
             modifierType: "percentNextLevel",
             modifierValue: 10,
+            modifierValueMin: 10,
+            modifierValueMax: 10,
             enabled: true,
+            scope: "xp",
         });
 
         // Act
@@ -93,9 +96,10 @@ describe("Encounter XP View", () => {
 
         // Assert
         expect(member1.baseXp).toBeCloseTo(200, 6);
-        expect(member1.modifiersDelta).toBeCloseTo(700, 6);
-        expect(member1.totalXp).toBeCloseTo(900, 6);
-        expect(member2.modifiersDelta).toBeCloseTo(160, 6);
+        expect(member1.modifiersDelta).toBeCloseTo(430, 6);
+        expect(member1.totalXp).toBeCloseTo(630, 6);
+        expect(member2.modifiersDelta).toBeCloseTo(430, 6);
+        expect(member2.totalXp).toBeCloseTo(630, 6);
         expect(ruleView?.totalDelta).toBeCloseTo(860, 6);
         expect(view.totalEncounterXp).toBeCloseTo(1260, 6);
     });
@@ -109,18 +113,22 @@ describe("Encounter XP View", () => {
         presenter.addRule({
             id: "flat",
             title: "Loot",
-            scope: "overall",
             modifierType: "flat",
             modifierValue: 120,
+            modifierValueMin: 120,
+            modifierValueMax: 120,
             enabled: true,
+            scope: "xp",
         });
         presenter.addRule({
             id: "percent",
             title: "Morale",
-            scope: "overall",
             modifierType: "percentTotal",
             modifierValue: 10,
+            modifierValueMin: 10,
+            modifierValueMax: 10,
             enabled: true,
+            scope: "xp",
         });
 
         // Act
@@ -145,6 +153,94 @@ describe("Encounter XP View", () => {
         expect(view.totalEncounterXp).toBeCloseTo(792, 6);
     });
 
+    it("skaliert encounter-weite Flat-pro-Level-Regeln mit dem Durchschnittslevel", () => {
+        // Arrange
+        presenter.addPartyMember({ id: "p1", name: "Kara", level: 2 });
+        presenter.addPartyMember({ id: "p2", name: "Lio", level: 5 });
+        presenter.addPartyMember({ id: "p3", name: "Mira", level: 7 });
+        presenter.setEncounterXp(0);
+        presenter.addRule({
+            id: "avg-flat",
+            title: "Scaling Reward",
+            modifierType: "flatPerAverageLevel",
+            modifierValue: 10,
+            modifierValueMin: 10,
+            modifierValueMax: 10,
+            enabled: true,
+            scope: "xp",
+        });
+
+        // Act
+        const view = presenter.getState().xpView;
+        const ruleView = view.rules.find((rule) => rule.rule.id === "avg-flat");
+
+        // Assert
+        expect(view.party[0]?.modifiersDelta).toBeCloseTo(15.5555555556, 6);
+        expect(view.party[1]?.modifiersDelta).toBeCloseTo(15.5555555556, 6);
+        expect(view.party[2]?.modifiersDelta).toBeCloseTo(15.5555555556, 6);
+        expect(ruleView?.totalDelta).toBeCloseTo(46.6666666667, 6);
+        expect(view.totalEncounterXp).toBeCloseTo(46.6666666667, 6);
+    });
+
+    it("skaliert encounter-weite Flat-pro-Gesamtstufen-Regeln nach individuellem Level", () => {
+        // Arrange
+        presenter.addPartyMember({ id: "p1", name: "Kara", level: 2 });
+        presenter.addPartyMember({ id: "p2", name: "Lio", level: 5 });
+        presenter.addPartyMember({ id: "p3", name: "Mira", level: 7 });
+        presenter.setEncounterXp(0);
+        presenter.addRule({
+            id: "total-flat",
+            title: "Level Weighted Reward",
+            modifierType: "flatPerTotalLevel",
+            modifierValue: 5,
+            modifierValueMin: 5,
+            modifierValueMax: 5,
+            enabled: true,
+            scope: "xp",
+        });
+
+        // Act
+        const view = presenter.getState().xpView;
+        const ruleView = view.rules.find((rule) => rule.rule.id === "total-flat");
+
+        // Assert
+        expect(view.party[0]?.modifiersDelta).toBeCloseTo(10, 6);
+        expect(view.party[1]?.modifiersDelta).toBeCloseTo(25, 6);
+        expect(view.party[2]?.modifiersDelta).toBeCloseTo(35, 6);
+        expect(ruleView?.totalDelta).toBeCloseTo(70, 6);
+        expect(view.totalEncounterXp).toBeCloseTo(70, 6);
+    });
+
+    it("würfelt Regelwerte innerhalb der Spannengrenzen neu aus", () => {
+        // Arrange
+        presenter.addRule({
+            id: "random",
+            title: "Lucky Roll",
+            modifierType: "flat",
+            modifierValue: 5,
+            modifierValueMin: 5,
+            modifierValueMax: 5,
+            enabled: true,
+            scope: "xp",
+        });
+        const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+        // Act
+        presenter.updateRule("random", { modifierValueMin: 10, modifierValueMax: 20 });
+
+        // Assert
+        let rule = presenter.getState().xp.rules.find((entry) => entry.id === "random");
+        expect(rule?.modifierValue).toBeCloseTo(15, 6);
+
+        // Act
+        randomSpy.mockReturnValue(0.2);
+        presenter.updateRule("random", { modifierValueMin: 30, modifierValueMax: 30 });
+
+        // Assert
+        rule = presenter.getState().xp.rules.find((entry) => entry.id === "random");
+        expect(rule?.modifierValue).toBe(30);
+    });
+
     it("meldet Warnungen, wenn Prozent-auf-Level-Aufstieg-Regeln keine Schwelle finden", () => {
         // Arrange
         presenter.addPartyMember({ id: "p1", name: "Veteran", level: 20 });
@@ -152,10 +248,12 @@ describe("Encounter XP View", () => {
         presenter.addRule({
             id: "next",
             title: "Epic Bonus",
-            scope: "perPlayer",
             modifierType: "percentNextLevel",
             modifierValue: 15,
+            modifierValueMin: 15,
+            modifierValueMax: 15,
             enabled: true,
+            scope: "xp",
         });
 
         // Act
@@ -166,6 +264,31 @@ describe("Encounter XP View", () => {
         expect(ruleWarnings).toContain("Veteran has no next-level XP threshold.");
         expect(view.warnings).toContain("Veteran has no next-level XP threshold.");
         expect(view.party[0]?.modifiersDelta).toBe(0);
+    });
+
+    it("ignoriert Gold-Regeln für die XP-Berechnung", () => {
+        // Arrange
+        presenter.addPartyMember({ id: "p1", name: "Collector", level: 4 });
+        presenter.setEncounterXp(200);
+        presenter.addRule({
+            id: "gold",
+            title: "Treasure",
+            modifierType: "flat",
+            modifierValue: 150,
+            modifierValueMin: 150,
+            modifierValueMax: 150,
+            enabled: true,
+            scope: "gold",
+        });
+
+        // Act
+        const view = presenter.getState().xpView;
+        const ruleView = view.rules.find((rule) => rule.rule.id === "gold");
+
+        // Assert
+        expect(ruleView?.totalDelta).toBe(0);
+        expect(view.totalEncounterXp).toBeCloseTo(200, 6);
+        expect(view.party[0]?.totalXp).toBeCloseTo(200, 6);
     });
 
     it("warnt, wenn Encounter-XP ohne Party vergeben werden", () => {

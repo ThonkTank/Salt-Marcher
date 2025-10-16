@@ -2,22 +2,22 @@
 // Überprüft den Editor-Modus auf DOM-Aufbau und Brush-Interaktionen.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { App, TFile } from "obsidian";
-import type { CartographerModeLifecycleContext, HexCoord } from "../../../src/apps/cartographer/presenter";
-import type { RenderHandles } from "../../../src/core/hex-mapper/hex-render";
+import type { CartographerModeLifecycleContext, HexCoord } from "../../../src/workmodes/cartographer/presenter";
+import type { RenderHandles } from "../../../src/features/maps/hex-mapper/hex-render";
 
 const telemetryMocks = vi.hoisted(() => ({
     reportEditorToolIssue: vi.fn(({ stage, toolId }: { stage: string; toolId?: string }) => `issue:${stage}:${toolId ?? "unknown"}`),
 }));
 
-vi.mock("../../../src/apps/cartographer/editor/editor-telemetry", () => telemetryMocks);
+vi.mock("../../../src/workmodes/cartographer/editor/editor-telemetry", () => telemetryMocks);
 
 const loadRegions = vi.fn();
 const applyBrush = vi.fn(() => Promise.resolve());
 
-vi.mock("../../../src/apps/cartographer/editor/tools/terrain-brush/brush-core", async () => {
+vi.mock("../../../src/workmodes/cartographer/editor/tools/terrain-brush/brush-core", async () => {
     const actual = await vi.importActual<
-        typeof import("../../../src/apps/cartographer/editor/tools/terrain-brush/brush-core")
-    >("../../../src/apps/cartographer/editor/tools/terrain-brush/brush-core");
+        typeof import("../../../src/workmodes/cartographer/editor/tools/terrain-brush/brush-core")
+    >("../../../src/workmodes/cartographer/editor/tools/terrain-brush/brush-core");
     return {
         ...actual,
         applyBrush: (...args: unknown[]) => applyBrush(...args),
@@ -34,11 +34,11 @@ const attachBrushCircle = vi.fn(() => ({
     destroy: vi.fn(),
 }));
 
-vi.mock("../../../src/apps/cartographer/editor/tools/brush-circle", () => ({
+vi.mock("../../../src/workmodes/cartographer/editor/tools/brush-circle", () => ({
     attachBrushCircle: (...args: unknown[]) => attachBrushCircle(...args),
 }));
 
-import { createEditorMode } from "../../../src/apps/cartographer/modes/editor";
+import { createEditorMode } from "../../../src/workmodes/cartographer/modes/editor";
 
 beforeEach(() => {
     vi.clearAllMocks();

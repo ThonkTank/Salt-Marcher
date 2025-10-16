@@ -22,7 +22,7 @@ console.log('');
 // Build parser module
 console.log('Building reference parser...');
 try {
-    execSync('npx esbuild src/apps/library/core/reference-parser.ts --bundle --platform=node --format=esm --outfile=scripts/.tmp-parser.mjs --external:obsidian', {
+    execSync('npx esbuild src/workmodes/library/core/reference-parser.ts --bundle --platform=node --format=esm --outfile=scripts/.tmp-parser.mjs --external:obsidian', {
         cwd: PLUGIN_ROOT,
         stdio: 'inherit'
     });

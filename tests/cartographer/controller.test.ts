@@ -9,10 +9,10 @@ import {
     CartographerController,
     type CartographerMode,
     type CartographerModeLifecycleContext,
-} from "../../src/apps/cartographer/controller";
-import type { MapLayer } from "../../src/apps/cartographer/travel/ui/map-layer";
-import type { HexOptions } from "../../src/core/options";
-import type { RenderHandles } from "../../src/core/hex-mapper/hex-render";
+} from "../../src/workmodes/cartographer/controller";
+import type { MapLayer } from "../../src/workmodes/session-runner/travel/ui/map-layer";
+import type { HexOptions } from "../../src/features/maps/domain/options";
+import type { RenderHandles } from "../../src/features/maps/hex-mapper/hex-render";
 
 const createFile = (path: string): TFile => {
     const file = new TFile();

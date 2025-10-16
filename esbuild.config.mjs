@@ -1,6 +1,20 @@
 // esbuild.config.mjs
-import esbuild from "esbuild";
 import { execSync } from "child_process";
+
+let esbuild;
+try {
+    const esbuildModule = await import("esbuild");
+    esbuild = esbuildModule.default ?? esbuildModule;
+} catch (error) {
+    if (error?.code === "ERR_MODULE_NOT_FOUND") {
+        console.error(
+            "Es konnte kein 'esbuild'-Paket gefunden werden. Führe zuerst `npm install` im Plugin-Ordner aus, " +
+                "damit die Build-Abhängigkeiten bereitstehen."
+        );
+        process.exit(1);
+    }
+    throw error;
+}
 
 // Generate preset data before building
 console.log("Generating preset data...");

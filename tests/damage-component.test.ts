@@ -10,8 +10,8 @@ import {
   damageInstancesToString,
   parseDamageString,
   type DamageInstance,
-} from "../src/apps/library/create/creature/components/damage-component";
-import type { StatblockData } from "../src/apps/core/creature-files";
+} from "../src/workmodes/library/create/creature/components/damage-component";
+import type { StatblockData } from "../src/workmodes/core/creature-files";
 
 describe("Damage Component", () => {
   describe("validateDiceNotation", () => {

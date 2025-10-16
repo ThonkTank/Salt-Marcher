@@ -8,16 +8,16 @@ import { createLibraryHarness } from "./library-harness";
 import { libraryFixtures } from "./library-fixtures";
 import {
     CREATURES_DIR,
-} from "../../src/apps/library/core/creature-files";
+} from "../../src/workmodes/library/core/creature-files";
 import {
     EQUIPMENT_DIR,
-} from "../../src/apps/library/core/equipment-files";
-import { ITEMS_DIR } from "../../src/apps/library/core/item-files";
+} from "../../src/workmodes/library/core/equipment-files";
+import { ITEMS_DIR } from "../../src/workmodes/library/core/item-files";
 import {
     SPELL_PRESETS_DIR,
     spellPresetToMarkdown,
-} from "../../src/apps/library/core/spell-presets";
-import { sanitizeVaultFileName } from "../../src/apps/library/core/file-pipeline";
+} from "../../src/workmodes/library/core/spell-presets";
+import { sanitizeVaultFileName } from "../../src/workmodes/library/core/file-pipeline";
 
 type DomainKey = "creatures" | "items" | "equipment" | "spells";
 

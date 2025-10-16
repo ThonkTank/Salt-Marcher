@@ -115,7 +115,11 @@ const mapAndPreviewCss = `
 .markdown-source-view .cm-preview-code-block .hex3x3-map { pointer-events: auto; }
 .markdown-source-view .cm-preview-code-block .edit-block-button { pointer-events: none; }
 `;
-const editorLayoutsCss = `
+/**
+ * Terrain Editor CSS
+ * Simple form layout for editing terrain types
+ */
+const terrainEditorCss = `
 /* === Terrain Editor === */
 .sm-terrain-editor { padding:.5rem 0; }
 .sm-terrain-editor .desc { color: var(--text-muted); margin-bottom:.25rem; }
@@ -124,7 +128,13 @@ const editorLayoutsCss = `
 .sm-terrain-editor .row input[type="text"] { flex:1; min-width:0; }
 .sm-terrain-editor .addbar { display:flex; gap:.5rem; margin-top:.5rem; }
 .sm-terrain-editor .addbar input[type="text"] { flex:1; min-width:0; }
+`;
 
+/**
+ * Library View CSS
+ * Creature compendium, search bars, filters, and item lists
+ */
+const libraryViewCss = `
 /* Creature Compendium – nutzt die gleichen Layout-Hilfsklassen */
 .sm-creature-compendium { padding:.5rem 0; }
 .sm-creature-compendium .desc { color: var(--text-muted); margin-bottom:.25rem; }
@@ -201,7 +211,13 @@ const editorLayoutsCss = `
     box-shadow: 0 3px 10px rgba(15, 23, 42, .04);
 }
 .sm-cc-item__name { font-weight: 600; }
+`;
 
+/**
+ * Create Modal CSS
+ * Complete styling for creature/item/spell creation modal
+ */
+const createModalCss = `
 /* Creature Creator – Modal Layout */
 .modal.sm-cc-create-modal-host {
     width: min(1120px, calc(100vw - 32px));
@@ -261,7 +277,21 @@ const editorLayoutsCss = `
 .sm-cc-card__validation { display:none; padding:.6rem .95rem; border-top:1px solid color-mix(in srgb, var(--color-red, #e11d48) 30%, transparent); background:color-mix(in srgb, var(--color-red, #e11d48) 12%, var(--background-secondary)); color: var(--color-red, #e11d48); font-size:.9em; }
 .sm-cc-card__validation.is-visible { display:block; }
 .sm-cc-card__validation-list { margin:0; padding-left:1.2rem; display:flex; flex-direction:column; gap:.25rem; }
-.sm-cc-card__body { padding:.95rem; display:flex; flex-direction:column; gap:1.1rem; }
+.sm-cc-card__body {
+    padding: .95rem;
+    display: grid;
+    /* Shared grid for label alignment across all fields */
+    grid-template-columns: max-content 1fr;
+    column-gap: 0.8rem;
+    row-gap: 0.3rem;
+    align-items: start;
+}
+
+/* Multi-column layout for composite/special fields */
+.sm-cc-card__body--multi-column {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem 1.5rem;
+}
 .sm-cc-card.is-invalid { border-color: color-mix(in srgb, var(--color-red, #e11d48) 35%, transparent); box-shadow:0 0 0 1px color-mix(in srgb, var(--color-red, #e11d48) 22%, transparent) inset; }
 .sm-cc-modal-footer { margin-top:1.25rem; display:flex; justify-content:flex-end; }
 .sm-cc-modal-footer .setting-item { margin:0; padding:0; border:none; background:none; }
@@ -335,19 +365,166 @@ const editorLayoutsCss = `
 .sm-cc-field-grid--classification { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
 .sm-cc-field-grid--vitals { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 .sm-cc-field-grid--speeds { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.sm-cc-field-grid--irregular { grid-template-columns: initial; }
+.sm-cc-repeating-grid { display: grid; gap: .75rem; align-items: stretch; }
+/* Settings within card__body become part of the shared grid */
+.sm-cc-card__body > .sm-cc-setting.setting-item {
+    border: none;
+    padding: 0;
+    margin: 0;
+    background: none;
+    /* Use display: contents to make children part of parent grid */
+    display: contents;
+}
+
+/* Label - auto-placed by grid */
+.sm-cc-card__body > .sm-cc-setting .setting-item-info {
+    display: block;
+    min-width: fit-content;
+    max-width: max-content;
+    align-self: center;
+}
+
+/* Control - auto-placed by grid */
+.sm-cc-card__body > .sm-cc-setting .setting-item-control {
+    margin-left: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: .45rem;
+}
+
+/* Error messages span both columns */
+.sm-cc-card__body > .sm-cc-setting .sm-cc-field__errors {
+    grid-column: 1 / -1;
+}
+
+/* Ensure all input elements have consistent width */
+.sm-cc-card__body > .sm-cc-setting .setting-item-control select,
+.sm-cc-card__body > .sm-cc-setting .setting-item-control input:not([type="checkbox"]):not([type="radio"]),
+.sm-cc-card__body > .sm-cc-setting .setting-item-control textarea {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Fallback for settings not in card__body */
 .sm-cc-setting.setting-item {
     border: none;
     padding: 0;
     margin: 0;
     background: none;
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    column-gap: 0.8rem;
+    row-gap: 0.3rem;
+    align-items: center;
 }
-.sm-cc-setting .setting-item-info { display: none; }
+
+.sm-cc-setting .setting-item-info {
+    display: block;
+    min-width: fit-content;
+    max-width: max-content;
+}
+
+.sm-cc-setting .setting-item-control {
+    margin-left: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: .45rem;
+}
+
+.sm-cc-setting .sm-cc-field__errors {
+    grid-column: 1 / -1;
+}
+
+.sm-cc-field__errors-list {
+    margin: 0;
+    padding-left: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.sm-cc-setting--hide-label .setting-item-info { display: none; }
+
 .sm-cc-setting .setting-item-name {
     font-weight: 600;
     font-size: .88rem;
     color: var(--text-muted);
+    white-space: nowrap;
 }
-.sm-cc-setting .setting-item-control {
+
+/* Wide fields (textarea, tags, repeating, composite) span full width */
+.sm-cc-card__body > .sm-cc-setting--wide.setting-item {
+    /* Override display: contents for wide fields */
+    /* Increased specificity to (0,3,0) to override .sm-cc-setting.setting-item */
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-column: 1 / -1;
+    gap: 0.3rem;
+}
+
+.sm-cc-card__body > .sm-cc-setting--wide.setting-item .setting-item-info {
+    grid-column: 1;
+    margin-bottom: 0.3rem;
+}
+
+.sm-cc-card__body > .sm-cc-setting--wide.setting-item .setting-item-control {
+    grid-column: 1;
+    margin-left: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: .45rem;
+}
+
+/* Special layout for tags fields - horizontal with label on left */
+.sm-cc-card__body > .sm-cc-setting--tags.setting-item {
+    grid-template-columns: max-content 1fr;
+    align-items: start;
+    gap: 0.8rem;
+}
+
+.sm-cc-card__body > .sm-cc-setting--tags.setting-item .setting-item-info {
+    align-self: center;
+    margin-bottom: 0;
+}
+
+.sm-cc-card__body > .sm-cc-setting--tags.setting-item .setting-item-control {
+    grid-column: 2;
+}
+
+/* Special layout for structured-tags fields - horizontal with label on left */
+.sm-cc-card__body > .sm-cc-setting--structured-tags.setting-item {
+    grid-template-columns: max-content 1fr;
+    align-items: start;
+    gap: 0.8rem;
+}
+
+.sm-cc-card__body > .sm-cc-setting--structured-tags.setting-item .setting-item-info {
+    align-self: center;
+    margin-bottom: 0;
+}
+
+.sm-cc-card__body > .sm-cc-setting--structured-tags.setting-item .setting-item-control {
+    grid-column: 2;
+}
+
+/* Fallback for wide fields not in card__body */
+.sm-cc-setting--wide {
+    grid-template-columns: 1fr;
+    gap: 0.3rem;
+}
+
+.sm-cc-setting--wide .setting-item-info {
+    margin-bottom: 0.3rem;
+}
+
+.sm-cc-setting--wide .setting-item-control {
     margin-left: 0;
     width: 100%;
     display: flex;
@@ -376,16 +553,19 @@ const editorLayoutsCss = `
 .sm-cc-setting--stack .setting-item-control {
     gap: .6rem;
 }
+/* Token editor input + button horizontal layout - high specificity to override wide field default */
+.sm-cc-card__body > .sm-cc-setting--token-editor .setting-item-control,
 .sm-cc-setting--token-editor .setting-item-control {
-    flex-direction: row;
-    flex-wrap: wrap;
+    flex-direction: row !important;
+    flex-wrap: nowrap;
     gap: .5rem;
 }
 .sm-cc-setting--token-editor .setting-item-control input {
-    flex: 1 1 240px;
-    min-width: 200px;
+    flex: 1;
+    min-width: 0;
 }
 .sm-cc-setting--token-editor .setting-item-control button {
+    flex-shrink: 0;
     align-self: flex-start;
 }
 
@@ -411,6 +591,28 @@ const editorLayoutsCss = `
     border-radius: 8px;
 }
 
+/* Display field (computed/read-only values) */
+.sm-cc-display-field {
+    width: 100%;
+    min-height: 34px;
+    padding: .3rem .55rem;
+    box-sizing: border-box;
+    border-radius: 8px;
+    background: var(--background-secondary);
+    color: var(--text-muted);
+    text-align: center;
+    font-family: var(--font-monospace);
+    font-weight: 500;
+    cursor: default;
+    opacity: 0.9;
+}
+
+/* Conditional visibility */
+.sm-cc-composite-item.is-hidden,
+.sm-cc-setting.is-hidden {
+    display: none !important;
+}
+
 .sm-cc-setting--alignment-override {
     border-radius: 10px;
     border: 1px dashed var(--background-modifier-border);
@@ -423,6 +625,116 @@ const editorLayoutsCss = `
 }
 .sm-cc-input--alignment-override {
     background: transparent;
+}
+
+/* Composite field grid (for abilities, speeds, etc.) */
+.sm-cc-composite-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem 1rem;
+    align-items: start;
+}
+
+/* Composite field grouped layout (keeps groups of fields together) */
+.sm-cc-composite-grouped {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.sm-cc-composite-group {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    align-items: center;
+    padding: 0.5rem 0.65rem;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--background-secondary) 40%, transparent);
+}
+
+.sm-cc-composite-item {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.sm-cc-composite-item .sm-cc-field-label {
+    min-width: fit-content;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.sm-cc-composite-item .sm-cc-field-control {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Repeating field template-based rendering */
+.sm-cc-repeating-list {
+    /* Wide setting to span full width */
+}
+
+.sm-cc-repeating-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sm-cc-repeating-item {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    align-items: center;
+    padding: 0.5rem 0.65rem;
+    border-radius: 8px;
+    border: 1px solid var(--background-modifier-border);
+    background: color-mix(in srgb, var(--background-secondary) 40%, transparent);
+}
+
+.sm-cc-repeating-field {
+    display: flex;
+    flex-direction: row;
+    gap: 0.35rem;
+    align-items: center;
+    min-width: fit-content;
+}
+
+.sm-cc-repeating-field.is-hidden {
+    display: none !important;
+}
+
+.sm-cc-repeating-field .sm-cc-field-label {
+    min-width: fit-content;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.sm-cc-repeating-field .sm-cc-field-control {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.sm-cc-field-heading {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-normal);
+    white-space: nowrap;
+}
+
+/* Display field (read-only computed values) */
+.sm-cc-display-field {
+    font-weight: 500;
+    color: var(--text-normal);
+    text-align: center;
+    min-width: 2.5ch;
 }
 
 .sm-cc-speeds-grid {
@@ -486,6 +798,7 @@ const editorLayoutsCss = `
 }
 .sm-cc-grid__row { display: contents; }
 .sm-cc-grid__save { display: flex; align-items: center; gap: .35rem; }
+.sm-cc-component-grid { display: grid; grid-template-columns: repeat(6, max-content); gap: .35rem .5rem; align-items: center; }
 
 .sm-cc-skills { margin-top: .5rem; }
 .sm-cc-skill-group { border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: .5rem; margin: .35rem 0; }
@@ -504,6 +817,85 @@ const editorLayoutsCss = `
     font-size:.85em;
     color: var(--text-muted);
     box-shadow:0 3px 8px rgba(15,23,42,.04);
+}
+
+/* Structured token chips (with inline value input) */
+.sm-cc-structured-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .25rem .6rem;
+}
+.sm-cc-structured-chip__label {
+    font-weight: 500;
+    color: var(--text-normal);
+}
+.sm-cc-structured-chip__value {
+    min-width: 20px;
+    padding: .15rem .4rem;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background: var(--background-primary);
+    font-size: .9em;
+    text-align: center;
+}
+.sm-cc-structured-chip__value:focus {
+    outline: none;
+    border-color: var(--interactive-accent);
+}
+.sm-cc-structured-chip__value-mirror {
+    position: absolute;
+    visibility: hidden;
+    white-space: pre;
+    pointer-events: none;
+}
+.sm-cc-structured-chip__unit {
+    font-size: .85em;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-left: .2rem;
+}
+.sm-cc-structured-chip__remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2em;
+    line-height: 1;
+    padding: 0;
+    margin-left: .3rem;
+    color: var(--text-muted);
+}
+.sm-cc-structured-chip__remove:hover {
+    color: var(--text-error);
+}
+
+/* Structured token editor layout - match token-editor behavior */
+.sm-cc-card__body > .sm-cc-setting--structured-token-editor .setting-item-control,
+.sm-cc-setting--structured-token-editor .setting-item-control {
+    flex-direction: row !important;
+    flex-wrap: nowrap;
+    gap: .5rem;
+}
+.sm-cc-setting--structured-token-editor .setting-item-control input {
+    flex: 1;
+    min-width: 0;
+}
+.sm-cc-setting--structured-token-editor .setting-item-control button {
+    flex-shrink: 0;
+    align-self: flex-start;
+}
+
+.sm-cc-tag-actions {
+    display: flex;
+    margin-top: .5rem;
+}
+.sm-cc-tag-actions button {
+    border: 1px dashed var(--background-modifier-border);
+    border-radius: 8px;
+    background: transparent;
+    padding: .35rem .75rem;
+    cursor: pointer;
+    font-weight: 600;
 }
 .sm-cc-damage-row { align-items:center; }
 .sm-cc-damage-type { display:inline-flex; align-items:center; gap:.35rem; flex-wrap:wrap; justify-content:flex-start; }
@@ -1127,15 +1519,54 @@ const editorLayoutsCss = `
 }
 
 /* Compact inline number controls */
-.sm-inline-number { display: inline-flex; align-items: center; gap: .2rem; }
-.sm-inline-number input[type="number"] { width: 84px; }
-.sm-cc-create-modal .sm-cc-stat-row .sm-inline-number { gap: .12rem; }
+.sm-inline-number {
+    display: inline-flex;
+    align-items: stretch;
+    gap: 0;
+}
+.sm-inline-number input[type="number"] {
+    width: 84px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+.sm-cc-create-modal .sm-cc-stat-row .sm-inline-number { gap: 0; }
 .sm-cc-create-modal .sm-cc-stat-row .sm-inline-number input[type="number"].sm-cc-stat-row__score-input {
     width: calc(2.2ch + 10px);
     min-width: calc(2.2ch + 10px);
     text-align: center;
     padding-inline: 0;
 }
+
+/* Vertical button group for number stepper */
+.sm-number-stepper-buttons {
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+}
+
+.sm-number-stepper-buttons button {
+    flex: 1;
+    min-height: 0;
+    padding: 0;
+    min-width: 1.5rem;
+    line-height: 1;
+    border-radius: 0;
+    font-size: 0.85rem;
+    border-left: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sm-number-stepper-buttons button:first-child {
+    border-top-right-radius: var(--radius-s);
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.sm-number-stepper-buttons button:last-child {
+    border-bottom-right-radius: var(--radius-s);
+}
+
 .btn-compact { padding: 0 .4rem; min-width: 1.5rem; height: 1.6rem; line-height: 1.2; }
 
 /* Movement row should not overflow; children stay compact */
@@ -1245,6 +1676,10 @@ const editorLayoutsCss = `
     flex-wrap: wrap;
     gap: .5rem;
 }
+.sm-cc-entry-host {
+    display: flex;
+    flex-direction: column;
+}
 .sm-cc-entry-add-btn {
     border: 1px solid var(--background-modifier-border);
     border-radius: 999px;
@@ -1315,6 +1750,11 @@ const editorLayoutsCss = `
     flex-direction: column;
     gap: .75rem;
 }
+
+.sm-cc-entry-card.sm-cc-entry-hidden {
+    display: none;
+}
+
 .sm-cc-entry-head {
     display: grid;
     grid-template-columns: max-content 1fr max-content;
@@ -1792,9 +2232,15 @@ const cartographerPanelsCss = `
 /* === Cartographer Panels (Editor & Inspector) === */
 
 /* Library header */
-.sm-library .sm-lib-header { display:flex; gap:.4rem; margin:.25rem 0 .25rem; }
-.sm-library .sm-lib-header button { border: 1px solid var(--background-modifier-border); background: var(--background-secondary); padding:.25rem .75rem; border-radius:6px; cursor:pointer; }
-.sm-library .sm-lib-header button.is-active { background: var(--interactive-accent); color: var(--text-on-accent,#fff); }
+.sm-library .sm-lib-header,
+.sm-atlas .sm-lib-header,
+.sm-almanac .sm-lib-header { display:flex; gap:.4rem; margin:.25rem 0 .25rem; }
+.sm-library .sm-lib-header button,
+.sm-atlas .sm-lib-header button,
+.sm-almanac .sm-lib-header button { border: 1px solid var(--background-modifier-border); background: var(--background-secondary); padding:.25rem .75rem; border-radius:6px; cursor:pointer; }
+.sm-library .sm-lib-header button.is-active,
+.sm-atlas .sm-lib-header button.is-active,
+.sm-almanac .sm-lib-header button.is-active { background: var(--interactive-accent); color: var(--text-on-accent,#fff); }
 .sm-cartographer__panel {
     display: flex;
     flex-direction: column;
@@ -2051,7 +2497,9 @@ const presetsCss = `
 export const HEX_PLUGIN_CSS_SECTIONS = {
     viewContainer: viewContainerCss,
     mapAndPreview: mapAndPreviewCss,
-    editorLayouts: editorLayoutsCss,
+    terrainEditor: terrainEditorCss,
+    libraryView: libraryViewCss,
+    createModal: createModalCss,
     cartographerShell: cartographerShellCss,
     cartographerPanels: cartographerPanelsCss,
     travelMode: travelModeCss,

@@ -1,8 +1,8 @@
 // salt-marcher/tests/core/tile-schema.test.ts
 import { afterEach, describe, expect, it } from "vitest";
 
-import { validateTileData, TileValidationError } from "../../src/core/hex-mapper/hex-notes";
-import { setTerrains } from "../../src/core/terrain";
+import { validateTileData, TileValidationError } from "../../src/features/maps/hex-mapper/hex-notes";
+import { setTerrains } from "../../src/features/maps/domain/terrain";
 
 describe("tile schema validation", () => {
     afterEach(() => {
