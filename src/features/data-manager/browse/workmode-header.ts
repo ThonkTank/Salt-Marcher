@@ -2,7 +2,7 @@
 // Provides a shared header layout (title, tabs, search + action) for workmode views.
 
 import { createTabNavigation, type TabConfig, type TabNavigationHandle } from "./tab-navigation";
-import { applyMapButtonStyle } from "../../../ui/maps/workflows/map-workflows";
+import { applyMapButtonStyle } from "./map-styling";
 
 export interface WorkmodeHeaderTabsConfig<T extends string> {
     readonly items: ReadonlyArray<TabConfig<T>>;

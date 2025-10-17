@@ -2,7 +2,7 @@
 // Field-level utility functions for create modal
 
 import { createNumberStepper } from "./number-stepper-control";
-import { enhanceSelectToSearch } from "../../../ui/components/search-dropdown";
+import { enhanceSelectToSearch } from "./select-enhancement";
 import { mountEntryManager, type EntryCategoryDefinition, type EntryFilterDefinition } from "../storage/entry-system";
 import { RepeatingWidthSynchronizer } from "../layout/repeating-width-sync";
 import { renderTextCore, renderTextareaCore, renderToggleCore, renderColorCore, renderMultiselectCore, renderDisplayCore, renderHeadingCore, renderCompositeCore, renderRepeatingEntryManagerCore } from "./field-rendering-core";

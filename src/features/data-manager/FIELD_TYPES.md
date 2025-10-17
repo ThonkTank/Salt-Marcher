@@ -7,7 +7,7 @@ Diese Dokumentation beschreibt, wie eine `*-spec.ts` Datei strukturiert sein mus
 ## Grundstruktur einer Spec-Datei
 
 ```typescript
-import type { CreateSpec, AnyFieldSpec, DataSchema } from "../../../ui/workmode/create/types";
+import type { CreateSpec, AnyFieldSpec, DataSchema } from "../types";
 
 // 1. Schema definieren (optional, für Validierung)
 const mySchema: DataSchema<MyDataType> = {
@@ -937,7 +937,7 @@ ui: {
 ## Vollständiges Beispiel: Zauber-Spec
 
 ```typescript
-import type { CreateSpec, AnyFieldSpec } from "../../../ui/workmode/create/types";
+import type { CreateSpec, AnyFieldSpec } from "../types";
 
 interface SpellData {
   name: string;
@@ -1101,7 +1101,7 @@ export const spellSpec: CreateSpec<SpellData> = {
 ## Weitere Ressourcen
 
 - Vollständiges Beispiel: `src/apps/library/create/creature/creature-spec.ts`
-- Type-Definitionen: `src/ui/workmode/create/types.ts`
+- Type-Definitionen: `src/features/data-manager/types.ts`
 - Modal-Implementierung: `src/ui/workmode/create/modal.ts`
 - Entry-System: `src/ui/workmode/create/components/entry-system.ts`
 - Token-Editor: `src/ui/workmode/create/components/token-editor.ts`
