@@ -17,7 +17,7 @@ import {
     openCreateModal,
     type CreateSpec,
     type DataSchema,
-} from "../../../features/data-manager/edit";
+} from "../../../features/data-manager";
 
 interface RegionFormValues {
     name: string;

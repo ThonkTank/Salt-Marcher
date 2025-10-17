@@ -1,8 +1,8 @@
 // src/ui/create/renderers/display.ts
 // Display field renderer (computed/read-only fields)
 
-import type { FieldRegistryEntry, DisplayFieldSpec } from "../types";
-import { renderDisplayCore } from "../field-rendering-core";
+import type { FieldRegistryEntry, DisplayFieldSpec } from "../../types";
+import { renderDisplayCore } from "./field-rendering-core";
 
 export const displayFieldRenderer: FieldRegistryEntry = {
   supports: (spec) => spec.type === "display",

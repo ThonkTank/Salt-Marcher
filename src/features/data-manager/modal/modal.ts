@@ -4,7 +4,7 @@ import { App, Modal, Setting, Notice, type ButtonComponent } from "obsidian";
 import type { FormCardHandles } from "../layout/layouts";
 import { GridLayoutManager } from "../layout/grid-layout-manager";
 import { RepeatingWidthSynchronizer } from "../layout/repeating-width-sync";
-import { registerAllFieldRenderers } from "../fields/renderers";
+import { registerAllFieldRenderers } from "../fields/register-renderers";
 import { DataInitializer, type NamedDraft } from "./data-initializer";
 import { ModalPersistence } from "./modal-persistence";
 import { DefaultFieldTransformer, ModalValidator } from "./modal-validator";

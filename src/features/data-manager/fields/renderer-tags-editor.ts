@@ -3,9 +3,9 @@
 
 import { Setting } from "obsidian";
 import type { FieldRegistryEntry } from "../../types";
-import { createValidationControls } from "../../modal/modal-utils";
-import { resolveInitialValue } from "../field-utils";
-import { mountTokenEditor } from "../tag-chips";
+import { createValidationControls } from "../modal/modal-utils";
+import { resolveInitialValue } from "./field-utils";
+import { mountTokenEditor } from "./tag-chips";
 
 export const tagsFieldRenderer: FieldRegistryEntry = {
   supports: (spec) => spec.type === "tags",

@@ -1,7 +1,7 @@
 // src/workmodes/library/create/spell/spell-spec.ts
 // Declarative field specification for spell creation using the global modal system
 
-import type { CreateSpec, AnyFieldSpec, DataSchema } from "../../../../features/data-manager/edit/types";
+import type { CreateSpec, AnyFieldSpec, DataSchema } from "../../../../features/data-manager/types";
 import type { SpellData } from "../../core/spell-files";
 import { collectSpellScalingIssues } from "./validation";
 

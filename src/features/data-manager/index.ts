@@ -13,7 +13,7 @@ export * from "./storage/storage";
 
 // Components
 export * from "./layout/layouts";
-export * from "./controls/number-stepper";
+export * from "./fields/number-stepper-control";
 export * from "./storage/entry-system";
 
 // ============================================================================

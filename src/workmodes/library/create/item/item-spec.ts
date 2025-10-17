@@ -1,7 +1,7 @@
 // src/workmodes/library/create/item/item-spec.ts
 // Declarative field specification for item creation using the global modal system
 
-import type { CreateSpec, AnyFieldSpec, DataSchema } from "../../../../features/data-manager/edit/types";
+import type { CreateSpec, AnyFieldSpec, DataSchema } from "../../../../features/data-manager/types";
 import type { ItemData } from "../../core/item-files";
 
 // ============================================================================

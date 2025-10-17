@@ -3,9 +3,9 @@
 
 import { Setting } from "obsidian";
 import type { FieldRegistryEntry, StructuredTagsFieldSpec } from "../../types";
-import { createValidationControls } from "../../modal/modal-utils";
-import { resolveInitialValue } from "../field-utils";
-import { mountTokenEditor, type TokenItem } from "../tag-chips";
+import { createValidationControls } from "../modal/modal-utils";
+import { resolveInitialValue } from "./field-utils";
+import { mountTokenEditor, type TokenItem } from "./tag-chips";
 
 export const structuredTagsFieldRenderer: FieldRegistryEntry = {
   supports: (spec) => spec.type === "structured-tags",

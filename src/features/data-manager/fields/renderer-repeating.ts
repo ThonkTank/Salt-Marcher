@@ -2,12 +2,12 @@
 // Repeating field renderer (entry lists with add/remove/reorder OR template-based lists)
 
 import { Setting } from "obsidian";
-import type { FieldRegistryEntry, CompositeFieldSpec, AnyFieldSpec } from "../types";
-import { createValidationControls } from "../../modal/modal-utils";
-import { resolveInitialValue, renderFieldControl } from "../field-utils";
-import { RepeatingWidthSynchronizer } from "../../layout/repeating-width-sync";
-import { mountEntryManager, type EntryCategoryDefinition, type EntryFilterDefinition } from "../../storage/entry-system";
-import { renderRepeatingEntryManagerCore } from "../field-rendering-core";
+import type { FieldRegistryEntry, CompositeFieldSpec, AnyFieldSpec } from "../../types";
+import { createValidationControls } from "../modal/modal-utils";
+import { resolveInitialValue, renderFieldControl } from "./field-utils";
+import { RepeatingWidthSynchronizer } from "../layout/repeating-width-sync";
+import { mountEntryManager, type EntryCategoryDefinition, type EntryFilterDefinition } from "../storage/entry-system";
+import { renderRepeatingEntryManagerCore } from "./field-rendering-core";
 
 export const repeatingFieldRenderer: FieldRegistryEntry = {
   supports: (spec) => spec.type === "repeating",

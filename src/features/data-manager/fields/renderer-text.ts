@@ -1,14 +1,14 @@
-// src/ui/create/renderers/multiselect.ts
-// Multiselect field renderer
+// src/ui/create/renderers/text.ts
+// Text field renderer
 
 import { Setting } from "obsidian";
-import type { FieldRegistryEntry } from "../types";
-import { createValidationControls } from "../../modal/modal-utils";
-import { resolveInitialValue } from "../field-utils";
-import { renderMultiselectCore } from "../field-rendering-core";
+import type { FieldRegistryEntry } from "../../types";
+import { createValidationControls } from "../modal/modal-utils";
+import { resolveInitialValue } from "./field-utils";
+import { renderTextCore } from "./field-rendering-core";
 
-export const multiselectFieldRenderer: FieldRegistryEntry = {
-  supports: (spec) => spec.type === "multiselect",
+export const textFieldRenderer: FieldRegistryEntry = {
+  supports: (spec) => spec.type === "text",
   render: (args) => {
     const { container, spec, values, onChange } = args;
     const setting = new Setting(container).setName(spec.label);
@@ -20,10 +20,9 @@ export const multiselectFieldRenderer: FieldRegistryEntry = {
     const initial = resolveInitialValue(spec, values);
 
     // Use core rendering function
-    const options = spec.options ?? [];
-    const handle = renderMultiselectCore({
+    const handle = renderTextCore({
       container: setting.controlEl,
-      options,
+      placeholder: spec.placeholder,
       value: initial,
       onChange: (value) => onChange(spec.id, value),
     });

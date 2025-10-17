@@ -4,7 +4,7 @@
 import { fieldRendererRegistry } from "./field-renderer-registry";
 import { RepeatingWidthSynchronizer } from "../layout/repeating-width-sync";
 import { orderFields } from "../modal/modal-utils";
-import type { AnyFieldSpec, FieldRenderHandle } from "../types";
+import type { AnyFieldSpec, FieldRenderHandle } from "../../types";
 import type { FieldInstance } from "../modal/modal-validator";
 
 /**

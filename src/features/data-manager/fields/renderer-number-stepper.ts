@@ -2,10 +2,10 @@
 // Number stepper field renderer
 
 import { Setting } from "obsidian";
-import type { FieldRegistryEntry } from "../types";
-import { createValidationControls } from "../../modal/modal-utils";
-import { resolveInitialValue } from "../field-utils";
-import { createNumberStepper } from "../../controls/number-stepper";
+import type { FieldRegistryEntry } from "../../types";
+import { createValidationControls } from "../modal/modal-utils";
+import { resolveInitialValue } from "./field-utils";
+import { createNumberStepper } from "./number-stepper-control";
 
 export const numberStepperFieldRenderer: FieldRegistryEntry = {
   supports: (spec) => spec.type === "number-stepper",

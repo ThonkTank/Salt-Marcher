@@ -2,7 +2,7 @@
 // Shared core rendering functions for field types
 // Used by both registry-based renderers (with Setting) and direct rendering (without Setting)
 
-import type { AnyFieldSpec, FieldRenderHandle } from "../types";
+import type { AnyFieldSpec, FieldRenderHandle } from "../../types";
 
 /**
  * Core handle for field controls.

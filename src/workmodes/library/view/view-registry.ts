@@ -7,7 +7,7 @@ import { createCreatureFile, type StatblockData } from "../core/creature-files";
 import { loadSpellFile, type SpellData } from "../core/spell-files";
 import { loadItemFile, type ItemData } from "../core/item-files";
 import { loadEquipmentFile, type EquipmentData } from "../core/equipment-files";
-import { openCreateModal } from "../../../features/data-manager/edit";
+import { openCreateModal } from "../../../features/data-manager";
 import { createStandardActions } from "../../../features/data-manager/browse/action-factory";
 import { creatureSpec } from "../create/creature/creature-spec";
 import { spellSpec } from "../create/spell/spell-spec";

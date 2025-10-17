@@ -2,10 +2,10 @@
 // Composite field renderer (nested fields in a grid/custom layout)
 
 import { Setting } from "obsidian";
-import type { FieldRegistryEntry, CompositeFieldSpec, FieldRenderHandle, AnyFieldSpec } from "../types";
-import { createValidationControls } from "../../modal/modal-utils";
-import { resolveInitialValue, renderFieldControl } from "../field-utils";
-import { renderCompositeCore } from "../field-rendering-core";
+import type { FieldRegistryEntry, CompositeFieldSpec, FieldRenderHandle, AnyFieldSpec } from "../../types";
+import { createValidationControls } from "../modal/modal-utils";
+import { resolveInitialValue, renderFieldControl } from "./field-utils";
+import { renderCompositeCore } from "./field-rendering-core";
 
 export const compositeFieldRenderer: FieldRegistryEntry = {
   supports: (spec) => spec.type === "composite",

@@ -9,4 +9,4 @@ export * from "./utils/split-view-container";
 export * from "./utils/watcher-hub";
 
 // Create Modal
-export * from "../features/data-manager/edit";
+export * from "../features/data-manager";

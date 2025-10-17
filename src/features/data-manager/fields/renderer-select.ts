@@ -2,10 +2,10 @@
 // Select field renderer
 
 import { Setting } from "obsidian";
-import type { FieldRegistryEntry } from "../types";
-import { createValidationControls } from "../../modal/modal-utils";
-import { resolveInitialValue } from "../field-utils";
-import { enhanceSelectToSearch } from "../../../../../ui/components/search-dropdown";
+import type { FieldRegistryEntry } from "../../types";
+import { createValidationControls } from "../modal/modal-utils";
+import { resolveInitialValue } from "./field-utils";
+import { enhanceSelectToSearch } from "../../../ui/components/search-dropdown";
 
 export const selectFieldRenderer: FieldRegistryEntry = {
   supports: (spec) => spec.type === "select",

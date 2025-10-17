@@ -1,12 +1,12 @@
 // src/ui/create/field-utils.ts
 // Field-level utility functions for create modal
 
-import { createNumberStepper } from "../controls/number-stepper";
-import { enhanceSelectToSearch } from "../../../../ui/components/search-dropdown";
+import { createNumberStepper } from "./number-stepper-control";
+import { enhanceSelectToSearch } from "../../../ui/components/search-dropdown";
 import { mountEntryManager, type EntryCategoryDefinition, type EntryFilterDefinition } from "../storage/entry-system";
 import { RepeatingWidthSynchronizer } from "../layout/repeating-width-sync";
 import { renderTextCore, renderTextareaCore, renderToggleCore, renderColorCore, renderMultiselectCore, renderDisplayCore, renderHeadingCore, renderCompositeCore, renderRepeatingEntryManagerCore } from "./field-rendering-core";
-import type { AnyFieldSpec, FieldRenderHandle, CompositeFieldSpec } from "../types";
+import type { AnyFieldSpec, FieldRenderHandle, CompositeFieldSpec } from "../../types";
 
 /**
  * Resolves the initial value for a field from values or default.

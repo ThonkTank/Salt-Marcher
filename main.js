@@ -44387,10 +44387,10 @@ var WatcherHub = class {
   }
 };
 
-// src/features/data-manager/edit/modal/modal.ts
+// src/features/data-manager/modal/modal.ts
 var import_obsidian31 = require("obsidian");
 
-// src/features/data-manager/edit/layout/layout-utils.ts
+// src/features/data-manager/layout/layout-utils.ts
 var FieldWidthCalculator = class {
   static calculate(field) {
     const defaults = this.TYPE_DEFAULTS[field.type] ?? {
@@ -44481,7 +44481,7 @@ FieldWidthCalculator.TYPE_DEFAULTS = {
   "object": { minControlWidth: 400, isWide: true, hasFixedWidth: false }
 };
 
-// src/features/data-manager/edit/layout/grid-layout-manager.ts
+// src/features/data-manager/layout/grid-layout-manager.ts
 var GridLayoutManager = class {
   constructor(container, fields) {
     this.container = container;
@@ -44549,7 +44549,7 @@ var GridLayoutManager = class {
   }
 };
 
-// src/features/data-manager/edit/fields/field-renderer-registry.ts
+// src/features/data-manager/fields/field-renderer-registry.ts
 var FieldRendererRegistry = class {
   constructor() {
     this.renderers = [];
@@ -44577,10 +44577,10 @@ var FieldRendererRegistry = class {
 };
 var fieldRendererRegistry = new FieldRendererRegistry();
 
-// src/features/data-manager/edit/fields/renderers/text.ts
+// src/features/data-manager/fields/renderer-text.ts
 var import_obsidian17 = require("obsidian");
 
-// src/features/data-manager/edit/modal/modal-utils.ts
+// src/features/data-manager/modal/modal-utils.ts
 function createValidationControls(setting) {
   const container = setting.settingEl.createDiv({ cls: "sm-cc-field__errors", attr: { hidden: "" } });
   const list = container.createEl("ul", { cls: "sm-cc-field__errors-list" });
@@ -44630,7 +44630,7 @@ function extractSchemaIssues(error) {
   return maybeIssues.filter((issue) => typeof issue === "object" && issue !== null);
 }
 
-// src/features/data-manager/edit/controls/number-stepper.ts
+// src/features/data-manager/fields/number-stepper-control.ts
 function createNumberInput2(parent, options = {}) {
   const input = parent.createEl("input", {
     cls: options.className || "sm-cc-input",
@@ -44805,10 +44805,10 @@ function createNumberStepper(parent, options = {}) {
   };
 }
 
-// src/features/data-manager/edit/fields/field-utils.ts
+// src/features/data-manager/fields/field-utils.ts
 init_search_dropdown();
 
-// src/features/data-manager/edit/storage/entry-system.ts
+// src/features/data-manager/storage/entry-system.ts
 var import_obsidian16 = require("obsidian");
 function toArray(value) {
   if (!value) return [];
@@ -45095,7 +45095,7 @@ function mountEntryManager(parent, options) {
   };
 }
 
-// src/features/data-manager/edit/layout/repeating-width-sync.ts
+// src/features/data-manager/layout/repeating-width-sync.ts
 var RepeatingWidthSynchronizer = class {
   constructor(container) {
     this.container = container;
@@ -45177,7 +45177,7 @@ var RepeatingWidthSynchronizer = class {
   }
 };
 
-// src/features/data-manager/edit/fields/field-rendering-core.ts
+// src/features/data-manager/fields/field-rendering-core.ts
 function normalizeToString(value) {
   if (value == null) return "";
   if (typeof value === "string") return value;
@@ -45523,7 +45523,7 @@ function renderRepeatingEntryManagerCore(options) {
   };
 }
 
-// src/features/data-manager/edit/fields/field-utils.ts
+// src/features/data-manager/fields/field-utils.ts
 function resolveInitialValue(spec, values) {
   if (values[spec.id] !== void 0) return values[spec.id];
   if (spec.default !== void 0) return spec.default;
@@ -45863,7 +45863,7 @@ function renderFieldControl(container, spec, initial, onChange) {
   return {};
 }
 
-// src/features/data-manager/edit/fields/renderers/text.ts
+// src/features/data-manager/fields/renderer-text.ts
 var textFieldRenderer = {
   supports: (spec) => spec.type === "text",
   render: (args) => {
@@ -45889,7 +45889,7 @@ var textFieldRenderer = {
   }
 };
 
-// src/features/data-manager/edit/fields/renderers/textarea.ts
+// src/features/data-manager/fields/renderer-textarea.ts
 var import_obsidian18 = require("obsidian");
 var textareaFieldRenderer = {
   supports: (spec) => spec.type === "textarea" || spec.type === "markdown",
@@ -45919,7 +45919,7 @@ var textareaFieldRenderer = {
   }
 };
 
-// src/features/data-manager/edit/fields/renderers/number-stepper.ts
+// src/features/data-manager/fields/renderer-number-stepper.ts
 var import_obsidian19 = require("obsidian");
 var numberStepperFieldRenderer = {
   supports: (spec) => spec.type === "number-stepper",
@@ -45956,7 +45956,7 @@ var numberStepperFieldRenderer = {
   }
 };
 
-// src/features/data-manager/edit/fields/renderers/toggle.ts
+// src/features/data-manager/fields/renderer-toggle.ts
 var import_obsidian20 = require("obsidian");
 var toggleFieldRenderer = {
   supports: (spec) => spec.type === "toggle",
@@ -45982,7 +45982,7 @@ var toggleFieldRenderer = {
   }
 };
 
-// src/features/data-manager/edit/fields/renderers/select.ts
+// src/features/data-manager/fields/renderer-select.ts
 var import_obsidian21 = require("obsidian");
 init_search_dropdown();
 var selectFieldRenderer = {
@@ -46025,7 +46025,7 @@ var selectFieldRenderer = {
   }
 };
 
-// src/features/data-manager/edit/fields/renderers/multiselect.ts
+// src/features/data-manager/fields/renderer-multiselect.ts
 var import_obsidian22 = require("obsidian");
 var multiselectFieldRenderer = {
   supports: (spec) => spec.type === "multiselect",
@@ -46053,7 +46053,7 @@ var multiselectFieldRenderer = {
   }
 };
 
-// src/features/data-manager/edit/fields/renderers/color.ts
+// src/features/data-manager/fields/renderer-color.ts
 var import_obsidian23 = require("obsidian");
 var colorFieldRenderer = {
   supports: (spec) => spec.type === "color",
@@ -46079,10 +46079,10 @@ var colorFieldRenderer = {
   }
 };
 
-// src/features/data-manager/edit/fields/renderers/tags-editor.ts
+// src/features/data-manager/fields/renderer-tags-editor.ts
 var import_obsidian25 = require("obsidian");
 
-// src/features/data-manager/edit/fields/tag-chips.ts
+// src/features/data-manager/fields/tag-chips.ts
 var import_obsidian24 = require("obsidian");
 function mountTokenEditor(parent, title, model, options = {}) {
   const placeholder = options.placeholder ?? "Begriff eingeben\u2026";
@@ -46134,7 +46134,7 @@ function mountTokenEditor(parent, title, model, options = {}) {
   return { setting, chipsEl: chips, refresh: renderChips };
 }
 
-// src/features/data-manager/edit/fields/renderers/tags-editor.ts
+// src/features/data-manager/fields/renderer-tags-editor.ts
 var tagsFieldRenderer = {
   supports: (spec) => spec.type === "tags",
   render: (args) => {
@@ -46182,7 +46182,7 @@ var tagsFieldRenderer = {
   }
 };
 
-// src/features/data-manager/edit/fields/renderers/structured-tags-editor.ts
+// src/features/data-manager/fields/renderer-structured-tags-editor.ts
 var import_obsidian26 = require("obsidian");
 var structuredTagsFieldRenderer = {
   supports: (spec) => spec.type === "structured-tags",
@@ -46250,7 +46250,7 @@ var structuredTagsFieldRenderer = {
   }
 };
 
-// src/features/data-manager/edit/fields/renderers/display.ts
+// src/features/data-manager/fields/renderer-display.ts
 var displayFieldRenderer = {
   supports: (spec) => spec.type === "display",
   render: (args) => {
@@ -46269,7 +46269,7 @@ var displayFieldRenderer = {
   }
 };
 
-// src/features/data-manager/edit/fields/renderers/heading.ts
+// src/features/data-manager/fields/renderer-heading.ts
 var headingFieldRenderer = {
   supports: (spec) => spec.type === "heading",
   render: (args) => {
@@ -46288,7 +46288,7 @@ var headingFieldRenderer = {
   }
 };
 
-// src/features/data-manager/edit/fields/renderers/composite.ts
+// src/features/data-manager/fields/renderer-composite.ts
 var import_obsidian27 = require("obsidian");
 var compositeFieldRenderer = {
   supports: (spec) => spec.type === "composite",
@@ -46324,7 +46324,7 @@ var compositeFieldRenderer = {
   }
 };
 
-// src/features/data-manager/edit/fields/renderers/autocomplete.ts
+// src/features/data-manager/fields/renderer-autocomplete.ts
 var import_obsidian28 = require("obsidian");
 var autocompleteFieldRenderer = {
   supports: (spec) => spec.type === "autocomplete",
@@ -46421,7 +46421,7 @@ var autocompleteFieldRenderer = {
   }
 };
 
-// src/features/data-manager/edit/fields/renderers/repeating.ts
+// src/features/data-manager/fields/renderer-repeating.ts
 var import_obsidian29 = require("obsidian");
 var repeatingFieldRenderer = {
   supports: (spec) => spec.type === "repeating",
@@ -46564,7 +46564,7 @@ var repeatingFieldRenderer = {
   }
 };
 
-// src/features/data-manager/edit/fields/renderers/index.ts
+// src/features/data-manager/fields/register-renderers.ts
 function registerAllFieldRenderers() {
   fieldRendererRegistry.register(textFieldRenderer);
   fieldRendererRegistry.register(textareaFieldRenderer);
@@ -46582,7 +46582,7 @@ function registerAllFieldRenderers() {
   fieldRendererRegistry.register(repeatingFieldRenderer);
 }
 
-// src/features/data-manager/edit/modal/data-initializer.ts
+// src/features/data-manager/modal/data-initializer.ts
 var DataInitializer = class {
   constructor(options) {
     this.options = options;
@@ -46684,7 +46684,7 @@ var DataInitializer = class {
   }
 };
 
-// src/features/data-manager/edit/storage/storage.ts
+// src/features/data-manager/storage/storage.ts
 var import_obsidian30 = require("obsidian");
 function slugify(value) {
   const trimmed = value.trim().toLowerCase();
@@ -46871,7 +46871,7 @@ async function persistSerializedPayload(app, storage, payload) {
   return result;
 }
 
-// src/features/data-manager/edit/modal/modal-persistence.ts
+// src/features/data-manager/modal/modal-persistence.ts
 var ModalPersistence = class {
   constructor(app, spec, transformer) {
     this.app = app;
@@ -46915,7 +46915,7 @@ var ModalPersistence = class {
   }
 };
 
-// src/features/data-manager/edit/modal/modal-validator.ts
+// src/features/data-manager/modal/modal-validator.ts
 var DefaultFieldTransformer = class {
   constructor(fields) {
     this.fields = fields;
@@ -47061,7 +47061,7 @@ var ModalValidator = class {
   }
 };
 
-// src/features/data-manager/edit/fields/field-manager.ts
+// src/features/data-manager/fields/field-manager.ts
 var FieldManager = class {
   constructor(fields, getData, onChange, widthSynchronizers) {
     this.fields = fields;
@@ -47163,7 +47163,7 @@ var FieldManager = class {
   }
 };
 
-// src/features/data-manager/edit/layout/layouts.ts
+// src/features/data-manager/layout/layouts.ts
 function createFormCard(parent, options) {
   const { title, subtitle, registerValidator, id, headingId, role } = options;
   const card = parent.createDiv({ cls: "sm-cc-card" });
@@ -47220,7 +47220,7 @@ function createFormCard(parent, options) {
   return { card, body, heading: headingTitle, registerValidation };
 }
 
-// src/features/data-manager/edit/modal/modal-navigation.ts
+// src/features/data-manager/modal/modal-navigation.ts
 var ModalNavigation = class {
   constructor(options) {
     this.options = options;
@@ -47318,7 +47318,7 @@ var ModalNavigation = class {
   }
 };
 
-// src/features/data-manager/edit/modal/modal.ts
+// src/features/data-manager/modal/modal.ts
 registerAllFieldRenderers();
 var CreateModal = class extends import_obsidian31.Modal {
   constructor(app, spec, options, resolve) {
@@ -47522,7 +47522,7 @@ var CreateModal = class extends import_obsidian31.Modal {
   }
 };
 
-// src/features/data-manager/edit/modal/open-create-modal.ts
+// src/features/data-manager/modal/open-create-modal.ts
 function resolveAppInstance(options) {
   if (options?.app) return options.app;
   const globalApp = globalThis.app;

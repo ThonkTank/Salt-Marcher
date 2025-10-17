@@ -1,7 +1,7 @@
 // src/workmodes/library/create/equipment/equipment-spec.ts
 // Declarative field specification for equipment creation using the global modal system
 
-import type { CreateSpec, AnyFieldSpec, DataSchema } from "../../../../features/data-manager/edit/types";
+import type { CreateSpec, AnyFieldSpec, DataSchema } from "../../../../features/data-manager/types";
 import type { EquipmentData, EquipmentType } from "../../core/equipment-files";
 
 // ============================================================================

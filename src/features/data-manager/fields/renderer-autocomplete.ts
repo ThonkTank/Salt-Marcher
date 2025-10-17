@@ -2,9 +2,9 @@
 // Autocomplete field renderer (async search with suggestions)
 
 import { Setting } from "obsidian";
-import type { FieldRegistryEntry, AutocompleteFieldSpec } from "../types";
-import { createValidationControls } from "../../modal/modal-utils";
-import { resolveInitialValue } from "../field-utils";
+import type { FieldRegistryEntry, AutocompleteFieldSpec } from "../../types";
+import { createValidationControls } from "../modal/modal-utils";
+import { resolveInitialValue } from "./field-utils";
 
 export const autocompleteFieldRenderer: FieldRegistryEntry = {
   supports: (spec) => spec.type === "autocomplete",

@@ -1,7 +1,7 @@
 // src/ui/create/field-renderer-registry.ts
 // Central registry for field renderers
 
-import type { FieldRegistryEntry, RenderFieldArgs, FieldRenderHandle } from "../types";
+import type { FieldRegistryEntry, RenderFieldArgs, FieldRenderHandle } from "../../types";
 
 /**
  * Central registry for field renderers.

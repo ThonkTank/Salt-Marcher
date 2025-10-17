@@ -1,8 +1,8 @@
 // src/ui/create/renderers/heading.ts
 // Heading field renderer (for entry labels in repeating fields)
 
-import type { FieldRegistryEntry, HeadingFieldSpec } from "../types";
-import { renderHeadingCore } from "../field-rendering-core";
+import type { FieldRegistryEntry, HeadingFieldSpec } from "../../types";
+import { renderHeadingCore } from "./field-rendering-core";
 
 export const headingFieldRenderer: FieldRegistryEntry = {
   supports: (spec) => spec.type === "heading",

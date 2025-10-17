@@ -1,21 +1,21 @@
-// src/ui/create/renderers/index.ts
+// src/features/data-manager/fields/register-renderers.ts
 // Registers all field renderers with the global registry
 
-import { fieldRendererRegistry } from "../field-renderer-registry";
-import { textFieldRenderer } from "./text";
-import { textareaFieldRenderer } from "./textarea";
-import { numberStepperFieldRenderer } from "./number-stepper";
-import { toggleFieldRenderer } from "./toggle";
-import { selectFieldRenderer } from "./select";
-import { multiselectFieldRenderer } from "./multiselect";
-import { colorFieldRenderer } from "./color";
-import { tagsFieldRenderer } from "./tags-editor";
-import { structuredTagsFieldRenderer } from "./structured-tags-editor";
-import { displayFieldRenderer } from "./display";
-import { headingFieldRenderer } from "./heading";
-import { compositeFieldRenderer } from "./composite";
-import { autocompleteFieldRenderer } from "./autocomplete";
-import { repeatingFieldRenderer } from "./repeating";
+import { fieldRendererRegistry } from "./field-renderer-registry";
+import { textFieldRenderer } from "./renderer-text";
+import { textareaFieldRenderer } from "./renderer-textarea";
+import { numberStepperFieldRenderer } from "./renderer-number-stepper";
+import { toggleFieldRenderer } from "./renderer-toggle";
+import { selectFieldRenderer } from "./renderer-select";
+import { multiselectFieldRenderer } from "./renderer-multiselect";
+import { colorFieldRenderer } from "./renderer-color";
+import { tagsFieldRenderer } from "./renderer-tags-editor";
+import { structuredTagsFieldRenderer } from "./renderer-structured-tags-editor";
+import { displayFieldRenderer } from "./renderer-display";
+import { headingFieldRenderer } from "./renderer-heading";
+import { compositeFieldRenderer } from "./renderer-composite";
+import { autocompleteFieldRenderer } from "./renderer-autocomplete";
+import { repeatingFieldRenderer } from "./renderer-repeating";
 
 /**
  * Register all field renderers with the global registry.
