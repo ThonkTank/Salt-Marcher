@@ -2,7 +2,8 @@
 // Shared core rendering functions for field types
 // Used by both registry-based renderers (with Setting) and direct rendering (without Setting)
 
-import type { AnyFieldSpec, FieldRenderHandle } from "../../types";
+import { Setting } from "obsidian";
+import type { AnyFieldSpec, FieldRenderHandle, FieldRegistryEntry } from "../../types";
 
 /**
  * Core handle for field controls.
@@ -623,6 +624,69 @@ export function renderRepeatingEntryManagerCore(options: RepeatingEntryManagerCo
         entries.splice(0, entries.length, ...value as Record<string, unknown>[]);
         handle.rerender();
       }
+    },
+  };
+}
+
+// ============================================================================
+// RENDERER WRAPPER FACTORY
+// ============================================================================
+
+/**
+ * Creates a field renderer with standard Setting wrapper and validation.
+ * Eliminates boilerplate code from individual renderer implementations.
+ * 
+ * @param type - The field type this renderer supports (e.g., "text", "color")
+ * @param coreRenderer - The core rendering function that creates the actual control
+ * @param options - Optional configuration for the wrapper
+ * @returns A complete FieldRegistryEntry with Setting wrapper
+ */
+export function createRendererWrapper<THandle = CoreFieldHandle>(
+  type: string,
+  coreRenderer: (options: {
+    container: HTMLElement;
+    spec: AnyFieldSpec;
+    initial: unknown;
+    onChange: (value: unknown) => void;
+  }) => THandle,
+  options?: {
+    /** Import createValidationControls dynamically to avoid circular deps */
+    createValidationControls?: (setting: any) => { apply: (errors: string[]) => void };
+    /** Import resolveInitialValue dynamically to avoid circular deps */
+    resolveInitialValue?: (spec: AnyFieldSpec, values: Record<string, unknown>) => unknown;
+  }
+): FieldRegistryEntry {
+  return {
+    supports: (spec) => spec.type === type,
+    render: (args) => {
+      const { container, spec, values, onChange } = args;
+      
+      // Create Setting wrapper with label and description
+      const setting = new Setting(container).setName(spec.label);
+      setting.settingEl.addClass("sm-cc-setting");
+      if (spec.help) {
+        setting.setDesc(spec.help);
+      }
+
+      // Create validation controls (if available)
+      const validation = options?.createValidationControls?.(setting) ?? { apply: () => {} };
+
+      // Resolve initial value (if available)
+      const initial = options?.resolveInitialValue?.(spec, values) ?? values[spec.id];
+
+      // Render the actual control using the core function
+      const handle = coreRenderer({
+        container: setting.controlEl,
+        spec,
+        initial,
+        onChange: (value) => onChange(spec.id, value),
+      });
+
+      return {
+        ...handle,
+        setErrors: validation.apply,
+        container: setting.settingEl,
+      };
     },
   };
 }
