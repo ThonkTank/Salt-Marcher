@@ -45462,6 +45462,66 @@ function renderCompositeCore(options) {
     }
   };
 }
+function renderRepeatingEntryManagerCore(options) {
+  const {
+    container,
+    entries,
+    categories,
+    filters,
+    itemTemplate,
+    renderEntry,
+    card,
+    onChange,
+    insertPosition = "end",
+    isStatic = false,
+    mountEntryManager: mountEntryManager2,
+    fieldId = "unknown"
+  } = options;
+  if (!categories.length) {
+    console.warn(`Repeating field "${fieldId}" has no categories defined`);
+    const errorContainer = container.createDiv({ cls: "sm-cc-field--error" });
+    errorContainer.createEl("p", { text: "No categories defined for repeating field" });
+    return { error: true };
+  }
+  if (!renderEntry && !card) {
+    console.warn(`Repeating field "${fieldId}" requires renderEntry or card in config`);
+    const errorContainer = container.createDiv({ cls: "sm-cc-field--error" });
+    errorContainer.createEl("p", { text: "No renderer defined for repeating field" });
+    return { error: true };
+  }
+  const createEntry = (category) => {
+    const entry = { category };
+    for (const [key, fieldDef] of Object.entries(itemTemplate)) {
+      if (fieldDef.default !== void 0) {
+        entry[key] = fieldDef.default;
+      }
+    }
+    return entry;
+  };
+  const handle = mountEntryManager2(container, {
+    label: "",
+    entries,
+    categories,
+    filters,
+    createEntry,
+    renderEntry,
+    card,
+    onEntriesChanged: (updated) => {
+      onChange(updated);
+    },
+    insertPosition,
+    hideAddBar: isStatic,
+    hideActions: isStatic
+  });
+  return {
+    update: (value) => {
+      if (Array.isArray(value)) {
+        entries.splice(0, entries.length, ...value);
+        handle.rerender();
+      }
+    }
+  };
+}
 
 // src/features/data-manager/edit/fields/field-utils.ts
 function resolveInitialValue(spec, values) {
@@ -45774,54 +45834,26 @@ function renderFieldControl(container, spec, initial, onChange) {
       const categories = config.categories ?? [];
       const filters = config.filters ?? void 0;
       const itemTemplate = repeatingSpec.itemTemplate ?? {};
-      if (!categories.length) {
-        controlContainer.createEl("p", {
-          text: "No categories defined for repeating field",
-          cls: "sm-cc-field--error"
-        });
-        return {};
-      }
       const renderEntry = config.renderEntry;
       const cardFactory = config.card;
-      if (!renderEntry && !cardFactory) {
-        controlContainer.createEl("p", {
-          text: "No renderer defined for repeating field",
-          cls: "sm-cc-field--error"
-        });
-        return {};
-      }
-      const createEntry = (category) => {
-        const entry = { category };
-        for (const [key, fieldDef] of Object.entries(itemTemplate)) {
-          if (fieldDef.default !== void 0) {
-            entry[key] = fieldDef.default;
-          }
-        }
-        return entry;
-      };
-      const handle = mountEntryManager(controlContainer, {
-        label: "",
+      const handle = renderRepeatingEntryManagerCore({
+        container: controlContainer,
         entries,
         categories,
         filters,
-        createEntry,
+        itemTemplate,
         renderEntry,
         card: cardFactory,
-        onEntriesChanged: (updated) => {
-          onChange(updated);
-        },
+        onChange,
         insertPosition: config.insertPosition ?? "end",
-        hideAddBar: isStatic,
-        hideActions: isStatic
+        isStatic,
+        mountEntryManager,
+        fieldId: spec.id
       });
-      return {
-        update: (value) => {
-          if (Array.isArray(value)) {
-            entries.splice(0, entries.length, ...value);
-            handle.rerender();
-          }
-        }
-      };
+      if ("error" in handle && handle.error) {
+        return {};
+      }
+      return handle;
     }
   }
   controlContainer.createEl("p", {
@@ -46502,55 +46534,31 @@ var repeatingFieldRenderer = {
       const categories = config.categories ?? [];
       const filters = config.filters ?? void 0;
       const itemTemplate = repeatingSpec.itemTemplate ?? {};
-      if (!categories.length) {
-        console.warn(`Repeating field "${spec.id}" has no categories defined`);
-        const fallback = container.createDiv({ cls: "sm-cc-field--error" });
-        fallback.createEl("label", { text: spec.label });
-        fallback.createEl("p", { text: "No categories defined for repeating field" });
-        return { container: fallback };
-      }
       const renderEntry = config.renderEntry;
       const cardFactory = config.card;
-      if (!renderEntry && !cardFactory) {
-        console.warn(`Repeating field "${spec.id}" requires renderEntry or card in config`);
-        const fallback = container.createDiv({ cls: "sm-cc-field--error" });
-        fallback.createEl("label", { text: spec.label });
-        fallback.createEl("p", { text: "No renderer defined for repeating field" });
-        return { container: fallback };
-      }
-      const createEntry = (category) => {
-        const entry = { category };
-        for (const [key, fieldDef] of Object.entries(itemTemplate)) {
-          if (fieldDef.default !== void 0) {
-            entry[key] = fieldDef.default;
-          }
-        }
-        return entry;
-      };
-      const handle = mountEntryManager(setting.controlEl, {
-        label: "",
+      const handle = renderRepeatingEntryManagerCore({
+        container: setting.controlEl,
         entries,
         categories,
         filters,
-        createEntry,
+        itemTemplate,
         renderEntry,
         card: cardFactory,
-        onEntriesChanged: (updated) => {
-          onChange(spec.id, updated);
-        },
+        onChange: (updated) => onChange(spec.id, updated),
         insertPosition: config.insertPosition ?? "end",
-        hideAddBar: isStatic,
-        hideActions: isStatic
+        isStatic,
+        mountEntryManager,
+        fieldId: spec.id
       });
+      if ("error" in handle && handle.error) {
+        const fallback = container.createDiv({ cls: "sm-cc-field--error" });
+        fallback.createEl("label", { text: spec.label });
+        return { container: fallback };
+      }
       return {
         setErrors: validation.apply,
         container: setting.settingEl,
-        update: (value) => {
-          if (Array.isArray(value)) {
-            entries.splice(0, entries.length, ...value);
-            handle.rerender();
-          }
-        }
+        update: handle.update
       };
     }
   }

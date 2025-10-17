@@ -5,7 +5,7 @@ import { createNumberStepper } from "../controls/number-stepper";
 import { enhanceSelectToSearch } from "../../../../ui/components/search-dropdown";
 import { mountEntryManager, type EntryCategoryDefinition, type EntryFilterDefinition } from "../storage/entry-system";
 import { RepeatingWidthSynchronizer } from "../layout/repeating-width-sync";
-import { renderTextCore, renderTextareaCore, renderToggleCore, renderColorCore, renderMultiselectCore, renderDisplayCore, renderHeadingCore, renderCompositeCore } from "./field-rendering-core";
+import { renderTextCore, renderTextareaCore, renderToggleCore, renderColorCore, renderMultiselectCore, renderDisplayCore, renderHeadingCore, renderCompositeCore, renderRepeatingEntryManagerCore } from "./field-rendering-core";
 import type { AnyFieldSpec, FieldRenderHandle, CompositeFieldSpec } from "../types";
 
 /**
@@ -416,60 +416,31 @@ export function renderFieldControl(
       const categories = (config.categories as EntryCategoryDefinition<string>[]) ?? [];
       const filters = (config.filters as EntryFilterDefinition<Record<string, unknown>, string>[]) ?? undefined;
       const itemTemplate = repeatingSpec.itemTemplate ?? {};
-
-      if (!categories.length) {
-        controlContainer.createEl("p", {
-          text: "No categories defined for repeating field",
-          cls: "sm-cc-field--error"
-        });
-        return {};
-      }
-
       const renderEntry = config.renderEntry as ((container: HTMLElement, context: any) => HTMLElement) | undefined;
       const cardFactory = config.card as ((context: any) => any) | undefined;
 
-      if (!renderEntry && !cardFactory) {
-        controlContainer.createEl("p", {
-          text: "No renderer defined for repeating field",
-          cls: "sm-cc-field--error"
-        });
-        return {};
-      }
-
-      const createEntry = (category: string): Record<string, unknown> => {
-        const entry: Record<string, unknown> = { category };
-        for (const [key, fieldDef] of Object.entries(itemTemplate)) {
-          if (fieldDef.default !== undefined) {
-            entry[key] = fieldDef.default;
-          }
-        }
-        return entry;
-      };
-
-      const handle = mountEntryManager(controlContainer, {
-        label: "",
+      // Use core rendering function
+      const handle = renderRepeatingEntryManagerCore({
+        container: controlContainer,
         entries,
         categories,
         filters,
-        createEntry,
+        itemTemplate,
         renderEntry,
         card: cardFactory,
-        onEntriesChanged: (updated) => {
-          onChange(updated);
-        },
+        onChange,
         insertPosition: (config.insertPosition as "start" | "end") ?? "end",
-        hideAddBar: isStatic,
-        hideActions: isStatic,
+        isStatic,
+        mountEntryManager,
+        fieldId: spec.id,
       });
 
-      return {
-        update: (value) => {
-          if (Array.isArray(value)) {
-            entries.splice(0, entries.length, ...value as Record<string, unknown>[]);
-            handle.rerender();
-          }
-        },
-      };
+      // Handle validation errors from core
+      if ('error' in handle && handle.error) {
+        return {};
+      }
+
+      return handle;
     }
   }
 

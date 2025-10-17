@@ -375,6 +375,13 @@ export function renderHeadingCore(options: HeadingFieldCoreOptions): CoreFieldHa
 // COMPOSITE FIELD CORE
 // ============================================================================
 
+// Type imports for external dependencies
+export type EntryCategoryDefinition<T> = any;
+export type EntryFilterDefinition<Entry, Category> = any;
+export type EntryManagerHandle = {
+  rerender: () => void;
+};
+
 export interface CompositeFieldCoreOptions {
   container: HTMLElement;
   childFields: Array<Partial<AnyFieldSpec>>;
@@ -524,6 +531,97 @@ export function renderCompositeCore(options: CompositeFieldCoreOptions) {
         }
         // Update visibility after updating values
         updateChildVisibility();
+      }
+    },
+  };
+}
+
+// ============================================================================
+// REPEATING FIELD ENTRY-MANAGER CORE
+// ============================================================================
+
+export interface RepeatingEntryManagerCoreOptions {
+  container: HTMLElement;
+  entries: Record<string, unknown>[];
+  categories: EntryCategoryDefinition<string>[];
+  filters?: EntryFilterDefinition<Record<string, unknown>, string>[];
+  itemTemplate: Record<string, any>;
+  renderEntry?: (container: HTMLElement, context: any) => HTMLElement;
+  card?: (context: any) => any;
+  onChange: (entries: Record<string, unknown>[]) => void;
+  insertPosition?: "start" | "end";
+  isStatic?: boolean;
+  mountEntryManager: (container: HTMLElement, options: any) => EntryManagerHandle;
+  fieldId?: string; // For error logging
+}
+
+/**
+ * Core implementation for repeating field entry-manager mode.
+ * Handles entry management with categories, filters, and custom rendering.
+ */
+export function renderRepeatingEntryManagerCore(options: RepeatingEntryManagerCoreOptions) {
+  const {
+    container,
+    entries,
+    categories,
+    filters,
+    itemTemplate,
+    renderEntry,
+    card,
+    onChange,
+    insertPosition = "end",
+    isStatic = false,
+    mountEntryManager,
+    fieldId = "unknown",
+  } = options;
+
+  // Validate required config
+  if (!categories.length) {
+    console.warn(`Repeating field "${fieldId}" has no categories defined`);
+    const errorContainer = container.createDiv({ cls: "sm-cc-field--error" });
+    errorContainer.createEl("p", { text: "No categories defined for repeating field" });
+    return { error: true };
+  }
+
+  if (!renderEntry && !card) {
+    console.warn(`Repeating field "${fieldId}" requires renderEntry or card in config`);
+    const errorContainer = container.createDiv({ cls: "sm-cc-field--error" });
+    errorContainer.createEl("p", { text: "No renderer defined for repeating field" });
+    return { error: true };
+  }
+
+  // Create entry factory from itemTemplate
+  const createEntry = (category: string): Record<string, unknown> => {
+    const entry: Record<string, unknown> = { category };
+    for (const [key, fieldDef] of Object.entries(itemTemplate)) {
+      if (fieldDef.default !== undefined) {
+        entry[key] = fieldDef.default;
+      }
+    }
+    return entry;
+  };
+
+  const handle = mountEntryManager(container, {
+    label: "",
+    entries,
+    categories,
+    filters,
+    createEntry,
+    renderEntry,
+    card,
+    onEntriesChanged: (updated) => {
+      onChange(updated);
+    },
+    insertPosition,
+    hideAddBar: isStatic,
+    hideActions: isStatic,
+  });
+
+  return {
+    update: (value: unknown) => {
+      if (Array.isArray(value)) {
+        entries.splice(0, entries.length, ...value as Record<string, unknown>[]);
+        handle.rerender();
       }
     },
   };
