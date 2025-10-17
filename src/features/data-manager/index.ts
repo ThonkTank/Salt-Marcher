@@ -16,6 +16,9 @@ export * from "./layout/layouts";
 export * from "./fields/number-stepper-control";
 export * from "./storage/entry-system";
 
+// Browse infrastructure
+export * from "./browse";
+
 // ============================================================================
 // LEGACY - Backwards compatibility exports
 // ============================================================================

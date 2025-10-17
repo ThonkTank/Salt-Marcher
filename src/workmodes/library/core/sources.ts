@@ -1,10 +1,10 @@
 // src/workmodes/library/core/sources.ts
 // Konsolidiert Bibliotheksquellen samt Setup- und Beschreibungs-Utilities.
 import type { App } from "obsidian";
-import { ensureCreatureDir } from "./creature-files";
-import { ensureSpellDir } from "./spell-files";
-import { ensureItemDir } from "./item-files";
-import { ensureEquipmentDir } from "./equipment-files";
+import { ensureCreatureDir } from "../storage/creatures";
+import { ensureSpellDir } from "../storage/spells";
+import { ensureItemDir } from "../storage/items";
+import { ensureEquipmentDir } from "../storage/equipment";
 import { ensureTerrainFile, TERRAIN_FILE } from "../../../features/maps/data/terrain-repository";
 import { ensureRegionsFile, REGIONS_FILE } from "../../../features/maps/data/region-repository";
 import { ENTITY_REGISTRY } from "./entity-registry";

@@ -1,14 +1,15 @@
-// src/workmodes/library/view/library-renderer.ts
-// Generic renderer for all library entities (creatures, spells, items, equipment)
+// src/features/data-manager/browse/generic-list-renderer.ts
+// Fully generic list renderer for any entity type with filtering, sorting, and search
 
 import type { App } from "obsidian";
-import type { FilterableLibraryMode, LibraryEntry } from "../storage/data-sources";
-import type { LibraryDataSource } from "../storage/data-sources";
-import type { LibraryListSchema } from "../../../features/data-manager/browse/schema-builder";
-import type { LibraryViewConfig, LibraryActionContext } from "../entities/creatures/view-config";
-
-import { LIBRARY_DATA_SOURCES } from "../storage/data-sources";
-import { LIBRARY_VIEW_CONFIGS, LIBRARY_LIST_SCHEMAS } from "../entities/registry";
+import type {
+    BaseEntry,
+    DataSource,
+    ViewConfig,
+    ListSchema,
+    GenericListRendererConfig,
+    SourceWatcherHub
+} from "./types";
 
 import {
     FilterSortState,
@@ -16,43 +17,31 @@ import {
     renderFilterSortControls,
     renderWorkmodeFeedback,
     renderWorkmodeList,
-} from "../../../features/data-manager/browse";
+} from "./index";
 
-interface PreparedEntry<M extends FilterableLibraryMode> {
-    entry: LibraryEntry<M>;
+interface PreparedEntry<E extends BaseEntry> {
+    entry: E;
     score: number;
 }
 
-export interface BaseModeRenderer {
-    query: string;
-    init(): Promise<void>;
-    render(): void;
-    destroy(): void;
-    isDisposed(): boolean;
-    registerCleanup(fn: () => void): void;
-}
-
-export interface LibrarySourceWatcherHub {
-    subscribe(
-        mode: FilterableLibraryMode,
-        watch: (onChange: () => void) => () => void,
-        onChange: () => void
-    ): () => void;
-}
-
 /**
- * Generic library renderer that works for any entity type.
- * Replaces the per-entity renderers (CreaturesRenderer, SpellsRenderer, etc.)
+ * Fully generic list renderer that works for any entity type.
+ * Supports filtering, sorting, searching, and custom actions.
+ *
+ * @template M - Mode identifier type (e.g., "creatures" | "spells")
+ * @template E - Entry type extending BaseEntry
+ * @template C - Action context type (defaults to any)
  */
-export class LibraryRenderer<M extends FilterableLibraryMode> {
+export class GenericListRenderer<M extends string, E extends BaseEntry, C = any> {
     readonly mode: M;
     query = "";
 
-    private readonly source: LibraryDataSource<M>;
-    private readonly schema: LibraryListSchema<LibraryEntry<M>>;
-    private readonly viewConfig: LibraryViewConfig;
-    private readonly state: FilterSortState<LibraryEntry<M>>;
-    private entries: LibraryEntry<M>[] = [];
+    private readonly source: DataSource<M, E>;
+    private readonly schema: ListSchema<E>;
+    private readonly viewConfig: ViewConfig<E, C>;
+    private readonly watchers: SourceWatcherHub<M>;
+    private readonly state: FilterSortState<E>;
+    private entries: E[] = [];
     private loadError?: unknown;
     private renderToken = 0;
     private disposed = false;
@@ -61,14 +50,14 @@ export class LibraryRenderer<M extends FilterableLibraryMode> {
     constructor(
         private readonly app: App,
         private readonly container: HTMLElement,
-        private readonly watchers: LibrarySourceWatcherHub,
-        mode: M,
+        config: GenericListRendererConfig<M, E, C>
     ) {
-        this.mode = mode;
-        this.source = LIBRARY_DATA_SOURCES[mode] as LibraryDataSource<M>;
-        this.schema = LIBRARY_LIST_SCHEMAS[mode];
-        this.viewConfig = LIBRARY_VIEW_CONFIGS[mode];
-        this.state = new FilterSortState<LibraryEntry<M>>();
+        this.mode = config.mode;
+        this.source = config.source;
+        this.schema = config.schema;
+        this.viewConfig = config.viewConfig;
+        this.watchers = config.watchers;
+        this.state = new FilterSortState<E>();
     }
 
     async init(): Promise<void> {
@@ -104,13 +93,13 @@ export class LibraryRenderer<M extends FilterableLibraryMode> {
         this.cleanups.push(fn);
     }
 
-    private createActionContext(): LibraryActionContext {
+    private createActionContext(): C {
         return {
             app: this.app,
             reloadEntries: () => this.reloadEntries(),
             getRenderer: () => this.viewConfig,
             getFilterSelection: (id) => this.getFilterSelection(id),
-        };
+        } as C;
     }
 
     async handleCreate(name: string): Promise<void> {
@@ -177,7 +166,7 @@ export class LibraryRenderer<M extends FilterableLibraryMode> {
         }
 
         const query = this.query;
-        const prepared: PreparedEntry<M>[] = this.entries.map(entry => ({
+        const prepared: PreparedEntry<E>[] = this.entries.map(entry => ({
             entry,
             score: this.computeSearchScore(entry, query),
         }));
@@ -221,7 +210,7 @@ export class LibraryRenderer<M extends FilterableLibraryMode> {
         });
     }
 
-    private computeSearchScore(entry: LibraryEntry<M>, query: string): number {
+    private computeSearchScore(entry: E, query: string): number {
         if (!query) return 0.0001;
         const candidates = [entry.name, ...this.schema.search(entry)];
         let best = -Infinity;
@@ -242,3 +231,8 @@ export class LibraryRenderer<M extends FilterableLibraryMode> {
         return -Infinity;
     }
 }
+
+/**
+ * @deprecated Use GenericListRenderer instead
+ */
+export const LibraryRenderer = GenericListRenderer;

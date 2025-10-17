@@ -4,8 +4,8 @@
 import type { App, TFile } from "obsidian";
 import { parseReferenceStatblock } from "./parsers/reference-parser";
 import { parseReferenceSpell } from "./parsers/spell-reference-parser";
-import { statblockToMarkdown } from "../core/creature-files";
-import { spellToMarkdown } from "../core/spell-files";
+import { statblockToMarkdown } from "../storage/creatures";
+import { spellToMarkdown } from "../storage/spells";
 import { Notice } from "obsidian";
 
 const CREATURES_REFERENCES_DIR = "References/rulebooks/Statblocks/Creatures";

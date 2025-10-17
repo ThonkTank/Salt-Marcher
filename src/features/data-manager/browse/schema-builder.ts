@@ -1,7 +1,7 @@
 // src/features/data-manager/browse/schema-builder.ts
 // Fluent builder API for creating filter/sort/search schemas
 
-import type { LibraryEntryBase } from "../../../workmodes/library/core/data-sources";
+import type { BaseEntry, ListSchema } from "./types";
 
 /**
  * Generic filter definition for library entries
@@ -26,12 +26,9 @@ export interface SortDefinition<TEntry> {
 
 /**
  * Complete schema for a library list view
+ * @deprecated Use ListSchema from types.ts instead
  */
-export interface LibraryListSchema<TEntry> {
-    readonly filters: FilterDefinition<TEntry>[];
-    readonly sorts: SortDefinition<TEntry>[];
-    readonly search: (entry: TEntry) => string[];
-}
+export type LibraryListSchema<TEntry extends BaseEntry> = ListSchema<TEntry>;
 
 /**
  * Fluent builder for creating library list schemas.
@@ -46,7 +43,7 @@ export interface LibraryListSchema<TEntry> {
  *   .build();
  * ```
  */
-export class SchemaBuilder<TEntry extends LibraryEntryBase> {
+export class SchemaBuilder<TEntry extends BaseEntry> {
     private _filters: FilterDefinition<TEntry>[] = [];
     private _sorts: SortDefinition<TEntry>[] = [];
     private _searchFields: ((entry: TEntry) => string | undefined)[] = [];
@@ -231,7 +228,7 @@ export class SchemaBuilder<TEntry extends LibraryEntryBase> {
      * Build the final schema object.
      * Call this after adding all filters, sorts, and search fields.
      */
-    build(): LibraryListSchema<TEntry> {
+    build(): ListSchema<TEntry> {
         return {
             filters: this._filters,
             sorts: this._sorts,
@@ -255,6 +252,6 @@ export class SchemaBuilder<TEntry extends LibraryEntryBase> {
  *   .build();
  * ```
  */
-export function createSchema<TEntry extends LibraryEntryBase>(): SchemaBuilder<TEntry> {
+export function createSchema<TEntry extends BaseEntry>(): SchemaBuilder<TEntry> {
     return new SchemaBuilder<TEntry>();
 }

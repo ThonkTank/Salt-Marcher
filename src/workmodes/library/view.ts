@@ -1,14 +1,33 @@
 // src/workmodes/library/view.ts
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import type { App } from "obsidian";
-import type { ModeRenderer, Mode } from "./view/mode";
-import { LibrarySourceWatcherHub } from "./view/mode";
-import { CreaturesRenderer } from "./view/creatures";
-import { SpellsRenderer } from "./view/spells";
-import { ItemsRenderer } from "./view/items";
-import { EquipmentRenderer } from "./view/equipment";
+import type { GenericListRendererConfig, SourceWatcherHub } from "../../features/data-manager";
+import { GenericListRenderer } from "../../features/data-manager";
+import { WatcherHub } from "../../ui/utils/watcher-hub";
+import { LIBRARY_DATA_SOURCES, type FilterableLibraryMode, type LibraryEntry } from "./storage/data-sources";
+import { LIBRARY_LIST_SCHEMAS, LIBRARY_VIEW_CONFIGS } from "./entities/registry";
+import type { LibraryActionContext } from "./entities/creatures/view-config";
 import { describeLibrarySource, ensureLibrarySources } from "./core/sources";
 import { createWorkmodeHeader, type WorkmodeHeaderHandle, type TabConfig } from "../../ui";
+
+type Mode = FilterableLibraryMode;
+type ModeRenderer = GenericListRenderer<Mode, LibraryEntry<Mode>, LibraryActionContext>;
+
+/**
+ * Library-specific watcher hub for coordinating file system watchers.
+ * Typed wrapper around the generic WatcherHub.
+ */
+class LibrarySourceWatcherHub implements SourceWatcherHub<Mode> {
+    private readonly hub = new WatcherHub<Mode>();
+
+    subscribe(source: Mode, factory: (onChange: () => void) => () => void, listener: () => void): () => void {
+        return this.hub.subscribe(source, factory, listener);
+    }
+
+    destroy(): void {
+        this.hub.destroy();
+    }
+}
 
 /**
  * Authoritative UI copy for the library view. Keep aligned with `docs/ui/terminology.md`.
@@ -130,18 +149,14 @@ export class LibraryView extends ItemView {
     }
 
     private createRenderer(mode: Mode, container: HTMLElement): ModeRenderer {
-        switch (mode) {
-            case "creatures":
-                return new CreaturesRenderer(this.app, container, this.watchers);
-            case "spells":
-                return new SpellsRenderer(this.app, container, this.watchers);
-            case "items":
-                return new ItemsRenderer(this.app, container, this.watchers);
-            case "equipment":
-                return new EquipmentRenderer(this.app, container, this.watchers);
-            default:
-                throw new Error(`Unsupported mode: ${mode}`);
-        }
+        const config: GenericListRendererConfig<Mode, LibraryEntry<Mode>, LibraryActionContext> = {
+            mode,
+            source: LIBRARY_DATA_SOURCES[mode],
+            schema: LIBRARY_LIST_SCHEMAS[mode],
+            viewConfig: LIBRARY_VIEW_CONFIGS[mode],
+            watchers: this.watchers as SourceWatcherHub<Mode>,
+        };
+        return new GenericListRenderer(this.app, container, config);
     }
 
     private updateSourceDescription() {

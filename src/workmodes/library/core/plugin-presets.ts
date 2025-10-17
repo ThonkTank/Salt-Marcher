@@ -2,10 +2,10 @@
 // Loads preset creatures and spells from bundled presets or reference files
 
 import { App, Notice, Platform, normalizePath } from "obsidian";
-import { ensureCreatureDir } from "./creature-files";
-import { ensureSpellDir } from "./spell-files";
-import { ensureItemDir } from "./item-files";
-import { ensureEquipmentDir } from "./equipment-files";
+import { ensureCreatureDir } from "../storage/creatures";
+import { ensureSpellDir } from "../storage/spells";
+import { ensureItemDir } from "../storage/items";
+import { ensureEquipmentDir } from "../storage/equipment";
 import { ENTITY_REGISTRY } from "./entity-registry";
 
 // Define the preset files structure

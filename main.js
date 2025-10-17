@@ -5274,16 +5274,16 @@ function sanitizeVaultFileName(name, fallback) {
   return trimmed.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").replace(/^\.+$/, safeFallback).slice(0, 120);
 }
 function createVaultFilePipeline(options) {
-  const normalizedDir = (0, import_obsidian32.normalizePath)(options.dir);
+  const normalizedDir = (0, import_obsidian27.normalizePath)(options.dir);
   const extension = (options.extension || "md").replace(/^\.+/, "");
   const sanitize = options.sanitizeName ? options.sanitizeName : (name) => sanitizeVaultFileName(name, options.defaultBaseName);
   async function ensure(app) {
     let file = app.vault.getAbstractFileByPath(normalizedDir);
-    if (file instanceof import_obsidian32.TFolder) return file;
+    if (file instanceof import_obsidian27.TFolder) return file;
     await app.vault.createFolder(normalizedDir).catch(() => {
     });
     file = app.vault.getAbstractFileByPath(normalizedDir);
-    if (file instanceof import_obsidian32.TFolder) return file;
+    if (file instanceof import_obsidian27.TFolder) return file;
     throw new Error(`Could not create directory ${normalizedDir}`);
   }
   async function list(app) {
@@ -5291,8 +5291,8 @@ function createVaultFilePipeline(options) {
     const out = [];
     const walk = (folder) => {
       for (const child of folder.children) {
-        if (child instanceof import_obsidian32.TFolder) walk(child);
-        else if (child instanceof import_obsidian32.TFile && child.extension === extension) out.push(child);
+        if (child instanceof import_obsidian27.TFolder) walk(child);
+        else if (child instanceof import_obsidian27.TFile && child.extension === extension) out.push(child);
       }
     };
     walk(dir);
@@ -5301,7 +5301,7 @@ function createVaultFilePipeline(options) {
   function watch(app, onChange) {
     const base = `${normalizedDir}/`;
     const isRelevant = (file) => {
-      if (!(file instanceof import_obsidian32.TFile || file instanceof import_obsidian32.TFolder)) return false;
+      if (!(file instanceof import_obsidian27.TFile || file instanceof import_obsidian27.TFolder)) return false;
       const path = file.path.endsWith("/") ? file.path : `${file.path}/`;
       return path.startsWith(base);
     };
@@ -5323,11 +5323,11 @@ function createVaultFilePipeline(options) {
     const dir = await ensure(app);
     const baseName = sanitize(options.getBaseName(data) ?? options.defaultBaseName);
     let fileName = `${baseName}.${extension}`;
-    let path = (0, import_obsidian32.normalizePath)(`${dir.path}/${fileName}`);
+    let path = (0, import_obsidian27.normalizePath)(`${dir.path}/${fileName}`);
     let i = 2;
     while (app.vault.getAbstractFileByPath(path)) {
       fileName = `${baseName} (${i}).${extension}`;
-      path = (0, import_obsidian32.normalizePath)(`${dir.path}/${fileName}`);
+      path = (0, import_obsidian27.normalizePath)(`${dir.path}/${fileName}`);
       i += 1;
     }
     const content = options.toContent(data);
@@ -5336,11 +5336,11 @@ function createVaultFilePipeline(options) {
   }
   return { ensure, list, watch, create };
 }
-var import_obsidian32;
+var import_obsidian27;
 var init_file_pipeline = __esm({
   "src/workmodes/library/core/file-pipeline.ts"() {
     "use strict";
-    import_obsidian32 = require("obsidian");
+    import_obsidian27 = require("obsidian");
   }
 });
 
@@ -5386,7 +5386,7 @@ var init_entity_registry = __esm({
   }
 });
 
-// src/workmodes/library/core/creature-files.ts
+// src/workmodes/library/storage/creatures.ts
 function yamlList(items) {
   if (!items || items.length === 0) return void 0;
   const safe = items.map((s) => `"${(s ?? "").replace(/"/g, '\\"')}"`).join(", ");
@@ -5740,10 +5740,59 @@ function formatSpellLevelHeading(level) {
   const suffix = level === 1 ? "st" : level === 2 ? "nd" : level === 3 ? "rd" : "th";
   return `${level}${suffix} Level`;
 }
-var entityConfig, CREATURES_DIR, CREATURE_PIPELINE, ensureCreatureDir, listCreatureFiles, watchCreatureDir;
-var init_creature_files = __esm({
-  "src/workmodes/library/core/creature-files.ts"() {
+async function loadCreaturePreset(app, filePath) {
+  const file = app.vault.getAbstractFileByPath(filePath);
+  if (!(file instanceof import_obsidian28.TFile)) {
+    throw new Error(`File not found: ${filePath}`);
+  }
+  const cache = app.metadataCache.getFileCache(file);
+  if (!cache?.frontmatter) {
+    throw new Error(`No frontmatter found in ${filePath}`);
+  }
+  const fm2 = cache.frontmatter;
+  const speeds = fm2.speeds_json ? JSON.parse(fm2.speeds_json.replace(/\\"/g, '"')) : void 0;
+  const abilities = fm2.abilities_json ? JSON.parse(fm2.abilities_json.replace(/\\"/g, '"')) : void 0;
+  const saves = fm2.saves_json ? JSON.parse(fm2.saves_json.replace(/\\"/g, '"')) : void 0;
+  const skills = fm2.skills_json ? JSON.parse(fm2.skills_json.replace(/\\"/g, '"')) : void 0;
+  const entries = fm2.entries_structured_json ? JSON.parse(fm2.entries_structured_json.replace(/\\"/g, '"')) : void 0;
+  const spellcasting = fm2.spellcasting_json ? JSON.parse(fm2.spellcasting_json.replace(/\\"/g, '"')) : void 0;
+  const data = {
+    name: fm2.name || file.basename,
+    size: fm2.size,
+    type: fm2.type,
+    typeTags: fm2.type_tags,
+    alignmentLawChaos: void 0,
+    alignmentGoodEvil: void 0,
+    alignmentOverride: fm2.alignment_override,
+    ac: fm2.ac,
+    initiative: fm2.initiative,
+    hp: fm2.hp,
+    hitDice: fm2.hit_dice,
+    speeds,
+    abilities,
+    pb: fm2.pb,
+    saves,
+    skills,
+    sensesList: fm2.senses,
+    languagesList: fm2.languages,
+    passivesList: fm2.passives,
+    damageVulnerabilitiesList: fm2.damage_vulnerabilities,
+    damageResistancesList: fm2.damage_resistances,
+    damageImmunitiesList: fm2.damage_immunities,
+    conditionImmunitiesList: fm2.condition_immunities,
+    gearList: fm2.gear,
+    cr: fm2.cr,
+    xp: fm2.xp,
+    entries,
+    spellcasting
+  };
+  return data;
+}
+var import_obsidian28, entityConfig, CREATURES_DIR, CREATURE_PIPELINE, ensureCreatureDir, listCreatureFiles, watchCreatureDir;
+var init_creatures = __esm({
+  "src/workmodes/library/storage/creatures.ts"() {
     "use strict";
+    import_obsidian28 = require("obsidian");
     init_file_pipeline();
     init_entity_registry();
     entityConfig = ENTITY_REGISTRY.creatures;
@@ -5761,7 +5810,7 @@ var init_creature_files = __esm({
   }
 });
 
-// src/workmodes/library/core/spell-files.ts
+// src/workmodes/library/storage/spells.ts
 function asStringArray(value) {
   if (!Array.isArray(value)) return void 0;
   return value.map((entry) => typeof entry === "string" ? entry : String(entry ?? ""));
@@ -5863,8 +5912,8 @@ async function loadSpellFile(app, file) {
   return data;
 }
 var entityConfig2, SPELLS_DIR, SPELL_PIPELINE, ensureSpellDir, listSpellFiles, watchSpellDir;
-var init_spell_files = __esm({
-  "src/workmodes/library/core/spell-files.ts"() {
+var init_spells = __esm({
+  "src/workmodes/library/storage/spells.ts"() {
     "use strict";
     init_file_pipeline();
     init_entity_registry();
@@ -5883,7 +5932,7 @@ var init_spell_files = __esm({
   }
 });
 
-// src/workmodes/library/core/item-files.ts
+// src/workmodes/library/storage/items.ts
 function yamlList3(items) {
   if (!items || items.length === 0) return void 0;
   const safe = items.map((s) => `"${(s ?? "").replace(/"/g, '\\"')}"`).join(", ");
@@ -6198,8 +6247,8 @@ async function loadItemFile(app, file) {
   return data;
 }
 var entityConfig3, ITEMS_DIR, ITEM_PIPELINE, ensureItemDir, listItemFiles, watchItemDir;
-var init_item_files = __esm({
-  "src/workmodes/library/core/item-files.ts"() {
+var init_items = __esm({
+  "src/workmodes/library/storage/items.ts"() {
     "use strict";
     init_file_pipeline();
     init_entity_registry();
@@ -6218,7 +6267,7 @@ var init_item_files = __esm({
   }
 });
 
-// src/workmodes/library/core/equipment-files.ts
+// src/workmodes/library/storage/equipment.ts
 function yamlList4(items) {
   if (!items || items.length === 0) return void 0;
   const safe = items.map((s) => `"${(s ?? "").replace(/"/g, '\\"')}"`).join(", ");
@@ -6407,8 +6456,8 @@ async function loadEquipmentFile(app, file) {
   return data;
 }
 var entityConfig4, EQUIPMENT_DIR, EQUIPMENT_PIPELINE, ensureEquipmentDir, listEquipmentFiles, watchEquipmentDir;
-var init_equipment_files = __esm({
-  "src/workmodes/library/core/equipment-files.ts"() {
+var init_equipment = __esm({
+  "src/workmodes/library/storage/equipment.ts"() {
     "use strict";
     init_file_pipeline();
     init_entity_registry();
@@ -6429,9 +6478,9 @@ var init_equipment_files = __esm({
 
 // src/features/maps/data/terrain-repository.ts
 async function ensureTerrainFile(app) {
-  const p = (0, import_obsidian33.normalizePath)(TERRAIN_FILE);
+  const p = (0, import_obsidian29.normalizePath)(TERRAIN_FILE);
   const existing = app.vault.getAbstractFileByPath(p);
-  if (existing instanceof import_obsidian33.TFile) return existing;
+  if (existing instanceof import_obsidian29.TFile) return existing;
   await app.vault.createFolder(p.split("/").slice(0, -1).join("/")).catch(() => {
   });
   const body = [
@@ -6518,7 +6567,7 @@ function watchTerrains(app, onChangeOrOptions) {
     }
   };
   const maybeUpdate = (reason, file) => {
-    if (!(file instanceof import_obsidian33.TFile) || file.path !== TERRAIN_FILE) return;
+    if (!(file instanceof import_obsidian29.TFile) || file.path !== TERRAIN_FILE) return;
     void update(reason);
   };
   const refs = ["modify", "delete"].map(
@@ -6533,11 +6582,11 @@ function watchTerrains(app, onChangeOrOptions) {
     }
   };
 }
-var import_obsidian33, TERRAIN_FILE, BLOCK_RE2;
+var import_obsidian29, TERRAIN_FILE, BLOCK_RE2;
 var init_terrain_repository = __esm({
   "src/features/maps/data/terrain-repository.ts"() {
     "use strict";
-    import_obsidian33 = require("obsidian");
+    import_obsidian29 = require("obsidian");
     init_terrain();
     TERRAIN_FILE = "SaltMarcher/Terrains.md";
     BLOCK_RE2 = /```terrain\s*([\s\S]*?)```/i;
@@ -6617,9 +6666,9 @@ var init_travel_calendar_toolbar = __esm({
           modeGroup.appendChild(button);
           this.modeButtons.set(mode, button);
         }
-        const actions = document.createElement("div");
-        actions.classList.add("sm-almanac-travel__toolbar-actions");
-        this.root.appendChild(actions);
+        const actions5 = document.createElement("div");
+        actions5.classList.add("sm-almanac-travel__toolbar-actions");
+        this.root.appendChild(actions5);
         const createStepButton = (label, onClick, shortcut, direction) => {
           const btn = document.createElement("button");
           btn.type = "button";
@@ -6634,7 +6683,7 @@ var init_travel_calendar_toolbar = __esm({
               onClick();
             }
           });
-          actions.appendChild(btn);
+          actions5.appendChild(btn);
           return btn;
         };
         createStepButton("\u2212Tag", () => this.options.onStepDay("backward"), "Ctrl+Alt+,", "backward");
@@ -7887,7 +7936,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--play",
     text: "Start"
   });
-  (0, import_obsidian37.setIcon)(playBtn, "play");
+  (0, import_obsidian33.setIcon)(playBtn, "play");
   applyMapButtonStyle(playBtn);
   playBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -7898,7 +7947,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--stop",
     text: "Stopp"
   });
-  (0, import_obsidian37.setIcon)(stopBtn, "square");
+  (0, import_obsidian33.setIcon)(stopBtn, "square");
   applyMapButtonStyle(stopBtn);
   stopBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -7909,7 +7958,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--reset",
     text: "Reset"
   });
-  (0, import_obsidian37.setIcon)(resetBtn, "rotate-ccw");
+  (0, import_obsidian33.setIcon)(resetBtn, "rotate-ccw");
   applyMapButtonStyle(resetBtn);
   resetBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -7958,11 +8007,11 @@ function createPlaybackControls(host, callbacks) {
     setTempo
   };
 }
-var import_obsidian37;
+var import_obsidian33;
 var init_controls = __esm({
   "src/workmodes/session-runner/travel/ui/controls.ts"() {
     "use strict";
-    import_obsidian37 = require("obsidian");
+    import_obsidian33 = require("obsidian");
     init_map_workflows();
   }
 });
@@ -8221,7 +8270,7 @@ function bindContextMenu(routeLayerEl, logic) {
     }
     ev.preventDefault();
     ev.stopPropagation();
-    const menu = new import_obsidian38.Menu();
+    const menu = new import_obsidian34.Menu();
     if (allowDelete) {
       menu.addItem(
         (item) => item.setTitle("Wegpunkt entfernen").setIcon("trash").onClick(() => {
@@ -8241,11 +8290,11 @@ function bindContextMenu(routeLayerEl, logic) {
   routeLayerEl.addEventListener("contextmenu", onContextMenu, { capture: true });
   return () => routeLayerEl.removeEventListener("contextmenu", onContextMenu, { capture: true });
 }
-var import_obsidian38;
+var import_obsidian34;
 var init_context_menu_controller = __esm({
   "src/workmodes/session-runner/travel/ui/context-menu.controller.ts"() {
     "use strict";
-    import_obsidian38 = require("obsidian");
+    import_obsidian34 = require("obsidian");
   }
 });
 
@@ -8370,7 +8419,7 @@ function loadEncounterModule() {
     VIEW_ENCOUNTER: encounter.VIEW_ENCOUNTER
   })).catch((err) => {
     console.error("[session-runner] failed to load encounter module", err);
-    new import_obsidian39.Notice("Encounter-Modul konnte nicht geladen werden.");
+    new import_obsidian35.Notice("Encounter-Modul konnte nicht geladen werden.");
     return null;
   });
 }
@@ -8389,7 +8438,7 @@ async function openEncounter2(app, context) {
   const issue = describeEncounterContextIssue(context);
   if (issue) {
     console.warn(`[session-runner] ${issue.log}`, context);
-    new import_obsidian39.Notice(issue.message);
+    new import_obsidian35.Notice(issue.message);
   } else if (context) {
     try {
       const event = await createEncounterEventFromTravel(app, context);
@@ -8441,11 +8490,11 @@ async function publishManualEncounter(app, context, options = {}) {
     console.error("[session-runner] failed to publish manual encounter", err);
   }
 }
-var import_obsidian39, encounterModule;
+var import_obsidian35, encounterModule;
 var init_encounter_gateway = __esm({
   "src/workmodes/session-runner/view/controllers/encounter-gateway.ts"() {
     "use strict";
-    import_obsidian39 = require("obsidian");
+    import_obsidian35 = require("obsidian");
     init_session_store();
     init_event_builder();
     encounterModule = null;
@@ -41497,7 +41546,7 @@ function registerPreset(fileName, content) {
 async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir2) {
   try {
     await ensureDir2(app);
-    const normalizedDir = (0, import_obsidian43.normalizePath)(dir);
+    const normalizedDir = (0, import_obsidian39.normalizePath)(dir);
     const presetModule = await Promise.resolve().then(() => (init_preset_data(), preset_data_exports));
     const rawPresetFiles = presetModule[presetKey] || {};
     const presetEntries = Object.entries(rawPresetFiles).map(([fileName, content]) => [
@@ -41515,7 +41564,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir2) {
       const existing = await app.vault.adapter.list(normalizedDir);
       const prefix = `${normalizedDir}/`;
       existing.files.forEach((file) => {
-        const normalizedFile = (0, import_obsidian43.normalizePath)(file);
+        const normalizedFile = (0, import_obsidian39.normalizePath)(file);
         if (normalizedFile.startsWith(prefix)) {
           const relativePath = normalizedFile.slice(prefix.length).toLowerCase();
           if (relativePath) existingFiles.add(relativePath);
@@ -41529,7 +41578,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir2) {
     const ensuredFolders = /* @__PURE__ */ new Set([normalizedDir]);
     for (const [fileName, content] of presetEntries) {
       const loweredName = fileName.toLowerCase();
-      const targetPath = (0, import_obsidian43.normalizePath)(`${normalizedDir}/${fileName}`);
+      const targetPath = (0, import_obsidian39.normalizePath)(`${normalizedDir}/${fileName}`);
       if (existingFiles.has(loweredName)) {
         skippedCount++;
         continue;
@@ -41545,19 +41594,19 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir2) {
       }
     }
     if (importedCount > 0) {
-      new import_obsidian43.Notice(`Imported ${importedCount} ${typeName} presets`);
+      new import_obsidian39.Notice(`Imported ${importedCount} ${typeName} presets`);
       console.log(`${typeName} import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
     } else if (skippedCount > 0) {
       console.log(`All ${skippedCount} ${typeName} presets already exist`);
     } else if (errorCount > 0) {
-      new import_obsidian43.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian39.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   } catch (err) {
     console.error(`Failed to import ${typeName} presets:`, err);
     if (err instanceof Error && err.message.includes("Cannot find module")) {
       console.log(`No ${typeName} preset data found - skipping import`);
     } else {
-      new import_obsidian43.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian39.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   }
 }
@@ -41569,7 +41618,7 @@ async function ensureParentFolders(app, baseDir, relativePath, ensured) {
   parts.pop();
   let current = baseDir;
   for (const part of parts) {
-    current = (0, import_obsidian43.normalizePath)(`${current}/${part}`);
+    current = (0, import_obsidian39.normalizePath)(`${current}/${part}`);
     if (ensured.has(current)) continue;
     ensured.add(current);
     if (!app.vault.getAbstractFileByPath(current)) {
@@ -41586,7 +41635,7 @@ async function importPluginPresets(app) {
   return importPresetsForDir(app, ENTITY_REGISTRY.creatures.directory, "PRESET_CREATURES", "creature", ensureCreatureDir);
 }
 async function shouldImportPresetsForDir(app, dir, markerName, label, ensureDir2) {
-  const markerPath = (0, import_obsidian43.normalizePath)(`${dir}/${markerName}`);
+  const markerPath = (0, import_obsidian39.normalizePath)(`${dir}/${markerName}`);
   const markerFile = app.vault.getAbstractFileByPath(markerPath);
   if (markerFile) {
     return false;
@@ -41620,15 +41669,15 @@ async function importEquipmentPresets(app) {
 async function shouldImportEquipmentPresets(app) {
   return shouldImportPresetsForDir(app, ENTITY_REGISTRY.equipment.directory, ".plugin-equipment-imported", "Equipment presets", ensureEquipmentDir);
 }
-var import_obsidian43, PRESET_FILES;
+var import_obsidian39, PRESET_FILES;
 var init_plugin_presets = __esm({
   "src/workmodes/library/core/plugin-presets.ts"() {
     "use strict";
-    import_obsidian43 = require("obsidian");
-    init_creature_files();
-    init_spell_files();
-    init_item_files();
-    init_equipment_files();
+    import_obsidian39 = require("obsidian");
+    init_creatures();
+    init_spells();
+    init_items();
+    init_equipment();
     init_entity_registry();
     PRESET_FILES = {};
   }
@@ -41646,16 +41695,16 @@ __export(index_files_exports, {
 });
 async function createIndexFile(app, filePath, title, description, directory) {
   const folder = app.vault.getAbstractFileByPath(directory);
-  if (!(folder instanceof import_obsidian44.TFolder)) {
+  if (!(folder instanceof import_obsidian40.TFolder)) {
     console.log(`[Index] Directory ${directory} not found, skipping index generation`);
     return;
   }
   const files = [];
   const collectFiles = (folder2) => {
     for (const child of folder2.children) {
-      if (child instanceof import_obsidian44.TFile && child.extension === "md") {
+      if (child instanceof import_obsidian40.TFile && child.extension === "md") {
         files.push(child);
-      } else if (child instanceof import_obsidian44.TFolder) {
+      } else if (child instanceof import_obsidian40.TFolder) {
         collectFiles(child);
       }
     }
@@ -41692,7 +41741,7 @@ async function createIndexFile(app, filePath, title, description, directory) {
   }
   const content = lines.join("\n");
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian44.TFile) {
+  if (existingFile instanceof import_obsidian40.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -41750,7 +41799,7 @@ async function generateLibraryHub(app) {
   const content = lines.join("\n");
   const filePath = `${SALTMARCHER_DIR}/Library.md`;
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian44.TFile) {
+  if (existingFile instanceof import_obsidian40.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -41771,11 +41820,11 @@ async function generateAllIndexes(app) {
   ]);
   console.log("[Index] All indexes generated successfully");
 }
-var import_obsidian44, SALTMARCHER_DIR;
+var import_obsidian40, SALTMARCHER_DIR;
 var init_index_files = __esm({
   "src/workmodes/library/core/index-files.ts"() {
     "use strict";
-    import_obsidian44 = require("obsidian");
+    import_obsidian40 = require("obsidian");
     init_entity_registry();
     SALTMARCHER_DIR = "SaltMarcher";
   }
@@ -41848,7 +41897,7 @@ function parseReferenceStatblock(markdown) {
     const { cr, xp, pb } = parseCRLine(crText);
     data.cr = cr;
     data.xp = xp;
-    data.pb = pb || calculatePBFromCR2(cr);
+    data.pb = pb || calculatePBFromCR(cr);
   }
   const abilityTable = extractAbilityTable(lines);
   if (abilityTable) {
@@ -41898,14 +41947,14 @@ function parseSubtitle(subtitle) {
     }
   }
   if (secondPart) {
-    const alignment = parseAlignment2(secondPart);
+    const alignment = parseAlignment(secondPart);
     result.alignmentLawChaos = alignment.lawChaos;
     result.alignmentGoodEvil = alignment.goodEvil;
     result.alignmentOverride = alignment.override;
   }
   return result;
 }
-function parseAlignment2(text) {
+function parseAlignment(text) {
   const normalized = text.toLowerCase().trim();
   if (normalized === "unaligned" || normalized === "any alignment") {
     return { override: text };
@@ -42025,7 +42074,7 @@ function parseCRLine(text) {
   }
   return result;
 }
-function calculatePBFromCR2(cr) {
+function calculatePBFromCR(cr) {
   if (!cr) return void 0;
   let crValue;
   if (cr.includes("/")) {
@@ -42404,11 +42453,11 @@ async function convertAllReferences(app, options = {}) {
   };
   const referenceFiles = await findReferenceFiles(app);
   if (referenceFiles.length === 0) {
-    new import_obsidian45.Notice("Keine Reference Statbl\xF6cke gefunden");
+    new import_obsidian41.Notice("Keine Reference Statbl\xF6cke gefunden");
     return result;
   }
   const filesToProcess = limit ? referenceFiles.slice(0, limit) : referenceFiles;
-  new import_obsidian45.Notice(`Konvertiere ${filesToProcess.length} Statbl\xF6cke${dryRun ? " (Dry Run)" : ""}...`);
+  new import_obsidian41.Notice(`Konvertiere ${filesToProcess.length} Statbl\xF6cke${dryRun ? " (Dry Run)" : ""}...`);
   if (!dryRun) {
     await ensureDir(app, CREATURES_PRESETS_DIR);
   }
@@ -42428,7 +42477,7 @@ async function convertAllReferences(app, options = {}) {
     }
   }
   const summary = `Konvertierung abgeschlossen: ${result.success} erfolgreich, ${result.failed} fehlgeschlagen`;
-  new import_obsidian45.Notice(summary);
+  new import_obsidian41.Notice(summary);
   console.log(summary);
   if (result.errors.length > 0) {
     console.log("Fehler:", result.errors);
@@ -42517,17 +42566,17 @@ async function convertAllSpells(app, options = {}) {
   };
   const spellsFile = app.vault.getAbstractFileByPath(SPELLS_REFERENCES_FILE);
   if (!spellsFile || !("extension" in spellsFile)) {
-    new import_obsidian45.Notice("Spells Reference Datei nicht gefunden");
+    new import_obsidian41.Notice("Spells Reference Datei nicht gefunden");
     return result;
   }
   const content = await app.vault.read(spellsFile);
   const spellSections = extractSpellSections(content);
   if (spellSections.length === 0) {
-    new import_obsidian45.Notice("Keine Spells in Reference Datei gefunden");
+    new import_obsidian41.Notice("Keine Spells in Reference Datei gefunden");
     return result;
   }
   const sectionsToProcess = limit ? spellSections.slice(0, limit) : spellSections;
-  new import_obsidian45.Notice(`Konvertiere ${sectionsToProcess.length} Spells${dryRun ? " (Dry Run)" : ""}...`);
+  new import_obsidian41.Notice(`Konvertiere ${sectionsToProcess.length} Spells${dryRun ? " (Dry Run)" : ""}...`);
   if (!dryRun) {
     await ensureDir(app, SPELLS_PRESETS_DIR);
   }
@@ -42547,7 +42596,7 @@ async function convertAllSpells(app, options = {}) {
     }
   }
   const summary = `Spell-Konvertierung abgeschlossen: ${result.success} erfolgreich, ${result.failed} fehlgeschlagen`;
-  new import_obsidian45.Notice(summary);
+  new import_obsidian41.Notice(summary);
   console.log(summary);
   if (result.errors.length > 0) {
     console.log("Fehler:", result.errors);
@@ -42589,15 +42638,15 @@ async function convertSpellSection(app, spellMarkdown, dryRun) {
     await app.vault.create(targetPath, presetMarkdown);
   }
 }
-var import_obsidian45, CREATURES_REFERENCES_DIR, CREATURES_PRESETS_DIR, SPELLS_REFERENCES_FILE, SPELLS_PRESETS_DIR;
+var import_obsidian41, CREATURES_REFERENCES_DIR, CREATURES_PRESETS_DIR, SPELLS_REFERENCES_FILE, SPELLS_PRESETS_DIR;
 var init_convert_references = __esm({
   "src/workmodes/library/tools/convert-references.ts"() {
     "use strict";
     init_reference_parser();
     init_spell_reference_parser();
-    init_creature_files();
-    init_spell_files();
-    import_obsidian45 = require("obsidian");
+    init_creatures();
+    init_spells();
+    import_obsidian41 = require("obsidian");
     CREATURES_REFERENCES_DIR = "References/rulebooks/Statblocks/Creatures";
     CREATURES_PRESETS_DIR = "SaltMarcher/Presets/Creatures";
     SPELLS_REFERENCES_FILE = "References/rulebooks/Spells/07_Spells.md";
@@ -42611,7 +42660,7 @@ __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian46 = require("obsidian");
+var import_obsidian42 = require("obsidian");
 
 // src/workmodes/cartographer/index.ts
 var import_obsidian12 = require("obsidian");
@@ -43565,7 +43614,3258 @@ async function detachCartographerLeaves(app) {
 init_view();
 
 // src/workmodes/library/view.ts
-var import_obsidian34 = require("obsidian");
+var import_obsidian30 = require("obsidian");
+
+// src/features/data-manager/modal/modal.ts
+var import_obsidian26 = require("obsidian");
+
+// src/features/data-manager/layout/layout-utils.ts
+var FieldWidthCalculator = class {
+  static calculate(field) {
+    const defaults = this.TYPE_DEFAULTS[field.type] ?? {
+      minControlWidth: 200,
+      isWide: false,
+      hasFixedWidth: false
+    };
+    if (field.minWidth !== void 0) {
+      return {
+        isWide: field.preferWide ?? defaults.isWide ?? false,
+        hasFixedWidth: defaults.hasFixedWidth ?? false,
+        minControlWidth: field.minWidth
+      };
+    }
+    switch (field.type) {
+      case "multiselect":
+        return this.calculateMultiselect(field, defaults);
+      default:
+        return {
+          minControlWidth: defaults.minControlWidth ?? 200,
+          isWide: field.preferWide ?? defaults.isWide ?? false,
+          hasFixedWidth: defaults.hasFixedWidth ?? false
+        };
+    }
+  }
+  static calculateMultiselect(field, defaults) {
+    const options = field.options ?? [];
+    const avgOptionWidth = 108;
+    const optionsPerRow = 3;
+    const rows = Math.ceil(options.length / optionsPerRow);
+    const minWidth = rows > 1 ? optionsPerRow * avgOptionWidth : options.length * avgOptionWidth;
+    return {
+      minControlWidth: Math.max(minWidth, defaults.minControlWidth ?? 200),
+      isWide: rows > 2,
+      // Many options → wide
+      hasFixedWidth: false
+    };
+  }
+};
+FieldWidthCalculator.TYPE_DEFAULTS = {
+  // Simple inputs - flexible width
+  "text": { minControlWidth: 180, isWide: false, hasFixedWidth: false },
+  "select": { minControlWidth: 160, isWide: false, hasFixedWidth: false },
+  "date": { minControlWidth: 140, isWide: false, hasFixedWidth: false },
+  // Composite inputs - calculated from components
+  "number-stepper": {
+    // Decrement (32px) + gap (4px) + input (80px) + gap (4px) + increment (32px)
+    minControlWidth: 152,
+    isWide: false,
+    hasFixedWidth: false
+  },
+  "tags": {
+    // Input (min 180px) + gap (8px) + button (40px)
+    // Tags get sm-cc-setting--wide class in modal.ts, so treat as wide
+    minControlWidth: 228,
+    isWide: true,
+    hasFixedWidth: false
+  },
+  "structured-tags": {
+    // Type input (min 180px) + value input (min 120px) + gap (8px) + button (40px)
+    // Structured tags are always wide due to complexity
+    minControlWidth: 368,
+    isWide: true,
+    hasFixedWidth: false
+  },
+  "autocomplete": {
+    minControlWidth: 200,
+    isWide: false,
+    hasFixedWidth: false
+  },
+  // Small fixed-width controls
+  "toggle": { minControlWidth: 60, isWide: false, hasFixedWidth: true },
+  "color": { minControlWidth: 80, isWide: false, hasFixedWidth: true },
+  // Multi-option controls - depends on options
+  "multiselect": {
+    minControlWidth: 200,
+    // Calculated dynamically
+    isWide: false,
+    hasFixedWidth: false
+  },
+  // Wide fields - always span all columns
+  "textarea": { minControlWidth: 400, isWide: true, hasFixedWidth: false },
+  "markdown": { minControlWidth: 500, isWide: true, hasFixedWidth: false },
+  "repeating": { minControlWidth: 600, isWide: true, hasFixedWidth: false },
+  "composite": { minControlWidth: 500, isWide: true, hasFixedWidth: false },
+  "composite-stat": { minControlWidth: 500, isWide: true, hasFixedWidth: false },
+  "array": { minControlWidth: 400, isWide: true, hasFixedWidth: false },
+  "object": { minControlWidth: 400, isWide: true, hasFixedWidth: false }
+};
+
+// src/features/data-manager/layout/grid-layout-manager.ts
+var GridLayoutManager = class {
+  constructor(container, fields) {
+    this.container = container;
+    this.fields = fields;
+    this.observer = new ResizeObserver(() => this.recalculate());
+    this.observer.observe(container);
+    this.recalculate();
+  }
+  measureMaxLabelWidth() {
+    const labels = this.container.querySelectorAll(".setting-item-info");
+    let maxWidth = 0;
+    labels.forEach((label) => {
+      const el = label;
+      if (!el.offsetParent) return;
+      const width = el.offsetWidth;
+      if (width > maxWidth) maxWidth = width;
+    });
+    return maxWidth || 100;
+  }
+  recalculate() {
+    const availableWidth = this.container.clientWidth - 30;
+    const normalFields = this.fields.filter((f) => {
+      const dims = FieldWidthCalculator.calculate(f);
+      return !dims.isWide;
+    });
+    console.log("[GridLayoutManager] Recalculating layout:", {
+      totalFields: this.fields.length,
+      normalFields: normalFields.length,
+      availableWidth,
+      fieldTypes: this.fields.map((f) => `${f.id}:${f.type}`)
+    });
+    if (normalFields.length === 0) {
+      console.log("[GridLayoutManager] No normal fields, using single column");
+      this.container.style.gridTemplateColumns = "max-content 1fr";
+      return;
+    }
+    const labelWidth = this.measureMaxLabelWidth();
+    const maxControlWidth = Math.max(
+      ...normalFields.map((f) => FieldWidthCalculator.calculate(f).minControlWidth)
+    );
+    const gap = 16;
+    const minPairWidth = labelWidth + gap + maxControlWidth;
+    let pairs = Math.floor(availableWidth / minPairWidth);
+    pairs = Math.max(1, Math.min(pairs, 3));
+    const hasFixedWidths = normalFields.some(
+      (f) => FieldWidthCalculator.calculate(f).hasFixedWidth
+    );
+    if (hasFixedWidths && pairs > 1) {
+      const safeWidth = (labelWidth + gap + maxControlWidth) * 1.1;
+      pairs = Math.floor(availableWidth / safeWidth);
+      pairs = Math.max(1, Math.min(pairs, 3));
+    }
+    const columns = pairs === 1 ? "max-content 1fr" : `repeat(${pairs}, max-content 1fr)`;
+    console.log("[GridLayoutManager] Layout calculated:", {
+      labelWidth,
+      maxControlWidth,
+      minPairWidth,
+      pairs,
+      columns
+    });
+    this.container.style.gridTemplateColumns = columns;
+  }
+  destroy() {
+    this.observer.disconnect();
+  }
+};
+
+// src/features/data-manager/fields/field-renderer-registry.ts
+var FieldRendererRegistry = class {
+  constructor() {
+    this.renderers = [];
+  }
+  /**
+   * Register a field renderer.
+   */
+  register(entry) {
+    this.renderers.push(entry);
+  }
+  /**
+   * Render a field using the first matching renderer.
+   */
+  render(args) {
+    for (const renderer of this.renderers) {
+      if (renderer.supports(args.spec)) {
+        return renderer.render(args);
+      }
+    }
+    const fallback = args.container.createDiv({ cls: "sm-cc-field--unsupported" });
+    fallback.createEl("label", { text: args.spec.label });
+    fallback.createEl("p", { text: `Unsupported field type: ${args.spec.type}` });
+    return { container: fallback };
+  }
+};
+var fieldRendererRegistry = new FieldRendererRegistry();
+
+// src/features/data-manager/fields/field-rendering-core.ts
+var import_obsidian16 = require("obsidian");
+function normalizeToString(value) {
+  if (value == null) return "";
+  if (typeof value === "string") return value;
+  return String(value);
+}
+function normalizeToBoolean(value) {
+  if (typeof value === "boolean") return value;
+  if (value === "true" || value === 1) return true;
+  if (value === "false" || value === 0) return false;
+  return Boolean(value);
+}
+function renderTextCore(options) {
+  const { container, placeholder = "", value, className = "sm-cc-input", onChange } = options;
+  const input = container.createEl("input", {
+    cls: className,
+    attr: {
+      type: "text",
+      placeholder
+    }
+  });
+  const initialValue = normalizeToString(value);
+  input.value = initialValue;
+  input.addEventListener("input", () => {
+    onChange(input.value);
+  });
+  return {
+    focus: () => input.focus(),
+    update: (newValue) => {
+      const next = normalizeToString(newValue);
+      if (input.value !== next) {
+        input.value = next;
+      }
+    }
+  };
+}
+function renderTextareaCore(options) {
+  const { container, placeholder = "", value, rows = 4, className = "sm-cc-textarea", onChange } = options;
+  const textarea = container.createEl("textarea", {
+    cls: className,
+    attr: {
+      rows: String(rows),
+      placeholder
+    }
+  });
+  const initialValue = normalizeToString(value);
+  textarea.value = initialValue;
+  textarea.addEventListener("input", () => {
+    onChange(textarea.value);
+  });
+  return {
+    focus: () => textarea.focus(),
+    update: (newValue) => {
+      const next = normalizeToString(newValue);
+      if (textarea.value !== next) {
+        textarea.value = next;
+      }
+    }
+  };
+}
+function renderToggleCore(options) {
+  const { container, value, className = "sm-cc-toggle", onChange } = options;
+  const checkbox = container.createEl("input", {
+    cls: className,
+    attr: {
+      type: "checkbox"
+    }
+  });
+  const initialValue = normalizeToBoolean(value);
+  checkbox.checked = initialValue;
+  checkbox.addEventListener("change", () => {
+    onChange(checkbox.checked);
+  });
+  return {
+    focus: () => checkbox.focus(),
+    update: (newValue) => {
+      const next = normalizeToBoolean(newValue);
+      if (checkbox.checked !== next) {
+        checkbox.checked = next;
+      }
+    }
+  };
+}
+function renderColorCore(options) {
+  const { container, value, className = "sm-cc-color-input", onChange } = options;
+  const input = container.createEl("input", {
+    cls: className,
+    attr: {
+      type: "color"
+    }
+  });
+  const normalizeColor2 = (val) => {
+    if (typeof val === "string" && /^#[0-9a-fA-F]{6}$/.test(val)) {
+      return val;
+    }
+    return "#000000";
+  };
+  const initialValue = normalizeColor2(value);
+  input.value = initialValue;
+  input.addEventListener("input", () => {
+    onChange(input.value);
+  });
+  input.addEventListener("change", () => {
+    onChange(input.value);
+  });
+  return {
+    focus: () => input.focus(),
+    update: (newValue) => {
+      const next = normalizeColor2(newValue);
+      if (input.value !== next) {
+        input.value = next;
+      }
+    }
+  };
+}
+function renderMultiselectCore(options) {
+  const { container, options: fieldOptions, value, className = "sm-cc-multiselect", onChange } = options;
+  const selected = new Set(Array.isArray(value) ? value : []);
+  const multiContainer = container.createDiv({ cls: className });
+  const checkboxes = [];
+  for (const option of fieldOptions) {
+    const item = multiContainer.createDiv({ cls: "sm-cc-multiselect-item" });
+    const checkbox = item.createEl("input", { attr: { type: "checkbox" } });
+    checkbox.value = option.value;
+    checkbox.checked = selected.has(option.value);
+    const label = item.createEl("label");
+    label.textContent = option.label;
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) {
+        selected.add(option.value);
+      } else {
+        selected.delete(option.value);
+      }
+      onChange(Array.from(selected));
+    });
+    checkboxes.push(checkbox);
+  }
+  return {
+    update: (newValue) => {
+      selected.clear();
+      if (Array.isArray(newValue)) {
+        for (const entry of newValue) {
+          if (typeof entry === "string") {
+            selected.add(entry);
+          }
+        }
+      }
+      checkboxes.forEach((cb) => {
+        cb.checked = selected.has(cb.value);
+      });
+    }
+  };
+}
+function renderDisplayCore(options) {
+  const { container, config, fieldId = "unknown" } = options;
+  const displayEl = container.createEl("input", {
+    cls: "sm-cc-display-field",
+    attr: {
+      type: "text",
+      disabled: "true",
+      readonly: "true"
+    }
+  });
+  if (config.className) {
+    displayEl.addClass(config.className);
+  }
+  return {
+    update: (value, all) => {
+      try {
+        const computed = config.compute(all ?? {});
+        const prefixVal = typeof config.prefix === "function" ? config.prefix(all ?? {}) : config.prefix ?? "";
+        const suffixVal = typeof config.suffix === "function" ? config.suffix(all ?? {}) : config.suffix ?? "";
+        displayEl.value = `${prefixVal}${computed}${suffixVal}`;
+      } catch (error) {
+        console.warn(`Display field ${fieldId} compute error:`, error);
+        displayEl.value = "";
+      }
+    }
+  };
+}
+function renderHeadingCore(options) {
+  const { container, getValue, values } = options;
+  const value = getValue ? getValue(values) : String(values ?? "");
+  container.createEl("strong", {
+    cls: "sm-cc-field-heading",
+    text: value
+  });
+  return {};
+}
+function renderCompositeCore(options) {
+  const {
+    container,
+    childFields,
+    groupBy,
+    initialValue: compositeValue,
+    onChange,
+    renderFieldControl: renderFieldControl2
+  } = options;
+  const useGrouping = Boolean(groupBy && groupBy.length > 0);
+  const compositeContainer = container.createDiv({
+    cls: useGrouping ? "sm-cc-composite-grouped" : "sm-cc-composite-grid"
+  });
+  const childInstances = [];
+  const evaluateChildVisibility = (childSpec) => {
+    if (!childSpec.visibleIf) return true;
+    try {
+      return childSpec.visibleIf(compositeValue);
+    } catch (error) {
+      console.error(`Failed to evaluate visibility for ${childSpec.id}:`, error);
+      return true;
+    }
+  };
+  const updateChildVisibility = () => {
+    for (const child of childInstances) {
+      const shouldBeVisible = evaluateChildVisibility(child.spec);
+      if (shouldBeVisible !== child.wasVisible) {
+        child.wrapper.toggleClass("is-hidden", !shouldBeVisible);
+        child.wasVisible = shouldBeVisible;
+        if (shouldBeVisible && !child.initialized) {
+          child.initialized = true;
+          const initConfig = child.spec.config?.init;
+          if (initConfig && typeof initConfig === "function") {
+            try {
+              const initValue = initConfig(compositeValue);
+              compositeValue[child.id] = initValue;
+              child.handle.update?.(initValue, compositeValue);
+              onChange(compositeValue);
+            } catch (error) {
+              console.error(`Failed to initialize ${child.id}:`, error);
+            }
+          }
+        }
+      }
+    }
+  };
+  const fieldsToRender = useGrouping && groupBy ? groupBy.flatMap(
+    (prefix) => childFields.filter((f) => f.id === prefix || f.id?.startsWith(`${prefix}`))
+  ) : childFields;
+  for (const childDef of fieldsToRender) {
+    const childId = childDef.id ?? "";
+    const childSpec = {
+      id: childId,
+      label: childDef.label ?? childId,
+      type: childDef.type ?? "text",
+      ...childDef
+    };
+    const childWrapper = compositeContainer.createDiv({ cls: "sm-cc-composite-item" });
+    const childInitial = compositeValue[childId] ?? childSpec.default;
+    const childHandle = renderFieldControl2(
+      childWrapper,
+      childSpec,
+      childInitial,
+      (childValue) => {
+        const oldValue = compositeValue[childId];
+        compositeValue[childId] = childValue;
+        onChange(compositeValue);
+        if (oldValue !== childValue) {
+          updateChildVisibility();
+        }
+      }
+    );
+    const initiallyVisible = evaluateChildVisibility(childSpec);
+    childWrapper.toggleClass("is-hidden", !initiallyVisible);
+    childInstances.push({
+      id: childId,
+      spec: childSpec,
+      handle: childHandle,
+      wrapper: childWrapper,
+      wasVisible: initiallyVisible,
+      initialized: initiallyVisible
+      // Mark as initialized if initially visible
+    });
+  }
+  return {
+    update: (value) => {
+      if (typeof value === "object" && value !== null) {
+        const valueMap = value;
+        for (const child of childInstances) {
+          child.handle.update?.(valueMap[child.id], valueMap);
+        }
+        updateChildVisibility();
+      }
+    }
+  };
+}
+function renderRepeatingEntryManagerCore(options) {
+  const {
+    container,
+    entries,
+    categories,
+    filters,
+    itemTemplate,
+    renderEntry,
+    card,
+    onChange,
+    insertPosition = "end",
+    isStatic = false,
+    mountEntryManager: mountEntryManager2,
+    fieldId = "unknown"
+  } = options;
+  if (!categories.length) {
+    console.warn(`Repeating field "${fieldId}" has no categories defined`);
+    const errorContainer = container.createDiv({ cls: "sm-cc-field--error" });
+    errorContainer.createEl("p", { text: "No categories defined for repeating field" });
+    return { error: true };
+  }
+  if (!renderEntry && !card) {
+    console.warn(`Repeating field "${fieldId}" requires renderEntry or card in config`);
+    const errorContainer = container.createDiv({ cls: "sm-cc-field--error" });
+    errorContainer.createEl("p", { text: "No renderer defined for repeating field" });
+    return { error: true };
+  }
+  const createEntry = (category) => {
+    const entry = { category };
+    for (const [key, fieldDef] of Object.entries(itemTemplate)) {
+      if (fieldDef.default !== void 0) {
+        entry[key] = fieldDef.default;
+      }
+    }
+    return entry;
+  };
+  const handle = mountEntryManager2(container, {
+    label: "",
+    entries,
+    categories,
+    filters,
+    createEntry,
+    renderEntry,
+    card,
+    onEntriesChanged: (updated) => {
+      onChange(updated);
+    },
+    insertPosition,
+    hideAddBar: isStatic,
+    hideActions: isStatic
+  });
+  return {
+    update: (value) => {
+      if (Array.isArray(value)) {
+        entries.splice(0, entries.length, ...value);
+        handle.rerender();
+      }
+    }
+  };
+}
+function createRendererWrapper(type, coreRenderer, options) {
+  return {
+    supports: (spec) => spec.type === type,
+    render: (args) => {
+      const { container, spec, values, onChange } = args;
+      const setting = new import_obsidian16.Setting(container).setName(spec.label);
+      setting.settingEl.addClass("sm-cc-setting");
+      if (spec.help) {
+        setting.setDesc(spec.help);
+      }
+      const validation = options?.createValidationControls?.(setting) ?? { apply: () => {
+      } };
+      const initial = options?.resolveInitialValue?.(spec, values) ?? values[spec.id];
+      const handle = coreRenderer({
+        container: setting.controlEl,
+        spec,
+        initial,
+        onChange: (value) => onChange(spec.id, value)
+      });
+      return {
+        ...handle,
+        setErrors: validation.apply,
+        container: setting.settingEl
+      };
+    }
+  };
+}
+
+// src/features/data-manager/modal/modal-utils.ts
+function createValidationControls(setting) {
+  const container = setting.settingEl.createDiv({ cls: "sm-cc-field__errors", attr: { hidden: "" } });
+  const list = container.createEl("ul", { cls: "sm-cc-field__errors-list" });
+  const apply = (errors) => {
+    const hasErrors = errors.length > 0;
+    setting.settingEl.toggleClass("is-invalid", hasErrors);
+    if (!hasErrors) {
+      container.setAttribute("hidden", "");
+      container.classList.remove("is-visible");
+      list.empty();
+      return;
+    }
+    container.removeAttribute("hidden");
+    container.classList.add("is-visible");
+    list.empty();
+    for (const issue of errors) {
+      list.createEl("li", { text: issue });
+    }
+  };
+  return { apply, container };
+}
+function deepClone(value) {
+  if (typeof structuredClone === "function") {
+    return structuredClone(value);
+  }
+  return JSON.parse(JSON.stringify(value));
+}
+function resolveDefaults(spec, name) {
+  const fromSpec = typeof spec.defaults === "function" ? spec.defaults({ presetName: name }) : spec.defaults;
+  return fromSpec ? { ...fromSpec } : {};
+}
+function orderFields(fields, ids) {
+  if (!ids || ids.length === 0) return fields;
+  const lookup = new Map(fields.map((field) => [field.id, field]));
+  const ordered = [];
+  for (const id of ids) {
+    const entry = lookup.get(id);
+    if (!entry) continue;
+    ordered.push(entry);
+  }
+  return ordered;
+}
+function extractSchemaIssues(error) {
+  if (!error || typeof error !== "object") return [];
+  const maybeIssues = error.issues;
+  if (!Array.isArray(maybeIssues)) return [];
+  return maybeIssues.filter((issue) => typeof issue === "object" && issue !== null);
+}
+
+// src/features/data-manager/fields/number-stepper-control.ts
+function createNumberInput2(parent, options = {}) {
+  const input = parent.createEl("input", {
+    cls: options.className || "sm-cc-input",
+    attr: {
+      type: "number",
+      placeholder: options.placeholder || "",
+      "aria-label": options.ariaLabel || options.placeholder || "Number input"
+    }
+  });
+  if (options.min !== void 0) input.min = String(options.min);
+  if (options.max !== void 0) input.max = String(options.max);
+  if (options.step !== void 0) input.step = String(options.step);
+  if (options.value !== void 0) input.value = String(options.value);
+  const parseValue = () => {
+    const raw = input.value.trim();
+    if (!raw) return { value: void 0, raw };
+    const parsed = Number(raw);
+    return { value: Number.isFinite(parsed) ? parsed : void 0, raw };
+  };
+  if (options.onChange) {
+    input.addEventListener("change", () => {
+      const { value } = parseValue();
+      options.onChange(value);
+    });
+  }
+  if (options.onInput) {
+    input.addEventListener("input", () => {
+      const { value, raw } = parseValue();
+      options.onInput(value, raw);
+    });
+  }
+  return input;
+}
+function createNumberStepper(parent, options = {}) {
+  const {
+    wrapperClassName,
+    buttonClassName,
+    decrementClassName,
+    incrementClassName,
+    decrementLabel = "\u2212",
+    decrementAriaLabel = "Decrease value",
+    incrementLabel = "+",
+    incrementAriaLabel = "Increase value",
+    autoSizeOnInput = true,
+    // Default: true
+    onChange,
+    onInput,
+    ...inputOptions
+  } = options;
+  const containerClasses = ["sm-inline-number"];
+  if (wrapperClassName) {
+    containerClasses.push(...wrapperClassName.split(" ").filter(Boolean));
+  }
+  const container = parent.createDiv({ cls: containerClasses });
+  const mirrorEl = container.createEl("span", {
+    cls: "sm-cc-number-stepper__mirror"
+  });
+  mirrorEl.style.position = "absolute";
+  mirrorEl.style.visibility = "hidden";
+  mirrorEl.style.whiteSpace = "pre";
+  mirrorEl.style.pointerEvents = "none";
+  let stylesCopied = false;
+  let input;
+  const updateInputSize = () => {
+    let measureText;
+    if (inputOptions.max !== void 0) {
+      measureText = String(inputOptions.max);
+    } else {
+      measureText = input.value || input.placeholder || "0";
+    }
+    if (!stylesCopied) {
+      const computedStyle = window.getComputedStyle(input);
+      mirrorEl.style.fontSize = computedStyle.fontSize;
+      mirrorEl.style.fontFamily = computedStyle.fontFamily;
+      mirrorEl.style.fontWeight = computedStyle.fontWeight;
+      mirrorEl.style.letterSpacing = computedStyle.letterSpacing;
+      mirrorEl.style.padding = "0";
+      mirrorEl.style.border = "0";
+      stylesCopied = true;
+    }
+    mirrorEl.textContent = measureText;
+    const textWidth = mirrorEl.getBoundingClientRect().width;
+    input.style.width = `${textWidth + 8}px`;
+  };
+  input = createNumberInput2(container, {
+    ...inputOptions,
+    onChange: (value) => {
+      onChange?.(value);
+    },
+    onInput: (value, raw) => {
+      if (autoSizeOnInput) {
+        updateInputSize();
+      }
+      onInput?.(value, raw);
+    }
+  });
+  const buttonGroup = container.createDiv({ cls: "sm-number-stepper-buttons" });
+  const incrementButton = buttonGroup.createEl("button", {
+    text: incrementLabel,
+    cls: incrementClassName ?? buttonClassName ?? "btn-compact",
+    attr: { type: "button", "aria-label": incrementAriaLabel }
+  });
+  const decrementButton = buttonGroup.createEl("button", {
+    text: decrementLabel,
+    cls: decrementClassName ?? buttonClassName ?? "btn-compact",
+    attr: { type: "button", "aria-label": decrementAriaLabel }
+  });
+  const decimalPlaces = (num) => {
+    if (!Number.isFinite(num)) return 0;
+    const parts = num.toString().split(".");
+    return parts[1]?.length ?? 0;
+  };
+  const getValue = () => {
+    const raw = input.value.trim();
+    if (!raw) return void 0;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed : void 0;
+  };
+  const setValue = (value) => {
+    if (value === void 0 || Number.isNaN(value)) {
+      input.value = "";
+    } else {
+      input.value = String(value);
+    }
+    updateInputSize();
+  };
+  const notify = () => {
+    const value = getValue();
+    if (onInput) {
+      onInput(value, input.value);
+    }
+    if (onChange) {
+      onChange(value);
+    }
+  };
+  const stepValue = (direction) => {
+    const stepSize = inputOptions.step ?? 1;
+    const precision = Math.max(decimalPlaces(stepSize), decimalPlaces(getValue() ?? 0));
+    const factor = Math.pow(10, precision);
+    const baseValue = getValue();
+    const current = baseValue ?? inputOptions.min ?? 0;
+    let next = (current * factor + direction * stepSize * factor) / factor;
+    if (inputOptions.min !== void 0) {
+      next = Math.max(inputOptions.min, next);
+    }
+    if (inputOptions.max !== void 0) {
+      next = Math.min(inputOptions.max, next);
+    }
+    const previousRaw = input.value;
+    const rounded = Number(next.toFixed(precision));
+    setValue(rounded);
+    if (input.value === previousRaw) {
+      return;
+    }
+    notify();
+  };
+  decrementButton.addEventListener("click", () => {
+    stepValue(-1);
+  });
+  incrementButton.addEventListener("click", () => {
+    stepValue(1);
+  });
+  updateInputSize();
+  return {
+    container,
+    input,
+    decrementButton,
+    incrementButton,
+    mirrorEl,
+    getValue,
+    setValue
+  };
+}
+
+// src/features/data-manager/fields/select-enhancement.ts
+init_search_dropdown();
+
+// src/features/data-manager/storage/entry-card.ts
+var import_obsidian17 = require("obsidian");
+function toArray(value) {
+  if (!value) return [];
+  return Array.isArray(value) ? value : [value];
+}
+function renderEntryCard(options) {
+  const {
+    parent,
+    context,
+    className,
+    type,
+    badge,
+    nameBoxClassName,
+    renderName,
+    renderBody,
+    actions: actions5,
+    shouldFocus,
+    dataset,
+    renderHeadExtras
+  } = options;
+  const classes = /* @__PURE__ */ new Set(["sm-cc-entry-card"]);
+  for (const cls of toArray(className)) classes.add(cls);
+  const resolvedType = typeof type === "function" ? type(context) : type;
+  if (resolvedType) classes.add(`sm-cc-entry-card--type-${resolvedType}`);
+  const card = parent.createDiv({ cls: Array.from(classes).join(" ") });
+  if (dataset) {
+    for (const [key, value] of Object.entries(dataset)) {
+      card.dataset[key] = value;
+    }
+  }
+  const head = card.createDiv({ cls: "sm-cc-entry-head" });
+  const resolvedBadge = typeof badge === "function" ? badge(context) : badge;
+  let badgeEl = null;
+  if (resolvedBadge?.text) {
+    const badgeClasses = ["sm-cc-entry-badge"];
+    if (resolvedBadge.variant) {
+      badgeClasses.push(`sm-cc-entry-badge--${resolvedBadge.variant}`);
+    }
+    badgeEl = head.createEl("span", {
+      cls: badgeClasses.join(" "),
+      text: resolvedBadge.text,
+      attr: resolvedBadge.title ? { title: resolvedBadge.title } : void 0
+    });
+  }
+  const nameBoxClasses = ["sm-cc-entry-name-box", ...toArray(nameBoxClassName)];
+  const nameBox = head.createDiv({ cls: nameBoxClasses.join(" ") });
+  let focusTarget = null;
+  if (renderName) {
+    const result = renderName(nameBox, context);
+    if (result instanceof HTMLElement) {
+      focusTarget = result;
+    }
+  }
+  const actionsContainer = head.createDiv({ cls: "sm-cc-entry-actions" });
+  const resolvedActions = actions5 ?? {};
+  const moveUpHandler = resolvedActions.moveUp ?? context.moveUp;
+  const moveDownHandler = resolvedActions.moveDown ?? context.moveDown;
+  const canMoveUp = resolvedActions.canMoveUp ?? context.canMoveUp;
+  const canMoveDown = resolvedActions.canMoveDown ?? context.canMoveDown;
+  const includeMoveButtons = resolvedActions.showMoveButtons ?? Boolean(moveUpHandler || moveDownHandler);
+  if (includeMoveButtons && moveUpHandler) {
+    const attributes = {
+      type: "button",
+      "aria-label": resolvedActions.moveUpAriaLabel ?? "Move Up"
+    };
+    if (!canMoveUp) {
+      attributes.disabled = "true";
+    }
+    const moveUpBtn = actionsContainer.createEl("button", {
+      cls: "sm-cc-entry-move-btn",
+      attr: attributes
+    });
+    (0, import_obsidian17.setIcon)(moveUpBtn, "chevron-up");
+    moveUpBtn.addEventListener("click", moveUpHandler);
+  }
+  if (includeMoveButtons && moveDownHandler) {
+    const attributes = {
+      type: "button",
+      "aria-label": resolvedActions.moveDownAriaLabel ?? "Move Down"
+    };
+    if (!canMoveDown) {
+      attributes.disabled = "true";
+    }
+    const moveDownBtn = actionsContainer.createEl("button", {
+      cls: "sm-cc-entry-move-btn",
+      attr: attributes
+    });
+    (0, import_obsidian17.setIcon)(moveDownBtn, "chevron-down");
+    moveDownBtn.addEventListener("click", moveDownHandler);
+  }
+  const deleteHandler = resolvedActions.remove ?? context.remove;
+  const includeDeleteButton = resolvedActions.showDeleteButton ?? Boolean(deleteHandler);
+  if (includeDeleteButton && deleteHandler) {
+    const deleteBtn = actionsContainer.createEl("button", {
+      cls: "sm-cc-entry-delete",
+      text: resolvedActions.deleteLabel ?? "\xD7",
+      attr: {
+        type: "button",
+        "aria-label": resolvedActions.deleteAriaLabel ?? "Delete Entry"
+      }
+    });
+    deleteBtn.addEventListener("click", deleteHandler);
+  }
+  const slots = {
+    card,
+    head,
+    badge: badgeEl,
+    nameBox,
+    actions: actionsContainer
+  };
+  renderHeadExtras?.(head, context, slots);
+  const shouldAutoFocus = shouldFocus ?? context.shouldFocus;
+  if (shouldAutoFocus) {
+    setTimeout(() => {
+      if (focusTarget && typeof focusTarget.focus === "function") {
+        focusTarget.focus();
+        return;
+      }
+      const candidate = nameBox.querySelector(
+        "input, textarea, select, button, [tabindex]"
+      );
+      candidate?.focus();
+    }, 0);
+  }
+  renderBody(card, context);
+  return slots;
+}
+
+// src/features/data-manager/storage/entry-manager.ts
+function mountEntryManager(parent, options) {
+  if (!options.renderEntry && !options.card) {
+    throw new Error("mountEntryManager requires either renderEntry or card configuration");
+  }
+  const entries = options.entries;
+  const wrap = parent.createDiv({ cls: "setting-item sm-cc-entries" });
+  if (options.label) {
+    wrap.createDiv({ cls: "setting-item-info", text: options.label });
+  }
+  const control = wrap.createDiv({ cls: "setting-item-control" });
+  let focusIndex = null;
+  let activeFilter = options.defaultFilter ?? "all";
+  const insertPosition = options.insertPosition ?? "start";
+  const triggerChange = () => {
+    options.onEntriesChanged?.(entries);
+  };
+  if (!options.hideAddBar) {
+    const addBar = control.createDiv({ cls: "sm-cc-entry-add-bar" });
+    addBar.createEl("span", { cls: "sm-cc-entry-add-label", text: "Hinzuf\xFCgen:" });
+    const addGroup = addBar.createDiv({ cls: "sm-cc-entry-add-group" });
+    for (const category of options.categories) {
+      const btn = addGroup.createEl("button", {
+        cls: ["sm-cc-entry-add-btn", `sm-cc-entry-add-btn--${category.id}`].join(" "),
+        text: category.label,
+        attr: { type: "button", title: category.title ?? category.label }
+      });
+      btn.addEventListener("click", () => {
+        const created = options.createEntry(category.id);
+        if (insertPosition === "end") {
+          entries.push(created);
+          focusIndex = entries.length - 1;
+        } else {
+          entries.unshift(created);
+          focusIndex = 0;
+        }
+        triggerChange();
+        render();
+      });
+    }
+  }
+  const filterBar = control.createDiv({
+    cls: "sm-cc-entry-filter",
+    attr: { role: "toolbar", "aria-label": "Eintragsliste filtern" }
+  });
+  const allFilter = {
+    id: "all",
+    label: "Alle",
+    predicate: () => true
+  };
+  const filterDefinitions = [allFilter];
+  if (options.filters) {
+    for (const filter of options.filters) {
+      filterDefinitions.push({
+        id: filter.id,
+        label: filter.label,
+        hint: filter.hint,
+        predicate: filter.predicate
+      });
+    }
+  }
+  const filterButtons = /* @__PURE__ */ new Map();
+  const filterPredicates = /* @__PURE__ */ new Map();
+  const updateFilterButtons = () => {
+    for (const [id, button] of filterButtons) {
+      const isActive = id === activeFilter;
+      button.setAttribute("aria-pressed", isActive ? "true" : "false");
+      button.classList.toggle("is-active", isActive);
+    }
+  };
+  for (const filter of filterDefinitions) {
+    const button = filterBar.createEl("button", {
+      text: filter.label,
+      attr: {
+        type: "button",
+        title: filter.hint,
+        "aria-label": filter.hint ?? filter.label,
+        "aria-pressed": filter.id === activeFilter ? "true" : "false"
+      }
+    });
+    button.addEventListener("click", () => {
+      activeFilter = filter.id;
+      updateFilterButtons();
+      render();
+    });
+    filterButtons.set(filter.id, button);
+    filterPredicates.set(filter.id, filter.predicate);
+  }
+  const host = control.createDiv({ cls: "sm-cc-entry-host" });
+  const revalidate = options.registerValidation ? options.registerValidation(() => options.collectIssues?.(entries) ?? []) : () => [];
+  const render = () => {
+    updateFilterButtons();
+    host.empty();
+    const predicate = filterPredicates.get(activeFilter) ?? (() => true);
+    const renderEntry = options.renderEntry ?? ((container, context) => {
+      if (!options.card) {
+        throw new Error("card factory missing for entry-manager render");
+      }
+      const config = options.card(context);
+      return renderEntryCard({ parent: container, context, ...config }).card;
+    });
+    entries.forEach((entry, index) => {
+      const shouldFocus = focusIndex === index;
+      if (shouldFocus) focusIndex = null;
+      const context = {
+        entry,
+        index,
+        total: entries.length,
+        shouldFocus,
+        canMoveUp: options.hideActions ? false : index > 0,
+        canMoveDown: options.hideActions ? false : index < entries.length - 1,
+        remove: options.hideActions ? () => {
+        } : () => {
+          entries.splice(index, 1);
+          triggerChange();
+          focusIndex = index > 0 ? index - 1 : 0;
+          render();
+        },
+        moveUp: options.hideActions ? () => {
+        } : () => {
+          if (index <= 0) return;
+          [entries[index - 1], entries[index]] = [entries[index], entries[index - 1]];
+          triggerChange();
+          focusIndex = index - 1;
+          render();
+        },
+        moveDown: options.hideActions ? () => {
+        } : () => {
+          if (index >= entries.length - 1) return;
+          [entries[index + 1], entries[index]] = [entries[index], entries[index + 1]];
+          triggerChange();
+          focusIndex = index + 1;
+          render();
+        },
+        requestRender: () => {
+          triggerChange();
+          render();
+        }
+      };
+      const card = renderEntry(host, context);
+      const isVisible = predicate(entry);
+      card.classList.toggle("sm-cc-entry-hidden", !isVisible);
+      card.style.display = isVisible ? "" : "none";
+      card.setAttribute("aria-hidden", isVisible ? "false" : "true");
+    });
+    revalidate();
+  };
+  render();
+  return {
+    rerender: render,
+    setFilter: (filterId) => {
+      if (filterPredicates.has(filterId)) {
+        activeFilter = filterId;
+        render();
+      }
+    },
+    getActiveFilter: () => activeFilter
+  };
+}
+
+// src/features/data-manager/layout/repeating-width-sync.ts
+var RepeatingWidthSynchronizer = class {
+  constructor(container) {
+    this.container = container;
+    this.resizeObserver = new ResizeObserver(() => {
+      this.synchronize();
+    });
+    this.mutationObserver = new MutationObserver((mutations) => {
+      const hasVisibilityChange = mutations.some(
+        (m) => m.type === "attributes" && m.attributeName === "class" && m.target.classList.contains("sm-cc-repeating-field")
+      );
+      if (hasVisibilityChange) {
+        this.synchronize();
+      }
+    });
+    this.mutationObserver.observe(container, {
+      attributes: true,
+      attributeFilter: ["class"],
+      subtree: true
+    });
+    setTimeout(() => {
+      this.synchronize();
+      this.resizeObserver.observe(this.container);
+    }, 0);
+  }
+  /**
+   * Groups elements by their field-id data attribute.
+   * All fields with id "score" across entries are grouped together, etc.
+   */
+  groupByFieldId() {
+    const groups = /* @__PURE__ */ new Map();
+    const items = this.container.querySelectorAll(".sm-cc-repeating-item");
+    items.forEach((item) => {
+      const fields = item.querySelectorAll(".sm-cc-repeating-field:not(.is-hidden)");
+      fields.forEach((field) => {
+        const fieldId = field.dataset.fieldId;
+        if (!fieldId) return;
+        const label = field.querySelector(".sm-cc-field-label");
+        if (label && label.offsetParent !== null) {
+          const key = `${fieldId}__label`;
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(label);
+        }
+        const control = field.querySelector(
+          ".sm-inline-number input, .sm-cc-display-field, .sm-cc-input, .checkbox-container, .sm-cc-field-heading"
+        );
+        if (control && control.offsetParent !== null) {
+          const key = `${fieldId}__control`;
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(control);
+        }
+      });
+    });
+    return groups;
+  }
+  synchronize() {
+    const groups = this.groupByFieldId();
+    for (const [groupKey, elements] of groups.entries()) {
+      if (elements.length === 0) continue;
+      if (groupKey.endsWith("__label")) {
+        elements.forEach((el) => {
+          el.style.minWidth = "";
+        });
+        void elements[0].offsetWidth;
+      }
+      const widths = elements.map((el) => el.getBoundingClientRect().width);
+      const maxWidth = Math.max(...widths);
+      elements.forEach((el) => {
+        if (groupKey.endsWith("__label")) {
+          el.style.minWidth = `${maxWidth}px`;
+        } else {
+          el.style.width = `${maxWidth}px`;
+        }
+      });
+    }
+  }
+  destroy() {
+    this.resizeObserver.disconnect();
+    this.mutationObserver.disconnect();
+  }
+};
+
+// src/features/data-manager/fields/field-utils.ts
+function resolveInitialValue(spec, values) {
+  if (values[spec.id] !== void 0) return values[spec.id];
+  if (spec.default !== void 0) return spec.default;
+  return void 0;
+}
+function renderFieldControl(container, spec, initial, onChange) {
+  if (spec.type !== "heading") {
+    const label = container.createEl("label", {
+      cls: "sm-cc-field-label",
+      text: spec.label
+    });
+  }
+  const controlContainer = container.createDiv({ cls: "sm-cc-field-control" });
+  if (spec.type === "text") {
+    return renderTextCore({
+      container: controlContainer,
+      placeholder: spec.placeholder,
+      value: initial,
+      onChange
+    });
+  }
+  if (spec.type === "textarea" || spec.type === "markdown") {
+    const rows = spec.type === "markdown" ? 12 : 4;
+    return renderTextareaCore({
+      container: controlContainer,
+      placeholder: spec.placeholder,
+      value: initial,
+      rows,
+      onChange
+    });
+  }
+  if (spec.type === "number-stepper") {
+    const numberStepperSpec = spec;
+    const handle = createNumberStepper(controlContainer, {
+      value: typeof initial === "number" ? initial : void 0,
+      min: spec.min,
+      max: spec.max,
+      step: spec.step,
+      autoSizeOnInput: numberStepperSpec.autoSizeOnInput,
+      onChange: (value) => {
+        onChange(value);
+      }
+    });
+    return {
+      focus: () => handle.input.focus(),
+      update: (value) => {
+        if (typeof value === "number") {
+          handle.setValue(value);
+        } else {
+          handle.setValue(void 0);
+        }
+      }
+    };
+  }
+  if (spec.type === "toggle") {
+    const toggleContainer = controlContainer.createDiv({ cls: "checkbox-container" });
+    return renderToggleCore({
+      container: toggleContainer,
+      value: initial,
+      onChange
+    });
+  }
+  if (spec.type === "select") {
+    const selectSpec = spec;
+    const select = controlContainer.createEl("select", {
+      cls: "dropdown"
+    });
+    const options = selectSpec.options ?? [];
+    for (const opt of options) {
+      const optionEl = select.createEl("option", {
+        value: opt.value,
+        text: opt.label
+      });
+    }
+    const value = initial != null ? String(initial) : options[0]?.value ?? "";
+    select.value = value;
+    select.addEventListener("change", () => {
+      onChange(select.value);
+    });
+    if (options.length > 10) {
+      enhanceSelectToSearch(select);
+    }
+    return {
+      focus: () => select.focus(),
+      update: (value2) => {
+        select.value = value2 != null ? String(value2) : "";
+      }
+    };
+  }
+  if (spec.type === "multiselect") {
+    const multiselectSpec = spec;
+    const options = multiselectSpec.options ?? [];
+    return renderMultiselectCore({
+      container: controlContainer,
+      options,
+      value: initial,
+      onChange
+    });
+  }
+  if (spec.type === "color") {
+    return renderColorCore({
+      container: controlContainer,
+      value: initial,
+      onChange
+    });
+  }
+  if (spec.type === "display") {
+    const displaySpec = spec;
+    return renderDisplayCore({
+      container: controlContainer,
+      config: displaySpec.config,
+      fieldId: spec.id
+    });
+  }
+  if (spec.type === "heading") {
+    const headingSpec = spec;
+    return renderHeadingCore({
+      container: controlContainer,
+      getValue: headingSpec.getValue,
+      values: initial
+    });
+  }
+  if (spec.type === "composite") {
+    const compositeSpec = spec;
+    const config = compositeSpec.config ?? {};
+    const childFields = config.fields ?? compositeSpec.children ?? [];
+    const groupBy = config.groupBy;
+    const compositeValue = initial ?? {};
+    return renderCompositeCore({
+      container: controlContainer,
+      childFields,
+      groupBy,
+      initialValue: compositeValue,
+      onChange,
+      renderFieldControl
+    });
+  }
+  if (spec.type === "autocomplete") {
+    const autocompleteSpec = spec;
+    const { load, renderSuggestion, onSelect, minQueryLength = 2 } = autocompleteSpec.config;
+    const input = controlContainer.createEl("input", {
+      cls: "sm-cc-input sm-cc-autocomplete-input",
+      attr: { type: "text", placeholder: spec.placeholder ?? "Search..." }
+    });
+    let suggestionsContainer = null;
+    let selectedIndex = -1;
+    const hideSuggestions = () => {
+      suggestionsContainer?.remove();
+      suggestionsContainer = null;
+      selectedIndex = -1;
+    };
+    const showSuggestions = async (query) => {
+      if (query.length < minQueryLength) {
+        hideSuggestions();
+        return;
+      }
+      const items = await Promise.resolve(load(query));
+      if (items.length === 0) {
+        hideSuggestions();
+        return;
+      }
+      if (!suggestionsContainer) {
+        suggestionsContainer = controlContainer.createDiv({ cls: "sm-cc-autocomplete-suggestions" });
+      }
+      suggestionsContainer.empty();
+      selectedIndex = -1;
+      items.forEach((item, index) => {
+        const suggestionEl = suggestionsContainer.createDiv({ cls: "sm-cc-autocomplete-suggestion" });
+        suggestionEl.innerHTML = renderSuggestion(item);
+        suggestionEl.addEventListener("click", () => {
+          const values = initial ?? {};
+          onSelect(item, values);
+          input.value = "";
+          hideSuggestions();
+        });
+        suggestionEl.addEventListener("mouseenter", () => {
+          selectedIndex = index;
+          updateSelection();
+        });
+      });
+      updateSelection();
+    };
+    const updateSelection = () => {
+      if (!suggestionsContainer) return;
+      const suggestions = suggestionsContainer.querySelectorAll(".sm-cc-autocomplete-suggestion");
+      suggestions.forEach((el, index) => {
+        el.classList.toggle("is-selected", index === selectedIndex);
+      });
+    };
+    const selectCurrent = () => {
+      if (!suggestionsContainer || selectedIndex < 0) return;
+      const suggestions = suggestionsContainer.querySelectorAll(".sm-cc-autocomplete-suggestion");
+      suggestions[selectedIndex]?.click();
+    };
+    input.addEventListener("input", () => void showSuggestions(input.value));
+    input.addEventListener("blur", () => setTimeout(hideSuggestions, 200));
+    input.addEventListener("keydown", (e) => {
+      if (!suggestionsContainer) return;
+      const count = suggestionsContainer.querySelectorAll(".sm-cc-autocomplete-suggestion").length;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        selectedIndex = (selectedIndex + 1) % count;
+        updateSelection();
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        selectedIndex = selectedIndex <= 0 ? count - 1 : selectedIndex - 1;
+        updateSelection();
+      } else if (e.key === "Enter" && selectedIndex >= 0) {
+        e.preventDefault();
+        selectCurrent();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        hideSuggestions();
+      }
+    });
+    return {
+      focus: () => input.focus()
+    };
+  }
+  if (spec.type === "repeating") {
+    const repeatingSpec = spec;
+    const config = repeatingSpec.config ?? {};
+    const isTemplateMode = Boolean(config.fields && config.fields.length > 0);
+    const isStatic = Boolean(config.static);
+    const entries = Array.isArray(initial) ? [...initial] : [];
+    if (isTemplateMode) {
+      const listContainer = controlContainer.createDiv({ cls: "sm-cc-repeating-fields" });
+      const fieldTemplate = config.fields;
+      const updateEntryFields = (entryContainer, entry, template) => {
+        const fieldWrappers = entryContainer.querySelectorAll(".sm-cc-repeating-field");
+        fieldWrappers.forEach((wrapper, index) => {
+          const fieldSpec = template[index];
+          if (!fieldSpec) return;
+          const isVisible = !fieldSpec.visibleIf || fieldSpec.visibleIf(entry);
+          wrapper.toggleClass("is-hidden", !isVisible);
+          if (fieldSpec.type === "display") {
+            const displaySpec = fieldSpec;
+            const displayEl = wrapper.querySelector(".sm-cc-display-field");
+            if (displayEl && displaySpec.config?.compute) {
+              try {
+                const computed = displaySpec.config.compute(entry);
+                const prefix = typeof displaySpec.config.prefix === "function" ? displaySpec.config.prefix(entry) : displaySpec.config.prefix ?? "";
+                const suffix = typeof displaySpec.config.suffix === "function" ? displaySpec.config.suffix(entry) : displaySpec.config.suffix ?? "";
+                displayEl.value = `${prefix}${computed}${suffix}`;
+              } catch (error) {
+                console.warn(`Display field ${fieldSpec.id} compute error:`, error);
+                displayEl.value = "";
+              }
+            }
+          }
+        });
+      };
+      entries.forEach((entry, entryIndex) => {
+        const entryContainer = listContainer.createDiv({
+          cls: "sm-cc-repeating-item",
+          attr: { "data-entry-index": String(entryIndex) }
+        });
+        fieldTemplate.forEach((fieldSpec) => {
+          const fieldWrapper = entryContainer.createDiv({
+            cls: `sm-cc-repeating-field sm-cc-repeating-field--${fieldSpec.type}`,
+            attr: { "data-field-id": fieldSpec.id }
+          });
+          const isVisible = !fieldSpec.visibleIf || fieldSpec.visibleIf(entry);
+          if (!isVisible) {
+            fieldWrapper.addClass("is-hidden");
+          }
+          if (isVisible && entry[fieldSpec.id] === void 0) {
+            const initConfig = fieldSpec.config?.init;
+            if (initConfig && typeof initConfig === "function") {
+              try {
+                entry[fieldSpec.id] = initConfig(entry);
+              } catch (error) {
+                console.error(`Failed to initialize ${fieldSpec.id}:`, error);
+              }
+            }
+          }
+          const fieldHandle = renderFieldControl(
+            fieldWrapper,
+            fieldSpec,
+            fieldSpec.type === "heading" ? entry : entry[fieldSpec.id],
+            (newValue) => {
+              entry[fieldSpec.id] = newValue;
+              onChange([...entries]);
+              updateEntryFields(entryContainer, entry, fieldTemplate);
+            }
+          );
+        });
+      });
+      let synchronizer;
+      if (config.synchronizeWidths) {
+        synchronizer = new RepeatingWidthSynchronizer(listContainer);
+      }
+      entries.forEach((entry, entryIndex) => {
+        const entryContainer = listContainer.children[entryIndex];
+        if (entryContainer) {
+          updateEntryFields(entryContainer, entry, fieldTemplate);
+        }
+      });
+      return {
+        synchronizer,
+        update: (value) => {
+          if (Array.isArray(value)) {
+            entries.splice(0, entries.length, ...value);
+          }
+        }
+      };
+    } else {
+      const categories = config.categories ?? [];
+      const filters = config.filters ?? void 0;
+      const itemTemplate = repeatingSpec.itemTemplate ?? {};
+      const renderEntry = config.renderEntry;
+      const cardFactory = config.card;
+      const handle = renderRepeatingEntryManagerCore({
+        container: controlContainer,
+        entries,
+        categories,
+        filters,
+        itemTemplate,
+        renderEntry,
+        card: cardFactory,
+        onChange,
+        insertPosition: config.insertPosition ?? "end",
+        isStatic,
+        mountEntryManager,
+        fieldId: spec.id
+      });
+      if ("error" in handle && handle.error) {
+        return {};
+      }
+      return handle;
+    }
+  }
+  controlContainer.createEl("p", {
+    text: `Unsupported field type: ${spec.type}`,
+    cls: "sm-cc-field--error"
+  });
+  return {};
+}
+
+// src/features/data-manager/fields/renderer-text.ts
+var textFieldRenderer = createRendererWrapper(
+  "text",
+  ({ container, spec, initial, onChange }) => renderTextCore({
+    container,
+    placeholder: spec.placeholder,
+    value: initial,
+    onChange
+  }),
+  { createValidationControls, resolveInitialValue }
+);
+
+// src/features/data-manager/fields/renderer-textarea.ts
+var textareaFieldRenderer = createRendererWrapper(
+  "textarea",
+  ({ container, spec, initial, onChange }) => renderTextareaCore({
+    container,
+    placeholder: spec.placeholder,
+    value: initial,
+    onChange
+  }),
+  { createValidationControls, resolveInitialValue }
+);
+
+// src/features/data-manager/fields/renderer-number-stepper.ts
+var numberStepperFieldRenderer = createRendererWrapper(
+  "number-stepper",
+  ({ container, spec, initial, onChange }) => {
+    const handle = createNumberStepper(container, {
+      value: typeof initial === "number" ? initial : void 0,
+      min: spec.min,
+      max: spec.max,
+      step: spec.step,
+      onChange
+    });
+    return {
+      focus: () => handle.input.focus(),
+      update: (value) => {
+        if (typeof value === "number") {
+          handle.setValue(value);
+        } else {
+          handle.setValue(void 0);
+        }
+      }
+    };
+  },
+  { createValidationControls, resolveInitialValue }
+);
+
+// src/features/data-manager/fields/renderer-toggle.ts
+var toggleFieldRenderer = createRendererWrapper(
+  "toggle",
+  ({ container, initial, onChange }) => renderToggleCore({
+    container: container.createDiv({ cls: "checkbox-container" }),
+    value: initial,
+    onChange
+  }),
+  { createValidationControls, resolveInitialValue }
+);
+
+// src/features/data-manager/fields/renderer-select.ts
+var import_obsidian18 = require("obsidian");
+var selectFieldRenderer = {
+  supports: (spec) => spec.type === "select",
+  render: (args) => {
+    const { container, spec, values, onChange } = args;
+    const setting = new import_obsidian18.Setting(container).setName(spec.label);
+    setting.settingEl.addClass("sm-cc-setting");
+    if (spec.help) {
+      setting.setDesc(spec.help);
+    }
+    const validation = createValidationControls(setting);
+    const initial = resolveInitialValue(spec, values);
+    setting.addDropdown((dropdown) => {
+      const options = spec.options ?? [];
+      const fallback = typeof initial === "string" ? initial : "";
+      if (!options.some((opt) => opt.value === "")) {
+        dropdown.addOption("", "");
+      }
+      for (const option of options) {
+        dropdown.addOption(option.value, option.label);
+      }
+      dropdown.setValue(fallback);
+      dropdown.onChange((value) => {
+        onChange(spec.id, value || void 0);
+      });
+      const selectEl = dropdown.selectEl;
+      if (selectEl) {
+        try {
+          enhanceSelectToSearch(selectEl, spec.placeholder ?? "Suchen\u2026");
+        } catch (error) {
+          console.warn("Enhance select failed", error);
+        }
+      }
+    });
+    return {
+      setErrors: validation.apply,
+      container: setting.settingEl
+    };
+  }
+};
+
+// src/features/data-manager/fields/renderer-multiselect.ts
+var multiselectFieldRenderer = createRendererWrapper(
+  "multiselect",
+  ({ container, spec, initial, onChange }) => renderMultiselectCore({
+    container,
+    options: spec.options ?? [],
+    value: initial,
+    onChange
+  }),
+  { createValidationControls, resolveInitialValue }
+);
+
+// src/features/data-manager/fields/renderer-color.ts
+var colorFieldRenderer = createRendererWrapper(
+  "color",
+  ({ container, initial, onChange }) => renderColorCore({
+    container,
+    value: initial,
+    onChange
+  }),
+  { createValidationControls, resolveInitialValue }
+);
+
+// src/features/data-manager/fields/renderer-tags-editor.ts
+var import_obsidian20 = require("obsidian");
+
+// src/features/data-manager/fields/tag-chips.ts
+var import_obsidian19 = require("obsidian");
+function mountTokenEditor(parent, title, model, options = {}) {
+  const placeholder = options.placeholder ?? "Begriff eingeben\u2026";
+  const addLabel = options.addButtonLabel ?? "+";
+  const setting = new import_obsidian19.Setting(parent).setName(title);
+  let inputEl;
+  let renderChips = () => {
+  };
+  const commitValue = (value) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    model.add(trimmed);
+    options.onAdd?.(trimmed);
+    renderChips();
+  };
+  setting.addText((t) => {
+    t.setPlaceholder(placeholder);
+    inputEl = t.inputEl;
+    t.inputEl.style.minWidth = "260px";
+    t.inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        commitValue((inputEl?.value ?? "").trim());
+        if (inputEl) inputEl.value = "";
+      }
+    });
+  });
+  setting.addButton(
+    (b) => b.setButtonText(addLabel).onClick(() => {
+      commitValue((inputEl?.value ?? "").trim());
+      if (inputEl) inputEl.value = "";
+    })
+  );
+  const chips = parent.createDiv({ cls: "sm-cc-chips" });
+  renderChips = () => {
+    chips.empty();
+    const items = model.getItems();
+    items.forEach((txt, index) => {
+      const chip = chips.createDiv({ cls: "sm-cc-chip" });
+      chip.createSpan({ text: txt });
+      const removeBtn = chip.createEl("button", { text: "\xD7" });
+      removeBtn.onclick = () => {
+        model.remove(index);
+        options.onRemove?.(txt, index);
+        renderChips();
+      };
+    });
+  };
+  renderChips();
+  return { setting, chipsEl: chips, refresh: renderChips };
+}
+
+// src/features/data-manager/fields/renderer-tags-editor.ts
+var tagsFieldRenderer = {
+  supports: (spec) => spec.type === "tags",
+  render: (args) => {
+    const { container, spec, values, onChange } = args;
+    const setting = new import_obsidian20.Setting(container).setName(spec.label);
+    setting.settingEl.addClass("sm-cc-setting");
+    if (spec.help) {
+      setting.setDesc(spec.help);
+    }
+    const validation = createValidationControls(setting);
+    const initial = resolveInitialValue(spec, values);
+    setting.settingEl.addClass("sm-cc-setting--wide");
+    setting.settingEl.addClass("sm-cc-setting--tags");
+    const tagValues = Array.isArray(values[spec.id]) ? [...values[spec.id]] : Array.isArray(spec.default) ? [...spec.default] : [];
+    const suggestions = spec.config?.suggestions;
+    const model = {
+      getItems: () => tagValues,
+      add: (value) => {
+        tagValues.push(value);
+        onChange(spec.id, [...tagValues]);
+      },
+      remove: (index) => {
+        tagValues.splice(index, 1);
+        onChange(spec.id, [...tagValues]);
+      }
+    };
+    const handle = mountTokenEditor(setting.controlEl, "", model, {
+      placeholder: spec.placeholder,
+      suggestions
+      // Pass suggestions to token editor
+    });
+    return {
+      setErrors: validation.apply,
+      container: handle.setting.settingEl,
+      update: (value) => {
+        tagValues.splice(0, tagValues.length);
+        if (Array.isArray(value)) {
+          for (const entry of value) {
+            if (typeof entry === "string") tagValues.push(entry);
+          }
+        }
+        handle.refresh();
+      }
+    };
+  }
+};
+
+// src/features/data-manager/fields/renderer-structured-tags-editor.ts
+var import_obsidian21 = require("obsidian");
+var structuredTagsFieldRenderer = {
+  supports: (spec) => spec.type === "structured-tags",
+  render: (args) => {
+    const { container, spec, values, onChange } = args;
+    const setting = new import_obsidian21.Setting(container).setName(spec.label);
+    setting.settingEl.addClass("sm-cc-setting");
+    if (spec.help) {
+      setting.setDesc(spec.help);
+    }
+    const validation = createValidationControls(setting);
+    const initial = resolveInitialValue(spec, values);
+    setting.settingEl.addClass("sm-cc-setting--wide");
+    setting.settingEl.addClass("sm-cc-setting--structured-tags");
+    const structuredSpec = spec;
+    const suggestions = structuredSpec.config.suggestions;
+    const valueConfig = structuredSpec.config.valueConfig;
+    const tokenValues = Array.isArray(values[spec.id]) ? values[spec.id].map((t) => ({ type: t.type, value: t.value })) : Array.isArray(spec.default) ? spec.default.map((t) => ({ type: t.type, value: t.value })) : [];
+    const model = {
+      getItems: () => tokenValues,
+      add: (value) => {
+        tokenValues.push(value);
+        onChange(spec.id, [...tokenValues]);
+      },
+      remove: (index) => {
+        tokenValues.splice(index, 1);
+        onChange(spec.id, [...tokenValues]);
+      },
+      update: (index, value) => {
+        const token = tokenValues[index];
+        if (token && typeof token === "object" && "type" in token) {
+          token.value = value;
+          onChange(spec.id, [...tokenValues]);
+        }
+      }
+    };
+    const handle = mountTokenEditor(setting.controlEl, "", model, {
+      placeholder: spec.placeholder,
+      structured: {
+        typeSuggestions: suggestions,
+        typePlaceholder: spec.placeholder ?? "Typ ausw\xE4hlen...",
+        valuePlaceholder: valueConfig.placeholder,
+        unit: valueConfig.unit,
+        autoSize: true
+      }
+    });
+    return {
+      setErrors: validation.apply,
+      container: handle.setting.settingEl,
+      update: (value) => {
+        tokenValues.splice(0, tokenValues.length);
+        if (Array.isArray(value)) {
+          for (const entry of value) {
+            if (typeof entry === "object" && entry !== null && "type" in entry && "value" in entry) {
+              tokenValues.push({
+                type: String(entry.type),
+                value: String(entry.value)
+              });
+            }
+          }
+        }
+        handle.refresh();
+      }
+    };
+  }
+};
+
+// src/features/data-manager/fields/renderer-display.ts
+var displayFieldRenderer = {
+  supports: (spec) => spec.type === "display",
+  render: (args) => {
+    const { container, spec, values } = args;
+    const displaySpec = spec;
+    const label = container.createEl("label", {
+      cls: "sm-cc-field-label",
+      text: spec.label
+    });
+    const controlContainer = container.createDiv({ cls: "sm-cc-field-control" });
+    return renderDisplayCore({
+      container: controlContainer,
+      config: displaySpec.config,
+      fieldId: spec.id
+    });
+  }
+};
+
+// src/features/data-manager/fields/renderer-heading.ts
+var headingFieldRenderer = {
+  supports: (spec) => spec.type === "heading",
+  render: (args) => {
+    const { container, spec, values } = args;
+    const headingSpec = spec;
+    const label = container.createEl("label", {
+      cls: "sm-cc-field-label",
+      text: spec.label
+    });
+    const controlContainer = container.createDiv({ cls: "sm-cc-field-control" });
+    return renderHeadingCore({
+      container: controlContainer,
+      getValue: headingSpec.getValue,
+      values
+    });
+  }
+};
+
+// src/features/data-manager/fields/renderer-composite.ts
+var import_obsidian22 = require("obsidian");
+var compositeFieldRenderer = {
+  supports: (spec) => spec.type === "composite",
+  render: (args) => {
+    const { container, spec, values, onChange } = args;
+    const setting = new import_obsidian22.Setting(container).setName(spec.label);
+    setting.settingEl.addClass("sm-cc-setting");
+    if (spec.help) {
+      setting.setDesc(spec.help);
+    }
+    const validation = createValidationControls(setting);
+    const initial = resolveInitialValue(spec, values);
+    const compositeSpec = spec;
+    const config = compositeSpec.config ?? {};
+    const childFields = config.fields ?? compositeSpec.children ?? [];
+    setting.settingEl.addClass("sm-cc-composite");
+    setting.settingEl.addClass("sm-cc-setting--wide");
+    const compositeValue = values[spec.id] ?? {};
+    const groupBy = config.groupBy;
+    const handle = renderCompositeCore({
+      container: setting.controlEl,
+      childFields,
+      groupBy,
+      initialValue: compositeValue,
+      onChange: (value) => onChange(spec.id, value),
+      renderFieldControl
+    });
+    return {
+      setErrors: validation.apply,
+      container: setting.settingEl,
+      update: handle.update
+    };
+  }
+};
+
+// src/features/data-manager/fields/renderer-autocomplete.ts
+var import_obsidian23 = require("obsidian");
+var autocompleteFieldRenderer = {
+  supports: (spec) => spec.type === "autocomplete",
+  render: (args) => {
+    const { container, spec, values, onChange } = args;
+    const setting = new import_obsidian23.Setting(container).setName(spec.label);
+    setting.settingEl.addClass("sm-cc-setting");
+    if (spec.help) {
+      setting.setDesc(spec.help);
+    }
+    const validation = createValidationControls(setting);
+    const initial = resolveInitialValue(spec, values);
+    const autocompleteSpec = spec;
+    const { load, renderSuggestion, onSelect, minQueryLength = 2 } = autocompleteSpec.config;
+    const input = setting.controlEl.createEl("input", {
+      cls: "sm-cc-input sm-cc-autocomplete-input",
+      attr: { type: "text", placeholder: spec.placeholder ?? "Search..." }
+    });
+    let suggestionsContainer = null;
+    let selectedIndex = -1;
+    const hideSuggestions = () => {
+      suggestionsContainer?.remove();
+      suggestionsContainer = null;
+      selectedIndex = -1;
+    };
+    const showSuggestions = async (query) => {
+      if (query.length < minQueryLength) {
+        hideSuggestions();
+        return;
+      }
+      const items = await Promise.resolve(load(query));
+      if (items.length === 0) {
+        hideSuggestions();
+        return;
+      }
+      if (!suggestionsContainer) {
+        suggestionsContainer = setting.controlEl.createDiv({ cls: "sm-cc-autocomplete-suggestions" });
+      }
+      suggestionsContainer.empty();
+      selectedIndex = -1;
+      items.forEach((item, index) => {
+        const suggestionEl = suggestionsContainer.createDiv({ cls: "sm-cc-autocomplete-suggestion" });
+        suggestionEl.innerHTML = renderSuggestion(item);
+        suggestionEl.addEventListener("click", () => {
+          onSelect(item, values);
+          input.value = "";
+          hideSuggestions();
+        });
+        suggestionEl.addEventListener("mouseenter", () => {
+          selectedIndex = index;
+          updateSelection();
+        });
+      });
+      updateSelection();
+    };
+    const updateSelection = () => {
+      if (!suggestionsContainer) return;
+      const suggestions = suggestionsContainer.querySelectorAll(".sm-cc-autocomplete-suggestion");
+      suggestions.forEach((el, index) => {
+        el.classList.toggle("is-selected", index === selectedIndex);
+      });
+    };
+    const selectCurrent = () => {
+      if (!suggestionsContainer || selectedIndex < 0) return;
+      const suggestions = suggestionsContainer.querySelectorAll(".sm-cc-autocomplete-suggestion");
+      suggestions[selectedIndex]?.click();
+    };
+    input.addEventListener("input", () => void showSuggestions(input.value));
+    input.addEventListener("blur", () => setTimeout(hideSuggestions, 200));
+    input.addEventListener("keydown", (e) => {
+      if (!suggestionsContainer) return;
+      const count = suggestionsContainer.querySelectorAll(".sm-cc-autocomplete-suggestion").length;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        selectedIndex = (selectedIndex + 1) % count;
+        updateSelection();
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        selectedIndex = selectedIndex <= 0 ? count - 1 : selectedIndex - 1;
+        updateSelection();
+      } else if (e.key === "Enter" && selectedIndex >= 0) {
+        e.preventDefault();
+        selectCurrent();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        hideSuggestions();
+      }
+    });
+    return {
+      setErrors: validation.apply,
+      container: setting.settingEl,
+      focus: () => input.focus()
+    };
+  }
+};
+
+// src/features/data-manager/fields/renderer-repeating.ts
+var import_obsidian24 = require("obsidian");
+var repeatingFieldRenderer = {
+  supports: (spec) => spec.type === "repeating",
+  render: (args) => {
+    const { container, spec, values, onChange } = args;
+    const setting = new import_obsidian24.Setting(container).setName(spec.label);
+    setting.settingEl.addClass("sm-cc-setting");
+    if (spec.help) {
+      setting.setDesc(spec.help);
+    }
+    const validation = createValidationControls(setting);
+    const initial = resolveInitialValue(spec, values);
+    setting.settingEl.addClass("sm-cc-setting--wide");
+    const repeatingSpec = spec;
+    const config = repeatingSpec.config ?? {};
+    const entries = Array.isArray(values[spec.id]) ? [...values[spec.id]] : Array.isArray(spec.default) ? [...spec.default] : [];
+    const isTemplateMode = Boolean(config.fields && config.fields.length > 0);
+    const isStatic = Boolean(config.static);
+    if (isTemplateMode) {
+      setting.settingEl.addClass("sm-cc-repeating-list");
+      const listContainer = setting.controlEl.createDiv({
+        cls: "sm-cc-repeating-fields"
+      });
+      const fieldTemplate = config.fields;
+      const updateEntryFields = (entryContainer, entry, template) => {
+        const fieldWrappers = entryContainer.querySelectorAll(
+          ".sm-cc-repeating-field"
+        );
+        fieldWrappers.forEach((wrapper, index) => {
+          const fieldSpec = template[index];
+          if (!fieldSpec) return;
+          const isVisible = !fieldSpec.visibleIf || fieldSpec.visibleIf(entry);
+          wrapper.toggleClass("is-hidden", !isVisible);
+          if (fieldSpec.type === "display") {
+            const displaySpec = fieldSpec;
+            const displayEl = wrapper.querySelector(".sm-cc-display-field");
+            if (displayEl && displaySpec.config?.compute) {
+              try {
+                const computed = displaySpec.config.compute(entry);
+                const prefix = typeof displaySpec.config.prefix === "function" ? displaySpec.config.prefix(entry) : displaySpec.config.prefix ?? "";
+                const suffix = typeof displaySpec.config.suffix === "function" ? displaySpec.config.suffix(entry) : displaySpec.config.suffix ?? "";
+                displayEl.value = `${prefix}${computed}${suffix}`;
+              } catch (error) {
+                console.warn(`Display field ${fieldSpec.id} compute error:`, error);
+                displayEl.value = "";
+              }
+            }
+          }
+        });
+      };
+      entries.forEach((entry, entryIndex) => {
+        const entryContainer = listContainer.createDiv({
+          cls: "sm-cc-repeating-item",
+          attr: { "data-entry-index": String(entryIndex) }
+        });
+        fieldTemplate.forEach((fieldSpec, fieldIndex) => {
+          const fieldWrapper = entryContainer.createDiv({
+            cls: `sm-cc-repeating-field sm-cc-repeating-field--${fieldSpec.type}`,
+            attr: { "data-field-id": fieldSpec.id }
+          });
+          const isVisible = !fieldSpec.visibleIf || fieldSpec.visibleIf(entry);
+          if (!isVisible) {
+            fieldWrapper.addClass("is-hidden");
+          }
+          if (isVisible && entry[fieldSpec.id] === void 0) {
+            const initConfig = fieldSpec.config?.init;
+            if (initConfig && typeof initConfig === "function") {
+              try {
+                entry[fieldSpec.id] = initConfig(entry);
+              } catch (error) {
+                console.error(`Failed to initialize ${fieldSpec.id}:`, error);
+              }
+            }
+          }
+          const fieldHandle = renderFieldControl(
+            fieldWrapper,
+            fieldSpec,
+            // For heading fields, pass entire entry object so getValue can access any property
+            // For other fields, pass the specific field value
+            fieldSpec.type === "heading" ? entry : entry[fieldSpec.id],
+            (newValue) => {
+              entry[fieldSpec.id] = newValue;
+              onChange(spec.id, [...entries]);
+              updateEntryFields(entryContainer, entry, fieldTemplate);
+            }
+          );
+        });
+      });
+      let synchronizer;
+      if (config.synchronizeWidths) {
+        synchronizer = new RepeatingWidthSynchronizer(listContainer);
+      }
+      entries.forEach((entry, entryIndex) => {
+        const entryContainer = listContainer.children[entryIndex];
+        if (entryContainer) {
+          updateEntryFields(entryContainer, entry, fieldTemplate);
+        }
+      });
+      return {
+        setErrors: validation.apply,
+        container: setting.settingEl,
+        synchronizer,
+        update: (value) => {
+          if (Array.isArray(value)) {
+            entries.splice(0, entries.length, ...value);
+          }
+        }
+      };
+    } else {
+      const categories = config.categories ?? [];
+      const filters = config.filters ?? void 0;
+      const itemTemplate = repeatingSpec.itemTemplate ?? {};
+      const renderEntry = config.renderEntry;
+      const cardFactory = config.card;
+      const handle = renderRepeatingEntryManagerCore({
+        container: setting.controlEl,
+        entries,
+        categories,
+        filters,
+        itemTemplate,
+        renderEntry,
+        card: cardFactory,
+        onChange: (updated) => onChange(spec.id, updated),
+        insertPosition: config.insertPosition ?? "end",
+        isStatic,
+        mountEntryManager,
+        fieldId: spec.id
+      });
+      if ("error" in handle && handle.error) {
+        const fallback = container.createDiv({ cls: "sm-cc-field--error" });
+        fallback.createEl("label", { text: spec.label });
+        return { container: fallback };
+      }
+      return {
+        setErrors: validation.apply,
+        container: setting.settingEl,
+        update: handle.update
+      };
+    }
+  }
+};
+
+// src/features/data-manager/fields/register-renderers.ts
+function registerAllFieldRenderers() {
+  fieldRendererRegistry.register(textFieldRenderer);
+  fieldRendererRegistry.register(textareaFieldRenderer);
+  fieldRendererRegistry.register(numberStepperFieldRenderer);
+  fieldRendererRegistry.register(toggleFieldRenderer);
+  fieldRendererRegistry.register(selectFieldRenderer);
+  fieldRendererRegistry.register(multiselectFieldRenderer);
+  fieldRendererRegistry.register(colorFieldRenderer);
+  fieldRendererRegistry.register(tagsFieldRenderer);
+  fieldRendererRegistry.register(structuredTagsFieldRenderer);
+  fieldRendererRegistry.register(displayFieldRenderer);
+  fieldRendererRegistry.register(headingFieldRenderer);
+  fieldRendererRegistry.register(compositeFieldRenderer);
+  fieldRendererRegistry.register(autocompleteFieldRenderer);
+  fieldRendererRegistry.register(repeatingFieldRenderer);
+}
+
+// src/features/data-manager/modal/data-initializer.ts
+var DataInitializer = class {
+  constructor(options) {
+    this.options = options;
+  }
+  /**
+   * Initialize draft data with all sources merged in correct order.
+   */
+  initialize() {
+    const name = this.resolveName();
+    const base = this.createBase(name);
+    const withDefaults = this.applyDefaults(base, name);
+    const withPreset = this.applyPreset(withDefaults);
+    const final = this.applyCustomInitializer(withPreset);
+    return final;
+  }
+  /**
+   * Resolve the name from preset or generate default name.
+   */
+  resolveName() {
+    const { preset } = this.options;
+    const defaultName = this.resolveDefaultName();
+    if (typeof preset === "string") {
+      return preset;
+    }
+    if (typeof preset === "object" && preset && "name" in preset) {
+      const nameValue = preset.name;
+      return typeof nameValue === "string" && nameValue.trim() ? nameValue : defaultName;
+    }
+    return defaultName;
+  }
+  /**
+   * Create base draft with name and filename.
+   */
+  createBase(name) {
+    const draft = { name };
+    const filenameField = this.options.spec.storage.filenameFrom;
+    if (draft[filenameField] === void 0) {
+      draft[filenameField] = name;
+    }
+    return draft;
+  }
+  /**
+   * Apply defaults from spec.defaults and field defaults.
+   */
+  applyDefaults(base, name) {
+    const { spec } = this.options;
+    const specDefaults = resolveDefaults(spec, name);
+    let result = { ...base, ...specDefaults };
+    for (const field of spec.fields) {
+      if (result[field.id] !== void 0) {
+        continue;
+      }
+      if (field.default !== void 0) {
+        result[field.id] = field.default;
+      }
+    }
+    const filenameField = spec.storage.filenameFrom;
+    if (result[filenameField] === void 0) {
+      result[filenameField] = result.name;
+    }
+    return result;
+  }
+  /**
+   * Apply preset data (if preset is an object).
+   */
+  applyPreset(data) {
+    const { preset } = this.options;
+    if (preset && typeof preset === "object") {
+      return { ...data, ...preset };
+    }
+    return data;
+  }
+  /**
+   * Apply custom initializer function (if provided).
+   */
+  applyCustomInitializer(data) {
+    const { customInitializer } = this.options;
+    if (!customInitializer) {
+      return data;
+    }
+    const adjusted = customInitializer(deepClone(data));
+    if (adjusted && typeof adjusted === "object") {
+      return { ...data, ...adjusted };
+    }
+    return data;
+  }
+  /**
+   * Resolve default name from name field default or spec.kind.
+   */
+  resolveDefaultName() {
+    const { spec } = this.options;
+    const nameField = spec.fields.find((field) => field.id === "name");
+    if (nameField && typeof nameField.default === "string" && nameField.default.trim()) {
+      return nameField.default;
+    }
+    const kind = spec.kind || "Eintrag";
+    const normalized = kind.charAt(0).toUpperCase() + kind.slice(1);
+    return `Neue/r ${normalized}`;
+  }
+};
+
+// src/features/data-manager/storage/storage.ts
+var import_obsidian25 = require("obsidian");
+function slugify(value) {
+  const trimmed = value.trim().toLowerCase();
+  const replaced = trimmed.normalize("NFKD").replace(/\p{Diacritic}/gu, "").replace(/[^a-z0-9]+/g, "-").replace(/-{2,}/g, "-").replace(/^-+|-+$/g, "");
+  return replaced || "entry";
+}
+function ensureExtension(path, extension) {
+  if (path.toLowerCase().endsWith(`.${extension}`)) return path;
+  return `${path}.${extension}`;
+}
+function applyTemplate(template, replacements) {
+  return template.replace(/\{([^}]+)\}/g, (_, key) => {
+    const replacement = replacements[key];
+    return replacement ?? "";
+  });
+}
+function collectReplacements(values) {
+  const map = {};
+  for (const [key, raw] of Object.entries(values)) {
+    if (raw == null) continue;
+    map[key] = typeof raw === "string" ? raw : String(raw);
+  }
+  if (values.name) {
+    map.slug = slugify(String(values.name));
+    map.name = String(values.name);
+  }
+  return map;
+}
+function resolveTargetPath(storage, values) {
+  const replacements = collectReplacements(values);
+  const filenameSource = values[storage.filenameFrom];
+  const slug = typeof filenameSource === "string" ? slugify(filenameSource) : slugify(String(filenameSource ?? "entry"));
+  replacements.slug = slug;
+  replacements.filename = slug;
+  const templatePath = applyTemplate(storage.pathTemplate, replacements);
+  const extension = storage.format === "md-frontmatter" || storage.format === "codeblock" ? "md" : storage.format === "json" ? "json" : "yaml";
+  const target = ensureExtension(templatePath, extension);
+  if (storage.directory) {
+    const sanitizedDir = (0, import_obsidian25.normalizePath)(storage.directory);
+    const fileName = target.split("/").pop() ?? target;
+    return (0, import_obsidian25.normalizePath)(`${sanitizedDir}/${fileName}`);
+  }
+  return (0, import_obsidian25.normalizePath)(target);
+}
+function buildFrontmatter(values, storage) {
+  const frontmatter = {};
+  if (Array.isArray(storage.frontmatter)) {
+    for (const key of storage.frontmatter) {
+      if (values[key] !== void 0) {
+        frontmatter[key] = values[key];
+      }
+    }
+  } else if (storage.frontmatter) {
+    for (const [fieldId, fmKey] of Object.entries(storage.frontmatter)) {
+      if (values[fieldId] !== void 0) {
+        frontmatter[fmKey] = values[fieldId];
+      }
+    }
+  }
+  if (!("name" in frontmatter) && typeof values.name === "string") {
+    frontmatter.name = values.name;
+  }
+  return frontmatter;
+}
+function buildMarkdownBody(values, storage) {
+  if (storage.bodyTemplate) {
+    return storage.bodyTemplate(values);
+  }
+  if (storage.bodyFields?.length) {
+    const parts = [];
+    for (const fieldId of storage.bodyFields) {
+      const value = values[fieldId];
+      if (value == null) continue;
+      if (typeof value === "string") {
+        parts.push(value);
+      } else if (Array.isArray(value)) {
+        parts.push(value.join(", "));
+      } else {
+        parts.push(String(value));
+      }
+    }
+    return parts.join("\n\n");
+  }
+  return "";
+}
+function serializeMarkdown(storage, values, path) {
+  const frontmatter = buildFrontmatter(values, storage);
+  const body = buildMarkdownBody(values, storage);
+  const fm2 = (0, import_obsidian25.stringifyYaml)(frontmatter ?? {});
+  const content = [`---`, fm2.trimEnd(), `---`, "", body.trimEnd()].join("\n").trimEnd() + "\n";
+  return { path, content, metadata: { frontmatter, format: storage.format } };
+}
+function serializeJson(values, path) {
+  const content = JSON.stringify(values, null, 2) + "\n";
+  return { path, content, metadata: { format: "json" } };
+}
+function serializeYaml(values, path) {
+  const content = (0, import_obsidian25.stringifyYaml)(values ?? {}) + "\n";
+  return { path, content, metadata: { format: "yaml" } };
+}
+function serializeCodeblock(storage, values, path) {
+  if (!storage.blockRenderer) {
+    throw new Error("Codeblock storage requires a blockRenderer definition");
+  }
+  const raw = storage.blockRenderer.serialize(values);
+  const content = typeof raw === "string" ? raw.trim() : String(raw ?? "");
+  return {
+    path,
+    content,
+    metadata: {
+      format: "codeblock",
+      language: storage.blockRenderer.language,
+      values
+    }
+  };
+}
+function buildSerializedPayload(storage, values) {
+  const path = resolveTargetPath(storage, values);
+  switch (storage.format) {
+    case "json":
+      return serializeJson(values, path);
+    case "yaml":
+      return serializeYaml(values, path);
+    case "codeblock":
+      return serializeCodeblock(storage, values, path);
+    case "md-frontmatter":
+    default:
+      return serializeMarkdown(storage, values, path);
+  }
+}
+function ensureFolder2(app, path) {
+  const parts = path.split("/");
+  parts.pop();
+  const folder = parts.join("/");
+  if (!folder) return Promise.resolve();
+  const normalized = (0, import_obsidian25.normalizePath)(folder);
+  const existing = app.vault.getAbstractFileByPath(normalized);
+  if (existing) return Promise.resolve();
+  return app.vault.createFolder(normalized).catch(() => {
+  });
+}
+function toContentString(content) {
+  if (typeof content === "string") return content;
+  return JSON.stringify(content, null, 2);
+}
+async function persistSerializedPayload(app, storage, payload) {
+  await storage.hooks?.ensureDirectory?.(app);
+  await ensureFolder2(app, payload.path);
+  await storage.hooks?.beforeWrite?.(payload);
+  const existing = app.vault.getAbstractFileByPath(payload.path);
+  let file;
+  const content = toContentString(payload.content);
+  if (storage.format === "codeblock") {
+    if (!storage.blockRenderer) {
+      throw new Error("Codeblock storage requires a blockRenderer definition");
+    }
+    const language = storage.blockRenderer.language;
+    const fence = "```";
+    const blockRegex = new RegExp(`^\\s*${fence}${language}(?:\\s|$)[\\s\\S]*?${fence}`, "im");
+    const normalizedBlock = content.trim();
+    const blockWithNewline = normalizedBlock.endsWith("\\n") ? normalizedBlock : `${normalizedBlock}\\n`;
+    if (existing instanceof import_obsidian25.TFile) {
+      const current = await app.vault.read(existing);
+      const trimmedCurrent = current.trimEnd();
+      const replacement = blockWithNewline.trimEnd();
+      const hasBlock = blockRegex.test(current);
+      const next = hasBlock ? current.replace(blockRegex, replacement) : `${trimmedCurrent}\\n\\n${replacement}`;
+      await app.vault.modify(existing, next.trimEnd() + "\\n");
+      file = existing;
+    } else {
+      const initial = storage.bodyTemplate ? storage.bodyTemplate({ ...payload.metadata?.values ?? {}, block: blockWithNewline }) : blockWithNewline;
+      file = await app.vault.create(payload.path, initial.endsWith("\\n") ? initial : `${initial}\\n`);
+    }
+  } else {
+    if (existing instanceof import_obsidian25.TFile) {
+      await app.vault.modify(existing, content);
+      file = existing;
+    } else {
+      file = await app.vault.create(payload.path, content);
+    }
+  }
+  const result = { filePath: payload.path, file };
+  await storage.hooks?.afterWrite?.(result);
+  return result;
+}
+
+// src/features/data-manager/modal/modal-persistence.ts
+var ModalPersistence = class {
+  constructor(app, spec, transformer) {
+    this.app = app;
+    this.spec = spec;
+    this.transformer = transformer;
+  }
+  /**
+   * Save draft data: transform → parse → serialize → persist
+   */
+  async save(data) {
+    const serialized = await this.serialize(data);
+    const result = await this.persist(serialized);
+    return result;
+  }
+  /**
+   * Serialize draft to payload (transform + parse + build payload)
+   */
+  async serialize(draft) {
+    const transformed = this.transformer.apply(draft);
+    const parsed = this.spec.schema.parse(transformed);
+    const prepared = this.spec.transformers?.preSave ? this.spec.transformers.preSave(parsed) : parsed;
+    const payload = buildSerializedPayload(
+      this.spec.storage,
+      prepared
+    );
+    return { values: prepared, payload };
+  }
+  /**
+   * Persist serialized payload to vault
+   */
+  async persist(serialized) {
+    const result = await persistSerializedPayload(
+      this.app,
+      this.spec.storage,
+      serialized.payload
+    );
+    return {
+      filePath: result.filePath,
+      values: serialized.values
+    };
+  }
+};
+
+// src/features/data-manager/modal/modal-validator.ts
+var DefaultFieldTransformer = class {
+  constructor(fields) {
+    this.fields = fields;
+  }
+  /**
+   * Apply all field transforms to data.
+   * Returns a new object with transformed values.
+   */
+  apply(data) {
+    const result = { ...data };
+    for (const field of this.fields) {
+      if (!field.transform) continue;
+      try {
+        const transformed = field.transform(result[field.id], result);
+        result[field.id] = transformed;
+      } catch (error) {
+        console.error(`Transform failed for field ${field.id}`, error);
+      }
+    }
+    return result;
+  }
+};
+var ModalValidator = class {
+  constructor(spec, fieldInstances, data, customValidators, transformer) {
+    this.spec = spec;
+    this.fieldInstances = fieldInstances;
+    this.data = data;
+    this.customValidators = customValidators;
+    this.transformer = transformer;
+  }
+  /**
+   * Run comprehensive validation:
+   * 1. Field validation (required, custom validate functions)
+   * 2. Field transforms
+   * 3. Schema validation
+   * 4. Custom validators
+   */
+  validate() {
+    const summary = [];
+    const fieldErrors = this.validateFields();
+    for (const [id, errors] of fieldErrors) {
+      if (errors.length > 0) {
+        const instance = this.fieldInstances.get(id);
+        if (instance) {
+          summary.push(`${instance.spec.label}: ${errors[0]}`);
+        }
+      }
+    }
+    const transformed = this.transformer.apply(this.data());
+    const schemaErrors = this.validateSchema(transformed, fieldErrors);
+    summary.push(...schemaErrors);
+    const customErrors = this.runCustomValidators();
+    summary.push(...customErrors);
+    this.applyFieldErrors(fieldErrors);
+    const isValid = summary.length === 0;
+    return {
+      isValid,
+      errors: fieldErrors,
+      summary,
+      transformed: isValid ? transformed : void 0
+    };
+  }
+  /**
+   * Validate all fields: required and custom validate functions.
+   */
+  validateFields() {
+    const fieldErrors = /* @__PURE__ */ new Map();
+    const currentData = this.data();
+    for (const [id, instance] of this.fieldInstances) {
+      if (!instance.isVisible) {
+        instance.handle.setErrors?.([]);
+        fieldErrors.set(id, []);
+        continue;
+      }
+      const value = currentData[id];
+      const errors = [];
+      if (instance.spec.required) {
+        if (value === void 0 || value === null || value === "") {
+          errors.push("Pflichtfeld");
+        } else if (Array.isArray(value) && value.length === 0) {
+          errors.push("Mindestens ein Wert erforderlich");
+        }
+      }
+      if (instance.spec.validate) {
+        try {
+          const result = instance.spec.validate(value, currentData);
+          if (typeof result === "string" && result.trim()) {
+            errors.push(result.trim());
+          }
+        } catch (error) {
+          errors.push(String(error));
+        }
+      }
+      fieldErrors.set(id, errors);
+    }
+    return fieldErrors;
+  }
+  /**
+   * Validate transformed data with schema.
+   * Adds schema errors to existing field errors.
+   */
+  validateSchema(transformed, fieldErrors) {
+    const summary = [];
+    const schema = this.spec.schema.safeParse(transformed);
+    if (!schema.success) {
+      const issues = extractSchemaIssues(schema.error);
+      if (issues.length === 0) {
+        summary.push(String(schema.error));
+      }
+      for (const issue of issues) {
+        const target = issue.path?.[0];
+        if (typeof target === "string" && fieldErrors.has(target)) {
+          const list = fieldErrors.get(target);
+          if (issue.message) {
+            list.push(issue.message);
+          }
+          summary.push(`${target}: ${issue.message ?? "Ung\xFCltiger Wert"}`);
+        } else if (issue.message) {
+          summary.push(issue.message);
+        }
+      }
+    }
+    return summary;
+  }
+  /**
+   * Run custom validator functions (used in navigation mode).
+   */
+  runCustomValidators() {
+    const collected = [];
+    for (const validator of this.customValidators) {
+      collected.push(...validator());
+    }
+    return collected;
+  }
+  /**
+   * Apply field errors to UI (set errors on field handles).
+   */
+  applyFieldErrors(errors) {
+    for (const [id, instance] of this.fieldInstances) {
+      const fieldErrors = errors.get(id) ?? [];
+      instance.handle.setErrors?.(fieldErrors);
+    }
+  }
+};
+
+// src/features/data-manager/fields/field-manager.ts
+var FieldManager = class {
+  constructor(fields, getData, onChange, widthSynchronizers) {
+    this.fields = fields;
+    this.getData = getData;
+    this.onChange = onChange;
+    this.widthSynchronizers = widthSynchronizers;
+    this.fieldInstances = /* @__PURE__ */ new Map();
+  }
+  /**
+   * Render fields in container, optionally filtered by fieldIds.
+   * If fieldIds is undefined, renders all fields.
+   */
+  renderFields(container, fieldIds) {
+    const ordered = orderFields(this.fields, fieldIds);
+    for (const field of ordered) {
+      this.renderSingleField(container, field);
+    }
+    this.updateVisibility();
+  }
+  /**
+   * Render a single field and register its instance.
+   */
+  renderSingleField(container, field) {
+    const handle = this.renderField(
+      container,
+      field,
+      this.getData(),
+      (id, value) => this.onChange(id, value)
+    );
+    if (handle.synchronizer) {
+      this.widthSynchronizers.push(handle.synchronizer);
+    }
+    this.fieldInstances.set(field.id, {
+      spec: field,
+      handle: {
+        setErrors: handle.setErrors
+      },
+      container: handle.container,
+      isVisible: true
+    });
+  }
+  /**
+   * Render field using registry.
+   * Internal wrapper around fieldRendererRegistry.render().
+   */
+  renderField(container, spec, values, onChange) {
+    return fieldRendererRegistry.render({
+      app: null,
+      // App not needed for current renderers
+      container,
+      spec,
+      values,
+      onChange,
+      registerValidator: () => {
+      }
+      // Not used in this context
+    });
+  }
+  /**
+   * Update visibility of all fields based on visibleIf conditions.
+   */
+  updateVisibility() {
+    const data = this.getData();
+    for (const [id, instance] of this.fieldInstances) {
+      const visible = this.evaluateVisibility(instance.spec, data);
+      instance.isVisible = visible;
+      const target = instance.container;
+      if (target) {
+        target.toggleClass("is-hidden", !visible);
+        if (!visible) {
+          instance.handle.setErrors?.([]);
+        }
+      }
+    }
+  }
+  /**
+   * Evaluate visibility condition for a field.
+   */
+  evaluateVisibility(field, data) {
+    if (!field.visibleIf) return true;
+    try {
+      return field.visibleIf(data);
+    } catch (error) {
+      console.error("Failed to evaluate field visibility", error);
+      return true;
+    }
+  }
+  /**
+   * Get the field instances map (for validator integration).
+   */
+  getFieldInstances() {
+    return this.fieldInstances;
+  }
+  /**
+   * Cleanup field instances.
+   */
+  dispose() {
+    this.fieldInstances.clear();
+  }
+};
+
+// src/features/data-manager/layout/layouts.ts
+function createFormCard(parent, options) {
+  const { title, subtitle, registerValidator, id, headingId, role } = options;
+  const card = parent.createDiv({ cls: "sm-cc-card" });
+  if (id) card.id = id;
+  const computedHeadingId = headingId ?? (id ? `${id}__title` : void 0);
+  card.setAttribute("role", role ?? "region");
+  if (computedHeadingId) {
+    card.setAttribute("aria-labelledby", computedHeadingId);
+  }
+  const head = card.createDiv({ cls: "sm-cc-card__head" });
+  const heading = head.createDiv({ cls: "sm-cc-card__heading" });
+  const headingTitle = heading.createEl("h3", { text: title, cls: "sm-cc-card__title" });
+  if (computedHeadingId) headingTitle.id = computedHeadingId;
+  const status = heading.createSpan({
+    cls: "sm-cc-card__status",
+    attr: { hidden: "" }
+  });
+  if (subtitle) head.createEl("p", { text: subtitle, cls: "sm-cc-card__subtitle" });
+  const validation = card.createDiv({ cls: "sm-cc-card__validation", attr: { hidden: "" } });
+  const validationList = validation.createEl("ul", { cls: "sm-cc-card__validation-list" });
+  const applyValidation = (issues, summary) => {
+    const hasIssues = issues.length > 0;
+    card.toggleClass("is-invalid", hasIssues);
+    if (!hasIssues) {
+      validation.setAttribute("hidden", "");
+      validation.classList.remove("is-visible");
+      validationList.empty();
+      status.textContent = "";
+      status.setAttribute("hidden", "");
+      status.classList.remove("is-active");
+      return;
+    }
+    validation.removeAttribute("hidden");
+    validation.classList.add("is-visible");
+    validationList.empty();
+    for (const message of issues) {
+      validationList.createEl("li", { text: message });
+    }
+    const fallbackSummary = issues.length === 1 ? issues[0] : `${issues.length} Probleme`;
+    status.textContent = summary?.trim() || fallbackSummary;
+    status.removeAttribute("hidden");
+    status.classList.add("is-active");
+  };
+  const body = card.createDiv({ cls: "sm-cc-card__body" });
+  const registerValidation = (compute) => {
+    const runner = () => {
+      const result = compute();
+      const normalized = Array.isArray(result) ? { issues: result, summary: void 0 } : result ?? { issues: [], summary: void 0 };
+      applyValidation(normalized.issues, normalized.summary);
+      return normalized.issues;
+    };
+    return registerValidator ? registerValidator(runner) : runner;
+  };
+  return { card, body, heading: headingTitle, registerValidation };
+}
+
+// src/features/data-manager/modal/modal-navigation.ts
+var ModalNavigation = class {
+  constructor(options) {
+    this.options = options;
+    this.sectionObserver = null;
+    this.navButtons = [];
+  }
+  /**
+   * Mount the navigation layout: header, shell (nav + content), and footer.
+   * Returns the footer element for action buttons.
+   */
+  mount() {
+    const { container, sections, title, subtitle, onMountSection, addValidator } = this.options;
+    const header = container.createDiv({ cls: "sm-cc-modal-header" });
+    header.createEl("h2", { text: title });
+    if (subtitle) {
+      header.createEl("p", {
+        cls: "sm-cc-modal-subtitle",
+        text: subtitle
+      });
+    }
+    const shell = container.createDiv({ cls: "sm-cc-shell" });
+    const nav = shell.createEl("nav", { cls: "sm-cc-shell__nav", attr: { "aria-label": "Abschnitte" } });
+    nav.createEl("p", { cls: "sm-cc-shell__nav-label", text: "Abschnitte" });
+    const navList = nav.createDiv({ cls: "sm-cc-shell__nav-list" });
+    const content = shell.createDiv({ cls: "sm-cc-shell__content" });
+    const setActive = (sectionId) => {
+      for (const entry of this.navButtons) {
+        const isActive = entry.id === sectionId;
+        entry.button.classList.toggle("is-active", isActive);
+        if (isActive) {
+          entry.button.setAttribute("aria-current", "true");
+        } else {
+          entry.button.removeAttribute("aria-current");
+        }
+      }
+    };
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.filter((entry) => entry.isIntersecting);
+      if (!visible.length) return;
+      visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+      const next = visible[0].target.id;
+      if (next) setActive(next);
+    }, { root: container, rootMargin: "-45% 0px -45% 0px", threshold: 0 });
+    this.sectionObserver = observer;
+    for (const section of sections) {
+      this.createSection(section, content, navList, observer, setActive, onMountSection, addValidator);
+    }
+    if (sections.length) {
+      setActive(sections[0].id);
+    }
+    const footer = container.createDiv({ cls: "sm-cc-modal-footer" });
+    return footer;
+  }
+  /**
+   * Create a single section with navigation button and form card.
+   */
+  createSection(section, content, navList, observer, setActive, onMountSection, addValidator) {
+    const handles = createFormCard(content, {
+      title: section.label,
+      subtitle: section.description,
+      registerValidator: (runner) => addValidator(runner),
+      id: section.id
+    });
+    const navButton = navList.createEl("button", {
+      cls: "sm-cc-shell__nav-button",
+      text: section.label
+    });
+    navButton.type = "button";
+    navButton.setAttribute("aria-controls", handles.card.id);
+    this.navButtons.push({ id: handles.card.id, button: navButton });
+    navButton.addEventListener("click", () => {
+      setActive(handles.card.id);
+      handles.card.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    observer.observe(handles.card);
+    onMountSection(handles, section);
+  }
+  /**
+   * Scroll to a specific section by ID.
+   */
+  scrollToSection(id) {
+    const entry = this.navButtons.find((btn) => btn.id === id);
+    if (entry) {
+      const section = document.getElementById(id);
+      section?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+  /**
+   * Cleanup navigation resources.
+   */
+  dispose() {
+    this.sectionObserver?.disconnect();
+    this.sectionObserver = null;
+    this.navButtons = [];
+  }
+};
+
+// src/features/data-manager/modal/modal.ts
+registerAllFieldRenderers();
+var CreateModal = class extends import_obsidian26.Modal {
+  constructor(app, spec, options, resolve) {
+    super(app);
+    this.completion = null;
+    this.resolved = false;
+    // Navigation support
+    this.navigation = null;
+    this.validators = [];
+    // Layout managers for dynamic grid
+    this.layoutManagers = [];
+    // Width synchronizers for repeating fields
+    this.widthSynchronizers = [];
+    // Background pointer lock
+    this.bgLock = null;
+    // Submission state
+    this.submitButton = null;
+    this.cancelButton = null;
+    this.isSubmitting = false;
+    this.spec = spec;
+    this.resolveResult = resolve;
+    this.sectionOrder = spec.ui?.sections ?? [];
+    const initializer = new DataInitializer({
+      spec,
+      preset: options?.preset,
+      customInitializer: options?.initialize
+    });
+    this.data = initializer.initialize();
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass("sm-cc-create-modal");
+    this.validators = [];
+    this.transformer = new DefaultFieldTransformer(this.spec.fields);
+    this.persistence = new ModalPersistence(this.app, this.spec, this.transformer);
+    this.fieldManager = new FieldManager(
+      this.spec.fields,
+      () => this.data,
+      // Getter for current data
+      (id, value) => this.handleFieldChange(id, value),
+      this.widthSynchronizers
+    );
+    this.validator = new ModalValidator(
+      this.spec,
+      this.fieldManager.getFieldInstances(),
+      () => this.data,
+      // Getter for current data
+      this.validators,
+      this.transformer
+    );
+    this.lockBackgroundPointer();
+    const navigationEnabled = this.spec.ui?.enableNavigation ?? Boolean(this.sectionOrder.length);
+    if (navigationEnabled) {
+      this.modalEl.addClass("sm-cc-create-modal-host");
+    }
+    if (navigationEnabled && this.sectionOrder.length) {
+      this.buildNavigationLayout(contentEl);
+    } else {
+      this.buildSimpleLayout(contentEl);
+    }
+  }
+  buildSimpleLayout(contentEl) {
+    contentEl.createEl("h3", { text: this.spec.title });
+    this.fieldManager.renderFields(contentEl, void 0);
+    this.buildActionButtons(contentEl);
+    this.scope.register([], "Enter", (evt) => {
+      if (!(evt.target instanceof HTMLTextAreaElement)) {
+        void this.submit();
+      }
+    });
+  }
+  buildNavigationLayout(contentEl) {
+    this.navigation = new ModalNavigation({
+      container: contentEl,
+      sections: this.sectionOrder,
+      title: this.spec.title,
+      subtitle: this.spec.subtitle,
+      onMountSection: (handles, section) => this.mountSection(handles, section),
+      addValidator: (runner) => this.addValidator(runner)
+    });
+    const footer = this.navigation.mount();
+    this.buildActionButtons(footer);
+  }
+  mountSection(handles, section) {
+    const ordered = orderFields(this.spec.fields, section.fieldIds);
+    this.fieldManager.renderFields(handles.body, section.fieldIds);
+    const layoutManager = new GridLayoutManager(handles.body, ordered);
+    this.layoutManagers.push(layoutManager);
+    handles.registerValidation(() => {
+      const result = this.validator.validate();
+      const issues = [];
+      for (const field of ordered) {
+        const fieldErrors = result.errors.get(field.id) ?? [];
+        if (fieldErrors.length) {
+          issues.push(`${field.label}: ${fieldErrors[0]}`);
+        }
+      }
+      const summary = issues.length > 0 ? `${issues.length} Feld${issues.length > 1 ? "er" : ""} ben\xF6tigt Aufmerksamkeit` : void 0;
+      return { issues, summary };
+    });
+  }
+  handleFieldChange(id, value) {
+    if (id === "name" && typeof value === "string") {
+      this.data.name = value.trim();
+    }
+    this.data[id] = value;
+    this.fieldManager.updateVisibility();
+  }
+  buildActionButtons(container) {
+    const buttons = new import_obsidian26.Setting(container);
+    buttons.addButton((btn) => {
+      this.cancelButton = btn;
+      btn.setButtonText(this.spec.ui?.cancelLabel || "Abbrechen").onClick(() => {
+        if (this.isSubmitting) return;
+        this.close();
+      });
+    });
+    buttons.addButton((btn) => {
+      this.submitButton = btn;
+      btn.setButtonText(this.spec.ui?.submitLabel || "Erstellen").setCta().onClick(() => void this.submit());
+    });
+  }
+  async submit() {
+    if (this.isSubmitting) return;
+    const validationResult = this.validator.validate();
+    if (!validationResult.isValid) {
+      if (this.spec.ui?.enableNavigation) {
+        const firstInvalid = this.contentEl.querySelector(".sm-cc-card.is-invalid");
+        if (firstInvalid) firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      return;
+    }
+    if (!this.data.name || !this.data.name.trim()) {
+      return;
+    }
+    this.setButtonsDisabled(true);
+    this.isSubmitting = true;
+    try {
+      const result = await this.persistence.save(this.data);
+      await this.spec.transformers?.postSave?.(result.filePath, result.values);
+      this.completion = {
+        filePath: result.filePath,
+        values: result.values
+      };
+      this.close();
+    } catch (error) {
+      console.error("Failed to submit create modal", error);
+      this.handleSubmissionError(error);
+    } finally {
+      this.isSubmitting = false;
+      this.setButtonsDisabled(false);
+    }
+  }
+  onClose() {
+    this.fieldManager?.dispose();
+    this.navigation?.dispose();
+    this.navigation = null;
+    this.validators = [];
+    for (const manager of this.layoutManagers) {
+      manager.destroy();
+    }
+    this.layoutManagers = [];
+    for (const synchronizer of this.widthSynchronizers) {
+      synchronizer.destroy();
+    }
+    this.widthSynchronizers = [];
+    this.modalEl.removeClass("sm-cc-create-modal-host");
+    this.restoreBackgroundPointer();
+    if (!this.resolved) {
+      this.resolved = true;
+      this.resolveResult(this.completion);
+    }
+    this.contentEl.empty();
+    this.submitButton = null;
+    this.cancelButton = null;
+    this.isSubmitting = false;
+  }
+  addValidator(run) {
+    this.validators.push(run);
+    return run;
+  }
+  setButtonsDisabled(disabled) {
+    this.submitButton?.setDisabled(disabled);
+    this.cancelButton?.setDisabled(disabled);
+  }
+  handleSubmissionError(error) {
+    const message = error instanceof Error ? error.message : String(error ?? "Unbekannter Fehler");
+    new import_obsidian26.Notice(`Fehler beim Speichern: ${message}`);
+  }
+  lockBackgroundPointer() {
+    const bg = document.querySelector(".modal-bg");
+    if (!bg) return;
+    this.bgLock = { el: bg, pointer: bg.style.pointerEvents };
+    bg.style.pointerEvents = "none";
+  }
+  restoreBackgroundPointer() {
+    if (!this.bgLock) return;
+    this.bgLock.el.style.pointerEvents = this.bgLock.pointer || "";
+    this.bgLock = null;
+  }
+};
+
+// src/features/data-manager/modal/open-create-modal.ts
+function resolveAppInstance(options) {
+  if (options?.app) return options.app;
+  const globalApp = globalThis.app;
+  if (!globalApp) {
+    throw new Error("Obsidian App instance is required to open the create modal");
+  }
+  return globalApp;
+}
+function openCreateModal(spec, options) {
+  const app = resolveAppInstance(options);
+  return new Promise((resolve) => {
+    const modal = new CreateModal(app, spec, options, resolve);
+    modal.open();
+  });
+}
+
+// src/features/data-manager/browse/generic-list-renderer.ts
+var GenericListRenderer = class {
+  constructor(app, container, config) {
+    this.app = app;
+    this.container = container;
+    this.query = "";
+    this.entries = [];
+    this.renderToken = 0;
+    this.disposed = false;
+    this.cleanups = [];
+    this.mode = config.mode;
+    this.source = config.source;
+    this.schema = config.schema;
+    this.viewConfig = config.viewConfig;
+    this.watchers = config.watchers;
+    this.state = new FilterSortState();
+  }
+  async init() {
+    await this.refreshEntries();
+    if (this.disposed) return;
+    const unsubscribe = this.watchers.subscribe(
+      this.mode,
+      (onChange) => this.source.watch(this.app, onChange),
+      () => void this.handleSourceChange()
+    );
+    this.registerCleanup(unsubscribe);
+  }
+  render() {
+    if (this.disposed) return;
+    this.renderInternal();
+  }
+  destroy() {
+    this.disposed = true;
+    for (const cleanup of this.cleanups) {
+      cleanup();
+    }
+    this.cleanups = [];
+  }
+  isDisposed() {
+    return this.disposed;
+  }
+  registerCleanup(fn) {
+    this.cleanups.push(fn);
+  }
+  createActionContext() {
+    return {
+      app: this.app,
+      reloadEntries: () => this.reloadEntries(),
+      getRenderer: () => this.viewConfig,
+      getFilterSelection: (id) => this.getFilterSelection(id)
+    };
+  }
+  async handleCreate(name) {
+    const context = this.createActionContext();
+    await this.viewConfig.handleCreate(context, name);
+  }
+  async reloadEntries() {
+    await this.refreshEntries();
+    if (!this.disposed) {
+      this.render();
+    }
+  }
+  getFilterSelection(id) {
+    return this.state.getFilterValue(id);
+  }
+  async handleSourceChange() {
+    await this.refreshEntries();
+    if (!this.disposed) {
+      this.render();
+    }
+  }
+  async refreshEntries() {
+    try {
+      const files = await this.source.list(this.app);
+      const entries = await Promise.all(files.map((file) => this.source.load(this.app, file)));
+      this.entries = entries;
+      this.loadError = void 0;
+    } catch (err) {
+      console.error(`[library] Failed to load ${this.mode} entries`, err);
+      this.entries = [];
+      this.loadError = err;
+    }
+  }
+  renderInternal() {
+    const token = ++this.renderToken;
+    const container = this.container;
+    container.empty();
+    if (this.loadError) {
+      renderWorkmodeFeedback(container, "error", "Failed to load entries.");
+      return;
+    }
+    const filters = this.schema.filters;
+    const sorts = this.schema.sorts;
+    this.state.ensureSortAvailable(sorts);
+    const optionValues = collectFilterOptions(this.entries, filters);
+    this.state.pruneInvalidFilters(optionValues);
+    if (filters.length || sorts.length) {
+      renderFilterSortControls({
+        container,
+        filters,
+        sorts,
+        optionValues,
+        state: this.state,
+        onChange: () => this.render()
+      });
+    }
+    const query = this.query;
+    const prepared = this.entries.map((entry) => ({
+      entry,
+      score: this.computeSearchScore(entry, query)
+    }));
+    const filtered = prepared.filter((item) => this.state.matches(item.entry, filters));
+    const visible = query ? filtered.filter((item) => item.score > -Infinity) : filtered;
+    const sortDef = sorts.find((option) => option.id === this.state.getSortId()) ?? sorts[0];
+    visible.sort((a, b) => {
+      if (query && a.score !== b.score) {
+        return b.score - a.score;
+      }
+      let comparison = sortDef ? sortDef.compare(a.entry, b.entry) : a.entry.name.localeCompare(b.entry.name);
+      if (comparison === 0) {
+        comparison = a.entry.name.localeCompare(b.entry.name);
+      }
+      return this.state.getSortDirection() === "asc" ? comparison : -comparison;
+    });
+    if (token !== this.renderToken || this.disposed) {
+      return;
+    }
+    const entriesToRender = visible.map((item) => item.entry);
+    if (!entriesToRender.length) {
+      renderWorkmodeFeedback(container, "empty", "No entries found.");
+      return;
+    }
+    const actionContext = this.createActionContext();
+    renderWorkmodeList({
+      container,
+      entries: entriesToRender,
+      getName: (entry) => entry.name,
+      metadata: this.viewConfig.metadataFields,
+      actions: this.viewConfig.actions,
+      actionContext
+    });
+  }
+  computeSearchScore(entry, query) {
+    if (!query) return 1e-4;
+    const candidates = [entry.name, ...this.schema.search(entry)];
+    let best = -Infinity;
+    for (const candidate of candidates) {
+      if (!candidate) continue;
+      const score = this.scoreName(candidate.toLowerCase(), query);
+      if (score > best) {
+        best = score;
+      }
+    }
+    return best;
+  }
+  scoreName(candidate, query) {
+    if (candidate.includes(query)) {
+      return candidate.startsWith(query) ? 2 : 1;
+    }
+    return -Infinity;
+  }
+};
 
 // src/features/data-manager/browse/action-factory.ts
 function createOpenAction() {
@@ -44213,7 +47513,7 @@ function renderWorkmodeList({
   entries,
   getName,
   metadata = [],
-  actions = [],
+  actions: actions5 = [],
   actionContext,
   onRenderRow
 }) {
@@ -44232,9 +47532,9 @@ function renderWorkmodeList({
         }
       }
     }
-    if (actions.length > 0) {
+    if (actions5.length > 0) {
       const actionsContainer = row.createDiv({ cls: "sm-cc-item__actions" });
-      for (const action of actions) {
+      for (const action of actions5) {
         const cls = action.cls ? `sm-cc-item__action ${action.cls}` : "sm-cc-item__action";
         const button = actionsContainer.createEl("button", { text: action.label, cls });
         button.onclick = async () => {
@@ -44249,8 +47549,10 @@ function renderWorkmodeList({
   return rows;
 }
 
-// src/features/data-manager/browse/workmode-header.ts
+// src/features/data-manager/browse/map-styling.ts
 init_map_workflows();
+
+// src/features/data-manager/browse/workmode-header.ts
 function createWorkmodeHeader(parent, config) {
   const titleEl = parent.createEl("h2", { text: config.title });
   let tabNavigation;
@@ -44387,3183 +47689,11 @@ var WatcherHub = class {
   }
 };
 
-// src/features/data-manager/modal/modal.ts
-var import_obsidian31 = require("obsidian");
-
-// src/features/data-manager/layout/layout-utils.ts
-var FieldWidthCalculator = class {
-  static calculate(field) {
-    const defaults = this.TYPE_DEFAULTS[field.type] ?? {
-      minControlWidth: 200,
-      isWide: false,
-      hasFixedWidth: false
-    };
-    if (field.minWidth !== void 0) {
-      return {
-        isWide: field.preferWide ?? defaults.isWide ?? false,
-        hasFixedWidth: defaults.hasFixedWidth ?? false,
-        minControlWidth: field.minWidth
-      };
-    }
-    switch (field.type) {
-      case "multiselect":
-        return this.calculateMultiselect(field, defaults);
-      default:
-        return {
-          minControlWidth: defaults.minControlWidth ?? 200,
-          isWide: field.preferWide ?? defaults.isWide ?? false,
-          hasFixedWidth: defaults.hasFixedWidth ?? false
-        };
-    }
-  }
-  static calculateMultiselect(field, defaults) {
-    const options = field.options ?? [];
-    const avgOptionWidth = 108;
-    const optionsPerRow = 3;
-    const rows = Math.ceil(options.length / optionsPerRow);
-    const minWidth = rows > 1 ? optionsPerRow * avgOptionWidth : options.length * avgOptionWidth;
-    return {
-      minControlWidth: Math.max(minWidth, defaults.minControlWidth ?? 200),
-      isWide: rows > 2,
-      // Many options → wide
-      hasFixedWidth: false
-    };
-  }
-};
-FieldWidthCalculator.TYPE_DEFAULTS = {
-  // Simple inputs - flexible width
-  "text": { minControlWidth: 180, isWide: false, hasFixedWidth: false },
-  "select": { minControlWidth: 160, isWide: false, hasFixedWidth: false },
-  "date": { minControlWidth: 140, isWide: false, hasFixedWidth: false },
-  // Composite inputs - calculated from components
-  "number-stepper": {
-    // Decrement (32px) + gap (4px) + input (80px) + gap (4px) + increment (32px)
-    minControlWidth: 152,
-    isWide: false,
-    hasFixedWidth: false
-  },
-  "tags": {
-    // Input (min 180px) + gap (8px) + button (40px)
-    // Tags get sm-cc-setting--wide class in modal.ts, so treat as wide
-    minControlWidth: 228,
-    isWide: true,
-    hasFixedWidth: false
-  },
-  "structured-tags": {
-    // Type input (min 180px) + value input (min 120px) + gap (8px) + button (40px)
-    // Structured tags are always wide due to complexity
-    minControlWidth: 368,
-    isWide: true,
-    hasFixedWidth: false
-  },
-  "autocomplete": {
-    minControlWidth: 200,
-    isWide: false,
-    hasFixedWidth: false
-  },
-  // Small fixed-width controls
-  "toggle": { minControlWidth: 60, isWide: false, hasFixedWidth: true },
-  "color": { minControlWidth: 80, isWide: false, hasFixedWidth: true },
-  // Multi-option controls - depends on options
-  "multiselect": {
-    minControlWidth: 200,
-    // Calculated dynamically
-    isWide: false,
-    hasFixedWidth: false
-  },
-  // Wide fields - always span all columns
-  "textarea": { minControlWidth: 400, isWide: true, hasFixedWidth: false },
-  "markdown": { minControlWidth: 500, isWide: true, hasFixedWidth: false },
-  "repeating": { minControlWidth: 600, isWide: true, hasFixedWidth: false },
-  "composite": { minControlWidth: 500, isWide: true, hasFixedWidth: false },
-  "composite-stat": { minControlWidth: 500, isWide: true, hasFixedWidth: false },
-  "array": { minControlWidth: 400, isWide: true, hasFixedWidth: false },
-  "object": { minControlWidth: 400, isWide: true, hasFixedWidth: false }
-};
-
-// src/features/data-manager/layout/grid-layout-manager.ts
-var GridLayoutManager = class {
-  constructor(container, fields) {
-    this.container = container;
-    this.fields = fields;
-    this.observer = new ResizeObserver(() => this.recalculate());
-    this.observer.observe(container);
-    this.recalculate();
-  }
-  measureMaxLabelWidth() {
-    const labels = this.container.querySelectorAll(".setting-item-info");
-    let maxWidth = 0;
-    labels.forEach((label) => {
-      const el = label;
-      if (!el.offsetParent) return;
-      const width = el.offsetWidth;
-      if (width > maxWidth) maxWidth = width;
-    });
-    return maxWidth || 100;
-  }
-  recalculate() {
-    const availableWidth = this.container.clientWidth - 30;
-    const normalFields = this.fields.filter((f) => {
-      const dims = FieldWidthCalculator.calculate(f);
-      return !dims.isWide;
-    });
-    console.log("[GridLayoutManager] Recalculating layout:", {
-      totalFields: this.fields.length,
-      normalFields: normalFields.length,
-      availableWidth,
-      fieldTypes: this.fields.map((f) => `${f.id}:${f.type}`)
-    });
-    if (normalFields.length === 0) {
-      console.log("[GridLayoutManager] No normal fields, using single column");
-      this.container.style.gridTemplateColumns = "max-content 1fr";
-      return;
-    }
-    const labelWidth = this.measureMaxLabelWidth();
-    const maxControlWidth = Math.max(
-      ...normalFields.map((f) => FieldWidthCalculator.calculate(f).minControlWidth)
-    );
-    const gap = 16;
-    const minPairWidth = labelWidth + gap + maxControlWidth;
-    let pairs = Math.floor(availableWidth / minPairWidth);
-    pairs = Math.max(1, Math.min(pairs, 3));
-    const hasFixedWidths = normalFields.some(
-      (f) => FieldWidthCalculator.calculate(f).hasFixedWidth
-    );
-    if (hasFixedWidths && pairs > 1) {
-      const safeWidth = (labelWidth + gap + maxControlWidth) * 1.1;
-      pairs = Math.floor(availableWidth / safeWidth);
-      pairs = Math.max(1, Math.min(pairs, 3));
-    }
-    const columns = pairs === 1 ? "max-content 1fr" : `repeat(${pairs}, max-content 1fr)`;
-    console.log("[GridLayoutManager] Layout calculated:", {
-      labelWidth,
-      maxControlWidth,
-      minPairWidth,
-      pairs,
-      columns
-    });
-    this.container.style.gridTemplateColumns = columns;
-  }
-  destroy() {
-    this.observer.disconnect();
-  }
-};
-
-// src/features/data-manager/fields/field-renderer-registry.ts
-var FieldRendererRegistry = class {
-  constructor() {
-    this.renderers = [];
-  }
-  /**
-   * Register a field renderer.
-   */
-  register(entry) {
-    this.renderers.push(entry);
-  }
-  /**
-   * Render a field using the first matching renderer.
-   */
-  render(args) {
-    for (const renderer of this.renderers) {
-      if (renderer.supports(args.spec)) {
-        return renderer.render(args);
-      }
-    }
-    const fallback = args.container.createDiv({ cls: "sm-cc-field--unsupported" });
-    fallback.createEl("label", { text: args.spec.label });
-    fallback.createEl("p", { text: `Unsupported field type: ${args.spec.type}` });
-    return { container: fallback };
-  }
-};
-var fieldRendererRegistry = new FieldRendererRegistry();
-
-// src/features/data-manager/fields/renderer-text.ts
-var import_obsidian17 = require("obsidian");
-
-// src/features/data-manager/modal/modal-utils.ts
-function createValidationControls(setting) {
-  const container = setting.settingEl.createDiv({ cls: "sm-cc-field__errors", attr: { hidden: "" } });
-  const list = container.createEl("ul", { cls: "sm-cc-field__errors-list" });
-  const apply = (errors) => {
-    const hasErrors = errors.length > 0;
-    setting.settingEl.toggleClass("is-invalid", hasErrors);
-    if (!hasErrors) {
-      container.setAttribute("hidden", "");
-      container.classList.remove("is-visible");
-      list.empty();
-      return;
-    }
-    container.removeAttribute("hidden");
-    container.classList.add("is-visible");
-    list.empty();
-    for (const issue of errors) {
-      list.createEl("li", { text: issue });
-    }
-  };
-  return { apply, container };
-}
-function deepClone(value) {
-  if (typeof structuredClone === "function") {
-    return structuredClone(value);
-  }
-  return JSON.parse(JSON.stringify(value));
-}
-function resolveDefaults(spec, name) {
-  const fromSpec = typeof spec.defaults === "function" ? spec.defaults({ presetName: name }) : spec.defaults;
-  return fromSpec ? { ...fromSpec } : {};
-}
-function orderFields(fields, ids) {
-  if (!ids || ids.length === 0) return fields;
-  const lookup = new Map(fields.map((field) => [field.id, field]));
-  const ordered = [];
-  for (const id of ids) {
-    const entry = lookup.get(id);
-    if (!entry) continue;
-    ordered.push(entry);
-  }
-  return ordered;
-}
-function extractSchemaIssues(error) {
-  if (!error || typeof error !== "object") return [];
-  const maybeIssues = error.issues;
-  if (!Array.isArray(maybeIssues)) return [];
-  return maybeIssues.filter((issue) => typeof issue === "object" && issue !== null);
-}
-
-// src/features/data-manager/fields/number-stepper-control.ts
-function createNumberInput2(parent, options = {}) {
-  const input = parent.createEl("input", {
-    cls: options.className || "sm-cc-input",
-    attr: {
-      type: "number",
-      placeholder: options.placeholder || "",
-      "aria-label": options.ariaLabel || options.placeholder || "Number input"
-    }
-  });
-  if (options.min !== void 0) input.min = String(options.min);
-  if (options.max !== void 0) input.max = String(options.max);
-  if (options.step !== void 0) input.step = String(options.step);
-  if (options.value !== void 0) input.value = String(options.value);
-  const parseValue = () => {
-    const raw = input.value.trim();
-    if (!raw) return { value: void 0, raw };
-    const parsed = Number(raw);
-    return { value: Number.isFinite(parsed) ? parsed : void 0, raw };
-  };
-  if (options.onChange) {
-    input.addEventListener("change", () => {
-      const { value } = parseValue();
-      options.onChange(value);
-    });
-  }
-  if (options.onInput) {
-    input.addEventListener("input", () => {
-      const { value, raw } = parseValue();
-      options.onInput(value, raw);
-    });
-  }
-  return input;
-}
-function createNumberStepper(parent, options = {}) {
-  const {
-    wrapperClassName,
-    buttonClassName,
-    decrementClassName,
-    incrementClassName,
-    decrementLabel = "\u2212",
-    decrementAriaLabel = "Decrease value",
-    incrementLabel = "+",
-    incrementAriaLabel = "Increase value",
-    autoSizeOnInput = true,
-    // Default: true
-    onChange,
-    onInput,
-    ...inputOptions
-  } = options;
-  const containerClasses = ["sm-inline-number"];
-  if (wrapperClassName) {
-    containerClasses.push(...wrapperClassName.split(" ").filter(Boolean));
-  }
-  const container = parent.createDiv({ cls: containerClasses });
-  const mirrorEl = container.createEl("span", {
-    cls: "sm-cc-number-stepper__mirror"
-  });
-  mirrorEl.style.position = "absolute";
-  mirrorEl.style.visibility = "hidden";
-  mirrorEl.style.whiteSpace = "pre";
-  mirrorEl.style.pointerEvents = "none";
-  let stylesCopied = false;
-  let input;
-  const updateInputSize = () => {
-    let measureText;
-    if (inputOptions.max !== void 0) {
-      measureText = String(inputOptions.max);
-    } else {
-      measureText = input.value || input.placeholder || "0";
-    }
-    if (!stylesCopied) {
-      const computedStyle = window.getComputedStyle(input);
-      mirrorEl.style.fontSize = computedStyle.fontSize;
-      mirrorEl.style.fontFamily = computedStyle.fontFamily;
-      mirrorEl.style.fontWeight = computedStyle.fontWeight;
-      mirrorEl.style.letterSpacing = computedStyle.letterSpacing;
-      mirrorEl.style.padding = "0";
-      mirrorEl.style.border = "0";
-      stylesCopied = true;
-    }
-    mirrorEl.textContent = measureText;
-    const textWidth = mirrorEl.getBoundingClientRect().width;
-    input.style.width = `${textWidth + 8}px`;
-  };
-  input = createNumberInput2(container, {
-    ...inputOptions,
-    onChange: (value) => {
-      onChange?.(value);
-    },
-    onInput: (value, raw) => {
-      if (autoSizeOnInput) {
-        updateInputSize();
-      }
-      onInput?.(value, raw);
-    }
-  });
-  const buttonGroup = container.createDiv({ cls: "sm-number-stepper-buttons" });
-  const incrementButton = buttonGroup.createEl("button", {
-    text: incrementLabel,
-    cls: incrementClassName ?? buttonClassName ?? "btn-compact",
-    attr: { type: "button", "aria-label": incrementAriaLabel }
-  });
-  const decrementButton = buttonGroup.createEl("button", {
-    text: decrementLabel,
-    cls: decrementClassName ?? buttonClassName ?? "btn-compact",
-    attr: { type: "button", "aria-label": decrementAriaLabel }
-  });
-  const decimalPlaces = (num) => {
-    if (!Number.isFinite(num)) return 0;
-    const parts = num.toString().split(".");
-    return parts[1]?.length ?? 0;
-  };
-  const getValue = () => {
-    const raw = input.value.trim();
-    if (!raw) return void 0;
-    const parsed = Number(raw);
-    return Number.isFinite(parsed) ? parsed : void 0;
-  };
-  const setValue = (value) => {
-    if (value === void 0 || Number.isNaN(value)) {
-      input.value = "";
-    } else {
-      input.value = String(value);
-    }
-    updateInputSize();
-  };
-  const notify = () => {
-    const value = getValue();
-    if (onInput) {
-      onInput(value, input.value);
-    }
-    if (onChange) {
-      onChange(value);
-    }
-  };
-  const stepValue = (direction) => {
-    const stepSize = inputOptions.step ?? 1;
-    const precision = Math.max(decimalPlaces(stepSize), decimalPlaces(getValue() ?? 0));
-    const factor = Math.pow(10, precision);
-    const baseValue = getValue();
-    const current = baseValue ?? inputOptions.min ?? 0;
-    let next = (current * factor + direction * stepSize * factor) / factor;
-    if (inputOptions.min !== void 0) {
-      next = Math.max(inputOptions.min, next);
-    }
-    if (inputOptions.max !== void 0) {
-      next = Math.min(inputOptions.max, next);
-    }
-    const previousRaw = input.value;
-    const rounded = Number(next.toFixed(precision));
-    setValue(rounded);
-    if (input.value === previousRaw) {
-      return;
-    }
-    notify();
-  };
-  decrementButton.addEventListener("click", () => {
-    stepValue(-1);
-  });
-  incrementButton.addEventListener("click", () => {
-    stepValue(1);
-  });
-  updateInputSize();
-  return {
-    container,
-    input,
-    decrementButton,
-    incrementButton,
-    mirrorEl,
-    getValue,
-    setValue
-  };
-}
-
-// src/features/data-manager/fields/field-utils.ts
-init_search_dropdown();
-
-// src/features/data-manager/storage/entry-system.ts
-var import_obsidian16 = require("obsidian");
-function toArray(value) {
-  if (!value) return [];
-  return Array.isArray(value) ? value : [value];
-}
-function renderEntryCard(options) {
-  const {
-    parent,
-    context,
-    className,
-    type,
-    badge,
-    nameBoxClassName,
-    renderName,
-    renderBody,
-    actions,
-    shouldFocus,
-    dataset,
-    renderHeadExtras
-  } = options;
-  const classes = /* @__PURE__ */ new Set(["sm-cc-entry-card"]);
-  for (const cls of toArray(className)) classes.add(cls);
-  const resolvedType = typeof type === "function" ? type(context) : type;
-  if (resolvedType) classes.add(`sm-cc-entry-card--type-${resolvedType}`);
-  const card = parent.createDiv({ cls: Array.from(classes).join(" ") });
-  if (dataset) {
-    for (const [key, value] of Object.entries(dataset)) {
-      card.dataset[key] = value;
-    }
-  }
-  const head = card.createDiv({ cls: "sm-cc-entry-head" });
-  const resolvedBadge = typeof badge === "function" ? badge(context) : badge;
-  let badgeEl = null;
-  if (resolvedBadge?.text) {
-    const badgeClasses = ["sm-cc-entry-badge"];
-    if (resolvedBadge.variant) {
-      badgeClasses.push(`sm-cc-entry-badge--${resolvedBadge.variant}`);
-    }
-    badgeEl = head.createEl("span", {
-      cls: badgeClasses.join(" "),
-      text: resolvedBadge.text,
-      attr: resolvedBadge.title ? { title: resolvedBadge.title } : void 0
-    });
-  }
-  const nameBoxClasses = ["sm-cc-entry-name-box", ...toArray(nameBoxClassName)];
-  const nameBox = head.createDiv({ cls: nameBoxClasses.join(" ") });
-  let focusTarget = null;
-  if (renderName) {
-    const result = renderName(nameBox, context);
-    if (result instanceof HTMLElement) {
-      focusTarget = result;
-    }
-  }
-  const actionsContainer = head.createDiv({ cls: "sm-cc-entry-actions" });
-  const resolvedActions = actions ?? {};
-  const moveUpHandler = resolvedActions.moveUp ?? context.moveUp;
-  const moveDownHandler = resolvedActions.moveDown ?? context.moveDown;
-  const canMoveUp = resolvedActions.canMoveUp ?? context.canMoveUp;
-  const canMoveDown = resolvedActions.canMoveDown ?? context.canMoveDown;
-  const includeMoveButtons = resolvedActions.showMoveButtons ?? Boolean(moveUpHandler || moveDownHandler);
-  if (includeMoveButtons && moveUpHandler) {
-    const attributes = {
-      type: "button",
-      "aria-label": resolvedActions.moveUpAriaLabel ?? "Move Up"
-    };
-    if (!canMoveUp) {
-      attributes.disabled = "true";
-    }
-    const moveUpBtn = actionsContainer.createEl("button", {
-      cls: "sm-cc-entry-move-btn",
-      attr: attributes
-    });
-    (0, import_obsidian16.setIcon)(moveUpBtn, "chevron-up");
-    moveUpBtn.addEventListener("click", moveUpHandler);
-  }
-  if (includeMoveButtons && moveDownHandler) {
-    const attributes = {
-      type: "button",
-      "aria-label": resolvedActions.moveDownAriaLabel ?? "Move Down"
-    };
-    if (!canMoveDown) {
-      attributes.disabled = "true";
-    }
-    const moveDownBtn = actionsContainer.createEl("button", {
-      cls: "sm-cc-entry-move-btn",
-      attr: attributes
-    });
-    (0, import_obsidian16.setIcon)(moveDownBtn, "chevron-down");
-    moveDownBtn.addEventListener("click", moveDownHandler);
-  }
-  const deleteHandler = resolvedActions.remove ?? context.remove;
-  const includeDeleteButton = resolvedActions.showDeleteButton ?? Boolean(deleteHandler);
-  if (includeDeleteButton && deleteHandler) {
-    const deleteBtn = actionsContainer.createEl("button", {
-      cls: "sm-cc-entry-delete",
-      text: resolvedActions.deleteLabel ?? "\xD7",
-      attr: {
-        type: "button",
-        "aria-label": resolvedActions.deleteAriaLabel ?? "Delete Entry"
-      }
-    });
-    deleteBtn.addEventListener("click", deleteHandler);
-  }
-  const slots = {
-    card,
-    head,
-    badge: badgeEl,
-    nameBox,
-    actions: actionsContainer
-  };
-  renderHeadExtras?.(head, context, slots);
-  const shouldAutoFocus = shouldFocus ?? context.shouldFocus;
-  if (shouldAutoFocus) {
-    setTimeout(() => {
-      if (focusTarget && typeof focusTarget.focus === "function") {
-        focusTarget.focus();
-        return;
-      }
-      const candidate = nameBox.querySelector(
-        "input, textarea, select, button, [tabindex]"
-      );
-      candidate?.focus();
-    }, 0);
-  }
-  renderBody(card, context);
-  return slots;
-}
-function mountEntryManager(parent, options) {
-  if (!options.renderEntry && !options.card) {
-    throw new Error("mountEntryManager requires either renderEntry or card configuration");
-  }
-  const entries = options.entries;
-  const wrap = parent.createDiv({ cls: "setting-item sm-cc-entries" });
-  if (options.label) {
-    wrap.createDiv({ cls: "setting-item-info", text: options.label });
-  }
-  const control = wrap.createDiv({ cls: "setting-item-control" });
-  let focusIndex = null;
-  let activeFilter = options.defaultFilter ?? "all";
-  const insertPosition = options.insertPosition ?? "start";
-  const triggerChange = () => {
-    options.onEntriesChanged?.(entries);
-  };
-  if (!options.hideAddBar) {
-    const addBar = control.createDiv({ cls: "sm-cc-entry-add-bar" });
-    addBar.createEl("span", { cls: "sm-cc-entry-add-label", text: "Hinzuf\xFCgen:" });
-    const addGroup = addBar.createDiv({ cls: "sm-cc-entry-add-group" });
-    for (const category of options.categories) {
-      const btn = addGroup.createEl("button", {
-        cls: ["sm-cc-entry-add-btn", `sm-cc-entry-add-btn--${category.id}`].join(" "),
-        text: category.label,
-        attr: { type: "button", title: category.title ?? category.label }
-      });
-      btn.addEventListener("click", () => {
-        const created = options.createEntry(category.id);
-        if (insertPosition === "end") {
-          entries.push(created);
-          focusIndex = entries.length - 1;
-        } else {
-          entries.unshift(created);
-          focusIndex = 0;
-        }
-        triggerChange();
-        render();
-      });
-    }
-  }
-  const filterBar = control.createDiv({
-    cls: "sm-cc-entry-filter",
-    attr: { role: "toolbar", "aria-label": "Eintragsliste filtern" }
-  });
-  const allFilter = {
-    id: "all",
-    label: "Alle",
-    predicate: () => true
-  };
-  const filterDefinitions = [allFilter];
-  if (options.filters) {
-    for (const filter of options.filters) {
-      filterDefinitions.push({
-        id: filter.id,
-        label: filter.label,
-        hint: filter.hint,
-        predicate: filter.predicate
-      });
-    }
-  }
-  const filterButtons = /* @__PURE__ */ new Map();
-  const filterPredicates = /* @__PURE__ */ new Map();
-  const updateFilterButtons = () => {
-    for (const [id, button] of filterButtons) {
-      const isActive = id === activeFilter;
-      button.setAttribute("aria-pressed", isActive ? "true" : "false");
-      button.classList.toggle("is-active", isActive);
-    }
-  };
-  for (const filter of filterDefinitions) {
-    const button = filterBar.createEl("button", {
-      text: filter.label,
-      attr: {
-        type: "button",
-        title: filter.hint,
-        "aria-label": filter.hint ?? filter.label,
-        "aria-pressed": filter.id === activeFilter ? "true" : "false"
-      }
-    });
-    button.addEventListener("click", () => {
-      activeFilter = filter.id;
-      updateFilterButtons();
-      render();
-    });
-    filterButtons.set(filter.id, button);
-    filterPredicates.set(filter.id, filter.predicate);
-  }
-  const host = control.createDiv({ cls: "sm-cc-entry-host" });
-  const revalidate = options.registerValidation ? options.registerValidation(() => options.collectIssues?.(entries) ?? []) : () => [];
-  const render = () => {
-    updateFilterButtons();
-    host.empty();
-    const predicate = filterPredicates.get(activeFilter) ?? (() => true);
-    const renderEntry = options.renderEntry ?? ((container, context) => {
-      if (!options.card) {
-        throw new Error("card factory missing for entry-manager render");
-      }
-      const config = options.card(context);
-      return renderEntryCard({ parent: container, context, ...config }).card;
-    });
-    entries.forEach((entry, index) => {
-      const shouldFocus = focusIndex === index;
-      if (shouldFocus) focusIndex = null;
-      const context = {
-        entry,
-        index,
-        total: entries.length,
-        shouldFocus,
-        canMoveUp: options.hideActions ? false : index > 0,
-        canMoveDown: options.hideActions ? false : index < entries.length - 1,
-        remove: options.hideActions ? () => {
-        } : () => {
-          entries.splice(index, 1);
-          triggerChange();
-          focusIndex = index > 0 ? index - 1 : 0;
-          render();
-        },
-        moveUp: options.hideActions ? () => {
-        } : () => {
-          if (index <= 0) return;
-          [entries[index - 1], entries[index]] = [entries[index], entries[index - 1]];
-          triggerChange();
-          focusIndex = index - 1;
-          render();
-        },
-        moveDown: options.hideActions ? () => {
-        } : () => {
-          if (index >= entries.length - 1) return;
-          [entries[index + 1], entries[index]] = [entries[index], entries[index + 1]];
-          triggerChange();
-          focusIndex = index + 1;
-          render();
-        },
-        requestRender: () => {
-          triggerChange();
-          render();
-        }
-      };
-      const card = renderEntry(host, context);
-      const isVisible = predicate(entry);
-      card.classList.toggle("sm-cc-entry-hidden", !isVisible);
-      card.style.display = isVisible ? "" : "none";
-      card.setAttribute("aria-hidden", isVisible ? "false" : "true");
-    });
-    revalidate();
-  };
-  render();
-  return {
-    rerender: render,
-    setFilter: (filterId) => {
-      if (filterPredicates.has(filterId)) {
-        activeFilter = filterId;
-        render();
-      }
-    },
-    getActiveFilter: () => activeFilter
-  };
-}
-
-// src/features/data-manager/layout/repeating-width-sync.ts
-var RepeatingWidthSynchronizer = class {
-  constructor(container) {
-    this.container = container;
-    this.resizeObserver = new ResizeObserver(() => {
-      this.synchronize();
-    });
-    this.mutationObserver = new MutationObserver((mutations) => {
-      const hasVisibilityChange = mutations.some(
-        (m) => m.type === "attributes" && m.attributeName === "class" && m.target.classList.contains("sm-cc-repeating-field")
-      );
-      if (hasVisibilityChange) {
-        this.synchronize();
-      }
-    });
-    this.mutationObserver.observe(container, {
-      attributes: true,
-      attributeFilter: ["class"],
-      subtree: true
-    });
-    setTimeout(() => {
-      this.synchronize();
-      this.resizeObserver.observe(this.container);
-    }, 0);
-  }
-  /**
-   * Groups elements by their field-id data attribute.
-   * All fields with id "score" across entries are grouped together, etc.
-   */
-  groupByFieldId() {
-    const groups = /* @__PURE__ */ new Map();
-    const items = this.container.querySelectorAll(".sm-cc-repeating-item");
-    items.forEach((item) => {
-      const fields = item.querySelectorAll(".sm-cc-repeating-field:not(.is-hidden)");
-      fields.forEach((field) => {
-        const fieldId = field.dataset.fieldId;
-        if (!fieldId) return;
-        const label = field.querySelector(".sm-cc-field-label");
-        if (label && label.offsetParent !== null) {
-          const key = `${fieldId}__label`;
-          if (!groups.has(key)) groups.set(key, []);
-          groups.get(key).push(label);
-        }
-        const control = field.querySelector(
-          ".sm-inline-number input, .sm-cc-display-field, .sm-cc-input, .checkbox-container, .sm-cc-field-heading"
-        );
-        if (control && control.offsetParent !== null) {
-          const key = `${fieldId}__control`;
-          if (!groups.has(key)) groups.set(key, []);
-          groups.get(key).push(control);
-        }
-      });
-    });
-    return groups;
-  }
-  synchronize() {
-    const groups = this.groupByFieldId();
-    for (const [groupKey, elements] of groups.entries()) {
-      if (elements.length === 0) continue;
-      if (groupKey.endsWith("__label")) {
-        elements.forEach((el) => {
-          el.style.minWidth = "";
-        });
-        void elements[0].offsetWidth;
-      }
-      const widths = elements.map((el) => el.getBoundingClientRect().width);
-      const maxWidth = Math.max(...widths);
-      elements.forEach((el) => {
-        if (groupKey.endsWith("__label")) {
-          el.style.minWidth = `${maxWidth}px`;
-        } else {
-          el.style.width = `${maxWidth}px`;
-        }
-      });
-    }
-  }
-  destroy() {
-    this.resizeObserver.disconnect();
-    this.mutationObserver.disconnect();
-  }
-};
-
-// src/features/data-manager/fields/field-rendering-core.ts
-function normalizeToString(value) {
-  if (value == null) return "";
-  if (typeof value === "string") return value;
-  return String(value);
-}
-function normalizeToBoolean(value) {
-  if (typeof value === "boolean") return value;
-  if (value === "true" || value === 1) return true;
-  if (value === "false" || value === 0) return false;
-  return Boolean(value);
-}
-function renderTextCore(options) {
-  const { container, placeholder = "", value, className = "sm-cc-input", onChange } = options;
-  const input = container.createEl("input", {
-    cls: className,
-    attr: {
-      type: "text",
-      placeholder
-    }
-  });
-  const initialValue = normalizeToString(value);
-  input.value = initialValue;
-  input.addEventListener("input", () => {
-    onChange(input.value);
-  });
-  return {
-    focus: () => input.focus(),
-    update: (newValue) => {
-      const next = normalizeToString(newValue);
-      if (input.value !== next) {
-        input.value = next;
-      }
-    }
-  };
-}
-function renderTextareaCore(options) {
-  const { container, placeholder = "", value, rows = 4, className = "sm-cc-textarea", onChange } = options;
-  const textarea = container.createEl("textarea", {
-    cls: className,
-    attr: {
-      rows: String(rows),
-      placeholder
-    }
-  });
-  const initialValue = normalizeToString(value);
-  textarea.value = initialValue;
-  textarea.addEventListener("input", () => {
-    onChange(textarea.value);
-  });
-  return {
-    focus: () => textarea.focus(),
-    update: (newValue) => {
-      const next = normalizeToString(newValue);
-      if (textarea.value !== next) {
-        textarea.value = next;
-      }
-    }
-  };
-}
-function renderToggleCore(options) {
-  const { container, value, className = "sm-cc-toggle", onChange } = options;
-  const checkbox = container.createEl("input", {
-    cls: className,
-    attr: {
-      type: "checkbox"
-    }
-  });
-  const initialValue = normalizeToBoolean(value);
-  checkbox.checked = initialValue;
-  checkbox.addEventListener("change", () => {
-    onChange(checkbox.checked);
-  });
-  return {
-    focus: () => checkbox.focus(),
-    update: (newValue) => {
-      const next = normalizeToBoolean(newValue);
-      if (checkbox.checked !== next) {
-        checkbox.checked = next;
-      }
-    }
-  };
-}
-function renderColorCore(options) {
-  const { container, value, className = "sm-cc-color-input", onChange } = options;
-  const input = container.createEl("input", {
-    cls: className,
-    attr: {
-      type: "color"
-    }
-  });
-  const normalizeColor2 = (val) => {
-    if (typeof val === "string" && /^#[0-9a-fA-F]{6}$/.test(val)) {
-      return val;
-    }
-    return "#000000";
-  };
-  const initialValue = normalizeColor2(value);
-  input.value = initialValue;
-  input.addEventListener("input", () => {
-    onChange(input.value);
-  });
-  input.addEventListener("change", () => {
-    onChange(input.value);
-  });
-  return {
-    focus: () => input.focus(),
-    update: (newValue) => {
-      const next = normalizeColor2(newValue);
-      if (input.value !== next) {
-        input.value = next;
-      }
-    }
-  };
-}
-function renderMultiselectCore(options) {
-  const { container, options: fieldOptions, value, className = "sm-cc-multiselect", onChange } = options;
-  const selected = new Set(Array.isArray(value) ? value : []);
-  const multiContainer = container.createDiv({ cls: className });
-  const checkboxes = [];
-  for (const option of fieldOptions) {
-    const item = multiContainer.createDiv({ cls: "sm-cc-multiselect-item" });
-    const checkbox = item.createEl("input", { attr: { type: "checkbox" } });
-    checkbox.value = option.value;
-    checkbox.checked = selected.has(option.value);
-    const label = item.createEl("label");
-    label.textContent = option.label;
-    checkbox.addEventListener("change", () => {
-      if (checkbox.checked) {
-        selected.add(option.value);
-      } else {
-        selected.delete(option.value);
-      }
-      onChange(Array.from(selected));
-    });
-    checkboxes.push(checkbox);
-  }
-  return {
-    update: (newValue) => {
-      selected.clear();
-      if (Array.isArray(newValue)) {
-        for (const entry of newValue) {
-          if (typeof entry === "string") {
-            selected.add(entry);
-          }
-        }
-      }
-      checkboxes.forEach((cb) => {
-        cb.checked = selected.has(cb.value);
-      });
-    }
-  };
-}
-function renderDisplayCore(options) {
-  const { container, config, fieldId = "unknown" } = options;
-  const displayEl = container.createEl("input", {
-    cls: "sm-cc-display-field",
-    attr: {
-      type: "text",
-      disabled: "true",
-      readonly: "true"
-    }
-  });
-  if (config.className) {
-    displayEl.addClass(config.className);
-  }
-  return {
-    update: (value, all) => {
-      try {
-        const computed = config.compute(all ?? {});
-        const prefixVal = typeof config.prefix === "function" ? config.prefix(all ?? {}) : config.prefix ?? "";
-        const suffixVal = typeof config.suffix === "function" ? config.suffix(all ?? {}) : config.suffix ?? "";
-        displayEl.value = `${prefixVal}${computed}${suffixVal}`;
-      } catch (error) {
-        console.warn(`Display field ${fieldId} compute error:`, error);
-        displayEl.value = "";
-      }
-    }
-  };
-}
-function renderHeadingCore(options) {
-  const { container, getValue, values } = options;
-  const value = getValue ? getValue(values) : String(values ?? "");
-  container.createEl("strong", {
-    cls: "sm-cc-field-heading",
-    text: value
-  });
-  return {};
-}
-function renderCompositeCore(options) {
-  const {
-    container,
-    childFields,
-    groupBy,
-    initialValue: compositeValue,
-    onChange,
-    renderFieldControl: renderFieldControl2
-  } = options;
-  const useGrouping = Boolean(groupBy && groupBy.length > 0);
-  const compositeContainer = container.createDiv({
-    cls: useGrouping ? "sm-cc-composite-grouped" : "sm-cc-composite-grid"
-  });
-  const childInstances = [];
-  const evaluateChildVisibility = (childSpec) => {
-    if (!childSpec.visibleIf) return true;
-    try {
-      return childSpec.visibleIf(compositeValue);
-    } catch (error) {
-      console.error(`Failed to evaluate visibility for ${childSpec.id}:`, error);
-      return true;
-    }
-  };
-  const updateChildVisibility = () => {
-    for (const child of childInstances) {
-      const shouldBeVisible = evaluateChildVisibility(child.spec);
-      if (shouldBeVisible !== child.wasVisible) {
-        child.wrapper.toggleClass("is-hidden", !shouldBeVisible);
-        child.wasVisible = shouldBeVisible;
-        if (shouldBeVisible && !child.initialized) {
-          child.initialized = true;
-          const initConfig = child.spec.config?.init;
-          if (initConfig && typeof initConfig === "function") {
-            try {
-              const initValue = initConfig(compositeValue);
-              compositeValue[child.id] = initValue;
-              child.handle.update?.(initValue, compositeValue);
-              onChange(compositeValue);
-            } catch (error) {
-              console.error(`Failed to initialize ${child.id}:`, error);
-            }
-          }
-        }
-      }
-    }
-  };
-  const fieldsToRender = useGrouping && groupBy ? groupBy.flatMap(
-    (prefix) => childFields.filter((f) => f.id === prefix || f.id?.startsWith(`${prefix}`))
-  ) : childFields;
-  for (const childDef of fieldsToRender) {
-    const childId = childDef.id ?? "";
-    const childSpec = {
-      id: childId,
-      label: childDef.label ?? childId,
-      type: childDef.type ?? "text",
-      ...childDef
-    };
-    const childWrapper = compositeContainer.createDiv({ cls: "sm-cc-composite-item" });
-    const childInitial = compositeValue[childId] ?? childSpec.default;
-    const childHandle = renderFieldControl2(
-      childWrapper,
-      childSpec,
-      childInitial,
-      (childValue) => {
-        const oldValue = compositeValue[childId];
-        compositeValue[childId] = childValue;
-        onChange(compositeValue);
-        if (oldValue !== childValue) {
-          updateChildVisibility();
-        }
-      }
-    );
-    const initiallyVisible = evaluateChildVisibility(childSpec);
-    childWrapper.toggleClass("is-hidden", !initiallyVisible);
-    childInstances.push({
-      id: childId,
-      spec: childSpec,
-      handle: childHandle,
-      wrapper: childWrapper,
-      wasVisible: initiallyVisible,
-      initialized: initiallyVisible
-      // Mark as initialized if initially visible
-    });
-  }
-  return {
-    update: (value) => {
-      if (typeof value === "object" && value !== null) {
-        const valueMap = value;
-        for (const child of childInstances) {
-          child.handle.update?.(valueMap[child.id], valueMap);
-        }
-        updateChildVisibility();
-      }
-    }
-  };
-}
-function renderRepeatingEntryManagerCore(options) {
-  const {
-    container,
-    entries,
-    categories,
-    filters,
-    itemTemplate,
-    renderEntry,
-    card,
-    onChange,
-    insertPosition = "end",
-    isStatic = false,
-    mountEntryManager: mountEntryManager2,
-    fieldId = "unknown"
-  } = options;
-  if (!categories.length) {
-    console.warn(`Repeating field "${fieldId}" has no categories defined`);
-    const errorContainer = container.createDiv({ cls: "sm-cc-field--error" });
-    errorContainer.createEl("p", { text: "No categories defined for repeating field" });
-    return { error: true };
-  }
-  if (!renderEntry && !card) {
-    console.warn(`Repeating field "${fieldId}" requires renderEntry or card in config`);
-    const errorContainer = container.createDiv({ cls: "sm-cc-field--error" });
-    errorContainer.createEl("p", { text: "No renderer defined for repeating field" });
-    return { error: true };
-  }
-  const createEntry = (category) => {
-    const entry = { category };
-    for (const [key, fieldDef] of Object.entries(itemTemplate)) {
-      if (fieldDef.default !== void 0) {
-        entry[key] = fieldDef.default;
-      }
-    }
-    return entry;
-  };
-  const handle = mountEntryManager2(container, {
-    label: "",
-    entries,
-    categories,
-    filters,
-    createEntry,
-    renderEntry,
-    card,
-    onEntriesChanged: (updated) => {
-      onChange(updated);
-    },
-    insertPosition,
-    hideAddBar: isStatic,
-    hideActions: isStatic
-  });
-  return {
-    update: (value) => {
-      if (Array.isArray(value)) {
-        entries.splice(0, entries.length, ...value);
-        handle.rerender();
-      }
-    }
-  };
-}
-
-// src/features/data-manager/fields/field-utils.ts
-function resolveInitialValue(spec, values) {
-  if (values[spec.id] !== void 0) return values[spec.id];
-  if (spec.default !== void 0) return spec.default;
-  return void 0;
-}
-function renderFieldControl(container, spec, initial, onChange) {
-  if (spec.type !== "heading") {
-    const label = container.createEl("label", {
-      cls: "sm-cc-field-label",
-      text: spec.label
-    });
-  }
-  const controlContainer = container.createDiv({ cls: "sm-cc-field-control" });
-  if (spec.type === "text") {
-    return renderTextCore({
-      container: controlContainer,
-      placeholder: spec.placeholder,
-      value: initial,
-      onChange
-    });
-  }
-  if (spec.type === "textarea" || spec.type === "markdown") {
-    const rows = spec.type === "markdown" ? 12 : 4;
-    return renderTextareaCore({
-      container: controlContainer,
-      placeholder: spec.placeholder,
-      value: initial,
-      rows,
-      onChange
-    });
-  }
-  if (spec.type === "number-stepper") {
-    const numberStepperSpec = spec;
-    const handle = createNumberStepper(controlContainer, {
-      value: typeof initial === "number" ? initial : void 0,
-      min: spec.min,
-      max: spec.max,
-      step: spec.step,
-      autoSizeOnInput: numberStepperSpec.autoSizeOnInput,
-      onChange: (value) => {
-        onChange(value);
-      }
-    });
-    return {
-      focus: () => handle.input.focus(),
-      update: (value) => {
-        if (typeof value === "number") {
-          handle.setValue(value);
-        } else {
-          handle.setValue(void 0);
-        }
-      }
-    };
-  }
-  if (spec.type === "toggle") {
-    const toggleContainer = controlContainer.createDiv({ cls: "checkbox-container" });
-    return renderToggleCore({
-      container: toggleContainer,
-      value: initial,
-      onChange
-    });
-  }
-  if (spec.type === "select") {
-    const selectSpec = spec;
-    const select = controlContainer.createEl("select", {
-      cls: "dropdown"
-    });
-    const options = selectSpec.options ?? [];
-    for (const opt of options) {
-      const optionEl = select.createEl("option", {
-        value: opt.value,
-        text: opt.label
-      });
-    }
-    const value = initial != null ? String(initial) : options[0]?.value ?? "";
-    select.value = value;
-    select.addEventListener("change", () => {
-      onChange(select.value);
-    });
-    if (options.length > 10) {
-      enhanceSelectToSearch(select);
-    }
-    return {
-      focus: () => select.focus(),
-      update: (value2) => {
-        select.value = value2 != null ? String(value2) : "";
-      }
-    };
-  }
-  if (spec.type === "multiselect") {
-    const multiselectSpec = spec;
-    const options = multiselectSpec.options ?? [];
-    return renderMultiselectCore({
-      container: controlContainer,
-      options,
-      value: initial,
-      onChange
-    });
-  }
-  if (spec.type === "color") {
-    return renderColorCore({
-      container: controlContainer,
-      value: initial,
-      onChange
-    });
-  }
-  if (spec.type === "display") {
-    const displaySpec = spec;
-    return renderDisplayCore({
-      container: controlContainer,
-      config: displaySpec.config,
-      fieldId: spec.id
-    });
-  }
-  if (spec.type === "heading") {
-    const headingSpec = spec;
-    return renderHeadingCore({
-      container: controlContainer,
-      getValue: headingSpec.getValue,
-      values: initial
-    });
-  }
-  if (spec.type === "composite") {
-    const compositeSpec = spec;
-    const config = compositeSpec.config ?? {};
-    const childFields = config.fields ?? compositeSpec.children ?? [];
-    const groupBy = config.groupBy;
-    const compositeValue = initial ?? {};
-    return renderCompositeCore({
-      container: controlContainer,
-      childFields,
-      groupBy,
-      initialValue: compositeValue,
-      onChange,
-      renderFieldControl
-    });
-  }
-  if (spec.type === "autocomplete") {
-    const autocompleteSpec = spec;
-    const { load, renderSuggestion, onSelect, minQueryLength = 2 } = autocompleteSpec.config;
-    const input = controlContainer.createEl("input", {
-      cls: "sm-cc-input sm-cc-autocomplete-input",
-      attr: { type: "text", placeholder: spec.placeholder ?? "Search..." }
-    });
-    let suggestionsContainer = null;
-    let selectedIndex = -1;
-    const hideSuggestions = () => {
-      suggestionsContainer?.remove();
-      suggestionsContainer = null;
-      selectedIndex = -1;
-    };
-    const showSuggestions = async (query) => {
-      if (query.length < minQueryLength) {
-        hideSuggestions();
-        return;
-      }
-      const items = await Promise.resolve(load(query));
-      if (items.length === 0) {
-        hideSuggestions();
-        return;
-      }
-      if (!suggestionsContainer) {
-        suggestionsContainer = controlContainer.createDiv({ cls: "sm-cc-autocomplete-suggestions" });
-      }
-      suggestionsContainer.empty();
-      selectedIndex = -1;
-      items.forEach((item, index) => {
-        const suggestionEl = suggestionsContainer.createDiv({ cls: "sm-cc-autocomplete-suggestion" });
-        suggestionEl.innerHTML = renderSuggestion(item);
-        suggestionEl.addEventListener("click", () => {
-          const values = initial ?? {};
-          onSelect(item, values);
-          input.value = "";
-          hideSuggestions();
-        });
-        suggestionEl.addEventListener("mouseenter", () => {
-          selectedIndex = index;
-          updateSelection();
-        });
-      });
-      updateSelection();
-    };
-    const updateSelection = () => {
-      if (!suggestionsContainer) return;
-      const suggestions = suggestionsContainer.querySelectorAll(".sm-cc-autocomplete-suggestion");
-      suggestions.forEach((el, index) => {
-        el.classList.toggle("is-selected", index === selectedIndex);
-      });
-    };
-    const selectCurrent = () => {
-      if (!suggestionsContainer || selectedIndex < 0) return;
-      const suggestions = suggestionsContainer.querySelectorAll(".sm-cc-autocomplete-suggestion");
-      suggestions[selectedIndex]?.click();
-    };
-    input.addEventListener("input", () => void showSuggestions(input.value));
-    input.addEventListener("blur", () => setTimeout(hideSuggestions, 200));
-    input.addEventListener("keydown", (e) => {
-      if (!suggestionsContainer) return;
-      const count = suggestionsContainer.querySelectorAll(".sm-cc-autocomplete-suggestion").length;
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        selectedIndex = (selectedIndex + 1) % count;
-        updateSelection();
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        selectedIndex = selectedIndex <= 0 ? count - 1 : selectedIndex - 1;
-        updateSelection();
-      } else if (e.key === "Enter" && selectedIndex >= 0) {
-        e.preventDefault();
-        selectCurrent();
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        hideSuggestions();
-      }
-    });
-    return {
-      focus: () => input.focus()
-    };
-  }
-  if (spec.type === "repeating") {
-    const repeatingSpec = spec;
-    const config = repeatingSpec.config ?? {};
-    const isTemplateMode = Boolean(config.fields && config.fields.length > 0);
-    const isStatic = Boolean(config.static);
-    const entries = Array.isArray(initial) ? [...initial] : [];
-    if (isTemplateMode) {
-      const listContainer = controlContainer.createDiv({ cls: "sm-cc-repeating-fields" });
-      const fieldTemplate = config.fields;
-      const updateEntryFields = (entryContainer, entry, template) => {
-        const fieldWrappers = entryContainer.querySelectorAll(".sm-cc-repeating-field");
-        fieldWrappers.forEach((wrapper, index) => {
-          const fieldSpec = template[index];
-          if (!fieldSpec) return;
-          const isVisible = !fieldSpec.visibleIf || fieldSpec.visibleIf(entry);
-          wrapper.toggleClass("is-hidden", !isVisible);
-          if (fieldSpec.type === "display") {
-            const displaySpec = fieldSpec;
-            const displayEl = wrapper.querySelector(".sm-cc-display-field");
-            if (displayEl && displaySpec.config?.compute) {
-              try {
-                const computed = displaySpec.config.compute(entry);
-                const prefix = typeof displaySpec.config.prefix === "function" ? displaySpec.config.prefix(entry) : displaySpec.config.prefix ?? "";
-                const suffix = typeof displaySpec.config.suffix === "function" ? displaySpec.config.suffix(entry) : displaySpec.config.suffix ?? "";
-                displayEl.value = `${prefix}${computed}${suffix}`;
-              } catch (error) {
-                console.warn(`Display field ${fieldSpec.id} compute error:`, error);
-                displayEl.value = "";
-              }
-            }
-          }
-        });
-      };
-      entries.forEach((entry, entryIndex) => {
-        const entryContainer = listContainer.createDiv({
-          cls: "sm-cc-repeating-item",
-          attr: { "data-entry-index": String(entryIndex) }
-        });
-        fieldTemplate.forEach((fieldSpec) => {
-          const fieldWrapper = entryContainer.createDiv({
-            cls: `sm-cc-repeating-field sm-cc-repeating-field--${fieldSpec.type}`,
-            attr: { "data-field-id": fieldSpec.id }
-          });
-          const isVisible = !fieldSpec.visibleIf || fieldSpec.visibleIf(entry);
-          if (!isVisible) {
-            fieldWrapper.addClass("is-hidden");
-          }
-          if (isVisible && entry[fieldSpec.id] === void 0) {
-            const initConfig = fieldSpec.config?.init;
-            if (initConfig && typeof initConfig === "function") {
-              try {
-                entry[fieldSpec.id] = initConfig(entry);
-              } catch (error) {
-                console.error(`Failed to initialize ${fieldSpec.id}:`, error);
-              }
-            }
-          }
-          const fieldHandle = renderFieldControl(
-            fieldWrapper,
-            fieldSpec,
-            fieldSpec.type === "heading" ? entry : entry[fieldSpec.id],
-            (newValue) => {
-              entry[fieldSpec.id] = newValue;
-              onChange([...entries]);
-              updateEntryFields(entryContainer, entry, fieldTemplate);
-            }
-          );
-        });
-      });
-      let synchronizer;
-      if (config.synchronizeWidths) {
-        synchronizer = new RepeatingWidthSynchronizer(listContainer);
-      }
-      entries.forEach((entry, entryIndex) => {
-        const entryContainer = listContainer.children[entryIndex];
-        if (entryContainer) {
-          updateEntryFields(entryContainer, entry, fieldTemplate);
-        }
-      });
-      return {
-        synchronizer,
-        update: (value) => {
-          if (Array.isArray(value)) {
-            entries.splice(0, entries.length, ...value);
-          }
-        }
-      };
-    } else {
-      const categories = config.categories ?? [];
-      const filters = config.filters ?? void 0;
-      const itemTemplate = repeatingSpec.itemTemplate ?? {};
-      const renderEntry = config.renderEntry;
-      const cardFactory = config.card;
-      const handle = renderRepeatingEntryManagerCore({
-        container: controlContainer,
-        entries,
-        categories,
-        filters,
-        itemTemplate,
-        renderEntry,
-        card: cardFactory,
-        onChange,
-        insertPosition: config.insertPosition ?? "end",
-        isStatic,
-        mountEntryManager,
-        fieldId: spec.id
-      });
-      if ("error" in handle && handle.error) {
-        return {};
-      }
-      return handle;
-    }
-  }
-  controlContainer.createEl("p", {
-    text: `Unsupported field type: ${spec.type}`,
-    cls: "sm-cc-field--error"
-  });
-  return {};
-}
-
-// src/features/data-manager/fields/renderer-text.ts
-var textFieldRenderer = {
-  supports: (spec) => spec.type === "text",
-  render: (args) => {
-    const { container, spec, values, onChange } = args;
-    const setting = new import_obsidian17.Setting(container).setName(spec.label);
-    setting.settingEl.addClass("sm-cc-setting");
-    if (spec.help) {
-      setting.setDesc(spec.help);
-    }
-    const validation = createValidationControls(setting);
-    const initial = resolveInitialValue(spec, values);
-    const handle = renderTextCore({
-      container: setting.controlEl,
-      placeholder: spec.placeholder,
-      value: initial,
-      onChange: (value) => onChange(spec.id, value)
-    });
-    return {
-      ...handle,
-      setErrors: validation.apply,
-      container: setting.settingEl
-    };
-  }
-};
-
-// src/features/data-manager/fields/renderer-textarea.ts
-var import_obsidian18 = require("obsidian");
-var textareaFieldRenderer = {
-  supports: (spec) => spec.type === "textarea" || spec.type === "markdown",
-  render: (args) => {
-    const { container, spec, values, onChange } = args;
-    const setting = new import_obsidian18.Setting(container).setName(spec.label);
-    setting.settingEl.addClass("sm-cc-setting");
-    if (spec.help) {
-      setting.setDesc(spec.help);
-    }
-    const validation = createValidationControls(setting);
-    const initial = resolveInitialValue(spec, values);
-    setting.settingEl.addClass("sm-cc-setting--wide");
-    const rows = spec.type === "markdown" ? 12 : 6;
-    const handle = renderTextareaCore({
-      container: setting.controlEl,
-      placeholder: spec.placeholder,
-      value: initial,
-      rows,
-      onChange: (value) => onChange(spec.id, value)
-    });
-    return {
-      ...handle,
-      setErrors: validation.apply,
-      container: setting.settingEl
-    };
-  }
-};
-
-// src/features/data-manager/fields/renderer-number-stepper.ts
-var import_obsidian19 = require("obsidian");
-var numberStepperFieldRenderer = {
-  supports: (spec) => spec.type === "number-stepper",
-  render: (args) => {
-    const { container, spec, values, onChange } = args;
-    const setting = new import_obsidian19.Setting(container).setName(spec.label);
-    setting.settingEl.addClass("sm-cc-setting");
-    if (spec.help) {
-      setting.setDesc(spec.help);
-    }
-    const validation = createValidationControls(setting);
-    const initial = resolveInitialValue(spec, values);
-    const handle = createNumberStepper(setting.controlEl, {
-      value: typeof initial === "number" ? initial : void 0,
-      min: spec.min,
-      max: spec.max,
-      step: spec.step,
-      onChange: (value) => {
-        onChange(spec.id, value);
-      }
-    });
-    return {
-      setErrors: validation.apply,
-      container: setting.settingEl,
-      focus: () => handle.input.focus(),
-      update: (value) => {
-        if (typeof value === "number") {
-          handle.setValue(value);
-        } else {
-          handle.setValue(void 0);
-        }
-      }
-    };
-  }
-};
-
-// src/features/data-manager/fields/renderer-toggle.ts
-var import_obsidian20 = require("obsidian");
-var toggleFieldRenderer = {
-  supports: (spec) => spec.type === "toggle",
-  render: (args) => {
-    const { container, spec, values, onChange } = args;
-    const setting = new import_obsidian20.Setting(container).setName(spec.label);
-    setting.settingEl.addClass("sm-cc-setting");
-    if (spec.help) {
-      setting.setDesc(spec.help);
-    }
-    const validation = createValidationControls(setting);
-    const initial = resolveInitialValue(spec, values);
-    const handle = renderToggleCore({
-      container: setting.controlEl,
-      value: initial,
-      onChange: (value) => onChange(spec.id, value)
-    });
-    return {
-      ...handle,
-      setErrors: validation.apply,
-      container: setting.settingEl
-    };
-  }
-};
-
-// src/features/data-manager/fields/renderer-select.ts
-var import_obsidian21 = require("obsidian");
-init_search_dropdown();
-var selectFieldRenderer = {
-  supports: (spec) => spec.type === "select",
-  render: (args) => {
-    const { container, spec, values, onChange } = args;
-    const setting = new import_obsidian21.Setting(container).setName(spec.label);
-    setting.settingEl.addClass("sm-cc-setting");
-    if (spec.help) {
-      setting.setDesc(spec.help);
-    }
-    const validation = createValidationControls(setting);
-    const initial = resolveInitialValue(spec, values);
-    setting.addDropdown((dropdown) => {
-      const options = spec.options ?? [];
-      const fallback = typeof initial === "string" ? initial : "";
-      if (!options.some((opt) => opt.value === "")) {
-        dropdown.addOption("", "");
-      }
-      for (const option of options) {
-        dropdown.addOption(option.value, option.label);
-      }
-      dropdown.setValue(fallback);
-      dropdown.onChange((value) => {
-        onChange(spec.id, value || void 0);
-      });
-      const selectEl = dropdown.selectEl;
-      if (selectEl) {
-        try {
-          enhanceSelectToSearch(selectEl, spec.placeholder ?? "Suchen\u2026");
-        } catch (error) {
-          console.warn("Enhance select failed", error);
-        }
-      }
-    });
-    return {
-      setErrors: validation.apply,
-      container: setting.settingEl
-    };
-  }
-};
-
-// src/features/data-manager/fields/renderer-multiselect.ts
-var import_obsidian22 = require("obsidian");
-var multiselectFieldRenderer = {
-  supports: (spec) => spec.type === "multiselect",
-  render: (args) => {
-    const { container, spec, values, onChange } = args;
-    const setting = new import_obsidian22.Setting(container).setName(spec.label);
-    setting.settingEl.addClass("sm-cc-setting");
-    if (spec.help) {
-      setting.setDesc(spec.help);
-    }
-    const validation = createValidationControls(setting);
-    const initial = resolveInitialValue(spec, values);
-    const options = spec.options ?? [];
-    const handle = renderMultiselectCore({
-      container: setting.controlEl,
-      options,
-      value: initial,
-      onChange: (value) => onChange(spec.id, value)
-    });
-    return {
-      ...handle,
-      setErrors: validation.apply,
-      container: setting.settingEl
-    };
-  }
-};
-
-// src/features/data-manager/fields/renderer-color.ts
-var import_obsidian23 = require("obsidian");
-var colorFieldRenderer = {
-  supports: (spec) => spec.type === "color",
-  render: (args) => {
-    const { container, spec, values, onChange } = args;
-    const setting = new import_obsidian23.Setting(container).setName(spec.label);
-    setting.settingEl.addClass("sm-cc-setting");
-    if (spec.help) {
-      setting.setDesc(spec.help);
-    }
-    const validation = createValidationControls(setting);
-    const initial = resolveInitialValue(spec, values);
-    const handle = renderColorCore({
-      container: setting.controlEl,
-      value: initial,
-      onChange: (value) => onChange(spec.id, value)
-    });
-    return {
-      ...handle,
-      setErrors: validation.apply,
-      container: setting.settingEl
-    };
-  }
-};
-
-// src/features/data-manager/fields/renderer-tags-editor.ts
-var import_obsidian25 = require("obsidian");
-
-// src/features/data-manager/fields/tag-chips.ts
-var import_obsidian24 = require("obsidian");
-function mountTokenEditor(parent, title, model, options = {}) {
-  const placeholder = options.placeholder ?? "Begriff eingeben\u2026";
-  const addLabel = options.addButtonLabel ?? "+";
-  const setting = new import_obsidian24.Setting(parent).setName(title);
-  let inputEl;
-  let renderChips = () => {
-  };
-  const commitValue = (value) => {
-    const trimmed = value.trim();
-    if (!trimmed) return;
-    model.add(trimmed);
-    options.onAdd?.(trimmed);
-    renderChips();
-  };
-  setting.addText((t) => {
-    t.setPlaceholder(placeholder);
-    inputEl = t.inputEl;
-    t.inputEl.style.minWidth = "260px";
-    t.inputEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        commitValue((inputEl?.value ?? "").trim());
-        if (inputEl) inputEl.value = "";
-      }
-    });
-  });
-  setting.addButton(
-    (b) => b.setButtonText(addLabel).onClick(() => {
-      commitValue((inputEl?.value ?? "").trim());
-      if (inputEl) inputEl.value = "";
-    })
-  );
-  const chips = parent.createDiv({ cls: "sm-cc-chips" });
-  renderChips = () => {
-    chips.empty();
-    const items = model.getItems();
-    items.forEach((txt, index) => {
-      const chip = chips.createDiv({ cls: "sm-cc-chip" });
-      chip.createSpan({ text: txt });
-      const removeBtn = chip.createEl("button", { text: "\xD7" });
-      removeBtn.onclick = () => {
-        model.remove(index);
-        options.onRemove?.(txt, index);
-        renderChips();
-      };
-    });
-  };
-  renderChips();
-  return { setting, chipsEl: chips, refresh: renderChips };
-}
-
-// src/features/data-manager/fields/renderer-tags-editor.ts
-var tagsFieldRenderer = {
-  supports: (spec) => spec.type === "tags",
-  render: (args) => {
-    const { container, spec, values, onChange } = args;
-    const setting = new import_obsidian25.Setting(container).setName(spec.label);
-    setting.settingEl.addClass("sm-cc-setting");
-    if (spec.help) {
-      setting.setDesc(spec.help);
-    }
-    const validation = createValidationControls(setting);
-    const initial = resolveInitialValue(spec, values);
-    setting.settingEl.addClass("sm-cc-setting--wide");
-    setting.settingEl.addClass("sm-cc-setting--tags");
-    const tagValues = Array.isArray(values[spec.id]) ? [...values[spec.id]] : Array.isArray(spec.default) ? [...spec.default] : [];
-    const suggestions = spec.config?.suggestions;
-    const model = {
-      getItems: () => tagValues,
-      add: (value) => {
-        tagValues.push(value);
-        onChange(spec.id, [...tagValues]);
-      },
-      remove: (index) => {
-        tagValues.splice(index, 1);
-        onChange(spec.id, [...tagValues]);
-      }
-    };
-    const handle = mountTokenEditor(setting.controlEl, "", model, {
-      placeholder: spec.placeholder,
-      suggestions
-      // Pass suggestions to token editor
-    });
-    return {
-      setErrors: validation.apply,
-      container: handle.setting.settingEl,
-      update: (value) => {
-        tagValues.splice(0, tagValues.length);
-        if (Array.isArray(value)) {
-          for (const entry of value) {
-            if (typeof entry === "string") tagValues.push(entry);
-          }
-        }
-        handle.refresh();
-      }
-    };
-  }
-};
-
-// src/features/data-manager/fields/renderer-structured-tags-editor.ts
-var import_obsidian26 = require("obsidian");
-var structuredTagsFieldRenderer = {
-  supports: (spec) => spec.type === "structured-tags",
-  render: (args) => {
-    const { container, spec, values, onChange } = args;
-    const setting = new import_obsidian26.Setting(container).setName(spec.label);
-    setting.settingEl.addClass("sm-cc-setting");
-    if (spec.help) {
-      setting.setDesc(spec.help);
-    }
-    const validation = createValidationControls(setting);
-    const initial = resolveInitialValue(spec, values);
-    setting.settingEl.addClass("sm-cc-setting--wide");
-    setting.settingEl.addClass("sm-cc-setting--structured-tags");
-    const structuredSpec = spec;
-    const suggestions = structuredSpec.config.suggestions;
-    const valueConfig = structuredSpec.config.valueConfig;
-    const tokenValues = Array.isArray(values[spec.id]) ? values[spec.id].map((t) => ({ type: t.type, value: t.value })) : Array.isArray(spec.default) ? spec.default.map((t) => ({ type: t.type, value: t.value })) : [];
-    const model = {
-      getItems: () => tokenValues,
-      add: (value) => {
-        tokenValues.push(value);
-        onChange(spec.id, [...tokenValues]);
-      },
-      remove: (index) => {
-        tokenValues.splice(index, 1);
-        onChange(spec.id, [...tokenValues]);
-      },
-      update: (index, value) => {
-        const token = tokenValues[index];
-        if (token && typeof token === "object" && "type" in token) {
-          token.value = value;
-          onChange(spec.id, [...tokenValues]);
-        }
-      }
-    };
-    const handle = mountTokenEditor(setting.controlEl, "", model, {
-      placeholder: spec.placeholder,
-      structured: {
-        typeSuggestions: suggestions,
-        typePlaceholder: spec.placeholder ?? "Typ ausw\xE4hlen...",
-        valuePlaceholder: valueConfig.placeholder,
-        unit: valueConfig.unit,
-        autoSize: true
-      }
-    });
-    return {
-      setErrors: validation.apply,
-      container: handle.setting.settingEl,
-      update: (value) => {
-        tokenValues.splice(0, tokenValues.length);
-        if (Array.isArray(value)) {
-          for (const entry of value) {
-            if (typeof entry === "object" && entry !== null && "type" in entry && "value" in entry) {
-              tokenValues.push({
-                type: String(entry.type),
-                value: String(entry.value)
-              });
-            }
-          }
-        }
-        handle.refresh();
-      }
-    };
-  }
-};
-
-// src/features/data-manager/fields/renderer-display.ts
-var displayFieldRenderer = {
-  supports: (spec) => spec.type === "display",
-  render: (args) => {
-    const { container, spec, values } = args;
-    const displaySpec = spec;
-    const label = container.createEl("label", {
-      cls: "sm-cc-field-label",
-      text: spec.label
-    });
-    const controlContainer = container.createDiv({ cls: "sm-cc-field-control" });
-    return renderDisplayCore({
-      container: controlContainer,
-      config: displaySpec.config,
-      fieldId: spec.id
-    });
-  }
-};
-
-// src/features/data-manager/fields/renderer-heading.ts
-var headingFieldRenderer = {
-  supports: (spec) => spec.type === "heading",
-  render: (args) => {
-    const { container, spec, values } = args;
-    const headingSpec = spec;
-    const label = container.createEl("label", {
-      cls: "sm-cc-field-label",
-      text: spec.label
-    });
-    const controlContainer = container.createDiv({ cls: "sm-cc-field-control" });
-    return renderHeadingCore({
-      container: controlContainer,
-      getValue: headingSpec.getValue,
-      values
-    });
-  }
-};
-
-// src/features/data-manager/fields/renderer-composite.ts
-var import_obsidian27 = require("obsidian");
-var compositeFieldRenderer = {
-  supports: (spec) => spec.type === "composite",
-  render: (args) => {
-    const { container, spec, values, onChange } = args;
-    const setting = new import_obsidian27.Setting(container).setName(spec.label);
-    setting.settingEl.addClass("sm-cc-setting");
-    if (spec.help) {
-      setting.setDesc(spec.help);
-    }
-    const validation = createValidationControls(setting);
-    const initial = resolveInitialValue(spec, values);
-    const compositeSpec = spec;
-    const config = compositeSpec.config ?? {};
-    const childFields = config.fields ?? compositeSpec.children ?? [];
-    setting.settingEl.addClass("sm-cc-composite");
-    setting.settingEl.addClass("sm-cc-setting--wide");
-    const compositeValue = values[spec.id] ?? {};
-    const groupBy = config.groupBy;
-    const handle = renderCompositeCore({
-      container: setting.controlEl,
-      childFields,
-      groupBy,
-      initialValue: compositeValue,
-      onChange: (value) => onChange(spec.id, value),
-      renderFieldControl
-    });
-    return {
-      setErrors: validation.apply,
-      container: setting.settingEl,
-      update: handle.update
-    };
-  }
-};
-
-// src/features/data-manager/fields/renderer-autocomplete.ts
-var import_obsidian28 = require("obsidian");
-var autocompleteFieldRenderer = {
-  supports: (spec) => spec.type === "autocomplete",
-  render: (args) => {
-    const { container, spec, values, onChange } = args;
-    const setting = new import_obsidian28.Setting(container).setName(spec.label);
-    setting.settingEl.addClass("sm-cc-setting");
-    if (spec.help) {
-      setting.setDesc(spec.help);
-    }
-    const validation = createValidationControls(setting);
-    const initial = resolveInitialValue(spec, values);
-    const autocompleteSpec = spec;
-    const { load, renderSuggestion, onSelect, minQueryLength = 2 } = autocompleteSpec.config;
-    const input = setting.controlEl.createEl("input", {
-      cls: "sm-cc-input sm-cc-autocomplete-input",
-      attr: { type: "text", placeholder: spec.placeholder ?? "Search..." }
-    });
-    let suggestionsContainer = null;
-    let selectedIndex = -1;
-    const hideSuggestions = () => {
-      suggestionsContainer?.remove();
-      suggestionsContainer = null;
-      selectedIndex = -1;
-    };
-    const showSuggestions = async (query) => {
-      if (query.length < minQueryLength) {
-        hideSuggestions();
-        return;
-      }
-      const items = await Promise.resolve(load(query));
-      if (items.length === 0) {
-        hideSuggestions();
-        return;
-      }
-      if (!suggestionsContainer) {
-        suggestionsContainer = setting.controlEl.createDiv({ cls: "sm-cc-autocomplete-suggestions" });
-      }
-      suggestionsContainer.empty();
-      selectedIndex = -1;
-      items.forEach((item, index) => {
-        const suggestionEl = suggestionsContainer.createDiv({ cls: "sm-cc-autocomplete-suggestion" });
-        suggestionEl.innerHTML = renderSuggestion(item);
-        suggestionEl.addEventListener("click", () => {
-          onSelect(item, values);
-          input.value = "";
-          hideSuggestions();
-        });
-        suggestionEl.addEventListener("mouseenter", () => {
-          selectedIndex = index;
-          updateSelection();
-        });
-      });
-      updateSelection();
-    };
-    const updateSelection = () => {
-      if (!suggestionsContainer) return;
-      const suggestions = suggestionsContainer.querySelectorAll(".sm-cc-autocomplete-suggestion");
-      suggestions.forEach((el, index) => {
-        el.classList.toggle("is-selected", index === selectedIndex);
-      });
-    };
-    const selectCurrent = () => {
-      if (!suggestionsContainer || selectedIndex < 0) return;
-      const suggestions = suggestionsContainer.querySelectorAll(".sm-cc-autocomplete-suggestion");
-      suggestions[selectedIndex]?.click();
-    };
-    input.addEventListener("input", () => void showSuggestions(input.value));
-    input.addEventListener("blur", () => setTimeout(hideSuggestions, 200));
-    input.addEventListener("keydown", (e) => {
-      if (!suggestionsContainer) return;
-      const count = suggestionsContainer.querySelectorAll(".sm-cc-autocomplete-suggestion").length;
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        selectedIndex = (selectedIndex + 1) % count;
-        updateSelection();
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        selectedIndex = selectedIndex <= 0 ? count - 1 : selectedIndex - 1;
-        updateSelection();
-      } else if (e.key === "Enter" && selectedIndex >= 0) {
-        e.preventDefault();
-        selectCurrent();
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        hideSuggestions();
-      }
-    });
-    return {
-      setErrors: validation.apply,
-      container: setting.settingEl,
-      focus: () => input.focus()
-    };
-  }
-};
-
-// src/features/data-manager/fields/renderer-repeating.ts
-var import_obsidian29 = require("obsidian");
-var repeatingFieldRenderer = {
-  supports: (spec) => spec.type === "repeating",
-  render: (args) => {
-    const { container, spec, values, onChange } = args;
-    const setting = new import_obsidian29.Setting(container).setName(spec.label);
-    setting.settingEl.addClass("sm-cc-setting");
-    if (spec.help) {
-      setting.setDesc(spec.help);
-    }
-    const validation = createValidationControls(setting);
-    const initial = resolveInitialValue(spec, values);
-    setting.settingEl.addClass("sm-cc-setting--wide");
-    const repeatingSpec = spec;
-    const config = repeatingSpec.config ?? {};
-    const entries = Array.isArray(values[spec.id]) ? [...values[spec.id]] : Array.isArray(spec.default) ? [...spec.default] : [];
-    const isTemplateMode = Boolean(config.fields && config.fields.length > 0);
-    const isStatic = Boolean(config.static);
-    if (isTemplateMode) {
-      setting.settingEl.addClass("sm-cc-repeating-list");
-      const listContainer = setting.controlEl.createDiv({
-        cls: "sm-cc-repeating-fields"
-      });
-      const fieldTemplate = config.fields;
-      const updateEntryFields = (entryContainer, entry, template) => {
-        const fieldWrappers = entryContainer.querySelectorAll(
-          ".sm-cc-repeating-field"
-        );
-        fieldWrappers.forEach((wrapper, index) => {
-          const fieldSpec = template[index];
-          if (!fieldSpec) return;
-          const isVisible = !fieldSpec.visibleIf || fieldSpec.visibleIf(entry);
-          wrapper.toggleClass("is-hidden", !isVisible);
-          if (fieldSpec.type === "display") {
-            const displaySpec = fieldSpec;
-            const displayEl = wrapper.querySelector(".sm-cc-display-field");
-            if (displayEl && displaySpec.config?.compute) {
-              try {
-                const computed = displaySpec.config.compute(entry);
-                const prefix = typeof displaySpec.config.prefix === "function" ? displaySpec.config.prefix(entry) : displaySpec.config.prefix ?? "";
-                const suffix = typeof displaySpec.config.suffix === "function" ? displaySpec.config.suffix(entry) : displaySpec.config.suffix ?? "";
-                displayEl.value = `${prefix}${computed}${suffix}`;
-              } catch (error) {
-                console.warn(`Display field ${fieldSpec.id} compute error:`, error);
-                displayEl.value = "";
-              }
-            }
-          }
-        });
-      };
-      entries.forEach((entry, entryIndex) => {
-        const entryContainer = listContainer.createDiv({
-          cls: "sm-cc-repeating-item",
-          attr: { "data-entry-index": String(entryIndex) }
-        });
-        fieldTemplate.forEach((fieldSpec, fieldIndex) => {
-          const fieldWrapper = entryContainer.createDiv({
-            cls: `sm-cc-repeating-field sm-cc-repeating-field--${fieldSpec.type}`,
-            attr: { "data-field-id": fieldSpec.id }
-          });
-          const isVisible = !fieldSpec.visibleIf || fieldSpec.visibleIf(entry);
-          if (!isVisible) {
-            fieldWrapper.addClass("is-hidden");
-          }
-          if (isVisible && entry[fieldSpec.id] === void 0) {
-            const initConfig = fieldSpec.config?.init;
-            if (initConfig && typeof initConfig === "function") {
-              try {
-                entry[fieldSpec.id] = initConfig(entry);
-              } catch (error) {
-                console.error(`Failed to initialize ${fieldSpec.id}:`, error);
-              }
-            }
-          }
-          const fieldHandle = renderFieldControl(
-            fieldWrapper,
-            fieldSpec,
-            // For heading fields, pass entire entry object so getValue can access any property
-            // For other fields, pass the specific field value
-            fieldSpec.type === "heading" ? entry : entry[fieldSpec.id],
-            (newValue) => {
-              entry[fieldSpec.id] = newValue;
-              onChange(spec.id, [...entries]);
-              updateEntryFields(entryContainer, entry, fieldTemplate);
-            }
-          );
-        });
-      });
-      let synchronizer;
-      if (config.synchronizeWidths) {
-        synchronizer = new RepeatingWidthSynchronizer(listContainer);
-      }
-      entries.forEach((entry, entryIndex) => {
-        const entryContainer = listContainer.children[entryIndex];
-        if (entryContainer) {
-          updateEntryFields(entryContainer, entry, fieldTemplate);
-        }
-      });
-      return {
-        setErrors: validation.apply,
-        container: setting.settingEl,
-        synchronizer,
-        update: (value) => {
-          if (Array.isArray(value)) {
-            entries.splice(0, entries.length, ...value);
-          }
-        }
-      };
-    } else {
-      const categories = config.categories ?? [];
-      const filters = config.filters ?? void 0;
-      const itemTemplate = repeatingSpec.itemTemplate ?? {};
-      const renderEntry = config.renderEntry;
-      const cardFactory = config.card;
-      const handle = renderRepeatingEntryManagerCore({
-        container: setting.controlEl,
-        entries,
-        categories,
-        filters,
-        itemTemplate,
-        renderEntry,
-        card: cardFactory,
-        onChange: (updated) => onChange(spec.id, updated),
-        insertPosition: config.insertPosition ?? "end",
-        isStatic,
-        mountEntryManager,
-        fieldId: spec.id
-      });
-      if ("error" in handle && handle.error) {
-        const fallback = container.createDiv({ cls: "sm-cc-field--error" });
-        fallback.createEl("label", { text: spec.label });
-        return { container: fallback };
-      }
-      return {
-        setErrors: validation.apply,
-        container: setting.settingEl,
-        update: handle.update
-      };
-    }
-  }
-};
-
-// src/features/data-manager/fields/register-renderers.ts
-function registerAllFieldRenderers() {
-  fieldRendererRegistry.register(textFieldRenderer);
-  fieldRendererRegistry.register(textareaFieldRenderer);
-  fieldRendererRegistry.register(numberStepperFieldRenderer);
-  fieldRendererRegistry.register(toggleFieldRenderer);
-  fieldRendererRegistry.register(selectFieldRenderer);
-  fieldRendererRegistry.register(multiselectFieldRenderer);
-  fieldRendererRegistry.register(colorFieldRenderer);
-  fieldRendererRegistry.register(tagsFieldRenderer);
-  fieldRendererRegistry.register(structuredTagsFieldRenderer);
-  fieldRendererRegistry.register(displayFieldRenderer);
-  fieldRendererRegistry.register(headingFieldRenderer);
-  fieldRendererRegistry.register(compositeFieldRenderer);
-  fieldRendererRegistry.register(autocompleteFieldRenderer);
-  fieldRendererRegistry.register(repeatingFieldRenderer);
-}
-
-// src/features/data-manager/modal/data-initializer.ts
-var DataInitializer = class {
-  constructor(options) {
-    this.options = options;
-  }
-  /**
-   * Initialize draft data with all sources merged in correct order.
-   */
-  initialize() {
-    const name = this.resolveName();
-    const base = this.createBase(name);
-    const withDefaults = this.applyDefaults(base, name);
-    const withPreset = this.applyPreset(withDefaults);
-    const final = this.applyCustomInitializer(withPreset);
-    return final;
-  }
-  /**
-   * Resolve the name from preset or generate default name.
-   */
-  resolveName() {
-    const { preset } = this.options;
-    const defaultName = this.resolveDefaultName();
-    if (typeof preset === "string") {
-      return preset;
-    }
-    if (typeof preset === "object" && preset && "name" in preset) {
-      const nameValue = preset.name;
-      return typeof nameValue === "string" && nameValue.trim() ? nameValue : defaultName;
-    }
-    return defaultName;
-  }
-  /**
-   * Create base draft with name and filename.
-   */
-  createBase(name) {
-    const draft = { name };
-    const filenameField = this.options.spec.storage.filenameFrom;
-    if (draft[filenameField] === void 0) {
-      draft[filenameField] = name;
-    }
-    return draft;
-  }
-  /**
-   * Apply defaults from spec.defaults and field defaults.
-   */
-  applyDefaults(base, name) {
-    const { spec } = this.options;
-    const specDefaults = resolveDefaults(spec, name);
-    let result = { ...base, ...specDefaults };
-    for (const field of spec.fields) {
-      if (result[field.id] !== void 0) {
-        continue;
-      }
-      if (field.default !== void 0) {
-        result[field.id] = field.default;
-      }
-    }
-    const filenameField = spec.storage.filenameFrom;
-    if (result[filenameField] === void 0) {
-      result[filenameField] = result.name;
-    }
-    return result;
-  }
-  /**
-   * Apply preset data (if preset is an object).
-   */
-  applyPreset(data) {
-    const { preset } = this.options;
-    if (preset && typeof preset === "object") {
-      return { ...data, ...preset };
-    }
-    return data;
-  }
-  /**
-   * Apply custom initializer function (if provided).
-   */
-  applyCustomInitializer(data) {
-    const { customInitializer } = this.options;
-    if (!customInitializer) {
-      return data;
-    }
-    const adjusted = customInitializer(deepClone(data));
-    if (adjusted && typeof adjusted === "object") {
-      return { ...data, ...adjusted };
-    }
-    return data;
-  }
-  /**
-   * Resolve default name from name field default or spec.kind.
-   */
-  resolveDefaultName() {
-    const { spec } = this.options;
-    const nameField = spec.fields.find((field) => field.id === "name");
-    if (nameField && typeof nameField.default === "string" && nameField.default.trim()) {
-      return nameField.default;
-    }
-    const kind = spec.kind || "Eintrag";
-    const normalized = kind.charAt(0).toUpperCase() + kind.slice(1);
-    return `Neue/r ${normalized}`;
-  }
-};
-
-// src/features/data-manager/storage/storage.ts
-var import_obsidian30 = require("obsidian");
-function slugify(value) {
-  const trimmed = value.trim().toLowerCase();
-  const replaced = trimmed.normalize("NFKD").replace(/\p{Diacritic}/gu, "").replace(/[^a-z0-9]+/g, "-").replace(/-{2,}/g, "-").replace(/^-+|-+$/g, "");
-  return replaced || "entry";
-}
-function ensureExtension(path, extension) {
-  if (path.toLowerCase().endsWith(`.${extension}`)) return path;
-  return `${path}.${extension}`;
-}
-function applyTemplate(template, replacements) {
-  return template.replace(/\{([^}]+)\}/g, (_, key) => {
-    const replacement = replacements[key];
-    return replacement ?? "";
-  });
-}
-function collectReplacements(values) {
-  const map = {};
-  for (const [key, raw] of Object.entries(values)) {
-    if (raw == null) continue;
-    map[key] = typeof raw === "string" ? raw : String(raw);
-  }
-  if (values.name) {
-    map.slug = slugify(String(values.name));
-    map.name = String(values.name);
-  }
-  return map;
-}
-function resolveTargetPath(storage, values) {
-  const replacements = collectReplacements(values);
-  const filenameSource = values[storage.filenameFrom];
-  const slug = typeof filenameSource === "string" ? slugify(filenameSource) : slugify(String(filenameSource ?? "entry"));
-  replacements.slug = slug;
-  replacements.filename = slug;
-  const templatePath = applyTemplate(storage.pathTemplate, replacements);
-  const extension = storage.format === "md-frontmatter" || storage.format === "codeblock" ? "md" : storage.format === "json" ? "json" : "yaml";
-  const target = ensureExtension(templatePath, extension);
-  if (storage.directory) {
-    const sanitizedDir = (0, import_obsidian30.normalizePath)(storage.directory);
-    const fileName = target.split("/").pop() ?? target;
-    return (0, import_obsidian30.normalizePath)(`${sanitizedDir}/${fileName}`);
-  }
-  return (0, import_obsidian30.normalizePath)(target);
-}
-function buildFrontmatter(values, storage) {
-  const frontmatter = {};
-  if (Array.isArray(storage.frontmatter)) {
-    for (const key of storage.frontmatter) {
-      if (values[key] !== void 0) {
-        frontmatter[key] = values[key];
-      }
-    }
-  } else if (storage.frontmatter) {
-    for (const [fieldId, fmKey] of Object.entries(storage.frontmatter)) {
-      if (values[fieldId] !== void 0) {
-        frontmatter[fmKey] = values[fieldId];
-      }
-    }
-  }
-  if (!("name" in frontmatter) && typeof values.name === "string") {
-    frontmatter.name = values.name;
-  }
-  return frontmatter;
-}
-function buildMarkdownBody(values, storage) {
-  if (storage.bodyTemplate) {
-    return storage.bodyTemplate(values);
-  }
-  if (storage.bodyFields?.length) {
-    const parts = [];
-    for (const fieldId of storage.bodyFields) {
-      const value = values[fieldId];
-      if (value == null) continue;
-      if (typeof value === "string") {
-        parts.push(value);
-      } else if (Array.isArray(value)) {
-        parts.push(value.join(", "));
-      } else {
-        parts.push(String(value));
-      }
-    }
-    return parts.join("\n\n");
-  }
-  return "";
-}
-function serializeMarkdown(storage, values, path) {
-  const frontmatter = buildFrontmatter(values, storage);
-  const body = buildMarkdownBody(values, storage);
-  const fm2 = (0, import_obsidian30.stringifyYaml)(frontmatter ?? {});
-  const content = [`---`, fm2.trimEnd(), `---`, "", body.trimEnd()].join("\n").trimEnd() + "\n";
-  return { path, content, metadata: { frontmatter, format: storage.format } };
-}
-function serializeJson(values, path) {
-  const content = JSON.stringify(values, null, 2) + "\n";
-  return { path, content, metadata: { format: "json" } };
-}
-function serializeYaml(values, path) {
-  const content = (0, import_obsidian30.stringifyYaml)(values ?? {}) + "\n";
-  return { path, content, metadata: { format: "yaml" } };
-}
-function serializeCodeblock(storage, values, path) {
-  if (!storage.blockRenderer) {
-    throw new Error("Codeblock storage requires a blockRenderer definition");
-  }
-  const raw = storage.blockRenderer.serialize(values);
-  const content = typeof raw === "string" ? raw.trim() : String(raw ?? "");
-  return {
-    path,
-    content,
-    metadata: {
-      format: "codeblock",
-      language: storage.blockRenderer.language,
-      values
-    }
-  };
-}
-function buildSerializedPayload(storage, values) {
-  const path = resolveTargetPath(storage, values);
-  switch (storage.format) {
-    case "json":
-      return serializeJson(values, path);
-    case "yaml":
-      return serializeYaml(values, path);
-    case "codeblock":
-      return serializeCodeblock(storage, values, path);
-    case "md-frontmatter":
-    default:
-      return serializeMarkdown(storage, values, path);
-  }
-}
-function ensureFolder2(app, path) {
-  const parts = path.split("/");
-  parts.pop();
-  const folder = parts.join("/");
-  if (!folder) return Promise.resolve();
-  const normalized = (0, import_obsidian30.normalizePath)(folder);
-  const existing = app.vault.getAbstractFileByPath(normalized);
-  if (existing) return Promise.resolve();
-  return app.vault.createFolder(normalized).catch(() => {
-  });
-}
-function toContentString(content) {
-  if (typeof content === "string") return content;
-  return JSON.stringify(content, null, 2);
-}
-async function persistSerializedPayload(app, storage, payload) {
-  await storage.hooks?.ensureDirectory?.(app);
-  await ensureFolder2(app, payload.path);
-  await storage.hooks?.beforeWrite?.(payload);
-  const existing = app.vault.getAbstractFileByPath(payload.path);
-  let file;
-  const content = toContentString(payload.content);
-  if (storage.format === "codeblock") {
-    if (!storage.blockRenderer) {
-      throw new Error("Codeblock storage requires a blockRenderer definition");
-    }
-    const language = storage.blockRenderer.language;
-    const fence = "```";
-    const blockRegex = new RegExp(`^\\s*${fence}${language}(?:\\s|$)[\\s\\S]*?${fence}`, "im");
-    const normalizedBlock = content.trim();
-    const blockWithNewline = normalizedBlock.endsWith("\\n") ? normalizedBlock : `${normalizedBlock}\\n`;
-    if (existing instanceof import_obsidian30.TFile) {
-      const current = await app.vault.read(existing);
-      const trimmedCurrent = current.trimEnd();
-      const replacement = blockWithNewline.trimEnd();
-      const hasBlock = blockRegex.test(current);
-      const next = hasBlock ? current.replace(blockRegex, replacement) : `${trimmedCurrent}\\n\\n${replacement}`;
-      await app.vault.modify(existing, next.trimEnd() + "\\n");
-      file = existing;
-    } else {
-      const initial = storage.bodyTemplate ? storage.bodyTemplate({ ...payload.metadata?.values ?? {}, block: blockWithNewline }) : blockWithNewline;
-      file = await app.vault.create(payload.path, initial.endsWith("\\n") ? initial : `${initial}\\n`);
-    }
-  } else {
-    if (existing instanceof import_obsidian30.TFile) {
-      await app.vault.modify(existing, content);
-      file = existing;
-    } else {
-      file = await app.vault.create(payload.path, content);
-    }
-  }
-  const result = { filePath: payload.path, file };
-  await storage.hooks?.afterWrite?.(result);
-  return result;
-}
-
-// src/features/data-manager/modal/modal-persistence.ts
-var ModalPersistence = class {
-  constructor(app, spec, transformer) {
-    this.app = app;
-    this.spec = spec;
-    this.transformer = transformer;
-  }
-  /**
-   * Save draft data: transform → parse → serialize → persist
-   */
-  async save(data) {
-    const serialized = await this.serialize(data);
-    const result = await this.persist(serialized);
-    return result;
-  }
-  /**
-   * Serialize draft to payload (transform + parse + build payload)
-   */
-  async serialize(draft) {
-    const transformed = this.transformer.apply(draft);
-    const parsed = this.spec.schema.parse(transformed);
-    const prepared = this.spec.transformers?.preSave ? this.spec.transformers.preSave(parsed) : parsed;
-    const payload = buildSerializedPayload(
-      this.spec.storage,
-      prepared
-    );
-    return { values: prepared, payload };
-  }
-  /**
-   * Persist serialized payload to vault
-   */
-  async persist(serialized) {
-    const result = await persistSerializedPayload(
-      this.app,
-      this.spec.storage,
-      serialized.payload
-    );
-    return {
-      filePath: result.filePath,
-      values: serialized.values
-    };
-  }
-};
-
-// src/features/data-manager/modal/modal-validator.ts
-var DefaultFieldTransformer = class {
-  constructor(fields) {
-    this.fields = fields;
-  }
-  /**
-   * Apply all field transforms to data.
-   * Returns a new object with transformed values.
-   */
-  apply(data) {
-    const result = { ...data };
-    for (const field of this.fields) {
-      if (!field.transform) continue;
-      try {
-        const transformed = field.transform(result[field.id], result);
-        result[field.id] = transformed;
-      } catch (error) {
-        console.error(`Transform failed for field ${field.id}`, error);
-      }
-    }
-    return result;
-  }
-};
-var ModalValidator = class {
-  constructor(spec, fieldInstances, data, customValidators, transformer) {
-    this.spec = spec;
-    this.fieldInstances = fieldInstances;
-    this.data = data;
-    this.customValidators = customValidators;
-    this.transformer = transformer;
-  }
-  /**
-   * Run comprehensive validation:
-   * 1. Field validation (required, custom validate functions)
-   * 2. Field transforms
-   * 3. Schema validation
-   * 4. Custom validators
-   */
-  validate() {
-    const summary = [];
-    const fieldErrors = this.validateFields();
-    for (const [id, errors] of fieldErrors) {
-      if (errors.length > 0) {
-        const instance = this.fieldInstances.get(id);
-        if (instance) {
-          summary.push(`${instance.spec.label}: ${errors[0]}`);
-        }
-      }
-    }
-    const transformed = this.transformer.apply(this.data());
-    const schemaErrors = this.validateSchema(transformed, fieldErrors);
-    summary.push(...schemaErrors);
-    const customErrors = this.runCustomValidators();
-    summary.push(...customErrors);
-    this.applyFieldErrors(fieldErrors);
-    const isValid = summary.length === 0;
-    return {
-      isValid,
-      errors: fieldErrors,
-      summary,
-      transformed: isValid ? transformed : void 0
-    };
-  }
-  /**
-   * Validate all fields: required and custom validate functions.
-   */
-  validateFields() {
-    const fieldErrors = /* @__PURE__ */ new Map();
-    const currentData = this.data();
-    for (const [id, instance] of this.fieldInstances) {
-      if (!instance.isVisible) {
-        instance.handle.setErrors?.([]);
-        fieldErrors.set(id, []);
-        continue;
-      }
-      const value = currentData[id];
-      const errors = [];
-      if (instance.spec.required) {
-        if (value === void 0 || value === null || value === "") {
-          errors.push("Pflichtfeld");
-        } else if (Array.isArray(value) && value.length === 0) {
-          errors.push("Mindestens ein Wert erforderlich");
-        }
-      }
-      if (instance.spec.validate) {
-        try {
-          const result = instance.spec.validate(value, currentData);
-          if (typeof result === "string" && result.trim()) {
-            errors.push(result.trim());
-          }
-        } catch (error) {
-          errors.push(String(error));
-        }
-      }
-      fieldErrors.set(id, errors);
-    }
-    return fieldErrors;
-  }
-  /**
-   * Validate transformed data with schema.
-   * Adds schema errors to existing field errors.
-   */
-  validateSchema(transformed, fieldErrors) {
-    const summary = [];
-    const schema = this.spec.schema.safeParse(transformed);
-    if (!schema.success) {
-      const issues = extractSchemaIssues(schema.error);
-      if (issues.length === 0) {
-        summary.push(String(schema.error));
-      }
-      for (const issue of issues) {
-        const target = issue.path?.[0];
-        if (typeof target === "string" && fieldErrors.has(target)) {
-          const list = fieldErrors.get(target);
-          if (issue.message) {
-            list.push(issue.message);
-          }
-          summary.push(`${target}: ${issue.message ?? "Ung\xFCltiger Wert"}`);
-        } else if (issue.message) {
-          summary.push(issue.message);
-        }
-      }
-    }
-    return summary;
-  }
-  /**
-   * Run custom validator functions (used in navigation mode).
-   */
-  runCustomValidators() {
-    const collected = [];
-    for (const validator of this.customValidators) {
-      collected.push(...validator());
-    }
-    return collected;
-  }
-  /**
-   * Apply field errors to UI (set errors on field handles).
-   */
-  applyFieldErrors(errors) {
-    for (const [id, instance] of this.fieldInstances) {
-      const fieldErrors = errors.get(id) ?? [];
-      instance.handle.setErrors?.(fieldErrors);
-    }
-  }
-};
-
-// src/features/data-manager/fields/field-manager.ts
-var FieldManager = class {
-  constructor(fields, getData, onChange, widthSynchronizers) {
-    this.fields = fields;
-    this.getData = getData;
-    this.onChange = onChange;
-    this.widthSynchronizers = widthSynchronizers;
-    this.fieldInstances = /* @__PURE__ */ new Map();
-  }
-  /**
-   * Render fields in container, optionally filtered by fieldIds.
-   * If fieldIds is undefined, renders all fields.
-   */
-  renderFields(container, fieldIds) {
-    const ordered = orderFields(this.fields, fieldIds);
-    for (const field of ordered) {
-      this.renderSingleField(container, field);
-    }
-    this.updateVisibility();
-  }
-  /**
-   * Render a single field and register its instance.
-   */
-  renderSingleField(container, field) {
-    const handle = this.renderField(
-      container,
-      field,
-      this.getData(),
-      (id, value) => this.onChange(id, value)
-    );
-    if (handle.synchronizer) {
-      this.widthSynchronizers.push(handle.synchronizer);
-    }
-    this.fieldInstances.set(field.id, {
-      spec: field,
-      handle: {
-        setErrors: handle.setErrors
-      },
-      container: handle.container,
-      isVisible: true
-    });
-  }
-  /**
-   * Render field using registry.
-   * Internal wrapper around fieldRendererRegistry.render().
-   */
-  renderField(container, spec, values, onChange) {
-    return fieldRendererRegistry.render({
-      app: null,
-      // App not needed for current renderers
-      container,
-      spec,
-      values,
-      onChange,
-      registerValidator: () => {
-      }
-      // Not used in this context
-    });
-  }
-  /**
-   * Update visibility of all fields based on visibleIf conditions.
-   */
-  updateVisibility() {
-    const data = this.getData();
-    for (const [id, instance] of this.fieldInstances) {
-      const visible = this.evaluateVisibility(instance.spec, data);
-      instance.isVisible = visible;
-      const target = instance.container;
-      if (target) {
-        target.toggleClass("is-hidden", !visible);
-        if (!visible) {
-          instance.handle.setErrors?.([]);
-        }
-      }
-    }
-  }
-  /**
-   * Evaluate visibility condition for a field.
-   */
-  evaluateVisibility(field, data) {
-    if (!field.visibleIf) return true;
-    try {
-      return field.visibleIf(data);
-    } catch (error) {
-      console.error("Failed to evaluate field visibility", error);
-      return true;
-    }
-  }
-  /**
-   * Get the field instances map (for validator integration).
-   */
-  getFieldInstances() {
-    return this.fieldInstances;
-  }
-  /**
-   * Cleanup field instances.
-   */
-  dispose() {
-    this.fieldInstances.clear();
-  }
-};
-
-// src/features/data-manager/layout/layouts.ts
-function createFormCard(parent, options) {
-  const { title, subtitle, registerValidator, id, headingId, role } = options;
-  const card = parent.createDiv({ cls: "sm-cc-card" });
-  if (id) card.id = id;
-  const computedHeadingId = headingId ?? (id ? `${id}__title` : void 0);
-  card.setAttribute("role", role ?? "region");
-  if (computedHeadingId) {
-    card.setAttribute("aria-labelledby", computedHeadingId);
-  }
-  const head = card.createDiv({ cls: "sm-cc-card__head" });
-  const heading = head.createDiv({ cls: "sm-cc-card__heading" });
-  const headingTitle = heading.createEl("h3", { text: title, cls: "sm-cc-card__title" });
-  if (computedHeadingId) headingTitle.id = computedHeadingId;
-  const status = heading.createSpan({
-    cls: "sm-cc-card__status",
-    attr: { hidden: "" }
-  });
-  if (subtitle) head.createEl("p", { text: subtitle, cls: "sm-cc-card__subtitle" });
-  const validation = card.createDiv({ cls: "sm-cc-card__validation", attr: { hidden: "" } });
-  const validationList = validation.createEl("ul", { cls: "sm-cc-card__validation-list" });
-  const applyValidation = (issues, summary) => {
-    const hasIssues = issues.length > 0;
-    card.toggleClass("is-invalid", hasIssues);
-    if (!hasIssues) {
-      validation.setAttribute("hidden", "");
-      validation.classList.remove("is-visible");
-      validationList.empty();
-      status.textContent = "";
-      status.setAttribute("hidden", "");
-      status.classList.remove("is-active");
-      return;
-    }
-    validation.removeAttribute("hidden");
-    validation.classList.add("is-visible");
-    validationList.empty();
-    for (const message of issues) {
-      validationList.createEl("li", { text: message });
-    }
-    const fallbackSummary = issues.length === 1 ? issues[0] : `${issues.length} Probleme`;
-    status.textContent = summary?.trim() || fallbackSummary;
-    status.removeAttribute("hidden");
-    status.classList.add("is-active");
-  };
-  const body = card.createDiv({ cls: "sm-cc-card__body" });
-  const registerValidation = (compute) => {
-    const runner = () => {
-      const result = compute();
-      const normalized = Array.isArray(result) ? { issues: result, summary: void 0 } : result ?? { issues: [], summary: void 0 };
-      applyValidation(normalized.issues, normalized.summary);
-      return normalized.issues;
-    };
-    return registerValidator ? registerValidator(runner) : runner;
-  };
-  return { card, body, heading: headingTitle, registerValidation };
-}
-
-// src/features/data-manager/modal/modal-navigation.ts
-var ModalNavigation = class {
-  constructor(options) {
-    this.options = options;
-    this.sectionObserver = null;
-    this.navButtons = [];
-  }
-  /**
-   * Mount the navigation layout: header, shell (nav + content), and footer.
-   * Returns the footer element for action buttons.
-   */
-  mount() {
-    const { container, sections, title, subtitle, onMountSection, addValidator } = this.options;
-    const header = container.createDiv({ cls: "sm-cc-modal-header" });
-    header.createEl("h2", { text: title });
-    if (subtitle) {
-      header.createEl("p", {
-        cls: "sm-cc-modal-subtitle",
-        text: subtitle
-      });
-    }
-    const shell = container.createDiv({ cls: "sm-cc-shell" });
-    const nav = shell.createEl("nav", { cls: "sm-cc-shell__nav", attr: { "aria-label": "Abschnitte" } });
-    nav.createEl("p", { cls: "sm-cc-shell__nav-label", text: "Abschnitte" });
-    const navList = nav.createDiv({ cls: "sm-cc-shell__nav-list" });
-    const content = shell.createDiv({ cls: "sm-cc-shell__content" });
-    const setActive = (sectionId) => {
-      for (const entry of this.navButtons) {
-        const isActive = entry.id === sectionId;
-        entry.button.classList.toggle("is-active", isActive);
-        if (isActive) {
-          entry.button.setAttribute("aria-current", "true");
-        } else {
-          entry.button.removeAttribute("aria-current");
-        }
-      }
-    };
-    const observer = new IntersectionObserver((entries) => {
-      const visible = entries.filter((entry) => entry.isIntersecting);
-      if (!visible.length) return;
-      visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-      const next = visible[0].target.id;
-      if (next) setActive(next);
-    }, { root: container, rootMargin: "-45% 0px -45% 0px", threshold: 0 });
-    this.sectionObserver = observer;
-    for (const section of sections) {
-      this.createSection(section, content, navList, observer, setActive, onMountSection, addValidator);
-    }
-    if (sections.length) {
-      setActive(sections[0].id);
-    }
-    const footer = container.createDiv({ cls: "sm-cc-modal-footer" });
-    return footer;
-  }
-  /**
-   * Create a single section with navigation button and form card.
-   */
-  createSection(section, content, navList, observer, setActive, onMountSection, addValidator) {
-    const handles = createFormCard(content, {
-      title: section.label,
-      subtitle: section.description,
-      registerValidator: (runner) => addValidator(runner),
-      id: section.id
-    });
-    const navButton = navList.createEl("button", {
-      cls: "sm-cc-shell__nav-button",
-      text: section.label
-    });
-    navButton.type = "button";
-    navButton.setAttribute("aria-controls", handles.card.id);
-    this.navButtons.push({ id: handles.card.id, button: navButton });
-    navButton.addEventListener("click", () => {
-      setActive(handles.card.id);
-      handles.card.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-    observer.observe(handles.card);
-    onMountSection(handles, section);
-  }
-  /**
-   * Scroll to a specific section by ID.
-   */
-  scrollToSection(id) {
-    const entry = this.navButtons.find((btn) => btn.id === id);
-    if (entry) {
-      const section = document.getElementById(id);
-      section?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }
-  /**
-   * Cleanup navigation resources.
-   */
-  dispose() {
-    this.sectionObserver?.disconnect();
-    this.sectionObserver = null;
-    this.navButtons = [];
-  }
-};
-
-// src/features/data-manager/modal/modal.ts
-registerAllFieldRenderers();
-var CreateModal = class extends import_obsidian31.Modal {
-  constructor(app, spec, options, resolve) {
-    super(app);
-    this.completion = null;
-    this.resolved = false;
-    // Navigation support
-    this.navigation = null;
-    this.validators = [];
-    // Layout managers for dynamic grid
-    this.layoutManagers = [];
-    // Width synchronizers for repeating fields
-    this.widthSynchronizers = [];
-    // Background pointer lock
-    this.bgLock = null;
-    // Submission state
-    this.submitButton = null;
-    this.cancelButton = null;
-    this.isSubmitting = false;
-    this.spec = spec;
-    this.resolveResult = resolve;
-    this.sectionOrder = spec.ui?.sections ?? [];
-    const initializer = new DataInitializer({
-      spec,
-      preset: options?.preset,
-      customInitializer: options?.initialize
-    });
-    this.data = initializer.initialize();
-  }
-  onOpen() {
-    const { contentEl } = this;
-    contentEl.empty();
-    contentEl.addClass("sm-cc-create-modal");
-    this.validators = [];
-    this.transformer = new DefaultFieldTransformer(this.spec.fields);
-    this.persistence = new ModalPersistence(this.app, this.spec, this.transformer);
-    this.fieldManager = new FieldManager(
-      this.spec.fields,
-      () => this.data,
-      // Getter for current data
-      (id, value) => this.handleFieldChange(id, value),
-      this.widthSynchronizers
-    );
-    this.validator = new ModalValidator(
-      this.spec,
-      this.fieldManager.getFieldInstances(),
-      () => this.data,
-      // Getter for current data
-      this.validators,
-      this.transformer
-    );
-    this.lockBackgroundPointer();
-    const navigationEnabled = this.spec.ui?.enableNavigation ?? Boolean(this.sectionOrder.length);
-    if (navigationEnabled) {
-      this.modalEl.addClass("sm-cc-create-modal-host");
-    }
-    if (navigationEnabled && this.sectionOrder.length) {
-      this.buildNavigationLayout(contentEl);
-    } else {
-      this.buildSimpleLayout(contentEl);
-    }
-  }
-  buildSimpleLayout(contentEl) {
-    contentEl.createEl("h3", { text: this.spec.title });
-    this.fieldManager.renderFields(contentEl, void 0);
-    this.buildActionButtons(contentEl);
-    this.scope.register([], "Enter", (evt) => {
-      if (!(evt.target instanceof HTMLTextAreaElement)) {
-        void this.submit();
-      }
-    });
-  }
-  buildNavigationLayout(contentEl) {
-    this.navigation = new ModalNavigation({
-      container: contentEl,
-      sections: this.sectionOrder,
-      title: this.spec.title,
-      subtitle: this.spec.subtitle,
-      onMountSection: (handles, section) => this.mountSection(handles, section),
-      addValidator: (runner) => this.addValidator(runner)
-    });
-    const footer = this.navigation.mount();
-    this.buildActionButtons(footer);
-  }
-  mountSection(handles, section) {
-    const ordered = orderFields(this.spec.fields, section.fieldIds);
-    this.fieldManager.renderFields(handles.body, section.fieldIds);
-    const layoutManager = new GridLayoutManager(handles.body, ordered);
-    this.layoutManagers.push(layoutManager);
-    handles.registerValidation(() => {
-      const result = this.validator.validate();
-      const issues = [];
-      for (const field of ordered) {
-        const fieldErrors = result.errors.get(field.id) ?? [];
-        if (fieldErrors.length) {
-          issues.push(`${field.label}: ${fieldErrors[0]}`);
-        }
-      }
-      const summary = issues.length > 0 ? `${issues.length} Feld${issues.length > 1 ? "er" : ""} ben\xF6tigt Aufmerksamkeit` : void 0;
-      return { issues, summary };
-    });
-  }
-  handleFieldChange(id, value) {
-    if (id === "name" && typeof value === "string") {
-      this.data.name = value.trim();
-    }
-    this.data[id] = value;
-    this.fieldManager.updateVisibility();
-  }
-  buildActionButtons(container) {
-    const buttons = new import_obsidian31.Setting(container);
-    buttons.addButton((btn) => {
-      this.cancelButton = btn;
-      btn.setButtonText(this.spec.ui?.cancelLabel || "Abbrechen").onClick(() => {
-        if (this.isSubmitting) return;
-        this.close();
-      });
-    });
-    buttons.addButton((btn) => {
-      this.submitButton = btn;
-      btn.setButtonText(this.spec.ui?.submitLabel || "Erstellen").setCta().onClick(() => void this.submit());
-    });
-  }
-  async submit() {
-    if (this.isSubmitting) return;
-    const validationResult = this.validator.validate();
-    if (!validationResult.isValid) {
-      if (this.spec.ui?.enableNavigation) {
-        const firstInvalid = this.contentEl.querySelector(".sm-cc-card.is-invalid");
-        if (firstInvalid) firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-      return;
-    }
-    if (!this.data.name || !this.data.name.trim()) {
-      return;
-    }
-    this.setButtonsDisabled(true);
-    this.isSubmitting = true;
-    try {
-      const result = await this.persistence.save(this.data);
-      await this.spec.transformers?.postSave?.(result.filePath, result.values);
-      this.completion = {
-        filePath: result.filePath,
-        values: result.values
-      };
-      this.close();
-    } catch (error) {
-      console.error("Failed to submit create modal", error);
-      this.handleSubmissionError(error);
-    } finally {
-      this.isSubmitting = false;
-      this.setButtonsDisabled(false);
-    }
-  }
-  onClose() {
-    this.fieldManager?.dispose();
-    this.navigation?.dispose();
-    this.navigation = null;
-    this.validators = [];
-    for (const manager of this.layoutManagers) {
-      manager.destroy();
-    }
-    this.layoutManagers = [];
-    for (const synchronizer of this.widthSynchronizers) {
-      synchronizer.destroy();
-    }
-    this.widthSynchronizers = [];
-    this.modalEl.removeClass("sm-cc-create-modal-host");
-    this.restoreBackgroundPointer();
-    if (!this.resolved) {
-      this.resolved = true;
-      this.resolveResult(this.completion);
-    }
-    this.contentEl.empty();
-    this.submitButton = null;
-    this.cancelButton = null;
-    this.isSubmitting = false;
-  }
-  addValidator(run) {
-    this.validators.push(run);
-    return run;
-  }
-  setButtonsDisabled(disabled) {
-    this.submitButton?.setDisabled(disabled);
-    this.cancelButton?.setDisabled(disabled);
-  }
-  handleSubmissionError(error) {
-    const message = error instanceof Error ? error.message : String(error ?? "Unbekannter Fehler");
-    new import_obsidian31.Notice(`Fehler beim Speichern: ${message}`);
-  }
-  lockBackgroundPointer() {
-    const bg = document.querySelector(".modal-bg");
-    if (!bg) return;
-    this.bgLock = { el: bg, pointer: bg.style.pointerEvents };
-    bg.style.pointerEvents = "none";
-  }
-  restoreBackgroundPointer() {
-    if (!this.bgLock) return;
-    this.bgLock.el.style.pointerEvents = this.bgLock.pointer || "";
-    this.bgLock = null;
-  }
-};
-
-// src/features/data-manager/modal/open-create-modal.ts
-function resolveAppInstance(options) {
-  if (options?.app) return options.app;
-  const globalApp = globalThis.app;
-  if (!globalApp) {
-    throw new Error("Obsidian App instance is required to open the create modal");
-  }
-  return globalApp;
-}
-function openCreateModal(spec, options) {
-  const app = resolveAppInstance(options);
-  return new Promise((resolve) => {
-    const modal = new CreateModal(app, spec, options, resolve);
-    modal.open();
-  });
-}
-
-// src/workmodes/library/view/mode.ts
-var BaseModeRenderer2 = class extends BaseModeRenderer {
-  // Override setQuery to trim the query (Library-specific behavior)
-  setQuery(query) {
-    this.query = (query || "").toLowerCase();
-    this.render();
-  }
-};
-var LibrarySourceWatcherHub = class {
-  constructor() {
-    this.hub = new WatcherHub();
-  }
-  subscribe(source, factory, listener) {
-    return this.hub.subscribe(source, factory, listener);
-  }
-  destroy() {
-    this.hub.destroy();
-  }
-};
-
-// src/workmodes/library/core/data-sources.ts
-init_creature_files();
-init_spell_files();
-init_item_files();
-init_equipment_files();
+// src/workmodes/library/storage/data-sources.ts
+init_creatures();
+init_spells();
+init_items();
+init_equipment();
 function createEntryLoader(extractMeta) {
   return async (app, file) => {
     const fm2 = await readFrontmatter(app, file);
@@ -47631,242 +47761,7 @@ var LIBRARY_DATA_SOURCES = {
   }
 };
 
-// src/workmodes/library/view/filter-registry.ts
-var RARITY_ORDER = /* @__PURE__ */ new Map([
-  ["common", 0],
-  ["uncommon", 1],
-  ["rare", 2],
-  ["very rare", 3],
-  ["legendary", 4],
-  ["artifact", 5]
-]);
-function rarityOrder(value) {
-  if (!value) return Number.POSITIVE_INFINITY;
-  return RARITY_ORDER.get(value.toLowerCase()) ?? Number.POSITIVE_INFINITY;
-}
-function parseCr(value) {
-  if (!value) return Number.POSITIVE_INFINITY;
-  if (value.includes("/")) {
-    const [num, denom] = value.split("/").map((part) => Number(part.trim()));
-    if (Number.isFinite(num) && Number.isFinite(denom) && denom !== 0) {
-      return num / denom;
-    }
-  }
-  const numeric = Number(value);
-  return Number.isFinite(numeric) ? numeric : Number.POSITIVE_INFINITY;
-}
-function formatSpellLevel(level) {
-  if (level == null) return "Unknown";
-  if (level === 0) return "Cantrip";
-  return `Level ${level}`;
-}
-var LIBRARY_LIST_SCHEMAS = {
-  creatures: createSchema().addStringFilter("type", "type", "Type").addCustomFilter("cr", "cr", {
-    label: "CR",
-    sortComparator: (a, b) => parseCr(a) - parseCr(b)
-  }).addNameSort().addStringFieldSort("type", "type", "Type").addCustomSort(
-    "cr",
-    "CR",
-    (a, b) => parseCr(a.cr) - parseCr(b.cr) || a.name.localeCompare(b.name)
-  ).searchField("type").searchField("cr").build(),
-  spells: createSchema().addStringFilter("school", "school", "School").addFilter(
-    "level",
-    "Level",
-    (entry) => [entry.level != null ? String(entry.level) : void 0],
-    {
-      sortComparator: (a, b) => Number(a) - Number(b),
-      formatOption: (value) => formatSpellLevel(Number(value))
-    }
-  ).addFilter(
-    "ritual",
-    "Ritual",
-    (entry) => [entry.ritual == null ? void 0 : entry.ritual ? "true" : "false"],
-    {
-      emptyLabel: "All",
-      formatOption: (value) => value === "true" ? "Only rituals" : "No rituals"
-    }
-  ).addNameSort().addCustomSort(
-    "level",
-    "Level",
-    (a, b) => (a.level ?? 0) - (b.level ?? 0) || a.name.localeCompare(b.name)
-  ).addStringFieldSort("school", "school", "School").searchField("school").searchCustom((entry) => entry.level != null ? formatSpellLevel(entry.level) : void 0).searchField("casting_time").searchField("duration").searchField("description").build(),
-  items: createSchema().addStringFilter("category", "category", "Category").addCustomFilter("rarity", "rarity", {
-    label: "Rarity",
-    sortComparator: (a, b) => rarityOrder(a) - rarityOrder(b) || a.localeCompare(b)
-  }).addNameSort().addCustomSort(
-    "rarity",
-    "Rarity",
-    (a, b) => rarityOrder(a.rarity) - rarityOrder(b.rarity) || a.name.localeCompare(b.name)
-  ).addStringFieldSort("category", "category", "Category").searchField("category").searchField("rarity").build(),
-  equipment: createSchema().addStringFilter("type", "type", "Type").addStringFilter("role", "role", "Role").addNameSort().addStringFieldSort("type", "type", "Type").addStringFieldSort("role", "role", "Role").searchField("type").searchField("role").build()
-};
-
-// src/workmodes/library/core/creature-presets.ts
-init_file_pipeline();
-var PRESETS_DIR = "SaltMarcher/Presets/Creatures";
-var PRESET_PIPELINE = createVaultFilePipeline({
-  dir: PRESETS_DIR,
-  defaultBaseName: "Preset",
-  getBaseName: (data) => data.name,
-  toContent: () => "",
-  // Presets werden nicht geschrieben, nur gelesen
-  sanitizeName: (name) => name.replace(/[\\/:*?"<>|]/g, "-")
-});
-var ensurePresetDir = PRESET_PIPELINE.ensure;
-var listPresetFiles = PRESET_PIPELINE.list;
-var watchPresetDir = PRESET_PIPELINE.watch;
-function parseAlignment(text) {
-  if (!text) return {};
-  const normalized = text.toLowerCase().trim();
-  if (normalized === "unaligned" || normalized === "any alignment") {
-    return { override: text };
-  }
-  if (normalized === "neutral") {
-    return { lawChaos: "Neutral", goodEvil: "Neutral" };
-  }
-  const words = text.split(/\s+/);
-  if (words.length === 2) {
-    return { lawChaos: words[0], goodEvil: words[1] };
-  } else if (words.length === 1) {
-    const word = words[0];
-    if (["Good", "Evil"].some((w) => w.toLowerCase() === word.toLowerCase())) {
-      return { goodEvil: word };
-    } else if (["Lawful", "Chaotic"].some((w) => w.toLowerCase() === word.toLowerCase())) {
-      return { lawChaos: word };
-    }
-  }
-  return { override: text };
-}
-function calculatePBFromCR(cr) {
-  if (!cr) return void 0;
-  let crValue;
-  if (cr.includes("/")) {
-    const [num, denom] = cr.split("/").map(Number);
-    crValue = num / denom;
-  } else {
-    crValue = Number(cr);
-  }
-  if (isNaN(crValue)) return void 0;
-  if (crValue <= 4) return "+2";
-  if (crValue <= 8) return "+3";
-  if (crValue <= 12) return "+4";
-  if (crValue <= 16) return "+5";
-  if (crValue <= 20) return "+6";
-  if (crValue <= 24) return "+7";
-  if (crValue <= 28) return "+8";
-  return "+9";
-}
-async function loadCreaturePreset(app, file) {
-  const cache = app.metadataCache.getFileCache(file);
-  if (!cache?.frontmatter) {
-    throw new Error(`No frontmatter found in ${file.path}`);
-  }
-  const fm2 = cache.frontmatter;
-  const parseJson = (value, fieldName) => {
-    if (!value) return void 0;
-    try {
-      return JSON.parse(value);
-    } catch (err) {
-      console.warn(`Failed to parse ${fieldName}:`, err);
-      return void 0;
-    }
-  };
-  const alignmentParts = parseAlignment(fm2.alignment);
-  const abilities = fm2.abilities_json ? parseJson(fm2.abilities_json, "abilities_json") : void 0;
-  let initiative = fm2.initiative;
-  if (!initiative && abilities) {
-    const dexAbility = abilities.find((a) => a.ability === "dex");
-    if (dexAbility) {
-      const modifier = Math.floor((dexAbility.score - 10) / 2);
-      initiative = modifier >= 0 ? `+${modifier}` : `${modifier}`;
-    }
-  }
-  const data = {
-    // Basic identity
-    name: fm2.name ?? file.basename,
-    size: fm2.size,
-    type: fm2.type,
-    typeTags: fm2.type_tags ?? fm2.typeTags,
-    // Alignment (use explicit fields or parse from combined)
-    alignmentLawChaos: fm2.alignmentLawChaos ?? alignmentParts.lawChaos,
-    alignmentGoodEvil: fm2.alignmentGoodEvil ?? alignmentParts.goodEvil,
-    alignmentOverride: fm2.alignmentOverride ?? alignmentParts.override,
-    // Combat stats
-    ac: fm2.ac,
-    initiative,
-    hp: fm2.hp,
-    hitDice: fm2.hit_dice ?? fm2.hitDice,
-    // Abilities
-    abilities,
-    pb: fm2.pb ?? calculatePBFromCR(fm2.cr),
-    // Fallback: berechne aus CR
-    // CR & XP
-    cr: fm2.cr,
-    xp: fm2.xp,
-    // Speeds
-    speeds: fm2.speeds_json ? parseJson(fm2.speeds_json, "speeds_json") : void 0,
-    // Saves & Skills
-    saves: fm2.saves_json ? parseJson(fm2.saves_json, "saves_json") : void 0,
-    skills: fm2.skills_json ? parseJson(fm2.skills_json, "skills_json") : void 0,
-    // Senses & Languages
-    sensesList: fm2.senses,
-    languagesList: fm2.languages,
-    passivesList: fm2.passives,
-    // Defenses
-    damageVulnerabilitiesList: fm2.damage_vulnerabilities,
-    damageResistancesList: fm2.damage_resistances,
-    damageImmunitiesList: fm2.damage_immunities,
-    conditionImmunitiesList: fm2.condition_immunities,
-    gearList: fm2.gear,
-    // Entries & Spellcasting (JSON fields)
-    entries: fm2.entries_structured_json ? parseJson(fm2.entries_structured_json, "entries_structured_json") : void 0,
-    spellcasting: fm2.spellcasting_json ? parseJson(fm2.spellcasting_json, "spellcasting_json") : void 0,
-    // Legacy fields
-    traits: fm2.traits,
-    actions: fm2.actions,
-    legendary: fm2.legendary
-  };
-  if (!data.speeds && (fm2.speed_walk || fm2.speed_fly || fm2.speed_swim || fm2.speed_climb || fm2.speed_burrow)) {
-    data.speeds = {};
-    if (fm2.speed_walk) data.speeds.walk = { distance: fm2.speed_walk };
-    if (fm2.speed_fly) {
-      data.speeds.fly = {
-        distance: fm2.speed_fly,
-        hover: fm2.speed_fly_hover === true || fm2.speed_fly_hover === "true"
-      };
-    }
-    if (fm2.speed_swim) data.speeds.swim = { distance: fm2.speed_swim };
-    if (fm2.speed_climb) data.speeds.climb = { distance: fm2.speed_climb };
-    if (fm2.speed_burrow) data.speeds.burrow = { distance: fm2.speed_burrow };
-  }
-  console.log("[Preset Loader] Loaded preset:", data.name, {
-    type: data.type,
-    size: data.size,
-    typeTags: data.typeTags,
-    alignmentLawChaos: data.alignmentLawChaos,
-    alignmentGoodEvil: data.alignmentGoodEvil,
-    alignmentOverride: data.alignmentOverride,
-    initiative: data.initiative,
-    pb: data.pb,
-    hasEntries: !!data.entries,
-    entriesCount: data.entries?.length ?? 0,
-    hasSpellcasting: !!data.spellcasting,
-    hasSpeeds: !!data.speeds,
-    hasSaves: !!data.saves,
-    hasSkills: !!data.skills,
-    hasSenses: !!data.sensesList,
-    hasLanguages: !!data.languagesList,
-    hasPassives: !!data.passivesList
-  });
-  return data;
-}
-
-// src/workmodes/library/view/view-registry.ts
-init_spell_files();
-init_item_files();
-init_equipment_files();
-
-// src/workmodes/library/create/creature/presets.ts
+// src/workmodes/library/entities/creatures/presets.ts
 var CREATURE_SIZES = [
   "Tiny",
   "Small",
@@ -48017,7 +47912,7 @@ var CREATURE_LANGUAGE_PRESETS = [
   "Thieves' Cant"
 ];
 
-// src/workmodes/library/create/creature/creature-spec.ts
+// src/workmodes/library/entities/creatures/create-spec.ts
 var creatureSchema = {
   parse: (data) => data,
   safeParse: (data) => {
@@ -48444,7 +48339,79 @@ var creatureSpec = {
   }
 };
 
-// src/workmodes/library/create/spell/validation.ts
+// src/workmodes/library/entities/creatures/view-config.ts
+init_creatures();
+var metadataFields = [
+  {
+    id: "type",
+    cls: "sm-cc-item__type",
+    getValue: (entry) => entry.type
+  },
+  {
+    id: "cr",
+    cls: "sm-cc-item__cr",
+    getValue: (entry) => entry.cr ? `CR ${entry.cr}` : void 0
+  }
+];
+var actions = createStandardActions("creature", () => ({
+  id: "edit",
+  label: "Edit",
+  execute: async (entry, context) => {
+    const { app } = context;
+    try {
+      const creatureData = await loadCreaturePreset(app, entry.file);
+      const result = await openCreateModal(creatureSpec, {
+        app,
+        preset: creatureData
+      });
+      if (result) {
+        await context.reloadEntries();
+        await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
+      }
+    } catch (err) {
+      console.error("Failed to load creature for editing", err);
+    }
+  }
+}));
+var handleCreate = async (context, name) => {
+  const { app } = context;
+  const result = await openCreateModal(creatureSpec, {
+    app,
+    preset: name
+  });
+  if (result) {
+    await context.reloadEntries();
+    await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
+  }
+};
+var creatureViewConfig = {
+  metadataFields,
+  actions,
+  handleCreate
+};
+
+// src/workmodes/library/entities/creatures/list-schema.ts
+function parseCr(value) {
+  if (!value) return Number.POSITIVE_INFINITY;
+  if (value.includes("/")) {
+    const [num, denom] = value.split("/").map((part) => Number(part.trim()));
+    if (Number.isFinite(num) && Number.isFinite(denom) && denom !== 0) {
+      return num / denom;
+    }
+  }
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : Number.POSITIVE_INFINITY;
+}
+var creatureListSchema = createSchema().addStringFilter("type", "type", "Type").addCustomFilter("cr", "cr", {
+  label: "CR",
+  sortComparator: (a, b) => parseCr(a) - parseCr(b)
+}).addNameSort().addStringFieldSort("type", "type", "Type").addCustomSort(
+  "cr",
+  "CR",
+  (a, b) => parseCr(a.cr) - parseCr(b.cr) || a.name.localeCompare(b.name)
+).searchField("type").searchField("cr").build();
+
+// src/workmodes/library/entities/spells/validation.ts
 var SCALING_REQUIRES_LEVEL_MESSAGE = "Skalierende Effekte ben\xF6tigen einen Zaubergrad zwischen 1 und 9.";
 var SCALING_DISALLOWS_CANTRIPS_MESSAGE = "Zaubertricks verwenden keine h\xF6heren Zauberstufen \u2013 entferne den Abschnitt oder w\xE4hle Grad 1\u20139.";
 function collectSpellScalingIssues(data) {
@@ -48462,7 +48429,7 @@ function collectSpellScalingIssues(data) {
   return issues;
 }
 
-// src/workmodes/library/create/spell/spell-spec.ts
+// src/workmodes/library/entities/spells/create-spec.ts
 var spellSchema = {
   parse: (data) => data,
   safeParse: (data) => {
@@ -48772,7 +48739,102 @@ var spellSpec = {
   }
 };
 
-// src/workmodes/library/create/item/item-spec.ts
+// src/workmodes/library/entities/spells/view-config.ts
+init_spells();
+
+// src/workmodes/library/entities/spells/list-schema.ts
+function formatSpellLevel(level) {
+  if (level == null) return "Unknown";
+  if (level === 0) return "Cantrip";
+  return `Level ${level}`;
+}
+var spellListSchema = createSchema().addStringFilter("school", "school", "School").addFilter(
+  "level",
+  "Level",
+  (entry) => [entry.level != null ? String(entry.level) : void 0],
+  {
+    sortComparator: (a, b) => Number(a) - Number(b),
+    formatOption: (value) => formatSpellLevel(Number(value))
+  }
+).addFilter(
+  "ritual",
+  "Ritual",
+  (entry) => [entry.ritual == null ? void 0 : entry.ritual ? "true" : "false"],
+  {
+    emptyLabel: "All",
+    formatOption: (value) => value === "true" ? "Only rituals" : "No rituals"
+  }
+).addNameSort().addCustomSort(
+  "level",
+  "Level",
+  (a, b) => (a.level ?? 0) - (b.level ?? 0) || a.name.localeCompare(b.name)
+).addStringFieldSort("school", "school", "School").searchField("school").searchCustom((entry) => entry.level != null ? formatSpellLevel(entry.level) : void 0).searchField("casting_time").searchField("duration").searchField("description").build();
+
+// src/workmodes/library/entities/spells/view-config.ts
+var metadataFields2 = [
+  {
+    id: "level",
+    cls: "sm-cc-item__type",
+    getValue: (entry) => formatSpellLevel(entry.level)
+  },
+  {
+    id: "school",
+    cls: "sm-cc-item__cr",
+    getValue: (entry) => entry.school
+  }
+];
+var actions2 = createStandardActions("spell", () => ({
+  id: "edit",
+  label: "Edit",
+  execute: async (entry, context) => {
+    const { app } = context;
+    try {
+      const spellData = await loadSpellFile(app, entry.file);
+      const result = await openCreateModal(spellSpec, {
+        app,
+        preset: spellData
+      });
+      if (result) {
+        await context.reloadEntries();
+        await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
+      }
+    } catch (err) {
+      console.error("Failed to load spell for editing", err);
+    }
+  }
+}));
+var handleCreate2 = async (context, name) => {
+  const { app } = context;
+  const trimmed = name.trim();
+  const preset = { name: trimmed || "Neuer Zauber" };
+  if (context.getFilterSelection) {
+    const levelFilter = context.getFilterSelection("level");
+    if (levelFilter) {
+      const parsed = Number(levelFilter);
+      if (Number.isFinite(parsed)) preset.level = parsed;
+    }
+    const schoolFilter = context.getFilterSelection("school");
+    if (schoolFilter) preset.school = schoolFilter;
+    const ritualFilter = context.getFilterSelection("ritual");
+    if (ritualFilter === "true") preset.ritual = true;
+    if (ritualFilter === "false") preset.ritual = false;
+  }
+  const result = await openCreateModal(spellSpec, {
+    app,
+    preset
+  });
+  if (result) {
+    await context.reloadEntries();
+    await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
+  }
+};
+var spellViewConfig = {
+  metadataFields: metadataFields2,
+  actions: actions2,
+  handleCreate: handleCreate2
+};
+
+// src/workmodes/library/entities/items/create-spec.ts
 var itemSchema = {
   parse: (data) => data,
   safeParse: (data) => {
@@ -48909,7 +48971,7 @@ var propertiesFields = [
     placeholder: "Additional information..."
   }
 ];
-var metadataFields = [
+var metadataFields3 = [
   {
     id: "weight",
     label: "Weight",
@@ -48948,7 +49010,7 @@ var itemSpec = {
     ...attunementFields,
     ...chargesFields,
     ...propertiesFields,
-    ...metadataFields,
+    ...metadataFields3,
     ...curseFields
   ],
   storage: {
@@ -49018,7 +49080,80 @@ var itemSpec = {
   }
 };
 
-// src/workmodes/library/create/equipment/equipment-spec.ts
+// src/workmodes/library/entities/items/view-config.ts
+init_items();
+var metadataFields4 = [
+  {
+    id: "category",
+    cls: "sm-cc-item__type",
+    getValue: (entry) => entry.category
+  },
+  {
+    id: "rarity",
+    cls: "sm-cc-item__cr",
+    getValue: (entry) => entry.rarity
+  }
+];
+var actions3 = createStandardActions("item", () => ({
+  id: "edit",
+  label: "Edit",
+  execute: async (entry, context) => {
+    const { app } = context;
+    try {
+      const itemData = await loadItemFile(app, entry.file);
+      const result = await openCreateModal(itemSpec, {
+        app,
+        preset: itemData
+      });
+      if (result) {
+        await context.reloadEntries();
+        await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
+      }
+    } catch (err) {
+      console.error("Failed to edit item", err);
+    }
+  }
+}));
+var handleCreate3 = async (context, name) => {
+  const { app } = context;
+  const result = await openCreateModal(itemSpec, {
+    app,
+    preset: name
+  });
+  if (result) {
+    await context.reloadEntries();
+    await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
+  }
+};
+var itemViewConfig = {
+  metadataFields: metadataFields4,
+  actions: actions3,
+  handleCreate: handleCreate3
+};
+
+// src/workmodes/library/entities/items/list-schema.ts
+var RARITY_ORDER = /* @__PURE__ */ new Map([
+  ["common", 0],
+  ["uncommon", 1],
+  ["rare", 2],
+  ["very rare", 3],
+  ["legendary", 4],
+  ["artifact", 5]
+]);
+function rarityOrder(value) {
+  if (!value) return Number.POSITIVE_INFINITY;
+  return RARITY_ORDER.get(value.toLowerCase()) ?? Number.POSITIVE_INFINITY;
+}
+var itemListSchema = createSchema().addStringFilter("category", "category", "Category").addCustomFilter("rarity", "rarity", {
+  label: "Rarity",
+  sortComparator: (a, b) => rarityOrder(a) - rarityOrder(b) || a.localeCompare(b)
+}).addNameSort().addCustomSort(
+  "rarity",
+  "Rarity",
+  (a, b) => rarityOrder(a.rarity) - rarityOrder(b.rarity) || a.name.localeCompare(b.name)
+).addStringFieldSort("category", "category", "Category").searchField("category").searchField("rarity").build();
+
+// src/workmodes/library/entities/equipment/create-spec.ts
 var equipmentSchema = {
   parse: (data) => data,
   safeParse: (data) => {
@@ -49371,104 +49506,9 @@ var equipmentSpec = {
   }
 };
 
-// src/workmodes/library/view/view-registry.ts
-var creaturesMetadata = [
-  {
-    id: "type",
-    cls: "sm-cc-item__type",
-    getValue: (entry) => entry.type
-  },
-  {
-    id: "cr",
-    cls: "sm-cc-item__cr",
-    getValue: (entry) => entry.cr ? `CR ${entry.cr}` : void 0
-  }
-];
-var creaturesActions = createStandardActions("creature", () => ({
-  id: "edit",
-  label: "Edit",
-  execute: async (entry, context) => {
-    const { app } = context;
-    try {
-      const creatureData = await loadCreaturePreset(app, entry.file);
-      const result = await openCreateModal(creatureSpec, {
-        app,
-        preset: creatureData
-      });
-      if (result) {
-        await context.reloadEntries();
-        await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
-      }
-    } catch (err) {
-      console.error("Failed to load creature for editing", err);
-    }
-  }
-}));
-var spellsMetadata = [
-  {
-    id: "level",
-    cls: "sm-cc-item__type",
-    getValue: (entry) => formatSpellLevel(entry.level)
-  },
-  {
-    id: "school",
-    cls: "sm-cc-item__cr",
-    getValue: (entry) => entry.school
-  }
-];
-var spellsActions = createStandardActions("spell", () => ({
-  id: "edit",
-  label: "Edit",
-  execute: async (entry, context) => {
-    const { app } = context;
-    try {
-      const spellData = await loadSpellFile(app, entry.file);
-      const result = await openCreateModal(spellSpec, {
-        app,
-        preset: spellData
-      });
-      if (result) {
-        await context.reloadEntries();
-        await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
-      }
-    } catch (err) {
-      console.error("Failed to load spell for editing", err);
-    }
-  }
-}));
-var itemsMetadata = [
-  {
-    id: "category",
-    cls: "sm-cc-item__type",
-    getValue: (entry) => entry.category
-  },
-  {
-    id: "rarity",
-    cls: "sm-cc-item__cr",
-    getValue: (entry) => entry.rarity
-  }
-];
-var itemsActions = createStandardActions("item", () => ({
-  id: "edit",
-  label: "Edit",
-  execute: async (entry, context) => {
-    const { app } = context;
-    try {
-      const itemData = await loadItemFile(app, entry.file);
-      const result = await openCreateModal(itemSpec, {
-        app,
-        preset: itemData
-      });
-      if (result) {
-        await context.reloadEntries();
-        await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
-      }
-    } catch (err) {
-      console.error("Failed to edit item", err);
-    }
-  }
-}));
-var equipmentMetadata = [
+// src/workmodes/library/entities/equipment/view-config.ts
+init_equipment();
+var metadataFields5 = [
   {
     id: "type",
     cls: "sm-cc-item__type",
@@ -49480,7 +49520,7 @@ var equipmentMetadata = [
     getValue: (entry) => entry.role
   }
 ];
-var equipmentActions = createStandardActions("equipment", () => ({
+var actions4 = createStandardActions("equipment", () => ({
   id: "edit",
   label: "Edit",
   execute: async (entry, context) => {
@@ -49500,260 +49540,45 @@ var equipmentActions = createStandardActions("equipment", () => ({
     }
   }
 }));
+var handleCreate4 = async (context, name) => {
+  const { app } = context;
+  const result = await openCreateModal(equipmentSpec, {
+    app,
+    preset: name
+  });
+  if (result) {
+    await context.reloadEntries();
+    await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
+  }
+};
+var equipmentViewConfig = {
+  metadataFields: metadataFields5,
+  actions: actions4,
+  handleCreate: handleCreate4
+};
+
+// src/workmodes/library/entities/equipment/list-schema.ts
+var equipmentListSchema = createSchema().addStringFilter("type", "type", "Type").addStringFilter("role", "role", "Role").addNameSort().addStringFieldSort("type", "type", "Type").addStringFieldSort("role", "role", "Role").searchField("type").searchField("role").build();
+
+// src/workmodes/library/entities/registry.ts
 var LIBRARY_VIEW_CONFIGS = {
-  creatures: {
-    metadataFields: creaturesMetadata,
-    actions: creaturesActions,
-    handleCreate: async (context, name) => {
-      const { app } = context;
-      const result = await openCreateModal(creatureSpec, {
-        app,
-        preset: name
-      });
-      if (result) {
-        await context.reloadEntries();
-        await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
-      }
-    }
-  },
-  spells: {
-    metadataFields: spellsMetadata,
-    actions: spellsActions,
-    handleCreate: async (context, name) => {
-      const { app } = context;
-      const trimmed = name.trim();
-      const preset = { name: trimmed || "Neuer Zauber" };
-      if (context.getFilterSelection) {
-        const levelFilter = context.getFilterSelection("level");
-        if (levelFilter) {
-          const parsed = Number(levelFilter);
-          if (Number.isFinite(parsed)) preset.level = parsed;
-        }
-        const schoolFilter = context.getFilterSelection("school");
-        if (schoolFilter) preset.school = schoolFilter;
-        const ritualFilter = context.getFilterSelection("ritual");
-        if (ritualFilter === "true") preset.ritual = true;
-        if (ritualFilter === "false") preset.ritual = false;
-      }
-      const result = await openCreateModal(spellSpec, {
-        app,
-        preset
-      });
-      if (result) {
-        await context.reloadEntries();
-        await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
-      }
-    }
-  },
-  items: {
-    metadataFields: itemsMetadata,
-    actions: itemsActions,
-    handleCreate: async (context, name) => {
-      const { app } = context;
-      const result = await openCreateModal(itemSpec, {
-        app,
-        preset: name
-      });
-      if (result) {
-        await context.reloadEntries();
-        await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
-      }
-    }
-  },
-  equipment: {
-    metadataFields: equipmentMetadata,
-    actions: equipmentActions,
-    handleCreate: async (context, name) => {
-      const { app } = context;
-      const result = await openCreateModal(equipmentSpec, {
-        app,
-        preset: name
-      });
-      if (result) {
-        await context.reloadEntries();
-        await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
-      }
-    }
-  }
+  creatures: creatureViewConfig,
+  spells: spellViewConfig,
+  items: itemViewConfig,
+  equipment: equipmentViewConfig
 };
-
-// src/workmodes/library/view/filterable-mode.ts
-var FilterableLibraryRenderer = class extends BaseModeRenderer2 {
-  constructor(app, container, watchers, mode) {
-    super(app, container);
-    this.watchers = watchers;
-    this.entries = [];
-    this.renderToken = 0;
-    this.mode = mode;
-    this.source = LIBRARY_DATA_SOURCES[mode];
-    this.schema = LIBRARY_LIST_SCHEMAS[mode];
-    this.viewConfig = LIBRARY_VIEW_CONFIGS[mode];
-    this.state = new FilterSortState();
-  }
-  async init() {
-    await this.refreshEntries();
-    if (this.isDisposed()) return;
-    const unsubscribe = this.watchers.subscribe(this.mode, (onChange) => this.source.watch(this.app, onChange), () => {
-      void this.handleSourceChange();
-    });
-    this.registerCleanup(unsubscribe);
-  }
-  render() {
-    if (this.isDisposed()) return;
-    this.renderInternal();
-  }
-  createActionContext() {
-    return {
-      app: this.app,
-      reloadEntries: () => this.reloadEntries(),
-      getRenderer: () => this.viewConfig,
-      getFilterSelection: (id) => this.getFilterSelection(id)
-    };
-  }
-  async handleCreate(name) {
-    const context = this.createActionContext();
-    await this.viewConfig.handleCreate(context, name);
-  }
-  getEmptyMessage() {
-    return "No entries found.";
-  }
-  getErrorMessage() {
-    return "Failed to load entries.";
-  }
-  async reloadEntries() {
-    await this.refreshEntries();
-    if (!this.isDisposed()) {
-      this.render();
-    }
-  }
-  getFilterSelection(id) {
-    return this.state.getFilterValue(id);
-  }
-  async handleSourceChange() {
-    await this.refreshEntries();
-    if (!this.isDisposed()) {
-      this.render();
-    }
-  }
-  async refreshEntries() {
-    try {
-      const files = await this.source.list(this.app);
-      const entries = await Promise.all(files.map((file) => this.source.load(this.app, file)));
-      this.entries = entries;
-      this.loadError = void 0;
-    } catch (err) {
-      console.error("Failed to load library entries", err);
-      this.entries = [];
-      this.loadError = err;
-    }
-  }
-  renderInternal() {
-    const token = ++this.renderToken;
-    const container = this.container;
-    container.empty();
-    if (this.loadError) {
-      renderWorkmodeFeedback(container, "error", this.getErrorMessage());
-      return;
-    }
-    const filters = this.schema.filters;
-    const sorts = this.schema.sorts;
-    this.state.ensureSortAvailable(sorts);
-    const optionValues = collectFilterOptions(this.entries, filters);
-    this.state.pruneInvalidFilters(optionValues);
-    if (filters.length || sorts.length) {
-      renderFilterSortControls({
-        container,
-        filters,
-        sorts,
-        optionValues,
-        state: this.state,
-        onChange: () => this.render()
-      });
-    }
-    const query = this.query;
-    const prepared = this.entries.map((entry) => ({
-      entry,
-      score: this.computeSearchScore(entry, query)
-    }));
-    const filtered = prepared.filter((item) => this.state.matches(item.entry, filters));
-    const visible = query ? filtered.filter((item) => item.score > -Infinity) : filtered;
-    const sortDef = sorts.find((option) => option.id === this.state.getSortId()) ?? sorts[0];
-    visible.sort((a, b) => {
-      if (query && a.score !== b.score) {
-        return b.score - a.score;
-      }
-      let comparison = sortDef ? sortDef.compare(a.entry, b.entry) : a.entry.name.localeCompare(b.entry.name);
-      if (comparison === 0) {
-        comparison = a.entry.name.localeCompare(b.entry.name);
-      }
-      return this.state.getSortDirection() === "asc" ? comparison : -comparison;
-    });
-    if (token !== this.renderToken || this.isDisposed()) {
-      return;
-    }
-    const entriesToRender = visible.map((item) => item.entry);
-    if (!entriesToRender.length) {
-      renderWorkmodeFeedback(container, "empty", this.getEmptyMessage());
-      return;
-    }
-    const actionContext = this.createActionContext();
-    renderWorkmodeList({
-      container,
-      entries: entriesToRender,
-      getName: (entry) => entry.name,
-      metadata: this.viewConfig.metadataFields,
-      actions: this.viewConfig.actions,
-      actionContext
-    });
-  }
-  computeSearchScore(entry, query) {
-    if (!query) return 1e-4;
-    const candidates = [entry.name, ...this.schema.search(entry)];
-    let best = -Infinity;
-    for (const candidate of candidates) {
-      if (!candidate) continue;
-      const score = scoreName(candidate.toLowerCase(), query);
-      if (score > best) {
-        best = score;
-      }
-    }
-    return best;
-  }
-};
-
-// src/workmodes/library/view/creatures.ts
-var CreaturesRenderer = class extends FilterableLibraryRenderer {
-  constructor(app, container, watchers) {
-    super(app, container, watchers, "creatures");
-  }
-};
-
-// src/workmodes/library/view/spells.ts
-var SpellsRenderer = class extends FilterableLibraryRenderer {
-  constructor(app, container, watchers) {
-    super(app, container, watchers, "spells");
-  }
-};
-
-// src/workmodes/library/view/items.ts
-var ItemsRenderer = class extends FilterableLibraryRenderer {
-  constructor(app, container, watchers) {
-    super(app, container, watchers, "items");
-  }
-};
-
-// src/workmodes/library/view/equipment.ts
-var EquipmentRenderer = class extends FilterableLibraryRenderer {
-  constructor(app, container, watchers) {
-    super(app, container, watchers, "equipment");
-  }
+var LIBRARY_LIST_SCHEMAS = {
+  creatures: creatureListSchema,
+  spells: spellListSchema,
+  items: itemListSchema,
+  equipment: equipmentListSchema
 };
 
 // src/workmodes/library/core/sources.ts
-init_creature_files();
-init_spell_files();
-init_item_files();
-init_equipment_files();
+init_creatures();
+init_spells();
+init_items();
+init_equipment();
 init_terrain_repository();
 init_region_repository();
 init_entity_registry();
@@ -49800,6 +49625,17 @@ function describeLibrarySource(source) {
 }
 
 // src/workmodes/library/view.ts
+var LibrarySourceWatcherHub = class {
+  constructor() {
+    this.hub = new WatcherHub();
+  }
+  subscribe(source, factory, listener) {
+    return this.hub.subscribe(source, factory, listener);
+  }
+  destroy() {
+    this.hub.destroy();
+  }
+};
 var LIBRARY_COPY = {
   title: "Library",
   searchPlaceholder: "Search the library or enter a name\u2026",
@@ -49816,7 +49652,7 @@ var LIBRARY_COPY = {
 };
 var VIEW_LIBRARY = "salt-library";
 var LIBRARY_VIEW_SOURCES = ["creatures", "spells", "items", "equipment"];
-var LibraryView = class extends import_obsidian34.ItemView {
+var LibraryView = class extends import_obsidian30.ItemView {
   constructor() {
     super(...arguments);
     this.mode = "creatures";
@@ -49911,18 +49747,14 @@ var LibraryView = class extends import_obsidian34.ItemView {
     renderer.render();
   }
   createRenderer(mode, container) {
-    switch (mode) {
-      case "creatures":
-        return new CreaturesRenderer(this.app, container, this.watchers);
-      case "spells":
-        return new SpellsRenderer(this.app, container, this.watchers);
-      case "items":
-        return new ItemsRenderer(this.app, container, this.watchers);
-      case "equipment":
-        return new EquipmentRenderer(this.app, container, this.watchers);
-      default:
-        throw new Error(`Unsupported mode: ${mode}`);
-    }
+    const config = {
+      mode,
+      source: LIBRARY_DATA_SOURCES[mode],
+      schema: LIBRARY_LIST_SCHEMAS[mode],
+      viewConfig: LIBRARY_VIEW_CONFIGS[mode],
+      watchers: this.watchers
+    };
+    return new GenericListRenderer(this.app, container, config);
   }
   updateSourceDescription() {
     if (!this.descEl) return;
@@ -49948,10 +49780,10 @@ async function openLibrary(app) {
 }
 
 // src/workmodes/atlas/view.ts
-var import_obsidian35 = require("obsidian");
+var import_obsidian31 = require("obsidian");
 
 // src/workmodes/atlas/view/mode.ts
-var BaseModeRenderer3 = class extends BaseModeRenderer {
+var BaseModeRenderer2 = class extends BaseModeRenderer {
   setQuery(query) {
     this.query = (query || "").toLowerCase();
     this.render();
@@ -50022,7 +49854,7 @@ function createTerrainSchema(base) {
   };
 }
 var SAVE_DEBOUNCE_MS = 500;
-var TerrainsRenderer = class extends BaseModeRenderer3 {
+var TerrainsRenderer = class extends BaseModeRenderer2 {
   constructor() {
     super(...arguments);
     this.mode = "terrains";
@@ -50298,7 +50130,7 @@ function createRegionSchema(base) {
   };
 }
 var SAVE_DEBOUNCE_MS2 = 500;
-var RegionsRenderer = class extends BaseModeRenderer3 {
+var RegionsRenderer = class extends BaseModeRenderer2 {
   constructor() {
     super(...arguments);
     this.mode = "regions";
@@ -50519,7 +50351,7 @@ var ATLAS_COPY = {
   }
 };
 var VIEW_ATLAS = "salt-atlas";
-var AtlasView = class extends import_obsidian35.ItemView {
+var AtlasView = class extends import_obsidian31.ItemView {
   constructor() {
     super(...arguments);
     this.mode = "terrains";
@@ -50645,10 +50477,10 @@ async function openAtlas(app) {
 }
 
 // src/workmodes/almanac/index.ts
-var import_obsidian36 = require("obsidian");
+var import_obsidian32 = require("obsidian");
 var VIEW_TYPE_ALMANAC = "almanac-view";
 var VIEW_ALMANAC = VIEW_TYPE_ALMANAC;
-var AlmanacView = class extends import_obsidian36.ItemView {
+var AlmanacView = class extends import_obsidian32.ItemView {
   constructor(leaf) {
     super(leaf);
   }
@@ -50701,10 +50533,10 @@ async function openAlmanac(app) {
 }
 
 // src/workmodes/session-runner/index.ts
-var import_obsidian41 = require("obsidian");
+var import_obsidian37 = require("obsidian");
 
 // src/workmodes/session-runner/controller.ts
-var import_obsidian40 = require("obsidian");
+var import_obsidian36 = require("obsidian");
 init_options();
 init_map_list();
 var createDefaultDeps2 = (app) => ({
@@ -50793,7 +50625,7 @@ var SessionRunnerController = class {
     } catch (error) {
       console.error("[session-runner] failed to start experience", error);
       this.view?.setOverlay(EXPERIENCE_OVERLAY_MESSAGE);
-      new import_obsidian40.Notice(EXPERIENCE_NOTICE_MESSAGE);
+      new import_obsidian36.Notice(EXPERIENCE_NOTICE_MESSAGE);
     }
     if (this.mapManager) {
       await this.mapManager.setFile(initialFile);
@@ -51004,7 +50836,7 @@ function createSessionRunnerView(options) {
 // src/workmodes/session-runner/index.ts
 var VIEW_TYPE_SESSION_RUNNER = "session-runner-view";
 var VIEW_SESSION_RUNNER = VIEW_TYPE_SESSION_RUNNER;
-var SessionRunnerView = class extends import_obsidian41.ItemView {
+var SessionRunnerView = class extends import_obsidian37.ItemView {
   constructor(leaf) {
     super(leaf);
     this.hostEl = null;
@@ -53671,7 +53503,7 @@ var HEX_PLUGIN_CSS_SECTIONS = {
 var HEX_PLUGIN_CSS = Object.values(HEX_PLUGIN_CSS_SECTIONS).join("\n\n");
 
 // src/app/integration-telemetry.ts
-var import_obsidian42 = require("obsidian");
+var import_obsidian38 = require("obsidian");
 var notifiedOperations = /* @__PURE__ */ new Set();
 function reportIntegrationIssue(payload) {
   const { integrationId, operation, error, userMessage } = payload;
@@ -53680,7 +53512,7 @@ function reportIntegrationIssue(payload) {
   const dedupeKey = `${integrationId}:${operation}`;
   if (notifiedOperations.has(dedupeKey)) return;
   notifiedOperations.add(dedupeKey);
-  new import_obsidian42.Notice(userMessage);
+  new import_obsidian38.Notice(userMessage);
 }
 
 // src/app/bootstrap-services.ts
@@ -53767,7 +53599,7 @@ function createTerrainBootstrap(app, config = {}) {
 }
 
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian46.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian42.Plugin {
   async onload() {
     try {
       const { shouldImportPluginPresets: shouldImportPluginPresets2, importPluginPresets: importPluginPresets2 } = await Promise.resolve().then(() => (init_plugin_presets(), plugin_presets_exports));

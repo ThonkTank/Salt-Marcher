@@ -476,3 +476,61 @@ function formatSpellLevelHeading(level: number): string {
 export async function createCreatureFile(app: App, d: StatblockData): Promise<TFile> {
     return CREATURE_PIPELINE.create(app, d);
 }
+
+/**
+ * Load creature data from a file for editing
+ */
+export async function loadCreaturePreset(app: App, filePath: string): Promise<StatblockData> {
+    const file = app.vault.getAbstractFileByPath(filePath);
+    if (!(file instanceof TFile)) {
+        throw new Error(`File not found: ${filePath}`);
+    }
+
+    const cache = app.metadataCache.getFileCache(file);
+    if (!cache?.frontmatter) {
+        throw new Error(`No frontmatter found in ${filePath}`);
+    }
+
+    const fm = cache.frontmatter;
+
+    // Parse JSON fields
+    const speeds = fm.speeds_json ? JSON.parse(fm.speeds_json.replace(/\\"/g, '"')) : undefined;
+    const abilities = fm.abilities_json ? JSON.parse(fm.abilities_json.replace(/\\"/g, '"')) : undefined;
+    const saves = fm.saves_json ? JSON.parse(fm.saves_json.replace(/\\"/g, '"')) : undefined;
+    const skills = fm.skills_json ? JSON.parse(fm.skills_json.replace(/\\"/g, '"')) : undefined;
+    const entries = fm.entries_structured_json ? JSON.parse(fm.entries_structured_json.replace(/\\"/g, '"')) : undefined;
+    const spellcasting = fm.spellcasting_json ? JSON.parse(fm.spellcasting_json.replace(/\\"/g, '"')) : undefined;
+
+    const data: StatblockData = {
+        name: fm.name || file.basename,
+        size: fm.size,
+        type: fm.type,
+        typeTags: fm.type_tags,
+        alignmentLawChaos: undefined,
+        alignmentGoodEvil: undefined,
+        alignmentOverride: fm.alignment_override,
+        ac: fm.ac,
+        initiative: fm.initiative,
+        hp: fm.hp,
+        hitDice: fm.hit_dice,
+        speeds,
+        abilities,
+        pb: fm.pb,
+        saves,
+        skills,
+        sensesList: fm.senses,
+        languagesList: fm.languages,
+        passivesList: fm.passives,
+        damageVulnerabilitiesList: fm.damage_vulnerabilities,
+        damageResistancesList: fm.damage_resistances,
+        damageImmunitiesList: fm.damage_immunities,
+        conditionImmunitiesList: fm.condition_immunities,
+        gearList: fm.gear,
+        cr: fm.cr,
+        xp: fm.xp,
+        entries,
+        spellcasting,
+    };
+
+    return data;
+}
