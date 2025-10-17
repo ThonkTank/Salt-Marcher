@@ -287,3 +287,86 @@ export function renderMultiselectCore(options: MultiselectFieldCoreOptions): Cor
     },
   };
 }
+
+// ============================================================================
+// DISPLAY FIELD CORE
+// ============================================================================
+
+export interface DisplayFieldCoreOptions {
+  container: HTMLElement;
+  config: {
+    compute: (data: Record<string, unknown>) => string | number;
+    prefix?: string | ((data: Record<string, unknown>) => string);
+    suffix?: string | ((data: Record<string, unknown>) => string);
+    className?: string;
+  };
+  fieldId?: string; // For error logging
+}
+
+/**
+ * Core implementation for display (computed/read-only) fields.
+ * Creates a disabled input that displays computed values based on form data.
+ */
+export function renderDisplayCore(options: DisplayFieldCoreOptions) {
+  const { container, config, fieldId = "unknown" } = options;
+
+  const displayEl = container.createEl("input", {
+    cls: "sm-cc-display-field",
+    attr: {
+      type: "text",
+      disabled: "true",
+      readonly: "true",
+    },
+  }) as HTMLInputElement;
+
+  if (config.className) {
+    displayEl.addClass(config.className);
+  }
+
+  return {
+    update: (value: unknown, all?: Record<string, unknown>) => {
+      try {
+        const computed = config.compute(all ?? {});
+        const prefixVal = typeof config.prefix === "function"
+          ? config.prefix(all ?? {})
+          : (config.prefix ?? "");
+        const suffixVal = typeof config.suffix === "function"
+          ? config.suffix(all ?? {})
+          : (config.suffix ?? "");
+        displayEl.value = `${prefixVal}${computed}${suffixVal}`;
+      } catch (error) {
+        console.warn(`Display field ${fieldId} compute error:`, error);
+        displayEl.value = "";
+      }
+    },
+  };
+}
+
+// ============================================================================
+// HEADING FIELD CORE
+// ============================================================================
+
+export interface HeadingFieldCoreOptions {
+  container: HTMLElement;
+  getValue?: (data: Record<string, unknown>) => string;
+  values: Record<string, unknown>;
+}
+
+/**
+ * Core implementation for heading fields.
+ * Creates a strong element with static text (no updates).
+ */
+export function renderHeadingCore(options: HeadingFieldCoreOptions): CoreFieldHandle {
+  const { container, getValue, values } = options;
+
+  const value = getValue
+    ? getValue(values)
+    : String(values ?? "");
+
+  container.createEl("strong", {
+    cls: "sm-cc-field-heading",
+    text: value
+  });
+
+  return {}; // No update/focus needed for headings
+}

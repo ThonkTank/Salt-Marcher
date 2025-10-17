@@ -45330,6 +45330,42 @@ function renderMultiselectCore(options) {
     }
   };
 }
+function renderDisplayCore(options) {
+  const { container, config, fieldId = "unknown" } = options;
+  const displayEl = container.createEl("input", {
+    cls: "sm-cc-display-field",
+    attr: {
+      type: "text",
+      disabled: "true",
+      readonly: "true"
+    }
+  });
+  if (config.className) {
+    displayEl.addClass(config.className);
+  }
+  return {
+    update: (value, all) => {
+      try {
+        const computed = config.compute(all ?? {});
+        const prefixVal = typeof config.prefix === "function" ? config.prefix(all ?? {}) : config.prefix ?? "";
+        const suffixVal = typeof config.suffix === "function" ? config.suffix(all ?? {}) : config.suffix ?? "";
+        displayEl.value = `${prefixVal}${computed}${suffixVal}`;
+      } catch (error) {
+        console.warn(`Display field ${fieldId} compute error:`, error);
+        displayEl.value = "";
+      }
+    }
+  };
+}
+function renderHeadingCore(options) {
+  const { container, getValue, values } = options;
+  const value = getValue ? getValue(values) : String(values ?? "");
+  container.createEl("strong", {
+    cls: "sm-cc-field-heading",
+    text: value
+  });
+  return {};
+}
 
 // src/features/data-manager/edit/fields/field-utils.ts
 function resolveInitialValue(spec, values) {
@@ -45440,39 +45476,19 @@ function renderFieldControl(container, spec, initial, onChange) {
   }
   if (spec.type === "display") {
     const displaySpec = spec;
-    const displayEl = controlContainer.createEl("input", {
-      cls: "sm-cc-display-field",
-      attr: {
-        type: "text",
-        disabled: "true",
-        readonly: "true"
-      }
+    return renderDisplayCore({
+      container: controlContainer,
+      config: displaySpec.config,
+      fieldId: spec.id
     });
-    if (displaySpec.config.className) {
-      displayEl.addClass(displaySpec.config.className);
-    }
-    return {
-      update: (value, all) => {
-        try {
-          const computed = displaySpec.config.compute(all ?? {});
-          const prefixVal = typeof displaySpec.config.prefix === "function" ? displaySpec.config.prefix(all ?? {}) : displaySpec.config.prefix ?? "";
-          const suffixVal = typeof displaySpec.config.suffix === "function" ? displaySpec.config.suffix(all ?? {}) : displaySpec.config.suffix ?? "";
-          displayEl.value = `${prefixVal}${computed}${suffixVal}`;
-        } catch (error) {
-          console.warn(`Display field ${spec.id} compute error:`, error);
-          displayEl.value = "";
-        }
-      }
-    };
   }
   if (spec.type === "heading") {
     const headingSpec = spec;
-    const value = headingSpec.getValue ? headingSpec.getValue(initial) : String(initial ?? "");
-    controlContainer.createEl("strong", {
-      cls: "sm-cc-field-heading",
-      text: value
+    return renderHeadingCore({
+      container: controlContainer,
+      getValue: headingSpec.getValue,
+      values: initial
     });
-    return {};
   }
   if (spec.type === "composite") {
     const compositeSpec = spec;
@@ -46194,30 +46210,11 @@ var displayFieldRenderer = {
       text: spec.label
     });
     const controlContainer = container.createDiv({ cls: "sm-cc-field-control" });
-    const displayEl = controlContainer.createEl("input", {
-      cls: "sm-cc-display-field",
-      attr: {
-        type: "text",
-        disabled: "true",
-        readonly: "true"
-      }
+    return renderDisplayCore({
+      container: controlContainer,
+      config: displaySpec.config,
+      fieldId: spec.id
     });
-    if (displaySpec.config.className) {
-      displayEl.addClass(displaySpec.config.className);
-    }
-    return {
-      update: (value, all) => {
-        try {
-          const computed = displaySpec.config.compute(all ?? {});
-          const prefixVal = typeof displaySpec.config.prefix === "function" ? displaySpec.config.prefix(all ?? {}) : displaySpec.config.prefix ?? "";
-          const suffixVal = typeof displaySpec.config.suffix === "function" ? displaySpec.config.suffix(all ?? {}) : displaySpec.config.suffix ?? "";
-          displayEl.value = `${prefixVal}${computed}${suffixVal}`;
-        } catch (error) {
-          console.warn(`Display field ${spec.id} compute error:`, error);
-          displayEl.value = "";
-        }
-      }
-    };
   }
 };
 
@@ -46232,12 +46229,11 @@ var headingFieldRenderer = {
       text: spec.label
     });
     const controlContainer = container.createDiv({ cls: "sm-cc-field-control" });
-    const value = headingSpec.getValue ? headingSpec.getValue(values) : String(values ?? "");
-    controlContainer.createEl("strong", {
-      cls: "sm-cc-field-heading",
-      text: value
+    return renderHeadingCore({
+      container: controlContainer,
+      getValue: headingSpec.getValue,
+      values
     });
-    return {};
   }
 };
 

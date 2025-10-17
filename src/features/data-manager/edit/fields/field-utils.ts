@@ -5,7 +5,7 @@ import { createNumberStepper } from "../controls/number-stepper";
 import { enhanceSelectToSearch } from "../../../../ui/components/search-dropdown";
 import { mountEntryManager, type EntryCategoryDefinition, type EntryFilterDefinition } from "../storage/entry-system";
 import { RepeatingWidthSynchronizer } from "../layout/repeating-width-sync";
-import { renderTextCore, renderTextareaCore, renderToggleCore, renderColorCore, renderMultiselectCore } from "./field-rendering-core";
+import { renderTextCore, renderTextareaCore, renderToggleCore, renderColorCore, renderMultiselectCore, renderDisplayCore, renderHeadingCore } from "./field-rendering-core";
 import type { AnyFieldSpec, FieldRenderHandle, CompositeFieldSpec } from "../types";
 
 /**
@@ -161,51 +161,21 @@ export function renderFieldControl(
   // Display field (computed/read-only)
   if (spec.type === "display") {
     const displaySpec = spec as import("../types").DisplayFieldSpec;
-    const displayEl = controlContainer.createEl("input", {
-      cls: "sm-cc-display-field",
-      attr: {
-        type: "text",
-        disabled: "true",
-        readonly: "true",
-      },
-    }) as HTMLInputElement;
-
-    if (displaySpec.config.className) {
-      displayEl.addClass(displaySpec.config.className);
-    }
-
-    return {
-      update: (value, all) => {
-        try {
-          const computed = displaySpec.config.compute(all ?? {});
-          const prefixVal = typeof displaySpec.config.prefix === "function"
-            ? displaySpec.config.prefix(all ?? {})
-            : (displaySpec.config.prefix ?? "");
-          const suffixVal = typeof displaySpec.config.suffix === "function"
-            ? displaySpec.config.suffix(all ?? {})
-            : (displaySpec.config.suffix ?? "");
-          displayEl.value = `${prefixVal}${computed}${suffixVal}`;
-        } catch (error) {
-          console.warn(`Display field ${spec.id} compute error:`, error);
-          displayEl.value = "";
-        }
-      },
-    };
+    return renderDisplayCore({
+      container: controlContainer,
+      config: displaySpec.config,
+      fieldId: spec.id,
+    });
   }
 
   // Heading type (for entry labels in repeating fields)
   if (spec.type === "heading") {
     const headingSpec = spec as import("../types").HeadingFieldSpec;
-    const value = headingSpec.getValue
-      ? headingSpec.getValue(initial as Record<string, unknown>)
-      : String(initial ?? "");
-
-    controlContainer.createEl("strong", {
-      cls: "sm-cc-field-heading",
-      text: value
+    return renderHeadingCore({
+      container: controlContainer,
+      getValue: headingSpec.getValue,
+      values: initial as Record<string, unknown>,
     });
-
-    return {}; // No update/focus needed for headings
   }
 
   // ═══════════════════════════════════════════════
