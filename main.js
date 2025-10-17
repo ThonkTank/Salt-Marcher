@@ -45366,6 +45366,102 @@ function renderHeadingCore(options) {
   });
   return {};
 }
+function renderCompositeCore(options) {
+  const {
+    container,
+    childFields,
+    groupBy,
+    initialValue: compositeValue,
+    onChange,
+    renderFieldControl: renderFieldControl2
+  } = options;
+  const useGrouping = Boolean(groupBy && groupBy.length > 0);
+  const compositeContainer = container.createDiv({
+    cls: useGrouping ? "sm-cc-composite-grouped" : "sm-cc-composite-grid"
+  });
+  const childInstances = [];
+  const evaluateChildVisibility = (childSpec) => {
+    if (!childSpec.visibleIf) return true;
+    try {
+      return childSpec.visibleIf(compositeValue);
+    } catch (error) {
+      console.error(`Failed to evaluate visibility for ${childSpec.id}:`, error);
+      return true;
+    }
+  };
+  const updateChildVisibility = () => {
+    for (const child of childInstances) {
+      const shouldBeVisible = evaluateChildVisibility(child.spec);
+      if (shouldBeVisible !== child.wasVisible) {
+        child.wrapper.toggleClass("is-hidden", !shouldBeVisible);
+        child.wasVisible = shouldBeVisible;
+        if (shouldBeVisible && !child.initialized) {
+          child.initialized = true;
+          const initConfig = child.spec.config?.init;
+          if (initConfig && typeof initConfig === "function") {
+            try {
+              const initValue = initConfig(compositeValue);
+              compositeValue[child.id] = initValue;
+              child.handle.update?.(initValue, compositeValue);
+              onChange(compositeValue);
+            } catch (error) {
+              console.error(`Failed to initialize ${child.id}:`, error);
+            }
+          }
+        }
+      }
+    }
+  };
+  const fieldsToRender = useGrouping && groupBy ? groupBy.flatMap(
+    (prefix) => childFields.filter((f) => f.id === prefix || f.id?.startsWith(`${prefix}`))
+  ) : childFields;
+  for (const childDef of fieldsToRender) {
+    const childId = childDef.id ?? "";
+    const childSpec = {
+      id: childId,
+      label: childDef.label ?? childId,
+      type: childDef.type ?? "text",
+      ...childDef
+    };
+    const childWrapper = compositeContainer.createDiv({ cls: "sm-cc-composite-item" });
+    const childInitial = compositeValue[childId] ?? childSpec.default;
+    const childHandle = renderFieldControl2(
+      childWrapper,
+      childSpec,
+      childInitial,
+      (childValue) => {
+        const oldValue = compositeValue[childId];
+        compositeValue[childId] = childValue;
+        onChange(compositeValue);
+        if (oldValue !== childValue) {
+          updateChildVisibility();
+        }
+      }
+    );
+    const initiallyVisible = evaluateChildVisibility(childSpec);
+    childWrapper.toggleClass("is-hidden", !initiallyVisible);
+    childInstances.push({
+      id: childId,
+      spec: childSpec,
+      handle: childHandle,
+      wrapper: childWrapper,
+      wasVisible: initiallyVisible,
+      initialized: initiallyVisible
+      // Mark as initialized if initially visible
+    });
+  }
+  return {
+    update: (value) => {
+      if (typeof value === "object" && value !== null) {
+        const valueMap = value;
+        for (const child of childInstances) {
+          child.handle.update?.(valueMap[child.id], valueMap);
+        }
+        updateChildVisibility();
+      }
+    }
+  };
+}
 
 // src/features/data-manager/edit/fields/field-utils.ts
 function resolveInitialValue(spec, values) {
@@ -45495,92 +45591,15 @@ function renderFieldControl(container, spec, initial, onChange) {
     const config = compositeSpec.config ?? {};
     const childFields = config.fields ?? compositeSpec.children ?? [];
     const groupBy = config.groupBy;
-    const useGrouping = Boolean(groupBy && groupBy.length > 0);
-    const compositeContainer = controlContainer.createDiv({
-      cls: useGrouping ? "sm-cc-composite-grouped" : "sm-cc-composite-grid"
-    });
     const compositeValue = initial ?? {};
-    const childInstances = [];
-    const evaluateChildVisibility = (childSpec) => {
-      if (!childSpec.visibleIf) return true;
-      try {
-        return childSpec.visibleIf(compositeValue);
-      } catch (error) {
-        console.error(`Failed to evaluate visibility for ${childSpec.id}:`, error);
-        return true;
-      }
-    };
-    const updateChildVisibility = () => {
-      for (const child of childInstances) {
-        const shouldBeVisible = evaluateChildVisibility(child.spec);
-        if (shouldBeVisible !== child.wasVisible) {
-          child.wrapper.toggleClass("is-hidden", !shouldBeVisible);
-          child.wasVisible = shouldBeVisible;
-          if (shouldBeVisible && !child.initialized) {
-            child.initialized = true;
-            const initConfig = child.spec.config?.init;
-            if (initConfig && typeof initConfig === "function") {
-              try {
-                const initValue = initConfig(compositeValue);
-                compositeValue[child.id] = initValue;
-                child.handle.update?.(initValue, compositeValue);
-                onChange(compositeValue);
-              } catch (error) {
-                console.error(`Failed to initialize ${child.id}:`, error);
-              }
-            }
-          }
-        }
-      }
-    };
-    const fieldsToRender = useGrouping && groupBy ? groupBy.flatMap(
-      (prefix) => childFields.filter((f) => f.id === prefix || f.id?.startsWith(`${prefix}`))
-    ) : childFields;
-    for (const childDef of fieldsToRender) {
-      const childId = childDef.id ?? "";
-      const childSpec = {
-        id: childId,
-        label: childDef.label ?? childId,
-        type: childDef.type ?? "text",
-        ...childDef
-      };
-      const childWrapper = compositeContainer.createDiv({ cls: "sm-cc-composite-item" });
-      const childInitial = compositeValue[childId] ?? childSpec.default;
-      const childHandle = renderFieldControl(
-        childWrapper,
-        childSpec,
-        childInitial,
-        (childValue) => {
-          const oldValue = compositeValue[childId];
-          compositeValue[childId] = childValue;
-          onChange(compositeValue);
-          if (oldValue !== childValue) {
-            updateChildVisibility();
-          }
-        }
-      );
-      const initiallyVisible = evaluateChildVisibility(childSpec);
-      childWrapper.toggleClass("is-hidden", !initiallyVisible);
-      childInstances.push({
-        id: childId,
-        spec: childSpec,
-        handle: childHandle,
-        wrapper: childWrapper,
-        wasVisible: initiallyVisible,
-        initialized: initiallyVisible
-      });
-    }
-    return {
-      update: (value) => {
-        if (typeof value === "object" && value !== null) {
-          const valueMap = value;
-          for (const child of childInstances) {
-            child.handle.update?.(valueMap[child.id], valueMap);
-          }
-          updateChildVisibility();
-        }
-      }
-    };
+    return renderCompositeCore({
+      container: controlContainer,
+      childFields,
+      groupBy,
+      initialValue: compositeValue,
+      onChange,
+      renderFieldControl
+    });
   }
   if (spec.type === "autocomplete") {
     const autocompleteSpec = spec;
@@ -46255,138 +46274,20 @@ var compositeFieldRenderer = {
     const childFields = config.fields ?? compositeSpec.children ?? [];
     setting.settingEl.addClass("sm-cc-composite");
     setting.settingEl.addClass("sm-cc-setting--wide");
-    const groupBy = config.groupBy;
-    const useGrouping = Boolean(groupBy && groupBy.length > 0);
-    const compositeContainer = setting.controlEl.createDiv({
-      cls: useGrouping ? "sm-cc-composite-grouped" : "sm-cc-composite-grid"
-    });
     const compositeValue = values[spec.id] ?? {};
-    const childInstances = [];
-    const evaluateChildVisibility = (childSpec) => {
-      if (!childSpec.visibleIf) return true;
-      try {
-        return childSpec.visibleIf(compositeValue);
-      } catch (error) {
-        console.error(`Failed to evaluate visibility for ${childSpec.id}:`, error);
-        return true;
-      }
-    };
-    const updateChildVisibility = () => {
-      for (const child of childInstances) {
-        const shouldBeVisible = evaluateChildVisibility(child.spec);
-        if (shouldBeVisible !== child.wasVisible) {
-          child.wrapper.toggleClass("is-hidden", !shouldBeVisible);
-          child.wasVisible = shouldBeVisible;
-          if (shouldBeVisible && !child.initialized) {
-            child.initialized = true;
-            const initConfig = child.spec.config?.init;
-            if (initConfig && typeof initConfig === "function") {
-              try {
-                const initValue = initConfig(compositeValue);
-                compositeValue[child.id] = initValue;
-                child.handle.update?.(initValue, compositeValue);
-                onChange(spec.id, compositeValue);
-              } catch (error) {
-                console.error(`Failed to initialize ${child.id}:`, error);
-              }
-            }
-          }
-        }
-      }
-    };
-    if (useGrouping && groupBy) {
-      for (const groupPrefix of groupBy) {
-        const groupContainer = compositeContainer.createDiv({ cls: "sm-cc-composite-group" });
-        const groupFields = childFields.filter(
-          (field) => field.id === groupPrefix || field.id?.startsWith(`${groupPrefix}`)
-        );
-        for (const childDef of groupFields) {
-          const childId = childDef.id ?? "";
-          const childSpec = {
-            id: childId,
-            label: childDef.label ?? childId,
-            type: childDef.type ?? "text",
-            ...childDef
-          };
-          const childWrapper = groupContainer.createDiv({ cls: "sm-cc-composite-item" });
-          const childInitial = compositeValue[childId] ?? childSpec.default;
-          const childHandle = renderFieldControl(
-            childWrapper,
-            childSpec,
-            childInitial,
-            (childValue) => {
-              const currentValue = values[spec.id] ?? {};
-              const oldValue = currentValue[childId];
-              currentValue[childId] = childValue;
-              onChange(spec.id, currentValue);
-              if (oldValue !== childValue) {
-                updateChildVisibility();
-              }
-            }
-          );
-          const initiallyVisible = evaluateChildVisibility(childSpec);
-          childWrapper.toggleClass("is-hidden", !initiallyVisible);
-          childInstances.push({
-            id: childId,
-            spec: childSpec,
-            handle: childHandle,
-            wrapper: childWrapper,
-            wasVisible: initiallyVisible,
-            initialized: initiallyVisible
-            // Mark as initialized if initially visible
-          });
-        }
-      }
-    } else {
-      for (const childDef of childFields) {
-        const childId = childDef.id ?? "";
-        const childSpec = {
-          id: childId,
-          label: childDef.label ?? childId,
-          type: childDef.type ?? "text",
-          ...childDef
-        };
-        const childWrapper = compositeContainer.createDiv({ cls: "sm-cc-composite-item" });
-        const childInitial = compositeValue[childId] ?? childSpec.default;
-        const childHandle = renderFieldControl(
-          childWrapper,
-          childSpec,
-          childInitial,
-          (childValue) => {
-            const currentValue = values[spec.id] ?? {};
-            const oldValue = currentValue[childId];
-            currentValue[childId] = childValue;
-            onChange(spec.id, currentValue);
-            if (oldValue !== childValue) {
-              updateChildVisibility();
-            }
-          }
-        );
-        const initiallyVisible = evaluateChildVisibility(childSpec);
-        childWrapper.toggleClass("is-hidden", !initiallyVisible);
-        childInstances.push({
-          id: childId,
-          spec: childSpec,
-          handle: childHandle,
-          wrapper: childWrapper,
-          wasVisible: initiallyVisible,
-          initialized: initiallyVisible
-          // Mark as initialized if initially visible
-        });
-      }
-    }
+    const groupBy = config.groupBy;
+    const handle = renderCompositeCore({
+      container: setting.controlEl,
+      childFields,
+      groupBy,
+      initialValue: compositeValue,
+      onChange: (value) => onChange(spec.id, value),
+      renderFieldControl
+    });
     return {
       setErrors: validation.apply,
       container: setting.settingEl,
-      update: (value) => {
-        if (typeof value === "object" && value !== null) {
-          const valueMap = value;
-          for (const child of childInstances) {
-            child.handle.update?.(valueMap[child.id], valueMap);
-          }
-          updateChildVisibility();
-        }
-      }
+      update: handle.update
     };
   }
 };

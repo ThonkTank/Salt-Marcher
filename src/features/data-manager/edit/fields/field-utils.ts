@@ -5,7 +5,7 @@ import { createNumberStepper } from "../controls/number-stepper";
 import { enhanceSelectToSearch } from "../../../../ui/components/search-dropdown";
 import { mountEntryManager, type EntryCategoryDefinition, type EntryFilterDefinition } from "../storage/entry-system";
 import { RepeatingWidthSynchronizer } from "../layout/repeating-width-sync";
-import { renderTextCore, renderTextareaCore, renderToggleCore, renderColorCore, renderMultiselectCore, renderDisplayCore, renderHeadingCore } from "./field-rendering-core";
+import { renderTextCore, renderTextareaCore, renderToggleCore, renderColorCore, renderMultiselectCore, renderDisplayCore, renderHeadingCore, renderCompositeCore } from "./field-rendering-core";
 import type { AnyFieldSpec, FieldRenderHandle, CompositeFieldSpec } from "../types";
 
 /**
@@ -188,113 +188,17 @@ export function renderFieldControl(
     const config = compositeSpec.config ?? {};
     const childFields = (config.fields as Array<Partial<import("../types").FieldSpec>>) ?? compositeSpec.children ?? [];
     const groupBy = (config as any).groupBy as string[] | undefined;
-    const useGrouping = Boolean(groupBy && groupBy.length > 0);
-
-    const compositeContainer = controlContainer.createDiv({
-      cls: useGrouping ? "sm-cc-composite-grouped" : "sm-cc-composite-grid"
-    });
-
     const compositeValue = (initial as Record<string, unknown>) ?? {};
-    const childInstances: Array<{
-      id: string;
-      spec: AnyFieldSpec;
-      handle: FieldRenderHandle;
-      wrapper: HTMLElement;
-      wasVisible: boolean;
-      initialized: boolean;
-    }> = [];
 
-    const evaluateChildVisibility = (childSpec: AnyFieldSpec): boolean => {
-      if (!childSpec.visibleIf) return true;
-      try {
-        return childSpec.visibleIf(compositeValue);
-      } catch (error) {
-        console.error(`Failed to evaluate visibility for ${childSpec.id}:`, error);
-        return true;
-      }
-    };
-
-    const updateChildVisibility = () => {
-      for (const child of childInstances) {
-        const shouldBeVisible = evaluateChildVisibility(child.spec);
-        if (shouldBeVisible !== child.wasVisible) {
-          child.wrapper.toggleClass("is-hidden", !shouldBeVisible);
-          child.wasVisible = shouldBeVisible;
-          if (shouldBeVisible && !child.initialized) {
-            child.initialized = true;
-            const initConfig = (child.spec.config as any)?.init;
-            if (initConfig && typeof initConfig === "function") {
-              try {
-                const initValue = initConfig(compositeValue);
-                compositeValue[child.id] = initValue;
-                child.handle.update?.(initValue, compositeValue);
-                onChange(compositeValue);
-              } catch (error) {
-                console.error(`Failed to initialize ${child.id}:`, error);
-              }
-            }
-          }
-        }
-      }
-    };
-
-    // Render children (with or without grouping)
-    const fieldsToRender = useGrouping && groupBy
-      ? groupBy.flatMap(prefix =>
-          childFields.filter(f => f.id === prefix || f.id?.startsWith(`${prefix}`))
-        )
-      : childFields;
-
-    for (const childDef of fieldsToRender) {
-      const childId = childDef.id ?? "";
-      const childSpec: AnyFieldSpec = {
-        id: childId,
-        label: childDef.label ?? childId,
-        type: childDef.type ?? "text",
-        ...childDef,
-      };
-
-      const childWrapper = compositeContainer.createDiv({ cls: "sm-cc-composite-item" });
-      const childInitial = compositeValue[childId] ?? childSpec.default;
-
-      const childHandle = renderFieldControl(
-        childWrapper,
-        childSpec,
-        childInitial,
-        (childValue) => {
-          const oldValue = compositeValue[childId];
-          compositeValue[childId] = childValue;
-          onChange(compositeValue);
-          if (oldValue !== childValue) {
-            updateChildVisibility();
-          }
-        }
-      );
-
-      const initiallyVisible = evaluateChildVisibility(childSpec);
-      childWrapper.toggleClass("is-hidden", !initiallyVisible);
-
-      childInstances.push({
-        id: childId,
-        spec: childSpec,
-        handle: childHandle,
-        wrapper: childWrapper,
-        wasVisible: initiallyVisible,
-        initialized: initiallyVisible,
-      });
-    }
-
-    return {
-      update: (value) => {
-        if (typeof value === "object" && value !== null) {
-          const valueMap = value as Record<string, unknown>;
-          for (const child of childInstances) {
-            child.handle.update?.(valueMap[child.id], valueMap);
-          }
-          updateChildVisibility();
-        }
-      },
-    };
+    // Use core rendering function
+    return renderCompositeCore({
+      container: controlContainer,
+      childFields,
+      groupBy,
+      initialValue: compositeValue,
+      onChange,
+      renderFieldControl,
+    });
   }
 
   // Autocomplete field (async search with suggestions)
