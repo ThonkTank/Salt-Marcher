@@ -1,4 +1,4 @@
-// src/ui/create/open-create-modal.ts
+// src/features/data-manager/open-create-modal.ts
 // Public entry point for the declarative workmode create modal.
 import type { App } from "obsidian";
 import { CreateModal } from "./modal";

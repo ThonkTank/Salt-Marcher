@@ -1,4 +1,4 @@
-// src/ui/create/modal-validator.ts
+// src/features/data-manager/modal-validator.ts
 // Service for validating draft data and transforming fields
 
 import { extractSchemaIssues, type SchemaErrorIssue } from "./modal-utils";

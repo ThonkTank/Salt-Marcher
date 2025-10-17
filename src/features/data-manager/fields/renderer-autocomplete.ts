@@ -1,4 +1,4 @@
-// src/ui/create/renderers/autocomplete.ts
+// src/features/data-manager/renderers/autocomplete.ts
 // Autocomplete field renderer (async search with suggestions)
 
 import { Setting } from "obsidian";

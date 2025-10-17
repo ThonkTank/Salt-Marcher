@@ -1,4 +1,4 @@
-// src/ui/create/fields/tag-chips.ts
+// src/features/data-manager/fields/tag-chips.ts
 // Tag chips UI component - Internal utility for tag field renderers
 import { Setting } from "obsidian";
 

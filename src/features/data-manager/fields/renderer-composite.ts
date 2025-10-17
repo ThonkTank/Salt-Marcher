@@ -1,4 +1,4 @@
-// src/ui/create/renderers/composite.ts
+// src/features/data-manager/renderers/composite.ts
 // Composite field renderer (nested fields in a grid/custom layout)
 
 import { Setting } from "obsidian";

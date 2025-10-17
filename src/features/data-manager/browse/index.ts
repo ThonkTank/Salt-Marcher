@@ -1,5 +1,5 @@
-// src/ui/data-manager/index.ts
-// Data Manager: Datenmanagement UI infrastructure (universelles Template für Tabs)
+// src/features/data-manager/browse/index.ts
+// Data Manager Browse: Browsing infrastructure for filterable entity lists
 
 export * from "./action-factory";
 export * from "./frontmatter-utils";

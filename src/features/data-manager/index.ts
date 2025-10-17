@@ -1,5 +1,5 @@
-// src/ui/create/index.ts
-// Re-exports for shared Workmode create dialog utilities.
+// src/features/data-manager/index.ts
+// Data Manager: Unified infrastructure for data creation, editing, and browsing
 
 // Unified modal system
 export * from "./modal/modal";

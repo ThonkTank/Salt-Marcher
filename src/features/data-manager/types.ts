@@ -1,5 +1,5 @@
-// src/ui/create/types.ts
-// Type definitions for the declarative workmode create modal contract.
+// src/features/data-manager/types.ts
+// Type definitions for the declarative data management system (modals, fields, storage)
 import type { App } from "obsidian";
 
 export type FieldType =

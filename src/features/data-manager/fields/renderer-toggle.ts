@@ -1,4 +1,4 @@
-// src/ui/create/renderers/toggle.ts
+// src/features/data-manager/renderers/toggle.ts
 // Toggle field renderer
 
 import { createRendererWrapper, renderToggleCore } from "./field-rendering-core";

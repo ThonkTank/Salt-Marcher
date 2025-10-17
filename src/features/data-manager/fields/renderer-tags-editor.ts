@@ -1,4 +1,4 @@
-// src/ui/create/fields/renderers/tags-editor.ts
+// src/features/data-manager/fields/renderers/tags-editor.ts
 // Tags editor field renderer
 
 import { Setting } from "obsidian";

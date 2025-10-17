@@ -1,4 +1,4 @@
-// src/ui/create/data-initializer.ts
+// src/features/data-manager/data-initializer.ts
 // Service for initializing draft data from spec, presets, and options
 
 import { deepClone, resolveDefaults } from "./modal-utils";

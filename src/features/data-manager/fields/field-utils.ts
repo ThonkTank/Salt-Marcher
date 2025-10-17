@@ -1,4 +1,4 @@
-// src/ui/create/field-utils.ts
+// src/features/data-manager/field-utils.ts
 // Field-level utility functions for create modal
 
 import { createNumberStepper } from "./number-stepper-control";

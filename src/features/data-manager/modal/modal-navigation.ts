@@ -1,4 +1,4 @@
-// src/ui/create/modal-navigation.ts
+// src/features/data-manager/modal-navigation.ts
 // Service for managing modal navigation with sections
 
 import { createFormCard } from "../layout/layouts";

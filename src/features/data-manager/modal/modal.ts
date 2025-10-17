@@ -1,4 +1,4 @@
-// src/ui/create/modal/modal.ts
+// src/features/data-manager/modal/modal.ts
 // Unified create modal combining BaseCreateModal + DeclarativeCreateModal functionality
 import { App, Modal, Setting, Notice, type ButtonComponent } from "obsidian";
 import type { FormCardHandles } from "../layout/layouts";

@@ -1,4 +1,4 @@
-// src/ui/create/modal-persistence.ts
+// src/features/data-manager/modal-persistence.ts
 // Service for serializing and persisting draft data
 
 import type { App } from "obsidian";

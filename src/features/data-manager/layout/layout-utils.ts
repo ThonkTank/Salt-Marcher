@@ -1,4 +1,4 @@
-// src/ui/create/layout-utils.ts
+// src/features/data-manager/layout-utils.ts
 // Utilities for calculating optimal grid layouts based on field dimensions
 
 import type { AnyFieldSpec } from "../types";

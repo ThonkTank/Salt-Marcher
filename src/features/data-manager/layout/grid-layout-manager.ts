@@ -1,4 +1,4 @@
-// src/ui/create/grid-layout-manager.ts
+// src/features/data-manager/grid-layout-manager.ts
 // Manages dynamic grid layout for card__body based on field dimensions
 
 import { FieldWidthCalculator } from "./layout-utils";

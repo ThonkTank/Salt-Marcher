@@ -1,4 +1,4 @@
-// src/ui/create/fields/renderers/structured-tags-editor.ts
+// src/features/data-manager/fields/renderers/structured-tags-editor.ts
 // Structured tags editor field renderer (tokens with type + value)
 
 import { Setting } from "obsidian";

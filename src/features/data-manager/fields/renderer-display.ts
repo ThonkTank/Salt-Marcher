@@ -1,4 +1,4 @@
-// src/ui/create/renderers/display.ts
+// src/features/data-manager/renderers/display.ts
 // Display field renderer (computed/read-only fields)
 
 import type { FieldRegistryEntry, DisplayFieldSpec } from "../../types";

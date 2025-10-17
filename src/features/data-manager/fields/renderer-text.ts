@@ -1,4 +1,4 @@
-// src/ui/create/renderers/text.ts
+// src/features/data-manager/renderers/text.ts
 // Text field renderer
 
 import { createRendererWrapper, renderTextCore } from "./field-rendering-core";

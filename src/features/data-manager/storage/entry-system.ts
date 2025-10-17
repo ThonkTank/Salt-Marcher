@@ -1,4 +1,4 @@
-// src/ui/create/storage/entry-system.ts
+// src/features/data-manager/storage/entry-system.ts
 // Barrel file for backward compatibility - unified entry system exports
 //
 // This file re-exports all functionality from entry-card and entry-manager.

@@ -1,4 +1,4 @@
-// src/ui/create/modal-utils.ts
+// src/features/data-manager/modal-utils.ts
 // Modal-level utility functions for create modal
 
 import { Setting } from "obsidian";

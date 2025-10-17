@@ -1,4 +1,4 @@
-// src/ui/create/renderers/repeating.ts
+// src/features/data-manager/renderers/repeating.ts
 // Repeating field renderer (entry lists with add/remove/reorder OR template-based lists)
 
 import { Setting } from "obsidian";

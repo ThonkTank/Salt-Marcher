@@ -1,4 +1,4 @@
-// src/ui/create/repeating-width-sync.ts
+// src/features/data-manager/repeating-width-sync.ts
 // Synchronizes widths of identical field types across repeating entries
 
 /**

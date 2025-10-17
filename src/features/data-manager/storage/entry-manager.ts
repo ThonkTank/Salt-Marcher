@@ -1,4 +1,4 @@
-// src/ui/create/storage/entry-manager.ts
+// src/features/data-manager/storage/entry-manager.ts
 // Entry manager - list management with add bar, filters, and entry lifecycle
 import type { ValidationRegistrar } from "../layout/layouts";
 import {

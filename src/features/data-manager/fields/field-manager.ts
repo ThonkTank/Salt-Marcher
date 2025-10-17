@@ -1,4 +1,4 @@
-// src/ui/create/field-manager.ts
+// src/features/data-manager/field-manager.ts
 // Service for managing field instances, rendering, and visibility
 
 import { fieldRendererRegistry } from "./field-renderer-registry";

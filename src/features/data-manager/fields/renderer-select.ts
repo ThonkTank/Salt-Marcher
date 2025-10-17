@@ -1,4 +1,4 @@
-// src/ui/create/renderers/select.ts
+// src/features/data-manager/renderers/select.ts
 // Select field renderer
 
 import { Setting } from "obsidian";

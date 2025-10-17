@@ -1,4 +1,4 @@
-// src/ui/create/layouts.ts
+// src/features/data-manager/layouts.ts
 // Bündelt Builder für Karten- und Grid-Layouts in den Workmode-Create-Dialogen.
 import { Setting } from "obsidian";
 

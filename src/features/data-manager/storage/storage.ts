@@ -1,4 +1,4 @@
-// src/ui/create/storage.ts
+// src/features/data-manager/storage.ts
 // Helpers for serializing and persisting declarative create modal payloads.
 import { normalizePath, stringifyYaml, TFile, type App } from "obsidian";
 import type { PersistResult, SerializedPayload, StorageSpec } from "../types";

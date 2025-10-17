@@ -1,4 +1,4 @@
-// src/ui/create/renderers/heading.ts
+// src/features/data-manager/renderers/heading.ts
 // Heading field renderer (for entry labels in repeating fields)
 
 import type { FieldRegistryEntry, HeadingFieldSpec } from "../../types";

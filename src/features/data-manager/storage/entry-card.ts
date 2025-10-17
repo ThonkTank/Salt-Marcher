@@ -1,4 +1,4 @@
-// src/ui/create/storage/entry-card.ts
+// src/features/data-manager/storage/entry-card.ts
 // Entry card rendering logic - visual representation of individual entries
 import { setIcon } from "obsidian";
 

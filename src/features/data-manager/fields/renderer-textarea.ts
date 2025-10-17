@@ -1,4 +1,4 @@
-// src/ui/create/renderers/textarea.ts
+// src/features/data-manager/renderers/textarea.ts
 // Textarea field renderer
 
 import { createRendererWrapper, renderTextareaCore } from "./field-rendering-core";

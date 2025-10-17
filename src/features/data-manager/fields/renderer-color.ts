@@ -1,4 +1,4 @@
-// src/ui/create/renderers/color.ts
+// src/features/data-manager/renderers/color.ts
 // Color field renderer
 
 import { createRendererWrapper, renderColorCore } from "./field-rendering-core";

@@ -1,4 +1,4 @@
-// src/ui/create/renderers/number-stepper.ts
+// src/features/data-manager/renderers/number-stepper.ts
 // Number stepper field renderer
 
 import { createRendererWrapper } from "./field-rendering-core";

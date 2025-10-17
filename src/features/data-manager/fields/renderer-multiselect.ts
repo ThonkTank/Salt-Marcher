@@ -1,4 +1,4 @@
-// src/ui/create/renderers/multiselect.ts
+// src/features/data-manager/renderers/multiselect.ts
 // Multiselect field renderer
 
 import { createRendererWrapper, renderMultiselectCore } from "./field-rendering-core";
