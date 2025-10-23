@@ -1,3 +1,4 @@
+import { logger } from "../../../app/plugin-logger";
 // src/ui/data-manager/tab-navigation.ts
 // Reusable tab navigation component for workmode views
 
@@ -158,7 +159,7 @@ export function createTabNavigation<T extends string>(
         element: container,
         setActiveTab(tabId: T) {
             if (!buttons.has(tabId)) {
-                console.warn(`Tab ${tabId} not found in navigation`);
+                logger.warn(`Tab ${tabId} not found in navigation`);
                 return;
             }
             currentActive = tabId;

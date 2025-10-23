@@ -2,6 +2,7 @@
 import { App, TFile, TFolder, normalizePath } from "obsidian";
 import { TERRAIN_COLORS } from "../domain/terrain";
 import { parseOptions } from "../domain/options";
+import { logger } from "../../../app/plugin-logger";
 
 export type TileCoord = { r: number; c: number };
 export type TileData  = { terrain: string; region?: string; note?: string };
@@ -334,7 +335,7 @@ export async function listTilesForMap(
                     const validated = validateTileData({ terrain, region }, { allowUnknownTerrain: true });
                     return { terrain: validated.terrain, region: validated.region ?? "" };
                 } catch (error) {
-                    console.warn("[salt-marcher] Ignoring invalid tile data", error);
+                    logger.warn("[salt-marcher] Ignoring invalid tile data", error);
                     return { terrain: terrain.trim(), region: region.trim() };
                 }
             })(),
@@ -372,7 +373,7 @@ export async function loadTile(
         const validated = validateTileData({ terrain, region, note }, { allowUnknownTerrain: true });
         return validated;
     } catch (error) {
-        console.warn("[salt-marcher] Loaded tile contains invalid data", error);
+        logger.warn("[salt-marcher] Loaded tile contains invalid data", error);
         return { terrain: terrain.trim(), region: region.trim(), note: note || undefined };
     }
 }

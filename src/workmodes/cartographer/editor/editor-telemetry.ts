@@ -1,6 +1,7 @@
 // src/workmodes/cartographer/editor/editor-telemetry.ts
 // Meldet Tool-Fehler des Cartographer-Editors und dedupliziert Nutzerhinweise.
 import { Notice } from "obsidian";
+import { logger } from "../../../app/plugin-logger";
 
 export type EditorToolIssueStage =
     | "resolve"
@@ -44,7 +45,7 @@ export function reportEditorToolIssue(payload: EditorToolIssuePayload): string {
     const { stage, error } = payload;
     const toolId = payload.toolId ?? "unknown";
     const logPrefix = `[cartographer:editor] tool(${toolId}) stage(${stage}) failed`;
-    console.error(logPrefix, error);
+    logger.error(logPrefix, error);
 
     const messageFactory = TOOL_STAGE_MESSAGES[stage];
     const userMessage = messageFactory(toolId);

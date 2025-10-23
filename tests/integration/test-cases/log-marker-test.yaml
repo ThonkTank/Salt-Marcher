@@ -1,0 +1,67 @@
+name: "Log marker test"
+description: "Tests that custom markers can be added to logs and retrieved"
+
+# Debug configuration
+debugConfig:
+  enabled: true
+  logFields: ["*"]
+  logCategories: ["*"]
+  logAll: false
+
+# Setup
+setup:
+  - name: "Reload plugin"
+    command: reload-plugin
+    wait: 1000
+
+# Main test steps
+steps:
+  - name: "Add first marker"
+    command: log-marker
+    args:
+      - "Starting UI interaction test"
+    expect:
+      success: true
+      marker: "Starting UI interaction test"
+
+  - name: "Open creature editor"
+    command: edit-creature
+    args: ["Goblin"]
+    wait: 500
+    expect:
+      success: true
+
+  - name: "Add second marker"
+    command: log-marker
+    args:
+      - "Creature editor opened"
+    expect:
+      success: true
+      marker: "Creature editor opened"
+
+  - name: "Navigate to section"
+    command: navigate-to-section
+    args: ["basic-info"]
+    wait: 300
+    expect:
+      success: true
+
+  - name: "Add third marker"
+    command: log-marker
+    args:
+      - "Navigation complete"
+    expect:
+      success: true
+      marker: "Navigation complete"
+
+  - name: "Verify markers appear in logs"
+    command: assert-log-contains
+    args:
+      - "Starting UI interaction test"
+      - "Creature editor opened"
+      - "Navigation complete"
+
+# Cleanup
+cleanup:
+  - name: "Close modal"
+    command: close-modal

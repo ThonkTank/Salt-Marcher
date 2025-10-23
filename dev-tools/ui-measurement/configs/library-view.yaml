@@ -1,0 +1,59 @@
+# Library View UI Validation Config
+# Validation rules for Salt Marcher library list views
+
+name: library-view
+description: Validation rules for library list views
+rules:
+  # Item cards
+  - name: "Item card minimum height"
+    selector: ".sm-cc-item"
+    dimension: "height"
+    expect: "min"
+    value: 60
+    description: "Item cards need sufficient height for content"
+
+  - name: "Item card consistent padding"
+    selector: ".sm-cc-item"
+    dimension: "padding"
+    expect: "synchronized"
+    tolerance: 1
+    description: "All item cards should have consistent padding"
+
+  # Metadata badges
+  - name: "Metadata badge alignment"
+    selector: ".sm-cc-item__cr, .sm-cc-item__type"
+    dimension: "height"
+    expect: "synchronized"
+    tolerance: 2
+    description: "Metadata badges should align properly"
+
+  # Search and filters
+  - name: "Search box minimum width"
+    selector: ".sm-cc-search-bar input"
+    dimension: "width"
+    expect: "min"
+    value: 200
+    description: "Search box must be usable"
+
+  - name: "Filter button consistent width"
+    selector: ".sm-cc-filter-button"
+    dimension: "width"
+    expect: "synchronized"
+    tolerance: 5
+    description: "Filter buttons should have consistent sizing"
+
+  # List container
+  - name: "List container scroll behavior"
+    selector: ".sm-cc-list-container"
+    dimension: "overflow-y"
+    expect: "exact"
+    value: "auto"
+    description: "List should be scrollable when needed"
+
+  # Sort controls
+  - name: "Sort dropdown minimum width"
+    selector: ".sm-cc-sort-selector"
+    dimension: "width"
+    expect: "min"
+    value: 120
+    description: "Sort dropdown needs sufficient width"

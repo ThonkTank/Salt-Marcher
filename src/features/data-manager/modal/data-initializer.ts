@@ -117,6 +117,21 @@ export class DataInitializer<TDraft extends NamedDraft> {
     const { preset } = this.options;
 
     if (preset && typeof preset === "object") {
+      // Debug logging for pb and initiative
+      if ('pb' in preset || 'initiative' in preset) {
+        console.log('[data-initializer] Preset data contains pb:', (preset as any).pb);
+        console.log('[data-initializer] Preset data contains initiative:', (preset as any).initiative);
+      }
+      // Debug logging for token fields
+      if ('passivesList' in preset) {
+        console.log('[data-initializer] Preset passivesList:', JSON.stringify((preset as any).passivesList, null, 2));
+      }
+      if ('languagesList' in preset) {
+        console.log('[data-initializer] Preset languagesList:', JSON.stringify((preset as any).languagesList, null, 2));
+      }
+      if ('sensesList' in preset) {
+        console.log('[data-initializer] Preset sensesList:', JSON.stringify((preset as any).sensesList, null, 2));
+      }
       return { ...data, ...(preset as Partial<TDraft>) };
     }
 

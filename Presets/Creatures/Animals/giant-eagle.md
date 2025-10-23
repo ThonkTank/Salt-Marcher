@@ -1,18 +1,52 @@
 ---
 smType: creature
-name: "Giant Eagle"
-size: "Large"
-type: "Celestial"
-alignment: "Neutral Good"
+name: Giant Eagle
+size: Large
+type: Celestial
+alignmentLawChaos: Neutral
+alignmentGoodEvil: Good
 ac: "13"
+initiative: +3 (13)
 hp: "26"
-hit_dice: "4d10 + 4"
-speeds_json: "{\"walk\":{\"distance\":\"10 ft.\"},\"fly\":{\"distance\":\"80 ft.\"}}"
-abilities_json: "[{\"ability\":\"str\",\"score\":16},{\"ability\":\"dex\",\"score\":17},{\"ability\":\"con\",\"score\":13},{\"ability\":\"int\",\"score\":8},{\"ability\":\"wis\",\"score\":14},{\"ability\":\"cha\",\"score\":10}]"
+hitDice: 4d10 + 4
+speeds:
+  - type: walk
+    value: "10"
+  - type: fly
+    value: "80"
+abilities:
+  - ability: str
+    score: 16
+  - ability: dex
+    score: 17
+  - ability: con
+    score: 13
+  - ability: int
+    score: 8
+  - ability: wis
+    score: 14
+  - ability: cha
+    score: 10
 pb: "+2"
 cr: "1"
 xp: "200"
-entries_structured_json: "[{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The eagle makes two Rend attacks.\"},{\"category\":\"action\",\"name\":\"Rend\",\"text\":\"*Melee Attack Roll:* +5, reach 5 ft. 5 (1d4 + 3) Slashing damage plus 3 (1d6) Radiant damage.\"}]"
+languagesList:
+  - value: Celestial
+  - value: understands Common and Primordial (Auran) but can't speak them
+passivesList:
+  - skill: Perception
+    value: "16"
+damageResistancesList:
+  - value: Necrotic
+  - value: Radiant
+entries:
+  - category: action
+    name: Multiattack
+    text: The eagle makes two Rend attacks.
+  - category: action
+    name: Rend
+    text: "*Melee Attack Roll:* +5, reach 5 ft. 5 (1d4 + 3) Slashing damage plus 3 (1d6) Radiant damage."
+
 ---
 
 # Giant Eagle
@@ -20,12 +54,14 @@ entries_structured_json: "[{\"category\":\"action\",\"name\":\"Multiattack\",\"t
 
 **AC** 13
 **HP** 26 (4d10 + 4)
+**Initiative** +3 (13)
 **Speed** 10 ft., fly 80 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
 | 16 | 17 | 13 | 8 | 14 | 10 |
 
+**Languages** Celestial, understands Common and Primordial (Auran) but can't speak them
 CR 1, PB +2, XP 200
 
 ## Actions

@@ -8,6 +8,7 @@ import type { RenderHandles } from "../../../../../features/maps/hex-mapper/hex-
 import type { HexOptions } from "../../../../../features/maps/options";
 import { loadRegions } from "../../../../../features/maps/data/region-repository";
 import { enhanceSelectToSearch } from "../../../../../ui/components/search-dropdown";
+import { logger } from "../../../../../app/plugin-logger";
 import {
     buildForm,
     type FormButtonHandle,
@@ -86,7 +87,7 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
         try {
             ctx.setStatus(message);
         } catch (err) {
-            console.error("[terrain-brush] failed to set status", err);
+            logger.error("[terrain-brush] failed to set status", err);
         }
     };
 
@@ -216,7 +217,7 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
 
     const handleManageError = (err?: unknown) => {
         if (err) {
-            console.error("[terrain-brush] failed to open Library command", err);
+            logger.error("[terrain-brush] failed to open Library command", err);
         }
         applyManageHint({
             text: "Opening the Library command failed. Use the ribbon icon to open the Library manually and add Region entries under Library → Regions before refreshing.",
@@ -244,7 +245,7 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
         try {
             regions = await loadRegions(ctx.app);
         } catch (err) {
-            console.error("[terrain-brush] failed to load regions", err);
+            logger.error("[terrain-brush] failed to load regions", err);
             if (seq === fillSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
                 regionControl?.setOptions([]);
                 state.region = "";
@@ -354,7 +355,7 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
             try {
                 off();
             } catch (err) {
-                console.error("[terrain-brush] failed to unsubscribe", err);
+                logger.error("[terrain-brush] failed to unsubscribe", err);
             }
         });
         unsubscribe.length = 0;

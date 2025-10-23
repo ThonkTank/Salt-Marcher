@@ -1,0 +1,69 @@
+# Cartographer View UI Validation Config
+# Validation rules for Salt Marcher map editor
+
+name: cartographer
+description: Validation rules for cartographer map editor
+rules:
+  # Tool palette
+  - name: "Tool button consistent size"
+    selector: ".sm-tool-button"
+    dimension: "width"
+    expect: "synchronized"
+    tolerance: 0
+    description: "Tool buttons should be uniform squares"
+
+  - name: "Tool button aspect ratio"
+    selector: ".sm-tool-button"
+    dimension: "height"
+    expect: "synchronized"
+    tolerance: 0
+    description: "Tool buttons should be square"
+
+  # Map viewport
+  - name: "Map canvas minimum size"
+    selector: ".sm-map-canvas"
+    dimension: "width"
+    expect: "min"
+    value: 400
+    description: "Map needs minimum usable size"
+
+  - name: "Map canvas aspect ratio"
+    selector: ".sm-map-canvas"
+    dimension: "height"
+    expect: "min"
+    value: 400
+    description: "Map needs minimum usable height"
+
+  # Control panels
+  - name: "Control panel consistent width"
+    selector: ".sm-control-panel"
+    dimension: "width"
+    expect: "synchronized"
+    tolerance: 10
+    description: "Control panels should have consistent width"
+
+  # Hex grid overlay
+  - name: "Hex size consistency"
+    selector: ".sm-hex"
+    dimension: "width"
+    expect: "synchronized"
+    tolerance: 0.5
+    description: "All hexes should be the same size"
+
+  # Minimap
+  - name: "Minimap fixed dimensions"
+    selector: ".sm-minimap"
+    dimension: "width"
+    expect: "exact"
+    value: 200
+    tolerance: 0
+    description: "Minimap has fixed size"
+
+  # Zoom controls
+  - name: "Zoom button size"
+    selector: ".sm-zoom-control button"
+    dimension: "width"
+    expect: "exact"
+    value: 32
+    tolerance: 0
+    description: "Zoom buttons should be exactly 32px"

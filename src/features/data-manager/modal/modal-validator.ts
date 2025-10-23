@@ -4,6 +4,7 @@
 import { extractSchemaIssues, type SchemaErrorIssue } from "./modal-utils";
 import type { AnyFieldSpec, CreateSpec } from "../types";
 import type { FieldTransformer } from "./modal-persistence";
+import { logger } from "../../../app/plugin-logger";
 
 /**
  * Validation result with errors, summary, and transformed data
@@ -48,7 +49,7 @@ export class DefaultFieldTransformer<TDraft> implements FieldTransformer<TDraft>
         const transformed = field.transform(result[field.id] as never, result);
         result[field.id] = transformed;
       } catch (error) {
-        console.error(`Transform failed for field ${field.id}`, error);
+        logger.error(`Transform failed for field ${field.id}`, error);
       }
     }
 
@@ -105,6 +106,19 @@ export class ModalValidator<TDraft, TSerialized> {
     this.applyFieldErrors(fieldErrors);
 
     const isValid = summary.length === 0;
+
+    // Log validation results for UI testing
+    if (!isValid) {
+      const errorObj: Record<string, string[]> = {};
+      for (const [id, errors] of fieldErrors) {
+        if (errors.length > 0) {
+          errorObj[id] = errors;
+        }
+      }
+      logger.log('[UI-TEST] Validation errors:', JSON.stringify({ errors: errorObj, summary }));
+    } else {
+      logger.log('[UI-TEST] Validation passed');
+    }
 
     return {
       isValid,

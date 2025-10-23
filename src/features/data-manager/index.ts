@@ -18,10 +18,3 @@ export * from "./storage/entry-system";
 
 // Browse infrastructure
 export * from "./browse";
-
-// ============================================================================
-// LEGACY - Backwards compatibility exports
-// ============================================================================
-
-// @deprecated BaseCreateModal renamed to CreateModal. Use CreateModal instead.
-export { CreateModal as BaseCreateModal } from "./modal/modal";

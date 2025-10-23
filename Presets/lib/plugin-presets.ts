@@ -2,11 +2,25 @@
 // Loads preset creatures and spells from bundled presets or reference files
 
 import { App, Notice, Platform, normalizePath } from "obsidian";
-import { ensureCreatureDir } from "../storage/creatures";
-import { ensureSpellDir } from "../storage/spells";
-import { ensureItemDir } from "../storage/items";
-import { ensureEquipmentDir } from "../storage/equipment";
 import { ENTITY_REGISTRY } from "./entity-registry";
+import { logger } from "../../src/app/plugin-logger";
+
+// Simple directory ensure functions
+async function ensureDir(app: App, dir: string): Promise<void> {
+    const normalizedDir = normalizePath(dir);
+    const folder = app.vault.getAbstractFileByPath(normalizedDir);
+    if (!folder) {
+        await app.vault.createFolder(normalizedDir).catch(() => {});
+    }
+}
+
+const ensureCreatureDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.creatures.directory);
+const ensureSpellDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.spells.directory);
+const ensureItemDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.items.directory);
+const ensureEquipmentDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.equipment.directory);
+const ensureTerrainDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.terrains.directory);
+const ensureRegionDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.regions.directory);
+const ensureCalendarDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.calendars.directory);
 
 // Define the preset files structure
 // This will be populated at build time with actual preset files
@@ -22,13 +36,15 @@ export function registerPreset(fileName: string, content: string): void {
 
 /**
  * Generic helper to import presets for a given directory and preset type
+ * @param force - If true, delete existing files before importing (for re-import with updated filenames)
  */
 async function importPresetsForDir(
     app: App,
     dir: string,
     presetKey: string,
     typeName: string,
-    ensureDir: (app: App) => Promise<void>
+    ensureDir: (app: App) => Promise<void>,
+    force = false
 ): Promise<void> {
     try {
         // Ensure directory exists
@@ -47,22 +63,24 @@ async function importPresetsForDir(
         const fileNames = presetEntries.map(([fileName]) => fileName);
 
         if (fileNames.length === 0) {
-            console.log(`No preset ${typeName} found in plugin`);
+            logger.log(`No preset ${typeName} found in plugin`);
             return;
         }
 
-        console.log(`Found ${fileNames.length} preset ${typeName} in plugin`);
+        logger.log(`Found ${fileNames.length} preset ${typeName} in plugin`);
 
-        // Get existing files for comparison
-        const existingFiles = new Set();
+        // Get existing files for comparison (map lowercase names to actual paths)
+        const existingFiles = new Map<string, string>();
         try {
             const existing = await app.vault.adapter.list(normalizedDir);
             const prefix = `${normalizedDir}/`;
             existing.files.forEach(file => {
                 const normalizedFile = normalizePath(file);
                 if (normalizedFile.startsWith(prefix)) {
-                    const relativePath = normalizedFile.slice(prefix.length).toLowerCase();
-                    if (relativePath) existingFiles.add(relativePath);
+                    const relativePath = normalizedFile.slice(prefix.length);
+                    if (relativePath) {
+                        existingFiles.set(relativePath.toLowerCase(), normalizedFile);
+                    }
                 }
             });
         } catch {
@@ -77,22 +95,34 @@ async function importPresetsForDir(
         for (const [fileName, content] of presetEntries) {
             const loweredName = fileName.toLowerCase();
             const targetPath = normalizePath(`${normalizedDir}/${fileName}`);
-
-            // Check if file already exists
-            if (existingFiles.has(loweredName)) {
-                skippedCount++;
-                continue;
-            }
+            const existingPath = existingFiles.get(loweredName);
 
             try {
-                // Get preset content
                 await ensureParentFolders(app, normalizedDir, fileName, ensuredFolders);
-                await app.vault.create(targetPath, content);
-                importedCount++;
 
-                console.log(`Imported ${typeName} preset: ${fileName}`);
+                // If force mode and file exists, delete and recreate
+                if (force && existingPath) {
+                    // Delete the old file (might have different capitalization)
+                    const existingFile = app.vault.getAbstractFileByPath(existingPath);
+                    if (existingFile) {
+                        await app.vault.delete(existingFile);
+                        logger.log(`Deleted existing ${typeName} preset: ${existingPath}`);
+                    }
+                    // Use adapter.write to bypass vault cache after deletion
+                    await app.vault.adapter.write(targetPath, content);
+                    importedCount++;
+                    logger.log(`Re-imported ${typeName} preset: ${fileName}`);
+                } else if (existingPath) {
+                    // File exists but not force mode - skip
+                    skippedCount++;
+                } else {
+                    // New file - use vault.create
+                    await app.vault.create(targetPath, content);
+                    importedCount++;
+                    logger.log(`Imported ${typeName} preset: ${fileName}`);
+                }
             } catch (err) {
-                console.error(`Failed to import ${typeName} preset ${fileName}:`, err);
+                logger.error(`Failed to import ${typeName} preset ${fileName}:`, err);
                 errorCount++;
             }
         }
@@ -100,17 +130,17 @@ async function importPresetsForDir(
         // Show notification with results
         if (importedCount > 0) {
             new Notice(`Imported ${importedCount} ${typeName} presets`);
-            console.log(`${typeName} import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
+            logger.log(`${typeName} import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
         } else if (skippedCount > 0) {
-            console.log(`All ${skippedCount} ${typeName} presets already exist`);
+            logger.log(`All ${skippedCount} ${typeName} presets already exist`);
         } else if (errorCount > 0) {
             new Notice(`Failed to import ${typeName} presets. Check console for details.`);
         }
     } catch (err) {
-        console.error(`Failed to import ${typeName} presets:`, err);
+        logger.error(`Failed to import ${typeName} presets:`, err);
         // If preset-data module doesn't exist, it's not an error - just no presets
         if (err instanceof Error && err.message.includes('Cannot find module')) {
-            console.log(`No ${typeName} preset data found - skipping import`);
+            logger.log(`No ${typeName} preset data found - skipping import`);
         } else {
             new Notice(`Failed to import ${typeName} presets. Check console for details.`);
         }
@@ -174,7 +204,9 @@ async function shouldImportPresetsForDir(
         await ensureDir(app);
         await app.vault.create(markerPath, `${label} imported on ${new Date().toISOString()}`);
     } catch (err) {
-        console.error(`Failed to create ${label} marker:`, err);
+        // Marker could not be created (likely already exists) → no import needed
+        logger.log(`${label} already imported (marker exists)`);
+        return false;
     }
 
     return true;
@@ -227,4 +259,97 @@ export async function importEquipmentPresets(app: App): Promise<void> {
  */
 export async function shouldImportEquipmentPresets(app: App): Promise<boolean> {
     return shouldImportPresetsForDir(app, ENTITY_REGISTRY.equipment.directory, ".plugin-equipment-imported", "Equipment presets", ensureEquipmentDir);
+}
+
+/**
+ * Import terrain presets from bundled plugin files to vault
+ */
+export async function importTerrainPresets(app: App): Promise<void> {
+    return importPresetsForDir(app, ENTITY_REGISTRY.terrains.directory, "PRESET_TERRAINS", "terrain", ensureTerrainDir);
+}
+
+/**
+ * Check if terrain presets should be imported (first time setup)
+ */
+export async function shouldImportTerrainPresets(app: App): Promise<boolean> {
+    return shouldImportPresetsForDir(app, ENTITY_REGISTRY.terrains.directory, ".plugin-terrains-imported", "Terrain presets", ensureTerrainDir);
+}
+
+/**
+ * Import region presets from bundled plugin files to vault
+ */
+export async function importRegionPresets(app: App): Promise<void> {
+    return importPresetsForDir(app, ENTITY_REGISTRY.regions.directory, "PRESET_REGIONS", "region", ensureRegionDir);
+}
+
+/**
+ * Check if region presets should be imported (first time setup)
+ */
+export async function shouldImportRegionPresets(app: App): Promise<boolean> {
+    return shouldImportPresetsForDir(app, ENTITY_REGISTRY.regions.directory, ".plugin-regions-imported", "Region presets", ensureRegionDir);
+}
+
+/**
+ * Import calendar presets from bundled plugin files to vault
+ */
+export async function importCalendarPresets(app: App): Promise<void> {
+    return importPresetsForDir(app, ENTITY_REGISTRY.calendars.directory, "PRESET_CALENDARS", "calendar", ensureCalendarDir);
+}
+
+/**
+ * Check if calendar presets should be imported (first time setup)
+ */
+export async function shouldImportCalendarPresets(app: App): Promise<boolean> {
+    return shouldImportPresetsForDir(app, ENTITY_REGISTRY.calendars.directory, ".plugin-calendars-imported", "Calendar presets", ensureCalendarDir);
+}
+
+/**
+ * Import presets for a specific category with optional force flag
+ * Used by IPC commands for re-importing presets
+ */
+export async function importPresetsByCategory(app: App, category: string, force = false): Promise<{ imported: number; category: string }> {
+    const categoryLower = category.toLowerCase();
+
+    switch (categoryLower) {
+        case "creatures":
+            await importPresetsForDir(app, ENTITY_REGISTRY.creatures.directory, "PRESET_CREATURES", "creature", ensureCreatureDir, force);
+            return { imported: 0, category: "creatures" }; // Count not available in current implementation
+
+        case "spells":
+            await importPresetsForDir(app, ENTITY_REGISTRY.spells.directory, "PRESET_SPELLS", "spell", ensureSpellDir, force);
+            return { imported: 0, category: "spells" };
+
+        case "items":
+            await importPresetsForDir(app, ENTITY_REGISTRY.items.directory, "PRESET_ITEMS", "item", ensureItemDir, force);
+            return { imported: 0, category: "items" };
+
+        case "equipment":
+            await importPresetsForDir(app, ENTITY_REGISTRY.equipment.directory, "PRESET_EQUIPMENT", "equipment", ensureEquipmentDir, force);
+            return { imported: 0, category: "equipment" };
+
+        case "terrains":
+            await importPresetsForDir(app, ENTITY_REGISTRY.terrains.directory, "PRESET_TERRAINS", "terrain", ensureTerrainDir, force);
+            return { imported: 0, category: "terrains" };
+
+        case "regions":
+            await importPresetsForDir(app, ENTITY_REGISTRY.regions.directory, "PRESET_REGIONS", "region", ensureRegionDir, force);
+            return { imported: 0, category: "regions" };
+
+        case "calendars":
+            await importPresetsForDir(app, ENTITY_REGISTRY.calendars.directory, "PRESET_CALENDARS", "calendar", ensureCalendarDir, force);
+            return { imported: 0, category: "calendars" };
+
+        case "all":
+            await importPresetsForDir(app, ENTITY_REGISTRY.creatures.directory, "PRESET_CREATURES", "creature", ensureCreatureDir, force);
+            await importPresetsForDir(app, ENTITY_REGISTRY.spells.directory, "PRESET_SPELLS", "spell", ensureSpellDir, force);
+            await importPresetsForDir(app, ENTITY_REGISTRY.items.directory, "PRESET_ITEMS", "item", ensureItemDir, force);
+            await importPresetsForDir(app, ENTITY_REGISTRY.equipment.directory, "PRESET_EQUIPMENT", "equipment", ensureEquipmentDir, force);
+            await importPresetsForDir(app, ENTITY_REGISTRY.terrains.directory, "PRESET_TERRAINS", "terrain", ensureTerrainDir, force);
+            await importPresetsForDir(app, ENTITY_REGISTRY.regions.directory, "PRESET_REGIONS", "region", ensureRegionDir, force);
+            await importPresetsForDir(app, ENTITY_REGISTRY.calendars.directory, "PRESET_CALENDARS", "calendar", ensureCalendarDir, force);
+            return { imported: 0, category: "all" };
+
+        default:
+            throw new Error(`Unknown preset category: ${category}. Valid categories: creatures, spells, items, equipment, terrains, regions, calendars, all`);
+    }
 }

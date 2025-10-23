@@ -7,6 +7,7 @@ import type { Coord, RouteNode, LogicStateSnapshot } from "./types";
 import type { RenderAdapter } from "../infra/adapter";
 import { loadTerrainSpeed } from "./terrain.service";
 import { writeTokenToTiles } from "./persistence";
+import { logger } from "../../../../app/plugin-logger";
 
 type Store = {
     get(): LogicStateSnapshot & { route: RouteNode[]; playing: boolean };
@@ -158,7 +159,7 @@ export function createPlayback(cfg: {
                 onEncounter && (await onEncounter());
             }
         } catch (err) {
-            console.error("[travel] encounter check failed", err);
+            logger.error("[travel] encounter check failed", err);
         }
     }
 

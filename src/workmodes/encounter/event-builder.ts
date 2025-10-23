@@ -5,6 +5,7 @@
 import type { App, TFile } from "obsidian";
 import type { LogicStateSnapshot } from "../session-runner/travel/domain/types";
 import type { EncounterEvent, EncounterEventSource } from "./session-store";
+import { logger } from "../../app/plugin-logger";
 
 export interface TravelEncounterContext {
     mapFile: TFile | null;
@@ -45,11 +46,11 @@ export async function createEncounterEventFromTravel(
                         encounterOdds = odds;
                     }
                 } catch (err) {
-                    console.error("[encounter] failed to resolve region odds", err);
+                    logger.error("[encounter] failed to resolve region odds", err);
                 }
             }
         } catch (err) {
-            console.error("[encounter] failed to read tile metadata", err);
+            logger.error("[encounter] failed to read tile metadata", err);
         }
     }
 

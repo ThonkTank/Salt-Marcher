@@ -6,6 +6,7 @@ import type { CreateSpec } from "../types";
 import { openCreateModal } from "../index";
 import { loadFromFrontmatter } from "./auto-loader";
 import { createStandardActions } from "./action-factory";
+import { logger } from "../../../app/plugin-logger";
 
 /**
  * Context type for browse actions.
@@ -48,7 +49,7 @@ export function createAutoEditAction<TDraft extends Record<string, unknown>>(
                     await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
                 }
             } catch (err) {
-                console.error(`Failed to load ${spec.kind} for editing`, err);
+                logger.error(`Failed to load ${spec.kind} for editing`, err);
             }
         },
     };

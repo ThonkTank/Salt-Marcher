@@ -4,6 +4,7 @@ import { App, Modal, Setting, Notice, type ButtonComponent } from "obsidian";
 import type { FormCardHandles } from "../layout/layouts";
 import { GridLayoutManager } from "../layout/grid-layout-manager";
 import { RepeatingWidthSynchronizer } from "../layout/repeating-width-sync";
+import { LabelWidthSynchronizer } from "../layout/label-width-sync";
 import { registerAllFieldRenderers } from "../fields/register-renderers";
 import { DataInitializer, type NamedDraft } from "./data-initializer";
 import { ModalPersistence } from "./modal-persistence";
@@ -11,6 +12,7 @@ import { DefaultFieldTransformer, ModalValidator } from "./modal-validator";
 import { FieldManager } from "../fields/field-manager";
 import { ModalNavigation } from "./modal-navigation";
 import { orderFields } from "./modal-utils";
+import { logger } from "../../../app/plugin-logger";
 import type {
   AnyFieldSpec,
   CreateSpec,
@@ -46,6 +48,9 @@ export class CreateModal<
 
   // Width synchronizers for repeating fields
   private widthSynchronizers: RepeatingWidthSynchronizer[] = [];
+
+  // Label width synchronizers for sections
+  private labelSynchronizers: LabelWidthSynchronizer[] = [];
 
   // Background pointer lock
   private bgLock: { el: HTMLElement; pointer: string } | null = null;
@@ -86,6 +91,14 @@ export class CreateModal<
     contentEl.empty();
     contentEl.addClass("sm-cc-create-modal");
     this.validators = [];
+
+    // Log modal opened for UI testing
+    logger.log('[UI-TEST] Modal opened:', JSON.stringify({
+      kind: this.spec.kind,
+      title: this.spec.title,
+      entity: this.data.name || 'new',
+      timestamp: Date.now()
+    }));
 
     // Initialize services
     this.transformer = new DefaultFieldTransformer(this.spec.fields);
@@ -169,6 +182,13 @@ export class CreateModal<
     const layoutManager = new GridLayoutManager(handles.body, ordered);
     this.layoutManagers.push(layoutManager);
 
+    // Synchronize label widths
+    // - Multi-column: only tags/structured-tags labels (synced with first column)
+    // - Single-column: all labels
+    const labelSync = new LabelWidthSynchronizer(handles.body, layoutManager.isMultiColumn);
+    this.labelSynchronizers.push(labelSync);
+    logger.log('[Modal] Label sync enabled for section:', section.id, 'Multi-column:', layoutManager.isMultiColumn);
+
     // Register validation (called by card to show validation summary)
     handles.registerValidation(() => {
       // Run validation to get current errors
@@ -247,7 +267,7 @@ export class CreateModal<
       };
       this.close();
     } catch (error) {
-      console.error("Failed to submit create modal", error);
+      logger.error("Failed to submit create modal", error);
       this.handleSubmissionError(error);
     } finally {
       this.isSubmitting = false;
@@ -275,6 +295,12 @@ export class CreateModal<
       synchronizer.destroy();
     }
     this.widthSynchronizers = [];
+
+    // Cleanup label synchronizers
+    for (const synchronizer of this.labelSynchronizers) {
+      synchronizer.destroy();
+    }
+    this.labelSynchronizers = [];
 
     // Cleanup modal layout
     this.modalEl.removeClass("sm-cc-create-modal-host");

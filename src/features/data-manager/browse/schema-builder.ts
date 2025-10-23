@@ -25,12 +25,6 @@ export interface SortDefinition<TEntry> {
 }
 
 /**
- * Complete schema for a library list view
- * @deprecated Use ListSchema from types.ts instead
- */
-export type LibraryListSchema<TEntry extends BaseEntry> = ListSchema<TEntry>;
-
-/**
  * Fluent builder for creating library list schemas.
  * Reduces boilerplate by providing common patterns for filters, sorts, and search.
  *

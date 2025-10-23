@@ -1,16 +1,17 @@
 // src/core/layout.ts
 import type { App, WorkspaceLeaf } from "obsidian";
+import { logger } from "../../app/plugin-logger";
 
 /**
  * Holt den rechten Leaf, falls keiner existiert, erstellt einen neuen.
  */
 export function getRightLeaf(app: App): WorkspaceLeaf {
-    console.log("[Layout] Requesting right leaf...");
+    logger.log("[Layout] Requesting right leaf...");
     const leaf =
     app.workspace.getRightLeaf(false) ??
     app.workspace.getRightLeaf(true) ??
     app.workspace.getLeaf(true);
-    console.log("[Layout] Right leaf resolved:", leaf);
+    logger.log("[Layout] Right leaf resolved:", leaf);
     return leaf;
 }
 
@@ -23,6 +24,6 @@ export function getCenterLeaf(app: App): WorkspaceLeaf {
     app.workspace.getMostRecentLeaf() ??
     app.workspace.getLeaf(false) ??
     app.workspace.getLeaf(true);
-    console.log("[Layout] Center leaf resolved:", leaf);
+    logger.log("[Layout] Center leaf resolved:", leaf);
     return leaf;
 }

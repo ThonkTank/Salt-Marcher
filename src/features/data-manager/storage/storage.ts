@@ -14,6 +14,22 @@ function slugify(value: string): string {
   return replaced || "entry";
 }
 
+/**
+ * Slugify while preserving case.
+ * Converts spaces and special chars to dashes, keeps original capitalization.
+ * Example: "Black Bear" → "Black-Bear", "Aboleth" → "Aboleth"
+ */
+function preserveCaseSlugify(value: string): string {
+  const trimmed = value.trim();
+  const replaced = trimmed
+    .normalize("NFKD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")  // Keep both upper and lowercase
+    .replace(/-{2,}/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return replaced || "entry";
+}
+
 function ensureExtension(path: string, extension: string): string {
   if (path.toLowerCase().endsWith(`.${extension}`)) return path;
   return `${path}.${extension}`;
@@ -26,23 +42,26 @@ function applyTemplate(template: string, replacements: Record<string, string>): 
   });
 }
 
-function collectReplacements(values: Record<string, unknown>): Record<string, string> {
+function collectReplacements(values: Record<string, unknown>, preserveCase = false): Record<string, string> {
   const map: Record<string, string> = {};
   for (const [key, raw] of Object.entries(values)) {
     if (raw == null) continue;
     map[key] = typeof raw === "string" ? raw : String(raw);
   }
   if (values.name) {
-    map.slug = slugify(String(values.name));
-    map.name = String(values.name);
+    const nameStr = String(values.name);
+    map.slug = preserveCase ? preserveCaseSlugify(nameStr) : slugify(nameStr);
+    map.name = nameStr;
   }
   return map;
 }
 
 function resolveTargetPath(storage: StorageSpec, values: Record<string, unknown>): string {
-  const replacements = collectReplacements(values);
+  const preserveCase = storage.preserveCase ?? false;
+  const replacements = collectReplacements(values, preserveCase);
   const filenameSource = values[storage.filenameFrom];
-  const slug = typeof filenameSource === "string" ? slugify(filenameSource) : slugify(String(filenameSource ?? "entry"));
+  const slugFn = preserveCase ? preserveCaseSlugify : slugify;
+  const slug = typeof filenameSource === "string" ? slugFn(filenameSource) : slugFn(String(filenameSource ?? "entry"));
   replacements.slug = slug;
   replacements.filename = slug;
   const templatePath = applyTemplate(storage.pathTemplate, replacements);

@@ -1,6 +1,7 @@
 // src/app/integration-telemetry.ts
 // Dedupliziert Meldungen über Integrationsfehler.
 import { Notice } from "obsidian";
+import { logger } from "./plugin-logger";
 
 /** Identifies the bridge/integration that surfaced an operational issue. */
 export type IntegrationId = string;
@@ -39,7 +40,7 @@ const notifiedOperations = new Set<string>();
 export function reportIntegrationIssue(payload: IntegrationIssuePayload): void {
     const { integrationId, operation, error, userMessage } = payload;
     const logPrefix = `[salt-marcher] integration(${integrationId}) ${operation} failed`;
-    console.error(logPrefix, error);
+    logger.error(logPrefix, error);
 
     const dedupeKey = `${integrationId}:${operation}`;
     if (notifiedOperations.has(dedupeKey)) return;

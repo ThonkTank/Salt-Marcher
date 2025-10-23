@@ -35,3 +35,6 @@ coverage/
 
 # Vitest
 .vitest/
+
+# Debug configuration (local only)
+.claude/debug.json

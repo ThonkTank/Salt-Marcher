@@ -1,18 +1,11 @@
 // src/workmodes/library/storage/data-sources.ts
 // Stellt zentral konfigurierte Datenquellen für filterbare Library-Ansichten bereit.
 import type { App, TFile } from "obsidian";
+import type { BaseEntry, DataSource } from "../../../features/data-manager";
 import { readFrontmatter } from "../../../features/data-manager/browse/frontmatter-utils";
-import { listCreatureFiles, watchCreatureDir } from "./creatures";
-import { listSpellFiles, watchSpellDir } from "./spells";
-import { listItemFiles, watchItemDir } from "./items";
-import { listEquipmentFiles, watchEquipmentDir } from "./equipment";
+import { listVaultPresets, watchVaultPresets } from "../../../../Presets/lib/vault-preset-loader";
 
-export type FilterableLibraryMode = "creatures" | "spells" | "items" | "equipment";
-
-export interface LibraryEntryBase {
-    readonly file: TFile;
-    readonly name: string;
-}
+export type FilterableLibraryMode = "creatures" | "spells" | "items" | "equipment" | "terrains" | "regions" | "calendars";
 
 export interface CreatureEntryMeta {
     readonly type?: string;
@@ -39,24 +32,36 @@ export interface EquipmentEntryMeta {
     readonly role?: string;
 }
 
+export interface TerrainEntryMeta {
+    readonly color: string;
+    readonly speed: number;
+}
+
+export interface RegionEntryMeta {
+    readonly terrain: string;
+    readonly encounterOdds?: number;
+}
+
+export interface CalendarEntryMeta {
+    readonly id: string;
+    readonly daysPerWeek: number;
+    readonly monthCount?: number;
+}
+
 export interface LibraryEntryMetaMap {
     creatures: CreatureEntryMeta;
     spells: SpellEntryMeta;
     items: ItemEntryMeta;
     equipment: EquipmentEntryMeta;
+    terrains: TerrainEntryMeta;
+    regions: RegionEntryMeta;
+    calendars: CalendarEntryMeta;
 }
 
-export type LibraryEntry<M extends FilterableLibraryMode> = LibraryEntryBase & LibraryEntryMetaMap[M];
-
-export interface LibraryDataSource<M extends FilterableLibraryMode> {
-    readonly id: M;
-    list(app: App): Promise<TFile[]>;
-    watch(app: App, onChange: () => void): () => void;
-    load(app: App, file: TFile): Promise<LibraryEntry<M>>;
-}
+export type LibraryEntry<M extends FilterableLibraryMode> = BaseEntry & LibraryEntryMetaMap[M];
 
 export type LibraryDataSourceMap = {
-    [M in FilterableLibraryMode]: LibraryDataSource<M>;
+    [M in FilterableLibraryMode]: DataSource<M, LibraryEntry<M>>;
 };
 
 /**
@@ -73,7 +78,7 @@ function createEntryLoader<M extends FilterableLibraryMode>(
     return async (app: App, file: TFile): Promise<LibraryEntry<M>> => {
         const fm = await readFrontmatter(app, file);
         const meta = extractMeta(fm);
-        return { file, name: file.basename, ...meta } as LibraryEntry<M>;
+        return { file: file, name: file.basename, ...meta } as LibraryEntry<M>;
     };
 }
 
@@ -119,29 +124,66 @@ const loadEquipmentEntry = createEntryLoader<"equipment">(fm => {
     };
 });
 
+const loadTerrainEntry = createEntryLoader<"terrains">(fm => ({
+    color: typeof fm.color === "string" ? fm.color : "transparent",
+    speed: typeof fm.speed === "number" ? fm.speed : 1.0,
+}));
+
+const loadRegionEntry = createEntryLoader<"regions">(fm => ({
+    terrain: typeof fm.terrain === "string" ? fm.terrain : "",
+    encounterOdds: typeof fm.encounter_odds === "number" ? fm.encounter_odds : undefined,
+}));
+
+const loadCalendarEntry = createEntryLoader<"calendars">(fm => {
+    const months = Array.isArray(fm.months) ? fm.months : [];
+    return {
+        id: typeof fm.id === "string" ? fm.id : "",
+        daysPerWeek: typeof fm.daysPerWeek === "number" ? fm.daysPerWeek : 7,
+        monthCount: months.length,
+    };
+});
+
 export const LIBRARY_DATA_SOURCES: LibraryDataSourceMap = {
     creatures: {
         id: "creatures",
-        list: (app) => listCreatureFiles(app),
-        watch: (app, onChange) => watchCreatureDir(app, onChange),
+        list: (app) => listVaultPresets(app, "creatures"),
+        watch: (app, onChange) => watchVaultPresets(app, "creatures", onChange),
         load: loadCreatureEntry,
     },
     spells: {
         id: "spells",
-        list: (app) => listSpellFiles(app),
-        watch: (app, onChange) => watchSpellDir(app, onChange),
+        list: (app) => listVaultPresets(app, "spells"),
+        watch: (app, onChange) => watchVaultPresets(app, "spells", onChange),
         load: loadSpellEntry,
     },
     items: {
         id: "items",
-        list: (app) => listItemFiles(app),
-        watch: (app, onChange) => watchItemDir(app, onChange),
+        list: (app) => listVaultPresets(app, "items"),
+        watch: (app, onChange) => watchVaultPresets(app, "items", onChange),
         load: loadItemEntry,
     },
     equipment: {
         id: "equipment",
-        list: (app) => listEquipmentFiles(app),
-        watch: (app, onChange) => watchEquipmentDir(app, onChange),
+        list: (app) => listVaultPresets(app, "equipment"),
+        watch: (app, onChange) => watchVaultPresets(app, "equipment", onChange),
         load: loadEquipmentEntry,
+    },
+    terrains: {
+        id: "terrains",
+        list: (app) => listVaultPresets(app, "terrains"),
+        watch: (app, onChange) => watchVaultPresets(app, "terrains", onChange),
+        load: loadTerrainEntry,
+    },
+    regions: {
+        id: "regions",
+        list: (app) => listVaultPresets(app, "regions"),
+        watch: (app, onChange) => watchVaultPresets(app, "regions", onChange),
+        load: loadRegionEntry,
+    },
+    calendars: {
+        id: "calendars",
+        list: (app) => listVaultPresets(app, "calendars"),
+        watch: (app, onChange) => watchVaultPresets(app, "calendars", onChange),
+        load: loadCalendarEntry,
     },
 };

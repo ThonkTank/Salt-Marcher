@@ -1,3 +1,4 @@
+import { logger } from "../app/plugin-logger";
 // src/core/translator.ts
 export interface TranslationRequest {
     text: string;
@@ -41,7 +42,7 @@ export async function translateText({ text, target, source }: TranslationRequest
         const detected = typeof body?.[2] === "string" ? body[2] : source;
         return { translatedText: translated, detectedSourceLanguage: detected };
     } catch (error) {
-        console.error("translateText failed", error);
+        logger.error("translateText failed", error);
         return { translatedText: text, detectedSourceLanguage: source };
     }
 }

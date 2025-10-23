@@ -1,19 +1,48 @@
 ---
 smType: creature
-name: "Hippopotamus"
-size: "Large"
-type: "Beast"
-alignment: "Unaligned"
+name: Hippopotamus
+size: Large
+type: Beast
+alignmentOverride: Unaligned
 ac: "14"
+initiative: "-2 (8)"
 hp: "82"
-hit_dice: "11d10 + 22"
-speeds_json: "{\"walk\":{\"distance\":\"30 ft.\"},\"swim\":{\"distance\":\"30 ft.\"}}"
-abilities_json: "[{\"ability\":\"str\",\"score\":21},{\"ability\":\"dex\",\"score\":7},{\"ability\":\"con\",\"score\":15},{\"ability\":\"int\",\"score\":2},{\"ability\":\"wis\",\"score\":12},{\"ability\":\"cha\",\"score\":4}]"
+hitDice: 11d10 + 22
+speeds:
+  - type: walk
+    value: "30"
+  - type: swim
+    value: "30"
+abilities:
+  - ability: str
+    score: 21
+  - ability: dex
+    score: 7
+  - ability: con
+    score: 15
+  - ability: int
+    score: 2
+  - ability: wis
+    score: 12
+  - ability: cha
+    score: 4
 pb: "+2"
-saves_json: "[{\"ability\":\"str\",\"bonus\":7}]"
 cr: "4"
 xp: "1100"
-entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Hold Breath\",\"text\":\"The hippopotamus can hold its breath for 10 minutes.\"},{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The hippopotamus makes two Bite attacks.\"},{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +7, reach 5 ft. 16 (2d10 + 5) Piercing damage.\"}]"
+passivesList:
+  - skill: Perception
+    value: "13"
+entries:
+  - category: trait
+    name: Hold Breath
+    text: The hippopotamus can hold its breath for 10 minutes.
+  - category: action
+    name: Multiattack
+    text: The hippopotamus makes two Bite attacks.
+  - category: action
+    name: Bite
+    text: "*Melee Attack Roll:* +7, reach 5 ft. 16 (2d10 + 5) Piercing damage."
+
 ---
 
 # Hippopotamus
@@ -21,6 +50,7 @@ entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Hold Breath\",\"te
 
 **AC** 14
 **HP** 82 (11d10 + 22)
+**Initiative** -2 (8)
 **Speed** 30 ft., swim 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |

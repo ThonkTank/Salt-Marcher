@@ -282,7 +282,76 @@ Für Farbauswahl mit Hex-Code.
 
 ---
 
-### 9. **tags** - Chips/Token-Editor
+### 9. **tokens** - Vereinheitlichter Token-Editor (Empfohlen)
+
+**Neuer einheitlicher Token-Editor** für einfache Tags oder strukturierte Token mit Typ+Wert-Paaren. Ersetzt die separaten `tags` und `structured-tags` Typen mit einem flexiblen System, das beide Modi unterstützt.
+
+#### Modus 1: Einfache Token (String-Arrays)
+
+```typescript
+{
+  id: "languages",
+  label: "Sprachen",
+  type: "tokens",  // Neuer Typ
+  config: {
+    mode: "simple",  // Optional - wird automatisch erkannt
+    suggestions: ["Gemeinsam", "Elfisch", "Zwergisch", "Orkisch"],
+  },
+  placeholder: "Sprache hinzufügen...",
+  default: [],
+}
+```
+
+#### Modus 2: Strukturierte Token (Typ+Wert)
+
+```typescript
+{
+  id: "speeds",
+  label: "Bewegungsraten",
+  type: "tokens",  // Neuer Typ
+  config: {
+    mode: "structured",  // Optional - kann auch durch type-Kompatibilität erkannt werden
+    suggestions: [
+      { key: "walk", label: "Gehen" },
+      { key: "fly", label: "Fliegen" },
+      { key: "swim", label: "Schwimmen" },
+    ],
+    valueConfig: {
+      placeholder: "z.B. 30 ft.",
+      unit: "ft.",
+    },
+  },
+  placeholder: "Bewegungsart auswählen...",
+  default: [],
+}
+```
+
+**Config-Optionen:**
+- `mode?: "simple" | "structured"` - Modus (optional - wird automatisch erkannt)
+- `suggestions?: string[] | Array<{ key: string; label: string }>` - Vorschlagsliste
+  - Für simple Mode: String-Array
+  - Für structured Mode: Array von Objekten mit `key` und `label`
+- `valueConfig?` - Konfiguration für Wert-Input (nur structured Mode):
+  - `placeholder?: string` - Platzhalter für Wert-Input
+  - `unit?: string` - Einheit nach dem Wert (z.B. "ft.", "%")
+
+**Features:**
+- **Automatische Modus-Erkennung**: Erkennt simple vs. structured aus suggestions-Format
+- **Keyboard-Navigation**: ↑/↓ Navigation, Enter auswählen, Escape schließen
+- **Suggestion-Menü**: Autocomplete für beide Modi
+- **Grid-Layout kompatibel**: Funktioniert in allen Layout-Kontexten
+- **Backward Compatible**: Unterstützt auch `type: "tags"` und `type: "structured-tags"`
+
+**Datenformat:**
+- Simple Mode: `["Gemeinsam", "Elfisch", "Zwergisch"]`
+- Structured Mode: `[{ type: "walk", value: "30" }, { type: "fly", value: "60" }]`
+
+---
+
+### 9a. **tags** - Einfache Tags (Legacy)
+
+> **Hinweis:** Dies ist ein Legacy-Typ. Verwende stattdessen `type: "tokens"` mit `config.mode: "simple"`.
+> Der `tags` Typ wird weiterhin unterstützt, zeigt aber intern auf den unified `tokens` Renderer.
 
 Für dynamische Liste von Text-Tags mit optionalen Vorschlägen.
 
@@ -309,7 +378,10 @@ Für dynamische Liste von Text-Tags mit optionalen Vorschlägen.
 
 ---
 
-### 10. **structured-tags** - Strukturierte Token mit Typ und Wert
+### 9b. **structured-tags** - Strukturierte Token (Legacy)
+
+> **Hinweis:** Dies ist ein Legacy-Typ. Verwende stattdessen `type: "tokens"` mit `config.mode: "structured"`.
+> Der `structured-tags` Typ wird weiterhin unterstützt, zeigt aber intern auf den unified `tokens` Renderer.
 
 Für dynamische Listen von strukturierten Token, bei denen jeder Token einen Typ (aus Vorschlägen) und einen editierbaren Wert hat. Ideal für Bewegungsraten, Skill-Boni, Schadensresistenzen mit Bedingungen, etc.
 
@@ -370,7 +442,7 @@ Speichert als Array von Objekten: `[{ type: "walk", value: "30" }, { type: "fly"
 
 ---
 
-### 11. **composite** - Gruppierte Felder
+### 10. **composite** - Gruppierte Felder
 
 Für zusammenhängende Felder, die als Gruppe dargestellt werden (z.B. Attribute).
 
@@ -399,7 +471,7 @@ Für zusammenhängende Felder, die als Gruppe dargestellt werden (z.B. Attribute
 
 ---
 
-### 12. **repeating** - Dynamische oder Statische Listen
+### 11. **repeating** - Dynamische oder Statische Listen
 
 Für Listen von Einträgen, die entweder **dynamisch** (mit Hinzufügen/Entfernen/Umsortieren) oder **statisch** (feste Anzahl mit Template-basiertem Rendering) sein können.
 
@@ -565,7 +637,7 @@ Für feste Listen mit gleicher Struktur (z.B. D&D Attribute: STR, DEX, CON, INT,
 
 ---
 
-### 13. **autocomplete** - Textfeld mit Vorschlägen
+### 12. **autocomplete** - Textfeld mit Vorschlägen
 
 Für Texteingabe mit Autovervollständigung aus vordefinierten Werten.
 
@@ -587,7 +659,7 @@ Für Texteingabe mit Autovervollständigung aus vordefinierten Werten.
 
 ---
 
-### 14. **display** - Berechnetes/Angezeigtes Feld (Read-Only)
+### 13. **display** - Berechnetes/Angezeigtes Feld (Read-Only)
 
 Für computed/berechnete Werte, die basierend auf anderen Feldern automatisch angezeigt werden. Ideal für Modifikatoren, abgeleitete Werte, oder Formeln.
 
@@ -698,7 +770,7 @@ Display-Felder erhalten automatisch die CSS-Klasse `.sm-cc-display-field` und we
 
 ---
 
-### 15. **heading** - Überschriften/Labels für Repeating Fields (NEU)
+### 14. **heading** - Überschriften/Labels für Repeating Fields (NEU)
 
 Für Überschriften oder Labels innerhalb von Repeating Fields im Template-Modus. Zeigt einen Wert aus den Entry-Daten als nicht-editierbare Überschrift an.
 

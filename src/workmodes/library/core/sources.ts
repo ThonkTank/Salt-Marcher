@@ -1,15 +1,27 @@
 // src/workmodes/library/core/sources.ts
 // Konsolidiert Bibliotheksquellen samt Setup- und Beschreibungs-Utilities.
 import type { App } from "obsidian";
-import { ensureCreatureDir } from "../storage/creatures";
-import { ensureSpellDir } from "../storage/spells";
-import { ensureItemDir } from "../storage/items";
-import { ensureEquipmentDir } from "../storage/equipment";
+import { normalizePath } from "obsidian";
 import { ensureTerrainFile, TERRAIN_FILE } from "../../../features/maps/data/terrain-repository";
 import { ensureRegionsFile, REGIONS_FILE } from "../../../features/maps/data/region-repository";
-import { ENTITY_REGISTRY } from "./entity-registry";
+import { ENTITY_REGISTRY } from "../../../../Presets/lib/entity-registry";
 
-export type LibrarySourceId = "creatures" | "spells" | "items" | "equipment" | "terrains" | "regions";
+// Simple directory ensure functions
+async function ensureDir(app: App, dir: string): Promise<void> {
+    const normalizedDir = normalizePath(dir);
+    const folder = app.vault.getAbstractFileByPath(normalizedDir);
+    if (!folder) {
+        await app.vault.createFolder(normalizedDir).catch(() => {});
+    }
+}
+
+const ensureCreatureDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.creatures.directory);
+const ensureSpellDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.spells.directory);
+const ensureItemDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.items.directory);
+const ensureEquipmentDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.equipment.directory);
+const ensureCalendarDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.calendars.directory);
+
+export type LibrarySourceId = "creatures" | "spells" | "items" | "equipment" | "terrains" | "regions" | "calendars";
 
 type SourceSpec = {
     ensure(app: App): Promise<unknown>;
@@ -40,6 +52,10 @@ const SOURCE_MAP: Record<LibrarySourceId, SourceSpec> = Object.freeze({
     regions: {
         ensure: ensureRegionsFile,
         description: REGIONS_FILE,
+    },
+    calendars: {
+        ensure: ensureCalendarDir,
+        description: `${ENTITY_REGISTRY.calendars.directory}/`,
     },
 });
 

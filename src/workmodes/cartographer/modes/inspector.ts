@@ -5,6 +5,7 @@ import { loadTile, saveTile } from "../../../features/maps/data/tile-repository"
 import { TERRAIN_COLORS } from "../../../features/maps/domain/terrain";
 import { enhanceSelectToSearch } from "../../../ui/components/search-dropdown";
 import type { RenderHandles } from "../../../features/maps/rendering/hex-render";
+import { logger } from "../../../app/plugin-logger";
 import type {
     CartographerMode,
     CartographerModeLifecycleContext,
@@ -110,13 +111,13 @@ export function createInspectorMode(): CartographerMode {
             try {
                 await saveTile(ctx.app, file, state.selection!, { terrain, note });
             } catch (err) {
-                console.error("[inspector-mode] saveTile failed", err);
+                logger.error("[inspector-mode] saveTile failed", err);
             }
             const color = TERRAIN_COLORS[terrain] ?? "transparent";
             try {
                 handles?.setFill(state.selection!, color);
             } catch (err) {
-                console.error("[inspector-mode] setFill failed", err);
+                logger.error("[inspector-mode] setFill failed", err);
             }
         }, 250);
     };
@@ -129,7 +130,7 @@ export function createInspectorMode(): CartographerMode {
         try {
             data = await loadTile(ctx.app, file, state.selection);
         } catch (err) {
-            console.error("[inspector-mode] loadTile failed", err);
+            logger.error("[inspector-mode] loadTile failed", err);
             data = null;
         }
         if (ctx.signal.aborted) return;

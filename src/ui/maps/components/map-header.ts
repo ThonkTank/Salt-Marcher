@@ -5,6 +5,7 @@ import { App, Notice, TFile, setIcon } from "obsidian";
 import { applyMapButtonStyle, promptCreateMap, promptMapSelection } from "../workflows/map-workflows";
 import { enhanceSelectToSearch } from "../../components/search-dropdown";
 import { saveMap, saveMapAs } from "../workflows/save";
+import { logger } from "../../../app/plugin-logger";
 
 export type MapHeaderSaveMode = "save" | "saveAs";
 
@@ -194,7 +195,7 @@ export function createMapHeader(app: App, host: HTMLElement, options: MapHeaderO
             }
             new Notice(notices.saveSuccess);
         } catch (err) {
-            console.error("[map-header] save failed", err);
+            logger.error("[map-header] save failed", err);
             new Notice(notices.saveError);
         }
     };

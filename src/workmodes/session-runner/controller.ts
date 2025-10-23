@@ -6,6 +6,7 @@ import { getFirstHexBlock } from "../../ui/maps/components/map-list";
 import type { RenderHandles } from "../../features/maps/rendering/hex-render";
 import { createMapLayer, type MapLayer } from "./travel/ui/map-layer";
 import { createMapManager, type MapManagerHandle } from "../../ui/maps/workflows/map-manager";
+import { logger } from "../../app/plugin-logger";
 import {
     createMapHeader,
     type MapHeaderHandle,
@@ -170,7 +171,7 @@ export class SessionRunnerController {
             await experience.onEnter(lifecycleCtx);
             await this.applyCurrentFile(initialFile, lifecycleCtx);
         } catch (error) {
-            console.error("[session-runner] failed to start experience", error);
+            logger.error("[session-runner] failed to start experience", error);
             this.view?.setOverlay(EXPERIENCE_OVERLAY_MESSAGE);
             new Notice(EXPERIENCE_NOTICE_MESSAGE);
         }
@@ -191,7 +192,7 @@ export class SessionRunnerController {
             try {
                 await experience.onExit(lifecycle.ctx);
             } catch (error) {
-                console.error("[session-runner] experience exit failed", error);
+                logger.error("[session-runner] experience exit failed", error);
             }
         }
 
@@ -272,7 +273,7 @@ export class SessionRunnerController {
             try {
                 options = await this.deps.loadHexOptions(this.app, this.currentFile);
             } catch (error) {
-                console.error("[session-runner] failed to parse map options", error);
+                logger.error("[session-runner] failed to parse map options", error);
             }
             if (signal.aborted || !this.view) return;
 
@@ -289,7 +290,7 @@ export class SessionRunnerController {
             try {
                 layer = await this.deps.createMapLayer(this.app, view.mapHost, this.currentFile, options);
             } catch (error) {
-                console.error("[session-runner] failed to render map", error);
+                logger.error("[session-runner] failed to render map", error);
                 layer = null;
             }
 
@@ -332,7 +333,7 @@ export class SessionRunnerController {
         try {
             await this.experience?.onFileChange(file, handles, ctx);
         } catch (error) {
-            console.error("[session-runner] onFileChange failed", error);
+            logger.error("[session-runner] onFileChange failed", error);
         }
     }
 
@@ -342,7 +343,7 @@ export class SessionRunnerController {
             if (!this.experience.onSave) return false;
             return (await this.experience.onSave(mode, file, this.lifecycle.ctx)) ?? false;
         } catch (error) {
-            console.error("[session-runner] onSave failed", error);
+            logger.error("[session-runner] onSave failed", error);
             return false;
         }
     }
@@ -352,7 +353,7 @@ export class SessionRunnerController {
         try {
             await this.experience.onHexClick(coord, event, this.lifecycle.ctx);
         } catch (error) {
-            console.error("[session-runner] onHexClick failed", error);
+            logger.error("[session-runner] onHexClick failed", error);
         }
     }
 
@@ -363,7 +364,7 @@ export class SessionRunnerController {
         try {
             layer.destroy();
         } catch (error) {
-            console.error("[session-runner] failed to destroy map layer", error);
+            logger.error("[session-runner] failed to destroy map layer", error);
         }
     }
 }
@@ -403,7 +404,7 @@ function createSessionRunnerView(options: CreateSessionRunnerViewOptions): Sessi
         event.stopPropagation();
         if (event.cancelable) event.preventDefault();
         void Promise.resolve(callbacks.onHexClick(detail, event as CustomEvent<HexCoord>)).catch((error) => {
-            console.error("[session-runner] hex click handler failed", error);
+            logger.error("[session-runner] hex click handler failed", error);
         });
     };
     surface.stageEl.addEventListener("hex:click", hexListener as EventListener, { passive: false });

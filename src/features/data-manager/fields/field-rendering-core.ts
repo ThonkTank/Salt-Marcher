@@ -4,6 +4,8 @@
 
 import { Setting } from "obsidian";
 import type { AnyFieldSpec, FieldRenderHandle, FieldRegistryEntry } from "../../types";
+import { logger } from "../../../app/plugin-logger";
+import { calculateTextWidth } from "../utils/width-utils";
 
 /**
  * Core handle for field controls.
@@ -53,6 +55,13 @@ export interface TextFieldCoreOptions {
 export function renderTextCore(options: TextFieldCoreOptions): CoreFieldHandle {
   const { container, placeholder = "", value, className = "sm-cc-input", onChange } = options;
 
+  // Debug logging for pb field (check placeholder for ÜB field)
+  if (placeholder.includes('+2') || placeholder === 'z.B. +2') {
+    logger.log('[renderTextCore] Rendering field with placeholder:', placeholder);
+    logger.log('[renderTextCore] Raw value:', value);
+    logger.log('[renderTextCore] Value type:', typeof value);
+  }
+
   const input = container.createEl("input", {
     cls: className,
     attr: {
@@ -62,6 +71,13 @@ export function renderTextCore(options: TextFieldCoreOptions): CoreFieldHandle {
   }) as HTMLInputElement;
 
   const initialValue = normalizeToString(value);
+
+  // Debug logging continued
+  if (placeholder.includes('+2') || placeholder === 'z.B. +2') {
+    logger.log('[renderTextCore] Normalized value:', initialValue);
+    logger.log('[renderTextCore] Setting input.value to:', initialValue);
+  }
+
   input.value = initialValue;
 
   input.addEventListener("input", () => {
@@ -126,10 +142,10 @@ export function renderTextareaCore(options: TextareaFieldCoreOptions): CoreField
 }
 
 // ============================================================================
-// TOGGLE FIELD CORE
+// CHECKBOX FIELD CORE
 // ============================================================================
 
-export interface ToggleFieldCoreOptions {
+export interface CheckboxFieldCoreOptions {
   container: HTMLElement;
   value?: unknown;
   className?: string;
@@ -137,11 +153,11 @@ export interface ToggleFieldCoreOptions {
 }
 
 /**
- * Core implementation for toggle/checkbox fields.
+ * Core implementation for checkbox fields.
  * Creates and manages a checkbox input element without Setting wrapper.
  */
-export function renderToggleCore(options: ToggleFieldCoreOptions): CoreFieldHandle {
-  const { container, value, className = "sm-cc-toggle", onChange } = options;
+export function renderCheckboxCore(options: CheckboxFieldCoreOptions): CoreFieldHandle {
+  const { container, value, className = "sm-cc-checkbox", onChange } = options;
 
   const checkbox = container.createEl("input", {
     cls: className,
@@ -300,6 +316,8 @@ export interface DisplayFieldCoreOptions {
     prefix?: string | ((data: Record<string, unknown>) => string);
     suffix?: string | ((data: Record<string, unknown>) => string);
     className?: string;
+    maxWidth?: string;
+    maxTokens?: number; // Expected character count for width calculation
   };
   fieldId?: string; // For error logging
 }
@@ -324,6 +342,28 @@ export function renderDisplayCore(options: DisplayFieldCoreOptions) {
     displayEl.addClass(config.className);
   }
 
+  if (config.maxWidth) {
+    displayEl.style.maxWidth = config.maxWidth;
+  }
+
+  // Calculate width based on maxTokens if specified
+  if (config.maxTokens && config.maxTokens > 0) {
+    // Wait for element to be in DOM with font styles applied
+    setTimeout(() => {
+      // Generate sample text ("M" is typically widest character)
+      const sampleText = "M".repeat(config.maxTokens);
+
+      // Calculate width including padding and border
+      const width = calculateTextWidth(sampleText, displayEl, {
+        includePadding: true,
+        includeBorder: true,
+        extraSpace: 4, // Small buffer
+      });
+
+      displayEl.style.width = `${width}px`;
+    }, 0);
+  }
+
   return {
     update: (value: unknown, all?: Record<string, unknown>) => {
       try {
@@ -336,7 +376,7 @@ export function renderDisplayCore(options: DisplayFieldCoreOptions) {
           : (config.suffix ?? "");
         displayEl.value = `${prefixVal}${computed}${suffixVal}`;
       } catch (error) {
-        console.warn(`Display field ${fieldId} compute error:`, error);
+        logger.warn(`Display field ${fieldId} compute error:`, error);
         displayEl.value = "";
       }
     },
@@ -434,7 +474,7 @@ export function renderCompositeCore(options: CompositeFieldCoreOptions) {
     try {
       return childSpec.visibleIf(compositeValue);
     } catch (error) {
-      console.error(`Failed to evaluate visibility for ${childSpec.id}:`, error);
+      logger.error(`Failed to evaluate visibility for ${childSpec.id}:`, error);
       return true;
     }
   };
@@ -460,7 +500,7 @@ export function renderCompositeCore(options: CompositeFieldCoreOptions) {
               child.handle.update?.(initValue, compositeValue);
               onChange(compositeValue);
             } catch (error) {
-              console.error(`Failed to initialize ${child.id}:`, error);
+              logger.error(`Failed to initialize ${child.id}:`, error);
             }
           }
         }
@@ -578,14 +618,14 @@ export function renderRepeatingEntryManagerCore(options: RepeatingEntryManagerCo
 
   // Validate required config
   if (!categories.length) {
-    console.warn(`Repeating field "${fieldId}" has no categories defined`);
+    logger.warn(`Repeating field "${fieldId}" has no categories defined`);
     const errorContainer = container.createDiv({ cls: "sm-cc-field--error" });
     errorContainer.createEl("p", { text: "No categories defined for repeating field" });
     return { error: true };
   }
 
   if (!renderEntry && !card) {
-    console.warn(`Repeating field "${fieldId}" requires renderEntry or card in config`);
+    logger.warn(`Repeating field "${fieldId}" requires renderEntry or card in config`);
     const errorContainer = container.createDiv({ cls: "sm-cc-field--error" });
     errorContainer.createEl("p", { text: "No renderer defined for repeating field" });
     return { error: true };
@@ -629,6 +669,48 @@ export function renderRepeatingEntryManagerCore(options: RepeatingEntryManagerCo
 }
 
 // ============================================================================
+// TOKEN FIELD CORE
+// ============================================================================
+
+// Import modular token system
+import {
+  renderModularTokenFieldCore,
+  type ModularTokenFieldOptions,
+  type ModularTokenFieldHandle,
+} from "./token-field-core-new";
+import type { TokenFieldDefinition } from "../../types";
+
+/**
+ * Modular token field options
+ */
+export interface ModularTokenFieldCoreOptions {
+  container: HTMLElement;
+  fields: TokenFieldDefinition[];
+  primaryField: string;
+  value?: Array<Record<string, unknown>>;
+  chipTemplate?: (token: Record<string, unknown>) => string;
+  className?: string;
+  onChange: (value: Array<Record<string, unknown>>) => void;
+}
+
+export interface TokenFieldCoreHandle extends CoreFieldHandle {
+  chipsContainer: HTMLElement;
+}
+
+/**
+ * Core implementation for modular token/chip fields.
+ * Supports flexible token structures with inline-editable segments.
+ *
+ * Grid-compatible layout: Input/button and chips container are returned separately
+ * so caller can position them correctly for CSS Grid.
+ */
+export function renderTokenFieldCore(
+  options: ModularTokenFieldCoreOptions
+): TokenFieldCoreHandle {
+  return renderModularTokenFieldCore(options as ModularTokenFieldOptions) as TokenFieldCoreHandle;
+}
+
+// ============================================================================
 // RENDERER WRAPPER FACTORY
 // ============================================================================
 
@@ -660,9 +742,12 @@ export function createRendererWrapper<THandle = CoreFieldHandle>(
     supports: (spec) => spec.type === type,
     render: (args) => {
       const { container, spec, values, onChange } = args;
-      
+
       // Create Setting wrapper with label and description
-      const setting = new Setting(container).setName(spec.label);
+      const setting = new Setting(container);
+      if (spec.label) {
+        setting.setName(spec.label);
+      }
       setting.settingEl.addClass("sm-cc-setting");
       if (spec.help) {
         setting.setDesc(spec.help);

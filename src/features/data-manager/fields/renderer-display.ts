@@ -10,11 +10,13 @@ export const displayFieldRenderer: FieldRegistryEntry = {
     const { container, spec, values } = args;
     const displaySpec = spec as DisplayFieldSpec;
 
-    // Add label for the control
-    const label = container.createEl("label", {
-      cls: "sm-cc-field-label",
-      text: spec.label
-    });
+    // Only add label if spec.label is not empty
+    if (spec.label) {
+      const label = container.createEl("label", {
+        cls: "sm-cc-field-label",
+        text: spec.label
+      });
+    }
 
     const controlContainer = container.createDiv({ cls: "sm-cc-field-control" });
 

@@ -3,6 +3,7 @@
 
 import { FieldWidthCalculator } from "./layout-utils";
 import type { AnyFieldSpec } from "../types";
+import { logger } from "../../../app/plugin-logger";
 
 /**
  * Manages dynamic grid layout for card__body based on field dimensions.
@@ -12,6 +13,7 @@ export class GridLayoutManager {
   private container: HTMLElement;
   private fields: AnyFieldSpec[];
   private observer: ResizeObserver;
+  private currentPairs: number = 1;
 
   constructor(container: HTMLElement, fields: AnyFieldSpec[]) {
     this.container = container;
@@ -19,6 +21,14 @@ export class GridLayoutManager {
     this.observer = new ResizeObserver(() => this.recalculate());
     this.observer.observe(container);
     this.recalculate();
+  }
+
+  /**
+   * Returns true if the current layout uses multiple columns (pairs > 1).
+   * Used to determine if label width synchronization should be disabled.
+   */
+  get isMultiColumn(): boolean {
+    return this.currentPairs > 1;
   }
 
   private measureMaxLabelWidth(): number {
@@ -42,7 +52,7 @@ export class GridLayoutManager {
       return !dims.isWide;
     });
 
-    console.log('[GridLayoutManager] Recalculating layout:', {
+    logger.log('[GridLayoutManager] Recalculating layout:', {
       totalFields: this.fields.length,
       normalFields: normalFields.length,
       availableWidth,
@@ -51,7 +61,7 @@ export class GridLayoutManager {
 
     if (normalFields.length === 0) {
       // Only wide fields → single column
-      console.log('[GridLayoutManager] No normal fields, using single column');
+      logger.log('[GridLayoutManager] No normal fields, using single column');
       this.container.style.gridTemplateColumns = 'max-content 1fr';
       return;
     }
@@ -82,17 +92,21 @@ export class GridLayoutManager {
       pairs = Math.max(1, Math.min(pairs, 3));
     }
 
+    // Store current pairs for isMultiColumn getter
+    this.currentPairs = pairs;
+
     // Set grid template dynamically
     const columns = pairs === 1
       ? 'max-content 1fr'
       : `repeat(${pairs}, max-content 1fr)`;
 
-    console.log('[GridLayoutManager] Layout calculated:', {
+    logger.log('[GridLayoutManager] Layout calculated:', {
       labelWidth,
       maxControlWidth,
       minPairWidth,
       pairs,
       columns,
+      isMultiColumn: this.isMultiColumn,
     });
 
     this.container.style.gridTemplateColumns = columns;

@@ -6,6 +6,7 @@ import type { FieldRegistryEntry } from "../../types";
 import { createValidationControls } from "../modal/modal-utils";
 import { resolveInitialValue } from "./field-utils";
 import { enhanceSelectToSearch } from "./select-enhancement";
+import { logger } from "../../../app/plugin-logger";
 
 export const selectFieldRenderer: FieldRegistryEntry = {
   supports: (spec) => spec.type === "select",
@@ -36,8 +37,16 @@ export const selectFieldRenderer: FieldRegistryEntry = {
       if (selectEl) {
         try {
           enhanceSelectToSearch(selectEl, spec.placeholder ?? "Suchen…");
+
+          // Sync input with current selection after enhancement
+          if ((selectEl as any)._smSearchInput) {
+            const currentOption = Array.from(selectEl.options).find(opt => opt.value === fallback);
+            if (currentOption) {
+              ((selectEl as any)._smSearchInput as HTMLInputElement).value = currentOption.text;
+            }
+          }
         } catch (error) {
-          console.warn("Enhance select failed", error);
+          logger.warn("Enhance select failed", error);
         }
       }
     });

@@ -1,3 +1,4 @@
+import { logger } from "../../app/plugin-logger";
 // src/ui/form-builder.ts
 // Baut Formularoberflächen aus einer Konfiguration mit Reihen, Auswahlfeldern, Slidern und Hinweisen.
 export type FormBuilderTone = "info" | "loading" | "error" | "warning";
@@ -522,7 +523,7 @@ export function buildForm<FieldId extends string, HintId extends string, Contain
                 try {
                     fn();
                 } catch (err) {
-                    console.error("[form-builder] cleanup failed", err);
+                    logger.error("[form-builder] cleanup failed", err);
                 }
             });
             cleanup.length = 0;

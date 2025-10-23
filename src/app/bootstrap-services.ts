@@ -1,5 +1,6 @@
 // src/app/bootstrap-services.ts
 import type { App } from "obsidian";
+import { logger } from "./plugin-logger";
 import {
     ensureTerrainFile,
     loadTerrains,
@@ -36,23 +37,23 @@ export interface TerrainBootstrapConfig {
 const defaultLogger: Required<TerrainBootstrapLogger> = {
     info: (message, context) => {
         if (context) {
-            console.info(`[salt-marcher] ${message}`, context);
+            logger.info(`[salt-marcher] ${message}`, context);
         } else {
-            console.info(`[salt-marcher] ${message}`);
+            logger.info(`[salt-marcher] ${message}`);
         }
     },
     warn: (message, context) => {
         if (context) {
-            console.warn(`[salt-marcher] ${message}`, context);
+            logger.warn(`[salt-marcher] ${message}`, context);
         } else {
-            console.warn(`[salt-marcher] ${message}`);
+            logger.warn(`[salt-marcher] ${message}`);
         }
     },
     error: (message, context) => {
         if (context) {
-            console.error(`[salt-marcher] ${message}`, context);
+            logger.error(`[salt-marcher] ${message}`, context);
         } else {
-            console.error(`[salt-marcher] ${message}`);
+            logger.error(`[salt-marcher] ${message}`);
         }
     },
 };

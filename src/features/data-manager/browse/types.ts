@@ -11,7 +11,7 @@ import type { FilterDefinition, SortDefinition } from "./filter-controls";
  */
 export interface BaseEntry {
     readonly name: string;
-    readonly file: string;
+    readonly file: TFile;
 }
 
 /**

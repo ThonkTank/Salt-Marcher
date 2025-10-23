@@ -4,6 +4,7 @@
 // render the last travel hand-off without waiting for another event.
 
 import type { Coord } from "../session-runner/travel/domain/types";
+import { logger } from "../../app/plugin-logger";
 
 export const DND5E_XP_THRESHOLDS: Record<number, number> = {
     1: 0,
@@ -140,7 +141,7 @@ function emitEncounterXpState(): EncounterXpState {
         try {
             listener(snapshot);
         } catch (err) {
-            console.error("[encounter] xp listener failed", err);
+            logger.error("[encounter] xp listener failed", err);
         }
     }
     return snapshot;
@@ -152,7 +153,7 @@ export function publishEncounterEvent(event: EncounterEvent) {
         try {
             listener(event);
         } catch (err) {
-            console.error("[encounter] listener failed", err);
+            logger.error("[encounter] listener failed", err);
         }
     }
 }
@@ -163,7 +164,7 @@ export function subscribeToEncounterEvents(listener: EncounterEventListener): ()
         try {
             listener(latestEvent);
         } catch (err) {
-            console.error("[encounter] listener failed", err);
+            logger.error("[encounter] listener failed", err);
         }
     }
     return () => {
@@ -184,7 +185,7 @@ export function subscribeEncounterXpState(listener: EncounterXpStateListener): (
     try {
         listener(getEncounterXpState());
     } catch (err) {
-        console.error("[encounter] xp listener failed", err);
+        logger.error("[encounter] xp listener failed", err);
     }
     return () => {
         xpStateListeners.delete(listener);

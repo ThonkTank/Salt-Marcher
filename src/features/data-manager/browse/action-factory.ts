@@ -1,7 +1,8 @@
 // src/features/data-manager/browse/action-factory.ts
 // Unified action factory for creating standard CRUD actions across all entity types
 
-import type { TFile } from "obsidian";
+import type { BaseEntry } from "./types";
+import { logger } from "../../../app/plugin-logger";
 
 /**
  * Generic action context for any entity type
@@ -22,18 +23,10 @@ export interface EntityAction<TEntry, TContext = EntityActionContext<TEntry>> {
 }
 
 /**
- * Minimum requirements for an entry that can use standard actions
- */
-export interface StandardEntry {
-  name: string;
-  file: TFile;
-}
-
-/**
  * Creates a standard "open file" action.
  * Opens the entry's file in the workspace.
  */
-export function createOpenAction<TEntry extends StandardEntry, TContext extends EntityActionContext<TEntry>>(): EntityAction<TEntry, TContext> {
+export function createOpenAction<TEntry extends BaseEntry, TContext extends EntityActionContext<TEntry>>(): EntityAction<TEntry, TContext> {
   return {
     id: "open",
     label: "Open",
@@ -49,7 +42,7 @@ export function createOpenAction<TEntry extends StandardEntry, TContext extends 
  *
  * @param typeName - Human-readable name for the entity type (e.g., "creature", "spell")
  */
-export function createDeleteAction<TEntry extends StandardEntry, TContext extends EntityActionContext<TEntry>>(
+export function createDeleteAction<TEntry extends BaseEntry, TContext extends EntityActionContext<TEntry>>(
   typeName: string
 ): EntityAction<TEntry, TContext> {
   return {
@@ -66,7 +59,7 @@ export function createDeleteAction<TEntry extends StandardEntry, TContext extend
         await context.app.vault.trash(entry.file, true);
         await context.reloadEntries();
       } catch (err) {
-        console.error(`Failed to delete ${typeName}`, err);
+        logger.error(`Failed to delete ${typeName}`, err);
       }
     },
   };
@@ -92,7 +85,7 @@ export function createDeleteAction<TEntry extends StandardEntry, TContext extend
  * }));
  * ```
  */
-export function createStandardActions<TEntry extends StandardEntry, TContext extends EntityActionContext<TEntry>>(
+export function createStandardActions<TEntry extends BaseEntry, TContext extends EntityActionContext<TEntry>>(
   typeName: string,
   createEditAction: () => EntityAction<TEntry, TContext>
 ): EntityAction<TEntry, TContext>[] {

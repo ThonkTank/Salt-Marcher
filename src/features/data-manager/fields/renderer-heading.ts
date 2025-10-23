@@ -10,19 +10,20 @@ export const headingFieldRenderer: FieldRegistryEntry = {
     const { container, spec, values } = args;
     const headingSpec = spec as HeadingFieldSpec;
 
-    // Add label for the control
-    const label = container.createEl("label", {
+    // Calculate label text from getValue or use spec.label
+    const labelText = headingSpec.getValue
+      ? headingSpec.getValue(values as Record<string, unknown>)
+      : spec.label;
+
+    // Always create label with calculated text
+    container.createEl("label", {
       cls: "sm-cc-field-label",
-      text: spec.label
+      text: labelText
     });
 
-    const controlContainer = container.createDiv({ cls: "sm-cc-field-control" });
+    // Control container (empty for heading fields)
+    container.createDiv({ cls: "sm-cc-field-control" });
 
-    // Use core rendering function
-    return renderHeadingCore({
-      container: controlContainer,
-      getValue: headingSpec.getValue,
-      values: values as Record<string, unknown>,
-    });
+    return {};
   },
 };

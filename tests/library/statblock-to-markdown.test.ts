@@ -2,7 +2,7 @@
 // Prüft den Markdown-Export von Statblocks auf neue Metadaten (Typ-Tags, Alignment-Override, Spellcasting-Gruppen).
 
 import { describe, expect, it } from "vitest";
-import { statblockToMarkdown, type StatblockData } from "../../src/workmodes/library/core/creature-files";
+import { statblockToMarkdown, type StatblockData } from "../../src/workmodes/library/entities/creatures";
 import { EXAMPLE_CREATURE_STATBLOCKS } from "./creature-fixtures";
 
 function createStatblock(overrides: Partial<StatblockData> = {}): StatblockData {
@@ -13,7 +13,7 @@ function createStatblock(overrides: Partial<StatblockData> = {}): StatblockData 
 }
 
 describe("statblockToMarkdown", () => {
-  it("rendert Typ-Tags im Frontmatter und in der Kopfzeile", () => {
+  it("rendert Typ-Tags in der Kopfzeile", () => {
     const markdown = statblockToMarkdown(
       createStatblock({
         size: "Large",
@@ -24,7 +24,7 @@ describe("statblockToMarkdown", () => {
       }),
     );
 
-    expect(markdown).toContain('type_tags: ["warforged", "soldier"]');
+    // Only check body content (frontmatter is handled by data-manager)
     expect(markdown).toContain("*Large Construct (warforged, soldier), Lawful Good*");
   });
 
@@ -38,8 +38,7 @@ describe("statblockToMarkdown", () => {
       }),
     );
 
-    expect(markdown).toContain('alignment: "Unaligned"');
-    expect(markdown).toContain('alignment_override: "Unaligned"');
+    // Only check body content (frontmatter is handled by data-manager)
     expect(markdown).toContain("*Tiny Beast (familiar), Unaligned*");
   });
 

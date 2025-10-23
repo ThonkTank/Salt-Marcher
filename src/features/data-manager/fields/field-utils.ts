@@ -5,15 +5,39 @@ import { createNumberStepper } from "./number-stepper-control";
 import { enhanceSelectToSearch } from "./select-enhancement";
 import { mountEntryManager, type EntryCategoryDefinition, type EntryFilterDefinition } from "../storage/entry-system";
 import { RepeatingWidthSynchronizer } from "../layout/repeating-width-sync";
-import { renderTextCore, renderTextareaCore, renderToggleCore, renderColorCore, renderMultiselectCore, renderDisplayCore, renderHeadingCore, renderCompositeCore, renderRepeatingEntryManagerCore } from "./field-rendering-core";
+import { renderTextCore, renderTextareaCore, renderCheckboxCore, renderColorCore, renderMultiselectCore, renderDisplayCore, renderHeadingCore, renderCompositeCore, renderRepeatingEntryManagerCore } from "./field-rendering-core";
+import { createClickableIcon } from "./clickable-icon";
 import type { AnyFieldSpec, FieldRenderHandle, CompositeFieldSpec } from "../../types";
+import { logger } from "../../../app/plugin-logger";
+import { debugLogger } from "../../../app/debug-logger";
 
 /**
  * Resolves the initial value for a field from values or default.
  */
 export function resolveInitialValue(spec: AnyFieldSpec, values: Record<string, unknown>) {
-  if (values[spec.id] !== undefined) return values[spec.id];
-  if (spec.default !== undefined) return spec.default;
+  // Debug logging for pb field
+  if (spec.id === 'pb') {
+    logger.log('[resolveInitialValue] Resolving pb field');
+    logger.log('[resolveInitialValue] values object:', values);
+    logger.log('[resolveInitialValue] values["pb"]:', values['pb']);
+    logger.log('[resolveInitialValue] spec.default:', spec.default);
+  }
+
+  if (values[spec.id] !== undefined) {
+    if (spec.id === 'pb') {
+      logger.log('[resolveInitialValue] Returning from values:', values[spec.id]);
+    }
+    return values[spec.id];
+  }
+  if (spec.default !== undefined) {
+    if (spec.id === 'pb') {
+      logger.log('[resolveInitialValue] Returning default:', spec.default);
+    }
+    return spec.default;
+  }
+  if (spec.id === 'pb') {
+    logger.log('[resolveInitialValue] Returning undefined');
+  }
   return undefined;
 }
 
@@ -28,6 +52,11 @@ export function renderFieldControl(
   initial: unknown,
   onChange: (value: unknown) => void,
 ): FieldRenderHandle {
+  debugLogger.logField(spec.id, "field-creation", "renderFieldControl called", {
+    type: spec.type,
+    onChangeType: typeof onChange
+  });
+
   // Add label for the control (unless it's a heading, which has its own label style)
   if (spec.type !== "heading") {
     const label = container.createEl("label", {
@@ -89,14 +118,48 @@ export function renderFieldControl(
     };
   }
 
-  // Toggle field
-  if (spec.type === "toggle") {
-    const toggleContainer = controlContainer.createDiv({ cls: "checkbox-container" });
-    return renderToggleCore({
-      container: toggleContainer,
+  // Checkbox field
+  if (spec.type === "checkbox") {
+    const checkboxContainer = controlContainer.createDiv({ cls: "checkbox-container" });
+    return renderCheckboxCore({
+      container: checkboxContainer,
       value: initial,
       onChange,
     });
+  }
+
+  // Clickable icon field (e.g., star for expertise/proficiency)
+  if (spec.type === "clickable-icon") {
+    const iconSpec = spec as import("../types").ClickableIconFieldSpec;
+    debugLogger.logField(spec.id, "field-creation", "Creating clickable-icon", { initial });
+    const handle = createClickableIcon({
+      container: controlContainer,
+      value: Boolean(initial),
+      icon: iconSpec.icon || "★",
+      inactiveIcon: iconSpec.inactiveIcon || "☆",
+      fieldId: spec.id,
+      onChange: (value) => {
+        debugLogger.logField(spec.id, "onChange-wrapper", "clickable-icon onChange wrapper called", {
+          value,
+          onChangeType: typeof onChange,
+          onChangeDefined: onChange !== undefined
+        });
+        if (typeof onChange === 'function') {
+          debugLogger.logField(spec.id, "onChange-wrapper", "Calling parent onChange");
+          onChange(value);
+          debugLogger.logField(spec.id, "onChange-wrapper", "Parent onChange returned successfully");
+        } else {
+          logger.error(`[field-utils] onChange is not a function for "${spec.id}"! Type: ${typeof onChange}`);
+        }
+      },
+    });
+    return {
+      focus: () => handle.element.focus(),
+      update: (value: unknown) => {
+        debugLogger.logField(spec.id, "update", "clickable-icon update() called", { value });
+        handle.update(Boolean(value));
+      },
+    };
   }
 
   // Select field
@@ -172,7 +235,7 @@ export function renderFieldControl(
   if (spec.type === "heading") {
     const headingSpec = spec as import("../types").HeadingFieldSpec;
     return renderHeadingCore({
-      container: controlContainer,
+      container: container,
       getValue: headingSpec.getValue,
       values: initial as Record<string, unknown>,
     });
@@ -314,6 +377,9 @@ export function renderFieldControl(
       const listContainer = controlContainer.createDiv({ cls: "sm-cc-repeating-fields" });
       const fieldTemplate = config.fields as AnyFieldSpec[];
 
+      // Track field handles for each entry
+      const fieldHandles = new Map<string, FieldRenderHandle>();
+
       const updateEntryFields = (
         entryContainer: HTMLElement,
         entry: Record<string, unknown>,
@@ -324,8 +390,45 @@ export function renderFieldControl(
           const fieldSpec = template[index];
           if (!fieldSpec) return;
 
+          const wasVisible = !wrapper.hasClass("is-hidden");
           const isVisible = !fieldSpec.visibleIf || fieldSpec.visibleIf(entry);
           wrapper.toggleClass("is-hidden", !isVisible);
+
+          debugLogger.logField(fieldSpec.id, "visibility", "Field visibility check", {
+            wasVisible,
+            isVisible,
+            currentValue: entry[fieldSpec.id]
+          });
+
+          // Auto-initialize field when it becomes visible for the first time
+          if (!wasVisible && isVisible && entry[fieldSpec.id] === undefined) {
+            debugLogger.logField(fieldSpec.id, "init", "Field became visible, checking init function");
+            const initConfig = (fieldSpec.config as any)?.init;
+            if (initConfig && typeof initConfig === "function") {
+              try {
+                debugLogger.logField(fieldSpec.id, "init", "Calling init function", entry);
+                const initValue = initConfig(entry);
+                debugLogger.logField(fieldSpec.id, "init", "Init function returned", { initValue });
+                entry[fieldSpec.id] = initValue;
+
+                // Update the field control using its handle
+                const handleKey = `${wrapper.getAttribute('data-entry-index')}-${fieldSpec.id}`;
+                debugLogger.logField(fieldSpec.id, "init", "Looking for handle", { handleKey });
+                const handle = fieldHandles.get(handleKey);
+                if (handle?.update) {
+                  debugLogger.logField(fieldSpec.id, "init", "Found handle, calling update()", { initValue });
+                  handle.update(initValue, entry);
+                } else {
+                  debugLogger.logField(fieldSpec.id, "init", "No handle found - WARNING", { handleKey });
+                  logger.warn(`[updateEntryFields] No handle found for key: "${handleKey}"`);
+                }
+              } catch (error) {
+                logger.error(`Failed to initialize ${fieldSpec.id}:`, error);
+              }
+            } else {
+              debugLogger.logField(fieldSpec.id, "init", "No init function configured");
+            }
+          }
 
           if (fieldSpec.type === "display") {
             const displaySpec = fieldSpec as import("../types").DisplayFieldSpec;
@@ -341,7 +444,7 @@ export function renderFieldControl(
                   : (displaySpec.config.suffix ?? "");
                 displayEl.value = `${prefix}${computed}${suffix}`;
               } catch (error) {
-                console.warn(`Display field ${fieldSpec.id} compute error:`, error);
+                logger.warn(`Display field ${fieldSpec.id} compute error:`, error);
                 displayEl.value = "";
               }
             }
@@ -372,7 +475,7 @@ export function renderFieldControl(
               try {
                 entry[fieldSpec.id] = initConfig(entry);
               } catch (error) {
-                console.error(`Failed to initialize ${fieldSpec.id}:`, error);
+                logger.error(`Failed to initialize ${fieldSpec.id}:`, error);
               }
             }
           }
@@ -382,11 +485,19 @@ export function renderFieldControl(
             fieldSpec,
             fieldSpec.type === "heading" ? entry : entry[fieldSpec.id],
             (newValue) => {
+              debugLogger.logField(fieldSpec.id, "repeating-onChange", "Repeating field onChange called", { newValue });
               entry[fieldSpec.id] = newValue;
+              debugLogger.logField(fieldSpec.id, "repeating-onChange", "Entry updated, calling parent onChange");
               onChange([...entries]);
+              debugLogger.logField(fieldSpec.id, "repeating-onChange", "Parent onChange called, now calling updateEntryFields");
               updateEntryFields(entryContainer, entry, fieldTemplate);
+              debugLogger.logField(fieldSpec.id, "repeating-onChange", "updateEntryFields completed");
             }
           );
+
+          // Store the handle for later use in updateEntryFields
+          const handleKey = `${entryIndex}-${fieldSpec.id}`;
+          fieldHandles.set(handleKey, fieldHandle);
         });
       });
 

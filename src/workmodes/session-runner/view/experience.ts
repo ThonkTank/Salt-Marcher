@@ -15,6 +15,7 @@ import { getCartographerBridge } from "../../almanac/mode/cartographer-bridge";
 import type { CartographerBridgeHandle } from "../../almanac/mode/cartographer-bridge";
 import { TravelPlaybackController } from "./controllers/playback-controller";
 import { TravelInteractionController } from "./controllers/interaction-controller";
+import { logger } from "../../../app/plugin-logger";
 import {
     openEncounter,
     preloadEncounterModule,
@@ -44,11 +45,11 @@ export function createSessionRunnerExperience(): SessionRunnerExperience {
     ): void => {
         const bridge = getCartographerBridge();
         if (!bridge) {
-            console.warn(`[session-runner] skipped ${label} – no Almanac bridge available`);
+            logger.warn(`[session-runner] skipped ${label} – no Almanac bridge available`);
             return;
         }
         void Promise.resolve(fn(bridge)).catch(error => {
-            console.error(`[session-runner] ${label} failed`, error);
+            logger.error(`[session-runner] ${label} failed`, error);
         });
     };
 
@@ -136,7 +137,7 @@ export function createSessionRunnerExperience(): SessionRunnerExperience {
         try {
             await fn();
         } catch (err) {
-            console.error("[session-runner] cleanupFile failed", err);
+            logger.error("[session-runner] cleanupFile failed", err);
         }
     };
 
@@ -182,7 +183,7 @@ export function createSessionRunnerExperience(): SessionRunnerExperience {
             try {
                 logic.pause();
             } catch (err) {
-                console.error("[session-runner] pause failed", err);
+                logger.error("[session-runner] pause failed", err);
             }
             logic = null;
         }
@@ -343,7 +344,7 @@ export function createSessionRunnerExperience(): SessionRunnerExperience {
                     try {
                         activeLogic.pause();
                     } catch (err) {
-                        console.error("[session-runner] pause during encounter sync failed", err);
+                        logger.error("[session-runner] pause during encounter sync failed", err);
                     }
                 },
                 openEncounter: (context) => openEncounter(ctx.app, context),
@@ -407,7 +408,7 @@ export function createSessionRunnerExperience(): SessionRunnerExperience {
                 try {
                     activeLogic.pause();
                 } catch (err) {
-                    console.error("[session-runner] pause during cleanup failed", err);
+                    logger.error("[session-runner] pause during cleanup failed", err);
                 }
                 tokenLayer?.destroy?.();
                 tokenLayer = null;
@@ -448,7 +449,7 @@ export function createSessionRunnerExperience(): SessionRunnerExperience {
             try {
                 await logic.persistTokenToTiles();
             } catch (err) {
-                console.error("[session-runner] persistTokenToTiles failed", err);
+                logger.error("[session-runner] persistTokenToTiles failed", err);
             }
             return false;
         },

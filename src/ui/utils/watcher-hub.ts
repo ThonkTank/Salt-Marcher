@@ -1,3 +1,4 @@
+import { logger } from "../../app/plugin-logger";
 // src/ui/workmode/watcher-hub.ts
 // Generic watcher hub for managing file system watchers across multiple consumers
 
@@ -43,7 +44,7 @@ export class WatcherHub<K extends string = string> {
                     try {
                         cb();
                     } catch (err) {
-                        console.error(`Watcher listener failed for key ${key}:`, err);
+                        logger.error(`Watcher listener failed for key ${key}:`, err);
                     }
                 }
             });
@@ -68,7 +69,7 @@ export class WatcherHub<K extends string = string> {
                 try {
                     current.stop?.();
                 } catch (err) {
-                    console.error(`Failed to stop watcher for key ${key}:`, err);
+                    logger.error(`Failed to stop watcher for key ${key}:`, err);
                 }
                 this.registry.delete(key);
             }
@@ -97,7 +98,7 @@ export class WatcherHub<K extends string = string> {
             try {
                 entry.stop?.();
             } catch (err) {
-                console.error(`Failed to stop watcher for key ${key}:`, err);
+                logger.error(`Failed to stop watcher for key ${key}:`, err);
             }
         }
         this.registry.clear();

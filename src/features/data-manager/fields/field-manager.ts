@@ -6,6 +6,7 @@ import { RepeatingWidthSynchronizer } from "../layout/repeating-width-sync";
 import { orderFields } from "../modal/modal-utils";
 import type { AnyFieldSpec, FieldRenderHandle } from "../../types";
 import type { FieldInstance } from "../modal/modal-validator";
+import { logger } from "../../../app/plugin-logger";
 
 /**
  * Service responsible for field instance management.
@@ -37,10 +38,19 @@ export class FieldManager {
    * Render a single field and register its instance.
    */
   private renderSingleField(container: HTMLElement, field: AnyFieldSpec): void {
+    const values = this.getData();
+
+    // Debug logging for pb field
+    if (field.id === 'pb') {
+      logger.log('[field-manager] Rendering pb field');
+      logger.log('[field-manager] values object:', values);
+      logger.log('[field-manager] values["pb"]:', values['pb']);
+    }
+
     const handle = this.renderField(
       container,
       field,
-      this.getData(),
+      values,
       (id, value) => this.onChange(id, value),
     );
 
@@ -57,6 +67,110 @@ export class FieldManager {
       container: handle.container,
       isVisible: true,
     });
+
+    // Log field state for UI testing
+    if (handle.container) {
+      setTimeout(() => {
+        this.logFieldState(field.id, handle.container!);
+      }, 50); // Wait for DOM to settle
+    }
+  }
+
+  /**
+   * Log field state for UI testing purposes.
+   */
+  private logFieldState(fieldId: string, container: HTMLElement): void {
+    const instance = this.fieldInstances.get(fieldId);
+    if (!instance) return;
+
+    const inputEl = container.querySelector('input, select, textarea') as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null;
+
+    const state: Record<string, any> = {
+      id: fieldId,
+      type: instance.spec.type,
+      label: instance.spec.label,
+      visible: instance.isVisible,
+      hasContainer: !!container,
+    };
+
+    if (inputEl) {
+      state.value = inputEl.value;
+      state.width = inputEl.offsetWidth;
+      state.height = inputEl.offsetHeight;
+
+      if (inputEl instanceof HTMLSelectElement) {
+        state.selectedOption = inputEl.options[inputEl.selectedIndex]?.text;
+      }
+    }
+
+    // Log chips for tag fields
+    const chipsEl = container.querySelector('.sm-cc-chips');
+    if (chipsEl) {
+      // Use child combinator to select only direct child spans (segments), avoiding nested label/value spans
+      const chips = Array.from(chipsEl.querySelectorAll('.sm-cc-chip > span')).map(el => el.textContent);
+      state.chips = chips;
+      state.chipCount = chips.length;
+    }
+
+    // Enhanced logging for tag editors (DOM structure and CSS)
+    if (instance.spec.type === 'tags' || instance.spec.type === 'structured-tags') {
+      state.domStructure = this.analyzeDOMStructure(container);
+      state.gridLayout = this.analyzeGridLayout(container);
+    }
+
+    logger.log('[UI-TEST] Field rendered:', JSON.stringify(state));
+  }
+
+  /**
+   * Analyze DOM structure for tag editor fields.
+   */
+  private analyzeDOMStructure(container: HTMLElement): Record<string, any> {
+    const structure: Record<string, any> = {
+      classes: Array.from(container.classList),
+      children: []
+    };
+
+    // Analyze direct children
+    for (let i = 0; i < container.children.length; i++) {
+      const child = container.children[i] as HTMLElement;
+      structure.children.push({
+        tag: child.tagName.toLowerCase(),
+        classes: Array.from(child.classList),
+        hasInput: !!child.querySelector('input'),
+        hasButton: !!child.querySelector('button'),
+        hasChips: !!child.querySelector('.sm-cc-chips'),
+      });
+    }
+
+    return structure;
+  }
+
+  /**
+   * Analyze grid layout properties.
+   */
+  private analyzeGridLayout(container: HTMLElement): Record<string, any> {
+    const computed = window.getComputedStyle(container);
+
+    const gridInfo: Record<string, any> = {
+      display: computed.display,
+      gridTemplateColumns: computed.gridTemplateColumns,
+      gridTemplateRows: computed.gridTemplateRows,
+      gap: computed.gap,
+    };
+
+    // Analyze children positioning
+    const children = Array.from(container.children) as HTMLElement[];
+    gridInfo.childrenGrid = children.map((child, index) => {
+      const childComputed = window.getComputedStyle(child);
+      return {
+        index,
+        classes: Array.from(child.classList),
+        gridRow: childComputed.gridRow,
+        gridColumn: childComputed.gridColumn,
+      };
+    });
+
+    return gridInfo;
   }
 
   /**
@@ -105,7 +219,7 @@ export class FieldManager {
     try {
       return field.visibleIf(data);
     } catch (error) {
-      console.error("Failed to evaluate field visibility", error);
+      logger.error("Failed to evaluate field visibility", error);
       return true;
     }
   }

@@ -2,7 +2,8 @@
 // Generiert Index-Dateien für besseren Graph View
 
 import { App, TFile, TFolder } from "obsidian";
-import { ENTITY_REGISTRY } from "./entity-registry";
+import { ENTITY_REGISTRY } from "../../../../Presets/lib/entity-registry";
+import { logger } from "../../../app/plugin-logger";
 
 const SALTMARCHER_DIR = "SaltMarcher";
 
@@ -18,7 +19,7 @@ async function createIndexFile(
 ): Promise<void> {
     const folder = app.vault.getAbstractFileByPath(directory);
     if (!(folder instanceof TFolder)) {
-        console.log(`[Index] Directory ${directory} not found, skipping index generation`);
+        logger.log(`[Index] Directory ${directory} not found, skipping index generation`);
         return;
     }
 
@@ -139,6 +140,19 @@ export async function generateItemsIndex(app: App): Promise<void> {
 }
 
 /**
+ * Generiert Calendars.md Index
+ */
+export async function generateCalendarsIndex(app: App): Promise<void> {
+    await createIndexFile(
+        app,
+        `${SALTMARCHER_DIR}/Calendars.md`,
+        "Calendars",
+        "Index of all calendars in the library.",
+        ENTITY_REGISTRY.calendars.directory
+    );
+}
+
+/**
  * Generiert Library.md Hub-Datei
  */
 export async function generateLibraryHub(app: App): Promise<void> {
@@ -153,6 +167,7 @@ export async function generateLibraryHub(app: App): Promise<void> {
     lines.push("- [[Equipment]] - Weapons, armor, tools, and adventuring gear");
     lines.push("- [[Spells]] - Spell compendium");
     lines.push("- [[Items]] - Magic items and artifacts");
+    lines.push("- [[Calendars]] - Calendar systems and timekeeping");
     lines.push("");
 
     const content = lines.join("\n");
@@ -170,7 +185,7 @@ export async function generateLibraryHub(app: App): Promise<void> {
  * Generiert alle Index-Dateien
  */
 export async function generateAllIndexes(app: App): Promise<void> {
-    console.log("[Index] Generating all library indexes...");
+    logger.log("[Index] Generating all library indexes...");
 
     // Stelle sicher dass SaltMarcher Verzeichnis existiert
     const saltmarcherFolder = app.vault.getAbstractFileByPath(SALTMARCHER_DIR);
@@ -183,8 +198,9 @@ export async function generateAllIndexes(app: App): Promise<void> {
         generateEquipmentIndex(app),
         generateSpellsIndex(app),
         generateItemsIndex(app),
+        generateCalendarsIndex(app),
         generateLibraryHub(app)
     ]);
 
-    console.log("[Index] All indexes generated successfully");
+    logger.log("[Index] All indexes generated successfully");
 }

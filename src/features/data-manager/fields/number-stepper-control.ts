@@ -1,6 +1,8 @@
 // src/features/data-manager/edit/controls/number-stepper.ts
 // Number stepper control with increment/decrement buttons
 
+import { calculateTextWidth } from "../utils/width-utils";
+
 /**
  * Options for creating a number input field
  */
@@ -37,8 +39,6 @@ export interface NumberStepperHandle {
   input: HTMLInputElement;
   decrementButton: HTMLButtonElement;
   incrementButton: HTMLButtonElement;
-  /** Hidden mirror element for text width measurement (used for auto-sizing) */
-  mirrorEl: HTMLSpanElement;
   /** Returns the current numeric value of the input (undefined when empty/invalid) */
   getValue: () => number | undefined;
   /** Sets the current value without triggering change callbacks */
@@ -117,17 +117,7 @@ export function createNumberStepper(
 
   const container = parent.createDiv({ cls: containerClasses });
 
-  // Create hidden mirror element for text width measurement (auto-sizing)
-  const mirrorEl = container.createEl("span", {
-    cls: "sm-cc-number-stepper__mirror",
-  }) as HTMLSpanElement;
-  mirrorEl.style.position = "absolute";
-  mirrorEl.style.visibility = "hidden";
-  mirrorEl.style.whiteSpace = "pre";
-  mirrorEl.style.pointerEvents = "none";
-
   // Declare updateInputSize early so it can be used in input callbacks
-  let stylesCopied = false;
   let input: HTMLInputElement;
   const updateInputSize = () => {
     // Determine text to measure for width calculation
@@ -140,24 +130,14 @@ export function createNumberStepper(
       measureText = input.value || input.placeholder || "0";
     }
 
-    // Copy font styles from input to mirror element (only once)
-    if (!stylesCopied) {
-      const computedStyle = window.getComputedStyle(input);
-      mirrorEl.style.fontSize = computedStyle.fontSize;
-      mirrorEl.style.fontFamily = computedStyle.fontFamily;
-      mirrorEl.style.fontWeight = computedStyle.fontWeight;
-      mirrorEl.style.letterSpacing = computedStyle.letterSpacing;
-      mirrorEl.style.padding = "0";
-      mirrorEl.style.border = "0";
-      stylesCopied = true;
-    }
+    // Calculate width using utility function
+    const width = calculateTextWidth(measureText, input, {
+      includePadding: true,
+      includeBorder: true,
+      extraSpace: 8,
+    });
 
-    // Measure actual text width using mirror element
-    mirrorEl.textContent = measureText;
-    const textWidth = mirrorEl.getBoundingClientRect().width;
-
-    // Set input width with buffer
-    input.style.width = `${textWidth + 8}px`;
+    input.style.width = `${width}px`;
   };
 
   input = createNumberInput(container, {
@@ -263,7 +243,6 @@ export function createNumberStepper(
     input,
     decrementButton,
     incrementButton,
-    mirrorEl,
     getValue,
     setValue,
   };

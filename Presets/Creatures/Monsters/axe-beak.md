@@ -1,18 +1,40 @@
 ---
 smType: creature
-name: "Axe Beak"
-size: "Large"
-type: "Monstrosity"
-alignment: "Unaligned"
+name: Axe Beak
+size: Large
+type: Monstrosity
+alignmentOverride: Unaligned
 ac: "11"
+initiative: +1 (11)
 hp: "19"
-hit_dice: "3d10 + 3"
-speeds_json: "{\"walk\":{\"distance\":\"50 ft.\"}}"
-abilities_json: "[{\"ability\":\"str\",\"score\":14},{\"ability\":\"dex\",\"score\":12},{\"ability\":\"con\",\"score\":12},{\"ability\":\"int\",\"score\":2},{\"ability\":\"wis\",\"score\":10},{\"ability\":\"cha\",\"score\":5}]"
+hitDice: 3d10 + 3
+speeds:
+  - type: walk
+    value: "50"
+abilities:
+  - ability: str
+    score: 14
+  - ability: dex
+    score: 12
+  - ability: con
+    score: 12
+  - ability: int
+    score: 2
+  - ability: wis
+    score: 10
+  - ability: cha
+    score: 5
 pb: "+2"
-cr: "1/4"
+cr: 1/4
 xp: "50"
-entries_structured_json: "[{\"category\":\"action\",\"name\":\"Beak\",\"text\":\"*Melee Attack Roll:* +4, reach 5 ft. 5 (1d6 + 2) Slashing damage.\"}]"
+passivesList:
+  - skill: Perception
+    value: "10"
+entries:
+  - category: action
+    name: Beak
+    text: "*Melee Attack Roll:* +4, reach 5 ft. 5 (1d6 + 2) Slashing damage."
+
 ---
 
 # Axe Beak
@@ -20,6 +42,7 @@ entries_structured_json: "[{\"category\":\"action\",\"name\":\"Beak\",\"text\":\
 
 **AC** 11
 **HP** 19 (3d10 + 3)
+**Initiative** +1 (11)
 **Speed** 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |

@@ -42,6 +42,11 @@ await esbuild.build({
             "codemirror",
             "@codemirror/state",
             "@codemirror/view",
+            // Node.js built-ins (available in Electron/Obsidian)
+            "net",
+            "fs",
+            "path",
+            "crypto",
         ],
 
         // WICHTIG: explizit TS-Loader setzen, damit 'import type' unterstützt wird

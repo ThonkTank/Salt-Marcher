@@ -28,6 +28,86 @@ console.log('Dry Run:', dryRun);
 if (limit) console.log('Limit:', limit);
 console.log('');
 
+// YAML helper functions
+function toYamlArray(arr, indent = 0) {
+    const spaces = '  '.repeat(indent);
+    const lines = [];
+    for (const item of arr) {
+        if (typeof item === 'object' && item !== null) {
+            lines.push(`${spaces}-`);
+            for (const [key, value] of Object.entries(item)) {
+                if (value === undefined || value === null) continue;
+                if (typeof value === 'string' && value.includes('\n')) {
+                    lines.push(`${spaces}  ${key}: |`);
+                    const textLines = value.split('\n');
+                    for (const textLine of textLines) {
+                        lines.push(`${spaces}    ${textLine}`);
+                    }
+                } else if (typeof value === 'string') {
+                    lines.push(`${spaces}  ${key}: "${value.replace(/"/g, '\\"')}"`);
+                } else {
+                    lines.push(`${spaces}  ${key}: ${value}`);
+                }
+            }
+        } else if (typeof item === 'string') {
+            lines.push(`${spaces}- "${item.replace(/"/g, '\\"')}"`);
+        } else {
+            lines.push(`${spaces}- ${item}`);
+        }
+    }
+    return lines.join('\n');
+}
+
+function toYamlObject(obj, indent = 0) {
+    const spaces = '  '.repeat(indent);
+    const lines = [];
+    for (const [key, value] of Object.entries(obj)) {
+        if (value === undefined || value === null) continue;
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+            lines.push(`${spaces}${key}:`);
+            for (const [nestedKey, nestedValue] of Object.entries(value)) {
+                if (nestedValue === undefined || nestedValue === null) continue;
+                if (typeof nestedValue === 'string') {
+                    lines.push(`${spaces}  ${nestedKey}: "${nestedValue.replace(/"/g, '\\"')}"`);
+                } else if (typeof nestedValue === 'boolean') {
+                    lines.push(`${spaces}  ${nestedKey}: ${nestedValue}`);
+                } else {
+                    lines.push(`${spaces}  ${nestedKey}: ${nestedValue}`);
+                }
+            }
+        } else if (typeof value === 'string') {
+            lines.push(`${spaces}${key}: "${value.replace(/"/g, '\\"')}"`);
+        } else {
+            lines.push(`${spaces}${key}: ${value}`);
+        }
+    }
+    return lines.join('\n');
+}
+
+// Calculate Proficiency Bonus from CR according to D&D 5e rules
+function calculateProficiencyBonus(cr) {
+    if (!cr) return '+2';
+
+    // Parse CR (handles fractions like "1/4")
+    let crValue;
+    if (cr.includes('/')) {
+        const [num, denom] = cr.split('/').map(n => parseInt(n.trim()));
+        crValue = num / denom;
+    } else {
+        crValue = parseFloat(cr);
+    }
+
+    // D&D 5e Proficiency Bonus by CR
+    if (crValue <= 4) return '+2';
+    if (crValue <= 8) return '+3';
+    if (crValue <= 12) return '+4';
+    if (crValue <= 16) return '+5';
+    if (crValue <= 20) return '+6';
+    if (crValue <= 24) return '+7';
+    if (crValue <= 28) return '+8';
+    return '+9';
+}
+
 // Simple StatblockData to Markdown converter (inline version)
 function statblockToMarkdown(data) {
     const lines = [];
@@ -40,80 +120,88 @@ function statblockToMarkdown(data) {
     if (data.type) lines.push(`type: "${data.type}"`);
     if (data.typeTags && data.typeTags.length > 0) {
         const tags = data.typeTags.map(t => `"${t}"`).join(', ');
-        lines.push(`type_tags: [${tags}]`);
+        lines.push(`typeTags: [${tags}]`);
     }
 
-    // Alignment
-    const alignment = data.alignmentOverride || [data.alignmentLawChaos, data.alignmentGoodEvil].filter(Boolean).join(' ');
-    if (alignment) lines.push(`alignment: "${alignment}"`);
+    // Alignment (use separate fields or override)
+    if (data.alignmentOverride) {
+        lines.push(`alignmentOverride: "${data.alignmentOverride}"`);
+    } else {
+        if (data.alignmentLawChaos) lines.push(`alignmentLawChaos: "${data.alignmentLawChaos}"`);
+        if (data.alignmentGoodEvil) lines.push(`alignmentGoodEvil: "${data.alignmentGoodEvil}"`);
+    }
 
     // Combat stats
     if (data.ac) lines.push(`ac: "${data.ac}"`);
     if (data.initiative) lines.push(`initiative: "${data.initiative}"`);
     if (data.hp) lines.push(`hp: "${data.hp}"`);
-    if (data.hitDice) lines.push(`hit_dice: "${data.hitDice}"`);
+    if (data.hitDice) lines.push(`hitDice: "${data.hitDice}"`);
 
-    // Speeds
-    if (data.speeds) {
-        const json = JSON.stringify(data.speeds).replace(/"/g, '\\"');
-        lines.push(`speeds_json: "${json}"`);
+    // Speeds (as YAML object)
+    if (data.speeds && Object.keys(data.speeds).length > 0) {
+        lines.push('speeds:');
+        lines.push(toYamlObject(data.speeds, 1));
     }
 
-    // Abilities
+    // Abilities (as YAML array)
     if (data.abilities && data.abilities.length > 0) {
-        const json = JSON.stringify(data.abilities).replace(/"/g, '\\"');
-        lines.push(`abilities_json: "${json}"`);
+        lines.push('abilities:');
+        lines.push(toYamlArray(data.abilities, 1));
     }
     if (data.pb) lines.push(`pb: "${data.pb}"`);
 
-    // Saves
+    // Saves (as YAML array)
     if (data.saves && data.saves.length > 0) {
-        const json = JSON.stringify(data.saves).replace(/"/g, '\\"');
-        lines.push(`saves_json: "${json}"`);
+        lines.push('saves:');
+        lines.push(toYamlArray(data.saves, 1));
     }
 
-    // Skills
+    // Skills (as YAML array)
     if (data.skills && data.skills.length > 0) {
-        const json = JSON.stringify(data.skills).replace(/"/g, '\\"');
-        lines.push(`skills_json: "${json}"`);
+        lines.push('skills:');
+        lines.push(toYamlArray(data.skills, 1));
     }
 
     // Senses, Languages, etc.
     if (data.sensesList && data.sensesList.length > 0) {
         const senses = data.sensesList.map(s => `"${s}"`).join(', ');
-        lines.push(`senses: [${senses}]`);
+        lines.push(`sensesList: [${senses}]`);
     }
     if (data.passivesList && data.passivesList.length > 0) {
         const passives = data.passivesList.map(p => `"${p}"`).join(', ');
-        lines.push(`passives: [${passives}]`);
+        lines.push(`passivesList: [${passives}]`);
     }
     if (data.languagesList && data.languagesList.length > 0) {
         const langs = data.languagesList.map(l => `"${l}"`).join(', ');
-        lines.push(`languages: [${langs}]`);
+        lines.push(`languagesList: [${langs}]`);
     }
 
-    // Resistances, Immunities
+    // Vulnerabilities, Resistances, Immunities
+    if (data.damageVulnerabilitiesList && data.damageVulnerabilitiesList.length > 0) {
+        const vuln = data.damageVulnerabilitiesList.map(v => `"${v}"`).join(', ');
+        lines.push(`damageVulnerabilitiesList: [${vuln}]`);
+    }
     if (data.damageResistancesList && data.damageResistancesList.length > 0) {
         const res = data.damageResistancesList.map(r => `"${r}"`).join(', ');
-        lines.push(`damage_resistances: [${res}]`);
+        lines.push(`damageResistancesList: [${res}]`);
     }
     if (data.damageImmunitiesList && data.damageImmunitiesList.length > 0) {
         const imm = data.damageImmunitiesList.map(i => `"${i}"`).join(', ');
-        lines.push(`damage_immunities: [${imm}]`);
+        lines.push(`damageImmunitiesList: [${imm}]`);
     }
     if (data.conditionImmunitiesList && data.conditionImmunitiesList.length > 0) {
         const cond = data.conditionImmunitiesList.map(c => `"${c}"`).join(', ');
-        lines.push(`condition_immunities: [${cond}]`);
+        lines.push(`conditionImmunitiesList: [${cond}]`);
     }
 
     // CR, XP
     if (data.cr) lines.push(`cr: "${data.cr}"`);
     if (data.xp) lines.push(`xp: "${data.xp}"`);
 
-    // Entries as JSON
+    // Entries (as YAML array)
     if (data.entries && data.entries.length > 0) {
-        const json = JSON.stringify(data.entries).replace(/"/g, '\\"');
-        lines.push(`entries_structured_json: "${json}"`);
+        lines.push('entries:');
+        lines.push(toYamlArray(data.entries, 1));
     }
 
     lines.push('---\n');
@@ -121,10 +209,14 @@ function statblockToMarkdown(data) {
     // Markdown content
     lines.push(`# ${data.name}`);
 
+    // Reconstruct alignment for display
+    const alignmentDisplay = data.alignmentOverride ||
+        [data.alignmentLawChaos, data.alignmentGoodEvil].filter(Boolean).join(' ');
+
     const subtitle = [
         data.size,
         data.type,
-        alignment
+        alignmentDisplay
     ].filter(Boolean).join(', ');
     if (subtitle) lines.push(`*${subtitle}*`);
 
@@ -274,14 +366,23 @@ function parseReferenceStatblock(markdown) {
     // Extract bullet stats
     const bullets = new Map();
     for (const line of lines) {
-        // Try with colon first
-        let match = line.match(/^-?\s*\*\*(.+?):\*\*\s*(.+)$/);
+        let match;
+
+        // Pattern 1: **Label:** value (colon before closing **)
+        match = line.match(/^-?\s*\*\*(.+?):\*\*\s*(.+)$/);
         if (match) {
             bullets.set(match[1].toLowerCase().trim(), match[2].trim());
             continue;
         }
 
-        // Try without colon (for CR line)
+        // Pattern 2: **Label**: value (colon after closing **)
+        match = line.match(/^-?\s*\*\*(.+?)\*\*:\s*(.+)$/);
+        if (match) {
+            bullets.set(match[1].toLowerCase().trim(), match[2].trim());
+            continue;
+        }
+
+        // Pattern 3: **Label** value (no colon, for CR line)
         match = line.match(/^-?\s*\*\*(.+?)\*\*\s+(.+)$/);
         if (match) {
             bullets.set(match[1].toLowerCase().trim(), match[2].trim());
@@ -361,6 +462,30 @@ function parseReferenceStatblock(markdown) {
         data.languagesList = languagesText.split(/[,;]/).map(l => l.trim()).filter(Boolean);
     }
 
+    // Parse damage vulnerabilities
+    const vulnerabilitiesText = bullets.get('vulnerabilities');
+    if (vulnerabilitiesText) {
+        data.damageVulnerabilitiesList = vulnerabilitiesText.split(/[,;]/).map(v => v.trim()).filter(Boolean);
+    }
+
+    // Parse damage resistances
+    const resistancesText = bullets.get('resistances');
+    if (resistancesText) {
+        data.damageResistancesList = resistancesText.split(/[,;]/).map(r => r.trim()).filter(Boolean);
+    }
+
+    // Parse damage immunities
+    const immunitiesText = bullets.get('immunities');
+    if (immunitiesText) {
+        data.damageImmunitiesList = immunitiesText.split(/[,;]/).map(i => i.trim()).filter(Boolean);
+    }
+
+    // Parse condition immunities
+    const conditionImmunitiesText = bullets.get('condition immunities');
+    if (conditionImmunitiesText) {
+        data.conditionImmunitiesList = conditionImmunitiesText.split(/[,;]/).map(c => c.trim()).filter(Boolean);
+    }
+
     const crText = bullets.get('cr');
     if (crText) {
         const crMatch = crText.match(/^([\d/]+)/);
@@ -370,7 +495,12 @@ function parseReferenceStatblock(markdown) {
         if (xpMatch) data.xp = xpMatch[1].replace(/,/g, '');
 
         const pbMatch = crText.match(/PB\s+([+\-]?\d+)/);
-        if (pbMatch) data.pb = pbMatch[1];
+        if (pbMatch) {
+            data.pb = pbMatch[1];
+        } else if (data.cr) {
+            // Calculate PB from CR if not explicitly provided
+            data.pb = calculateProficiencyBonus(data.cr);
+        }
     }
 
     // Extract ability table

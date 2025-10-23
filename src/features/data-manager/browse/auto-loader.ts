@@ -35,6 +35,10 @@ export async function loadFromFrontmatter<TDraft extends Record<string, unknown>
         for (const fieldId of spec.storage.frontmatter) {
             if (fm[fieldId] !== undefined) {
                 data[fieldId] = fm[fieldId];
+                // Debug logging for token fields
+                if (fieldId === 'pb' || fieldId === 'initiative' || fieldId === 'passivesList' || fieldId === 'sensesList' || fieldId === 'languagesList') {
+                    console.log(`[auto-loader] Loading ${fieldId}:`, JSON.stringify(fm[fieldId], null, 2));
+                }
             }
         }
     } else if (spec.storage.frontmatter) {

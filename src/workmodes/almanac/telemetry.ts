@@ -4,6 +4,7 @@
 import { reportIntegrationIssue } from "../../app/integration-telemetry";
 import type { AlmanacMode, TravelCalendarMode } from "./mode/contracts";
 import type { CalendarTimestamp } from "./domain";
+import { logger } from "../../app/plugin-logger";
 
 /** Stable integration identifier used for Almanac notices. */
 export const ALMANAC_INTEGRATION_ID = "obsidian:almanac-view" as const;
@@ -60,7 +61,7 @@ type AlmanacTelemetryReporter = (event: AlmanacTelemetryEvent) => void;
 const defaultReporter: AlmanacTelemetryReporter = event => {
   const { type, ...payload } = event;
   // eslint-disable-next-line no-console -- Observability hook for development builds.
-  console.info("[almanac:telemetry]", type, payload);
+  logger.info("[almanac:telemetry]", type, payload);
 };
 
 let reporter: AlmanacTelemetryReporter = defaultReporter;
@@ -105,7 +106,7 @@ export function reportAlmanacGatewayIssue(payload: AlmanacGatewayIssuePayload): 
   const logContext = { scope, code, ...(payload.context ?? {}) };
 
   // eslint-disable-next-line no-console -- Observability hook for runtime diagnostics.
-  console.error(`[almanac] ${operation} failed`, logContext, error);
+  logger.error(`[almanac] ${operation} failed`, logContext, error);
 
   if (code === "io_error") {
     reportIntegrationIssue({

@@ -12,7 +12,10 @@ const CREATURES_PRESETS_DIR = path.join(__dirname, '..', 'Presets', 'Creatures')
 const SPELLS_PRESETS_DIR = path.join(__dirname, '..', 'Presets', 'Spells');
 const ITEMS_PRESETS_DIR = path.join(__dirname, '..', 'Presets', 'Items');
 const EQUIPMENT_PRESETS_DIR = path.join(__dirname, '..', 'Presets', 'Equipment');
-const OUTPUT_FILE = path.join(__dirname, '..', 'src', 'workmodes', 'library', 'core', 'preset-data.ts');
+const TERRAINS_PRESETS_DIR = path.join(__dirname, '..', 'Presets', 'Terrains');
+const REGIONS_PRESETS_DIR = path.join(__dirname, '..', 'Presets', 'Regions');
+const CALENDARS_PRESETS_DIR = path.join(__dirname, '..', 'Presets', 'Calendars');
+const OUTPUT_FILE = path.join(__dirname, '..', 'Presets', 'lib', 'preset-data.ts');
 
 /**
  * Recursively get all .md files from a directory
@@ -73,7 +76,25 @@ function generatePresetModule() {
         : {};
     const equipmentCount = Object.keys(equipmentFiles).length;
 
-    console.log(`Found ${creatureCount} creature presets, ${spellCount} spell presets, ${itemCount} item presets, and ${equipmentCount} equipment presets`);
+    // Get terrain files
+    const terrainFiles = fs.existsSync(TERRAINS_PRESETS_DIR)
+        ? getMarkdownFiles(TERRAINS_PRESETS_DIR)
+        : {};
+    const terrainCount = Object.keys(terrainFiles).length;
+
+    // Get region files
+    const regionFiles = fs.existsSync(REGIONS_PRESETS_DIR)
+        ? getMarkdownFiles(REGIONS_PRESETS_DIR)
+        : {};
+    const regionCount = Object.keys(regionFiles).length;
+
+    // Get calendar files
+    const calendarFiles = fs.existsSync(CALENDARS_PRESETS_DIR)
+        ? getMarkdownFiles(CALENDARS_PRESETS_DIR)
+        : {};
+    const calendarCount = Object.keys(calendarFiles).length;
+
+    console.log(`Found ${creatureCount} creature presets, ${spellCount} spell presets, ${itemCount} item presets, ${equipmentCount} equipment presets, ${terrainCount} terrain presets, ${regionCount} region presets, and ${calendarCount} calendar presets`);
 
     // Generate the TypeScript module
     let moduleContent = '// Auto-generated file - DO NOT EDIT\n';
@@ -83,7 +104,10 @@ function generatePresetModule() {
     moduleContent += formatPresetMap('PRESET_CREATURES', creatureFiles);
     moduleContent += formatPresetMap('PRESET_SPELLS', spellFiles);
     moduleContent += formatPresetMap('PRESET_ITEMS', itemFiles);
-    moduleContent += formatPresetMap('PRESET_EQUIPMENT', equipmentFiles, true);
+    moduleContent += formatPresetMap('PRESET_EQUIPMENT', equipmentFiles);
+    moduleContent += formatPresetMap('PRESET_TERRAINS', terrainFiles);
+    moduleContent += formatPresetMap('PRESET_REGIONS', regionFiles);
+    moduleContent += formatPresetMap('PRESET_CALENDARS', calendarFiles, true);
 
     // Ensure output directory exists
     const outputDir = path.dirname(OUTPUT_FILE);
@@ -94,7 +118,7 @@ function generatePresetModule() {
     // Write the module
     fs.writeFileSync(OUTPUT_FILE, moduleContent);
 
-    console.log(`Generated preset module with ${creatureCount} creatures, ${spellCount} spells, ${itemCount} items, and ${equipmentCount} equipment at ${OUTPUT_FILE}`);
+    console.log(`Generated preset module with ${creatureCount} creatures, ${spellCount} spells, ${itemCount} items, ${equipmentCount} equipment, ${terrainCount} terrains, ${regionCount} regions, and ${calendarCount} calendars at ${OUTPUT_FILE}`);
 }
 
 // Run the generator

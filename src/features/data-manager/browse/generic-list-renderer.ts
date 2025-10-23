@@ -2,6 +2,7 @@
 // Fully generic list renderer for any entity type with filtering, sorting, and search
 
 import type { App } from "obsidian";
+import { logger } from "../../../app/plugin-logger";
 import type {
     BaseEntry,
     DataSource,
@@ -77,6 +78,10 @@ export class GenericListRenderer<M extends string, E extends BaseEntry, C = any>
         this.renderInternal();
     }
 
+    setQuery(query: string): void {
+        this.query = query.toLowerCase();
+    }
+
     destroy(): void {
         this.disposed = true;
         for (const cleanup of this.cleanups) {
@@ -128,11 +133,13 @@ export class GenericListRenderer<M extends string, E extends BaseEntry, C = any>
     private async refreshEntries(): Promise<void> {
         try {
             const files = await this.source.list(this.app);
+            logger.log(`[library:${this.mode}] Found ${files.length} files`);
             const entries = await Promise.all(files.map(file => this.source.load(this.app, file)));
+            logger.log(`[library:${this.mode}] Loaded ${entries.length} entries`);
             this.entries = entries;
             this.loadError = undefined;
         } catch (err) {
-            console.error(`[library] Failed to load ${this.mode} entries`, err);
+            logger.error(`[library:${this.mode}] Failed to load entries`, err);
             this.entries = [];
             this.loadError = err;
         }
@@ -194,6 +201,8 @@ export class GenericListRenderer<M extends string, E extends BaseEntry, C = any>
 
         const entriesToRender = visible.map(item => item.entry);
 
+        logger.log(`[library:${this.mode}] Rendering ${entriesToRender.length} entries (filtered from ${this.entries.length} total)`);
+
         if (!entriesToRender.length) {
             renderWorkmodeFeedback(container, "empty", "No entries found.");
             return;
@@ -231,8 +240,3 @@ export class GenericListRenderer<M extends string, E extends BaseEntry, C = any>
         return -Infinity;
     }
 }
-
-/**
- * @deprecated Use GenericListRenderer instead
- */
-export const LibraryRenderer = GenericListRenderer;

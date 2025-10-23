@@ -5,6 +5,7 @@ import { saveTile, deleteTile, loadTile } from "../../../../../features/maps/dat
 import type { RenderHandles } from "../../../../../features/maps/hex-mapper/hex-render";
 import { TERRAIN_COLORS } from "../../../../../features/maps/domain/terrain";
 import { reportEditorToolIssue } from "../../editor-telemetry";
+import { logger } from "../../../../../app/plugin-logger";
 
 export type BrushCoord = { r: number; c: number };
 
@@ -147,7 +148,7 @@ export async function applyBrush(
             const key = `${coord.r},${coord.c}`;
             const previousFill = getFillSnapshot(coord);
             const previousData = await loadTile(app, mapFile, coord).catch((error) => {
-                console.error(`[terrain-brush] failed to load tile ${key} before applying brush`, error);
+                logger.error(`[terrain-brush] failed to load tile ${key} before applying brush`, error);
                 return null;
             });
 
@@ -195,18 +196,18 @@ export async function applyBrush(
     } catch (error) {
         const aborted = isAbortError(error);
         if (!aborted) {
-            console.error("[terrain-brush] applyBrush failed", error);
+            logger.error("[terrain-brush] applyBrush failed", error);
         }
         for (const step of applied.reverse()) {
             try {
                 step.restoreFill();
             } catch (restoreErr) {
-                console.error("[terrain-brush] failed to restore hex fill", restoreErr);
+                logger.error("[terrain-brush] failed to restore hex fill", restoreErr);
             }
             try {
                 await step.rollback();
             } catch (rollbackErr) {
-                console.error("[terrain-brush] failed to rollback tile changes", rollbackErr);
+                logger.error("[terrain-brush] failed to rollback tile changes", rollbackErr);
             }
         }
 
@@ -222,7 +223,7 @@ export async function applyBrush(
             try {
                 tool?.setStatus?.(message);
             } catch (statusErr) {
-                console.error("[terrain-brush] failed to publish tool status", statusErr);
+                logger.error("[terrain-brush] failed to publish tool status", statusErr);
             }
             throw error;
         }

@@ -1,0 +1,906 @@
+// src/workmodes/library/entities/creatures/create-spec.ts
+// Declarative field specification for creature creation using the global modal system
+
+import type { CreateSpec, AnyFieldSpec, DataSchema } from "../../../../features/data-manager/types";
+import type { StatblockData } from "./types";
+import { statblockToMarkdown } from "./serializer";
+import { debugLogger } from "../../../app/debug-logger";
+import {
+  CREATURE_SIZES,
+  CREATURE_TYPES,
+  CREATURE_ALIGNMENT_LAW_CHAOS,
+  CREATURE_ALIGNMENT_GOOD_EVIL,
+  CREATURE_MOVEMENT_TYPES,
+  CREATURE_ABILITIES,
+  CREATURE_SKILLS,
+  CREATURE_DAMAGE_PRESETS,
+  CREATURE_CONDITION_PRESETS,
+  CREATURE_LANGUAGE_PRESETS,
+  CREATURE_SENSE_PRESETS,
+  CREATURE_SENSE_TYPES,
+  CREATURE_PASSIVE_PRESETS,
+  CREATURE_ENTRY_CATEGORIES,
+} from "./constants";
+// Note: Entry card config removed - entries now use template-based rendering
+
+// ============================================================================
+// SCHEMA
+// ============================================================================
+
+// Simple passthrough schema (validation can be added later if needed)
+const creatureSchema: DataSchema<StatblockData> = {
+  parse: (data: unknown) => data as StatblockData,
+  safeParse: (data: unknown) => {
+    try {
+      return { success: true, data: data as StatblockData };
+    } catch (error) {
+      return { success: false, error };
+    }
+  },
+};
+
+// ============================================================================
+// FIELD DEFINITIONS
+// ============================================================================
+
+// Section 1: Grunddaten (Basic Info)
+const basicInfoFields: AnyFieldSpec[] = [
+  {
+    id: "name",
+    label: "Name",
+    type: "text",
+    required: true,
+    placeholder: "Kreaturname eingeben...",
+  },
+  {
+    id: "size",
+    label: "Größe",
+    type: "select",
+    options: CREATURE_SIZES.map(s => ({ value: s, label: s })),
+    default: "Medium",
+  },
+  {
+    id: "type",
+    label: "Typ",
+    type: "select",
+    options: CREATURE_TYPES.map(t => ({ value: t, label: t })),
+  },
+  {
+    id: "typeTags",
+    label: "Typ-Tags",
+    type: "tokens",
+    config: {
+      fields: [{
+        id: "value",
+        type: "text",
+        displayInChip: true,
+        editable: true,
+        placeholder: "Tag hinzufügen...",
+      }],
+      primaryField: "value",
+    },
+    default: [],
+  },
+  {
+    id: "alignmentLawChaos",
+    label: "Gesetz/Chaos",
+    type: "select",
+    options: CREATURE_ALIGNMENT_LAW_CHAOS.map(a => ({ value: a, label: a })),
+  },
+  {
+    id: "alignmentGoodEvil",
+    label: "Gut/Böse",
+    type: "select",
+    options: CREATURE_ALIGNMENT_GOOD_EVIL.map(a => ({ value: a, label: a })),
+  },
+  {
+    id: "alignmentOverride",
+    label: "Gesinnung (Freiform)",
+    type: "text",
+    placeholder: "z.B. unaligned",
+  },
+];
+
+// Section 2: Kampfwerte (Combat Stats)
+const combatStatsFields: AnyFieldSpec[] = [
+  {
+    id: "ac",
+    label: "AC",
+    type: "text",
+    placeholder: "z.B. 15 (Lederrüstung)",
+  },
+  {
+    id: "initiative",
+    label: "INI",
+    type: "text",
+    placeholder: "z.B. +2",
+  },
+  {
+    id: "hp",
+    label: "TP",
+    type: "text",
+    placeholder: "z.B. 45",
+  },
+  {
+    id: "hitDice",
+    label: "TW",
+    type: "text",
+    placeholder: "z.B. 6d8+18",
+  },
+  {
+    id: "cr",
+    label: "CR",
+    type: "text",
+    placeholder: "z.B. 3",
+  },
+  {
+    id: "xp",
+    label: "EP",
+    type: "text",
+    placeholder: "z.B. 700",
+  },
+  {
+    id: "pb",
+    label: "ÜB",
+    type: "text",
+    placeholder: "z.B. +2",
+  },
+];
+
+// Section 3: Bewegung (Movement) - Using modular tokens with inline editing
+const movementFields: AnyFieldSpec[] = [
+  {
+    id: "speeds",
+    label: "Bewegungsraten",
+    type: "tokens",
+    config: {
+      fields: [
+        {
+          id: "type",
+          type: "select",
+          displayInChip: true,
+          editable: true,
+          suggestions: CREATURE_MOVEMENT_TYPES.map(([key, label]) => ({ key, label })),
+          placeholder: "Bewegungsart wählen...",
+        },
+        {
+          id: "value",
+          type: "text",
+          label: ": ",
+          displayInChip: true,
+          editable: true,
+          unit: "ft.",
+          placeholder: "30",
+        },
+        {
+          id: "hover",
+          type: "checkbox",
+          displayInChip: true,
+          editable: true,
+          icon: "⟨hover⟩",
+          visibleIf: (token) => token.type === "fly",
+          default: false,
+        },
+      ],
+      primaryField: "type",
+    },
+    default: [],
+  },
+];
+
+// Section 4: Attribute (Abilities) - Using repeating with template-based rendering
+const abilitiesFields: AnyFieldSpec[] = [
+  {
+    id: "abilities",
+    label: "",
+    type: "repeating",
+    config: {
+      static: true,  // No add/remove/reorder controls
+      synchronizeWidths: true,  // Synchronize widths across all ability rows
+      fields: [
+        // Heading (ability abbreviation - STR, DEX, etc.)
+        {
+          id: "name",
+          label: "",
+          type: "heading" as const,
+          getValue: (data: Record<string, unknown>) => (data.key as string)?.toUpperCase() || "",
+        },
+        // Score
+        {
+          id: "score",
+          label: "",
+          type: "number-stepper" as const,
+          min: 1,
+          max: 30,
+          step: 1,
+          autoSizeOnInput: false,  // Suppress auto-sizing on input for width sync
+        },
+        // Modifier (display)
+        {
+          id: "mod",
+          label: "",
+          type: "display" as const,
+          config: {
+            compute: (data: Record<string, unknown>) => {
+              const score = data.score as number || 10;
+              const mod = Math.floor((score - 10) / 2);
+              return mod;
+            },
+            prefix: (data: Record<string, unknown>) => {
+              const score = data.score as number || 10;
+              const mod = Math.floor((score - 10) / 2);
+              return mod >= 0 ? "+" : "";
+            },
+            maxTokens: 3,  // Format: +/-XX (e.g., "+5", "-1")
+          },
+        },
+        // Save Proficiency (star icon - click to toggle)
+        {
+          id: "saveProf",
+          label: "Save",
+          type: "clickable-icon" as const,
+          icon: "★",
+          inactiveIcon: "☆",
+        },
+        // Save Modifier (conditional - only visible when save checkbox is true)
+        // Initial value = ability modifier + proficiency bonus
+        {
+          id: "saveMod",
+          label: "Save",
+          type: "number-stepper" as const,
+          min: -10,
+          max: 20,
+          step: 1,
+          autoSizeOnInput: false,  // Suppress auto-sizing on input for width sync
+          visibleIf: (data: Record<string, unknown>) => Boolean(data.saveProf),
+          config: {
+            // Auto-initialize with ability modifier + PB when field becomes visible
+            init: (data: Record<string, unknown>) => {
+              debugLogger.logField("saveMod", "init-function", "saveMod init called", data);
+              const score = data.score as number || 10;
+              debugLogger.logField("saveMod", "init-function", "Calculated score", { score });
+              const abilityMod = Math.floor((score - 10) / 2);
+              debugLogger.logField("saveMod", "init-function", "Calculated abilityMod", { abilityMod });
+              const pb = 2; // Default proficiency bonus
+              debugLogger.logField("saveMod", "init-function", "Using PB", { pb });
+              const result = abilityMod + pb;
+              debugLogger.logField("saveMod", "init-function", "Returning result", { result });
+              return result;
+            },
+          },
+        },
+      ],
+    },
+    // Default: Array of ability entries (data) - template defined once above
+    default: CREATURE_ABILITIES.map(ability => ({
+      key: ability.key,
+      label: ability.label,
+      score: 10,
+      saveProf: false,
+      // saveMod will be auto-initialized when saveProf checkbox is checked
+    })),
+  },
+];
+
+// Section 4.5: Fertigkeiten (Skills) - Using modular tokens with auto-calculation
+const skillsFields: AnyFieldSpec[] = [
+  {
+    id: "skills",
+    label: "Fertigkeiten",
+    type: "tokens",
+    config: {
+      fields: [
+        {
+          id: "skill",
+          type: "select",
+          displayInChip: true,
+          editable: true,
+          suggestions: CREATURE_SKILLS.map(([name, ability]) => ({ key: name, label: name })),
+          placeholder: "Fertigkeit wählen...",
+        },
+        {
+          id: "value",
+          type: "text",
+          label: " ",
+          displayInChip: true,
+          editable: true,
+          placeholder: "+0",
+        },
+        {
+          id: "expertise",
+          type: "checkbox",
+          displayInChip: true,
+          editable: true,
+          icon: "★",
+          default: false,
+        },
+      ],
+      primaryField: "skill",
+      getInitialValue: (formData, skillName) => {
+        // Find the skill's associated ability
+        const skillEntry = CREATURE_SKILLS.find(([name]) => name === skillName);
+        if (!skillEntry) {
+          return { skill: skillName, value: "+0", expertise: false };
+        }
+
+        const [, abilityKey] = skillEntry;
+
+        // Extract PB from form data
+        const pbStr = formData.pb as string || "+2";
+        const pb = parseInt(pbStr.replace(/[^\d-]/g, '')) || 2;
+
+        // Find the ability score from abilities array
+        // Support both "key" (new format) and "ability" (legacy format) fields
+        const abilities = formData.abilities as Array<{key?: string; ability?: string; score: number}> || [];
+        const abilityEntry = abilities.find(a => (a.key === abilityKey || a.ability === abilityKey));
+        const abilityScore = abilityEntry?.score || 10;
+
+        // Calculate modifier
+        const abilityMod = Math.floor((abilityScore - 10) / 2);
+
+        // Calculate skill bonus (mod + PB)
+        const skillBonus = abilityMod + pb;
+
+        // Format with sign
+        const sign = skillBonus >= 0 ? "+" : "";
+        const valueStr = `${sign}${skillBonus}`;
+
+        return {
+          skill: skillName,
+          value: valueStr,
+          expertise: false,
+        };
+      },
+      onTokenFieldChange: (token, fieldId, newValue, formData) => {
+        // Only recalculate when expertise is toggled
+        if (fieldId !== "expertise") return;
+
+        const skillName = token.skill as string;
+        if (!skillName) return;
+
+        // Find the skill's associated ability
+        const skillEntry = CREATURE_SKILLS.find(([name]) => name === skillName);
+        if (!skillEntry) return;
+
+        const [, abilityKey] = skillEntry;
+
+        // Extract PB from form data
+        const pbStr = formData.pb as string || "+2";
+        const pb = parseInt(pbStr.replace(/[^\d-]/g, '')) || 2;
+
+        // Find the ability score from abilities array
+        const abilities = formData.abilities as Array<{key?: string; ability?: string; score: number}> || [];
+        const abilityEntry = abilities.find(a => (a.key === abilityKey || a.ability === abilityKey));
+        const abilityScore = abilityEntry?.score || 10;
+
+        // Calculate modifier
+        const abilityMod = Math.floor((abilityScore - 10) / 2);
+
+        // Calculate skill bonus: mod + PB (or 2*PB if expertise)
+        const expertise = newValue as boolean;
+        const pbBonus = expertise ? (2 * pb) : pb;
+        const skillBonus = abilityMod + pbBonus;
+
+        // Format with sign
+        const sign = skillBonus >= 0 ? "+" : "";
+        const valueStr = `${sign}${skillBonus}`;
+
+        // Update the value field in the token
+        token.value = valueStr;
+      },
+    },
+    default: [],
+  },
+];
+
+// Section 5: Sinne & Sprachen (Senses & Languages) - Using modular tokens
+const sensesLanguagesFields: AnyFieldSpec[] = [
+  {
+    id: "sensesList",
+    label: "Sinne",
+    type: "tokens",
+    config: {
+      fields: [
+        {
+          id: "type",
+          type: "select",
+          displayInChip: true,
+          editable: true,
+          suggestions: CREATURE_SENSE_TYPES,
+          placeholder: "Sinn wählen...",
+        },
+        {
+          id: "range",
+          type: "text",
+          label: ": ",
+          displayInChip: true,
+          editable: true,
+          unit: "ft.",
+          placeholder: "60",
+          visibleIf: (token) => Boolean(token.type),
+        },
+      ],
+      primaryField: "type",
+    },
+    default: [],
+  },
+  {
+    id: "passivesList",
+    label: "Passive Werte",
+    type: "tokens",
+    config: {
+      fields: [
+        {
+          id: "skill",
+          type: "select",
+          displayInChip: true,
+          editable: true,
+          suggestions: [
+            { key: "Perception", label: "Perception" },
+            { key: "Insight", label: "Insight" },
+            { key: "Investigation", label: "Investigation" },
+          ],
+          placeholder: "Fertigkeit wählen...",
+        },
+        {
+          id: "value",
+          type: "text",
+          label: " ",
+          displayInChip: true,
+          editable: true,
+          placeholder: "Wert",
+        },
+      ],
+      primaryField: "skill",
+      chipTemplate: (token) => `Passive ${token.skill || "?"} ${token.value || ""}`.trim(),
+    },
+    default: [],
+  },
+  {
+    id: "languagesList",
+    label: "Sprachen",
+    type: "tokens",
+    config: {
+      fields: [
+        {
+          id: "value",
+          type: "text",
+          displayInChip: true,
+          editable: true,
+          placeholder: "Sprache hinzufügen...",
+          suggestions: CREATURE_LANGUAGE_PRESETS,
+          visibleIf: (token) => !token.type,
+        },
+        {
+          id: "type",
+          type: "select",
+          displayInChip: true,
+          editable: true,
+          suggestions: [{ key: "telepathy", label: "Telepathy" }],
+          placeholder: "Telepathie",
+          optional: true,
+          visibleIf: (token) => Boolean(token.type),
+        },
+        {
+          id: "range",
+          type: "text",
+          label: ": ",
+          displayInChip: true,
+          editable: true,
+          unit: "ft.",
+          placeholder: "120",
+          visibleIf: (token) => token.type === "telepathy",
+        },
+      ],
+      primaryField: "value",
+    },
+    default: [],
+  },
+];
+
+// Section 6: Widerstände (Resistances) - Using modular tokens
+const resistancesFields: AnyFieldSpec[] = [
+  {
+    id: "damageVulnerabilitiesList",
+    label: "Schadensanfälligkeiten",
+    type: "tokens",
+    config: {
+      fields: [{
+        id: "value",
+        type: "text",
+        displayInChip: true,
+        editable: true,
+        placeholder: "Anfälligkeit hinzufügen...",
+        suggestions: CREATURE_DAMAGE_PRESETS,
+      }],
+      primaryField: "value",
+    },
+    default: [],
+  },
+  {
+    id: "damageResistancesList",
+    label: "Schadenswiderstände",
+    type: "tokens",
+    config: {
+      fields: [{
+        id: "value",
+        type: "text",
+        displayInChip: true,
+        editable: true,
+        placeholder: "Widerstand hinzufügen...",
+        suggestions: CREATURE_DAMAGE_PRESETS,
+      }],
+      primaryField: "value",
+    },
+    default: [],
+  },
+  {
+    id: "damageImmunitiesList",
+    label: "Schadensimmunitäten",
+    type: "tokens",
+    config: {
+      fields: [{
+        id: "value",
+        type: "text",
+        displayInChip: true,
+        editable: true,
+        placeholder: "Immunität hinzufügen...",
+        suggestions: CREATURE_DAMAGE_PRESETS,
+      }],
+      primaryField: "value",
+    },
+    default: [],
+  },
+  {
+    id: "conditionImmunitiesList",
+    label: "Zustandsimmunitäten",
+    type: "tokens",
+    config: {
+      fields: [{
+        id: "value",
+        type: "text",
+        displayInChip: true,
+        editable: true,
+        placeholder: "Zustand hinzufügen...",
+        suggestions: CREATURE_CONDITION_PRESETS,
+      }],
+      primaryField: "value",
+    },
+    default: [],
+  },
+];
+
+// Section 7: Ausrüstung (Equipment)
+const equipmentFields: AnyFieldSpec[] = [
+  {
+    id: "gearList",
+    label: "Ausrüstung",
+    type: "tokens",
+    config: {
+      fields: [{
+        id: "value",
+        type: "text",
+        displayInChip: true,
+        editable: true,
+        placeholder: "Gegenstand hinzufügen...",
+      }],
+      primaryField: "value",
+    },
+    default: [],
+  },
+];
+
+// Section 8: Einträge (Entries) - Using template-based repeating field
+// Note: Simplified to basic fields only. Complex features (components, spellcasting)
+// can be added via separate edit workflow after creation.
+const entriesFields: AnyFieldSpec[] = [
+  {
+    id: "entries",
+    label: "Aktionen & Eigenschaften",
+    type: "repeating",
+    config: {
+      static: false,
+      fields: [
+        {
+          id: "category",
+          label: "Kategorie",
+          type: "select" as const,
+          options: CREATURE_ENTRY_CATEGORIES.map(([id, label]) => ({ value: id, label })),
+        },
+        {
+          id: "name",
+          label: "Name",
+          type: "text" as const,
+          placeholder: "z.B. Multiattack, Bite, Claw...",
+        },
+        {
+          id: "text",
+          label: "Beschreibung",
+          type: "textarea" as const,
+          placeholder: "Entry description (Markdown)...",
+        },
+      ],
+    },
+    default: [],
+  },
+];
+
+// ============================================================================
+// SECTIONS
+// ============================================================================
+
+export const creatureSpec: CreateSpec<StatblockData> = {
+  kind: "creature",
+  title: "Kreatur erstellen",
+  subtitle: "Neue Kreatur für deine Kampagne",
+  schema: creatureSchema,
+  fields: [
+    ...basicInfoFields,
+    ...combatStatsFields,
+    ...movementFields,
+    ...abilitiesFields,
+    ...skillsFields,
+    ...sensesLanguagesFields,
+    ...resistancesFields,
+    ...equipmentFields,
+    ...entriesFields,
+  ],
+  storage: {
+    format: "md-frontmatter",
+    pathTemplate: "SaltMarcher/Creatures/{name}.md",
+    filenameFrom: "name",
+    directory: "SaltMarcher/Creatures",
+    preserveCase: true,
+    frontmatter: [
+      "name", "size", "type", "typeTags",
+      "alignmentLawChaos", "alignmentGoodEvil", "alignmentOverride",
+      "ac", "initiative", "hp", "hitDice",
+      "speeds", "abilities", "pb", "saves", "skills",
+      "sensesList", "languagesList", "passivesList",
+      "damageVulnerabilitiesList", "damageResistancesList",
+      "damageImmunitiesList", "conditionImmunitiesList",
+      "gearList", "cr", "xp",
+      "entries", "spellcasting"
+    ],
+    bodyTemplate: (data) => statblockToMarkdown(data as StatblockData),
+  },
+  ui: {
+    submitLabel: "Kreatur erstellen",
+    cancelLabel: "Abbrechen",
+    enableNavigation: true,
+    sections: [
+      {
+        id: "basic",
+        label: "Grunddaten",
+        description: "Name, Größe, Typ und Gesinnung",
+        fieldIds: ["name", "size", "alignmentLawChaos", "alignmentGoodEvil", "alignmentOverride", "type", "typeTags"],
+      },
+      {
+        id: "combat",
+        label: "Kampfwerte",
+        description: "AC, HP, Initiative und CR",
+        fieldIds: ["ac", "initiative", "hp", "hitDice", "cr", "xp", "pb"],
+      },
+      {
+        id: "abilities",
+        label: "Attribute",
+        description: "Grundattribute und Modifikatoren",
+        fieldIds: ["abilities"],
+      },
+      {
+        id: "senses",
+        label: "Fähigkeiten",
+        description: "Bewegungsraten, Fertigkeiten, Sinneswahrnehmungen und Kommunikation",
+        fieldIds: ["speeds", "skills", "sensesList", "passivesList", "languagesList"],
+      },
+      {
+        id: "resistances",
+        label: "Widerstände",
+        description: "Schadenswiderstände und Immunitäten",
+        fieldIds: ["damageVulnerabilitiesList", "damageResistancesList", "damageImmunitiesList", "conditionImmunitiesList"],
+      },
+      {
+        id: "equipment",
+        label: "Ausrüstung",
+        description: "Gegenstände und Ausrüstung",
+        fieldIds: ["gearList"],
+      },
+      {
+        id: "entries",
+        label: "Eigenschaften & Aktionen",
+        description: "Spezialfähigkeiten, Angriffe und Reaktionen",
+        fieldIds: ["entries"],
+      },
+    ],
+  },
+  // Browse configuration - replaces view-config.ts and list-schema.ts
+  browse: {
+    metadata: [
+      {
+        id: "type",
+        cls: "sm-cc-item__type",
+        getValue: (entry) => entry.type,
+      },
+      {
+        id: "cr",
+        cls: "sm-cc-item__cr",
+        getValue: (entry) => entry.cr ? `CR ${entry.cr}` : undefined,
+      },
+    ],
+    filters: [
+      { id: "type", field: "type", label: "Type", type: "string" },
+      {
+        id: "cr",
+        field: "cr",
+        label: "CR",
+        type: "custom",
+        sortComparator: (a: string, b: string) => {
+          const parseCr = (value?: string): number => {
+            if (!value) return Number.POSITIVE_INFINITY;
+            if (value.includes("/")) {
+              const [num, denom] = value.split("/").map(part => Number(part.trim()));
+              if (Number.isFinite(num) && Number.isFinite(denom) && denom !== 0) {
+                return num / denom;
+              }
+            }
+            const numeric = Number(value);
+            return Number.isFinite(numeric) ? numeric : Number.POSITIVE_INFINITY;
+          };
+          return parseCr(a) - parseCr(b);
+        },
+      },
+    ],
+    sorts: [
+      { id: "name", label: "Name", field: "name" },
+      { id: "type", label: "Type", field: "type" },
+      {
+        id: "cr",
+        label: "CR",
+        compareFn: (a, b) => {
+          const parseCr = (value?: string): number => {
+            if (!value) return Number.POSITIVE_INFINITY;
+            if (value.includes("/")) {
+              const [num, denom] = value.split("/").map(part => Number(part.trim()));
+              if (Number.isFinite(num) && Number.isFinite(denom) && denom !== 0) {
+                return num / denom;
+              }
+            }
+            const numeric = Number(value);
+            return Number.isFinite(numeric) ? numeric : Number.POSITIVE_INFINITY;
+          };
+          return parseCr(a.cr) - parseCr(b.cr) || a.name.localeCompare(b.name);
+        },
+      },
+    ],
+    search: ["type", "cr"],
+  },
+  // Loader configuration - replaces loader.ts (uses auto-loader by default)
+  loader: {
+    fromFrontmatter: (fm, file) => {
+      // Helper: Strip " ft." from values since UI adds it via valueConfig.unit
+      const stripUnit = (value: string): string => {
+        if (!value) return '';
+        return value.replace(/\s*ft\.?$/i, '').trim();
+      };
+
+      // Auto-migrate legacy speeds format to array format
+      if (fm.speeds && !Array.isArray(fm.speeds)) {
+        const oldSpeeds = fm.speeds as any;
+        const newSpeeds: Array<{type: string; value: string; hover?: boolean}> = [];
+
+        // Convert known speed types
+        const speedTypes = ['walk', 'burrow', 'climb', 'fly', 'swim'];
+        for (const type of speedTypes) {
+          if (oldSpeeds[type]?.distance) {
+            const entry: any = {
+              type,
+              value: stripUnit(oldSpeeds[type].distance),  // Strip unit
+            };
+            if (type === 'fly' && oldSpeeds[type].hover === true) {
+              entry.hover = true;
+            }
+            newSpeeds.push(entry);
+          }
+        }
+
+        // Convert extras if present
+        if (oldSpeeds.extras && Array.isArray(oldSpeeds.extras)) {
+          for (const extra of oldSpeeds.extras) {
+            if (extra.label && extra.distance) {
+              newSpeeds.push({
+                type: extra.label,
+                value: stripUnit(extra.distance),  // Strip unit
+              });
+            }
+          }
+        }
+
+        fm.speeds = newSpeeds.length > 0 ? newSpeeds : undefined;
+      }
+
+      // Normalize passivesList: Parse legacy format "Passive Perception 20" → {skill: "Perception", value: "20"}
+      if (fm.passivesList && Array.isArray(fm.passivesList)) {
+        fm.passivesList = fm.passivesList.map(item => {
+          let text: string;
+
+          // Handle both string and {value: "..."} formats
+          if (typeof item === 'string') {
+            text = item;
+          } else if (item && typeof item === 'object' && 'value' in item) {
+            text = String(item.value);
+          } else if (item && typeof item === 'object' && 'skill' in item && 'value' in item) {
+            // Already in new format
+            return item;
+          } else {
+            return item;
+          }
+
+          // Parse "Passive Perception 20" format
+          const match = text.match(/^Passive\s+(\w+)\s+(\d+)$/i);
+          if (match) {
+            return {
+              skill: match[1], // e.g., "Perception"
+              value: match[2], // e.g., "20"
+            };
+          }
+
+          // Fallback: if no match, try to salvage what we can
+          return {
+            skill: "Perception",
+            value: text.replace(/\D/g, '') || "10",
+          };
+        });
+      }
+
+      // Normalize languagesList: Clean up Obsidian's YAML parsing quirks
+      // Obsidian merges keys from adjacent list items, so we need to separate them
+      if (fm.languagesList && Array.isArray(fm.languagesList)) {
+        fm.languagesList = fm.languagesList.map(item => {
+          if (typeof item === 'string') {
+            return { value: item };
+          }
+
+          // Remove empty/whitespace-only fields
+          const cleaned: Record<string, unknown> = {};
+          for (const [key, value] of Object.entries(item)) {
+            if (typeof value === 'string' && value.trim() === '') {
+              continue;
+            }
+            cleaned[key] = value;
+          }
+
+          // If token has BOTH value AND type, but value looks like a language name
+          // (not empty), then this is a case where Obsidian merged two tokens
+          // Keep only the value field for simple language tokens
+          if (cleaned.value && cleaned.type && !cleaned.range) {
+            // This is likely a simple language that got 'type' added from the next token
+            return { value: cleaned.value };
+          }
+
+          return cleaned;
+        });
+      }
+
+      // Normalize sensesList: Same treatment as languagesList
+      if (fm.sensesList && Array.isArray(fm.sensesList)) {
+        fm.sensesList = fm.sensesList.map(item => {
+          if (typeof item === 'string') {
+            return { value: item };
+          }
+
+          const cleaned: Record<string, unknown> = {};
+          for (const [key, value] of Object.entries(item)) {
+            if (typeof value === 'string' && value.trim() === '') {
+              continue;
+            }
+            cleaned[key] = value;
+          }
+
+          return cleaned;
+        });
+      }
+
+      return fm as StatblockData;
+    },
+  },
+};

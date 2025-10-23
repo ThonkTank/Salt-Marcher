@@ -1,0 +1,68 @@
+name: "Debug configuration test"
+description: "Tests that debug configuration can be set and retrieved via IPC"
+
+# Setup steps
+setup:
+  - name: "Reload plugin"
+    command: reload-plugin
+    wait: 1000
+
+# Main test steps
+steps:
+  - name: "Set debug config with specific fields"
+    command: set-debug-config
+    args:
+      - '{"enabled": true, "logFields": ["saveProf", "saveMod"], "logCategories": ["init", "onChange"], "logAll": false}'
+    expect:
+      success: true
+      config:
+        enabled: true
+        logFields: ["saveProf", "saveMod"]
+        logCategories: ["init", "onChange"]
+        logAll: false
+
+  - name: "Retrieve debug config to verify"
+    command: get-debug-config
+    expect:
+      success: true
+      config:
+        enabled: true
+        logFields: ["saveProf", "saveMod"]
+        logCategories: ["init", "onChange"]
+        logAll: false
+
+  - name: "Enable full logging"
+    command: set-debug-config
+    args:
+      - '{"enabled": true, "logAll": true}'
+    expect:
+      success: true
+      config:
+        enabled: true
+        logAll: true
+
+  - name: "Verify full logging is enabled"
+    command: get-debug-config
+    expect:
+      success: true
+      config:
+        enabled: true
+        logAll: true
+
+  - name: "Disable debug logging"
+    command: set-debug-config
+    args:
+      - '{"enabled": false}'
+    expect:
+      success: true
+      config:
+        enabled: false
+
+  - name: "Verify logging is disabled"
+    command: get-debug-config
+    expect:
+      success: true
+      config:
+        enabled: false
+
+# No cleanup needed for this test

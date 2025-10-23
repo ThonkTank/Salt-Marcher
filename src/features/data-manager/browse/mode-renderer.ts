@@ -2,6 +2,7 @@
 // Base renderer pattern for workmode views
 
 import type { App } from "obsidian";
+import { logger } from "../../../app/plugin-logger";
 
 /**
  * Renderer interface for a specific mode within a workmode view.
@@ -83,7 +84,7 @@ export abstract class BaseModeRenderer<M extends string = string> implements Mod
             try {
                 fn();
             } catch (err) {
-                console.error("Cleanup function failed:", err);
+                logger.error("Cleanup function failed:", err);
             }
         }
 
@@ -103,7 +104,7 @@ export abstract class BaseModeRenderer<M extends string = string> implements Mod
      */
     protected registerCleanup(fn: () => void): void {
         if (this.disposed) {
-            console.warn("Attempted to register cleanup on disposed renderer");
+            logger.warn("Attempted to register cleanup on disposed renderer");
             return;
         }
         this.cleanups.push(fn);

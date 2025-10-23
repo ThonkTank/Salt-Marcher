@@ -977,3 +977,32 @@
         align-items: flex-start;
     }
 }
+
+/* Tag Editor Suggestion Menu */
+.sm-cc-suggestion-menu {
+    position: absolute;
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    margin-top: 4px;
+    min-width: 200px;
+}
+
+.sm-cc-suggestion-item {
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.sm-cc-suggestion-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.sm-cc-suggestion-item.is-active {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}

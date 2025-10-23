@@ -115,7 +115,7 @@ export class FilterSortState<Entry> {
             const definition = filters.find(filter => filter.id === id);
             if (!definition) continue;
             const values = (definition.getValues(entry) || [])
-                .map(value => (value ?? "").trim())
+                .map(value => String(value ?? "").trim())
                 .filter((value): value is string => Boolean(value));
             if (!values.includes(selected)) {
                 return false;
@@ -135,7 +135,7 @@ export function collectFilterOptions<Entry>(
         for (const entry of entries) {
             const rawValues = filter.getValues(entry) || [];
             for (const raw of rawValues) {
-                const value = (raw ?? "").trim();
+                const value = String(raw ?? "").trim();
                 if (value) {
                     values.add(value);
                 }

@@ -1,0 +1,103 @@
+# Create Modal UI Validation Config
+# Comprehensive validation rules for the create modal layout
+
+name: create-modal
+description: Validation rules for Salt Marcher create modals
+rules:
+  # Label synchronization
+  - name: "Single-column section label synchronization"
+    selector: ".sm-cc-card .setting-item-info"
+    groupBy:
+      ancestorSelector: ".sm-cc-card"
+      extractLabel: ".sm-cc-card__title"
+    dimension: "width"
+    expect: "synchronized"
+    tolerance: 1
+    description: "Labels in single-column sections should have synchronized widths"
+
+  # Number steppers
+  - name: "Number stepper minimum width"
+    selector: ".sm-inline-number input[type='number']"
+    dimension: "width"
+    expect: "min"
+    value: 30
+    description: "Steppers must be wide enough to display their values"
+
+  - name: "Number stepper maximum width"
+    selector: ".sm-inline-number input[type='number']"
+    dimension: "width"
+    expect: "max"
+    value: 100
+    description: "Steppers shouldn't be unnecessarily wide"
+
+  # Tag editors grid layout
+  - name: "Tag editor grid columns"
+    selector: ".sm-cc-setting--token-editor"
+    dimension: "grid-template-columns"
+    expect: "custom"
+    validator: "validateGridColumns"
+    expectedColumns: 2
+    description: "Tag editors should use 2-column grid"
+
+  # Modal dimensions
+  - name: "Modal minimum width"
+    selector: ".modal"
+    dimension: "width"
+    expect: "min"
+    value: 700
+    description: "Modal must be wide enough for content"
+
+  - name: "Modal maximum width"
+    selector: ".modal"
+    dimension: "width"
+    expect: "max"
+    value: 1200
+    description: "Modal shouldn't exceed reasonable width"
+
+  # Card spacing
+  - name: "Card consistent margin"
+    selector: ".sm-cc-card"
+    dimension: "margin-bottom"
+    expect: "synchronized"
+    tolerance: 2
+    description: "Cards should have consistent vertical spacing"
+
+  # Form controls
+  - name: "Text input minimum width"
+    selector: ".setting-item-control input[type='text']"
+    dimension: "width"
+    expect: "min"
+    value: 200
+    description: "Text inputs must be usable"
+
+  - name: "Textarea minimum height"
+    selector: ".setting-item-control textarea"
+    dimension: "height"
+    expect: "min"
+    value: 60
+    description: "Textareas need sufficient height"
+
+  # Checkboxes
+  - name: "Checkbox consistent size"
+    selector: ".checkbox-container input[type='checkbox']"
+    dimension: "width"
+    expect: "synchronized"
+    tolerance: 0
+    description: "All checkboxes should be the same size"
+
+  # Navigation sidebar (if present)
+  - name: "Navigation sidebar width"
+    selector: ".sm-cc-shell__nav"
+    dimension: "width"
+    expect: "range"
+    value: 150
+    maxValue: 250
+    description: "Sidebar should be appropriately sized"
+
+  # Button alignment
+  - name: "Action buttons height"
+    selector: ".modal .setting-item button"
+    dimension: "height"
+    expect: "synchronized"
+    tolerance: 2
+    description: "Action buttons should have consistent height"

@@ -57,6 +57,7 @@ import {
 } from "../data/calendar-state-gateway";
 import type { PhenomenonDTO } from "../data/dto";
 import { formatPhenomenaExport, parsePhenomenaImport } from "../data/phenomena-serialization";
+import { logger } from "../../../app/plugin-logger";
 import {
     advanceTime,
     computeNextEventOccurrence,
@@ -3907,7 +3908,7 @@ export class AlmanacStateMachine {
             await this.gateway.saveTravelLeafPreferences(this.travelId, next);
             this.travelLeafPreferences = next;
         } catch (error) {
-            console.warn("Failed to persist travel leaf preferences", error);
+            logger.warn("Failed to persist travel leaf preferences", error);
         }
     }
 
@@ -3915,7 +3916,7 @@ export class AlmanacStateMachine {
         try {
             await this.gateway.savePreferences(partial);
         } catch (error) {
-            console.warn("Failed to persist Almanac preferences", error);
+            logger.warn("Failed to persist Almanac preferences", error);
         }
     }
 }

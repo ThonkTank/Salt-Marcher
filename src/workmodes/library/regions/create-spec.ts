@@ -1,0 +1,141 @@
+// src/workmodes/library/entities/regions/create-spec.ts
+// Declarative field specification for region creation using the global modal system
+
+import type { CreateSpec, AnyFieldSpec, DataSchema } from "../../../../features/data-manager/types";
+import type { RegionData } from "./types";
+import { regionToMarkdown } from "./serializer";
+import { ENCOUNTER_ODDS_PRESETS, TERRAIN_SUGGESTIONS } from "./constants";
+
+// ============================================================================
+// SCHEMA
+// ============================================================================
+
+const regionSchema: DataSchema<RegionData> = {
+  parse: (data: unknown) => data as RegionData,
+  safeParse: (data: unknown) => {
+    try {
+      const region = data as RegionData;
+
+      // Validate encounter odds
+      if (region.encounter_odds !== undefined) {
+        if (typeof region.encounter_odds !== "number" || region.encounter_odds < 0) {
+          return {
+            success: false,
+            error: new Error("Encounter odds must be a positive number")
+          };
+        }
+      }
+
+      return { success: true, data: region };
+    } catch (error) {
+      return { success: false, error };
+    }
+  },
+};
+
+// ============================================================================
+// FIELD DEFINITIONS
+// ============================================================================
+
+const fields: AnyFieldSpec[] = [
+  {
+    id: "name",
+    label: "Name",
+    type: "text",
+    required: true,
+    placeholder: "Saltmarsh",
+    description: "Name of the region",
+  },
+  {
+    id: "terrain",
+    label: "Terrain",
+    type: "text",
+    placeholder: "Küste",
+    description: "Primary terrain type of this region",
+    config: {
+      suggestions: TERRAIN_SUGGESTIONS,
+    },
+  },
+  {
+    id: "encounter_odds",
+    label: "Encounter Rate",
+    type: "select",
+    options: ENCOUNTER_ODDS_PRESETS.map(p => ({
+      value: String(p.value),
+      label: p.label,
+    })),
+    default: "0",
+    description: "Chance of random encounters (1/N per travel period)",
+  },
+  {
+    id: "description",
+    label: "Description",
+    type: "textarea",
+    placeholder: "A bustling coastal town known for fishing and trade...",
+    description: "Optional description of the region",
+  },
+];
+
+// ============================================================================
+// SPEC
+// ============================================================================
+
+export const regionSpec: CreateSpec<RegionData> = {
+  kind: "region",
+  title: "Region erstellen",
+  subtitle: "Neue Region für deine Welt",
+  schema: regionSchema,
+  fields,
+  storage: {
+    format: "md-frontmatter",
+    pathTemplate: "SaltMarcher/Regions/{name}.md",
+    filenameFrom: "name",
+    directory: "SaltMarcher/Regions",
+    frontmatter: ["name", "terrain", "encounter_odds", "description"],
+    bodyTemplate: (data) => regionToMarkdown(data as RegionData),
+  },
+  ui: {
+    submitLabel: "Region erstellen",
+    cancelLabel: "Abbrechen",
+    enableNavigation: false, // Single section, no nav needed
+  },
+  // Browse configuration - replaces view-config.ts and list-schema.ts
+  browse: {
+    metadata: [
+      {
+        id: "terrain",
+        cls: "sm-cc-item__type",
+        getValue: (entry) => entry.terrain || "Unknown",
+      },
+      {
+        id: "encounter_odds",
+        cls: "sm-cc-item__cr",
+        getValue: (entry) => {
+          if (!entry.encounter_odds || entry.encounter_odds === 0) return "No encounters";
+          return `Encounters: 1/${entry.encounter_odds}`;
+        },
+      },
+    ],
+    filters: [
+      { id: "terrain", field: "terrain", label: "Terrain", type: "string" },
+      { id: "encounter_odds", field: "encounter_odds", label: "Encounter Rate", type: "number" },
+    ],
+    sorts: [
+      { id: "name", label: "Name", field: "name" },
+      { id: "terrain", label: "Terrain", field: "terrain" },
+      {
+        id: "encounter_odds",
+        label: "Danger Level",
+        compareFn: (a, b) => {
+          // Sort by danger (lower odds = more dangerous)
+          const oddsA = a.encounter_odds || Number.MAX_VALUE;
+          const oddsB = b.encounter_odds || Number.MAX_VALUE;
+          return oddsA - oddsB;
+        },
+      },
+    ],
+    search: ["name", "terrain", "description"],
+  },
+  // Loader configuration - uses auto-loader by default
+  loader: {},
+};

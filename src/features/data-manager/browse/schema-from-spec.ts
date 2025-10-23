@@ -1,5 +1,5 @@
 // src/features/data-manager/browse/schema-from-spec.ts
-// Converts BrowseSpec from CreateSpec into LibraryListSchema format
+// Converts BrowseSpec from CreateSpec into ListSchema format
 
 import type { CreateSpec, BrowseSpec, FilterSpec, SortSpec } from "../types";
 import type { ListSchema } from "./types";

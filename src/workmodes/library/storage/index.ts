@@ -6,4 +6,3 @@ export * from "./spells";
 export * from "./items";
 export * from "./equipment";
 export * from "./data-sources";
-export * from "./file-pipeline";

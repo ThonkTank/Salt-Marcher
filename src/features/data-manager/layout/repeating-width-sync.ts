@@ -1,6 +1,8 @@
 // src/features/data-manager/repeating-width-sync.ts
 // Synchronizes widths of identical field types across repeating entries
 
+import { calculateTextWidth } from "../utils/width-utils";
+
 /**
  * Synchronizes widths of identical field types across repeating entries.
  * Groups elements by their field-id attribute and applies max width to all in group.
@@ -89,19 +91,20 @@ export class RepeatingWidthSynchronizer {
     for (const [groupKey, elements] of groups.entries()) {
       if (elements.length === 0) continue;
 
-      // For labels, reset to measure natural width
-      // For controls, keep existing width (from auto-sizing)
-      if (groupKey.endsWith('__label')) {
-        elements.forEach(el => {
-          el.style.minWidth = '';
-        });
-        // Force reflow
-        void elements[0].offsetWidth;
-      }
+      let maxWidth: number;
 
-      // Measure all widths (controls keep their auto-sized width)
-      const widths = elements.map(el => el.getBoundingClientRect().width);
-      const maxWidth = Math.max(...widths);
+      if (groupKey.endsWith('__label')) {
+        // For labels, calculate text width using utility (no DOM measurement needed)
+        const widths = elements.map(el => {
+          const text = el.textContent || '';
+          return calculateTextWidth(text, el);
+        });
+        maxWidth = Math.max(...widths);
+      } else {
+        // For controls, measure existing auto-sized width
+        const widths = elements.map(el => el.getBoundingClientRect().width);
+        maxWidth = Math.max(...widths);
+      }
 
       // Apply max width to all elements in group
       elements.forEach(el => {

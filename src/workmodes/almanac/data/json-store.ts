@@ -2,6 +2,7 @@
 // Generic JSON store backed by an Obsidian vault file with migration support.
 
 import { normalizePath, TAbstractFile, TFile } from "obsidian";
+import { logger } from "../../../app/plugin-logger";
 
 export interface VaultLike {
   getAbstractFileByPath(path: string): TAbstractFile | null;
@@ -72,7 +73,7 @@ export class JsonStore<T> {
       }
       return normalized;
     } catch (error) {
-      console.warn(`[salt-marcher] Failed to parse ${this.normalizedPath}, resetting file`, error);
+      logger.warn(`[salt-marcher] Failed to parse ${this.normalizedPath}, resetting file`, error);
       const fallback: VersionedPayload<T> = { version: this.config.currentVersion, data: this.config.initialData() };
       await this.writePayload(fallback);
       return fallback;

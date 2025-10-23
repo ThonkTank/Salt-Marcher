@@ -1,7 +1,7 @@
 // tests/library/creature-fixtures.ts
 // Beinhaltet Beispiel-Statblocks zum schnellen Testen von Formatter- und Editorlogik.
 
-import type { StatblockData } from "../../src/workmodes/library/core/creature-files";
+import type { StatblockData } from "../../src/workmodes/library/entities/creatures";
 
 export const EXAMPLE_CREATURE_STATBLOCKS: StatblockData[] = [
   {

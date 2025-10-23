@@ -8,6 +8,7 @@ import { resolveInitialValue, renderFieldControl } from "./field-utils";
 import { RepeatingWidthSynchronizer } from "../layout/repeating-width-sync";
 import { mountEntryManager, type EntryCategoryDefinition, type EntryFilterDefinition } from "../storage/entry-system";
 import { renderRepeatingEntryManagerCore } from "./field-rendering-core";
+import { logger } from "../../../app/plugin-logger";
 
 export const repeatingFieldRenderer: FieldRegistryEntry = {
   supports: (spec) => spec.type === "repeating",
@@ -81,7 +82,7 @@ export const repeatingFieldRenderer: FieldRegistryEntry = {
                   : (displaySpec.config.suffix ?? "");
                 displayEl.value = `${prefix}${computed}${suffix}`;
               } catch (error) {
-                console.warn(`Display field ${fieldSpec.id} compute error:`, error);
+                logger.warn(`Display field ${fieldSpec.id} compute error:`, error);
                 displayEl.value = "";
               }
             }
@@ -116,7 +117,7 @@ export const repeatingFieldRenderer: FieldRegistryEntry = {
               try {
                 entry[fieldSpec.id] = initConfig(entry);
               } catch (error) {
-                console.error(`Failed to initialize ${fieldSpec.id}:`, error);
+                logger.error(`Failed to initialize ${fieldSpec.id}:`, error);
               }
             }
           }

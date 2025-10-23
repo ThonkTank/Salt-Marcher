@@ -1,20 +1,67 @@
 ---
 smType: creature
-name: "Bone Devil"
-size: "Large"
-type: "Fiend"
-type_tags: ["Devil"]
-alignment: "Lawful Evil"
+name: Bone Devil
+size: Large
+type: Fiend
+alignmentLawChaos: Lawful
+alignmentGoodEvil: Evil
 ac: "16"
+initiative: +7 (17)
 hp: "161"
-hit_dice: "17d10 + 68"
-speeds_json: "{\"walk\":{\"distance\":\"40 ft.\"},\"fly\":{\"distance\":\"40 ft.\"}}"
-abilities_json: "[{\"ability\":\"str\",\"score\":18},{\"ability\":\"dex\",\"score\":16},{\"ability\":\"con\",\"score\":18},{\"ability\":\"int\",\"score\":13},{\"ability\":\"wis\",\"score\":14},{\"ability\":\"cha\",\"score\":16}]"
+hitDice: 17d10 + 68
+speeds:
+  - type: walk
+    value: "40"
+  - type: fly
+    value: "40"
+abilities:
+  - ability: str
+    score: 18
+  - ability: dex
+    score: 16
+  - ability: con
+    score: 18
+  - ability: int
+    score: 13
+  - ability: wis
+    score: 14
+  - ability: cha
+    score: 16
 pb: "+4"
-saves_json: "[{\"ability\":\"str\",\"bonus\":8},{\"ability\":\"int\",\"bonus\":5},{\"ability\":\"wis\",\"bonus\":6},{\"ability\":\"cha\",\"bonus\":7}]"
 cr: "9"
 xp: "5000"
-entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Diabolical Restoration\",\"text\":\"If the devil dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.\"},{\"category\":\"trait\",\"name\":\"Magic Resistance\",\"text\":\"The devil has Advantage on saving throws against spells and other magical effects.\"},{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The devil makes two Claw attacks and one Infernal Sting attack.\"},{\"category\":\"action\",\"name\":\"Claw\",\"text\":\"*Melee Attack Roll:* +8, reach 10 ft. 13 (2d8 + 4) Slashing damage.\"},{\"category\":\"action\",\"name\":\"Infernal Sting\",\"text\":\"*Melee Attack Roll:* +8, reach 10 ft. 15 (2d10 + 4) Piercing damage plus 18 (4d8) Poison damage, and the target has the Poisoned condition until the start of the devil's next turn. While Poisoned, the target can't regain Hit Points.\"}]"
+sensesList:
+  - value: darkvision 120 ft. (unimpeded by magical darkness)
+languagesList:
+  - value: Infernal
+  - type: telepathy
+    range: "120"
+passivesList:
+  - skill: Perception
+    value: "12"
+damageResistancesList:
+  - value: Cold
+damageImmunitiesList:
+  - value: Fire
+  - value: Poison
+  - value: Poisoned
+entries:
+  - category: trait
+    name: Diabolical Restoration
+    text: If the devil dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+  - category: trait
+    name: Magic Resistance
+    text: The devil has Advantage on saving throws against spells and other magical effects.
+  - category: action
+    name: Multiattack
+    text: The devil makes two Claw attacks and one Infernal Sting attack.
+  - category: action
+    name: Claw
+    text: "*Melee Attack Roll:* +8, reach 10 ft. 13 (2d8 + 4) Slashing damage."
+  - category: action
+    name: Infernal Sting
+    text: "*Melee Attack Roll:* +8, reach 10 ft. 15 (2d10 + 4) Piercing damage plus 18 (4d8) Poison damage, and the target has the Poisoned condition until the start of the devil's next turn. While Poisoned, the target can't regain Hit Points."
+
 ---
 
 # Bone Devil
@@ -22,12 +69,15 @@ entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Diabolical Restora
 
 **AC** 16
 **HP** 161 (17d10 + 68)
+**Initiative** +7 (17)
 **Speed** 40 ft., fly 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
 | 18 | 16 | 18 | 13 | 14 | 16 |
 
+**Senses** darkvision 120 ft. (unimpeded by magical darkness); Passive Perception 12
+**Languages** Infernal, telepathy 120 ft.
 CR 9, PB +4, XP 5000
 
 ## Traits

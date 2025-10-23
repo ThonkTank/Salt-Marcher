@@ -2,6 +2,7 @@
 // Consolidated map CRUD operations
 import { App, TFile } from "obsidian";
 import { initTilesForNewMap, listTilesForMap } from "./tile-repository";
+import { logger } from "../../../app/plugin-logger";
 
 export type HexBlockOptions = {
     folder?: string;        // Target folder for tiles
@@ -128,7 +129,7 @@ export async function deleteMapAndTiles(app: App, mapFile: TFile): Promise<void>
         try {
             await app.vault.delete(t.file);
         } catch (e) {
-            console.warn("Delete tile failed:", t.file.path, e);
+            logger.warn("Delete tile failed:", t.file.path, e);
         }
     }
 
@@ -136,6 +137,6 @@ export async function deleteMapAndTiles(app: App, mapFile: TFile): Promise<void>
     try {
         await app.vault.delete(mapFile);
     } catch (e) {
-        console.warn("Delete map failed:", mapFile.path, e);
+        logger.warn("Delete map failed:", mapFile.path, e);
     }
 }

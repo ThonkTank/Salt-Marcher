@@ -11,3 +11,4 @@ export * from "./tab-navigation";
 export * from "./filter-controls";
 export * from "./list-renderer";
 export * from "./workmode-header";
+export * from "./tabbed-browse-view";

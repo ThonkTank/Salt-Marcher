@@ -1,18 +1,59 @@
 ---
 smType: creature
-name: "Pseudodragon"
-size: "Small"
-type: "Dragon"
-alignment: "Neutral Good"
+name: Pseudodragon
+size: Small
+type: Dragon
+alignmentLawChaos: Neutral
+alignmentGoodEvil: Good
 ac: "14"
+initiative: +2 (12)
 hp: "10"
-hit_dice: "3d4 + 3"
-speeds_json: "{\"walk\":{\"distance\":\"15 ft.\"},\"fly\":{\"distance\":\"60 ft.\"}}"
-abilities_json: "[{\"ability\":\"str\",\"score\":6},{\"ability\":\"dex\",\"score\":15},{\"ability\":\"con\",\"score\":13},{\"ability\":\"int\",\"score\":10},{\"ability\":\"wis\",\"score\":12},{\"ability\":\"cha\",\"score\":10}]"
+hitDice: 3d4 + 3
+speeds:
+  - type: walk
+    value: "15"
+  - type: fly
+    value: "60"
+abilities:
+  - ability: str
+    score: 6
+  - ability: dex
+    score: 15
+  - ability: con
+    score: 13
+  - ability: int
+    score: 10
+  - ability: wis
+    score: 12
+  - ability: cha
+    score: 10
 pb: "+2"
-cr: "1/4"
+cr: 1/4
 xp: "50"
-entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Magic Resistance\",\"text\":\"The pseudodragon has Advantage on saving throws against spells and other magical effects.\"},{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The pseudodragon makes two Bite attacks.\"},{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +4, reach 5 ft. 4 (1d4 + 2) Piercing damage.\"},{\"category\":\"action\",\"name\":\"Sting\",\"text\":\"*Constitution Saving Throw*: DC 12, one creature the pseudodragon can see within 5 feet. *Failure:*  5 (2d4) Poison damage, and the target has the Poisoned condition for 1 hour. *Failure by 5 or More:* While Poisoned, the target also has the Unconscious condition, which ends early if the target takes damage or a creature within 5 feet of it takes an action to wake it.\"}]"
+sensesList:
+  - type: blindsight
+    range: "10"
+  - type: darkvision
+    range: "60"
+languagesList:
+  - value: Understands Common and Draconic but can't speak
+passivesList:
+  - skill: Perception
+    value: "15"
+entries:
+  - category: trait
+    name: Magic Resistance
+    text: The pseudodragon has Advantage on saving throws against spells and other magical effects.
+  - category: action
+    name: Multiattack
+    text: The pseudodragon makes two Bite attacks.
+  - category: action
+    name: Bite
+    text: "*Melee Attack Roll:* +4, reach 5 ft. 4 (1d4 + 2) Piercing damage."
+  - category: action
+    name: Sting
+    text: "*Constitution Saving Throw*: DC 12, one creature the pseudodragon can see within 5 feet. *Failure:*  5 (2d4) Poison damage, and the target has the Poisoned condition for 1 hour. *Failure by 5 or More:* While Poisoned, the target also has the Unconscious condition, which ends early if the target takes damage or a creature within 5 feet of it takes an action to wake it."
+
 ---
 
 # Pseudodragon
@@ -20,12 +61,15 @@ entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Magic Resistance\"
 
 **AC** 14
 **HP** 10 (3d4 + 3)
+**Initiative** +2 (12)
 **Speed** 15 ft., fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
 | 6 | 15 | 13 | 10 | 12 | 10 |
 
+**Senses** blindsight 10 ft., darkvision 60 ft.; Passive Perception 15
+**Languages** Understands Common and Draconic but can't speak
 CR 1/4, PB +2, XP 50
 
 ## Traits

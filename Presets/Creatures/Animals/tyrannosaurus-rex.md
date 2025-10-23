@@ -1,20 +1,46 @@
 ---
 smType: creature
-name: "Tyrannosaurus Rex"
-size: "Huge"
-type: "Beast"
-type_tags: ["Dinosaur"]
-alignment: "Unaligned"
+name: Tyrannosaurus Rex
+size: Huge
+type: Beast
+alignmentOverride: Unaligned
 ac: "13"
+initiative: +3 (13)
 hp: "136"
-hit_dice: "13d12 + 52"
-speeds_json: "{\"walk\":{\"distance\":\"50 ft.\"}}"
-abilities_json: "[{\"ability\":\"str\",\"score\":25},{\"ability\":\"dex\",\"score\":10},{\"ability\":\"con\",\"score\":19},{\"ability\":\"int\",\"score\":2},{\"ability\":\"wis\",\"score\":12},{\"ability\":\"cha\",\"score\":9}]"
+hitDice: 13d12 + 52
+speeds:
+  - type: walk
+    value: "50"
+abilities:
+  - ability: str
+    score: 25
+  - ability: dex
+    score: 10
+  - ability: con
+    score: 19
+  - ability: int
+    score: 2
+  - ability: wis
+    score: 12
+  - ability: cha
+    score: 9
 pb: "+3"
-saves_json: "[{\"ability\":\"str\",\"bonus\":10},{\"ability\":\"wis\",\"bonus\":4}]"
 cr: "8"
 xp: "3900"
-entries_structured_json: "[{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The tyrannosaurus makes one Bite attack and one Tail attack.\"},{\"category\":\"action\",\"name\":\"Bite\",\"text\":\"*Melee Attack Roll:* +10, reach 10 ft. 33 (4d12 + 7) Piercing damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 17). While Grappled, the target has the Restrained condition and can't be targeted by the tyrannosaurus's Tail.\"},{\"category\":\"action\",\"name\":\"Tail\",\"text\":\"*Melee Attack Roll:* +10, reach 15 ft. 25 (4d8 + 7) Bludgeoning damage. If the target is a Huge or smaller creature, it has the Prone condition.\"}]"
+passivesList:
+  - skill: Perception
+    value: "14"
+entries:
+  - category: action
+    name: Multiattack
+    text: The tyrannosaurus makes one Bite attack and one Tail attack.
+  - category: action
+    name: Bite
+    text: "*Melee Attack Roll:* +10, reach 10 ft. 33 (4d12 + 7) Piercing damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 17). While Grappled, the target has the Restrained condition and can't be targeted by the tyrannosaurus's Tail."
+  - category: action
+    name: Tail
+    text: "*Melee Attack Roll:* +10, reach 15 ft. 25 (4d8 + 7) Bludgeoning damage. If the target is a Huge or smaller creature, it has the Prone condition."
+
 ---
 
 # Tyrannosaurus Rex
@@ -22,6 +48,7 @@ entries_structured_json: "[{\"category\":\"action\",\"name\":\"Multiattack\",\"t
 
 **AC** 13
 **HP** 136 (13d12 + 52)
+**Initiative** +3 (13)
 **Speed** 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |

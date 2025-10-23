@@ -1,18 +1,42 @@
 ---
 smType: creature
-name: "Eagle"
-size: "Small"
-type: "Beast"
-alignment: "Unaligned"
+name: Eagle
+size: Small
+type: Beast
+alignmentOverride: Unaligned
 ac: "12"
+initiative: +2 (12)
 hp: "4"
-hit_dice: "1d6 + 1"
-speeds_json: "{\"walk\":{\"distance\":\"10 ft.\"},\"fly\":{\"distance\":\"60 ft.\"}}"
-abilities_json: "[{\"ability\":\"str\",\"score\":6},{\"ability\":\"dex\",\"score\":15},{\"ability\":\"con\",\"score\":12},{\"ability\":\"int\",\"score\":2},{\"ability\":\"wis\",\"score\":14},{\"ability\":\"cha\",\"score\":7}]"
+hitDice: 1d6 + 1
+speeds:
+  - type: walk
+    value: "10"
+  - type: fly
+    value: "60"
+abilities:
+  - ability: str
+    score: 6
+  - ability: dex
+    score: 15
+  - ability: con
+    score: 12
+  - ability: int
+    score: 2
+  - ability: wis
+    score: 14
+  - ability: cha
+    score: 7
 pb: "+2"
 cr: "0"
 xp: "0"
-entries_structured_json: "[{\"category\":\"action\",\"name\":\"Talons\",\"text\":\"*Melee Attack Roll:* +4, reach 5 feet. 4 (1d4 + 2) Slashing damage.\"}]"
+passivesList:
+  - skill: Perception
+    value: "16"
+entries:
+  - category: action
+    name: Talons
+    text: "*Melee Attack Roll:* +4, reach 5 feet. 4 (1d4 + 2) Slashing damage."
+
 ---
 
 # Eagle
@@ -20,6 +44,7 @@ entries_structured_json: "[{\"category\":\"action\",\"name\":\"Talons\",\"text\"
 
 **AC** 12
 **HP** 4 (1d6 + 1)
+**Initiative** +2 (12)
 **Speed** 10 ft., fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |

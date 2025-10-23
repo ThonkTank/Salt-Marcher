@@ -63,6 +63,30 @@ export const ENTITY_REGISTRY = {
         singular: "equipment",
         plural: "equipment",
     },
+    terrains: {
+        id: "terrains",
+        displayName: "Terrains",
+        directory: "SaltMarcher/Terrains",
+        defaultBaseName: "Terrain",
+        singular: "terrain",
+        plural: "terrains",
+    },
+    regions: {
+        id: "regions",
+        displayName: "Regions",
+        directory: "SaltMarcher/Regions",
+        defaultBaseName: "Region",
+        singular: "region",
+        plural: "regions",
+    },
+    calendars: {
+        id: "calendars",
+        displayName: "Calendars",
+        directory: "SaltMarcher/Calendars",
+        defaultBaseName: "Calendar",
+        singular: "calendar",
+        plural: "calendars",
+    },
 } as const;
 
 // Type helpers

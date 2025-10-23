@@ -1,0 +1,6 @@
+{
+  "enabled": true,
+  "logFields": ["saveProf", "saveMod"],
+  "logCategories": ["*"],
+  "logAll": false
+}

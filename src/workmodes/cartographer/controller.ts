@@ -7,6 +7,7 @@ import { getFirstHexBlock } from "../../ui/maps/components/map-list";
 import type { RenderHandles } from "../../features/maps/rendering/hex-render";
 import { createMapLayer, type MapLayer } from "../session-runner/travel/ui/map-layer";
 import { createMapManager, type MapManagerHandle } from "../../ui/maps/workflows/map-manager";
+import { logger } from "../../app/plugin-logger";
 import {
     createMapHeader,
     type MapHeaderHandle,
@@ -216,7 +217,7 @@ export class CartographerController {
             try {
                 await active.onExit(lifecycle.ctx);
             } catch (error) {
-                console.error("[cartographer] mode exit failed", error);
+                logger.error("[cartographer] mode exit failed", error);
             }
         }
 
@@ -258,7 +259,7 @@ export class CartographerController {
                     return map;
                 })
                 .catch((error) => {
-                    console.error("[cartographer] failed to load modes", error);
+                    logger.error("[cartographer] failed to load modes", error);
                     this.view?.setOverlay(MODE_PROVISION_OVERLAY_MESSAGE);
                     new Notice(MODE_PROVISION_NOTICE_MESSAGE);
                     this.modeLoad = undefined;
@@ -293,7 +294,7 @@ export class CartographerController {
             try {
                 await previous.onExit(previousLifecycle.ctx);
             } catch (error) {
-                console.error("[cartographer] mode exit failed", error);
+                logger.error("[cartographer] mode exit failed", error);
             }
         }
 
@@ -317,7 +318,7 @@ export class CartographerController {
         try {
             await next.onEnter(lifecycleCtx);
         } catch (error) {
-            if (!controller.signal.aborted) console.error("[cartographer] mode enter failed", error);
+            if (!controller.signal.aborted) logger.error("[cartographer] mode enter failed", error);
         }
 
         if (controller.signal.aborted) return;
@@ -329,7 +330,7 @@ export class CartographerController {
         try {
             return (await this.activeMode.onSave(mode, file, this.lifecycle.ctx)) === true;
         } catch (error) {
-            console.error("[cartographer] mode onSave failed", error);
+            logger.error("[cartographer] mode onSave failed", error);
             return false;
         }
     }
@@ -339,7 +340,7 @@ export class CartographerController {
         try {
             await this.activeMode.onHexClick(coord, event, this.lifecycle.ctx);
         } catch (error) {
-            console.error("[cartographer] mode onHexClick failed", error);
+            logger.error("[cartographer] mode onHexClick failed", error);
         }
     }
 
@@ -392,7 +393,7 @@ export class CartographerController {
             try {
                 options = await this.deps.loadHexOptions(this.app, this.currentFile);
             } catch (error) {
-                console.error("[cartographer] failed to parse map options", error);
+                logger.error("[cartographer] failed to parse map options", error);
             }
             if (signal.aborted || !this.view) return;
 
@@ -409,7 +410,7 @@ export class CartographerController {
             try {
                 layer = await this.deps.createMapLayer(this.app, view.mapHost, this.currentFile, options);
             } catch (error) {
-                console.error("[cartographer] failed to render map", error);
+                logger.error("[cartographer] failed to render map", error);
                 layer = null;
             }
 
@@ -452,7 +453,7 @@ export class CartographerController {
         try {
             await this.activeMode?.onFileChange(file, handles, ctx);
         } catch (error) {
-            console.error("[cartographer] mode onFileChange failed", error);
+            logger.error("[cartographer] mode onFileChange failed", error);
         }
     }
 
@@ -463,7 +464,7 @@ export class CartographerController {
         try {
             layer.destroy();
         } catch (error) {
-            console.error("[cartographer] failed to destroy map layer", error);
+            logger.error("[cartographer] failed to destroy map layer", error);
         }
     }
 }
@@ -517,7 +518,7 @@ function createControllerView(options: CreateControllerViewOptions): Cartographe
         event.stopPropagation();
         if (event.cancelable) event.preventDefault();
         void Promise.resolve(callbacks.onHexClick(detail, event as CustomEvent<HexCoord>)).catch((error) => {
-            console.error("[cartographer] hex click handler failed", error);
+            logger.error("[cartographer] hex click handler failed", error);
         });
     };
     surface.stageEl.addEventListener("hex:click", hexListener as EventListener, { passive: false });
@@ -576,7 +577,7 @@ function renderModeSelect(
         const id = selectEl.value;
         if (!id) return;
         void Promise.resolve(onChange(id)).catch((error) => {
-            console.error("[cartographer] failed to select mode", error);
+            logger.error("[cartographer] failed to select mode", error);
         });
     };
     selectEl.addEventListener("change", handleChange);

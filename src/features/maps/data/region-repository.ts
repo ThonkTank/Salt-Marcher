@@ -1,6 +1,7 @@
 // src/features/maps/data/region-repository.ts
 import { App, Notice, TAbstractFile, TFile, normalizePath } from "obsidian";
 import type { Region } from "../domain/region";
+import { logger } from "../../../app/plugin-logger";
 
 export const REGIONS_FILE = "SaltMarcher/Regions.md";
 const BLOCK_RE = /```regions\s*([\s\S]*?)```/i;
@@ -106,14 +107,14 @@ export function watchRegions(app: App, onChange: () => void): () => void {
 
     const handleDelete = async (file: TAbstractFile) => {
         if (!(file instanceof TFile) || normalizePath(file.path) !== targetPath) return;
-        console.warn(
+        logger.warn(
             "Salt Marcher regions store detected Regions.md deletion; attempting automatic recreation."
         );
         try {
             await ensureRegionsFile(app);
             new Notice("Regions.md wurde automatisch neu erstellt.");
         } catch (error) {
-            console.error(
+            logger.error(
                 "Salt Marcher regions store failed to recreate Regions.md automatically.",
                 error
             );

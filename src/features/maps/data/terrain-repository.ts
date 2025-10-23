@@ -1,6 +1,7 @@
 // src/features/maps/data/terrain-repository.ts
 import { App, EventRef, TAbstractFile, TFile, normalizePath } from "obsidian";
 import { setTerrains } from "../domain/terrain";
+import { logger } from "../../../app/plugin-logger";
 
 export const TERRAIN_FILE = "SaltMarcher/Terrains.md";
 const BLOCK_RE = /```terrain\s*([\s\S]*?)```/i;
@@ -98,10 +99,10 @@ export function watchTerrains(
             try {
                 options.onError(error, { reason });
             } catch (loggingError) {
-                console.error("[salt-marcher] Terrain watcher error handler threw", loggingError);
+                logger.error("[salt-marcher] Terrain watcher error handler threw", loggingError);
             }
         } else {
-            console.error(`[salt-marcher] Terrain watcher failed after ${reason} event`, error);
+            logger.error(`[salt-marcher] Terrain watcher failed after ${reason} event`, error);
         }
     };
 

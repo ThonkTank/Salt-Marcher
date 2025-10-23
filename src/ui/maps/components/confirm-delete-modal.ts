@@ -1,5 +1,6 @@
 // src/ui/confirm-delete.ts
 import { App, Modal, setIcon, Notice, TFile } from "obsidian";
+import { logger } from "../../../app/plugin-logger";
 
 export class ConfirmDeleteModal extends Modal {
     private onConfirm: () => Promise<void>;
@@ -48,7 +49,7 @@ export class ConfirmDeleteModal extends Modal {
                 await this.onConfirm();
                 new Notice("Map deleted.");
             } catch (e) {
-                console.error(e);
+                logger.error(e);
                 new Notice("Deleting map failed.");
             } finally {
                 this.close();

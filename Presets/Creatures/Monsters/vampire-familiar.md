@@ -1,19 +1,61 @@
 ---
 smType: creature
-name: "Vampire Familiar"
-size: "Small"
-type: "Humanoid"
-alignment: "Neutral Evil"
+name: Vampire Familiar
+size: Small
+type: Humanoid
+alignmentLawChaos: Neutral
+alignmentGoodEvil: Evil
 ac: "15"
+initiative: +5 (15)
 hp: "65"
-hit_dice: "10d8 + 20"
-speeds_json: "{\"walk\":{\"distance\":\"30 ft.\"},\"climb\":{\"distance\":\"30 ft.\"}}"
-abilities_json: "[{\"ability\":\"str\",\"score\":17},{\"ability\":\"dex\",\"score\":16},{\"ability\":\"con\",\"score\":15},{\"ability\":\"int\",\"score\":10},{\"ability\":\"wis\",\"score\":10},{\"ability\":\"cha\",\"score\":14}]"
+hitDice: 10d8 + 20
+speeds:
+  - type: walk
+    value: "30"
+  - type: climb
+    value: "30"
+abilities:
+  - ability: str
+    score: 17
+  - ability: dex
+    score: 16
+  - ability: con
+    score: 15
+  - ability: int
+    score: 10
+  - ability: wis
+    score: 10
+  - ability: cha
+    score: 14
 pb: "+2"
-saves_json: "[{\"ability\":\"dex\",\"bonus\":5},{\"ability\":\"wis\",\"bonus\":2}]"
 cr: "3"
 xp: "700"
-entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Vampiric Connection\",\"text\":\"While the familiar and its vampire master are on the same plane of existence, the vampire can communicate with the familiar telepathically, and the vampire can perceive through the familiar's senses.\"},{\"category\":\"action\",\"name\":\"Multiattack\",\"text\":\"The familiar makes two Umbral Dagger attacks.\"},{\"category\":\"action\",\"name\":\"Umbral Dagger\",\"text\":\"*Melee or Ranged Attack Roll:* +5, reach 5 ft. or range 20/60 ft. 5 (1d4 + 3) Piercing damage plus 7 (3d4) Necrotic damage. If the target is reduced to 0 Hit Points by this attack, the target becomes Stable but has the Poisoned condition for 1 hour. While it has the Poisoned condition, the target has the Paralyzed condition.\"},{\"category\":\"bonus\",\"name\":\"Deathless Agility\",\"text\":\"The familiar takes the Dash or Disengage action.\"}]"
+sensesList:
+  - type: darkvision
+    range: "60"
+languagesList:
+  - value: Common plus one other language
+passivesList:
+  - skill: Perception
+    value: "14"
+damageResistancesList:
+  - value: Necrotic
+damageImmunitiesList:
+  - value: Charmed ((except from its vampire master))
+entries:
+  - category: trait
+    name: Vampiric Connection
+    text: While the familiar and its vampire master are on the same plane of existence, the vampire can communicate with the familiar telepathically, and the vampire can perceive through the familiar's senses.
+  - category: action
+    name: Multiattack
+    text: The familiar makes two Umbral Dagger attacks.
+  - category: action
+    name: Umbral Dagger
+    text: "*Melee or Ranged Attack Roll:* +5, reach 5 ft. or range 20/60 ft. 5 (1d4 + 3) Piercing damage plus 7 (3d4) Necrotic damage. If the target is reduced to 0 Hit Points by this attack, the target becomes Stable but has the Poisoned condition for 1 hour. While it has the Poisoned condition, the target has the Paralyzed condition."
+  - category: bonus
+    name: Deathless Agility
+    text: The familiar takes the Dash or Disengage action.
+
 ---
 
 # Vampire Familiar
@@ -21,12 +63,15 @@ entries_structured_json: "[{\"category\":\"trait\",\"name\":\"Vampiric Connectio
 
 **AC** 15
 **HP** 65 (10d8 + 20)
+**Initiative** +5 (15)
 **Speed** 30 ft., climb 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
 | 17 | 16 | 15 | 10 | 10 | 14 |
 
+**Senses** darkvision 60 ft.; Passive Perception 14
+**Languages** Common plus one other language
 CR 3, PB +2, XP 700
 
 ## Traits

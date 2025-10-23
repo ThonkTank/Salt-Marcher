@@ -1,19 +1,40 @@
 ---
 smType: creature
-name: "Pony"
-size: "Medium"
-type: "Beast"
-alignment: "Unaligned"
+name: Pony
+size: Medium
+type: Beast
+alignmentOverride: Unaligned
 ac: "10"
+initiative: +0 (10)
 hp: "11"
-hit_dice: "2d8 + 2"
-speeds_json: "{\"walk\":{\"distance\":\"40 ft.\"}}"
-abilities_json: "[{\"ability\":\"str\",\"score\":15},{\"ability\":\"dex\",\"score\":10},{\"ability\":\"con\",\"score\":13},{\"ability\":\"int\",\"score\":2},{\"ability\":\"wis\",\"score\":11},{\"ability\":\"cha\",\"score\":7}]"
+hitDice: 2d8 + 2
+speeds:
+  - type: walk
+    value: "40"
+abilities:
+  - ability: str
+    score: 15
+  - ability: dex
+    score: 10
+  - ability: con
+    score: 13
+  - ability: int
+    score: 2
+  - ability: wis
+    score: 11
+  - ability: cha
+    score: 7
 pb: "+2"
-saves_json: "[{\"ability\":\"str\",\"bonus\":4}]"
-cr: "1/8"
+cr: 1/8
 xp: "25"
-entries_structured_json: "[{\"category\":\"action\",\"name\":\"Hooves\",\"text\":\"*Melee Attack Roll:* +4, reach 5 ft. 4 (1d4 + 2) Bludgeoning damage.\"}]"
+passivesList:
+  - skill: Perception
+    value: "10"
+entries:
+  - category: action
+    name: Hooves
+    text: "*Melee Attack Roll:* +4, reach 5 ft. 4 (1d4 + 2) Bludgeoning damage."
+
 ---
 
 # Pony
@@ -21,6 +42,7 @@ entries_structured_json: "[{\"category\":\"action\",\"name\":\"Hooves\",\"text\"
 
 **AC** 10
 **HP** 11 (2d8 + 2)
+**Initiative** +0 (10)
 **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |

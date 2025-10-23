@@ -2,6 +2,7 @@
 // Central manager that coordinates map selection, creation, and deletion flows.
 
 import { App, Notice, TFile } from "obsidian";
+import { logger } from "../../../app/plugin-logger";
 import {
     promptCreateMap,
     promptMapSelection,
@@ -103,7 +104,7 @@ export function createMapManager(app: App, options: MapManagerOptions = {}): Map
                     await applyChange(null);
                 }
             } catch (error) {
-                console.error(MAP_MANAGER_COPY.logs.deleteFailed, error);
+                logger.error(MAP_MANAGER_COPY.logs.deleteFailed, error);
                 new Notice(notices.deleteFailed);
             }
         }).open();

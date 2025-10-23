@@ -5,6 +5,7 @@ import type { CalendarTimestamp } from "../domain";
 import type { TravelAdvancePayload } from "./travel";
 import type { TravelCalendarMode } from "./contracts";
 import type { AlmanacStateMachine } from "./state-machine";
+import { logger } from "../../../app/plugin-logger";
 
 type AlmanacDispatch = AlmanacStateMachine["dispatch"];
 type AlmanacGetState = AlmanacStateMachine["getState"];
@@ -36,11 +37,11 @@ type BridgeOptions = {
 let activeBridge: CartographerBridgeHandle | null = null;
 
 function warnInactive(action: string): void {
-    console.warn(`[almanac] cartographer bridge ignored ${action} – no active dispatcher registered.`);
+    logger.warn(`[almanac] cartographer bridge ignored ${action} – no active dispatcher registered.`);
 }
 
 function logDispatchError(event: string, error: unknown): void {
-    console.error(`[almanac] cartographer bridge dispatch for ${event} failed`, error);
+    logger.error(`[almanac] cartographer bridge dispatch for ${event} failed`, error);
 }
 
 export function registerCartographerBridge(

@@ -1,6 +1,7 @@
 // src/workmodes/cartographer/modes/editor.ts
 // Hex-Editor mit direkter Brush-Integration ohne Tool-Manager.
 import type { TFile } from "obsidian";
+import { logger } from "../../../app/plugin-logger";
 import type {
     CartographerMode,
     CartographerModeContext,
@@ -223,7 +224,7 @@ export function createEditorMode(): CartographerMode {
             try {
                 await activeBrush.handleHexClick(coord);
             } catch (err) {
-                console.error("[editor-mode] brush interaction failed", err);
+                logger.error("[editor-mode] brush interaction failed", err);
                 const message = reportEditorToolIssue({
                     stage: "operation",
                     toolId: BRUSH_LABEL,

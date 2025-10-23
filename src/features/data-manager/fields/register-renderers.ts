@@ -5,12 +5,11 @@ import { fieldRendererRegistry } from "./field-renderer-registry";
 import { textFieldRenderer } from "./renderer-text";
 import { textareaFieldRenderer } from "./renderer-textarea";
 import { numberStepperFieldRenderer } from "./renderer-number-stepper";
-import { toggleFieldRenderer } from "./renderer-toggle";
+import { checkboxFieldRenderer } from "./renderer-checkbox";
 import { selectFieldRenderer } from "./renderer-select";
 import { multiselectFieldRenderer } from "./renderer-multiselect";
 import { colorFieldRenderer } from "./renderer-color";
-import { tagsFieldRenderer } from "./renderer-tags-editor";
-import { structuredTagsFieldRenderer } from "./renderer-structured-tags-editor";
+import { tokenFieldRenderer } from "./renderer-tokens";
 import { displayFieldRenderer } from "./renderer-display";
 import { headingFieldRenderer } from "./renderer-heading";
 import { compositeFieldRenderer } from "./renderer-composite";
@@ -26,14 +25,13 @@ export function registerAllFieldRenderers(): void {
   fieldRendererRegistry.register(textFieldRenderer);
   fieldRendererRegistry.register(textareaFieldRenderer);
   fieldRendererRegistry.register(numberStepperFieldRenderer);
-  fieldRendererRegistry.register(toggleFieldRenderer);
+  fieldRendererRegistry.register(checkboxFieldRenderer);
   fieldRendererRegistry.register(selectFieldRenderer);
   fieldRendererRegistry.register(multiselectFieldRenderer);
   fieldRendererRegistry.register(colorFieldRenderer);
 
-  // Tag editors
-  fieldRendererRegistry.register(tagsFieldRenderer);
-  fieldRendererRegistry.register(structuredTagsFieldRenderer);
+  // Token editor (unified - supports tags, structured-tags, and tokens types)
+  fieldRendererRegistry.register(tokenFieldRenderer);
 
   // Special fields (used in composite/repeating)
   fieldRendererRegistry.register(displayFieldRenderer);

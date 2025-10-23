@@ -4,6 +4,7 @@ import { App, Notice, TAbstractFile, TFile, normalizePath } from "obsidian";
 import { NameInputModal } from "../../ui/components/modals";
 import type { EncounterPresenter, EncounterViewState } from "./presenter";
 import type { EncounterRuleModifierType, EncounterXpRule } from "./session-store";
+import { logger } from "../../app/plugin-logger";
 import {
     ENCOUNTER_RULE_PRESET_DIR,
     type EncounterRulePresetSummary,
@@ -319,7 +320,7 @@ export class EncounterWorkspaceView {
                 }
             }
         } catch (error) {
-            console.error("[encounter] failed to list rule presets", error);
+            logger.error("[encounter] failed to list rule presets", error);
         }
         this.syncPresetControlsState();
     }
@@ -372,7 +373,7 @@ export class EncounterWorkspaceView {
             }
             new Notice(`Preset "${preset.name}" geladen.`);
         } catch (error) {
-            console.error("[encounter] failed to load preset", error);
+            logger.error("[encounter] failed to load preset", error);
             new Notice("Preset konnte nicht geladen werden.");
         }
     }
@@ -406,7 +407,7 @@ export class EncounterWorkspaceView {
                         this.presetSelectEl.value = file.path;
                     }
                 } catch (error) {
-                    console.error("[encounter] failed to save preset", error);
+                    logger.error("[encounter] failed to save preset", error);
                     new Notice("Preset konnte nicht gespeichert werden.");
                 }
                 this.syncPresetControlsState();
@@ -437,7 +438,7 @@ export class EncounterWorkspaceView {
                 this.presetSelectEl.value = "";
             }
         } catch (error) {
-            console.error("[encounter] failed to delete preset", error);
+            logger.error("[encounter] failed to delete preset", error);
             new Notice("Preset konnte nicht gelöscht werden.");
         }
         this.syncPresetControlsState();
