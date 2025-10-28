@@ -119,8 +119,8 @@ describe("watchTerrains", () => {
         await flushAsync();
 
         expect(consoleSpy).toHaveBeenCalledTimes(1);
-        expect(consoleSpy.mock.calls[0][0]).toContain("Terrain watcher failed after modify event");
-        expect(consoleSpy.mock.calls[0][1]).toBe(failure);
+        expect(consoleSpy.mock.calls[0][1]).toContain("Terrain watcher failed after modify event");
+        expect(consoleSpy.mock.calls[0][2]).toBe(failure);
 
         stop();
         consoleSpy.mockRestore();
