@@ -5,11 +5,11 @@ import {
     EncounterPresenter,
     type EncounterPersistedState,
     type EncounterXpRule,
-} from "../../src/workmodes/encounter/presenter";
+} from "src/workmodes/encounter/presenter";
 import {
     __resetEncounterEventStore,
     getEncounterXpState,
-} from "../../src/workmodes/encounter/session-store";
+} from "src/workmodes/encounter/session-store";
 
 describe("EncounterPresenter XP-Verwaltung", () => {
     beforeEach(() => {

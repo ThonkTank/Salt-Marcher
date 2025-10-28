@@ -5,8 +5,8 @@ import {
     EncounterPresenter,
     calculateXpToNextLevel,
     type EncounterXpPartyMemberView,
-} from "../../src/workmodes/encounter/presenter";
-import { __resetEncounterEventStore } from "../../src/workmodes/encounter/session-store";
+} from "src/workmodes/encounter/presenter";
+import { __resetEncounterEventStore } from "src/workmodes/encounter/session-store";
 
 describe("calculateXpToNextLevel", () => {
     beforeEach(() => {

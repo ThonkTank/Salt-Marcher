@@ -1,6 +1,6 @@
 // Testspezifikation für den LibraryStoragePort-Contract, Fehlerklassifikation und Legacy-Mapping.
 import { describe, expect, it } from "vitest";
-import { LIBRARY_SOURCE_IDS } from "../../src/workmodes/library/core/sources";
+import { LIBRARY_SOURCE_IDS } from "src/workmodes/library/core/sources";
 import {
     LEGACY_LIBRARY_STORAGE_MAPPING,
     describeLegacyStorageGaps,
@@ -8,7 +8,7 @@ import {
     ensureLegacyStorageCoverage,
     listLibraryStorageDomains,
     createLibraryStorageError,
-} from "../../src/workmodes/library/core/library-storage-port";
+} from "src/workmodes/library/core/library-storage-port";
 
 describe("library-storage-port", () => {
     it("liefert Descriptoren für alle Library-Quellen und das Preset-Cluster", () => {

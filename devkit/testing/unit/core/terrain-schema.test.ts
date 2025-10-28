@@ -8,7 +8,7 @@ import {
     setTerrainPalette,
     setTerrains,
     validateTerrainSchema,
-} from "../../src/features/maps/domain/terrain";
+} from "src/features/maps/domain/terrain";
 
 describe("terrain schema validation", () => {
     afterEach(() => {

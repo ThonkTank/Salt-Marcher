@@ -3,7 +3,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as Obsidian from "obsidian";
 import { App, TFile } from "obsidian";
-import { ensureRegionsFile, watchRegions, REGIONS_FILE } from "../../src/features/maps/data/region-repository";
+import { ensureRegionsFile, watchRegions, REGIONS_FILE } from "src/features/maps/data/region-repository";
 
 class FakeVault {
     private files = new Map<string, { file: TFile; data: string }>();

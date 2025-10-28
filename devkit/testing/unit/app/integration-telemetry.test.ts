@@ -17,7 +17,7 @@ vi.mock("obsidian", () => ({
     Notice: noticeMocks.mockNotice,
 }));
 
-import { __resetIntegrationIssueTelemetry, reportIntegrationIssue } from "../../src/app/integration-telemetry";
+import { __resetIntegrationIssueTelemetry, reportIntegrationIssue } from "src/app/integration-telemetry";
 
 describe("integration telemetry", () => {
     let consoleError: ReturnType<typeof vi.spyOn>;

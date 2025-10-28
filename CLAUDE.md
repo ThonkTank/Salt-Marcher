@@ -315,106 +315,242 @@ Ziele:
 
 ## Architektur-Roadmap
 
+### Roadmap Overview (TL;DR)
+
+| Phase | Status | Zielbild | Nächster Schritt |
+|-------|--------|----------|------------------|
+| **BLOCKER** – Test-Suite | 🔴 49/56 Tests kaputt | Funktionierende CI/CD | Tests reparieren (MODULE_NOT_FOUND) |
+| Phase 0 – Taxonomie & Schemas | ✅ Abgeschlossen | Konsistente Tags & Schemas | Test-Fixtures/CI-Checks finalisieren |
+| Phase 1 – Core State Platform | ⚙️ 75% fertig | Vereinheitlichte Stores & DevKit-Diagnostics | Library-Repos migrieren, Seed-System |
+| Phase 2 – Fraktionen MVP | ⚙️ 35% fertig | Factions-Workmode + Karten-/Session-Integration | Cartographer Brush + Session Hooks |
+| Phase 3 – Orte & Dungeons | ⏳ Geplant | Orts-Hierarchie & Dungeon-Tools | Kickoff nach Phase 2 |
+| Phase 4 – Event Engine & Automation | ⏳ Geplant | Kalender-Events, Automationen | Spezifikation finalisieren |
+| Phase 5 – Calculator & Loot Services | ⏳ Geplant | Encounter-/Loot-Automation | Design-Doc vorbereiten |
+| Phase 6 – Audio & Experience Layer | ⏳ Geplant | Audio, UX-Finishing, Release | Scope nach Phase 5 verfeinern |
+
+#### Onboarding Snapshot
+
+**Aktueller Fokus:** Phase 1 finalisieren, dann Phase 2 UI-Integration
+
+- **Phase 0 – Taxonomie & Schemas** ✅: Laufende Referenz in `docs/TAGS.md`, Validatoren unter `src/domain/schemas.ts`, Beispiel-Dateien in `samples/**`.
+- **Phase 1 – Core State Platform** ⚙️ 75%: State-Inspector & Persistent Stores (`src/services/state/**`, `src/features/maps/state/{tile,terrain,region}-store.ts`), Map-Repository Cleanup (`src/features/maps/data/map-store-registry.ts`).
+  - **Blocker:** Test-Suite kaputt (49/56 Tests), Library-Repos noch auf Legacy-Pattern
+- **Phase 2 – Fraktionen MVP** ⚙️ 35%:
+  - ✅ Library-Workflow (`src/workmodes/library/factions/**`)
+  - ✅ Overlay-Rendering (`src/features/maps/state/faction-overlay-store.ts`, `src/features/maps/domain/faction-colors.ts`)
+  - ❌ Cartographer UI-Integration fehlt (Brush/Inspector)
+  - ❌ Session Runner Hooks fehlen
+
 ### Phase 0 – Taxonomie & Schemas
-**Status:** ✅ Completed | **Last Updated:** 2025-10-28
-  1. ✅ Bestehende Tags aus Creatures-Presets sammeln (`typeTags`) und in `docs/TAGS.md` dokumentieren.
-  2. ✅ Weitere Tag-Quellen analysieren (Items & Spells erfasst, Equipment/Terrains/Regions ohne Tags → als offen markiert).
-  3. ✅ Terminologie-Dokument `docs/TAGS.md` angelegt; enthält aktuelle Liste und offene Kategorien.
-  4. ✅ DevKit-Prüfung (`devkit lint tags`) implementiert (siehe `devkit/core/cli/devkit.mjs`).
-  5. ✅ **NEW:** Equipment/Terrains/Regions Tags vollständig definiert in `docs/TAGS.md` (Biome, Difficulty, Danger, Climate, Settlement).
-- **Schemas & Frontmatter**
-  1. ✅ Für Fraktion, Ort, Dungeon, Playlist, Kalender-Event, Loot-Template TypeScript-Interfaces plus Validator-Funktionen erstellen (`src/domain/schemas.ts`).
-  2. ✅ Frontmatter-/Body-Templates festlegen (`samples/**` demonstriert Struktur, kompatibel mit bestehenden Preset-Konventionen).
-  3. ✅ Beispiel-Dateien im Repo anlegen (Seed-Daten in `samples/` für Tests & Doku).
-  4. ✅ **NEW:** Encounter-Regel-Preset-Format geprüft - bereits vollständig implementiert (`src/workmodes/encounter/rule-presets.ts`).
-- **Migration & Tooling**
-  1. ✅ DevKit-Command `devkit schema validate` implementiert (transpiliert `src/domain/schemas.ts`, prüft Markdown-Dateien).
-  2. ✅ Upgrade-Skript (`devkit migrate factions-v1`) mit Dry-Run/Basics für Fraktions-Dokumente erstellt.
-  3. ✅ `generate-preset-data.mjs` erweitert (Frontmatter-Validierung für Tags & neue Datentypen).
-  4. ✅ Dokumentation ergänzt (`CLAUDE.md` Roadmap, `docs/TAGS.md`, neues `docs/SCHEMA_REFERENCE.md`).
-- **Library-UI & Tests**
-  1. ✅ **NEW:** Items CreateSpec um tags-Feld erweitert (Token-Editor mit Autocomplete aus `ITEM_TAGS`).
-  2. ✅ **NEW:** Equipment/Terrains/Regions CreateSpecs um Tag-Felder erweitert (Token-Editor mit Autocomplete, Browse-Filter, Search-Integration).
-  3. ⏳ DevKit-Test-Fixtures (oder reaktivierte Vitest-Goldens) um neue Felder erweitern; ggf. `devkit/testing`-Module ergänzen.
-  4. ⏳ Prüfläufe in DevKit/CICD einbinden (z. B. `devkit test schema`), die Schema- und Tag-Validierung automatisiert abdecken.
+**Status:** ✅ Abgeschlossen · **Letztes Update:** 2025-10-28
+
+**Ergebnisse**
+- Vollständige Tag-Taxonomie dokumentiert (`docs/TAGS.md`), DevKit-Linter aktiv
+- Schema-Definitionen & Validatoren für Fraktion, Ort, Dungeon, Playlist, Kalender-Event, Loot (`src/domain/schemas.ts`)
+- Samples & Templates in `samples/**`; Generator & Preset-Build aktualisiert
+- Library-Formulare mit neuen Tag-Feldern (Items/Equipment/Terrains/Regions)
+
+**Offen**
+- ⚙️ DevKit-Test-Fixtures aktualisieren (Vitest-Goldens / neue Felder)
+- ⚙️ CI-Prüfläufe (`devkit test schema`) einbinden
 
 ### Phase 1 – Core State Platform
-**Status:** In Progress | **Started:** 2025-10-28
-- **State-Layer konsolidieren**
-  1. ✅ Gemeinsame Store-Schnittstelle definiert (`src/services/state/store.interface.ts`)
-  2. ✅ Writable & Persistent Store Implementierungen (`writable-store.ts`, `persistent-store.ts`)
-  3. ✅ Event-Bus mit typed events implementiert (`src/services/events/event-bus.ts`) - unterstützt AbortController
-  4. ✅ Store-Manager für zentrale Verwaltung (`store-manager.ts`)
-  5. ✅ Encounter Store Adapter als Proof-of-Concept (`adapters/encounter-store-adapter.ts`)
-  6. ⏳ Migration der übrigen Repositories (tile, terrain, region, map)
-- **Diagnostics & Tooling**
-  1. State-Inspector-Panel im DevKit (z. B. `devkit workflow state dump`) hinzufügen.
-  2. Logging erweitern (`plugin-logger.ts`): strukturierte Events, Filter pro Subsystem.
-  3. Seedbare Test-Vaults (Skripte in `devkit/testing/seeds/`) bereitstellen; CLI-Befehl `devkit seed --preset`.
+**Status:** ⚙️ 75% fertig · **Start:** 2025-10-28 · **Target:** KW 45 abschließen
 
-**Nächste konkrete Schritte (Phase 1):**
-- [x] Store-Interfaces in `src/services/state/` definiert (ReadableStore, WritableStore, PersistentStore, VersionedStore)
-- [x] Writable und Persistent Store Implementierungen erstellt
-- [x] Event-Bus System mit typed events implementiert (`src/services/events/event-bus.ts`)
-- [x] Store-Adapter für encounter session-store erstellt
-- [x] Store Manager für zentrale Verwaltung implementiert
-- [x] Integration Example mit Party/Session State demonstriert
-- [ ] DevKit State-Inspector Command hinzufügen
-- [ ] Migration bestehender Stores auf neue Interfaces
+**Abgeschlossen ✅**
+- Basis-API für Stores (Readable/Writable/Persistent/Versioned), Event-Bus, Store-Manager, Encounter-Adapter
+- DevKit State-Inspector (CLI+IPC) liefert Store-Übersicht und Detail-Reports
+- Almanac- und Map-Subsysteme auf PersistentStores gehoben (`almanac-calendar-state`, `map-tiles`, `map-terrains`, `map-regions`); Doku & Inspector aktualisiert
+- Map-Repository Cleanup (`map-store-registry`) für konsistente Resets
+- JSON Store Adapter für Legacy-Kompatibilität
+- Writable Store mit derived() für computed states
+
+**Diese Woche (Kritisch) 🔴**
+- 🚨 **Test-Suite reparieren** (MODULE_NOT_FOUND Fehler beheben, 49/56 Tests kaputt!)
+- 🔧 Library-Repositories migrieren: creature, spell, item, equipment auf Store-Pattern
+- 🔧 Seed-System implementieren: `devkit seed --preset default` für reproduzierbare Tests
+
+**Nice-to-have ⚡**
+- ⚙️ Logging erweitern: Strukturierte Events, Runtime-Filter, Kategorien
+- ⚙️ Store-Metriken: Load/Save-Timing, Dirty-Tracking Dashboard
+- ⚙️ Store-Naming-Konvention vereinheitlichen (namespace:type:instance)
 
 ### Phase 2 – Fraktionen MVP
-**Status:** Not started  
-- **Daten & UI**
-  1. CreateSpec + Serializer (`src/workmodes/library/fraktionen/create-spec.ts`) inkl. Tagging, Mitgliederlisten, Besitzinformationen.
-  2. Fraktions-Library-Tab aktivieren, Browse-Schema + Filter (Einfluss, Kultur, Ziele) definieren.
-- **Kartenintegration**
-  1. Cartographer-Overlay erweitern (Polygon/Heatmap) und Fraktionszuordnung pro Hex speichern (via `tile-repository`).
-  2. Kontextmenü zum Anheften/Entfernen von Fraktionen auf Hexes implementieren.
-- **Session Runner Hook**
-  1. API `fraktionen.getByHex(coord)` in State-Layer anbieten.
-  2. Encounter-Builder UI (Session Runner Sidebar) ergänzen: Fraktion → Mitglieder (benannt/unbenannt) auswählen, Calculator-Aufruf.
+**Status:** ⚙️ 35% fertig · **Letztes Update:** 2025-10-28 · **Target:** KW 46-47
+
+**Abgeschlossen ✅**
+- **Library-Modus:** CreateSpec, Serializer & Markdown-Ausgabe (`src/workmodes/library/factions/*`), Data-Sources & View (`src/workmodes/library/{storage/data-sources.ts, view.ts}`, `core/sources.ts`) mit Filters/Sorts.
+- **Validierung:** Schema-Erweiterungen (`src/domain/schemas.ts`) + Samples (`samples/fraktionen/*.md`) und Storage-Referenz (`docs/storage-formats.md`).
+- **Overlay-Infrastruktur:** Farbpalette (`src/features/maps/domain/faction-colors.ts`), Overlay-Store (`src/features/maps/state/faction-overlay-store.ts`), Reset-Hooks (`src/features/maps/data/map-store-registry.ts`).
+- **Overlay-Sync:** TileStore-Subscription aktualisiert FactionOverlay automatisch bei Map-/Tile-Changes (`src/features/maps/data/tile-repository.ts`).
+- **Overlay-Rendering:** Cartographer färbt Hexes nach Fraktion, inkl. Legende (`src/features/maps/rendering/*`, `styles.css`).
+
+**Kritischer Pfad (Must-have für MVP) 🔴**
+1. 🚨 **Cartographer Brush Integration** (src/workmodes/cartographer/editor/tools/terrain-brush/)
+   - Faction-Dropdown im Brush-Panel (neben Region-Auswahl)
+   - `saveTile()` erweitern um `faction`-Feld
+   - Tooltip zeigt Fraktionsnamen beim Hover
+
+2. 🚨 **Cartographer Inspector** (src/workmodes/cartographer/editor/inspector/)
+   - Faction-Feld im Inspector-Panel anzeigen
+   - Faction per Dropdown editierbar machen
+   - Änderungen sofort im Overlay sichtbar
+
+3. 🚨 **Session Runner Hooks** (src/workmodes/session-runner/)
+   - Contract definieren: `fraktionen.getByHex(mapPath, coord) → FactionSummary`
+   - Handler in Encounter-Gateway implementieren
+   - Encounter-Builder: Faction-Filter UI (Dropdown/Multi-Select)
+   - Creature-Suggestions nach Faction-Tags filtern
+
+4. 🚨 **End-to-End Test** (devkit/testing/integration/cases/)
+   - Workflow: Create faction → Assign to hex → Load in Session Runner → Filter encounters
+   - YAML-Test mit allen Schritten
+
+**Nice-to-have (kann später kommen) ⚡**
+- Subfraktionen-Schema & CreateSpec
+- Mitglieder-Tracking (Anzahl/Namen pro Fraktion)
+- Beziehungs-Visualisierung zwischen Fraktionen
+- Faction-Strength auf Overlay anzeigen
+- Legende interaktiv (Toggle, Filter, Custom Colors)
+
+**Definition of Done für Phase 2:**
+- [ ] User kann Fraktion per Brush oder Inspector zuweisen
+- [ ] Session Runner zeigt Fraktionen pro Hex
+- [ ] Encounter-Builder filtert Creatures nach Faction
+- [ ] E2E-Test läuft grün
+- [ ] Dokumentation aktualisiert (QUICK_REFERENCE.md, storage-formats.md)
 
 ### Phase 3 – Orte & Dungeons
-**Status:** Not started  
-- **Ortshierarchie**
-  1. Schema `OrtNode` (ID, Typ, Besitzer, Einflussradius, Kinder) definieren; Speicherung als Markdown mit Frontmatter (`Orte/{path}.md`).
-  2. Library/Map UI für Hierarchie-Navigation (Breadcrumb, Baumübersicht) implementieren.
-- **Dungeon-Werkzeuge**
-  1. Square-Renderer (`src/features/maps/rendering/square-render.ts`) erstellen, Feature-/Token-Layer mit IDs (T1, F1 etc.) abbilden.
-  2. Raum-Editor (Sidebar) mit Sinnesbeschreibung, Feature-Liste, Direktlinks; Daten persistieren im Dungeon-Dokument.
-- **Produktionsslots**
-  1. Gebäude-Schema (Slot-Typ, Arbeiter, Output) definieren.
-  2. Library-Formulare für Gebäude um konfigurierbare Jobs erweitern (z. B. Item-Crafting, Training).
+**Status:** ⏳ Geplant · **Start:** Nach Phase 2 Abschluss
+
+**Zielbild**
+- Orts-Hierarchie (`OrtNode`), Breadcrumb-/Baum-UI, persistente Markdown-Struktur
+- Dungeon-Tools (Grid-Renderer, Raum-Editor, Raum-Feature-Verlinkung)
+- Produktions-Slots für Gebäude & Jobs
+
+**Kickoff-Checkliste** (erst starten wenn Phase 2 DoD erfüllt)
+1. Schema & Samples für `Orte/` finalisieren, Validator erweitern
+2. Cartographer-Baum/Breadcrumb-Ansicht entwerfen
+3. Dungeon-Renderer-Prototyp (Quadrat-Layer, ID-System)
 
 ### Phase 4 – Event Engine & Automation
-**Status:** Not started  
-- **Almanac-Erweiterung**
-  1. Event-Dokument (ID, Trigger, Ziel, Auswirkungen) modellieren; Timeline/Monats/Wochen-Ansicht im Almanac-UI ergänzen.
-  2. Postfach-Komponente (Inbox) mit Importance-Sortierung implementieren.
-  3. Wetter-Service refactoren: Wetterdaten pro Region speichern, Update-Events vom Kalender steuern.
-- **Automations-Hooks**
-  1. Trigger-Engine (cron-ähnlich) für wiederkehrende Events; Handler für Wetter, Fraktionen, Ort-Status.
-  2. Session Runner Travel-Loop erweitern, um Events (z. B. Expedition entdeckt) einzuspielen.
-  3. Job-/Expeditionssystem (Fraktionsservice) vorbereiten – Statusmaschine, opt-in Toggle im UI.
+**Status:** ⏳ Geplant · **Start:** Nach Phase 3
+
+**Zielbild**
+- Kalender-Events mit Timeline/Inbox, wettergesteuerte Updates
+- Automations-Hooks für Reise, Fraktionen, Orte
+
+**Kickoff-Checkliste**
+1. Ereignis-Schema + Beispiele (Events, Inbox, Wetter)
+2. Trigger-Engine-Konzept (Cron-ähnlich, Prioritäten, Guards)
+3. Schnittstellen zu Session Runner definieren (Travel Loop, Encounter Hooks)
 
 ### Phase 5 – Calculator & Loot Services
-**Status:** Not started  
-- **Calculator-Service**
-  1. API-Layer (`src/services/calculator.ts`) extrahieren: Schwierigkeitsgrad (Easy/Medium/Hard/Deadly) anhand Party + Encounter.
-  2. Regel-DSL erweitern (Scopes, Modifier, limits) und Preset-Loader aktualisieren.
-  3. Tests für Regelkombinationen (DevKit fixtures).
-- **Loot-Pipeline**
-  1. Loot-Konfiguration (Gold-Tabellen, Item-Pools, Magic-Limits) als YAML/MD hinterlegen.
-  2. Generator implementieren: XP/Level → Gold, Items, Magie; Tag-Filter anwenden; inherent loot aus Statblocks mergen.
-  3. Session Runner Encounter-Flow automatisch um Reward-Vorschau erweitern.
+**Status:** ⏳ Geplant · **Start:** Nach Phase 4
+
+**Zielbild**
+- Modularer Encounter-Calculator, erweiterte Regel-DSL
+- Loot-Pipeline (Gold/Items/Magie, Tag-basierte Filter, inherent loot)
+
+**Kickoff-Checkliste**
+1. Calculator-API entkoppeln, Regel-DSL-Spezifikation schreiben
+2. Loot-YAML-Format + Preset-Sammlung vorbereiten
+3. Tests & DevKit-Workflows (Encounter/Loot Regression) planen
 
 ### Phase 6 – Audio & Experience Layer
-**Status:** Not started  
-- **Audio-System**
-  1. Playlist-Definition (MD/JSON) mit Tags, Quellen, Lautstärken anlegen.
-  2. Audio-Engine (WebAudio) mit Fade/Loop implementieren; Steuerpanel im Session Runner.
-  3. Event-Hooks: Kalender/Encounter/Fraktion lösen Playlist-Wechsel aus; manuelle Overrides.
-- **UX & Abschluss**
-  1. Session Runner Sidebar finalisieren (Tabs für Encounter/Loot, Kalender, Audio).
-  2. Cartographer Overlays (Fraktionseinfluss, Wetter, Orte, Dungeons) visuell abstimmen.
-  3. Telemetrie/Debug-Panel, Doku-Update, Migration-Guides, Release-Checklist.
+**Status:** ⏳ Geplant · **Start:** Nach Phase 5 · **Release-Phase**
+
+**Zielbild**
+- Audio-System (Playlists, WebAudio, Fade/Loop, Overrides)
+- UX-Finishing: Session Runner Tabs, Cartographer-Overlays, Telemetrie, Release-Doku
+
+**Kickoff-Checkliste**
+1. Audio-Format & Storage definieren (`SaltMarcher/Audio/`?)
+2. Player-Prototyp + Event-Hooks skizzieren
+3. Release-Checklist & Migrationsplan vorbereiten
+
+---
+
+## 🎯 Roadmap-Zusammenfassung & Nächste Schritte
+
+### Aktueller Stand (2025-10-28)
+
+**Phase 0** ✅ Abgeschlossen  
+**Phase 1** ⚙️ 75% fertig – **BLOCKER:** Test-Suite  
+**Phase 2** ⚙️ 35% fertig – Daten-Layer fertig, UI-Integration fehlt
+
+### Prioritäten für diese Woche
+
+1. **🚨 Test-Suite reparieren** (Highest Priority)
+   - MODULE_NOT_FOUND Fehler beheben
+   - 49/56 Tests wieder grün bekommen
+   - Golden Files aktualisieren
+   - **Warum:** Ohne funktionierende Tests keine zuverlässige Entwicklung
+
+2. **🔧 Phase 1 finalisieren**
+   - Library-Repositories auf Store-Pattern migrieren
+   - Seed-System implementieren (`devkit seed --preset default`)
+   - **Warum:** Konsistente Datenzugriffe, reproduzierbare Tests
+
+3. **📋 Phase 2 planen**
+   - Cartographer Brush Integration spezifizieren
+   - Session Runner Hook-Contract schreiben
+   - **Warum:** Klare Specs verhindern Rework
+
+### Konkrete nächste Commits
+
+```bash
+# 1. Tests fixen
+git add devkit/testing/
+git commit -m "fix: Repair test suite (49→0 failures)"
+
+# 2. Store-Migration
+git add src/workmodes/library/*/repository.ts
+git commit -m "refactor: Migrate library repos to Store pattern"
+
+# 3. Seed-System
+git add devkit/testing/seeds/ devkit/core/ipc/commands/seed-commands.ts
+git commit -m "feat: Add seed system for reproducible test vaults"
+
+# 4. Phase 2 Spec
+git add docs/phase2-ui-integration-spec.md
+git commit -m "docs: Specify Phase 2 UI integration contracts"
+```
+
+### Definition of Done - Phase 1
+
+- [ ] Alle Tests grün (0 failures)
+- [ ] Library-Repos nutzen PersistentStore
+- [ ] `devkit seed --preset default` funktioniert
+- [ ] `devkit state list` zeigt alle Library-Stores
+- [ ] Logging hat Filter/Kategorien
+
+### Definition of Done - Phase 2
+
+- [ ] User kann Fraktion per Brush zuweisen
+- [ ] Inspector zeigt/editiert Fraktionen
+- [ ] Session Runner: `fraktionen.getByHex()` funktioniert
+- [ ] Encounter-Builder filtert nach Faction
+- [ ] E2E-Test läuft grün
+- [ ] QUICK_REFERENCE.md dokumentiert Faction-Workflow
+
+### Zeitschätzung
+
+| Phase | Verbleibende Arbeit | Schätzung |
+|-------|---------------------|-----------|
+| Tests reparieren | 49 failing tests | 4-6h |
+| Phase 1 finalisieren | Store-Migration, Seed-System | 8-10h |
+| Phase 2 UI-Integration | Cartographer + Session Runner | 12-16h |
+| **Total bis Phase 2 MVP** | | **24-32h** (~3-4 Arbeitstage) |
+
+### Erfolgsmetriken
+
+**Phase 1 erfolgreich wenn:**
+- Test-Suite grün
+- Keine Custom-IO-Pattern mehr in Library
+- DevKit zeigt alle Stores im Inspector
+
+**Phase 2 erfolgreich wenn:**
+- User-Story funktioniert: "Create faction → Assign to hex → Filter encounters in session"
+- Keine Lücken zwischen Daten-Layer und UI
+- Dokumentation vollständig

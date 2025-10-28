@@ -5,7 +5,7 @@ import type { App, TFile } from "obsidian";
 import {
     createEncounterEventFromTravel,
     type TravelEncounterContext,
-} from "../../src/workmodes/encounter/event-builder";
+} from "src/workmodes/encounter/event-builder";
 
 const loadTile = vi.fn();
 const loadRegions = vi.fn();

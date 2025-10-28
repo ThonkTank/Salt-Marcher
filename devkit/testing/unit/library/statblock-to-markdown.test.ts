@@ -2,7 +2,7 @@
 // Prüft den Markdown-Export von Statblocks auf neue Metadaten (Typ-Tags, Alignment-Override, Spellcasting-Gruppen).
 
 import { describe, expect, it } from "vitest";
-import { statblockToMarkdown, type StatblockData } from "../../src/workmodes/library/entities/creatures";
+import { statblockToMarkdown, type StatblockData } from "src/workmodes/library/entities/creatures";
 import { EXAMPLE_CREATURE_STATBLOCKS } from "./creature-fixtures";
 
 function createStatblock(overrides: Partial<StatblockData> = {}): StatblockData {

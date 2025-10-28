@@ -5,7 +5,7 @@ import {
     buildForm,
     type FormSelectHandle,
     type FormSliderHandle,
-} from "../../src/ui/form-builder";
+} from "src/ui/form-builder";
 
 describe("buildForm", () => {
     it("renders configured sections and wires control callbacks", () => {

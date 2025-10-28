@@ -63,7 +63,7 @@ vi.mock("../../src/workmodes/library/view", () => ({
     VIEW_LIBRARY: "library",
 }));
 
-import SaltMarcherPlugin from "../../src/app/main";
+import SaltMarcherPlugin from "src/app/main";
 
 describe("SaltMarcherPlugin bootstrap integration", () => {
     beforeEach(() => {

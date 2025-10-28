@@ -1,8 +1,8 @@
 // salt-marcher/tests/library/view.test.ts
 // Prüft den Library-View auf Initialisierung, Kopien und Moduswechsel.
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Mode } from "../../src/workmodes/library/view/mode";
-import { LIBRARY_COPY, LibraryView } from "../../src/workmodes/library/view";
+import type { Mode } from "src/workmodes/library/view/mode";
+import { LIBRARY_COPY, LibraryView } from "src/workmodes/library/view";
 import { App, WorkspaceLeaf } from "obsidian";
 
 const SOURCE_LABELS: Record<Mode, string> = {

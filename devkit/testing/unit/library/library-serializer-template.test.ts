@@ -7,7 +7,7 @@ import {
     validateLibrarySerializerTemplate,
     LibrarySerializerTemplateError,
     type LibrarySerializerTemplateDraft,
-} from "../../src/workmodes/library/core/serializer-template/library-serializer-template";
+} from "src/workmodes/library/core/serializer-template/library-serializer-template";
 
 describe("library serializer template", () => {
     it("creates an immutable template with explicit telemetry configuration", () => {
