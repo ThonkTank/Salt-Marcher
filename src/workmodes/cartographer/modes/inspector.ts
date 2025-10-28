@@ -3,6 +3,8 @@
 import type { TFile } from "obsidian";
 import { loadTile, saveTile } from "../../../features/maps/data/tile-repository";
 import { TERRAIN_COLORS } from "../../../features/maps/domain/terrain";
+import { loadRegions } from "../../../features/maps/data/region-repository";
+import { LIBRARY_DATA_SOURCES } from "../../library/storage/data-sources";
 import { enhanceSelectToSearch } from "../../../ui/components/search-dropdown";
 import type { RenderHandles } from "../../../features/maps/rendering/hex-render";
 import { logger } from "../../../app/plugin-logger";
@@ -22,10 +24,12 @@ import {
 
 type InspectorUI = {
     panel: HTMLElement | null;
-    form: FormBuilderInstance<"file" | "terrain" | "note", never, never, "message"> | null;
+    form: FormBuilderInstance<"file" | "terrain" | "region" | "faction" | "note", never, never, "message"> | null;
     fileLabel: HTMLElement | null;
     message: FormStatusHandle | null;
     terrain: FormSelectHandle | null;
+    region: FormSelectHandle | null;
+    faction: FormSelectHandle | null;
     note: FormTextareaHandle | null;
 };
 
@@ -43,6 +47,8 @@ export function createInspectorMode(): CartographerMode {
         fileLabel: null,
         message: null,
         terrain: null,
+        region: null,
+        faction: null,
         note: null,
     };
 
@@ -67,6 +73,10 @@ export function createInspectorMode(): CartographerMode {
     const resetInputs = () => {
         ui.terrain?.setValue("");
         ui.terrain?.setDisabled(true);
+        ui.region?.setValue("");
+        ui.region?.setDisabled(true);
+        ui.faction?.setValue("");
+        ui.faction?.setDisabled(true);
         ui.note?.setValue("");
         ui.note?.setDisabled(true);
     };
@@ -107,9 +117,11 @@ export function createInspectorMode(): CartographerMode {
         state.saveTimer = window.setTimeout(async () => {
             if (ctx.signal.aborted) return;
             const terrain = ui.terrain?.getValue() ?? "";
+            const region = ui.region?.getValue() ?? "";
+            const faction = ui.faction?.getValue() ?? "";
             const note = ui.note?.getValue() ?? "";
             try {
-                await saveTile(ctx.app, file, state.selection!, { terrain, note });
+                await saveTile(ctx.app, file, state.selection!, { terrain, region, faction, note });
             } catch (err) {
                 logger.error("[inspector-mode] saveTile failed", err);
             }
@@ -136,6 +148,10 @@ export function createInspectorMode(): CartographerMode {
         if (ctx.signal.aborted) return;
         ui.terrain?.setValue(data?.terrain ?? "");
         ui.terrain?.setDisabled(false);
+        ui.region?.setValue(data?.region ?? "");
+        ui.region?.setDisabled(false);
+        ui.faction?.setValue(data?.faction ?? "");
+        ui.faction?.setDisabled(false);
         ui.note?.setValue(data?.note ?? "");
         ui.note?.setDisabled(false);
         updateMessage();
@@ -185,6 +201,36 @@ export function createInspectorMode(): CartographerMode {
                     },
                     {
                         kind: "row",
+                        label: "Region:",
+                        rowCls: "sm-cartographer__panel-row",
+                        controls: [
+                            {
+                                kind: "select",
+                                id: "region",
+                                options: [],
+                                disabled: true,
+                                enhance: (select) => enhanceSelectToSearch(select, "Such-dropdown…"),
+                                onChange: () => scheduleSave(ctx),
+                            },
+                        ],
+                    },
+                    {
+                        kind: "row",
+                        label: "Faction:",
+                        rowCls: "sm-cartographer__panel-row",
+                        controls: [
+                            {
+                                kind: "select",
+                                id: "faction",
+                                options: [],
+                                disabled: true,
+                                enhance: (select) => enhanceSelectToSearch(select, "Such-dropdown…"),
+                                onChange: () => scheduleSave(ctx),
+                            },
+                        ],
+                    },
+                    {
+                        kind: "row",
                         label: "Notiz:",
                         rowCls: "sm-cartographer__panel-row",
                         controls: [
@@ -203,7 +249,46 @@ export function createInspectorMode(): CartographerMode {
             ui.fileLabel = ui.form.getElement("file");
             ui.message = ui.form.getStatus("message");
             ui.terrain = ui.form.getControl("terrain") as FormSelectHandle | null;
+            ui.region = ui.form.getControl("region") as FormSelectHandle | null;
+            ui.faction = ui.form.getControl("faction") as FormSelectHandle | null;
             ui.note = ui.form.getControl("note") as FormTextareaHandle | null;
+
+            // Load region options
+            try {
+                const regions = await loadRegions(ctx.app);
+                ui.region?.setOptions([
+                    { label: "(none)", value: "" },
+                    ...regions.map((r) => ({
+                        label: r.name || "(unnamed)",
+                        value: r.name ?? "",
+                    })),
+                ]);
+            } catch (err) {
+                logger.error("[inspector-mode] failed to load regions", err);
+            }
+
+            // Load faction options
+            try {
+                const factionFiles = await LIBRARY_DATA_SOURCES.factions.list(ctx.app);
+                const factions: Array<{ name: string }> = [];
+                for (const file of factionFiles) {
+                    try {
+                        const entry = await LIBRARY_DATA_SOURCES.factions.load(ctx.app, file);
+                        factions.push({ name: entry.name });
+                    } catch (err) {
+                        logger.warn(`[inspector-mode] failed to load faction ${file.path}`, err);
+                    }
+                }
+                ui.faction?.setOptions([
+                    { label: "(none)", value: "" },
+                    ...factions.map((f) => ({
+                        label: f.name || "(unnamed)",
+                        value: f.name ?? "",
+                    })),
+                ]);
+            } catch (err) {
+                logger.error("[inspector-mode] failed to load factions", err);
+            }
 
             updateFileLabel();
             updatePanelState();
@@ -213,7 +298,7 @@ export function createInspectorMode(): CartographerMode {
             clearSaveTimer();
             ui.form?.destroy();
             ui.panel?.remove();
-            ui = { panel: null, form: null, fileLabel: null, message: null, terrain: null, note: null };
+            ui = { panel: null, form: null, fileLabel: null, message: null, terrain: null, region: null, faction: null, note: null };
             state = { file: null, handles: null, selection: null, saveTimer: null };
             lifecycle.reset();
         },
