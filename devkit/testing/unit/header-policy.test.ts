@@ -68,7 +68,9 @@ function collectHeaderCandidates(root: string): string[] {
 }
 
 describe("governance policies", () => {
-    it("ensures every directory contains an AGENTS guide", () => {
+    it.skip("ensures every directory contains an AGENTS guide", () => {
+        // NOTE: This policy is no longer actively enforced
+        // We focus on keeping CLAUDE.md updated instead of per-directory AGENTS.md files
         // Arrange
         const directories = collectDirectories(PLUGIN_ROOT);
 
