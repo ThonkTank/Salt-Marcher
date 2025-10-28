@@ -14,7 +14,7 @@ const SOURCE_LABELS: Record<Mode, string> = {
     regions: "SaltMarcher/Regions.md",
 };
 
-vi.mock("../../src/workmodes/library/core/sources", () => ({
+vi.mock("src/workmodes/library/core/sources", () => ({
     ensureLibrarySources: vi.fn().mockResolvedValue(undefined),
     describeLibrarySource: (mode: Mode) => SOURCE_LABELS[mode],
 }));
@@ -36,23 +36,23 @@ function createRenderer(mode: Mode) {
     };
 }
 
-vi.mock("../../src/workmodes/library/view/creatures", () => ({
+vi.mock("src/workmodes/library/view/creatures", () => ({
     CreaturesRenderer: createRenderer("creatures" as Mode),
 }));
 
-vi.mock("../../src/workmodes/library/view/spells", () => ({
+vi.mock("src/workmodes/library/view/spells", () => ({
     SpellsRenderer: createRenderer("spells" as Mode),
 }));
 
-vi.mock("../../src/workmodes/library/view/terrains", () => ({
+vi.mock("src/workmodes/library/view/terrains", () => ({
     TerrainsRenderer: createRenderer("terrains" as Mode),
 }));
 
-vi.mock("../../src/workmodes/library/view/equipment", () => ({
+vi.mock("src/workmodes/library/view/equipment", () => ({
     EquipmentRenderer: createRenderer("equipment" as Mode),
 }));
 
-vi.mock("../../src/workmodes/library/view/regions", () => ({
+vi.mock("src/workmodes/library/view/regions", () => ({
     RegionsRenderer: createRenderer("regions" as Mode),
 }));
 
@@ -62,7 +62,10 @@ const ensureObsidianDomHelpers = () => {
         proto.createEl = function(tag: string, options?: { text?: string; cls?: string; attr?: Record<string, string> }) {
             const el = document.createElement(tag);
             if (options?.text) el.textContent = options.text;
-            if (options?.cls) el.classList.add(options.cls);
+            if (options?.cls) {
+                // Support space-separated class names like Obsidian's API
+                options.cls.split(/\s+/).filter(Boolean).forEach(cls => el.classList.add(cls));
+            }
             if (options?.attr) {
                 for (const [key, value] of Object.entries(options.attr)) {
                     el.setAttribute(key, value);
