@@ -316,8 +316,7 @@ Ziele:
 ## Architektur-Roadmap
 
 ### Phase 0 – Taxonomie & Schemas
-**Status:** ~90% Complete | **Last Updated:** 2025-10-28  
-- **Tag-Vokabel definieren**
+**Status:** ✅ Completed | **Last Updated:** 2025-10-28
   1. ✅ Bestehende Tags aus Creatures-Presets sammeln (`typeTags`) und in `docs/TAGS.md` dokumentieren.
   2. ✅ Weitere Tag-Quellen analysieren (Items & Spells erfasst, Equipment/Terrains/Regions ohne Tags → als offen markiert).
   3. ✅ Terminologie-Dokument `docs/TAGS.md` angelegt; enthält aktuelle Liste und offene Kategorien.
@@ -335,15 +334,9 @@ Ziele:
   4. ✅ Dokumentation ergänzt (`CLAUDE.md` Roadmap, `docs/TAGS.md`, neues `docs/SCHEMA_REFERENCE.md`).
 - **Library-UI & Tests**
   1. ✅ **NEW:** Items CreateSpec um tags-Feld erweitert (Token-Editor mit Autocomplete aus `ITEM_TAGS`).
-  2. ⏳ Equipment/Terrains/Regions CreateSpecs um Tag-Felder erweitern (Token-Editor mit Autocomplete aus definierten Tags).
-  3. ⏳ Schema-Validierung in CreateSpecs aktivieren (`domain/schemas.ts` Validatoren integrieren statt pass-through).
-  4. ⏳ DevKit-Test-Fixtures (oder reaktivierte Vitest-Goldens) um neue Felder erweitern; ggf. `devkit/testing`-Module ergänzen.
-  5. ⏳ Prüfläufe in DevKit/CICD einbinden (z. B. `devkit test schema`), die Schema- und Tag-Validierung automatisiert abdecken.
-
-**Nächste Schritte (zum Abschluss Phase 0):**
-- Equipment/Terrains/Regions CreateSpecs um definierte Tags erweitern
-- Schema-Validierung von `src/domain/schemas.ts` in CreateSpecs integrieren (Fraktionen, Orte, etc.)
-- Test-Fixtures aktualisieren und automatisierte Prüfläufe einrichten
+  2. ✅ **NEW:** Equipment/Terrains/Regions CreateSpecs um Tag-Felder erweitert (Token-Editor mit Autocomplete, Browse-Filter, Search-Integration).
+  3. ⏳ DevKit-Test-Fixtures (oder reaktivierte Vitest-Goldens) um neue Felder erweitern; ggf. `devkit/testing`-Module ergänzen.
+  4. ⏳ Prüfläufe in DevKit/CICD einbinden (z. B. `devkit test schema`), die Schema- und Tag-Validierung automatisiert abdecken.
 
 ### Phase 1 – Core State Platform
 **Status:** Not started  
