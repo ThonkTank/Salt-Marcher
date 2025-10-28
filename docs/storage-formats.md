@@ -114,6 +114,41 @@ faction: "Schildwachtbund"   # optional, drives the faction overlay
 
 The optional `faction` key is read by the `FactionOverlayStore` to color hexes in the Cartographer and to feed upcoming session hooks with faction context.
 
+### Encounter Event Faction Context
+
+When the Session Runner creates an encounter from travel, faction context flows through the system:
+
+**Data Flow:**
+1. **Tile → Event Builder** (`src/workmodes/encounter/event-builder.ts:56-58`)
+   - Reads `faction` from tile frontmatter
+   - Includes in `EncounterEvent` as `factionName`
+
+2. **Event → Encounter Summary** (`src/workmodes/encounter/session-view.ts:77-79`)
+   - Displays faction in encounter UI
+   - Shows alongside hex coordinates, region, and map info
+
+**EncounterEvent Interface** (`src/workmodes/encounter/session-store.ts:78-92`):
+```typescript
+export interface EncounterEvent {
+    readonly id: string;
+    readonly source: EncounterEventSource;
+    readonly triggeredAt: string;
+    readonly coord: Coord | null;
+    readonly regionName?: string;
+    readonly factionName?: string;  // Added in Phase 2.2
+    readonly mapPath?: string;
+    readonly mapName?: string;
+    readonly encounterOdds?: number;
+    readonly travelClockHours?: number;
+}
+```
+
+**Workflow:**
+- User assigns faction to hex in Cartographer (via Brush or Inspector)
+- Session Runner triggers encounter from travel
+- Encounter summary displays faction context
+- Future: Encounter Builder will filter creatures by faction tags
+
 ## Current Architecture
 
 All entity types now use the **unified declarative CreateSpec system**:
