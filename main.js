@@ -5958,6 +5958,299 @@ var init_rule_presets = __esm({
   }
 });
 
+// src/workmodes/encounter/session-view.ts
+var EncounterSessionView;
+var init_session_view = __esm({
+  "src/workmodes/encounter/session-view.ts"() {
+    "use strict";
+    EncounterSessionView = class {
+      constructor(parentEl) {
+        this.rootEl = null;
+        this.parentEl = parentEl;
+      }
+      mount() {
+        this.unmount();
+        const section = this.parentEl.createDiv({
+          cls: "sm-encounter-section sm-encounter-session sm-encounter-header"
+        });
+        this.rootEl = section;
+        this.titleEl = section.createEl("h2", {
+          cls: "sm-encounter-heading",
+          text: "Encounter"
+        });
+        this.statusEl = section.createDiv({
+          cls: "sm-encounter-status",
+          text: "Waiting for travel events\u2026"
+        });
+        const metaEl = section.createDiv({ cls: "sm-encounter-meta" });
+        this.summaryListEl = metaEl.createEl("ul", { cls: "sm-encounter-summary" });
+        this.emptyStateEl = section.createDiv({
+          cls: "sm-encounter-empty",
+          text: "No active encounter. Travel mode will populate this workspace when an encounter triggers."
+        });
+      }
+      unmount() {
+        this.rootEl?.remove();
+        this.rootEl = null;
+      }
+      render(session) {
+        if (!this.rootEl) return;
+        if (!session) {
+          this.titleEl.setText("Encounter");
+          this.statusEl.setText("Waiting for travel events\u2026");
+          this.summaryListEl.empty();
+          this.emptyStateEl.removeClass("sm-encounter-hidden");
+          return;
+        }
+        this.emptyStateEl.addClass("sm-encounter-hidden");
+        const { event, status, resolvedAt } = session;
+        const region = event.regionName ?? "Unknown region";
+        this.titleEl.setText(`Encounter \u2013 ${region}`);
+        if (status === "resolved") {
+          this.statusEl.setText(resolvedAt ? `Resolved ${resolvedAt}` : "Resolved");
+        } else {
+          this.statusEl.setText("Awaiting resolution");
+        }
+        this.summaryListEl.empty();
+        const summaryEntries = [];
+        if (event.coord) {
+          summaryEntries.push(["Hex", `${event.coord.r}, ${event.coord.c}`]);
+        }
+        if (event.factionName) {
+          summaryEntries.push(["Faction", event.factionName]);
+        }
+        if (event.mapName) {
+          summaryEntries.push(["Map", event.mapName]);
+        }
+        if (event.mapPath) {
+          summaryEntries.push(["Map path", event.mapPath]);
+        }
+        summaryEntries.push(["Triggered", event.triggeredAt]);
+        if (typeof event.travelClockHours === "number") {
+          summaryEntries.push(["Travel clock", `${event.travelClockHours.toFixed(2)} h`]);
+        }
+        if (typeof event.encounterOdds === "number") {
+          summaryEntries.push(["Encounter odds", `1 in ${event.encounterOdds}`]);
+        }
+        for (const [label, value] of summaryEntries) {
+          const li = this.summaryListEl.createEl("li");
+          li.createSpan({ cls: "label", text: `${label}: ` });
+          li.createSpan({ cls: "value", text: value });
+        }
+      }
+    };
+  }
+});
+
+// src/workmodes/encounter/creature-list.ts
+function parseCR(crString) {
+  if (!crString) return 0;
+  const str = crString.trim();
+  if (str.includes("/")) {
+    const [num2, denom] = str.split("/").map((s) => Number(s.trim()));
+    if (Number.isFinite(num2) && Number.isFinite(denom) && denom !== 0) {
+      return num2 / denom;
+    }
+  }
+  const num = Number(str);
+  return Number.isFinite(num) ? num : 0;
+}
+function formatCR(cr) {
+  if (cr === 0.125) return "1/8";
+  if (cr === 0.25) return "1/4";
+  if (cr === 0.5) return "1/2";
+  return String(cr);
+}
+var EncounterCreatureList;
+var init_creature_list = __esm({
+  "src/workmodes/encounter/creature-list.ts"() {
+    "use strict";
+    init_data_sources();
+    init_plugin_logger();
+    EncounterCreatureList = class {
+      constructor(app, containerEl, callbacks) {
+        this.creatures = [];
+        this.filteredCreatures = [];
+        this.app = app;
+        this.containerEl = containerEl;
+        this.callbacks = callbacks;
+      }
+      async mount() {
+        this.containerEl.empty();
+        this.containerEl.addClass("sm-encounter-creature-list");
+        const header = this.containerEl.createDiv({ cls: "sm-encounter-creature-list-header" });
+        header.createEl("h3", { text: "Add Creatures", cls: "sm-encounter-section-title" });
+        const searchRow = this.containerEl.createDiv({ cls: "sm-encounter-creature-search" });
+        this.searchInput = searchRow.createEl("input", {
+          cls: "sm-encounter-input",
+          attr: {
+            type: "text",
+            placeholder: "Search creatures..."
+          }
+        });
+        this.searchInput.addEventListener("input", () => this.applyFilter());
+        this.listEl = this.containerEl.createDiv({ cls: "sm-encounter-creature-list-items" });
+        await this.loadCreatures();
+      }
+      unmount() {
+        this.containerEl.empty();
+        this.creatures = [];
+        this.filteredCreatures = [];
+      }
+      async loadCreatures() {
+        try {
+          const files = await LIBRARY_DATA_SOURCES.creatures.list(this.app);
+          const loaded = [];
+          for (const file of files) {
+            try {
+              const entry = await LIBRARY_DATA_SOURCES.creatures.load(this.app, file);
+              const cr = parseCR(entry.cr);
+              loaded.push({
+                name: entry.name,
+                cr,
+                type: entry.type,
+                path: file.path
+              });
+            } catch (err) {
+              logger.warn(`[creature-list] failed to load ${file.path}`, err);
+            }
+          }
+          loaded.sort((a, b) => {
+            if (a.cr !== b.cr) return a.cr - b.cr;
+            return a.name.localeCompare(b.name);
+          });
+          this.creatures = loaded;
+          this.applyFilter();
+        } catch (err) {
+          logger.error("[creature-list] failed to load creatures", err);
+          this.listEl.setText("Failed to load creatures from library.");
+        }
+      }
+      applyFilter() {
+        const query = this.searchInput.value.toLowerCase().trim();
+        if (!query) {
+          this.filteredCreatures = this.creatures;
+        } else {
+          this.filteredCreatures = this.creatures.filter((creature) => {
+            return creature.name.toLowerCase().includes(query) || creature.type?.toLowerCase().includes(query);
+          });
+        }
+        this.renderList();
+      }
+      renderList() {
+        this.listEl.empty();
+        if (!this.filteredCreatures.length) {
+          this.listEl.createDiv({
+            cls: "sm-encounter-empty-row",
+            text: this.creatures.length ? "No creatures match your search." : "No creatures found in library."
+          });
+          return;
+        }
+        for (const creature of this.filteredCreatures) {
+          const row = this.listEl.createDiv({ cls: "sm-encounter-creature-item" });
+          const nameEl = row.createDiv({ cls: "sm-encounter-creature-name" });
+          nameEl.setText(creature.name);
+          const metaEl = row.createDiv({ cls: "sm-encounter-creature-meta" });
+          metaEl.createSpan({ cls: "sm-encounter-creature-cr", text: `CR ${formatCR(creature.cr)}` });
+          if (creature.type) {
+            metaEl.createSpan({ cls: "sm-encounter-creature-type", text: creature.type });
+          }
+          const addButton = row.createEl("button", {
+            cls: "sm-encounter-button sm-encounter-button-primary",
+            text: "Add"
+          });
+          addButton.type = "button";
+          addButton.addEventListener("click", () => {
+            this.callbacks.onAddCreature(creature);
+          });
+        }
+      }
+    };
+  }
+});
+
+// src/workmodes/encounter/composition-view.ts
+function formatCR2(cr) {
+  if (cr === 0.125) return "1/8";
+  if (cr === 0.25) return "1/4";
+  if (cr === 0.5) return "1/2";
+  return String(cr);
+}
+var EncounterCompositionView;
+var init_composition_view = __esm({
+  "src/workmodes/encounter/composition-view.ts"() {
+    "use strict";
+    EncounterCompositionView = class {
+      constructor(containerEl, callbacks) {
+        this.containerEl = containerEl;
+        this.callbacks = callbacks;
+      }
+      mount() {
+        this.containerEl.empty();
+        this.containerEl.addClass("sm-encounter-composition");
+        const header = this.containerEl.createDiv({ cls: "sm-encounter-composition-header" });
+        header.createEl("h3", { text: "Encounter Composition", cls: "sm-encounter-section-title" });
+        this.listEl = this.containerEl.createDiv({ cls: "sm-encounter-composition-list" });
+      }
+      unmount() {
+        this.containerEl.empty();
+      }
+      render(creatures) {
+        this.listEl.empty();
+        if (!creatures.length) {
+          this.listEl.createDiv({
+            cls: "sm-encounter-empty-row",
+            text: "No creatures added yet. Use the list above to add creatures."
+          });
+          return;
+        }
+        for (const creature of creatures) {
+          const row = this.listEl.createDiv({ cls: "sm-encounter-composition-item" });
+          const nameEl = row.createDiv({ cls: "sm-encounter-composition-name" });
+          nameEl.setText(creature.name);
+          const metaEl = row.createDiv({ cls: "sm-encounter-composition-meta" });
+          metaEl.createSpan({ cls: "sm-encounter-composition-cr", text: `CR ${formatCR2(creature.cr)}` });
+          const countField = row.createDiv({ cls: "sm-encounter-composition-count" });
+          countField.createEl("label", {
+            attr: { for: `creature-count-${creature.id}` },
+            text: "Count:"
+          });
+          const countInput = countField.createEl("input", {
+            cls: "sm-encounter-input",
+            attr: {
+              id: `creature-count-${creature.id}`,
+              type: "number",
+              min: "1",
+              max: "99",
+              value: String(creature.count)
+            }
+          });
+          countInput.addEventListener("change", () => {
+            const value = Number(countInput.value);
+            if (!Number.isFinite(value) || value < 1) {
+              countInput.value = String(creature.count);
+              return;
+            }
+            const clamped = Math.max(1, Math.min(99, Math.floor(value)));
+            if (clamped !== value) {
+              countInput.value = String(clamped);
+            }
+            this.callbacks.onUpdateCount(creature.id, clamped);
+          });
+          const removeButton = row.createEl("button", {
+            cls: "sm-encounter-button sm-encounter-button-danger",
+            text: "Remove"
+          });
+          removeButton.type = "button";
+          removeButton.addEventListener("click", () => {
+            this.callbacks.onRemove(creature.id);
+          });
+        }
+      }
+    };
+  }
+});
+
 // src/workmodes/encounter/workspace-view.ts
 function createSection(parent, className) {
   return parent.createDiv({ cls: `sm-encounter-section ${className}` });
@@ -6044,11 +6337,17 @@ var init_workspace_view = __esm({
     init_modals();
     init_plugin_logger();
     init_rule_presets();
+    init_session_view();
+    init_creature_list();
+    init_composition_view();
     EncounterWorkspaceView = class {
       constructor(app, containerEl) {
         this.presenter = null;
         this.presetOptions = [];
         this.presetRefreshTimeout = null;
+        this.sessionView = null;
+        this.creatureList = null;
+        this.compositionView = null;
         this.app = app;
         this.containerEl = containerEl;
       }
@@ -6060,6 +6359,12 @@ var init_workspace_view = __esm({
         this.syncPresetControlsState();
       }
       unmount() {
+        this.sessionView?.unmount();
+        this.sessionView = null;
+        this.creatureList?.unmount();
+        this.creatureList = null;
+        this.compositionView?.unmount();
+        this.compositionView = null;
         this.containerEl.empty();
         this.containerEl.removeClass("sm-encounter-view");
         this.presenter = null;
@@ -6077,6 +6382,13 @@ var init_workspace_view = __esm({
       }
       render(state) {
         const session = state.session ?? null;
+        if (session && this.sessionView) {
+          this.sessionView.render(session.event);
+        }
+        if (this.compositionView) {
+          const creatures = session?.creatures ?? [];
+          this.compositionView.render(creatures);
+        }
         this.renderParty(state);
         this.renderRules(state);
         this.renderResults(state);
@@ -6085,6 +6397,22 @@ var init_workspace_view = __esm({
       }
       renderShell() {
         this.containerEl.empty();
+        const sessionSection = createSection(this.containerEl, "sm-encounter-session");
+        this.sessionView = new EncounterSessionView(sessionSection);
+        this.sessionView.mount();
+        const creaturesSection = createSection(this.containerEl, "sm-encounter-creatures");
+        const creaturesLayout = creaturesSection.createDiv({ cls: "sm-encounter-creatures-layout" });
+        const creatureListContainer = creaturesLayout.createDiv({ cls: "sm-encounter-creature-list-container" });
+        this.creatureList = new EncounterCreatureList(this.app, creatureListContainer, {
+          onAddCreature: (creature) => this.handleAddCreature(creature)
+        });
+        void this.creatureList.mount();
+        const compositionContainer = creaturesLayout.createDiv({ cls: "sm-encounter-composition-container" });
+        this.compositionView = new EncounterCompositionView(compositionContainer, {
+          onUpdateCount: (id, count) => this.handleUpdateCreatureCount(id, count),
+          onRemove: (id) => this.handleRemoveCreature(id)
+        });
+        this.compositionView.mount();
         const xpSection = createSection(this.containerEl, "sm-encounter-xp");
         xpSection.createEl("h3", { cls: "sm-encounter-section-title", text: "Encounter XP & Rules" });
         const xpRow = xpSection.createDiv({ cls: "sm-encounter-xp-row" });
@@ -7059,6 +7387,28 @@ var init_workspace_view = __esm({
           scope: "xp"
         };
         presenter.addRule(rule);
+      }
+      handleAddCreature(creature) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.addCreature({
+          id: createId("creature"),
+          name: creature.name,
+          count: 1,
+          cr: creature.cr,
+          source: "library",
+          statblockPath: creature.path
+        });
+      }
+      handleUpdateCreatureCount(id, count) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.updateCreature(id, { count });
+      }
+      handleRemoveCreature(id) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.removeCreature(id);
       }
     };
     numberFormatter = new Intl.NumberFormat(void 0, {
