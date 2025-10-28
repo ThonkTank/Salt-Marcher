@@ -2243,3 +2243,174 @@
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
+
+/* ===== Encounter Session View ===== */
+.sm-encounter-session {
+  margin-bottom: 1rem;
+}
+
+/* ===== Encounter Creatures Section ===== */
+.sm-encounter-creatures {
+  margin-bottom: 1.5rem;
+}
+
+.sm-encounter-creatures-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .sm-encounter-creatures-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Creature List ===== */
+.sm-encounter-creature-list-container {
+  background-color: var(--background-secondary);
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.sm-encounter-creature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sm-encounter-creature-list-header {
+  margin-bottom: 0.75rem;
+}
+
+.sm-encounter-creature-search {
+  margin-bottom: 0.75rem;
+}
+
+.sm-encounter-creature-search input {
+  width: 100%;
+}
+
+.sm-encounter-creature-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.sm-encounter-creature-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem;
+  background-color: var(--background-primary);
+  border-radius: 4px;
+  border: 1px solid var(--background-modifier-border);
+  transition: all 0.2s ease;
+}
+
+.sm-encounter-creature-item:hover {
+  background-color: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+}
+
+.sm-encounter-creature-name {
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.sm-encounter-creature-meta {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  grid-column: 1 / -1;
+}
+
+.sm-encounter-creature-cr {
+  padding: 0.125rem 0.375rem;
+  background-color: var(--background-secondary);
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.sm-encounter-creature-type {
+  padding: 0.125rem 0.375rem;
+  background-color: var(--background-secondary);
+  border-radius: 3px;
+}
+
+/* ===== Composition View ===== */
+.sm-encounter-composition-container {
+  background-color: var(--background-secondary);
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.sm-encounter-composition {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sm-encounter-composition-header {
+  margin-bottom: 0.75rem;
+}
+
+.sm-encounter-composition-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sm-encounter-composition-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem;
+  background-color: var(--background-primary);
+  border-radius: 6px;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.sm-encounter-composition-name {
+  font-weight: 600;
+  color: var(--text-normal);
+  font-size: 0.9375rem;
+}
+
+.sm-encounter-composition-meta {
+  grid-column: 1 / -1;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.sm-encounter-composition-cr {
+  padding: 0.125rem 0.375rem;
+  background-color: var(--background-secondary);
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.sm-encounter-composition-count {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sm-encounter-composition-count label {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.sm-encounter-composition-count input {
+  width: 60px;
+  text-align: center;
+}

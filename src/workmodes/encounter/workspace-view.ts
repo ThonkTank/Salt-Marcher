@@ -14,6 +14,9 @@ import {
     loadEncounterRulePreset,
     saveEncounterRulePreset,
 } from "./rule-presets";
+import { EncounterSessionView } from "./session-view";
+import { EncounterCreatureList } from "./creature-list";
+import { EncounterCompositionView } from "./composition-view";
 
 export class EncounterWorkspaceView {
     private readonly app: App;
@@ -47,6 +50,10 @@ export class EncounterWorkspaceView {
     private notesEl!: HTMLTextAreaElement;
     private resolveBtn!: HTMLButtonElement;
 
+    private sessionView: EncounterSessionView | null = null;
+    private creatureList: EncounterCreatureList | null = null;
+    private compositionView: EncounterCompositionView | null = null;
+
     constructor(app: App, containerEl: HTMLElement) {
         this.app = app;
         this.containerEl = containerEl;
@@ -61,6 +68,13 @@ export class EncounterWorkspaceView {
     }
 
     unmount() {
+        this.sessionView?.unmount();
+        this.sessionView = null;
+        this.creatureList?.unmount();
+        this.creatureList = null;
+        this.compositionView?.unmount();
+        this.compositionView = null;
+
         this.containerEl.empty();
         this.containerEl.removeClass("sm-encounter-view");
         this.presenter = null;
@@ -80,6 +94,18 @@ export class EncounterWorkspaceView {
 
     render(state: EncounterViewState) {
         const session = state.session ?? null;
+
+        // Render session context
+        if (session && this.sessionView) {
+            this.sessionView.render(session.event);
+        }
+
+        // Render creature composition
+        if (this.compositionView) {
+            const creatures = session?.creatures ?? [];
+            this.compositionView.render(creatures);
+        }
+
         this.renderParty(state);
         this.renderRules(state);
         this.renderResults(state);
@@ -89,6 +115,28 @@ export class EncounterWorkspaceView {
 
     private renderShell() {
         this.containerEl.empty();
+
+        // Session context section
+        const sessionSection = createSection(this.containerEl, "sm-encounter-session");
+        this.sessionView = new EncounterSessionView(sessionSection);
+        this.sessionView.mount();
+
+        // Creatures section
+        const creaturesSection = createSection(this.containerEl, "sm-encounter-creatures");
+        const creaturesLayout = creaturesSection.createDiv({ cls: "sm-encounter-creatures-layout" });
+
+        const creatureListContainer = creaturesLayout.createDiv({ cls: "sm-encounter-creature-list-container" });
+        this.creatureList = new EncounterCreatureList(this.app, creatureListContainer, {
+            onAddCreature: (creature) => this.handleAddCreature(creature),
+        });
+        void this.creatureList.mount();
+
+        const compositionContainer = creaturesLayout.createDiv({ cls: "sm-encounter-composition-container" });
+        this.compositionView = new EncounterCompositionView(compositionContainer, {
+            onUpdateCount: (id, count) => this.handleUpdateCreatureCount(id, count),
+            onRemove: (id) => this.handleRemoveCreature(id),
+        });
+        this.compositionView.mount();
 
         const xpSection = createSection(this.containerEl, "sm-encounter-xp");
         xpSection.createEl("h3", { cls: "sm-encounter-section-title", text: "Encounter XP & Rules" });
@@ -1132,6 +1180,32 @@ export class EncounterWorkspaceView {
             scope: "xp",
         };
         presenter.addRule(rule);
+    }
+
+    private handleAddCreature(creature: { name: string; cr: number; type?: string; path: string }) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+
+        presenter.addCreature({
+            id: createId("creature"),
+            name: creature.name,
+            count: 1,
+            cr: creature.cr,
+            source: "library",
+            statblockPath: creature.path,
+        });
+    }
+
+    private handleUpdateCreatureCount(id: string, count: number) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.updateCreature(id, { count });
+    }
+
+    private handleRemoveCreature(id: string) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.removeCreature(id);
     }
 }
 
