@@ -4,48 +4,68 @@ name: Reef Shark
 size: Medium
 type: Beast
 alignmentOverride: Unaligned
-ac: "12"
+ac: '12'
 initiative: +2 (12)
-hp: "22"
+hp: '22'
 hitDice: 4d8 + 4
 speeds:
-  - type: walk
-    value: "5"
-  - type: swim
-    value: "30"
+  walk:
+    distance: 5 ft.
+  swim:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 14
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 15
-  - ability: con
+    saveProf: false
+  - key: con
     score: 13
-  - ability: int
+    saveProf: false
+  - key: int
     score: 1
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 4
-pb: "+2"
-cr: 1/2
-xp: "100"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '2'
 sensesList:
   - type: blindsight
-    range: "30"
+    range: '30'
 passivesList:
   - skill: Perception
-    value: "12"
+    value: '12'
+cr: 1/2
+xp: '100'
 entries:
   - category: trait
     name: Pack Tactics
+    entryType: special
     text: The shark has Advantage on an attack roll against a creature if at least one of the shark's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
   - category: trait
     name: Water Breathing
+    entryType: special
     text: The shark can breathe only underwater.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 7 (2d4 + 2) Piercing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 7 (2d4 + 2) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 2d4
+          bonus: 2
+          type: Piercing
+          average: 7
+      reach: 5 ft.
 ---
 
 # Reef Shark
@@ -58,7 +78,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 14 | 15 | 13 | 1 | 10 | 4 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 30 ft.; Passive Perception 12
 CR 1/2, PB +2, XP 100

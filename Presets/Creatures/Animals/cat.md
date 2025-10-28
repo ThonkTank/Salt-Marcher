@@ -4,45 +4,63 @@ name: Cat
 size: Small
 type: Beast
 alignmentOverride: Unaligned
-ac: "12"
+ac: '12'
 initiative: +2 (12)
-hp: "2"
+hp: '2'
 hitDice: 1d4
 speeds:
-  - type: walk
-    value: "40"
-  - type: climb
-    value: "40"
+  walk:
+    distance: 40 ft.
+  climb:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 3
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 15
-  - ability: con
+    saveProf: true
+    saveMod: 4
+  - key: con
     score: 10
-  - ability: int
+    saveProf: false
+  - key: int
     score: 3
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 7
-pb: "+2"
-cr: "0"
-xp: "0"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '3'
+  - skill: Stealth
+    value: '4'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "13"
+    value: '13'
+cr: '0'
+xp: '0'
 entries:
   - category: trait
     name: Jumper
+    entryType: special
     text: The cat's jump distance is determined using its Dexterity rather than its Strength.
   - category: action
     name: Scratch
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 1 Slashing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 1 Slashing damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage: []
+      reach: 5 ft.
 ---
 
 # Cat
@@ -55,7 +73,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 3 | 15 | 10 | 3 | 12 | 7 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 13
 CR 0, PB +2, XP 0

@@ -5,54 +5,99 @@ size: Small
 type: Humanoid
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Neutral
-ac: "16"
+ac: '16'
 initiative: +10 (20)
-hp: "97"
+hp: '97'
 hitDice: 15d8 + 30
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 11
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 18
-  - ability: con
+    saveProf: true
+    saveMod: 7
+  - key: con
     score: 14
-  - ability: int
+    saveProf: false
+  - key: int
     score: 16
-  - ability: wis
+    saveProf: true
+    saveMod: 6
+  - key: wis
     score: 11
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 10
-pb: "+3"
-cr: "8"
-xp: "3900"
+    saveProf: false
+pb: '+3'
+skills:
+  - skill: Acrobatics
+    value: '7'
+  - skill: Perception
+    value: '6'
+  - skill: Stealth
+    value: '10'
+passivesList:
+  - skill: Perception
+    value: '16'
 languagesList:
   - value: Common
   - value: Thieves' cant
-passivesList:
-  - skill: Perception
-    value: "16"
 damageResistancesList:
   - value: Poison
+cr: '8'
+xp: '3900'
 entries:
   - category: trait
     name: Evasion
+    entryType: special
     text: If the assassin is subjected to an effect that allows it to make a Dexterity saving throw to take only half damage, the assassin instead takes no damage if it succeeds on the save and only half damage if it fails. It can't use this trait if it has the Incapacitated condition.
   - category: action
     name: Multiattack
+    entryType: special
     text: The assassin makes three attacks, using Shortsword or Light Crossbow in any combination.
   - category: action
     name: Shortsword
-    text: "*Melee Attack Roll:* +7, reach 5 ft. 7 (1d6 + 4) Piercing damage plus 17 (5d6) Poison damage, and the target has the Poisoned condition until the start of the assassin's next turn."
+    entryType: attack
+    text: '*Melee Attack Roll:* +7, reach 5 ft. 7 (1d6 + 4) Piercing damage plus 17 (5d6) Poison damage, and the target has the Poisoned condition until the start of the assassin''s next turn.'
+    attack:
+      type: melee
+      bonus: 7
+      damage:
+        - dice: 1d6
+          bonus: 4
+          type: Piercing
+          average: 7
+        - dice: 5d6
+          bonus: 0
+          type: Poison
+          average: 17
+      reach: 5 ft.
   - category: action
     name: Light Crossbow
-    text: "*Ranged Attack Roll:* +7, range 80/320 ft. 8 (1d8 + 4) Piercing damage plus 21 (6d6) Poison damage."
+    entryType: attack
+    text: '*Ranged Attack Roll:* +7, range 80/320 ft. 8 (1d8 + 4) Piercing damage plus 21 (6d6) Poison damage.'
+    attack:
+      type: ranged
+      bonus: 7
+      damage:
+        - dice: 1d8
+          bonus: 4
+          type: Piercing
+          average: 8
+        - dice: 6d6
+          bonus: 0
+          type: Poison
+          average: 21
+      range: 80/320 ft.
   - category: bonus
     name: Cunning Action
+    entryType: special
     text: The assassin takes the Dash, Disengage, or Hide action.
-
 ---
 
 # Assassin
@@ -65,7 +110,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 11 | 18 | 14 | 16 | 11 | 10 |
+| - | - | - | - | - | - |
 
 **Languages** Common, Thieves' cant
 CR 8, PB +3, XP 3900

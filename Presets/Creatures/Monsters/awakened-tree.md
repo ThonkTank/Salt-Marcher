@@ -5,44 +5,59 @@ size: Huge
 type: Plant
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Neutral
-ac: "13"
-initiative: "-2 (8)"
-hp: "59"
+ac: '13'
+initiative: '-2 (8)'
+hp: '59'
 hitDice: 7d12 + 14
 speeds:
-  - type: walk
-    value: "20"
+  walk:
+    distance: 20 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 19
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 6
-  - ability: con
+    saveProf: false
+  - key: con
     score: 15
-  - ability: int
+    saveProf: false
+  - key: int
     score: 10
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 7
-pb: "+2"
-cr: "2"
-xp: "450"
-languagesList:
-  - value: Common plus one other language
+    saveProf: false
+pb: '+2'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+languagesList:
+  - value: Common plus one other language
 damageVulnerabilitiesList:
   - value: Fire
 damageResistancesList:
   - value: Bludgeoning
   - value: Piercing
+cr: '2'
+xp: '450'
 entries:
   - category: action
     name: Slam
-    text: "*Melee Attack Roll:* +6, reach 10 ft. 13 (2d8 + 4) Bludgeoning damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +6, reach 10 ft. 13 (2d8 + 4) Bludgeoning damage.'
+    attack:
+      type: melee
+      bonus: 6
+      damage:
+        - dice: 2d8
+          bonus: 4
+          type: Bludgeoning
+          average: 13
+      reach: 10 ft.
 ---
 
 # Awakened Tree
@@ -55,7 +70,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 19 | 6 | 15 | 10 | 10 | 7 |
+| - | - | - | - | - | - |
 
 **Languages** Common plus one other language
 CR 2, PB +2, XP 450

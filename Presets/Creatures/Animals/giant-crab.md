@@ -4,45 +4,74 @@ name: Giant Crab
 size: Medium
 type: Beast
 alignmentOverride: Unaligned
-ac: "15"
+ac: '15'
 initiative: +1 (11)
-hp: "13"
+hp: '13'
 hitDice: 3d8
 speeds:
-  - type: walk
-    value: "30"
-  - type: swim
-    value: "30"
+  walk:
+    distance: 30 ft.
+  swim:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 13
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 13
-  - ability: con
+    saveProf: false
+  - key: con
     score: 11
-  - ability: int
+    saveProf: false
+  - key: int
     score: 1
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 9
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 3
-pb: "+2"
-cr: 1/8
-xp: "25"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Stealth
+    value: '3'
 sensesList:
   - type: blindsight
-    range: "30"
+    range: '30'
 passivesList:
   - skill: Perception
-    value: "9"
+    value: '9'
+cr: 1/8
+xp: '25'
 entries:
   - category: trait
     name: Amphibious
+    entryType: special
     text: The crab can breathe air and water.
   - category: action
     name: Claw
-    text: "*Melee Attack Roll:* +3, reach 5 ft. 4 (1d6 + 1) Bludgeoning damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11) from one of two claws."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +3, reach 5 ft. 4 (1d6 + 1) Bludgeoning damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11) from one of two claws.'
+    attack:
+      type: melee
+      bonus: 3
+      damage:
+        - dice: 1d6
+          bonus: 1
+          type: Bludgeoning
+          average: 4
+      reach: 5 ft.
+      onHit:
+        conditions:
+          - condition: Grappled
+            escape:
+              type: dc
+              dc: 11
+            restrictions:
+              size: Medium or smaller
+        other: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11) from one of two claws.
+      additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11) from one of two claws.
 ---
 
 # Giant Crab
@@ -55,7 +84,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 13 | 13 | 11 | 1 | 9 | 3 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 30 ft.; Passive Perception 9
 CR 1/8, PB +2, XP 25

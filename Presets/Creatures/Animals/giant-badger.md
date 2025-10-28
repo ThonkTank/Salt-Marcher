@@ -4,44 +4,62 @@ name: Giant Badger
 size: Medium
 type: Beast
 alignmentOverride: Unaligned
-ac: "13"
+ac: '13'
 initiative: +0 (10)
-hp: "15"
+hp: '15'
 hitDice: 2d8 + 6
 speeds:
-  - type: walk
-    value: "30"
-  - type: burrow
-    value: "10"
+  walk:
+    distance: 30 ft.
+  burrow:
+    distance: 10 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 13
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 10
-  - ability: con
+    saveProf: false
+  - key: con
     score: 17
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 5
-pb: "+2"
-cr: 1/4
-xp: "50"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '3'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "13"
+    value: '13'
 damageResistancesList:
   - value: Poison
+cr: 1/4
+xp: '50'
 entries:
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +3, reach 5 ft. 6 (2d4 + 1) Piercing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +3, reach 5 ft. 6 (2d4 + 1) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 3
+      damage:
+        - dice: 2d4
+          bonus: 1
+          type: Piercing
+          average: 6
+      reach: 5 ft.
 ---
 
 # Giant Badger
@@ -54,7 +72,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 13 | 10 | 17 | 2 | 12 | 5 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 13
 CR 1/4, PB +2, XP 50

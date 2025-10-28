@@ -3,41 +3,74 @@ smType: creature
 name: Ankylosaurus
 size: Huge
 type: Beast
+typeTags:
+  - value: Dinosaur
 alignmentOverride: Unaligned
-ac: "15"
+ac: '15'
 initiative: +0 (10)
-hp: "68"
+hp: '68'
 hitDice: 8d12 + 16
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 19
-  - ability: dex
+    saveProf: true
+    saveMod: 6
+  - key: dex
     score: 11
-  - ability: con
+    saveProf: false
+  - key: con
     score: 15
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 5
-pb: "+2"
-cr: "3"
-xp: "700"
+    saveProf: false
+pb: '+2'
 passivesList:
   - skill: Perception
-    value: "11"
+    value: '11'
+cr: '3'
+xp: '700'
 entries:
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The ankylosaurus makes two Tail attacks.
+    multiattack:
+      attacks:
+        - name: Tail
+          count: 2
+        - name: Tail
+          count: 2
+      substitutions: []
   - category: action
     name: Tail
-    text: "*Melee Attack Roll:* +6, reach 10 ft. 9 (1d10 + 4) Bludgeoning damage. If the target is a Huge or smaller creature, it has the Prone condition."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +6, reach 10 ft. 9 (1d10 + 4) Bludgeoning damage. If the target is a Huge or smaller creature, it has the Prone condition.'
+    attack:
+      type: melee
+      bonus: 6
+      damage:
+        - dice: 1d10
+          bonus: 4
+          type: Bludgeoning
+          average: 9
+      reach: 10 ft.
+      onHit:
+        conditions:
+          - condition: Prone
+            restrictions:
+              size: Huge or smaller
+        other: If the target is a Huge or smaller creature, it has the Prone condition.
+      additionalEffects: If the target is a Huge or smaller creature, it has the Prone condition.
 ---
 
 # Ankylosaurus
@@ -50,7 +83,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 19 | 11 | 15 | 2 | 12 | 5 |
+| - | - | - | - | - | - |
 
 CR 3, PB +2, XP 700
 

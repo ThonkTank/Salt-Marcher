@@ -4,45 +4,57 @@ name: Piranha
 size: Small
 type: Beast
 alignmentOverride: Unaligned
-ac: "13"
+ac: '13'
 initiative: +3 (13)
-hp: "1"
+hp: '1'
 hitDice: 1d4 - 1
 speeds:
-  - type: walk
-    value: "5"
-  - type: swim
-    value: "40"
+  walk:
+    distance: 5 ft.
+  swim:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 2
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 16
-  - ability: con
+    saveProf: false
+  - key: con
     score: 9
-  - ability: int
+    saveProf: false
+  - key: int
     score: 1
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 7
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 2
-pb: "+2"
-cr: "0"
-xp: "0"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "8"
+    value: '8'
+cr: '0'
+xp: '0'
 entries:
   - category: trait
     name: Water Breathing
+    entryType: special
     text: The piranha can breathe only underwater.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +5 (with Advantage if the target doesn't have all its Hit Points), reach 5 ft. 1 Piercing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +5 (with Advantage if the target doesn''t have all its Hit Points), reach 5 ft. 1 Piercing damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage: []
+      reach: 5 ft.
 ---
 
 # Piranha
@@ -55,7 +67,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 2 | 16 | 9 | 1 | 7 | 2 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 8
 CR 0, PB +2, XP 0

@@ -4,42 +4,57 @@ name: Giant Bat
 size: Large
 type: Beast
 alignmentOverride: Unaligned
-ac: "13"
+ac: '13'
 initiative: +3 (13)
-hp: "22"
+hp: '22'
 hitDice: 4d10
 speeds:
-  - type: walk
-    value: "10"
-  - type: fly
-    value: "60"
+  walk:
+    distance: 10 ft.
+  fly:
+    distance: 60 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 15
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 16
-  - ability: con
+    saveProf: false
+  - key: con
     score: 11
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 6
-pb: "+2"
-cr: 1/4
-xp: "50"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: blindsight
-    range: "120"
+    range: '120'
 passivesList:
   - skill: Perception
-    value: "11"
+    value: '11'
+cr: 1/4
+xp: '50'
 entries:
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 6 (1d6 + 3) Piercing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 6 (1d6 + 3) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d6
+          bonus: 3
+          type: Piercing
+          average: 6
+      reach: 5 ft.
 ---
 
 # Giant Bat
@@ -52,7 +67,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 15 | 16 | 11 | 2 | 12 | 6 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 120 ft.; Passive Perception 11
 CR 1/4, PB +2, XP 50

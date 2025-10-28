@@ -4,49 +4,101 @@ name: Gorgon
 size: Large
 type: Construct
 alignmentOverride: Unaligned
-ac: "19"
+ac: '19'
 initiative: +0 (10)
-hp: "114"
+hp: '114'
 hitDice: 12d10 + 48
 speeds:
-  - type: walk
-    value: "40"
+  walk:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 20
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 11
-  - ability: con
+    saveProf: false
+  - key: con
     score: 18
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 7
-pb: "+3"
-cr: "5"
-xp: "1800"
+    saveProf: false
+pb: '+3'
+skills:
+  - skill: Perception
+    value: '7'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "17"
+    value: '17'
 damageImmunitiesList:
   - value: Exhaustion
+conditionImmunitiesList:
   - value: Petrified
+cr: '5'
+xp: '1800'
 entries:
   - category: action
     name: Gore
-    text: "*Melee Attack Roll:* +8, reach 5 ft. 18 (2d12 + 5) Piercing damage. If the target is a Large or smaller creature and the gorgon moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition."
+    entryType: attack
+    text: '*Melee Attack Roll:* +8, reach 5 ft. 18 (2d12 + 5) Piercing damage. If the target is a Large or smaller creature and the gorgon moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.'
+    attack:
+      type: melee
+      bonus: 8
+      damage:
+        - dice: 2d12
+          bonus: 5
+          type: Piercing
+          average: 18
+      reach: 5 ft.
+      onHit:
+        conditions:
+          - condition: Prone
+            restrictions:
+              size: Large or smaller
+      additionalEffects: If the target is a Large or smaller creature and the gorgon moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.
   - category: action
     name: Petrifying Breath (Recharge 5-6)
-    text: "*Constitution Saving Throw*: DC 15, each creature in a 30-foot Cone. *First Failure* The target has the Restrained condition and repeats the save at the end of its next turn if it is still Restrained, ending the effect on itself on a success. *Second Failure* The target has the Petrified condition instead of the Restrained condition."
+    entryType: save
+    text: '*Constitution Saving Throw*: DC 15, each creature in a 30-foot Cone. *First Failure* The target has the Restrained condition and repeats the save at the end of its next turn if it is still Restrained, ending the effect on itself on a success. *Second Failure* The target has the Petrified condition instead of the Restrained condition.'
+    recharge: 5-6
+    save:
+      ability: con
+      dc: 15
   - category: bonus
     name: Trample
-    text: "*Dexterity Saving Throw*: DC 16, one creature within 5 feet that has the Prone condition. *Failure:*  16 (2d10 + 5) Bludgeoning damage. *Success:*  Half damage."
-
+    entryType: save
+    text: '*Dexterity Saving Throw*: DC 16, one creature within 5 feet that has the Prone condition. *Failure:*  16 (2d10 + 5) Bludgeoning damage. *Success:*  Half damage.'
+    save:
+      ability: dex
+      dc: 16
+      targeting:
+        type: single
+        range: 5 ft.
+        restrictions:
+          conditions:
+            - Prone
+      onFail:
+        effects:
+          other: 16 (2d10 + 5) Bludgeoning damage.
+        damage:
+          - dice: 2d10
+            bonus: 5
+            type: Bludgeoning
+            average: 16
+        legacyEffects: 16 (2d10 + 5) Bludgeoning damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
 ---
 
 # Gorgon
@@ -59,7 +111,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 20 | 11 | 18 | 2 | 12 | 7 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 17
 CR 5, PB +3, XP 1800

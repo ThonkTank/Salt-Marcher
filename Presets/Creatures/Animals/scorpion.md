@@ -4,40 +4,55 @@ name: Scorpion
 size: Small
 type: Beast
 alignmentOverride: Unaligned
-ac: "11"
+ac: '11'
 initiative: +0 (10)
-hp: "1"
+hp: '1'
 hitDice: 1d4 - 1
 speeds:
-  - type: walk
-    value: "10"
+  walk:
+    distance: 10 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 2
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 11
-  - ability: con
+    saveProf: false
+  - key: con
     score: 8
-  - ability: int
+    saveProf: false
+  - key: int
     score: 1
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 8
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 2
-pb: "+2"
-cr: "0"
-xp: "0"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: blindsight
-    range: "10"
+    range: '10'
 passivesList:
   - skill: Perception
-    value: "9"
+    value: '9'
+cr: '0'
+xp: '0'
 entries:
   - category: action
     name: Sting
-    text: "*Melee Attack Roll:* +2, reach 5 ft. 1 Piercing damage plus 3 (1d6) Poison damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +2, reach 5 ft. 1 Piercing damage plus 3 (1d6) Poison damage.'
+    attack:
+      type: melee
+      bonus: 2
+      damage:
+        - dice: 1d6
+          bonus: 0
+          type: Poison
+          average: 3
+      reach: 5 ft.
 ---
 
 # Scorpion
@@ -50,7 +65,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 2 | 11 | 8 | 1 | 8 | 2 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 10 ft.; Passive Perception 9
 CR 0, PB +2, XP 0

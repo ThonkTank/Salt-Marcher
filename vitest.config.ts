@@ -14,7 +14,7 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            obsidian: resolvePath("./tests/mocks/obsidian.ts"),
+            obsidian: resolvePath("./devkit/testing/unit/mocks/obsidian.ts"),
         },
     },
 });

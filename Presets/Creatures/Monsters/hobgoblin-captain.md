@@ -3,54 +3,91 @@ smType: creature
 name: Hobgoblin Captain
 size: Medium
 type: Fey
+typeTags:
+  - value: Goblinoid
 alignmentLawChaos: Lawful
 alignmentGoodEvil: Evil
-ac: "17"
+ac: '17'
 initiative: +4 (14)
-hp: "58"
+hp: '58'
 hitDice: 9d8 + 18
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 15
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 14
-  - ability: int
+    saveProf: false
+  - key: int
     score: 12
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 13
-pb: "+2"
-cr: "3"
-xp: "700"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
+passivesList:
+  - skill: Perception
+    value: '10'
 languagesList:
   - value: Common
   - value: Goblin
-passivesList:
-  - skill: Perception
-    value: "10"
+cr: '3'
+xp: '700'
 entries:
   - category: trait
     name: Aura of Authority
+    entryType: special
     text: While in a 10-foot Emanation originating from the hobgoblin, the hobgoblin and its allies have Advantage on attack rolls and saving throws, provided the hobgoblin doesn't have the Incapacitated condition.
   - category: action
     name: Multiattack
+    entryType: special
     text: The hobgoblin makes two attacks, using Greatsword or Longbow in any combination.
   - category: action
     name: Greatsword
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 9 (2d6 + 2) Slashing damage plus 3 (1d6) Poison damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 9 (2d6 + 2) Slashing damage plus 3 (1d6) Poison damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 2d6
+          bonus: 2
+          type: Slashing
+          average: 9
+        - dice: 1d6
+          bonus: 0
+          type: Poison
+          average: 3
+      reach: 5 ft.
   - category: action
     name: Longbow
-    text: "*Ranged Attack Roll:* +4, range 150/600 ft. 6 (1d8 + 2) Piercing damage plus 5 (2d4) Poison damage."
-
+    entryType: attack
+    text: '*Ranged Attack Roll:* +4, range 150/600 ft. 6 (1d8 + 2) Piercing damage plus 5 (2d4) Poison damage.'
+    attack:
+      type: ranged
+      bonus: 4
+      damage:
+        - dice: 1d8
+          bonus: 2
+          type: Piercing
+          average: 6
+        - dice: 2d4
+          bonus: 0
+          type: Poison
+          average: 5
+      range: 150/600 ft.
 ---
 
 # Hobgoblin Captain
@@ -63,7 +100,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 15 | 14 | 14 | 12 | 10 | 13 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 10
 **Languages** Common, Goblin

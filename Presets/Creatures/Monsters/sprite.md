@@ -5,52 +5,98 @@ size: Small
 type: Fey
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Good
-ac: "15"
+ac: '15'
 initiative: +4 (14)
-hp: "10"
+hp: '10'
 hitDice: 4d4
 speeds:
-  - type: walk
-    value: "10"
-  - type: fly
-    value: "40"
+  walk:
+    distance: 10 ft.
+  fly:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 3
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 18
-  - ability: con
+    saveProf: false
+  - key: con
     score: 10
-  - ability: int
+    saveProf: false
+  - key: int
     score: 14
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 13
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 11
-pb: "+2"
-cr: 1/4
-xp: "50"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '3'
+  - skill: Stealth
+    value: '8'
+passivesList:
+  - skill: Perception
+    value: '13'
 languagesList:
   - value: Common
   - value: Elvish
   - value: Sylvan
-passivesList:
-  - skill: Perception
-    value: "13"
+cr: 1/4
+xp: '50'
 entries:
   - category: action
     name: Needle Sword
-    text: "*Melee Attack Roll:* +6, reach 5 ft. 6 (1d4 + 4) Piercing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +6, reach 5 ft. 6 (1d4 + 4) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 6
+      damage:
+        - dice: 1d4
+          bonus: 4
+          type: Piercing
+          average: 6
+      reach: 5 ft.
   - category: action
     name: Enchanting Bow
-    text: "*Ranged Attack Roll:* +6, range 40/160 ft. 1 Piercing damage, and the target has the Charmed condition until the start of the sprite's next turn."
+    entryType: attack
+    text: '*Ranged Attack Roll:* +6, range 40/160 ft. 1 Piercing damage, and the target has the Charmed condition until the start of the sprite''s next turn.'
+    attack:
+      type: ranged
+      bonus: 6
+      damage: []
+      range: 40/160 ft.
   - category: action
     name: Heart Sight
-    text: "*Charisma Saving Throw*: DC 10, one creature within 5 feet the sprite can see (Celestials, Fiends, and Undead automatically fail the save). *Failure:*  The sprite knows the target's emotions and alignment."
+    entryType: save
+    text: '*Charisma Saving Throw*: DC 10, one creature within 5 feet the sprite can see (Celestials, Fiends, and Undead automatically fail the save). *Failure:*  The sprite knows the target''s emotions and alignment.'
+    save:
+      ability: cha
+      dc: 10
+      targeting:
+        type: single
+        range: 5 ft.
+        restrictions:
+          visibility: true
+      onFail:
+        effects:
+          knowledge: the target's emotions and alignment
+spellcastingEntries:
   - category: action
     name: Invisibility
+    entryType: spellcasting
     text: The sprite casts *Invisibility* on itself, requiring no spell components and using Charisma as the spellcasting ability. - **At Will:** *Invisibility*
-
+    spellcasting:
+      ability: cha
+      spellLists:
+        - frequency: at-will
+          spells:
+            - Invisibility
 ---
 
 # Sprite
@@ -63,7 +109,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 3 | 18 | 10 | 14 | 13 | 11 |
+| - | - | - | - | - | - |
 
 **Languages** Common, Elvish, Sylvan
 CR 1/4, PB +2, XP 50

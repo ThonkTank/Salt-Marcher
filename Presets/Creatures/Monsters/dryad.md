@@ -5,61 +5,117 @@ size: Medium
 type: Fey
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Neutral
-ac: "16"
+ac: '16'
 initiative: +1 (11)
-hp: "22"
+hp: '22'
 hitDice: 5d8
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 10
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 12
-  - ability: con
+    saveProf: false
+  - key: con
     score: 11
-  - ability: int
+    saveProf: false
+  - key: int
     score: 14
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 15
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 18
-pb: "+2"
-cr: "1"
-xp: "200"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '4'
+  - skill: Stealth
+    value: '5'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
+passivesList:
+  - skill: Perception
+    value: '14'
 languagesList:
   - value: Elvish
   - value: Sylvan
-passivesList:
-  - skill: Perception
-    value: "14"
+cr: '1'
+xp: '200'
 entries:
   - category: trait
     name: Magic Resistance
+    entryType: special
     text: The dryad has Advantage on saving throws against spells and other magical effects.
   - category: trait
     name: Speak with Beasts and Plants
+    entryType: special
     text: The dryad can communicate with Beasts and Plants as if they shared a language.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The dryad makes one Vine Lash or Thorn Burst attack, and it can use Spellcasting to cast *Charm Monster*.
+    multiattack:
+      attacks:
+        - name: Burst
+          count: 1
+      substitutions: []
   - category: action
     name: Vine Lash
-    text: "*Melee Attack Roll:* +6, reach 10 ft. 8 (1d8 + 4) Slashing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +6, reach 10 ft. 8 (1d8 + 4) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 6
+      damage:
+        - dice: 1d8
+          bonus: 4
+          type: Slashing
+          average: 8
+      reach: 10 ft.
   - category: action
     name: Thorn Burst
-    text: "*Ranged Attack Roll:* +6, range 60 ft. 7 (1d6 + 4) Piercing damage."
-  - category: action
-    name: Spellcasting
-    text: "The dryad casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 14): - **At Will:** *Animal Friendship*, *Charm Monster*, *Druidcraft* - **1e/Day Each:** *Entangle*, *Pass without Trace*"
+    entryType: attack
+    text: '*Ranged Attack Roll:* +6, range 60 ft. 7 (1d6 + 4) Piercing damage.'
+    attack:
+      type: ranged
+      bonus: 6
+      damage:
+        - dice: 1d6
+          bonus: 4
+          type: Piercing
+          average: 7
+      range: 60 ft.
   - category: bonus
     name: Tree Stride
+    entryType: special
     text: If within 5 feet of a Large or bigger tree, the dryad teleports to an unoccupied space within 5 feet of a second Large or bigger tree that is within 60 feet of the previous tree.
-
+spellcastingEntries:
+  - category: action
+    name: Spellcasting
+    entryType: spellcasting
+    text: 'The dryad casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 14): - **At Will:** *Animal Friendship*, *Charm Monster*, *Druidcraft* - **1e/Day Each:** *Entangle*, *Pass without Trace*'
+    spellcasting:
+      ability: cha
+      saveDC: 14
+      excludeComponents:
+        - M
+      spellLists:
+        - frequency: at-will
+          spells:
+            - Animal Friendship
+            - Charm Monster
+            - Druidcraft
+        - frequency: 1/day
+          spells:
+            - Entangle
+            - Pass without Trace
 ---
 
 # Dryad
@@ -72,7 +128,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 10 | 12 | 11 | 14 | 15 | 18 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 14
 **Languages** Elvish, Sylvan

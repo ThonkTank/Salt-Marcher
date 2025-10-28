@@ -4,42 +4,61 @@ name: Goat
 size: Medium
 type: Beast
 alignmentOverride: Unaligned
-ac: "10"
+ac: '10'
 initiative: +0 (10)
-hp: "4"
+hp: '4'
 hitDice: 1d8
 speeds:
-  - type: walk
-    value: "40"
-  - type: climb
-    value: "30"
+  walk:
+    distance: 40 ft.
+  climb:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 11
-  - ability: dex
+    saveProf: true
+    saveMod: 2
+  - key: dex
     score: 10
-  - ability: con
+    saveProf: false
+  - key: con
     score: 11
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 5
-pb: "+2"
-cr: "0"
-xp: "0"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '2'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "12"
+    value: '12'
+cr: '0'
+xp: '0'
 entries:
   - category: action
     name: Ram
-    text: "*Melee Attack Roll:* +2, reach 5 ft. 1 Bludgeoning damage, or 2 (1d4) Bludgeoning damage if the goat moved 20+ feet straight toward the target immediately before the hit."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +2, reach 5 ft. 1 Bludgeoning damage, or 2 (1d4) Bludgeoning damage if the goat moved 20+ feet straight toward the target immediately before the hit.'
+    attack:
+      type: melee
+      bonus: 2
+      damage:
+        - dice: 1d4
+          bonus: 0
+          type: Bludgeoning
+          average: 2
+      reach: 5 ft.
 ---
 
 # Goat
@@ -52,7 +71,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 11 | 10 | 11 | 2 | 10 | 5 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 12
 CR 0, PB +2, XP 0

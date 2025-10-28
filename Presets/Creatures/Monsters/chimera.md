@@ -5,56 +5,134 @@ size: Large
 type: Monstrosity
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Evil
-ac: "14"
+ac: '14'
 initiative: +0 (10)
-hp: "114"
+hp: '114'
 hitDice: 12d10 + 48
 speeds:
-  - type: walk
-    value: "30"
-  - type: fly
-    value: "60"
+  walk:
+    distance: 30 ft.
+  fly:
+    distance: 60 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 19
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 11
-  - ability: con
+    saveProf: false
+  - key: con
     score: 19
-  - ability: int
+    saveProf: false
+  - key: int
     score: 3
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 14
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 10
-pb: "+3"
-cr: "6"
-xp: "2300"
+    saveProf: false
+pb: '+3'
+skills:
+  - skill: Perception
+    value: '8'
 sensesList:
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Understands Draconic but can't speak
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "18"
+    value: '18'
+languagesList:
+  - value: Understands Draconic but can't speak
+cr: '6'
+xp: '2300'
 entries:
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The chimera makes one Ram attack, one Bite attack, and one Claw attack. It can replace the Claw attack with a use of Fire Breath if available.
+    multiattack:
+      attacks:
+        - name: Ram
+          count: 1
+        - name: Bite
+          count: 1
+        - name: Claw
+          count: 1
+      substitutions: []
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +7, reach 5 ft. 11 (2d6 + 4) Piercing damage, or 18 (4d6 + 4) Piercing damage if the chimera had Advantage on the attack roll."
+    entryType: attack
+    text: '*Melee Attack Roll:* +7, reach 5 ft. 11 (2d6 + 4) Piercing damage, or 18 (4d6 + 4) Piercing damage if the chimera had Advantage on the attack roll.'
+    attack:
+      type: melee
+      bonus: 7
+      damage:
+        - dice: 2d6
+          bonus: 4
+          type: Piercing
+          average: 11
+        - dice: 4d6
+          bonus: 4
+          type: Piercing
+          average: 18
+      reach: 5 ft.
   - category: action
     name: Claw
-    text: "*Melee Attack Roll:* +7, reach 5 ft. 7 (1d6 + 4) Slashing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +7, reach 5 ft. 7 (1d6 + 4) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 7
+      damage:
+        - dice: 1d6
+          bonus: 4
+          type: Slashing
+          average: 7
+      reach: 5 ft.
   - category: action
     name: Ram
-    text: "*Melee Attack Roll:* +7, reach 5 ft. 10 (1d12 + 4) Bludgeoning damage. If the target is a Medium or smaller creature, it has the Prone condition."
+    entryType: attack
+    text: '*Melee Attack Roll:* +7, reach 5 ft. 10 (1d12 + 4) Bludgeoning damage. If the target is a Medium or smaller creature, it has the Prone condition.'
+    attack:
+      type: melee
+      bonus: 7
+      damage:
+        - dice: 1d12
+          bonus: 4
+          type: Bludgeoning
+          average: 10
+      reach: 5 ft.
+      onHit:
+        conditions:
+          - condition: Prone
+            restrictions:
+              size: Medium or smaller
+      additionalEffects: If the target is a Medium or smaller creature, it has the Prone condition.
   - category: action
     name: Fire Breath (Recharge 5-6)
-    text: "*Dexterity Saving Throw*: DC 15, each creature in a 15-foot Cone. *Failure:*  31 (7d8) Fire damage. *Success:*  Half damage."
-
+    entryType: save
+    text: '*Dexterity Saving Throw*: DC 15, each creature in a 15-foot Cone. *Failure:*  31 (7d8) Fire damage. *Success:*  Half damage.'
+    recharge: 5-6
+    save:
+      ability: dex
+      dc: 15
+      targeting:
+        shape: cone
+        size: 15 ft.
+      onFail:
+        effects:
+          other: 31 (7d8) Fire damage.
+        damage:
+          - dice: 7d8
+            bonus: 0
+            type: Fire
+            average: 31
+        legacyEffects: 31 (7d8) Fire damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
 ---
 
 # Chimera
@@ -67,7 +145,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 19 | 11 | 19 | 3 | 14 | 10 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 18
 **Languages** Understands Draconic but can't speak

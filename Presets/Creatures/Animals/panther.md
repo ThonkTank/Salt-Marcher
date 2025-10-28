@@ -4,45 +4,66 @@ name: Panther
 size: Medium
 type: Beast
 alignmentOverride: Unaligned
-ac: "13"
+ac: '13'
 initiative: +3 (13)
-hp: "13"
+hp: '13'
 hitDice: 3d8
 speeds:
-  - type: walk
-    value: "50"
-  - type: climb
-    value: "40"
+  walk:
+    distance: 50 ft.
+  climb:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 14
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 16
-  - ability: con
+    saveProf: false
+  - key: con
     score: 10
-  - ability: int
+    saveProf: false
+  - key: int
     score: 3
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 14
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 7
-pb: "+2"
-cr: 1/4
-xp: "50"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '4'
+  - skill: Stealth
+    value: '6'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "14"
+    value: '14'
+cr: 1/4
+xp: '50'
 entries:
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 6 (1d6 + 3) Slashing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 6 (1d6 + 3) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d6
+          bonus: 3
+          type: Slashing
+          average: 6
+      reach: 5 ft.
   - category: bonus
     name: Nimble Escape
+    entryType: special
     text: The panther takes the Disengage or Hide action.
-
 ---
 
 # Panther
@@ -55,7 +76,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 14 | 16 | 10 | 3 | 14 | 7 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 14
 CR 1/4, PB +2, XP 50

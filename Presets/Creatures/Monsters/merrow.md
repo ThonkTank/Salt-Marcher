@@ -5,57 +5,85 @@ size: Large
 type: Monstrosity
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Evil
-ac: "13"
+ac: '13'
 initiative: +2 (12)
-hp: "45"
+hp: '45'
 hitDice: 6d10 + 12
 speeds:
-  - type: walk
-    value: "10"
-  - type: swim
-    value: "40"
+  walk:
+    distance: 10 ft.
+  swim:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 18
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 15
-  - ability: con
+    saveProf: false
+  - key: con
     score: 15
-  - ability: int
+    saveProf: false
+  - key: int
     score: 8
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 9
-pb: "+2"
-cr: "2"
-xp: "450"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
+passivesList:
+  - skill: Perception
+    value: '10'
 languagesList:
   - value: Abyssal
   - value: Primordial (Aquan)
-passivesList:
-  - skill: Perception
-    value: "10"
+cr: '2'
+xp: '450'
 entries:
   - category: trait
     name: Amphibious
+    entryType: special
     text: The merrow can breathe air and water.
   - category: action
     name: Multiattack
+    entryType: special
     text: The merrow makes two attacks, using Bite, Claw, or Harpoon in any combination.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +6, reach 5 ft. 6 (1d4 + 4) Piercing damage, and the target has the Poisoned condition until the end of the merrow's next turn."
+    entryType: attack
+    text: '*Melee Attack Roll:* +6, reach 5 ft. 6 (1d4 + 4) Piercing damage, and the target has the Poisoned condition until the end of the merrow''s next turn.'
+    attack:
+      type: melee
+      bonus: 6
+      damage:
+        - dice: 1d4
+          bonus: 4
+          type: Piercing
+          average: 6
+      reach: 5 ft.
   - category: action
     name: Claw
-    text: "*Melee Attack Roll:* +6, reach 5 ft. 9 (2d4 + 4) Slashing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +6, reach 5 ft. 9 (2d4 + 4) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 6
+      damage:
+        - dice: 2d4
+          bonus: 4
+          type: Slashing
+          average: 9
+      reach: 5 ft.
   - category: action
     name: Harpoon
-    text: "*Melee or Ranged Attack Roll:* +6, reach 5 ft. or range 20/60 ft. 11 (2d6 + 4) Piercing damage. If the target is a Large or smaller creature, the merrow pulls the target up to 15 feet straight toward itself."
-
+    entryType: special
+    text: '*Melee or Ranged Attack Roll:* +6, reach 5 ft. or range 20/60 ft. 11 (2d6 + 4) Piercing damage. If the target is a Large or smaller creature, the merrow pulls the target up to 15 feet straight toward itself.'
 ---
 
 # Merrow
@@ -68,7 +96,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 18 | 15 | 15 | 8 | 10 | 9 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 10
 **Languages** Abyssal, Primordial (Aquan)

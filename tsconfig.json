@@ -6,10 +6,10 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "obsidian": ["tests/mocks/obsidian.ts"],
+      "obsidian": ["devkit/testing/unit/mocks/obsidian.ts"],
       "*": ["./*", "./src/*"]
     },
     "types": ["obsidian", "node"]   // <- wichtig für die Typen
   },
-  "include": ["src", "tests"]
+  "include": ["src", "devkit/testing/unit"]
 }

@@ -3,71 +3,126 @@ smType: creature
 name: Nalfeshnee
 size: Large
 type: Fiend
+typeTags:
+  - value: Demon
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Evil
-ac: "18"
+ac: '18'
 initiative: +5 (15)
-hp: "184"
+hp: '184'
 hitDice: 16d10 + 96
 speeds:
-  - type: walk
-    value: "20"
-  - type: fly
-    value: "30"
+  walk:
+    distance: 20 ft.
+  fly:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 21
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 10
-  - ability: con
+    saveProf: false
+  - key: con
     score: 22
-  - ability: int
+    saveProf: true
+    saveMod: 11
+  - key: int
     score: 19
-  - ability: wis
+    saveProf: true
+    saveMod: 9
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: true
+    saveMod: 6
+  - key: cha
     score: 15
-pb: "+5"
-cr: "13"
-xp: "10000"
+    saveProf: true
+    saveMod: 7
+pb: '+5'
 sensesList:
   - type: truesight
-    range: "120"
-languagesList:
-  - value: Abyssal
-  - type: telepathy
-    range: "120"
+    range: '120'
 passivesList:
   - skill: Perception
-    value: "11"
+    value: '11'
+languagesList:
+  - value: Abyssal
+  - value: telepathy 120 ft.
 damageResistancesList:
   - value: Cold
   - value: Fire
   - value: Lightning
 damageImmunitiesList:
-  - value: Poison
-  - value: Frightened
+  - value: Poison; Frightened
+conditionImmunitiesList:
   - value: Poisoned
+cr: '13'
+xp: '10000'
 entries:
   - category: trait
     name: Demonic Restoration
+    entryType: special
     text: If the nalfeshnee dies outside the Abyss, its body dissolves into ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Abyss.
   - category: trait
     name: Magic Resistance
+    entryType: special
     text: The nalfeshnee has Advantage on saving throws against spells and other magical effects.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The nalfeshnee makes three Rend attacks.
+    multiattack:
+      attacks:
+        - name: Rend
+          count: 3
+      substitutions: []
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +10, reach 10 ft. 16 (2d10 + 5) Slashing damage plus 11 (2d10) Force damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +10, reach 10 ft. 16 (2d10 + 5) Slashing damage plus 11 (2d10) Force damage.'
+    attack:
+      type: melee
+      bonus: 10
+      damage:
+        - dice: 2d10
+          bonus: 5
+          type: Slashing
+          average: 16
+        - dice: 2d10
+          bonus: 0
+          type: Force
+          average: 11
+      reach: 10 ft.
   - category: action
     name: Teleport
+    entryType: special
     text: The nalfeshnee teleports up to 120 feet to an unoccupied space it can see.
   - category: bonus
     name: Horror Nimbus (Recharge 5-6)
-    text: "*Wisdom Saving Throw*: DC 15, each creature in a 15-foot Emanation originating from the nalfeshnee. *Failure:*  28 (8d6) Psychic damage, and the target has the Frightened condition for 1 minute, until it takes damage, or until it ends its turn with the nalfeshnee out of line of sight. *Success:*  The target is immune to this nalfeshnee's Horror Nimbus for 24 hours."
-
+    entryType: save
+    text: '*Wisdom Saving Throw*: DC 15, each creature in a 15-foot Emanation originating from the nalfeshnee. *Failure:*  28 (8d6) Psychic damage, and the target has the Frightened condition for 1 minute, until it takes damage, or until it ends its turn with the nalfeshnee out of line of sight. *Success:*  The target is immune to this nalfeshnee''s Horror Nimbus for 24 hours.'
+    recharge: 5-6
+    save:
+      ability: wis
+      dc: 15
+      targeting:
+        shape: emanation
+        size: 15 ft.
+        origin: self
+      onFail:
+        effects:
+          conditions:
+            - condition: Frightened
+              duration:
+                type: until
+                trigger: it takes damage
+        damage:
+          - dice: 8d6
+            bonus: 0
+            type: Psychic
+            average: 28
+      onSuccess: The target is immune to this nalfeshnee's Horror Nimbus for 24 hours.
 ---
 
 # Nalfeshnee
@@ -80,7 +135,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 21 | 10 | 22 | 19 | 12 | 15 |
+| - | - | - | - | - | - |
 
 **Senses** truesight 120 ft.; Passive Perception 11
 **Languages** Abyssal, telepathy 120 ft.

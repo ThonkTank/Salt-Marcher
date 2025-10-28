@@ -2,13 +2,14 @@
 // Repeating field renderer (entry lists with add/remove/reorder OR template-based lists)
 
 import { Setting } from "obsidian";
-import type { FieldRegistryEntry, CompositeFieldSpec, AnyFieldSpec } from "../../types";
+import type { FieldRegistryEntry, CompositeFieldSpec, AnyFieldSpec, FieldRenderHandle } from "../../types";
 import { createValidationControls } from "../modal/modal-utils";
 import { resolveInitialValue, renderFieldControl } from "./field-utils";
 import { RepeatingWidthSynchronizer } from "../layout/repeating-width-sync";
 import { mountEntryManager, type EntryCategoryDefinition, type EntryFilterDefinition } from "../storage/entry-system";
 import { renderRepeatingEntryManagerCore } from "./field-rendering-core";
 import { logger } from "../../../app/plugin-logger";
+import { debugLogger } from "../../../app/debug-logger";
 
 export const repeatingFieldRenderer: FieldRegistryEntry = {
   supports: (spec) => spec.type === "repeating",
@@ -49,11 +50,15 @@ export const repeatingFieldRenderer: FieldRegistryEntry = {
 
       const fieldTemplate = config.fields!; // Template: defined once
 
+      // Track field handles for each entry (needed for auto-initialization)
+      const fieldHandles = new Map<string, FieldRenderHandle>();
+
       // Helper to update computed fields and visibility for an entry
       const updateEntryFields = (
         entryContainer: HTMLElement,
         entry: Record<string, unknown>,
-        template: AnyFieldSpec[]
+        template: AnyFieldSpec[],
+        allFormData: Record<string, unknown>
       ) => {
         const fieldWrappers = entryContainer.querySelectorAll<HTMLElement>(
           '.sm-cc-repeating-field'
@@ -63,9 +68,46 @@ export const repeatingFieldRenderer: FieldRegistryEntry = {
           const fieldSpec = template[index];
           if (!fieldSpec) return;
 
-          // Update visibility
+          // Track visibility change to detect when field becomes visible
+          const wasVisible = !wrapper.hasClass("is-hidden");
           const isVisible = !fieldSpec.visibleIf || fieldSpec.visibleIf(entry);
           wrapper.toggleClass("is-hidden", !isVisible);
+
+          debugLogger.logField(fieldSpec.id, "visibility", "Field visibility check", {
+            wasVisible,
+            isVisible,
+            currentValue: entry[fieldSpec.id]
+          });
+
+          // Auto-initialize field when it becomes visible for the first time
+          if (!wasVisible && isVisible && entry[fieldSpec.id] === undefined) {
+            debugLogger.logField(fieldSpec.id, "init", "Field became visible, checking init function");
+            const initConfig = (fieldSpec.config as any)?.init;
+            if (initConfig && typeof initConfig === "function") {
+              try {
+                debugLogger.logField(fieldSpec.id, "init", "Calling init function", entry);
+                const initValue = initConfig(entry, allFormData);
+                debugLogger.logField(fieldSpec.id, "init", "Init function returned", { initValue });
+                entry[fieldSpec.id] = initValue;
+
+                // Update the field control using its handle
+                const handleKey = `${wrapper.closest('.sm-cc-repeating-item')?.getAttribute('data-entry-index')}-${fieldSpec.id}`;
+                debugLogger.logField(fieldSpec.id, "init", "Looking for handle", { handleKey });
+                const handle = fieldHandles.get(handleKey);
+                if (handle?.update) {
+                  debugLogger.logField(fieldSpec.id, "init", "Found handle, calling update()", { initValue });
+                  handle.update(initValue, entry);
+                } else {
+                  debugLogger.logField(fieldSpec.id, "init", "No handle found - WARNING", { handleKey });
+                  logger.warn(`[updateEntryFields] No handle found for key: "${handleKey}"`);
+                }
+              } catch (error) {
+                logger.error(`Failed to initialize ${fieldSpec.id}:`, error);
+              }
+            } else {
+              debugLogger.logField(fieldSpec.id, "init", "No init function configured");
+            }
+          }
 
           // Update computed fields (display type)
           if (fieldSpec.type === "display") {
@@ -73,12 +115,12 @@ export const repeatingFieldRenderer: FieldRegistryEntry = {
             const displayEl = wrapper.querySelector<HTMLInputElement>('.sm-cc-display-field');
             if (displayEl && displaySpec.config?.compute) {
               try {
-                const computed = displaySpec.config.compute(entry);
+                const computed = displaySpec.config.compute(entry, allFormData);
                 const prefix = typeof displaySpec.config.prefix === "function"
-                  ? displaySpec.config.prefix(entry)
+                  ? displaySpec.config.prefix(entry, allFormData)
                   : (displaySpec.config.prefix ?? "");
                 const suffix = typeof displaySpec.config.suffix === "function"
-                  ? displaySpec.config.suffix(entry)
+                  ? displaySpec.config.suffix(entry, allFormData)
                   : (displaySpec.config.suffix ?? "");
                 displayEl.value = `${prefix}${computed}${suffix}`;
               } catch (error) {
@@ -115,7 +157,7 @@ export const repeatingFieldRenderer: FieldRegistryEntry = {
             const initConfig = (fieldSpec.config as any)?.init;
             if (initConfig && typeof initConfig === "function") {
               try {
-                entry[fieldSpec.id] = initConfig(entry);
+                entry[fieldSpec.id] = initConfig(entry, values);
               } catch (error) {
                 logger.error(`Failed to initialize ${fieldSpec.id}:`, error);
               }
@@ -135,9 +177,14 @@ export const repeatingFieldRenderer: FieldRegistryEntry = {
               onChange(spec.id, [...entries]);
 
               // Update computed fields and visibility
-              updateEntryFields(entryContainer, entry, fieldTemplate);
-            }
+              updateEntryFields(entryContainer, entry, fieldTemplate, values);
+            },
+            values  // Pass formData so nested fields can access it
           );
+
+          // Store the handle for later use in updateEntryFields
+          const handleKey = `${entryIndex}-${fieldSpec.id}`;
+          fieldHandles.set(handleKey, fieldHandle);
         });
       });
 
@@ -151,7 +198,7 @@ export const repeatingFieldRenderer: FieldRegistryEntry = {
       entries.forEach((entry, entryIndex) => {
         const entryContainer = listContainer.children[entryIndex] as HTMLElement;
         if (entryContainer) {
-          updateEntryFields(entryContainer, entry, fieldTemplate);
+          updateEntryFields(entryContainer, entry, fieldTemplate, values);
         }
       });
 

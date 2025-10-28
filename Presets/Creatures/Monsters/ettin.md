@@ -5,55 +5,97 @@ size: Large
 type: Giant
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Evil
-ac: "12"
-initiative: "-1 (9)"
-hp: "85"
+ac: '12'
+initiative: '-1 (9)'
+hp: '85'
 hitDice: 10d10 + 30
 speeds:
-  - type: walk
-    value: "40"
+  walk:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 21
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 8
-  - ability: con
+    saveProf: false
+  - key: con
     score: 17
-  - ability: int
+    saveProf: false
+  - key: int
     score: 6
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 8
-pb: "+2"
-cr: "4"
-xp: "1100"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '4'
 sensesList:
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Giant
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "14"
-damageImmunitiesList:
+    value: '14'
+languagesList:
+  - value: Giant
+conditionImmunitiesList:
   - value: Blinded
   - value: Charmed
   - value: Deafened
   - value: Frightened
   - value: Stunned
   - value: Unconscious
+cr: '4'
+xp: '1100'
 entries:
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The ettin makes one Battleaxe attack and one Morningstar attack.
+    multiattack:
+      attacks:
+        - name: Battleaxe
+          count: 1
+        - name: Morningstar
+          count: 1
+      substitutions: []
   - category: action
     name: Battleaxe
-    text: "*Melee Attack Roll:* +7, reach 5 ft. 14 (2d8 + 5) Slashing damage. If the target is a Large or smaller creature, it has the Prone condition."
+    entryType: attack
+    text: '*Melee Attack Roll:* +7, reach 5 ft. 14 (2d8 + 5) Slashing damage. If the target is a Large or smaller creature, it has the Prone condition.'
+    attack:
+      type: melee
+      bonus: 7
+      damage:
+        - dice: 2d8
+          bonus: 5
+          type: Slashing
+          average: 14
+      reach: 5 ft.
+      onHit:
+        conditions:
+          - condition: Prone
+            restrictions:
+              size: Large or smaller
+      additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
   - category: action
     name: Morningstar
-    text: "*Melee Attack Roll:* +7, reach 5 ft. 14 (2d8 + 5) Piercing damage, and the target has Disadvantage on the next attack roll it makes before the end of its next turn."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +7, reach 5 ft. 14 (2d8 + 5) Piercing damage, and the target has Disadvantage on the next attack roll it makes before the end of its next turn.'
+    attack:
+      type: melee
+      bonus: 7
+      damage:
+        - dice: 2d8
+          bonus: 5
+          type: Piercing
+          average: 14
+      reach: 5 ft.
 ---
 
 # Ettin
@@ -66,7 +108,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 21 | 8 | 17 | 6 | 10 | 8 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 14
 **Languages** Giant

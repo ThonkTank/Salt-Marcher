@@ -3,51 +3,84 @@ smType: creature
 name: Bugbear Warrior
 size: Medium
 type: Fey
+typeTags:
+  - value: Goblinoid
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Evil
-ac: "14"
+ac: '14'
 initiative: +2 (12)
-hp: "33"
+hp: '33'
 hitDice: 6d8 + 6
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 15
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 13
-  - ability: int
+    saveProf: false
+  - key: int
     score: 8
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 11
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 9
-pb: "+2"
-cr: "1"
-xp: "200"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Stealth
+    value: '6'
+  - skill: Survival
+    value: '2'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
+passivesList:
+  - skill: Perception
+    value: '10'
 languagesList:
   - value: Common
   - value: Goblin
-passivesList:
-  - skill: Perception
-    value: "10"
+cr: '1'
+xp: '200'
 entries:
   - category: trait
     name: Abduct
+    entryType: special
     text: The bugbear needn't spend extra movement to move a creature it is grappling.
   - category: action
     name: Grab
-    text: "*Melee Attack Roll:* +4, reach 10 ft. 9 (2d6 + 2) Bludgeoning damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12)."
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 10 ft. 9 (2d6 + 2) Bludgeoning damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12).'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 2d6
+          bonus: 2
+          type: Bludgeoning
+          average: 9
+      reach: 10 ft.
+      onHit:
+        conditions:
+          - condition: Grappled
+            escape:
+              type: dc
+              dc: 12
+            restrictions:
+              size: Medium or smaller
+      additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12).
   - category: action
     name: Light Hammer
-    text: "*Melee or Ranged Attack Roll:* +4 (with Advantage if the target is Grappled by the bugbear), reach 10 ft. or range 20/60 ft. 9 (3d4 + 2) Bludgeoning damage."
-
+    entryType: special
+    text: '*Melee or Ranged Attack Roll:* +4 (with Advantage if the target is Grappled by the bugbear), reach 10 ft. or range 20/60 ft. 9 (3d4 + 2) Bludgeoning damage.'
 ---
 
 # Bugbear Warrior
@@ -60,7 +93,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 15 | 14 | 13 | 8 | 11 | 9 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 10
 **Languages** Common, Goblin

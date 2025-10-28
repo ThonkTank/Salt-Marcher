@@ -37,9 +37,11 @@ export const tokenFieldRenderer: FieldRegistryEntry = {
 
     // Initialize token values
     const currentValue = values[spec.id];
+    logger.log(`[TokenRenderer] Field "${spec.id}" currentValue type: ${typeof currentValue}, isArray: ${Array.isArray(currentValue)}, value:`, JSON.stringify(currentValue, null, 2));
     const tokenValues: Array<Record<string, unknown>> = Array.isArray(currentValue)
       ? currentValue as Array<Record<string, unknown>>
       : (Array.isArray(spec.default) ? spec.default as Array<Record<string, unknown>> : []);
+    logger.log(`[TokenRenderer] Field "${spec.id}" tokenValues:`, JSON.stringify(tokenValues, null, 2));
 
     // Prepare options for modular token renderer
     const coreOptions: ModularTokenFieldCoreOptions = {

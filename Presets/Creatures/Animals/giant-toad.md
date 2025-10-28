@@ -4,51 +4,83 @@ name: Giant Toad
 size: Large
 type: Beast
 alignmentOverride: Unaligned
-ac: "11"
+ac: '11'
 initiative: +1 (11)
-hp: "39"
+hp: '39'
 hitDice: 6d10 + 6
 speeds:
-  - type: walk
-    value: "30"
-  - type: swim
-    value: "30"
+  walk:
+    distance: 30 ft.
+  swim:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 15
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 13
-  - ability: con
+    saveProf: false
+  - key: con
     score: 13
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 3
-pb: "+2"
-cr: "1"
-xp: "200"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+cr: '1'
+xp: '200'
 entries:
   - category: trait
     name: Amphibious
+    entryType: special
     text: The toad can breathe air and water.
   - category: trait
     name: Standing Leap
+    entryType: special
     text: The toad's Long Jump is up to 20 feet and its High Jump is up to 10 feet with or without a running start.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 5 (1d6 + 2) Piercing damage plus 5 (2d4) Poison damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12)."
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 5 (1d6 + 2) Piercing damage plus 5 (2d4) Poison damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12).'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d6
+          bonus: 2
+          type: Piercing
+          average: 5
+        - dice: 2d4
+          bonus: 0
+          type: Poison
+          average: 5
+      reach: 5 ft.
+      onHit:
+        conditions:
+          - condition: Grappled
+            escape:
+              type: dc
+              dc: 12
+            restrictions:
+              size: Medium or smaller
+        other: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12).
+      additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12).
   - category: action
     name: Swallow
+    entryType: special
     text: The toad swallows a Medium or smaller target it is grappling. While swallowed, the target isn't Grappled but has the Blinded and Restrained conditions, and it has Cover|XPHB|Total Cover against attacks and other effects outside the toad. In addition, the target takes 10 (3d6) Acid damage at the end of each of the toad's turns. The toad can have only one target swallowed at a time, and it can't use Bite while it has a swallowed target. If the toad dies, a swallowed creature is no longer Restrained and can escape from the corpse using 5 feet of movement, exiting with the Prone condition.
-
 ---
 
 # Giant Toad
@@ -61,7 +93,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 15 | 13 | 13 | 2 | 10 | 3 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 10
 CR 1, PB +2, XP 200

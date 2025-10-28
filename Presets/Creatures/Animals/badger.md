@@ -4,44 +4,58 @@ name: Badger
 size: Small
 type: Beast
 alignmentOverride: Unaligned
-ac: "11"
+ac: '11'
 initiative: +0 (10)
-hp: "5"
+hp: '5'
 hitDice: 1d4 + 3
 speeds:
-  - type: walk
-    value: "20"
-  - type: burrow
-    value: "5"
+  walk:
+    distance: 20 ft.
+  burrow:
+    distance: 5 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 10
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 11
-  - ability: con
+    saveProf: false
+  - key: con
     score: 16
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 5
-pb: "+2"
-cr: "0"
-xp: "0"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '3'
 sensesList:
   - type: darkvision
-    range: "30"
+    range: '30'
 passivesList:
   - skill: Perception
-    value: "13"
+    value: '13'
 damageResistancesList:
   - value: Poison
+cr: '0'
+xp: '0'
 entries:
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +2, reach 5 ft. 1 Piercing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +2, reach 5 ft. 1 Piercing damage.'
+    attack:
+      type: melee
+      bonus: 2
+      damage: []
+      reach: 5 ft.
 ---
 
 # Badger
@@ -54,7 +68,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 10 | 11 | 16 | 2 | 12 | 5 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 30 ft.; Passive Perception 13
 CR 0, PB +2, XP 0

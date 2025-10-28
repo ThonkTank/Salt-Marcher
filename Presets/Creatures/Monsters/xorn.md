@@ -5,66 +5,107 @@ size: Medium
 type: Elemental
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Neutral
-ac: "19"
+ac: '19'
 initiative: +0 (10)
-hp: "84"
+hp: '84'
 hitDice: 8d8 + 48
 speeds:
-  - type: walk
-    value: "20"
-  - type: burrow
-    value: "20"
+  walk:
+    distance: 20 ft.
+  burrow:
+    distance: 20 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 17
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 10
-  - ability: con
+    saveProf: false
+  - key: con
     score: 22
-  - ability: int
+    saveProf: false
+  - key: int
     score: 11
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 11
-pb: "+3"
-cr: "5"
-xp: "1800"
+    saveProf: false
+pb: '+3'
+skills:
+  - skill: Perception
+    value: '6'
+  - skill: Stealth
+    value: '6'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
   - type: tremorsense
-    range: "60"
-languagesList:
-  - value: Primordial (Terran)
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "16"
+    value: '16'
+languagesList:
+  - value: Primordial (Terran)
 damageImmunitiesList:
-  - value: Poison
-  - value: Paralyzed
+  - value: Poison; Paralyzed
+conditionImmunitiesList:
   - value: Petrified
   - value: Poisoned
+cr: '5'
+xp: '1800'
 entries:
   - category: trait
     name: Earth Glide
+    entryType: special
     text: The xorn can burrow through nonmagical, unworked earth and stone. While doing so, the xorn doesn't disturb the material it moves through.
   - category: trait
     name: Treasure Sense
+    entryType: special
     text: The xorn can pinpoint the location of precious metals and stones within 60 feet of itself.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The xorn makes one Bite attack and three Claw attacks.
+    multiattack:
+      attacks:
+        - name: Bite
+          count: 1
+        - name: Claw
+          count: 3
+      substitutions: []
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +6, reach 5 ft. 17 (4d6 + 3) Piercing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +6, reach 5 ft. 17 (4d6 + 3) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 6
+      damage:
+        - dice: 4d6
+          bonus: 3
+          type: Piercing
+          average: 17
+      reach: 5 ft.
   - category: action
     name: Claw
-    text: "*Melee Attack Roll:* +6, reach 5 ft. 8 (1d10 + 3) Slashing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +6, reach 5 ft. 8 (1d10 + 3) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 6
+      damage:
+        - dice: 1d10
+          bonus: 3
+          type: Slashing
+          average: 8
+      reach: 5 ft.
   - category: bonus
     name: Charge
+    entryType: special
     text: The xorn moves up to its Speed or Burrow Speed straight toward an enemy it can sense.
-
 ---
 
 # Xorn
@@ -77,7 +118,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 17 | 10 | 22 | 11 | 10 | 11 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft., tremorsense 60 ft.; Passive Perception 16
 **Languages** Primordial (Terran)

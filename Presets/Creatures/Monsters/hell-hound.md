@@ -5,53 +5,102 @@ size: Medium
 type: Fiend
 alignmentLawChaos: Lawful
 alignmentGoodEvil: Evil
-ac: "15"
+ac: '15'
 initiative: +1 (11)
-hp: "58"
+hp: '58'
 hitDice: 9d8 + 18
 speeds:
-  - type: walk
-    value: "50"
+  walk:
+    distance: 50 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 17
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 12
-  - ability: con
+    saveProf: false
+  - key: con
     score: 14
-  - ability: int
+    saveProf: false
+  - key: int
     score: 6
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 13
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 6
-pb: "+2"
-cr: "3"
-xp: "700"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '5'
 sensesList:
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Understands Infernal but can't speak
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "15"
+    value: '15'
+languagesList:
+  - value: Understands Infernal but can't speak
 damageImmunitiesList:
   - value: Fire
+cr: '3'
+xp: '700'
 entries:
   - category: trait
     name: Pack Tactics
+    entryType: special
     text: The hound has Advantage on an attack roll against a creature if at least one of the hound's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The hound makes two Bite attacks.
+    multiattack:
+      attacks:
+        - name: Bite
+          count: 2
+      substitutions: []
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 7 (1d8 + 3) Piercing damage plus 3 (1d6) Fire damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 7 (1d8 + 3) Piercing damage plus 3 (1d6) Fire damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d8
+          bonus: 3
+          type: Piercing
+          average: 7
+        - dice: 1d6
+          bonus: 0
+          type: Fire
+          average: 3
+      reach: 5 ft.
   - category: action
     name: Fire Breath (Recharge 5-6)
-    text: "*Dexterity Saving Throw*: DC 12, each creature in a 15-foot Cone. *Failure:*  17 (5d6) Fire damage. *Success:*  Half damage."
-
+    entryType: save
+    text: '*Dexterity Saving Throw*: DC 12, each creature in a 15-foot Cone. *Failure:*  17 (5d6) Fire damage. *Success:*  Half damage.'
+    recharge: 5-6
+    save:
+      ability: dex
+      dc: 12
+      targeting:
+        shape: cone
+        size: 15 ft.
+      onFail:
+        effects:
+          other: 17 (5d6) Fire damage.
+        damage:
+          - dice: 5d6
+            bonus: 0
+            type: Fire
+            average: 17
+        legacyEffects: 17 (5d6) Fire damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
 ---
 
 # Hell Hound
@@ -64,7 +113,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 17 | 12 | 14 | 6 | 13 | 6 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 15
 **Languages** Understands Infernal but can't speak

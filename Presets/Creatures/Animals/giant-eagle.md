@@ -5,48 +5,78 @@ size: Large
 type: Celestial
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Good
-ac: "13"
+ac: '13'
 initiative: +3 (13)
-hp: "26"
+hp: '26'
 hitDice: 4d10 + 4
 speeds:
-  - type: walk
-    value: "10"
-  - type: fly
-    value: "80"
+  walk:
+    distance: 10 ft.
+  fly:
+    distance: 80 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 16
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 17
-  - ability: con
+    saveProf: false
+  - key: con
     score: 13
-  - ability: int
+    saveProf: false
+  - key: int
     score: 8
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 14
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 10
-pb: "+2"
-cr: "1"
-xp: "200"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '6'
+passivesList:
+  - skill: Perception
+    value: '16'
 languagesList:
   - value: Celestial
   - value: understands Common and Primordial (Auran) but can't speak them
-passivesList:
-  - skill: Perception
-    value: "16"
 damageResistancesList:
   - value: Necrotic
   - value: Radiant
+cr: '1'
+xp: '200'
 entries:
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The eagle makes two Rend attacks.
+    multiattack:
+      attacks:
+        - name: Rend
+          count: 2
+        - name: Rend
+          count: 2
+      substitutions: []
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 5 (1d4 + 3) Slashing damage plus 3 (1d6) Radiant damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 5 (1d4 + 3) Slashing damage plus 3 (1d6) Radiant damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d4
+          bonus: 3
+          type: Slashing
+          average: 5
+        - dice: 1d6
+          bonus: 0
+          type: Radiant
+          average: 3
+      reach: 5 ft.
 ---
 
 # Giant Eagle
@@ -59,7 +89,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 16 | 17 | 13 | 8 | 14 | 10 |
+| - | - | - | - | - | - |
 
 **Languages** Celestial, understands Common and Primordial (Auran) but can't speak them
 CR 1, PB +2, XP 200

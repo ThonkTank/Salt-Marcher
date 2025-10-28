@@ -4,45 +4,66 @@ name: Giant Seahorse
 size: Large
 type: Beast
 alignmentOverride: Unaligned
-ac: "14"
+ac: '14'
 initiative: +1 (11)
-hp: "16"
+hp: '16'
 hitDice: 3d10
 speeds:
-  - type: walk
-    value: "5"
-  - type: swim
-    value: "40"
+  walk:
+    distance: 5 ft.
+  swim:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 15
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 12
-  - ability: con
+    saveProf: false
+  - key: con
     score: 11
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 5
-pb: "+2"
-cr: 1/2
-xp: "100"
+    saveProf: false
+pb: '+2'
 passivesList:
   - skill: Perception
-    value: "11"
+    value: '11'
+cr: 1/2
+xp: '100'
 entries:
   - category: trait
     name: Water Breathing
+    entryType: special
     text: The seahorse can breathe only underwater.
   - category: action
     name: Ram
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 9 (2d6 + 2) Bludgeoning damage, or 11 (2d8 + 2) Bludgeoning damage if the seahorse moved 20+ feet straight toward the target immediately before the hit."
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 9 (2d6 + 2) Bludgeoning damage, or 11 (2d8 + 2) Bludgeoning damage if the seahorse moved 20+ feet straight toward the target immediately before the hit.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 2d6
+          bonus: 2
+          type: Bludgeoning
+          average: 9
+        - dice: 2d8
+          bonus: 2
+          type: Bludgeoning
+          average: 11
+      reach: 5 ft.
   - category: bonus
     name: Bubble Dash
+    entryType: special
     text: While underwater, the seahorse moves up to half its Swim Speed without provoking Opportunity Attacks.
-
 ---
 
 # Giant Seahorse
@@ -55,7 +76,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 15 | 12 | 11 | 2 | 12 | 5 |
+| - | - | - | - | - | - |
 
 CR 1/2, PB +2, XP 100
 

@@ -18,8 +18,8 @@ export class EncounterView extends ItemView {
     }
 
     getViewType() { return VIEW_ENCOUNTER; }
-    getDisplayText() { return "Encounter"; }
-    getIcon() { return "swords" as any; }
+    getDisplayText() { return "Calculator"; }
+    getIcon() { return "calculator" as any; }
 
     async onOpen() {
         const workspaceView = new EncounterWorkspaceView(this.app, this.contentEl);
@@ -62,7 +62,7 @@ export class EncounterView extends ItemView {
     }
 }
 
-/** Opens the encounter calculator in the centre workspace pane. */
+/** Opens the calculator in the centre workspace pane. */
 export async function openEncounter(app: App): Promise<void> {
     const leaf = getCenterLeaf(app);
     await leaf.setViewState({ type: VIEW_ENCOUNTER, active: true });

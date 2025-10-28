@@ -5,43 +5,54 @@ size: Small
 type: Plant
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Neutral
-ac: "9"
-initiative: "-1 (9)"
-hp: "10"
+ac: '9'
+initiative: '-1 (9)'
+hp: '10'
 hitDice: 3d6
 speeds:
-  - type: walk
-    value: "20"
+  walk:
+    distance: 20 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 3
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 8
-  - ability: con
+    saveProf: false
+  - key: con
     score: 11
-  - ability: int
+    saveProf: false
+  - key: int
     score: 10
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 6
-pb: "+2"
-cr: "0"
-xp: "0"
-languagesList:
-  - value: Common plus one other language
+    saveProf: false
+pb: '+2'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+languagesList:
+  - value: Common plus one other language
 damageVulnerabilitiesList:
   - value: Fire
 damageResistancesList:
   - value: Piercing
+cr: '0'
+xp: '0'
 entries:
   - category: action
     name: Rake
-    text: "*Melee Attack Roll:* +1, reach 5 ft. 1 Slashing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +1, reach 5 ft. 1 Slashing damage.'
+    attack:
+      type: melee
+      bonus: 1
+      damage: []
+      reach: 5 ft.
 ---
 
 # Awakened Shrub
@@ -54,7 +65,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 3 | 8 | 11 | 10 | 10 | 6 |
+| - | - | - | - | - | - |
 
 **Languages** Common plus one other language
 CR 0, PB +2, XP 0

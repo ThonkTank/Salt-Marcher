@@ -5,65 +5,85 @@ size: Medium
 type: Undead
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Evil
-ac: "12"
+ac: '12'
 initiative: +2 (12)
-hp: "49"
+hp: '49'
 hitDice: 11d8
 speeds:
-  - type: walk
-    value: "30"
-  - type: climb
-    value: "30"
+  walk:
+    distance: 30 ft.
+  climb:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 14
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 11
-  - ability: int
+    saveProf: false
+  - key: int
     score: 5
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 4
-pb: "+2"
-cr: "3"
-xp: "700"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: blindsight
-    range: "30"
-languagesList:
-  - value: Understands Common but can't speak
+    range: '30'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+languagesList:
+  - value: Understands Common but can't speak
 damageResistancesList:
   - value: Bludgeoning
   - value: Piercing
   - value: Slashing
 damageImmunitiesList:
   - value: Necrotic
-  - value: Poison
-  - value: Charmed
+  - value: Poison; Charmed
   - value: Exhaustion
+  - value: Incapacitated
+conditionImmunitiesList:
   - value: Frightened
   - value: Grappled
-  - value: Incapacitated
   - value: Paralyzed
   - value: Petrified
   - value: Poisoned
   - value: Prone
   - value: Restrained
   - value: Stunned
+cr: '3'
+xp: '700'
 entries:
   - category: trait
     name: Swarm
+    entryType: special
     text: The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny creature. The swarm can't regain Hit Points or gain Temporary Hit Points.
   - category: action
     name: Swarm of Grasping Hands
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 20 (4d8 + 2) Necrotic damage, or 11 (2d8 + 2) Necrotic damage if the swarm is Bloodied. If the target is a Medium or smaller creature, it has the Prone condition."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 20 (4d8 + 2) Necrotic damage, or 11 (2d8 + 2) Necrotic damage if the swarm is Bloodied. If the target is a Medium or smaller creature, it has the Prone condition.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 4d8
+          bonus: 2
+          type: Necrotic
+          average: 20
+        - dice: 2d8
+          bonus: 2
+          type: Necrotic
+          average: 11
+      reach: 5 ft.
 ---
 
 # Swarm of Crawling Claws
@@ -76,7 +96,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 14 | 14 | 11 | 5 | 10 | 4 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 30 ft.; Passive Perception 10
 **Languages** Understands Common but can't speak

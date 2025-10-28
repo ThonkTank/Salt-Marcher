@@ -5,69 +5,99 @@ size: Medium
 type: Construct
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Neutral
-ac: "9"
-initiative: "-1 (9)"
-hp: "127"
+ac: '9'
+initiative: '-1 (9)'
+hp: '127'
 hitDice: 15d8 + 60
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 19
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 9
-  - ability: con
+    saveProf: false
+  - key: con
     score: 18
-  - ability: int
+    saveProf: false
+  - key: int
     score: 6
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 5
-pb: "+3"
-cr: "5"
-xp: "1800"
+    saveProf: false
+pb: '+3'
 sensesList:
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Understands Common plus one other language but can't speak
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+languagesList:
+  - value: Understands Common plus one other language but can't speak
 damageImmunitiesList:
   - value: Lightning
-  - value: Poison
-  - value: Charmed
+  - value: Poison; Charmed
   - value: Exhaustion
+conditionImmunitiesList:
   - value: Frightened
   - value: Paralyzed
   - value: Petrified
   - value: Poisoned
+cr: '5'
+xp: '1800'
 entries:
   - category: trait
     name: Aversion to Fire
+    entryType: special
     text: If the golem takes Fire damage, it has Disadvantage on attack rolls and ability checks until the end of its next turn.
   - category: trait
     name: Berserk
+    entryType: special
     text: Whenever the golem starts its turn Bloodied, roll 1d6. On a 6, the golem goes berserk. On each of its turns while berserk, the golem attacks the nearest creature it can see. If no creature is near enough to move to and attack, the golem attacks an object. Once the golem goes berserk, it remains so until it is destroyed or it is no longer Bloodied. The golem's creator, if within 60 feet of the berserk golem, can try to calm it by taking an action to make a DC 15 Charisma (Persuasion) check; the golem must be able to hear its creator. If this check succeeds, the golem ceases being berserk until the start of its next turn, at which point it resumes rolling for the Berserk trait again if it is still Bloodied.
   - category: trait
     name: Immutable Form
+    entryType: special
     text: The golem can't shape-shift.
   - category: trait
     name: Lightning Absorption
+    entryType: special
     text: Whenever the golem is subjected to Lightning damage, it regains a number of Hit Points equal to the Lightning damage dealt.
   - category: trait
     name: Magic Resistance
+    entryType: special
     text: The golem has Advantage on saving throws against spells and other magical effects.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The golem makes two Slam attacks.
+    multiattack:
+      attacks:
+        - name: Slam
+          count: 2
+      substitutions: []
   - category: action
     name: Slam
-    text: "*Melee Attack Roll:* +7, reach 5 ft. 13 (2d8 + 4) Bludgeoning damage plus 4 (1d8) Lightning damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +7, reach 5 ft. 13 (2d8 + 4) Bludgeoning damage plus 4 (1d8) Lightning damage.'
+    attack:
+      type: melee
+      bonus: 7
+      damage:
+        - dice: 2d8
+          bonus: 4
+          type: Bludgeoning
+          average: 13
+        - dice: 1d8
+          bonus: 0
+          type: Lightning
+          average: 4
+      reach: 5 ft.
 ---
 
 # Flesh Golem
@@ -80,7 +110,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 19 | 9 | 18 | 6 | 10 | 5 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 10
 **Languages** Understands Common plus one other language but can't speak

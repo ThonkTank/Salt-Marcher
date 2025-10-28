@@ -3,77 +3,216 @@ smType: creature
 name: Ancient Brass Dragon
 size: Gargantuan
 type: Dragon
+typeTags:
+  - value: Metallic
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Good
-ac: "20"
+ac: '20'
 initiative: +4 (14)
-hp: "332"
+hp: '332'
 hitDice: 19d20 + 133
 speeds:
-  - type: walk
-    value: "40"
-  - type: burrow
-    value: "40"
-  - type: fly
-    value: "80"
+  walk:
+    distance: 40 ft.
+  burrow:
+    distance: 40 ft.
+  fly:
+    distance: 80 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 27
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 10
-  - ability: con
+    saveProf: true
+    saveMod: 6
+  - key: con
     score: 25
-  - ability: int
+    saveProf: false
+  - key: int
     score: 16
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 15
-  - ability: cha
+    saveProf: true
+    saveMod: 8
+  - key: cha
     score: 22
-pb: "+6"
-cr: "20"
-xp: "25000"
+    saveProf: false
+pb: '+6'
+skills:
+  - skill: History
+    value: '9'
+  - skill: Perception
+    value: '14'
+  - skill: Persuasion
+    value: '12'
+  - skill: Stealth
+    value: '6'
 sensesList:
   - type: blindsight
-    range: "60"
+    range: '60'
   - type: darkvision
-    range: "120"
+    range: '120'
+passivesList:
+  - skill: Perception
+    value: '24'
 languagesList:
   - value: Common
   - value: Draconic
-passivesList:
-  - skill: Perception
-    value: "24"
 damageImmunitiesList:
   - value: Fire
+cr: '20'
+xp: '25000'
 entries:
   - category: trait
     name: Legendary Resistance (4/Day, or 5/Day in Lair)
+    entryType: special
     text: If the dragon fails a saving throw, it can choose to succeed instead.
+    limitedUse:
+      count: 4
+      reset: day
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The dragon makes three Rend attacks. It can replace one attack with a use of (A) Sleep Breath or (B) Spellcasting to cast *Scorching Ray* (level 3 version).
+    multiattack:
+      attacks:
+        - name: Rend
+          count: 3
+      substitutions:
+        - replace: attack
+          with:
+            type: spellcasting
+            spell: Scorching Ray
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +14, reach 15 ft. 19 (2d10 + 8) Slashing damage plus 7 (2d6) Fire damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +14, reach 15 ft. 19 (2d10 + 8) Slashing damage plus 7 (2d6) Fire damage.'
+    attack:
+      type: melee
+      bonus: 14
+      damage:
+        - dice: 2d10
+          bonus: 8
+          type: Slashing
+          average: 19
+        - dice: 2d6
+          bonus: 0
+          type: Fire
+          average: 7
+      reach: 15 ft.
   - category: action
     name: Fire Breath (Recharge 5-6)
-    text: "*Dexterity Saving Throw*: DC 21, each creature in a 90-foot-long, 5-foot-wide Line. *Failure:*  58 (13d8) Fire damage. *Success:*  Half damage."
+    entryType: save
+    text: '*Dexterity Saving Throw*: DC 21, each creature in a 90-foot-long, 5-foot-wide Line. *Failure:*  58 (13d8) Fire damage. *Success:*  Half damage.'
+    recharge: 5-6
+    save:
+      ability: dex
+      dc: 21
+      targeting:
+        shape: line
+        size: 90 ft.
+        width: 5 ft.
+      onFail:
+        effects:
+          other: 58 (13d8) Fire damage.
+        damage:
+          - dice: 13d8
+            bonus: 0
+            type: Fire
+            average: 58
+        legacyEffects: 58 (13d8) Fire damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
   - category: action
     name: Sleep Breath
-    text: "*Constitution Saving Throw*: DC 21, each creature in a 90-foot Cone. *Failure:*  The target has the Incapacitated condition until the end of its next turn, at which point it repeats the save. *Second Failure* The target has the Unconscious condition for 10 minutes. This effect ends for the target if it takes damage or a creature within 5 feet of it takes an action to wake it."
-  - category: action
-    name: Spellcasting
-    text: "The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 20): - **At Will:** *Detect Magic*, *Minor Illusion*, *Scorching Ray*, *Shapechange*, *Speak with Animals* - **1e/Day Each:** *Control Weather*, *Detect Thoughts*"
-  - category: legendary
-    name: Blazing Light
-    text: The dragon uses Spellcasting to cast *Scorching Ray* (level 3 version).
+    entryType: save
+    text: '*Constitution Saving Throw*: DC 21, each creature in a 90-foot Cone. *Failure:*  The target has the Incapacitated condition until the end of its next turn, at which point it repeats the save. *Second Failure* The target has the Unconscious condition for 10 minutes. This effect ends for the target if it takes damage or a creature within 5 feet of it takes an action to wake it.'
+    save:
+      ability: con
+      dc: 21
+      targeting:
+        shape: cone
+        size: 90 ft.
+      onFail:
+        effects:
+          conditions:
+            - condition: Incapacitated
+              duration:
+                type: until
+                trigger: the end of its next turn
+              saveToEnd:
+                timing: custom
+            - condition: Unconscious
+              duration:
+                type: until
+                trigger: the end of its next turn
+              saveToEnd:
+                timing: custom
   - category: legendary
     name: Pounce
+    entryType: multiattack
     text: The dragon moves up to half its Speed, and it makes one Rend attack.
+    multiattack:
+      attacks:
+        - name: Rend
+          count: 1
+      substitutions: []
   - category: legendary
     name: Scorching Sands
-    text: "*Dexterity Saving Throw*: DC 20, one creature the dragon can see within 120 feet. *Failure:*  36 (8d8) Fire damage, and the target's Speed is halved until the end of its next turn. *Failure or Success*:  The dragon can't take this action again until the start of its next turn."
-
+    entryType: save
+    text: '*Dexterity Saving Throw*: DC 20, one creature the dragon can see within 120 feet. *Failure:*  36 (8d8) Fire damage, and the target''s Speed is halved until the end of its next turn. *Failure or Success*:  The dragon can''t take this action again until the start of its next turn.'
+    save:
+      ability: dex
+      dc: 20
+      targeting:
+        type: single
+        range: 120 ft.
+        restrictions:
+          visibility: true
+      onFail:
+        effects:
+          mechanical:
+            - type: penalty
+              modifier: half
+              target: Speed
+              description: Speed is halved
+        damage:
+          - dice: 8d8
+            bonus: 0
+            type: Fire
+            average: 36
+spellcastingEntries:
+  - category: action
+    name: Spellcasting
+    entryType: spellcasting
+    text: 'The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 20): - **At Will:** *Detect Magic*, *Minor Illusion*, *Scorching Ray*, *Shapechange*, *Speak with Animals* - **1e/Day Each:** *Control Weather*, *Detect Thoughts*'
+    spellcasting:
+      ability: cha
+      saveDC: 20
+      excludeComponents:
+        - M
+      spellLists:
+        - frequency: at-will
+          spells:
+            - Detect Magic
+            - Minor Illusion
+            - Scorching Ray
+            - Shapechange
+            - Speak with Animals
+        - frequency: 1/day
+          spells:
+            - Control Weather
+            - Detect Thoughts
+  - category: legendary
+    name: Blazing Light
+    entryType: spellcasting
+    text: The dragon uses Spellcasting to cast *Scorching Ray* (level 3 version).
+    spellcasting:
+      ability: int
+      spellLists: []
 ---
 
 # Ancient Brass Dragon
@@ -86,7 +225,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 27 | 10 | 25 | 16 | 15 | 22 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 60 ft., darkvision 120 ft.; Passive Perception 24
 **Languages** Common, Draconic

@@ -1,0 +1,212 @@
+#!/bin/bash
+# Salt Marcher DevKit - Unified CLI Interface
+# Usage: ./devkit <command> [options]
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEVKIT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"  # devkit/core/cli -> devkit
+PLUGIN_ROOT="$(dirname "$DEVKIT_ROOT")"
+CONFIG_FILE="$PLUGIN_ROOT/.devkitrc.json"
+
+# Color output for better readability
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+# Load config and expand aliases
+expand_alias() {
+    local cmd="$1"
+
+    # Check if config file exists
+    if [ ! -f "$CONFIG_FILE" ]; then
+        echo "$cmd"
+        return
+    fi
+
+    # Try to get alias from config using node
+    local expanded=$(node -e "
+        try {
+            const fs = require('fs');
+            const config = JSON.parse(fs.readFileSync('$CONFIG_FILE', 'utf-8'));
+            const alias = config.aliases['$cmd'];
+            console.log(alias || '$cmd');
+        } catch(e) {
+            console.log('$cmd');
+        }
+    " 2>/dev/null)
+
+    echo "$expanded"
+}
+
+# Show header
+show_header() {
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}  Salt Marcher DevKit v2.0.0${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+}
+
+# Show help
+show_help() {
+    show_header
+    cat << EOF
+
+Usage: ${GREEN}./devkit <command> [options]${NC}
+
+${YELLOW}Setup (First Time):${NC}
+  ${GREEN}source devkit/core/cli/devkit-completion.bash${NC}
+    Enable tab completion for all commands (highly recommended!)
+
+${YELLOW}Core Commands:${NC}
+  test <cmd> [args]     Execute test command or run test suite
+    - run <suite>       Run specific test suite
+    - watch [suite]     Auto-run tests on file changes
+    - generate <type>   Generate test from spec
+    - validate          Validate UI
+  debug <cmd> [args]    Debug and logging utilities
+    - enable [opts]     Enable debug logging
+    - disable           Disable debug logging
+    - logs [n]          Show last n log lines
+    - marker <text>     Add log marker
+    - analyze [file]    Analyze log patterns
+  ui <cmd> [args]       UI interaction and validation
+    - open <type> [nm]  Open entity editor
+    - validate [mode]   Run UI validation
+    - screenshot        Capture modal screenshot
+  migrate <type>        Run data migrations
+
+${YELLOW}Quick Actions:${NC}
+  reload               Reload the plugin
+  logs [n]             Show last n log lines (default: 100)
+  screenshot           Capture current modal
+  validate             Run UI validation
+
+${YELLOW}Common Workflows:${NC}
+
+  # Enable tab completion (first time)
+  source devkit/core/cli/devkit-completion.bash
+  ./devkit <TAB>       # Now use TAB to discover commands!
+
+  # Watch mode development
+  ./devkit test watch  # Auto-run tests on file changes
+
+  # Test creature editor
+  ./devkit test edit-creature
+  ./devkit ui validate
+
+  # Debug an issue
+  ./devkit debug enable --fields "name,hp"
+  ./devkit test edit-creature
+  ./devkit debug logs 200
+
+${YELLOW}Options:${NC}
+  --help, -h           Show this help message
+  --verbose, -v        Verbose output
+  --dry-run            Preview without making changes
+  --force              Skip confirmations
+
+${YELLOW}Examples:${NC}
+  ${GREEN}./devkit reload${NC}
+    Reload the plugin
+
+  ${GREEN}./devkit test watch${NC}
+    Watch mode - auto-run tests on file changes
+
+  ${GREEN}./devkit debug enable --all${NC}
+    Enable comprehensive debug logging
+
+  ${GREEN}./devkit test run integration${NC}
+    Run all integration tests
+
+${YELLOW}Customization:${NC}
+  Create .devkitrc.json for aliases and configuration
+  See devkit/README.md for details
+
+${YELLOW}Documentation:${NC}
+  devkit/README.md - DevKit overview and configuration
+  devkit/core/cli/README.md - CLI architecture and installation
+  docs/TESTING.md - Complete testing guide
+
+EOF
+}
+
+# Execute Node.js CLI
+run_node_cli() {
+    node "$SCRIPT_DIR/devkit.mjs" "$@"
+}
+
+# Main command routing
+main() {
+    if [ $# -eq 0 ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+        show_help
+        exit 0
+    fi
+
+    # Expand alias if it exists
+    local original_cmd="$1"
+    local expanded=$(expand_alias "$1")
+
+    if [ "$expanded" != "$original_cmd" ]; then
+        echo -e "${CYAN}[alias: $original_cmd → $expanded]${NC}"
+        # Split expanded command and add remaining args
+        set -- $expanded "${@:2}"
+    fi
+
+    case "$1" in
+        # Core commands - route to Node.js CLI
+        test|debug|ui|plugin|migrate|data|doctor|workflow|backup|generate|hooks)
+            run_node_cli "$@"
+            ;;
+
+        # Reload command (can be used standalone or with Node.js CLI)
+        reload)
+            if [ "$2" = "watch" ]; then
+                # watch subcommand - route to Node.js CLI
+                run_node_cli "$@"
+            else
+                # Simple reload - shortcut
+                echo -e "${BLUE}Reloading plugin...${NC}"
+                run_node_cli reload
+            fi
+            ;;
+
+        logs)
+            LINES="${2:-100}"
+            echo -e "${BLUE}Fetching last $LINES log lines...${NC}"
+            run_node_cli debug logs "$LINES"
+            ;;
+
+        screenshot)
+            echo -e "${BLUE}Capturing screenshot...${NC}"
+            run_node_cli ui screenshot
+            ;;
+
+        validate)
+            echo -e "${BLUE}Running UI validation...${NC}"
+            run_node_cli ui validate
+            ;;
+
+        # Version info
+        version|--version|-v)
+            show_header
+            echo "Location: $PLUGIN_ROOT"
+            echo "Node: $(node --version)"
+            ;;
+
+        # Commands with hyphens are IPC commands - route to Node.js CLI
+        *-*)
+            run_node_cli "$@"
+            ;;
+
+        # Unknown command
+        *)
+            echo -e "${RED}Error: Unknown command '$1'${NC}"
+            echo "Run './devkit --help' for usage information"
+            exit 1
+            ;;
+    esac
+}
+
+# Run main function with all arguments
+main "$@"

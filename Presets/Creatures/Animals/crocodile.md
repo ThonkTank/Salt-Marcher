@@ -4,42 +4,80 @@ name: Crocodile
 size: Large
 type: Beast
 alignmentOverride: Unaligned
-ac: "12"
+ac: '12'
 initiative: +0 (10)
-hp: "13"
+hp: '13'
 hitDice: 2d10 + 2
 speeds:
-  - type: walk
-    value: "20"
-  - type: swim
-    value: "30"
+  walk:
+    distance: 20 ft.
+  swim:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 15
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 10
-  - ability: con
+    saveProf: false
+  - key: con
     score: 13
-  - ability: int
+    saveProf: true
+    saveMod: 3
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 5
-pb: "+2"
-cr: 1/2
-xp: "100"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Stealth
+    value: '2'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+cr: 1/2
+xp: '100'
 entries:
   - category: trait
     name: Hold Breath
+    entryType: special
     text: The crocodile can hold its breath for 1 hour.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 6 (1d8 + 2) Piercing damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12). While Grappled, the target has the Restrained condition."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 6 (1d8 + 2) Piercing damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12). While Grappled, the target has the Restrained condition.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d8
+          bonus: 2
+          type: Piercing
+          average: 6
+      reach: 5 ft.
+      onHit:
+        conditions:
+          - condition: Grappled
+            escape:
+              type: dc
+              dc: 12
+            restrictions:
+              size: Medium or smaller
+              while: While Grappled, the target has the Restrained condition
+          - condition: Restrained
+            escape:
+              type: dc
+              dc: 12
+            restrictions:
+              size: Medium or smaller
+              while: While Grappled, the target has the Restrained condition
+        other: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12). While Grappled, the target has the Restrained condition.
+      additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12). While Grappled, the target has the Restrained condition.
 ---
 
 # Crocodile
@@ -52,7 +90,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 15 | 10 | 13 | 2 | 10 | 5 |
+| - | - | - | - | - | - |
 
 CR 1/2, PB +2, XP 100
 

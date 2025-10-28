@@ -25,7 +25,7 @@ During the build process:
 npm run build
 ```
 
-1. `scripts/generate-preset-data.mjs` reads all `.md` files from `/Presets/`
+1. `generate-preset-data.mjs` reads all `.md` files from `/Presets/`
 2. File contents are bundled into `preset-data.ts` as string constants
 3. Build output shows counts:
    ```
@@ -142,8 +142,7 @@ const types = await getVaultPresetCategories(app, "creatures", "type");
 ├── Terrains/
 └── Regions/
 
-scripts/
-└── generate-preset-data.mjs   # Build script
+generate-preset-data.mjs       # Build script (root)
 
 src/workmodes/library/
 ├── core/
@@ -297,22 +296,22 @@ The import only happens once (first load). If marker files exist, import is skip
 **To force re-import:**
 ```bash
 # Using CLI (recommended)
-./scripts/obsidian-cli.mjs import-presets creatures --force
+./devkit/core/cli/devkit import-presets creatures --force
 
 # Or delete marker files manually
 rm SaltMarcher/Creatures/.plugin-presets-imported
 # Then reload plugin
-./scripts/obsidian-cli.mjs reload-plugin
+./devkit/core/cli/devkit reload-plugin
 ```
 
 **CLI Import Commands:**
 ```bash
 # Import all categories with force option (delete and recreate)
-./scripts/obsidian-cli.mjs import-presets all --force
+./devkit/core/cli/devkit import-presets all --force
 
 # Import specific category
-./scripts/obsidian-cli.mjs import-presets creatures --force
-./scripts/obsidian-cli.mjs import-presets spells --force
+./devkit/core/cli/devkit import-presets creatures --force
+./devkit/core/cli/devkit import-presets spells --force
 
 # Available categories: creatures, spells, items, equipment, terrains, regions, calendars, all
 ```
@@ -350,7 +349,7 @@ source: "plugin-preset"  # Custom marker
 To add support for a new entity type to the preset system:
 
 1. **Create preset files** in `/Presets/{NewEntityType}/`
-2. **Extend build script** (`scripts/generate-preset-data.mjs`):
+2. **Extend build script** (`generate-preset-data.mjs`):
    ```javascript
    const NEW_PRESETS_DIR = path.join(__dirname, '..', 'Presets', 'NewEntityType');
    const newFiles = getMarkdownFiles(NEW_PRESETS_DIR);

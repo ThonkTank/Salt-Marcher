@@ -5,45 +5,67 @@ size: Small
 type: Humanoid
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Neutral
-ac: "18"
+ac: '18'
 initiative: +4 (14)
-hp: "75"
+hp: '75'
 hitDice: 10d8 + 30
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 18
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 16
-  - ability: int
+    saveProf: false
+  - key: int
     score: 12
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 14
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 13
-pb: "+2"
-cr: "4"
-xp: "1100"
-languagesList:
-  - value: Common
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Athletics
+    value: '6'
+  - skill: Perception
+    value: '4'
 passivesList:
   - skill: Perception
-    value: "14"
+    value: '14'
+languagesList:
+  - value: Common
+cr: '4'
+xp: '1100'
 entries:
   - category: action
     name: Multiattack
+    entryType: special
     text: The guard makes two attacks, using Javelin or Longsword in any combination.
   - category: action
     name: Javelin
-    text: "*Melee or Ranged Attack Roll:* +6, reach 5 ft. or range 30/120 ft. 14 (3d6 + 4) Piercing damage."
+    entryType: special
+    text: '*Melee or Ranged Attack Roll:* +6, reach 5 ft. or range 30/120 ft. 14 (3d6 + 4) Piercing damage.'
   - category: action
     name: Longsword
-    text: "*Melee Attack Roll:* +6, reach 5 ft. 15 (2d10 + 4) Slashing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +6, reach 5 ft. 15 (2d10 + 4) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 6
+      damage:
+        - dice: 2d10
+          bonus: 4
+          type: Slashing
+          average: 15
+      reach: 5 ft.
 ---
 
 # Guard Captain
@@ -56,7 +78,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 18 | 14 | 16 | 12 | 14 | 13 |
+| - | - | - | - | - | - |
 
 **Languages** Common
 CR 4, PB +2, XP 1100

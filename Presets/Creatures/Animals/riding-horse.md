@@ -4,37 +4,52 @@ name: Riding Horse
 size: Large
 type: Beast
 alignmentOverride: Unaligned
-ac: "11"
+ac: '11'
 initiative: +1 (11)
-hp: "13"
+hp: '13'
 hitDice: 2d10 + 2
 speeds:
-  - type: walk
-    value: "60"
+  walk:
+    distance: 60 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 16
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 13
-  - ability: con
+    saveProf: false
+  - key: con
     score: 12
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 11
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 7
-pb: "+2"
-cr: 1/4
-xp: "50"
+    saveProf: false
+pb: '+2'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+cr: 1/4
+xp: '50'
 entries:
   - category: action
     name: Hooves
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 7 (1d8 + 3) Bludgeoning damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 7 (1d8 + 3) Bludgeoning damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d8
+          bonus: 3
+          type: Bludgeoning
+          average: 7
+      reach: 5 ft.
 ---
 
 # Riding Horse
@@ -47,7 +62,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 16 | 13 | 12 | 2 | 11 | 7 |
+| - | - | - | - | - | - |
 
 CR 1/4, PB +2, XP 50
 

@@ -5,45 +5,49 @@ size: Large
 type: Elemental
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Neutral
-ac: "13"
+ac: '13'
 initiative: +3 (13)
-hp: "93"
+hp: '93'
 hitDice: 11d10 + 33
 speeds:
-  - type: walk
-    value: "50"
+  walk:
+    distance: 50 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 10
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 17
-  - ability: con
+    saveProf: false
+  - key: con
     score: 16
-  - ability: int
+    saveProf: false
+  - key: int
     score: 6
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 7
-pb: "+3"
-cr: "5"
-xp: "1800"
+    saveProf: false
+pb: '+3'
 sensesList:
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Primordial (Ignan)
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+languagesList:
+  - value: Primordial (Ignan)
 damageResistancesList:
   - value: Bludgeoning
   - value: Piercing
   - value: Slashing
 damageImmunitiesList:
   - value: Fire
-  - value: Poison
-  - value: Exhaustion
+  - value: Poison; Exhaustion
+conditionImmunitiesList:
   - value: Grappled
   - value: Paralyzed
   - value: Petrified
@@ -51,26 +55,50 @@ damageImmunitiesList:
   - value: Prone
   - value: Restrained
   - value: Unconscious
+cr: '5'
+xp: '1800'
 entries:
   - category: trait
     name: Fire Aura
+    entryType: special
     text: At the end of each of the elemental's turns, each creature in a 10-foot Emanation originating from the elemental takes 5 (1d10) Fire damage. Creatures and flammable objects in the Emanation start Hitazard burning.
   - category: trait
     name: Fire Form
+    entryType: special
     text: The elemental can move through a space as narrow as 1 inch without expending extra movement to do so, and it can enter a creature's space and stop there. The first time it enters a creature's space on a turn, that creature takes 5 (1d10) Fire damage.
   - category: trait
     name: Illumination
+    entryType: special
     text: The elemental sheds Bright Light in a 30-foot radius and Dim Light for an additional 30 feet.
   - category: trait
     name: Water Susceptibility
+    entryType: special
     text: The elemental takes 3 (1d6) Cold damage for every 5 feet the elemental moves in water or for every gallon of water splashed on it.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The elemental makes two Burn attacks.
+    multiattack:
+      attacks:
+        - name: Burn
+          count: 2
+      substitutions: []
   - category: action
     name: Burn
-    text: "*Melee Attack Roll:* +6, reach 5 ft. 10 (2d6 + 3) Fire damage. If the target is a creature or a flammable object, it starts burning."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +6, reach 5 ft. 10 (2d6 + 3) Fire damage. If the target is a creature or a flammable object, it starts burning.'
+    attack:
+      type: melee
+      bonus: 6
+      damage:
+        - dice: 2d6
+          bonus: 3
+          type: Fire
+          average: 10
+      reach: 5 ft.
+      onHit:
+        other: If the target is a creature or a flammable object, it starts burning.
+      additionalEffects: If the target is a creature or a flammable object, it starts burning.
 ---
 
 # Fire Elemental
@@ -83,7 +111,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 10 | 17 | 16 | 6 | 10 | 7 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 10
 **Languages** Primordial (Ignan)

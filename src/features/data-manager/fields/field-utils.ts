@@ -7,7 +7,9 @@ import { mountEntryManager, type EntryCategoryDefinition, type EntryFilterDefini
 import { RepeatingWidthSynchronizer } from "../layout/repeating-width-sync";
 import { renderTextCore, renderTextareaCore, renderCheckboxCore, renderColorCore, renderMultiselectCore, renderDisplayCore, renderHeadingCore, renderCompositeCore, renderRepeatingEntryManagerCore } from "./field-rendering-core";
 import { createClickableIcon } from "./clickable-icon";
+import { fieldRendererRegistry } from "./field-renderer-registry";
 import type { AnyFieldSpec, FieldRenderHandle, CompositeFieldSpec } from "../../types";
+import type { App } from "obsidian";
 import { logger } from "../../../app/plugin-logger";
 import { debugLogger } from "../../../app/debug-logger";
 
@@ -51,14 +53,18 @@ export function renderFieldControl(
   spec: AnyFieldSpec,
   initial: unknown,
   onChange: (value: unknown) => void,
+  formData?: Record<string, unknown>
 ): FieldRenderHandle {
   debugLogger.logField(spec.id, "field-creation", "renderFieldControl called", {
     type: spec.type,
     onChangeType: typeof onChange
   });
 
-  // Add label for the control (unless it's a heading, which has its own label style)
-  if (spec.type !== "heading") {
+  // Add label for simple types (complex types like tokens render their own Settings with labels)
+  const simpleTypes = ["text", "textarea", "markdown", "number-stepper", "checkbox", "select", "multiselect", "color", "display"];
+  const shouldAddLabel = simpleTypes.includes(spec.type);
+
+  if (shouldAddLabel && spec.label) {
     const label = container.createEl("label", {
       cls: "sm-cc-field-label",
       text: spec.label
@@ -383,7 +389,8 @@ export function renderFieldControl(
       const updateEntryFields = (
         entryContainer: HTMLElement,
         entry: Record<string, unknown>,
-        template: AnyFieldSpec[]
+        template: AnyFieldSpec[],
+        allFormData: Record<string, unknown>
       ) => {
         const fieldWrappers = entryContainer.querySelectorAll<HTMLElement>('.sm-cc-repeating-field');
         fieldWrappers.forEach((wrapper, index) => {
@@ -407,7 +414,7 @@ export function renderFieldControl(
             if (initConfig && typeof initConfig === "function") {
               try {
                 debugLogger.logField(fieldSpec.id, "init", "Calling init function", entry);
-                const initValue = initConfig(entry);
+                const initValue = initConfig(entry, allFormData);
                 debugLogger.logField(fieldSpec.id, "init", "Init function returned", { initValue });
                 entry[fieldSpec.id] = initValue;
 
@@ -435,12 +442,12 @@ export function renderFieldControl(
             const displayEl = wrapper.querySelector<HTMLInputElement>('.sm-cc-display-field');
             if (displayEl && displaySpec.config?.compute) {
               try {
-                const computed = displaySpec.config.compute(entry);
+                const computed = displaySpec.config.compute(entry, allFormData);
                 const prefix = typeof displaySpec.config.prefix === "function"
-                  ? displaySpec.config.prefix(entry)
+                  ? displaySpec.config.prefix(entry, allFormData)
                   : (displaySpec.config.prefix ?? "");
                 const suffix = typeof displaySpec.config.suffix === "function"
-                  ? displaySpec.config.suffix(entry)
+                  ? displaySpec.config.suffix(entry, allFormData)
                   : (displaySpec.config.suffix ?? "");
                 displayEl.value = `${prefix}${computed}${suffix}`;
               } catch (error) {
@@ -473,7 +480,7 @@ export function renderFieldControl(
             const initConfig = (fieldSpec.config as any)?.init;
             if (initConfig && typeof initConfig === "function") {
               try {
-                entry[fieldSpec.id] = initConfig(entry);
+                entry[fieldSpec.id] = initConfig(entry, formData || {});
               } catch (error) {
                 logger.error(`Failed to initialize ${fieldSpec.id}:`, error);
               }
@@ -490,9 +497,10 @@ export function renderFieldControl(
               debugLogger.logField(fieldSpec.id, "repeating-onChange", "Entry updated, calling parent onChange");
               onChange([...entries]);
               debugLogger.logField(fieldSpec.id, "repeating-onChange", "Parent onChange called, now calling updateEntryFields");
-              updateEntryFields(entryContainer, entry, fieldTemplate);
+              updateEntryFields(entryContainer, entry, fieldTemplate, formData || {});
               debugLogger.logField(fieldSpec.id, "repeating-onChange", "updateEntryFields completed");
-            }
+            },
+            formData
           );
 
           // Store the handle for later use in updateEntryFields
@@ -509,7 +517,7 @@ export function renderFieldControl(
       entries.forEach((entry, entryIndex) => {
         const entryContainer = listContainer.children[entryIndex] as HTMLElement;
         if (entryContainer) {
-          updateEntryFields(entryContainer, entry, fieldTemplate);
+          updateEntryFields(entryContainer, entry, fieldTemplate, formData || {});
         }
       });
 
@@ -555,10 +563,31 @@ export function renderFieldControl(
     }
   }
 
-  // Fallback: unsupported type
-  controlContainer.createEl("p", {
-    text: `Unsupported field type: ${spec.type}`,
-    cls: "sm-cc-field--error"
-  });
+  // Fallback: Try registry for field types not handled above (e.g., tokens)
+  // Adapt parameters for registry interface
+  const registryArgs = {
+    app: null as any, // App not needed for most renderers
+    container: controlContainer,
+    spec,
+    values: { [spec.id]: initial },
+    onChange: (id: string, value: unknown) => {
+      if (id === spec.id) {
+        onChange(value);
+      }
+    },
+    registerValidator: () => {}, // No validation in entry fields
+  };
+
+  const handle = fieldRendererRegistry.render(registryArgs);
+
+  // Return handle if successful, otherwise show error
+  if (handle && !handle.container?.querySelector('.sm-cc-field--unsupported')) {
+    return {
+      focus: handle.focus,
+      update: handle.update,
+    };
+  }
+
+  // Final fallback: unsupported type already shown by registry
   return {};
 }

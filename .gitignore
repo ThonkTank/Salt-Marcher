@@ -38,3 +38,6 @@ coverage/
 
 # Debug configuration (local only)
 .claude/debug.json
+
+# DevKit CLI symlink
+devkit-cli

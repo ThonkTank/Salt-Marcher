@@ -5,58 +5,166 @@ size: Huge
 type: Monstrosity
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Evil
-ac: "17"
+ac: '17'
 initiative: +3 (13)
-hp: "168"
+hp: '168'
 hitDice: 16d12 + 64
 speeds:
-  - type: walk
-    value: "50"
-  - type: climb
-    value: "50"
+  walk:
+    distance: 50 ft.
+  climb:
+    distance: 50 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 23
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 16
-  - ability: con
+    saveProf: false
+  - key: con
     score: 18
-  - ability: int
+    saveProf: false
+  - key: int
     score: 7
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 14
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 12
-pb: "+4"
-cr: "11"
-xp: "7200"
+    saveProf: false
+pb: '+4'
+skills:
+  - skill: Perception
+    value: '6'
+  - skill: Stealth
+    value: '7'
 sensesList:
   - type: darkvision
-    range: "90"
-languagesList:
-  - value: Draconic
+    range: '90'
 passivesList:
   - skill: Perception
-    value: "16"
+    value: '16'
+languagesList:
+  - value: Draconic
 damageImmunitiesList:
   - value: Lightning
+cr: '11'
+xp: '7200'
 entries:
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The behir makes one Bite attack and uses Constrict.
+    multiattack:
+      attacks:
+        - name: Bite
+          count: 1
+      substitutions: []
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +10, reach 10 ft. 19 (2d12 + 6) Piercing damage plus 11 (2d10) Lightning damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +10, reach 10 ft. 19 (2d12 + 6) Piercing damage plus 11 (2d10) Lightning damage.'
+    attack:
+      type: melee
+      bonus: 10
+      damage:
+        - dice: 2d12
+          bonus: 6
+          type: Piercing
+          average: 19
+        - dice: 2d10
+          bonus: 0
+          type: Lightning
+          average: 11
+      reach: 10 ft.
   - category: action
     name: Constrict
-    text: "*Strength Saving Throw*: DC 18, one Large or smaller creature the behir can see within 5 feet. *Failure:*  28 (5d8 + 6) Bludgeoning damage. The target has the Grappled condition (escape DC 16), and it has the Restrained condition until the grapple ends."
+    entryType: save
+    text: '*Strength Saving Throw*: DC 18, one Large or smaller creature the behir can see within 5 feet. *Failure:*  28 (5d8 + 6) Bludgeoning damage. The target has the Grappled condition (escape DC 16), and it has the Restrained condition until the grapple ends.'
+    save:
+      ability: str
+      dc: 18
+      targeting:
+        type: single
+        range: 5 ft.
+        restrictions:
+          size:
+            - Large
+            - smaller
+          visibility: true
+      onFail:
+        effects:
+          conditions:
+            - condition: Grappled
+              escape:
+                type: dc
+                dc: 16
+              duration:
+                type: until
+                trigger: the grapple ends
+            - condition: Restrained
+              escape:
+                type: dc
+                dc: 16
+              duration:
+                type: until
+                trigger: the grapple ends
+        damage:
+          - dice: 5d8
+            bonus: 6
+            type: Bludgeoning
+            average: 28
   - category: action
     name: Lightning Breath (Recharge 5-6)
-    text: "*Dexterity Saving Throw*: DC 16, each creature in a 90-foot-long, 5-foot-wide Line. *Failure:*  66 (12d10) Lightning damage. *Success:*  Half damage."
+    entryType: save
+    text: '*Dexterity Saving Throw*: DC 16, each creature in a 90-foot-long, 5-foot-wide Line. *Failure:*  66 (12d10) Lightning damage. *Success:*  Half damage.'
+    recharge: 5-6
+    save:
+      ability: dex
+      dc: 16
+      targeting:
+        shape: line
+        size: 90 ft.
+        width: 5 ft.
+      onFail:
+        effects:
+          other: 66 (12d10) Lightning damage.
+        damage:
+          - dice: 12d10
+            bonus: 0
+            type: Lightning
+            average: 66
+        legacyEffects: 66 (12d10) Lightning damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
   - category: bonus
     name: Swallow
-    text: "*Dexterity Saving Throw*: DC 18, one Large or smaller creature Grappled by the behir (the behir can have only one creature swallowed at a time). *Failure:*  The behir swallows the target, which is no longer Grappled. While swallowed, a creature has the Blinded and Restrained conditions, has Cover|XPHB|Total Cover against attacks and other effects outside the behir, and takes 21 (6d6) Acid damage at the start of each of the behir's turns. If the behir takes 30 damage or more on a single turn from the swallowed creature, the behir must succeed on a DC 14 Constitution saving throw at the end of that turn or regurgitate the creature, which falls in a space within 10 feet of the behir and has the Prone condition. If the behir dies, a swallowed creature is no longer Restrained and can escape from the corpse by using 15 feet of movement, exiting Prone."
-
+    entryType: save
+    text: '*Dexterity Saving Throw*: DC 18, one Large or smaller creature Grappled by the behir (the behir can have only one creature swallowed at a time). *Failure:*  The behir swallows the target, which is no longer Grappled. While swallowed, a creature has the Blinded and Restrained conditions, has Cover|XPHB|Total Cover against attacks and other effects outside the behir, and takes 21 (6d6) Acid damage at the start of each of the behir''s turns. If the behir takes 30 damage or more on a single turn from the swallowed creature, the behir must succeed on a DC 14 Constitution saving throw at the end of that turn or regurgitate the creature, which falls in a space within 10 feet of the behir and has the Prone condition. If the behir dies, a swallowed creature is no longer Restrained and can escape from the corpse by using 15 feet of movement, exiting Prone.'
+    save:
+      ability: dex
+      dc: 18
+      targeting:
+        type: single
+        restrictions:
+          size:
+            - Large
+            - smaller
+          other:
+            - grappled by source
+      onFail:
+        effects:
+          conditions:
+            - condition: Prone
+              restrictions:
+                while: While swallowed, a creature has the Blinded and Restrained conditions, has Cover|XPHB|Total Cover against attacks and other effects outside the behir, and takes 21 (6d6) Acid damage at the start of each of the behir's turns. If the behir takes 30 damage or more on a single turn from the swallowed creature, the behir must succeed on a DC 14 Constitution saving throw at the end of that turn or regurgitate the creature, which falls in a space within 10 feet of the behir and has the Prone condition
+        damage:
+          - dice: 6d6
+            bonus: 0
+            type: Acid
+            average: 21
 ---
 
 # Behir
@@ -69,7 +177,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 23 | 16 | 18 | 7 | 14 | 12 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 90 ft.; Passive Perception 16
 **Languages** Draconic

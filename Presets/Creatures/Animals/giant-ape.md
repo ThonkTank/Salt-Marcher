@@ -4,49 +4,104 @@ name: Giant Ape
 size: Huge
 type: Beast
 alignmentOverride: Unaligned
-ac: "12"
+ac: '12'
 initiative: +5 (15)
-hp: "168"
+hp: '168'
 hitDice: 16d12 + 64
 speeds:
-  - type: walk
-    value: "40"
-  - type: climb
-    value: "40"
+  walk:
+    distance: 40 ft.
+  climb:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 23
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 18
-  - ability: int
+    saveProf: false
+  - key: int
     score: 5
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 7
-pb: "+3"
-cr: "7"
-xp: "2900"
+    saveProf: false
+pb: '+3'
+skills:
+  - skill: Athletics
+    value: '9'
+  - skill: Perception
+    value: '4'
+  - skill: Survival
+    value: '4'
 passivesList:
   - skill: Perception
-    value: "14"
+    value: '14'
+cr: '7'
+xp: '2900'
 entries:
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The ape makes two Fist attacks.
+    multiattack:
+      attacks:
+        - name: Fist
+          count: 2
+        - name: Fist
+          count: 2
+      substitutions: []
   - category: action
     name: Fist
-    text: "*Melee Attack Roll:* +9, reach 10 ft. 22 (3d10 + 6) Bludgeoning damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +9, reach 10 ft. 22 (3d10 + 6) Bludgeoning damage.'
+    attack:
+      type: melee
+      bonus: 9
+      damage:
+        - dice: 3d10
+          bonus: 6
+          type: Bludgeoning
+          average: 22
+      reach: 10 ft.
   - category: action
     name: Boulder Toss
-    recharge: Recharge 6
-    text: "The ape hurls a boulder at a point it can see within 90 feet. *Dexterity Saving Throw*: DC 17, each creature in a 5-foot-radius Sphere [Area of Effect]|XPHB|Sphere centered on that point. *Failure:*  24 (7d6) Bludgeoning damage. If the target is a Large or smaller creature, it has the Prone condition. *Success:*  Half damage only."
+    entryType: save
+    text: 'The ape hurls a boulder at a point it can see within 90 feet. *Dexterity Saving Throw*: DC 17, each creature in a 5-foot-radius Sphere [Area of Effect]|XPHB|Sphere centered on that point. *Failure:*  24 (7d6) Bludgeoning damage. If the target is a Large or smaller creature, it has the Prone condition. *Success:*  Half damage only.'
+    save:
+      ability: dex
+      dc: 17
+      targeting:
+        shape: sphere
+        size: 5 ft.
+        description: each creature in a 5-foot-radius Sphere [Area of Effect]|XPHB|Sphere centered on that point
+      area: each creature in a 5-foot-radius Sphere [Area of Effect]|XPHB|Sphere centered on that point
+      onFail:
+        damage:
+          - dice: 7d6
+            bonus: 0
+            type: Bludgeoning
+            average: 24
+        effects:
+          conditions:
+            - condition: Prone
+              restrictions:
+                size: Large or smaller
+          other: 24 (7d6) Bludgeoning damage. If the target is a Large or smaller creature, it has the Prone condition.
+        legacyEffects: 24 (7d6) Bludgeoning damage. If the target is a Large or smaller creature, it has the Prone condition.
+      onSuccess:
+        damage: half
+        legacyText: Half damage only.
   - category: bonus
     name: Leap
+    entryType: special
     text: The ape jumps up to 30 feet by spending 10 feet of movement.
-
 ---
 
 # Giant Ape
@@ -59,7 +114,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 23 | 14 | 18 | 5 | 12 | 7 |
+| - | - | - | - | - | - |
 
 CR 7, PB +3, XP 2900
 

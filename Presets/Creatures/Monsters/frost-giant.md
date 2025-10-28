@@ -5,50 +5,94 @@ size: Huge
 type: Giant
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Evil
-ac: "15"
+ac: '15'
 initiative: +2 (12)
-hp: "149"
+hp: '149'
 hitDice: 13d12 + 65
 speeds:
-  - type: walk
-    value: "40"
+  walk:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 23
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 9
-  - ability: con
+    saveProf: false
+  - key: con
     score: 21
-  - ability: int
+    saveProf: true
+    saveMod: 8
+  - key: int
     score: 9
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: true
+    saveMod: 3
+  - key: cha
     score: 12
-pb: "+3"
-cr: "8"
-xp: "3900"
-languagesList:
-  - value: Giant
+    saveProf: true
+    saveMod: 4
+pb: '+3'
+skills:
+  - skill: Athletics
+    value: '9'
+  - skill: Perception
+    value: '3'
 passivesList:
   - skill: Perception
-    value: "13"
+    value: '13'
+languagesList:
+  - value: Giant
 damageImmunitiesList:
   - value: Cold
+cr: '8'
+xp: '3900'
 entries:
   - category: action
     name: Multiattack
+    entryType: special
     text: The giant makes two attacks, using Frost Axe or Great Bow in any combination.
   - category: action
     name: Frost Axe
-    text: "*Melee Attack Roll:* +9, reach 10 ft. 19 (2d12 + 6) Slashing damage plus 9 (2d8) Cold damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +9, reach 10 ft. 19 (2d12 + 6) Slashing damage plus 9 (2d8) Cold damage.'
+    attack:
+      type: melee
+      bonus: 9
+      damage:
+        - dice: 2d12
+          bonus: 6
+          type: Slashing
+          average: 19
+        - dice: 2d8
+          bonus: 0
+          type: Cold
+          average: 9
+      reach: 10 ft.
   - category: action
     name: Great Bow
-    text: "*Ranged Attack Roll:* +9, range 150/600 ft. 17 (2d10 + 6) Piercing damage plus 7 (2d6) Cold damage, and the target's Speed decreases by 10 feet until the end of its next turn."
+    entryType: attack
+    text: '*Ranged Attack Roll:* +9, range 150/600 ft. 17 (2d10 + 6) Piercing damage plus 7 (2d6) Cold damage, and the target''s Speed decreases by 10 feet until the end of its next turn.'
+    attack:
+      type: ranged
+      bonus: 9
+      damage:
+        - dice: 2d10
+          bonus: 6
+          type: Piercing
+          average: 17
+        - dice: 2d6
+          bonus: 0
+          type: Cold
+          average: 7
+      range: 150/600 ft.
   - category: bonus
     name: War Cry (Recharge 5-6)
+    entryType: special
     text: The giant or one creature of its choice that can see or hear it gains 16 (2d10 + 5) Temporary Hit Points and has Advantage on attack rolls until the start of the giant's next turn.
-
+    recharge: 5-6
 ---
 
 # Frost Giant
@@ -61,7 +105,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 23 | 9 | 21 | 9 | 10 | 12 |
+| - | - | - | - | - | - |
 
 **Languages** Giant
 CR 8, PB +3, XP 3900

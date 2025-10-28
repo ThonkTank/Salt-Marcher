@@ -3,54 +3,72 @@ smType: creature
 name: Lemure
 size: Medium
 type: Fiend
+typeTags:
+  - value: Devil
 alignmentLawChaos: Lawful
 alignmentGoodEvil: Evil
-ac: "9"
-initiative: "-3 (7)"
-hp: "9"
+ac: '9'
+initiative: '-3 (7)'
+hp: '9'
 hitDice: 2d8
 speeds:
-  - type: walk
-    value: "20"
+  walk:
+    distance: 20 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 10
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 5
-  - ability: con
+    saveProf: false
+  - key: con
     score: 11
-  - ability: int
+    saveProf: false
+  - key: int
     score: 1
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 11
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 3
-pb: "+2"
-cr: "0"
-xp: "0"
+    saveProf: false
+pb: '+2'
 sensesList:
-  - value: darkvision 120 ft. (unimpeded by magical darkness)
-languagesList:
-  - value: Understands Infernal but can't speak
+  - type: darkvision 120 ft. (unimpeded by magical darkness)
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+languagesList:
+  - value: Understands Infernal but can't speak
 damageResistancesList:
   - value: Cold
 damageImmunitiesList:
   - value: Fire
-  - value: Poison
-  - value: Charmed
+  - value: Poison; Charmed
+conditionImmunitiesList:
   - value: Frightened
   - value: Poisoned
+cr: '0'
+xp: '0'
 entries:
   - category: trait
     name: Hellish Restoration
+    entryType: special
     text: If the lemure dies in the Nine Hells, it revives with all its Hit Points in 1d10 days unless it is killed by a creature under the effects of a *Bless* spell or its remains are sprinkled with Holy Water.
   - category: action
     name: Vile Slime
-    text: "*Melee Attack Roll:* +2, reach 5 ft. 2 (1d4) Poison damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +2, reach 5 ft. 2 (1d4) Poison damage.'
+    attack:
+      type: melee
+      bonus: 2
+      damage:
+        - dice: 1d4
+          bonus: 0
+          type: Poison
+          average: 2
+      reach: 5 ft.
 ---
 
 # Lemure
@@ -63,7 +81,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 10 | 5 | 11 | 1 | 11 | 3 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 120 ft. (unimpeded by magical darkness); Passive Perception 10
 **Languages** Understands Infernal but can't speak

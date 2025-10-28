@@ -4,40 +4,57 @@ name: Mule
 size: Medium
 type: Beast
 alignmentOverride: Unaligned
-ac: "10"
+ac: '10'
 initiative: +0 (10)
-hp: "11"
+hp: '11'
 hitDice: 2d8 + 2
 speeds:
-  - type: walk
-    value: "40"
+  walk:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 14
-  - ability: dex
+    saveProf: true
+    saveMod: 4
+  - key: dex
     score: 10
-  - ability: con
+    saveProf: false
+  - key: con
     score: 13
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 5
-pb: "+2"
-cr: 1/8
-xp: "25"
+    saveProf: false
+pb: '+2'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+cr: 1/8
+xp: '25'
 entries:
   - category: trait
     name: Beast of Burden
+    entryType: special
     text: The mule counts as one size larger for the purpose of determining its carrying capacity.
   - category: action
     name: Hooves
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 4 (1d4 + 2) Bludgeoning damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 4 (1d4 + 2) Bludgeoning damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d4
+          bonus: 2
+          type: Bludgeoning
+          average: 4
+      reach: 5 ft.
 ---
 
 # Mule
@@ -50,7 +67,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 14 | 10 | 13 | 2 | 10 | 5 |
+| - | - | - | - | - | - |
 
 CR 1/8, PB +2, XP 25
 

@@ -3,77 +3,193 @@ smType: creature
 name: Ancient Black Dragon
 size: Gargantuan
 type: Dragon
+typeTags:
+  - value: Chromatic
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Evil
-ac: "22"
+ac: '22'
 initiative: +6 (16)
-hp: "367"
+hp: '367'
 hitDice: 21d20 + 147
 speeds:
-  - type: walk
-    value: "40"
-  - type: fly
-    value: "80"
-  - type: swim
-    value: "40"
+  walk:
+    distance: 40 ft.
+  fly:
+    distance: 80 ft.
+  swim:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 27
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: true
+    saveMod: 9
+  - key: con
     score: 25
-  - ability: int
+    saveProf: false
+  - key: int
     score: 16
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 15
-  - ability: cha
+    saveProf: true
+    saveMod: 9
+  - key: cha
     score: 22
-pb: "+7"
-cr: "21"
-xp: "33000"
+    saveProf: false
+pb: '+7'
+skills:
+  - skill: Perception
+    value: '16'
+  - skill: Stealth
+    value: '9'
 sensesList:
   - type: blindsight
-    range: "60"
+    range: '60'
   - type: darkvision
-    range: "120"
+    range: '120'
+passivesList:
+  - skill: Perception
+    value: '26'
 languagesList:
   - value: Common
   - value: Draconic
-passivesList:
-  - skill: Perception
-    value: "26"
 damageImmunitiesList:
   - value: Acid
+cr: '21'
+xp: '33000'
 entries:
   - category: trait
     name: Amphibious
+    entryType: special
     text: The dragon can breathe air and water.
   - category: trait
     name: Legendary Resistance (4/Day, or 5/Day in Lair)
+    entryType: special
     text: If the dragon fails a saving throw, it can choose to succeed instead.
+    limitedUse:
+      count: 4
+      reset: day
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The dragon makes three Rend attacks. It can replace one attack with a use of Spellcasting to cast *Acid Arrow* (level 4 version).
+    multiattack:
+      attacks:
+        - name: Rend
+          count: 3
+      substitutions:
+        - replace: attack
+          with:
+            type: spellcasting
+            spell: Acid Arrow
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +15, reach 15 ft. 17 (2d8 + 8) Slashing damage plus 9 (2d8) Acid damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +15, reach 15 ft. 17 (2d8 + 8) Slashing damage plus 9 (2d8) Acid damage.'
+    attack:
+      type: melee
+      bonus: 15
+      damage:
+        - dice: 2d8
+          bonus: 8
+          type: Slashing
+          average: 17
+        - dice: 2d8
+          bonus: 0
+          type: Acid
+          average: 9
+      reach: 15 ft.
   - category: action
     name: Acid Breath (Recharge 5-6)
-    text: "*Dexterity Saving Throw*: DC 22, each creature in a 90-foot-long, 10-foot-wide Line. *Failure:*  67 (15d8) Acid damage. *Success:*  Half damage."
-  - category: action
-    name: Spellcasting
-    text: "The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 21, +13 to hit with spell attacks): - **At Will:** *Detect Magic*, *Fear*, *Acid Arrow* - **1e/Day Each:** *Create Undead*, *Speak with Dead*, *Vitriolic Sphere*"
+    entryType: save
+    text: '*Dexterity Saving Throw*: DC 22, each creature in a 90-foot-long, 10-foot-wide Line. *Failure:*  67 (15d8) Acid damage. *Success:*  Half damage.'
+    recharge: 5-6
+    save:
+      ability: dex
+      dc: 22
+      targeting:
+        shape: line
+        size: 90 ft.
+        width: 10 ft.
+      onFail:
+        effects:
+          other: 67 (15d8) Acid damage.
+        damage:
+          - dice: 15d8
+            bonus: 0
+            type: Acid
+            average: 67
+        legacyEffects: 67 (15d8) Acid damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
   - category: legendary
     name: Cloud of Insects
-    text: "*Dexterity Saving Throw*: DC 21, one creature the dragon can see within 120 feet. *Failure:*  33 (6d10) Poison damage, and the target has Disadvantage on saving throws to maintain  Concentration until the end of its next turn. *Failure or Success*:  The dragon can't take this action again until the start of its next turn."
-  - category: legendary
-    name: Frightful Presence
-    text: The dragon uses Spellcasting to cast *Fear*. The dragon can't take this action again until the start of its next turn.
+    entryType: save
+    text: '*Dexterity Saving Throw*: DC 21, one creature the dragon can see within 120 feet. *Failure:*  33 (6d10) Poison damage, and the target has Disadvantage on saving throws to maintain  Concentration until the end of its next turn. *Failure or Success*:  The dragon can''t take this action again until the start of its next turn.'
+    save:
+      ability: dex
+      dc: 21
+      targeting:
+        type: single
+        range: 120 ft.
+        restrictions:
+          visibility: true
+      onFail:
+        effects:
+          mechanical:
+            - type: disadvantage
+              target: saving throws to maintain  Concentration until the end of its next turn
+              description: has Disadvantage on saving throws to maintain  Concentration until the end of its next turn.
+            - type: advantage
+              target: saving throws to maintain  Concentration until the end of its next turn
+              description: advantage on saving throws to maintain  Concentration until the end of its next turn.
+        damage:
+          - dice: 6d10
+            bonus: 0
+            type: Poison
+            average: 33
   - category: legendary
     name: Pounce
+    entryType: multiattack
     text: The dragon moves up to half its Speed, and it makes one Rend attack.
-
+    multiattack:
+      attacks:
+        - name: Rend
+          count: 1
+      substitutions: []
+spellcastingEntries:
+  - category: action
+    name: Spellcasting
+    entryType: spellcasting
+    text: 'The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 21, +13 to hit with spell attacks): - **At Will:** *Detect Magic*, *Fear*, *Acid Arrow* - **1e/Day Each:** *Create Undead*, *Speak with Dead*, *Vitriolic Sphere*'
+    spellcasting:
+      ability: cha
+      saveDC: 21
+      attackBonus: 13
+      excludeComponents:
+        - M
+      spellLists:
+        - frequency: at-will
+          spells:
+            - Detect Magic
+            - Fear
+            - Acid Arrow
+        - frequency: 1/day
+          spells:
+            - Create Undead
+            - Speak with Dead
+            - Vitriolic Sphere
+  - category: legendary
+    name: Frightful Presence
+    entryType: spellcasting
+    text: The dragon uses Spellcasting to cast *Fear*. The dragon can't take this action again until the start of its next turn.
+    spellcasting:
+      ability: int
+      spellLists: []
 ---
 
 # Ancient Black Dragon
@@ -86,7 +202,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 27 | 14 | 25 | 16 | 15 | 22 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 60 ft., darkvision 120 ft.; Passive Perception 26
 **Languages** Common, Draconic

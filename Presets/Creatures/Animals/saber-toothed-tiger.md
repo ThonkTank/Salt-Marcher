@@ -4,49 +4,81 @@ name: Saber-Toothed Tiger
 size: Large
 type: Beast
 alignmentOverride: Unaligned
-ac: "13"
+ac: '13'
 initiative: +3 (13)
-hp: "52"
+hp: '52'
 hitDice: 7d10 + 14
 speeds:
-  - type: walk
-    value: "40"
+  walk:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 18
-  - ability: dex
+    saveProf: true
+    saveMod: 6
+  - key: dex
     score: 17
-  - ability: con
+    saveProf: true
+    saveMod: 5
+  - key: con
     score: 15
-  - ability: int
+    saveProf: false
+  - key: int
     score: 3
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 8
-pb: "+2"
-cr: "2"
-xp: "450"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '5'
+  - skill: Stealth
+    value: '7'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "15"
+    value: '15'
+cr: '2'
+xp: '450'
 entries:
   - category: trait
     name: Running Leap
+    entryType: special
     text: With a 10-foot running start, the tiger can Long Jump up to 25 feet.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The tiger makes two Rend attacks.
+    multiattack:
+      attacks:
+        - name: Rend
+          count: 2
+        - name: Rend
+          count: 2
+      substitutions: []
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +6, reach 5 ft. 11 (2d6 + 4) Slashing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +6, reach 5 ft. 11 (2d6 + 4) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 6
+      damage:
+        - dice: 2d6
+          bonus: 4
+          type: Slashing
+          average: 11
+      reach: 5 ft.
   - category: bonus
     name: Nimble Escape
+    entryType: special
     text: The tiger takes the Disengage or Hide action.
-
 ---
 
 # Saber-Toothed Tiger
@@ -59,7 +91,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 18 | 17 | 15 | 3 | 12 | 8 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 15
 CR 2, PB +2, XP 450

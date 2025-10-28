@@ -5,51 +5,107 @@ size: Small
 type: Humanoid
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Neutral
-ac: "15"
+ac: '15'
 initiative: +2 (12)
-hp: "81"
+hp: '81'
 hitDice: 18d8
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 9
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 11
-  - ability: int
+    saveProf: false
+  - key: int
     score: 17
-  - ability: wis
+    saveProf: true
+    saveMod: 6
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: true
+    saveMod: 4
+  - key: cha
     score: 11
-pb: "+3"
-cr: "6"
-xp: "2300"
-languagesList:
-  - value: Common and any three languages
+    saveProf: false
+pb: '+3'
+skills:
+  - skill: Arcana
+    value: '6'
+  - skill: History
+    value: '6'
+  - skill: Perception
+    value: '4'
 passivesList:
   - skill: Perception
-    value: "14"
+    value: '14'
+languagesList:
+  - value: Common and any three languages
+cr: '6'
+xp: '2300'
 entries:
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The mage makes three Arcane Burst attacks.
+    multiattack:
+      attacks:
+        - name: Burst
+          count: 1
+      substitutions: []
   - category: action
     name: Arcane Burst
-    text: "*Melee or Ranged Attack Roll:* +6, reach 5 ft. or range 120 ft. 16 (3d8 + 3) Force damage."
+    entryType: special
+    text: '*Melee or Ranged Attack Roll:* +6, reach 5 ft. or range 120 ft. 16 (3d8 + 3) Force damage.'
+spellcastingEntries:
   - category: action
     name: Spellcasting
-    text: "The mage casts one of the following spells, using Intelligence as the spellcasting ability (spell save DC 14): - **At Will:** *Detect Magic*, *Light*, *Mage Armor*, *Mage Hand*, *Prestidigitation* - **2e/Day Each:** *Fireball*, *Invisibility* - **1e/Day Each:** *Cone of Cold*, *Fly*"
+    entryType: spellcasting
+    text: 'The mage casts one of the following spells, using Intelligence as the spellcasting ability (spell save DC 14): - **At Will:** *Detect Magic*, *Light*, *Mage Armor*, *Mage Hand*, *Prestidigitation* - **2e/Day Each:** *Fireball*, *Invisibility* - **1e/Day Each:** *Cone of Cold*, *Fly*'
+    spellcasting:
+      ability: int
+      saveDC: 14
+      spellLists:
+        - frequency: at-will
+          spells:
+            - Detect Magic
+            - Light
+            - Mage Armor
+            - Mage Hand
+            - Prestidigitation
+        - frequency: 2/day
+          spells:
+            - Fireball
+            - Invisibility
+        - frequency: 1/day
+          spells:
+            - Cone of Cold
+            - Fly
   - category: bonus
     name: Misty Step (3/Day)
+    entryType: spellcasting
     text: The mage casts *Misty Step*, using the same spellcasting ability as Spellcasting.
+    limitedUse:
+      count: 3
+      reset: day
+    spellcasting:
+      ability: int
+      spellLists: []
   - category: reaction
     name: Protective Magic (3/Day)
+    entryType: spellcasting
     text: The mage casts *Counterspell* or *Shield* in response to the spell's trigger, using the same spellcasting ability as Spellcasting.
-
+    limitedUse:
+      count: 3
+      reset: day
+    spellcasting:
+      ability: int
+      spellLists: []
 ---
 
 # Mage
@@ -62,7 +118,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 9 | 14 | 11 | 17 | 12 | 11 |
+| - | - | - | - | - | - |
 
 **Languages** Common and any three languages
 CR 6, PB +3, XP 2300

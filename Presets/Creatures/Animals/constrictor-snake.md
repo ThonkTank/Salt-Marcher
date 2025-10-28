@@ -4,45 +4,92 @@ name: Constrictor Snake
 size: Large
 type: Beast
 alignmentOverride: Unaligned
-ac: "13"
+ac: '13'
 initiative: +2 (12)
-hp: "13"
+hp: '13'
 hitDice: 2d10 + 2
 speeds:
-  - type: walk
-    value: "30"
-  - type: swim
-    value: "30"
+  walk:
+    distance: 30 ft.
+  swim:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 15
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 12
-  - ability: int
+    saveProf: false
+  - key: int
     score: 1
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 3
-pb: "+2"
-cr: 1/4
-xp: "50"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '2'
+  - skill: Stealth
+    value: '4'
 sensesList:
   - type: blindsight
-    range: "10"
+    range: '10'
 passivesList:
   - skill: Perception
-    value: "12"
+    value: '12'
+cr: 1/4
+xp: '50'
 entries:
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 6 (1d8 + 2) Piercing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 6 (1d8 + 2) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d8
+          bonus: 2
+          type: Piercing
+          average: 6
+      reach: 5 ft.
   - category: action
     name: Constrict
-    text: "*Strength Saving Throw*: DC 12, one Medium or smaller creature the snake can see within 5 feet. *Failure:*  7 (3d4) Bludgeoning damage, and the target has the Grappled condition (escape DC 12)."
-
+    entryType: save
+    text: '*Strength Saving Throw*: DC 12, one Medium or smaller creature the snake can see within 5 feet. *Failure:*  7 (3d4) Bludgeoning damage, and the target has the Grappled condition (escape DC 12).'
+    save:
+      ability: str
+      dc: 12
+      targeting:
+        type: single
+        range: 5 ft.
+        restrictions:
+          size:
+            - Medium
+            - smaller
+          visibility: true
+      area: one Medium or smaller creature the snake can see within 5 feet
+      onFail:
+        damage:
+          - dice: 3d4
+            bonus: 0
+            type: Bludgeoning
+            average: 7
+        effects:
+          conditions:
+            - condition: Grappled
+              escape:
+                type: dc
+                dc: 12
+          other: 7 (3d4) Bludgeoning damage, and the target has the Grappled condition (escape DC 12).
+        legacyEffects: 7 (3d4) Bludgeoning damage, and the target has the Grappled condition (escape DC 12).
 ---
 
 # Constrictor Snake
@@ -55,7 +102,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 15 | 14 | 12 | 1 | 10 | 3 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 10 ft.; Passive Perception 12
 CR 1/4, PB +2, XP 50

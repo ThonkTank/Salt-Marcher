@@ -5,57 +5,80 @@ size: Small
 type: Humanoid
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Evil
-ac: "15"
+ac: '15'
 initiative: +5 (15)
-hp: "65"
+hp: '65'
 hitDice: 10d8 + 20
 speeds:
-  - type: walk
-    value: "30"
-  - type: climb
-    value: "30"
+  walk:
+    distance: 30 ft.
+  climb:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 17
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 16
-  - ability: con
+    saveProf: true
+    saveMod: 5
+  - key: con
     score: 15
-  - ability: int
+    saveProf: false
+  - key: int
     score: 10
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: true
+    saveMod: 2
+  - key: cha
     score: 14
-pb: "+2"
-cr: "3"
-xp: "700"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '4'
+  - skill: Persuasion
+    value: '4'
+  - skill: Stealth
+    value: '7'
 sensesList:
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Common plus one other language
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "14"
+    value: '14'
+languagesList:
+  - value: Common plus one other language
 damageResistancesList:
   - value: Necrotic
 damageImmunitiesList:
   - value: Charmed ((except from its vampire master))
+cr: '3'
+xp: '700'
 entries:
   - category: trait
     name: Vampiric Connection
+    entryType: special
     text: While the familiar and its vampire master are on the same plane of existence, the vampire can communicate with the familiar telepathically, and the vampire can perceive through the familiar's senses.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The familiar makes two Umbral Dagger attacks.
+    multiattack:
+      attacks:
+        - name: Dagger
+          count: 1
+      substitutions: []
   - category: action
     name: Umbral Dagger
-    text: "*Melee or Ranged Attack Roll:* +5, reach 5 ft. or range 20/60 ft. 5 (1d4 + 3) Piercing damage plus 7 (3d4) Necrotic damage. If the target is reduced to 0 Hit Points by this attack, the target becomes Stable but has the Poisoned condition for 1 hour. While it has the Poisoned condition, the target has the Paralyzed condition."
+    entryType: special
+    text: '*Melee or Ranged Attack Roll:* +5, reach 5 ft. or range 20/60 ft. 5 (1d4 + 3) Piercing damage plus 7 (3d4) Necrotic damage. If the target is reduced to 0 Hit Points by this attack, the target becomes Stable but has the Poisoned condition for 1 hour. While it has the Poisoned condition, the target has the Paralyzed condition.'
   - category: bonus
     name: Deathless Agility
+    entryType: special
     text: The familiar takes the Dash or Disengage action.
-
 ---
 
 # Vampire Familiar
@@ -68,7 +91,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 17 | 16 | 15 | 10 | 10 | 14 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 14
 **Languages** Common plus one other language

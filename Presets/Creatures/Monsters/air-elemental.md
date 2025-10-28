@@ -5,40 +5,44 @@ size: Large
 type: Elemental
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Neutral
-ac: "15"
+ac: '15'
 initiative: +5 (15)
-hp: "90"
+hp: '90'
 hitDice: 12d10 + 24
 speeds:
-  - type: walk
-    value: "10"
-  - type: fly
-    value: "90"
+  walk:
+    distance: 10 ft.
+  fly:
+    distance: 90 ft.
     hover: true
 abilities:
-  - ability: str
+  - key: str
     score: 14
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 20
-  - ability: con
+    saveProf: false
+  - key: con
     score: 14
-  - ability: int
+    saveProf: false
+  - key: int
     score: 6
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 6
-pb: "+3"
-cr: "5"
-xp: "1800"
+    saveProf: false
+pb: '+3'
 sensesList:
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Primordial (Auran)
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+languagesList:
+  - value: Primordial (Auran)
 damageResistancesList:
   - value: Bludgeoning
   - value: Lightning
@@ -46,8 +50,8 @@ damageResistancesList:
   - value: Slashing
 damageImmunitiesList:
   - value: Poison
-  - value: Thunder
-  - value: Exhaustion
+  - value: Thunder; Exhaustion
+conditionImmunitiesList:
   - value: Grappled
   - value: Paralyzed
   - value: Petrified
@@ -55,20 +59,65 @@ damageImmunitiesList:
   - value: Prone
   - value: Restrained
   - value: Unconscious
+cr: '5'
+xp: '1800'
 entries:
   - category: trait
     name: Air Form
+    entryType: special
     text: The elemental can enter a creature's space and stop there. It can move through a space as narrow as 1 inch without expending extra movement to do so.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The elemental makes two Thunderous Slam attacks.
+    multiattack:
+      attacks:
+        - name: Slam
+          count: 1
+      substitutions: []
   - category: action
     name: Thunderous Slam
-    text: "*Melee Attack Roll:* +8, reach 10 ft. 14 (2d8 + 5) Thunder damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +8, reach 10 ft. 14 (2d8 + 5) Thunder damage.'
+    attack:
+      type: melee
+      bonus: 8
+      damage:
+        - dice: 2d8
+          bonus: 5
+          type: Thunder
+          average: 14
+      reach: 10 ft.
   - category: action
     name: Whirlwind (Recharge 4-6)
-    text: "*Strength Saving Throw*: DC 13, one Medium or smaller creature in the elemental's space. *Failure:*  24 (4d10 + 2) Thunder damage, and the target is pushed up to 20 feet straight away from the elemental and has the Prone condition. *Success:*  Half damage only."
-
+    entryType: save
+    text: '*Strength Saving Throw*: DC 13, one Medium or smaller creature in the elemental''s space. *Failure:*  24 (4d10 + 2) Thunder damage, and the target is pushed up to 20 feet straight away from the elemental and has the Prone condition. *Success:*  Half damage only.'
+    recharge: 4-6
+    save:
+      ability: str
+      dc: 13
+      targeting:
+        type: single
+        restrictions:
+          size:
+            - Medium
+            - smaller
+      onFail:
+        effects:
+          conditions:
+            - condition: Prone
+          movement:
+            type: push
+            distance: 20 feet
+            direction: straight away from the elemental
+        damage:
+          - dice: 4d10
+            bonus: 2
+            type: Thunder
+            average: 24
+      onSuccess:
+        damage: half
+        legacyText: Half damage only.
 ---
 
 # Air Elemental
@@ -81,7 +130,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 14 | 20 | 14 | 6 | 10 | 6 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 10
 **Languages** Primordial (Auran)

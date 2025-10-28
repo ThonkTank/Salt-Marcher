@@ -1,0 +1,117 @@
+name: "Edit existing creature"
+description: "Tests editing an existing creature and verifying changes"
+
+debugConfig:
+  enabled: true
+  logFields: ["*"]
+  logCategories: ["field-creation", "onChange", "update"]
+
+setup:
+  - name: "Reload plugin"
+    command: reload-plugin
+    wait: 1000
+
+  - name: "Import creature presets"
+    command: import-presets
+    args: ["creatures"]
+    wait: 2000
+
+steps:
+  # Open existing creature
+  - name: "Open Goblin editor"
+    command: edit-creature
+    args: ["Goblin"]
+    wait: 500
+    expect:
+      success: true
+
+  - name: "Mark edit start"
+    command: log-marker
+    args: ["=== EDITING GOBLIN START ==="]
+
+  # Verify loaded values
+  - name: "Get initial STR values"
+    command: get-ability-values
+    args: ["str"]
+    expect:
+      success: true
+      values:
+        score: 8  # Goblin's STR
+
+  # Make changes
+  - name: "Navigate to abilities"
+    command: navigate-to-section
+    args: ["abilities"]
+    wait: 300
+
+  - name: "Change STR score"
+    command: set-input-value
+    args: ["input[data-field-id='str']", "12"]
+    wait: 200
+
+  - name: "Verify STR modifier updated"
+    command: get-ability-values
+    args: ["str"]
+    expect:
+      success: true
+      values:
+        score: 12
+        mod: 1  # floor((12-10)/2)
+
+  # Add skills
+  - name: "Navigate to skills"
+    command: navigate-to-section
+    args: ["skills"]
+    wait: 300
+
+  - name: "Toggle Stealth proficiency"
+    command: click-element
+    args: ["input[data-field-id='skills.stealth.prof']"]
+    wait: 200
+
+  - name: "Verify skill modifier"
+    command: assert-log-contains
+    args:
+      - "[onChange:skills.stealth.prof]"
+      - "true"
+
+  # Add new action
+  - name: "Navigate to actions"
+    command: navigate-to-section
+    args: ["actions"]
+    wait: 300
+
+  - name: "Add new action entry"
+    command: click-element
+    args: ["button.add-repeating-entry"]
+    wait: 200
+
+  - name: "Set action name"
+    command: set-input-value
+    args: ["input[data-field-id='entries[1].name']", "Dagger"]
+    wait: 200
+
+  - name: "Set action text"
+    command: set-input-value
+    args: ["textarea[data-field-id='entries[1].text']", "+3 to hit, 1d4+1 damage"]
+    wait: 200
+
+  # Validate changes
+  - name: "Mark validation"
+    command: log-marker
+    args: ["=== VALIDATING CHANGES ==="]
+
+  - name: "Validate UI consistency"
+    command: validate-ui
+    args: ["all"]
+    expect:
+      success: true
+
+cleanup:
+  - name: "Close without saving"
+    command: close-modal
+    wait: 200
+
+  - name: "Mark test end"
+    command: log-marker
+    args: ["=== EDITING GOBLIN END ==="]

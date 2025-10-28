@@ -4,51 +4,99 @@ name: Ankheg
 size: Large
 type: Monstrosity
 alignmentOverride: Unaligned
-ac: "14"
+ac: '14'
 initiative: +0 (10)
-hp: "45"
+hp: '45'
 hitDice: 6d10 + 12
 speeds:
-  - type: walk
-    value: "30"
-  - type: burrow
-    value: "10"
+  walk:
+    distance: 30 ft.
+  burrow:
+    distance: 10 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 17
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 11
-  - ability: con
+    saveProf: false
+  - key: con
     score: 14
-  - ability: int
+    saveProf: false
+  - key: int
     score: 1
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 13
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 6
-pb: "+2"
-cr: "2"
-xp: "450"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
   - type: tremorsense
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "11"
+    value: '11'
+cr: '2'
+xp: '450'
 entries:
   - category: trait
     name: Tunneler
+    entryType: special
     text: The ankheg can burrow through solid rock at half its Burrow Speed and leaves a 10-foot-diameter tunnel in its wake.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +5 (with Advantage if the target is Grappled by the ankheg), reach 5 ft. 10 (2d6 + 3) Slashing damage plus 3 (1d6) Acid damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13)."
+    entryType: attack
+    text: '*Melee Attack Roll:* +5 (with Advantage if the target is Grappled by the ankheg), reach 5 ft. 10 (2d6 + 3) Slashing damage plus 3 (1d6) Acid damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13).'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 2d6
+          bonus: 3
+          type: Slashing
+          average: 10
+        - dice: 1d6
+          bonus: 0
+          type: Acid
+          average: 3
+      reach: 5 ft.
+      onHit:
+        conditions:
+          - condition: Grappled
+            escape:
+              type: dc
+              dc: 13
+            restrictions:
+              size: Large or smaller
+      additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13).
   - category: action
     name: Acid Spray
-    recharge: Recharge 6
-    text: "*Dexterity Saving Throw*: DC 12, each creature in a 30-foot-long, 5-foot-wide Line. *Failure:*  14 (4d6) Acid damage. *Success:*  Half damage."
-
+    entryType: save
+    text: '*Dexterity Saving Throw*: DC 12, each creature in a 30-foot-long, 5-foot-wide Line. *Failure:*  14 (4d6) Acid damage. *Success:*  Half damage.'
+    save:
+      ability: dex
+      dc: 12
+      targeting:
+        shape: line
+        size: 30 ft.
+        width: 5 ft.
+      onFail:
+        effects:
+          other: 14 (4d6) Acid damage.
+        damage:
+          - dice: 4d6
+            bonus: 0
+            type: Acid
+            average: 14
+        legacyEffects: 14 (4d6) Acid damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
 ---
 
 # Ankheg
@@ -61,7 +109,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 17 | 11 | 14 | 1 | 13 | 6 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft., tremorsense 60 ft.; Passive Perception 11
 CR 2, PB +2, XP 450

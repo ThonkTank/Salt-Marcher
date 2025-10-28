@@ -4,48 +4,68 @@ name: Spider
 size: Small
 type: Beast
 alignmentOverride: Unaligned
-ac: "12"
+ac: '12'
 initiative: +2 (12)
-hp: "1"
+hp: '1'
 hitDice: 1d4 - 1
 speeds:
-  - type: walk
-    value: "20"
-  - type: climb
-    value: "20"
+  walk:
+    distance: 20 ft.
+  climb:
+    distance: 20 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 2
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 8
-  - ability: int
+    saveProf: false
+  - key: int
     score: 1
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 2
-pb: "+2"
-cr: "0"
-xp: "0"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Stealth
+    value: '4'
 sensesList:
   - type: darkvision
-    range: "30"
+    range: '30'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+cr: '0'
+xp: '0'
 entries:
   - category: trait
     name: Spider Climb
+    entryType: special
     text: The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check.
   - category: trait
     name: Web Walker
+    entryType: special
     text: The spider ignores movement restrictions caused by webs, and the spider knows the location of any other creature in contact with the same web.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 1 Piercing damage plus 2 (1d4) Poison damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 1 Piercing damage plus 2 (1d4) Poison damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d4
+          bonus: 0
+          type: Poison
+          average: 2
+      reach: 5 ft.
 ---
 
 # Spider
@@ -58,7 +78,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 2 | 14 | 8 | 1 | 10 | 2 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 30 ft.; Passive Perception 10
 CR 0, PB +2, XP 0

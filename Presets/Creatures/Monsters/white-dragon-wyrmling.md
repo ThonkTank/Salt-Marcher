@@ -3,63 +3,118 @@ smType: creature
 name: White Dragon Wyrmling
 size: Medium
 type: Dragon
+typeTags:
+  - value: Chromatic
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Evil
-ac: "16"
+ac: '16'
 initiative: +2 (12)
-hp: "32"
+hp: '32'
 hitDice: 5d8 + 10
 speeds:
-  - type: walk
-    value: "30"
-  - type: burrow
-    value: "15"
-  - type: fly
-    value: "60"
-  - type: swim
-    value: "30"
+  walk:
+    distance: 30 ft.
+  burrow:
+    distance: 15 ft.
+  fly:
+    distance: 60 ft.
+  swim:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 14
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 10
-  - ability: con
+    saveProf: true
+    saveMod: 2
+  - key: con
     score: 14
-  - ability: int
+    saveProf: false
+  - key: int
     score: 5
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: true
+    saveMod: 2
+  - key: cha
     score: 11
-pb: "+2"
-cr: "2"
-xp: "450"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '4'
+  - skill: Stealth
+    value: '2'
 sensesList:
   - type: blindsight
-    range: "10"
+    range: '10'
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Draconic
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "14"
+    value: '14'
+languagesList:
+  - value: Draconic
 damageImmunitiesList:
   - value: Cold
+cr: '2'
+xp: '450'
 entries:
   - category: trait
     name: Ice Walk
+    entryType: special
     text: The dragon can move across and climb icy surfaces without needing to make an ability check. Additionally, Difficult Terrain composed of ice or snow doesn't cost it extra movement.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The dragon makes two Rend attacks.
+    multiattack:
+      attacks:
+        - name: Rend
+          count: 2
+      substitutions: []
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 6 (1d8 + 2) Slashing damage plus 2 (1d4) Cold damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 6 (1d8 + 2) Slashing damage plus 2 (1d4) Cold damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d8
+          bonus: 2
+          type: Slashing
+          average: 6
+        - dice: 1d4
+          bonus: 0
+          type: Cold
+          average: 2
+      reach: 5 ft.
   - category: action
     name: Cold Breath (Recharge 5-6)
-    text: "*Constitution Saving Throw*: DC 12, each creature in a 15-foot Cone. *Failure:*  22 (5d8) Cold damage. *Success:*  Half damage."
-
+    entryType: save
+    text: '*Constitution Saving Throw*: DC 12, each creature in a 15-foot Cone. *Failure:*  22 (5d8) Cold damage. *Success:*  Half damage.'
+    recharge: 5-6
+    save:
+      ability: con
+      dc: 12
+      targeting:
+        shape: cone
+        size: 15 ft.
+      onFail:
+        effects:
+          other: 22 (5d8) Cold damage.
+        damage:
+          - dice: 5d8
+            bonus: 0
+            type: Cold
+            average: 22
+        legacyEffects: 22 (5d8) Cold damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
 ---
 
 # White Dragon Wyrmling
@@ -72,7 +127,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 14 | 10 | 14 | 5 | 10 | 11 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 10 ft., darkvision 60 ft.; Passive Perception 14
 **Languages** Draconic

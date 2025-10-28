@@ -4,46 +4,83 @@ name: Ape
 size: Medium
 type: Beast
 alignmentOverride: Unaligned
-ac: "12"
+ac: '12'
 initiative: +2 (12)
-hp: "19"
+hp: '19'
 hitDice: 3d8 + 6
 speeds:
-  - type: walk
-    value: "30"
-  - type: climb
-    value: "30"
+  walk:
+    distance: 30 ft.
+  climb:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 16
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 14
-  - ability: int
+    saveProf: false
+  - key: int
     score: 6
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 7
-pb: "+2"
-cr: 1/2
-xp: "100"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Athletics
+    value: '5'
+  - skill: Perception
+    value: '3'
 passivesList:
   - skill: Perception
-    value: "13"
+    value: '13'
+cr: 1/2
+xp: '100'
 entries:
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The ape makes two Fist attacks.
+    multiattack:
+      attacks:
+        - name: Fist
+          count: 2
+        - name: Fist
+          count: 2
+      substitutions: []
   - category: action
     name: Fist
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 5 (1d4 + 3) Bludgeoning damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 5 (1d4 + 3) Bludgeoning damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d4
+          bonus: 3
+          type: Bludgeoning
+          average: 5
+      reach: 5 ft.
   - category: action
     name: Rock
-    recharge: Recharge 6
-    text: "*Ranged Attack Roll:* +5, range 25/50 ft. 10 (2d6 + 3) Bludgeoning damage."
-
+    entryType: attack
+    text: '*Ranged Attack Roll:* +5, range 25/50 ft. 10 (2d6 + 3) Bludgeoning damage.'
+    attack:
+      type: ranged
+      bonus: 5
+      damage:
+        - dice: 2d6
+          bonus: 3
+          type: Bludgeoning
+          average: 10
+      range: 25/50 ft.
 ---
 
 # Ape
@@ -56,7 +93,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 16 | 14 | 14 | 6 | 12 | 7 |
+| - | - | - | - | - | - |
 
 CR 1/2, PB +2, XP 100
 

@@ -4,43 +4,72 @@ name: Giant Hyena
 size: Large
 type: Beast
 alignmentOverride: Unaligned
-ac: "12"
+ac: '12'
 initiative: +2 (12)
-hp: "45"
+hp: '45'
 hitDice: 6d10 + 12
 speeds:
-  - type: walk
-    value: "50"
+  walk:
+    distance: 50 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 16
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 14
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 7
-pb: "+2"
-cr: "1"
-xp: "200"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '3'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "13"
+    value: '13'
+cr: '1'
+xp: '200'
 entries:
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 10 (2d6 + 3) Piercing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 10 (2d6 + 3) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 2d6
+          bonus: 3
+          type: Piercing
+          average: 10
+      reach: 5 ft.
   - category: bonus
     name: Rampage (1/Day)
+    entryType: multiattack
     text: Immediately after dealing damage to a creature that was already Bloodied, the hyena can move up to half its Speed, and it makes one Bite attack.
-
+    limitedUse:
+      count: 1
+      reset: day
+    multiattack:
+      attacks:
+        - name: Bite
+          count: 1
+        - name: Bite
+          count: 1
+      substitutions: []
 ---
 
 # Giant Hyena
@@ -53,7 +82,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 16 | 14 | 14 | 2 | 12 | 7 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 13
 CR 1, PB +2, XP 200

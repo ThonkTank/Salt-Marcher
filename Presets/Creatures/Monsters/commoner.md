@@ -5,42 +5,58 @@ size: Small
 type: Humanoid
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Neutral
-ac: "10"
+ac: '10'
 initiative: +0 (10)
-hp: "4"
+hp: '4'
 hitDice: 1d8
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 10
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 10
-  - ability: con
+    saveProf: false
+  - key: con
     score: 10
-  - ability: int
+    saveProf: false
+  - key: int
     score: 10
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 10
-pb: "+2"
-cr: "0"
-xp: "0"
-languagesList:
-  - value: Common
+    saveProf: false
+pb: '+2'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+languagesList:
+  - value: Common
+cr: '0'
+xp: '0'
 entries:
   - category: trait
     name: Training
+    entryType: special
     text: The commoner has proficiency in one skill of the DM's choice and has Advantage whenever it makes an ability check using that skill.
   - category: action
     name: Club
-    text: "*Melee Attack Roll:* +2, reach 5 ft. 2 (1d4) Bludgeoning damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +2, reach 5 ft. 2 (1d4) Bludgeoning damage.'
+    attack:
+      type: melee
+      bonus: 2
+      damage:
+        - dice: 1d4
+          bonus: 0
+          type: Bludgeoning
+          average: 2
+      reach: 5 ft.
 ---
 
 # Commoner
@@ -53,7 +69,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 10 | 10 | 10 | 10 | 10 | 10 |
+| - | - | - | - | - | - |
 
 **Languages** Common
 CR 0, PB +2, XP 0

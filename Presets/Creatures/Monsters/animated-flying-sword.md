@@ -4,53 +4,69 @@ name: Animated Flying Sword
 size: Small
 type: Construct
 alignmentOverride: Unaligned
-ac: "17"
+ac: '17'
 initiative: +4 (14)
-hp: "14"
+hp: '14'
 hitDice: 4d6
 speeds:
-  - type: walk
-    value: "5"
-  - type: fly
-    value: "50"
+  walk:
+    distance: 5 ft.
+  fly:
+    distance: 50 ft.
     hover: true
 abilities:
-  - ability: str
+  - key: str
     score: 12
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 15
-  - ability: con
+    saveProf: true
+    saveMod: 4
+  - key: con
     score: 11
-  - ability: int
+    saveProf: false
+  - key: int
     score: 1
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 5
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 1
-pb: "+2"
-cr: 1/4
-xp: "50"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: blindsight
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "7"
+    value: '7'
 damageImmunitiesList:
   - value: Poison
-  - value: Psychic
-  - value: Charmed
-  - value: Deafened
+  - value: Psychic; Charmed
   - value: Exhaustion
+conditionImmunitiesList:
+  - value: Deafened
   - value: Frightened
   - value: Paralyzed
   - value: Petrified
   - value: Poisoned
+cr: 1/4
+xp: '50'
 entries:
   - category: action
     name: Slash
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 6 (1d8 + 2) Slashing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 6 (1d8 + 2) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d8
+          bonus: 2
+          type: Slashing
+          average: 6
+      reach: 5 ft.
 ---
 
 # Animated Flying Sword
@@ -63,7 +79,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 12 | 15 | 11 | 1 | 5 | 1 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 60 ft.; Passive Perception 7
 CR 1/4, PB +2, XP 50

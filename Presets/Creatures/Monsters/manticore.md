@@ -5,50 +5,76 @@ size: Large
 type: Monstrosity
 alignmentLawChaos: Lawful
 alignmentGoodEvil: Evil
-ac: "14"
+ac: '14'
 initiative: +3 (13)
-hp: "68"
+hp: '68'
 hitDice: 8d10 + 24
 speeds:
-  - type: walk
-    value: "30"
-  - type: fly
-    value: "50"
+  walk:
+    distance: 30 ft.
+  fly:
+    distance: 50 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 17
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 16
-  - ability: con
+    saveProf: false
+  - key: con
     score: 17
-  - ability: int
+    saveProf: false
+  - key: int
     score: 7
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 8
-pb: "+2"
-cr: "3"
-xp: "700"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Common
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "11"
+    value: '11'
+languagesList:
+  - value: Common
+cr: '3'
+xp: '700'
 entries:
   - category: action
     name: Multiattack
+    entryType: special
     text: The manticore makes three attacks, using Rend or Tail Spike in any combination.
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 7 (1d8 + 3) Slashing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 7 (1d8 + 3) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d8
+          bonus: 3
+          type: Slashing
+          average: 7
+      reach: 5 ft.
   - category: action
     name: Tail Spike
-    text: "*Ranged Attack Roll:* +5, range 100/200 ft. 7 (1d8 + 3) Piercing damage."
-
+    entryType: attack
+    text: '*Ranged Attack Roll:* +5, range 100/200 ft. 7 (1d8 + 3) Piercing damage.'
+    attack:
+      type: ranged
+      bonus: 5
+      damage:
+        - dice: 1d8
+          bonus: 3
+          type: Piercing
+          average: 7
+      range: 100/200 ft.
 ---
 
 # Manticore
@@ -61,7 +87,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 17 | 16 | 17 | 7 | 12 | 8 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 11
 **Languages** Common

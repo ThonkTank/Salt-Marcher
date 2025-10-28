@@ -3,58 +3,120 @@ smType: creature
 name: Copper Dragon Wyrmling
 size: Medium
 type: Dragon
+typeTags:
+  - value: Metallic
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Good
-ac: "16"
+ac: '16'
 initiative: +3 (13)
-hp: "22"
+hp: '22'
 hitDice: 4d8 + 4
 speeds:
-  - type: walk
-    value: "30"
-  - type: climb
-    value: "30"
-  - type: fly
-    value: "60"
+  walk:
+    distance: 30 ft.
+  climb:
+    distance: 30 ft.
+  fly:
+    distance: 60 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 15
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 12
-  - ability: con
+    saveProf: true
+    saveMod: 3
+  - key: con
     score: 13
-  - ability: int
+    saveProf: false
+  - key: int
     score: 14
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 11
-  - ability: cha
+    saveProf: true
+    saveMod: 2
+  - key: cha
     score: 13
-pb: "+2"
-cr: "1"
-xp: "200"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '4'
+  - skill: Stealth
+    value: '3'
 sensesList:
   - type: blindsight
-    range: "10"
+    range: '10'
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Draconic
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "14"
+    value: '14'
+languagesList:
+  - value: Draconic
 damageImmunitiesList:
   - value: Acid
+cr: '1'
+xp: '200'
 entries:
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 7 (1d10 + 2) Slashing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 7 (1d10 + 2) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d10
+          bonus: 2
+          type: Slashing
+          average: 7
+      reach: 5 ft.
   - category: action
     name: Acid Breath (Recharge 5-6)
-    text: "*Dexterity Saving Throw*: DC 11, each creature in a 20-foot-long, 5-foot-wide Line. *Failure:*  18 (4d8) Acid damage. *Success:*  Half damage."
+    entryType: save
+    text: '*Dexterity Saving Throw*: DC 11, each creature in a 20-foot-long, 5-foot-wide Line. *Failure:*  18 (4d8) Acid damage. *Success:*  Half damage.'
+    recharge: 5-6
+    save:
+      ability: dex
+      dc: 11
+      targeting:
+        shape: line
+        size: 20 ft.
+        width: 5 ft.
+      onFail:
+        effects:
+          other: 18 (4d8) Acid damage.
+        damage:
+          - dice: 4d8
+            bonus: 0
+            type: Acid
+            average: 18
+        legacyEffects: 18 (4d8) Acid damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
   - category: action
     name: Slowing Breath
-    text: "*Constitution Saving Throw*: DC 11, each creature in a 15-foot Cone. *Failure:*  The target can't take Reactions; its Speed is halved; and it can take either an action or a Bonus Action on its turn, not both. This effect lasts until the end of its next turn."
-
+    entryType: save
+    text: '*Constitution Saving Throw*: DC 11, each creature in a 15-foot Cone. *Failure:*  The target can''t take Reactions; its Speed is halved; and it can take either an action or a Bonus Action on its turn, not both. This effect lasts until the end of its next turn.'
+    save:
+      ability: con
+      dc: 11
+      targeting:
+        shape: cone
+        size: 15 ft.
+      onFail:
+        effects:
+          mechanical:
+            - type: penalty
+              modifier: half
+              target: Speed
+              description: Speed is halved
+            - type: other
+              target: Reactions
+              description: can't take Reactions
 ---
 
 # Copper Dragon Wyrmling
@@ -67,7 +129,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 15 | 12 | 13 | 14 | 11 | 13 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 10 ft., darkvision 60 ft.; Passive Perception 14
 **Languages** Draconic

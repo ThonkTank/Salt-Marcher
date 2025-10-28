@@ -4,47 +4,75 @@ name: Polar Bear
 size: Large
 type: Beast
 alignmentOverride: Unaligned
-ac: "12"
+ac: '12'
 initiative: +2 (12)
-hp: "42"
+hp: '42'
 hitDice: 5d10 + 15
 speeds:
-  - type: walk
-    value: "40"
-  - type: swim
-    value: "40"
+  walk:
+    distance: 40 ft.
+  swim:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 20
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 16
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 13
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 7
-pb: "+2"
-cr: "2"
-xp: "450"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '5'
+  - skill: Stealth
+    value: '4'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "15"
+    value: '15'
 damageResistancesList:
   - value: Cold
+cr: '2'
+xp: '450'
 entries:
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The bear makes two Rend attacks.
+    multiattack:
+      attacks:
+        - name: Rend
+          count: 2
+        - name: Rend
+          count: 2
+      substitutions: []
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +7, reach 5 ft. 9 (1d8 + 5) Slashing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +7, reach 5 ft. 9 (1d8 + 5) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 7
+      damage:
+        - dice: 1d8
+          bonus: 5
+          type: Slashing
+          average: 9
+      reach: 5 ft.
 ---
 
 # Polar Bear
@@ -57,7 +85,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 20 | 14 | 16 | 2 | 13 | 7 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 15
 CR 2, PB +2, XP 450

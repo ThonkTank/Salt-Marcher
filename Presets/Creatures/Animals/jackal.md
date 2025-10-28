@@ -4,40 +4,60 @@ name: Jackal
 size: Small
 type: Beast
 alignmentOverride: Unaligned
-ac: "12"
+ac: '12'
 initiative: +2 (12)
-hp: "3"
+hp: '3'
 hitDice: 1d6
 speeds:
-  - type: walk
-    value: "40"
+  walk:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 8
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 15
-  - ability: con
+    saveProf: false
+  - key: con
     score: 11
-  - ability: int
+    saveProf: false
+  - key: int
     score: 3
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 6
-pb: "+2"
-cr: "0"
-xp: "0"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '5'
+  - skill: Stealth
+    value: '4'
 sensesList:
   - type: darkvision
-    range: "90"
+    range: '90'
 passivesList:
   - skill: Perception
-    value: "15"
+    value: '15'
+cr: '0'
+xp: '0'
 entries:
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +1, reach 5 ft. 1 (1d4 - 1) Piercing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +1, reach 5 ft. 1 (1d4 - 1) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 1
+      damage:
+        - dice: 1d4
+          bonus: 0
+          type: Piercing
+          average: 1
+      reach: 5 ft.
 ---
 
 # Jackal
@@ -50,7 +70,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 8 | 15 | 11 | 3 | 12 | 6 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 90 ft.; Passive Perception 15
 CR 0, PB +2, XP 0

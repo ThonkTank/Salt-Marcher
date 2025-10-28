@@ -5,52 +5,102 @@ size: Medium
 type: Monstrosity
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Neutral
-ac: "12"
+ac: '12'
 initiative: +3 (13)
-hp: "58"
+hp: '58'
 hitDice: 9d8 + 18
 speeds:
-  - type: walk
-    value: "20"
+  walk:
+    distance: 20 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 17
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 12
-  - ability: con
+    saveProf: false
+  - key: con
     score: 15
-  - ability: int
+    saveProf: false
+  - key: int
     score: 5
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 13
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 8
-pb: "+2"
-cr: "2"
-xp: "450"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Stealth
+    value: '5'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "11"
+    value: '11'
 damageImmunitiesList:
-  - value: Acid
-  - value: Prone
+  - value: Acid; Prone
+cr: '2'
+xp: '450'
 entries:
   - category: trait
     name: Adhesive (Object Form Only)
+    entryType: special
     text: The mimic adheres to anything that touches it. A Huge or smaller creature adhered to the mimic has the Grappled condition (escape DC 13). Ability checks made to escape this grapple have Disadvantage.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +5 (with Advantage if the target is Grappled by the mimic), reach 5 ft. 7 (1d8 + 3) Piercing damage—or 12 (2d8 + 3) Piercing damage if the target is Grappled by the mimic—plus 4 (1d8) Acid damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +5 (with Advantage if the target is Grappled by the mimic), reach 5 ft. 7 (1d8 + 3) Piercing damage—or 12 (2d8 + 3) Piercing damage if the target is Grappled by the mimic—plus 4 (1d8) Acid damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d8
+          bonus: 3
+          type: Piercing
+          average: 7
+        - dice: 2d8
+          bonus: 3
+          type: Piercing
+          average: 12
+        - dice: 1d8
+          bonus: 0
+          type: Acid
+          average: 4
+      reach: 5 ft.
   - category: action
     name: Pseudopod
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 7 (1d8 + 3) Bludgeoning damage plus 4 (1d8) Acid damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13). Ability checks made to escape this grapple have Disadvantage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 7 (1d8 + 3) Bludgeoning damage plus 4 (1d8) Acid damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13). Ability checks made to escape this grapple have Disadvantage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d8
+          bonus: 3
+          type: Bludgeoning
+          average: 7
+        - dice: 1d8
+          bonus: 0
+          type: Acid
+          average: 4
+      reach: 5 ft.
+      onHit:
+        conditions:
+          - condition: Grappled
+            escape:
+              type: dc
+              dc: 13
+            restrictions:
+              size: Large or smaller
+      additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13). Ability checks made to escape this grapple have Disadvantage.
   - category: bonus
     name: Shape-Shift
+    entryType: special
     text: The mimic shape-shifts to resemble a Medium or Small object while retaining its game statistics, or it returns to its true blob form. Any equipment it is wearing or carrying isn't transformed.
-
 ---
 
 # Mimic
@@ -63,7 +113,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 17 | 12 | 15 | 5 | 13 | 8 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 11
 CR 2, PB +2, XP 450

@@ -4,48 +4,101 @@ name: Giant Constrictor Snake
 size: Huge
 type: Beast
 alignmentOverride: Unaligned
-ac: "12"
+ac: '12'
 initiative: +2 (12)
-hp: "60"
+hp: '60'
 hitDice: 8d12 + 8
 speeds:
-  - type: walk
-    value: "30"
-  - type: swim
-    value: "30"
+  walk:
+    distance: 30 ft.
+  swim:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 19
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 12
-  - ability: int
+    saveProf: false
+  - key: int
     score: 1
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 3
-pb: "+2"
-cr: "2"
-xp: "450"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '2'
 sensesList:
   - type: blindsight
-    range: "10"
+    range: '10'
 passivesList:
   - skill: Perception
-    value: "12"
+    value: '12'
+cr: '2'
+xp: '450'
 entries:
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The snake makes one Bite attack and uses Constrict.
+    multiattack:
+      attacks:
+        - name: Bite
+          count: 1
+        - name: Bite
+          count: 1
+      substitutions: []
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +6, reach 10 ft. 11 (2d6 + 4) Piercing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +6, reach 10 ft. 11 (2d6 + 4) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 6
+      damage:
+        - dice: 2d6
+          bonus: 4
+          type: Piercing
+          average: 11
+      reach: 10 ft.
   - category: action
     name: Constrict
-    text: "*Strength Saving Throw*: DC 14, one Large or smaller creature the snake can see within 10 feet. *Failure:*  13 (2d8 + 4) Bludgeoning damage, and the target has the Grappled condition (escape DC 14)."
-
+    entryType: save
+    text: '*Strength Saving Throw*: DC 14, one Large or smaller creature the snake can see within 10 feet. *Failure:*  13 (2d8 + 4) Bludgeoning damage, and the target has the Grappled condition (escape DC 14).'
+    save:
+      ability: str
+      dc: 14
+      targeting:
+        type: single
+        range: 10 ft.
+        restrictions:
+          size:
+            - Large
+            - smaller
+          visibility: true
+      area: one Large or smaller creature the snake can see within 10 feet
+      onFail:
+        damage:
+          - dice: 2d8
+            bonus: 4
+            type: Bludgeoning
+            average: 13
+        effects:
+          conditions:
+            - condition: Grappled
+              escape:
+                type: dc
+                dc: 14
+          other: 13 (2d8 + 4) Bludgeoning damage, and the target has the Grappled condition (escape DC 14).
+        legacyEffects: 13 (2d8 + 4) Bludgeoning damage, and the target has the Grappled condition (escape DC 14).
 ---
 
 # Giant Constrictor Snake
@@ -58,7 +111,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 19 | 14 | 12 | 1 | 10 | 3 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 10 ft.; Passive Perception 12
 CR 2, PB +2, XP 450

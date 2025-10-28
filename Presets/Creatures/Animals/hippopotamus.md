@@ -4,45 +4,73 @@ name: Hippopotamus
 size: Large
 type: Beast
 alignmentOverride: Unaligned
-ac: "14"
-initiative: "-2 (8)"
-hp: "82"
+ac: '14'
+initiative: '-2 (8)'
+hp: '82'
 hitDice: 11d10 + 22
 speeds:
-  - type: walk
-    value: "30"
-  - type: swim
-    value: "30"
+  walk:
+    distance: 30 ft.
+  swim:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 21
-  - ability: dex
+    saveProf: true
+    saveMod: 7
+  - key: dex
     score: 7
-  - ability: con
+    saveProf: false
+  - key: con
     score: 15
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 4
-pb: "+2"
-cr: "4"
-xp: "1100"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '3'
 passivesList:
   - skill: Perception
-    value: "13"
+    value: '13'
+cr: '4'
+xp: '1100'
 entries:
   - category: trait
     name: Hold Breath
+    entryType: special
     text: The hippopotamus can hold its breath for 10 minutes.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The hippopotamus makes two Bite attacks.
+    multiattack:
+      attacks:
+        - name: Bite
+          count: 2
+        - name: Bite
+          count: 2
+      substitutions: []
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +7, reach 5 ft. 16 (2d10 + 5) Piercing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +7, reach 5 ft. 16 (2d10 + 5) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 7
+      damage:
+        - dice: 2d10
+          bonus: 5
+          type: Piercing
+          average: 16
+      reach: 5 ft.
 ---
 
 # Hippopotamus
@@ -55,7 +83,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 21 | 7 | 15 | 2 | 12 | 4 |
+| - | - | - | - | - | - |
 
 CR 4, PB +2, XP 1100
 

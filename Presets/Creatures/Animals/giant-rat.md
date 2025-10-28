@@ -4,45 +4,64 @@ name: Giant Rat
 size: Small
 type: Beast
 alignmentOverride: Unaligned
-ac: "13"
+ac: '13'
 initiative: +3 (13)
-hp: "7"
+hp: '7'
 hitDice: 2d6
 speeds:
-  - type: walk
-    value: "30"
-  - type: climb
-    value: "30"
+  walk:
+    distance: 30 ft.
+  climb:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 7
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 16
-  - ability: con
+    saveProf: true
+    saveMod: 5
+  - key: con
     score: 11
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 4
-pb: "+2"
-cr: 1/8
-xp: "25"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '2'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "12"
+    value: '12'
+cr: 1/8
+xp: '25'
 entries:
   - category: trait
     name: Pack Tactics
+    entryType: special
     text: The rat has Advantage on an attack roll against a creature if at least one of the rat's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +5, reach 5 feet. 5 (1d4 + 3) Piercing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 feet. 5 (1d4 + 3) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d4
+          bonus: 3
+          type: Piercing
+          average: 5
 ---
 
 # Giant Rat
@@ -55,7 +74,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 7 | 16 | 11 | 2 | 10 | 4 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 12
 CR 1/8, PB +2, XP 25

@@ -5,51 +5,64 @@ size: Small
 type: Construct
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Neutral
-ac: "13"
+ac: '13'
 initiative: +2 (12)
-hp: "4"
+hp: '4'
 hitDice: 1d4 + 2
 speeds:
-  - type: walk
-    value: "20"
-  - type: fly
-    value: "40"
+  walk:
+    distance: 20 ft.
+  fly:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 4
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 15
-  - ability: con
+    saveProf: false
+  - key: con
     score: 14
-  - ability: int
+    saveProf: false
+  - key: int
     score: 10
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: true
+    saveMod: 2
+  - key: cha
     score: 7
-pb: "+2"
-cr: "0"
-xp: "0"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Understands Common plus one other language but can't speak
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+languagesList:
+  - value: Understands Common plus one other language but can't speak
 damageImmunitiesList:
-  - value: Poison
-  - value: Charmed
+  - value: Poison; Charmed
+conditionImmunitiesList:
   - value: Poisoned
+cr: '0'
+xp: '0'
 entries:
   - category: trait
     name: Telepathic Bond
+    entryType: special
     text: While the homunculus is on the same plane of existence as its master, the two of them can communicate telepathically with each other.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 1 Piercing damage, and the target is subjected to the following effect. *Constitution Saving Throw*: DC 12. *Failure:*  The target has the Poisoned condition until the end of the homunculus's next turn. *Failure by 5 or More:* The target has the Poisoned condition for 1 minute. While Poisoned, the target has the Unconscious condition, which ends early if the target takes any damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 1 Piercing damage, and the target is subjected to the following effect. *Constitution Saving Throw*: DC 12. *Failure:*  The target has the Poisoned condition until the end of the homunculus''s next turn. *Failure by 5 or More:* The target has the Poisoned condition for 1 minute. While Poisoned, the target has the Unconscious condition, which ends early if the target takes any damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage: []
+      reach: 5 ft.
 ---
 
 # Homunculus
@@ -62,7 +75,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 4 | 15 | 14 | 10 | 10 | 7 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 10
 **Languages** Understands Common plus one other language but can't speak

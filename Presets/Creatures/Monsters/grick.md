@@ -4,48 +4,93 @@ name: Grick
 size: Medium
 type: Aberration
 alignmentOverride: Unaligned
-ac: "14"
+ac: '14'
 initiative: +2 (12)
-hp: "54"
+hp: '54'
 hitDice: 12d8
 speeds:
-  - type: walk
-    value: "30"
-  - type: climb
-    value: "30"
+  walk:
+    distance: 30 ft.
+  climb:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 14
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 11
-  - ability: int
+    saveProf: false
+  - key: int
     score: 3
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 14
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 5
-pb: "+2"
-cr: "2"
-xp: "450"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Stealth
+    value: '4'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "12"
+    value: '12'
+cr: '2'
+xp: '450'
 entries:
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The grick makes one Beak attack and one Tentacles attack.
+    multiattack:
+      attacks:
+        - name: Beak
+          count: 1
+        - name: Tentacles
+          count: 1
+      substitutions: []
   - category: action
     name: Beak
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 9 (2d6 + 2) Piercing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 9 (2d6 + 2) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 2d6
+          bonus: 2
+          type: Piercing
+          average: 9
+      reach: 5 ft.
   - category: action
     name: Tentacles
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 7 (1d10 + 2) Slashing damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12) from all four tentacles."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 7 (1d10 + 2) Slashing damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12) from all four tentacles.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d10
+          bonus: 2
+          type: Slashing
+          average: 7
+      reach: 5 ft.
+      onHit:
+        conditions:
+          - condition: Grappled
+            escape:
+              type: dc
+              dc: 12
+            restrictions:
+              size: Medium or smaller
+      additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12) from all four tentacles.
 ---
 
 # Grick
@@ -58,7 +103,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 14 | 14 | 11 | 3 | 14 | 5 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 12
 CR 2, PB +2, XP 450

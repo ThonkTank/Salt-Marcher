@@ -87,19 +87,19 @@ export const VIEW_MANIFEST: ReadonlyArray<ViewManifestEntry> = [
     {
         viewType: VIEW_ENCOUNTER,
         integrationId: "obsidian:encounter-view",
-        displayName: "Encounter",
-        viewIcon: "swords",
+        displayName: "Calculator",
+        viewIcon: "calculator",
         createView: (leaf) => new EncounterView(leaf),
         activation: {
             open: (app) => openEncounter(app),
             ribbon: {
-                icon: "swords",
-                title: "Open Encounter Calculator",
+                icon: "calculator",
+                title: "Open Calculator",
             },
             commands: [
                 {
                     id: "open-encounter",
-                    name: "Open Encounter Calculator",
+                    name: "Open Calculator",
                 },
             ],
         },

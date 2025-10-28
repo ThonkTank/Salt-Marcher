@@ -1572,13 +1572,7 @@ const createModalCss = `
     gap: .25rem;
 }
 
-/* Entry header layout: [category | name (flex) | delete] */
-.sm-cc-create-modal .sm-cc-entry-head {
-    display: grid;
-    grid-template-columns: max-content 1fr max-content;
-    gap: .5rem;
-    align-items: center;
-}
+/* Entry header layout moved to styles.css */
 .sm-cc-create-modal .sm-cc-entry-head select { width: auto; }
 .sm-cc-create-modal .sm-cc-entry-name { width: 100%; min-width: 0; }
 
@@ -1851,12 +1845,7 @@ const createModalCss = `
     display: none;
 }
 
-.sm-cc-entry-head {
-    display: grid;
-    grid-template-columns: max-content 1fr max-content;
-    gap: .65rem;
-    align-items: center;
-}
+/* Entry head styling moved to styles.css for better control */
 .sm-cc-entry-badge {
     display: inline-flex;
     align-items: center;

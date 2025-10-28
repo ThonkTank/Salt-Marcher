@@ -5,55 +5,108 @@ size: Medium
 type: Undead
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Evil
-ac: "13"
+ac: '13'
 initiative: +3 (13)
-hp: "36"
+hp: '36'
 hitDice: 8d8
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 16
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 17
-  - ability: con
+    saveProf: false
+  - key: con
     score: 10
-  - ability: int
+    saveProf: false
+  - key: int
     score: 11
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: true
+    saveMod: 2
+  - key: cha
     score: 8
-pb: "+2"
-cr: "2"
-xp: "450"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Common
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+languagesList:
+  - value: Common
 damageResistancesList:
   - value: Necrotic
 damageImmunitiesList:
-  - value: Poison
-  - value: Charmed
+  - value: Poison; Charmed
   - value: Exhaustion
+conditionImmunitiesList:
   - value: Poisoned
+cr: '2'
+xp: '450'
 entries:
   - category: trait
     name: Stench
-    text: "*Constitution Saving Throw*: DC 10, any creature that starts its turn in a 5-foot Emanation originating from the ghast. *Failure:*  The target has the Poisoned condition until the start of its next turn. *Success:*  The target is immune to this ghast's Stench for 24 hours."
+    entryType: save
+    text: '*Constitution Saving Throw*: DC 10, any creature that starts its turn in a 5-foot Emanation originating from the ghast. *Failure:*  The target has the Poisoned condition until the start of its next turn. *Success:*  The target is immune to this ghast''s Stench for 24 hours.'
+    save:
+      ability: con
+      dc: 10
+      targeting:
+        shape: emanation
+        size: 5 ft.
+        origin: self
+      onFail:
+        effects:
+          conditions:
+            - condition: Poisoned
+              duration:
+                type: until
+                trigger: the start of its next turn
+      onSuccess: The target is immune to this ghast's Stench for 24 hours.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 7 (1d8 + 3) Piercing damage plus 9 (2d8) Necrotic damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 7 (1d8 + 3) Piercing damage plus 9 (2d8) Necrotic damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d8
+          bonus: 3
+          type: Piercing
+          average: 7
+        - dice: 2d8
+          bonus: 0
+          type: Necrotic
+          average: 9
+      reach: 5 ft.
   - category: action
     name: Claw
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 10 (2d6 + 3) Slashing damage. If the target is a non-Undead creature, it is subjected to the following effect. *Constitution Saving Throw*: DC 10. *Failure:*  The target has the Paralyzed condition until the end of its next turn."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 10 (2d6 + 3) Slashing damage. If the target is a non-Undead creature, it is subjected to the following effect. *Constitution Saving Throw*: DC 10. *Failure:*  The target has the Paralyzed condition until the end of its next turn.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 2d6
+          bonus: 3
+          type: Slashing
+          average: 10
+      reach: 5 ft.
+      onHit:
+        conditions:
+          - condition: Paralyzed
+            duration:
+              type: until
+              trigger: the end of its next turn
+      additionalEffects: 'If the target is a non-Undead creature, it is subjected to the following effect. *Constitution Saving Throw*: DC 10. *Failure:*  The target has the Paralyzed condition until the end of its next turn.'
 ---
 
 # Ghast
@@ -66,7 +119,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 16 | 17 | 10 | 11 | 10 | 8 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 10
 **Languages** Common

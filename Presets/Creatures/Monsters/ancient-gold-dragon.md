@@ -3,80 +3,217 @@ smType: creature
 name: Ancient Gold Dragon
 size: Gargantuan
 type: Dragon
+typeTags:
+  - value: Metallic
 alignmentLawChaos: Lawful
 alignmentGoodEvil: Good
-ac: "22"
+ac: '22'
 initiative: +6 (16)
-hp: "546"
+hp: '546'
 hitDice: 28d20 + 252
 speeds:
-  - type: walk
-    value: "40"
-  - type: fly
-    value: "80"
-  - type: swim
-    value: "40"
+  walk:
+    distance: 40 ft.
+  fly:
+    distance: 80 ft.
+  swim:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 30
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: true
+    saveMod: 9
+  - key: con
     score: 29
-  - ability: int
+    saveProf: false
+  - key: int
     score: 18
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 17
-  - ability: cha
+    saveProf: true
+    saveMod: 10
+  - key: cha
     score: 28
-pb: "+7"
-cr: "24"
-xp: "62000"
+    saveProf: false
+pb: '+7'
+skills:
+  - skill: Insight
+    value: '10'
+  - skill: Perception
+    value: '17'
+  - skill: Persuasion
+    value: '16'
+  - skill: Stealth
+    value: '9'
 sensesList:
   - type: blindsight
-    range: "60"
+    range: '60'
   - type: darkvision
-    range: "120"
+    range: '120'
+passivesList:
+  - skill: Perception
+    value: '27'
 languagesList:
   - value: Common
   - value: Draconic
-passivesList:
-  - skill: Perception
-    value: "27"
 damageImmunitiesList:
   - value: Fire
+cr: '24'
+xp: '62000'
 entries:
   - category: trait
     name: Amphibious
+    entryType: special
     text: The dragon can breathe air and water.
   - category: trait
     name: Legendary Resistance (4/Day, or 5/Day in Lair)
+    entryType: special
     text: If the dragon fails a saving throw, it can choose to succeed instead.
+    limitedUse:
+      count: 4
+      reset: day
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The dragon makes three Rend attacks. It can replace one attack with a use of (A) Spellcasting to cast *Guiding Bolt* (level 4 version) or (B) Weakening Breath.
+    multiattack:
+      attacks:
+        - name: Rend
+          count: 3
+      substitutions:
+        - replace: attack
+          with:
+            type: spellcasting
+            spell: Guiding Bolt
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +17 to hit, reach 15 ft. 19 (2d8 + 10) Slashing damage plus 9 (2d8) Fire damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +17 to hit, reach 15 ft. 19 (2d8 + 10) Slashing damage plus 9 (2d8) Fire damage.'
+    attack:
+      type: melee
+      bonus: 17
+      damage:
+        - dice: 2d8
+          bonus: 10
+          type: Slashing
+          average: 19
+        - dice: 2d8
+          bonus: 0
+          type: Fire
+          average: 9
+      reach: 15 ft.
   - category: action
     name: Fire Breath (Recharge 5-6)
-    text: "*Dexterity Saving Throw*: DC 24, each creature in a 90-foot Cone. *Failure:*  71 (13d10) Fire damage. *Success:*  Half damage."
+    entryType: save
+    text: '*Dexterity Saving Throw*: DC 24, each creature in a 90-foot Cone. *Failure:*  71 (13d10) Fire damage. *Success:*  Half damage.'
+    recharge: 5-6
+    save:
+      ability: dex
+      dc: 24
+      targeting:
+        shape: cone
+        size: 90 ft.
+      onFail:
+        effects:
+          other: 71 (13d10) Fire damage.
+        damage:
+          - dice: 13d10
+            bonus: 0
+            type: Fire
+            average: 71
+        legacyEffects: 71 (13d10) Fire damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
   - category: action
     name: Weakening Breath
-    text: "*Strength Saving Throw*: DC 24, each creature that isn't currently affected by this breath in a 90-foot Cone. *Failure:*  The target has Disadvantage on Strength-based D20 Test and subtracts 5 (1d10) from its damage rolls. It repeats the save at the end of each of its turns, ending the effect on itself on a success. After 1 minute, it succeeds automatically."
-  - category: action
-    name: Spellcasting
-    text: "The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 24, +16 to hit with spell attacks): - **At Will:** *Detect Magic*, *Guiding Bolt*, *Shapechange* - **1e/Day Each:** *Flame Strike*, *Word of Recall*, *Zone of Truth*"
+    entryType: save
+    text: '*Strength Saving Throw*: DC 24, each creature that isn''t currently affected by this breath in a 90-foot Cone. *Failure:*  The target has Disadvantage on Strength-based D20 Test and subtracts 5 (1d10) from its damage rolls. It repeats the save at the end of each of its turns, ending the effect on itself on a success. After 1 minute, it succeeds automatically.'
+    save:
+      ability: str
+      dc: 24
+      targeting:
+        shape: cone
+        size: 90 ft.
+      onFail:
+        effects:
+          mechanical:
+            - type: disadvantage
+              target: Strength-based D20 Test
+              description: has Disadvantage on Strength-based D20 Test and
+            - type: advantage
+              target: Strength-based D20 Test
+              description: advantage on Strength-based D20 Test and
+            - type: penalty
+              modifier: -5
+              target: damage rolls
+              description: subtracts 5 (1d10) from its damage rolls.
   - category: legendary
     name: Banish
-    text: "*Charisma Saving Throw*: DC 24, one creature the dragon can see within 120 feet. *Failure:*  24 (7d6) Force damage, and the target has the Incapacitated condition and is transported to a harmless demiplane until the start of the dragon's next turn, at which point it reappears in an unoccupied space of the dragon's choice within 120 feet of the dragon. *Failure or Success*:  The dragon can't take this action again until the start of its next turn."
-  - category: legendary
-    name: Guiding Light
-    text: The dragon uses Spellcasting to cast *Guiding Bolt* (level 4 version).
+    entryType: save
+    text: '*Charisma Saving Throw*: DC 24, one creature the dragon can see within 120 feet. *Failure:*  24 (7d6) Force damage, and the target has the Incapacitated condition and is transported to a harmless demiplane until the start of the dragon''s next turn, at which point it reappears in an unoccupied space of the dragon''s choice within 120 feet of the dragon. *Failure or Success*:  The dragon can''t take this action again until the start of its next turn.'
+    save:
+      ability: cha
+      dc: 24
+      targeting:
+        type: single
+        range: 120 ft.
+        restrictions:
+          visibility: true
+      onFail:
+        effects:
+          conditions:
+            - condition: Incapacitated
+              duration:
+                type: until
+                trigger: the start of the dragon's next turn
+        damage:
+          - dice: 7d6
+            bonus: 0
+            type: Force
+            average: 24
   - category: legendary
     name: Pounce
+    entryType: multiattack
     text: The dragon moves up to half its Speed, and it makes one Rend attack.
-
+    multiattack:
+      attacks:
+        - name: Rend
+          count: 1
+      substitutions: []
+spellcastingEntries:
+  - category: action
+    name: Spellcasting
+    entryType: spellcasting
+    text: 'The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 24, +16 to hit with spell attacks): - **At Will:** *Detect Magic*, *Guiding Bolt*, *Shapechange* - **1e/Day Each:** *Flame Strike*, *Word of Recall*, *Zone of Truth*'
+    spellcasting:
+      ability: cha
+      saveDC: 24
+      attackBonus: 16
+      excludeComponents:
+        - M
+      spellLists:
+        - frequency: at-will
+          spells:
+            - Detect Magic
+            - Guiding Bolt
+            - Shapechange
+        - frequency: 1/day
+          spells:
+            - Flame Strike
+            - Word of Recall
+            - Zone of Truth
+  - category: legendary
+    name: Guiding Light
+    entryType: spellcasting
+    text: The dragon uses Spellcasting to cast *Guiding Bolt* (level 4 version).
+    spellcasting:
+      ability: int
+      spellLists: []
 ---
 
 # Ancient Gold Dragon
@@ -89,7 +226,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 30 | 14 | 29 | 18 | 17 | 28 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 60 ft., darkvision 120 ft.; Passive Perception 27
 **Languages** Common, Draconic

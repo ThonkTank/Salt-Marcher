@@ -1,489 +1,596 @@
-[2025-10-23T05:23:00.797Z] LOG: ================================================================================
-[2025-10-23T05:23:00.797Z] LOG: Salt Marcher Plugin Logger - Session Start
-[2025-10-23T05:23:00.797Z] LOG: Timestamp: 2025-10-23T05:23:00.797Z
-[2025-10-23T05:23:00.797Z] LOG: ================================================================================
-[2025-10-23T05:23:00.797Z] LOG: Plugin loading...
-[2025-10-23T05:23:00.804Z] LOG: [Index] Generating all library indexes...
-[2025-10-23T05:23:01.123Z] LOG: [Index] All indexes generated successfully
-[2025-10-23T05:23:01.124Z] LOG: [IPC] Registered command: reload-plugin
-[2025-10-23T05:23:01.125Z] LOG: [IPC] Registered command: edit-creature
-[2025-10-23T05:23:01.125Z] LOG: [IPC] Registered command: edit-spell
-[2025-10-23T05:23:01.125Z] LOG: [IPC] Registered command: edit-item
-[2025-10-23T05:23:01.125Z] LOG: [IPC] Registered command: edit-equipment
-[2025-10-23T05:23:01.125Z] LOG: [IPC] Registered command: get-logs
-[2025-10-23T05:23:01.125Z] LOG: [IPC] Registered command: import-presets
-[2025-10-23T05:23:01.125Z] LOG: [IPC] Registered command: regenerate-indexes
-[2025-10-23T05:23:01.127Z] LOG: [IPC] Registered command: screenshot-modal
-[2025-10-23T05:23:01.127Z] LOG: [IPC] Registered command: navigate-to-section
-[2025-10-23T05:23:01.127Z] LOG: [IPC] Registered command: click-element
-[2025-10-23T05:23:01.127Z] LOG: [IPC] Registered command: set-input-value
-[2025-10-23T05:23:01.127Z] LOG: [IPC] Registered command: add-token
-[2025-10-23T05:23:01.127Z] LOG: [IPC] Registered command: toggle-save-checkbox
-[2025-10-23T05:23:01.127Z] LOG: [IPC] Registered command: get-ability-values
-[2025-10-23T05:23:01.127Z] LOG: [IPC] Registered command: validate-grid-layout
-[2025-10-23T05:23:01.128Z] LOG: [IPC] Registered command: debug-stepper-styles
-[2025-10-23T05:23:01.128Z] LOG: [IPC] Registered command: validate-ui
-[2025-10-23T05:23:01.128Z] LOG: [IPC] Registered command: measure-ui
-[2025-10-23T05:23:01.128Z] LOG: [IPC] Registered command: validate-ui-rule
-[2025-10-23T05:23:01.128Z] LOG: [IPC] Registered command: validate-ui-config
-[2025-10-23T05:23:01.128Z] LOG: [IPC] Dev commands loaded - available: measure-ui, validate-ui-rule, validate-ui-config, screenshot-modal, navigate-to-section, validate-grid-layout, debug-stepper-styles, validate-ui
-[2025-10-23T05:23:01.129Z] LOG: [IPC] Server started on /home/aaron/ObsVaults/DnD/.obsidian/plugins/salt-marcher/ipc.sock
-[2025-10-23T05:23:01.129Z] LOG: [IPC] Server ready - production commands: reload-plugin, edit-creature, edit-spell, edit-item, edit-equipment, get-logs
-[2025-10-23T05:23:01.291Z] LOG: Plugin presets already imported (marker exists)
-[2025-10-23T05:23:01.309Z] LOG: Spell presets already imported (marker exists)
-[2025-10-23T05:23:01.342Z] LOG: Item presets already imported (marker exists)
-[2025-10-23T05:23:01.371Z] LOG: Equipment presets already imported (marker exists)
-[2025-10-23T05:23:01.419Z] LOG: Terrain presets already imported (marker exists)
-[2025-10-23T05:23:01.437Z] LOG: Region presets already imported (marker exists)
-[2025-10-23T05:23:01.438Z] LOG: Calendar presets already imported (marker exists)
-[2025-10-23T05:23:02.678Z] LOG: [library:creatures] Found 235 files
-[2025-10-23T05:23:02.680Z] LOG: [library:creatures] Loaded 235 entries
-[2025-10-23T05:23:02.684Z] LOG: [library:creatures] Rendering 235 entries (filtered from 235 total)
-[2025-10-23T05:23:03.565Z] LOG: [UI-TEST] Modal opened: {"kind":"creature","title":"Kreatur erstellen","entity":"New creature","timestamp":1761196983565}
-[2025-10-23T05:23:03.587Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 7,
-  "normalFields": 7,
+[2025-10-27T10:16:05.865Z] LOG: ================================================================================
+[2025-10-27T10:16:05.872Z] LOG: Salt Marcher Plugin Logger - Session Start
+[2025-10-27T10:16:05.872Z] LOG: Timestamp: 2025-10-27T10:16:05.872Z
+[2025-10-27T10:16:05.872Z] LOG: ================================================================================
+[2025-10-27T10:16:05.872Z] LOG: Plugin loading...
+[2025-10-27T10:16:05.879Z] LOG: [DebugLogger] Config loaded: {
+  "enabled": true,
+  "logAll": true,
+  "logFields": [
+    "*"
+  ],
+  "logCategories": [
+    "*"
+  ]
+}
+[2025-10-27T10:16:05.886Z] LOG: [Index] Generating all library indexes...
+[2025-10-27T10:16:05.904Z] LOG: [Index] All indexes generated successfully
+[2025-10-27T10:16:05.906Z] LOG: [IPC] Registered command: reload-plugin
+[2025-10-27T10:16:05.906Z] LOG: [IPC] Registered command: edit-creature
+[2025-10-27T10:16:05.906Z] LOG: [IPC] Registered command: edit-spell
+[2025-10-27T10:16:05.906Z] LOG: [IPC] Registered command: edit-item
+[2025-10-27T10:16:05.906Z] LOG: [IPC] Registered command: edit-equipment
+[2025-10-27T10:16:05.906Z] LOG: [IPC] Registered command: get-logs
+[2025-10-27T10:16:05.906Z] LOG: [IPC] Registered command: import-presets
+[2025-10-27T10:16:05.906Z] LOG: [IPC] Registered command: regenerate-indexes
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: navigate-to-section
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: click-element
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: set-input-value
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: add-token
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: toggle-save-checkbox
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: get-ability-values
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: validate-grid-layout
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: debug-stepper-styles
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: validate-ui
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: measure-ui
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: validate-ui-rule
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: validate-ui-config
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: start-test
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: end-test
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: log-marker
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: set-debug-config
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: get-debug-config
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: get-test-logs
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: assert-log-contains
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: get-field-state
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: dump-field-states
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: get-modal-data
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: dump-dom
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Registered command: inspect-ui
+[2025-10-27T10:16:05.908Z] LOG: [IPC] Dev commands loaded - available: measure-ui, validate-ui-rule, validate-ui-config, dump-dom, navigate-to-section, validate-grid-layout, debug-stepper-styles, validate-ui, start-test, end-test, log-marker, set-debug-config, get-debug-config, get-test-logs, assert-log-contains, get-field-state, dump-field-states, get-modal-data
+[2025-10-27T10:16:05.909Z] LOG: [IPC] Server started on /home/aaron/ObsVaults/DnD/.obsidian/plugins/salt-marcher/ipc.sock
+[2025-10-27T10:16:05.909Z] LOG: [IPC] Server ready - production commands: reload-plugin, edit-creature, edit-spell, edit-item, edit-equipment, get-logs
+[2025-10-27T10:16:05.914Z] LOG: Plugin presets already imported (marker exists)
+[2025-10-27T10:16:05.915Z] LOG: Spell presets already imported (marker exists)
+[2025-10-27T10:16:05.916Z] LOG: Item presets already imported (marker exists)
+[2025-10-27T10:16:05.923Z] LOG: Equipment presets already imported (marker exists)
+[2025-10-27T10:16:05.924Z] LOG: Terrain presets already imported (marker exists)
+[2025-10-27T10:16:05.926Z] LOG: Region presets already imported (marker exists)
+[2025-10-27T10:16:05.927Z] LOG: Calendar presets already imported (marker exists)
+[2025-10-27T10:16:09.569Z] LOG: [Layout] Center leaf resolved: [object Object]
+[2025-10-27T10:16:28.113Z] LOG: [library:creatures] Found 329 files
+[2025-10-27T10:16:28.116Z] LOG: [library:creatures] Loaded 329 entries
+[2025-10-27T10:16:28.128Z] LOG: [library:creatures] Rendering 329 entries (filtered from 329 total)
+[2025-10-27T10:16:30.024Z] LOG: [library:equipment] Found 145 files
+[2025-10-27T10:16:30.025Z] LOG: [library:equipment] Loaded 145 entries
+[2025-10-27T10:16:30.043Z] LOG: [library:equipment] Rendering 145 entries (filtered from 145 total)
+[2025-10-27T10:16:34.238Z] LOG: [UI-TEST] Modal opened: {"kind":"equipment","title":"Equipment erstellen","entity":"Acid","timestamp":1761560194238}
+[2025-10-27T10:16:34.302Z] LOG: [GridLayoutManager] Recalculating layout: {
+  "totalFields": 4,
+  "normalFields": 4,
   "availableWidth": 770,
   "fieldTypes": [
     "name:text",
-    "size:select",
-    "alignmentLawChaos:select",
-    "alignmentGoodEvil:select",
-    "alignmentOverride:text",
     "type:select",
-    "typeTags:tokens"
+    "cost:text",
+    "weight:text"
   ]
 }
-[2025-10-23T05:23:03.588Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 146,
-  "maxControlWidth": 200,
-  "minPairWidth": 362,
-  "pairs": 2,
-  "columns": "repeat(2, max-content 1fr)",
-  "isMultiColumn": true
-}
-[2025-10-23T05:23:03.588Z] LOG: [Modal] Label sync enabled for section: basic Multi-column: true
-[2025-10-23T05:23:03.589Z] LOG: [renderTextCore] Rendering field with placeholder: z.B. +2
-[2025-10-23T05:23:03.589Z] LOG: [renderTextCore] Raw value: undefined
-[2025-10-23T05:23:03.589Z] LOG: [renderTextCore] Value type: undefined
-[2025-10-23T05:23:03.589Z] LOG: [renderTextCore] Normalized value: 
-[2025-10-23T05:23:03.589Z] LOG: [renderTextCore] Setting input.value to: 
-[2025-10-23T05:23:03.590Z] LOG: [field-manager] Rendering pb field
-[2025-10-23T05:23:03.590Z] LOG: [field-manager] values object: {
-  "name": "New creature",
-  "size": "Medium",
-  "typeTags": [],
-  "speeds": [],
-  "abilities": [
-    {
-      "key": "str",
-      "label": "STR",
-      "score": 10,
-      "saveProf": false
-    },
-    {
-      "key": "dex",
-      "label": "DEX",
-      "score": 10,
-      "saveProf": false
-    },
-    {
-      "key": "con",
-      "label": "CON",
-      "score": 10,
-      "saveProf": false
-    },
-    {
-      "key": "int",
-      "label": "INT",
-      "score": 10,
-      "saveProf": false
-    },
-    {
-      "key": "wis",
-      "label": "WIS",
-      "score": 10,
-      "saveProf": false
-    },
-    {
-      "key": "cha",
-      "label": "CHA",
-      "score": 10,
-      "saveProf": false
-    }
-  ],
-  "skills": [],
-  "sensesList": [],
-  "passivesList": [],
-  "languagesList": [],
-  "damageVulnerabilitiesList": [],
-  "damageResistancesList": [],
-  "damageImmunitiesList": [],
-  "conditionImmunitiesList": [],
-  "gearList": [],
-  "entries": []
-}
-[2025-10-23T05:23:03.590Z] LOG: [field-manager] values["pb"]: undefined
-[2025-10-23T05:23:03.590Z] LOG: [resolveInitialValue] Resolving pb field
-[2025-10-23T05:23:03.590Z] LOG: [resolveInitialValue] values object: {
-  "name": "New creature",
-  "size": "Medium",
-  "typeTags": [],
-  "speeds": [],
-  "abilities": [
-    {
-      "key": "str",
-      "label": "STR",
-      "score": 10,
-      "saveProf": false
-    },
-    {
-      "key": "dex",
-      "label": "DEX",
-      "score": 10,
-      "saveProf": false
-    },
-    {
-      "key": "con",
-      "label": "CON",
-      "score": 10,
-      "saveProf": false
-    },
-    {
-      "key": "int",
-      "label": "INT",
-      "score": 10,
-      "saveProf": false
-    },
-    {
-      "key": "wis",
-      "label": "WIS",
-      "score": 10,
-      "saveProf": false
-    },
-    {
-      "key": "cha",
-      "label": "CHA",
-      "score": 10,
-      "saveProf": false
-    }
-  ],
-  "skills": [],
-  "sensesList": [],
-  "passivesList": [],
-  "languagesList": [],
-  "damageVulnerabilitiesList": [],
-  "damageResistancesList": [],
-  "damageImmunitiesList": [],
-  "conditionImmunitiesList": [],
-  "gearList": [],
-  "entries": []
-}
-[2025-10-23T05:23:03.590Z] LOG: [resolveInitialValue] values["pb"]: undefined
-[2025-10-23T05:23:03.590Z] LOG: [resolveInitialValue] spec.default: undefined
-[2025-10-23T05:23:03.591Z] LOG: [resolveInitialValue] Returning undefined
-[2025-10-23T05:23:03.591Z] LOG: [renderTextCore] Rendering field with placeholder: z.B. +2
-[2025-10-23T05:23:03.591Z] LOG: [renderTextCore] Raw value: undefined
-[2025-10-23T05:23:03.591Z] LOG: [renderTextCore] Value type: undefined
-[2025-10-23T05:23:03.591Z] LOG: [renderTextCore] Normalized value: 
-[2025-10-23T05:23:03.591Z] LOG: [renderTextCore] Setting input.value to: 
-[2025-10-23T05:23:03.595Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 7,
-  "normalFields": 7,
-  "availableWidth": 770,
-  "fieldTypes": [
-    "ac:text",
-    "initiative:text",
-    "hp:text",
-    "hitDice:text",
-    "cr:text",
-    "xp:text",
-    "pb:text"
-  ]
-}
-[2025-10-23T05:23:03.595Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 22,
+[2025-10-27T10:16:34.303Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 46,
   "maxControlWidth": 180,
-  "minPairWidth": 218,
+  "minPairWidth": 242,
   "pairs": 3,
   "columns": "repeat(3, max-content 1fr)",
   "isMultiColumn": true
 }
-[2025-10-23T05:23:03.595Z] LOG: [Modal] Label sync enabled for section: combat Multi-column: true
-[2025-10-23T05:23:03.602Z] LOG: [field-utils] Creating clickable-icon for field "saveProf", initial value: false
-[2025-10-23T05:23:03.603Z] LOG: [ClickableIcon] Created for field "saveProf", initial value: false
-[2025-10-23T05:23:03.611Z] LOG: [field-utils] Creating clickable-icon for field "saveProf", initial value: false
-[2025-10-23T05:23:03.611Z] LOG: [ClickableIcon] Created for field "saveProf", initial value: false
-[2025-10-23T05:23:03.618Z] LOG: [field-utils] Creating clickable-icon for field "saveProf", initial value: false
-[2025-10-23T05:23:03.618Z] LOG: [ClickableIcon] Created for field "saveProf", initial value: false
-[2025-10-23T05:23:03.624Z] LOG: [field-utils] Creating clickable-icon for field "saveProf", initial value: false
-[2025-10-23T05:23:03.624Z] LOG: [ClickableIcon] Created for field "saveProf", initial value: false
-[2025-10-23T05:23:03.630Z] LOG: [field-utils] Creating clickable-icon for field "saveProf", initial value: false
-[2025-10-23T05:23:03.630Z] LOG: [ClickableIcon] Created for field "saveProf", initial value: false
-[2025-10-23T05:23:03.637Z] LOG: [field-utils] Creating clickable-icon for field "saveProf", initial value: false
-[2025-10-23T05:23:03.637Z] LOG: [ClickableIcon] Created for field "saveProf", initial value: false
-[2025-10-23T05:23:03.642Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 1,
-  "normalFields": 0,
-  "availableWidth": 758,
+[2025-10-27T10:16:34.303Z] LOG: [Modal] Label sync enabled for section: basic Multi-column: true
+[2025-10-27T10:16:34.320Z] LOG: [TokenRenderer] Field "properties" currentValue type: object, isArray: true, value: []
+[2025-10-27T10:16:34.320Z] LOG: [TokenRenderer] Field "properties" tokenValues: []
+[2025-10-27T10:16:34.331Z] LOG: [GridLayoutManager] Recalculating layout: {
+  "totalFields": 5,
+  "normalFields": 5,
+  "availableWidth": 770,
   "fieldTypes": [
-    "abilities:repeating"
+    "weapon_category:select",
+    "weapon_type:select",
+    "damage:text",
+    "properties:tokens",
+    "mastery:text"
   ]
 }
-[2025-10-23T05:23:03.642Z] LOG: [GridLayoutManager] No normal fields, using single column
-[2025-10-23T05:23:03.642Z] LOG: [Modal] Label sync enabled for section: abilities Multi-column: false
-[2025-10-23T05:23:03.647Z] LOG: [GridLayoutManager] Recalculating layout: {
+[2025-10-27T10:16:34.331Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 66,
+  "maxControlWidth": 200,
+  "minPairWidth": 282,
+  "pairs": 2,
+  "columns": "repeat(2, max-content 1fr)",
+  "isMultiColumn": true
+}
+[2025-10-27T10:16:34.331Z] LOG: [Modal] Label sync enabled for section: weapon Multi-column: true
+[2025-10-27T10:16:34.346Z] LOG: [GridLayoutManager] Recalculating layout: {
+  "totalFields": 6,
+  "normalFields": 6,
+  "availableWidth": 770,
+  "fieldTypes": [
+    "armor_category:select",
+    "ac:text",
+    "strength_requirement:text",
+    "stealth_disadvantage:checkbox",
+    "don_time:text",
+    "doff_time:text"
+  ]
+}
+[2025-10-27T10:16:34.347Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 100,
+  "maxControlWidth": 200,
+  "minPairWidth": 316,
+  "pairs": 2,
+  "columns": "repeat(2, max-content 1fr)",
+  "isMultiColumn": true
+}
+[2025-10-27T10:16:34.347Z] LOG: [Modal] Label sync enabled for section: armor Multi-column: true
+[2025-10-27T10:16:34.358Z] LOG: [TokenRenderer] Field "utilize" currentValue type: object, isArray: true, value: []
+[2025-10-27T10:16:34.358Z] LOG: [TokenRenderer] Field "utilize" tokenValues: []
+[2025-10-27T10:16:34.359Z] LOG: [TokenRenderer] Field "craft" currentValue type: object, isArray: true, value: []
+[2025-10-27T10:16:34.359Z] LOG: [TokenRenderer] Field "craft" tokenValues: []
+[2025-10-27T10:16:34.360Z] LOG: [TokenRenderer] Field "variants" currentValue type: object, isArray: true, value: []
+[2025-10-27T10:16:34.360Z] LOG: [TokenRenderer] Field "variants" tokenValues: []
+[2025-10-27T10:16:34.369Z] LOG: [GridLayoutManager] Recalculating layout: {
   "totalFields": 5,
   "normalFields": 5,
   "availableWidth": 758,
   "fieldTypes": [
-    "speeds:tokens",
-    "skills:tokens",
-    "sensesList:tokens",
-    "passivesList:tokens",
-    "languagesList:tokens"
+    "tool_category:select",
+    "ability:text",
+    "utilize:tokens",
+    "craft:tokens",
+    "variants:tokens"
   ]
 }
-[2025-10-23T05:23:03.647Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 117,
+[2025-10-27T10:16:34.370Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 53,
   "maxControlWidth": 200,
-  "minPairWidth": 333,
+  "minPairWidth": 269,
   "pairs": 2,
   "columns": "repeat(2, max-content 1fr)",
   "isMultiColumn": true
 }
-[2025-10-23T05:23:03.647Z] LOG: [Modal] Label sync enabled for section: senses Multi-column: true
-[2025-10-23T05:23:03.651Z] LOG: [GridLayoutManager] Recalculating layout: {
+[2025-10-27T10:16:34.370Z] LOG: [Modal] Label sync enabled for section: tool Multi-column: true
+[2025-10-27T10:16:34.381Z] LOG: [GridLayoutManager] Recalculating layout: {
   "totalFields": 4,
-  "normalFields": 4,
+  "normalFields": 3,
   "availableWidth": 758,
   "fieldTypes": [
-    "damageVulnerabilitiesList:tokens",
-    "damageResistancesList:tokens",
-    "damageImmunitiesList:tokens",
-    "conditionImmunitiesList:tokens"
+    "gear_category:text",
+    "capacity:text",
+    "duration:text",
+    "special_use:textarea"
   ]
 }
-[2025-10-23T05:23:03.652Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 160,
-  "maxControlWidth": 200,
-  "minPairWidth": 376,
+[2025-10-27T10:16:34.381Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 72,
+  "maxControlWidth": 180,
+  "minPairWidth": 268,
   "pairs": 2,
   "columns": "repeat(2, max-content 1fr)",
   "isMultiColumn": true
 }
-[2025-10-23T05:23:03.652Z] LOG: [Modal] Label sync enabled for section: resistances Multi-column: true
-[2025-10-23T05:23:03.655Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 1,
-  "normalFields": 1,
-  "availableWidth": 758,
-  "fieldTypes": [
-    "gearList:tokens"
-  ]
-}
-[2025-10-23T05:23:03.655Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 80,
-  "maxControlWidth": 200,
-  "minPairWidth": 296,
-  "pairs": 2,
-  "columns": "repeat(2, max-content 1fr)",
-  "isMultiColumn": true
-}
-[2025-10-23T05:23:03.655Z] LOG: [Modal] Label sync enabled for section: equipment Multi-column: true
-[2025-10-23T05:23:03.658Z] LOG: [GridLayoutManager] Recalculating layout: {
+[2025-10-27T10:16:34.382Z] LOG: [Modal] Label sync enabled for section: gear Multi-column: true
+[2025-10-27T10:16:34.388Z] LOG: [GridLayoutManager] Recalculating layout: {
   "totalFields": 1,
   "normalFields": 0,
   "availableWidth": 758,
   "fieldTypes": [
-    "entries:repeating"
+    "description:textarea"
   ]
 }
-[2025-10-23T05:23:03.658Z] LOG: [GridLayoutManager] No normal fields, using single column
-[2025-10-23T05:23:03.658Z] LOG: [Modal] Label sync enabled for section: entries Multi-column: false
-[2025-10-23T05:23:03.704Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 7,
-  "normalFields": 7,
+[2025-10-27T10:16:34.388Z] LOG: [GridLayoutManager] No normal fields, using single column
+[2025-10-27T10:16:34.389Z] LOG: [Modal] Label sync enabled for section: description Multi-column: false
+[2025-10-27T10:16:34.400Z] LOG: [GridLayoutManager] Recalculating layout: {
+  "totalFields": 4,
+  "normalFields": 4,
   "availableWidth": 758,
   "fieldTypes": [
     "name:text",
-    "size:select",
-    "alignmentLawChaos:select",
-    "alignmentGoodEvil:select",
-    "alignmentOverride:text",
     "type:select",
-    "typeTags:tokens"
+    "cost:text",
+    "weight:text"
   ]
 }
-[2025-10-23T05:23:03.704Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 146,
-  "maxControlWidth": 200,
-  "minPairWidth": 362,
-  "pairs": 2,
-  "columns": "repeat(2, max-content 1fr)",
-  "isMultiColumn": true
-}
-[2025-10-23T05:23:03.704Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 7,
-  "normalFields": 7,
-  "availableWidth": 758,
-  "fieldTypes": [
-    "ac:text",
-    "initiative:text",
-    "hp:text",
-    "hitDice:text",
-    "cr:text",
-    "xp:text",
-    "pb:text"
-  ]
-}
-[2025-10-23T05:23:03.704Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 22,
+[2025-10-27T10:16:34.400Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 46,
   "maxControlWidth": 180,
-  "minPairWidth": 218,
+  "minPairWidth": 242,
   "pairs": 3,
   "columns": "repeat(3, max-content 1fr)",
   "isMultiColumn": true
 }
-[2025-10-23T05:23:03.704Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 1,
-  "normalFields": 0,
-  "availableWidth": 758,
-  "fieldTypes": [
-    "abilities:repeating"
-  ]
-}
-[2025-10-23T05:23:03.704Z] LOG: [GridLayoutManager] No normal fields, using single column
-[2025-10-23T05:23:03.705Z] LOG: [GridLayoutManager] Recalculating layout: {
+[2025-10-27T10:16:34.400Z] LOG: [GridLayoutManager] Recalculating layout: {
   "totalFields": 5,
   "normalFields": 5,
   "availableWidth": 758,
   "fieldTypes": [
-    "speeds:tokens",
-    "skills:tokens",
-    "sensesList:tokens",
-    "passivesList:tokens",
-    "languagesList:tokens"
+    "weapon_category:select",
+    "weapon_type:select",
+    "damage:text",
+    "properties:tokens",
+    "mastery:text"
   ]
 }
-[2025-10-23T05:23:03.705Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 117,
+[2025-10-27T10:16:34.400Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 66,
   "maxControlWidth": 200,
-  "minPairWidth": 333,
+  "minPairWidth": 282,
   "pairs": 2,
   "columns": "repeat(2, max-content 1fr)",
   "isMultiColumn": true
 }
-[2025-10-23T05:23:03.705Z] LOG: [GridLayoutManager] Recalculating layout: {
+[2025-10-27T10:16:34.400Z] LOG: [GridLayoutManager] Recalculating layout: {
+  "totalFields": 6,
+  "normalFields": 6,
+  "availableWidth": 758,
+  "fieldTypes": [
+    "armor_category:select",
+    "ac:text",
+    "strength_requirement:text",
+    "stealth_disadvantage:checkbox",
+    "don_time:text",
+    "doff_time:text"
+  ]
+}
+[2025-10-27T10:16:34.400Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 100,
+  "maxControlWidth": 200,
+  "minPairWidth": 316,
+  "pairs": 2,
+  "columns": "repeat(2, max-content 1fr)",
+  "isMultiColumn": true
+}
+[2025-10-27T10:16:34.400Z] LOG: [GridLayoutManager] Recalculating layout: {
+  "totalFields": 5,
+  "normalFields": 5,
+  "availableWidth": 758,
+  "fieldTypes": [
+    "tool_category:select",
+    "ability:text",
+    "utilize:tokens",
+    "craft:tokens",
+    "variants:tokens"
+  ]
+}
+[2025-10-27T10:16:34.401Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 53,
+  "maxControlWidth": 200,
+  "minPairWidth": 269,
+  "pairs": 2,
+  "columns": "repeat(2, max-content 1fr)",
+  "isMultiColumn": true
+}
+[2025-10-27T10:16:34.401Z] LOG: [GridLayoutManager] Recalculating layout: {
   "totalFields": 4,
-  "normalFields": 4,
+  "normalFields": 3,
   "availableWidth": 758,
   "fieldTypes": [
-    "damageVulnerabilitiesList:tokens",
-    "damageResistancesList:tokens",
-    "damageImmunitiesList:tokens",
-    "conditionImmunitiesList:tokens"
+    "gear_category:text",
+    "capacity:text",
+    "duration:text",
+    "special_use:textarea"
   ]
 }
-[2025-10-23T05:23:03.705Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 160,
-  "maxControlWidth": 200,
-  "minPairWidth": 376,
+[2025-10-27T10:16:34.401Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 72,
+  "maxControlWidth": 180,
+  "minPairWidth": 268,
   "pairs": 2,
   "columns": "repeat(2, max-content 1fr)",
   "isMultiColumn": true
 }
-[2025-10-23T05:23:03.705Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 1,
-  "normalFields": 1,
-  "availableWidth": 758,
-  "fieldTypes": [
-    "gearList:tokens"
-  ]
-}
-[2025-10-23T05:23:03.705Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 80,
-  "maxControlWidth": 200,
-  "minPairWidth": 296,
-  "pairs": 2,
-  "columns": "repeat(2, max-content 1fr)",
-  "isMultiColumn": true
-}
-[2025-10-23T05:23:03.705Z] LOG: [GridLayoutManager] Recalculating layout: {
+[2025-10-27T10:16:34.401Z] LOG: [GridLayoutManager] Recalculating layout: {
   "totalFields": 1,
   "normalFields": 0,
   "availableWidth": 758,
   "fieldTypes": [
-    "entries:repeating"
+    "description:textarea"
   ]
 }
-[2025-10-23T05:23:03.706Z] LOG: [GridLayoutManager] No normal fields, using single column
-[2025-10-23T05:23:03.810Z] LOG: [UI-TEST] Field rendered: {"id":"name","type":"text","label":"Name","visible":true,"hasContainer":true,"value":"New creature","width":239,"height":34}
-[2025-10-23T05:23:03.810Z] LOG: [UI-TEST] Field rendered: {"id":"size","type":"select","label":"Größe","visible":true,"hasContainer":true,"value":"Medium","width":239,"height":34}
-[2025-10-23T05:23:03.810Z] LOG: [UI-TEST] Field rendered: {"id":"alignmentLawChaos","type":"select","label":"Gesetz/Chaos","visible":true,"hasContainer":true,"value":"","width":239,"height":34}
-[2025-10-23T05:23:03.810Z] LOG: [UI-TEST] Field rendered: {"id":"alignmentGoodEvil","type":"select","label":"Gut/Böse","visible":true,"hasContainer":true,"value":"","width":239,"height":34}
-[2025-10-23T05:23:03.810Z] LOG: [UI-TEST] Field rendered: {"id":"alignmentOverride","type":"text","label":"Gesinnung (Freiform)","visible":true,"hasContainer":true,"value":"","width":239,"height":34}
-[2025-10-23T05:23:03.810Z] LOG: [UI-TEST] Field rendered: {"id":"type","type":"select","label":"Typ","visible":true,"hasContainer":true,"value":"","width":239,"height":34}
-[2025-10-23T05:23:03.811Z] LOG: [UI-TEST] Field rendered: {"id":"typeTags","type":"tokens","label":"Typ-Tags","visible":true,"hasContainer":true,"value":"","width":627,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:03.811Z] LOG: [UI-TEST] Field rendered: {"id":"ac","type":"text","label":"AC","visible":true,"hasContainer":true,"value":"","width":195,"height":34}
-[2025-10-23T05:23:03.811Z] LOG: [UI-TEST] Field rendered: {"id":"initiative","type":"text","label":"INI","visible":true,"hasContainer":true,"value":"","width":195,"height":34}
-[2025-10-23T05:23:03.811Z] LOG: [UI-TEST] Field rendered: {"id":"hp","type":"text","label":"TP","visible":true,"hasContainer":true,"value":"","width":195,"height":34}
-[2025-10-23T05:23:03.811Z] LOG: [UI-TEST] Field rendered: {"id":"hitDice","type":"text","label":"TW","visible":true,"hasContainer":true,"value":"","width":195,"height":34}
-[2025-10-23T05:23:03.811Z] LOG: [UI-TEST] Field rendered: {"id":"cr","type":"text","label":"CR","visible":true,"hasContainer":true,"value":"","width":195,"height":34}
-[2025-10-23T05:23:03.811Z] LOG: [UI-TEST] Field rendered: {"id":"xp","type":"text","label":"EP","visible":true,"hasContainer":true,"value":"","width":195,"height":34}
-[2025-10-23T05:23:03.812Z] LOG: [UI-TEST] Field rendered: {"id":"pb","type":"text","label":"ÜB","visible":true,"hasContainer":true,"value":"","width":195,"height":34}
-[2025-10-23T05:23:03.816Z] LOG: [LabelWidthSync] Multi-column: Found 1 token labels, 6 normal labels
-[2025-10-23T05:23:03.817Z] LOG: [LabelWidthSync] Multi-column: max normal label width: 146.0625
-[2025-10-23T05:23:03.817Z] LOG: [LabelWidthSync] Multi-column: Applied 146.0625 px to 1 token labels
-[2025-10-23T05:23:03.819Z] LOG: [UI-TEST] Field rendered: {"id":"abilities","type":"repeating","label":"","visible":true,"hasContainer":true,"value":"10","width":41,"height":34}
-[2025-10-23T05:23:03.819Z] LOG: [UI-TEST] Field rendered: {"id":"speeds","type":"tokens","label":"Bewegungsraten","visible":true,"hasContainer":true,"value":"","width":570,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:03.819Z] LOG: [UI-TEST] Field rendered: {"id":"skills","type":"tokens","label":"Fertigkeiten","visible":true,"hasContainer":true,"value":"","width":602,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:03.820Z] LOG: [UI-TEST] Field rendered: {"id":"sensesList","type":"tokens","label":"Sinne","visible":true,"hasContainer":true,"value":"","width":648,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:03.820Z] LOG: [UI-TEST] Field rendered: {"id":"passivesList","type":"tokens","label":"Passive Werte","visible":true,"hasContainer":true,"value":"","width":590,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:03.820Z] LOG: [UI-TEST] Field rendered: {"id":"languagesList","type":"tokens","label":"Sprachen","visible":true,"hasContainer":true,"value":"","width":622,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:03.820Z] LOG: [LabelWidthSync] Multi-column: No token labels found
-[2025-10-23T05:23:03.821Z] LOG: [UI-TEST] Field rendered: {"id":"damageVulnerabilitiesList","type":"tokens","label":"Schadensanfälligkeiten","visible":true,"hasContainer":true,"value":"","width":526,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:03.821Z] LOG: [UI-TEST] Field rendered: {"id":"damageResistancesList","type":"tokens","label":"Schadenswiderstände","visible":true,"hasContainer":true,"value":"","width":535,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:03.821Z] LOG: [UI-TEST] Field rendered: {"id":"damageImmunitiesList","type":"tokens","label":"Schadensimmunitäten","visible":true,"hasContainer":true,"value":"","width":531,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:03.824Z] LOG: [LabelWidthSync] Multi-column: Found 1 token labels, 6 normal labels
-[2025-10-23T05:23:03.824Z] LOG: [LabelWidthSync] Multi-column: max normal label width: 146.0625
-[2025-10-23T05:23:03.825Z] LOG: [LabelWidthSync] Multi-column: Applied 146.0625 px to 1 token labels
-[2025-10-23T05:23:03.825Z] LOG: [LabelWidthSync] Multi-column: No token labels found
-[2025-10-23T05:23:03.828Z] LOG: [UI-TEST] Field rendered: {"id":"conditionImmunitiesList","type":"tokens","label":"Zustandsimmunitäten","visible":true,"hasContainer":true,"value":"","width":534,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:03.828Z] LOG: [UI-TEST] Field rendered: {"id":"gearList","type":"tokens","label":"Ausrüstung","visible":true,"hasContainer":true,"value":"","width":606,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:03.828Z] LOG: [UI-TEST] Field rendered: {"id":"entries","type":"repeating","label":"Aktionen & Eigenschaften","visible":true,"hasContainer":true}
-[2025-10-23T05:23:03.829Z] LOG: [LabelWidthSync] Single-column: Found 1 labels
-[2025-10-23T05:23:03.831Z] LOG: [LabelWidthSync] Single-column: max width: 0
-[2025-10-23T05:23:03.833Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
-[2025-10-23T05:23:03.843Z] LOG: [LabelWidthSync] Multi-column: max token label width: 119.796875
-[2025-10-23T05:23:03.843Z] LOG: [LabelWidthSync] Multi-column: Applied 119.796875 px to 5 token labels
-[2025-10-23T05:23:03.846Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
-[2025-10-23T05:23:03.853Z] LOG: [LabelWidthSync] Multi-column: max token label width: 162.84375
-[2025-10-23T05:23:03.853Z] LOG: [LabelWidthSync] Multi-column: Applied 162.84375 px to 4 token labels
-[2025-10-23T05:23:03.856Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
-[2025-10-23T05:23:03.858Z] LOG: [LabelWidthSync] Multi-column: max token label width: 81.875
-[2025-10-23T05:23:03.858Z] LOG: [LabelWidthSync] Multi-column: Applied 81.875 px to 1 token labels
-[2025-10-23T05:23:03.860Z] LOG: [LabelWidthSync] Single-column: Found 1 labels
-[2025-10-23T05:23:03.862Z] LOG: [LabelWidthSync] Single-column: max width: 181.28125
-[2025-10-23T05:23:03.862Z] LOG: [LabelWidthSync] Single-column: Applied to 1 labels
-[2025-10-23T05:23:03.867Z] LOG: [LabelWidthSync] Single-column: Found 1 labels
-[2025-10-23T05:23:03.869Z] LOG: [LabelWidthSync] Single-column: max width: 0
-[2025-10-23T05:23:03.871Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
-[2025-10-23T05:23:03.879Z] LOG: [LabelWidthSync] Multi-column: max token label width: 119.796875
-[2025-10-23T05:23:03.880Z] LOG: [LabelWidthSync] Multi-column: Applied 119.796875 px to 5 token labels
-[2025-10-23T05:23:03.881Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
-[2025-10-23T05:23:03.888Z] LOG: [LabelWidthSync] Multi-column: max token label width: 162.84375
-[2025-10-23T05:23:03.888Z] LOG: [LabelWidthSync] Multi-column: Applied 162.84375 px to 4 token labels
-[2025-10-23T05:23:03.890Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
-[2025-10-23T05:23:03.891Z] LOG: [LabelWidthSync] Multi-column: max token label width: 81.875
-[2025-10-23T05:23:03.892Z] LOG: [LabelWidthSync] Multi-column: Applied 81.875 px to 1 token labels
-[2025-10-23T05:23:03.893Z] LOG: [LabelWidthSync] Single-column: Found 1 labels
-[2025-10-23T05:23:03.895Z] LOG: [LabelWidthSync] Single-column: max width: 181.28125
-[2025-10-23T05:23:03.895Z] LOG: [LabelWidthSync] Single-column: Applied to 1 labels
-[2025-10-23T05:23:05.860Z] LOG: [ClickableIcon] Field "saveProf" toggled: false -> true
-[2025-10-23T05:23:05.860Z] LOG: [ClickableIcon] Field "saveProf" calling onChange with value: true
-[2025-10-23T05:23:05.860Z] LOG: [field-utils] clickable-icon "saveProf" onChange called with value: true
-[2025-10-23T05:23:08.404Z] LOG: [UI-TEST] Modal opened: {"kind":"creature","title":"Kreatur erstellen","entity":"Aboleth","timestamp":1761196988404}
-[2025-10-23T05:23:08.418Z] LOG: [GridLayoutManager] Recalculating layout: {
+[2025-10-27T10:16:34.401Z] LOG: [GridLayoutManager] No normal fields, using single column
+[2025-10-27T10:16:34.409Z] LOG: [UI-TEST] Field rendered: {"id":"name","type":"text","label":"Name","visible":true,"hasContainer":true,"value":"Acid","width":191,"height":30}
+[2025-10-27T10:16:34.409Z] LOG: [UI-TEST] Field rendered: {"id":"type","type":"select","label":"Type","visible":true,"hasContainer":true,"value":"Gear","width":191,"height":30}
+[2025-10-27T10:16:34.410Z] LOG: [UI-TEST] Field rendered: {"id":"cost","type":"text","label":"Cost","visible":true,"hasContainer":true,"value":"25 GP","width":191,"height":30}
+[2025-10-27T10:16:34.410Z] LOG: [UI-TEST] Field rendered: {"id":"weight","type":"text","label":"Weight","visible":true,"hasContainer":true,"value":"1 lb.","width":191,"height":30}
+[2025-10-27T10:16:34.410Z] LOG: [UI-TEST] Field rendered: {"id":"weapon_category","type":"select","label":"Category","visible":false,"hasContainer":true,"value":"(none)","width":0,"height":0}
+[2025-10-27T10:16:34.420Z] LOG: [UI-TEST] Field rendered: {"id":"weapon_type","type":"select","label":"Weapon Type","visible":false,"hasContainer":true,"value":"(none)","width":0,"height":0}
+[2025-10-27T10:16:34.420Z] LOG: [UI-TEST] Field rendered: {"id":"damage","type":"text","label":"Damage","visible":false,"hasContainer":true,"value":"","width":0,"height":0}
+[2025-10-27T10:16:34.420Z] LOG: [UI-TEST] Field rendered: {"id":"properties","type":"tokens","label":"Properties","visible":false,"hasContainer":true,"value":"","width":633,"height":30,"chips":[],"chipCount":0}
+[2025-10-27T10:16:34.420Z] LOG: [UI-TEST] Field rendered: {"id":"mastery","type":"text","label":"Mastery","visible":false,"hasContainer":true,"value":"","width":0,"height":0}
+[2025-10-27T10:16:34.420Z] LOG: [UI-TEST] Field rendered: {"id":"armor_category","type":"select","label":"Category","visible":false,"hasContainer":true,"value":"(none)","width":0,"height":0}
+[2025-10-27T10:16:34.421Z] LOG: [UI-TEST] Field rendered: {"id":"ac","type":"text","label":"Armor Class (AC)","visible":false,"hasContainer":true,"value":"","width":0,"height":0}
+[2025-10-27T10:16:34.421Z] LOG: [UI-TEST] Field rendered: {"id":"strength_requirement","type":"text","label":"Strength Requirement","visible":false,"hasContainer":true,"value":"","width":0,"height":0}
+[2025-10-27T10:16:34.421Z] LOG: [UI-TEST] Field rendered: {"id":"stealth_disadvantage","type":"checkbox","label":"Stealth Disadvantage","visible":false,"hasContainer":true,"value":"on","width":0,"height":0}
+[2025-10-27T10:16:34.421Z] LOG: [UI-TEST] Field rendered: {"id":"don_time","type":"text","label":"Don Time","visible":false,"hasContainer":true,"value":"","width":0,"height":0}
+[2025-10-27T10:16:34.421Z] LOG: [UI-TEST] Field rendered: {"id":"doff_time","type":"text","label":"Doff Time","visible":false,"hasContainer":true,"value":"","width":0,"height":0}
+[2025-10-27T10:16:34.422Z] LOG: [LabelWidthSync] Multi-column: No token labels found
+[2025-10-27T10:16:34.423Z] LOG: [UI-TEST] Field rendered: {"id":"tool_category","type":"select","label":"Category","visible":false,"hasContainer":true,"value":"(none)","width":0,"height":0}
+[2025-10-27T10:16:34.423Z] LOG: [UI-TEST] Field rendered: {"id":"ability","type":"text","label":"Ability","visible":false,"hasContainer":true,"value":"","width":0,"height":0}
+[2025-10-27T10:16:34.423Z] LOG: [UI-TEST] Field rendered: {"id":"utilize","type":"tokens","label":"Utilize","visible":false,"hasContainer":true,"value":"","width":660,"height":30,"chips":[],"chipCount":0}
+[2025-10-27T10:16:34.424Z] LOG: [UI-TEST] Field rendered: {"id":"craft","type":"tokens","label":"Craft","visible":false,"hasContainer":true,"value":"","width":668,"height":30,"chips":[],"chipCount":0}
+[2025-10-27T10:16:34.424Z] LOG: [UI-TEST] Field rendered: {"id":"variants","type":"tokens","label":"Variants","visible":false,"hasContainer":true,"value":"","width":647,"height":30,"chips":[],"chipCount":0}
+[2025-10-27T10:16:34.424Z] LOG: [UI-TEST] Field rendered: {"id":"gear_category","type":"text","label":"Category","visible":true,"hasContainer":true,"value":"","width":290,"height":30}
+[2025-10-27T10:16:34.424Z] LOG: [UI-TEST] Field rendered: {"id":"capacity","type":"text","label":"Capacity","visible":true,"hasContainer":true,"value":"","width":290,"height":30}
+[2025-10-27T10:16:34.426Z] LOG: [LabelWidthSync] Multi-column: No token labels found
+[2025-10-27T10:16:34.434Z] LOG: [UI-TEST] Field rendered: {"id":"duration","type":"text","label":"Duration","visible":true,"hasContainer":true,"value":"","width":290,"height":30}
+[2025-10-27T10:16:34.434Z] LOG: [UI-TEST] Field rendered: {"id":"special_use","type":"textarea","label":"Special Use","visible":true,"hasContainer":true,"value":"","width":290,"height":81}
+[2025-10-27T10:16:34.435Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
+[2025-10-27T10:16:34.439Z] LOG: [LabelWidthSync] Multi-column: max token label width: 72.859375
+[2025-10-27T10:16:34.439Z] LOG: [LabelWidthSync] Multi-column: Applied 72.859375 px to 1 token labels
+[2025-10-27T10:16:34.443Z] LOG: [UI-TEST] Field rendered: {"id":"description","type":"textarea","label":"Description","visible":true,"hasContainer":true,"value":"# Acid\n*Adventuring Gear*\n\n- **Cost:** 25 GP\n- **Weight:** 1 lb.","width":668,"height":81}
+[2025-10-27T10:16:34.447Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
+[2025-10-27T10:16:34.450Z] LOG: [LabelWidthSync] Multi-column: max token label width: 72.859375
+[2025-10-27T10:16:34.450Z] LOG: [LabelWidthSync] Multi-column: Applied 72.859375 px to 1 token labels
+[2025-10-27T10:16:34.467Z] LOG: [LabelWidthSync] Multi-column: No token labels found
+[2025-10-27T10:16:34.471Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
+[2025-10-27T10:16:34.483Z] LOG: [LabelWidthSync] Multi-column: max token label width: 57.46875
+[2025-10-27T10:16:34.483Z] LOG: [LabelWidthSync] Multi-column: Applied 57.46875 px to 3 token labels
+[2025-10-27T10:16:34.495Z] LOG: [LabelWidthSync] Multi-column: No token labels found
+[2025-10-27T10:16:34.495Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
+[2025-10-27T10:16:34.501Z] LOG: [LabelWidthSync] Multi-column: max token label width: 57.46875
+[2025-10-27T10:16:34.501Z] LOG: [LabelWidthSync] Multi-column: Applied 57.46875 px to 3 token labels
+[2025-10-27T10:16:34.509Z] LOG: [LabelWidthSync] Multi-column: No token labels found
+[2025-10-27T10:16:34.513Z] LOG: [LabelWidthSync] Multi-column: No token labels found
+[2025-10-27T10:16:34.518Z] LOG: [LabelWidthSync] Single-column: Found 1 labels
+[2025-10-27T10:16:34.521Z] LOG: [LabelWidthSync] Single-column: max width: 80.71875
+[2025-10-27T10:16:34.522Z] LOG: [LabelWidthSync] Single-column: Applied to 1 labels
+[2025-10-27T10:16:34.527Z] LOG: [LabelWidthSync] Single-column: Found 1 labels
+[2025-10-27T10:16:34.529Z] LOG: [LabelWidthSync] Single-column: max width: 80.71875
+[2025-10-27T10:16:34.530Z] LOG: [LabelWidthSync] Single-column: Applied to 1 labels
+[2025-10-27T10:16:40.791Z] LOG: [library:items] Found 243 files
+[2025-10-27T10:16:40.793Z] LOG: [library:items] Loaded 243 entries
+[2025-10-27T10:16:40.812Z] LOG: [library:items] Rendering 243 entries (filtered from 243 total)
+[2025-10-27T10:16:41.762Z] LOG: [UI-TEST] Modal opened: {"kind":"item","title":"Item erstellen","entity":"Adamantine Armor","timestamp":1761560201762}
+[2025-10-27T10:16:41.790Z] LOG: [GridLayoutManager] Recalculating layout: {
+  "totalFields": 4,
+  "normalFields": 4,
+  "availableWidth": 770,
+  "fieldTypes": [
+    "name:text",
+    "category:select",
+    "type:text",
+    "rarity:select"
+  ]
+}
+[2025-10-27T10:16:41.790Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 58,
+  "maxControlWidth": 180,
+  "minPairWidth": 254,
+  "pairs": 3,
+  "columns": "repeat(3, max-content 1fr)",
+  "isMultiColumn": true
+}
+[2025-10-27T10:16:41.790Z] LOG: [Modal] Label sync enabled for section: basic Multi-column: true
+[2025-10-27T10:16:41.796Z] LOG: [GridLayoutManager] Recalculating layout: {
+  "totalFields": 2,
+  "normalFields": 2,
+  "availableWidth": 770,
+  "fieldTypes": [
+    "attunement:checkbox",
+    "attunement_req:text"
+  ]
+}
+[2025-10-27T10:16:41.797Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 137,
+  "maxControlWidth": 200,
+  "minPairWidth": 353,
+  "pairs": 2,
+  "columns": "repeat(2, max-content 1fr)",
+  "isMultiColumn": true
+}
+[2025-10-27T10:16:41.797Z] LOG: [Modal] Label sync enabled for section: attunement Multi-column: true
+[2025-10-27T10:16:41.812Z] LOG: [GridLayoutManager] Recalculating layout: {
+  "totalFields": 4,
+  "normalFields": 4,
+  "availableWidth": 770,
+  "fieldTypes": [
+    "max_charges:number-stepper",
+    "recharge_formula:text",
+    "recharge_time:select",
+    "destruction_risk:text"
+  ]
+}
+[2025-10-27T10:16:41.812Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 83,
+  "maxControlWidth": 180,
+  "minPairWidth": 279,
+  "pairs": 2,
+  "columns": "repeat(2, max-content 1fr)",
+  "isMultiColumn": true
+}
+[2025-10-27T10:16:41.812Z] LOG: [Modal] Label sync enabled for section: charges Multi-column: true
+[2025-10-27T10:16:41.817Z] LOG: [GridLayoutManager] Recalculating layout: {
+  "totalFields": 2,
+  "normalFields": 0,
+  "availableWidth": 758,
+  "fieldTypes": [
+    "description:textarea",
+    "notes:textarea"
+  ]
+}
+[2025-10-27T10:16:41.818Z] LOG: [GridLayoutManager] No normal fields, using single column
+[2025-10-27T10:16:41.818Z] LOG: [Modal] Label sync enabled for section: properties Multi-column: false
+[2025-10-27T10:16:41.822Z] LOG: [GridLayoutManager] Recalculating layout: {
+  "totalFields": 2,
+  "normalFields": 2,
+  "availableWidth": 758,
+  "fieldTypes": [
+    "weight:text",
+    "value:text"
+  ]
+}
+[2025-10-27T10:16:41.822Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 46,
+  "maxControlWidth": 180,
+  "minPairWidth": 242,
+  "pairs": 3,
+  "columns": "repeat(3, max-content 1fr)",
+  "isMultiColumn": true
+}
+[2025-10-27T10:16:41.822Z] LOG: [Modal] Label sync enabled for section: metadata Multi-column: true
+[2025-10-27T10:16:41.826Z] LOG: [GridLayoutManager] Recalculating layout: {
+  "totalFields": 2,
+  "normalFields": 1,
+  "availableWidth": 758,
+  "fieldTypes": [
+    "cursed:checkbox",
+    "curse_description:textarea"
+  ]
+}
+[2025-10-27T10:16:41.826Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 79,
+  "maxControlWidth": 200,
+  "minPairWidth": 295,
+  "pairs": 2,
+  "columns": "repeat(2, max-content 1fr)",
+  "isMultiColumn": true
+}
+[2025-10-27T10:16:41.826Z] LOG: [Modal] Label sync enabled for section: curse Multi-column: true
+[2025-10-27T10:16:41.834Z] LOG: [GridLayoutManager] Recalculating layout: {
+  "totalFields": 4,
+  "normalFields": 4,
+  "availableWidth": 758,
+  "fieldTypes": [
+    "name:text",
+    "category:select",
+    "type:text",
+    "rarity:select"
+  ]
+}
+[2025-10-27T10:16:41.834Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 58,
+  "maxControlWidth": 180,
+  "minPairWidth": 254,
+  "pairs": 2,
+  "columns": "repeat(2, max-content 1fr)",
+  "isMultiColumn": true
+}
+[2025-10-27T10:16:41.837Z] LOG: [GridLayoutManager] Recalculating layout: {
+  "totalFields": 2,
+  "normalFields": 2,
+  "availableWidth": 758,
+  "fieldTypes": [
+    "attunement:checkbox",
+    "attunement_req:text"
+  ]
+}
+[2025-10-27T10:16:41.837Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 137,
+  "maxControlWidth": 200,
+  "minPairWidth": 353,
+  "pairs": 2,
+  "columns": "repeat(2, max-content 1fr)",
+  "isMultiColumn": true
+}
+[2025-10-27T10:16:41.837Z] LOG: [GridLayoutManager] Recalculating layout: {
+  "totalFields": 4,
+  "normalFields": 4,
+  "availableWidth": 758,
+  "fieldTypes": [
+    "max_charges:number-stepper",
+    "recharge_formula:text",
+    "recharge_time:select",
+    "destruction_risk:text"
+  ]
+}
+[2025-10-27T10:16:41.837Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 83,
+  "maxControlWidth": 180,
+  "minPairWidth": 279,
+  "pairs": 2,
+  "columns": "repeat(2, max-content 1fr)",
+  "isMultiColumn": true
+}
+[2025-10-27T10:16:41.837Z] LOG: [GridLayoutManager] Recalculating layout: {
+  "totalFields": 2,
+  "normalFields": 0,
+  "availableWidth": 758,
+  "fieldTypes": [
+    "description:textarea",
+    "notes:textarea"
+  ]
+}
+[2025-10-27T10:16:41.837Z] LOG: [GridLayoutManager] No normal fields, using single column
+[2025-10-27T10:16:41.837Z] LOG: [GridLayoutManager] Recalculating layout: {
+  "totalFields": 2,
+  "normalFields": 2,
+  "availableWidth": 758,
+  "fieldTypes": [
+    "weight:text",
+    "value:text"
+  ]
+}
+[2025-10-27T10:16:41.837Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 46,
+  "maxControlWidth": 180,
+  "minPairWidth": 242,
+  "pairs": 3,
+  "columns": "repeat(3, max-content 1fr)",
+  "isMultiColumn": true
+}
+[2025-10-27T10:16:41.837Z] LOG: [GridLayoutManager] Recalculating layout: {
+  "totalFields": 2,
+  "normalFields": 1,
+  "availableWidth": 758,
+  "fieldTypes": [
+    "cursed:checkbox",
+    "curse_description:textarea"
+  ]
+}
+[2025-10-27T10:16:41.837Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 79,
+  "maxControlWidth": 200,
+  "minPairWidth": 295,
+  "pairs": 2,
+  "columns": "repeat(2, max-content 1fr)",
+  "isMultiColumn": true
+}
+[2025-10-27T10:16:41.844Z] LOG: [UI-TEST] Field rendered: {"id":"name","type":"text","label":"Name","visible":true,"hasContainer":true,"value":"Adamantine Armor","width":307,"height":30}
+[2025-10-27T10:16:41.845Z] LOG: [UI-TEST] Field rendered: {"id":"category","type":"select","label":"Category","visible":true,"hasContainer":true,"value":"Armor","width":307,"height":30}
+[2025-10-27T10:16:41.846Z] LOG: [UI-TEST] Field rendered: {"id":"type","type":"text","label":"Type","visible":true,"hasContainer":true,"value":"Any Medium or Heavy, Except Hide Armor","width":307,"height":30}
+[2025-10-27T10:16:41.846Z] LOG: [UI-TEST] Field rendered: {"id":"rarity","type":"select","label":"Rarity","visible":true,"hasContainer":true,"value":"Uncommon","width":307,"height":30}
+[2025-10-27T10:16:41.853Z] LOG: [UI-TEST] Field rendered: {"id":"attunement","type":"checkbox","label":"Requires Attunement","visible":true,"hasContainer":true,"value":"on","width":15,"height":15}
+[2025-10-27T10:16:41.853Z] LOG: [UI-TEST] Field rendered: {"id":"attunement_req","type":"text","label":"Attunement Requirement","visible":false,"hasContainer":true,"value":"","width":0,"height":0}
+[2025-10-27T10:16:41.857Z] LOG: [UI-TEST] Field rendered: {"id":"max_charges","type":"number-stepper","label":"Max Charges","visible":true,"hasContainer":true,"value":"","width":35,"height":30}
+[2025-10-27T10:16:41.857Z] LOG: [UI-TEST] Field rendered: {"id":"recharge_formula","type":"text","label":"Recharge Formula","visible":false,"hasContainer":true,"value":"","width":0,"height":0}
+[2025-10-27T10:16:41.860Z] LOG: [UI-TEST] Field rendered: {"id":"recharge_time","type":"select","label":"Recharge Time","visible":false,"hasContainer":true,"value":"(none)","width":0,"height":0}
+[2025-10-27T10:16:41.860Z] LOG: [UI-TEST] Field rendered: {"id":"destruction_risk","type":"text","label":"Destruction Risk","visible":false,"hasContainer":true,"value":"","width":0,"height":0}
+[2025-10-27T10:16:41.863Z] LOG: [UI-TEST] Field rendered: {"id":"description","type":"textarea","label":"Description","visible":true,"hasContainer":true,"value":"# Adamantine Armor\n*Armor (Any Medium or Heavy, Except Hide Armor) Uncommon*\n\nThis suit of armor is reinforced with adamantine, one of the hardest substances in existence. While you're wearing it, any Critical Hit against you becomes a normal hit.","width":668,"height":81}
+[2025-10-27T10:16:41.875Z] LOG: [UI-TEST] Field rendered: {"id":"notes","type":"textarea","label":"Notes","visible":true,"hasContainer":true,"value":"","width":668,"height":81}
+[2025-10-27T10:16:41.875Z] LOG: [UI-TEST] Field rendered: {"id":"weight","type":"text","label":"Weight","visible":true,"hasContainer":true,"value":"","width":204,"height":30}
+[2025-10-27T10:16:41.875Z] LOG: [UI-TEST] Field rendered: {"id":"value","type":"text","label":"Value","visible":true,"hasContainer":true,"value":"","width":204,"height":30}
+[2025-10-27T10:16:41.875Z] LOG: [UI-TEST] Field rendered: {"id":"cursed","type":"checkbox","label":"Cursed Item","visible":true,"hasContainer":true,"value":"on","width":15,"height":15}
+[2025-10-27T10:16:41.875Z] LOG: [UI-TEST] Field rendered: {"id":"curse_description","type":"textarea","label":"Curse Description","visible":false,"hasContainer":true,"value":"","width":0,"height":0}
+[2025-10-27T10:16:41.892Z] LOG: [LabelWidthSync] Multi-column: No token labels found
+[2025-10-27T10:16:41.898Z] LOG: [LabelWidthSync] Multi-column: No token labels found
+[2025-10-27T10:16:41.903Z] LOG: [LabelWidthSync] Multi-column: No token labels found
+[2025-10-27T10:16:41.912Z] LOG: [LabelWidthSync] Multi-column: No token labels found
+[2025-10-27T10:16:41.918Z] LOG: [LabelWidthSync] Single-column: Found 2 labels
+[2025-10-27T10:16:41.924Z] LOG: [LabelWidthSync] Single-column: max width: 80.71875
+[2025-10-27T10:16:41.924Z] LOG: [LabelWidthSync] Single-column: Applied to 2 labels
+[2025-10-27T10:16:41.932Z] LOG: [LabelWidthSync] Multi-column: No token labels found
+[2025-10-27T10:16:41.932Z] LOG: [LabelWidthSync] Multi-column: No token labels found
+[2025-10-27T10:16:41.932Z] LOG: [LabelWidthSync] Single-column: Found 2 labels
+[2025-10-27T10:16:41.936Z] LOG: [LabelWidthSync] Single-column: max width: 80.71875
+[2025-10-27T10:16:41.937Z] LOG: [LabelWidthSync] Single-column: Applied to 2 labels
+[2025-10-27T10:16:41.944Z] LOG: [LabelWidthSync] Multi-column: No token labels found
+[2025-10-27T10:16:41.947Z] LOG: [LabelWidthSync] Multi-column: No token labels found
+[2025-10-27T10:16:41.950Z] LOG: [LabelWidthSync] Multi-column: No token labels found
+[2025-10-27T10:16:41.956Z] LOG: [LabelWidthSync] Multi-column: No token labels found
+[2025-10-27T10:16:56.041Z] LOG: [library:creatures] Found 329 files
+[2025-10-27T10:16:56.043Z] LOG: [library:creatures] Loaded 329 entries
+[2025-10-27T10:16:56.067Z] LOG: [library:creatures] Rendering 329 entries (filtered from 329 total)
+[2025-10-27T10:16:57.347Z] LOG: [UI-TEST] Modal opened: {"kind":"creature","title":"Kreatur erstellen","entity":"Aboleth","timestamp":1761560217347}
+[2025-10-27T10:16:57.382Z] LOG: [TokenRenderer] Field "typeTags" currentValue type: object, isArray: true, value: []
+[2025-10-27T10:16:57.382Z] LOG: [TokenRenderer] Field "typeTags" tokenValues: []
+[2025-10-27T10:16:57.389Z] LOG: [GridLayoutManager] Recalculating layout: {
   "totalFields": 7,
   "normalFields": 7,
   "availableWidth": 770,
@@ -497,22 +604,22 @@
     "typeTags:tokens"
   ]
 }
-[2025-10-23T05:23:08.418Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 146,
+[2025-10-27T10:16:57.389Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 136,
   "maxControlWidth": 200,
-  "minPairWidth": 362,
+  "minPairWidth": 352,
   "pairs": 2,
   "columns": "repeat(2, max-content 1fr)",
   "isMultiColumn": true
 }
-[2025-10-23T05:23:08.418Z] LOG: [Modal] Label sync enabled for section: basic Multi-column: true
-[2025-10-23T05:23:08.419Z] LOG: [renderTextCore] Rendering field with placeholder: z.B. +2
-[2025-10-23T05:23:08.419Z] LOG: [renderTextCore] Raw value: +3 (13)
-[2025-10-23T05:23:08.419Z] LOG: [renderTextCore] Value type: string
-[2025-10-23T05:23:08.419Z] LOG: [renderTextCore] Normalized value: +3 (13)
-[2025-10-23T05:23:08.419Z] LOG: [renderTextCore] Setting input.value to: +3 (13)
-[2025-10-23T05:23:08.420Z] LOG: [field-manager] Rendering pb field
-[2025-10-23T05:23:08.420Z] LOG: [field-manager] values object: {
+[2025-10-27T10:16:57.390Z] LOG: [Modal] Label sync enabled for section: basic Multi-column: true
+[2025-10-27T10:16:57.390Z] LOG: [renderTextCore] Rendering field with placeholder: z.B. +2
+[2025-10-27T10:16:57.390Z] LOG: [renderTextCore] Raw value: +3 (13)
+[2025-10-27T10:16:57.391Z] LOG: [renderTextCore] Value type: string
+[2025-10-27T10:16:57.391Z] LOG: [renderTextCore] Normalized value: +3 (13)
+[2025-10-27T10:16:57.391Z] LOG: [renderTextCore] Setting input.value to: +3 (13)
+[2025-10-27T10:16:57.391Z] LOG: [field-manager] Rendering pb field
+[2025-10-27T10:16:57.392Z] LOG: [field-manager] values object: {
   "name": "Aboleth",
   "size": "Large",
   "typeTags": [],
@@ -528,34 +635,50 @@
   ],
   "abilities": [
     {
-      "ability": "str",
+      "key": "str",
       "score": 21,
-      "saveProf": true,
-      "saveMod": 7
-    },
-    {
-      "ability": "dex",
-      "score": 9
-    },
-    {
-      "ability": "con",
-      "score": 15,
       "saveProf": false
     },
     {
-      "ability": "int",
-      "score": 18
+      "key": "dex",
+      "score": 9,
+      "saveProf": true,
+      "saveMod": 3
     },
     {
-      "ability": "wis",
-      "score": 15
+      "key": "con",
+      "score": 15,
+      "saveProf": true,
+      "saveMod": 6
     },
     {
-      "ability": "cha",
-      "score": 18
+      "key": "int",
+      "score": 18,
+      "saveProf": true,
+      "saveMod": 8
+    },
+    {
+      "key": "wis",
+      "score": 15,
+      "saveProf": true,
+      "saveMod": 6
+    },
+    {
+      "key": "cha",
+      "score": 18,
+      "saveProf": false
     }
   ],
-  "skills": [],
+  "skills": [
+    {
+      "skill": "History",
+      "value": "12"
+    },
+    {
+      "skill": "Perception",
+      "value": "10"
+    }
+  ],
   "sensesList": [
     {
       "type": "darkvision",
@@ -573,8 +696,7 @@
       "value": "Deep Speech"
     },
     {
-      "type": "telepathy",
-      "range": "120"
+      "value": "telepathy 120 ft."
     }
   ],
   "damageVulnerabilitiesList": [],
@@ -582,60 +704,179 @@
   "damageImmunitiesList": [],
   "conditionImmunitiesList": [],
   "gearList": [],
+  "spellcastingEntries": [],
   "entries": [
     {
       "category": "trait",
       "name": "Amphibious",
+      "entryType": "special",
       "text": "The aboleth can breathe air and water."
     },
     {
       "category": "trait",
       "name": "Eldritch Restoration",
+      "entryType": "special",
       "text": "If destroyed, the aboleth gains a new body in 5d10 days, reviving with all its Hit Points in the Far Realm or another location chosen by the DM."
     },
     {
       "category": "trait",
       "name": "Legendary Resistance (3/Day, or 4/Day in Lair)",
-      "text": "If the aboleth fails a saving throw, it can choose to succeed instead."
+      "entryType": "special",
+      "text": "If the aboleth fails a saving throw, it can choose to succeed instead.",
+      "limitedUse.count": 3,
+      "limitedUse.reset": "day"
     },
     {
       "category": "trait",
       "name": "Mucus Cloud",
-      "text": "While underwater, the aboleth is surrounded by mucus. *Constitution Saving Throw*: DC 14, each creature in a 5-foot Emanation originating from the aboleth at the end of the aboleth's turn. *Failure:*  The target is cursed. Until the curse ends, the target's skin becomes slimy, the target can breathe air and water, and it can't regain Hit Points unless it is underwater. While the cursed creature is outside a body of water, the creature takes 6 (1d12) Acid damage at the end of every 10 minutes unless moisture is applied to its skin before those minutes have passed."
+      "entryType": "save",
+      "text": "While underwater, the aboleth is surrounded by mucus. *Constitution Saving Throw*: DC 14, each creature in a 5-foot Emanation originating from the aboleth at the end of the aboleth's turn. *Failure:*  The target is cursed. Until the curse ends, the target's skin becomes slimy, the target can breathe air and water, and it can't regain Hit Points unless it is underwater. While the cursed creature is outside a body of water, the creature takes 6 (1d12) Acid damage at the end of every 10 minutes unless moisture is applied to its skin before those minutes have passed.",
+      "save.ability": "con",
+      "save.dc": 14,
+      "save.targeting.shape": "emanation",
+      "save.targeting.size": "5 ft.",
+      "save.targeting.origin": "self",
+      "save.onFail.effects.conditions": [
+        {
+          "condition": "Cursed",
+          "additionalText": "the target's skin becomes slimy; the target can breathe air and water; it can't regain Hit Points unless it is underwater",
+          "duration": {
+            "type": "until",
+            "trigger": "the curse ends"
+          }
+        }
+      ],
+      "save.onFail.effects.damageOverTime.damage": [
+        {
+          "dice": "1d12",
+          "bonus": 0,
+          "type": "Acid",
+          "average": 6
+        }
+      ],
+      "save.onFail.effects.damageOverTime.timing.type": "minutes",
+      "save.onFail.effects.damageOverTime.timing.count": 10,
+      "save.onFail.effects.damageOverTime.condition": "it is underwater"
     },
     {
       "category": "trait",
       "name": "Probing Telepathy",
+      "entryType": "special",
       "text": "If a creature the aboleth can see communicates telepathically with the aboleth, the aboleth learns the creature's greatest desires."
     },
     {
       "category": "action",
       "name": "Multiattack",
-      "text": "The aboleth makes two Tentacle attacks and uses either Consume Memories or Dominate Mind if available."
+      "entryType": "multiattack",
+      "text": "The aboleth makes two Tentacle attacks and uses either Consume Memories or Dominate Mind if available.",
+      "multiattack.attacks": [
+        {
+          "name": "Tentacle",
+          "count": 2
+        }
+      ],
+      "multiattack.substitutions": []
     },
     {
       "category": "action",
       "name": "Tentacle",
-      "text": "*Melee Attack Roll:* +9, reach 15 ft. 12 (2d6 + 5) Bludgeoning damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14) from one of four tentacles."
+      "entryType": "attack",
+      "text": "*Melee Attack Roll:* +9, reach 15 ft. 12 (2d6 + 5) Bludgeoning damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14) from one of four tentacles.",
+      "attack.type": "melee",
+      "attack.bonus": 9,
+      "attack.damage": [
+        {
+          "dice": "2d6",
+          "bonus": 5,
+          "type": "Bludgeoning",
+          "average": 12
+        }
+      ],
+      "attack.reach": "15 ft.",
+      "attack.onHit.conditions": [
+        {
+          "condition": "Grappled",
+          "escape": {
+            "type": "dc",
+            "dc": 14
+          },
+          "restrictions": {
+            "size": "Large or smaller"
+          }
+        }
+      ],
+      "attack.additionalEffects": "If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14) from one of four tentacles."
     },
     {
       "category": "action",
       "name": "Consume Memories",
-      "text": "*Intelligence Saving Throw*: DC 16, one creature within 30 feet that is Charmed or Grappled by the aboleth. *Failure:*  10 (3d6) Psychic damage. *Success:*  Half damage. *Failure or Success*:  The aboleth gains the target's memories if the target is a Humanoid and is reduced to 0 Hit Points by this action."
+      "entryType": "save",
+      "text": "*Intelligence Saving Throw*: DC 16, one creature within 30 feet that is Charmed or Grappled by the aboleth. *Failure:*  10 (3d6) Psychic damage. *Success:*  Half damage. *Failure or Success*:  The aboleth gains the target's memories if the target is a Humanoid and is reduced to 0 Hit Points by this action.",
+      "save.ability": "int",
+      "save.dc": 16,
+      "save.targeting.type": "single",
+      "save.targeting.range": "30 ft.",
+      "save.targeting.restrictions.conditions": [
+        "Charmed"
+      ],
+      "save.targeting.restrictions.other": [
+        "grappled by source"
+      ],
+      "save.onFail.effects.other": "10 (3d6) Psychic damage.",
+      "save.onFail.damage": [
+        {
+          "dice": "3d6",
+          "bonus": 0,
+          "type": "Psychic",
+          "average": 10
+        }
+      ],
+      "save.onFail.legacyEffects": "10 (3d6) Psychic damage.",
+      "save.onSuccess.damage": "half",
+      "save.onSuccess.legacyText": "Half damage."
     },
     {
       "category": "action",
       "name": "Dominate Mind (2/Day)",
-      "text": "*Wisdom Saving Throw*: DC 16, one creature the aboleth can see within 30 feet. *Failure:*  The target has the Charmed condition until the aboleth dies or is on a different plane of existence from the target. While Charmed, the target acts as an ally to the aboleth and is under its control while within 60 feet of it. In addition, the aboleth and the target can communicate telepathically with each other over any distance. The target repeats the save whenever it takes damage as well as after every 24 hours it spends at least 1 mile away from the aboleth, ending the effect on itself on a success."
+      "entryType": "save",
+      "text": "*Wisdom Saving Throw*: DC 16, one creature the aboleth can see within 30 feet. *Failure:*  The target has the Charmed condition until the aboleth dies or is on a different plane of existence from the target. While Charmed, the target acts as an ally to the aboleth and is under its control while within 60 feet of it. In addition, the aboleth and the target can communicate telepathically with each other over any distance. The target repeats the save whenever it takes damage as well as after every 24 hours it spends at least 1 mile away from the aboleth, ending the effect on itself on a success.",
+      "limitedUse.count": 2,
+      "limitedUse.reset": "day",
+      "save.ability": "wis",
+      "save.dc": 16,
+      "save.targeting.type": "single",
+      "save.targeting.range": "30 ft.",
+      "save.targeting.restrictions.visibility": true,
+      "save.onFail.effects.conditions": [
+        {
+          "condition": "Charmed",
+          "duration": {
+            "type": "until",
+            "trigger": "the aboleth dies or is on a different plane of existence from the target"
+          },
+          "saveToEnd": {
+            "timing": "when-damage"
+          }
+        }
+      ]
     },
     {
       "category": "legendary",
       "name": "Lash",
-      "text": "The aboleth makes one Tentacle attack."
+      "entryType": "multiattack",
+      "text": "The aboleth makes one Tentacle attack.",
+      "multiattack.attacks": [
+        {
+          "name": "Tentacle",
+          "count": 1
+        }
+      ],
+      "multiattack.substitutions": []
     },
     {
       "category": "legendary",
       "name": "Psychic Drain",
+      "entryType": "special",
       "text": "If the aboleth has at least one creature Charmed or Grappled, it uses Consume Memories and regains 5 (1d10) Hit Points."
     }
   ],
@@ -651,9 +892,9 @@
   "cr": "10",
   "xp": "5900"
 }
-[2025-10-23T05:23:08.420Z] LOG: [field-manager] values["pb"]: +4
-[2025-10-23T05:23:08.420Z] LOG: [resolveInitialValue] Resolving pb field
-[2025-10-23T05:23:08.420Z] LOG: [resolveInitialValue] values object: {
+[2025-10-27T10:16:57.392Z] LOG: [field-manager] values["pb"]: +4
+[2025-10-27T10:16:57.392Z] LOG: [resolveInitialValue] Resolving pb field
+[2025-10-27T10:16:57.392Z] LOG: [resolveInitialValue] values object: {
   "name": "Aboleth",
   "size": "Large",
   "typeTags": [],
@@ -669,34 +910,50 @@
   ],
   "abilities": [
     {
-      "ability": "str",
+      "key": "str",
       "score": 21,
-      "saveProf": true,
-      "saveMod": 7
-    },
-    {
-      "ability": "dex",
-      "score": 9
-    },
-    {
-      "ability": "con",
-      "score": 15,
       "saveProf": false
     },
     {
-      "ability": "int",
-      "score": 18
+      "key": "dex",
+      "score": 9,
+      "saveProf": true,
+      "saveMod": 3
     },
     {
-      "ability": "wis",
-      "score": 15
+      "key": "con",
+      "score": 15,
+      "saveProf": true,
+      "saveMod": 6
     },
     {
-      "ability": "cha",
-      "score": 18
+      "key": "int",
+      "score": 18,
+      "saveProf": true,
+      "saveMod": 8
+    },
+    {
+      "key": "wis",
+      "score": 15,
+      "saveProf": true,
+      "saveMod": 6
+    },
+    {
+      "key": "cha",
+      "score": 18,
+      "saveProf": false
     }
   ],
-  "skills": [],
+  "skills": [
+    {
+      "skill": "History",
+      "value": "12"
+    },
+    {
+      "skill": "Perception",
+      "value": "10"
+    }
+  ],
   "sensesList": [
     {
       "type": "darkvision",
@@ -714,8 +971,7 @@
       "value": "Deep Speech"
     },
     {
-      "type": "telepathy",
-      "range": "120"
+      "value": "telepathy 120 ft."
     }
   ],
   "damageVulnerabilitiesList": [],
@@ -723,60 +979,179 @@
   "damageImmunitiesList": [],
   "conditionImmunitiesList": [],
   "gearList": [],
+  "spellcastingEntries": [],
   "entries": [
     {
       "category": "trait",
       "name": "Amphibious",
+      "entryType": "special",
       "text": "The aboleth can breathe air and water."
     },
     {
       "category": "trait",
       "name": "Eldritch Restoration",
+      "entryType": "special",
       "text": "If destroyed, the aboleth gains a new body in 5d10 days, reviving with all its Hit Points in the Far Realm or another location chosen by the DM."
     },
     {
       "category": "trait",
       "name": "Legendary Resistance (3/Day, or 4/Day in Lair)",
-      "text": "If the aboleth fails a saving throw, it can choose to succeed instead."
+      "entryType": "special",
+      "text": "If the aboleth fails a saving throw, it can choose to succeed instead.",
+      "limitedUse.count": 3,
+      "limitedUse.reset": "day"
     },
     {
       "category": "trait",
       "name": "Mucus Cloud",
-      "text": "While underwater, the aboleth is surrounded by mucus. *Constitution Saving Throw*: DC 14, each creature in a 5-foot Emanation originating from the aboleth at the end of the aboleth's turn. *Failure:*  The target is cursed. Until the curse ends, the target's skin becomes slimy, the target can breathe air and water, and it can't regain Hit Points unless it is underwater. While the cursed creature is outside a body of water, the creature takes 6 (1d12) Acid damage at the end of every 10 minutes unless moisture is applied to its skin before those minutes have passed."
+      "entryType": "save",
+      "text": "While underwater, the aboleth is surrounded by mucus. *Constitution Saving Throw*: DC 14, each creature in a 5-foot Emanation originating from the aboleth at the end of the aboleth's turn. *Failure:*  The target is cursed. Until the curse ends, the target's skin becomes slimy, the target can breathe air and water, and it can't regain Hit Points unless it is underwater. While the cursed creature is outside a body of water, the creature takes 6 (1d12) Acid damage at the end of every 10 minutes unless moisture is applied to its skin before those minutes have passed.",
+      "save.ability": "con",
+      "save.dc": 14,
+      "save.targeting.shape": "emanation",
+      "save.targeting.size": "5 ft.",
+      "save.targeting.origin": "self",
+      "save.onFail.effects.conditions": [
+        {
+          "condition": "Cursed",
+          "additionalText": "the target's skin becomes slimy; the target can breathe air and water; it can't regain Hit Points unless it is underwater",
+          "duration": {
+            "type": "until",
+            "trigger": "the curse ends"
+          }
+        }
+      ],
+      "save.onFail.effects.damageOverTime.damage": [
+        {
+          "dice": "1d12",
+          "bonus": 0,
+          "type": "Acid",
+          "average": 6
+        }
+      ],
+      "save.onFail.effects.damageOverTime.timing.type": "minutes",
+      "save.onFail.effects.damageOverTime.timing.count": 10,
+      "save.onFail.effects.damageOverTime.condition": "it is underwater"
     },
     {
       "category": "trait",
       "name": "Probing Telepathy",
+      "entryType": "special",
       "text": "If a creature the aboleth can see communicates telepathically with the aboleth, the aboleth learns the creature's greatest desires."
     },
     {
       "category": "action",
       "name": "Multiattack",
-      "text": "The aboleth makes two Tentacle attacks and uses either Consume Memories or Dominate Mind if available."
+      "entryType": "multiattack",
+      "text": "The aboleth makes two Tentacle attacks and uses either Consume Memories or Dominate Mind if available.",
+      "multiattack.attacks": [
+        {
+          "name": "Tentacle",
+          "count": 2
+        }
+      ],
+      "multiattack.substitutions": []
     },
     {
       "category": "action",
       "name": "Tentacle",
-      "text": "*Melee Attack Roll:* +9, reach 15 ft. 12 (2d6 + 5) Bludgeoning damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14) from one of four tentacles."
+      "entryType": "attack",
+      "text": "*Melee Attack Roll:* +9, reach 15 ft. 12 (2d6 + 5) Bludgeoning damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14) from one of four tentacles.",
+      "attack.type": "melee",
+      "attack.bonus": 9,
+      "attack.damage": [
+        {
+          "dice": "2d6",
+          "bonus": 5,
+          "type": "Bludgeoning",
+          "average": 12
+        }
+      ],
+      "attack.reach": "15 ft.",
+      "attack.onHit.conditions": [
+        {
+          "condition": "Grappled",
+          "escape": {
+            "type": "dc",
+            "dc": 14
+          },
+          "restrictions": {
+            "size": "Large or smaller"
+          }
+        }
+      ],
+      "attack.additionalEffects": "If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14) from one of four tentacles."
     },
     {
       "category": "action",
       "name": "Consume Memories",
-      "text": "*Intelligence Saving Throw*: DC 16, one creature within 30 feet that is Charmed or Grappled by the aboleth. *Failure:*  10 (3d6) Psychic damage. *Success:*  Half damage. *Failure or Success*:  The aboleth gains the target's memories if the target is a Humanoid and is reduced to 0 Hit Points by this action."
+      "entryType": "save",
+      "text": "*Intelligence Saving Throw*: DC 16, one creature within 30 feet that is Charmed or Grappled by the aboleth. *Failure:*  10 (3d6) Psychic damage. *Success:*  Half damage. *Failure or Success*:  The aboleth gains the target's memories if the target is a Humanoid and is reduced to 0 Hit Points by this action.",
+      "save.ability": "int",
+      "save.dc": 16,
+      "save.targeting.type": "single",
+      "save.targeting.range": "30 ft.",
+      "save.targeting.restrictions.conditions": [
+        "Charmed"
+      ],
+      "save.targeting.restrictions.other": [
+        "grappled by source"
+      ],
+      "save.onFail.effects.other": "10 (3d6) Psychic damage.",
+      "save.onFail.damage": [
+        {
+          "dice": "3d6",
+          "bonus": 0,
+          "type": "Psychic",
+          "average": 10
+        }
+      ],
+      "save.onFail.legacyEffects": "10 (3d6) Psychic damage.",
+      "save.onSuccess.damage": "half",
+      "save.onSuccess.legacyText": "Half damage."
     },
     {
       "category": "action",
       "name": "Dominate Mind (2/Day)",
-      "text": "*Wisdom Saving Throw*: DC 16, one creature the aboleth can see within 30 feet. *Failure:*  The target has the Charmed condition until the aboleth dies or is on a different plane of existence from the target. While Charmed, the target acts as an ally to the aboleth and is under its control while within 60 feet of it. In addition, the aboleth and the target can communicate telepathically with each other over any distance. The target repeats the save whenever it takes damage as well as after every 24 hours it spends at least 1 mile away from the aboleth, ending the effect on itself on a success."
+      "entryType": "save",
+      "text": "*Wisdom Saving Throw*: DC 16, one creature the aboleth can see within 30 feet. *Failure:*  The target has the Charmed condition until the aboleth dies or is on a different plane of existence from the target. While Charmed, the target acts as an ally to the aboleth and is under its control while within 60 feet of it. In addition, the aboleth and the target can communicate telepathically with each other over any distance. The target repeats the save whenever it takes damage as well as after every 24 hours it spends at least 1 mile away from the aboleth, ending the effect on itself on a success.",
+      "limitedUse.count": 2,
+      "limitedUse.reset": "day",
+      "save.ability": "wis",
+      "save.dc": 16,
+      "save.targeting.type": "single",
+      "save.targeting.range": "30 ft.",
+      "save.targeting.restrictions.visibility": true,
+      "save.onFail.effects.conditions": [
+        {
+          "condition": "Charmed",
+          "duration": {
+            "type": "until",
+            "trigger": "the aboleth dies or is on a different plane of existence from the target"
+          },
+          "saveToEnd": {
+            "timing": "when-damage"
+          }
+        }
+      ]
     },
     {
       "category": "legendary",
       "name": "Lash",
-      "text": "The aboleth makes one Tentacle attack."
+      "entryType": "multiattack",
+      "text": "The aboleth makes one Tentacle attack.",
+      "multiattack.attacks": [
+        {
+          "name": "Tentacle",
+          "count": 1
+        }
+      ],
+      "multiattack.substitutions": []
     },
     {
       "category": "legendary",
       "name": "Psychic Drain",
+      "entryType": "special",
       "text": "If the aboleth has at least one creature Charmed or Grappled, it uses Consume Memories and regains 5 (1d10) Hit Points."
     }
   ],
@@ -792,18 +1167,18 @@
   "cr": "10",
   "xp": "5900"
 }
-[2025-10-23T05:23:08.421Z] LOG: [resolveInitialValue] values["pb"]: +4
-[2025-10-23T05:23:08.421Z] LOG: [resolveInitialValue] spec.default: undefined
-[2025-10-23T05:23:08.421Z] LOG: [resolveInitialValue] Returning from values: +4
-[2025-10-23T05:23:08.421Z] LOG: [renderTextCore] Rendering field with placeholder: z.B. +2
-[2025-10-23T05:23:08.421Z] LOG: [renderTextCore] Raw value: +4
-[2025-10-23T05:23:08.421Z] LOG: [renderTextCore] Value type: string
-[2025-10-23T05:23:08.421Z] LOG: [renderTextCore] Normalized value: +4
-[2025-10-23T05:23:08.421Z] LOG: [renderTextCore] Setting input.value to: +4
-[2025-10-23T05:23:08.425Z] LOG: [GridLayoutManager] Recalculating layout: {
+[2025-10-27T10:16:57.392Z] LOG: [resolveInitialValue] values["pb"]: +4
+[2025-10-27T10:16:57.392Z] LOG: [resolveInitialValue] spec.default: undefined
+[2025-10-27T10:16:57.392Z] LOG: [resolveInitialValue] Returning from values: +4
+[2025-10-27T10:16:57.392Z] LOG: [renderTextCore] Rendering field with placeholder: z.B. +2
+[2025-10-27T10:16:57.392Z] LOG: [renderTextCore] Raw value: +4
+[2025-10-27T10:16:57.392Z] LOG: [renderTextCore] Value type: string
+[2025-10-27T10:16:57.392Z] LOG: [renderTextCore] Normalized value: +4
+[2025-10-27T10:16:57.392Z] LOG: [renderTextCore] Setting input.value to: +4
+[2025-10-27T10:16:57.404Z] LOG: [GridLayoutManager] Recalculating layout: {
   "totalFields": 7,
   "normalFields": 7,
-  "availableWidth": 770,
+  "availableWidth": 758,
   "fieldTypes": [
     "ac:text",
     "initiative:text",
@@ -814,28 +1189,308 @@
     "pb:text"
   ]
 }
-[2025-10-23T05:23:08.425Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 22,
+[2025-10-27T10:16:57.405Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 20,
   "maxControlWidth": 180,
-  "minPairWidth": 218,
+  "minPairWidth": 216,
   "pairs": 3,
   "columns": "repeat(3, max-content 1fr)",
   "isMultiColumn": true
 }
-[2025-10-23T05:23:08.425Z] LOG: [Modal] Label sync enabled for section: combat Multi-column: true
-[2025-10-23T05:23:08.429Z] LOG: [field-utils] Creating clickable-icon for field "saveProf", initial value: true
-[2025-10-23T05:23:08.429Z] LOG: [ClickableIcon] Created for field "saveProf", initial value: true
-[2025-10-23T05:23:08.435Z] LOG: [field-utils] Creating clickable-icon for field "saveProf", initial value: undefined
-[2025-10-23T05:23:08.436Z] LOG: [ClickableIcon] Created for field "saveProf", initial value: false
-[2025-10-23T05:23:08.442Z] LOG: [field-utils] Creating clickable-icon for field "saveProf", initial value: false
-[2025-10-23T05:23:08.442Z] LOG: [ClickableIcon] Created for field "saveProf", initial value: false
-[2025-10-23T05:23:08.448Z] LOG: [field-utils] Creating clickable-icon for field "saveProf", initial value: undefined
-[2025-10-23T05:23:08.448Z] LOG: [ClickableIcon] Created for field "saveProf", initial value: false
-[2025-10-23T05:23:08.454Z] LOG: [field-utils] Creating clickable-icon for field "saveProf", initial value: undefined
-[2025-10-23T05:23:08.454Z] LOG: [ClickableIcon] Created for field "saveProf", initial value: false
-[2025-10-23T05:23:08.460Z] LOG: [field-utils] Creating clickable-icon for field "saveProf", initial value: undefined
-[2025-10-23T05:23:08.460Z] LOG: [ClickableIcon] Created for field "saveProf", initial value: false
-[2025-10-23T05:23:08.465Z] LOG: [GridLayoutManager] Recalculating layout: {
+[2025-10-27T10:16:57.405Z] LOG: [Modal] Label sync enabled for section: combat Multi-column: true
+[2025-10-27T10:16:57.409Z] LOG: [field-creation:name] renderFieldControl called {
+  "type": "heading",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.409Z] LOG: [field-creation:score] renderFieldControl called {
+  "type": "number-stepper",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.424Z] LOG: [field-creation:mod] renderFieldControl called {
+  "type": "display",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.424Z] LOG: [field-creation:saveProf] renderFieldControl called {
+  "type": "clickable-icon",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.425Z] LOG: [field-creation:saveProf] Creating clickable-icon {
+  "initial": false
+}
+[2025-10-27T10:16:57.425Z] LOG: [field-creation:saveProf] ClickableIcon created {
+  "initialValue": false
+}
+[2025-10-27T10:16:57.425Z] LOG: [field-creation:saveMod] renderFieldControl called {
+  "type": "number-stepper",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.443Z] LOG: [field-creation:name] renderFieldControl called {
+  "type": "heading",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.444Z] LOG: [field-creation:score] renderFieldControl called {
+  "type": "number-stepper",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.453Z] LOG: [field-creation:mod] renderFieldControl called {
+  "type": "display",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.453Z] LOG: [field-creation:saveProf] renderFieldControl called {
+  "type": "clickable-icon",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.454Z] LOG: [field-creation:saveProf] Creating clickable-icon {
+  "initial": true
+}
+[2025-10-27T10:16:57.454Z] LOG: [field-creation:saveProf] ClickableIcon created {
+  "initialValue": true
+}
+[2025-10-27T10:16:57.454Z] LOG: [field-creation:saveMod] renderFieldControl called {
+  "type": "number-stepper",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.467Z] LOG: [field-creation:name] renderFieldControl called {
+  "type": "heading",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.468Z] LOG: [field-creation:score] renderFieldControl called {
+  "type": "number-stepper",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.478Z] LOG: [field-creation:mod] renderFieldControl called {
+  "type": "display",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.479Z] LOG: [field-creation:saveProf] renderFieldControl called {
+  "type": "clickable-icon",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.479Z] LOG: [field-creation:saveProf] Creating clickable-icon {
+  "initial": true
+}
+[2025-10-27T10:16:57.479Z] LOG: [field-creation:saveProf] ClickableIcon created {
+  "initialValue": true
+}
+[2025-10-27T10:16:57.479Z] LOG: [field-creation:saveMod] renderFieldControl called {
+  "type": "number-stepper",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.488Z] LOG: [field-creation:name] renderFieldControl called {
+  "type": "heading",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.489Z] LOG: [field-creation:score] renderFieldControl called {
+  "type": "number-stepper",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.496Z] LOG: [field-creation:mod] renderFieldControl called {
+  "type": "display",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.497Z] LOG: [field-creation:saveProf] renderFieldControl called {
+  "type": "clickable-icon",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.497Z] LOG: [field-creation:saveProf] Creating clickable-icon {
+  "initial": true
+}
+[2025-10-27T10:16:57.497Z] LOG: [field-creation:saveProf] ClickableIcon created {
+  "initialValue": true
+}
+[2025-10-27T10:16:57.497Z] LOG: [field-creation:saveMod] renderFieldControl called {
+  "type": "number-stepper",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.503Z] LOG: [field-creation:name] renderFieldControl called {
+  "type": "heading",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.503Z] LOG: [field-creation:score] renderFieldControl called {
+  "type": "number-stepper",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.509Z] LOG: [field-creation:mod] renderFieldControl called {
+  "type": "display",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.509Z] LOG: [field-creation:saveProf] renderFieldControl called {
+  "type": "clickable-icon",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.509Z] LOG: [field-creation:saveProf] Creating clickable-icon {
+  "initial": true
+}
+[2025-10-27T10:16:57.509Z] LOG: [field-creation:saveProf] ClickableIcon created {
+  "initialValue": true
+}
+[2025-10-27T10:16:57.509Z] LOG: [field-creation:saveMod] renderFieldControl called {
+  "type": "number-stepper",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.514Z] LOG: [field-creation:name] renderFieldControl called {
+  "type": "heading",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.515Z] LOG: [field-creation:score] renderFieldControl called {
+  "type": "number-stepper",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.520Z] LOG: [field-creation:mod] renderFieldControl called {
+  "type": "display",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.520Z] LOG: [field-creation:saveProf] renderFieldControl called {
+  "type": "clickable-icon",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.520Z] LOG: [field-creation:saveProf] Creating clickable-icon {
+  "initial": false
+}
+[2025-10-27T10:16:57.520Z] LOG: [field-creation:saveProf] ClickableIcon created {
+  "initialValue": false
+}
+[2025-10-27T10:16:57.520Z] LOG: [field-creation:saveMod] renderFieldControl called {
+  "type": "number-stepper",
+  "onChangeType": "function"
+}
+[2025-10-27T10:16:57.525Z] LOG: [visibility:name] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true
+}
+[2025-10-27T10:16:57.525Z] LOG: [visibility:score] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true,
+  "currentValue": 21
+}
+[2025-10-27T10:16:57.526Z] LOG: [visibility:mod] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true
+}
+[2025-10-27T10:16:57.526Z] LOG: [visibility:saveProf] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true,
+  "currentValue": false
+}
+[2025-10-27T10:16:57.526Z] LOG: [visibility:saveMod] Field visibility check {
+  "wasVisible": false,
+  "isVisible": false
+}
+[2025-10-27T10:16:57.526Z] LOG: [visibility:name] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true
+}
+[2025-10-27T10:16:57.526Z] LOG: [visibility:score] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true,
+  "currentValue": 9
+}
+[2025-10-27T10:16:57.526Z] LOG: [visibility:mod] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true
+}
+[2025-10-27T10:16:57.526Z] LOG: [visibility:saveProf] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true,
+  "currentValue": true
+}
+[2025-10-27T10:16:57.526Z] LOG: [visibility:saveMod] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true,
+  "currentValue": 3
+}
+[2025-10-27T10:16:57.526Z] LOG: [visibility:name] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true
+}
+[2025-10-27T10:16:57.526Z] LOG: [visibility:score] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true,
+  "currentValue": 15
+}
+[2025-10-27T10:16:57.526Z] LOG: [visibility:mod] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true
+}
+[2025-10-27T10:16:57.526Z] LOG: [visibility:saveProf] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true,
+  "currentValue": true
+}
+[2025-10-27T10:16:57.526Z] LOG: [visibility:saveMod] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true,
+  "currentValue": 6
+}
+[2025-10-27T10:16:57.526Z] LOG: [visibility:name] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true
+}
+[2025-10-27T10:16:57.526Z] LOG: [visibility:score] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true,
+  "currentValue": 18
+}
+[2025-10-27T10:16:57.526Z] LOG: [visibility:mod] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true
+}
+[2025-10-27T10:16:57.527Z] LOG: [visibility:saveProf] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true,
+  "currentValue": true
+}
+[2025-10-27T10:16:57.527Z] LOG: [visibility:saveMod] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true,
+  "currentValue": 8
+}
+[2025-10-27T10:16:57.527Z] LOG: [visibility:name] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true
+}
+[2025-10-27T10:16:57.527Z] LOG: [visibility:score] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true,
+  "currentValue": 15
+}
+[2025-10-27T10:16:57.527Z] LOG: [visibility:mod] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true
+}
+[2025-10-27T10:16:57.527Z] LOG: [visibility:saveProf] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true,
+  "currentValue": true
+}
+[2025-10-27T10:16:57.527Z] LOG: [visibility:saveMod] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true,
+  "currentValue": 6
+}
+[2025-10-27T10:16:57.527Z] LOG: [visibility:name] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true
+}
+[2025-10-27T10:16:57.527Z] LOG: [visibility:score] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true,
+  "currentValue": 18
+}
+[2025-10-27T10:16:57.527Z] LOG: [visibility:mod] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true
+}
+[2025-10-27T10:16:57.527Z] LOG: [visibility:saveProf] Field visibility check {
+  "wasVisible": true,
+  "isVisible": true,
+  "currentValue": false
+}
+[2025-10-27T10:16:57.527Z] LOG: [visibility:saveMod] Field visibility check {
+  "wasVisible": false,
+  "isVisible": false
+}
+[2025-10-27T10:16:57.530Z] LOG: [GridLayoutManager] Recalculating layout: {
   "totalFields": 1,
   "normalFields": 0,
   "availableWidth": 758,
@@ -843,9 +1498,89 @@
     "abilities:repeating"
   ]
 }
-[2025-10-23T05:23:08.465Z] LOG: [GridLayoutManager] No normal fields, using single column
-[2025-10-23T05:23:08.465Z] LOG: [Modal] Label sync enabled for section: abilities Multi-column: false
-[2025-10-23T05:23:08.473Z] LOG: [GridLayoutManager] Recalculating layout: {
+[2025-10-27T10:16:57.530Z] LOG: [GridLayoutManager] No normal fields, using single column
+[2025-10-27T10:16:57.530Z] LOG: [Modal] Label sync enabled for section: abilities Multi-column: false
+[2025-10-27T10:16:57.531Z] LOG: [TokenRenderer] Field "speeds" currentValue type: object, isArray: true, value: [
+  {
+    "type": "walk",
+    "value": "10"
+  },
+  {
+    "type": "swim",
+    "value": "40"
+  }
+]
+[2025-10-27T10:16:57.531Z] LOG: [TokenRenderer] Field "speeds" tokenValues: [
+  {
+    "type": "walk",
+    "value": "10"
+  },
+  {
+    "type": "swim",
+    "value": "40"
+  }
+]
+[2025-10-27T10:16:57.532Z] LOG: [TokenRenderer] Field "skills" currentValue type: object, isArray: true, value: [
+  {
+    "skill": "History",
+    "value": "12"
+  },
+  {
+    "skill": "Perception",
+    "value": "10"
+  }
+]
+[2025-10-27T10:16:57.532Z] LOG: [TokenRenderer] Field "skills" tokenValues: [
+  {
+    "skill": "History",
+    "value": "12"
+  },
+  {
+    "skill": "Perception",
+    "value": "10"
+  }
+]
+[2025-10-27T10:16:57.532Z] LOG: [TokenRenderer] Field "sensesList" currentValue type: object, isArray: true, value: [
+  {
+    "type": "darkvision",
+    "range": "120"
+  }
+]
+[2025-10-27T10:16:57.532Z] LOG: [TokenRenderer] Field "sensesList" tokenValues: [
+  {
+    "type": "darkvision",
+    "range": "120"
+  }
+]
+[2025-10-27T10:16:57.532Z] LOG: [TokenRenderer] Field "passivesList" currentValue type: object, isArray: true, value: [
+  {
+    "skill": "Perception",
+    "value": "20"
+  }
+]
+[2025-10-27T10:16:57.532Z] LOG: [TokenRenderer] Field "passivesList" tokenValues: [
+  {
+    "skill": "Perception",
+    "value": "20"
+  }
+]
+[2025-10-27T10:16:57.533Z] LOG: [TokenRenderer] Field "languagesList" currentValue type: object, isArray: true, value: [
+  {
+    "value": "Deep Speech"
+  },
+  {
+    "value": "telepathy 120 ft."
+  }
+]
+[2025-10-27T10:16:57.533Z] LOG: [TokenRenderer] Field "languagesList" tokenValues: [
+  {
+    "value": "Deep Speech"
+  },
+  {
+    "value": "telepathy 120 ft."
+  }
+]
+[2025-10-27T10:16:57.545Z] LOG: [GridLayoutManager] Recalculating layout: {
   "totalFields": 5,
   "normalFields": 5,
   "availableWidth": 758,
@@ -857,16 +1592,24 @@
     "languagesList:tokens"
   ]
 }
-[2025-10-23T05:23:08.473Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 117,
+[2025-10-27T10:16:57.546Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 109,
   "maxControlWidth": 200,
-  "minPairWidth": 333,
+  "minPairWidth": 325,
   "pairs": 2,
   "columns": "repeat(2, max-content 1fr)",
   "isMultiColumn": true
 }
-[2025-10-23T05:23:08.474Z] LOG: [Modal] Label sync enabled for section: senses Multi-column: true
-[2025-10-23T05:23:08.477Z] LOG: [GridLayoutManager] Recalculating layout: {
+[2025-10-27T10:16:57.546Z] LOG: [Modal] Label sync enabled for section: senses Multi-column: true
+[2025-10-27T10:16:57.546Z] LOG: [TokenRenderer] Field "damageVulnerabilitiesList" currentValue type: object, isArray: true, value: []
+[2025-10-27T10:16:57.546Z] LOG: [TokenRenderer] Field "damageVulnerabilitiesList" tokenValues: []
+[2025-10-27T10:16:57.546Z] LOG: [TokenRenderer] Field "damageResistancesList" currentValue type: object, isArray: true, value: []
+[2025-10-27T10:16:57.546Z] LOG: [TokenRenderer] Field "damageResistancesList" tokenValues: []
+[2025-10-27T10:16:57.546Z] LOG: [TokenRenderer] Field "damageImmunitiesList" currentValue type: object, isArray: true, value: []
+[2025-10-27T10:16:57.546Z] LOG: [TokenRenderer] Field "damageImmunitiesList" tokenValues: []
+[2025-10-27T10:16:57.547Z] LOG: [TokenRenderer] Field "conditionImmunitiesList" currentValue type: object, isArray: true, value: []
+[2025-10-27T10:16:57.547Z] LOG: [TokenRenderer] Field "conditionImmunitiesList" tokenValues: []
+[2025-10-27T10:16:57.552Z] LOG: [GridLayoutManager] Recalculating layout: {
   "totalFields": 4,
   "normalFields": 4,
   "availableWidth": 758,
@@ -877,16 +1620,18 @@
     "conditionImmunitiesList:tokens"
   ]
 }
-[2025-10-23T05:23:08.478Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 160,
+[2025-10-27T10:16:57.553Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 149,
   "maxControlWidth": 200,
-  "minPairWidth": 376,
+  "minPairWidth": 365,
   "pairs": 2,
   "columns": "repeat(2, max-content 1fr)",
   "isMultiColumn": true
 }
-[2025-10-23T05:23:08.478Z] LOG: [Modal] Label sync enabled for section: resistances Multi-column: true
-[2025-10-23T05:23:08.481Z] LOG: [GridLayoutManager] Recalculating layout: {
+[2025-10-27T10:16:57.553Z] LOG: [Modal] Label sync enabled for section: resistances Multi-column: true
+[2025-10-27T10:16:57.553Z] LOG: [TokenRenderer] Field "gearList" currentValue type: object, isArray: true, value: []
+[2025-10-27T10:16:57.553Z] LOG: [TokenRenderer] Field "gearList" tokenValues: []
+[2025-10-27T10:16:57.557Z] LOG: [GridLayoutManager] Recalculating layout: {
   "totalFields": 1,
   "normalFields": 1,
   "availableWidth": 758,
@@ -894,16 +1639,27 @@
     "gearList:tokens"
   ]
 }
-[2025-10-23T05:23:08.481Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 80,
+[2025-10-27T10:16:57.557Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 74,
   "maxControlWidth": 200,
-  "minPairWidth": 296,
+  "minPairWidth": 290,
   "pairs": 2,
   "columns": "repeat(2, max-content 1fr)",
   "isMultiColumn": true
 }
-[2025-10-23T05:23:08.481Z] LOG: [Modal] Label sync enabled for section: equipment Multi-column: true
-[2025-10-23T05:23:08.494Z] LOG: [GridLayoutManager] Recalculating layout: {
+[2025-10-27T10:16:57.557Z] LOG: [Modal] Label sync enabled for section: equipment Multi-column: true
+[2025-10-27T10:16:57.558Z] WARN: Repeating field "spellcastingEntries" has no categories defined
+[2025-10-27T10:16:57.562Z] LOG: [GridLayoutManager] Recalculating layout: {
+  "totalFields": 1,
+  "normalFields": 0,
+  "availableWidth": 758,
+  "fieldTypes": [
+    "spellcastingEntries:repeating"
+  ]
+}
+[2025-10-27T10:16:57.563Z] LOG: [GridLayoutManager] No normal fields, using single column
+[2025-10-27T10:16:57.563Z] LOG: [Modal] Label sync enabled for section: spellcasting Multi-column: false
+[2025-10-27T10:16:57.614Z] LOG: [GridLayoutManager] Recalculating layout: {
   "totalFields": 1,
   "normalFields": 0,
   "availableWidth": 758,
@@ -911,9 +1667,9 @@
     "entries:repeating"
   ]
 }
-[2025-10-23T05:23:08.494Z] LOG: [GridLayoutManager] No normal fields, using single column
-[2025-10-23T05:23:08.494Z] LOG: [Modal] Label sync enabled for section: entries Multi-column: false
-[2025-10-23T05:23:08.541Z] LOG: [GridLayoutManager] Recalculating layout: {
+[2025-10-27T10:16:57.614Z] LOG: [GridLayoutManager] No normal fields, using single column
+[2025-10-27T10:16:57.614Z] LOG: [Modal] Label sync enabled for section: entries Multi-column: false
+[2025-10-27T10:16:57.653Z] LOG: [GridLayoutManager] Recalculating layout: {
   "totalFields": 7,
   "normalFields": 7,
   "availableWidth": 758,
@@ -927,15 +1683,15 @@
     "typeTags:tokens"
   ]
 }
-[2025-10-23T05:23:08.542Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 146,
+[2025-10-27T10:16:57.653Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 136,
   "maxControlWidth": 200,
-  "minPairWidth": 362,
+  "minPairWidth": 352,
   "pairs": 2,
   "columns": "repeat(2, max-content 1fr)",
   "isMultiColumn": true
 }
-[2025-10-23T05:23:08.542Z] LOG: [GridLayoutManager] Recalculating layout: {
+[2025-10-27T10:16:57.653Z] LOG: [GridLayoutManager] Recalculating layout: {
   "totalFields": 7,
   "normalFields": 7,
   "availableWidth": 758,
@@ -949,15 +1705,15 @@
     "pb:text"
   ]
 }
-[2025-10-23T05:23:08.542Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 22,
+[2025-10-27T10:16:57.653Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 20,
   "maxControlWidth": 180,
-  "minPairWidth": 218,
+  "minPairWidth": 216,
   "pairs": 3,
   "columns": "repeat(3, max-content 1fr)",
   "isMultiColumn": true
 }
-[2025-10-23T05:23:08.542Z] LOG: [GridLayoutManager] Recalculating layout: {
+[2025-10-27T10:16:57.653Z] LOG: [GridLayoutManager] Recalculating layout: {
   "totalFields": 1,
   "normalFields": 0,
   "availableWidth": 758,
@@ -965,8 +1721,8 @@
     "abilities:repeating"
   ]
 }
-[2025-10-23T05:23:08.542Z] LOG: [GridLayoutManager] No normal fields, using single column
-[2025-10-23T05:23:08.542Z] LOG: [GridLayoutManager] Recalculating layout: {
+[2025-10-27T10:16:57.653Z] LOG: [GridLayoutManager] No normal fields, using single column
+[2025-10-27T10:16:57.654Z] LOG: [GridLayoutManager] Recalculating layout: {
   "totalFields": 5,
   "normalFields": 5,
   "availableWidth": 758,
@@ -978,15 +1734,15 @@
     "languagesList:tokens"
   ]
 }
-[2025-10-23T05:23:08.542Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 117,
+[2025-10-27T10:16:57.654Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 109,
   "maxControlWidth": 200,
-  "minPairWidth": 333,
+  "minPairWidth": 325,
   "pairs": 2,
   "columns": "repeat(2, max-content 1fr)",
   "isMultiColumn": true
 }
-[2025-10-23T05:23:08.542Z] LOG: [GridLayoutManager] Recalculating layout: {
+[2025-10-27T10:16:57.654Z] LOG: [GridLayoutManager] Recalculating layout: {
   "totalFields": 4,
   "normalFields": 4,
   "availableWidth": 758,
@@ -997,15 +1753,15 @@
     "conditionImmunitiesList:tokens"
   ]
 }
-[2025-10-23T05:23:08.543Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 160,
+[2025-10-27T10:16:57.654Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 149,
   "maxControlWidth": 200,
-  "minPairWidth": 376,
+  "minPairWidth": 365,
   "pairs": 2,
   "columns": "repeat(2, max-content 1fr)",
   "isMultiColumn": true
 }
-[2025-10-23T05:23:08.543Z] LOG: [GridLayoutManager] Recalculating layout: {
+[2025-10-27T10:16:57.654Z] LOG: [GridLayoutManager] Recalculating layout: {
   "totalFields": 1,
   "normalFields": 1,
   "availableWidth": 758,
@@ -1013,15 +1769,24 @@
     "gearList:tokens"
   ]
 }
-[2025-10-23T05:23:08.543Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 80,
+[2025-10-27T10:16:57.654Z] LOG: [GridLayoutManager] Layout calculated: {
+  "labelWidth": 74,
   "maxControlWidth": 200,
-  "minPairWidth": 296,
+  "minPairWidth": 290,
   "pairs": 2,
   "columns": "repeat(2, max-content 1fr)",
   "isMultiColumn": true
 }
-[2025-10-23T05:23:08.543Z] LOG: [GridLayoutManager] Recalculating layout: {
+[2025-10-27T10:16:57.654Z] LOG: [GridLayoutManager] Recalculating layout: {
+  "totalFields": 1,
+  "normalFields": 0,
+  "availableWidth": 758,
+  "fieldTypes": [
+    "spellcastingEntries:repeating"
+  ]
+}
+[2025-10-27T10:16:57.654Z] LOG: [GridLayoutManager] No normal fields, using single column
+[2025-10-27T10:16:57.654Z] LOG: [GridLayoutManager] Recalculating layout: {
   "totalFields": 1,
   "normalFields": 0,
   "availableWidth": 758,
@@ -1029,681 +1794,82 @@
     "entries:repeating"
   ]
 }
-[2025-10-23T05:23:08.543Z] LOG: [GridLayoutManager] No normal fields, using single column
-[2025-10-23T05:23:08.683Z] LOG: [UI-TEST] Field rendered: {"id":"name","type":"text","label":"Name","visible":true,"hasContainer":true,"value":"Aboleth","width":239,"height":34}
-[2025-10-23T05:23:08.683Z] LOG: [UI-TEST] Field rendered: {"id":"size","type":"select","label":"Größe","visible":true,"hasContainer":true,"value":"Large","width":239,"height":34}
-[2025-10-23T05:23:08.683Z] LOG: [UI-TEST] Field rendered: {"id":"alignmentLawChaos","type":"select","label":"Gesetz/Chaos","visible":true,"hasContainer":true,"value":"Lawful","width":239,"height":34}
-[2025-10-23T05:23:08.683Z] LOG: [UI-TEST] Field rendered: {"id":"alignmentGoodEvil","type":"select","label":"Gut/Böse","visible":true,"hasContainer":true,"value":"Evil","width":239,"height":34}
-[2025-10-23T05:23:08.684Z] LOG: [UI-TEST] Field rendered: {"id":"alignmentOverride","type":"text","label":"Gesinnung (Freiform)","visible":true,"hasContainer":true,"value":"","width":239,"height":34}
-[2025-10-23T05:23:08.684Z] LOG: [UI-TEST] Field rendered: {"id":"type","type":"select","label":"Typ","visible":true,"hasContainer":true,"value":"Aberration","width":239,"height":34}
-[2025-10-23T05:23:08.684Z] LOG: [UI-TEST] Field rendered: {"id":"typeTags","type":"tokens","label":"Typ-Tags","visible":true,"hasContainer":true,"value":"","width":627,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:08.684Z] LOG: [UI-TEST] Field rendered: {"id":"ac","type":"text","label":"AC","visible":true,"hasContainer":true,"value":"17","width":195,"height":34}
-[2025-10-23T05:23:08.684Z] LOG: [UI-TEST] Field rendered: {"id":"initiative","type":"text","label":"INI","visible":true,"hasContainer":true,"value":"+3 (13)","width":195,"height":34}
-[2025-10-23T05:23:08.684Z] LOG: [UI-TEST] Field rendered: {"id":"hp","type":"text","label":"TP","visible":true,"hasContainer":true,"value":"150","width":195,"height":34}
-[2025-10-23T05:23:08.684Z] LOG: [UI-TEST] Field rendered: {"id":"hitDice","type":"text","label":"TW","visible":true,"hasContainer":true,"value":"20d10 + 40","width":195,"height":34}
-[2025-10-23T05:23:08.684Z] LOG: [UI-TEST] Field rendered: {"id":"cr","type":"text","label":"CR","visible":true,"hasContainer":true,"value":"10","width":195,"height":34}
-[2025-10-23T05:23:08.684Z] LOG: [UI-TEST] Field rendered: {"id":"xp","type":"text","label":"EP","visible":true,"hasContainer":true,"value":"5900","width":195,"height":34}
-[2025-10-23T05:23:08.684Z] LOG: [UI-TEST] Field rendered: {"id":"pb","type":"text","label":"ÜB","visible":true,"hasContainer":true,"value":"+4","width":195,"height":34}
-[2025-10-23T05:23:08.685Z] LOG: [UI-TEST] Field rendered: {"id":"abilities","type":"repeating","label":"","visible":true,"hasContainer":true,"value":"21","width":41,"height":34}
-[2025-10-23T05:23:08.692Z] LOG: [UI-TEST] Field rendered: {"id":"speeds","type":"tokens","label":"Bewegungsraten","visible":true,"hasContainer":true,"value":"","width":570,"height":30,"chips":["Gehen",": 10ft.","Schwimmen",": 40ft."],"chipCount":4}
-[2025-10-23T05:23:08.692Z] LOG: [UI-TEST] Field rendered: {"id":"skills","type":"tokens","label":"Fertigkeiten","visible":true,"hasContainer":true,"value":"","width":602,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:08.692Z] LOG: [UI-TEST] Field rendered: {"id":"sensesList","type":"tokens","label":"Sinne","visible":true,"hasContainer":true,"value":"","width":648,"height":30,"chips":["Darkvision",": 120ft."],"chipCount":2}
-[2025-10-23T05:23:08.692Z] LOG: [UI-TEST] Field rendered: {"id":"passivesList","type":"tokens","label":"Passive Werte","visible":true,"hasContainer":true,"value":"","width":590,"height":30,"chips":["Passive Perception 20"],"chipCount":1}
-[2025-10-23T05:23:08.692Z] LOG: [UI-TEST] Field rendered: {"id":"languagesList","type":"tokens","label":"Sprachen","visible":true,"hasContainer":true,"value":"","width":622,"height":30,"chips":["Deep Speech","Telepathy",": 120ft."],"chipCount":3}
-[2025-10-23T05:23:08.693Z] LOG: [LabelWidthSync] Multi-column: Found 1 token labels, 6 normal labels
-[2025-10-23T05:23:08.693Z] LOG: [LabelWidthSync] Multi-column: max normal label width: 146.0625
-[2025-10-23T05:23:08.693Z] LOG: [LabelWidthSync] Multi-column: Applied 146.0625 px to 1 token labels
-[2025-10-23T05:23:08.696Z] LOG: [UI-TEST] Field rendered: {"id":"damageVulnerabilitiesList","type":"tokens","label":"Schadensanfälligkeiten","visible":true,"hasContainer":true,"value":"","width":526,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:08.699Z] LOG: [UI-TEST] Field rendered: {"id":"damageResistancesList","type":"tokens","label":"Schadenswiderstände","visible":true,"hasContainer":true,"value":"","width":535,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:08.699Z] LOG: [UI-TEST] Field rendered: {"id":"damageImmunitiesList","type":"tokens","label":"Schadensimmunitäten","visible":true,"hasContainer":true,"value":"","width":531,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:08.699Z] LOG: [UI-TEST] Field rendered: {"id":"conditionImmunitiesList","type":"tokens","label":"Zustandsimmunitäten","visible":true,"hasContainer":true,"value":"","width":534,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:08.700Z] LOG: [LabelWidthSync] Multi-column: No token labels found
-[2025-10-23T05:23:08.700Z] LOG: [UI-TEST] Field rendered: {"id":"gearList","type":"tokens","label":"Ausrüstung","visible":true,"hasContainer":true,"value":"","width":606,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:08.700Z] LOG: [UI-TEST] Field rendered: {"id":"entries","type":"repeating","label":"Aktionen & Eigenschaften","visible":true,"hasContainer":true,"value":"trait","width":143,"height":30,"selectedOption":"Eigenschaft"}
-[2025-10-23T05:23:08.701Z] LOG: [LabelWidthSync] Single-column: Found 1 labels
-[2025-10-23T05:23:08.703Z] LOG: [LabelWidthSync] Single-column: max width: 0
-[2025-10-23T05:23:08.707Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
-[2025-10-23T05:23:08.718Z] LOG: [LabelWidthSync] Multi-column: max token label width: 119.796875
-[2025-10-23T05:23:08.718Z] LOG: [LabelWidthSync] Multi-column: Applied 119.796875 px to 5 token labels
-[2025-10-23T05:23:08.726Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
-[2025-10-23T05:23:08.733Z] LOG: [LabelWidthSync] Multi-column: max token label width: 162.84375
-[2025-10-23T05:23:08.733Z] LOG: [LabelWidthSync] Multi-column: Applied 162.84375 px to 4 token labels
-[2025-10-23T05:23:08.740Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
-[2025-10-23T05:23:08.742Z] LOG: [LabelWidthSync] Multi-column: max token label width: 81.875
-[2025-10-23T05:23:08.742Z] LOG: [LabelWidthSync] Multi-column: Applied 81.875 px to 1 token labels
-[2025-10-23T05:23:08.744Z] LOG: [LabelWidthSync] Single-column: Found 1 labels
-[2025-10-23T05:23:08.746Z] LOG: [LabelWidthSync] Single-column: max width: 181.28125
-[2025-10-23T05:23:08.746Z] LOG: [LabelWidthSync] Single-column: Applied to 1 labels
-[2025-10-23T05:23:08.750Z] LOG: [LabelWidthSync] Multi-column: Found 1 token labels, 6 normal labels
-[2025-10-23T05:23:08.750Z] LOG: [LabelWidthSync] Multi-column: max normal label width: 146.0625
-[2025-10-23T05:23:08.750Z] LOG: [LabelWidthSync] Multi-column: Applied 146.0625 px to 1 token labels
-[2025-10-23T05:23:08.750Z] LOG: [LabelWidthSync] Multi-column: No token labels found
-[2025-10-23T05:23:08.750Z] LOG: [LabelWidthSync] Single-column: Found 1 labels
-[2025-10-23T05:23:08.752Z] LOG: [LabelWidthSync] Single-column: max width: 0
-[2025-10-23T05:23:08.754Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
-[2025-10-23T05:23:08.764Z] LOG: [LabelWidthSync] Multi-column: max token label width: 119.796875
-[2025-10-23T05:23:08.764Z] LOG: [LabelWidthSync] Multi-column: Applied 119.796875 px to 5 token labels
-[2025-10-23T05:23:08.766Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
-[2025-10-23T05:23:08.773Z] LOG: [LabelWidthSync] Multi-column: max token label width: 162.84375
-[2025-10-23T05:23:08.773Z] LOG: [LabelWidthSync] Multi-column: Applied 162.84375 px to 4 token labels
-[2025-10-23T05:23:08.775Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
-[2025-10-23T05:23:08.777Z] LOG: [LabelWidthSync] Multi-column: max token label width: 81.875
-[2025-10-23T05:23:08.777Z] LOG: [LabelWidthSync] Multi-column: Applied 81.875 px to 1 token labels
-[2025-10-23T05:23:08.778Z] LOG: [LabelWidthSync] Single-column: Found 1 labels
-[2025-10-23T05:23:08.780Z] LOG: [LabelWidthSync] Single-column: max width: 181.28125
-[2025-10-23T05:23:08.780Z] LOG: [LabelWidthSync] Single-column: Applied to 1 labels
-[2025-10-23T05:23:10.645Z] LOG: [ClickableIcon] Field "saveProf" toggled: true -> false
-[2025-10-23T05:23:10.645Z] LOG: [ClickableIcon] Field "saveProf" calling onChange with value: false
-[2025-10-23T05:23:10.646Z] LOG: [field-utils] clickable-icon "saveProf" onChange called with value: false
-[2025-10-23T05:23:12.138Z] LOG: [ClickableIcon] Field "saveProf" toggled: false -> true
-[2025-10-23T05:23:12.138Z] LOG: [ClickableIcon] Field "saveProf" calling onChange with value: true
-[2025-10-23T05:23:12.138Z] LOG: [field-utils] clickable-icon "saveProf" onChange called with value: true
-[2025-10-23T05:23:39.541Z] LOG: [UI-TEST] Modal opened: {"kind":"creature","title":"Kreatur erstellen","entity":"Adult Black Dragon","timestamp":1761197019541}
-[2025-10-23T05:23:39.559Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 7,
-  "normalFields": 7,
-  "availableWidth": 770,
-  "fieldTypes": [
-    "name:text",
-    "size:select",
-    "alignmentLawChaos:select",
-    "alignmentGoodEvil:select",
-    "alignmentOverride:text",
-    "type:select",
-    "typeTags:tokens"
-  ]
-}
-[2025-10-23T05:23:39.559Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 146,
-  "maxControlWidth": 200,
-  "minPairWidth": 362,
-  "pairs": 2,
-  "columns": "repeat(2, max-content 1fr)",
-  "isMultiColumn": true
-}
-[2025-10-23T05:23:39.559Z] LOG: [Modal] Label sync enabled for section: basic Multi-column: true
-[2025-10-23T05:23:39.560Z] LOG: [renderTextCore] Rendering field with placeholder: z.B. +2
-[2025-10-23T05:23:39.560Z] LOG: [renderTextCore] Raw value: +6 (16)
-[2025-10-23T05:23:39.560Z] LOG: [renderTextCore] Value type: string
-[2025-10-23T05:23:39.560Z] LOG: [renderTextCore] Normalized value: +6 (16)
-[2025-10-23T05:23:39.560Z] LOG: [renderTextCore] Setting input.value to: +6 (16)
-[2025-10-23T05:23:39.561Z] LOG: [field-manager] Rendering pb field
-[2025-10-23T05:23:39.561Z] LOG: [field-manager] values object: {
-  "name": "Adult Black Dragon",
-  "size": "Huge",
-  "typeTags": [],
-  "speeds": [
-    {
-      "type": "walk",
-      "value": "40"
-    },
-    {
-      "type": "fly",
-      "value": "80"
-    },
-    {
-      "type": "swim",
-      "value": "40"
-    }
-  ],
-  "abilities": [
-    {
-      "ability": "str",
-      "score": 23
-    },
-    {
-      "ability": "dex",
-      "score": 14
-    },
-    {
-      "ability": "con",
-      "score": 21
-    },
-    {
-      "ability": "int",
-      "score": 14
-    },
-    {
-      "ability": "wis",
-      "score": 13
-    },
-    {
-      "ability": "cha",
-      "score": 19
-    }
-  ],
-  "skills": [],
-  "sensesList": [
-    {
-      "type": "blindsight",
-      "range": "60"
-    },
-    {
-      "type": "darkvision",
-      "range": "120"
-    }
-  ],
-  "passivesList": [
-    {
-      "skill": "Perception",
-      "value": "21"
-    }
-  ],
-  "languagesList": [
-    {
-      "value": "Common"
-    },
-    {
-      "value": "Draconic"
-    }
-  ],
-  "damageVulnerabilitiesList": [],
-  "damageResistancesList": [],
-  "damageImmunitiesList": [
-    {
-      "value": "Acid"
-    }
-  ],
-  "conditionImmunitiesList": [],
-  "gearList": [],
-  "entries": [
-    {
-      "category": "trait",
-      "name": "Amphibious",
-      "text": "The dragon can breathe air and water."
-    },
-    {
-      "category": "trait",
-      "name": "Legendary Resistance (3/Day, or 4/Day in Lair)",
-      "text": "If the dragon fails a saving throw, it can choose to succeed instead."
-    },
-    {
-      "category": "action",
-      "name": "Multiattack",
-      "text": "The dragon makes three Rend attacks. It can replace one attack with a use of Spellcasting to cast *Acid Arrow* (level 3 version)."
-    },
-    {
-      "category": "action",
-      "name": "Rend",
-      "text": "*Melee Attack Roll:* +11, reach 10 ft. 13 (2d6 + 6) Slashing damage plus 4 (1d8) Acid damage."
-    },
-    {
-      "category": "action",
-      "name": "Acid Breath (Recharge 5-6)",
-      "text": "*Dexterity Saving Throw*: DC 18, each creature in a 60-foot-long, 5-foot-wide Line. *Failure:*  54 (12d8) Acid damage. *Success:*  Half damage."
-    },
-    {
-      "category": "action",
-      "name": "Spellcasting",
-      "text": "The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 17, +9 to hit with spell attacks): - **At Will:** *Detect Magic*, *Fear*, *Acid Arrow* - **1e/Day Each:** *Speak with Dead*, *Vitriolic Sphere*"
-    },
-    {
-      "category": "legendary",
-      "name": "Cloud of Insects",
-      "text": "*Dexterity Saving Throw*: DC 17, one creature the dragon can see within 120 feet. *Failure:*  22 (4d10) Poison damage, and the target has Disadvantage on saving throws to maintain  Concentration until the end of its next turn. *Failure or Success*:  The dragon can't take this action again until the start of its next turn."
-    },
-    {
-      "category": "legendary",
-      "name": "Frightful Presence",
-      "text": "The dragon uses Spellcasting to cast *Fear*. The dragon can't take this action again until the start of its next turn."
-    },
-    {
-      "category": "legendary",
-      "name": "Pounce",
-      "text": "The dragon can move up to half its Speed, and it makes one Rend attack."
-    }
-  ],
-  "smType": "creature",
-  "type": "Dragon",
-  "alignmentLawChaos": "Chaotic",
-  "alignmentGoodEvil": "Evil",
-  "ac": "19",
-  "initiative": "+6 (16)",
-  "hp": "195",
-  "hitDice": "17d12 + 85",
-  "pb": "+5",
-  "cr": "14",
-  "xp": "11500"
-}
-[2025-10-23T05:23:39.561Z] LOG: [field-manager] values["pb"]: +5
-[2025-10-23T05:23:39.561Z] LOG: [resolveInitialValue] Resolving pb field
-[2025-10-23T05:23:39.561Z] LOG: [resolveInitialValue] values object: {
-  "name": "Adult Black Dragon",
-  "size": "Huge",
-  "typeTags": [],
-  "speeds": [
-    {
-      "type": "walk",
-      "value": "40"
-    },
-    {
-      "type": "fly",
-      "value": "80"
-    },
-    {
-      "type": "swim",
-      "value": "40"
-    }
-  ],
-  "abilities": [
-    {
-      "ability": "str",
-      "score": 23
-    },
-    {
-      "ability": "dex",
-      "score": 14
-    },
-    {
-      "ability": "con",
-      "score": 21
-    },
-    {
-      "ability": "int",
-      "score": 14
-    },
-    {
-      "ability": "wis",
-      "score": 13
-    },
-    {
-      "ability": "cha",
-      "score": 19
-    }
-  ],
-  "skills": [],
-  "sensesList": [
-    {
-      "type": "blindsight",
-      "range": "60"
-    },
-    {
-      "type": "darkvision",
-      "range": "120"
-    }
-  ],
-  "passivesList": [
-    {
-      "skill": "Perception",
-      "value": "21"
-    }
-  ],
-  "languagesList": [
-    {
-      "value": "Common"
-    },
-    {
-      "value": "Draconic"
-    }
-  ],
-  "damageVulnerabilitiesList": [],
-  "damageResistancesList": [],
-  "damageImmunitiesList": [
-    {
-      "value": "Acid"
-    }
-  ],
-  "conditionImmunitiesList": [],
-  "gearList": [],
-  "entries": [
-    {
-      "category": "trait",
-      "name": "Amphibious",
-      "text": "The dragon can breathe air and water."
-    },
-    {
-      "category": "trait",
-      "name": "Legendary Resistance (3/Day, or 4/Day in Lair)",
-      "text": "If the dragon fails a saving throw, it can choose to succeed instead."
-    },
-    {
-      "category": "action",
-      "name": "Multiattack",
-      "text": "The dragon makes three Rend attacks. It can replace one attack with a use of Spellcasting to cast *Acid Arrow* (level 3 version)."
-    },
-    {
-      "category": "action",
-      "name": "Rend",
-      "text": "*Melee Attack Roll:* +11, reach 10 ft. 13 (2d6 + 6) Slashing damage plus 4 (1d8) Acid damage."
-    },
-    {
-      "category": "action",
-      "name": "Acid Breath (Recharge 5-6)",
-      "text": "*Dexterity Saving Throw*: DC 18, each creature in a 60-foot-long, 5-foot-wide Line. *Failure:*  54 (12d8) Acid damage. *Success:*  Half damage."
-    },
-    {
-      "category": "action",
-      "name": "Spellcasting",
-      "text": "The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 17, +9 to hit with spell attacks): - **At Will:** *Detect Magic*, *Fear*, *Acid Arrow* - **1e/Day Each:** *Speak with Dead*, *Vitriolic Sphere*"
-    },
-    {
-      "category": "legendary",
-      "name": "Cloud of Insects",
-      "text": "*Dexterity Saving Throw*: DC 17, one creature the dragon can see within 120 feet. *Failure:*  22 (4d10) Poison damage, and the target has Disadvantage on saving throws to maintain  Concentration until the end of its next turn. *Failure or Success*:  The dragon can't take this action again until the start of its next turn."
-    },
-    {
-      "category": "legendary",
-      "name": "Frightful Presence",
-      "text": "The dragon uses Spellcasting to cast *Fear*. The dragon can't take this action again until the start of its next turn."
-    },
-    {
-      "category": "legendary",
-      "name": "Pounce",
-      "text": "The dragon can move up to half its Speed, and it makes one Rend attack."
-    }
-  ],
-  "smType": "creature",
-  "type": "Dragon",
-  "alignmentLawChaos": "Chaotic",
-  "alignmentGoodEvil": "Evil",
-  "ac": "19",
-  "initiative": "+6 (16)",
-  "hp": "195",
-  "hitDice": "17d12 + 85",
-  "pb": "+5",
-  "cr": "14",
-  "xp": "11500"
-}
-[2025-10-23T05:23:39.562Z] LOG: [resolveInitialValue] values["pb"]: +5
-[2025-10-23T05:23:39.562Z] LOG: [resolveInitialValue] spec.default: undefined
-[2025-10-23T05:23:39.562Z] LOG: [resolveInitialValue] Returning from values: +5
-[2025-10-23T05:23:39.562Z] LOG: [renderTextCore] Rendering field with placeholder: z.B. +2
-[2025-10-23T05:23:39.562Z] LOG: [renderTextCore] Raw value: +5
-[2025-10-23T05:23:39.562Z] LOG: [renderTextCore] Value type: string
-[2025-10-23T05:23:39.562Z] LOG: [renderTextCore] Normalized value: +5
-[2025-10-23T05:23:39.563Z] LOG: [renderTextCore] Setting input.value to: +5
-[2025-10-23T05:23:39.566Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 7,
-  "normalFields": 7,
-  "availableWidth": 770,
-  "fieldTypes": [
-    "ac:text",
-    "initiative:text",
-    "hp:text",
-    "hitDice:text",
-    "cr:text",
-    "xp:text",
-    "pb:text"
-  ]
-}
-[2025-10-23T05:23:39.567Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 22,
-  "maxControlWidth": 180,
-  "minPairWidth": 218,
-  "pairs": 3,
-  "columns": "repeat(3, max-content 1fr)",
-  "isMultiColumn": true
-}
-[2025-10-23T05:23:39.567Z] LOG: [Modal] Label sync enabled for section: combat Multi-column: true
-[2025-10-23T05:23:39.570Z] LOG: [field-utils] Creating clickable-icon for field "saveProf", initial value: undefined
-[2025-10-23T05:23:39.570Z] LOG: [ClickableIcon] Created for field "saveProf", initial value: false
-[2025-10-23T05:23:39.576Z] LOG: [field-utils] Creating clickable-icon for field "saveProf", initial value: undefined
-[2025-10-23T05:23:39.576Z] LOG: [ClickableIcon] Created for field "saveProf", initial value: false
-[2025-10-23T05:23:39.583Z] LOG: [field-utils] Creating clickable-icon for field "saveProf", initial value: undefined
-[2025-10-23T05:23:39.583Z] LOG: [ClickableIcon] Created for field "saveProf", initial value: false
-[2025-10-23T05:23:39.589Z] LOG: [field-utils] Creating clickable-icon for field "saveProf", initial value: undefined
-[2025-10-23T05:23:39.589Z] LOG: [ClickableIcon] Created for field "saveProf", initial value: false
-[2025-10-23T05:23:39.595Z] LOG: [field-utils] Creating clickable-icon for field "saveProf", initial value: undefined
-[2025-10-23T05:23:39.595Z] LOG: [ClickableIcon] Created for field "saveProf", initial value: false
-[2025-10-23T05:23:39.601Z] LOG: [field-utils] Creating clickable-icon for field "saveProf", initial value: undefined
-[2025-10-23T05:23:39.601Z] LOG: [ClickableIcon] Created for field "saveProf", initial value: false
-[2025-10-23T05:23:39.606Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 1,
-  "normalFields": 0,
-  "availableWidth": 758,
-  "fieldTypes": [
-    "abilities:repeating"
-  ]
-}
-[2025-10-23T05:23:39.607Z] LOG: [GridLayoutManager] No normal fields, using single column
-[2025-10-23T05:23:39.607Z] LOG: [Modal] Label sync enabled for section: abilities Multi-column: false
-[2025-10-23T05:23:39.612Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 5,
-  "normalFields": 5,
-  "availableWidth": 758,
-  "fieldTypes": [
-    "speeds:tokens",
-    "skills:tokens",
-    "sensesList:tokens",
-    "passivesList:tokens",
-    "languagesList:tokens"
-  ]
-}
-[2025-10-23T05:23:39.613Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 117,
-  "maxControlWidth": 200,
-  "minPairWidth": 333,
-  "pairs": 2,
-  "columns": "repeat(2, max-content 1fr)",
-  "isMultiColumn": true
-}
-[2025-10-23T05:23:39.613Z] LOG: [Modal] Label sync enabled for section: senses Multi-column: true
-[2025-10-23T05:23:39.617Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 4,
-  "normalFields": 4,
-  "availableWidth": 758,
-  "fieldTypes": [
-    "damageVulnerabilitiesList:tokens",
-    "damageResistancesList:tokens",
-    "damageImmunitiesList:tokens",
-    "conditionImmunitiesList:tokens"
-  ]
-}
-[2025-10-23T05:23:39.617Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 160,
-  "maxControlWidth": 200,
-  "minPairWidth": 376,
-  "pairs": 2,
-  "columns": "repeat(2, max-content 1fr)",
-  "isMultiColumn": true
-}
-[2025-10-23T05:23:39.618Z] LOG: [Modal] Label sync enabled for section: resistances Multi-column: true
-[2025-10-23T05:23:39.621Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 1,
-  "normalFields": 1,
-  "availableWidth": 758,
-  "fieldTypes": [
-    "gearList:tokens"
-  ]
-}
-[2025-10-23T05:23:39.621Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 80,
-  "maxControlWidth": 200,
-  "minPairWidth": 296,
-  "pairs": 2,
-  "columns": "repeat(2, max-content 1fr)",
-  "isMultiColumn": true
-}
-[2025-10-23T05:23:39.621Z] LOG: [Modal] Label sync enabled for section: equipment Multi-column: true
-[2025-10-23T05:23:39.632Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 1,
-  "normalFields": 0,
-  "availableWidth": 758,
-  "fieldTypes": [
-    "entries:repeating"
-  ]
-}
-[2025-10-23T05:23:39.632Z] LOG: [GridLayoutManager] No normal fields, using single column
-[2025-10-23T05:23:39.632Z] LOG: [Modal] Label sync enabled for section: entries Multi-column: false
-[2025-10-23T05:23:39.679Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 7,
-  "normalFields": 7,
-  "availableWidth": 758,
-  "fieldTypes": [
-    "name:text",
-    "size:select",
-    "alignmentLawChaos:select",
-    "alignmentGoodEvil:select",
-    "alignmentOverride:text",
-    "type:select",
-    "typeTags:tokens"
-  ]
-}
-[2025-10-23T05:23:39.679Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 146,
-  "maxControlWidth": 200,
-  "minPairWidth": 362,
-  "pairs": 2,
-  "columns": "repeat(2, max-content 1fr)",
-  "isMultiColumn": true
-}
-[2025-10-23T05:23:39.679Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 7,
-  "normalFields": 7,
-  "availableWidth": 758,
-  "fieldTypes": [
-    "ac:text",
-    "initiative:text",
-    "hp:text",
-    "hitDice:text",
-    "cr:text",
-    "xp:text",
-    "pb:text"
-  ]
-}
-[2025-10-23T05:23:39.680Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 22,
-  "maxControlWidth": 180,
-  "minPairWidth": 218,
-  "pairs": 3,
-  "columns": "repeat(3, max-content 1fr)",
-  "isMultiColumn": true
-}
-[2025-10-23T05:23:39.680Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 1,
-  "normalFields": 0,
-  "availableWidth": 758,
-  "fieldTypes": [
-    "abilities:repeating"
-  ]
-}
-[2025-10-23T05:23:39.680Z] LOG: [GridLayoutManager] No normal fields, using single column
-[2025-10-23T05:23:39.680Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 5,
-  "normalFields": 5,
-  "availableWidth": 758,
-  "fieldTypes": [
-    "speeds:tokens",
-    "skills:tokens",
-    "sensesList:tokens",
-    "passivesList:tokens",
-    "languagesList:tokens"
-  ]
-}
-[2025-10-23T05:23:39.680Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 117,
-  "maxControlWidth": 200,
-  "minPairWidth": 333,
-  "pairs": 2,
-  "columns": "repeat(2, max-content 1fr)",
-  "isMultiColumn": true
-}
-[2025-10-23T05:23:39.680Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 4,
-  "normalFields": 4,
-  "availableWidth": 758,
-  "fieldTypes": [
-    "damageVulnerabilitiesList:tokens",
-    "damageResistancesList:tokens",
-    "damageImmunitiesList:tokens",
-    "conditionImmunitiesList:tokens"
-  ]
-}
-[2025-10-23T05:23:39.680Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 160,
-  "maxControlWidth": 200,
-  "minPairWidth": 376,
-  "pairs": 2,
-  "columns": "repeat(2, max-content 1fr)",
-  "isMultiColumn": true
-}
-[2025-10-23T05:23:39.681Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 1,
-  "normalFields": 1,
-  "availableWidth": 758,
-  "fieldTypes": [
-    "gearList:tokens"
-  ]
-}
-[2025-10-23T05:23:39.681Z] LOG: [GridLayoutManager] Layout calculated: {
-  "labelWidth": 80,
-  "maxControlWidth": 200,
-  "minPairWidth": 296,
-  "pairs": 2,
-  "columns": "repeat(2, max-content 1fr)",
-  "isMultiColumn": true
-}
-[2025-10-23T05:23:39.681Z] LOG: [GridLayoutManager] Recalculating layout: {
-  "totalFields": 1,
-  "normalFields": 0,
-  "availableWidth": 758,
-  "fieldTypes": [
-    "entries:repeating"
-  ]
-}
-[2025-10-23T05:23:39.681Z] LOG: [GridLayoutManager] No normal fields, using single column
-[2025-10-23T05:23:39.808Z] LOG: [UI-TEST] Field rendered: {"id":"name","type":"text","label":"Name","visible":true,"hasContainer":true,"value":"Adult Black Dragon","width":239,"height":34}
-[2025-10-23T05:23:39.808Z] LOG: [UI-TEST] Field rendered: {"id":"size","type":"select","label":"Größe","visible":true,"hasContainer":true,"value":"Huge","width":239,"height":34}
-[2025-10-23T05:23:39.809Z] LOG: [UI-TEST] Field rendered: {"id":"alignmentLawChaos","type":"select","label":"Gesetz/Chaos","visible":true,"hasContainer":true,"value":"Chaotic","width":239,"height":34}
-[2025-10-23T05:23:39.809Z] LOG: [UI-TEST] Field rendered: {"id":"alignmentGoodEvil","type":"select","label":"Gut/Böse","visible":true,"hasContainer":true,"value":"Evil","width":239,"height":34}
-[2025-10-23T05:23:39.809Z] LOG: [UI-TEST] Field rendered: {"id":"alignmentOverride","type":"text","label":"Gesinnung (Freiform)","visible":true,"hasContainer":true,"value":"","width":239,"height":34}
-[2025-10-23T05:23:39.809Z] LOG: [UI-TEST] Field rendered: {"id":"type","type":"select","label":"Typ","visible":true,"hasContainer":true,"value":"Dragon","width":239,"height":34}
-[2025-10-23T05:23:39.809Z] LOG: [UI-TEST] Field rendered: {"id":"typeTags","type":"tokens","label":"Typ-Tags","visible":true,"hasContainer":true,"value":"","width":627,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:39.809Z] LOG: [UI-TEST] Field rendered: {"id":"ac","type":"text","label":"AC","visible":true,"hasContainer":true,"value":"19","width":195,"height":34}
-[2025-10-23T05:23:39.809Z] LOG: [UI-TEST] Field rendered: {"id":"initiative","type":"text","label":"INI","visible":true,"hasContainer":true,"value":"+6 (16)","width":195,"height":34}
-[2025-10-23T05:23:39.810Z] LOG: [UI-TEST] Field rendered: {"id":"hp","type":"text","label":"TP","visible":true,"hasContainer":true,"value":"195","width":195,"height":34}
-[2025-10-23T05:23:39.810Z] LOG: [UI-TEST] Field rendered: {"id":"hitDice","type":"text","label":"TW","visible":true,"hasContainer":true,"value":"17d12 + 85","width":195,"height":34}
-[2025-10-23T05:23:39.810Z] LOG: [UI-TEST] Field rendered: {"id":"cr","type":"text","label":"CR","visible":true,"hasContainer":true,"value":"14","width":195,"height":34}
-[2025-10-23T05:23:39.810Z] LOG: [UI-TEST] Field rendered: {"id":"xp","type":"text","label":"EP","visible":true,"hasContainer":true,"value":"11500","width":195,"height":34}
-[2025-10-23T05:23:39.810Z] LOG: [UI-TEST] Field rendered: {"id":"pb","type":"text","label":"ÜB","visible":true,"hasContainer":true,"value":"+5","width":195,"height":34}
-[2025-10-23T05:23:39.817Z] LOG: [UI-TEST] Field rendered: {"id":"abilities","type":"repeating","label":"","visible":true,"hasContainer":true,"value":"23","width":41,"height":34}
-[2025-10-23T05:23:39.818Z] LOG: [UI-TEST] Field rendered: {"id":"speeds","type":"tokens","label":"Bewegungsraten","visible":true,"hasContainer":true,"value":"","width":570,"height":30,"chips":["Gehen",": 40ft.","Fliegen",": 80ft.","-","Schwimmen",": 40ft."],"chipCount":7}
-[2025-10-23T05:23:39.818Z] LOG: [UI-TEST] Field rendered: {"id":"skills","type":"tokens","label":"Fertigkeiten","visible":true,"hasContainer":true,"value":"","width":602,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:39.818Z] LOG: [UI-TEST] Field rendered: {"id":"sensesList","type":"tokens","label":"Sinne","visible":true,"hasContainer":true,"value":"","width":648,"height":30,"chips":["Blindsight",": 60ft.","Darkvision",": 120ft."],"chipCount":4}
-[2025-10-23T05:23:39.818Z] LOG: [UI-TEST] Field rendered: {"id":"passivesList","type":"tokens","label":"Passive Werte","visible":true,"hasContainer":true,"value":"","width":590,"height":30,"chips":["Passive Perception 21"],"chipCount":1}
-[2025-10-23T05:23:39.819Z] LOG: [UI-TEST] Field rendered: {"id":"languagesList","type":"tokens","label":"Sprachen","visible":true,"hasContainer":true,"value":"","width":622,"height":30,"chips":["Common","Draconic"],"chipCount":2}
-[2025-10-23T05:23:39.819Z] LOG: [LabelWidthSync] Multi-column: Found 1 token labels, 6 normal labels
-[2025-10-23T05:23:39.819Z] LOG: [LabelWidthSync] Multi-column: max normal label width: 146.0625
-[2025-10-23T05:23:39.819Z] LOG: [LabelWidthSync] Multi-column: Applied 146.0625 px to 1 token labels
-[2025-10-23T05:23:39.823Z] LOG: [UI-TEST] Field rendered: {"id":"damageVulnerabilitiesList","type":"tokens","label":"Schadensanfälligkeiten","visible":true,"hasContainer":true,"value":"","width":526,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:39.824Z] LOG: [UI-TEST] Field rendered: {"id":"damageResistancesList","type":"tokens","label":"Schadenswiderstände","visible":true,"hasContainer":true,"value":"","width":535,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:39.825Z] LOG: [UI-TEST] Field rendered: {"id":"damageImmunitiesList","type":"tokens","label":"Schadensimmunitäten","visible":true,"hasContainer":true,"value":"","width":531,"height":30,"chips":["Acid"],"chipCount":1}
-[2025-10-23T05:23:39.825Z] LOG: [UI-TEST] Field rendered: {"id":"conditionImmunitiesList","type":"tokens","label":"Zustandsimmunitäten","visible":true,"hasContainer":true,"value":"","width":534,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:39.825Z] LOG: [LabelWidthSync] Multi-column: No token labels found
-[2025-10-23T05:23:39.825Z] LOG: [UI-TEST] Field rendered: {"id":"gearList","type":"tokens","label":"Ausrüstung","visible":true,"hasContainer":true,"value":"","width":606,"height":30,"chips":[],"chipCount":0}
-[2025-10-23T05:23:39.825Z] LOG: [UI-TEST] Field rendered: {"id":"entries","type":"repeating","label":"Aktionen & Eigenschaften","visible":true,"hasContainer":true,"value":"trait","width":143,"height":30,"selectedOption":"Eigenschaft"}
-[2025-10-23T05:23:39.829Z] LOG: [LabelWidthSync] Multi-column: Found 1 token labels, 6 normal labels
-[2025-10-23T05:23:39.829Z] LOG: [LabelWidthSync] Multi-column: max normal label width: 146.0625
-[2025-10-23T05:23:39.829Z] LOG: [LabelWidthSync] Multi-column: Applied 146.0625 px to 1 token labels
-[2025-10-23T05:23:39.829Z] LOG: [LabelWidthSync] Multi-column: No token labels found
-[2025-10-23T05:23:39.835Z] LOG: [LabelWidthSync] Single-column: Found 1 labels
-[2025-10-23T05:23:39.837Z] LOG: [LabelWidthSync] Single-column: max width: 0
-[2025-10-23T05:23:39.839Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
-[2025-10-23T05:23:39.852Z] LOG: [LabelWidthSync] Multi-column: max token label width: 119.796875
-[2025-10-23T05:23:39.852Z] LOG: [LabelWidthSync] Multi-column: Applied 119.796875 px to 5 token labels
-[2025-10-23T05:23:39.855Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
-[2025-10-23T05:23:39.863Z] LOG: [LabelWidthSync] Multi-column: max token label width: 162.84375
-[2025-10-23T05:23:39.864Z] LOG: [LabelWidthSync] Multi-column: Applied 162.84375 px to 4 token labels
-[2025-10-23T05:23:39.866Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
-[2025-10-23T05:23:39.868Z] LOG: [LabelWidthSync] Multi-column: max token label width: 81.875
-[2025-10-23T05:23:39.868Z] LOG: [LabelWidthSync] Multi-column: Applied 81.875 px to 1 token labels
-[2025-10-23T05:23:39.871Z] LOG: [LabelWidthSync] Single-column: Found 1 labels
-[2025-10-23T05:23:39.873Z] LOG: [LabelWidthSync] Single-column: max width: 181.28125
-[2025-10-23T05:23:39.873Z] LOG: [LabelWidthSync] Single-column: Applied to 1 labels
-[2025-10-23T05:23:39.878Z] LOG: [LabelWidthSync] Single-column: Found 1 labels
-[2025-10-23T05:23:39.880Z] LOG: [LabelWidthSync] Single-column: max width: 0
-[2025-10-23T05:23:39.881Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
-[2025-10-23T05:23:39.892Z] LOG: [LabelWidthSync] Multi-column: max token label width: 119.796875
-[2025-10-23T05:23:39.893Z] LOG: [LabelWidthSync] Multi-column: Applied 119.796875 px to 5 token labels
-[2025-10-23T05:23:39.894Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
-[2025-10-23T05:23:39.902Z] LOG: [LabelWidthSync] Multi-column: max token label width: 162.84375
-[2025-10-23T05:23:39.902Z] LOG: [LabelWidthSync] Multi-column: Applied 162.84375 px to 4 token labels
-[2025-10-23T05:23:39.904Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
-[2025-10-23T05:23:39.906Z] LOG: [LabelWidthSync] Multi-column: max token label width: 81.875
-[2025-10-23T05:23:39.906Z] LOG: [LabelWidthSync] Multi-column: Applied 81.875 px to 1 token labels
-[2025-10-23T05:23:39.908Z] LOG: [LabelWidthSync] Single-column: Found 1 labels
-[2025-10-23T05:23:39.909Z] LOG: [LabelWidthSync] Single-column: max width: 181.28125
-[2025-10-23T05:23:39.910Z] LOG: [LabelWidthSync] Single-column: Applied to 1 labels
-[2025-10-23T05:23:41.614Z] LOG: [ClickableIcon] Field "saveProf" toggled: false -> true
-[2025-10-23T05:23:41.614Z] LOG: [ClickableIcon] Field "saveProf" calling onChange with value: true
-[2025-10-23T05:23:41.614Z] LOG: [field-utils] clickable-icon "saveProf" onChange called with value: true
+[2025-10-27T10:16:57.654Z] LOG: [GridLayoutManager] No normal fields, using single column
+[2025-10-27T10:16:57.762Z] LOG: [UI-TEST] Field rendered: {"id":"name","type":"text","label":"Name","visible":true,"hasContainer":true,"value":"Aboleth","width":257,"height":30}
+[2025-10-27T10:16:57.762Z] LOG: [UI-TEST] Field rendered: {"id":"size","type":"select","label":"Größe","visible":true,"hasContainer":true,"value":"Large","width":257,"height":30}
+[2025-10-27T10:16:57.762Z] LOG: [UI-TEST] Field rendered: {"id":"alignmentLawChaos","type":"select","label":"Gesetz/Chaos","visible":true,"hasContainer":true,"value":"Lawful","width":257,"height":30}
+[2025-10-27T10:16:57.762Z] LOG: [UI-TEST] Field rendered: {"id":"alignmentGoodEvil","type":"select","label":"Gut/Böse","visible":true,"hasContainer":true,"value":"Evil","width":257,"height":30}
+[2025-10-27T10:16:57.762Z] LOG: [UI-TEST] Field rendered: {"id":"alignmentOverride","type":"text","label":"Gesinnung (Freiform)","visible":true,"hasContainer":true,"value":"","width":257,"height":30}
+[2025-10-27T10:16:57.762Z] LOG: [UI-TEST] Field rendered: {"id":"type","type":"select","label":"Typ","visible":true,"hasContainer":true,"value":"Aberration","width":257,"height":30}
+[2025-10-27T10:16:57.763Z] LOG: [UI-TEST] Field rendered: {"id":"typeTags","type":"tokens","label":"Typ-Tags","visible":true,"hasContainer":true,"value":"","width":645,"height":30,"chips":[],"chipCount":0}
+[2025-10-27T10:16:57.763Z] LOG: [UI-TEST] Field rendered: {"id":"ac","type":"text","label":"AC","visible":true,"hasContainer":true,"value":"17","width":207,"height":30}
+[2025-10-27T10:16:57.763Z] LOG: [UI-TEST] Field rendered: {"id":"initiative","type":"text","label":"INI","visible":true,"hasContainer":true,"value":"+3 (13)","width":207,"height":30}
+[2025-10-27T10:16:57.763Z] LOG: [UI-TEST] Field rendered: {"id":"hp","type":"text","label":"TP","visible":true,"hasContainer":true,"value":"150","width":207,"height":30}
+[2025-10-27T10:16:57.763Z] LOG: [UI-TEST] Field rendered: {"id":"hitDice","type":"text","label":"TW","visible":true,"hasContainer":true,"value":"20d10 + 40","width":207,"height":30}
+[2025-10-27T10:16:57.763Z] LOG: [UI-TEST] Field rendered: {"id":"cr","type":"text","label":"CR","visible":true,"hasContainer":true,"value":"10","width":207,"height":30}
+[2025-10-27T10:16:57.763Z] LOG: [UI-TEST] Field rendered: {"id":"xp","type":"text","label":"EP","visible":true,"hasContainer":true,"value":"5900","width":207,"height":30}
+[2025-10-27T10:16:57.763Z] LOG: [UI-TEST] Field rendered: {"id":"pb","type":"text","label":"ÜB","visible":true,"hasContainer":true,"value":"+4","width":207,"height":30}
+[2025-10-27T10:16:57.763Z] LOG: [LabelWidthSync] Multi-column: Found 1 token labels, 6 normal labels
+[2025-10-27T10:16:57.764Z] LOG: [LabelWidthSync] Multi-column: max normal label width: 136.015625
+[2025-10-27T10:16:57.764Z] LOG: [LabelWidthSync] Multi-column: Applied 136.015625 px to 1 token labels
+[2025-10-27T10:16:57.775Z] LOG: [LabelWidthSync] Multi-column: Found 1 token labels, 6 normal labels
+[2025-10-27T10:16:57.775Z] LOG: [LabelWidthSync] Multi-column: max normal label width: 136.015625
+[2025-10-27T10:16:57.775Z] LOG: [LabelWidthSync] Multi-column: Applied 136.015625 px to 1 token labels
+[2025-10-27T10:16:57.783Z] LOG: [LabelWidthSync] Multi-column: No token labels found
+[2025-10-27T10:16:57.784Z] LOG: [UI-TEST] Field rendered: {"id":"abilities","type":"repeating","label":"","visible":true,"hasContainer":true,"value":"21","width":35,"height":30}
+[2025-10-27T10:16:57.784Z] LOG: [UI-TEST] Field rendered: {"id":"speeds","type":"tokens","label":"Bewegungsraten","visible":true,"hasContainer":true,"value":"","width":591,"height":30,"chips":["Gehen",": 10ft.","Schwimmen",": 40ft."],"chipCount":4}
+[2025-10-27T10:16:57.785Z] LOG: [UI-TEST] Field rendered: {"id":"skills","type":"tokens","label":"Fertigkeiten","visible":true,"hasContainer":true,"value":"","width":622,"height":30,"chips":["History"," 12","-","Perception"," 10","-"],"chipCount":6}
+[2025-10-27T10:16:57.785Z] LOG: [UI-TEST] Field rendered: {"id":"sensesList","type":"tokens","label":"Sinne","visible":true,"hasContainer":true,"value":"","width":664,"height":30,"chips":["Darkvision",": 120ft."],"chipCount":2}
+[2025-10-27T10:16:57.785Z] LOG: [UI-TEST] Field rendered: {"id":"passivesList","type":"tokens","label":"Passive Werte","visible":true,"hasContainer":true,"value":"","width":611,"height":30,"chips":["Passive Perception"," 20"],"chipCount":2}
+[2025-10-27T10:16:57.785Z] LOG: [UI-TEST] Field rendered: {"id":"languagesList","type":"tokens","label":"Sprachen","visible":true,"hasContainer":true,"value":"","width":640,"height":30,"chips":["Deep Speech","telepathy 120 ft."],"chipCount":2}
+[2025-10-27T10:16:57.785Z] LOG: [UI-TEST] Field rendered: {"id":"damageVulnerabilitiesList","type":"tokens","label":"Schadensanfälligkeiten","visible":true,"hasContainer":true,"value":"","width":551,"height":30,"chips":[],"chipCount":0}
+[2025-10-27T10:16:57.785Z] LOG: [UI-TEST] Field rendered: {"id":"damageResistancesList","type":"tokens","label":"Schadenswiderstände","visible":true,"hasContainer":true,"value":"","width":559,"height":30,"chips":[],"chipCount":0}
+[2025-10-27T10:16:57.792Z] LOG: [LabelWidthSync] Multi-column: No token labels found
+[2025-10-27T10:16:57.797Z] LOG: [UI-TEST] Field rendered: {"id":"damageImmunitiesList","type":"tokens","label":"Schadensimmunitäten","visible":true,"hasContainer":true,"value":"","width":556,"height":30,"chips":[],"chipCount":0}
+[2025-10-27T10:16:57.797Z] LOG: [UI-TEST] Field rendered: {"id":"conditionImmunitiesList","type":"tokens","label":"Zustandsimmunitäten","visible":true,"hasContainer":true,"value":"","width":558,"height":30,"chips":[],"chipCount":0}
+[2025-10-27T10:16:57.797Z] LOG: [UI-TEST] Field rendered: {"id":"gearList","type":"tokens","label":"Ausrüstung","visible":true,"hasContainer":true,"value":"","width":625,"height":30,"chips":[],"chipCount":0}
+[2025-10-27T10:16:57.797Z] LOG: [UI-TEST] Field rendered: {"id":"spellcastingEntries","type":"repeating","label":"Zauber & Zauberwirken","visible":true,"hasContainer":true}
+[2025-10-27T10:16:57.797Z] LOG: [UI-TEST] Field rendered: {"id":"entries","type":"repeating","label":"Eigenschaften & Aktionen (ohne Zauber)","visible":true,"hasContainer":true,"value":"Amphibious","width":513,"height":30}
+[2025-10-27T10:16:57.797Z] LOG: [LabelWidthSync] Single-column: Found 1 labels
+[2025-10-27T10:16:57.801Z] LOG: [LabelWidthSync] Single-column: max width: 0
+[2025-10-27T10:16:57.811Z] LOG: [LabelWidthSync] Single-column: Found 1 labels
+[2025-10-27T10:16:57.815Z] LOG: [LabelWidthSync] Single-column: max width: 0
+[2025-10-27T10:16:57.824Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
+[2025-10-27T10:16:57.845Z] LOG: [LabelWidthSync] Multi-column: max token label width: 119.796875
+[2025-10-27T10:16:57.845Z] LOG: [LabelWidthSync] Multi-column: Applied 119.796875 px to 5 token labels
+[2025-10-27T10:16:57.850Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
+[2025-10-27T10:16:57.863Z] LOG: [LabelWidthSync] Multi-column: max token label width: 162.84375
+[2025-10-27T10:16:57.863Z] LOG: [LabelWidthSync] Multi-column: Applied 162.84375 px to 4 token labels
+[2025-10-27T10:16:57.868Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
+[2025-10-27T10:16:57.871Z] LOG: [LabelWidthSync] Multi-column: max token label width: 81.875
+[2025-10-27T10:16:57.871Z] LOG: [LabelWidthSync] Multi-column: Applied 81.875 px to 1 token labels
+[2025-10-27T10:16:57.875Z] LOG: [LabelWidthSync] Single-column: Found 1 labels
+[2025-10-27T10:16:57.878Z] LOG: [LabelWidthSync] Single-column: max width: 166.671875
+[2025-10-27T10:16:57.878Z] LOG: [LabelWidthSync] Single-column: Applied to 1 labels
+[2025-10-27T10:16:57.882Z] LOG: [LabelWidthSync] Single-column: Found 1 labels
+[2025-10-27T10:16:57.885Z] LOG: [LabelWidthSync] Single-column: max width: 284.3125
+[2025-10-27T10:16:57.885Z] LOG: [LabelWidthSync] Single-column: Applied to 1 labels
+[2025-10-27T10:16:57.893Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
+[2025-10-27T10:16:57.913Z] LOG: [LabelWidthSync] Multi-column: max token label width: 119.796875
+[2025-10-27T10:16:57.913Z] LOG: [LabelWidthSync] Multi-column: Applied 119.796875 px to 5 token labels
+[2025-10-27T10:16:57.916Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
+[2025-10-27T10:16:57.930Z] LOG: [LabelWidthSync] Multi-column: max token label width: 162.84375
+[2025-10-27T10:16:57.930Z] LOG: [LabelWidthSync] Multi-column: Applied 162.84375 px to 4 token labels
+[2025-10-27T10:16:57.933Z] LOG: [LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other
+[2025-10-27T10:16:57.936Z] LOG: [LabelWidthSync] Multi-column: max token label width: 81.875
+[2025-10-27T10:16:57.936Z] LOG: [LabelWidthSync] Multi-column: Applied 81.875 px to 1 token labels
+[2025-10-27T10:16:57.939Z] LOG: [LabelWidthSync] Single-column: Found 1 labels
+[2025-10-27T10:16:57.943Z] LOG: [LabelWidthSync] Single-column: max width: 166.671875
+[2025-10-27T10:16:57.943Z] LOG: [LabelWidthSync] Single-column: Applied to 1 labels
+[2025-10-27T10:16:57.946Z] LOG: [LabelWidthSync] Single-column: Found 1 labels
+[2025-10-27T10:16:57.949Z] LOG: [LabelWidthSync] Single-column: max width: 284.3125
+[2025-10-27T10:16:57.949Z] LOG: [LabelWidthSync] Single-column: Applied to 1 labels
+[2025-10-27T10:17:59.778Z] LOG: [library:creatures] Found 329 files
+[2025-10-27T10:17:59.780Z] LOG: [library:creatures] Loaded 329 entries
+[2025-10-27T10:17:59.783Z] LOG: [library:creatures] Rendering 329 entries (filtered from 329 total)
+[2025-10-27T10:18:06.548Z] LOG: [library:regions] Found 1 files
+[2025-10-27T10:18:06.548Z] LOG: [library:regions] Loaded 1 entries
+[2025-10-27T10:18:06.559Z] LOG: [library:regions] Rendering 1 entries (filtered from 1 total)
+[2025-10-27T10:18:10.937Z] LOG: [library:terrains] Found 4 files
+[2025-10-27T10:18:10.937Z] LOG: [library:terrains] Loaded 4 entries
+[2025-10-27T10:18:10.942Z] LOG: [library:terrains] Rendering 4 entries (filtered from 4 total)

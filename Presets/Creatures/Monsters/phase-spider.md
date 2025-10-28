@@ -4,57 +4,104 @@ name: Phase Spider
 size: Large
 type: Monstrosity
 alignmentOverride: Unaligned
-ac: "14"
+ac: '14'
 initiative: +3 (13)
-hp: "45"
+hp: '45'
 hitDice: 7d10 + 7
 speeds:
-  - type: walk
-    value: "30"
-  - type: climb
-    value: "30"
+  walk:
+    distance: 30 ft.
+  climb:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 15
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 16
-  - ability: con
+    saveProf: false
+  - key: con
     score: 12
-  - ability: int
+    saveProf: false
+  - key: int
     score: 6
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 6
-pb: "+2"
-cr: "3"
-xp: "700"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Stealth
+    value: '7'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+cr: '3'
+xp: '700'
 entries:
   - category: trait
     name: Ethereal Sight
+    entryType: special
     text: The spider can see 60 feet into the Ethereal Plane while on the Material Plane and vice versa.
   - category: trait
     name: Spider Climb
+    entryType: special
     text: The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check.
   - category: trait
     name: Web Walker
+    entryType: special
     text: The spider ignores movement restrictions caused by webs, and the spider knows the location of any other creature in contact with the same web.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The spider makes two Bite attacks.
+    multiattack:
+      attacks:
+        - name: Bite
+          count: 2
+      substitutions: []
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 8 (1d10 + 3) Piercing damage plus 9 (2d8) Poison damage. If this damage reduces the target to 0 Hit Points, the target becomes Stable, and it has the Poisoned condition for 1 hour. While Poisoned, the target also has the Paralyzed condition."
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 8 (1d10 + 3) Piercing damage plus 9 (2d8) Poison damage. If this damage reduces the target to 0 Hit Points, the target becomes Stable, and it has the Poisoned condition for 1 hour. While Poisoned, the target also has the Paralyzed condition.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d10
+          bonus: 3
+          type: Piercing
+          average: 8
+        - dice: 2d8
+          bonus: 0
+          type: Poison
+          average: 9
+      reach: 5 ft.
+      onHit:
+        conditions:
+          - condition: Poisoned
+            duration:
+              type: hours
+              count: 1
+            restrictions:
+              while: While Poisoned, the target also has the Paralyzed condition
+          - condition: Paralyzed
+            duration:
+              type: hours
+              count: 1
+            restrictions:
+              while: While Poisoned, the target also has the Paralyzed condition
+      additionalEffects: If this damage reduces the target to 0 Hit Points, the target becomes Stable, and it has the Poisoned condition for 1 hour. While Poisoned, the target also has the Paralyzed condition.
   - category: bonus
     name: Ethereal Jaunt
+    entryType: special
     text: The spider teleports from the Material Plane to the Ethereal Plane or vice versa.
-
 ---
 
 # Phase Spider
@@ -67,7 +114,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 15 | 16 | 12 | 6 | 10 | 6 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 10
 CR 3, PB +2, XP 700

@@ -5,49 +5,70 @@ size: Medium
 type: Elemental
 alignmentLawChaos: Lawful
 alignmentGoodEvil: Neutral
-ac: "17"
+ac: '17'
 initiative: +1 (11)
-hp: "39"
+hp: '39'
 hitDice: 6d8 + 12
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 17
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 12
-  - ability: con
+    saveProf: false
+  - key: con
     score: 15
-  - ability: int
+    saveProf: true
+    saveMod: 4
+  - key: int
     score: 12
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 13
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 10
-pb: "+2"
-cr: "2"
-xp: "450"
-languagesList:
-  - value: Primordial (Ignan)
+    saveProf: false
+pb: '+2'
 passivesList:
   - skill: Perception
-    value: "11"
+    value: '11'
+languagesList:
+  - value: Primordial (Ignan)
 damageImmunitiesList:
   - value: Fire
-  - value: Poison
-  - value: Poisoned
+  - value: Poison; Poisoned
+cr: '2'
+xp: '450'
 entries:
   - category: trait
     name: Fire Aura
+    entryType: special
     text: At the end of each of the azer's turns, each creature of the azer's choice in a 5-foot Emanation originating from the azer takes 5 (1d10) Fire damage unless the azer has the Incapacitated condition.
   - category: trait
     name: Illumination
+    entryType: special
     text: The azer sheds Bright Light in a 10-foot radius and Dim Light for an additional 10 feet.
   - category: action
     name: Burning Hammer
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 8 (1d10 + 3) Bludgeoning damage plus 3 (1d6) Fire damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 8 (1d10 + 3) Bludgeoning damage plus 3 (1d6) Fire damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d10
+          bonus: 3
+          type: Bludgeoning
+          average: 8
+        - dice: 1d6
+          bonus: 0
+          type: Fire
+          average: 3
+      reach: 5 ft.
 ---
 
 # Azer Sentinel
@@ -60,7 +81,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 17 | 12 | 15 | 12 | 13 | 10 |
+| - | - | - | - | - | - |
 
 **Languages** Primordial (Ignan)
 CR 2, PB +2, XP 450

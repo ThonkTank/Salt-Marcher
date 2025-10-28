@@ -4,64 +4,96 @@ name: Shield Guardian
 size: Large
 type: Construct
 alignmentOverride: Unaligned
-ac: "17"
-initiative: "-1 (9)"
-hp: "142"
+ac: '17'
+initiative: '-1 (9)'
+hp: '142'
 hitDice: 15d10 + 60
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 18
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 8
-  - ability: con
+    saveProf: false
+  - key: con
     score: 18
-  - ability: int
+    saveProf: false
+  - key: int
     score: 7
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 3
-pb: "+3"
-cr: "7"
-xp: "2900"
+    saveProf: false
+pb: '+3'
 sensesList:
   - type: blindsight
-    range: "10"
+    range: '10'
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Understands commands given in any language but can't speak
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+languagesList:
+  - value: Understands commands given in any language but can't speak
 damageImmunitiesList:
-  - value: Poison
-  - value: Charmed
+  - value: Poison; Charmed
   - value: Exhaustion
+conditionImmunitiesList:
   - value: Frightened
   - value: Paralyzed
   - value: Petrified
   - value: Poisoned
+cr: '7'
+xp: '2900'
 entries:
   - category: trait
     name: Bound
+    entryType: special
     text: The guardian is magically bound to an amulet. While the guardian and its amulet are on the same plane of existence, the amulet's wearer can telepathically call the guardian to travel to it, and the guardian knows the distance and direction to the amulet. If the guardian is within 60 feet of the amulet's wearer, half of any damage the wearer takes (round up) is transferred to the guardian.
   - category: trait
     name: Regeneration
+    entryType: special
     text: The guardian regains 10 Hit Points at the start of each of its turns if it has at least 1 Hit Point.
-  - category: trait
-    name: Spell Storing
-    text: A spellcaster who wears the guardian's amulet can cause the guardian to store one spell of level 4 or lower. To do so, the wearer must cast the spell on the guardian while within 5 feet of it. The spell has no effect but is stored within the guardian. Any previously stored spell is lost when a new spell is stored. The guardian can cast the spell stored with any parameters set by the original caster, requiring no spell components and using the caster's spellcasting ability. The stored spell is then lost.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The guardian makes two Fist attacks.
+    multiattack:
+      attacks:
+        - name: Fist
+          count: 2
+      substitutions: []
   - category: action
     name: Fist
-    text: "*Melee Attack Roll:* +7, reach 10 ft. 11 (2d6 + 4) Bludgeoning damage plus 7 (2d6) Force damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +7, reach 10 ft. 11 (2d6 + 4) Bludgeoning damage plus 7 (2d6) Force damage.'
+    attack:
+      type: melee
+      bonus: 7
+      damage:
+        - dice: 2d6
+          bonus: 4
+          type: Bludgeoning
+          average: 11
+        - dice: 2d6
+          bonus: 0
+          type: Force
+          average: 7
+      reach: 10 ft.
+spellcastingEntries:
+  - category: trait
+    name: Spell Storing
+    entryType: spellcasting
+    text: A spellcaster who wears the guardian's amulet can cause the guardian to store one spell of level 4 or lower. To do so, the wearer must cast the spell on the guardian while within 5 feet of it. The spell has no effect but is stored within the guardian. Any previously stored spell is lost when a new spell is stored. The guardian can cast the spell stored with any parameters set by the original caster, requiring no spell components and using the caster's spellcasting ability. The stored spell is then lost.
+    spellcasting:
+      ability: int
+      spellLists: []
 ---
 
 # Shield Guardian
@@ -74,7 +106,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 18 | 8 | 18 | 7 | 10 | 3 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 10 ft., darkvision 60 ft.; Passive Perception 10
 **Languages** Understands commands given in any language but can't speak

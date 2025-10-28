@@ -4,45 +4,69 @@ name: Owlbear
 size: Large
 type: Monstrosity
 alignmentOverride: Unaligned
-ac: "13"
+ac: '13'
 initiative: +1 (11)
-hp: "59"
+hp: '59'
 hitDice: 7d10 + 21
 speeds:
-  - type: walk
-    value: "40"
-  - type: climb
-    value: "40"
+  walk:
+    distance: 40 ft.
+  climb:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 20
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 12
-  - ability: con
+    saveProf: false
+  - key: con
     score: 17
-  - ability: int
+    saveProf: false
+  - key: int
     score: 3
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 7
-pb: "+2"
-cr: "3"
-xp: "700"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '5'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "15"
+    value: '15'
+cr: '3'
+xp: '700'
 entries:
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The owlbear makes two Rend attacks.
+    multiattack:
+      attacks:
+        - name: Rend
+          count: 2
+      substitutions: []
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +7, reach 5 ft. 14 (2d8 + 5) Slashing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +7, reach 5 ft. 14 (2d8 + 5) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 7
+      damage:
+        - dice: 2d8
+          bonus: 5
+          type: Slashing
+          average: 14
+      reach: 5 ft.
 ---
 
 # Owlbear
@@ -55,7 +79,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 20 | 12 | 17 | 3 | 12 | 7 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 15
 CR 3, PB +2, XP 700

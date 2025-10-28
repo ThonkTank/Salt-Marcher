@@ -5,62 +5,90 @@ size: Medium
 type: Fiend
 alignmentLawChaos: Lawful
 alignmentGoodEvil: Evil
-ac: "12"
+ac: '12'
 initiative: +0 (10)
-hp: "22"
+hp: '22'
 hitDice: 4d8 + 4
 speeds:
-  - type: walk
-    value: "30"
-  - type: swim
-    value: "40"
+  walk:
+    distance: 30 ft.
+  swim:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 13
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 11
-  - ability: con
+    saveProf: false
+  - key: con
     score: 12
-  - ability: int
+    saveProf: false
+  - key: int
     score: 12
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 13
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 9
-pb: "+2"
-cr: 1/2
-xp: "100"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '5'
 sensesList:
   - type: darkvision
-    range: "120"
-languagesList:
-  - value: Sahuagin
+    range: '120'
 passivesList:
   - skill: Perception
-    value: "15"
+    value: '15'
+languagesList:
+  - value: Sahuagin
 damageResistancesList:
   - value: Acid
   - value: Cold
+cr: 1/2
+xp: '100'
 entries:
   - category: trait
     name: Blood Frenzy
+    entryType: special
     text: The sahuagin has Advantage on attack rolls against any creature that doesn't have all its Hit Points.
   - category: trait
     name: Limited Amphibiousness
+    entryType: special
     text: The sahuagin can breathe air and water, but it must be submerged at least once every 4 hours to avoid suffocating outside water.
   - category: trait
     name: Shark Telepathy
+    entryType: special
     text: The sahuagin can magically control sharks within 120 feet of itself, using a special telepathy.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The sahuagin makes two Claw attacks.
+    multiattack:
+      attacks:
+        - name: Claw
+          count: 2
+      substitutions: []
   - category: action
     name: Claw
-    text: "*Melee Attack Roll:* +3, reach 5 ft. 4 (1d6 + 1) Slashing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +3, reach 5 ft. 4 (1d6 + 1) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 3
+      damage:
+        - dice: 1d6
+          bonus: 1
+          type: Slashing
+          average: 4
+      reach: 5 ft.
   - category: bonus
     name: Aquatic Charge
+    entryType: special
     text: The sahuagin swims up to its Swim Speed straight toward an enemy it can see.
-
 ---
 
 # Sahuagin Warrior
@@ -73,7 +101,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 13 | 11 | 12 | 12 | 13 | 9 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 120 ft.; Passive Perception 15
 **Languages** Sahuagin

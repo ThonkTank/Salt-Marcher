@@ -1,0 +1,28 @@
+{
+  "aliases": {
+    "e": "ui open creature",
+    "edit": "ui open creature",
+    "spell": "ui open spell",
+    "item": "ui open item",
+    "reload": "plugin reload",
+    "r": "plugin reload",
+    "l": "debug logs",
+    "logs": "debug logs",
+    "v": "ui validate",
+    "validate": "ui validate",
+    "d": "ui dump",
+    "dump": "ui dump",
+    "watch": "test watch"
+  },
+  "debug": {
+    "defaultFields": ["name", "hp", "ac"],
+    "defaultCategories": ["init", "onChange"]
+  },
+  "test": {
+    "defaultTimeout": 30000,
+    "watch": {
+      "patterns": ["src/**/*.ts", "devkit/testing/**/*.yaml"],
+      "ignore": ["**/node_modules/**", "**/.git/**"]
+    }
+  }
+}

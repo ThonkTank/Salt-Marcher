@@ -3,43 +3,66 @@ smType: creature
 name: Plesiosaurus
 size: Large
 type: Beast
+typeTags:
+  - value: Dinosaur
 alignmentOverride: Unaligned
-ac: "13"
+ac: '13'
 initiative: +2 (12)
-hp: "68"
+hp: '68'
 hitDice: 8d10 + 24
 speeds:
-  - type: walk
-    value: "20"
-  - type: swim
-    value: "40"
+  walk:
+    distance: 20 ft.
+  swim:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 18
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 15
-  - ability: con
+    saveProf: false
+  - key: con
     score: 16
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 5
-pb: "+2"
-cr: "2"
-xp: "450"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '3'
+  - skill: Stealth
+    value: '4'
 passivesList:
   - skill: Perception
-    value: "13"
+    value: '13'
+cr: '2'
+xp: '450'
 entries:
   - category: trait
     name: Hold Breath
+    entryType: special
     text: The plesiosaurus can hold its breath for 1 hour.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +6, reach 10 ft. 11 (2d6 + 4) Piercing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +6, reach 10 ft. 11 (2d6 + 4) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 6
+      damage:
+        - dice: 2d6
+          bonus: 4
+          type: Piercing
+          average: 11
+      reach: 10 ft.
 ---
 
 # Plesiosaurus
@@ -52,7 +75,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 18 | 15 | 16 | 2 | 12 | 5 |
+| - | - | - | - | - | - |
 
 CR 2, PB +2, XP 450
 

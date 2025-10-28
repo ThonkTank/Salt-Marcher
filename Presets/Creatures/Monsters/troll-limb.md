@@ -5,46 +5,63 @@ size: Small
 type: Giant
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Evil
-ac: "13"
+ac: '13'
 initiative: +1 (11)
-hp: "14"
+hp: '14'
 hitDice: 4d6
 speeds:
-  - type: walk
-    value: "20"
+  walk:
+    distance: 20 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 18
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 12
-  - ability: con
+    saveProf: false
+  - key: con
     score: 10
-  - ability: int
+    saveProf: false
+  - key: int
     score: 1
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 9
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 1
-pb: "+2"
-cr: 1/2
-xp: "100"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "9"
+    value: '9'
+cr: 1/2
+xp: '100'
 entries:
   - category: trait
     name: Regeneration
+    entryType: special
     text: The limb regains 5 Hit Points at the start of each of its turns. If the limb takes Acid or Fire damage, this trait doesn't function on the limb's next turn. The limb dies only if it starts its turn with 0 Hit Points and doesn't regenerate.
   - category: trait
     name: Troll Spawn
+    entryType: special
     text: The limb uncannily has the same senses as a whole troll. If the limb isn't destroyed within 24 hours, roll 1d12. On a 12, the limb turns into a Troll. Otherwise, the limb withers away.
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +6, reach 5 ft. 9 (2d4 + 4) Slashing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +6, reach 5 ft. 9 (2d4 + 4) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 6
+      damage:
+        - dice: 2d4
+          bonus: 4
+          type: Slashing
+          average: 9
+      reach: 5 ft.
 ---
 
 # Troll Limb
@@ -57,7 +74,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 18 | 12 | 10 | 1 | 9 | 1 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 9
 CR 1/2, PB +2, XP 100

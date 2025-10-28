@@ -5,50 +5,89 @@ size: Small
 type: Elemental
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Neutral
-ac: "14"
+ac: '14'
 initiative: +2 (12)
-hp: "13"
+hp: '13'
 hitDice: 3d6 + 3
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 7
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 15
-  - ability: con
+    saveProf: false
+  - key: con
     score: 12
-  - ability: int
+    saveProf: false
+  - key: int
     score: 8
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 11
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 10
-pb: "+2"
-cr: 1/2
-xp: "100"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Primordial (Ignan)
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+languagesList:
+  - value: Primordial (Ignan)
 damageImmunitiesList:
   - value: Fire
+cr: 1/2
+xp: '100'
 entries:
   - category: trait
     name: Death Burst
-    text: "The magmin explodes when it dies. *Dexterity Saving Throw*: DC 11, each creature in a 10-foot Emanation originating from the magmin. *Failure:*  7 (2d6) Fire damage. *Success:*  Half damage."
+    entryType: save
+    text: 'The magmin explodes when it dies. *Dexterity Saving Throw*: DC 11, each creature in a 10-foot Emanation originating from the magmin. *Failure:*  7 (2d6) Fire damage. *Success:*  Half damage.'
+    save:
+      ability: dex
+      dc: 11
+      targeting:
+        shape: emanation
+        size: 10 ft.
+        origin: self
+      onFail:
+        effects:
+          other: 7 (2d6) Fire damage.
+        damage:
+          - dice: 2d6
+            bonus: 0
+            type: Fire
+            average: 7
+        legacyEffects: 7 (2d6) Fire damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
   - category: action
     name: Touch
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 7 (2d4 + 2) Fire damage. If the target is a creature or a flammable object that isn't being worn or carried, it starts burning."
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 7 (2d4 + 2) Fire damage. If the target is a creature or a flammable object that isn''t being worn or carried, it starts burning.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 2d4
+          bonus: 2
+          type: Fire
+          average: 7
+      reach: 5 ft.
+      onHit:
+        other: If the target is a creature or a flammable object that isn't being worn or carried, it starts burning.
+      additionalEffects: If the target is a creature or a flammable object that isn't being worn or carried, it starts burning.
   - category: bonus
     name: Ignited Illumination
+    entryType: special
     text: The magmin sets itself ablaze or extinguishes its flames. While ablaze, the magmin sheds Bright Light in a 10-foot radius and Dim Light for an additional 10 feet.
-
 ---
 
 # Magmin
@@ -61,7 +100,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 7 | 15 | 12 | 8 | 11 | 10 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 10
 **Languages** Primordial (Ignan)

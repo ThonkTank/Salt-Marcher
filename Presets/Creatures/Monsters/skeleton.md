@@ -5,51 +5,76 @@ size: Medium
 type: Undead
 alignmentLawChaos: Lawful
 alignmentGoodEvil: Evil
-ac: "14"
+ac: '14'
 initiative: +3 (13)
-hp: "13"
+hp: '13'
 hitDice: 2d8 + 4
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 10
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 16
-  - ability: con
+    saveProf: false
+  - key: con
     score: 15
-  - ability: int
+    saveProf: false
+  - key: int
     score: 6
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 8
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 5
-pb: "+2"
-cr: 1/4
-xp: "50"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Understands Common plus one other language but can't speak
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "9"
+    value: '9'
+languagesList:
+  - value: Understands Common plus one other language but can't speak
 damageVulnerabilitiesList:
   - value: Bludgeoning
 damageImmunitiesList:
-  - value: Poison
-  - value: Exhaustion
+  - value: Poison; Exhaustion
+conditionImmunitiesList:
   - value: Poisoned
+cr: 1/4
+xp: '50'
 entries:
   - category: action
     name: Shortsword
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 6 (1d6 + 3) Piercing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 6 (1d6 + 3) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d6
+          bonus: 3
+          type: Piercing
+          average: 6
+      reach: 5 ft.
   - category: action
     name: Shortbow
-    text: "*Ranged Attack Roll:* +5, range 80/320 ft. 6 (1d6 + 3) Piercing damage."
-
+    entryType: attack
+    text: '*Ranged Attack Roll:* +5, range 80/320 ft. 6 (1d6 + 3) Piercing damage.'
+    attack:
+      type: ranged
+      bonus: 5
+      damage:
+        - dice: 1d6
+          bonus: 3
+          type: Piercing
+          average: 6
+      range: 80/320 ft.
 ---
 
 # Skeleton
@@ -62,7 +87,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 10 | 16 | 15 | 6 | 8 | 5 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 9
 **Languages** Understands Common plus one other language but can't speak

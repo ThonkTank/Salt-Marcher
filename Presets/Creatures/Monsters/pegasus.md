@@ -5,44 +5,70 @@ size: Large
 type: Celestial
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Good
-ac: "12"
+ac: '12'
 initiative: +2 (12)
-hp: "59"
+hp: '59'
 hitDice: 7d10 + 21
 speeds:
-  - type: walk
-    value: "60"
-  - type: fly
-    value: "90"
+  walk:
+    distance: 60 ft.
+  fly:
+    distance: 90 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 18
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 15
-  - ability: con
+    saveProf: true
+    saveMod: 4
+  - key: con
     score: 16
-  - ability: int
+    saveProf: true
+    saveMod: 5
+  - key: int
     score: 10
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 15
-  - ability: cha
+    saveProf: true
+    saveMod: 4
+  - key: cha
     score: 13
-pb: "+2"
-cr: "2"
-xp: "450"
+    saveProf: true
+    saveMod: 3
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '6'
+passivesList:
+  - skill: Perception
+    value: '16'
 languagesList:
   - value: Understands Celestial
   - value: Common
   - value: Elvish
   - value: And Sylvan but can't speak
-passivesList:
-  - skill: Perception
-    value: "16"
+cr: '2'
+xp: '450'
 entries:
   - category: action
     name: Hooves
-    text: "*Melee Attack Roll:* +6, reach 5 ft. 7 (1d6 + 4) Bludgeoning damage plus 5 (2d4) Radiant damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +6, reach 5 ft. 7 (1d6 + 4) Bludgeoning damage plus 5 (2d4) Radiant damage.'
+    attack:
+      type: melee
+      bonus: 6
+      damage:
+        - dice: 1d6
+          bonus: 4
+          type: Bludgeoning
+          average: 7
+        - dice: 2d4
+          bonus: 0
+          type: Radiant
+          average: 5
+      reach: 5 ft.
 ---
 
 # Pegasus
@@ -55,7 +81,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 18 | 15 | 16 | 10 | 15 | 13 |
+| - | - | - | - | - | - |
 
 **Languages** Understands Celestial, Common, Elvish, And Sylvan but can't speak
 CR 2, PB +2, XP 450

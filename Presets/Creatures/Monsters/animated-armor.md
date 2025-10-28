@@ -4,53 +4,74 @@ name: Animated Armor
 size: Medium
 type: Construct
 alignmentOverride: Unaligned
-ac: "18"
+ac: '18'
 initiative: +2 (12)
-hp: "33"
+hp: '33'
 hitDice: 6d8 + 6
 speeds:
-  - type: walk
-    value: "25"
+  walk:
+    distance: 25 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 14
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 11
-  - ability: con
+    saveProf: false
+  - key: con
     score: 13
-  - ability: int
+    saveProf: false
+  - key: int
     score: 1
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 3
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 1
-pb: "+2"
-cr: "1"
-xp: "200"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: blindsight
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "6"
+    value: '6'
 damageImmunitiesList:
   - value: Poison
-  - value: Psychic
-  - value: Charmed
-  - value: Deafened
+  - value: Psychic; Charmed
   - value: Exhaustion
+conditionImmunitiesList:
+  - value: Deafened
   - value: Frightened
   - value: Paralyzed
   - value: Petrified
   - value: Poisoned
+cr: '1'
+xp: '200'
 entries:
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The armor makes two Slam attacks.
+    multiattack:
+      attacks:
+        - name: Slam
+          count: 2
+      substitutions: []
   - category: action
     name: Slam
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 5 (1d6 + 2) Bludgeoning damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 5 (1d6 + 2) Bludgeoning damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d6
+          bonus: 2
+          type: Bludgeoning
+          average: 5
+      reach: 5 ft.
 ---
 
 # Animated Armor
@@ -63,7 +84,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 14 | 11 | 13 | 1 | 3 | 1 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 60 ft.; Passive Perception 6
 CR 1, PB +2, XP 200

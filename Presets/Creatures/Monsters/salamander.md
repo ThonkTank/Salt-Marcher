@@ -5,57 +5,112 @@ size: Large
 type: Elemental
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Evil
-ac: "15"
+ac: '15'
 initiative: +2 (12)
-hp: "90"
+hp: '90'
 hitDice: 12d10 + 24
 speeds:
-  - type: walk
-    value: "30"
-  - type: climb
-    value: "30"
+  walk:
+    distance: 30 ft.
+  climb:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 18
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 15
-  - ability: int
+    saveProf: false
+  - key: int
     score: 11
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 12
-pb: "+3"
-cr: "5"
-xp: "1800"
+    saveProf: false
+pb: '+3'
 sensesList:
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Primordial (Ignan)
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+languagesList:
+  - value: Primordial (Ignan)
 damageVulnerabilitiesList:
   - value: Cold
 damageImmunitiesList:
   - value: Fire
+cr: '5'
+xp: '1800'
 entries:
   - category: trait
     name: Fire Aura
+    entryType: special
     text: At the end of each of the salamander's turns, each creature of the salamander's choice in a 5-foot Emanation originating from the salamander takes 7 (2d6) Fire damage.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The salamander makes two Flame Spear attacks. It can replace one attack with a use of Constrict.
+    multiattack:
+      attacks:
+        - name: Spear
+          count: 1
+      substitutions:
+        - replace: attack
+          with:
+            type: attack
+            name: Constrict
   - category: action
     name: Flame Spear
-    text: "*Melee or Ranged Attack Roll:* +7, reach 5 ft. or range 20/60 ft. 13 (2d8 + 4) Piercing damage plus 7 (2d6) Fire damage. HitomThe spear magically returns to the salamander's hand immediately after a ranged attack."
+    entryType: special
+    text: '*Melee or Ranged Attack Roll:* +7, reach 5 ft. or range 20/60 ft. 13 (2d8 + 4) Piercing damage plus 7 (2d6) Fire damage. HitomThe spear magically returns to the salamander''s hand immediately after a ranged attack.'
   - category: action
     name: Constrict
-    text: "*Strength Saving Throw*: DC 15, one Large or smaller creature the salamander can see within 10 feet. *Failure:*  11 (2d6 + 4) Bludgeoning damage plus 7 (2d6) Fire damage. The target has the Grappled condition (escape DC 14), and it has the Restrained condition until the grapple ends."
-
+    entryType: save
+    text: '*Strength Saving Throw*: DC 15, one Large or smaller creature the salamander can see within 10 feet. *Failure:*  11 (2d6 + 4) Bludgeoning damage plus 7 (2d6) Fire damage. The target has the Grappled condition (escape DC 14), and it has the Restrained condition until the grapple ends.'
+    save:
+      ability: str
+      dc: 15
+      targeting:
+        type: single
+        range: 10 ft.
+        restrictions:
+          size:
+            - Large
+            - smaller
+          visibility: true
+      onFail:
+        effects:
+          conditions:
+            - condition: Grappled
+              escape:
+                type: dc
+                dc: 14
+              duration:
+                type: until
+                trigger: the grapple ends
+            - condition: Restrained
+              escape:
+                type: dc
+                dc: 14
+              duration:
+                type: until
+                trigger: the grapple ends
+        damage:
+          - dice: 2d6
+            bonus: 4
+            type: Bludgeoning
+            average: 11
+          - dice: 2d6
+            bonus: 0
+            type: Fire
+            average: 7
 ---
 
 # Salamander
@@ -68,7 +123,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 18 | 14 | 15 | 11 | 10 | 12 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 10
 **Languages** Primordial (Ignan)

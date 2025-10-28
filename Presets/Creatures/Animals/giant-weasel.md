@@ -4,42 +4,64 @@ name: Giant Weasel
 size: Medium
 type: Beast
 alignmentOverride: Unaligned
-ac: "13"
+ac: '13'
 initiative: +3 (13)
-hp: "9"
+hp: '9'
 hitDice: 2d8
 speeds:
-  - type: walk
-    value: "40"
-  - type: climb
-    value: "30"
+  walk:
+    distance: 40 ft.
+  climb:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 11
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 17
-  - ability: con
+    saveProf: false
+  - key: con
     score: 10
-  - ability: int
+    saveProf: false
+  - key: int
     score: 4
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 5
-pb: "+2"
-cr: 1/8
-xp: "25"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Acrobatics
+    value: '5'
+  - skill: Perception
+    value: '3'
+  - skill: Stealth
+    value: '5'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "13"
+    value: '13'
+cr: 1/8
+xp: '25'
 entries:
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 5 (1d4 + 3) Piercing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 5 (1d4 + 3) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d4
+          bonus: 3
+          type: Piercing
+          average: 5
+      reach: 5 ft.
 ---
 
 # Giant Weasel
@@ -52,7 +74,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 11 | 17 | 10 | 4 | 12 | 5 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 13
 CR 1/8, PB +2, XP 25

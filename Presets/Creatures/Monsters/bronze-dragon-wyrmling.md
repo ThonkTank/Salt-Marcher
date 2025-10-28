@@ -3,64 +3,131 @@ smType: creature
 name: Bronze Dragon Wyrmling
 size: Medium
 type: Dragon
+typeTags:
+  - value: Metallic
 alignmentLawChaos: Lawful
 alignmentGoodEvil: Good
-ac: "15"
+ac: '15'
 initiative: +2 (12)
-hp: "39"
+hp: '39'
 hitDice: 6d8 + 12
 speeds:
-  - type: walk
-    value: "30"
-  - type: fly
-    value: "60"
-  - type: swim
-    value: "30"
+  walk:
+    distance: 30 ft.
+  fly:
+    distance: 60 ft.
+  swim:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 17
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 10
-  - ability: con
+    saveProf: true
+    saveMod: 2
+  - key: con
     score: 15
-  - ability: int
+    saveProf: false
+  - key: int
     score: 12
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 11
-  - ability: cha
+    saveProf: true
+    saveMod: 2
+  - key: cha
     score: 15
-pb: "+2"
-cr: "2"
-xp: "450"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '4'
+  - skill: Stealth
+    value: '2'
 sensesList:
   - type: blindsight
-    range: "10"
+    range: '10'
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Draconic
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "14"
+    value: '14'
+languagesList:
+  - value: Draconic
 damageImmunitiesList:
   - value: Lightning
+cr: '2'
+xp: '450'
 entries:
   - category: trait
     name: Amphibious
+    entryType: special
     text: The dragon can breathe air and water.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The dragon makes two Rend attacks.
+    multiattack:
+      attacks:
+        - name: Rend
+          count: 2
+      substitutions: []
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 8 (1d10 + 3) Slashing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 8 (1d10 + 3) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d10
+          bonus: 3
+          type: Slashing
+          average: 8
+      reach: 5 ft.
   - category: action
     name: Lightning Breath (Recharge 5-6)
-    text: "*Dexterity Saving Throw*: DC 12, each creature in a 40-foot-long, 5-foot-wide Line. *Failure:*  16 (3d10) Lightning damage. *Success:*  Half damage."
+    entryType: save
+    text: '*Dexterity Saving Throw*: DC 12, each creature in a 40-foot-long, 5-foot-wide Line. *Failure:*  16 (3d10) Lightning damage. *Success:*  Half damage.'
+    recharge: 5-6
+    save:
+      ability: dex
+      dc: 12
+      targeting:
+        shape: line
+        size: 40 ft.
+        width: 5 ft.
+      onFail:
+        effects:
+          other: 16 (3d10) Lightning damage.
+        damage:
+          - dice: 3d10
+            bonus: 0
+            type: Lightning
+            average: 16
+        legacyEffects: 16 (3d10) Lightning damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
   - category: action
     name: Repulsion Breath
-    text: "*Strength Saving Throw*: DC 12, each creature in a 30-foot Cone. *Failure:*  The target is pushed up to 30 feet straight away from the dragon and has the Prone condition."
-
+    entryType: save
+    text: '*Strength Saving Throw*: DC 12, each creature in a 30-foot Cone. *Failure:*  The target is pushed up to 30 feet straight away from the dragon and has the Prone condition.'
+    save:
+      ability: str
+      dc: 12
+      targeting:
+        shape: cone
+        size: 30 ft.
+      onFail:
+        effects:
+          conditions:
+            - condition: Prone
+          movement:
+            type: push
+            distance: 30 feet
+            direction: straight away from the dragon
 ---
 
 # Bronze Dragon Wyrmling
@@ -73,7 +140,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 17 | 10 | 15 | 12 | 11 | 15 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 10 ft., darkvision 60 ft.; Passive Perception 14
 **Languages** Draconic

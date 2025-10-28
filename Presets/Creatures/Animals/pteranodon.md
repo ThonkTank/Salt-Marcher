@@ -3,43 +3,64 @@ smType: creature
 name: Pteranodon
 size: Medium
 type: Beast
+typeTags:
+  - value: Dinosaur
 alignmentOverride: Unaligned
-ac: "13"
+ac: '13'
 initiative: +2 (12)
-hp: "13"
+hp: '13'
 hitDice: 3d8
 speeds:
-  - type: walk
-    value: "10"
-  - type: fly
-    value: "60"
+  walk:
+    distance: 10 ft.
+  fly:
+    distance: 60 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 12
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 15
-  - ability: con
+    saveProf: false
+  - key: con
     score: 10
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 9
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 5
-pb: "+2"
-cr: 1/4
-xp: "50"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '1'
 passivesList:
   - skill: Perception
-    value: "11"
+    value: '11'
+cr: 1/4
+xp: '50'
 entries:
   - category: trait
     name: Flyby
+    entryType: special
     text: The pteranodon doesn't provoke an Opportunity Attack when it flies out of an enemy's reach.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 6 (1d8 + 2) Piercing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 6 (1d8 + 2) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d8
+          bonus: 2
+          type: Piercing
+          average: 6
+      reach: 5 ft.
 ---
 
 # Pteranodon
@@ -52,7 +73,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 12 | 15 | 10 | 2 | 9 | 5 |
+| - | - | - | - | - | - |
 
 CR 1/4, PB +2, XP 50
 

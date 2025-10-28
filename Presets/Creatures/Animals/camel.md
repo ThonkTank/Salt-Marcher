@@ -4,40 +4,56 @@ name: Camel
 size: Large
 type: Beast
 alignmentOverride: Unaligned
-ac: "10"
-initiative: "-1 (9)"
-hp: "17"
+ac: '10'
+initiative: '-1 (9)'
+hp: '17'
 hitDice: 2d10 + 6
 speeds:
-  - type: walk
-    value: "50"
+  walk:
+    distance: 50 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 15
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 8
-  - ability: con
+    saveProf: false
+  - key: con
     score: 17
-  - ability: int
+    saveProf: true
+    saveMod: 5
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 11
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 5
-pb: "+2"
-cr: 1/8
-xp: "25"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+cr: 1/8
+xp: '25'
 entries:
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 4 (1d4 + 2) Bludgeoning damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 4 (1d4 + 2) Bludgeoning damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d4
+          bonus: 2
+          type: Bludgeoning
+          average: 4
+      reach: 5 ft.
 ---
 
 # Camel
@@ -50,7 +66,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 15 | 8 | 17 | 2 | 11 | 5 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 10
 CR 1/8, PB +2, XP 25

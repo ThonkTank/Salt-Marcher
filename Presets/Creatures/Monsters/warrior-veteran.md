@@ -5,45 +5,81 @@ size: Small
 type: Humanoid
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Neutral
-ac: "17"
+ac: '17'
 initiative: +3 (13)
-hp: "65"
+hp: '65'
 hitDice: 10d8 + 20
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 16
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 13
-  - ability: con
+    saveProf: false
+  - key: con
     score: 14
-  - ability: int
+    saveProf: false
+  - key: int
     score: 10
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 11
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 10
-pb: "+2"
-cr: "3"
-xp: "700"
-languagesList:
-  - value: Common plus one other language
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Athletics
+    value: '5'
+  - skill: Perception
+    value: '2'
 passivesList:
   - skill: Perception
-    value: "12"
+    value: '12'
+languagesList:
+  - value: Common plus one other language
+cr: '3'
+xp: '700'
 entries:
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The warrior makes two Greatsword or Heavy Crossbow attacks.
+    multiattack:
+      attacks:
+        - name: Crossbow
+          count: 1
+      substitutions: []
   - category: action
     name: Greatsword
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 10 (2d6 + 3) Slashing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 10 (2d6 + 3) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 2d6
+          bonus: 3
+          type: Slashing
+          average: 10
+      reach: 5 ft.
   - category: action
     name: Heavy Crossbow
-    text: "*Ranged Attack Roll:* +3, range 100/400 ft. 12 (2d10 + 1) Piercing damage."
-
+    entryType: attack
+    text: '*Ranged Attack Roll:* +3, range 100/400 ft. 12 (2d10 + 1) Piercing damage.'
+    attack:
+      type: ranged
+      bonus: 3
+      damage:
+        - dice: 2d10
+          bonus: 1
+          type: Piercing
+          average: 12
+      range: 100/400 ft.
 ---
 
 # Warrior Veteran
@@ -56,7 +92,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 16 | 13 | 14 | 10 | 11 | 10 |
+| - | - | - | - | - | - |
 
 **Languages** Common plus one other language
 CR 3, PB +2, XP 700

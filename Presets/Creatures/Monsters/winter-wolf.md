@@ -5,48 +5,95 @@ size: Large
 type: Monstrosity
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Evil
-ac: "13"
+ac: '13'
 initiative: +1 (11)
-hp: "75"
+hp: '75'
 hitDice: 10d10 + 20
 speeds:
-  - type: walk
-    value: "50"
+  walk:
+    distance: 50 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 18
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 13
-  - ability: con
+    saveProf: false
+  - key: con
     score: 14
-  - ability: int
+    saveProf: false
+  - key: int
     score: 7
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 8
-pb: "+2"
-cr: "3"
-xp: "700"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '5'
+  - skill: Stealth
+    value: '5'
+passivesList:
+  - skill: Perception
+    value: '15'
 languagesList:
   - value: Common
   - value: Giant
-passivesList:
-  - skill: Perception
-    value: "15"
 damageImmunitiesList:
   - value: Cold
+cr: '3'
+xp: '700'
 entries:
   - category: trait
     name: Pack Tactics
+    entryType: special
     text: The wolf has Advantage on an attack roll against a creature if at least one of the wolf's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +6, reach 5 ft. 11 (2d6 + 4) Piercing damage. If the target is a Large or smaller creature, it has the Prone condition."
+    entryType: attack
+    text: '*Melee Attack Roll:* +6, reach 5 ft. 11 (2d6 + 4) Piercing damage. If the target is a Large or smaller creature, it has the Prone condition.'
+    attack:
+      type: melee
+      bonus: 6
+      damage:
+        - dice: 2d6
+          bonus: 4
+          type: Piercing
+          average: 11
+      reach: 5 ft.
+      onHit:
+        conditions:
+          - condition: Prone
+            restrictions:
+              size: Large or smaller
+      additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
   - category: action
     name: Cold Breath (Recharge 5-6)
-    text: "*Constitution Saving Throw*: DC 12, each creature in a 15-foot Cone. *Failure:*  18 (4d8) Cold damage. *Success:*  Half damage."
-
+    entryType: save
+    text: '*Constitution Saving Throw*: DC 12, each creature in a 15-foot Cone. *Failure:*  18 (4d8) Cold damage. *Success:*  Half damage.'
+    recharge: 5-6
+    save:
+      ability: con
+      dc: 12
+      targeting:
+        shape: cone
+        size: 15 ft.
+      onFail:
+        effects:
+          other: 18 (4d8) Cold damage.
+        damage:
+          - dice: 4d8
+            bonus: 0
+            type: Cold
+            average: 18
+        legacyEffects: 18 (4d8) Cold damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
 ---
 
 # Winter Wolf
@@ -59,7 +106,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 18 | 13 | 14 | 7 | 12 | 8 |
+| - | - | - | - | - | - |
 
 **Languages** Common, Giant
 CR 3, PB +2, XP 700

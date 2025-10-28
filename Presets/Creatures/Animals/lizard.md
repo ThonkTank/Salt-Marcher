@@ -4,45 +4,57 @@ name: Lizard
 size: Small
 type: Beast
 alignmentOverride: Unaligned
-ac: "10"
+ac: '10'
 initiative: +0 (10)
-hp: "2"
+hp: '2'
 hitDice: 1d4
 speeds:
-  - type: walk
-    value: "20"
-  - type: climb
-    value: "20"
+  walk:
+    distance: 20 ft.
+  climb:
+    distance: 20 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 2
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 11
-  - ability: con
+    saveProf: false
+  - key: con
     score: 10
-  - ability: int
+    saveProf: false
+  - key: int
     score: 1
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 8
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 3
-pb: "+2"
-cr: "0"
-xp: "0"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: darkvision
-    range: "30"
+    range: '30'
 passivesList:
   - skill: Perception
-    value: "9"
+    value: '9'
+cr: '0'
+xp: '0'
 entries:
   - category: trait
     name: Spider Climb
+    entryType: special
     text: The lizard can climb difficult surfaces, including along ceilings, without needing to make an ability check.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +2, reach 5 ft. 1 Piercing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +2, reach 5 ft. 1 Piercing damage.'
+    attack:
+      type: melee
+      bonus: 2
+      damage: []
+      reach: 5 ft.
 ---
 
 # Lizard
@@ -55,7 +67,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 2 | 11 | 10 | 1 | 8 | 3 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 30 ft.; Passive Perception 9
 CR 0, PB +2, XP 0

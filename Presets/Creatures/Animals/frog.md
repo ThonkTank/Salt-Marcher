@@ -4,48 +4,66 @@ name: Frog
 size: Small
 type: Beast
 alignmentOverride: Unaligned
-ac: "11"
+ac: '11'
 initiative: +1 (11)
-hp: "1"
+hp: '1'
 hitDice: 1d4 - 1
 speeds:
-  - type: walk
-    value: "20"
-  - type: swim
-    value: "20"
+  walk:
+    distance: 20 ft.
+  swim:
+    distance: 20 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 1
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 13
-  - ability: con
+    saveProf: false
+  - key: con
     score: 8
-  - ability: int
+    saveProf: false
+  - key: int
     score: 1
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 8
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 3
-pb: "+2"
-cr: "0"
-xp: "0"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '1'
+  - skill: Stealth
+    value: '3'
 sensesList:
   - type: darkvision
-    range: "30"
+    range: '30'
 passivesList:
   - skill: Perception
-    value: "11"
+    value: '11'
+cr: '0'
+xp: '0'
 entries:
   - category: trait
     name: Amphibious
+    entryType: special
     text: The frog can breathe air and water.
   - category: trait
     name: Standing Leap
+    entryType: special
     text: The frog's Long Jump is up to 10 feet and its High Jump is up to 5 feet with or without a running start.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +3, reach 5 ft. 1 Piercing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +3, reach 5 ft. 1 Piercing damage.'
+    attack:
+      type: melee
+      bonus: 3
+      damage: []
+      reach: 5 ft.
 ---
 
 # Frog
@@ -58,7 +76,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 1 | 13 | 8 | 1 | 8 | 3 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 30 ft.; Passive Perception 11
 CR 0, PB +2, XP 0

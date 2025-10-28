@@ -5,59 +5,119 @@ size: Small
 type: Elemental
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Evil
-ac: "11"
+ac: '11'
 initiative: +1 (11)
-hp: "18"
+hp: '18'
 hitDice: 4d6 + 4
 speeds:
-  - type: walk
-    value: "30"
-  - type: fly
-    value: "30"
+  walk:
+    distance: 30 ft.
+  fly:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 8
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 12
-  - ability: con
+    saveProf: false
+  - key: con
     score: 12
-  - ability: int
+    saveProf: false
+  - key: int
     score: 7
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 10
-pb: "+2"
-cr: 1/2
-xp: "100"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Stealth
+    value: '3'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
+passivesList:
+  - skill: Perception
+    value: '10'
 languagesList:
   - value: Primordial (Ignan
   - value: Terran)
-passivesList:
-  - skill: Perception
-    value: "10"
 damageVulnerabilitiesList:
   - value: Cold
 damageImmunitiesList:
   - value: Fire
-  - value: Poison
-  - value: Exhaustion
+  - value: Poison; Exhaustion
+conditionImmunitiesList:
   - value: Poisoned
+cr: 1/2
+xp: '100'
 entries:
   - category: trait
     name: Death Burst
-    text: "The mephit explodes when it dies. *Dexterity Saving Throw*: DC 11, each creature in a 5-foot Emanation originating from the mephit. *Failure:*  7 (2d6) Fire damage. *Success:*  Half damage."
+    entryType: save
+    text: 'The mephit explodes when it dies. *Dexterity Saving Throw*: DC 11, each creature in a 5-foot Emanation originating from the mephit. *Failure:*  7 (2d6) Fire damage. *Success:*  Half damage.'
+    save:
+      ability: dex
+      dc: 11
+      targeting:
+        shape: emanation
+        size: 5 ft.
+        origin: self
+      onFail:
+        effects:
+          other: 7 (2d6) Fire damage.
+        damage:
+          - dice: 2d6
+            bonus: 0
+            type: Fire
+            average: 7
+        legacyEffects: 7 (2d6) Fire damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
   - category: action
     name: Claw
-    text: "*Melee Attack Roll:* +3, reach 5 ft. 3 (1d4 + 1) Slashing damage plus 3 (1d6) Fire damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +3, reach 5 ft. 3 (1d4 + 1) Slashing damage plus 3 (1d6) Fire damage.'
+    attack:
+      type: melee
+      bonus: 3
+      damage:
+        - dice: 1d4
+          bonus: 1
+          type: Slashing
+          average: 3
+        - dice: 1d6
+          bonus: 0
+          type: Fire
+          average: 3
+      reach: 5 ft.
   - category: action
     name: Fire Breath
-    recharge: Recharge 6
-    text: "*Dexterity Saving Throw*: DC 11, each creature in a 15-foot Cone. *Failure:*  7 (2d6) Fire damage. *Success:*  Half damage."
-
+    entryType: save
+    text: '*Dexterity Saving Throw*: DC 11, each creature in a 15-foot Cone. *Failure:*  7 (2d6) Fire damage. *Success:*  Half damage.'
+    save:
+      ability: dex
+      dc: 11
+      targeting:
+        shape: cone
+        size: 15 ft.
+      onFail:
+        effects:
+          other: 7 (2d6) Fire damage.
+        damage:
+          - dice: 2d6
+            bonus: 0
+            type: Fire
+            average: 7
+        legacyEffects: 7 (2d6) Fire damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
 ---
 
 # Magma Mephit
@@ -70,7 +130,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 8 | 12 | 12 | 7 | 10 | 10 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 10
 **Languages** Primordial (Ignan, Terran)

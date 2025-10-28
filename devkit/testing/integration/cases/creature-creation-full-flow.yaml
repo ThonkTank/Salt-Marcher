@@ -1,0 +1,140 @@
+name: "Complete creature creation flow"
+description: "Tests full creature creation workflow from opening modal to saving"
+
+debugConfig:
+  enabled: true
+  logFields: ["*"]
+  logCategories: ["field-creation", "onChange", "init", "update"]
+
+setup:
+  - name: "Reload plugin for clean state"
+    command: reload-plugin
+    wait: 1000
+
+steps:
+  # Open modal
+  - name: "Open new creature editor"
+    command: edit-creature
+    wait: 500
+    expect:
+      success: true
+
+  - name: "Mark creature creation start"
+    command: log-marker
+    args: ["=== CREATURE CREATION START ==="]
+
+  # Fill basic info
+  - name: "Set creature name"
+    command: set-input-value
+    args: ["input[data-field-id='name']", "Test Dragon"]
+    wait: 200
+
+  - name: "Set creature size"
+    command: click-element
+    args: ["select[data-field-id='size']"]
+    wait: 200
+
+  - name: "Select Large size"
+    command: set-input-value
+    args: ["select[data-field-id='size']", "Large"]
+    wait: 200
+
+  - name: "Set creature type"
+    command: set-input-value
+    args: ["select[data-field-id='type']", "Dragon"]
+    wait: 200
+
+  # Navigate to abilities section
+  - name: "Navigate to abilities"
+    command: navigate-to-section
+    args: ["abilities"]
+    wait: 300
+
+  - name: "Set STR score"
+    command: set-input-value
+    args: ["input[data-field-id='str']", "20"]
+    wait: 200
+    expect:
+      success: true
+
+  - name: "Toggle STR save proficiency"
+    command: toggle-save-checkbox
+    args: ["str", "0"]
+    wait: 200
+    expect:
+      success: true
+
+  - name: "Verify STR save modifier initialized"
+    command: get-ability-values
+    args: ["str"]
+    expect:
+      success: true
+      values:
+        score: 20
+        saveProf: true
+        saveMod: 7  # +5 (ability) + 2 (PB)
+
+  # Navigate to combat stats
+  - name: "Navigate to combat"
+    command: navigate-to-section
+    args: ["combat"]
+    wait: 300
+
+  - name: "Set AC"
+    command: set-input-value
+    args: ["input[data-field-id='ac']", "18"]
+    wait: 200
+
+  - name: "Set HP"
+    command: set-input-value
+    args: ["input[data-field-id='hp']", "150"]
+    wait: 200
+
+  - name: "Set Hit Dice"
+    command: set-input-value
+    args: ["input[data-field-id='hitDice']", "15d10 + 75"]
+    wait: 200
+
+  # Add speeds
+  - name: "Navigate to movement"
+    command: navigate-to-section
+    args: ["movement"]
+    wait: 300
+
+  - name: "Add fly speed"
+    command: add-token
+    args: ["speeds", "fly"]
+    wait: 200
+
+  - name: "Set fly speed value"
+    command: set-input-value
+    args: ["input[data-field-id='speeds.fly']", "80"]
+    wait: 200
+
+  # Validate all fields
+  - name: "Mark validation checkpoint"
+    command: log-marker
+    args: ["=== VALIDATING ALL FIELDS ==="]
+
+  - name: "Validate UI layout"
+    command: validate-ui
+    args: ["all"]
+    expect:
+      success: true
+
+  - name: "Assert creature data in logs"
+    command: assert-log-contains
+    args:
+      - "Test Dragon"
+      - "[onChange:name]"
+      - "[init:saveMod]"
+      - "score: 20"
+
+cleanup:
+  - name: "Close modal without saving"
+    command: close-modal
+    wait: 200
+
+  - name: "Mark test end"
+    command: log-marker
+    args: ["=== CREATURE CREATION END ==="]

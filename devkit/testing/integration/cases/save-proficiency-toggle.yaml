@@ -1,0 +1,70 @@
+name: "Save proficiency toggle test"
+description: "Tests that toggling save proficiency auto-initializes the saveMod field"
+
+# Debug configuration for this test
+debugConfig:
+  enabled: true
+  logFields: ["saveProf", "saveMod"]
+  logCategories: ["*"]
+  logAll: false
+
+# Setup steps run before the test
+setup:
+  - name: "Reload plugin to ensure clean state"
+    command: reload-plugin
+    wait: 1000
+
+# Main test steps
+steps:
+  - name: "Open creature editor for Goblin"
+    command: edit-creature
+    args: ["Goblin"]
+    wait: 500
+    expect:
+      success: true
+
+  - name: "Navigate to abilities section"
+    command: navigate-to-section
+    args: ["abilities"]
+    wait: 300
+    expect:
+      success: true
+
+  - name: "Get initial STR ability values"
+    command: get-ability-values
+    args: ["str"]
+    expect:
+      success: true
+      values:
+        score: 8
+        # saveProf should be false initially
+        saveProf: false
+
+  - name: "Toggle STR save proficiency"
+    command: toggle-save-checkbox
+    args: ["str", "0"]  # First ability entry, STR checkbox
+    wait: 200
+    expect:
+      success: true
+
+  - name: "Verify saveMod was auto-initialized"
+    command: get-ability-values
+    args: ["str"]
+    expect:
+      success: true
+      values:
+        score: 8
+        saveProf: true
+        # saveMod should be: floor((8-10)/2) + 2 (PB) = -1 + 2 = 1
+        saveMod: 1
+
+  - name: "Check that init logs are present"
+    command: assert-log-contains
+    args:
+      - "[init:saveMod]"
+      - "Init function returned"
+
+# Cleanup steps run after the test (even if test fails)
+cleanup:
+  - name: "Close modal"
+    command: close-modal

@@ -4,42 +4,57 @@ name: Giant Centipede
 size: Small
 type: Beast
 alignmentOverride: Unaligned
-ac: "14"
+ac: '14'
 initiative: +2 (12)
-hp: "9"
+hp: '9'
 hitDice: 2d6 + 2
 speeds:
-  - type: walk
-    value: "30"
-  - type: climb
-    value: "30"
+  walk:
+    distance: 30 ft.
+  climb:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 5
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 12
-  - ability: int
+    saveProf: false
+  - key: int
     score: 1
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 7
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 3
-pb: "+2"
-cr: 1/4
-xp: "50"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: blindsight
-    range: "30"
+    range: '30'
 passivesList:
   - skill: Perception
-    value: "8"
+    value: '8'
+cr: 1/4
+xp: '50'
 entries:
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 4 (1d4 + 2) Piercing damage, and the target has the Poisoned condition until the start of the centipede's next turn."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 4 (1d4 + 2) Piercing damage, and the target has the Poisoned condition until the start of the centipede''s next turn.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d4
+          bonus: 2
+          type: Piercing
+          average: 4
+      reach: 5 ft.
 ---
 
 # Giant Centipede
@@ -52,7 +67,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 5 | 14 | 12 | 1 | 7 | 3 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 30 ft.; Passive Perception 8
 CR 1/4, PB +2, XP 50

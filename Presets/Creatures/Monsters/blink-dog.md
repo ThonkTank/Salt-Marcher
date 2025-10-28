@@ -5,45 +5,67 @@ size: Medium
 type: Fey
 alignmentLawChaos: Lawful
 alignmentGoodEvil: Good
-ac: "13"
+ac: '13'
 initiative: +3 (13)
-hp: "22"
+hp: '22'
 hitDice: 4d8 + 4
 speeds:
-  - type: walk
-    value: "40"
+  walk:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 12
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 17
-  - ability: con
+    saveProf: false
+  - key: con
     score: 12
-  - ability: int
+    saveProf: false
+  - key: int
     score: 10
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 13
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 11
-pb: "+2"
-cr: 1/4
-xp: "50"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '5'
+  - skill: Stealth
+    value: '5'
 sensesList:
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Understands Elvish and Sylvan but can't speak them
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "15"
+    value: '15'
+languagesList:
+  - value: Understands Elvish and Sylvan but can't speak them
+cr: 1/4
+xp: '50'
 entries:
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 5 (1d4 + 3) Piercing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 5 (1d4 + 3) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d4
+          bonus: 3
+          type: Piercing
+          average: 5
+      reach: 5 ft.
   - category: bonus
     name: Teleport (Recharge 4-6)
+    entryType: special
     text: The dog teleports up to 40 feet to an unoccupied space it can see.
-
+    recharge: 4-6
 ---
 
 # Blink Dog
@@ -56,7 +78,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 12 | 17 | 12 | 10 | 13 | 11 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 15
 **Languages** Understands Elvish and Sylvan but can't speak them

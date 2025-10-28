@@ -5,46 +5,67 @@ size: Large
 type: Undead
 alignmentLawChaos: Lawful
 alignmentGoodEvil: Evil
-ac: "13"
+ac: '13'
 initiative: +1 (11)
-hp: "22"
+hp: '22'
 hitDice: 3d10 + 6
 speeds:
-  - type: walk
-    value: "60"
+  walk:
+    distance: 60 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 18
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 12
-  - ability: con
+    saveProf: false
+  - key: con
     score: 15
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 8
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 5
-pb: "+2"
-cr: 1/2
-xp: "100"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "9"
+    value: '9'
 damageVulnerabilitiesList:
   - value: Bludgeoning
 damageImmunitiesList:
-  - value: Poison
-  - value: Exhaustion
+  - value: Poison; Exhaustion
+conditionImmunitiesList:
   - value: Poisoned
+cr: 1/2
+xp: '100'
 entries:
   - category: action
     name: Hooves
-    text: "*Melee Attack Roll:* +6, reach 5 ft. 7 (1d6 + 4) Bludgeoning damage. If the target is a Large or smaller creature and the skeleton moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +6, reach 5 ft. 7 (1d6 + 4) Bludgeoning damage. If the target is a Large or smaller creature and the skeleton moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.'
+    attack:
+      type: melee
+      bonus: 6
+      damage:
+        - dice: 1d6
+          bonus: 4
+          type: Bludgeoning
+          average: 7
+      reach: 5 ft.
+      onHit:
+        conditions:
+          - condition: Prone
+            restrictions:
+              size: Large or smaller
+      additionalEffects: If the target is a Large or smaller creature and the skeleton moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.
 ---
 
 # Warhorse Skeleton
@@ -57,7 +78,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 18 | 12 | 15 | 2 | 8 | 5 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 9
 CR 1/2, PB +2, XP 100

@@ -4,45 +4,64 @@ name: Hunter Shark
 size: Large
 type: Beast
 alignmentOverride: Unaligned
-ac: "12"
+ac: '12'
 initiative: +2 (12)
-hp: "45"
+hp: '45'
 hitDice: 6d10 + 12
 speeds:
-  - type: walk
-    value: "5"
-  - type: swim
-    value: "40"
+  walk:
+    distance: 5 ft.
+  swim:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 18
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 15
-  - ability: int
+    saveProf: false
+  - key: int
     score: 1
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 4
-pb: "+2"
-cr: "2"
-xp: "450"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '2'
 sensesList:
   - type: blindsight
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "12"
+    value: '12'
+cr: '2'
+xp: '450'
 entries:
   - category: trait
     name: Water Breathing
+    entryType: special
     text: The shark can breathe only underwater.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +6 (with Advantage if the target doesn't have all its Hit Points), reach 5 ft. 14 (3d6 + 4) Piercing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +6 (with Advantage if the target doesn''t have all its Hit Points), reach 5 ft. 14 (3d6 + 4) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 6
+      damage:
+        - dice: 3d6
+          bonus: 4
+          type: Piercing
+          average: 14
+      reach: 5 ft.
 ---
 
 # Hunter Shark
@@ -55,7 +74,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 18 | 14 | 15 | 1 | 10 | 4 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 60 ft.; Passive Perception 12
 CR 2, PB +2, XP 450

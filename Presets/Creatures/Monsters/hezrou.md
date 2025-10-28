@@ -3,68 +3,114 @@ smType: creature
 name: Hezrou
 size: Large
 type: Fiend
+typeTags:
+  - value: Demon
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Evil
-ac: "18"
+ac: '18'
 initiative: +6 (16)
-hp: "157"
+hp: '157'
 hitDice: 15d10 + 75
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 19
-  - ability: dex
+    saveProf: true
+    saveMod: 7
+  - key: dex
     score: 17
-  - ability: con
+    saveProf: false
+  - key: con
     score: 20
-  - ability: int
+    saveProf: true
+    saveMod: 8
+  - key: int
     score: 5
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: true
+    saveMod: 4
+  - key: cha
     score: 13
-pb: "+3"
-cr: "8"
-xp: "3900"
+    saveProf: false
+pb: '+3'
 sensesList:
   - type: darkvision
-    range: "120"
-languagesList:
-  - value: Abyssal
-  - type: telepathy
-    range: "120"
+    range: '120'
 passivesList:
   - skill: Perception
-    value: "11"
+    value: '11'
+languagesList:
+  - value: Abyssal
+  - value: telepathy 120 ft.
 damageResistancesList:
   - value: Cold
   - value: Fire
   - value: Lightning
 damageImmunitiesList:
-  - value: Poison
-  - value: Poisoned
+  - value: Poison; Poisoned
+cr: '8'
+xp: '3900'
 entries:
   - category: trait
     name: Demonic Restoration
+    entryType: special
     text: If the hezrou dies outside the Abyss, its body dissolves into ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Abyss.
   - category: trait
     name: Magic Resistance
+    entryType: special
     text: The hezrou has Advantage on saving throws against spells and other magical effects.
   - category: trait
     name: Stench
-    text: "*Constitution Saving Throw*: DC 16, any creature that starts its turn in a 10-foot Emanation originating from the hezrou. *Failure:*  The target has the Poisoned condition until the start of its next turn."
+    entryType: save
+    text: '*Constitution Saving Throw*: DC 16, any creature that starts its turn in a 10-foot Emanation originating from the hezrou. *Failure:*  The target has the Poisoned condition until the start of its next turn.'
+    save:
+      ability: con
+      dc: 16
+      targeting:
+        shape: emanation
+        size: 10 ft.
+        origin: self
+      onFail:
+        effects:
+          conditions:
+            - condition: Poisoned
+              duration:
+                type: until
+                trigger: the start of its next turn
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The hezrou makes three Rend attacks.
+    multiattack:
+      attacks:
+        - name: Rend
+          count: 3
+      substitutions: []
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +7, reach 5 ft. 6 (1d4 + 4) Slashing damage plus 9 (2d8) Poison damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +7, reach 5 ft. 6 (1d4 + 4) Slashing damage plus 9 (2d8) Poison damage.'
+    attack:
+      type: melee
+      bonus: 7
+      damage:
+        - dice: 1d4
+          bonus: 4
+          type: Slashing
+          average: 6
+        - dice: 2d8
+          bonus: 0
+          type: Poison
+          average: 9
+      reach: 5 ft.
   - category: bonus
     name: Leap
+    entryType: special
     text: The hezrou jumps up to 30 feet by spending 10 feet of movement.
-
 ---
 
 # Hezrou
@@ -77,7 +123,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 19 | 17 | 20 | 5 | 12 | 13 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 120 ft.; Passive Perception 11
 **Languages** Abyssal, telepathy 120 ft.

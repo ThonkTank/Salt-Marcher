@@ -4,42 +4,62 @@ name: Giant Wasp
 size: Medium
 type: Beast
 alignmentOverride: Unaligned
-ac: "13"
+ac: '13'
 initiative: +2 (12)
-hp: "22"
+hp: '22'
 hitDice: 5d8
 speeds:
-  - type: walk
-    value: "10"
-  - type: fly
-    value: "50"
+  walk:
+    distance: 10 ft.
+  fly:
+    distance: 50 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 10
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 10
-  - ability: int
+    saveProf: false
+  - key: int
     score: 1
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 3
-pb: "+2"
-cr: 1/2
-xp: "100"
+    saveProf: false
+pb: '+2'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+cr: 1/2
+xp: '100'
 entries:
   - category: trait
     name: Flyby
+    entryType: special
     text: The wasp doesn't provoke an Opportunity Attack when it flies out of an enemy's reach.
   - category: action
     name: Sting
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 5 (1d6 + 2) Piercing damage plus 5 (2d4) Poison damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 5 (1d6 + 2) Piercing damage plus 5 (2d4) Poison damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d6
+          bonus: 2
+          type: Piercing
+          average: 5
+        - dice: 2d4
+          bonus: 0
+          type: Poison
+          average: 5
+      reach: 5 ft.
 ---
 
 # Giant Wasp
@@ -52,7 +72,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 10 | 14 | 10 | 1 | 10 | 3 |
+| - | - | - | - | - | - |
 
 CR 1/2, PB +2, XP 100
 

@@ -5,70 +5,151 @@ size: Huge
 type: Giant
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Good
-ac: "16"
+ac: '16'
 initiative: +7 (17)
-hp: "230"
+hp: '230'
 hitDice: 20d12 + 100
 speeds:
-  - type: walk
-    value: "50"
-  - type: fly
-    value: "25"
+  walk:
+    distance: 50 ft.
+  fly:
+    distance: 25 ft.
     hover: true
-  - type: swim
-    value: "50"
+  swim:
+    distance: 50 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 29
-  - ability: dex
+    saveProf: true
+    saveMod: 14
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 20
-  - ability: int
+    saveProf: true
+    saveMod: 10
+  - key: int
     score: 16
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 20
-  - ability: cha
+    saveProf: true
+    saveMod: 10
+  - key: cha
     score: 18
-pb: "+5"
-cr: "13"
-xp: "10000"
+    saveProf: true
+    saveMod: 9
+pb: '+5'
+skills:
+  - skill: Arcana
+    value: '8'
+  - skill: Athletics
+    value: '14'
+  - skill: History
+    value: '8'
+  - skill: Perception
+    value: '10'
 sensesList:
   - type: darkvision
-    range: "120"
+    range: '120'
   - type: truesight
-    range: "30"
+    range: '30'
+passivesList:
+  - skill: Perception
+    value: '20'
 languagesList:
   - value: Common
   - value: Giant
-passivesList:
-  - skill: Perception
-    value: "20"
 damageResistancesList:
   - value: Cold
 damageImmunitiesList:
   - value: Lightning
   - value: Thunder
+cr: '13'
+xp: '10000'
 entries:
   - category: trait
     name: Amphibious
+    entryType: special
     text: The giant can breathe air and water.
   - category: action
     name: Multiattack
+    entryType: special
     text: The giant makes two attacks, using Storm Sword or Thunderbolt in any combination.
   - category: action
     name: Storm Sword
-    text: "*Melee Attack Roll:* +14, reach 10 ft. 23 (4d6 + 9) Slashing damage plus 13 (3d8) Lightning damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +14, reach 10 ft. 23 (4d6 + 9) Slashing damage plus 13 (3d8) Lightning damage.'
+    attack:
+      type: melee
+      bonus: 14
+      damage:
+        - dice: 4d6
+          bonus: 9
+          type: Slashing
+          average: 23
+        - dice: 3d8
+          bonus: 0
+          type: Lightning
+          average: 13
+      reach: 10 ft.
   - category: action
     name: Thunderbolt
-    text: "*Ranged Attack Roll:* +14, range 500 ft. 22 (2d12 + 9) Lightning damage, and the target has the Blinded and Deafened conditions until the start of the giant's next turn."
+    entryType: attack
+    text: '*Ranged Attack Roll:* +14, range 500 ft. 22 (2d12 + 9) Lightning damage, and the target has the Blinded and Deafened conditions until the start of the giant''s next turn.'
+    attack:
+      type: ranged
+      bonus: 14
+      damage:
+        - dice: 2d12
+          bonus: 9
+          type: Lightning
+          average: 22
+      range: 500 ft.
   - category: action
     name: Lightning Storm (Recharge 5-6)
-    text: "*Dexterity Saving Throw*: DC 18, each creature in a 10-foot-radius, 40-foot-high Cylinder [Area of Effect]|XPHB|Cylinder originating from a point the giant can see within 500 feet. *Failure:*  55 (10d10) Lightning damage. *Success:*  Half damage."
+    entryType: save
+    text: '*Dexterity Saving Throw*: DC 18, each creature in a 10-foot-radius, 40-foot-high Cylinder [Area of Effect]|XPHB|Cylinder originating from a point the giant can see within 500 feet. *Failure:*  55 (10d10) Lightning damage. *Success:*  Half damage.'
+    recharge: 5-6
+    save:
+      ability: dex
+      dc: 18
+      targeting:
+        shape: cylinder
+        size: 10 ft.
+        height: 40 ft.
+        origin: self
+      onFail:
+        effects:
+          other: 55 (10d10) Lightning damage.
+        damage:
+          - dice: 10d10
+            bonus: 0
+            type: Lightning
+            average: 55
+        legacyEffects: 55 (10d10) Lightning damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
+spellcastingEntries:
   - category: action
     name: Spellcasting
-    text: "The giant casts one of the following spells, requiring no Material components and using Wisdom as the spellcasting ability (spell save DC 18): - **At Will:** *Detect Magic*, *Light* - **1/Day Each:** *Control Weather*"
-
+    entryType: spellcasting
+    text: 'The giant casts one of the following spells, requiring no Material components and using Wisdom as the spellcasting ability (spell save DC 18): - **At Will:** *Detect Magic*, *Light* - **1/Day Each:** *Control Weather*'
+    spellcasting:
+      ability: wis
+      saveDC: 18
+      excludeComponents:
+        - M
+      spellLists:
+        - frequency: at-will
+          spells:
+            - Detect Magic
+            - Light
+        - frequency: 1/day
+          spells:
+            - Control Weather
 ---
 
 # Storm Giant
@@ -81,7 +162,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 29 | 14 | 20 | 16 | 20 | 18 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 120 ft., truesight 30 ft.; Passive Perception 20
 **Languages** Common, Giant

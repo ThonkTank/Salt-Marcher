@@ -5,61 +5,129 @@ size: Small
 type: Elemental
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Evil
-ac: "12"
+ac: '12'
 initiative: +2 (12)
-hp: "17"
+hp: '17'
 hitDice: 5d6
 speeds:
-  - type: walk
-    value: "30"
-  - type: fly
-    value: "30"
+  walk:
+    distance: 30 ft.
+  fly:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 5
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 10
-  - ability: int
+    saveProf: false
+  - key: int
     score: 9
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 11
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 10
-pb: "+2"
-cr: 1/2
-xp: "100"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '2'
+  - skill: Stealth
+    value: '4'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
+passivesList:
+  - skill: Perception
+    value: '12'
 languagesList:
   - value: Primordial (Auran
   - value: Terran)
-passivesList:
-  - skill: Perception
-    value: "12"
 damageVulnerabilitiesList:
   - value: Fire
 damageImmunitiesList:
-  - value: Poison
-  - value: Exhaustion
+  - value: Poison; Exhaustion
+conditionImmunitiesList:
   - value: Poisoned
+cr: 1/2
+xp: '100'
 entries:
   - category: trait
     name: Death Burst
-    text: "The mephit explodes when it dies. *Dexterity Saving Throw*: DC 10, each creature in a 5-foot Emanation originating from the mephit. *Failure:*  5 (2d4) Bludgeoning damage. *Success:*  Half damage."
+    entryType: save
+    text: 'The mephit explodes when it dies. *Dexterity Saving Throw*: DC 10, each creature in a 5-foot Emanation originating from the mephit. *Failure:*  5 (2d4) Bludgeoning damage. *Success:*  Half damage.'
+    save:
+      ability: dex
+      dc: 10
+      targeting:
+        shape: emanation
+        size: 5 ft.
+        origin: self
+      onFail:
+        effects:
+          other: 5 (2d4) Bludgeoning damage.
+        damage:
+          - dice: 2d4
+            bonus: 0
+            type: Bludgeoning
+            average: 5
+        legacyEffects: 5 (2d4) Bludgeoning damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
   - category: action
     name: Claw
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 4 (1d4 + 2) Slashing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 4 (1d4 + 2) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d4
+          bonus: 2
+          type: Slashing
+          average: 4
+      reach: 5 ft.
   - category: action
     name: Blinding Breath
-    recharge: Recharge 6
-    text: "*Dexterity Saving Throw*: DC 10, each creature in a 15-foot Cone. *Failure:*  The target has the Blinded condition until the end of the mephit's next turn."
+    entryType: save
+    text: '*Dexterity Saving Throw*: DC 10, each creature in a 15-foot Cone. *Failure:*  The target has the Blinded condition until the end of the mephit''s next turn.'
+    save:
+      ability: dex
+      dc: 10
+      targeting:
+        shape: cone
+        size: 15 ft.
+      onFail:
+        effects:
+          conditions:
+            - condition: Blinded
+              duration:
+                type: until
+                trigger: the end of the mephit's next turn
+spellcastingEntries:
   - category: action
     name: Sleep (1/Day)
+    entryType: spellcasting
     text: The mephit casts the *Sleep* spell, requiring no spell components and using Charisma as the spellcasting ability (spell save DC 10). - **At Will:** - **1/Day Each:** *Sleep*
-
+    limitedUse:
+      count: 1
+      reset: day
+    spellcasting:
+      ability: cha
+      saveDC: 10
+      spellLists:
+        - frequency: at-will
+          spells:
+            - '- 1/Day Each: Sleep'
+        - frequency: 1/day
+          spells:
+            - Sleep
 ---
 
 # Dust Mephit
@@ -72,7 +140,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 5 | 14 | 10 | 9 | 11 | 10 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 12
 **Languages** Primordial (Auran, Terran)

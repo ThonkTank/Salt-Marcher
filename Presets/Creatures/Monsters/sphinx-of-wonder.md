@@ -5,52 +5,79 @@ size: Small
 type: Celestial
 alignmentLawChaos: Lawful
 alignmentGoodEvil: Good
-ac: "13"
+ac: '13'
 initiative: +3 (13)
-hp: "24"
+hp: '24'
 hitDice: 7d4 + 7
 speeds:
-  - type: walk
-    value: "20"
-  - type: fly
-    value: "40"
+  walk:
+    distance: 20 ft.
+  fly:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 6
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 17
-  - ability: con
+    saveProf: false
+  - key: con
     score: 13
-  - ability: int
+    saveProf: false
+  - key: int
     score: 15
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 11
-pb: "+2"
-cr: "1"
-xp: "200"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Arcana
+    value: '4'
+  - skill: Religion
+    value: '4'
+  - skill: Stealth
+    value: '5'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
+passivesList:
+  - skill: Perception
+    value: '11'
 languagesList:
   - value: Celestial
   - value: Common
-passivesList:
-  - skill: Perception
-    value: "11"
 damageResistancesList:
   - value: Necrotic
   - value: Psychic
   - value: Radiant
+cr: '1'
+xp: '200'
 entries:
   - category: trait
     name: Magic Resistance
+    entryType: special
     text: The sphinx has Advantage on saving throws against spells and other magical effects.
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 5 (1d4 + 3) Slashing damage plus 7 (2d6) Radiant damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 5 (1d4 + 3) Slashing damage plus 7 (2d6) Radiant damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d4
+          bonus: 3
+          type: Slashing
+          average: 5
+        - dice: 2d6
+          bonus: 0
+          type: Radiant
+          average: 7
+      reach: 5 ft.
 ---
 
 # Sphinx of Wonder
@@ -63,7 +90,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 6 | 17 | 13 | 15 | 12 | 11 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 11
 **Languages** Celestial, Common

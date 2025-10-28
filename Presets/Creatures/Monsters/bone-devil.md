@@ -3,65 +3,113 @@ smType: creature
 name: Bone Devil
 size: Large
 type: Fiend
+typeTags:
+  - value: Devil
 alignmentLawChaos: Lawful
 alignmentGoodEvil: Evil
-ac: "16"
+ac: '16'
 initiative: +7 (17)
-hp: "161"
+hp: '161'
 hitDice: 17d10 + 68
 speeds:
-  - type: walk
-    value: "40"
-  - type: fly
-    value: "40"
+  walk:
+    distance: 40 ft.
+  fly:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 18
-  - ability: dex
+    saveProf: true
+    saveMod: 8
+  - key: dex
     score: 16
-  - ability: con
+    saveProf: false
+  - key: con
     score: 18
-  - ability: int
+    saveProf: false
+  - key: int
     score: 13
-  - ability: wis
+    saveProf: true
+    saveMod: 5
+  - key: wis
     score: 14
-  - ability: cha
+    saveProf: true
+    saveMod: 6
+  - key: cha
     score: 16
-pb: "+4"
-cr: "9"
-xp: "5000"
+    saveProf: true
+    saveMod: 7
+pb: '+4'
+skills:
+  - skill: Deception
+    value: '7'
+  - skill: Insight
+    value: '6'
 sensesList:
-  - value: darkvision 120 ft. (unimpeded by magical darkness)
-languagesList:
-  - value: Infernal
-  - type: telepathy
-    range: "120"
+  - type: darkvision 120 ft. (unimpeded by magical darkness)
 passivesList:
   - skill: Perception
-    value: "12"
+    value: '12'
+languagesList:
+  - value: Infernal
+  - value: telepathy 120 ft.
 damageResistancesList:
   - value: Cold
 damageImmunitiesList:
   - value: Fire
-  - value: Poison
-  - value: Poisoned
+  - value: Poison; Poisoned
+cr: '9'
+xp: '5000'
 entries:
   - category: trait
     name: Diabolical Restoration
+    entryType: special
     text: If the devil dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
   - category: trait
     name: Magic Resistance
+    entryType: special
     text: The devil has Advantage on saving throws against spells and other magical effects.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The devil makes two Claw attacks and one Infernal Sting attack.
+    multiattack:
+      attacks:
+        - name: Claw
+          count: 2
+        - name: Sting
+          count: 1
+      substitutions: []
   - category: action
     name: Claw
-    text: "*Melee Attack Roll:* +8, reach 10 ft. 13 (2d8 + 4) Slashing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +8, reach 10 ft. 13 (2d8 + 4) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 8
+      damage:
+        - dice: 2d8
+          bonus: 4
+          type: Slashing
+          average: 13
+      reach: 10 ft.
   - category: action
     name: Infernal Sting
-    text: "*Melee Attack Roll:* +8, reach 10 ft. 15 (2d10 + 4) Piercing damage plus 18 (4d8) Poison damage, and the target has the Poisoned condition until the start of the devil's next turn. While Poisoned, the target can't regain Hit Points."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +8, reach 10 ft. 15 (2d10 + 4) Piercing damage plus 18 (4d8) Poison damage, and the target has the Poisoned condition until the start of the devil''s next turn. While Poisoned, the target can''t regain Hit Points.'
+    attack:
+      type: melee
+      bonus: 8
+      damage:
+        - dice: 2d10
+          bonus: 4
+          type: Piercing
+          average: 15
+        - dice: 4d8
+          bonus: 0
+          type: Poison
+          average: 18
+      reach: 10 ft.
 ---
 
 # Bone Devil
@@ -74,7 +122,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 18 | 16 | 18 | 13 | 14 | 16 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 120 ft. (unimpeded by magical darkness); Passive Perception 12
 **Languages** Infernal, telepathy 120 ft.

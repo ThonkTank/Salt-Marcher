@@ -1,0 +1,181 @@
+{
+  "workflows": [
+    {
+      "name": "fix-bug",
+      "description": "Debug and fix a bug",
+      "steps": [
+        {
+          "name": "Reload plugin",
+          "command": "reload-plugin"
+        },
+        {
+          "name": "Enable debug logging",
+          "command": "set-debug-config",
+          "args": ["{\"enabled\":true,\"logFields\":[\"*\"],\"logCategories\":[\"*\"]}"]
+        },
+        {
+          "name": "Wait for user input",
+          "type": "pause",
+          "message": "Reproduce the bug now, then press Enter..."
+        },
+        {
+          "name": "Get recent logs",
+          "command": "get-logs",
+          "args": ["500"],
+          "save": "logs.txt"
+        },
+        {
+          "name": "Disable debug logging",
+          "command": "set-debug-config",
+          "args": ["{\"enabled\":false}"]
+        }
+      ]
+    },
+    {
+      "name": "add-feature",
+      "description": "Start developing a new feature",
+      "steps": [
+        {
+          "name": "Create feature branch",
+          "type": "git",
+          "command": "checkout",
+          "args": ["-b", "feature/${FEATURE_NAME}"]
+        },
+        {
+          "name": "Enable debug logging",
+          "command": "set-debug-config",
+          "args": ["{\"enabled\":true,\"logFields\":[\"*\"],\"logCategories\":[\"init\",\"onChange\"]}"]
+        },
+        {
+          "name": "Reload plugin",
+          "command": "reload-plugin"
+        },
+        {
+          "name": "Start watch mode",
+          "type": "background",
+          "script": "test watch"
+        }
+      ]
+    },
+    {
+      "name": "release",
+      "description": "Prepare for release",
+      "steps": [
+        {
+          "name": "Run all tests",
+          "type": "npm",
+          "command": "run",
+          "args": ["test:all"]
+        },
+        {
+          "name": "Validate UI",
+          "command": "validate-ui",
+          "args": ["all"]
+        },
+        {
+          "name": "Build plugin",
+          "type": "npm",
+          "command": "run",
+          "args": ["build"]
+        },
+        {
+          "name": "Check git status",
+          "type": "git",
+          "command": "status",
+          "args": ["--short"]
+        },
+        {
+          "name": "Confirm release",
+          "type": "confirm",
+          "message": "Ready to tag release?"
+        },
+        {
+          "name": "Create git tag",
+          "type": "git",
+          "command": "tag",
+          "args": ["-a", "v${VERSION}", "-m", "Release v${VERSION}"]
+        }
+      ]
+    },
+    {
+      "name": "test-entity",
+      "description": "Test entity editor end-to-end",
+      "steps": [
+        {
+          "name": "Reload plugin",
+          "command": "reload-plugin",
+          "wait": 1000
+        },
+        {
+          "name": "Open entity editor",
+          "command": "edit-${ENTITY_TYPE}",
+          "args": ["${ENTITY_NAME}"],
+          "wait": 500
+        },
+        {
+          "name": "Validate UI",
+          "command": "validate-ui",
+          "args": ["all"]
+        },
+        {
+          "name": "Close modal",
+          "command": "close-modal"
+        }
+      ]
+    },
+    {
+      "name": "quick-validate",
+      "description": "Quick validation before commit",
+      "steps": [
+        {
+          "name": "Run unit tests",
+          "type": "npm",
+          "command": "test"
+        },
+        {
+          "name": "Validate UI",
+          "command": "validate-ui",
+          "args": ["all"]
+        },
+        {
+          "name": "Check lint",
+          "type": "npm",
+          "command": "run",
+          "args": ["lint"],
+          "optional": true
+        }
+      ]
+    },
+    {
+      "name": "migrate-data",
+      "description": "Run data migration with backup",
+      "steps": [
+        {
+          "name": "Create backup",
+          "type": "custom",
+          "script": "backup create pre-migration-${DATE}"
+        },
+        {
+          "name": "Preview migration",
+          "type": "custom",
+          "script": "migrate ${MIGRATION_TYPE} --dry-run"
+        },
+        {
+          "name": "Confirm migration",
+          "type": "confirm",
+          "message": "Proceed with migration?"
+        },
+        {
+          "name": "Run migration",
+          "type": "custom",
+          "script": "migrate ${MIGRATION_TYPE}"
+        },
+        {
+          "name": "Validate result",
+          "command": "validate-ui",
+          "args": ["all"]
+        }
+      ]
+    }
+  ]
+}

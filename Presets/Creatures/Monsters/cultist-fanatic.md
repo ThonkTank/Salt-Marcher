@@ -5,45 +5,96 @@ size: Small
 type: Humanoid
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Neutral
-ac: "13"
+ac: '13'
 initiative: +2 (12)
-hp: "44"
+hp: '44'
 hitDice: 8d8 + 8
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 11
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 12
-  - ability: int
+    saveProf: false
+  - key: int
     score: 10
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 14
-  - ability: cha
+    saveProf: true
+    saveMod: 4
+  - key: cha
     score: 13
-pb: "+2"
-cr: "2"
-xp: "450"
-languagesList:
-  - value: Common
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Deception
+    value: '3'
+  - skill: Persuasion
+    value: '3'
+  - skill: Religion
+    value: '2'
 passivesList:
   - skill: Perception
-    value: "12"
+    value: '12'
+languagesList:
+  - value: Common
+cr: '2'
+xp: '450'
 entries:
   - category: action
     name: Pact Blade
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 6 (1d8 + 2) Slashing damage plus 7 (2d6) Necrotic damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 6 (1d8 + 2) Slashing damage plus 7 (2d6) Necrotic damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d8
+          bonus: 2
+          type: Slashing
+          average: 6
+        - dice: 2d6
+          bonus: 0
+          type: Necrotic
+          average: 7
+      reach: 5 ft.
+spellcastingEntries:
   - category: action
     name: Spellcasting
-    text: "The cultist casts one of the following spells, using Wisdom as the spellcasting ability (spell save DC 12, +4 to hit with spell attacks): - **At Will:** *Light*, *Thaumaturgy* - **1/Day Each:** *Hold Person* - **2/Day Each:** *Command*"
+    entryType: spellcasting
+    text: 'The cultist casts one of the following spells, using Wisdom as the spellcasting ability (spell save DC 12, +4 to hit with spell attacks): - **At Will:** *Light*, *Thaumaturgy* - **1/Day Each:** *Hold Person* - **2/Day Each:** *Command*'
+    spellcasting:
+      ability: wis
+      saveDC: 12
+      attackBonus: 4
+      spellLists:
+        - frequency: at-will
+          spells:
+            - Light
+            - Thaumaturgy
+        - frequency: 1/day
+          spells:
+            - Hold Person
+        - frequency: 2/day
+          spells:
+            - Command
   - category: bonus
     name: Spiritual Weapon (2/Day)
+    entryType: spellcasting
     text: The cultist casts the *Spiritual Weapon* spell, using the same spellcasting ability as Spellcasting.
-
+    limitedUse:
+      count: 2
+      reset: day
+    spellcasting:
+      ability: int
+      spellLists: []
 ---
 
 # Cultist Fanatic
@@ -56,7 +107,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 11 | 14 | 12 | 10 | 14 | 13 |
+| - | - | - | - | - | - |
 
 **Languages** Common
 CR 2, PB +2, XP 450

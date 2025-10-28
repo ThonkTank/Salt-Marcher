@@ -4,47 +4,59 @@ name: Giant Fire Beetle
 size: Small
 type: Beast
 alignmentOverride: Unaligned
-ac: "13"
+ac: '13'
 initiative: +0 (10)
-hp: "4"
+hp: '4'
 hitDice: 1d6 + 1
 speeds:
-  - type: walk
-    value: "30"
-  - type: climb
-    value: "30"
+  walk:
+    distance: 30 ft.
+  climb:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 8
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 10
-  - ability: con
+    saveProf: false
+  - key: con
     score: 12
-  - ability: int
+    saveProf: false
+  - key: int
     score: 1
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 7
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 3
-pb: "+2"
-cr: "0"
-xp: "0"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: blindsight
-    range: "30"
+    range: '30'
 passivesList:
   - skill: Perception
-    value: "8"
+    value: '8'
 damageResistancesList:
   - value: Fire
+cr: '0'
+xp: '0'
 entries:
   - category: trait
     name: Illumination
+    entryType: special
     text: The beetle sheds Bright Light in a 10-foot radius and Dim Light for an additional 10 feet.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +1, reach 5 ft. 1 Fire damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +1, reach 5 ft. 1 Fire damage.'
+    attack:
+      type: melee
+      bonus: 1
+      damage: []
+      reach: 5 ft.
 ---
 
 # Giant Fire Beetle
@@ -57,7 +69,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 8 | 10 | 12 | 1 | 7 | 3 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 30 ft.; Passive Perception 8
 CR 0, PB +2, XP 0

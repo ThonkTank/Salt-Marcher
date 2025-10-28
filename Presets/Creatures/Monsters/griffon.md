@@ -4,45 +4,78 @@ name: Griffon
 size: Large
 type: Monstrosity
 alignmentOverride: Unaligned
-ac: "12"
+ac: '12'
 initiative: +2 (12)
-hp: "59"
+hp: '59'
 hitDice: 7d10 + 21
 speeds:
-  - type: walk
-    value: "30"
-  - type: fly
-    value: "80"
+  walk:
+    distance: 30 ft.
+  fly:
+    distance: 80 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 18
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 15
-  - ability: con
+    saveProf: false
+  - key: con
     score: 16
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 13
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 8
-pb: "+2"
-cr: "2"
-xp: "450"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '5'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "15"
+    value: '15'
+cr: '2'
+xp: '450'
 entries:
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The griffon makes two Rend attacks.
+    multiattack:
+      attacks:
+        - name: Rend
+          count: 2
+      substitutions: []
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +6, reach 5 ft. 8 (1d8 + 4) Piercing damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 14) from both of the griffon's front claws."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +6, reach 5 ft. 8 (1d8 + 4) Piercing damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 14) from both of the griffon''s front claws.'
+    attack:
+      type: melee
+      bonus: 6
+      damage:
+        - dice: 1d8
+          bonus: 4
+          type: Piercing
+          average: 8
+      reach: 5 ft.
+      onHit:
+        conditions:
+          - condition: Grappled
+            escape:
+              type: dc
+              dc: 14
+            restrictions:
+              size: Medium or smaller
+      additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 14) from both of the griffon's front claws.
 ---
 
 # Griffon
@@ -55,7 +88,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 18 | 15 | 16 | 2 | 13 | 8 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 15
 CR 2, PB +2, XP 450

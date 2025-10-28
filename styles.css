@@ -106,7 +106,7 @@
 
 /* Clear Filters Button */
 .sm-cc-clear-filters {
-    margin-left: auto;
+    margin-right: auto;
     padding: 0.35rem 0.75rem;
     background-color: var(--interactive-normal);
     border: none;
@@ -406,7 +406,7 @@
 
 .sm-encounter-field-actions {
     display: flex;
-    align-items: flex-end;
+    align-items: flex-start;
 }
 
 .sm-encounter-error {
@@ -426,7 +426,7 @@
 }
 
 .sm-encounter-inline-actions-right {
-    justify-content: flex-end;
+    justify-content: flex-start;
 }
 
 .sm-encounter-preset-select {
@@ -494,8 +494,8 @@
 }
 
 .sm-encounter-xp-group-right {
-    margin-left: auto;
-    justify-content: flex-end;
+    margin-right: auto;
+    justify-content: flex-start;
     align-items: center;
 }
 
@@ -733,7 +733,7 @@
 .sm-encounter-result-summary-item .value {
     font-weight: 600;
     font-variant-numeric: tabular-nums;
-    text-align: right;
+    text-align: left;
 }
 
 .sm-encounter-result-summary-item--modifiers {
@@ -941,7 +941,7 @@
 
 .sm-encounter-actions {
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start;
 }
 
 .sm-encounter-empty-row {
@@ -1006,3 +1006,1127 @@
     background-color: var(--interactive-accent);
     color: var(--text-on-accent);
 }
+
+/* ==================================================================
+   COLLAPSIBLE ENTRY CARDS
+   ================================================================== */
+
+/* Entry list container - FULL WIDTH */
+.sm-cc-entry-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Entry card - minimal styling */
+.sm-cc-entry-card {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  margin-bottom: 4px;
+  overflow: hidden;
+}
+
+/* Entry card head - minimal, functional */
+.sm-cc-entry-head {
+  display: flex;
+  align-items: center;
+  padding: 4px 6px;
+  gap: 4px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  min-height: 26px;
+  flex-wrap: nowrap;
+}
+
+.sm-cc-entry-head--collapsible {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sm-cc-entry-head--collapsible:hover {
+  background: var(--background-modifier-hover);
+}
+
+/* Collapse toggle icon - SMALL */
+.sm-cc-entry-toggle {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+/* Category icon */
+.sm-cc-entry-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-accent);
+}
+
+/* Entry name */
+.sm-cc-entry-name {
+  font-weight: 600;
+  color: var(--text-normal);
+  margin-right: 8px;
+}
+
+/* Entry summary (type info) */
+.sm-cc-entry-summary {
+  font-size: 0.9em;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Entry badge - minimal, subtle */
+.sm-cc-entry-badge {
+  flex-shrink: 0;
+  padding: 1px 4px;
+  font-size: 0.65em;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  color: var(--text-muted);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 3px;
+}
+
+/* Compact entry body - minimal styling */
+.sm-cc-entry-body-compact {
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Entry row - single line of related fields */
+.sm-cc-entry-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 26px;
+  flex-wrap: wrap;
+}
+
+/* Fields in sections: compact, no unnecessary width */
+.sm-cc-entry-section-content > .sm-cc-entry-field {
+  flex: 0 0 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* Prevent all elements from expanding beyond their content */
+.sm-cc-entry-section-content * {
+  max-width: fit-content !important;
+  min-width: 0 !important;
+}
+
+/* Section headers in entry bodies - Clear section titles */
+.sm-cc-entry-section-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 8px 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  display: block;
+  text-align: left !important;
+}
+
+/* Fields within sections - apply intelligent sizing */
+.sm-cc-entry-section-content .sm-cc-entry-field {
+  flex: 0 0 auto; /* Don't grow */
+}
+
+/* Tiny fields in sections */
+.sm-cc-entry-section-content .sm-cc-entry-field:has(input[type="number"]:not(.sm-cc-token-field__input-el)),
+.sm-cc-entry-section-content .sm-cc-entry-field:has(input[type="checkbox"]) {
+  min-width: 80px;
+}
+
+/* Small fields in sections */
+.sm-cc-entry-section-content .sm-cc-entry-field:has(select:not(.sm-cc-token-field__input-el)) {
+  min-width: 120px;
+}
+
+/* Medium fields in sections */
+.sm-cc-entry-section-content .sm-cc-entry-field:has(input[type="text"]:not(.sm-cc-token-field__input-el)) {
+  min-width: 140px;
+}
+
+/* Token fields in sections - prevent expansion */
+.sm-cc-entry-section-content .sm-cc-entry-field:has(.sm-cc-setting--token-editor),
+.sm-cc-entry-section-content .sm-cc-entry-field:has(.sm-cc-setting--structured-token-editor) {
+  flex: 0 0 auto !important; /* Never grow */
+  width: fit-content !important;
+  min-width: 0 !important; /* No minimum width */
+}
+
+.sm-cc-entry-card.is-collapsed .sm-cc-entry-body {
+  display: none;
+}
+
+/* Entry name box spacing - COMPACT */
+.sm-cc-entry-name-box {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 1 auto; /* Don't grow, can shrink */
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Entry fields within body - VERTICAL LABELS (stacked, compact) */
+.sm-cc-entry-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* Minimal gap between label and control */
+  min-width: 0; /* Allow shrinking */
+  width: fit-content; /* Only take needed space */
+  max-width: 100%; /* But don't overflow grid cell */
+  margin: 0 !important; /* No margin */
+  padding: 0 !important; /* No padding */
+}
+
+
+/* Tiny fields (number steppers, checkboxes) - minimal width */
+.sm-cc-entry-field:has(input[type="number"]:not(.sm-cc-token-field__input-el)),
+.sm-cc-entry-field:has(input[type="checkbox"]) {
+  min-width: 80px;
+  max-width: 120px;
+}
+
+/* Small fields (selects) - compact width */
+.sm-cc-entry-field:has(select:not(.sm-cc-token-field__input-el)) {
+  min-width: 120px;
+  max-width: 180px;
+}
+
+/* Medium fields (text inputs, but not token editors) */
+.sm-cc-entry-field:has(input[type="text"]:not(.sm-cc-token-field__input-el)) {
+  min-width: 140px;
+  max-width: 220px;
+}
+
+/* Token fields - fit to content, no arbitrary max width */
+.sm-cc-entry-field:has(.sm-cc-setting--token-editor),
+.sm-cc-entry-field:has(.sm-cc-setting--structured-token-editor) {
+  width: fit-content !important; /* Only take space for actual content */
+  max-width: 100%; /* Don't overflow container */
+}
+
+/* Wide fields (textarea) in their own section - FULL WIDTH */
+.sm-cc-entry-section:has(.sm-cc-entry-field--text),
+.sm-cc-entry-section:has(.sm-cc-entry-field:has(textarea)) {
+  flex: 1 1 100%; /* Take full width */
+  width: 100%; /* Explicit width to force full container width */
+  max-width: 100%;
+  order: 999; /* Move to end */
+}
+
+.sm-cc-entry-field--text,
+.sm-cc-entry-field:has(textarea) {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Wide fields (complex settings - but NOT token editors) in sections */
+.sm-cc-entry-section:has(.sm-cc-entry-field:has(.sm-cc-setting):not(:has(.sm-cc-setting--token-editor)):not(:has(.sm-cc-setting--structured-token-editor))) {
+  flex: 1 1 100%; /* Take full width */
+}
+
+/* Compact token fields in entry bodies - medium width */
+.sm-cc-entry-field:has(.sm-cc-setting--token-editor),
+.sm-cc-entry-field:has(.sm-cc-setting--structured-token-editor) {
+  min-width: 280px;
+  max-width: 400px;
+}
+
+/* Compact inputs in entry fields */
+.sm-cc-entry-field input[type="text"],
+.sm-cc-entry-field input[type="number"],
+.sm-cc-entry-field input[type="email"],
+.sm-cc-entry-field input[type="url"],
+.sm-cc-entry-field select {
+  padding: 3px 6px !important;
+  font-size: 13px !important;
+  min-height: 26px !important;
+  line-height: 1.4;
+}
+
+/* Textarea in entry fields - compact, at end */
+.sm-cc-entry-field textarea {
+  padding: 4px 6px !important;
+  font-size: 13px !important;
+  min-height: 50px !important;
+  max-height: 80px !important;
+  line-height: 1.4;
+  resize: vertical;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Compact labels in entry fields - MINIMAL and CONSISTENT */
+.sm-cc-entry-field .setting-item-name,
+.sm-cc-entry-field > label,
+.sm-cc-entry-field .sm-cc-field-label,
+.sm-cc-entry-field .sm-cc-setting .setting-item-name {
+  font-size: 0.7rem !important;
+  font-weight: 500 !important;
+  color: var(--text-muted) !important;
+  margin-bottom: 0px !important; /* No margin, gap handled by flex */
+  display: block !important;
+  line-height: 1.1 !important;
+  word-break: break-word !important;
+  hyphens: auto !important;
+  max-width: 100% !important;
+  text-align: left !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.03em !important;
+}
+
+/* Reduce gap in entry field controls */
+.sm-cc-entry-field .setting-item-control {
+  gap: 0.3rem !important;
+}
+
+/* Settings within entry fields - compact styling */
+.sm-cc-entry-field .sm-cc-setting {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+
+/* Labels in settings - compact */
+.sm-cc-entry-field .setting-item-info {
+  margin: 0;
+  padding: 0;
+  min-width: auto;
+  max-width: 100%;
+}
+
+.sm-cc-entry-field .setting-item-name {
+  font-size: 0.82rem !important;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* Control takes full width */
+.sm-cc-entry-field .setting-item-control {
+  width: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: row; /* Horizontal layout for token editor */
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap; /* Wrap to next line if needed */
+}
+
+/* ============================================================================
+   TOKEN FIELD LAYOUTS
+   ============================================================================ */
+
+/* Broad token field (normal usage outside entry bodies) - 2x2 Grid Layout */
+.sm-cc-setting--token-editor:not(.sm-cc-entry-body *),
+.sm-cc-setting--structured-token-editor:not(.sm-cc-entry-body *) {
+  display: grid !important;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  gap: 8px 12px;
+  align-items: start;
+}
+
+/* Label: top-left */
+.sm-cc-setting--token-editor:not(.sm-cc-entry-body *) .setting-item-info,
+.sm-cc-setting--structured-token-editor:not(.sm-cc-entry-body *) .setting-item-info {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+/* Input + Button: top-right */
+.sm-cc-setting--token-editor:not(.sm-cc-entry-body *) .setting-item-control,
+.sm-cc-setting--structured-token-editor:not(.sm-cc-entry-body *) .setting-item-control {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 6px;
+  align-items: center;
+}
+
+/* Input: full width */
+.sm-cc-setting--token-editor:not(.sm-cc-entry-body *) .setting-item-control input,
+.sm-cc-setting--structured-token-editor:not(.sm-cc-entry-body *) .setting-item-control input {
+  flex: 1 1 auto;
+  min-width: 200px;
+}
+
+/* Button: auto width */
+.sm-cc-setting--token-editor:not(.sm-cc-entry-body *) .setting-item-control button,
+.sm-cc-setting--structured-token-editor:not(.sm-cc-entry-body *) .setting-item-control button {
+  flex: 0 0 auto;
+}
+
+/* Chips: bottom-right */
+.sm-cc-setting--token-editor:not(.sm-cc-entry-body *) .sm-cc-chips,
+.sm-cc-setting--structured-token-editor:not(.sm-cc-entry-body *) .sm-cc-chips {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+/* All setting-items in entry bodies - fit to content */
+.sm-cc-entry-body .setting-item {
+  width: fit-content !important;
+  max-width: 100% !important;
+  flex: 0 0 auto !important;
+}
+
+/* Token editor ONLY in entry bodies - COMPACT vertical layout like other fields */
+.sm-cc-entry-body .sm-cc-setting--token-editor,
+.sm-cc-entry-body .sm-cc-setting--structured-token-editor {
+  display: flex !important;
+  flex-direction: column !important; /* Vertical: label on top, control below */
+  flex-wrap: nowrap !important;
+  align-items: flex-start !important;
+  gap: 2px !important; /* Minimal gap like other entry fields */
+  grid-template-columns: none !important;
+  grid-template-rows: none !important;
+  width: fit-content !important; /* Only take needed space */
+  max-width: 100%;
+}
+
+/* Token editor label in entry bodies - same style as other entry field labels */
+.sm-cc-entry-body .sm-cc-setting--token-editor .setting-item-info,
+.sm-cc-entry-body .sm-cc-setting--structured-token-editor .setting-item-info {
+  display: block !important;
+  grid-row: auto !important;
+  grid-column: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex: 0 0 auto !important;
+  width: fit-content !important; /* Only as wide as text */
+  font-size: 0.7rem !important; /* Match other entry field labels */
+}
+
+/* Token editor label text - match other entry field labels */
+.sm-cc-entry-body .sm-cc-setting--token-editor .setting-item-name,
+.sm-cc-entry-body .sm-cc-setting--structured-token-editor .setting-item-name {
+  font-size: 0.7rem !important;
+  font-weight: 500 !important;
+  color: var(--text-muted) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.03em !important;
+  word-break: break-word !important;
+  hyphens: auto !important;
+}
+
+/* Token editor control in entry bodies - horizontal layout for input+button+chips */
+.sm-cc-entry-body .sm-cc-setting--token-editor .setting-item-control,
+.sm-cc-entry-body .sm-cc-setting--structured-token-editor .setting-item-control {
+  grid-row: auto !important;
+  grid-column: auto !important;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important; /* Allow chips to wrap if needed */
+  gap: 3px !important; /* Reduced from 4px */
+  align-items: center !important;
+  justify-content: flex-start !important;
+  flex: 0 0 auto !important; /* Never grow */
+  width: fit-content !important; /* Only take needed space */
+  max-width: none !important; /* Remove any max-width constraints */
+}
+
+/* Token editor input in entry bodies - compact */
+.sm-cc-entry-body .sm-cc-setting--token-editor .setting-item-control input,
+.sm-cc-entry-body .sm-cc-setting--structured-token-editor .setting-item-control input {
+  flex: 0 1 auto !important; /* Don't grow, only shrink */
+  width: 90px !important; /* Smaller fixed width */
+  min-width: 70px !important;
+  max-width: 110px !important;
+}
+
+/* Token editor button in entry bodies - compact */
+.sm-cc-entry-body .sm-cc-setting--token-editor .setting-item-control button,
+.sm-cc-entry-body .sm-cc-setting--structured-token-editor .setting-item-control button {
+  flex: 0 0 auto !important;
+  padding: 2px 8px !important;
+  min-width: auto !important;
+}
+
+/* Chips container in entry bodies - inline, wraps to new line if needed */
+.sm-cc-entry-body .sm-cc-setting--token-editor .sm-cc-chips,
+.sm-cc-entry-body .sm-cc-setting--structured-token-editor .sm-cc-chips {
+  grid-row: auto !important;
+  grid-column: auto !important;
+  flex: 0 1 auto !important; /* Don't grow, only shrink if needed */
+  min-width: 0 !important; /* No minimum width, only take space for actual chips */
+  margin: 0 !important;
+  width: fit-content !important;
+}
+
+.sm-cc-entry-field:last-child {
+  margin-bottom: 0;
+}
+
+.sm-cc-entry-field.is-hidden {
+  display: none !important;
+}
+
+/* Entry body - full width fields */
+.sm-cc-entry-body {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sm-cc-entry-body .sm-cc-setting {
+  width: fit-content !important; /* Only as wide as needed */
+  max-width: 100%;
+}
+
+/* Name container with compact selects - SINGLE LINE */
+.sm-cc-entry-name-container {
+  display: inline-flex; /* Inline flex to stay on one line */
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+/* Name input in header */
+.sm-cc-entry-name-input {
+  width: 120px; /* Fixed width instead of flex */
+  border: none;
+  background: transparent;
+  font-weight: 600;
+  font-size: 0.95em;
+  color: var(--text-normal);
+  padding: 0;
+}
+
+.sm-cc-entry-name-input:focus {
+  outline: none;
+  background: var(--background-primary-alt);
+  padding: 2px 4px;
+  border-radius: 2px;
+}
+
+/* Compact selects container */
+.sm-cc-entry-compact-selects {
+  display: inline-flex; /* Inline to stay on same line */
+  gap: 3px;
+  flex-shrink: 0; /* Don't allow shrinking */
+}
+
+/* Compact select styling - VERY SMALL */
+.sm-cc-entry-compact-select {
+  font-size: 0.75em;
+  padding: 1px 4px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 2px;
+  background: var(--background-primary);
+  color: var(--text-muted);
+  cursor: pointer;
+  width: 55px; /* Fixed width */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sm-cc-entry-compact-select:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.sm-cc-entry-compact-select:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+  color: var(--text-normal);
+}
+
+/* Entry actions (move/delete buttons) - COMPACT */
+.sm-cc-entry-actions {
+  display: flex;
+  gap: 2px;
+  margin-right: auto;
+  flex-shrink: 0;
+}
+
+.sm-cc-entry-move-btn,
+.sm-cc-entry-delete {
+  padding: 0 !important; /* Remove padding - override Obsidian defaults */
+  margin: 0 !important;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-muted);
+  border-radius: 3px;
+  transition: all 0.15s ease;
+  font-size: 16px; /* Larger for × to match icon size */
+  line-height: 1;
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  max-width: 20px !important;
+  max-height: 20px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0; /* Never shrink these buttons */
+}
+
+.sm-cc-entry-move-btn:hover,
+.sm-cc-entry-delete:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.sm-cc-entry-move-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.sm-cc-entry-delete {
+  color: var(--text-error);
+}
+
+.sm-cc-entry-delete:hover {
+  background: var(--background-modifier-error);
+}
+
+/* ============================================================================
+   COMPACT FORM INPUTS
+   Make all form inputs more compact for better space efficiency
+   ============================================================================ */
+
+/* Compact text inputs, number inputs, and textareas in create modal */
+.sm-cc-create-modal input[type="text"],
+.sm-cc-create-modal input[type="number"],
+.sm-cc-create-modal input[type="email"],
+.sm-cc-create-modal input[type="url"],
+.sm-cc-create-modal input[type="search"],
+.sm-cc-create-modal .sm-cc-input,
+.sm-cc-create-modal textarea {
+  padding: 3px 6px !important;
+  font-size: 13px !important;
+  min-height: 26px !important;
+  line-height: 1.4;
+}
+
+/* Compact selects in create modal */
+.sm-cc-create-modal select,
+.sm-cc-create-modal .dropdown {
+  padding: 3px 8px !important;
+  font-size: 13px !important;
+  min-height: 26px !important;
+}
+
+/* Compact number steppers */
+.sm-cc-create-modal input[type="number"] {
+  padding-right: 4px !important;
+}
+
+/* Reduce gap in entry list */
+.sm-cc-entry-list {
+  gap: 6px !important; /* Reduced from 8px */
+}
+
+/* Reduce margin on entry cards */
+.sm-cc-entry-card {
+  margin-bottom: 6px !important; /* Reduced from 8px */
+}
+
+/* Reduce padding in card body grid */
+.sm-cc-card__body {
+  padding: 0.7rem !important; /* Reduced from 0.95rem */
+  gap: 0.5rem !important; /* Reduced vertical gap between rows */
+}
+
+/* Reduce padding in setting items */
+.sm-cc-setting .setting-item-control {
+  gap: 0.4rem !important; /* Reduced from default */
+}
+
+/* Reduce font size in labels for more compact look */
+.sm-cc-setting .setting-item-name {
+  font-size: 0.82rem !important; /* Reduced from 0.88rem */
+}
+
+/* Compact token editor inputs */
+.sm-cc-setting--token-editor .setting-item-control input,
+.sm-cc-setting--structured-token-editor .setting-item-control input {
+  padding: 3px 6px !important;
+  font-size: 13px !important;
+  min-height: 26px !important;
+}
+
+/* Compact chips/tokens */
+.sm-cc-chip {
+  padding: 2px 8px !important;
+  font-size: 12px !important;
+}
+
+/* Compact buttons in token editors */
+.sm-cc-setting--token-editor .setting-item-control button,
+.sm-cc-setting--structured-token-editor .setting-item-control button {
+  padding: 3px 10px !important;
+  font-size: 13px !important;
+  min-height: 26px !important;
+}
+
+/* ==================================================================
+   IMPROVED ENTRY HEADER LAYOUT
+   ================================================================== */
+
+/* Single-line entry header */
+.sm-cc-entry-header-single {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Entry name input for single-line header */
+.sm-cc-entry-name-input {
+  flex: 1;
+  padding: 4px 8px;
+  font-size: 0.95em;
+  font-weight: 500;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  transition: border-color 0.15s ease;
+}
+
+.sm-cc-entry-name-input:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+}
+
+/* Full width entry name (when no dropdowns) */
+.sm-cc-entry-name-full {
+  width: 100%;
+  padding: 5px 10px;
+  font-size: 1em;
+  font-weight: 500;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  transition: border-color 0.15s ease;
+}
+
+.sm-cc-entry-name-full:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 15%, transparent);
+}
+
+/* Header selectors - compact */
+.sm-cc-header-select {
+  padding: 4px 8px;
+  font-size: 0.85em;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-secondary);
+  cursor: pointer;
+  min-width: 90px;
+  transition: all 0.15s ease;
+}
+
+.sm-cc-header-select:hover {
+  border-color: var(--interactive-accent-hover);
+  background: var(--background-modifier-hover);
+}
+
+.sm-cc-header-select:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+}
+
+/* Legacy multi-line header (deprecated) */
+.sm-cc-entry-header-clean {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 0;
+}
+
+/* Name row - full width for prominent name display */
+.sm-cc-entry-name-row {
+  width: 100%;
+}
+
+.sm-cc-entry-name-input-full {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 1.05em;
+  font-weight: 600;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-primary);
+  transition: border-color 0.15s ease;
+}
+
+.sm-cc-entry-name-input-full:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 20%, transparent);
+}
+
+/* Meta info row - category and type selectors */
+.sm-cc-entry-meta-row {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.sm-cc-entry-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sm-cc-entry-meta-label {
+  font-size: 0.7em;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sm-cc-entry-meta-select {
+  padding: 3px 10px;
+  font-size: 0.85em;
+  font-weight: 500;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  background: var(--background-secondary);
+  min-width: 100px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sm-cc-entry-meta-select:hover {
+  border-color: var(--interactive-accent-hover);
+  background: var(--background-modifier-hover);
+}
+
+/* Color coding for entry types */
+.sm-cc-entry-meta-select[data-type="attack"],
+.sm-cc-entry-meta-select:has(option[value="attack"]:checked) {
+  border-color: color-mix(in srgb, var(--color-red) 40%, transparent);
+  background: color-mix(in srgb, var(--color-red) 8%, var(--background-secondary));
+  color: var(--color-red);
+}
+
+.sm-cc-entry-meta-select[data-type="save"],
+.sm-cc-entry-meta-select:has(option[value="save"]:checked) {
+  border-color: color-mix(in srgb, var(--color-orange) 40%, transparent);
+  background: color-mix(in srgb, var(--color-orange) 8%, var(--background-secondary));
+  color: var(--color-orange);
+}
+
+.sm-cc-entry-meta-select[data-type="multiattack"],
+.sm-cc-entry-meta-select:has(option[value="multiattack"]:checked) {
+  border-color: color-mix(in srgb, var(--color-purple) 40%, transparent);
+  background: color-mix(in srgb, var(--color-purple) 8%, var(--background-secondary));
+  color: var(--color-purple);
+}
+
+.sm-cc-entry-meta-select[data-type="spellcasting"],
+.sm-cc-entry-meta-select:has(option[value="spellcasting"]:checked) {
+  border-color: color-mix(in srgb, var(--interactive-accent) 40%, transparent);
+  background: color-mix(in srgb, var(--interactive-accent) 8%, var(--background-secondary));
+  color: var(--interactive-accent);
+}
+
+/* ==================================================================
+   COMPACT ENTRY STYLES
+   ================================================================== */
+
+/* Compact inputs - minimal, functional */
+.sm-cc-compact-select {
+  padding: 2px 6px;
+  font-size: 0.85em;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 3px;
+  background: var(--background-primary);
+  min-width: 60px;
+}
+
+.sm-cc-compact-number {
+  width: 50px;
+  padding: 2px 4px;
+  font-size: 0.85em;
+  text-align: center;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 3px;
+  background: var(--background-primary);
+}
+
+.sm-cc-compact-text {
+  padding: 2px 6px;
+  font-size: 0.85em;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 3px;
+  background: var(--background-primary);
+  min-width: 60px;
+  max-width: 120px;
+}
+
+.sm-cc-compact-textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: 4px 6px;
+  font-size: 0.85em;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 3px;
+  background: var(--background-primary);
+  resize: vertical;
+}
+
+/* Compact button */
+.sm-cc-compact-btn {
+  padding: 2px 8px;
+  font-size: 0.8em;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 3px;
+  background: var(--background-secondary);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.sm-cc-compact-btn:hover {
+  background: var(--background-modifier-hover);
+}
+
+/* Separator */
+.sm-cc-separator {
+  color: var(--text-faint);
+  margin: 0 4px;
+}
+
+/* Damage text */
+.sm-cc-damage-text {
+  font-weight: 500;
+  color: var(--text-accent);
+}
+
+/* Muted text */
+.sm-cc-muted {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ============================================================================
+   SPELLCASTING SECTION
+   ============================================================================ */
+
+/* Spellcasting entry card */
+.sm-cc-spellcasting-entry {
+  border: 1px solid var(--background-modifier-border-hover);
+  background: var(--background-secondary);
+  margin-bottom: 8px;
+}
+
+.sm-cc-spellcasting-entry .sm-cc-entry-card__badge {
+  background: var(--color-purple);
+  color: white;
+}
+
+/* Spell header - now uses standard entry header styles */
+
+/* Spell body */
+.sm-cc-spell-body {
+  padding: 8px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.sm-cc-spell-config {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.sm-cc-spell-label {
+  font-size: 0.85em;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-align: left;
+}
+
+.sm-cc-spell-lists {
+  margin-top: 12px;
+}
+
+.sm-cc-spell-list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 6px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+}
+
+.sm-cc-spell-frequency {
+  font-weight: 500;
+  color: var(--text-normal);
+  min-width: 80px;
+}
+
+.sm-cc-spell-names {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.sm-cc-spell-chip {
+  padding: 2px 8px;
+  background: var(--background-modifier-hover);
+  border-radius: 12px;
+  font-size: 0.85em;
+  color: var(--text-normal);
+}
+
+/* ============================================================================
+   MODULAR ENTRY SYSTEM
+   ============================================================================ */
+
+/* Modular entry body */
+.sm-cc-entry-body-modular {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Section styling */
+.sm-cc-trigger-section,
+.sm-cc-effects-section,
+.sm-cc-description-section {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 8px;
+  background: var(--background-primary);
+}
+
+.sm-cc-section-label {
+  font-size: 0.75em;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 8px 0;
+  text-align: left;
+}
+
+/* Field rows */
+.sm-cc-field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.sm-cc-field-label {
+  font-size: 0.85em;
+  color: var(--text-muted);
+  min-width: 80px;
+  text-align: left;
+}
+
+/* Conditions */
+.sm-cc-conditions-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex: 1;
+}
+
+.sm-cc-condition-chip {
+  padding: 2px 8px;
+  background: var(--background-modifier-hover);
+  border-radius: 12px;
+  font-size: 0.85em;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.sm-cc-condition-chip:hover {
+  background: var(--background-modifier-error);
+  color: white;
+}
+
+/* Effect cards */
+.sm-cc-effect-card {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 8px;
+  background: var(--background-secondary);
+  margin-bottom: 8px;
+}
+
+.sm-cc-effect-title {
+  font-size: 0.9em;
+  font-weight: 600;
+  color: var(--text-normal);
+  margin: 0 0 8px 0;
+}
+
+.sm-cc-effect-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Add effects row */
+.sm-cc-add-effects-row {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+/* Attack chips */
+.sm-cc-attack-chip {
+  padding: 3px 10px;
+  background: var(--background-modifier-hover);
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: 500;
+}
+
+/* Entry description textarea */
+.sm-cc-entry-description {
+  width: 100%;
+  min-height: 60px;
+  padding: 6px 8px;
+  font-size: 0.9em;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  resize: vertical;
+  font-family: inherit;
+}
+

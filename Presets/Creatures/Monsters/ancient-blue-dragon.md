@@ -3,74 +3,169 @@ smType: creature
 name: Ancient Blue Dragon
 size: Gargantuan
 type: Dragon
+typeTags:
+  - value: Chromatic
 alignmentLawChaos: Lawful
 alignmentGoodEvil: Evil
-ac: "22"
+ac: '22'
 initiative: +4 (14)
-hp: "481"
+hp: '481'
 hitDice: 26d20 + 208
 speeds:
-  - type: walk
-    value: "40"
-  - type: burrow
-    value: "40"
-  - type: fly
-    value: "80"
+  walk:
+    distance: 40 ft.
+  burrow:
+    distance: 40 ft.
+  fly:
+    distance: 80 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 29
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 10
-  - ability: con
+    saveProf: true
+    saveMod: 7
+  - key: con
     score: 27
-  - ability: int
+    saveProf: false
+  - key: int
     score: 18
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 17
-  - ability: cha
+    saveProf: true
+    saveMod: 10
+  - key: cha
     score: 25
-pb: "+7"
-cr: "23"
-xp: "50000"
+    saveProf: false
+pb: '+7'
+skills:
+  - skill: Perception
+    value: '17'
+  - skill: Stealth
+    value: '7'
 sensesList:
   - type: blindsight
-    range: "60"
+    range: '60'
   - type: darkvision
-    range: "120"
+    range: '120'
+passivesList:
+  - skill: Perception
+    value: '27'
 languagesList:
   - value: Common
   - value: Draconic
-passivesList:
-  - skill: Perception
-    value: "27"
 damageImmunitiesList:
   - value: Lightning
+cr: '23'
+xp: '50000'
 entries:
   - category: trait
     name: Legendary Resistance (4/Day, or 5/Day in Lair)
+    entryType: special
     text: If the dragon fails a saving throw, it can choose to succeed instead.
+    limitedUse:
+      count: 4
+      reset: day
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The dragon makes three Rend attacks. It can replace one attack with a use of Spellcasting to cast *Shatter* (level 3 version).
+    multiattack:
+      attacks:
+        - name: Rend
+          count: 3
+      substitutions:
+        - replace: attack
+          with:
+            type: spellcasting
+            spell: Shatter
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +16, reach 15 ft. 18 (2d8 + 9) Slashing damage plus 11 (2d10) Lightning damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +16, reach 15 ft. 18 (2d8 + 9) Slashing damage plus 11 (2d10) Lightning damage.'
+    attack:
+      type: melee
+      bonus: 16
+      damage:
+        - dice: 2d8
+          bonus: 9
+          type: Slashing
+          average: 18
+        - dice: 2d10
+          bonus: 0
+          type: Lightning
+          average: 11
+      reach: 15 ft.
   - category: action
     name: Lightning Breath (Recharge 5-6)
-    text: "*Dexterity Saving Throw*: DC 23, each creature in a 120-foot-long, 10-foot-wide Line. *Failure:*  88 (16d10) Lightning damage. *Success:*  Half damage."
-  - category: action
-    name: Spellcasting
-    text: "The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 22): - **At Will:** *Detect Magic*, *Invisibility*, *Mage Hand*, *Shatter* - **1e/Day Each:** *Scrying*, *Sending*"
-  - category: legendary
-    name: Cloaked Flight
-    text: The dragon uses Spellcasting to cast *Invisibility* on itself, and it can fly up to half its Fly Speed. The dragon can't take this action again until the start of its next turn.
-  - category: legendary
-    name: Sonic Boom
-    text: The dragon uses Spellcasting to cast *Shatter* (level 3 version). The dragon can't take this action again until the start of its next turn.
+    entryType: save
+    text: '*Dexterity Saving Throw*: DC 23, each creature in a 120-foot-long, 10-foot-wide Line. *Failure:*  88 (16d10) Lightning damage. *Success:*  Half damage.'
+    recharge: 5-6
+    save:
+      ability: dex
+      dc: 23
+      targeting:
+        shape: line
+        size: 120 ft.
+        width: 10 ft.
+      onFail:
+        effects:
+          other: 88 (16d10) Lightning damage.
+        damage:
+          - dice: 16d10
+            bonus: 0
+            type: Lightning
+            average: 88
+        legacyEffects: 88 (16d10) Lightning damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
   - category: legendary
     name: Tail Swipe
+    entryType: multiattack
     text: The dragon makes one Rend attack.
-
+    multiattack:
+      attacks:
+        - name: Rend
+          count: 1
+      substitutions: []
+spellcastingEntries:
+  - category: action
+    name: Spellcasting
+    entryType: spellcasting
+    text: 'The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 22): - **At Will:** *Detect Magic*, *Invisibility*, *Mage Hand*, *Shatter* - **1e/Day Each:** *Scrying*, *Sending*'
+    spellcasting:
+      ability: cha
+      saveDC: 22
+      excludeComponents:
+        - M
+      spellLists:
+        - frequency: at-will
+          spells:
+            - Detect Magic
+            - Invisibility
+            - Mage Hand
+            - Shatter
+        - frequency: 1/day
+          spells:
+            - Scrying
+            - Sending
+  - category: legendary
+    name: Cloaked Flight
+    entryType: spellcasting
+    text: The dragon uses Spellcasting to cast *Invisibility* on itself, and it can fly up to half its Fly Speed. The dragon can't take this action again until the start of its next turn.
+    spellcasting:
+      ability: int
+      spellLists: []
+  - category: legendary
+    name: Sonic Boom
+    entryType: spellcasting
+    text: The dragon uses Spellcasting to cast *Shatter* (level 3 version). The dragon can't take this action again until the start of its next turn.
+    spellcasting:
+      ability: int
+      spellLists: []
 ---
 
 # Ancient Blue Dragon
@@ -83,7 +178,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 29 | 10 | 27 | 18 | 17 | 25 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 60 ft., darkvision 120 ft.; Passive Perception 27
 **Languages** Common, Draconic

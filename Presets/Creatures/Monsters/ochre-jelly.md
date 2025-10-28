@@ -4,60 +4,77 @@ name: Ochre Jelly
 size: Large
 type: Ooze
 alignmentOverride: Unaligned
-ac: "8"
-initiative: "-2 (8)"
-hp: "52"
+ac: '8'
+initiative: '-2 (8)'
+hp: '52'
 hitDice: 7d10 + 14
 speeds:
-  - type: walk
-    value: "20"
-  - type: climb
-    value: "20"
+  walk:
+    distance: 20 ft.
+  climb:
+    distance: 20 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 15
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 6
-  - ability: con
+    saveProf: false
+  - key: con
     score: 14
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 6
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 1
-pb: "+2"
-cr: "2"
-xp: "450"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: blindsight
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "8"
+    value: '8'
 damageResistancesList:
   - value: Acid
 damageImmunitiesList:
   - value: Lightning
-  - value: Slashing
-  - value: Charmed
-  - value: Deafened
+  - value: Slashing; Charmed
   - value: Exhaustion
+conditionImmunitiesList:
+  - value: Deafened
   - value: Frightened
   - value: Grappled
   - value: Prone
   - value: Restrained
+cr: '2'
+xp: '450'
 entries:
   - category: trait
     name: Amorphous
+    entryType: special
     text: The jelly can move through a space as narrow as 1 inch without expending extra movement to do so.
   - category: trait
     name: Spider Climb
+    entryType: special
     text: The jelly can climb difficult surfaces, including along ceilings, without needing to make an ability check.
   - category: action
     name: Pseudopod
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 12 (3d6 + 2) Acid damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 12 (3d6 + 2) Acid damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 3d6
+          bonus: 2
+          type: Acid
+          average: 12
+      reach: 5 ft.
 ---
 
 # Ochre Jelly
@@ -70,7 +87,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 15 | 6 | 14 | 2 | 6 | 1 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 60 ft.; Passive Perception 8
 CR 2, PB +2, XP 450

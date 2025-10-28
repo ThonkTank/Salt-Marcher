@@ -5,63 +5,106 @@ size: Large
 type: Monstrosity
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Evil
-ac: "19"
+ac: '19'
 initiative: +4 (14)
-hp: "123"
+hp: '123'
 hitDice: 13d10 + 52
 speeds:
-  - type: walk
-    value: "30"
-  - type: climb
-    value: "30"
+  walk:
+    distance: 30 ft.
+  climb:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 16
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 19
-  - ability: con
+    saveProf: false
+  - key: con
     score: 18
-  - ability: int
+    saveProf: false
+  - key: int
     score: 13
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 16
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 12
-pb: "+3"
-cr: "6"
-xp: "2300"
+    saveProf: false
+pb: '+3'
+skills:
+  - skill: Perception
+    value: '6'
+  - skill: Stealth
+    value: '10'
 sensesList:
   - type: darkvision
-    range: "120"
+    range: '120'
+passivesList:
+  - skill: Perception
+    value: '16'
 languagesList:
   - value: Elvish
   - value: Undercommon
-passivesList:
-  - skill: Perception
-    value: "16"
+cr: '6'
+xp: '2300'
 entries:
   - category: trait
     name: Spider Climb
+    entryType: special
     text: The drider can climb difficult surfaces, including along ceilings, without needing to make an ability check.
   - category: trait
     name: Sunlight Sensitivity
+    entryType: special
     text: While in sunlight, the drider has Disadvantage on ability checks and attack rolls.
   - category: trait
     name: Web Walker
+    entryType: special
     text: The drider ignores movement restrictions caused by webs, and the drider knows the location of any other creature in contact with the same web.
   - category: action
     name: Multiattack
+    entryType: special
     text: The drider makes three attacks, using Foreleg or Poison Burst in any combination.
   - category: action
     name: Foreleg
-    text: "*Melee Attack Roll:* +7, reach 10 ft. 13 (2d8 + 4) Piercing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +7, reach 10 ft. 13 (2d8 + 4) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 7
+      damage:
+        - dice: 2d8
+          bonus: 4
+          type: Piercing
+          average: 13
+      reach: 10 ft.
   - category: action
     name: Poison Burst
-    text: "*Ranged Attack Roll:* +6, range 120 ft. 13 (3d6 + 3) Poison damage."
+    entryType: attack
+    text: '*Ranged Attack Roll:* +6, range 120 ft. 13 (3d6 + 3) Poison damage.'
+    attack:
+      type: ranged
+      bonus: 6
+      damage:
+        - dice: 3d6
+          bonus: 3
+          type: Poison
+          average: 13
+      range: 120 ft.
+spellcastingEntries:
   - category: bonus
     name: Magic of the Spider Queen (Recharge 5-6)
+    entryType: spellcasting
     text: The drider casts *Darkness*, *Faerie Fire*, or *Web*, requiring no Material components and using Wisdom as the spellcasting ability (spell save DC 14).
-
+    recharge: 5-6
+    spellcasting:
+      ability: wis
+      saveDC: 14
+      excludeComponents:
+        - M
+      spellLists: []
 ---
 
 # Drider
@@ -74,7 +117,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 16 | 19 | 18 | 13 | 16 | 12 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 120 ft.; Passive Perception 16
 **Languages** Elvish, Undercommon

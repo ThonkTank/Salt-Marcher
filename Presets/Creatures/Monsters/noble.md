@@ -5,39 +5,61 @@ size: Small
 type: Humanoid
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Neutral
-ac: "15"
+ac: '15'
 initiative: +1 (11)
-hp: "9"
+hp: '9'
 hitDice: 2d8
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 11
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 12
-  - ability: con
+    saveProf: false
+  - key: con
     score: 11
-  - ability: int
+    saveProf: false
+  - key: int
     score: 12
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 14
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 16
-pb: "+2"
-cr: 1/8
-xp: "25"
-languagesList:
-  - value: Common plus two other languages
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Deception
+    value: '5'
+  - skill: Insight
+    value: '4'
+  - skill: Persuasion
+    value: '5'
 passivesList:
   - skill: Perception
-    value: "12"
+    value: '12'
+languagesList:
+  - value: Common plus two other languages
+cr: 1/8
+xp: '25'
 entries:
   - category: action
     name: Rapier
-    text: "*Melee Attack Roll:* +3, reach 5 ft. 5 (1d8 + 1) Piercing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +3, reach 5 ft. 5 (1d8 + 1) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 3
+      damage:
+        - dice: 1d8
+          bonus: 1
+          type: Piercing
+          average: 5
+      reach: 5 ft.
 ---
 
 # Noble
@@ -50,7 +72,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 11 | 12 | 11 | 12 | 14 | 16 |
+| - | - | - | - | - | - |
 
 **Languages** Common plus two other languages
 CR 1/8, PB +2, XP 25

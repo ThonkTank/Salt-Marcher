@@ -4,45 +4,84 @@ name: Giant Octopus
 size: Large
 type: Beast
 alignmentOverride: Unaligned
-ac: "11"
+ac: '11'
 initiative: +1 (11)
-hp: "45"
+hp: '45'
 hitDice: 7d10 + 7
 speeds:
-  - type: walk
-    value: "10"
-  - type: swim
-    value: "60"
+  walk:
+    distance: 10 ft.
+  swim:
+    distance: 60 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 17
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 13
-  - ability: con
+    saveProf: false
+  - key: con
     score: 13
-  - ability: int
+    saveProf: false
+  - key: int
     score: 5
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 4
-pb: "+2"
-cr: "1"
-xp: "200"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '4'
+  - skill: Stealth
+    value: '5'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "14"
+    value: '14'
+cr: '1'
+xp: '200'
 entries:
   - category: trait
     name: Water Breathing
+    entryType: special
     text: The octopus can breathe only underwater. It can hold its breath for 1 hour outside water.
   - category: action
     name: Tentacles
-    text: "*Melee Attack Roll:* +5, reach 10 ft. 10 (2d6 + 3) Bludgeoning damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 13) from all eight tentacles. While Grappled, the target has the Restrained condition."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 10 ft. 10 (2d6 + 3) Bludgeoning damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 13) from all eight tentacles. While Grappled, the target has the Restrained condition.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 2d6
+          bonus: 3
+          type: Bludgeoning
+          average: 10
+      reach: 10 ft.
+      onHit:
+        conditions:
+          - condition: Grappled
+            escape:
+              type: dc
+              dc: 13
+            restrictions:
+              size: Medium or smaller
+              while: While Grappled, the target has the Restrained condition
+          - condition: Restrained
+            escape:
+              type: dc
+              dc: 13
+            restrictions:
+              size: Medium or smaller
+              while: While Grappled, the target has the Restrained condition
+        other: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 13) from all eight tentacles. While Grappled, the target has the Restrained condition.
+      additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 13) from all eight tentacles. While Grappled, the target has the Restrained condition.
 ---
 
 # Giant Octopus
@@ -55,7 +94,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 17 | 13 | 13 | 5 | 10 | 4 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 14
 CR 1, PB +2, XP 200

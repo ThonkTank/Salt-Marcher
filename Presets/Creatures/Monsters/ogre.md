@@ -5,46 +5,62 @@ size: Large
 type: Giant
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Evil
-ac: "11"
-initiative: "-1 (9)"
-hp: "68"
+ac: '11'
+initiative: '-1 (9)'
+hp: '68'
 hitDice: 8d10 + 24
 speeds:
-  - type: walk
-    value: "40"
+  walk:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 19
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 8
-  - ability: con
+    saveProf: false
+  - key: con
     score: 16
-  - ability: int
+    saveProf: false
+  - key: int
     score: 5
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 7
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 7
-pb: "+2"
-cr: "2"
-xp: "450"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
+passivesList:
+  - skill: Perception
+    value: '8'
 languagesList:
   - value: Common
   - value: Giant
-passivesList:
-  - skill: Perception
-    value: "8"
+cr: '2'
+xp: '450'
 entries:
   - category: action
     name: Greatclub
-    text: "*Melee Attack Roll:* +6, reach 5 ft. 13 (2d8 + 4) Bludgeoning damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +6, reach 5 ft. 13 (2d8 + 4) Bludgeoning damage.'
+    attack:
+      type: melee
+      bonus: 6
+      damage:
+        - dice: 2d8
+          bonus: 4
+          type: Bludgeoning
+          average: 13
+      reach: 5 ft.
   - category: action
     name: Javelin
-    text: "*Melee or Ranged Attack Roll:* +6, reach 5 ft. or range 30/120 ft. 11 (2d6 + 4) Piercing damage."
-
+    entryType: special
+    text: '*Melee or Ranged Attack Roll:* +6, reach 5 ft. or range 30/120 ft. 11 (2d6 + 4) Piercing damage.'
 ---
 
 # Ogre
@@ -57,7 +73,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 19 | 8 | 16 | 5 | 7 | 7 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 8
 **Languages** Common, Giant

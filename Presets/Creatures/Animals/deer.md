@@ -4,43 +4,62 @@ name: Deer
 size: Medium
 type: Beast
 alignmentOverride: Unaligned
-ac: "13"
+ac: '13'
 initiative: +3 (13)
-hp: "4"
+hp: '4'
 hitDice: 1d8
 speeds:
-  - type: walk
-    value: "50"
+  walk:
+    distance: 50 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 11
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 16
-  - ability: con
+    saveProf: false
+  - key: con
     score: 11
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 14
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 5
-pb: "+2"
-cr: "0"
-xp: "0"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '4'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "14"
+    value: '14'
+cr: '0'
+xp: '0'
 entries:
   - category: trait
     name: Agile
+    entryType: special
     text: The deer doesn't provoke an Opportunity Attack when it moves out of an enemy's reach.
   - category: action
     name: Ram
-    text: "*Melee Attack Roll:* +2, reach 5 ft. 2 (1d4) Bludgeoning damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +2, reach 5 ft. 2 (1d4) Bludgeoning damage.'
+    attack:
+      type: melee
+      bonus: 2
+      damage:
+        - dice: 1d4
+          bonus: 0
+          type: Bludgeoning
+          average: 2
+      reach: 5 ft.
 ---
 
 # Deer
@@ -53,7 +72,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 11 | 16 | 11 | 2 | 14 | 5 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 14
 CR 0, PB +2, XP 0

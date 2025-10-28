@@ -4,37 +4,52 @@ name: Axe Beak
 size: Large
 type: Monstrosity
 alignmentOverride: Unaligned
-ac: "11"
+ac: '11'
 initiative: +1 (11)
-hp: "19"
+hp: '19'
 hitDice: 3d10 + 3
 speeds:
-  - type: walk
-    value: "50"
+  walk:
+    distance: 50 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 14
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 12
-  - ability: con
+    saveProf: false
+  - key: con
     score: 12
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 5
-pb: "+2"
-cr: 1/4
-xp: "50"
+    saveProf: false
+pb: '+2'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+cr: 1/4
+xp: '50'
 entries:
   - category: action
     name: Beak
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 5 (1d6 + 2) Slashing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 5 (1d6 + 2) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d6
+          bonus: 2
+          type: Slashing
+          average: 5
+      reach: 5 ft.
 ---
 
 # Axe Beak
@@ -47,7 +62,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 14 | 12 | 12 | 2 | 10 | 5 |
+| - | - | - | - | - | - |
 
 CR 1/4, PB +2, XP 50
 

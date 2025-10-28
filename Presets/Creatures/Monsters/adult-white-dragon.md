@@ -3,76 +3,165 @@ smType: creature
 name: Adult White Dragon
 size: Huge
 type: Dragon
+typeTags:
+  - value: Chromatic
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Evil
-ac: "18"
+ac: '18'
 initiative: +4 (14)
-hp: "200"
+hp: '200'
 hitDice: 16d12 + 96
 speeds:
-  - type: walk
-    value: "40"
-  - type: burrow
-    value: "30"
-  - type: fly
-    value: "80"
-  - type: swim
-    value: "40"
+  walk:
+    distance: 40 ft.
+  burrow:
+    distance: 30 ft.
+  fly:
+    distance: 80 ft.
+  swim:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 22
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 10
-  - ability: con
+    saveProf: true
+    saveMod: 5
+  - key: con
     score: 22
-  - ability: int
+    saveProf: false
+  - key: int
     score: 8
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: true
+    saveMod: 6
+  - key: cha
     score: 12
-pb: "+5"
-cr: "13"
-xp: "10000"
+    saveProf: false
+pb: '+5'
+skills:
+  - skill: Perception
+    value: '11'
+  - skill: Stealth
+    value: '5'
 sensesList:
   - type: blindsight
-    range: "60"
+    range: '60'
   - type: darkvision
-    range: "120"
+    range: '120'
+passivesList:
+  - skill: Perception
+    value: '21'
 languagesList:
   - value: Common
   - value: Draconic
-passivesList:
-  - skill: Perception
-    value: "21"
 damageImmunitiesList:
   - value: Cold
+cr: '13'
+xp: '10000'
 entries:
   - category: trait
     name: Ice Walk
+    entryType: special
     text: The dragon can move across and climb icy surfaces without needing to make an ability check. Additionally, Difficult Terrain composed of ice or snow doesn't cost it extra movement.
   - category: trait
     name: Legendary Resistance (3/Day, or 4/Day in Lair)
+    entryType: special
     text: If the dragon fails a saving throw, it can choose to succeed instead.
+    limitedUse:
+      count: 3
+      reset: day
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The dragon makes three Rend attacks.
+    multiattack:
+      attacks:
+        - name: Rend
+          count: 3
+      substitutions: []
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +11, reach 10 ft. 13 (2d6 + 6) Slashing damage plus 4 (1d8) Cold damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +11, reach 10 ft. 13 (2d6 + 6) Slashing damage plus 4 (1d8) Cold damage.'
+    attack:
+      type: melee
+      bonus: 11
+      damage:
+        - dice: 2d6
+          bonus: 6
+          type: Slashing
+          average: 13
+        - dice: 1d8
+          bonus: 0
+          type: Cold
+          average: 4
+      reach: 10 ft.
   - category: action
     name: Cold Breath (Recharge 5-6)
-    text: "*Constitution Saving Throw*: DC 19, each creature in a 60-foot Cone. *Failure:*  54 (12d8) Cold damage. *Success:*  Half damage."
+    entryType: save
+    text: '*Constitution Saving Throw*: DC 19, each creature in a 60-foot Cone. *Failure:*  54 (12d8) Cold damage. *Success:*  Half damage.'
+    recharge: 5-6
+    save:
+      ability: con
+      dc: 19
+      targeting:
+        shape: cone
+        size: 60 ft.
+      onFail:
+        effects:
+          other: 54 (12d8) Cold damage.
+        damage:
+          - dice: 12d8
+            bonus: 0
+            type: Cold
+            average: 54
+        legacyEffects: 54 (12d8) Cold damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
   - category: legendary
     name: Freezing Burst
-    text: "*Constitution Saving Throw*: DC 14, each creature in a 30-foot-radius Sphere [Area of Effect]|XPHB|Sphere centered on a point the dragon can see within 120 feet. *Failure:*  7 (2d6) Cold damage, and the target's Speed is 0 until the end of the target's next turn. *Failure or Success*:  The dragon can't take this action again until the start of its next turn."
+    entryType: save
+    text: '*Constitution Saving Throw*: DC 14, each creature in a 30-foot-radius Sphere [Area of Effect]|XPHB|Sphere centered on a point the dragon can see within 120 feet. *Failure:*  7 (2d6) Cold damage, and the target''s Speed is 0 until the end of the target''s next turn. *Failure or Success*:  The dragon can''t take this action again until the start of its next turn.'
+    save:
+      ability: con
+      dc: 14
+      targeting:
+        shape: sphere
+        size: 30 ft.
+      onFail:
+        effects:
+          other: 7 (2d6) Cold damage, and the target's Speed is 0 until the end of the target's next turn.
+        damage:
+          - dice: 2d6
+            bonus: 0
+            type: Cold
+            average: 7
+        legacyEffects: 7 (2d6) Cold damage, and the target's Speed is 0 until the end of the target's next turn.
   - category: legendary
     name: Pounce
+    entryType: multiattack
     text: The dragon moves up to half its Speed, and it makes one Rend attack.
+    multiattack:
+      attacks:
+        - name: Rend
+          count: 1
+      substitutions: []
+spellcastingEntries:
   - category: legendary
     name: Frightful Presence
+    entryType: spellcasting
     text: The dragon casts *Fear*, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 14). The dragon can't take this action again until the start of its next turn.
-
+    spellcasting:
+      ability: cha
+      saveDC: 14
+      excludeComponents:
+        - M
+      spellLists: []
 ---
 
 # Adult White Dragon
@@ -85,7 +174,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 22 | 10 | 22 | 8 | 12 | 12 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 60 ft., darkvision 120 ft.; Passive Perception 21
 **Languages** Common, Draconic

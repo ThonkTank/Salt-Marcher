@@ -5,55 +5,80 @@ size: Medium
 type: Elemental
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Evil
-ac: "15"
+ac: '15'
 initiative: +2 (12)
-hp: "67"
+hp: '67'
 hitDice: 9d8 + 27
 speeds:
-  - type: walk
-    value: "30"
-  - type: fly
-    value: "60"
+  walk:
+    distance: 30 ft.
+  fly:
+    distance: 60 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 15
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 11
-  - ability: con
+    saveProf: false
+  - key: con
     score: 16
-  - ability: int
+    saveProf: false
+  - key: int
     score: 6
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 11
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 7
-pb: "+2"
-cr: "2"
-xp: "450"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Stealth
+    value: '4'
 sensesList:
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Primordial (Terran)
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+languagesList:
+  - value: Primordial (Terran)
 damageImmunitiesList:
-  - value: Poison
-  - value: Exhaustion
+  - value: Poison; Exhaustion
+conditionImmunitiesList:
   - value: Petrified
   - value: Poisoned
+cr: '2'
+xp: '450'
 entries:
   - category: trait
     name: Flyby
+    entryType: special
     text: The gargoyle doesn't provoke an Opportunity Attack when it flies out of an enemy's reach.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The gargoyle makes two Claw attacks.
+    multiattack:
+      attacks:
+        - name: Claw
+          count: 2
+      substitutions: []
   - category: action
     name: Claw
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 7 (2d4 + 2) Slashing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 7 (2d4 + 2) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 2d4
+          bonus: 2
+          type: Slashing
+          average: 7
+      reach: 5 ft.
 ---
 
 # Gargoyle
@@ -66,7 +91,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 15 | 11 | 16 | 6 | 11 | 7 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 10
 **Languages** Primordial (Terran)

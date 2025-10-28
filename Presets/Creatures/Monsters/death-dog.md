@@ -5,50 +5,82 @@ size: Medium
 type: Monstrosity
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Evil
-ac: "12"
+ac: '12'
 initiative: +2 (12)
-hp: "39"
+hp: '39'
 hitDice: 6d8 + 12
 speeds:
-  - type: walk
-    value: "40"
+  walk:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 15
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 14
-  - ability: int
+    saveProf: false
+  - key: int
     score: 3
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 13
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 6
-pb: "+2"
-cr: "1"
-xp: "200"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '5'
+  - skill: Stealth
+    value: '4'
 sensesList:
   - type: darkvision
-    range: "120"
+    range: '120'
 passivesList:
   - skill: Perception
-    value: "15"
-damageImmunitiesList:
+    value: '15'
+conditionImmunitiesList:
   - value: Blinded
   - value: Charmed
   - value: Deafened
   - value: Frightened
   - value: Stunned
   - value: Unconscious
+cr: '1'
+xp: '200'
 entries:
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The death dog makes two Bite attacks.
+    multiattack:
+      attacks:
+        - name: Bite
+          count: 2
+      substitutions: []
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 4 (1d4 + 2) Piercing damage. If the target is a creature, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *First Failure* The target has the Poisoned condition. While Poisoned, the target's Hit Point maximum doesn't return to normal when finishing a Long Rest, and it repeats the save every 24 hours that elapse, ending the effect on itself on a success. Subsequent Failures: The Poisoned target's Hit Point maximum decreases by 5 (1d10)."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 4 (1d4 + 2) Piercing damage. If the target is a creature, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *First Failure* The target has the Poisoned condition. While Poisoned, the target''s Hit Point maximum doesn''t return to normal when finishing a Long Rest, and it repeats the save every 24 hours that elapse, ending the effect on itself on a success. Subsequent Failures: The Poisoned target''s Hit Point maximum decreases by 5 (1d10).'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d4
+          bonus: 2
+          type: Piercing
+          average: 4
+      reach: 5 ft.
+      onHit:
+        conditions:
+          - condition: Poisoned
+            saveToEnd:
+              timing: when-damage
+      additionalEffects: 'If the target is a creature, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *First Failure* The target has the Poisoned condition. While Poisoned, the target''s Hit Point maximum doesn''t return to normal when finishing a Long Rest, and it repeats the save every 24 hours that elapse, ending the effect on itself on a success. Subsequent Failures: The Poisoned target''s Hit Point maximum decreases by 5 (1d10).'
 ---
 
 # Death Dog
@@ -61,7 +93,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 15 | 14 | 14 | 3 | 13 | 6 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 120 ft.; Passive Perception 15
 CR 1, PB +2, XP 200

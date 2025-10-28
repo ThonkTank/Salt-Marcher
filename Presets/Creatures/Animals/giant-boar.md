@@ -4,40 +4,68 @@ name: Giant Boar
 size: Large
 type: Beast
 alignmentOverride: Unaligned
-ac: "13"
+ac: '13'
 initiative: +0 (10)
-hp: "42"
+hp: '42'
 hitDice: 5d10 + 15
 speeds:
-  - type: walk
-    value: "40"
+  walk:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 17
-  - ability: dex
+    saveProf: true
+    saveMod: 5
+  - key: dex
     score: 10
-  - ability: con
+    saveProf: false
+  - key: con
     score: 16
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 7
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 5
-pb: "+2"
-cr: "2"
-xp: "450"
+    saveProf: false
+pb: '+2'
 passivesList:
   - skill: Perception
-    value: "8"
+    value: '8'
+cr: '2'
+xp: '450'
 entries:
   - category: trait
     name: Bloodied Fury
+    entryType: special
     text: The boar has Advantage on melee attack rolls while it is Bloodied.
   - category: action
     name: Gore
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 10 (2d6 + 3) Piercing damage. If the target is a Large or smaller creature and the boar moved 20+ feet straight toward it immediately before the hit, the target takes an extra 7 (2d6) Piercing damage and has the Prone condition."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 10 (2d6 + 3) Piercing damage. If the target is a Large or smaller creature and the boar moved 20+ feet straight toward it immediately before the hit, the target takes an extra 7 (2d6) Piercing damage and has the Prone condition.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 2d6
+          bonus: 3
+          type: Piercing
+          average: 10
+        - dice: 2d6
+          bonus: 0
+          type: Piercing
+          average: 7
+      reach: 5 ft.
+      onHit:
+        conditions:
+          - condition: Prone
+            restrictions:
+              size: Large or smaller
+        other: If the target is a Large or smaller creature and the boar moved 20+ feet straight toward it immediately before the hit, the target takes an extra 7 (2d6) Piercing damage and has the Prone condition.
+      additionalEffects: If the target is a Large or smaller creature and the boar moved 20+ feet straight toward it immediately before the hit, the target takes an extra 7 (2d6) Piercing damage and has the Prone condition.
 ---
 
 # Giant Boar
@@ -50,7 +78,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 17 | 10 | 16 | 2 | 7 | 5 |
+| - | - | - | - | - | - |
 
 CR 2, PB +2, XP 450
 

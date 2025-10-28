@@ -4,39 +4,53 @@ name: Hawk
 size: Small
 type: Beast
 alignmentOverride: Unaligned
-ac: "13"
+ac: '13'
 initiative: +3 (13)
-hp: "1"
+hp: '1'
 hitDice: 1d4 - 1
 speeds:
-  - type: walk
-    value: "10"
-  - type: fly
-    value: "60"
+  walk:
+    distance: 10 ft.
+  fly:
+    distance: 60 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 5
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 16
-  - ability: con
+    saveProf: false
+  - key: con
     score: 8
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 14
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 6
-pb: "+2"
-cr: "0"
-xp: "0"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '6'
 passivesList:
   - skill: Perception
-    value: "16"
+    value: '16'
+cr: '0'
+xp: '0'
 entries:
   - category: action
     name: Talons
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 1 Slashing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 1 Slashing damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage: []
+      reach: 5 ft.
 ---
 
 # Hawk
@@ -49,7 +63,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 5 | 16 | 8 | 2 | 14 | 6 |
+| - | - | - | - | - | - |
 
 CR 0, PB +2, XP 0
 

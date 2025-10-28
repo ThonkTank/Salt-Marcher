@@ -4,42 +4,60 @@ name: Weasel
 size: Small
 type: Beast
 alignmentOverride: Unaligned
-ac: "13"
+ac: '13'
 initiative: +3 (13)
-hp: "1"
+hp: '1'
 hitDice: 1d4 - 1
 speeds:
-  - type: walk
-    value: "30"
-  - type: climb
-    value: "30"
+  walk:
+    distance: 30 ft.
+  climb:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 3
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 16
-  - ability: con
+    saveProf: false
+  - key: con
     score: 8
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 3
-pb: "+2"
-cr: "0"
-xp: "0"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Acrobatics
+    value: '5'
+  - skill: Perception
+    value: '3'
+  - skill: Stealth
+    value: '5'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "13"
+    value: '13'
+cr: '0'
+xp: '0'
 entries:
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 1 Piercing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 1 Piercing damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage: []
+      reach: 5 ft.
 ---
 
 # Weasel
@@ -52,7 +70,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 3 | 16 | 8 | 2 | 12 | 3 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 13
 CR 0, PB +2, XP 0

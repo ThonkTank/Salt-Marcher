@@ -53,6 +53,9 @@ export interface CompositeFieldSpec<T = unknown> extends FieldSpec<T> {
     static?: boolean;  // Hide add/remove/reorder controls
     synchronizeWidths?: boolean;  // Synchronize widths of same field types across entries
 
+    // For field-level config (used in nested fields within repeating fields)
+    init?: (entryData: Record<string, unknown>, allFormData: Record<string, unknown>) => unknown;  // Auto-initialize field value when it becomes visible
+
     // For repeating fields - Entry-manager based rendering
     categories?: Array<{ id: string; label: string; className?: string; title?: string }>;
     card?: (context: any) => any;  // Card factory for entry rendering
@@ -176,9 +179,9 @@ export interface TokenFieldSpec extends FieldSpec<Array<Record<string, unknown>>
 export interface DisplayFieldSpec extends FieldSpec<string | number> {
   type: "display";
   config: {
-    compute: (data: Record<string, unknown>) => string | number;
-    prefix?: string | ((data: Record<string, unknown>) => string);    // e.g. "+", "-", or dynamic function
-    suffix?: string | ((data: Record<string, unknown>) => string);    // e.g. "ft.", or dynamic function
+    compute: (data: Record<string, unknown>, allFormData?: Record<string, unknown>) => string | number;
+    prefix?: string | ((data: Record<string, unknown>, allFormData?: Record<string, unknown>) => string);    // e.g. "+", "-", or dynamic function
+    suffix?: string | ((data: Record<string, unknown>, allFormData?: Record<string, unknown>) => string);    // e.g. "ft.", or dynamic function
     className?: string; // Additional CSS class for styling
     maxTokens?: number; // Expected character count for width calculation
   };

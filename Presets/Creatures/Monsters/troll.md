@@ -5,54 +5,84 @@ size: Large
 type: Giant
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Evil
-ac: "15"
+ac: '15'
 initiative: +1 (11)
-hp: "94"
+hp: '94'
 hitDice: 9d10 + 45
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 18
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 13
-  - ability: con
+    saveProf: false
+  - key: con
     score: 20
-  - ability: int
+    saveProf: false
+  - key: int
     score: 7
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 9
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 7
-pb: "+3"
-cr: "5"
-xp: "1800"
+    saveProf: false
+pb: '+3'
+skills:
+  - skill: Perception
+    value: '5'
 sensesList:
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Giant
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "15"
+    value: '15'
+languagesList:
+  - value: Giant
+cr: '5'
+xp: '1800'
 entries:
   - category: trait
     name: Loathsome Limbs (4/Day)
+    entryType: special
     text: If the troll ends any turn Bloodied and took 15+ Slashing damage during that turn, one of the troll's limbs is severed, falls into the troll's space, and becomes a Troll Limb. The limb acts immediately after the troll's turn. The troll has 1 Exhaustion level for each missing limb, and it grows replacement limbs the next time it regains Hit Points.
+    limitedUse:
+      count: 4
+      reset: day
   - category: trait
     name: Regeneration
+    entryType: special
     text: The troll regains 15 Hit Points at the start of each of its turns. If the troll takes Acid or Fire damage, this trait doesn't function on the troll's next turn. The troll dies only if it starts its turn with 0 Hit Points and doesn't regenerate.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The troll makes three Rend attacks.
+    multiattack:
+      attacks:
+        - name: Rend
+          count: 3
+      substitutions: []
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +7, reach 10 ft. 11 (2d6 + 4) Slashing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +7, reach 10 ft. 11 (2d6 + 4) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 7
+      damage:
+        - dice: 2d6
+          bonus: 4
+          type: Slashing
+          average: 11
+      reach: 10 ft.
   - category: bonus
     name: Charge
+    entryType: special
     text: The troll moves up to half its Speed straight toward an enemy it can see.
-
 ---
 
 # Troll
@@ -65,7 +95,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 18 | 13 | 20 | 7 | 9 | 7 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 15
 **Languages** Giant

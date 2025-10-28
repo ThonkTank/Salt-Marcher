@@ -1,0 +1,106 @@
+# Template for modal interaction tests
+# Copy and modify this template for specific test cases
+
+name: "Modal interaction template"
+description: "Template for testing modal create/edit workflows"
+
+# Debug configuration - adjust as needed
+debugConfig:
+  enabled: true
+  logFields: ["*"]  # Or specific fields: ["name", "ac", "hp"]
+  logCategories: ["*"]  # Or specific: ["onChange", "init", "update"]
+
+# Setup steps - run before main test
+setup:
+  - name: "Reload plugin"
+    command: reload-plugin
+    wait: 1000
+
+# Main test steps
+steps:
+  # === OPEN MODAL ===
+  - name: "Open modal"
+    command: edit-{entity}  # Replace: edit-creature, edit-spell, etc.
+    args: []  # Add entity name for editing: ["Goblin"]
+    wait: 500
+    expect:
+      success: true
+
+  - name: "Mark test start"
+    command: log-marker
+    args: ["=== TEST START ==="]
+
+  # === BASIC FIELDS ===
+  - name: "Set field value"
+    command: set-input-value
+    args: ["input[data-field-id='fieldId']", "value"]
+    wait: 200
+    expect:
+      success: true
+
+  # === NAVIGATION ===
+  - name: "Navigate to section"
+    command: navigate-to-section
+    args: ["sectionName"]
+    wait: 300
+
+  # === CHECKBOX/TOGGLE ===
+  - name: "Toggle checkbox"
+    command: click-element
+    args: ["input[data-field-id='checkboxId']"]
+    wait: 200
+
+  # === SELECT/DROPDOWN ===
+  - name: "Select option"
+    command: set-input-value
+    args: ["select[data-field-id='selectId']", "optionValue"]
+    wait: 200
+
+  # === REPEATING FIELDS ===
+  - name: "Add repeating entry"
+    command: click-element
+    args: ["button.add-repeating-entry"]
+    wait: 200
+
+  - name: "Set repeating field value"
+    command: set-input-value
+    args: ["input[data-field-id='repeatingField[0].property']", "value"]
+    wait: 200
+
+  # === STRUCTURED TAGS ===
+  - name: "Add token"
+    command: add-token
+    args: ["fieldId", "tokenValue"]
+    wait: 200
+
+  # === VALIDATION ===
+  - name: "Validate UI"
+    command: validate-ui
+    args: ["all"]  # Options: all|labels|steppers
+    expect:
+      success: true
+
+  # === ASSERTIONS ===
+  - name: "Get field values"
+    command: get-ability-values  # Or other getter commands
+    args: ["fieldGroup"]
+    expect:
+      success: true
+      values:
+        property: "expectedValue"
+
+  - name: "Assert logs"
+    command: assert-log-contains
+    args:
+      - "expected pattern 1"
+      - "expected pattern 2"
+
+# Cleanup - always runs
+cleanup:
+  - name: "Close modal"
+    command: close-modal
+    wait: 200
+
+  - name: "Mark test end"
+    command: log-marker
+    args: ["=== TEST END ==="]

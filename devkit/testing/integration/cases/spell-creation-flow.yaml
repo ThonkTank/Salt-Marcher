@@ -1,0 +1,141 @@
+name: "Spell creation flow"
+description: "Tests creating a new spell with all fields"
+
+debugConfig:
+  enabled: true
+  logFields: ["*"]
+  logCategories: ["field-creation", "onChange", "init"]
+
+setup:
+  - name: "Reload plugin"
+    command: reload-plugin
+    wait: 1000
+
+steps:
+  # Open spell editor
+  - name: "Open new spell editor"
+    command: edit-spell
+    wait: 500
+    expect:
+      success: true
+
+  - name: "Mark spell creation start"
+    command: log-marker
+    args: ["=== SPELL CREATION START ==="]
+
+  # Basic info
+  - name: "Set spell name"
+    command: set-input-value
+    args: ["input[data-field-id='name']", "Test Fireball"]
+    wait: 200
+
+  - name: "Set spell level"
+    command: set-input-value
+    args: ["select[data-field-id='level']", "3"]
+    wait: 200
+
+  - name: "Set spell school"
+    command: set-input-value
+    args: ["select[data-field-id='school']", "Evocation"]
+    wait: 200
+
+  # Components
+  - name: "Navigate to components"
+    command: navigate-to-section
+    args: ["components"]
+    wait: 300
+
+  - name: "Toggle verbal component"
+    command: click-element
+    args: ["input[data-field-id='components.v']"]
+    wait: 200
+
+  - name: "Toggle somatic component"
+    command: click-element
+    args: ["input[data-field-id='components.s']"]
+    wait: 200
+
+  - name: "Toggle material component"
+    command: click-element
+    args: ["input[data-field-id='components.m']"]
+    wait: 200
+
+  - name: "Set material description"
+    command: set-input-value
+    args: ["input[data-field-id='components.material']", "A tiny ball of bat guano"]
+    wait: 200
+
+  # Casting
+  - name: "Navigate to casting"
+    command: navigate-to-section
+    args: ["casting"]
+    wait: 300
+
+  - name: "Set casting time"
+    command: set-input-value
+    args: ["input[data-field-id='castingTime']", "1 action"]
+    wait: 200
+
+  - name: "Set range"
+    command: set-input-value
+    args: ["input[data-field-id='range']", "150 feet"]
+    wait: 200
+
+  - name: "Set duration"
+    command: set-input-value
+    args: ["input[data-field-id='duration']", "Instantaneous"]
+    wait: 200
+
+  # Description
+  - name: "Navigate to description"
+    command: navigate-to-section
+    args: ["description"]
+    wait: 300
+
+  - name: "Set spell description"
+    command: set-input-value
+    args: ["textarea[data-field-id='description']", "A bright streak flashes from your pointing finger..."]
+    wait: 200
+
+  # Classes
+  - name: "Navigate to classes"
+    command: navigate-to-section
+    args: ["classes"]
+    wait: 300
+
+  - name: "Add Wizard class"
+    command: add-token
+    args: ["classes", "wizard"]
+    wait: 200
+
+  - name: "Add Sorcerer class"
+    command: add-token
+    args: ["classes", "sorcerer"]
+    wait: 200
+
+  # Validation
+  - name: "Mark validation"
+    command: log-marker
+    args: ["=== SPELL VALIDATION ==="]
+
+  - name: "Validate UI"
+    command: validate-ui
+    args: ["all"]
+    expect:
+      success: true
+
+  - name: "Assert spell data"
+    command: assert-log-contains
+    args:
+      - "Test Fireball"
+      - "[onChange:level]"
+      - "Evocation"
+
+cleanup:
+  - name: "Close modal"
+    command: close-modal
+    wait: 200
+
+  - name: "Mark end"
+    command: log-marker
+    args: ["=== SPELL CREATION END ==="]

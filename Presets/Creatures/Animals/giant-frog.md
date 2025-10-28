@@ -4,51 +4,84 @@ name: Giant Frog
 size: Medium
 type: Beast
 alignmentOverride: Unaligned
-ac: "11"
+ac: '11'
 initiative: +1 (11)
-hp: "18"
+hp: '18'
 hitDice: 4d8
 speeds:
-  - type: walk
-    value: "30"
-  - type: swim
-    value: "30"
+  walk:
+    distance: 30 ft.
+  swim:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 12
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 13
-  - ability: con
+    saveProf: false
+  - key: con
     score: 11
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 3
-pb: "+2"
-cr: 1/4
-xp: "50"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '2'
+  - skill: Stealth
+    value: '4'
 sensesList:
   - type: darkvision
-    range: "30"
+    range: '30'
 passivesList:
   - skill: Perception
-    value: "12"
+    value: '12'
+cr: 1/4
+xp: '50'
 entries:
   - category: trait
     name: Amphibious
+    entryType: special
     text: The frog can breathe air and water.
   - category: trait
     name: Standing Leap
+    entryType: special
     text: The frog's Long Jump is up to 20 feet and its High Jump is up to 10 feet with or without a running start.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +3, reach 5 ft. 5 (1d6 + 2) Piercing damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11)."
+    entryType: attack
+    text: '*Melee Attack Roll:* +3, reach 5 ft. 5 (1d6 + 2) Piercing damage. If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11).'
+    attack:
+      type: melee
+      bonus: 3
+      damage:
+        - dice: 1d6
+          bonus: 2
+          type: Piercing
+          average: 5
+      reach: 5 ft.
+      onHit:
+        conditions:
+          - condition: Grappled
+            escape:
+              type: dc
+              dc: 11
+            restrictions:
+              size: Medium or smaller
+        other: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11).
+      additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11).
   - category: action
     name: Swallow
+    entryType: special
     text: The frog swallows a Small or smaller target it is grappling. While swallowed, the target isn't Grappled but has the Blinded and Restrained conditions, and it has Cover|XPHB|Total Cover against attacks and other effects outside the frog. While swallowing the target, the frog can't use Bite, and if the frog dies, the swallowed target is no longer Restrained and can escape from the corpse using 5 feet of movement, exiting with the Prone condition. At the end of the frog's next turn, the swallowed target takes 5 (2d4) Acid damage. If that damage doesn't kill it, the frog disgorges it, causing it to exit Prone.
-
 ---
 
 # Giant Frog
@@ -61,7 +94,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 12 | 13 | 11 | 2 | 10 | 3 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 30 ft.; Passive Perception 12
 CR 1/4, PB +2, XP 50

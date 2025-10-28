@@ -5,39 +5,60 @@ size: Small
 type: Humanoid
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Neutral
-ac: "12"
+ac: '12'
 initiative: +1 (11)
-hp: "9"
+hp: '9'
 hitDice: 2d8
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 11
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 12
-  - ability: con
+    saveProf: false
+  - key: con
     score: 10
-  - ability: int
+    saveProf: false
+  - key: int
     score: 10
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 11
-  - ability: cha
+    saveProf: true
+    saveMod: 2
+  - key: cha
     score: 10
-pb: "+2"
-cr: 1/8
-xp: "25"
-languagesList:
-  - value: Common
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Deception
+    value: '2'
+  - skill: Religion
+    value: '2'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+languagesList:
+  - value: Common
+cr: 1/8
+xp: '25'
 entries:
   - category: action
     name: Ritual Sickle
-    text: "*Melee Attack Roll:* +3, reach 5 ft. 3 (1d4 + 1) Slashing damage plus 1 Necrotic damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +3, reach 5 ft. 3 (1d4 + 1) Slashing damage plus 1 Necrotic damage.'
+    attack:
+      type: melee
+      bonus: 3
+      damage:
+        - dice: 1d4
+          bonus: 1
+          type: Slashing
+          average: 3
+      reach: 5 ft.
 ---
 
 # Cultist
@@ -50,7 +71,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 11 | 12 | 10 | 10 | 11 | 10 |
+| - | - | - | - | - | - |
 
 **Languages** Common
 CR 1/8, PB +2, XP 25

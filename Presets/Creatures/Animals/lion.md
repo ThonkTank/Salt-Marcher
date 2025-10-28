@@ -4,52 +4,105 @@ name: Lion
 size: Large
 type: Beast
 alignmentOverride: Unaligned
-ac: "12"
+ac: '12'
 initiative: +2 (12)
-hp: "22"
+hp: '22'
 hitDice: 4d10
 speeds:
-  - type: walk
-    value: "50"
+  walk:
+    distance: 50 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 17
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 15
-  - ability: con
+    saveProf: false
+  - key: con
     score: 11
-  - ability: int
+    saveProf: false
+  - key: int
     score: 3
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 8
-pb: "+2"
-cr: "1"
-xp: "200"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '3'
+  - skill: Stealth
+    value: '4'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "13"
+    value: '13'
+cr: '1'
+xp: '200'
 entries:
   - category: trait
     name: Pack Tactics
+    entryType: special
     text: The lion has Advantage on an attack roll against a creature if at least one of the lion's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
   - category: trait
     name: Running Leap
+    entryType: special
     text: With a 10-foot running start, the lion can Long Jump up to 25 feet.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The lion makes two Rend attacks. It can replace one attack with a use of Roar.
+    multiattack:
+      attacks:
+        - name: Rend
+          count: 2
+        - name: Rend
+          count: 2
+        - name: one
+          count: 1
+      substitutions:
+        - replace: attack
+          with:
+            type: attack
+            name: Roar
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 7 (1d8 + 3) Slashing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 7 (1d8 + 3) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d8
+          bonus: 3
+          type: Slashing
+          average: 7
+      reach: 5 ft.
   - category: action
     name: Roar
-    text: "*Wisdom Saving Throw*: DC 11, one creature within 15 feet. *Failure:*  The target has the Frightened condition until the start of the lion's next turn."
-
+    entryType: save
+    text: '*Wisdom Saving Throw*: DC 11, one creature within 15 feet. *Failure:*  The target has the Frightened condition until the start of the lion''s next turn.'
+    save:
+      ability: wis
+      dc: 11
+      targeting:
+        type: single
+        range: 15 ft.
+      area: one creature within 15 feet
+      onFail:
+        effects:
+          conditions:
+            - condition: Frightened
+              duration:
+                type: until
+                trigger: the start of the lion's next turn
+          other: The target has the Frightened condition until the start of the lion's next turn.
+        legacyEffects: The target has the Frightened condition until the start of the lion's next turn.
 ---
 
 # Lion
@@ -62,7 +115,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 17 | 15 | 11 | 3 | 12 | 8 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 13
 CR 1, PB +2, XP 200

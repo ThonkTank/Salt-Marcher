@@ -5,43 +5,61 @@ size: Large
 type: Fey
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Evil
-ac: "13"
+ac: '13'
 initiative: +1 (11)
-hp: "26"
+hp: '26'
 hitDice: 4d10 + 4
 speeds:
-  - type: walk
-    value: "50"
+  walk:
+    distance: 50 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 16
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 13
-  - ability: con
+    saveProf: false
+  - key: con
     score: 13
-  - ability: int
+    saveProf: false
+  - key: int
     score: 7
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 11
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 8
-pb: "+2"
-cr: 1/2
-xp: "100"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '4'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
+passivesList:
+  - skill: Perception
+    value: '14'
 languagesList:
   - value: Goblin
   - value: Worg
-passivesList:
-  - skill: Perception
-    value: "14"
+cr: 1/2
+xp: '100'
 entries:
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 7 (1d8 + 3) Piercing damage, and the next attack roll made against the target before the start of the worg's next turn has Advantage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 7 (1d8 + 3) Piercing damage, and the next attack roll made against the target before the start of the worg''s next turn has Advantage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d8
+          bonus: 3
+          type: Piercing
+          average: 7
+      reach: 5 ft.
 ---
 
 # Worg
@@ -54,7 +72,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 16 | 13 | 13 | 7 | 11 | 8 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 14
 **Languages** Goblin, Worg

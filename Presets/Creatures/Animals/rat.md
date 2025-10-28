@@ -4,45 +4,60 @@ name: Rat
 size: Small
 type: Beast
 alignmentOverride: Unaligned
-ac: "10"
+ac: '10'
 initiative: +0 (10)
-hp: "1"
+hp: '1'
 hitDice: 1d4 - 1
 speeds:
-  - type: walk
-    value: "20"
-  - type: climb
-    value: "20"
+  walk:
+    distance: 20 ft.
+  climb:
+    distance: 20 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 2
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 11
-  - ability: con
+    saveProf: false
+  - key: con
     score: 9
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 4
-pb: "+2"
-cr: "0"
-xp: "0"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '2'
 sensesList:
   - type: darkvision
-    range: "30"
+    range: '30'
 passivesList:
   - skill: Perception
-    value: "12"
+    value: '12'
+cr: '0'
+xp: '0'
 entries:
   - category: trait
     name: Agile
+    entryType: special
     text: The rat doesn't provoke Opportunity Attacks when it moves out of an enemy's reach.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +2, reach 5 ft. 1 Piercing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +2, reach 5 ft. 1 Piercing damage.'
+    attack:
+      type: melee
+      bonus: 2
+      damage: []
+      reach: 5 ft.
 ---
 
 # Rat
@@ -55,7 +70,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 2 | 11 | 9 | 2 | 10 | 4 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 30 ft.; Passive Perception 12
 CR 0, PB +2, XP 0

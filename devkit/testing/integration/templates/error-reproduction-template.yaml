@@ -1,0 +1,113 @@
+# Template for reproducing and debugging errors
+# Use this when investigating reported issues
+
+name: "Error reproduction template"
+description: "Template for reproducing specific errors or bugs"
+
+# Enable comprehensive logging for debugging
+debugConfig:
+  enabled: true
+  logAll: true  # Log everything for debugging
+  logFields: ["*"]
+  logCategories: ["*"]
+
+setup:
+  - name: "Clean state"
+    command: reload-plugin
+    wait: 1000
+
+  - name: "Mark reproduction start"
+    command: log-marker
+    args: ["=== ERROR REPRODUCTION START ==="]
+
+  - name: "Log test environment"
+    command: get-debug-config
+    wait: 100
+
+steps:
+  # === REPRODUCE ERROR CONDITION ===
+
+  # Step 1: Set up preconditions
+  - name: "Setup precondition"
+    command: {command}
+    args: []
+    wait: 500
+    continueOnError: true  # Continue even if this fails
+
+  # Step 2: Trigger the error
+  - name: "Trigger error condition"
+    command: {command}
+    args: []
+    wait: 500
+    continueOnError: true  # Capture the error
+
+  # === CAPTURE ERROR STATE ===
+
+  - name: "Mark error point"
+    command: log-marker
+    args: ["!!! ERROR SHOULD OCCUR HERE !!!"]
+    continueOnError: true
+
+  - name: "Capture recent logs"
+    command: get-logs
+    args: [200]  # Get last 200 lines
+    continueOnError: true
+
+  # === INVESTIGATE ERROR ===
+
+  - name: "Check field states"
+    command: validate-ui
+    args: ["all"]
+    continueOnError: true
+
+  - name: "Get specific field values"
+    command: get-ability-values  # Or appropriate getter
+    args: ["fieldId"]
+    continueOnError: true
+
+  # === ATTEMPT RECOVERY ===
+
+  - name: "Mark recovery attempt"
+    command: log-marker
+    args: ["=== ATTEMPTING RECOVERY ==="]
+    continueOnError: true
+
+  - name: "Recovery action"
+    command: {recovery-command}
+    args: []
+    wait: 500
+    continueOnError: true
+
+  - name: "Verify recovery"
+    command: validate-ui
+    args: ["all"]
+    continueOnError: true
+
+  # === EXTRACT ERROR PATTERNS ===
+
+  - name: "Search for error patterns"
+    command: assert-log-contains
+    args:
+      - "Error"
+      - "Failed"
+      - "undefined"
+      - "null"
+    continueOnError: true
+
+cleanup:
+  - name: "Get final logs"
+    command: get-logs
+    args: [500]
+    continueOnError: true
+
+  - name: "Close modal if open"
+    command: close-modal
+    continueOnError: true
+
+  - name: "Mark reproduction end"
+    command: log-marker
+    args: ["=== ERROR REPRODUCTION END ==="]
+
+  - name: "Reset debug config"
+    command: set-debug-config
+    args: ['{"enabled": false}']

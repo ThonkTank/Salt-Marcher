@@ -4,42 +4,61 @@ name: Vulture
 size: Medium
 type: Beast
 alignmentOverride: Unaligned
-ac: "10"
+ac: '10'
 initiative: +0 (10)
-hp: "5"
+hp: '5'
 hitDice: 1d8 + 1
 speeds:
-  - type: walk
-    value: "10"
-  - type: fly
-    value: "50"
+  walk:
+    distance: 10 ft.
+  fly:
+    distance: 50 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 7
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 10
-  - ability: con
+    saveProf: false
+  - key: con
     score: 13
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 4
-pb: "+2"
-cr: "0"
-xp: "0"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '3'
 passivesList:
   - skill: Perception
-    value: "13"
+    value: '13'
+cr: '0'
+xp: '0'
 entries:
   - category: trait
     name: Pack Tactics
+    entryType: special
     text: The vulture has Advantage on an attack roll against a creature if at least one of the vulture's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
   - category: action
     name: Beak
-    text: "*Melee Attack Roll:* +2, reach 5 ft. 2 (1d4) Piercing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +2, reach 5 ft. 2 (1d4) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 2
+      damage:
+        - dice: 1d4
+          bonus: 0
+          type: Piercing
+          average: 2
+      reach: 5 ft.
 ---
 
 # Vulture
@@ -52,7 +71,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 7 | 10 | 13 | 2 | 12 | 4 |
+| - | - | - | - | - | - |
 
 CR 0, PB +2, XP 0
 

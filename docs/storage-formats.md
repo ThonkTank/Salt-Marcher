@@ -26,35 +26,38 @@ HP 7 (2d6)
 
 ## Current Implementation
 
-### Entity-Specific Serializers
+### Entity-Specific Body Serializers
 
-Each entity type currently has its own markdown serialization function:
+Each entity type has its own markdown body serialization function (frontmatter handled separately by data-manager):
 
-- **Creatures**: `src/workmodes/library/core/creature-files.ts:222` → `statblockToMarkdown()`
-- **Spells**: `src/workmodes/library/core/spell-files.ts` → `spellToMarkdown()`
-- **Items**: `src/workmodes/library/core/item-files.ts` → `itemToMarkdown()`
-- **Equipment**: `src/workmodes/library/core/equipment-files.ts` → `equipmentToMarkdown()`
+- **Creatures**: `src/workmodes/library/creatures/serializer.ts` → `statblockToMarkdown()`
+- **Spells**: `src/workmodes/library/spells/serializer.ts` → `spellToMarkdown()`
+- **Items**: `src/workmodes/library/items/serializer.ts` → `itemToMarkdown()`
+- **Equipment**: `src/workmodes/library/equipment/serializer.ts` → `equipmentToMarkdown()`
+- **Calendars**: `src/workmodes/library/calendars/serializer.ts` → `calendarToMarkdown()`
+- **Terrains**: `src/workmodes/library/terrains/serializer.ts` → `terrainToMarkdown()`
+- **Regions**: `src/workmodes/library/regions/serializer.ts` → `regionToMarkdown()`
 
-All of these functions produce the same output structure:
-1. YAML frontmatter block (`---\nfields\n---`)
-2. Markdown body content
-
-**These are migration artifacts** from before the unified creation system existed.
+These functions are used as `bodyTemplate` in CreateSpecs and generate only the markdown body content.
+Frontmatter serialization is handled generically by the storage system.
 
 ### Generic Storage System
 
-The new declarative creation system uses a generic storage layer:
+All declarative CreateSpecs use a unified generic storage layer:
 
-**Location**: `src/features/data-manager/edit/storage/storage.ts`
+**Location**: `src/features/data-manager/storage/storage.ts`
 
-**Key Functions**:
+**Exported Functions**:
 - `buildSerializedPayload()` - Creates serialized content from spec + values
-- `serializeMarkdown()` - Generic markdown serialization
-- `buildFrontmatter()` - Maps field values to frontmatter keys
-- `buildMarkdownBody()` - Generates body from template or field list
 - `persistSerializedPayload()` - Writes to vault
 
-**Used by**: Creatures via `creatureSpec.storage` configuration
+**Internal Functions** (not exported):
+- `serializeMarkdown()` - Generic markdown serialization (frontmatter + body)
+- `buildFrontmatter()` - Maps field values to frontmatter keys
+- `buildMarkdownBody()` - Generates body from bodyTemplate or bodyFields
+- `serializeJson()`, `serializeYaml()`, `serializeCodeblock()` - Format-specific serializers
+
+**Used by**: All entity types via their CreateSpec `storage` configuration
 
 ```typescript
 // Example from creature-spec.ts:408-418
@@ -67,47 +70,47 @@ storage: {
 }
 ```
 
-## Why Multiple Code Paths Exist
+## Current Architecture
 
-The codebase is **in transition** from imperative to declarative creation systems:
+All entity types now use the **unified declarative CreateSpec system**:
 
-- **Creatures** → Fully migrated to declarative spec-based system (`creature-spec.ts`)
-- **Spells/Items/Equipment** → Still use imperative modal classes with entity-specific serializers
+- **All entities** (Creatures, Spells, Items, Equipment, Calendars, Terrains, Regions) → Declarative spec-based system
+- Each entity defines a CreateSpec in `src/workmodes/library/{entity}/create-spec.ts`
+- Body serialization via entity-specific `*ToMarkdown()` functions (used as `bodyTemplate`)
+- Frontmatter serialization via generic storage system
 
-Both paths produce identical output (`.md` files with frontmatter), but via different code:
-- Old path: `new CreateSpellModal()` → `spellToMarkdown()` → vault write
-- New path: `openCreateModal(spec)` → `buildSerializedPayload()` → `persistSerializedPayload()`
+**Unified code path:**
+1. User fills in modal fields
+2. `buildSerializedPayload(spec.storage, values)` creates content:
+   - Frontmatter: generic `buildFrontmatter()` from spec.storage.frontmatter
+   - Body: entity-specific `bodyTemplate()` function (e.g., `statblockToMarkdown()`)
+3. `persistSerializedPayload()` writes to vault
 
-## Future Consolidation (Phase 2)
+## Future Optimization Opportunities
 
-### Goal
-Migrate all entities to the unified spec-based system.
+While all entity types now use the unified CreateSpec system, there are still optimization opportunities:
 
-### Benefits
-- **Single source of truth** for markdown serialization logic
-- **Reduced code duplication** (~500-800 LOC reduction estimated)
-- **Consistent API** for all CRUD operations
-- **Easier maintenance** - changes to storage format only need to be made once
+### Optional: Consolidate Body Serializers
 
-### Migration Path
-1. Create `spell-spec.ts`, `item-spec.ts`, `equipment-spec.ts` (like `creature-spec.ts`)
-2. Convert imperative `buildFields()` methods to declarative field arrays
-3. Remove entity-specific modals in favor of unified `openCreateModal()`
-4. Remove entity-specific `*ToMarkdown()` functions
-5. All entities use generic `storage.ts` via their spec configuration
+Currently each entity has its own `*ToMarkdown()` function. These could potentially be:
+- Replaced with generic template-based rendering
+- Consolidated using a markdown DSL or template system
+- Kept as-is for maximum flexibility (current approach)
 
-### Impact
-- **LOC Reduction**: ~500-800 lines
-- **Breaking Changes**: None (output format remains identical)
-- **Testing**: Verify existing .md files can still be read/edited
+**Trade-offs:**
+- **Current approach**: Maximum flexibility, easy to customize per-entity
+- **Template consolidation**: Less code, harder to customize, potential loss of format control
+
+**Recommendation**: Keep current approach unless significant duplication emerges.
 
 ## Summary
 
-| Aspect | Current State | Unified Vision |
-|--------|--------------|----------------|
-| **Output Format** | ✅ Already unified (.md + frontmatter) | ✅ No change |
-| **Serialization Code** | ⚠️ Duplicated (4 `*ToMarkdown()` functions) | ✅ Single `serializeMarkdown()` |
-| **Creation API** | ⚠️ Mixed (specs + modals) | ✅ Single `openCreateModal(spec)` |
-| **Maintenance Burden** | ⚠️ High (4 code paths) | ✅ Low (1 code path) |
+| Aspect | Status |
+|--------|--------|
+| **Output Format** | ✅ Unified (.md + frontmatter for all entities) |
+| **Frontmatter Serialization** | ✅ Generic system (`buildFrontmatter()` in storage.ts) |
+| **Body Serialization** | ✅ Entity-specific functions used as bodyTemplate |
+| **Creation API** | ✅ Unified CreateSpec system for all entities |
+| **Storage Layer** | ✅ Generic `buildSerializedPayload()` + `persistSerializedPayload()` |
 
-**Key Takeaway**: The storage *format* is already unified - only the code paths to produce it need consolidation.
+**Key Takeaway**: All entities now use the unified declarative CreateSpec system with generic frontmatter handling and entity-specific body templates for maximum flexibility.

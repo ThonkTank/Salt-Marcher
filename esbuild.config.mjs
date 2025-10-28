@@ -19,7 +19,7 @@ try {
 // Generate preset data before building
 console.log("Generating preset data...");
 try {
-    execSync("node scripts/generate-preset-data.mjs", { stdio: "inherit" });
+    execSync("node generate-preset-data.mjs", { stdio: "inherit" });
 } catch (err) {
     console.error("Failed to generate preset data:", err);
 }

@@ -4,42 +4,58 @@ name: Baboon
 size: Small
 type: Beast
 alignmentOverride: Unaligned
-ac: "12"
+ac: '12'
 initiative: +2 (12)
-hp: "3"
+hp: '3'
 hitDice: 1d6
 speeds:
-  - type: walk
-    value: "30"
-  - type: climb
-    value: "30"
+  walk:
+    distance: 30 ft.
+  climb:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 8
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 11
-  - ability: int
+    saveProf: false
+  - key: int
     score: 4
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 6
-pb: "+2"
-cr: "0"
-xp: "0"
+    saveProf: false
+pb: '+2'
 passivesList:
   - skill: Perception
-    value: "11"
+    value: '11'
+cr: '0'
+xp: '0'
 entries:
   - category: trait
     name: Pack Tactics
+    entryType: special
     text: The baboon has Advantage on an attack roll against a creature if at least one of the baboon's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +1, reach 5 ft. 1 (1d4 - 1) Piercing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +1, reach 5 ft. 1 (1d4 - 1) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 1
+      damage:
+        - dice: 1d4
+          bonus: 0
+          type: Piercing
+          average: 1
+      reach: 5 ft.
 ---
 
 # Baboon
@@ -52,7 +68,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 8 | 14 | 11 | 4 | 12 | 6 |
+| - | - | - | - | - | - |
 
 CR 0, PB +2, XP 0
 

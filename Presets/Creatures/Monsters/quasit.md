@@ -3,64 +3,109 @@ smType: creature
 name: Quasit
 size: Small
 type: Fiend
+typeTags:
+  - value: Demon
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Evil
-ac: "13"
+ac: '13'
 initiative: +3 (13)
-hp: "25"
+hp: '25'
 hitDice: 10d4
 speeds:
-  - type: walk
-    value: "40"
+  walk:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 5
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 17
-  - ability: con
+    saveProf: false
+  - key: con
     score: 10
-  - ability: int
+    saveProf: false
+  - key: int
     score: 7
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 10
-pb: "+2"
-cr: "1"
-xp: "200"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Stealth
+    value: '5'
 sensesList:
   - type: darkvision
-    range: "120"
+    range: '120'
+passivesList:
+  - skill: Perception
+    value: '10'
 languagesList:
   - value: Abyssal
   - value: Common
-passivesList:
-  - skill: Perception
-    value: "10"
 damageResistancesList:
   - value: Cold
   - value: Fire
   - value: Lightning
 damageImmunitiesList:
-  - value: Poison
-  - value: Poisoned
+  - value: Poison; Poisoned
+cr: '1'
+xp: '200'
 entries:
   - category: trait
     name: Magic Resistance
+    entryType: special
     text: The quasit has Advantage on saving throws against spells and other magical effects.
   - category: action
     name: Rend
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 5 (1d4 + 3) Slashing damage, and the target has the Poisoned condition until the start of the quasit's next turn."
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 5 (1d4 + 3) Slashing damage, and the target has the Poisoned condition until the start of the quasit''s next turn.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d4
+          bonus: 3
+          type: Slashing
+          average: 5
+      reach: 5 ft.
   - category: action
     name: Scare (1/Day)
-    text: "*Wisdom Saving Throw*: DC 10, one creature within 20 feet. *Failure:*  The target has the Frightened condition. At the end of each of its turns, the target repeats the save, ending the effect on itself on a success. After 1 minute, it succeeds automatically."
+    entryType: save
+    text: '*Wisdom Saving Throw*: DC 10, one creature within 20 feet. *Failure:*  The target has the Frightened condition. At the end of each of its turns, the target repeats the save, ending the effect on itself on a success. After 1 minute, it succeeds automatically.'
+    limitedUse:
+      count: 1
+      reset: day
+    save:
+      ability: wis
+      dc: 10
+      targeting:
+        type: single
+        range: 20 ft.
+      onFail:
+        effects:
+          conditions:
+            - condition: Frightened
+              saveToEnd:
+                timing: end-of-turn
   - category: action
     name: Shape-Shift
+    entryType: special
     text: The quasit shape-shifts to resemble a bat (Speed 10 ft., Fly 40 ft.), a centipede (40 ft., Climb 40 ft.), or a toad (40 ft., Swim 40 ft.), or it returns to its true form. Its game statistics are the same in each form, except for its Speed. Any equipment it is wearing or carrying isn't transformed.
+spellcastingEntries:
   - category: action
     name: Invisibility
+    entryType: spellcasting
     text: The quasit casts *Invisibility* on itself, requiring no spell components and using Charisma as the spellcasting ability. - **At Will:** *Invisibility*
-
+    spellcasting:
+      ability: cha
+      spellLists:
+        - frequency: at-will
+          spells:
+            - Invisibility
 ---
 
 # Quasit
@@ -73,7 +118,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 5 | 17 | 10 | 7 | 10 | 10 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 120 ft.; Passive Perception 10
 **Languages** Abyssal, Common

@@ -5,40 +5,44 @@ size: Medium
 type: Undead
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Evil
-ac: "12"
+ac: '12'
 initiative: +2 (12)
-hp: "22"
+hp: '22'
 hitDice: 5d8
 speeds:
-  - type: walk
-    value: "30"
-  - type: fly
-    value: "50"
+  walk:
+    distance: 30 ft.
+  fly:
+    distance: 50 ft.
     hover: true
 abilities:
-  - ability: str
+  - key: str
     score: 1
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 11
-  - ability: int
+    saveProf: false
+  - key: int
     score: 10
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 11
-pb: "+2"
-cr: "1"
-xp: "200"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Understands Common plus one other language but can't speak
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+languagesList:
+  - value: Understands Common plus one other language but can't speak
 damageResistancesList:
   - value: Acid
   - value: Bludgeoning
@@ -50,9 +54,9 @@ damageResistancesList:
   - value: Thunder
 damageImmunitiesList:
   - value: Necrotic
-  - value: Poison
-  - value: Charmed
+  - value: Poison; Charmed
   - value: Exhaustion
+conditionImmunitiesList:
   - value: Grappled
   - value: Paralyzed
   - value: Petrified
@@ -60,17 +64,33 @@ damageImmunitiesList:
   - value: Prone
   - value: Restrained
   - value: Unconscious
+cr: '1'
+xp: '200'
 entries:
   - category: trait
     name: Incorporeal Movement
+    entryType: special
     text: The specter can move through other creatures and objects as if they were Difficult Terrain. It takes 5 (1d10) Force damage if it ends its turn inside an object.
   - category: trait
     name: Sunlight Sensitivity
+    entryType: special
     text: While in sunlight, the specter has Disadvantage on ability checks and attack rolls.
   - category: action
     name: Life Drain
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 7 (2d6) Necrotic damage. If the target is a creature, its Hit Point maximum decreases by an amount equal to the damage taken."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 7 (2d6) Necrotic damage. If the target is a creature, its Hit Point maximum decreases by an amount equal to the damage taken.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 2d6
+          bonus: 0
+          type: Necrotic
+          average: 7
+      reach: 5 ft.
+      onHit:
+        other: If the target is a creature, its Hit Point maximum decreases by an amount equal to the damage taken.
+      additionalEffects: If the target is a creature, its Hit Point maximum decreases by an amount equal to the damage taken.
 ---
 
 # Specter
@@ -83,7 +103,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 1 | 14 | 11 | 10 | 10 | 11 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 10
 **Languages** Understands Common plus one other language but can't speak

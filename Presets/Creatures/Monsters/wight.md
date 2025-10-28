@@ -5,60 +5,125 @@ size: Medium
 type: Undead
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Evil
-ac: "14"
+ac: '14'
 initiative: +4 (14)
-hp: "82"
+hp: '82'
 hitDice: 11d8 + 33
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 15
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 16
-  - ability: int
+    saveProf: false
+  - key: int
     score: 10
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 13
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 15
-pb: "+2"
-cr: "3"
-xp: "700"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '3'
+  - skill: Stealth
+    value: '4'
 sensesList:
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Common plus one other language
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "13"
+    value: '13'
+languagesList:
+  - value: Common plus one other language
 damageResistancesList:
   - value: Necrotic
 damageImmunitiesList:
-  - value: Poison
-  - value: Exhaustion
+  - value: Poison; Exhaustion
+conditionImmunitiesList:
   - value: Poisoned
+cr: '3'
+xp: '700'
 entries:
   - category: trait
     name: Sunlight Sensitivity
+    entryType: special
     text: While in sunlight, the wight has Disadvantage on ability checks and attack rolls.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The wight makes two attacks, using Necrotic Sword or Necrotic Bow in any combination. It can replace one attack with a use of Life Drain.
+    multiattack:
+      attacks:
+        - name: two
+          count: 1
+      substitutions:
+        - replace: attack
+          with:
+            type: attack
+            name: Life Drain
   - category: action
     name: Necrotic Sword
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 6 (1d8 + 2) Slashing damage plus 4 (1d8) Necrotic damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 6 (1d8 + 2) Slashing damage plus 4 (1d8) Necrotic damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d8
+          bonus: 2
+          type: Slashing
+          average: 6
+        - dice: 1d8
+          bonus: 0
+          type: Necrotic
+          average: 4
+      reach: 5 ft.
   - category: action
     name: Necrotic Bow
-    text: "*Ranged Attack Roll:* +4, range 150/600 ft. 6 (1d8 + 2) Piercing damage plus 4 (1d8) Necrotic damage."
+    entryType: attack
+    text: '*Ranged Attack Roll:* +4, range 150/600 ft. 6 (1d8 + 2) Piercing damage plus 4 (1d8) Necrotic damage.'
+    attack:
+      type: ranged
+      bonus: 4
+      damage:
+        - dice: 1d8
+          bonus: 2
+          type: Piercing
+          average: 6
+        - dice: 1d8
+          bonus: 0
+          type: Necrotic
+          average: 4
+      range: 150/600 ft.
   - category: action
     name: Life Drain
-    text: "*Constitution Saving Throw*: DC 13, one creature within 5 feet. *Failure:*  6 (1d8 + 2) Necrotic damage, and the target's Hit Point maximum decreases by an amount equal to the damage taken. A Humanoid slain by this attack rises 24 hours later as a Zombie under the wight's control, unless the Humanoid is restored to life or its body is destroyed. The wight can have no more than twelve zombies under its control at a time."
-
+    entryType: save
+    text: '*Constitution Saving Throw*: DC 13, one creature within 5 feet. *Failure:*  6 (1d8 + 2) Necrotic damage, and the target''s Hit Point maximum decreases by an amount equal to the damage taken. A Humanoid slain by this attack rises 24 hours later as a Zombie under the wight''s control, unless the Humanoid is restored to life or its body is destroyed. The wight can have no more than twelve zombies under its control at a time.'
+    save:
+      ability: con
+      dc: 13
+      targeting:
+        type: single
+        range: 5 ft.
+      onFail:
+        effects:
+          other: 6 (1d8 + 2) Necrotic damage, and the target's Hit Point maximum decreases by an amount equal to the damage taken. A Humanoid slain by this attack rises 24 hours later as a Zombie under the wight's control, unless the Humanoid is restored to life or its body is destroyed. The wight can have no more than twelve zombies under its control at a time.
+        damage:
+          - dice: 1d8
+            bonus: 2
+            type: Necrotic
+            average: 6
+        legacyEffects: 6 (1d8 + 2) Necrotic damage, and the target's Hit Point maximum decreases by an amount equal to the damage taken. A Humanoid slain by this attack rises 24 hours later as a Zombie under the wight's control, unless the Humanoid is restored to life or its body is destroyed. The wight can have no more than twelve zombies under its control at a time.
 ---
 
 # Wight
@@ -71,7 +136,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 15 | 14 | 16 | 10 | 13 | 15 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 13
 **Languages** Common plus one other language

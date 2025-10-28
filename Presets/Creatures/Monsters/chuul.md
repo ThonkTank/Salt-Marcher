@@ -5,59 +5,115 @@ size: Large
 type: Aberration
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Evil
-ac: "16"
+ac: '16'
 initiative: +0 (10)
-hp: "76"
+hp: '76'
 hitDice: 9d10 + 27
 speeds:
-  - type: walk
-    value: "30"
-  - type: swim
-    value: "30"
+  walk:
+    distance: 30 ft.
+  swim:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 19
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 10
-  - ability: con
+    saveProf: false
+  - key: con
     score: 16
-  - ability: int
+    saveProf: false
+  - key: int
     score: 5
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 11
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 5
-pb: "+2"
-cr: "4"
-xp: "1100"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '4'
 sensesList:
   - type: darkvision
-    range: "60"
-languagesList:
-  - value: Understands Deep Speech but can't speak
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "14"
+    value: '14'
+languagesList:
+  - value: Understands Deep Speech but can't speak
 damageImmunitiesList:
-  - value: Poison
-  - value: Poisoned
+  - value: Poison; Poisoned
+cr: '4'
+xp: '1100'
 entries:
   - category: trait
     name: Amphibious
+    entryType: special
     text: The chuul can breathe air and water.
   - category: trait
     name: Sense Magic
+    entryType: special
     text: The chuul senses magic within 120 feet of itself. This trait otherwise works like the *Detect Magic* spell but isn't itself magical.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The chuul makes two Pincer attacks and uses Paralyzing Tentacles.
+    multiattack:
+      attacks:
+        - name: Pincer
+          count: 2
+      substitutions: []
   - category: action
     name: Pincer
-    text: "*Melee Attack Roll:* +6, reach 10 ft. 9 (1d10 + 4) Bludgeoning damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14) from one of two pincers."
+    entryType: attack
+    text: '*Melee Attack Roll:* +6, reach 10 ft. 9 (1d10 + 4) Bludgeoning damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14) from one of two pincers.'
+    attack:
+      type: melee
+      bonus: 6
+      damage:
+        - dice: 1d10
+          bonus: 4
+          type: Bludgeoning
+          average: 9
+      reach: 10 ft.
+      onHit:
+        conditions:
+          - condition: Grappled
+            escape:
+              type: dc
+              dc: 14
+            restrictions:
+              size: Large or smaller
+      additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14) from one of two pincers.
   - category: action
     name: Paralyzing Tentacles
-    text: "*Constitution Saving Throw*: DC 13, one creature Grappled by the chuul. *Failure:*  The target has the Poisoned condition and repeats the save at the end of each of its turns, ending the effect on itself on a success. After 1 minute, it succeeds automatically. While Poisoned, the target has the Paralyzed condition."
-
+    entryType: save
+    text: '*Constitution Saving Throw*: DC 13, one creature Grappled by the chuul. *Failure:*  The target has the Poisoned condition and repeats the save at the end of each of its turns, ending the effect on itself on a success. After 1 minute, it succeeds automatically. While Poisoned, the target has the Paralyzed condition.'
+    save:
+      ability: con
+      dc: 13
+      targeting:
+        type: single
+        restrictions:
+          other:
+            - grappled by source
+      onFail:
+        effects:
+          conditions:
+            - condition: Poisoned
+              saveToEnd:
+                timing: end-of-turn
+              restrictions:
+                while: While Poisoned, the target has the Paralyzed condition
+            - condition: Paralyzed
+              saveToEnd:
+                timing: end-of-turn
+              restrictions:
+                while: While Poisoned, the target has the Paralyzed condition
 ---
 
 # Chuul
@@ -70,7 +126,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 19 | 10 | 16 | 5 | 11 | 5 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 14
 **Languages** Understands Deep Speech but can't speak

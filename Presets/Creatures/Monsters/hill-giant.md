@@ -5,45 +5,80 @@ size: Huge
 type: Giant
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Evil
-ac: "13"
+ac: '13'
 initiative: +2 (12)
-hp: "105"
+hp: '105'
 hitDice: 10d12 + 40
 speeds:
-  - type: walk
-    value: "40"
+  walk:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 21
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 8
-  - ability: con
+    saveProf: false
+  - key: con
     score: 19
-  - ability: int
+    saveProf: false
+  - key: int
     score: 5
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 9
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 6
-pb: "+3"
-cr: "5"
-xp: "1800"
-languagesList:
-  - value: Giant
+    saveProf: false
+pb: '+3'
+skills:
+  - skill: Perception
+    value: '2'
 passivesList:
   - skill: Perception
-    value: "12"
+    value: '12'
+languagesList:
+  - value: Giant
+cr: '5'
+xp: '1800'
 entries:
   - category: action
     name: Multiattack
+    entryType: special
     text: The giant makes two attacks, using Tree Club or Trash Lob in any combination.
   - category: action
     name: Tree Club
-    text: "*Melee Attack Roll:* +8, reach 10 ft. 18 (3d8 + 5) Bludgeoning damage. If the target is a Large or smaller creature, it has the Prone condition."
+    entryType: attack
+    text: '*Melee Attack Roll:* +8, reach 10 ft. 18 (3d8 + 5) Bludgeoning damage. If the target is a Large or smaller creature, it has the Prone condition.'
+    attack:
+      type: melee
+      bonus: 8
+      damage:
+        - dice: 3d8
+          bonus: 5
+          type: Bludgeoning
+          average: 18
+      reach: 10 ft.
+      onHit:
+        conditions:
+          - condition: Prone
+            restrictions:
+              size: Large or smaller
+      additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
   - category: action
     name: Trash Lob
-    text: "*Ranged Attack Roll:* +8, range 60/240 ft. 16 (2d10 + 5) Bludgeoning damage, and the target has the Poisoned condition until the end of its next turn."
-
+    entryType: attack
+    text: '*Ranged Attack Roll:* +8, range 60/240 ft. 16 (2d10 + 5) Bludgeoning damage, and the target has the Poisoned condition until the end of its next turn.'
+    attack:
+      type: ranged
+      bonus: 8
+      damage:
+        - dice: 2d10
+          bonus: 5
+          type: Bludgeoning
+          average: 16
+      range: 60/240 ft.
 ---
 
 # Hill Giant
@@ -56,7 +91,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 21 | 8 | 19 | 5 | 9 | 6 |
+| - | - | - | - | - | - |
 
 **Languages** Giant
 CR 5, PB +3, XP 1800

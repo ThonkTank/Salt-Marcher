@@ -4,42 +4,46 @@ name: Swarm of Piranhas
 size: Medium
 type: Beast
 alignmentOverride: Unaligned
-ac: "13"
+ac: '13'
 initiative: +3 (13)
-hp: "28"
+hp: '28'
 hitDice: 8d8 - 8
 speeds:
-  - type: walk
-    value: "5"
-  - type: swim
-    value: "40"
+  walk:
+    distance: 5 ft.
+  swim:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 13
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 16
-  - ability: con
+    saveProf: false
+  - key: con
     score: 9
-  - ability: int
+    saveProf: false
+  - key: int
     score: 1
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 7
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 2
-pb: "+2"
-cr: "1"
-xp: "200"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "8"
+    value: '8'
 damageResistancesList:
   - value: Bludgeoning
   - value: Piercing
   - value: Slashing
-damageImmunitiesList:
+conditionImmunitiesList:
   - value: Charmed
   - value: Frightened
   - value: Grappled
@@ -48,17 +52,34 @@ damageImmunitiesList:
   - value: Prone
   - value: Restrained
   - value: Stunned
+cr: '1'
+xp: '200'
 entries:
   - category: trait
     name: Swarm
+    entryType: special
     text: The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny piranha. The swarm can't regain Hit Points or gain Temporary Hit Points.
   - category: trait
     name: Water Breathing
+    entryType: special
     text: The swarm can breathe only underwater.
   - category: action
     name: Bites
-    text: "*Melee Attack Roll:* +5 (with Advantage if the target doesn't have all its Hit Points), reach 5 ft. 8 (2d4 + 3) Piercing damage, or 5 (1d4 + 3) Piercing damage if the swarm is Bloodied."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +5 (with Advantage if the target doesn''t have all its Hit Points), reach 5 ft. 8 (2d4 + 3) Piercing damage, or 5 (1d4 + 3) Piercing damage if the swarm is Bloodied.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 2d4
+          bonus: 3
+          type: Piercing
+          average: 8
+        - dice: 1d4
+          bonus: 3
+          type: Piercing
+          average: 5
+      reach: 5 ft.
 ---
 
 # Swarm of Piranhas
@@ -71,7 +92,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 13 | 16 | 9 | 1 | 7 | 2 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 8
 CR 1, PB +2, XP 200

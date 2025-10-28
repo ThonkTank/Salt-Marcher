@@ -3,86 +3,195 @@ smType: creature
 name: Solar
 size: Large
 type: Celestial
+typeTags:
+  - value: Angel
 alignmentLawChaos: Lawful
 alignmentGoodEvil: Good
-ac: "21"
+ac: '21'
 initiative: +20 (30)
-hp: "297"
+hp: '297'
 hitDice: 22d10 + 176
 speeds:
-  - type: walk
-    value: "50"
-  - type: fly
-    value: "150"
+  walk:
+    distance: 50 ft.
+  fly:
+    distance: 150 ft.
     hover: true
 abilities:
-  - ability: str
+  - key: str
     score: 26
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 22
-  - ability: con
+    saveProf: false
+  - key: con
     score: 26
-  - ability: int
+    saveProf: false
+  - key: int
     score: 25
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 25
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 30
-pb: "+7"
-cr: "21"
-xp: "33000"
+    saveProf: false
+pb: '+7'
+skills:
+  - skill: Perception
+    value: '14'
 sensesList:
   - type: truesight
-    range: "120"
-languagesList:
-  - value: All
-  - type: telepathy
-    range: "120"
+    range: '120'
 passivesList:
   - skill: Perception
-    value: "24"
+    value: '24'
+languagesList:
+  - value: All
+  - value: telepathy 120 ft.
 damageImmunitiesList:
   - value: Poison
-  - value: Radiant
-  - value: Charmed
+  - value: Radiant; Charmed
   - value: Exhaustion
+conditionImmunitiesList:
   - value: Frightened
   - value: Poisoned
+cr: '21'
+xp: '33000'
 entries:
   - category: trait
     name: Divine Awareness
+    entryType: special
     text: The solar knows if it hears a lie.
   - category: trait
     name: Exalted Restoration
+    entryType: special
     text: If the solar dies outside Mount Celestia, its body disappears, and it gains a new body instantly, reviving with all its Hit Points somewhere in Mount Celestia.
   - category: trait
     name: Legendary Resistance (4/Day)
+    entryType: special
     text: If the solar fails a saving throw, it can choose to succeed instead.
+    limitedUse:
+      count: 4
+      reset: day
   - category: trait
     name: Magic Resistance
+    entryType: special
     text: The solar has Advantage on saving throws against spells and other magical effects.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The solar makes two Flying Sword attacks. It can replace one attack with a use of Slaying Bow.
+    multiattack:
+      attacks:
+        - name: Sword
+          count: 1
+      substitutions:
+        - replace: attack
+          with:
+            type: attack
+            name: Slaying Bow
   - category: action
     name: Flying Sword
-    text: "*Melee or Ranged Attack Roll:* +15, reach 10 ft. or range 120 ft. 22 (4d6 + 8) Slashing damage plus 36 (8d8) Radiant damage. HitomThe sword magically returns to the solar's hand or hovers within 5 feet of the solar immediately after a ranged attack."
+    entryType: special
+    text: '*Melee or Ranged Attack Roll:* +15, reach 10 ft. or range 120 ft. 22 (4d6 + 8) Slashing damage plus 36 (8d8) Radiant damage. HitomThe sword magically returns to the solar''s hand or hovers within 5 feet of the solar immediately after a ranged attack.'
   - category: action
     name: Slaying Bow
-    text: "*Dexterity Saving Throw*: DC 21, one creature the solar can see within 600 feet. *Failure:*  If the creature has 100 Hit Points or fewer, it dies. It otherwise takes 24 (4d8 + 6) Piercing damage plus 36 (8d8) Radiant damage."
-  - category: action
-    name: Spellcasting
-    text: "The solar casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 25): - **At Will:** *Detect Evil and Good* - **1e/Day Each:** *Commune*, *Control Weather*, *Dispel Evil and Good*, *Resurrection*"
-  - category: bonus
-    name: Divine Aid (3/Day)
-    text: The solar casts *Cure Wounds* (level 2 version), *Lesser Restoration*, or *Remove Curse*, using the same spellcasting ability as Spellcasting.
+    entryType: save
+    text: '*Dexterity Saving Throw*: DC 21, one creature the solar can see within 600 feet. *Failure:*  If the creature has 100 Hit Points or fewer, it dies. It otherwise takes 24 (4d8 + 6) Piercing damage plus 36 (8d8) Radiant damage.'
+    save:
+      ability: dex
+      dc: 21
+      targeting:
+        type: single
+        range: 600 ft.
+        restrictions:
+          visibility: true
+      onFail:
+        effects:
+          other: If the creature has 100 Hit Points or fewer, it dies. It otherwise takes 24 (4d8 + 6) Piercing damage plus 36 (8d8) Radiant damage.
+        damage:
+          - dice: 4d8
+            bonus: 6
+            type: Piercing
+            average: 24
+          - dice: 8d8
+            bonus: 0
+            type: Radiant
+            average: 36
+        legacyEffects: If the creature has 100 Hit Points or fewer, it dies. It otherwise takes 24 (4d8 + 6) Piercing damage plus 36 (8d8) Radiant damage.
   - category: legendary
     name: Blinding Gaze
-    text: "*Constitution Saving Throw*: DC 25, one creature the solar can see within 120 feet. *Failure:*  The target has the Blinded condition for 1 minute. *Failure or Success*:  The solar can't take this action again until the start of its next turn."
+    entryType: save
+    text: '*Constitution Saving Throw*: DC 25, one creature the solar can see within 120 feet. *Failure:*  The target has the Blinded condition for 1 minute. *Failure or Success*:  The solar can''t take this action again until the start of its next turn.'
+    save:
+      ability: con
+      dc: 25
+      targeting:
+        type: single
+        range: 120 ft.
+        restrictions:
+          visibility: true
+      onFail:
+        effects:
+          conditions:
+            - condition: Blinded
+              duration:
+                type: minutes
+                count: 1
   - category: legendary
     name: Radiant Teleport
-    text: "The solar teleports up to 60 feet to an unoccupied space it can see. *Dexterity Saving Throw*: DC 25, each creature in a 10-foot Emanation originating from the solar at its destination space. *Failure:*  11 (2d10) Radiant damage. *Success:*  Half damage."
-
+    entryType: save
+    text: 'The solar teleports up to 60 feet to an unoccupied space it can see. *Dexterity Saving Throw*: DC 25, each creature in a 10-foot Emanation originating from the solar at its destination space. *Failure:*  11 (2d10) Radiant damage. *Success:*  Half damage.'
+    save:
+      ability: dex
+      dc: 25
+      targeting:
+        shape: emanation
+        size: 10 ft.
+        origin: self
+      onFail:
+        effects:
+          other: 11 (2d10) Radiant damage.
+        damage:
+          - dice: 2d10
+            bonus: 0
+            type: Radiant
+            average: 11
+        legacyEffects: 11 (2d10) Radiant damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
+spellcastingEntries:
+  - category: action
+    name: Spellcasting
+    entryType: spellcasting
+    text: 'The solar casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 25): - **At Will:** *Detect Evil and Good* - **1e/Day Each:** *Commune*, *Control Weather*, *Dispel Evil and Good*, *Resurrection*'
+    spellcasting:
+      ability: cha
+      saveDC: 25
+      excludeComponents:
+        - M
+      spellLists:
+        - frequency: at-will
+          spells:
+            - Detect Evil and Good
+        - frequency: 1/day
+          spells:
+            - Commune
+            - Control Weather
+            - Dispel Evil and Good
+            - Resurrection
+  - category: bonus
+    name: Divine Aid (3/Day)
+    entryType: spellcasting
+    text: The solar casts *Cure Wounds* (level 2 version), *Lesser Restoration*, or *Remove Curse*, using the same spellcasting ability as Spellcasting.
+    limitedUse:
+      count: 3
+      reset: day
+    spellcasting:
+      ability: int
+      spellLists: []
 ---
 
 # Solar
@@ -95,7 +204,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 26 | 22 | 26 | 25 | 25 | 30 |
+| - | - | - | - | - | - |
 
 **Senses** truesight 120 ft.; Passive Perception 24
 **Languages** All, telepathy 120 ft.

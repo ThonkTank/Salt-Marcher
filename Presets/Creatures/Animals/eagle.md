@@ -4,39 +4,56 @@ name: Eagle
 size: Small
 type: Beast
 alignmentOverride: Unaligned
-ac: "12"
+ac: '12'
 initiative: +2 (12)
-hp: "4"
+hp: '4'
 hitDice: 1d6 + 1
 speeds:
-  - type: walk
-    value: "10"
-  - type: fly
-    value: "60"
+  walk:
+    distance: 10 ft.
+  fly:
+    distance: 60 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 6
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 15
-  - ability: con
+    saveProf: false
+  - key: con
     score: 12
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 14
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 7
-pb: "+2"
-cr: "0"
-xp: "0"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '6'
 passivesList:
   - skill: Perception
-    value: "16"
+    value: '16'
+cr: '0'
+xp: '0'
 entries:
   - category: action
     name: Talons
-    text: "*Melee Attack Roll:* +4, reach 5 feet. 4 (1d4 + 2) Slashing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 feet. 4 (1d4 + 2) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d4
+          bonus: 2
+          type: Slashing
+          average: 4
 ---
 
 # Eagle
@@ -49,7 +66,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 6 | 15 | 12 | 2 | 14 | 7 |
+| - | - | - | - | - | - |
 
 CR 0, PB +2, XP 0
 

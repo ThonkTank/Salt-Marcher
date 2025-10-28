@@ -4,42 +4,65 @@ name: Blood Hawk
 size: Small
 type: Beast
 alignmentOverride: Unaligned
-ac: "12"
+ac: '12'
 initiative: +2 (12)
-hp: "7"
+hp: '7'
 hitDice: 2d6
 speeds:
-  - type: walk
-    value: "10"
-  - type: fly
-    value: "60"
+  walk:
+    distance: 10 ft.
+  fly:
+    distance: 60 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 6
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 14
-  - ability: con
+    saveProf: false
+  - key: con
     score: 10
-  - ability: int
+    saveProf: false
+  - key: int
     score: 3
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 14
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 5
-pb: "+2"
-cr: 1/8
-xp: "25"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '6'
 passivesList:
   - skill: Perception
-    value: "16"
+    value: '16'
+cr: 1/8
+xp: '25'
 entries:
   - category: trait
     name: Pack Tactics
+    entryType: special
     text: The hawk has Advantage on an attack roll against a creature if at least one of the hawk's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
   - category: action
     name: Beak
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 4 (1d4 + 2) Piercing damage, or 6 (1d8 + 2) Piercing damage if the target is Bloodied."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 4 (1d4 + 2) Piercing damage, or 6 (1d8 + 2) Piercing damage if the target is Bloodied.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d4
+          bonus: 2
+          type: Piercing
+          average: 4
+        - dice: 1d8
+          bonus: 2
+          type: Piercing
+          average: 6
+      reach: 5 ft.
 ---
 
 # Blood Hawk
@@ -52,7 +75,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 6 | 14 | 10 | 3 | 14 | 5 |
+| - | - | - | - | - | - |
 
 CR 1/8, PB +2, XP 25
 

@@ -5,42 +5,68 @@ size: Medium
 type: Aberration
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Evil
-ac: "11"
+ac: '11'
 initiative: +1 (11)
-hp: "11"
+hp: '11'
 hitDice: 2d8 + 2
 speeds:
-  - type: walk
-    value: "30"
-  - type: climb
-    value: "30"
+  walk:
+    distance: 30 ft.
+  climb:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 16
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 12
-  - ability: con
+    saveProf: false
+  - key: con
     score: 12
-  - ability: int
+    saveProf: false
+  - key: int
     score: 9
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 8
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 6
-pb: "+2"
-cr: 1/4
-xp: "50"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Athletics
+    value: '5'
+  - skill: Perception
+    value: '3'
+  - skill: Stealth
+    value: '5'
 sensesList:
   - type: blindsight
-    range: "30"
+    range: '30'
 passivesList:
   - skill: Perception
-    value: "13"
+    value: '13'
+cr: 1/4
+xp: '50'
 entries:
   - category: action
     name: Bone Cudgel
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 6 (1d6 + 3) Bludgeoning damage plus 2 (1d4) Psychic damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 6 (1d6 + 3) Bludgeoning damage plus 2 (1d4) Psychic damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d6
+          bonus: 3
+          type: Bludgeoning
+          average: 6
+        - dice: 1d4
+          bonus: 0
+          type: Psychic
+          average: 2
+      reach: 5 ft.
 ---
 
 # Grimlock
@@ -53,7 +79,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 16 | 12 | 12 | 9 | 8 | 6 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 30 ft.; Passive Perception 13
 CR 1/4, PB +2, XP 50

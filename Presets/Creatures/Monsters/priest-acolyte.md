@@ -5,48 +5,98 @@ size: Small
 type: Humanoid
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Neutral
-ac: "13"
+ac: '13'
 initiative: +0 (10)
-hp: "11"
+hp: '11'
 hitDice: 2d8 + 2
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 14
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 10
-  - ability: con
+    saveProf: false
+  - key: con
     score: 12
-  - ability: int
+    saveProf: false
+  - key: int
     score: 10
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 14
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 11
-pb: "+2"
-cr: 1/4
-xp: "50"
-languagesList:
-  - value: Common
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Medicine
+    value: '4'
+  - skill: Religion
+    value: '2'
 passivesList:
   - skill: Perception
-    value: "12"
+    value: '12'
+languagesList:
+  - value: Common
+cr: 1/4
+xp: '50'
 entries:
   - category: action
     name: Mace
-    text: "*Melee Attack Roll:* +4, reach 5 ft. 5 (1d6 + 2) Bludgeoning damage plus 2 (1d4) Radiant damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +4, reach 5 ft. 5 (1d6 + 2) Bludgeoning damage plus 2 (1d4) Radiant damage.'
+    attack:
+      type: melee
+      bonus: 4
+      damage:
+        - dice: 1d6
+          bonus: 2
+          type: Bludgeoning
+          average: 5
+        - dice: 1d4
+          bonus: 0
+          type: Radiant
+          average: 2
+      reach: 5 ft.
   - category: action
     name: Radiant Flame
-    text: "*Ranged Attack Roll:* +4, range 60 ft. 7 (2d6) Radiant damage."
+    entryType: attack
+    text: '*Ranged Attack Roll:* +4, range 60 ft. 7 (2d6) Radiant damage.'
+    attack:
+      type: ranged
+      bonus: 4
+      damage:
+        - dice: 2d6
+          bonus: 0
+          type: Radiant
+          average: 7
+      range: 60 ft.
+spellcastingEntries:
   - category: action
     name: Spellcasting
-    text: "The priest casts one of the following spells, using Wisdom as the spellcasting ability: - **At Will:** *Light*, *Thaumaturgy*"
+    entryType: spellcasting
+    text: 'The priest casts one of the following spells, using Wisdom as the spellcasting ability: - **At Will:** *Light*, *Thaumaturgy*'
+    spellcasting:
+      ability: wis
+      spellLists:
+        - frequency: at-will
+          spells:
+            - Light
+            - Thaumaturgy
   - category: bonus
     name: Divine Aid (1/Day)
+    entryType: spellcasting
     text: The priest casts *Bless*, *Healing Word*, or *Sanctuary*, using the same spellcasting ability as Spellcasting.
-
+    limitedUse:
+      count: 1
+      reset: day
+    spellcasting:
+      ability: int
+      spellLists: []
 ---
 
 # Priest Acolyte
@@ -59,7 +109,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 14 | 10 | 12 | 10 | 14 | 11 |
+| - | - | - | - | - | - |
 
 **Languages** Common
 CR 1/4, PB +2, XP 50

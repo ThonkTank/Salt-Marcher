@@ -4,43 +4,62 @@ name: Hyena
 size: Medium
 type: Beast
 alignmentOverride: Unaligned
-ac: "11"
+ac: '11'
 initiative: +1 (11)
-hp: "5"
+hp: '5'
 hitDice: 1d8 + 1
 speeds:
-  - type: walk
-    value: "50"
+  walk:
+    distance: 50 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 11
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 13
-  - ability: con
+    saveProf: false
+  - key: con
     score: 12
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 5
-pb: "+2"
-cr: "0"
-xp: "0"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '3'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
 passivesList:
   - skill: Perception
-    value: "13"
+    value: '13'
+cr: '0'
+xp: '0'
 entries:
   - category: trait
     name: Pack Tactics
+    entryType: special
     text: The hyena has Advantage on an attack roll against a creature if at least one of the hyena's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +2, reach 5 ft. 3 (1d6) Piercing damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +2, reach 5 ft. 3 (1d6) Piercing damage.'
+    attack:
+      type: melee
+      bonus: 2
+      damage:
+        - dice: 1d6
+          bonus: 0
+          type: Piercing
+          average: 3
+      reach: 5 ft.
 ---
 
 # Hyena
@@ -53,7 +72,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 11 | 13 | 12 | 2 | 12 | 5 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 13
 CR 0, PB +2, XP 0

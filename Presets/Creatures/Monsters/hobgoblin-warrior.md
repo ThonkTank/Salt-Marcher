@@ -3,51 +3,83 @@ smType: creature
 name: Hobgoblin Warrior
 size: Medium
 type: Fey
+typeTags:
+  - value: Goblinoid
 alignmentLawChaos: Lawful
 alignmentGoodEvil: Evil
-ac: "18"
+ac: '18'
 initiative: +3 (13)
-hp: "11"
+hp: '11'
 hitDice: 2d8 + 2
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 13
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 12
-  - ability: con
+    saveProf: false
+  - key: con
     score: 12
-  - ability: int
+    saveProf: false
+  - key: int
     score: 10
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 9
-pb: "+2"
-cr: 1/2
-xp: "100"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
+passivesList:
+  - skill: Perception
+    value: '10'
 languagesList:
   - value: Common
   - value: Goblin
-passivesList:
-  - skill: Perception
-    value: "10"
+cr: 1/2
+xp: '100'
 entries:
   - category: trait
     name: Pack Tactics
+    entryType: special
     text: The hobgoblin has Advantage on an attack roll against a creature if at least one of the hobgoblin's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
   - category: action
     name: Longsword
-    text: "*Melee Attack Roll:* +3, reach 5 ft. 12 (2d10 + 1) Slashing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +3, reach 5 ft. 12 (2d10 + 1) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 3
+      damage:
+        - dice: 2d10
+          bonus: 1
+          type: Slashing
+          average: 12
+      reach: 5 ft.
   - category: action
     name: Longbow
-    text: "*Ranged Attack Roll:* +3, range 150/600 ft. 5 (1d8 + 1) Piercing damage plus 7 (3d4) Poison damage."
-
+    entryType: attack
+    text: '*Ranged Attack Roll:* +3, range 150/600 ft. 5 (1d8 + 1) Piercing damage plus 7 (3d4) Poison damage.'
+    attack:
+      type: ranged
+      bonus: 3
+      damage:
+        - dice: 1d8
+          bonus: 1
+          type: Piercing
+          average: 5
+        - dice: 3d4
+          bonus: 0
+          type: Poison
+          average: 7
+      range: 150/600 ft.
 ---
 
 # Hobgoblin Warrior
@@ -60,7 +92,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 13 | 12 | 12 | 10 | 10 | 9 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 10
 **Languages** Common, Goblin

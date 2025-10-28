@@ -4,37 +4,63 @@ name: Rhinoceros
 size: Large
 type: Beast
 alignmentOverride: Unaligned
-ac: "13"
-initiative: "-1 (9)"
-hp: "45"
+ac: '13'
+initiative: '-1 (9)'
+hp: '45'
 hitDice: 6d10 + 12
 speeds:
-  - type: walk
-    value: "40"
+  walk:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 21
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 8
-  - ability: con
+    saveProf: false
+  - key: con
     score: 15
-  - ability: int
+    saveProf: false
+  - key: int
     score: 2
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 6
-pb: "+2"
-cr: "2"
-xp: "450"
+    saveProf: false
+pb: '+2'
 passivesList:
   - skill: Perception
-    value: "11"
+    value: '11'
+cr: '2'
+xp: '450'
 entries:
   - category: action
     name: Gore
-    text: "*Melee Attack Roll:* +7, reach 5 ft. 14 (2d8 + 5) Piercing damage. If target is a Large or smaller creature and the rhinoceros moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +7, reach 5 ft. 14 (2d8 + 5) Piercing damage. If target is a Large or smaller creature and the rhinoceros moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition.'
+    attack:
+      type: melee
+      bonus: 7
+      damage:
+        - dice: 2d8
+          bonus: 5
+          type: Piercing
+          average: 14
+        - dice: 2d8
+          bonus: 0
+          type: Piercing
+          average: 9
+      reach: 5 ft.
+      onHit:
+        conditions:
+          - condition: Prone
+            restrictions:
+              size: Large or smaller
+        other: If target is a Large or smaller creature and the rhinoceros moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition.
+      additionalEffects: If target is a Large or smaller creature and the rhinoceros moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition.
 ---
 
 # Rhinoceros
@@ -47,7 +73,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 21 | 8 | 15 | 2 | 12 | 6 |
+| - | - | - | - | - | - |
 
 CR 2, PB +2, XP 450
 

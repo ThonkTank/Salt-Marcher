@@ -5,66 +5,142 @@ size: Large
 type: Fiend
 alignmentLawChaos: Lawful
 alignmentGoodEvil: Evil
-ac: "17"
+ac: '17'
 initiative: +0 (10)
-hp: "119"
+hp: '119'
 hitDice: 14d10 + 42
 speeds:
-  - type: walk
-    value: "30"
-  - type: fly
-    value: "30"
+  walk:
+    distance: 30 ft.
+  fly:
+    distance: 30 ft.
     hover: true
 abilities:
-  - ability: str
+  - key: str
     score: 19
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 11
-  - ability: con
+    saveProf: true
+    saveMod: 3
+  - key: con
     score: 16
-  - ability: int
+    saveProf: true
+    saveMod: 6
+  - key: int
     score: 14
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: true
+    saveMod: 4
+  - key: cha
     score: 15
-pb: "+3"
-cr: "7"
-xp: "2900"
+    saveProf: true
+    saveMod: 5
+pb: '+3'
+skills:
+  - skill: Arcana
+    value: '5'
+  - skill: Deception
+    value: '8'
+  - skill: Perception
+    value: '4'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
+passivesList:
+  - skill: Perception
+    value: '14'
 languagesList:
   - value: Common
   - value: Giant
-passivesList:
-  - skill: Perception
-    value: "14"
 damageResistancesList:
   - value: Cold
+cr: '7'
+xp: '2900'
 entries:
   - category: trait
     name: Regeneration
+    entryType: special
     text: The oni regains 10 Hit Points at the start of each of its turns if it has at least 1 Hit Point.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The oni makes two Claw or Nightmare Ray attacks. It can replace one attack with a use of Spellcasting.
+    multiattack:
+      attacks:
+        - name: Ray
+          count: 1
+      substitutions:
+        - replace: attack
+          with:
+            type: spellcasting
+            text: Spellcasting
   - category: action
     name: Claw
-    text: "*Melee Attack Roll:* +7, reach 10 ft. 10 (1d12 + 4) Slashing damage plus 9 (2d8) Necrotic damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +7, reach 10 ft. 10 (1d12 + 4) Slashing damage plus 9 (2d8) Necrotic damage.'
+    attack:
+      type: melee
+      bonus: 7
+      damage:
+        - dice: 1d12
+          bonus: 4
+          type: Slashing
+          average: 10
+        - dice: 2d8
+          bonus: 0
+          type: Necrotic
+          average: 9
+      reach: 10 ft.
   - category: action
     name: Nightmare Ray
-    text: "*Ranged Attack Roll:* +5, range 60 ft. 9 (2d6 + 2) Psychic damage, and the target has the Frightened condition until the start of the oni's next turn."
+    entryType: attack
+    text: '*Ranged Attack Roll:* +5, range 60 ft. 9 (2d6 + 2) Psychic damage, and the target has the Frightened condition until the start of the oni''s next turn.'
+    attack:
+      type: ranged
+      bonus: 5
+      damage:
+        - dice: 2d6
+          bonus: 2
+          type: Psychic
+          average: 9
+      range: 60 ft.
   - category: action
     name: Shape-Shift
+    entryType: special
     text: The oni shape-shifts into a Small or Medium Humanoid or a Large Giant, or it returns to its true form. Other than its size, its game statistics are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+spellcastingEntries:
   - category: action
     name: Spellcasting
-    text: "The oni casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 13): - **At Will:** - **1e/Day Each:** *Charm Person*, *Darkness*, *Gaseous Form*, *Sleep*"
+    entryType: spellcasting
+    text: 'The oni casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 13): - **At Will:** - **1e/Day Each:** *Charm Person*, *Darkness*, *Gaseous Form*, *Sleep*'
+    spellcasting:
+      ability: cha
+      saveDC: 13
+      excludeComponents:
+        - M
+      spellLists:
+        - frequency: at-will
+          spells:
+            - '- 1e/Day Each: Charm Person'
+            - Darkness
+            - Gaseous Form
+            - Sleep
+        - frequency: 1/day
+          spells:
+            - Charm Person
+            - Darkness
+            - Gaseous Form
+            - Sleep
   - category: bonus
     name: Invisibility
+    entryType: spellcasting
     text: The oni casts *Invisibility* on itself, requiring no spell components and using the same spellcasting ability as Spellcasting.
-
+    spellcasting:
+      ability: int
+      spellLists: []
 ---
 
 # Oni
@@ -77,7 +153,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 19 | 11 | 16 | 14 | 12 | 15 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 14
 **Languages** Common, Giant

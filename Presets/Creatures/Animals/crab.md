@@ -4,45 +4,60 @@ name: Crab
 size: Small
 type: Beast
 alignmentOverride: Unaligned
-ac: "11"
+ac: '11'
 initiative: +0 (10)
-hp: "3"
+hp: '3'
 hitDice: 1d4 + 1
 speeds:
-  - type: walk
-    value: "20"
-  - type: swim
-    value: "20"
+  walk:
+    distance: 20 ft.
+  swim:
+    distance: 20 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 6
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 11
-  - ability: con
+    saveProf: false
+  - key: con
     score: 12
-  - ability: int
+    saveProf: false
+  - key: int
     score: 1
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 8
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 2
-pb: "+2"
-cr: "0"
-xp: "0"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Stealth
+    value: '2'
 sensesList:
   - type: blindsight
-    range: "30"
+    range: '30'
 passivesList:
   - skill: Perception
-    value: "9"
+    value: '9'
+cr: '0'
+xp: '0'
 entries:
   - category: trait
     name: Amphibious
+    entryType: special
     text: The crab can breathe air and water.
   - category: action
     name: Claw
-    text: "*Melee Attack Roll:* +2, reach 5 ft. 1 Bludgeoning damage."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +2, reach 5 ft. 1 Bludgeoning damage.'
+    attack:
+      type: melee
+      bonus: 2
+      damage: []
+      reach: 5 ft.
 ---
 
 # Crab
@@ -55,7 +70,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 6 | 11 | 12 | 1 | 8 | 2 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 30 ft.; Passive Perception 9
 CR 0, PB +2, XP 0

@@ -5,43 +5,68 @@ size: Small
 type: Humanoid
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Neutral
-ac: "12"
+ac: '12'
 initiative: +1 (11)
-hp: "11"
+hp: '11'
 hitDice: 2d8 + 2
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 11
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 12
-  - ability: con
+    saveProf: false
+  - key: con
     score: 12
-  - ability: int
+    saveProf: false
+  - key: int
     score: 10
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 10
-pb: "+2"
-cr: 1/8
-xp: "25"
+    saveProf: false
+pb: '+2'
+passivesList:
+  - skill: Perception
+    value: '10'
 languagesList:
   - value: Common
   - value: Thieves' cant
-passivesList:
-  - skill: Perception
-    value: "10"
+cr: 1/8
+xp: '25'
 entries:
   - category: action
     name: Scimitar
-    text: "*Melee Attack Roll:* +3, reach 5 ft. 4 (1d6 + 1) Slashing damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +3, reach 5 ft. 4 (1d6 + 1) Slashing damage.'
+    attack:
+      type: melee
+      bonus: 3
+      damage:
+        - dice: 1d6
+          bonus: 1
+          type: Slashing
+          average: 4
+      reach: 5 ft.
   - category: action
     name: Light Crossbow
-    text: "*Ranged Attack Roll:* +3, range 80/320 ft. 5 (1d8 + 1) Piercing damage."
-
+    entryType: attack
+    text: '*Ranged Attack Roll:* +3, range 80/320 ft. 5 (1d8 + 1) Piercing damage.'
+    attack:
+      type: ranged
+      bonus: 3
+      damage:
+        - dice: 1d8
+          bonus: 1
+          type: Piercing
+          average: 5
+      range: 80/320 ft.
 ---
 
 # Bandit
@@ -54,7 +79,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 11 | 12 | 12 | 10 | 10 | 10 |
+| - | - | - | - | - | - |
 
 **Languages** Common, Thieves' cant
 CR 1/8, PB +2, XP 25

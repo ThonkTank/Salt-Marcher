@@ -3,61 +3,102 @@ smType: creature
 name: Bearded Devil
 size: Medium
 type: Fiend
+typeTags:
+  - value: Devil
 alignmentLawChaos: Lawful
 alignmentGoodEvil: Evil
-ac: "13"
+ac: '13'
 initiative: +2 (12)
-hp: "58"
+hp: '58'
 hitDice: 9d8 + 18
 speeds:
-  - type: walk
-    value: "30"
+  walk:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 16
-  - ability: dex
+    saveProf: true
+    saveMod: 5
+  - key: dex
     score: 15
-  - ability: con
+    saveProf: false
+  - key: con
     score: 15
-  - ability: int
+    saveProf: true
+    saveMod: 4
+  - key: int
     score: 9
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 11
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 14
-pb: "+2"
-cr: "3"
-xp: "700"
+    saveProf: true
+    saveMod: 4
+pb: '+2'
 sensesList:
-  - value: darkvision 120 ft. (unimpeded by magical darkness)
-languagesList:
-  - value: Infernal
-  - type: telepathy
-    range: "120"
+  - type: darkvision 120 ft. (unimpeded by magical darkness)
 passivesList:
   - skill: Perception
-    value: "10"
+    value: '10'
+languagesList:
+  - value: Infernal
+  - value: telepathy 120 ft.
 damageResistancesList:
   - value: Cold
 damageImmunitiesList:
   - value: Fire
-  - value: Poison
-  - value: Frightened
+  - value: Poison; Frightened
+conditionImmunitiesList:
   - value: Poisoned
+cr: '3'
+xp: '700'
 entries:
   - category: trait
     name: Magic Resistance
+    entryType: special
     text: The devil has Advantage on saving throws against spells and other magical effects.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The devil makes one Beard attack and one Infernal Glaive attack.
+    multiattack:
+      attacks:
+        - name: Beard
+          count: 1
+        - name: Glaive
+          count: 1
+      substitutions: []
   - category: action
     name: Beard
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 7 (1d8 + 3) Piercing damage, and the target has the Poisoned condition until the start of the devil's next turn. Until this poison ends, the target can't regain Hit Points."
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 7 (1d8 + 3) Piercing damage, and the target has the Poisoned condition until the start of the devil''s next turn. Until this poison ends, the target can''t regain Hit Points.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d8
+          bonus: 3
+          type: Piercing
+          average: 7
+      reach: 5 ft.
   - category: action
     name: Infernal Glaive
-    text: "*Melee Attack Roll:* +5, reach 10 ft. 8 (1d10 + 3) Slashing damage. If the target is a creature and doesn't already have an infernal wound, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *Failure:*  The target receives an infernal wound. While wounded, the target loses 5 (1d10) Hit Points at the start of each of its turns. The wound closes after 1 minute, after a spell restores Hit Points to the target, or after the target or a creature within 5 feet of it takes an action to stanch the wound, doing so by succeeding on a DC 12 Wisdom (Medicine) check."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 10 ft. 8 (1d10 + 3) Slashing damage. If the target is a creature and doesn''t already have an infernal wound, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *Failure:*  The target receives an infernal wound. While wounded, the target loses 5 (1d10) Hit Points at the start of each of its turns. The wound closes after 1 minute, after a spell restores Hit Points to the target, or after the target or a creature within 5 feet of it takes an action to stanch the wound, doing so by succeeding on a DC 12 Wisdom (Medicine) check.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d10
+          bonus: 3
+          type: Slashing
+          average: 8
+      reach: 10 ft.
+      onHit:
+        other: 'If the target is a creature and doesn''t already have an infernal wound, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *Failure:*  The target receives an infernal wound. While wounded, the target loses 5 (1d10) Hit Points at the start of each of its turns. The wound closes after 1 minute, after a spell restores Hit Points to the target, or after the target or a creature within 5 feet of it takes an action to stanch the wound, doing so by succeeding on a DC 12 Wisdom (Medicine) check.'
+      additionalEffects: 'If the target is a creature and doesn''t already have an infernal wound, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *Failure:*  The target receives an infernal wound. While wounded, the target loses 5 (1d10) Hit Points at the start of each of its turns. The wound closes after 1 minute, after a spell restores Hit Points to the target, or after the target or a creature within 5 feet of it takes an action to stanch the wound, doing so by succeeding on a DC 12 Wisdom (Medicine) check.'
 ---
 
 # Bearded Devil
@@ -70,7 +111,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 16 | 15 | 15 | 9 | 11 | 14 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 120 ft. (unimpeded by magical darkness); Passive Perception 10
 **Languages** Infernal, telepathy 120 ft.

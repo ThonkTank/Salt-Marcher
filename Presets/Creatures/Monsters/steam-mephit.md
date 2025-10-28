@@ -5,60 +5,121 @@ size: Small
 type: Elemental
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Evil
-ac: "10"
+ac: '10'
 initiative: +0 (10)
-hp: "17"
+hp: '17'
 hitDice: 5d6
 speeds:
-  - type: walk
-    value: "30"
-  - type: fly
-    value: "30"
+  walk:
+    distance: 30 ft.
+  fly:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 5
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 11
-  - ability: con
+    saveProf: false
+  - key: con
     score: 10
-  - ability: int
+    saveProf: false
+  - key: int
     score: 11
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 10
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 12
-pb: "+2"
-cr: 1/4
-xp: "50"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Stealth
+    value: '2'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
+passivesList:
+  - skill: Perception
+    value: '10'
 languagesList:
   - value: Primordial (Aquan
   - value: Ignan)
-passivesList:
-  - skill: Perception
-    value: "10"
 damageImmunitiesList:
   - value: Fire
-  - value: Poison
-  - value: Exhaustion
+  - value: Poison; Exhaustion
+conditionImmunitiesList:
   - value: Poisoned
+cr: 1/4
+xp: '50'
 entries:
   - category: trait
     name: Blurred Form
+    entryType: special
     text: Attack rolls against the mephit are made with Disadvantage unless the mephit has the Incapacitated condition.
   - category: trait
     name: Death Burst
-    text: "The mephit explodes when it dies. *Dexterity Saving Throw*: DC 10, each creature in a 5-foot Emanation originating from the mephit. *Failure:*  5 (2d4) Fire damage. *Success:*  Half damage."
+    entryType: save
+    text: 'The mephit explodes when it dies. *Dexterity Saving Throw*: DC 10, each creature in a 5-foot Emanation originating from the mephit. *Failure:*  5 (2d4) Fire damage. *Success:*  Half damage.'
+    save:
+      ability: dex
+      dc: 10
+      targeting:
+        shape: emanation
+        size: 5 ft.
+        origin: self
+      onFail:
+        effects:
+          other: 5 (2d4) Fire damage.
+        damage:
+          - dice: 2d4
+            bonus: 0
+            type: Fire
+            average: 5
+        legacyEffects: 5 (2d4) Fire damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
   - category: action
     name: Claw
-    text: "*Melee Attack Roll:* +2, reach 5 ft. 2 (1d4) Slashing damage plus 2 (1d4) Fire damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +2, reach 5 ft. 2 (1d4) Slashing damage plus 2 (1d4) Fire damage.'
+    attack:
+      type: melee
+      bonus: 2
+      damage:
+        - dice: 1d4
+          bonus: 0
+          type: Slashing
+          average: 2
+        - dice: 1d4
+          bonus: 0
+          type: Fire
+          average: 2
+      reach: 5 ft.
   - category: action
     name: Steam Breath
-    recharge: Recharge 6
-    text: "*Constitution Saving Throw*: DC 10, each creature in a 15-foot Cone. *Failure:*  5 (2d4) Fire damage, and the target's Speed decreases by 10 feet until the end of the mephit's next turn. *Success:*  Half damage only. *Failure or Success*:  Being underwater doesn't grant Resistance to this Fire damage."
-
+    entryType: save
+    text: '*Constitution Saving Throw*: DC 10, each creature in a 15-foot Cone. *Failure:*  5 (2d4) Fire damage, and the target''s Speed decreases by 10 feet until the end of the mephit''s next turn. *Success:*  Half damage only. *Failure or Success*:  Being underwater doesn''t grant Resistance to this Fire damage.'
+    save:
+      ability: con
+      dc: 10
+      targeting:
+        shape: cone
+        size: 15 ft.
+      onFail:
+        effects:
+          other: 5 (2d4) Fire damage, and the target's Speed decreases by 10 feet until the end of the mephit's next turn.
+        damage:
+          - dice: 2d4
+            bonus: 0
+            type: Fire
+            average: 5
+        legacyEffects: 5 (2d4) Fire damage, and the target's Speed decreases by 10 feet until the end of the mephit's next turn.
+      onSuccess:
+        damage: half
+        legacyText: Half damage only.
 ---
 
 # Steam Mephit
@@ -71,7 +132,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 5 | 11 | 10 | 11 | 10 | 12 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 10
 **Languages** Primordial (Aquan, Ignan)

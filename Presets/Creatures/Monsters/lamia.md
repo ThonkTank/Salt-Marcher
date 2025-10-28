@@ -5,55 +5,131 @@ size: Large
 type: Fiend
 alignmentLawChaos: Chaotic
 alignmentGoodEvil: Evil
-ac: "13"
+ac: '13'
 initiative: +1 (11)
-hp: "97"
+hp: '97'
 hitDice: 13d10 + 26
 speeds:
-  - type: walk
-    value: "40"
+  walk:
+    distance: 40 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 16
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 13
-  - ability: con
+    saveProf: false
+  - key: con
     score: 15
-  - ability: int
+    saveProf: false
+  - key: int
     score: 14
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 15
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 16
-pb: "+2"
-cr: "4"
-xp: "1100"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Deception
+    value: '7'
+  - skill: Insight
+    value: '4'
+  - skill: Stealth
+    value: '5'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
+passivesList:
+  - skill: Perception
+    value: '12'
 languagesList:
   - value: Abyssal
   - value: Common
-passivesList:
-  - skill: Perception
-    value: "12"
+cr: '4'
+xp: '1100'
 entries:
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The lamia makes two Claw attacks. It can replace one attack with a use of Corrupting Touch.
+    multiattack:
+      attacks:
+        - name: Claw
+          count: 2
+      substitutions:
+        - replace: attack
+          with:
+            type: attack
+            name: Corrupting Touch
   - category: action
     name: Claw
-    text: "*Melee Attack Roll:* +5, reach 5 ft. 7 (1d8 + 3) Slashing damage plus 7 (2d6) Psychic damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +5, reach 5 ft. 7 (1d8 + 3) Slashing damage plus 7 (2d6) Psychic damage.'
+    attack:
+      type: melee
+      bonus: 5
+      damage:
+        - dice: 1d8
+          bonus: 3
+          type: Slashing
+          average: 7
+        - dice: 2d6
+          bonus: 0
+          type: Psychic
+          average: 7
+      reach: 5 ft.
   - category: action
     name: Corrupting Touch
-    text: "*Wisdom Saving Throw*: DC 13, one creature the lamia can see within 5 feet. *Failure:*  13 (3d8) Psychic damage, and the target is cursed for 1 hour. Until the curse ends, the target has the Charmed and Poisoned conditions."
-  - category: action
-    name: Spellcasting
-    text: "The lamia casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 13): - **At Will:** *Disguise Self*, *Minor Illusion* - **1e/Day Each:** *Geas*, *Major Image*, *Scrying*"
+    entryType: save
+    text: '*Wisdom Saving Throw*: DC 13, one creature the lamia can see within 5 feet. *Failure:*  13 (3d8) Psychic damage, and the target is cursed for 1 hour. Until the curse ends, the target has the Charmed and Poisoned conditions.'
+    save:
+      ability: wis
+      dc: 13
+      targeting:
+        type: single
+        range: 5 ft.
+        restrictions:
+          visibility: true
+      onFail:
+        effects:
+          conditions:
+            - condition: Cursed
+              additionalText: the target has the Charmed and Poisoned conditions
+              duration:
+                type: until
+                trigger: the curse ends
+        damage:
+          - dice: 3d8
+            bonus: 0
+            type: Psychic
+            average: 13
   - category: bonus
     name: Leap
+    entryType: special
     text: The lamia jumps up to 30 feet by spending 10 feet of movement.
-
+spellcastingEntries:
+  - category: action
+    name: Spellcasting
+    entryType: spellcasting
+    text: 'The lamia casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 13): - **At Will:** *Disguise Self*, *Minor Illusion* - **1e/Day Each:** *Geas*, *Major Image*, *Scrying*'
+    spellcasting:
+      ability: cha
+      saveDC: 13
+      excludeComponents:
+        - M
+      spellLists:
+        - frequency: at-will
+          spells:
+            - Disguise Self
+            - Minor Illusion
+        - frequency: 1/day
+          spells:
+            - Geas
+            - Major Image
+            - Scrying
 ---
 
 # Lamia
@@ -66,7 +142,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 16 | 13 | 15 | 14 | 15 | 16 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 12
 **Languages** Abyssal, Common

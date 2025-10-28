@@ -69,9 +69,9 @@ export default class SaltMarcherPlugin extends Plugin {
 
             // Load dev commands (bundled with esbuild)
             try {
-                const { registerDevCommands } = await import('../../dev-tools/ipc/register-dev-commands');
+                const { registerDevCommands } = await import('../../devkit/core/ipc/register-dev-commands');
                 registerDevCommands(this.ipcServer);
-                logger.log('[IPC] Dev commands loaded - available: measure-ui, validate-ui-rule, validate-ui-config, screenshot-modal, navigate-to-section, validate-grid-layout, debug-stepper-styles, validate-ui, start-test, end-test, log-marker, set-debug-config, get-debug-config, get-test-logs, assert-log-contains');
+                logger.log('[IPC] Dev commands loaded - available: measure-ui, validate-ui-rule, validate-ui-config, dump-dom, navigate-to-section, validate-grid-layout, debug-stepper-styles, validate-ui, start-test, end-test, log-marker, set-debug-config, get-debug-config, get-test-logs, assert-log-contains, get-field-state, dump-field-states, get-modal-data');
             } catch (err) {
                 // Dev commands not available or import failed
                 logger.log('[IPC] Dev commands not available:', err);
@@ -279,7 +279,7 @@ export default class SaltMarcherPlugin extends Plugin {
             }
         }
 
-        // Dev tool command removed - use scripts/convert-references.mjs instead
+        // Dev tool command removed - use devkit/utilities/conversions/convert-references.mjs instead
 
     }
 

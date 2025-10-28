@@ -57,7 +57,19 @@
       "Bash(timeout 120 node:*)",
       "Bash(git log:*)",
       "Bash(timeout 30 node:*)",
-      "Bash(timeout 120 ./scripts/obsidian-cli.mjs:*)"
+      "Bash(timeout 120 ./scripts/obsidian-cli.mjs:*)",
+      "Bash(./devkit/core/cli/devkit:*)",
+      "Bash(timeout 120 ./devkit/core/cli/devkit import-presets:*)",
+      "Bash(netstat:*)",
+      "Bash(ln:*)",
+      "Bash(./devkit-cli:*)",
+      "Bash(timeout 120 ./devkit-cli import-presets:*)",
+      "Bash(rsync:*)",
+      "Bash(xxd:*)",
+      "Bash(tee:*)",
+      "Bash(timeout 15 ./devkit/core/cli/devkit debug:*)",
+      "Bash(./devkit/core/cli/legacy-obsidian-cli.mjs:*)",
+      "Bash(while read f)"
     ],
     "deny": [],
     "ask": []

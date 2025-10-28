@@ -5,62 +5,138 @@ size: Small
 type: Elemental
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Evil
-ac: "11"
+ac: '11'
 initiative: +1 (11)
-hp: "21"
+hp: '21'
 hitDice: 6d6
 speeds:
-  - type: walk
-    value: "30"
-  - type: fly
-    value: "30"
+  walk:
+    distance: 30 ft.
+  fly:
+    distance: 30 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 7
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 13
-  - ability: con
+    saveProf: false
+  - key: con
     score: 10
-  - ability: int
+    saveProf: false
+  - key: int
     score: 9
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 11
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 12
-pb: "+2"
-cr: 1/2
-xp: "100"
+    saveProf: false
+pb: '+2'
+skills:
+  - skill: Perception
+    value: '2'
+  - skill: Stealth
+    value: '3'
 sensesList:
   - type: darkvision
-    range: "60"
+    range: '60'
+passivesList:
+  - skill: Perception
+    value: '12'
 languagesList:
   - value: Primordial (Aquan
   - value: Auran)
-passivesList:
-  - skill: Perception
-    value: "12"
 damageVulnerabilitiesList:
   - value: Fire
 damageImmunitiesList:
   - value: Cold
-  - value: Poison
-  - value: Exhaustion
+  - value: Poison; Exhaustion
+conditionImmunitiesList:
   - value: Poisoned
+cr: 1/2
+xp: '100'
 entries:
   - category: trait
     name: Death Burst
-    text: "The mephit explodes when it dies. *Constitution Saving Throw*: DC 10, each creature in a 5-foot Emanation originating from the mephit. *Failure:*  5 (2d4) Cold damage. *Success:*  Half damage."
+    entryType: save
+    text: 'The mephit explodes when it dies. *Constitution Saving Throw*: DC 10, each creature in a 5-foot Emanation originating from the mephit. *Failure:*  5 (2d4) Cold damage. *Success:*  Half damage.'
+    save:
+      ability: con
+      dc: 10
+      targeting:
+        shape: emanation
+        size: 5 ft.
+        origin: self
+      onFail:
+        effects:
+          other: 5 (2d4) Cold damage.
+        damage:
+          - dice: 2d4
+            bonus: 0
+            type: Cold
+            average: 5
+        legacyEffects: 5 (2d4) Cold damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
   - category: action
     name: Claw
-    text: "*Melee Attack Roll:* +3, reach 5 ft. 3 (1d4 + 1) Slashing damage plus 2 (1d4) Cold damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +3, reach 5 ft. 3 (1d4 + 1) Slashing damage plus 2 (1d4) Cold damage.'
+    attack:
+      type: melee
+      bonus: 3
+      damage:
+        - dice: 1d4
+          bonus: 1
+          type: Slashing
+          average: 3
+        - dice: 1d4
+          bonus: 0
+          type: Cold
+          average: 2
+      reach: 5 ft.
   - category: action
     name: Frost Breath
-    recharge: Recharge 6
-    text: "*Constitution Saving Throw*: DC 10, each creature in a 15-foot Cone. *Failure:*  7 (3d4) Cold damage. *Success:*  Half damage."
+    entryType: save
+    text: '*Constitution Saving Throw*: DC 10, each creature in a 15-foot Cone. *Failure:*  7 (3d4) Cold damage. *Success:*  Half damage.'
+    save:
+      ability: con
+      dc: 10
+      targeting:
+        shape: cone
+        size: 15 ft.
+      onFail:
+        effects:
+          other: 7 (3d4) Cold damage.
+        damage:
+          - dice: 3d4
+            bonus: 0
+            type: Cold
+            average: 7
+        legacyEffects: 7 (3d4) Cold damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
+spellcastingEntries:
   - category: action
     name: Fog Cloud (1/Day)
+    entryType: spellcasting
     text: The mephit casts *Fog Cloud*, requiring no spell components and using Charisma as the spellcasting ability. - **At Will:** - **1/Day Each:** *Fog Cloud*
-
+    limitedUse:
+      count: 1
+      reset: day
+    spellcasting:
+      ability: cha
+      spellLists:
+        - frequency: at-will
+          spells:
+            - '- 1/Day Each: Fog Cloud'
+        - frequency: 1/day
+          spells:
+            - Fog Cloud
 ---
 
 # Ice Mephit
@@ -73,7 +149,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 7 | 13 | 10 | 9 | 11 | 12 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 60 ft.; Passive Perception 12
 **Languages** Primordial (Aquan, Auran)

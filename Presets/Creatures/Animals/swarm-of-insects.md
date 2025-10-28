@@ -4,40 +4,44 @@ name: Swarm of Insects
 size: Medium
 type: Beast
 alignmentOverride: Unaligned
-ac: "11"
+ac: '11'
 initiative: +1 (11)
-hp: "19"
+hp: '19'
 hitDice: 3d8 + 6
 speeds:
-  - type: walk
-    value: "20"
+  walk:
+    distance: 20 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 3
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 13
-  - ability: con
+    saveProf: false
+  - key: con
     score: 14
-  - ability: int
+    saveProf: false
+  - key: int
     score: 1
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 7
-  - ability: cha
+    saveProf: false
+  - key: cha
     score: 1
-pb: "+2"
-cr: 1/2
-xp: "100"
+    saveProf: false
+pb: '+2'
 sensesList:
   - type: blindsight
-    range: "30"
+    range: '30'
 passivesList:
   - skill: Perception
-    value: "8"
+    value: '8'
 damageResistancesList:
   - value: Bludgeoning
   - value: Piercing
   - value: Slashing
-damageImmunitiesList:
+conditionImmunitiesList:
   - value: Charmed
   - value: Frightened
   - value: Grappled
@@ -46,17 +50,34 @@ damageImmunitiesList:
   - value: Prone
   - value: Restrained
   - value: Stunned
+cr: 1/2
+xp: '100'
 entries:
   - category: trait
     name: Spider Climb
+    entryType: special
     text: If the swarm has a Climb Speed, the swarm can climb difficult surfaces, including along ceilings, without needing to make an ability check.
   - category: trait
     name: Swarm
+    entryType: special
     text: The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny insect. The swarm can't regain Hit Points or gain Temporary Hit Points.
   - category: action
     name: Bites
-    text: "*Melee Attack Roll:* +3, reach 5 ft. 6 (2d4 + 1) Poison damage, or 3 (1d4 + 1) Poison damage if the swarm is Bloodied."
-
+    entryType: attack
+    text: '*Melee Attack Roll:* +3, reach 5 ft. 6 (2d4 + 1) Poison damage, or 3 (1d4 + 1) Poison damage if the swarm is Bloodied.'
+    attack:
+      type: melee
+      bonus: 3
+      damage:
+        - dice: 2d4
+          bonus: 1
+          type: Poison
+          average: 6
+        - dice: 1d4
+          bonus: 1
+          type: Poison
+          average: 3
+      reach: 5 ft.
 ---
 
 # Swarm of Insects
@@ -69,7 +90,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 3 | 13 | 14 | 1 | 7 | 1 |
+| - | - | - | - | - | - |
 
 **Senses** blindsight 30 ft.; Passive Perception 8
 CR 1/2, PB +2, XP 100

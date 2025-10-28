@@ -1,0 +1,155 @@
+# Gesamt-ToDo-Liste
+
+Die Aufgaben sind nach Priorität sortiert. Dezimalstellen kennzeichnen die Reihenfolge innerhalb einer Prioritätsstufe.
+
+## 0. Fehlerbehebung
+- keine offenen ToDos.
+
+## 1. Funktionalität absichern
+- 1.1 [salt-marcher/src/apps/almanac/AGENTS.md] Events-Modus auf reale Daten umstellen (Phänomen-Editor, Filter, Import/Export).
+- 1.2 [salt-marcher/src/apps/almanac/data/AGENTS.md] Dateibasierte Persistenzschicht ergänzen (JsonStore-Integration, Migrationen).
+- 1.3 [salt-marcher/src/apps/almanac/domain/__tests__/AGENTS.md] Ergänze Tests für negative Zeitfortschritte und Chunk-basierte Verarbeitung.
+- 1.4 [salt-marcher/src/apps/almanac/domain/AGENTS.md] Recurrence-Engine um astronomische & benutzerdefinierte Regeln erweitern.
+- 1.5 [salt-marcher/src/apps/almanac/fixtures/AGENTS.md] Weitere Kalender-Schemata (z.B. 10-Tage-Woche, Schaltregeln) ergänzen.
+- 1.6 [salt-marcher/src/apps/almanac/mode/AGENTS.md] Aktualisiere Spezifikationen nach Architekturänderungen im Domain-Layer.
+- 1.7 [salt-marcher/src/apps/almanac/mode/components/AGENTS.md] Monat-/Woche-/Tag-Renderings implementieren und Tests in `tests/apps/almanac` ergänzen.
+- 1.8 [salt-marcher/src/apps/almanac/mode/events/AGENTS.md] Ergänze Styling-Hooks, sobald ein dediziertes Stylesheet für die Kartenansicht entsteht.
+- 1.9 [salt-marcher/src/ui/workmode/AGENTS.md] Icon-Handling (`setIcon`) integrieren, damit Obsidian-Icons statt Fallback-HTML genutzt werden.
+- 1.10 [salt-marcher/tests/apps/almanac/AGENTS.md] Ergänze UI-/Events-Tests nach Fertigstellung des Phänomen-Editors und Travel-Leaves.
+
+## 2. Robustheit & Wartbarkeit
+- 2.1 [salt-marcher/Presets/AGENTS.md] Pro Preset-Typ Metadaten-Header vereinheitlichen.
+- 2.2 [salt-marcher/Presets/Creatures/AGENTS.md] Legendäre/Lair-Komponenten ergänzen.
+- 2.3 [salt-marcher/Presets/Equipment/AGENTS.md] Einheitliche Property-Namen für Damage und Traits durchsetzen.
+- 2.4 [salt-marcher/Presets/Items/AGENTS.md] Mehr Beispiele für unterschiedliche Rarity-Level ergänzen.
+- 2.5 [salt-marcher/Presets/Spells/AGENTS.md] Einheitliche Kopfzeilen (Name, Schule, Quelle) etablieren.
+- 2.6 [salt-marcher/References/rulebooks/Admin-Legal/AGENTS.md] Aktuelle Lizenzmodelle (OGL, ORC, Fan Content) abgleichen.
+- 2.7 [salt-marcher/scripts/AGENTS.md] CLI-Prüfungen ergänzen (z. B. `--dry-run`) und Logging harmonisieren.
+- 2.8 [salt-marcher/src/apps/almanac/AGENTS.md] Cartographer-Integration & Travel-Leaf mit bidirektionalem Sync fertigstellen.
+- 2.9 [salt-marcher/src/apps/almanac/data/AGENTS.md] Cache-Invalidierung/Batch-Ladevorgänge für Events & Phänomene implementieren.
+- 2.10 [salt-marcher/src/apps/almanac/domain/__tests__/AGENTS.md] Füge Snapshot-/Property-Tests für komplexe Wiederholregeln hinzu.
+- 2.11 [salt-marcher/src/apps/almanac/domain/AGENTS.md] Konfliktauflösung zwischen Events & Phänomenen implementieren (Merge-/Reschedule-Flows).
+- 2.12 [salt-marcher/src/apps/almanac/fixtures/AGENTS.md] Fixture-Daten für Travel-Leaf (Wetter, Gezeiten) erweitern.
+- 2.13 [salt-marcher/src/apps/almanac/mode/AGENTS.md] Pflege Links zu Implementierungsdateien, sobald Komponenten erstellt werden.
+- 2.14 [salt-marcher/src/apps/almanac/mode/components/AGENTS.md] Events-/Manager-Child-Komponenten nachziehen und Verträge aus `contracts.ts` verlinken.
+- 2.15 [salt-marcher/src/apps/almanac/mode/travel/AGENTS.md] Nach Integration zusätzlicher Panels (Timeline/Grid) Tests mit JSDOM ergänzen.
+- 2.16 [salt-marcher/src/apps/library/create/creature/components/AGENTS.md] Weitere Komponenten (Legendary Actions, Lair Actions) extrahieren und testen.
+- 2.17 [salt-marcher/src/apps/library/create/equipment/AGENTS.md] Spezialfälle (modulare Waffen, Upgrade-Slots) modellieren.
+- 2.18 [salt-marcher/src/apps/library/create/item/AGENTS.md] Mehrfeld-Unterstützung (z. B. Aufladungen, Verbrauchsregeln) implementieren.
+- 2.19 [salt-marcher/src/apps/library/tools/AGENTS.md] Fehlertoleranz erhöhen (konfigurierbare Warnungen vs. Fehler) und Tests ergänzen.
+- 2.20 [salt-marcher/src/apps/library/tools/parsers/AGENTS.md] Parser um Schema-Versionierung erweitern und Breaking Changes protokollieren.
+- 2.21 [salt-marcher/src/ui/workmode/AGENTS.md] Accessibility-Checks für Keyboard-Navigation und ARIA-Attribute automatisieren.
+- 2.22 [salt-marcher/tests/apps/AGENTS.md] Weitere Smoke-Tests für neue Workmodes anlegen, sobald Implementierungen erfolgen.
+- 2.23 [salt-marcher/tests/contracts/AGENTS.md] Smoke-Subset für PR-Läufe dokumentieren und aktuell halten.
+- 2.24 [salt-marcher/tests/contracts/library-fixtures/AGENTS.md] Bei Schemaänderungen der Library-Domäne Fixtures synchronisieren und dokumentieren.
+- 2.25 [salt-marcher/tests/golden/library/creatures/AGENTS.md] Bei neuen Komponenten (Legendary Actions, Lair Actions) weitere Beispiele anlegen.
+- 2.34 [salt-marcher/src/apps/AGENTS.md] Kapsle View-Metadaten (Typ, Icon, Display-Name, Ribbon-Konfiguration) in einem gemeinsamen Manifest (`apps/view-manifest.ts`) und nutze es in `src/app/main.ts`, um Registrierungen, Ribbons und Commands generisch aufzubauen.
+- 2.49 [salt-marcher/src/apps/cartographer/modes/AGENTS.md] Auto-Save-Timeout des Inspectors an das Abort-Signal koppeln, Fehlermeldungen im Panel darstellen und Telemetrie für `saveTile`-/`setFill`-Fehler ergänzen.
+- 2.50 [salt-marcher/src/apps/cartographer/modes/AGENTS.md] Travel-Guide-Initialisierung gegen Terrain-/Logic-/Encounter-Ausfälle absichern und Nutzerhinweise + Logging vereinheitlichen.
+- 2.51 [salt-marcher/src/apps/cartographer/modes/AGENTS.md] Mode-IDs, Labels und Capabilities zentralisieren, damit Modusdefinitionen und Provider-Metadaten nicht auseinanderlaufen.
+- 2.52 [salt-marcher/src/apps/cartographer/modes/travel-guide/AGENTS.md] Encounter-Gateway so erweitern, dass fehlgeschlagene Module-Loads und Event-Builds Telemetrie & UI-Hinweise setzen, den Promise-Cache zurücksetzen und eine erneute Initialisierung zulassen.
+- 2.53 [salt-marcher/src/apps/cartographer/modes/travel-guide/AGENTS.md] Fehlerpfade rund um `initTokenFromTiles()` und Logik-Initialisierung auffangen, Statusmeldungen im Sidebar/Overlay setzen und Nutzern Wiederholungsoptionen anbieten.
+- 2.54 [salt-marcher/src/apps/cartographer/modes/travel-guide/AGENTS.md] Playback-Controls typisieren, damit Clock-/Tempo-Setter sowie `destroy()` ohne `any`-Casts adressiert werden und API-Drift früh auffällt.
+- 2.55 [salt-marcher/src/apps/cartographer/travel/domain/AGENTS.md] `createTravelLogic` um `dispose()` erweitern, das Store-Subscription, Token-Adapter und Playback zuverlässig beendet.
+- 2.55 [salt-marcher/src/apps/cartographer/travel/AGENTS.md] Dispose-Hook für `createTravelLogic()` bereitstellen, der Store-Subscription, Adapter-Token und Playback stoppt.
+- 2.56 [salt-marcher/src/apps/cartographer/travel/AGENTS.md] `bindAdapter()` um sofortiges `draw()`/`ensurePolys` erweitern, damit frisch montierte Map-/Route-Layer den aktuellen Zustand anzeigen.
+- 2.56 [salt-marcher/src/apps/cartographer/travel/domain/AGENTS.md] `bindAdapter` initiale Synchronisierung ergänzen (`ensurePolys`, `draw`, Token-Zentrierung), damit neue Render-Layer sofort den aktuellen Zustand anzeigen.
+- 2.57 [salt-marcher/src/apps/cartographer/travel/domain/AGENTS.md] Fehler aus `initTokenFromTiles`/`persistTokenToTiles` über UI-/Telemetry-Hooks sichtbar machen und Wiederholungsoptionen anbieten.
+- 2.57 [salt-marcher/src/apps/cartographer/travel/AGENTS.md] Persistenzfehler (`initTokenFromTiles`, `persistTokenToTiles`) mit UI-/Telemetry-Rückmeldung versehen, damit Nutzer Fehlschläge nachvollziehen können.
+- 2.58 [salt-marcher/src/apps/cartographer/travel/domain/AGENTS.md] Playback an neue RenderAdapter koppeln, damit Token-Animationen nach Adapterwechsel nicht am alten Adapter hängen bleiben.
+- 2.59 [salt-marcher/src/apps/cartographer/travel/infra/AGENTS.md] Playback nur pausieren, wenn ein Encounter tatsächlich geöffnet wird, oder nach unterdrückten externen Events sauber fortsetzen.
+- 2.59 [salt-marcher/src/apps/cartographer/travel/domain/AGENTS.md] Token-Persistenz entkoppeln, sodass beim Schreiben nicht jede Karte geladen und gespeichert werden muss (letzten Token-Stand cachen und nur betroffene Tiles anfassen).
+- 2.60 [salt-marcher/src/apps/cartographer/travel/infra/AGENTS.md] `openEncounter()` bei externen Events awaiten und Fehler bzw. Abbrüche mit Logging/Notice sichtbar machen.
+- 2.61 [salt-marcher/src/apps/cartographer/travel/render/AGENTS.md] `draw-route.ts`: Fehlende Zentren (`centerOf` → `null`) als Warnung loggen und eine Wiederholungs-/`ensurePolys`-Strategie dokumentieren, damit Routenpunkte nicht stillschweigend verschwinden.
+- 2.62 [salt-marcher/src/apps/cartographer/travel/render/AGENTS.md] `draw-route.ts`: Layer-Diff einführen, das bestehende Dot-/Hitbox-Elemente aktualisiert statt sie zu löschen, um Pointer-Capture und Event-Verweise während Rerenders zu erhalten.
+- 2.63 [salt-marcher/src/apps/cartographer/travel/ui/AGENTS.md] Legacy-Import im Travel-Guide (`interaction-controller.ts`) auf `context-menu.controller` umstellen und den Shim `contextmenue.ts` entfernen, um den doppelten Bundle-Eintrag loszuwerden.
+- 2.64 [salt-marcher/src/apps/cartographer/travel/ui/AGENTS.md] Geschwindigkeitssteuerung in `sidebar.ts` auf `input`-basierte Updates inklusive Validierungs-Helfer umbauen, damit Tempoänderungen sofort im Travel-Logic-Store landen.
+- 2.65 [salt-marcher/src/app/AGENTS.md] Terrain-Bootstrap-Logger so erweitern, dass Vault-Änderungen über `watchTerrains.onError` Telemetrie- und Notice-Hooks triggern statt nur Konsolenfehler zu schreiben.
+- 2.66 [salt-marcher/src/app/AGENTS.md] Terrain-Bootstrap mit `this.register` am Plugin-Lifecycle anbinden, damit `stop()` auch nach abgebrochenen `onload`-Sequenzen zuverlässig läuft.
+
+## 3. Neue Features
+- 3.1 [salt-marcher/calendarium/AGENTS.md] Bei Sicherheitsfixes Legacy-Build aktualisieren oder Repository archivieren.
+- 3.2 [salt-marcher/src/apps/cartographer/travel/domain/AGENTS.md] Mehrstufige Undo/Redo-Strategien entwerfen.
+- 3.3 [salt-marcher/src/apps/library/AGENTS.md] Filter-/Suchfunktionen beschreiben und später implementieren.
+- 3.4 [salt-marcher/src/apps/library/create/AGENTS.md] Speicherroutinen mit Autosave ergänzen.
+- 3.5 [salt-marcher/src/apps/library/create/spell/AGENTS.md] Komponenten für Ritual-spezifische Felder ergänzen.
+- 3.6 [salt-marcher/src/apps/library/view/AGENTS.md] Filter- und Sortierparameter dokumentieren und implementieren.
+- 3.7 [salt-marcher/calendarium/AGENTS.md] Dokumentieren, welche Features bereits ins neue Almanac-Modul migriert wurden.
+- 3.8 [salt-marcher/Presets/AGENTS.md] Automatisierte Validierung gegen Parser implementieren.
+- 3.9 [salt-marcher/Presets/Creatures/AGENTS.md] Verweise zu Referenzquellen hinzufügen.
+- 3.10 [salt-marcher/Presets/Creatures/Animals/AGENTS.md] Kennzeichnen, welche Presets bereits exportiert wurden.
+- 3.11 [salt-marcher/Presets/Creatures/Animals/AGENTS.md] Weitere Biome repräsentieren (Aquatic, Arctic).
+- 3.12 [salt-marcher/Presets/Creatures/Monsters/AGENTS.md] Legendary/Lair Actions in Preset-Schema integrieren.
+- 3.13 [salt-marcher/Presets/Creatures/Monsters/AGENTS.md] Quellenangaben pro Monster ergänzen.
+- 3.14 [salt-marcher/Presets/Equipment/AGENTS.md] Kennzeichnung für Homebrew vs. Regelwerk hinzufügen.
+- 3.15 [salt-marcher/Presets/Equipment/Armor/AGENTS.md] Strukturiertes Mapping zu Traits (Stealth Disadvantage etc.) prüfen.
+- 3.16 [salt-marcher/Presets/Equipment/Armor/AGENTS.md] Varianten (magische Rüstungen) ergänzen.
+- 3.17 [salt-marcher/Presets/Equipment/Gear/AGENTS.md] Kategorien (Utility, Camping, Consumable) sauber kennzeichnen.
+- 3.18 [salt-marcher/Presets/Equipment/Gear/AGENTS.md] Verweise zu passenden Regelbuchabschnitten hinzufügen.
+- 3.19 [salt-marcher/Presets/Equipment/Tools/AGENTS.md] Felder für verwendete Fertigkeiten (skill) vereinheitlichen.
+- 3.20 [salt-marcher/Presets/Equipment/Tools/AGENTS.md] Weitere Werkzeuge aus Kampagnensettings sammeln.
+- 3.21 [salt-marcher/Presets/Equipment/Weapons/AGENTS.md] Damage-Typen mit Library-Konstanten abgleichen.
+- 3.22 [salt-marcher/Presets/Equipment/Weapons/AGENTS.md] Weitere Waffen aus Alternativquellen aufnehmen.
+- 3.23 [salt-marcher/Presets/Items/AGENTS.md] Automatisierte Konsistenzprüfung (z. B. fehlende Felder) hinzufügen.
+- 3.24 [salt-marcher/Presets/Spells/AGENTS.md] Kennzeichnen, welche Presets bereits getestet/exportiert wurden.
+- 3.25 [salt-marcher/References/AGENTS.md] Inhaltsverzeichnis pflegen und Duplikate bereinigen.
+- 3.26 [salt-marcher/References/AGENTS.md] Quellenangaben und Lizenzhinweise pro Dokument ergänzen.
+- 3.27 [salt-marcher/References/mechanics/AGENTS.md] Referenzen mit entsprechenden Tool-Implementierungen verlinken.
+- 3.28 [salt-marcher/References/mechanics/AGENTS.md] Weitere Mechaniknotizen (Zeitmanagement, Ressourcen) hinzufügen.
+- 3.29 [salt-marcher/References/mechanics/hexagonal-grids/AGENTS.md] Ergänzende Diagramme oder verlinkte Assets einpflegen.
+- 3.30 [salt-marcher/References/mechanics/hexagonal-grids/AGENTS.md] Vergleiche zu quadratischen Grids anlegen für Konvertierungs-Skripte.
+- 3.31 [salt-marcher/References/rulebooks/Admin-Legal/AGENTS.md] Checklisten für Veröffentlichungen ergänzen.
+- 3.32 [salt-marcher/References/rulebooks/AGENTS.md] Lizenzhinweise pro Quelle ergänzen und Aktualitätsstand vermerken.
+- 3.33 [salt-marcher/References/rulebooks/AGENTS.md] Verlinkungen zu entsprechenden Tool-/Preset-Dateien herstellen.
+- 3.34 [salt-marcher/References/rulebooks/CharacterFeatures/03_Classes/AGENTS.md] Klassenübersichten vereinheitlichen (z. B. Template für Features).
+- 3.35 [salt-marcher/References/rulebooks/CharacterFeatures/03_Classes/AGENTS.md] Quellen- und Editionsempfehlung hinzufügen.
+- 3.36 [salt-marcher/References/rulebooks/CharacterFeatures/AGENTS.md] Quelle und Versionsstand je Dokument ergänzen.
+- 3.37 [salt-marcher/References/rulebooks/CharacterFeatures/AGENTS.md] Weitere Feature-Gruppen (Feats, Backgrounds) strukturieren.
+- 3.38 [salt-marcher/References/rulebooks/Gameplay/AGENTS.md] Links zu betroffenen Modulen (Almanac, Travel) ergänzen.
+- 3.39 [salt-marcher/References/rulebooks/Gameplay/AGENTS.md] Regelupdates aus neuen Editionen abgleichen.
+- 3.40 [salt-marcher/References/rulebooks/Items/AGENTS.md] Markieren, welche Items bereits als Preset umgesetzt sind.
+- 3.41 [salt-marcher/References/rulebooks/Items/AGENTS.md] Meta-Informationen (Quelle, Seiten, Edition) ergänzen.
+- 3.42 [salt-marcher/References/rulebooks/Spells/AGENTS.md] Mapping zu Preset-Dateien dokumentieren.
+- 3.43 [salt-marcher/References/rulebooks/Spells/AGENTS.md] Quellenangaben (Edition, Buch) ergänzen.
+- 3.44 [salt-marcher/References/rulebooks/Statblocks/AGENTS.md] Beispielvergleiche mit Library-Exports hinzufügen.
+- 3.45 [salt-marcher/References/rulebooks/Statblocks/AGENTS.md] Mehrsprachige Varianten (de/en) dokumentieren.
+- 3.46 [salt-marcher/References/rulebooks/Statblocks/Creatures/AGENTS.md] Verweise zu entsprechenden Golden-Tests dokumentieren.
+- 3.47 [salt-marcher/References/rulebooks/Statblocks/Creatures/AGENTS.md] Zusätzliche Kategorien (NPCs, Constructs) anlegen.
+- 3.48 [salt-marcher/References/rulebooks/Statblocks/Creatures/Animals/AGENTS.md] Kennzeichnen, welche Statblocks bereits in Presets umgesetzt wurden.
+- 3.49 [salt-marcher/References/rulebooks/Statblocks/Creatures/Animals/AGENTS.md] Zusätzliche Biome (Wasser, Wüste) ergänzen.
+- 3.50 [salt-marcher/References/rulebooks/Statblocks/Creatures/Monsters/AGENTS.md] Metadaten (Edition, CR, Quelle) oberhalb jedes Dokuments ergänzen.
+- 3.51 [salt-marcher/References/rulebooks/Statblocks/Creatures/Monsters/AGENTS.md] Verknüpfungen zu Library-Golden-Files herstellen.
+- 3.52 [salt-marcher/References/rulebooks/Tools/AGENTS.md] Quellenangaben aktualisieren (Edition, Seitenzahl).
+- 3.53 [salt-marcher/References/rulebooks/Tools/AGENTS.md] Strukturierte Tabellen ergänzen, um spätere Automatisierung zu erleichtern.
+- 3.54 [salt-marcher/scripts/AGENTS.md] Langfristig in Vitest/Build-Pipeline integrieren.
+- 3.55 [salt-marcher/src/apps/almanac/AGENTS.md] Observability/Telemetrie ergänzen und Dokumentation (BUILD/README) synchronisieren.
+- 3.56 [salt-marcher/src/apps/almanac/data/AGENTS.md] Telemetrie-Hooks und Fehlerkanäle (io_error) an Gateway anbinden.
+- 3.57 [salt-marcher/src/apps/almanac/domain/AGENTS.md] Performance-Profiling für große Zeitbereiche (Lazy-Chunks, Cache-Strategien).
+- 3.58 [salt-marcher/src/apps/almanac/mode/components/AGENTS.md] UX-Spezifikation updaten, sobald echte Renderer vorhanden sind.
+- 3.59 [salt-marcher/src/apps/library/create/creature/components/AGENTS.md] Drag-and-Drop-Reihenfolge per Komponente ermöglichen.
+- 3.60 [salt-marcher/src/apps/library/create/creature/components/docs/AGENTS.md] Markdown-Docs aus den Tests generieren (optional) für Entwicklerhandbuch.
+- 3.61 [salt-marcher/src/apps/library/create/creature/components/docs/AGENTS.md] Weitere Beispiele (Recharge, Uses, Trigger) ergänzen, sobald Komponenten stabil sind.
+- 3.62 [salt-marcher/src/apps/library/create/equipment/AGENTS.md] Tooltips und Hilfetexte aus `docs/library` übernehmen.
+- 3.63 [salt-marcher/src/apps/library/create/item/AGENTS.md] i18n-Vorbereitung für Formularlabels evaluieren.
+- 3.64 [salt-marcher/src/apps/library/tools/AGENTS.md] Performance-Metriken erfassen, sobald große Referenzpakete verarbeitet werden.
+- 3.65 [salt-marcher/src/apps/library/tools/parsers/AGENTS.md] Mehrsprachige Beschreibungsfelder berücksichtigen (Locale-Fallbacks).
+- 3.66 [salt-marcher/src/ui/workmode/AGENTS.md] Weitere Workmode-spezifische Styles auslagern, sobald zusätzliche Apps sie nutzen.
+- 3.67 [salt-marcher/tests/apps/AGENTS.md] Cross-App-Regressionstests (Integration) bündeln und dokumentieren.
+- 3.68 [salt-marcher/tests/golden/library/creatures/AGENTS.md] Statblock-JSON parallel ablegen, sobald Exportpfad aktiv ist.
+- 3.69 [salt-marcher/tests/golden/library/equipment/AGENTS.md] Neue Spalten oder Regeln nachziehen, sobald das Datenmodell wächst.
+- 3.70 [salt-marcher/tests/golden/library/equipment/AGENTS.md] Weitere Beispielausrüstung für exotische Quellen ergänzen.
+- 3.71 [salt-marcher/tests/golden/library/items/AGENTS.md] Ergänzende JSON-Repräsentationen ablegen, falls Export-Pipeline erweitert wird.
+- 3.72 [salt-marcher/tests/golden/library/items/AGENTS.md] Neue Item-Kategorien aufnehmen, sobald die Library sie unterstützt.
+- 3.73 [salt-marcher/tests/golden/library/spells/AGENTS.md] Bei neuen Preset-Feldern die Golden-Dateien aktualisieren und Tests erweitern.
+- 3.74 [salt-marcher/tests/golden/library/spells/AGENTS.md] Zusätzliche Beispiele für Rituale und Reaktionszauber ergänzen.
+
+## 4. User Experience verbessern
+- 4.1 [salt-marcher/src/apps/cartographer/travel/render/AGENTS.md] Animierte Routen und Status-Indikatoren ergänzen.
+- 4.2 [salt-marcher/src/apps/library/create/AGENTS.md] Validierungsfeedback konsolidieren und zentral beschreiben.
+- 4.3 [salt-marcher/src/apps/library/create/creature/AGENTS.md] Spell-Ladeprozess im Modal mit Lade-/Fehlerzustand versehen.
+- 4.4 [salt-marcher/src/apps/library/create/shared/AGENTS.md] Token-Editor um Drag&Drop-Upload erweitern.
+- 4.5 [salt-marcher/src/apps/library/view/AGENTS.md] Regions-View um Karten-Preview erweitern.
+- 4.6 [salt-marcher/src/ui/AGENTS.md] Such- und Filter-UI für größere Datenmengen erweitern.
+
+## 5. Weitere Aufgaben
+- keine offenen ToDos.

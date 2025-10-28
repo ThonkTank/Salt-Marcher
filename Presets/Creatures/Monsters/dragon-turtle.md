@@ -5,59 +5,130 @@ size: Gargantuan
 type: Dragon
 alignmentLawChaos: Neutral
 alignmentGoodEvil: Neutral
-ac: "20"
+ac: '20'
 initiative: +6 (16)
-hp: "356"
+hp: '356'
 hitDice: 23d20 + 115
 speeds:
-  - type: walk
-    value: "20"
-  - type: swim
-    value: "50"
+  walk:
+    distance: 20 ft.
+  swim:
+    distance: 50 ft.
 abilities:
-  - ability: str
+  - key: str
     score: 25
-  - ability: dex
+    saveProf: false
+  - key: dex
     score: 10
-  - ability: con
+    saveProf: false
+  - key: con
     score: 20
-  - ability: int
+    saveProf: true
+    saveMod: 11
+  - key: int
     score: 10
-  - ability: wis
+    saveProf: false
+  - key: wis
     score: 12
-  - ability: cha
+    saveProf: true
+    saveMod: 7
+  - key: cha
     score: 12
-pb: "+6"
-cr: "17"
-xp: "18000"
+    saveProf: false
+pb: '+6'
 sensesList:
   - type: darkvision
-    range: "120"
+    range: '120'
+passivesList:
+  - skill: Perception
+    value: '11'
 languagesList:
   - value: Draconic
   - value: Primordial (Aquan)
-passivesList:
-  - skill: Perception
-    value: "11"
 damageResistancesList:
   - value: Fire
+cr: '17'
+xp: '18000'
 entries:
   - category: trait
     name: Amphibious
+    entryType: special
     text: The dragon can breathe air and water.
   - category: action
     name: Multiattack
+    entryType: multiattack
     text: The dragon makes three Bite attacks. It can replace one attack with a Tail attack.
+    multiattack:
+      attacks:
+        - name: Bite
+          count: 3
+      substitutions:
+        - replace: attack
+          with:
+            type: attack
+            name: a Tail attack
   - category: action
     name: Bite
-    text: "*Melee Attack Roll:* +13, reach 15 ft. 23 (3d10 + 7) Piercing damage plus 7 (2d6) Fire damage. Being underwater doesn't grant Resistance to this Fire damage."
+    entryType: attack
+    text: '*Melee Attack Roll:* +13, reach 15 ft. 23 (3d10 + 7) Piercing damage plus 7 (2d6) Fire damage. Being underwater doesn''t grant Resistance to this Fire damage.'
+    attack:
+      type: melee
+      bonus: 13
+      damage:
+        - dice: 3d10
+          bonus: 7
+          type: Piercing
+          average: 23
+        - dice: 2d6
+          bonus: 0
+          type: Fire
+          average: 7
+      reach: 15 ft.
+      onHit:
+        other: Being underwater doesn't grant Resistance to this Fire damage.
+      additionalEffects: Being underwater doesn't grant Resistance to this Fire damage.
   - category: action
     name: Tail
-    text: "*Melee Attack Roll:* +13, reach 15 ft. 18 (2d10 + 7) Bludgeoning damage. If the target is a Huge or smaller creature, it has the Prone condition."
+    entryType: attack
+    text: '*Melee Attack Roll:* +13, reach 15 ft. 18 (2d10 + 7) Bludgeoning damage. If the target is a Huge or smaller creature, it has the Prone condition.'
+    attack:
+      type: melee
+      bonus: 13
+      damage:
+        - dice: 2d10
+          bonus: 7
+          type: Bludgeoning
+          average: 18
+      reach: 15 ft.
+      onHit:
+        conditions:
+          - condition: Prone
+            restrictions:
+              size: Huge or smaller
+      additionalEffects: If the target is a Huge or smaller creature, it has the Prone condition.
   - category: action
     name: Steam Breath (Recharge 5-6)
-    text: "*Constitution Saving Throw*: DC 19, each creature in a 60-foot Cone. *Failure:*  56 (16d6) Fire damage. *Success:*  Half damage. *Failure or Success*:  Being underwater doesn't grant Resistance to this Fire damage."
-
+    entryType: save
+    text: '*Constitution Saving Throw*: DC 19, each creature in a 60-foot Cone. *Failure:*  56 (16d6) Fire damage. *Success:*  Half damage. *Failure or Success*:  Being underwater doesn''t grant Resistance to this Fire damage.'
+    recharge: 5-6
+    save:
+      ability: con
+      dc: 19
+      targeting:
+        shape: cone
+        size: 60 ft.
+      onFail:
+        effects:
+          other: 56 (16d6) Fire damage.
+        damage:
+          - dice: 16d6
+            bonus: 0
+            type: Fire
+            average: 56
+        legacyEffects: 56 (16d6) Fire damage.
+      onSuccess:
+        damage: half
+        legacyText: Half damage.
 ---
 
 # Dragon Turtle
@@ -70,7 +141,7 @@ entries:
 
 | STR | DEX | CON | INT | WIS | CHA |
 | --- | --- | --- | --- | --- | --- |
-| 25 | 10 | 20 | 10 | 12 | 12 |
+| - | - | - | - | - | - |
 
 **Senses** darkvision 120 ft.; Passive Perception 11
 **Languages** Draconic, Primordial (Aquan)
