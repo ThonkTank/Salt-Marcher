@@ -319,7 +319,7 @@ Ziele:
 
 | Phase | Status | Zielbild | Nächster Schritt |
 |-------|--------|----------|------------------|
-| **BLOCKER** – Test-Suite | 🔴 49/56 Tests kaputt | Funktionierende CI/CD | Tests reparieren (MODULE_NOT_FOUND) |
+| **BLOCKER** – Test-Suite | ⚙️ 33/56 Tests kaputt | Funktionierende CI/CD | Mock-Probleme beheben |
 | Phase 0 – Taxonomie & Schemas | ✅ Abgeschlossen | Konsistente Tags & Schemas | Test-Fixtures/CI-Checks finalisieren |
 | Phase 1 – Core State Platform | ⚙️ 75% fertig | Vereinheitlichte Stores & DevKit-Diagnostics | Library-Repos migrieren, Seed-System |
 | Phase 2 – Fraktionen MVP | ⚙️ 35% fertig | Factions-Workmode + Karten-/Session-Integration | Cartographer Brush + Session Hooks |
@@ -366,7 +366,8 @@ Ziele:
 - Writable Store mit derived() für computed states
 
 **Diese Woche (Kritisch) 🔴**
-- 🚨 **Test-Suite reparieren** (MODULE_NOT_FOUND Fehler beheben, 49/56 Tests kaputt!)
+- ✅ **Test-Infrastruktur repariert** (Import-Pfade gefixt, 49→33 failures, 7→22 passes)
+- ⚙️ **Verbleibende 33 Test-Failures** (Mock-Probleme, veraltete Fixtures)
 - 🔧 Library-Repositories migrieren: creature, spell, item, equipment auf Store-Pattern
 - 🔧 Seed-System implementieren: `devkit seed --preset default` für reproduzierbare Tests
 
