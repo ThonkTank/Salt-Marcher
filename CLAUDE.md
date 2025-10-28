@@ -339,15 +339,28 @@ Ziele:
   4. ⏳ Prüfläufe in DevKit/CICD einbinden (z. B. `devkit test schema`), die Schema- und Tag-Validierung automatisiert abdecken.
 
 ### Phase 1 – Core State Platform
-**Status:** Not started  
+**Status:** In Progress | **Started:** 2025-10-28
 - **State-Layer konsolidieren**
-  1. Gemeinsame Store-Schnittstelle definieren (`src/services/state/`), Adapter für `session-store`, `tile-repository`, `region-repository` implementieren.
-  2. Event-Bus (`src/services/events.ts`) mit Themen (Encounter, Fraktion, Kalender, Audio) erstellen; Hot-Reload unterstützen (AbortController).
-  3. Persistente Repositories (Datei-IO via Obsidian API) mit Version-Header & Migrations-Hook ausstatten.
+  1. ✅ Gemeinsame Store-Schnittstelle definiert (`src/services/state/store.interface.ts`)
+  2. ✅ Writable & Persistent Store Implementierungen (`writable-store.ts`, `persistent-store.ts`)
+  3. ✅ Event-Bus mit typed events implementiert (`src/services/events/event-bus.ts`) - unterstützt AbortController
+  4. ✅ Store-Manager für zentrale Verwaltung (`store-manager.ts`)
+  5. ✅ Encounter Store Adapter als Proof-of-Concept (`adapters/encounter-store-adapter.ts`)
+  6. ⏳ Migration der übrigen Repositories (tile, terrain, region, map)
 - **Diagnostics & Tooling**
   1. State-Inspector-Panel im DevKit (z. B. `devkit workflow state dump`) hinzufügen.
   2. Logging erweitern (`plugin-logger.ts`): strukturierte Events, Filter pro Subsystem.
   3. Seedbare Test-Vaults (Skripte in `devkit/testing/seeds/`) bereitstellen; CLI-Befehl `devkit seed --preset`.
+
+**Nächste konkrete Schritte (Phase 1):**
+- [x] Store-Interfaces in `src/services/state/` definiert (ReadableStore, WritableStore, PersistentStore, VersionedStore)
+- [x] Writable und Persistent Store Implementierungen erstellt
+- [x] Event-Bus System mit typed events implementiert (`src/services/events/event-bus.ts`)
+- [x] Store-Adapter für encounter session-store erstellt
+- [x] Store Manager für zentrale Verwaltung implementiert
+- [x] Integration Example mit Party/Session State demonstriert
+- [ ] DevKit State-Inspector Command hinzufügen
+- [ ] Migration bestehender Stores auf neue Interfaces
 
 ### Phase 2 – Fraktionen MVP
 **Status:** Not started  
