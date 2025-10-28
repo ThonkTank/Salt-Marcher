@@ -7,21 +7,22 @@ import {
     mountBrushPanel,
     type BrushPanelContext,
 } from "src/workmodes/cartographer/editor/tools/terrain-brush/brush-options";
+import { createMockApp, createMockTFile } from "../../../mocks/obsidian-api";
 
 const loadRegions = vi.fn();
 const applyBrush = vi.fn(() => Promise.resolve());
 
-vi.mock("../../../src/workmodes/cartographer/editor/tools/terrain-brush/brush-core", async () => {
+vi.mock("src/workmodes/cartographer/editor/tools/terrain-brush/brush-core", async () => {
     const actual = await vi.importActual<
-        typeof import("../../../src/workmodes/cartographer/editor/tools/terrain-brush/brush-core")
-    >("../../../src/workmodes/cartographer/editor/tools/terrain-brush/brush-core");
+        typeof import("src/workmodes/cartographer/editor/tools/terrain-brush/brush-core")
+    >("src/workmodes/cartographer/editor/tools/terrain-brush/brush-core");
     return {
         ...actual,
         applyBrush: (...args: unknown[]) => applyBrush(...args),
     };
 });
 
-vi.mock("../../../src/core/regions-store", () => ({
+vi.mock("src/features/maps/data/region-repository", () => ({
     loadRegions: (...args: unknown[]) => loadRegions(...args),
 }));
 
@@ -56,15 +57,13 @@ describe("terrain brush panel", () => {
             { name: "Forest", terrain: "forest" },
             { name: "Coast", terrain: "coast" },
         ]);
-        const workspace = {
-            on: vi.fn((event: string, handler: () => void) => {
-                listeners[event] = handler;
-                return `${event}-token`;
-            }),
-            offref: vi.fn(),
-        };
+        const app = createMockApp();
+        (app.workspace.on as any) = vi.fn((event: string, handler: () => void) => {
+            listeners[event] = handler;
+            return `${event}-token`;
+        });
         const ctx: BrushPanelContext = {
-            app: { workspace } as unknown as App,
+            app,
             getFile: () => null,
             getHandles: () => null,
             getOptions: () => null,
@@ -125,9 +124,15 @@ describe("terrain brush panel", () => {
     it("ensures missing polygons before applying brush actions", async () => {
         loadRegions.mockResolvedValue([]);
         const handles = createHandles();
+        const app = createMockApp({
+            initialFiles: {
+                "map.md": "---\nfolder: Hexes\n---\n# Map",
+            },
+        });
+        const mapFile = createMockTFile("map.md");
         const ctx: BrushPanelContext = {
-            app: { workspace: {} } as unknown as App,
-            getFile: () => ({ path: "map.md" }) as any,
+            app,
+            getFile: () => mapFile,
             getHandles: () => handles,
             getOptions: () => ({ radius: 42 } as any),
             getAbortSignal: () => null,

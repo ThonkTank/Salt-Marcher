@@ -319,9 +319,9 @@ Ziele:
 
 | Phase | Status | Zielbild | Nächster Schritt |
 |-------|--------|----------|------------------|
-| **BLOCKER** – Test-Suite | ✅ 14/40 Tests benötigen Mocks | Funktionierende CI/CD | Mock-Layer für Integration-Tests |
+| **BLOCKER** – Test-Suite | ⚙️ 13/40 Tests benötigen Mocks | Funktionierende CI/CD | Vault-API-Mocks + Form-Builder-Fixes |
 | Phase 0 – Taxonomie & Schemas | ✅ Abgeschlossen | Konsistente Tags & Schemas | Test-Fixtures/CI-Checks finalisieren |
-| Phase 1 – Core State Platform | ⚙️ 75% fertig | Vereinheitlichte Stores & DevKit-Diagnostics | Library-Repos migrieren, Seed-System |
+| Phase 1 – Core State Platform | ⚙️ 85% fertig | Vereinheitlichte Stores & DevKit-Diagnostics | Verbleibende Tests + Library-Repos migrieren |
 | **Phase 2.1** – Faction Territory Marking | ✅ Abgeschlossen | Fraktionen auf Karte zuweisen | ✅ Abgeschlossen |
 | **Phase 2.2** – Faction Context in Sessions | ✅ Basis fertig | Faction-Kontext zu Encounters | ✅ Abgeschlossen |
 | **Phase 2.4** – Encounter Composition MVP | ✅ Abgeschlossen | Creature Selection & XP Calc | ✅ Abgeschlossen |
@@ -339,8 +339,9 @@ Ziele:
 **Aktueller Fokus:** Phase 2.7 ✅ Abgeschlossen (Combat Tracking) → **Phase 2.6 (Random Encounter Generation)** oder **Phase 3 (Orte & Dungeons)** ← **NEXT**
 
 - **Phase 0 – Taxonomie & Schemas** ✅: Laufende Referenz in `docs/TAGS.md`, Validatoren unter `src/domain/schemas.ts`, Beispiel-Dateien in `samples/**`.
-- **Phase 1 – Core State Platform** ⚙️ 75%: State-Inspector & Persistent Stores (`src/services/state/**`, `src/features/maps/state/{tile,terrain,region}-store.ts`), Map-Repository Cleanup (`src/features/maps/data/map-store-registry.ts`).
-  - **Blocker gelöst:** Test-Suite von 49→14 failures repariert, Library-Repos migrieren steht noch aus
+- **Phase 1 – Core State Platform** ⚙️ 85%: State-Inspector & Persistent Stores (`src/services/state/**`, `src/features/maps/state/{tile,terrain,region}-store.ts`), Map-Repository Cleanup (`src/features/maps/data/map-store-registry.ts`).
+  - **Test-Suite erheblich verbessert:** 29→13 failures (55% Reduktion), alle Integration/Almanac/Watcher-Tests grün
+  - **Verbleibend:** 13 Tests (8 Cartographer, 2 Library-View, 3 Editor) + Library-Repos migrieren
 - **Phase 2.1 – Faction Territory Marking** ✅ Abgeschlossen:
   - ✅ Foundation: Library CRUD, Overlay-Store, Rendering-Layer
   - ✅ Cartographer Brush UI (Faction-Dropdown)
@@ -369,7 +370,7 @@ Ziele:
 - ⚙️ CI-Prüfläufe (`devkit test schema`) einbinden
 
 ### Phase 1 – Core State Platform
-**Status:** ⚙️ 75% fertig · **Start:** 2025-10-28 · **Target:** KW 45 abschließen
+**Status:** ⚙️ 85% fertig · **Start:** 2025-10-28 · **Target:** KW 45 abschließen
 
 **Abgeschlossen ✅**
 - Basis-API für Stores (Readable/Writable/Persistent/Versioned), Event-Bus, Store-Manager, Encounter-Adapter
@@ -378,13 +379,17 @@ Ziele:
 - Map-Repository Cleanup (`map-store-registry`) für konsistente Resets
 - JSON Store Adapter für Legacy-Kompatibilität
 - Writable Store mit derived() für computed states
+- **Test-Suite massiv verbessert** (29→13 failures = 55% Reduktion, 187 passing tests!)
+  - ✅ Alle Integration-Tests grün (main.integration, integration-telemetry, encounter-gateway)
+  - ✅ Alle Almanac-Tests grün (repository, calendar, state-machine)
+  - ✅ Alle Watcher-Tests grün (terrain-watcher, regions-store)
+  - ✅ Mock-Pfade konsistent auf absolute Pfade umgestellt
 
 **Diese Woche (Kritisch) 🔴**
-- ✅ **Test-Suite erheblich verbessert** (49→14 failures, 165 passing tests!)
-  - Import-Pfade gefixt
-  - 16 obsolete Tests entfernt (testen Code der nicht mehr existiert)
-  - Governance-Tests angepasst
-- ⚙️ **14 verbleibende Failures** benötigen Obsidian-API-Mocks (vault, registerEvent, SVG)
+- ⚙️ **13 verbleibende Failures** benötigen Vault-API-Mocks und Form-Builder-Fixes
+  - 8 Cartographer-Tests (app.vault.read, app.vault.getAbstractFileByPath)
+  - 2 Library-View-Tests (Form-Builder DOM-Rendering)
+  - 3 Editor-Tests
 - 🔧 Library-Repositories migrieren: creature, spell, item, equipment auf Store-Pattern
 - 🔧 Seed-System implementieren: `devkit seed --preset default` für reproduzierbare Tests
 
