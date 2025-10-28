@@ -17,6 +17,7 @@ import {
 import { EncounterSessionView } from "./session-view";
 import { EncounterCreatureList } from "./creature-list";
 import { EncounterCompositionView } from "./composition-view";
+import { CombatTrackerView } from "./combat-tracker";
 
 export class EncounterWorkspaceView {
     private readonly app: App;
@@ -53,6 +54,7 @@ export class EncounterWorkspaceView {
     private sessionView: EncounterSessionView | null = null;
     private creatureList: EncounterCreatureList | null = null;
     private compositionView: EncounterCompositionView | null = null;
+    private combatTracker: CombatTrackerView | null = null;
 
     constructor(app: App, containerEl: HTMLElement) {
         this.app = app;
@@ -74,6 +76,8 @@ export class EncounterWorkspaceView {
         this.creatureList = null;
         this.compositionView?.unmount();
         this.compositionView = null;
+        this.combatTracker?.unmount();
+        this.combatTracker = null;
 
         this.containerEl.empty();
         this.containerEl.removeClass("sm-encounter-view");
@@ -104,6 +108,13 @@ export class EncounterWorkspaceView {
         if (this.compositionView) {
             const creatures = session?.creatures ?? [];
             this.compositionView.render(creatures);
+        }
+
+        // Render combat tracker
+        if (this.combatTracker) {
+            const combat = session?.combat ?? null;
+            const hasCreatures = (session?.creatures?.length ?? 0) > 0;
+            this.combatTracker.render(combat, hasCreatures);
         }
 
         this.renderParty(state);
@@ -137,6 +148,21 @@ export class EncounterWorkspaceView {
             onRemove: (id) => this.handleRemoveCreature(id),
         });
         this.compositionView.mount();
+
+        // Combat tracker section
+        const combatSection = createSection(this.containerEl, "sm-encounter-combat");
+        this.combatTracker = new CombatTrackerView(combatSection, {
+            onStartCombat: () => this.handleStartCombat(),
+            onEndCombat: () => this.handleEndCombat(),
+            onUpdateInitiative: (id, initiative) => this.handleUpdateInitiative(id, initiative),
+            onUpdateHp: (id, currentHp, maxHp) => this.handleUpdateHp(id, currentHp, maxHp),
+            onApplyDamage: (id, amount) => this.handleApplyDamage(id, amount),
+            onApplyHealing: (id, amount) => this.handleApplyHealing(id, amount),
+            onToggleDefeated: (id) => this.handleToggleDefeated(id),
+            onSetActive: (id) => this.handleSetActive(id),
+            onSortByInitiative: () => this.handleSortByInitiative(),
+        });
+        this.combatTracker.mount();
 
         const xpSection = createSection(this.containerEl, "sm-encounter-xp");
         xpSection.createEl("h3", { cls: "sm-encounter-section-title", text: "Encounter XP & Rules" });
@@ -1206,6 +1232,60 @@ export class EncounterWorkspaceView {
         const presenter = this.presenter;
         if (!presenter) return;
         presenter.removeCreature(id);
+    }
+
+    private handleStartCombat() {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.startCombat();
+    }
+
+    private handleEndCombat() {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.endCombat();
+    }
+
+    private handleUpdateInitiative(id: string, initiative: number) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.updateParticipantInitiative(id, initiative);
+    }
+
+    private handleUpdateHp(id: string, currentHp: number, maxHp?: number) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.updateParticipantHp(id, currentHp, maxHp);
+    }
+
+    private handleApplyDamage(id: string, amount: number) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.applyDamage(id, amount);
+    }
+
+    private handleApplyHealing(id: string, amount: number) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.applyHealing(id, amount);
+    }
+
+    private handleToggleDefeated(id: string) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.toggleDefeated(id);
+    }
+
+    private handleSetActive(id: string | null) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.setActiveParticipant(id);
+    }
+
+    private handleSortByInitiative() {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.sortParticipantsByInitiative();
     }
 }
 

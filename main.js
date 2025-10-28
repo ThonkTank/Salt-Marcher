@@ -1599,6 +1599,17 @@ var init_tile_store = __esm({
 });
 
 // src/features/maps/data/tile-repository.ts
+var tile_repository_exports = {};
+__export(tile_repository_exports, {
+  TileValidationError: () => TileValidationError,
+  deleteTile: () => deleteTile,
+  initTilesForNewMap: () => initTilesForNewMap,
+  listTilesForMap: () => listTilesForMap,
+  loadTile: () => loadTile,
+  resetTileStore: () => resetTileStore,
+  saveTile: () => saveTile,
+  validateTileData: () => validateTileData
+});
 function validateTileData(data, options = {}) {
   const { allowUnknownTerrain = false } = options;
   const issues = [];
@@ -2551,7 +2562,7 @@ function createRegionStore(app, options) {
     await ensureLoaded();
     return persistent2.get().list;
   };
-  const saveRegions2 = async (list) => {
+  const saveRegions3 = async (list) => {
     await ensureLoaded();
     persistent2.update(() => ({
       loaded: true,
@@ -2602,7 +2613,7 @@ function createRegionStore(app, options) {
   return {
     state: persistent2,
     getRegions,
-    saveRegions: saveRegions2,
+    saveRegions: saveRegions3,
     refresh,
     watch
   };
@@ -2618,6 +2629,14 @@ function getRegionStore(app, options) {
 async function loadRegions(app) {
   const store = getRegionStore(app);
   return await store.getRegions();
+}
+async function saveRegions(app, list) {
+  const store = getRegionStore(app);
+  await store.saveRegions(list);
+}
+function watchRegions(app, onChange) {
+  const store = getRegionStore(app);
+  return store.watch(onChange);
 }
 function resetRegionStore(app) {
   const store = storeRegistry.get(app);
@@ -3172,8 +3191,24 @@ var init_brush_core = __esm({
 });
 
 // src/features/maps/data/region-repository.ts
+var region_repository_exports = {};
+__export(region_repository_exports, {
+  REGIONS_FILE: () => REGIONS_FILE,
+  ensureRegionsFile: () => ensureRegionsFile,
+  loadRegions: () => loadRegions2,
+  parseRegionsBlock: () => parseRegionsBlock,
+  saveRegions: () => saveRegions2,
+  stringifyRegionsBlock: () => stringifyRegionsBlock,
+  watchRegions: () => watchRegions2
+});
 async function loadRegions2(app) {
   return await loadRegions(app);
+}
+async function saveRegions2(app, list) {
+  await saveRegions(app, list);
+}
+function watchRegions2(app, onChange) {
+  return watchRegions(app, onChange);
 }
 var init_region_repository = __esm({
   "src/features/maps/data/region-repository.ts"() {
@@ -5488,6 +5523,212 @@ var init_presenter = __esm({
         this.setEncounterXp(totalXp);
         this.emit();
       }
+      // ============================================================================
+      // Combat Tracking Methods
+      // ============================================================================
+      startCombat() {
+        const session = this.persisted.session;
+        if (!session) return;
+        if (session.combat?.isActive) return;
+        const participants = [];
+        for (const creature of session.creatures) {
+          for (let i = 0; i < creature.count; i++) {
+            const participantId = `${creature.id}-${i}`;
+            const name = creature.count > 1 ? `${creature.name} ${i + 1}` : creature.name;
+            participants.push({
+              id: participantId,
+              creatureId: creature.id,
+              name,
+              initiative: 0,
+              currentHp: 0,
+              // UI will prompt for max HP
+              maxHp: 0,
+              defeated: false
+            });
+          }
+        }
+        const combat = {
+          isActive: true,
+          participants: Object.freeze(participants),
+          activeParticipantId: null
+        };
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            combat
+          }
+        };
+        this.emit();
+      }
+      endCombat() {
+        const session = this.persisted.session;
+        if (!session) return;
+        if (!session.combat?.isActive) return;
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            combat: null
+          }
+        };
+        this.emit();
+      }
+      updateParticipantInitiative(id, initiative) {
+        const session = this.persisted.session;
+        if (!session?.combat) return;
+        const sanitized = sanitizeNumber(initiative);
+        const participants = [...session.combat.participants];
+        const index = participants.findIndex((p) => p.id === id);
+        if (index === -1) return;
+        participants[index] = { ...participants[index], initiative: sanitized };
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            combat: {
+              ...session.combat,
+              participants: Object.freeze(participants)
+            }
+          }
+        };
+        this.emit();
+      }
+      updateParticipantHp(id, currentHp, maxHp) {
+        const session = this.persisted.session;
+        if (!session?.combat) return;
+        const sanitizedCurrent = sanitizeNonNegativeNumber(currentHp);
+        const participants = [...session.combat.participants];
+        const index = participants.findIndex((p) => p.id === id);
+        if (index === -1) return;
+        const participant = participants[index];
+        const sanitizedMax = maxHp !== void 0 ? sanitizeNonNegativeNumber(maxHp) : participant.maxHp;
+        const clampedCurrent = Math.min(sanitizedCurrent, sanitizedMax);
+        participants[index] = {
+          ...participant,
+          currentHp: clampedCurrent,
+          maxHp: sanitizedMax,
+          defeated: clampedCurrent <= 0
+        };
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            combat: {
+              ...session.combat,
+              participants: Object.freeze(participants)
+            }
+          }
+        };
+        this.emit();
+      }
+      applyDamage(id, amount) {
+        const session = this.persisted.session;
+        if (!session?.combat) return;
+        const participants = [...session.combat.participants];
+        const index = participants.findIndex((p) => p.id === id);
+        if (index === -1) return;
+        const participant = participants[index];
+        const sanitizedAmount = sanitizeNonNegativeNumber(amount);
+        const newHp = Math.max(0, participant.currentHp - sanitizedAmount);
+        participants[index] = {
+          ...participant,
+          currentHp: newHp,
+          defeated: newHp <= 0
+        };
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            combat: {
+              ...session.combat,
+              participants: Object.freeze(participants)
+            }
+          }
+        };
+        this.emit();
+      }
+      applyHealing(id, amount) {
+        const session = this.persisted.session;
+        if (!session?.combat) return;
+        const participants = [...session.combat.participants];
+        const index = participants.findIndex((p) => p.id === id);
+        if (index === -1) return;
+        const participant = participants[index];
+        const sanitizedAmount = sanitizeNonNegativeNumber(amount);
+        const newHp = Math.min(participant.maxHp, participant.currentHp + sanitizedAmount);
+        participants[index] = {
+          ...participant,
+          currentHp: newHp,
+          defeated: newHp <= 0
+        };
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            combat: {
+              ...session.combat,
+              participants: Object.freeze(participants)
+            }
+          }
+        };
+        this.emit();
+      }
+      toggleDefeated(id) {
+        const session = this.persisted.session;
+        if (!session?.combat) return;
+        const participants = [...session.combat.participants];
+        const index = participants.findIndex((p) => p.id === id);
+        if (index === -1) return;
+        const participant = participants[index];
+        participants[index] = {
+          ...participant,
+          defeated: !participant.defeated
+        };
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            combat: {
+              ...session.combat,
+              participants: Object.freeze(participants)
+            }
+          }
+        };
+        this.emit();
+      }
+      setActiveParticipant(id) {
+        const session = this.persisted.session;
+        if (!session?.combat) return;
+        if (session.combat.activeParticipantId === id) return;
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            combat: {
+              ...session.combat,
+              activeParticipantId: id
+            }
+          }
+        };
+        this.emit();
+      }
+      sortParticipantsByInitiative() {
+        const session = this.persisted.session;
+        if (!session?.combat) return;
+        const sorted = [...session.combat.participants].sort((a, b) => b.initiative - a.initiative);
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            combat: {
+              ...session.combat,
+              participants: Object.freeze(sorted)
+            }
+          }
+        };
+        this.emit();
+      }
       setEncounterXp(value) {
         const sanitized = sanitizeNonNegativeNumber(value);
         if (sanitized === this.persisted.xp.encounterXp) return;
@@ -5622,12 +5863,28 @@ var init_presenter = __esm({
           count: Math.max(1, Math.floor(creature.count)),
           cr: Math.max(0, creature.cr)
         }));
+        const combat = session.combat ? _EncounterPresenter.normaliseCombat(session.combat) : null;
         return {
           event: session.event,
           notes: session.notes ?? "",
           status,
           resolvedAt: session.resolvedAt ?? null,
-          creatures
+          creatures,
+          combat
+        };
+      }
+      static normaliseCombat(combat) {
+        const participants = (combat.participants ?? []).map((participant) => ({
+          ...participant,
+          initiative: sanitizeNumber(participant.initiative),
+          currentHp: sanitizeNonNegativeNumber(participant.currentHp),
+          maxHp: sanitizeNonNegativeNumber(participant.maxHp),
+          defeated: !!participant.defeated
+        }));
+        return {
+          isActive: !!combat.isActive,
+          participants: Object.freeze(participants),
+          activeParticipantId: combat.activeParticipantId ?? null
         };
       }
       static normaliseXpState(xp) {
@@ -6251,6 +6508,225 @@ var init_composition_view = __esm({
   }
 });
 
+// src/workmodes/encounter/combat-tracker.ts
+var CombatTrackerView;
+var init_combat_tracker = __esm({
+  "src/workmodes/encounter/combat-tracker.ts"() {
+    "use strict";
+    CombatTrackerView = class {
+      constructor(containerEl, callbacks) {
+        this.containerEl = containerEl;
+        this.callbacks = callbacks;
+      }
+      mount() {
+        this.containerEl.empty();
+        this.containerEl.addClass("sm-combat-tracker");
+        this.headerEl = this.containerEl.createDiv({ cls: "sm-combat-tracker-header" });
+        this.headerEl.createEl("h3", { text: "Combat Tracker", cls: "sm-encounter-section-title" });
+        this.controlsEl = this.containerEl.createDiv({ cls: "sm-combat-tracker-controls" });
+        this.listEl = this.containerEl.createDiv({ cls: "sm-combat-tracker-list" });
+      }
+      unmount() {
+        this.containerEl.empty();
+      }
+      render(combat, hasCreatures) {
+        this.renderControls(combat, hasCreatures);
+        this.renderParticipants(combat);
+      }
+      renderControls(combat, hasCreatures) {
+        this.controlsEl.empty();
+        if (!combat || !combat.isActive) {
+          const startButton = this.controlsEl.createEl("button", {
+            cls: "sm-encounter-button sm-encounter-button-primary",
+            text: "Start Combat"
+          });
+          startButton.type = "button";
+          startButton.disabled = !hasCreatures;
+          startButton.addEventListener("click", () => {
+            this.callbacks.onStartCombat();
+          });
+          if (!hasCreatures) {
+            this.controlsEl.createDiv({
+              cls: "sm-combat-tracker-hint",
+              text: "Add creatures to start combat"
+            });
+          }
+        } else {
+          const sortButton = this.controlsEl.createEl("button", {
+            cls: "sm-encounter-button",
+            text: "Sort by Initiative"
+          });
+          sortButton.type = "button";
+          sortButton.addEventListener("click", () => {
+            this.callbacks.onSortByInitiative();
+          });
+          const endButton = this.controlsEl.createEl("button", {
+            cls: "sm-encounter-button sm-encounter-button-danger",
+            text: "End Combat"
+          });
+          endButton.type = "button";
+          endButton.addEventListener("click", () => {
+            this.callbacks.onEndCombat();
+          });
+        }
+      }
+      renderParticipants(combat) {
+        this.listEl.empty();
+        if (!combat || !combat.isActive) {
+          this.listEl.createDiv({
+            cls: "sm-encounter-empty-row",
+            text: "Combat not started. Click 'Start Combat' to begin tracking initiative and HP."
+          });
+          return;
+        }
+        if (!combat.participants.length) {
+          this.listEl.createDiv({
+            cls: "sm-encounter-empty-row",
+            text: "No participants in combat."
+          });
+          return;
+        }
+        for (const participant of combat.participants) {
+          const row = this.listEl.createDiv({ cls: "sm-combat-participant" });
+          if (participant.id === combat.activeParticipantId) {
+            row.addClass("sm-combat-participant-active");
+          }
+          if (participant.defeated) {
+            row.addClass("sm-combat-participant-defeated");
+          }
+          const initiativeCol = row.createDiv({ cls: "sm-combat-initiative" });
+          initiativeCol.createEl("label", {
+            attr: { for: `initiative-${participant.id}` },
+            text: "Init:"
+          });
+          const initiativeInput = initiativeCol.createEl("input", {
+            cls: "sm-encounter-input sm-combat-initiative-input",
+            attr: {
+              id: `initiative-${participant.id}`,
+              type: "number",
+              value: String(participant.initiative)
+            }
+          });
+          initiativeInput.addEventListener("change", () => {
+            const value = Number(initiativeInput.value);
+            if (Number.isFinite(value)) {
+              this.callbacks.onUpdateInitiative(participant.id, value);
+            } else {
+              initiativeInput.value = String(participant.initiative);
+            }
+          });
+          const nameCol = row.createDiv({ cls: "sm-combat-name" });
+          nameCol.setText(participant.name);
+          const hpCol = row.createDiv({ cls: "sm-combat-hp" });
+          const hpBar = hpCol.createDiv({ cls: "sm-combat-hp-bar" });
+          const hpFill = hpBar.createDiv({ cls: "sm-combat-hp-fill" });
+          const hpPercent = participant.maxHp > 0 ? participant.currentHp / participant.maxHp * 100 : 0;
+          hpFill.style.width = `${hpPercent}%`;
+          if (hpPercent > 66) {
+            hpFill.addClass("sm-combat-hp-high");
+          } else if (hpPercent > 33) {
+            hpFill.addClass("sm-combat-hp-medium");
+          } else {
+            hpFill.addClass("sm-combat-hp-low");
+          }
+          const hpInputs = hpCol.createDiv({ cls: "sm-combat-hp-inputs" });
+          hpInputs.createEl("label", {
+            attr: { for: `current-hp-${participant.id}` },
+            text: "HP:"
+          });
+          const currentHpInput = hpInputs.createEl("input", {
+            cls: "sm-encounter-input sm-combat-hp-input",
+            attr: {
+              id: `current-hp-${participant.id}`,
+              type: "number",
+              min: "0",
+              value: String(participant.currentHp)
+            }
+          });
+          hpInputs.createSpan({ text: "/" });
+          const maxHpInput = hpInputs.createEl("input", {
+            cls: "sm-encounter-input sm-combat-hp-input",
+            attr: {
+              id: `max-hp-${participant.id}`,
+              type: "number",
+              min: "0",
+              value: String(participant.maxHp)
+            }
+          });
+          currentHpInput.addEventListener("change", () => {
+            const current = Number(currentHpInput.value);
+            const max = Number(maxHpInput.value);
+            if (Number.isFinite(current)) {
+              this.callbacks.onUpdateHp(participant.id, current, max);
+            } else {
+              currentHpInput.value = String(participant.currentHp);
+            }
+          });
+          maxHpInput.addEventListener("change", () => {
+            const current = Number(currentHpInput.value);
+            const max = Number(maxHpInput.value);
+            if (Number.isFinite(max)) {
+              this.callbacks.onUpdateHp(participant.id, current, max);
+            } else {
+              maxHpInput.value = String(participant.maxHp);
+            }
+          });
+          const quickActions = row.createDiv({ cls: "sm-combat-quick-actions" });
+          const damageButton = quickActions.createEl("button", {
+            cls: "sm-encounter-button sm-combat-damage-btn",
+            text: "\u2212",
+            attr: { title: "Apply 1 damage" }
+          });
+          damageButton.type = "button";
+          damageButton.addEventListener("click", () => {
+            this.callbacks.onApplyDamage(participant.id, 1);
+          });
+          const healButton = quickActions.createEl("button", {
+            cls: "sm-encounter-button sm-combat-heal-btn",
+            text: "+",
+            attr: { title: "Apply 1 healing" }
+          });
+          healButton.type = "button";
+          healButton.addEventListener("click", () => {
+            this.callbacks.onApplyHealing(participant.id, 1);
+          });
+          const defeatedCheckbox = row.createEl("input", {
+            cls: "sm-combat-defeated-checkbox",
+            attr: {
+              type: "checkbox",
+              id: `defeated-${participant.id}`
+            }
+          });
+          defeatedCheckbox.checked = participant.defeated;
+          defeatedCheckbox.addEventListener("change", () => {
+            this.callbacks.onToggleDefeated(participant.id);
+          });
+          const defeatedLabel = row.createEl("label", {
+            cls: "sm-combat-defeated-label",
+            attr: { for: `defeated-${participant.id}` },
+            text: "Defeated"
+          });
+          const activeButton = row.createEl("button", {
+            cls: "sm-encounter-button sm-combat-active-btn",
+            text: participant.id === combat.activeParticipantId ? "Active" : "Set Active"
+          });
+          activeButton.type = "button";
+          if (participant.id === combat.activeParticipantId) {
+            activeButton.addClass("sm-combat-active-btn-selected");
+          }
+          activeButton.addEventListener("click", () => {
+            if (participant.id === combat.activeParticipantId) {
+              this.callbacks.onSetActive(null);
+            } else {
+              this.callbacks.onSetActive(participant.id);
+            }
+          });
+        }
+      }
+    };
+  }
+});
+
 // src/workmodes/encounter/workspace-view.ts
 function createSection(parent, className) {
   return parent.createDiv({ cls: `sm-encounter-section ${className}` });
@@ -6340,6 +6816,7 @@ var init_workspace_view = __esm({
     init_session_view();
     init_creature_list();
     init_composition_view();
+    init_combat_tracker();
     EncounterWorkspaceView = class {
       constructor(app, containerEl) {
         this.presenter = null;
@@ -6348,6 +6825,7 @@ var init_workspace_view = __esm({
         this.sessionView = null;
         this.creatureList = null;
         this.compositionView = null;
+        this.combatTracker = null;
         this.app = app;
         this.containerEl = containerEl;
       }
@@ -6365,6 +6843,8 @@ var init_workspace_view = __esm({
         this.creatureList = null;
         this.compositionView?.unmount();
         this.compositionView = null;
+        this.combatTracker?.unmount();
+        this.combatTracker = null;
         this.containerEl.empty();
         this.containerEl.removeClass("sm-encounter-view");
         this.presenter = null;
@@ -6388,6 +6868,11 @@ var init_workspace_view = __esm({
         if (this.compositionView) {
           const creatures = session?.creatures ?? [];
           this.compositionView.render(creatures);
+        }
+        if (this.combatTracker) {
+          const combat = session?.combat ?? null;
+          const hasCreatures = (session?.creatures?.length ?? 0) > 0;
+          this.combatTracker.render(combat, hasCreatures);
         }
         this.renderParty(state);
         this.renderRules(state);
@@ -6413,6 +6898,19 @@ var init_workspace_view = __esm({
           onRemove: (id) => this.handleRemoveCreature(id)
         });
         this.compositionView.mount();
+        const combatSection = createSection(this.containerEl, "sm-encounter-combat");
+        this.combatTracker = new CombatTrackerView(combatSection, {
+          onStartCombat: () => this.handleStartCombat(),
+          onEndCombat: () => this.handleEndCombat(),
+          onUpdateInitiative: (id, initiative) => this.handleUpdateInitiative(id, initiative),
+          onUpdateHp: (id, currentHp, maxHp) => this.handleUpdateHp(id, currentHp, maxHp),
+          onApplyDamage: (id, amount) => this.handleApplyDamage(id, amount),
+          onApplyHealing: (id, amount) => this.handleApplyHealing(id, amount),
+          onToggleDefeated: (id) => this.handleToggleDefeated(id),
+          onSetActive: (id) => this.handleSetActive(id),
+          onSortByInitiative: () => this.handleSortByInitiative()
+        });
+        this.combatTracker.mount();
         const xpSection = createSection(this.containerEl, "sm-encounter-xp");
         xpSection.createEl("h3", { cls: "sm-encounter-section-title", text: "Encounter XP & Rules" });
         const xpRow = xpSection.createDiv({ cls: "sm-encounter-xp-row" });
@@ -7409,6 +7907,51 @@ var init_workspace_view = __esm({
         const presenter = this.presenter;
         if (!presenter) return;
         presenter.removeCreature(id);
+      }
+      handleStartCombat() {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.startCombat();
+      }
+      handleEndCombat() {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.endCombat();
+      }
+      handleUpdateInitiative(id, initiative) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.updateParticipantInitiative(id, initiative);
+      }
+      handleUpdateHp(id, currentHp, maxHp) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.updateParticipantHp(id, currentHp, maxHp);
+      }
+      handleApplyDamage(id, amount) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.applyDamage(id, amount);
+      }
+      handleApplyHealing(id, amount) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.applyHealing(id, amount);
+      }
+      handleToggleDefeated(id) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.toggleDefeated(id);
+      }
+      handleSetActive(id) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.setActiveParticipant(id);
+      }
+      handleSortByInitiative() {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.sortParticipantsByInitiative();
       }
     };
     numberFormatter = new Intl.NumberFormat(void 0, {
@@ -19957,14 +20500,14 @@ async function createEncounterEventFromTravel(app, ctx, options = {}) {
   let encounterOdds;
   if (mapFile && coord) {
     try {
-      const { loadTile: loadTile2 } = await import("../../features/maps/hex-mapper/hex-notes");
+      const { loadTile: loadTile2 } = await Promise.resolve().then(() => (init_tile_repository(), tile_repository_exports));
       const tile = await loadTile2(app, mapFile, coord).catch(() => null);
       const tileRegion = typeof tile?.region === "string" ? tile.region : void 0;
       const tileFaction = typeof tile?.faction === "string" ? tile.faction : void 0;
       if (tileRegion) {
         regionName = tileRegion;
         try {
-          const { loadRegions: loadRegions3 } = await import("../../features/maps/regions-store");
+          const { loadRegions: loadRegions3 } = await Promise.resolve().then(() => (init_region_repository(), region_repository_exports));
           const regions = await loadRegions3(app);
           const region = regions.find((r) => typeof r?.name === "string" && r.name.toLowerCase() === tileRegion.toLowerCase());
           const odds = region?.encounterOdds;

@@ -16,6 +16,8 @@ import {
     setEncounterXp as storeSetEncounterXp,
     subscribeEncounterXpState,
     subscribeToEncounterEvents,
+    type CombatParticipant,
+    type CombatState,
     type EncounterCreature,
     type EncounterEvent,
     type EncounterPartyMember,
@@ -38,6 +40,7 @@ export interface EncounterSessionState {
     status: EncounterResolutionStatus;
     resolvedAt?: string | null;
     creatures: EncounterCreature[];
+    combat: CombatState | null;
 }
 
 export type EncounterResolutionStatus = "pending" | "resolved";
@@ -261,6 +264,248 @@ export class EncounterPresenter {
         this.emit();
     }
 
+    // ============================================================================
+    // Combat Tracking Methods
+    // ============================================================================
+
+    startCombat() {
+        const session = this.persisted.session;
+        if (!session) return;
+        if (session.combat?.isActive) return; // Already in combat
+
+        // Generate participants from creatures
+        const participants: CombatParticipant[] = [];
+        for (const creature of session.creatures) {
+            for (let i = 0; i < creature.count; i++) {
+                const participantId = `${creature.id}-${i}`;
+                const name = creature.count > 1 ? `${creature.name} ${i + 1}` : creature.name;
+                participants.push({
+                    id: participantId,
+                    creatureId: creature.id,
+                    name,
+                    initiative: 0,
+                    currentHp: 0, // UI will prompt for max HP
+                    maxHp: 0,
+                    defeated: false,
+                });
+            }
+        }
+
+        const combat: CombatState = {
+            isActive: true,
+            participants: Object.freeze(participants) as ReadonlyArray<CombatParticipant>,
+            activeParticipantId: null,
+        };
+
+        this.persisted = {
+            ...this.persisted,
+            session: {
+                ...session,
+                combat,
+            },
+        };
+        this.emit();
+    }
+
+    endCombat() {
+        const session = this.persisted.session;
+        if (!session) return;
+        if (!session.combat?.isActive) return;
+
+        this.persisted = {
+            ...this.persisted,
+            session: {
+                ...session,
+                combat: null,
+            },
+        };
+        this.emit();
+    }
+
+    updateParticipantInitiative(id: string, initiative: number) {
+        const session = this.persisted.session;
+        if (!session?.combat) return;
+
+        const sanitized = sanitizeNumber(initiative);
+        const participants = [...session.combat.participants];
+        const index = participants.findIndex((p) => p.id === id);
+        if (index === -1) return;
+
+        participants[index] = { ...participants[index], initiative: sanitized };
+
+        this.persisted = {
+            ...this.persisted,
+            session: {
+                ...session,
+                combat: {
+                    ...session.combat,
+                    participants: Object.freeze(participants) as ReadonlyArray<CombatParticipant>,
+                },
+            },
+        };
+        this.emit();
+    }
+
+    updateParticipantHp(id: string, currentHp: number, maxHp?: number) {
+        const session = this.persisted.session;
+        if (!session?.combat) return;
+
+        const sanitizedCurrent = sanitizeNonNegativeNumber(currentHp);
+        const participants = [...session.combat.participants];
+        const index = participants.findIndex((p) => p.id === id);
+        if (index === -1) return;
+
+        const participant = participants[index];
+        const sanitizedMax = maxHp !== undefined ? sanitizeNonNegativeNumber(maxHp) : participant.maxHp;
+        const clampedCurrent = Math.min(sanitizedCurrent, sanitizedMax);
+
+        participants[index] = {
+            ...participant,
+            currentHp: clampedCurrent,
+            maxHp: sanitizedMax,
+            defeated: clampedCurrent <= 0,
+        };
+
+        this.persisted = {
+            ...this.persisted,
+            session: {
+                ...session,
+                combat: {
+                    ...session.combat,
+                    participants: Object.freeze(participants) as ReadonlyArray<CombatParticipant>,
+                },
+            },
+        };
+        this.emit();
+    }
+
+    applyDamage(id: string, amount: number) {
+        const session = this.persisted.session;
+        if (!session?.combat) return;
+
+        const participants = [...session.combat.participants];
+        const index = participants.findIndex((p) => p.id === id);
+        if (index === -1) return;
+
+        const participant = participants[index];
+        const sanitizedAmount = sanitizeNonNegativeNumber(amount);
+        const newHp = Math.max(0, participant.currentHp - sanitizedAmount);
+
+        participants[index] = {
+            ...participant,
+            currentHp: newHp,
+            defeated: newHp <= 0,
+        };
+
+        this.persisted = {
+            ...this.persisted,
+            session: {
+                ...session,
+                combat: {
+                    ...session.combat,
+                    participants: Object.freeze(participants) as ReadonlyArray<CombatParticipant>,
+                },
+            },
+        };
+        this.emit();
+    }
+
+    applyHealing(id: string, amount: number) {
+        const session = this.persisted.session;
+        if (!session?.combat) return;
+
+        const participants = [...session.combat.participants];
+        const index = participants.findIndex((p) => p.id === id);
+        if (index === -1) return;
+
+        const participant = participants[index];
+        const sanitizedAmount = sanitizeNonNegativeNumber(amount);
+        const newHp = Math.min(participant.maxHp, participant.currentHp + sanitizedAmount);
+
+        participants[index] = {
+            ...participant,
+            currentHp: newHp,
+            defeated: newHp <= 0,
+        };
+
+        this.persisted = {
+            ...this.persisted,
+            session: {
+                ...session,
+                combat: {
+                    ...session.combat,
+                    participants: Object.freeze(participants) as ReadonlyArray<CombatParticipant>,
+                },
+            },
+        };
+        this.emit();
+    }
+
+    toggleDefeated(id: string) {
+        const session = this.persisted.session;
+        if (!session?.combat) return;
+
+        const participants = [...session.combat.participants];
+        const index = participants.findIndex((p) => p.id === id);
+        if (index === -1) return;
+
+        const participant = participants[index];
+        participants[index] = {
+            ...participant,
+            defeated: !participant.defeated,
+        };
+
+        this.persisted = {
+            ...this.persisted,
+            session: {
+                ...session,
+                combat: {
+                    ...session.combat,
+                    participants: Object.freeze(participants) as ReadonlyArray<CombatParticipant>,
+                },
+            },
+        };
+        this.emit();
+    }
+
+    setActiveParticipant(id: string | null) {
+        const session = this.persisted.session;
+        if (!session?.combat) return;
+
+        if (session.combat.activeParticipantId === id) return;
+
+        this.persisted = {
+            ...this.persisted,
+            session: {
+                ...session,
+                combat: {
+                    ...session.combat,
+                    activeParticipantId: id,
+                },
+            },
+        };
+        this.emit();
+    }
+
+    sortParticipantsByInitiative() {
+        const session = this.persisted.session;
+        if (!session?.combat) return;
+
+        const sorted = [...session.combat.participants].sort((a, b) => b.initiative - a.initiative);
+
+        this.persisted = {
+            ...this.persisted,
+            session: {
+                ...session,
+                combat: {
+                    ...session.combat,
+                    participants: Object.freeze(sorted) as ReadonlyArray<CombatParticipant>,
+                },
+            },
+        };
+        this.emit();
+    }
+
     setEncounterXp(value: number) {
         const sanitized = sanitizeNonNegativeNumber(value);
         if (sanitized === this.persisted.xp.encounterXp) return;
@@ -413,12 +658,29 @@ export class EncounterPresenter {
             count: Math.max(1, Math.floor(creature.count)),
             cr: Math.max(0, creature.cr),
         }));
+        const combat = session.combat ? EncounterPresenter.normaliseCombat(session.combat) : null;
         return {
             event: session.event,
             notes: session.notes ?? "",
             status,
             resolvedAt: session.resolvedAt ?? null,
             creatures,
+            combat,
+        };
+    }
+
+    private static normaliseCombat(combat: CombatState): CombatState {
+        const participants = (combat.participants ?? []).map((participant) => ({
+            ...participant,
+            initiative: sanitizeNumber(participant.initiative),
+            currentHp: sanitizeNonNegativeNumber(participant.currentHp),
+            maxHp: sanitizeNonNegativeNumber(participant.maxHp),
+            defeated: !!participant.defeated,
+        }));
+        return {
+            isActive: !!combat.isActive,
+            participants: Object.freeze(participants) as ReadonlyArray<CombatParticipant>,
+            activeParticipantId: combat.activeParticipantId ?? null,
         };
     }
 

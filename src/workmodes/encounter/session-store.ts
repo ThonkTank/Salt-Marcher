@@ -52,6 +52,22 @@ export interface EncounterCreature {
     readonly statblockPath?: string;
 }
 
+export interface CombatParticipant {
+    readonly id: string;
+    readonly creatureId: string;
+    readonly name: string;
+    readonly initiative: number;
+    readonly currentHp: number;
+    readonly maxHp: number;
+    readonly defeated: boolean;
+}
+
+export interface CombatState {
+    readonly isActive: boolean;
+    readonly participants: ReadonlyArray<CombatParticipant>;
+    readonly activeParticipantId: string | null;
+}
+
 export type EncounterRuleScope = "xp" | "gold";
 
 export interface EncounterXpRule {

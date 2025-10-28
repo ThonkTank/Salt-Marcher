@@ -33,7 +33,7 @@ export async function createEncounterEventFromTravel(
 
     if (mapFile && coord) {
         try {
-            const { loadTile } = await import("../../features/maps/hex-mapper/hex-notes");
+            const { loadTile } = await import("../../features/maps/data/tile-repository");
             const tile = await loadTile(app, mapFile, coord).catch(() => null);
             const tileRegion = typeof tile?.region === "string" ? tile.region : undefined;
             const tileFaction = typeof tile?.faction === "string" ? tile.faction : undefined;
@@ -41,7 +41,7 @@ export async function createEncounterEventFromTravel(
             if (tileRegion) {
                 regionName = tileRegion;
                 try {
-                    const { loadRegions } = await import("../../features/maps/regions-store");
+                    const { loadRegions } = await import("../../features/maps/data/region-repository");
                     const regions = await loadRegions(app);
                     const region = regions.find((r: any) => typeof r?.name === "string" && r.name.toLowerCase() === tileRegion.toLowerCase());
                     const odds = region?.encounterOdds;
