@@ -316,27 +316,34 @@ Ziele:
 ## Architektur-Roadmap
 
 ### Phase 0 – Taxonomie & Schemas
-**Status:** Completed  
+**Status:** ~90% Complete | **Last Updated:** 2025-10-28  
 - **Tag-Vokabel definieren**
   1. ✅ Bestehende Tags aus Creatures-Presets sammeln (`typeTags`) und in `docs/TAGS.md` dokumentieren.
   2. ✅ Weitere Tag-Quellen analysieren (Items & Spells erfasst, Equipment/Terrains/Regions ohne Tags → als offen markiert).
   3. ✅ Terminologie-Dokument `docs/TAGS.md` angelegt; enthält aktuelle Liste und offene Kategorien.
   4. ✅ DevKit-Prüfung (`devkit lint tags`) implementiert (siehe `devkit/core/cli/devkit.mjs`).
+  5. ✅ **NEW:** Equipment/Terrains/Regions Tags vollständig definiert in `docs/TAGS.md` (Biome, Difficulty, Danger, Climate, Settlement).
 - **Schemas & Frontmatter**
   1. ✅ Für Fraktion, Ort, Dungeon, Playlist, Kalender-Event, Loot-Template TypeScript-Interfaces plus Validator-Funktionen erstellen (`src/domain/schemas.ts`).
   2. ✅ Frontmatter-/Body-Templates festlegen (`samples/**` demonstriert Struktur, kompatibel mit bestehenden Preset-Konventionen).
   3. ✅ Beispiel-Dateien im Repo anlegen (Seed-Daten in `samples/` für Tests & Doku).
-  4. Encounter-Regel-Preset-Format prüfen und ggf. erweitern; Rückwärtskompatibilität sicherstellen.
+  4. ✅ **NEW:** Encounter-Regel-Preset-Format geprüft - bereits vollständig implementiert (`src/workmodes/encounter/rule-presets.ts`).
 - **Migration & Tooling**
   1. ✅ DevKit-Command `devkit schema validate` implementiert (transpiliert `src/domain/schemas.ts`, prüft Markdown-Dateien).
   2. ✅ Upgrade-Skript (`devkit migrate factions-v1`) mit Dry-Run/Basics für Fraktions-Dokumente erstellt.
   3. ✅ `generate-preset-data.mjs` erweitert (Frontmatter-Validierung für Tags & neue Datentypen).
   4. ✅ Dokumentation ergänzt (`CLAUDE.md` Roadmap, `docs/TAGS.md`, neues `docs/SCHEMA_REFERENCE.md`).
 - **Library-UI & Tests**
-  1. Library CreateSpecs um Tagging-/Schema-Felder erweitern (Dropdown/Token-Editor mit Autocomplete aus `docs/TAGS.md`).
-  2. Schema-Validierung in CreateSpecs aktivieren (`schema.safeParse` + Fehlermeldungen).
-  3. DevKit-Test-Fixtures (oder reaktivierte Vitest-Goldens) um neue Felder erweitern; ggf. `devkit/testing`-Module ergänzen.
-  4. Prüfläufe in DevKit/CICD einbinden (z. B. `devkit test schema`), die Schema- und Tag-Validierung automatisiert abdecken.
+  1. ✅ **NEW:** Items CreateSpec um tags-Feld erweitert (Token-Editor mit Autocomplete aus `ITEM_TAGS`).
+  2. ⏳ Equipment/Terrains/Regions CreateSpecs um Tag-Felder erweitern (Token-Editor mit Autocomplete aus definierten Tags).
+  3. ⏳ Schema-Validierung in CreateSpecs aktivieren (`domain/schemas.ts` Validatoren integrieren statt pass-through).
+  4. ⏳ DevKit-Test-Fixtures (oder reaktivierte Vitest-Goldens) um neue Felder erweitern; ggf. `devkit/testing`-Module ergänzen.
+  5. ⏳ Prüfläufe in DevKit/CICD einbinden (z. B. `devkit test schema`), die Schema- und Tag-Validierung automatisiert abdecken.
+
+**Nächste Schritte (zum Abschluss Phase 0):**
+- Equipment/Terrains/Regions CreateSpecs um definierte Tags erweitern
+- Schema-Validierung von `src/domain/schemas.ts` in CreateSpecs integrieren (Fraktionen, Orte, etc.)
+- Test-Fixtures aktualisieren und automatisierte Prüfläufe einrichten
 
 ### Phase 1 – Core State Platform
 **Status:** Not started  
