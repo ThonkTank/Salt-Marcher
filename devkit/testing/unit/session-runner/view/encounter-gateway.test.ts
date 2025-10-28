@@ -21,11 +21,11 @@ vi.mock("obsidian", async () => {
     return { ...actual, Notice: CapturingNotice };
 });
 
-vi.mock("../../../src/workmodes/encounter/session-store", () => ({
+vi.mock("src/workmodes/encounter/session-store", () => ({
     publishEncounterEvent,
 }));
 
-vi.mock("../../../src/workmodes/encounter/event-builder", () => ({
+vi.mock("src/workmodes/encounter/event-builder", () => ({
     createEncounterEventFromTravel,
 }));
 
