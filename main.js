@@ -574,6 +574,9 @@ function createHexScene(config) {
     poly.style.stroke = "var(--text-muted)";
     poly.style.strokeWidth = "2";
     poly.style.transition = "fill 120ms ease, fill-opacity 120ms ease, stroke 120ms ease";
+    poly.dataset.defaultStroke = "var(--text-muted)";
+    poly.dataset.defaultStrokeWidth = "2";
+    poly.dataset.terrainFill = "transparent";
     contentG.appendChild(poly);
     polyByCoord.set(keyOf(coord), poly);
     const label = document.createElementNS(SVG_NS, "text");
@@ -601,12 +604,45 @@ function createHexScene(config) {
     const poly = polyByCoord.get(keyOf(coord));
     if (!poly) return;
     const fill = color ?? "transparent";
-    poly.style.fill = fill;
-    poly.style.fillOpacity = fill !== "transparent" ? "0.25" : "0";
+    poly.dataset.terrainFill = fill;
+    if (!poly.dataset.overlayColor) {
+      poly.style.fill = fill;
+      poly.style.fillOpacity = fill !== "transparent" ? "0.25" : "0";
+    }
     if (fill !== "transparent") {
       poly.setAttribute("data-painted", "1");
     } else {
       poly.removeAttribute("data-painted");
+    }
+  }
+  function setOverlay(coord, overlay2) {
+    const poly = polyByCoord.get(keyOf(coord));
+    if (!poly) return;
+    if (overlay2) {
+      const strokeWidth = overlay2.strokeWidth ?? "3";
+      const fillOpacity = overlay2.fillOpacity ?? "0.5";
+      poly.dataset.overlayColor = overlay2.color;
+      if (overlay2.factionId) poly.dataset.factionId = overlay2.factionId;
+      else delete poly.dataset.factionId;
+      if (overlay2.factionName) poly.dataset.factionName = overlay2.factionName;
+      else delete poly.dataset.factionName;
+      poly.style.stroke = overlay2.color;
+      poly.style.strokeWidth = strokeWidth;
+      poly.style.strokeOpacity = "0.9";
+      poly.style.mixBlendMode = "multiply";
+      poly.style.fill = overlay2.color;
+      poly.style.fillOpacity = fillOpacity;
+    } else {
+      delete poly.dataset.overlayColor;
+      delete poly.dataset.factionId;
+      delete poly.dataset.factionName;
+      poly.style.stroke = poly.dataset.defaultStroke ?? "var(--text-muted)";
+      poly.style.strokeWidth = poly.dataset.defaultStrokeWidth ?? "2";
+      poly.style.strokeOpacity = "1";
+      poly.style.mixBlendMode = "";
+      const terrainFill = poly.dataset.terrainFill ?? "transparent";
+      poly.style.fill = terrainFill;
+      poly.style.fillOpacity = terrainFill !== "transparent" ? "0.25" : "0";
     }
   }
   const initial = initialCoords.length ? initialCoords : [];
@@ -621,6 +657,7 @@ function createHexScene(config) {
     polyByCoord,
     ensurePolys,
     setFill,
+    setOverlay,
     getViewBox: () => {
       if (!internals.bounds) {
         return { minX: 0, minY: 0, width: 0, height: 0 };
@@ -1212,6 +1249,210 @@ var init_store_manager = __esm({
   }
 });
 
+// src/features/maps/domain/faction-colors.ts
+function getFactionColor(factionId, palette = DEFAULT_FACTION_COLORS) {
+  const basePalette = palette.length > 0 ? palette : DEFAULT_FACTION_COLORS;
+  if (basePalette.length === 0) return FALLBACK_COLOR;
+  const key = factionId.trim();
+  if (!key) return basePalette[0];
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) {
+    hash = hash * 31 + key.charCodeAt(i) >>> 0;
+  }
+  const index = hash % basePalette.length;
+  return basePalette[index] ?? basePalette[0] ?? FALLBACK_COLOR;
+}
+var DEFAULT_FACTION_COLORS, FALLBACK_COLOR;
+var init_faction_colors = __esm({
+  "src/features/maps/domain/faction-colors.ts"() {
+    "use strict";
+    DEFAULT_FACTION_COLORS = [
+      "#2E86AB",
+      "#F6AA1C",
+      "#C7443E",
+      "#6A994E",
+      "#4A4E69",
+      "#EF8354",
+      "#16697A",
+      "#6C5B7B",
+      "#3DCCC7",
+      "#D9BF77",
+      "#B8336A",
+      "#1B998B",
+      "#FF6F59",
+      "#355070",
+      "#70C1B3",
+      "#F25F5C"
+    ];
+    FALLBACK_COLOR = "#9E9E9E";
+  }
+});
+
+// src/features/maps/state/faction-overlay-store.ts
+function getFactionOverlayStore(app, mapFile, options = {}) {
+  let storesByApp = overlayRegistry.get(app);
+  if (!storesByApp) {
+    storesByApp = /* @__PURE__ */ new Map();
+    overlayRegistry.set(app, storesByApp);
+  }
+  const mapPath = (0, import_obsidian4.normalizePath)(mapFile.path);
+  let store = storesByApp.get(mapPath);
+  if (!store) {
+    store = createFactionOverlayStore(mapPath, options);
+    storesByApp.set(mapPath, store);
+  }
+  return store;
+}
+function resetFactionOverlayStore(app, mapFile) {
+  const storesByApp = overlayRegistry.get(app);
+  if (!storesByApp) return;
+  const mapPath = (0, import_obsidian4.normalizePath)(mapFile.path);
+  const store = storesByApp.get(mapPath);
+  if (store) {
+    store.clear();
+    storesByApp.delete(mapPath);
+  }
+}
+function createFactionOverlayStore(mapPath, options) {
+  const storeName = `map-factions:${mapPath}`;
+  const state = writable(createEmptyState(mapPath), {
+    name: storeName,
+    debug: false
+  });
+  getStoreManager().register(storeName, state);
+  const resolveColor = (factionId, palette) => {
+    const normalized = factionId.trim();
+    if (!normalized) return palette.get("") ?? FALLBACK_COLOR2;
+    const existing = palette.get(normalized);
+    if (existing) return existing;
+    const custom = options.resolveColor?.(normalized, palette);
+    if (custom && typeof custom === "string") {
+      const value = custom.trim() || FALLBACK_COLOR2;
+      palette.set(normalized, value);
+      return value;
+    }
+    const color = getFactionColor(normalized, options.palette ?? DEFAULT_FACTION_COLORS);
+    palette.set(normalized, color);
+    return color;
+  };
+  const setAssignments = (assignments) => {
+    const snapshot = state.get();
+    const nextEntries = /* @__PURE__ */ new Map();
+    const nextPalette = new Map(snapshot.palette);
+    const seen = /* @__PURE__ */ new Set();
+    for (const assignment of assignments) {
+      if (!assignment) continue;
+      const coord = normalizeCoord(assignment.coord);
+      if (!coord) continue;
+      const factionId = normalizeFactionId(assignment.factionId);
+      if (!factionId) continue;
+      const key = keyFromCoord(coord);
+      if (seen.has(key)) continue;
+      const overrideColor = normalizeColor(assignment.color);
+      const color = overrideColor ?? resolveColor(factionId, nextPalette);
+      if (overrideColor) {
+        nextPalette.set(factionId, color);
+      }
+      const entry = {
+        ...assignment,
+        coord,
+        factionId,
+        color,
+        key
+      };
+      nextEntries.set(key, entry);
+      seen.add(key);
+    }
+    state.set({
+      mapPath,
+      loaded: true,
+      entries: nextEntries,
+      palette: nextPalette,
+      version: Date.now()
+    });
+  };
+  const clear = () => {
+    state.set(createEmptyState(mapPath));
+  };
+  const get = (coord) => {
+    const snapshot = state.get();
+    const normalized = normalizeCoord(coord);
+    if (!normalized) return null;
+    return snapshot.entries.get(keyFromCoord(normalized)) ?? null;
+  };
+  const list = () => {
+    const snapshot = state.get();
+    return Array.from(snapshot.entries.values());
+  };
+  const getColorForFaction = (factionId) => {
+    const snapshot = state.get();
+    const normalized = normalizeFactionId(factionId);
+    if (!normalized) return FALLBACK_COLOR2;
+    const palette = new Map(snapshot.palette);
+    const color = palette.get(normalized) ?? resolveColor(normalized, palette);
+    if (!snapshot.palette.has(normalized)) {
+      state.update((current) => {
+        const nextPalette = new Map(current.palette);
+        nextPalette.set(normalized, color);
+        return {
+          ...current,
+          palette: nextPalette,
+          version: Date.now()
+        };
+      });
+    }
+    return color;
+  };
+  return {
+    state,
+    setAssignments,
+    clear,
+    get,
+    list,
+    getColorForFaction
+  };
+}
+function createEmptyState(mapPath) {
+  return {
+    mapPath,
+    loaded: false,
+    entries: /* @__PURE__ */ new Map(),
+    palette: /* @__PURE__ */ new Map(),
+    version: Date.now()
+  };
+}
+function normalizeCoord(coord) {
+  if (!coord) return null;
+  const r = Number(coord.r);
+  const c = Number(coord.c);
+  if (!Number.isInteger(r) || !Number.isInteger(c)) return null;
+  return { r, c };
+}
+function normalizeFactionId(id) {
+  return typeof id === "string" ? id.trim() : "";
+}
+function keyFromCoord(coord) {
+  return `${coord.r}:${coord.c}`;
+}
+function normalizeColor(color) {
+  if (!color) return null;
+  const trimmed = color.trim();
+  if (!trimmed) return null;
+  return trimmed;
+}
+var import_obsidian4, FALLBACK_COLOR2, overlayRegistry;
+var init_faction_overlay_store = __esm({
+  "src/features/maps/state/faction-overlay-store.ts"() {
+    "use strict";
+    import_obsidian4 = require("obsidian");
+    init_state();
+    init_store_manager();
+    init_faction_colors();
+    FALLBACK_COLOR2 = "#9E9E9E";
+    overlayRegistry = /* @__PURE__ */ new WeakMap();
+  }
+});
+
 // src/features/maps/state/tile-store.ts
 function createEmptyTileStoreState(version = Date.now()) {
   return {
@@ -1236,7 +1477,7 @@ function createTileStore(deps) {
       const entries = await deps.listTilesFromDisk();
       const nextTiles = /* @__PURE__ */ new Map();
       for (const entry of entries) {
-        nextTiles.set(keyFromCoord(entry.coord), {
+        nextTiles.set(keyFromCoord2(entry.coord), {
           coord: entry.coord,
           data: entry.data,
           file: entry.file
@@ -1275,7 +1516,7 @@ function createTileStore(deps) {
   const loadTile2 = async (coord) => {
     await ensureLoaded();
     const snapshot = persistent2.get();
-    const record = snapshot.tiles.get(keyFromCoord(coord));
+    const record = snapshot.tiles.get(keyFromCoord2(coord));
     if (record) {
       return record.data;
     }
@@ -1283,7 +1524,7 @@ function createTileStore(deps) {
       const data = await deps.loadTileFromDisk(coord);
       if (data) {
         await refresh();
-        const refreshed = persistent2.get().tiles.get(keyFromCoord(coord));
+        const refreshed = persistent2.get().tiles.get(keyFromCoord2(coord));
         return refreshed ? refreshed.data : data;
       }
       return data;
@@ -1295,7 +1536,7 @@ function createTileStore(deps) {
     await ensureLoaded();
     persistent2.update((current) => {
       const nextTiles = new Map(current.tiles);
-      nextTiles.set(keyFromCoord(coord), {
+      nextTiles.set(keyFromCoord2(coord), {
         coord,
         data: result.data,
         file: result.file
@@ -1313,7 +1554,7 @@ function createTileStore(deps) {
     await ensureLoaded();
     persistent2.update((current) => {
       const nextTiles = new Map(current.tiles);
-      nextTiles.delete(keyFromCoord(coord));
+      nextTiles.delete(keyFromCoord2(coord));
       return {
         loaded: true,
         tiles: nextTiles,
@@ -1346,7 +1587,7 @@ function createTileStore(deps) {
     refresh
   };
 }
-function keyFromCoord(coord) {
+function keyFromCoord2(coord) {
   return `${coord.r}:${coord.c}`;
 }
 var init_tile_store = __esm({
@@ -1373,6 +1614,11 @@ function validateTileData(data, options = {}) {
   if (region.length > TILE_REGION_MAX_LENGTH) {
     issues.push(`region exceeds ${TILE_REGION_MAX_LENGTH} characters`);
   }
+  const factionRaw = typeof data.faction === "string" ? data.faction : "";
+  const faction = factionRaw.trim();
+  if (faction.length > TILE_FACTION_MAX_LENGTH) {
+    issues.push(`faction exceeds ${TILE_FACTION_MAX_LENGTH} characters`);
+  }
   const noteRaw = typeof data.note === "string" ? data.note : void 0;
   const note = noteRaw?.trim();
   if (issues.length) {
@@ -1381,8 +1627,53 @@ function validateTileData(data, options = {}) {
   return {
     terrain,
     region,
+    faction: faction || void 0,
     note: note || void 0
   };
+}
+function ensureOverlaySync(app, mapFile, store) {
+  let byApp = overlaySyncRegistry.get(app);
+  if (!byApp) {
+    byApp = /* @__PURE__ */ new Map();
+    overlaySyncRegistry.set(app, byApp);
+  }
+  const key = mapFile.path;
+  if (byApp.has(key)) return;
+  const overlayStore = getFactionOverlayStore(app, mapFile);
+  const applyState = (state) => {
+    if (!state.loaded) {
+      overlayStore.clear();
+      return;
+    }
+    const assignments = [];
+    for (const record of state.tiles.values()) {
+      const factionId = (record.data.faction ?? "").trim();
+      if (!factionId) continue;
+      assignments.push({
+        coord: record.coord,
+        factionId,
+        factionName: record.data.faction ?? void 0,
+        sourceId: record.file?.path
+      });
+    }
+    overlayStore.setAssignments(assignments);
+  };
+  const unsubscribe = store.state.subscribe(applyState);
+  applyState(store.state.get());
+  const dispose = () => {
+    unsubscribe();
+    overlayStore.clear();
+  };
+  byApp.set(key, dispose);
+}
+function releaseOverlaySync(app, mapFile) {
+  const byApp = overlaySyncRegistry.get(app);
+  if (!byApp) return;
+  const dispose = byApp.get(mapFile.path);
+  if (dispose) {
+    dispose();
+    byApp.delete(mapFile.path);
+  }
 }
 function mapNameFromPath(mapPath) {
   const base = mapPath.replace(/\\/g, "/").split("/").pop() || "Map";
@@ -1435,8 +1726,8 @@ function getTileStore(app, mapFile) {
   let store = storesByApp.get(key);
   if (!store) {
     store = createTileStore({
-      storageKey: (0, import_obsidian4.normalizePath)(`tiles://${mapFile.path}`),
-      name: `map-tiles:${(0, import_obsidian4.normalizePath)(mapFile.path)}`,
+      storageKey: (0, import_obsidian5.normalizePath)(`tiles://${mapFile.path}`),
+      name: `map-tiles:${(0, import_obsidian5.normalizePath)(mapFile.path)}`,
       listTilesFromDisk: () => listTilesForMapFromDisk(app, mapFile),
       saveTileToDisk: (coord, data) => saveTileToDisk(app, mapFile, coord, data),
       deleteTileFromDisk: (coord) => deleteTileFromDisk(app, mapFile, coord),
@@ -1444,6 +1735,7 @@ function getTileStore(app, mapFile) {
     });
     storesByApp.set(key, store);
   }
+  ensureOverlaySync(app, mapFile, store);
   return store;
 }
 async function readOptions(app, mapFile) {
@@ -1454,13 +1746,13 @@ async function readOptions(app, mapFile) {
   return { folder, folderPrefix };
 }
 async function ensureFolder(app, folderPath) {
-  const path = (0, import_obsidian4.normalizePath)(folderPath);
+  const path = (0, import_obsidian5.normalizePath)(folderPath);
   const existing = app.vault.getAbstractFileByPath(path);
-  if (existing && existing instanceof import_obsidian4.TFolder) return existing;
+  if (existing && existing instanceof import_obsidian5.TFolder) return existing;
   if (existing) throw new Error(`Pfad existiert, ist aber kein Ordner: ${path}`);
   await app.vault.createFolder(path);
   const created = app.vault.getAbstractFileByPath(path);
-  if (!(created && created instanceof import_obsidian4.TFolder)) throw new Error(`Ordner konnte nicht erstellt werden: ${path}`);
+  if (!(created && created instanceof import_obsidian5.TFolder)) throw new Error(`Ordner konnte nicht erstellt werden: ${path}`);
   return created;
 }
 function fm(app, file) {
@@ -1470,6 +1762,7 @@ function buildMarkdown(coord, mapPath, folderPrefix, data) {
   const validated = validateTileData(data, { allowUnknownTerrain: true });
   const terrain = validated.terrain ?? "";
   const region = (validated.region ?? "").trim();
+  const faction = (validated.faction ?? "").trim();
   const mapName = mapNameFromPath(mapPath);
   const bodyNote = (validated.note ?? "Notizen hier \u2026").trim();
   return [
@@ -1477,6 +1770,7 @@ function buildMarkdown(coord, mapPath, folderPrefix, data) {
     `type: ${FM_TYPE}`,
     `smHexTile: true`,
     `region: "${region}"`,
+    `faction: "${faction}"`,
     `row: ${coord.r}`,
     `col: ${coord.c}`,
     `map_path: "${mapPath}"`,
@@ -1491,7 +1785,7 @@ function buildMarkdown(coord, mapPath, folderPrefix, data) {
 }
 async function resolveTilePath(app, mapFile, coord) {
   const { folder, folderPrefix } = await readOptions(app, mapFile);
-  const folderPath = (0, import_obsidian4.normalizePath)(folder);
+  const folderPath = (0, import_obsidian5.normalizePath)(folder);
   const newName = fileNameForMap(mapFile, coord);
   const newPath = `${folderPath}/${newName}`;
   const legacy = legacyFilenames(folderPrefix, coord).map((n) => `${folderPath}/${n}`);
@@ -1559,15 +1853,15 @@ async function adoptLegacyTile(app, mapFile, file, folderPath, folderPrefix, cac
   const mapName = mapNameFromPath(mapFile.path);
   const backlinkNeedle = `[[${mapName.toLowerCase()}|`;
   if (!raw.toLowerCase().includes(backlinkNeedle)) return null;
-  const desiredPath = (0, import_obsidian4.normalizePath)(`${folderPath}/${fileNameForMap(mapFile, coord)}`);
-  if ((0, import_obsidian4.normalizePath)(file.path) !== desiredPath) {
+  const desiredPath = (0, import_obsidian5.normalizePath)(`${folderPath}/${fileNameForMap(mapFile, coord)}`);
+  if ((0, import_obsidian5.normalizePath)(file.path) !== desiredPath) {
     const existing = app.vault.getAbstractFileByPath(desiredPath);
     if (existing && existing !== file) {
       return null;
     }
     await app.fileManager.renameFile(file, desiredPath);
     const renamed = app.vault.getAbstractFileByPath(desiredPath);
-    if (renamed && renamed instanceof import_obsidian4.TFile) {
+    if (renamed && renamed instanceof import_obsidian5.TFile) {
       file = renamed;
     }
   }
@@ -1576,7 +1870,7 @@ async function adoptLegacyTile(app, mapFile, file, folderPath, folderPrefix, cac
 }
 async function listTilesForMapFromDisk(app, mapFile) {
   const { folder, folderPrefix } = await readOptions(app, mapFile);
-  const folderPath = (0, import_obsidian4.normalizePath)(folder);
+  const folderPath = (0, import_obsidian5.normalizePath)(folder);
   const folderPathLower = (folderPath.endsWith("/") ? folderPath : folderPath + "/").toLowerCase();
   const out = [];
   for (const file of app.vault.getFiles()) {
@@ -1637,12 +1931,13 @@ async function loadTileFromDisk(app, mapFile, coord) {
   const note = (body.split(/\n{2,}/).map((s) => s.trim()).find(Boolean) ?? "").trim();
   const terrain = typeof fmc.terrain === "string" ? fmc.terrain : "";
   const region = typeof fmc.region === "string" ? fmc.region : "";
+  const faction = typeof fmc.faction === "string" ? fmc.faction : "";
   try {
-    const validated = validateTileData({ terrain, region, note }, { allowUnknownTerrain: true });
+    const validated = validateTileData({ terrain, region, faction, note }, { allowUnknownTerrain: true });
     return validated;
   } catch (error) {
     logger.warn("[salt-marcher] Loaded tile contains invalid data", error);
-    return { terrain: terrain.trim(), region: region.trim(), note: note || void 0 };
+    return { terrain: terrain.trim(), region: region.trim(), faction: faction.trim() || void 0, note: note || void 0 };
   }
 }
 async function saveTileToDisk(app, mapFile, coord, data) {
@@ -1665,6 +1960,13 @@ async function saveTileToDisk(app, mapFile, coord, data) {
     if (sanitized.region !== void 0) f.region = sanitized.region ?? "";
     if (sanitized.terrain !== void 0) f.terrain = sanitized.terrain ?? "";
     if (typeof f.terrain !== "string") f.terrain = "";
+    if ("faction" in data) {
+      if (sanitized.faction) {
+        f.faction = sanitized.faction;
+      } else {
+        delete f.faction;
+      }
+    }
   });
   if (sanitized.note !== void 0) {
     const raw = await app.vault.read(file);
@@ -1713,21 +2015,24 @@ function resetTileStore(app, mapFile) {
   const storesByApp = tileStoreRegistry.get(app);
   const store = storesByApp?.get(mapFile.path);
   if (store) {
+    releaseOverlaySync(app, mapFile);
     store.state.set(createEmptyTileStoreState());
     storesByApp?.delete(mapFile.path);
   }
 }
-var import_obsidian4, TILE_TERRAIN_MAX_LENGTH, TILE_REGION_MAX_LENGTH, TileValidationError, FM_TYPE, tileStoreRegistry;
+var import_obsidian5, TILE_TERRAIN_MAX_LENGTH, TILE_REGION_MAX_LENGTH, TILE_FACTION_MAX_LENGTH, TileValidationError, FM_TYPE, tileStoreRegistry, overlaySyncRegistry;
 var init_tile_repository = __esm({
   "src/features/maps/data/tile-repository.ts"() {
     "use strict";
-    import_obsidian4 = require("obsidian");
+    import_obsidian5 = require("obsidian");
     init_terrain();
     init_options();
     init_plugin_logger();
+    init_faction_overlay_store();
     init_tile_store();
     TILE_TERRAIN_MAX_LENGTH = 64;
     TILE_REGION_MAX_LENGTH = 120;
+    TILE_FACTION_MAX_LENGTH = 120;
     TileValidationError = class extends Error {
       constructor(issues) {
         super(`Invalid tile data: ${issues.join(", ")}`);
@@ -1737,6 +2042,7 @@ var init_tile_repository = __esm({
     };
     FM_TYPE = "hex";
     tileStoreRegistry = /* @__PURE__ */ new WeakMap();
+    overlaySyncRegistry = /* @__PURE__ */ new WeakMap();
   }
 });
 
@@ -1791,7 +2097,7 @@ var init_interaction_delegate = __esm({
 // src/features/maps/rendering/interactions/interaction-adapter.ts
 function resolveMapFile(app, mapPath) {
   const abstract = app.vault.getAbstractFileByPath(mapPath);
-  return abstract instanceof import_obsidian5.TFile ? abstract : null;
+  return abstract instanceof import_obsidian6.TFile ? abstract : null;
 }
 function createInteractionAdapter(config) {
   const { app, host, mapPath } = config;
@@ -1813,11 +2119,11 @@ function createInteractionAdapter(config) {
     setDelegate
   };
 }
-var import_obsidian5;
+var import_obsidian6;
 var init_interaction_adapter = __esm({
   "src/features/maps/rendering/interactions/interaction-adapter.ts"() {
     "use strict";
-    import_obsidian5 = require("obsidian");
+    import_obsidian6 = require("obsidian");
     init_layout();
     init_tile_repository();
     init_interaction_delegate();
@@ -1855,7 +2161,7 @@ function buildFallback(bounds) {
 }
 async function loadTiles(app, mapPath) {
   const file = app.vault.getAbstractFileByPath(mapPath);
-  if (!(file instanceof import_obsidian6.TFile)) {
+  if (!(file instanceof import_obsidian7.TFile)) {
     return [];
   }
   try {
@@ -1878,11 +2184,11 @@ async function bootstrapHexTiles(app, mapPath) {
     initialCoords
   };
 }
-var import_obsidian6, DEFAULT_FALLBACK_SPAN;
+var import_obsidian7, DEFAULT_FALLBACK_SPAN;
 var init_bootstrap = __esm({
   "src/features/maps/rendering/scene/bootstrap.ts"() {
     "use strict";
-    import_obsidian6 = require("obsidian");
+    import_obsidian7 = require("obsidian");
     init_tile_repository();
     DEFAULT_FALLBACK_SPAN = 2;
   }
@@ -1922,9 +2228,10 @@ var init_surface = __esm({
 });
 
 // src/features/maps/rendering/hex-render.ts
-async function renderHexMap(app, host, opts, mapPath) {
+async function renderHexMap(app, host, mapFile, opts) {
   const radius = opts.radius;
   const padding = DEFAULT_PADDING;
+  const mapPath = mapFile.path;
   const { tiles, base, initialCoords } = await bootstrapHexTiles(app, mapPath);
   const surface = selectRenderSurface();
   const scene = createHexScene({
@@ -1961,9 +2268,49 @@ async function renderHexMap(app, host, opts, mapPath) {
     const color = TERRAIN_COLORS[data.terrain] ?? "transparent";
     scene.setFill(coord, color);
   }
+  const legendHost = createLegendHost(host);
+  const overlayStore = getFactionOverlayStore(app, mapFile);
+  let overlayKeys = /* @__PURE__ */ new Set();
+  const applyOverlay = (state) => {
+    const entries = state.loaded ? Array.from(state.entries.values()) : [];
+    const ensureCoords = entries.map((entry) => entry.coord);
+    scene.ensurePolys(ensureCoords);
+    const nextKeys = /* @__PURE__ */ new Set();
+    for (const entry of entries) {
+      const key = `${entry.coord.r},${entry.coord.c}`;
+      nextKeys.add(key);
+      scene.setOverlay(entry.coord, {
+        color: entry.color,
+        factionId: entry.factionId,
+        factionName: entry.factionName ?? void 0,
+        fillOpacity: OVERLAY_FILL_OPACITY,
+        strokeWidth: OVERLAY_STROKE_WIDTH
+      });
+    }
+    for (const key of overlayKeys) {
+      if (nextKeys.has(key)) continue;
+      const [r, c] = key.split(",").map(Number);
+      scene.setOverlay({ r, c }, null);
+    }
+    overlayKeys = nextKeys;
+    updateLegend(legendHost, entries);
+  };
+  const overlayUnsubscribe = overlayStore.state.subscribe(applyOverlay);
+  applyOverlay(overlayStore.state.get());
   const ensurePolys = (coords) => {
     if (!coords.length) return;
     scene.ensurePolys(coords);
+  };
+  const cleanup = () => {
+    overlayUnsubscribe();
+    overlayKeys.clear();
+    legendHost.remove();
+    if (host.dataset.hexMapPositionChanged === "1") {
+      host.style.position = host.dataset.hexMapPrevPosition ?? "";
+    }
+    delete host.dataset.hexMapPrevPosition;
+    delete host.dataset.hexMapPositionChanged;
+    host.classList.remove("sm-hex-map-host");
   };
   return {
     svg: scene.svg,
@@ -1977,13 +2324,59 @@ async function renderHexMap(app, host, opts, mapPath) {
       interactionAdapter.setDelegate(delegate);
     },
     destroy: () => {
+      cleanup();
       interactions.destroy();
       camera.destroy();
       scene.destroy();
     }
   };
 }
-var DEFAULT_PADDING, CAMERA_OPTIONS;
+function createLegendHost(host) {
+  var _a;
+  host.classList.add("sm-hex-map-host");
+  if (getComputedStyle(host).position === "static") {
+    (_a = host.dataset).hexMapPrevPosition ?? (_a.hexMapPrevPosition = host.style.position ?? "");
+    host.dataset.hexMapPositionChanged = "1";
+    host.style.position = "relative";
+  } else {
+    host.dataset.hexMapPositionChanged = "0";
+  }
+  const legend = host.ownerDocument.createElement("div");
+  legend.className = "sm-map-legend is-empty";
+  host.appendChild(legend);
+  return legend;
+}
+function updateLegend(container, entries) {
+  container.empty();
+  if (!entries.length) {
+    container.classList.add("is-empty");
+    return;
+  }
+  container.classList.remove("is-empty");
+  const aggregate = /* @__PURE__ */ new Map();
+  for (const entry of entries) {
+    const id = entry.factionId;
+    const name = entry.factionName && entry.factionName.trim().length > 0 ? entry.factionName : id;
+    const color = entry.color;
+    const current = aggregate.get(id);
+    if (current) {
+      current.count += 1;
+    } else {
+      aggregate.set(id, { id, name, color, count: 1 });
+    }
+  }
+  const items = Array.from(aggregate.values()).sort((a, b) => {
+    if (b.count !== a.count) return b.count - a.count;
+    return a.name.localeCompare(b.name);
+  });
+  for (const item of items) {
+    const row = container.createDiv({ cls: "sm-map-legend__item" });
+    row.createDiv({ cls: "sm-map-legend__swatch" }).style.backgroundColor = item.color;
+    row.createDiv({ cls: "sm-map-legend__label", text: item.name });
+    row.createDiv({ cls: "sm-map-legend__meta", text: `${item.count}` });
+  }
+}
+var OVERLAY_STROKE_WIDTH, OVERLAY_FILL_OPACITY, DEFAULT_PADDING, CAMERA_OPTIONS;
 var init_hex_render = __esm({
   "src/features/maps/rendering/hex-render.ts"() {
     "use strict";
@@ -1996,6 +2389,9 @@ var init_hex_render = __esm({
     init_bootstrap();
     init_surface();
     init_interaction_delegate();
+    init_faction_overlay_store();
+    OVERLAY_STROKE_WIDTH = "3";
+    OVERLAY_FILL_OPACITY = "0.55";
     DEFAULT_PADDING = 12;
     CAMERA_OPTIONS = { minScale: 0.15, maxScale: 16, zoomSpeed: 1.01 };
   }
@@ -2003,9 +2399,9 @@ var init_hex_render = __esm({
 
 // src/features/maps/state/region-store.ts
 async function ensureRegionsFile(app) {
-  const path = (0, import_obsidian7.normalizePath)(REGIONS_FILE);
+  const path = (0, import_obsidian8.normalizePath)(REGIONS_FILE);
   const existing = app.vault.getAbstractFileByPath(path);
-  if (existing instanceof import_obsidian7.TFile) {
+  if (existing instanceof import_obsidian8.TFile) {
     return existing;
   }
   const dir = path.split("/").slice(0, -1).join("/");
@@ -2130,7 +2526,7 @@ function createRegionStore(app, options) {
       dirty = false;
     },
     isDirty: () => dirty,
-    getStorageKey: () => (0, import_obsidian7.normalizePath)(REGIONS_FILE)
+    getStorageKey: () => (0, import_obsidian8.normalizePath)(REGIONS_FILE)
   };
   getStoreManager().register("map-regions", persistent2);
   const ensureLoaded = async () => {
@@ -2166,7 +2562,7 @@ function createRegionStore(app, options) {
     triggerRegionEvent(app);
   };
   const watch = (onChange) => {
-    const targetPath = (0, import_obsidian7.normalizePath)(REGIONS_FILE);
+    const targetPath = (0, import_obsidian8.normalizePath)(REGIONS_FILE);
     const update = async (reason) => {
       try {
         if (reason === "delete") {
@@ -2174,7 +2570,7 @@ function createRegionStore(app, options) {
             "Regions store detected deletion; attempting automatic recreation."
           );
           await ensureRegionsFile(app);
-          new import_obsidian7.Notice("Regions.md wurde neu erstellt.");
+          new import_obsidian8.Notice("Regions.md wurde neu erstellt.");
         }
         await refresh();
         await onChange?.();
@@ -2187,8 +2583,8 @@ function createRegionStore(app, options) {
       }
     };
     const maybeUpdate = (reason, file) => {
-      if (!(file instanceof import_obsidian7.TFile)) return;
-      if ((0, import_obsidian7.normalizePath)(file.path) !== targetPath) return;
+      if (!(file instanceof import_obsidian8.TFile)) return;
+      if ((0, import_obsidian8.normalizePath)(file.path) !== targetPath) return;
       void update(reason);
     };
     const refs = ["modify", "delete"].map(
@@ -2229,11 +2625,11 @@ function resetRegionStore(app) {
   store.state.set(createInitialState());
   storeRegistry.delete(app);
 }
-var import_obsidian7, REGIONS_FILE, BLOCK_RE, storeRegistry;
+var import_obsidian8, REGIONS_FILE, BLOCK_RE, storeRegistry;
 var init_region_store = __esm({
   "src/features/maps/state/region-store.ts"() {
     "use strict";
-    import_obsidian7 = require("obsidian");
+    import_obsidian8 = require("obsidian");
     init_state();
     init_store_manager();
     init_plugin_logger();
@@ -2262,11 +2658,13 @@ function unregisterMapStores(app, mapFile) {
   }
   resetTileStore(app, mapFile);
   resetRegionStore(app);
+  resetFactionOverlayStore(app, mapFile);
 }
 var MAP_STORE_REGISTRY;
 var init_map_store_registry = __esm({
   "src/features/maps/data/map-store-registry.ts"() {
     "use strict";
+    init_faction_overlay_store();
     init_region_store();
     init_tile_repository();
     MAP_STORE_REGISTRY = /* @__PURE__ */ new WeakMap();
@@ -2359,7 +2757,7 @@ function applyMapButtonStyle(button) {
 async function promptMapSelection(app, onSelect, options) {
   const files = await getAllMapFiles(app);
   if (!files.length) {
-    new import_obsidian8.Notice(options?.emptyMessage ?? "No maps available.");
+    new import_obsidian9.Notice(options?.emptyMessage ?? "No maps available.");
     return;
   }
   new MapSelectModal(app, files, async (file) => {
@@ -2369,15 +2767,15 @@ async function promptMapSelection(app, onSelect, options) {
 function promptCreateMap(app, onCreate, options) {
   new NameInputModal(app, async (name) => {
     const file = await createHexMapFile(app, name);
-    new import_obsidian8.Notice(options?.successMessage ?? "Map created.");
+    new import_obsidian9.Notice(options?.successMessage ?? "Map created.");
     await onCreate(file);
   }).open();
 }
-var import_obsidian8;
+var import_obsidian9;
 var init_map_workflows = __esm({
   "src/ui/maps/workflows/map-workflows.ts"() {
     "use strict";
-    import_obsidian8 = require("obsidian");
+    import_obsidian9 = require("obsidian");
     init_map_repository();
     init_map_list();
     init_options();
@@ -2498,15 +2896,15 @@ function reportEditorToolIssue(payload) {
   const dedupeKey = `${stage}:${toolId}`;
   if (!noticedIssues.has(dedupeKey)) {
     noticedIssues.add(dedupeKey);
-    new import_obsidian12.Notice(userMessage);
+    new import_obsidian13.Notice(userMessage);
   }
   return userMessage;
 }
-var import_obsidian12, noticedIssues, TOOL_STAGE_MESSAGES;
+var import_obsidian13, noticedIssues, TOOL_STAGE_MESSAGES;
 var init_editor_telemetry = __esm({
   "src/workmodes/cartographer/editor/editor-telemetry.ts"() {
     "use strict";
-    import_obsidian12 = require("obsidian");
+    import_obsidian13 = require("obsidian");
     init_plugin_logger();
     noticedIssues = /* @__PURE__ */ new Set();
     TOOL_STAGE_MESSAGES = {
@@ -2654,7 +3052,13 @@ async function applyBrush(app, mapFile, center, opts, handles, context) {
       }
       const terrain = opts.terrain ?? "";
       const region = opts.region ?? "";
-      await saveTile(app, mapFile, coord, { terrain, region });
+      const payload = { terrain, region };
+      if (opts.faction !== void 0) {
+        payload.faction = opts.faction;
+      } else if (previousData?.faction) {
+        payload.faction = previousData.faction;
+      }
+      await saveTile(app, mapFile, coord, payload);
       const color = TERRAIN_COLORS[terrain] ?? "transparent";
       handles.setFill(coord, color);
       applied.push({
@@ -2775,6 +3179,332 @@ var init_region_repository = __esm({
   "src/features/maps/data/region-repository.ts"() {
     "use strict";
     init_region_store();
+  }
+});
+
+// src/features/data-manager/browse/frontmatter-utils.ts
+async function readFrontmatter(app, file, options = {}) {
+  const { useCache = true } = options;
+  if (useCache) {
+    const cached = app.metadataCache.getFileCache(file)?.frontmatter;
+    if (cached && typeof cached === "object") {
+      return cached;
+    }
+  }
+  return await parseFrontmatterFromContent(app, file);
+}
+async function parseFrontmatterFromContent(app, file) {
+  const content = await app.vault.read(file);
+  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  if (!match) return {};
+  const lines = match[1].split(/\r?\n/);
+  const data = {};
+  for (const line of lines) {
+    const idx = line.indexOf(":");
+    if (idx === -1) continue;
+    const rawKey = line.slice(0, idx).trim();
+    if (!rawKey) continue;
+    let rawValue = line.slice(idx + 1).trim();
+    if (!rawValue) {
+      data[rawKey] = rawValue;
+      continue;
+    }
+    if (/^".*"$/.test(rawValue)) {
+      rawValue = rawValue.slice(1, -1);
+    }
+    const num = Number(rawValue);
+    data[rawKey] = Number.isFinite(num) && rawValue === String(num) ? num : rawValue;
+  }
+  return data;
+}
+var init_frontmatter_utils = __esm({
+  "src/features/data-manager/browse/frontmatter-utils.ts"() {
+    "use strict";
+  }
+});
+
+// Presets/lib/entity-registry.ts
+var ENTITY_REGISTRY;
+var init_entity_registry = __esm({
+  "Presets/lib/entity-registry.ts"() {
+    "use strict";
+    ENTITY_REGISTRY = {
+      creatures: {
+        id: "creatures",
+        displayName: "Creatures",
+        directory: "SaltMarcher/Creatures",
+        defaultBaseName: "Creature",
+        singular: "creature",
+        plural: "creatures"
+      },
+      spells: {
+        id: "spells",
+        displayName: "Spells",
+        directory: "SaltMarcher/Spells",
+        defaultBaseName: "Spell",
+        singular: "spell",
+        plural: "spells"
+      },
+      items: {
+        id: "items",
+        displayName: "Items",
+        directory: "SaltMarcher/Items",
+        defaultBaseName: "Item",
+        singular: "item",
+        plural: "items"
+      },
+      equipment: {
+        id: "equipment",
+        displayName: "Equipment",
+        directory: "SaltMarcher/Equipment",
+        defaultBaseName: "Equipment",
+        singular: "equipment",
+        plural: "equipment"
+      },
+      terrains: {
+        id: "terrains",
+        displayName: "Terrains",
+        directory: "SaltMarcher/Terrains",
+        defaultBaseName: "Terrain",
+        singular: "terrain",
+        plural: "terrains"
+      },
+      regions: {
+        id: "regions",
+        displayName: "Regions",
+        directory: "SaltMarcher/Regions",
+        defaultBaseName: "Region",
+        singular: "region",
+        plural: "regions"
+      },
+      factions: {
+        id: "factions",
+        displayName: "Factions",
+        directory: "SaltMarcher/Factions",
+        defaultBaseName: "Faction",
+        singular: "faction",
+        plural: "factions"
+      },
+      calendars: {
+        id: "calendars",
+        displayName: "Calendars",
+        directory: "SaltMarcher/Calendars",
+        defaultBaseName: "Calendar",
+        singular: "calendar",
+        plural: "calendars"
+      }
+    };
+  }
+});
+
+// Presets/lib/vault-preset-loader.ts
+async function listVaultPresets(app, entityType) {
+  const entityConfig = ENTITY_REGISTRY[entityType];
+  if (!entityConfig) {
+    logger.warn(`[VaultPresetLoader] Unknown entity type: ${entityType}`);
+    return [];
+  }
+  const folder = app.vault.getAbstractFileByPath(entityConfig.directory);
+  if (!folder || !(folder instanceof import_obsidian14.TFolder)) {
+    return [];
+  }
+  const files = [];
+  const collectFiles = (currentFolder) => {
+    for (const child of currentFolder.children) {
+      if (child instanceof import_obsidian14.TFile && child.extension === "md") {
+        files.push(child);
+      } else if (child instanceof import_obsidian14.TFolder) {
+        collectFiles(child);
+      }
+    }
+  };
+  collectFiles(folder);
+  return files;
+}
+function watchVaultPresets(app, entityType, onChange) {
+  const entityConfig = ENTITY_REGISTRY[entityType];
+  if (!entityConfig) {
+    logger.warn(`[VaultPresetLoader] Unknown entity type: ${entityType}`);
+    return () => {
+    };
+  }
+  const notify = () => {
+    onChange();
+  };
+  const createRef = app.vault.on("create", (file) => {
+    if (file instanceof import_obsidian14.TFile && file.path.startsWith(entityConfig.directory)) {
+      notify();
+    }
+  });
+  const deleteRef = app.vault.on("delete", (file) => {
+    if (file instanceof import_obsidian14.TFile && file.path.startsWith(entityConfig.directory)) {
+      notify();
+    }
+  });
+  const renameRef = app.vault.on("rename", (file, oldPath) => {
+    if (file instanceof import_obsidian14.TFile && (file.path.startsWith(entityConfig.directory) || oldPath.startsWith(entityConfig.directory))) {
+      notify();
+    }
+  });
+  const modifyRef = app.vault.on("modify", (file) => {
+    if (file instanceof import_obsidian14.TFile && file.path.startsWith(entityConfig.directory)) {
+      notify();
+    }
+  });
+  return () => {
+    app.vault.offref(createRef);
+    app.vault.offref(deleteRef);
+    app.vault.offref(renameRef);
+    app.vault.offref(modifyRef);
+  };
+}
+var import_obsidian14;
+var init_vault_preset_loader = __esm({
+  "Presets/lib/vault-preset-loader.ts"() {
+    "use strict";
+    import_obsidian14 = require("obsidian");
+    init_entity_registry();
+    init_plugin_logger();
+  }
+});
+
+// src/workmodes/library/storage/data-sources.ts
+function createEntryLoader(extractMeta) {
+  return async (app, file) => {
+    const fm2 = await readFrontmatter(app, file);
+    const meta = extractMeta(fm2);
+    return { file, name: file.basename, ...meta };
+  };
+}
+function extractTokenValues(raw) {
+  if (!Array.isArray(raw)) return [];
+  const result = [];
+  for (const entry of raw) {
+    if (typeof entry === "string" && entry.trim()) {
+      result.push(entry.trim());
+    } else if (entry && typeof entry === "object") {
+      const value = entry.value;
+      if (typeof value === "string" && value.trim()) {
+        result.push(value.trim());
+      }
+    }
+  }
+  return result;
+}
+var loadCreatureEntry, loadSpellEntry, loadItemEntry, loadEquipmentEntry, loadTerrainEntry, loadRegionEntry, loadFactionEntry, loadCalendarEntry, LIBRARY_DATA_SOURCES;
+var init_data_sources = __esm({
+  "src/workmodes/library/storage/data-sources.ts"() {
+    "use strict";
+    init_frontmatter_utils();
+    init_vault_preset_loader();
+    loadCreatureEntry = createEntryLoader((fm2) => ({
+      type: typeof fm2.type === "string" ? fm2.type : void 0,
+      cr: typeof fm2.cr === "string" ? fm2.cr : typeof fm2.cr === "number" ? String(fm2.cr) : void 0
+    }));
+    loadSpellEntry = createEntryLoader((fm2) => {
+      const rawLevel = fm2.level;
+      const level = typeof rawLevel === "number" ? rawLevel : typeof rawLevel === "string" ? Number(rawLevel) : void 0;
+      return {
+        school: typeof fm2.school === "string" ? fm2.school : void 0,
+        level: Number.isFinite(level) ? level : void 0,
+        casting_time: typeof fm2.casting_time === "string" ? fm2.casting_time : void 0,
+        duration: typeof fm2.duration === "string" ? fm2.duration : void 0,
+        concentration: typeof fm2.concentration === "boolean" ? fm2.concentration : void 0,
+        ritual: typeof fm2.ritual === "boolean" ? fm2.ritual : void 0,
+        description: typeof fm2.description === "string" ? fm2.description : void 0
+      };
+    });
+    loadItemEntry = createEntryLoader((fm2) => ({
+      category: typeof fm2.category === "string" ? fm2.category : void 0,
+      rarity: typeof fm2.rarity === "string" ? fm2.rarity : void 0
+    }));
+    loadEquipmentEntry = createEntryLoader((fm2) => {
+      const roleCandidate = [
+        fm2.weapon_category,
+        fm2.armor_category,
+        fm2.tool_category,
+        fm2.gear_category
+      ].find((value) => typeof value === "string" && value.length > 0);
+      return {
+        type: typeof fm2.type === "string" ? fm2.type : void 0,
+        role: roleCandidate
+      };
+    });
+    loadTerrainEntry = createEntryLoader((fm2) => ({
+      color: typeof fm2.color === "string" ? fm2.color : "transparent",
+      speed: typeof fm2.speed === "number" ? fm2.speed : 1
+    }));
+    loadRegionEntry = createEntryLoader((fm2) => ({
+      terrain: typeof fm2.terrain === "string" ? fm2.terrain : "",
+      encounterOdds: typeof fm2.encounter_odds === "number" ? fm2.encounter_odds : void 0
+    }));
+    loadFactionEntry = createEntryLoader((fm2) => {
+      const influenceTags = extractTokenValues(fm2.influence_tags);
+      const members = Array.isArray(fm2.members) ? fm2.members : [];
+      return {
+        influence: influenceTags[0],
+        headquarters: typeof fm2.headquarters === "string" ? fm2.headquarters : void 0,
+        memberCount: members.length
+      };
+    });
+    loadCalendarEntry = createEntryLoader((fm2) => {
+      const months = Array.isArray(fm2.months) ? fm2.months : [];
+      return {
+        id: typeof fm2.id === "string" ? fm2.id : "",
+        daysPerWeek: typeof fm2.daysPerWeek === "number" ? fm2.daysPerWeek : 7,
+        monthCount: months.length
+      };
+    });
+    LIBRARY_DATA_SOURCES = {
+      creatures: {
+        id: "creatures",
+        list: (app) => listVaultPresets(app, "creatures"),
+        watch: (app, onChange) => watchVaultPresets(app, "creatures", onChange),
+        load: loadCreatureEntry
+      },
+      spells: {
+        id: "spells",
+        list: (app) => listVaultPresets(app, "spells"),
+        watch: (app, onChange) => watchVaultPresets(app, "spells", onChange),
+        load: loadSpellEntry
+      },
+      items: {
+        id: "items",
+        list: (app) => listVaultPresets(app, "items"),
+        watch: (app, onChange) => watchVaultPresets(app, "items", onChange),
+        load: loadItemEntry
+      },
+      equipment: {
+        id: "equipment",
+        list: (app) => listVaultPresets(app, "equipment"),
+        watch: (app, onChange) => watchVaultPresets(app, "equipment", onChange),
+        load: loadEquipmentEntry
+      },
+      terrains: {
+        id: "terrains",
+        list: (app) => listVaultPresets(app, "terrains"),
+        watch: (app, onChange) => watchVaultPresets(app, "terrains", onChange),
+        load: loadTerrainEntry
+      },
+      regions: {
+        id: "regions",
+        list: (app) => listVaultPresets(app, "regions"),
+        watch: (app, onChange) => watchVaultPresets(app, "regions", onChange),
+        load: loadRegionEntry
+      },
+      factions: {
+        id: "factions",
+        list: (app) => listVaultPresets(app, "factions"),
+        watch: (app, onChange) => watchVaultPresets(app, "factions", onChange),
+        load: loadFactionEntry
+      },
+      calendars: {
+        id: "calendars",
+        list: (app) => listVaultPresets(app, "calendars"),
+        watch: (app, onChange) => watchVaultPresets(app, "calendars", onChange),
+        load: loadCalendarEntry
+      }
+    };
   }
 });
 
@@ -3106,6 +3836,7 @@ function mountBrushPanel(root, ctx) {
   const state = {
     radius: 1,
     region: "",
+    faction: "",
     terrain: "",
     mode: "paint"
   };
@@ -3117,10 +3848,13 @@ function mountBrushPanel(root, ctx) {
   let manageCommandAvailable = false;
   let radiusControl = null;
   let regionControl = null;
+  let factionControl = null;
   let modeControl = null;
   let manageButton = null;
+  let manageFactionButton = null;
   let inlineHint = null;
   let manageHint = null;
+  let factionHint = null;
   const setPanelDisabled = (disabled) => {
     panelDisabled = disabled;
     if (disabled) {
@@ -3130,8 +3864,10 @@ function mountBrushPanel(root, ctx) {
     }
     radiusControl?.setDisabled(disabled);
     regionControl?.setDisabled(disabled);
+    factionControl?.setDisabled(disabled);
     modeControl?.setDisabled(disabled);
     manageButton?.setDisabled(disabled || !manageCommandAvailable);
+    manageFactionButton?.setDisabled(disabled || !manageCommandAvailable);
   };
   const updateStatus = (message) => {
     try {
@@ -3188,6 +3924,27 @@ function mountBrushPanel(root, ctx) {
       { kind: "hint", id: "manageHint", cls: "sm-inline-hint", hidden: true },
       {
         kind: "row",
+        label: "Faction:",
+        controls: [
+          {
+            kind: "select",
+            id: "faction",
+            options: [],
+            enhance: (select) => enhanceSelectToSearch(select, "Search dropdown\u2026"),
+            onChange: ({ element }) => {
+              state.faction = element.value;
+            }
+          },
+          {
+            kind: "button",
+            id: "manageFaction",
+            label: "Manage\u2026"
+          }
+        ]
+      },
+      { kind: "hint", id: "factionHint", cls: "sm-inline-hint", hidden: true },
+      {
+        kind: "row",
         label: "Mode:",
         controls: [
           {
@@ -3209,15 +3966,21 @@ function mountBrushPanel(root, ctx) {
   });
   radiusControl = form.getControl("radius");
   regionControl = form.getControl("region");
+  factionControl = form.getControl("faction");
   modeControl = form.getControl("mode");
   manageButton = form.getControl("manage");
+  manageFactionButton = form.getControl("manageFaction");
   inlineHint = form.getHint("inline");
   manageHint = form.getHint("manageHint");
+  factionHint = form.getHint("factionHint");
   const applyInlineHint = (details) => {
     inlineHint?.set(details ? { text: details.text, tone: details.tone } : null);
   };
   const applyManageHint = (details) => {
     manageHint?.set(details ? { text: details.text, tone: details.tone } : null);
+  };
+  const applyFactionHint = (details) => {
+    factionHint?.set(details ? { text: details.text, tone: details.tone } : null);
   };
   const handleManageClick = () => {
     if (!manageCommandAvailable) {
@@ -3238,22 +4001,50 @@ function mountBrushPanel(root, ctx) {
       handleManageError(err);
     }
   };
+  const handleManageFactionClick = () => {
+    if (!manageCommandAvailable) {
+      updateStatus("The Library command is unavailable. Follow the manual steps below to add factions.");
+      return;
+    }
+    try {
+      const result = ctx.app.commands?.executeCommandById?.(MANAGE_REGIONS_COMMAND_ID);
+      if (result instanceof Promise) {
+        result.catch((err) => handleManageFactionError(err));
+        updateStatus("Opening the Library to manage factions\u2026");
+      } else if (result === false) {
+        handleManageFactionError();
+      } else {
+        updateStatus("Opening the Library to manage factions\u2026");
+      }
+    } catch (err) {
+      handleManageFactionError(err);
+    }
+  };
   const refreshManageCommandAvailability = () => {
     const commandsApi = ctx.app.commands;
     manageCommandAvailable = Boolean(
       commandsApi?.executeCommandById && commandsApi?.commands?.[MANAGE_REGIONS_COMMAND_ID]
     );
     manageButton?.setDisabled(panelDisabled || !manageCommandAvailable);
+    manageFactionButton?.setDisabled(panelDisabled || !manageCommandAvailable);
     if (manageButton) {
       manageButton.element.classList.toggle("is-missing-command", !manageCommandAvailable);
     }
+    if (manageFactionButton) {
+      manageFactionButton.element.classList.toggle("is-missing-command", !manageCommandAvailable);
+    }
     if (!manageCommandAvailable) {
       applyManageHint({
-        text: "The \u201COpen Library\u201D command is unavailable. Open the Library view from the ribbon (book icon) and add Region entries under Library \u2192 Regions, then refresh this list.",
+        text: 'The "Open Library" command is unavailable. Open the Library view from the ribbon (book icon) and add Region entries under Library \u2192 Regions, then refresh this list.',
+        tone: "warning"
+      });
+      applyFactionHint({
+        text: 'The "Open Library" command is unavailable. Open the Library view from the ribbon (book icon) and add Faction entries under Library \u2192 Factions, then refresh this list.',
         tone: "warning"
       });
     } else {
       applyManageHint(null);
+      applyFactionHint(null);
     }
   };
   const handleManageError = (err) => {
@@ -3266,8 +4057,21 @@ function mountBrushPanel(root, ctx) {
     });
     updateStatus("Failed to open the Library command. Check the console for details.");
   };
+  const handleManageFactionError = (err) => {
+    if (err) {
+      logger.error("[terrain-brush] failed to open Library command for factions", err);
+    }
+    applyFactionHint({
+      text: "Opening the Library command failed. Use the ribbon icon to open the Library manually and add Faction entries under Library \u2192 Factions before refreshing.",
+      tone: "error"
+    });
+    updateStatus("Failed to open the Library command. Check the console for details.");
+  };
   if (manageButton) {
     manageButton.element.addEventListener("click", handleManageClick);
+  }
+  if (manageFactionButton) {
+    manageFactionButton.element.addEventListener("click", handleManageFactionClick);
   }
   refreshManageCommandAvailability();
   const fillOptions = async (reason) => {
@@ -3350,10 +4154,89 @@ function mountBrushPanel(root, ctx) {
       }
     }
   };
+  const fillFactions = async (reason) => {
+    const fSeq = ++fillSeq;
+    setPanelDisabled(true);
+    applyFactionHint({
+      text: reason === "initial" ? "Loading factions\u2026" : "Refreshing factions\u2026",
+      tone: "loading"
+    });
+    let factionFiles = [];
+    try {
+      factionFiles = await LIBRARY_DATA_SOURCES.factions.list(ctx.app);
+    } catch (err) {
+      logger.error("[terrain-brush] failed to list factions", err);
+      if (fSeq === fillSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
+        factionControl?.setOptions([]);
+        state.faction = "";
+        applyFactionHint({
+          text: "Factions could not be loaded. Please retry once your vault is synced.",
+          tone: "error"
+        });
+      }
+      return;
+    } finally {
+      if (fSeq === fillSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
+        setPanelDisabled(false);
+        refreshManageCommandAvailability();
+      }
+    }
+    if (disposed || ctx.getAbortSignal()?.aborted || fSeq !== fillSeq) {
+      return;
+    }
+    const factions = [];
+    for (const file of factionFiles) {
+      try {
+        const entry = await LIBRARY_DATA_SOURCES.factions.load(ctx.app, file);
+        factions.push({ name: entry.name });
+      } catch (err) {
+        logger.warn(`[terrain-brush] failed to load faction ${file.path}`, err);
+      }
+    }
+    factionControl?.setOptions([
+      { label: "(none)", value: "" },
+      ...factions.map((f) => ({
+        label: f.name || "(unnamed)",
+        value: f.name ?? ""
+      }))
+    ]);
+    const factionSelect = factionControl?.element;
+    if (!factionSelect) return;
+    let matchedFaction = state.faction;
+    let preservedFactionSelection = false;
+    for (const opt of Array.from(factionSelect.options)) {
+      if (!opt.value) continue;
+      if (opt.value === state.faction) {
+        matchedFaction = opt.value;
+        preservedFactionSelection = true;
+        break;
+      }
+    }
+    if (state.faction && !preservedFactionSelection) {
+      state.faction = "";
+      factionControl.setValue("");
+      applyFactionHint({
+        text: "The previously selected faction is no longer available and was cleared.",
+        tone: "warning"
+      });
+    } else {
+      state.faction = matchedFaction;
+      factionControl.setValue(matchedFaction);
+      if (factions.length === 0) {
+        applyFactionHint({
+          text: "No factions found. Open the Library (Manage\u2026 button or ribbon icon) and add Faction entries before painting.",
+          tone: "info"
+        });
+      } else {
+        applyFactionHint(null);
+      }
+    }
+  };
   void fillOptions("initial");
+  void fillFactions("initial");
   const workspace = ctx.app.workspace;
   const unsubscribe = [];
-  const subscribe = (event) => {
+  const subscribeRegions = (event) => {
     const handler = () => {
       if (!disposed) void fillOptions("refresh");
     };
@@ -3364,8 +4247,20 @@ function mountBrushPanel(root, ctx) {
       unsubscribe.push(() => token());
     }
   };
-  subscribe("salt:terrains-updated");
-  subscribe("salt:regions-updated");
+  const subscribeFactions = (event) => {
+    const handler = () => {
+      if (!disposed) void fillFactions("refresh");
+    };
+    const token = workspace?.on?.(event, handler);
+    if (typeof workspace?.offref === "function" && token) {
+      unsubscribe.push(() => workspace.offref(token));
+    } else if (typeof token === "function") {
+      unsubscribe.push(() => token());
+    }
+  };
+  subscribeRegions("salt:terrains-updated");
+  subscribeRegions("salt:regions-updated");
+  subscribeFactions("salt:factions-updated");
   const ensureCircle = (handles, options) => {
     if (!handles) return;
     circle?.destroy();
@@ -3388,6 +4283,9 @@ function mountBrushPanel(root, ctx) {
     unsubscribe.length = 0;
     if (manageButton) {
       manageButton.element.removeEventListener("click", handleManageClick);
+    }
+    if (manageFactionButton) {
+      manageFactionButton.element.removeEventListener("click", handleManageFactionClick);
     }
     form.destroy();
     circle?.destroy();
@@ -3414,6 +4312,7 @@ function mountBrushPanel(root, ctx) {
         radius: effectiveRadius(),
         terrain: state.terrain,
         region: state.region,
+        faction: state.faction || void 0,
         mode: state.mode
       },
       handles,
@@ -3462,6 +4361,7 @@ var init_brush_options = __esm({
     init_brush_circle();
     init_brush_core();
     init_region_repository();
+    init_data_sources();
     init_search_dropdown();
     init_plugin_logger();
     init_form_builder();
@@ -4681,13 +5581,13 @@ var init_presenter = __esm({
 
 // src/workmodes/encounter/rule-presets.ts
 async function ensureEncounterRulePresetDir(app) {
-  const normalized = (0, import_obsidian15.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
+  const normalized = (0, import_obsidian17.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
   let file = app.vault.getAbstractFileByPath(normalized);
-  if (file instanceof import_obsidian15.TFolder) return file;
+  if (file instanceof import_obsidian17.TFolder) return file;
   await app.vault.createFolder(normalized).catch(() => {
   });
   file = app.vault.getAbstractFileByPath(normalized);
-  if (file instanceof import_obsidian15.TFolder) return file;
+  if (file instanceof import_obsidian17.TFolder) return file;
   throw new Error(`Could not ensure encounter preset directory: ${normalized}`);
 }
 async function listEncounterRulePresets(app) {
@@ -4695,8 +5595,8 @@ async function listEncounterRulePresets(app) {
   const files = [];
   const walk = (folder) => {
     for (const child of folder.children) {
-      if (child instanceof import_obsidian15.TFolder) walk(child);
-      else if (child instanceof import_obsidian15.TFile && child.extension === "md") files.push(child);
+      if (child instanceof import_obsidian17.TFolder) walk(child);
+      else if (child instanceof import_obsidian17.TFile && child.extension === "md") files.push(child);
     }
   };
   walk(dir);
@@ -4724,18 +5624,18 @@ async function saveEncounterRulePreset(app, doc, options = {}) {
   const dir = await ensureEncounterRulePresetDir(app);
   if (options.path) {
     const existing = app.vault.getAbstractFileByPath(options.path);
-    if (existing instanceof import_obsidian15.TFile) {
+    if (existing instanceof import_obsidian17.TFile) {
       await app.vault.modify(existing, content);
       return existing;
     }
   }
   const baseName = sanitizeFileName2(sanitizedName, DEFAULT_PRESET_NAME);
   let fileName = `${baseName}.md`;
-  let targetPath = (0, import_obsidian15.normalizePath)(`${dir.path}/${fileName}`);
+  let targetPath = (0, import_obsidian17.normalizePath)(`${dir.path}/${fileName}`);
   let counter = 2;
   while (app.vault.getAbstractFileByPath(targetPath)) {
     fileName = `${baseName} (${counter}).md`;
-    targetPath = (0, import_obsidian15.normalizePath)(`${dir.path}/${fileName}`);
+    targetPath = (0, import_obsidian17.normalizePath)(`${dir.path}/${fileName}`);
     counter += 1;
   }
   const file = await app.vault.create(targetPath, content);
@@ -4842,17 +5742,17 @@ function createRuleId() {
   return `rule-${Date.now().toString(36)}-${random}`;
 }
 function isEncounterPresetFile(file) {
-  if (!(file instanceof import_obsidian15.TFile)) return false;
+  if (!(file instanceof import_obsidian17.TFile)) return false;
   if (file.extension !== "md") return false;
-  const normalized = (0, import_obsidian15.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
+  const normalized = (0, import_obsidian17.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
   const base = `${normalized}/`;
   return file.path === normalized || file.path.startsWith(base);
 }
-var import_obsidian15, ENCOUNTER_RULE_PRESET_DIR, DEFAULT_PRESET_NAME, MODIFIER_TYPES, PRESET_SCOPE_GOLD, PRESET_SCOPE_XP;
+var import_obsidian17, ENCOUNTER_RULE_PRESET_DIR, DEFAULT_PRESET_NAME, MODIFIER_TYPES, PRESET_SCOPE_GOLD, PRESET_SCOPE_XP;
 var init_rule_presets = __esm({
   "src/workmodes/encounter/rule-presets.ts"() {
     "use strict";
-    import_obsidian15 = require("obsidian");
+    import_obsidian17 = require("obsidian");
     ENCOUNTER_RULE_PRESET_DIR = "SaltMarcher/EncounterPresets";
     DEFAULT_PRESET_NAME = "Encounter Rule Preset";
     MODIFIER_TYPES = /* @__PURE__ */ new Set([
@@ -4945,11 +5845,11 @@ function createId(prefix) {
   const random = Math.random().toString(36).slice(2, 8);
   return `${prefix}-${Date.now().toString(36)}-${random}`;
 }
-var import_obsidian16, EncounterWorkspaceView, numberFormatter;
+var import_obsidian18, EncounterWorkspaceView, numberFormatter;
 var init_workspace_view = __esm({
   "src/workmodes/encounter/workspace-view.ts"() {
     "use strict";
-    import_obsidian16 = require("obsidian");
+    import_obsidian18 = require("obsidian");
     init_modals();
     init_plugin_logger();
     init_rule_presets();
@@ -5150,10 +6050,10 @@ var init_workspace_view = __esm({
       }
       registerPresetWatcher() {
         this.detachPresetWatcher?.();
-        const baseDir = (0, import_obsidian16.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
+        const baseDir = (0, import_obsidian18.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
         const prefix = `${baseDir}/`;
         const handler = (file) => {
-          if (file instanceof import_obsidian16.TFile) {
+          if (file instanceof import_obsidian18.TFile) {
             if (isEncounterPresetFile(file)) {
               this.schedulePresetRefresh();
             }
@@ -5241,11 +6141,11 @@ var init_workspace_view = __esm({
         const presenter = this.presenter;
         const selected = this.getSelectedPreset();
         if (!presenter) {
-          new import_obsidian16.Notice("Encounter-Presenter nicht verf\xFCgbar.");
+          new import_obsidian18.Notice("Encounter-Presenter nicht verf\xFCgbar.");
           return;
         }
         if (!selected) {
-          new import_obsidian16.Notice("Bitte ein Preset ausw\xE4hlen.");
+          new import_obsidian18.Notice("Bitte ein Preset ausw\xE4hlen.");
           return;
         }
         try {
@@ -5263,16 +6163,16 @@ var init_workspace_view = __esm({
           if (typeof preset.encounterXp === "number" && Number.isFinite(preset.encounterXp)) {
             presenter.setEncounterXp(preset.encounterXp);
           }
-          new import_obsidian16.Notice(`Preset "${preset.name}" geladen.`);
+          new import_obsidian18.Notice(`Preset "${preset.name}" geladen.`);
         } catch (error) {
           logger.error("[encounter] failed to load preset", error);
-          new import_obsidian16.Notice("Preset konnte nicht geladen werden.");
+          new import_obsidian18.Notice("Preset konnte nicht geladen werden.");
         }
       }
       async handleSavePreset() {
         const presenter = this.presenter;
         if (!presenter) {
-          new import_obsidian16.Notice("Encounter-Presenter nicht verf\xFCgbar.");
+          new import_obsidian18.Notice("Encounter-Presenter nicht verf\xFCgbar.");
           return;
         }
         const selected = this.getSelectedPreset();
@@ -5292,14 +6192,14 @@ var init_workspace_view = __esm({
                   path: selected && selected.name === (name || fallbackName) ? selected.file.path : void 0
                 }
               );
-              new import_obsidian16.Notice(`Preset "${name || fallbackName}" gespeichert.`);
+              new import_obsidian18.Notice(`Preset "${name || fallbackName}" gespeichert.`);
               await this.refreshPresetOptions();
               if (this.presetSelectEl && this.presetSelectEl.isConnected) {
                 this.presetSelectEl.value = file.path;
               }
             } catch (error) {
               logger.error("[encounter] failed to save preset", error);
-              new import_obsidian16.Notice("Preset konnte nicht gespeichert werden.");
+              new import_obsidian18.Notice("Preset konnte nicht gespeichert werden.");
             }
             this.syncPresetControlsState();
           },
@@ -5315,21 +6215,21 @@ var init_workspace_view = __esm({
       async handleDeletePreset() {
         const selected = this.getSelectedPreset();
         if (!selected) {
-          new import_obsidian16.Notice("Bitte ein Preset ausw\xE4hlen.");
+          new import_obsidian18.Notice("Bitte ein Preset ausw\xE4hlen.");
           return;
         }
         const confirmed = window.confirm(`Preset "${selected.name}" l\xF6schen?`);
         if (!confirmed) return;
         try {
           await deleteEncounterRulePreset(this.app, selected.file);
-          new import_obsidian16.Notice(`Preset "${selected.name}" gel\xF6scht.`);
+          new import_obsidian18.Notice(`Preset "${selected.name}" gel\xF6scht.`);
           await this.refreshPresetOptions();
           if (this.presetSelectEl && this.presetSelectEl.isConnected) {
             this.presetSelectEl.value = "";
           }
         } catch (error) {
           logger.error("[encounter] failed to delete preset", error);
-          new import_obsidian16.Notice("Preset konnte nicht gel\xF6scht werden.");
+          new import_obsidian18.Notice("Preset konnte nicht gel\xF6scht werden.");
         }
         this.syncPresetControlsState();
       }
@@ -5989,16 +6889,16 @@ async function openEncounter(app) {
   await leaf.setViewState({ type: VIEW_ENCOUNTER, active: true });
   app.workspace.revealLeaf(leaf);
 }
-var import_obsidian17, VIEW_ENCOUNTER, EncounterView;
+var import_obsidian19, VIEW_ENCOUNTER, EncounterView;
 var init_view = __esm({
   "src/workmodes/encounter/view.ts"() {
     "use strict";
-    import_obsidian17 = require("obsidian");
+    import_obsidian19 = require("obsidian");
     init_presenter();
     init_workspace_view();
     init_layout();
     VIEW_ENCOUNTER = "salt-encounter";
-    EncounterView = class extends import_obsidian17.ItemView {
+    EncounterView = class extends import_obsidian19.ItemView {
       constructor(leaf) {
         super(leaf);
         this.presenter = null;
@@ -6847,13 +7747,13 @@ function renderColorCore(options) {
       type: "color"
     }
   });
-  const normalizeColor = (val) => {
+  const normalizeColor2 = (val) => {
     if (typeof val === "string" && /^#[0-9a-fA-F]{6}$/.test(val)) {
       return val;
     }
     return "#000000";
   };
-  const initialValue = normalizeColor(value);
+  const initialValue = normalizeColor2(value);
   input.value = initialValue;
   input.addEventListener("input", () => {
     onChange(input.value);
@@ -6864,7 +7764,7 @@ function renderColorCore(options) {
   return {
     focus: () => input.focus(),
     update: (newValue) => {
-      const next = normalizeColor(newValue);
+      const next = normalizeColor2(newValue);
       if (input.value !== next) {
         input.value = next;
       }
@@ -7124,7 +8024,7 @@ function createRendererWrapper(type, coreRenderer, options) {
     supports: (spec) => spec.type === type,
     render: (args) => {
       const { container, spec, values, onChange } = args;
-      const setting = new import_obsidian18.Setting(container);
+      const setting = new import_obsidian20.Setting(container);
       if (spec.label) {
         setting.setName(spec.label);
       }
@@ -7149,11 +8049,11 @@ function createRendererWrapper(type, coreRenderer, options) {
     }
   };
 }
-var import_obsidian18;
+var import_obsidian20;
 var init_field_rendering_core = __esm({
   "src/features/data-manager/fields/field-rendering-core.ts"() {
     "use strict";
-    import_obsidian18 = require("obsidian");
+    import_obsidian20 = require("obsidian");
     init_plugin_logger();
     init_width_utils();
     init_token_field_core_new();
@@ -7460,7 +8360,7 @@ function renderEntryCard(options) {
       cls: "sm-cc-entry-move-btn",
       attr: attributes
     });
-    (0, import_obsidian19.setIcon)(moveUpBtn, "chevron-up");
+    (0, import_obsidian21.setIcon)(moveUpBtn, "chevron-up");
     moveUpBtn.addEventListener("click", moveUpHandler);
   }
   if (includeMoveButtons && moveDownHandler) {
@@ -7475,7 +8375,7 @@ function renderEntryCard(options) {
       cls: "sm-cc-entry-move-btn",
       attr: attributes
     });
-    (0, import_obsidian19.setIcon)(moveDownBtn, "chevron-down");
+    (0, import_obsidian21.setIcon)(moveDownBtn, "chevron-down");
     moveDownBtn.addEventListener("click", moveDownHandler);
   }
   const deleteHandler = resolvedActions.remove ?? context.remove;
@@ -7515,11 +8415,11 @@ function renderEntryCard(options) {
   renderBody(card, context);
   return slots;
 }
-var import_obsidian19;
+var import_obsidian21;
 var init_entry_card = __esm({
   "src/features/data-manager/storage/entry-card.ts"() {
     "use strict";
-    import_obsidian19 = require("obsidian");
+    import_obsidian21 = require("obsidian");
   }
 });
 
@@ -8511,11 +9411,11 @@ var init_renderer_checkbox = __esm({
 });
 
 // src/features/data-manager/fields/renderer-select.ts
-var import_obsidian20, selectFieldRenderer;
+var import_obsidian22, selectFieldRenderer;
 var init_renderer_select = __esm({
   "src/features/data-manager/fields/renderer-select.ts"() {
     "use strict";
-    import_obsidian20 = require("obsidian");
+    import_obsidian22 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     init_select_enhancement();
@@ -8524,7 +9424,7 @@ var init_renderer_select = __esm({
       supports: (spec) => spec.type === "select",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian20.Setting(container).setName(spec.label);
+        const setting = new import_obsidian22.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -8610,11 +9510,11 @@ var init_renderer_color = __esm({
 });
 
 // src/features/data-manager/fields/renderer-tokens.ts
-var import_obsidian21, tokenFieldRenderer;
+var import_obsidian23, tokenFieldRenderer;
 var init_renderer_tokens = __esm({
   "src/features/data-manager/fields/renderer-tokens.ts"() {
     "use strict";
-    import_obsidian21 = require("obsidian");
+    import_obsidian23 = require("obsidian");
     init_modal_utils();
     init_field_rendering_core();
     init_plugin_logger();
@@ -8625,7 +9525,7 @@ var init_renderer_tokens = __esm({
       render: (args) => {
         const { container, spec, values, onChange } = args;
         const tokenSpec = spec;
-        const setting = new import_obsidian21.Setting(container).setName(spec.label);
+        const setting = new import_obsidian23.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         setting.settingEl.addClass("sm-cc-setting--wide");
         setting.settingEl.addClass("sm-cc-setting--token-editor");
@@ -8722,11 +9622,11 @@ var init_renderer_heading = __esm({
 });
 
 // src/features/data-manager/fields/renderer-composite.ts
-var import_obsidian22, compositeFieldRenderer;
+var import_obsidian24, compositeFieldRenderer;
 var init_renderer_composite = __esm({
   "src/features/data-manager/fields/renderer-composite.ts"() {
     "use strict";
-    import_obsidian22 = require("obsidian");
+    import_obsidian24 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     init_field_rendering_core();
@@ -8734,7 +9634,7 @@ var init_renderer_composite = __esm({
       supports: (spec) => spec.type === "composite",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian22.Setting(container).setName(spec.label);
+        const setting = new import_obsidian24.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -8767,18 +9667,18 @@ var init_renderer_composite = __esm({
 });
 
 // src/features/data-manager/fields/renderer-autocomplete.ts
-var import_obsidian23, autocompleteFieldRenderer;
+var import_obsidian25, autocompleteFieldRenderer;
 var init_renderer_autocomplete = __esm({
   "src/features/data-manager/fields/renderer-autocomplete.ts"() {
     "use strict";
-    import_obsidian23 = require("obsidian");
+    import_obsidian25 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     autocompleteFieldRenderer = {
       supports: (spec) => spec.type === "autocomplete",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian23.Setting(container).setName(spec.label);
+        const setting = new import_obsidian25.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -8872,11 +9772,11 @@ var init_renderer_autocomplete = __esm({
 });
 
 // src/features/data-manager/fields/renderer-repeating.ts
-var import_obsidian24, repeatingFieldRenderer;
+var import_obsidian26, repeatingFieldRenderer;
 var init_renderer_repeating = __esm({
   "src/features/data-manager/fields/renderer-repeating.ts"() {
     "use strict";
-    import_obsidian24 = require("obsidian");
+    import_obsidian26 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     init_repeating_width_sync();
@@ -8888,7 +9788,7 @@ var init_renderer_repeating = __esm({
       supports: (spec) => spec.type === "repeating",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian24.Setting(container).setName(spec.label);
+        const setting = new import_obsidian26.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -9268,11 +10168,11 @@ function resolveTargetPath(storage, values) {
   const extension = storage.format === "md-frontmatter" || storage.format === "codeblock" ? "md" : storage.format === "json" ? "json" : "yaml";
   const target = ensureExtension(templatePath, extension);
   if (storage.directory) {
-    const sanitizedDir = (0, import_obsidian25.normalizePath)(storage.directory);
+    const sanitizedDir = (0, import_obsidian27.normalizePath)(storage.directory);
     const fileName = target.split("/").pop() ?? target;
-    return (0, import_obsidian25.normalizePath)(`${sanitizedDir}/${fileName}`);
+    return (0, import_obsidian27.normalizePath)(`${sanitizedDir}/${fileName}`);
   }
-  return (0, import_obsidian25.normalizePath)(target);
+  return (0, import_obsidian27.normalizePath)(target);
 }
 function buildFrontmatter(values, storage) {
   const frontmatter = {};
@@ -9318,7 +10218,7 @@ function buildMarkdownBody(values, storage) {
 function serializeMarkdown(storage, values, path) {
   const frontmatter = buildFrontmatter(values, storage);
   const body = buildMarkdownBody(values, storage);
-  const fm2 = (0, import_obsidian25.stringifyYaml)(frontmatter ?? {});
+  const fm2 = (0, import_obsidian27.stringifyYaml)(frontmatter ?? {});
   const content = [`---`, fm2.trimEnd(), `---`, "", body.trimEnd()].join("\n").trimEnd() + "\n";
   return { path, content, metadata: { frontmatter, format: storage.format } };
 }
@@ -9327,7 +10227,7 @@ function serializeJson(values, path) {
   return { path, content, metadata: { format: "json" } };
 }
 function serializeYaml(values, path) {
-  const content = (0, import_obsidian25.stringifyYaml)(values ?? {}) + "\n";
+  const content = (0, import_obsidian27.stringifyYaml)(values ?? {}) + "\n";
   return { path, content, metadata: { format: "yaml" } };
 }
 function serializeCodeblock(storage, values, path) {
@@ -9365,7 +10265,7 @@ function ensureFolder2(app, path) {
   parts.pop();
   const folder = parts.join("/");
   if (!folder) return Promise.resolve();
-  const normalized = (0, import_obsidian25.normalizePath)(folder);
+  const normalized = (0, import_obsidian27.normalizePath)(folder);
   const existing = app.vault.getAbstractFileByPath(normalized);
   if (existing) return Promise.resolve();
   return app.vault.createFolder(normalized).catch(() => {
@@ -9391,7 +10291,7 @@ async function persistSerializedPayload(app, storage, payload) {
     const blockRegex = new RegExp(`^\\s*${fence}${language}(?:\\s|$)[\\s\\S]*?${fence}`, "im");
     const normalizedBlock = content.trim();
     const blockWithNewline = normalizedBlock.endsWith("\\n") ? normalizedBlock : `${normalizedBlock}\\n`;
-    if (existing instanceof import_obsidian25.TFile) {
+    if (existing instanceof import_obsidian27.TFile) {
       const current = await app.vault.read(existing);
       const trimmedCurrent = current.trimEnd();
       const replacement = blockWithNewline.trimEnd();
@@ -9404,7 +10304,7 @@ async function persistSerializedPayload(app, storage, payload) {
       file = await app.vault.create(payload.path, initial.endsWith("\\n") ? initial : `${initial}\\n`);
     }
   } else {
-    if (existing instanceof import_obsidian25.TFile) {
+    if (existing instanceof import_obsidian27.TFile) {
       await app.vault.modify(existing, content);
       file = existing;
     } else {
@@ -9415,11 +10315,11 @@ async function persistSerializedPayload(app, storage, payload) {
   await storage.hooks?.afterWrite?.(result);
   return result;
 }
-var import_obsidian25;
+var import_obsidian27;
 var init_storage = __esm({
   "src/features/data-manager/storage/storage.ts"() {
     "use strict";
-    import_obsidian25 = require("obsidian");
+    import_obsidian27 = require("obsidian");
   }
 });
 
@@ -10022,11 +10922,11 @@ var init_modal_navigation = __esm({
 });
 
 // src/features/data-manager/modal/modal.ts
-var import_obsidian26, CreateModal;
+var import_obsidian28, CreateModal;
 var init_modal = __esm({
   "src/features/data-manager/modal/modal.ts"() {
     "use strict";
-    import_obsidian26 = require("obsidian");
+    import_obsidian28 = require("obsidian");
     init_grid_layout_manager();
     init_label_width_sync();
     init_register_renderers();
@@ -10038,7 +10938,7 @@ var init_modal = __esm({
     init_modal_utils();
     init_plugin_logger();
     registerAllFieldRenderers();
-    CreateModal = class extends import_obsidian26.Modal {
+    CreateModal = class extends import_obsidian28.Modal {
       constructor(app, spec, options, resolve) {
         super(app);
         this.completion = null;
@@ -10158,7 +11058,7 @@ var init_modal = __esm({
         this.fieldManager.updateVisibility();
       }
       buildActionButtons(container) {
-        const buttons = new import_obsidian26.Setting(container);
+        const buttons = new import_obsidian28.Setting(container);
         buttons.addButton((btn) => {
           this.cancelButton = btn;
           btn.setButtonText(this.spec.ui?.cancelLabel || "Abbrechen").onClick(() => {
@@ -10240,7 +11140,7 @@ var init_modal = __esm({
       }
       handleSubmissionError(error) {
         const message = error instanceof Error ? error.message : String(error ?? "Unbekannter Fehler");
-        new import_obsidian26.Notice(`Fehler beim Speichern: ${message}`);
+        new import_obsidian28.Notice(`Fehler beim Speichern: ${message}`);
       }
       lockBackgroundPointer() {
         const bg = document.querySelector(".modal-bg");
@@ -10509,47 +11409,6 @@ var init_action_factory = __esm({
   "src/features/data-manager/browse/action-factory.ts"() {
     "use strict";
     init_plugin_logger();
-  }
-});
-
-// src/features/data-manager/browse/frontmatter-utils.ts
-async function readFrontmatter(app, file, options = {}) {
-  const { useCache = true } = options;
-  if (useCache) {
-    const cached = app.metadataCache.getFileCache(file)?.frontmatter;
-    if (cached && typeof cached === "object") {
-      return cached;
-    }
-  }
-  return await parseFrontmatterFromContent(app, file);
-}
-async function parseFrontmatterFromContent(app, file) {
-  const content = await app.vault.read(file);
-  const match = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!match) return {};
-  const lines = match[1].split(/\r?\n/);
-  const data = {};
-  for (const line of lines) {
-    const idx = line.indexOf(":");
-    if (idx === -1) continue;
-    const rawKey = line.slice(0, idx).trim();
-    if (!rawKey) continue;
-    let rawValue = line.slice(idx + 1).trim();
-    if (!rawValue) {
-      data[rawKey] = rawValue;
-      continue;
-    }
-    if (/^".*"$/.test(rawValue)) {
-      rawValue = rawValue.slice(1, -1);
-    }
-    const num = Number(rawValue);
-    data[rawKey] = Number.isFinite(num) && rawValue === String(num) ? num : rawValue;
-  }
-  return data;
-}
-var init_frontmatter_utils = __esm({
-  "src/features/data-manager/browse/frontmatter-utils.ts"() {
-    "use strict";
   }
 });
 
@@ -11113,15 +11972,15 @@ var init_ui = __esm({
 });
 
 // src/features/data-manager/browse/tabbed-browse-view.ts
-var import_obsidian27, TabbedBrowseView;
+var import_obsidian29, TabbedBrowseView;
 var init_tabbed_browse_view = __esm({
   "src/features/data-manager/browse/tabbed-browse-view.ts"() {
     "use strict";
-    import_obsidian27 = require("obsidian");
+    import_obsidian29 = require("obsidian");
     init_generic_list_renderer();
     init_watcher_hub();
     init_ui();
-    TabbedBrowseView = class extends import_obsidian27.ItemView {
+    TabbedBrowseView = class extends import_obsidian29.ItemView {
       constructor(leaf) {
         super(leaf);
         this.queries = /* @__PURE__ */ new Map();
@@ -11305,151 +12164,6 @@ var init_data_manager = __esm({
     init_number_stepper_control();
     init_entry_system();
     init_browse();
-  }
-});
-
-// Presets/lib/entity-registry.ts
-var ENTITY_REGISTRY;
-var init_entity_registry = __esm({
-  "Presets/lib/entity-registry.ts"() {
-    "use strict";
-    ENTITY_REGISTRY = {
-      creatures: {
-        id: "creatures",
-        displayName: "Creatures",
-        directory: "SaltMarcher/Creatures",
-        defaultBaseName: "Creature",
-        singular: "creature",
-        plural: "creatures"
-      },
-      spells: {
-        id: "spells",
-        displayName: "Spells",
-        directory: "SaltMarcher/Spells",
-        defaultBaseName: "Spell",
-        singular: "spell",
-        plural: "spells"
-      },
-      items: {
-        id: "items",
-        displayName: "Items",
-        directory: "SaltMarcher/Items",
-        defaultBaseName: "Item",
-        singular: "item",
-        plural: "items"
-      },
-      equipment: {
-        id: "equipment",
-        displayName: "Equipment",
-        directory: "SaltMarcher/Equipment",
-        defaultBaseName: "Equipment",
-        singular: "equipment",
-        plural: "equipment"
-      },
-      terrains: {
-        id: "terrains",
-        displayName: "Terrains",
-        directory: "SaltMarcher/Terrains",
-        defaultBaseName: "Terrain",
-        singular: "terrain",
-        plural: "terrains"
-      },
-      regions: {
-        id: "regions",
-        displayName: "Regions",
-        directory: "SaltMarcher/Regions",
-        defaultBaseName: "Region",
-        singular: "region",
-        plural: "regions"
-      },
-      factions: {
-        id: "factions",
-        displayName: "Factions",
-        directory: "SaltMarcher/Factions",
-        defaultBaseName: "Faction",
-        singular: "faction",
-        plural: "factions"
-      },
-      calendars: {
-        id: "calendars",
-        displayName: "Calendars",
-        directory: "SaltMarcher/Calendars",
-        defaultBaseName: "Calendar",
-        singular: "calendar",
-        plural: "calendars"
-      }
-    };
-  }
-});
-
-// Presets/lib/vault-preset-loader.ts
-async function listVaultPresets(app, entityType) {
-  const entityConfig = ENTITY_REGISTRY[entityType];
-  if (!entityConfig) {
-    logger.warn(`[VaultPresetLoader] Unknown entity type: ${entityType}`);
-    return [];
-  }
-  const folder = app.vault.getAbstractFileByPath(entityConfig.directory);
-  if (!folder || !(folder instanceof import_obsidian28.TFolder)) {
-    return [];
-  }
-  const files = [];
-  const collectFiles = (currentFolder) => {
-    for (const child of currentFolder.children) {
-      if (child instanceof import_obsidian28.TFile && child.extension === "md") {
-        files.push(child);
-      } else if (child instanceof import_obsidian28.TFolder) {
-        collectFiles(child);
-      }
-    }
-  };
-  collectFiles(folder);
-  return files;
-}
-function watchVaultPresets(app, entityType, onChange) {
-  const entityConfig = ENTITY_REGISTRY[entityType];
-  if (!entityConfig) {
-    logger.warn(`[VaultPresetLoader] Unknown entity type: ${entityType}`);
-    return () => {
-    };
-  }
-  const notify = () => {
-    onChange();
-  };
-  const createRef = app.vault.on("create", (file) => {
-    if (file instanceof import_obsidian28.TFile && file.path.startsWith(entityConfig.directory)) {
-      notify();
-    }
-  });
-  const deleteRef = app.vault.on("delete", (file) => {
-    if (file instanceof import_obsidian28.TFile && file.path.startsWith(entityConfig.directory)) {
-      notify();
-    }
-  });
-  const renameRef = app.vault.on("rename", (file, oldPath) => {
-    if (file instanceof import_obsidian28.TFile && (file.path.startsWith(entityConfig.directory) || oldPath.startsWith(entityConfig.directory))) {
-      notify();
-    }
-  });
-  const modifyRef = app.vault.on("modify", (file) => {
-    if (file instanceof import_obsidian28.TFile && file.path.startsWith(entityConfig.directory)) {
-      notify();
-    }
-  });
-  return () => {
-    app.vault.offref(createRef);
-    app.vault.offref(deleteRef);
-    app.vault.offref(renameRef);
-    app.vault.offref(modifyRef);
-  };
-}
-var import_obsidian28;
-var init_vault_preset_loader = __esm({
-  "Presets/lib/vault-preset-loader.ts"() {
-    "use strict";
-    import_obsidian28 = require("obsidian");
-    init_entity_registry();
-    init_plugin_logger();
   }
 });
 
@@ -12415,11 +13129,11 @@ function renderMultiattackEffect(container, entry, ctx) {
     text: "+ Angriff"
   });
 }
-var import_obsidian29, creatureSchema, basicInfoFields, combatStatsFields, movementFields, abilitiesFields, skillsFields, sensesLanguagesFields, resistancesFields, equipmentFields, spellcastingFields, entriesFields, creatureSpec;
+var import_obsidian30, creatureSchema, basicInfoFields, combatStatsFields, movementFields, abilitiesFields, skillsFields, sensesLanguagesFields, resistancesFields, equipmentFields, spellcastingFields, entriesFields, creatureSpec;
 var init_create_spec = __esm({
   "src/workmodes/library/creatures/create-spec.ts"() {
     "use strict";
-    import_obsidian29 = require("obsidian");
+    import_obsidian30 = require("obsidian");
     init_serializer();
     init_debug_logger();
     init_constants();
@@ -13426,14 +14140,14 @@ var init_create_spec = __esm({
                   cls: "sm-cc-entry-toggle",
                   attr: { "aria-expanded": "true", "aria-label": "Toggle entry" }
                 });
-                (0, import_obsidian29.setIcon)(toggle, "chevron-down");
+                (0, import_obsidian30.setIcon)(toggle, "chevron-down");
                 head.prepend(toggle);
                 toggle.addEventListener("click", (e) => {
                   e.stopPropagation();
                   const isExpanded = toggle.getAttribute("aria-expanded") === "true";
                   toggle.setAttribute("aria-expanded", String(!isExpanded));
                   slots.card.toggleClass("is-collapsed", isExpanded);
-                  (0, import_obsidian29.setIcon)(toggle, isExpanded ? "chevron-right" : "chevron-down");
+                  (0, import_obsidian30.setIcon)(toggle, isExpanded ? "chevron-right" : "chevron-down");
                 });
               }
             };
@@ -16671,9 +17385,9 @@ var init_registry = __esm({
 
 // src/features/maps/state/terrain-store.ts
 async function ensureTerrainFile(app) {
-  const path = (0, import_obsidian30.normalizePath)(TERRAIN_FILE);
+  const path = (0, import_obsidian31.normalizePath)(TERRAIN_FILE);
   const existing = app.vault.getAbstractFileByPath(path);
-  if (existing instanceof import_obsidian30.TFile) {
+  if (existing instanceof import_obsidian31.TFile) {
     return existing;
   }
   const dir = path.split("/").slice(0, -1).join("/");
@@ -16789,7 +17503,7 @@ function createTerrainStore(app, options) {
       dirty = false;
     },
     isDirty: () => dirty,
-    getStorageKey: () => (0, import_obsidian30.normalizePath)(TERRAIN_FILE)
+    getStorageKey: () => (0, import_obsidian31.normalizePath)(TERRAIN_FILE)
   };
   getStoreManager().register("map-terrains", persistent2);
   const ensureLoaded = async () => {
@@ -16851,8 +17565,8 @@ function createTerrainStore(app, options) {
       }
     };
     const maybeUpdate = (reason, file) => {
-      if (!(file instanceof import_obsidian30.TFile)) return;
-      if ((0, import_obsidian30.normalizePath)(file.path) !== (0, import_obsidian30.normalizePath)(TERRAIN_FILE)) return;
+      if (!(file instanceof import_obsidian31.TFile)) return;
+      if ((0, import_obsidian31.normalizePath)(file.path) !== (0, import_obsidian31.normalizePath)(TERRAIN_FILE)) return;
       void update(reason);
     };
     const refs = ["modify", "delete"].map(
@@ -16897,11 +17611,11 @@ function watchTerrains(app, options) {
   const store = getTerrainStore(app, typeof options === "object" ? options.storeOptions : void 0);
   return store.watch(options);
 }
-var import_obsidian30, TERRAIN_FILE, BLOCK_RE2, storeRegistry2;
+var import_obsidian31, TERRAIN_FILE, BLOCK_RE2, storeRegistry2;
 var init_terrain_store = __esm({
   "src/features/maps/state/terrain-store.ts"() {
     "use strict";
-    import_obsidian30 = require("obsidian");
+    import_obsidian31 = require("obsidian");
     init_state();
     init_store_manager();
     init_plugin_logger();
@@ -18271,7 +18985,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--play",
     text: "Start"
   });
-  (0, import_obsidian33.setIcon)(playBtn, "play");
+  (0, import_obsidian34.setIcon)(playBtn, "play");
   applyMapButtonStyle(playBtn);
   playBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -18282,7 +18996,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--stop",
     text: "Stopp"
   });
-  (0, import_obsidian33.setIcon)(stopBtn, "square");
+  (0, import_obsidian34.setIcon)(stopBtn, "square");
   applyMapButtonStyle(stopBtn);
   stopBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -18293,7 +19007,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--reset",
     text: "Reset"
   });
-  (0, import_obsidian33.setIcon)(resetBtn, "rotate-ccw");
+  (0, import_obsidian34.setIcon)(resetBtn, "rotate-ccw");
   applyMapButtonStyle(resetBtn);
   resetBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -18342,11 +19056,11 @@ function createPlaybackControls(host, callbacks) {
     setTempo
   };
 }
-var import_obsidian33;
+var import_obsidian34;
 var init_controls = __esm({
   "src/workmodes/session-runner/travel/ui/controls.ts"() {
     "use strict";
-    import_obsidian33 = require("obsidian");
+    import_obsidian34 = require("obsidian");
     init_map_workflows();
   }
 });
@@ -18605,7 +19319,7 @@ function bindContextMenu(routeLayerEl, logic) {
     }
     ev.preventDefault();
     ev.stopPropagation();
-    const menu = new import_obsidian34.Menu();
+    const menu = new import_obsidian35.Menu();
     if (allowDelete) {
       menu.addItem(
         (item) => item.setTitle("Wegpunkt entfernen").setIcon("trash").onClick(() => {
@@ -18625,11 +19339,11 @@ function bindContextMenu(routeLayerEl, logic) {
   routeLayerEl.addEventListener("contextmenu", onContextMenu, { capture: true });
   return () => routeLayerEl.removeEventListener("contextmenu", onContextMenu, { capture: true });
 }
-var import_obsidian34;
+var import_obsidian35;
 var init_context_menu_controller = __esm({
   "src/workmodes/session-runner/travel/ui/context-menu.controller.ts"() {
     "use strict";
-    import_obsidian34 = require("obsidian");
+    import_obsidian35 = require("obsidian");
   }
 });
 
@@ -18755,7 +19469,7 @@ function loadEncounterModule() {
     VIEW_ENCOUNTER: encounter.VIEW_ENCOUNTER
   })).catch((err) => {
     logger.error("[session-runner] failed to load encounter module", err);
-    new import_obsidian35.Notice("Encounter-Modul konnte nicht geladen werden.");
+    new import_obsidian36.Notice("Encounter-Modul konnte nicht geladen werden.");
     return null;
   });
 }
@@ -18774,7 +19488,7 @@ async function openEncounter2(app, context) {
   const issue = describeEncounterContextIssue(context);
   if (issue) {
     logger.warn(`[session-runner] ${issue.log}`, context);
-    new import_obsidian35.Notice(issue.message);
+    new import_obsidian36.Notice(issue.message);
   } else if (context) {
     try {
       const event = await createEncounterEventFromTravel(app, context);
@@ -18826,11 +19540,11 @@ async function publishManualEncounter(app, context, options = {}) {
     logger.error("[session-runner] failed to publish manual encounter", err);
   }
 }
-var import_obsidian35, encounterModule;
+var import_obsidian36, encounterModule;
 var init_encounter_gateway = __esm({
   "src/workmodes/session-runner/view/controllers/encounter-gateway.ts"() {
     "use strict";
-    import_obsidian35 = require("obsidian");
+    import_obsidian36 = require("obsidian");
     init_session_store();
     init_plugin_logger();
     init_event_builder();
@@ -84924,7 +85638,7 @@ __export(plugin_presets_exports, {
   shouldImportTerrainPresets: () => shouldImportTerrainPresets
 });
 async function ensureDir2(app, dir) {
-  const normalizedDir = (0, import_obsidian39.normalizePath)(dir);
+  const normalizedDir = (0, import_obsidian40.normalizePath)(dir);
   const folder = app.vault.getAbstractFileByPath(normalizedDir);
   if (!folder) {
     await app.vault.createFolder(normalizedDir).catch(() => {
@@ -84937,7 +85651,7 @@ function registerPreset(fileName, content) {
 async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, force = false) {
   try {
     await ensureDir3(app);
-    const normalizedDir = (0, import_obsidian39.normalizePath)(dir);
+    const normalizedDir = (0, import_obsidian40.normalizePath)(dir);
     const presetModule = await Promise.resolve().then(() => (init_preset_data(), preset_data_exports));
     const rawPresetFiles = presetModule[presetKey] || {};
     const presetEntries = Object.entries(rawPresetFiles).map(([fileName, content]) => [
@@ -84955,7 +85669,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       const existing = await app.vault.adapter.list(normalizedDir);
       const prefix = `${normalizedDir}/`;
       existing.files.forEach((file) => {
-        const normalizedFile = (0, import_obsidian39.normalizePath)(file);
+        const normalizedFile = (0, import_obsidian40.normalizePath)(file);
         if (normalizedFile.startsWith(prefix)) {
           const relativePath = normalizedFile.slice(prefix.length);
           if (relativePath) {
@@ -84971,7 +85685,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
     const ensuredFolders = /* @__PURE__ */ new Set([normalizedDir]);
     for (const [fileName, content] of presetEntries) {
       const loweredName = fileName.toLowerCase();
-      const targetPath = (0, import_obsidian39.normalizePath)(`${normalizedDir}/${fileName}`);
+      const targetPath = (0, import_obsidian40.normalizePath)(`${normalizedDir}/${fileName}`);
       const existingPath = existingFiles.get(loweredName);
       try {
         await ensureParentFolders(app, normalizedDir, fileName, ensuredFolders);
@@ -84997,19 +85711,19 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       }
     }
     if (importedCount > 0) {
-      new import_obsidian39.Notice(`Imported ${importedCount} ${typeName} presets`);
+      new import_obsidian40.Notice(`Imported ${importedCount} ${typeName} presets`);
       logger.log(`${typeName} import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
     } else if (skippedCount > 0) {
       logger.log(`All ${skippedCount} ${typeName} presets already exist`);
     } else if (errorCount > 0) {
-      new import_obsidian39.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian40.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   } catch (err) {
     logger.error(`Failed to import ${typeName} presets:`, err);
     if (err instanceof Error && err.message.includes("Cannot find module")) {
       logger.log(`No ${typeName} preset data found - skipping import`);
     } else {
-      new import_obsidian39.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian40.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   }
 }
@@ -85021,7 +85735,7 @@ async function ensureParentFolders(app, baseDir, relativePath, ensured) {
   parts.pop();
   let current = baseDir;
   for (const part of parts) {
-    current = (0, import_obsidian39.normalizePath)(`${current}/${part}`);
+    current = (0, import_obsidian40.normalizePath)(`${current}/${part}`);
     if (ensured.has(current)) continue;
     ensured.add(current);
     if (!app.vault.getAbstractFileByPath(current)) {
@@ -85038,7 +85752,7 @@ async function importPluginPresets(app) {
   return importPresetsForDir(app, ENTITY_REGISTRY.creatures.directory, "PRESET_CREATURES", "creature", ensureCreatureDir2);
 }
 async function shouldImportPresetsForDir(app, dir, markerName, label, ensureDir3) {
-  const markerPath = (0, import_obsidian39.normalizePath)(`${dir}/${markerName}`);
+  const markerPath = (0, import_obsidian40.normalizePath)(`${dir}/${markerName}`);
   const markerFile = app.vault.getAbstractFileByPath(markerPath);
   if (markerFile) {
     return false;
@@ -85128,11 +85842,11 @@ async function importPresetsByCategory(app, category, force = false) {
       throw new Error(`Unknown preset category: ${category}. Valid categories: creatures, spells, items, equipment, terrains, regions, calendars, all`);
   }
 }
-var import_obsidian39, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, PRESET_FILES;
+var import_obsidian40, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, PRESET_FILES;
 var init_plugin_presets = __esm({
   "Presets/lib/plugin-presets.ts"() {
     "use strict";
-    import_obsidian39 = require("obsidian");
+    import_obsidian40 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     ensureCreatureDir2 = (app) => ensureDir2(app, ENTITY_REGISTRY.creatures.directory);
@@ -85159,16 +85873,16 @@ __export(index_files_exports, {
 });
 async function createIndexFile(app, filePath, title, description, directory) {
   const folder = app.vault.getAbstractFileByPath(directory);
-  if (!(folder instanceof import_obsidian40.TFolder)) {
+  if (!(folder instanceof import_obsidian41.TFolder)) {
     logger.log(`[Index] Directory ${directory} not found, skipping index generation`);
     return;
   }
   const files = [];
   const collectFiles = (folder2) => {
     for (const child of folder2.children) {
-      if (child instanceof import_obsidian40.TFile && child.extension === "md") {
+      if (child instanceof import_obsidian41.TFile && child.extension === "md") {
         files.push(child);
-      } else if (child instanceof import_obsidian40.TFolder) {
+      } else if (child instanceof import_obsidian41.TFolder) {
         collectFiles(child);
       }
     }
@@ -85205,7 +85919,7 @@ async function createIndexFile(app, filePath, title, description, directory) {
   }
   const content = lines.join("\n");
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian40.TFile) {
+  if (existingFile instanceof import_obsidian41.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -85273,7 +85987,7 @@ async function generateLibraryHub(app) {
   const content = lines.join("\n");
   const filePath = `${SALTMARCHER_DIR}/Library.md`;
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian40.TFile) {
+  if (existingFile instanceof import_obsidian41.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -85295,11 +86009,11 @@ async function generateAllIndexes(app) {
   ]);
   logger.log("[Index] All indexes generated successfully");
 }
-var import_obsidian40, SALTMARCHER_DIR;
+var import_obsidian41, SALTMARCHER_DIR;
 var init_index_files = __esm({
   "src/workmodes/library/core/index-files.ts"() {
     "use strict";
-    import_obsidian40 = require("obsidian");
+    import_obsidian41 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     SALTMARCHER_DIR = "SaltMarcher";
@@ -87279,14 +87993,14 @@ __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian41 = require("obsidian");
+var import_obsidian42 = require("obsidian");
 init_plugin_logger();
 
 // src/workmodes/cartographer/index.ts
-var import_obsidian14 = require("obsidian");
+var import_obsidian16 = require("obsidian");
 
 // src/workmodes/cartographer/controller.ts
-var import_obsidian13 = require("obsidian");
+var import_obsidian15 = require("obsidian");
 init_options();
 init_map_list();
 
@@ -87294,7 +88008,7 @@ init_map_list();
 init_hex_render();
 var keyOf3 = (r, c) => `${r},${c}`;
 async function createMapLayer(app, host, mapFile, opts) {
-  const handles = await renderHexMap(app, host, opts, mapFile.path);
+  const handles = await renderHexMap(app, host, mapFile, opts);
   const polyToCoord = /* @__PURE__ */ new WeakMap();
   for (const [k, poly] of handles.polyByCoord) {
     if (!poly) continue;
@@ -87329,14 +88043,14 @@ async function createMapLayer(app, host, mapFile, opts) {
 }
 
 // src/ui/maps/workflows/map-manager.ts
-var import_obsidian10 = require("obsidian");
+var import_obsidian11 = require("obsidian");
 init_plugin_logger();
 init_map_workflows();
 
 // src/ui/maps/components/confirm-delete-modal.ts
-var import_obsidian9 = require("obsidian");
+var import_obsidian10 = require("obsidian");
 init_plugin_logger();
-var ConfirmDeleteModal = class extends import_obsidian9.Modal {
+var ConfirmDeleteModal = class extends import_obsidian10.Modal {
   constructor(app, mapFile, onConfirm) {
     super(app);
     this.mapFile = mapFile;
@@ -87359,7 +88073,7 @@ var ConfirmDeleteModal = class extends import_obsidian9.Modal {
     const btnRow = contentEl.createDiv({ cls: "modal-button-container" });
     const cancelBtn = btnRow.createEl("button", { text: "Cancel" });
     const confirmBtn = btnRow.createEl("button", { text: "Delete" });
-    (0, import_obsidian9.setIcon)(confirmBtn, "trash");
+    (0, import_obsidian10.setIcon)(confirmBtn, "trash");
     confirmBtn.classList.add("mod-warning");
     confirmBtn.disabled = true;
     input.addEventListener("input", () => {
@@ -87370,10 +88084,10 @@ var ConfirmDeleteModal = class extends import_obsidian9.Modal {
       confirmBtn.disabled = true;
       try {
         await this.onConfirm();
-        new import_obsidian9.Notice("Map deleted.");
+        new import_obsidian10.Notice("Map deleted.");
       } catch (e) {
         logger.error(e);
-        new import_obsidian9.Notice("Deleting map failed.");
+        new import_obsidian10.Notice("Deleting map failed.");
       } finally {
         this.close();
       }
@@ -87430,7 +88144,7 @@ function createMapManager(app, options = {}) {
   const deleteCurrent = () => {
     const target = current;
     if (!target) {
-      new import_obsidian10.Notice(notices.missingSelection);
+      new import_obsidian11.Notice(notices.missingSelection);
       return;
     }
     new ConfirmDeleteModal(app, target, async () => {
@@ -87441,7 +88155,7 @@ function createMapManager(app, options = {}) {
         }
       } catch (error) {
         logger.error(MAP_MANAGER_COPY.logs.deleteFailed, error);
-        new import_obsidian10.Notice(notices.deleteFailed);
+        new import_obsidian11.Notice(notices.deleteFailed);
       }
     }).open();
   };
@@ -87458,7 +88172,7 @@ function createMapManager(app, options = {}) {
 init_plugin_logger();
 
 // src/ui/maps/components/map-header.ts
-var import_obsidian11 = require("obsidian");
+var import_obsidian12 = require("obsidian");
 init_map_workflows();
 init_search_dropdown();
 
@@ -87515,7 +88229,7 @@ function createMapHeader(app, host, options) {
     titleRightSlot.style.display = "none";
   }
   const openBtn = row1.createEl("button", { text: labels.open, attr: { type: "button" } });
-  (0, import_obsidian11.setIcon)(openBtn, "folder-open");
+  (0, import_obsidian12.setIcon)(openBtn, "folder-open");
   applyMapButtonStyle(openBtn);
   openBtn.onclick = () => {
     if (destroyed) return;
@@ -87526,7 +88240,7 @@ function createMapHeader(app, host, options) {
     });
   };
   const createBtn = row1.createEl("button", { text: labels.create, attr: { type: "button" } });
-  (0, import_obsidian11.setIcon)(createBtn, "plus");
+  (0, import_obsidian12.setIcon)(createBtn, "plus");
   applyMapButtonStyle(createBtn);
   createBtn.onclick = () => {
     if (destroyed) return;
@@ -87538,12 +88252,12 @@ function createMapHeader(app, host, options) {
   };
   const deleteBtn = options.onDelete ? row1.createEl("button", { text: labels.delete, attr: { type: "button", "aria-label": labels.delete } }) : null;
   if (deleteBtn) {
-    (0, import_obsidian11.setIcon)(deleteBtn, "trash");
+    (0, import_obsidian12.setIcon)(deleteBtn, "trash");
     applyMapButtonStyle(deleteBtn);
     deleteBtn.onclick = () => {
       if (destroyed) return;
       if (!currentFile) {
-        new import_obsidian11.Notice(notices.missingFile);
+        new import_obsidian12.Notice(notices.missingFile);
         return;
       }
       void options.onDelete?.(currentFile);
@@ -87579,7 +88293,7 @@ function createMapHeader(app, host, options) {
     const file = currentFile;
     if (!file) {
       await options.onSave?.(mode, null);
-      new import_obsidian11.Notice(notices.missingFile);
+      new import_obsidian12.Notice(notices.missingFile);
       return;
     }
     try {
@@ -87588,10 +88302,10 @@ function createMapHeader(app, host, options) {
         if (mode === "save") await saveMap(app, file);
         else await saveMapAs(app, file);
       }
-      new import_obsidian11.Notice(notices.saveSuccess);
+      new import_obsidian12.Notice(notices.saveSuccess);
     } catch (err) {
       logger.error("[map-header] save failed", err);
-      new import_obsidian11.Notice(notices.saveError);
+      new import_obsidian12.Notice(notices.saveError);
     }
   };
   function setFileLabel(file) {
@@ -87904,7 +88618,7 @@ var CartographerController = class {
       }).catch((error) => {
         logger.error("[cartographer] failed to load modes", error);
         this.view?.setOverlay(MODE_PROVISION_OVERLAY_MESSAGE);
-        new import_obsidian13.Notice(MODE_PROVISION_NOTICE_MESSAGE);
+        new import_obsidian15.Notice(MODE_PROVISION_NOTICE_MESSAGE);
         this.modeLoad = void 0;
         throw error;
       });
@@ -88179,7 +88893,7 @@ function renderModeSelect(slot, initialModes, onChange) {
 // src/workmodes/cartographer/index.ts
 var VIEW_TYPE_CARTOGRAPHER = "cartographer-view";
 var VIEW_CARTOGRAPHER = VIEW_TYPE_CARTOGRAPHER;
-var CartographerView = class extends import_obsidian14.ItemView {
+var CartographerView = class extends import_obsidian16.ItemView {
   constructor(leaf) {
     super(leaf);
     this.hostEl = null;
@@ -88242,151 +88956,16 @@ init_view();
 
 // src/workmodes/library/view.ts
 init_data_manager();
-
-// src/workmodes/library/storage/data-sources.ts
-init_frontmatter_utils();
-init_vault_preset_loader();
-function createEntryLoader(extractMeta) {
-  return async (app, file) => {
-    const fm2 = await readFrontmatter(app, file);
-    const meta = extractMeta(fm2);
-    return { file, name: file.basename, ...meta };
-  };
-}
-var loadCreatureEntry = createEntryLoader((fm2) => ({
-  type: typeof fm2.type === "string" ? fm2.type : void 0,
-  cr: typeof fm2.cr === "string" ? fm2.cr : typeof fm2.cr === "number" ? String(fm2.cr) : void 0
-}));
-var loadSpellEntry = createEntryLoader((fm2) => {
-  const rawLevel = fm2.level;
-  const level = typeof rawLevel === "number" ? rawLevel : typeof rawLevel === "string" ? Number(rawLevel) : void 0;
-  return {
-    school: typeof fm2.school === "string" ? fm2.school : void 0,
-    level: Number.isFinite(level) ? level : void 0,
-    casting_time: typeof fm2.casting_time === "string" ? fm2.casting_time : void 0,
-    duration: typeof fm2.duration === "string" ? fm2.duration : void 0,
-    concentration: typeof fm2.concentration === "boolean" ? fm2.concentration : void 0,
-    ritual: typeof fm2.ritual === "boolean" ? fm2.ritual : void 0,
-    description: typeof fm2.description === "string" ? fm2.description : void 0
-  };
-});
-var loadItemEntry = createEntryLoader((fm2) => ({
-  category: typeof fm2.category === "string" ? fm2.category : void 0,
-  rarity: typeof fm2.rarity === "string" ? fm2.rarity : void 0
-}));
-var loadEquipmentEntry = createEntryLoader((fm2) => {
-  const roleCandidate = [
-    fm2.weapon_category,
-    fm2.armor_category,
-    fm2.tool_category,
-    fm2.gear_category
-  ].find((value) => typeof value === "string" && value.length > 0);
-  return {
-    type: typeof fm2.type === "string" ? fm2.type : void 0,
-    role: roleCandidate
-  };
-});
-var loadTerrainEntry = createEntryLoader((fm2) => ({
-  color: typeof fm2.color === "string" ? fm2.color : "transparent",
-  speed: typeof fm2.speed === "number" ? fm2.speed : 1
-}));
-var loadRegionEntry = createEntryLoader((fm2) => ({
-  terrain: typeof fm2.terrain === "string" ? fm2.terrain : "",
-  encounterOdds: typeof fm2.encounter_odds === "number" ? fm2.encounter_odds : void 0
-}));
-function extractTokenValues(raw) {
-  if (!Array.isArray(raw)) return [];
-  const result = [];
-  for (const entry of raw) {
-    if (typeof entry === "string" && entry.trim()) {
-      result.push(entry.trim());
-    } else if (entry && typeof entry === "object") {
-      const value = entry.value;
-      if (typeof value === "string" && value.trim()) {
-        result.push(value.trim());
-      }
-    }
-  }
-  return result;
-}
-var loadFactionEntry = createEntryLoader((fm2) => {
-  const influenceTags = extractTokenValues(fm2.influence_tags);
-  const members = Array.isArray(fm2.members) ? fm2.members : [];
-  return {
-    influence: influenceTags[0],
-    headquarters: typeof fm2.headquarters === "string" ? fm2.headquarters : void 0,
-    memberCount: members.length
-  };
-});
-var loadCalendarEntry = createEntryLoader((fm2) => {
-  const months = Array.isArray(fm2.months) ? fm2.months : [];
-  return {
-    id: typeof fm2.id === "string" ? fm2.id : "",
-    daysPerWeek: typeof fm2.daysPerWeek === "number" ? fm2.daysPerWeek : 7,
-    monthCount: months.length
-  };
-});
-var LIBRARY_DATA_SOURCES = {
-  creatures: {
-    id: "creatures",
-    list: (app) => listVaultPresets(app, "creatures"),
-    watch: (app, onChange) => watchVaultPresets(app, "creatures", onChange),
-    load: loadCreatureEntry
-  },
-  spells: {
-    id: "spells",
-    list: (app) => listVaultPresets(app, "spells"),
-    watch: (app, onChange) => watchVaultPresets(app, "spells", onChange),
-    load: loadSpellEntry
-  },
-  items: {
-    id: "items",
-    list: (app) => listVaultPresets(app, "items"),
-    watch: (app, onChange) => watchVaultPresets(app, "items", onChange),
-    load: loadItemEntry
-  },
-  equipment: {
-    id: "equipment",
-    list: (app) => listVaultPresets(app, "equipment"),
-    watch: (app, onChange) => watchVaultPresets(app, "equipment", onChange),
-    load: loadEquipmentEntry
-  },
-  terrains: {
-    id: "terrains",
-    list: (app) => listVaultPresets(app, "terrains"),
-    watch: (app, onChange) => watchVaultPresets(app, "terrains", onChange),
-    load: loadTerrainEntry
-  },
-  regions: {
-    id: "regions",
-    list: (app) => listVaultPresets(app, "regions"),
-    watch: (app, onChange) => watchVaultPresets(app, "regions", onChange),
-    load: loadRegionEntry
-  },
-  factions: {
-    id: "factions",
-    list: (app) => listVaultPresets(app, "factions"),
-    watch: (app, onChange) => watchVaultPresets(app, "factions", onChange),
-    load: loadFactionEntry
-  },
-  calendars: {
-    id: "calendars",
-    list: (app) => listVaultPresets(app, "calendars"),
-    watch: (app, onChange) => watchVaultPresets(app, "calendars", onChange),
-    load: loadCalendarEntry
-  }
-};
-
-// src/workmodes/library/view.ts
+init_data_sources();
 init_registry();
 
 // src/workmodes/library/core/sources.ts
-var import_obsidian31 = require("obsidian");
+var import_obsidian32 = require("obsidian");
 init_terrain_repository();
 init_region_repository();
 init_entity_registry();
 async function ensureDir(app, dir) {
-  const normalizedDir = (0, import_obsidian31.normalizePath)(dir);
+  const normalizedDir = (0, import_obsidian32.normalizePath)(dir);
   const folder = app.vault.getAbstractFileByPath(normalizedDir);
   if (!folder) {
     await app.vault.createFolder(normalizedDir).catch(() => {
@@ -88498,11 +89077,11 @@ async function openLibrary(app) {
 }
 
 // src/workmodes/almanac/index.ts
-var import_obsidian32 = require("obsidian");
+var import_obsidian33 = require("obsidian");
 init_ui();
 var VIEW_TYPE_ALMANAC = "almanac-view";
 var VIEW_ALMANAC = VIEW_TYPE_ALMANAC;
-var AlmanacView = class extends import_obsidian32.ItemView {
+var AlmanacView = class extends import_obsidian33.ItemView {
   constructor(leaf) {
     super(leaf);
   }
@@ -88555,10 +89134,10 @@ async function openAlmanac(app) {
 }
 
 // src/workmodes/session-runner/index.ts
-var import_obsidian37 = require("obsidian");
+var import_obsidian38 = require("obsidian");
 
 // src/workmodes/session-runner/controller.ts
-var import_obsidian36 = require("obsidian");
+var import_obsidian37 = require("obsidian");
 init_options();
 init_map_list();
 init_plugin_logger();
@@ -88648,7 +89227,7 @@ var SessionRunnerController = class {
     } catch (error) {
       logger.error("[session-runner] failed to start experience", error);
       this.view?.setOverlay(EXPERIENCE_OVERLAY_MESSAGE);
-      new import_obsidian36.Notice(EXPERIENCE_NOTICE_MESSAGE);
+      new import_obsidian37.Notice(EXPERIENCE_NOTICE_MESSAGE);
     }
     if (this.mapManager) {
       await this.mapManager.setFile(initialFile);
@@ -88859,7 +89438,7 @@ function createSessionRunnerView(options) {
 // src/workmodes/session-runner/index.ts
 var VIEW_TYPE_SESSION_RUNNER = "session-runner-view";
 var VIEW_SESSION_RUNNER = VIEW_TYPE_SESSION_RUNNER;
-var SessionRunnerView = class extends import_obsidian37.ItemView {
+var SessionRunnerView = class extends import_obsidian38.ItemView {
   constructor(leaf) {
     super(leaf);
     this.hostEl = null;
@@ -92688,7 +93267,7 @@ var HEX_PLUGIN_CSS_SECTIONS = {
 var HEX_PLUGIN_CSS = Object.values(HEX_PLUGIN_CSS_SECTIONS).join("\n\n");
 
 // src/app/integration-telemetry.ts
-var import_obsidian38 = require("obsidian");
+var import_obsidian39 = require("obsidian");
 init_plugin_logger();
 var notifiedOperations = /* @__PURE__ */ new Set();
 function reportIntegrationIssue(payload) {
@@ -92698,7 +93277,7 @@ function reportIntegrationIssue(payload) {
   const dedupeKey = `${integrationId}:${operation}`;
   if (notifiedOperations.has(dedupeKey)) return;
   notifiedOperations.add(dedupeKey);
-  new import_obsidian38.Notice(userMessage);
+  new import_obsidian39.Notice(userMessage);
 }
 
 // src/app/bootstrap-services.ts
@@ -93009,7 +93588,7 @@ function registerIPCCommands(server, plugin) {
 }
 
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian41.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian42.Plugin {
   async onload() {
     await logger.init(this.app);
     logger.log("Plugin loading...");

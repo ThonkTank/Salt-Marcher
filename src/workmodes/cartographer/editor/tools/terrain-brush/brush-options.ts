@@ -7,6 +7,7 @@ import type { BrushOptions } from "./brush-core";
 import type { RenderHandles } from "../../../../../features/maps/hex-mapper/hex-render";
 import type { HexOptions } from "../../../../../features/maps/options";
 import { loadRegions } from "../../../../../features/maps/data/region-repository";
+import { LIBRARY_DATA_SOURCES } from "../../../../library/storage/data-sources";
 import { enhanceSelectToSearch } from "../../../../../ui/components/search-dropdown";
 import { logger } from "../../../../../app/plugin-logger";
 import {
@@ -41,6 +42,7 @@ export type BrushPanelControls = {
 type BrushState = Required<Pick<BrushOptions, "terrain">> & {
     radius: number;
     region: string;
+    faction: string;
     mode: "paint" | "erase";
 };
 
@@ -50,6 +52,7 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
     const state: BrushState = {
         radius: 1,
         region: "",
+        faction: "",
         terrain: "",
         mode: "paint",
     };
@@ -65,10 +68,13 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
 
     let radiusControl: FormSliderHandle | null = null;
     let regionControl: FormSelectHandle | null = null;
+    let factionControl: FormSelectHandle | null = null;
     let modeControl: FormSelectHandle | null = null;
     let manageButton: FormButtonHandle | null = null;
+    let manageFactionButton: FormButtonHandle | null = null;
     let inlineHint: FormHintHandle | null = null;
     let manageHint: FormHintHandle | null = null;
+    let factionHint: FormHintHandle | null = null;
 
     const setPanelDisabled = (disabled: boolean) => {
         panelDisabled = disabled;
@@ -79,8 +85,10 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
         }
         radiusControl?.setDisabled(disabled);
         regionControl?.setDisabled(disabled);
+        factionControl?.setDisabled(disabled);
         modeControl?.setDisabled(disabled);
         manageButton?.setDisabled(disabled || !manageCommandAvailable);
+        manageFactionButton?.setDisabled(disabled || !manageCommandAvailable);
     };
 
     const updateStatus = (message: string) => {
@@ -141,6 +149,27 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
             { kind: "hint", id: "manageHint", cls: "sm-inline-hint", hidden: true },
             {
                 kind: "row",
+                label: "Faction:",
+                controls: [
+                    {
+                        kind: "select",
+                        id: "faction",
+                        options: [],
+                        enhance: (select) => enhanceSelectToSearch(select, "Search dropdown…"),
+                        onChange: ({ element }) => {
+                            state.faction = element.value;
+                        },
+                    },
+                    {
+                        kind: "button",
+                        id: "manageFaction",
+                        label: "Manage…",
+                    },
+                ],
+            },
+            { kind: "hint", id: "factionHint", cls: "sm-inline-hint", hidden: true },
+            {
+                kind: "row",
                 label: "Mode:",
                 controls: [
                     {
@@ -163,16 +192,22 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
 
     radiusControl = form.getControl("radius") as FormSliderHandle;
     regionControl = form.getControl("region") as FormSelectHandle;
+    factionControl = form.getControl("faction") as FormSelectHandle;
     modeControl = form.getControl("mode") as FormSelectHandle;
     manageButton = form.getControl("manage") as FormButtonHandle;
+    manageFactionButton = form.getControl("manageFaction") as FormButtonHandle;
     inlineHint = form.getHint("inline");
     manageHint = form.getHint("manageHint");
+    factionHint = form.getHint("factionHint");
 
     const applyInlineHint = (details: { text: string; tone: HintTone } | null) => {
         inlineHint?.set(details ? { text: details.text, tone: details.tone } : null);
     };
     const applyManageHint = (details: { text: string; tone: HintTone } | null) => {
         manageHint?.set(details ? { text: details.text, tone: details.tone } : null);
+    };
+    const applyFactionHint = (details: { text: string; tone: HintTone } | null) => {
+        factionHint?.set(details ? { text: details.text, tone: details.tone } : null);
     };
 
     const handleManageClick = () => {
@@ -196,22 +231,52 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
         }
     };
 
+    const handleManageFactionClick = () => {
+        if (!manageCommandAvailable) {
+            updateStatus("The Library command is unavailable. Follow the manual steps below to add factions.");
+            return;
+        }
+
+        try {
+            const result = (ctx.app as any).commands?.executeCommandById?.(MANAGE_REGIONS_COMMAND_ID);
+            if (result instanceof Promise) {
+                result.catch((err: unknown) => handleManageFactionError(err));
+                updateStatus("Opening the Library to manage factions…");
+            } else if (result === false) {
+                handleManageFactionError();
+            } else {
+                updateStatus("Opening the Library to manage factions…");
+            }
+        } catch (err) {
+            handleManageFactionError(err);
+        }
+    };
+
     const refreshManageCommandAvailability = () => {
         const commandsApi = (ctx.app as any).commands;
         manageCommandAvailable = Boolean(
             commandsApi?.executeCommandById && commandsApi?.commands?.[MANAGE_REGIONS_COMMAND_ID]
         );
         manageButton?.setDisabled(panelDisabled || !manageCommandAvailable);
+        manageFactionButton?.setDisabled(panelDisabled || !manageCommandAvailable);
         if (manageButton) {
             manageButton.element.classList.toggle("is-missing-command", !manageCommandAvailable);
         }
+        if (manageFactionButton) {
+            manageFactionButton.element.classList.toggle("is-missing-command", !manageCommandAvailable);
+        }
         if (!manageCommandAvailable) {
             applyManageHint({
-                text: "The “Open Library” command is unavailable. Open the Library view from the ribbon (book icon) and add Region entries under Library → Regions, then refresh this list.",
+                text: "The \"Open Library\" command is unavailable. Open the Library view from the ribbon (book icon) and add Region entries under Library → Regions, then refresh this list.",
+                tone: "warning",
+            });
+            applyFactionHint({
+                text: "The \"Open Library\" command is unavailable. Open the Library view from the ribbon (book icon) and add Faction entries under Library → Factions, then refresh this list.",
                 tone: "warning",
             });
         } else {
             applyManageHint(null);
+            applyFactionHint(null);
         }
     };
 
@@ -226,8 +291,22 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
         updateStatus("Failed to open the Library command. Check the console for details.");
     };
 
+    const handleManageFactionError = (err?: unknown) => {
+        if (err) {
+            logger.error("[terrain-brush] failed to open Library command for factions", err);
+        }
+        applyFactionHint({
+            text: "Opening the Library command failed. Use the ribbon icon to open the Library manually and add Faction entries under Library → Factions before refreshing.",
+            tone: "error",
+        });
+        updateStatus("Failed to open the Library command. Check the console for details.");
+    };
+
     if (manageButton) {
         manageButton.element.addEventListener("click", handleManageClick);
+    }
+    if (manageFactionButton) {
+        manageFactionButton.element.addEventListener("click", handleManageFactionClick);
     }
 
     refreshManageCommandAvailability();
@@ -320,11 +399,99 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
         }
     };
 
+    const fillFactions = async (reason: "initial" | "refresh") => {
+        const fSeq = ++fillSeq;
+        setPanelDisabled(true);
+        applyFactionHint({
+            text: reason === "initial" ? "Loading factions…" : "Refreshing factions…",
+            tone: "loading",
+        });
+
+        let factionFiles: Array<TFile> = [];
+        try {
+            factionFiles = await LIBRARY_DATA_SOURCES.factions.list(ctx.app);
+        } catch (err) {
+            logger.error("[terrain-brush] failed to list factions", err);
+            if (fSeq === fillSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
+                factionControl?.setOptions([]);
+                state.faction = "";
+                applyFactionHint({
+                    text: "Factions could not be loaded. Please retry once your vault is synced.",
+                    tone: "error",
+                });
+            }
+            return;
+        } finally {
+            if (fSeq === fillSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
+                setPanelDisabled(false);
+                refreshManageCommandAvailability();
+            }
+        }
+
+        if (disposed || ctx.getAbortSignal()?.aborted || fSeq !== fillSeq) {
+            return;
+        }
+
+        const factions: Array<{ name: string }> = [];
+        for (const file of factionFiles) {
+            try {
+                const entry = await LIBRARY_DATA_SOURCES.factions.load(ctx.app, file);
+                factions.push({ name: entry.name });
+            } catch (err) {
+                logger.warn(`[terrain-brush] failed to load faction ${file.path}`, err);
+            }
+        }
+
+        factionControl?.setOptions([
+            { label: "(none)", value: "" },
+            ...factions.map((f) => ({
+                label: f.name || "(unnamed)",
+                value: f.name ?? "",
+            })),
+        ]);
+
+        const factionSelect = factionControl?.element;
+        if (!factionSelect) return;
+
+        let matchedFaction = state.faction;
+        let preservedFactionSelection = false;
+
+        for (const opt of Array.from(factionSelect.options)) {
+            if (!opt.value) continue;
+            if (opt.value === state.faction) {
+                matchedFaction = opt.value;
+                preservedFactionSelection = true;
+                break;
+            }
+        }
+
+        if (state.faction && !preservedFactionSelection) {
+            state.faction = "";
+            factionControl.setValue("");
+            applyFactionHint({
+                text: "The previously selected faction is no longer available and was cleared.",
+                tone: "warning",
+            });
+        } else {
+            state.faction = matchedFaction;
+            factionControl.setValue(matchedFaction);
+            if (factions.length === 0) {
+                applyFactionHint({
+                    text: "No factions found. Open the Library (Manage… button or ribbon icon) and add Faction entries before painting.",
+                    tone: "info",
+                });
+            } else {
+                applyFactionHint(null);
+            }
+        }
+    };
+
     void fillOptions("initial");
+    void fillFactions("initial");
 
     const workspace = ctx.app.workspace as any;
     const unsubscribe: Array<() => void> = [];
-    const subscribe = (event: string) => {
+    const subscribeRegions = (event: string) => {
         const handler = () => {
             if (!disposed) void fillOptions("refresh");
         };
@@ -335,8 +502,20 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
             unsubscribe.push(() => token());
         }
     };
-    subscribe("salt:terrains-updated");
-    subscribe("salt:regions-updated");
+    const subscribeFactions = (event: string) => {
+        const handler = () => {
+            if (!disposed) void fillFactions("refresh");
+        };
+        const token = workspace?.on?.(event, handler);
+        if (typeof workspace?.offref === "function" && token) {
+            unsubscribe.push(() => workspace.offref(token));
+        } else if (typeof token === "function") {
+            unsubscribe.push(() => token());
+        }
+    };
+    subscribeRegions("salt:terrains-updated");
+    subscribeRegions("salt:regions-updated");
+    subscribeFactions("salt:factions-updated");
 
     const ensureCircle = (handles: RenderHandles | null, options: HexOptions | null) => {
         if (!handles) return;
@@ -361,6 +540,9 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
         unsubscribe.length = 0;
         if (manageButton) {
             manageButton.element.removeEventListener("click", handleManageClick);
+        }
+        if (manageFactionButton) {
+            manageFactionButton.element.removeEventListener("click", handleManageFactionClick);
         }
         form.destroy();
         circle?.destroy();
@@ -391,6 +573,7 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
                 radius: effectiveRadius(),
                 terrain: state.terrain,
                 region: state.region,
+                faction: state.faction || undefined,
                 mode: state.mode,
             },
             handles,

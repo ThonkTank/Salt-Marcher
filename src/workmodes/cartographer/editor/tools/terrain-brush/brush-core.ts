@@ -17,6 +17,8 @@ export type BrushOptions = {
     terrain: string;
     /** Optionale Region, die dem Hex zugeordnet wird. */
     region?: string;
+    /** Optionale Fraktion, die dem Hex zugeordnet wird. */
+    faction?: string;
     /** Betriebsmodus – "paint" legt Tiles an, "erase" löscht sie. */
     mode?: "paint" | "erase";
 };
@@ -175,9 +177,14 @@ export async function applyBrush(
             const terrain = opts.terrain ?? "";
             const region = opts.region ?? "";
             const payload: TileData = { terrain, region };
-            if (previousData?.faction) {
+
+            // Faction handling: Use new value if provided, otherwise preserve existing
+            if (opts.faction !== undefined) {
+                payload.faction = opts.faction;
+            } else if (previousData?.faction) {
                 payload.faction = previousData.faction;
             }
+
             await saveTile(app, mapFile, coord, payload);
             const color = TERRAIN_COLORS[terrain] ?? "transparent";
             handles.setFill(coord, color);
