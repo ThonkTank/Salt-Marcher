@@ -490,6 +490,98 @@ Die folgenden Features erfordern den Aufbau des Encounter Builder UI-Systems, da
 
 ---
 
+### Phase 2.4 – Encounter Composition MVP
+**Status:** 🚨 0% · **Target:** KW 46 · **Priority:** 🔴 Kritisch (Blocker)
+
+**User Story:**
+> "Als GM kann ich Creatures manuell zu einer Begegnung hinzufügen, um ad-hoc Kämpfe zu komponieren."
+
+**Problem:**
+Aktuell kann der User Encounter-Events von Travel empfangen und sieht den Kontext (Faction, Region, etc.), aber es gibt **keine Möglichkeit, Creatures hinzuzufügen**. Der Calculator zeigt XP/Gold, aber ohne Creatures ist er nutzlos. Das ist der Blocker für den kompletten Encounter-Workflow.
+
+**Acceptance Criteria (MVP):**
+1. User kann Creature-Liste aus Library öffnen
+2. User kann Creatures mit Count hinzufügen ("3x Goblin")
+3. Hinzugefügte Creatures werden mit Name, Count, CR angezeigt
+4. XP-Berechnung aktualisiert sich automatisch basierend auf CR
+5. User kann Creatures wieder entfernen
+6. EncounterSessionView ist in EncounterWorkspaceView integriert
+
+**NICHT im Scope (Later Phases):**
+- ❌ Faction-basiertes Filtering (Phase 2.5)
+- ❌ Random Encounter Generation (Phase 2.6)
+- ❌ HP/Initiative Tracking (Phase 2.7)
+- ❌ Loot Generation (Phase 5)
+
+**Implementation Plan:**
+
+**1. Data Model & Store** (`src/workmodes/encounter/session-store.ts`)
+- [ ] `EncounterCreature` Interface: `{ id, name, count, cr, statblock }`
+- [ ] `EncounterSessionState.creatures: EncounterCreature[]`
+- [ ] Store actions: `addCreature()`, `updateCreature()`, `removeCreature()`
+
+**2. Presenter Integration** (`src/workmodes/encounter/presenter.ts`)
+- [ ] `addCreature()`, `updateCreature()`, `removeCreature()` methods
+- [ ] XP calculation: `sum(creature.cr * creature.count)` → base XP
+- [ ] Update view state on creature changes
+
+**3. UI Components**
+- [ ] **EncounterCreatureList** (`src/workmodes/encounter/creature-list.ts`)
+  - Zeigt Library Creatures (alle)
+  - Search/Filter nach Name
+  - "Add" Button pro Creature
+- [ ] **EncounterComposition** (`src/workmodes/encounter/composition-view.ts`)
+  - Zeigt hinzugefügte Creatures
+  - Count-Input (number)
+  - Remove-Button
+  - Zeigt CR pro Creature
+- [ ] Integration in `workspace-view.ts`: Session + Composition + Calculator
+
+**4. Data Loading**
+- [ ] Load creatures from Library via `LIBRARY_DATA_SOURCES.creatures.list()`
+- [ ] CR-Lookup aus Creature-Statblock
+
+**Files to Create:**
+- `src/workmodes/encounter/creature-list.ts` (Creature-Selection UI)
+- `src/workmodes/encounter/composition-view.ts` (Hinzugefügte Creatures UI)
+
+**Files to Modify:**
+- `src/workmodes/encounter/session-store.ts` (Data Model)
+- `src/workmodes/encounter/presenter.ts` (Business Logic)
+- `src/workmodes/encounter/workspace-view.ts` (UI Integration)
+
+**Definition of Done:**
+- [ ] User kann Creatures aus Library-Liste hinzufügen
+- [ ] Hinzugefügte Creatures werden angezeigt mit Count & CR
+- [ ] User kann Count ändern (1-99)
+- [ ] User kann Creatures entfernen
+- [ ] XP-Berechnung funktioniert: `baseXP = sum(cr × count)`
+- [ ] XP fließt in Calculator und wird mit Rules kombiniert
+- [ ] Build erfolgreich, keine TypeScript-Fehler
+- [ ] Manuelle Smoke-Tests erfolgreich
+- [ ] EncounterSessionView integriert (zeigt Encounter-Kontext oben)
+
+**Rationale:**
+Dies ist der kritische Blocker für den gesamten Encounter-Workflow. Ohne Creature-Selection kann der User Encounters weder manuell komponieren noch sinnvoll mit dem Calculator arbeiten. Alle anderen Encounter-Features (Faction-Filter, HP-Tracking, Random Generation) bauen auf diesem Foundation-Feature auf.
+
+---
+
+### Phase 2.5 – Faction-Based Creature Filtering
+**Status:** ⏳ Geplant · **Target:** Nach Phase 2.4 · **Priority:** 🟡 Important
+
+**User Story:**
+> "Als GM möchte ich Creatures nach Faction-Tags filtern, um kontextuell passende Begegnungen zu erstellen."
+
+**Acceptance Criteria:**
+1. Creature-Liste zeigt Faction-Filter-Dropdown
+2. Filter nutzt Faction-Tags aus Creature-Frontmatter
+3. Scoring: Exact match > Partial match > No match
+4. UI zeigt Relevance-Indicator neben Creatures
+
+**Depends on:** Phase 2.4 (Creature-Selection muss existieren)
+
+---
+
 ### Phase 2.3 – Member Management (Later)
 **Status:** ⏳ Geplant · **Target:** Nach Phase 3 · **Priority:** ⚡ Nice-to-have
 
@@ -509,23 +601,46 @@ Die folgenden Features erfordern den Aufbau des Encounter Builder UI-Systems, da
 ### Phase 2 – Overall Progress
 
 **Phase 2.1:** ✅ Abgeschlossen (100%) · User kann Fraktionen auf Karte zuweisen
-**Phase 2.2:** ⚙️ Teilweise abgeschlossen (40%) · Faction-Kontext fließt durch System, Encounter Builder UI fehlt noch
-**Phase 2.3:** ⏳ Geplant · Member Management nach Phase 3
+**Phase 2.2:** ⚙️ Teilweise abgeschlossen (40%) · Faction-Kontext fließt durch System
+**Phase 2.4:** 🚨 Kritisch (0%) · **BLOCKER** - Encounter Creature Selection fehlt
+**Phase 2.5:** ⏳ Geplant · Faction-basiertes Filtering (nach 2.4)
+**Phase 2.3:** ⏳ Geplant · Member Management (nach Phase 3)
+
+**Kritischer Pfad zum funktionierenden Encounter-System:**
+1. ✅ **Phase 2.1:** Fraktionen auf Karte zuweisen
+2. ✅ **Phase 2.2:** Faction-Kontext zu Encounters
+3. 🚨 **Phase 2.4:** Creature Composition (MVP) ← **BLOCKER, höchste Priorität**
+4. ⏳ **Phase 2.5:** Faction-basiertes Filtering
+5. ⏳ **Phase 2.6:** Random Encounter Generation
+6. ⏳ **Phase 2.7:** HP & Initiative Tracking
 
 **Phase 2 MVP ist erreicht wenn:**
 - [x] **Phase 2.1 DoD erfüllt:** User kann Fraktionen auf Karte zuweisen ✅
 - [x] **Phase 2.2 Basis-Integration:** Faction-Kontext fließt zum Encounter System ✅
-- [ ] **Phase 2.2 Vollständig:** Encounter Builder filtert Creatures nach Faction (requires new UI)
-- [ ] **E2E-Test läuft grün:** Workflow: Create faction → Assign to hex → See in encounter (partially done)
+- [ ] **Phase 2.4 DoD erfüllt:** User kann Creatures zu Encounters hinzufügen ← **NEXT**
+- [ ] **Phase 2.5 DoD erfüllt:** Creatures nach Faction filtern
+- [ ] **E2E-Test läuft grün:** Workflow: Travel → Encounter → Add Creatures → Calculate XP
 - [ ] **Dokumentation aktualisiert:**
-  - [ ] `QUICK_REFERENCE.md`: Faction-Workflow dokumentiert
-  - [ ] `docs/storage-formats.md`: Faction-Felder beschrieben
+  - [x] `docs/storage-formats.md`: Faction-Felder beschrieben ✅
   - [x] `samples/fraktionen/`: Mindestens 2 Beispiel-Fraktionen ✅
+  - [ ] `QUICK_REFERENCE.md`: Encounter-Workflow dokumentiert (nach 2.4)
 
-**Nächste Schritte:**
-- Dokumentation aktualisieren (QUICK_REFERENCE.md, storage-formats.md)
-- Encounter Builder UI konzipieren & implementieren (siehe "Ziele" → Session Runner)
-- Dann Phase 2.2 vollständig abschließen mit Creature-Filtering
+**Aktuelle Prioritäten (2025-10-28):**
+1. 🔴 **Phase 2.4 - Encounter Composition MVP** (Blocker, ~2-3 Tage)
+   - Creature-Selection UI
+   - Add/Remove Creatures mit Count
+   - XP-Berechnung basierend auf CR
+   - **Rationale:** Ohne dies kann User Encounters nicht nutzen
+
+2. 🟡 **Phase 2.5 - Faction Filtering** (Important, ~1 Tag)
+   - Faction-basiertes Creature-Filtering
+   - Relevance-Scoring
+   - **Rationale:** Vervollständigt Faction-Integration
+
+3. 🟢 **Phase 1 - Store Migration** (Foundation, ~2 Tage)
+   - Library-Repos auf Store-Pattern
+   - Seed-System für Tests
+   - **Rationale:** Stärkt Foundation, kein direktes User-Feature
 
 ### Phase 3 – Orte & Dungeons
 **Status:** ⏳ Geplant · **Start:** Nach Phase 2 Abschluss
@@ -585,25 +700,33 @@ Die folgenden Features erfordern den Aufbau des Encounter Builder UI-Systems, da
 **Phase 0** ✅ Abgeschlossen
 **Phase 1** ⚙️ 75% fertig – Test-Suite repariert (49→14 failures), Library-Repos migrieren steht aus
 **Phase 2.1** ✅ Abgeschlossen (100%) – Cartographer Brush & Inspector mit Faction-Support
-**Phase 2.2** ⚙️ 40% fertig – Faction-Kontext fließt durch System, Encounter Builder UI fehlt noch
+**Phase 2.2** ✅ Basis abgeschlossen (40%) – Faction-Kontext fließt zu Encounters
+**Phase 2.4** 🚨 BLOCKER (0%) – Creature Composition fehlt komplett ← **HÖCHSTE PRIORITÄT**
 
-### Prioritäten für diese Woche
+### Prioritäten für diese Woche (KW 46)
 
-1. **✅ Test-Suite repariert** (DONE)
-   - ✅ MODULE_NOT_FOUND Fehler behoben (49→14 failures)
-   - ✅ Obsolete Tests entfernt (16 files)
-   - ⏭️ Verbleibende 14 failures benötigen Obsidian-API-Mocks (später)
+**Abgeschlossen:**
+1. ✅ Test-Suite repariert (49→14 failures)
+2. ✅ Phase 2.1 komplett (Faction Cartographer UI)
+3. ✅ Phase 2.2 Basis (Faction Context Flow)
+4. ✅ Dokumentation (storage-formats.md)
 
-2. **✅ Phase 2.1 abgeschlossen** (DONE)
-   - ✅ Cartographer Brush: Faction-Dropdown implementiert
-   - ✅ Cartographer Inspector: Faction-Feld hinzugefügt
-   - ✅ Faction-Kontext fließt durch Encounter-System
-   - **Ergebnis:** User kann Fraktionen auf Karte zuweisen und in Encounters sehen!
+**Aktuell:**
+5. 🚨 **Phase 2.4 - Encounter Composition MVP** (KRITISCH, ~2-3 Tage)
+   - **Problem:** User kann Encounters sehen, aber nicht nutzen (keine Creatures!)
+   - **Scope:** Creature-Selection, Add/Remove, Count, XP-Berechnung
+   - **Impact:** Hebt Blocker für gesamten Encounter-Workflow auf
+   - **Tasks:**
+     1. Data Model erweitern (`EncounterCreature` Interface)
+     2. Store Actions (`addCreature`, `updateCreature`, `removeCreature`)
+     3. Creature-List UI (Library-Daten laden & anzeigen)
+     4. Composition UI (Hinzugefügte Creatures mit Count)
+     5. XP-Berechnung (`sum(cr × count)`)
+     6. Integration in workspace-view
 
-3. **⚙️ Phase 2.2 Dokumentation** (In Progress)
-   - [ ] QUICK_REFERENCE.md: Faction-Workflow dokumentieren
-   - [ ] storage-formats.md: Faction-Felder beschreiben
-   - **Warum:** User brauchen Dokumentation für neue Features
+**Danach:**
+6. ⏳ Phase 2.5 - Faction Filtering (~1 Tag)
+7. ⏳ Phase 1 Completion - Store Migration (~2 Tage)
 
 ### Abgeschlossene Commits (2025-10-28)
 
