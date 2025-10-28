@@ -8,6 +8,7 @@ export type ItemData = {
     // === Basic Information ===
     name: string;
     category?: string;          // Armor, Potion, Ring, Rod, Scroll, Staff, Wand, Weapon, Wondrous Item
+    tags?: Array<{ value: string }>;  // Classification tags: Armor, Potion, Ring, Rod, Scroll, Staff, Wand, Weapon, Wondrous
     type?: string;              // e.g. "Armor (Plate)", "Weapon (Longsword)", "Any Medium Armor"
     rarity?: string;            // Common, Uncommon, Rare, Very Rare, Legendary, Artifact
 

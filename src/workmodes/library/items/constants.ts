@@ -34,3 +34,18 @@ export const RECHARGE_TIMES = [
   "Short Rest",
 ] as const;
 export type RechargeTime = (typeof RECHARGE_TIMES)[number];
+
+// Item tags (for classification and filtering)
+// Based on docs/TAGS.md
+export const ITEM_TAGS = [
+  "Armor",
+  "Potion",
+  "Ring",
+  "Rod",
+  "Scroll",
+  "Staff",
+  "Wand",
+  "Weapon",
+  "Wondrous",
+] as const;
+export type ItemTag = (typeof ITEM_TAGS)[number];

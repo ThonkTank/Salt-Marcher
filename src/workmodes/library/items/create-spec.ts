@@ -4,7 +4,7 @@
 import type { CreateSpec, AnyFieldSpec, DataSchema } from "../../../../features/data-manager/types";
 import type { ItemData } from "./types";
 import { itemToMarkdown } from "./serializer";
-import { ITEM_CATEGORIES, ITEM_RARITIES, RECHARGE_TIMES } from "./constants";
+import { ITEM_CATEGORIES, ITEM_RARITIES, RECHARGE_TIMES, ITEM_TAGS } from "./constants";
 
 // ============================================================================
 // SCHEMA
@@ -42,6 +42,24 @@ const basicInfoFields: AnyFieldSpec[] = [
             { value: "", label: "(none)" },
             ...ITEM_CATEGORIES.map(c => ({ value: c, label: c })),
         ],
+    },
+    {
+        id: "tags",
+        label: "Tags",
+        type: "tokens",
+        config: {
+            fields: [{
+                id: "value",
+                type: "select",
+                displayInChip: true,
+                editable: true,
+                suggestions: ITEM_TAGS.map(tag => ({ key: tag, label: tag })),
+                placeholder: "Tag auswählen...",
+            }],
+            primaryField: "value",
+        },
+        default: [],
+        description: "Classification tags for filtering and organization",
     },
     {
         id: "type",
@@ -191,7 +209,7 @@ export const itemSpec: CreateSpec<ItemData> = {
         directory: "SaltMarcher/Items",
         preserveCase: true,
         frontmatter: [
-            "name", "category", "type", "rarity",
+            "name", "category", "tags", "type", "rarity",
             "attunement", "attunement_req",
             "max_charges", "recharge_formula", "recharge_time", "destruction_risk",
             "spell_storage_capacity",
@@ -213,8 +231,8 @@ export const itemSpec: CreateSpec<ItemData> = {
             {
                 id: "basic",
                 label: "Grunddaten",
-                description: "Name, Kategorie, Typ und Seltenheit",
-                fieldIds: ["name", "category", "type", "rarity"],
+                description: "Name, Kategorie, Tags, Typ und Seltenheit",
+                fieldIds: ["name", "category", "tags", "type", "rarity"],
             },
             {
                 id: "attunement",
@@ -264,6 +282,7 @@ export const itemSpec: CreateSpec<ItemData> = {
         ],
         filters: [
             { id: "category", field: "category", label: "Category", type: "string" },
+            { id: "tags", field: "tags", label: "Tags", type: "array" },
             {
                 id: "rarity",
                 field: "rarity",
@@ -305,7 +324,7 @@ export const itemSpec: CreateSpec<ItemData> = {
                 },
             },
         ],
-        search: ["category", "rarity"],
+        search: ["category", "tags", "rarity"],
     },
     // Loader configuration - replaces loader.ts (uses auto-loader by default)
     loader: {
