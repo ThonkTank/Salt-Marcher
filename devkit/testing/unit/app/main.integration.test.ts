@@ -4,9 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App, PluginManifest } from "obsidian";
 
 const terrainStoreMocks = vi.hoisted(() => ({
+    TERRAIN_FILE: "SaltMarcher/Terrains.md",
     ensureTerrainFile: vi.fn(),
     loadTerrains: vi.fn(),
     watchTerrains: vi.fn(),
+    parseTerrainBlock: vi.fn(),
+    stringifyTerrainBlock: vi.fn(),
+    saveTerrains: vi.fn(),
 }));
 
 const terrainMocks = vi.hoisted(() => ({
@@ -26,9 +30,9 @@ const integrationTelemetry = vi.hoisted(() => ({
     reportIntegrationIssue: vi.fn(),
 }));
 
-vi.mock("../../src/core/terrain-store", () => terrainStoreMocks);
-vi.mock("../../src/core/terrain", () => terrainMocks);
-vi.mock("../../src/app/integration-telemetry", () => integrationTelemetry);
+vi.mock("src/features/maps/data/terrain-repository", () => terrainStoreMocks);
+vi.mock("src/features/maps/domain/terrain", () => terrainMocks);
+vi.mock("src/app/integration-telemetry", () => integrationTelemetry);
 
 const { ensureTerrainFile, loadTerrains, watchTerrains } = terrainStoreMocks;
 const { setTerrains } = terrainMocks;
@@ -37,14 +41,14 @@ const { openEncounter } = encounterMocks;
 const { reportIntegrationIssue } = integrationTelemetry;
 let unwatch: ReturnType<typeof vi.fn>;
 
-vi.mock("../../src/workmodes/cartographer", () => ({
+vi.mock("src/workmodes/cartographer", () => ({
     VIEW_CARTOGRAPHER: "cartographer",
     CartographerView: class CartographerView {},
     openCartographer: cartographerMocks.openCartographer,
     detachCartographerLeaves: cartographerMocks.detachCartographerLeaves,
 }));
 
-vi.mock("../../src/workmodes/encounter/view", () => ({
+vi.mock("src/workmodes/encounter/view", () => ({
     EncounterView: class EncounterView {
         constructor(public leaf: unknown) {
             void leaf;
@@ -54,7 +58,7 @@ vi.mock("../../src/workmodes/encounter/view", () => ({
     openEncounter: encounterMocks.openEncounter,
 }));
 
-vi.mock("../../src/workmodes/library/view", () => ({
+vi.mock("src/workmodes/library/view", () => ({
     LibraryView: class LibraryView {
         constructor(public leaf: unknown) {
             void leaf;
