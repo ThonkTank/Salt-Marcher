@@ -5383,6 +5383,111 @@ var init_presenter = __esm({
         };
         this.emit();
       }
+      addCreature(creature) {
+        const session = this.persisted.session;
+        if (!session) return;
+        const sanitized = {
+          ...creature,
+          count: Math.max(1, Math.floor(creature.count)),
+          cr: Math.max(0, creature.cr)
+        };
+        const existing = session.creatures.find((c) => c.id === sanitized.id);
+        if (existing) {
+          this.updateCreature(sanitized.id, { count: existing.count + sanitized.count });
+          return;
+        }
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            creatures: [...session.creatures, sanitized]
+          }
+        };
+        this.updateEncounterXpFromCreatures();
+      }
+      updateCreature(id, patch) {
+        const session = this.persisted.session;
+        if (!session) return;
+        const index = session.creatures.findIndex((c) => c.id === id);
+        if (index === -1) return;
+        const existing = session.creatures[index];
+        const updated = {
+          ...existing,
+          ...patch,
+          count: patch.count !== void 0 ? Math.max(1, Math.floor(patch.count)) : existing.count,
+          cr: patch.cr !== void 0 ? Math.max(0, patch.cr) : existing.cr
+        };
+        const nextCreatures = [...session.creatures];
+        nextCreatures[index] = updated;
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            creatures: nextCreatures
+          }
+        };
+        this.updateEncounterXpFromCreatures();
+      }
+      removeCreature(id) {
+        const session = this.persisted.session;
+        if (!session) return;
+        const filtered = session.creatures.filter((c) => c.id !== id);
+        if (filtered.length === session.creatures.length) return;
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            creatures: filtered
+          }
+        };
+        this.updateEncounterXpFromCreatures();
+      }
+      updateEncounterXpFromCreatures() {
+        const session = this.persisted.session;
+        if (!session) return;
+        const xpByCr = {
+          0: 10,
+          0.125: 25,
+          0.25: 50,
+          0.5: 100,
+          1: 200,
+          2: 450,
+          3: 700,
+          4: 1100,
+          5: 1800,
+          6: 2300,
+          7: 2900,
+          8: 3900,
+          9: 5e3,
+          10: 5900,
+          11: 7200,
+          12: 8400,
+          13: 1e4,
+          14: 11500,
+          15: 13e3,
+          16: 15e3,
+          17: 18e3,
+          18: 2e4,
+          19: 22e3,
+          20: 25e3,
+          21: 33e3,
+          22: 41e3,
+          23: 5e4,
+          24: 62e3,
+          25: 75e3,
+          26: 9e4,
+          27: 105e3,
+          28: 12e4,
+          29: 135e3,
+          30: 155e3
+        };
+        const totalXp = session.creatures.reduce((sum, creature) => {
+          const xpPerCreature = xpByCr[creature.cr] ?? 0;
+          return sum + xpPerCreature * creature.count;
+        }, 0);
+        this.setEncounterXp(totalXp);
+        this.emit();
+      }
       setEncounterXp(value) {
         const sanitized = sanitizeNonNegativeNumber(value);
         if (sanitized === this.persisted.xp.encounterXp) return;
@@ -5466,7 +5571,8 @@ var init_presenter = __esm({
             session: {
               event,
               notes: "",
-              status: "pending"
+              status: "pending",
+              creatures: []
             }
           };
         } else {
@@ -5511,11 +5617,17 @@ var init_presenter = __esm({
           return null;
         }
         const status = session.status === "resolved" ? "resolved" : "pending";
+        const creatures = (session.creatures ?? []).map((creature) => ({
+          ...creature,
+          count: Math.max(1, Math.floor(creature.count)),
+          cr: Math.max(0, creature.cr)
+        }));
         return {
           event: session.event,
           notes: session.notes ?? "",
           status,
-          resolvedAt: session.resolvedAt ?? null
+          resolvedAt: session.resolvedAt ?? null,
+          creatures
         };
       }
       static normaliseXpState(xp) {

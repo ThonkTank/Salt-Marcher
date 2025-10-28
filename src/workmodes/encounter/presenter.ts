@@ -16,6 +16,7 @@ import {
     setEncounterXp as storeSetEncounterXp,
     subscribeEncounterXpState,
     subscribeToEncounterEvents,
+    type EncounterCreature,
     type EncounterEvent,
     type EncounterPartyMember,
     type EncounterRuleScope,
@@ -36,6 +37,7 @@ export interface EncounterSessionState {
     notes: string;
     status: EncounterResolutionStatus;
     resolvedAt?: string | null;
+    creatures: EncounterCreature[];
 }
 
 export type EncounterResolutionStatus = "pending" | "resolved";
@@ -172,6 +174,93 @@ export class EncounterPresenter {
         this.emit();
     }
 
+    addCreature(creature: EncounterCreature) {
+        const session = this.persisted.session;
+        if (!session) return;
+        const sanitized: EncounterCreature = {
+            ...creature,
+            count: Math.max(1, Math.floor(creature.count)),
+            cr: Math.max(0, creature.cr),
+        };
+        const existing = session.creatures.find((c) => c.id === sanitized.id);
+        if (existing) {
+            this.updateCreature(sanitized.id, { count: existing.count + sanitized.count });
+            return;
+        }
+        this.persisted = {
+            ...this.persisted,
+            session: {
+                ...session,
+                creatures: [...session.creatures, sanitized],
+            },
+        };
+        this.updateEncounterXpFromCreatures();
+    }
+
+    updateCreature(id: string, patch: Partial<EncounterCreature>) {
+        const session = this.persisted.session;
+        if (!session) return;
+        const index = session.creatures.findIndex((c) => c.id === id);
+        if (index === -1) return;
+        const existing = session.creatures[index];
+        const updated: EncounterCreature = {
+            ...existing,
+            ...patch,
+            count: patch.count !== undefined ? Math.max(1, Math.floor(patch.count)) : existing.count,
+            cr: patch.cr !== undefined ? Math.max(0, patch.cr) : existing.cr,
+        };
+        const nextCreatures = [...session.creatures];
+        nextCreatures[index] = updated;
+        this.persisted = {
+            ...this.persisted,
+            session: {
+                ...session,
+                creatures: nextCreatures,
+            },
+        };
+        this.updateEncounterXpFromCreatures();
+    }
+
+    removeCreature(id: string) {
+        const session = this.persisted.session;
+        if (!session) return;
+        const filtered = session.creatures.filter((c) => c.id !== id);
+        if (filtered.length === session.creatures.length) return;
+        this.persisted = {
+            ...this.persisted,
+            session: {
+                ...session,
+                creatures: filtered,
+            },
+        };
+        this.updateEncounterXpFromCreatures();
+    }
+
+    private updateEncounterXpFromCreatures() {
+        const session = this.persisted.session;
+        if (!session) return;
+
+        // Calculate XP based on CR and count
+        // D&D 5e XP by CR lookup table
+        const xpByCr: Record<number, number> = {
+            0: 10, 0.125: 25, 0.25: 50, 0.5: 100,
+            1: 200, 2: 450, 3: 700, 4: 1100, 5: 1800,
+            6: 2300, 7: 2900, 8: 3900, 9: 5000, 10: 5900,
+            11: 7200, 12: 8400, 13: 10000, 14: 11500, 15: 13000,
+            16: 15000, 17: 18000, 18: 20000, 19: 22000, 20: 25000,
+            21: 33000, 22: 41000, 23: 50000, 24: 62000, 25: 75000,
+            26: 90000, 27: 105000, 28: 120000, 29: 135000, 30: 155000,
+        };
+
+        const totalXp = session.creatures.reduce((sum, creature) => {
+            const xpPerCreature = xpByCr[creature.cr] ?? 0;
+            return sum + (xpPerCreature * creature.count);
+        }, 0);
+
+        this.setEncounterXp(totalXp);
+        this.emit();
+    }
+
     setEncounterXp(value: number) {
         const sanitized = sanitizeNonNegativeNumber(value);
         if (sanitized === this.persisted.xp.encounterXp) return;
@@ -261,17 +350,18 @@ export class EncounterPresenter {
     private applyEvent(event: EncounterEvent) {
         const prev = this.persisted.session;
         if (!prev || prev.event.id !== event.id) {
-            // New encounter: wipe notes/resolution state.
+            // New encounter: wipe notes/resolution state and creatures.
             this.persisted = {
                 ...this.persisted,
                 session: {
                     event,
                     notes: "",
                     status: "pending",
+                    creatures: [],
                 },
             };
         } else {
-            // Same encounter (e.g. view reopened) → keep notes/resolution.
+            // Same encounter (e.g. view reopened) → keep notes/resolution/creatures.
             this.persisted = {
                 ...this.persisted,
                 session: {
@@ -318,11 +408,17 @@ export class EncounterPresenter {
             return null;
         }
         const status: EncounterResolutionStatus = session.status === "resolved" ? "resolved" : "pending";
+        const creatures = (session.creatures ?? []).map((creature) => ({
+            ...creature,
+            count: Math.max(1, Math.floor(creature.count)),
+            cr: Math.max(0, creature.cr),
+        }));
         return {
             event: session.event,
             notes: session.notes ?? "",
             status,
             resolvedAt: session.resolvedAt ?? null,
+            creatures,
         };
     }
 

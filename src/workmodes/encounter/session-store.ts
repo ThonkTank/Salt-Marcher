@@ -43,6 +43,15 @@ export interface EncounterPartyMember {
     readonly currentXp?: number;
 }
 
+export interface EncounterCreature {
+    readonly id: string;
+    readonly name: string;
+    readonly count: number;
+    readonly cr: number;
+    readonly source: "library" | "custom";
+    readonly statblockPath?: string;
+}
+
 export type EncounterRuleScope = "xp" | "gold";
 
 export interface EncounterXpRule {
