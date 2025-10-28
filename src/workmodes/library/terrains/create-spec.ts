@@ -4,7 +4,7 @@
 import type { CreateSpec, AnyFieldSpec, DataSchema } from "../../../../features/data-manager/types";
 import type { TerrainData } from "./types";
 import { terrainToMarkdown } from "./serializer";
-import { TERRAIN_COLORS, SPEED_PRESETS } from "./constants";
+import { TERRAIN_COLORS, SPEED_PRESETS, TERRAIN_BIOME_TAGS, TERRAIN_DIFFICULTY_TAGS } from "./constants";
 
 // ============================================================================
 // SCHEMA WITH VALIDATION
@@ -51,6 +51,42 @@ const fields: AnyFieldSpec[] = [
     required: true,
     placeholder: "Wald",
     description: "Terrain name (leave empty for default/transparent terrain)",
+  },
+  {
+    id: "biome_tags",
+    label: "Biome Tags",
+    type: "tokens",
+    config: {
+      fields: [{
+        id: "value",
+        type: "select",
+        displayInChip: true,
+        editable: true,
+        suggestions: TERRAIN_BIOME_TAGS.map(tag => ({ key: tag, label: tag })),
+        placeholder: "Biome auswählen...",
+      }],
+      primaryField: "value",
+    },
+    default: [],
+    description: "Terrain classification (Forest, Mountain, etc.)",
+  },
+  {
+    id: "difficulty_tags",
+    label: "Difficulty Tags",
+    type: "tokens",
+    config: {
+      fields: [{
+        id: "value",
+        type: "select",
+        displayInChip: true,
+        editable: true,
+        suggestions: TERRAIN_DIFFICULTY_TAGS.map(tag => ({ key: tag, label: tag })),
+        placeholder: "Difficulty auswählen...",
+      }],
+      primaryField: "value",
+    },
+    default: [],
+    description: "Movement difficulty (Easy, Difficult, Very Difficult)",
   },
   {
     id: "color",
@@ -107,7 +143,7 @@ export const terrainSpec: CreateSpec<TerrainData> = {
     pathTemplate: "SaltMarcher/Terrains/{name}.md",
     filenameFrom: "name",
     directory: "SaltMarcher/Terrains",
-    frontmatter: ["name", "display_name", "color", "speed"],
+    frontmatter: ["name", "display_name", "biome_tags", "difficulty_tags", "color", "speed"],
     bodyTemplate: (data) => terrainToMarkdown(data as TerrainData),
   },
   ui: {
@@ -130,13 +166,15 @@ export const terrainSpec: CreateSpec<TerrainData> = {
       },
     ],
     filters: [
+      { id: "biome_tags", field: "biome_tags", label: "Biome", type: "array" },
+      { id: "difficulty_tags", field: "difficulty_tags", label: "Difficulty", type: "array" },
       { id: "speed", field: "speed", label: "Speed", type: "number" },
     ],
     sorts: [
       { id: "name", label: "Name", field: "name" },
       { id: "speed", label: "Speed", field: "speed" },
     ],
-    search: ["name", "color"],
+    search: ["name", "biome_tags", "difficulty_tags", "color"],
   },
   // Loader configuration - uses auto-loader by default
   loader: {},

@@ -13,6 +13,7 @@ export type EquipmentData = {
     // === Basic Information ===
     name: string;
     type: EquipmentType;
+    tags?: Array<{ value: string }>;  // Classification tags: Armor, Weapon, Tool, Gear, Mount, Trade Goods
     cost?: string;              // e.g. "15 GP", "2 SP"
     weight?: string;            // e.g. "3 lb.", "1/4 lb.", "—"
     description?: string;       // General description

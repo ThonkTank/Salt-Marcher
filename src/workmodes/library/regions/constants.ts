@@ -1,6 +1,48 @@
 // src/workmodes/library/entities/regions/constants.ts
 // Constants and types for region creation UI
 
+// Region tags (for classification and filtering)
+// Based on docs/TAGS.md
+export const REGION_BIOME_TAGS = [
+  "Forest",
+  "Mountain",
+  "Coastal",
+  "Desert",
+  "Arctic",
+  "Swamp",
+  "Grassland",
+  "Hills",
+  "Urban",
+  "Underground",
+] as const;
+export type RegionBiomeTag = (typeof REGION_BIOME_TAGS)[number];
+
+export const REGION_DANGER_TAGS = [
+  "Safe",
+  "Moderate",
+  "Dangerous",
+  "Deadly",
+] as const;
+export type RegionDangerTag = (typeof REGION_DANGER_TAGS)[number];
+
+export const REGION_CLIMATE_TAGS = [
+  "Arctic",
+  "Cold",
+  "Temperate",
+  "Warm",
+  "Hot",
+  "Desert",
+] as const;
+export type RegionClimateTag = (typeof REGION_CLIMATE_TAGS)[number];
+
+export const REGION_SETTLEMENT_TAGS = [
+  "Civilized",
+  "Frontier",
+  "Wilderness",
+  "Ruins",
+] as const;
+export type RegionSettlementTag = (typeof REGION_SETTLEMENT_TAGS)[number];
+
 export const ENCOUNTER_ODDS_PRESETS = [
   { value: 0, label: "No encounters" },
   { value: 20, label: "Very rare (1/20)" },

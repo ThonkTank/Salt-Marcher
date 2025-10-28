@@ -1,6 +1,29 @@
 // src/workmodes/library/entities/terrains/constants.ts
 // Constants and types for terrain creation UI
 
+// Terrain tags (for classification and filtering)
+// Based on docs/TAGS.md
+export const TERRAIN_BIOME_TAGS = [
+  "Forest",
+  "Mountain",
+  "Coastal",
+  "Desert",
+  "Arctic",
+  "Swamp",
+  "Grassland",
+  "Hills",
+  "Urban",
+  "Underground",
+] as const;
+export type TerrainBiomeTag = (typeof TERRAIN_BIOME_TAGS)[number];
+
+export const TERRAIN_DIFFICULTY_TAGS = [
+  "Easy",
+  "Difficult",
+  "Very Difficult",
+] as const;
+export type TerrainDifficultyTag = (typeof TERRAIN_DIFFICULTY_TAGS)[number];
+
 export const TERRAIN_COLORS = [
   "transparent",
   "#2e7d32", // Wald grün

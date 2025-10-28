@@ -42,3 +42,15 @@ export const CRAFT_SUGGESTIONS = [
   "Soap",
 ] as const;
 export type CraftSuggestion = (typeof CRAFT_SUGGESTIONS)[number];
+
+// Equipment tags (for classification and filtering)
+// Based on docs/TAGS.md
+export const EQUIPMENT_TAGS = [
+  "Armor",
+  "Weapon",
+  "Tool",
+  "Gear",
+  "Mount",
+  "Trade Goods",
+] as const;
+export type EquipmentTag = (typeof EQUIPMENT_TAGS)[number];

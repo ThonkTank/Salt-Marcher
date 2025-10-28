@@ -4,7 +4,7 @@
 import type { CreateSpec, AnyFieldSpec, DataSchema } from "../../../../features/data-manager/types";
 import type { RegionData } from "./types";
 import { regionToMarkdown } from "./serializer";
-import { ENCOUNTER_ODDS_PRESETS, TERRAIN_SUGGESTIONS } from "./constants";
+import { ENCOUNTER_ODDS_PRESETS, TERRAIN_SUGGESTIONS, REGION_BIOME_TAGS, REGION_DANGER_TAGS, REGION_CLIMATE_TAGS, REGION_SETTLEMENT_TAGS } from "./constants";
 
 // ============================================================================
 // SCHEMA
@@ -45,6 +45,78 @@ const fields: AnyFieldSpec[] = [
     required: true,
     placeholder: "Saltmarsh",
     description: "Name of the region",
+  },
+  {
+    id: "biome_tags",
+    label: "Biome Tags",
+    type: "tokens",
+    config: {
+      fields: [{
+        id: "value",
+        type: "select",
+        displayInChip: true,
+        editable: true,
+        suggestions: REGION_BIOME_TAGS.map(tag => ({ key: tag, label: tag })),
+        placeholder: "Biome auswählen...",
+      }],
+      primaryField: "value",
+    },
+    default: [],
+    description: "Terrain classification (Forest, Mountain, Coastal, etc.)",
+  },
+  {
+    id: "danger_tags",
+    label: "Danger Tags",
+    type: "tokens",
+    config: {
+      fields: [{
+        id: "value",
+        type: "select",
+        displayInChip: true,
+        editable: true,
+        suggestions: REGION_DANGER_TAGS.map(tag => ({ key: tag, label: tag })),
+        placeholder: "Danger auswählen...",
+      }],
+      primaryField: "value",
+    },
+    default: [],
+    description: "Danger level (Safe, Moderate, Dangerous, Deadly)",
+  },
+  {
+    id: "climate_tags",
+    label: "Climate Tags",
+    type: "tokens",
+    config: {
+      fields: [{
+        id: "value",
+        type: "select",
+        displayInChip: true,
+        editable: true,
+        suggestions: REGION_CLIMATE_TAGS.map(tag => ({ key: tag, label: tag })),
+        placeholder: "Climate auswählen...",
+      }],
+      primaryField: "value",
+    },
+    default: [],
+    description: "Climate type (Arctic, Cold, Temperate, Warm, Hot, Desert)",
+  },
+  {
+    id: "settlement_tags",
+    label: "Settlement Tags",
+    type: "tokens",
+    config: {
+      fields: [{
+        id: "value",
+        type: "select",
+        displayInChip: true,
+        editable: true,
+        suggestions: REGION_SETTLEMENT_TAGS.map(tag => ({ key: tag, label: tag })),
+        placeholder: "Settlement auswählen...",
+      }],
+      primaryField: "value",
+    },
+    default: [],
+    description: "Settlement type (Civilized, Frontier, Wilderness, Ruins)",
   },
   {
     id: "terrain",
@@ -91,7 +163,7 @@ export const regionSpec: CreateSpec<RegionData> = {
     pathTemplate: "SaltMarcher/Regions/{name}.md",
     filenameFrom: "name",
     directory: "SaltMarcher/Regions",
-    frontmatter: ["name", "terrain", "encounter_odds", "description"],
+    frontmatter: ["name", "biome_tags", "danger_tags", "climate_tags", "settlement_tags", "terrain", "encounter_odds", "description"],
     bodyTemplate: (data) => regionToMarkdown(data as RegionData),
   },
   ui: {
@@ -117,6 +189,10 @@ export const regionSpec: CreateSpec<RegionData> = {
       },
     ],
     filters: [
+      { id: "biome_tags", field: "biome_tags", label: "Biome", type: "array" },
+      { id: "danger_tags", field: "danger_tags", label: "Danger", type: "array" },
+      { id: "climate_tags", field: "climate_tags", label: "Climate", type: "array" },
+      { id: "settlement_tags", field: "settlement_tags", label: "Settlement", type: "array" },
       { id: "terrain", field: "terrain", label: "Terrain", type: "string" },
       { id: "encounter_odds", field: "encounter_odds", label: "Encounter Rate", type: "number" },
     ],
@@ -134,7 +210,7 @@ export const regionSpec: CreateSpec<RegionData> = {
         },
       },
     ],
-    search: ["name", "terrain", "description"],
+    search: ["name", "biome_tags", "danger_tags", "climate_tags", "settlement_tags", "terrain", "description"],
   },
   // Loader configuration - uses auto-loader by default
   loader: {},

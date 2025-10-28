@@ -4,7 +4,7 @@
 import type { CreateSpec, AnyFieldSpec, DataSchema } from "../../../../features/data-manager/types";
 import type { EquipmentData, EquipmentType } from "./types";
 import { equipmentToMarkdown } from "./serializer";
-import { EQUIPMENT_TYPES, WEAPON_CATEGORIES, WEAPON_TYPES, WEAPON_PROPERTIES, ARMOR_CATEGORIES, TOOL_CATEGORIES, CRAFT_SUGGESTIONS } from "./constants";
+import { EQUIPMENT_TYPES, WEAPON_CATEGORIES, WEAPON_TYPES, WEAPON_PROPERTIES, ARMOR_CATEGORIES, TOOL_CATEGORIES, CRAFT_SUGGESTIONS, EQUIPMENT_TAGS } from "./constants";
 
 // ============================================================================
 // SCHEMA
@@ -44,6 +44,24 @@ const basicInfoFields: AnyFieldSpec[] = [
             label: type.charAt(0).toUpperCase() + type.slice(1),
         })),
         default: "weapon",
+    },
+    {
+        id: "tags",
+        label: "Tags",
+        type: "tokens",
+        config: {
+            fields: [{
+                id: "value",
+                type: "select",
+                displayInChip: true,
+                editable: true,
+                suggestions: EQUIPMENT_TAGS.map(tag => ({ key: tag, label: tag })),
+                placeholder: "Tag auswählen...",
+            }],
+            primaryField: "value",
+        },
+        default: [],
+        description: "Classification tags for filtering and organization",
     },
     {
         id: "cost",
@@ -320,7 +338,7 @@ export const equipmentSpec: CreateSpec<EquipmentData> = {
         directory: "SaltMarcher/Equipment",
         preserveCase: true,
         frontmatter: [
-            "name", "type", "cost", "weight",
+            "name", "type", "tags", "cost", "weight",
             // Weapon fields
             "weapon_category", "weapon_type", "damage", "properties", "mastery",
             // Armor fields
@@ -341,8 +359,8 @@ export const equipmentSpec: CreateSpec<EquipmentData> = {
             {
                 id: "basic",
                 label: "Grunddaten",
-                description: "Name, Typ, Kosten und Gewicht",
-                fieldIds: ["name", "type", "cost", "weight"],
+                description: "Name, Typ, Tags, Kosten und Gewicht",
+                fieldIds: ["name", "type", "tags", "cost", "weight"],
             },
             {
                 id: "weapon",
@@ -399,6 +417,7 @@ export const equipmentSpec: CreateSpec<EquipmentData> = {
         ],
         filters: [
             { id: "type", field: "type", label: "Type", type: "string" },
+            { id: "tags", field: "tags", label: "Tags", type: "array" },
             {
                 id: "role",
                 field: "role",
@@ -426,7 +445,7 @@ export const equipmentSpec: CreateSpec<EquipmentData> = {
                 },
             },
         ],
-        search: ["type"],
+        search: ["type", "tags"],
     },
     // Loader configuration - replaces loader.ts (uses auto-loader by default)
     loader: {
