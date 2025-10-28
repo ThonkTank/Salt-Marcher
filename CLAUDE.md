@@ -324,9 +324,11 @@ Ziele:
 | Phase 1 – Core State Platform | ⚙️ 75% fertig | Vereinheitlichte Stores & DevKit-Diagnostics | Library-Repos migrieren, Seed-System |
 | **Phase 2.1** – Faction Territory Marking | ✅ Abgeschlossen | Fraktionen auf Karte zuweisen | ✅ Abgeschlossen |
 | **Phase 2.2** – Faction Context in Sessions | ✅ Basis fertig | Faction-Kontext zu Encounters | ✅ Abgeschlossen |
-| **Phase 2.4** – Encounter Composition MVP | ✅ Abgeschlossen | Creature Selection & XP Calc | Phase 2.5 starten |
-| **Phase 2.5** – Faction Filtering | ⏳ Geplant | Faction-basiertes Filtering | Creature-List erweitern |
-| Phase 2.3 – Member Management (Later) | ⏳ Geplant | Mitglieder-Tracking, Subfraktionen | Nach Phase 2.5 |
+| **Phase 2.4** – Encounter Composition MVP | ✅ Abgeschlossen | Creature Selection & XP Calc | ✅ Abgeschlossen |
+| **Phase 2.7** – HP & Initiative Tracking | ⏳ Geplant | Combat führen können | Combat Tracking UI ← **NEXT** |
+| **Phase 2.6** – Random Encounter Generation | ⏳ Geplant | Auto-Generate Creatures | Generator-Logic |
+| **Phase 2.5** – Faction Filtering | ⏳ Geplant | Filter Creatures by Faction | Nice-to-have QoL |
+| Phase 2.3 – Member Management (Later) | ⏳ Geplant | Mitglieder-Tracking, Subfraktionen | Nach Phase 2.6 |
 | Phase 3 – Orte & Dungeons | ⏳ Geplant | Orts-Hierarchie & Dungeon-Tools | Kickoff nach Phase 2 |
 | Phase 4 – Event Engine & Automation | ⏳ Geplant | Kalender-Events, Automationen | Spezifikation finalisieren |
 | Phase 5 – Calculator & Loot Services | ⏳ Geplant | Encounter-/Loot-Automation | Design-Doc vorbereiten |
@@ -334,7 +336,7 @@ Ziele:
 
 #### Onboarding Snapshot
 
-**Aktueller Fokus:** Phase 2.4 ✅ Abgeschlossen → Phase 2.5 (Faction Filtering) ← **NEXT**
+**Aktueller Fokus:** Phase 2.4 ✅ Abgeschlossen → **Phase 2.7 (HP & Initiative Tracking)** ← **NEXT** (Vertical Slice Completion)
 
 - **Phase 0 – Taxonomie & Schemas** ✅: Laufende Referenz in `docs/TAGS.md`, Validatoren unter `src/domain/schemas.ts`, Beispiel-Dateien in `samples/**`.
 - **Phase 1 – Core State Platform** ⚙️ 75%: State-Inspector & Persistent Stores (`src/services/state/**`, `src/features/maps/state/{tile,terrain,region}-store.ts`), Map-Repository Cleanup (`src/features/maps/data/map-store-registry.ts`).
@@ -573,11 +575,74 @@ Dies ist der kritische Blocker für den gesamten Encounter-Workflow. Ohne Creatu
 
 ---
 
-### Phase 2.5 – Faction-Based Creature Filtering
-**Status:** ⏳ Geplant · **Target:** Nach Phase 2.4 · **Priority:** 🟡 Important
+### Phase 2.7 – HP & Initiative Tracking
+**Status:** ⏳ 0% · **Target:** KW 46 · **Priority:** 🔴 Kritisch (Vertical Slice Completion)
 
 **User Story:**
-> "Als GM möchte ich Creatures nach Faction-Tags filtern, um kontextuell passende Begegnungen zu erstellen."
+> "Als GM kann ich während eines Encounters HP und Initiative tracken, um den Combat zu leiten."
+
+**Problem:**
+Aktuell kann der User Encounters komponieren und XP berechnen, aber **nicht spielen**. Es fehlt das Combat-Tracking, um Encounters tatsächlich zu leiten. Dies komplettiert den End-to-End Workflow: Travel → Compose → Calculate → **PLAY** → Resolve.
+
+**Acceptance Criteria (MVP):**
+1. Initiative-Order wird angezeigt (sortierbar, mit drag & drop)
+2. User kann HP tracken (current/max, damage/heal buttons)
+3. HP-Änderungen sind persistent im Session-State
+4. User kann Creatures als "defeated" markieren
+5. Status wird visuell klar dargestellt (healthy/bloodied/defeated)
+6. Empty State: "Click 'Start Combat' to begin tracking"
+
+**NOT in Scope (Later Phases):**
+- ❌ Automated Initiative rolls (User gibt Werte manuell ein)
+- ❌ Complex status effects (Poisoned, Stunned etc. - Phase 2.8)
+- ❌ Damage resistance calculations (User rechnet manuell)
+- ❌ Spell effect duration tracking
+- ❌ Lair actions, legendary actions
+
+**Files to Create/Modify:**
+- `src/workmodes/encounter/combat-tracker.ts` (NEW - UI Component)
+- `src/workmodes/encounter/session-store.ts` (Extend: CombatState interface)
+- `src/workmodes/encounter/presenter.ts` (Add: combat tracking methods)
+- `src/workmodes/encounter/workspace-view.ts` (Integrate combat tracker)
+- `styles.css` (Combat tracker styling)
+
+**Definition of Done:**
+- [ ] User kann Initiative-Order eingeben/sortieren
+- [ ] User kann HP damage/healing eingeben
+- [ ] HP wird persistent gespeichert
+- [ ] Visual feedback (health bars, defeated state)
+- [ ] Combat State ist Teil von Session-State
+- [ ] Build erfolgreich, keine TypeScript-Fehler
+- [ ] Smoke Test: Compose → Start Combat → Track HP → Resolve
+
+**Rationale:**
+Dies ist der **kritischste nächste Schritt** gemäß Vertical Slice Principle. Phase 2.7 komplettiert den End-to-End Workflow und liefert ein **nutzbares Encounter-System**. Alle bisherigen Features (Faction-Context, Creature-Selection, XP-Calc) sind nur dann wertvoll, wenn der User Encounters tatsächlich spielen kann.
+
+---
+
+### Phase 2.6 – Random Encounter Generation
+**Status:** ⏳ Geplant · **Target:** Nach Phase 2.7 · **Priority:** 🟡 Important
+
+**User Story:**
+> "Als GM möchte ich Random Encounters basierend auf Location, Faction und Terrain automatisch generieren lassen."
+
+**Depends on:** Phase 2.7 (Combat Tracking muss existieren - sonst nutzlos)
+
+**Scope:**
+- Generator liest Faction/Terrain/Region vom aktuellen Hex
+- Wählt Creatures aus Library basierend auf Tags
+- Generiert Count basierend auf Party Level (CR Budget)
+- Automatisches XP-Balancing
+
+**Rationale:** Automatisiert den in Phase 2.7 fertiggestellten, spielbaren Encounter-Workflow.
+
+---
+
+### Phase 2.5 – Faction-Based Creature Filtering
+**Status:** ⏳ Geplant · **Target:** Nach Phase 2.6 · **Priority:** 🟢 Nice-to-have (QoL)
+
+**User Story:**
+> "Als GM möchte ich Creatures nach Faction-Tags filtern, um kontextuell passende Begegnungen schneller zu finden."
 
 **Acceptance Criteria:**
 1. Creature-Liste zeigt Faction-Filter-Dropdown
@@ -585,7 +650,10 @@ Dies ist der kritische Blocker für den gesamten Encounter-Workflow. Ohne Creatu
 3. Scoring: Exact match > Partial match > No match
 4. UI zeigt Relevance-Indicator neben Creatures
 
-**Depends on:** Phase 2.4 (Creature-Selection muss existieren)
+**Depends on:** Phase 2.4 (Creature-Selection existiert ✅)
+
+**Rationale:**
+Quality-of-Life Feature, das Creature-Selection verbessert, aber nicht kritisch ist. User kann auch ohne Filter Creatures finden (Suchfeld existiert). Macht mehr Sinn **nach** Random Generation, da der Generator bereits automatisch filtert.
 
 ---
 
@@ -608,32 +676,45 @@ Dies ist der kritische Blocker für den gesamten Encounter-Workflow. Ohne Creatu
 ### Phase 2 – Overall Progress
 
 **Phase 2.1:** ✅ Abgeschlossen (100%) · User kann Fraktionen auf Karte zuweisen
-**Phase 2.2:** ⚙️ Teilweise abgeschlossen (40%) · Faction-Kontext fließt durch System
+**Phase 2.2:** ✅ Abgeschlossen (~90%) · Faction-Kontext fließt durch System
 **Phase 2.4:** ✅ Abgeschlossen (100%) · Encounter Creature Selection & Composition
-**Phase 2.5:** ⏳ Geplant · Faction-basiertes Filtering (nach 2.4) ← **NEXT**
-**Phase 2.3:** ⏳ Geplant · Member Management (nach Phase 3)
+**Phase 2.7:** ⏳ Geplant (0%) · HP & Initiative Tracking ← **NEXT** (Vertical Slice!)
+**Phase 2.6:** ⏳ Geplant (0%) · Random Encounter Generation
+**Phase 2.5:** ⏳ Geplant (0%) · Faction-basiertes Filtering (QoL)
+**Phase 2.3:** ⏳ Geplant · Member Management (Later)
 
-**Kritischer Pfad zum funktionierenden Encounter-System:**
+**Kritischer Pfad zum funktionierenden Encounter-System (Vertical Slice):**
 1. ✅ **Phase 2.1:** Fraktionen auf Karte zuweisen
 2. ✅ **Phase 2.2:** Faction-Kontext zu Encounters
 3. ✅ **Phase 2.4:** Creature Composition (MVP)
-4. ⏳ **Phase 2.5:** Faction-basiertes Filtering ← **NEXT**
-5. ⏳ **Phase 2.6:** Random Encounter Generation
-6. ⏳ **Phase 2.7:** HP & Initiative Tracking
+4. 🔴 **Phase 2.7:** HP & Initiative Tracking ← **NEXT** (Komplettiert Slice!)
+5. 🟡 **Phase 2.6:** Random Encounter Generation (Automatisierung)
+6. 🟢 **Phase 2.5:** Faction-basiertes Filtering (Nice-to-have QoL)
 
-**Phase 2 MVP ist erreicht wenn:**
+**Phase 2 MVP ist erreicht wenn (Vertical Slice):**
 - [x] **Phase 2.1 DoD erfüllt:** User kann Fraktionen auf Karte zuweisen ✅
 - [x] **Phase 2.2 Basis-Integration:** Faction-Kontext fließt zum Encounter System ✅
 - [x] **Phase 2.4 DoD erfüllt:** User kann Creatures zu Encounters hinzufügen ✅
-- [ ] **Phase 2.5 DoD erfüllt:** Creatures nach Faction filtern ← **NEXT**
-- [ ] **E2E-Test läuft grün:** Workflow: Travel → Encounter → Add Creatures → Calculate XP
+- [ ] **Phase 2.7 DoD erfüllt:** User kann Encounters spielen (HP/Initiative) ← **NEXT**
+- [ ] **Phase 2.6 DoD erfüllt:** Random Encounters auto-generieren
+- [ ] **Phase 2.5 DoD erfüllt:** Creatures nach Faction filtern (Optional QoL)
+- [ ] **E2E-Test läuft grün:** Workflow: Travel → Encounter → Add Creatures → Combat → Resolve
 - [ ] **Dokumentation aktualisiert:**
   - [x] `docs/storage-formats.md`: Faction-Felder beschrieben ✅
   - [x] `samples/fraktionen/`: Mindestens 2 Beispiel-Fraktionen ✅
   - [x] `CLAUDE.md`: Phase 2.4 als abgeschlossen markiert ✅
-  - [ ] `QUICK_REFERENCE.md`: Encounter-Workflow dokumentiert (nach 2.5)
+  - [ ] `QUICK_REFERENCE.md`: Encounter-Workflow dokumentiert (nach 2.7)
 
-**Aktuelle Prioritäten (2025-10-28):**
+**Aktuelle Prioritäten (2025-10-28, revidiert nach Vertical Slice Analyse):**
+
+**RATIONALE FÜR UMPRIORISIERUNG:**
+Die ursprüngliche Reihenfolge (2.4 → 2.5 → 2.6 → 2.7) widerspricht dem **Vertical Slice Principle**:
+- Phase 2.5 (Faction Filter) ist ein **horizontaler Layer** (verbessert Creature-Selection)
+- Phase 2.7 (Combat Tracking) **komplettiert den End-to-End Workflow**
+- Nach 2.7 haben wir ein **nutzbares Encounter-System**, nach 2.5 nur besseren Filter
+
+**Neue Prioritäten (Vertical Slice konform):**
+
 1. ✅ **Phase 2.4 - Encounter Composition MVP** (ABGESCHLOSSEN)
    - ✅ Creature-Selection UI (EncounterCreatureList)
    - ✅ Add/Remove Creatures mit Count (EncounterCompositionView)
@@ -641,12 +722,22 @@ Dies ist der kritische Blocker für den gesamten Encounter-Workflow. Ohne Creatu
    - ✅ Workspace Integration & CSS Styling
    - **Commits:** 469344c, 1d71bf2
 
-2. 🟡 **Phase 2.5 - Faction Filtering** (Important, ~1 Tag) ← **NEXT**
-   - Faction-basiertes Creature-Filtering
-   - Relevance-Scoring
-   - **Rationale:** Vervollständigt Faction-Integration
+2. 🔴 **Phase 2.7 - HP & Initiative Tracking** (KRITISCH, ~2-3 Tage) ← **NEXT**
+   - **Problem:** User kann Encounters komponieren, aber nicht spielen
+   - **Impact:** Komplettiert End-to-End Workflow (Travel → Compose → Calculate → **PLAY**)
+   - **Rationale:** Vertical Slice Completion - liefert nutzbares Feature
+   - **Scope:** Initiative Order, HP Tracking, Basic Status, Persistent State
 
-3. 🟢 **Phase 1 - Store Migration** (Foundation, ~2 Tage)
+3. 🟡 **Phase 2.6 - Random Encounter Generation** (Important, ~2 Tage)
+   - Automatisiert Creature-Selection basierend auf Faction/Terrain/Region
+   - Baut auf spiel barem Encounter-System auf
+   - **Rationale:** Automation des funktionierenden Workflows
+
+4. 🟢 **Phase 2.5 - Faction Filtering** (Nice-to-have QoL, ~1 Tag)
+   - Faction-basiertes Creature-Filtering
+   - **Rationale:** Quality-of-Life, nicht kritisch für Core-Workflow
+
+5. 🟢 **Phase 1 - Store Migration** (Foundation, ~2 Tage)
    - Library-Repos auf Store-Pattern
    - Seed-System für Tests
    - **Rationale:** Stärkt Foundation, kein direktes User-Feature
@@ -709,9 +800,9 @@ Dies ist der kritische Blocker für den gesamten Encounter-Workflow. Ohne Creatu
 **Phase 0** ✅ Abgeschlossen
 **Phase 1** ⚙️ 75% fertig – Test-Suite repariert (49→14 failures), Library-Repos migrieren steht aus
 **Phase 2.1** ✅ Abgeschlossen (100%) – Cartographer Brush & Inspector mit Faction-Support
-**Phase 2.2** ✅ Basis abgeschlossen (40%) – Faction-Kontext fließt zu Encounters
+**Phase 2.2** ✅ Abgeschlossen (~90%) – Faction-Kontext fließt zu Encounters
 **Phase 2.4** ✅ Abgeschlossen (100%) – Encounter Creature Selection & Composition
-**Phase 2.5** ⏳ Geplant (0%) – Faction-basiertes Filtering ← **NÄCHSTER SCHRITT**
+**Phase 2.7** ⏳ Geplant (0%) – HP & Initiative Tracking ← **NÄCHSTER SCHRITT** (Vertical Slice!)
 
 ### Prioritäten für diese Woche (KW 46)
 
@@ -729,14 +820,22 @@ Dies ist der kritische Blocker für den gesamten Encounter-Workflow. Ohne Creatu
    - ✅ Integration in workspace-view
    - **Commits:** 469344c (feat), 1d71bf2 (build)
 
-**Nächstes:**
-6. ⏳ **Phase 2.5 - Faction-Based Filtering** (~1 Tag)
-   - Creature-Liste mit Faction-Filter-Dropdown
-   - Relevance-Scoring (Exact > Partial > No match)
-   - UI-Indicator für Relevanz
+**Nächstes (Vertical Slice konform):**
+6. 🔴 **Phase 2.7 - HP & Initiative Tracking** (~2-3 Tage) ← **HÖCHSTE PRIORITÄT**
+   - **Rationale:** Komplettiert End-to-End Encounter-Workflow
+   - **Impact:** User kann Encounters endlich SPIELEN
+   - Initiative-Order UI (sortierbar, drag & drop)
+   - HP Tracking (current/max, damage/heal buttons)
+   - Persistent Combat State
+   - Visual feedback (health bars, defeated state)
 
 **Danach:**
-7. ⏳ Phase 1 Completion - Store Migration (~2 Tage)
+7. 🟡 **Phase 2.6 - Random Encounter Generation** (~2 Tage)
+   - Automatisiert den in 2.7 fertiggestellten, spielbaren Workflow
+8. 🟢 **Phase 2.5 - Faction Filtering** (~1 Tag)
+   - Nice-to-have QoL Verbesserung
+9. 🟢 **Phase 1 Completion - Store Migration** (~2 Tage)
+   - Foundation strengthening
 
 ### Abgeschlossene Commits (2025-10-28)
 
