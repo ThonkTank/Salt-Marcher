@@ -47,10 +47,16 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The tough has Advantage on an attack roll against a creature if at least one of the tough's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The tough makes two attacks, using Warhammer or Heavy Crossbow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Warhammer
     entryType: attack
@@ -67,6 +73,9 @@ entries:
       onHit:
         other: If the target is a Large or smaller creature, the tough pushes the target up to 10 feet straight away from itself.
       additionalEffects: If the target is a Large or smaller creature, the tough pushes the target up to 10 feet straight away from itself.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Heavy Crossbow
     entryType: attack
@@ -80,6 +89,9 @@ entries:
           type: Piercing
           average: 13
       range: 100/400 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Tough Boss

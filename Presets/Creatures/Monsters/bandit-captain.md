@@ -53,6 +53,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The bandit makes two attacks, using Scimitar and Pistol in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Scimitar
     entryType: attack
@@ -66,6 +69,9 @@ entries:
           type: Slashing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Pistol
     entryType: attack
@@ -79,6 +85,9 @@ entries:
           type: Piercing
           average: 8
       range: 30/90 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Bandit Captain

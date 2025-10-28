@@ -61,6 +61,9 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The sphinx has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Rend
     entryType: attack
@@ -78,6 +81,9 @@ entries:
           type: Radiant
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Sphinx of Wonder

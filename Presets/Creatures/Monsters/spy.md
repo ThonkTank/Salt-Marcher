@@ -72,6 +72,9 @@ entries:
           type: Poison
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Hand Crossbow
     entryType: attack
@@ -89,10 +92,16 @@ entries:
           type: Poison
           average: 7
       range: 30/120 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Cunning Action
     entryType: special
     text: The spy takes the Dash, Disengage, or Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Spy

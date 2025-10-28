@@ -52,6 +52,9 @@ entries:
     name: Spider Climb
     entryType: special
     text: The roper can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -63,6 +66,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -76,6 +82,9 @@ entries:
           type: Piercing
           average: 17
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tentacle
     entryType: attack
@@ -85,10 +94,16 @@ entries:
       bonus: 7
       damage: []
       reach: 60 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Reel
     entryType: special
     text: The roper pulls each creature Grappled by it up to 30 feet straight toward it.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Roper

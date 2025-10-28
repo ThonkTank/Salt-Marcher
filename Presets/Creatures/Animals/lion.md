@@ -49,10 +49,16 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The lion has Advantage on an attack roll against a creature if at least one of the lion's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Running Leap
     entryType: special
     text: With a 10-foot running start, the lion can Long Jump up to 25 feet.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -70,6 +76,9 @@ entries:
           with:
             type: attack
             name: Roar
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -83,6 +92,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Roar
     entryType: save
@@ -103,6 +115,9 @@ entries:
                 trigger: the start of the lion's next turn
           other: The target has the Frightened condition until the start of the lion's next turn.
         legacyEffects: The target has the Frightened condition until the start of the lion's next turn.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Lion

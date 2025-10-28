@@ -64,6 +64,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -73,6 +76,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -86,6 +92,9 @@ entries:
           type: Slashing
           average: 8
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -110,6 +119,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Repulsion Breath
     entryType: save
@@ -128,6 +140,9 @@ entries:
             type: push
             distance: 30 feet
             direction: straight away from the dragon
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Bronze Dragon Wyrmling

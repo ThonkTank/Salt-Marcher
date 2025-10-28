@@ -64,10 +64,16 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The hag has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Soul Bag
     entryType: special
     text: The hag has a soul bag. While holding or carrying the bag, the hag can use its Nightmare Haunting action. The bag has AC 15, HP 20, and Resistance to all damage. The bag turns to dust if reduced to 0 Hit Points. If the bag is destroyed, any souls the bag is holding are released. The hag can create a new bag after 7 days.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -77,6 +83,9 @@ entries:
         - name: Claw
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -90,10 +99,16 @@ entries:
           type: Slashing
           average: 13
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The hag shape-shifts into a Small or Medium Humanoid, or it returns to its true form. Other than its size, its game statistics are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -114,6 +129,9 @@ spellcastingEntries:
           spells:
             - Phantasmal Killer
             - Plane Shift
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Nightmare Haunting (1/Day; Requires Soul Bag)
     entryType: spellcasting
@@ -134,6 +152,9 @@ spellcastingEntries:
             - Dream
             - Protection from Evil and Good
             - Magic Circle
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Night Hag

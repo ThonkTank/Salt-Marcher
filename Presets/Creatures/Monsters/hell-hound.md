@@ -52,6 +52,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The hound has Advantage on an attack roll against a creature if at least one of the hound's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -61,6 +64,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -78,6 +84,9 @@ entries:
           type: Fire
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -101,6 +110,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hell Hound

@@ -51,10 +51,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The frog can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Standing Leap
     entryType: special
     text: The frog's Long Jump is up to 20 feet and its High Jump is up to 10 feet with or without a running start.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -78,10 +84,16 @@ entries:
               size: Medium or smaller
         other: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11).
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11).
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Swallow
     entryType: special
     text: The frog swallows a Small or smaller target it is grappling. While swallowed, the target isn't Grappled but has the Blinded and Restrained conditions, and it has Cover|XPHB|Total Cover against attacks and other effects outside the frog. While swallowing the target, the frog can't use Bite, and if the frog dies, the swallowed target is no longer Restrained and can escape from the corpse using 5 feet of movement, exiting with the Prone condition. At the end of the frog's next turn, the swallowed target takes 5 (2d4) Acid damage. If that damage doesn't kill it, the frog disgorges it, causing it to exit Prone.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Frog

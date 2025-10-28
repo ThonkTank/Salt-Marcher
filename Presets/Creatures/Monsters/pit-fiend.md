@@ -64,6 +64,9 @@ entries:
     name: Diabolical Restoration
     entryType: special
     text: If the pit fiend dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Fear Aura
     entryType: save
@@ -81,6 +84,9 @@ entries:
                 type: until
                 trigger: the start of its next turn
       onSuccess: The target is immune to this pit fiend's aura for 24 hours.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (4/Day)
     entryType: special
@@ -88,10 +94,16 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The pit fiend has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -105,6 +117,9 @@ entries:
         - name: Mace
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -128,6 +143,9 @@ entries:
             saveToEnd:
               timing: end-of-turn
       additionalEffects: 'If the target is a creature, it must make the following saving throw. *Constitution Saving Throw*: DC 21. *Failure:*  The target has the Poisoned condition. While Poisoned, the target can''t regain Hit Points and takes 21 (6d6) Poison damage at the start of each of its turns, and it repeats the save at the end of each of its turns, ending the effect on itself on a success. After 1 minute, it succeeds automatically.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Devilish Claw
     entryType: attack
@@ -141,6 +159,9 @@ entries:
           type: Necrotic
           average: 26
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fiery Mace
     entryType: attack
@@ -158,6 +179,9 @@ entries:
           type: Fire
           average: 21
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Hellfire Spellcasting (Recharge 4-6)
@@ -170,6 +194,9 @@ spellcastingEntries:
       excludeComponents:
         - M
       spellLists: []
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Pit Fiend

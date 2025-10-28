@@ -60,14 +60,23 @@ entries:
     name: Earth Glide
     entryType: special
     text: The elemental can burrow through nonmagical, unworked earth and stone. While doing so, the elemental doesn't disturb the material it moves through.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Siege Monster
     entryType: special
     text: The elemental deals double damage to objects and structures.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The elemental makes two attacks, using Slam or Rock Launch in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Slam
     entryType: attack
@@ -81,6 +90,9 @@ entries:
           type: Bludgeoning
           average: 14
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Rock Launch
     entryType: attack
@@ -100,6 +112,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Earth Elemental

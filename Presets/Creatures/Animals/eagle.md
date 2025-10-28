@@ -54,6 +54,9 @@ entries:
           bonus: 2
           type: Slashing
           average: 4
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Eagle

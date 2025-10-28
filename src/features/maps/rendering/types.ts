@@ -14,12 +14,16 @@ export interface HexSceneConfig {
 
 export interface HexScene extends Destroyable {
     svg: SVGSVGElement;
-    contentG: SVGGElement;
-    overlay: SVGRectElement;
-    polyByCoord: Map<string, SVGPolygonElement>;
-    ensurePolys(coords: HexCoord[]): void;
-    setFill(coord: HexCoord, color: string): void;
-    getViewBox(): { minX: number; minY: number; width: number; height: number };
+   contentG: SVGGElement;
+   overlay: SVGRectElement;
+   polyByCoord: Map<string, SVGPolygonElement>;
+   ensurePolys(coords: HexCoord[]): void;
+   setFill(coord: HexCoord, color: string): void;
+    setOverlay(
+        coord: HexCoord,
+        overlay: { color: string; factionId?: string; factionName?: string; fillOpacity?: string; strokeWidth?: string } | null
+    ): void;
+   getViewBox(): { minX: number; minY: number; width: number; height: number };
 }
 
 export type HexCameraController = Destroyable;

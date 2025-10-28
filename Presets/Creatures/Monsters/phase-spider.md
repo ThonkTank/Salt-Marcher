@@ -49,14 +49,23 @@ entries:
     name: Ethereal Sight
     entryType: special
     text: The spider can see 60 feet into the Ethereal Plane while on the Material Plane and vice versa.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Spider Climb
     entryType: special
     text: The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Web Walker
     entryType: special
     text: The spider ignores movement restrictions caused by webs, and the spider knows the location of any other creature in contact with the same web.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -66,6 +75,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -98,10 +110,16 @@ entries:
             restrictions:
               while: While Poisoned, the target also has the Paralyzed condition
       additionalEffects: If this damage reduces the target to 0 Hit Points, the target becomes Stable, and it has the Poisoned condition for 1 hour. While Poisoned, the target also has the Paralyzed condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Ethereal Jaunt
     entryType: special
     text: The spider teleports from the Material Plane to the Ethereal Plane or vice versa.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Phase Spider

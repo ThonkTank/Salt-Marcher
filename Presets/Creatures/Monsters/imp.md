@@ -63,6 +63,9 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The imp has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Sting
     entryType: attack
@@ -80,10 +83,16 @@ entries:
           type: Poison
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shape-Shift
     entryType: special
     text: The imp shape-shifts to resemble a rat (Speed 20 ft.), a raven (20 ft., Fly 60 ft.), or a spider (20 ft., Climb 20 ft.), or it returns to its true form. Its statistics are the same in each form, except for its Speed. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Invisibility
@@ -95,6 +104,9 @@ spellcastingEntries:
         - frequency: at-will
           spells:
             - Invisibility
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Imp

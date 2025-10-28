@@ -59,10 +59,16 @@ entries:
     name: Swarm
     entryType: special
     text: The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny piranha. The swarm can't regain Hit Points or gain Temporary Hit Points.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Water Breathing
     entryType: special
     text: The swarm can breathe only underwater.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bites
     entryType: attack
@@ -80,6 +86,9 @@ entries:
           type: Piercing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Swarm of Piranhas

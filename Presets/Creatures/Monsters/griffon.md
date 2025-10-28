@@ -54,6 +54,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -76,6 +79,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 14) from both of the griffon's front claws.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Griffon

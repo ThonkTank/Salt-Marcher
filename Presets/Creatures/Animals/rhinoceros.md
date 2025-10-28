@@ -61,6 +61,9 @@ entries:
               size: Large or smaller
         other: If target is a Large or smaller creature and the rhinoceros moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition.
       additionalEffects: If target is a Large or smaller creature and the rhinoceros moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Rhinoceros

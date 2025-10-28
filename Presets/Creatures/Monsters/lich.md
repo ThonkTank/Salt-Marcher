@@ -76,18 +76,30 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Spirit Jar
     entryType: special
     text: If destroyed, the lich reforms in 1d10 days if it has a spirit jar, reviving with all its Hit Points. The new body appears in an unoccupied space within the lich's lair.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The lich makes three attacks, using Eldritch Burst or Paralyzing Touch in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Eldritch Burst
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +12, reach 5 ft. or range 120 ft. 31 (4d12 + 5) Force damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Paralyzing Touch
     entryType: attack
@@ -101,10 +113,17 @@ entries:
           type: Cold
           average: 15
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Deathly Teleport
     entryType: special
     text: The lich teleports up to 60 feet to an unoccupied space it can see, and each creature within 10 feet of the space it left takes 11 (2d10) Necrotic damage.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Disrupt Life
     entryType: save
@@ -128,6 +147,10 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -158,6 +181,9 @@ spellcastingEntries:
             - Finger of Death
             - Power Word Kill
             - Scrying
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: reaction
     name: Protective Magic
     entryType: spellcasting
@@ -165,6 +191,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: reaction
+    trigger.targeting:
+      type: single
+    trigger.reactionTrigger: the spell's trigger
   - category: legendary
     name: Frightening Gaze
     entryType: spellcasting
@@ -172,6 +202,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Lich

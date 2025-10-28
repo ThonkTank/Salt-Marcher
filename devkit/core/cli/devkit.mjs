@@ -30,6 +30,8 @@ const colors = {
   blue: '\x1b[34m',
   magenta: '\x1b[35m',
   cyan: '\x1b[36m',
+  bright: '\x1b[1m',
+  dim: '\x1b[2m',
   reset: '\x1b[0m'
 };
 
@@ -1840,6 +1842,243 @@ Examples:
   }
 }
 
+class StateCommand {
+  constructor(client) {
+    this.client = client;
+  }
+
+  async handle(args) {
+    if (!args || args.length === 0) {
+      return await this.list([]);
+    }
+
+    if (args.includes('--help') || args.includes('-h')) {
+      console.log(this.help);
+      return;
+    }
+
+    const [first, ...rest] = args;
+    const hasSubcommand = first && !first.startsWith('-');
+    const command = hasSubcommand ? first : 'list';
+    const commandArgs = hasSubcommand ? rest : args;
+
+    switch (command) {
+      case 'list':
+        return await this.list(commandArgs);
+      case 'inspect':
+        return await this.inspect(commandArgs);
+      default:
+        console.log(`${colors.red}Unknown state command: ${command}${colors.reset}`);
+        console.log(`${colors.dim}Run 'devkit state --help' for usage${colors.reset}`);
+    }
+  }
+
+  parseFlags(args) {
+    const flags = {
+      json: false,
+    };
+    const rest = [];
+
+    for (const arg of args) {
+      if (arg === '--json') {
+        flags.json = true;
+      } else {
+        rest.push(arg);
+      }
+    }
+
+    return { ...flags, rest };
+  }
+
+  async list(args) {
+    const { json, rest } = this.parseFlags(args);
+
+    if (rest.length > 0) {
+      console.log(`${colors.yellow}Ignoring unexpected arguments: ${rest.join(', ')}${colors.reset}`);
+    }
+
+    try {
+      const result = await this.client.execute('state-list', []);
+      const payload = result?.data ?? result ?? {};
+      if (json) {
+        console.log(JSON.stringify(payload, null, 2));
+        return;
+      }
+
+      const stores = payload.stores || [];
+      const stats = payload.stats || {};
+      const eventBus = payload.eventBus || {};
+
+      console.log(`${colors.cyan}Registered Stores:${colors.reset}`);
+      if (stores.length === 0) {
+        console.log(`  ${colors.dim}(no stores registered)${colors.reset}`);
+      }
+
+      for (const store of stores) {
+        this.printStoreSummary(store);
+      }
+
+      console.log(`\n${colors.cyan}Stats:${colors.reset}`);
+      console.log(`  Total: ${stats.totalStores ?? stores.length}`);
+      console.log(`  Persistent: ${stats.persistentStores ?? 0}`);
+      console.log(`  Writable: ${stats.writableStores ?? 0}`);
+      console.log(`  Readable: ${stats.readableStores ?? 0}`);
+
+      if (eventBus && typeof eventBus.totalSubscriptions === 'number') {
+        console.log(`\n${colors.cyan}Event Bus:${colors.reset}`);
+        console.log(`  Subscriptions: ${eventBus.totalSubscriptions}`);
+        if (Array.isArray(eventBus.topics)) {
+          for (const topic of eventBus.topics) {
+            if (!topic || topic.subscriptions === 0) continue;
+            console.log(`    ${topic.topic}: ${topic.subscriptions}`);
+          }
+        }
+      }
+    } catch (err) {
+      this.handleError(err);
+    }
+  }
+
+  async inspect(args) {
+    const { json, rest } = this.parseFlags(args);
+    const [storeName] = rest;
+
+    if (!storeName) {
+      console.log(`${colors.red}Store name required${colors.reset}`);
+      console.log(`${colors.dim}Usage: devkit state inspect <name> [--json]${colors.reset}`);
+      console.log(`${colors.dim}Example: devkit state inspect encounter-xp${colors.reset}`);
+      return;
+    }
+
+    try {
+      const result = await this.client.execute('state-inspect', [storeName]);
+      const payload = result?.data ?? result ?? {};
+
+      if (json) {
+        console.log(JSON.stringify(payload, null, 2));
+        return;
+      }
+
+      if (!payload.found) {
+        console.log(`${colors.yellow}Store "${storeName}" not found${colors.reset}`);
+        return;
+      }
+
+      console.log(`${colors.cyan}Store: ${colors.reset}${colors.green}${payload.name}${colors.reset}`);
+      console.log(`  Type: ${payload.type} (${(payload.capabilities || []).join(', ') || 'readable'})`);
+      console.log(`  Writable: ${payload.isWritable ? 'Yes' : 'No'}`);
+      console.log(`  Persistent: ${payload.isPersistent ? 'Yes' : 'No'}`);
+      if (payload.isPersistent) {
+        if (typeof payload.isDirty === 'boolean') {
+          console.log(`  Dirty: ${payload.isDirty ? `${colors.red}Yes${colors.reset}` : 'No'}`);
+        }
+        if (payload.storageKey) {
+          console.log(`  Storage Key: ${payload.storageKey}`);
+        }
+      }
+      if (payload.valueType) {
+        console.log(`  Value Type: ${payload.valueType}`);
+      }
+      if (payload.valueError) {
+        console.log(`  Value Error: ${colors.red}${payload.valueError}${colors.reset}`);
+      } else if (payload.valuePreview) {
+        console.log(`  Value Preview: ${colors.dim}${this.truncate(payload.valuePreview, 160)}${colors.reset}`);
+      }
+
+      if (payload.metadata) {
+        this.printJson('Metadata', payload.metadata);
+      }
+
+      if (!payload.valueError && typeof payload.value !== 'undefined') {
+        this.printJson('Value', payload.value);
+      }
+    } catch (err) {
+      this.handleError(err);
+    }
+  }
+
+  printStoreSummary(store) {
+    console.log(`\n${colors.green}${store.name}${colors.reset}`);
+    console.log(`  Type: ${store.type} (${(store.capabilities || []).join(', ') || 'readable'})`);
+    console.log(`  Writable: ${store.isWritable ? 'Yes' : 'No'}`);
+    console.log(`  Persistent: ${store.isPersistent ? 'Yes' : 'No'}`);
+    if (store.isPersistent) {
+      if (typeof store.isDirty === 'boolean') {
+        console.log(`  Dirty: ${store.isDirty ? `${colors.red}Yes${colors.reset}` : 'No'}`);
+      }
+      if (store.storageKey) {
+        console.log(`  Storage Key: ${store.storageKey}`);
+      }
+    }
+    if (store.valueError) {
+      console.log(`  Value Error: ${colors.red}${store.valueError}${colors.reset}`);
+    } else if (store.valuePreview) {
+      console.log(`  Value Preview: ${colors.dim}${this.truncate(store.valuePreview, 120)}${colors.reset}`);
+    }
+  }
+
+  printJson(label, value) {
+    try {
+      const json = JSON.stringify(value, null, 2);
+      console.log(`  ${label}:`);
+      json.split('\n').forEach(line => {
+        console.log(`    ${colors.dim}${line}${colors.reset}`);
+      });
+    } catch (err) {
+      console.log(`  ${label}: ${colors.red}[unserializable: ${err.message}]${colors.reset}`);
+    }
+  }
+
+  truncate(text, length) {
+    if (!text) return text;
+    if (text.length <= length) return text;
+    return `${text.slice(0, length - 1)}…`;
+  }
+
+  handleError(err) {
+    const message = err?.message || String(err);
+    const code = err?.code;
+    if (
+      message.includes('not running') ||
+      message.includes('ENOENT') ||
+      message.includes('ECONNREFUSED') ||
+      message.includes('EPERM') ||
+      code === 'ENOENT' ||
+      code === 'ECONNREFUSED' ||
+      code === 'EPERM'
+    ) {
+      console.log(`${colors.red}Plugin not running${colors.reset}`);
+      console.log(`${colors.dim}Make sure Obsidian is open with Salt Marcher loaded${colors.reset}`);
+    } else {
+      console.error(`${colors.red}Error: ${message}${colors.reset}`);
+      if (process.env.DEBUG && err?.stack) {
+        console.error(err.stack);
+      }
+    }
+  }
+
+  get help() {
+    return `
+Usage: devkit state <command> [options]
+
+Inspect stores managed by the state layer
+
+Commands:
+  list [--json]            List registered stores with metadata
+  inspect <name> [--json]  Inspect a single store and dump its value
+
+Options:
+  --json                   Output raw JSON result
+
+Examples:
+  devkit state list
+  devkit state list --json
+  devkit state inspect party
+  devkit state inspect encounter-xp --json
+`;
+  }
+}
+
 class LintCommand {
   async handle(args) {
     const [subcommand] = args;
@@ -2380,6 +2619,7 @@ class DevKitCLI {
       lint: new LintCommand(),
       schema: new SchemaCommand(),
       data: new DataCommand(this.client),
+      state: new StateCommand(this.client),
       doctor: new DoctorCommand(this.client),
       // Backwards compatibility alias
       reload: new PluginCommand(this.client)
@@ -2403,6 +2643,7 @@ ${colors.yellow}Commands:${colors.reset}
     plugin        Plugin control (reload, watch)
     migrate       Run data migrations
     data          Manage preset and vault data
+    state         Inspect global state stores
     doctor        Run DevKit health checks
 
   ${colors.green}Development Tools:${colors.reset}
@@ -2432,6 +2673,7 @@ ${colors.yellow}Examples:${colors.reset}
     devkit data inspect creature aboleth # Compare preset vs vault
     devkit data sync creatures --force   # Update vault from presets
     devkit debug field-state saveMod     # Inspect field state
+    devkit state list                    # Show registered stores
     devkit ui open creature Dragon       # Open creature editor
 
 ${colors.yellow}Documentation:${colors.reset}

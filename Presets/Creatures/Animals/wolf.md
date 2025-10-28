@@ -49,6 +49,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The wolf has Advantage on attack rolls against a creature if at least one of the wolf's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -69,6 +72,9 @@ entries:
               size: Medium or smaller
         other: If the target is a Medium or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Medium or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Wolf

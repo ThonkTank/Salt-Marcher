@@ -42,6 +42,9 @@ entries:
     name: Bloodied Fury
     entryType: special
     text: The boar has Advantage on melee attack rolls while it is Bloodied.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Gore
     entryType: attack
@@ -66,6 +69,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature and the boar moved 20+ feet straight toward it immediately before the hit, the target takes an extra 7 (2d6) Piercing damage and has the Prone condition.
       additionalEffects: If the target is a Large or smaller creature and the boar moved 20+ feet straight toward it immediately before the hit, the target takes an extra 7 (2d6) Piercing damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Boar

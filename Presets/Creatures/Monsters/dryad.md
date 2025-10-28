@@ -53,10 +53,16 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The dryad has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Speak with Beasts and Plants
     entryType: special
     text: The dryad can communicate with Beasts and Plants as if they shared a language.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -66,6 +72,9 @@ entries:
         - name: Burst
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Vine Lash
     entryType: attack
@@ -79,6 +88,9 @@ entries:
           type: Slashing
           average: 8
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Thorn Burst
     entryType: attack
@@ -92,10 +104,16 @@ entries:
           type: Piercing
           average: 7
       range: 60 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Tree Stride
     entryType: special
     text: If within 5 feet of a Large or bigger tree, the dryad teleports to an unoccupied space within 5 feet of a second Large or bigger tree that is within 60 feet of the previous tree.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -116,6 +134,9 @@ spellcastingEntries:
           spells:
             - Entangle
             - Pass without Trace
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Dryad

@@ -53,10 +53,16 @@ entries:
     name: Dagger
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +4, reach 5 ft. or range 20/60 ft. 4 (1d4 + 2) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Nimble Escape
     entryType: special
     text: The goblin takes the Disengage or Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Goblin Minion

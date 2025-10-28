@@ -55,18 +55,30 @@ entries:
     name: Spider Climb
     entryType: special
     text: The drider can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Sunlight Sensitivity
     entryType: special
     text: While in sunlight, the drider has Disadvantage on ability checks and attack rolls.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Web Walker
     entryType: special
     text: The drider ignores movement restrictions caused by webs, and the drider knows the location of any other creature in contact with the same web.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The drider makes three attacks, using Foreleg or Poison Burst in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Foreleg
     entryType: attack
@@ -80,6 +92,9 @@ entries:
           type: Piercing
           average: 13
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Poison Burst
     entryType: attack
@@ -93,6 +108,9 @@ entries:
           type: Poison
           average: 13
       range: 120 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: bonus
     name: Magic of the Spider Queen (Recharge 5-6)
@@ -105,6 +123,9 @@ spellcastingEntries:
       excludeComponents:
         - M
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Drider

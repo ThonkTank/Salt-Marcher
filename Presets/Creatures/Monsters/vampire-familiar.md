@@ -62,6 +62,9 @@ entries:
     name: Vampiric Connection
     entryType: special
     text: While the familiar and its vampire master are on the same plane of existence, the vampire can communicate with the familiar telepathically, and the vampire can perceive through the familiar's senses.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -71,14 +74,23 @@ entries:
         - name: Dagger
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Umbral Dagger
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +5, reach 5 ft. or range 20/60 ft. 5 (1d4 + 3) Piercing damage plus 7 (3d4) Necrotic damage. If the target is reduced to 0 Hit Points by this attack, the target becomes Stable but has the Poisoned condition for 1 hour. While it has the Poisoned condition, the target has the Paralyzed condition.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Deathless Agility
     entryType: special
     text: The familiar takes the Dash or Disengage action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Vampire Familiar

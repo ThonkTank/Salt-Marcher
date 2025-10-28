@@ -80,6 +80,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -93,6 +96,9 @@ entries:
           type: Slashing
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Blinding Breath
     entryType: save
@@ -110,6 +116,9 @@ entries:
               duration:
                 type: until
                 trigger: the end of the mephit's next turn
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Sleep (1/Day)
@@ -128,6 +137,9 @@ spellcastingEntries:
         - frequency: 1/day
           spells:
             - Sleep
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Dust Mephit

@@ -56,6 +56,9 @@ entries:
     name: Hellish Restoration
     entryType: special
     text: If the lemure dies in the Nine Hells, it revives with all its Hit Points in 1d10 days unless it is killed by a creature under the effects of a *Bless* spell or its remains are sprinkled with Holy Water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Vile Slime
     entryType: attack
@@ -69,6 +72,9 @@ entries:
           type: Poison
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Lemure

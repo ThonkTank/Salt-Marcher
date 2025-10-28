@@ -54,6 +54,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The giant makes two attacks, using Flame Sword or Hammer Throw in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Flame Sword
     entryType: attack
@@ -71,6 +74,9 @@ entries:
           type: Fire
           average: 10
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Hammer Throw
     entryType: attack
@@ -88,6 +94,9 @@ entries:
           type: Fire
           average: 4
       range: 60/240 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Fire Giant

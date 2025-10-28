@@ -51,6 +51,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The priest makes two attacks, using Mace or Radiant Flame in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Mace
     entryType: attack
@@ -68,6 +71,9 @@ entries:
           type: Radiant
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Radiant Flame
     entryType: attack
@@ -81,6 +87,9 @@ entries:
           type: Radiant
           average: 11
       range: 60 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -96,6 +105,9 @@ spellcastingEntries:
         - frequency: 1/day
           spells:
             - Spirit Guardians
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Divine Aid (3/Day)
     entryType: spellcasting
@@ -106,6 +118,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Priest

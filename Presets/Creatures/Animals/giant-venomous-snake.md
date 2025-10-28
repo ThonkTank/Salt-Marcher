@@ -62,6 +62,9 @@ entries:
           type: Poison
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Venomous Snake

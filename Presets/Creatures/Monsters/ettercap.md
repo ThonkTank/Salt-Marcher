@@ -54,10 +54,16 @@ entries:
     name: Spider Climb
     entryType: special
     text: The ettercap can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Web Walker
     entryType: special
     text: The ettercap ignores movement restrictions caused by webs, and the ettercap knows the location of any other creature in contact with the same web.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -69,6 +75,9 @@ entries:
         - name: Claw
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -86,6 +95,9 @@ entries:
           type: Poison
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -99,6 +111,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Web Strand (Recharge 5-6)
     entryType: save
@@ -122,10 +137,16 @@ entries:
               duration:
                 type: until
                 trigger: the web is destroyed (AC 10; HP 5; Vulnerability to Fire damage; Immunity to Bludgeoning
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Reel
     entryType: special
     text: The ettercap pulls one creature within 30 feet of itself that is Restrained by its Web Strand up to 25 feet straight toward itself.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Ettercap

@@ -55,14 +55,23 @@ entries:
     name: Immutable Form
     entryType: special
     text: The golem can't shape-shift.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The golem has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The golem makes two attacks, using Slam or Force Bolt in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Slam
     entryType: attack
@@ -80,6 +89,9 @@ entries:
           type: Force
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Force Bolt
     entryType: attack
@@ -93,6 +105,9 @@ entries:
           type: Force
           average: 22
       range: 120 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: bonus
     name: Slow (Recharge 5-6)
@@ -103,6 +118,9 @@ spellcastingEntries:
       ability: int
       saveDC: 17
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Stone Golem

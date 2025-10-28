@@ -57,6 +57,9 @@ entries:
     name: Flyby
     entryType: special
     text: The gargoyle doesn't provoke an Opportunity Attack when it flies out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -66,6 +69,9 @@ entries:
         - name: Claw
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -79,6 +85,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Gargoyle

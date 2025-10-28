@@ -57,6 +57,9 @@ entries:
         - name: Tail
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -88,6 +91,9 @@ entries:
               while: While Grappled, the target has the Restrained condition
         other: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 17). While Grappled, the target has the Restrained condition and can't be targeted by the tyrannosaurus's Tail.
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 17). While Grappled, the target has the Restrained condition and can't be targeted by the tyrannosaurus's Tail.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail
     entryType: attack
@@ -108,6 +114,9 @@ entries:
               size: Huge or smaller
         other: If the target is a Huge or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Huge or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Tyrannosaurus Rex

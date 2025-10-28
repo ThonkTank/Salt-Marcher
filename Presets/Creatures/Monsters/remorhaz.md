@@ -51,6 +51,9 @@ entries:
     name: Heat Aura
     entryType: special
     text: At the end of each of the remorhaz's turns, each creature in a 5-foot Emanation originating from the remorhaz takes 16 (3d10) Fire damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -89,6 +92,9 @@ entries:
               type: until
               trigger: the grapple ends
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 17), and it has the Restrained condition until the grapple ends.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Swallow
     entryType: save
@@ -119,6 +125,9 @@ entries:
             bonus: 0
             type: Fire
             average: 10
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Remorhaz

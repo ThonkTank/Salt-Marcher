@@ -65,6 +65,9 @@ entries:
           type: Necrotic
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -85,6 +88,9 @@ spellcastingEntries:
         - frequency: 2/day
           spells:
             - Command
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Spiritual Weapon (2/Day)
     entryType: spellcasting
@@ -95,6 +101,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Cultist Fanatic

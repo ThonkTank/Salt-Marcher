@@ -56,6 +56,9 @@ entries:
         - name: Bite
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -69,6 +72,9 @@ entries:
           type: Piercing
           average: 11
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Constrict
     entryType: save
@@ -99,6 +105,9 @@ entries:
                 dc: 14
           other: 13 (2d8 + 4) Bludgeoning damage, and the target has the Grappled condition (escape DC 14).
         legacyEffects: 13 (2d8 + 4) Bludgeoning damage, and the target has the Grappled condition (escape DC 14).
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Constrictor Snake

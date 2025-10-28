@@ -67,10 +67,16 @@ entries:
     name: Exalted Restoration
     entryType: special
     text: If the deva dies outside Mount Celestia, its body disappears, and it gains a new body instantly, reviving with all its Hit Points somewhere in Mount Celestia.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The deva has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -80,6 +86,9 @@ entries:
         - name: Mace
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Holy Mace
     entryType: attack
@@ -97,6 +106,9 @@ entries:
           type: Radiant
           average: 18
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -116,6 +128,9 @@ spellcastingEntries:
           spells:
             - Commune
             - Raise Dead
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Divine Aid (2/Day)
     entryType: spellcasting
@@ -126,6 +141,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Deva

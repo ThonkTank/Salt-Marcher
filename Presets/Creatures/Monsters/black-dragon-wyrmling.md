@@ -64,6 +64,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -73,6 +76,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -90,6 +96,9 @@ entries:
           type: Acid
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Breath (Recharge 5-6)
     entryType: save
@@ -114,6 +123,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Black Dragon Wyrmling

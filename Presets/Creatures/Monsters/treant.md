@@ -52,6 +52,9 @@ entries:
     name: Siege Monster
     entryType: special
     text: The treant deals double damage to objects and structures.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -61,6 +64,9 @@ entries:
         - name: Slam
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Slam
     entryType: attack
@@ -74,6 +80,9 @@ entries:
           type: Bludgeoning
           average: 16
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Hail of Bark
     entryType: attack
@@ -87,6 +96,9 @@ entries:
           type: Piercing
           average: 28
       range: 180 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Animate Trees (1/Day)
     entryType: special
@@ -94,6 +106,9 @@ entries:
     limitedUse:
       count: 1
       reset: day
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Treant

@@ -59,6 +59,9 @@ entries:
         - name: Slam
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Slam
     entryType: attack
@@ -72,6 +75,9 @@ entries:
           type: Bludgeoning
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Animated Armor

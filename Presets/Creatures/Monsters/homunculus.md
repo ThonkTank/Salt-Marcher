@@ -54,6 +54,9 @@ entries:
     name: Telepathic Bond
     entryType: special
     text: While the homunculus is on the same plane of existence as its master, the two of them can communicate telepathically with each other.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -63,6 +66,9 @@ entries:
       bonus: 4
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Homunculus

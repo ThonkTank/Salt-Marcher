@@ -62,10 +62,16 @@ entries:
           with:
             type: attack
             name: Shield Bash
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Spear
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +7, reach 5 ft. or range 20/60 ft. 11 (2d6 + 4) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shield Bash
     entryType: save
@@ -89,6 +95,9 @@ entries:
             bonus: 4
             type: Bludgeoning
             average: 9
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Gladiator

@@ -70,6 +70,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -87,6 +90,9 @@ entries:
           type: Fire
           average: 3
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -110,6 +116,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young Red Dragon

@@ -57,6 +57,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -74,6 +77,9 @@ entries:
           type: Necrotic
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -94,6 +100,9 @@ entries:
               type: until
               trigger: the end of its next turn
       additionalEffects: 'If the target is a creature that isn''t an Undead or elf, it is subjected to the following effect. *Constitution Saving Throw*: DC 10. *Failure:*  The target has the Paralyzed condition until the end of its next turn.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ghoul

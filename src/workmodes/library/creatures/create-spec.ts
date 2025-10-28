@@ -1625,103 +1625,359 @@ const entriesFields: AnyFieldSpec[] = [
 
             const triggerContent = triggerSection.createDiv({ cls: "sm-cc-trigger-content" });
 
-            // Kosten (Cost)
-            const costRow = triggerContent.createDiv({ cls: "sm-cc-field-row" });
-            costRow.createEl("span", { text: "Kosten:", cls: "sm-cc-field-label" });
-            const costSelect = costRow.createEl("select", {
+            // Row 1: Aktivierung (Activation)
+            const activationRow = triggerContent.createDiv({ cls: "sm-cc-field-row" });
+            activationRow.createEl("span", { text: "Aktivierung:", cls: "sm-cc-field-label" });
+            const activationSelect = activationRow.createEl("select", {
               cls: "sm-cc-compact-select",
-              value: (entry['trigger.cost'] as string) || 'action'
+              value: (entry['trigger.activation'] as string) || 'action'
             });
-            const costOptions = [
+            const activationOptions = [
               { value: 'action', label: 'Aktion' },
               { value: 'bonus', label: 'Bonusaktion' },
               { value: 'reaction', label: 'Reaktion' },
               { value: 'passive', label: 'Passiv' },
-              { value: 'legendary', label: 'Legendär' },
-              { value: 'free', label: 'Frei' }
+              { value: 'automatic', label: 'Automatisch' }
             ];
-            costOptions.forEach(opt => {
-              const option = costSelect.createEl("option", { value: opt.value, text: opt.label });
-              if (opt.value === (entry['trigger.cost'] || 'action')) option.selected = true;
+            activationOptions.forEach(opt => {
+              const option = activationSelect.createEl("option", { value: opt.value, text: opt.label });
+              if (opt.value === (entry['trigger.activation'] || 'action')) option.selected = true;
             });
-            costSelect.addEventListener("change", () => {
-              entry['trigger.cost'] = costSelect.value;
-              // Update category based on cost
-              if (costSelect.value === 'legendary') entry.category = 'legendary';
-              else if (costSelect.value === 'bonus') entry.category = 'bonus';
-              else if (costSelect.value === 'reaction') entry.category = 'reaction';
-              else if (costSelect.value === 'passive') entry.category = 'trait';
+            activationSelect.addEventListener("change", () => {
+              entry['trigger.activation'] = activationSelect.value;
+              // Update category based on activation
+              if (activationSelect.value === 'bonus') entry.category = 'bonus';
+              else if (activationSelect.value === 'reaction') entry.category = 'reaction';
+              else if (activationSelect.value === 'passive') entry.category = 'trait';
               else entry.category = 'action';
               ctx.requestRender();
             });
 
-            // Bedingungen (Conditions)
-            const conditionsRow = triggerContent.createDiv({ cls: "sm-cc-field-row" });
-            conditionsRow.createEl("span", { text: "Bedingungen:", cls: "sm-cc-field-label" });
-            const conditionsContainer = conditionsRow.createDiv({ cls: "sm-cc-conditions-list" });
+            // Row 2: Modifikatoren (always visible)
+            const modifiersRow = triggerContent.createDiv({ cls: "sm-cc-field-row" });
+            modifiersRow.createEl("span", { text: "Modifikatoren:", cls: "sm-cc-field-label" });
 
-            const conditions = (entry['trigger.conditions'] as string[]) || [];
-            conditions.forEach((condition, index) => {
-              const chip = conditionsContainer.createEl("span", {
-                text: condition,
-                cls: "sm-cc-condition-chip"
-              });
-              chip.addEventListener("click", () => {
-                conditions.splice(index, 1);
-                entry['trigger.conditions'] = conditions;
-                ctx.requestRender();
-              });
+            // Recharge checkbox and inputs
+            const rechargeCheck = modifiersRow.createEl("input", {
+              type: "checkbox",
+              attr: { id: "recharge-check" }
+            });
+            rechargeCheck.checked = Boolean(entry.recharge);
+            rechargeCheck.addEventListener("change", () => {
+              if (rechargeCheck.checked) {
+                entry.recharge = "5-6";
+              } else {
+                delete entry.recharge;
+              }
+              ctx.requestRender();
+            });
+            modifiersRow.createEl("label", {
+              text: "Aufladung:",
+              attr: { for: "recharge-check" },
+              cls: "sm-cc-checkbox-label"
             });
 
-            const addConditionBtn = conditionsContainer.createEl("button", {
-              cls: "sm-cc-compact-btn",
-              text: "+ Bedingung"
-            });
-            addConditionBtn.addEventListener("click", () => {
-              // This would open a modal to select conditions
-              console.log("Add condition");
-            });
-
-            // Optional: Recharge
             if (entry.recharge) {
-              const rechargeRow = triggerContent.createDiv({ cls: "sm-cc-field-row" });
-              rechargeRow.createEl("span", { text: "Aufladung:", cls: "sm-cc-field-label" });
-              const rechargeInput = rechargeRow.createEl("input", {
-                cls: "sm-cc-compact-text",
-                value: (entry.recharge as string) || '',
-                placeholder: "z.B. 5-6"
+              const rechargeMin = modifiersRow.createEl("input", {
+                type: "number",
+                cls: "sm-cc-tiny-number",
+                value: String(entry.recharge).split("-")[0] || "5"
               });
-              rechargeInput.addEventListener("input", () => {
-                entry.recharge = rechargeInput.value;
+              modifiersRow.createEl("span", { text: "-" });
+              const rechargeMax = modifiersRow.createEl("input", {
+                type: "number",
+                cls: "sm-cc-tiny-number",
+                value: String(entry.recharge).split("-")[1] || "6"
+              });
+              [rechargeMin, rechargeMax].forEach(input => {
+                input.addEventListener("input", () => {
+                  entry.recharge = `${rechargeMin.value}-${rechargeMax.value}`;
+                });
               });
             }
 
-            // Optional: Limited Use
+            // Limited use checkbox and inputs
+            const limitedCheck = modifiersRow.createEl("input", {
+              type: "checkbox",
+              attr: { id: "limited-check" }
+            });
+            limitedCheck.checked = Boolean(entry.limitedUse);
+            limitedCheck.addEventListener("change", () => {
+              if (limitedCheck.checked) {
+                entry.limitedUse = { count: 3, reset: "day" };
+              } else {
+                delete entry.limitedUse;
+              }
+              ctx.requestRender();
+            });
+            modifiersRow.createEl("label", {
+              text: "Begrenzt:",
+              attr: { for: "limited-check" },
+              cls: "sm-cc-checkbox-label"
+            });
+
             if (entry.limitedUse) {
-              const limitRow = triggerContent.createDiv({ cls: "sm-cc-field-row" });
-              limitRow.createEl("span", { text: "Begrenzt:", cls: "sm-cc-field-label" });
-              const limitInput = limitRow.createEl("input", {
+              const limitInput = modifiersRow.createEl("input", {
                 type: "number",
-                cls: "sm-cc-compact-number",
-                value: String((entry.limitedUse as any)?.count || 1)
+                cls: "sm-cc-tiny-number",
+                value: String((entry.limitedUse as any)?.count || 3)
+              });
+              modifiersRow.createEl("span", { text: "pro" });
+              const resetSelect = modifiersRow.createEl("select", {
+                cls: "sm-cc-tiny-select"
+              });
+              const resetOptions = [
+                { value: 'day', label: 'Tag' },
+                { value: 'short-rest', label: 'Kurze Rast' },
+                { value: 'long-rest', label: 'Lange Rast' }
+              ];
+              resetOptions.forEach(opt => {
+                const option = resetSelect.createEl("option", { value: opt.value, text: opt.label });
+                if (opt.value === (entry.limitedUse as any)?.reset) option.selected = true;
               });
               limitInput.addEventListener("input", () => {
                 if (!entry.limitedUse) entry.limitedUse = {};
                 (entry.limitedUse as any).count = parseInt(limitInput.value) || 1;
-              });
-              limitRow.createEl("span", { text: "pro" });
-              const resetSelect = limitRow.createEl("select", {
-                cls: "sm-cc-compact-select"
-              });
-              ['day', 'short rest', 'long rest'].forEach(opt => {
-                const option = resetSelect.createEl("option", { value: opt, text: opt });
-                if (opt === (entry.limitedUse as any)?.reset) option.selected = true;
               });
               resetSelect.addEventListener("change", () => {
                 if (!entry.limitedUse) entry.limitedUse = {};
                 (entry.limitedUse as any).reset = resetSelect.value;
               });
             }
+
+            // Legendary checkbox and input
+            const legendaryCheck = modifiersRow.createEl("input", {
+              type: "checkbox",
+              attr: { id: "legendary-check" }
+            });
+            legendaryCheck.checked = Boolean(entry['trigger.legendaryCost']);
+            legendaryCheck.addEventListener("change", () => {
+              if (legendaryCheck.checked) {
+                entry['trigger.legendaryCost'] = 1;
+                entry.category = 'legendary';
+              } else {
+                delete entry['trigger.legendaryCost'];
+                if (entry['trigger.activation'] !== 'passive') {
+                  entry.category = 'action';
+                }
+              }
+              ctx.requestRender();
+            });
+            modifiersRow.createEl("label", {
+              text: "Legendär:",
+              attr: { for: "legendary-check" },
+              cls: "sm-cc-checkbox-label"
+            });
+
+            if (entry['trigger.legendaryCost']) {
+              const costInput = modifiersRow.createEl("input", {
+                type: "number",
+                cls: "sm-cc-tiny-number",
+                value: String(entry['trigger.legendaryCost'] || 1)
+              });
+              modifiersRow.createEl("span", { text: "Kosten" });
+              costInput.addEventListener("input", () => {
+                entry['trigger.legendaryCost'] = parseInt(costInput.value) || 1;
+              });
+            }
+
+            // Row 3: Bedingungen (Conditions) - based on activation type
+            if (entry['trigger.activation'] === 'reaction') {
+              const reactionRow = triggerContent.createDiv({ cls: "sm-cc-field-row" });
+              reactionRow.createEl("span", { text: "Auslöser:", cls: "sm-cc-field-label" });
+              const reactionInput = reactionRow.createEl("input", {
+                cls: "sm-cc-long-text",
+                value: (entry['trigger.reactionTrigger'] as string) || '',
+                placeholder: "z.B. wird getroffen, sieht einen Zauber gewirkt..."
+              });
+              reactionInput.addEventListener("input", () => {
+                entry['trigger.reactionTrigger'] = reactionInput.value;
+              });
+            } else if (entry['trigger.activation'] === 'automatic') {
+              const timingRow = triggerContent.createDiv({ cls: "sm-cc-field-row" });
+              timingRow.createEl("span", { text: "Zeitpunkt:", cls: "sm-cc-field-label" });
+              const timingSelect = timingRow.createEl("select", {
+                cls: "sm-cc-compact-select",
+                value: (entry['trigger.automaticTiming'] as string) || 'start-of-turn'
+              });
+              const timingOptions = [
+                { value: 'start-of-turn', label: 'Am Beginn der Runde der Kreatur' },
+                { value: 'end-of-turn', label: 'Am Ende der Runde der Kreatur' },
+                { value: 'start-of-any-turn', label: 'Am Beginn jeder Kreatur-Runde' },
+                { value: 'end-of-any-turn', label: 'Am Ende jeder Kreatur-Runde' }
+              ];
+              timingOptions.forEach(opt => {
+                const option = timingSelect.createEl("option", { value: opt.value, text: opt.label });
+                if (opt.value === entry['trigger.automaticTiming']) option.selected = true;
+              });
+              timingSelect.addEventListener("change", () => {
+                entry['trigger.automaticTiming'] = timingSelect.value;
+              });
+            }
+
+            // Row 4: Zielbereich (Targeting)
+            const targetingRow = triggerContent.createDiv({ cls: "sm-cc-field-row" });
+            targetingRow.createEl("span", { text: "Zielbereich:", cls: "sm-cc-field-label" });
+            const targetTypeSelect = targetingRow.createEl("select", {
+              cls: "sm-cc-compact-select",
+              value: (entry['trigger.targeting.type'] as string) || 'single'
+            });
+            const targetTypes = [
+              { value: 'self', label: 'Selbst' },
+              { value: 'single', label: 'Einzelziel' },
+              { value: 'multiple', label: 'Mehrere Ziele' },
+              { value: 'area', label: 'Bereich' }
+            ];
+            targetTypes.forEach(opt => {
+              const option = targetTypeSelect.createEl("option", { value: opt.value, text: opt.label });
+              if (opt.value === (entry['trigger.targeting.type'] || 'single')) option.selected = true;
+            });
+            targetTypeSelect.addEventListener("change", () => {
+              if (!entry['trigger.targeting']) entry['trigger.targeting'] = {};
+              (entry['trigger.targeting'] as any).type = targetTypeSelect.value;
+              ctx.requestRender();
+            });
+
+            // Additional targeting fields based on type
+            const targetType = entry['trigger.targeting.type'] || 'single';
+            if (targetType === 'single' || targetType === 'multiple') {
+              if (targetType === 'multiple') {
+                targetingRow.createEl("span", { text: "Anzahl:" });
+                const countInput = targetingRow.createEl("input", {
+                  type: "number",
+                  cls: "sm-cc-tiny-number",
+                  value: String(entry['trigger.targeting.count'] || 2)
+                });
+                countInput.addEventListener("input", () => {
+                  if (!entry['trigger.targeting']) entry['trigger.targeting'] = {};
+                  (entry['trigger.targeting'] as any).count = parseInt(countInput.value) || 1;
+                });
+              }
+              targetingRow.createEl("span", { text: "Reichweite:" });
+              const rangeInput = targetingRow.createEl("input", {
+                cls: "sm-cc-compact-text",
+                value: (entry['trigger.targeting.range'] as string) || '',
+                placeholder: "z.B. 30 ft."
+              });
+              rangeInput.addEventListener("input", () => {
+                if (!entry['trigger.targeting']) entry['trigger.targeting'] = {};
+                (entry['trigger.targeting'] as any).range = rangeInput.value;
+              });
+
+              const sightCheck = targetingRow.createEl("input", {
+                type: "checkbox",
+                attr: { id: "sight-required" }
+              });
+              sightCheck.checked = entry['trigger.targeting.sightRequired'] === true;
+              sightCheck.addEventListener("change", () => {
+                if (!entry['trigger.targeting']) entry['trigger.targeting'] = {};
+                (entry['trigger.targeting'] as any).sightRequired = sightCheck.checked;
+              });
+              targetingRow.createEl("label", {
+                text: "Sichtlinie erforderlich",
+                attr: { for: "sight-required" },
+                cls: "sm-cc-checkbox-label"
+              });
+            } else if (targetType === 'area') {
+              targetingRow.createEl("span", { text: "Form:" });
+              const shapeSelect = targetingRow.createEl("select", {
+                cls: "sm-cc-compact-select",
+                value: (entry['trigger.targeting.shape'] as string) || 'cone'
+              });
+              const shapes = [
+                { value: 'cone', label: 'Kegel' },
+                { value: 'emanation', label: 'Aura' },
+                { value: 'line', label: 'Linie' },
+                { value: 'cube', label: 'Würfel' },
+                { value: 'sphere', label: 'Kugel' }
+              ];
+              shapes.forEach(opt => {
+                const option = shapeSelect.createEl("option", { value: opt.value, text: opt.label });
+                if (opt.value === entry['trigger.targeting.shape']) option.selected = true;
+              });
+              shapeSelect.addEventListener("change", () => {
+                if (!entry['trigger.targeting']) entry['trigger.targeting'] = {};
+                (entry['trigger.targeting'] as any).shape = shapeSelect.value;
+              });
+
+              targetingRow.createEl("span", { text: "Größe:" });
+              const sizeInput = targetingRow.createEl("input", {
+                cls: "sm-cc-compact-text",
+                value: (entry['trigger.targeting.size'] as string) || '',
+                placeholder: "z.B. 15 ft."
+              });
+              sizeInput.addEventListener("input", () => {
+                if (!entry['trigger.targeting']) entry['trigger.targeting'] = {};
+                (entry['trigger.targeting'] as any).size = sizeInput.value;
+              });
+            }
+
+            // Row 5: Einschränkungen (Restrictions) - always visible
+            const restrictionsRow = triggerContent.createDiv({ cls: "sm-cc-field-row" });
+            restrictionsRow.createEl("span", { text: "Einschränkungen:", cls: "sm-cc-field-label" });
+
+            // Size restriction checkbox and dropdown
+            const sizeCheck = restrictionsRow.createEl("input", {
+              type: "checkbox",
+              attr: { id: "size-restriction" }
+            });
+            const restrictions = entry['trigger.restrictions'] as any || {};
+            sizeCheck.checked = Boolean(restrictions.maxSize);
+            sizeCheck.addEventListener("change", () => {
+              if (sizeCheck.checked) {
+                if (!entry['trigger.restrictions']) entry['trigger.restrictions'] = {};
+                (entry['trigger.restrictions'] as any).maxSize = 'Mittel';
+              } else {
+                if (entry['trigger.restrictions']) {
+                  delete (entry['trigger.restrictions'] as any).maxSize;
+                  // Clean up if empty
+                  if (Object.keys(entry['trigger.restrictions'] as any).length === 0) {
+                    delete entry['trigger.restrictions'];
+                  }
+                }
+              }
+              ctx.requestRender();
+            });
+            restrictionsRow.createEl("label", {
+              text: "Max. Größe:",
+              attr: { for: "size-restriction" },
+              cls: "sm-cc-checkbox-label-small"
+            });
+
+            if (restrictions.maxSize) {
+              const sizeSelect = restrictionsRow.createEl("select", {
+                cls: "sm-cc-tiny-select"
+              });
+              ['Klein', 'Mittel', 'Groß', 'Riesig'].forEach(size => {
+                const opt = sizeSelect.createEl("option", { value: size, text: size });
+                if (size === restrictions.maxSize) opt.selected = true;
+              });
+              sizeSelect.addEventListener("change", () => {
+                if (!entry['trigger.restrictions']) entry['trigger.restrictions'] = {};
+                (entry['trigger.restrictions'] as any).maxSize = sizeSelect.value;
+              });
+            }
+
+            // Custom restriction text input
+            const otherInput = restrictionsRow.createEl("input", {
+              cls: "sm-cc-long-text",
+              value: restrictions.other || '',
+              placeholder: "Weitere Einschränkungen (z.B. muss ergriffen sein)"
+            });
+            otherInput.addEventListener("input", () => {
+              if (otherInput.value) {
+                if (!entry['trigger.restrictions']) entry['trigger.restrictions'] = {};
+                (entry['trigger.restrictions'] as any).other = otherInput.value;
+              } else {
+                if (entry['trigger.restrictions']) {
+                  delete (entry['trigger.restrictions'] as any).other;
+                  // Clean up if empty
+                  if (Object.keys(entry['trigger.restrictions'] as any).length === 0) {
+                    delete entry['trigger.restrictions'];
+                  }
+                }
+              }
+            });
 
             // EFFEKTE Section
             const effectsSection = body.createDiv({ cls: "sm-cc-effects-section" });
@@ -1762,6 +2018,11 @@ const entriesFields: AnyFieldSpec[] = [
             });
           },
 
+          // Add data-entry-id for navigation
+          dataset: {
+            entryId: String(entry.name || `entry-${context.index}`)
+          },
+
           // Add collapse toggle in head
           renderHeadExtras: (head, ctx, slots) => {
             const toggle = head.createDiv({
@@ -1789,6 +2050,13 @@ const entriesFields: AnyFieldSpec[] = [
         id,
         label,
         defaultActive: true,
+      })),
+
+      // Filters for entry types
+      filters: CREATURE_ENTRY_CATEGORIES.map(([id, label]) => ({
+        id,
+        label,
+        predicate: (entry: Record<string, unknown>) => entry.category === id,
       })),
     },
     default: [],

@@ -61,6 +61,9 @@ entries:
     name: Draconic Origin
     entryType: special
     text: 'The half-dragon is related to a type of dragon associated with one of the following damage types (DM''s choice): Acid, Cold, Fire, Lightning, or Poison. This choice affects other aspects of the stat block.'
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -70,6 +73,9 @@ entries:
         - name: Claw
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -83,6 +89,9 @@ entries:
           type: Slashing
           average: 6
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Dragon's Breath (Recharge 5-6)
     entryType: save
@@ -101,10 +110,16 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Leap
     entryType: special
     text: The half-dragon jumps up to 30 feet by spending 10 feet of movement.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Half-Dragon

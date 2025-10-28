@@ -19,9 +19,10 @@ const ensureCreatureDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.creatures
 const ensureSpellDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.spells.directory);
 const ensureItemDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.items.directory);
 const ensureEquipmentDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.equipment.directory);
+const ensureFactionDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.factions.directory);
 const ensureCalendarDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.calendars.directory);
 
-export type LibrarySourceId = "creatures" | "spells" | "items" | "equipment" | "terrains" | "regions" | "calendars";
+export type LibrarySourceId = "creatures" | "spells" | "items" | "equipment" | "terrains" | "regions" | "factions" | "calendars";
 
 type SourceSpec = {
     ensure(app: App): Promise<unknown>;
@@ -53,6 +54,10 @@ const SOURCE_MAP: Record<LibrarySourceId, SourceSpec> = Object.freeze({
         ensure: ensureRegionsFile,
         description: REGIONS_FILE,
     },
+    factions: {
+        ensure: ensureFactionDir,
+        description: `${ENTITY_REGISTRY.factions.directory}/`,
+    },
     calendars: {
         ensure: ensureCalendarDir,
         description: `${ENTITY_REGISTRY.calendars.directory}/`,
@@ -77,4 +82,3 @@ export function describeLibrarySource(source: LibrarySourceId): string {
     if (!spec) throw new Error(`Unknown library source: ${source}`);
     return spec.description;
 }
-

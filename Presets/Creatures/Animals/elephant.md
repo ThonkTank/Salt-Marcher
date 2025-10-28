@@ -48,6 +48,9 @@ entries:
         - name: Gore
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Gore
     entryType: attack
@@ -68,6 +71,9 @@ entries:
               size: Huge or smaller
         other: If the target is a Huge or smaller creature and the elephant moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.
       additionalEffects: If the target is a Huge or smaller creature and the elephant moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Trample
     entryType: save
@@ -94,6 +100,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Elephant

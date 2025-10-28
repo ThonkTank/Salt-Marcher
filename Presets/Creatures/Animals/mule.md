@@ -42,6 +42,9 @@ entries:
     name: Beast of Burden
     entryType: special
     text: The mule counts as one size larger for the purpose of determining its carrying capacity.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Hooves
     entryType: attack
@@ -55,6 +58,9 @@ entries:
           type: Bludgeoning
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Mule

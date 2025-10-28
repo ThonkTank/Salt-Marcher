@@ -64,6 +64,9 @@ entries:
           with:
             type: spellcasting
             spell: Fog Cloud
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Thunderous Mace
     entryType: attack
@@ -81,6 +84,9 @@ entries:
           type: Thunder
           average: 7
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Thundercloud
     entryType: attack
@@ -94,6 +100,9 @@ entries:
           type: Thunder
           average: 18
       range: 240 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -115,6 +124,9 @@ spellcastingEntries:
             - Control Weather
             - Gaseous Form
             - Telekinesis
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Misty Step
     entryType: spellcasting
@@ -122,6 +134,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Cloud Giant

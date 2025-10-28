@@ -46,6 +46,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The vulture has Advantage on an attack roll against a creature if at least one of the vulture's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Beak
     entryType: attack
@@ -59,6 +62,9 @@ entries:
           type: Piercing
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Vulture

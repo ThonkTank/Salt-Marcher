@@ -43,6 +43,9 @@ entries:
     name: Water Breathing
     entryType: special
     text: The seahorse can breathe only underwater.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Ram
     entryType: attack
@@ -60,10 +63,16 @@ entries:
           type: Bludgeoning
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Bubble Dash
     entryType: special
     text: While underwater, the seahorse moves up to half its Swim Speed without provoking Opportunity Attacks.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Seahorse

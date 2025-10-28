@@ -79,6 +79,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -96,6 +99,9 @@ entries:
           type: Fire
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath
     entryType: save
@@ -118,6 +124,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Magma Mephit

@@ -89,10 +89,16 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Fire Aura
     entryType: special
     text: At the end of each of the balor's turns, each creature in a 5-foot Emanation originating from the balor takes 13 (3d8) Fire damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day)
     entryType: special
@@ -100,10 +106,16 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The balor has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -115,6 +127,9 @@ entries:
         - name: Blade
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Flame Whip
     entryType: attack
@@ -138,6 +153,9 @@ entries:
             restrictions:
               size: Huge or smaller
       additionalEffects: If the target is a Huge or smaller creature, the balor pulls the target up to 25 feet straight toward itself, and the target has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Blade
     entryType: attack
@@ -155,10 +173,16 @@ entries:
           type: Lightning
           average: 22
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Teleport
     entryType: special
     text: The balor teleports itself or a willing demon within 10 feet of itself up to 60 feet to an unoccupied space the balor can see.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Balor

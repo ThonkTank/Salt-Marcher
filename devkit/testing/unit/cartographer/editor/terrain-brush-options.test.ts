@@ -2,11 +2,11 @@
 // Prüft das Terrain-Brush-Panel auf DOM-Setup und Brush-Interaktionen.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { App } from "obsidian";
-import type { RenderHandles } from "../../../src/features/maps/hex-mapper/hex-render";
+import type { RenderHandles } from "src/features/maps/hex-mapper/hex-render";
 import {
     mountBrushPanel,
     type BrushPanelContext,
-} from "../../../src/workmodes/cartographer/editor/tools/terrain-brush/brush-options";
+} from "src/workmodes/cartographer/editor/tools/terrain-brush/brush-options";
 
 const loadRegions = vi.fn();
 const applyBrush = vi.fn(() => Promise.resolve());

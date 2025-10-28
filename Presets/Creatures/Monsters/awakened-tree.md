@@ -58,6 +58,9 @@ entries:
           type: Bludgeoning
           average: 13
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Awakened Tree

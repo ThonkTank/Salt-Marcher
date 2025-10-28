@@ -95,6 +95,6 @@ export async function renderHexMapFromFile(
     }
 
     const parsed = parseOptions(block);
-    const handles = await renderHexMap(app, container, parsed, file.path);
+    const handles = await renderHexMap(app, container, file, parsed);
     return { host: container, options: parsed, handles };
 }

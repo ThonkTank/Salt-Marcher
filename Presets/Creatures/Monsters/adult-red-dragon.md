@@ -68,6 +68,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -81,6 +84,9 @@ entries:
           with:
             type: spellcasting
             spell: Scorching Ray
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -98,6 +104,9 @@ entries:
           type: Fire
           average: 5
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -121,6 +130,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -130,6 +142,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -150,6 +166,9 @@ spellcastingEntries:
         - frequency: 1/day
           spells:
             - Fireball
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Commanding Presence
     entryType: spellcasting
@@ -157,6 +176,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Fiery Rays
     entryType: spellcasting
@@ -164,6 +187,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Red Dragon

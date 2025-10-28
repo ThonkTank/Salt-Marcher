@@ -60,6 +60,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -77,6 +80,9 @@ entries:
           type: Radiant
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Eagle

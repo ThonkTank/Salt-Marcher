@@ -50,6 +50,9 @@ entries:
     name: Hold Breath
     entryType: special
     text: The plesiosaurus can hold its breath for 1 hour.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -63,6 +66,9 @@ entries:
           type: Piercing
           average: 11
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Plesiosaurus

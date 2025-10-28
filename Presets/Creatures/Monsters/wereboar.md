@@ -56,6 +56,9 @@ entries:
           with:
             type: attack
             name: a Gore attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Gore (Boar or Hybrid Form Only)
     entryType: attack
@@ -76,10 +79,16 @@ entries:
               type: hours
               count: 24
       additionalEffects: 'If the target is a Humanoid, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *Failure:*  The target is cursed. If the cursed target drops to 0 Hit Points, it instead becomes a Wereboar under the DM''s control and has 10 Hit Points. *Success:*  The target is immune to this wereboar''s curse for 24 hours.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Javelin (Humanoid or Hybrid Form Only)
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +5, reach 5 ft. or range 30/120 ft. 13 (3d6 + 3) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tusk (Boar or Hybrid Form Only)
     entryType: attack
@@ -103,10 +112,16 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature and the wereboar moved 20+ feet straight toward it immediately before the hit, the target takes an extra 7 (2d6) Piercing damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The wereboar shape-shifts into a Medium boar-humanoid hybrid or a Small boar, or it returns to its true humanoid form. Its game statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Wereboar

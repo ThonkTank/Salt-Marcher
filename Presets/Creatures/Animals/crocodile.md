@@ -47,6 +47,9 @@ entries:
     name: Hold Breath
     entryType: special
     text: The crocodile can hold its breath for 1 hour.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -78,6 +81,9 @@ entries:
               while: While Grappled, the target has the Restrained condition
         other: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12). While Grappled, the target has the Restrained condition.
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12). While Grappled, the target has the Restrained condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Crocodile

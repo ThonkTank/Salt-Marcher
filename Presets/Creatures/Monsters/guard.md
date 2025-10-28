@@ -47,6 +47,9 @@ entries:
     name: Spear
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +3, reach 5 ft. or range 20/60 ft. 4 (1d6 + 1) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Guard

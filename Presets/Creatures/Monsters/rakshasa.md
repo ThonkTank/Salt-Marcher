@@ -60,10 +60,16 @@ entries:
     name: Greater Magic Resistance
     entryType: special
     text: The rakshasa automatically succeeds on saving throws against spells and other magical effects, and the attack rolls of spells automatically miss it. Without the rakshasa's permission, no spell can observe the rakshasa remotely or detect its thoughts, creature type, or alignment.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Fiendish Restoration
     entryType: special
     text: If the rakshasa dies outside the Nine Hells, its body turns to ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -73,6 +79,9 @@ entries:
         - name: Touch
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Cursed Touch
     entryType: attack
@@ -93,6 +102,9 @@ entries:
       onHit:
         other: If the target is a creature, it is cursed. While cursed, the target gains no benefit from finishing a Short Rest|XPHB|Short or Long Rest.
       additionalEffects: If the target is a creature, it is cursed. While cursed, the target gains no benefit from finishing a Short Rest|XPHB|Short or Long Rest.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Baleful Command (Recharge 5-6)
     entryType: save
@@ -114,6 +126,9 @@ entries:
             type: Psychic
             average: 28
         legacyEffects: 28 (8d6) Psychic damage, and the target has the Frightened and Incapacitated conditions until the start of the rakshasa's next turn.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -138,6 +153,9 @@ spellcastingEntries:
             - Invisibility
             - Major Image
             - Plane Shift
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Rakshasa

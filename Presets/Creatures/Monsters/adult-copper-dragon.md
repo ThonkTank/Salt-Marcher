@@ -70,6 +70,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -83,6 +86,9 @@ entries:
           with:
             type: spellcasting
             spell: Mind Spike
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -100,6 +106,9 @@ entries:
           type: Acid
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Breath (Recharge 5-6)
     entryType: save
@@ -124,6 +133,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Slowing Breath
     entryType: save
@@ -144,6 +156,9 @@ entries:
             - type: other
               target: Reactions
               description: can't take Reactions
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Giggling Magic
     entryType: save
@@ -165,6 +180,10 @@ entries:
             type: Psychic
             average: 24
         legacyEffects: 24 (7d6) Psychic damage. Until the end of its next turn, the target rolls 1d6 whenever it makes an ability check or attack roll and subtracts the number rolled from the D20 Test.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -174,6 +193,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -195,6 +218,9 @@ spellcastingEntries:
           spells:
             - Greater Restoration
             - Major Image
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Mind Jolt
     entryType: spellcasting
@@ -202,6 +228,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Copper Dragon

@@ -51,10 +51,16 @@ entries:
     name: Spider Climb
     entryType: special
     text: The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Web Walker
     entryType: special
     text: The spider ignores movement restrictions caused by webs, and it knows the location of any other creature in contact with the same web.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -72,6 +78,9 @@ entries:
           type: Poison
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Web (Recharge 5-6)
     entryType: save
@@ -95,6 +104,9 @@ entries:
                 trigger: the web is destroyed (AC 10; HP 5; Vulnerability to Fire damage; Immunity to Poison and Psychic damage)
           other: The target has the Restrained condition until the web is destroyed (AC 10; HP 5; Vulnerability to Fire damage; Immunity to Poison and Psychic damage).
         legacyEffects: The target has the Restrained condition until the web is destroyed (AC 10; HP 5; Vulnerability to Fire damage; Immunity to Poison and Psychic damage).
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Spider

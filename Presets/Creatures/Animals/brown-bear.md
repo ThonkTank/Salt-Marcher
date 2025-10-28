@@ -58,6 +58,9 @@ entries:
         - name: Claw
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -71,6 +74,9 @@ entries:
           type: Piercing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -91,6 +97,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Brown Bear

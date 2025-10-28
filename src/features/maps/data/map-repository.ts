@@ -2,6 +2,7 @@
 // Consolidated map CRUD operations
 import { App, TFile } from "obsidian";
 import { initTilesForNewMap, listTilesForMap } from "./tile-repository";
+import { registerMapStores, unregisterMapStores } from "./map-store-registry";
 import { logger } from "../../../app/plugin-logger";
 
 export type HexBlockOptions = {
@@ -31,6 +32,7 @@ export async function createHexMapFile(
 
     // Immediately create initial tiles → renderer has bounds, brush/inspector work without reload
     await initTilesForNewMap(app, file);
+    registerMapStores(app, file);
 
     return file;
 }
@@ -139,4 +141,6 @@ export async function deleteMapAndTiles(app: App, mapFile: TFile): Promise<void>
     } catch (e) {
         logger.warn("Delete map failed:", mapFile.path, e);
     }
+
+    unregisterMapStores(app, mapFile);
 }

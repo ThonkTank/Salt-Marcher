@@ -55,6 +55,9 @@ entries:
     name: Abduct
     entryType: special
     text: The bugbear needn't spend extra movement to move a creature it is grappling.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Grab
     entryType: attack
@@ -77,10 +80,16 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12).
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Light Hammer
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +4 (with Advantage if the target is Grappled by the bugbear), reach 10 ft. or range 20/60 ft. 9 (3d4 + 2) Bludgeoning damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Bugbear Warrior

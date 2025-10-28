@@ -47,6 +47,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The giant makes two attacks, using Tree Club or Trash Lob in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tree Club
     entryType: attack
@@ -66,6 +69,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Trash Lob
     entryType: attack
@@ -79,6 +85,9 @@ entries:
           type: Bludgeoning
           average: 16
       range: 60/240 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hill Giant

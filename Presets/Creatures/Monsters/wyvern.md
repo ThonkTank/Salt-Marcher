@@ -56,6 +56,9 @@ entries:
         - name: Sting
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -69,6 +72,9 @@ entries:
           type: Piercing
           average: 13
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Sting
     entryType: attack
@@ -86,6 +92,9 @@ entries:
           type: Poison
           average: 24
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Wyvern

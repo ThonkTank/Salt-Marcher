@@ -50,6 +50,9 @@ entries:
     name: Tunneler
     entryType: special
     text: The worm can burrow through solid rock at half its Burrow Speed and leaves a 10-foot-diameter tunnel in its wake.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -61,6 +64,9 @@ entries:
         - name: Stinger
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -95,6 +101,9 @@ entries:
               type: until
               trigger: the grapple ends
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 19), and it has the Restrained condition until the grapple ends.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail Stinger
     entryType: attack
@@ -112,6 +121,9 @@ entries:
           type: Poison
           average: 35
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Swallow
     entryType: save
@@ -138,6 +150,9 @@ entries:
             bonus: 0
             type: Acid
             average: 17
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Purple Worm

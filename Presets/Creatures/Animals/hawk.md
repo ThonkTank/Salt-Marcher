@@ -51,6 +51,9 @@ entries:
       bonus: 5
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hawk

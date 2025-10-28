@@ -61,10 +61,16 @@ entries:
     name: Earth Glide
     entryType: special
     text: The xorn can burrow through nonmagical, unworked earth and stone. While doing so, the xorn doesn't disturb the material it moves through.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Treasure Sense
     entryType: special
     text: The xorn can pinpoint the location of precious metals and stones within 60 feet of itself.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -76,6 +82,9 @@ entries:
         - name: Claw
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -89,6 +98,9 @@ entries:
           type: Piercing
           average: 17
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -102,10 +114,16 @@ entries:
           type: Slashing
           average: 8
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Charge
     entryType: special
     text: The xorn moves up to its Speed or Burrow Speed straight toward an enemy it can sense.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Xorn

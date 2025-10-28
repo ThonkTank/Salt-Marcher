@@ -49,10 +49,16 @@ entries:
     name: Multiattack
     entryType: special
     text: The guard makes two attacks, using Javelin or Longsword in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Javelin
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +6, reach 5 ft. or range 30/120 ft. 14 (3d6 + 4) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Longsword
     entryType: attack
@@ -66,6 +72,9 @@ entries:
           type: Slashing
           average: 15
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Guard Captain

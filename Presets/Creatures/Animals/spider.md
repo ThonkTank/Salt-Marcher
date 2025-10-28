@@ -49,10 +49,16 @@ entries:
     name: Spider Climb
     entryType: special
     text: The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Web Walker
     entryType: special
     text: The spider ignores movement restrictions caused by webs, and the spider knows the location of any other creature in contact with the same web.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -66,6 +72,9 @@ entries:
           type: Poison
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Spider

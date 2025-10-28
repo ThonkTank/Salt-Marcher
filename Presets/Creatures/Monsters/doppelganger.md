@@ -59,6 +59,9 @@ entries:
         - name: Slam
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Slam
     entryType: attack
@@ -72,6 +75,9 @@ entries:
           type: Bludgeoning
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Unsettling Visage
     entryType: save
@@ -89,10 +95,16 @@ entries:
             - condition: Frightened
               saveToEnd:
                 timing: end-of-turn
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The doppelganger shape-shifts into a Medium or Small Humanoid, or it returns to its true form. Its game statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Read Thoughts
@@ -105,6 +117,9 @@ spellcastingEntries:
         - frequency: at-will
           spells:
             - Detect Thoughts
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Doppelganger

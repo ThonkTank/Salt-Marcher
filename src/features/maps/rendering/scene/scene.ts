@@ -95,6 +95,9 @@ export function createHexScene(config: HexSceneConfig): HexScene {
         (poly.style as any).stroke = "var(--text-muted)";
         (poly.style as any).strokeWidth = "2";
         (poly.style as any).transition = "fill 120ms ease, fill-opacity 120ms ease, stroke 120ms ease";
+        poly.dataset.defaultStroke = "var(--text-muted)";
+        poly.dataset.defaultStrokeWidth = "2";
+        poly.dataset.terrainFill = "transparent";
 
         contentG.appendChild(poly);
         polyByCoord.set(keyOf(coord), poly);
@@ -127,12 +130,49 @@ export function createHexScene(config: HexSceneConfig): HexScene {
         const poly = polyByCoord.get(keyOf(coord));
         if (!poly) return;
         const fill = color ?? "transparent";
-        (poly.style as any).fill = fill;
-        (poly.style as any).fillOpacity = fill !== "transparent" ? "0.25" : "0";
+        poly.dataset.terrainFill = fill;
+        if (!poly.dataset.overlayColor) {
+            (poly.style as any).fill = fill;
+            (poly.style as any).fillOpacity = fill !== "transparent" ? "0.25" : "0";
+        }
         if (fill !== "transparent") {
             poly.setAttribute("data-painted", "1");
         } else {
             poly.removeAttribute("data-painted");
+        }
+    }
+
+    function setOverlay(
+        coord: HexCoord,
+        overlay: { color: string; factionId?: string; factionName?: string; fillOpacity?: string; strokeWidth?: string } | null
+    ): void {
+        const poly = polyByCoord.get(keyOf(coord));
+        if (!poly) return;
+        if (overlay) {
+            const strokeWidth = overlay.strokeWidth ?? "3";
+            const fillOpacity = overlay.fillOpacity ?? "0.5";
+            poly.dataset.overlayColor = overlay.color;
+            if (overlay.factionId) poly.dataset.factionId = overlay.factionId;
+            else delete poly.dataset.factionId;
+            if (overlay.factionName) poly.dataset.factionName = overlay.factionName;
+            else delete poly.dataset.factionName;
+            (poly.style as any).stroke = overlay.color;
+            (poly.style as any).strokeWidth = strokeWidth;
+            (poly.style as any).strokeOpacity = "0.9";
+            (poly.style as any).mixBlendMode = "multiply";
+            (poly.style as any).fill = overlay.color;
+            (poly.style as any).fillOpacity = fillOpacity;
+        } else {
+            delete poly.dataset.overlayColor;
+            delete poly.dataset.factionId;
+            delete poly.dataset.factionName;
+            (poly.style as any).stroke = poly.dataset.defaultStroke ?? "var(--text-muted)";
+            (poly.style as any).strokeWidth = poly.dataset.defaultStrokeWidth ?? "2";
+            (poly.style as any).strokeOpacity = "1";
+            (poly.style as any).mixBlendMode = "";
+            const terrainFill = poly.dataset.terrainFill ?? "transparent";
+            (poly.style as any).fill = terrainFill;
+            (poly.style as any).fillOpacity = terrainFill !== "transparent" ? "0.25" : "0";
         }
     }
 
@@ -149,6 +189,7 @@ export function createHexScene(config: HexSceneConfig): HexScene {
         polyByCoord,
         ensurePolys,
         setFill,
+        setOverlay,
         getViewBox: () => {
             if (!internals.bounds) {
                 return { minX: 0, minY: 0, width: 0, height: 0 };

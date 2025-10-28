@@ -56,22 +56,37 @@ entries:
     name: Aversion to Fire
     entryType: special
     text: If the golem takes Fire damage, it has Disadvantage on attack rolls and ability checks until the end of its next turn.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Berserk
     entryType: special
     text: Whenever the golem starts its turn Bloodied, roll 1d6. On a 6, the golem goes berserk. On each of its turns while berserk, the golem attacks the nearest creature it can see. If no creature is near enough to move to and attack, the golem attacks an object. Once the golem goes berserk, it remains so until it is destroyed or it is no longer Bloodied. The golem's creator, if within 60 feet of the berserk golem, can try to calm it by taking an action to make a DC 15 Charisma (Persuasion) check; the golem must be able to hear its creator. If this check succeeds, the golem ceases being berserk until the start of its next turn, at which point it resumes rolling for the Berserk trait again if it is still Bloodied.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Immutable Form
     entryType: special
     text: The golem can't shape-shift.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Lightning Absorption
     entryType: special
     text: Whenever the golem is subjected to Lightning damage, it regains a number of Hit Points equal to the Lightning damage dealt.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The golem has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -81,6 +96,9 @@ entries:
         - name: Slam
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Slam
     entryType: attack
@@ -98,6 +116,9 @@ entries:
           type: Lightning
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Flesh Golem

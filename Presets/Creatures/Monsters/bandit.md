@@ -54,6 +54,9 @@ entries:
           type: Slashing
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Light Crossbow
     entryType: attack
@@ -67,6 +70,9 @@ entries:
           type: Piercing
           average: 5
       range: 80/320 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Bandit

@@ -49,10 +49,16 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The shark has Advantage on an attack roll against a creature if at least one of the shark's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Water Breathing
     entryType: special
     text: The shark can breathe only underwater.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -66,6 +72,9 @@ entries:
           type: Piercing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Reef Shark

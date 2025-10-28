@@ -65,10 +65,16 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Nimble Escape
     entryType: special
     text: The tiger takes the Disengage or Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Tiger

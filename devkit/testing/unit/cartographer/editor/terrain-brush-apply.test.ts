@@ -2,12 +2,12 @@
 // Verifiziert Fehlerbehandlung und Rollback des Terrain-Brush beim Anwenden auf Hexfelder.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { App, TFile } from "obsidian";
-import type { RenderHandles } from "../../../src/features/maps/hex-mapper/hex-render";
+import type { RenderHandles } from "src/features/maps/hex-mapper/hex-render";
 import {
     applyBrush,
     type BrushExecutionContext,
     type BrushToolAdapter,
-} from "../../../src/workmodes/cartographer/editor/tools/terrain-brush/brush-core";
+} from "src/workmodes/cartographer/editor/tools/terrain-brush/brush-core";
 
 const telemetryMocks = vi.hoisted(() => ({
     reportEditorToolIssue: vi.fn(() => "issue:operation:Brush"),

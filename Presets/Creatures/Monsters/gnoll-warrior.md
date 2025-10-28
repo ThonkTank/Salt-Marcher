@@ -56,6 +56,9 @@ entries:
           type: Piercing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Bone Bow
     entryType: attack
@@ -69,6 +72,9 @@ entries:
           type: Piercing
           average: 6
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Rampage (1/Day)
     entryType: multiattack
@@ -81,6 +87,9 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: self
 ---
 
 # Gnoll Warrior

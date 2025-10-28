@@ -44,10 +44,16 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The warrior has Advantage on an attack roll against a creature if at least one of the warrior's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Spear
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +3, reach 5 ft. or range 20/60 ft. 4 (1d6 + 1) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Warrior Infantry

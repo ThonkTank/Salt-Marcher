@@ -1,7 +1,7 @@
 // tests/ui/workmode/create/entry-card.test.ts
 // Validates the shared entry card helper renders Library styling and actions.
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
-import { renderEntryCard, type EntryRenderContext } from "../../../src/ui";
+import { renderEntryCard, type EntryRenderContext } from "src/ui";
 
 const proto = HTMLElement.prototype as any;
 if (!proto.createEl) {

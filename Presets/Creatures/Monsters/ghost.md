@@ -71,10 +71,16 @@ entries:
     name: Ethereal Sight
     entryType: special
     text: The ghost can see 60 feet into the Ethereal Plane when it is on the Material Plane.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Incorporeal Movement
     entryType: special
     text: The ghost can move through other creatures and objects as if they were Difficult Terrain. It takes 5 (1d10) Force damage if it ends its turn inside an object.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -84,6 +90,9 @@ entries:
         - name: Touch
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Withering Touch
     entryType: attack
@@ -97,6 +106,9 @@ entries:
           type: Necrotic
           average: 19
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Horrific Visage
     entryType: save
@@ -120,6 +132,9 @@ entries:
             type: Psychic
             average: 10
       onSuccess: The target is immune to this ghost's Horrific Visage for 24 hours.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Possession
     entryType: save
@@ -140,6 +155,9 @@ entries:
                 type: until
                 trigger: the body drops to 0 Hit Points or the ghost leaves as a Bonus Action
       onSuccess: The target is immune to this ghost's Possession for 24 hours.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Etherealness
@@ -151,6 +169,9 @@ spellcastingEntries:
         - frequency: at-will
           spells:
             - Etherealness
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ghost

@@ -56,6 +56,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -69,6 +72,9 @@ entries:
           type: Piercing
           average: 17
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Deadly Leap
     entryType: save
@@ -93,10 +99,16 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage, and the target is pushed 5 feet straight away from the bulette.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Leap
     entryType: special
     text: The bulette jumps up to 30 feet by spending 10 feet of movement.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Bulette

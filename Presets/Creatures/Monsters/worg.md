@@ -60,6 +60,9 @@ entries:
           type: Piercing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Worg

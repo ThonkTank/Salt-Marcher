@@ -65,14 +65,23 @@ entries:
     name: Diabolical Restoration
     entryType: special
     text: If the erinyes dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The erinyes has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Rope
     entryType: special
     text: The erinyes has a magic rope. While bearing it, the erinyes can use the Entangling Rope action. The rope has AC 20, HP 90, and Immunity to Poison and Psychic damage. The rope turns to dust if reduced to 0 Hit Points, if it is 5+ feet away from the erinyes for 1 hour or more, or if the erinyes dies. If the rope is damaged or destroyed, the erinyes can fully restore it when finishing a Short Rest|XPHB|Short or Long Rest.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -82,6 +91,9 @@ entries:
         - name: Sword
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Withering Sword
     entryType: attack
@@ -99,6 +111,9 @@ entries:
           type: Necrotic
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Entangling Rope (Requires Magic Rope)
     entryType: save
@@ -123,6 +138,9 @@ entries:
             bonus: 0
             type: Force
             average: 14
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Erinyes

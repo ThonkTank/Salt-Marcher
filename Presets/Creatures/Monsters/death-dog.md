@@ -62,6 +62,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -81,6 +84,9 @@ entries:
             saveToEnd:
               timing: when-damage
       additionalEffects: 'If the target is a creature, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *First Failure* The target has the Poisoned condition. While Poisoned, the target''s Hit Point maximum doesn''t return to normal when finishing a Long Rest, and it repeats the save every 24 hours that elapse, ending the effect on itself on a success. Subsequent Failures: The Poisoned target''s Hit Point maximum decreases by 5 (1d10).'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Death Dog

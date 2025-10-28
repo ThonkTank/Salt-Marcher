@@ -64,10 +64,16 @@ entries:
     name: Demonic Restoration
     entryType: special
     text: If the nalfeshnee dies outside the Abyss, its body dissolves into ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Abyss.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The nalfeshnee has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -77,6 +83,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -94,10 +103,16 @@ entries:
           type: Force
           average: 11
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Teleport
     entryType: special
     text: The nalfeshnee teleports up to 120 feet to an unoccupied space it can see.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Horror Nimbus (Recharge 5-6)
     entryType: save
@@ -123,6 +138,9 @@ entries:
             type: Psychic
             average: 28
       onSuccess: The target is immune to this nalfeshnee's Horror Nimbus for 24 hours.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Nalfeshnee

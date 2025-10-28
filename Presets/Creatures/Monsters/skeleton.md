@@ -62,6 +62,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shortbow
     entryType: attack
@@ -75,6 +78,9 @@ entries:
           type: Piercing
           average: 6
       range: 80/320 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Skeleton

@@ -1,7 +1,7 @@
 // tests/ui/workmode/create/entry-manager.test.ts
 // Prüft Hinzufügen, Filtern und Neuordnen im shared Entry-Manager.
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
-import { mountEntryManager, type EntryRenderContext } from "../../../src/ui";
+import { mountEntryManager, type EntryRenderContext } from "src/ui";
 
 const proto = HTMLElement.prototype as any;
 if (!proto.createEl) {

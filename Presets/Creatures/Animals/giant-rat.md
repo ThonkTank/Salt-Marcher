@@ -50,6 +50,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The rat has Advantage on an attack roll against a creature if at least one of the rat's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -62,6 +65,9 @@ entries:
           bonus: 3
           type: Piercing
           average: 5
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Rat

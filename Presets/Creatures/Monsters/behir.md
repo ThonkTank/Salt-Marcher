@@ -61,6 +61,9 @@ entries:
         - name: Bite
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -78,6 +81,9 @@ entries:
           type: Lightning
           average: 11
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Constrict
     entryType: save
@@ -115,6 +121,9 @@ entries:
             bonus: 6
             type: Bludgeoning
             average: 28
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -139,6 +148,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Swallow
     entryType: save
@@ -165,6 +177,9 @@ entries:
             bonus: 0
             type: Acid
             average: 21
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Behir

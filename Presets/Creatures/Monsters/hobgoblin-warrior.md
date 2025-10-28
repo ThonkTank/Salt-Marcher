@@ -50,6 +50,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The hobgoblin has Advantage on an attack roll against a creature if at least one of the hobgoblin's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Longsword
     entryType: attack
@@ -63,6 +66,9 @@ entries:
           type: Slashing
           average: 12
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Longbow
     entryType: attack
@@ -80,6 +86,9 @@ entries:
           type: Poison
           average: 7
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hobgoblin Warrior

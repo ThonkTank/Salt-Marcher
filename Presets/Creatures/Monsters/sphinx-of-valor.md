@@ -68,6 +68,9 @@ entries:
     name: Inscrutable
     entryType: special
     text: No magic can observe the sphinx remotely or detect its thoughts without its permission. Wisdom (Insight) checks made to ascertain its intentions or sincerity are made with Disadvantage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day, or 4/Day in Lair)
     entryType: special
@@ -75,6 +78,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -84,6 +90,9 @@ entries:
         - name: Claw
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -97,6 +106,9 @@ entries:
           type: Slashing
           average: 20
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Roar (3/Day)
     entryType: save
@@ -140,6 +152,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Arcane Prowl
     entryType: multiattack
@@ -149,6 +164,10 @@ entries:
         - name: Claw
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: Weight of Years
     entryType: save
@@ -165,6 +184,10 @@ entries:
         effects:
           other: The target gains 1 Exhaustion level. While the target has any Exhaustion levels, it appears 3d10 years older.
         legacyEffects: The target gains 1 Exhaustion level. While the target has any Exhaustion levels, it appears 3d10 years older.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -187,6 +210,9 @@ spellcastingEntries:
             - Greater Restoration
             - Heroes' Feast
             - Zone of Truth
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Sphinx of Valor

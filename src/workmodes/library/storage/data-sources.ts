@@ -5,7 +5,7 @@ import type { BaseEntry, DataSource } from "../../../features/data-manager";
 import { readFrontmatter } from "../../../features/data-manager/browse/frontmatter-utils";
 import { listVaultPresets, watchVaultPresets } from "../../../../Presets/lib/vault-preset-loader";
 
-export type FilterableLibraryMode = "creatures" | "spells" | "items" | "equipment" | "terrains" | "regions" | "calendars";
+export type FilterableLibraryMode = "creatures" | "spells" | "items" | "equipment" | "terrains" | "regions" | "factions" | "calendars";
 
 export interface CreatureEntryMeta {
     readonly type?: string;
@@ -42,6 +42,12 @@ export interface RegionEntryMeta {
     readonly encounterOdds?: number;
 }
 
+export interface FactionEntryMeta {
+    readonly influence?: string;
+    readonly headquarters?: string;
+    readonly memberCount: number;
+}
+
 export interface CalendarEntryMeta {
     readonly id: string;
     readonly daysPerWeek: number;
@@ -55,6 +61,7 @@ export interface LibraryEntryMetaMap {
     equipment: EquipmentEntryMeta;
     terrains: TerrainEntryMeta;
     regions: RegionEntryMeta;
+    factions: FactionEntryMeta;
     calendars: CalendarEntryMeta;
 }
 
@@ -134,6 +141,33 @@ const loadRegionEntry = createEntryLoader<"regions">(fm => ({
     encounterOdds: typeof fm.encounter_odds === "number" ? fm.encounter_odds : undefined,
 }));
 
+function extractTokenValues(raw: unknown): string[] {
+    if (!Array.isArray(raw)) return [];
+    const result: string[] = [];
+    for (const entry of raw) {
+        if (typeof entry === "string" && entry.trim()) {
+            result.push(entry.trim());
+        } else if (entry && typeof entry === "object") {
+            const value = (entry as Record<string, unknown>).value;
+            if (typeof value === "string" && value.trim()) {
+                result.push(value.trim());
+            }
+        }
+    }
+    return result;
+}
+
+const loadFactionEntry = createEntryLoader<"factions">(fm => {
+    const influenceTags = extractTokenValues(fm.influence_tags);
+    const members = Array.isArray(fm.members) ? fm.members : [];
+
+    return {
+        influence: influenceTags[0],
+        headquarters: typeof fm.headquarters === "string" ? fm.headquarters : undefined,
+        memberCount: members.length,
+    };
+});
+
 const loadCalendarEntry = createEntryLoader<"calendars">(fm => {
     const months = Array.isArray(fm.months) ? fm.months : [];
     return {
@@ -179,6 +213,12 @@ export const LIBRARY_DATA_SOURCES: LibraryDataSourceMap = {
         list: (app) => listVaultPresets(app, "regions"),
         watch: (app, onChange) => watchVaultPresets(app, "regions", onChange),
         load: loadRegionEntry,
+    },
+    factions: {
+        id: "factions",
+        list: (app) => listVaultPresets(app, "factions"),
+        watch: (app, onChange) => watchVaultPresets(app, "factions", onChange),
+        load: loadFactionEntry,
     },
     calendars: {
         id: "calendars",

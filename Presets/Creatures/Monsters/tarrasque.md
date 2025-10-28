@@ -72,18 +72,30 @@ entries:
     limitedUse:
       count: 6
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The tarrasque has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Reflective Carapace
     entryType: special
     text: If the tarrasque is targeted by a *Magic Missile* spell or a spell that requires a ranged attack roll, roll 1d6. On a 1-5, the tarrasque is unaffected. On a 6, the tarrasque is unaffected and reflects the spell, turning the caster into the target.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Siege Monster
     entryType: special
     text: The tarrasque deals double damage to objects and structures.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -95,6 +107,9 @@ entries:
         - name: other
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -108,6 +123,9 @@ entries:
           type: Piercing
           average: 36
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -121,6 +139,9 @@ entries:
           type: Slashing
           average: 28
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail
     entryType: attack
@@ -140,6 +161,9 @@ entries:
             restrictions:
               size: Huge or smaller
       additionalEffects: If the target is a Huge or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Thunderous Bellow (Recharge 5-6)
     entryType: save
@@ -163,6 +187,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Swallow
     entryType: save
@@ -189,6 +216,9 @@ entries:
             bonus: 0
             type: Acid
             average: 56
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Onslaught
     entryType: multiattack
@@ -198,10 +228,18 @@ entries:
         - name: Tail
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: World-Shaking Movement
     entryType: special
     text: The tarrasque moves up to its Speed. At the end of this movement, the tarrasque creates an instantaneous shock wave in a 60-foot Emanation originating from itself. Creatures in that area lose  Concentration and, if Medium or smaller, have the Prone condition. The tarrasque can't take this action again until the start of its next turn.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Tarrasque

@@ -68,6 +68,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Touch
     entryType: attack
@@ -84,10 +87,16 @@ entries:
       onHit:
         other: If the target is a creature or a flammable object that isn't being worn or carried, it starts burning.
       additionalEffects: If the target is a creature or a flammable object that isn't being worn or carried, it starts burning.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Ignited Illumination
     entryType: special
     text: The magmin sets itself ablaze or extinguishes its flames. While ablaze, the magmin sheds Bright Light in a 10-foot radius and Dim Light for an additional 10 feet.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Magmin

@@ -7,9 +7,9 @@ import { TAbstractFile, TFile } from "obsidian";
 import {
     VaultAlmanacRepository,
     VaultCalendarRepository,
-} from "../../../src/workmodes/almanac/data/repositories";
-import type { VaultLike } from "../../../src/workmodes/almanac/data/json-store";
-import { gregorianSchema } from "../../../src/workmodes/almanac/fixtures/gregorian.fixture";
+} from "src/workmodes/almanac/data/repositories";
+import type { VaultLike } from "src/workmodes/almanac/data/json-store";
+import { gregorianSchema } from "src/workmodes/almanac/fixtures/gregorian.fixture";
 
 class MemoryFile extends TFile {
     data = "";

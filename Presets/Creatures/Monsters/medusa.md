@@ -64,6 +64,9 @@ entries:
         - name: Ray
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -77,6 +80,9 @@ entries:
           type: Slashing
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Snake Hair
     entryType: attack
@@ -94,6 +100,9 @@ entries:
           type: Poison
           average: 14
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Poison Ray
     entryType: attack
@@ -107,6 +116,9 @@ entries:
           type: Poison
           average: 11
       range: 150 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Petrifying Gaze (Recharge 5-6)
     entryType: save
@@ -115,6 +127,9 @@ entries:
     save:
       ability: con
       dc: 13
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Medusa

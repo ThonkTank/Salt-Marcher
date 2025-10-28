@@ -44,6 +44,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The tough has Advantage on an attack roll against a creature if at least one of the tough's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Mace
     entryType: attack
@@ -57,6 +60,9 @@ entries:
           type: Bludgeoning
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Heavy Crossbow
     entryType: attack
@@ -70,6 +76,9 @@ entries:
           type: Piercing
           average: 6
       range: 100/400 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Tough

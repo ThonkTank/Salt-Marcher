@@ -51,6 +51,9 @@ entries:
     name: Undead Fortitude
     entryType: special
     text: If damage reduces the zombie to 0 Hit Points, it makes a Constitution saving throw (DC 5 plus the damage taken) unless the damage is Radiant or from a Critical Hit. On a successful save, the zombie drops to 1 Hit Point instead.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Slam
     entryType: attack
@@ -64,6 +67,9 @@ entries:
           type: Bludgeoning
           average: 13
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ogre Zombie

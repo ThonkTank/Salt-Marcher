@@ -65,10 +65,16 @@ entries:
     name: Diabolical Restoration
     entryType: special
     text: If the devil dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The devil has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -80,6 +86,9 @@ entries:
         - name: Sting
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -93,6 +102,9 @@ entries:
           type: Slashing
           average: 13
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Infernal Sting
     entryType: attack
@@ -110,6 +122,9 @@ entries:
           type: Poison
           average: 18
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Bone Devil

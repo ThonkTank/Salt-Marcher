@@ -54,6 +54,9 @@ entries:
         - name: Touch
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rotting Touch
     entryType: attack
@@ -67,6 +70,9 @@ entries:
           type: Necrotic
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Violet Fungus

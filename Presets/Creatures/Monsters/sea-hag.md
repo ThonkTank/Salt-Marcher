@@ -51,6 +51,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The hag can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Vile Appearance
     entryType: save
@@ -68,6 +71,9 @@ entries:
                 type: until
                 trigger: the start of its next turn
       onSuccess: The target is immune to this hag's Vile Appearance for 24 hours.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -81,6 +87,9 @@ entries:
           type: Slashing
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Death Glare (Recharge 5-6)
     entryType: save
@@ -103,6 +112,9 @@ entries:
             type: Psychic
             average: 13
         legacyEffects: If the target has 20 Hit Points or fewer, it drops to 0 Hit Points. Otherwise, the target takes 13 (3d8) Psychic damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Illusory Appearance
@@ -115,6 +127,9 @@ spellcastingEntries:
         - frequency: at-will
           spells:
             - Disguise Self
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Sea Hag

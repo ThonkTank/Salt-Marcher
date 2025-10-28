@@ -8,16 +8,16 @@ import {
   InMemoryCalendarRepository,
   InMemoryEventRepository,
   InMemoryPhenomenonRepository,
-} from "../../../src/workmodes/almanac/data/repositories";
-import { InMemoryStateGateway } from "../../../src/workmodes/almanac/data/calendar-state-gateway";
-import { AlmanacStateMachine } from "../../../src/workmodes/almanac/mode/state-machine";
+} from "src/workmodes/almanac/data/repositories";
+import { InMemoryStateGateway } from "src/workmodes/almanac/data/calendar-state-gateway";
+import { AlmanacStateMachine } from "src/workmodes/almanac/mode/state-machine";
 import {
     createSampleEvents,
     getDefaultCurrentTimestamp,
     gregorianSchema,
-} from "../../../src/workmodes/almanac/fixtures/gregorian.fixture";
-import { createDayTimestamp } from "../../../src/workmodes/almanac/domain";
-import { createSamplePhenomena } from "../../../src/workmodes/almanac/fixtures/phenomena.fixture";
+} from "src/workmodes/almanac/fixtures/gregorian.fixture";
+import { createDayTimestamp } from "src/workmodes/almanac/domain";
+import { createSamplePhenomena } from "src/workmodes/almanac/fixtures/phenomena.fixture";
 
 const flushGateway = async (instance: unknown): Promise<void> => {
     if (

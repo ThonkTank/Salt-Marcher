@@ -59,6 +59,9 @@ entries:
     name: Swarm
     entryType: special
     text: The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny raven. The swarm can't regain Hit Points or gain Temporary Hit Points.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Beaks
     entryType: attack
@@ -76,6 +79,9 @@ entries:
           type: Piercing
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cacophony
     entryType: save
@@ -102,6 +108,9 @@ entries:
               description: advantage on ability checks and
           other: The target has the Deafened condition until the start of the swarm's next turn. While Deafened, the target also has Disadvantage on ability checks and attack rolls.
         legacyEffects: The target has the Deafened condition until the start of the swarm's next turn. While Deafened, the target also has Disadvantage on ability checks and attack rolls.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Swarm of Ravens

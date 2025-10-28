@@ -56,10 +56,16 @@ entries:
     name: Evasion
     entryType: special
     text: If the assassin is subjected to an effect that allows it to make a Dexterity saving throw to take only half damage, the assassin instead takes no damage if it succeeds on the save and only half damage if it fails. It can't use this trait if it has the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The assassin makes three attacks, using Shortsword or Light Crossbow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shortsword
     entryType: attack
@@ -77,6 +83,9 @@ entries:
           type: Poison
           average: 17
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Light Crossbow
     entryType: attack
@@ -94,10 +103,16 @@ entries:
           type: Poison
           average: 21
       range: 80/320 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Cunning Action
     entryType: special
     text: The assassin takes the Dash, Disengage, or Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Assassin

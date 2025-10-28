@@ -67,6 +67,9 @@ entries:
     name: Ice Walk
     entryType: special
     text: The dragon can move across and climb icy surfaces without needing to make an ability check. Additionally, Difficult Terrain composed of ice or snow doesn't cost it extra movement.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day, or 4/Day in Lair)
     entryType: special
@@ -74,6 +77,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -83,6 +89,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -100,6 +109,9 @@ entries:
           type: Cold
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cold Breath (Recharge 5-6)
     entryType: save
@@ -123,6 +135,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Freezing Burst
     entryType: save
@@ -142,6 +157,10 @@ entries:
             type: Cold
             average: 7
         legacyEffects: 7 (2d6) Cold damage, and the target's Speed is 0 until the end of the target's next turn.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -151,6 +170,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: legendary
     name: Frightful Presence
@@ -162,6 +185,10 @@ spellcastingEntries:
       excludeComponents:
         - M
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult White Dragon

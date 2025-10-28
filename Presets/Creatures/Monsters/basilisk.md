@@ -57,6 +57,9 @@ entries:
           type: Poison
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Petrifying Gaze (Recharge 4-6)
     entryType: save
@@ -65,6 +68,9 @@ entries:
     save:
       ability: con
       dc: 12
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Basilisk

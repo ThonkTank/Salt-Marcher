@@ -60,18 +60,30 @@ entries:
     name: Acid Absorption
     entryType: special
     text: Whenever the golem is subjected to Acid damage, it takes no damage and instead regains a number of Hit Points equal to the Acid damage dealt.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Berserk
     entryType: special
     text: Whenever the golem starts its turn Bloodied, roll 1d6. On a 6, the golem goes berserk. On each of its turns while berserk, the golem attacks the nearest creature it can see. If no creature is near enough to move to and attack, the golem attacks an object. Once the golem goes berserk, it continues to be berserk until it is destroyed or it is no longer Bloodied.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Immutable Form
     entryType: special
     text: The golem can't shape-shift.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The golem has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -81,6 +93,9 @@ entries:
         - name: Slam
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Slam
     entryType: attack
@@ -98,11 +113,17 @@ entries:
           type: Acid
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Hasten (Recharge 5-6)
     entryType: special
     text: The golem takes the Dash and Disengage actions.
     recharge: 5-6
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Clay Golem

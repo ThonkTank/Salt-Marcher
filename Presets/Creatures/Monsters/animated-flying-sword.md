@@ -67,6 +67,9 @@ entries:
           type: Slashing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Animated Flying Sword

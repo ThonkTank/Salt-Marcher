@@ -54,6 +54,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The giant makes two attacks, using Frost Axe or Great Bow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Frost Axe
     entryType: attack
@@ -71,6 +74,9 @@ entries:
           type: Cold
           average: 9
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Great Bow
     entryType: attack
@@ -88,11 +94,17 @@ entries:
           type: Cold
           average: 7
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: War Cry (Recharge 5-6)
     entryType: special
     text: The giant or one creature of its choice that can see or hear it gains 16 (2d10 + 5) Temporary Hit Points and has Advantage on attack rolls until the start of the giant's next turn.
     recharge: 5-6
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Frost Giant

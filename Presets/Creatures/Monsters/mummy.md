@@ -63,6 +63,9 @@ entries:
         - name: Fist
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rotting Fist
     entryType: attack
@@ -83,6 +86,9 @@ entries:
       onHit:
         other: If the target is a creature, it is cursed. While cursed, the target can't regain Hit Points, its Hit Point maximum doesn't return to normal when finishing a Long Rest, and its Hit Point maximum decreases by 10 (3d6) every 24 hours that elapse. A creature dies and turns to dust if reduced to 0 Hit Points by this attack.
       additionalEffects: If the target is a creature, it is cursed. While cursed, the target can't regain Hit Points, its Hit Point maximum doesn't return to normal when finishing a Long Rest, and its Hit Point maximum decreases by 10 (3d6) every 24 hours that elapse. A creature dies and turns to dust if reduced to 0 Hit Points by this attack.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Dreadful Glare
     entryType: save
@@ -103,6 +109,9 @@ entries:
                 type: until
                 trigger: the end of the mummy's next turn
       onSuccess: The target is immune to this mummy's Dreadful Glare for 24 hours.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Mummy

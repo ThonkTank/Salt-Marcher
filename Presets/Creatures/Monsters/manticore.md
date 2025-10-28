@@ -49,6 +49,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The manticore makes three attacks, using Rend or Tail Spike in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Rend
     entryType: attack
@@ -62,6 +65,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail Spike
     entryType: attack
@@ -75,6 +81,9 @@ entries:
           type: Piercing
           average: 7
       range: 100/200 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Manticore

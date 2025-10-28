@@ -56,10 +56,16 @@ entries:
     name: Spider Climb
     entryType: special
     text: The vampire can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Vampire Weakness
     entryType: special
     text: 'The vampire has these weaknesses: - **Forbiddance**: The vampire can''t enter a residence without an invitation from an occupant. - **Running Water**: The vampire takes 20 Acid damage if it ends its turn in running water. - **Stake to the Heart**: The vampire is destroyed if a weapon that deals Piercing damage is driven into the vampire''s heart while the vampire has the Incapacitated condition. - **Sunlight**: The vampire takes 20 Radiant damage if it starts its turn in sunlight. While in sunlight, it has Disadvantage on attack rolls and ability checks.'
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -69,6 +75,9 @@ entries:
         - name: Claw
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -91,6 +100,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 13) from one of two claws.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: save
@@ -117,10 +129,16 @@ entries:
             type: Necrotic
             average: 10
         legacyEffects: 5 (1d4 + 3) Piercing damage plus 10 (3d6) Necrotic damage. The target's Hit Point maximum decreases by an amount equal to the Necrotic damage taken, and the vampire regains Hit Points equal to that amount.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Deathless Agility
     entryType: special
     text: The vampire takes the Dash or Disengage action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Vampire Spawn

@@ -68,6 +68,9 @@ entries:
     name: Succubus Form
     entryType: special
     text: When the incubus finishes a Long Rest, it can shape-shift into a Succubus, using that stat block instead of this one. Any equipment it's wearing or carrying isn't transformed.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -77,6 +80,9 @@ entries:
         - name: Touch
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Restless Touch
     entryType: attack
@@ -90,6 +96,9 @@ entries:
           type: Psychic
           average: 15
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Nightmare
     entryType: save
@@ -114,6 +123,9 @@ entries:
             bonus: 0
             type: Psychic
             average: 18
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -133,6 +145,9 @@ spellcastingEntries:
           spells:
             - Dream
             - Hypnotic Pattern
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Incubus

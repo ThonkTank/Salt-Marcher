@@ -37,6 +37,7 @@ Each entity type has its own markdown body serialization function (frontmatter h
 - **Calendars**: `src/workmodes/library/calendars/serializer.ts` → `calendarToMarkdown()`
 - **Terrains**: `src/workmodes/library/terrains/serializer.ts` → `terrainToMarkdown()`
 - **Regions**: `src/workmodes/library/regions/serializer.ts` → `regionToMarkdown()`
+- **Factions**: `src/workmodes/library/factions/serializer.ts` → `factionToMarkdown()`
 
 These functions are used as `bodyTemplate` in CreateSpecs and generate only the markdown body content.
 Frontmatter serialization is handled generically by the storage system.
@@ -69,6 +70,49 @@ storage: {
   frontmatter: ["name", "size", "type", "abilities", ...]
 }
 ```
+
+### Faction Document Shape
+
+Faction presets follow the same Markdown + frontmatter structure. The CreateSpec writes
+frontmatter fields for metadata (`name`, `motto`, `headquarters`, `territory`) and
+token arrays such as `influence_tags`, `goal_tags`, and `culture_tags`. Members are stored
+as objects with `name`, `role`, `status`, optional `is_named`, and `notes`.
+
+The markdown body is produced by `factionToMarkdown()` and mirrors the sections shown
+inside the Library workmode:
+
+```markdown
+# Schildwachtbund
+
+> Ueberall wo die Flut schlaegt, stehen wir.
+
+## Overview
+- **Headquarters:** Wacht am Sturmwall
+- **Territory:** Hafenviertel und umliegende Suempfe
+- **Influence:** Military, Civic
+- **Culture:** Human, Mixed
+- **Goals:** Defense, Stability
+```
+
+Complete examples—including narrative sections (Summary, Assets, Relationships) and the
+structured member list—live in `samples/fraktionen/*.md`.
+
+### Hex Tile Frontmatter
+
+Hex tiles are stored as Markdown files with YAML frontmatter inside the map subfolders. Relevant keys:
+
+```yaml
+type: hex
+smHexTile: true
+row: 3
+col: 5
+map_path: "SaltMarcher/Maps/Sturmlicht.md"
+terrain: "Sumpf"
+region: "Sturmlicht-Suempfe"
+faction: "Schildwachtbund"   # optional, drives the faction overlay
+```
+
+The optional `faction` key is read by the `FactionOverlayStore` to color hexes in the Cartographer and to feed upcoming session hooks with faction context.
 
 ## Current Architecture
 

@@ -58,6 +58,9 @@ entries:
           type: Bludgeoning
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Darkness Aura (1/Day)
     entryType: special
@@ -65,6 +68,9 @@ entries:
     limitedUse:
       count: 1
       reset: day
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Darkmantle

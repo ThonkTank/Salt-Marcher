@@ -64,6 +64,9 @@ entries:
     name: Regeneration
     entryType: special
     text: The oni regains 10 Hit Points at the start of each of its turns if it has at least 1 Hit Point.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -77,6 +80,9 @@ entries:
           with:
             type: spellcasting
             text: Spellcasting
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -94,6 +100,9 @@ entries:
           type: Necrotic
           average: 9
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Nightmare Ray
     entryType: attack
@@ -107,10 +116,16 @@ entries:
           type: Psychic
           average: 9
       range: 60 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shape-Shift
     entryType: special
     text: The oni shape-shifts into a Small or Medium Humanoid or a Large Giant, or it returns to its true form. Other than its size, its game statistics are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -134,6 +149,9 @@ spellcastingEntries:
             - Darkness
             - Gaseous Form
             - Sleep
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Invisibility
     entryType: spellcasting
@@ -141,6 +159,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Oni

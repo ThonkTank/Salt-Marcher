@@ -2,7 +2,7 @@
 // Verifiziert das Pipeline-Verhalten des gemeinsamen BaseCreateModal.
 import { describe, expect, it, vi } from "vitest";
 import { App } from "obsidian";
-import { BaseCreateModal, type CreateModalPipeline } from "../../../src/ui";
+import { BaseCreateModal, type CreateModalPipeline } from "src/ui";
 
 const proto = HTMLElement.prototype as any;
 if (!proto.createEl) {

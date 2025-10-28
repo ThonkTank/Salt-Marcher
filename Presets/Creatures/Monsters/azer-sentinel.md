@@ -48,10 +48,16 @@ entries:
     name: Fire Aura
     entryType: special
     text: At the end of each of the azer's turns, each creature of the azer's choice in a 5-foot Emanation originating from the azer takes 5 (1d10) Fire damage unless the azer has the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Illumination
     entryType: special
     text: The azer sheds Bright Light in a 10-foot radius and Dim Light for an additional 10 feet.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Burning Hammer
     entryType: attack
@@ -69,6 +75,9 @@ entries:
           type: Fire
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Azer Sentinel

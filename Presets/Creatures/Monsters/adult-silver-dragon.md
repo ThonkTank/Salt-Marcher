@@ -68,6 +68,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -81,6 +84,9 @@ entries:
           with:
             type: spellcasting
             spell: Ice Knife
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -98,6 +104,9 @@ entries:
           type: Cold
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cold Breath (Recharge 5-6)
     entryType: save
@@ -121,6 +130,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Paralyzing Breath
     entryType: save
@@ -128,6 +140,9 @@ entries:
     save:
       ability: con
       dc: 20
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Cold Gale
     entryType: save
@@ -153,6 +168,10 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -162,6 +181,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -184,6 +207,9 @@ spellcastingEntries:
           spells:
             - Ice Storm
             - Zone of Truth
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Chill
     entryType: spellcasting
@@ -191,6 +217,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Silver Dragon

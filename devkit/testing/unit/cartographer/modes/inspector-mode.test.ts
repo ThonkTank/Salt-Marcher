@@ -2,10 +2,10 @@
 // Prüft den Inspector-Modus auf Formularaufbau und Auto-Save-Verhalten.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { App, TFile } from "obsidian";
-import type { CartographerModeLifecycleContext } from "../../../src/workmodes/cartographer/presenter";
-import type { RenderHandles } from "../../../src/features/maps/hex-mapper/hex-render";
-import { TERRAIN_COLORS } from "../../../src/features/maps/domain/terrain";
-import { createInspectorMode } from "../../../src/workmodes/cartographer/modes/inspector";
+import type { CartographerModeLifecycleContext } from "src/workmodes/cartographer/presenter";
+import type { RenderHandles } from "src/features/maps/hex-mapper/hex-render";
+import { TERRAIN_COLORS } from "src/features/maps/domain/terrain";
+import { createInspectorMode } from "src/workmodes/cartographer/modes/inspector";
 
 const loadTile = vi.fn();
 const saveTile = vi.fn();

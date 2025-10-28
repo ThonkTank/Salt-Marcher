@@ -56,10 +56,16 @@ entries:
     name: Bound
     entryType: special
     text: The guardian is magically bound to an amulet. While the guardian and its amulet are on the same plane of existence, the amulet's wearer can telepathically call the guardian to travel to it, and the guardian knows the distance and direction to the amulet. If the guardian is within 60 feet of the amulet's wearer, half of any damage the wearer takes (round up) is transferred to the guardian.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Regeneration
     entryType: special
     text: The guardian regains 10 Hit Points at the start of each of its turns if it has at least 1 Hit Point.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -69,6 +75,9 @@ entries:
         - name: Fist
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Fist
     entryType: attack
@@ -86,6 +95,9 @@ entries:
           type: Force
           average: 7
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: trait
     name: Spell Storing
@@ -94,6 +106,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
 ---
 
 # Shield Guardian

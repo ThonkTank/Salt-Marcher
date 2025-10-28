@@ -50,6 +50,9 @@ entries:
     name: Adhesive (Object Form Only)
     entryType: special
     text: The mimic adheres to anything that touches it. A Huge or smaller creature adhered to the mimic has the Grappled condition (escape DC 13). Ability checks made to escape this grapple have Disadvantage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -71,6 +74,9 @@ entries:
           type: Acid
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Pseudopod
     entryType: attack
@@ -97,10 +103,16 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13). Ability checks made to escape this grapple have Disadvantage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The mimic shape-shifts to resemble a Medium or Small object while retaining its game statistics, or it returns to its true blob form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Mimic

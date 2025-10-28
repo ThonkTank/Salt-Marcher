@@ -10,11 +10,11 @@ import {
     VaultAlmanacRepository,
     VaultCalendarRepository,
     VaultEventRepository,
-} from "../../../src/workmodes/almanac/data/repositories";
+} from "src/workmodes/almanac/data/repositories";
 import {
     InMemoryStateGateway,
     VaultCalendarStateGateway,
-} from "../../../src/workmodes/almanac/data/calendar-state-gateway";
+} from "src/workmodes/almanac/data/calendar-state-gateway";
 import {
     compareTimestampsWithSchema,
     createDayTimestamp,
@@ -22,14 +22,14 @@ import {
     createSingleEvent,
     getEventAnchorTimestamp,
     type CalendarTimestamp,
-} from "../../../src/workmodes/almanac/domain";
-import { CartographerHookGateway } from "../../../src/workmodes/almanac/mode/cartographer-gateway";
+} from "src/workmodes/almanac/domain";
+import { CartographerHookGateway } from "src/workmodes/almanac/mode/cartographer-gateway";
 import {
     gregorianSchema,
     GREGORIAN_CALENDAR_ID,
-} from "../../../src/workmodes/almanac/fixtures/gregorian.fixture";
+} from "src/workmodes/almanac/fixtures/gregorian.fixture";
 import { TAbstractFile, TFile } from "obsidian";
-import type { VaultLike } from "../../../src/workmodes/almanac/data/json-store";
+import type { VaultLike } from "src/workmodes/almanac/data/json-store";
 
 const startOfJanFirst = createHourTimestamp(GREGORIAN_CALENDAR_ID, 2024, "jan", 1, 0);
 

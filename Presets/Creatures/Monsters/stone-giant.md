@@ -57,6 +57,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The giant makes two attacks, using Stone Club or Boulder in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Stone Club
     entryType: attack
@@ -70,6 +73,9 @@ entries:
           type: Bludgeoning
           average: 22
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Boulder
     entryType: attack
@@ -89,6 +95,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Stone Giant

@@ -12,20 +12,20 @@ vi.mock("../../../src/workmodes/almanac/telemetry", () => {
     };
 });
 
-import { emitAlmanacEvent, reportAlmanacGatewayIssue } from "../../../src/workmodes/almanac/telemetry";
-import { InMemoryStateGateway } from "../../../src/workmodes/almanac/data/calendar-state-gateway";
+import { emitAlmanacEvent, reportAlmanacGatewayIssue } from "src/workmodes/almanac/telemetry";
+import { InMemoryStateGateway } from "src/workmodes/almanac/data/calendar-state-gateway";
 import {
   AlmanacMemoryBackend,
   InMemoryCalendarRepository,
   InMemoryEventRepository,
   InMemoryPhenomenonRepository,
-} from "../../../src/workmodes/almanac/data/repositories";
-import { AlmanacStateMachine } from "../../../src/workmodes/almanac/mode/state-machine";
-import { gregorianSchema, getDefaultCurrentTimestamp } from "../../../src/workmodes/almanac/fixtures/gregorian.fixture";
-import { createSampleEvents } from "../../../src/workmodes/almanac/fixtures/gregorian.fixture";
-import { CalendarGatewayError } from "../../../src/workmodes/almanac/data/calendar-state-gateway";
-import { AlmanacRepositoryError } from "../../../src/workmodes/almanac/data/repositories";
-import { createDayTimestamp } from "../../../src/workmodes/almanac/domain";
+} from "src/workmodes/almanac/data/repositories";
+import { AlmanacStateMachine } from "src/workmodes/almanac/mode/state-machine";
+import { gregorianSchema, getDefaultCurrentTimestamp } from "src/workmodes/almanac/fixtures/gregorian.fixture";
+import { createSampleEvents } from "src/workmodes/almanac/fixtures/gregorian.fixture";
+import { CalendarGatewayError } from "src/workmodes/almanac/data/calendar-state-gateway";
+import { AlmanacRepositoryError } from "src/workmodes/almanac/data/repositories";
+import { createDayTimestamp } from "src/workmodes/almanac/domain";
 
 class ConflictPhenomenonRepository extends InMemoryPhenomenonRepository {
     constructor(backend: AlmanacMemoryBackend) {

@@ -59,6 +59,9 @@ entries:
           type: Bludgeoning
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Goat

@@ -73,6 +73,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -97,6 +100,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Sleep Breath
     entryType: save
@@ -122,6 +128,9 @@ entries:
                 trigger: the end of its next turn
               saveToEnd:
                 timing: custom
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Brass Dragon Wyrmling

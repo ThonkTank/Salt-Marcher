@@ -50,6 +50,9 @@ entries:
           type: Bludgeoning
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Riding Horse

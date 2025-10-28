@@ -65,10 +65,16 @@ entries:
     name: Demonic Restoration
     entryType: special
     text: If the glabrezu dies outside the Abyss, its body dissolves into ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Abyss.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The glabrezu has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -78,6 +84,9 @@ entries:
         - name: Pincer
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Pincer
     entryType: attack
@@ -100,6 +109,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 15) from one of two pincers.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Pummel
     entryType: save
@@ -124,6 +136,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -145,6 +160,9 @@ spellcastingEntries:
             - Confusion
             - Fly
             - Power Word Stun
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Glabrezu

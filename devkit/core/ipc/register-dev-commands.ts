@@ -32,6 +32,10 @@ import {
 } from './commands/field-inspection-commands';
 import { dumpDOM } from './commands/dom-dump-command';
 import { inspectUI } from './commands/ui-inspect-command';
+import {
+  listStores,
+  inspectStore,
+} from './commands/state-commands';
 
 /**
  * Register all development commands with the IPC server
@@ -78,4 +82,8 @@ export function registerDevCommands(server: IPCServer): void {
   // DOM inspection commands
   server.registerCommand('dump-dom', dumpDOM);
   server.registerCommand('inspect-ui', inspectUI);
+
+  // State inspection commands
+  server.registerCommand('state-list', listStores);
+  server.registerCommand('state-inspect', inspectStore);
 }

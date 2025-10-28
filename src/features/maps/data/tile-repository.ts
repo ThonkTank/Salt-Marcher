@@ -3,12 +3,16 @@ import { App, TFile, TFolder, normalizePath } from "obsidian";
 import { TERRAIN_COLORS } from "../domain/terrain";
 import { parseOptions } from "../domain/options";
 import { logger } from "../../../app/plugin-logger";
+import { getFactionOverlayStore, type FactionOverlayAssignment } from "../state/faction-overlay-store";
+import { createTileStore, createEmptyTileStoreState, type TileStore, type TileStoreState } from "../state/tile-store";
+import type { Unsubscriber } from "../../../services/state";
 
 export type TileCoord = { r: number; c: number };
-export type TileData  = { terrain: string; region?: string; note?: string };
+export type TileData  = { terrain: string; region?: string; faction?: string; note?: string };
 
 const TILE_TERRAIN_MAX_LENGTH = 64;
 const TILE_REGION_MAX_LENGTH = 120;
+const TILE_FACTION_MAX_LENGTH = 120;
 
 export class TileValidationError extends Error {
     constructor(public readonly issues: string[]) {
@@ -42,6 +46,12 @@ export function validateTileData(
         issues.push(`region exceeds ${TILE_REGION_MAX_LENGTH} characters`);
     }
 
+    const factionRaw = typeof data.faction === "string" ? data.faction : "";
+    const faction = factionRaw.trim();
+    if (faction.length > TILE_FACTION_MAX_LENGTH) {
+        issues.push(`faction exceeds ${TILE_FACTION_MAX_LENGTH} characters`);
+    }
+
     const noteRaw = typeof data.note === "string" ? data.note : undefined;
     const note = noteRaw?.trim();
 
@@ -52,11 +62,70 @@ export function validateTileData(
     return {
         terrain,
         region,
+        faction: faction || undefined,
         note: note || undefined,
     };
 }
 
 const FM_TYPE = "hex";
+
+const tileStoreRegistry = new WeakMap<App, Map<string, TileStore>>();
+const overlaySyncRegistry = new WeakMap<App, Map<string, () => void>>();
+
+function ensureOverlaySync(app: App, mapFile: TFile, store: TileStore): void {
+    let byApp = overlaySyncRegistry.get(app);
+    if (!byApp) {
+        byApp = new Map();
+        overlaySyncRegistry.set(app, byApp);
+    }
+
+    const key = mapFile.path;
+    if (byApp.has(key)) return;
+
+    const overlayStore = getFactionOverlayStore(app, mapFile);
+
+    const applyState = (state: TileStoreState) => {
+        if (!state.loaded) {
+            overlayStore.clear();
+            return;
+        }
+
+        const assignments: FactionOverlayAssignment[] = [];
+        for (const record of state.tiles.values()) {
+            const factionId = (record.data.faction ?? "").trim();
+            if (!factionId) continue;
+
+            assignments.push({
+                coord: record.coord,
+                factionId,
+                factionName: record.data.faction ?? undefined,
+                sourceId: record.file?.path,
+            });
+        }
+
+        overlayStore.setAssignments(assignments);
+    };
+
+    const unsubscribe: Unsubscriber = store.state.subscribe(applyState);
+    applyState(store.state.get());
+
+    const dispose = () => {
+        unsubscribe();
+        overlayStore.clear();
+    };
+
+    byApp.set(key, dispose);
+}
+
+function releaseOverlaySync(app: App, mapFile: TFile): void {
+    const byApp = overlaySyncRegistry.get(app);
+    if (!byApp) return;
+    const dispose = byApp.get(mapFile.path);
+    if (dispose) {
+        dispose();
+        byApp.delete(mapFile.path);
+    }
+}
 
 // ===== Pfad-/Namens-Helfer =====
 function mapNameFromPath(mapPath: string): string {
@@ -99,6 +168,30 @@ function coordFromLegacyName(file: TFile, folderPrefix: string): TileCoord | nul
     return null;
 }
 
+function getTileStore(app: App, mapFile: TFile): TileStore {
+    let storesByApp = tileStoreRegistry.get(app);
+    if (!storesByApp) {
+        storesByApp = new Map();
+        tileStoreRegistry.set(app, storesByApp);
+    }
+
+    const key = mapFile.path;
+    let store = storesByApp.get(key);
+    if (!store) {
+        store = createTileStore({
+            storageKey: normalizePath(`tiles://${mapFile.path}`),
+            name: `map-tiles:${normalizePath(mapFile.path)}`,
+            listTilesFromDisk: () => listTilesForMapFromDisk(app, mapFile),
+            saveTileToDisk: (coord, data) => saveTileToDisk(app, mapFile, coord, data),
+            deleteTileFromDisk: (coord) => deleteTileFromDisk(app, mapFile, coord),
+            loadTileFromDisk: (coord) => loadTileFromDisk(app, mapFile, coord),
+        });
+        storesByApp.set(key, store);
+    }
+    ensureOverlaySync(app, mapFile, store);
+    return store;
+}
+
 async function readOptions(app: App, mapFile: TFile): Promise<{ folder: string; folderPrefix: string }> {
     const raw = await app.vault.read(mapFile);
     const opts = parseOptions(raw);
@@ -131,6 +224,7 @@ function buildMarkdown(coord: TileCoord, mapPath: string, folderPrefix: string, 
     const validated = validateTileData(data, { allowUnknownTerrain: true });
     const terrain = validated.terrain ?? "";
     const region = (validated.region ?? "").trim();
+    const faction = (validated.faction ?? "").trim();
     const mapName = mapNameFromPath(mapPath);
     const bodyNote = (validated.note ?? "Notizen hier …").trim();
     return [
@@ -138,6 +232,7 @@ function buildMarkdown(coord: TileCoord, mapPath: string, folderPrefix: string, 
         `type: ${FM_TYPE}`,
         `smHexTile: true`,
         `region: "${region}"`,
+        `faction: "${faction}"`,
         `row: ${coord.r}`,
         `col: ${coord.c}`,
         `map_path: "${mapPath}"`,
@@ -279,7 +374,7 @@ async function adoptLegacyTile(
 // ===== Öffentliche API =====
 
 /** Alle Tiles für eine Map auflisten (scannt nur den Ziel-Ordner). */
-export async function listTilesForMap(
+async function listTilesForMapFromDisk(
     app: App,
     mapFile: TFile
 ): Promise<Array<{ coord: TileCoord; file: TFile; data: TileData }>> {
@@ -347,7 +442,7 @@ export async function listTilesForMap(
 
 
 /** Tile laden – gibt null zurück, wenn die Datei nicht existiert oder invalid ist. */
-export async function loadTile(
+async function loadTileFromDisk(
     app: App,
     mapFile: TFile,
     coord: TileCoord
@@ -369,22 +464,23 @@ export async function loadTile(
 
     const terrain = typeof fmc.terrain === "string" ? fmc.terrain : "";
     const region = typeof (fmc as any).region === "string" ? (fmc as any).region : "";
+    const faction = typeof (fmc as any).faction === "string" ? (fmc as any).faction : "";
     try {
-        const validated = validateTileData({ terrain, region, note }, { allowUnknownTerrain: true });
+        const validated = validateTileData({ terrain, region, faction, note }, { allowUnknownTerrain: true });
         return validated;
     } catch (error) {
         logger.warn("[salt-marcher] Loaded tile contains invalid data", error);
-        return { terrain: terrain.trim(), region: region.trim(), note: note || undefined };
+        return { terrain: terrain.trim(), region: region.trim(), faction: faction.trim() || undefined, note: note || undefined };
     }
 }
 
 /** Tile speichern – legt Datei an oder aktualisiert Frontmatter/Body. */
-export async function saveTile(
+async function saveTileToDisk(
     app: App,
     mapFile: TFile,
     coord: TileCoord,
     data: TileData
-): Promise<TFile> {
+): Promise<{ file: TFile; data: TileData }> {
     const sanitized = validateTileData(data);
     const mapPath = mapFile.path;
     const { folder, newPath, file } = await resolveTilePath(app, mapFile, coord);
@@ -393,7 +489,8 @@ export async function saveTile(
     if (!file) {
         const { folderPrefix } = await readOptions(app, mapFile);
         const md = buildMarkdown(coord, mapPath, folderPrefix, sanitized);
-        return await app.vault.create(newPath, md);
+        const created = await app.vault.create(newPath, md);
+        return { file: created, data: sanitized };
     }
 
     // Frontmatter aktualisieren (nur setzen, wenn explizit übergeben)
@@ -406,28 +503,35 @@ export async function saveTile(
         if (sanitized.region !== undefined) (f as any).region = sanitized.region ?? "";
         if (sanitized.terrain !== undefined) f.terrain = sanitized.terrain ?? "";
         if (typeof f.terrain !== "string") f.terrain = "";
+        if ("faction" in data) {
+            if (sanitized.faction) {
+                (f as any).faction = sanitized.faction;
+            } else {
+                delete (f as any).faction;
+            }
+        }
     });
 
-        // Note (Body) optional aktualisieren – ersetzt nur, wenn data.note gesetzt ist
-        if (sanitized.note !== undefined) {
-            const raw = await app.vault.read(file);
-            const hasFM = /^---[\s\S]*?---/m.test(raw);
-            const fmPart = hasFM ? (raw.match(/^---[\s\S]*?---/m) || [""])[0] : "";
-            const body = hasFM ? raw.slice(fmPart.length).trimStart() : raw;
+    // Note (Body) optional aktualisieren – ersetzt nur, wenn data.note gesetzt ist
+    if (sanitized.note !== undefined) {
+        const raw = await app.vault.read(file);
+        const hasFM = /^---[\s\S]*?---/m.test(raw);
+        const fmPart = hasFM ? (raw.match(/^---[\s\S]*?---/m) || [""])[0] : "";
+        const body = hasFM ? raw.slice(fmPart.length).trimStart() : raw;
 
-            // Erhalte optionalen Backlink, ersetze restlichen Body durch neue Note
-            const lines = body.split("\n");
-            const keepBacklink = lines.find((l) => /\[\[.*\|\s*↩ Zur Karte\s*\]\]/.test(l));
-            const newBody = [keepBacklink ?? "", sanitized.note.trim(), ""].filter(Boolean).join("\n");
+        // Erhalte optionalen Backlink, ersetze restlichen Body durch neue Note
+        const lines = body.split("\n");
+        const keepBacklink = lines.find((l) => /\[\[.*\|\s*↩ Zur Karte\s*\]\]/.test(l));
+        const newBody = [keepBacklink ?? "", sanitized.note.trim(), ""].filter(Boolean).join("\n");
 
-            await app.vault.modify(file, `${fmPart}\n${newBody}`.trim() + "\n");
-        }
+        await app.vault.modify(file, `${fmPart}\n${newBody}`.trim() + "\n");
+    }
 
-        return file;
+    return { file, data: sanitized };
 }
 
 /** Tile löschen (falls vorhanden). */
-export async function deleteTile(
+async function deleteTileFromDisk(
     app: App,
     mapFile: TFile,
     coord: TileCoord
@@ -442,5 +546,53 @@ export async function initTilesForNewMap(app: App, mapFile: TFile): Promise<void
         for (let c = 0; c < 3; c++) {
             await saveTile(app, mapFile, { r, c }, { terrain: "" });
         }
+    }
+    const store = getTileStore(app, mapFile);
+    await store.refresh();
+}
+
+export async function listTilesForMap(
+    app: App,
+    mapFile: TFile
+): Promise<Array<{ coord: TileCoord; file: TFile; data: TileData }>> {
+    const store = getTileStore(app, mapFile);
+    return await store.listTiles();
+}
+
+export async function loadTile(
+    app: App,
+    mapFile: TFile,
+    coord: TileCoord
+): Promise<TileData | null> {
+    const store = getTileStore(app, mapFile);
+    return await store.loadTile(coord);
+}
+
+export async function saveTile(
+    app: App,
+    mapFile: TFile,
+    coord: TileCoord,
+    data: TileData
+): Promise<TFile> {
+    const store = getTileStore(app, mapFile);
+    return await store.saveTile(coord, data);
+}
+
+export async function deleteTile(
+    app: App,
+    mapFile: TFile,
+    coord: TileCoord
+): Promise<void> {
+    const store = getTileStore(app, mapFile);
+    await store.deleteTile(coord);
+}
+
+export function resetTileStore(app: App, mapFile: TFile): void {
+    const storesByApp = tileStoreRegistry.get(app);
+    const store = storesByApp?.get(mapFile.path);
+    if (store) {
+        releaseOverlaySync(app, mapFile);
+        store.state.set(createEmptyTileStoreState());
+        storesByApp?.delete(mapFile.path);
     }
 }

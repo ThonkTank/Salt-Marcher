@@ -61,6 +61,9 @@ entries:
     name: Flyby
     entryType: special
     text: The owl doesn't provoke an Opportunity Attack when it flies out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Talons
     entryType: attack
@@ -74,6 +77,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -89,6 +95,9 @@ spellcastingEntries:
         - frequency: 1/day
           spells:
             - Clairvoyance
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Owl

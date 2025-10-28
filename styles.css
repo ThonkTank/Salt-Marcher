@@ -2130,3 +2130,116 @@
   font-family: inherit;
 }
 
+/* New Trigger UI elements */
+.sm-cc-tiny-number {
+  width: 40px;
+  padding: 2px 4px;
+  font-size: 0.85em;
+  text-align: center;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 3px;
+  background: var(--background-primary);
+}
+
+.sm-cc-tiny-select {
+  padding: 2px 4px;
+  font-size: 0.85em;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 3px;
+  background: var(--background-primary);
+  min-width: 80px;
+}
+
+.sm-cc-long-text {
+  flex: 1;
+  padding: 4px 8px;
+  font-size: 0.85em;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 3px;
+  background: var(--background-primary);
+  min-width: 200px;
+}
+
+.sm-cc-checkbox-label {
+  font-size: 0.85em;
+  color: var(--text-normal);
+  margin-right: 12px;
+  cursor: pointer;
+}
+
+.sm-cc-checkbox-label-small {
+  font-size: 0.8em;
+  color: var(--text-normal);
+  margin-right: 6px;
+  cursor: pointer;
+}
+
+.sm-cc-secondary-btn {
+  background: transparent;
+  border: 1px dashed var(--background-modifier-border);
+  color: var(--text-muted);
+  font-size: 0.8em;
+  padding: 2px 8px;
+}
+
+.sm-cc-secondary-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+  border-style: solid;
+}
+
+/* Hex Map Overlay Legend */
+.sm-hex-map-host {
+  position: relative;
+}
+
+.sm-map-legend {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--background-modifier-border);
+  background-color: var(--background-secondary);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+  max-width: 280px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.sm-map-legend.is-empty {
+  display: none;
+}
+
+.sm-map-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.sm-map-legend__swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.sm-map-legend__label {
+  flex: 1;
+  font-weight: 500;
+  color: var(--text-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sm-map-legend__meta {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}

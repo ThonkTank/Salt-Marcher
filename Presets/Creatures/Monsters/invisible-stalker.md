@@ -70,10 +70,16 @@ entries:
     name: Air Form
     entryType: special
     text: The stalker can enter an enemy's space and stop there. It can move through a space as narrow as 1 inch without expending extra movement to do so.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Invisibility
     entryType: special
     text: The stalker has the Invisible condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -87,6 +93,9 @@ entries:
           with:
             type: attack
             name: Vortex
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Wind Swipe
     entryType: attack
@@ -100,6 +109,9 @@ entries:
           type: Force
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Vortex
     entryType: save
@@ -132,6 +144,9 @@ entries:
             bonus: 0
             type: Thunder
             average: 7
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Invisible Stalker

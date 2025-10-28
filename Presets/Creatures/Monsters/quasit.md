@@ -59,6 +59,9 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The quasit has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Rend
     entryType: attack
@@ -72,6 +75,9 @@ entries:
           type: Slashing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Scare (1/Day)
     entryType: save
@@ -91,10 +97,16 @@ entries:
             - condition: Frightened
               saveToEnd:
                 timing: end-of-turn
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shape-Shift
     entryType: special
     text: The quasit shape-shifts to resemble a bat (Speed 10 ft., Fly 40 ft.), a centipede (40 ft., Climb 40 ft.), or a toad (40 ft., Swim 40 ft.), or it returns to its true form. Its game statistics are the same in each form, except for its Speed. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Invisibility
@@ -106,6 +118,9 @@ spellcastingEntries:
         - frequency: at-will
           spells:
             - Invisibility
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Quasit

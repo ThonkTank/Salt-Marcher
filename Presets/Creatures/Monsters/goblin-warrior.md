@@ -66,6 +66,9 @@ entries:
           type: Slashing
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shortbow
     entryType: attack
@@ -83,10 +86,16 @@ entries:
           type: Piercing
           average: 2
       range: 80/320 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Nimble Escape
     entryType: special
     text: The goblin takes the Disengage or Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Goblin Warrior

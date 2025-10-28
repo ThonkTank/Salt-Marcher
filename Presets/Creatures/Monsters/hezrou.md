@@ -59,10 +59,16 @@ entries:
     name: Demonic Restoration
     entryType: special
     text: If the hezrou dies outside the Abyss, its body dissolves into ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Abyss.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The hezrou has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Stench
     entryType: save
@@ -81,6 +87,9 @@ entries:
               duration:
                 type: until
                 trigger: the start of its next turn
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -90,6 +99,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -107,10 +119,16 @@ entries:
           type: Poison
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Leap
     entryType: special
     text: The hezrou jumps up to 30 feet by spending 10 feet of movement.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Hezrou

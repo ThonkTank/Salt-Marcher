@@ -46,6 +46,9 @@ entries:
     name: Hold Breath
     entryType: special
     text: The crocodile can hold its breath for 1 hour.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -59,6 +62,9 @@ entries:
         - name: Tail
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -90,6 +96,9 @@ entries:
               while: While Grappled, the target has the Restrained condition
         other: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 15). While Grappled, the target has the Restrained condition and can't be targeted by the crocodile's Tail.
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 15). While Grappled, the target has the Restrained condition and can't be targeted by the crocodile's Tail.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail
     entryType: attack
@@ -110,6 +119,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Crocodile

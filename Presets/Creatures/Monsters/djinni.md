@@ -57,18 +57,30 @@ entries:
     name: Elemental Restoration
     entryType: special
     text: If the djinni dies outside the Elemental Plane of Air, its body dissolves into mist, and it gains a new body in 1d4 days, reviving with all its Hit Points somewhere on the Plane of Air.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The djinni has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Wishes
     entryType: special
     text: The djinni has a 30 percent chance of knowing the *Wish* spell. If the djinni knows it, the djinni can cast it only on behalf of a non-genie creature who communicates a wish in a way the djinni can understand. If the djinni casts the spell for the creature, the djinni suffers none of the spell's stress. Once the djinni has cast it three times, the djinni can't do so again for 365 days.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The djinni makes three attacks, using Storm Blade or Storm Bolt in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Storm Blade
     entryType: attack
@@ -85,6 +97,9 @@ entries:
           bonus: 0
           type: Lightning
           average: 7
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Storm Bolt
     entryType: attack
@@ -103,6 +118,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Create Whirlwind
     entryType: save
@@ -121,6 +139,9 @@ entries:
             bonus: 0
             type: Thunder
             average: 21
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -148,6 +169,9 @@ spellcastingEntries:
             - Invisibility
             - Major Image
             - Plane Shift
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Djinni

@@ -55,6 +55,9 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The archmage has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -64,10 +67,16 @@ entries:
         - name: Burst
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Arcane Burst
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +9, reach 5 ft. or range 150 ft. 27 (4d10 + 5) Force damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -97,6 +106,9 @@ spellcastingEntries:
             - Mind Blank
             - Scrying
             - Teleport
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Misty Step (3/Day)
     entryType: spellcasting
@@ -107,6 +119,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
   - category: reaction
     name: Protective Magic (3/Day)
     entryType: spellcasting
@@ -117,6 +132,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: reaction
+    trigger.targeting:
+      type: single
+    trigger.reactionTrigger: the spell's trigger
 ---
 
 # Archmage

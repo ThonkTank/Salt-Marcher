@@ -53,6 +53,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The pirate makes three attacks, using Rapier or Pistol in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Rapier
     entryType: attack
@@ -66,6 +69,9 @@ entries:
           type: Piercing
           average: 13
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Pistol
     entryType: attack
@@ -79,6 +85,9 @@ entries:
           type: Piercing
           average: 15
       range: 30/90 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Captain's Charm
     entryType: save
@@ -98,6 +107,9 @@ entries:
               duration:
                 type: until
                 trigger: the start of the pirate's next turn
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Pirate Captain

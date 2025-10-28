@@ -53,6 +53,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The scout makes two attacks, using Shortsword and Longbow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shortsword
     entryType: attack
@@ -66,6 +69,9 @@ entries:
           type: Piercing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Longbow
     entryType: attack
@@ -79,6 +85,9 @@ entries:
           type: Piercing
           average: 6
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Scout

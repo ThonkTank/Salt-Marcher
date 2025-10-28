@@ -29,7 +29,7 @@ vi.mock("../../../src/workmodes/encounter/event-builder", () => ({
     createEncounterEventFromTravel,
 }));
 
-import { openEncounter, publishManualEncounter } from "../../../src/workmodes/session-runner/view/controllers/encounter-gateway";
+import { openEncounter, publishManualEncounter } from "src/workmodes/session-runner/view/controllers/encounter-gateway";
 
 describe("openEncounter", () => {
     const revealLeaf = vi.fn();

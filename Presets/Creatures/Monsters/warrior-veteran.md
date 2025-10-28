@@ -54,6 +54,9 @@ entries:
         - name: Crossbow
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Greatsword
     entryType: attack
@@ -67,6 +70,9 @@ entries:
           type: Slashing
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Heavy Crossbow
     entryType: attack
@@ -80,6 +86,9 @@ entries:
           type: Piercing
           average: 12
       range: 100/400 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Warrior Veteran

@@ -962,6 +962,401 @@ var init_layout = __esm({
   }
 });
 
+// src/services/state/store.interface.ts
+var init_store_interface = __esm({
+  "src/services/state/store.interface.ts"() {
+    "use strict";
+  }
+});
+
+// src/services/state/writable-store.ts
+function writable(initialValue, options) {
+  const { debug = false, name = "unnamed-store" } = options || {};
+  let value = initialValue;
+  const subscribers = /* @__PURE__ */ new Set();
+  const log = (event, payload) => {
+    if (!debug) return;
+    logger.info(`[Store:${name}] ${event}`, {
+      ...payload,
+      storeName: name,
+      event,
+      timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  };
+  const notifySubscribers = (previousValue) => {
+    log("value_changed", { value, previousValue });
+    subscribers.forEach((subscriber) => {
+      try {
+        subscriber(value);
+      } catch (error) {
+        logger.error(`[Store:${name}] Subscriber error:`, error);
+      }
+    });
+  };
+  const subscribe = (subscriber) => {
+    subscribers.add(subscriber);
+    log("subscribed", { metadata: { subscriberCount: subscribers.size } });
+    try {
+      subscriber(value);
+    } catch (error) {
+      logger.error(`[Store:${name}] Initial subscriber call error:`, error);
+    }
+    return () => {
+      subscribers.delete(subscriber);
+      log("unsubscribed", { metadata: { subscriberCount: subscribers.size } });
+    };
+  };
+  const get = () => {
+    return value;
+  };
+  const set = (newValue) => {
+    if (value === newValue) return;
+    const previousValue = value;
+    value = newValue;
+    notifySubscribers(previousValue);
+  };
+  const update = (updater) => {
+    const newValue = updater(value);
+    set(newValue);
+  };
+  log("initialized", { value: initialValue });
+  return {
+    subscribe,
+    get,
+    set,
+    update
+  };
+}
+var init_writable_store = __esm({
+  "src/services/state/writable-store.ts"() {
+    "use strict";
+    init_plugin_logger();
+  }
+});
+
+// src/services/state/persistent-store.ts
+var import_obsidian3;
+var init_persistent_store = __esm({
+  "src/services/state/persistent-store.ts"() {
+    "use strict";
+    init_writable_store();
+    import_obsidian3 = require("obsidian");
+    init_plugin_logger();
+  }
+});
+
+// src/services/state/adapters/json-store-adapter.ts
+var init_json_store_adapter = __esm({
+  "src/services/state/adapters/json-store-adapter.ts"() {
+    "use strict";
+    init_writable_store();
+  }
+});
+
+// src/services/state/index.ts
+var init_state = __esm({
+  "src/services/state/index.ts"() {
+    "use strict";
+    init_store_interface();
+    init_writable_store();
+    init_persistent_store();
+    init_json_store_adapter();
+  }
+});
+
+// src/services/state/store-manager.ts
+function getStoreManager() {
+  if (!globalStoreManager || globalStoreManager.isDisposed()) {
+    globalStoreManager = new StoreManagerImpl();
+  }
+  return globalStoreManager;
+}
+var StoreManagerImpl, globalStoreManager;
+var init_store_manager = __esm({
+  "src/services/state/store-manager.ts"() {
+    "use strict";
+    init_plugin_logger();
+    StoreManagerImpl = class {
+      constructor() {
+        this.stores = /* @__PURE__ */ new Map();
+        this.disposed = false;
+      }
+      /**
+       * Register a store with the manager
+       */
+      register(name, store) {
+        if (this.disposed) {
+          throw new Error("StoreManager has been disposed");
+        }
+        if (this.stores.has(name)) {
+          logger.warn(`[StoreManager] Store "${name}" already registered, replacing`);
+        }
+        const isPersistent = this.isPersistentStore(store);
+        this.stores.set(name, {
+          name,
+          store,
+          isPersistent
+        });
+        logger.info(`[StoreManager] Registered store "${name}"${isPersistent ? " (persistent)" : ""}`);
+      }
+      /**
+       * Get a registered store by name
+       */
+      get(name) {
+        if (this.disposed) {
+          throw new Error("StoreManager has been disposed");
+        }
+        return this.stores.get(name)?.store;
+      }
+      /**
+       * List all registered store names
+       */
+      list() {
+        if (this.disposed) {
+          throw new Error("StoreManager has been disposed");
+        }
+        return Array.from(this.stores.keys());
+      }
+      /**
+       * Save all persistent stores
+       */
+      async saveAll() {
+        if (this.disposed) {
+          throw new Error("StoreManager has been disposed");
+        }
+        const persistentStores = Array.from(this.stores.values()).filter((entry) => entry.isPersistent).map((entry) => ({
+          name: entry.name,
+          store: entry.store
+        }));
+        if (persistentStores.length === 0) {
+          logger.info("[StoreManager] No persistent stores to save");
+          return;
+        }
+        logger.info(`[StoreManager] Saving ${persistentStores.length} persistent stores`);
+        const savePromises = persistentStores.map(async ({ name, store }) => {
+          try {
+            await store.save();
+            logger.debug(`[StoreManager] Saved store "${name}"`);
+          } catch (error) {
+            logger.error(`[StoreManager] Failed to save store "${name}":`, error);
+            throw error;
+          }
+        });
+        await Promise.all(savePromises);
+        logger.info("[StoreManager] All persistent stores saved");
+      }
+      /**
+       * Load all persistent stores
+       */
+      async loadAll() {
+        if (this.disposed) {
+          throw new Error("StoreManager has been disposed");
+        }
+        const persistentStores = Array.from(this.stores.values()).filter((entry) => entry.isPersistent).map((entry) => ({
+          name: entry.name,
+          store: entry.store
+        }));
+        if (persistentStores.length === 0) {
+          logger.info("[StoreManager] No persistent stores to load");
+          return;
+        }
+        logger.info(`[StoreManager] Loading ${persistentStores.length} persistent stores`);
+        const loadPromises = persistentStores.map(async ({ name, store }) => {
+          try {
+            await store.load();
+            logger.debug(`[StoreManager] Loaded store "${name}"`);
+          } catch (error) {
+            logger.error(`[StoreManager] Failed to load store "${name}":`, error);
+          }
+        });
+        await Promise.allSettled(loadPromises);
+        logger.info("[StoreManager] Persistent stores loaded");
+      }
+      /**
+       * Dispose of all stores and cleanup
+       */
+      dispose() {
+        if (this.disposed) {
+          return;
+        }
+        logger.info(`[StoreManager] Disposing ${this.stores.size} stores`);
+        this.stores.clear();
+        this.disposed = true;
+        logger.info("[StoreManager] Disposed");
+      }
+      /**
+       * Check if disposed
+       */
+      isDisposed() {
+        return this.disposed;
+      }
+      /**
+       * Get store statistics
+       */
+      getStats() {
+        const persistentCount = Array.from(this.stores.values()).filter((entry) => entry.isPersistent).length;
+        return {
+          totalStores: this.stores.size,
+          persistentStores: persistentCount,
+          nonPersistentStores: this.stores.size - persistentCount
+        };
+      }
+      /**
+       * Check if a store is persistent
+       */
+      isPersistentStore(store) {
+        return "load" in store && typeof store.load === "function" && "save" in store && typeof store.save === "function";
+      }
+    };
+    globalStoreManager = null;
+  }
+});
+
+// src/features/maps/state/tile-store.ts
+function createEmptyTileStoreState(version = Date.now()) {
+  return {
+    loaded: false,
+    tiles: /* @__PURE__ */ new Map(),
+    version
+  };
+}
+function createTileStore(deps) {
+  const storeName = deps.name;
+  const base = writable(createEmptyTileStoreState(0), {
+    name: storeName,
+    debug: deps.storeOptions?.debug
+  });
+  let loadPromise = null;
+  const persistent2 = {
+    subscribe: base.subscribe,
+    get: base.get,
+    set: base.set,
+    update: base.update,
+    load: async () => {
+      const entries = await deps.listTilesFromDisk();
+      const nextTiles = /* @__PURE__ */ new Map();
+      for (const entry of entries) {
+        nextTiles.set(keyFromCoord(entry.coord), {
+          coord: entry.coord,
+          data: entry.data,
+          file: entry.file
+        });
+      }
+      base.set({
+        loaded: true,
+        tiles: nextTiles,
+        version: Date.now()
+      });
+    },
+    save: async () => {
+    },
+    isDirty: () => false,
+    getStorageKey: () => deps.storageKey
+  };
+  getStoreManager().register(storeName, persistent2);
+  const ensureLoaded = async () => {
+    const snapshot = persistent2.get();
+    if (snapshot.loaded && loadPromise === null) {
+      return;
+    }
+    if (!loadPromise) {
+      loadPromise = persistent2.load().finally(() => {
+        loadPromise = null;
+      });
+    }
+    await loadPromise;
+  };
+  const refresh = async () => {
+    loadPromise = persistent2.load().finally(() => {
+      loadPromise = null;
+    });
+    await loadPromise;
+  };
+  const loadTile2 = async (coord) => {
+    await ensureLoaded();
+    const snapshot = persistent2.get();
+    const record = snapshot.tiles.get(keyFromCoord(coord));
+    if (record) {
+      return record.data;
+    }
+    if (deps.loadTileFromDisk) {
+      const data = await deps.loadTileFromDisk(coord);
+      if (data) {
+        await refresh();
+        const refreshed = persistent2.get().tiles.get(keyFromCoord(coord));
+        return refreshed ? refreshed.data : data;
+      }
+      return data;
+    }
+    return null;
+  };
+  const saveTile2 = async (coord, data) => {
+    const result = await deps.saveTileToDisk(coord, data);
+    await ensureLoaded();
+    persistent2.update((current) => {
+      const nextTiles = new Map(current.tiles);
+      nextTiles.set(keyFromCoord(coord), {
+        coord,
+        data: result.data,
+        file: result.file
+      });
+      return {
+        loaded: true,
+        tiles: nextTiles,
+        version: Date.now()
+      };
+    });
+    return result.file;
+  };
+  const deleteTile2 = async (coord) => {
+    await deps.deleteTileFromDisk(coord);
+    await ensureLoaded();
+    persistent2.update((current) => {
+      const nextTiles = new Map(current.tiles);
+      nextTiles.delete(keyFromCoord(coord));
+      return {
+        loaded: true,
+        tiles: nextTiles,
+        version: Date.now()
+      };
+    });
+  };
+  const listTiles = async () => {
+    await ensureLoaded();
+    const snapshot = persistent2.get();
+    const rows = [];
+    for (const record of snapshot.tiles.values()) {
+      if (!record.file) {
+        continue;
+      }
+      rows.push({
+        coord: record.coord,
+        data: record.data,
+        file: record.file
+      });
+    }
+    return rows;
+  };
+  return {
+    state: persistent2,
+    loadTile: loadTile2,
+    saveTile: saveTile2,
+    deleteTile: deleteTile2,
+    listTiles,
+    refresh
+  };
+}
+function keyFromCoord(coord) {
+  return `${coord.r}:${coord.c}`;
+}
+var init_tile_store = __esm({
+  "src/features/maps/state/tile-store.ts"() {
+    "use strict";
+    init_state();
+    init_store_manager();
+  }
+});
+
 // src/features/maps/data/tile-repository.ts
 function validateTileData(data, options = {}) {
   const { allowUnknownTerrain = false } = options;
@@ -1030,6 +1425,27 @@ function coordFromLegacyName(file, folderPrefix) {
   if (match) return { r: Number(match[1]), c: Number(match[2]) };
   return null;
 }
+function getTileStore(app, mapFile) {
+  let storesByApp = tileStoreRegistry.get(app);
+  if (!storesByApp) {
+    storesByApp = /* @__PURE__ */ new Map();
+    tileStoreRegistry.set(app, storesByApp);
+  }
+  const key = mapFile.path;
+  let store = storesByApp.get(key);
+  if (!store) {
+    store = createTileStore({
+      storageKey: (0, import_obsidian4.normalizePath)(`tiles://${mapFile.path}`),
+      name: `map-tiles:${(0, import_obsidian4.normalizePath)(mapFile.path)}`,
+      listTilesFromDisk: () => listTilesForMapFromDisk(app, mapFile),
+      saveTileToDisk: (coord, data) => saveTileToDisk(app, mapFile, coord, data),
+      deleteTileFromDisk: (coord) => deleteTileFromDisk(app, mapFile, coord),
+      loadTileFromDisk: (coord) => loadTileFromDisk(app, mapFile, coord)
+    });
+    storesByApp.set(key, store);
+  }
+  return store;
+}
 async function readOptions(app, mapFile) {
   const raw = await app.vault.read(mapFile);
   const opts = parseOptions(raw);
@@ -1038,13 +1454,13 @@ async function readOptions(app, mapFile) {
   return { folder, folderPrefix };
 }
 async function ensureFolder(app, folderPath) {
-  const path = (0, import_obsidian3.normalizePath)(folderPath);
+  const path = (0, import_obsidian4.normalizePath)(folderPath);
   const existing = app.vault.getAbstractFileByPath(path);
-  if (existing && existing instanceof import_obsidian3.TFolder) return existing;
+  if (existing && existing instanceof import_obsidian4.TFolder) return existing;
   if (existing) throw new Error(`Pfad existiert, ist aber kein Ordner: ${path}`);
   await app.vault.createFolder(path);
   const created = app.vault.getAbstractFileByPath(path);
-  if (!(created && created instanceof import_obsidian3.TFolder)) throw new Error(`Ordner konnte nicht erstellt werden: ${path}`);
+  if (!(created && created instanceof import_obsidian4.TFolder)) throw new Error(`Ordner konnte nicht erstellt werden: ${path}`);
   return created;
 }
 function fm(app, file) {
@@ -1075,7 +1491,7 @@ function buildMarkdown(coord, mapPath, folderPrefix, data) {
 }
 async function resolveTilePath(app, mapFile, coord) {
   const { folder, folderPrefix } = await readOptions(app, mapFile);
-  const folderPath = (0, import_obsidian3.normalizePath)(folder);
+  const folderPath = (0, import_obsidian4.normalizePath)(folder);
   const newName = fileNameForMap(mapFile, coord);
   const newPath = `${folderPath}/${newName}`;
   const legacy = legacyFilenames(folderPrefix, coord).map((n) => `${folderPath}/${n}`);
@@ -1143,24 +1559,24 @@ async function adoptLegacyTile(app, mapFile, file, folderPath, folderPrefix, cac
   const mapName = mapNameFromPath(mapFile.path);
   const backlinkNeedle = `[[${mapName.toLowerCase()}|`;
   if (!raw.toLowerCase().includes(backlinkNeedle)) return null;
-  const desiredPath = (0, import_obsidian3.normalizePath)(`${folderPath}/${fileNameForMap(mapFile, coord)}`);
-  if ((0, import_obsidian3.normalizePath)(file.path) !== desiredPath) {
+  const desiredPath = (0, import_obsidian4.normalizePath)(`${folderPath}/${fileNameForMap(mapFile, coord)}`);
+  if ((0, import_obsidian4.normalizePath)(file.path) !== desiredPath) {
     const existing = app.vault.getAbstractFileByPath(desiredPath);
     if (existing && existing !== file) {
       return null;
     }
     await app.fileManager.renameFile(file, desiredPath);
     const renamed = app.vault.getAbstractFileByPath(desiredPath);
-    if (renamed && renamed instanceof import_obsidian3.TFile) {
+    if (renamed && renamed instanceof import_obsidian4.TFile) {
       file = renamed;
     }
   }
   const ensured = await ensureTileSchema(app, mapFile, file, coord, cached);
   return { file, fmc: ensured, coord };
 }
-async function listTilesForMap(app, mapFile) {
+async function listTilesForMapFromDisk(app, mapFile) {
   const { folder, folderPrefix } = await readOptions(app, mapFile);
-  const folderPath = (0, import_obsidian3.normalizePath)(folder);
+  const folderPath = (0, import_obsidian4.normalizePath)(folder);
   const folderPathLower = (folderPath.endsWith("/") ? folderPath : folderPath + "/").toLowerCase();
   const out = [];
   for (const file of app.vault.getFiles()) {
@@ -1207,7 +1623,7 @@ async function listTilesForMap(app, mapFile) {
   }
   return out;
 }
-async function loadTile(app, mapFile, coord) {
+async function loadTileFromDisk(app, mapFile, coord) {
   const { file } = await resolveTilePath(app, mapFile, coord);
   if (!file) return null;
   let fmc = fm(app, file);
@@ -1229,7 +1645,7 @@ async function loadTile(app, mapFile, coord) {
     return { terrain: terrain.trim(), region: region.trim(), note: note || void 0 };
   }
 }
-async function saveTile(app, mapFile, coord, data) {
+async function saveTileToDisk(app, mapFile, coord, data) {
   const sanitized = validateTileData(data);
   const mapPath = mapFile.path;
   const { folder, newPath, file } = await resolveTilePath(app, mapFile, coord);
@@ -1237,7 +1653,8 @@ async function saveTile(app, mapFile, coord, data) {
   if (!file) {
     const { folderPrefix } = await readOptions(app, mapFile);
     const md = buildMarkdown(coord, mapPath, folderPrefix, sanitized);
-    return await app.vault.create(newPath, md);
+    const created = await app.vault.create(newPath, md);
+    return { file: created, data: sanitized };
   }
   await app.fileManager.processFrontMatter(file, (f) => {
     f.type = FM_TYPE;
@@ -1260,9 +1677,9 @@ async function saveTile(app, mapFile, coord, data) {
     await app.vault.modify(file, `${fmPart}
 ${newBody}`.trim() + "\n");
   }
-  return file;
+  return { file, data: sanitized };
 }
-async function deleteTile(app, mapFile, coord) {
+async function deleteTileFromDisk(app, mapFile, coord) {
   const { file } = await resolveTilePath(app, mapFile, coord);
   if (!file) return;
   await app.vault.delete(file);
@@ -1273,15 +1690,42 @@ async function initTilesForNewMap(app, mapFile) {
       await saveTile(app, mapFile, { r, c }, { terrain: "" });
     }
   }
+  const store = getTileStore(app, mapFile);
+  await store.refresh();
 }
-var import_obsidian3, TILE_TERRAIN_MAX_LENGTH, TILE_REGION_MAX_LENGTH, TileValidationError, FM_TYPE;
+async function listTilesForMap(app, mapFile) {
+  const store = getTileStore(app, mapFile);
+  return await store.listTiles();
+}
+async function loadTile(app, mapFile, coord) {
+  const store = getTileStore(app, mapFile);
+  return await store.loadTile(coord);
+}
+async function saveTile(app, mapFile, coord, data) {
+  const store = getTileStore(app, mapFile);
+  return await store.saveTile(coord, data);
+}
+async function deleteTile(app, mapFile, coord) {
+  const store = getTileStore(app, mapFile);
+  await store.deleteTile(coord);
+}
+function resetTileStore(app, mapFile) {
+  const storesByApp = tileStoreRegistry.get(app);
+  const store = storesByApp?.get(mapFile.path);
+  if (store) {
+    store.state.set(createEmptyTileStoreState());
+    storesByApp?.delete(mapFile.path);
+  }
+}
+var import_obsidian4, TILE_TERRAIN_MAX_LENGTH, TILE_REGION_MAX_LENGTH, TileValidationError, FM_TYPE, tileStoreRegistry;
 var init_tile_repository = __esm({
   "src/features/maps/data/tile-repository.ts"() {
     "use strict";
-    import_obsidian3 = require("obsidian");
+    import_obsidian4 = require("obsidian");
     init_terrain();
     init_options();
     init_plugin_logger();
+    init_tile_store();
     TILE_TERRAIN_MAX_LENGTH = 64;
     TILE_REGION_MAX_LENGTH = 120;
     TileValidationError = class extends Error {
@@ -1292,6 +1736,7 @@ var init_tile_repository = __esm({
       }
     };
     FM_TYPE = "hex";
+    tileStoreRegistry = /* @__PURE__ */ new WeakMap();
   }
 });
 
@@ -1346,7 +1791,7 @@ var init_interaction_delegate = __esm({
 // src/features/maps/rendering/interactions/interaction-adapter.ts
 function resolveMapFile(app, mapPath) {
   const abstract = app.vault.getAbstractFileByPath(mapPath);
-  return abstract instanceof import_obsidian4.TFile ? abstract : null;
+  return abstract instanceof import_obsidian5.TFile ? abstract : null;
 }
 function createInteractionAdapter(config) {
   const { app, host, mapPath } = config;
@@ -1368,11 +1813,11 @@ function createInteractionAdapter(config) {
     setDelegate
   };
 }
-var import_obsidian4;
+var import_obsidian5;
 var init_interaction_adapter = __esm({
   "src/features/maps/rendering/interactions/interaction-adapter.ts"() {
     "use strict";
-    import_obsidian4 = require("obsidian");
+    import_obsidian5 = require("obsidian");
     init_layout();
     init_tile_repository();
     init_interaction_delegate();
@@ -1410,7 +1855,7 @@ function buildFallback(bounds) {
 }
 async function loadTiles(app, mapPath) {
   const file = app.vault.getAbstractFileByPath(mapPath);
-  if (!(file instanceof import_obsidian5.TFile)) {
+  if (!(file instanceof import_obsidian6.TFile)) {
     return [];
   }
   try {
@@ -1433,11 +1878,11 @@ async function bootstrapHexTiles(app, mapPath) {
     initialCoords
   };
 }
-var import_obsidian5, DEFAULT_FALLBACK_SPAN;
+var import_obsidian6, DEFAULT_FALLBACK_SPAN;
 var init_bootstrap = __esm({
   "src/features/maps/rendering/scene/bootstrap.ts"() {
     "use strict";
-    import_obsidian5 = require("obsidian");
+    import_obsidian6 = require("obsidian");
     init_tile_repository();
     DEFAULT_FALLBACK_SPAN = 2;
   }
@@ -1556,6 +2001,278 @@ var init_hex_render = __esm({
   }
 });
 
+// src/features/maps/state/region-store.ts
+async function ensureRegionsFile(app) {
+  const path = (0, import_obsidian7.normalizePath)(REGIONS_FILE);
+  const existing = app.vault.getAbstractFileByPath(path);
+  if (existing instanceof import_obsidian7.TFile) {
+    return existing;
+  }
+  const dir = path.split("/").slice(0, -1).join("/");
+  if (dir) {
+    await app.vault.createFolder(dir).catch(() => {
+    });
+  }
+  const body = [
+    "---",
+    "smList: true",
+    "---",
+    "# Regions",
+    "",
+    "```regions",
+    "# Name: Terrain",
+    "# Beispiel:",
+    "# Saltmarsh: K\xFCste",
+    "```",
+    ""
+  ].join("\n");
+  return await app.vault.create(path, body);
+}
+function parseRegionsBlock(md) {
+  const match = md.match(BLOCK_RE);
+  if (!match) return [];
+  const list = [];
+  for (const raw of match[1].split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    const parsed = line.match(/^("?)(.*?)\1\s*:\s*(.*)$/);
+    if (!parsed) continue;
+    const name = (parsed[2] || "").trim();
+    const rest = (parsed[3] || "").trim();
+    let terrain = rest;
+    let encounterOdds;
+    const encounterMatch = rest.match(/,\s*encounter\s*:\s*([^,]+)\s*$/i);
+    if (encounterMatch) {
+      terrain = rest.slice(0, encounterMatch.index).trim();
+      const spec = encounterMatch[1].trim();
+      const fraction = spec.match(/^1\s*\/\s*(\d+)$/);
+      if (fraction) {
+        encounterOdds = parseInt(fraction[1], 10) || void 0;
+      } else {
+        const numeric = parseInt(spec, 10);
+        if (Number.isFinite(numeric) && numeric > 0) {
+          encounterOdds = numeric;
+        }
+      }
+    }
+    list.push({ name, terrain, encounterOdds });
+  }
+  return list;
+}
+function stringifyRegionsBlock(list) {
+  const lines = list.map((region) => {
+    const base = `${region.name}: ${region.terrain || ""}`;
+    const odds = region.encounterOdds;
+    return odds && odds > 0 ? `${base}, encounter: 1/${odds}` : base;
+  });
+  return ["```regions", ...lines, "```"].join("\n");
+}
+async function readRegionsFromDisk(app) {
+  const file = await ensureRegionsFile(app);
+  const content = await app.vault.read(file);
+  return parseRegionsBlock(content);
+}
+async function writeRegionsToDisk(app, list) {
+  const file = await ensureRegionsFile(app);
+  const content = await app.vault.read(file);
+  const block = stringifyRegionsBlock(list);
+  const updated = content.match(BLOCK_RE) ? content.replace(BLOCK_RE, block) : `${content}
+
+${block}
+`;
+  await app.vault.modify(file, updated);
+}
+function createInitialState() {
+  return {
+    loaded: false,
+    list: [],
+    version: 0
+  };
+}
+function triggerRegionEvent(app) {
+  app.workspace.trigger?.("salt:regions-updated");
+}
+function createRegionStore(app, options) {
+  const base = writable(createInitialState(), {
+    name: "map-regions",
+    debug: options?.debug
+  });
+  let dirty = false;
+  let loadPromise = null;
+  const persistent2 = {
+    subscribe: base.subscribe,
+    get: base.get,
+    set: (value) => {
+      base.set(value);
+      dirty = true;
+    },
+    update: (updater) => {
+      base.update((current) => {
+        const next = updater(current);
+        dirty = true;
+        return next;
+      });
+    },
+    load: async () => {
+      const regions = await readRegionsFromDisk(app);
+      base.set({
+        loaded: true,
+        list: regions,
+        version: Date.now()
+      });
+      dirty = false;
+      triggerRegionEvent(app);
+    },
+    save: async () => {
+      const snapshot = base.get();
+      if (!snapshot.loaded) return;
+      await writeRegionsToDisk(app, snapshot.list);
+      dirty = false;
+    },
+    isDirty: () => dirty,
+    getStorageKey: () => (0, import_obsidian7.normalizePath)(REGIONS_FILE)
+  };
+  getStoreManager().register("map-regions", persistent2);
+  const ensureLoaded = async () => {
+    const snapshot = persistent2.get();
+    if (snapshot.loaded && loadPromise === null) {
+      return;
+    }
+    if (!loadPromise) {
+      loadPromise = persistent2.load().finally(() => {
+        loadPromise = null;
+      });
+    }
+    await loadPromise;
+  };
+  const refresh = async () => {
+    loadPromise = persistent2.load().finally(() => {
+      loadPromise = null;
+    });
+    await loadPromise;
+  };
+  const getRegions = async () => {
+    await ensureLoaded();
+    return persistent2.get().list;
+  };
+  const saveRegions2 = async (list) => {
+    await ensureLoaded();
+    persistent2.update(() => ({
+      loaded: true,
+      list: [...list],
+      version: Date.now()
+    }));
+    await persistent2.save();
+    triggerRegionEvent(app);
+  };
+  const watch = (onChange) => {
+    const targetPath = (0, import_obsidian7.normalizePath)(REGIONS_FILE);
+    const update = async (reason) => {
+      try {
+        if (reason === "delete") {
+          logger.warn(
+            "Regions store detected deletion; attempting automatic recreation."
+          );
+          await ensureRegionsFile(app);
+          new import_obsidian7.Notice("Regions.md wurde neu erstellt.");
+        }
+        await refresh();
+        await onChange?.();
+        triggerRegionEvent(app);
+      } catch (error) {
+        logger.error(
+          `[salt-marcher] Regions watcher failed after ${reason} event`,
+          error
+        );
+      }
+    };
+    const maybeUpdate = (reason, file) => {
+      if (!(file instanceof import_obsidian7.TFile)) return;
+      if ((0, import_obsidian7.normalizePath)(file.path) !== targetPath) return;
+      void update(reason);
+    };
+    const refs = ["modify", "delete"].map(
+      (event) => app.vault.on(event, (file) => maybeUpdate(event, file))
+    );
+    let disposed = false;
+    return () => {
+      if (disposed) return;
+      disposed = true;
+      for (const ref of refs) {
+        app.vault.offref(ref);
+      }
+    };
+  };
+  return {
+    state: persistent2,
+    getRegions,
+    saveRegions: saveRegions2,
+    refresh,
+    watch
+  };
+}
+function getRegionStore(app, options) {
+  let store = storeRegistry.get(app);
+  if (!store) {
+    store = createRegionStore(app, options);
+    storeRegistry.set(app, store);
+  }
+  return store;
+}
+async function loadRegions(app) {
+  const store = getRegionStore(app);
+  return await store.getRegions();
+}
+function resetRegionStore(app) {
+  const store = storeRegistry.get(app);
+  if (!store) return;
+  store.state.set(createInitialState());
+  storeRegistry.delete(app);
+}
+var import_obsidian7, REGIONS_FILE, BLOCK_RE, storeRegistry;
+var init_region_store = __esm({
+  "src/features/maps/state/region-store.ts"() {
+    "use strict";
+    import_obsidian7 = require("obsidian");
+    init_state();
+    init_store_manager();
+    init_plugin_logger();
+    REGIONS_FILE = "SaltMarcher/Regions.md";
+    BLOCK_RE = /```regions\s*([\s\S]*?)```/i;
+    storeRegistry = /* @__PURE__ */ new WeakMap();
+  }
+});
+
+// src/features/maps/data/map-store-registry.ts
+function getRegistry(app) {
+  let set = MAP_STORE_REGISTRY.get(app);
+  if (!set) {
+    set = /* @__PURE__ */ new Set();
+    MAP_STORE_REGISTRY.set(app, set);
+  }
+  return set;
+}
+function registerMapStores(app, mapFile) {
+  getRegistry(app).add(mapFile.path);
+}
+function unregisterMapStores(app, mapFile) {
+  const set = MAP_STORE_REGISTRY.get(app);
+  if (set) {
+    set.delete(mapFile.path);
+  }
+  resetTileStore(app, mapFile);
+  resetRegionStore(app);
+}
+var MAP_STORE_REGISTRY;
+var init_map_store_registry = __esm({
+  "src/features/maps/data/map-store-registry.ts"() {
+    "use strict";
+    init_region_store();
+    init_tile_repository();
+    MAP_STORE_REGISTRY = /* @__PURE__ */ new WeakMap();
+  }
+});
+
 // src/features/maps/data/map-repository.ts
 async function createHexMapFile(app, rawName, opts = { folder: "Hexes", folderPrefix: "Hex", radius: 42 }) {
   const name = sanitizeFileName(rawName) || "Neue Hex Map";
@@ -1566,6 +2283,7 @@ async function createHexMapFile(app, rawName, opts = { folder: "Hexes", folderPr
   const path = await ensureUniquePath(app, `${mapsFolder}/${name}.md`);
   const file = await app.vault.create(path, content);
   await initTilesForNewMap(app, file);
+  registerMapStores(app, file);
   return file;
 }
 function buildHexMapMarkdown(name, opts) {
@@ -1617,11 +2335,13 @@ async function deleteMapAndTiles(app, mapFile) {
   } catch (e) {
     logger.warn("Delete map failed:", mapFile.path, e);
   }
+  unregisterMapStores(app, mapFile);
 }
 var init_map_repository = __esm({
   "src/features/maps/data/map-repository.ts"() {
     "use strict";
     init_tile_repository();
+    init_map_store_registry();
     init_plugin_logger();
   }
 });
@@ -1639,7 +2359,7 @@ function applyMapButtonStyle(button) {
 async function promptMapSelection(app, onSelect, options) {
   const files = await getAllMapFiles(app);
   if (!files.length) {
-    new import_obsidian6.Notice(options?.emptyMessage ?? "No maps available.");
+    new import_obsidian8.Notice(options?.emptyMessage ?? "No maps available.");
     return;
   }
   new MapSelectModal(app, files, async (file) => {
@@ -1649,15 +2369,15 @@ async function promptMapSelection(app, onSelect, options) {
 function promptCreateMap(app, onCreate, options) {
   new NameInputModal(app, async (name) => {
     const file = await createHexMapFile(app, name);
-    new import_obsidian6.Notice(options?.successMessage ?? "Map created.");
+    new import_obsidian8.Notice(options?.successMessage ?? "Map created.");
     await onCreate(file);
   }).open();
 }
-var import_obsidian6;
+var import_obsidian8;
 var init_map_workflows = __esm({
   "src/ui/maps/workflows/map-workflows.ts"() {
     "use strict";
-    import_obsidian6 = require("obsidian");
+    import_obsidian8 = require("obsidian");
     init_map_repository();
     init_map_list();
     init_options();
@@ -1778,15 +2498,15 @@ function reportEditorToolIssue(payload) {
   const dedupeKey = `${stage}:${toolId}`;
   if (!noticedIssues.has(dedupeKey)) {
     noticedIssues.add(dedupeKey);
-    new import_obsidian10.Notice(userMessage);
+    new import_obsidian12.Notice(userMessage);
   }
   return userMessage;
 }
-var import_obsidian10, noticedIssues, TOOL_STAGE_MESSAGES;
+var import_obsidian12, noticedIssues, TOOL_STAGE_MESSAGES;
 var init_editor_telemetry = __esm({
   "src/workmodes/cartographer/editor/editor-telemetry.ts"() {
     "use strict";
-    import_obsidian10 = require("obsidian");
+    import_obsidian12 = require("obsidian");
     init_plugin_logger();
     noticedIssues = /* @__PURE__ */ new Set();
     TOOL_STAGE_MESSAGES = {
@@ -2048,68 +2768,13 @@ var init_brush_core = __esm({
 });
 
 // src/features/maps/data/region-repository.ts
-async function ensureRegionsFile(app) {
-  const p = (0, import_obsidian11.normalizePath)(REGIONS_FILE);
-  const existing = app.vault.getAbstractFileByPath(p);
-  if (existing instanceof import_obsidian11.TFile) return existing;
-  await app.vault.createFolder(p.split("/").slice(0, -1).join("/")).catch(() => {
-  });
-  const body = [
-    "---",
-    "smList: true",
-    "---",
-    "# Regions",
-    "",
-    "```regions",
-    "# Name: Terrain",
-    "# Beispiel:",
-    "# Saltmarsh: K\xFCste",
-    "```",
-    ""
-  ].join("\n");
-  return await app.vault.create(p, body);
+async function loadRegions2(app) {
+  return await loadRegions(app);
 }
-function parseRegionsBlock(md) {
-  const m = md.match(BLOCK_RE);
-  if (!m) return [];
-  const out = [];
-  for (const raw of m[1].split(/\r?\n/)) {
-    const line = raw.trim();
-    if (!line || line.startsWith("#")) continue;
-    const mm = line.match(/^("?)(.*?)\1\s*:\s*(.*)$/);
-    if (!mm) continue;
-    const name = (mm[2] || "").trim();
-    const rest = (mm[3] || "").trim();
-    let terrain = rest;
-    let encounterOdds = void 0;
-    const em = rest.match(/,\s*encounter\s*:\s*([^,]+)\s*$/i);
-    if (em) {
-      terrain = rest.slice(0, em.index).trim();
-      const spec = em[1].trim();
-      const frac = spec.match(/^1\s*\/\s*(\d+)$/);
-      if (frac) encounterOdds = parseInt(frac[1], 10) || void 0;
-      else {
-        const n = parseInt(spec, 10);
-        if (Number.isFinite(n) && n > 0) encounterOdds = n;
-      }
-    }
-    out.push({ name, terrain, encounterOdds });
-  }
-  return out;
-}
-async function loadRegions(app) {
-  const f = await ensureRegionsFile(app);
-  const md = await app.vault.read(f);
-  return parseRegionsBlock(md);
-}
-var import_obsidian11, REGIONS_FILE, BLOCK_RE;
 var init_region_repository = __esm({
   "src/features/maps/data/region-repository.ts"() {
     "use strict";
-    import_obsidian11 = require("obsidian");
-    init_plugin_logger();
-    REGIONS_FILE = "SaltMarcher/Regions.md";
-    BLOCK_RE = /```regions\s*([\s\S]*?)```/i;
+    init_region_store();
   }
 });
 
@@ -2615,7 +3280,7 @@ function mountBrushPanel(root, ctx) {
     updateStatus(reason === "initial" ? "Loading regions\u2026" : "Refreshing regions\u2026");
     let regions = [];
     try {
-      regions = await loadRegions(ctx.app);
+      regions = await loadRegions2(ctx.app);
     } catch (err) {
       logger.error("[terrain-brush] failed to load regions", err);
       if (seq === fillSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
@@ -4016,13 +4681,13 @@ var init_presenter = __esm({
 
 // src/workmodes/encounter/rule-presets.ts
 async function ensureEncounterRulePresetDir(app) {
-  const normalized = (0, import_obsidian14.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
+  const normalized = (0, import_obsidian15.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
   let file = app.vault.getAbstractFileByPath(normalized);
-  if (file instanceof import_obsidian14.TFolder) return file;
+  if (file instanceof import_obsidian15.TFolder) return file;
   await app.vault.createFolder(normalized).catch(() => {
   });
   file = app.vault.getAbstractFileByPath(normalized);
-  if (file instanceof import_obsidian14.TFolder) return file;
+  if (file instanceof import_obsidian15.TFolder) return file;
   throw new Error(`Could not ensure encounter preset directory: ${normalized}`);
 }
 async function listEncounterRulePresets(app) {
@@ -4030,8 +4695,8 @@ async function listEncounterRulePresets(app) {
   const files = [];
   const walk = (folder) => {
     for (const child of folder.children) {
-      if (child instanceof import_obsidian14.TFolder) walk(child);
-      else if (child instanceof import_obsidian14.TFile && child.extension === "md") files.push(child);
+      if (child instanceof import_obsidian15.TFolder) walk(child);
+      else if (child instanceof import_obsidian15.TFile && child.extension === "md") files.push(child);
     }
   };
   walk(dir);
@@ -4059,18 +4724,18 @@ async function saveEncounterRulePreset(app, doc, options = {}) {
   const dir = await ensureEncounterRulePresetDir(app);
   if (options.path) {
     const existing = app.vault.getAbstractFileByPath(options.path);
-    if (existing instanceof import_obsidian14.TFile) {
+    if (existing instanceof import_obsidian15.TFile) {
       await app.vault.modify(existing, content);
       return existing;
     }
   }
   const baseName = sanitizeFileName2(sanitizedName, DEFAULT_PRESET_NAME);
   let fileName = `${baseName}.md`;
-  let targetPath = (0, import_obsidian14.normalizePath)(`${dir.path}/${fileName}`);
+  let targetPath = (0, import_obsidian15.normalizePath)(`${dir.path}/${fileName}`);
   let counter = 2;
   while (app.vault.getAbstractFileByPath(targetPath)) {
     fileName = `${baseName} (${counter}).md`;
-    targetPath = (0, import_obsidian14.normalizePath)(`${dir.path}/${fileName}`);
+    targetPath = (0, import_obsidian15.normalizePath)(`${dir.path}/${fileName}`);
     counter += 1;
   }
   const file = await app.vault.create(targetPath, content);
@@ -4177,17 +4842,17 @@ function createRuleId() {
   return `rule-${Date.now().toString(36)}-${random}`;
 }
 function isEncounterPresetFile(file) {
-  if (!(file instanceof import_obsidian14.TFile)) return false;
+  if (!(file instanceof import_obsidian15.TFile)) return false;
   if (file.extension !== "md") return false;
-  const normalized = (0, import_obsidian14.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
+  const normalized = (0, import_obsidian15.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
   const base = `${normalized}/`;
   return file.path === normalized || file.path.startsWith(base);
 }
-var import_obsidian14, ENCOUNTER_RULE_PRESET_DIR, DEFAULT_PRESET_NAME, MODIFIER_TYPES, PRESET_SCOPE_GOLD, PRESET_SCOPE_XP;
+var import_obsidian15, ENCOUNTER_RULE_PRESET_DIR, DEFAULT_PRESET_NAME, MODIFIER_TYPES, PRESET_SCOPE_GOLD, PRESET_SCOPE_XP;
 var init_rule_presets = __esm({
   "src/workmodes/encounter/rule-presets.ts"() {
     "use strict";
-    import_obsidian14 = require("obsidian");
+    import_obsidian15 = require("obsidian");
     ENCOUNTER_RULE_PRESET_DIR = "SaltMarcher/EncounterPresets";
     DEFAULT_PRESET_NAME = "Encounter Rule Preset";
     MODIFIER_TYPES = /* @__PURE__ */ new Set([
@@ -4280,11 +4945,11 @@ function createId(prefix) {
   const random = Math.random().toString(36).slice(2, 8);
   return `${prefix}-${Date.now().toString(36)}-${random}`;
 }
-var import_obsidian15, EncounterWorkspaceView, numberFormatter;
+var import_obsidian16, EncounterWorkspaceView, numberFormatter;
 var init_workspace_view = __esm({
   "src/workmodes/encounter/workspace-view.ts"() {
     "use strict";
-    import_obsidian15 = require("obsidian");
+    import_obsidian16 = require("obsidian");
     init_modals();
     init_plugin_logger();
     init_rule_presets();
@@ -4485,10 +5150,10 @@ var init_workspace_view = __esm({
       }
       registerPresetWatcher() {
         this.detachPresetWatcher?.();
-        const baseDir = (0, import_obsidian15.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
+        const baseDir = (0, import_obsidian16.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
         const prefix = `${baseDir}/`;
         const handler = (file) => {
-          if (file instanceof import_obsidian15.TFile) {
+          if (file instanceof import_obsidian16.TFile) {
             if (isEncounterPresetFile(file)) {
               this.schedulePresetRefresh();
             }
@@ -4576,11 +5241,11 @@ var init_workspace_view = __esm({
         const presenter = this.presenter;
         const selected = this.getSelectedPreset();
         if (!presenter) {
-          new import_obsidian15.Notice("Encounter-Presenter nicht verf\xFCgbar.");
+          new import_obsidian16.Notice("Encounter-Presenter nicht verf\xFCgbar.");
           return;
         }
         if (!selected) {
-          new import_obsidian15.Notice("Bitte ein Preset ausw\xE4hlen.");
+          new import_obsidian16.Notice("Bitte ein Preset ausw\xE4hlen.");
           return;
         }
         try {
@@ -4598,16 +5263,16 @@ var init_workspace_view = __esm({
           if (typeof preset.encounterXp === "number" && Number.isFinite(preset.encounterXp)) {
             presenter.setEncounterXp(preset.encounterXp);
           }
-          new import_obsidian15.Notice(`Preset "${preset.name}" geladen.`);
+          new import_obsidian16.Notice(`Preset "${preset.name}" geladen.`);
         } catch (error) {
           logger.error("[encounter] failed to load preset", error);
-          new import_obsidian15.Notice("Preset konnte nicht geladen werden.");
+          new import_obsidian16.Notice("Preset konnte nicht geladen werden.");
         }
       }
       async handleSavePreset() {
         const presenter = this.presenter;
         if (!presenter) {
-          new import_obsidian15.Notice("Encounter-Presenter nicht verf\xFCgbar.");
+          new import_obsidian16.Notice("Encounter-Presenter nicht verf\xFCgbar.");
           return;
         }
         const selected = this.getSelectedPreset();
@@ -4627,14 +5292,14 @@ var init_workspace_view = __esm({
                   path: selected && selected.name === (name || fallbackName) ? selected.file.path : void 0
                 }
               );
-              new import_obsidian15.Notice(`Preset "${name || fallbackName}" gespeichert.`);
+              new import_obsidian16.Notice(`Preset "${name || fallbackName}" gespeichert.`);
               await this.refreshPresetOptions();
               if (this.presetSelectEl && this.presetSelectEl.isConnected) {
                 this.presetSelectEl.value = file.path;
               }
             } catch (error) {
               logger.error("[encounter] failed to save preset", error);
-              new import_obsidian15.Notice("Preset konnte nicht gespeichert werden.");
+              new import_obsidian16.Notice("Preset konnte nicht gespeichert werden.");
             }
             this.syncPresetControlsState();
           },
@@ -4650,21 +5315,21 @@ var init_workspace_view = __esm({
       async handleDeletePreset() {
         const selected = this.getSelectedPreset();
         if (!selected) {
-          new import_obsidian15.Notice("Bitte ein Preset ausw\xE4hlen.");
+          new import_obsidian16.Notice("Bitte ein Preset ausw\xE4hlen.");
           return;
         }
         const confirmed = window.confirm(`Preset "${selected.name}" l\xF6schen?`);
         if (!confirmed) return;
         try {
           await deleteEncounterRulePreset(this.app, selected.file);
-          new import_obsidian15.Notice(`Preset "${selected.name}" gel\xF6scht.`);
+          new import_obsidian16.Notice(`Preset "${selected.name}" gel\xF6scht.`);
           await this.refreshPresetOptions();
           if (this.presetSelectEl && this.presetSelectEl.isConnected) {
             this.presetSelectEl.value = "";
           }
         } catch (error) {
           logger.error("[encounter] failed to delete preset", error);
-          new import_obsidian15.Notice("Preset konnte nicht gel\xF6scht werden.");
+          new import_obsidian16.Notice("Preset konnte nicht gel\xF6scht werden.");
         }
         this.syncPresetControlsState();
       }
@@ -5324,16 +5989,16 @@ async function openEncounter(app) {
   await leaf.setViewState({ type: VIEW_ENCOUNTER, active: true });
   app.workspace.revealLeaf(leaf);
 }
-var import_obsidian16, VIEW_ENCOUNTER, EncounterView;
+var import_obsidian17, VIEW_ENCOUNTER, EncounterView;
 var init_view = __esm({
   "src/workmodes/encounter/view.ts"() {
     "use strict";
-    import_obsidian16 = require("obsidian");
+    import_obsidian17 = require("obsidian");
     init_presenter();
     init_workspace_view();
     init_layout();
     VIEW_ENCOUNTER = "salt-encounter";
-    EncounterView = class extends import_obsidian16.ItemView {
+    EncounterView = class extends import_obsidian17.ItemView {
       constructor(leaf) {
         super(leaf);
         this.presenter = null;
@@ -5490,10 +6155,10 @@ var init_grid_layout_manager = __esm({
     init_layout_utils();
     init_plugin_logger();
     GridLayoutManager = class {
-      constructor(container, fields4) {
+      constructor(container, fields5) {
         this.currentPairs = 1;
         this.container = container;
-        this.fields = fields4;
+        this.fields = fields5;
         this.observer = new ResizeObserver(() => this.recalculate());
         this.observer.observe(container);
         this.recalculate();
@@ -5744,7 +6409,7 @@ var init_field_renderer_registry = __esm({
 function renderModularTokenFieldCore(options) {
   const {
     container,
-    fields: fields4,
+    fields: fields5,
     primaryField,
     value = [],
     chipTemplate,
@@ -5755,7 +6420,7 @@ function renderModularTokenFieldCore(options) {
     onTokenFieldChange
   } = options;
   const tokens = Array.isArray(value) ? [...value] : [];
-  const primaryFieldDef = fields4.find((f) => f.id === primaryField);
+  const primaryFieldDef = fields5.find((f) => f.id === primaryField);
   if (!primaryFieldDef) {
     throw new Error(`Primary field "${primaryField}" not found in fields config`);
   }
@@ -5857,7 +6522,7 @@ function renderModularTokenFieldCore(options) {
           chip.createSpan({ text: JSON.stringify(token), cls: "sm-cc-chip__text" });
         }
       } else {
-        for (const fieldDef of fields4) {
+        for (const fieldDef of fields5) {
           if (!fieldDef.displayInChip) continue;
           if (fieldDef.visibleIf && !fieldDef.visibleIf(token)) continue;
           const segment = chip.createSpan({
@@ -6006,7 +6671,7 @@ function renderModularTokenFieldCore(options) {
     if (getInitialValue) {
       newToken = getInitialValue(formData, inputValue);
     } else {
-      for (const fieldDef of fields4) {
+      for (const fieldDef of fields5) {
         if (fieldDef.id === primaryField) {
           newToken[fieldDef.id] = inputValue;
         } else if (fieldDef.default !== void 0) {
@@ -6459,7 +7124,7 @@ function createRendererWrapper(type, coreRenderer, options) {
     supports: (spec) => spec.type === type,
     render: (args) => {
       const { container, spec, values, onChange } = args;
-      const setting = new import_obsidian17.Setting(container);
+      const setting = new import_obsidian18.Setting(container);
       if (spec.label) {
         setting.setName(spec.label);
       }
@@ -6484,11 +7149,11 @@ function createRendererWrapper(type, coreRenderer, options) {
     }
   };
 }
-var import_obsidian17;
+var import_obsidian18;
 var init_field_rendering_core = __esm({
   "src/features/data-manager/fields/field-rendering-core.ts"() {
     "use strict";
-    import_obsidian17 = require("obsidian");
+    import_obsidian18 = require("obsidian");
     init_plugin_logger();
     init_width_utils();
     init_token_field_core_new();
@@ -6527,9 +7192,9 @@ function resolveDefaults(spec, name) {
   const fromSpec = typeof spec.defaults === "function" ? spec.defaults({ presetName: name }) : spec.defaults;
   return fromSpec ? { ...fromSpec } : {};
 }
-function orderFields(fields4, ids) {
-  if (!ids || ids.length === 0) return fields4;
-  const lookup = new Map(fields4.map((field) => [field.id, field]));
+function orderFields(fields5, ids) {
+  if (!ids || ids.length === 0) return fields5;
+  const lookup = new Map(fields5.map((field) => [field.id, field]));
   const ordered = [];
   for (const id of ids) {
     const entry = lookup.get(id);
@@ -6795,7 +7460,7 @@ function renderEntryCard(options) {
       cls: "sm-cc-entry-move-btn",
       attr: attributes
     });
-    (0, import_obsidian18.setIcon)(moveUpBtn, "chevron-up");
+    (0, import_obsidian19.setIcon)(moveUpBtn, "chevron-up");
     moveUpBtn.addEventListener("click", moveUpHandler);
   }
   if (includeMoveButtons && moveDownHandler) {
@@ -6810,7 +7475,7 @@ function renderEntryCard(options) {
       cls: "sm-cc-entry-move-btn",
       attr: attributes
     });
-    (0, import_obsidian18.setIcon)(moveDownBtn, "chevron-down");
+    (0, import_obsidian19.setIcon)(moveDownBtn, "chevron-down");
     moveDownBtn.addEventListener("click", moveDownHandler);
   }
   const deleteHandler = resolvedActions.remove ?? context.remove;
@@ -6850,11 +7515,11 @@ function renderEntryCard(options) {
   renderBody(card, context);
   return slots;
 }
-var import_obsidian18;
+var import_obsidian19;
 var init_entry_card = __esm({
   "src/features/data-manager/storage/entry-card.ts"() {
     "use strict";
-    import_obsidian18 = require("obsidian");
+    import_obsidian19 = require("obsidian");
   }
 });
 
@@ -7071,8 +7736,8 @@ var init_repeating_width_sync = __esm({
         const groups = /* @__PURE__ */ new Map();
         const items = this.container.querySelectorAll(".sm-cc-repeating-item");
         items.forEach((item) => {
-          const fields4 = item.querySelectorAll(".sm-cc-repeating-field:not(.is-hidden)");
-          fields4.forEach((field) => {
+          const fields5 = item.querySelectorAll(".sm-cc-repeating-field:not(.is-hidden)");
+          fields5.forEach((field) => {
             const fieldId = field.dataset.fieldId;
             if (!fieldId) return;
             const label = field.querySelector(".sm-cc-field-label");
@@ -7846,11 +8511,11 @@ var init_renderer_checkbox = __esm({
 });
 
 // src/features/data-manager/fields/renderer-select.ts
-var import_obsidian19, selectFieldRenderer;
+var import_obsidian20, selectFieldRenderer;
 var init_renderer_select = __esm({
   "src/features/data-manager/fields/renderer-select.ts"() {
     "use strict";
-    import_obsidian19 = require("obsidian");
+    import_obsidian20 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     init_select_enhancement();
@@ -7859,7 +8524,7 @@ var init_renderer_select = __esm({
       supports: (spec) => spec.type === "select",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian19.Setting(container).setName(spec.label);
+        const setting = new import_obsidian20.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -7945,11 +8610,11 @@ var init_renderer_color = __esm({
 });
 
 // src/features/data-manager/fields/renderer-tokens.ts
-var import_obsidian20, tokenFieldRenderer;
+var import_obsidian21, tokenFieldRenderer;
 var init_renderer_tokens = __esm({
   "src/features/data-manager/fields/renderer-tokens.ts"() {
     "use strict";
-    import_obsidian20 = require("obsidian");
+    import_obsidian21 = require("obsidian");
     init_modal_utils();
     init_field_rendering_core();
     init_plugin_logger();
@@ -7960,7 +8625,7 @@ var init_renderer_tokens = __esm({
       render: (args) => {
         const { container, spec, values, onChange } = args;
         const tokenSpec = spec;
-        const setting = new import_obsidian20.Setting(container).setName(spec.label);
+        const setting = new import_obsidian21.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         setting.settingEl.addClass("sm-cc-setting--wide");
         setting.settingEl.addClass("sm-cc-setting--token-editor");
@@ -8057,11 +8722,11 @@ var init_renderer_heading = __esm({
 });
 
 // src/features/data-manager/fields/renderer-composite.ts
-var import_obsidian21, compositeFieldRenderer;
+var import_obsidian22, compositeFieldRenderer;
 var init_renderer_composite = __esm({
   "src/features/data-manager/fields/renderer-composite.ts"() {
     "use strict";
-    import_obsidian21 = require("obsidian");
+    import_obsidian22 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     init_field_rendering_core();
@@ -8069,7 +8734,7 @@ var init_renderer_composite = __esm({
       supports: (spec) => spec.type === "composite",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian21.Setting(container).setName(spec.label);
+        const setting = new import_obsidian22.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -8102,18 +8767,18 @@ var init_renderer_composite = __esm({
 });
 
 // src/features/data-manager/fields/renderer-autocomplete.ts
-var import_obsidian22, autocompleteFieldRenderer;
+var import_obsidian23, autocompleteFieldRenderer;
 var init_renderer_autocomplete = __esm({
   "src/features/data-manager/fields/renderer-autocomplete.ts"() {
     "use strict";
-    import_obsidian22 = require("obsidian");
+    import_obsidian23 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     autocompleteFieldRenderer = {
       supports: (spec) => spec.type === "autocomplete",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian22.Setting(container).setName(spec.label);
+        const setting = new import_obsidian23.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -8207,11 +8872,11 @@ var init_renderer_autocomplete = __esm({
 });
 
 // src/features/data-manager/fields/renderer-repeating.ts
-var import_obsidian23, repeatingFieldRenderer;
+var import_obsidian24, repeatingFieldRenderer;
 var init_renderer_repeating = __esm({
   "src/features/data-manager/fields/renderer-repeating.ts"() {
     "use strict";
-    import_obsidian23 = require("obsidian");
+    import_obsidian24 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     init_repeating_width_sync();
@@ -8223,7 +8888,7 @@ var init_renderer_repeating = __esm({
       supports: (spec) => spec.type === "repeating",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian23.Setting(container).setName(spec.label);
+        const setting = new import_obsidian24.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -8603,11 +9268,11 @@ function resolveTargetPath(storage, values) {
   const extension = storage.format === "md-frontmatter" || storage.format === "codeblock" ? "md" : storage.format === "json" ? "json" : "yaml";
   const target = ensureExtension(templatePath, extension);
   if (storage.directory) {
-    const sanitizedDir = (0, import_obsidian24.normalizePath)(storage.directory);
+    const sanitizedDir = (0, import_obsidian25.normalizePath)(storage.directory);
     const fileName = target.split("/").pop() ?? target;
-    return (0, import_obsidian24.normalizePath)(`${sanitizedDir}/${fileName}`);
+    return (0, import_obsidian25.normalizePath)(`${sanitizedDir}/${fileName}`);
   }
-  return (0, import_obsidian24.normalizePath)(target);
+  return (0, import_obsidian25.normalizePath)(target);
 }
 function buildFrontmatter(values, storage) {
   const frontmatter = {};
@@ -8653,7 +9318,7 @@ function buildMarkdownBody(values, storage) {
 function serializeMarkdown(storage, values, path) {
   const frontmatter = buildFrontmatter(values, storage);
   const body = buildMarkdownBody(values, storage);
-  const fm2 = (0, import_obsidian24.stringifyYaml)(frontmatter ?? {});
+  const fm2 = (0, import_obsidian25.stringifyYaml)(frontmatter ?? {});
   const content = [`---`, fm2.trimEnd(), `---`, "", body.trimEnd()].join("\n").trimEnd() + "\n";
   return { path, content, metadata: { frontmatter, format: storage.format } };
 }
@@ -8662,7 +9327,7 @@ function serializeJson(values, path) {
   return { path, content, metadata: { format: "json" } };
 }
 function serializeYaml(values, path) {
-  const content = (0, import_obsidian24.stringifyYaml)(values ?? {}) + "\n";
+  const content = (0, import_obsidian25.stringifyYaml)(values ?? {}) + "\n";
   return { path, content, metadata: { format: "yaml" } };
 }
 function serializeCodeblock(storage, values, path) {
@@ -8700,7 +9365,7 @@ function ensureFolder2(app, path) {
   parts.pop();
   const folder = parts.join("/");
   if (!folder) return Promise.resolve();
-  const normalized = (0, import_obsidian24.normalizePath)(folder);
+  const normalized = (0, import_obsidian25.normalizePath)(folder);
   const existing = app.vault.getAbstractFileByPath(normalized);
   if (existing) return Promise.resolve();
   return app.vault.createFolder(normalized).catch(() => {
@@ -8726,7 +9391,7 @@ async function persistSerializedPayload(app, storage, payload) {
     const blockRegex = new RegExp(`^\\s*${fence}${language}(?:\\s|$)[\\s\\S]*?${fence}`, "im");
     const normalizedBlock = content.trim();
     const blockWithNewline = normalizedBlock.endsWith("\\n") ? normalizedBlock : `${normalizedBlock}\\n`;
-    if (existing instanceof import_obsidian24.TFile) {
+    if (existing instanceof import_obsidian25.TFile) {
       const current = await app.vault.read(existing);
       const trimmedCurrent = current.trimEnd();
       const replacement = blockWithNewline.trimEnd();
@@ -8739,7 +9404,7 @@ async function persistSerializedPayload(app, storage, payload) {
       file = await app.vault.create(payload.path, initial.endsWith("\\n") ? initial : `${initial}\\n`);
     }
   } else {
-    if (existing instanceof import_obsidian24.TFile) {
+    if (existing instanceof import_obsidian25.TFile) {
       await app.vault.modify(existing, content);
       file = existing;
     } else {
@@ -8750,11 +9415,11 @@ async function persistSerializedPayload(app, storage, payload) {
   await storage.hooks?.afterWrite?.(result);
   return result;
 }
-var import_obsidian24;
+var import_obsidian25;
 var init_storage = __esm({
   "src/features/data-manager/storage/storage.ts"() {
     "use strict";
-    import_obsidian24 = require("obsidian");
+    import_obsidian25 = require("obsidian");
   }
 });
 
@@ -8817,8 +9482,8 @@ var init_modal_validator = __esm({
     init_modal_utils();
     init_plugin_logger();
     DefaultFieldTransformer = class {
-      constructor(fields4) {
-        this.fields = fields4;
+      constructor(fields5) {
+        this.fields = fields5;
       }
       /**
        * Apply all field transforms to data.
@@ -8983,8 +9648,8 @@ var init_field_manager = __esm({
     init_modal_utils();
     init_plugin_logger();
     FieldManager = class {
-      constructor(fields4, getData, onChange, widthSynchronizers) {
-        this.fields = fields4;
+      constructor(fields5, getData, onChange, widthSynchronizers) {
+        this.fields = fields5;
         this.getData = getData;
         this.onChange = onChange;
         this.widthSynchronizers = widthSynchronizers;
@@ -9315,6 +9980,22 @@ var init_modal_navigation = __esm({
           setActive(handles.card.id);
           handles.card.scrollIntoView({ behavior: "smooth", block: "start" });
         });
+        if (section.subItems && section.subItems.length > 0) {
+          const subList = navList.createDiv({ cls: "sm-cc-shell__nav-subitems" });
+          for (const subItem of section.subItems) {
+            const subButton = subList.createEl("button", {
+              cls: "sm-cc-shell__nav-subitem",
+              text: subItem.label
+            });
+            subButton.type = "button";
+            subButton.addEventListener("click", () => {
+              const entryEl = document.querySelector(`[data-entry-id="${subItem.id}"]`);
+              if (entryEl) {
+                entryEl.scrollIntoView({ behavior: "smooth", block: "center" });
+              }
+            });
+          }
+        }
         observer.observe(handles.card);
         onMountSection(handles, section);
       }
@@ -9341,11 +10022,11 @@ var init_modal_navigation = __esm({
 });
 
 // src/features/data-manager/modal/modal.ts
-var import_obsidian25, CreateModal;
+var import_obsidian26, CreateModal;
 var init_modal = __esm({
   "src/features/data-manager/modal/modal.ts"() {
     "use strict";
-    import_obsidian25 = require("obsidian");
+    import_obsidian26 = require("obsidian");
     init_grid_layout_manager();
     init_label_width_sync();
     init_register_renderers();
@@ -9357,7 +10038,7 @@ var init_modal = __esm({
     init_modal_utils();
     init_plugin_logger();
     registerAllFieldRenderers();
-    CreateModal = class extends import_obsidian25.Modal {
+    CreateModal = class extends import_obsidian26.Modal {
       constructor(app, spec, options, resolve) {
         super(app);
         this.completion = null;
@@ -9477,7 +10158,7 @@ var init_modal = __esm({
         this.fieldManager.updateVisibility();
       }
       buildActionButtons(container) {
-        const buttons = new import_obsidian25.Setting(container);
+        const buttons = new import_obsidian26.Setting(container);
         buttons.addButton((btn) => {
           this.cancelButton = btn;
           btn.setButtonText(this.spec.ui?.cancelLabel || "Abbrechen").onClick(() => {
@@ -9559,7 +10240,7 @@ var init_modal = __esm({
       }
       handleSubmissionError(error) {
         const message = error instanceof Error ? error.message : String(error ?? "Unbekannter Fehler");
-        new import_obsidian25.Notice(`Fehler beim Speichern: ${message}`);
+        new import_obsidian26.Notice(`Fehler beim Speichern: ${message}`);
       }
       lockBackgroundPointer() {
         const bg = document.querySelector(".modal-bg");
@@ -10432,15 +11113,15 @@ var init_ui = __esm({
 });
 
 // src/features/data-manager/browse/tabbed-browse-view.ts
-var import_obsidian26, TabbedBrowseView;
+var import_obsidian27, TabbedBrowseView;
 var init_tabbed_browse_view = __esm({
   "src/features/data-manager/browse/tabbed-browse-view.ts"() {
     "use strict";
-    import_obsidian26 = require("obsidian");
+    import_obsidian27 = require("obsidian");
     init_generic_list_renderer();
     init_watcher_hub();
     init_ui();
-    TabbedBrowseView = class extends import_obsidian26.ItemView {
+    TabbedBrowseView = class extends import_obsidian27.ItemView {
       constructor(leaf) {
         super(leaf);
         this.queries = /* @__PURE__ */ new Map();
@@ -10681,6 +11362,14 @@ var init_entity_registry = __esm({
         singular: "region",
         plural: "regions"
       },
+      factions: {
+        id: "factions",
+        displayName: "Factions",
+        directory: "SaltMarcher/Factions",
+        defaultBaseName: "Faction",
+        singular: "faction",
+        plural: "factions"
+      },
       calendars: {
         id: "calendars",
         displayName: "Calendars",
@@ -10701,15 +11390,15 @@ async function listVaultPresets(app, entityType) {
     return [];
   }
   const folder = app.vault.getAbstractFileByPath(entityConfig.directory);
-  if (!folder || !(folder instanceof import_obsidian27.TFolder)) {
+  if (!folder || !(folder instanceof import_obsidian28.TFolder)) {
     return [];
   }
   const files = [];
   const collectFiles = (currentFolder) => {
     for (const child of currentFolder.children) {
-      if (child instanceof import_obsidian27.TFile && child.extension === "md") {
+      if (child instanceof import_obsidian28.TFile && child.extension === "md") {
         files.push(child);
-      } else if (child instanceof import_obsidian27.TFolder) {
+      } else if (child instanceof import_obsidian28.TFolder) {
         collectFiles(child);
       }
     }
@@ -10728,22 +11417,22 @@ function watchVaultPresets(app, entityType, onChange) {
     onChange();
   };
   const createRef = app.vault.on("create", (file) => {
-    if (file instanceof import_obsidian27.TFile && file.path.startsWith(entityConfig.directory)) {
+    if (file instanceof import_obsidian28.TFile && file.path.startsWith(entityConfig.directory)) {
       notify();
     }
   });
   const deleteRef = app.vault.on("delete", (file) => {
-    if (file instanceof import_obsidian27.TFile && file.path.startsWith(entityConfig.directory)) {
+    if (file instanceof import_obsidian28.TFile && file.path.startsWith(entityConfig.directory)) {
       notify();
     }
   });
   const renameRef = app.vault.on("rename", (file, oldPath) => {
-    if (file instanceof import_obsidian27.TFile && (file.path.startsWith(entityConfig.directory) || oldPath.startsWith(entityConfig.directory))) {
+    if (file instanceof import_obsidian28.TFile && (file.path.startsWith(entityConfig.directory) || oldPath.startsWith(entityConfig.directory))) {
       notify();
     }
   });
   const modifyRef = app.vault.on("modify", (file) => {
-    if (file instanceof import_obsidian27.TFile && file.path.startsWith(entityConfig.directory)) {
+    if (file instanceof import_obsidian28.TFile && file.path.startsWith(entityConfig.directory)) {
       notify();
     }
   });
@@ -10754,11 +11443,11 @@ function watchVaultPresets(app, entityType, onChange) {
     app.vault.offref(modifyRef);
   };
 }
-var import_obsidian27;
+var import_obsidian28;
 var init_vault_preset_loader = __esm({
   "Presets/lib/vault-preset-loader.ts"() {
     "use strict";
-    import_obsidian27 = require("obsidian");
+    import_obsidian28 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
   }
@@ -11726,11 +12415,11 @@ function renderMultiattackEffect(container, entry, ctx) {
     text: "+ Angriff"
   });
 }
-var import_obsidian28, creatureSchema, basicInfoFields, combatStatsFields, movementFields, abilitiesFields, skillsFields, sensesLanguagesFields, resistancesFields, equipmentFields, spellcastingFields, entriesFields, creatureSpec;
+var import_obsidian29, creatureSchema, basicInfoFields, combatStatsFields, movementFields, abilitiesFields, skillsFields, sensesLanguagesFields, resistancesFields, equipmentFields, spellcastingFields, entriesFields, creatureSpec;
 var init_create_spec = __esm({
   "src/workmodes/library/creatures/create-spec.ts"() {
     "use strict";
-    import_obsidian28 = require("obsidian");
+    import_obsidian29 = require("obsidian");
     init_serializer();
     init_debug_logger();
     init_constants();
@@ -12374,92 +13063,329 @@ var init_create_spec = __esm({
                 const triggerSection = body.createDiv({ cls: "sm-cc-trigger-section" });
                 triggerSection.createEl("h4", { text: "TRIGGER", cls: "sm-cc-section-label" });
                 const triggerContent = triggerSection.createDiv({ cls: "sm-cc-trigger-content" });
-                const costRow = triggerContent.createDiv({ cls: "sm-cc-field-row" });
-                costRow.createEl("span", { text: "Kosten:", cls: "sm-cc-field-label" });
-                const costSelect = costRow.createEl("select", {
+                const activationRow = triggerContent.createDiv({ cls: "sm-cc-field-row" });
+                activationRow.createEl("span", { text: "Aktivierung:", cls: "sm-cc-field-label" });
+                const activationSelect = activationRow.createEl("select", {
                   cls: "sm-cc-compact-select",
-                  value: entry["trigger.cost"] || "action"
+                  value: entry["trigger.activation"] || "action"
                 });
-                const costOptions = [
+                const activationOptions = [
                   { value: "action", label: "Aktion" },
                   { value: "bonus", label: "Bonusaktion" },
                   { value: "reaction", label: "Reaktion" },
                   { value: "passive", label: "Passiv" },
-                  { value: "legendary", label: "Legend\xE4r" },
-                  { value: "free", label: "Frei" }
+                  { value: "automatic", label: "Automatisch" }
                 ];
-                costOptions.forEach((opt) => {
-                  const option = costSelect.createEl("option", { value: opt.value, text: opt.label });
-                  if (opt.value === (entry["trigger.cost"] || "action")) option.selected = true;
+                activationOptions.forEach((opt) => {
+                  const option = activationSelect.createEl("option", { value: opt.value, text: opt.label });
+                  if (opt.value === (entry["trigger.activation"] || "action")) option.selected = true;
                 });
-                costSelect.addEventListener("change", () => {
-                  entry["trigger.cost"] = costSelect.value;
-                  if (costSelect.value === "legendary") entry.category = "legendary";
-                  else if (costSelect.value === "bonus") entry.category = "bonus";
-                  else if (costSelect.value === "reaction") entry.category = "reaction";
-                  else if (costSelect.value === "passive") entry.category = "trait";
+                activationSelect.addEventListener("change", () => {
+                  entry["trigger.activation"] = activationSelect.value;
+                  if (activationSelect.value === "bonus") entry.category = "bonus";
+                  else if (activationSelect.value === "reaction") entry.category = "reaction";
+                  else if (activationSelect.value === "passive") entry.category = "trait";
                   else entry.category = "action";
                   ctx.requestRender();
                 });
-                const conditionsRow = triggerContent.createDiv({ cls: "sm-cc-field-row" });
-                conditionsRow.createEl("span", { text: "Bedingungen:", cls: "sm-cc-field-label" });
-                const conditionsContainer = conditionsRow.createDiv({ cls: "sm-cc-conditions-list" });
-                const conditions = entry["trigger.conditions"] || [];
-                conditions.forEach((condition, index) => {
-                  const chip = conditionsContainer.createEl("span", {
-                    text: condition,
-                    cls: "sm-cc-condition-chip"
-                  });
-                  chip.addEventListener("click", () => {
-                    conditions.splice(index, 1);
-                    entry["trigger.conditions"] = conditions;
-                    ctx.requestRender();
-                  });
+                const modifiersRow = triggerContent.createDiv({ cls: "sm-cc-field-row" });
+                modifiersRow.createEl("span", { text: "Modifikatoren:", cls: "sm-cc-field-label" });
+                const rechargeCheck = modifiersRow.createEl("input", {
+                  type: "checkbox",
+                  attr: { id: "recharge-check" }
                 });
-                const addConditionBtn = conditionsContainer.createEl("button", {
-                  cls: "sm-cc-compact-btn",
-                  text: "+ Bedingung"
+                rechargeCheck.checked = Boolean(entry.recharge);
+                rechargeCheck.addEventListener("change", () => {
+                  if (rechargeCheck.checked) {
+                    entry.recharge = "5-6";
+                  } else {
+                    delete entry.recharge;
+                  }
+                  ctx.requestRender();
                 });
-                addConditionBtn.addEventListener("click", () => {
-                  console.log("Add condition");
+                modifiersRow.createEl("label", {
+                  text: "Aufladung:",
+                  attr: { for: "recharge-check" },
+                  cls: "sm-cc-checkbox-label"
                 });
                 if (entry.recharge) {
-                  const rechargeRow = triggerContent.createDiv({ cls: "sm-cc-field-row" });
-                  rechargeRow.createEl("span", { text: "Aufladung:", cls: "sm-cc-field-label" });
-                  const rechargeInput = rechargeRow.createEl("input", {
-                    cls: "sm-cc-compact-text",
-                    value: entry.recharge || "",
-                    placeholder: "z.B. 5-6"
+                  const rechargeMin = modifiersRow.createEl("input", {
+                    type: "number",
+                    cls: "sm-cc-tiny-number",
+                    value: String(entry.recharge).split("-")[0] || "5"
                   });
-                  rechargeInput.addEventListener("input", () => {
-                    entry.recharge = rechargeInput.value;
+                  modifiersRow.createEl("span", { text: "-" });
+                  const rechargeMax = modifiersRow.createEl("input", {
+                    type: "number",
+                    cls: "sm-cc-tiny-number",
+                    value: String(entry.recharge).split("-")[1] || "6"
+                  });
+                  [rechargeMin, rechargeMax].forEach((input) => {
+                    input.addEventListener("input", () => {
+                      entry.recharge = `${rechargeMin.value}-${rechargeMax.value}`;
+                    });
                   });
                 }
+                const limitedCheck = modifiersRow.createEl("input", {
+                  type: "checkbox",
+                  attr: { id: "limited-check" }
+                });
+                limitedCheck.checked = Boolean(entry.limitedUse);
+                limitedCheck.addEventListener("change", () => {
+                  if (limitedCheck.checked) {
+                    entry.limitedUse = { count: 3, reset: "day" };
+                  } else {
+                    delete entry.limitedUse;
+                  }
+                  ctx.requestRender();
+                });
+                modifiersRow.createEl("label", {
+                  text: "Begrenzt:",
+                  attr: { for: "limited-check" },
+                  cls: "sm-cc-checkbox-label"
+                });
                 if (entry.limitedUse) {
-                  const limitRow = triggerContent.createDiv({ cls: "sm-cc-field-row" });
-                  limitRow.createEl("span", { text: "Begrenzt:", cls: "sm-cc-field-label" });
-                  const limitInput = limitRow.createEl("input", {
+                  const limitInput = modifiersRow.createEl("input", {
                     type: "number",
-                    cls: "sm-cc-compact-number",
-                    value: String(entry.limitedUse?.count || 1)
+                    cls: "sm-cc-tiny-number",
+                    value: String(entry.limitedUse?.count || 3)
+                  });
+                  modifiersRow.createEl("span", { text: "pro" });
+                  const resetSelect = modifiersRow.createEl("select", {
+                    cls: "sm-cc-tiny-select"
+                  });
+                  const resetOptions = [
+                    { value: "day", label: "Tag" },
+                    { value: "short-rest", label: "Kurze Rast" },
+                    { value: "long-rest", label: "Lange Rast" }
+                  ];
+                  resetOptions.forEach((opt) => {
+                    const option = resetSelect.createEl("option", { value: opt.value, text: opt.label });
+                    if (opt.value === entry.limitedUse?.reset) option.selected = true;
                   });
                   limitInput.addEventListener("input", () => {
                     if (!entry.limitedUse) entry.limitedUse = {};
                     entry.limitedUse.count = parseInt(limitInput.value) || 1;
-                  });
-                  limitRow.createEl("span", { text: "pro" });
-                  const resetSelect = limitRow.createEl("select", {
-                    cls: "sm-cc-compact-select"
-                  });
-                  ["day", "short rest", "long rest"].forEach((opt) => {
-                    const option = resetSelect.createEl("option", { value: opt, text: opt });
-                    if (opt === entry.limitedUse?.reset) option.selected = true;
                   });
                   resetSelect.addEventListener("change", () => {
                     if (!entry.limitedUse) entry.limitedUse = {};
                     entry.limitedUse.reset = resetSelect.value;
                   });
                 }
+                const legendaryCheck = modifiersRow.createEl("input", {
+                  type: "checkbox",
+                  attr: { id: "legendary-check" }
+                });
+                legendaryCheck.checked = Boolean(entry["trigger.legendaryCost"]);
+                legendaryCheck.addEventListener("change", () => {
+                  if (legendaryCheck.checked) {
+                    entry["trigger.legendaryCost"] = 1;
+                    entry.category = "legendary";
+                  } else {
+                    delete entry["trigger.legendaryCost"];
+                    if (entry["trigger.activation"] !== "passive") {
+                      entry.category = "action";
+                    }
+                  }
+                  ctx.requestRender();
+                });
+                modifiersRow.createEl("label", {
+                  text: "Legend\xE4r:",
+                  attr: { for: "legendary-check" },
+                  cls: "sm-cc-checkbox-label"
+                });
+                if (entry["trigger.legendaryCost"]) {
+                  const costInput = modifiersRow.createEl("input", {
+                    type: "number",
+                    cls: "sm-cc-tiny-number",
+                    value: String(entry["trigger.legendaryCost"] || 1)
+                  });
+                  modifiersRow.createEl("span", { text: "Kosten" });
+                  costInput.addEventListener("input", () => {
+                    entry["trigger.legendaryCost"] = parseInt(costInput.value) || 1;
+                  });
+                }
+                if (entry["trigger.activation"] === "reaction") {
+                  const reactionRow = triggerContent.createDiv({ cls: "sm-cc-field-row" });
+                  reactionRow.createEl("span", { text: "Ausl\xF6ser:", cls: "sm-cc-field-label" });
+                  const reactionInput = reactionRow.createEl("input", {
+                    cls: "sm-cc-long-text",
+                    value: entry["trigger.reactionTrigger"] || "",
+                    placeholder: "z.B. wird getroffen, sieht einen Zauber gewirkt..."
+                  });
+                  reactionInput.addEventListener("input", () => {
+                    entry["trigger.reactionTrigger"] = reactionInput.value;
+                  });
+                } else if (entry["trigger.activation"] === "automatic") {
+                  const timingRow = triggerContent.createDiv({ cls: "sm-cc-field-row" });
+                  timingRow.createEl("span", { text: "Zeitpunkt:", cls: "sm-cc-field-label" });
+                  const timingSelect = timingRow.createEl("select", {
+                    cls: "sm-cc-compact-select",
+                    value: entry["trigger.automaticTiming"] || "start-of-turn"
+                  });
+                  const timingOptions = [
+                    { value: "start-of-turn", label: "Am Beginn der Runde der Kreatur" },
+                    { value: "end-of-turn", label: "Am Ende der Runde der Kreatur" },
+                    { value: "start-of-any-turn", label: "Am Beginn jeder Kreatur-Runde" },
+                    { value: "end-of-any-turn", label: "Am Ende jeder Kreatur-Runde" }
+                  ];
+                  timingOptions.forEach((opt) => {
+                    const option = timingSelect.createEl("option", { value: opt.value, text: opt.label });
+                    if (opt.value === entry["trigger.automaticTiming"]) option.selected = true;
+                  });
+                  timingSelect.addEventListener("change", () => {
+                    entry["trigger.automaticTiming"] = timingSelect.value;
+                  });
+                }
+                const targetingRow = triggerContent.createDiv({ cls: "sm-cc-field-row" });
+                targetingRow.createEl("span", { text: "Zielbereich:", cls: "sm-cc-field-label" });
+                const targetTypeSelect = targetingRow.createEl("select", {
+                  cls: "sm-cc-compact-select",
+                  value: entry["trigger.targeting.type"] || "single"
+                });
+                const targetTypes = [
+                  { value: "self", label: "Selbst" },
+                  { value: "single", label: "Einzelziel" },
+                  { value: "multiple", label: "Mehrere Ziele" },
+                  { value: "area", label: "Bereich" }
+                ];
+                targetTypes.forEach((opt) => {
+                  const option = targetTypeSelect.createEl("option", { value: opt.value, text: opt.label });
+                  if (opt.value === (entry["trigger.targeting.type"] || "single")) option.selected = true;
+                });
+                targetTypeSelect.addEventListener("change", () => {
+                  if (!entry["trigger.targeting"]) entry["trigger.targeting"] = {};
+                  entry["trigger.targeting"].type = targetTypeSelect.value;
+                  ctx.requestRender();
+                });
+                const targetType = entry["trigger.targeting.type"] || "single";
+                if (targetType === "single" || targetType === "multiple") {
+                  if (targetType === "multiple") {
+                    targetingRow.createEl("span", { text: "Anzahl:" });
+                    const countInput = targetingRow.createEl("input", {
+                      type: "number",
+                      cls: "sm-cc-tiny-number",
+                      value: String(entry["trigger.targeting.count"] || 2)
+                    });
+                    countInput.addEventListener("input", () => {
+                      if (!entry["trigger.targeting"]) entry["trigger.targeting"] = {};
+                      entry["trigger.targeting"].count = parseInt(countInput.value) || 1;
+                    });
+                  }
+                  targetingRow.createEl("span", { text: "Reichweite:" });
+                  const rangeInput = targetingRow.createEl("input", {
+                    cls: "sm-cc-compact-text",
+                    value: entry["trigger.targeting.range"] || "",
+                    placeholder: "z.B. 30 ft."
+                  });
+                  rangeInput.addEventListener("input", () => {
+                    if (!entry["trigger.targeting"]) entry["trigger.targeting"] = {};
+                    entry["trigger.targeting"].range = rangeInput.value;
+                  });
+                  const sightCheck = targetingRow.createEl("input", {
+                    type: "checkbox",
+                    attr: { id: "sight-required" }
+                  });
+                  sightCheck.checked = entry["trigger.targeting.sightRequired"] === true;
+                  sightCheck.addEventListener("change", () => {
+                    if (!entry["trigger.targeting"]) entry["trigger.targeting"] = {};
+                    entry["trigger.targeting"].sightRequired = sightCheck.checked;
+                  });
+                  targetingRow.createEl("label", {
+                    text: "Sichtlinie erforderlich",
+                    attr: { for: "sight-required" },
+                    cls: "sm-cc-checkbox-label"
+                  });
+                } else if (targetType === "area") {
+                  targetingRow.createEl("span", { text: "Form:" });
+                  const shapeSelect = targetingRow.createEl("select", {
+                    cls: "sm-cc-compact-select",
+                    value: entry["trigger.targeting.shape"] || "cone"
+                  });
+                  const shapes = [
+                    { value: "cone", label: "Kegel" },
+                    { value: "emanation", label: "Aura" },
+                    { value: "line", label: "Linie" },
+                    { value: "cube", label: "W\xFCrfel" },
+                    { value: "sphere", label: "Kugel" }
+                  ];
+                  shapes.forEach((opt) => {
+                    const option = shapeSelect.createEl("option", { value: opt.value, text: opt.label });
+                    if (opt.value === entry["trigger.targeting.shape"]) option.selected = true;
+                  });
+                  shapeSelect.addEventListener("change", () => {
+                    if (!entry["trigger.targeting"]) entry["trigger.targeting"] = {};
+                    entry["trigger.targeting"].shape = shapeSelect.value;
+                  });
+                  targetingRow.createEl("span", { text: "Gr\xF6\xDFe:" });
+                  const sizeInput = targetingRow.createEl("input", {
+                    cls: "sm-cc-compact-text",
+                    value: entry["trigger.targeting.size"] || "",
+                    placeholder: "z.B. 15 ft."
+                  });
+                  sizeInput.addEventListener("input", () => {
+                    if (!entry["trigger.targeting"]) entry["trigger.targeting"] = {};
+                    entry["trigger.targeting"].size = sizeInput.value;
+                  });
+                }
+                const restrictionsRow = triggerContent.createDiv({ cls: "sm-cc-field-row" });
+                restrictionsRow.createEl("span", { text: "Einschr\xE4nkungen:", cls: "sm-cc-field-label" });
+                const sizeCheck = restrictionsRow.createEl("input", {
+                  type: "checkbox",
+                  attr: { id: "size-restriction" }
+                });
+                const restrictions = entry["trigger.restrictions"] || {};
+                sizeCheck.checked = Boolean(restrictions.maxSize);
+                sizeCheck.addEventListener("change", () => {
+                  if (sizeCheck.checked) {
+                    if (!entry["trigger.restrictions"]) entry["trigger.restrictions"] = {};
+                    entry["trigger.restrictions"].maxSize = "Mittel";
+                  } else {
+                    if (entry["trigger.restrictions"]) {
+                      delete entry["trigger.restrictions"].maxSize;
+                      if (Object.keys(entry["trigger.restrictions"]).length === 0) {
+                        delete entry["trigger.restrictions"];
+                      }
+                    }
+                  }
+                  ctx.requestRender();
+                });
+                restrictionsRow.createEl("label", {
+                  text: "Max. Gr\xF6\xDFe:",
+                  attr: { for: "size-restriction" },
+                  cls: "sm-cc-checkbox-label-small"
+                });
+                if (restrictions.maxSize) {
+                  const sizeSelect = restrictionsRow.createEl("select", {
+                    cls: "sm-cc-tiny-select"
+                  });
+                  ["Klein", "Mittel", "Gro\xDF", "Riesig"].forEach((size) => {
+                    const opt = sizeSelect.createEl("option", { value: size, text: size });
+                    if (size === restrictions.maxSize) opt.selected = true;
+                  });
+                  sizeSelect.addEventListener("change", () => {
+                    if (!entry["trigger.restrictions"]) entry["trigger.restrictions"] = {};
+                    entry["trigger.restrictions"].maxSize = sizeSelect.value;
+                  });
+                }
+                const otherInput = restrictionsRow.createEl("input", {
+                  cls: "sm-cc-long-text",
+                  value: restrictions.other || "",
+                  placeholder: "Weitere Einschr\xE4nkungen (z.B. muss ergriffen sein)"
+                });
+                otherInput.addEventListener("input", () => {
+                  if (otherInput.value) {
+                    if (!entry["trigger.restrictions"]) entry["trigger.restrictions"] = {};
+                    entry["trigger.restrictions"].other = otherInput.value;
+                  } else {
+                    if (entry["trigger.restrictions"]) {
+                      delete entry["trigger.restrictions"].other;
+                      if (Object.keys(entry["trigger.restrictions"]).length === 0) {
+                        delete entry["trigger.restrictions"];
+                      }
+                    }
+                  }
+                });
                 const effectsSection = body.createDiv({ cls: "sm-cc-effects-section" });
                 effectsSection.createEl("h4", { text: "EFFEKTE", cls: "sm-cc-section-label" });
                 const effectsContent = effectsSection.createDiv({ cls: "sm-cc-effects-content" });
@@ -12490,20 +13416,24 @@ var init_create_spec = __esm({
                   entry.text = textarea.value;
                 });
               },
+              // Add data-entry-id for navigation
+              dataset: {
+                entryId: String(entry.name || `entry-${context.index}`)
+              },
               // Add collapse toggle in head
               renderHeadExtras: (head, ctx, slots) => {
                 const toggle = head.createDiv({
                   cls: "sm-cc-entry-toggle",
                   attr: { "aria-expanded": "true", "aria-label": "Toggle entry" }
                 });
-                (0, import_obsidian28.setIcon)(toggle, "chevron-down");
+                (0, import_obsidian29.setIcon)(toggle, "chevron-down");
                 head.prepend(toggle);
                 toggle.addEventListener("click", (e) => {
                   e.stopPropagation();
                   const isExpanded = toggle.getAttribute("aria-expanded") === "true";
                   toggle.setAttribute("aria-expanded", String(!isExpanded));
                   slots.card.toggleClass("is-collapsed", isExpanded);
-                  (0, import_obsidian28.setIcon)(toggle, isExpanded ? "chevron-right" : "chevron-down");
+                  (0, import_obsidian29.setIcon)(toggle, isExpanded ? "chevron-right" : "chevron-down");
                 });
               }
             };
@@ -12513,6 +13443,12 @@ var init_create_spec = __esm({
             id,
             label,
             defaultActive: true
+          })),
+          // Filters for entry types
+          filters: CREATURE_ENTRY_CATEGORIES.map(([id, label]) => ({
+            id,
+            label,
+            predicate: (entry) => entry.category === id
           }))
         },
         default: []
@@ -13480,7 +14416,7 @@ var init_serializer3 = __esm({
 });
 
 // src/workmodes/library/items/constants.ts
-var ITEM_CATEGORIES, ITEM_RARITIES, RECHARGE_TIMES;
+var ITEM_CATEGORIES, ITEM_RARITIES, RECHARGE_TIMES, ITEM_TAGS;
 var init_constants3 = __esm({
   "src/workmodes/library/items/constants.ts"() {
     "use strict";
@@ -13508,6 +14444,17 @@ var init_constants3 = __esm({
       "Dusk",
       "Long Rest",
       "Short Rest"
+    ];
+    ITEM_TAGS = [
+      "Armor",
+      "Potion",
+      "Ring",
+      "Rod",
+      "Scroll",
+      "Staff",
+      "Wand",
+      "Weapon",
+      "Wondrous"
     ];
   }
 });
@@ -13545,6 +14492,24 @@ var init_create_spec3 = __esm({
           { value: "", label: "(none)" },
           ...ITEM_CATEGORIES.map((c) => ({ value: c, label: c }))
         ]
+      },
+      {
+        id: "tags",
+        label: "Tags",
+        type: "tokens",
+        config: {
+          fields: [{
+            id: "value",
+            type: "select",
+            displayInChip: true,
+            editable: true,
+            suggestions: ITEM_TAGS.map((tag) => ({ key: tag, label: tag })),
+            placeholder: "Tag ausw\xE4hlen..."
+          }],
+          primaryField: "value"
+        },
+        default: [],
+        description: "Classification tags for filtering and organization"
       },
       {
         id: "type",
@@ -13681,6 +14646,7 @@ var init_create_spec3 = __esm({
         frontmatter: [
           "name",
           "category",
+          "tags",
           "type",
           "rarity",
           "attunement",
@@ -13718,8 +14684,8 @@ var init_create_spec3 = __esm({
           {
             id: "basic",
             label: "Grunddaten",
-            description: "Name, Kategorie, Typ und Seltenheit",
-            fieldIds: ["name", "category", "type", "rarity"]
+            description: "Name, Kategorie, Tags, Typ und Seltenheit",
+            fieldIds: ["name", "category", "tags", "type", "rarity"]
           },
           {
             id: "attunement",
@@ -13769,6 +14735,7 @@ var init_create_spec3 = __esm({
         ],
         filters: [
           { id: "category", field: "category", label: "Category", type: "string" },
+          { id: "tags", field: "tags", label: "Tags", type: "array" },
           {
             id: "rarity",
             field: "rarity",
@@ -13810,7 +14777,7 @@ var init_create_spec3 = __esm({
             }
           }
         ],
-        search: ["category", "rarity"]
+        search: ["category", "tags", "rarity"]
       },
       // Loader configuration - replaces loader.ts (uses auto-loader by default)
       loader: {
@@ -13953,7 +14920,7 @@ var init_serializer4 = __esm({
 });
 
 // src/workmodes/library/equipment/constants.ts
-var EQUIPMENT_TYPES, WEAPON_CATEGORIES, WEAPON_TYPES, WEAPON_PROPERTIES, ARMOR_CATEGORIES, TOOL_CATEGORIES, CRAFT_SUGGESTIONS;
+var EQUIPMENT_TYPES, WEAPON_CATEGORIES, WEAPON_TYPES, WEAPON_PROPERTIES, ARMOR_CATEGORIES, TOOL_CATEGORIES, CRAFT_SUGGESTIONS, EQUIPMENT_TAGS;
 var init_constants4 = __esm({
   "src/workmodes/library/equipment/constants.ts"() {
     "use strict";
@@ -13979,6 +14946,14 @@ var init_constants4 = __esm({
       "Oil",
       "Perfume",
       "Soap"
+    ];
+    EQUIPMENT_TAGS = [
+      "Armor",
+      "Weapon",
+      "Tool",
+      "Gear",
+      "Mount",
+      "Trade Goods"
     ];
   }
 });
@@ -14018,6 +14993,24 @@ var init_create_spec4 = __esm({
           label: type.charAt(0).toUpperCase() + type.slice(1)
         })),
         default: "weapon"
+      },
+      {
+        id: "tags",
+        label: "Tags",
+        type: "tokens",
+        config: {
+          fields: [{
+            id: "value",
+            type: "select",
+            displayInChip: true,
+            editable: true,
+            suggestions: EQUIPMENT_TAGS.map((tag) => ({ key: tag, label: tag })),
+            placeholder: "Tag ausw\xE4hlen..."
+          }],
+          primaryField: "value"
+        },
+        default: [],
+        description: "Classification tags for filtering and organization"
       },
       {
         id: "cost",
@@ -14281,6 +15274,7 @@ var init_create_spec4 = __esm({
         frontmatter: [
           "name",
           "type",
+          "tags",
           "cost",
           "weight",
           // Weapon fields
@@ -14318,8 +15312,8 @@ var init_create_spec4 = __esm({
           {
             id: "basic",
             label: "Grunddaten",
-            description: "Name, Typ, Kosten und Gewicht",
-            fieldIds: ["name", "type", "cost", "weight"]
+            description: "Name, Typ, Tags, Kosten und Gewicht",
+            fieldIds: ["name", "type", "tags", "cost", "weight"]
           },
           {
             id: "weapon",
@@ -14375,6 +15369,7 @@ var init_create_spec4 = __esm({
         ],
         filters: [
           { id: "type", field: "type", label: "Type", type: "string" },
+          { id: "tags", field: "tags", label: "Tags", type: "array" },
           {
             id: "role",
             field: "role",
@@ -14396,7 +15391,7 @@ var init_create_spec4 = __esm({
             }
           }
         ],
-        search: ["type"]
+        search: ["type", "tags"]
       },
       // Loader configuration - replaces loader.ts (uses auto-loader by default)
       loader: {
@@ -14446,12 +15441,38 @@ var init_serializer5 = __esm({
   }
 });
 
+// src/workmodes/library/terrains/constants.ts
+var TERRAIN_BIOME_TAGS, TERRAIN_DIFFICULTY_TAGS;
+var init_constants5 = __esm({
+  "src/workmodes/library/terrains/constants.ts"() {
+    "use strict";
+    TERRAIN_BIOME_TAGS = [
+      "Forest",
+      "Mountain",
+      "Coastal",
+      "Desert",
+      "Arctic",
+      "Swamp",
+      "Grassland",
+      "Hills",
+      "Urban",
+      "Underground"
+    ];
+    TERRAIN_DIFFICULTY_TAGS = [
+      "Easy",
+      "Difficult",
+      "Very Difficult"
+    ];
+  }
+});
+
 // src/workmodes/library/terrains/create-spec.ts
 var terrainSchema, fields, terrainSpec;
 var init_create_spec5 = __esm({
   "src/workmodes/library/terrains/create-spec.ts"() {
     "use strict";
     init_serializer5();
+    init_constants5();
     terrainSchema = {
       parse: (data) => data,
       safeParse: (data) => {
@@ -14483,6 +15504,42 @@ var init_create_spec5 = __esm({
         required: true,
         placeholder: "Wald",
         description: "Terrain name (leave empty for default/transparent terrain)"
+      },
+      {
+        id: "biome_tags",
+        label: "Biome Tags",
+        type: "tokens",
+        config: {
+          fields: [{
+            id: "value",
+            type: "select",
+            displayInChip: true,
+            editable: true,
+            suggestions: TERRAIN_BIOME_TAGS.map((tag) => ({ key: tag, label: tag })),
+            placeholder: "Biome ausw\xE4hlen..."
+          }],
+          primaryField: "value"
+        },
+        default: [],
+        description: "Terrain classification (Forest, Mountain, etc.)"
+      },
+      {
+        id: "difficulty_tags",
+        label: "Difficulty Tags",
+        type: "tokens",
+        config: {
+          fields: [{
+            id: "value",
+            type: "select",
+            displayInChip: true,
+            editable: true,
+            suggestions: TERRAIN_DIFFICULTY_TAGS.map((tag) => ({ key: tag, label: tag })),
+            placeholder: "Difficulty ausw\xE4hlen..."
+          }],
+          primaryField: "value"
+        },
+        default: [],
+        description: "Movement difficulty (Easy, Difficult, Very Difficult)"
       },
       {
         id: "color",
@@ -14534,7 +15591,7 @@ var init_create_spec5 = __esm({
         pathTemplate: "SaltMarcher/Terrains/{name}.md",
         filenameFrom: "name",
         directory: "SaltMarcher/Terrains",
-        frontmatter: ["name", "display_name", "color", "speed"],
+        frontmatter: ["name", "display_name", "biome_tags", "difficulty_tags", "color", "speed"],
         bodyTemplate: (data) => terrainToMarkdown(data)
       },
       ui: {
@@ -14558,13 +15615,15 @@ var init_create_spec5 = __esm({
           }
         ],
         filters: [
+          { id: "biome_tags", field: "biome_tags", label: "Biome", type: "array" },
+          { id: "difficulty_tags", field: "difficulty_tags", label: "Difficulty", type: "array" },
           { id: "speed", field: "speed", label: "Speed", type: "number" }
         ],
         sorts: [
           { id: "name", label: "Name", field: "name" },
           { id: "speed", label: "Speed", field: "speed" }
         ],
-        search: ["name", "color"]
+        search: ["name", "biome_tags", "difficulty_tags", "color"]
       },
       // Loader configuration - uses auto-loader by default
       loader: {}
@@ -14620,10 +15679,42 @@ var init_serializer6 = __esm({
 });
 
 // src/workmodes/library/regions/constants.ts
-var ENCOUNTER_ODDS_PRESETS, TERRAIN_SUGGESTIONS;
-var init_constants5 = __esm({
+var REGION_BIOME_TAGS, REGION_DANGER_TAGS, REGION_CLIMATE_TAGS, REGION_SETTLEMENT_TAGS, ENCOUNTER_ODDS_PRESETS, TERRAIN_SUGGESTIONS;
+var init_constants6 = __esm({
   "src/workmodes/library/regions/constants.ts"() {
     "use strict";
+    REGION_BIOME_TAGS = [
+      "Forest",
+      "Mountain",
+      "Coastal",
+      "Desert",
+      "Arctic",
+      "Swamp",
+      "Grassland",
+      "Hills",
+      "Urban",
+      "Underground"
+    ];
+    REGION_DANGER_TAGS = [
+      "Safe",
+      "Moderate",
+      "Dangerous",
+      "Deadly"
+    ];
+    REGION_CLIMATE_TAGS = [
+      "Arctic",
+      "Cold",
+      "Temperate",
+      "Warm",
+      "Hot",
+      "Desert"
+    ];
+    REGION_SETTLEMENT_TAGS = [
+      "Civilized",
+      "Frontier",
+      "Wilderness",
+      "Ruins"
+    ];
     ENCOUNTER_ODDS_PRESETS = [
       { value: 0, label: "No encounters" },
       { value: 20, label: "Very rare (1/20)" },
@@ -14654,7 +15745,7 @@ var init_create_spec6 = __esm({
   "src/workmodes/library/regions/create-spec.ts"() {
     "use strict";
     init_serializer6();
-    init_constants5();
+    init_constants6();
     regionSchema = {
       parse: (data) => data,
       safeParse: (data) => {
@@ -14682,6 +15773,78 @@ var init_create_spec6 = __esm({
         required: true,
         placeholder: "Saltmarsh",
         description: "Name of the region"
+      },
+      {
+        id: "biome_tags",
+        label: "Biome Tags",
+        type: "tokens",
+        config: {
+          fields: [{
+            id: "value",
+            type: "select",
+            displayInChip: true,
+            editable: true,
+            suggestions: REGION_BIOME_TAGS.map((tag) => ({ key: tag, label: tag })),
+            placeholder: "Biome ausw\xE4hlen..."
+          }],
+          primaryField: "value"
+        },
+        default: [],
+        description: "Terrain classification (Forest, Mountain, Coastal, etc.)"
+      },
+      {
+        id: "danger_tags",
+        label: "Danger Tags",
+        type: "tokens",
+        config: {
+          fields: [{
+            id: "value",
+            type: "select",
+            displayInChip: true,
+            editable: true,
+            suggestions: REGION_DANGER_TAGS.map((tag) => ({ key: tag, label: tag })),
+            placeholder: "Danger ausw\xE4hlen..."
+          }],
+          primaryField: "value"
+        },
+        default: [],
+        description: "Danger level (Safe, Moderate, Dangerous, Deadly)"
+      },
+      {
+        id: "climate_tags",
+        label: "Climate Tags",
+        type: "tokens",
+        config: {
+          fields: [{
+            id: "value",
+            type: "select",
+            displayInChip: true,
+            editable: true,
+            suggestions: REGION_CLIMATE_TAGS.map((tag) => ({ key: tag, label: tag })),
+            placeholder: "Climate ausw\xE4hlen..."
+          }],
+          primaryField: "value"
+        },
+        default: [],
+        description: "Climate type (Arctic, Cold, Temperate, Warm, Hot, Desert)"
+      },
+      {
+        id: "settlement_tags",
+        label: "Settlement Tags",
+        type: "tokens",
+        config: {
+          fields: [{
+            id: "value",
+            type: "select",
+            displayInChip: true,
+            editable: true,
+            suggestions: REGION_SETTLEMENT_TAGS.map((tag) => ({ key: tag, label: tag })),
+            placeholder: "Settlement ausw\xE4hlen..."
+          }],
+          primaryField: "value"
+        },
+        default: [],
+        description: "Settlement type (Civilized, Frontier, Wilderness, Ruins)"
       },
       {
         id: "terrain",
@@ -14723,7 +15886,7 @@ var init_create_spec6 = __esm({
         pathTemplate: "SaltMarcher/Regions/{name}.md",
         filenameFrom: "name",
         directory: "SaltMarcher/Regions",
-        frontmatter: ["name", "terrain", "encounter_odds", "description"],
+        frontmatter: ["name", "biome_tags", "danger_tags", "climate_tags", "settlement_tags", "terrain", "encounter_odds", "description"],
         bodyTemplate: (data) => regionToMarkdown(data)
       },
       ui: {
@@ -14750,6 +15913,10 @@ var init_create_spec6 = __esm({
           }
         ],
         filters: [
+          { id: "biome_tags", field: "biome_tags", label: "Biome", type: "array" },
+          { id: "danger_tags", field: "danger_tags", label: "Danger", type: "array" },
+          { id: "climate_tags", field: "climate_tags", label: "Climate", type: "array" },
+          { id: "settlement_tags", field: "settlement_tags", label: "Settlement", type: "array" },
           { id: "terrain", field: "terrain", label: "Terrain", type: "string" },
           { id: "encounter_odds", field: "encounter_odds", label: "Encounter Rate", type: "number" }
         ],
@@ -14766,7 +15933,7 @@ var init_create_spec6 = __esm({
             }
           }
         ],
-        search: ["name", "terrain", "description"]
+        search: ["name", "biome_tags", "danger_tags", "climate_tags", "settlement_tags", "terrain", "description"]
       },
       // Loader configuration - uses auto-loader by default
       loader: {}
@@ -14828,7 +15995,7 @@ var init_serializer7 = __esm({
 
 // src/workmodes/library/calendars/constants.ts
 var DEFAULT_HOURS_PER_DAY, DEFAULT_MINUTES_PER_HOUR, DEFAULT_SECONDS_PER_MINUTE, DEFAULT_MINUTE_STEP, DEFAULT_DAYS_PER_WEEK;
-var init_constants6 = __esm({
+var init_constants7 = __esm({
   "src/workmodes/library/calendars/constants.ts"() {
     "use strict";
     DEFAULT_HOURS_PER_DAY = 24;
@@ -14845,7 +16012,7 @@ var init_create_spec7 = __esm({
   "src/workmodes/library/calendars/create-spec.ts"() {
     "use strict";
     init_serializer7();
-    init_constants6();
+    init_constants7();
     calendarSchema = {
       parse: (data) => data,
       safeParse: (data) => {
@@ -15033,6 +16200,439 @@ var init_calendars = __esm({
   }
 });
 
+// src/workmodes/library/factions/constants.ts
+var FACTION_INFLUENCE_TAGS, FACTION_CULTURE_TAGS, FACTION_GOAL_TAGS, FACTION_MEMBER_ROLES, FACTION_MEMBER_STATUSES;
+var init_constants8 = __esm({
+  "src/workmodes/library/factions/constants.ts"() {
+    "use strict";
+    FACTION_INFLUENCE_TAGS = [
+      "Political",
+      "Military",
+      "Religious",
+      "Economic",
+      "Arcane",
+      "Criminal",
+      "Scholarly",
+      "Mercantile",
+      "Civic",
+      "Shadow"
+    ];
+    FACTION_CULTURE_TAGS = [
+      "Human",
+      "Elven",
+      "Dwarven",
+      "Halfling",
+      "Orcish",
+      "Dragonborn",
+      "Tiefling",
+      "Mixed",
+      "Outsider",
+      "Undead"
+    ];
+    FACTION_GOAL_TAGS = [
+      "Expansion",
+      "Defense",
+      "Knowledge",
+      "Dominance",
+      "Reformation",
+      "Profit",
+      "Faith",
+      "Revenge",
+      "Exploration",
+      "Stability"
+    ];
+    FACTION_MEMBER_ROLES = [
+      "Leader",
+      "Advisor",
+      "Envoy",
+      "Operative",
+      "Spy",
+      "Champion",
+      "Agent",
+      "Quartermaster"
+    ];
+    FACTION_MEMBER_STATUSES = [
+      "Active",
+      "On Assignment",
+      "Missing",
+      "Deceased",
+      "Retired"
+    ];
+  }
+});
+
+// src/workmodes/library/factions/serializer.ts
+function formatTagList(values) {
+  if (!values || values.length === 0) return "\u2014";
+  const items = values.map((entry) => typeof entry === "object" && entry ? entry.value : void 0).filter((value) => typeof value === "string" && value.trim().length > 0);
+  return items.length > 0 ? items.join(", ") : "\u2014";
+}
+function formatMember(member) {
+  const parts = [];
+  const name = member.name?.trim();
+  if (name) {
+    parts.push(`**${name}**`);
+  }
+  const details = [];
+  if (member.role) {
+    details.push(member.role);
+  }
+  if (member.status) {
+    details.push(member.status);
+  }
+  if (member.is_named !== void 0) {
+    details.push(member.is_named ? "Named" : "Anonymous");
+  }
+  if (details.length > 0) {
+    parts.push(`(${details.join(" \xB7 ")})`);
+  }
+  if (member.notes) {
+    parts.push(`\u2014 ${member.notes}`);
+  }
+  return parts.join(" ");
+}
+function factionToMarkdown(data) {
+  const lines = [];
+  lines.push(`# ${data.name}`);
+  lines.push("");
+  if (data.motto) {
+    lines.push(`> ${data.motto}`);
+    lines.push("");
+  }
+  lines.push("## Overview");
+  lines.push(`- **Headquarters:** ${data.headquarters?.trim() || "\u2014"}`);
+  lines.push(`- **Territory:** ${data.territory?.trim() || "\u2014"}`);
+  lines.push(`- **Influence:** ${formatTagList(data.influence_tags)}`);
+  lines.push(`- **Culture:** ${formatTagList(data.culture_tags)}`);
+  lines.push(`- **Goals:** ${formatTagList(data.goal_tags)}`);
+  if (data.summary) {
+    lines.push("");
+    lines.push("## Summary");
+    lines.push(data.summary);
+  }
+  if (data.assets) {
+    lines.push("");
+    lines.push("## Assets & Resources");
+    lines.push(data.assets);
+  }
+  if (data.relationships) {
+    lines.push("");
+    lines.push("## Relationships");
+    lines.push(data.relationships);
+  }
+  if (data.members && data.members.length > 0) {
+    lines.push("");
+    lines.push("## Notable Members");
+    lines.push("");
+    for (const member of data.members) {
+      if (!member || !member.name) continue;
+      lines.push(`- ${formatMember(member)}`);
+    }
+  }
+  return lines.join("\n");
+}
+var init_serializer8 = __esm({
+  "src/workmodes/library/factions/serializer.ts"() {
+    "use strict";
+  }
+});
+
+// src/workmodes/library/factions/create-spec.ts
+function isStringArray(value) {
+  return Array.isArray(value) && value.every((entry) => {
+    if (typeof entry === "string") return entry.trim().length > 0;
+    return typeof entry === "object" && entry !== null && typeof entry.value === "string";
+  });
+}
+function normalizeTagArray(value) {
+  if (!value) return void 0;
+  if (!Array.isArray(value)) return void 0;
+  const normalized = [];
+  for (const entry of value) {
+    if (typeof entry === "string" && entry.trim()) {
+      normalized.push({ value: entry.trim() });
+    } else if (entry && typeof entry === "object" && typeof entry.value === "string") {
+      const val = entry.value.trim();
+      if (val) normalized.push({ value: val });
+    }
+  }
+  return normalized;
+}
+function normalizeMembers(value) {
+  if (!value) return void 0;
+  if (!Array.isArray(value)) return void 0;
+  const result = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object") continue;
+    const record = entry;
+    const name = typeof record.name === "string" ? record.name.trim() : "";
+    if (!name) continue;
+    result.push({
+      name,
+      role: typeof record.role === "string" ? record.role.trim() || void 0 : void 0,
+      status: typeof record.status === "string" ? record.status.trim() || void 0 : void 0,
+      is_named: typeof record.is_named === "boolean" ? record.is_named : void 0,
+      notes: typeof record.notes === "string" ? record.notes.trim() || void 0 : void 0
+    });
+  }
+  return result;
+}
+var factionSchema, tagField, fields4, factionSpec;
+var init_create_spec8 = __esm({
+  "src/workmodes/library/factions/create-spec.ts"() {
+    "use strict";
+    init_constants8();
+    init_serializer8();
+    factionSchema = {
+      parse: (data) => data,
+      safeParse: (data) => {
+        try {
+          if (!data || typeof data !== "object") {
+            throw new Error("Faction data must be an object");
+          }
+          const faction = data;
+          if (typeof faction.name !== "string" || faction.name.trim().length === 0) {
+            throw new Error("Name is required");
+          }
+          if (faction.influence_tags && !isStringArray(faction.influence_tags)) {
+            throw new Error("Influence tags must be an array of values");
+          }
+          if (faction.culture_tags && !isStringArray(faction.culture_tags)) {
+            throw new Error("Culture tags must be an array of values");
+          }
+          if (faction.goal_tags && !isStringArray(faction.goal_tags)) {
+            throw new Error("Goal tags must be an array of values");
+          }
+          if (faction.members) {
+            const members = normalizeMembers(faction.members);
+            if (!members) {
+              throw new Error("Members must be an array of objects");
+            }
+            faction.members = members;
+          }
+          faction.influence_tags = normalizeTagArray(faction.influence_tags) ?? [];
+          faction.culture_tags = normalizeTagArray(faction.culture_tags) ?? [];
+          faction.goal_tags = normalizeTagArray(faction.goal_tags) ?? [];
+          return { success: true, data: faction };
+        } catch (error) {
+          return { success: false, error: error instanceof Error ? error : new Error(String(error)) };
+        }
+      }
+    };
+    tagField = (id, label, suggestions, description) => ({
+      id,
+      label,
+      type: "tokens",
+      config: {
+        fields: [
+          {
+            id: "value",
+            type: "select",
+            displayInChip: true,
+            editable: true,
+            suggestions: suggestions.map((value) => ({ key: value, label: value })),
+            placeholder: `${label} ausw\xE4hlen\u2026`
+          }
+        ],
+        primaryField: "value"
+      },
+      default: [],
+      description
+    });
+    fields4 = [
+      {
+        id: "name",
+        label: "Name",
+        type: "text",
+        required: true,
+        placeholder: "Die Schildbr\xFCder",
+        description: "Name der Fraktion"
+      },
+      {
+        id: "motto",
+        label: "Motto",
+        type: "text",
+        placeholder: "In Schatten liegt unsere St\xE4rke",
+        description: "Optionales Motto oder Leitspruch"
+      },
+      tagField(
+        "influence_tags",
+        "Einfluss",
+        FACTION_INFLUENCE_TAGS,
+        "Welche Bereiche dominiert die Fraktion?"
+      ),
+      tagField(
+        "goal_tags",
+        "Ziele",
+        FACTION_GOAL_TAGS,
+        "Strategische Ziele oder Agenda der Fraktion"
+      ),
+      tagField(
+        "culture_tags",
+        "Kultur",
+        FACTION_CULTURE_TAGS,
+        "Kulturelle Ausrichtung oder Herkunft"
+      ),
+      {
+        id: "headquarters",
+        label: "Hauptquartier",
+        type: "text",
+        placeholder: "Zitadelle von Sturmlicht",
+        description: "Zentrale Operationsbasis der Fraktion"
+      },
+      {
+        id: "territory",
+        label: "Territorium",
+        type: "text",
+        placeholder: "Region, Einflussbereich oder Revier",
+        description: "Gebiete, die von der Fraktion kontrolliert oder beansprucht werden"
+      },
+      {
+        id: "summary",
+        label: "Kurzbeschreibung",
+        type: "textarea",
+        placeholder: "Kurzprofil der Fraktion, Geschichte oder Ruf\u2026",
+        description: "Zusammenfassung f\xFCr den schnellen \xDCberblick"
+      },
+      {
+        id: "assets",
+        label: "Ressourcen & Besitz",
+        type: "textarea",
+        placeholder: "Truppenst\xE4rke, finanzielle Mittel, Artefakte\u2026",
+        description: "Wichtige Ressourcen, Besitz oder milit\xE4rische St\xE4rke"
+      },
+      {
+        id: "relationships",
+        label: "Beziehungen",
+        type: "textarea",
+        placeholder: "Wichtige B\xFCndnisse, Rivalit\xE4ten oder Verpflichtungen\u2026",
+        description: "Politische oder pers\xF6nliche Beziehungen zu anderen Fraktionen"
+      },
+      {
+        id: "members",
+        label: "Mitglieder",
+        type: "repeating",
+        description: "Wichtige Ansprechpartner, Agenten oder Funktionstr\xE4ger",
+        config: {
+          insertPosition: "end",
+          synchronizeWidths: true
+        },
+        itemTemplate: {
+          name: {
+            type: "text",
+            label: "Name",
+            placeholder: "Agent Thorne",
+            required: true
+          },
+          role: {
+            type: "text",
+            label: "Rolle",
+            placeholder: "Spymaster",
+            config: {
+              suggestions: FACTION_MEMBER_ROLES.map((role) => ({ key: role, label: role }))
+            }
+          },
+          status: {
+            type: "select",
+            label: "Status",
+            options: FACTION_MEMBER_STATUSES.map((status) => ({ value: status, label: status }))
+          },
+          is_named: {
+            type: "toggle",
+            label: "Benannter NSC",
+            default: true
+          },
+          notes: {
+            type: "textarea",
+            label: "Notizen",
+            placeholder: "Besonderheiten, Loyalit\xE4t, Geheimnisse\u2026"
+          }
+        },
+        default: []
+      }
+    ];
+    factionSpec = {
+      kind: "faction",
+      title: "Fraktion erstellen",
+      subtitle: "Neue Organisation f\xFCr deine Kampagne",
+      schema: factionSchema,
+      fields: fields4,
+      storage: {
+        format: "md-frontmatter",
+        pathTemplate: "SaltMarcher/Factions/{name}.md",
+        filenameFrom: "name",
+        directory: "SaltMarcher/Factions",
+        frontmatter: [
+          "name",
+          "motto",
+          "headquarters",
+          "territory",
+          "influence_tags",
+          "goal_tags",
+          "culture_tags",
+          "summary",
+          "assets",
+          "relationships",
+          "members"
+        ],
+        bodyTemplate: (data) => factionToMarkdown(data)
+      },
+      ui: {
+        submitLabel: "Fraktion speichern",
+        cancelLabel: "Abbrechen"
+      },
+      browse: {
+        metadata: [
+          {
+            id: "primaryInfluence",
+            cls: "sm-cc-item__type",
+            getValue: (entry) => {
+              const tags = entry.influence_tags;
+              if (!tags || tags.length === 0) return "Neutral";
+              const first = tags[0];
+              return typeof first === "string" ? first : first?.value || "Neutral";
+            }
+          },
+          {
+            id: "headquarters",
+            cls: "sm-cc-item__cr",
+            getValue: (entry) => entry.headquarters || "Unbekannter Sitz"
+          },
+          {
+            id: "memberCount",
+            cls: "sm-cc-item__meta",
+            getValue: (entry) => {
+              const list = Array.isArray(entry.members) ? entry.members : [];
+              return `${list.length} Mitglieder`;
+            }
+          }
+        ],
+        filters: [
+          { id: "influence_tags", field: "influence_tags", label: "Einfluss", type: "array" },
+          { id: "goal_tags", field: "goal_tags", label: "Ziele", type: "array" },
+          { id: "culture_tags", field: "culture_tags", label: "Kultur", type: "array" },
+          { id: "headquarters", field: "headquarters", label: "Hauptquartier", type: "string" },
+          { id: "territory", field: "territory", label: "Territorium", type: "string" }
+        ],
+        sorts: [
+          { id: "name", label: "Name", field: "name" },
+          { id: "primaryInfluence", label: "Einfluss", field: "influence_tags" },
+          { id: "memberCount", label: "Mitgliederzahl", field: "members" }
+        ]
+      }
+    };
+  }
+});
+
+// src/workmodes/library/factions/index.ts
+var init_factions = __esm({
+  "src/workmodes/library/factions/index.ts"() {
+    "use strict";
+    init_create_spec8();
+    init_serializer8();
+  }
+});
+
 // src/workmodes/library/registry.ts
 function getCreateSpec(entity) {
   return LIBRARY_CREATE_SPECS[entity];
@@ -15049,6 +16649,7 @@ var init_registry = __esm({
     init_terrains();
     init_regions();
     init_calendars();
+    init_factions();
     LIBRARY_CREATE_SPECS = {
       creatures: creatureSpec,
       spells: spellSpec,
@@ -15056,6 +16657,7 @@ var init_registry = __esm({
       equipment: equipmentSpec,
       terrains: terrainSpec,
       regions: regionSpec,
+      factions: factionSpec,
       calendars: calendarSpec
     };
     LIBRARY_VIEW_CONFIGS = {
@@ -15067,13 +16669,18 @@ var init_registry = __esm({
   }
 });
 
-// src/features/maps/data/terrain-repository.ts
+// src/features/maps/state/terrain-store.ts
 async function ensureTerrainFile(app) {
-  const p = (0, import_obsidian29.normalizePath)(TERRAIN_FILE);
-  const existing = app.vault.getAbstractFileByPath(p);
-  if (existing instanceof import_obsidian29.TFile) return existing;
-  await app.vault.createFolder(p.split("/").slice(0, -1).join("/")).catch(() => {
-  });
+  const path = (0, import_obsidian30.normalizePath)(TERRAIN_FILE);
+  const existing = app.vault.getAbstractFileByPath(path);
+  if (existing instanceof import_obsidian30.TFile) {
+    return existing;
+  }
+  const dir = path.split("/").slice(0, -1).join("/");
+  if (dir) {
+    await app.vault.createFolder(dir).catch(() => {
+    });
+  }
   const body = [
     "---",
     "smList: true",
@@ -15088,87 +16695,234 @@ async function ensureTerrainFile(app) {
     "```",
     ""
   ].join("\n");
-  return await app.vault.create(p, body);
+  return await app.vault.create(path, body);
 }
 function parseTerrainBlock(md) {
-  const m = md.match(BLOCK_RE2);
-  if (!m) return {};
-  const out = {};
-  for (const raw of m[1].split(/\r?\n/)) {
+  const match = md.match(BLOCK_RE2);
+  if (!match) return {};
+  const map = {};
+  for (const raw of match[1].split(/\r?\n/)) {
     const line = raw.trim();
     if (!line || line.startsWith("#")) continue;
-    const mm = line.match(/^("?)(.*?)(\1)\s*:\s*([^,]+?)(?:\s*,\s*speed\s*:\s*([-+]?\d*\.?\d+))?\s*$/i);
-    if (!mm) continue;
-    const name = mm[2].trim();
-    const color = mm[4].trim();
-    const speed = mm[5] !== void 0 ? parseFloat(mm[5]) : 1;
-    out[name] = { color, speed: Number.isFinite(speed) ? speed : 1 };
+    const parsed = line.match(
+      /^("?)(.*?)(\1)\s*:\s*([^,]+?)(?:\s*,\s*speed\s*:\s*([-+]?\d*\.?\d+))?\s*$/i
+    );
+    if (!parsed) continue;
+    const name = parsed[2].trim();
+    const color = parsed[4].trim();
+    const speedValue = parsed[5] !== void 0 ? parseFloat(parsed[5]) : 1;
+    const speed = Number.isFinite(speedValue) ? speedValue : 1;
+    map[name] = { color, speed };
   }
-  if (!out[""]) out[""] = { color: "transparent", speed: 1 };
-  return out;
+  if (!map[""]) {
+    map[""] = { color: "transparent", speed: 1 };
+  }
+  return map;
+}
+function stringifyTerrainBlock(map) {
+  const entries = Object.entries(map);
+  entries.sort(([a], [b]) => a === "" ? -1 : b === "" ? 1 : a.localeCompare(b));
+  const lines = entries.map(([key, value]) => `${key || ":"}: ${value.color}, speed: ${value.speed}`);
+  return ["```terrain", ...lines, "```"].join("\n");
+}
+async function readTerrainsFromDisk(app) {
+  const file = await ensureTerrainFile(app);
+  const content = await app.vault.read(file);
+  return parseTerrainBlock(content);
+}
+async function writeTerrainsToDisk(app, map) {
+  const file = await ensureTerrainFile(app);
+  const content = await app.vault.read(file);
+  const block = stringifyTerrainBlock(map);
+  const updated = content.match(BLOCK_RE2) ? content.replace(BLOCK_RE2, block) : `${content}
+
+${block}
+`;
+  await app.vault.modify(file, updated);
+}
+function createInitialState2() {
+  return {
+    loaded: false,
+    map: {},
+    version: 0
+  };
+}
+function triggerTerrainEvent(app) {
+  app.workspace.trigger?.("salt:terrains-updated");
+}
+function createTerrainStore(app, options) {
+  const base = writable(createInitialState2(), {
+    name: "map-terrains",
+    debug: options?.debug
+  });
+  let dirty = false;
+  let loadPromise = null;
+  const persistent2 = {
+    subscribe: base.subscribe,
+    get: base.get,
+    set: (value) => {
+      base.set(value);
+      dirty = true;
+    },
+    update: (updater) => {
+      base.update((current) => {
+        const next = updater(current);
+        dirty = true;
+        return next;
+      });
+    },
+    load: async () => {
+      const terrainMap = await readTerrainsFromDisk(app);
+      base.set({
+        loaded: true,
+        map: terrainMap,
+        version: Date.now()
+      });
+      dirty = false;
+      setTerrains(terrainMap);
+      triggerTerrainEvent(app);
+    },
+    save: async () => {
+      const snapshot = base.get();
+      if (!snapshot.loaded) return;
+      await writeTerrainsToDisk(app, snapshot.map);
+      dirty = false;
+    },
+    isDirty: () => dirty,
+    getStorageKey: () => (0, import_obsidian30.normalizePath)(TERRAIN_FILE)
+  };
+  getStoreManager().register("map-terrains", persistent2);
+  const ensureLoaded = async () => {
+    const snapshot = persistent2.get();
+    if (snapshot.loaded && loadPromise === null) {
+      return;
+    }
+    if (!loadPromise) {
+      loadPromise = persistent2.load().finally(() => {
+        loadPromise = null;
+      });
+    }
+    await loadPromise;
+  };
+  const refresh = async () => {
+    loadPromise = persistent2.load().finally(() => {
+      loadPromise = null;
+    });
+    await loadPromise;
+  };
+  const getTerrains = async () => {
+    await ensureLoaded();
+    return persistent2.get().map;
+  };
+  const saveTerrains2 = async (next) => {
+    await ensureLoaded();
+    persistent2.update(() => ({
+      loaded: true,
+      map: { ...next },
+      version: Date.now()
+    }));
+    setTerrains(next);
+    await persistent2.save();
+    triggerTerrainEvent(app);
+  };
+  const watch = (options2) => {
+    const resolved = resolveWatcherOptions(options2);
+    const handleError = (error, reason) => {
+      if (resolved.onError) {
+        try {
+          resolved.onError(error, { reason });
+        } catch (handlerError) {
+          logger.error("[salt-marcher] Terrain watcher error handler threw", handlerError);
+        }
+        return;
+      }
+      logger.error(`[salt-marcher] Terrain watcher failed after ${reason} event`, error);
+    };
+    const update = async (reason) => {
+      try {
+        if (reason === "delete") {
+          await ensureTerrainFile(app);
+        }
+        await refresh();
+        triggerTerrainEvent(app);
+        await resolved.onChange?.();
+      } catch (error) {
+        handleError(error, reason);
+      }
+    };
+    const maybeUpdate = (reason, file) => {
+      if (!(file instanceof import_obsidian30.TFile)) return;
+      if ((0, import_obsidian30.normalizePath)(file.path) !== (0, import_obsidian30.normalizePath)(TERRAIN_FILE)) return;
+      void update(reason);
+    };
+    const refs = ["modify", "delete"].map(
+      (event) => app.vault.on(event, (file) => maybeUpdate(event, file))
+    );
+    let disposed = false;
+    return () => {
+      if (disposed) return;
+      disposed = true;
+      for (const ref of refs) {
+        app.vault.offref(ref);
+      }
+    };
+  };
+  return {
+    state: persistent2,
+    getTerrains,
+    saveTerrains: saveTerrains2,
+    refresh,
+    watch
+  };
+}
+function getTerrainStore(app, options) {
+  let store = storeRegistry2.get(app);
+  if (!store) {
+    store = createTerrainStore(app, options);
+    storeRegistry2.set(app, store);
+  }
+  return store;
+}
+function resolveWatcherOptions(maybe) {
+  if (typeof maybe === "function") {
+    return { onChange: maybe };
+  }
+  return maybe ?? {};
 }
 async function loadTerrains(app) {
-  const f = await ensureTerrainFile(app);
-  const md = await app.vault.read(f);
-  return parseTerrainBlock(md);
+  const store = getTerrainStore(app);
+  return await store.getTerrains();
 }
-function resolveWatcherOptions(maybeCallback) {
-  if (typeof maybeCallback === "function") {
-    return { onChange: maybeCallback };
+function watchTerrains(app, options) {
+  const store = getTerrainStore(app, typeof options === "object" ? options.storeOptions : void 0);
+  return store.watch(options);
+}
+var import_obsidian30, TERRAIN_FILE, BLOCK_RE2, storeRegistry2;
+var init_terrain_store = __esm({
+  "src/features/maps/state/terrain-store.ts"() {
+    "use strict";
+    import_obsidian30 = require("obsidian");
+    init_state();
+    init_store_manager();
+    init_plugin_logger();
+    init_terrain();
+    TERRAIN_FILE = "SaltMarcher/Terrains.md";
+    BLOCK_RE2 = /```terrain\s*([\s\S]*?)```/i;
+    storeRegistry2 = /* @__PURE__ */ new WeakMap();
   }
-  return maybeCallback ?? {};
+});
+
+// src/features/maps/data/terrain-repository.ts
+async function loadTerrains2(app) {
+  return await loadTerrains(app);
 }
-function watchTerrains(app, onChangeOrOptions) {
-  const options = resolveWatcherOptions(onChangeOrOptions);
-  const handleError = (error, reason) => {
-    if (options.onError) {
-      try {
-        options.onError(error, { reason });
-      } catch (loggingError) {
-        logger.error("[salt-marcher] Terrain watcher error handler threw", loggingError);
-      }
-    } else {
-      logger.error(`[salt-marcher] Terrain watcher failed after ${reason} event`, error);
-    }
-  };
-  const update = async (reason) => {
-    try {
-      if (reason === "delete") {
-        await ensureTerrainFile(app);
-      }
-      const map = await loadTerrains(app);
-      setTerrains(map);
-      app.workspace.trigger?.("salt:terrains-updated");
-      await options.onChange?.();
-    } catch (error) {
-      handleError(error, reason);
-    }
-  };
-  const maybeUpdate = (reason, file) => {
-    if (!(file instanceof import_obsidian29.TFile) || file.path !== TERRAIN_FILE) return;
-    void update(reason);
-  };
-  const refs = ["modify", "delete"].map(
-    (event) => app.vault.on(event, (file) => maybeUpdate(event, file))
-  );
-  let disposed = false;
-  return () => {
-    if (disposed) return;
-    disposed = true;
-    for (const ref of refs) {
-      app.vault.offref(ref);
-    }
-  };
+function watchTerrains2(app, options) {
+  return watchTerrains(app, options);
 }
-var import_obsidian29, TERRAIN_FILE, BLOCK_RE2;
 var init_terrain_repository = __esm({
   "src/features/maps/data/terrain-repository.ts"() {
     "use strict";
-    import_obsidian29 = require("obsidian");
-    init_terrain();
-    init_plugin_logger();
-    TERRAIN_FILE = "SaltMarcher/Terrains.md";
-    BLOCK_RE2 = /```terrain\s*([\s\S]*?)```/i;
+    init_terrain_store();
   }
 });
 
@@ -16100,8 +17854,8 @@ function createPlayback(cfg) {
       const tile = await loadTile2(app, mapFile, cur).catch(() => null);
       const regionName = tile?.region;
       if (!regionName) return;
-      const { loadRegions: loadRegions2 } = await import("../../../../core/regions-store");
-      const regions = await loadRegions2(app);
+      const { loadRegions: loadRegions3 } = await import("../../../../core/regions-store");
+      const regions = await loadRegions3(app);
       const region = regions.find((r) => (r.name || "").toLowerCase() === regionName.toLowerCase());
       const odds = region?.encounterOdds;
       const n = Number.isFinite(odds) && odds > 0 ? odds : void 0;
@@ -16517,7 +18271,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--play",
     text: "Start"
   });
-  (0, import_obsidian32.setIcon)(playBtn, "play");
+  (0, import_obsidian33.setIcon)(playBtn, "play");
   applyMapButtonStyle(playBtn);
   playBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -16528,7 +18282,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--stop",
     text: "Stopp"
   });
-  (0, import_obsidian32.setIcon)(stopBtn, "square");
+  (0, import_obsidian33.setIcon)(stopBtn, "square");
   applyMapButtonStyle(stopBtn);
   stopBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -16539,7 +18293,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--reset",
     text: "Reset"
   });
-  (0, import_obsidian32.setIcon)(resetBtn, "rotate-ccw");
+  (0, import_obsidian33.setIcon)(resetBtn, "rotate-ccw");
   applyMapButtonStyle(resetBtn);
   resetBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -16588,11 +18342,11 @@ function createPlaybackControls(host, callbacks) {
     setTempo
   };
 }
-var import_obsidian32;
+var import_obsidian33;
 var init_controls = __esm({
   "src/workmodes/session-runner/travel/ui/controls.ts"() {
     "use strict";
-    import_obsidian32 = require("obsidian");
+    import_obsidian33 = require("obsidian");
     init_map_workflows();
   }
 });
@@ -16851,7 +18605,7 @@ function bindContextMenu(routeLayerEl, logic) {
     }
     ev.preventDefault();
     ev.stopPropagation();
-    const menu = new import_obsidian33.Menu();
+    const menu = new import_obsidian34.Menu();
     if (allowDelete) {
       menu.addItem(
         (item) => item.setTitle("Wegpunkt entfernen").setIcon("trash").onClick(() => {
@@ -16871,11 +18625,11 @@ function bindContextMenu(routeLayerEl, logic) {
   routeLayerEl.addEventListener("contextmenu", onContextMenu, { capture: true });
   return () => routeLayerEl.removeEventListener("contextmenu", onContextMenu, { capture: true });
 }
-var import_obsidian33;
+var import_obsidian34;
 var init_context_menu_controller = __esm({
   "src/workmodes/session-runner/travel/ui/context-menu.controller.ts"() {
     "use strict";
-    import_obsidian33 = require("obsidian");
+    import_obsidian34 = require("obsidian");
   }
 });
 
@@ -16953,8 +18707,8 @@ async function createEncounterEventFromTravel(app, ctx, options = {}) {
       if (tileRegion) {
         regionName = tileRegion;
         try {
-          const { loadRegions: loadRegions2 } = await import("../../features/maps/regions-store");
-          const regions = await loadRegions2(app);
+          const { loadRegions: loadRegions3 } = await import("../../features/maps/regions-store");
+          const regions = await loadRegions3(app);
           const region = regions.find((r) => typeof r?.name === "string" && r.name.toLowerCase() === tileRegion.toLowerCase());
           const odds = region?.encounterOdds;
           if (typeof odds === "number" && Number.isFinite(odds) && odds > 0) {
@@ -17001,7 +18755,7 @@ function loadEncounterModule() {
     VIEW_ENCOUNTER: encounter.VIEW_ENCOUNTER
   })).catch((err) => {
     logger.error("[session-runner] failed to load encounter module", err);
-    new import_obsidian34.Notice("Encounter-Modul konnte nicht geladen werden.");
+    new import_obsidian35.Notice("Encounter-Modul konnte nicht geladen werden.");
     return null;
   });
 }
@@ -17020,7 +18774,7 @@ async function openEncounter2(app, context) {
   const issue = describeEncounterContextIssue(context);
   if (issue) {
     logger.warn(`[session-runner] ${issue.log}`, context);
-    new import_obsidian34.Notice(issue.message);
+    new import_obsidian35.Notice(issue.message);
   } else if (context) {
     try {
       const event = await createEncounterEventFromTravel(app, context);
@@ -17072,11 +18826,11 @@ async function publishManualEncounter(app, context, options = {}) {
     logger.error("[session-runner] failed to publish manual encounter", err);
   }
 }
-var import_obsidian34, encounterModule;
+var import_obsidian35, encounterModule;
 var init_encounter_gateway = __esm({
   "src/workmodes/session-runner/view/controllers/encounter-gateway.ts"() {
     "use strict";
-    import_obsidian34 = require("obsidian");
+    import_obsidian35 = require("obsidian");
     init_session_store();
     init_plugin_logger();
     init_event_builder();
@@ -17284,7 +19038,7 @@ function createSessionRunnerExperience() {
   };
   const ensureTerrains = async (ctx) => {
     if (ctx.signal.aborted) return;
-    await setTerrains(await loadTerrains(ctx.app));
+    await setTerrains(await loadTerrains2(ctx.app));
   };
   const subscribeToTerrains = (ctx) => {
     if (ctx.signal.aborted) {
@@ -17659,6 +19413,9 @@ entries:
           type: Piercing
           average: 15
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claws
     entryType: attack
@@ -17679,6 +19436,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature and the allosaurus moved 30+ feet straight toward it immediately before the hit, the target has the Prone condition, and the allosaurus can make one Bite attack against it.
       additionalEffects: If the target is a Large or smaller creature and the allosaurus moved 30+ feet straight toward it immediately before the hit, the target has the Prone condition, and the allosaurus can make one Bite attack against it.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Allosaurus
@@ -17756,6 +19516,9 @@ entries:
         - name: Tail
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Tail
     entryType: attack
@@ -17776,6 +19539,9 @@ entries:
               size: Huge or smaller
         other: If the target is a Huge or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Huge or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ankylosaurus
@@ -17857,6 +19623,9 @@ entries:
         - name: Fist
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Fist
     entryType: attack
@@ -17870,6 +19639,9 @@ entries:
           type: Bludgeoning
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Rock
     entryType: attack
@@ -17883,6 +19655,9 @@ entries:
           type: Bludgeoning
           average: 10
       range: 25/50 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ape
@@ -17960,6 +19735,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The archelon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -17971,6 +19749,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -17984,6 +19765,9 @@ entries:
           type: Piercing
           average: 14
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Archelon
@@ -18058,6 +19842,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The baboon has Advantage on an attack roll against a creature if at least one of the baboon's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -18071,6 +19858,9 @@ entries:
           type: Piercing
           average: 1
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Baboon
@@ -18155,6 +19945,9 @@ entries:
       bonus: 2
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Badger
@@ -18230,6 +20023,9 @@ entries:
       bonus: 4
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Bat
@@ -18312,6 +20108,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -18325,6 +20124,9 @@ entries:
           type: Slashing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Black Bear
@@ -18398,6 +20200,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The hawk has Advantage on an attack roll against a creature if at least one of the hawk's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Beak
     entryType: attack
@@ -18415,6 +20220,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Blood Hawk
@@ -18484,6 +20292,9 @@ entries:
     name: Bloodied Fury
     entryType: special
     text: While Bloodied, the boar has Advantage on attack rolls.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Gore
     entryType: attack
@@ -18508,6 +20319,9 @@ entries:
               size: Medium or smaller
         other: If the target is a Medium or smaller creature and the boar moved 20+ feet straight toward it immediately before the hit, the target takes an extra 3 (1d6) Piercing damage and has the Prone condition.
       additionalEffects: If the target is a Medium or smaller creature and the boar moved 20+ feet straight toward it immediately before the hit, the target takes an extra 3 (1d6) Piercing damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Boar
@@ -18594,6 +20408,9 @@ entries:
         - name: Claw
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -18607,6 +20424,9 @@ entries:
           type: Piercing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -18627,6 +20447,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Brown Bear
@@ -18711,6 +20534,9 @@ entries:
           type: Bludgeoning
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Camel
@@ -18787,6 +20613,9 @@ entries:
     name: Jumper
     entryType: special
     text: The cat's jump distance is determined using its Dexterity rather than its Strength.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Scratch
     entryType: attack
@@ -18796,6 +20625,9 @@ entries:
       bonus: 4
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Cat
@@ -18885,6 +20717,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Constrict
     entryType: save
@@ -18915,6 +20750,9 @@ entries:
                 dc: 12
           other: 7 (3d4) Bludgeoning damage, and the target has the Grappled condition (escape DC 12).
         legacyEffects: 7 (3d4) Bludgeoning damage, and the target has the Grappled condition (escape DC 12).
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Constrictor Snake
@@ -18991,6 +20829,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The crab can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -19000,6 +20841,9 @@ entries:
       bonus: 2
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Crab
@@ -19076,6 +20920,9 @@ entries:
     name: Hold Breath
     entryType: special
     text: The crocodile can hold its breath for 1 hour.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -19107,6 +20954,9 @@ entries:
               while: While Grappled, the target has the Restrained condition
         other: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12). While Grappled, the target has the Restrained condition.
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12). While Grappled, the target has the Restrained condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Crocodile
@@ -19182,6 +21032,9 @@ entries:
     name: Agile
     entryType: special
     text: The deer doesn't provoke an Opportunity Attack when it moves out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Ram
     entryType: attack
@@ -19195,6 +21048,9 @@ entries:
           type: Bludgeoning
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Deer
@@ -19273,6 +21129,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The wolf has Advantage on an attack roll against a creature if at least one of the wolf's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -19293,6 +21152,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Dire Wolf
@@ -19372,6 +21234,9 @@ entries:
           type: Bludgeoning
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Draft Horse
@@ -19449,6 +21314,9 @@ entries:
           bonus: 2
           type: Slashing
           average: 4
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Eagle
@@ -19520,6 +21388,9 @@ entries:
         - name: Gore
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Gore
     entryType: attack
@@ -19540,6 +21411,9 @@ entries:
               size: Huge or smaller
         other: If the target is a Huge or smaller creature and the elephant moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.
       additionalEffects: If the target is a Huge or smaller creature and the elephant moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Trample
     entryType: save
@@ -19566,6 +21440,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Elephant
@@ -19664,6 +21541,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature and the elk moved 20+ feet straight toward it immediately before the hit, the target takes an extra 3 (1d6) Bludgeoning damage and has the Prone condition.
       additionalEffects: If the target is a Large or smaller creature and the elk moved 20+ feet straight toward it immediately before the hit, the target takes an extra 3 (1d6) Bludgeoning damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Elk
@@ -19736,6 +21616,9 @@ entries:
     name: Flyby
     entryType: special
     text: The snake doesn't provoke an Opportunity Attack when it flies out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -19749,6 +21632,9 @@ entries:
           type: Poison
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Flying Snake
@@ -19829,10 +21715,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The frog can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Standing Leap
     entryType: special
     text: The frog's Long Jump is up to 10 feet and its High Jump is up to 5 feet with or without a running start.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -19842,6 +21734,9 @@ entries:
       bonus: 3
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Frog
@@ -19931,6 +21826,9 @@ entries:
         - name: Fist
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Fist
     entryType: attack
@@ -19944,6 +21842,9 @@ entries:
           type: Bludgeoning
           average: 22
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Boulder Toss
     entryType: save
@@ -19972,10 +21873,16 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Leap
     entryType: special
     text: The ape jumps up to 30 feet by spending 10 feet of movement.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Ape
@@ -20070,6 +21977,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Badger
@@ -20149,6 +22059,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Bat
@@ -20215,6 +22128,9 @@ entries:
     name: Bloodied Fury
     entryType: special
     text: The boar has Advantage on melee attack rolls while it is Bloodied.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Gore
     entryType: attack
@@ -20239,6 +22155,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature and the boar moved 20+ feet straight toward it immediately before the hit, the target takes an extra 7 (2d6) Piercing damage and has the Prone condition.
       additionalEffects: If the target is a Large or smaller creature and the boar moved 20+ feet straight toward it immediately before the hit, the target takes an extra 7 (2d6) Piercing damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Boar
@@ -20322,6 +22241,9 @@ entries:
           type: Piercing
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Centipede
@@ -20402,6 +22324,9 @@ entries:
         - name: Bite
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -20415,6 +22340,9 @@ entries:
           type: Piercing
           average: 11
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Constrict
     entryType: save
@@ -20445,6 +22373,9 @@ entries:
                 dc: 14
           other: 13 (2d8 + 4) Bludgeoning damage, and the target has the Grappled condition (escape DC 14).
         legacyEffects: 13 (2d8 + 4) Bludgeoning damage, and the target has the Grappled condition (escape DC 14).
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Constrictor Snake
@@ -20524,6 +22455,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The crab can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -20547,6 +22481,9 @@ entries:
               size: Medium or smaller
         other: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11) from one of two claws.
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11) from one of two claws.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Crab
@@ -20622,6 +22559,9 @@ entries:
     name: Hold Breath
     entryType: special
     text: The crocodile can hold its breath for 1 hour.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -20635,6 +22575,9 @@ entries:
         - name: Tail
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -20666,6 +22609,9 @@ entries:
               while: While Grappled, the target has the Restrained condition
         other: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 15). While Grappled, the target has the Restrained condition and can't be targeted by the crocodile's Tail.
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 15). While Grappled, the target has the Restrained condition and can't be targeted by the crocodile's Tail.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail
     entryType: attack
@@ -20686,6 +22632,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Crocodile
@@ -20780,6 +22729,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -20797,6 +22749,9 @@ entries:
           type: Radiant
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Eagle
@@ -20906,6 +22861,9 @@ entries:
               size: Huge or smaller
         other: If the target is a Huge or smaller creature and the elk moved 20+ feet straight toward it immediately before the hit, the target takes an extra 5 (2d4) Bludgeoning damage and has the Prone condition.
       additionalEffects: If the target is a Huge or smaller creature and the elk moved 20+ feet straight toward it immediately before the hit, the target takes an extra 5 (2d4) Bludgeoning damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Elk
@@ -20979,6 +22937,9 @@ entries:
     name: Illumination
     entryType: special
     text: The beetle sheds Bright Light in a 10-foot radius and Dim Light for an additional 10 feet.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -20988,6 +22949,9 @@ entries:
       bonus: 1
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Fire Beetle
@@ -21068,10 +23032,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The frog can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Standing Leap
     entryType: special
     text: The frog's Long Jump is up to 20 feet and its High Jump is up to 10 feet with or without a running start.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -21095,10 +23065,16 @@ entries:
               size: Medium or smaller
         other: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11).
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11).
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Swallow
     entryType: special
     text: The frog swallows a Small or smaller target it is grappling. While swallowed, the target isn't Grappled but has the Blinded and Restrained conditions, and it has Cover|XPHB|Total Cover against attacks and other effects outside the frog. While swallowing the target, the frog can't use Bite, and if the frog dies, the swallowed target is no longer Restrained and can escape from the corpse using 5 feet of movement, exiting with the Prone condition. At the end of the frog's next turn, the swallowed target takes 5 (2d4) Acid damage. If that damage doesn't kill it, the frog disgorges it, causing it to exit Prone.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Frog
@@ -21204,6 +23180,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature and the goat moved 20+ feet straight toward it immediately before the hit, the target takes an extra 5 (2d4) Bludgeoning damage and has the Prone condition.
       additionalEffects: If the target is a Large or smaller creature and the goat moved 20+ feet straight toward it immediately before the hit, the target takes an extra 5 (2d4) Bludgeoning damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Goat
@@ -21284,6 +23263,9 @@ entries:
           type: Piercing
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Rampage (1/Day)
     entryType: multiattack
@@ -21298,6 +23280,9 @@ entries:
         - name: Bite
           count: 1
       substitutions: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: self
 ---
 
 # Giant Hyena
@@ -21374,6 +23359,9 @@ entries:
     name: Spider Climb
     entryType: special
     text: The lizard can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -21387,6 +23375,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Lizard
@@ -21467,6 +23458,9 @@ entries:
     name: Water Breathing
     entryType: special
     text: The octopus can breathe only underwater. It can hold its breath for 1 hour outside water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Tentacles
     entryType: attack
@@ -21498,6 +23492,9 @@ entries:
               while: While Grappled, the target has the Restrained condition
         other: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 13) from all eight tentacles. While Grappled, the target has the Restrained condition.
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 13) from all eight tentacles. While Grappled, the target has the Restrained condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Octopus
@@ -21588,6 +23585,9 @@ entries:
     name: Flyby
     entryType: special
     text: The owl doesn't provoke an Opportunity Attack when it flies out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Talons
     entryType: attack
@@ -21601,6 +23601,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -21616,6 +23619,9 @@ spellcastingEntries:
         - frequency: 1/day
           spells:
             - Clairvoyance
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Owl
@@ -21699,6 +23705,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The rat has Advantage on an attack roll against a creature if at least one of the rat's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -21711,6 +23720,9 @@ entries:
           bonus: 3
           type: Piercing
           average: 5
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Rat
@@ -21793,6 +23805,9 @@ entries:
         - name: Sting
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -21816,6 +23831,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13) from one of two claws.
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13) from one of two claws.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Sting
     entryType: attack
@@ -21833,6 +23851,9 @@ entries:
           type: Poison
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Scorpion
@@ -21906,6 +23927,9 @@ entries:
     name: Water Breathing
     entryType: special
     text: The seahorse can breathe only underwater.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Ram
     entryType: attack
@@ -21923,10 +23947,16 @@ entries:
           type: Bludgeoning
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Bubble Dash
     entryType: special
     text: While underwater, the seahorse moves up to half its Swim Speed without provoking Opportunity Attacks.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Seahorse
@@ -22009,6 +24039,9 @@ entries:
     name: Water Breathing
     entryType: special
     text: The shark can breathe only underwater.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -22020,6 +24053,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -22033,6 +24069,9 @@ entries:
           type: Piercing
           average: 22
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Shark
@@ -22116,10 +24155,16 @@ entries:
     name: Spider Climb
     entryType: special
     text: The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Web Walker
     entryType: special
     text: The spider ignores movement restrictions caused by webs, and it knows the location of any other creature in contact with the same web.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -22137,6 +24182,9 @@ entries:
           type: Poison
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Web (Recharge 5-6)
     entryType: save
@@ -22160,6 +24208,9 @@ entries:
                 trigger: the web is destroyed (AC 10; HP 5; Vulnerability to Fire damage; Immunity to Poison and Psychic damage)
           other: The target has the Restrained condition until the web is destroyed (AC 10; HP 5; Vulnerability to Fire damage; Immunity to Poison and Psychic damage).
         legacyEffects: The target has the Restrained condition until the web is destroyed (AC 10; HP 5; Vulnerability to Fire damage; Immunity to Poison and Psychic damage).
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Spider
@@ -22241,10 +24292,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The toad can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Standing Leap
     entryType: special
     text: The toad's Long Jump is up to 20 feet and its High Jump is up to 10 feet with or without a running start.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -22272,10 +24329,16 @@ entries:
               size: Medium or smaller
         other: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12).
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12).
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Swallow
     entryType: special
     text: The toad swallows a Medium or smaller target it is grappling. While swallowed, the target isn't Grappled but has the Blinded and Restrained conditions, and it has Cover|XPHB|Total Cover against attacks and other effects outside the toad. In addition, the target takes 10 (3d6) Acid damage at the end of each of the toad's turns. The toad can have only one target swallowed at a time, and it can't use Bite while it has a swallowed target. If the toad dies, a swallowed creature is no longer Restrained and can escape from the corpse using 5 feet of movement, exiting with the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Toad
@@ -22373,6 +24436,9 @@ entries:
           type: Poison
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Venomous Snake
@@ -22451,6 +24517,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The vulture has Advantage on an attack roll against a creature if at least one of the vulture's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Gouge
     entryType: attack
@@ -22464,6 +24533,9 @@ entries:
           type: Piercing
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Vulture
@@ -22537,6 +24609,9 @@ entries:
     name: Flyby
     entryType: special
     text: The wasp doesn't provoke an Opportunity Attack when it flies out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Sting
     entryType: attack
@@ -22554,6 +24629,9 @@ entries:
           type: Poison
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Wasp
@@ -22644,6 +24722,9 @@ entries:
           type: Piercing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Weasel
@@ -22721,6 +24802,9 @@ entries:
     name: Spider Climb
     entryType: special
     text: The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -22738,6 +24822,9 @@ entries:
           type: Poison
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Wolf Spider
@@ -22826,6 +24913,9 @@ entries:
           type: Bludgeoning
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Goat
@@ -22901,6 +24991,9 @@ entries:
       bonus: 5
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hawk
@@ -22971,6 +25064,9 @@ entries:
     name: Hold Breath
     entryType: special
     text: The hippopotamus can hold its breath for 10 minutes.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -22982,6 +25078,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -22995,6 +25094,9 @@ entries:
           type: Piercing
           average: 16
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hippopotamus
@@ -23075,6 +25177,9 @@ entries:
     name: Water Breathing
     entryType: special
     text: The shark can breathe only underwater.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -23088,6 +25193,9 @@ entries:
           type: Piercing
           average: 14
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hunter Shark
@@ -23164,6 +25272,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The hyena has Advantage on an attack roll against a creature if at least one of the hyena's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -23177,6 +25288,9 @@ entries:
           type: Piercing
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hyena
@@ -23264,6 +25378,9 @@ entries:
           type: Piercing
           average: 1
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Jackal
@@ -23339,6 +25456,9 @@ entries:
     name: Hold Breath
     entryType: special
     text: The whale can hold its breath for 30 minutes.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -23352,6 +25472,9 @@ entries:
           type: Piercing
           average: 21
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Killer Whale
@@ -23430,10 +25553,16 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The lion has Advantage on an attack roll against a creature if at least one of the lion's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Running Leap
     entryType: special
     text: With a 10-foot running start, the lion can Long Jump up to 25 feet.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -23451,6 +25580,9 @@ entries:
           with:
             type: attack
             name: Roar
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -23464,6 +25596,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Roar
     entryType: save
@@ -23484,6 +25619,9 @@ entries:
                 trigger: the start of the lion's next turn
           other: The target has the Frightened condition until the start of the lion's next turn.
         legacyEffects: The target has the Frightened condition until the start of the lion's next turn.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Lion
@@ -23568,6 +25706,9 @@ entries:
     name: Spider Climb
     entryType: special
     text: The lizard can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -23577,6 +25718,9 @@ entries:
       bonus: 2
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Lizard
@@ -23656,6 +25800,9 @@ entries:
         - name: Gore
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Gore
     entryType: attack
@@ -23676,6 +25823,9 @@ entries:
               size: Huge or smaller
         other: If the target is a Huge or smaller creature and the mammoth moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.
       additionalEffects: If the target is a Huge or smaller creature and the mammoth moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Trample
     entryType: save
@@ -23702,6 +25852,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Mammoth
@@ -23796,6 +25949,9 @@ entries:
               size: Medium or smaller
         other: If the target is a Medium or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Medium or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Mastiff
@@ -23862,6 +26018,9 @@ entries:
     name: Beast of Burden
     entryType: special
     text: The mule counts as one size larger for the purpose of determining its carrying capacity.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Hooves
     entryType: attack
@@ -23875,6 +26034,9 @@ entries:
           type: Bludgeoning
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Mule
@@ -23954,6 +26116,9 @@ entries:
     name: Flyby
     entryType: special
     text: The owl doesn't provoke Opportunity Attacks when it flies out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Talons
     entryType: attack
@@ -23963,6 +26128,9 @@ entries:
       bonus: 3
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Owl
@@ -24052,10 +26220,16 @@ entries:
           type: Slashing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Nimble Escape
     entryType: special
     text: The panther takes the Disengage or Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Panther
@@ -24131,6 +26305,9 @@ entries:
     name: Water Breathing
     entryType: special
     text: The piranha can breathe only underwater.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -24140,6 +26317,9 @@ entries:
       bonus: 5
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Piranha
@@ -24219,6 +26399,9 @@ entries:
     name: Hold Breath
     entryType: special
     text: The plesiosaurus can hold its breath for 1 hour.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -24232,6 +26415,9 @@ entries:
           type: Piercing
           average: 11
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Plesiosaurus
@@ -24320,6 +26506,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -24333,6 +26522,9 @@ entries:
           type: Slashing
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Polar Bear
@@ -24411,6 +26603,9 @@ entries:
           type: Bludgeoning
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Pony
@@ -24482,6 +26677,9 @@ entries:
     name: Flyby
     entryType: special
     text: The pteranodon doesn't provoke an Opportunity Attack when it flies out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -24495,6 +26693,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Pteranodon
@@ -24572,6 +26773,9 @@ entries:
     name: Agile
     entryType: special
     text: The rat doesn't provoke Opportunity Attacks when it moves out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -24581,6 +26785,9 @@ entries:
       bonus: 2
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Rat
@@ -24656,6 +26863,9 @@ entries:
     name: Mimicry
     entryType: special
     text: The raven can mimic simple sounds it has heard, such as a whisper or chitter. A hearer can discern the sounds are imitations with a successful DC 10 Wisdom (Insight) check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Beak
     entryType: attack
@@ -24665,6 +26875,9 @@ entries:
       bonus: 4
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Raven
@@ -24742,10 +26955,16 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The shark has Advantage on an attack roll against a creature if at least one of the shark's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Water Breathing
     entryType: special
     text: The shark can breathe only underwater.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -24759,6 +26978,9 @@ entries:
           type: Piercing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Reef Shark
@@ -24852,6 +27074,9 @@ entries:
               size: Large or smaller
         other: If target is a Large or smaller creature and the rhinoceros moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition.
       additionalEffects: If target is a Large or smaller creature and the rhinoceros moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Rhinoceros
@@ -24925,6 +27150,9 @@ entries:
           type: Bludgeoning
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Riding Horse
@@ -24999,6 +27227,9 @@ entries:
     name: Running Leap
     entryType: special
     text: With a 10-foot running start, the tiger can Long Jump up to 25 feet.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -25010,6 +27241,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -25023,10 +27257,16 @@ entries:
           type: Slashing
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Nimble Escape
     entryType: special
     text: The tiger takes the Disengage or Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Saber-Toothed Tiger
@@ -25117,6 +27357,9 @@ entries:
           type: Poison
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Scorpion
@@ -25189,10 +27432,16 @@ entries:
     name: Water Breathing
     entryType: special
     text: The seahorse can breathe only underwater.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bubble Dash
     entryType: special
     text: While underwater, the seahorse moves up to its Swim Speed without provoking Opportunity Attacks.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Seahorse
@@ -25270,10 +27519,16 @@ entries:
     name: Spider Climb
     entryType: special
     text: The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Web Walker
     entryType: special
     text: The spider ignores movement restrictions caused by webs, and the spider knows the location of any other creature in contact with the same web.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -25287,6 +27542,9 @@ entries:
           type: Poison
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Spider
@@ -25378,6 +27636,9 @@ entries:
     name: Swarm
     entryType: special
     text: The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny bat. The swarm can't regain Hit Points or gain Temporary Hit Points.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bites
     entryType: attack
@@ -25395,6 +27656,9 @@ entries:
           type: Piercing
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Swarm of Bats
@@ -25481,10 +27745,16 @@ entries:
     name: Spider Climb
     entryType: special
     text: If the swarm has a Climb Speed, the swarm can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Swarm
     entryType: special
     text: The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny insect. The swarm can't regain Hit Points or gain Temporary Hit Points.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bites
     entryType: attack
@@ -25502,6 +27772,9 @@ entries:
           type: Poison
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Swarm of Insects
@@ -25593,10 +27866,16 @@ entries:
     name: Swarm
     entryType: special
     text: The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny piranha. The swarm can't regain Hit Points or gain Temporary Hit Points.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Water Breathing
     entryType: special
     text: The swarm can breathe only underwater.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bites
     entryType: attack
@@ -25614,6 +27893,9 @@ entries:
           type: Piercing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Swarm of Piranhas
@@ -25705,6 +27987,9 @@ entries:
     name: Swarm
     entryType: special
     text: The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny rat. The swarm can't regain Hit Points or gain Temporary Hit Points.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bites
     entryType: attack
@@ -25722,6 +28007,9 @@ entries:
           type: Piercing
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Swarm of Rats
@@ -25810,6 +28098,9 @@ entries:
     name: Swarm
     entryType: special
     text: The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny raven. The swarm can't regain Hit Points or gain Temporary Hit Points.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Beaks
     entryType: attack
@@ -25827,6 +28118,9 @@ entries:
           type: Piercing
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cacophony
     entryType: save
@@ -25853,6 +28147,9 @@ entries:
               description: advantage on ability checks and
           other: The target has the Deafened condition until the start of the swarm's next turn. While Deafened, the target also has Disadvantage on ability checks and attack rolls.
         legacyEffects: The target has the Deafened condition until the start of the swarm's next turn. While Deafened, the target also has Disadvantage on ability checks and attack rolls.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Swarm of Ravens
@@ -25943,6 +28240,9 @@ entries:
     name: Swarm
     entryType: special
     text: The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny snake. The swarm can't regain Hit Points or gain Temporary Hit Points.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bites
     entryType: attack
@@ -25964,6 +28264,9 @@ entries:
           type: Poison
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Swarm of Venomous Snakes
@@ -26058,10 +28361,16 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Nimble Escape
     entryType: special
     text: The tiger takes the Disengage or Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Tiger
@@ -26141,6 +28450,9 @@ entries:
         - name: Gore
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Gore
     entryType: attack
@@ -26165,6 +28477,9 @@ entries:
               size: Huge or smaller
         other: If the target is Huge or smaller and the triceratops moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition.
       additionalEffects: If the target is Huge or smaller and the triceratops moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Triceratops
@@ -26248,6 +28563,9 @@ entries:
         - name: Tail
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -26279,6 +28597,9 @@ entries:
               while: While Grappled, the target has the Restrained condition
         other: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 17). While Grappled, the target has the Restrained condition and can't be targeted by the tyrannosaurus's Tail.
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 17). While Grappled, the target has the Restrained condition and can't be targeted by the tyrannosaurus's Tail.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail
     entryType: attack
@@ -26299,6 +28620,9 @@ entries:
               size: Huge or smaller
         other: If the target is a Huge or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Huge or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Tyrannosaurus Rex
@@ -26387,6 +28711,9 @@ entries:
           type: Poison
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Venomous Snake
@@ -26457,6 +28784,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The vulture has Advantage on an attack roll against a creature if at least one of the vulture's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Beak
     entryType: attack
@@ -26470,6 +28800,9 @@ entries:
           type: Piercing
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Vulture
@@ -26560,6 +28893,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature and the horse moved 20+ feet straight toward it immediately before the hit, the target takes an extra 5 (2d4) Bludgeoning damage and has the Prone condition.
       additionalEffects: If the target is a Large or smaller creature and the horse moved 20+ feet straight toward it immediately before the hit, the target takes an extra 5 (2d4) Bludgeoning damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Warhorse
@@ -26641,6 +28977,9 @@ entries:
       bonus: 5
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Weasel
@@ -26714,6 +29053,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The wolf has Advantage on attack rolls against a creature if at least one of the wolf's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -26734,6 +29076,9 @@ entries:
               size: Medium or smaller
         other: If the target is a Medium or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Medium or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Wolf
@@ -26822,10 +29167,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The aboleth can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Eldritch Restoration
     entryType: special
     text: If destroyed, the aboleth gains a new body in 5d10 days, reviving with all its Hit Points in the Far Realm or another location chosen by the DM.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day, or 4/Day in Lair)
     entryType: special
@@ -26833,6 +29184,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Mucus Cloud
     entryType: save
@@ -26862,10 +29216,16 @@ entries:
               type: minutes
               count: 10
             condition: it is underwater
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Probing Telepathy
     entryType: special
     text: If a creature the aboleth can see communicates telepathically with the aboleth, the aboleth learns the creature's greatest desires.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -26875,6 +29235,9 @@ entries:
         - name: Tentacle
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Tentacle
     entryType: attack
@@ -26897,6 +29260,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14) from one of four tentacles.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Consume Memories
     entryType: save
@@ -26924,6 +29290,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Dominate Mind (2/Day)
     entryType: save
@@ -26948,6 +29317,9 @@ entries:
                 trigger: the aboleth dies or is on a different plane of existence from the target
               saveToEnd:
                 timing: when-damage
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Lash
     entryType: multiattack
@@ -26957,10 +29329,18 @@ entries:
         - name: Tentacle
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: Psychic Drain
     entryType: special
     text: If the aboleth has at least one creature Charmed or Grappled, it uses Consume Memories and regains 5 (1d10) Hit Points.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Aboleth
@@ -27085,6 +29465,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day, or 4/Day in Lair)
     entryType: special
@@ -27092,6 +29475,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -27105,6 +29491,9 @@ entries:
           with:
             type: spellcasting
             spell: Acid Arrow
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -27122,6 +29511,9 @@ entries:
           type: Acid
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Breath (Recharge 5-6)
     entryType: save
@@ -27146,6 +29538,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Cloud of Insects
     entryType: save
@@ -27172,6 +29567,10 @@ entries:
             bonus: 0
             type: Poison
             average: 22
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -27181,6 +29580,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -27202,6 +29605,9 @@ spellcastingEntries:
           spells:
             - Speak with Dead
             - Vitriolic Sphere
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Frightful Presence
     entryType: spellcasting
@@ -27209,6 +29615,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Black Dragon
@@ -27330,6 +29740,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -27343,6 +29756,9 @@ entries:
           with:
             type: spellcasting
             spell: Shatter
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -27360,6 +29776,9 @@ entries:
           type: Lightning
           average: 5
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -27384,6 +29803,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Tail Swipe
     entryType: multiattack
@@ -27393,6 +29815,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -27414,6 +29840,9 @@ spellcastingEntries:
           spells:
             - Scrying
             - Sending
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Cloaked Flight
     entryType: spellcasting
@@ -27421,6 +29850,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Sonic Boom
     entryType: spellcasting
@@ -27428,6 +29861,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Blue Dragon
@@ -27550,6 +29987,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -27563,6 +30003,9 @@ entries:
           with:
             type: spellcasting
             spell: Scorching Ray
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -27580,6 +30023,9 @@ entries:
           type: Fire
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -27604,6 +30050,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Sleep Breath
     entryType: save
@@ -27629,6 +30078,9 @@ entries:
                 trigger: the end of its next turn
               saveToEnd:
                 timing: custom
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -27638,6 +30090,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: Scorching Sands
     entryType: save
@@ -27662,6 +30118,10 @@ entries:
             bonus: 0
             type: Fire
             average: 27
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -27684,6 +30144,9 @@ spellcastingEntries:
           spells:
             - Detect Thoughts
             - Control Weather
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Blazing Light
     entryType: spellcasting
@@ -27691,6 +30154,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Brass Dragon
@@ -27811,6 +30278,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day, or 4/Day in Lair)
     entryType: special
@@ -27818,6 +30288,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -27831,6 +30304,9 @@ entries:
           with:
             type: spellcasting
             spell: Guiding Bolt
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -27848,6 +30324,9 @@ entries:
           type: Lightning
           average: 5
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -27872,6 +30351,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Repulsion Breath
     entryType: save
@@ -27890,6 +30372,9 @@ entries:
             type: push
             distance: 60 feet
             direction: straight away from the dragon
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -27899,6 +30384,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: Thunderclap
     entryType: save
@@ -27921,6 +30410,10 @@ entries:
             bonus: 0
             type: Thunder
             average: 10
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -27944,6 +30437,9 @@ spellcastingEntries:
           spells:
             - Detect Thoughts
             - Water Breathing
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Guiding Light
     entryType: spellcasting
@@ -27951,6 +30447,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Bronze Dragon
@@ -28077,6 +30577,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -28090,6 +30593,9 @@ entries:
           with:
             type: spellcasting
             spell: Mind Spike
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -28107,6 +30613,9 @@ entries:
           type: Acid
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Breath (Recharge 5-6)
     entryType: save
@@ -28131,6 +30640,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Slowing Breath
     entryType: save
@@ -28151,6 +30663,9 @@ entries:
             - type: other
               target: Reactions
               description: can't take Reactions
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Giggling Magic
     entryType: save
@@ -28172,6 +30687,10 @@ entries:
             type: Psychic
             average: 24
         legacyEffects: 24 (7d6) Psychic damage. Until the end of its next turn, the target rolls 1d6 whenever it makes an ability check or attack roll and subtracts the number rolled from the D20 Test.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -28181,6 +30700,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -28202,6 +30725,9 @@ spellcastingEntries:
           spells:
             - Greater Restoration
             - Major Image
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Mind Jolt
     entryType: spellcasting
@@ -28209,6 +30735,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Copper Dragon
@@ -28331,6 +30861,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day, or 4/Day in Lair)
     entryType: special
@@ -28338,6 +30871,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -28351,6 +30887,9 @@ entries:
           with:
             type: spellcasting
             spell: Guiding Bolt
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -28368,6 +30907,9 @@ entries:
           type: Fire
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -28391,6 +30933,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Weakening Breath
     entryType: save
@@ -28414,6 +30959,9 @@ entries:
               modifier: -3
               target: damage rolls
               description: subtracts 3 (1d6) from its damage rolls.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Banish
     entryType: save
@@ -28438,6 +30986,10 @@ entries:
             bonus: 0
             type: Force
             average: 10
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -28447,6 +30999,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -28468,6 +31024,9 @@ spellcastingEntries:
           spells:
             - Flame Strike
             - Zone of Truth
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Guiding Light
     entryType: spellcasting
@@ -28475,6 +31034,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Gold Dragon
@@ -28600,6 +31163,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day, or 4/Day in Lair)
     entryType: special
@@ -28607,6 +31173,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -28620,6 +31189,9 @@ entries:
           with:
             type: spellcasting
             spell: Mind Spike
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -28637,6 +31209,9 @@ entries:
           type: Poison
           average: 7
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Poison Breath (Recharge 5-6)
     entryType: save
@@ -28660,6 +31235,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Noxious Miasma
     entryType: save
@@ -28679,6 +31257,10 @@ entries:
             type: Poison
             average: 7
         legacyEffects: 7 (2d6) Poison damage, and the target takes a -2 penalty to AC until the end of its next turn.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -28688,6 +31270,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -28706,6 +31292,9 @@ spellcastingEntries:
         - frequency: 1/day
           spells:
             - Geas
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Mind Invasion
     entryType: spellcasting
@@ -28713,6 +31302,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Green Dragon
@@ -28834,6 +31427,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -28847,6 +31443,9 @@ entries:
           with:
             type: spellcasting
             spell: Scorching Ray
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -28864,6 +31463,9 @@ entries:
           type: Fire
           average: 5
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -28887,6 +31489,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -28896,6 +31501,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -28916,6 +31525,9 @@ spellcastingEntries:
         - frequency: 1/day
           spells:
             - Fireball
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Commanding Presence
     entryType: spellcasting
@@ -28923,6 +31535,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Fiery Rays
     entryType: spellcasting
@@ -28930,6 +31546,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Red Dragon
@@ -29048,6 +31668,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -29061,6 +31684,9 @@ entries:
           with:
             type: spellcasting
             spell: Ice Knife
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -29078,6 +31704,9 @@ entries:
           type: Cold
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cold Breath (Recharge 5-6)
     entryType: save
@@ -29101,6 +31730,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Paralyzing Breath
     entryType: save
@@ -29108,6 +31740,9 @@ entries:
     save:
       ability: con
       dc: 20
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Cold Gale
     entryType: save
@@ -29133,6 +31768,10 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -29142,6 +31781,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -29164,6 +31807,9 @@ spellcastingEntries:
           spells:
             - Ice Storm
             - Zone of Truth
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Chill
     entryType: spellcasting
@@ -29171,6 +31817,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Silver Dragon
@@ -29291,6 +31941,9 @@ entries:
     name: Ice Walk
     entryType: special
     text: The dragon can move across and climb icy surfaces without needing to make an ability check. Additionally, Difficult Terrain composed of ice or snow doesn't cost it extra movement.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day, or 4/Day in Lair)
     entryType: special
@@ -29298,6 +31951,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -29307,6 +31963,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -29324,6 +31983,9 @@ entries:
           type: Cold
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cold Breath (Recharge 5-6)
     entryType: save
@@ -29347,6 +32009,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Freezing Burst
     entryType: save
@@ -29366,6 +32031,10 @@ entries:
             type: Cold
             average: 7
         legacyEffects: 7 (2d6) Cold damage, and the target's Speed is 0 until the end of the target's next turn.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -29375,6 +32044,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: legendary
     name: Frightful Presence
@@ -29386,6 +32059,10 @@ spellcastingEntries:
       excludeComponents:
         - M
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult White Dragon
@@ -29502,6 +32179,9 @@ entries:
     name: Air Form
     entryType: special
     text: The elemental can enter a creature's space and stop there. It can move through a space as narrow as 1 inch without expending extra movement to do so.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -29511,6 +32191,9 @@ entries:
         - name: Slam
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Thunderous Slam
     entryType: attack
@@ -29524,6 +32207,9 @@ entries:
           type: Thunder
           average: 14
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Whirlwind (Recharge 4-6)
     entryType: save
@@ -29554,6 +32240,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Air Elemental
@@ -29655,6 +32344,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (4/Day, or 5/Day in Lair)
     entryType: special
@@ -29662,6 +32354,9 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -29675,6 +32370,9 @@ entries:
           with:
             type: spellcasting
             spell: Acid Arrow
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -29692,6 +32390,9 @@ entries:
           type: Acid
           average: 9
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Breath (Recharge 5-6)
     entryType: save
@@ -29716,6 +32417,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Cloud of Insects
     entryType: save
@@ -29742,6 +32446,10 @@ entries:
             bonus: 0
             type: Poison
             average: 33
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -29751,6 +32459,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -29773,6 +32485,9 @@ spellcastingEntries:
             - Create Undead
             - Speak with Dead
             - Vitriolic Sphere
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Frightful Presence
     entryType: spellcasting
@@ -29780,6 +32495,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Ancient Black Dragon
@@ -29901,6 +32620,9 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -29914,6 +32636,9 @@ entries:
           with:
             type: spellcasting
             spell: Shatter
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -29931,6 +32656,9 @@ entries:
           type: Lightning
           average: 11
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -29955,6 +32683,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Tail Swipe
     entryType: multiattack
@@ -29964,6 +32695,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -29985,6 +32720,9 @@ spellcastingEntries:
           spells:
             - Scrying
             - Sending
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Cloaked Flight
     entryType: spellcasting
@@ -29992,6 +32730,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Sonic Boom
     entryType: spellcasting
@@ -29999,6 +32741,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Ancient Blue Dragon
@@ -30121,6 +32867,9 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -30134,6 +32883,9 @@ entries:
           with:
             type: spellcasting
             spell: Scorching Ray
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -30151,6 +32903,9 @@ entries:
           type: Fire
           average: 7
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -30175,6 +32930,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Sleep Breath
     entryType: save
@@ -30200,6 +32958,9 @@ entries:
                 trigger: the end of its next turn
               saveToEnd:
                 timing: custom
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -30209,6 +32970,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: Scorching Sands
     entryType: save
@@ -30233,6 +32998,10 @@ entries:
             bonus: 0
             type: Fire
             average: 36
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -30255,6 +33024,9 @@ spellcastingEntries:
           spells:
             - Control Weather
             - Detect Thoughts
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Blazing Light
     entryType: spellcasting
@@ -30262,6 +33034,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Ancient Brass Dragon
@@ -30382,6 +33158,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (4/Day, or 5/Day in Lair)
     entryType: special
@@ -30389,6 +33168,9 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -30402,6 +33184,9 @@ entries:
           with:
             type: spellcasting
             spell: Guiding Bolt
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -30419,6 +33204,9 @@ entries:
           type: Lightning
           average: 9
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -30443,6 +33231,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Repulsion Breath
     entryType: save
@@ -30461,6 +33252,9 @@ entries:
             type: push
             distance: 60 feet
             direction: straight away from the dragon
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -30470,6 +33264,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: Thunderclap
     entryType: save
@@ -30492,6 +33290,10 @@ entries:
             bonus: 0
             type: Thunder
             average: 13
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -30517,6 +33319,9 @@ spellcastingEntries:
             - Control Water
             - Scrying
             - Water Breathing
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Guiding Light
     entryType: spellcasting
@@ -30524,6 +33329,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Ancient Bronze Dragon
@@ -30650,6 +33459,9 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -30663,6 +33475,9 @@ entries:
           with:
             type: spellcasting
             spell: Mind Spike
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -30680,6 +33495,9 @@ entries:
           type: Acid
           average: 9
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Breath (Recharge 5-6)
     entryType: save
@@ -30704,6 +33522,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Slowing Breath
     entryType: save
@@ -30724,6 +33545,9 @@ entries:
             - type: other
               target: Reactions
               description: can't take Reactions
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Giggling Magic
     entryType: save
@@ -30745,6 +33569,10 @@ entries:
             type: Psychic
             average: 31
         legacyEffects: 31 (9d6) Psychic damage. Until the end of its next turn, the target rolls 1d8 whenever it makes an ability check or attack roll and subtracts the number rolled from the D20 Test.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -30754,6 +33582,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -30776,6 +33608,9 @@ spellcastingEntries:
             - Greater Restoration
             - Major Image
             - Project Image
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Mind Jolt
     entryType: spellcasting
@@ -30783,6 +33618,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Ancient Copper Dragon
@@ -30905,6 +33744,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (4/Day, or 5/Day in Lair)
     entryType: special
@@ -30912,6 +33754,9 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -30925,6 +33770,9 @@ entries:
           with:
             type: spellcasting
             spell: Guiding Bolt
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -30942,6 +33790,9 @@ entries:
           type: Fire
           average: 9
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -30965,6 +33816,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Weakening Breath
     entryType: save
@@ -30988,6 +33842,9 @@ entries:
               modifier: -5
               target: damage rolls
               description: subtracts 5 (1d10) from its damage rolls.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Banish
     entryType: save
@@ -31012,6 +33869,10 @@ entries:
             bonus: 0
             type: Force
             average: 24
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -31021,6 +33882,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -31043,6 +33908,9 @@ spellcastingEntries:
             - Flame Strike
             - Word of Recall
             - Zone of Truth
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Guiding Light
     entryType: spellcasting
@@ -31050,6 +33918,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Ancient Gold Dragon
@@ -31175,6 +34047,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (4/Day, or 5/Day in Lair)
     entryType: special
@@ -31182,6 +34057,9 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -31195,6 +34073,9 @@ entries:
           with:
             type: spellcasting
             spell: Mind Spike
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -31212,6 +34093,9 @@ entries:
           type: Poison
           average: 10
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Poison Breath (Recharge 5-6)
     entryType: save
@@ -31235,6 +34119,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Noxious Miasma
     entryType: save
@@ -31254,6 +34141,10 @@ entries:
             type: Poison
             average: 17
         legacyEffects: 17 (5d6) Poison damage, and the target takes a -2 penalty to AC until the end of its next turn.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -31263,6 +34154,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -31282,6 +34177,9 @@ spellcastingEntries:
           spells:
             - Geas
             - Modify Memory
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Mind Invasion
     entryType: spellcasting
@@ -31289,6 +34187,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Ancient Green Dragon
@@ -31410,6 +34312,9 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -31423,6 +34328,9 @@ entries:
           with:
             type: spellcasting
             spell: Scorching Ray
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -31440,6 +34348,9 @@ entries:
           type: Fire
           average: 10
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -31463,6 +34374,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -31472,6 +34386,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -31493,6 +34411,9 @@ spellcastingEntries:
           spells:
             - Fireball
             - Scrying
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Commanding Presence
     entryType: spellcasting
@@ -31500,6 +34421,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Fiery Rays
     entryType: spellcasting
@@ -31507,6 +34432,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Ancient Red Dragon
@@ -31625,6 +34554,9 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -31638,6 +34570,9 @@ entries:
           with:
             type: spellcasting
             spell: Ice Knife
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -31655,6 +34590,9 @@ entries:
           type: Cold
           average: 9
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cold Breath (Recharge 5-6)
     entryType: save
@@ -31678,6 +34616,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Paralyzing Breath
     entryType: save
@@ -31685,6 +34626,9 @@ entries:
     save:
       ability: con
       dc: 24
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Cold Gale
     entryType: save
@@ -31710,6 +34654,10 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -31719,6 +34667,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -31743,6 +34695,9 @@ spellcastingEntries:
             - Ice Storm
             - Teleport
             - Zone of Truth
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Chill
     entryType: spellcasting
@@ -31750,6 +34705,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Ancient Silver Dragon
@@ -31870,6 +34829,9 @@ entries:
     name: Ice Walk
     entryType: special
     text: The dragon can move across and climb icy surfaces without needing to make an ability check. Additionally, Difficult Terrain composed of ice or snow doesn't cost it extra movement.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (4/Day, or 5/Day in Lair)
     entryType: special
@@ -31877,6 +34839,9 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -31886,6 +34851,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -31903,6 +34871,9 @@ entries:
           type: Cold
           average: 7
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cold Breath (Recharge 5-6)
     entryType: save
@@ -31926,6 +34897,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Freezing Burst
     entryType: save
@@ -31945,6 +34919,10 @@ entries:
             type: Cold
             average: 14
         legacyEffects: 14 (4d6) Cold damage, and the target's Speed is 0 until the end of the target's next turn.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -31954,6 +34932,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: legendary
     name: Frightful Presence
@@ -31965,6 +34947,10 @@ spellcastingEntries:
       excludeComponents:
         - M
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Ancient White Dragon
@@ -32074,6 +35060,9 @@ entries:
         - name: Slam
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Slam
     entryType: attack
@@ -32087,6 +35076,9 @@ entries:
           type: Bludgeoning
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Animated Armor
@@ -32181,6 +35173,9 @@ entries:
           type: Slashing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Animated Flying Sword
@@ -32275,6 +35270,9 @@ entries:
       onHit:
         other: If the target is a Medium or smaller creature, the rug can give it the Grappled condition (escape DC 13) instead of dealing damage. Until the grapple ends, the target has the Blinded and Restrained conditions, is suffocating, and takes 10 (2d6 + 3) Bludgeoning damage at the start of each of its turns. The rug can smother only one creature at a time. While grappling the target, the rug can't take this action, the rug halves the damage it takes (round down), and the target takes the same amount of damage.
       additionalEffects: If the target is a Medium or smaller creature, the rug can give it the Grappled condition (escape DC 13) instead of dealing damage. Until the grapple ends, the target has the Blinded and Restrained conditions, is suffocating, and takes 10 (2d6 + 3) Bludgeoning damage at the start of each of its turns. The rug can smother only one creature at a time. While grappling the target, the rug can't take this action, the rug halves the damage it takes (round down), and the target takes the same amount of damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Animated Rug of Smothering
@@ -32347,6 +35345,9 @@ entries:
     name: Tunneler
     entryType: special
     text: The ankheg can burrow through solid rock at half its Burrow Speed and leaves a 10-foot-diameter tunnel in its wake.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -32373,6 +35374,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13).
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Spray
     entryType: save
@@ -32396,6 +35400,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ankheg
@@ -32483,6 +35490,9 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The archmage has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -32492,10 +35502,16 @@ entries:
         - name: Burst
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Arcane Burst
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +9, reach 5 ft. or range 150 ft. 27 (4d10 + 5) Force damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -32525,6 +35541,9 @@ spellcastingEntries:
             - Mind Blank
             - Scrying
             - Teleport
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Misty Step (3/Day)
     entryType: spellcasting
@@ -32535,6 +35554,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
   - category: reaction
     name: Protective Magic (3/Day)
     entryType: spellcasting
@@ -32545,6 +35567,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: reaction
+    trigger.targeting:
+      type: single
+    trigger.reactionTrigger: the spell's trigger
 ---
 
 # Archmage
@@ -32646,10 +35672,16 @@ entries:
     name: Evasion
     entryType: special
     text: If the assassin is subjected to an effect that allows it to make a Dexterity saving throw to take only half damage, the assassin instead takes no damage if it succeeds on the save and only half damage if it fails. It can't use this trait if it has the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The assassin makes three attacks, using Shortsword or Light Crossbow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shortsword
     entryType: attack
@@ -32667,6 +35699,9 @@ entries:
           type: Poison
           average: 17
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Light Crossbow
     entryType: attack
@@ -32684,10 +35719,16 @@ entries:
           type: Poison
           average: 21
       range: 80/320 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Cunning Action
     entryType: special
     text: The assassin takes the Dash, Disengage, or Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Assassin
@@ -32781,6 +35822,9 @@ entries:
       bonus: 1
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Awakened Shrub
@@ -32863,6 +35907,9 @@ entries:
           type: Bludgeoning
           average: 13
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Awakened Tree
@@ -32937,6 +35984,9 @@ entries:
           type: Slashing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Axe Beak
@@ -33008,10 +36058,16 @@ entries:
     name: Fire Aura
     entryType: special
     text: At the end of each of the azer's turns, each creature of the azer's choice in a 5-foot Emanation originating from the azer takes 5 (1d10) Fire damage unless the azer has the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Illumination
     entryType: special
     text: The azer sheds Bright Light in a 10-foot radius and Dim Light for an additional 10 feet.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Burning Hammer
     entryType: attack
@@ -33029,6 +36085,9 @@ entries:
           type: Fire
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Azer Sentinel
@@ -33150,10 +36209,16 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Fire Aura
     entryType: special
     text: At the end of each of the balor's turns, each creature in a 5-foot Emanation originating from the balor takes 13 (3d8) Fire damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day)
     entryType: special
@@ -33161,10 +36226,16 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The balor has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -33176,6 +36247,9 @@ entries:
         - name: Blade
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Flame Whip
     entryType: attack
@@ -33199,6 +36273,9 @@ entries:
             restrictions:
               size: Huge or smaller
       additionalEffects: If the target is a Huge or smaller creature, the balor pulls the target up to 25 feet straight toward itself, and the target has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Blade
     entryType: attack
@@ -33216,10 +36293,16 @@ entries:
           type: Lightning
           average: 22
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Teleport
     entryType: special
     text: The balor teleports itself or a willing demon within 10 feet of itself up to 60 feet to an unoccupied space the balor can see.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Balor
@@ -33323,6 +36406,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The bandit makes two attacks, using Scimitar and Pistol in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Scimitar
     entryType: attack
@@ -33336,6 +36422,9 @@ entries:
           type: Slashing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Pistol
     entryType: attack
@@ -33349,6 +36438,9 @@ entries:
           type: Piercing
           average: 8
       range: 30/90 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Bandit Captain
@@ -33433,6 +36525,9 @@ entries:
           type: Slashing
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Light Crossbow
     entryType: attack
@@ -33446,6 +36541,9 @@ entries:
           type: Piercing
           average: 5
       range: 80/320 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Bandit
@@ -33540,14 +36638,23 @@ entries:
     name: Barbed Hide
     entryType: special
     text: At the start of each of its turns, the devil deals 5 (1d10) Piercing damage to any creature it is grappling or any creature grappling it.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Diabolical Restoration
     entryType: special
     text: If the devil dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The devil has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -33561,6 +36668,9 @@ entries:
         - name: Flame
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claws
     entryType: attack
@@ -33583,6 +36693,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13) from both claws.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail
     entryType: attack
@@ -33596,6 +36709,9 @@ entries:
           type: Slashing
           average: 14
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Hurl Flame
     entryType: attack
@@ -33612,6 +36728,9 @@ entries:
       onHit:
         other: If the target is a flammable object that isn't being worn or carried, it starts burning.
       additionalEffects: If the target is a flammable object that isn't being worn or carried, it starts burning.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Barbed Devil
@@ -33714,6 +36833,9 @@ entries:
           type: Poison
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Petrifying Gaze (Recharge 4-6)
     entryType: save
@@ -33722,6 +36844,9 @@ entries:
     save:
       ability: con
       dc: 12
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Basilisk
@@ -33810,6 +36935,9 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The devil has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -33821,6 +36949,9 @@ entries:
         - name: Glaive
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Beard
     entryType: attack
@@ -33834,6 +36965,9 @@ entries:
           type: Piercing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Infernal Glaive
     entryType: attack
@@ -33850,6 +36984,9 @@ entries:
       onHit:
         other: 'If the target is a creature and doesn''t already have an infernal wound, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *Failure:*  The target receives an infernal wound. While wounded, the target loses 5 (1d10) Hit Points at the start of each of its turns. The wound closes after 1 minute, after a spell restores Hit Points to the target, or after the target or a creature within 5 feet of it takes an action to stanch the wound, doing so by succeeding on a DC 12 Wisdom (Medicine) check.'
       additionalEffects: 'If the target is a creature and doesn''t already have an infernal wound, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *Failure:*  The target receives an infernal wound. While wounded, the target loses 5 (1d10) Hit Points at the start of each of its turns. The wound closes after 1 minute, after a spell restores Hit Points to the target, or after the target or a creature within 5 feet of it takes an action to stanch the wound, doing so by succeeding on a DC 12 Wisdom (Medicine) check.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Bearded Devil
@@ -33947,6 +37084,9 @@ entries:
         - name: Bite
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -33964,6 +37104,9 @@ entries:
           type: Lightning
           average: 11
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Constrict
     entryType: save
@@ -34001,6 +37144,9 @@ entries:
             bonus: 6
             type: Bludgeoning
             average: 28
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -34025,6 +37171,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Swallow
     entryType: save
@@ -34051,6 +37200,9 @@ entries:
             bonus: 0
             type: Acid
             average: 21
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Behir
@@ -34134,6 +37286,9 @@ entries:
     name: Bloodied Frenzy
     entryType: special
     text: While Bloodied, the berserker has Advantage on attack rolls and saving throws.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Greataxe
     entryType: attack
@@ -34147,6 +37302,9 @@ entries:
           type: Slashing
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Berserker
@@ -34240,6 +37398,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -34249,6 +37410,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -34266,6 +37430,9 @@ entries:
           type: Acid
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Breath (Recharge 5-6)
     entryType: save
@@ -34290,6 +37457,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Black Dragon Wyrmling
@@ -34384,14 +37554,23 @@ entries:
     name: Amorphous
     entryType: special
     text: The pudding can move through a space as narrow as 1 inch without expending extra movement to do so.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Corrosive Form
     entryType: special
     text: A creature that hits the pudding with a melee attack roll takes 4 (1d8) Acid damage. Nonmagical ammunition is destroyed immediately after hitting the pudding and dealing any damage. Any nonmagical weapon takes a cumulative -1 penalty to attack rolls immediately after dealing damage to the pudding and coming into contact with it. The weapon is destroyed if the penalty reaches -5. The penalty can be removed by casting the *Mending* spell on the weapon. In 1 minute, the pudding can eat through 2 feet of nonmagical wood or metal.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Spider Climb
     entryType: special
     text: The pudding can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Dissolving Pseudopod
     entryType: attack
@@ -34408,6 +37587,9 @@ entries:
       onHit:
         other: Nonmagical armor worn by the target takes a -1 penalty to the AC it offers. The armor is destroyed if the penalty reduces its AC to 10. The penalty can be removed by casting the *Mending* spell on the armor.
       additionalEffects: Nonmagical armor worn by the target takes a -1 penalty to the AC it offers. The armor is destroyed if the penalty reduces its AC to 10. The penalty can be removed by casting the *Mending* spell on the armor.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Black Pudding
@@ -34504,11 +37686,17 @@ entries:
           type: Piercing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Teleport (Recharge 4-6)
     entryType: special
     text: The dog teleports up to 40 feet to an unoccupied space it can see.
     recharge: 4-6
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Blink Dog
@@ -34608,6 +37796,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -34625,6 +37816,9 @@ entries:
           type: Lightning
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -34649,6 +37843,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Blue Dragon Wyrmling
@@ -34745,10 +37942,16 @@ entries:
     name: Diabolical Restoration
     entryType: special
     text: If the devil dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The devil has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -34760,6 +37963,9 @@ entries:
         - name: Sting
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -34773,6 +37979,9 @@ entries:
           type: Slashing
           average: 13
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Infernal Sting
     entryType: attack
@@ -34790,6 +37999,9 @@ entries:
           type: Poison
           average: 18
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Bone Devil
@@ -34902,6 +38114,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -34926,6 +38141,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Sleep Breath
     entryType: save
@@ -34951,6 +38169,9 @@ entries:
                 trigger: the end of its next turn
               saveToEnd:
                 timing: custom
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Brass Dragon Wyrmling
@@ -35046,6 +38267,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -35055,6 +38279,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -35068,6 +38295,9 @@ entries:
           type: Slashing
           average: 8
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -35092,6 +38322,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Repulsion Breath
     entryType: save
@@ -35110,6 +38343,9 @@ entries:
             type: push
             distance: 30 feet
             direction: straight away from the dragon
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Bronze Dragon Wyrmling
@@ -35206,6 +38442,9 @@ entries:
     name: Abduct
     entryType: special
     text: The bugbear needn't spend extra movement to move a creature it is grappling.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -35215,10 +38454,16 @@ entries:
         - name: Morningstar
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Javelin
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +5, reach 10 ft. or range 30/120 ft. 13 (3d6 + 3) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Morningstar
     entryType: attack
@@ -35232,6 +38477,9 @@ entries:
           type: Piercing
           average: 12
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Quick Grapple
     entryType: save
@@ -35254,6 +38502,9 @@ entries:
               escape:
                 type: dc
                 dc: 13
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Bugbear Stalker
@@ -35350,6 +38601,9 @@ entries:
     name: Abduct
     entryType: special
     text: The bugbear needn't spend extra movement to move a creature it is grappling.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Grab
     entryType: attack
@@ -35372,10 +38626,16 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12).
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Light Hammer
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +4 (with Advantage if the target is Grappled by the bugbear), reach 10 ft. or range 20/60 ft. 9 (3d4 + 2) Bludgeoning damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Bugbear Warrior
@@ -35465,6 +38725,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -35478,6 +38741,9 @@ entries:
           type: Piercing
           average: 17
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Deadly Leap
     entryType: save
@@ -35502,10 +38768,16 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage, and the target is pushed 5 feet straight away from the bulette.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Leap
     entryType: special
     text: The bulette jumps up to 30 feet by spending 10 feet of movement.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Bulette
@@ -35591,6 +38863,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The centaur makes two attacks, using Pike or Longbow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Pike
     entryType: attack
@@ -35604,6 +38879,9 @@ entries:
           type: Piercing
           average: 9
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Longbow
     entryType: attack
@@ -35617,6 +38895,9 @@ entries:
           type: Piercing
           average: 6
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Trampling Charge (Recharge 5-6)
     entryType: save
@@ -35634,6 +38915,9 @@ entries:
             bonus: 4
             type: Bludgeoning
             average: 7
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Centaur Trooper
@@ -35728,10 +39012,16 @@ entries:
     name: Diabolical Restoration
     entryType: special
     text: If the devil dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The devil has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -35741,6 +39031,9 @@ entries:
         - name: Chain
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Chain
     entryType: attack
@@ -35775,6 +39068,9 @@ entries:
               type: until
               trigger: the grapple ends
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14) from one of two chains, and it has the Restrained condition until the grapple ends.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Conjure Infernal Chain
     entryType: save
@@ -35802,6 +39098,9 @@ entries:
             type: Fire
             average: 9
       onSuccess: The chain disappears.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Chain Devil
@@ -35902,6 +39201,9 @@ entries:
         - name: Claw
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -35919,6 +39221,9 @@ entries:
           type: Piercing
           average: 18
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -35932,6 +39237,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Ram
     entryType: attack
@@ -35951,6 +39259,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -35974,6 +39285,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Chimera
@@ -36065,10 +39379,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The chuul can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Sense Magic
     entryType: special
     text: The chuul senses magic within 120 feet of itself. This trait otherwise works like the *Detect Magic* spell but isn't itself magical.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -36078,6 +39398,9 @@ entries:
         - name: Pincer
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Pincer
     entryType: attack
@@ -36100,6 +39423,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14) from one of two pincers.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Paralyzing Tentacles
     entryType: save
@@ -36125,6 +39451,9 @@ entries:
                 timing: end-of-turn
               restrictions:
                 while: While Poisoned, the target has the Paralyzed condition
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Chuul
@@ -36224,18 +39553,30 @@ entries:
     name: Acid Absorption
     entryType: special
     text: Whenever the golem is subjected to Acid damage, it takes no damage and instead regains a number of Hit Points equal to the Acid damage dealt.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Berserk
     entryType: special
     text: Whenever the golem starts its turn Bloodied, roll 1d6. On a 6, the golem goes berserk. On each of its turns while berserk, the golem attacks the nearest creature it can see. If no creature is near enough to move to and attack, the golem attacks an object. Once the golem goes berserk, it continues to be berserk until it is destroyed or it is no longer Bloodied.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Immutable Form
     entryType: special
     text: The golem can't shape-shift.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The golem has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -36245,6 +39586,9 @@ entries:
         - name: Slam
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Slam
     entryType: attack
@@ -36262,11 +39606,17 @@ entries:
           type: Acid
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Hasten (Recharge 5-6)
     entryType: special
     text: The golem takes the Dash and Disengage actions.
     recharge: 5-6
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Clay Golem
@@ -36369,6 +39719,9 @@ entries:
     name: Light Sensitivity
     entryType: special
     text: While in Bright Light, the cloaker has Disadvantage on attack rolls.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -36380,6 +39733,9 @@ entries:
         - name: Tail
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Attach
     entryType: attack
@@ -36399,6 +39755,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, the cloaker attaches to it. While the cloaker is attached, the target has the Blinded condition, and the cloaker can't make Attach attacks against other targets. In addition, the cloaker halves the damage it takes (round down), and the target takes the same amount of damage. The cloaker can detach itself by spending 5 feet of movement. The target or a creature within 5 feet of it can take an action to try to detach the cloaker, doing so by succeeding on a DC 14 Strength (Athletics) check.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail
     entryType: attack
@@ -36412,6 +39771,9 @@ entries:
           type: Slashing
           average: 8
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Moan
     entryType: save
@@ -36431,6 +39793,9 @@ entries:
                 type: until
                 trigger: the end of the cloaker's next turn
       onSuccess: The target is immune to this cloaker's Moan for the next 24 hours.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: bonus
     name: Phantasms (Recharge after a Short or Long Rest)
@@ -36439,6 +39804,9 @@ spellcastingEntries:
     spellcasting:
       ability: wis
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Cloaker
@@ -36547,6 +39915,9 @@ entries:
           with:
             type: spellcasting
             spell: Fog Cloud
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Thunderous Mace
     entryType: attack
@@ -36564,6 +39935,9 @@ entries:
           type: Thunder
           average: 7
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Thundercloud
     entryType: attack
@@ -36577,6 +39951,9 @@ entries:
           type: Thunder
           average: 18
       range: 240 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -36598,6 +39975,9 @@ spellcastingEntries:
             - Control Weather
             - Gaseous Form
             - Telekinesis
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Misty Step
     entryType: spellcasting
@@ -36605,6 +39985,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Cloud Giant
@@ -36717,6 +40100,9 @@ entries:
               timing: custom
               description: at the end of its next turn if it is still Restrained
       additionalEffects: 'If the target is a creature, it is subjected to the following effect. *Constitution Saving Throw*: DC 11. *First Failure* The target has the Restrained condition. The target repeats the save at the end of its next turn if it is still Restrained, ending the effect on itself on a success. *Second Failure* The target has the Petrified condition, instead of the Restrained condition, for 24 hours.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Cockatrice
@@ -36785,6 +40171,9 @@ entries:
     name: Training
     entryType: special
     text: The commoner has proficiency in one skill of the DM's choice and has Advantage whenever it makes an ability check using that skill.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Club
     entryType: attack
@@ -36798,6 +40187,9 @@ entries:
           type: Bludgeoning
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Commoner
@@ -36900,6 +40292,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Breath (Recharge 5-6)
     entryType: save
@@ -36924,6 +40319,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Slowing Breath
     entryType: save
@@ -36944,6 +40342,9 @@ entries:
             - type: other
               target: Reactions
               description: can't take Reactions
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Copper Dragon Wyrmling
@@ -37034,6 +40435,9 @@ entries:
     name: Shielded Mind
     entryType: special
     text: The couatl's thoughts can't be read by any means, and other creatures can communicate with it telepathically only if it allows them.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -37047,6 +40451,9 @@ entries:
           type: Piercing
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Constrict
     entryType: save
@@ -37084,6 +40491,9 @@ entries:
             bonus: 5
             type: Bludgeoning
             average: 8
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -37106,6 +40516,9 @@ spellcastingEntries:
             - Greater Restoration
             - Scrying
             - Sleep
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Divine Aid (2/Day)
     entryType: spellcasting
@@ -37116,6 +40529,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Couatl
@@ -37222,6 +40638,9 @@ entries:
           type: Necrotic
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -37242,6 +40661,9 @@ spellcastingEntries:
         - frequency: 2/day
           spells:
             - Command
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Spiritual Weapon (2/Day)
     entryType: spellcasting
@@ -37252,6 +40674,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Cultist Fanatic
@@ -37343,6 +40768,9 @@ entries:
           type: Slashing
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Cultist
@@ -37425,6 +40853,9 @@ entries:
           type: Bludgeoning
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Darkness Aura (1/Day)
     entryType: special
@@ -37432,6 +40863,9 @@ entries:
     limitedUse:
       count: 1
       reset: day
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Darkmantle
@@ -37521,6 +40955,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -37540,6 +40977,9 @@ entries:
             saveToEnd:
               timing: when-damage
       additionalEffects: 'If the target is a creature, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *First Failure* The target has the Poisoned condition. While Poisoned, the target''s Hit Point maximum doesn''t return to normal when finishing a Long Rest, and it repeats the save every 24 hours that elapse, ending the effect on itself on a success. Subsequent Failures: The Poisoned target''s Hit Point maximum decreases by 5 (1d10).'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Death Dog
@@ -37634,10 +41074,16 @@ entries:
     name: Exalted Restoration
     entryType: special
     text: If the deva dies outside Mount Celestia, its body disappears, and it gains a new body instantly, reviving with all its Hit Points somewhere in Mount Celestia.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The deva has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -37647,6 +41093,9 @@ entries:
         - name: Mace
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Holy Mace
     entryType: attack
@@ -37664,6 +41113,9 @@ entries:
           type: Radiant
           average: 18
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -37683,6 +41135,9 @@ spellcastingEntries:
           spells:
             - Commune
             - Raise Dead
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Divine Aid (2/Day)
     entryType: spellcasting
@@ -37693,6 +41148,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Deva
@@ -37794,18 +41252,30 @@ entries:
     name: Elemental Restoration
     entryType: special
     text: If the djinni dies outside the Elemental Plane of Air, its body dissolves into mist, and it gains a new body in 1d4 days, reviving with all its Hit Points somewhere on the Plane of Air.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The djinni has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Wishes
     entryType: special
     text: The djinni has a 30 percent chance of knowing the *Wish* spell. If the djinni knows it, the djinni can cast it only on behalf of a non-genie creature who communicates a wish in a way the djinni can understand. If the djinni casts the spell for the creature, the djinni suffers none of the spell's stress. Once the djinni has cast it three times, the djinni can't do so again for 365 days.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The djinni makes three attacks, using Storm Blade or Storm Bolt in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Storm Blade
     entryType: attack
@@ -37822,6 +41292,9 @@ entries:
           bonus: 0
           type: Lightning
           average: 7
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Storm Bolt
     entryType: attack
@@ -37840,6 +41313,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Create Whirlwind
     entryType: save
@@ -37858,6 +41334,9 @@ entries:
             bonus: 0
             type: Thunder
             average: 21
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -37885,6 +41364,9 @@ spellcastingEntries:
             - Invisibility
             - Major Image
             - Plane Shift
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Djinni
@@ -37992,6 +41474,9 @@ entries:
         - name: Slam
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Slam
     entryType: attack
@@ -38005,6 +41490,9 @@ entries:
           type: Bludgeoning
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Unsettling Visage
     entryType: save
@@ -38022,10 +41510,16 @@ entries:
             - condition: Frightened
               saveToEnd:
                 timing: end-of-turn
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The doppelganger shape-shifts into a Medium or Small Humanoid, or it returns to its true form. Its game statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Read Thoughts
@@ -38038,6 +41532,9 @@ spellcastingEntries:
         - frequency: at-will
           spells:
             - Detect Thoughts
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Doppelganger
@@ -38131,6 +41628,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -38144,6 +41644,9 @@ entries:
           with:
             type: attack
             name: a Tail attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -38164,6 +41667,9 @@ entries:
       onHit:
         other: Being underwater doesn't grant Resistance to this Fire damage.
       additionalEffects: Being underwater doesn't grant Resistance to this Fire damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail
     entryType: attack
@@ -38183,6 +41689,9 @@ entries:
             restrictions:
               size: Huge or smaller
       additionalEffects: If the target is a Huge or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Steam Breath (Recharge 5-6)
     entryType: save
@@ -38206,6 +41715,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Dragon Turtle
@@ -38310,6 +41822,9 @@ entries:
           type: Slashing
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fetid Cloud (1/Day)
     entryType: save
@@ -38335,6 +41850,9 @@ entries:
             - type: other
               target: Reactions
               description: can't take Reactions
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Dretch
@@ -38418,18 +41936,30 @@ entries:
     name: Spider Climb
     entryType: special
     text: The drider can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Sunlight Sensitivity
     entryType: special
     text: While in sunlight, the drider has Disadvantage on ability checks and attack rolls.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Web Walker
     entryType: special
     text: The drider ignores movement restrictions caused by webs, and the drider knows the location of any other creature in contact with the same web.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The drider makes three attacks, using Foreleg or Poison Burst in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Foreleg
     entryType: attack
@@ -38443,6 +41973,9 @@ entries:
           type: Piercing
           average: 13
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Poison Burst
     entryType: attack
@@ -38456,6 +41989,9 @@ entries:
           type: Poison
           average: 13
       range: 120 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: bonus
     name: Magic of the Spider Queen (Recharge 5-6)
@@ -38468,6 +42004,9 @@ spellcastingEntries:
       excludeComponents:
         - M
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Drider
@@ -38568,6 +42107,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The druid makes two attacks, using Vine Staff or Verdant Wisp in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Vine Staff
     entryType: attack
@@ -38585,6 +42127,9 @@ entries:
           type: Poison
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Verdant Wisp
     entryType: attack
@@ -38598,6 +42143,9 @@ entries:
           type: Radiant
           average: 10
       range: 90 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -38620,6 +42168,9 @@ spellcastingEntries:
             - Animal Messenger
             - Longstrider
             - Moonbeam
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Druid
@@ -38706,10 +42257,16 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The dryad has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Speak with Beasts and Plants
     entryType: special
     text: The dryad can communicate with Beasts and Plants as if they shared a language.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -38719,6 +42276,9 @@ entries:
         - name: Burst
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Vine Lash
     entryType: attack
@@ -38732,6 +42292,9 @@ entries:
           type: Slashing
           average: 8
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Thorn Burst
     entryType: attack
@@ -38745,10 +42308,16 @@ entries:
           type: Piercing
           average: 7
       range: 60 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Tree Stride
     entryType: special
     text: If within 5 feet of a Large or bigger tree, the dryad teleports to an unoccupied space within 5 feet of a second Large or bigger tree that is within 60 feet of the previous tree.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -38769,6 +42338,9 @@ spellcastingEntries:
           spells:
             - Entangle
             - Pass without Trace
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Dryad
@@ -38896,6 +42468,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -38909,6 +42484,9 @@ entries:
           type: Slashing
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Blinding Breath
     entryType: save
@@ -38926,6 +42504,9 @@ entries:
               duration:
                 type: until
                 trigger: the end of the mephit's next turn
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Sleep (1/Day)
@@ -38944,6 +42525,9 @@ spellcastingEntries:
         - frequency: 1/day
           spells:
             - Sleep
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Dust Mephit
@@ -39040,14 +42624,23 @@ entries:
     name: Earth Glide
     entryType: special
     text: The elemental can burrow through nonmagical, unworked earth and stone. While doing so, the elemental doesn't disturb the material it moves through.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Siege Monster
     entryType: special
     text: The elemental deals double damage to objects and structures.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The elemental makes two attacks, using Slam or Rock Launch in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Slam
     entryType: attack
@@ -39061,6 +42654,9 @@ entries:
           type: Bludgeoning
           average: 14
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Rock Launch
     entryType: attack
@@ -39080,6 +42676,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Earth Elemental
@@ -39175,18 +42774,30 @@ entries:
     name: Elemental Restoration
     entryType: special
     text: If the efreeti dies outside the Elemental Plane of Fire, its body dissolves into ash, and it gains a new body in 1d4 days, reviving with all its Hit Points somewhere on the Plane of Fire.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The efreeti has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Wishes
     entryType: special
     text: The efreeti has a 30 percent chance of knowing the *Wish* spell. If the efreeti knows it, the efreeti can cast it only on behalf of a non-genie creature who communicates a wish in a way the efreeti can understand. If the efreeti casts the spell for the creature, the efreeti suffers none of the spell's stress. Once the efreeti has cast it three times, the efreeti can't do so again for 365 days.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The efreeti makes three attacks, using Heated Blade or Hurl Flame in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Heated Blade
     entryType: attack
@@ -39204,6 +42815,9 @@ entries:
           type: Fire
           average: 13
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Hurl Flame
     entryType: attack
@@ -39217,6 +42831,9 @@ entries:
           type: Fire
           average: 24
       range: 120 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -39240,6 +42857,9 @@ spellcastingEntries:
             - Plane Shift
             - Tongues
             - Wall of Fire
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Efreeti
@@ -39350,14 +42970,23 @@ entries:
     name: Diabolical Restoration
     entryType: special
     text: If the erinyes dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The erinyes has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Rope
     entryType: special
     text: The erinyes has a magic rope. While bearing it, the erinyes can use the Entangling Rope action. The rope has AC 20, HP 90, and Immunity to Poison and Psychic damage. The rope turns to dust if reduced to 0 Hit Points, if it is 5+ feet away from the erinyes for 1 hour or more, or if the erinyes dies. If the rope is damaged or destroyed, the erinyes can fully restore it when finishing a Short Rest|XPHB|Short or Long Rest.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -39367,6 +42996,9 @@ entries:
         - name: Sword
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Withering Sword
     entryType: attack
@@ -39384,6 +43016,9 @@ entries:
           type: Necrotic
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Entangling Rope (Requires Magic Rope)
     entryType: save
@@ -39408,6 +43043,9 @@ entries:
             bonus: 0
             type: Force
             average: 14
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Erinyes
@@ -39504,10 +43142,16 @@ entries:
     name: Spider Climb
     entryType: special
     text: The ettercap can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Web Walker
     entryType: special
     text: The ettercap ignores movement restrictions caused by webs, and the ettercap knows the location of any other creature in contact with the same web.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -39519,6 +43163,9 @@ entries:
         - name: Claw
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -39536,6 +43183,9 @@ entries:
           type: Poison
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -39549,6 +43199,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Web Strand (Recharge 5-6)
     entryType: save
@@ -39572,10 +43225,16 @@ entries:
               duration:
                 type: until
                 trigger: the web is destroyed (AC 10; HP 5; Vulnerability to Fire damage; Immunity to Bludgeoning
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Reel
     entryType: special
     text: The ettercap pulls one creature within 30 feet of itself that is Restrained by its Web Strand up to 25 feet straight toward itself.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Ettercap
@@ -39686,6 +43345,9 @@ entries:
         - name: Morningstar
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Battleaxe
     entryType: attack
@@ -39705,6 +43367,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Morningstar
     entryType: attack
@@ -39718,6 +43383,9 @@ entries:
           type: Piercing
           average: 14
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ettin
@@ -39811,18 +43479,30 @@ entries:
     name: Fire Aura
     entryType: special
     text: At the end of each of the elemental's turns, each creature in a 10-foot Emanation originating from the elemental takes 5 (1d10) Fire damage. Creatures and flammable objects in the Emanation start Hitazard burning.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Fire Form
     entryType: special
     text: The elemental can move through a space as narrow as 1 inch without expending extra movement to do so, and it can enter a creature's space and stop there. The first time it enters a creature's space on a turn, that creature takes 5 (1d10) Fire damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Illumination
     entryType: special
     text: The elemental sheds Bright Light in a 30-foot radius and Dim Light for an additional 30 feet.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Water Susceptibility
     entryType: special
     text: The elemental takes 3 (1d6) Cold damage for every 5 feet the elemental moves in water or for every gallon of water splashed on it.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -39832,6 +43512,9 @@ entries:
         - name: Burn
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Burn
     entryType: attack
@@ -39848,6 +43531,9 @@ entries:
       onHit:
         other: If the target is a creature or a flammable object, it starts burning.
       additionalEffects: If the target is a creature or a flammable object, it starts burning.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Fire Elemental
@@ -39944,6 +43630,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The giant makes two attacks, using Flame Sword or Hammer Throw in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Flame Sword
     entryType: attack
@@ -39961,6 +43650,9 @@ entries:
           type: Fire
           average: 10
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Hammer Throw
     entryType: attack
@@ -39978,6 +43670,9 @@ entries:
           type: Fire
           average: 4
       range: 60/240 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Fire Giant
@@ -40064,22 +43759,37 @@ entries:
     name: Aversion to Fire
     entryType: special
     text: If the golem takes Fire damage, it has Disadvantage on attack rolls and ability checks until the end of its next turn.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Berserk
     entryType: special
     text: Whenever the golem starts its turn Bloodied, roll 1d6. On a 6, the golem goes berserk. On each of its turns while berserk, the golem attacks the nearest creature it can see. If no creature is near enough to move to and attack, the golem attacks an object. Once the golem goes berserk, it remains so until it is destroyed or it is no longer Bloodied. The golem's creator, if within 60 feet of the berserk golem, can try to calm it by taking an action to make a DC 15 Charisma (Persuasion) check; the golem must be able to hear its creator. If this check succeeds, the golem ceases being berserk until the start of its next turn, at which point it resumes rolling for the Berserk trait again if it is still Bloodied.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Immutable Form
     entryType: special
     text: The golem can't shape-shift.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Lightning Absorption
     entryType: special
     text: Whenever the golem is subjected to Lightning damage, it regains a number of Hit Points equal to the Lightning damage dealt.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The golem has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -40089,6 +43799,9 @@ entries:
         - name: Slam
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Slam
     entryType: attack
@@ -40106,6 +43819,9 @@ entries:
           type: Lightning
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Flesh Golem
@@ -40205,6 +43921,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The giant makes two attacks, using Frost Axe or Great Bow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Frost Axe
     entryType: attack
@@ -40222,6 +43941,9 @@ entries:
           type: Cold
           average: 9
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Great Bow
     entryType: attack
@@ -40239,11 +43961,17 @@ entries:
           type: Cold
           average: 7
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: War Cry (Recharge 5-6)
     entryType: special
     text: The giant or one creature of its choice that can see or hear it gains 16 (2d10 + 5) Temporary Hit Points and has Advantage on attack rolls until the start of the giant's next turn.
     recharge: 5-6
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Frost Giant
@@ -40336,6 +44064,9 @@ entries:
     name: Flyby
     entryType: special
     text: The gargoyle doesn't provoke an Opportunity Attack when it flies out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -40345,6 +44076,9 @@ entries:
         - name: Claw
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -40358,6 +44092,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Gargoyle
@@ -40443,10 +44180,16 @@ entries:
     name: Ooze Cube
     entryType: special
     text: The cube fills its entire space and is transparent. Other creatures can enter that space, but a creature that does so is subjected to the cube's Engulf and has Disadvantage on the saving throw. Creatures inside the cube have Cover|XPHB|Total Cover, and the cube can hold one Large creature or up to four Medium or Small creatures inside itself at a time. As an action, a creature within 5 feet of the cube can pull a creature or an object out of the cube by succeeding on a DC 12 Strength (Athletics) check, and the puller takes 10 (3d6) Acid damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Transparent
     entryType: special
     text: Even when the cube is in plain sight, a creature must succeed on a DC 15 Wisdom (Perception) check to notice the cube if the creature hasn't witnessed the cube move or otherwise act.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Pseudopod
     entryType: attack
@@ -40460,6 +44203,9 @@ entries:
           type: Acid
           average: 12
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Engulf
     entryType: save
@@ -40485,6 +44231,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage, and the target moves to an unoccupied space within 5 feet of the cube. If there is no unoccupied space, the target fails the save instead.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Gelatinous Cube
@@ -40590,6 +44339,9 @@ entries:
                 type: until
                 trigger: the start of its next turn
       onSuccess: The target is immune to this ghast's Stench for 24 hours.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -40607,6 +44359,9 @@ entries:
           type: Necrotic
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -40627,6 +44382,9 @@ entries:
               type: until
               trigger: the end of its next turn
       additionalEffects: 'If the target is a non-Undead creature, it is subjected to the following effect. *Constitution Saving Throw*: DC 10. *Failure:*  The target has the Paralyzed condition until the end of its next turn.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ghast
@@ -40731,10 +44489,16 @@ entries:
     name: Ethereal Sight
     entryType: special
     text: The ghost can see 60 feet into the Ethereal Plane when it is on the Material Plane.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Incorporeal Movement
     entryType: special
     text: The ghost can move through other creatures and objects as if they were Difficult Terrain. It takes 5 (1d10) Force damage if it ends its turn inside an object.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -40744,6 +44508,9 @@ entries:
         - name: Touch
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Withering Touch
     entryType: attack
@@ -40757,6 +44524,9 @@ entries:
           type: Necrotic
           average: 19
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Horrific Visage
     entryType: save
@@ -40780,6 +44550,9 @@ entries:
             type: Psychic
             average: 10
       onSuccess: The target is immune to this ghost's Horrific Visage for 24 hours.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Possession
     entryType: save
@@ -40800,6 +44573,9 @@ entries:
                 type: until
                 trigger: the body drops to 0 Hit Points or the ghost leaves as a Bonus Action
       onSuccess: The target is immune to this ghost's Possession for 24 hours.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Etherealness
@@ -40811,6 +44587,9 @@ spellcastingEntries:
         - frequency: at-will
           spells:
             - Etherealness
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ghost
@@ -40913,6 +44692,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -40930,6 +44712,9 @@ entries:
           type: Necrotic
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -40950,6 +44735,9 @@ entries:
               type: until
               trigger: the end of its next turn
       additionalEffects: 'If the target is a creature that isn''t an Undead or elf, it is subjected to the following effect. *Constitution Saving Throw*: DC 10. *Failure:*  The target has the Paralyzed condition until the end of its next turn.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ghoul
@@ -41030,6 +44818,9 @@ entries:
     name: Aberrant Ground
     entryType: special
     text: The ground in a 10-foot Emanation originating from the mouther is Difficult Terrain.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Gibbering
     entryType: save
@@ -41044,6 +44835,9 @@ entries:
         effects:
           other: 'The target rolls 1d8 to determine what it does during the current turn: - **1-4**: The target does nothing. - **5-6**: The target takes no action or Bonus Action and uses all its movement to move in a random direction. - **7-8**: The target makes a melee attack against a randomly determined creature within its reach or does nothing if it can''t make such an attack.'
         legacyEffects: 'The target rolls 1d8 to determine what it does during the current turn: - **1-4**: The target does nothing. - **5-6**: The target takes no action or Bonus Action and uses all its movement to move in a random direction. - **7-8**: The target makes a melee attack against a randomly determined creature within its reach or does nothing if it can''t make such an attack.'
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -41063,6 +44857,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Prone condition. The target dies if it is reduced to 0 Hit Points by this attack. Its body is then absorbed into the mouther, leaving only equipment behind.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Blinding Spittle (Recharge 5-6)
     entryType: save
@@ -41086,6 +44883,9 @@ entries:
             bonus: 0
             type: Radiant
             average: 7
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Gibbering Mouther
@@ -41186,10 +44986,16 @@ entries:
     name: Demonic Restoration
     entryType: special
     text: If the glabrezu dies outside the Abyss, its body dissolves into ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Abyss.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The glabrezu has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -41199,6 +45005,9 @@ entries:
         - name: Pincer
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Pincer
     entryType: attack
@@ -41221,6 +45030,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 15) from one of two pincers.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Pummel
     entryType: save
@@ -41245,6 +45057,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -41266,6 +45081,9 @@ spellcastingEntries:
             - Confusion
             - Fly
             - Power Word Stun
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Glabrezu
@@ -41370,10 +45188,16 @@ entries:
           with:
             type: attack
             name: Shield Bash
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Spear
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +7, reach 5 ft. or range 20/60 ft. 11 (2d6 + 4) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shield Bash
     entryType: save
@@ -41397,6 +45221,9 @@ entries:
             bonus: 4
             type: Bludgeoning
             average: 9
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Gladiator
@@ -41483,6 +45310,9 @@ entries:
           type: Piercing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Bone Bow
     entryType: attack
@@ -41496,6 +45326,9 @@ entries:
           type: Piercing
           average: 6
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Rampage (1/Day)
     entryType: multiattack
@@ -41508,6 +45341,9 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: self
 ---
 
 # Gnoll Warrior
@@ -41594,6 +45430,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The goblin makes two attacks, using Scimitar or Shortbow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Scimitar
     entryType: attack
@@ -41611,6 +45450,9 @@ entries:
           type: Slashing
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shortbow
     entryType: attack
@@ -41628,10 +45470,16 @@ entries:
           type: Piercing
           average: 2
       range: 80/320 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Nimble Escape
     entryType: special
     text: The goblin takes the Disengage or Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Goblin Boss
@@ -41721,10 +45569,16 @@ entries:
     name: Dagger
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +4, reach 5 ft. or range 20/60 ft. 4 (1d4 + 2) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Nimble Escape
     entryType: special
     text: The goblin takes the Disengage or Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Goblin Minion
@@ -41821,6 +45675,9 @@ entries:
           type: Slashing
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shortbow
     entryType: attack
@@ -41838,10 +45695,16 @@ entries:
           type: Piercing
           average: 2
       range: 80/320 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Nimble Escape
     entryType: special
     text: The goblin takes the Disengage or Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Goblin Warrior
@@ -41939,6 +45802,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -41948,6 +45814,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -41961,6 +45830,9 @@ entries:
           type: Slashing
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -41984,6 +45856,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Weakening Breath
     entryType: save
@@ -42007,6 +45882,9 @@ entries:
               modifier: -2
               target: damage rolls
               description: subtracts 2 (1d4) from its damage rolls.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Gold Dragon Wyrmling
@@ -42112,6 +45990,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature and the gorgon moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Petrifying Breath (Recharge 5-6)
     entryType: save
@@ -42120,6 +46001,9 @@ entries:
     save:
       ability: con
       dc: 15
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Trample
     entryType: save
@@ -42145,6 +46029,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Gorgon
@@ -42240,10 +46127,16 @@ entries:
     name: Amorphous
     entryType: special
     text: The ooze can move through a space as narrow as 1 inch without expending extra movement to do so.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Corrosive Form
     entryType: special
     text: Nonmagical ammunition is destroyed immediately after hitting the ooze and dealing any damage. Any nonmagical weapon takes a cumulative -1 penalty to attack rolls immediately after dealing damage to the ooze and coming into contact with it. The weapon is destroyed if the penalty reaches -5. The penalty can be removed by casting the *Mending* spell on the weapon. The ooze can eat through 2-inch-thick, nonmagical metal or wood in 1 round.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Pseudopod
     entryType: attack
@@ -42260,6 +46153,9 @@ entries:
       onHit:
         other: Nonmagical armor worn by the target takes a -1 penalty to the AC it offers. The armor is destroyed if the penalty reduces its AC to 10. The penalty can be removed by casting the *Mending* spell on the armor.
       additionalEffects: Nonmagical armor worn by the target takes a -1 penalty to the AC it offers. The armor is destroyed if the penalty reduces its AC to 10. The penalty can be removed by casting the *Mending* spell on the armor.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Gray Ooze
@@ -42356,6 +46252,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -42365,6 +46264,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -42382,6 +46284,9 @@ entries:
           type: Poison
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Poison Breath (Recharge 5-6)
     entryType: save
@@ -42405,6 +46310,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Green Dragon Wyrmling
@@ -42501,10 +46409,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The hag can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Mimicry
     entryType: special
     text: The hag can mimic animal sounds and humanoid voices. A creature that hears the sounds can tell they are imitations only with a successful DC 14 Wisdom (Insight) check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -42514,6 +46428,9 @@ entries:
         - name: Claw
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -42531,6 +46448,9 @@ entries:
           type: Poison
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -42550,6 +46470,9 @@ spellcastingEntries:
             - Invisibility
             - Minor Illusion
             - Ray of Sickness
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Green Hag
@@ -42645,6 +46568,9 @@ entries:
         - name: Tentacles
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Beak
     entryType: attack
@@ -42658,6 +46584,9 @@ entries:
           type: Piercing
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tentacles
     entryType: attack
@@ -42680,6 +46609,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12) from all four tentacles.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Grick
@@ -42764,6 +46696,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -42786,6 +46721,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 14) from both of the griffon's front claws.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Griffon
@@ -42880,6 +46818,9 @@ entries:
           type: Psychic
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Grimlock
@@ -42953,10 +46894,16 @@ entries:
     name: Multiattack
     entryType: special
     text: The guard makes two attacks, using Javelin or Longsword in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Javelin
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +6, reach 5 ft. or range 30/120 ft. 14 (3d6 + 4) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Longsword
     entryType: attack
@@ -42970,6 +46917,9 @@ entries:
           type: Slashing
           average: 15
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Guard Captain
@@ -43047,6 +46997,9 @@ entries:
     name: Spear
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +3, reach 5 ft. or range 20/60 ft. 4 (1d6 + 1) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Guard
@@ -43141,6 +47094,9 @@ entries:
     name: Celestial Restoration
     entryType: special
     text: If the naga dies, it returns to life in 1d6 days and regains all its Hit Points unless *Dispel Evil and Good* is cast on its remains.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -43150,6 +47106,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -43167,6 +47126,9 @@ entries:
           type: Poison
           average: 22
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Poisonous Spittle
     entryType: save
@@ -43194,6 +47156,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -43213,6 +47178,9 @@ spellcastingEntries:
             - Flame Strike
             - Geas
             - True Seeing
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Guardian Naga
@@ -43313,6 +47281,9 @@ entries:
     name: Draconic Origin
     entryType: special
     text: 'The half-dragon is related to a type of dragon associated with one of the following damage types (DM''s choice): Acid, Cold, Fire, Lightning, or Poison. This choice affects other aspects of the stat block.'
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -43322,6 +47293,9 @@ entries:
         - name: Claw
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -43335,6 +47309,9 @@ entries:
           type: Slashing
           average: 6
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Dragon's Breath (Recharge 5-6)
     entryType: save
@@ -43353,10 +47330,16 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Leap
     entryType: special
     text: The half-dragon jumps up to 30 feet by spending 10 feet of movement.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Half-Dragon
@@ -43453,6 +47436,9 @@ entries:
           type: Slashing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Luring Song
     entryType: save
@@ -43487,6 +47473,9 @@ entries:
             type: compelled
             description: moves on its turn toward the harpy by
       onSuccess: The target is immune to this harpy's Luring Song for 24 hours.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Harpy
@@ -43566,6 +47555,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The hound has Advantage on an attack roll against a creature if at least one of the hound's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -43575,6 +47567,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -43592,6 +47587,9 @@ entries:
           type: Fire
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -43615,6 +47613,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hell Hound
@@ -43710,10 +47711,16 @@ entries:
     name: Demonic Restoration
     entryType: special
     text: If the hezrou dies outside the Abyss, its body dissolves into ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Abyss.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The hezrou has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Stench
     entryType: save
@@ -43732,6 +47739,9 @@ entries:
               duration:
                 type: until
                 trigger: the start of its next turn
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -43741,6 +47751,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -43758,10 +47771,16 @@ entries:
           type: Poison
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Leap
     entryType: special
     text: The hezrou jumps up to 30 feet by spending 10 feet of movement.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Hezrou
@@ -43853,6 +47872,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The giant makes two attacks, using Tree Club or Trash Lob in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tree Club
     entryType: attack
@@ -43872,6 +47894,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Trash Lob
     entryType: attack
@@ -43885,6 +47910,9 @@ entries:
           type: Bludgeoning
           average: 16
       range: 60/240 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hill Giant
@@ -43961,6 +47989,9 @@ entries:
     name: Flyby
     entryType: special
     text: The hippogriff doesn't provoke an Opportunity Attack when it flies out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -43970,6 +48001,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -43983,6 +48017,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hippogriff
@@ -44064,10 +48101,16 @@ entries:
     name: Aura of Authority
     entryType: special
     text: While in a 10-foot Emanation originating from the hobgoblin, the hobgoblin and its allies have Advantage on attack rolls and saving throws, provided the hobgoblin doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The hobgoblin makes two attacks, using Greatsword or Longbow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Greatsword
     entryType: attack
@@ -44085,6 +48128,9 @@ entries:
           type: Poison
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Longbow
     entryType: attack
@@ -44102,6 +48148,9 @@ entries:
           type: Poison
           average: 5
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hobgoblin Captain
@@ -44188,6 +48237,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The hobgoblin has Advantage on an attack roll against a creature if at least one of the hobgoblin's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Longsword
     entryType: attack
@@ -44201,6 +48253,9 @@ entries:
           type: Slashing
           average: 12
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Longbow
     entryType: attack
@@ -44218,6 +48273,9 @@ entries:
           type: Poison
           average: 7
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hobgoblin Warrior
@@ -44305,6 +48363,9 @@ entries:
     name: Telepathic Bond
     entryType: special
     text: While the homunculus is on the same plane of existence as its master, the two of them can communicate telepathically with each other.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -44314,6 +48375,9 @@ entries:
       bonus: 4
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Homunculus
@@ -44402,10 +48466,16 @@ entries:
     name: Diabolical Restoration
     entryType: special
     text: If the devil dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The devil has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -44419,6 +48489,9 @@ entries:
           with:
             type: attack
             name: Infernal Tail
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Searing Fork
     entryType: attack
@@ -44436,6 +48509,9 @@ entries:
           type: Fire
           average: 9
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Hurl Flame
     entryType: attack
@@ -44452,6 +48528,9 @@ entries:
       onHit:
         other: If the target is a flammable object that isn't being worn or carried, it starts burning.
       additionalEffects: If the target is a flammable object that isn't being worn or carried, it starts burning.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Infernal Tail
     entryType: save
@@ -44473,6 +48552,9 @@ entries:
             type: Necrotic
             average: 10
         legacyEffects: 10 (1d8 + 6) Necrotic damage, and the target receives an infernal wound if it doesn't have one. While wounded, the target loses 10 (3d6) Hit Points at the start of each of its turns. The wound closes after 1 minute, after a spell restores Hit Points to the target, or after the target or a creature within 5 feet of it takes an action to stanch the wound, doing so by succeeding on a DC 17 Wisdom (Medicine) check.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Horned Devil
@@ -44571,14 +48653,23 @@ entries:
     name: Hold Breath
     entryType: special
     text: The hydra can hold its breath for 1 hour.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Multiple Heads
     entryType: special
     text: The hydra has five heads. Whenever the hydra takes 25 damage or more on a single turn, one of its heads dies. The hydra dies if all its heads are dead. At the end of each of its turns when it has at least one living head, the hydra grows two heads for each of its heads that died since its last turn, unless it has taken Fire damage since its last turn. The hydra regains 20 Hit Points when it grows new heads.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Reactive Heads
     entryType: special
     text: For each head the hydra has beyond one, it gets an extra Reaction that can be used only for Opportunity Attacks.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -44588,6 +48679,9 @@ entries:
         - name: Bite
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -44601,6 +48695,9 @@ entries:
           type: Piercing
           average: 10
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hydra
@@ -44704,10 +48801,16 @@ entries:
     name: Diabolical Restoration
     entryType: special
     text: If the devil dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The devil has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -44721,10 +48824,16 @@ entries:
           with:
             type: attack
             name: a Tail attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Ice Spear
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +10, reach 5 ft. or range 30/120 ft. 14 (2d8 + 5) Piercing damage plus 10 (3d6) Cold damage. Until the end of its next turn, the target can''t take a Bonus Action or Reaction, its Speed decreases by 10 feet, and it can move or take one action on its turn, not both. HitomThe spear magically returns to the devil''s hand immediately after a ranged attack.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail
     entryType: attack
@@ -44742,6 +48851,9 @@ entries:
           type: Cold
           average: 18
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Ice Wall
@@ -44751,6 +48863,9 @@ spellcastingEntries:
       ability: int
       saveDC: 17
       spellLists: []
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ice Devil
@@ -44874,6 +48989,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -44891,6 +49009,9 @@ entries:
           type: Cold
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Frost Breath
     entryType: save
@@ -44913,6 +49034,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Fog Cloud (1/Day)
@@ -44930,6 +49054,9 @@ spellcastingEntries:
         - frequency: 1/day
           spells:
             - Fog Cloud
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ice Mephit
@@ -45029,6 +49156,9 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The imp has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Sting
     entryType: attack
@@ -45046,10 +49176,16 @@ entries:
           type: Poison
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shape-Shift
     entryType: special
     text: The imp shape-shifts to resemble a rat (Speed 20 ft.), a raven (20 ft., Fly 60 ft.), or a spider (20 ft., Climb 20 ft.), or it returns to its true form. Its statistics are the same in each form, except for its Speed. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Invisibility
@@ -45061,6 +49197,9 @@ spellcastingEntries:
         - frequency: at-will
           spells:
             - Invisibility
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Imp
@@ -45165,6 +49304,9 @@ entries:
     name: Succubus Form
     entryType: special
     text: When the incubus finishes a Long Rest, it can shape-shift into a Succubus, using that stat block instead of this one. Any equipment it's wearing or carrying isn't transformed.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -45174,6 +49316,9 @@ entries:
         - name: Touch
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Restless Touch
     entryType: attack
@@ -45187,6 +49332,9 @@ entries:
           type: Psychic
           average: 15
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Nightmare
     entryType: save
@@ -45211,6 +49359,9 @@ entries:
             bonus: 0
             type: Psychic
             average: 18
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -45230,6 +49381,9 @@ spellcastingEntries:
           spells:
             - Dream
             - Hypnotic Pattern
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Incubus
@@ -45341,10 +49495,16 @@ entries:
     name: Air Form
     entryType: special
     text: The stalker can enter an enemy's space and stop there. It can move through a space as narrow as 1 inch without expending extra movement to do so.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Invisibility
     entryType: special
     text: The stalker has the Invisible condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -45358,6 +49518,9 @@ entries:
           with:
             type: attack
             name: Vortex
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Wind Swipe
     entryType: attack
@@ -45371,6 +49534,9 @@ entries:
           type: Force
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Vortex
     entryType: save
@@ -45403,6 +49569,9 @@ entries:
             bonus: 0
             type: Thunder
             average: 7
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Invisible Stalker
@@ -45498,18 +49667,30 @@ entries:
     name: Fire Absorption
     entryType: special
     text: Whenever the golem is subjected to Fire damage, it regains a number of Hit Points equal to the Fire damage dealt.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Immutable Form
     entryType: special
     text: The golem can't shape-shift.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The golem has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The golem makes two attacks, using Bladed Arm or Fiery Bolt in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Bladed Arm
     entryType: attack
@@ -45527,6 +49708,9 @@ entries:
           type: Fire
           average: 10
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fiery Bolt
     entryType: attack
@@ -45540,6 +49724,9 @@ entries:
           type: Fire
           average: 36
       range: 120 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Poison Breath
     entryType: save
@@ -45562,6 +49749,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Iron Golem
@@ -45655,6 +49845,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The knight makes two attacks, using Greatsword or Heavy Crossbow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Greatsword
     entryType: attack
@@ -45672,6 +49865,9 @@ entries:
           type: Radiant
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Heavy Crossbow
     entryType: attack
@@ -45689,6 +49885,9 @@ entries:
           type: Radiant
           average: 4
       range: 100/400 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Knight
@@ -45767,14 +49966,23 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The kobold has Advantage on an attack roll against a creature if at least one of the kobold's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Sunlight Sensitivity
     entryType: special
     text: While in sunlight, the kobold has Disadvantage on ability checks and attack rolls.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Dagger
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +4, reach 5 ft. or range 20/60 ft. 4 (1d4 + 2) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Kobold Warrior
@@ -45879,6 +50087,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The kraken can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (4/Day, or 5/Day in Lair)
     entryType: special
@@ -45886,10 +50097,16 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Siege Monster
     entryType: special
     text: The kraken deals double damage to objects and structures.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -45899,6 +50116,9 @@ entries:
         - name: Tentacle
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Tentacle
     entryType: attack
@@ -45929,6 +50149,9 @@ entries:
               type: until
               trigger: the grapple ends
       additionalEffects: The target has the Grappled condition (escape DC 20) from one of ten tentacles, and it has the Restrained condition until the grapple ends.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fling
     entryType: save
@@ -45953,6 +50176,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Strike
     entryType: save
@@ -45977,6 +50203,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Swallow
     entryType: save
@@ -46008,10 +50237,17 @@ entries:
             bonus: 0
             type: Acid
             average: 24
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Storm Bolt
     entryType: special
     text: The kraken uses Lightning Strike.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Toxic Ink
     entryType: save
@@ -46027,6 +50263,10 @@ entries:
         effects:
           other: The target has the Blinded and Poisoned conditions until the end of the kraken's next turn. The kraken then moves up to its Speed.
         legacyEffects: The target has the Blinded and Poisoned conditions until the end of the kraken's next turn. The kraken then moves up to its Speed.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Kraken
@@ -46147,6 +50387,9 @@ entries:
           with:
             type: attack
             name: Corrupting Touch
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -46164,6 +50407,9 @@ entries:
           type: Psychic
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Corrupting Touch
     entryType: save
@@ -46189,10 +50435,16 @@ entries:
             bonus: 0
             type: Psychic
             average: 13
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Leap
     entryType: special
     text: The lamia jumps up to 30 feet by spending 10 feet of movement.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -46213,6 +50465,9 @@ spellcastingEntries:
             - Geas
             - Major Image
             - Scrying
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Lamia
@@ -46308,6 +50563,9 @@ entries:
     name: Hellish Restoration
     entryType: special
     text: If the lemure dies in the Nine Hells, it revives with all its Hit Points in 1d10 days unless it is killed by a creature under the effects of a *Bless* spell or its remains are sprinkled with Holy Water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Vile Slime
     entryType: attack
@@ -46321,6 +50579,9 @@ entries:
           type: Poison
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Lemure
@@ -46427,18 +50688,30 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Spirit Jar
     entryType: special
     text: If destroyed, the lich reforms in 1d10 days if it has a spirit jar, reviving with all its Hit Points. The new body appears in an unoccupied space within the lich's lair.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The lich makes three attacks, using Eldritch Burst or Paralyzing Touch in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Eldritch Burst
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +12, reach 5 ft. or range 120 ft. 31 (4d12 + 5) Force damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Paralyzing Touch
     entryType: attack
@@ -46452,10 +50725,17 @@ entries:
           type: Cold
           average: 15
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Deathly Teleport
     entryType: special
     text: The lich teleports up to 60 feet to an unoccupied space it can see, and each creature within 10 feet of the space it left takes 11 (2d10) Necrotic damage.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Disrupt Life
     entryType: save
@@ -46479,6 +50759,10 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -46509,6 +50793,9 @@ spellcastingEntries:
             - Finger of Death
             - Power Word Kill
             - Scrying
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: reaction
     name: Protective Magic
     entryType: spellcasting
@@ -46516,6 +50803,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: reaction
+    trigger.targeting:
+      type: single
+    trigger.reactionTrigger: the spell's trigger
   - category: legendary
     name: Frightening Gaze
     entryType: spellcasting
@@ -46523,6 +50814,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Lich
@@ -46639,10 +50934,16 @@ entries:
         - name: Burst
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Arcane Burst
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +6, reach 5 ft. or range 120 ft. 16 (3d8 + 3) Force damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -46667,6 +50968,9 @@ spellcastingEntries:
           spells:
             - Cone of Cold
             - Fly
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Misty Step (3/Day)
     entryType: spellcasting
@@ -46677,6 +50981,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
   - category: reaction
     name: Protective Magic (3/Day)
     entryType: spellcasting
@@ -46687,6 +50994,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: reaction
+    trigger.targeting:
+      type: single
+    trigger.reactionTrigger: the spell's trigger
 ---
 
 # Mage
@@ -46806,6 +51117,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -46823,6 +51137,9 @@ entries:
           type: Fire
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath
     entryType: save
@@ -46845,6 +51162,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Magma Mephit
@@ -46946,6 +51266,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Touch
     entryType: attack
@@ -46962,10 +51285,16 @@ entries:
       onHit:
         other: If the target is a creature or a flammable object that isn't being worn or carried, it starts burning.
       additionalEffects: If the target is a creature or a flammable object that isn't being worn or carried, it starts burning.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Ignited Illumination
     entryType: special
     text: The magmin sets itself ablaze or extinguishes its flames. While ablaze, the magmin sheds Bright Light in a 10-foot radius and Dim Light for an additional 10 feet.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Magmin
@@ -47050,6 +51379,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The manticore makes three attacks, using Rend or Tail Spike in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Rend
     entryType: attack
@@ -47063,6 +51395,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail Spike
     entryType: attack
@@ -47076,6 +51411,9 @@ entries:
           type: Piercing
           average: 7
       range: 100/200 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Manticore
@@ -47172,14 +51510,23 @@ entries:
     name: Demonic Restoration
     entryType: special
     text: If the marilith dies outside the Abyss, its body dissolves into ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Abyss.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The marilith has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Reactive
     entryType: special
     text: The marilith can take one Reaction on every turn of combat.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -47189,6 +51536,9 @@ entries:
         - name: Blade
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Pact Blade
     entryType: attack
@@ -47206,6 +51556,9 @@ entries:
           type: Necrotic
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Constrict
     entryType: save
@@ -47243,11 +51596,17 @@ entries:
             bonus: 4
             type: Bludgeoning
             average: 15
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Teleport (Recharge 5-6)
     entryType: special
     text: The marilith teleports up to 120 feet to an unoccupied space it can see.
     recharge: 5-6
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Marilith
@@ -47359,6 +51718,9 @@ entries:
         - name: Ray
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -47372,6 +51734,9 @@ entries:
           type: Slashing
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Snake Hair
     entryType: attack
@@ -47389,6 +51754,9 @@ entries:
           type: Poison
           average: 14
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Poison Ray
     entryType: attack
@@ -47402,6 +51770,9 @@ entries:
           type: Poison
           average: 11
       range: 150 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Petrifying Gaze (Recharge 5-6)
     entryType: save
@@ -47410,6 +51781,9 @@ entries:
     save:
       ability: con
       dc: 13
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Medusa
@@ -47496,10 +51870,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The merfolk can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Ocean Spear
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +2, reach 5 ft. or range 20/60 ft. 3 (1d6) Piercing damage plus 2 (1d4) Cold damage. If the target is a creature, its Speed decreases by 10 feet until the end of its next turn. HitomThe spear magically returns to the merfolk''s hand immediately after a ranged attack.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Merfolk Skirmisher
@@ -47579,10 +51959,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The merrow can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The merrow makes two attacks, using Bite, Claw, or Harpoon in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -47596,6 +51982,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -47609,10 +51998,16 @@ entries:
           type: Slashing
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Harpoon
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +6, reach 5 ft. or range 20/60 ft. 11 (2d6 + 4) Piercing damage. If the target is a Large or smaller creature, the merrow pulls the target up to 15 feet straight toward itself.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Merrow
@@ -47702,6 +52097,9 @@ entries:
     name: Adhesive (Object Form Only)
     entryType: special
     text: The mimic adheres to anything that touches it. A Huge or smaller creature adhered to the mimic has the Grappled condition (escape DC 13). Ability checks made to escape this grapple have Disadvantage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -47723,6 +52121,9 @@ entries:
           type: Acid
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Pseudopod
     entryType: attack
@@ -47749,10 +52150,16 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13). Ability checks made to escape this grapple have Disadvantage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The mimic shape-shifts to resemble a Medium or Small object while retaining its game statistics, or it returns to its true blob form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Mimic
@@ -47855,6 +52262,9 @@ entries:
           type: Necrotic
           average: 10
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Gore (Recharge 5-6)
     entryType: attack
@@ -47879,6 +52289,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature and the minotaur moved 10+ feet straight toward it immediately before the hit, the target takes an extra 10 (3d6) Piercing damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Minotaur of Baphomet
@@ -47979,6 +52392,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature and the skeleton moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Slam
     entryType: attack
@@ -47992,6 +52408,9 @@ entries:
           type: Bludgeoning
           average: 15
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Minotaur Skeleton
@@ -48089,14 +52508,23 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The mummy has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Undead Restoration
     entryType: special
     text: If destroyed, the mummy gains a new body in 24 hours if its heart is intact, reviving with all its Hit Points. The new body appears in an unoccupied space within the mummy's lair. The heart is a Tiny object that has AC 17, HP 10, and Immunity to all damage except Fire.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -48106,6 +52534,9 @@ entries:
         - name: Energy
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rotting Fist
     entryType: attack
@@ -48126,6 +52557,9 @@ entries:
       onHit:
         other: If the target is a creature, it is cursed. While cursed, the target can't regain Hit Points, it gains no benefit from finishing a Long Rest, and its Hit Point maximum decreases by 10 (3d6) every 24 hours that elapse. A creature dies and turns to dust if reduced to 0 Hit Points by this attack.
       additionalEffects: If the target is a creature, it is cursed. While cursed, the target can't regain Hit Points, it gains no benefit from finishing a Long Rest, and its Hit Point maximum decreases by 10 (3d6) every 24 hours that elapse. A creature dies and turns to dust if reduced to 0 Hit Points by this attack.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Channel Negative Energy
     entryType: attack
@@ -48139,6 +52573,9 @@ entries:
           type: Necrotic
           average: 25
       range: 60 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Dreadful Glare
     entryType: save
@@ -48163,10 +52600,17 @@ entries:
             bonus: 4
             type: Psychic
             average: 25
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Glare
     entryType: special
     text: The mummy uses Dreadful Glare. The mummy can't take this action again until the start of its next turn.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Necrotic Strike
     entryType: multiattack
@@ -48176,6 +52620,10 @@ entries:
         - name: Energy
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -48197,6 +52645,9 @@ spellcastingEntries:
             - Animate Dead
             - Harm
             - Insect Plague
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Dread Command
     entryType: spellcasting
@@ -48204,6 +52655,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Mummy Lord
@@ -48326,6 +52781,9 @@ entries:
         - name: Fist
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rotting Fist
     entryType: attack
@@ -48346,6 +52804,9 @@ entries:
       onHit:
         other: If the target is a creature, it is cursed. While cursed, the target can't regain Hit Points, its Hit Point maximum doesn't return to normal when finishing a Long Rest, and its Hit Point maximum decreases by 10 (3d6) every 24 hours that elapse. A creature dies and turns to dust if reduced to 0 Hit Points by this attack.
       additionalEffects: If the target is a creature, it is cursed. While cursed, the target can't regain Hit Points, its Hit Point maximum doesn't return to normal when finishing a Long Rest, and its Hit Point maximum decreases by 10 (3d6) every 24 hours that elapse. A creature dies and turns to dust if reduced to 0 Hit Points by this attack.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Dreadful Glare
     entryType: save
@@ -48366,6 +52827,9 @@ entries:
                 type: until
                 trigger: the end of the mummy's next turn
       onSuccess: The target is immune to this mummy's Dreadful Glare for 24 hours.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Mummy
@@ -48461,10 +52925,16 @@ entries:
     name: Demonic Restoration
     entryType: special
     text: If the nalfeshnee dies outside the Abyss, its body dissolves into ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Abyss.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The nalfeshnee has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -48474,6 +52944,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -48491,10 +52964,16 @@ entries:
           type: Force
           average: 11
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Teleport
     entryType: special
     text: The nalfeshnee teleports up to 120 feet to an unoccupied space it can see.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Horror Nimbus (Recharge 5-6)
     entryType: save
@@ -48520,6 +52999,9 @@ entries:
             type: Psychic
             average: 28
       onSuccess: The target is immune to this nalfeshnee's Horror Nimbus for 24 hours.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Nalfeshnee
@@ -48628,10 +53110,16 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The hag has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Soul Bag
     entryType: special
     text: The hag has a soul bag. While holding or carrying the bag, the hag can use its Nightmare Haunting action. The bag has AC 15, HP 20, and Resistance to all damage. The bag turns to dust if reduced to 0 Hit Points. If the bag is destroyed, any souls the bag is holding are released. The hag can create a new bag after 7 days.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -48641,6 +53129,9 @@ entries:
         - name: Claw
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -48654,10 +53145,16 @@ entries:
           type: Slashing
           average: 13
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The hag shape-shifts into a Small or Medium Humanoid, or it returns to its true form. Other than its size, its game statistics are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -48678,6 +53175,9 @@ spellcastingEntries:
           spells:
             - Phantasmal Killer
             - Plane Shift
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Nightmare Haunting (1/Day; Requires Soul Bag)
     entryType: spellcasting
@@ -48698,6 +53198,9 @@ spellcastingEntries:
             - Dream
             - Protection from Evil and Good
             - Magic Circle
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Night Hag
@@ -48796,10 +53299,16 @@ entries:
     name: Confer Fire Resistance
     entryType: special
     text: The nightmare can grant Resistance to Fire damage to a rider while it is on the nightmare.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Illumination
     entryType: special
     text: The nightmare sheds Bright Light in a 10-foot radius and Dim Light for an additional 10 feet.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Hooves
     entryType: attack
@@ -48817,10 +53326,16 @@ entries:
           type: Fire
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Ethereal Stride
     entryType: special
     text: The nightmare and up to three willing creatures within 5 feet of it teleport to the Ethereal Plane from the Material Plane or vice versa.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Nightmare
@@ -48916,6 +53431,9 @@ entries:
           type: Piercing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Noble
@@ -48998,10 +53516,16 @@ entries:
     name: Amorphous
     entryType: special
     text: The jelly can move through a space as narrow as 1 inch without expending extra movement to do so.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Spider Climb
     entryType: special
     text: The jelly can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Pseudopod
     entryType: attack
@@ -49015,6 +53539,9 @@ entries:
           type: Acid
           average: 12
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ochre Jelly
@@ -49098,6 +53625,9 @@ entries:
     name: Undead Fortitude
     entryType: special
     text: If damage reduces the zombie to 0 Hit Points, it makes a Constitution saving throw (DC 5 plus the damage taken) unless the damage is Radiant or from a Critical Hit. On a successful save, the zombie drops to 1 Hit Point instead.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Slam
     entryType: attack
@@ -49111,6 +53641,9 @@ entries:
           type: Bludgeoning
           average: 13
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ogre Zombie
@@ -49198,10 +53731,16 @@ entries:
           type: Bludgeoning
           average: 13
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Javelin
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +6, reach 5 ft. or range 30/120 ft. 11 (2d6 + 4) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ogre
@@ -49294,6 +53833,9 @@ entries:
     name: Regeneration
     entryType: special
     text: The oni regains 10 Hit Points at the start of each of its turns if it has at least 1 Hit Point.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -49307,6 +53849,9 @@ entries:
           with:
             type: spellcasting
             text: Spellcasting
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -49324,6 +53869,9 @@ entries:
           type: Necrotic
           average: 9
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Nightmare Ray
     entryType: attack
@@ -49337,10 +53885,16 @@ entries:
           type: Psychic
           average: 9
       range: 60 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shape-Shift
     entryType: special
     text: The oni shape-shifts into a Small or Medium Humanoid or a Large Giant, or it returns to its true form. Other than its size, its game statistics are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -49364,6 +53918,9 @@ spellcastingEntries:
             - Darkness
             - Gaseous Form
             - Sleep
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Invisibility
     entryType: spellcasting
@@ -49371,6 +53928,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Oni
@@ -49474,6 +54034,9 @@ entries:
         - name: Tentacle
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -49487,6 +54050,9 @@ entries:
           type: Piercing
           average: 12
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tentacle
     entryType: attack
@@ -49509,6 +54075,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 13) from one of two tentacles.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tentacle Slam
     entryType: save
@@ -49536,6 +54105,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Otyugh
@@ -49624,6 +54196,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -49637,6 +54212,9 @@ entries:
           type: Slashing
           average: 14
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Owlbear
@@ -49733,6 +54311,9 @@ entries:
           type: Radiant
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Pegasus
@@ -49806,14 +54387,23 @@ entries:
     name: Ethereal Sight
     entryType: special
     text: The spider can see 60 feet into the Ethereal Plane while on the Material Plane and vice versa.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Spider Climb
     entryType: special
     text: The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Web Walker
     entryType: special
     text: The spider ignores movement restrictions caused by webs, and the spider knows the location of any other creature in contact with the same web.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -49823,6 +54413,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -49855,10 +54448,16 @@ entries:
             restrictions:
               while: While Poisoned, the target also has the Paralyzed condition
       additionalEffects: If this damage reduces the target to 0 Hit Points, the target becomes Stable, and it has the Poisoned condition for 1 hour. While Poisoned, the target also has the Paralyzed condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Ethereal Jaunt
     entryType: special
     text: The spider teleports from the Material Plane to the Ethereal Plane or vice versa.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Phase Spider
@@ -49955,6 +54554,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The pirate makes three attacks, using Rapier or Pistol in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Rapier
     entryType: attack
@@ -49968,6 +54570,9 @@ entries:
           type: Piercing
           average: 13
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Pistol
     entryType: attack
@@ -49981,6 +54586,9 @@ entries:
           type: Piercing
           average: 15
       range: 30/90 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Captain's Charm
     entryType: save
@@ -50000,6 +54608,9 @@ entries:
               duration:
                 type: until
                 trigger: the start of the pirate's next turn
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Pirate Captain
@@ -50090,10 +54701,16 @@ entries:
           with:
             type: attack
             name: Enthralling Panache
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Dagger
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +5, reach 5 ft. or range 20/60 ft. 5 (1d4 + 3) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Enthralling Panache
     entryType: save
@@ -50113,6 +54730,9 @@ entries:
               duration:
                 type: until
                 trigger: the start of the pirate's next turn
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Pirate
@@ -50207,6 +54827,9 @@ entries:
     name: Diabolical Restoration
     entryType: special
     text: If the pit fiend dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Fear Aura
     entryType: save
@@ -50224,6 +54847,9 @@ entries:
                 type: until
                 trigger: the start of its next turn
       onSuccess: The target is immune to this pit fiend's aura for 24 hours.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (4/Day)
     entryType: special
@@ -50231,10 +54857,16 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The pit fiend has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -50248,6 +54880,9 @@ entries:
         - name: Mace
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -50271,6 +54906,9 @@ entries:
             saveToEnd:
               timing: end-of-turn
       additionalEffects: 'If the target is a creature, it must make the following saving throw. *Constitution Saving Throw*: DC 21. *Failure:*  The target has the Poisoned condition. While Poisoned, the target can''t regain Hit Points and takes 21 (6d6) Poison damage at the start of each of its turns, and it repeats the save at the end of each of its turns, ending the effect on itself on a success. After 1 minute, it succeeds automatically.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Devilish Claw
     entryType: attack
@@ -50284,6 +54922,9 @@ entries:
           type: Necrotic
           average: 26
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fiery Mace
     entryType: attack
@@ -50301,6 +54942,9 @@ entries:
           type: Fire
           average: 21
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Hellfire Spellcasting (Recharge 4-6)
@@ -50313,6 +54957,9 @@ spellcastingEntries:
       excludeComponents:
         - M
       spellLists: []
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Pit Fiend
@@ -50431,14 +55078,23 @@ entries:
     name: Divine Awareness
     entryType: special
     text: The planetar knows if it hears a lie.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Exalted Restoration
     entryType: special
     text: If the planetar dies outside Mount Celestia, its body disappears, and it gains a new body instantly, reviving with all its Hit Points somewhere in Mount Celestia.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The planetar has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -50448,6 +55104,9 @@ entries:
         - name: Sword
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Radiant Sword
     entryType: attack
@@ -50465,6 +55124,9 @@ entries:
           type: Radiant
           average: 18
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Holy Burst
     entryType: save
@@ -50487,6 +55149,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -50507,6 +55172,9 @@ spellcastingEntries:
             - Control Weather
             - Dispel Evil and Good
             - Raise Dead
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Divine Aid (2/Day)
     entryType: spellcasting
@@ -50517,6 +55185,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Planetar
@@ -50629,6 +55300,9 @@ entries:
           type: Radiant
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Radiant Flame
     entryType: attack
@@ -50642,6 +55316,9 @@ entries:
           type: Radiant
           average: 7
       range: 60 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -50654,6 +55331,9 @@ spellcastingEntries:
           spells:
             - Light
             - Thaumaturgy
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Divine Aid (1/Day)
     entryType: spellcasting
@@ -50664,6 +55344,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Priest Acolyte
@@ -50750,6 +55433,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The priest makes two attacks, using Mace or Radiant Flame in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Mace
     entryType: attack
@@ -50767,6 +55453,9 @@ entries:
           type: Radiant
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Radiant Flame
     entryType: attack
@@ -50780,6 +55469,9 @@ entries:
           type: Radiant
           average: 11
       range: 60 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -50795,6 +55487,9 @@ spellcastingEntries:
         - frequency: 1/day
           spells:
             - Spirit Guardians
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Divine Aid (3/Day)
     entryType: spellcasting
@@ -50805,6 +55500,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Priest
@@ -50899,6 +55597,9 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The pseudodragon has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -50908,6 +55609,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -50921,6 +55625,9 @@ entries:
           type: Piercing
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Sting
     entryType: save
@@ -50953,6 +55660,9 @@ entries:
             bonus: 0
             type: Poison
             average: 5
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Pseudodragon
@@ -51039,6 +55749,9 @@ entries:
     name: Tunneler
     entryType: special
     text: The worm can burrow through solid rock at half its Burrow Speed and leaves a 10-foot-diameter tunnel in its wake.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -51050,6 +55763,9 @@ entries:
         - name: Stinger
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -51084,6 +55800,9 @@ entries:
               type: until
               trigger: the grapple ends
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 19), and it has the Restrained condition until the grapple ends.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail Stinger
     entryType: attack
@@ -51101,6 +55820,9 @@ entries:
           type: Poison
           average: 35
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Swallow
     entryType: save
@@ -51127,6 +55849,9 @@ entries:
             bonus: 0
             type: Acid
             average: 17
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Purple Worm
@@ -51226,6 +55951,9 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The quasit has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Rend
     entryType: attack
@@ -51239,6 +55967,9 @@ entries:
           type: Slashing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Scare (1/Day)
     entryType: save
@@ -51258,10 +55989,16 @@ entries:
             - condition: Frightened
               saveToEnd:
                 timing: end-of-turn
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shape-Shift
     entryType: special
     text: The quasit shape-shifts to resemble a bat (Speed 10 ft., Fly 40 ft.), a centipede (40 ft., Climb 40 ft.), or a toad (40 ft., Swim 40 ft.), or it returns to its true form. Its game statistics are the same in each form, except for its Speed. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Invisibility
@@ -51273,6 +56010,9 @@ spellcastingEntries:
         - frequency: at-will
           spells:
             - Invisibility
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Quasit
@@ -51372,10 +56112,16 @@ entries:
     name: Greater Magic Resistance
     entryType: special
     text: The rakshasa automatically succeeds on saving throws against spells and other magical effects, and the attack rolls of spells automatically miss it. Without the rakshasa's permission, no spell can observe the rakshasa remotely or detect its thoughts, creature type, or alignment.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Fiendish Restoration
     entryType: special
     text: If the rakshasa dies outside the Nine Hells, its body turns to ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -51385,6 +56131,9 @@ entries:
         - name: Touch
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Cursed Touch
     entryType: attack
@@ -51405,6 +56154,9 @@ entries:
       onHit:
         other: If the target is a creature, it is cursed. While cursed, the target gains no benefit from finishing a Short Rest|XPHB|Short or Long Rest.
       additionalEffects: If the target is a creature, it is cursed. While cursed, the target gains no benefit from finishing a Short Rest|XPHB|Short or Long Rest.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Baleful Command (Recharge 5-6)
     entryType: save
@@ -51426,6 +56178,9 @@ entries:
             type: Psychic
             average: 28
         legacyEffects: 28 (8d6) Psychic damage, and the target has the Frightened and Incapacitated conditions until the start of the rakshasa's next turn.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -51450,6 +56205,9 @@ spellcastingEntries:
             - Invisibility
             - Major Image
             - Plane Shift
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Rakshasa
@@ -51561,6 +56319,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -51578,6 +56339,9 @@ entries:
           type: Fire
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -51601,6 +56365,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Red Dragon Wyrmling
@@ -51683,6 +56450,9 @@ entries:
     name: Heat Aura
     entryType: special
     text: At the end of each of the remorhaz's turns, each creature in a 5-foot Emanation originating from the remorhaz takes 16 (3d10) Fire damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -51721,6 +56491,9 @@ entries:
               type: until
               trigger: the grapple ends
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 17), and it has the Restrained condition until the grapple ends.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Swallow
     entryType: save
@@ -51751,6 +56524,9 @@ entries:
             bonus: 0
             type: Fire
             average: 10
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Remorhaz
@@ -51842,6 +56618,9 @@ entries:
           with:
             type: attack
             name: a Talons attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Beak
     entryType: attack
@@ -51855,6 +56634,9 @@ entries:
           type: Piercing
           average: 28
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Talons
     entryType: attack
@@ -51889,11 +56671,17 @@ entries:
               type: until
               trigger: the grapple ends
       additionalEffects: If the target is a Huge or smaller creature, it has the Grappled condition (escape DC 19) from both talons, and it has the Restrained condition until the grapple ends.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Swoop (Recharge 5-6)
     entryType: special
     text: If the roc has a creature Grappled, the roc flies up to half its Fly Speed without provoking Opportunity Attacks and drops that creature.
     recharge: 5-6
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Roc
@@ -51980,6 +56768,9 @@ entries:
     name: Spider Climb
     entryType: special
     text: The roper can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -51991,6 +56782,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -52004,6 +56798,9 @@ entries:
           type: Piercing
           average: 17
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tentacle
     entryType: attack
@@ -52013,10 +56810,16 @@ entries:
       bonus: 7
       damage: []
       reach: 60 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Reel
     entryType: special
     text: The roper pulls each creature Grappled by it up to 30 feet straight toward it.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Roper
@@ -52099,6 +56902,9 @@ entries:
     name: Iron Scent
     entryType: special
     text: The rust monster can pinpoint the location of ferrous metal within 30 feet of itself.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -52108,6 +56914,9 @@ entries:
         - name: Bite
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -52121,6 +56930,9 @@ entries:
           type: Piercing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Antennae
     entryType: save
@@ -52134,10 +56946,16 @@ entries:
         effects:
           other: The object takes a -1 penalty to the AC it offers (armor) or to its attack rolls (weapon). Armor is destroyed if the penalty reduces its AC to 10, and a weapon is destroyed if its penalty reaches -5. The penalty can be removed by casting the *Mending* spell on the armor or weapon.
         legacyEffects: The object takes a -1 penalty to the AC it offers (armor) or to its attack rolls (weapon). Armor is destroyed if the penalty reduces its AC to 10, and a weapon is destroyed if its penalty reaches -5. The penalty can be removed by casting the *Mending* spell on the armor or weapon.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Destroy Metal
     entryType: special
     text: The rust monster touches a nonmagical metal object within 5 feet of itself that isn't being worn or carried. The touch destroys a 1-foot Cube [Area of Effect]|XPHB|Cube of the object.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Rust Monster
@@ -52231,14 +57049,23 @@ entries:
     name: Blood Frenzy
     entryType: special
     text: The sahuagin has Advantage on attack rolls against any creature that doesn't have all its Hit Points.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Limited Amphibiousness
     entryType: special
     text: The sahuagin can breathe air and water, but it must be submerged at least once every 4 hours to avoid suffocating outside water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Shark Telepathy
     entryType: special
     text: The sahuagin can magically control sharks within 120 feet of itself, using a special telepathy.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -52248,6 +57075,9 @@ entries:
         - name: Claw
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -52261,10 +57091,16 @@ entries:
           type: Slashing
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Aquatic Charge
     entryType: special
     text: The sahuagin swims up to its Swim Speed straight toward an enemy it can see.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Sahuagin Warrior
@@ -52362,6 +57198,9 @@ entries:
     name: Fire Aura
     entryType: special
     text: At the end of each of the salamander's turns, each creature of the salamander's choice in a 5-foot Emanation originating from the salamander takes 7 (2d6) Fire damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -52375,10 +57214,16 @@ entries:
           with:
             type: attack
             name: Constrict
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Flame Spear
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +7, reach 5 ft. or range 20/60 ft. 13 (2d8 + 4) Piercing damage plus 7 (2d6) Fire damage. HitomThe spear magically returns to the salamander''s hand immediately after a ranged attack.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Constrict
     entryType: save
@@ -52420,6 +57265,9 @@ entries:
             bonus: 0
             type: Fire
             average: 7
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Salamander
@@ -52509,6 +57357,9 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The satyr has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Hooves
     entryType: attack
@@ -52525,6 +57376,9 @@ entries:
       onHit:
         other: If the target is a Medium or smaller creature, the satyr pushes the target up to 10 feet straight away from itself.
       additionalEffects: If the target is a Medium or smaller creature, the satyr pushes the target up to 10 feet straight away from itself.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Mockery
     entryType: save
@@ -52546,6 +57400,9 @@ entries:
             type: Psychic
             average: 5
         legacyEffects: 5 (1d6 + 2) Psychic damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Satyr
@@ -52631,6 +57488,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The scout makes two attacks, using Shortsword and Longbow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shortsword
     entryType: attack
@@ -52644,6 +57504,9 @@ entries:
           type: Piercing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Longbow
     entryType: attack
@@ -52657,6 +57520,9 @@ entries:
           type: Piercing
           average: 6
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Scout
@@ -52738,6 +57604,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The hag can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Vile Appearance
     entryType: save
@@ -52755,6 +57624,9 @@ entries:
                 type: until
                 trigger: the start of its next turn
       onSuccess: The target is immune to this hag's Vile Appearance for 24 hours.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -52768,6 +57640,9 @@ entries:
           type: Slashing
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Death Glare (Recharge 5-6)
     entryType: save
@@ -52790,6 +57665,9 @@ entries:
             type: Psychic
             average: 13
         legacyEffects: If the target has 20 Hit Points or fewer, it drops to 0 Hit Points. Otherwise, the target takes 13 (3d8) Psychic damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Illusory Appearance
@@ -52802,6 +57680,9 @@ spellcastingEntries:
         - frequency: at-will
           spells:
             - Disguise Self
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Sea Hag
@@ -52909,10 +57790,16 @@ entries:
     name: Amorphous
     entryType: special
     text: The shadow can move through a space as narrow as 1 inch without expending extra movement to do so.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Sunlight Weakness
     entryType: special
     text: While in sunlight, the shadow has Disadvantage on D20 Test.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Draining Swipe
     entryType: attack
@@ -52926,10 +57813,16 @@ entries:
           type: Necrotic
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shadow Stealth
     entryType: special
     text: While in Dim Light or darkness, the shadow takes the Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Shadow
@@ -53022,6 +57915,9 @@ entries:
     name: Lightning Absorption
     entryType: special
     text: Whenever the shambling mound is subjected to Lightning damage, it regains a number of Hit Points equal to the Lightning damage dealt.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -53035,6 +57931,9 @@ entries:
           with:
             type: attack
             name: Engulf
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Charged Tendril
     entryType: attack
@@ -53055,6 +57954,9 @@ entries:
       onHit:
         other: If the target is a Medium or smaller creature, the shambling mound pulls the target 5 feet straight toward itself.
       additionalEffects: If the target is a Medium or smaller creature, the shambling mound pulls the target 5 feet straight toward itself.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Engulf
     entryType: save
@@ -53084,6 +57986,9 @@ entries:
             bonus: 0
             type: Lightning
             average: 10
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Shambling Mound
@@ -53175,10 +58080,16 @@ entries:
     name: Bound
     entryType: special
     text: The guardian is magically bound to an amulet. While the guardian and its amulet are on the same plane of existence, the amulet's wearer can telepathically call the guardian to travel to it, and the guardian knows the distance and direction to the amulet. If the guardian is within 60 feet of the amulet's wearer, half of any damage the wearer takes (round up) is transferred to the guardian.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Regeneration
     entryType: special
     text: The guardian regains 10 Hit Points at the start of each of its turns if it has at least 1 Hit Point.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -53188,6 +58099,9 @@ entries:
         - name: Fist
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Fist
     entryType: attack
@@ -53205,6 +58119,9 @@ entries:
           type: Force
           average: 7
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: trait
     name: Spell Storing
@@ -53213,6 +58130,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
 ---
 
 # Shield Guardian
@@ -53390,6 +58310,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -53403,6 +58326,9 @@ entries:
           type: Piercing
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cold Breath (Recharge 5-6)
     entryType: save
@@ -53426,6 +58352,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Paralyzing Breath
     entryType: save
@@ -53433,6 +58362,9 @@ entries:
     save:
       ability: con
       dc: 13
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Silver Dragon Wyrmling
@@ -53529,6 +58461,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shortbow
     entryType: attack
@@ -53542,6 +58477,9 @@ entries:
           type: Piercing
           average: 6
       range: 80/320 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Skeleton
@@ -53633,10 +58571,16 @@ entries:
     name: Divine Awareness
     entryType: special
     text: The solar knows if it hears a lie.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Exalted Restoration
     entryType: special
     text: If the solar dies outside Mount Celestia, its body disappears, and it gains a new body instantly, reviving with all its Hit Points somewhere in Mount Celestia.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (4/Day)
     entryType: special
@@ -53644,10 +58588,16 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The solar has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -53661,10 +58611,16 @@ entries:
           with:
             type: attack
             name: Slaying Bow
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Flying Sword
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +15, reach 10 ft. or range 120 ft. 22 (4d6 + 8) Slashing damage plus 36 (8d8) Radiant damage. HitomThe sword magically returns to the solar''s hand or hovers within 5 feet of the solar immediately after a ranged attack.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Slaying Bow
     entryType: save
@@ -53690,6 +58646,9 @@ entries:
             type: Radiant
             average: 36
         legacyEffects: If the creature has 100 Hit Points or fewer, it dies. It otherwise takes 24 (4d8 + 6) Piercing damage plus 36 (8d8) Radiant damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Blinding Gaze
     entryType: save
@@ -53709,6 +58668,10 @@ entries:
               duration:
                 type: minutes
                 count: 1
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Radiant Teleport
     entryType: save
@@ -53732,6 +58695,10 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -53752,6 +58719,9 @@ spellcastingEntries:
             - Control Weather
             - Dispel Evil and Good
             - Resurrection
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Divine Aid (3/Day)
     entryType: spellcasting
@@ -53762,6 +58732,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Solar
@@ -53894,10 +58867,16 @@ entries:
     name: Incorporeal Movement
     entryType: special
     text: The specter can move through other creatures and objects as if they were Difficult Terrain. It takes 5 (1d10) Force damage if it ends its turn inside an object.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Sunlight Sensitivity
     entryType: special
     text: While in sunlight, the specter has Disadvantage on ability checks and attack rolls.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Life Drain
     entryType: attack
@@ -53914,6 +58893,9 @@ entries:
       onHit:
         other: If the target is a creature, its Hit Point maximum decreases by an amount equal to the damage taken.
       additionalEffects: If the target is a creature, its Hit Point maximum decreases by an amount equal to the damage taken.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Specter
@@ -54013,6 +58995,9 @@ entries:
     name: Inscrutable
     entryType: special
     text: No magic can observe the sphinx remotely or detect its thoughts without its permission. Wisdom (Insight) checks made to ascertain its intentions or sincerity are made with Disadvantage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day, or 4/Day in Lair)
     entryType: special
@@ -54020,6 +59005,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -54029,6 +59017,9 @@ entries:
         - name: Claw
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -54042,6 +59033,9 @@ entries:
           type: Slashing
           average: 14
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Mind-Rending Roar (Recharge 5-6)
     entryType: save
@@ -54066,6 +59060,9 @@ entries:
             bonus: 0
             type: Psychic
             average: 35
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Arcane Prowl
     entryType: multiattack
@@ -54075,6 +59072,10 @@ entries:
         - name: Claw
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: Weight of Years
     entryType: save
@@ -54091,6 +59092,10 @@ entries:
         effects:
           other: The target gains 1 Exhaustion level. While the target has any Exhaustion levels, it appears 3d10 years older.
         legacyEffects: The target gains 1 Exhaustion level. While the target has any Exhaustion levels, it appears 3d10 years older.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -54117,6 +59122,9 @@ spellcastingEntries:
             - Plane Shift
             - Remove Curse
             - Tongues
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Sphinx of Lore
@@ -54235,6 +59243,9 @@ entries:
     name: Inscrutable
     entryType: special
     text: No magic can observe the sphinx remotely or detect its thoughts without its permission. Wisdom (Insight) checks made to ascertain its intentions or sincerity are made with Disadvantage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day, or 4/Day in Lair)
     entryType: special
@@ -54242,6 +59253,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -54251,6 +59265,9 @@ entries:
         - name: Claw
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -54264,6 +59281,9 @@ entries:
           type: Slashing
           average: 20
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Roar (3/Day)
     entryType: save
@@ -54307,6 +59327,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Arcane Prowl
     entryType: multiattack
@@ -54316,6 +59339,10 @@ entries:
         - name: Claw
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: Weight of Years
     entryType: save
@@ -54332,6 +59359,10 @@ entries:
         effects:
           other: The target gains 1 Exhaustion level. While the target has any Exhaustion levels, it appears 3d10 years older.
         legacyEffects: The target gains 1 Exhaustion level. While the target has any Exhaustion levels, it appears 3d10 years older.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -54354,6 +59385,9 @@ spellcastingEntries:
             - Greater Restoration
             - Heroes' Feast
             - Zone of Truth
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Sphinx of Valor
@@ -54465,6 +59499,9 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The sphinx has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Rend
     entryType: attack
@@ -54482,6 +59519,9 @@ entries:
           type: Radiant
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Sphinx of Wonder
@@ -54568,10 +59608,16 @@ entries:
     name: Fiendish Restoration
     entryType: special
     text: If it dies, the naga returns to life in 1d6 days and regains all its Hit Points. Only a *Wish* spell can prevent this trait from functioning.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The naga makes three attacks, using Bite or Necrotic Ray in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -54589,6 +59635,9 @@ entries:
           type: Poison
           average: 14
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Necrotic Ray
     entryType: attack
@@ -54602,6 +59651,9 @@ entries:
           type: Necrotic
           average: 21
       range: 60 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -54623,6 +59675,9 @@ spellcastingEntries:
             - Dimension Door
             - Hold Person
             - Lightning Bolt
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Spirit Naga
@@ -54724,6 +59779,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Enchanting Bow
     entryType: attack
@@ -54733,6 +59791,9 @@ entries:
       bonus: 6
       damage: []
       range: 40/160 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Heart Sight
     entryType: save
@@ -54748,6 +59809,9 @@ entries:
       onFail:
         effects:
           knowledge: the target's emotions and alignment
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Invisibility
@@ -54759,6 +59823,9 @@ spellcastingEntries:
         - frequency: at-will
           spells:
             - Invisibility
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Sprite
@@ -54864,6 +59931,9 @@ entries:
           type: Poison
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Hand Crossbow
     entryType: attack
@@ -54881,10 +59951,16 @@ entries:
           type: Poison
           average: 7
       range: 30/120 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Cunning Action
     entryType: special
     text: The spy takes the Dash, Disengage, or Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Spy
@@ -54975,6 +60051,9 @@ entries:
     name: Blurred Form
     entryType: special
     text: Attack rolls against the mephit are made with Disadvantage unless the mephit has the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Death Burst
     entryType: save
@@ -54998,6 +60077,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -55015,6 +60097,9 @@ entries:
           type: Fire
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Steam Breath
     entryType: save
@@ -55037,6 +60122,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Steam Mephit
@@ -55132,6 +60220,9 @@ entries:
           type: Necrotic
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Stirge
@@ -55213,6 +60304,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The giant makes two attacks, using Stone Club or Boulder in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Stone Club
     entryType: attack
@@ -55226,6 +60320,9 @@ entries:
           type: Bludgeoning
           average: 22
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Boulder
     entryType: attack
@@ -55245,6 +60342,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Stone Giant
@@ -55331,14 +60431,23 @@ entries:
     name: Immutable Form
     entryType: special
     text: The golem can't shape-shift.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The golem has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The golem makes two attacks, using Slam or Force Bolt in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Slam
     entryType: attack
@@ -55356,6 +60465,9 @@ entries:
           type: Force
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Force Bolt
     entryType: attack
@@ -55369,6 +60481,9 @@ entries:
           type: Force
           average: 22
       range: 120 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: bonus
     name: Slow (Recharge 5-6)
@@ -55379,6 +60494,9 @@ spellcastingEntries:
       ability: int
       saveDC: 17
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Stone Golem
@@ -55496,10 +60614,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The giant can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The giant makes two attacks, using Storm Sword or Thunderbolt in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Storm Sword
     entryType: attack
@@ -55517,6 +60641,9 @@ entries:
           type: Lightning
           average: 13
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Thunderbolt
     entryType: attack
@@ -55530,6 +60657,9 @@ entries:
           type: Lightning
           average: 22
       range: 500 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Storm (Recharge 5-6)
     entryType: save
@@ -55555,6 +60685,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -55573,6 +60706,9 @@ spellcastingEntries:
         - frequency: 1/day
           spells:
             - Control Weather
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Storm Giant
@@ -55683,6 +60819,9 @@ entries:
     name: Incubus Form
     entryType: special
     text: When the succubus finishes a Long Rest, it can shape-shift into an Incubus, using that stat block instead of this one.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -55692,6 +60831,9 @@ entries:
         - name: Touch
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Fiendish Touch
     entryType: attack
@@ -55705,6 +60847,9 @@ entries:
           type: Psychic
           average: 16
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Draining Kiss
     entryType: save
@@ -55727,10 +60872,16 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The succubus shape-shifts to resemble a Medium or Small Humanoid or back into its true form. Its game statistics are the same in each form, except its Fly Speed is available only in its true form. Any equipment it's wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Charm
@@ -55740,6 +60891,9 @@ spellcastingEntries:
       ability: cha
       saveDC: 15
       spellLists: []
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Succubus
@@ -55851,6 +61005,9 @@ entries:
     name: Swarm
     entryType: special
     text: The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny creature. The swarm can't regain Hit Points or gain Temporary Hit Points.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Swarm of Grasping Hands
     entryType: attack
@@ -55868,6 +61025,9 @@ entries:
           type: Necrotic
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Swarm of Crawling Claws
@@ -55970,18 +61130,30 @@ entries:
     limitedUse:
       count: 6
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The tarrasque has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Reflective Carapace
     entryType: special
     text: If the tarrasque is targeted by a *Magic Missile* spell or a spell that requires a ranged attack roll, roll 1d6. On a 1-5, the tarrasque is unaffected. On a 6, the tarrasque is unaffected and reflects the spell, turning the caster into the target.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Siege Monster
     entryType: special
     text: The tarrasque deals double damage to objects and structures.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -55993,6 +61165,9 @@ entries:
         - name: other
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -56006,6 +61181,9 @@ entries:
           type: Piercing
           average: 36
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -56019,6 +61197,9 @@ entries:
           type: Slashing
           average: 28
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail
     entryType: attack
@@ -56038,6 +61219,9 @@ entries:
             restrictions:
               size: Huge or smaller
       additionalEffects: If the target is a Huge or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Thunderous Bellow (Recharge 5-6)
     entryType: save
@@ -56061,6 +61245,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Swallow
     entryType: save
@@ -56087,6 +61274,9 @@ entries:
             bonus: 0
             type: Acid
             average: 56
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Onslaught
     entryType: multiattack
@@ -56096,10 +61286,18 @@ entries:
         - name: Tail
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: World-Shaking Movement
     entryType: special
     text: The tarrasque moves up to its Speed. At the end of this movement, the tarrasque creates an instantaneous shock wave in a 60-foot Emanation originating from itself. Creatures in that area lose  Concentration and, if Medium or smaller, have the Prone condition. The tarrasque can't take this action again until the start of its next turn.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Tarrasque
@@ -56210,10 +61408,16 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The tough has Advantage on an attack roll against a creature if at least one of the tough's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The tough makes two attacks, using Warhammer or Heavy Crossbow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Warhammer
     entryType: attack
@@ -56230,6 +61434,9 @@ entries:
       onHit:
         other: If the target is a Large or smaller creature, the tough pushes the target up to 10 feet straight away from itself.
       additionalEffects: If the target is a Large or smaller creature, the tough pushes the target up to 10 feet straight away from itself.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Heavy Crossbow
     entryType: attack
@@ -56243,6 +61450,9 @@ entries:
           type: Piercing
           average: 13
       range: 100/400 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Tough Boss
@@ -56322,6 +61532,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The tough has Advantage on an attack roll against a creature if at least one of the tough's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Mace
     entryType: attack
@@ -56335,6 +61548,9 @@ entries:
           type: Bludgeoning
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Heavy Crossbow
     entryType: attack
@@ -56348,6 +61564,9 @@ entries:
           type: Piercing
           average: 6
       range: 100/400 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Tough
@@ -56432,6 +61651,9 @@ entries:
     name: Siege Monster
     entryType: special
     text: The treant deals double damage to objects and structures.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -56441,6 +61663,9 @@ entries:
         - name: Slam
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Slam
     entryType: attack
@@ -56454,6 +61679,9 @@ entries:
           type: Bludgeoning
           average: 16
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Hail of Bark
     entryType: attack
@@ -56467,6 +61695,9 @@ entries:
           type: Piercing
           average: 28
       range: 180 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Animate Trees (1/Day)
     entryType: special
@@ -56474,6 +61705,9 @@ entries:
     limitedUse:
       count: 1
       reset: day
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Treant
@@ -56557,10 +61791,16 @@ entries:
     name: Regeneration
     entryType: special
     text: The limb regains 5 Hit Points at the start of each of its turns. If the limb takes Acid or Fire damage, this trait doesn't function on the limb's next turn. The limb dies only if it starts its turn with 0 Hit Points and doesn't regenerate.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Troll Spawn
     entryType: special
     text: The limb uncannily has the same senses as a whole troll. If the limb isn't destroyed within 24 hours, roll 1d12. On a 12, the limb turns into a Troll. Otherwise, the limb withers away.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Rend
     entryType: attack
@@ -56574,6 +61814,9 @@ entries:
           type: Slashing
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Troll Limb
@@ -56659,10 +61902,16 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Regeneration
     entryType: special
     text: The troll regains 15 Hit Points at the start of each of its turns. If the troll takes Acid or Fire damage, this trait doesn't function on the troll's next turn. The troll dies only if it starts its turn with 0 Hit Points and doesn't regenerate.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -56672,6 +61921,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -56685,10 +61937,16 @@ entries:
           type: Slashing
           average: 11
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Charge
     entryType: special
     text: The troll moves up to half its Speed straight toward an enemy it can see.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Troll
@@ -56788,10 +62046,16 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The unicorn has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -56803,6 +62067,9 @@ entries:
         - name: Horn
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Hooves
     entryType: attack
@@ -56816,6 +62083,9 @@ entries:
           type: Bludgeoning
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Radiant Horn
     entryType: attack
@@ -56829,6 +62099,9 @@ entries:
           type: Radiant
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Charging Horn
     entryType: multiattack
@@ -56840,10 +62113,18 @@ entries:
         - name: Horn
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: Shimmering Shield
     entryType: special
     text: The unicorn targets itself or one creature it can see within 60 feet of itself. The target gains 10 (3d6) Temporary Hit Points, and its AC increases by 2 until the end of the unicorn's next turn. The unicorn can't take this action again until the start of its next turn.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -56864,6 +62145,9 @@ spellcastingEntries:
             - Entangle
             - Pass without Trace
             - Word of Recall
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Unicorn's Blessing (3/Day)
     entryType: spellcasting
@@ -56874,6 +62158,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Unicorn
@@ -56991,6 +62278,9 @@ entries:
     name: Vampiric Connection
     entryType: special
     text: While the familiar and its vampire master are on the same plane of existence, the vampire can communicate with the familiar telepathically, and the vampire can perceive through the familiar's senses.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -57000,14 +62290,23 @@ entries:
         - name: Dagger
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Umbral Dagger
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +5, reach 5 ft. or range 20/60 ft. 5 (1d4 + 3) Piercing damage plus 7 (3d4) Necrotic damage. If the target is reduced to 0 Hit Points by this attack, the target becomes Stable but has the Poisoned condition for 1 hour. While it has the Poisoned condition, the target has the Paralyzed condition.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Deathless Agility
     entryType: special
     text: The familiar takes the Dash or Disengage action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Vampire Familiar
@@ -57102,10 +62401,16 @@ entries:
     name: Spider Climb
     entryType: special
     text: The vampire can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Vampire Weakness
     entryType: special
     text: 'The vampire has these weaknesses: - **Forbiddance**: The vampire can''t enter a residence without an invitation from an occupant. - **Running Water**: The vampire takes 20 Acid damage if it ends its turn in running water. - **Stake to the Heart**: The vampire is destroyed if a weapon that deals Piercing damage is driven into the vampire''s heart while the vampire has the Incapacitated condition. - **Sunlight**: The vampire takes 20 Radiant damage if it starts its turn in sunlight. While in sunlight, it has Disadvantage on attack rolls and ability checks.'
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -57115,6 +62420,9 @@ entries:
         - name: Claw
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -57137,6 +62445,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 13) from one of two claws.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: save
@@ -57163,10 +62474,16 @@ entries:
             type: Necrotic
             average: 10
         legacyEffects: 5 (1d4 + 3) Piercing damage plus 10 (3d6) Necrotic damage. The target's Hit Point maximum decreases by an amount equal to the Necrotic damage taken, and the vampire regains Hit Points equal to that amount.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Deathless Agility
     entryType: special
     text: The vampire takes the Dash or Disengage action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Vampire Spawn
@@ -57274,18 +62591,30 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Misty Escape
     entryType: special
     text: If the vampire drops to 0 Hit Points outside its resting place, the vampire uses Shape-Shift to become mist (no action required). If it can't use Shape-Shift, it is destroyed. While it has 0 Hit Points in mist form, it can't return to its vampire form, and it must reach its resting place within 2 hours or be destroyed. Once in its resting place, it returns to its vampire form and has the Paralyzed condition until it regains any Hit Points, and it regains 1 Hit Point after spending 1 hour there.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Spider Climb
     entryType: special
     text: The vampire can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Vampire Weakness
     entryType: special
     text: 'The vampire has these weaknesses: - **Forbiddance**: The vampire can''t enter a residence without an invitation from an occupant. - **Running Water**: The vampire takes 20 Acid damage if it ends its turn in running water. - **Stake to the Heart**: If a weapon that deals Piercing damage is driven into the vampire''s heart while the vampire has the Incapacitated condition in its resting place, the vampire has the Paralyzed condition until the weapon is removed. - **Sunlight**: The vampire takes 20 Radiant damage if it starts its turn in sunlight. While in sunlight, it has Disadvantage on attack rolls and ability checks.'
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack (Vampire Form Only)
     entryType: multiattack
@@ -57295,6 +62624,9 @@ entries:
         - name: Strike
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Grave Strike (Vampire Form Only)
     entryType: attack
@@ -57321,6 +62653,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14) from one of two hands.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite (Bat or Vampire Form Only)
     entryType: save
@@ -57347,10 +62682,16 @@ entries:
             type: Necrotic
             average: 13
         legacyEffects: 6 (1d4 + 4) Piercing damage plus 13 (3d8) Necrotic damage. The target's Hit Point maximum decreases by an amount equal to the Necrotic damage taken, and the vampire regains Hit Points equal to that amount. A Humanoid reduced to 0 Hit Points by this damage and then buried rises the following sunset as a Vampire Spawn under the vampire's control.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: If the vampire isn't in sunlight or running water, it shape-shifts into a Tiny bat (Speed 5 ft., Fly Speed 30 ft.) or a Medium cloud of mist (Speed 5 ft., Fly Speed 20 ft. [hover]), or it returns to its vampire form. Anything it is wearing transforms with it. While in bat form, the vampire can't speak. Its game statistics, other than its size and Speed, are unchanged. While in mist form, the vampire can't take any actions, speak, or manipulate objects. It is weightless and can enter an enemy's space and stop there. If air can pass through a space, the mist can do so, but it can't pass through liquid. It has Resistance to all damage, except the damage it takes from sunlight.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Deathless Strike
     entryType: multiattack
@@ -57360,6 +62701,10 @@ entries:
         - name: Strike
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: bonus
     name: Charm (Recharge 5-6)
@@ -57370,6 +62715,9 @@ spellcastingEntries:
       ability: cha
       saveDC: 17
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Beguile
     entryType: spellcasting
@@ -57378,6 +62726,10 @@ spellcastingEntries:
       ability: cha
       saveDC: 17
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Vampire
@@ -57493,6 +62845,9 @@ entries:
         - name: Touch
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rotting Touch
     entryType: attack
@@ -57506,6 +62861,9 @@ entries:
           type: Necrotic
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Violet Fungus
@@ -57594,10 +62952,16 @@ entries:
     name: Demonic Restoration
     entryType: special
     text: If the vrock dies outside the Abyss, its body dissolves into ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Abyss.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The vrock has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -57607,6 +62971,9 @@ entries:
         - name: Shred
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Shred
     entryType: attack
@@ -57624,6 +62991,9 @@ entries:
           type: Poison
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Spores
     entryType: save
@@ -57646,6 +63016,9 @@ entries:
             bonus: 0
             type: Poison
             average: 5
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Stunning Screech (1/Day)
     entryType: save
@@ -57672,6 +63045,9 @@ entries:
             bonus: 0
             type: Thunder
             average: 10
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Vrock
@@ -57780,6 +63156,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature and the skeleton moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Warhorse Skeleton
@@ -57848,10 +63227,16 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The warrior has Advantage on an attack roll against a creature if at least one of the warrior's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Spear
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +3, reach 5 ft. or range 20/60 ft. 4 (1d6 + 1) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Warrior Infantry
@@ -57935,6 +63320,9 @@ entries:
         - name: Crossbow
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Greatsword
     entryType: attack
@@ -57948,6 +63336,9 @@ entries:
           type: Slashing
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Heavy Crossbow
     entryType: attack
@@ -57961,6 +63352,9 @@ entries:
           type: Piercing
           average: 12
       range: 100/400 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Warrior Veteran
@@ -58053,10 +63447,16 @@ entries:
     name: Freeze
     entryType: special
     text: If the elemental takes Cold damage, its Speed decreases by 20 feet until the end of its next turn.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Water Form
     entryType: special
     text: The elemental can enter an enemy's space and stop there. It can move through a space as narrow as 1 inch without expending extra movement to do so.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -58066,6 +63466,9 @@ entries:
         - name: Slam
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Slam
     entryType: attack
@@ -58085,6 +63488,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Whelm (Recharge 4-6)
     entryType: save
@@ -58131,6 +63537,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Water Elemental
@@ -58231,6 +63640,9 @@ entries:
           with:
             type: attack
             name: a Bite attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite (Bear or Hybrid Form Only)
     entryType: attack
@@ -58251,10 +63663,16 @@ entries:
               type: hours
               count: 24
       additionalEffects: 'If the target is a Humanoid, it is subjected to the following effect. *Constitution Saving Throw*: DC 14. *Failure:*  The target is cursed. If the cursed target drops to 0 Hit Points, it instead becomes a Werebear under the DM''s control and has 10 Hit Points. *Success:*  The target is immune to this werebear''s curse for 24 hours.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Handaxe (Humanoid or Hybrid Form Only)
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +7, reach 5 ft or range 20/60 ft. 14 (3d6 + 4) Slashing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Rend (Bear or Hybrid Form Only)
     entryType: attack
@@ -58268,10 +63686,16 @@ entries:
           type: Slashing
           average: 13
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The werebear shape-shifts into a Large bear-humanoid hybrid form or a Large bear, or it returns to its true humanoid form. Its game statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Werebear
@@ -58367,6 +63791,9 @@ entries:
           with:
             type: attack
             name: a Gore attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Gore (Boar or Hybrid Form Only)
     entryType: attack
@@ -58387,10 +63814,16 @@ entries:
               type: hours
               count: 24
       additionalEffects: 'If the target is a Humanoid, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *Failure:*  The target is cursed. If the cursed target drops to 0 Hit Points, it instead becomes a Wereboar under the DM''s control and has 10 Hit Points. *Success:*  The target is immune to this wereboar''s curse for 24 hours.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Javelin (Humanoid or Hybrid Form Only)
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +5, reach 5 ft. or range 30/120 ft. 13 (3d6 + 3) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tusk (Boar or Hybrid Form Only)
     entryType: attack
@@ -58414,10 +63847,16 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature and the wereboar moved 20+ feet straight toward it immediately before the hit, the target takes an extra 7 (2d6) Piercing damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The wereboar shape-shifts into a Medium boar-humanoid hybrid or a Small boar, or it returns to its true humanoid form. Its game statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Wereboar
@@ -58519,6 +63958,9 @@ entries:
           with:
             type: attack
             name: a Bite attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite (Rat or Hybrid Form Only)
     entryType: attack
@@ -58539,6 +63981,9 @@ entries:
               type: hours
               count: 24
       additionalEffects: 'If the target is a Humanoid, it is subjected to the following effect. *Constitution Saving Throw*: DC 11. *Failure:*  The target is cursed. If the cursed target drops to 0 Hit Points, it instead becomes a Wererat under the DM''s control and has 10 Hit Points. *Success:*  The target is immune to this wererat''s curse for 24 hours.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Scratch
     entryType: attack
@@ -58552,6 +63997,9 @@ entries:
           type: Slashing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Hand Crossbow (Humanoid or Hybrid Form Only)
     entryType: attack
@@ -58565,10 +64013,16 @@ entries:
           type: Piercing
           average: 6
       range: 30/120 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The wererat shape-shifts into a Medium rat-humanoid hybrid or a Small rat, or it returns to its true humanoid form. Its game statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Wererat
@@ -58669,6 +64123,9 @@ entries:
           with:
             type: attack
             name: a Bite attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite (Tiger or Hybrid Form Only)
     entryType: attack
@@ -58689,6 +64146,9 @@ entries:
               type: hours
               count: 24
       additionalEffects: 'If the target is a Humanoid, it is subjected to the following effect. *Constitution Saving Throw*: DC 13. *Failure:*  The target is cursed. If the cursed target drops to 0 Hit Points, it instead becomes a Weretiger under the DM''s control and has 10 Hit Points. *Success:*  The target is immune to this weretiger''s curse for 24 hours.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Scratch
     entryType: attack
@@ -58702,6 +64162,9 @@ entries:
           type: Slashing
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Longbow (Humanoid or Hybrid Form Only)
     entryType: attack
@@ -58715,14 +64178,23 @@ entries:
           type: Piercing
           average: 11
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Prowl (Tiger or Hybrid Form Only)
     entryType: special
     text: The weretiger moves up to its Speed without provoking Opportunity Attacks. At the end of this movement, the weretiger can take the Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The weretiger shape-shifts into a Large tiger-humanoid hybrid or a Large tiger, or it returns to its true humanoid form. Its game statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Weretiger
@@ -58817,6 +64289,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The werewolf has Advantage on an attack roll against a creature if at least one of the werewolf's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -58830,6 +64305,9 @@ entries:
           with:
             type: attack
             name: a Bite attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite (Wolf or Hybrid Form Only)
     entryType: attack
@@ -58850,6 +64328,9 @@ entries:
               type: hours
               count: 24
       additionalEffects: 'If the target is a Humanoid, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *Failure:*  The target is cursed. If the cursed target drops to 0 Hit Points, it instead becomes a Werewolf under the DM''s control and has 10 Hit Points. *Success:*  The target is immune to this werewolf''s curse for 24 hours.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Scratch
     entryType: attack
@@ -58863,6 +64344,9 @@ entries:
           type: Slashing
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Longbow (Humanoid or Hybrid Form Only)
     entryType: attack
@@ -58876,10 +64360,16 @@ entries:
           type: Piercing
           average: 11
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The werewolf shape-shifts into a Large wolf-humanoid hybrid or a Medium wolf, or it returns to its true humanoid form. Its game statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Werewolf
@@ -58990,6 +64480,9 @@ entries:
     name: Ice Walk
     entryType: special
     text: The dragon can move across and climb icy surfaces without needing to make an ability check. Additionally, Difficult Terrain composed of ice or snow doesn't cost it extra movement.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -58999,6 +64492,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -59016,6 +64512,9 @@ entries:
           type: Cold
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cold Breath (Recharge 5-6)
     entryType: save
@@ -59039,6 +64538,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # White Dragon Wyrmling
@@ -59133,6 +64635,9 @@ entries:
     name: Sunlight Sensitivity
     entryType: special
     text: While in sunlight, the wight has Disadvantage on ability checks and attack rolls.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -59146,6 +64651,9 @@ entries:
           with:
             type: attack
             name: Life Drain
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Necrotic Sword
     entryType: attack
@@ -59163,6 +64671,9 @@ entries:
           type: Necrotic
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Necrotic Bow
     entryType: attack
@@ -59180,6 +64691,9 @@ entries:
           type: Necrotic
           average: 4
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Life Drain
     entryType: save
@@ -59199,6 +64713,9 @@ entries:
             type: Necrotic
             average: 6
         legacyEffects: 6 (1d8 + 2) Necrotic damage, and the target's Hit Point maximum decreases by an amount equal to the damage taken. A Humanoid slain by this attack rises 24 hours later as a Zombie under the wight's control, unless the Humanoid is restored to life or its body is destroyed. The wight can have no more than twelve zombies under its control at a time.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Wight
@@ -59307,14 +64824,23 @@ entries:
     name: Ephemeral
     entryType: special
     text: The wisp can't wear or carry anything.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Illumination
     entryType: special
     text: The wisp sheds Bright Light in a 20-foot radius and Dim Light for an additional 20 feet.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Incorporeal Movement
     entryType: special
     text: The wisp can move through other creatures and objects as if they were Difficult Terrain. It takes 5 (1d10) Force damage if it ends its turn inside an object.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Shock
     entryType: attack
@@ -59328,6 +64854,9 @@ entries:
           type: Lightning
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Consume Life
     entryType: save
@@ -59344,10 +64873,16 @@ entries:
         effects:
           other: The target dies, and the wisp regains 10 (3d6) Hit Points.
         legacyEffects: The target dies, and the wisp regains 10 (3d6) Hit Points.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Vanish
     entryType: special
     text: The wisp and its light have the Invisible condition until the wisp's  Concentration ends on this effect, which ends early immediately after the wisp makes an attack roll or uses Consume Life.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Will-o'-Wisp
@@ -59444,6 +64979,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The wolf has Advantage on an attack roll against a creature if at least one of the wolf's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -59463,6 +65001,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cold Breath (Recharge 5-6)
     entryType: save
@@ -59486,6 +65027,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Winter Wolf
@@ -59578,6 +65122,9 @@ entries:
           type: Piercing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Worg
@@ -59672,10 +65219,16 @@ entries:
     name: Incorporeal Movement
     entryType: special
     text: The wraith can move through other creatures and objects as if they were Difficult Terrain. It takes 5 (1d10) Force damage if it ends its turn inside an object.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Sunlight Sensitivity
     entryType: special
     text: While in sunlight, the wraith has Disadvantage on ability checks and attack rolls.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Life Drain
     entryType: attack
@@ -59692,10 +65245,16 @@ entries:
       onHit:
         other: If the target is a creature, its Hit Point maximum decreases by an amount equal to the damage taken.
       additionalEffects: If the target is a creature, its Hit Point maximum decreases by an amount equal to the damage taken.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Create Specter
     entryType: special
     text: The wraith targets a Humanoid corpse within 10 feet of itself that has been dead for no longer than 1 minute. The target's spirit rises as a Specter in the space of its corpse or in the nearest unoccupied space. The specter is under the wraith's control. The wraith can have no more than seven specters under its control at a time.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Wraith
@@ -59788,6 +65347,9 @@ entries:
         - name: Sting
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -59801,6 +65363,9 @@ entries:
           type: Piercing
           average: 13
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Sting
     entryType: attack
@@ -59818,6 +65383,9 @@ entries:
           type: Poison
           average: 24
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Wyvern
@@ -59909,10 +65477,16 @@ entries:
     name: Earth Glide
     entryType: special
     text: The xorn can burrow through nonmagical, unworked earth and stone. While doing so, the xorn doesn't disturb the material it moves through.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Treasure Sense
     entryType: special
     text: The xorn can pinpoint the location of precious metals and stones within 60 feet of itself.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -59924,6 +65498,9 @@ entries:
         - name: Claw
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -59937,6 +65514,9 @@ entries:
           type: Piercing
           average: 17
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -59950,10 +65530,16 @@ entries:
           type: Slashing
           average: 8
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Charge
     entryType: special
     text: The xorn moves up to its Speed or Burrow Speed straight toward an enemy it can sense.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Xorn
@@ -60063,6 +65649,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -60072,6 +65661,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -60089,6 +65681,9 @@ entries:
           type: Acid
           average: 3
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Breath (Recharge 5-6)
     entryType: save
@@ -60113,6 +65708,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young Black Dragon
@@ -60219,6 +65817,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -60236,6 +65837,9 @@ entries:
           type: Lightning
           average: 5
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -60260,6 +65864,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young Blue Dragon
@@ -60363,6 +65970,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -60376,6 +65986,9 @@ entries:
           type: Slashing
           average: 15
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -60400,6 +66013,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Sleep Breath
     entryType: save
@@ -60425,6 +66041,9 @@ entries:
                 trigger: the end of its next turn
               saveToEnd:
                 timing: custom
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young Brass Dragon
@@ -60526,6 +66145,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -60539,6 +66161,9 @@ entries:
           with:
             type: attack
             name: Repulsion Breath
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -60552,6 +66177,9 @@ entries:
           type: Slashing
           average: 16
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -60576,6 +66204,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Repulsion Breath
     entryType: save
@@ -60594,6 +66225,9 @@ entries:
             type: push
             distance: 40 feet
             direction: straight away from the dragon
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young Bronze Dragon
@@ -60709,6 +66343,9 @@ entries:
           with:
             type: attack
             name: Slowing Breath
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -60722,6 +66359,9 @@ entries:
           type: Slashing
           average: 15
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Breath (Recharge 5-6)
     entryType: save
@@ -60746,6 +66386,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Slowing Breath
     entryType: save
@@ -60766,6 +66409,9 @@ entries:
             - type: other
               target: Reactions
               description: can't take Reactions
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young Copper Dragon
@@ -60869,6 +66515,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -60882,6 +66531,9 @@ entries:
           with:
             type: attack
             name: Weakening Breath
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -60895,6 +66547,9 @@ entries:
           type: Slashing
           average: 17
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -60918,6 +66573,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Weakening Breath
     entryType: save
@@ -60941,6 +66599,9 @@ entries:
               modifier: -3
               target: damage rolls
               description: subtracts 3 (1d6) from its damage rolls.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young Gold Dragon
@@ -61047,6 +66708,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -61056,6 +66720,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -61073,6 +66740,9 @@ entries:
           type: Poison
           average: 7
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Poison Breath (Recharge 5-6)
     entryType: save
@@ -61096,6 +66766,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young Green Dragon
@@ -61202,6 +66875,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -61219,6 +66895,9 @@ entries:
           type: Fire
           average: 3
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -61242,6 +66921,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young Red Dragon
@@ -61347,6 +67029,9 @@ entries:
           with:
             type: attack
             name: Paralyzing Breath
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -61360,6 +67045,9 @@ entries:
           type: Slashing
           average: 15
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cold Breath (Recharge 5-6)
     entryType: save
@@ -61383,6 +67071,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Paralyzing Breath
     entryType: save
@@ -61390,6 +67081,9 @@ entries:
     save:
       ability: con
       dc: 17
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young Silver Dragon
@@ -61491,6 +67185,9 @@ entries:
     name: Ice Walk
     entryType: special
     text: The dragon can move across and climb icy surfaces without needing to make an ability check. Additionally, Difficult Terrain composed of ice or snow doesn't cost it extra movement.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -61500,6 +67197,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -61517,6 +67217,9 @@ entries:
           type: Cold
           average: 2
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cold Breath (Recharge 5-6)
     entryType: save
@@ -61540,6 +67243,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young White Dragon
@@ -61627,6 +67333,9 @@ entries:
     name: Undead Fortitude
     entryType: special
     text: If damage reduces the zombie to 0 Hit Points, it makes a Constitution saving throw (DC 5 plus the damage taken) unless the damage is Radiant or from a Critical Hit. On a successful save, the zombie drops to 1 Hit Point instead.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Slam
     entryType: attack
@@ -61640,6 +67349,9 @@ entries:
           type: Bludgeoning
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Zombie
@@ -79212,7 +84924,7 @@ __export(plugin_presets_exports, {
   shouldImportTerrainPresets: () => shouldImportTerrainPresets
 });
 async function ensureDir2(app, dir) {
-  const normalizedDir = (0, import_obsidian38.normalizePath)(dir);
+  const normalizedDir = (0, import_obsidian39.normalizePath)(dir);
   const folder = app.vault.getAbstractFileByPath(normalizedDir);
   if (!folder) {
     await app.vault.createFolder(normalizedDir).catch(() => {
@@ -79225,7 +84937,7 @@ function registerPreset(fileName, content) {
 async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, force = false) {
   try {
     await ensureDir3(app);
-    const normalizedDir = (0, import_obsidian38.normalizePath)(dir);
+    const normalizedDir = (0, import_obsidian39.normalizePath)(dir);
     const presetModule = await Promise.resolve().then(() => (init_preset_data(), preset_data_exports));
     const rawPresetFiles = presetModule[presetKey] || {};
     const presetEntries = Object.entries(rawPresetFiles).map(([fileName, content]) => [
@@ -79243,7 +84955,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       const existing = await app.vault.adapter.list(normalizedDir);
       const prefix = `${normalizedDir}/`;
       existing.files.forEach((file) => {
-        const normalizedFile = (0, import_obsidian38.normalizePath)(file);
+        const normalizedFile = (0, import_obsidian39.normalizePath)(file);
         if (normalizedFile.startsWith(prefix)) {
           const relativePath = normalizedFile.slice(prefix.length);
           if (relativePath) {
@@ -79259,7 +84971,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
     const ensuredFolders = /* @__PURE__ */ new Set([normalizedDir]);
     for (const [fileName, content] of presetEntries) {
       const loweredName = fileName.toLowerCase();
-      const targetPath = (0, import_obsidian38.normalizePath)(`${normalizedDir}/${fileName}`);
+      const targetPath = (0, import_obsidian39.normalizePath)(`${normalizedDir}/${fileName}`);
       const existingPath = existingFiles.get(loweredName);
       try {
         await ensureParentFolders(app, normalizedDir, fileName, ensuredFolders);
@@ -79285,19 +84997,19 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       }
     }
     if (importedCount > 0) {
-      new import_obsidian38.Notice(`Imported ${importedCount} ${typeName} presets`);
+      new import_obsidian39.Notice(`Imported ${importedCount} ${typeName} presets`);
       logger.log(`${typeName} import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
     } else if (skippedCount > 0) {
       logger.log(`All ${skippedCount} ${typeName} presets already exist`);
     } else if (errorCount > 0) {
-      new import_obsidian38.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian39.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   } catch (err) {
     logger.error(`Failed to import ${typeName} presets:`, err);
     if (err instanceof Error && err.message.includes("Cannot find module")) {
       logger.log(`No ${typeName} preset data found - skipping import`);
     } else {
-      new import_obsidian38.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian39.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   }
 }
@@ -79309,7 +85021,7 @@ async function ensureParentFolders(app, baseDir, relativePath, ensured) {
   parts.pop();
   let current = baseDir;
   for (const part of parts) {
-    current = (0, import_obsidian38.normalizePath)(`${current}/${part}`);
+    current = (0, import_obsidian39.normalizePath)(`${current}/${part}`);
     if (ensured.has(current)) continue;
     ensured.add(current);
     if (!app.vault.getAbstractFileByPath(current)) {
@@ -79326,7 +85038,7 @@ async function importPluginPresets(app) {
   return importPresetsForDir(app, ENTITY_REGISTRY.creatures.directory, "PRESET_CREATURES", "creature", ensureCreatureDir2);
 }
 async function shouldImportPresetsForDir(app, dir, markerName, label, ensureDir3) {
-  const markerPath = (0, import_obsidian38.normalizePath)(`${dir}/${markerName}`);
+  const markerPath = (0, import_obsidian39.normalizePath)(`${dir}/${markerName}`);
   const markerFile = app.vault.getAbstractFileByPath(markerPath);
   if (markerFile) {
     return false;
@@ -79416,11 +85128,11 @@ async function importPresetsByCategory(app, category, force = false) {
       throw new Error(`Unknown preset category: ${category}. Valid categories: creatures, spells, items, equipment, terrains, regions, calendars, all`);
   }
 }
-var import_obsidian38, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, PRESET_FILES;
+var import_obsidian39, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, PRESET_FILES;
 var init_plugin_presets = __esm({
   "Presets/lib/plugin-presets.ts"() {
     "use strict";
-    import_obsidian38 = require("obsidian");
+    import_obsidian39 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     ensureCreatureDir2 = (app) => ensureDir2(app, ENTITY_REGISTRY.creatures.directory);
@@ -79447,16 +85159,16 @@ __export(index_files_exports, {
 });
 async function createIndexFile(app, filePath, title, description, directory) {
   const folder = app.vault.getAbstractFileByPath(directory);
-  if (!(folder instanceof import_obsidian39.TFolder)) {
+  if (!(folder instanceof import_obsidian40.TFolder)) {
     logger.log(`[Index] Directory ${directory} not found, skipping index generation`);
     return;
   }
   const files = [];
   const collectFiles = (folder2) => {
     for (const child of folder2.children) {
-      if (child instanceof import_obsidian39.TFile && child.extension === "md") {
+      if (child instanceof import_obsidian40.TFile && child.extension === "md") {
         files.push(child);
-      } else if (child instanceof import_obsidian39.TFolder) {
+      } else if (child instanceof import_obsidian40.TFolder) {
         collectFiles(child);
       }
     }
@@ -79493,7 +85205,7 @@ async function createIndexFile(app, filePath, title, description, directory) {
   }
   const content = lines.join("\n");
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian39.TFile) {
+  if (existingFile instanceof import_obsidian40.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -79561,7 +85273,7 @@ async function generateLibraryHub(app) {
   const content = lines.join("\n");
   const filePath = `${SALTMARCHER_DIR}/Library.md`;
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian39.TFile) {
+  if (existingFile instanceof import_obsidian40.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -79583,11 +85295,11 @@ async function generateAllIndexes(app) {
   ]);
   logger.log("[Index] All indexes generated successfully");
 }
-var import_obsidian39, SALTMARCHER_DIR;
+var import_obsidian40, SALTMARCHER_DIR;
 var init_index_files = __esm({
   "src/workmodes/library/core/index-files.ts"() {
     "use strict";
-    import_obsidian39 = require("obsidian");
+    import_obsidian40 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     SALTMARCHER_DIR = "SaltMarcher";
@@ -80862,7 +86574,7 @@ async function dumpFieldStates(app, args) {
     throw new Error("No create modal is open");
   }
   const fieldContainers = modal.querySelectorAll("[data-field-id]");
-  const fields4 = [];
+  const fields5 = [];
   for (const container of Array.from(fieldContainers)) {
     const fieldId = container.getAttribute("data-field-id");
     if (!fieldId) continue;
@@ -80881,14 +86593,14 @@ async function dumpFieldStates(app, args) {
       field.chips = chips.map((chip) => chip.textContent?.trim());
       field.chipCount = chips.length;
     }
-    fields4.push(field);
+    fields5.push(field);
   }
   const result = {
     modalType: modalType || "unknown",
-    fieldCount: fields4.length,
-    fields: fields4
+    fieldCount: fields5.length,
+    fields: fields5
   };
-  logger.log(`[IPC-CMD] Dumped ${fields4.length} fields`);
+  logger.log(`[IPC-CMD] Dumped ${fields5.length} fields`);
   return result;
 }
 async function getModalData(app, args) {
@@ -81137,6 +86849,385 @@ var init_ui_inspect_command = __esm({
   }
 });
 
+// src/services/events/event-bus.ts
+var EventTopic, EventBusImpl, eventBus;
+var init_event_bus = __esm({
+  "src/services/events/event-bus.ts"() {
+    "use strict";
+    init_plugin_logger();
+    EventTopic = /* @__PURE__ */ ((EventTopic2) => {
+      EventTopic2["ENCOUNTER"] = "encounter";
+      EventTopic2["FACTION"] = "faction";
+      EventTopic2["CALENDAR"] = "calendar";
+      EventTopic2["AUDIO"] = "audio";
+      EventTopic2["MAP"] = "map";
+      EventTopic2["LIBRARY"] = "library";
+      EventTopic2["TRAVEL"] = "travel";
+      EventTopic2["WEATHER"] = "weather";
+      return EventTopic2;
+    })(EventTopic || {});
+    EventBusImpl = class {
+      constructor() {
+        this.subscriptions = /* @__PURE__ */ new Map();
+        this.topicIndex = /* @__PURE__ */ new Map();
+        this.nextId = 1;
+        this.isPaused = false;
+        this.eventQueue = [];
+        this.isProcessing = false;
+        Object.values(EventTopic).forEach((topic) => {
+          this.topicIndex.set(topic, /* @__PURE__ */ new Set());
+        });
+      }
+      /**
+       * Subscribe to events
+       */
+      subscribe(handler, options = {}) {
+        const {
+          topics = Object.values(EventTopic),
+          filter,
+          async = false,
+          priority = 0,
+          signal
+        } = options;
+        const id = `sub-${this.nextId++}`;
+        const topicSet = new Set(
+          Array.isArray(topics) ? topics : [topics]
+        );
+        const subscription = {
+          id,
+          topics: topicSet,
+          handler,
+          filter,
+          async,
+          priority
+        };
+        this.subscriptions.set(id, subscription);
+        topicSet.forEach((topic) => {
+          this.topicIndex.get(topic)?.add(id);
+        });
+        if (signal) {
+          signal.addEventListener("abort", () => {
+            this.unsubscribe(id);
+          });
+        }
+        logger.debug(`[EventBus] Subscribed ${id} to topics:`, Array.from(topicSet));
+        return () => this.unsubscribe(id);
+      }
+      /**
+       * Emit an event
+       */
+      async emit(event) {
+        if (this.isPaused) {
+          this.eventQueue.push(event);
+          return;
+        }
+        logger.debug(`[EventBus] Emitting ${event.topic} event:`, event);
+        const subscriptionIds = this.topicIndex.get(event.topic) || /* @__PURE__ */ new Set();
+        const subscriptions = Array.from(subscriptionIds).map((id) => this.subscriptions.get(id)).filter((sub) => !!sub).filter((sub) => !sub.filter || sub.filter(event)).sort((a, b) => b.priority - a.priority);
+        const promises = [];
+        for (const subscription of subscriptions) {
+          try {
+            if (subscription.async) {
+              promises.push(
+                Promise.resolve(subscription.handler(event)).catch((error) => {
+                  logger.error(
+                    `[EventBus] Async handler error for ${subscription.id}:`,
+                    error
+                  );
+                })
+              );
+            } else {
+              await Promise.resolve(subscription.handler(event));
+            }
+          } catch (error) {
+            logger.error(
+              `[EventBus] Handler error for ${subscription.id}:`,
+              error
+            );
+          }
+        }
+        if (promises.length > 0) {
+          await Promise.allSettled(promises);
+        }
+      }
+      /**
+       * Emit an event without waiting for handlers
+       */
+      emitAsync(event) {
+        this.emit(event).catch((error) => {
+          logger.error("[EventBus] Async emit error:", error);
+        });
+      }
+      /**
+       * Remove a subscription
+       */
+      unsubscribe(id) {
+        const subscription = this.subscriptions.get(id);
+        if (!subscription) return;
+        subscription.topics.forEach((topic) => {
+          this.topicIndex.get(topic)?.delete(id);
+        });
+        this.subscriptions.delete(id);
+        logger.debug(`[EventBus] Unsubscribed ${id}`);
+      }
+      /**
+       * Pause event processing (queue events)
+       */
+      pause() {
+        this.isPaused = true;
+        logger.info("[EventBus] Paused");
+      }
+      /**
+       * Resume event processing (flush queue)
+       */
+      async resume() {
+        this.isPaused = false;
+        logger.info("[EventBus] Resumed");
+        const queue = [...this.eventQueue];
+        this.eventQueue = [];
+        for (const event of queue) {
+          await this.emit(event);
+        }
+      }
+      /**
+       * Clear all subscriptions
+       */
+      clear() {
+        this.subscriptions.clear();
+        this.topicIndex.forEach((set) => set.clear());
+        this.eventQueue = [];
+        logger.info("[EventBus] Cleared all subscriptions");
+      }
+      /**
+       * Get subscription count
+       */
+      getSubscriptionCount() {
+        return this.subscriptions.size;
+      }
+      /**
+       * Get topic subscription count
+       */
+      getTopicSubscriptionCount(topic) {
+        return this.topicIndex.get(topic)?.size || 0;
+      }
+    };
+    eventBus = new EventBusImpl();
+  }
+});
+
+// src/services/events/index.ts
+var init_events = __esm({
+  "src/services/events/index.ts"() {
+    "use strict";
+    init_event_bus();
+  }
+});
+
+// devkit/core/ipc/commands/state-commands.ts
+async function listStores(app) {
+  logger.log("[IPC-CMD] Listing registered stores");
+  const manager = getStoreManager();
+  const storeNames = manager.list();
+  const summaries = storeNames.map((name) => {
+    const store = manager.get(name);
+    return summarizeStore(name, store);
+  }).filter((summary) => summary !== null);
+  const stats = {
+    totalStores: summaries.length,
+    persistentStores: summaries.filter((summary) => summary.isPersistent).length,
+    writableStores: summaries.filter((summary) => summary.isWritable).length,
+    readableStores: summaries.filter((summary) => summary.type === "readable").length
+  };
+  const topics = Object.values(EventTopic).map((topic) => ({
+    topic,
+    subscriptions: eventBus.getTopicSubscriptionCount(topic)
+  }));
+  return {
+    stores: summaries,
+    stats,
+    eventBus: {
+      totalSubscriptions: eventBus.getSubscriptionCount(),
+      topics
+    }
+  };
+}
+async function inspectStore(app, args) {
+  const [storeName] = args;
+  if (!storeName) {
+    throw new Error("Store name required");
+  }
+  logger.log(`[IPC-CMD] Inspecting store: ${storeName}`);
+  const manager = getStoreManager();
+  const store = manager.get(storeName);
+  if (!store) {
+    return {
+      name: storeName,
+      capabilities: [],
+      type: "readable",
+      isPersistent: false,
+      isWritable: false,
+      found: false,
+      valuePreview: void 0
+    };
+  }
+  const summary = summarizeStore(storeName, store, { includeValue: true });
+  return {
+    ...summary,
+    found: true
+  };
+}
+function summarizeStore(name, store, options = {}) {
+  if (!store) return null;
+  const isWritable = typeof store.set === "function";
+  const isPersistent = typeof store.save === "function" && typeof store.load === "function";
+  const hasMetadata = typeof store.getMetadata === "function";
+  const capabilities = ["readable"];
+  if (isWritable) capabilities.push("writable");
+  if (isPersistent) capabilities.push("persistent");
+  let metadata;
+  if (hasMetadata) {
+    try {
+      metadata = sanitizeValue(store.getMetadata());
+    } catch (error) {
+      metadata = { error: `Failed to read metadata: ${error instanceof Error ? error.message : String(error)}` };
+    }
+  }
+  let storageKey;
+  if (isPersistent && typeof store.getStorageKey === "function") {
+    try {
+      storageKey = store.getStorageKey();
+    } catch (error) {
+      storageKey = `Error: ${error instanceof Error ? error.message : String(error)}`;
+    }
+  }
+  let isDirty;
+  if (isPersistent && typeof store.isDirty === "function") {
+    try {
+      isDirty = store.isDirty();
+    } catch (error) {
+      isDirty = void 0;
+    }
+  }
+  let valueType;
+  let valuePreview;
+  let valueError;
+  let serializedValue;
+  try {
+    const value = store.get();
+    valueType = determineType(value);
+    serializedValue = sanitizeValue(value);
+    valuePreview = createPreview(serializedValue);
+  } catch (error) {
+    valueError = `Failed to read value: ${error instanceof Error ? error.message : String(error)}`;
+  }
+  if (options.includeValue) {
+    return {
+      name,
+      capabilities,
+      type: determineStoreType(isPersistent, isWritable),
+      isPersistent,
+      isWritable,
+      isDirty,
+      storageKey,
+      metadata,
+      valueType,
+      valuePreview,
+      valueError,
+      value: serializedValue
+    };
+  }
+  return {
+    name,
+    capabilities,
+    type: determineStoreType(isPersistent, isWritable),
+    isPersistent,
+    isWritable,
+    isDirty,
+    storageKey,
+    metadata,
+    valueType,
+    valuePreview,
+    valueError
+  };
+}
+function determineStoreType(isPersistent, isWritable) {
+  if (isPersistent) return "persistent";
+  if (isWritable) return "writable";
+  return "readable";
+}
+function createPreview(value) {
+  if (typeof value === "undefined") return void 0;
+  try {
+    const json = JSON.stringify(value);
+    if (!json) return void 0;
+    if (json.length <= MAX_PREVIEW_LENGTH) {
+      return json;
+    }
+    return `${json.slice(0, MAX_PREVIEW_LENGTH - 1)}\u2026`;
+  } catch (error) {
+    return `[unserializable: ${error instanceof Error ? error.message : typeof value}]`;
+  }
+}
+function determineType(value) {
+  if (value === null) return "null";
+  if (value === void 0) return "undefined";
+  if (Array.isArray(value)) return "array";
+  if (value instanceof Map) return "Map";
+  if (value instanceof Set) return "Set";
+  if (value instanceof Date) return "Date";
+  if (value instanceof RegExp) return "RegExp";
+  return typeof value;
+}
+function sanitizeValue(value, seen = /* @__PURE__ */ new WeakSet(), depth = 0) {
+  if (value === null || typeof value !== "object") {
+    if (typeof value === "function") {
+      return `[Function ${value.name || "anonymous"}]`;
+    }
+    return value;
+  }
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (value instanceof RegExp) {
+    return value.toString();
+  }
+  if (value instanceof Map) {
+    const entries = Array.from(value.entries()).slice(0, MAX_ARRAY_ITEMS);
+    return entries.map(([key, val]) => [
+      sanitizeValue(key, seen, depth + 1),
+      sanitizeValue(val, seen, depth + 1)
+    ]);
+  }
+  if (value instanceof Set) {
+    return Array.from(value.values()).slice(0, MAX_ARRAY_ITEMS).map((item) => sanitizeValue(item, seen, depth + 1));
+  }
+  if (seen.has(value)) {
+    return "[Circular]";
+  }
+  seen.add(value);
+  if (depth >= MAX_DEPTH) {
+    const ctor = value.constructor;
+    return `[Object ${ctor?.name || "Object"}]`;
+  }
+  const result = {};
+  for (const [key, val] of Object.entries(value)) {
+    result[key] = sanitizeValue(val, seen, depth + 1);
+  }
+  return result;
+}
+var MAX_PREVIEW_LENGTH, MAX_ARRAY_ITEMS, MAX_DEPTH;
+var init_state_commands = __esm({
+  "devkit/core/ipc/commands/state-commands.ts"() {
+    "use strict";
+    init_plugin_logger();
+    init_store_manager();
+    init_events();
+    MAX_PREVIEW_LENGTH = 200;
+    MAX_ARRAY_ITEMS = 20;
+    MAX_DEPTH = 3;
+  }
+});
+
 // devkit/core/ipc/register-dev-commands.ts
 var register_dev_commands_exports = {};
 __export(register_dev_commands_exports, {
@@ -81167,6 +87258,8 @@ function registerDevCommands(server) {
   server.registerCommand("get-modal-data", getModalData);
   server.registerCommand("dump-dom", dumpDOM);
   server.registerCommand("inspect-ui", inspectUI);
+  server.registerCommand("state-list", listStores);
+  server.registerCommand("state-inspect", inspectStore);
 }
 var init_register_dev_commands = __esm({
   "devkit/core/ipc/register-dev-commands.ts"() {
@@ -81176,6 +87269,7 @@ var init_register_dev_commands = __esm({
     init_field_inspection_commands();
     init_dom_dump_command();
     init_ui_inspect_command();
+    init_state_commands();
   }
 });
 
@@ -81185,14 +87279,14 @@ __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian40 = require("obsidian");
+var import_obsidian41 = require("obsidian");
 init_plugin_logger();
 
 // src/workmodes/cartographer/index.ts
-var import_obsidian13 = require("obsidian");
+var import_obsidian14 = require("obsidian");
 
 // src/workmodes/cartographer/controller.ts
-var import_obsidian12 = require("obsidian");
+var import_obsidian13 = require("obsidian");
 init_options();
 init_map_list();
 
@@ -81235,14 +87329,14 @@ async function createMapLayer(app, host, mapFile, opts) {
 }
 
 // src/ui/maps/workflows/map-manager.ts
-var import_obsidian8 = require("obsidian");
+var import_obsidian10 = require("obsidian");
 init_plugin_logger();
 init_map_workflows();
 
 // src/ui/maps/components/confirm-delete-modal.ts
-var import_obsidian7 = require("obsidian");
+var import_obsidian9 = require("obsidian");
 init_plugin_logger();
-var ConfirmDeleteModal = class extends import_obsidian7.Modal {
+var ConfirmDeleteModal = class extends import_obsidian9.Modal {
   constructor(app, mapFile, onConfirm) {
     super(app);
     this.mapFile = mapFile;
@@ -81265,7 +87359,7 @@ var ConfirmDeleteModal = class extends import_obsidian7.Modal {
     const btnRow = contentEl.createDiv({ cls: "modal-button-container" });
     const cancelBtn = btnRow.createEl("button", { text: "Cancel" });
     const confirmBtn = btnRow.createEl("button", { text: "Delete" });
-    (0, import_obsidian7.setIcon)(confirmBtn, "trash");
+    (0, import_obsidian9.setIcon)(confirmBtn, "trash");
     confirmBtn.classList.add("mod-warning");
     confirmBtn.disabled = true;
     input.addEventListener("input", () => {
@@ -81276,10 +87370,10 @@ var ConfirmDeleteModal = class extends import_obsidian7.Modal {
       confirmBtn.disabled = true;
       try {
         await this.onConfirm();
-        new import_obsidian7.Notice("Map deleted.");
+        new import_obsidian9.Notice("Map deleted.");
       } catch (e) {
         logger.error(e);
-        new import_obsidian7.Notice("Deleting map failed.");
+        new import_obsidian9.Notice("Deleting map failed.");
       } finally {
         this.close();
       }
@@ -81336,7 +87430,7 @@ function createMapManager(app, options = {}) {
   const deleteCurrent = () => {
     const target = current;
     if (!target) {
-      new import_obsidian8.Notice(notices.missingSelection);
+      new import_obsidian10.Notice(notices.missingSelection);
       return;
     }
     new ConfirmDeleteModal(app, target, async () => {
@@ -81347,7 +87441,7 @@ function createMapManager(app, options = {}) {
         }
       } catch (error) {
         logger.error(MAP_MANAGER_COPY.logs.deleteFailed, error);
-        new import_obsidian8.Notice(notices.deleteFailed);
+        new import_obsidian10.Notice(notices.deleteFailed);
       }
     }).open();
   };
@@ -81364,7 +87458,7 @@ function createMapManager(app, options = {}) {
 init_plugin_logger();
 
 // src/ui/maps/components/map-header.ts
-var import_obsidian9 = require("obsidian");
+var import_obsidian11 = require("obsidian");
 init_map_workflows();
 init_search_dropdown();
 
@@ -81421,7 +87515,7 @@ function createMapHeader(app, host, options) {
     titleRightSlot.style.display = "none";
   }
   const openBtn = row1.createEl("button", { text: labels.open, attr: { type: "button" } });
-  (0, import_obsidian9.setIcon)(openBtn, "folder-open");
+  (0, import_obsidian11.setIcon)(openBtn, "folder-open");
   applyMapButtonStyle(openBtn);
   openBtn.onclick = () => {
     if (destroyed) return;
@@ -81432,7 +87526,7 @@ function createMapHeader(app, host, options) {
     });
   };
   const createBtn = row1.createEl("button", { text: labels.create, attr: { type: "button" } });
-  (0, import_obsidian9.setIcon)(createBtn, "plus");
+  (0, import_obsidian11.setIcon)(createBtn, "plus");
   applyMapButtonStyle(createBtn);
   createBtn.onclick = () => {
     if (destroyed) return;
@@ -81444,12 +87538,12 @@ function createMapHeader(app, host, options) {
   };
   const deleteBtn = options.onDelete ? row1.createEl("button", { text: labels.delete, attr: { type: "button", "aria-label": labels.delete } }) : null;
   if (deleteBtn) {
-    (0, import_obsidian9.setIcon)(deleteBtn, "trash");
+    (0, import_obsidian11.setIcon)(deleteBtn, "trash");
     applyMapButtonStyle(deleteBtn);
     deleteBtn.onclick = () => {
       if (destroyed) return;
       if (!currentFile) {
-        new import_obsidian9.Notice(notices.missingFile);
+        new import_obsidian11.Notice(notices.missingFile);
         return;
       }
       void options.onDelete?.(currentFile);
@@ -81485,7 +87579,7 @@ function createMapHeader(app, host, options) {
     const file = currentFile;
     if (!file) {
       await options.onSave?.(mode, null);
-      new import_obsidian9.Notice(notices.missingFile);
+      new import_obsidian11.Notice(notices.missingFile);
       return;
     }
     try {
@@ -81494,10 +87588,10 @@ function createMapHeader(app, host, options) {
         if (mode === "save") await saveMap(app, file);
         else await saveMapAs(app, file);
       }
-      new import_obsidian9.Notice(notices.saveSuccess);
+      new import_obsidian11.Notice(notices.saveSuccess);
     } catch (err) {
       logger.error("[map-header] save failed", err);
-      new import_obsidian9.Notice(notices.saveError);
+      new import_obsidian11.Notice(notices.saveError);
     }
   };
   function setFileLabel(file) {
@@ -81810,7 +87904,7 @@ var CartographerController = class {
       }).catch((error) => {
         logger.error("[cartographer] failed to load modes", error);
         this.view?.setOverlay(MODE_PROVISION_OVERLAY_MESSAGE);
-        new import_obsidian12.Notice(MODE_PROVISION_NOTICE_MESSAGE);
+        new import_obsidian13.Notice(MODE_PROVISION_NOTICE_MESSAGE);
         this.modeLoad = void 0;
         throw error;
       });
@@ -82085,7 +88179,7 @@ function renderModeSelect(slot, initialModes, onChange) {
 // src/workmodes/cartographer/index.ts
 var VIEW_TYPE_CARTOGRAPHER = "cartographer-view";
 var VIEW_CARTOGRAPHER = VIEW_TYPE_CARTOGRAPHER;
-var CartographerView = class extends import_obsidian13.ItemView {
+var CartographerView = class extends import_obsidian14.ItemView {
   constructor(leaf) {
     super(leaf);
     this.hostEl = null;
@@ -82200,6 +88294,30 @@ var loadRegionEntry = createEntryLoader((fm2) => ({
   terrain: typeof fm2.terrain === "string" ? fm2.terrain : "",
   encounterOdds: typeof fm2.encounter_odds === "number" ? fm2.encounter_odds : void 0
 }));
+function extractTokenValues(raw) {
+  if (!Array.isArray(raw)) return [];
+  const result = [];
+  for (const entry of raw) {
+    if (typeof entry === "string" && entry.trim()) {
+      result.push(entry.trim());
+    } else if (entry && typeof entry === "object") {
+      const value = entry.value;
+      if (typeof value === "string" && value.trim()) {
+        result.push(value.trim());
+      }
+    }
+  }
+  return result;
+}
+var loadFactionEntry = createEntryLoader((fm2) => {
+  const influenceTags = extractTokenValues(fm2.influence_tags);
+  const members = Array.isArray(fm2.members) ? fm2.members : [];
+  return {
+    influence: influenceTags[0],
+    headquarters: typeof fm2.headquarters === "string" ? fm2.headquarters : void 0,
+    memberCount: members.length
+  };
+});
 var loadCalendarEntry = createEntryLoader((fm2) => {
   const months = Array.isArray(fm2.months) ? fm2.months : [];
   return {
@@ -82245,6 +88363,12 @@ var LIBRARY_DATA_SOURCES = {
     watch: (app, onChange) => watchVaultPresets(app, "regions", onChange),
     load: loadRegionEntry
   },
+  factions: {
+    id: "factions",
+    list: (app) => listVaultPresets(app, "factions"),
+    watch: (app, onChange) => watchVaultPresets(app, "factions", onChange),
+    load: loadFactionEntry
+  },
   calendars: {
     id: "calendars",
     list: (app) => listVaultPresets(app, "calendars"),
@@ -82257,12 +88381,12 @@ var LIBRARY_DATA_SOURCES = {
 init_registry();
 
 // src/workmodes/library/core/sources.ts
-var import_obsidian30 = require("obsidian");
+var import_obsidian31 = require("obsidian");
 init_terrain_repository();
 init_region_repository();
 init_entity_registry();
 async function ensureDir(app, dir) {
-  const normalizedDir = (0, import_obsidian30.normalizePath)(dir);
+  const normalizedDir = (0, import_obsidian31.normalizePath)(dir);
   const folder = app.vault.getAbstractFileByPath(normalizedDir);
   if (!folder) {
     await app.vault.createFolder(normalizedDir).catch(() => {
@@ -82273,6 +88397,7 @@ var ensureCreatureDir = (app) => ensureDir(app, ENTITY_REGISTRY.creatures.direct
 var ensureSpellDir = (app) => ensureDir(app, ENTITY_REGISTRY.spells.directory);
 var ensureItemDir = (app) => ensureDir(app, ENTITY_REGISTRY.items.directory);
 var ensureEquipmentDir = (app) => ensureDir(app, ENTITY_REGISTRY.equipment.directory);
+var ensureFactionDir = (app) => ensureDir(app, ENTITY_REGISTRY.factions.directory);
 var ensureCalendarDir = (app) => ensureDir(app, ENTITY_REGISTRY.calendars.directory);
 var SOURCE_MAP = Object.freeze({
   creatures: {
@@ -82298,6 +88423,10 @@ var SOURCE_MAP = Object.freeze({
   regions: {
     ensure: ensureRegionsFile,
     description: REGIONS_FILE
+  },
+  factions: {
+    ensure: ensureFactionDir,
+    description: `${ENTITY_REGISTRY.factions.directory}/`
   },
   calendars: {
     ensure: ensureCalendarDir,
@@ -82332,6 +88461,7 @@ var LIBRARY_COPY = {
     equipment: "Equipment",
     terrains: "Terrains",
     regions: "Regions",
+    factions: "Factions",
     calendars: "Calendars"
   },
   sources: {
@@ -82339,7 +88469,7 @@ var LIBRARY_COPY = {
   }
 };
 var VIEW_LIBRARY = "salt-library";
-var LIBRARY_MODES = ["creatures", "spells", "items", "equipment", "terrains", "regions", "calendars"];
+var LIBRARY_MODES = ["creatures", "spells", "items", "equipment", "terrains", "regions", "factions", "calendars"];
 var _LibraryView = class _LibraryView extends TabbedBrowseView {
   get config() {
     return _LibraryView.LIBRARY_CONFIG;
@@ -82368,11 +88498,11 @@ async function openLibrary(app) {
 }
 
 // src/workmodes/almanac/index.ts
-var import_obsidian31 = require("obsidian");
+var import_obsidian32 = require("obsidian");
 init_ui();
 var VIEW_TYPE_ALMANAC = "almanac-view";
 var VIEW_ALMANAC = VIEW_TYPE_ALMANAC;
-var AlmanacView = class extends import_obsidian31.ItemView {
+var AlmanacView = class extends import_obsidian32.ItemView {
   constructor(leaf) {
     super(leaf);
   }
@@ -82425,10 +88555,10 @@ async function openAlmanac(app) {
 }
 
 // src/workmodes/session-runner/index.ts
-var import_obsidian36 = require("obsidian");
+var import_obsidian37 = require("obsidian");
 
 // src/workmodes/session-runner/controller.ts
-var import_obsidian35 = require("obsidian");
+var import_obsidian36 = require("obsidian");
 init_options();
 init_map_list();
 init_plugin_logger();
@@ -82518,7 +88648,7 @@ var SessionRunnerController = class {
     } catch (error) {
       logger.error("[session-runner] failed to start experience", error);
       this.view?.setOverlay(EXPERIENCE_OVERLAY_MESSAGE);
-      new import_obsidian35.Notice(EXPERIENCE_NOTICE_MESSAGE);
+      new import_obsidian36.Notice(EXPERIENCE_NOTICE_MESSAGE);
     }
     if (this.mapManager) {
       await this.mapManager.setFile(initialFile);
@@ -82729,7 +88859,7 @@ function createSessionRunnerView(options) {
 // src/workmodes/session-runner/index.ts
 var VIEW_TYPE_SESSION_RUNNER = "session-runner-view";
 var VIEW_SESSION_RUNNER = VIEW_TYPE_SESSION_RUNNER;
-var SessionRunnerView = class extends import_obsidian36.ItemView {
+var SessionRunnerView = class extends import_obsidian37.ItemView {
   constructor(leaf) {
     super(leaf);
     this.hostEl = null;
@@ -86558,7 +92688,7 @@ var HEX_PLUGIN_CSS_SECTIONS = {
 var HEX_PLUGIN_CSS = Object.values(HEX_PLUGIN_CSS_SECTIONS).join("\n\n");
 
 // src/app/integration-telemetry.ts
-var import_obsidian37 = require("obsidian");
+var import_obsidian38 = require("obsidian");
 init_plugin_logger();
 var notifiedOperations = /* @__PURE__ */ new Set();
 function reportIntegrationIssue(payload) {
@@ -86568,7 +92698,7 @@ function reportIntegrationIssue(payload) {
   const dedupeKey = `${integrationId}:${operation}`;
   if (notifiedOperations.has(dedupeKey)) return;
   notifiedOperations.add(dedupeKey);
-  new import_obsidian37.Notice(userMessage);
+  new import_obsidian38.Notice(userMessage);
 }
 
 // src/app/bootstrap-services.ts
@@ -86601,9 +92731,9 @@ var defaultLogger = {
 function createTerrainBootstrap(app, config = {}) {
   const deps = {
     ensureTerrainFile: config.ensureTerrainFile ?? ensureTerrainFile,
-    loadTerrains: config.loadTerrains ?? loadTerrains,
+    loadTerrains: config.loadTerrains ?? loadTerrains2,
     setTerrains: config.setTerrains ?? setTerrains,
-    watchTerrains: config.watchTerrains ?? watchTerrains,
+    watchTerrains: config.watchTerrains ?? watchTerrains2,
     logger: config.logger ?? defaultLogger
   };
   let disposeWatcher = null;
@@ -86879,7 +93009,7 @@ function registerIPCCommands(server, plugin) {
 }
 
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian40.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian41.Plugin {
   async onload() {
     await logger.init(this.app);
     logger.log("Plugin loading...");

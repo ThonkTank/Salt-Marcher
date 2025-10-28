@@ -50,10 +50,16 @@ entries:
     name: Aura of Authority
     entryType: special
     text: While in a 10-foot Emanation originating from the hobgoblin, the hobgoblin and its allies have Advantage on attack rolls and saving throws, provided the hobgoblin doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The hobgoblin makes two attacks, using Greatsword or Longbow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Greatsword
     entryType: attack
@@ -71,6 +77,9 @@ entries:
           type: Poison
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Longbow
     entryType: attack
@@ -88,6 +97,9 @@ entries:
           type: Poison
           average: 5
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hobgoblin Captain

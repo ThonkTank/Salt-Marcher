@@ -126,6 +126,25 @@ export class ModalNavigation {
       handles.card.scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
+    // Render sub-items if available
+    if (section.subItems && section.subItems.length > 0) {
+      const subList = navList.createDiv({ cls: "sm-cc-shell__nav-subitems" });
+      for (const subItem of section.subItems) {
+        const subButton = subList.createEl("button", {
+          cls: "sm-cc-shell__nav-subitem",
+          text: subItem.label,
+        }) as HTMLButtonElement;
+        subButton.type = "button";
+        subButton.addEventListener("click", () => {
+          // Scroll to the specific entry within the section
+          const entryEl = document.querySelector(`[data-entry-id="${subItem.id}"]`) as HTMLElement;
+          if (entryEl) {
+            entryEl.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        });
+      }
+    }
+
     observer.observe(handles.card);
 
     // Delegate section content mounting to callback

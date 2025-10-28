@@ -53,6 +53,9 @@ entries:
     name: Spider Climb
     entryType: special
     text: The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -70,6 +73,9 @@ entries:
           type: Poison
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Wolf Spider

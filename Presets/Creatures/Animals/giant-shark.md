@@ -49,6 +49,9 @@ entries:
     name: Water Breathing
     entryType: special
     text: The shark can breathe only underwater.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -60,6 +63,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -73,6 +79,9 @@ entries:
           type: Piercing
           average: 22
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Shark

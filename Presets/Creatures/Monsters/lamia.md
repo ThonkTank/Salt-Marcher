@@ -64,6 +64,9 @@ entries:
           with:
             type: attack
             name: Corrupting Touch
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -81,6 +84,9 @@ entries:
           type: Psychic
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Corrupting Touch
     entryType: save
@@ -106,10 +112,16 @@ entries:
             bonus: 0
             type: Psychic
             average: 13
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Leap
     entryType: special
     text: The lamia jumps up to 30 feet by spending 10 feet of movement.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -130,6 +142,9 @@ spellcastingEntries:
             - Geas
             - Major Image
             - Scrying
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Lamia

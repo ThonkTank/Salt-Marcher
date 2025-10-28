@@ -51,10 +51,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The frog can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Standing Leap
     entryType: special
     text: The frog's Long Jump is up to 10 feet and its High Jump is up to 5 feet with or without a running start.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -64,6 +70,9 @@ entries:
       bonus: 3
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Frog

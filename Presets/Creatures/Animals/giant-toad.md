@@ -46,10 +46,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The toad can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Standing Leap
     entryType: special
     text: The toad's Long Jump is up to 20 feet and its High Jump is up to 10 feet with or without a running start.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -77,10 +83,16 @@ entries:
               size: Medium or smaller
         other: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12).
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12).
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Swallow
     entryType: special
     text: The toad swallows a Medium or smaller target it is grappling. While swallowed, the target isn't Grappled but has the Blinded and Restrained conditions, and it has Cover|XPHB|Total Cover against attacks and other effects outside the toad. In addition, the target takes 10 (3d6) Acid damage at the end of each of the toad's turns. The toad can have only one target swallowed at a time, and it can't use Bite while it has a swallowed target. If the toad dies, a swallowed creature is no longer Restrained and can escape from the corpse using 5 feet of movement, exiting with the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Toad

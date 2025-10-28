@@ -49,6 +49,9 @@ entries:
     name: Aberrant Ground
     entryType: special
     text: The ground in a 10-foot Emanation originating from the mouther is Difficult Terrain.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Gibbering
     entryType: save
@@ -63,6 +66,9 @@ entries:
         effects:
           other: 'The target rolls 1d8 to determine what it does during the current turn: - **1-4**: The target does nothing. - **5-6**: The target takes no action or Bonus Action and uses all its movement to move in a random direction. - **7-8**: The target makes a melee attack against a randomly determined creature within its reach or does nothing if it can''t make such an attack.'
         legacyEffects: 'The target rolls 1d8 to determine what it does during the current turn: - **1-4**: The target does nothing. - **5-6**: The target takes no action or Bonus Action and uses all its movement to move in a random direction. - **7-8**: The target makes a melee attack against a randomly determined creature within its reach or does nothing if it can''t make such an attack.'
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -82,6 +88,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Prone condition. The target dies if it is reduced to 0 Hit Points by this attack. Its body is then absorbed into the mouther, leaving only equipment behind.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Blinding Spittle (Recharge 5-6)
     entryType: save
@@ -105,6 +114,9 @@ entries:
             bonus: 0
             type: Radiant
             average: 7
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Gibbering Mouther

@@ -58,6 +58,9 @@ entries:
     name: Sunlight Sensitivity
     entryType: special
     text: While in sunlight, the wight has Disadvantage on ability checks and attack rolls.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -71,6 +74,9 @@ entries:
           with:
             type: attack
             name: Life Drain
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Necrotic Sword
     entryType: attack
@@ -88,6 +94,9 @@ entries:
           type: Necrotic
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Necrotic Bow
     entryType: attack
@@ -105,6 +114,9 @@ entries:
           type: Necrotic
           average: 4
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Life Drain
     entryType: save
@@ -124,6 +136,9 @@ entries:
             type: Necrotic
             average: 6
         legacyEffects: 6 (1d8 + 2) Necrotic damage, and the target's Hit Point maximum decreases by an amount equal to the damage taken. A Humanoid slain by this attack rises 24 hours later as a Zombie under the wight's control, unless the Humanoid is restored to life or its body is destroyed. The wight can have no more than twelve zombies under its control at a time.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Wight

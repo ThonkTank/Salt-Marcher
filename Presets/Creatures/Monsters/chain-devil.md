@@ -59,10 +59,16 @@ entries:
     name: Diabolical Restoration
     entryType: special
     text: If the devil dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The devil has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -72,6 +78,9 @@ entries:
         - name: Chain
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Chain
     entryType: attack
@@ -106,6 +115,9 @@ entries:
               type: until
               trigger: the grapple ends
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14) from one of two chains, and it has the Restrained condition until the grapple ends.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Conjure Infernal Chain
     entryType: save
@@ -133,6 +145,9 @@ entries:
             type: Fire
             average: 9
       onSuccess: The chain disappears.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Chain Devil

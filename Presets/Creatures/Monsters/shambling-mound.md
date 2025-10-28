@@ -55,6 +55,9 @@ entries:
     name: Lightning Absorption
     entryType: special
     text: Whenever the shambling mound is subjected to Lightning damage, it regains a number of Hit Points equal to the Lightning damage dealt.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -68,6 +71,9 @@ entries:
           with:
             type: attack
             name: Engulf
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Charged Tendril
     entryType: attack
@@ -88,6 +94,9 @@ entries:
       onHit:
         other: If the target is a Medium or smaller creature, the shambling mound pulls the target 5 feet straight toward itself.
       additionalEffects: If the target is a Medium or smaller creature, the shambling mound pulls the target 5 feet straight toward itself.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Engulf
     entryType: save
@@ -117,6 +126,9 @@ entries:
             bonus: 0
             type: Lightning
             average: 10
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Shambling Mound

@@ -69,14 +69,23 @@ entries:
     name: Ephemeral
     entryType: special
     text: The wisp can't wear or carry anything.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Illumination
     entryType: special
     text: The wisp sheds Bright Light in a 20-foot radius and Dim Light for an additional 20 feet.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Incorporeal Movement
     entryType: special
     text: The wisp can move through other creatures and objects as if they were Difficult Terrain. It takes 5 (1d10) Force damage if it ends its turn inside an object.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Shock
     entryType: attack
@@ -90,6 +99,9 @@ entries:
           type: Lightning
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Consume Life
     entryType: save
@@ -106,10 +118,16 @@ entries:
         effects:
           other: The target dies, and the wisp regains 10 (3d6) Hit Points.
         legacyEffects: The target dies, and the wisp regains 10 (3d6) Hit Points.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Vanish
     entryType: special
     text: The wisp and its light have the Invisible condition until the wisp's  Concentration ends on this effect, which ends early immediately after the wisp makes an attack roll or uses Consume Life.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Will-o'-Wisp

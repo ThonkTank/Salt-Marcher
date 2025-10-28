@@ -73,6 +73,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Breath (Recharge 5-6)
     entryType: save
@@ -97,6 +100,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Slowing Breath
     entryType: save
@@ -117,6 +123,9 @@ entries:
             - type: other
               target: Reactions
               description: can't take Reactions
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Copper Dragon Wyrmling

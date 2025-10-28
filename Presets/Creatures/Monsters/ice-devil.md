@@ -65,10 +65,16 @@ entries:
     name: Diabolical Restoration
     entryType: special
     text: If the devil dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The devil has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -82,10 +88,16 @@ entries:
           with:
             type: attack
             name: a Tail attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Ice Spear
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +10, reach 5 ft. or range 30/120 ft. 14 (2d8 + 5) Piercing damage plus 10 (3d6) Cold damage. Until the end of its next turn, the target can''t take a Bonus Action or Reaction, its Speed decreases by 10 feet, and it can move or take one action on its turn, not both. HitomThe spear magically returns to the devil''s hand immediately after a ranged attack.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail
     entryType: attack
@@ -103,6 +115,9 @@ entries:
           type: Cold
           average: 18
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Ice Wall
@@ -112,6 +127,9 @@ spellcastingEntries:
       ability: int
       saveDC: 17
       spellLists: []
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ice Devil

@@ -56,6 +56,9 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The pseudodragon has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -65,6 +68,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -78,6 +84,9 @@ entries:
           type: Piercing
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Sting
     entryType: save
@@ -110,6 +119,9 @@ entries:
             bonus: 0
             type: Poison
             average: 5
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Pseudodragon

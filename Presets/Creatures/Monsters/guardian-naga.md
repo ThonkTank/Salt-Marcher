@@ -70,6 +70,9 @@ entries:
     name: Celestial Restoration
     entryType: special
     text: If the naga dies, it returns to life in 1d6 days and regains all its Hit Points unless *Dispel Evil and Good* is cast on its remains.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -79,6 +82,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -96,6 +102,9 @@ entries:
           type: Poison
           average: 22
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Poisonous Spittle
     entryType: save
@@ -123,6 +132,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -142,6 +154,9 @@ spellcastingEntries:
             - Flame Strike
             - Geas
             - True Seeing
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Guardian Naga

@@ -1,7 +1,7 @@
 // tests/ui/workmode/create/number-stepper.test.ts
 // Validates the shared number stepper control renders Library styling and behaviour.
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
-import { createNumberStepper } from "../../../src/ui";
+import { createNumberStepper } from "src/ui";
 
 const proto = HTMLElement.prototype as any;
 if (!proto.createEl) {

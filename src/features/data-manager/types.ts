@@ -276,6 +276,10 @@ export interface SectionSpec {
   label: string;
   description?: string;
   fieldIds: string[];
+  subItems?: Array<{
+    id: string;
+    label: string;
+  }>;
 }
 
 // Browse/List configuration types

@@ -56,6 +56,9 @@ entries:
           type: Piercing
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Rampage (1/Day)
     entryType: multiattack
@@ -70,6 +73,9 @@ entries:
         - name: Bite
           count: 1
       substitutions: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: self
 ---
 
 # Giant Hyena

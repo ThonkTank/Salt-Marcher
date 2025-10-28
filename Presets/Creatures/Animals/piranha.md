@@ -46,6 +46,9 @@ entries:
     name: Water Breathing
     entryType: special
     text: The piranha can breathe only underwater.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -55,6 +58,9 @@ entries:
       bonus: 5
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Piranha

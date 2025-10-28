@@ -53,6 +53,9 @@ entries:
           type: Poison
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Scorpion

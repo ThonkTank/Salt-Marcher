@@ -49,6 +49,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The crab can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -72,6 +75,9 @@ entries:
               size: Medium or smaller
         other: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11) from one of two claws.
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11) from one of two claws.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Crab

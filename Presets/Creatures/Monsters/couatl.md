@@ -59,6 +59,9 @@ entries:
     name: Shielded Mind
     entryType: special
     text: The couatl's thoughts can't be read by any means, and other creatures can communicate with it telepathically only if it allows them.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -72,6 +75,9 @@ entries:
           type: Piercing
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Constrict
     entryType: save
@@ -109,6 +115,9 @@ entries:
             bonus: 5
             type: Bludgeoning
             average: 8
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -131,6 +140,9 @@ spellcastingEntries:
             - Greater Restoration
             - Scrying
             - Sleep
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Divine Aid (2/Day)
     entryType: spellcasting
@@ -141,6 +153,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Couatl

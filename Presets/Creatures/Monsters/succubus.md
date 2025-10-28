@@ -68,6 +68,9 @@ entries:
     name: Incubus Form
     entryType: special
     text: When the succubus finishes a Long Rest, it can shape-shift into an Incubus, using that stat block instead of this one.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -77,6 +80,9 @@ entries:
         - name: Touch
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Fiendish Touch
     entryType: attack
@@ -90,6 +96,9 @@ entries:
           type: Psychic
           average: 16
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Draining Kiss
     entryType: save
@@ -112,10 +121,16 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The succubus shape-shifts to resemble a Medium or Small Humanoid or back into its true form. Its game statistics are the same in each form, except its Fly Speed is available only in its true form. Any equipment it's wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Charm
@@ -125,6 +140,9 @@ spellcastingEntries:
       ability: cha
       saveDC: 15
       spellLists: []
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Succubus

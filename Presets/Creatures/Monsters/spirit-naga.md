@@ -56,10 +56,16 @@ entries:
     name: Fiendish Restoration
     entryType: special
     text: If it dies, the naga returns to life in 1d6 days and regains all its Hit Points. Only a *Wish* spell can prevent this trait from functioning.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The naga makes three attacks, using Bite or Necrotic Ray in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -77,6 +83,9 @@ entries:
           type: Poison
           average: 14
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Necrotic Ray
     entryType: attack
@@ -90,6 +99,9 @@ entries:
           type: Necrotic
           average: 21
       range: 60 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -111,6 +123,9 @@ spellcastingEntries:
             - Dimension Door
             - Hold Person
             - Lightning Bolt
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Spirit Naga

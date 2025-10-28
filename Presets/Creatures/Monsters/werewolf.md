@@ -52,6 +52,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The werewolf has Advantage on an attack roll against a creature if at least one of the werewolf's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -65,6 +68,9 @@ entries:
           with:
             type: attack
             name: a Bite attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite (Wolf or Hybrid Form Only)
     entryType: attack
@@ -85,6 +91,9 @@ entries:
               type: hours
               count: 24
       additionalEffects: 'If the target is a Humanoid, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *Failure:*  The target is cursed. If the cursed target drops to 0 Hit Points, it instead becomes a Werewolf under the DM''s control and has 10 Hit Points. *Success:*  The target is immune to this werewolf''s curse for 24 hours.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Scratch
     entryType: attack
@@ -98,6 +107,9 @@ entries:
           type: Slashing
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Longbow (Humanoid or Hybrid Form Only)
     entryType: attack
@@ -111,10 +123,16 @@ entries:
           type: Piercing
           average: 11
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The werewolf shape-shifts into a Large wolf-humanoid hybrid or a Medium wolf, or it returns to its true humanoid form. Its game statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Werewolf

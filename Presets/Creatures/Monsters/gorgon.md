@@ -66,6 +66,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature and the gorgon moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Petrifying Breath (Recharge 5-6)
     entryType: save
@@ -74,6 +77,9 @@ entries:
     save:
       ability: con
       dc: 15
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Trample
     entryType: save
@@ -99,6 +105,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Gorgon

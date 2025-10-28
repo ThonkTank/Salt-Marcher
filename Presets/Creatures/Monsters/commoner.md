@@ -44,6 +44,9 @@ entries:
     name: Training
     entryType: special
     text: The commoner has proficiency in one skill of the DM's choice and has Advantage whenever it makes an ability check using that skill.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Club
     entryType: attack
@@ -57,6 +60,9 @@ entries:
           type: Bludgeoning
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Commoner

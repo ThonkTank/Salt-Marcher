@@ -67,6 +67,9 @@ entries:
           type: Psychic
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Grimlock

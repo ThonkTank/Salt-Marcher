@@ -59,6 +59,9 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The devil has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -70,6 +73,9 @@ entries:
         - name: Glaive
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Beard
     entryType: attack
@@ -83,6 +89,9 @@ entries:
           type: Piercing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Infernal Glaive
     entryType: attack
@@ -99,6 +108,9 @@ entries:
       onHit:
         other: 'If the target is a creature and doesn''t already have an infernal wound, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *Failure:*  The target receives an infernal wound. While wounded, the target loses 5 (1d10) Hit Points at the start of each of its turns. The wound closes after 1 minute, after a spell restores Hit Points to the target, or after the target or a creature within 5 feet of it takes an action to stanch the wound, doing so by succeeding on a DC 12 Wisdom (Medicine) check.'
       additionalEffects: 'If the target is a creature and doesn''t already have an infernal wound, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *Failure:*  The target receives an infernal wound. While wounded, the target loses 5 (1d10) Hit Points at the start of each of its turns. The wound closes after 1 minute, after a spell restores Hit Points to the target, or after the target or a creature within 5 feet of it takes an action to stanch the wound, doing so by succeeding on a DC 12 Wisdom (Medicine) check.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Bearded Devil

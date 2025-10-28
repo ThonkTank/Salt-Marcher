@@ -56,6 +56,9 @@ entries:
         - name: Tentacles
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Beak
     entryType: attack
@@ -69,6 +72,9 @@ entries:
           type: Piercing
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tentacles
     entryType: attack
@@ -91,6 +97,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12) from all four tentacles.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Grick

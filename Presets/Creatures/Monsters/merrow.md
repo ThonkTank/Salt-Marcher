@@ -50,10 +50,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The merrow can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The merrow makes two attacks, using Bite, Claw, or Harpoon in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -67,6 +73,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -80,10 +89,16 @@ entries:
           type: Slashing
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Harpoon
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +6, reach 5 ft. or range 20/60 ft. 11 (2d6 + 4) Piercing damage. If the target is a Large or smaller creature, the merrow pulls the target up to 15 feet straight toward itself.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Merrow

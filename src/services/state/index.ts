@@ -31,3 +31,10 @@ export {
     versionedPersistent,
     type PersistentStoreOptions,
 } from "./persistent-store";
+
+export {
+    // Adapters
+    createJsonStorePersistentAdapter,
+    type JsonStoreLike,
+    type JsonStorePersistentAdapterOptions,
+} from "./adapters/json-store-adapter";

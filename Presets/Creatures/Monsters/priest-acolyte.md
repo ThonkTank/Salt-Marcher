@@ -62,6 +62,9 @@ entries:
           type: Radiant
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Radiant Flame
     entryType: attack
@@ -75,6 +78,9 @@ entries:
           type: Radiant
           average: 7
       range: 60 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -87,6 +93,9 @@ spellcastingEntries:
           spells:
             - Light
             - Thaumaturgy
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Divine Aid (1/Day)
     entryType: spellcasting
@@ -97,6 +106,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Priest Acolyte

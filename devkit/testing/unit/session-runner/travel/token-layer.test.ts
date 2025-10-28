@@ -2,7 +2,7 @@
 // Testet den Token-Layer auf Animationsabläufe und DOM-Updates innerhalb des Session Runners.
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-import { createTokenLayer } from "../../../src/workmodes/session-runner/travel/ui/token-layer";
+import { createTokenLayer } from "src/workmodes/session-runner/travel/ui/token-layer";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 

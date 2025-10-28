@@ -52,10 +52,16 @@ entries:
     name: Ooze Cube
     entryType: special
     text: The cube fills its entire space and is transparent. Other creatures can enter that space, but a creature that does so is subjected to the cube's Engulf and has Disadvantage on the saving throw. Creatures inside the cube have Cover|XPHB|Total Cover, and the cube can hold one Large creature or up to four Medium or Small creatures inside itself at a time. As an action, a creature within 5 feet of the cube can pull a creature or an object out of the cube by succeeding on a DC 12 Strength (Athletics) check, and the puller takes 10 (3d6) Acid damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Transparent
     entryType: special
     text: Even when the cube is in plain sight, a creature must succeed on a DC 15 Wisdom (Perception) check to notice the cube if the creature hasn't witnessed the cube move or otherwise act.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Pseudopod
     entryType: attack
@@ -69,6 +75,9 @@ entries:
           type: Acid
           average: 12
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Engulf
     entryType: save
@@ -94,6 +103,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage, and the target moves to an unoccupied space within 5 feet of the cube. If there is no unoccupied space, the target fails the save instead.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Gelatinous Cube

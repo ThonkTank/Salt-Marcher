@@ -53,6 +53,9 @@ entries:
     name: Fire Aura
     entryType: special
     text: At the end of each of the salamander's turns, each creature of the salamander's choice in a 5-foot Emanation originating from the salamander takes 7 (2d6) Fire damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -66,10 +69,16 @@ entries:
           with:
             type: attack
             name: Constrict
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Flame Spear
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +7, reach 5 ft. or range 20/60 ft. 13 (2d8 + 4) Piercing damage plus 7 (2d6) Fire damage. HitomThe spear magically returns to the salamander''s hand immediately after a ranged attack.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Constrict
     entryType: save
@@ -111,6 +120,9 @@ entries:
             bonus: 0
             type: Fire
             average: 7
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Salamander

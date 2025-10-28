@@ -48,10 +48,16 @@ entries:
     name: Water Breathing
     entryType: special
     text: The seahorse can breathe only underwater.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bubble Dash
     entryType: special
     text: While underwater, the seahorse moves up to its Swim Speed without provoking Opportunity Attacks.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Seahorse

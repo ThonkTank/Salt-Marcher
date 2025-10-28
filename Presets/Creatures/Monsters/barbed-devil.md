@@ -67,14 +67,23 @@ entries:
     name: Barbed Hide
     entryType: special
     text: At the start of each of its turns, the devil deals 5 (1d10) Piercing damage to any creature it is grappling or any creature grappling it.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Diabolical Restoration
     entryType: special
     text: If the devil dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The devil has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -88,6 +97,9 @@ entries:
         - name: Flame
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claws
     entryType: attack
@@ -110,6 +122,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13) from both claws.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail
     entryType: attack
@@ -123,6 +138,9 @@ entries:
           type: Slashing
           average: 14
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Hurl Flame
     entryType: attack
@@ -139,6 +157,9 @@ entries:
       onHit:
         other: If the target is a flammable object that isn't being worn or carried, it starts burning.
       additionalEffects: If the target is a flammable object that isn't being worn or carried, it starts burning.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Barbed Devil

@@ -55,10 +55,16 @@ entries:
           with:
             type: attack
             name: Enthralling Panache
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Dagger
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +5, reach 5 ft. or range 20/60 ft. 5 (1d4 + 3) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Enthralling Panache
     entryType: save
@@ -78,6 +84,9 @@ entries:
               duration:
                 type: until
                 trigger: the start of the pirate's next turn
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Pirate

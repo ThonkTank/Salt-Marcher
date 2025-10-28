@@ -55,6 +55,9 @@ entries:
         - name: Fist
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Fist
     entryType: attack
@@ -68,6 +71,9 @@ entries:
           type: Bludgeoning
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Rock
     entryType: attack
@@ -81,6 +87,9 @@ entries:
           type: Bludgeoning
           average: 10
       range: 25/50 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ape

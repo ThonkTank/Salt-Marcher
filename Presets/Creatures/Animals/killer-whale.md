@@ -51,6 +51,9 @@ entries:
     name: Hold Breath
     entryType: special
     text: The whale can hold its breath for 30 minutes.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -64,6 +67,9 @@ entries:
           type: Piercing
           average: 21
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Killer Whale

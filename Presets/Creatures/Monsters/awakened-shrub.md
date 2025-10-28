@@ -53,6 +53,9 @@ entries:
       bonus: 1
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Awakened Shrub

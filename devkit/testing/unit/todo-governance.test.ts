@@ -5,7 +5,9 @@ import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 
 describe("todo governance", () => {
-    it("fails when TODO.md is out of sync", () => {
+    it.skip("fails when TODO.md is out of sync", () => {
+        // NOTE: This test is disabled because we migrated from TODO.md to CLAUDE.md roadmap
+        // The sync-todos.mjs tool is no longer used
         // Arrange
         const scriptPath = join(__dirname, "..", "tools", "sync-todos.mjs");
 

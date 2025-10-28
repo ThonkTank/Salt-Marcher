@@ -67,6 +67,9 @@ entries:
     name: Swarm
     entryType: special
     text: The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny creature. The swarm can't regain Hit Points or gain Temporary Hit Points.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Swarm of Grasping Hands
     entryType: attack
@@ -84,6 +87,9 @@ entries:
           type: Necrotic
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Swarm of Crawling Claws

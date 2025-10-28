@@ -58,10 +58,16 @@ entries:
     name: Amorphous
     entryType: special
     text: The jelly can move through a space as narrow as 1 inch without expending extra movement to do so.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Spider Climb
     entryType: special
     text: The jelly can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Pseudopod
     entryType: attack
@@ -75,6 +81,9 @@ entries:
           type: Acid
           average: 12
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ochre Jelly

@@ -56,6 +56,9 @@ entries:
         - name: Tentacle
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -69,6 +72,9 @@ entries:
           type: Piercing
           average: 12
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tentacle
     entryType: attack
@@ -91,6 +97,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 13) from one of two tentacles.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tentacle Slam
     entryType: save
@@ -118,6 +127,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Otyugh

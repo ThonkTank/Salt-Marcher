@@ -69,6 +69,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (4/Day, or 5/Day in Lair)
     entryType: special
@@ -76,6 +79,9 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -89,6 +95,9 @@ entries:
           with:
             type: spellcasting
             spell: Mind Spike
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -106,6 +115,9 @@ entries:
           type: Poison
           average: 10
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Poison Breath (Recharge 5-6)
     entryType: save
@@ -129,6 +141,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Noxious Miasma
     entryType: save
@@ -148,6 +163,10 @@ entries:
             type: Poison
             average: 17
         legacyEffects: 17 (5d6) Poison damage, and the target takes a -2 penalty to AC until the end of its next turn.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -157,6 +176,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -176,6 +199,9 @@ spellcastingEntries:
           spells:
             - Geas
             - Modify Memory
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Mind Invasion
     entryType: spellcasting
@@ -183,6 +209,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Ancient Green Dragon

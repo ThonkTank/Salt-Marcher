@@ -47,6 +47,9 @@ entries:
     name: Hold Breath
     entryType: special
     text: The hippopotamus can hold its breath for 10 minutes.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -58,6 +61,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -71,6 +77,9 @@ entries:
           type: Piercing
           average: 16
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hippopotamus

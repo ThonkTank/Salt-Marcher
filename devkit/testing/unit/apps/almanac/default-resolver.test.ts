@@ -8,14 +8,14 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { CalendarSchema } from '../../../src/workmodes/almanac/domain';
+import type { CalendarSchema } from 'src/workmodes/almanac/domain';
 import {
   AlmanacMemoryBackend,
   InMemoryCalendarRepository,
   InMemoryEventRepository,
   InMemoryPhenomenonRepository,
-} from '../../../src/workmodes/almanac/data/repositories';
-import { InMemoryStateGateway } from '../../../src/workmodes/almanac/data/calendar-state-gateway';
+} from 'src/workmodes/almanac/data/repositories';
+import { InMemoryStateGateway } from 'src/workmodes/almanac/data/calendar-state-gateway';
 
 describe('Default Calendar Resolver', () => {
   let backend: AlmanacMemoryBackend;

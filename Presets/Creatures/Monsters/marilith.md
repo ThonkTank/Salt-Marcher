@@ -65,14 +65,23 @@ entries:
     name: Demonic Restoration
     entryType: special
     text: If the marilith dies outside the Abyss, its body dissolves into ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Abyss.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The marilith has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Reactive
     entryType: special
     text: The marilith can take one Reaction on every turn of combat.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -82,6 +91,9 @@ entries:
         - name: Blade
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Pact Blade
     entryType: attack
@@ -99,6 +111,9 @@ entries:
           type: Necrotic
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Constrict
     entryType: save
@@ -136,11 +151,17 @@ entries:
             bonus: 4
             type: Bludgeoning
             average: 15
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Teleport (Recharge 5-6)
     entryType: special
     text: The marilith teleports up to 120 feet to an unoccupied space it can see.
     recharge: 5-6
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Marilith

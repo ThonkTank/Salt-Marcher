@@ -51,6 +51,9 @@ entries:
     name: Water Breathing
     entryType: special
     text: The octopus can breathe only underwater. It can hold its breath for 1 hour outside water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Tentacles
     entryType: attack
@@ -82,6 +85,9 @@ entries:
               while: While Grappled, the target has the Restrained condition
         other: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 13) from all eight tentacles. While Grappled, the target has the Restrained condition.
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 13) from all eight tentacles. While Grappled, the target has the Restrained condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Octopus

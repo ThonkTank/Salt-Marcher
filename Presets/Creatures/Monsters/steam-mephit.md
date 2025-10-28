@@ -58,6 +58,9 @@ entries:
     name: Blurred Form
     entryType: special
     text: Attack rolls against the mephit are made with Disadvantage unless the mephit has the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Death Burst
     entryType: save
@@ -81,6 +84,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -98,6 +104,9 @@ entries:
           type: Fire
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Steam Breath
     entryType: save
@@ -120,6 +129,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Steam Mephit

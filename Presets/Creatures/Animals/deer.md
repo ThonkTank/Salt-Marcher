@@ -47,6 +47,9 @@ entries:
     name: Agile
     entryType: special
     text: The deer doesn't provoke an Opportunity Attack when it moves out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Ram
     entryType: attack
@@ -60,6 +63,9 @@ entries:
           type: Bludgeoning
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Deer

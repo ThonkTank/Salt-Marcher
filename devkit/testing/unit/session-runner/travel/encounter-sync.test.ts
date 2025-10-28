@@ -1,12 +1,12 @@
 // salt-marcher/tests/session-runner/travel/encounter-sync.test.ts
 // Testet Encounter-Sync-Service für das Session-Runner-Reiseerlebnis.
 import { describe, expect, it, beforeEach, vi } from "vitest";
-import { createEncounterSync } from "../../../src/workmodes/session-runner/travel/infra/encounter-sync";
+import { createEncounterSync } from "src/workmodes/session-runner/travel/infra/encounter-sync";
 import {
     publishEncounterEvent,
     __resetEncounterEventStore,
     type EncounterEvent,
-} from "../../../src/workmodes/encounter/session-store";
+} from "src/workmodes/encounter/session-store";
 
 const baseEvent: EncounterEvent = {
     id: "manual-1",

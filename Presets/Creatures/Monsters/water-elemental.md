@@ -62,10 +62,16 @@ entries:
     name: Freeze
     entryType: special
     text: If the elemental takes Cold damage, its Speed decreases by 20 feet until the end of its next turn.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Water Form
     entryType: special
     text: The elemental can enter an enemy's space and stop there. It can move through a space as narrow as 1 inch without expending extra movement to do so.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -75,6 +81,9 @@ entries:
         - name: Slam
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Slam
     entryType: attack
@@ -94,6 +103,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Whelm (Recharge 4-6)
     entryType: save
@@ -140,6 +152,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Water Elemental

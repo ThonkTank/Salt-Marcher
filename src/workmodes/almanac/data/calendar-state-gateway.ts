@@ -30,6 +30,11 @@ import type {
   PhenomenonRepository,
 } from "./repositories";
 import { JsonStore, type VaultLike } from "./json-store";
+import {
+  createJsonStorePersistentAdapter,
+  type PersistentStore,
+} from "../../../services/state";
+import { getStoreManager } from "../../../services/state/store-manager";
 
 export type CalendarGatewayErrorCode = "validation_error" | "io_error";
 
@@ -855,7 +860,8 @@ export class InMemoryStateGateway extends BaseCalendarStateGateway {
 }
 
 export class VaultCalendarStateGateway extends BaseCalendarStateGateway {
-  private readonly store: JsonStore<GatewayStoreData>;
+  private readonly jsonStore: JsonStore<GatewayStoreData>;
+  private readonly persistence: PersistentStore<GatewayStoreData>;
   private ready: Promise<void> | null = null;
   private initialised = false;
 
@@ -867,11 +873,18 @@ export class VaultCalendarStateGateway extends BaseCalendarStateGateway {
     hookDispatcher?: HookDispatchGateway,
   ) {
     super(calendarRepo, eventRepo, phenomenonRepo, hookDispatcher);
-    this.store = new JsonStore<GatewayStoreData>(vault, {
+    this.jsonStore = new JsonStore<GatewayStoreData>(vault, {
       path: "SaltMarcher/Almanac/state.json",
       currentVersion: "1.0.0",
       initialData: () => createInitialStore(),
     });
+    this.persistence = createJsonStorePersistentAdapter<GatewayStoreData>({
+      backend: this.jsonStore,
+      initialValue: createInitialStore(),
+      storageKey: "SaltMarcher/Almanac/state.json",
+      name: "almanac-calendar-state",
+    });
+    getStoreManager().register("almanac-calendar-state", this.persistence);
   }
 
   protected async ensureReady(): Promise<void> {
@@ -879,10 +892,10 @@ export class VaultCalendarStateGateway extends BaseCalendarStateGateway {
       return;
     }
     if (!this.ready) {
-      this.ready = this.store
-        .read()
-        .then(data => {
-          const hydrated = normaliseStore(data);
+      this.ready = this.persistence
+        .load()
+        .then(() => {
+          const hydrated = normaliseStore(this.persistence.get());
           this.applyHydratedState(hydrated);
           this.initialised = true;
         })
@@ -907,7 +920,8 @@ export class VaultCalendarStateGateway extends BaseCalendarStateGateway {
     }
     try {
       const payload = serialiseState(this.state);
-      await this.store.update(() => payload);
+      this.persistence.set(payload);
+      await this.persistence.save();
     } catch (error) {
       const gatewayError = createGatewayIoError("Failed to persist calendar state");
       reportAlmanacGatewayIssue({

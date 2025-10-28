@@ -48,6 +48,9 @@ entries:
     name: Flyby
     entryType: special
     text: The pteranodon doesn't provoke an Opportunity Attack when it flies out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -61,6 +64,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Pteranodon

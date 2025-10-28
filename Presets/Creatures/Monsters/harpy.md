@@ -55,6 +55,9 @@ entries:
           type: Slashing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Luring Song
     entryType: save
@@ -89,6 +92,9 @@ entries:
             type: compelled
             description: moves on its turn toward the harpy by
       onSuccess: The target is immune to this harpy's Luring Song for 24 hours.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Harpy

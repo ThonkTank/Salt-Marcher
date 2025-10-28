@@ -72,6 +72,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -85,6 +88,9 @@ entries:
           with:
             type: spellcasting
             spell: Scorching Ray
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -102,6 +108,9 @@ entries:
           type: Fire
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -126,6 +135,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Sleep Breath
     entryType: save
@@ -151,6 +163,9 @@ entries:
                 trigger: the end of its next turn
               saveToEnd:
                 timing: custom
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -160,6 +175,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: Scorching Sands
     entryType: save
@@ -184,6 +203,10 @@ entries:
             bonus: 0
             type: Fire
             average: 27
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -206,6 +229,9 @@ spellcastingEntries:
           spells:
             - Detect Thoughts
             - Control Weather
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Blazing Light
     entryType: spellcasting
@@ -213,6 +239,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Brass Dragon

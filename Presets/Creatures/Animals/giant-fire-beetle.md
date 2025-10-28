@@ -48,6 +48,9 @@ entries:
     name: Illumination
     entryType: special
     text: The beetle sheds Bright Light in a 10-foot radius and Dim Light for an additional 10 feet.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -57,6 +60,9 @@ entries:
       bonus: 1
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Fire Beetle

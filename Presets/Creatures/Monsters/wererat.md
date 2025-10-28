@@ -63,6 +63,9 @@ entries:
           with:
             type: attack
             name: a Bite attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite (Rat or Hybrid Form Only)
     entryType: attack
@@ -83,6 +86,9 @@ entries:
               type: hours
               count: 24
       additionalEffects: 'If the target is a Humanoid, it is subjected to the following effect. *Constitution Saving Throw*: DC 11. *Failure:*  The target is cursed. If the cursed target drops to 0 Hit Points, it instead becomes a Wererat under the DM''s control and has 10 Hit Points. *Success:*  The target is immune to this wererat''s curse for 24 hours.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Scratch
     entryType: attack
@@ -96,6 +102,9 @@ entries:
           type: Slashing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Hand Crossbow (Humanoid or Hybrid Form Only)
     entryType: attack
@@ -109,10 +118,16 @@ entries:
           type: Piercing
           average: 6
       range: 30/120 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The wererat shape-shifts into a Medium rat-humanoid hybrid or a Small rat, or it returns to its true humanoid form. Its game statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Wererat

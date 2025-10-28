@@ -50,6 +50,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The centaur makes two attacks, using Pike or Longbow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Pike
     entryType: attack
@@ -63,6 +66,9 @@ entries:
           type: Piercing
           average: 9
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Longbow
     entryType: attack
@@ -76,6 +82,9 @@ entries:
           type: Piercing
           average: 6
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Trampling Charge (Recharge 5-6)
     entryType: save
@@ -93,6 +102,9 @@ entries:
             bonus: 4
             type: Bludgeoning
             average: 7
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Centaur Trooper

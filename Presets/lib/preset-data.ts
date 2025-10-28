@@ -59,6 +59,9 @@ entries:
           type: Piercing
           average: 15
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claws
     entryType: attack
@@ -79,6 +82,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature and the allosaurus moved 30+ feet straight toward it immediately before the hit, the target has the Prone condition, and the allosaurus can make one Bite attack against it.
       additionalEffects: If the target is a Large or smaller creature and the allosaurus moved 30+ feet straight toward it immediately before the hit, the target has the Prone condition, and the allosaurus can make one Bite attack against it.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Allosaurus
@@ -156,6 +162,9 @@ entries:
         - name: Tail
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Tail
     entryType: attack
@@ -176,6 +185,9 @@ entries:
               size: Huge or smaller
         other: If the target is a Huge or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Huge or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ankylosaurus
@@ -257,6 +269,9 @@ entries:
         - name: Fist
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Fist
     entryType: attack
@@ -270,6 +285,9 @@ entries:
           type: Bludgeoning
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Rock
     entryType: attack
@@ -283,6 +301,9 @@ entries:
           type: Bludgeoning
           average: 10
       range: 25/50 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ape
@@ -360,6 +381,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The archelon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -371,6 +395,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -384,6 +411,9 @@ entries:
           type: Piercing
           average: 14
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Archelon
@@ -458,6 +488,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The baboon has Advantage on an attack roll against a creature if at least one of the baboon's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -471,6 +504,9 @@ entries:
           type: Piercing
           average: 1
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Baboon
@@ -555,6 +591,9 @@ entries:
       bonus: 2
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Badger
@@ -630,6 +669,9 @@ entries:
       bonus: 4
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Bat
@@ -712,6 +754,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -725,6 +770,9 @@ entries:
           type: Slashing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Black Bear
@@ -798,6 +846,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The hawk has Advantage on an attack roll against a creature if at least one of the hawk's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Beak
     entryType: attack
@@ -815,6 +866,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Blood Hawk
@@ -884,6 +938,9 @@ entries:
     name: Bloodied Fury
     entryType: special
     text: While Bloodied, the boar has Advantage on attack rolls.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Gore
     entryType: attack
@@ -908,6 +965,9 @@ entries:
               size: Medium or smaller
         other: If the target is a Medium or smaller creature and the boar moved 20+ feet straight toward it immediately before the hit, the target takes an extra 3 (1d6) Piercing damage and has the Prone condition.
       additionalEffects: If the target is a Medium or smaller creature and the boar moved 20+ feet straight toward it immediately before the hit, the target takes an extra 3 (1d6) Piercing damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Boar
@@ -994,6 +1054,9 @@ entries:
         - name: Claw
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -1007,6 +1070,9 @@ entries:
           type: Piercing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -1027,6 +1093,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Brown Bear
@@ -1111,6 +1180,9 @@ entries:
           type: Bludgeoning
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Camel
@@ -1187,6 +1259,9 @@ entries:
     name: Jumper
     entryType: special
     text: The cat's jump distance is determined using its Dexterity rather than its Strength.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Scratch
     entryType: attack
@@ -1196,6 +1271,9 @@ entries:
       bonus: 4
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Cat
@@ -1285,6 +1363,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Constrict
     entryType: save
@@ -1315,6 +1396,9 @@ entries:
                 dc: 12
           other: 7 (3d4) Bludgeoning damage, and the target has the Grappled condition (escape DC 12).
         legacyEffects: 7 (3d4) Bludgeoning damage, and the target has the Grappled condition (escape DC 12).
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Constrictor Snake
@@ -1391,6 +1475,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The crab can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -1400,6 +1487,9 @@ entries:
       bonus: 2
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Crab
@@ -1476,6 +1566,9 @@ entries:
     name: Hold Breath
     entryType: special
     text: The crocodile can hold its breath for 1 hour.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -1507,6 +1600,9 @@ entries:
               while: While Grappled, the target has the Restrained condition
         other: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12). While Grappled, the target has the Restrained condition.
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12). While Grappled, the target has the Restrained condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Crocodile
@@ -1582,6 +1678,9 @@ entries:
     name: Agile
     entryType: special
     text: The deer doesn't provoke an Opportunity Attack when it moves out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Ram
     entryType: attack
@@ -1595,6 +1694,9 @@ entries:
           type: Bludgeoning
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Deer
@@ -1673,6 +1775,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The wolf has Advantage on an attack roll against a creature if at least one of the wolf's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -1693,6 +1798,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Dire Wolf
@@ -1772,6 +1880,9 @@ entries:
           type: Bludgeoning
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Draft Horse
@@ -1849,6 +1960,9 @@ entries:
           bonus: 2
           type: Slashing
           average: 4
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Eagle
@@ -1920,6 +2034,9 @@ entries:
         - name: Gore
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Gore
     entryType: attack
@@ -1940,6 +2057,9 @@ entries:
               size: Huge or smaller
         other: If the target is a Huge or smaller creature and the elephant moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.
       additionalEffects: If the target is a Huge or smaller creature and the elephant moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Trample
     entryType: save
@@ -1966,6 +2086,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Elephant
@@ -2064,6 +2187,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature and the elk moved 20+ feet straight toward it immediately before the hit, the target takes an extra 3 (1d6) Bludgeoning damage and has the Prone condition.
       additionalEffects: If the target is a Large or smaller creature and the elk moved 20+ feet straight toward it immediately before the hit, the target takes an extra 3 (1d6) Bludgeoning damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Elk
@@ -2136,6 +2262,9 @@ entries:
     name: Flyby
     entryType: special
     text: The snake doesn't provoke an Opportunity Attack when it flies out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -2149,6 +2278,9 @@ entries:
           type: Poison
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Flying Snake
@@ -2229,10 +2361,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The frog can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Standing Leap
     entryType: special
     text: The frog's Long Jump is up to 10 feet and its High Jump is up to 5 feet with or without a running start.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -2242,6 +2380,9 @@ entries:
       bonus: 3
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Frog
@@ -2331,6 +2472,9 @@ entries:
         - name: Fist
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Fist
     entryType: attack
@@ -2344,6 +2488,9 @@ entries:
           type: Bludgeoning
           average: 22
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Boulder Toss
     entryType: save
@@ -2372,10 +2519,16 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Leap
     entryType: special
     text: The ape jumps up to 30 feet by spending 10 feet of movement.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Ape
@@ -2470,6 +2623,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Badger
@@ -2549,6 +2705,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Bat
@@ -2615,6 +2774,9 @@ entries:
     name: Bloodied Fury
     entryType: special
     text: The boar has Advantage on melee attack rolls while it is Bloodied.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Gore
     entryType: attack
@@ -2639,6 +2801,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature and the boar moved 20+ feet straight toward it immediately before the hit, the target takes an extra 7 (2d6) Piercing damage and has the Prone condition.
       additionalEffects: If the target is a Large or smaller creature and the boar moved 20+ feet straight toward it immediately before the hit, the target takes an extra 7 (2d6) Piercing damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Boar
@@ -2722,6 +2887,9 @@ entries:
           type: Piercing
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Centipede
@@ -2802,6 +2970,9 @@ entries:
         - name: Bite
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -2815,6 +2986,9 @@ entries:
           type: Piercing
           average: 11
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Constrict
     entryType: save
@@ -2845,6 +3019,9 @@ entries:
                 dc: 14
           other: 13 (2d8 + 4) Bludgeoning damage, and the target has the Grappled condition (escape DC 14).
         legacyEffects: 13 (2d8 + 4) Bludgeoning damage, and the target has the Grappled condition (escape DC 14).
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Constrictor Snake
@@ -2924,6 +3101,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The crab can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -2947,6 +3127,9 @@ entries:
               size: Medium or smaller
         other: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11) from one of two claws.
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11) from one of two claws.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Crab
@@ -3022,6 +3205,9 @@ entries:
     name: Hold Breath
     entryType: special
     text: The crocodile can hold its breath for 1 hour.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -3035,6 +3221,9 @@ entries:
         - name: Tail
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -3066,6 +3255,9 @@ entries:
               while: While Grappled, the target has the Restrained condition
         other: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 15). While Grappled, the target has the Restrained condition and can't be targeted by the crocodile's Tail.
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 15). While Grappled, the target has the Restrained condition and can't be targeted by the crocodile's Tail.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail
     entryType: attack
@@ -3086,6 +3278,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Crocodile
@@ -3180,6 +3375,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -3197,6 +3395,9 @@ entries:
           type: Radiant
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Eagle
@@ -3306,6 +3507,9 @@ entries:
               size: Huge or smaller
         other: If the target is a Huge or smaller creature and the elk moved 20+ feet straight toward it immediately before the hit, the target takes an extra 5 (2d4) Bludgeoning damage and has the Prone condition.
       additionalEffects: If the target is a Huge or smaller creature and the elk moved 20+ feet straight toward it immediately before the hit, the target takes an extra 5 (2d4) Bludgeoning damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Elk
@@ -3379,6 +3583,9 @@ entries:
     name: Illumination
     entryType: special
     text: The beetle sheds Bright Light in a 10-foot radius and Dim Light for an additional 10 feet.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -3388,6 +3595,9 @@ entries:
       bonus: 1
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Fire Beetle
@@ -3468,10 +3678,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The frog can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Standing Leap
     entryType: special
     text: The frog's Long Jump is up to 20 feet and its High Jump is up to 10 feet with or without a running start.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -3495,10 +3711,16 @@ entries:
               size: Medium or smaller
         other: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11).
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 11).
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Swallow
     entryType: special
     text: The frog swallows a Small or smaller target it is grappling. While swallowed, the target isn't Grappled but has the Blinded and Restrained conditions, and it has Cover|XPHB|Total Cover against attacks and other effects outside the frog. While swallowing the target, the frog can't use Bite, and if the frog dies, the swallowed target is no longer Restrained and can escape from the corpse using 5 feet of movement, exiting with the Prone condition. At the end of the frog's next turn, the swallowed target takes 5 (2d4) Acid damage. If that damage doesn't kill it, the frog disgorges it, causing it to exit Prone.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Frog
@@ -3604,6 +3826,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature and the goat moved 20+ feet straight toward it immediately before the hit, the target takes an extra 5 (2d4) Bludgeoning damage and has the Prone condition.
       additionalEffects: If the target is a Large or smaller creature and the goat moved 20+ feet straight toward it immediately before the hit, the target takes an extra 5 (2d4) Bludgeoning damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Goat
@@ -3684,6 +3909,9 @@ entries:
           type: Piercing
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Rampage (1/Day)
     entryType: multiattack
@@ -3698,6 +3926,9 @@ entries:
         - name: Bite
           count: 1
       substitutions: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: self
 ---
 
 # Giant Hyena
@@ -3774,6 +4005,9 @@ entries:
     name: Spider Climb
     entryType: special
     text: The lizard can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -3787,6 +4021,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Lizard
@@ -3867,6 +4104,9 @@ entries:
     name: Water Breathing
     entryType: special
     text: The octopus can breathe only underwater. It can hold its breath for 1 hour outside water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Tentacles
     entryType: attack
@@ -3898,6 +4138,9 @@ entries:
               while: While Grappled, the target has the Restrained condition
         other: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 13) from all eight tentacles. While Grappled, the target has the Restrained condition.
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 13) from all eight tentacles. While Grappled, the target has the Restrained condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Octopus
@@ -3988,6 +4231,9 @@ entries:
     name: Flyby
     entryType: special
     text: The owl doesn't provoke an Opportunity Attack when it flies out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Talons
     entryType: attack
@@ -4001,6 +4247,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -4016,6 +4265,9 @@ spellcastingEntries:
         - frequency: 1/day
           spells:
             - Clairvoyance
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Owl
@@ -4099,6 +4351,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The rat has Advantage on an attack roll against a creature if at least one of the rat's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -4111,6 +4366,9 @@ entries:
           bonus: 3
           type: Piercing
           average: 5
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Rat
@@ -4193,6 +4451,9 @@ entries:
         - name: Sting
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -4216,6 +4477,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13) from one of two claws.
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13) from one of two claws.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Sting
     entryType: attack
@@ -4233,6 +4497,9 @@ entries:
           type: Poison
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Scorpion
@@ -4306,6 +4573,9 @@ entries:
     name: Water Breathing
     entryType: special
     text: The seahorse can breathe only underwater.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Ram
     entryType: attack
@@ -4323,10 +4593,16 @@ entries:
           type: Bludgeoning
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Bubble Dash
     entryType: special
     text: While underwater, the seahorse moves up to half its Swim Speed without provoking Opportunity Attacks.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Seahorse
@@ -4409,6 +4685,9 @@ entries:
     name: Water Breathing
     entryType: special
     text: The shark can breathe only underwater.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -4420,6 +4699,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -4433,6 +4715,9 @@ entries:
           type: Piercing
           average: 22
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Shark
@@ -4516,10 +4801,16 @@ entries:
     name: Spider Climb
     entryType: special
     text: The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Web Walker
     entryType: special
     text: The spider ignores movement restrictions caused by webs, and it knows the location of any other creature in contact with the same web.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -4537,6 +4828,9 @@ entries:
           type: Poison
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Web (Recharge 5-6)
     entryType: save
@@ -4560,6 +4854,9 @@ entries:
                 trigger: the web is destroyed (AC 10; HP 5; Vulnerability to Fire damage; Immunity to Poison and Psychic damage)
           other: The target has the Restrained condition until the web is destroyed (AC 10; HP 5; Vulnerability to Fire damage; Immunity to Poison and Psychic damage).
         legacyEffects: The target has the Restrained condition until the web is destroyed (AC 10; HP 5; Vulnerability to Fire damage; Immunity to Poison and Psychic damage).
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Spider
@@ -4641,10 +4938,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The toad can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Standing Leap
     entryType: special
     text: The toad's Long Jump is up to 20 feet and its High Jump is up to 10 feet with or without a running start.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -4672,10 +4975,16 @@ entries:
               size: Medium or smaller
         other: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12).
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12).
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Swallow
     entryType: special
     text: The toad swallows a Medium or smaller target it is grappling. While swallowed, the target isn't Grappled but has the Blinded and Restrained conditions, and it has Cover|XPHB|Total Cover against attacks and other effects outside the toad. In addition, the target takes 10 (3d6) Acid damage at the end of each of the toad's turns. The toad can have only one target swallowed at a time, and it can't use Bite while it has a swallowed target. If the toad dies, a swallowed creature is no longer Restrained and can escape from the corpse using 5 feet of movement, exiting with the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Toad
@@ -4773,6 +5082,9 @@ entries:
           type: Poison
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Venomous Snake
@@ -4851,6 +5163,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The vulture has Advantage on an attack roll against a creature if at least one of the vulture's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Gouge
     entryType: attack
@@ -4864,6 +5179,9 @@ entries:
           type: Piercing
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Vulture
@@ -4937,6 +5255,9 @@ entries:
     name: Flyby
     entryType: special
     text: The wasp doesn't provoke an Opportunity Attack when it flies out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Sting
     entryType: attack
@@ -4954,6 +5275,9 @@ entries:
           type: Poison
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Wasp
@@ -5044,6 +5368,9 @@ entries:
           type: Piercing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Weasel
@@ -5121,6 +5448,9 @@ entries:
     name: Spider Climb
     entryType: special
     text: The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -5138,6 +5468,9 @@ entries:
           type: Poison
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Giant Wolf Spider
@@ -5226,6 +5559,9 @@ entries:
           type: Bludgeoning
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Goat
@@ -5301,6 +5637,9 @@ entries:
       bonus: 5
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hawk
@@ -5371,6 +5710,9 @@ entries:
     name: Hold Breath
     entryType: special
     text: The hippopotamus can hold its breath for 10 minutes.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -5382,6 +5724,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -5395,6 +5740,9 @@ entries:
           type: Piercing
           average: 16
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hippopotamus
@@ -5475,6 +5823,9 @@ entries:
     name: Water Breathing
     entryType: special
     text: The shark can breathe only underwater.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -5488,6 +5839,9 @@ entries:
           type: Piercing
           average: 14
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hunter Shark
@@ -5564,6 +5918,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The hyena has Advantage on an attack roll against a creature if at least one of the hyena's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -5577,6 +5934,9 @@ entries:
           type: Piercing
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hyena
@@ -5664,6 +6024,9 @@ entries:
           type: Piercing
           average: 1
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Jackal
@@ -5739,6 +6102,9 @@ entries:
     name: Hold Breath
     entryType: special
     text: The whale can hold its breath for 30 minutes.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -5752,6 +6118,9 @@ entries:
           type: Piercing
           average: 21
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Killer Whale
@@ -5830,10 +6199,16 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The lion has Advantage on an attack roll against a creature if at least one of the lion's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Running Leap
     entryType: special
     text: With a 10-foot running start, the lion can Long Jump up to 25 feet.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -5851,6 +6226,9 @@ entries:
           with:
             type: attack
             name: Roar
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -5864,6 +6242,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Roar
     entryType: save
@@ -5884,6 +6265,9 @@ entries:
                 trigger: the start of the lion's next turn
           other: The target has the Frightened condition until the start of the lion's next turn.
         legacyEffects: The target has the Frightened condition until the start of the lion's next turn.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Lion
@@ -5968,6 +6352,9 @@ entries:
     name: Spider Climb
     entryType: special
     text: The lizard can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -5977,6 +6364,9 @@ entries:
       bonus: 2
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Lizard
@@ -6056,6 +6446,9 @@ entries:
         - name: Gore
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Gore
     entryType: attack
@@ -6076,6 +6469,9 @@ entries:
               size: Huge or smaller
         other: If the target is a Huge or smaller creature and the mammoth moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.
       additionalEffects: If the target is a Huge or smaller creature and the mammoth moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Trample
     entryType: save
@@ -6102,6 +6498,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Mammoth
@@ -6196,6 +6595,9 @@ entries:
               size: Medium or smaller
         other: If the target is a Medium or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Medium or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Mastiff
@@ -6262,6 +6664,9 @@ entries:
     name: Beast of Burden
     entryType: special
     text: The mule counts as one size larger for the purpose of determining its carrying capacity.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Hooves
     entryType: attack
@@ -6275,6 +6680,9 @@ entries:
           type: Bludgeoning
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Mule
@@ -6354,6 +6762,9 @@ entries:
     name: Flyby
     entryType: special
     text: The owl doesn't provoke Opportunity Attacks when it flies out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Talons
     entryType: attack
@@ -6363,6 +6774,9 @@ entries:
       bonus: 3
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Owl
@@ -6452,10 +6866,16 @@ entries:
           type: Slashing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Nimble Escape
     entryType: special
     text: The panther takes the Disengage or Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Panther
@@ -6531,6 +6951,9 @@ entries:
     name: Water Breathing
     entryType: special
     text: The piranha can breathe only underwater.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -6540,6 +6963,9 @@ entries:
       bonus: 5
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Piranha
@@ -6619,6 +7045,9 @@ entries:
     name: Hold Breath
     entryType: special
     text: The plesiosaurus can hold its breath for 1 hour.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -6632,6 +7061,9 @@ entries:
           type: Piercing
           average: 11
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Plesiosaurus
@@ -6720,6 +7152,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -6733,6 +7168,9 @@ entries:
           type: Slashing
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Polar Bear
@@ -6811,6 +7249,9 @@ entries:
           type: Bludgeoning
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Pony
@@ -6882,6 +7323,9 @@ entries:
     name: Flyby
     entryType: special
     text: The pteranodon doesn't provoke an Opportunity Attack when it flies out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -6895,6 +7339,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Pteranodon
@@ -6972,6 +7419,9 @@ entries:
     name: Agile
     entryType: special
     text: The rat doesn't provoke Opportunity Attacks when it moves out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -6981,6 +7431,9 @@ entries:
       bonus: 2
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Rat
@@ -7056,6 +7509,9 @@ entries:
     name: Mimicry
     entryType: special
     text: The raven can mimic simple sounds it has heard, such as a whisper or chitter. A hearer can discern the sounds are imitations with a successful DC 10 Wisdom (Insight) check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Beak
     entryType: attack
@@ -7065,6 +7521,9 @@ entries:
       bonus: 4
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Raven
@@ -7142,10 +7601,16 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The shark has Advantage on an attack roll against a creature if at least one of the shark's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Water Breathing
     entryType: special
     text: The shark can breathe only underwater.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -7159,6 +7624,9 @@ entries:
           type: Piercing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Reef Shark
@@ -7252,6 +7720,9 @@ entries:
               size: Large or smaller
         other: If target is a Large or smaller creature and the rhinoceros moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition.
       additionalEffects: If target is a Large or smaller creature and the rhinoceros moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Rhinoceros
@@ -7325,6 +7796,9 @@ entries:
           type: Bludgeoning
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Riding Horse
@@ -7399,6 +7873,9 @@ entries:
     name: Running Leap
     entryType: special
     text: With a 10-foot running start, the tiger can Long Jump up to 25 feet.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -7410,6 +7887,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -7423,10 +7903,16 @@ entries:
           type: Slashing
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Nimble Escape
     entryType: special
     text: The tiger takes the Disengage or Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Saber-Toothed Tiger
@@ -7517,6 +8003,9 @@ entries:
           type: Poison
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Scorpion
@@ -7589,10 +8078,16 @@ entries:
     name: Water Breathing
     entryType: special
     text: The seahorse can breathe only underwater.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bubble Dash
     entryType: special
     text: While underwater, the seahorse moves up to its Swim Speed without provoking Opportunity Attacks.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Seahorse
@@ -7670,10 +8165,16 @@ entries:
     name: Spider Climb
     entryType: special
     text: The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Web Walker
     entryType: special
     text: The spider ignores movement restrictions caused by webs, and the spider knows the location of any other creature in contact with the same web.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -7687,6 +8188,9 @@ entries:
           type: Poison
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Spider
@@ -7778,6 +8282,9 @@ entries:
     name: Swarm
     entryType: special
     text: The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny bat. The swarm can't regain Hit Points or gain Temporary Hit Points.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bites
     entryType: attack
@@ -7795,6 +8302,9 @@ entries:
           type: Piercing
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Swarm of Bats
@@ -7881,10 +8391,16 @@ entries:
     name: Spider Climb
     entryType: special
     text: If the swarm has a Climb Speed, the swarm can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Swarm
     entryType: special
     text: The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny insect. The swarm can't regain Hit Points or gain Temporary Hit Points.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bites
     entryType: attack
@@ -7902,6 +8418,9 @@ entries:
           type: Poison
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Swarm of Insects
@@ -7993,10 +8512,16 @@ entries:
     name: Swarm
     entryType: special
     text: The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny piranha. The swarm can't regain Hit Points or gain Temporary Hit Points.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Water Breathing
     entryType: special
     text: The swarm can breathe only underwater.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bites
     entryType: attack
@@ -8014,6 +8539,9 @@ entries:
           type: Piercing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Swarm of Piranhas
@@ -8105,6 +8633,9 @@ entries:
     name: Swarm
     entryType: special
     text: The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny rat. The swarm can't regain Hit Points or gain Temporary Hit Points.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bites
     entryType: attack
@@ -8122,6 +8653,9 @@ entries:
           type: Piercing
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Swarm of Rats
@@ -8210,6 +8744,9 @@ entries:
     name: Swarm
     entryType: special
     text: The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny raven. The swarm can't regain Hit Points or gain Temporary Hit Points.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Beaks
     entryType: attack
@@ -8227,6 +8764,9 @@ entries:
           type: Piercing
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cacophony
     entryType: save
@@ -8253,6 +8793,9 @@ entries:
               description: advantage on ability checks and
           other: The target has the Deafened condition until the start of the swarm's next turn. While Deafened, the target also has Disadvantage on ability checks and attack rolls.
         legacyEffects: The target has the Deafened condition until the start of the swarm's next turn. While Deafened, the target also has Disadvantage on ability checks and attack rolls.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Swarm of Ravens
@@ -8343,6 +8886,9 @@ entries:
     name: Swarm
     entryType: special
     text: The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny snake. The swarm can't regain Hit Points or gain Temporary Hit Points.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bites
     entryType: attack
@@ -8364,6 +8910,9 @@ entries:
           type: Poison
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Swarm of Venomous Snakes
@@ -8458,10 +9007,16 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Nimble Escape
     entryType: special
     text: The tiger takes the Disengage or Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Tiger
@@ -8541,6 +9096,9 @@ entries:
         - name: Gore
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Gore
     entryType: attack
@@ -8565,6 +9123,9 @@ entries:
               size: Huge or smaller
         other: If the target is Huge or smaller and the triceratops moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition.
       additionalEffects: If the target is Huge or smaller and the triceratops moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Triceratops
@@ -8648,6 +9209,9 @@ entries:
         - name: Tail
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -8679,6 +9243,9 @@ entries:
               while: While Grappled, the target has the Restrained condition
         other: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 17). While Grappled, the target has the Restrained condition and can't be targeted by the tyrannosaurus's Tail.
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 17). While Grappled, the target has the Restrained condition and can't be targeted by the tyrannosaurus's Tail.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail
     entryType: attack
@@ -8699,6 +9266,9 @@ entries:
               size: Huge or smaller
         other: If the target is a Huge or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Huge or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Tyrannosaurus Rex
@@ -8787,6 +9357,9 @@ entries:
           type: Poison
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Venomous Snake
@@ -8857,6 +9430,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The vulture has Advantage on an attack roll against a creature if at least one of the vulture's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Beak
     entryType: attack
@@ -8870,6 +9446,9 @@ entries:
           type: Piercing
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Vulture
@@ -8960,6 +9539,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature and the horse moved 20+ feet straight toward it immediately before the hit, the target takes an extra 5 (2d4) Bludgeoning damage and has the Prone condition.
       additionalEffects: If the target is a Large or smaller creature and the horse moved 20+ feet straight toward it immediately before the hit, the target takes an extra 5 (2d4) Bludgeoning damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Warhorse
@@ -9041,6 +9623,9 @@ entries:
       bonus: 5
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Weasel
@@ -9114,6 +9699,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The wolf has Advantage on attack rolls against a creature if at least one of the wolf's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -9134,6 +9722,9 @@ entries:
               size: Medium or smaller
         other: If the target is a Medium or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Medium or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Wolf
@@ -9222,10 +9813,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The aboleth can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Eldritch Restoration
     entryType: special
     text: If destroyed, the aboleth gains a new body in 5d10 days, reviving with all its Hit Points in the Far Realm or another location chosen by the DM.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day, or 4/Day in Lair)
     entryType: special
@@ -9233,6 +9830,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Mucus Cloud
     entryType: save
@@ -9262,10 +9862,16 @@ entries:
               type: minutes
               count: 10
             condition: it is underwater
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Probing Telepathy
     entryType: special
     text: If a creature the aboleth can see communicates telepathically with the aboleth, the aboleth learns the creature's greatest desires.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -9275,6 +9881,9 @@ entries:
         - name: Tentacle
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Tentacle
     entryType: attack
@@ -9297,6 +9906,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14) from one of four tentacles.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Consume Memories
     entryType: save
@@ -9324,6 +9936,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Dominate Mind (2/Day)
     entryType: save
@@ -9348,6 +9963,9 @@ entries:
                 trigger: the aboleth dies or is on a different plane of existence from the target
               saveToEnd:
                 timing: when-damage
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Lash
     entryType: multiattack
@@ -9357,10 +9975,18 @@ entries:
         - name: Tentacle
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: Psychic Drain
     entryType: special
     text: If the aboleth has at least one creature Charmed or Grappled, it uses Consume Memories and regains 5 (1d10) Hit Points.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Aboleth
@@ -9485,6 +10111,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day, or 4/Day in Lair)
     entryType: special
@@ -9492,6 +10121,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -9505,6 +10137,9 @@ entries:
           with:
             type: spellcasting
             spell: Acid Arrow
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -9522,6 +10157,9 @@ entries:
           type: Acid
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Breath (Recharge 5-6)
     entryType: save
@@ -9546,6 +10184,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Cloud of Insects
     entryType: save
@@ -9572,6 +10213,10 @@ entries:
             bonus: 0
             type: Poison
             average: 22
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -9581,6 +10226,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -9602,6 +10251,9 @@ spellcastingEntries:
           spells:
             - Speak with Dead
             - Vitriolic Sphere
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Frightful Presence
     entryType: spellcasting
@@ -9609,6 +10261,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Black Dragon
@@ -9730,6 +10386,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -9743,6 +10402,9 @@ entries:
           with:
             type: spellcasting
             spell: Shatter
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -9760,6 +10422,9 @@ entries:
           type: Lightning
           average: 5
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -9784,6 +10449,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Tail Swipe
     entryType: multiattack
@@ -9793,6 +10461,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -9814,6 +10486,9 @@ spellcastingEntries:
           spells:
             - Scrying
             - Sending
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Cloaked Flight
     entryType: spellcasting
@@ -9821,6 +10496,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Sonic Boom
     entryType: spellcasting
@@ -9828,6 +10507,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Blue Dragon
@@ -9950,6 +10633,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -9963,6 +10649,9 @@ entries:
           with:
             type: spellcasting
             spell: Scorching Ray
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -9980,6 +10669,9 @@ entries:
           type: Fire
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -10004,6 +10696,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Sleep Breath
     entryType: save
@@ -10029,6 +10724,9 @@ entries:
                 trigger: the end of its next turn
               saveToEnd:
                 timing: custom
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -10038,6 +10736,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: Scorching Sands
     entryType: save
@@ -10062,6 +10764,10 @@ entries:
             bonus: 0
             type: Fire
             average: 27
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -10084,6 +10790,9 @@ spellcastingEntries:
           spells:
             - Detect Thoughts
             - Control Weather
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Blazing Light
     entryType: spellcasting
@@ -10091,6 +10800,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Brass Dragon
@@ -10211,6 +10924,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day, or 4/Day in Lair)
     entryType: special
@@ -10218,6 +10934,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -10231,6 +10950,9 @@ entries:
           with:
             type: spellcasting
             spell: Guiding Bolt
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -10248,6 +10970,9 @@ entries:
           type: Lightning
           average: 5
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -10272,6 +10997,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Repulsion Breath
     entryType: save
@@ -10290,6 +11018,9 @@ entries:
             type: push
             distance: 60 feet
             direction: straight away from the dragon
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -10299,6 +11030,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: Thunderclap
     entryType: save
@@ -10321,6 +11056,10 @@ entries:
             bonus: 0
             type: Thunder
             average: 10
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -10344,6 +11083,9 @@ spellcastingEntries:
           spells:
             - Detect Thoughts
             - Water Breathing
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Guiding Light
     entryType: spellcasting
@@ -10351,6 +11093,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Bronze Dragon
@@ -10477,6 +11223,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -10490,6 +11239,9 @@ entries:
           with:
             type: spellcasting
             spell: Mind Spike
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -10507,6 +11259,9 @@ entries:
           type: Acid
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Breath (Recharge 5-6)
     entryType: save
@@ -10531,6 +11286,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Slowing Breath
     entryType: save
@@ -10551,6 +11309,9 @@ entries:
             - type: other
               target: Reactions
               description: can't take Reactions
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Giggling Magic
     entryType: save
@@ -10572,6 +11333,10 @@ entries:
             type: Psychic
             average: 24
         legacyEffects: 24 (7d6) Psychic damage. Until the end of its next turn, the target rolls 1d6 whenever it makes an ability check or attack roll and subtracts the number rolled from the D20 Test.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -10581,6 +11346,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -10602,6 +11371,9 @@ spellcastingEntries:
           spells:
             - Greater Restoration
             - Major Image
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Mind Jolt
     entryType: spellcasting
@@ -10609,6 +11381,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Copper Dragon
@@ -10731,6 +11507,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day, or 4/Day in Lair)
     entryType: special
@@ -10738,6 +11517,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -10751,6 +11533,9 @@ entries:
           with:
             type: spellcasting
             spell: Guiding Bolt
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -10768,6 +11553,9 @@ entries:
           type: Fire
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -10791,6 +11579,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Weakening Breath
     entryType: save
@@ -10814,6 +11605,9 @@ entries:
               modifier: -3
               target: damage rolls
               description: subtracts 3 (1d6) from its damage rolls.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Banish
     entryType: save
@@ -10838,6 +11632,10 @@ entries:
             bonus: 0
             type: Force
             average: 10
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -10847,6 +11645,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -10868,6 +11670,9 @@ spellcastingEntries:
           spells:
             - Flame Strike
             - Zone of Truth
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Guiding Light
     entryType: spellcasting
@@ -10875,6 +11680,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Gold Dragon
@@ -11000,6 +11809,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day, or 4/Day in Lair)
     entryType: special
@@ -11007,6 +11819,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -11020,6 +11835,9 @@ entries:
           with:
             type: spellcasting
             spell: Mind Spike
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -11037,6 +11855,9 @@ entries:
           type: Poison
           average: 7
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Poison Breath (Recharge 5-6)
     entryType: save
@@ -11060,6 +11881,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Noxious Miasma
     entryType: save
@@ -11079,6 +11903,10 @@ entries:
             type: Poison
             average: 7
         legacyEffects: 7 (2d6) Poison damage, and the target takes a -2 penalty to AC until the end of its next turn.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -11088,6 +11916,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -11106,6 +11938,9 @@ spellcastingEntries:
         - frequency: 1/day
           spells:
             - Geas
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Mind Invasion
     entryType: spellcasting
@@ -11113,6 +11948,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Green Dragon
@@ -11234,6 +12073,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -11247,6 +12089,9 @@ entries:
           with:
             type: spellcasting
             spell: Scorching Ray
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -11264,6 +12109,9 @@ entries:
           type: Fire
           average: 5
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -11287,6 +12135,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -11296,6 +12147,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -11316,6 +12171,9 @@ spellcastingEntries:
         - frequency: 1/day
           spells:
             - Fireball
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Commanding Presence
     entryType: spellcasting
@@ -11323,6 +12181,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Fiery Rays
     entryType: spellcasting
@@ -11330,6 +12192,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Red Dragon
@@ -11448,6 +12314,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -11461,6 +12330,9 @@ entries:
           with:
             type: spellcasting
             spell: Ice Knife
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -11478,6 +12350,9 @@ entries:
           type: Cold
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cold Breath (Recharge 5-6)
     entryType: save
@@ -11501,6 +12376,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Paralyzing Breath
     entryType: save
@@ -11508,6 +12386,9 @@ entries:
     save:
       ability: con
       dc: 20
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Cold Gale
     entryType: save
@@ -11533,6 +12414,10 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -11542,6 +12427,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -11564,6 +12453,9 @@ spellcastingEntries:
           spells:
             - Ice Storm
             - Zone of Truth
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Chill
     entryType: spellcasting
@@ -11571,6 +12463,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Silver Dragon
@@ -11691,6 +12587,9 @@ entries:
     name: Ice Walk
     entryType: special
     text: The dragon can move across and climb icy surfaces without needing to make an ability check. Additionally, Difficult Terrain composed of ice or snow doesn't cost it extra movement.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day, or 4/Day in Lair)
     entryType: special
@@ -11698,6 +12597,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -11707,6 +12609,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -11724,6 +12629,9 @@ entries:
           type: Cold
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cold Breath (Recharge 5-6)
     entryType: save
@@ -11747,6 +12655,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Freezing Burst
     entryType: save
@@ -11766,6 +12677,10 @@ entries:
             type: Cold
             average: 7
         legacyEffects: 7 (2d6) Cold damage, and the target's Speed is 0 until the end of the target's next turn.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -11775,6 +12690,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: legendary
     name: Frightful Presence
@@ -11786,6 +12705,10 @@ spellcastingEntries:
       excludeComponents:
         - M
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult White Dragon
@@ -11902,6 +12825,9 @@ entries:
     name: Air Form
     entryType: special
     text: The elemental can enter a creature's space and stop there. It can move through a space as narrow as 1 inch without expending extra movement to do so.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -11911,6 +12837,9 @@ entries:
         - name: Slam
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Thunderous Slam
     entryType: attack
@@ -11924,6 +12853,9 @@ entries:
           type: Thunder
           average: 14
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Whirlwind (Recharge 4-6)
     entryType: save
@@ -11954,6 +12886,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Air Elemental
@@ -12055,6 +12990,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (4/Day, or 5/Day in Lair)
     entryType: special
@@ -12062,6 +13000,9 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -12075,6 +13016,9 @@ entries:
           with:
             type: spellcasting
             spell: Acid Arrow
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -12092,6 +13036,9 @@ entries:
           type: Acid
           average: 9
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Breath (Recharge 5-6)
     entryType: save
@@ -12116,6 +13063,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Cloud of Insects
     entryType: save
@@ -12142,6 +13092,10 @@ entries:
             bonus: 0
             type: Poison
             average: 33
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -12151,6 +13105,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -12173,6 +13131,9 @@ spellcastingEntries:
             - Create Undead
             - Speak with Dead
             - Vitriolic Sphere
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Frightful Presence
     entryType: spellcasting
@@ -12180,6 +13141,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Ancient Black Dragon
@@ -12301,6 +13266,9 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -12314,6 +13282,9 @@ entries:
           with:
             type: spellcasting
             spell: Shatter
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -12331,6 +13302,9 @@ entries:
           type: Lightning
           average: 11
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -12355,6 +13329,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Tail Swipe
     entryType: multiattack
@@ -12364,6 +13341,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -12385,6 +13366,9 @@ spellcastingEntries:
           spells:
             - Scrying
             - Sending
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Cloaked Flight
     entryType: spellcasting
@@ -12392,6 +13376,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Sonic Boom
     entryType: spellcasting
@@ -12399,6 +13387,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Ancient Blue Dragon
@@ -12521,6 +13513,9 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -12534,6 +13529,9 @@ entries:
           with:
             type: spellcasting
             spell: Scorching Ray
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -12551,6 +13549,9 @@ entries:
           type: Fire
           average: 7
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -12575,6 +13576,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Sleep Breath
     entryType: save
@@ -12600,6 +13604,9 @@ entries:
                 trigger: the end of its next turn
               saveToEnd:
                 timing: custom
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -12609,6 +13616,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: Scorching Sands
     entryType: save
@@ -12633,6 +13644,10 @@ entries:
             bonus: 0
             type: Fire
             average: 36
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -12655,6 +13670,9 @@ spellcastingEntries:
           spells:
             - Control Weather
             - Detect Thoughts
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Blazing Light
     entryType: spellcasting
@@ -12662,6 +13680,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Ancient Brass Dragon
@@ -12782,6 +13804,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (4/Day, or 5/Day in Lair)
     entryType: special
@@ -12789,6 +13814,9 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -12802,6 +13830,9 @@ entries:
           with:
             type: spellcasting
             spell: Guiding Bolt
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -12819,6 +13850,9 @@ entries:
           type: Lightning
           average: 9
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -12843,6 +13877,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Repulsion Breath
     entryType: save
@@ -12861,6 +13898,9 @@ entries:
             type: push
             distance: 60 feet
             direction: straight away from the dragon
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -12870,6 +13910,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: Thunderclap
     entryType: save
@@ -12892,6 +13936,10 @@ entries:
             bonus: 0
             type: Thunder
             average: 13
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -12917,6 +13965,9 @@ spellcastingEntries:
             - Control Water
             - Scrying
             - Water Breathing
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Guiding Light
     entryType: spellcasting
@@ -12924,6 +13975,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Ancient Bronze Dragon
@@ -13050,6 +14105,9 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -13063,6 +14121,9 @@ entries:
           with:
             type: spellcasting
             spell: Mind Spike
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -13080,6 +14141,9 @@ entries:
           type: Acid
           average: 9
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Breath (Recharge 5-6)
     entryType: save
@@ -13104,6 +14168,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Slowing Breath
     entryType: save
@@ -13124,6 +14191,9 @@ entries:
             - type: other
               target: Reactions
               description: can't take Reactions
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Giggling Magic
     entryType: save
@@ -13145,6 +14215,10 @@ entries:
             type: Psychic
             average: 31
         legacyEffects: 31 (9d6) Psychic damage. Until the end of its next turn, the target rolls 1d8 whenever it makes an ability check or attack roll and subtracts the number rolled from the D20 Test.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -13154,6 +14228,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -13176,6 +14254,9 @@ spellcastingEntries:
             - Greater Restoration
             - Major Image
             - Project Image
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Mind Jolt
     entryType: spellcasting
@@ -13183,6 +14264,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Ancient Copper Dragon
@@ -13305,6 +14390,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (4/Day, or 5/Day in Lair)
     entryType: special
@@ -13312,6 +14400,9 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -13325,6 +14416,9 @@ entries:
           with:
             type: spellcasting
             spell: Guiding Bolt
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -13342,6 +14436,9 @@ entries:
           type: Fire
           average: 9
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -13365,6 +14462,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Weakening Breath
     entryType: save
@@ -13388,6 +14488,9 @@ entries:
               modifier: -5
               target: damage rolls
               description: subtracts 5 (1d10) from its damage rolls.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Banish
     entryType: save
@@ -13412,6 +14515,10 @@ entries:
             bonus: 0
             type: Force
             average: 24
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -13421,6 +14528,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -13443,6 +14554,9 @@ spellcastingEntries:
             - Flame Strike
             - Word of Recall
             - Zone of Truth
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Guiding Light
     entryType: spellcasting
@@ -13450,6 +14564,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Ancient Gold Dragon
@@ -13575,6 +14693,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (4/Day, or 5/Day in Lair)
     entryType: special
@@ -13582,6 +14703,9 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -13595,6 +14719,9 @@ entries:
           with:
             type: spellcasting
             spell: Mind Spike
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -13612,6 +14739,9 @@ entries:
           type: Poison
           average: 10
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Poison Breath (Recharge 5-6)
     entryType: save
@@ -13635,6 +14765,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Noxious Miasma
     entryType: save
@@ -13654,6 +14787,10 @@ entries:
             type: Poison
             average: 17
         legacyEffects: 17 (5d6) Poison damage, and the target takes a -2 penalty to AC until the end of its next turn.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -13663,6 +14800,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -13682,6 +14823,9 @@ spellcastingEntries:
           spells:
             - Geas
             - Modify Memory
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Mind Invasion
     entryType: spellcasting
@@ -13689,6 +14833,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Ancient Green Dragon
@@ -13810,6 +14958,9 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -13823,6 +14974,9 @@ entries:
           with:
             type: spellcasting
             spell: Scorching Ray
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -13840,6 +14994,9 @@ entries:
           type: Fire
           average: 10
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -13863,6 +15020,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -13872,6 +15032,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -13893,6 +15057,9 @@ spellcastingEntries:
           spells:
             - Fireball
             - Scrying
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Commanding Presence
     entryType: spellcasting
@@ -13900,6 +15067,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Fiery Rays
     entryType: spellcasting
@@ -13907,6 +15078,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Ancient Red Dragon
@@ -14025,6 +15200,9 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -14038,6 +15216,9 @@ entries:
           with:
             type: spellcasting
             spell: Ice Knife
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -14055,6 +15236,9 @@ entries:
           type: Cold
           average: 9
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cold Breath (Recharge 5-6)
     entryType: save
@@ -14078,6 +15262,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Paralyzing Breath
     entryType: save
@@ -14085,6 +15272,9 @@ entries:
     save:
       ability: con
       dc: 24
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Cold Gale
     entryType: save
@@ -14110,6 +15300,10 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -14119,6 +15313,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -14143,6 +15341,9 @@ spellcastingEntries:
             - Ice Storm
             - Teleport
             - Zone of Truth
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Chill
     entryType: spellcasting
@@ -14150,6 +15351,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Ancient Silver Dragon
@@ -14270,6 +15475,9 @@ entries:
     name: Ice Walk
     entryType: special
     text: The dragon can move across and climb icy surfaces without needing to make an ability check. Additionally, Difficult Terrain composed of ice or snow doesn't cost it extra movement.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (4/Day, or 5/Day in Lair)
     entryType: special
@@ -14277,6 +15485,9 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -14286,6 +15497,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -14303,6 +15517,9 @@ entries:
           type: Cold
           average: 7
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cold Breath (Recharge 5-6)
     entryType: save
@@ -14326,6 +15543,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Freezing Burst
     entryType: save
@@ -14345,6 +15565,10 @@ entries:
             type: Cold
             average: 14
         legacyEffects: 14 (4d6) Cold damage, and the target's Speed is 0 until the end of the target's next turn.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -14354,6 +15578,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: legendary
     name: Frightful Presence
@@ -14365,6 +15593,10 @@ spellcastingEntries:
       excludeComponents:
         - M
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Ancient White Dragon
@@ -14474,6 +15706,9 @@ entries:
         - name: Slam
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Slam
     entryType: attack
@@ -14487,6 +15722,9 @@ entries:
           type: Bludgeoning
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Animated Armor
@@ -14581,6 +15819,9 @@ entries:
           type: Slashing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Animated Flying Sword
@@ -14675,6 +15916,9 @@ entries:
       onHit:
         other: If the target is a Medium or smaller creature, the rug can give it the Grappled condition (escape DC 13) instead of dealing damage. Until the grapple ends, the target has the Blinded and Restrained conditions, is suffocating, and takes 10 (2d6 + 3) Bludgeoning damage at the start of each of its turns. The rug can smother only one creature at a time. While grappling the target, the rug can't take this action, the rug halves the damage it takes (round down), and the target takes the same amount of damage.
       additionalEffects: If the target is a Medium or smaller creature, the rug can give it the Grappled condition (escape DC 13) instead of dealing damage. Until the grapple ends, the target has the Blinded and Restrained conditions, is suffocating, and takes 10 (2d6 + 3) Bludgeoning damage at the start of each of its turns. The rug can smother only one creature at a time. While grappling the target, the rug can't take this action, the rug halves the damage it takes (round down), and the target takes the same amount of damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Animated Rug of Smothering
@@ -14747,6 +15991,9 @@ entries:
     name: Tunneler
     entryType: special
     text: The ankheg can burrow through solid rock at half its Burrow Speed and leaves a 10-foot-diameter tunnel in its wake.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -14773,6 +16020,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13).
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Spray
     entryType: save
@@ -14796,6 +16046,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ankheg
@@ -14883,6 +16136,9 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The archmage has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -14892,10 +16148,16 @@ entries:
         - name: Burst
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Arcane Burst
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +9, reach 5 ft. or range 150 ft. 27 (4d10 + 5) Force damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -14925,6 +16187,9 @@ spellcastingEntries:
             - Mind Blank
             - Scrying
             - Teleport
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Misty Step (3/Day)
     entryType: spellcasting
@@ -14935,6 +16200,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
   - category: reaction
     name: Protective Magic (3/Day)
     entryType: spellcasting
@@ -14945,6 +16213,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: reaction
+    trigger.targeting:
+      type: single
+    trigger.reactionTrigger: the spell's trigger
 ---
 
 # Archmage
@@ -15046,10 +16318,16 @@ entries:
     name: Evasion
     entryType: special
     text: If the assassin is subjected to an effect that allows it to make a Dexterity saving throw to take only half damage, the assassin instead takes no damage if it succeeds on the save and only half damage if it fails. It can't use this trait if it has the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The assassin makes three attacks, using Shortsword or Light Crossbow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shortsword
     entryType: attack
@@ -15067,6 +16345,9 @@ entries:
           type: Poison
           average: 17
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Light Crossbow
     entryType: attack
@@ -15084,10 +16365,16 @@ entries:
           type: Poison
           average: 21
       range: 80/320 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Cunning Action
     entryType: special
     text: The assassin takes the Dash, Disengage, or Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Assassin
@@ -15181,6 +16468,9 @@ entries:
       bonus: 1
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Awakened Shrub
@@ -15263,6 +16553,9 @@ entries:
           type: Bludgeoning
           average: 13
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Awakened Tree
@@ -15337,6 +16630,9 @@ entries:
           type: Slashing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Axe Beak
@@ -15408,10 +16704,16 @@ entries:
     name: Fire Aura
     entryType: special
     text: At the end of each of the azer's turns, each creature of the azer's choice in a 5-foot Emanation originating from the azer takes 5 (1d10) Fire damage unless the azer has the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Illumination
     entryType: special
     text: The azer sheds Bright Light in a 10-foot radius and Dim Light for an additional 10 feet.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Burning Hammer
     entryType: attack
@@ -15429,6 +16731,9 @@ entries:
           type: Fire
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Azer Sentinel
@@ -15550,10 +16855,16 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Fire Aura
     entryType: special
     text: At the end of each of the balor's turns, each creature in a 5-foot Emanation originating from the balor takes 13 (3d8) Fire damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day)
     entryType: special
@@ -15561,10 +16872,16 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The balor has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -15576,6 +16893,9 @@ entries:
         - name: Blade
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Flame Whip
     entryType: attack
@@ -15599,6 +16919,9 @@ entries:
             restrictions:
               size: Huge or smaller
       additionalEffects: If the target is a Huge or smaller creature, the balor pulls the target up to 25 feet straight toward itself, and the target has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Blade
     entryType: attack
@@ -15616,10 +16939,16 @@ entries:
           type: Lightning
           average: 22
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Teleport
     entryType: special
     text: The balor teleports itself or a willing demon within 10 feet of itself up to 60 feet to an unoccupied space the balor can see.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Balor
@@ -15723,6 +17052,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The bandit makes two attacks, using Scimitar and Pistol in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Scimitar
     entryType: attack
@@ -15736,6 +17068,9 @@ entries:
           type: Slashing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Pistol
     entryType: attack
@@ -15749,6 +17084,9 @@ entries:
           type: Piercing
           average: 8
       range: 30/90 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Bandit Captain
@@ -15833,6 +17171,9 @@ entries:
           type: Slashing
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Light Crossbow
     entryType: attack
@@ -15846,6 +17187,9 @@ entries:
           type: Piercing
           average: 5
       range: 80/320 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Bandit
@@ -15940,14 +17284,23 @@ entries:
     name: Barbed Hide
     entryType: special
     text: At the start of each of its turns, the devil deals 5 (1d10) Piercing damage to any creature it is grappling or any creature grappling it.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Diabolical Restoration
     entryType: special
     text: If the devil dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The devil has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -15961,6 +17314,9 @@ entries:
         - name: Flame
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claws
     entryType: attack
@@ -15983,6 +17339,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13) from both claws.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail
     entryType: attack
@@ -15996,6 +17355,9 @@ entries:
           type: Slashing
           average: 14
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Hurl Flame
     entryType: attack
@@ -16012,6 +17374,9 @@ entries:
       onHit:
         other: If the target is a flammable object that isn't being worn or carried, it starts burning.
       additionalEffects: If the target is a flammable object that isn't being worn or carried, it starts burning.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Barbed Devil
@@ -16114,6 +17479,9 @@ entries:
           type: Poison
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Petrifying Gaze (Recharge 4-6)
     entryType: save
@@ -16122,6 +17490,9 @@ entries:
     save:
       ability: con
       dc: 12
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Basilisk
@@ -16210,6 +17581,9 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The devil has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -16221,6 +17595,9 @@ entries:
         - name: Glaive
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Beard
     entryType: attack
@@ -16234,6 +17611,9 @@ entries:
           type: Piercing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Infernal Glaive
     entryType: attack
@@ -16250,6 +17630,9 @@ entries:
       onHit:
         other: 'If the target is a creature and doesn''t already have an infernal wound, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *Failure:*  The target receives an infernal wound. While wounded, the target loses 5 (1d10) Hit Points at the start of each of its turns. The wound closes after 1 minute, after a spell restores Hit Points to the target, or after the target or a creature within 5 feet of it takes an action to stanch the wound, doing so by succeeding on a DC 12 Wisdom (Medicine) check.'
       additionalEffects: 'If the target is a creature and doesn''t already have an infernal wound, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *Failure:*  The target receives an infernal wound. While wounded, the target loses 5 (1d10) Hit Points at the start of each of its turns. The wound closes after 1 minute, after a spell restores Hit Points to the target, or after the target or a creature within 5 feet of it takes an action to stanch the wound, doing so by succeeding on a DC 12 Wisdom (Medicine) check.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Bearded Devil
@@ -16347,6 +17730,9 @@ entries:
         - name: Bite
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -16364,6 +17750,9 @@ entries:
           type: Lightning
           average: 11
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Constrict
     entryType: save
@@ -16401,6 +17790,9 @@ entries:
             bonus: 6
             type: Bludgeoning
             average: 28
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -16425,6 +17817,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Swallow
     entryType: save
@@ -16451,6 +17846,9 @@ entries:
             bonus: 0
             type: Acid
             average: 21
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Behir
@@ -16534,6 +17932,9 @@ entries:
     name: Bloodied Frenzy
     entryType: special
     text: While Bloodied, the berserker has Advantage on attack rolls and saving throws.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Greataxe
     entryType: attack
@@ -16547,6 +17948,9 @@ entries:
           type: Slashing
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Berserker
@@ -16640,6 +18044,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -16649,6 +18056,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -16666,6 +18076,9 @@ entries:
           type: Acid
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Breath (Recharge 5-6)
     entryType: save
@@ -16690,6 +18103,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Black Dragon Wyrmling
@@ -16784,14 +18200,23 @@ entries:
     name: Amorphous
     entryType: special
     text: The pudding can move through a space as narrow as 1 inch without expending extra movement to do so.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Corrosive Form
     entryType: special
     text: A creature that hits the pudding with a melee attack roll takes 4 (1d8) Acid damage. Nonmagical ammunition is destroyed immediately after hitting the pudding and dealing any damage. Any nonmagical weapon takes a cumulative -1 penalty to attack rolls immediately after dealing damage to the pudding and coming into contact with it. The weapon is destroyed if the penalty reaches -5. The penalty can be removed by casting the *Mending* spell on the weapon. In 1 minute, the pudding can eat through 2 feet of nonmagical wood or metal.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Spider Climb
     entryType: special
     text: The pudding can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Dissolving Pseudopod
     entryType: attack
@@ -16808,6 +18233,9 @@ entries:
       onHit:
         other: Nonmagical armor worn by the target takes a -1 penalty to the AC it offers. The armor is destroyed if the penalty reduces its AC to 10. The penalty can be removed by casting the *Mending* spell on the armor.
       additionalEffects: Nonmagical armor worn by the target takes a -1 penalty to the AC it offers. The armor is destroyed if the penalty reduces its AC to 10. The penalty can be removed by casting the *Mending* spell on the armor.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Black Pudding
@@ -16904,11 +18332,17 @@ entries:
           type: Piercing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Teleport (Recharge 4-6)
     entryType: special
     text: The dog teleports up to 40 feet to an unoccupied space it can see.
     recharge: 4-6
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Blink Dog
@@ -17008,6 +18442,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -17025,6 +18462,9 @@ entries:
           type: Lightning
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -17049,6 +18489,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Blue Dragon Wyrmling
@@ -17145,10 +18588,16 @@ entries:
     name: Diabolical Restoration
     entryType: special
     text: If the devil dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The devil has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -17160,6 +18609,9 @@ entries:
         - name: Sting
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -17173,6 +18625,9 @@ entries:
           type: Slashing
           average: 13
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Infernal Sting
     entryType: attack
@@ -17190,6 +18645,9 @@ entries:
           type: Poison
           average: 18
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Bone Devil
@@ -17302,6 +18760,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -17326,6 +18787,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Sleep Breath
     entryType: save
@@ -17351,6 +18815,9 @@ entries:
                 trigger: the end of its next turn
               saveToEnd:
                 timing: custom
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Brass Dragon Wyrmling
@@ -17446,6 +18913,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -17455,6 +18925,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -17468,6 +18941,9 @@ entries:
           type: Slashing
           average: 8
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -17492,6 +18968,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Repulsion Breath
     entryType: save
@@ -17510,6 +18989,9 @@ entries:
             type: push
             distance: 30 feet
             direction: straight away from the dragon
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Bronze Dragon Wyrmling
@@ -17606,6 +19088,9 @@ entries:
     name: Abduct
     entryType: special
     text: The bugbear needn't spend extra movement to move a creature it is grappling.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -17615,10 +19100,16 @@ entries:
         - name: Morningstar
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Javelin
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +5, reach 10 ft. or range 30/120 ft. 13 (3d6 + 3) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Morningstar
     entryType: attack
@@ -17632,6 +19123,9 @@ entries:
           type: Piercing
           average: 12
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Quick Grapple
     entryType: save
@@ -17654,6 +19148,9 @@ entries:
               escape:
                 type: dc
                 dc: 13
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Bugbear Stalker
@@ -17750,6 +19247,9 @@ entries:
     name: Abduct
     entryType: special
     text: The bugbear needn't spend extra movement to move a creature it is grappling.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Grab
     entryType: attack
@@ -17772,10 +19272,16 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12).
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Light Hammer
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +4 (with Advantage if the target is Grappled by the bugbear), reach 10 ft. or range 20/60 ft. 9 (3d4 + 2) Bludgeoning damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Bugbear Warrior
@@ -17865,6 +19371,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -17878,6 +19387,9 @@ entries:
           type: Piercing
           average: 17
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Deadly Leap
     entryType: save
@@ -17902,10 +19414,16 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage, and the target is pushed 5 feet straight away from the bulette.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Leap
     entryType: special
     text: The bulette jumps up to 30 feet by spending 10 feet of movement.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Bulette
@@ -17991,6 +19509,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The centaur makes two attacks, using Pike or Longbow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Pike
     entryType: attack
@@ -18004,6 +19525,9 @@ entries:
           type: Piercing
           average: 9
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Longbow
     entryType: attack
@@ -18017,6 +19541,9 @@ entries:
           type: Piercing
           average: 6
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Trampling Charge (Recharge 5-6)
     entryType: save
@@ -18034,6 +19561,9 @@ entries:
             bonus: 4
             type: Bludgeoning
             average: 7
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Centaur Trooper
@@ -18128,10 +19658,16 @@ entries:
     name: Diabolical Restoration
     entryType: special
     text: If the devil dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The devil has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -18141,6 +19677,9 @@ entries:
         - name: Chain
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Chain
     entryType: attack
@@ -18175,6 +19714,9 @@ entries:
               type: until
               trigger: the grapple ends
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14) from one of two chains, and it has the Restrained condition until the grapple ends.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Conjure Infernal Chain
     entryType: save
@@ -18202,6 +19744,9 @@ entries:
             type: Fire
             average: 9
       onSuccess: The chain disappears.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Chain Devil
@@ -18302,6 +19847,9 @@ entries:
         - name: Claw
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -18319,6 +19867,9 @@ entries:
           type: Piercing
           average: 18
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -18332,6 +19883,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Ram
     entryType: attack
@@ -18351,6 +19905,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -18374,6 +19931,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Chimera
@@ -18465,10 +20025,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The chuul can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Sense Magic
     entryType: special
     text: The chuul senses magic within 120 feet of itself. This trait otherwise works like the *Detect Magic* spell but isn't itself magical.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -18478,6 +20044,9 @@ entries:
         - name: Pincer
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Pincer
     entryType: attack
@@ -18500,6 +20069,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14) from one of two pincers.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Paralyzing Tentacles
     entryType: save
@@ -18525,6 +20097,9 @@ entries:
                 timing: end-of-turn
               restrictions:
                 while: While Poisoned, the target has the Paralyzed condition
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Chuul
@@ -18624,18 +20199,30 @@ entries:
     name: Acid Absorption
     entryType: special
     text: Whenever the golem is subjected to Acid damage, it takes no damage and instead regains a number of Hit Points equal to the Acid damage dealt.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Berserk
     entryType: special
     text: Whenever the golem starts its turn Bloodied, roll 1d6. On a 6, the golem goes berserk. On each of its turns while berserk, the golem attacks the nearest creature it can see. If no creature is near enough to move to and attack, the golem attacks an object. Once the golem goes berserk, it continues to be berserk until it is destroyed or it is no longer Bloodied.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Immutable Form
     entryType: special
     text: The golem can't shape-shift.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The golem has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -18645,6 +20232,9 @@ entries:
         - name: Slam
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Slam
     entryType: attack
@@ -18662,11 +20252,17 @@ entries:
           type: Acid
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Hasten (Recharge 5-6)
     entryType: special
     text: The golem takes the Dash and Disengage actions.
     recharge: 5-6
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Clay Golem
@@ -18769,6 +20365,9 @@ entries:
     name: Light Sensitivity
     entryType: special
     text: While in Bright Light, the cloaker has Disadvantage on attack rolls.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -18780,6 +20379,9 @@ entries:
         - name: Tail
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Attach
     entryType: attack
@@ -18799,6 +20401,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, the cloaker attaches to it. While the cloaker is attached, the target has the Blinded condition, and the cloaker can't make Attach attacks against other targets. In addition, the cloaker halves the damage it takes (round down), and the target takes the same amount of damage. The cloaker can detach itself by spending 5 feet of movement. The target or a creature within 5 feet of it can take an action to try to detach the cloaker, doing so by succeeding on a DC 14 Strength (Athletics) check.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail
     entryType: attack
@@ -18812,6 +20417,9 @@ entries:
           type: Slashing
           average: 8
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Moan
     entryType: save
@@ -18831,6 +20439,9 @@ entries:
                 type: until
                 trigger: the end of the cloaker's next turn
       onSuccess: The target is immune to this cloaker's Moan for the next 24 hours.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: bonus
     name: Phantasms (Recharge after a Short or Long Rest)
@@ -18839,6 +20450,9 @@ spellcastingEntries:
     spellcasting:
       ability: wis
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Cloaker
@@ -18947,6 +20561,9 @@ entries:
           with:
             type: spellcasting
             spell: Fog Cloud
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Thunderous Mace
     entryType: attack
@@ -18964,6 +20581,9 @@ entries:
           type: Thunder
           average: 7
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Thundercloud
     entryType: attack
@@ -18977,6 +20597,9 @@ entries:
           type: Thunder
           average: 18
       range: 240 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -18998,6 +20621,9 @@ spellcastingEntries:
             - Control Weather
             - Gaseous Form
             - Telekinesis
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Misty Step
     entryType: spellcasting
@@ -19005,6 +20631,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Cloud Giant
@@ -19117,6 +20746,9 @@ entries:
               timing: custom
               description: at the end of its next turn if it is still Restrained
       additionalEffects: 'If the target is a creature, it is subjected to the following effect. *Constitution Saving Throw*: DC 11. *First Failure* The target has the Restrained condition. The target repeats the save at the end of its next turn if it is still Restrained, ending the effect on itself on a success. *Second Failure* The target has the Petrified condition, instead of the Restrained condition, for 24 hours.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Cockatrice
@@ -19185,6 +20817,9 @@ entries:
     name: Training
     entryType: special
     text: The commoner has proficiency in one skill of the DM's choice and has Advantage whenever it makes an ability check using that skill.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Club
     entryType: attack
@@ -19198,6 +20833,9 @@ entries:
           type: Bludgeoning
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Commoner
@@ -19300,6 +20938,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Breath (Recharge 5-6)
     entryType: save
@@ -19324,6 +20965,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Slowing Breath
     entryType: save
@@ -19344,6 +20988,9 @@ entries:
             - type: other
               target: Reactions
               description: can't take Reactions
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Copper Dragon Wyrmling
@@ -19434,6 +21081,9 @@ entries:
     name: Shielded Mind
     entryType: special
     text: The couatl's thoughts can't be read by any means, and other creatures can communicate with it telepathically only if it allows them.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -19447,6 +21097,9 @@ entries:
           type: Piercing
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Constrict
     entryType: save
@@ -19484,6 +21137,9 @@ entries:
             bonus: 5
             type: Bludgeoning
             average: 8
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -19506,6 +21162,9 @@ spellcastingEntries:
             - Greater Restoration
             - Scrying
             - Sleep
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Divine Aid (2/Day)
     entryType: spellcasting
@@ -19516,6 +21175,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Couatl
@@ -19622,6 +21284,9 @@ entries:
           type: Necrotic
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -19642,6 +21307,9 @@ spellcastingEntries:
         - frequency: 2/day
           spells:
             - Command
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Spiritual Weapon (2/Day)
     entryType: spellcasting
@@ -19652,6 +21320,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Cultist Fanatic
@@ -19743,6 +21414,9 @@ entries:
           type: Slashing
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Cultist
@@ -19825,6 +21499,9 @@ entries:
           type: Bludgeoning
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Darkness Aura (1/Day)
     entryType: special
@@ -19832,6 +21509,9 @@ entries:
     limitedUse:
       count: 1
       reset: day
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Darkmantle
@@ -19921,6 +21601,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -19940,6 +21623,9 @@ entries:
             saveToEnd:
               timing: when-damage
       additionalEffects: 'If the target is a creature, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *First Failure* The target has the Poisoned condition. While Poisoned, the target''s Hit Point maximum doesn''t return to normal when finishing a Long Rest, and it repeats the save every 24 hours that elapse, ending the effect on itself on a success. Subsequent Failures: The Poisoned target''s Hit Point maximum decreases by 5 (1d10).'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Death Dog
@@ -20034,10 +21720,16 @@ entries:
     name: Exalted Restoration
     entryType: special
     text: If the deva dies outside Mount Celestia, its body disappears, and it gains a new body instantly, reviving with all its Hit Points somewhere in Mount Celestia.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The deva has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -20047,6 +21739,9 @@ entries:
         - name: Mace
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Holy Mace
     entryType: attack
@@ -20064,6 +21759,9 @@ entries:
           type: Radiant
           average: 18
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -20083,6 +21781,9 @@ spellcastingEntries:
           spells:
             - Commune
             - Raise Dead
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Divine Aid (2/Day)
     entryType: spellcasting
@@ -20093,6 +21794,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Deva
@@ -20194,18 +21898,30 @@ entries:
     name: Elemental Restoration
     entryType: special
     text: If the djinni dies outside the Elemental Plane of Air, its body dissolves into mist, and it gains a new body in 1d4 days, reviving with all its Hit Points somewhere on the Plane of Air.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The djinni has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Wishes
     entryType: special
     text: The djinni has a 30 percent chance of knowing the *Wish* spell. If the djinni knows it, the djinni can cast it only on behalf of a non-genie creature who communicates a wish in a way the djinni can understand. If the djinni casts the spell for the creature, the djinni suffers none of the spell's stress. Once the djinni has cast it three times, the djinni can't do so again for 365 days.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The djinni makes three attacks, using Storm Blade or Storm Bolt in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Storm Blade
     entryType: attack
@@ -20222,6 +21938,9 @@ entries:
           bonus: 0
           type: Lightning
           average: 7
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Storm Bolt
     entryType: attack
@@ -20240,6 +21959,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Create Whirlwind
     entryType: save
@@ -20258,6 +21980,9 @@ entries:
             bonus: 0
             type: Thunder
             average: 21
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -20285,6 +22010,9 @@ spellcastingEntries:
             - Invisibility
             - Major Image
             - Plane Shift
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Djinni
@@ -20392,6 +22120,9 @@ entries:
         - name: Slam
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Slam
     entryType: attack
@@ -20405,6 +22136,9 @@ entries:
           type: Bludgeoning
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Unsettling Visage
     entryType: save
@@ -20422,10 +22156,16 @@ entries:
             - condition: Frightened
               saveToEnd:
                 timing: end-of-turn
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The doppelganger shape-shifts into a Medium or Small Humanoid, or it returns to its true form. Its game statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Read Thoughts
@@ -20438,6 +22178,9 @@ spellcastingEntries:
         - frequency: at-will
           spells:
             - Detect Thoughts
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Doppelganger
@@ -20531,6 +22274,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -20544,6 +22290,9 @@ entries:
           with:
             type: attack
             name: a Tail attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -20564,6 +22313,9 @@ entries:
       onHit:
         other: Being underwater doesn't grant Resistance to this Fire damage.
       additionalEffects: Being underwater doesn't grant Resistance to this Fire damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail
     entryType: attack
@@ -20583,6 +22335,9 @@ entries:
             restrictions:
               size: Huge or smaller
       additionalEffects: If the target is a Huge or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Steam Breath (Recharge 5-6)
     entryType: save
@@ -20606,6 +22361,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Dragon Turtle
@@ -20710,6 +22468,9 @@ entries:
           type: Slashing
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fetid Cloud (1/Day)
     entryType: save
@@ -20735,6 +22496,9 @@ entries:
             - type: other
               target: Reactions
               description: can't take Reactions
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Dretch
@@ -20818,18 +22582,30 @@ entries:
     name: Spider Climb
     entryType: special
     text: The drider can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Sunlight Sensitivity
     entryType: special
     text: While in sunlight, the drider has Disadvantage on ability checks and attack rolls.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Web Walker
     entryType: special
     text: The drider ignores movement restrictions caused by webs, and the drider knows the location of any other creature in contact with the same web.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The drider makes three attacks, using Foreleg or Poison Burst in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Foreleg
     entryType: attack
@@ -20843,6 +22619,9 @@ entries:
           type: Piercing
           average: 13
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Poison Burst
     entryType: attack
@@ -20856,6 +22635,9 @@ entries:
           type: Poison
           average: 13
       range: 120 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: bonus
     name: Magic of the Spider Queen (Recharge 5-6)
@@ -20868,6 +22650,9 @@ spellcastingEntries:
       excludeComponents:
         - M
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Drider
@@ -20968,6 +22753,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The druid makes two attacks, using Vine Staff or Verdant Wisp in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Vine Staff
     entryType: attack
@@ -20985,6 +22773,9 @@ entries:
           type: Poison
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Verdant Wisp
     entryType: attack
@@ -20998,6 +22789,9 @@ entries:
           type: Radiant
           average: 10
       range: 90 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -21020,6 +22814,9 @@ spellcastingEntries:
             - Animal Messenger
             - Longstrider
             - Moonbeam
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Druid
@@ -21106,10 +22903,16 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The dryad has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Speak with Beasts and Plants
     entryType: special
     text: The dryad can communicate with Beasts and Plants as if they shared a language.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -21119,6 +22922,9 @@ entries:
         - name: Burst
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Vine Lash
     entryType: attack
@@ -21132,6 +22938,9 @@ entries:
           type: Slashing
           average: 8
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Thorn Burst
     entryType: attack
@@ -21145,10 +22954,16 @@ entries:
           type: Piercing
           average: 7
       range: 60 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Tree Stride
     entryType: special
     text: If within 5 feet of a Large or bigger tree, the dryad teleports to an unoccupied space within 5 feet of a second Large or bigger tree that is within 60 feet of the previous tree.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -21169,6 +22984,9 @@ spellcastingEntries:
           spells:
             - Entangle
             - Pass without Trace
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Dryad
@@ -21296,6 +23114,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -21309,6 +23130,9 @@ entries:
           type: Slashing
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Blinding Breath
     entryType: save
@@ -21326,6 +23150,9 @@ entries:
               duration:
                 type: until
                 trigger: the end of the mephit's next turn
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Sleep (1/Day)
@@ -21344,6 +23171,9 @@ spellcastingEntries:
         - frequency: 1/day
           spells:
             - Sleep
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Dust Mephit
@@ -21440,14 +23270,23 @@ entries:
     name: Earth Glide
     entryType: special
     text: The elemental can burrow through nonmagical, unworked earth and stone. While doing so, the elemental doesn't disturb the material it moves through.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Siege Monster
     entryType: special
     text: The elemental deals double damage to objects and structures.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The elemental makes two attacks, using Slam or Rock Launch in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Slam
     entryType: attack
@@ -21461,6 +23300,9 @@ entries:
           type: Bludgeoning
           average: 14
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Rock Launch
     entryType: attack
@@ -21480,6 +23322,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Earth Elemental
@@ -21575,18 +23420,30 @@ entries:
     name: Elemental Restoration
     entryType: special
     text: If the efreeti dies outside the Elemental Plane of Fire, its body dissolves into ash, and it gains a new body in 1d4 days, reviving with all its Hit Points somewhere on the Plane of Fire.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The efreeti has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Wishes
     entryType: special
     text: The efreeti has a 30 percent chance of knowing the *Wish* spell. If the efreeti knows it, the efreeti can cast it only on behalf of a non-genie creature who communicates a wish in a way the efreeti can understand. If the efreeti casts the spell for the creature, the efreeti suffers none of the spell's stress. Once the efreeti has cast it three times, the efreeti can't do so again for 365 days.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The efreeti makes three attacks, using Heated Blade or Hurl Flame in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Heated Blade
     entryType: attack
@@ -21604,6 +23461,9 @@ entries:
           type: Fire
           average: 13
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Hurl Flame
     entryType: attack
@@ -21617,6 +23477,9 @@ entries:
           type: Fire
           average: 24
       range: 120 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -21640,6 +23503,9 @@ spellcastingEntries:
             - Plane Shift
             - Tongues
             - Wall of Fire
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Efreeti
@@ -21750,14 +23616,23 @@ entries:
     name: Diabolical Restoration
     entryType: special
     text: If the erinyes dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The erinyes has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Rope
     entryType: special
     text: The erinyes has a magic rope. While bearing it, the erinyes can use the Entangling Rope action. The rope has AC 20, HP 90, and Immunity to Poison and Psychic damage. The rope turns to dust if reduced to 0 Hit Points, if it is 5+ feet away from the erinyes for 1 hour or more, or if the erinyes dies. If the rope is damaged or destroyed, the erinyes can fully restore it when finishing a Short Rest|XPHB|Short or Long Rest.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -21767,6 +23642,9 @@ entries:
         - name: Sword
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Withering Sword
     entryType: attack
@@ -21784,6 +23662,9 @@ entries:
           type: Necrotic
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Entangling Rope (Requires Magic Rope)
     entryType: save
@@ -21808,6 +23689,9 @@ entries:
             bonus: 0
             type: Force
             average: 14
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Erinyes
@@ -21904,10 +23788,16 @@ entries:
     name: Spider Climb
     entryType: special
     text: The ettercap can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Web Walker
     entryType: special
     text: The ettercap ignores movement restrictions caused by webs, and the ettercap knows the location of any other creature in contact with the same web.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -21919,6 +23809,9 @@ entries:
         - name: Claw
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -21936,6 +23829,9 @@ entries:
           type: Poison
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -21949,6 +23845,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Web Strand (Recharge 5-6)
     entryType: save
@@ -21972,10 +23871,16 @@ entries:
               duration:
                 type: until
                 trigger: the web is destroyed (AC 10; HP 5; Vulnerability to Fire damage; Immunity to Bludgeoning
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Reel
     entryType: special
     text: The ettercap pulls one creature within 30 feet of itself that is Restrained by its Web Strand up to 25 feet straight toward itself.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Ettercap
@@ -22086,6 +23991,9 @@ entries:
         - name: Morningstar
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Battleaxe
     entryType: attack
@@ -22105,6 +24013,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Morningstar
     entryType: attack
@@ -22118,6 +24029,9 @@ entries:
           type: Piercing
           average: 14
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ettin
@@ -22211,18 +24125,30 @@ entries:
     name: Fire Aura
     entryType: special
     text: At the end of each of the elemental's turns, each creature in a 10-foot Emanation originating from the elemental takes 5 (1d10) Fire damage. Creatures and flammable objects in the Emanation start Hitazard burning.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Fire Form
     entryType: special
     text: The elemental can move through a space as narrow as 1 inch without expending extra movement to do so, and it can enter a creature's space and stop there. The first time it enters a creature's space on a turn, that creature takes 5 (1d10) Fire damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Illumination
     entryType: special
     text: The elemental sheds Bright Light in a 30-foot radius and Dim Light for an additional 30 feet.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Water Susceptibility
     entryType: special
     text: The elemental takes 3 (1d6) Cold damage for every 5 feet the elemental moves in water or for every gallon of water splashed on it.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -22232,6 +24158,9 @@ entries:
         - name: Burn
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Burn
     entryType: attack
@@ -22248,6 +24177,9 @@ entries:
       onHit:
         other: If the target is a creature or a flammable object, it starts burning.
       additionalEffects: If the target is a creature or a flammable object, it starts burning.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Fire Elemental
@@ -22344,6 +24276,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The giant makes two attacks, using Flame Sword or Hammer Throw in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Flame Sword
     entryType: attack
@@ -22361,6 +24296,9 @@ entries:
           type: Fire
           average: 10
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Hammer Throw
     entryType: attack
@@ -22378,6 +24316,9 @@ entries:
           type: Fire
           average: 4
       range: 60/240 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Fire Giant
@@ -22464,22 +24405,37 @@ entries:
     name: Aversion to Fire
     entryType: special
     text: If the golem takes Fire damage, it has Disadvantage on attack rolls and ability checks until the end of its next turn.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Berserk
     entryType: special
     text: Whenever the golem starts its turn Bloodied, roll 1d6. On a 6, the golem goes berserk. On each of its turns while berserk, the golem attacks the nearest creature it can see. If no creature is near enough to move to and attack, the golem attacks an object. Once the golem goes berserk, it remains so until it is destroyed or it is no longer Bloodied. The golem's creator, if within 60 feet of the berserk golem, can try to calm it by taking an action to make a DC 15 Charisma (Persuasion) check; the golem must be able to hear its creator. If this check succeeds, the golem ceases being berserk until the start of its next turn, at which point it resumes rolling for the Berserk trait again if it is still Bloodied.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Immutable Form
     entryType: special
     text: The golem can't shape-shift.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Lightning Absorption
     entryType: special
     text: Whenever the golem is subjected to Lightning damage, it regains a number of Hit Points equal to the Lightning damage dealt.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The golem has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -22489,6 +24445,9 @@ entries:
         - name: Slam
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Slam
     entryType: attack
@@ -22506,6 +24465,9 @@ entries:
           type: Lightning
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Flesh Golem
@@ -22605,6 +24567,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The giant makes two attacks, using Frost Axe or Great Bow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Frost Axe
     entryType: attack
@@ -22622,6 +24587,9 @@ entries:
           type: Cold
           average: 9
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Great Bow
     entryType: attack
@@ -22639,11 +24607,17 @@ entries:
           type: Cold
           average: 7
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: War Cry (Recharge 5-6)
     entryType: special
     text: The giant or one creature of its choice that can see or hear it gains 16 (2d10 + 5) Temporary Hit Points and has Advantage on attack rolls until the start of the giant's next turn.
     recharge: 5-6
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Frost Giant
@@ -22736,6 +24710,9 @@ entries:
     name: Flyby
     entryType: special
     text: The gargoyle doesn't provoke an Opportunity Attack when it flies out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -22745,6 +24722,9 @@ entries:
         - name: Claw
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -22758,6 +24738,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Gargoyle
@@ -22843,10 +24826,16 @@ entries:
     name: Ooze Cube
     entryType: special
     text: The cube fills its entire space and is transparent. Other creatures can enter that space, but a creature that does so is subjected to the cube's Engulf and has Disadvantage on the saving throw. Creatures inside the cube have Cover|XPHB|Total Cover, and the cube can hold one Large creature or up to four Medium or Small creatures inside itself at a time. As an action, a creature within 5 feet of the cube can pull a creature or an object out of the cube by succeeding on a DC 12 Strength (Athletics) check, and the puller takes 10 (3d6) Acid damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Transparent
     entryType: special
     text: Even when the cube is in plain sight, a creature must succeed on a DC 15 Wisdom (Perception) check to notice the cube if the creature hasn't witnessed the cube move or otherwise act.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Pseudopod
     entryType: attack
@@ -22860,6 +24849,9 @@ entries:
           type: Acid
           average: 12
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Engulf
     entryType: save
@@ -22885,6 +24877,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage, and the target moves to an unoccupied space within 5 feet of the cube. If there is no unoccupied space, the target fails the save instead.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Gelatinous Cube
@@ -22990,6 +24985,9 @@ entries:
                 type: until
                 trigger: the start of its next turn
       onSuccess: The target is immune to this ghast's Stench for 24 hours.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -23007,6 +25005,9 @@ entries:
           type: Necrotic
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -23027,6 +25028,9 @@ entries:
               type: until
               trigger: the end of its next turn
       additionalEffects: 'If the target is a non-Undead creature, it is subjected to the following effect. *Constitution Saving Throw*: DC 10. *Failure:*  The target has the Paralyzed condition until the end of its next turn.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ghast
@@ -23131,10 +25135,16 @@ entries:
     name: Ethereal Sight
     entryType: special
     text: The ghost can see 60 feet into the Ethereal Plane when it is on the Material Plane.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Incorporeal Movement
     entryType: special
     text: The ghost can move through other creatures and objects as if they were Difficult Terrain. It takes 5 (1d10) Force damage if it ends its turn inside an object.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -23144,6 +25154,9 @@ entries:
         - name: Touch
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Withering Touch
     entryType: attack
@@ -23157,6 +25170,9 @@ entries:
           type: Necrotic
           average: 19
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Horrific Visage
     entryType: save
@@ -23180,6 +25196,9 @@ entries:
             type: Psychic
             average: 10
       onSuccess: The target is immune to this ghost's Horrific Visage for 24 hours.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Possession
     entryType: save
@@ -23200,6 +25219,9 @@ entries:
                 type: until
                 trigger: the body drops to 0 Hit Points or the ghost leaves as a Bonus Action
       onSuccess: The target is immune to this ghost's Possession for 24 hours.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Etherealness
@@ -23211,6 +25233,9 @@ spellcastingEntries:
         - frequency: at-will
           spells:
             - Etherealness
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ghost
@@ -23313,6 +25338,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -23330,6 +25358,9 @@ entries:
           type: Necrotic
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -23350,6 +25381,9 @@ entries:
               type: until
               trigger: the end of its next turn
       additionalEffects: 'If the target is a creature that isn''t an Undead or elf, it is subjected to the following effect. *Constitution Saving Throw*: DC 10. *Failure:*  The target has the Paralyzed condition until the end of its next turn.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ghoul
@@ -23430,6 +25464,9 @@ entries:
     name: Aberrant Ground
     entryType: special
     text: The ground in a 10-foot Emanation originating from the mouther is Difficult Terrain.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Gibbering
     entryType: save
@@ -23444,6 +25481,9 @@ entries:
         effects:
           other: 'The target rolls 1d8 to determine what it does during the current turn: - **1-4**: The target does nothing. - **5-6**: The target takes no action or Bonus Action and uses all its movement to move in a random direction. - **7-8**: The target makes a melee attack against a randomly determined creature within its reach or does nothing if it can''t make such an attack.'
         legacyEffects: 'The target rolls 1d8 to determine what it does during the current turn: - **1-4**: The target does nothing. - **5-6**: The target takes no action or Bonus Action and uses all its movement to move in a random direction. - **7-8**: The target makes a melee attack against a randomly determined creature within its reach or does nothing if it can''t make such an attack.'
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -23463,6 +25503,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Prone condition. The target dies if it is reduced to 0 Hit Points by this attack. Its body is then absorbed into the mouther, leaving only equipment behind.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Blinding Spittle (Recharge 5-6)
     entryType: save
@@ -23486,6 +25529,9 @@ entries:
             bonus: 0
             type: Radiant
             average: 7
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Gibbering Mouther
@@ -23586,10 +25632,16 @@ entries:
     name: Demonic Restoration
     entryType: special
     text: If the glabrezu dies outside the Abyss, its body dissolves into ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Abyss.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The glabrezu has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -23599,6 +25651,9 @@ entries:
         - name: Pincer
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Pincer
     entryType: attack
@@ -23621,6 +25676,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 15) from one of two pincers.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Pummel
     entryType: save
@@ -23645,6 +25703,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -23666,6 +25727,9 @@ spellcastingEntries:
             - Confusion
             - Fly
             - Power Word Stun
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Glabrezu
@@ -23770,10 +25834,16 @@ entries:
           with:
             type: attack
             name: Shield Bash
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Spear
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +7, reach 5 ft. or range 20/60 ft. 11 (2d6 + 4) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shield Bash
     entryType: save
@@ -23797,6 +25867,9 @@ entries:
             bonus: 4
             type: Bludgeoning
             average: 9
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Gladiator
@@ -23883,6 +25956,9 @@ entries:
           type: Piercing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Bone Bow
     entryType: attack
@@ -23896,6 +25972,9 @@ entries:
           type: Piercing
           average: 6
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Rampage (1/Day)
     entryType: multiattack
@@ -23908,6 +25987,9 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: self
 ---
 
 # Gnoll Warrior
@@ -23994,6 +26076,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The goblin makes two attacks, using Scimitar or Shortbow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Scimitar
     entryType: attack
@@ -24011,6 +26096,9 @@ entries:
           type: Slashing
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shortbow
     entryType: attack
@@ -24028,10 +26116,16 @@ entries:
           type: Piercing
           average: 2
       range: 80/320 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Nimble Escape
     entryType: special
     text: The goblin takes the Disengage or Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Goblin Boss
@@ -24121,10 +26215,16 @@ entries:
     name: Dagger
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +4, reach 5 ft. or range 20/60 ft. 4 (1d4 + 2) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Nimble Escape
     entryType: special
     text: The goblin takes the Disengage or Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Goblin Minion
@@ -24221,6 +26321,9 @@ entries:
           type: Slashing
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shortbow
     entryType: attack
@@ -24238,10 +26341,16 @@ entries:
           type: Piercing
           average: 2
       range: 80/320 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Nimble Escape
     entryType: special
     text: The goblin takes the Disengage or Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Goblin Warrior
@@ -24339,6 +26448,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -24348,6 +26460,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -24361,6 +26476,9 @@ entries:
           type: Slashing
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -24384,6 +26502,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Weakening Breath
     entryType: save
@@ -24407,6 +26528,9 @@ entries:
               modifier: -2
               target: damage rolls
               description: subtracts 2 (1d4) from its damage rolls.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Gold Dragon Wyrmling
@@ -24512,6 +26636,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature and the gorgon moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Petrifying Breath (Recharge 5-6)
     entryType: save
@@ -24520,6 +26647,9 @@ entries:
     save:
       ability: con
       dc: 15
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Trample
     entryType: save
@@ -24545,6 +26675,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Gorgon
@@ -24640,10 +26773,16 @@ entries:
     name: Amorphous
     entryType: special
     text: The ooze can move through a space as narrow as 1 inch without expending extra movement to do so.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Corrosive Form
     entryType: special
     text: Nonmagical ammunition is destroyed immediately after hitting the ooze and dealing any damage. Any nonmagical weapon takes a cumulative -1 penalty to attack rolls immediately after dealing damage to the ooze and coming into contact with it. The weapon is destroyed if the penalty reaches -5. The penalty can be removed by casting the *Mending* spell on the weapon. The ooze can eat through 2-inch-thick, nonmagical metal or wood in 1 round.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Pseudopod
     entryType: attack
@@ -24660,6 +26799,9 @@ entries:
       onHit:
         other: Nonmagical armor worn by the target takes a -1 penalty to the AC it offers. The armor is destroyed if the penalty reduces its AC to 10. The penalty can be removed by casting the *Mending* spell on the armor.
       additionalEffects: Nonmagical armor worn by the target takes a -1 penalty to the AC it offers. The armor is destroyed if the penalty reduces its AC to 10. The penalty can be removed by casting the *Mending* spell on the armor.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Gray Ooze
@@ -24756,6 +26898,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -24765,6 +26910,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -24782,6 +26930,9 @@ entries:
           type: Poison
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Poison Breath (Recharge 5-6)
     entryType: save
@@ -24805,6 +26956,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Green Dragon Wyrmling
@@ -24901,10 +27055,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The hag can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Mimicry
     entryType: special
     text: The hag can mimic animal sounds and humanoid voices. A creature that hears the sounds can tell they are imitations only with a successful DC 14 Wisdom (Insight) check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -24914,6 +27074,9 @@ entries:
         - name: Claw
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -24931,6 +27094,9 @@ entries:
           type: Poison
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -24950,6 +27116,9 @@ spellcastingEntries:
             - Invisibility
             - Minor Illusion
             - Ray of Sickness
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Green Hag
@@ -25045,6 +27214,9 @@ entries:
         - name: Tentacles
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Beak
     entryType: attack
@@ -25058,6 +27230,9 @@ entries:
           type: Piercing
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tentacles
     entryType: attack
@@ -25080,6 +27255,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 12) from all four tentacles.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Grick
@@ -25164,6 +27342,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -25186,6 +27367,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 14) from both of the griffon's front claws.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Griffon
@@ -25280,6 +27464,9 @@ entries:
           type: Psychic
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Grimlock
@@ -25353,10 +27540,16 @@ entries:
     name: Multiattack
     entryType: special
     text: The guard makes two attacks, using Javelin or Longsword in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Javelin
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +6, reach 5 ft. or range 30/120 ft. 14 (3d6 + 4) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Longsword
     entryType: attack
@@ -25370,6 +27563,9 @@ entries:
           type: Slashing
           average: 15
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Guard Captain
@@ -25447,6 +27643,9 @@ entries:
     name: Spear
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +3, reach 5 ft. or range 20/60 ft. 4 (1d6 + 1) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Guard
@@ -25541,6 +27740,9 @@ entries:
     name: Celestial Restoration
     entryType: special
     text: If the naga dies, it returns to life in 1d6 days and regains all its Hit Points unless *Dispel Evil and Good* is cast on its remains.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -25550,6 +27752,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -25567,6 +27772,9 @@ entries:
           type: Poison
           average: 22
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Poisonous Spittle
     entryType: save
@@ -25594,6 +27802,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -25613,6 +27824,9 @@ spellcastingEntries:
             - Flame Strike
             - Geas
             - True Seeing
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Guardian Naga
@@ -25713,6 +27927,9 @@ entries:
     name: Draconic Origin
     entryType: special
     text: 'The half-dragon is related to a type of dragon associated with one of the following damage types (DM''s choice): Acid, Cold, Fire, Lightning, or Poison. This choice affects other aspects of the stat block.'
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -25722,6 +27939,9 @@ entries:
         - name: Claw
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -25735,6 +27955,9 @@ entries:
           type: Slashing
           average: 6
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Dragon's Breath (Recharge 5-6)
     entryType: save
@@ -25753,10 +27976,16 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Leap
     entryType: special
     text: The half-dragon jumps up to 30 feet by spending 10 feet of movement.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Half-Dragon
@@ -25853,6 +28082,9 @@ entries:
           type: Slashing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Luring Song
     entryType: save
@@ -25887,6 +28119,9 @@ entries:
             type: compelled
             description: moves on its turn toward the harpy by
       onSuccess: The target is immune to this harpy's Luring Song for 24 hours.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Harpy
@@ -25966,6 +28201,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The hound has Advantage on an attack roll against a creature if at least one of the hound's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -25975,6 +28213,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -25992,6 +28233,9 @@ entries:
           type: Fire
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -26015,6 +28259,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hell Hound
@@ -26110,10 +28357,16 @@ entries:
     name: Demonic Restoration
     entryType: special
     text: If the hezrou dies outside the Abyss, its body dissolves into ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Abyss.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The hezrou has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Stench
     entryType: save
@@ -26132,6 +28385,9 @@ entries:
               duration:
                 type: until
                 trigger: the start of its next turn
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -26141,6 +28397,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -26158,10 +28417,16 @@ entries:
           type: Poison
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Leap
     entryType: special
     text: The hezrou jumps up to 30 feet by spending 10 feet of movement.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Hezrou
@@ -26253,6 +28518,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The giant makes two attacks, using Tree Club or Trash Lob in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tree Club
     entryType: attack
@@ -26272,6 +28540,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Trash Lob
     entryType: attack
@@ -26285,6 +28556,9 @@ entries:
           type: Bludgeoning
           average: 16
       range: 60/240 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hill Giant
@@ -26361,6 +28635,9 @@ entries:
     name: Flyby
     entryType: special
     text: The hippogriff doesn't provoke an Opportunity Attack when it flies out of an enemy's reach.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -26370,6 +28647,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -26383,6 +28663,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hippogriff
@@ -26464,10 +28747,16 @@ entries:
     name: Aura of Authority
     entryType: special
     text: While in a 10-foot Emanation originating from the hobgoblin, the hobgoblin and its allies have Advantage on attack rolls and saving throws, provided the hobgoblin doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The hobgoblin makes two attacks, using Greatsword or Longbow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Greatsword
     entryType: attack
@@ -26485,6 +28774,9 @@ entries:
           type: Poison
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Longbow
     entryType: attack
@@ -26502,6 +28794,9 @@ entries:
           type: Poison
           average: 5
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hobgoblin Captain
@@ -26588,6 +28883,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The hobgoblin has Advantage on an attack roll against a creature if at least one of the hobgoblin's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Longsword
     entryType: attack
@@ -26601,6 +28899,9 @@ entries:
           type: Slashing
           average: 12
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Longbow
     entryType: attack
@@ -26618,6 +28919,9 @@ entries:
           type: Poison
           average: 7
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hobgoblin Warrior
@@ -26705,6 +29009,9 @@ entries:
     name: Telepathic Bond
     entryType: special
     text: While the homunculus is on the same plane of existence as its master, the two of them can communicate telepathically with each other.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -26714,6 +29021,9 @@ entries:
       bonus: 4
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Homunculus
@@ -26802,10 +29112,16 @@ entries:
     name: Diabolical Restoration
     entryType: special
     text: If the devil dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The devil has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -26819,6 +29135,9 @@ entries:
           with:
             type: attack
             name: Infernal Tail
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Searing Fork
     entryType: attack
@@ -26836,6 +29155,9 @@ entries:
           type: Fire
           average: 9
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Hurl Flame
     entryType: attack
@@ -26852,6 +29174,9 @@ entries:
       onHit:
         other: If the target is a flammable object that isn't being worn or carried, it starts burning.
       additionalEffects: If the target is a flammable object that isn't being worn or carried, it starts burning.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Infernal Tail
     entryType: save
@@ -26873,6 +29198,9 @@ entries:
             type: Necrotic
             average: 10
         legacyEffects: 10 (1d8 + 6) Necrotic damage, and the target receives an infernal wound if it doesn't have one. While wounded, the target loses 10 (3d6) Hit Points at the start of each of its turns. The wound closes after 1 minute, after a spell restores Hit Points to the target, or after the target or a creature within 5 feet of it takes an action to stanch the wound, doing so by succeeding on a DC 17 Wisdom (Medicine) check.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Horned Devil
@@ -26971,14 +29299,23 @@ entries:
     name: Hold Breath
     entryType: special
     text: The hydra can hold its breath for 1 hour.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Multiple Heads
     entryType: special
     text: The hydra has five heads. Whenever the hydra takes 25 damage or more on a single turn, one of its heads dies. The hydra dies if all its heads are dead. At the end of each of its turns when it has at least one living head, the hydra grows two heads for each of its heads that died since its last turn, unless it has taken Fire damage since its last turn. The hydra regains 20 Hit Points when it grows new heads.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Reactive Heads
     entryType: special
     text: For each head the hydra has beyond one, it gets an extra Reaction that can be used only for Opportunity Attacks.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -26988,6 +29325,9 @@ entries:
         - name: Bite
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -27001,6 +29341,9 @@ entries:
           type: Piercing
           average: 10
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Hydra
@@ -27104,10 +29447,16 @@ entries:
     name: Diabolical Restoration
     entryType: special
     text: If the devil dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The devil has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -27121,10 +29470,16 @@ entries:
           with:
             type: attack
             name: a Tail attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Ice Spear
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +10, reach 5 ft. or range 30/120 ft. 14 (2d8 + 5) Piercing damage plus 10 (3d6) Cold damage. Until the end of its next turn, the target can''t take a Bonus Action or Reaction, its Speed decreases by 10 feet, and it can move or take one action on its turn, not both. HitomThe spear magically returns to the devil''s hand immediately after a ranged attack.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail
     entryType: attack
@@ -27142,6 +29497,9 @@ entries:
           type: Cold
           average: 18
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Ice Wall
@@ -27151,6 +29509,9 @@ spellcastingEntries:
       ability: int
       saveDC: 17
       spellLists: []
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ice Devil
@@ -27274,6 +29635,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -27291,6 +29655,9 @@ entries:
           type: Cold
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Frost Breath
     entryType: save
@@ -27313,6 +29680,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Fog Cloud (1/Day)
@@ -27330,6 +29700,9 @@ spellcastingEntries:
         - frequency: 1/day
           spells:
             - Fog Cloud
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ice Mephit
@@ -27429,6 +29802,9 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The imp has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Sting
     entryType: attack
@@ -27446,10 +29822,16 @@ entries:
           type: Poison
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shape-Shift
     entryType: special
     text: The imp shape-shifts to resemble a rat (Speed 20 ft.), a raven (20 ft., Fly 60 ft.), or a spider (20 ft., Climb 20 ft.), or it returns to its true form. Its statistics are the same in each form, except for its Speed. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Invisibility
@@ -27461,6 +29843,9 @@ spellcastingEntries:
         - frequency: at-will
           spells:
             - Invisibility
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Imp
@@ -27565,6 +29950,9 @@ entries:
     name: Succubus Form
     entryType: special
     text: When the incubus finishes a Long Rest, it can shape-shift into a Succubus, using that stat block instead of this one. Any equipment it's wearing or carrying isn't transformed.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -27574,6 +29962,9 @@ entries:
         - name: Touch
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Restless Touch
     entryType: attack
@@ -27587,6 +29978,9 @@ entries:
           type: Psychic
           average: 15
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Nightmare
     entryType: save
@@ -27611,6 +30005,9 @@ entries:
             bonus: 0
             type: Psychic
             average: 18
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -27630,6 +30027,9 @@ spellcastingEntries:
           spells:
             - Dream
             - Hypnotic Pattern
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Incubus
@@ -27741,10 +30141,16 @@ entries:
     name: Air Form
     entryType: special
     text: The stalker can enter an enemy's space and stop there. It can move through a space as narrow as 1 inch without expending extra movement to do so.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Invisibility
     entryType: special
     text: The stalker has the Invisible condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -27758,6 +30164,9 @@ entries:
           with:
             type: attack
             name: Vortex
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Wind Swipe
     entryType: attack
@@ -27771,6 +30180,9 @@ entries:
           type: Force
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Vortex
     entryType: save
@@ -27803,6 +30215,9 @@ entries:
             bonus: 0
             type: Thunder
             average: 7
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Invisible Stalker
@@ -27898,18 +30313,30 @@ entries:
     name: Fire Absorption
     entryType: special
     text: Whenever the golem is subjected to Fire damage, it regains a number of Hit Points equal to the Fire damage dealt.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Immutable Form
     entryType: special
     text: The golem can't shape-shift.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The golem has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The golem makes two attacks, using Bladed Arm or Fiery Bolt in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Bladed Arm
     entryType: attack
@@ -27927,6 +30354,9 @@ entries:
           type: Fire
           average: 10
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fiery Bolt
     entryType: attack
@@ -27940,6 +30370,9 @@ entries:
           type: Fire
           average: 36
       range: 120 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Poison Breath
     entryType: save
@@ -27962,6 +30395,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Iron Golem
@@ -28055,6 +30491,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The knight makes two attacks, using Greatsword or Heavy Crossbow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Greatsword
     entryType: attack
@@ -28072,6 +30511,9 @@ entries:
           type: Radiant
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Heavy Crossbow
     entryType: attack
@@ -28089,6 +30531,9 @@ entries:
           type: Radiant
           average: 4
       range: 100/400 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Knight
@@ -28167,14 +30612,23 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The kobold has Advantage on an attack roll against a creature if at least one of the kobold's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Sunlight Sensitivity
     entryType: special
     text: While in sunlight, the kobold has Disadvantage on ability checks and attack rolls.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Dagger
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +4, reach 5 ft. or range 20/60 ft. 4 (1d4 + 2) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Kobold Warrior
@@ -28279,6 +30733,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The kraken can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (4/Day, or 5/Day in Lair)
     entryType: special
@@ -28286,10 +30743,16 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Siege Monster
     entryType: special
     text: The kraken deals double damage to objects and structures.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -28299,6 +30762,9 @@ entries:
         - name: Tentacle
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Tentacle
     entryType: attack
@@ -28329,6 +30795,9 @@ entries:
               type: until
               trigger: the grapple ends
       additionalEffects: The target has the Grappled condition (escape DC 20) from one of ten tentacles, and it has the Restrained condition until the grapple ends.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fling
     entryType: save
@@ -28353,6 +30822,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Strike
     entryType: save
@@ -28377,6 +30849,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Swallow
     entryType: save
@@ -28408,10 +30883,17 @@ entries:
             bonus: 0
             type: Acid
             average: 24
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Storm Bolt
     entryType: special
     text: The kraken uses Lightning Strike.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Toxic Ink
     entryType: save
@@ -28427,6 +30909,10 @@ entries:
         effects:
           other: The target has the Blinded and Poisoned conditions until the end of the kraken's next turn. The kraken then moves up to its Speed.
         legacyEffects: The target has the Blinded and Poisoned conditions until the end of the kraken's next turn. The kraken then moves up to its Speed.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Kraken
@@ -28547,6 +31033,9 @@ entries:
           with:
             type: attack
             name: Corrupting Touch
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -28564,6 +31053,9 @@ entries:
           type: Psychic
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Corrupting Touch
     entryType: save
@@ -28589,10 +31081,16 @@ entries:
             bonus: 0
             type: Psychic
             average: 13
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Leap
     entryType: special
     text: The lamia jumps up to 30 feet by spending 10 feet of movement.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -28613,6 +31111,9 @@ spellcastingEntries:
             - Geas
             - Major Image
             - Scrying
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Lamia
@@ -28708,6 +31209,9 @@ entries:
     name: Hellish Restoration
     entryType: special
     text: If the lemure dies in the Nine Hells, it revives with all its Hit Points in 1d10 days unless it is killed by a creature under the effects of a *Bless* spell or its remains are sprinkled with Holy Water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Vile Slime
     entryType: attack
@@ -28721,6 +31225,9 @@ entries:
           type: Poison
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Lemure
@@ -28827,18 +31334,30 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Spirit Jar
     entryType: special
     text: If destroyed, the lich reforms in 1d10 days if it has a spirit jar, reviving with all its Hit Points. The new body appears in an unoccupied space within the lich's lair.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The lich makes three attacks, using Eldritch Burst or Paralyzing Touch in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Eldritch Burst
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +12, reach 5 ft. or range 120 ft. 31 (4d12 + 5) Force damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Paralyzing Touch
     entryType: attack
@@ -28852,10 +31371,17 @@ entries:
           type: Cold
           average: 15
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Deathly Teleport
     entryType: special
     text: The lich teleports up to 60 feet to an unoccupied space it can see, and each creature within 10 feet of the space it left takes 11 (2d10) Necrotic damage.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Disrupt Life
     entryType: save
@@ -28879,6 +31405,10 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -28909,6 +31439,9 @@ spellcastingEntries:
             - Finger of Death
             - Power Word Kill
             - Scrying
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: reaction
     name: Protective Magic
     entryType: spellcasting
@@ -28916,6 +31449,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: reaction
+    trigger.targeting:
+      type: single
+    trigger.reactionTrigger: the spell's trigger
   - category: legendary
     name: Frightening Gaze
     entryType: spellcasting
@@ -28923,6 +31460,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Lich
@@ -29039,10 +31580,16 @@ entries:
         - name: Burst
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Arcane Burst
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +6, reach 5 ft. or range 120 ft. 16 (3d8 + 3) Force damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -29067,6 +31614,9 @@ spellcastingEntries:
           spells:
             - Cone of Cold
             - Fly
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Misty Step (3/Day)
     entryType: spellcasting
@@ -29077,6 +31627,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
   - category: reaction
     name: Protective Magic (3/Day)
     entryType: spellcasting
@@ -29087,6 +31640,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: reaction
+    trigger.targeting:
+      type: single
+    trigger.reactionTrigger: the spell's trigger
 ---
 
 # Mage
@@ -29206,6 +31763,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -29223,6 +31783,9 @@ entries:
           type: Fire
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath
     entryType: save
@@ -29245,6 +31808,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Magma Mephit
@@ -29346,6 +31912,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Touch
     entryType: attack
@@ -29362,10 +31931,16 @@ entries:
       onHit:
         other: If the target is a creature or a flammable object that isn't being worn or carried, it starts burning.
       additionalEffects: If the target is a creature or a flammable object that isn't being worn or carried, it starts burning.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Ignited Illumination
     entryType: special
     text: The magmin sets itself ablaze or extinguishes its flames. While ablaze, the magmin sheds Bright Light in a 10-foot radius and Dim Light for an additional 10 feet.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Magmin
@@ -29450,6 +32025,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The manticore makes three attacks, using Rend or Tail Spike in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Rend
     entryType: attack
@@ -29463,6 +32041,9 @@ entries:
           type: Slashing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail Spike
     entryType: attack
@@ -29476,6 +32057,9 @@ entries:
           type: Piercing
           average: 7
       range: 100/200 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Manticore
@@ -29572,14 +32156,23 @@ entries:
     name: Demonic Restoration
     entryType: special
     text: If the marilith dies outside the Abyss, its body dissolves into ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Abyss.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The marilith has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Reactive
     entryType: special
     text: The marilith can take one Reaction on every turn of combat.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -29589,6 +32182,9 @@ entries:
         - name: Blade
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Pact Blade
     entryType: attack
@@ -29606,6 +32202,9 @@ entries:
           type: Necrotic
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Constrict
     entryType: save
@@ -29643,11 +32242,17 @@ entries:
             bonus: 4
             type: Bludgeoning
             average: 15
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Teleport (Recharge 5-6)
     entryType: special
     text: The marilith teleports up to 120 feet to an unoccupied space it can see.
     recharge: 5-6
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Marilith
@@ -29759,6 +32364,9 @@ entries:
         - name: Ray
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -29772,6 +32380,9 @@ entries:
           type: Slashing
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Snake Hair
     entryType: attack
@@ -29789,6 +32400,9 @@ entries:
           type: Poison
           average: 14
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Poison Ray
     entryType: attack
@@ -29802,6 +32416,9 @@ entries:
           type: Poison
           average: 11
       range: 150 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Petrifying Gaze (Recharge 5-6)
     entryType: save
@@ -29810,6 +32427,9 @@ entries:
     save:
       ability: con
       dc: 13
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Medusa
@@ -29896,10 +32516,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The merfolk can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Ocean Spear
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +2, reach 5 ft. or range 20/60 ft. 3 (1d6) Piercing damage plus 2 (1d4) Cold damage. If the target is a creature, its Speed decreases by 10 feet until the end of its next turn. HitomThe spear magically returns to the merfolk''s hand immediately after a ranged attack.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Merfolk Skirmisher
@@ -29979,10 +32605,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The merrow can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The merrow makes two attacks, using Bite, Claw, or Harpoon in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -29996,6 +32628,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -30009,10 +32644,16 @@ entries:
           type: Slashing
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Harpoon
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +6, reach 5 ft. or range 20/60 ft. 11 (2d6 + 4) Piercing damage. If the target is a Large or smaller creature, the merrow pulls the target up to 15 feet straight toward itself.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Merrow
@@ -30102,6 +32743,9 @@ entries:
     name: Adhesive (Object Form Only)
     entryType: special
     text: The mimic adheres to anything that touches it. A Huge or smaller creature adhered to the mimic has the Grappled condition (escape DC 13). Ability checks made to escape this grapple have Disadvantage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -30123,6 +32767,9 @@ entries:
           type: Acid
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Pseudopod
     entryType: attack
@@ -30149,10 +32796,16 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13). Ability checks made to escape this grapple have Disadvantage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The mimic shape-shifts to resemble a Medium or Small object while retaining its game statistics, or it returns to its true blob form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Mimic
@@ -30255,6 +32908,9 @@ entries:
           type: Necrotic
           average: 10
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Gore (Recharge 5-6)
     entryType: attack
@@ -30279,6 +32935,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature and the minotaur moved 10+ feet straight toward it immediately before the hit, the target takes an extra 10 (3d6) Piercing damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Minotaur of Baphomet
@@ -30379,6 +33038,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature and the skeleton moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Slam
     entryType: attack
@@ -30392,6 +33054,9 @@ entries:
           type: Bludgeoning
           average: 15
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Minotaur Skeleton
@@ -30489,14 +33154,23 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The mummy has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Undead Restoration
     entryType: special
     text: If destroyed, the mummy gains a new body in 24 hours if its heart is intact, reviving with all its Hit Points. The new body appears in an unoccupied space within the mummy's lair. The heart is a Tiny object that has AC 17, HP 10, and Immunity to all damage except Fire.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -30506,6 +33180,9 @@ entries:
         - name: Energy
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rotting Fist
     entryType: attack
@@ -30526,6 +33203,9 @@ entries:
       onHit:
         other: If the target is a creature, it is cursed. While cursed, the target can't regain Hit Points, it gains no benefit from finishing a Long Rest, and its Hit Point maximum decreases by 10 (3d6) every 24 hours that elapse. A creature dies and turns to dust if reduced to 0 Hit Points by this attack.
       additionalEffects: If the target is a creature, it is cursed. While cursed, the target can't regain Hit Points, it gains no benefit from finishing a Long Rest, and its Hit Point maximum decreases by 10 (3d6) every 24 hours that elapse. A creature dies and turns to dust if reduced to 0 Hit Points by this attack.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Channel Negative Energy
     entryType: attack
@@ -30539,6 +33219,9 @@ entries:
           type: Necrotic
           average: 25
       range: 60 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Dreadful Glare
     entryType: save
@@ -30563,10 +33246,17 @@ entries:
             bonus: 4
             type: Psychic
             average: 25
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Glare
     entryType: special
     text: The mummy uses Dreadful Glare. The mummy can't take this action again until the start of its next turn.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Necrotic Strike
     entryType: multiattack
@@ -30576,6 +33266,10 @@ entries:
         - name: Energy
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -30597,6 +33291,9 @@ spellcastingEntries:
             - Animate Dead
             - Harm
             - Insect Plague
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Dread Command
     entryType: spellcasting
@@ -30604,6 +33301,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Mummy Lord
@@ -30726,6 +33427,9 @@ entries:
         - name: Fist
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rotting Fist
     entryType: attack
@@ -30746,6 +33450,9 @@ entries:
       onHit:
         other: If the target is a creature, it is cursed. While cursed, the target can't regain Hit Points, its Hit Point maximum doesn't return to normal when finishing a Long Rest, and its Hit Point maximum decreases by 10 (3d6) every 24 hours that elapse. A creature dies and turns to dust if reduced to 0 Hit Points by this attack.
       additionalEffects: If the target is a creature, it is cursed. While cursed, the target can't regain Hit Points, its Hit Point maximum doesn't return to normal when finishing a Long Rest, and its Hit Point maximum decreases by 10 (3d6) every 24 hours that elapse. A creature dies and turns to dust if reduced to 0 Hit Points by this attack.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Dreadful Glare
     entryType: save
@@ -30766,6 +33473,9 @@ entries:
                 type: until
                 trigger: the end of the mummy's next turn
       onSuccess: The target is immune to this mummy's Dreadful Glare for 24 hours.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Mummy
@@ -30861,10 +33571,16 @@ entries:
     name: Demonic Restoration
     entryType: special
     text: If the nalfeshnee dies outside the Abyss, its body dissolves into ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Abyss.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The nalfeshnee has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -30874,6 +33590,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -30891,10 +33610,16 @@ entries:
           type: Force
           average: 11
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Teleport
     entryType: special
     text: The nalfeshnee teleports up to 120 feet to an unoccupied space it can see.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Horror Nimbus (Recharge 5-6)
     entryType: save
@@ -30920,6 +33645,9 @@ entries:
             type: Psychic
             average: 28
       onSuccess: The target is immune to this nalfeshnee's Horror Nimbus for 24 hours.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Nalfeshnee
@@ -31028,10 +33756,16 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The hag has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Soul Bag
     entryType: special
     text: The hag has a soul bag. While holding or carrying the bag, the hag can use its Nightmare Haunting action. The bag has AC 15, HP 20, and Resistance to all damage. The bag turns to dust if reduced to 0 Hit Points. If the bag is destroyed, any souls the bag is holding are released. The hag can create a new bag after 7 days.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -31041,6 +33775,9 @@ entries:
         - name: Claw
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -31054,10 +33791,16 @@ entries:
           type: Slashing
           average: 13
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The hag shape-shifts into a Small or Medium Humanoid, or it returns to its true form. Other than its size, its game statistics are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -31078,6 +33821,9 @@ spellcastingEntries:
           spells:
             - Phantasmal Killer
             - Plane Shift
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Nightmare Haunting (1/Day; Requires Soul Bag)
     entryType: spellcasting
@@ -31098,6 +33844,9 @@ spellcastingEntries:
             - Dream
             - Protection from Evil and Good
             - Magic Circle
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Night Hag
@@ -31196,10 +33945,16 @@ entries:
     name: Confer Fire Resistance
     entryType: special
     text: The nightmare can grant Resistance to Fire damage to a rider while it is on the nightmare.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Illumination
     entryType: special
     text: The nightmare sheds Bright Light in a 10-foot radius and Dim Light for an additional 10 feet.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Hooves
     entryType: attack
@@ -31217,10 +33972,16 @@ entries:
           type: Fire
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Ethereal Stride
     entryType: special
     text: The nightmare and up to three willing creatures within 5 feet of it teleport to the Ethereal Plane from the Material Plane or vice versa.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Nightmare
@@ -31316,6 +34077,9 @@ entries:
           type: Piercing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Noble
@@ -31398,10 +34162,16 @@ entries:
     name: Amorphous
     entryType: special
     text: The jelly can move through a space as narrow as 1 inch without expending extra movement to do so.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Spider Climb
     entryType: special
     text: The jelly can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Pseudopod
     entryType: attack
@@ -31415,6 +34185,9 @@ entries:
           type: Acid
           average: 12
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ochre Jelly
@@ -31498,6 +34271,9 @@ entries:
     name: Undead Fortitude
     entryType: special
     text: If damage reduces the zombie to 0 Hit Points, it makes a Constitution saving throw (DC 5 plus the damage taken) unless the damage is Radiant or from a Critical Hit. On a successful save, the zombie drops to 1 Hit Point instead.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Slam
     entryType: attack
@@ -31511,6 +34287,9 @@ entries:
           type: Bludgeoning
           average: 13
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ogre Zombie
@@ -31598,10 +34377,16 @@ entries:
           type: Bludgeoning
           average: 13
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Javelin
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +6, reach 5 ft. or range 30/120 ft. 11 (2d6 + 4) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ogre
@@ -31694,6 +34479,9 @@ entries:
     name: Regeneration
     entryType: special
     text: The oni regains 10 Hit Points at the start of each of its turns if it has at least 1 Hit Point.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -31707,6 +34495,9 @@ entries:
           with:
             type: spellcasting
             text: Spellcasting
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -31724,6 +34515,9 @@ entries:
           type: Necrotic
           average: 9
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Nightmare Ray
     entryType: attack
@@ -31737,10 +34531,16 @@ entries:
           type: Psychic
           average: 9
       range: 60 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shape-Shift
     entryType: special
     text: The oni shape-shifts into a Small or Medium Humanoid or a Large Giant, or it returns to its true form. Other than its size, its game statistics are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -31764,6 +34564,9 @@ spellcastingEntries:
             - Darkness
             - Gaseous Form
             - Sleep
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Invisibility
     entryType: spellcasting
@@ -31771,6 +34574,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Oni
@@ -31874,6 +34680,9 @@ entries:
         - name: Tentacle
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -31887,6 +34696,9 @@ entries:
           type: Piercing
           average: 12
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tentacle
     entryType: attack
@@ -31909,6 +34721,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 13) from one of two tentacles.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tentacle Slam
     entryType: save
@@ -31936,6 +34751,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Otyugh
@@ -32024,6 +34842,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -32037,6 +34858,9 @@ entries:
           type: Slashing
           average: 14
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Owlbear
@@ -32133,6 +34957,9 @@ entries:
           type: Radiant
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Pegasus
@@ -32206,14 +35033,23 @@ entries:
     name: Ethereal Sight
     entryType: special
     text: The spider can see 60 feet into the Ethereal Plane while on the Material Plane and vice versa.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Spider Climb
     entryType: special
     text: The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Web Walker
     entryType: special
     text: The spider ignores movement restrictions caused by webs, and the spider knows the location of any other creature in contact with the same web.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -32223,6 +35059,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -32255,10 +35094,16 @@ entries:
             restrictions:
               while: While Poisoned, the target also has the Paralyzed condition
       additionalEffects: If this damage reduces the target to 0 Hit Points, the target becomes Stable, and it has the Poisoned condition for 1 hour. While Poisoned, the target also has the Paralyzed condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Ethereal Jaunt
     entryType: special
     text: The spider teleports from the Material Plane to the Ethereal Plane or vice versa.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Phase Spider
@@ -32355,6 +35200,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The pirate makes three attacks, using Rapier or Pistol in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Rapier
     entryType: attack
@@ -32368,6 +35216,9 @@ entries:
           type: Piercing
           average: 13
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Pistol
     entryType: attack
@@ -32381,6 +35232,9 @@ entries:
           type: Piercing
           average: 15
       range: 30/90 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Captain's Charm
     entryType: save
@@ -32400,6 +35254,9 @@ entries:
               duration:
                 type: until
                 trigger: the start of the pirate's next turn
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Pirate Captain
@@ -32490,10 +35347,16 @@ entries:
           with:
             type: attack
             name: Enthralling Panache
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Dagger
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +5, reach 5 ft. or range 20/60 ft. 5 (1d4 + 3) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Enthralling Panache
     entryType: save
@@ -32513,6 +35376,9 @@ entries:
               duration:
                 type: until
                 trigger: the start of the pirate's next turn
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Pirate
@@ -32607,6 +35473,9 @@ entries:
     name: Diabolical Restoration
     entryType: special
     text: If the pit fiend dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Fear Aura
     entryType: save
@@ -32624,6 +35493,9 @@ entries:
                 type: until
                 trigger: the start of its next turn
       onSuccess: The target is immune to this pit fiend's aura for 24 hours.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (4/Day)
     entryType: special
@@ -32631,10 +35503,16 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The pit fiend has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -32648,6 +35526,9 @@ entries:
         - name: Mace
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -32671,6 +35552,9 @@ entries:
             saveToEnd:
               timing: end-of-turn
       additionalEffects: 'If the target is a creature, it must make the following saving throw. *Constitution Saving Throw*: DC 21. *Failure:*  The target has the Poisoned condition. While Poisoned, the target can''t regain Hit Points and takes 21 (6d6) Poison damage at the start of each of its turns, and it repeats the save at the end of each of its turns, ending the effect on itself on a success. After 1 minute, it succeeds automatically.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Devilish Claw
     entryType: attack
@@ -32684,6 +35568,9 @@ entries:
           type: Necrotic
           average: 26
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fiery Mace
     entryType: attack
@@ -32701,6 +35588,9 @@ entries:
           type: Fire
           average: 21
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Hellfire Spellcasting (Recharge 4-6)
@@ -32713,6 +35603,9 @@ spellcastingEntries:
       excludeComponents:
         - M
       spellLists: []
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Pit Fiend
@@ -32831,14 +35724,23 @@ entries:
     name: Divine Awareness
     entryType: special
     text: The planetar knows if it hears a lie.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Exalted Restoration
     entryType: special
     text: If the planetar dies outside Mount Celestia, its body disappears, and it gains a new body instantly, reviving with all its Hit Points somewhere in Mount Celestia.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The planetar has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -32848,6 +35750,9 @@ entries:
         - name: Sword
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Radiant Sword
     entryType: attack
@@ -32865,6 +35770,9 @@ entries:
           type: Radiant
           average: 18
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Holy Burst
     entryType: save
@@ -32887,6 +35795,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -32907,6 +35818,9 @@ spellcastingEntries:
             - Control Weather
             - Dispel Evil and Good
             - Raise Dead
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Divine Aid (2/Day)
     entryType: spellcasting
@@ -32917,6 +35831,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Planetar
@@ -33029,6 +35946,9 @@ entries:
           type: Radiant
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Radiant Flame
     entryType: attack
@@ -33042,6 +35962,9 @@ entries:
           type: Radiant
           average: 7
       range: 60 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -33054,6 +35977,9 @@ spellcastingEntries:
           spells:
             - Light
             - Thaumaturgy
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Divine Aid (1/Day)
     entryType: spellcasting
@@ -33064,6 +35990,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Priest Acolyte
@@ -33150,6 +36079,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The priest makes two attacks, using Mace or Radiant Flame in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Mace
     entryType: attack
@@ -33167,6 +36099,9 @@ entries:
           type: Radiant
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Radiant Flame
     entryType: attack
@@ -33180,6 +36115,9 @@ entries:
           type: Radiant
           average: 11
       range: 60 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -33195,6 +36133,9 @@ spellcastingEntries:
         - frequency: 1/day
           spells:
             - Spirit Guardians
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Divine Aid (3/Day)
     entryType: spellcasting
@@ -33205,6 +36146,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Priest
@@ -33299,6 +36243,9 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The pseudodragon has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -33308,6 +36255,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -33321,6 +36271,9 @@ entries:
           type: Piercing
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Sting
     entryType: save
@@ -33353,6 +36306,9 @@ entries:
             bonus: 0
             type: Poison
             average: 5
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Pseudodragon
@@ -33439,6 +36395,9 @@ entries:
     name: Tunneler
     entryType: special
     text: The worm can burrow through solid rock at half its Burrow Speed and leaves a 10-foot-diameter tunnel in its wake.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -33450,6 +36409,9 @@ entries:
         - name: Stinger
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -33484,6 +36446,9 @@ entries:
               type: until
               trigger: the grapple ends
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 19), and it has the Restrained condition until the grapple ends.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail Stinger
     entryType: attack
@@ -33501,6 +36466,9 @@ entries:
           type: Poison
           average: 35
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Swallow
     entryType: save
@@ -33527,6 +36495,9 @@ entries:
             bonus: 0
             type: Acid
             average: 17
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Purple Worm
@@ -33626,6 +36597,9 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The quasit has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Rend
     entryType: attack
@@ -33639,6 +36613,9 @@ entries:
           type: Slashing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Scare (1/Day)
     entryType: save
@@ -33658,10 +36635,16 @@ entries:
             - condition: Frightened
               saveToEnd:
                 timing: end-of-turn
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shape-Shift
     entryType: special
     text: The quasit shape-shifts to resemble a bat (Speed 10 ft., Fly 40 ft.), a centipede (40 ft., Climb 40 ft.), or a toad (40 ft., Swim 40 ft.), or it returns to its true form. Its game statistics are the same in each form, except for its Speed. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Invisibility
@@ -33673,6 +36656,9 @@ spellcastingEntries:
         - frequency: at-will
           spells:
             - Invisibility
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Quasit
@@ -33772,10 +36758,16 @@ entries:
     name: Greater Magic Resistance
     entryType: special
     text: The rakshasa automatically succeeds on saving throws against spells and other magical effects, and the attack rolls of spells automatically miss it. Without the rakshasa's permission, no spell can observe the rakshasa remotely or detect its thoughts, creature type, or alignment.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Fiendish Restoration
     entryType: special
     text: If the rakshasa dies outside the Nine Hells, its body turns to ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -33785,6 +36777,9 @@ entries:
         - name: Touch
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Cursed Touch
     entryType: attack
@@ -33805,6 +36800,9 @@ entries:
       onHit:
         other: If the target is a creature, it is cursed. While cursed, the target gains no benefit from finishing a Short Rest|XPHB|Short or Long Rest.
       additionalEffects: If the target is a creature, it is cursed. While cursed, the target gains no benefit from finishing a Short Rest|XPHB|Short or Long Rest.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Baleful Command (Recharge 5-6)
     entryType: save
@@ -33826,6 +36824,9 @@ entries:
             type: Psychic
             average: 28
         legacyEffects: 28 (8d6) Psychic damage, and the target has the Frightened and Incapacitated conditions until the start of the rakshasa's next turn.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -33850,6 +36851,9 @@ spellcastingEntries:
             - Invisibility
             - Major Image
             - Plane Shift
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Rakshasa
@@ -33961,6 +36965,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -33978,6 +36985,9 @@ entries:
           type: Fire
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -34001,6 +37011,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Red Dragon Wyrmling
@@ -34083,6 +37096,9 @@ entries:
     name: Heat Aura
     entryType: special
     text: At the end of each of the remorhaz's turns, each creature in a 5-foot Emanation originating from the remorhaz takes 16 (3d10) Fire damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -34121,6 +37137,9 @@ entries:
               type: until
               trigger: the grapple ends
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 17), and it has the Restrained condition until the grapple ends.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Swallow
     entryType: save
@@ -34151,6 +37170,9 @@ entries:
             bonus: 0
             type: Fire
             average: 10
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Remorhaz
@@ -34242,6 +37264,9 @@ entries:
           with:
             type: attack
             name: a Talons attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Beak
     entryType: attack
@@ -34255,6 +37280,9 @@ entries:
           type: Piercing
           average: 28
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Talons
     entryType: attack
@@ -34289,11 +37317,17 @@ entries:
               type: until
               trigger: the grapple ends
       additionalEffects: If the target is a Huge or smaller creature, it has the Grappled condition (escape DC 19) from both talons, and it has the Restrained condition until the grapple ends.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Swoop (Recharge 5-6)
     entryType: special
     text: If the roc has a creature Grappled, the roc flies up to half its Fly Speed without provoking Opportunity Attacks and drops that creature.
     recharge: 5-6
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Roc
@@ -34380,6 +37414,9 @@ entries:
     name: Spider Climb
     entryType: special
     text: The roper can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -34391,6 +37428,9 @@ entries:
         - name: Bite
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -34404,6 +37444,9 @@ entries:
           type: Piercing
           average: 17
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tentacle
     entryType: attack
@@ -34413,10 +37456,16 @@ entries:
       bonus: 7
       damage: []
       reach: 60 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Reel
     entryType: special
     text: The roper pulls each creature Grappled by it up to 30 feet straight toward it.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Roper
@@ -34499,6 +37548,9 @@ entries:
     name: Iron Scent
     entryType: special
     text: The rust monster can pinpoint the location of ferrous metal within 30 feet of itself.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -34508,6 +37560,9 @@ entries:
         - name: Bite
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -34521,6 +37576,9 @@ entries:
           type: Piercing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Antennae
     entryType: save
@@ -34534,10 +37592,16 @@ entries:
         effects:
           other: The object takes a -1 penalty to the AC it offers (armor) or to its attack rolls (weapon). Armor is destroyed if the penalty reduces its AC to 10, and a weapon is destroyed if its penalty reaches -5. The penalty can be removed by casting the *Mending* spell on the armor or weapon.
         legacyEffects: The object takes a -1 penalty to the AC it offers (armor) or to its attack rolls (weapon). Armor is destroyed if the penalty reduces its AC to 10, and a weapon is destroyed if its penalty reaches -5. The penalty can be removed by casting the *Mending* spell on the armor or weapon.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Destroy Metal
     entryType: special
     text: The rust monster touches a nonmagical metal object within 5 feet of itself that isn't being worn or carried. The touch destroys a 1-foot Cube [Area of Effect]|XPHB|Cube of the object.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Rust Monster
@@ -34631,14 +37695,23 @@ entries:
     name: Blood Frenzy
     entryType: special
     text: The sahuagin has Advantage on attack rolls against any creature that doesn't have all its Hit Points.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Limited Amphibiousness
     entryType: special
     text: The sahuagin can breathe air and water, but it must be submerged at least once every 4 hours to avoid suffocating outside water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Shark Telepathy
     entryType: special
     text: The sahuagin can magically control sharks within 120 feet of itself, using a special telepathy.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -34648,6 +37721,9 @@ entries:
         - name: Claw
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -34661,10 +37737,16 @@ entries:
           type: Slashing
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Aquatic Charge
     entryType: special
     text: The sahuagin swims up to its Swim Speed straight toward an enemy it can see.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Sahuagin Warrior
@@ -34762,6 +37844,9 @@ entries:
     name: Fire Aura
     entryType: special
     text: At the end of each of the salamander's turns, each creature of the salamander's choice in a 5-foot Emanation originating from the salamander takes 7 (2d6) Fire damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -34775,10 +37860,16 @@ entries:
           with:
             type: attack
             name: Constrict
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Flame Spear
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +7, reach 5 ft. or range 20/60 ft. 13 (2d8 + 4) Piercing damage plus 7 (2d6) Fire damage. HitomThe spear magically returns to the salamander''s hand immediately after a ranged attack.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Constrict
     entryType: save
@@ -34820,6 +37911,9 @@ entries:
             bonus: 0
             type: Fire
             average: 7
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Salamander
@@ -34909,6 +38003,9 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The satyr has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Hooves
     entryType: attack
@@ -34925,6 +38022,9 @@ entries:
       onHit:
         other: If the target is a Medium or smaller creature, the satyr pushes the target up to 10 feet straight away from itself.
       additionalEffects: If the target is a Medium or smaller creature, the satyr pushes the target up to 10 feet straight away from itself.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Mockery
     entryType: save
@@ -34946,6 +38046,9 @@ entries:
             type: Psychic
             average: 5
         legacyEffects: 5 (1d6 + 2) Psychic damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Satyr
@@ -35031,6 +38134,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The scout makes two attacks, using Shortsword and Longbow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shortsword
     entryType: attack
@@ -35044,6 +38150,9 @@ entries:
           type: Piercing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Longbow
     entryType: attack
@@ -35057,6 +38166,9 @@ entries:
           type: Piercing
           average: 6
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Scout
@@ -35138,6 +38250,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The hag can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Vile Appearance
     entryType: save
@@ -35155,6 +38270,9 @@ entries:
                 type: until
                 trigger: the start of its next turn
       onSuccess: The target is immune to this hag's Vile Appearance for 24 hours.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -35168,6 +38286,9 @@ entries:
           type: Slashing
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Death Glare (Recharge 5-6)
     entryType: save
@@ -35190,6 +38311,9 @@ entries:
             type: Psychic
             average: 13
         legacyEffects: If the target has 20 Hit Points or fewer, it drops to 0 Hit Points. Otherwise, the target takes 13 (3d8) Psychic damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Illusory Appearance
@@ -35202,6 +38326,9 @@ spellcastingEntries:
         - frequency: at-will
           spells:
             - Disguise Self
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Sea Hag
@@ -35309,10 +38436,16 @@ entries:
     name: Amorphous
     entryType: special
     text: The shadow can move through a space as narrow as 1 inch without expending extra movement to do so.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Sunlight Weakness
     entryType: special
     text: While in sunlight, the shadow has Disadvantage on D20 Test.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Draining Swipe
     entryType: attack
@@ -35326,10 +38459,16 @@ entries:
           type: Necrotic
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shadow Stealth
     entryType: special
     text: While in Dim Light or darkness, the shadow takes the Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Shadow
@@ -35422,6 +38561,9 @@ entries:
     name: Lightning Absorption
     entryType: special
     text: Whenever the shambling mound is subjected to Lightning damage, it regains a number of Hit Points equal to the Lightning damage dealt.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -35435,6 +38577,9 @@ entries:
           with:
             type: attack
             name: Engulf
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Charged Tendril
     entryType: attack
@@ -35455,6 +38600,9 @@ entries:
       onHit:
         other: If the target is a Medium or smaller creature, the shambling mound pulls the target 5 feet straight toward itself.
       additionalEffects: If the target is a Medium or smaller creature, the shambling mound pulls the target 5 feet straight toward itself.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Engulf
     entryType: save
@@ -35484,6 +38632,9 @@ entries:
             bonus: 0
             type: Lightning
             average: 10
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Shambling Mound
@@ -35575,10 +38726,16 @@ entries:
     name: Bound
     entryType: special
     text: The guardian is magically bound to an amulet. While the guardian and its amulet are on the same plane of existence, the amulet's wearer can telepathically call the guardian to travel to it, and the guardian knows the distance and direction to the amulet. If the guardian is within 60 feet of the amulet's wearer, half of any damage the wearer takes (round up) is transferred to the guardian.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Regeneration
     entryType: special
     text: The guardian regains 10 Hit Points at the start of each of its turns if it has at least 1 Hit Point.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -35588,6 +38745,9 @@ entries:
         - name: Fist
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Fist
     entryType: attack
@@ -35605,6 +38765,9 @@ entries:
           type: Force
           average: 7
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: trait
     name: Spell Storing
@@ -35613,6 +38776,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
 ---
 
 # Shield Guardian
@@ -35790,6 +38956,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -35803,6 +38972,9 @@ entries:
           type: Piercing
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cold Breath (Recharge 5-6)
     entryType: save
@@ -35826,6 +38998,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Paralyzing Breath
     entryType: save
@@ -35833,6 +39008,9 @@ entries:
     save:
       ability: con
       dc: 13
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Silver Dragon Wyrmling
@@ -35929,6 +39107,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Shortbow
     entryType: attack
@@ -35942,6 +39123,9 @@ entries:
           type: Piercing
           average: 6
       range: 80/320 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Skeleton
@@ -36033,10 +39217,16 @@ entries:
     name: Divine Awareness
     entryType: special
     text: The solar knows if it hears a lie.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Exalted Restoration
     entryType: special
     text: If the solar dies outside Mount Celestia, its body disappears, and it gains a new body instantly, reviving with all its Hit Points somewhere in Mount Celestia.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (4/Day)
     entryType: special
@@ -36044,10 +39234,16 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The solar has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -36061,10 +39257,16 @@ entries:
           with:
             type: attack
             name: Slaying Bow
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Flying Sword
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +15, reach 10 ft. or range 120 ft. 22 (4d6 + 8) Slashing damage plus 36 (8d8) Radiant damage. HitomThe sword magically returns to the solar''s hand or hovers within 5 feet of the solar immediately after a ranged attack.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Slaying Bow
     entryType: save
@@ -36090,6 +39292,9 @@ entries:
             type: Radiant
             average: 36
         legacyEffects: If the creature has 100 Hit Points or fewer, it dies. It otherwise takes 24 (4d8 + 6) Piercing damage plus 36 (8d8) Radiant damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Blinding Gaze
     entryType: save
@@ -36109,6 +39314,10 @@ entries:
               duration:
                 type: minutes
                 count: 1
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Radiant Teleport
     entryType: save
@@ -36132,6 +39341,10 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -36152,6 +39365,9 @@ spellcastingEntries:
             - Control Weather
             - Dispel Evil and Good
             - Resurrection
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Divine Aid (3/Day)
     entryType: spellcasting
@@ -36162,6 +39378,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Solar
@@ -36294,10 +39513,16 @@ entries:
     name: Incorporeal Movement
     entryType: special
     text: The specter can move through other creatures and objects as if they were Difficult Terrain. It takes 5 (1d10) Force damage if it ends its turn inside an object.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Sunlight Sensitivity
     entryType: special
     text: While in sunlight, the specter has Disadvantage on ability checks and attack rolls.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Life Drain
     entryType: attack
@@ -36314,6 +39539,9 @@ entries:
       onHit:
         other: If the target is a creature, its Hit Point maximum decreases by an amount equal to the damage taken.
       additionalEffects: If the target is a creature, its Hit Point maximum decreases by an amount equal to the damage taken.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Specter
@@ -36413,6 +39641,9 @@ entries:
     name: Inscrutable
     entryType: special
     text: No magic can observe the sphinx remotely or detect its thoughts without its permission. Wisdom (Insight) checks made to ascertain its intentions or sincerity are made with Disadvantage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day, or 4/Day in Lair)
     entryType: special
@@ -36420,6 +39651,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -36429,6 +39663,9 @@ entries:
         - name: Claw
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -36442,6 +39679,9 @@ entries:
           type: Slashing
           average: 14
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Mind-Rending Roar (Recharge 5-6)
     entryType: save
@@ -36466,6 +39706,9 @@ entries:
             bonus: 0
             type: Psychic
             average: 35
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Arcane Prowl
     entryType: multiattack
@@ -36475,6 +39718,10 @@ entries:
         - name: Claw
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: Weight of Years
     entryType: save
@@ -36491,6 +39738,10 @@ entries:
         effects:
           other: The target gains 1 Exhaustion level. While the target has any Exhaustion levels, it appears 3d10 years older.
         legacyEffects: The target gains 1 Exhaustion level. While the target has any Exhaustion levels, it appears 3d10 years older.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -36517,6 +39768,9 @@ spellcastingEntries:
             - Plane Shift
             - Remove Curse
             - Tongues
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Sphinx of Lore
@@ -36635,6 +39889,9 @@ entries:
     name: Inscrutable
     entryType: special
     text: No magic can observe the sphinx remotely or detect its thoughts without its permission. Wisdom (Insight) checks made to ascertain its intentions or sincerity are made with Disadvantage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day, or 4/Day in Lair)
     entryType: special
@@ -36642,6 +39899,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -36651,6 +39911,9 @@ entries:
         - name: Claw
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -36664,6 +39927,9 @@ entries:
           type: Slashing
           average: 20
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Roar (3/Day)
     entryType: save
@@ -36707,6 +39973,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Arcane Prowl
     entryType: multiattack
@@ -36716,6 +39985,10 @@ entries:
         - name: Claw
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: Weight of Years
     entryType: save
@@ -36732,6 +40005,10 @@ entries:
         effects:
           other: The target gains 1 Exhaustion level. While the target has any Exhaustion levels, it appears 3d10 years older.
         legacyEffects: The target gains 1 Exhaustion level. While the target has any Exhaustion levels, it appears 3d10 years older.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -36754,6 +40031,9 @@ spellcastingEntries:
             - Greater Restoration
             - Heroes' Feast
             - Zone of Truth
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Sphinx of Valor
@@ -36865,6 +40145,9 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The sphinx has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Rend
     entryType: attack
@@ -36882,6 +40165,9 @@ entries:
           type: Radiant
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Sphinx of Wonder
@@ -36968,10 +40254,16 @@ entries:
     name: Fiendish Restoration
     entryType: special
     text: If it dies, the naga returns to life in 1d6 days and regains all its Hit Points. Only a *Wish* spell can prevent this trait from functioning.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The naga makes three attacks, using Bite or Necrotic Ray in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -36989,6 +40281,9 @@ entries:
           type: Poison
           average: 14
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Necrotic Ray
     entryType: attack
@@ -37002,6 +40297,9 @@ entries:
           type: Necrotic
           average: 21
       range: 60 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -37023,6 +40321,9 @@ spellcastingEntries:
             - Dimension Door
             - Hold Person
             - Lightning Bolt
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Spirit Naga
@@ -37124,6 +40425,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Enchanting Bow
     entryType: attack
@@ -37133,6 +40437,9 @@ entries:
       bonus: 6
       damage: []
       range: 40/160 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Heart Sight
     entryType: save
@@ -37148,6 +40455,9 @@ entries:
       onFail:
         effects:
           knowledge: the target's emotions and alignment
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Invisibility
@@ -37159,6 +40469,9 @@ spellcastingEntries:
         - frequency: at-will
           spells:
             - Invisibility
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Sprite
@@ -37264,6 +40577,9 @@ entries:
           type: Poison
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Hand Crossbow
     entryType: attack
@@ -37281,10 +40597,16 @@ entries:
           type: Poison
           average: 7
       range: 30/120 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Cunning Action
     entryType: special
     text: The spy takes the Dash, Disengage, or Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Spy
@@ -37375,6 +40697,9 @@ entries:
     name: Blurred Form
     entryType: special
     text: Attack rolls against the mephit are made with Disadvantage unless the mephit has the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Death Burst
     entryType: save
@@ -37398,6 +40723,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -37415,6 +40743,9 @@ entries:
           type: Fire
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Steam Breath
     entryType: save
@@ -37437,6 +40768,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Steam Mephit
@@ -37532,6 +40866,9 @@ entries:
           type: Necrotic
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Stirge
@@ -37613,6 +40950,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The giant makes two attacks, using Stone Club or Boulder in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Stone Club
     entryType: attack
@@ -37626,6 +40966,9 @@ entries:
           type: Bludgeoning
           average: 22
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Boulder
     entryType: attack
@@ -37645,6 +40988,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Stone Giant
@@ -37731,14 +41077,23 @@ entries:
     name: Immutable Form
     entryType: special
     text: The golem can't shape-shift.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The golem has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The golem makes two attacks, using Slam or Force Bolt in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Slam
     entryType: attack
@@ -37756,6 +41111,9 @@ entries:
           type: Force
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Force Bolt
     entryType: attack
@@ -37769,6 +41127,9 @@ entries:
           type: Force
           average: 22
       range: 120 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: bonus
     name: Slow (Recharge 5-6)
@@ -37779,6 +41140,9 @@ spellcastingEntries:
       ability: int
       saveDC: 17
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Stone Golem
@@ -37896,10 +41260,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The giant can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The giant makes two attacks, using Storm Sword or Thunderbolt in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Storm Sword
     entryType: attack
@@ -37917,6 +41287,9 @@ entries:
           type: Lightning
           average: 13
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Thunderbolt
     entryType: attack
@@ -37930,6 +41303,9 @@ entries:
           type: Lightning
           average: 22
       range: 500 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Storm (Recharge 5-6)
     entryType: save
@@ -37955,6 +41331,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -37973,6 +41352,9 @@ spellcastingEntries:
         - frequency: 1/day
           spells:
             - Control Weather
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Storm Giant
@@ -38083,6 +41465,9 @@ entries:
     name: Incubus Form
     entryType: special
     text: When the succubus finishes a Long Rest, it can shape-shift into an Incubus, using that stat block instead of this one.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -38092,6 +41477,9 @@ entries:
         - name: Touch
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Fiendish Touch
     entryType: attack
@@ -38105,6 +41493,9 @@ entries:
           type: Psychic
           average: 16
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Draining Kiss
     entryType: save
@@ -38127,10 +41518,16 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The succubus shape-shifts to resemble a Medium or Small Humanoid or back into its true form. Its game statistics are the same in each form, except its Fly Speed is available only in its true form. Any equipment it's wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Charm
@@ -38140,6 +41537,9 @@ spellcastingEntries:
       ability: cha
       saveDC: 15
       spellLists: []
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Succubus
@@ -38251,6 +41651,9 @@ entries:
     name: Swarm
     entryType: special
     text: The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny creature. The swarm can't regain Hit Points or gain Temporary Hit Points.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Swarm of Grasping Hands
     entryType: attack
@@ -38268,6 +41671,9 @@ entries:
           type: Necrotic
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Swarm of Crawling Claws
@@ -38370,18 +41776,30 @@ entries:
     limitedUse:
       count: 6
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The tarrasque has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Reflective Carapace
     entryType: special
     text: If the tarrasque is targeted by a *Magic Missile* spell or a spell that requires a ranged attack roll, roll 1d6. On a 1-5, the tarrasque is unaffected. On a 6, the tarrasque is unaffected and reflects the spell, turning the caster into the target.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Siege Monster
     entryType: special
     text: The tarrasque deals double damage to objects and structures.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -38393,6 +41811,9 @@ entries:
         - name: other
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -38406,6 +41827,9 @@ entries:
           type: Piercing
           average: 36
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -38419,6 +41843,9 @@ entries:
           type: Slashing
           average: 28
       reach: 15 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tail
     entryType: attack
@@ -38438,6 +41865,9 @@ entries:
             restrictions:
               size: Huge or smaller
       additionalEffects: If the target is a Huge or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Thunderous Bellow (Recharge 5-6)
     entryType: save
@@ -38461,6 +41891,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Swallow
     entryType: save
@@ -38487,6 +41920,9 @@ entries:
             bonus: 0
             type: Acid
             average: 56
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Onslaught
     entryType: multiattack
@@ -38496,10 +41932,18 @@ entries:
         - name: Tail
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: World-Shaking Movement
     entryType: special
     text: The tarrasque moves up to its Speed. At the end of this movement, the tarrasque creates an instantaneous shock wave in a 60-foot Emanation originating from itself. Creatures in that area lose  Concentration and, if Medium or smaller, have the Prone condition. The tarrasque can't take this action again until the start of its next turn.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Tarrasque
@@ -38610,10 +42054,16 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The tough has Advantage on an attack roll against a creature if at least one of the tough's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The tough makes two attacks, using Warhammer or Heavy Crossbow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Warhammer
     entryType: attack
@@ -38630,6 +42080,9 @@ entries:
       onHit:
         other: If the target is a Large or smaller creature, the tough pushes the target up to 10 feet straight away from itself.
       additionalEffects: If the target is a Large or smaller creature, the tough pushes the target up to 10 feet straight away from itself.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Heavy Crossbow
     entryType: attack
@@ -38643,6 +42096,9 @@ entries:
           type: Piercing
           average: 13
       range: 100/400 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Tough Boss
@@ -38722,6 +42178,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The tough has Advantage on an attack roll against a creature if at least one of the tough's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Mace
     entryType: attack
@@ -38735,6 +42194,9 @@ entries:
           type: Bludgeoning
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Heavy Crossbow
     entryType: attack
@@ -38748,6 +42210,9 @@ entries:
           type: Piercing
           average: 6
       range: 100/400 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Tough
@@ -38832,6 +42297,9 @@ entries:
     name: Siege Monster
     entryType: special
     text: The treant deals double damage to objects and structures.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -38841,6 +42309,9 @@ entries:
         - name: Slam
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Slam
     entryType: attack
@@ -38854,6 +42325,9 @@ entries:
           type: Bludgeoning
           average: 16
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Hail of Bark
     entryType: attack
@@ -38867,6 +42341,9 @@ entries:
           type: Piercing
           average: 28
       range: 180 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Animate Trees (1/Day)
     entryType: special
@@ -38874,6 +42351,9 @@ entries:
     limitedUse:
       count: 1
       reset: day
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Treant
@@ -38957,10 +42437,16 @@ entries:
     name: Regeneration
     entryType: special
     text: The limb regains 5 Hit Points at the start of each of its turns. If the limb takes Acid or Fire damage, this trait doesn't function on the limb's next turn. The limb dies only if it starts its turn with 0 Hit Points and doesn't regenerate.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Troll Spawn
     entryType: special
     text: The limb uncannily has the same senses as a whole troll. If the limb isn't destroyed within 24 hours, roll 1d12. On a 12, the limb turns into a Troll. Otherwise, the limb withers away.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Rend
     entryType: attack
@@ -38974,6 +42460,9 @@ entries:
           type: Slashing
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Troll Limb
@@ -39059,10 +42548,16 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Regeneration
     entryType: special
     text: The troll regains 15 Hit Points at the start of each of its turns. If the troll takes Acid or Fire damage, this trait doesn't function on the troll's next turn. The troll dies only if it starts its turn with 0 Hit Points and doesn't regenerate.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -39072,6 +42567,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -39085,10 +42583,16 @@ entries:
           type: Slashing
           average: 11
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Charge
     entryType: special
     text: The troll moves up to half its Speed straight toward an enemy it can see.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Troll
@@ -39188,10 +42692,16 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The unicorn has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -39203,6 +42713,9 @@ entries:
         - name: Horn
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Hooves
     entryType: attack
@@ -39216,6 +42729,9 @@ entries:
           type: Bludgeoning
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Radiant Horn
     entryType: attack
@@ -39229,6 +42745,9 @@ entries:
           type: Radiant
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Charging Horn
     entryType: multiattack
@@ -39240,10 +42759,18 @@ entries:
         - name: Horn
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: Shimmering Shield
     entryType: special
     text: The unicorn targets itself or one creature it can see within 60 feet of itself. The target gains 10 (3d6) Temporary Hit Points, and its AC increases by 2 until the end of the unicorn's next turn. The unicorn can't take this action again until the start of its next turn.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -39264,6 +42791,9 @@ spellcastingEntries:
             - Entangle
             - Pass without Trace
             - Word of Recall
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Unicorn's Blessing (3/Day)
     entryType: spellcasting
@@ -39274,6 +42804,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Unicorn
@@ -39391,6 +42924,9 @@ entries:
     name: Vampiric Connection
     entryType: special
     text: While the familiar and its vampire master are on the same plane of existence, the vampire can communicate with the familiar telepathically, and the vampire can perceive through the familiar's senses.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -39400,14 +42936,23 @@ entries:
         - name: Dagger
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Umbral Dagger
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +5, reach 5 ft. or range 20/60 ft. 5 (1d4 + 3) Piercing damage plus 7 (3d4) Necrotic damage. If the target is reduced to 0 Hit Points by this attack, the target becomes Stable but has the Poisoned condition for 1 hour. While it has the Poisoned condition, the target has the Paralyzed condition.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Deathless Agility
     entryType: special
     text: The familiar takes the Dash or Disengage action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Vampire Familiar
@@ -39502,10 +43047,16 @@ entries:
     name: Spider Climb
     entryType: special
     text: The vampire can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Vampire Weakness
     entryType: special
     text: 'The vampire has these weaknesses: - **Forbiddance**: The vampire can''t enter a residence without an invitation from an occupant. - **Running Water**: The vampire takes 20 Acid damage if it ends its turn in running water. - **Stake to the Heart**: The vampire is destroyed if a weapon that deals Piercing damage is driven into the vampire''s heart while the vampire has the Incapacitated condition. - **Sunlight**: The vampire takes 20 Radiant damage if it starts its turn in sunlight. While in sunlight, it has Disadvantage on attack rolls and ability checks.'
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -39515,6 +43066,9 @@ entries:
         - name: Claw
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -39537,6 +43091,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Grappled condition (escape DC 13) from one of two claws.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: save
@@ -39563,10 +43120,16 @@ entries:
             type: Necrotic
             average: 10
         legacyEffects: 5 (1d4 + 3) Piercing damage plus 10 (3d6) Necrotic damage. The target's Hit Point maximum decreases by an amount equal to the Necrotic damage taken, and the vampire regains Hit Points equal to that amount.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Deathless Agility
     entryType: special
     text: The vampire takes the Dash or Disengage action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Vampire Spawn
@@ -39674,18 +43237,30 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Misty Escape
     entryType: special
     text: If the vampire drops to 0 Hit Points outside its resting place, the vampire uses Shape-Shift to become mist (no action required). If it can't use Shape-Shift, it is destroyed. While it has 0 Hit Points in mist form, it can't return to its vampire form, and it must reach its resting place within 2 hours or be destroyed. Once in its resting place, it returns to its vampire form and has the Paralyzed condition until it regains any Hit Points, and it regains 1 Hit Point after spending 1 hour there.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Spider Climb
     entryType: special
     text: The vampire can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Vampire Weakness
     entryType: special
     text: 'The vampire has these weaknesses: - **Forbiddance**: The vampire can''t enter a residence without an invitation from an occupant. - **Running Water**: The vampire takes 20 Acid damage if it ends its turn in running water. - **Stake to the Heart**: If a weapon that deals Piercing damage is driven into the vampire''s heart while the vampire has the Incapacitated condition in its resting place, the vampire has the Paralyzed condition until the weapon is removed. - **Sunlight**: The vampire takes 20 Radiant damage if it starts its turn in sunlight. While in sunlight, it has Disadvantage on attack rolls and ability checks.'
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack (Vampire Form Only)
     entryType: multiattack
@@ -39695,6 +43270,9 @@ entries:
         - name: Strike
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Grave Strike (Vampire Form Only)
     entryType: attack
@@ -39721,6 +43299,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14) from one of two hands.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite (Bat or Vampire Form Only)
     entryType: save
@@ -39747,10 +43328,16 @@ entries:
             type: Necrotic
             average: 13
         legacyEffects: 6 (1d4 + 4) Piercing damage plus 13 (3d8) Necrotic damage. The target's Hit Point maximum decreases by an amount equal to the Necrotic damage taken, and the vampire regains Hit Points equal to that amount. A Humanoid reduced to 0 Hit Points by this damage and then buried rises the following sunset as a Vampire Spawn under the vampire's control.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: If the vampire isn't in sunlight or running water, it shape-shifts into a Tiny bat (Speed 5 ft., Fly Speed 30 ft.) or a Medium cloud of mist (Speed 5 ft., Fly Speed 20 ft. [hover]), or it returns to its vampire form. Anything it is wearing transforms with it. While in bat form, the vampire can't speak. Its game statistics, other than its size and Speed, are unchanged. While in mist form, the vampire can't take any actions, speak, or manipulate objects. It is weightless and can enter an enemy's space and stop there. If air can pass through a space, the mist can do so, but it can't pass through liquid. It has Resistance to all damage, except the damage it takes from sunlight.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Deathless Strike
     entryType: multiattack
@@ -39760,6 +43347,10 @@ entries:
         - name: Strike
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: bonus
     name: Charm (Recharge 5-6)
@@ -39770,6 +43361,9 @@ spellcastingEntries:
       ability: cha
       saveDC: 17
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Beguile
     entryType: spellcasting
@@ -39778,6 +43372,10 @@ spellcastingEntries:
       ability: cha
       saveDC: 17
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Vampire
@@ -39893,6 +43491,9 @@ entries:
         - name: Touch
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rotting Touch
     entryType: attack
@@ -39906,6 +43507,9 @@ entries:
           type: Necrotic
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Violet Fungus
@@ -39994,10 +43598,16 @@ entries:
     name: Demonic Restoration
     entryType: special
     text: If the vrock dies outside the Abyss, its body dissolves into ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Abyss.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The vrock has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -40007,6 +43617,9 @@ entries:
         - name: Shred
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Shred
     entryType: attack
@@ -40024,6 +43637,9 @@ entries:
           type: Poison
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Spores
     entryType: save
@@ -40046,6 +43662,9 @@ entries:
             bonus: 0
             type: Poison
             average: 5
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Stunning Screech (1/Day)
     entryType: save
@@ -40072,6 +43691,9 @@ entries:
             bonus: 0
             type: Thunder
             average: 10
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Vrock
@@ -40180,6 +43802,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature and the skeleton moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Warhorse Skeleton
@@ -40248,10 +43873,16 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The warrior has Advantage on an attack roll against a creature if at least one of the warrior's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Spear
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +3, reach 5 ft. or range 20/60 ft. 4 (1d6 + 1) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Warrior Infantry
@@ -40335,6 +43966,9 @@ entries:
         - name: Crossbow
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Greatsword
     entryType: attack
@@ -40348,6 +43982,9 @@ entries:
           type: Slashing
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Heavy Crossbow
     entryType: attack
@@ -40361,6 +43998,9 @@ entries:
           type: Piercing
           average: 12
       range: 100/400 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Warrior Veteran
@@ -40453,10 +44093,16 @@ entries:
     name: Freeze
     entryType: special
     text: If the elemental takes Cold damage, its Speed decreases by 20 feet until the end of its next turn.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Water Form
     entryType: special
     text: The elemental can enter an enemy's space and stop there. It can move through a space as narrow as 1 inch without expending extra movement to do so.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -40466,6 +44112,9 @@ entries:
         - name: Slam
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Slam
     entryType: attack
@@ -40485,6 +44134,9 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Whelm (Recharge 4-6)
     entryType: save
@@ -40531,6 +44183,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Water Elemental
@@ -40631,6 +44286,9 @@ entries:
           with:
             type: attack
             name: a Bite attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite (Bear or Hybrid Form Only)
     entryType: attack
@@ -40651,10 +44309,16 @@ entries:
               type: hours
               count: 24
       additionalEffects: 'If the target is a Humanoid, it is subjected to the following effect. *Constitution Saving Throw*: DC 14. *Failure:*  The target is cursed. If the cursed target drops to 0 Hit Points, it instead becomes a Werebear under the DM''s control and has 10 Hit Points. *Success:*  The target is immune to this werebear''s curse for 24 hours.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Handaxe (Humanoid or Hybrid Form Only)
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +7, reach 5 ft or range 20/60 ft. 14 (3d6 + 4) Slashing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Rend (Bear or Hybrid Form Only)
     entryType: attack
@@ -40668,10 +44332,16 @@ entries:
           type: Slashing
           average: 13
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The werebear shape-shifts into a Large bear-humanoid hybrid form or a Large bear, or it returns to its true humanoid form. Its game statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Werebear
@@ -40767,6 +44437,9 @@ entries:
           with:
             type: attack
             name: a Gore attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Gore (Boar or Hybrid Form Only)
     entryType: attack
@@ -40787,10 +44460,16 @@ entries:
               type: hours
               count: 24
       additionalEffects: 'If the target is a Humanoid, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *Failure:*  The target is cursed. If the cursed target drops to 0 Hit Points, it instead becomes a Wereboar under the DM''s control and has 10 Hit Points. *Success:*  The target is immune to this wereboar''s curse for 24 hours.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Javelin (Humanoid or Hybrid Form Only)
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +5, reach 5 ft. or range 30/120 ft. 13 (3d6 + 3) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Tusk (Boar or Hybrid Form Only)
     entryType: attack
@@ -40814,10 +44493,16 @@ entries:
             restrictions:
               size: Medium or smaller
       additionalEffects: If the target is a Medium or smaller creature and the wereboar moved 20+ feet straight toward it immediately before the hit, the target takes an extra 7 (2d6) Piercing damage and has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The wereboar shape-shifts into a Medium boar-humanoid hybrid or a Small boar, or it returns to its true humanoid form. Its game statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Wereboar
@@ -40919,6 +44604,9 @@ entries:
           with:
             type: attack
             name: a Bite attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite (Rat or Hybrid Form Only)
     entryType: attack
@@ -40939,6 +44627,9 @@ entries:
               type: hours
               count: 24
       additionalEffects: 'If the target is a Humanoid, it is subjected to the following effect. *Constitution Saving Throw*: DC 11. *Failure:*  The target is cursed. If the cursed target drops to 0 Hit Points, it instead becomes a Wererat under the DM''s control and has 10 Hit Points. *Success:*  The target is immune to this wererat''s curse for 24 hours.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Scratch
     entryType: attack
@@ -40952,6 +44643,9 @@ entries:
           type: Slashing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Hand Crossbow (Humanoid or Hybrid Form Only)
     entryType: attack
@@ -40965,10 +44659,16 @@ entries:
           type: Piercing
           average: 6
       range: 30/120 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The wererat shape-shifts into a Medium rat-humanoid hybrid or a Small rat, or it returns to its true humanoid form. Its game statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Wererat
@@ -41069,6 +44769,9 @@ entries:
           with:
             type: attack
             name: a Bite attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite (Tiger or Hybrid Form Only)
     entryType: attack
@@ -41089,6 +44792,9 @@ entries:
               type: hours
               count: 24
       additionalEffects: 'If the target is a Humanoid, it is subjected to the following effect. *Constitution Saving Throw*: DC 13. *Failure:*  The target is cursed. If the cursed target drops to 0 Hit Points, it instead becomes a Weretiger under the DM''s control and has 10 Hit Points. *Success:*  The target is immune to this weretiger''s curse for 24 hours.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Scratch
     entryType: attack
@@ -41102,6 +44808,9 @@ entries:
           type: Slashing
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Longbow (Humanoid or Hybrid Form Only)
     entryType: attack
@@ -41115,14 +44824,23 @@ entries:
           type: Piercing
           average: 11
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Prowl (Tiger or Hybrid Form Only)
     entryType: special
     text: The weretiger moves up to its Speed without provoking Opportunity Attacks. At the end of this movement, the weretiger can take the Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The weretiger shape-shifts into a Large tiger-humanoid hybrid or a Large tiger, or it returns to its true humanoid form. Its game statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Weretiger
@@ -41217,6 +44935,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The werewolf has Advantage on an attack roll against a creature if at least one of the werewolf's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -41230,6 +44951,9 @@ entries:
           with:
             type: attack
             name: a Bite attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite (Wolf or Hybrid Form Only)
     entryType: attack
@@ -41250,6 +44974,9 @@ entries:
               type: hours
               count: 24
       additionalEffects: 'If the target is a Humanoid, it is subjected to the following effect. *Constitution Saving Throw*: DC 12. *Failure:*  The target is cursed. If the cursed target drops to 0 Hit Points, it instead becomes a Werewolf under the DM''s control and has 10 Hit Points. *Success:*  The target is immune to this werewolf''s curse for 24 hours.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Scratch
     entryType: attack
@@ -41263,6 +44990,9 @@ entries:
           type: Slashing
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Longbow (Humanoid or Hybrid Form Only)
     entryType: attack
@@ -41276,10 +45006,16 @@ entries:
           type: Piercing
           average: 11
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The werewolf shape-shifts into a Large wolf-humanoid hybrid or a Medium wolf, or it returns to its true humanoid form. Its game statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Werewolf
@@ -41390,6 +45126,9 @@ entries:
     name: Ice Walk
     entryType: special
     text: The dragon can move across and climb icy surfaces without needing to make an ability check. Additionally, Difficult Terrain composed of ice or snow doesn't cost it extra movement.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -41399,6 +45138,9 @@ entries:
         - name: Rend
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -41416,6 +45158,9 @@ entries:
           type: Cold
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cold Breath (Recharge 5-6)
     entryType: save
@@ -41439,6 +45184,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # White Dragon Wyrmling
@@ -41533,6 +45281,9 @@ entries:
     name: Sunlight Sensitivity
     entryType: special
     text: While in sunlight, the wight has Disadvantage on ability checks and attack rolls.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -41546,6 +45297,9 @@ entries:
           with:
             type: attack
             name: Life Drain
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Necrotic Sword
     entryType: attack
@@ -41563,6 +45317,9 @@ entries:
           type: Necrotic
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Necrotic Bow
     entryType: attack
@@ -41580,6 +45337,9 @@ entries:
           type: Necrotic
           average: 4
       range: 150/600 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Life Drain
     entryType: save
@@ -41599,6 +45359,9 @@ entries:
             type: Necrotic
             average: 6
         legacyEffects: 6 (1d8 + 2) Necrotic damage, and the target's Hit Point maximum decreases by an amount equal to the damage taken. A Humanoid slain by this attack rises 24 hours later as a Zombie under the wight's control, unless the Humanoid is restored to life or its body is destroyed. The wight can have no more than twelve zombies under its control at a time.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Wight
@@ -41707,14 +45470,23 @@ entries:
     name: Ephemeral
     entryType: special
     text: The wisp can't wear or carry anything.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Illumination
     entryType: special
     text: The wisp sheds Bright Light in a 20-foot radius and Dim Light for an additional 20 feet.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Incorporeal Movement
     entryType: special
     text: The wisp can move through other creatures and objects as if they were Difficult Terrain. It takes 5 (1d10) Force damage if it ends its turn inside an object.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Shock
     entryType: attack
@@ -41728,6 +45500,9 @@ entries:
           type: Lightning
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Consume Life
     entryType: save
@@ -41744,10 +45519,16 @@ entries:
         effects:
           other: The target dies, and the wisp regains 10 (3d6) Hit Points.
         legacyEffects: The target dies, and the wisp regains 10 (3d6) Hit Points.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Vanish
     entryType: special
     text: The wisp and its light have the Invisible condition until the wisp's  Concentration ends on this effect, which ends early immediately after the wisp makes an attack roll or uses Consume Life.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Will-o'-Wisp
@@ -41844,6 +45625,9 @@ entries:
     name: Pack Tactics
     entryType: special
     text: The wolf has Advantage on an attack roll against a creature if at least one of the wolf's allies is within 5 feet of the creature and the ally doesn't have the Incapacitated condition.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -41863,6 +45647,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cold Breath (Recharge 5-6)
     entryType: save
@@ -41886,6 +45673,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Winter Wolf
@@ -41978,6 +45768,9 @@ entries:
           type: Piercing
           average: 7
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Worg
@@ -42072,10 +45865,16 @@ entries:
     name: Incorporeal Movement
     entryType: special
     text: The wraith can move through other creatures and objects as if they were Difficult Terrain. It takes 5 (1d10) Force damage if it ends its turn inside an object.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Sunlight Sensitivity
     entryType: special
     text: While in sunlight, the wraith has Disadvantage on ability checks and attack rolls.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Life Drain
     entryType: attack
@@ -42092,10 +45891,16 @@ entries:
       onHit:
         other: If the target is a creature, its Hit Point maximum decreases by an amount equal to the damage taken.
       additionalEffects: If the target is a creature, its Hit Point maximum decreases by an amount equal to the damage taken.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Create Specter
     entryType: special
     text: The wraith targets a Humanoid corpse within 10 feet of itself that has been dead for no longer than 1 minute. The target's spirit rises as a Specter in the space of its corpse or in the nearest unoccupied space. The specter is under the wraith's control. The wraith can have no more than seven specters under its control at a time.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Wraith
@@ -42188,6 +45993,9 @@ entries:
         - name: Sting
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -42201,6 +46009,9 @@ entries:
           type: Piercing
           average: 13
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Sting
     entryType: attack
@@ -42218,6 +46029,9 @@ entries:
           type: Poison
           average: 24
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Wyvern
@@ -42309,10 +46123,16 @@ entries:
     name: Earth Glide
     entryType: special
     text: The xorn can burrow through nonmagical, unworked earth and stone. While doing so, the xorn doesn't disturb the material it moves through.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Treasure Sense
     entryType: special
     text: The xorn can pinpoint the location of precious metals and stones within 60 feet of itself.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -42324,6 +46144,9 @@ entries:
         - name: Claw
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -42337,6 +46160,9 @@ entries:
           type: Piercing
           average: 17
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -42350,10 +46176,16 @@ entries:
           type: Slashing
           average: 8
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Charge
     entryType: special
     text: The xorn moves up to its Speed or Burrow Speed straight toward an enemy it can sense.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Xorn
@@ -42463,6 +46295,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -42472,6 +46307,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -42489,6 +46327,9 @@ entries:
           type: Acid
           average: 3
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Breath (Recharge 5-6)
     entryType: save
@@ -42513,6 +46354,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young Black Dragon
@@ -42619,6 +46463,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -42636,6 +46483,9 @@ entries:
           type: Lightning
           average: 5
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -42660,6 +46510,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young Blue Dragon
@@ -42763,6 +46616,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -42776,6 +46632,9 @@ entries:
           type: Slashing
           average: 15
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -42800,6 +46659,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Sleep Breath
     entryType: save
@@ -42825,6 +46687,9 @@ entries:
                 trigger: the end of its next turn
               saveToEnd:
                 timing: custom
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young Brass Dragon
@@ -42926,6 +46791,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -42939,6 +46807,9 @@ entries:
           with:
             type: attack
             name: Repulsion Breath
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -42952,6 +46823,9 @@ entries:
           type: Slashing
           average: 16
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -42976,6 +46850,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Repulsion Breath
     entryType: save
@@ -42994,6 +46871,9 @@ entries:
             type: push
             distance: 40 feet
             direction: straight away from the dragon
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young Bronze Dragon
@@ -43109,6 +46989,9 @@ entries:
           with:
             type: attack
             name: Slowing Breath
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -43122,6 +47005,9 @@ entries:
           type: Slashing
           average: 15
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Breath (Recharge 5-6)
     entryType: save
@@ -43146,6 +47032,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Slowing Breath
     entryType: save
@@ -43166,6 +47055,9 @@ entries:
             - type: other
               target: Reactions
               description: can't take Reactions
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young Copper Dragon
@@ -43269,6 +47161,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -43282,6 +47177,9 @@ entries:
           with:
             type: attack
             name: Weakening Breath
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -43295,6 +47193,9 @@ entries:
           type: Slashing
           average: 17
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -43318,6 +47219,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Weakening Breath
     entryType: save
@@ -43341,6 +47245,9 @@ entries:
               modifier: -3
               target: damage rolls
               description: subtracts 3 (1d6) from its damage rolls.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young Gold Dragon
@@ -43447,6 +47354,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -43456,6 +47366,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -43473,6 +47386,9 @@ entries:
           type: Poison
           average: 7
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Poison Breath (Recharge 5-6)
     entryType: save
@@ -43496,6 +47412,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young Green Dragon
@@ -43602,6 +47521,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -43619,6 +47541,9 @@ entries:
           type: Fire
           average: 3
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -43642,6 +47567,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young Red Dragon
@@ -43747,6 +47675,9 @@ entries:
           with:
             type: attack
             name: Paralyzing Breath
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -43760,6 +47691,9 @@ entries:
           type: Slashing
           average: 15
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cold Breath (Recharge 5-6)
     entryType: save
@@ -43783,6 +47717,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Paralyzing Breath
     entryType: save
@@ -43790,6 +47727,9 @@ entries:
     save:
       ability: con
       dc: 17
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young Silver Dragon
@@ -43891,6 +47831,9 @@ entries:
     name: Ice Walk
     entryType: special
     text: The dragon can move across and climb icy surfaces without needing to make an ability check. Additionally, Difficult Terrain composed of ice or snow doesn't cost it extra movement.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -43900,6 +47843,9 @@ entries:
         - name: Rend
           count: 3
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -43917,6 +47863,9 @@ entries:
           type: Cold
           average: 2
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Cold Breath (Recharge 5-6)
     entryType: save
@@ -43940,6 +47889,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young White Dragon
@@ -44027,6 +47979,9 @@ entries:
     name: Undead Fortitude
     entryType: special
     text: If damage reduces the zombie to 0 Hit Points, it makes a Constitution saving throw (DC 5 plus the damage taken) unless the damage is Radiant or from a Critical Hit. On a successful save, the zombie drops to 1 Hit Point instead.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Slam
     entryType: attack
@@ -44040,6 +47995,9 @@ entries:
           type: Bludgeoning
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Zombie

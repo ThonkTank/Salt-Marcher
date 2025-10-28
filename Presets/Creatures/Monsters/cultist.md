@@ -59,6 +59,9 @@ entries:
           type: Slashing
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Cultist

@@ -46,6 +46,9 @@ entries:
     name: Spider Climb
     entryType: special
     text: The lizard can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -55,6 +58,9 @@ entries:
       bonus: 2
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Lizard

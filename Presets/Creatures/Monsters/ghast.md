@@ -70,6 +70,9 @@ entries:
                 type: until
                 trigger: the start of its next turn
       onSuccess: The target is immune to this ghast's Stench for 24 hours.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -87,6 +90,9 @@ entries:
           type: Necrotic
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -107,6 +113,9 @@ entries:
               type: until
               trigger: the end of its next turn
       additionalEffects: 'If the target is a non-Undead creature, it is subjected to the following effect. *Constitution Saving Throw*: DC 10. *Failure:*  The target has the Paralyzed condition until the end of its next turn.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ghast

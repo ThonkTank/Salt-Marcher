@@ -68,10 +68,16 @@ entries:
     name: Amorphous
     entryType: special
     text: The shadow can move through a space as narrow as 1 inch without expending extra movement to do so.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Sunlight Weakness
     entryType: special
     text: While in sunlight, the shadow has Disadvantage on D20 Test.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Draining Swipe
     entryType: attack
@@ -85,10 +91,16 @@ entries:
           type: Necrotic
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shadow Stealth
     entryType: special
     text: While in Dim Light or darkness, the shadow takes the Hide action.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Shadow

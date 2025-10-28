@@ -57,6 +57,9 @@ entries:
     name: Abduct
     entryType: special
     text: The bugbear needn't spend extra movement to move a creature it is grappling.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -66,10 +69,16 @@ entries:
         - name: Morningstar
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Javelin
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +5, reach 10 ft. or range 30/120 ft. 13 (3d6 + 3) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Morningstar
     entryType: attack
@@ -83,6 +92,9 @@ entries:
           type: Piercing
           average: 12
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Quick Grapple
     entryType: save
@@ -105,6 +117,9 @@ entries:
               escape:
                 type: dc
                 dc: 13
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Bugbear Stalker

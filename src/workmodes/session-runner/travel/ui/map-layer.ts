@@ -28,7 +28,7 @@ export async function createMapLayer(
     opts: RenderLayerOptions
 ): Promise<MapLayer> {
     // render map
-    const handles = await renderHexMap(app, host, opts, mapFile.path);
+    const handles = await renderHexMap(app, host, mapFile, opts);
 
     // Index: Polygon -> Coord (für elementFromPoint/Drag)
     const polyToCoord = new WeakMap<SVGElement, Coord>();

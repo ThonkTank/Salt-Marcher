@@ -67,6 +67,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -80,6 +83,9 @@ entries:
           with:
             type: attack
             name: Repulsion Breath
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -93,6 +99,9 @@ entries:
           type: Slashing
           average: 16
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -117,6 +126,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Repulsion Breath
     entryType: save
@@ -135,6 +147,9 @@ entries:
             type: push
             distance: 40 feet
             direction: straight away from the dragon
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Young Bronze Dragon

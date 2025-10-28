@@ -55,14 +55,23 @@ entries:
     name: Blood Frenzy
     entryType: special
     text: The sahuagin has Advantage on attack rolls against any creature that doesn't have all its Hit Points.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Limited Amphibiousness
     entryType: special
     text: The sahuagin can breathe air and water, but it must be submerged at least once every 4 hours to avoid suffocating outside water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Shark Telepathy
     entryType: special
     text: The sahuagin can magically control sharks within 120 feet of itself, using a special telepathy.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -72,6 +81,9 @@ entries:
         - name: Claw
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -85,10 +97,16 @@ entries:
           type: Slashing
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Aquatic Charge
     entryType: special
     text: The sahuagin swims up to its Swim Speed straight toward an enemy it can see.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Sahuagin Warrior

@@ -51,10 +51,16 @@ entries:
     name: Confer Fire Resistance
     entryType: special
     text: The nightmare can grant Resistance to Fire damage to a rider while it is on the nightmare.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Illumination
     entryType: special
     text: The nightmare sheds Bright Light in a 10-foot radius and Dim Light for an additional 10 feet.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Hooves
     entryType: attack
@@ -72,10 +78,16 @@ entries:
           type: Fire
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Ethereal Stride
     entryType: special
     text: The nightmare and up to three willing creatures within 5 feet of it teleport to the Ethereal Plane from the Material Plane or vice versa.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Nightmare

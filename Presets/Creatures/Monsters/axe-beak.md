@@ -50,6 +50,9 @@ entries:
           type: Slashing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Axe Beak

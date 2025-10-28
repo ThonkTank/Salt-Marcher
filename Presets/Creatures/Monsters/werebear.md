@@ -61,6 +61,9 @@ entries:
           with:
             type: attack
             name: a Bite attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite (Bear or Hybrid Form Only)
     entryType: attack
@@ -81,10 +84,16 @@ entries:
               type: hours
               count: 24
       additionalEffects: 'If the target is a Humanoid, it is subjected to the following effect. *Constitution Saving Throw*: DC 14. *Failure:*  The target is cursed. If the cursed target drops to 0 Hit Points, it instead becomes a Werebear under the DM''s control and has 10 Hit Points. *Success:*  The target is immune to this werebear''s curse for 24 hours.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Handaxe (Humanoid or Hybrid Form Only)
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +7, reach 5 ft or range 20/60 ft. 14 (3d6 + 4) Slashing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Rend (Bear or Hybrid Form Only)
     entryType: attack
@@ -98,10 +107,16 @@ entries:
           type: Slashing
           average: 13
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Shape-Shift
     entryType: special
     text: The werebear shape-shifts into a Large bear-humanoid hybrid form or a Large bear, or it returns to its true humanoid form. Its game statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed.
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Werebear

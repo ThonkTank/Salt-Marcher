@@ -44,6 +44,9 @@ entries:
     name: Bloodied Frenzy
     entryType: special
     text: While Bloodied, the berserker has Advantage on attack rolls and saving throws.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Greataxe
     entryType: attack
@@ -57,6 +60,9 @@ entries:
           type: Slashing
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Berserker

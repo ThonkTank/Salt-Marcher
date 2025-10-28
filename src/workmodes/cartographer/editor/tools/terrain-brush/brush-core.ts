@@ -2,6 +2,7 @@
 // Kapselt Distanz- und Schreibhelfer des Terrain-Brush für Wiederverwendung im Editor.
 import type { App, TFile } from "obsidian";
 import { saveTile, deleteTile, loadTile } from "../../../../../features/maps/data/tile-repository";
+import type { TileData } from "../../../../../features/maps/data/tile-repository";
 import type { RenderHandles } from "../../../../../features/maps/hex-mapper/hex-render";
 import { TERRAIN_COLORS } from "../../../../../features/maps/domain/terrain";
 import { reportEditorToolIssue } from "../../editor-telemetry";
@@ -173,7 +174,11 @@ export async function applyBrush(
 
             const terrain = opts.terrain ?? "";
             const region = opts.region ?? "";
-            await saveTile(app, mapFile, coord, { terrain, region });
+            const payload: TileData = { terrain, region };
+            if (previousData?.faction) {
+                payload.faction = previousData.faction;
+            }
+            await saveTile(app, mapFile, coord, payload);
             const color = TERRAIN_COLORS[terrain] ?? "transparent";
             handles.setFill(coord, color);
 

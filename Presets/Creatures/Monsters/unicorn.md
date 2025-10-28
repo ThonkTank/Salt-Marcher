@@ -58,10 +58,16 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The unicorn has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -73,6 +79,9 @@ entries:
         - name: Horn
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Hooves
     entryType: attack
@@ -86,6 +95,9 @@ entries:
           type: Bludgeoning
           average: 11
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Radiant Horn
     entryType: attack
@@ -99,6 +111,9 @@ entries:
           type: Radiant
           average: 9
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Charging Horn
     entryType: multiattack
@@ -110,10 +125,18 @@ entries:
         - name: Horn
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: Shimmering Shield
     entryType: special
     text: The unicorn targets itself or one creature it can see within 60 feet of itself. The target gains 10 (3d6) Temporary Hit Points, and its AC increases by 2 until the end of the unicorn's next turn. The unicorn can't take this action again until the start of its next turn.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -134,6 +157,9 @@ spellcastingEntries:
             - Entangle
             - Pass without Trace
             - Word of Recall
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Unicorn's Blessing (3/Day)
     entryType: spellcasting
@@ -144,6 +170,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Unicorn

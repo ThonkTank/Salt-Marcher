@@ -59,10 +59,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The aboleth can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Eldritch Restoration
     entryType: special
     text: If destroyed, the aboleth gains a new body in 5d10 days, reviving with all its Hit Points in the Far Realm or another location chosen by the DM.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day, or 4/Day in Lair)
     entryType: special
@@ -70,6 +76,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Mucus Cloud
     entryType: save
@@ -99,10 +108,16 @@ entries:
               type: minutes
               count: 10
             condition: it is underwater
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Probing Telepathy
     entryType: special
     text: If a creature the aboleth can see communicates telepathically with the aboleth, the aboleth learns the creature's greatest desires.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -112,6 +127,9 @@ entries:
         - name: Tentacle
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Tentacle
     entryType: attack
@@ -134,6 +152,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14) from one of four tentacles.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Consume Memories
     entryType: save
@@ -161,6 +182,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Dominate Mind (2/Day)
     entryType: save
@@ -185,6 +209,9 @@ entries:
                 trigger: the aboleth dies or is on a different plane of existence from the target
               saveToEnd:
                 timing: when-damage
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Lash
     entryType: multiattack
@@ -194,10 +221,18 @@ entries:
         - name: Tentacle
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
   - category: legendary
     name: Psychic Drain
     entryType: special
     text: If the aboleth has at least one creature Charmed or Grappled, it uses Consume Memories and regains 5 (1d10) Hit Points.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Aboleth

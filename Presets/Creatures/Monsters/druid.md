@@ -53,6 +53,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The druid makes two attacks, using Vine Staff or Verdant Wisp in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Vine Staff
     entryType: attack
@@ -70,6 +73,9 @@ entries:
           type: Poison
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Verdant Wisp
     entryType: attack
@@ -83,6 +89,9 @@ entries:
           type: Radiant
           average: 10
       range: 90 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -105,6 +114,9 @@ spellcastingEntries:
             - Animal Messenger
             - Longstrider
             - Moonbeam
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Druid

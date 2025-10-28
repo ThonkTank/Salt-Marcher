@@ -54,10 +54,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The chuul can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Sense Magic
     entryType: special
     text: The chuul senses magic within 120 feet of itself. This trait otherwise works like the *Detect Magic* spell but isn't itself magical.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -67,6 +73,9 @@ entries:
         - name: Pincer
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Pincer
     entryType: attack
@@ -89,6 +98,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 14) from one of two pincers.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Paralyzing Tentacles
     entryType: save
@@ -114,6 +126,9 @@ entries:
                 timing: end-of-turn
               restrictions:
                 while: While Poisoned, the target has the Paralyzed condition
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Chuul

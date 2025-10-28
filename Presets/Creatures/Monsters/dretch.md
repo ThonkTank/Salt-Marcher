@@ -65,6 +65,9 @@ entries:
           type: Slashing
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fetid Cloud (1/Day)
     entryType: save
@@ -90,6 +93,9 @@ entries:
             - type: other
               target: Reactions
               description: can't take Reactions
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Dretch

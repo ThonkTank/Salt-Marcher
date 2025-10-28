@@ -44,6 +44,9 @@ entries:
     name: Iron Scent
     entryType: special
     text: The rust monster can pinpoint the location of ferrous metal within 30 feet of itself.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -53,6 +56,9 @@ entries:
         - name: Bite
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Bite
     entryType: attack
@@ -66,6 +72,9 @@ entries:
           type: Piercing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Antennae
     entryType: save
@@ -79,10 +88,16 @@ entries:
         effects:
           other: The object takes a -1 penalty to the AC it offers (armor) or to its attack rolls (weapon). Armor is destroyed if the penalty reduces its AC to 10, and a weapon is destroyed if its penalty reaches -5. The penalty can be removed by casting the *Mending* spell on the armor or weapon.
         legacyEffects: The object takes a -1 penalty to the AC it offers (armor) or to its attack rolls (weapon). Armor is destroyed if the penalty reduces its AC to 10, and a weapon is destroyed if its penalty reaches -5. The penalty can be removed by casting the *Mending* spell on the armor or weapon.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Destroy Metal
     entryType: special
     text: The rust monster touches a nonmagical metal object within 5 feet of itself that isn't being worn or carried. The touch destroys a 1-foot Cube [Area of Effect]|XPHB|Cube of the object.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Rust Monster

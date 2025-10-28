@@ -62,18 +62,30 @@ entries:
     name: Fire Aura
     entryType: special
     text: At the end of each of the elemental's turns, each creature in a 10-foot Emanation originating from the elemental takes 5 (1d10) Fire damage. Creatures and flammable objects in the Emanation start Hitazard burning.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Fire Form
     entryType: special
     text: The elemental can move through a space as narrow as 1 inch without expending extra movement to do so, and it can enter a creature's space and stop there. The first time it enters a creature's space on a turn, that creature takes 5 (1d10) Fire damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Illumination
     entryType: special
     text: The elemental sheds Bright Light in a 30-foot radius and Dim Light for an additional 30 feet.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Water Susceptibility
     entryType: special
     text: The elemental takes 3 (1d6) Cold damage for every 5 feet the elemental moves in water or for every gallon of water splashed on it.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -83,6 +95,9 @@ entries:
         - name: Burn
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Burn
     entryType: attack
@@ -99,6 +114,9 @@ entries:
       onHit:
         other: If the target is a creature or a flammable object, it starts burning.
       additionalEffects: If the target is a creature or a flammable object, it starts burning.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Fire Elemental

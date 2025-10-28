@@ -53,6 +53,9 @@ entries:
     name: Magic Resistance
     entryType: special
     text: The satyr has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Hooves
     entryType: attack
@@ -69,6 +72,9 @@ entries:
       onHit:
         other: If the target is a Medium or smaller creature, the satyr pushes the target up to 10 feet straight away from itself.
       additionalEffects: If the target is a Medium or smaller creature, the satyr pushes the target up to 10 feet straight away from itself.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Mockery
     entryType: save
@@ -90,6 +96,9 @@ entries:
             type: Psychic
             average: 5
         legacyEffects: 5 (1d6 + 2) Psychic damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Satyr

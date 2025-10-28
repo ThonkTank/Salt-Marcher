@@ -57,10 +57,16 @@ entries:
           type: Bludgeoning
           average: 13
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Javelin
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +6, reach 5 ft. or range 30/120 ft. 11 (2d6 + 4) Piercing damage.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ogre

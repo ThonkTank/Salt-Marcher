@@ -52,6 +52,9 @@ entries:
     name: Jumper
     entryType: special
     text: The cat's jump distance is determined using its Dexterity rather than its Strength.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Scratch
     entryType: attack
@@ -61,6 +64,9 @@ entries:
       bonus: 4
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Cat

@@ -46,6 +46,9 @@ entries:
     name: Mimicry
     entryType: special
     text: The raven can mimic simple sounds it has heard, such as a whisper or chitter. A hearer can discern the sounds are imitations with a successful DC 10 Wisdom (Insight) check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Beak
     entryType: attack
@@ -55,6 +58,9 @@ entries:
       bonus: 4
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Raven

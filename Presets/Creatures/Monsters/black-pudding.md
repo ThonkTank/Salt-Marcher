@@ -58,14 +58,23 @@ entries:
     name: Amorphous
     entryType: special
     text: The pudding can move through a space as narrow as 1 inch without expending extra movement to do so.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Corrosive Form
     entryType: special
     text: A creature that hits the pudding with a melee attack roll takes 4 (1d8) Acid damage. Nonmagical ammunition is destroyed immediately after hitting the pudding and dealing any damage. Any nonmagical weapon takes a cumulative -1 penalty to attack rolls immediately after dealing damage to the pudding and coming into contact with it. The weapon is destroyed if the penalty reaches -5. The penalty can be removed by casting the *Mending* spell on the weapon. In 1 minute, the pudding can eat through 2 feet of nonmagical wood or metal.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Spider Climb
     entryType: special
     text: The pudding can climb difficult surfaces, including along ceilings, without needing to make an ability check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Dissolving Pseudopod
     entryType: attack
@@ -82,6 +91,9 @@ entries:
       onHit:
         other: Nonmagical armor worn by the target takes a -1 penalty to the AC it offers. The armor is destroyed if the penalty reduces its AC to 10. The penalty can be removed by casting the *Mending* spell on the armor.
       additionalEffects: Nonmagical armor worn by the target takes a -1 penalty to the AC it offers. The armor is destroyed if the penalty reduces its AC to 10. The penalty can be removed by casting the *Mending* spell on the armor.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Black Pudding

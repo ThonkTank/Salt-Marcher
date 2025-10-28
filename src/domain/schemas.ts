@@ -98,55 +98,85 @@ function ensureObjectArray(value: unknown, field: string, errors: SchemaValidati
     }
 }
 
+function ensureTokenArray(value: unknown, field: string, errors: SchemaValidationError[]): void {
+    if (value == null) return;
+    if (!Array.isArray(value)) {
+        errors.push({ field, message: 'Expected array of token entries.' });
+        return;
+    }
+    for (const entry of value) {
+        if (typeof entry === 'string') {
+            if (!entry.trim()) {
+                errors.push({ field, message: 'Token values must be non-empty strings.' });
+                break;
+            }
+        } else if (!entry || typeof entry !== 'object' || typeof (entry as Record<string, unknown>).value !== 'string' || !(entry as Record<string, unknown>).value.trim()) {
+            errors.push({ field, message: 'Token entries must include a string "value" property.' });
+            break;
+        }
+    }
+}
+
+function ensureBoolean(value: unknown, field: string, errors: SchemaValidationError[]) {
+    if (value == null) return;
+    if (typeof value !== 'boolean') {
+        errors.push({ field, message: 'Expected boolean.' });
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Schema-specific validators
 // ---------------------------------------------------------------------------
 
 export interface FactionDocument {
-    id: string;
     name: string;
+    motto?: string;
+    headquarters?: string;
+    territory?: string;
+    influence_tags?: Array<{ value: string }>;
+    culture_tags?: Array<{ value: string }>;
+    goal_tags?: Array<{ value: string }>;
     summary?: string;
-    tags?: string[];
-    culture?: string;
-    agenda?: string[];
-    danger?: string | number;
-    members?: Array<{ id: string; name: string; role?: string; count?: number }>;
-    holdings?: string[];
-    influence?: { radius?: number; strength?: number };
-    notes?: string;
-    version?: number;
+    assets?: string;
+    relationships?: string;
+    members?: Array<{ name: string; role?: string; status?: string; is_named?: boolean; notes?: string }>;
 }
 
 export function validateFaction(doc: SchemaDocument): SchemaValidationError[] {
     const fm = doc.frontmatter ?? {};
     const errors: SchemaValidationError[] = [];
 
-    ensureString(fm, 'id', errors, { required: true });
     ensureString(fm, 'name', errors, { required: true });
-    ensureStringArray(fm, 'tags', errors);
-    ensureStringArray(fm, 'agenda', errors);
+    ensureString(fm, 'motto', errors);
+    ensureString(fm, 'headquarters', errors);
+    ensureString(fm, 'territory', errors);
+    ensureString(fm, 'summary', errors);
+    ensureString(fm, 'assets', errors);
+    ensureString(fm, 'relationships', errors);
 
-    if (fm.members !== undefined) {
-        ensureObjectArray(fm.members, 'members', errors);
-        if (Array.isArray(fm.members)) {
-            fm.members.forEach((entry, index) => {
-                if (entry && typeof entry === 'object') {
-                    const prefix = `members[${index}]`;
-                    ensureString(entry as Record<string, unknown>, 'id', errors, { required: true });
-                    ensureString(entry as Record<string, unknown>, 'name', errors, { required: true });
-                    const count = (entry as Record<string, unknown>).count;
-                    if (count !== undefined && (typeof count !== 'number' || !Number.isFinite(count) || count < 0)) {
-                        errors.push({ field: `${prefix}.count`, message: 'Count must be a non-negative number.' });
-                    }
+    ensureTokenArray(fm.influence_tags, 'influence_tags', errors);
+    ensureTokenArray(fm.culture_tags, 'culture_tags', errors);
+    ensureTokenArray(fm.goal_tags, 'goal_tags', errors);
+
+    const members = fm.members;
+    if (members !== undefined) {
+        if (!Array.isArray(members)) {
+            errors.push({ field: 'members', message: 'Members must be an array of objects.' });
+        } else {
+            members.forEach((entry, index) => {
+                const prefix = `members[${index}]`;
+                if (!entry || typeof entry !== 'object') {
+                    errors.push({ field: prefix, message: 'Member entry must be an object.' });
+                    return;
                 }
+                const record = entry as Record<string, unknown>;
+                ensureString(record, 'name', errors, { required: true });
+                ensureString(record, 'role', errors);
+                ensureString(record, 'status', errors);
+                ensureBoolean(record.is_named, `${prefix}.is_named`, errors);
+                ensureString(record, 'notes', errors);
             });
         }
-    }
-
-    if (fm.influence && typeof fm.influence === 'object') {
-        const inf = fm.influence as Record<string, unknown>;
-        ensureNumber(inf, 'radius', errors, { min: 0 });
-        ensureNumber(inf, 'strength', errors, { min: 0 });
     }
 
     return errors;

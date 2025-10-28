@@ -61,10 +61,16 @@ entries:
     name: Demonic Restoration
     entryType: special
     text: If the vrock dies outside the Abyss, its body dissolves into ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Abyss.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The vrock has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -74,6 +80,9 @@ entries:
         - name: Shred
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Shred
     entryType: attack
@@ -91,6 +100,9 @@ entries:
           type: Poison
           average: 10
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Spores
     entryType: save
@@ -113,6 +125,9 @@ entries:
             bonus: 0
             type: Poison
             average: 5
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Stunning Screech (1/Day)
     entryType: save
@@ -139,6 +154,9 @@ entries:
             bonus: 0
             type: Thunder
             average: 10
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Vrock

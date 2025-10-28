@@ -67,14 +67,23 @@ entries:
     name: Divine Awareness
     entryType: special
     text: The planetar knows if it hears a lie.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Exalted Restoration
     entryType: special
     text: If the planetar dies outside Mount Celestia, its body disappears, and it gains a new body instantly, reviving with all its Hit Points somewhere in Mount Celestia.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The planetar has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -84,6 +93,9 @@ entries:
         - name: Sword
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Radiant Sword
     entryType: attack
@@ -101,6 +113,9 @@ entries:
           type: Radiant
           average: 18
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Holy Burst
     entryType: save
@@ -123,6 +138,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -143,6 +161,9 @@ spellcastingEntries:
             - Control Weather
             - Dispel Evil and Good
             - Raise Dead
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Divine Aid (2/Day)
     entryType: spellcasting
@@ -153,6 +174,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Planetar

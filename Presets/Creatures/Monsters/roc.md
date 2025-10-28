@@ -57,6 +57,9 @@ entries:
           with:
             type: attack
             name: a Talons attack
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Beak
     entryType: attack
@@ -70,6 +73,9 @@ entries:
           type: Piercing
           average: 28
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Talons
     entryType: attack
@@ -104,11 +110,17 @@ entries:
               type: until
               trigger: the grapple ends
       additionalEffects: If the target is a Huge or smaller creature, it has the Grappled condition (escape DC 19) from both talons, and it has the Restrained condition until the grapple ends.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Swoop (Recharge 5-6)
     entryType: special
     text: If the roc has a creature Grappled, the roc flies up to half its Fly Speed without provoking Opportunity Attacks and drops that creature.
     recharge: 5-6
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Roc

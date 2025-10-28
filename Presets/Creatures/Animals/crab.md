@@ -49,6 +49,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The crab can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -58,6 +61,9 @@ entries:
       bonus: 2
       damage: []
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Crab

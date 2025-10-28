@@ -56,18 +56,30 @@ entries:
     name: Fire Absorption
     entryType: special
     text: Whenever the golem is subjected to Fire damage, it regains a number of Hit Points equal to the Fire damage dealt.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Immutable Form
     entryType: special
     text: The golem can't shape-shift.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The golem has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: special
     text: The golem makes two attacks, using Bladed Arm or Fiery Bolt in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Bladed Arm
     entryType: attack
@@ -85,6 +97,9 @@ entries:
           type: Fire
           average: 10
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fiery Bolt
     entryType: attack
@@ -98,6 +113,9 @@ entries:
           type: Fire
           average: 36
       range: 120 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Poison Breath
     entryType: save
@@ -120,6 +138,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Iron Golem

@@ -79,6 +79,14 @@ export const ENTITY_REGISTRY = {
         singular: "region",
         plural: "regions",
     },
+    factions: {
+        id: "factions",
+        displayName: "Factions",
+        directory: "SaltMarcher/Factions",
+        defaultBaseName: "Faction",
+        singular: "faction",
+        plural: "factions",
+    },
     calendars: {
         id: "calendars",
         displayName: "Calendars",

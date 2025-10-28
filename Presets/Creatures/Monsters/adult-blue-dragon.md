@@ -68,6 +68,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -81,6 +84,9 @@ entries:
           with:
             type: spellcasting
             spell: Shatter
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -98,6 +104,9 @@ entries:
           type: Lightning
           average: 5
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Breath (Recharge 5-6)
     entryType: save
@@ -122,6 +131,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Tail Swipe
     entryType: multiattack
@@ -131,6 +143,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -152,6 +168,9 @@ spellcastingEntries:
           spells:
             - Scrying
             - Sending
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Cloaked Flight
     entryType: spellcasting
@@ -159,6 +178,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Sonic Boom
     entryType: spellcasting
@@ -166,6 +189,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Blue Dragon

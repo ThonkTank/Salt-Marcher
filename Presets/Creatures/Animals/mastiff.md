@@ -63,6 +63,9 @@ entries:
               size: Medium or smaller
         other: If the target is a Medium or smaller creature, it has the Prone condition.
       additionalEffects: If the target is a Medium or smaller creature, it has the Prone condition.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Mastiff

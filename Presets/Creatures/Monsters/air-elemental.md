@@ -66,6 +66,9 @@ entries:
     name: Air Form
     entryType: special
     text: The elemental can enter a creature's space and stop there. It can move through a space as narrow as 1 inch without expending extra movement to do so.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -75,6 +78,9 @@ entries:
         - name: Slam
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Thunderous Slam
     entryType: attack
@@ -88,6 +94,9 @@ entries:
           type: Thunder
           average: 14
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Whirlwind (Recharge 4-6)
     entryType: save
@@ -118,6 +127,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Air Elemental

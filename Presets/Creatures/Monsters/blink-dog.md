@@ -61,11 +61,17 @@ entries:
           type: Piercing
           average: 5
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Teleport (Recharge 4-6)
     entryType: special
     text: The dog teleports up to 40 feet to an unoccupied space it can see.
     recharge: 4-6
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Blink Dog

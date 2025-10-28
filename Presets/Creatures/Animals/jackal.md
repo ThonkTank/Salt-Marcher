@@ -58,6 +58,9 @@ entries:
           type: Piercing
           average: 1
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Jackal

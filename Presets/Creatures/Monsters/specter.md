@@ -71,10 +71,16 @@ entries:
     name: Incorporeal Movement
     entryType: special
     text: The specter can move through other creatures and objects as if they were Difficult Terrain. It takes 5 (1d10) Force damage if it ends its turn inside an object.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Sunlight Sensitivity
     entryType: special
     text: While in sunlight, the specter has Disadvantage on ability checks and attack rolls.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Life Drain
     entryType: attack
@@ -91,6 +97,9 @@ entries:
       onHit:
         other: If the target is a creature, its Hit Point maximum decreases by an amount equal to the damage taken.
       additionalEffects: If the target is a creature, its Hit Point maximum decreases by an amount equal to the damage taken.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Specter

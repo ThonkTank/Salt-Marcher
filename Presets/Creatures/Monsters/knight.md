@@ -48,6 +48,9 @@ entries:
     name: Multiattack
     entryType: special
     text: The knight makes two attacks, using Greatsword or Heavy Crossbow in any combination.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Greatsword
     entryType: attack
@@ -65,6 +68,9 @@ entries:
           type: Radiant
           average: 4
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Heavy Crossbow
     entryType: attack
@@ -82,6 +88,9 @@ entries:
           type: Radiant
           average: 4
       range: 100/400 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Knight

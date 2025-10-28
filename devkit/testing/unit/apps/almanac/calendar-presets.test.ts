@@ -2,9 +2,9 @@
 // Tests for calendar preset initialization
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { InMemoryCalendarRepository } from '../../../src/workmodes/almanac/data/repositories';
-import { ensureDefaultCalendar, getAllPresetCalendars } from '../../../src/workmodes/almanac/data/calendar-presets';
-import { GREGORIAN_CALENDAR_ID } from '../../../src/workmodes/almanac/fixtures/gregorian.fixture';
+import { InMemoryCalendarRepository } from 'src/workmodes/almanac/data/repositories';
+import { ensureDefaultCalendar, getAllPresetCalendars } from 'src/workmodes/almanac/data/calendar-presets';
+import { GREGORIAN_CALENDAR_ID } from 'src/workmodes/almanac/fixtures/gregorian.fixture';
 
 describe('Calendar Presets', () => {
     let repo: InMemoryCalendarRepository;

@@ -55,6 +55,9 @@ entries:
           type: Piercing
           average: 15
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Claws
     entryType: attack
@@ -75,6 +78,9 @@ entries:
               size: Large or smaller
         other: If the target is a Large or smaller creature and the allosaurus moved 30+ feet straight toward it immediately before the hit, the target has the Prone condition, and the allosaurus can make one Bite attack against it.
       additionalEffects: If the target is a Large or smaller creature and the allosaurus moved 30+ feet straight toward it immediately before the hit, the target has the Prone condition, and the allosaurus can make one Bite attack against it.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Allosaurus

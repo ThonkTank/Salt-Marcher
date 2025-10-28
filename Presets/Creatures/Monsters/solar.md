@@ -63,10 +63,16 @@ entries:
     name: Divine Awareness
     entryType: special
     text: The solar knows if it hears a lie.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Exalted Restoration
     entryType: special
     text: If the solar dies outside Mount Celestia, its body disappears, and it gains a new body instantly, reviving with all its Hit Points somewhere in Mount Celestia.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (4/Day)
     entryType: special
@@ -74,10 +80,16 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The solar has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -91,10 +103,16 @@ entries:
           with:
             type: attack
             name: Slaying Bow
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Flying Sword
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +15, reach 10 ft. or range 120 ft. 22 (4d6 + 8) Slashing damage plus 36 (8d8) Radiant damage. HitomThe sword magically returns to the solar''s hand or hovers within 5 feet of the solar immediately after a ranged attack.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Slaying Bow
     entryType: save
@@ -120,6 +138,9 @@ entries:
             type: Radiant
             average: 36
         legacyEffects: If the creature has 100 Hit Points or fewer, it dies. It otherwise takes 24 (4d8 + 6) Piercing damage plus 36 (8d8) Radiant damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Blinding Gaze
     entryType: save
@@ -139,6 +160,10 @@ entries:
               duration:
                 type: minutes
                 count: 1
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Radiant Teleport
     entryType: save
@@ -162,6 +187,10 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -182,6 +211,9 @@ spellcastingEntries:
             - Control Weather
             - Dispel Evil and Good
             - Resurrection
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: bonus
     name: Divine Aid (3/Day)
     entryType: spellcasting
@@ -192,6 +224,9 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: bonus
+    trigger.targeting:
+      type: single
 ---
 
 # Solar

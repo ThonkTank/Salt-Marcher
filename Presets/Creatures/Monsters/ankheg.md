@@ -48,6 +48,9 @@ entries:
     name: Tunneler
     entryType: special
     text: The ankheg can burrow through solid rock at half its Burrow Speed and leaves a 10-foot-diameter tunnel in its wake.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Bite
     entryType: attack
@@ -74,6 +77,9 @@ entries:
             restrictions:
               size: Large or smaller
       additionalEffects: If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13).
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Acid Spray
     entryType: save
@@ -97,6 +103,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ankheg

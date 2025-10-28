@@ -69,6 +69,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The dragon can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (3/Day, or 4/Day in Lair)
     entryType: special
@@ -76,6 +79,9 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -89,6 +95,9 @@ entries:
           with:
             type: spellcasting
             spell: Guiding Bolt
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rend
     entryType: attack
@@ -106,6 +115,9 @@ entries:
           type: Fire
           average: 4
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fire Breath (Recharge 5-6)
     entryType: save
@@ -129,6 +141,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Weakening Breath
     entryType: save
@@ -152,6 +167,9 @@ entries:
               modifier: -3
               target: damage rolls
               description: subtracts 3 (1d6) from its damage rolls.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Banish
     entryType: save
@@ -176,6 +194,10 @@ entries:
             bonus: 0
             type: Force
             average: 10
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Pounce
     entryType: multiattack
@@ -185,6 +207,10 @@ entries:
         - name: Rend
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -206,6 +232,9 @@ spellcastingEntries:
           spells:
             - Flame Strike
             - Zone of Truth
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Guiding Light
     entryType: spellcasting
@@ -213,6 +242,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Adult Gold Dragon

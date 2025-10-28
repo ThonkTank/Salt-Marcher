@@ -71,6 +71,9 @@ entries:
     name: Amphibious
     entryType: special
     text: The kraken can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Legendary Resistance (4/Day, or 5/Day in Lair)
     entryType: special
@@ -78,10 +81,16 @@ entries:
     limitedUse:
       count: 4
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Siege Monster
     entryType: special
     text: The kraken deals double damage to objects and structures.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -91,6 +100,9 @@ entries:
         - name: Tentacle
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Tentacle
     entryType: attack
@@ -121,6 +133,9 @@ entries:
               type: until
               trigger: the grapple ends
       additionalEffects: The target has the Grappled condition (escape DC 20) from one of ten tentacles, and it has the Restrained condition until the grapple ends.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Fling
     entryType: save
@@ -145,6 +160,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage only.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Lightning Strike
     entryType: save
@@ -169,6 +187,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Swallow
     entryType: save
@@ -200,10 +221,17 @@ entries:
             bonus: 0
             type: Acid
             average: 24
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Storm Bolt
     entryType: special
     text: The kraken uses Lightning Strike.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Toxic Ink
     entryType: save
@@ -219,6 +247,10 @@ entries:
         effects:
           other: The target has the Blinded and Poisoned conditions until the end of the kraken's next turn. The kraken then moves up to its Speed.
         legacyEffects: The target has the Blinded and Poisoned conditions until the end of the kraken's next turn. The kraken then moves up to its Speed.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Kraken

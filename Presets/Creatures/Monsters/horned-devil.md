@@ -58,10 +58,16 @@ entries:
     name: Diabolical Restoration
     entryType: special
     text: If the devil dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The devil has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -75,6 +81,9 @@ entries:
           with:
             type: attack
             name: Infernal Tail
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Searing Fork
     entryType: attack
@@ -92,6 +101,9 @@ entries:
           type: Fire
           average: 9
       reach: 10 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Hurl Flame
     entryType: attack
@@ -108,6 +120,9 @@ entries:
       onHit:
         other: If the target is a flammable object that isn't being worn or carried, it starts burning.
       additionalEffects: If the target is a flammable object that isn't being worn or carried, it starts burning.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Infernal Tail
     entryType: save
@@ -129,6 +144,9 @@ entries:
             type: Necrotic
             average: 10
         legacyEffects: 10 (1d8 + 6) Necrotic damage, and the target receives an infernal wound if it doesn't have one. While wounded, the target loses 10 (3d6) Hit Points at the start of each of its turns. The wound closes after 1 minute, after a spell restores Hit Points to the target, or after the target or a creature within 5 feet of it takes an action to stanch the wound, doing so by succeeding on a DC 17 Wisdom (Medicine) check.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Horned Devil

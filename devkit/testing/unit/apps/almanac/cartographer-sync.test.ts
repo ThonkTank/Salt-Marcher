@@ -2,29 +2,29 @@
 // Prüft die Synchronisation zwischen Almanac-State-Machine und dem Cartographer-Hook-Gateway.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { InMemoryStateGateway } from "../../../src/workmodes/almanac/data/calendar-state-gateway";
+import { InMemoryStateGateway } from "src/workmodes/almanac/data/calendar-state-gateway";
 import {
   AlmanacMemoryBackend,
   InMemoryCalendarRepository,
   InMemoryEventRepository,
   InMemoryPhenomenonRepository,
-} from "../../../src/workmodes/almanac/data/repositories";
+} from "src/workmodes/almanac/data/repositories";
 import {
     createDayTimestamp,
     createHourTimestamp,
     createSingleEvent,
     type CalendarTimestamp,
-} from "../../../src/workmodes/almanac/domain";
-import { AlmanacStateMachine } from "../../../src/workmodes/almanac/mode/state-machine";
-import { CartographerHookGateway } from "../../../src/workmodes/almanac/mode/cartographer-gateway";
+} from "src/workmodes/almanac/domain";
+import { AlmanacStateMachine } from "src/workmodes/almanac/mode/state-machine";
+import { CartographerHookGateway } from "src/workmodes/almanac/mode/cartographer-gateway";
 import {
     registerCartographerBridge,
     resetCartographerBridge,
-} from "../../../src/workmodes/almanac/mode/cartographer-bridge";
+} from "src/workmodes/almanac/mode/cartographer-bridge";
 import {
     gregorianSchema,
     GREGORIAN_CALENDAR_ID,
-} from "../../../src/workmodes/almanac/fixtures/gregorian.fixture";
+} from "src/workmodes/almanac/fixtures/gregorian.fixture";
 
 const flushGateway = async (instance: unknown): Promise<void> => {
     if (

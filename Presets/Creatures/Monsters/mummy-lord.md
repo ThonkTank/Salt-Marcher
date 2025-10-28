@@ -69,14 +69,23 @@ entries:
     limitedUse:
       count: 3
       reset: day
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Magic Resistance
     entryType: special
     text: The mummy has Advantage on saving throws against spells and other magical effects.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Undead Restoration
     entryType: special
     text: If destroyed, the mummy gains a new body in 24 hours if its heart is intact, reviving with all its Hit Points. The new body appears in an unoccupied space within the mummy's lair. The heart is a Tiny object that has AC 17, HP 10, and Immunity to all damage except Fire.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -86,6 +95,9 @@ entries:
         - name: Energy
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Rotting Fist
     entryType: attack
@@ -106,6 +118,9 @@ entries:
       onHit:
         other: If the target is a creature, it is cursed. While cursed, the target can't regain Hit Points, it gains no benefit from finishing a Long Rest, and its Hit Point maximum decreases by 10 (3d6) every 24 hours that elapse. A creature dies and turns to dust if reduced to 0 Hit Points by this attack.
       additionalEffects: If the target is a creature, it is cursed. While cursed, the target can't regain Hit Points, it gains no benefit from finishing a Long Rest, and its Hit Point maximum decreases by 10 (3d6) every 24 hours that elapse. A creature dies and turns to dust if reduced to 0 Hit Points by this attack.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Channel Negative Energy
     entryType: attack
@@ -119,6 +134,9 @@ entries:
           type: Necrotic
           average: 25
       range: 60 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Dreadful Glare
     entryType: save
@@ -143,10 +161,17 @@ entries:
             bonus: 4
             type: Psychic
             average: 25
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Glare
     entryType: special
     text: The mummy uses Dreadful Glare. The mummy can't take this action again until the start of its next turn.
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Necrotic Strike
     entryType: multiattack
@@ -156,6 +181,10 @@ entries:
         - name: Energy
           count: 1
       substitutions: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: self
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -177,6 +206,9 @@ spellcastingEntries:
             - Animate Dead
             - Harm
             - Insect Plague
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: legendary
     name: Dread Command
     entryType: spellcasting
@@ -184,6 +216,10 @@ spellcastingEntries:
     spellcasting:
       ability: int
       spellLists: []
+    trigger.activation: action
+    trigger.legendaryCost: 1
+    trigger.targeting:
+      type: single
 ---
 
 # Mummy Lord

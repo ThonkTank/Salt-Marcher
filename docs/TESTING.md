@@ -26,7 +26,35 @@ npm run test:all
 # Enable bash completion for better UX
 source devkit/core/cli/devkit-completion.bash
 ./devkit <TAB>  # See all available commands
+
+# Inspect persistent state stores (new state platform)
+./devkit/core/cli/devkit state list
+./devkit/core/cli/devkit state inspect map-terrains
+./devkit/core/cli/devkit state inspect map-regions --json
 ```
+
+## State Diagnostics
+
+Use the DevKit state inspector to verify store health while developing or before a release:
+
+```bash
+# List all registered stores with metadata
+./devkit/core/cli/devkit state list
+
+# Inspect detailed payload for a specific store
+./devkit/core/cli/devkit state inspect map-terrains
+./devkit/core/cli/devkit state inspect map-regions --json
+./devkit/core/cli/devkit state inspect almanac-calendar-state
+```
+
+Key stores to check:
+
+- `map-tiles:<path>` – per-map tile caches and persistence
+- `map-terrains` – global terrain palette & travel speeds
+- `map-regions` – region metadata (terrain + encounter odds)
+- `almanac-calendar-state` – Almanac session state
+
+If a store shows unexpected data, run the relevant validator, rerun workflows, or trigger a refresh before shipping.
 
 ## Test Structure
 

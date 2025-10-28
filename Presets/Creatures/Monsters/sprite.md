@@ -62,6 +62,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Enchanting Bow
     entryType: attack
@@ -71,6 +74,9 @@ entries:
       bonus: 6
       damage: []
       range: 40/160 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Heart Sight
     entryType: save
@@ -86,6 +92,9 @@ entries:
       onFail:
         effects:
           knowledge: the target's emotions and alignment
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Invisibility
@@ -97,6 +106,9 @@ spellcastingEntries:
         - frequency: at-will
           spells:
             - Invisibility
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Sprite

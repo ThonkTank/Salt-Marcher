@@ -73,6 +73,10 @@
           "args": ["all"]
         },
         {
+          "name": "Inspect persistent stores",
+          "command": "state-list"
+        },
+        {
           "name": "Build plugin",
           "type": "npm",
           "command": "run",

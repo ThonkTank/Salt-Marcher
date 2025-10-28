@@ -60,10 +60,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The hag can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: trait
     name: Mimicry
     entryType: special
     text: The hag can mimic animal sounds and humanoid voices. A creature that hears the sounds can tell they are imitations only with a successful DC 14 Wisdom (Insight) check.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Multiattack
     entryType: multiattack
@@ -73,6 +79,9 @@ entries:
         - name: Claw
           count: 2
       substitutions: []
+    trigger.activation: action
+    trigger.targeting:
+      type: self
   - category: action
     name: Claw
     entryType: attack
@@ -90,6 +99,9 @@ entries:
           type: Poison
           average: 3
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Spellcasting
@@ -109,6 +121,9 @@ spellcastingEntries:
             - Invisibility
             - Minor Illusion
             - Ray of Sickness
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Green Hag

@@ -60,6 +60,9 @@ entries:
           type: Piercing
           average: 6
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Constrict
     entryType: save
@@ -90,6 +93,9 @@ entries:
                 dc: 12
           other: 7 (3d4) Bludgeoning damage, and the target has the Grappled condition (escape DC 12).
         legacyEffects: 7 (3d4) Bludgeoning damage, and the target has the Grappled condition (escape DC 12).
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Constrictor Snake

@@ -81,6 +81,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Claw
     entryType: attack
@@ -98,6 +101,9 @@ entries:
           type: Cold
           average: 2
       reach: 5 ft.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
   - category: action
     name: Frost Breath
     entryType: save
@@ -120,6 +126,9 @@ entries:
       onSuccess:
         damage: half
         legacyText: Half damage.
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 spellcastingEntries:
   - category: action
     name: Fog Cloud (1/Day)
@@ -137,6 +146,9 @@ spellcastingEntries:
         - frequency: 1/day
           spells:
             - Fog Cloud
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Ice Mephit

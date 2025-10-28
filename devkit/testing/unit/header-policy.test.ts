@@ -89,10 +89,18 @@ describe("governance policies", () => {
         const offenders = candidates
             .map((file) => {
                 const content = readFileSync(file, "utf8");
-                const [rawFirstLine = ""] = content.split(/\r?\n/, 1);
+                const lines = content.split(/\r?\n/);
+                const [rawFirstLine = ""] = lines;
                 const firstLine = rawFirstLine.replace(/^\uFEFF/, "").trim();
 
-                if (!firstLine.startsWith("//")) {
+                // If first line is a shebang, check second line instead
+                if (firstLine.startsWith("#!")) {
+                    const [, rawSecondLine = ""] = lines;
+                    const secondLine = rawSecondLine.trim();
+                    if (!secondLine.startsWith("//")) {
+                        return relative(PLUGIN_ROOT, file).replace(/\\/g, "/");
+                    }
+                } else if (!firstLine.startsWith("//")) {
                     return relative(PLUGIN_ROOT, file).replace(/\\/g, "/");
                 }
 

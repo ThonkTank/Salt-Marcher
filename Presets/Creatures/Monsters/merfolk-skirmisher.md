@@ -47,10 +47,16 @@ entries:
     name: Amphibious
     entryType: special
     text: The merfolk can breathe air and water.
+    trigger.activation: passive
+    trigger.targeting:
+      type: single
   - category: action
     name: Ocean Spear
     entryType: special
     text: '*Melee or Ranged Attack Roll:* +2, reach 5 ft. or range 20/60 ft. 3 (1d6) Piercing damage plus 2 (1d4) Cold damage. If the target is a creature, its Speed decreases by 10 feet until the end of its next turn. HitomThe spear magically returns to the merfolk''s hand immediately after a ranged attack.'
+    trigger.activation: action
+    trigger.targeting:
+      type: single
 ---
 
 # Merfolk Skirmisher
