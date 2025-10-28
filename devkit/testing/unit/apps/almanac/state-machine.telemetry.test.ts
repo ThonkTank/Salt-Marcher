@@ -3,7 +3,7 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../../../src/workmodes/almanac/telemetry", () => {
+vi.mock("src/workmodes/almanac/telemetry", () => {
     const emitAlmanacEvent = vi.fn();
     const reportAlmanacGatewayIssue = vi.fn();
     return {

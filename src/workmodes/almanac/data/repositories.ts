@@ -334,9 +334,7 @@ class VaultStore {
 function sanitiseDefaults(defaults: CalendarDefaultsState): CalendarDefaultSnapshot {
   const travel: Record<string, string | null> = {};
   for (const [travelId, calendarId] of Object.entries(defaults.travel)) {
-    if (calendarId) {
-      travel[travelId] = calendarId;
-    }
+    travel[travelId] = calendarId;
   }
   return { global: defaults.global, travel };
 }
@@ -431,7 +429,7 @@ function applyCalendarDefault(state: AlmanacStoreState, update: CalendarDefaultU
 }
 
 function clearTravelDefault(state: AlmanacStoreState, travelId: string): void {
-  delete state.defaults.travel[travelId];
+  state.defaults.travel[travelId] = null;
 }
 
 function listEvents(state: AlmanacStoreState, calendarId: string): EventDTO[] {
@@ -495,11 +493,12 @@ function applyEventDeletion(state: AlmanacStoreState, id: string): void {
 function applyPhenomenonUpsert(state: AlmanacStoreState, draft: PhenomenonDTO): PhenomenonDTO {
   const existingIndex = state.phenomena.findIndex(entry => entry.id === draft.id);
   if (existingIndex === -1) {
-    state.phenomena.push({ ...draft });
-    return { ...draft };
+    const newEntry = { ...draft };
+    state.phenomena.push(newEntry);
+    return newEntry;
   }
   state.phenomena[existingIndex] = { ...state.phenomena[existingIndex], ...draft };
-  return { ...state.phenomena[existingIndex] };
+  return state.phenomena[existingIndex];
 }
 
 function applyPhenomenonDeletion(state: AlmanacStoreState, id: string): void {
@@ -542,7 +541,11 @@ function listPhenomenaBatch(
   const { items, nextCursor } = paginatePhenomena(sorted, input.pagination);
   return {
     items: items.map(entry => entry.summary),
-    nextCursor,
+    pagination: {
+      cursor: nextCursor,
+      hasMore: Boolean(nextCursor),
+    },
+    generatedAt: new Date().toISOString(),
   };
 }
 
