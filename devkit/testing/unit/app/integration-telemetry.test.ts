@@ -51,6 +51,7 @@ describe("integration telemetry", () => {
         // Assert
         expect(consoleError).toHaveBeenCalledTimes(2);
         expect(consoleError).toHaveBeenCalledWith(
+            "[salt-marcher]",
             "[salt-marcher] integration(obsidian:cartographer-view) activate-view failed",
             payload.error,
         );
