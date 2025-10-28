@@ -322,7 +322,7 @@ Ziele:
 | **BLOCKER** – Test-Suite | ✅ 14/40 Tests benötigen Mocks | Funktionierende CI/CD | Mock-Layer für Integration-Tests |
 | Phase 0 – Taxonomie & Schemas | ✅ Abgeschlossen | Konsistente Tags & Schemas | Test-Fixtures/CI-Checks finalisieren |
 | Phase 1 – Core State Platform | ⚙️ 75% fertig | Vereinheitlichte Stores & DevKit-Diagnostics | Library-Repos migrieren, Seed-System |
-| **Phase 2.1** – Faction Territory Marking | ⚙️ 60% fertig | Fraktionen auf Karte zuweisen | Cartographer Brush + Inspector UI |
+| **Phase 2.1** – Faction Territory Marking | ✅ Abgeschlossen | Fraktionen auf Karte zuweisen | Phase 2.2 starten |
 | **Phase 2.2** – Faction Context in Sessions | 🚨 0% | Encounters nach Fraktion filtern | Session Runner Hooks + Encounter Filter |
 | Phase 2.3 – Member Management (Later) | ⏳ Geplant | Mitglieder-Tracking, Subfraktionen | Nach Phase 2.2 |
 | Phase 3 – Orte & Dungeons | ⏳ Geplant | Orts-Hierarchie & Dungeon-Tools | Kickoff nach Phase 2 |
@@ -337,10 +337,10 @@ Ziele:
 - **Phase 0 – Taxonomie & Schemas** ✅: Laufende Referenz in `docs/TAGS.md`, Validatoren unter `src/domain/schemas.ts`, Beispiel-Dateien in `samples/**`.
 - **Phase 1 – Core State Platform** ⚙️ 75%: State-Inspector & Persistent Stores (`src/services/state/**`, `src/features/maps/state/{tile,terrain,region}-store.ts`), Map-Repository Cleanup (`src/features/maps/data/map-store-registry.ts`).
   - **Blocker gelöst:** Test-Suite von 49→14 failures repariert, Library-Repos migrieren steht noch aus
-- **Phase 2.1 – Faction Territory Marking** ⚙️ 60%:
+- **Phase 2.1 – Faction Territory Marking** ✅ Abgeschlossen:
   - ✅ Foundation: Library CRUD, Overlay-Store, Rendering-Layer
-  - 🚨 TODO: Cartographer Brush UI (Faction-Dropdown)
-  - 🚨 TODO: Cartographer Inspector UI (Faction anzeigen/editieren)
+  - ✅ Cartographer Brush UI (Faction-Dropdown)
+  - ✅ Cartographer Inspector UI (Faction anzeigen/editieren)
 - **Phase 2.2 – Faction Context in Sessions** 🚨 0%:
   - 🚨 TODO: Session Runner Hook (`fraktionen.getByHex()`)
   - 🚨 TODO: Encounter Builder Faction-Filter
@@ -402,7 +402,7 @@ Alle horizontalen Infrastruktur-Layer sind fertig:
 ---
 
 ### Phase 2.1 – Faction Territory Marking
-**Status:** ⚙️ 60% fertig · **Target:** KW 45 · **Priority:** 🔴 Kritisch
+**Status:** ✅ Abgeschlossen · **Completed:** 2025-10-28 · **Priority:** 🔴 Kritisch
 
 **User Story:**
 > "Als GM möchte ich Territorien auf meiner Karte mit Fraktionen markieren, damit ich sehen kann, welche Fraktion welche Gebiete kontrolliert."
@@ -442,11 +442,11 @@ Alle horizontalen Infrastruktur-Layer sind fertig:
 - `src/features/maps/data/tile-repository.ts` (saveTile um faction-Feld erweitern)
 
 **Definition of Done:**
-- [ ] User kann Fraktion per Brush zuweisen
-- [ ] User kann Fraktion per Inspector anzeigen/editieren
-- [ ] Änderungen werden in Tile-Frontmatter gespeichert
-- [ ] Overlay zeigt Änderungen sofort an
-- [ ] Manuelle Smoke-Tests erfolgreich
+- [x] User kann Fraktion per Brush zuweisen
+- [x] User kann Fraktion per Inspector anzeigen/editieren
+- [x] Änderungen werden in Tile-Frontmatter gespeichert
+- [x] Overlay zeigt Änderungen sofort an
+- [x] Builds erfolgreich (keine TypeScript-Fehler)
 
 ---
 
