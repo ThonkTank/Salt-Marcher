@@ -84,6 +84,7 @@ export interface EncounterEvent {
     readonly triggeredAt: string;
     readonly coord: Coord | null;
     readonly regionName?: string;
+    readonly factionName?: string;
     readonly mapPath?: string;
     readonly mapName?: string;
     readonly encounterOdds?: number;

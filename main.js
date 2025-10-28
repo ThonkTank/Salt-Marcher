@@ -19491,12 +19491,14 @@ async function createEncounterEventFromTravel(app, ctx, options = {}) {
   const coord = options.coordOverride ?? ctx?.state?.currentTile ?? ctx?.state?.tokenRC ?? null;
   const mapFile = ctx?.mapFile ?? null;
   let regionName;
+  let factionName;
   let encounterOdds;
   if (mapFile && coord) {
     try {
       const { loadTile: loadTile2 } = await import("../../features/maps/hex-mapper/hex-notes");
       const tile = await loadTile2(app, mapFile, coord).catch(() => null);
       const tileRegion = typeof tile?.region === "string" ? tile.region : void 0;
+      const tileFaction = typeof tile?.faction === "string" ? tile.faction : void 0;
       if (tileRegion) {
         regionName = tileRegion;
         try {
@@ -19511,6 +19513,9 @@ async function createEncounterEventFromTravel(app, ctx, options = {}) {
           logger.error("[encounter] failed to resolve region odds", err);
         }
       }
+      if (tileFaction) {
+        factionName = tileFaction;
+      }
     } catch (err) {
       logger.error("[encounter] failed to read tile metadata", err);
     }
@@ -19524,6 +19529,7 @@ async function createEncounterEventFromTravel(app, ctx, options = {}) {
     triggeredAt,
     coord,
     regionName,
+    factionName,
     mapPath: mapFile?.path,
     mapName: mapFile?.basename,
     encounterOdds,

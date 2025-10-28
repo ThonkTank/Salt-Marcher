@@ -74,6 +74,9 @@ export class EncounterSessionView {
         if (event.coord) {
             summaryEntries.push(["Hex", `${event.coord.r}, ${event.coord.c}`]);
         }
+        if (event.factionName) {
+            summaryEntries.push(["Faction", event.factionName]);
+        }
         if (event.mapName) {
             summaryEntries.push(["Map", event.mapName]);
         }
