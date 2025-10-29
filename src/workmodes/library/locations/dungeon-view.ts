@@ -154,6 +154,11 @@ export class DungeonView extends ItemView {
                 this.updateDetailPanel(room);
             });
 
+            // Register callback for token placement
+            this.renderer.setOnTokenPlace((gridX, gridY) => {
+                this.placeToken(gridX, gridY);
+            });
+
             this.renderer.render(this.dungeon);
         } catch (error) {
             logger.error("[dungeon-view] Failed to initialize renderer", error);
@@ -235,6 +240,11 @@ export class DungeonView extends ItemView {
                 this.pendingToken = data;
                 this.tokenPlacementMode = true;
                 this.renderControls(); // Update button state
+
+                // Enable placement mode on renderer
+                if (this.renderer) {
+                    this.renderer.setTokenPlacementMode(true);
+                }
 
                 // Update canvas cursor
                 if (this.canvas) {
@@ -468,6 +478,62 @@ export class DungeonView extends ItemView {
 
         // Show panel
         this.detailPanel.style.display = "block";
+    }
+
+    /**
+     * Place a token at the specified grid coordinates
+     */
+    private placeToken(gridX: number, gridY: number): void {
+        if (!this.pendingToken || !this.dungeon || !isDungeonLocation(this.dungeon)) {
+            logger.warn("[dungeon-view] Cannot place token: no pending token or invalid dungeon");
+            return;
+        }
+
+        // Generate unique token ID
+        const existingTokens = this.dungeon.tokens || [];
+        const tokenId = `token-${existingTokens.length + 1}`;
+
+        // Create new token
+        const newToken: DungeonToken = {
+            id: tokenId,
+            type: this.pendingToken.type,
+            position: { x: gridX, y: gridY },
+            label: this.pendingToken.label,
+            color: this.pendingToken.color,
+            size: this.pendingToken.size,
+        };
+
+        // Add token to dungeon
+        if (!this.dungeon.tokens) {
+            this.dungeon.tokens = [];
+        }
+        this.dungeon.tokens.push(newToken);
+
+        logger.info("[dungeon-view] Token placed", { token: newToken });
+
+        // Exit placement mode
+        this.tokenPlacementMode = false;
+        this.pendingToken = null;
+
+        // Disable placement mode on renderer
+        if (this.renderer) {
+            this.renderer.setTokenPlacementMode(false);
+        }
+
+        // Update canvas cursor
+        if (this.canvas) {
+            this.canvas.style.cursor = "grab";
+        }
+
+        // Re-render to show new token
+        if (this.renderer) {
+            this.renderer.render(this.dungeon);
+        }
+
+        // Update controls to reflect mode change
+        this.renderControls();
+
+        // TODO: Persist changes to file (Step 3.4)
     }
 }
 

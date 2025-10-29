@@ -92713,6 +92713,8 @@ var GridRenderer = class {
     this.currentDungeon = null;
     // Hover state for tooltips
     this.hoveredElement = null;
+    // Token placement mode
+    this.tokenPlacementMode = false;
     /**
      * Handle mouse wheel for zoom
      */
@@ -92798,7 +92800,7 @@ var GridRenderer = class {
       }
     };
     /**
-     * Handle click for room selection
+     * Handle click for room selection or token placement
      */
     this.handleClick = (event) => {
       if (!this.currentDungeon || !isDungeonLocation(this.currentDungeon)) {
@@ -92810,6 +92812,10 @@ var GridRenderer = class {
       const worldX = (canvasX - this.offsetX) / this.scale;
       const worldY = (canvasY - this.offsetY) / this.scale;
       const gridCoord = this.pixelToGrid(worldX, worldY);
+      if (this.tokenPlacementMode) {
+        this.onTokenPlace?.(gridCoord.x, gridCoord.y);
+        return;
+      }
       const clickedRoom = this.findRoomAtPosition(gridCoord.x, gridCoord.y);
       let selectedRoom = null;
       if (clickedRoom) {
@@ -92854,6 +92860,18 @@ var GridRenderer = class {
    */
   setOnRoomSelect(callback) {
     this.onRoomSelect = callback;
+  }
+  /**
+   * Enable/disable token placement mode
+   */
+  setTokenPlacementMode(enabled) {
+    this.tokenPlacementMode = enabled;
+  }
+  /**
+   * Set callback for token placement (grid coordinates)
+   */
+  setOnTokenPlace(callback) {
+    this.onTokenPlace = callback;
   }
   /**
    * Render a dungeon location onto the canvas
@@ -93424,6 +93442,9 @@ var DungeonView = class extends import_obsidian41.ItemView {
       this.renderer.setOnRoomSelect((room) => {
         this.updateDetailPanel(room);
       });
+      this.renderer.setOnTokenPlace((gridX, gridY) => {
+        this.placeToken(gridX, gridY);
+      });
       this.renderer.render(this.dungeon);
     } catch (error) {
       logger2.error("[dungeon-view] Failed to initialize renderer", error);
@@ -93486,6 +93507,9 @@ var DungeonView = class extends import_obsidian41.ItemView {
         this.pendingToken = data;
         this.tokenPlacementMode = true;
         this.renderControls();
+        if (this.renderer) {
+          this.renderer.setTokenPlacementMode(true);
+        }
         if (this.canvas) {
           this.canvas.style.cursor = "crosshair";
         }
@@ -93670,6 +93694,42 @@ ${feature.description}`;
       }
     }
     this.detailPanel.style.display = "block";
+  }
+  /**
+   * Place a token at the specified grid coordinates
+   */
+  placeToken(gridX, gridY) {
+    if (!this.pendingToken || !this.dungeon || !isDungeonLocation(this.dungeon)) {
+      logger2.warn("[dungeon-view] Cannot place token: no pending token or invalid dungeon");
+      return;
+    }
+    const existingTokens = this.dungeon.tokens || [];
+    const tokenId = `token-${existingTokens.length + 1}`;
+    const newToken = {
+      id: tokenId,
+      type: this.pendingToken.type,
+      position: { x: gridX, y: gridY },
+      label: this.pendingToken.label,
+      color: this.pendingToken.color,
+      size: this.pendingToken.size
+    };
+    if (!this.dungeon.tokens) {
+      this.dungeon.tokens = [];
+    }
+    this.dungeon.tokens.push(newToken);
+    logger2.info("[dungeon-view] Token placed", { token: newToken });
+    this.tokenPlacementMode = false;
+    this.pendingToken = null;
+    if (this.renderer) {
+      this.renderer.setTokenPlacementMode(false);
+    }
+    if (this.canvas) {
+      this.canvas.style.cursor = "grab";
+    }
+    if (this.renderer) {
+      this.renderer.render(this.dungeon);
+    }
+    this.renderControls();
   }
 };
 

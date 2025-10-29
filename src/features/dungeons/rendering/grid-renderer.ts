@@ -59,6 +59,10 @@ export class GridRenderer {
     // Room selection callback
     private onRoomSelect?: (room: DungeonRoom | null) => void;
 
+    // Token placement mode
+    private tokenPlacementMode: boolean = false;
+    private onTokenPlace?: (gridX: number, gridY: number) => void;
+
     constructor(canvas: HTMLCanvasElement, options: Partial<GridRendererOptions> = {}) {
         this.canvas = canvas;
         const ctx = canvas.getContext("2d");
@@ -90,6 +94,20 @@ export class GridRenderer {
      */
     setOnRoomSelect(callback: (room: DungeonRoom | null) => void): void {
         this.onRoomSelect = callback;
+    }
+
+    /**
+     * Enable/disable token placement mode
+     */
+    setTokenPlacementMode(enabled: boolean): void {
+        this.tokenPlacementMode = enabled;
+    }
+
+    /**
+     * Set callback for token placement (grid coordinates)
+     */
+    setOnTokenPlace(callback: (gridX: number, gridY: number) => void): void {
+        this.onTokenPlace = callback;
     }
 
     /**
@@ -585,7 +603,7 @@ export class GridRenderer {
     };
 
     /**
-     * Handle click for room selection
+     * Handle click for room selection or token placement
      */
     private handleClick = (event: MouseEvent): void => {
         if (!this.currentDungeon || !isDungeonLocation(this.currentDungeon)) {
@@ -604,6 +622,14 @@ export class GridRenderer {
         // Convert to grid coordinates
         const gridCoord = this.pixelToGrid(worldX, worldY);
 
+        // Token placement mode takes priority
+        if (this.tokenPlacementMode) {
+            // Notify view of token placement at grid coordinates
+            this.onTokenPlace?.(gridCoord.x, gridCoord.y);
+            return;
+        }
+
+        // Room selection mode
         // Find clicked room
         const clickedRoom = this.findRoomAtPosition(gridCoord.x, gridCoord.y);
 
