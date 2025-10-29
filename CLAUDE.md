@@ -364,54 +364,24 @@ Territory Marking, Faction Context, Random Encounter Generator (22 tests), Comba
 ---
 
 #### Phase 3.4.4 - Token Management ⏳ IN PROGRESS
-**Scope:** Drag & Drop Token-Placement für Player, NPCs, Monsters auf Dungeon-Grid
+**Scope:** Token-Placement für Player, NPCs, Monsters auf Dungeon-Grid
 
-**User Story:**
-> "Als GM will ich Tokens für PCs/NPCs/Monster auf dem Dungeon-Grid platzieren und verschieben können, damit ich Positionen visuell tracken und im Combat verwenden kann."
+**Fortschritt:** ✅ Steps 1-3 Complete (Data Model, Rendering, Placement) | ⏳ Step 4 Next (Selection, Delete, Edit)
 
-**Acceptance Criteria:**
-1. ✅ Token-Typen definieren (Player, NPC, Monster, Object)
-2. ✅ Token-Rendering auf Grid (Icons/Colors, Size)
-3. ✅ Drag & Drop Token-Placement (snap to grid)
-4. ⏳ Token-Selection & Highlighting
-5. ✅ Token-Persistence (save/load with dungeon)
+**✅ Complete:**
+- DungeonToken interface (id, type, position, label, color, size)
+- GridRenderer.renderTokens() - Colored circles with labels
+- TokenCreationModal + Click-to-place workflow
+- Persistence to frontmatter (saveDungeonToFile)
 
-**Implementation Plan:**
+**⏳ Next - Step 4: Token Management** (~1h)
+- Click token → select (highlight, detail panel)
+- Delete token button + keyboard shortcut
+- Edit token properties
 
-**✅ Schritt 1: Token Data Model** (~1h) - COMPLETE
-- ✅ Define `DungeonToken` interface (id, type, position, label, color, size)
-- ✅ Add `tokens: DungeonToken[]` to `LocationData` (dungeon-specific)
-- ✅ Update serializer to save/load tokens from frontmatter
-
-**✅ Schritt 2: Token Rendering** (~1h) - COMPLETE
-- ✅ Extend `GridRenderer` with `renderTokens()` method
-- ✅ Render tokens as colored circles with labels
-- ✅ Layer order: Grid → Rooms → Tokens → Features/Doors
-- ⏳ Selection indicator (highlight border) → Step 4
-
-**✅ Schritt 3: Token Placement** (~1.5h) - COMPLETE
-- ✅ Add "Add Token" button to DungeonView controls
-- ✅ TokenCreationModal (type, label, color, size)
-- ✅ Click-to-place token on grid (snap to grid)
-- ✅ Update dungeon data & re-render
-- ✅ Persist to file frontmatter
-
-**⏳ Schritt 4: Token Management** (~1h) - NEXT
-- ⏳ Click token to select (show in detail panel)
-- ⏳ Delete token button
-- ⏳ Edit token properties (label, color)
-- ⏳ Keyboard shortcuts (Delete key removes selected token)
-
-**⏳ Schritt 5: Tests** (~30min)
-- ⏳ Unit tests for token rendering, placement, selection
-- ⏳ Integration test: add/move/delete token workflow
-
-**Out of Scope:**
-- ❌ Token health tracking → Later
-- ❌ FOW/LOS → Phase 3.4.5 (optional)
-- ❌ Initiative order → Encounter system handles this
-
-**Estimated Time:** 5 hours
+**⏳ Step 5: Tests** (~30min)
+- Unit tests: token rendering, placement, selection
+- Integration test: add/move/delete workflow
 
 #### Phase 3.4.5 - Advanced Features ⏳ Optional
 - FOW overlay, Sound radius, LOS calculations

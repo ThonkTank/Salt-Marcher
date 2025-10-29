@@ -53,8 +53,12 @@ export class GridRenderer {
     private currentDungeon: LocationData | null = null;
 
     // Hover state for tooltips
-    private hoveredElement: { type: "door"; data: DungeonDoor } | { type: "feature"; data: DungeonFeature } | null = null;
-    private onHoverChange?: (element: { type: "door"; data: DungeonDoor; canvasX: number; canvasY: number } | { type: "feature"; data: DungeonFeature; canvasX: number; canvasY: number } | null) => void;
+    private hoveredElement: { type: "door"; data: DungeonDoor } | { type: "feature"; data: DungeonFeature } | { type: "token"; data: DungeonToken } | null = null;
+    private onHoverChange?: (element: { type: "door"; data: DungeonDoor; canvasX: number; canvasY: number } | { type: "feature"; data: DungeonFeature; canvasX: number; canvasY: number } | { type: "token"; data: DungeonToken; canvasX: number; canvasY: number } | null) => void;
+
+    // Token selection state
+    private selectedTokenId: string | null = null;
+    private onTokenSelect?: (token: DungeonToken | null) => void;
 
     // Room selection callback
     private onRoomSelect?: (room: DungeonRoom | null) => void;
@@ -108,6 +112,13 @@ export class GridRenderer {
      */
     setOnTokenPlace(callback: (gridX: number, gridY: number) => void): void {
         this.onTokenPlace = callback;
+    }
+
+    /**
+     * Set callback for token selection
+     */
+    setOnTokenSelect(callback: (token: DungeonToken | null) => void): void {
+        this.onTokenSelect = callback;
     }
 
     /**
@@ -438,16 +449,30 @@ export class GridRenderer {
             const size = token.size || 1.0;
             const radius = baseRadius * size;
 
+            const isSelected = token.id === this.selectedTokenId;
+
             // Draw token circle
             this.ctx.fillStyle = color;
             this.ctx.beginPath();
             this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
             this.ctx.fill();
 
-            // Draw token border
-            this.ctx.strokeStyle = "#000000";
-            this.ctx.lineWidth = 2;
+            // Draw token border (thicker and glowing if selected)
+            if (isSelected) {
+                // Glow effect for selected token
+                this.ctx.shadowColor = "#ffd700";
+                this.ctx.shadowBlur = 15;
+                this.ctx.strokeStyle = "#ffd700";
+                this.ctx.lineWidth = 4;
+            } else {
+                this.ctx.shadowBlur = 0;
+                this.ctx.strokeStyle = "#000000";
+                this.ctx.lineWidth = 2;
+            }
             this.ctx.stroke();
+
+            // Reset shadow
+            this.ctx.shadowBlur = 0;
 
             // Draw token label below the circle
             this.ctx.font = "bold 10px sans-serif";
@@ -542,13 +567,16 @@ export class GridRenderer {
             // Convert to grid coordinates
             const gridCoord = this.pixelToGrid(worldX, worldY);
 
-            // Check for door or feature at position (doors have priority)
-            const door = this.findDoorAtPosition(gridCoord.x, gridCoord.y);
-            const feature = !door ? this.findFeatureAtPosition(gridCoord.x, gridCoord.y) : null;
+            // Check for token, door, or feature at position (priority: token > door > feature)
+            const token = this.findTokenAtPosition(gridCoord.x, gridCoord.y);
+            const door = !token ? this.findDoorAtPosition(gridCoord.x, gridCoord.y) : null;
+            const feature = !token && !door ? this.findFeatureAtPosition(gridCoord.x, gridCoord.y) : null;
 
             // Determine new hover state
             let newHover: typeof this.hoveredElement = null;
-            if (door) {
+            if (token) {
+                newHover = { type: "token", data: token };
+            } else if (door) {
                 newHover = { type: "door", data: door };
             } else if (feature) {
                 newHover = { type: "feature", data: feature };
@@ -560,6 +588,7 @@ export class GridRenderer {
                 (this.hoveredElement !== null && newHover === null) ||
                 (this.hoveredElement !== null && newHover !== null &&
                     (this.hoveredElement.type !== newHover.type ||
+                        (this.hoveredElement.type === "token" && newHover.type === "token" && this.hoveredElement.data.id !== newHover.data.id) ||
                         (this.hoveredElement.type === "door" && newHover.type === "door" && this.hoveredElement.data.id !== newHover.data.id) ||
                         (this.hoveredElement.type === "feature" && newHover.type === "feature" && this.hoveredElement.data.id !== newHover.data.id)));
 
@@ -568,7 +597,9 @@ export class GridRenderer {
 
                 // Notify view with canvas coordinates for tooltip positioning
                 if (newHover) {
-                    if (newHover.type === "door") {
+                    if (newHover.type === "token") {
+                        this.onHoverChange?.({ type: "token", data: newHover.data, canvasX, canvasY });
+                    } else if (newHover.type === "door") {
                         this.onHoverChange?.({ type: "door", data: newHover.data, canvasX, canvasY });
                     } else {
                         this.onHoverChange?.({ type: "feature", data: newHover.data, canvasX, canvasY });
@@ -629,7 +660,25 @@ export class GridRenderer {
             return;
         }
 
-        // Room selection mode
+        // Check if token was clicked (tokens have priority over rooms)
+        const clickedToken = this.findTokenAtPosition(gridCoord.x, gridCoord.y);
+
+        if (clickedToken) {
+            // Toggle token selection: if same token, clear; otherwise select new token
+            if (this.selectedTokenId === clickedToken.id) {
+                this.selectedTokenId = null;
+                this.onTokenSelect?.(null);
+            } else {
+                this.selectedTokenId = clickedToken.id;
+                this.onTokenSelect?.(clickedToken);
+            }
+
+            // Re-render to show selection highlight
+            this.onTransformChange?.();
+            return;
+        }
+
+        // Room selection mode (no token clicked)
         // Find clicked room
         const clickedRoom = this.findRoomAtPosition(gridCoord.x, gridCoord.y);
 
@@ -711,6 +760,23 @@ export class GridRenderer {
                 if (feature.position.x === gridX && feature.position.y === gridY) {
                     return feature;
                 }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Find token at grid position
+     */
+    private findTokenAtPosition(gridX: number, gridY: number): DungeonToken | null {
+        if (!this.currentDungeon || !isDungeonLocation(this.currentDungeon) || !this.currentDungeon.tokens) {
+            return null;
+        }
+
+        for (const token of this.currentDungeon.tokens) {
+            if (token.position.x === gridX && token.position.y === gridY) {
+                return token;
             }
         }
 

@@ -92713,6 +92713,8 @@ var GridRenderer = class {
     this.currentDungeon = null;
     // Hover state for tooltips
     this.hoveredElement = null;
+    // Token selection state
+    this.selectedTokenId = null;
     // Token placement mode
     this.tokenPlacementMode = false;
     /**
@@ -92758,19 +92760,24 @@ var GridRenderer = class {
         const worldX = (canvasX - this.offsetX) / this.scale;
         const worldY = (canvasY - this.offsetY) / this.scale;
         const gridCoord = this.pixelToGrid(worldX, worldY);
-        const door = this.findDoorAtPosition(gridCoord.x, gridCoord.y);
-        const feature = !door ? this.findFeatureAtPosition(gridCoord.x, gridCoord.y) : null;
+        const token = this.findTokenAtPosition(gridCoord.x, gridCoord.y);
+        const door = !token ? this.findDoorAtPosition(gridCoord.x, gridCoord.y) : null;
+        const feature = !token && !door ? this.findFeatureAtPosition(gridCoord.x, gridCoord.y) : null;
         let newHover = null;
-        if (door) {
+        if (token) {
+          newHover = { type: "token", data: token };
+        } else if (door) {
           newHover = { type: "door", data: door };
         } else if (feature) {
           newHover = { type: "feature", data: feature };
         }
-        const hoverChanged = this.hoveredElement === null && newHover !== null || this.hoveredElement !== null && newHover === null || this.hoveredElement !== null && newHover !== null && (this.hoveredElement.type !== newHover.type || this.hoveredElement.type === "door" && newHover.type === "door" && this.hoveredElement.data.id !== newHover.data.id || this.hoveredElement.type === "feature" && newHover.type === "feature" && this.hoveredElement.data.id !== newHover.data.id);
+        const hoverChanged = this.hoveredElement === null && newHover !== null || this.hoveredElement !== null && newHover === null || this.hoveredElement !== null && newHover !== null && (this.hoveredElement.type !== newHover.type || this.hoveredElement.type === "token" && newHover.type === "token" && this.hoveredElement.data.id !== newHover.data.id || this.hoveredElement.type === "door" && newHover.type === "door" && this.hoveredElement.data.id !== newHover.data.id || this.hoveredElement.type === "feature" && newHover.type === "feature" && this.hoveredElement.data.id !== newHover.data.id);
         if (hoverChanged) {
           this.hoveredElement = newHover;
           if (newHover) {
-            if (newHover.type === "door") {
+            if (newHover.type === "token") {
+              this.onHoverChange?.({ type: "token", data: newHover.data, canvasX, canvasY });
+            } else if (newHover.type === "door") {
               this.onHoverChange?.({ type: "door", data: newHover.data, canvasX, canvasY });
             } else {
               this.onHoverChange?.({ type: "feature", data: newHover.data, canvasX, canvasY });
@@ -92814,6 +92821,18 @@ var GridRenderer = class {
       const gridCoord = this.pixelToGrid(worldX, worldY);
       if (this.tokenPlacementMode) {
         this.onTokenPlace?.(gridCoord.x, gridCoord.y);
+        return;
+      }
+      const clickedToken = this.findTokenAtPosition(gridCoord.x, gridCoord.y);
+      if (clickedToken) {
+        if (this.selectedTokenId === clickedToken.id) {
+          this.selectedTokenId = null;
+          this.onTokenSelect?.(null);
+        } else {
+          this.selectedTokenId = clickedToken.id;
+          this.onTokenSelect?.(clickedToken);
+        }
+        this.onTransformChange?.();
         return;
       }
       const clickedRoom = this.findRoomAtPosition(gridCoord.x, gridCoord.y);
@@ -92872,6 +92891,12 @@ var GridRenderer = class {
    */
   setOnTokenPlace(callback) {
     this.onTokenPlace = callback;
+  }
+  /**
+   * Set callback for token selection
+   */
+  setOnTokenSelect(callback) {
+    this.onTokenSelect = callback;
   }
   /**
    * Render a dungeon location onto the canvas
@@ -93136,13 +93161,23 @@ var GridRenderer = class {
       const baseRadius = this.options.cellSize * 0.4;
       const size = token.size || 1;
       const radius = baseRadius * size;
+      const isSelected = token.id === this.selectedTokenId;
       this.ctx.fillStyle = color;
       this.ctx.beginPath();
       this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
       this.ctx.fill();
-      this.ctx.strokeStyle = "#000000";
-      this.ctx.lineWidth = 2;
+      if (isSelected) {
+        this.ctx.shadowColor = "#ffd700";
+        this.ctx.shadowBlur = 15;
+        this.ctx.strokeStyle = "#ffd700";
+        this.ctx.lineWidth = 4;
+      } else {
+        this.ctx.shadowBlur = 0;
+        this.ctx.strokeStyle = "#000000";
+        this.ctx.lineWidth = 2;
+      }
       this.ctx.stroke();
+      this.ctx.shadowBlur = 0;
       this.ctx.font = "bold 10px sans-serif";
       this.ctx.fillStyle = "#000000";
       this.ctx.textAlign = "center";
@@ -93206,6 +93241,20 @@ var GridRenderer = class {
         if (feature.position.x === gridX && feature.position.y === gridY) {
           return feature;
         }
+      }
+    }
+    return null;
+  }
+  /**
+   * Find token at grid position
+   */
+  findTokenAtPosition(gridX, gridY) {
+    if (!this.currentDungeon || !isDungeonLocation(this.currentDungeon) || !this.currentDungeon.tokens) {
+      return null;
+    }
+    for (const token of this.currentDungeon.tokens) {
+      if (token.position.x === gridX && token.position.y === gridY) {
+        return token;
       }
     }
     return null;
@@ -93448,6 +93497,9 @@ var DungeonView = class extends import_obsidian41.ItemView {
       this.renderer.setOnTokenPlace((gridX, gridY) => {
         this.placeToken(gridX, gridY);
       });
+      this.renderer.setOnTokenSelect((token) => {
+        this.updateTokenDetail(token);
+      });
       this.renderer.render(this.dungeon);
     } catch (error) {
       logger2.error("[dungeon-view] Failed to initialize renderer", error);
@@ -93549,7 +93601,21 @@ var DungeonView = class extends import_obsidian41.ItemView {
       return;
     }
     let content = "";
-    if (element.type === "door") {
+    if (element.type === "token") {
+      const token = element.data;
+      const typeEmoji = token.type === "player" ? "\u{1F9D9}" : token.type === "npc" ? "\u{1F642}" : token.type === "monster" ? "\u{1F479}" : "\u{1F4E6}";
+      content = `${typeEmoji} ${token.label}
+`;
+      content += `Type: ${token.type}
+`;
+      content += `Position: (${token.position.x}, ${token.position.y})
+`;
+      if (token.size && token.size !== 1) {
+        content += `Size: ${token.size}x
+`;
+      }
+      content += "\nClick to select";
+    } else if (element.type === "door") {
       const door = element.data;
       content = `\u{1F6AA} Door ${door.id}
 `;
@@ -93777,6 +93843,16 @@ ${body}`;
       logger2.info("[dungeon-view] Dungeon saved to file", { file: this.dungeonFile.path });
     } catch (error) {
       logger2.error("[dungeon-view] Failed to save dungeon", error);
+    }
+  }
+  /**
+   * Update token detail view (placeholder for Step 4.2)
+   */
+  updateTokenDetail(token) {
+    if (token) {
+      logger2.info("[dungeon-view] Token selected", { token });
+    } else {
+      logger2.info("[dungeon-view] Token deselected");
     }
   }
   /**

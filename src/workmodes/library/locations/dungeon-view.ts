@@ -161,6 +161,11 @@ export class DungeonView extends ItemView {
                 this.placeToken(gridX, gridY);
             });
 
+            // Register callback for token selection
+            this.renderer.setOnTokenSelect((token) => {
+                this.updateTokenDetail(token);
+            });
+
             this.renderer.render(this.dungeon);
         } catch (error) {
             logger.error("[dungeon-view] Failed to initialize renderer", error);
@@ -286,7 +291,7 @@ export class DungeonView extends ItemView {
     /**
      * Update tooltip visibility and content based on hovered element
      */
-    private updateTooltip(element: { type: "door"; data: any; canvasX: number; canvasY: number } | { type: "feature"; data: any; canvasX: number; canvasY: number } | null): void {
+    private updateTooltip(element: { type: "door"; data: any; canvasX: number; canvasY: number } | { type: "feature"; data: any; canvasX: number; canvasY: number } | { type: "token"; data: any; canvasX: number; canvasY: number } | null): void {
         if (!this.tooltipDiv) return;
 
         if (!element) {
@@ -297,7 +302,17 @@ export class DungeonView extends ItemView {
 
         // Format tooltip content
         let content = "";
-        if (element.type === "door") {
+        if (element.type === "token") {
+            const token = element.data;
+            const typeEmoji = token.type === "player" ? "🧙" : token.type === "npc" ? "🙂" : token.type === "monster" ? "👹" : "📦";
+            content = `${typeEmoji} ${token.label}\n`;
+            content += `Type: ${token.type}\n`;
+            content += `Position: (${token.position.x}, ${token.position.y})\n`;
+            if (token.size && token.size !== 1.0) {
+                content += `Size: ${token.size}x\n`;
+            }
+            content += "\nClick to select";
+        } else if (element.type === "door") {
             const door = element.data;
             content = `🚪 Door ${door.id}\n`;
             if (door.leads_to) {
@@ -578,6 +593,18 @@ export class DungeonView extends ItemView {
             logger.info("[dungeon-view] Dungeon saved to file", { file: this.dungeonFile.path });
         } catch (error) {
             logger.error("[dungeon-view] Failed to save dungeon", error);
+        }
+    }
+
+    /**
+     * Update token detail view (placeholder for Step 4.2)
+     */
+    private updateTokenDetail(token: DungeonToken | null): void {
+        // TODO: Implement token detail panel in Step 4.2
+        if (token) {
+            logger.info("[dungeon-view] Token selected", { token });
+        } else {
+            logger.info("[dungeon-view] Token deselected");
         }
     }
 
