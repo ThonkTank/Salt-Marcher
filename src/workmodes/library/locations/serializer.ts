@@ -1,8 +1,9 @@
 // src/workmodes/library/locations/serializer.ts
 // Markdown serialization helpers for locations
 
-import type { LocationData } from "./types";
+import type { LocationData, DungeonRoom, DungeonDoor, DungeonFeature } from "./types";
 import { OWNER_TYPE_LABELS } from "./constants";
+import { getFeatureTypePrefix, getFeatureTypeLabel, isDungeonLocation } from "./types";
 
 export function locationToMarkdown(data: LocationData): string {
     const lines: string[] = [];
@@ -32,11 +33,29 @@ export function locationToMarkdown(data: LocationData): string {
         lines.push(`- **Coordinates:** ${data.coordinates}`);
     }
 
+    // Dungeon-specific: Grid configuration
+    if (isDungeonLocation(data)) {
+        lines.push(`- **Grid Size:** ${data.grid_width}×${data.grid_height}`);
+        if (data.cell_size && data.cell_size !== 40) {
+            lines.push(`- **Cell Size:** ${data.cell_size}px`);
+        }
+    }
+
     // Description section
     if (data.description) {
         lines.push("");
         lines.push("## Description");
         lines.push(data.description);
+    }
+
+    // Dungeon-specific: Rooms section
+    if (isDungeonLocation(data) && data.rooms && data.rooms.length > 0) {
+        lines.push("");
+        lines.push("## Rooms");
+        lines.push("");
+        for (const room of data.rooms) {
+            serializeRoom(room, lines);
+        }
     }
 
     // Notes section
@@ -47,4 +66,65 @@ export function locationToMarkdown(data: LocationData): string {
     }
 
     return lines.join("\n");
+}
+
+function serializeRoom(room: DungeonRoom, lines: string[]): void {
+    // Room header
+    lines.push(`### Room ${room.id}: ${room.name}`);
+    lines.push("");
+
+    // Bounds
+    const { x, y, width, height } = room.grid_bounds;
+    lines.push(`**Bounds:** (${x},${y}) → (${x + width},${y + height})`);
+    lines.push("");
+
+    // Description
+    if (room.description) {
+        lines.push("**Description:**");
+        lines.push(room.description);
+        lines.push("");
+    }
+
+    // Doors
+    if (room.doors && room.doors.length > 0) {
+        lines.push("**Doors:**");
+        for (const door of room.doors) {
+            serializeDoor(door, lines);
+        }
+        lines.push("");
+    }
+
+    // Features
+    if (room.features && room.features.length > 0) {
+        lines.push("**Features:**");
+        for (const feature of room.features) {
+            serializeFeature(feature, lines);
+        }
+        lines.push("");
+    }
+}
+
+function serializeDoor(door: DungeonDoor, lines: string[]): void {
+    let line = `- **${door.id}** (${door.position.x},${door.position.y})`;
+
+    if (door.locked) {
+        line += " 🔒";
+    }
+
+    if (door.leads_to) {
+        line += ` → ${door.leads_to}`;
+    }
+
+    if (door.description) {
+        line += `: ${door.description}`;
+    }
+
+    lines.push(line);
+}
+
+function serializeFeature(feature: DungeonFeature, lines: string[]): void {
+    const prefix = getFeatureTypePrefix(feature.type);
+    const label = getFeatureTypeLabel(feature.type);
+    const line = `- **${prefix}${feature.id}** (${label}, ${feature.position.x},${feature.position.y}): ${feature.description}`;
+    lines.push(line);
 }

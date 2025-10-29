@@ -24,4 +24,92 @@ export interface LocationData {
     region?: string; // Optional region association
     coordinates?: string; // Optional hex coordinates (e.g., "12,34")
     notes?: string;
+    // Dungeon-specific fields (only used when type === "Dungeon")
+    grid_width?: number;
+    grid_height?: number;
+    cell_size?: number; // Grid cell size in pixels (default: 40)
+    rooms?: DungeonRoom[];
+}
+
+// Dungeon-specific types
+export interface DungeonRoom {
+    id: string; // R1, R2, R3, ...
+    name: string; // Room name (e.g., "Entrance Hall")
+    description?: string; // Markdown description with sensory details
+    grid_bounds: GridBounds; // Room area on grid
+    doors: DungeonDoor[];
+    features: DungeonFeature[];
+}
+
+export interface GridBounds {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
+export interface DungeonDoor {
+    id: string; // T1, T2, T3, ...
+    position: GridPosition;
+    leads_to?: string; // Target room ID or "outside"
+    locked: boolean;
+    description?: string;
+}
+
+export interface DungeonFeature {
+    id: string; // F1, F2, F3, ...
+    type: DungeonFeatureType;
+    position: GridPosition;
+    description: string;
+}
+
+export type DungeonFeatureType =
+    | "secret"      // G (Geheimnisse)
+    | "trap"        // H (Hindernisse/Hazards)
+    | "treasure"    // S (Schätze)
+    | "hazard"      // H (andere Gefahren)
+    | "furniture"   // (Möbel, Dekoration)
+    | "other";      // (Sonstiges)
+
+export interface GridPosition {
+    x: number;
+    y: number;
+}
+
+// Helper functions
+export function getFeatureTypePrefix(type: DungeonFeatureType): string {
+    switch (type) {
+        case "secret":
+            return "G"; // Geheimnisse
+        case "trap":
+        case "hazard":
+            return "H"; // Hindernisse/Hazards
+        case "treasure":
+            return "S"; // Schätze
+        case "furniture":
+        case "other":
+            return "F"; // Features (generic)
+    }
+}
+
+export function getFeatureTypeLabel(type: DungeonFeatureType): string {
+    switch (type) {
+        case "secret":
+            return "Secret";
+        case "trap":
+            return "Trap";
+        case "treasure":
+            return "Treasure";
+        case "hazard":
+            return "Hazard";
+        case "furniture":
+            return "Furniture";
+        case "other":
+            return "Other";
+    }
+}
+
+// Type guard
+export function isDungeonLocation(data: LocationData): data is LocationData & Required<Pick<LocationData, 'grid_width' | 'grid_height'>> {
+    return data.type === "Dungeon" && typeof data.grid_width === "number" && typeof data.grid_height === "number";
 }

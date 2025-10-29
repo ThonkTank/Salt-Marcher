@@ -328,14 +328,17 @@ Ziele:
 | **Phase 3.2.1 – Tree UI Integration** | ✅ **Abgeschlossen** | Library Toggle | List/Tree toggle in Library ✅ |
 | **Phase 3.3 – Map POI Markers** | ✅ **Abgeschlossen** | Hex Markers | Location markers auf Karte ✅ |
 | **Phase 3.3.1 – Marker Editor Tool** | ✅ **Abgeschlossen** | Marker Placement | Editor tool mit Multi-Tool Support ✅ |
-| **Phase 3.4 – Dungeons** | ⏳ **NÄCHSTER SCHRITT** | Grid Maps | Dungeon-Karten mit Raum-Features |
+| **Phase 3.4.1 – Dungeon Data Model** | ⏳ **NÄCHSTER SCHRITT** | Schema & Storage | Dungeon als Location-Typ in Library |
+| Phase 3.4.2 – Grid Renderer | ⏳ Later | Visual Grid | Canvas-based grid view |
+| Phase 3.4.3 – Interactive Features | ⏳ Later | Token Management | Drag & Drop, Features |
+| Phase 3.4.4 – Advanced Features | ⏳ Optional | FOW, LOS | Fog of War, Line of Sight |
 | Phase 2.3.2+ – Advanced Factions | ⏳ Optional | Population, Jobs | Inkrementell nach Bedarf |
 | Phase 2.5 – Faction Filtering | ⏳ QoL | UI-Filter | Optional (Generator filtert bereits) |
 | Phase 4 – Event Engine | ⏳ Geplant | Kalender-Automation | Nach Phase 3 |
 | Phase 5 – Loot & Presets | ⏳ Geplant | Loot-Pipeline | Nach Phase 4 |
 | Phase 6 – Audio & Release | ⏳ Geplant | UX-Finishing | Release-Phase |
 
-**Aktueller Fokus:** Phase 3.4 (Dungeons) ← **NÄCHSTER SCHRITT**
+**Aktueller Fokus:** Phase 3.4.1 (Dungeon Data Model & Storage) ← **NÄCHSTER SCHRITT**
 
 **Test-Suite:** 258/260 grün (99.2% pass rate) ✅ ALL TESTS PASSING (+19 neue Location Marker Tests)
 
@@ -1001,6 +1004,155 @@ Umfassendes Orts-Management-System:
 - ❌ Keyboard Shortcut: `L` für Location Marker Tool → later
 
 **Total Time:** ~3 hours (15min + 2h + 30min)
+
+---
+
+### Phase 3.4 – Dungeons ⏳ NÄCHSTER SCHRITT
+
+**Zielbild (Langfristig):**
+Vollständiges Dungeon-Management-System für den Session Runner:
+- Grid-basierte Kartenansicht (quadratisch, Rasterzellen)
+- Token-Management (Spieler, NPCs, Objekte auf Grid platzieren)
+- Raum-Features mit IDs (T1/T2/T3 für Türen, F1/F2/F3 für Features)
+- Feature-Kategorien: Geheimnisse (G), Hindernisse (H), Schätze (S)
+- Klickbare Navigation (Feature-ID → Beschreibung)
+- Optional: Fog of War, Geräuschradien
+
+**Scope-Entscheidung:**
+Phase 3.4 ist zu umfangreich für einen Sprint. Aufteilung in inkrementelle Slices:
+
+#### Phase 3.4.1 - Dungeon Data Model & Storage ⏳ NÄCHSTER SCHRITT
+**Scope:** Minimale Dungeon-Verwaltung als spezieller Location-Typ
+
+**User Story:**
+> "Als GM will ich Dungeons als speziellen Location-Typ in der Library verwalten können, damit ich Grid-Größe, Räume und Features strukturiert speichern kann."
+
+**Acceptance Criteria:**
+1. ⏳ Dungeon-Schema: Extends Location mit grid_width, grid_height, rooms
+2. ⏳ Room-Schema: name, description, grid_bounds, doors, features
+3. ⏳ Feature-Schema: id, type (door|secret|trap|treasure|hazard), position, description
+4. ⏳ Library Integration: Dungeon-Tab mit CRUD-Operations
+5. ⏳ Serializer: Markdown-Format mit YAML frontmatter
+
+**Implementation Plan:**
+
+**Schritt 1: Schema Definition** (~30min)
+- Extend `LocationDocument` interface → `DungeonDocument`
+- Add dungeon-specific fields:
+  ```typescript
+  type DungeonDocument = LocationDocument & {
+    grid_width: number;      // Grid-Breite (z.B. 30)
+    grid_height: number;     // Grid-Höhe (z.B. 20)
+    cell_size: number;       // Zellgröße in Pixels (default: 40)
+    rooms: DungeonRoom[];    // Array von Räumen
+  };
+
+  type DungeonRoom = {
+    id: string;              // Eindeutige ID (R1, R2, ...)
+    name: string;            // Name des Raums
+    description: string;     // Markdown-Text mit Sinneseindrücken
+    grid_bounds: {           // Raum-Bereich auf Grid
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
+    doors: DungeonDoor[];    // Türen/Ausgänge
+    features: DungeonFeature[]; // Features im Raum
+  };
+
+  type DungeonDoor = {
+    id: string;              // T1, T2, T3, ...
+    position: { x: number; y: number };
+    leads_to?: string;       // Raum-ID oder "outside"
+    locked: boolean;
+    description?: string;
+  };
+
+  type DungeonFeature = {
+    id: string;              // F1, F2, F3, ...
+    type: 'secret' | 'trap' | 'treasure' | 'hazard' | 'furniture' | 'other';
+    position: { x: number; y: number };
+    description: string;
+  };
+  ```
+
+**Schritt 2: Serializer** (~45min)
+- Create `dungeon-serializer.ts` following `location-serializer.ts` pattern
+- Frontmatter: Basic fields + grid dimensions
+- Body: Rooms als Markdown-Sections
+  ```markdown
+  ## Room R1: Entrance Hall
+
+  **Bounds:** (0,0) - (10,8)
+
+  ### Description
+  A large hall with vaulted ceilings...
+
+  ### Doors
+  - T1 (3,0): Leads to R2 (Main Corridor)
+  - T2 (10,4): Locked, leads to R3 (Treasury)
+
+  ### Features
+  - F1 (Secret): Hidden door at (7,2)
+  - F2 (Trap): Pressure plate at (5,4)
+  - F3 (Treasure): Chest at (8,6)
+  ```
+
+**Schritt 3: Library Integration** (~1h)
+- Add Dungeon to `entity-registry.ts`
+- Create `dungeon/create-spec.ts` (similar to location)
+- Form fields:
+  - Basic: name, type, owner, parent (from Location)
+  - Grid: grid_width, grid_height, cell_size
+  - Rooms: Array-Field (add/remove rooms)
+  - Room Editor: Modal for editing einzelner Raum
+- Browse view: Show grid dimensions badge
+
+**Schritt 4: Tests** (~30min)
+- Unit tests for dungeon-serializer
+- Test room parsing and generation
+- Test feature ID generation
+
+**Out of Scope (spätere Slices):**
+- ❌ Grid Renderer (visual) → Phase 3.4.2
+- ❌ Token Management → Phase 3.4.3
+- ❌ Interactive Room Editor → Phase 3.4.3
+- ❌ Fog of War → Phase 3.4.4 (optional)
+
+**Estimated Time:** 3 hours
+
+---
+
+#### Phase 3.4.2 - Grid Renderer ⏳ Later
+**Scope:** Visual Grid-Karte mit Zoom/Pan
+- Canvas-based renderer
+- Grid lines, room boundaries
+- Door/Feature markers
+- Zoom/Pan controls
+
+**Estimated Time:** 4-5 hours
+
+---
+
+#### Phase 3.4.3 - Room Features & Token Management ⏳ Later
+**Scope:** Interactive editing und Token-Placement
+- Click-to-edit rooms
+- Drag & Drop tokens
+- Feature ID navigation
+- Token types: Player, NPC, Object
+
+**Estimated Time:** 5-6 hours
+
+---
+
+#### Phase 3.4.4 - Advanced Features ⏳ Optional
+**Scope:** Fog of War, Sound Radii, Line-of-Sight
+- FOW overlay
+- Sound propagation visualization
+- LOS calculations
+
+**Estimated Time:** 4-6 hours (optional)
 
 ---
 

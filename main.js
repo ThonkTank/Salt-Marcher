@@ -15662,6 +15662,46 @@ var init_constants9 = __esm({
   }
 });
 
+// src/workmodes/library/locations/types.ts
+function getFeatureTypePrefix(type) {
+  switch (type) {
+    case "secret":
+      return "G";
+    case "trap":
+    case "hazard":
+      return "H";
+    case "treasure":
+      return "S";
+    case "furniture":
+    case "other":
+      return "F";
+  }
+}
+function getFeatureTypeLabel(type) {
+  switch (type) {
+    case "secret":
+      return "Secret";
+    case "trap":
+      return "Trap";
+    case "treasure":
+      return "Treasure";
+    case "hazard":
+      return "Hazard";
+    case "furniture":
+      return "Furniture";
+    case "other":
+      return "Other";
+  }
+}
+function isDungeonLocation(data) {
+  return data.type === "Dungeon" && typeof data.grid_width === "number" && typeof data.grid_height === "number";
+}
+var init_types3 = __esm({
+  "src/workmodes/library/locations/types.ts"() {
+    "use strict";
+  }
+});
+
 // src/workmodes/library/locations/serializer.ts
 function locationToMarkdown(data) {
   const lines = [];
@@ -15683,10 +15723,24 @@ function locationToMarkdown(data) {
   if (data.coordinates) {
     lines.push(`- **Coordinates:** ${data.coordinates}`);
   }
+  if (isDungeonLocation(data)) {
+    lines.push(`- **Grid Size:** ${data.grid_width}\xD7${data.grid_height}`);
+    if (data.cell_size && data.cell_size !== 40) {
+      lines.push(`- **Cell Size:** ${data.cell_size}px`);
+    }
+  }
   if (data.description) {
     lines.push("");
     lines.push("## Description");
     lines.push(data.description);
+  }
+  if (isDungeonLocation(data) && data.rooms && data.rooms.length > 0) {
+    lines.push("");
+    lines.push("## Rooms");
+    lines.push("");
+    for (const room of data.rooms) {
+      serializeRoom(room, lines);
+    }
   }
   if (data.notes) {
     lines.push("");
@@ -15695,10 +15749,56 @@ function locationToMarkdown(data) {
   }
   return lines.join("\n");
 }
+function serializeRoom(room, lines) {
+  lines.push(`### Room ${room.id}: ${room.name}`);
+  lines.push("");
+  const { x, y, width, height } = room.grid_bounds;
+  lines.push(`**Bounds:** (${x},${y}) \u2192 (${x + width},${y + height})`);
+  lines.push("");
+  if (room.description) {
+    lines.push("**Description:**");
+    lines.push(room.description);
+    lines.push("");
+  }
+  if (room.doors && room.doors.length > 0) {
+    lines.push("**Doors:**");
+    for (const door of room.doors) {
+      serializeDoor(door, lines);
+    }
+    lines.push("");
+  }
+  if (room.features && room.features.length > 0) {
+    lines.push("**Features:**");
+    for (const feature of room.features) {
+      serializeFeature(feature, lines);
+    }
+    lines.push("");
+  }
+}
+function serializeDoor(door, lines) {
+  let line = `- **${door.id}** (${door.position.x},${door.position.y})`;
+  if (door.locked) {
+    line += " \u{1F512}";
+  }
+  if (door.leads_to) {
+    line += ` \u2192 ${door.leads_to}`;
+  }
+  if (door.description) {
+    line += `: ${door.description}`;
+  }
+  lines.push(line);
+}
+function serializeFeature(feature, lines) {
+  const prefix = getFeatureTypePrefix(feature.type);
+  const label = getFeatureTypeLabel(feature.type);
+  const line = `- **${prefix}${feature.id}** (${label}, ${feature.position.x},${feature.position.y}): ${feature.description}`;
+  lines.push(line);
+}
 var init_serializer9 = __esm({
   "src/workmodes/library/locations/serializer.ts"() {
     "use strict";
     init_constants9();
+    init_types3();
   }
 });
 
