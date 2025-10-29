@@ -3430,7 +3430,7 @@ function extractTokenValues(raw) {
   }
   return result;
 }
-var loadCreatureEntry, loadSpellEntry, loadItemEntry, loadEquipmentEntry, loadTerrainEntry, loadRegionEntry, loadFactionEntry, loadCalendarEntry, LIBRARY_DATA_SOURCES;
+var loadCreatureEntry, loadSpellEntry, loadItemEntry, loadEquipmentEntry, loadTerrainEntry, loadRegionEntry, loadFactionEntry, loadCalendarEntry, loadLocationEntry, LIBRARY_DATA_SOURCES;
 var init_data_sources = __esm({
   "src/workmodes/library/storage/data-sources.ts"() {
     "use strict";
@@ -3494,6 +3494,16 @@ var init_data_sources = __esm({
         monthCount: months.length
       };
     });
+    loadLocationEntry = createEntryLoader((fm2) => {
+      const ownerType = typeof fm2.owner_type === "string" ? fm2.owner_type : "none";
+      const ownerName = typeof fm2.owner_name === "string" ? fm2.owner_name.trim() : "";
+      const owner = ownerType !== "none" && ownerName ? `${ownerType}: ${ownerName}` : void 0;
+      return {
+        type: typeof fm2.type === "string" ? fm2.type : "Unknown",
+        owner,
+        parent: typeof fm2.parent === "string" ? fm2.parent : void 0
+      };
+    });
     LIBRARY_DATA_SOURCES = {
       creatures: {
         id: "creatures",
@@ -3542,6 +3552,12 @@ var init_data_sources = __esm({
         list: (app) => listVaultPresets(app, "calendars"),
         watch: (app, onChange) => watchVaultPresets(app, "calendars", onChange),
         load: loadCalendarEntry
+      },
+      locations: {
+        id: "locations",
+        list: (app) => listVaultPresets(app, "locations"),
+        watch: (app, onChange) => watchVaultPresets(app, "locations", onChange),
+        load: loadLocationEntry
       }
     };
   }
@@ -9077,10 +9093,10 @@ var init_grid_layout_manager = __esm({
     init_layout_utils();
     init_plugin_logger();
     GridLayoutManager = class {
-      constructor(container, fields5) {
+      constructor(container, fields6) {
         this.currentPairs = 1;
         this.container = container;
-        this.fields = fields5;
+        this.fields = fields6;
         this.observer = new ResizeObserver(() => this.recalculate());
         this.observer.observe(container);
         this.recalculate();
@@ -9331,7 +9347,7 @@ var init_field_renderer_registry = __esm({
 function renderModularTokenFieldCore(options) {
   const {
     container,
-    fields: fields5,
+    fields: fields6,
     primaryField,
     value = [],
     chipTemplate,
@@ -9342,7 +9358,7 @@ function renderModularTokenFieldCore(options) {
     onTokenFieldChange
   } = options;
   const tokens = Array.isArray(value) ? [...value] : [];
-  const primaryFieldDef = fields5.find((f) => f.id === primaryField);
+  const primaryFieldDef = fields6.find((f) => f.id === primaryField);
   if (!primaryFieldDef) {
     throw new Error(`Primary field "${primaryField}" not found in fields config`);
   }
@@ -9444,7 +9460,7 @@ function renderModularTokenFieldCore(options) {
           chip.createSpan({ text: JSON.stringify(token), cls: "sm-cc-chip__text" });
         }
       } else {
-        for (const fieldDef of fields5) {
+        for (const fieldDef of fields6) {
           if (!fieldDef.displayInChip) continue;
           if (fieldDef.visibleIf && !fieldDef.visibleIf(token)) continue;
           const segment = chip.createSpan({
@@ -9593,7 +9609,7 @@ function renderModularTokenFieldCore(options) {
     if (getInitialValue) {
       newToken = getInitialValue(formData, inputValue);
     } else {
-      for (const fieldDef of fields5) {
+      for (const fieldDef of fields6) {
         if (fieldDef.id === primaryField) {
           newToken[fieldDef.id] = inputValue;
         } else if (fieldDef.default !== void 0) {
@@ -10114,9 +10130,9 @@ function resolveDefaults(spec, name) {
   const fromSpec = typeof spec.defaults === "function" ? spec.defaults({ presetName: name }) : spec.defaults;
   return fromSpec ? { ...fromSpec } : {};
 }
-function orderFields(fields5, ids) {
-  if (!ids || ids.length === 0) return fields5;
-  const lookup = new Map(fields5.map((field) => [field.id, field]));
+function orderFields(fields6, ids) {
+  if (!ids || ids.length === 0) return fields6;
+  const lookup = new Map(fields6.map((field) => [field.id, field]));
   const ordered = [];
   for (const id of ids) {
     const entry = lookup.get(id);
@@ -10658,8 +10674,8 @@ var init_repeating_width_sync = __esm({
         const groups = /* @__PURE__ */ new Map();
         const items = this.container.querySelectorAll(".sm-cc-repeating-item");
         items.forEach((item) => {
-          const fields5 = item.querySelectorAll(".sm-cc-repeating-field:not(.is-hidden)");
-          fields5.forEach((field) => {
+          const fields6 = item.querySelectorAll(".sm-cc-repeating-field:not(.is-hidden)");
+          fields6.forEach((field) => {
             const fieldId = field.dataset.fieldId;
             if (!fieldId) return;
             const label = field.querySelector(".sm-cc-field-label");
@@ -12404,8 +12420,8 @@ var init_modal_validator = __esm({
     init_modal_utils();
     init_plugin_logger();
     DefaultFieldTransformer = class {
-      constructor(fields5) {
-        this.fields = fields5;
+      constructor(fields6) {
+        this.fields = fields6;
       }
       /**
        * Apply all field transforms to data.
@@ -12570,8 +12586,8 @@ var init_field_manager = __esm({
     init_modal_utils();
     init_plugin_logger();
     FieldManager = class {
-      constructor(fields5, getData, onChange, widthSynchronizers) {
-        this.fields = fields5;
+      constructor(fields6, getData, onChange, widthSynchronizers) {
+        this.fields = fields6;
         this.getData = getData;
         this.onChange = onChange;
         this.widthSynchronizers = widthSynchronizers;
@@ -19369,6 +19385,254 @@ var init_factions = __esm({
   }
 });
 
+// src/workmodes/library/locations/constants.ts
+var LOCATION_TYPES, OWNER_TYPES, OWNER_TYPE_LABELS;
+var init_constants9 = __esm({
+  "src/workmodes/library/locations/constants.ts"() {
+    "use strict";
+    LOCATION_TYPES = [
+      "Stadt",
+      "Dorf",
+      "Weiler",
+      "Geb\xE4ude",
+      "Dungeon",
+      "Camp",
+      "Landmark",
+      "Ruine",
+      "Festung"
+    ];
+    OWNER_TYPES = [
+      "none",
+      "faction",
+      "npc"
+    ];
+    OWNER_TYPE_LABELS = {
+      none: "Kein Besitzer",
+      faction: "Fraktion",
+      npc: "NPC"
+    };
+  }
+});
+
+// src/workmodes/library/locations/serializer.ts
+function locationToMarkdown(data) {
+  const lines = [];
+  lines.push(`# ${data.name}`);
+  lines.push("");
+  lines.push("## Overview");
+  lines.push(`- **Type:** ${data.type}`);
+  if (data.parent) {
+    lines.push(`- **Parent Location:** ${data.parent}`);
+  }
+  if (data.owner_type && data.owner_type !== "none") {
+    const ownerLabel = OWNER_TYPE_LABELS[data.owner_type];
+    const ownerName = data.owner_name?.trim() || "\u2014";
+    lines.push(`- **Owner:** ${ownerLabel} (${ownerName})`);
+  }
+  if (data.region) {
+    lines.push(`- **Region:** ${data.region}`);
+  }
+  if (data.coordinates) {
+    lines.push(`- **Coordinates:** ${data.coordinates}`);
+  }
+  if (data.description) {
+    lines.push("");
+    lines.push("## Description");
+    lines.push(data.description);
+  }
+  if (data.notes) {
+    lines.push("");
+    lines.push("## Notes");
+    lines.push(data.notes);
+  }
+  return lines.join("\n");
+}
+var init_serializer9 = __esm({
+  "src/workmodes/library/locations/serializer.ts"() {
+    "use strict";
+    init_constants9();
+  }
+});
+
+// src/workmodes/library/locations/create-spec.ts
+var locationSchema, fields5, locationSpec;
+var init_create_spec9 = __esm({
+  "src/workmodes/library/locations/create-spec.ts"() {
+    "use strict";
+    init_constants9();
+    init_serializer9();
+    locationSchema = {
+      parse: (data) => data,
+      safeParse: (data) => {
+        try {
+          if (!data || typeof data !== "object") {
+            throw new Error("Location data must be an object");
+          }
+          const location = data;
+          if (typeof location.name !== "string" || location.name.trim().length === 0) {
+            throw new Error("Name is required");
+          }
+          if (typeof location.type !== "string" || location.type.trim().length === 0) {
+            throw new Error("Type is required");
+          }
+          return { success: true, data: location };
+        } catch (error) {
+          return { success: false, error: error instanceof Error ? error : new Error(String(error)) };
+        }
+      }
+    };
+    fields5 = [
+      {
+        id: "name",
+        label: "Name",
+        type: "text",
+        required: true,
+        placeholder: "Die Taverne zum Goldenen Drachen",
+        description: "Name des Ortes"
+      },
+      {
+        id: "type",
+        label: "Typ",
+        type: "select",
+        required: true,
+        options: LOCATION_TYPES.map((type) => ({ value: type, label: type })),
+        default: "Geb\xE4ude",
+        description: "Art des Ortes"
+      },
+      {
+        id: "description",
+        label: "Beschreibung",
+        type: "textarea",
+        placeholder: "Eine gem\xFCtliche Taverne im Herzen der Stadt...",
+        description: "Ausf\xFChrliche Beschreibung des Ortes"
+      },
+      {
+        id: "parent",
+        label: "\xDCbergeordneter Ort",
+        type: "text",
+        placeholder: "Marktplatz-Viertel",
+        description: "Name des \xFCbergeordneten Ortes (f\xFCr Hierarchie)"
+      },
+      {
+        id: "owner_type",
+        label: "Besitzertyp",
+        type: "select",
+        options: OWNER_TYPES.map((type) => ({
+          value: type,
+          label: OWNER_TYPE_LABELS[type]
+        })),
+        default: "none",
+        description: "Wer besitzt oder kontrolliert diesen Ort?"
+      },
+      {
+        id: "owner_name",
+        label: "Besitzer Name",
+        type: "text",
+        placeholder: "Die Schildbr\xFCder",
+        description: "Name der Fraktion oder des NPCs (falls zutreffend)"
+      },
+      {
+        id: "region",
+        label: "Region",
+        type: "text",
+        placeholder: "Salzmarsch",
+        description: "Optionale Regionszuordnung"
+      },
+      {
+        id: "coordinates",
+        label: "Koordinaten",
+        type: "text",
+        placeholder: "12,34",
+        description: "Optionale Hex-Koordinaten (Format: X,Y)"
+      },
+      {
+        id: "notes",
+        label: "Notizen",
+        type: "textarea",
+        placeholder: "Wichtige Details, Geheimnisse, Hooks...",
+        description: "Zus\xE4tzliche Notizen und Informationen"
+      }
+    ];
+    locationSpec = {
+      kind: "location",
+      title: "Ort erstellen",
+      subtitle: "Neuer Ort f\xFCr deine Kampagne",
+      schema: locationSchema,
+      fields: fields5,
+      storage: {
+        format: "md-frontmatter",
+        pathTemplate: "SaltMarcher/Locations/{name}.md",
+        filenameFrom: "name",
+        directory: "SaltMarcher/Locations",
+        frontmatter: [
+          "name",
+          "type",
+          "parent",
+          "owner_type",
+          "owner_name",
+          "region",
+          "coordinates",
+          "description",
+          "notes"
+        ],
+        bodyTemplate: (data) => locationToMarkdown(data)
+      },
+      ui: {
+        submitLabel: "Ort speichern",
+        cancelLabel: "Abbrechen"
+      },
+      browse: {
+        metadata: [
+          {
+            id: "type",
+            cls: "sm-cc-item__type",
+            getValue: (entry) => entry.type || "\u2014"
+          },
+          {
+            id: "owner",
+            cls: "sm-cc-item__cr",
+            getValue: (entry) => {
+              if (!entry.owner_type || entry.owner_type === "none") return "Kein Besitzer";
+              const ownerName = entry.owner_name?.trim() || "\u2014";
+              const ownerLabel = OWNER_TYPE_LABELS[entry.owner_type];
+              return `${ownerLabel}: ${ownerName}`;
+            }
+          },
+          {
+            id: "parent",
+            cls: "sm-cc-item__meta",
+            getValue: (entry) => {
+              if (!entry.parent) return "Top-Level";
+              return `In: ${entry.parent}`;
+            }
+          }
+        ],
+        filters: [
+          { id: "type", field: "type", label: "Typ", type: "string" },
+          { id: "owner_type", field: "owner_type", label: "Besitzertyp", type: "string" },
+          { id: "owner_name", field: "owner_name", label: "Besitzer", type: "string" },
+          { id: "region", field: "region", label: "Region", type: "string" },
+          { id: "parent", field: "parent", label: "\xDCbergeordneter Ort", type: "string" }
+        ],
+        sorts: [
+          { id: "name", label: "Name", field: "name" },
+          { id: "type", label: "Typ", field: "type" },
+          { id: "owner", label: "Besitzer", field: "owner_name" }
+        ]
+      }
+    };
+  }
+});
+
+// src/workmodes/library/locations/index.ts
+var init_locations = __esm({
+  "src/workmodes/library/locations/index.ts"() {
+    "use strict";
+    init_create_spec9();
+    init_serializer9();
+  }
+});
+
 // src/workmodes/library/registry.ts
 function getCreateSpec(entity) {
   return LIBRARY_CREATE_SPECS[entity];
@@ -19386,6 +19650,7 @@ var init_registry = __esm({
     init_regions();
     init_calendars();
     init_factions();
+    init_locations();
     LIBRARY_CREATE_SPECS = {
       creatures: creatureSpec,
       spells: spellSpec,
@@ -19394,7 +19659,8 @@ var init_registry = __esm({
       terrains: terrainSpec,
       regions: regionSpec,
       factions: factionSpec,
-      calendars: calendarSpec
+      calendars: calendarSpec,
+      locations: locationSpec
     };
     LIBRARY_VIEW_CONFIGS = {
       ...generateViewConfigs(LIBRARY_CREATE_SPECS)
@@ -89059,7 +89325,7 @@ async function dumpFieldStates(app, args) {
     throw new Error("No create modal is open");
   }
   const fieldContainers = modal.querySelectorAll("[data-field-id]");
-  const fields5 = [];
+  const fields6 = [];
   for (const container of Array.from(fieldContainers)) {
     const fieldId = container.getAttribute("data-field-id");
     if (!fieldId) continue;
@@ -89078,14 +89344,14 @@ async function dumpFieldStates(app, args) {
       field.chips = chips.map((chip) => chip.textContent?.trim());
       field.chipCount = chips.length;
     }
-    fields5.push(field);
+    fields6.push(field);
   }
   const result = {
     modalType: modalType || "unknown",
-    fieldCount: fields5.length,
-    fields: fields5
+    fieldCount: fields6.length,
+    fields: fields6
   };
-  logger2.log(`[IPC-CMD] Dumped ${fields5.length} fields`);
+  logger2.log(`[IPC-CMD] Dumped ${fields6.length} fields`);
   return result;
 }
 async function getModalData(app, args) {

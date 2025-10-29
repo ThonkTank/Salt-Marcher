@@ -5,7 +5,7 @@ import type { BaseEntry, DataSource } from "../../../features/data-manager";
 import { readFrontmatter } from "../../../features/data-manager/browse/frontmatter-utils";
 import { listVaultPresets, watchVaultPresets } from "../../../../Presets/lib/vault-preset-loader";
 
-export type FilterableLibraryMode = "creatures" | "spells" | "items" | "equipment" | "terrains" | "regions" | "factions" | "calendars";
+export type FilterableLibraryMode = "creatures" | "spells" | "items" | "equipment" | "terrains" | "regions" | "factions" | "calendars" | "locations";
 
 export interface CreatureEntryMeta {
     readonly type?: string;
@@ -54,6 +54,12 @@ export interface CalendarEntryMeta {
     readonly monthCount?: number;
 }
 
+export interface LocationEntryMeta {
+    readonly type: string;
+    readonly owner?: string;
+    readonly parent?: string;
+}
+
 export interface LibraryEntryMetaMap {
     creatures: CreatureEntryMeta;
     spells: SpellEntryMeta;
@@ -63,6 +69,7 @@ export interface LibraryEntryMetaMap {
     regions: RegionEntryMeta;
     factions: FactionEntryMeta;
     calendars: CalendarEntryMeta;
+    locations: LocationEntryMeta;
 }
 
 export type LibraryEntry<M extends FilterableLibraryMode> = BaseEntry & LibraryEntryMetaMap[M];
@@ -177,6 +184,18 @@ const loadCalendarEntry = createEntryLoader<"calendars">(fm => {
     };
 });
 
+const loadLocationEntry = createEntryLoader<"locations">(fm => {
+    const ownerType = typeof fm.owner_type === "string" ? fm.owner_type : "none";
+    const ownerName = typeof fm.owner_name === "string" ? fm.owner_name.trim() : "";
+    const owner = ownerType !== "none" && ownerName ? `${ownerType}: ${ownerName}` : undefined;
+
+    return {
+        type: typeof fm.type === "string" ? fm.type : "Unknown",
+        owner,
+        parent: typeof fm.parent === "string" ? fm.parent : undefined,
+    };
+});
+
 export const LIBRARY_DATA_SOURCES: LibraryDataSourceMap = {
     creatures: {
         id: "creatures",
@@ -225,5 +244,11 @@ export const LIBRARY_DATA_SOURCES: LibraryDataSourceMap = {
         list: (app) => listVaultPresets(app, "calendars"),
         watch: (app, onChange) => watchVaultPresets(app, "calendars", onChange),
         load: loadCalendarEntry,
+    },
+    locations: {
+        id: "locations",
+        list: (app) => listVaultPresets(app, "locations"),
+        watch: (app, onChange) => watchVaultPresets(app, "locations", onChange),
+        load: loadLocationEntry,
     },
 };

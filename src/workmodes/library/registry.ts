@@ -14,6 +14,7 @@ import { terrainSpec } from "./terrains";
 import { regionSpec } from "./regions";
 import { calendarSpec } from "./calendars";
 import { factionSpec } from "./factions";
+import { locationSpec } from "./locations";
 
 // ============================================================================
 // Types
@@ -35,6 +36,7 @@ export const LIBRARY_CREATE_SPECS: Record<LibraryEntity, CreateSpec<any> | null>
     regions: regionSpec,
     factions: factionSpec,
     calendars: calendarSpec,
+    locations: locationSpec,
 };
 
 /**
