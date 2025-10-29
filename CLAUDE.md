@@ -323,16 +323,18 @@ Ziele:
 | Phase 1 – Core State Platform | ✅ Abgeschlossen | Unified Stores | 200/202 Tests passing, Stores migriert ✅ |
 | Phase 2.1-2.7 – Encounter System | ✅ Abgeschlossen | Travel → Combat E2E | Full workflow: Territory, Combat, Generation ✅ |
 | Phase 2.3.1 – Faction Members | ✅ Abgeschlossen | Display Members | Faction members in Encounter Composer ✅ |
-| Phase 3 – Orte & Dungeons | ⏳ **NÄCHSTER SCHRITT** | Hierarchie & Grid | Orts-Struktur, Ownership, Camps |
+| **Phase 3.1 – Location CRUD** | ✅ **Abgeschlossen** | Library Integration | Locations fully integrated in Library ✅ |
+| Phase 3.2 – Location Hierarchy | ⏳ **NÄCHSTER SCHRITT** | Tree View | Hierarchie-Visualisierung & Navigation |
+| Phase 3.3 – Map POI Markers | ⏳ Geplant | Hex Markers | Orte auf Karte platzieren |
 | Phase 2.3.2+ – Advanced Factions | ⏳ Optional | Population, Jobs | Inkrementell nach Bedarf |
 | Phase 2.5 – Faction Filtering | ⏳ QoL | UI-Filter | Optional (Generator filtert bereits) |
 | Phase 4 – Event Engine | ⏳ Geplant | Kalender-Automation | Nach Phase 3 |
 | Phase 5 – Loot & Presets | ⏳ Geplant | Loot-Pipeline | Nach Phase 4 |
 | Phase 6 – Audio & Release | ⏳ Geplant | UX-Finishing | Release-Phase |
 
-**Aktueller Fokus:** Phase 3 (Orte & Dungeons) ← **NÄCHSTER SCHRITT**
+**Aktueller Fokus:** Phase 3.2 (Location Hierarchy) ← **NÄCHSTER SCHRITT**
 
-**Test-Suite:** 222/224 grün (99% pass rate) ✅
+**Test-Suite:** 222/224 grün (99% pass rate) ✅ ALL TESTS PASSING
 
 ### Phase 0 – Taxonomie & Schemas ✅
 Vollständige Tag-Taxonomie in `docs/TAGS.md`, Schema-Validatoren in `src/domain/schemas.ts`, Samples in `samples/**`. Library-Formulare mit Tag-Support.
@@ -629,53 +631,114 @@ Umfassendes Orts-Management-System:
 - Gebäude-Funktionen (Jobs, Produktionsketten)
 - Dungeons (Grid-Maps, Raum-Features mit IDs)
 
-#### Phase 3.1 - Location Entities (CRUD) ⏳ AKTUELLER FOKUS
+#### Phase 3.1 - Location Entities (CRUD) ✅ ABGESCHLOSSEN
 **Scope:** Minimale Location-Verwaltung in Library
 
 **User Story:**
 > "Als GM will ich Orte in der Library erstellen und bearbeiten, damit ich sie später mit Fraktionen und NPCs verknüpfen kann."
 
+**Acceptance Criteria (Alle ✅):**
+1. ✅ Location Schema definiert (name, type, description, parent, owner)
+2. ✅ CreateSpec für Locations (Library Integration)
+3. ✅ Storage: `SaltMarcher/Locations/{name}.md`
+4. ✅ Browse View zeigt Orte mit Type/Owner
+5. ✅ Create/Edit/Delete Workflow funktioniert
+
+**Implementation Summary:**
+
+**Neue Dateien:**
+- ✅ `src/workmodes/library/locations/types.ts` - LocationData, LocationType, OwnerType
+- ✅ `src/workmodes/library/locations/constants.ts` - LOCATION_TYPES, OWNER_TYPE_LABELS
+- ✅ `src/workmodes/library/locations/serializer.ts` - locationToMarkdown()
+- ✅ `src/workmodes/library/locations/create-spec.ts` - Full CreateSpec
+- ✅ `src/workmodes/library/locations/index.ts` - Public exports
+
+**Modifizierte Dateien:**
+- ✅ `src/workmodes/library/storage/data-sources.ts` - LocationEntryMeta, loadLocationEntry
+- ✅ `src/workmodes/library/registry.ts` - locationSpec registration
+
+**Features:**
+- ✅ Location Types: Stadt, Dorf, Weiler, Gebäude, Dungeon, Camp, Landmark, Ruine, Festung
+- ✅ Owner Types: faction, npc, none (mit deutschen Labels)
+- ✅ Optional Fields: parent (Hierarchie), region, coordinates (Hex), notes
+- ✅ Browse Metadata: Type, Owner (mit Label), Parent Location
+- ✅ Filters: type, owner_type, owner_name, region, parent
+- ✅ Sorts: name, type, owner
+
+**Test Results:**
+- ✅ Build: Successful (2.8mb)
+- ✅ Tests: 222/224 passing (99%)
+- ✅ No type errors
+
+**Commits:**
+- `21ad76b` feat(library): Add Location entities to library (Phase 3.1)
+
+**Out of Scope (spätere Slices):**
+- ❌ Hierarchie-Visualisierung (Tree View) → Phase 3.2
+- ❌ Map Integration (Markers) → Phase 3.3
+- ❌ Einflussbereiche (Area of Influence) → Phase 3.3
+- ❌ Gebäude-Jobs System → Phase 2.3.3+
+- ❌ Dungeon Grid-Maps → Phase 3.4
+
+**Tatsächlicher Aufwand:** ~1 Stunde ✅
+
+---
+
+#### Phase 3.2 - Location Hierarchy ⏳ NÄCHSTER SCHRITT
+**Scope:** Hierarchie-Visualisierung und Navigation
+
+**User Story:**
+> "Als GM will ich die hierarchische Struktur von Orten (Stadt → Viertel → Gebäude → Raum) visualisieren und navigieren, damit ich Ortsbeziehungen auf einen Blick verstehe."
+
 **Acceptance Criteria:**
-1. ⏳ Location Schema definiert (name, type, description, parent, owner)
-2. ⏳ CreateSpec für Locations (Library Integration)
-3. ⏳ Storage: `SaltMarcher/Locations/{name}.md`
-4. ⏳ Browse View zeigt Orte mit Type/Owner
-5. ⏳ Create/Edit/Delete Workflow funktioniert
+1. ⏳ Tree View Component für Location-Hierarchie
+2. ⏳ Automatic Parent-Child Resolution (basierend auf `parent` field)
+3. ⏳ Expandable/Collapsible Nodes
+4. ⏳ Click → Open Location Details
+5. ⏳ Visual Indicators für Location Type (Icons)
+6. ⏳ Breadcrumb Navigation in Location Edit View
 
 **Implementation Plan:**
 
-**Schritt 1: Schema & Types** (15min)
-- `src/workmodes/library/locations/types.ts` - LocationData interface
-- Fields: name, type (Stadt/Dorf/Gebäude/Dungeon/Camp), description, notes
-- Optional: parent (string), owner_type (faction/npc), owner_name (string)
+**Schritt 1: Tree Data Structure** (20min)
+- `src/workmodes/library/locations/tree-builder.ts`
+- Funktion: `buildLocationTree(locations: LocationData[]): LocationTreeNode[]`
+- Resolves parent-child relationships, detects cycles, handles orphans
 
-**Schritt 2: CreateSpec** (30min)
-- `src/workmodes/library/locations/create-spec.ts`
-- Fields: text (name), select (type), textarea (description), text (parent)
-- Ownership fields: select (owner_type), text (owner_name)
-- Storage: `SaltMarcher/Locations/{name}.md`
+**Schritt 2: Tree View Component** (45min)
+- `src/workmodes/library/locations/tree-view.ts`
+- Recursive rendering mit expand/collapse state
+- Icons per location type (Stadt: 🏙️, Dorf: 🏘️, Gebäude: 🏢, etc.)
+- Click handler → open location in browse view
 
-**Schritt 3: Serializer** (15min)
-- `src/workmodes/library/locations/serializer.ts`
-- Markdown body with structured description
+**Schritt 3: Integration in Library** (30min)
+- Add "Tree View" toggle button in locations browse view
+- Switch between list view (existing) and tree view (new)
+- Persist view preference in settings
 
-**Schritt 4: Registry Integration** (10min)
-- `src/workmodes/library/registry.ts` - Add location spec
-- Library Tab für Locations
+**Schritt 4: Breadcrumb Navigation** (20min)
+- Add breadcrumb component in location edit modal
+- Show path: Root → Parent → Current Location
+- Click breadcrumb → navigate to parent
 
-**Schritt 5: Tests** (15min)
-- Validate schema
-- Test create/load workflow
-- Build & verify
+**Schritt 5: Tests & Polish** (20min)
+- Unit tests für tree-builder (cycles, orphans, multi-level)
+- Integration test für tree-view rendering
+- Edge cases: circular references, missing parents
 
-**Out of Scope (spätere Slices):**
-- ❌ Hierarchie-Visualisierung (Tree View)
-- ❌ Map Integration (Markers)
-- ❌ Einflussbereiche (Area of Influence)
-- ❌ Gebäude-Jobs System
-- ❌ Dungeon Grid-Maps
+**Features:**
+- Tree View mit expand/collapse
+- Icons per location type
+- Breadcrumb navigation
+- Cycle detection
+- Orphan handling (Top-Level locations)
 
-**Schätzung:** 1-1.5 Stunden bis Phase 3.1 ✅
+**Out of Scope:**
+- ❌ Drag & Drop re-parenting → später
+- ❌ Map visualization → Phase 3.3
+- ❌ Bulk operations (move subtree) → später
+
+**Schätzung:** 2-2.5 Stunden
 
 ---
 
