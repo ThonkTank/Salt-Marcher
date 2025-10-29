@@ -25,6 +25,7 @@ export class DungeonView extends ItemView {
     // View options
     private showGrid = true;
     private showCoordinates = false;
+    private tokenPlacementMode = false; // Toggle for token placement mode
 
     constructor(leaf: WorkspaceLeaf) {
         super(leaf);
@@ -217,6 +218,24 @@ export class DungeonView extends ItemView {
                 this.renderer.render(this.dungeon);
                 this.renderControls(); // Update zoom indicator
             }
+        });
+
+        // Add Token button
+        const addTokenBtn = this.controlsContainer.createEl("button", {
+            cls: this.tokenPlacementMode ? "sm-dungeon-control-active" : "sm-dungeon-control",
+            text: "➕ Add Token",
+        });
+
+        addTokenBtn.addEventListener("click", () => {
+            this.tokenPlacementMode = !this.tokenPlacementMode;
+            this.renderControls(); // Update button state
+
+            // Update canvas cursor
+            if (this.canvas) {
+                this.canvas.style.cursor = this.tokenPlacementMode ? "crosshair" : "grab";
+            }
+
+            // TODO: Show token type selector when entering placement mode
         });
 
         // Export button (future: PNG snapshot)
@@ -472,6 +491,7 @@ export async function openDungeonView(app: App, file: TFile): Promise<void> {
         grid_height: typeof frontmatter.grid_height === "number" ? frontmatter.grid_height : undefined,
         cell_size: typeof frontmatter.cell_size === "number" ? frontmatter.cell_size : undefined,
         rooms: Array.isArray(frontmatter.rooms) ? frontmatter.rooms as any : undefined,
+        tokens: Array.isArray(frontmatter.tokens) ? frontmatter.tokens as any : undefined,
     };
 
     if (!isDungeonLocation(location)) {

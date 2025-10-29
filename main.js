@@ -93218,6 +93218,7 @@ init_plugin_logger();
 init_frontmatter_utils();
 var VIEW_TYPE_DUNGEON = "salt-dungeon-view";
 var DungeonView = class extends import_obsidian40.ItemView {
+  // Toggle for token placement mode
   constructor(leaf) {
     super(leaf);
     this.dungeon = null;
@@ -93229,6 +93230,7 @@ var DungeonView = class extends import_obsidian40.ItemView {
     // View options
     this.showGrid = true;
     this.showCoordinates = false;
+    this.tokenPlacementMode = false;
   }
   getViewType() {
     return VIEW_TYPE_DUNGEON;
@@ -93375,6 +93377,17 @@ var DungeonView = class extends import_obsidian40.ItemView {
         this.renderer.resetView();
         this.renderer.render(this.dungeon);
         this.renderControls();
+      }
+    });
+    const addTokenBtn = this.controlsContainer.createEl("button", {
+      cls: this.tokenPlacementMode ? "sm-dungeon-control-active" : "sm-dungeon-control",
+      text: "\u2795 Add Token"
+    });
+    addTokenBtn.addEventListener("click", () => {
+      this.tokenPlacementMode = !this.tokenPlacementMode;
+      this.renderControls();
+      if (this.canvas) {
+        this.canvas.style.cursor = this.tokenPlacementMode ? "crosshair" : "grab";
       }
     });
     const exportBtn = this.controlsContainer.createEl("button", {
