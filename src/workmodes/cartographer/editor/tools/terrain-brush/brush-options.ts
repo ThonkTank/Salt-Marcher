@@ -61,6 +61,7 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
 
     let disposed = false;
     let fillSeq = 0;
+    let fillFactionSeq = 0;
     let circle: ReturnType<typeof attachBrushCircle> | null = null;
 
     let panelDisabled = false;
@@ -400,7 +401,7 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
     };
 
     const fillFactions = async (reason: "initial" | "refresh") => {
-        const fSeq = ++fillSeq;
+        const fSeq = ++fillFactionSeq;
         setPanelDisabled(true);
         applyFactionHint({
             text: reason === "initial" ? "Loading factions…" : "Refreshing factions…",
@@ -412,7 +413,7 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
             factionFiles = await LIBRARY_DATA_SOURCES.factions.list(ctx.app);
         } catch (err) {
             logger.error("[terrain-brush] failed to list factions", err);
-            if (fSeq === fillSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
+            if (fSeq === fillFactionSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
                 factionControl?.setOptions([]);
                 state.faction = "";
                 applyFactionHint({
@@ -422,13 +423,13 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
             }
             return;
         } finally {
-            if (fSeq === fillSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
+            if (fSeq === fillFactionSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
                 setPanelDisabled(false);
                 refreshManageCommandAvailability();
             }
         }
 
-        if (disposed || ctx.getAbortSignal()?.aborted || fSeq !== fillSeq) {
+        if (disposed || ctx.getAbortSignal()?.aborted || fSeq !== fillFactionSeq) {
             return;
         }
 
@@ -530,6 +531,7 @@ export function mountBrushPanel(root: HTMLElement, ctx: BrushPanelContext): Brus
     const dispose = () => {
         disposed = true;
         fillSeq += 1;
+        fillFactionSeq += 1;
         unsubscribe.forEach((off) => {
             try {
                 off();

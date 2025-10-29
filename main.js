@@ -3878,6 +3878,7 @@ function mountBrushPanel(root, ctx) {
   const effectiveRadius = () => Math.max(0, state.radius - 1);
   let disposed = false;
   let fillSeq = 0;
+  let fillFactionSeq = 0;
   let circle = null;
   let panelDisabled = false;
   let manageCommandAvailable = false;
@@ -4190,7 +4191,7 @@ function mountBrushPanel(root, ctx) {
     }
   };
   const fillFactions = async (reason) => {
-    const fSeq = ++fillSeq;
+    const fSeq = ++fillFactionSeq;
     setPanelDisabled(true);
     applyFactionHint({
       text: reason === "initial" ? "Loading factions\u2026" : "Refreshing factions\u2026",
@@ -4201,7 +4202,7 @@ function mountBrushPanel(root, ctx) {
       factionFiles = await LIBRARY_DATA_SOURCES.factions.list(ctx.app);
     } catch (err) {
       logger.error("[terrain-brush] failed to list factions", err);
-      if (fSeq === fillSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
+      if (fSeq === fillFactionSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
         factionControl?.setOptions([]);
         state.faction = "";
         applyFactionHint({
@@ -4211,12 +4212,12 @@ function mountBrushPanel(root, ctx) {
       }
       return;
     } finally {
-      if (fSeq === fillSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
+      if (fSeq === fillFactionSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
         setPanelDisabled(false);
         refreshManageCommandAvailability();
       }
     }
-    if (disposed || ctx.getAbortSignal()?.aborted || fSeq !== fillSeq) {
+    if (disposed || ctx.getAbortSignal()?.aborted || fSeq !== fillFactionSeq) {
       return;
     }
     const factions = [];
@@ -4308,6 +4309,7 @@ function mountBrushPanel(root, ctx) {
   const dispose = () => {
     disposed = true;
     fillSeq += 1;
+    fillFactionSeq += 1;
     unsubscribe.forEach((off) => {
       try {
         off();

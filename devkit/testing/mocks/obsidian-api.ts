@@ -1,7 +1,8 @@
 // devkit/testing/mocks/obsidian-api.ts
 // Central Obsidian API mocks for testing
 import { vi } from "vitest";
-import type { App, TFile, Vault } from "obsidian";
+import type { App, TFile, TFolder, Vault } from "obsidian";
+import { TFolder as ObsidianTFolder } from "obsidian";
 
 /**
  * Mock TFile class for testing
@@ -13,6 +14,23 @@ class MockTFile {
     name: string = "";
     stat: { ctime: number; mtime: number; size: number } = { ctime: 0, mtime: 0, size: 0 };
     vault: any = null;
+}
+
+/**
+ * Mock TFolder class that passes instanceof TFolder checks
+ */
+class MockTFolder extends ObsidianTFolder {
+    constructor(path: string) {
+        // Create a minimal mock that extends TFolder
+        super();
+        this.path = path;
+        this.name = path.split("/").pop() ?? path;
+        this.children = [];
+    }
+
+    isRoot(): boolean {
+        return false;
+    }
 }
 
 /**
@@ -28,20 +46,41 @@ export function createMockTFile(path: string, basename?: string): TFile {
 }
 
 /**
+ * Creates a mock TFolder with the given path
+ */
+export function createMockTFolder(path: string): TFolder {
+    return new MockTFolder(path) as unknown as TFolder;
+}
+
+/**
  * Creates a mock Vault with common operations
  */
 export function createMockVault(initialFiles: Record<string, string> = {}): Vault {
     const files = new Map<string, { file: TFile; data: string }>();
+    const folders = new Map<string, TFolder>();
 
     // Initialize with provided files
     for (const [path, data] of Object.entries(initialFiles)) {
         const file = createMockTFile(path);
         files.set(path, { file, data });
+
+        // Ensure parent folders exist
+        const parts = path.split("/");
+        for (let i = 1; i < parts.length; i++) {
+            const folderPath = parts.slice(0, i).join("/");
+            if (!folders.has(folderPath) && !files.has(folderPath)) {
+                folders.set(folderPath, createMockTFolder(folderPath));
+            }
+        }
     }
 
     const vault = {
         getAbstractFileByPath: vi.fn((path: string) => {
-            return files.get(path)?.file ?? null;
+            const file = files.get(path)?.file;
+            if (file) return file;
+            const folder = folders.get(path);
+            if (folder) return folder;
+            return null;
         }),
 
         read: vi.fn(async (file: TFile) => {
@@ -71,8 +110,9 @@ export function createMockVault(initialFiles: Record<string, string> = {}): Vaul
         }),
 
         createFolder: vi.fn(async (path: string) => {
-            // Mark as created by adding to a set
-            return { path };
+            const folder = createMockTFolder(path);
+            folders.set(path, folder);
+            return folder;
         }),
 
         getFiles: vi.fn(() => {

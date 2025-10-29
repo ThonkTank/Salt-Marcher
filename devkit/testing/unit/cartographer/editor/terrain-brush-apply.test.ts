@@ -8,6 +8,7 @@ import {
     type BrushExecutionContext,
     type BrushToolAdapter,
 } from "src/workmodes/cartographer/editor/tools/terrain-brush/brush-core";
+import { createMockApp, createMockTFile } from "../../../mocks/obsidian-api";
 
 const telemetryMocks = vi.hoisted(() => ({
     reportEditorToolIssue: vi.fn(() => "issue:operation:Brush"),
@@ -80,8 +81,12 @@ const createExecutionContext = (tool: BrushToolAdapter | null): BrushExecutionCo
 });
 
 describe("applyBrush", () => {
-    const app = {} as App;
-    const mapFile = { path: "map.md" } as unknown as TFile;
+    const app = createMockApp({
+        initialFiles: {
+            "map.md": "---\nfolder: Hexes\n---\n# Map",
+        },
+    });
+    const mapFile = createMockTFile("map.md");
 
     beforeEach(() => {
         vi.clearAllMocks();

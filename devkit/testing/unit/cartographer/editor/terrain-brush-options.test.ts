@@ -9,22 +9,31 @@ import {
 } from "src/workmodes/cartographer/editor/tools/terrain-brush/brush-options";
 import { createMockApp, createMockTFile } from "../../../mocks/obsidian-api";
 
-const loadRegions = vi.fn();
-const applyBrush = vi.fn(() => Promise.resolve());
-
 vi.mock("src/workmodes/cartographer/editor/tools/terrain-brush/brush-core", async () => {
     const actual = await vi.importActual<
         typeof import("src/workmodes/cartographer/editor/tools/terrain-brush/brush-core")
     >("src/workmodes/cartographer/editor/tools/terrain-brush/brush-core");
     return {
         ...actual,
-        applyBrush: (...args: unknown[]) => applyBrush(...args),
+        applyBrush: vi.fn(() => Promise.resolve()),
     };
 });
 
 vi.mock("src/features/maps/data/region-repository", () => ({
-    loadRegions: (...args: unknown[]) => loadRegions(...args),
+    loadRegions: vi.fn(),
 }));
+
+vi.mock("src/workmodes/library/storage/data-sources", () => ({
+    LIBRARY_DATA_SOURCES: {
+        factions: {
+            list: vi.fn(() => Promise.resolve([])),
+            load: vi.fn(),
+        },
+    },
+}));
+
+import { loadRegions } from "src/features/maps/data/region-repository";
+import { applyBrush } from "src/workmodes/cartographer/editor/tools/terrain-brush/brush-core";
 
 const flushPromises = async () => {
     await Promise.resolve();
@@ -47,21 +56,24 @@ const createHandles = (): RenderHandles => ({
 describe("terrain brush panel", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        loadRegions.mockReset();
-        applyBrush.mockReset();
     });
 
     it("populates regions, tracks terrain, and resets when selections disappear", async () => {
         const listeners: Record<string, () => void> = {};
-        loadRegions.mockResolvedValueOnce([
+        vi.mocked(loadRegions).mockResolvedValue([
             { name: "Forest", terrain: "forest" },
             { name: "Coast", terrain: "coast" },
         ]);
         const app = createMockApp();
-        (app.workspace.on as any) = vi.fn((event: string, handler: () => void) => {
-            listeners[event] = handler;
-            return `${event}-token`;
-        });
+        const workspace = {
+            on: vi.fn((event: string, handler: () => void) => {
+                listeners[event] = handler;
+                return `${event}-token`;
+            }),
+            offref: vi.fn(),
+        };
+        app.workspace = workspace as any;
+
         const ctx: BrushPanelContext = {
             app,
             getFile: () => null,
@@ -73,7 +85,14 @@ describe("terrain brush panel", () => {
 
         const root = document.createElement("div");
         const controls = mountBrushPanel(root, ctx);
+
+        // Wait for BOTH fillOptions AND fillFactions to complete
+        // They both run async and use the same fillSeq counter
         await flushPromises();
+        await flushPromises();
+        await flushPromises();
+
+        expect(loadRegions).toHaveBeenCalled();
 
         const selects = root.querySelectorAll("select");
         const regionSelect = selects[0] as HTMLSelectElement;
@@ -83,7 +102,7 @@ describe("terrain brush panel", () => {
         regionSelect.dispatchEvent(new Event("change"));
         expect(regionSelect.selectedOptions[0].dataset.terrain).toBe("forest");
 
-        loadRegions.mockResolvedValueOnce([]);
+        vi.mocked(loadRegions).mockResolvedValue([]);
         listeners["salt:regions-updated"]?.();
         await flushPromises();
 
@@ -101,9 +120,10 @@ describe("terrain brush panel", () => {
         const pending = new Promise((resolve) => {
             resolveRegions = resolve;
         });
-        loadRegions.mockReturnValueOnce(pending as unknown as Promise<unknown>);
+        vi.mocked(loadRegions).mockReturnValueOnce(pending as unknown as Promise<unknown>);
+        const app = createMockApp();
         const ctx: BrushPanelContext = {
-            app: { workspace: {} } as unknown as App,
+            app,
             getFile: () => null,
             getHandles: () => null,
             getOptions: () => null,
@@ -122,7 +142,7 @@ describe("terrain brush panel", () => {
     });
 
     it("ensures missing polygons before applying brush actions", async () => {
-        loadRegions.mockResolvedValue([]);
+        vi.mocked(loadRegions).mockResolvedValue([]);
         const handles = createHandles();
         const app = createMockApp({
             initialFiles: {
