@@ -322,14 +322,15 @@ Ziele:
 | Phase 0 – Taxonomie & Schemas | ✅ Abgeschlossen | Tags & Schemas | Docs: `docs/TAGS.md`, `src/domain/schemas.ts` |
 | Phase 1 – Core State Platform | ✅ Abgeschlossen | Unified Stores | 200/202 Tests passing, Stores migriert ✅ |
 | Phase 2.1-2.7 – Encounter System | ✅ Abgeschlossen | Travel → Combat E2E | Full workflow: Territory, Combat, Generation ✅ |
-| Phase 2.3 – Member Management | ⏳ **NÄCHSTER SCHRITT** | NPC-Tracking | Subfraktionen, Jobs, Expeditionen |
-| Phase 2.5 – Faction Filtering | ⏳ QoL | UI-Filter | Nach 2.3 (optional) |
-| Phase 3 – Orte & Dungeons | ⏳ Geplant | Hierarchie & Grid | Nach Phase 2 komplett |
+| Phase 2.3.1 – Faction Members | ✅ Abgeschlossen | Display Members | Faction members in Encounter Composer ✅ |
+| Phase 3 – Orte & Dungeons | ⏳ **NÄCHSTER SCHRITT** | Hierarchie & Grid | Orts-Struktur, Ownership, Camps |
+| Phase 2.3.2+ – Advanced Factions | ⏳ Optional | Population, Jobs | Inkrementell nach Bedarf |
+| Phase 2.5 – Faction Filtering | ⏳ QoL | UI-Filter | Optional (Generator filtert bereits) |
 | Phase 4 – Event Engine | ⏳ Geplant | Kalender-Automation | Nach Phase 3 |
-| Phase 5 – Loot & Presets | ⏳ Geplant | Loot-Pipeline, Preset-Import | Nach Phase 4 |
+| Phase 5 – Loot & Presets | ⏳ Geplant | Loot-Pipeline | Nach Phase 4 |
 | Phase 6 – Audio & Release | ⏳ Geplant | UX-Finishing | Release-Phase |
 
-**Aktueller Fokus:** Phase 2.3 (Member Management) ← **NÄCHSTER SCHRITT**
+**Aktueller Fokus:** Phase 3 (Orte & Dungeons) ← **NÄCHSTER SCHRITT**
 
 **Test-Suite:** 222/224 grün (99% pass rate) ✅
 
@@ -610,10 +611,71 @@ Umfassendes Fraktions-Management-System:
 
 ---
 
-#### Phase 2.3.2 - Population Tracking ⏳ NÄCHSTER SLICE
+#### Phase 2.3.2 - Population Tracking ⏳ OPTIONAL
 **Scope:** Track verfügbare Anzahl pro Member, zeige "(X available)" Badge
 
-**Out of scope:** Phase 2.3 wird inkrementell erweitert nach Bedarf.
+**Status:** Zurückgestellt zugunsten Phase 3 (Orte sind Grundlage für Jobs/Camps)
+
+---
+
+### Phase 3 – Orte & Dungeons ⏳ NÄCHSTER SCHRITT
+**User Story:** "Als GM will ich Orte mit Hierarchie und Ownership verwalten, damit ich Camps, Städte und Dungeons strukturiert organisieren kann."
+
+#### Zielbild (Langfristig)
+Umfassendes Orts-Management-System:
+- Hierarchische Struktur (Stadt → Viertel → Gebäude → Raum)
+- Ownership (Faction, Subfaction, NPC)
+- Map Integration (Marker, Einflussbereiche)
+- Gebäude-Funktionen (Jobs, Produktionsketten)
+- Dungeons (Grid-Maps, Raum-Features mit IDs)
+
+#### Phase 3.1 - Location Entities (CRUD) ⏳ AKTUELLER FOKUS
+**Scope:** Minimale Location-Verwaltung in Library
+
+**User Story:**
+> "Als GM will ich Orte in der Library erstellen und bearbeiten, damit ich sie später mit Fraktionen und NPCs verknüpfen kann."
+
+**Acceptance Criteria:**
+1. ⏳ Location Schema definiert (name, type, description, parent, owner)
+2. ⏳ CreateSpec für Locations (Library Integration)
+3. ⏳ Storage: `SaltMarcher/Locations/{name}.md`
+4. ⏳ Browse View zeigt Orte mit Type/Owner
+5. ⏳ Create/Edit/Delete Workflow funktioniert
+
+**Implementation Plan:**
+
+**Schritt 1: Schema & Types** (15min)
+- `src/workmodes/library/locations/types.ts` - LocationData interface
+- Fields: name, type (Stadt/Dorf/Gebäude/Dungeon/Camp), description, notes
+- Optional: parent (string), owner_type (faction/npc), owner_name (string)
+
+**Schritt 2: CreateSpec** (30min)
+- `src/workmodes/library/locations/create-spec.ts`
+- Fields: text (name), select (type), textarea (description), text (parent)
+- Ownership fields: select (owner_type), text (owner_name)
+- Storage: `SaltMarcher/Locations/{name}.md`
+
+**Schritt 3: Serializer** (15min)
+- `src/workmodes/library/locations/serializer.ts`
+- Markdown body with structured description
+
+**Schritt 4: Registry Integration** (10min)
+- `src/workmodes/library/registry.ts` - Add location spec
+- Library Tab für Locations
+
+**Schritt 5: Tests** (15min)
+- Validate schema
+- Test create/load workflow
+- Build & verify
+
+**Out of Scope (spätere Slices):**
+- ❌ Hierarchie-Visualisierung (Tree View)
+- ❌ Map Integration (Markers)
+- ❌ Einflussbereiche (Area of Influence)
+- ❌ Gebäude-Jobs System
+- ❌ Dungeon Grid-Maps
+
+**Schätzung:** 1-1.5 Stunden bis Phase 3.1 ✅
 
 ---
 
@@ -639,9 +701,8 @@ Creature-Liste mit Faction-Filter-Dropdown, Relevance-Scoring (Exact > Partial >
 
 **Hinweis:** Phase 5 fokussiert auf **Loot & Preset Management**, nicht XP-Berechnung (bereits fertig).
 
-### Phase 3 – Orte & Dungeons ⏳
-**Zielbild:** Orts-Hierarchie (Stadt → Gebäude → Raum), Dungeon-Grid-Renderer, Raum-Features mit IDs
-**Kickoff:** Schema finalisieren, Dungeon-Prototyp bauen
+### Phase 3 – Orte & Dungeons ⏳ (Details siehe oben)
+Inkrementelle Slices: 3.1 (CRUD) → 3.2 (Hierarchy) → 3.3 (Map Integration) → 3.4 (Dungeons)
 
 ### Phase 4 – Event Engine ⏳
 **Zielbild:** Kalender-Events mit Timeline/Inbox, Automations-Hooks für Reise/Fraktionen/Orte
