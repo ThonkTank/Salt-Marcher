@@ -1,5 +1,5 @@
 // src/workmodes/cartographer/modes/editor.ts
-// Hex-Editor mit direkter Brush-Integration ohne Tool-Manager.
+// Hex-Editor mit Multi-Tool Support (Terrain Brush, Location Marker)
 import type { TFile } from "obsidian";
 import { logger } from "../../../app/plugin-logger";
 import type {
@@ -13,6 +13,10 @@ import {
     mountBrushPanel,
     type BrushPanelControls,
 } from "../editor/tools/terrain-brush/brush-options";
+import {
+    mountLocationMarkerPanel,
+    type LocationMarkerPanelControls,
+} from "../editor/tools/location-marker/marker-panel";
 import type { RenderHandles } from "../../../features/maps/rendering/hex-render";
 import type { HexOptions } from "../../../features/maps/domain/options";
 import { createModeLifecycle } from "./lifecycle";
@@ -25,6 +29,9 @@ import {
 import { enhanceSelectToSearch } from "../../../ui/components/search-dropdown";
 
 const BRUSH_LABEL = "Brush";
+const LOCATION_MARKER_LABEL = "Location Marker";
+
+type ToolId = "brush" | "location-marker";
 
 export function createEditorMode(): CartographerMode {
     let panel: HTMLElement | null = null;
@@ -32,9 +39,13 @@ export function createEditorMode(): CartographerMode {
     let fileLabel: HTMLElement | null = null;
     let statusField: FormStatusHandle | null = null;
     let toolBody: HTMLElement | null = null;
+    let toolSelectHandle: FormSelectHandle | null = null;
 
+    let activeTool: ToolId = "brush";
     let brush: BrushPanelControls | null = null;
     let brushActive = false;
+    let locationMarker: LocationMarkerPanelControls | null = null;
+    let locationMarkerActive = false;
 
     let state: {
         file: TFile | null;
@@ -112,22 +123,114 @@ export function createEditorMode(): CartographerMode {
         }
     };
 
+    const ensureLocationMarker = (ctx: CartographerModeContext) => {
+        if (locationMarker) return locationMarker;
+        if (!toolBody) return null;
+        try {
+            locationMarker = mountLocationMarkerPanel(toolBody, {
+                app: ctx.app,
+                getFile: () => state.file,
+                getHandles: () => state.handles,
+                getOptions: () => state.options,
+                getAbortSignal: () => lifecycle.get(),
+                setStatus: (message) => setContextualMessage(message),
+            });
+            locationMarker.setDisabled(!state.handles || !!errorStatus);
+            return locationMarker;
+        } catch (error) {
+            const message = reportEditorToolIssue({
+                stage: "mount-panel",
+                toolId: LOCATION_MARKER_LABEL,
+                error,
+            });
+            setErrorStatus({ message, tone: "error" });
+            return null;
+        }
+    };
+
+    const clearToolBody = () => {
+        if (!toolBody) return;
+        while (toolBody.firstChild) {
+            toolBody.removeChild(toolBody.firstChild);
+        }
+    };
+
+    const switchTool = (toolId: ToolId, ctx: CartographerModeContext) => {
+        // Deactivate current tool
+        if (activeTool === "brush" && brushActive) {
+            brush?.deactivate();
+            brushActive = false;
+        } else if (activeTool === "location-marker" && locationMarkerActive) {
+            locationMarker?.deactivate();
+            locationMarkerActive = false;
+        }
+
+        // Clear tool body
+        clearToolBody();
+
+        // Cleanup previous tool instances
+        if (activeTool === "brush" && brush) {
+            brush.destroy();
+            brush = null;
+        } else if (activeTool === "location-marker" && locationMarker) {
+            locationMarker.destroy();
+            locationMarker = null;
+        }
+
+        // Set new active tool
+        activeTool = toolId;
+
+        // Mount and activate new tool
+        if (toolId === "brush") {
+            ensureBrush(ctx);
+        } else if (toolId === "location-marker") {
+            ensureLocationMarker(ctx);
+        }
+
+        refreshPanelState();
+    };
+
     const refreshPanelState = () => {
         const hasHandles = !!state.handles;
         baseStatus = hasHandles ? BASE_STATUS_READY : state.file ? BASE_STATUS_LOADING : BASE_STATUS_NO_MAP;
         const toolsBlocked = !!errorStatus;
         panel?.classList.toggle("is-disabled", !hasHandles || toolsBlocked);
         panel?.classList.toggle("has-tool-error", toolsBlocked);
+
+        // Handle brush tool
         brush?.setDisabled(!hasHandles || toolsBlocked);
-        if (!brush || toolsBlocked || !hasHandles) {
-            if (brushActive) {
-                brush?.deactivate();
-                brushActive = false;
+        if (activeTool === "brush") {
+            if (!brush || toolsBlocked || !hasHandles) {
+                if (brushActive) {
+                    brush?.deactivate();
+                    brushActive = false;
+                }
+            } else if (!brushActive) {
+                brush.activate();
+                brushActive = true;
             }
-        } else if (!brushActive) {
-            brush.activate();
-            brushActive = true;
+        } else if (brushActive) {
+            brush?.deactivate();
+            brushActive = false;
         }
+
+        // Handle location marker tool
+        locationMarker?.setDisabled(!hasHandles || toolsBlocked);
+        if (activeTool === "location-marker") {
+            if (!locationMarker || toolsBlocked || !hasHandles) {
+                if (locationMarkerActive) {
+                    locationMarker?.deactivate();
+                    locationMarkerActive = false;
+                }
+            } else if (!locationMarkerActive) {
+                locationMarker.activate();
+                locationMarkerActive = true;
+            }
+        } else if (locationMarkerActive) {
+            locationMarker?.deactivate();
+            locationMarkerActive = false;
+        }
+
         applyStatus();
     };
 
@@ -162,10 +265,19 @@ export function createEditorMode(): CartographerMode {
                             {
                                 kind: "select",
                                 id: "toolSelect",
-                                options: [{ value: "brush", label: BRUSH_LABEL }],
+                                options: [
+                                    { value: "brush", label: BRUSH_LABEL },
+                                    { value: "location-marker", label: LOCATION_MARKER_LABEL },
+                                ],
                                 value: "brush",
-                                disabled: true,
+                                disabled: false,
                                 enhance: (select) => enhanceSelectToSearch(select, "Search dropdown…"),
+                                onChange: ({ element }) => {
+                                    const newTool = element.value as ToolId;
+                                    if (newTool !== activeTool) {
+                                        switchTool(newTool, ctx);
+                                    }
+                                },
                             },
                         ],
                     },
@@ -177,10 +289,10 @@ export function createEditorMode(): CartographerMode {
             fileLabel = form.getElement("file");
             statusField = form.getStatus("status");
             toolBody = form.getContainer("toolBody");
-            const toolSelectHandle = form.getControl("toolSelect") as FormSelectHandle | null;
+            toolSelectHandle = form.getControl("toolSelect") as FormSelectHandle | null;
             toolSelectHandle?.setValue("brush");
-            toolSelectHandle?.setDisabled(true);
 
+            // Initialize with brush tool
             ensureBrush(ctx);
 
             updateFileLabel();
@@ -191,6 +303,10 @@ export function createEditorMode(): CartographerMode {
             brush?.destroy();
             brush = null;
             brushActive = false;
+            locationMarker?.destroy();
+            locationMarker = null;
+            locationMarkerActive = false;
+            activeTool = "brush";
             contextualStatus = null;
             errorStatus = null;
             baseStatus = BASE_STATUS_NO_MAP;
@@ -203,6 +319,7 @@ export function createEditorMode(): CartographerMode {
             fileLabel = null;
             statusField = null;
             toolBody = null;
+            toolSelectHandle = null;
             lifecycle.reset();
         },
         async onFileChange(file, handles, ctx: CartographerModeLifecycleContext) {
@@ -211,26 +328,57 @@ export function createEditorMode(): CartographerMode {
             state.handles = handles;
             state.options = ctx.getOptions();
             updateFileLabel();
-            ensureBrush(ctx);
+
+            // Ensure active tool is mounted
+            if (activeTool === "brush") {
+                ensureBrush(ctx);
+            } else if (activeTool === "location-marker") {
+                ensureLocationMarker(ctx);
+            }
+
             refreshPanelState();
             if (!handles || isAborted()) return;
-            brush?.onMapRendered();
+
+            // Notify active tool of map change
+            if (activeTool === "brush") {
+                brush?.onMapRendered();
+            } else if (activeTool === "location-marker") {
+                locationMarker?.onMapRendered();
+            }
         },
         async onHexClick(coord: HexCoord, _event, ctx: CartographerModeLifecycleContext) {
             lifecycle.bind(ctx);
             if (isAborted()) return;
-            const activeBrush = ensureBrush(ctx);
-            if (!activeBrush) return;
-            try {
-                await activeBrush.handleHexClick(coord);
-            } catch (err) {
-                logger.error("[editor-mode] brush interaction failed", err);
-                const message = reportEditorToolIssue({
-                    stage: "operation",
-                    toolId: BRUSH_LABEL,
-                    error: err,
-                });
-                setErrorStatus({ message, tone: "error" });
+
+            // Handle click based on active tool
+            if (activeTool === "brush") {
+                const activeBrush = ensureBrush(ctx);
+                if (!activeBrush) return;
+                try {
+                    await activeBrush.handleHexClick(coord);
+                } catch (err) {
+                    logger.error("[editor-mode] brush interaction failed", err);
+                    const message = reportEditorToolIssue({
+                        stage: "operation",
+                        toolId: BRUSH_LABEL,
+                        error: err,
+                    });
+                    setErrorStatus({ message, tone: "error" });
+                }
+            } else if (activeTool === "location-marker") {
+                const activeMarker = ensureLocationMarker(ctx);
+                if (!activeMarker) return;
+                try {
+                    await activeMarker.handleHexClick(coord);
+                } catch (err) {
+                    logger.error("[editor-mode] location marker interaction failed", err);
+                    const message = reportEditorToolIssue({
+                        stage: "operation",
+                        toolId: LOCATION_MARKER_LABEL,
+                        error: err,
+                    });
+                    setErrorStatus({ message, tone: "error" });
+                }
             }
         },
     } satisfies CartographerMode;

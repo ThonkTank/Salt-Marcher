@@ -1630,6 +1630,11 @@ function validateTileData(data, options = {}) {
   if (faction.length > TILE_FACTION_MAX_LENGTH) {
     issues.push(`faction exceeds ${TILE_FACTION_MAX_LENGTH} characters`);
   }
+  const locationMarkerRaw = typeof data.locationMarker === "string" ? data.locationMarker : "";
+  const locationMarker = locationMarkerRaw.trim();
+  if (locationMarker.length > TILE_LOCATION_MARKER_MAX_LENGTH) {
+    issues.push(`locationMarker exceeds ${TILE_LOCATION_MARKER_MAX_LENGTH} characters`);
+  }
   const noteRaw = typeof data.note === "string" ? data.note : void 0;
   const note = noteRaw?.trim();
   if (issues.length) {
@@ -1639,6 +1644,7 @@ function validateTileData(data, options = {}) {
     terrain,
     region,
     faction: faction || void 0,
+    locationMarker: locationMarker || void 0,
     note: note || void 0
   };
 }
@@ -1774,6 +1780,7 @@ function buildMarkdown(coord, mapPath, folderPrefix, data) {
   const terrain = validated.terrain ?? "";
   const region = (validated.region ?? "").trim();
   const faction = (validated.faction ?? "").trim();
+  const locationMarker = (validated.locationMarker ?? "").trim();
   const mapName = mapNameFromPath(mapPath);
   const bodyNote = (validated.note ?? "Notizen hier \u2026").trim();
   return [
@@ -1782,6 +1789,7 @@ function buildMarkdown(coord, mapPath, folderPrefix, data) {
     `smHexTile: true`,
     `region: "${region}"`,
     `faction: "${faction}"`,
+    `locationMarker: "${locationMarker}"`,
     `row: ${coord.r}`,
     `col: ${coord.c}`,
     `map_path: "${mapPath}"`,
@@ -1943,12 +1951,13 @@ async function loadTileFromDisk(app, mapFile, coord) {
   const terrain = typeof fmc.terrain === "string" ? fmc.terrain : "";
   const region = typeof fmc.region === "string" ? fmc.region : "";
   const faction = typeof fmc.faction === "string" ? fmc.faction : "";
+  const locationMarker = typeof fmc.locationMarker === "string" ? fmc.locationMarker : "";
   try {
-    const validated = validateTileData({ terrain, region, faction, note }, { allowUnknownTerrain: true });
+    const validated = validateTileData({ terrain, region, faction, locationMarker, note }, { allowUnknownTerrain: true });
     return validated;
   } catch (error) {
     logger2.warn("[salt-marcher] Loaded tile contains invalid data", error);
-    return { terrain: terrain.trim(), region: region.trim(), faction: faction.trim() || void 0, note: note || void 0 };
+    return { terrain: terrain.trim(), region: region.trim(), faction: faction.trim() || void 0, locationMarker: locationMarker.trim() || void 0, note: note || void 0 };
   }
 }
 async function saveTileToDisk(app, mapFile, coord, data) {
@@ -2031,7 +2040,7 @@ function resetTileStore(app, mapFile) {
     storesByApp?.delete(mapFile.path);
   }
 }
-var import_obsidian5, TILE_TERRAIN_MAX_LENGTH, TILE_REGION_MAX_LENGTH, TILE_FACTION_MAX_LENGTH, TileValidationError, FM_TYPE, tileStoreRegistry, overlaySyncRegistry;
+var import_obsidian5, TILE_TERRAIN_MAX_LENGTH, TILE_REGION_MAX_LENGTH, TILE_FACTION_MAX_LENGTH, TILE_LOCATION_MARKER_MAX_LENGTH, TileValidationError, FM_TYPE, tileStoreRegistry, overlaySyncRegistry;
 var init_tile_repository = __esm({
   "src/features/maps/data/tile-repository.ts"() {
     "use strict";
@@ -2044,6 +2053,7 @@ var init_tile_repository = __esm({
     TILE_TERRAIN_MAX_LENGTH = 64;
     TILE_REGION_MAX_LENGTH = 120;
     TILE_FACTION_MAX_LENGTH = 120;
+    TILE_LOCATION_MARKER_MAX_LENGTH = 200;
     TileValidationError = class extends Error {
       constructor(issues) {
         super(`Invalid tile data: ${issues.join(", ")}`);
@@ -4633,6 +4643,255 @@ var init_brush_options = __esm({
   }
 });
 
+// src/workmodes/cartographer/editor/tools/location-marker/marker-panel.ts
+function mountLocationMarkerPanel(root, ctx) {
+  const state = {
+    selectedLocation: "",
+    mode: "place"
+  };
+  let disposed = false;
+  let panelDisabled = false;
+  let manageCommandAvailable = false;
+  let locationControl = null;
+  let modeControl = null;
+  let manageButton = null;
+  let inlineHint = null;
+  let manageHint = null;
+  const setPanelDisabled = (disabled) => {
+    panelDisabled = disabled;
+    if (disabled) {
+      root.classList.add("is-disabled");
+    } else {
+      root.classList.remove("is-disabled");
+    }
+    locationControl?.setDisabled(disabled);
+    modeControl?.setDisabled(disabled);
+    manageButton?.setDisabled(disabled || !manageCommandAvailable);
+  };
+  const updateStatus = (message) => {
+    try {
+      ctx.setStatus(message);
+    } catch (err) {
+      logger2.error("[location-marker] failed to set status", err);
+    }
+  };
+  const setHint = (message, tone = "info", element = null) => {
+    const target = element ?? inlineHint;
+    if (!target) return;
+    target.set({ message, tone });
+    target.setHidden(!message);
+  };
+  const clearHint = (element = null) => {
+    const target = element ?? inlineHint;
+    if (!target) return;
+    target.setHidden(true);
+  };
+  const form = buildForm(root, {
+    sections: [
+      { kind: "header", text: "Location Marker" },
+      { kind: "hint", id: "inline", cls: "sm-inline-hint", hidden: true },
+      {
+        kind: "row",
+        label: "Location:",
+        controls: [
+          {
+            kind: "select",
+            id: "location",
+            options: [{ label: "(none)", value: "" }],
+            enhance: (select) => enhanceSelectToSearch(select, "Search locations\u2026"),
+            onChange: ({ element }) => {
+              state.selectedLocation = element.value;
+              clearHint();
+            }
+          },
+          {
+            kind: "button",
+            id: "manage",
+            label: "Manage\u2026"
+          }
+        ]
+      },
+      { kind: "hint", id: "manageHint", cls: "sm-inline-hint", hidden: true },
+      {
+        kind: "row",
+        label: "Mode:",
+        controls: [
+          {
+            kind: "select",
+            id: "mode",
+            options: [
+              { label: "Place", value: "place" },
+              { label: "Remove", value: "remove" }
+            ],
+            value: "place",
+            onChange: ({ element }) => {
+              state.mode = element.value;
+              clearHint();
+              if (state.mode === "place") {
+                updateStatus("Click hex to place location marker");
+              } else {
+                updateStatus("Click hex to remove location marker");
+              }
+            }
+          }
+        ]
+      }
+    ]
+  });
+  locationControl = form.getControl("location");
+  modeControl = form.getControl("mode");
+  manageButton = form.getControl("manage");
+  inlineHint = form.getHint("inline");
+  manageHint = form.getHint("manageHint");
+  manageCommandAvailable = !!ctx.app.commands?.commands?.[MANAGE_LOCATIONS_COMMAND_ID];
+  if (manageButton) {
+    manageButton.setDisabled(!manageCommandAvailable);
+    manageButton.onClick(() => {
+      if (manageCommandAvailable) {
+        ctx.app.commands.executeCommandById(MANAGE_LOCATIONS_COMMAND_ID);
+      }
+    });
+  }
+  const loadLocations = async () => {
+    try {
+      const locationFiles = await LIBRARY_DATA_SOURCES.locations.list(ctx.app);
+      const locations = [];
+      for (const file of locationFiles) {
+        try {
+          const entry = await LIBRARY_DATA_SOURCES.locations.load(ctx.app, file);
+          locations.push({
+            name: entry.name,
+            type: entry.locationType ?? "Unknown"
+          });
+        } catch (err) {
+          logger2.warn(`[location-marker] failed to load location ${file.path}`, err);
+        }
+      }
+      locations.sort((a, b) => a.name.localeCompare(b.name));
+      locationControl?.setOptions([
+        { label: "(none)", value: "" },
+        ...locations.map((loc) => ({
+          label: `${loc.name} (${loc.type})`,
+          value: loc.name
+        }))
+      ]);
+      if (!manageCommandAvailable) {
+        setHint(
+          "Library command not available. Cannot manage locations.",
+          "warning",
+          manageHint
+        );
+      }
+    } catch (err) {
+      logger2.error("[location-marker] failed to load locations", err);
+      setHint("Failed to load locations from Library", "error");
+    }
+  };
+  const handleHexClick = async (coord) => {
+    if (disposed || panelDisabled) return false;
+    const file = ctx.getFile();
+    if (!file) {
+      setHint("No map file selected", "error");
+      return false;
+    }
+    const signal = ctx.getAbortSignal();
+    if (signal?.aborted) return false;
+    try {
+      if (state.mode === "place") {
+        if (!state.selectedLocation) {
+          setHint("Please select a location first", "warning");
+          return false;
+        }
+        const tileData = await loadTile(ctx.app, file, coord);
+        await saveTile(ctx.app, file, coord, {
+          ...tileData,
+          locationMarker: state.selectedLocation
+        });
+        const markerStore = getLocationMarkerStore(ctx.app, file);
+        const currentMarkers = markerStore.list();
+        const filtered = currentMarkers.filter((m) => m.coord.r !== coord.r || m.coord.c !== coord.c);
+        filtered.push({
+          coord,
+          locationName: state.selectedLocation,
+          locationType: "Location"
+          // Will be enriched by store
+        });
+        markerStore.setMarkers(filtered);
+        updateStatus(`Placed marker: ${state.selectedLocation}`);
+        clearHint();
+        return true;
+      } else if (state.mode === "remove") {
+        const tileData = await loadTile(ctx.app, file, coord);
+        if (!tileData.locationMarker) {
+          setHint("No location marker at this hex", "info");
+          return false;
+        }
+        await saveTile(ctx.app, file, coord, {
+          ...tileData,
+          locationMarker: void 0
+        });
+        const markerStore = getLocationMarkerStore(ctx.app, file);
+        const currentMarkers = markerStore.list();
+        const filtered = currentMarkers.filter((m) => m.coord.r !== coord.r || m.coord.c !== coord.c);
+        markerStore.setMarkers(filtered);
+        updateStatus("Removed location marker");
+        clearHint();
+        return true;
+      }
+    } catch (err) {
+      logger2.error("[location-marker] failed to handle hex click", err);
+      setHint("Failed to update location marker", "error");
+      return false;
+    }
+    return false;
+  };
+  loadLocations().catch((err) => {
+    logger2.error("[location-marker] initialization failed", err);
+  });
+  return {
+    activate() {
+      if (state.mode === "place") {
+        updateStatus("Click hex to place location marker");
+      } else {
+        updateStatus("Click hex to remove location marker");
+      }
+    },
+    deactivate() {
+      clearHint();
+      updateStatus("");
+    },
+    onMapRendered() {
+      loadLocations().catch((err) => {
+        logger2.error("[location-marker] onMapRendered loadLocations failed", err);
+      });
+    },
+    handleHexClick,
+    setDisabled: setPanelDisabled,
+    destroy() {
+      disposed = true;
+      form.destroy();
+      locationControl = null;
+      modeControl = null;
+      manageButton = null;
+      inlineHint = null;
+      manageHint = null;
+    }
+  };
+}
+var MANAGE_LOCATIONS_COMMAND_ID;
+var init_marker_panel = __esm({
+  "src/workmodes/cartographer/editor/tools/location-marker/marker-panel.ts"() {
+    "use strict";
+    init_data_sources();
+    init_search_dropdown();
+    init_plugin_logger();
+    init_tile_repository();
+    init_location_marker_store();
+    init_form_builder();
+    MANAGE_LOCATIONS_COMMAND_ID = "salt-marcher:open-library";
+  }
+});
+
 // src/workmodes/cartographer/modes/lifecycle.ts
 function createModeLifecycle() {
   let signal = null;
@@ -4669,8 +4928,12 @@ function createEditorMode() {
   let fileLabel = null;
   let statusField = null;
   let toolBody = null;
+  let toolSelectHandle = null;
+  let activeTool = "brush";
   let brush = null;
   let brushActive = false;
+  let locationMarker = null;
+  let locationMarkerActive = false;
   let state = {
     file: null,
     handles: null,
@@ -4730,6 +4993,60 @@ function createEditorMode() {
       return null;
     }
   };
+  const ensureLocationMarker = (ctx) => {
+    if (locationMarker) return locationMarker;
+    if (!toolBody) return null;
+    try {
+      locationMarker = mountLocationMarkerPanel(toolBody, {
+        app: ctx.app,
+        getFile: () => state.file,
+        getHandles: () => state.handles,
+        getOptions: () => state.options,
+        getAbortSignal: () => lifecycle.get(),
+        setStatus: (message) => setContextualMessage(message)
+      });
+      locationMarker.setDisabled(!state.handles || !!errorStatus);
+      return locationMarker;
+    } catch (error) {
+      const message = reportEditorToolIssue({
+        stage: "mount-panel",
+        toolId: LOCATION_MARKER_LABEL,
+        error
+      });
+      setErrorStatus({ message, tone: "error" });
+      return null;
+    }
+  };
+  const clearToolBody = () => {
+    if (!toolBody) return;
+    while (toolBody.firstChild) {
+      toolBody.removeChild(toolBody.firstChild);
+    }
+  };
+  const switchTool = (toolId, ctx) => {
+    if (activeTool === "brush" && brushActive) {
+      brush?.deactivate();
+      brushActive = false;
+    } else if (activeTool === "location-marker" && locationMarkerActive) {
+      locationMarker?.deactivate();
+      locationMarkerActive = false;
+    }
+    clearToolBody();
+    if (activeTool === "brush" && brush) {
+      brush.destroy();
+      brush = null;
+    } else if (activeTool === "location-marker" && locationMarker) {
+      locationMarker.destroy();
+      locationMarker = null;
+    }
+    activeTool = toolId;
+    if (toolId === "brush") {
+      ensureBrush(ctx);
+    } else if (toolId === "location-marker") {
+      ensureLocationMarker(ctx);
+    }
+    refreshPanelState();
+  };
   const refreshPanelState = () => {
     const hasHandles = !!state.handles;
     baseStatus = hasHandles ? BASE_STATUS_READY : state.file ? BASE_STATUS_LOADING : BASE_STATUS_NO_MAP;
@@ -4737,14 +5054,34 @@ function createEditorMode() {
     panel?.classList.toggle("is-disabled", !hasHandles || toolsBlocked);
     panel?.classList.toggle("has-tool-error", toolsBlocked);
     brush?.setDisabled(!hasHandles || toolsBlocked);
-    if (!brush || toolsBlocked || !hasHandles) {
-      if (brushActive) {
-        brush?.deactivate();
-        brushActive = false;
+    if (activeTool === "brush") {
+      if (!brush || toolsBlocked || !hasHandles) {
+        if (brushActive) {
+          brush?.deactivate();
+          brushActive = false;
+        }
+      } else if (!brushActive) {
+        brush.activate();
+        brushActive = true;
       }
-    } else if (!brushActive) {
-      brush.activate();
-      brushActive = true;
+    } else if (brushActive) {
+      brush?.deactivate();
+      brushActive = false;
+    }
+    locationMarker?.setDisabled(!hasHandles || toolsBlocked);
+    if (activeTool === "location-marker") {
+      if (!locationMarker || toolsBlocked || !hasHandles) {
+        if (locationMarkerActive) {
+          locationMarker?.deactivate();
+          locationMarkerActive = false;
+        }
+      } else if (!locationMarkerActive) {
+        locationMarker.activate();
+        locationMarkerActive = true;
+      }
+    } else if (locationMarkerActive) {
+      locationMarker?.deactivate();
+      locationMarkerActive = false;
     }
     applyStatus();
   };
@@ -4776,10 +5113,19 @@ function createEditorMode() {
               {
                 kind: "select",
                 id: "toolSelect",
-                options: [{ value: "brush", label: BRUSH_LABEL }],
+                options: [
+                  { value: "brush", label: BRUSH_LABEL },
+                  { value: "location-marker", label: LOCATION_MARKER_LABEL }
+                ],
                 value: "brush",
-                disabled: true,
-                enhance: (select) => enhanceSelectToSearch(select, "Search dropdown\u2026")
+                disabled: false,
+                enhance: (select) => enhanceSelectToSearch(select, "Search dropdown\u2026"),
+                onChange: ({ element }) => {
+                  const newTool = element.value;
+                  if (newTool !== activeTool) {
+                    switchTool(newTool, ctx);
+                  }
+                }
               }
             ]
           },
@@ -4790,9 +5136,8 @@ function createEditorMode() {
       fileLabel = form.getElement("file");
       statusField = form.getStatus("status");
       toolBody = form.getContainer("toolBody");
-      const toolSelectHandle = form.getControl("toolSelect");
+      toolSelectHandle = form.getControl("toolSelect");
       toolSelectHandle?.setValue("brush");
-      toolSelectHandle?.setDisabled(true);
       ensureBrush(ctx);
       updateFileLabel();
       refreshPanelState();
@@ -4802,6 +5147,10 @@ function createEditorMode() {
       brush?.destroy();
       brush = null;
       brushActive = false;
+      locationMarker?.destroy();
+      locationMarker = null;
+      locationMarkerActive = false;
+      activeTool = "brush";
       contextualStatus = null;
       errorStatus = null;
       baseStatus = BASE_STATUS_NO_MAP;
@@ -4814,6 +5163,7 @@ function createEditorMode() {
       fileLabel = null;
       statusField = null;
       toolBody = null;
+      toolSelectHandle = null;
       lifecycle.reset();
     },
     async onFileChange(file, handles, ctx) {
@@ -4822,41 +5172,67 @@ function createEditorMode() {
       state.handles = handles;
       state.options = ctx.getOptions();
       updateFileLabel();
-      ensureBrush(ctx);
+      if (activeTool === "brush") {
+        ensureBrush(ctx);
+      } else if (activeTool === "location-marker") {
+        ensureLocationMarker(ctx);
+      }
       refreshPanelState();
       if (!handles || isAborted()) return;
-      brush?.onMapRendered();
+      if (activeTool === "brush") {
+        brush?.onMapRendered();
+      } else if (activeTool === "location-marker") {
+        locationMarker?.onMapRendered();
+      }
     },
     async onHexClick(coord, _event, ctx) {
       lifecycle.bind(ctx);
       if (isAborted()) return;
-      const activeBrush = ensureBrush(ctx);
-      if (!activeBrush) return;
-      try {
-        await activeBrush.handleHexClick(coord);
-      } catch (err) {
-        logger2.error("[editor-mode] brush interaction failed", err);
-        const message = reportEditorToolIssue({
-          stage: "operation",
-          toolId: BRUSH_LABEL,
-          error: err
-        });
-        setErrorStatus({ message, tone: "error" });
+      if (activeTool === "brush") {
+        const activeBrush = ensureBrush(ctx);
+        if (!activeBrush) return;
+        try {
+          await activeBrush.handleHexClick(coord);
+        } catch (err) {
+          logger2.error("[editor-mode] brush interaction failed", err);
+          const message = reportEditorToolIssue({
+            stage: "operation",
+            toolId: BRUSH_LABEL,
+            error: err
+          });
+          setErrorStatus({ message, tone: "error" });
+        }
+      } else if (activeTool === "location-marker") {
+        const activeMarker = ensureLocationMarker(ctx);
+        if (!activeMarker) return;
+        try {
+          await activeMarker.handleHexClick(coord);
+        } catch (err) {
+          logger2.error("[editor-mode] location marker interaction failed", err);
+          const message = reportEditorToolIssue({
+            stage: "operation",
+            toolId: LOCATION_MARKER_LABEL,
+            error: err
+          });
+          setErrorStatus({ message, tone: "error" });
+        }
       }
     }
   };
 }
-var BRUSH_LABEL;
+var BRUSH_LABEL, LOCATION_MARKER_LABEL;
 var init_editor = __esm({
   "src/workmodes/cartographer/modes/editor.ts"() {
     "use strict";
     init_plugin_logger();
     init_editor_telemetry();
     init_brush_options();
+    init_marker_panel();
     init_lifecycle();
     init_form_builder();
     init_search_dropdown();
     BRUSH_LABEL = "Brush";
+    LOCATION_MARKER_LABEL = "Location Marker";
   }
 });
 
@@ -16396,7 +16772,9 @@ function createInspectorMode() {
     ui.note?.setValue(data?.note ?? "");
     ui.note?.setDisabled(false);
     if (ui.locationInfo) {
-      ui.locationInfo.empty();
+      while (ui.locationInfo.firstChild) {
+        ui.locationInfo.removeChild(ui.locationInfo.firstChild);
+      }
       const markerStore = getLocationMarkerStore(ctx.app, file);
       const marker = markerStore.get(state.selection);
       if (marker) {

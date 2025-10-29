@@ -8,11 +8,12 @@ import { createTileStore, createEmptyTileStoreState, type TileStore, type TileSt
 import type { Unsubscriber } from "../../../services/state";
 
 export type TileCoord = { r: number; c: number };
-export type TileData  = { terrain: string; region?: string; faction?: string; note?: string };
+export type TileData  = { terrain: string; region?: string; faction?: string; note?: string; locationMarker?: string };
 
 const TILE_TERRAIN_MAX_LENGTH = 64;
 const TILE_REGION_MAX_LENGTH = 120;
 const TILE_FACTION_MAX_LENGTH = 120;
+const TILE_LOCATION_MARKER_MAX_LENGTH = 200;
 
 export class TileValidationError extends Error {
     constructor(public readonly issues: string[]) {
@@ -52,6 +53,12 @@ export function validateTileData(
         issues.push(`faction exceeds ${TILE_FACTION_MAX_LENGTH} characters`);
     }
 
+    const locationMarkerRaw = typeof data.locationMarker === "string" ? data.locationMarker : "";
+    const locationMarker = locationMarkerRaw.trim();
+    if (locationMarker.length > TILE_LOCATION_MARKER_MAX_LENGTH) {
+        issues.push(`locationMarker exceeds ${TILE_LOCATION_MARKER_MAX_LENGTH} characters`);
+    }
+
     const noteRaw = typeof data.note === "string" ? data.note : undefined;
     const note = noteRaw?.trim();
 
@@ -63,6 +70,7 @@ export function validateTileData(
         terrain,
         region,
         faction: faction || undefined,
+        locationMarker: locationMarker || undefined,
         note: note || undefined,
     };
 }
@@ -225,6 +233,7 @@ function buildMarkdown(coord: TileCoord, mapPath: string, folderPrefix: string, 
     const terrain = validated.terrain ?? "";
     const region = (validated.region ?? "").trim();
     const faction = (validated.faction ?? "").trim();
+    const locationMarker = (validated.locationMarker ?? "").trim();
     const mapName = mapNameFromPath(mapPath);
     const bodyNote = (validated.note ?? "Notizen hier …").trim();
     return [
@@ -233,6 +242,7 @@ function buildMarkdown(coord: TileCoord, mapPath: string, folderPrefix: string, 
         `smHexTile: true`,
         `region: "${region}"`,
         `faction: "${faction}"`,
+        `locationMarker: "${locationMarker}"`,
         `row: ${coord.r}`,
         `col: ${coord.c}`,
         `map_path: "${mapPath}"`,
@@ -465,12 +475,13 @@ async function loadTileFromDisk(
     const terrain = typeof fmc.terrain === "string" ? fmc.terrain : "";
     const region = typeof (fmc as any).region === "string" ? (fmc as any).region : "";
     const faction = typeof (fmc as any).faction === "string" ? (fmc as any).faction : "";
+    const locationMarker = typeof (fmc as any).locationMarker === "string" ? (fmc as any).locationMarker : "";
     try {
-        const validated = validateTileData({ terrain, region, faction, note }, { allowUnknownTerrain: true });
+        const validated = validateTileData({ terrain, region, faction, locationMarker, note }, { allowUnknownTerrain: true });
         return validated;
     } catch (error) {
         logger.warn("[salt-marcher] Loaded tile contains invalid data", error);
-        return { terrain: terrain.trim(), region: region.trim(), faction: faction.trim() || undefined, note: note || undefined };
+        return { terrain: terrain.trim(), region: region.trim(), faction: faction.trim() || undefined, locationMarker: locationMarker.trim() || undefined, note: note || undefined };
     }
 }
 

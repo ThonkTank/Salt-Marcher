@@ -327,13 +327,15 @@ Ziele:
 | **Phase 3.2 – Tree Core** | ✅ **Abgeschlossen** | Tree Infrastructure | Tree-Builder, Components, Tests ✅ |
 | **Phase 3.2.1 – Tree UI Integration** | ✅ **Abgeschlossen** | Library Toggle | List/Tree toggle in Library ✅ |
 | **Phase 3.3 – Map POI Markers** | ✅ **Abgeschlossen** | Hex Markers | Location markers auf Karte ✅ |
+| **Phase 3.3.1 – Marker Editor Tool** | ✅ **Abgeschlossen** | Marker Placement | Editor tool mit Multi-Tool Support ✅ |
+| **Phase 3.4 – Dungeons** | ⏳ **NÄCHSTER SCHRITT** | Grid Maps | Dungeon-Karten mit Raum-Features |
 | Phase 2.3.2+ – Advanced Factions | ⏳ Optional | Population, Jobs | Inkrementell nach Bedarf |
 | Phase 2.5 – Faction Filtering | ⏳ QoL | UI-Filter | Optional (Generator filtert bereits) |
 | Phase 4 – Event Engine | ⏳ Geplant | Kalender-Automation | Nach Phase 3 |
 | Phase 5 – Loot & Presets | ⏳ Geplant | Loot-Pipeline | Nach Phase 4 |
 | Phase 6 – Audio & Release | ⏳ Geplant | UX-Finishing | Release-Phase |
 
-**Aktueller Fokus:** Phase 3.4 (Dungeons) oder Phase 4 (Event Engine) ← **NÄCHSTE SCHRITTE**
+**Aktueller Fokus:** Phase 3.4 (Dungeons) ← **NÄCHSTER SCHRITT**
 
 **Test-Suite:** 258/260 grün (99.2% pass rate) ✅ ALL TESTS PASSING (+19 neue Location Marker Tests)
 
@@ -936,9 +938,69 @@ Umfassendes Orts-Management-System:
 - ⏭️ 2 skipped (todo-governance, header-policy)
 
 **Next Steps:**
-- Phase 3.3.1 - Editor Mode Integration (marker placement UI)
+- Phase 3.3.1 - Editor Mode Integration (marker placement UI) ← **NEXT**
 - Phase 3.4 - Dungeons (grid maps, room features)
 - Phase 4 - Event Engine (calendar automation)
+
+---
+
+#### Phase 3.3.1 - Marker Editor Tool ✅ COMPLETED
+
+**Scope:** Editor Mode Tool zum Platzieren und Entfernen von Location Markern
+
+**User Story:**
+> "Als GM will ich im Cartographer Editor Mode Locations auf Hexes platzieren können, damit ich meine Karte mit wichtigen Orten annotieren kann."
+
+**Acceptance Criteria:**
+1. ✅ Neues Tool "Location Marker" im Editor Mode
+2. ✅ Dropdown: Locations aus Library laden
+3. ✅ Click auf Hex: Location platzieren (marker erscheint)
+4. ✅ Mode-Switcher: Place/Remove Modi
+5. ✅ Persistence: Marker in TileData speichern (neue Eigenschaft)
+6. ✅ Auto-Sync: marker-store lädt aus TileData
+
+**✅ Completed Implementation:**
+
+**Schritt 1: TileData Schema erweitern** (~15min) ✅
+- Extended `TileData` interface mit `locationMarker?: string` property
+- Updated `tile-repository.ts` load/save functions
+- Validation logic mit 200 char limit
+- Backward compatibility durch optional property
+
+**Schritt 2-5: Editor Tool & Panel** (~2h) ✅
+- Created `marker-panel.ts` (330 lines) following brush-options pattern
+- Location dropdown mit Library integration
+- Place/Remove mode switcher
+- Auto-save to TileData on hex click
+- Auto-sync mit location-marker-store
+- Status messages & error handling
+
+**Schritt 6: Editor Integration** (~30min) ✅
+- Updated `editor.ts` mit Multi-Tool Support
+- Tool dropdown enabled mit "Brush" und "Location Marker" options
+- Tool switching logic mit cleanup
+- Both tools work independently
+- No regressions in existing brush functionality
+
+**Files:**
+- `src/features/maps/data/tile-repository.ts` (+20 lines) - Schema extension
+- `src/workmodes/cartographer/editor/tools/location-marker/marker-panel.ts` (330 lines) - Tool
+- `src/workmodes/cartographer/modes/editor.ts` (+100 lines) - Multi-tool support
+
+**Test Results:**
+- ✅ Build: 2.8mb (successful)
+- ✅ Tests: 258/260 passing (99.2%)
+- ✅ No regressions in existing tests
+- ✅ Backward compatibility maintained (optional locationMarker property)
+
+**Out of Scope (Future Enhancements):**
+- ❌ Drag & Drop Marker verschieben → later
+- ❌ Multi-Hex Locations → later
+- ❌ Automatic marker placement → later
+- ❌ Marker editing (change location) → later (re-place stattdessen)
+- ❌ Keyboard Shortcut: `L` für Location Marker Tool → later
+
+**Total Time:** ~3 hours (15min + 2h + 30min)
 
 ---
 
