@@ -15752,6 +15752,14 @@ function locationToMarkdown(data) {
       serializeRoom(room, lines);
     }
   }
+  if (isDungeonLocation(data) && data.tokens && data.tokens.length > 0) {
+    lines.push("");
+    lines.push("## Tokens");
+    lines.push("");
+    for (const token of data.tokens) {
+      serializeToken(token, lines);
+    }
+  }
   if (data.notes) {
     lines.push("");
     lines.push("## Notes");
@@ -15802,6 +15810,16 @@ function serializeFeature(feature, lines) {
   const prefix = getFeatureTypePrefix(feature.type);
   const label = getFeatureTypeLabel(feature.type);
   const line = `- **${prefix}${feature.id}** (${label}, ${feature.position.x},${feature.position.y}): ${feature.description}`;
+  lines.push(line);
+}
+function serializeToken(token, lines) {
+  let line = `- **${token.label}** (${token.type}, ${token.position.x},${token.position.y})`;
+  if (token.color) {
+    line += ` [${token.color}]`;
+  }
+  if (token.size && token.size !== 1) {
+    line += ` size=${token.size}`;
+  }
   lines.push(line);
 }
 var init_serializer9 = __esm({
@@ -15975,7 +15993,8 @@ var init_create_spec9 = __esm({
           "grid_width",
           "grid_height",
           "cell_size",
-          "rooms"
+          "rooms",
+          "tokens"
         ],
         bodyTemplate: (data) => locationToMarkdown(data)
       },

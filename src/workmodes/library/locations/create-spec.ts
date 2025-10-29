@@ -181,6 +181,7 @@ export const locationSpec: CreateSpec<LocationData> = {
             "grid_height",
             "cell_size",
             "rooms",
+            "tokens",
         ],
         bodyTemplate: (data) => locationToMarkdown(data as LocationData),
     },

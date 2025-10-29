@@ -1,7 +1,7 @@
 // src/workmodes/library/locations/serializer.ts
 // Markdown serialization helpers for locations
 
-import type { LocationData, DungeonRoom, DungeonDoor, DungeonFeature } from "./types";
+import type { LocationData, DungeonRoom, DungeonDoor, DungeonFeature, DungeonToken } from "./types";
 import { OWNER_TYPE_LABELS } from "./constants";
 import { getFeatureTypePrefix, getFeatureTypeLabel, isDungeonLocation } from "./types";
 
@@ -55,6 +55,16 @@ export function locationToMarkdown(data: LocationData): string {
         lines.push("");
         for (const room of data.rooms) {
             serializeRoom(room, lines);
+        }
+    }
+
+    // Dungeon-specific: Tokens section
+    if (isDungeonLocation(data) && data.tokens && data.tokens.length > 0) {
+        lines.push("");
+        lines.push("## Tokens");
+        lines.push("");
+        for (const token of data.tokens) {
+            serializeToken(token, lines);
         }
     }
 
@@ -126,5 +136,19 @@ function serializeFeature(feature: DungeonFeature, lines: string[]): void {
     const prefix = getFeatureTypePrefix(feature.type);
     const label = getFeatureTypeLabel(feature.type);
     const line = `- **${prefix}${feature.id}** (${label}, ${feature.position.x},${feature.position.y}): ${feature.description}`;
+    lines.push(line);
+}
+
+function serializeToken(token: DungeonToken, lines: string[]): void {
+    let line = `- **${token.label}** (${token.type}, ${token.position.x},${token.position.y})`;
+
+    if (token.color) {
+        line += ` [${token.color}]`;
+    }
+
+    if (token.size && token.size !== 1.0) {
+        line += ` size=${token.size}`;
+    }
+
     lines.push(line);
 }

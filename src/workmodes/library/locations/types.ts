@@ -29,6 +29,7 @@ export interface LocationData {
     grid_height?: number;
     cell_size?: number; // Grid cell size in pixels (default: 40)
     rooms?: DungeonRoom[];
+    tokens?: DungeonToken[]; // Tokens placed on the grid
 }
 
 // Dungeon-specific types
@@ -76,6 +77,18 @@ export interface GridPosition {
     y: number;
 }
 
+// Token types
+export type TokenType = "player" | "npc" | "monster" | "object";
+
+export interface DungeonToken {
+    id: string; // Unique token ID (e.g., "token-1", "token-2")
+    type: TokenType;
+    position: GridPosition;
+    label: string; // Display name (e.g., "Gandalf", "Goblin 1", "Chest")
+    color?: string; // Hex color for token (default: type-based)
+    size?: number; // Token size multiplier (default: 1.0)
+}
+
 // Helper functions
 export function getFeatureTypePrefix(type: DungeonFeatureType): string {
     switch (type) {
@@ -106,6 +119,20 @@ export function getFeatureTypeLabel(type: DungeonFeatureType): string {
             return "Furniture";
         case "other":
             return "Other";
+    }
+}
+
+// Token helpers
+export function getDefaultTokenColor(type: TokenType): string {
+    switch (type) {
+        case "player":
+            return "#4a90e2"; // Blue
+        case "npc":
+            return "#50c878"; // Green
+        case "monster":
+            return "#e74c3c"; // Red
+        case "object":
+            return "#f39c12"; // Orange
     }
 }
 
