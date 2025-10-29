@@ -2238,6 +2238,133 @@ var init_surface = __esm({
   }
 });
 
+// src/features/maps/state/location-marker-store.ts
+function getLocationMarkerStore(app, mapFile) {
+  let storesByApp = markerRegistry.get(app);
+  if (!storesByApp) {
+    storesByApp = /* @__PURE__ */ new Map();
+    markerRegistry.set(app, storesByApp);
+  }
+  const mapPath = (0, import_obsidian8.normalizePath)(mapFile.path);
+  let store = storesByApp.get(mapPath);
+  if (!store) {
+    store = createLocationMarkerStore(mapPath);
+    storesByApp.set(mapPath, store);
+  }
+  return store;
+}
+function createLocationMarkerStore(mapPath) {
+  const storeName = `map-location-markers:${mapPath}`;
+  const state = writable(createEmptyState2(mapPath), {
+    name: storeName,
+    debug: false
+  });
+  getStoreManager().register(storeName, state);
+  const setMarkers = (markers) => {
+    const nextEntries = /* @__PURE__ */ new Map();
+    const seen = /* @__PURE__ */ new Set();
+    for (const marker of markers) {
+      if (!marker) continue;
+      const coord = normalizeCoord2(marker.coord);
+      if (!coord) continue;
+      const locationName = normalizeString(marker.locationName);
+      if (!locationName) continue;
+      const key = keyFromCoord3(coord);
+      if (seen.has(key)) continue;
+      const displayIcon = marker.icon || LOCATION_TYPE_ICONS[marker.locationType] || "\u{1F4CD}";
+      const entry = {
+        ...marker,
+        coord,
+        locationName,
+        key,
+        displayIcon
+      };
+      nextEntries.set(key, entry);
+      seen.add(key);
+    }
+    state.set({
+      mapPath,
+      loaded: true,
+      entries: nextEntries,
+      version: Date.now()
+    });
+  };
+  const clear = () => {
+    state.set(createEmptyState2(mapPath));
+  };
+  const get = (coord) => {
+    const snapshot = state.get();
+    const normalized = normalizeCoord2(coord);
+    if (!normalized) return null;
+    return snapshot.entries.get(keyFromCoord3(normalized)) ?? null;
+  };
+  const list = () => {
+    const snapshot = state.get();
+    return Array.from(snapshot.entries.values());
+  };
+  const getByLocationName = (name) => {
+    const snapshot = state.get();
+    const normalized = normalizeString(name);
+    if (!normalized) return null;
+    for (const entry of snapshot.entries.values()) {
+      if (entry.locationName === normalized) {
+        return entry;
+      }
+    }
+    return null;
+  };
+  return {
+    state,
+    setMarkers,
+    clear,
+    get,
+    list,
+    getByLocationName
+  };
+}
+function createEmptyState2(mapPath) {
+  return {
+    mapPath,
+    loaded: false,
+    entries: /* @__PURE__ */ new Map(),
+    version: Date.now()
+  };
+}
+function normalizeCoord2(coord) {
+  if (!coord) return null;
+  const r = Number(coord.r);
+  const c = Number(coord.c);
+  if (!Number.isInteger(r) || !Number.isInteger(c)) return null;
+  return { r, c };
+}
+function normalizeString(str) {
+  return typeof str === "string" ? str.trim() : "";
+}
+function keyFromCoord3(coord) {
+  return `${coord.r}:${coord.c}`;
+}
+var import_obsidian8, LOCATION_TYPE_ICONS, markerRegistry;
+var init_location_marker_store = __esm({
+  "src/features/maps/state/location-marker-store.ts"() {
+    "use strict";
+    import_obsidian8 = require("obsidian");
+    init_state();
+    init_store_manager();
+    LOCATION_TYPE_ICONS = {
+      "Stadt": "\u{1F3D9}\uFE0F",
+      "Dorf": "\u{1F3D8}\uFE0F",
+      "Weiler": "\u{1F3E1}",
+      "Geb\xE4ude": "\u{1F3E2}",
+      "Dungeon": "\u2694\uFE0F",
+      "Camp": "\u26FA",
+      "Landmark": "\u{1F5FF}",
+      "Ruine": "\u{1F3DA}\uFE0F",
+      "Festung": "\u{1F3F0}"
+    };
+    markerRegistry = /* @__PURE__ */ new WeakMap();
+  }
+});
+
 // src/features/maps/rendering/hex-render.ts
 async function renderHexMap(app, host, mapFile, opts) {
   const radius = opts.radius;
@@ -2308,11 +2435,35 @@ async function renderHexMap(app, host, mapFile, opts) {
   };
   const overlayUnsubscribe = overlayStore.state.subscribe(applyOverlay);
   applyOverlay(overlayStore.state.get());
+  const markerStore = getLocationMarkerStore(app, mapFile);
+  const markerLayer = createMarkerLayer(scene.contentG, radius, base, padding);
+  let markerKeys = /* @__PURE__ */ new Set();
+  const applyMarkers = (state) => {
+    const entries = state.loaded ? Array.from(state.entries.values()) : [];
+    const ensureCoords = entries.map((entry) => entry.coord);
+    scene.ensurePolys(ensureCoords);
+    const nextKeys = /* @__PURE__ */ new Set();
+    for (const entry of entries) {
+      const key = `${entry.coord.r},${entry.coord.c}`;
+      nextKeys.add(key);
+      markerLayer.setMarker(entry.coord, entry.displayIcon, entry.locationName);
+    }
+    for (const key of markerKeys) {
+      if (nextKeys.has(key)) continue;
+      const [r, c] = key.split(",").map(Number);
+      markerLayer.clearMarker({ r, c });
+    }
+    markerKeys = nextKeys;
+  };
+  const markerUnsubscribe = markerStore.state.subscribe(applyMarkers);
+  applyMarkers(markerStore.state.get());
   const ensurePolys = (coords) => {
     if (!coords.length) return;
     scene.ensurePolys(coords);
   };
   const cleanup = () => {
+    markerUnsubscribe();
+    markerKeys.clear();
     overlayUnsubscribe();
     overlayKeys.clear();
     legendHost.remove();
@@ -2387,7 +2538,59 @@ function updateLegend(container, entries) {
     row.createDiv({ cls: "sm-map-legend__meta", text: `${item.count}` });
   }
 }
-var OVERLAY_STROKE_WIDTH, OVERLAY_FILL_OPACITY, DEFAULT_PADDING, CAMERA_OPTIONS;
+function createMarkerLayer(contentG, radius, base, padding) {
+  const markerGroup = document.createElementNS(SVG_NS2, "g");
+  markerGroup.setAttribute("class", "location-markers");
+  contentG.appendChild(markerGroup);
+  const markerByCoord = /* @__PURE__ */ new Map();
+  const hexW = Math.sqrt(3) * radius;
+  const hexH = 2 * radius;
+  const hStep = hexW;
+  const vStep = 0.75 * hexH;
+  const centerOf = (coord) => {
+    const { r, c } = coord;
+    const cx = padding + (c - base.c) * hStep + (r % 2 ? hexW / 2 : 0);
+    const cy = padding + (r - base.r) * vStep + hexH / 2;
+    return { cx, cy };
+  };
+  const keyOf4 = (coord) => `${coord.r},${coord.c}`;
+  const setMarker = (coord, icon, tooltip) => {
+    const key = keyOf4(coord);
+    let marker = markerByCoord.get(key);
+    if (!marker) {
+      marker = document.createElementNS(SVG_NS2, "text");
+      marker.setAttribute("class", "location-marker");
+      marker.setAttribute("text-anchor", "middle");
+      marker.setAttribute("pointer-events", "none");
+      marker.setAttribute("font-size", MARKER_FONT_SIZE);
+      marker.setAttribute("data-coord", key);
+      markerGroup.appendChild(marker);
+      markerByCoord.set(key, marker);
+    }
+    const { cx, cy } = centerOf(coord);
+    marker.setAttribute("x", String(cx));
+    marker.setAttribute("y", String(cy - 10));
+    marker.textContent = icon;
+    if (tooltip) {
+      const title = document.createElementNS(SVG_NS2, "title");
+      title.textContent = tooltip;
+      marker.appendChild(title);
+    }
+  };
+  const clearMarker = (coord) => {
+    const key = keyOf4(coord);
+    const marker = markerByCoord.get(key);
+    if (marker) {
+      marker.remove();
+      markerByCoord.delete(key);
+    }
+  };
+  return {
+    setMarker,
+    clearMarker
+  };
+}
+var OVERLAY_STROKE_WIDTH, OVERLAY_FILL_OPACITY, MARKER_FONT_SIZE, SVG_NS2, DEFAULT_PADDING, CAMERA_OPTIONS;
 var init_hex_render = __esm({
   "src/features/maps/rendering/hex-render.ts"() {
     "use strict";
@@ -2401,8 +2604,11 @@ var init_hex_render = __esm({
     init_surface();
     init_interaction_delegate();
     init_faction_overlay_store();
+    init_location_marker_store();
     OVERLAY_STROKE_WIDTH = "3";
     OVERLAY_FILL_OPACITY = "0.55";
+    MARKER_FONT_SIZE = "24px";
+    SVG_NS2 = "http://www.w3.org/2000/svg";
     DEFAULT_PADDING = 12;
     CAMERA_OPTIONS = { minScale: 0.15, maxScale: 16, zoomSpeed: 1.01 };
   }
@@ -2410,9 +2616,9 @@ var init_hex_render = __esm({
 
 // src/features/maps/state/region-store.ts
 async function ensureRegionsFile(app) {
-  const path = (0, import_obsidian8.normalizePath)(REGIONS_FILE);
+  const path = (0, import_obsidian9.normalizePath)(REGIONS_FILE);
   const existing = app.vault.getAbstractFileByPath(path);
-  if (existing instanceof import_obsidian8.TFile) {
+  if (existing instanceof import_obsidian9.TFile) {
     return existing;
   }
   const dir = path.split("/").slice(0, -1).join("/");
@@ -2537,7 +2743,7 @@ function createRegionStore(app, options) {
       dirty = false;
     },
     isDirty: () => dirty,
-    getStorageKey: () => (0, import_obsidian8.normalizePath)(REGIONS_FILE)
+    getStorageKey: () => (0, import_obsidian9.normalizePath)(REGIONS_FILE)
   };
   getStoreManager().register("map-regions", persistent2);
   const ensureLoaded = async () => {
@@ -2573,7 +2779,7 @@ function createRegionStore(app, options) {
     triggerRegionEvent(app);
   };
   const watch = (onChange) => {
-    const targetPath = (0, import_obsidian8.normalizePath)(REGIONS_FILE);
+    const targetPath = (0, import_obsidian9.normalizePath)(REGIONS_FILE);
     const update = async (reason) => {
       try {
         if (reason === "delete") {
@@ -2581,7 +2787,7 @@ function createRegionStore(app, options) {
             "Regions store detected deletion; attempting automatic recreation."
           );
           await ensureRegionsFile(app);
-          new import_obsidian8.Notice("Regions.md wurde neu erstellt.");
+          new import_obsidian9.Notice("Regions.md wurde neu erstellt.");
         }
         await refresh();
         await onChange?.();
@@ -2594,8 +2800,8 @@ function createRegionStore(app, options) {
       }
     };
     const maybeUpdate = (reason, file) => {
-      if (!(file instanceof import_obsidian8.TFile)) return;
-      if ((0, import_obsidian8.normalizePath)(file.path) !== targetPath) return;
+      if (!(file instanceof import_obsidian9.TFile)) return;
+      if ((0, import_obsidian9.normalizePath)(file.path) !== targetPath) return;
       void update(reason);
     };
     const refs = ["modify", "delete"].map(
@@ -2644,11 +2850,11 @@ function resetRegionStore(app) {
   store.state.set(createInitialState());
   storeRegistry.delete(app);
 }
-var import_obsidian8, REGIONS_FILE, BLOCK_RE, storeRegistry;
+var import_obsidian9, REGIONS_FILE, BLOCK_RE, storeRegistry;
 var init_region_store = __esm({
   "src/features/maps/state/region-store.ts"() {
     "use strict";
-    import_obsidian8 = require("obsidian");
+    import_obsidian9 = require("obsidian");
     init_state();
     init_store_manager();
     init_plugin_logger();
@@ -2776,7 +2982,7 @@ function applyMapButtonStyle(button) {
 async function promptMapSelection(app, onSelect, options) {
   const files = await getAllMapFiles(app);
   if (!files.length) {
-    new import_obsidian9.Notice(options?.emptyMessage ?? "No maps available.");
+    new import_obsidian10.Notice(options?.emptyMessage ?? "No maps available.");
     return;
   }
   new MapSelectModal(app, files, async (file) => {
@@ -2786,15 +2992,15 @@ async function promptMapSelection(app, onSelect, options) {
 function promptCreateMap(app, onCreate, options) {
   new NameInputModal(app, async (name) => {
     const file = await createHexMapFile(app, name);
-    new import_obsidian9.Notice(options?.successMessage ?? "Map created.");
+    new import_obsidian10.Notice(options?.successMessage ?? "Map created.");
     await onCreate(file);
   }).open();
 }
-var import_obsidian9;
+var import_obsidian10;
 var init_map_workflows = __esm({
   "src/ui/maps/workflows/map-workflows.ts"() {
     "use strict";
-    import_obsidian9 = require("obsidian");
+    import_obsidian10 = require("obsidian");
     init_map_repository();
     init_map_list();
     init_options();
@@ -2915,15 +3121,15 @@ function reportEditorToolIssue(payload) {
   const dedupeKey = `${stage}:${toolId}`;
   if (!noticedIssues.has(dedupeKey)) {
     noticedIssues.add(dedupeKey);
-    new import_obsidian13.Notice(userMessage);
+    new import_obsidian14.Notice(userMessage);
   }
   return userMessage;
 }
-var import_obsidian13, noticedIssues, TOOL_STAGE_MESSAGES;
+var import_obsidian14, noticedIssues, TOOL_STAGE_MESSAGES;
 var init_editor_telemetry = __esm({
   "src/workmodes/cartographer/editor/editor-telemetry.ts"() {
     "use strict";
-    import_obsidian13 = require("obsidian");
+    import_obsidian14 = require("obsidian");
     init_plugin_logger();
     noticedIssues = /* @__PURE__ */ new Set();
     TOOL_STAGE_MESSAGES = {
@@ -3340,15 +3546,15 @@ async function listVaultPresets(app, entityType) {
     return [];
   }
   const folder = app.vault.getAbstractFileByPath(entityConfig.directory);
-  if (!folder || !(folder instanceof import_obsidian14.TFolder)) {
+  if (!folder || !(folder instanceof import_obsidian15.TFolder)) {
     return [];
   }
   const files = [];
   const collectFiles = (currentFolder) => {
     for (const child of currentFolder.children) {
-      if (child instanceof import_obsidian14.TFile && child.extension === "md") {
+      if (child instanceof import_obsidian15.TFile && child.extension === "md") {
         files.push(child);
-      } else if (child instanceof import_obsidian14.TFolder) {
+      } else if (child instanceof import_obsidian15.TFolder) {
         collectFiles(child);
       }
     }
@@ -3367,22 +3573,22 @@ function watchVaultPresets(app, entityType, onChange) {
     onChange();
   };
   const createRef = app.vault.on("create", (file) => {
-    if (file instanceof import_obsidian14.TFile && file.path.startsWith(entityConfig.directory)) {
+    if (file instanceof import_obsidian15.TFile && file.path.startsWith(entityConfig.directory)) {
       notify();
     }
   });
   const deleteRef = app.vault.on("delete", (file) => {
-    if (file instanceof import_obsidian14.TFile && file.path.startsWith(entityConfig.directory)) {
+    if (file instanceof import_obsidian15.TFile && file.path.startsWith(entityConfig.directory)) {
       notify();
     }
   });
   const renameRef = app.vault.on("rename", (file, oldPath) => {
-    if (file instanceof import_obsidian14.TFile && (file.path.startsWith(entityConfig.directory) || oldPath.startsWith(entityConfig.directory))) {
+    if (file instanceof import_obsidian15.TFile && (file.path.startsWith(entityConfig.directory) || oldPath.startsWith(entityConfig.directory))) {
       notify();
     }
   });
   const modifyRef = app.vault.on("modify", (file) => {
-    if (file instanceof import_obsidian14.TFile && file.path.startsWith(entityConfig.directory)) {
+    if (file instanceof import_obsidian15.TFile && file.path.startsWith(entityConfig.directory)) {
       notify();
     }
   });
@@ -3393,11 +3599,11 @@ function watchVaultPresets(app, entityType, onChange) {
     app.vault.offref(modifyRef);
   };
 }
-var import_obsidian14;
+var import_obsidian15;
 var init_vault_preset_loader = __esm({
   "Presets/lib/vault-preset-loader.ts"() {
     "use strict";
-    import_obsidian14 = require("obsidian");
+    import_obsidian15 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
   }
@@ -5388,9 +5594,9 @@ var init_generator = __esm({
 
 // src/features/maps/state/terrain-store.ts
 async function ensureTerrainFile(app) {
-  const path = (0, import_obsidian17.normalizePath)(TERRAIN_FILE);
+  const path = (0, import_obsidian18.normalizePath)(TERRAIN_FILE);
   const existing = app.vault.getAbstractFileByPath(path);
-  if (existing instanceof import_obsidian17.TFile) {
+  if (existing instanceof import_obsidian18.TFile) {
     return existing;
   }
   const dir = path.split("/").slice(0, -1).join("/");
@@ -5506,7 +5712,7 @@ function createTerrainStore(app, options) {
       dirty = false;
     },
     isDirty: () => dirty,
-    getStorageKey: () => (0, import_obsidian17.normalizePath)(TERRAIN_FILE)
+    getStorageKey: () => (0, import_obsidian18.normalizePath)(TERRAIN_FILE)
   };
   getStoreManager().register("map-terrains", persistent2);
   const ensureLoaded = async () => {
@@ -5568,8 +5774,8 @@ function createTerrainStore(app, options) {
       }
     };
     const maybeUpdate = (reason, file) => {
-      if (!(file instanceof import_obsidian17.TFile)) return;
-      if ((0, import_obsidian17.normalizePath)(file.path) !== (0, import_obsidian17.normalizePath)(TERRAIN_FILE)) return;
+      if (!(file instanceof import_obsidian18.TFile)) return;
+      if ((0, import_obsidian18.normalizePath)(file.path) !== (0, import_obsidian18.normalizePath)(TERRAIN_FILE)) return;
       void update(reason);
     };
     const refs = ["modify", "delete"].map(
@@ -5618,11 +5824,11 @@ function watchTerrains(app, options) {
   const store = getTerrainStore(app, typeof options === "object" ? options.storeOptions : void 0);
   return store.watch(options);
 }
-var import_obsidian17, TERRAIN_FILE, BLOCK_RE2, storeRegistry2;
+var import_obsidian18, TERRAIN_FILE, BLOCK_RE2, storeRegistry2;
 var init_terrain_store = __esm({
   "src/features/maps/state/terrain-store.ts"() {
     "use strict";
-    import_obsidian17 = require("obsidian");
+    import_obsidian18 = require("obsidian");
     init_state();
     init_store_manager();
     init_plugin_logger();
@@ -6736,13 +6942,13 @@ var init_presenter = __esm({
 
 // src/workmodes/encounter/rule-presets.ts
 async function ensureEncounterRulePresetDir(app) {
-  const normalized = (0, import_obsidian18.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
+  const normalized = (0, import_obsidian19.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
   let file = app.vault.getAbstractFileByPath(normalized);
-  if (file instanceof import_obsidian18.TFolder) return file;
+  if (file instanceof import_obsidian19.TFolder) return file;
   await app.vault.createFolder(normalized).catch(() => {
   });
   file = app.vault.getAbstractFileByPath(normalized);
-  if (file instanceof import_obsidian18.TFolder) return file;
+  if (file instanceof import_obsidian19.TFolder) return file;
   throw new Error(`Could not ensure encounter preset directory: ${normalized}`);
 }
 async function listEncounterRulePresets(app) {
@@ -6750,8 +6956,8 @@ async function listEncounterRulePresets(app) {
   const files = [];
   const walk = (folder) => {
     for (const child of folder.children) {
-      if (child instanceof import_obsidian18.TFolder) walk(child);
-      else if (child instanceof import_obsidian18.TFile && child.extension === "md") files.push(child);
+      if (child instanceof import_obsidian19.TFolder) walk(child);
+      else if (child instanceof import_obsidian19.TFile && child.extension === "md") files.push(child);
     }
   };
   walk(dir);
@@ -6779,18 +6985,18 @@ async function saveEncounterRulePreset(app, doc, options = {}) {
   const dir = await ensureEncounterRulePresetDir(app);
   if (options.path) {
     const existing = app.vault.getAbstractFileByPath(options.path);
-    if (existing instanceof import_obsidian18.TFile) {
+    if (existing instanceof import_obsidian19.TFile) {
       await app.vault.modify(existing, content);
       return existing;
     }
   }
   const baseName = sanitizeFileName2(sanitizedName, DEFAULT_PRESET_NAME);
   let fileName = `${baseName}.md`;
-  let targetPath = (0, import_obsidian18.normalizePath)(`${dir.path}/${fileName}`);
+  let targetPath = (0, import_obsidian19.normalizePath)(`${dir.path}/${fileName}`);
   let counter = 2;
   while (app.vault.getAbstractFileByPath(targetPath)) {
     fileName = `${baseName} (${counter}).md`;
-    targetPath = (0, import_obsidian18.normalizePath)(`${dir.path}/${fileName}`);
+    targetPath = (0, import_obsidian19.normalizePath)(`${dir.path}/${fileName}`);
     counter += 1;
   }
   const file = await app.vault.create(targetPath, content);
@@ -6897,17 +7103,17 @@ function createRuleId() {
   return `rule-${Date.now().toString(36)}-${random}`;
 }
 function isEncounterPresetFile(file) {
-  if (!(file instanceof import_obsidian18.TFile)) return false;
+  if (!(file instanceof import_obsidian19.TFile)) return false;
   if (file.extension !== "md") return false;
-  const normalized = (0, import_obsidian18.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
+  const normalized = (0, import_obsidian19.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
   const base = `${normalized}/`;
   return file.path === normalized || file.path.startsWith(base);
 }
-var import_obsidian18, ENCOUNTER_RULE_PRESET_DIR, DEFAULT_PRESET_NAME, MODIFIER_TYPES, PRESET_SCOPE_GOLD, PRESET_SCOPE_XP;
+var import_obsidian19, ENCOUNTER_RULE_PRESET_DIR, DEFAULT_PRESET_NAME, MODIFIER_TYPES, PRESET_SCOPE_GOLD, PRESET_SCOPE_XP;
 var init_rule_presets = __esm({
   "src/workmodes/encounter/rule-presets.ts"() {
     "use strict";
-    import_obsidian18 = require("obsidian");
+    import_obsidian19 = require("obsidian");
     ENCOUNTER_RULE_PRESET_DIR = "SaltMarcher/EncounterPresets";
     DEFAULT_PRESET_NAME = "Encounter Rule Preset";
     MODIFIER_TYPES = /* @__PURE__ */ new Set([
@@ -7621,11 +7827,11 @@ function createId(prefix) {
   const random = Math.random().toString(36).slice(2, 8);
   return `${prefix}-${Date.now().toString(36)}-${random}`;
 }
-var import_obsidian19, EncounterWorkspaceView, ConfirmReplaceModal, numberFormatter;
+var import_obsidian20, EncounterWorkspaceView, ConfirmReplaceModal, numberFormatter;
 var init_workspace_view = __esm({
   "src/workmodes/encounter/workspace-view.ts"() {
     "use strict";
-    import_obsidian19 = require("obsidian");
+    import_obsidian20 = require("obsidian");
     init_modals();
     init_plugin_logger();
     init_rule_presets();
@@ -7888,10 +8094,10 @@ var init_workspace_view = __esm({
       }
       registerPresetWatcher() {
         this.detachPresetWatcher?.();
-        const baseDir = (0, import_obsidian19.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
+        const baseDir = (0, import_obsidian20.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
         const prefix = `${baseDir}/`;
         const handler = (file) => {
-          if (file instanceof import_obsidian19.TFile) {
+          if (file instanceof import_obsidian20.TFile) {
             if (isEncounterPresetFile(file)) {
               this.schedulePresetRefresh();
             }
@@ -7979,11 +8185,11 @@ var init_workspace_view = __esm({
         const presenter = this.presenter;
         const selected = this.getSelectedPreset();
         if (!presenter) {
-          new import_obsidian19.Notice("Encounter-Presenter nicht verf\xFCgbar.");
+          new import_obsidian20.Notice("Encounter-Presenter nicht verf\xFCgbar.");
           return;
         }
         if (!selected) {
-          new import_obsidian19.Notice("Bitte ein Preset ausw\xE4hlen.");
+          new import_obsidian20.Notice("Bitte ein Preset ausw\xE4hlen.");
           return;
         }
         try {
@@ -8001,16 +8207,16 @@ var init_workspace_view = __esm({
           if (typeof preset.encounterXp === "number" && Number.isFinite(preset.encounterXp)) {
             presenter.setEncounterXp(preset.encounterXp);
           }
-          new import_obsidian19.Notice(`Preset "${preset.name}" geladen.`);
+          new import_obsidian20.Notice(`Preset "${preset.name}" geladen.`);
         } catch (error) {
           logger2.error("[encounter] failed to load preset", error);
-          new import_obsidian19.Notice("Preset konnte nicht geladen werden.");
+          new import_obsidian20.Notice("Preset konnte nicht geladen werden.");
         }
       }
       async handleSavePreset() {
         const presenter = this.presenter;
         if (!presenter) {
-          new import_obsidian19.Notice("Encounter-Presenter nicht verf\xFCgbar.");
+          new import_obsidian20.Notice("Encounter-Presenter nicht verf\xFCgbar.");
           return;
         }
         const selected = this.getSelectedPreset();
@@ -8030,14 +8236,14 @@ var init_workspace_view = __esm({
                   path: selected && selected.name === (name || fallbackName) ? selected.file.path : void 0
                 }
               );
-              new import_obsidian19.Notice(`Preset "${name || fallbackName}" gespeichert.`);
+              new import_obsidian20.Notice(`Preset "${name || fallbackName}" gespeichert.`);
               await this.refreshPresetOptions();
               if (this.presetSelectEl && this.presetSelectEl.isConnected) {
                 this.presetSelectEl.value = file.path;
               }
             } catch (error) {
               logger2.error("[encounter] failed to save preset", error);
-              new import_obsidian19.Notice("Preset konnte nicht gespeichert werden.");
+              new import_obsidian20.Notice("Preset konnte nicht gespeichert werden.");
             }
             this.syncPresetControlsState();
           },
@@ -8053,21 +8259,21 @@ var init_workspace_view = __esm({
       async handleDeletePreset() {
         const selected = this.getSelectedPreset();
         if (!selected) {
-          new import_obsidian19.Notice("Bitte ein Preset ausw\xE4hlen.");
+          new import_obsidian20.Notice("Bitte ein Preset ausw\xE4hlen.");
           return;
         }
         const confirmed = window.confirm(`Preset "${selected.name}" l\xF6schen?`);
         if (!confirmed) return;
         try {
           await deleteEncounterRulePreset(this.app, selected.file);
-          new import_obsidian19.Notice(`Preset "${selected.name}" gel\xF6scht.`);
+          new import_obsidian20.Notice(`Preset "${selected.name}" gel\xF6scht.`);
           await this.refreshPresetOptions();
           if (this.presetSelectEl && this.presetSelectEl.isConnected) {
             this.presetSelectEl.value = "";
           }
         } catch (error) {
           logger2.error("[encounter] failed to delete preset", error);
-          new import_obsidian19.Notice("Preset konnte nicht gel\xF6scht werden.");
+          new import_obsidian20.Notice("Preset konnte nicht gel\xF6scht werden.");
         }
         this.syncPresetControlsState();
       }
@@ -8776,13 +8982,13 @@ var init_workspace_view = __esm({
               return sum + (xpByCr[c.cr] ?? 0) * c.count;
             }, 0);
             const totalCreatureCount = result.creatures.reduce((sum, c) => sum + c.count, 0);
-            new import_obsidian19.Notice(`\u2705 Generated encounter: ${totalCreatureCount} creatures, ${totalXP} XP`);
+            new import_obsidian20.Notice(`\u2705 Generated encounter: ${totalCreatureCount} creatures, ${totalXP} XP`);
           } else {
-            new import_obsidian19.Notice(`\u274C ${result.error}`);
+            new import_obsidian20.Notice(`\u274C ${result.error}`);
           }
         } catch (err) {
           logger2.error("[workspace-view] Generate encounter failed", err);
-          new import_obsidian19.Notice(`\u274C Failed to generate encounter: ${err instanceof Error ? err.message : "Unknown error"}`);
+          new import_obsidian20.Notice(`\u274C Failed to generate encounter: ${err instanceof Error ? err.message : "Unknown error"}`);
         } finally {
           this.creatureList?.setGenerateButtonState(false);
         }
@@ -8862,7 +9068,7 @@ var init_workspace_view = __esm({
         }
       }
     };
-    ConfirmReplaceModal = class extends import_obsidian19.Modal {
+    ConfirmReplaceModal = class extends import_obsidian20.Modal {
       constructor(app, creatureCount, onConfirm) {
         super(app);
         this.creatureCount = creatureCount;
@@ -8927,16 +9133,16 @@ async function openEncounter(app) {
   await leaf.setViewState({ type: VIEW_ENCOUNTER, active: true });
   app.workspace.revealLeaf(leaf);
 }
-var import_obsidian20, VIEW_ENCOUNTER, EncounterView;
+var import_obsidian21, VIEW_ENCOUNTER, EncounterView;
 var init_view = __esm({
   "src/workmodes/encounter/view.ts"() {
     "use strict";
-    import_obsidian20 = require("obsidian");
+    import_obsidian21 = require("obsidian");
     init_presenter();
     init_workspace_view();
     init_layout();
     VIEW_ENCOUNTER = "salt-encounter";
-    EncounterView = class extends import_obsidian20.ItemView {
+    EncounterView = class extends import_obsidian21.ItemView {
       constructor(leaf) {
         super(leaf);
         this.presenter = null;
@@ -10062,7 +10268,7 @@ function createRendererWrapper(type, coreRenderer, options) {
     supports: (spec) => spec.type === type,
     render: (args) => {
       const { container, spec, values, onChange } = args;
-      const setting = new import_obsidian21.Setting(container);
+      const setting = new import_obsidian22.Setting(container);
       if (spec.label) {
         setting.setName(spec.label);
       }
@@ -10087,11 +10293,11 @@ function createRendererWrapper(type, coreRenderer, options) {
     }
   };
 }
-var import_obsidian21;
+var import_obsidian22;
 var init_field_rendering_core = __esm({
   "src/features/data-manager/fields/field-rendering-core.ts"() {
     "use strict";
-    import_obsidian21 = require("obsidian");
+    import_obsidian22 = require("obsidian");
     init_plugin_logger();
     init_width_utils();
     init_token_field_core_new();
@@ -10398,7 +10604,7 @@ function renderEntryCard(options) {
       cls: "sm-cc-entry-move-btn",
       attr: attributes
     });
-    (0, import_obsidian22.setIcon)(moveUpBtn, "chevron-up");
+    (0, import_obsidian23.setIcon)(moveUpBtn, "chevron-up");
     moveUpBtn.addEventListener("click", moveUpHandler);
   }
   if (includeMoveButtons && moveDownHandler) {
@@ -10413,7 +10619,7 @@ function renderEntryCard(options) {
       cls: "sm-cc-entry-move-btn",
       attr: attributes
     });
-    (0, import_obsidian22.setIcon)(moveDownBtn, "chevron-down");
+    (0, import_obsidian23.setIcon)(moveDownBtn, "chevron-down");
     moveDownBtn.addEventListener("click", moveDownHandler);
   }
   const deleteHandler = resolvedActions.remove ?? context.remove;
@@ -10453,11 +10659,11 @@ function renderEntryCard(options) {
   renderBody(card, context);
   return slots;
 }
-var import_obsidian22;
+var import_obsidian23;
 var init_entry_card = __esm({
   "src/features/data-manager/storage/entry-card.ts"() {
     "use strict";
-    import_obsidian22 = require("obsidian");
+    import_obsidian23 = require("obsidian");
   }
 });
 
@@ -11449,11 +11655,11 @@ var init_renderer_checkbox = __esm({
 });
 
 // src/features/data-manager/fields/renderer-select.ts
-var import_obsidian23, selectFieldRenderer;
+var import_obsidian24, selectFieldRenderer;
 var init_renderer_select = __esm({
   "src/features/data-manager/fields/renderer-select.ts"() {
     "use strict";
-    import_obsidian23 = require("obsidian");
+    import_obsidian24 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     init_select_enhancement();
@@ -11462,7 +11668,7 @@ var init_renderer_select = __esm({
       supports: (spec) => spec.type === "select",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian23.Setting(container).setName(spec.label);
+        const setting = new import_obsidian24.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -11548,11 +11754,11 @@ var init_renderer_color = __esm({
 });
 
 // src/features/data-manager/fields/renderer-tokens.ts
-var import_obsidian24, tokenFieldRenderer;
+var import_obsidian25, tokenFieldRenderer;
 var init_renderer_tokens = __esm({
   "src/features/data-manager/fields/renderer-tokens.ts"() {
     "use strict";
-    import_obsidian24 = require("obsidian");
+    import_obsidian25 = require("obsidian");
     init_modal_utils();
     init_field_rendering_core();
     init_plugin_logger();
@@ -11563,7 +11769,7 @@ var init_renderer_tokens = __esm({
       render: (args) => {
         const { container, spec, values, onChange } = args;
         const tokenSpec = spec;
-        const setting = new import_obsidian24.Setting(container).setName(spec.label);
+        const setting = new import_obsidian25.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         setting.settingEl.addClass("sm-cc-setting--wide");
         setting.settingEl.addClass("sm-cc-setting--token-editor");
@@ -11660,11 +11866,11 @@ var init_renderer_heading = __esm({
 });
 
 // src/features/data-manager/fields/renderer-composite.ts
-var import_obsidian25, compositeFieldRenderer;
+var import_obsidian26, compositeFieldRenderer;
 var init_renderer_composite = __esm({
   "src/features/data-manager/fields/renderer-composite.ts"() {
     "use strict";
-    import_obsidian25 = require("obsidian");
+    import_obsidian26 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     init_field_rendering_core();
@@ -11672,7 +11878,7 @@ var init_renderer_composite = __esm({
       supports: (spec) => spec.type === "composite",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian25.Setting(container).setName(spec.label);
+        const setting = new import_obsidian26.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -11705,18 +11911,18 @@ var init_renderer_composite = __esm({
 });
 
 // src/features/data-manager/fields/renderer-autocomplete.ts
-var import_obsidian26, autocompleteFieldRenderer;
+var import_obsidian27, autocompleteFieldRenderer;
 var init_renderer_autocomplete = __esm({
   "src/features/data-manager/fields/renderer-autocomplete.ts"() {
     "use strict";
-    import_obsidian26 = require("obsidian");
+    import_obsidian27 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     autocompleteFieldRenderer = {
       supports: (spec) => spec.type === "autocomplete",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian26.Setting(container).setName(spec.label);
+        const setting = new import_obsidian27.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -11810,11 +12016,11 @@ var init_renderer_autocomplete = __esm({
 });
 
 // src/features/data-manager/fields/renderer-repeating.ts
-var import_obsidian27, repeatingFieldRenderer;
+var import_obsidian28, repeatingFieldRenderer;
 var init_renderer_repeating = __esm({
   "src/features/data-manager/fields/renderer-repeating.ts"() {
     "use strict";
-    import_obsidian27 = require("obsidian");
+    import_obsidian28 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     init_repeating_width_sync();
@@ -11826,7 +12032,7 @@ var init_renderer_repeating = __esm({
       supports: (spec) => spec.type === "repeating",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian27.Setting(container).setName(spec.label);
+        const setting = new import_obsidian28.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -12206,11 +12412,11 @@ function resolveTargetPath(storage, values) {
   const extension = storage.format === "md-frontmatter" || storage.format === "codeblock" ? "md" : storage.format === "json" ? "json" : "yaml";
   const target = ensureExtension(templatePath, extension);
   if (storage.directory) {
-    const sanitizedDir = (0, import_obsidian28.normalizePath)(storage.directory);
+    const sanitizedDir = (0, import_obsidian29.normalizePath)(storage.directory);
     const fileName = target.split("/").pop() ?? target;
-    return (0, import_obsidian28.normalizePath)(`${sanitizedDir}/${fileName}`);
+    return (0, import_obsidian29.normalizePath)(`${sanitizedDir}/${fileName}`);
   }
-  return (0, import_obsidian28.normalizePath)(target);
+  return (0, import_obsidian29.normalizePath)(target);
 }
 function buildFrontmatter(values, storage) {
   const frontmatter = {};
@@ -12256,7 +12462,7 @@ function buildMarkdownBody(values, storage) {
 function serializeMarkdown(storage, values, path) {
   const frontmatter = buildFrontmatter(values, storage);
   const body = buildMarkdownBody(values, storage);
-  const fm2 = (0, import_obsidian28.stringifyYaml)(frontmatter ?? {});
+  const fm2 = (0, import_obsidian29.stringifyYaml)(frontmatter ?? {});
   const content = [`---`, fm2.trimEnd(), `---`, "", body.trimEnd()].join("\n").trimEnd() + "\n";
   return { path, content, metadata: { frontmatter, format: storage.format } };
 }
@@ -12265,7 +12471,7 @@ function serializeJson(values, path) {
   return { path, content, metadata: { format: "json" } };
 }
 function serializeYaml(values, path) {
-  const content = (0, import_obsidian28.stringifyYaml)(values ?? {}) + "\n";
+  const content = (0, import_obsidian29.stringifyYaml)(values ?? {}) + "\n";
   return { path, content, metadata: { format: "yaml" } };
 }
 function serializeCodeblock(storage, values, path) {
@@ -12303,7 +12509,7 @@ function ensureFolder2(app, path) {
   parts.pop();
   const folder = parts.join("/");
   if (!folder) return Promise.resolve();
-  const normalized = (0, import_obsidian28.normalizePath)(folder);
+  const normalized = (0, import_obsidian29.normalizePath)(folder);
   const existing = app.vault.getAbstractFileByPath(normalized);
   if (existing) return Promise.resolve();
   return app.vault.createFolder(normalized).catch(() => {
@@ -12329,7 +12535,7 @@ async function persistSerializedPayload(app, storage, payload) {
     const blockRegex = new RegExp(`^\\s*${fence}${language}(?:\\s|$)[\\s\\S]*?${fence}`, "im");
     const normalizedBlock = content.trim();
     const blockWithNewline = normalizedBlock.endsWith("\\n") ? normalizedBlock : `${normalizedBlock}\\n`;
-    if (existing instanceof import_obsidian28.TFile) {
+    if (existing instanceof import_obsidian29.TFile) {
       const current = await app.vault.read(existing);
       const trimmedCurrent = current.trimEnd();
       const replacement = blockWithNewline.trimEnd();
@@ -12342,7 +12548,7 @@ async function persistSerializedPayload(app, storage, payload) {
       file = await app.vault.create(payload.path, initial.endsWith("\\n") ? initial : `${initial}\\n`);
     }
   } else {
-    if (existing instanceof import_obsidian28.TFile) {
+    if (existing instanceof import_obsidian29.TFile) {
       await app.vault.modify(existing, content);
       file = existing;
     } else {
@@ -12353,11 +12559,11 @@ async function persistSerializedPayload(app, storage, payload) {
   await storage.hooks?.afterWrite?.(result);
   return result;
 }
-var import_obsidian28;
+var import_obsidian29;
 var init_storage = __esm({
   "src/features/data-manager/storage/storage.ts"() {
     "use strict";
-    import_obsidian28 = require("obsidian");
+    import_obsidian29 = require("obsidian");
   }
 });
 
@@ -12960,11 +13166,11 @@ var init_modal_navigation = __esm({
 });
 
 // src/features/data-manager/modal/modal.ts
-var import_obsidian29, CreateModal;
+var import_obsidian30, CreateModal;
 var init_modal = __esm({
   "src/features/data-manager/modal/modal.ts"() {
     "use strict";
-    import_obsidian29 = require("obsidian");
+    import_obsidian30 = require("obsidian");
     init_grid_layout_manager();
     init_label_width_sync();
     init_register_renderers();
@@ -12976,7 +13182,7 @@ var init_modal = __esm({
     init_modal_utils();
     init_plugin_logger();
     registerAllFieldRenderers();
-    CreateModal = class extends import_obsidian29.Modal {
+    CreateModal = class extends import_obsidian30.Modal {
       constructor(app, spec, options, resolve) {
         super(app);
         this.completion = null;
@@ -13096,7 +13302,7 @@ var init_modal = __esm({
         this.fieldManager.updateVisibility();
       }
       buildActionButtons(container) {
-        const buttons = new import_obsidian29.Setting(container);
+        const buttons = new import_obsidian30.Setting(container);
         buttons.addButton((btn) => {
           this.cancelButton = btn;
           btn.setButtonText(this.spec.ui?.cancelLabel || "Abbrechen").onClick(() => {
@@ -13178,7 +13384,7 @@ var init_modal = __esm({
       }
       handleSubmissionError(error) {
         const message = error instanceof Error ? error.message : String(error ?? "Unbekannter Fehler");
-        new import_obsidian29.Notice(`Fehler beim Speichern: ${message}`);
+        new import_obsidian30.Notice(`Fehler beim Speichern: ${message}`);
       }
       lockBackgroundPointer() {
         const bg = document.querySelector(".modal-bg");
@@ -14010,15 +14216,15 @@ var init_ui = __esm({
 });
 
 // src/features/data-manager/browse/tabbed-browse-view.ts
-var import_obsidian30, TabbedBrowseView;
+var import_obsidian31, TabbedBrowseView;
 var init_tabbed_browse_view = __esm({
   "src/features/data-manager/browse/tabbed-browse-view.ts"() {
     "use strict";
-    import_obsidian30 = require("obsidian");
+    import_obsidian31 = require("obsidian");
     init_generic_list_renderer();
     init_watcher_hub();
     init_ui();
-    TabbedBrowseView = class extends import_obsidian30.ItemView {
+    TabbedBrowseView = class extends import_obsidian31.ItemView {
       constructor(leaf) {
         super(leaf);
         this.queries = /* @__PURE__ */ new Map();
@@ -15167,11 +15373,11 @@ function renderMultiattackEffect(container, entry, ctx) {
     text: "+ Angriff"
   });
 }
-var import_obsidian31, creatureSchema, basicInfoFields, combatStatsFields, movementFields, abilitiesFields, skillsFields, sensesLanguagesFields, resistancesFields, equipmentFields, spellcastingFields, entriesFields, creatureSpec;
+var import_obsidian32, creatureSchema, basicInfoFields, combatStatsFields, movementFields, abilitiesFields, skillsFields, sensesLanguagesFields, resistancesFields, equipmentFields, spellcastingFields, entriesFields, creatureSpec;
 var init_create_spec = __esm({
   "src/workmodes/library/creatures/create-spec.ts"() {
     "use strict";
-    import_obsidian31 = require("obsidian");
+    import_obsidian32 = require("obsidian");
     init_serializer();
     init_debug_logger();
     init_constants();
@@ -16178,14 +16384,14 @@ var init_create_spec = __esm({
                   cls: "sm-cc-entry-toggle",
                   attr: { "aria-expanded": "true", "aria-label": "Toggle entry" }
                 });
-                (0, import_obsidian31.setIcon)(toggle, "chevron-down");
+                (0, import_obsidian32.setIcon)(toggle, "chevron-down");
                 head.prepend(toggle);
                 toggle.addEventListener("click", (e) => {
                   e.stopPropagation();
                   const isExpanded = toggle.getAttribute("aria-expanded") === "true";
                   toggle.setAttribute("aria-expanded", String(!isExpanded));
                   slots.card.toggleClass("is-collapsed", isExpanded);
-                  (0, import_obsidian31.setIcon)(toggle, isExpanded ? "chevron-right" : "chevron-down");
+                  (0, import_obsidian32.setIcon)(toggle, isExpanded ? "chevron-right" : "chevron-down");
                 });
               }
             };
@@ -19697,11 +19903,11 @@ var init_tree_builder = __esm({
 });
 
 // src/workmodes/library/locations/tree-view.ts
-var LOCATION_TYPE_ICONS, LocationTreeView;
+var LOCATION_TYPE_ICONS2, LocationTreeView;
 var init_tree_view = __esm({
   "src/workmodes/library/locations/tree-view.ts"() {
     "use strict";
-    LOCATION_TYPE_ICONS = {
+    LOCATION_TYPE_ICONS2 = {
       "Stadt": "\u{1F3D9}\uFE0F",
       "Dorf": "\u{1F3D8}\uFE0F",
       "Weiler": "\u{1F3E1}",
@@ -19752,7 +19958,7 @@ var init_tree_view = __esm({
         } else {
           contentEl.createSpan({ cls: "sm-tree-toggle sm-tree-toggle-empty", text: " " });
         }
-        const icon = LOCATION_TYPE_ICONS[node.location.type] || "\u{1F4CD}";
+        const icon = LOCATION_TYPE_ICONS2[node.location.type] || "\u{1F4CD}";
         contentEl.createSpan({ cls: "sm-tree-icon", text: icon });
         const nameEl = contentEl.createSpan({ cls: "sm-tree-name", text: node.location.name });
         nameEl.addEventListener("click", () => {
@@ -21212,7 +21418,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--play",
     text: "Start"
   });
-  (0, import_obsidian34.setIcon)(playBtn, "play");
+  (0, import_obsidian35.setIcon)(playBtn, "play");
   applyMapButtonStyle(playBtn);
   playBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -21223,7 +21429,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--stop",
     text: "Stopp"
   });
-  (0, import_obsidian34.setIcon)(stopBtn, "square");
+  (0, import_obsidian35.setIcon)(stopBtn, "square");
   applyMapButtonStyle(stopBtn);
   stopBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -21234,7 +21440,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--reset",
     text: "Reset"
   });
-  (0, import_obsidian34.setIcon)(resetBtn, "rotate-ccw");
+  (0, import_obsidian35.setIcon)(resetBtn, "rotate-ccw");
   applyMapButtonStyle(resetBtn);
   resetBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -21283,11 +21489,11 @@ function createPlaybackControls(host, callbacks) {
     setTempo
   };
 }
-var import_obsidian34;
+var import_obsidian35;
 var init_controls = __esm({
   "src/workmodes/session-runner/travel/ui/controls.ts"() {
     "use strict";
-    import_obsidian34 = require("obsidian");
+    import_obsidian35 = require("obsidian");
     init_map_workflows();
   }
 });
@@ -21546,7 +21752,7 @@ function bindContextMenu(routeLayerEl, logic) {
     }
     ev.preventDefault();
     ev.stopPropagation();
-    const menu = new import_obsidian35.Menu();
+    const menu = new import_obsidian36.Menu();
     if (allowDelete) {
       menu.addItem(
         (item) => item.setTitle("Wegpunkt entfernen").setIcon("trash").onClick(() => {
@@ -21566,11 +21772,11 @@ function bindContextMenu(routeLayerEl, logic) {
   routeLayerEl.addEventListener("contextmenu", onContextMenu, { capture: true });
   return () => routeLayerEl.removeEventListener("contextmenu", onContextMenu, { capture: true });
 }
-var import_obsidian35;
+var import_obsidian36;
 var init_context_menu_controller = __esm({
   "src/workmodes/session-runner/travel/ui/context-menu.controller.ts"() {
     "use strict";
-    import_obsidian35 = require("obsidian");
+    import_obsidian36 = require("obsidian");
   }
 });
 
@@ -21702,7 +21908,7 @@ function loadEncounterModule() {
     VIEW_ENCOUNTER: encounter.VIEW_ENCOUNTER
   })).catch((err) => {
     logger2.error("[session-runner] failed to load encounter module", err);
-    new import_obsidian36.Notice("Encounter-Modul konnte nicht geladen werden.");
+    new import_obsidian37.Notice("Encounter-Modul konnte nicht geladen werden.");
     return null;
   });
 }
@@ -21721,7 +21927,7 @@ async function openEncounter2(app, context) {
   const issue = describeEncounterContextIssue(context);
   if (issue) {
     logger2.warn(`[session-runner] ${issue.log}`, context);
-    new import_obsidian36.Notice(issue.message);
+    new import_obsidian37.Notice(issue.message);
   } else if (context) {
     try {
       const event = await createEncounterEventFromTravel(app, context);
@@ -21773,11 +21979,11 @@ async function publishManualEncounter(app, context, options = {}) {
     logger2.error("[session-runner] failed to publish manual encounter", err);
   }
 }
-var import_obsidian36, encounterModule;
+var import_obsidian37, encounterModule;
 var init_encounter_gateway = __esm({
   "src/workmodes/session-runner/view/controllers/encounter-gateway.ts"() {
     "use strict";
-    import_obsidian36 = require("obsidian");
+    import_obsidian37 = require("obsidian");
     init_session_store();
     init_plugin_logger();
     init_event_builder();
@@ -87871,7 +88077,7 @@ __export(plugin_presets_exports, {
   shouldImportTerrainPresets: () => shouldImportTerrainPresets
 });
 async function ensureDir2(app, dir) {
-  const normalizedDir = (0, import_obsidian40.normalizePath)(dir);
+  const normalizedDir = (0, import_obsidian41.normalizePath)(dir);
   const folder = app.vault.getAbstractFileByPath(normalizedDir);
   if (!folder) {
     await app.vault.createFolder(normalizedDir).catch(() => {
@@ -87884,7 +88090,7 @@ function registerPreset(fileName, content) {
 async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, force = false) {
   try {
     await ensureDir3(app);
-    const normalizedDir = (0, import_obsidian40.normalizePath)(dir);
+    const normalizedDir = (0, import_obsidian41.normalizePath)(dir);
     const presetModule = await Promise.resolve().then(() => (init_preset_data(), preset_data_exports));
     const rawPresetFiles = presetModule[presetKey] || {};
     const presetEntries = Object.entries(rawPresetFiles).map(([fileName, content]) => [
@@ -87902,7 +88108,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       const existing = await app.vault.adapter.list(normalizedDir);
       const prefix = `${normalizedDir}/`;
       existing.files.forEach((file) => {
-        const normalizedFile = (0, import_obsidian40.normalizePath)(file);
+        const normalizedFile = (0, import_obsidian41.normalizePath)(file);
         if (normalizedFile.startsWith(prefix)) {
           const relativePath = normalizedFile.slice(prefix.length);
           if (relativePath) {
@@ -87918,7 +88124,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
     const ensuredFolders = /* @__PURE__ */ new Set([normalizedDir]);
     for (const [fileName, content] of presetEntries) {
       const loweredName = fileName.toLowerCase();
-      const targetPath = (0, import_obsidian40.normalizePath)(`${normalizedDir}/${fileName}`);
+      const targetPath = (0, import_obsidian41.normalizePath)(`${normalizedDir}/${fileName}`);
       const existingPath = existingFiles.get(loweredName);
       try {
         await ensureParentFolders(app, normalizedDir, fileName, ensuredFolders);
@@ -87944,19 +88150,19 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       }
     }
     if (importedCount > 0) {
-      new import_obsidian40.Notice(`Imported ${importedCount} ${typeName} presets`);
+      new import_obsidian41.Notice(`Imported ${importedCount} ${typeName} presets`);
       logger2.log(`${typeName} import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
     } else if (skippedCount > 0) {
       logger2.log(`All ${skippedCount} ${typeName} presets already exist`);
     } else if (errorCount > 0) {
-      new import_obsidian40.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian41.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   } catch (err) {
     logger2.error(`Failed to import ${typeName} presets:`, err);
     if (err instanceof Error && err.message.includes("Cannot find module")) {
       logger2.log(`No ${typeName} preset data found - skipping import`);
     } else {
-      new import_obsidian40.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian41.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   }
 }
@@ -87968,7 +88174,7 @@ async function ensureParentFolders(app, baseDir, relativePath, ensured) {
   parts.pop();
   let current = baseDir;
   for (const part of parts) {
-    current = (0, import_obsidian40.normalizePath)(`${current}/${part}`);
+    current = (0, import_obsidian41.normalizePath)(`${current}/${part}`);
     if (ensured.has(current)) continue;
     ensured.add(current);
     if (!app.vault.getAbstractFileByPath(current)) {
@@ -87985,7 +88191,7 @@ async function importPluginPresets(app) {
   return importPresetsForDir(app, ENTITY_REGISTRY.creatures.directory, "PRESET_CREATURES", "creature", ensureCreatureDir2);
 }
 async function shouldImportPresetsForDir(app, dir, markerName, label, ensureDir3) {
-  const markerPath = (0, import_obsidian40.normalizePath)(`${dir}/${markerName}`);
+  const markerPath = (0, import_obsidian41.normalizePath)(`${dir}/${markerName}`);
   const markerFile = app.vault.getAbstractFileByPath(markerPath);
   if (markerFile) {
     return false;
@@ -88075,11 +88281,11 @@ async function importPresetsByCategory(app, category, force = false) {
       throw new Error(`Unknown preset category: ${category}. Valid categories: creatures, spells, items, equipment, terrains, regions, calendars, all`);
   }
 }
-var import_obsidian40, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, PRESET_FILES;
+var import_obsidian41, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, PRESET_FILES;
 var init_plugin_presets = __esm({
   "Presets/lib/plugin-presets.ts"() {
     "use strict";
-    import_obsidian40 = require("obsidian");
+    import_obsidian41 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     ensureCreatureDir2 = (app) => ensureDir2(app, ENTITY_REGISTRY.creatures.directory);
@@ -88106,16 +88312,16 @@ __export(index_files_exports, {
 });
 async function createIndexFile(app, filePath, title, description, directory) {
   const folder = app.vault.getAbstractFileByPath(directory);
-  if (!(folder instanceof import_obsidian41.TFolder)) {
+  if (!(folder instanceof import_obsidian42.TFolder)) {
     logger2.log(`[Index] Directory ${directory} not found, skipping index generation`);
     return;
   }
   const files = [];
   const collectFiles = (folder2) => {
     for (const child of folder2.children) {
-      if (child instanceof import_obsidian41.TFile && child.extension === "md") {
+      if (child instanceof import_obsidian42.TFile && child.extension === "md") {
         files.push(child);
-      } else if (child instanceof import_obsidian41.TFolder) {
+      } else if (child instanceof import_obsidian42.TFolder) {
         collectFiles(child);
       }
     }
@@ -88152,7 +88358,7 @@ async function createIndexFile(app, filePath, title, description, directory) {
   }
   const content = lines.join("\n");
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian41.TFile) {
+  if (existingFile instanceof import_obsidian42.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -88220,7 +88426,7 @@ async function generateLibraryHub(app) {
   const content = lines.join("\n");
   const filePath = `${SALTMARCHER_DIR}/Library.md`;
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian41.TFile) {
+  if (existingFile instanceof import_obsidian42.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -88242,11 +88448,11 @@ async function generateAllIndexes(app) {
   ]);
   logger2.log("[Index] All indexes generated successfully");
 }
-var import_obsidian41, SALTMARCHER_DIR;
+var import_obsidian42, SALTMARCHER_DIR;
 var init_index_files = __esm({
   "src/workmodes/library/core/index-files.ts"() {
     "use strict";
-    import_obsidian41 = require("obsidian");
+    import_obsidian42 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     SALTMARCHER_DIR = "SaltMarcher";
@@ -90226,14 +90432,14 @@ __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian42 = require("obsidian");
+var import_obsidian43 = require("obsidian");
 init_plugin_logger();
 
 // src/workmodes/cartographer/index.ts
-var import_obsidian16 = require("obsidian");
+var import_obsidian17 = require("obsidian");
 
 // src/workmodes/cartographer/controller.ts
-var import_obsidian15 = require("obsidian");
+var import_obsidian16 = require("obsidian");
 init_options();
 init_map_list();
 
@@ -90276,14 +90482,14 @@ async function createMapLayer(app, host, mapFile, opts) {
 }
 
 // src/ui/maps/workflows/map-manager.ts
-var import_obsidian11 = require("obsidian");
+var import_obsidian12 = require("obsidian");
 init_plugin_logger();
 init_map_workflows();
 
 // src/ui/maps/components/confirm-delete-modal.ts
-var import_obsidian10 = require("obsidian");
+var import_obsidian11 = require("obsidian");
 init_plugin_logger();
-var ConfirmDeleteModal = class extends import_obsidian10.Modal {
+var ConfirmDeleteModal = class extends import_obsidian11.Modal {
   constructor(app, mapFile, onConfirm) {
     super(app);
     this.mapFile = mapFile;
@@ -90306,7 +90512,7 @@ var ConfirmDeleteModal = class extends import_obsidian10.Modal {
     const btnRow = contentEl.createDiv({ cls: "modal-button-container" });
     const cancelBtn = btnRow.createEl("button", { text: "Cancel" });
     const confirmBtn = btnRow.createEl("button", { text: "Delete" });
-    (0, import_obsidian10.setIcon)(confirmBtn, "trash");
+    (0, import_obsidian11.setIcon)(confirmBtn, "trash");
     confirmBtn.classList.add("mod-warning");
     confirmBtn.disabled = true;
     input.addEventListener("input", () => {
@@ -90317,10 +90523,10 @@ var ConfirmDeleteModal = class extends import_obsidian10.Modal {
       confirmBtn.disabled = true;
       try {
         await this.onConfirm();
-        new import_obsidian10.Notice("Map deleted.");
+        new import_obsidian11.Notice("Map deleted.");
       } catch (e) {
         logger2.error(e);
-        new import_obsidian10.Notice("Deleting map failed.");
+        new import_obsidian11.Notice("Deleting map failed.");
       } finally {
         this.close();
       }
@@ -90377,7 +90583,7 @@ function createMapManager(app, options = {}) {
   const deleteCurrent = () => {
     const target = current;
     if (!target) {
-      new import_obsidian11.Notice(notices.missingSelection);
+      new import_obsidian12.Notice(notices.missingSelection);
       return;
     }
     new ConfirmDeleteModal(app, target, async () => {
@@ -90388,7 +90594,7 @@ function createMapManager(app, options = {}) {
         }
       } catch (error) {
         logger2.error(MAP_MANAGER_COPY.logs.deleteFailed, error);
-        new import_obsidian11.Notice(notices.deleteFailed);
+        new import_obsidian12.Notice(notices.deleteFailed);
       }
     }).open();
   };
@@ -90405,7 +90611,7 @@ function createMapManager(app, options = {}) {
 init_plugin_logger();
 
 // src/ui/maps/components/map-header.ts
-var import_obsidian12 = require("obsidian");
+var import_obsidian13 = require("obsidian");
 init_map_workflows();
 init_search_dropdown();
 
@@ -90462,7 +90668,7 @@ function createMapHeader(app, host, options) {
     titleRightSlot.style.display = "none";
   }
   const openBtn = row1.createEl("button", { text: labels.open, attr: { type: "button" } });
-  (0, import_obsidian12.setIcon)(openBtn, "folder-open");
+  (0, import_obsidian13.setIcon)(openBtn, "folder-open");
   applyMapButtonStyle(openBtn);
   openBtn.onclick = () => {
     if (destroyed) return;
@@ -90473,7 +90679,7 @@ function createMapHeader(app, host, options) {
     });
   };
   const createBtn = row1.createEl("button", { text: labels.create, attr: { type: "button" } });
-  (0, import_obsidian12.setIcon)(createBtn, "plus");
+  (0, import_obsidian13.setIcon)(createBtn, "plus");
   applyMapButtonStyle(createBtn);
   createBtn.onclick = () => {
     if (destroyed) return;
@@ -90485,12 +90691,12 @@ function createMapHeader(app, host, options) {
   };
   const deleteBtn = options.onDelete ? row1.createEl("button", { text: labels.delete, attr: { type: "button", "aria-label": labels.delete } }) : null;
   if (deleteBtn) {
-    (0, import_obsidian12.setIcon)(deleteBtn, "trash");
+    (0, import_obsidian13.setIcon)(deleteBtn, "trash");
     applyMapButtonStyle(deleteBtn);
     deleteBtn.onclick = () => {
       if (destroyed) return;
       if (!currentFile) {
-        new import_obsidian12.Notice(notices.missingFile);
+        new import_obsidian13.Notice(notices.missingFile);
         return;
       }
       void options.onDelete?.(currentFile);
@@ -90526,7 +90732,7 @@ function createMapHeader(app, host, options) {
     const file = currentFile;
     if (!file) {
       await options.onSave?.(mode, null);
-      new import_obsidian12.Notice(notices.missingFile);
+      new import_obsidian13.Notice(notices.missingFile);
       return;
     }
     try {
@@ -90535,10 +90741,10 @@ function createMapHeader(app, host, options) {
         if (mode === "save") await saveMap(app, file);
         else await saveMapAs(app, file);
       }
-      new import_obsidian12.Notice(notices.saveSuccess);
+      new import_obsidian13.Notice(notices.saveSuccess);
     } catch (err) {
       logger2.error("[map-header] save failed", err);
-      new import_obsidian12.Notice(notices.saveError);
+      new import_obsidian13.Notice(notices.saveError);
     }
   };
   function setFileLabel(file) {
@@ -90851,7 +91057,7 @@ var CartographerController = class {
       }).catch((error) => {
         logger2.error("[cartographer] failed to load modes", error);
         this.view?.setOverlay(MODE_PROVISION_OVERLAY_MESSAGE);
-        new import_obsidian15.Notice(MODE_PROVISION_NOTICE_MESSAGE);
+        new import_obsidian16.Notice(MODE_PROVISION_NOTICE_MESSAGE);
         this.modeLoad = void 0;
         throw error;
       });
@@ -91126,7 +91332,7 @@ function renderModeSelect(slot, initialModes, onChange) {
 // src/workmodes/cartographer/index.ts
 var VIEW_TYPE_CARTOGRAPHER = "cartographer-view";
 var VIEW_CARTOGRAPHER = VIEW_TYPE_CARTOGRAPHER;
-var CartographerView = class extends import_obsidian16.ItemView {
+var CartographerView = class extends import_obsidian17.ItemView {
   constructor(leaf) {
     super(leaf);
     this.hostEl = null;
@@ -91193,12 +91399,12 @@ init_data_sources();
 init_registry();
 
 // src/workmodes/library/core/sources.ts
-var import_obsidian32 = require("obsidian");
+var import_obsidian33 = require("obsidian");
 init_terrain_repository();
 init_region_repository();
 init_entity_registry();
 async function ensureDir(app, dir) {
-  const normalizedDir = (0, import_obsidian32.normalizePath)(dir);
+  const normalizedDir = (0, import_obsidian33.normalizePath)(dir);
   const folder = app.vault.getAbstractFileByPath(normalizedDir);
   if (!folder) {
     await app.vault.createFolder(normalizedDir).catch(() => {
@@ -91443,11 +91649,11 @@ async function openLibrary(app) {
 }
 
 // src/workmodes/almanac/index.ts
-var import_obsidian33 = require("obsidian");
+var import_obsidian34 = require("obsidian");
 init_ui();
 var VIEW_TYPE_ALMANAC = "almanac-view";
 var VIEW_ALMANAC = VIEW_TYPE_ALMANAC;
-var AlmanacView = class extends import_obsidian33.ItemView {
+var AlmanacView = class extends import_obsidian34.ItemView {
   constructor(leaf) {
     super(leaf);
   }
@@ -91500,10 +91706,10 @@ async function openAlmanac(app) {
 }
 
 // src/workmodes/session-runner/index.ts
-var import_obsidian38 = require("obsidian");
+var import_obsidian39 = require("obsidian");
 
 // src/workmodes/session-runner/controller.ts
-var import_obsidian37 = require("obsidian");
+var import_obsidian38 = require("obsidian");
 init_options();
 init_map_list();
 init_plugin_logger();
@@ -91593,7 +91799,7 @@ var SessionRunnerController = class {
     } catch (error) {
       logger2.error("[session-runner] failed to start experience", error);
       this.view?.setOverlay(EXPERIENCE_OVERLAY_MESSAGE);
-      new import_obsidian37.Notice(EXPERIENCE_NOTICE_MESSAGE);
+      new import_obsidian38.Notice(EXPERIENCE_NOTICE_MESSAGE);
     }
     if (this.mapManager) {
       await this.mapManager.setFile(initialFile);
@@ -91804,7 +92010,7 @@ function createSessionRunnerView(options) {
 // src/workmodes/session-runner/index.ts
 var VIEW_TYPE_SESSION_RUNNER = "session-runner-view";
 var VIEW_SESSION_RUNNER = VIEW_TYPE_SESSION_RUNNER;
-var SessionRunnerView = class extends import_obsidian38.ItemView {
+var SessionRunnerView = class extends import_obsidian39.ItemView {
   constructor(leaf) {
     super(leaf);
     this.hostEl = null;
@@ -95633,7 +95839,7 @@ var HEX_PLUGIN_CSS_SECTIONS = {
 var HEX_PLUGIN_CSS = Object.values(HEX_PLUGIN_CSS_SECTIONS).join("\n\n");
 
 // src/app/integration-telemetry.ts
-var import_obsidian39 = require("obsidian");
+var import_obsidian40 = require("obsidian");
 init_plugin_logger();
 var notifiedOperations = /* @__PURE__ */ new Set();
 function reportIntegrationIssue(payload) {
@@ -95643,7 +95849,7 @@ function reportIntegrationIssue(payload) {
   const dedupeKey = `${integrationId}:${operation}`;
   if (notifiedOperations.has(dedupeKey)) return;
   notifiedOperations.add(dedupeKey);
-  new import_obsidian39.Notice(userMessage);
+  new import_obsidian40.Notice(userMessage);
 }
 
 // src/app/bootstrap-services.ts
@@ -95954,7 +96160,7 @@ function registerIPCCommands(server, plugin) {
 }
 
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian42.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian43.Plugin {
   async onload() {
     await logger2.init(this.app);
     logger2.log("Plugin loading...");

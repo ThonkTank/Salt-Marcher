@@ -14,9 +14,13 @@ export type { HexInteractionDelegate, HexInteractionOutcome } from "./types";
 export { createEventBackedInteractionDelegate } from "./interactions/interaction-delegate";
 import { getFactionOverlayStore, type FactionOverlayEntry } from "../state/faction-overlay-store";
 import type { FactionOverlayState } from "../state/faction-overlay-store";
+import { getLocationMarkerStore, type LocationMarkerEntry } from "../state/location-marker-store";
+import type { LocationMarkerState } from "../state/location-marker-store";
 
 const OVERLAY_STROKE_WIDTH = "3";
 const OVERLAY_FILL_OPACITY = "0.55";
+const MARKER_FONT_SIZE = "24px";
+const SVG_NS = "http://www.w3.org/2000/svg";
 
 export type RenderHandles = {
     readonly svg: SVGSVGElement;
@@ -123,12 +127,43 @@ export async function renderHexMap(
     const overlayUnsubscribe = overlayStore.state.subscribe(applyOverlay);
     applyOverlay(overlayStore.state.get());
 
+    // Location Markers
+    const markerStore = getLocationMarkerStore(app, mapFile);
+    const markerLayer = createMarkerLayer(scene.contentG, radius, base, padding);
+    let markerKeys = new Set<string>();
+
+    const applyMarkers = (state: LocationMarkerState) => {
+        const entries = state.loaded ? Array.from(state.entries.values()) : [];
+        const ensureCoords = entries.map((entry) => entry.coord);
+        scene.ensurePolys(ensureCoords);
+
+        const nextKeys = new Set<string>();
+        for (const entry of entries) {
+            const key = `${entry.coord.r},${entry.coord.c}`;
+            nextKeys.add(key);
+            markerLayer.setMarker(entry.coord, entry.displayIcon, entry.locationName);
+        }
+
+        for (const key of markerKeys) {
+            if (nextKeys.has(key)) continue;
+            const [r, c] = key.split(",").map(Number);
+            markerLayer.clearMarker({ r, c });
+        }
+
+        markerKeys = nextKeys;
+    };
+
+    const markerUnsubscribe = markerStore.state.subscribe(applyMarkers);
+    applyMarkers(markerStore.state.get());
+
     const ensurePolys = (coords: readonly HexCoord[]) => {
         if (!coords.length) return;
         scene.ensurePolys(coords);
     };
 
     const cleanup = () => {
+        markerUnsubscribe();
+        markerKeys.clear();
         overlayUnsubscribe();
         overlayKeys.clear();
         legendHost.remove();
@@ -208,4 +243,78 @@ function updateLegend(container: HTMLElement, entries: FactionOverlayEntry[]): v
         row.createDiv({ cls: "sm-map-legend__label", text: item.name });
         row.createDiv({ cls: "sm-map-legend__meta", text: `${item.count}` });
     }
+}
+
+type MarkerLayer = {
+    setMarker(coord: HexCoord, icon: string, tooltip: string): void;
+    clearMarker(coord: HexCoord): void;
+};
+
+function createMarkerLayer(
+    contentG: SVGGElement,
+    radius: number,
+    base: HexCoord,
+    padding: number
+): MarkerLayer {
+    const markerGroup = document.createElementNS(SVG_NS, "g");
+    markerGroup.setAttribute("class", "location-markers");
+    contentG.appendChild(markerGroup);
+
+    const markerByCoord = new Map<string, SVGTextElement>();
+
+    // Calculate hex geometry (same as scene.ts)
+    const hexW = Math.sqrt(3) * radius;
+    const hexH = 2 * radius;
+    const hStep = hexW;
+    const vStep = 0.75 * hexH;
+
+    const centerOf = (coord: HexCoord): { cx: number; cy: number } => {
+        const { r, c } = coord;
+        const cx = padding + (c - base.c) * hStep + (r % 2 ? hexW / 2 : 0);
+        const cy = padding + (r - base.r) * vStep + hexH / 2;
+        return { cx, cy };
+    };
+
+    const keyOf = (coord: HexCoord) => `${coord.r},${coord.c}`;
+
+    const setMarker = (coord: HexCoord, icon: string, tooltip: string) => {
+        const key = keyOf(coord);
+        let marker = markerByCoord.get(key);
+
+        if (!marker) {
+            marker = document.createElementNS(SVG_NS, "text");
+            marker.setAttribute("class", "location-marker");
+            marker.setAttribute("text-anchor", "middle");
+            marker.setAttribute("pointer-events", "none");
+            marker.setAttribute("font-size", MARKER_FONT_SIZE);
+            marker.setAttribute("data-coord", key);
+            markerGroup.appendChild(marker);
+            markerByCoord.set(key, marker);
+        }
+
+        const { cx, cy } = centerOf(coord);
+        marker.setAttribute("x", String(cx));
+        marker.setAttribute("y", String(cy - 10)); // Offset above center
+        marker.textContent = icon;
+
+        if (tooltip) {
+            const title = document.createElementNS(SVG_NS, "title");
+            title.textContent = tooltip;
+            marker.appendChild(title);
+        }
+    };
+
+    const clearMarker = (coord: HexCoord) => {
+        const key = keyOf(coord);
+        const marker = markerByCoord.get(key);
+        if (marker) {
+            marker.remove();
+            markerByCoord.delete(key);
+        }
+    };
+
+    return {
+        setMarker,
+        clearMarker,
+    };
 }

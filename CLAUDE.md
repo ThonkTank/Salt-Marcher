@@ -326,7 +326,7 @@ Ziele:
 | **Phase 3.1 – Location CRUD** | ✅ **Abgeschlossen** | Library Integration | Locations fully integrated in Library ✅ |
 | **Phase 3.2 – Tree Core** | ✅ **Abgeschlossen** | Tree Infrastructure | Tree-Builder, Components, Tests ✅ |
 | **Phase 3.2.1 – Tree UI Integration** | ✅ **Abgeschlossen** | Library Toggle | List/Tree toggle in Library ✅ |
-| Phase 3.3 – Map POI Markers | ⏳ **NÄCHSTER SCHRITT** | Hex Markers | Orte auf Karte platzieren |
+| **Phase 3.3 – Map POI Markers** | ⏳ **IN ARBEIT** | Hex Markers | Orte auf Karte platzieren |
 | Phase 2.3.2+ – Advanced Factions | ⏳ Optional | Population, Jobs | Inkrementell nach Bedarf |
 | Phase 2.5 – Faction Filtering | ⏳ QoL | UI-Filter | Optional (Generator filtert bereits) |
 | Phase 4 – Event Engine | ⏳ Geplant | Kalender-Automation | Nach Phase 3 |
@@ -803,6 +803,68 @@ Umfassendes Orts-Management-System:
 - `7663741` feat(locations): Complete Phase 3.2.1 - Tree view in Library UI
 
 **Actual Time:** ~2 hours (UI integration)
+
+---
+
+#### Phase 3.3 - Map POI Markers ⏳ IN ARBEIT
+**Scope:** Locations auf der Hex-Karte platzieren und visualisieren
+
+**User Story:**
+> "Als GM will ich Locations auf der Cartographer-Karte platzieren, damit ich sehen kann wo Städte, Dungeons und andere Orte liegen, und diese Informationen im Inspector abrufen kann."
+
+**Acceptance Criteria:**
+1. ⏳ Location-Marker Store (welche Location auf welchem Hex)
+2. ⏳ Marker Rendering auf Karte (Icons/SVG-Marker über Hexes)
+3. ⏳ Inspector Integration (zeige Location-Info bei Hex-Click)
+4. ⏳ Editor Mode Integration (Location zu Hex hinzufügen/entfernen)
+5. ⏳ Unit Tests für Store und Rendering-Logic
+
+**Implementation Plan:**
+
+**Schritt 1: Location Marker Store** (~30min)
+- Erstelle `src/features/maps/state/location-marker-store.ts`
+- Pattern: ähnlich wie `faction-overlay-store.ts`
+- Interface:
+  ```typescript
+  interface LocationMarker {
+      coord: TileCoord;
+      locationName: string;
+      locationType: LocationType;
+      icon?: string; // SVG path or emoji
+  }
+  ```
+- Store-API: `setMarkers()`, `get()`, `list()`, `clear()`
+
+**Schritt 2: Marker Rendering** (~45min)
+- SVG Marker Layer in `hex-render.ts`
+- Icons basierend auf Location Type (🏙️ 🏘️ 🏢 ⚔️ etc.)
+- Marker über Hex-Polygon positionieren
+- Subscribe zu location-marker-store
+
+**Schritt 3: Inspector Integration** (~30min)
+- Erweitere Inspector Mode (`modes/inspector.ts`)
+- Zeige Location-Info wenn Hex mit Marker geklickt wird
+- Display: Location Name, Type, Parent (falls vorhanden)
+- Button "Open Location" → öffnet Location in Library
+
+**Schritt 4: Editor Integration** (~45min)
+- Neue Toolbar: "Location Marker" Tool
+- Dropdown: Locations aus Library laden
+- Click auf Hex: Location platzieren
+- Shift+Click: Marker entfernen
+
+**Schritt 5: Tests** (~30min)
+- Unit Tests für `location-marker-store.ts`
+- Test: setMarkers, get, list, clear
+- Test: Marker persistence (via store)
+
+**Out of Scope (spätere Phasen):**
+- ❌ Einflussbereiche (Area of Influence) → Phase 3.3.1
+- ❌ Automatische Marker-Platzierung → später
+- ❌ Drag & Drop Marker verschieben → später
+- ❌ Multi-Hex Locations (große Städte) → später
+
+**Estimated Time:** 3-3.5 hours
 
 ---
 
