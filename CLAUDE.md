@@ -393,37 +393,42 @@ Vollständige Tag-Taxonomie in `docs/TAGS.md`, Schema-Validatoren in `src/domain
 - Generiert Count basierend auf Party-Level und Difficulty Setting
 - Auto-XP-Balancing (Encounter bleibt im gewählten Difficulty-Bereich)
 
-#### Fortschritt (Stand: 2025-10-29)
+#### Fortschritt (Stand: 2025-10-29 14:30)
 
-**✅ Abgeschlossen:**
-- Core Generator (`generator.ts`) - 500+ Zeilen
+**✅ Abgeschlossen (60% Phase 2.6):**
+- Core Generator (`generator.ts`) - 500+ Zeilen ✅
 - Unit-Tests (`generator.test.ts`) - 22 Tests, alle passing ✅
-- Tag-Filtering mit 4-Level-Fallback implementiert
-- XP Budget Calculation (D&D 5e DMG p.82)
-- Creature Selection mit Variety-Constraint
-- Test-Suite: 222/224 Tests passing (99%)
+- Tag-Filtering mit 4-Level-Fallback implementiert ✅
+- XP Budget Calculation (D&D 5e DMG p.82) ✅
+- Creature Selection mit Variety-Constraint ✅
+- UI-Komponenten (`creature-list.ts`) - Difficulty-Dropdown + Generate-Button ✅
+- Presenter-Integration (`generateEncounter()` Methode) ✅
+- Error-Handling (No session, No party, No creatures) ✅
+- Test-Suite: 222/224 Tests passing (99%) ✅
 
-**⏳ In Arbeit:**
-- UI-Integration (Generate-Button, Difficulty-Dropdown)
-- Event-Builder Integration (Hex-Kontext → Generator)
+**⏳ In Arbeit (40% verbleibend):**
+- workspace-view.ts Integration (onGenerateEncounter Callback verdrahten)
+- Toast-Notifications für Success/Error
+- Confirmation-Modal bei bestehenden Creatures
 - Integration-Test (End-to-End Flow)
 
 **Commits:**
 - `85ac660` feat(encounter): Implement Phase 2.6 Random Encounter Generator
 - `c5f0ccd` docs: Update Phase 2.6 specification and roadmap status
+- `6eb0753` feat(encounter): Add Phase 2.6 UI components and presenter integration (WIP)
 
 #### Acceptance Criteria
-1. ⏳ Button "Generate Random Encounter" im Session-View (neben "Compose Manually")
-2. ⏳ Difficulty-Dropdown (Easy/Medium/Hard/Deadly) mit Standardwert "Medium"
+1. ✅ Button "Generate Random Encounter" im Creature-List (mit 🎲 Icon) - UI implementiert
+2. ✅ Difficulty-Dropdown (Easy/Medium/Hard/Deadly) mit Standardwert "Medium" - UI implementiert
 3. ✅ Generator liefert 1-6 Creatures (min 1, max 6 für Übersichtlichkeit) - Core implementiert
 4. ✅ Fallback bei 0 Matches: Schrittweise Tag-Relaxierung - Core implementiert
    - Stufe 1: Faction+Terrain+Region
    - Stufe 2: Faction+Terrain
    - Stufe 3: Terrain only
    - Stufe 4: Alle Creatures (keine Filter)
-5. ⏳ Loading-State während Generation (Spinner, "Generating...")
-6. ⏳ Error-Handling: Toast-Notification bei Failure ("No creatures found")
-7. ⏳ Generated Encounter ersetzt aktuelle Creature-Liste (mit Bestätigung bei existierenden Creatures)
+5. ✅ Loading-State während Generation ("Generating...") - UI implementiert
+6. ⏳ Error-Handling: Toast-Notification bei Failure ("No creatures found") - Presenter hat Errors, Toast fehlt
+7. ⏳ Generated Encounter ersetzt aktuelle Creature-Liste - Presenter implementiert, Confirmation-Modal fehlt
 
 #### Implementation Details
 
