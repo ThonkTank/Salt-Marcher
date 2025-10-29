@@ -363,25 +363,23 @@ Territory Marking, Faction Context, Random Encounter Generator (22 tests), Comba
 
 ---
 
-#### Phase 3.4.4 - Token Management ⏳ IN PROGRESS
+#### Phase 3.4.4 - Token Management ✅ FUNKTIONAL | ⏳ Tests ausstehend
 **Scope:** Token-Placement für Player, NPCs, Monsters auf Dungeon-Grid
 
-**Fortschritt:** ✅ Steps 1-3 Complete (Data Model, Rendering, Placement) | ⏳ Step 4 Next (Selection, Delete, Edit)
+**✅ Core Features Complete (Steps 1-4.3):**
+- DungeonToken interface, GridRenderer.renderTokens() (colored circles + labels)
+- TokenCreationModal → Click-to-place → Persist to frontmatter
+- Token selection (golden highlight), hover tooltips
+- Detail panel (emoji, type, position, color swatch, size)
+- Delete via button or Delete key → persists to file
 
-**✅ Complete:**
-- DungeonToken interface (id, type, position, label, color, size)
-- GridRenderer.renderTokens() - Colored circles with labels
-- TokenCreationModal + Click-to-place workflow
-- Persistence to frontmatter (saveDungeonToFile)
-
-**⏳ Next - Step 4: Token Management** (~1h)
-- Click token → select (highlight, detail panel)
-- Delete token button + keyboard shortcut
-- Edit token properties
+**⏳ Optional - Step 4.4: Edit Token** (~30min)
+- Reuse TokenCreationModal pre-filled with token data
+- Update token in-place + persist
 
 **⏳ Step 5: Tests** (~30min)
-- Unit tests: token rendering, placement, selection
-- Integration test: add/move/delete workflow
+- Unit tests: token rendering, placement, selection, deletion
+- Update GridRenderer tests with token cases
 
 #### Phase 3.4.5 - Advanced Features ⏳ Optional
 - FOW overlay, Sound radius, LOS calculations
