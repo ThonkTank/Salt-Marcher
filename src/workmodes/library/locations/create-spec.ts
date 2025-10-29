@@ -110,6 +110,46 @@ const fields: AnyFieldSpec[] = [
         placeholder: "Wichtige Details, Geheimnisse, Hooks...",
         description: "Zusätzliche Notizen und Informationen",
     },
+    // Dungeon-specific fields (only visible when type === "Dungeon")
+    {
+        id: "grid_width",
+        label: "Rasterbreite",
+        type: "number-stepper",
+        min: 5,
+        max: 100,
+        step: 5,
+        default: 30,
+        placeholder: "30",
+        description: "Breite des Dungeon-Rasters (Anzahl Zellen)",
+        visibleIf: (values) => values.type === "Dungeon",
+        dependsOn: ["type"],
+    },
+    {
+        id: "grid_height",
+        label: "Rasterhöhe",
+        type: "number-stepper",
+        min: 5,
+        max: 100,
+        step: 5,
+        default: 20,
+        placeholder: "20",
+        description: "Höhe des Dungeon-Rasters (Anzahl Zellen)",
+        visibleIf: (values) => values.type === "Dungeon",
+        dependsOn: ["type"],
+    },
+    {
+        id: "cell_size",
+        label: "Zellgröße",
+        type: "number-stepper",
+        min: 20,
+        max: 80,
+        step: 5,
+        default: 40,
+        placeholder: "40",
+        description: "Größe einer Rasterzelle in Pixeln (Standard: 40)",
+        visibleIf: (values) => values.type === "Dungeon",
+        dependsOn: ["type"],
+    },
 ];
 
 // ============================================================================
@@ -137,6 +177,10 @@ export const locationSpec: CreateSpec<LocationData> = {
             "coordinates",
             "description",
             "notes",
+            "grid_width",
+            "grid_height",
+            "cell_size",
+            "rooms",
         ],
         bodyTemplate: (data) => locationToMarkdown(data as LocationData),
     },
@@ -167,6 +211,14 @@ export const locationSpec: CreateSpec<LocationData> = {
                 getValue: (entry) => {
                     if (!entry.parent) return "Top-Level";
                     return `In: ${entry.parent}`;
+                },
+            },
+            {
+                id: "grid_size",
+                cls: "sm-cc-item__meta sm-cc-item__grid-badge",
+                getValue: (entry) => {
+                    if (!entry.grid_size) return null;
+                    return `⬚ ${entry.grid_size}`;
                 },
             },
         ],

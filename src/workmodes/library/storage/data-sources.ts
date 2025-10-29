@@ -58,6 +58,7 @@ export interface LocationEntryMeta {
     readonly type: string;
     readonly owner?: string;
     readonly parent?: string;
+    readonly grid_size?: string; // For dungeons: "30×20"
 }
 
 export interface LibraryEntryMetaMap {
@@ -189,10 +190,23 @@ const loadLocationEntry = createEntryLoader<"locations">(fm => {
     const ownerName = typeof fm.owner_name === "string" ? fm.owner_name.trim() : "";
     const owner = ownerType !== "none" && ownerName ? `${ownerType}: ${ownerName}` : undefined;
 
+    const locationType = typeof fm.type === "string" ? fm.type : "Unknown";
+    let gridSize: string | undefined = undefined;
+
+    // For dungeons, add grid size badge
+    if (locationType === "Dungeon") {
+        const gridWidth = typeof fm.grid_width === "number" ? fm.grid_width : undefined;
+        const gridHeight = typeof fm.grid_height === "number" ? fm.grid_height : undefined;
+        if (gridWidth && gridHeight) {
+            gridSize = `${gridWidth}×${gridHeight}`;
+        }
+    }
+
     return {
-        type: typeof fm.type === "string" ? fm.type : "Unknown",
+        type: locationType,
         owner,
         parent: typeof fm.parent === "string" ? fm.parent : undefined,
+        grid_size: gridSize,
     };
 });
 

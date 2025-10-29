@@ -3714,10 +3714,20 @@ var init_data_sources = __esm({
       const ownerType = typeof fm2.owner_type === "string" ? fm2.owner_type : "none";
       const ownerName = typeof fm2.owner_name === "string" ? fm2.owner_name.trim() : "";
       const owner = ownerType !== "none" && ownerName ? `${ownerType}: ${ownerName}` : void 0;
+      const locationType = typeof fm2.type === "string" ? fm2.type : "Unknown";
+      let gridSize = void 0;
+      if (locationType === "Dungeon") {
+        const gridWidth = typeof fm2.grid_width === "number" ? fm2.grid_width : void 0;
+        const gridHeight = typeof fm2.grid_height === "number" ? fm2.grid_height : void 0;
+        if (gridWidth && gridHeight) {
+          gridSize = `${gridWidth}\xD7${gridHeight}`;
+        }
+      }
       return {
-        type: typeof fm2.type === "string" ? fm2.type : "Unknown",
+        type: locationType,
         owner,
-        parent: typeof fm2.parent === "string" ? fm2.parent : void 0
+        parent: typeof fm2.parent === "string" ? fm2.parent : void 0,
+        grid_size: gridSize
       };
     });
     LIBRARY_DATA_SOURCES = {
@@ -15899,6 +15909,46 @@ var init_create_spec9 = __esm({
         type: "textarea",
         placeholder: "Wichtige Details, Geheimnisse, Hooks...",
         description: "Zus\xE4tzliche Notizen und Informationen"
+      },
+      // Dungeon-specific fields (only visible when type === "Dungeon")
+      {
+        id: "grid_width",
+        label: "Rasterbreite",
+        type: "number-stepper",
+        min: 5,
+        max: 100,
+        step: 5,
+        default: 30,
+        placeholder: "30",
+        description: "Breite des Dungeon-Rasters (Anzahl Zellen)",
+        visibleIf: (values) => values.type === "Dungeon",
+        dependsOn: ["type"]
+      },
+      {
+        id: "grid_height",
+        label: "Rasterh\xF6he",
+        type: "number-stepper",
+        min: 5,
+        max: 100,
+        step: 5,
+        default: 20,
+        placeholder: "20",
+        description: "H\xF6he des Dungeon-Rasters (Anzahl Zellen)",
+        visibleIf: (values) => values.type === "Dungeon",
+        dependsOn: ["type"]
+      },
+      {
+        id: "cell_size",
+        label: "Zellgr\xF6\xDFe",
+        type: "number-stepper",
+        min: 20,
+        max: 80,
+        step: 5,
+        default: 40,
+        placeholder: "40",
+        description: "Gr\xF6\xDFe einer Rasterzelle in Pixeln (Standard: 40)",
+        visibleIf: (values) => values.type === "Dungeon",
+        dependsOn: ["type"]
       }
     ];
     locationSpec = {
@@ -15921,7 +15971,11 @@ var init_create_spec9 = __esm({
           "region",
           "coordinates",
           "description",
-          "notes"
+          "notes",
+          "grid_width",
+          "grid_height",
+          "cell_size",
+          "rooms"
         ],
         bodyTemplate: (data) => locationToMarkdown(data)
       },
@@ -15952,6 +16006,14 @@ var init_create_spec9 = __esm({
             getValue: (entry) => {
               if (!entry.parent) return "Top-Level";
               return `In: ${entry.parent}`;
+            }
+          },
+          {
+            id: "grid_size",
+            cls: "sm-cc-item__meta sm-cc-item__grid-badge",
+            getValue: (entry) => {
+              if (!entry.grid_size) return null;
+              return `\u2B1A ${entry.grid_size}`;
             }
           }
         ],
