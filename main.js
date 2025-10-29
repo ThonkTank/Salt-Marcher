@@ -31,7 +31,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // src/app/plugin-logger.ts
-var import_obsidian, LOG_FILE_PATH, PluginLogger, logger;
+var import_obsidian, LOG_FILE_PATH, PluginLogger, logger2;
 var init_plugin_logger = __esm({
   "src/app/plugin-logger.ts"() {
     "use strict";
@@ -193,7 +193,7 @@ ${arg.stack || ""}`;
         }
       }
     };
-    logger = PluginLogger.getInstance();
+    logger2 = PluginLogger.getInstance();
   }
 });
 
@@ -784,7 +784,7 @@ function createCameraController(svg, contentG, overlay, host, options) {
       try {
         detach?.();
       } catch (err) {
-        logger.error("[hex-render] camera cleanup failed", err);
+        logger2.error("[hex-render] camera cleanup failed", err);
       }
     }
   };
@@ -982,14 +982,14 @@ __export(layout_exports, {
   getRightLeaf: () => getRightLeaf
 });
 function getRightLeaf(app) {
-  logger.log("[Layout] Requesting right leaf...");
+  logger2.log("[Layout] Requesting right leaf...");
   const leaf = app.workspace.getRightLeaf(false) ?? app.workspace.getRightLeaf(true) ?? app.workspace.getLeaf(true);
-  logger.log("[Layout] Right leaf resolved:", leaf);
+  logger2.log("[Layout] Right leaf resolved:", leaf);
   return leaf;
 }
 function getCenterLeaf(app) {
   const leaf = app.workspace.getMostRecentLeaf() ?? app.workspace.getLeaf(false) ?? app.workspace.getLeaf(true);
-  logger.log("[Layout] Center leaf resolved:", leaf);
+  logger2.log("[Layout] Center leaf resolved:", leaf);
   return leaf;
 }
 var init_layout = __esm({
@@ -1013,7 +1013,7 @@ function writable(initialValue, options) {
   const subscribers = /* @__PURE__ */ new Set();
   const log = (event, payload) => {
     if (!debug) return;
-    logger.info(`[Store:${name}] ${event}`, {
+    logger2.info(`[Store:${name}] ${event}`, {
       ...payload,
       storeName: name,
       event,
@@ -1026,7 +1026,7 @@ function writable(initialValue, options) {
       try {
         subscriber(value);
       } catch (error) {
-        logger.error(`[Store:${name}] Subscriber error:`, error);
+        logger2.error(`[Store:${name}] Subscriber error:`, error);
       }
     });
   };
@@ -1036,7 +1036,7 @@ function writable(initialValue, options) {
     try {
       subscriber(value);
     } catch (error) {
-      logger.error(`[Store:${name}] Initial subscriber call error:`, error);
+      logger2.error(`[Store:${name}] Initial subscriber call error:`, error);
     }
     return () => {
       subscribers.delete(subscriber);
@@ -1126,7 +1126,7 @@ var init_store_manager = __esm({
           throw new Error("StoreManager has been disposed");
         }
         if (this.stores.has(name)) {
-          logger.warn(`[StoreManager] Store "${name}" already registered, replacing`);
+          logger2.warn(`[StoreManager] Store "${name}" already registered, replacing`);
         }
         const isPersistent = this.isPersistentStore(store);
         this.stores.set(name, {
@@ -1134,7 +1134,7 @@ var init_store_manager = __esm({
           store,
           isPersistent
         });
-        logger.info(`[StoreManager] Registered store "${name}"${isPersistent ? " (persistent)" : ""}`);
+        logger2.info(`[StoreManager] Registered store "${name}"${isPersistent ? " (persistent)" : ""}`);
       }
       /**
        * Get a registered store by name
@@ -1166,21 +1166,21 @@ var init_store_manager = __esm({
           store: entry.store
         }));
         if (persistentStores.length === 0) {
-          logger.info("[StoreManager] No persistent stores to save");
+          logger2.info("[StoreManager] No persistent stores to save");
           return;
         }
-        logger.info(`[StoreManager] Saving ${persistentStores.length} persistent stores`);
+        logger2.info(`[StoreManager] Saving ${persistentStores.length} persistent stores`);
         const savePromises = persistentStores.map(async ({ name, store }) => {
           try {
             await store.save();
-            logger.debug(`[StoreManager] Saved store "${name}"`);
+            logger2.debug(`[StoreManager] Saved store "${name}"`);
           } catch (error) {
-            logger.error(`[StoreManager] Failed to save store "${name}":`, error);
+            logger2.error(`[StoreManager] Failed to save store "${name}":`, error);
             throw error;
           }
         });
         await Promise.all(savePromises);
-        logger.info("[StoreManager] All persistent stores saved");
+        logger2.info("[StoreManager] All persistent stores saved");
       }
       /**
        * Load all persistent stores
@@ -1194,20 +1194,20 @@ var init_store_manager = __esm({
           store: entry.store
         }));
         if (persistentStores.length === 0) {
-          logger.info("[StoreManager] No persistent stores to load");
+          logger2.info("[StoreManager] No persistent stores to load");
           return;
         }
-        logger.info(`[StoreManager] Loading ${persistentStores.length} persistent stores`);
+        logger2.info(`[StoreManager] Loading ${persistentStores.length} persistent stores`);
         const loadPromises = persistentStores.map(async ({ name, store }) => {
           try {
             await store.load();
-            logger.debug(`[StoreManager] Loaded store "${name}"`);
+            logger2.debug(`[StoreManager] Loaded store "${name}"`);
           } catch (error) {
-            logger.error(`[StoreManager] Failed to load store "${name}":`, error);
+            logger2.error(`[StoreManager] Failed to load store "${name}":`, error);
           }
         });
         await Promise.allSettled(loadPromises);
-        logger.info("[StoreManager] Persistent stores loaded");
+        logger2.info("[StoreManager] Persistent stores loaded");
       }
       /**
        * Dispose of all stores and cleanup
@@ -1216,10 +1216,10 @@ var init_store_manager = __esm({
         if (this.disposed) {
           return;
         }
-        logger.info(`[StoreManager] Disposing ${this.stores.size} stores`);
+        logger2.info(`[StoreManager] Disposing ${this.stores.size} stores`);
         this.stores.clear();
         this.disposed = true;
-        logger.info("[StoreManager] Disposed");
+        logger2.info("[StoreManager] Disposed");
       }
       /**
        * Check if disposed
@@ -1920,7 +1920,7 @@ async function listTilesForMapFromDisk(app, mapFile) {
           const validated = validateTileData({ terrain, region }, { allowUnknownTerrain: true });
           return { terrain: validated.terrain, region: validated.region ?? "" };
         } catch (error) {
-          logger.warn("[salt-marcher] Ignoring invalid tile data", error);
+          logger2.warn("[salt-marcher] Ignoring invalid tile data", error);
           return { terrain: terrain.trim(), region: region.trim() };
         }
       })()
@@ -1947,7 +1947,7 @@ async function loadTileFromDisk(app, mapFile, coord) {
     const validated = validateTileData({ terrain, region, faction, note }, { allowUnknownTerrain: true });
     return validated;
   } catch (error) {
-    logger.warn("[salt-marcher] Loaded tile contains invalid data", error);
+    logger2.warn("[salt-marcher] Loaded tile contains invalid data", error);
     return { terrain: terrain.trim(), region: region.trim(), faction: faction.trim() || void 0, note: note || void 0 };
   }
 }
@@ -2577,7 +2577,7 @@ function createRegionStore(app, options) {
     const update = async (reason) => {
       try {
         if (reason === "delete") {
-          logger.warn(
+          logger2.warn(
             "Regions store detected deletion; attempting automatic recreation."
           );
           await ensureRegionsFile(app);
@@ -2587,7 +2587,7 @@ function createRegionStore(app, options) {
         await onChange?.();
         triggerRegionEvent(app);
       } catch (error) {
-        logger.error(
+        logger2.error(
           `[salt-marcher] Regions watcher failed after ${reason} event`,
           error
         );
@@ -2744,13 +2744,13 @@ async function deleteMapAndTiles(app, mapFile) {
     try {
       await app.vault.delete(t.file);
     } catch (e) {
-      logger.warn("Delete tile failed:", t.file.path, e);
+      logger2.warn("Delete tile failed:", t.file.path, e);
     }
   }
   try {
     await app.vault.delete(mapFile);
   } catch (e) {
-    logger.warn("Delete map failed:", mapFile.path, e);
+    logger2.warn("Delete map failed:", mapFile.path, e);
   }
   unregisterMapStores(app, mapFile);
 }
@@ -2909,7 +2909,7 @@ function reportEditorToolIssue(payload) {
   const { stage, error } = payload;
   const toolId = payload.toolId ?? "unknown";
   const logPrefix = `[cartographer:editor] tool(${toolId}) stage(${stage}) failed`;
-  logger.error(logPrefix, error);
+  logger2.error(logPrefix, error);
   const messageFactory = TOOL_STAGE_MESSAGES[stage];
   const userMessage = messageFactory(toolId);
   const dedupeKey = `${stage}:${toolId}`;
@@ -3050,7 +3050,7 @@ async function applyBrush(app, mapFile, center, opts, handles, context) {
       const key = `${coord.r},${coord.c}`;
       const previousFill = getFillSnapshot(coord);
       const previousData = await loadTile(app, mapFile, coord).catch((error) => {
-        logger.error(`[terrain-brush] failed to load tile ${key} before applying brush`, error);
+        logger2.error(`[terrain-brush] failed to load tile ${key} before applying brush`, error);
         return null;
       });
       throwIfAborted();
@@ -3098,18 +3098,18 @@ async function applyBrush(app, mapFile, center, opts, handles, context) {
   } catch (error) {
     const aborted = isAbortError(error);
     if (!aborted) {
-      logger.error("[terrain-brush] applyBrush failed", error);
+      logger2.error("[terrain-brush] applyBrush failed", error);
     }
     for (const step of applied.reverse()) {
       try {
         step.restoreFill();
       } catch (restoreErr) {
-        logger.error("[terrain-brush] failed to restore hex fill", restoreErr);
+        logger2.error("[terrain-brush] failed to restore hex fill", restoreErr);
       }
       try {
         await step.rollback();
       } catch (rollbackErr) {
-        logger.error("[terrain-brush] failed to rollback tile changes", rollbackErr);
+        logger2.error("[terrain-brush] failed to rollback tile changes", rollbackErr);
       }
     }
     if (!aborted) {
@@ -3124,7 +3124,7 @@ async function applyBrush(app, mapFile, center, opts, handles, context) {
       try {
         tool?.setStatus?.(message);
       } catch (statusErr) {
-        logger.error("[terrain-brush] failed to publish tool status", statusErr);
+        logger2.error("[terrain-brush] failed to publish tool status", statusErr);
       }
       throw error;
     }
@@ -3336,7 +3336,7 @@ var init_entity_registry = __esm({
 async function listVaultPresets(app, entityType) {
   const entityConfig = ENTITY_REGISTRY[entityType];
   if (!entityConfig) {
-    logger.warn(`[VaultPresetLoader] Unknown entity type: ${entityType}`);
+    logger2.warn(`[VaultPresetLoader] Unknown entity type: ${entityType}`);
     return [];
   }
   const folder = app.vault.getAbstractFileByPath(entityConfig.directory);
@@ -3359,7 +3359,7 @@ async function listVaultPresets(app, entityType) {
 function watchVaultPresets(app, entityType, onChange) {
   const entityConfig = ENTITY_REGISTRY[entityType];
   if (!entityConfig) {
-    logger.warn(`[VaultPresetLoader] Unknown entity type: ${entityType}`);
+    logger2.warn(`[VaultPresetLoader] Unknown entity type: ${entityType}`);
     return () => {
     };
   }
@@ -3837,7 +3837,7 @@ function buildForm(root, config) {
         try {
           fn();
         } catch (err) {
-          logger.error("[form-builder] cleanup failed", err);
+          logger2.error("[form-builder] cleanup failed", err);
         }
       });
       cleanup.length = 0;
@@ -3913,7 +3913,7 @@ function mountBrushPanel(root, ctx) {
     try {
       ctx.setStatus(message);
     } catch (err) {
-      logger.error("[terrain-brush] failed to set status", err);
+      logger2.error("[terrain-brush] failed to set status", err);
     }
   };
   const form = buildForm(root, {
@@ -4089,7 +4089,7 @@ function mountBrushPanel(root, ctx) {
   };
   const handleManageError = (err) => {
     if (err) {
-      logger.error("[terrain-brush] failed to open Library command", err);
+      logger2.error("[terrain-brush] failed to open Library command", err);
     }
     applyManageHint({
       text: "Opening the Library command failed. Use the ribbon icon to open the Library manually and add Region entries under Library \u2192 Regions before refreshing.",
@@ -4099,7 +4099,7 @@ function mountBrushPanel(root, ctx) {
   };
   const handleManageFactionError = (err) => {
     if (err) {
-      logger.error("[terrain-brush] failed to open Library command for factions", err);
+      logger2.error("[terrain-brush] failed to open Library command for factions", err);
     }
     applyFactionHint({
       text: "Opening the Library command failed. Use the ribbon icon to open the Library manually and add Faction entries under Library \u2192 Factions before refreshing.",
@@ -4126,7 +4126,7 @@ function mountBrushPanel(root, ctx) {
     try {
       regions = await loadRegions2(ctx.app);
     } catch (err) {
-      logger.error("[terrain-brush] failed to load regions", err);
+      logger2.error("[terrain-brush] failed to load regions", err);
       if (seq === fillSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
         regionControl?.setOptions([]);
         state.region = "";
@@ -4205,7 +4205,7 @@ function mountBrushPanel(root, ctx) {
     try {
       factionFiles = await LIBRARY_DATA_SOURCES.factions.list(ctx.app);
     } catch (err) {
-      logger.error("[terrain-brush] failed to list factions", err);
+      logger2.error("[terrain-brush] failed to list factions", err);
       if (fSeq === fillFactionSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
         factionControl?.setOptions([]);
         state.faction = "";
@@ -4230,7 +4230,7 @@ function mountBrushPanel(root, ctx) {
         const entry = await LIBRARY_DATA_SOURCES.factions.load(ctx.app, file);
         factions.push({ name: entry.name });
       } catch (err) {
-        logger.warn(`[terrain-brush] failed to load faction ${file.path}`, err);
+        logger2.warn(`[terrain-brush] failed to load faction ${file.path}`, err);
       }
     }
     factionControl?.setOptions([
@@ -4318,7 +4318,7 @@ function mountBrushPanel(root, ctx) {
       try {
         off();
       } catch (err) {
-        logger.error("[terrain-brush] failed to unsubscribe", err);
+        logger2.error("[terrain-brush] failed to unsubscribe", err);
       }
     });
     unsubscribe.length = 0;
@@ -4613,7 +4613,7 @@ function createEditorMode() {
       try {
         await activeBrush.handleHexClick(coord);
       } catch (err) {
-        logger.error("[editor-mode] brush interaction failed", err);
+        logger2.error("[editor-mode] brush interaction failed", err);
         const message = reportEditorToolIssue({
           stage: "operation",
           toolId: BRUSH_LABEL,
@@ -4717,13 +4717,13 @@ function createInspectorMode() {
       try {
         await saveTile(ctx.app, file, state.selection, { terrain, region, faction, note });
       } catch (err) {
-        logger.error("[inspector-mode] saveTile failed", err);
+        logger2.error("[inspector-mode] saveTile failed", err);
       }
       const color = TERRAIN_COLORS[terrain] ?? "transparent";
       try {
         handles?.setFill(state.selection, color);
       } catch (err) {
-        logger.error("[inspector-mode] setFill failed", err);
+        logger2.error("[inspector-mode] setFill failed", err);
       }
     }, 250);
   };
@@ -4735,7 +4735,7 @@ function createInspectorMode() {
     try {
       data = await loadTile(ctx.app, file, state.selection);
     } catch (err) {
-      logger.error("[inspector-mode] loadTile failed", err);
+      logger2.error("[inspector-mode] loadTile failed", err);
       data = null;
     }
     if (ctx.signal.aborted) return;
@@ -4850,7 +4850,7 @@ function createInspectorMode() {
           }))
         ]);
       } catch (err) {
-        logger.error("[inspector-mode] failed to load regions", err);
+        logger2.error("[inspector-mode] failed to load regions", err);
       }
       try {
         const factionFiles = await LIBRARY_DATA_SOURCES.factions.list(ctx.app);
@@ -4860,7 +4860,7 @@ function createInspectorMode() {
             const entry = await LIBRARY_DATA_SOURCES.factions.load(ctx.app, file);
             factions.push({ name: entry.name });
           } catch (err) {
-            logger.warn(`[inspector-mode] failed to load faction ${file.path}`, err);
+            logger2.warn(`[inspector-mode] failed to load faction ${file.path}`, err);
           }
         }
         ui.faction?.setOptions([
@@ -4871,7 +4871,7 @@ function createInspectorMode() {
           }))
         ]);
       } catch (err) {
-        logger.error("[inspector-mode] failed to load factions", err);
+        logger2.error("[inspector-mode] failed to load factions", err);
       }
       updateFileLabel();
       updatePanelState();
@@ -4962,7 +4962,7 @@ function emitEncounterXpState() {
     try {
       listener(snapshot);
     } catch (err) {
-      logger.error("[encounter] xp listener failed", err);
+      logger2.error("[encounter] xp listener failed", err);
     }
   }
   return snapshot;
@@ -4973,7 +4973,7 @@ function publishEncounterEvent(event) {
     try {
       listener(event);
     } catch (err) {
-      logger.error("[encounter] listener failed", err);
+      logger2.error("[encounter] listener failed", err);
     }
   }
 }
@@ -4983,7 +4983,7 @@ function subscribeToEncounterEvents(listener) {
     try {
       listener(latestEvent);
     } catch (err) {
-      logger.error("[encounter] listener failed", err);
+      logger2.error("[encounter] listener failed", err);
     }
   }
   return () => {
@@ -5001,7 +5001,7 @@ function subscribeEncounterXpState(listener) {
   try {
     listener(getEncounterXpState());
   } catch (err) {
-    logger.error("[encounter] xp listener failed", err);
+    logger2.error("[encounter] xp listener failed", err);
   }
   return () => {
     xpStateListeners.delete(listener);
@@ -5152,7 +5152,7 @@ function filterCreaturesByTags(ctx) {
       return tags.every((filterTagSet) => matchesAnyTag(creatureTags, filterTagSet));
     });
     if (filtered.length > 0) {
-      logger.debug(`[generator] Filter level ${level}: ${filtered.length} matches`, {
+      logger2.debug(`[generator] Filter level ${level}: ${filtered.length} matches`, {
         factionTags,
         terrainTags,
         regionTags,
@@ -5161,16 +5161,16 @@ function filterCreaturesByTags(ctx) {
       return { creatures: filtered, filterLevel: level };
     }
   }
-  logger.warn("[generator] No creatures found at any filter level");
+  logger2.warn("[generator] No creatures found at any filter level");
   return { creatures: [], filterLevel: 4 };
 }
 function calculateCreatureBudget(options) {
   const { partyLevel, partySize, difficulty } = options;
   if (partyLevel < 1 || partyLevel > 20) {
-    logger.warn(`[generator] Invalid party level: ${partyLevel}, clamping to 1-20`);
+    logger2.warn(`[generator] Invalid party level: ${partyLevel}, clamping to 1-20`);
   }
   if (partySize < 1) {
-    logger.warn(`[generator] Invalid party size: ${partySize}, defaulting to 1`);
+    logger2.warn(`[generator] Invalid party size: ${partySize}, defaulting to 1`);
   }
   const level = Math.max(1, Math.min(20, partyLevel));
   const size = Math.max(1, partySize);
@@ -5178,7 +5178,7 @@ function calculateCreatureBudget(options) {
   const targetXP = xpPerCharacter * size;
   const minXP = Math.floor(targetXP * 0.8);
   const maxXP = Math.ceil(targetXP * 1.2);
-  logger.debug(`[generator] Budget: ${targetXP} XP (${minXP}-${maxXP})`, {
+  logger2.debug(`[generator] Budget: ${targetXP} XP (${minXP}-${maxXP})`, {
     partyLevel: level,
     partySize: size,
     difficulty,
@@ -5188,7 +5188,7 @@ function calculateCreatureBudget(options) {
 }
 function selectCreaturesForBudget(creatures, budget, options) {
   if (creatures.length === 0) {
-    logger.warn("[generator] No creatures available for selection");
+    logger2.warn("[generator] No creatures available for selection");
     return [];
   }
   const { minXP, maxXP } = budget;
@@ -5255,7 +5255,7 @@ function selectCreaturesForBudget(creatures, budget, options) {
       if (xp <= maxXP) {
         bestSelection.set(creature.name, 1);
         bestXP = xp;
-        logger.debug("[generator] Fallback: Single creature", { name: creature.name, xp });
+        logger2.debug("[generator] Fallback: Single creature", { name: creature.name, xp });
         break;
       }
     }
@@ -5275,7 +5275,7 @@ function selectCreaturesForBudget(creatures, budget, options) {
       // TODO: Get actual path
     });
   }
-  logger.debug("[generator] Selected creatures", {
+  logger2.debug("[generator] Selected creatures", {
     count: result.length,
     totalXP: bestXP,
     budget: `${minXP}-${maxXP}`,
@@ -5284,7 +5284,7 @@ function selectCreaturesForBudget(creatures, budget, options) {
   return result;
 }
 function generateRandomEncounter(ctx, options) {
-  logger.info("[generator] Starting encounter generation", {
+  logger2.info("[generator] Starting encounter generation", {
     partyLevel: options.partyLevel,
     partySize: options.partySize,
     difficulty: options.difficulty,
@@ -5292,7 +5292,7 @@ function generateRandomEncounter(ctx, options) {
   });
   const { creatures: filteredCreatures, filterLevel } = filterCreaturesByTags(ctx);
   if (filteredCreatures.length === 0) {
-    logger.error("[generator] No matching creatures found");
+    logger2.error("[generator] No matching creatures found");
     return { creatures: [], totalXP: 0, filterLevel: 4 };
   }
   const budget = calculateCreatureBudget(options);
@@ -5301,7 +5301,7 @@ function generateRandomEncounter(ctx, options) {
     const xpPerCreature = XP_BY_CR[creature.cr] ?? 0;
     return sum + xpPerCreature * creature.count;
   }, 0);
-  logger.info("[generator] Encounter generated successfully", {
+  logger2.info("[generator] Encounter generated successfully", {
     creatureCount: selectedCreatures.length,
     totalCreatures: selectedCreatures.reduce((sum, c) => sum + c.count, 0),
     totalXP,
@@ -5533,11 +5533,11 @@ function createTerrainStore(app, options) {
         try {
           resolved.onError(error, { reason });
         } catch (handlerError) {
-          logger.error("[salt-marcher] Terrain watcher error handler threw", handlerError);
+          logger2.error("[salt-marcher] Terrain watcher error handler threw", handlerError);
         }
         return;
       }
-      logger.error(`[salt-marcher] Terrain watcher failed after ${reason} event`, error);
+      logger2.error(`[salt-marcher] Terrain watcher failed after ${reason} event`, error);
     };
     const update = async (reason) => {
       try {
@@ -6156,6 +6156,62 @@ var init_presenter = __esm({
             success: false,
             error: err?.message ?? "Unknown error during generation"
           };
+        }
+      }
+      /**
+       * Loads faction members as CreatureListItems for display in Encounter Composer.
+       *
+       * @param factionName Name of the faction to load members from
+       * @param app Obsidian App instance (for loading creatures from library)
+       * @returns Array of CreatureListItems representing faction members
+       */
+      async loadFactionMembers(factionName, app) {
+        if (!factionName) return [];
+        try {
+          const { LIBRARY_DATA_SOURCES: LIBRARY_DATA_SOURCES2 } = await Promise.resolve().then(() => (init_data_sources(), data_sources_exports));
+          const allFactions = await LIBRARY_DATA_SOURCES2.factions.list(app).then(
+            (files) => Promise.all(files.map((f) => LIBRARY_DATA_SOURCES2.factions.load(app, f)))
+          );
+          const faction = allFactions.find((f) => f.name.toLowerCase() === factionName.toLowerCase());
+          if (!faction || !faction.members || faction.members.length === 0) {
+            return [];
+          }
+          const allCreatures = await LIBRARY_DATA_SOURCES2.creatures.list(app).then(
+            (files) => Promise.all(files.map((f) => LIBRARY_DATA_SOURCES2.creatures.load(app, f)))
+          );
+          const result = [];
+          for (const member of faction.members) {
+            const creature = allCreatures.find((c) => c.name.toLowerCase() === member.name.toLowerCase());
+            if (!creature) {
+              logger.warn(`[presenter] Faction member "${member.name}" not found in library`);
+              continue;
+            }
+            const crString = creature.cr;
+            let cr = 0;
+            if (crString) {
+              if (crString.includes("/")) {
+                const [num, denom] = crString.split("/").map((s) => Number(s.trim()));
+                if (Number.isFinite(num) && Number.isFinite(denom) && denom !== 0) {
+                  cr = num / denom;
+                }
+              } else {
+                const num = Number(crString);
+                if (Number.isFinite(num)) cr = num;
+              }
+            }
+            result.push({
+              name: creature.name,
+              cr,
+              type: creature.type,
+              path: `SaltMarcher/Creatures/${creature.name}.md`
+              // TODO: Get actual path from file
+            });
+          }
+          logger.debug(`[presenter] Loaded ${result.length} faction members for "${factionName}"`);
+          return result;
+        } catch (err) {
+          logger.error(`[presenter] Failed to load faction members for "${factionName}"`, err);
+          return [];
         }
       }
       // ============================================================================
@@ -6964,6 +7020,9 @@ var init_creature_list = __esm({
         this.creatures = [];
         this.filteredCreatures = [];
         this.currentDifficulty = "medium";
+        // Faction members
+        this.factionMembers = [];
+        this.factionName = null;
         this.app = app;
         this.containerEl = containerEl;
         this.callbacks = callbacks;
@@ -7008,6 +7067,7 @@ var init_creature_list = __esm({
           this.generateButton.type = "button";
           this.generateButton.addEventListener("click", () => this.handleGenerateClick());
         }
+        this.factionMembersSection = this.containerEl.createDiv({ cls: "sm-encounter-faction-members" });
         const searchRow = this.containerEl.createDiv({ cls: "sm-encounter-creature-search" });
         this.searchInput = searchRow.createEl("input", {
           cls: "sm-encounter-input",
@@ -7019,6 +7079,7 @@ var init_creature_list = __esm({
         this.searchInput.addEventListener("input", () => this.applyFilter());
         this.listEl = this.containerEl.createDiv({ cls: "sm-encounter-creature-list-items" });
         await this.loadCreatures();
+        this.renderFactionMembers();
       }
       handleGenerateClick() {
         if (!this.callbacks.onGenerateEncounter) return;
@@ -7026,7 +7087,7 @@ var init_creature_list = __esm({
         try {
           this.callbacks.onGenerateEncounter(this.currentDifficulty);
         } catch (err) {
-          logger.error("[creature-list] Generate encounter failed", err);
+          logger2.error("[creature-list] Generate encounter failed", err);
           this.setGenerateButtonState(false);
         }
       }
@@ -7048,6 +7109,50 @@ var init_creature_list = __esm({
         this.containerEl.empty();
         this.creatures = [];
         this.filteredCreatures = [];
+        this.factionMembers = [];
+        this.factionName = null;
+      }
+      /**
+       * Sets faction members to display in separate section.
+       * Call this whenever the hex faction changes.
+       */
+      setFactionMembers(members, factionName) {
+        this.factionMembers = members;
+        this.factionName = factionName;
+        this.renderFactionMembers();
+      }
+      renderFactionMembers() {
+        this.factionMembersSection.empty();
+        if (!this.factionMembers.length || !this.factionName) {
+          this.factionMembersSection.style.display = "none";
+          return;
+        }
+        this.factionMembersSection.style.display = "block";
+        const header = this.factionMembersSection.createDiv({ cls: "sm-encounter-faction-members-header" });
+        header.createEl("h4", {
+          text: `${this.factionName} Members (${this.factionMembers.length})`,
+          cls: "sm-encounter-section-subtitle"
+        });
+        const membersList = this.factionMembersSection.createDiv({ cls: "sm-encounter-faction-members-list" });
+        for (const member of this.factionMembers) {
+          const row = membersList.createDiv({ cls: "sm-encounter-creature-item sm-encounter-faction-member-item" });
+          const nameEl = row.createDiv({ cls: "sm-encounter-creature-name" });
+          nameEl.setText(member.name);
+          const badge = nameEl.createSpan({ cls: "sm-faction-member-badge", text: "Faction Member" });
+          const metaEl = row.createDiv({ cls: "sm-encounter-creature-meta" });
+          metaEl.createSpan({ cls: "sm-encounter-creature-cr", text: `CR ${formatCR(member.cr)}` });
+          if (member.type) {
+            metaEl.createSpan({ cls: "sm-encounter-creature-type", text: member.type });
+          }
+          const addButton = row.createEl("button", {
+            cls: "sm-encounter-button sm-encounter-button-primary",
+            text: "Add"
+          });
+          addButton.type = "button";
+          addButton.addEventListener("click", () => {
+            this.callbacks.onAddCreature(member);
+          });
+        }
       }
       async loadCreatures() {
         try {
@@ -7064,7 +7169,7 @@ var init_creature_list = __esm({
                 path: file.path
               });
             } catch (err) {
-              logger.warn(`[creature-list] failed to load ${file.path}`, err);
+              logger2.warn(`[creature-list] failed to load ${file.path}`, err);
             }
           }
           loaded.sort((a, b) => {
@@ -7074,7 +7179,7 @@ var init_creature_list = __esm({
           this.creatures = loaded;
           this.applyFilter();
         } catch (err) {
-          logger.error("[creature-list] failed to load creatures", err);
+          logger2.error("[creature-list] failed to load creatures", err);
           this.listEl.setText("Failed to load creatures from library.");
         }
       }
@@ -7573,6 +7678,10 @@ var init_workspace_view = __esm({
         this.renderRules(state);
         this.renderResults(state);
         this.renderRuleEffectsDebug(state);
+        if (session && this.creatureList) {
+          const factionName = session.event.factionName;
+          void this.loadAndRenderFactionMembers(factionName);
+        }
         this.syncSessionControls(session);
       }
       renderShell() {
@@ -7828,7 +7937,7 @@ var init_workspace_view = __esm({
             }
           }
         } catch (error) {
-          logger.error("[encounter] failed to list rule presets", error);
+          logger2.error("[encounter] failed to list rule presets", error);
         }
         this.syncPresetControlsState();
       }
@@ -7878,7 +7987,7 @@ var init_workspace_view = __esm({
           }
           new import_obsidian19.Notice(`Preset "${preset.name}" geladen.`);
         } catch (error) {
-          logger.error("[encounter] failed to load preset", error);
+          logger2.error("[encounter] failed to load preset", error);
           new import_obsidian19.Notice("Preset konnte nicht geladen werden.");
         }
       }
@@ -7911,7 +8020,7 @@ var init_workspace_view = __esm({
                 this.presetSelectEl.value = file.path;
               }
             } catch (error) {
-              logger.error("[encounter] failed to save preset", error);
+              logger2.error("[encounter] failed to save preset", error);
               new import_obsidian19.Notice("Preset konnte nicht gespeichert werden.");
             }
             this.syncPresetControlsState();
@@ -7941,7 +8050,7 @@ var init_workspace_view = __esm({
             this.presetSelectEl.value = "";
           }
         } catch (error) {
-          logger.error("[encounter] failed to delete preset", error);
+          logger2.error("[encounter] failed to delete preset", error);
           new import_obsidian19.Notice("Preset konnte nicht gel\xF6scht werden.");
         }
         this.syncPresetControlsState();
@@ -8656,7 +8765,7 @@ var init_workspace_view = __esm({
             new import_obsidian19.Notice(`\u274C ${result.error}`);
           }
         } catch (err) {
-          logger.error("[workspace-view] Generate encounter failed", err);
+          logger2.error("[workspace-view] Generate encounter failed", err);
           new import_obsidian19.Notice(`\u274C Failed to generate encounter: ${err instanceof Error ? err.message : "Unknown error"}`);
         } finally {
           this.creatureList?.setGenerateButtonState(false);
@@ -8724,6 +8833,17 @@ var init_workspace_view = __esm({
         const presenter = this.presenter;
         if (!presenter) return;
         presenter.sortParticipantsByInitiative();
+      }
+      async loadAndRenderFactionMembers(factionName) {
+        const presenter = this.presenter;
+        if (!presenter || !this.creatureList) return;
+        try {
+          const members = await presenter.loadFactionMembers(factionName, this.app);
+          this.creatureList.setFactionMembers(members, factionName ?? null);
+        } catch (err) {
+          logger2.error("[workspace-view] Failed to load faction members", err);
+          this.creatureList.setFactionMembers([], null);
+        }
       }
     };
     ConfirmReplaceModal = class extends import_obsidian19.Modal {
@@ -8989,14 +9109,14 @@ var init_grid_layout_manager = __esm({
           const dims = FieldWidthCalculator.calculate(f);
           return !dims.isWide;
         });
-        logger.log("[GridLayoutManager] Recalculating layout:", {
+        logger2.log("[GridLayoutManager] Recalculating layout:", {
           totalFields: this.fields.length,
           normalFields: normalFields.length,
           availableWidth,
           fieldTypes: this.fields.map((f) => `${f.id}:${f.type}`)
         });
         if (normalFields.length === 0) {
-          logger.log("[GridLayoutManager] No normal fields, using single column");
+          logger2.log("[GridLayoutManager] No normal fields, using single column");
           this.container.style.gridTemplateColumns = "max-content 1fr";
           return;
         }
@@ -9018,7 +9138,7 @@ var init_grid_layout_manager = __esm({
         }
         this.currentPairs = pairs;
         const columns = pairs === 1 ? "max-content 1fr" : `repeat(${pairs}, max-content 1fr)`;
-        logger.log("[GridLayoutManager] Layout calculated:", {
+        logger2.log("[GridLayoutManager] Layout calculated:", {
           labelWidth,
           maxControlWidth,
           minPairWidth,
@@ -9109,18 +9229,18 @@ var init_label_width_sync = __esm({
           this.container.querySelectorAll(".setting-item-info")
         ).filter((label) => label.offsetParent);
         if (allLabels.length === 0) return;
-        logger.log("[LabelWidthSync] Single-column: Found", allLabels.length, "labels");
+        logger2.log("[LabelWidthSync] Single-column: Found", allLabels.length, "labels");
         const widths = allLabels.map((label) => {
           const text = label.textContent || "";
           return calculateTextWidth(text, label);
         });
         const maxWidth = Math.max(...widths);
-        logger.log("[LabelWidthSync] Single-column: max width:", maxWidth);
+        logger2.log("[LabelWidthSync] Single-column: max width:", maxWidth);
         if (maxWidth > 0) {
           allLabels.forEach((label) => {
             label.style.minWidth = `${maxWidth}px`;
           });
-          logger.log("[LabelWidthSync] Single-column: Applied to", allLabels.length, "labels");
+          logger2.log("[LabelWidthSync] Single-column: Applied to", allLabels.length, "labels");
         }
       }
       synchronizeMultiColumn() {
@@ -9130,7 +9250,7 @@ var init_label_width_sync = __esm({
           )
         ).filter((label) => label.offsetParent);
         if (tokenLabels.length === 0) {
-          logger.log("[LabelWidthSync] Multi-column: No token labels found");
+          logger2.log("[LabelWidthSync] Multi-column: No token labels found");
           return;
         }
         const normalLabels = Array.from(
@@ -9141,29 +9261,29 @@ var init_label_width_sync = __esm({
           return parent && !parent.classList.contains("sm-cc-setting--token-editor");
         });
         if (normalLabels.length === 0) {
-          logger.log("[LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other");
+          logger2.log("[LabelWidthSync] Multi-column: No normal labels, syncing token labels with each other");
           const widths = tokenLabels.map((label) => {
             const text = label.textContent || "";
             return calculateTextWidth(text, label);
           });
           const maxTokenWidth = Math.max(...widths);
-          logger.log("[LabelWidthSync] Multi-column: max token label width:", maxTokenWidth);
+          logger2.log("[LabelWidthSync] Multi-column: max token label width:", maxTokenWidth);
           if (maxTokenWidth > 0) {
             tokenLabels.forEach((label) => {
               label.style.minWidth = `${maxTokenWidth}px`;
             });
-            logger.log("[LabelWidthSync] Multi-column: Applied", maxTokenWidth, "px to", tokenLabels.length, "token labels");
+            logger2.log("[LabelWidthSync] Multi-column: Applied", maxTokenWidth, "px to", tokenLabels.length, "token labels");
           }
           return;
         }
-        logger.log("[LabelWidthSync] Multi-column: Found", tokenLabels.length, "token labels,", normalLabels.length, "normal labels");
+        logger2.log("[LabelWidthSync] Multi-column: Found", tokenLabels.length, "token labels,", normalLabels.length, "normal labels");
         const maxNormalWidth = Math.max(...normalLabels.map((l) => l.getBoundingClientRect().width));
-        logger.log("[LabelWidthSync] Multi-column: max normal label width:", maxNormalWidth);
+        logger2.log("[LabelWidthSync] Multi-column: max normal label width:", maxNormalWidth);
         if (maxNormalWidth > 0) {
           tokenLabels.forEach((label) => {
             label.style.minWidth = `${maxNormalWidth}px`;
           });
-          logger.log("[LabelWidthSync] Multi-column: Applied", maxNormalWidth, "px to", tokenLabels.length, "token labels");
+          logger2.log("[LabelWidthSync] Multi-column: Applied", maxNormalWidth, "px to", tokenLabels.length, "token labels");
         }
       }
       destroy() {
@@ -9407,14 +9527,14 @@ function renderModularTokenFieldCore(options) {
         const oldValue = token[fieldDef.id];
         const newValue = !token[fieldDef.id];
         token[fieldDef.id] = newValue;
-        logger.log(`[TokenField] Checkbox toggled: ${fieldDef.id} ${oldValue} -> ${newValue}`);
+        logger2.log(`[TokenField] Checkbox toggled: ${fieldDef.id} ${oldValue} -> ${newValue}`);
         if (onTokenFieldChange) {
-          logger.log(`[TokenField] Calling onTokenFieldChange for ${fieldDef.id}`);
+          logger2.log(`[TokenField] Calling onTokenFieldChange for ${fieldDef.id}`);
           onTokenFieldChange(token, fieldDef.id, newValue, formData);
         }
-        logger.log(`[TokenField] Calling onChange with tokens:`, JSON.stringify(tokens, null, 2));
+        logger2.log(`[TokenField] Calling onChange with tokens:`, JSON.stringify(tokens, null, 2));
         onChange([...tokens]);
-        logger.log(`[TokenField] onChange called, now re-rendering chips`);
+        logger2.log(`[TokenField] onChange called, now re-rendering chips`);
         renderChips();
         return;
       }
@@ -9564,9 +9684,9 @@ function normalizeToBoolean(value) {
 function renderTextCore(options) {
   const { container, placeholder = "", value, className = "sm-cc-input", onChange } = options;
   if (placeholder.includes("+2") || placeholder === "z.B. +2") {
-    logger.log("[renderTextCore] Rendering field with placeholder:", placeholder);
-    logger.log("[renderTextCore] Raw value:", value);
-    logger.log("[renderTextCore] Value type:", typeof value);
+    logger2.log("[renderTextCore] Rendering field with placeholder:", placeholder);
+    logger2.log("[renderTextCore] Raw value:", value);
+    logger2.log("[renderTextCore] Value type:", typeof value);
   }
   const input = container.createEl("input", {
     cls: className,
@@ -9577,8 +9697,8 @@ function renderTextCore(options) {
   });
   const initialValue = normalizeToString(value);
   if (placeholder.includes("+2") || placeholder === "z.B. +2") {
-    logger.log("[renderTextCore] Normalized value:", initialValue);
-    logger.log("[renderTextCore] Setting input.value to:", initialValue);
+    logger2.log("[renderTextCore] Normalized value:", initialValue);
+    logger2.log("[renderTextCore] Setting input.value to:", initialValue);
   }
   input.value = initialValue;
   input.addEventListener("input", () => {
@@ -9747,7 +9867,7 @@ function renderDisplayCore(options) {
         const suffixVal = typeof config.suffix === "function" ? config.suffix(all ?? {}) : config.suffix ?? "";
         displayEl.value = `${prefixVal}${computed}${suffixVal}`;
       } catch (error) {
-        logger.warn(`Display field ${fieldId} compute error:`, error);
+        logger2.warn(`Display field ${fieldId} compute error:`, error);
         displayEl.value = "";
       }
     }
@@ -9781,7 +9901,7 @@ function renderCompositeCore(options) {
     try {
       return childSpec.visibleIf(compositeValue);
     } catch (error) {
-      logger.error(`Failed to evaluate visibility for ${childSpec.id}:`, error);
+      logger2.error(`Failed to evaluate visibility for ${childSpec.id}:`, error);
       return true;
     }
   };
@@ -9801,7 +9921,7 @@ function renderCompositeCore(options) {
               child.handle.update?.(initValue, compositeValue);
               onChange(compositeValue);
             } catch (error) {
-              logger.error(`Failed to initialize ${child.id}:`, error);
+              logger2.error(`Failed to initialize ${child.id}:`, error);
             }
           }
         }
@@ -9874,13 +9994,13 @@ function renderRepeatingEntryManagerCore(options) {
     fieldId = "unknown"
   } = options;
   if (!categories.length) {
-    logger.warn(`Repeating field "${fieldId}" has no categories defined`);
+    logger2.warn(`Repeating field "${fieldId}" has no categories defined`);
     const errorContainer = container.createDiv({ cls: "sm-cc-field--error" });
     errorContainer.createEl("p", { text: "No categories defined for repeating field" });
     return { error: true };
   }
   if (!renderEntry && !card) {
-    logger.warn(`Repeating field "${fieldId}" requires renderEntry or card in config`);
+    logger2.warn(`Repeating field "${fieldId}" requires renderEntry or card in config`);
     const errorContainer = container.createDiv({ cls: "sm-cc-field--error" });
     errorContainer.createEl("p", { text: "No renderer defined for repeating field" });
     return { error: true };
@@ -10620,14 +10740,14 @@ var init_debug_logger = __esm({
           const configPath = ".obsidian/plugins/salt-marcher/.claude/debug.json";
           const adapter = app.vault.adapter;
           if (!await adapter.exists(configPath)) {
-            logger.log("[DebugLogger] No debug config found, using defaults (all disabled)");
+            logger2.log("[DebugLogger] No debug config found, using defaults (all disabled)");
             return;
           }
           const configContent = await adapter.read(configPath);
           this.config = JSON.parse(configContent);
-          logger.log("[DebugLogger] Config loaded:", this.config);
+          logger2.log("[DebugLogger] Config loaded:", this.config);
         } catch (error) {
-          logger.log("[DebugLogger] Failed to load config, debug logging disabled:", error);
+          logger2.log("[DebugLogger] Failed to load config, debug logging disabled:", error);
         }
       }
       /**
@@ -10639,7 +10759,7 @@ var init_debug_logger = __esm({
        */
       logField(fieldId, category, message, ...args) {
         if (!this.shouldLog(fieldId, category)) return;
-        logger.log(`[${category}:${fieldId}] ${message}`, ...args);
+        logger2.log(`[${category}:${fieldId}] ${message}`, ...args);
       }
       /**
        * Log a message for a specific category (no field filtering)
@@ -10650,7 +10770,7 @@ var init_debug_logger = __esm({
        */
       logCategory(category, message, ...args) {
         if (!this.shouldLogCategory(category)) return;
-        logger.log(`[${category}] ${message}`, ...args);
+        logger2.log(`[${category}] ${message}`, ...args);
       }
       /**
        * Check if we should log for this field and category combination
@@ -10749,25 +10869,25 @@ var init_clickable_icon = __esm({
 // src/features/data-manager/fields/field-utils.ts
 function resolveInitialValue(spec, values) {
   if (spec.id === "pb") {
-    logger.log("[resolveInitialValue] Resolving pb field");
-    logger.log("[resolveInitialValue] values object:", values);
-    logger.log('[resolveInitialValue] values["pb"]:', values["pb"]);
-    logger.log("[resolveInitialValue] spec.default:", spec.default);
+    logger2.log("[resolveInitialValue] Resolving pb field");
+    logger2.log("[resolveInitialValue] values object:", values);
+    logger2.log('[resolveInitialValue] values["pb"]:', values["pb"]);
+    logger2.log("[resolveInitialValue] spec.default:", spec.default);
   }
   if (values[spec.id] !== void 0) {
     if (spec.id === "pb") {
-      logger.log("[resolveInitialValue] Returning from values:", values[spec.id]);
+      logger2.log("[resolveInitialValue] Returning from values:", values[spec.id]);
     }
     return values[spec.id];
   }
   if (spec.default !== void 0) {
     if (spec.id === "pb") {
-      logger.log("[resolveInitialValue] Returning default:", spec.default);
+      logger2.log("[resolveInitialValue] Returning default:", spec.default);
     }
     return spec.default;
   }
   if (spec.id === "pb") {
-    logger.log("[resolveInitialValue] Returning undefined");
+    logger2.log("[resolveInitialValue] Returning undefined");
   }
   return void 0;
 }
@@ -10854,7 +10974,7 @@ function renderFieldControl(container, spec, initial, onChange, formData) {
           onChange(value);
           debugLogger.logField(spec.id, "onChange-wrapper", "Parent onChange returned successfully");
         } else {
-          logger.error(`[field-utils] onChange is not a function for "${spec.id}"! Type: ${typeof onChange}`);
+          logger2.error(`[field-utils] onChange is not a function for "${spec.id}"! Type: ${typeof onChange}`);
         }
       }
     });
@@ -11063,10 +11183,10 @@ function renderFieldControl(container, spec, initial, onChange, formData) {
                   handle2.update(initValue, entry);
                 } else {
                   debugLogger.logField(fieldSpec.id, "init", "No handle found - WARNING", { handleKey });
-                  logger.warn(`[updateEntryFields] No handle found for key: "${handleKey}"`);
+                  logger2.warn(`[updateEntryFields] No handle found for key: "${handleKey}"`);
                 }
               } catch (error) {
-                logger.error(`Failed to initialize ${fieldSpec.id}:`, error);
+                logger2.error(`Failed to initialize ${fieldSpec.id}:`, error);
               }
             } else {
               debugLogger.logField(fieldSpec.id, "init", "No init function configured");
@@ -11082,7 +11202,7 @@ function renderFieldControl(container, spec, initial, onChange, formData) {
                 const suffix = typeof displaySpec.config.suffix === "function" ? displaySpec.config.suffix(entry, allFormData) : displaySpec.config.suffix ?? "";
                 displayEl.value = `${prefix}${computed}${suffix}`;
               } catch (error) {
-                logger.warn(`Display field ${fieldSpec.id} compute error:`, error);
+                logger2.warn(`Display field ${fieldSpec.id} compute error:`, error);
                 displayEl.value = "";
               }
             }
@@ -11109,7 +11229,7 @@ function renderFieldControl(container, spec, initial, onChange, formData) {
               try {
                 entry[fieldSpec.id] = initConfig(entry, formData || {});
               } catch (error) {
-                logger.error(`Failed to initialize ${fieldSpec.id}:`, error);
+                logger2.error(`Failed to initialize ${fieldSpec.id}:`, error);
               }
             }
           }
@@ -11357,7 +11477,7 @@ var init_renderer_select = __esm({
                 }
               }
             } catch (error) {
-              logger.warn("Enhance select failed", error);
+              logger2.warn("Enhance select failed", error);
             }
           }
         });
@@ -11436,9 +11556,9 @@ var init_renderer_tokens = __esm({
         }
         const validation = createValidationControls(setting);
         const currentValue = values[spec.id];
-        logger.log(`[TokenRenderer] Field "${spec.id}" currentValue type: ${typeof currentValue}, isArray: ${Array.isArray(currentValue)}, value:`, JSON.stringify(currentValue, null, 2));
+        logger2.log(`[TokenRenderer] Field "${spec.id}" currentValue type: ${typeof currentValue}, isArray: ${Array.isArray(currentValue)}, value:`, JSON.stringify(currentValue, null, 2));
         const tokenValues = Array.isArray(currentValue) ? currentValue : Array.isArray(spec.default) ? spec.default : [];
-        logger.log(`[TokenRenderer] Field "${spec.id}" tokenValues:`, JSON.stringify(tokenValues, null, 2));
+        logger2.log(`[TokenRenderer] Field "${spec.id}" tokenValues:`, JSON.stringify(tokenValues, null, 2));
         const coreOptions = {
           container: setting.controlEl,
           fields: tokenSpec.config.fields,
@@ -11449,10 +11569,10 @@ var init_renderer_tokens = __esm({
           formData: values,
           onTokenFieldChange: tokenSpec.config.onTokenFieldChange,
           onChange: (newValue) => {
-            logger.log(`[TokenRenderer] onChange called for field "${spec.id}":`, JSON.stringify(newValue, null, 2));
+            logger2.log(`[TokenRenderer] onChange called for field "${spec.id}":`, JSON.stringify(newValue, null, 2));
             tokenValues.splice(0, tokenValues.length, ...newValue);
             onChange(spec.id, [...newValue]);
-            logger.log(`[TokenRenderer] onChange propagated to modal system`);
+            logger2.log(`[TokenRenderer] onChange propagated to modal system`);
           }
         };
         const handle = renderTokenFieldCore(coreOptions);
@@ -11742,10 +11862,10 @@ var init_renderer_repeating = __esm({
                       handle.update(initValue, entry);
                     } else {
                       debugLogger.logField(fieldSpec.id, "init", "No handle found - WARNING", { handleKey });
-                      logger.warn(`[updateEntryFields] No handle found for key: "${handleKey}"`);
+                      logger2.warn(`[updateEntryFields] No handle found for key: "${handleKey}"`);
                     }
                   } catch (error) {
-                    logger.error(`Failed to initialize ${fieldSpec.id}:`, error);
+                    logger2.error(`Failed to initialize ${fieldSpec.id}:`, error);
                   }
                 } else {
                   debugLogger.logField(fieldSpec.id, "init", "No init function configured");
@@ -11761,7 +11881,7 @@ var init_renderer_repeating = __esm({
                     const suffix = typeof displaySpec.config.suffix === "function" ? displaySpec.config.suffix(entry, allFormData) : displaySpec.config.suffix ?? "";
                     displayEl.value = `${prefix}${computed}${suffix}`;
                   } catch (error) {
-                    logger.warn(`Display field ${fieldSpec.id} compute error:`, error);
+                    logger2.warn(`Display field ${fieldSpec.id} compute error:`, error);
                     displayEl.value = "";
                   }
                 }
@@ -11788,7 +11908,7 @@ var init_renderer_repeating = __esm({
                   try {
                     entry[fieldSpec.id] = initConfig(entry, values);
                   } catch (error) {
-                    logger.error(`Failed to initialize ${fieldSpec.id}:`, error);
+                    logger2.error(`Failed to initialize ${fieldSpec.id}:`, error);
                   }
                 }
               }
@@ -12299,7 +12419,7 @@ var init_modal_validator = __esm({
             const transformed = field.transform(result[field.id], result);
             result[field.id] = transformed;
           } catch (error) {
-            logger.error(`Transform failed for field ${field.id}`, error);
+            logger2.error(`Transform failed for field ${field.id}`, error);
           }
         }
         return result;
@@ -12345,9 +12465,9 @@ var init_modal_validator = __esm({
               errorObj[id] = errors;
             }
           }
-          logger.log("[UI-TEST] Validation errors:", JSON.stringify({ errors: errorObj, summary }));
+          logger2.log("[UI-TEST] Validation errors:", JSON.stringify({ errors: errorObj, summary }));
         } else {
-          logger.log("[UI-TEST] Validation passed");
+          logger2.log("[UI-TEST] Validation passed");
         }
         return {
           isValid,
@@ -12474,9 +12594,9 @@ var init_field_manager = __esm({
       renderSingleField(container, field) {
         const values = this.getData();
         if (field.id === "pb") {
-          logger.log("[field-manager] Rendering pb field");
-          logger.log("[field-manager] values object:", values);
-          logger.log('[field-manager] values["pb"]:', values["pb"]);
+          logger2.log("[field-manager] Rendering pb field");
+          logger2.log("[field-manager] values object:", values);
+          logger2.log('[field-manager] values["pb"]:', values["pb"]);
         }
         const handle = this.renderField(
           container,
@@ -12533,7 +12653,7 @@ var init_field_manager = __esm({
           state.domStructure = this.analyzeDOMStructure(container);
           state.gridLayout = this.analyzeGridLayout(container);
         }
-        logger.log("[UI-TEST] Field rendered:", JSON.stringify(state));
+        logger2.log("[UI-TEST] Field rendered:", JSON.stringify(state));
       }
       /**
        * Analyze DOM structure for tag editor fields.
@@ -12620,7 +12740,7 @@ var init_field_manager = __esm({
         try {
           return field.visibleIf(data);
         } catch (error) {
-          logger.error("Failed to evaluate field visibility", error);
+          logger2.error("Failed to evaluate field visibility", error);
           return true;
         }
       }
@@ -12875,7 +12995,7 @@ var init_modal = __esm({
         contentEl.empty();
         contentEl.addClass("sm-cc-create-modal");
         this.validators = [];
-        logger.log("[UI-TEST] Modal opened:", JSON.stringify({
+        logger2.log("[UI-TEST] Modal opened:", JSON.stringify({
           kind: this.spec.kind,
           title: this.spec.title,
           entity: this.data.name || "new",
@@ -12938,7 +13058,7 @@ var init_modal = __esm({
         this.layoutManagers.push(layoutManager);
         const labelSync = new LabelWidthSynchronizer(handles.body, layoutManager.isMultiColumn);
         this.labelSynchronizers.push(labelSync);
-        logger.log("[Modal] Label sync enabled for section:", section.id, "Multi-column:", layoutManager.isMultiColumn);
+        logger2.log("[Modal] Label sync enabled for section:", section.id, "Multi-column:", layoutManager.isMultiColumn);
         handles.registerValidation(() => {
           const result = this.validator.validate();
           const issues = [];
@@ -12997,7 +13117,7 @@ var init_modal = __esm({
           };
           this.close();
         } catch (error) {
-          logger.error("Failed to submit create modal", error);
+          logger2.error("Failed to submit create modal", error);
           this.handleSubmissionError(error);
         } finally {
           this.isSubmitting = false;
@@ -13179,13 +13299,13 @@ var init_generic_list_renderer = __esm({
       async refreshEntries() {
         try {
           const files = await this.source.list(this.app);
-          logger.log(`[library:${this.mode}] Found ${files.length} files`);
+          logger2.log(`[library:${this.mode}] Found ${files.length} files`);
           const entries = await Promise.all(files.map((file) => this.source.load(this.app, file)));
-          logger.log(`[library:${this.mode}] Loaded ${entries.length} entries`);
+          logger2.log(`[library:${this.mode}] Loaded ${entries.length} entries`);
           this.entries = entries;
           this.loadError = void 0;
         } catch (err) {
-          logger.error(`[library:${this.mode}] Failed to load entries`, err);
+          logger2.error(`[library:${this.mode}] Failed to load entries`, err);
           this.entries = [];
           this.loadError = err;
         }
@@ -13235,7 +13355,7 @@ var init_generic_list_renderer = __esm({
           return;
         }
         const entriesToRender = visible.map((item) => item.entry);
-        logger.log(`[library:${this.mode}] Rendering ${entriesToRender.length} entries (filtered from ${this.entries.length} total)`);
+        logger2.log(`[library:${this.mode}] Rendering ${entriesToRender.length} entries (filtered from ${this.entries.length} total)`);
         if (!entriesToRender.length) {
           renderWorkmodeFeedback(container, "empty", "No entries found.");
           return;
@@ -13295,7 +13415,7 @@ function createDeleteAction(typeName) {
         await context.app.vault.trash(entry.file, true);
         await context.reloadEntries();
       } catch (err) {
-        logger.error(`Failed to delete ${typeName}`, err);
+        logger2.error(`Failed to delete ${typeName}`, err);
       }
     }
   };
@@ -13423,7 +13543,7 @@ function createTabNavigation(parent, config) {
     element: container,
     setActiveTab(tabId) {
       if (!buttons.has(tabId)) {
-        logger.warn(`Tab ${tabId} not found in navigation`);
+        logger2.warn(`Tab ${tabId} not found in navigation`);
         return;
       }
       currentActive = tabId;
@@ -13804,7 +13924,7 @@ var init_watcher_hub = __esm({
               try {
                 cb();
               } catch (err) {
-                logger.error(`Watcher listener failed for key ${key}:`, err);
+                logger2.error(`Watcher listener failed for key ${key}:`, err);
               }
             }
           });
@@ -13820,7 +13940,7 @@ var init_watcher_hub = __esm({
             try {
               current.stop?.();
             } catch (err) {
-              logger.error(`Failed to stop watcher for key ${key}:`, err);
+              logger2.error(`Failed to stop watcher for key ${key}:`, err);
             }
             this.registry.delete(key);
           }
@@ -13846,7 +13966,7 @@ var init_watcher_hub = __esm({
           try {
             entry.stop?.();
           } catch (err) {
-            logger.error(`Failed to stop watcher for key ${key}:`, err);
+            logger2.error(`Failed to stop watcher for key ${key}:`, err);
           }
         }
         this.registry.clear();
@@ -14130,7 +14250,7 @@ function createAutoEditAction(spec) {
           await app.workspace.openLinkText(result.filePath, result.filePath, true, { state: { mode: "source" } });
         }
       } catch (err) {
-        logger.error(`Failed to load ${spec.kind} for editing`, err);
+        logger2.error(`Failed to load ${spec.kind} for editing`, err);
       }
     }
   };
@@ -20224,7 +20344,7 @@ function createPlayback(cfg) {
         onEncounter && await onEncounter();
       }
     } catch (err) {
-      logger.error("[travel] encounter check failed", err);
+      logger2.error("[travel] encounter check failed", err);
     }
   }
   return { play, pause };
@@ -21076,14 +21196,14 @@ async function createEncounterEventFromTravel(app, ctx, options = {}) {
             encounterOdds = odds;
           }
         } catch (err) {
-          logger.error("[encounter] failed to resolve region odds", err);
+          logger2.error("[encounter] failed to resolve region odds", err);
         }
       }
       if (tileFaction) {
         factionName = tileFaction;
       }
     } catch (err) {
-      logger.error("[encounter] failed to read tile metadata", err);
+      logger2.error("[encounter] failed to read tile metadata", err);
     }
   }
   const travelClock = ctx?.state?.clockHours;
@@ -21119,7 +21239,7 @@ function loadEncounterModule() {
     getCenterLeaf: layout.getCenterLeaf,
     VIEW_ENCOUNTER: encounter.VIEW_ENCOUNTER
   })).catch((err) => {
-    logger.error("[session-runner] failed to load encounter module", err);
+    logger2.error("[session-runner] failed to load encounter module", err);
     new import_obsidian36.Notice("Encounter-Modul konnte nicht geladen werden.");
     return null;
   });
@@ -21138,7 +21258,7 @@ async function openEncounter2(app, context) {
   if (!mod) return false;
   const issue = describeEncounterContextIssue(context);
   if (issue) {
-    logger.warn(`[session-runner] ${issue.log}`, context);
+    logger2.warn(`[session-runner] ${issue.log}`, context);
     new import_obsidian36.Notice(issue.message);
   } else if (context) {
     try {
@@ -21147,7 +21267,7 @@ async function openEncounter2(app, context) {
         publishEncounterEvent(event);
       }
     } catch (err) {
-      logger.error("[session-runner] failed to publish encounter payload", err);
+      logger2.error("[session-runner] failed to publish encounter payload", err);
     }
   }
   const leaf = mod.getCenterLeaf(app);
@@ -21188,7 +21308,7 @@ async function publishManualEncounter(app, context, options = {}) {
       publishEncounterEvent(event);
     }
   } catch (err) {
-    logger.error("[session-runner] failed to publish manual encounter", err);
+    logger2.error("[session-runner] failed to publish manual encounter", err);
   }
 }
 var import_obsidian36, encounterModule;
@@ -21272,11 +21392,11 @@ function createSessionRunnerExperience() {
   const runBridge = (label, fn) => {
     const bridge = getCartographerBridge();
     if (!bridge) {
-      logger.warn(`[session-runner] skipped ${label} \u2013 no Almanac bridge available`);
+      logger2.warn(`[session-runner] skipped ${label} \u2013 no Almanac bridge available`);
       return;
     }
     void Promise.resolve(fn(bridge)).catch((error) => {
-      logger.error(`[session-runner] ${label} failed`, error);
+      logger2.error(`[session-runner] ${label} failed`, error);
     });
   };
   const isAborted = () => lifecycleSignal?.aborted ?? false;
@@ -21355,7 +21475,7 @@ function createSessionRunnerExperience() {
     try {
       await fn();
     } catch (err) {
-      logger.error("[session-runner] cleanupFile failed", err);
+      logger2.error("[session-runner] cleanupFile failed", err);
     }
   };
   const detachSidebar = () => {
@@ -21396,7 +21516,7 @@ function createSessionRunnerExperience() {
       try {
         logic.pause();
       } catch (err) {
-        logger.error("[session-runner] pause failed", err);
+        logger2.error("[session-runner] pause failed", err);
       }
       logic = null;
     }
@@ -21534,7 +21654,7 @@ function createSessionRunnerExperience() {
           try {
             activeLogic.pause();
           } catch (err) {
-            logger.error("[session-runner] pause during encounter sync failed", err);
+            logger2.error("[session-runner] pause during encounter sync failed", err);
           }
         },
         openEncounter: (context) => openEncounter2(ctx.app, context),
@@ -21594,7 +21714,7 @@ function createSessionRunnerExperience() {
         try {
           activeLogic.pause();
         } catch (err) {
-          logger.error("[session-runner] pause during cleanup failed", err);
+          logger2.error("[session-runner] pause during cleanup failed", err);
         }
         tokenLayer?.destroy?.();
         tokenLayer = null;
@@ -21633,7 +21753,7 @@ function createSessionRunnerExperience() {
       try {
         await logic.persistTokenToTiles();
       } catch (err) {
-        logger.error("[session-runner] persistTokenToTiles failed", err);
+        logger2.error("[session-runner] persistTokenToTiles failed", err);
       }
       return false;
     }
@@ -21671,22 +21791,22 @@ async function openLibraryModal(app, kind, entityName) {
   let preset = void 0;
   if (entityName) {
     const files = await listVaultPresets(app, kind);
-    logger.log(`[LibraryModal] Found ${files.length} files for ${kind}`);
-    logger.log(`[LibraryModal] Looking for entity: ${entityName}`);
+    logger2.log(`[LibraryModal] Found ${files.length} files for ${kind}`);
+    logger2.log(`[LibraryModal] Looking for entity: ${entityName}`);
     const normalizeForMatch = (str) => str.toLowerCase().replace(/[-\s]/g, "");
     const normalizedSearchName = normalizeForMatch(entityName);
     for (const file of files) {
       const cache = app.metadataCache.getFileCache(file);
       const fm2 = cache?.frontmatter;
-      logger.log(`[LibraryModal] Checking file: ${file.path}, hasCache: ${!!cache}, hasFrontmatter: ${!!fm2}, name: ${fm2?.name}`);
+      logger2.log(`[LibraryModal] Checking file: ${file.path}, hasCache: ${!!cache}, hasFrontmatter: ${!!fm2}, name: ${fm2?.name}`);
       if (fm2?.name && normalizeForMatch(fm2.name) === normalizedSearchName) {
-        logger.log(`[LibraryModal] Found match: ${fm2.name}`);
+        logger2.log(`[LibraryModal] Found match: ${fm2.name}`);
         preset = await spec.loader?.fromFrontmatter?.(fm2, file) ?? fm2;
         break;
       }
     }
     if (!preset) {
-      logger.error(`[LibraryModal] Entity not found: ${entityName} (checked ${files.length} files)`);
+      logger2.error(`[LibraryModal] Entity not found: ${entityName} (checked ${files.length} files)`);
       throw new Error(`Entity not found: ${entityName}`);
     }
   }
@@ -87311,10 +87431,10 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
     ]).filter(([fileName]) => !isOrganizationalPresetFile(fileName));
     const fileNames = presetEntries.map(([fileName]) => fileName);
     if (fileNames.length === 0) {
-      logger.log(`No preset ${typeName} found in plugin`);
+      logger2.log(`No preset ${typeName} found in plugin`);
       return;
     }
-    logger.log(`Found ${fileNames.length} preset ${typeName} in plugin`);
+    logger2.log(`Found ${fileNames.length} preset ${typeName} in plugin`);
     const existingFiles = /* @__PURE__ */ new Map();
     try {
       const existing = await app.vault.adapter.list(normalizedDir);
@@ -87344,35 +87464,35 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
           const existingFile = app.vault.getAbstractFileByPath(existingPath);
           if (existingFile) {
             await app.vault.delete(existingFile);
-            logger.log(`Deleted existing ${typeName} preset: ${existingPath}`);
+            logger2.log(`Deleted existing ${typeName} preset: ${existingPath}`);
           }
           await app.vault.adapter.write(targetPath, content);
           importedCount++;
-          logger.log(`Re-imported ${typeName} preset: ${fileName}`);
+          logger2.log(`Re-imported ${typeName} preset: ${fileName}`);
         } else if (existingPath) {
           skippedCount++;
         } else {
           await app.vault.create(targetPath, content);
           importedCount++;
-          logger.log(`Imported ${typeName} preset: ${fileName}`);
+          logger2.log(`Imported ${typeName} preset: ${fileName}`);
         }
       } catch (err) {
-        logger.error(`Failed to import ${typeName} preset ${fileName}:`, err);
+        logger2.error(`Failed to import ${typeName} preset ${fileName}:`, err);
         errorCount++;
       }
     }
     if (importedCount > 0) {
       new import_obsidian40.Notice(`Imported ${importedCount} ${typeName} presets`);
-      logger.log(`${typeName} import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
+      logger2.log(`${typeName} import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
     } else if (skippedCount > 0) {
-      logger.log(`All ${skippedCount} ${typeName} presets already exist`);
+      logger2.log(`All ${skippedCount} ${typeName} presets already exist`);
     } else if (errorCount > 0) {
       new import_obsidian40.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   } catch (err) {
-    logger.error(`Failed to import ${typeName} presets:`, err);
+    logger2.error(`Failed to import ${typeName} presets:`, err);
     if (err instanceof Error && err.message.includes("Cannot find module")) {
-      logger.log(`No ${typeName} preset data found - skipping import`);
+      logger2.log(`No ${typeName} preset data found - skipping import`);
     } else {
       new import_obsidian40.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
@@ -87412,7 +87532,7 @@ async function shouldImportPresetsForDir(app, dir, markerName, label, ensureDir3
     await ensureDir3(app);
     await app.vault.create(markerPath, `${label} imported on ${(/* @__PURE__ */ new Date()).toISOString()}`);
   } catch (err) {
-    logger.log(`${label} already imported (marker exists)`);
+    logger2.log(`${label} already imported (marker exists)`);
     return false;
   }
   return true;
@@ -87525,7 +87645,7 @@ __export(index_files_exports, {
 async function createIndexFile(app, filePath, title, description, directory) {
   const folder = app.vault.getAbstractFileByPath(directory);
   if (!(folder instanceof import_obsidian41.TFolder)) {
-    logger.log(`[Index] Directory ${directory} not found, skipping index generation`);
+    logger2.log(`[Index] Directory ${directory} not found, skipping index generation`);
     return;
   }
   const files = [];
@@ -87645,7 +87765,7 @@ async function generateLibraryHub(app) {
   }
 }
 async function generateAllIndexes(app) {
-  logger.log("[Index] Generating all library indexes...");
+  logger2.log("[Index] Generating all library indexes...");
   const saltmarcherFolder = app.vault.getAbstractFileByPath(SALTMARCHER_DIR);
   if (!saltmarcherFolder) {
     await app.vault.createFolder(SALTMARCHER_DIR);
@@ -87658,7 +87778,7 @@ async function generateAllIndexes(app) {
     generateCalendarsIndex(app),
     generateLibraryHub(app)
   ]);
-  logger.log("[Index] All indexes generated successfully");
+  logger2.log("[Index] All indexes generated successfully");
 }
 var import_obsidian41, SALTMARCHER_DIR;
 var init_index_files = __esm({
@@ -87983,7 +88103,7 @@ var init_dev_commands = __esm({
     init_validation_engine();
     init_dom_utils();
     validateGridLayout = async (app, args) => {
-      logger.log("[IPC-CMD] Validating grid layout...");
+      logger2.log("[IPC-CMD] Validating grid layout...");
       const modal = document.querySelector(".sm-cc-create-modal");
       if (!modal) {
         return { success: false, error: "No modal found" };
@@ -88035,7 +88155,7 @@ var init_dev_commands = __esm({
         validation.valid = validation.isGrid && hasTwoColumns && hasTwoRows && validation.gridPositions.label?.row === "1" && validation.gridPositions.label?.column === "1" && validation.gridPositions.control?.row === "1" && validation.gridPositions.control?.column === "2" && validation.gridPositions.chips?.row === "2" && validation.gridPositions.chips?.column === "2";
         results.push(validation);
       });
-      logger.log("[IPC-CMD] Grid validation complete:", JSON.stringify(results, null, 2));
+      logger2.log("[IPC-CMD] Grid validation complete:", JSON.stringify(results, null, 2));
       return {
         success: true,
         totalEditors: results.length,
@@ -88045,7 +88165,7 @@ var init_dev_commands = __esm({
       };
     };
     debugStepperStyles = async (app, args) => {
-      logger.log("[IPC-CMD] Debugging stepper styles...");
+      logger2.log("[IPC-CMD] Debugging stepper styles...");
       const modal = document.querySelector(".sm-cc-create-modal");
       if (!modal) {
         return { success: false, error: "No modal found" };
@@ -88081,7 +88201,7 @@ var init_dev_commands = __esm({
     };
     validateUILegacy = async (app, args) => {
       const [mode] = args;
-      logger.log("[IPC-CMD] Validating UI layout (legacy)...", mode || "all");
+      logger2.log("[IPC-CMD] Validating UI layout (legacy)...", mode || "all");
       const modal = document.querySelector(".sm-cc-create-modal");
       if (!modal) {
         return { success: false, error: "No modal found" };
@@ -88188,13 +88308,13 @@ var init_dev_commands = __esm({
           };
         }
       }
-      logger.log("[IPC-CMD] UI validation complete:", JSON.stringify(result, null, 2));
+      logger2.log("[IPC-CMD] UI validation complete:", JSON.stringify(result, null, 2));
       return result;
     };
     navigateToSection = async (app, args) => {
       const [sectionId] = args;
       if (!sectionId) throw new Error("Section ID required");
-      logger.log("[IPC-CMD] Navigating to section:", sectionId);
+      logger2.log("[IPC-CMD] Navigating to section:", sectionId);
       const modal = document.querySelector(".sm-cc-create-modal");
       if (!modal) {
         return { success: false, error: "No modal found" };
@@ -88222,7 +88342,7 @@ var init_dev_commands = __esm({
       }
       targetButton.click();
       await waitForAnimation(600);
-      logger.log("[IPC-CMD] Navigated to section:", sectionId);
+      logger2.log("[IPC-CMD] Navigated to section:", sectionId);
       return {
         success: true,
         section: sectionId
@@ -88234,7 +88354,7 @@ var init_dev_commands = __esm({
         return { success: false, error: "Selector required. Usage: measure-ui <selector> [dimension1] [dimension2] ..." };
       }
       const dims = dimensions.length > 0 ? dimensions : ["width", "height"];
-      logger.log("[IPC-CMD] Measuring UI elements:", { selector, dimensions: dims });
+      logger2.log("[IPC-CMD] Measuring UI elements:", { selector, dimensions: dims });
       try {
         const measurements = measureElements({
           selector,
@@ -88268,7 +88388,7 @@ var init_dev_commands = __esm({
           }))
         };
       } catch (error) {
-        logger.error("[IPC-CMD] Measurement failed:", error);
+        logger2.error("[IPC-CMD] Measurement failed:", error);
         return { success: false, error: String(error) };
       }
     };
@@ -88280,19 +88400,19 @@ var init_dev_commands = __esm({
           error: `Rules required. Usage: validate-ui-rule '[{"name":"...", "selector":"...", ...}]'`
         };
       }
-      logger.log("[IPC-CMD] Validating UI with rules...");
+      logger2.log("[IPC-CMD] Validating UI with rules...");
       try {
         const rules = JSON.parse(rulesJson);
         const report = validateUI(rules);
         const formatted = formatReport(report);
-        logger.log("[IPC-CMD] Validation complete:", formatted);
+        logger2.log("[IPC-CMD] Validation complete:", formatted);
         return {
           success: report.failedRules === 0,
           report,
           formatted
         };
       } catch (error) {
-        logger.error("[IPC-CMD] Validation failed:", error);
+        logger2.error("[IPC-CMD] Validation failed:", error);
         return { success: false, error: String(error) };
       }
     };
@@ -88304,7 +88424,7 @@ var init_dev_commands = __esm({
           error: "Config name required. Usage: validate-ui-config <config-name>"
         };
       }
-      logger.log("[IPC-CMD] Validating UI with config:", configName);
+      logger2.log("[IPC-CMD] Validating UI with config:", configName);
       try {
         const configs = {
           "create-modal-labels": [
@@ -88339,7 +88459,7 @@ var init_dev_commands = __esm({
         }
         const report = validateUI(rules);
         const formatted = formatReport(report);
-        logger.log("[IPC-CMD] Validation complete:", formatted);
+        logger2.log("[IPC-CMD] Validation complete:", formatted);
         return {
           success: report.failedRules === 0,
           config: configName,
@@ -88347,7 +88467,7 @@ var init_dev_commands = __esm({
           formatted
         };
       } catch (error) {
-        logger.error("[IPC-CMD] Validation failed:", error);
+        logger2.error("[IPC-CMD] Validation failed:", error);
         return { success: false, error: String(error) };
       }
     };
@@ -88360,7 +88480,7 @@ var init_dev_commands = __esm({
         };
       }
       const waitTime = waitTimeStr ? parseInt(waitTimeStr, 10) : 300;
-      logger.log("[IPC-CMD] Clicking element:", selector);
+      logger2.log("[IPC-CMD] Clicking element:", selector);
       const element = document.querySelector(selector);
       if (!element) {
         return {
@@ -88374,7 +88494,7 @@ var init_dev_commands = __esm({
           element.focus();
         }
         await waitForAnimation(waitTime);
-        logger.log("[IPC-CMD] Element clicked:", selector);
+        logger2.log("[IPC-CMD] Element clicked:", selector);
         return {
           success: true,
           selector,
@@ -88384,7 +88504,7 @@ var init_dev_commands = __esm({
           }
         };
       } catch (error) {
-        logger.error("[IPC-CMD] Click failed:", error);
+        logger2.error("[IPC-CMD] Click failed:", error);
         return { success: false, error: String(error) };
       }
     };
@@ -88396,7 +88516,7 @@ var init_dev_commands = __esm({
           error: "Selector and value required. Usage: set-input-value <selector> <value>"
         };
       }
-      logger.log("[IPC-CMD] Setting input value:", { selector, value });
+      logger2.log("[IPC-CMD] Setting input value:", { selector, value });
       const element = document.querySelector(selector);
       if (!element) {
         return {
@@ -88414,14 +88534,14 @@ var init_dev_commands = __esm({
         element.value = value;
         element.dispatchEvent(new Event("input", { bubbles: true }));
         element.dispatchEvent(new Event("change", { bubbles: true }));
-        logger.log("[IPC-CMD] Input value set:", { selector, value });
+        logger2.log("[IPC-CMD] Input value set:", { selector, value });
         return {
           success: true,
           selector,
           value
         };
       } catch (error) {
-        logger.error("[IPC-CMD] Set input value failed:", error);
+        logger2.error("[IPC-CMD] Set input value failed:", error);
         return { success: false, error: String(error) };
       }
     };
@@ -88433,7 +88553,7 @@ var init_dev_commands = __esm({
           error: "Field label and token value required. Usage: add-token <field-label> <token-value>"
         };
       }
-      logger.log("[IPC-CMD] Adding token to field:", { fieldLabel, tokenValue });
+      logger2.log("[IPC-CMD] Adding token to field:", { fieldLabel, tokenValue });
       const modal = document.querySelector(".sm-cc-create-modal");
       if (!modal) {
         return { success: false, error: "No modal found" };
@@ -88472,14 +88592,14 @@ var init_dev_commands = __esm({
         await waitForAnimation(100);
         button.click();
         await waitForAnimation(300);
-        logger.log("[IPC-CMD] Token added successfully:", { fieldLabel, tokenValue });
+        logger2.log("[IPC-CMD] Token added successfully:", { fieldLabel, tokenValue });
         return {
           success: true,
           fieldLabel,
           tokenValue
         };
       } catch (error) {
-        logger.error("[IPC-CMD] Add token failed:", error);
+        logger2.error("[IPC-CMD] Add token failed:", error);
         return { success: false, error: String(error) };
       }
     };
@@ -88491,7 +88611,7 @@ var init_dev_commands = __esm({
           error: 'Ability key required. Usage: toggle-save-checkbox <ability-key> (e.g., "str", "dex")'
         };
       }
-      logger.log("[IPC-CMD] Toggling save checkbox for ability:", abilityKey);
+      logger2.log("[IPC-CMD] Toggling save checkbox for ability:", abilityKey);
       const modal = document.querySelector(".sm-cc-create-modal");
       if (!modal) {
         return { success: false, error: "No modal found" };
@@ -88530,7 +88650,7 @@ var init_dev_commands = __esm({
         const wasChecked = checkbox.checked;
         checkbox.click();
         await waitForAnimation(300);
-        logger.log("[IPC-CMD] Checkbox toggled:", { abilityKey, wasChecked, nowChecked: checkbox.checked });
+        logger2.log("[IPC-CMD] Checkbox toggled:", { abilityKey, wasChecked, nowChecked: checkbox.checked });
         return {
           success: true,
           abilityKey: abilityKey.toUpperCase(),
@@ -88538,7 +88658,7 @@ var init_dev_commands = __esm({
           nowChecked: checkbox.checked
         };
       } catch (error) {
-        logger.error("[IPC-CMD] Toggle checkbox failed:", error);
+        logger2.error("[IPC-CMD] Toggle checkbox failed:", error);
         return { success: false, error: String(error) };
       }
     };
@@ -88550,7 +88670,7 @@ var init_dev_commands = __esm({
           error: 'Ability key required. Usage: get-ability-values <ability-key> (e.g., "str", "dex")'
         };
       }
-      logger.log("[IPC-CMD] Getting values for ability:", abilityKey);
+      logger2.log("[IPC-CMD] Getting values for ability:", abilityKey);
       const modal = document.querySelector(".sm-cc-create-modal");
       if (!modal) {
         return { success: false, error: "No modal found" };
@@ -88599,14 +88719,14 @@ var init_dev_commands = __esm({
         if (saveFinalDisplay) {
           values.saveFinal = saveFinalDisplay.value?.trim();
         }
-        logger.log("[IPC-CMD] Ability values:", JSON.stringify(values, null, 2));
+        logger2.log("[IPC-CMD] Ability values:", JSON.stringify(values, null, 2));
         return {
           success: true,
           ability: abilityKey.toUpperCase(),
           values
         };
       } catch (error) {
-        logger.error("[IPC-CMD] Get values failed:", error);
+        logger2.error("[IPC-CMD] Get values failed:", error);
         return { success: false, error: String(error) };
       }
     };
@@ -88633,18 +88753,18 @@ var init_test_context = __esm({
           startTime: Date.now(),
           markers: []
         };
-        logger.log(`[TEST:START] ID="${testId}" Name="${testName}"`);
+        logger2.log(`[TEST:START] ID="${testId}" Name="${testName}"`);
       }
       /**
        * End the current test context
        */
       endTest() {
         if (!this.activeTest) {
-          logger.warn("[TEST:END] No active test to end");
+          logger2.warn("[TEST:END] No active test to end");
           return null;
         }
         const duration = Date.now() - this.activeTest.startTime;
-        logger.log(`[TEST:END] ID="${this.activeTest.testId}" Duration=${duration}ms`);
+        logger2.log(`[TEST:END] ID="${this.activeTest.testId}" Duration=${duration}ms`);
         const context = this.activeTest;
         this.activeTest = null;
         return context;
@@ -88654,14 +88774,14 @@ var init_test_context = __esm({
        */
       addMarker(marker) {
         if (!this.activeTest) {
-          logger.warn("[TEST:MARKER] No active test for marker:", marker);
+          logger2.warn("[TEST:MARKER] No active test for marker:", marker);
           return;
         }
         this.activeTest.markers.push({
           timestamp: Date.now(),
           marker
         });
-        logger.log(`[TEST:MARKER] ID="${this.activeTest.testId}" Marker="${marker}"`);
+        logger2.log(`[TEST:MARKER] ID="${this.activeTest.testId}" Marker="${marker}"`);
       }
       /**
        * Get the current test context
@@ -88697,7 +88817,7 @@ var init_test_commands = __esm({
         };
       }
       testContext.startTest(testId, testName || testId);
-      logger.log("[IPC-TEST] Test started:", { testId, testName });
+      logger2.log("[IPC-TEST] Test started:", { testId, testName });
       return {
         success: true,
         testId,
@@ -88713,7 +88833,7 @@ var init_test_commands = __esm({
           error: "No active test to end"
         };
       }
-      logger.log("[IPC-TEST] Test ended:", { testId: context.testId });
+      logger2.log("[IPC-TEST] Test ended:", { testId: context.testId });
       return {
         success: true,
         testId: context.testId,
@@ -88749,14 +88869,14 @@ var init_test_commands = __esm({
       try {
         const newConfig = JSON.parse(configJson);
         debugLogger.config = newConfig;
-        logger.log("[IPC-TEST] Debug config updated:", newConfig);
+        logger2.log("[IPC-TEST] Debug config updated:", newConfig);
         return {
           success: true,
           config: newConfig,
           message: "Debug configuration updated"
         };
       } catch (error) {
-        logger.error("[IPC-TEST] Failed to set debug config:", error);
+        logger2.error("[IPC-TEST] Failed to set debug config:", error);
         return {
           success: false,
           error: String(error)
@@ -88765,7 +88885,7 @@ var init_test_commands = __esm({
     };
     getDebugConfig = async (app, args) => {
       const config = debugLogger.getConfig();
-      logger.log("[IPC-TEST] Debug config retrieved:", config);
+      logger2.log("[IPC-TEST] Debug config retrieved:", config);
       return {
         success: true,
         config
@@ -88805,7 +88925,7 @@ var init_test_commands = __esm({
           };
         }
         const testLogs = allLines.slice(startIndex, endIndex !== -1 ? endIndex + 1 : void 0);
-        logger.log("[IPC-TEST] Test logs retrieved:", {
+        logger2.log("[IPC-TEST] Test logs retrieved:", {
           testId,
           lineCount: testLogs.length,
           hasEnd: endIndex !== -1
@@ -88817,7 +88937,7 @@ var init_test_commands = __esm({
           logs: testLogs
         };
       } catch (error) {
-        logger.error("[IPC-TEST] Failed to get test logs:", error);
+        logger2.error("[IPC-TEST] Failed to get test logs:", error);
         return {
           success: false,
           error: String(error)
@@ -88848,7 +88968,7 @@ var init_test_commands = __esm({
           });
         }
         const allPassed = results.every((r) => r.found);
-        logger.log("[IPC-TEST] Assertion result:", {
+        logger2.log("[IPC-TEST] Assertion result:", {
           testId,
           passed: allPassed,
           results
@@ -88861,7 +88981,7 @@ var init_test_commands = __esm({
           message: allPassed ? "All patterns found" : "Some patterns not found"
         };
       } catch (error) {
-        logger.error("[IPC-TEST] Assertion failed:", error);
+        logger2.error("[IPC-TEST] Assertion failed:", error);
         return {
           success: false,
           error: String(error)
@@ -88877,7 +88997,7 @@ async function getFieldState(app, args) {
   if (!fieldId) {
     throw new Error("Field ID required");
   }
-  logger.log(`[IPC-CMD] Getting field state for: ${fieldId}`);
+  logger2.log(`[IPC-CMD] Getting field state for: ${fieldId}`);
   const modal = document.querySelector(".modal.sm-cc-create-modal-host");
   if (!modal) {
     throw new Error("No create modal is open");
@@ -88928,12 +89048,12 @@ async function getFieldState(app, args) {
       };
     }
   }
-  logger.log(`[IPC-CMD] Field state:`, state);
+  logger2.log(`[IPC-CMD] Field state:`, state);
   return state;
 }
 async function dumpFieldStates(app, args) {
   const [modalType] = args;
-  logger.log(`[IPC-CMD] Dumping all field states for modal: ${modalType || "current"}`);
+  logger2.log(`[IPC-CMD] Dumping all field states for modal: ${modalType || "current"}`);
   const modal = document.querySelector(".modal.sm-cc-create-modal-host");
   if (!modal) {
     throw new Error("No create modal is open");
@@ -88965,17 +89085,17 @@ async function dumpFieldStates(app, args) {
     fieldCount: fields5.length,
     fields: fields5
   };
-  logger.log(`[IPC-CMD] Dumped ${fields5.length} fields`);
+  logger2.log(`[IPC-CMD] Dumped ${fields5.length} fields`);
   return result;
 }
 async function getModalData(app, args) {
-  logger.log(`[IPC-CMD] Getting current modal data`);
+  logger2.log(`[IPC-CMD] Getting current modal data`);
   const modalInstance = window.saltMarcherCurrentModal;
   if (!modalInstance) {
     throw new Error("No modal instance found");
   }
   const data = modalInstance.getData?.();
-  logger.log(`[IPC-CMD] Modal data:`, data);
+  logger2.log(`[IPC-CMD] Modal data:`, data);
   return data || {};
 }
 var init_field_inspection_commands = __esm({
@@ -89047,7 +89167,7 @@ var init_dom_dump_command = __esm({
     dumpDOM = async (app, args) => {
       const [selector = ".sm-cc-entry-list", maxDepthStr = "5"] = args;
       const maxDepth = parseInt(maxDepthStr, 10);
-      logger.log("[IPC-CMD] Dumping DOM structure:", { selector, maxDepth });
+      logger2.log("[IPC-CMD] Dumping DOM structure:", { selector, maxDepth });
       const element = document.querySelector(selector);
       if (!element) {
         return {
@@ -89059,7 +89179,7 @@ var init_dom_dump_command = __esm({
         const info = elementToInfo(element, maxDepth);
         const lines = infoToASCII(info);
         const ascii = lines.join("\n");
-        logger.log("[IPC-CMD] DOM structure:\n" + ascii);
+        logger2.log("[IPC-CMD] DOM structure:\n" + ascii);
         return {
           success: true,
           selector,
@@ -89069,7 +89189,7 @@ var init_dom_dump_command = __esm({
           // Also return structured data for programmatic use
         };
       } catch (error) {
-        logger.error("[IPC-CMD] DOM dump failed:", error);
+        logger2.error("[IPC-CMD] DOM dump failed:", error);
         return { success: false, error: String(error) };
       }
     };
@@ -89186,7 +89306,7 @@ var init_ui_inspect_command = __esm({
     inspectUI = async (app, args) => {
       const [selector = ".sm-cc-entry-head", maxDepthStr = "2"] = args;
       const maxDepth = parseInt(maxDepthStr, 10);
-      logger.log("[IPC-CMD] Inspecting UI layout:", { selector, maxDepth });
+      logger2.log("[IPC-CMD] Inspecting UI layout:", { selector, maxDepth });
       const element = document.querySelector(selector);
       if (!element) {
         return {
@@ -89198,7 +89318,7 @@ var init_ui_inspect_command = __esm({
         const layout = getLayoutInfo(element, maxDepth);
         const formatted = formatLayout(layout);
         const report = formatted.join("\n");
-        logger.log("[IPC-CMD] UI Layout:\n" + report);
+        logger2.log("[IPC-CMD] UI Layout:\n" + report);
         return {
           success: true,
           selector,
@@ -89207,7 +89327,7 @@ var init_ui_inspect_command = __esm({
           report
         };
       } catch (error) {
-        logger.error("[IPC-CMD] UI inspect failed:", error);
+        logger2.error("[IPC-CMD] UI inspect failed:", error);
         return { success: false, error: String(error) };
       }
     };
@@ -89275,7 +89395,7 @@ var init_event_bus = __esm({
             this.unsubscribe(id);
           });
         }
-        logger.debug(`[EventBus] Subscribed ${id} to topics:`, Array.from(topicSet));
+        logger2.debug(`[EventBus] Subscribed ${id} to topics:`, Array.from(topicSet));
         return () => this.unsubscribe(id);
       }
       /**
@@ -89286,7 +89406,7 @@ var init_event_bus = __esm({
           this.eventQueue.push(event);
           return;
         }
-        logger.debug(`[EventBus] Emitting ${event.topic} event:`, event);
+        logger2.debug(`[EventBus] Emitting ${event.topic} event:`, event);
         const subscriptionIds = this.topicIndex.get(event.topic) || /* @__PURE__ */ new Set();
         const subscriptions = Array.from(subscriptionIds).map((id) => this.subscriptions.get(id)).filter((sub) => !!sub).filter((sub) => !sub.filter || sub.filter(event)).sort((a, b) => b.priority - a.priority);
         const promises = [];
@@ -89295,7 +89415,7 @@ var init_event_bus = __esm({
             if (subscription.async) {
               promises.push(
                 Promise.resolve(subscription.handler(event)).catch((error) => {
-                  logger.error(
+                  logger2.error(
                     `[EventBus] Async handler error for ${subscription.id}:`,
                     error
                   );
@@ -89305,7 +89425,7 @@ var init_event_bus = __esm({
               await Promise.resolve(subscription.handler(event));
             }
           } catch (error) {
-            logger.error(
+            logger2.error(
               `[EventBus] Handler error for ${subscription.id}:`,
               error
             );
@@ -89320,7 +89440,7 @@ var init_event_bus = __esm({
        */
       emitAsync(event) {
         this.emit(event).catch((error) => {
-          logger.error("[EventBus] Async emit error:", error);
+          logger2.error("[EventBus] Async emit error:", error);
         });
       }
       /**
@@ -89333,21 +89453,21 @@ var init_event_bus = __esm({
           this.topicIndex.get(topic)?.delete(id);
         });
         this.subscriptions.delete(id);
-        logger.debug(`[EventBus] Unsubscribed ${id}`);
+        logger2.debug(`[EventBus] Unsubscribed ${id}`);
       }
       /**
        * Pause event processing (queue events)
        */
       pause() {
         this.isPaused = true;
-        logger.info("[EventBus] Paused");
+        logger2.info("[EventBus] Paused");
       }
       /**
        * Resume event processing (flush queue)
        */
       async resume() {
         this.isPaused = false;
-        logger.info("[EventBus] Resumed");
+        logger2.info("[EventBus] Resumed");
         const queue = [...this.eventQueue];
         this.eventQueue = [];
         for (const event of queue) {
@@ -89361,7 +89481,7 @@ var init_event_bus = __esm({
         this.subscriptions.clear();
         this.topicIndex.forEach((set) => set.clear());
         this.eventQueue = [];
-        logger.info("[EventBus] Cleared all subscriptions");
+        logger2.info("[EventBus] Cleared all subscriptions");
       }
       /**
        * Get subscription count
@@ -89390,7 +89510,7 @@ var init_events = __esm({
 
 // devkit/core/ipc/commands/state-commands.ts
 async function listStores(app) {
-  logger.log("[IPC-CMD] Listing registered stores");
+  logger2.log("[IPC-CMD] Listing registered stores");
   const manager = getStoreManager();
   const storeNames = manager.list();
   const summaries = storeNames.map((name) => {
@@ -89421,7 +89541,7 @@ async function inspectStore(app, args) {
   if (!storeName) {
     throw new Error("Store name required");
   }
-  logger.log(`[IPC-CMD] Inspecting store: ${storeName}`);
+  logger2.log(`[IPC-CMD] Inspecting store: ${storeName}`);
   const manager = getStoreManager();
   const store = manager.get(storeName);
   if (!store) {
@@ -89737,7 +89857,7 @@ var ConfirmDeleteModal = class extends import_obsidian10.Modal {
         await this.onConfirm();
         new import_obsidian10.Notice("Map deleted.");
       } catch (e) {
-        logger.error(e);
+        logger2.error(e);
         new import_obsidian10.Notice("Deleting map failed.");
       } finally {
         this.close();
@@ -89805,7 +89925,7 @@ function createMapManager(app, options = {}) {
           await applyChange(null);
         }
       } catch (error) {
-        logger.error(MAP_MANAGER_COPY.logs.deleteFailed, error);
+        logger2.error(MAP_MANAGER_COPY.logs.deleteFailed, error);
         new import_obsidian11.Notice(notices.deleteFailed);
       }
     }).open();
@@ -89830,10 +89950,10 @@ init_search_dropdown();
 // src/ui/maps/workflows/save.ts
 init_plugin_logger();
 async function saveMap(_app, file) {
-  logger.warn("[save] saveMap() not implemented. File:", file.path);
+  logger2.warn("[save] saveMap() not implemented. File:", file.path);
 }
 async function saveMapAs(_app, file) {
-  logger.warn("[save] saveMapAs() not implemented. File:", file.path);
+  logger2.warn("[save] saveMapAs() not implemented. File:", file.path);
 }
 
 // src/ui/maps/components/map-header.ts
@@ -89955,7 +90075,7 @@ function createMapHeader(app, host, options) {
       }
       new import_obsidian12.Notice(notices.saveSuccess);
     } catch (err) {
-      logger.error("[map-header] save failed", err);
+      logger2.error("[map-header] save failed", err);
       new import_obsidian12.Notice(notices.saveError);
     }
   };
@@ -90230,7 +90350,7 @@ var CartographerController = class {
       try {
         await active.onExit(lifecycle.ctx);
       } catch (error) {
-        logger.error("[cartographer] mode exit failed", error);
+        logger2.error("[cartographer] mode exit failed", error);
       }
     }
     if (this.view) {
@@ -90267,7 +90387,7 @@ var CartographerController = class {
         this.view?.setOverlay(null);
         return map;
       }).catch((error) => {
-        logger.error("[cartographer] failed to load modes", error);
+        logger2.error("[cartographer] failed to load modes", error);
         this.view?.setOverlay(MODE_PROVISION_OVERLAY_MESSAGE);
         new import_obsidian15.Notice(MODE_PROVISION_NOTICE_MESSAGE);
         this.modeLoad = void 0;
@@ -90299,7 +90419,7 @@ var CartographerController = class {
       try {
         await previous.onExit(previousLifecycle.ctx);
       } catch (error) {
-        logger.error("[cartographer] mode exit failed", error);
+        logger2.error("[cartographer] mode exit failed", error);
       }
     }
     if (!this.isMounted || !this.view) {
@@ -90320,7 +90440,7 @@ var CartographerController = class {
     try {
       await next.onEnter(lifecycleCtx);
     } catch (error) {
-      if (!controller.signal.aborted) logger.error("[cartographer] mode enter failed", error);
+      if (!controller.signal.aborted) logger2.error("[cartographer] mode enter failed", error);
     }
     if (controller.signal.aborted) return;
     await this.applyCurrentFile(this.currentFile, lifecycleCtx);
@@ -90330,7 +90450,7 @@ var CartographerController = class {
     try {
       return await this.activeMode.onSave(mode, file, this.lifecycle.ctx) === true;
     } catch (error) {
-      logger.error("[cartographer] mode onSave failed", error);
+      logger2.error("[cartographer] mode onSave failed", error);
       return false;
     }
   }
@@ -90339,7 +90459,7 @@ var CartographerController = class {
     try {
       await this.activeMode.onHexClick(coord, event, this.lifecycle.ctx);
     } catch (error) {
-      logger.error("[cartographer] mode onHexClick failed", error);
+      logger2.error("[cartographer] mode onHexClick failed", error);
     }
   }
   get baseModeCtx() {
@@ -90382,7 +90502,7 @@ var CartographerController = class {
       try {
         options = await this.deps.loadHexOptions(this.app, this.currentFile);
       } catch (error) {
-        logger.error("[cartographer] failed to parse map options", error);
+        logger2.error("[cartographer] failed to parse map options", error);
       }
       if (signal.aborted || !this.view) return;
       if (!options) {
@@ -90397,7 +90517,7 @@ var CartographerController = class {
       try {
         layer = await this.deps.createMapLayer(this.app, view.mapHost, this.currentFile, options);
       } catch (error) {
-        logger.error("[cartographer] failed to render map", error);
+        logger2.error("[cartographer] failed to render map", error);
         layer = null;
       }
       if (signal.aborted || !this.view) {
@@ -90432,7 +90552,7 @@ var CartographerController = class {
     try {
       await this.activeMode?.onFileChange(file, handles, ctx);
     } catch (error) {
-      logger.error("[cartographer] mode onFileChange failed", error);
+      logger2.error("[cartographer] mode onFileChange failed", error);
     }
   }
   destroyMapLayer() {
@@ -90442,7 +90562,7 @@ var CartographerController = class {
     try {
       layer.destroy();
     } catch (error) {
-      logger.error("[cartographer] failed to destroy map layer", error);
+      logger2.error("[cartographer] failed to destroy map layer", error);
     }
   }
 };
@@ -90477,7 +90597,7 @@ function createControllerView(options) {
     event.stopPropagation();
     if (event.cancelable) event.preventDefault();
     void Promise.resolve(callbacks.onHexClick(detail, event)).catch((error) => {
-      logger.error("[cartographer] hex click handler failed", error);
+      logger2.error("[cartographer] hex click handler failed", error);
     });
   };
   surface.stageEl.addEventListener("hex:click", hexListener, { passive: false });
@@ -90527,7 +90647,7 @@ function renderModeSelect(slot, initialModes, onChange) {
     const id = selectEl.value;
     if (!id) return;
     void Promise.resolve(onChange(id)).catch((error) => {
-      logger.error("[cartographer] failed to select mode", error);
+      logger2.error("[cartographer] failed to select mode", error);
     });
   };
   selectEl.addEventListener("change", handleChange);
@@ -90876,7 +90996,7 @@ var SessionRunnerController = class {
       await experience.onEnter(lifecycleCtx);
       await this.applyCurrentFile(initialFile, lifecycleCtx);
     } catch (error) {
-      logger.error("[session-runner] failed to start experience", error);
+      logger2.error("[session-runner] failed to start experience", error);
       this.view?.setOverlay(EXPERIENCE_OVERLAY_MESSAGE);
       new import_obsidian37.Notice(EXPERIENCE_NOTICE_MESSAGE);
     }
@@ -90894,7 +91014,7 @@ var SessionRunnerController = class {
       try {
         await experience.onExit(lifecycle.ctx);
       } catch (error) {
-        logger.error("[session-runner] experience exit failed", error);
+        logger2.error("[session-runner] experience exit failed", error);
       }
     }
     if (this.view) {
@@ -90960,7 +91080,7 @@ var SessionRunnerController = class {
       try {
         options = await this.deps.loadHexOptions(this.app, this.currentFile);
       } catch (error) {
-        logger.error("[session-runner] failed to parse map options", error);
+        logger2.error("[session-runner] failed to parse map options", error);
       }
       if (signal.aborted || !this.view) return;
       if (!options) {
@@ -90975,7 +91095,7 @@ var SessionRunnerController = class {
       try {
         layer = await this.deps.createMapLayer(this.app, view.mapHost, this.currentFile, options);
       } catch (error) {
-        logger.error("[session-runner] failed to render map", error);
+        logger2.error("[session-runner] failed to render map", error);
         layer = null;
       }
       if (signal.aborted || !this.view) {
@@ -91010,7 +91130,7 @@ var SessionRunnerController = class {
     try {
       await this.experience?.onFileChange(file, handles, ctx);
     } catch (error) {
-      logger.error("[session-runner] onFileChange failed", error);
+      logger2.error("[session-runner] onFileChange failed", error);
     }
   }
   async handleSave(mode, file) {
@@ -91019,7 +91139,7 @@ var SessionRunnerController = class {
       if (!this.experience.onSave) return false;
       return await this.experience.onSave(mode, file, this.lifecycle.ctx) ?? false;
     } catch (error) {
-      logger.error("[session-runner] onSave failed", error);
+      logger2.error("[session-runner] onSave failed", error);
       return false;
     }
   }
@@ -91028,7 +91148,7 @@ var SessionRunnerController = class {
     try {
       await this.experience.onHexClick(coord, event, this.lifecycle.ctx);
     } catch (error) {
-      logger.error("[session-runner] onHexClick failed", error);
+      logger2.error("[session-runner] onHexClick failed", error);
     }
   }
   destroyMapLayer() {
@@ -91038,7 +91158,7 @@ var SessionRunnerController = class {
     try {
       layer.destroy();
     } catch (error) {
-      logger.error("[session-runner] failed to destroy map layer", error);
+      logger2.error("[session-runner] failed to destroy map layer", error);
     }
   }
 };
@@ -91066,7 +91186,7 @@ function createSessionRunnerView(options) {
     event.stopPropagation();
     if (event.cancelable) event.preventDefault();
     void Promise.resolve(callbacks.onHexClick(detail, event)).catch((error) => {
-      logger.error("[session-runner] hex click handler failed", error);
+      logger2.error("[session-runner] hex click handler failed", error);
     });
   };
   surface.stageEl.addEventListener("hex:click", hexListener, { passive: false });
@@ -94924,7 +95044,7 @@ var notifiedOperations = /* @__PURE__ */ new Set();
 function reportIntegrationIssue(payload) {
   const { integrationId, operation, error, userMessage } = payload;
   const logPrefix = `[salt-marcher] integration(${integrationId}) ${operation} failed`;
-  logger.error(logPrefix, error);
+  logger2.error(logPrefix, error);
   const dedupeKey = `${integrationId}:${operation}`;
   if (notifiedOperations.has(dedupeKey)) return;
   notifiedOperations.add(dedupeKey);
@@ -94938,23 +95058,23 @@ init_terrain();
 var defaultLogger = {
   info: (message, context) => {
     if (context) {
-      logger.info(`[salt-marcher] ${message}`, context);
+      logger2.info(`[salt-marcher] ${message}`, context);
     } else {
-      logger.info(`[salt-marcher] ${message}`);
+      logger2.info(`[salt-marcher] ${message}`);
     }
   },
   warn: (message, context) => {
     if (context) {
-      logger.warn(`[salt-marcher] ${message}`, context);
+      logger2.warn(`[salt-marcher] ${message}`, context);
     } else {
-      logger.warn(`[salt-marcher] ${message}`);
+      logger2.warn(`[salt-marcher] ${message}`);
     }
   },
   error: (message, context) => {
     if (context) {
-      logger.error(`[salt-marcher] ${message}`, context);
+      logger2.error(`[salt-marcher] ${message}`, context);
     } else {
-      logger.error(`[salt-marcher] ${message}`);
+      logger2.error(`[salt-marcher] ${message}`);
     }
   }
 };
@@ -95031,7 +95151,7 @@ var IPCServer = class {
    */
   registerCommand(name, handler) {
     this.handlers.set(name, handler);
-    logger.log(`[IPC] Registered command: ${name}`);
+    logger2.log(`[IPC] Registered command: ${name}`);
   }
   /**
    * Start the IPC server
@@ -95066,15 +95186,15 @@ var IPCServer = class {
           }
         });
         socket.on("error", (err) => {
-          logger.error("[IPC] Client socket error:", err);
+          logger2.error("[IPC] Client socket error:", err);
         });
       });
       this.server.on("error", (err) => {
-        logger.error("[IPC] Server error:", err);
+        logger2.error("[IPC] Server error:", err);
         reject(err);
       });
       this.server.on("listening", () => {
-        logger.log(`[IPC] Server started on ${this.socketPath}`);
+        logger2.log(`[IPC] Server started on ${this.socketPath}`);
         resolve();
       });
       this.server.listen(this.socketPath);
@@ -95085,7 +95205,7 @@ var IPCServer = class {
    */
   async handleCommand(request) {
     const { command, args, id } = request;
-    logger.log("[IPC] Received command:", command, args);
+    logger2.log("[IPC] Received command:", command, args);
     const handler = this.handlers.get(command);
     if (!handler) {
       return {
@@ -95096,10 +95216,10 @@ var IPCServer = class {
     }
     try {
       const data = await handler(this.app, args);
-      logger.log("[IPC] Command completed:", command);
+      logger2.log("[IPC] Command completed:", command);
       return { success: true, data, id };
     } catch (error) {
-      logger.error("[IPC] Command failed:", command, error);
+      logger2.error("[IPC] Command failed:", command, error);
       return {
         success: false,
         error: String(error),
@@ -95120,7 +95240,7 @@ var IPCServer = class {
       fs.unlinkSync(this.socketPath);
     } catch (err) {
     }
-    logger.log("[IPC] Server stopped");
+    logger2.log("[IPC] Server stopped");
   }
 };
 
@@ -95137,21 +95257,21 @@ function closeAllModals() {
 }
 function registerIPCCommands(server, plugin) {
   server.registerCommand("reload-plugin", async (app) => {
-    logger.log("[IPC-CMD] Reloading plugin...");
+    logger2.log("[IPC-CMD] Reloading plugin...");
     await app.plugins.disablePlugin("salt-marcher");
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.plugins.enablePlugin("salt-marcher");
-    logger.log("[IPC-CMD] Plugin reloaded");
+    logger2.log("[IPC-CMD] Plugin reloaded");
     return { status: "reloaded" };
   });
   server.registerCommand("edit-creature", async (app, args) => {
     const [creatureName] = args;
-    logger.log("[IPC-CMD] Opening creature editor:", creatureName || "new");
+    logger2.log("[IPC-CMD] Opening creature editor:", creatureName || "new");
     closeAllModals();
     await new Promise((resolve) => setTimeout(resolve, 100));
     const { openLibraryModal: openLibraryModal2 } = await Promise.resolve().then(() => (init_library_mode_service_port(), library_mode_service_port_exports));
     openLibraryModal2(app, "creatures", creatureName).catch((err) => {
-      logger.error("[IPC-CMD] Failed to open creature modal:", err);
+      logger2.error("[IPC-CMD] Failed to open creature modal:", err);
     });
     await new Promise((resolve) => setTimeout(resolve, 300));
     return { status: "opened", entity: creatureName || "new" };
@@ -95159,12 +95279,12 @@ function registerIPCCommands(server, plugin) {
   server.registerCommand("edit-spell", async (app, args) => {
     const [spellName] = args;
     if (!spellName) throw new Error("Spell name required");
-    logger.log("[IPC-CMD] Opening spell editor:", spellName);
+    logger2.log("[IPC-CMD] Opening spell editor:", spellName);
     closeAllModals();
     await new Promise((resolve) => setTimeout(resolve, 100));
     const { openLibraryModal: openLibraryModal2 } = await Promise.resolve().then(() => (init_library_mode_service_port(), library_mode_service_port_exports));
     openLibraryModal2(app, "spells", spellName).catch((err) => {
-      logger.error("[IPC-CMD] Failed to open spell modal:", err);
+      logger2.error("[IPC-CMD] Failed to open spell modal:", err);
     });
     await new Promise((resolve) => setTimeout(resolve, 300));
     return { status: "opened", entity: spellName };
@@ -95172,12 +95292,12 @@ function registerIPCCommands(server, plugin) {
   server.registerCommand("edit-item", async (app, args) => {
     const [itemName] = args;
     if (!itemName) throw new Error("Item name required");
-    logger.log("[IPC-CMD] Opening item editor:", itemName);
+    logger2.log("[IPC-CMD] Opening item editor:", itemName);
     closeAllModals();
     await new Promise((resolve) => setTimeout(resolve, 100));
     const { openLibraryModal: openLibraryModal2 } = await Promise.resolve().then(() => (init_library_mode_service_port(), library_mode_service_port_exports));
     openLibraryModal2(app, "items", itemName).catch((err) => {
-      logger.error("[IPC-CMD] Failed to open item modal:", err);
+      logger2.error("[IPC-CMD] Failed to open item modal:", err);
     });
     await new Promise((resolve) => setTimeout(resolve, 300));
     return { status: "opened", entity: itemName };
@@ -95185,12 +95305,12 @@ function registerIPCCommands(server, plugin) {
   server.registerCommand("edit-equipment", async (app, args) => {
     const [equipmentName] = args;
     if (!equipmentName) throw new Error("Equipment name required");
-    logger.log("[IPC-CMD] Opening equipment editor:", equipmentName);
+    logger2.log("[IPC-CMD] Opening equipment editor:", equipmentName);
     closeAllModals();
     await new Promise((resolve) => setTimeout(resolve, 100));
     const { openLibraryModal: openLibraryModal2 } = await Promise.resolve().then(() => (init_library_mode_service_port(), library_mode_service_port_exports));
     openLibraryModal2(app, "equipments", equipmentName).catch((err) => {
-      logger.error("[IPC-CMD] Failed to open equipment modal:", err);
+      logger2.error("[IPC-CMD] Failed to open equipment modal:", err);
     });
     await new Promise((resolve) => setTimeout(resolve, 300));
     return { status: "opened", entity: equipmentName };
@@ -95215,10 +95335,10 @@ function registerIPCCommands(server, plugin) {
     if (!category) {
       throw new Error("Category required. Valid categories: creatures, spells, items, equipment, terrains, regions, calendars, all");
     }
-    logger.log(`[IPC-CMD] Importing ${category} presets (force: ${force})...`);
+    logger2.log(`[IPC-CMD] Importing ${category} presets (force: ${force})...`);
     const { importPresetsByCategory: importPresetsByCategory2 } = await Promise.resolve().then(() => (init_plugin_presets(), plugin_presets_exports));
     const result = await importPresetsByCategory2(app, category, force);
-    logger.log(`[IPC-CMD] Preset import complete: ${category}`);
+    logger2.log(`[IPC-CMD] Preset import complete: ${category}`);
     return {
       status: "imported",
       category: result.category,
@@ -95227,10 +95347,10 @@ function registerIPCCommands(server, plugin) {
     };
   });
   server.registerCommand("regenerate-indexes", async (app) => {
-    logger.log("[IPC-CMD] Regenerating library indexes...");
+    logger2.log("[IPC-CMD] Regenerating library indexes...");
     const { generateAllIndexes: generateAllIndexes2 } = await Promise.resolve().then(() => (init_index_files(), index_files_exports));
     await generateAllIndexes2(app);
-    logger.log("[IPC-CMD] Index regeneration complete");
+    logger2.log("[IPC-CMD] Index regeneration complete");
     return {
       status: "regenerated",
       message: "All library index files regenerated successfully"
@@ -95241,8 +95361,8 @@ function registerIPCCommands(server, plugin) {
 // src/app/main.ts
 var SaltMarcherPlugin = class extends import_obsidian42.Plugin {
   async onload() {
-    await logger.init(this.app);
-    logger.log("Plugin loading...");
+    await logger2.init(this.app);
+    logger2.log("Plugin loading...");
     const { debugLogger: debugLogger2 } = await Promise.resolve().then(() => (init_debug_logger(), debug_logger_exports));
     await debugLogger2.loadConfig(this.app);
     this.injectCss();
@@ -95250,7 +95370,7 @@ var SaltMarcherPlugin = class extends import_obsidian42.Plugin {
       const { generateAllIndexes: generateAllIndexes2 } = await Promise.resolve().then(() => (init_index_files(), index_files_exports));
       await generateAllIndexes2(this.app);
     } catch (err) {
-      logger.error("Failed to generate library indexes:", err);
+      logger2.error("Failed to generate library indexes:", err);
     }
     for (const manifestEntry of VIEW_MANIFEST) {
       try {
@@ -95280,14 +95400,14 @@ var SaltMarcherPlugin = class extends import_obsidian42.Plugin {
       try {
         const { registerDevCommands: registerDevCommands2 } = await Promise.resolve().then(() => (init_register_dev_commands(), register_dev_commands_exports));
         registerDevCommands2(this.ipcServer);
-        logger.log("[IPC] Dev commands loaded - available: measure-ui, validate-ui-rule, validate-ui-config, dump-dom, navigate-to-section, validate-grid-layout, debug-stepper-styles, validate-ui, start-test, end-test, log-marker, set-debug-config, get-debug-config, get-test-logs, assert-log-contains, get-field-state, dump-field-states, get-modal-data");
+        logger2.log("[IPC] Dev commands loaded - available: measure-ui, validate-ui-rule, validate-ui-config, dump-dom, navigate-to-section, validate-grid-layout, debug-stepper-styles, validate-ui, start-test, end-test, log-marker, set-debug-config, get-debug-config, get-test-logs, assert-log-contains, get-field-state, dump-field-states, get-modal-data");
       } catch (err) {
-        logger.log("[IPC] Dev commands not available:", err);
+        logger2.log("[IPC] Dev commands not available:", err);
       }
       await this.ipcServer.start();
-      logger.log("[IPC] Server ready - production commands: reload-plugin, edit-creature, edit-spell, edit-item, edit-equipment, get-logs");
+      logger2.log("[IPC] Server ready - production commands: reload-plugin, edit-creature, edit-spell, edit-item, edit-equipment, get-logs");
     } catch (err) {
-      logger.error("Failed to start IPC server:", err);
+      logger2.error("Failed to start IPC server:", err);
     }
     try {
       const { shouldImportPluginPresets: shouldImportPluginPresets2, importPluginPresets: importPluginPresets2 } = await Promise.resolve().then(() => (init_plugin_presets(), plugin_presets_exports));
@@ -95295,7 +95415,7 @@ var SaltMarcherPlugin = class extends import_obsidian42.Plugin {
         await importPluginPresets2(this.app);
       }
     } catch (err) {
-      logger.error("Failed to import preset creatures:", err);
+      logger2.error("Failed to import preset creatures:", err);
     }
     try {
       const { shouldImportSpellPresets: shouldImportSpellPresets2, importSpellPresets: importSpellPresets2 } = await Promise.resolve().then(() => (init_plugin_presets(), plugin_presets_exports));
@@ -95303,7 +95423,7 @@ var SaltMarcherPlugin = class extends import_obsidian42.Plugin {
         await importSpellPresets2(this.app);
       }
     } catch (err) {
-      logger.error("Failed to import spell presets:", err);
+      logger2.error("Failed to import spell presets:", err);
     }
     try {
       const { shouldImportItemPresets: shouldImportItemPresets2, importItemPresets: importItemPresets2 } = await Promise.resolve().then(() => (init_plugin_presets(), plugin_presets_exports));
@@ -95311,7 +95431,7 @@ var SaltMarcherPlugin = class extends import_obsidian42.Plugin {
         await importItemPresets2(this.app);
       }
     } catch (err) {
-      logger.error("Failed to import item presets:", err);
+      logger2.error("Failed to import item presets:", err);
     }
     try {
       const { shouldImportEquipmentPresets: shouldImportEquipmentPresets2, importEquipmentPresets: importEquipmentPresets2 } = await Promise.resolve().then(() => (init_plugin_presets(), plugin_presets_exports));
@@ -95319,7 +95439,7 @@ var SaltMarcherPlugin = class extends import_obsidian42.Plugin {
         await importEquipmentPresets2(this.app);
       }
     } catch (err) {
-      logger.error("Failed to import equipment presets:", err);
+      logger2.error("Failed to import equipment presets:", err);
     }
     try {
       const { shouldImportTerrainPresets: shouldImportTerrainPresets2, importTerrainPresets: importTerrainPresets2 } = await Promise.resolve().then(() => (init_plugin_presets(), plugin_presets_exports));
@@ -95327,7 +95447,7 @@ var SaltMarcherPlugin = class extends import_obsidian42.Plugin {
         await importTerrainPresets2(this.app);
       }
     } catch (err) {
-      logger.error("Failed to import terrain presets:", err);
+      logger2.error("Failed to import terrain presets:", err);
     }
     try {
       const { shouldImportRegionPresets: shouldImportRegionPresets2, importRegionPresets: importRegionPresets2 } = await Promise.resolve().then(() => (init_plugin_presets(), plugin_presets_exports));
@@ -95335,7 +95455,7 @@ var SaltMarcherPlugin = class extends import_obsidian42.Plugin {
         await importRegionPresets2(this.app);
       }
     } catch (err) {
-      logger.error("Failed to import region presets:", err);
+      logger2.error("Failed to import region presets:", err);
     }
     try {
       const { shouldImportCalendarPresets: shouldImportCalendarPresets2, importCalendarPresets: importCalendarPresets2 } = await Promise.resolve().then(() => (init_plugin_presets(), plugin_presets_exports));
@@ -95343,7 +95463,7 @@ var SaltMarcherPlugin = class extends import_obsidian42.Plugin {
         await importCalendarPresets2(this.app);
       }
     } catch (err) {
-      logger.error("Failed to import calendar presets:", err);
+      logger2.error("Failed to import calendar presets:", err);
     }
     try {
       const {
@@ -95362,7 +95482,7 @@ var SaltMarcherPlugin = class extends import_obsidian42.Plugin {
             try {
               await updateFn();
             } catch (err) {
-              logger.error("Failed to update index:", err);
+              logger2.error("Failed to update index:", err);
             }
           }, delay);
         };
@@ -95418,7 +95538,7 @@ var SaltMarcherPlugin = class extends import_obsidian42.Plugin {
         if (file.path.startsWith("SaltMarcher/Calendars/") && file.path !== "SaltMarcher/Calendars.md") calendarsWatcher();
       }));
     } catch (err) {
-      logger.error("Failed to setup library index watchers:", err);
+      logger2.error("Failed to setup library index watchers:", err);
     }
     this.terrainBootstrap = createTerrainBootstrap(this.app);
     const terrainBootstrapResult = await this.terrainBootstrap.start();
@@ -95451,7 +95571,7 @@ var SaltMarcherPlugin = class extends import_obsidian42.Plugin {
     }
   }
   async onunload() {
-    logger.log("Plugin unloading...");
+    logger2.log("Plugin unloading...");
     this.ipcServer?.stop();
     this.terrainBootstrap?.stop();
     try {
@@ -95460,7 +95580,7 @@ var SaltMarcherPlugin = class extends import_obsidian42.Plugin {
       this.failIntegration("detach-view", "obsidian:cartographer-view", error, "Cartographer-Ansichten konnten nicht geschlossen werden. Bitte die Konsole pruefen.");
     }
     this.removeCss();
-    await logger.shutdown();
+    await logger2.shutdown();
   }
   failIntegration(operation, integrationId, error, userMessage) {
     reportIntegrationIssue({ integrationId, operation, error, userMessage });

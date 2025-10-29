@@ -579,41 +579,26 @@ Umfassendes Fraktions-Management-System:
 - Expeditionen (Einheiten ziehen über Karte, Gruppe begegnet ihnen)
 - Beziehungen (Inter-Fraktions-Relationen, Handel, Konflikte)
 
-#### Phase 2.3.1 - Faction Members Display ⏳ AKTUELLER FOKUS
+#### Phase 2.3.1 - Faction Members Display ✅ ABGESCHLOSSEN
 **Scope:** Minimaler Slice für sofortigen Nutzen
 
 **User Story:**
 > "Als GM will ich im Encounter Composer sehen, welche Creatures zur aktuellen Hex-Faction gehören, damit ich diese schnell zu Encounters hinzufügen kann."
 
-**Acceptance Criteria:**
-1. ✅ Faction-Data enthält `members` Array (referenziert Creature-Namen)
-2. ⏳ Encounter-View lädt Members der aktuellen Hex-Faction
-3. ⏳ Separate Sektion "Faction Members (X)" in creature-list.ts
-4. ⏳ Members zeigen Badge "Faction Member" zur Unterscheidung
-5. ⏳ Click auf Member fügt ihn wie normale Creatures hinzu
-6. ⏳ Falls keine Faction auf Hex: Sektion versteckt
+**Acceptance Criteria (Alle ✅):**
+1. ✅ Faction-Data enthält `members` Array (bereits im Schema als FactionMember[])
+2. ✅ Encounter-View lädt Members der aktuellen Hex-Faction
+3. ✅ Separate Sektion "Faction Members (X)" in creature-list.ts
+4. ✅ Members zeigen Badge "Faction Member" zur Unterscheidung
+5. ✅ Click auf Member fügt ihn wie normale Creatures hinzu
+6. ✅ Falls keine Faction auf Hex: Sektion versteckt
 
-**Implementation Plan:**
-
-**Schritt 1: Faction Schema erweitern** (15min)
-- `src/workmodes/library/factions/types.ts` - Add `members?: string[]`
-- `src/workmodes/library/factions/create-spec.ts` - Add members field (multi-select)
-- Optional: Seed 2-3 Test-Factions mit Members
-
-**Schritt 2: Faction Members Loader** (20min)
-- `src/workmodes/encounter/presenter.ts` - `loadFactionMembers(factionName: string): Promise<CreatureListItem[]>`
-- Load Faction → Get members array → Load creature statblocks
-- Return as CreatureListItem[] (kompatibel mit creature-list)
-
-**Schritt 3: UI Integration** (30min)
-- `creature-list.ts` - Neue Sektion "Faction Members" (conditional rendering)
-- Badge für Members: `<span class="sm-faction-member-badge">Faction Member</span>`
-- Wenn keine Members: "No members defined for this faction"
-- workspace-view.ts - Pass faction name to creature-list
-
-**Schritt 4: Tests & Validation** (15min)
-- Unit-Test für `loadFactionMembers()` (Mock faction mit members)
-- Manual test: Assign faction to hex → Open encounter → See members
+**Implementation Summary:**
+- ✅ **Schema**: FactionMember[] bereits vorhanden mit name, role, status, is_named, notes
+- ✅ **Presenter**: `loadFactionMembers()` lädt Faction → extrahiert members → resolved zu CreatureListItems
+- ✅ **UI**: Neue Sektion in creature-list mit Badge, conditional rendering, click-to-add
+- ✅ **Integration**: workspace-view.render() lädt members automatisch basierend auf session.event.factionName
+- ✅ **Tests**: 222/224 Tests passing, Build successful (2.7mb)
 
 **Out of Scope (spätere Slices):**
 - ❌ Population tracking (Anzahl verfügbar)
@@ -623,7 +608,12 @@ Umfassendes Fraktions-Management-System:
 - ❌ Jobs system
 - ❌ Relations & diplomacy
 
-**Schätzung:** 1-1.5 Stunden bis Slice 2.3.1 ✅
+---
+
+#### Phase 2.3.2 - Population Tracking ⏳ NÄCHSTER SLICE
+**Scope:** Track verfügbare Anzahl pro Member, zeige "(X available)" Badge
+
+**Out of scope:** Phase 2.3 wird inkrementell erweitert nach Bedarf.
 
 ---
 

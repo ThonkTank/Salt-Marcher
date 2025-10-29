@@ -121,6 +121,13 @@ export class EncounterWorkspaceView {
         this.renderRules(state);
         this.renderResults(state);
         this.renderRuleEffectsDebug(state);
+
+        // Load and render faction members
+        if (session && this.creatureList) {
+            const factionName = session.event.factionName;
+            void this.loadAndRenderFactionMembers(factionName);
+        }
+
         this.syncSessionControls(session);
     }
 
@@ -1351,6 +1358,20 @@ export class EncounterWorkspaceView {
         const presenter = this.presenter;
         if (!presenter) return;
         presenter.sortParticipantsByInitiative();
+    }
+
+    private async loadAndRenderFactionMembers(factionName: string | null | undefined) {
+        const presenter = this.presenter;
+        if (!presenter || !this.creatureList) return;
+
+        try {
+            const members = await presenter.loadFactionMembers(factionName, this.app);
+            this.creatureList.setFactionMembers(members, factionName ?? null);
+        } catch (err) {
+            logger.error("[workspace-view] Failed to load faction members", err);
+            // On error, just clear the faction members section
+            this.creatureList.setFactionMembers([], null);
+        }
     }
 }
 

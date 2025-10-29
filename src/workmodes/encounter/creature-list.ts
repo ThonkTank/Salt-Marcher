@@ -31,6 +31,11 @@ export class EncounterCreatureList {
     private generateButton!: HTMLButtonElement;
     private currentDifficulty: Difficulty = "medium";
 
+    // Faction members
+    private factionMembers: CreatureListItem[] = [];
+    private factionMembersSection!: HTMLDivElement;
+    private factionName: string | null = null;
+
     constructor(app: App, containerEl: HTMLElement, callbacks: CreatureListCallbacks) {
         this.app = app;
         this.containerEl = containerEl;
@@ -87,6 +92,9 @@ export class EncounterCreatureList {
             this.generateButton.addEventListener("click", () => this.handleGenerateClick());
         }
 
+        // Faction Members Section (conditionally rendered)
+        this.factionMembersSection = this.containerEl.createDiv({ cls: "sm-encounter-faction-members" });
+
         const searchRow = this.containerEl.createDiv({ cls: "sm-encounter-creature-search" });
         this.searchInput = searchRow.createEl("input", {
             cls: "sm-encounter-input",
@@ -100,6 +108,7 @@ export class EncounterCreatureList {
         this.listEl = this.containerEl.createDiv({ cls: "sm-encounter-creature-list-items" });
 
         await this.loadCreatures();
+        this.renderFactionMembers(); // Initial render (will be empty until setFactionName called)
     }
 
     private handleGenerateClick() {
@@ -136,6 +145,65 @@ export class EncounterCreatureList {
         this.containerEl.empty();
         this.creatures = [];
         this.filteredCreatures = [];
+        this.factionMembers = [];
+        this.factionName = null;
+    }
+
+    /**
+     * Sets faction members to display in separate section.
+     * Call this whenever the hex faction changes.
+     */
+    setFactionMembers(members: CreatureListItem[], factionName: string | null) {
+        this.factionMembers = members;
+        this.factionName = factionName;
+        this.renderFactionMembers();
+    }
+
+    private renderFactionMembers() {
+        this.factionMembersSection.empty();
+
+        // Hide section if no members
+        if (!this.factionMembers.length || !this.factionName) {
+            this.factionMembersSection.style.display = "none";
+            return;
+        }
+
+        this.factionMembersSection.style.display = "block";
+
+        // Header
+        const header = this.factionMembersSection.createDiv({ cls: "sm-encounter-faction-members-header" });
+        header.createEl("h4", {
+            text: `${this.factionName} Members (${this.factionMembers.length})`,
+            cls: "sm-encounter-section-subtitle"
+        });
+
+        // Member list
+        const membersList = this.factionMembersSection.createDiv({ cls: "sm-encounter-faction-members-list" });
+
+        for (const member of this.factionMembers) {
+            const row = membersList.createDiv({ cls: "sm-encounter-creature-item sm-encounter-faction-member-item" });
+
+            const nameEl = row.createDiv({ cls: "sm-encounter-creature-name" });
+            nameEl.setText(member.name);
+
+            // Badge to distinguish faction members
+            const badge = nameEl.createSpan({ cls: "sm-faction-member-badge", text: "Faction Member" });
+
+            const metaEl = row.createDiv({ cls: "sm-encounter-creature-meta" });
+            metaEl.createSpan({ cls: "sm-encounter-creature-cr", text: `CR ${formatCR(member.cr)}` });
+            if (member.type) {
+                metaEl.createSpan({ cls: "sm-encounter-creature-type", text: member.type });
+            }
+
+            const addButton = row.createEl("button", {
+                cls: "sm-encounter-button sm-encounter-button-primary",
+                text: "Add",
+            });
+            addButton.type = "button";
+            addButton.addEventListener("click", () => {
+                this.callbacks.onAddCreature(member);
+            });
+        }
     }
 
     private async loadCreatures() {

@@ -379,6 +379,79 @@ export class EncounterPresenter {
         }
     }
 
+    /**
+     * Loads faction members as CreatureListItems for display in Encounter Composer.
+     *
+     * @param factionName Name of the faction to load members from
+     * @param app Obsidian App instance (for loading creatures from library)
+     * @returns Array of CreatureListItems representing faction members
+     */
+    async loadFactionMembers(
+        factionName: string | null | undefined,
+        app: import("obsidian").App
+    ): Promise<import("./creature-list").CreatureListItem[]> {
+        if (!factionName) return [];
+
+        try {
+            // Import dependencies
+            const { LIBRARY_DATA_SOURCES } = await import("../library/storage/data-sources");
+
+            // Load faction data
+            const allFactions = await LIBRARY_DATA_SOURCES.factions.list(app).then(files =>
+                Promise.all(files.map(f => LIBRARY_DATA_SOURCES.factions.load(app, f)))
+            );
+
+            const faction = allFactions.find(f => f.name.toLowerCase() === factionName.toLowerCase());
+            if (!faction || !faction.members || faction.members.length === 0) {
+                return [];
+            }
+
+            // Load creature statblocks for each member
+            const allCreatures = await LIBRARY_DATA_SOURCES.creatures.list(app).then(files =>
+                Promise.all(files.map(f => LIBRARY_DATA_SOURCES.creatures.load(app, f)))
+            );
+
+            // Map members to CreatureListItems
+            const result: import("./creature-list").CreatureListItem[] = [];
+            for (const member of faction.members) {
+                const creature = allCreatures.find(c => c.name.toLowerCase() === member.name.toLowerCase());
+                if (!creature) {
+                    logger.warn(`[presenter] Faction member "${member.name}" not found in library`);
+                    continue;
+                }
+
+                // Parse CR
+                const crString = creature.cr;
+                let cr = 0;
+                if (crString) {
+                    if (crString.includes("/")) {
+                        const [num, denom] = crString.split("/").map(s => Number(s.trim()));
+                        if (Number.isFinite(num) && Number.isFinite(denom) && denom !== 0) {
+                            cr = num / denom;
+                        }
+                    } else {
+                        const num = Number(crString);
+                        if (Number.isFinite(num)) cr = num;
+                    }
+                }
+
+                result.push({
+                    name: creature.name,
+                    cr,
+                    type: creature.type,
+                    path: `SaltMarcher/Creatures/${creature.name}.md`, // TODO: Get actual path from file
+                });
+            }
+
+            logger.debug(`[presenter] Loaded ${result.length} faction members for "${factionName}"`);
+            return result;
+
+        } catch (err) {
+            logger.error(`[presenter] Failed to load faction members for "${factionName}"`, err);
+            return [];
+        }
+    }
+
     // ============================================================================
     // Combat Tracking Methods
     // ============================================================================
