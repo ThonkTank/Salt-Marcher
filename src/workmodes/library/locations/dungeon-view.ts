@@ -29,6 +29,7 @@ export class DungeonView extends ItemView {
     private showCoordinates = false;
     private tokenPlacementMode = false; // Toggle for token placement mode
     private pendingToken: TokenCreationData | null = null; // Token waiting to be placed
+    private selectedToken: DungeonToken | null = null; // Currently selected token
 
     constructor(leaf: WorkspaceLeaf) {
         super(leaf);
@@ -92,6 +93,11 @@ export class DungeonView extends ItemView {
         if (this.dungeon && isDungeonLocation(this.dungeon)) {
             this.initializeRenderer();
         }
+
+        // Register keyboard shortcuts
+        this.registerDomEvent(document, "keydown", (event: KeyboardEvent) => {
+            this.handleKeyDown(event);
+        });
     }
 
     async onClose(): Promise<void> {
@@ -101,6 +107,7 @@ export class DungeonView extends ItemView {
         this.tooltipDiv = null;
         this.detailPanel = null;
         this.dungeon = null;
+        this.selectedToken = null;
     }
 
     /**
@@ -597,10 +604,24 @@ export class DungeonView extends ItemView {
     }
 
     /**
+     * Handle keyboard shortcuts
+     */
+    private handleKeyDown(event: KeyboardEvent): void {
+        // Delete key - delete selected token
+        if (event.key === "Delete" && this.selectedToken) {
+            event.preventDefault();
+            this.deleteToken(this.selectedToken.id);
+        }
+    }
+
+    /**
      * Update token detail view
      */
     private updateTokenDetail(token: DungeonToken | null): void {
         if (!this.detailPanel) return;
+
+        // Update selected token reference
+        this.selectedToken = token;
 
         if (!token) {
             // Hide panel
@@ -709,11 +730,47 @@ export class DungeonView extends ItemView {
     }
 
     /**
-     * Delete a token by ID (placeholder for Step 4.3)
+     * Delete a token by ID
      */
     private deleteToken(tokenId: string): void {
-        // TODO: Implement in Step 4.3
-        logger.info("[dungeon-view] Delete token (not yet implemented)", { tokenId });
+        if (!this.dungeon || !isDungeonLocation(this.dungeon)) {
+            logger.warn("[dungeon-view] Cannot delete token: invalid dungeon");
+            return;
+        }
+
+        if (!this.dungeon.tokens || this.dungeon.tokens.length === 0) {
+            logger.warn("[dungeon-view] Cannot delete token: no tokens");
+            return;
+        }
+
+        // Find token index
+        const tokenIndex = this.dungeon.tokens.findIndex((t) => t.id === tokenId);
+
+        if (tokenIndex === -1) {
+            logger.warn("[dungeon-view] Token not found", { tokenId });
+            return;
+        }
+
+        // Remove token from array
+        this.dungeon.tokens.splice(tokenIndex, 1);
+
+        logger.info("[dungeon-view] Token deleted", { tokenId });
+
+        // Clear selected token reference
+        this.selectedToken = null;
+
+        // Hide detail panel
+        if (this.detailPanel) {
+            this.detailPanel.style.display = "none";
+        }
+
+        // Re-render to remove token from canvas
+        if (this.renderer) {
+            this.renderer.render(this.dungeon);
+        }
+
+        // Persist changes to file
+        this.saveDungeonToFile();
     }
 
     /**

@@ -93381,7 +93381,7 @@ var TokenCreationModal = class extends import_obsidian40.Modal {
 // src/workmodes/library/locations/dungeon-view.ts
 var VIEW_TYPE_DUNGEON = "salt-dungeon-view";
 var DungeonView = class extends import_obsidian41.ItemView {
-  // Token waiting to be placed
+  // Currently selected token
   constructor(leaf) {
     super(leaf);
     this.dungeon = null;
@@ -93398,6 +93398,8 @@ var DungeonView = class extends import_obsidian41.ItemView {
     this.tokenPlacementMode = false;
     // Toggle for token placement mode
     this.pendingToken = null;
+    // Token waiting to be placed
+    this.selectedToken = null;
   }
   getViewType() {
     return VIEW_TYPE_DUNGEON;
@@ -93444,6 +93446,9 @@ var DungeonView = class extends import_obsidian41.ItemView {
     if (this.dungeon && isDungeonLocation(this.dungeon)) {
       this.initializeRenderer();
     }
+    this.registerDomEvent(document, "keydown", (event) => {
+      this.handleKeyDown(event);
+    });
   }
   async onClose() {
     this.renderer = null;
@@ -93452,6 +93457,7 @@ var DungeonView = class extends import_obsidian41.ItemView {
     this.tooltipDiv = null;
     this.detailPanel = null;
     this.dungeon = null;
+    this.selectedToken = null;
   }
   /**
    * Set the dungeon data to display
@@ -93846,10 +93852,20 @@ ${body}`;
     }
   }
   /**
+   * Handle keyboard shortcuts
+   */
+  handleKeyDown(event) {
+    if (event.key === "Delete" && this.selectedToken) {
+      event.preventDefault();
+      this.deleteToken(this.selectedToken.id);
+    }
+  }
+  /**
    * Update token detail view
    */
   updateTokenDetail(token) {
     if (!this.detailPanel) return;
+    this.selectedToken = token;
     if (!token) {
       this.detailPanel.style.display = "none";
       return;
@@ -93927,10 +93943,32 @@ ${body}`;
     this.detailPanel.style.display = "block";
   }
   /**
-   * Delete a token by ID (placeholder for Step 4.3)
+   * Delete a token by ID
    */
   deleteToken(tokenId) {
-    logger2.info("[dungeon-view] Delete token (not yet implemented)", { tokenId });
+    if (!this.dungeon || !isDungeonLocation(this.dungeon)) {
+      logger2.warn("[dungeon-view] Cannot delete token: invalid dungeon");
+      return;
+    }
+    if (!this.dungeon.tokens || this.dungeon.tokens.length === 0) {
+      logger2.warn("[dungeon-view] Cannot delete token: no tokens");
+      return;
+    }
+    const tokenIndex = this.dungeon.tokens.findIndex((t) => t.id === tokenId);
+    if (tokenIndex === -1) {
+      logger2.warn("[dungeon-view] Token not found", { tokenId });
+      return;
+    }
+    this.dungeon.tokens.splice(tokenIndex, 1);
+    logger2.info("[dungeon-view] Token deleted", { tokenId });
+    this.selectedToken = null;
+    if (this.detailPanel) {
+      this.detailPanel.style.display = "none";
+    }
+    if (this.renderer) {
+      this.renderer.render(this.dungeon);
+    }
+    this.saveDungeonToFile();
   }
   /**
    * Place a token at the specified grid coordinates
