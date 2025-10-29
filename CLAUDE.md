@@ -344,137 +344,75 @@ Ziele:
   - Encounter nutzt Event-driven Pattern
 
 ### Phase 2 – Encounter System ✅
-- **2.1-2.4:** Territory Marking, Faction Context, Creature Composition, XP Calculator
-- **2.6:** Random Encounter Generator (Tag-Fallback, D&D 5e XP Budget, 22 Tests)
-- **2.7:** Combat Tracking (HP/Initiative, Health-Bars, Defeated-State)
-- **2.3.1:** Faction Members Display im Encounter Composer
-- **Ergebnis:** Travel → Encounter → Combat E2E spielbar
+Territory Marking, Faction Context, Random Encounter Generator (22 tests), Combat Tracking (HP/Initiative), Faction Members Display. **Result:** Travel → Encounter → Combat E2E spielbar
 
----
-
----
-
-### Phase 2.3 – Member Management (Optional)
-- **Zielbild:** Population Tracking, NPCs, Unterfraktionen, Jobs, Expeditionen, Beziehungen
-- **Phase 2.3.1 ✅:** Faction Members Display in Encounter Composer
-  - Separate Sektion mit Badge, click-to-add
-  - `loadFactionMembers()` lädt members automatisch
-- **Phase 2.3.2+ ⏳:** Population Tracking, Jobs System (zurückgestellt, Phase 3 hat Priorität)
-
----
-
-### Phase 3 – Orte & Dungeons
-- **Zielbild:** Hierarchie (Stadt → Gebäude → Raum), Map-Marker, Dungeons (Grid-Maps, Features mit IDs)
-
-#### Phase 3.1 - Location CRUD ✅
-- CreateSpec, Serializer, Library-Integration
-- 9 Location-Types (Stadt, Dungeon, Camp, etc.), Owner-Types (Faction/NPC)
-- Storage: `SaltMarcher/Locations/{name}.md`
-
-#### Phase 3.2 - Tree View ✅
-- **3.2 Core:** Tree-Builder, TreeView Component, Breadcrumb (140+150+80 lines, 17 tests)
-  - Cycle Detection, Orphan Handling
-- **3.2.1 UI:** List/Tree Toggle in Library (LocationListRenderer, 170 lines)
-  - Icons: 🏙️ 🏘️ 🏢 ⚔️ ⛺ 🗿 🏚️ 🏰
-
-#### Phase 3.3 - Map POI Markers ✅
-- **3.3 Core:** location-marker-store (200 lines), Rendering (SVG layer), Inspector Integration
-  - 19 Tests, WeakMap-Registry, Emoji-Icons
-- **3.3.1 Editor:** Marker-Tool (marker-panel.ts, 330 lines), Multi-Tool Support
-  - TileData Schema extension (`locationMarker?: string`), Place/Remove Mode
+### Phase 3.1-3.3 – Locations ✅
+- **3.1:** Location CRUD (9 types, CreateSpec, Serializer)
+- **3.2:** Tree View mit Hierarchy (Breadcrumb, 17 tests)
+- **3.3:** Map POI Markers (location-marker-store, SVG layer, 19 tests)
 
 ---
 
 ### Phase 3.4 – Dungeons
 **Zielbild:** Grid-Karten, Token-Management, Raum-Features (T1/F1/G1/H1/S1), FOW, LOS
 
-#### Phase 3.4.1 - Dungeon Data Model ✅
-- **Schema:** LocationData extended mit `grid_width`, `grid_height`, `cell_size`, `rooms[]`
-  - DungeonRoom: id, name, description, grid_bounds, doors, features
-  - Feature-Prefixes: G (Geheimnisse), H (Hindernisse), S (Schätze), F (Features)
-- **Serializer:** Extended `locationToMarkdown()`, conditional rendering (nur bei type==="Dungeon")
-- **Library:** 3 conditional fields (grid_width/height/cell_size), grid_size badge `⬚ 30×20`
-- **Tests:** 9 Tests (dungeon-serializer.test.ts), 267/269 passing ✅
+#### Phase 3.4.1-3.4.3 – Dungeon Basics ✅
+- **3.4.1:** Data Model (grid_width/height, rooms[], doors, features), Serializer, 9 tests
+- **3.4.2:** Canvas Renderer (GridRenderer, 240 lines), Room/Door/Feature rendering, Controls
+- **3.4.3:** Navigation (Zoom/Pan, Click-highlight, Hover tooltips, Detail panel, Reset view), +14 tests
 
 ---
 
-#### Phase 3.4.2 - Grid Renderer ✅
-- **Core:** grid-renderer.ts (240 lines), Canvas-based, GridRendererOptions, gridToPixel()/pixelToGrid()
-- **Rendering:** Room boundaries (8-color palette), Door markers (🚪🔒), Feature markers (🔍⚠️💰📦)
-- **View:** DungeonView class (224 lines), VIEW_MANIFEST registration, `openDungeonView()` helper
-- **Controls:** Toggle Grid/Coordinates, responsive sizing
-- **Tests:** 267/269 passing ✅, no regressions
-
----
-
-#### Phase 3.4.3 - Navigation & Interactivity ✅ Abgeschlossen
-**Scope:** Zoom/Pan Controls und Click-to-Highlight für bessere Dungeon-Navigation
+#### Phase 3.4.4 - Token Management ⏳ NÄCHSTER SCHRITT
+**Scope:** Drag & Drop Token-Placement für Player, NPCs, Monsters auf Dungeon-Grid
 
 **User Story:**
-> "Als GM will ich große Dungeons durch Zoom/Pan navigieren und Räume/Features anklicken können, damit ich während der Sitzung schnell Details anzeigen und den Fokus ändern kann."
+> "Als GM will ich Tokens für PCs/NPCs/Monster auf dem Dungeon-Grid platzieren und verschieben können, damit ich Positionen visuell tracken und im Combat verwenden kann."
 
 **Acceptance Criteria:**
-1. ✅ Zoom/Pan Controls (Mausrad + Drag)
-2. ✅ Click-to-highlight rooms (visuelles Feedback)
-3. ✅ Hover tooltips für doors/features (zeige description)
-4. ✅ Room detail panel (zeige room info on click)
-5. ✅ Zoom-Level Indicator (z.B. "100%")
+1. ⏳ Token-Typen definieren (Player, NPC, Monster, Object)
+2. ⏳ Token-Rendering auf Grid (Icons/Colors, Size)
+3. ⏳ Drag & Drop Token-Placement (snap to grid)
+4. ⏳ Token-Selection & Highlighting
+5. ⏳ Token-Persistence (save/load with dungeon)
 
 **Implementation Plan:**
 
-**Schritt 1: Zoom/Pan Infrastructure** (~1.5h)
-- Extend GridRenderer mit Transform-State (scale, offsetX, offsetY)
-- Zoom via Mausrad: scale *= (1 + delta * 0.001)
-- Pan via Drag: update offsetX/offsetY on mousemove
-- Constrain: minScale=0.5, maxScale=3.0
-- Transform all rendering coordinates
+**Schritt 1: Token Data Model** (~1h)
+- Define `DungeonToken` interface (id, type, position, label, color, size)
+- Add `tokens: DungeonToken[]` to `LocationData` (dungeon-specific)
+- Update serializer to save/load tokens from frontmatter
 
-**Schritt 2: Click-to-Highlight** (~1h)
-- Add click event listener to canvas
-- Convert canvas coords → grid coords (account for transform)
-- Find clicked room/door/feature
-- Highlight selected room (thicker border + glow effect)
-- Clear highlight on background click
+**Schritt 2: Token Rendering** (~1h)
+- Extend `GridRenderer` with `renderTokens()` method
+- Render tokens as colored circles with labels
+- Layer order: Grid → Rooms → Tokens → Features/Doors
+- Selection indicator (highlight border)
 
-**Schritt 3: Hover Tooltips** (~1h)
-- Track mouse position on canvas
-- Detect hovered door/feature
-- Show tooltip div at mouse position
-- Display: ID, type, description
-- Hide on mouse leave
+**Schritt 3: Token Drag & Drop** (~1.5h)
+- Add "Add Token" button to DungeonView controls
+- Modal/dropdown to select token type & label
+- Drag token from palette or existing position
+- Snap to grid center on drop
+- Update dungeon data & re-render
 
-**Schritt 4: Room Detail Panel** (~1h)
-- Add side panel to DungeonView
-- Show on room click: Name, Description, Doors, Features
-- "Close" button
-- Scroll if content exceeds height
+**Schritt 4: Token Management** (~1h)
+- Click token to select (show in detail panel)
+- Delete token button
+- Edit token properties (label, color)
+- Keyboard shortcuts (Delete key removes selected token)
 
-**Schritt 5: Polish & Tests** (~30min)
-- Zoom level indicator (e.g., "125%")
-- Reset view button (back to 100%, centered)
-- Cursor feedback (grab/grabbing for pan)
-- Unit tests for coordinate transforms
+**Schritt 5: Persistence & Tests** (~30min)
+- Token state persists in frontmatter
+- Unit tests for token rendering, placement, selection
+- Integration test: add/move/delete token workflow
 
-**Out of Scope (Phase 3.4.4):**
-- ❌ Token Management (player/NPC tokens) → Phase 3.4.4
-- ❌ Drag & Drop tokens → Phase 3.4.4
-- ❌ Edit room data from UI → Phase 3.4.4
-- ❌ Fog of War → Phase 3.4.5 (optional)
+**Out of Scope:**
+- ❌ Token health tracking → Later
+- ❌ FOW/LOS → Phase 3.4.5 (optional)
+- ❌ Initiative order → Encounter system handles this
 
-**Technical Decisions:**
-- Canvas transform via ctx.save/restore + translate/scale
-- Click detection: adjust for transform with inverse matrix
-- Tooltips: absolute-positioned div, not canvas rendering
-- Room panel: flexbox sidebar, togglable
-
-**Estimated Time:** 5 hours (1.5h + 1h + 1h + 1h + 30min)
-
----
-
-#### Phase 3.4.4 - Token Management ⏳ Later
-- Drag & Drop Token-Placement (Player, NPC, Monster, Object)
-- Token state persistence
-- **Estimated:** 4-5 hours
+**Estimated Time:** 5 hours
 
 #### Phase 3.4.5 - Advanced Features ⏳ Optional
 - FOW overlay, Sound radius, LOS calculations
