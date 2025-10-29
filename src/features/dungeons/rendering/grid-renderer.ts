@@ -1,8 +1,8 @@
 // src/features/dungeons/rendering/grid-renderer.ts
 // Canvas-based grid renderer for dungeon maps
 
-import type { LocationData, DungeonRoom, DungeonDoor, DungeonFeature } from "../../../workmodes/library/locations/types";
-import { isDungeonLocation, getFeatureTypePrefix } from "../../../workmodes/library/locations/types";
+import type { LocationData, DungeonRoom, DungeonDoor, DungeonFeature, DungeonToken } from "../../../workmodes/library/locations/types";
+import { isDungeonLocation, getFeatureTypePrefix, getDefaultTokenColor } from "../../../workmodes/library/locations/types";
 
 // ============================================================================
 // TYPES
@@ -129,8 +129,15 @@ export class GridRenderer {
         // Render rooms
         if (dungeon.rooms && dungeon.rooms.length > 0) {
             this.renderRooms(dungeon.rooms);
+        }
 
-            // Render doors and features for each room
+        // Render tokens (after rooms, before doors/features)
+        if (dungeon.tokens && dungeon.tokens.length > 0) {
+            this.renderTokens(dungeon.tokens);
+        }
+
+        // Render doors and features for each room
+        if (dungeon.rooms && dungeon.rooms.length > 0) {
             for (const room of dungeon.rooms) {
                 if (room.doors && room.doors.length > 0) {
                     this.renderDoors(room.doors);
@@ -392,6 +399,44 @@ export class GridRenderer {
             this.ctx.font = "bold 10px sans-serif";
             this.ctx.fillStyle = "#000000";
             this.ctx.fillText(`${prefix}${feature.id}`, centerX, centerY + 15);
+        });
+    }
+
+    /**
+     * Render token markers (players, NPCs, monsters, objects)
+     */
+    private renderTokens(tokens: DungeonToken[]): void {
+        tokens.forEach((token) => {
+            const { x, y } = token.position;
+            const pixelPos = this.gridToPixel(x, y);
+            const centerX = pixelPos.x + this.options.cellSize / 2;
+            const centerY = pixelPos.y + this.options.cellSize / 2;
+
+            // Get token color (custom or default for type)
+            const color = token.color || getDefaultTokenColor(token.type);
+
+            // Calculate token radius (default size: 40% of cell)
+            const baseRadius = this.options.cellSize * 0.4;
+            const size = token.size || 1.0;
+            const radius = baseRadius * size;
+
+            // Draw token circle
+            this.ctx.fillStyle = color;
+            this.ctx.beginPath();
+            this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // Draw token border
+            this.ctx.strokeStyle = "#000000";
+            this.ctx.lineWidth = 2;
+            this.ctx.stroke();
+
+            // Draw token label below the circle
+            this.ctx.font = "bold 10px sans-serif";
+            this.ctx.fillStyle = "#000000";
+            this.ctx.textAlign = "center";
+            this.ctx.textBaseline = "top";
+            this.ctx.fillText(token.label, centerX, centerY + radius + 2);
         });
     }
 

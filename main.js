@@ -15703,6 +15703,18 @@ function getFeatureTypeLabel(type) {
       return "Other";
   }
 }
+function getDefaultTokenColor(type) {
+  switch (type) {
+    case "player":
+      return "#4a90e2";
+    case "npc":
+      return "#50c878";
+    case "monster":
+      return "#e74c3c";
+    case "object":
+      return "#f39c12";
+  }
+}
 function isDungeonLocation(data) {
   return data.type === "Dungeon" && typeof data.grid_width === "number" && typeof data.grid_height === "number";
 }
@@ -92869,6 +92881,11 @@ var GridRenderer = class {
     }
     if (dungeon.rooms && dungeon.rooms.length > 0) {
       this.renderRooms(dungeon.rooms);
+    }
+    if (dungeon.tokens && dungeon.tokens.length > 0) {
+      this.renderTokens(dungeon.tokens);
+    }
+    if (dungeon.rooms && dungeon.rooms.length > 0) {
       for (const room of dungeon.rooms) {
         if (room.doors && room.doors.length > 0) {
           this.renderDoors(room.doors);
@@ -93086,6 +93103,33 @@ var GridRenderer = class {
       this.ctx.font = "bold 10px sans-serif";
       this.ctx.fillStyle = "#000000";
       this.ctx.fillText(`${prefix}${feature.id}`, centerX, centerY + 15);
+    });
+  }
+  /**
+   * Render token markers (players, NPCs, monsters, objects)
+   */
+  renderTokens(tokens) {
+    tokens.forEach((token) => {
+      const { x, y } = token.position;
+      const pixelPos = this.gridToPixel(x, y);
+      const centerX = pixelPos.x + this.options.cellSize / 2;
+      const centerY = pixelPos.y + this.options.cellSize / 2;
+      const color = token.color || getDefaultTokenColor(token.type);
+      const baseRadius = this.options.cellSize * 0.4;
+      const size = token.size || 1;
+      const radius = baseRadius * size;
+      this.ctx.fillStyle = color;
+      this.ctx.beginPath();
+      this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.strokeStyle = "#000000";
+      this.ctx.lineWidth = 2;
+      this.ctx.stroke();
+      this.ctx.font = "bold 10px sans-serif";
+      this.ctx.fillStyle = "#000000";
+      this.ctx.textAlign = "center";
+      this.ctx.textBaseline = "top";
+      this.ctx.fillText(token.label, centerX, centerY + radius + 2);
     });
   }
   /**

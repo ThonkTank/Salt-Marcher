@@ -27,6 +27,8 @@ describe("GridRenderer", () => {
             lineTo: vi.fn(),
             stroke: vi.fn(),
             fillText: vi.fn(),
+            arc: vi.fn(),
+            fill: vi.fn(),
             strokeStyle: "",
             lineWidth: 0,
             fillStyle: "",
@@ -149,6 +151,34 @@ describe("GridRenderer", () => {
             };
 
             expect(() => renderer.render(nonDungeon)).toThrow("Cannot render non-dungeon location");
+        });
+
+        it("renders dungeon with tokens", () => {
+            const dungeon: LocationData = {
+                name: "Test Dungeon",
+                type: "Dungeon",
+                grid_width: 30,
+                grid_height: 20,
+                rooms: [],
+                tokens: [
+                    {
+                        id: "token-1",
+                        type: "player",
+                        position: { x: 10, y: 10 },
+                        label: "Gandalf",
+                    },
+                    {
+                        id: "token-2",
+                        type: "monster",
+                        position: { x: 15, y: 12 },
+                        label: "Goblin",
+                        color: "#ff0000",
+                        size: 0.8,
+                    },
+                ],
+            };
+
+            expect(() => renderer.render(dungeon)).not.toThrow();
         });
     });
 
