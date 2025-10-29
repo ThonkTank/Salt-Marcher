@@ -160,7 +160,10 @@ export function createInspectorMode(): CartographerMode {
 
         // Load location marker info
         if (ui.locationInfo) {
-            ui.locationInfo.empty();
+            // Clear existing content
+            while (ui.locationInfo.firstChild) {
+                ui.locationInfo.removeChild(ui.locationInfo.firstChild);
+            }
             const markerStore = getLocationMarkerStore(ctx.app, file);
             const marker = markerStore.get(state.selection);
 

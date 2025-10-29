@@ -27,6 +27,8 @@ vi.mock("src/features/maps/data/tile-repository", async () => {
 
 vi.mock("src/features/maps/data/region-repository", () => ({
     loadRegions: (...args: unknown[]) => loadRegions(...args),
+    ensureRegionsFile: vi.fn(),
+    REGIONS_FILE: "SaltMarcher/Regions.md",
 }));
 
 vi.mock("src/workmodes/library/storage/data-sources", () => ({
