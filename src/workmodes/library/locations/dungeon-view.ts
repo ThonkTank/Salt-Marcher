@@ -3,10 +3,11 @@
 
 import { ItemView, type WorkspaceLeaf, type App, TFile } from "obsidian";
 import { GridRenderer } from "../../../features/dungeons/rendering/grid-renderer";
-import type { LocationData } from "./types";
+import type { LocationData, DungeonToken } from "./types";
 import { isDungeonLocation } from "./types";
 import { logger } from "../../../app/plugin-logger";
 import { readFrontmatter } from "../../../features/data-manager/browse/frontmatter-utils";
+import { TokenCreationModal, type TokenCreationData } from "../../../features/dungeons/ui/token-creation-modal";
 
 export const VIEW_TYPE_DUNGEON = "salt-dungeon-view";
 
@@ -26,6 +27,7 @@ export class DungeonView extends ItemView {
     private showGrid = true;
     private showCoordinates = false;
     private tokenPlacementMode = false; // Toggle for token placement mode
+    private pendingToken: TokenCreationData | null = null; // Token waiting to be placed
 
     constructor(leaf: WorkspaceLeaf) {
         super(leaf);
@@ -227,15 +229,22 @@ export class DungeonView extends ItemView {
         });
 
         addTokenBtn.addEventListener("click", () => {
-            this.tokenPlacementMode = !this.tokenPlacementMode;
-            this.renderControls(); // Update button state
+            // Open token creation modal
+            const modal = new TokenCreationModal(this.app, (data) => {
+                // Store pending token and enter placement mode
+                this.pendingToken = data;
+                this.tokenPlacementMode = true;
+                this.renderControls(); // Update button state
 
-            // Update canvas cursor
-            if (this.canvas) {
-                this.canvas.style.cursor = this.tokenPlacementMode ? "crosshair" : "grab";
-            }
+                // Update canvas cursor
+                if (this.canvas) {
+                    this.canvas.style.cursor = "crosshair";
+                }
 
-            // TODO: Show token type selector when entering placement mode
+                logger.info("[dungeon-view] Token ready for placement", { token: data });
+            });
+
+            modal.open();
         });
 
         // Export button (future: PNG snapshot)

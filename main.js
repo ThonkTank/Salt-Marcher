@@ -88953,7 +88953,7 @@ __export(plugin_presets_exports, {
   shouldImportTerrainPresets: () => shouldImportTerrainPresets
 });
 async function ensureDir2(app, dir) {
-  const normalizedDir = (0, import_obsidian42.normalizePath)(dir);
+  const normalizedDir = (0, import_obsidian43.normalizePath)(dir);
   const folder = app.vault.getAbstractFileByPath(normalizedDir);
   if (!folder) {
     await app.vault.createFolder(normalizedDir).catch(() => {
@@ -88966,7 +88966,7 @@ function registerPreset(fileName, content) {
 async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, force = false) {
   try {
     await ensureDir3(app);
-    const normalizedDir = (0, import_obsidian42.normalizePath)(dir);
+    const normalizedDir = (0, import_obsidian43.normalizePath)(dir);
     const presetModule = await Promise.resolve().then(() => (init_preset_data(), preset_data_exports));
     const rawPresetFiles = presetModule[presetKey] || {};
     const presetEntries = Object.entries(rawPresetFiles).map(([fileName, content]) => [
@@ -88984,7 +88984,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       const existing = await app.vault.adapter.list(normalizedDir);
       const prefix = `${normalizedDir}/`;
       existing.files.forEach((file) => {
-        const normalizedFile = (0, import_obsidian42.normalizePath)(file);
+        const normalizedFile = (0, import_obsidian43.normalizePath)(file);
         if (normalizedFile.startsWith(prefix)) {
           const relativePath = normalizedFile.slice(prefix.length);
           if (relativePath) {
@@ -89000,7 +89000,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
     const ensuredFolders = /* @__PURE__ */ new Set([normalizedDir]);
     for (const [fileName, content] of presetEntries) {
       const loweredName = fileName.toLowerCase();
-      const targetPath = (0, import_obsidian42.normalizePath)(`${normalizedDir}/${fileName}`);
+      const targetPath = (0, import_obsidian43.normalizePath)(`${normalizedDir}/${fileName}`);
       const existingPath = existingFiles.get(loweredName);
       try {
         await ensureParentFolders(app, normalizedDir, fileName, ensuredFolders);
@@ -89026,19 +89026,19 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       }
     }
     if (importedCount > 0) {
-      new import_obsidian42.Notice(`Imported ${importedCount} ${typeName} presets`);
+      new import_obsidian43.Notice(`Imported ${importedCount} ${typeName} presets`);
       logger2.log(`${typeName} import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
     } else if (skippedCount > 0) {
       logger2.log(`All ${skippedCount} ${typeName} presets already exist`);
     } else if (errorCount > 0) {
-      new import_obsidian42.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian43.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   } catch (err) {
     logger2.error(`Failed to import ${typeName} presets:`, err);
     if (err instanceof Error && err.message.includes("Cannot find module")) {
       logger2.log(`No ${typeName} preset data found - skipping import`);
     } else {
-      new import_obsidian42.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian43.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   }
 }
@@ -89050,7 +89050,7 @@ async function ensureParentFolders(app, baseDir, relativePath, ensured) {
   parts.pop();
   let current = baseDir;
   for (const part of parts) {
-    current = (0, import_obsidian42.normalizePath)(`${current}/${part}`);
+    current = (0, import_obsidian43.normalizePath)(`${current}/${part}`);
     if (ensured.has(current)) continue;
     ensured.add(current);
     if (!app.vault.getAbstractFileByPath(current)) {
@@ -89067,7 +89067,7 @@ async function importPluginPresets(app) {
   return importPresetsForDir(app, ENTITY_REGISTRY.creatures.directory, "PRESET_CREATURES", "creature", ensureCreatureDir2);
 }
 async function shouldImportPresetsForDir(app, dir, markerName, label, ensureDir3) {
-  const markerPath = (0, import_obsidian42.normalizePath)(`${dir}/${markerName}`);
+  const markerPath = (0, import_obsidian43.normalizePath)(`${dir}/${markerName}`);
   const markerFile = app.vault.getAbstractFileByPath(markerPath);
   if (markerFile) {
     return false;
@@ -89157,11 +89157,11 @@ async function importPresetsByCategory(app, category, force = false) {
       throw new Error(`Unknown preset category: ${category}. Valid categories: creatures, spells, items, equipment, terrains, regions, calendars, all`);
   }
 }
-var import_obsidian42, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, PRESET_FILES;
+var import_obsidian43, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, PRESET_FILES;
 var init_plugin_presets = __esm({
   "Presets/lib/plugin-presets.ts"() {
     "use strict";
-    import_obsidian42 = require("obsidian");
+    import_obsidian43 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     ensureCreatureDir2 = (app) => ensureDir2(app, ENTITY_REGISTRY.creatures.directory);
@@ -89188,16 +89188,16 @@ __export(index_files_exports, {
 });
 async function createIndexFile(app, filePath, title, description, directory) {
   const folder = app.vault.getAbstractFileByPath(directory);
-  if (!(folder instanceof import_obsidian43.TFolder)) {
+  if (!(folder instanceof import_obsidian44.TFolder)) {
     logger2.log(`[Index] Directory ${directory} not found, skipping index generation`);
     return;
   }
   const files = [];
   const collectFiles = (folder2) => {
     for (const child of folder2.children) {
-      if (child instanceof import_obsidian43.TFile && child.extension === "md") {
+      if (child instanceof import_obsidian44.TFile && child.extension === "md") {
         files.push(child);
-      } else if (child instanceof import_obsidian43.TFolder) {
+      } else if (child instanceof import_obsidian44.TFolder) {
         collectFiles(child);
       }
     }
@@ -89234,7 +89234,7 @@ async function createIndexFile(app, filePath, title, description, directory) {
   }
   const content = lines.join("\n");
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian43.TFile) {
+  if (existingFile instanceof import_obsidian44.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -89302,7 +89302,7 @@ async function generateLibraryHub(app) {
   const content = lines.join("\n");
   const filePath = `${SALTMARCHER_DIR}/Library.md`;
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian43.TFile) {
+  if (existingFile instanceof import_obsidian44.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -89324,11 +89324,11 @@ async function generateAllIndexes(app) {
   ]);
   logger2.log("[Index] All indexes generated successfully");
 }
-var import_obsidian43, SALTMARCHER_DIR;
+var import_obsidian44, SALTMARCHER_DIR;
 var init_index_files = __esm({
   "src/workmodes/library/core/index-files.ts"() {
     "use strict";
-    import_obsidian43 = require("obsidian");
+    import_obsidian44 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     SALTMARCHER_DIR = "SaltMarcher";
@@ -91308,7 +91308,7 @@ __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian44 = require("obsidian");
+var import_obsidian45 = require("obsidian");
 init_plugin_logger();
 
 // src/workmodes/cartographer/index.ts
@@ -92685,7 +92685,7 @@ async function openSessionRunner(app, file) {
 }
 
 // src/workmodes/library/locations/dungeon-view.ts
-var import_obsidian40 = require("obsidian");
+var import_obsidian41 = require("obsidian");
 
 // src/features/dungeons/rendering/grid-renderer.ts
 init_types3();
@@ -93216,9 +93216,105 @@ var GridRenderer = class {
 init_types3();
 init_plugin_logger();
 init_frontmatter_utils();
+
+// src/features/dungeons/ui/token-creation-modal.ts
+var import_obsidian40 = require("obsidian");
+init_types3();
+var TokenCreationModal = class extends import_obsidian40.Modal {
+  constructor(app, onSubmit) {
+    super(app);
+    this.onSubmit = onSubmit;
+    this.tokenType = "player";
+    this.tokenLabel = "";
+    this.tokenColor = "";
+    this.tokenSize = 1;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.createEl("h3", { text: "Create Token" });
+    new import_obsidian40.Setting(contentEl).setName("Token Type").setDesc("Select the type of token to create").addDropdown((dropdown) => {
+      dropdown.addOption("player", "\u{1F9D9} Player").addOption("npc", "\u{1F642} NPC").addOption("monster", "\u{1F479} Monster").addOption("object", "\u{1F4E6} Object").setValue(this.tokenType).onChange((value) => {
+        this.tokenType = value;
+        this.tokenColor = getDefaultTokenColor(this.tokenType);
+        this.renderColorPreview();
+      });
+    });
+    let labelInput;
+    new import_obsidian40.Setting(contentEl).setName("Label").setDesc("Display name for the token").addText((text) => {
+      text.setPlaceholder("Gandalf").onChange((value) => {
+        this.tokenLabel = value.trim();
+      });
+      labelInput = text.inputEl;
+    });
+    new import_obsidian40.Setting(contentEl).setName("Color (Optional)").setDesc("Custom color in hex format (e.g., #ff0000). Leave empty for default.").addText((text) => {
+      text.setPlaceholder(getDefaultTokenColor(this.tokenType)).onChange((value) => {
+        this.tokenColor = value.trim();
+        this.renderColorPreview();
+      });
+    });
+    const colorPreviewContainer = contentEl.createDiv({ cls: "sm-token-color-preview-container" });
+    colorPreviewContainer.style.marginTop = "8px";
+    colorPreviewContainer.style.marginBottom = "16px";
+    const colorPreviewLabel = colorPreviewContainer.createSpan({ text: "Preview: " });
+    colorPreviewLabel.style.fontSize = "12px";
+    colorPreviewLabel.style.color = "var(--text-muted)";
+    const colorPreview = colorPreviewContainer.createEl("span", { cls: "sm-token-color-preview" });
+    colorPreview.style.display = "inline-block";
+    colorPreview.style.width = "24px";
+    colorPreview.style.height = "24px";
+    colorPreview.style.borderRadius = "50%";
+    colorPreview.style.border = "2px solid var(--background-modifier-border)";
+    colorPreview.style.marginLeft = "8px";
+    colorPreview.style.verticalAlign = "middle";
+    contentEl._colorPreview = colorPreview;
+    this.tokenColor = getDefaultTokenColor(this.tokenType);
+    this.renderColorPreview();
+    new import_obsidian40.Setting(contentEl).setName("Size").setDesc("Token size multiplier (0.5 = small, 1.0 = normal, 2.0 = large)").addSlider((slider) => {
+      slider.setLimits(0.5, 2, 0.1).setValue(this.tokenSize).setDynamicTooltip().onChange((value) => {
+        this.tokenSize = value;
+      });
+    });
+    new import_obsidian40.Setting(contentEl).addButton((button) => {
+      button.setButtonText("Cancel").onClick(() => {
+        this.close();
+      });
+    }).addButton((button) => {
+      button.setButtonText("Create Token").setCta().onClick(() => {
+        this.submit();
+      });
+    });
+    this.scope.register([], "Enter", () => this.submit());
+    queueMicrotask(() => labelInput?.focus());
+  }
+  onClose() {
+    this.contentEl.empty();
+  }
+  renderColorPreview() {
+    const colorPreview = this.contentEl._colorPreview;
+    if (!colorPreview) return;
+    const color = this.tokenColor || getDefaultTokenColor(this.tokenType);
+    colorPreview.style.backgroundColor = color;
+  }
+  submit() {
+    if (!this.tokenLabel) {
+      return;
+    }
+    const data = {
+      type: this.tokenType,
+      label: this.tokenLabel,
+      color: this.tokenColor || void 0,
+      size: this.tokenSize !== 1 ? this.tokenSize : void 0
+    };
+    this.close();
+    this.onSubmit(data);
+  }
+};
+
+// src/workmodes/library/locations/dungeon-view.ts
 var VIEW_TYPE_DUNGEON = "salt-dungeon-view";
-var DungeonView = class extends import_obsidian40.ItemView {
-  // Toggle for token placement mode
+var DungeonView = class extends import_obsidian41.ItemView {
+  // Token waiting to be placed
   constructor(leaf) {
     super(leaf);
     this.dungeon = null;
@@ -93231,6 +93327,8 @@ var DungeonView = class extends import_obsidian40.ItemView {
     this.showGrid = true;
     this.showCoordinates = false;
     this.tokenPlacementMode = false;
+    // Toggle for token placement mode
+    this.pendingToken = null;
   }
   getViewType() {
     return VIEW_TYPE_DUNGEON;
@@ -93384,11 +93482,16 @@ var DungeonView = class extends import_obsidian40.ItemView {
       text: "\u2795 Add Token"
     });
     addTokenBtn.addEventListener("click", () => {
-      this.tokenPlacementMode = !this.tokenPlacementMode;
-      this.renderControls();
-      if (this.canvas) {
-        this.canvas.style.cursor = this.tokenPlacementMode ? "crosshair" : "grab";
-      }
+      const modal = new TokenCreationModal(this.app, (data) => {
+        this.pendingToken = data;
+        this.tokenPlacementMode = true;
+        this.renderControls();
+        if (this.canvas) {
+          this.canvas.style.cursor = "crosshair";
+        }
+        logger2.info("[dungeon-view] Token ready for placement", { token: data });
+      });
+      modal.open();
     });
     const exportBtn = this.controlsContainer.createEl("button", {
       cls: "sm-dungeon-control",
@@ -97355,7 +97458,7 @@ var HEX_PLUGIN_CSS_SECTIONS = {
 var HEX_PLUGIN_CSS = Object.values(HEX_PLUGIN_CSS_SECTIONS).join("\n\n");
 
 // src/app/integration-telemetry.ts
-var import_obsidian41 = require("obsidian");
+var import_obsidian42 = require("obsidian");
 init_plugin_logger();
 var notifiedOperations = /* @__PURE__ */ new Set();
 function reportIntegrationIssue(payload) {
@@ -97365,7 +97468,7 @@ function reportIntegrationIssue(payload) {
   const dedupeKey = `${integrationId}:${operation}`;
   if (notifiedOperations.has(dedupeKey)) return;
   notifiedOperations.add(dedupeKey);
-  new import_obsidian41.Notice(userMessage);
+  new import_obsidian42.Notice(userMessage);
 }
 
 // src/app/bootstrap-services.ts
@@ -97676,7 +97779,7 @@ function registerIPCCommands(server, plugin) {
 }
 
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian44.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian45.Plugin {
   async onload() {
     await logger2.init(this.app);
     logger2.log("Plugin loading...");
