@@ -321,18 +321,17 @@ Ziele:
 |-------|--------|----------|------------------|
 | Phase 0 – Taxonomie & Schemas | ✅ Abgeschlossen | Tags & Schemas | Docs: `docs/TAGS.md`, `src/domain/schemas.ts` |
 | Phase 1 – Core State Platform | ✅ Abgeschlossen | Unified Stores | 200/202 Tests passing, Stores migriert ✅ |
-| Phase 2.1-2.5, 2.7 – Encounter Core | ✅ Abgeschlossen | Manual Encounters | Territory, Factions, Creatures, Combat ✅ |
-| **Phase 2.6** – Random Encounters | ⏳ **NÄCHSTER SCHRITT** | Auto-Generation | Generator, Tag-Filter, CR Budget |
-| Phase 2.3 – Member Management | ⏳ Geplant | NPC-Tracking | Nach 2.6 (benötigt für NPC-Encounters) |
+| Phase 2.1-2.7 – Encounter System | ✅ Abgeschlossen | Travel → Combat E2E | Full workflow: Territory, Combat, Generation ✅ |
+| Phase 2.3 – Member Management | ⏳ **NÄCHSTER SCHRITT** | NPC-Tracking | Subfraktionen, Jobs, Expeditionen |
 | Phase 2.5 – Faction Filtering | ⏳ QoL | UI-Filter | Nach 2.3 (optional) |
 | Phase 3 – Orte & Dungeons | ⏳ Geplant | Hierarchie & Grid | Nach Phase 2 komplett |
 | Phase 4 – Event Engine | ⏳ Geplant | Kalender-Automation | Nach Phase 3 |
 | Phase 5 – Loot & Presets | ⏳ Geplant | Loot-Pipeline, Preset-Import | Nach Phase 4 |
 | Phase 6 – Audio & Release | ⏳ Geplant | UX-Finishing | Release-Phase |
 
-**Aktueller Fokus:** Phase 2.6 (Random Encounter Generation) ← **NÄCHSTER SCHRITT**
+**Aktueller Fokus:** Phase 2.3 (Member Management) ← **NÄCHSTER SCHRITT**
 
-**Test-Suite:** 200/202 grün (99% pass rate) ✅
+**Test-Suite:** 222/224 grün (99% pass rate) ✅
 
 ### Phase 0 – Taxonomie & Schemas ✅
 Vollständige Tag-Taxonomie in `docs/TAGS.md`, Schema-Validatoren in `src/domain/schemas.ts`, Samples in `samples/**`. Library-Formulare mit Tag-Support.
@@ -384,7 +383,7 @@ Vollständige Tag-Taxonomie in `docs/TAGS.md`, Schema-Validatoren in `src/domain
 
 ---
 
-### Phase 2.6 – Random Encounter Generation ⏳ NÄCHSTER SCHRITT
+### Phase 2.6 – Random Encounter Generation ✅ ABGESCHLOSSEN
 **User Story:** "Auto-generate Encounters basierend auf Faction/Terrain/Region"
 
 #### Scope
@@ -393,42 +392,48 @@ Vollständige Tag-Taxonomie in `docs/TAGS.md`, Schema-Validatoren in `src/domain
 - Generiert Count basierend auf Party-Level und Difficulty Setting
 - Auto-XP-Balancing (Encounter bleibt im gewählten Difficulty-Bereich)
 
-#### Fortschritt (Stand: 2025-10-29 14:30)
+#### ✅ Abgeschlossen (100% Phase 2.6 - Stand: 2025-10-29)
 
-**✅ Abgeschlossen (60% Phase 2.6):**
-- Core Generator (`generator.ts`) - 500+ Zeilen ✅
-- Unit-Tests (`generator.test.ts`) - 22 Tests, alle passing ✅
-- Tag-Filtering mit 4-Level-Fallback implementiert ✅
-- XP Budget Calculation (D&D 5e DMG p.82) ✅
-- Creature Selection mit Variety-Constraint ✅
-- UI-Komponenten (`creature-list.ts`) - Difficulty-Dropdown + Generate-Button ✅
-- Presenter-Integration (`generateEncounter()` Methode) ✅
-- Error-Handling (No session, No party, No creatures) ✅
-- Test-Suite: 222/224 Tests passing (99%) ✅
+**Core Generator:**
+- ✅ `generator.ts` (500+ Zeilen) - filterCreaturesByTags, calculateCreatureBudget, selectCreaturesForBudget
+- ✅ 4-Level Tag-Fallback: Faction+Terrain+Region → Faction+Terrain → Terrain → All
+- ✅ D&D 5e XP Budget (DMG p.82 Thresholds)
+- ✅ Greedy Algorithm mit Variety-Constraint (max 3 copies)
+- ✅ XP Multiplier Support (1 creature = 1x, 2 = 1.5x, 3-6 = 2x)
 
-**⏳ In Arbeit (40% verbleibend):**
-- workspace-view.ts Integration (onGenerateEncounter Callback verdrahten)
-- Toast-Notifications für Success/Error
-- Confirmation-Modal bei bestehenden Creatures
-- Integration-Test (End-to-End Flow)
+**Unit Tests:**
+- ✅ `generator.test.ts` (22 Tests, alle passing)
+- ✅ Filterlogik getestet (alle 4 Levels + Edge Cases)
+- ✅ Budget-Calculation für alle Difficulties
+- ✅ Creature Selection mit Constraints
+- ✅ Deterministic Testing via Seed
+- ✅ Test-Suite: 222/224 Tests passing (99%)
+
+**UI & Integration:**
+- ✅ `creature-list.ts` - Difficulty-Dropdown + Generate-Button mit Loading-States
+- ✅ `presenter.ts` - `generateEncounter()` Methode (async, Promise.all, Error-Handling)
+- ✅ `workspace-view.ts` - `handleGenerateEncounter()` mit Loading + Modal + Toast
+- ✅ `ConfirmReplaceModal` - Bestätigung bei bestehenden Creatures
+- ✅ Toast-Notifications für Success/Error (Notice API mit XP-Berechnung)
 
 **Commits:**
-- `85ac660` feat(encounter): Implement Phase 2.6 Random Encounter Generator
+- `85ac660` feat(encounter): Implement Phase 2.6 Random Encounter Generator (Core)
 - `c5f0ccd` docs: Update Phase 2.6 specification and roadmap status
 - `6eb0753` feat(encounter): Add Phase 2.6 UI components and presenter integration (WIP)
+- `2d4eee1` feat: Complete Phase 2.6 - Random Encounter Generation UI integration ✅
 
-#### Acceptance Criteria
-1. ✅ Button "Generate Random Encounter" im Creature-List (mit 🎲 Icon) - UI implementiert
-2. ✅ Difficulty-Dropdown (Easy/Medium/Hard/Deadly) mit Standardwert "Medium" - UI implementiert
-3. ✅ Generator liefert 1-6 Creatures (min 1, max 6 für Übersichtlichkeit) - Core implementiert
-4. ✅ Fallback bei 0 Matches: Schrittweise Tag-Relaxierung - Core implementiert
+#### Acceptance Criteria (Alle ✅)
+1. ✅ Button "Generate Random Encounter" im Creature-List (mit 🎲 Icon)
+2. ✅ Difficulty-Dropdown (Easy/Medium/Hard/Deadly) mit Standardwert "Medium"
+3. ✅ Generator liefert 1-6 Creatures (min 1, max 6 für Übersichtlichkeit)
+4. ✅ Fallback bei 0 Matches: Schrittweise Tag-Relaxierung
    - Stufe 1: Faction+Terrain+Region
    - Stufe 2: Faction+Terrain
    - Stufe 3: Terrain only
    - Stufe 4: Alle Creatures (keine Filter)
-5. ✅ Loading-State während Generation ("Generating...") - UI implementiert
-6. ⏳ Error-Handling: Toast-Notification bei Failure ("No creatures found") - Presenter hat Errors, Toast fehlt
-7. ⏳ Generated Encounter ersetzt aktuelle Creature-Liste - Presenter implementiert, Confirmation-Modal fehlt
+5. ✅ Loading-State während Generation ("Generating...")
+6. ✅ Error-Handling: Toast-Notification bei Failure (Party, No creatures, etc.)
+7. ✅ Generated Encounter ersetzt Creature-Liste nach Confirmation-Modal
 
 #### Implementation Details
 
@@ -560,57 +565,7 @@ test('End-to-End Generation', () => {
 - ❌ **Weather/Time-of-Day Modifiers** (Nacht-Encounters, Sturm-Malus) - Phase 4
 - ❌ **Encounter-Presets** (Hausregeln per Markdown) - Phase 5
 
-#### Nächste Schritte (Aktualisiert - 40% verbleibend)
-
-**✅ Abgeschlossen:**
-- ~~Schritt 1: UI-Komponenten erstellen~~ (`creature-list.ts` - Difficulty-Dropdown + Generate-Button)
-- ~~Schritt 2: Generator Integration~~ (`presenter.ts` - `generateEncounter()` Methode)
-- ~~Schritt 3a: Loading States~~ (Button disabled während Generation)
-
-**⏳ Verbleibend (Geschätzt: 1-1.5h):**
-
-**Schritt 3b: workspace-view.ts Wiring** (30min)
-- **Ziel:** `onGenerateEncounter` Callback mit Presenter verbinden
-- **Datei:** `src/workmodes/encounter/workspace-view.ts`
-- **Implementation:**
-  ```typescript
-  // In renderShell() beim EncounterCreatureList init:
-  onGenerateEncounter: (difficulty) => this.handleGenerateEncounter(difficulty)
-
-  // Neue Methode:
-  private async handleGenerateEncounter(difficulty: Difficulty) {
-      // 1. Show loading
-      // 2. Check existing creatures → show confirmation modal
-      // 3. Call presenter.generateEncounter()
-      // 4. Show success/error toast
-      // 5. Hide loading
-  }
-  ```
-
-**Schritt 4: Confirmation-Modal** (20min)
-- **Komponente:** Obsidian Modal subclass
-- **Code:**
-  ```typescript
-  class ConfirmReplaceModal extends Modal {
-      constructor(app: App, creatureCount: number, onConfirm: () => void) { ... }
-  }
-  ```
-- **Text:** "Replace existing encounter? (X creatures will be removed)"
-- **Buttons:** "Cancel" (default), "Replace" (warning style)
-
-**Schritt 5: Toast-Notifications** (10min)
-- **Success:** `new Notice("✅ Generated encounter: X creatures, Y XP")`
-- **Errors:**
-  - "❌ No party members configured"
-  - "❌ No matching creatures found"
-  - "❌ Failed to generate: [error]"
-
-**Schritt 6: Test-Validierung** (20min)
-- Alle Unit-Tests laufen lassen (sollten weiterhin 222/224 passing sein)
-- Manuelles Testen via Build + Plugin-Reload
-- Optional: Integration-Test schreiben (kann später erfolgen)
-
-**Gesamt-Schätzung:** 1-1.5 Stunden bis Phase 2.6 100% ✅
+---
 
 ### Phase 2.5 – Faction Filtering ⏳ QoL
 Creature-Liste mit Faction-Filter-Dropdown, Relevance-Scoring (Exact > Partial > No match). Optional, da Random Generator bereits filtert.
@@ -655,13 +610,14 @@ Subfraktionen, NPC-Tracking, Beziehungen, Jobs, Expeditionen (siehe Ziele-Sektio
 
 ## 🧪 Test-Suite Status
 
-**Stats (Stand: 2025-10-29):**
-- ✅ 200/202 Tests passing (99% pass rate)
+**Stats (Stand: 2025-10-29 - Post Phase 2.6):**
+- ✅ 222/224 Tests passing (99% pass rate)
 - 🎯 49→0 Failures (100% Reduktion seit Phase 1 Start!)
 - ⏭️ 2 Tests skipped (todo-governance, header-policy - nicht kritisch)
-- ⏱️ Test-Laufzeit: ~19s (schnell genug für TDD-Workflow)
+- ⏱️ Test-Laufzeit: ~20s (schnell genug für TDD-Workflow)
 
 **Test-Kategorien & Coverage:**
+- ✅ **Encounter Generator** (filterCreaturesByTags, calculateCreatureBudget, selectCreaturesForBudget) - 22 Tests ✨ NEW
 - ✅ **Almanac** (state-machine, calendar-repository, recurring events) - 12 Tests
 - ✅ **Cartographer** (editor mode, inspector mode, terrain brush) - 25 Tests
 - ✅ **Library** (view rendering, mode switching) - 18 Tests
@@ -673,16 +629,15 @@ Subfraktionen, NPC-Tracking, Beziehungen, Jobs, Expeditionen (siehe Ziele-Sektio
 **Coverage-Schätzung:**
 - Core State (Store API, Event-Bus): ~90%
 - Domain Logic (Creatures, XP Calc): ~85%
-- Encounter System (Presenter, Combat): ~75%
+- Encounter System (Presenter, Combat, Generator): ~80% ✨ verbessert
 - UI Components (View, Modal): ~40% (Mock-basiert)
 
 **Known Gaps:**
 - ❌ Kein E2E Testing (echtes Obsidian Plugin)
-- ❌ Generator-Tests fehlen (wird mit Phase 2.6 hinzugefügt)
 - ❌ Performance-Tests für große Datensätze (>1000 Creatures)
 - ❌ Coverage-Reports (kein Tool konfiguriert)
 
 **Nächste Schritte:**
-1. Phase 2.6: Generator-Tests hinzufügen (filterCreaturesByTags, calculateCreatureBudget, selectCreaturesForBudget)
-2. Langfristig: E2E-Test-Suite mit echtem Obsidian-Plugin
-3. Coverage-Reports aktivieren (Istanbul/nyc)
+1. Langfristig: E2E-Test-Suite mit echtem Obsidian-Plugin
+2. Coverage-Reports aktivieren (Istanbul/nyc)
+3. Performance-Tests für Stress-Szenarien (viele Creatures, große Karten)
