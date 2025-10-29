@@ -19,6 +19,7 @@ export class DungeonView extends ItemView {
     private renderer: GridRenderer | null = null;
     private canvas: HTMLCanvasElement | null = null;
     private controlsContainer: HTMLElement | null = null;
+    private tooltipDiv: HTMLElement | null = null;
 
     // View options
     private showGrid = true;
@@ -52,6 +53,21 @@ export class DungeonView extends ItemView {
         // Create canvas container
         const canvasContainer = container.createDiv({ cls: "sm-dungeon-canvas-container" });
         this.canvas = canvasContainer.createEl("canvas", { cls: "sm-dungeon-canvas" });
+        this.canvas.style.cursor = "grab"; // Set cursor for pan
+
+        // Create tooltip (initially hidden)
+        this.tooltipDiv = container.createDiv({ cls: "sm-dungeon-tooltip" });
+        this.tooltipDiv.style.display = "none";
+        this.tooltipDiv.style.position = "absolute";
+        this.tooltipDiv.style.pointerEvents = "none"; // Don't block mouse events
+        this.tooltipDiv.style.background = "rgba(0, 0, 0, 0.85)";
+        this.tooltipDiv.style.color = "white";
+        this.tooltipDiv.style.padding = "8px 12px";
+        this.tooltipDiv.style.borderRadius = "4px";
+        this.tooltipDiv.style.fontSize = "12px";
+        this.tooltipDiv.style.zIndex = "1000";
+        this.tooltipDiv.style.maxWidth = "300px";
+        this.tooltipDiv.style.whiteSpace = "pre-wrap";
 
         // Initialize renderer if dungeon data is available
         if (this.dungeon && isDungeonLocation(this.dungeon)) {
@@ -63,6 +79,7 @@ export class DungeonView extends ItemView {
         this.renderer = null;
         this.canvas = null;
         this.controlsContainer = null;
+        this.tooltipDiv = null;
         this.dungeon = null;
     }
 
@@ -98,6 +115,18 @@ export class DungeonView extends ItemView {
                 cellSize: this.dungeon.cell_size || 40,
                 showGrid: this.showGrid,
                 showCoordinates: this.showCoordinates,
+            });
+
+            // Register callback for transform changes (zoom/pan)
+            this.renderer.setOnTransformChange(() => {
+                if (this.dungeon && isDungeonLocation(this.dungeon)) {
+                    this.renderer?.render(this.dungeon);
+                }
+            });
+
+            // Register callback for hover changes (tooltips)
+            this.renderer.setOnHoverChange((element) => {
+                this.updateTooltip(element);
             });
 
             this.renderer.render(this.dungeon);
@@ -160,6 +189,71 @@ export class DungeonView extends ItemView {
         });
 
         this.renderer.render(this.dungeon);
+    }
+
+    /**
+     * Update tooltip visibility and content based on hovered element
+     */
+    private updateTooltip(element: { type: "door"; data: any; canvasX: number; canvasY: number } | { type: "feature"; data: any; canvasX: number; canvasY: number } | null): void {
+        if (!this.tooltipDiv) return;
+
+        if (!element) {
+            // Hide tooltip
+            this.tooltipDiv.style.display = "none";
+            return;
+        }
+
+        // Format tooltip content
+        let content = "";
+        if (element.type === "door") {
+            const door = element.data;
+            content = `🚪 Door ${door.id}\n`;
+            if (door.leads_to) {
+                content += `Leads to: ${door.leads_to}\n`;
+            }
+            if (door.locked) {
+                content += "🔒 Locked\n";
+            }
+            if (door.description) {
+                content += `\n${door.description}`;
+            }
+        } else if (element.type === "feature") {
+            const feature = element.data;
+            const typeLabel = feature.type.charAt(0).toUpperCase() + feature.type.slice(1);
+            content = `${this.getFeatureIcon(feature.type)} Feature ${feature.id} (${typeLabel})\n`;
+            if (feature.description) {
+                content += `\n${feature.description}`;
+            }
+        }
+
+        // Update content
+        this.tooltipDiv.textContent = content;
+
+        // Position tooltip near mouse (offset to avoid cursor overlap)
+        const offsetX = 15;
+        const offsetY = 15;
+        this.tooltipDiv.style.left = `${element.canvasX + offsetX}px`;
+        this.tooltipDiv.style.top = `${element.canvasY + offsetY}px`;
+
+        // Show tooltip
+        this.tooltipDiv.style.display = "block";
+    }
+
+    /**
+     * Get icon for feature type
+     */
+    private getFeatureIcon(type: string): string {
+        switch (type) {
+            case "secret":
+                return "🔍";
+            case "trap":
+            case "hazard":
+                return "⚠️";
+            case "treasure":
+                return "💰";
+            default:
+                return "📦";
+        }
     }
 }
 

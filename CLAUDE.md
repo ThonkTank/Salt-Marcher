@@ -317,262 +317,39 @@ Ziele:
 
 ### Roadmap Overview
 
-| Phase | Status | Zielbild | Nächster Schritt |
-|-------|--------|----------|------------------|
-| Phase 0 – Taxonomie & Schemas | ✅ Abgeschlossen | Tags & Schemas | Docs: `docs/TAGS.md`, `src/domain/schemas.ts` |
-| Phase 1 – Core State Platform | ✅ Abgeschlossen | Unified Stores | 200/202 Tests passing, Stores migriert ✅ |
-| Phase 2.1-2.7 – Encounter System | ✅ Abgeschlossen | Travel → Combat E2E | Full workflow: Territory, Combat, Generation ✅ |
-| Phase 2.3.1 – Faction Members | ✅ Abgeschlossen | Display Members | Faction members in Encounter Composer ✅ |
-| **Phase 3.1 – Location CRUD** | ✅ **Abgeschlossen** | Library Integration | Locations fully integrated in Library ✅ |
-| **Phase 3.2 – Tree Core** | ✅ **Abgeschlossen** | Tree Infrastructure | Tree-Builder, Components, Tests ✅ |
-| **Phase 3.2.1 – Tree UI Integration** | ✅ **Abgeschlossen** | Library Toggle | List/Tree toggle in Library ✅ |
-| **Phase 3.3 – Map POI Markers** | ✅ **Abgeschlossen** | Hex Markers | Location markers auf Karte ✅ |
-| **Phase 3.3.1 – Marker Editor Tool** | ✅ **Abgeschlossen** | Marker Placement | Editor tool mit Multi-Tool Support ✅ |
-| **Phase 3.4.1 – Dungeon Data Model** | ✅ **Abgeschlossen** | Schema & Storage | Dungeon als Location-Typ in Library ✅ |
-| **Phase 3.4.2 – Grid Renderer** | ✅ **Abgeschlossen** | Visual Grid | Canvas-based grid view für Dungeons ✅ |
-| **Phase 3.4.3 – Interactive Features** | ⏳ **NÄCHSTER SCHRITT** | Token Management | Click-to-edit, Drag & Drop, Features |
-| Phase 3.4.4 – Advanced Features | ⏳ Optional | FOW, LOS | Fog of War, Line of Sight |
-| Phase 2.3.2+ – Advanced Factions | ⏳ Optional | Population, Jobs | Inkrementell nach Bedarf |
-| Phase 2.5 – Faction Filtering | ⏳ QoL | UI-Filter | Optional (Generator filtert bereits) |
-| Phase 4 – Event Engine | ⏳ Geplant | Kalender-Automation | Nach Phase 3 |
-| Phase 5 – Loot & Presets | ⏳ Geplant | Loot-Pipeline | Nach Phase 4 |
-| Phase 6 – Audio & Release | ⏳ Geplant | UX-Finishing | Release-Phase |
+| Phase | Status | Zielbild |
+|-------|--------|----------|
+| Phase 0-1 | ✅ Abgeschlossen | Tags, Schemas, Store-Platform |
+| Phase 2.1-2.7 | ✅ Abgeschlossen | Travel → Encounter → Combat E2E |
+| Phase 2.3.1 | ✅ Abgeschlossen | Faction Members Display |
+| Phase 2.6 | ✅ Abgeschlossen | Random Encounter Generator |
+| Phase 3.1 | ✅ Abgeschlossen | Location CRUD (Library) |
+| Phase 3.2-3.2.1 | ✅ Abgeschlossen | Tree View (Hierarchy) |
+| Phase 3.3-3.3.1 | ✅ Abgeschlossen | Map POI Markers + Editor |
+| Phase 3.4.1 | ✅ Abgeschlossen | Dungeon Data Model |
+| Phase 3.4.2 | ✅ Abgeschlossen | Grid Renderer (Canvas) |
+| **Phase 3.4.3** | ⏳ **NÄCHSTER SCHRITT** | **Zoom/Pan/Click** |
+| Phase 3.4.4-5 | ⏳ Later | Token Management, FOW |
+| Phase 4-6 | ⏳ Geplant | Events, Loot, Audio |
 
 **Aktueller Fokus:** Phase 3.4.3 (Interactive Features) ← **NÄCHSTER SCHRITT**
 
-**Test-Suite:** 267/269 grün (99.3% pass rate) ✅ ALL TESTS PASSING
+**Test-Suite:** 267/269 grün (99.3% pass rate) ✅
 
-### Phase 0 – Taxonomie & Schemas ✅
-Vollständige Tag-Taxonomie in `docs/TAGS.md`, Schema-Validatoren in `src/domain/schemas.ts`, Samples in `samples/**`. Library-Formulare mit Tag-Support.
+### Phase 0-1 – Foundation ✅
+- **Phase 0:** Tag-Taxonomie (`docs/TAGS.md`), Schema-Validatoren (`src/domain/schemas.ts`)
+- **Phase 1:** Store-Platform (Readable/Writable/Persistent), Event-Bus, 49→0 Test-Failures
+  - Map/Almanac auf PersistentStores migriert
+  - Encounter nutzt Event-driven Pattern
 
-### Phase 1 – Core State Platform ✅ 100%
-**Abgeschlossen:**
-- Store-API (Readable/Writable/Persistent/Versioned), Event-Bus, State-Inspector
-- Almanac/Map-Subsysteme auf PersistentStores migriert
-- Test-Suite: 49→0 failures (100% Reduktion), 200/202 Tests grün ✅
-- Vault-API-Mocks mit TFile/TFolder Support
-- Alle Test-Failures behoben (tile-repository mocks, SVG mocks, absolute import paths)
-
-**Optional (für später):**
-- Library-Repos auf Store-Pattern migrieren (nice-to-have)
-- Seed-System: `devkit seed --preset default` (entwickler-tool)
-
-**Store-Architektur Details:**
-
-*Map Subsystem (auf PersistentStore migriert):*
-- `tile-store.ts` - Hex tile state management
-- `terrain-store.ts` - Terrain type registry
-- `region-store.ts` - Region metadata
-- `faction-overlay-store.ts` - Faction territory assignments (Hex-Mappings only)
-
-*Almanac (auf PersistentStore migriert):*
-- `json-store.ts` - Calendar persistence
-
-*Encounter (Event-driven, NOT PersistentStore yet):*
-- `session-store.ts` - Pub/sub for encounter events
-- Mutable state pattern for XP calculations
-
-*Travel:*
-- `state.store.ts` - Travel logic state
-
-**Fehlende Stores (benötigt für Phase 2.3 Member Management):**
-- ❌ `faction-membership-store.ts` - Mitglieder/Population tracking
-- ❌ `faction-expedition-store.ts` - Expedition positions
-- ❌ `faction-relations-store.ts` - Inter-faction relations
-
-### Phase 2 – Encounter System ✅ (Vertical Slices)
-
-**Abgeschlossene Slices:**
-- **2.1 Territory Marking:** Fraktionen per Brush/Inspector auf Karte zuweisen, Overlay-Rendering
-- **2.2 Faction Context:** Faction-Daten fließen zu Encounter-Events, Summary zeigt Faction an
-- **2.4 Creature Composition:** Creatures aus Library hinzufügen (Count, CR), XP-Berechnung
-- **2.7 Combat Tracking:** HP/Initiative-Tracking, Health-Bars, Defeated-State (Commits: 469344c, 1d71bf2)
-
-**Ergebnis:** End-to-End Workflow spielbar: Travel → Encounter → Compose → Combat → Resolve
+### Phase 2 – Encounter System ✅
+- **2.1-2.4:** Territory Marking, Faction Context, Creature Composition, XP Calculator
+- **2.6:** Random Encounter Generator (Tag-Fallback, D&D 5e XP Budget, 22 Tests)
+- **2.7:** Combat Tracking (HP/Initiative, Health-Bars, Defeated-State)
+- **2.3.1:** Faction Members Display im Encounter Composer
+- **Ergebnis:** Travel → Encounter → Combat E2E spielbar
 
 ---
-
-### Phase 2.6 – Random Encounter Generation ✅ ABGESCHLOSSEN
-**User Story:** "Auto-generate Encounters basierend auf Faction/Terrain/Region"
-
-#### Scope
-- Generator liest Faction/Terrain/Region vom aktuellen Hex (via `event-builder.ts`)
-- Filtert Creatures nach Tags (prioritätsbasiert mit Fallback)
-- Generiert Count basierend auf Party-Level und Difficulty Setting
-- Auto-XP-Balancing (Encounter bleibt im gewählten Difficulty-Bereich)
-
-#### ✅ Abgeschlossen (100% Phase 2.6 - Stand: 2025-10-29)
-
-**Core Generator:**
-- ✅ `generator.ts` (500+ Zeilen) - filterCreaturesByTags, calculateCreatureBudget, selectCreaturesForBudget
-- ✅ 4-Level Tag-Fallback: Faction+Terrain+Region → Faction+Terrain → Terrain → All
-- ✅ D&D 5e XP Budget (DMG p.82 Thresholds)
-- ✅ Greedy Algorithm mit Variety-Constraint (max 3 copies)
-- ✅ XP Multiplier Support (1 creature = 1x, 2 = 1.5x, 3-6 = 2x)
-
-**Unit Tests:**
-- ✅ `generator.test.ts` (22 Tests, alle passing)
-- ✅ Filterlogik getestet (alle 4 Levels + Edge Cases)
-- ✅ Budget-Calculation für alle Difficulties
-- ✅ Creature Selection mit Constraints
-- ✅ Deterministic Testing via Seed
-- ✅ Test-Suite: 222/224 Tests passing (99%)
-
-**UI & Integration:**
-- ✅ `creature-list.ts` - Difficulty-Dropdown + Generate-Button mit Loading-States
-- ✅ `presenter.ts` - `generateEncounter()` Methode (async, Promise.all, Error-Handling)
-- ✅ `workspace-view.ts` - `handleGenerateEncounter()` mit Loading + Modal + Toast
-- ✅ `ConfirmReplaceModal` - Bestätigung bei bestehenden Creatures
-- ✅ Toast-Notifications für Success/Error (Notice API mit XP-Berechnung)
-
-**Commits:**
-- `85ac660` feat(encounter): Implement Phase 2.6 Random Encounter Generator (Core)
-- `c5f0ccd` docs: Update Phase 2.6 specification and roadmap status
-- `6eb0753` feat(encounter): Add Phase 2.6 UI components and presenter integration (WIP)
-- `2d4eee1` feat: Complete Phase 2.6 - Random Encounter Generation UI integration ✅
-
-#### Acceptance Criteria (Alle ✅)
-1. ✅ Button "Generate Random Encounter" im Creature-List (mit 🎲 Icon)
-2. ✅ Difficulty-Dropdown (Easy/Medium/Hard/Deadly) mit Standardwert "Medium"
-3. ✅ Generator liefert 1-6 Creatures (min 1, max 6 für Übersichtlichkeit)
-4. ✅ Fallback bei 0 Matches: Schrittweise Tag-Relaxierung
-   - Stufe 1: Faction+Terrain+Region
-   - Stufe 2: Faction+Terrain
-   - Stufe 3: Terrain only
-   - Stufe 4: Alle Creatures (keine Filter)
-5. ✅ Loading-State während Generation ("Generating...")
-6. ✅ Error-Handling: Toast-Notification bei Failure (Party, No creatures, etc.)
-7. ✅ Generated Encounter ersetzt Creature-Liste nach Confirmation-Modal
-
-#### Implementation Details
-
-**Dateien:**
-- `src/workmodes/encounter/generator.ts` - Core Generator-Logic (NEU)
-- `src/workmodes/encounter/view.ts` - UI-Integration (Generate-Button)
-- `src/workmodes/encounter/presenter.ts` - Bestehende `addCreature()` API nutzen
-
-**Algorithmen:**
-
-1. **Tag-Filtering** (`filterCreaturesByTags`)
-   ```typescript
-   // Priorität: Exact Match > Partial Match > Fallback
-   // Versuche in dieser Reihenfolge:
-   // 1. creatures mit (faction.influence_tags ∩ terrain.tags ∩ region.tags)
-   // 2. creatures mit (faction.influence_tags ∩ terrain.tags)
-   // 3. creatures mit (terrain.tags)
-   // 4. alle creatures (kein Filter)
-
-   // Tag-Matching: OR-Logik innerhalb, AND-Logik zwischen Kategorien
-   // Bsp: Faction=[Undead, Cult] + Terrain=[Swamp, Wetland]
-   //   → Match wenn creature.typeTags enthält (Undead OR Cult) AND (Swamp OR Wetland)
-   ```
-
-2. **CR Budget Calculation** (`calculateCreatureBudget`)
-   ```typescript
-   // Basierend auf D&D 5e DMG Encounter Building (DMG p.82)
-   // Input: partyLevel (Durchschnitt), partySize, difficulty
-   // Output: Target XP Budget
-
-   const xpThresholds = { // pro Charakter, nach Level
-     easy: [25, 50, 75, 125, 250, 300, 350, 450, 550, 600, 800, 1000, 1100, 1250, 1400, 1600, 2000, 2100, 2400, 2800],
-     medium: [50, 100, 150, 250, 500, 600, 750, 900, 1100, 1200, 1600, 2000, 2200, 2500, 2800, 3200, 3900, 4200, 4900, 5700],
-     hard: [75, 150, 225, 375, 750, 900, 1100, 1400, 1600, 1900, 2400, 3000, 3400, 3800, 4300, 4800, 5900, 6300, 7300, 8500],
-     deadly: [100, 200, 400, 500, 1100, 1400, 1700, 2100, 2400, 2800, 3600, 4500, 5100, 5700, 6400, 7200, 8800, 9500, 10900, 12700]
-   }
-
-   targetXP = xpThresholds[difficulty][partyLevel - 1] * partySize
-   // Toleranz: ±20% (z.B. Medium für 4 Lv3 = 600 XP → akzeptiert 480-720 XP)
-   ```
-
-3. **Creature Selection** (`selectCreaturesForBudget`)
-   ```typescript
-   // Greedy Algorithm mit Variety-Constraint:
-   // 1. Sortiere filtered creatures nach CR (aufsteigend)
-   // 2. Füge creatures hinzu bis XP-Budget erreicht (±20% Toleranz)
-   // 3. Wenn einzelne creature > Budget: Nutze nächst-kleinere, oder reduziere auf 1 creature
-   // 4. Bevorzuge Variety: Max 3 Kopien derselben creature (außer bei <3 verfügbaren)
-   // 5. Randomisierung: Wähle zufällig aus passenden CRs (nicht immer gleiche creature)
-
-   // Multiplier-Handling (DMG p.82):
-   // 1 creature: 1x XP
-   // 2 creatures: 1.5x XP
-   // 3-6 creatures: 2x XP
-   // 7-10 creatures: 2.5x XP (vermeiden, Max=6)
-   ```
-
-#### UI/UX Specs
-- **Button-Position:** Rechts oben in Encounter-Panel, neben "Compose Manually" Header
-- **Button-Style:** Primary (blau), Icon: 🎲 oder ⚡
-- **Disabled-State:** Grau wenn kein aktiver Travel-Event (kein Hex-Kontext verfügbar)
-- **Tooltip:** "Generate encounter based on current hex (Faction, Terrain, Region)"
-- **Difficulty-Dropdown:** Direkt links neben Button, Standardwert aus Settings (default: "Medium")
-- **Confirmation-Modal:**
-  - Nur bei existierenden Creatures: "Replace existing encounter? (3 creatures will be removed)"
-  - Buttons: "Cancel" (grey), "Replace" (red)
-- **Loading-State:** Button disabled + Spinner, Text "Generating..."
-- **Error-Toast:** Rot, 5s Dauer, "Failed to generate encounter: No matching creatures found"
-
-#### Testing Strategy
-
-**Unit-Tests** (`generator.test.ts`):
-```typescript
-describe('filterCreaturesByTags', () => {
-  test('exact match: faction+terrain+region')
-  test('partial match: faction+terrain')
-  test('fallback: terrain only')
-  test('fallback: all creatures (no filters)')
-  test('empty result at all levels')
-})
-
-describe('calculateCreatureBudget', () => {
-  test('easy difficulty for party Lv1-20')
-  test('deadly difficulty for large party (6+ members)')
-  test('edge case: party level 0 or negative')
-})
-
-describe('selectCreaturesForBudget', () => {
-  test('single creature within budget')
-  test('multiple creatures with variety constraint')
-  test('budget too small for any creature')
-  test('randomization: different results on repeated calls')
-})
-```
-
-**Integration-Test** (`generator.integration.test.ts`):
-```typescript
-test('End-to-End Generation', () => {
-  // Setup: Mock Hex with Faction="Ashen Circle", Terrain="Swamp", Region="Marshlands"
-  // Library: 10 creatures (3 Undead+Swamp, 2 Beast+Swamp, 5 other)
-  // Party: 4 members, Level 3, Difficulty=Medium (target 600 XP)
-
-  const result = generateRandomEncounter({ partyLevel: 3, partySize: 4, difficulty: 'medium' })
-
-  expect(result.creatures.length).toBeGreaterThanOrEqual(1)
-  expect(result.creatures.length).toBeLessThanOrEqual(6)
-  expect(result.totalXP).toBeGreaterThanOrEqual(480) // -20%
-  expect(result.totalXP).toBeLessThanOrEqual(720)    // +20%
-
-  // Verify creatures match tags (Undead+Swamp preferred)
-  const hasMatchingTags = result.creatures.some(c =>
-    c.typeTags.includes('Undead') && c.typeTags.includes('Swamp')
-  )
-  expect(hasMatchingTags).toBe(true)
-})
-```
-
-**Edge-Cases:**
-- Empty Library (no creatures)
-- No matching creatures at any filter level
-- Extreme Party-Levels (1, 20)
-- Party-Size 1 vs 8+ members
-- All creatures have CR > Budget (force single low-CR)
-
-#### Out of Scope (für spätere Phasen)
-- ❌ **NPC-Integration** ("benannte NPCs auf dem Hex") - Phase 2.3
-- ❌ **Expedition-Encounters** ("Fraktions-Expeditionen begegnen") - Phase 2.3
-- ❌ **Loot-Generation** (Gold/Items/Magie) - Phase 5
-- ❌ **Weather/Time-of-Day Modifiers** (Nacht-Encounters, Sturm-Malus) - Phase 4
-- ❌ **Encounter-Presets** (Hausregeln per Markdown) - Phase 5
 
 ---
 
@@ -1336,20 +1113,84 @@ Phase 3.4 ist zu umfangreich für einen Sprint. Aufteilung in inkrementelle Slic
 
 ---
 
-#### Phase 3.4.3 - Room Features & Token Management ⏳ Later
-**Scope:** Interactive editing und Token-Placement
-- Click-to-edit rooms
-- Drag & Drop tokens
-- Feature ID navigation
-- Token types: Player, NPC, Object
+#### Phase 3.4.3 - Navigation & Interactivity ⏳ NÄCHSTER SCHRITT
+**Scope:** Zoom/Pan Controls und Click-to-Highlight für bessere Dungeon-Navigation
 
-**Estimated Time:** 5-6 hours
+**User Story:**
+> "Als GM will ich große Dungeons durch Zoom/Pan navigieren und Räume/Features anklicken können, damit ich während der Sitzung schnell Details anzeigen und den Fokus ändern kann."
+
+**Acceptance Criteria:**
+1. ⏳ Zoom/Pan Controls (Mausrad + Drag)
+2. ⏳ Click-to-highlight rooms (visuelles Feedback)
+3. ⏳ Hover tooltips für doors/features (zeige description)
+4. ⏳ Room detail panel (zeige room info on click)
+5. ⏳ Zoom-Level Indicator (z.B. "100%")
+
+**Implementation Plan:**
+
+**Schritt 1: Zoom/Pan Infrastructure** (~1.5h)
+- Extend GridRenderer mit Transform-State (scale, offsetX, offsetY)
+- Zoom via Mausrad: scale *= (1 + delta * 0.001)
+- Pan via Drag: update offsetX/offsetY on mousemove
+- Constrain: minScale=0.5, maxScale=3.0
+- Transform all rendering coordinates
+
+**Schritt 2: Click-to-Highlight** (~1h)
+- Add click event listener to canvas
+- Convert canvas coords → grid coords (account for transform)
+- Find clicked room/door/feature
+- Highlight selected room (thicker border + glow effect)
+- Clear highlight on background click
+
+**Schritt 3: Hover Tooltips** (~1h)
+- Track mouse position on canvas
+- Detect hovered door/feature
+- Show tooltip div at mouse position
+- Display: ID, type, description
+- Hide on mouse leave
+
+**Schritt 4: Room Detail Panel** (~1h)
+- Add side panel to DungeonView
+- Show on room click: Name, Description, Doors, Features
+- "Close" button
+- Scroll if content exceeds height
+
+**Schritt 5: Polish & Tests** (~30min)
+- Zoom level indicator (e.g., "125%")
+- Reset view button (back to 100%, centered)
+- Cursor feedback (grab/grabbing for pan)
+- Unit tests for coordinate transforms
+
+**Out of Scope (Phase 3.4.4):**
+- ❌ Token Management (player/NPC tokens) → Phase 3.4.4
+- ❌ Drag & Drop tokens → Phase 3.4.4
+- ❌ Edit room data from UI → Phase 3.4.4
+- ❌ Fog of War → Phase 3.4.5 (optional)
+
+**Technical Decisions:**
+- Canvas transform via ctx.save/restore + translate/scale
+- Click detection: adjust for transform with inverse matrix
+- Tooltips: absolute-positioned div, not canvas rendering
+- Room panel: flexbox sidebar, togglable
+
+**Estimated Time:** 5 hours (1.5h + 1h + 1h + 1h + 30min)
 
 ---
 
-#### Phase 3.4.4 - Advanced Features ⏳ Optional
+#### Phase 3.4.4 - Token Management ⏳ Later
+**Scope:** Drag & Drop Token-Placement für Spieler/NPCs/Objekte
+- Token types: Player, NPC, Monster, Object
+- Drag & Drop from palette
+- Move tokens on grid
+- Token state persistence
+
+**Estimated Time:** 4-5 hours
+
+---
+
+#### Phase 3.4.5 - Advanced Features ⏳ Optional
 **Scope:** Fog of War, Sound Radii, Line-of-Sight
-- FOW overlay
+- FOW overlay (revealed/hidden cells)
 - Sound propagation visualization
 - LOS calculations
 

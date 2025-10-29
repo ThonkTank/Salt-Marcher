@@ -92667,6 +92667,126 @@ var DEFAULT_OPTIONS = {
 };
 var GridRenderer = class {
   constructor(canvas, options = {}) {
+    // Transform state for zoom/pan
+    this.scale = 1;
+    this.offsetX = 0;
+    this.offsetY = 0;
+    this.minScale = 0.5;
+    this.maxScale = 3;
+    // Pan state
+    this.isPanning = false;
+    this.lastMouseX = 0;
+    this.lastMouseY = 0;
+    // Highlight state
+    this.highlightedRoomId = null;
+    this.currentDungeon = null;
+    // Hover state for tooltips
+    this.hoveredElement = null;
+    /**
+     * Handle mouse wheel for zoom
+     */
+    this.handleWheel = (event) => {
+      event.preventDefault();
+      const zoomFactor = 1 + event.deltaY * -1e-3;
+      const newScale = this.scale * zoomFactor;
+      this.scale = Math.max(this.minScale, Math.min(this.maxScale, newScale));
+      this.onTransformChange?.();
+    };
+    /**
+     * Handle mouse down for pan start
+     */
+    this.handleMouseDown = (event) => {
+      if (event.button === 0) {
+        this.isPanning = true;
+        this.lastMouseX = event.clientX;
+        this.lastMouseY = event.clientY;
+        this.canvas.style.cursor = "grabbing";
+      }
+    };
+    /**
+     * Handle mouse move for pan and hover detection
+     */
+    this.handleMouseMove = (event) => {
+      if (this.isPanning) {
+        const deltaX = event.clientX - this.lastMouseX;
+        const deltaY = event.clientY - this.lastMouseY;
+        this.offsetX += deltaX;
+        this.offsetY += deltaY;
+        this.lastMouseX = event.clientX;
+        this.lastMouseY = event.clientY;
+        this.onTransformChange?.();
+      } else {
+        if (!this.currentDungeon || !isDungeonLocation(this.currentDungeon)) {
+          return;
+        }
+        const rect = this.canvas.getBoundingClientRect();
+        const canvasX = event.clientX - rect.left;
+        const canvasY = event.clientY - rect.top;
+        const worldX = (canvasX - this.offsetX) / this.scale;
+        const worldY = (canvasY - this.offsetY) / this.scale;
+        const gridCoord = this.pixelToGrid(worldX, worldY);
+        const door = this.findDoorAtPosition(gridCoord.x, gridCoord.y);
+        const feature = !door ? this.findFeatureAtPosition(gridCoord.x, gridCoord.y) : null;
+        let newHover = null;
+        if (door) {
+          newHover = { type: "door", data: door };
+        } else if (feature) {
+          newHover = { type: "feature", data: feature };
+        }
+        const hoverChanged = this.hoveredElement === null && newHover !== null || this.hoveredElement !== null && newHover === null || this.hoveredElement !== null && newHover !== null && (this.hoveredElement.type !== newHover.type || this.hoveredElement.type === "door" && newHover.type === "door" && this.hoveredElement.data.id !== newHover.data.id || this.hoveredElement.type === "feature" && newHover.type === "feature" && this.hoveredElement.data.id !== newHover.data.id);
+        if (hoverChanged) {
+          this.hoveredElement = newHover;
+          if (newHover) {
+            if (newHover.type === "door") {
+              this.onHoverChange?.({ type: "door", data: newHover.data, canvasX, canvasY });
+            } else {
+              this.onHoverChange?.({ type: "feature", data: newHover.data, canvasX, canvasY });
+            }
+          } else {
+            this.onHoverChange?.(null);
+          }
+        }
+      }
+    };
+    /**
+     * Handle mouse up for pan end
+     */
+    this.handleMouseUp = () => {
+      this.isPanning = false;
+      this.canvas.style.cursor = "grab";
+    };
+    /**
+     * Handle mouse leave to clear hover state
+     */
+    this.handleMouseLeave = () => {
+      this.isPanning = false;
+      this.canvas.style.cursor = "grab";
+      if (this.hoveredElement !== null) {
+        this.hoveredElement = null;
+        this.onHoverChange?.(null);
+      }
+    };
+    /**
+     * Handle click for room selection
+     */
+    this.handleClick = (event) => {
+      if (!this.currentDungeon || !isDungeonLocation(this.currentDungeon)) {
+        return;
+      }
+      const rect = this.canvas.getBoundingClientRect();
+      const canvasX = event.clientX - rect.left;
+      const canvasY = event.clientY - rect.top;
+      const worldX = (canvasX - this.offsetX) / this.scale;
+      const worldY = (canvasY - this.offsetY) / this.scale;
+      const gridCoord = this.pixelToGrid(worldX, worldY);
+      const clickedRoom = this.findRoomAtPosition(gridCoord.x, gridCoord.y);
+      if (clickedRoom) {
+        this.highlightedRoomId = this.highlightedRoomId === clickedRoom.id ? null : clickedRoom.id;
+      } else {
+        this.highlightedRoomId = null;
+      }
+      this.onTransformChange?.();
+    };
     this.canvas = canvas;
     const ctx = canvas.getContext("2d");
     if (!ctx) {
@@ -92675,6 +92795,19 @@ var GridRenderer = class {
     this.ctx = ctx;
     this.options = { ...DEFAULT_OPTIONS, ...options };
     this.updateCanvasSize();
+    this.initializeEventListeners();
+  }
+  /**
+   * Set callback for transform changes (zoom/pan)
+   */
+  setOnTransformChange(callback) {
+    this.onTransformChange = callback;
+  }
+  /**
+   * Set callback for hover changes (tooltips)
+   */
+  setOnHoverChange(callback) {
+    this.onHoverChange = callback;
   }
   /**
    * Render a dungeon location onto the canvas
@@ -92683,6 +92816,7 @@ var GridRenderer = class {
     if (!isDungeonLocation(dungeon)) {
       throw new Error("Cannot render non-dungeon location");
     }
+    this.currentDungeon = dungeon;
     this.options.gridWidth = dungeon.grid_width;
     this.options.gridHeight = dungeon.grid_height;
     if (dungeon.cell_size) {
@@ -92690,6 +92824,9 @@ var GridRenderer = class {
     }
     this.updateCanvasSize();
     this.clear();
+    this.ctx.save();
+    this.ctx.translate(this.offsetX, this.offsetY);
+    this.ctx.scale(this.scale, this.scale);
     if (this.options.showGrid) {
       this.renderGrid();
     }
@@ -92707,6 +92844,7 @@ var GridRenderer = class {
         }
       }
     }
+    this.ctx.restore();
   }
   /**
    * Clear the canvas
@@ -92731,6 +92869,31 @@ var GridRenderer = class {
       width: this.options.gridWidth * this.options.cellSize,
       height: this.options.gridHeight * this.options.cellSize
     };
+  }
+  /**
+   * Get current zoom scale
+   */
+  getScale() {
+    return this.scale;
+  }
+  /**
+   * Reset view to default (scale=1, centered)
+   */
+  resetView() {
+    this.scale = 1;
+    this.offsetX = 0;
+    this.offsetY = 0;
+  }
+  /**
+   * Destroy renderer and remove event listeners
+   */
+  destroy() {
+    this.canvas.removeEventListener("wheel", this.handleWheel);
+    this.canvas.removeEventListener("mousedown", this.handleMouseDown);
+    this.canvas.removeEventListener("mousemove", this.handleMouseMove);
+    this.canvas.removeEventListener("mouseup", this.handleMouseUp);
+    this.canvas.removeEventListener("mouseleave", this.handleMouseLeave);
+    this.canvas.removeEventListener("click", this.handleClick);
   }
   // ========================================================================
   // PRIVATE HELPERS
@@ -92814,11 +92977,21 @@ var GridRenderer = class {
       const pixelPos = this.gridToPixel(x, y);
       const pixelWidth = width * this.options.cellSize;
       const pixelHeight = height * this.options.cellSize;
-      this.ctx.fillStyle = colors[index % colors.length];
+      const isHighlighted = room.id === this.highlightedRoomId;
+      this.ctx.fillStyle = isHighlighted ? "#fffacd" : colors[index % colors.length];
       this.ctx.fillRect(pixelPos.x, pixelPos.y, pixelWidth, pixelHeight);
-      this.ctx.strokeStyle = "#666666";
-      this.ctx.lineWidth = 2;
+      if (isHighlighted) {
+        this.ctx.shadowColor = "#ffd700";
+        this.ctx.shadowBlur = 15;
+        this.ctx.strokeStyle = "#ffd700";
+        this.ctx.lineWidth = 4;
+      } else {
+        this.ctx.shadowBlur = 0;
+        this.ctx.strokeStyle = "#666666";
+        this.ctx.lineWidth = 2;
+      }
       this.ctx.strokeRect(pixelPos.x, pixelPos.y, pixelWidth, pixelHeight);
+      this.ctx.shadowBlur = 0;
       const centerX = pixelPos.x + pixelWidth / 2;
       const centerY = pixelPos.y + pixelHeight / 2;
       this.ctx.fillStyle = "#000000";
@@ -92882,6 +93055,66 @@ var GridRenderer = class {
     });
   }
   /**
+   * Initialize event listeners for zoom/pan/click/hover
+   */
+  initializeEventListeners() {
+    this.canvas.addEventListener("wheel", this.handleWheel);
+    this.canvas.addEventListener("mousedown", this.handleMouseDown);
+    this.canvas.addEventListener("mousemove", this.handleMouseMove);
+    this.canvas.addEventListener("mouseup", this.handleMouseUp);
+    this.canvas.addEventListener("mouseleave", this.handleMouseLeave);
+    this.canvas.addEventListener("click", this.handleClick);
+  }
+  /**
+   * Find room at grid position
+   */
+  findRoomAtPosition(gridX, gridY) {
+    if (!this.currentDungeon || !isDungeonLocation(this.currentDungeon) || !this.currentDungeon.rooms) {
+      return null;
+    }
+    for (const room of this.currentDungeon.rooms) {
+      const { x, y, width, height } = room.grid_bounds;
+      if (gridX >= x && gridX < x + width && gridY >= y && gridY < y + height) {
+        return room;
+      }
+    }
+    return null;
+  }
+  /**
+   * Find door at grid position (searches all rooms)
+   */
+  findDoorAtPosition(gridX, gridY) {
+    if (!this.currentDungeon || !isDungeonLocation(this.currentDungeon) || !this.currentDungeon.rooms) {
+      return null;
+    }
+    for (const room of this.currentDungeon.rooms) {
+      if (!room.doors || room.doors.length === 0) continue;
+      for (const door of room.doors) {
+        if (door.position.x === gridX && door.position.y === gridY) {
+          return door;
+        }
+      }
+    }
+    return null;
+  }
+  /**
+   * Find feature at grid position (searches all rooms)
+   */
+  findFeatureAtPosition(gridX, gridY) {
+    if (!this.currentDungeon || !isDungeonLocation(this.currentDungeon) || !this.currentDungeon.rooms) {
+      return null;
+    }
+    for (const room of this.currentDungeon.rooms) {
+      if (!room.features || room.features.length === 0) continue;
+      for (const feature of room.features) {
+        if (feature.position.x === gridX && feature.position.y === gridY) {
+          return feature;
+        }
+      }
+    }
+    return null;
+  }
+  /**
    * Convert grid coordinates to pixel coordinates
    */
   gridToPixel(gridX, gridY) {
@@ -92913,6 +93146,7 @@ var DungeonView = class extends import_obsidian40.ItemView {
     this.renderer = null;
     this.canvas = null;
     this.controlsContainer = null;
+    this.tooltipDiv = null;
     // View options
     this.showGrid = true;
     this.showCoordinates = false;
@@ -92934,6 +93168,19 @@ var DungeonView = class extends import_obsidian40.ItemView {
     this.renderControls();
     const canvasContainer = container.createDiv({ cls: "sm-dungeon-canvas-container" });
     this.canvas = canvasContainer.createEl("canvas", { cls: "sm-dungeon-canvas" });
+    this.canvas.style.cursor = "grab";
+    this.tooltipDiv = container.createDiv({ cls: "sm-dungeon-tooltip" });
+    this.tooltipDiv.style.display = "none";
+    this.tooltipDiv.style.position = "absolute";
+    this.tooltipDiv.style.pointerEvents = "none";
+    this.tooltipDiv.style.background = "rgba(0, 0, 0, 0.85)";
+    this.tooltipDiv.style.color = "white";
+    this.tooltipDiv.style.padding = "8px 12px";
+    this.tooltipDiv.style.borderRadius = "4px";
+    this.tooltipDiv.style.fontSize = "12px";
+    this.tooltipDiv.style.zIndex = "1000";
+    this.tooltipDiv.style.maxWidth = "300px";
+    this.tooltipDiv.style.whiteSpace = "pre-wrap";
     if (this.dungeon && isDungeonLocation(this.dungeon)) {
       this.initializeRenderer();
     }
@@ -92942,6 +93189,7 @@ var DungeonView = class extends import_obsidian40.ItemView {
     this.renderer = null;
     this.canvas = null;
     this.controlsContainer = null;
+    this.tooltipDiv = null;
     this.dungeon = null;
   }
   /**
@@ -92971,6 +93219,14 @@ var DungeonView = class extends import_obsidian40.ItemView {
         cellSize: this.dungeon.cell_size || 40,
         showGrid: this.showGrid,
         showCoordinates: this.showCoordinates
+      });
+      this.renderer.setOnTransformChange(() => {
+        if (this.dungeon && isDungeonLocation(this.dungeon)) {
+          this.renderer?.render(this.dungeon);
+        }
+      });
+      this.renderer.setOnHoverChange((element) => {
+        this.updateTooltip(element);
       });
       this.renderer.render(this.dungeon);
     } catch (error) {
@@ -93019,6 +93275,64 @@ var DungeonView = class extends import_obsidian40.ItemView {
       showCoordinates: this.showCoordinates
     });
     this.renderer.render(this.dungeon);
+  }
+  /**
+   * Update tooltip visibility and content based on hovered element
+   */
+  updateTooltip(element) {
+    if (!this.tooltipDiv) return;
+    if (!element) {
+      this.tooltipDiv.style.display = "none";
+      return;
+    }
+    let content = "";
+    if (element.type === "door") {
+      const door = element.data;
+      content = `\u{1F6AA} Door ${door.id}
+`;
+      if (door.leads_to) {
+        content += `Leads to: ${door.leads_to}
+`;
+      }
+      if (door.locked) {
+        content += "\u{1F512} Locked\n";
+      }
+      if (door.description) {
+        content += `
+${door.description}`;
+      }
+    } else if (element.type === "feature") {
+      const feature = element.data;
+      const typeLabel = feature.type.charAt(0).toUpperCase() + feature.type.slice(1);
+      content = `${this.getFeatureIcon(feature.type)} Feature ${feature.id} (${typeLabel})
+`;
+      if (feature.description) {
+        content += `
+${feature.description}`;
+      }
+    }
+    this.tooltipDiv.textContent = content;
+    const offsetX = 15;
+    const offsetY = 15;
+    this.tooltipDiv.style.left = `${element.canvasX + offsetX}px`;
+    this.tooltipDiv.style.top = `${element.canvasY + offsetY}px`;
+    this.tooltipDiv.style.display = "block";
+  }
+  /**
+   * Get icon for feature type
+   */
+  getFeatureIcon(type) {
+    switch (type) {
+      case "secret":
+        return "\u{1F50D}";
+      case "trap":
+      case "hazard":
+        return "\u26A0\uFE0F";
+      case "treasure":
+        return "\u{1F4B0}";
+      default:
+        return "\u{1F4E6}";
+    }
   }
 };
 
