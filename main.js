@@ -92780,11 +92780,20 @@ var GridRenderer = class {
       const worldY = (canvasY - this.offsetY) / this.scale;
       const gridCoord = this.pixelToGrid(worldX, worldY);
       const clickedRoom = this.findRoomAtPosition(gridCoord.x, gridCoord.y);
+      let selectedRoom = null;
       if (clickedRoom) {
-        this.highlightedRoomId = this.highlightedRoomId === clickedRoom.id ? null : clickedRoom.id;
+        if (this.highlightedRoomId === clickedRoom.id) {
+          this.highlightedRoomId = null;
+          selectedRoom = null;
+        } else {
+          this.highlightedRoomId = clickedRoom.id;
+          selectedRoom = clickedRoom;
+        }
       } else {
         this.highlightedRoomId = null;
+        selectedRoom = null;
       }
+      this.onRoomSelect?.(selectedRoom);
       this.onTransformChange?.();
     };
     this.canvas = canvas;
@@ -92808,6 +92817,12 @@ var GridRenderer = class {
    */
   setOnHoverChange(callback) {
     this.onHoverChange = callback;
+  }
+  /**
+   * Set callback for room selection changes (detail panel)
+   */
+  setOnRoomSelect(callback) {
+    this.onRoomSelect = callback;
   }
   /**
    * Render a dungeon location onto the canvas
@@ -93147,6 +93162,7 @@ var DungeonView = class extends import_obsidian40.ItemView {
     this.canvas = null;
     this.controlsContainer = null;
     this.tooltipDiv = null;
+    this.detailPanel = null;
     // View options
     this.showGrid = true;
     this.showCoordinates = false;
@@ -93181,6 +93197,18 @@ var DungeonView = class extends import_obsidian40.ItemView {
     this.tooltipDiv.style.zIndex = "1000";
     this.tooltipDiv.style.maxWidth = "300px";
     this.tooltipDiv.style.whiteSpace = "pre-wrap";
+    this.detailPanel = container.createDiv({ cls: "sm-dungeon-detail-panel" });
+    this.detailPanel.style.display = "none";
+    this.detailPanel.style.position = "absolute";
+    this.detailPanel.style.right = "0";
+    this.detailPanel.style.top = "0";
+    this.detailPanel.style.width = "300px";
+    this.detailPanel.style.height = "100%";
+    this.detailPanel.style.background = "var(--background-primary)";
+    this.detailPanel.style.borderLeft = "1px solid var(--background-modifier-border)";
+    this.detailPanel.style.padding = "16px";
+    this.detailPanel.style.overflowY = "auto";
+    this.detailPanel.style.zIndex = "100";
     if (this.dungeon && isDungeonLocation(this.dungeon)) {
       this.initializeRenderer();
     }
@@ -93190,6 +93218,7 @@ var DungeonView = class extends import_obsidian40.ItemView {
     this.canvas = null;
     this.controlsContainer = null;
     this.tooltipDiv = null;
+    this.detailPanel = null;
     this.dungeon = null;
   }
   /**
@@ -93223,10 +93252,14 @@ var DungeonView = class extends import_obsidian40.ItemView {
       this.renderer.setOnTransformChange(() => {
         if (this.dungeon && isDungeonLocation(this.dungeon)) {
           this.renderer?.render(this.dungeon);
+          this.renderControls();
         }
       });
       this.renderer.setOnHoverChange((element) => {
         this.updateTooltip(element);
+      });
+      this.renderer.setOnRoomSelect((room) => {
+        this.updateDetailPanel(room);
       });
       this.renderer.render(this.dungeon);
     } catch (error) {
@@ -93256,6 +93289,30 @@ var DungeonView = class extends import_obsidian40.ItemView {
       this.showCoordinates = !this.showCoordinates;
       this.updateRenderer();
       this.renderControls();
+    });
+    const zoomIndicator = this.controlsContainer.createEl("span", {
+      cls: "sm-dungeon-zoom-indicator"
+    });
+    zoomIndicator.style.padding = "4px 12px";
+    zoomIndicator.style.fontSize = "12px";
+    zoomIndicator.style.color = "var(--text-muted)";
+    zoomIndicator.style.marginLeft = "8px";
+    if (this.renderer) {
+      const scale = this.renderer.getScale();
+      zoomIndicator.textContent = `${Math.round(scale * 100)}%`;
+    } else {
+      zoomIndicator.textContent = "100%";
+    }
+    const resetBtn = this.controlsContainer.createEl("button", {
+      cls: "sm-dungeon-control",
+      text: "\u{1F504} Reset View"
+    });
+    resetBtn.addEventListener("click", () => {
+      if (this.renderer && this.dungeon && isDungeonLocation(this.dungeon)) {
+        this.renderer.resetView();
+        this.renderer.render(this.dungeon);
+        this.renderControls();
+      }
     });
     const exportBtn = this.controlsContainer.createEl("button", {
       cls: "sm-dungeon-control",
@@ -93333,6 +93390,107 @@ ${feature.description}`;
       default:
         return "\u{1F4E6}";
     }
+  }
+  /**
+   * Update detail panel with room information
+   */
+  updateDetailPanel(room) {
+    if (!this.detailPanel) return;
+    if (!room) {
+      this.detailPanel.style.display = "none";
+      return;
+    }
+    this.detailPanel.empty();
+    const header = this.detailPanel.createDiv({ cls: "sm-dungeon-detail-header" });
+    header.style.display = "flex";
+    header.style.justifyContent = "space-between";
+    header.style.alignItems = "center";
+    header.style.marginBottom = "16px";
+    const closeBtn = header.createEl("button", { text: "\u2715", cls: "sm-dungeon-detail-close" });
+    closeBtn.style.background = "none";
+    closeBtn.style.border = "none";
+    closeBtn.style.fontSize = "20px";
+    closeBtn.style.cursor = "pointer";
+    closeBtn.style.padding = "0";
+    closeBtn.style.marginLeft = "auto";
+    closeBtn.addEventListener("click", () => {
+      this.detailPanel.style.display = "none";
+      if (this.dungeon && isDungeonLocation(this.dungeon)) {
+        this.renderer?.render(this.dungeon);
+      }
+    });
+    const title = this.detailPanel.createEl("h3", { text: `Room ${room.id}` });
+    title.style.marginTop = "0";
+    title.style.marginBottom = "8px";
+    if (room.name) {
+      const subtitle = this.detailPanel.createEl("h4", { text: room.name });
+      subtitle.style.marginTop = "0";
+      subtitle.style.marginBottom = "16px";
+      subtitle.style.color = "var(--text-muted)";
+    }
+    const bounds = this.detailPanel.createEl("p");
+    bounds.style.fontSize = "12px";
+    bounds.style.color = "var(--text-muted)";
+    bounds.style.marginBottom = "16px";
+    bounds.textContent = `Bounds: (${room.grid_bounds.x},${room.grid_bounds.y}) \u2192 (${room.grid_bounds.width}\xD7${room.grid_bounds.height})`;
+    if (room.description) {
+      const descHeader = this.detailPanel.createEl("h5", { text: "Description" });
+      descHeader.style.marginTop = "16px";
+      descHeader.style.marginBottom = "8px";
+      const desc = this.detailPanel.createEl("p", { text: room.description });
+      desc.style.marginBottom = "16px";
+    }
+    if (room.doors && room.doors.length > 0) {
+      const doorsHeader = this.detailPanel.createEl("h5", { text: "Doors" });
+      doorsHeader.style.marginTop = "16px";
+      doorsHeader.style.marginBottom = "8px";
+      const doorsList = this.detailPanel.createEl("ul");
+      doorsList.style.marginTop = "0";
+      doorsList.style.paddingLeft = "20px";
+      for (const door of room.doors) {
+        const doorItem = doorsList.createEl("li");
+        doorItem.style.marginBottom = "8px";
+        let doorText = `\u{1F6AA} ${door.id} (${door.position.x},${door.position.y})`;
+        if (door.leads_to) {
+          doorText += ` \u2192 ${door.leads_to}`;
+        }
+        if (door.locked) {
+          doorText += " \u{1F512}";
+        }
+        doorItem.textContent = doorText;
+        if (door.description) {
+          const doorDesc = doorItem.createDiv();
+          doorDesc.style.fontSize = "11px";
+          doorDesc.style.color = "var(--text-muted)";
+          doorDesc.style.marginTop = "4px";
+          doorDesc.textContent = door.description;
+        }
+      }
+    }
+    if (room.features && room.features.length > 0) {
+      const featuresHeader = this.detailPanel.createEl("h5", { text: "Features" });
+      featuresHeader.style.marginTop = "16px";
+      featuresHeader.style.marginBottom = "8px";
+      const featuresList = this.detailPanel.createEl("ul");
+      featuresList.style.marginTop = "0";
+      featuresList.style.paddingLeft = "20px";
+      for (const feature of room.features) {
+        const featureItem = featuresList.createEl("li");
+        featureItem.style.marginBottom = "8px";
+        const icon = this.getFeatureIcon(feature.type);
+        const typeLabel = feature.type.charAt(0).toUpperCase() + feature.type.slice(1);
+        let featureText = `${icon} ${feature.id} (${typeLabel}, ${feature.position.x},${feature.position.y})`;
+        featureItem.textContent = featureText;
+        if (feature.description) {
+          const featureDesc = featureItem.createDiv();
+          featureDesc.style.fontSize = "11px";
+          featureDesc.style.color = "var(--text-muted)";
+          featureDesc.style.marginTop = "4px";
+          featureDesc.textContent = feature.description;
+        }
+      }
+    }
+    this.detailPanel.style.display = "block";
   }
 };
 

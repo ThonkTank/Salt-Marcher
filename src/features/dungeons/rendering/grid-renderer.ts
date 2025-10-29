@@ -56,6 +56,9 @@ export class GridRenderer {
     private hoveredElement: { type: "door"; data: DungeonDoor } | { type: "feature"; data: DungeonFeature } | null = null;
     private onHoverChange?: (element: { type: "door"; data: DungeonDoor; canvasX: number; canvasY: number } | { type: "feature"; data: DungeonFeature; canvasX: number; canvasY: number } | null) => void;
 
+    // Room selection callback
+    private onRoomSelect?: (room: DungeonRoom | null) => void;
+
     constructor(canvas: HTMLCanvasElement, options: Partial<GridRendererOptions> = {}) {
         this.canvas = canvas;
         const ctx = canvas.getContext("2d");
@@ -80,6 +83,13 @@ export class GridRenderer {
      */
     setOnHoverChange(callback: (element: { type: "door"; data: DungeonDoor; canvasX: number; canvasY: number } | { type: "feature"; data: DungeonFeature; canvasX: number; canvasY: number } | null) => void): void {
         this.onHoverChange = callback;
+    }
+
+    /**
+     * Set callback for room selection changes (detail panel)
+     */
+    setOnRoomSelect(callback: (room: DungeonRoom | null) => void): void {
+        this.onRoomSelect = callback;
     }
 
     /**
@@ -552,13 +562,25 @@ export class GridRenderer {
         // Find clicked room
         const clickedRoom = this.findRoomAtPosition(gridCoord.x, gridCoord.y);
 
+        let selectedRoom: DungeonRoom | null = null;
+
         if (clickedRoom) {
             // Toggle highlight: if same room, clear; otherwise highlight new room
-            this.highlightedRoomId = this.highlightedRoomId === clickedRoom.id ? null : clickedRoom.id;
+            if (this.highlightedRoomId === clickedRoom.id) {
+                this.highlightedRoomId = null;
+                selectedRoom = null;
+            } else {
+                this.highlightedRoomId = clickedRoom.id;
+                selectedRoom = clickedRoom;
+            }
         } else {
             // Clicked on background, clear highlight
             this.highlightedRoomId = null;
+            selectedRoom = null;
         }
+
+        // Notify view of room selection change
+        this.onRoomSelect?.(selectedRoom);
 
         // Re-render to show highlight
         this.onTransformChange?.();

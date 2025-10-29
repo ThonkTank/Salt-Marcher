@@ -20,6 +20,7 @@ export class DungeonView extends ItemView {
     private canvas: HTMLCanvasElement | null = null;
     private controlsContainer: HTMLElement | null = null;
     private tooltipDiv: HTMLElement | null = null;
+    private detailPanel: HTMLElement | null = null;
 
     // View options
     private showGrid = true;
@@ -69,6 +70,20 @@ export class DungeonView extends ItemView {
         this.tooltipDiv.style.maxWidth = "300px";
         this.tooltipDiv.style.whiteSpace = "pre-wrap";
 
+        // Create detail panel (initially hidden)
+        this.detailPanel = container.createDiv({ cls: "sm-dungeon-detail-panel" });
+        this.detailPanel.style.display = "none";
+        this.detailPanel.style.position = "absolute";
+        this.detailPanel.style.right = "0";
+        this.detailPanel.style.top = "0";
+        this.detailPanel.style.width = "300px";
+        this.detailPanel.style.height = "100%";
+        this.detailPanel.style.background = "var(--background-primary)";
+        this.detailPanel.style.borderLeft = "1px solid var(--background-modifier-border)";
+        this.detailPanel.style.padding = "16px";
+        this.detailPanel.style.overflowY = "auto";
+        this.detailPanel.style.zIndex = "100";
+
         // Initialize renderer if dungeon data is available
         if (this.dungeon && isDungeonLocation(this.dungeon)) {
             this.initializeRenderer();
@@ -80,6 +95,7 @@ export class DungeonView extends ItemView {
         this.canvas = null;
         this.controlsContainer = null;
         this.tooltipDiv = null;
+        this.detailPanel = null;
         this.dungeon = null;
     }
 
@@ -121,12 +137,18 @@ export class DungeonView extends ItemView {
             this.renderer.setOnTransformChange(() => {
                 if (this.dungeon && isDungeonLocation(this.dungeon)) {
                     this.renderer?.render(this.dungeon);
+                    this.renderControls(); // Update zoom indicator
                 }
             });
 
             // Register callback for hover changes (tooltips)
             this.renderer.setOnHoverChange((element) => {
                 this.updateTooltip(element);
+            });
+
+            // Register callback for room selection (detail panel)
+            this.renderer.setOnRoomSelect((room) => {
+                this.updateDetailPanel(room);
             });
 
             this.renderer.render(this.dungeon);
@@ -165,6 +187,36 @@ export class DungeonView extends ItemView {
             this.showCoordinates = !this.showCoordinates;
             this.updateRenderer();
             this.renderControls();
+        });
+
+        // Zoom indicator
+        const zoomIndicator = this.controlsContainer.createEl("span", {
+            cls: "sm-dungeon-zoom-indicator",
+        });
+        zoomIndicator.style.padding = "4px 12px";
+        zoomIndicator.style.fontSize = "12px";
+        zoomIndicator.style.color = "var(--text-muted)";
+        zoomIndicator.style.marginLeft = "8px";
+
+        if (this.renderer) {
+            const scale = this.renderer.getScale();
+            zoomIndicator.textContent = `${Math.round(scale * 100)}%`;
+        } else {
+            zoomIndicator.textContent = "100%";
+        }
+
+        // Reset view button
+        const resetBtn = this.controlsContainer.createEl("button", {
+            cls: "sm-dungeon-control",
+            text: "🔄 Reset View",
+        });
+
+        resetBtn.addEventListener("click", () => {
+            if (this.renderer && this.dungeon && isDungeonLocation(this.dungeon)) {
+                this.renderer.resetView();
+                this.renderer.render(this.dungeon);
+                this.renderControls(); // Update zoom indicator
+            }
         });
 
         // Export button (future: PNG snapshot)
@@ -254,6 +306,140 @@ export class DungeonView extends ItemView {
             default:
                 return "📦";
         }
+    }
+
+    /**
+     * Update detail panel with room information
+     */
+    private updateDetailPanel(room: any | null): void {
+        if (!this.detailPanel) return;
+
+        if (!room) {
+            // Hide panel
+            this.detailPanel.style.display = "none";
+            return;
+        }
+
+        // Clear panel
+        this.detailPanel.empty();
+
+        // Create close button
+        const header = this.detailPanel.createDiv({ cls: "sm-dungeon-detail-header" });
+        header.style.display = "flex";
+        header.style.justifyContent = "space-between";
+        header.style.alignItems = "center";
+        header.style.marginBottom = "16px";
+
+        const closeBtn = header.createEl("button", { text: "✕", cls: "sm-dungeon-detail-close" });
+        closeBtn.style.background = "none";
+        closeBtn.style.border = "none";
+        closeBtn.style.fontSize = "20px";
+        closeBtn.style.cursor = "pointer";
+        closeBtn.style.padding = "0";
+        closeBtn.style.marginLeft = "auto";
+        closeBtn.addEventListener("click", () => {
+            this.detailPanel!.style.display = "none";
+            // Clear highlight in renderer
+            if (this.dungeon && isDungeonLocation(this.dungeon)) {
+                this.renderer?.render(this.dungeon);
+            }
+        });
+
+        // Room title
+        const title = this.detailPanel.createEl("h3", { text: `Room ${room.id}` });
+        title.style.marginTop = "0";
+        title.style.marginBottom = "8px";
+
+        if (room.name) {
+            const subtitle = this.detailPanel.createEl("h4", { text: room.name });
+            subtitle.style.marginTop = "0";
+            subtitle.style.marginBottom = "16px";
+            subtitle.style.color = "var(--text-muted)";
+        }
+
+        // Grid bounds
+        const bounds = this.detailPanel.createEl("p");
+        bounds.style.fontSize = "12px";
+        bounds.style.color = "var(--text-muted)";
+        bounds.style.marginBottom = "16px";
+        bounds.textContent = `Bounds: (${room.grid_bounds.x},${room.grid_bounds.y}) → (${room.grid_bounds.width}×${room.grid_bounds.height})`;
+
+        // Description
+        if (room.description) {
+            const descHeader = this.detailPanel.createEl("h5", { text: "Description" });
+            descHeader.style.marginTop = "16px";
+            descHeader.style.marginBottom = "8px";
+
+            const desc = this.detailPanel.createEl("p", { text: room.description });
+            desc.style.marginBottom = "16px";
+        }
+
+        // Doors
+        if (room.doors && room.doors.length > 0) {
+            const doorsHeader = this.detailPanel.createEl("h5", { text: "Doors" });
+            doorsHeader.style.marginTop = "16px";
+            doorsHeader.style.marginBottom = "8px";
+
+            const doorsList = this.detailPanel.createEl("ul");
+            doorsList.style.marginTop = "0";
+            doorsList.style.paddingLeft = "20px";
+
+            for (const door of room.doors) {
+                const doorItem = doorsList.createEl("li");
+                doorItem.style.marginBottom = "8px";
+
+                let doorText = `🚪 ${door.id} (${door.position.x},${door.position.y})`;
+                if (door.leads_to) {
+                    doorText += ` → ${door.leads_to}`;
+                }
+                if (door.locked) {
+                    doorText += " 🔒";
+                }
+
+                doorItem.textContent = doorText;
+
+                if (door.description) {
+                    const doorDesc = doorItem.createDiv();
+                    doorDesc.style.fontSize = "11px";
+                    doorDesc.style.color = "var(--text-muted)";
+                    doorDesc.style.marginTop = "4px";
+                    doorDesc.textContent = door.description;
+                }
+            }
+        }
+
+        // Features
+        if (room.features && room.features.length > 0) {
+            const featuresHeader = this.detailPanel.createEl("h5", { text: "Features" });
+            featuresHeader.style.marginTop = "16px";
+            featuresHeader.style.marginBottom = "8px";
+
+            const featuresList = this.detailPanel.createEl("ul");
+            featuresList.style.marginTop = "0";
+            featuresList.style.paddingLeft = "20px";
+
+            for (const feature of room.features) {
+                const featureItem = featuresList.createEl("li");
+                featureItem.style.marginBottom = "8px";
+
+                const icon = this.getFeatureIcon(feature.type);
+                const typeLabel = feature.type.charAt(0).toUpperCase() + feature.type.slice(1);
+                let featureText = `${icon} ${feature.id} (${typeLabel}, ${feature.position.x},${feature.position.y})`;
+
+                featureItem.textContent = featureText;
+
+                if (feature.description) {
+                    const featureDesc = featureItem.createDiv();
+                    featureDesc.style.fontSize = "11px";
+                    featureDesc.style.color = "var(--text-muted)";
+                    featureDesc.style.marginTop = "4px";
+                    featureDesc.textContent = feature.description;
+                }
+            }
+        }
+
+        // Show panel
+        this.detailPanel.style.display = "block";
     }
 }
 
