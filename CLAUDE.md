@@ -560,60 +560,57 @@ test('End-to-End Generation', () => {
 - ❌ **Weather/Time-of-Day Modifiers** (Nacht-Encounters, Sturm-Malus) - Phase 4
 - ❌ **Encounter-Presets** (Hausregeln per Markdown) - Phase 5
 
-#### Nächste Schritte (Priorisiert)
+#### Nächste Schritte (Aktualisiert - 40% verbleibend)
 
-**Schritt 1: UI-Komponenten erstellen** (Geschätzt: 1-2h)
-- **Ziel:** Generate-Button und Difficulty-Dropdown im Encounter-View
-- **Dateien:** `src/workmodes/encounter/view.ts`
-- **Tasks:**
-  1. Difficulty-Dropdown hinzufügen (Easy/Medium/Hard/Deadly, default: Medium)
-  2. "Generate Random Encounter" Button rechts vom Dropdown
-  3. Button disabled wenn kein Travel-Event (kein Hex-Kontext)
-  4. Tooltip: "Generate encounter based on current hex"
-  5. Styling: Primary-Button (blau), Icon optional (🎲)
+**✅ Abgeschlossen:**
+- ~~Schritt 1: UI-Komponenten erstellen~~ (`creature-list.ts` - Difficulty-Dropdown + Generate-Button)
+- ~~Schritt 2: Generator Integration~~ (`presenter.ts` - `generateEncounter()` Methode)
+- ~~Schritt 3a: Loading States~~ (Button disabled während Generation)
 
-**Schritt 2: Generator Integration** (Geschätzt: 1-2h)
-- **Ziel:** Generator mit Encounter-Presenter verbinden
-- **Dateien:** `src/workmodes/encounter/presenter.ts`, `src/workmodes/encounter/view.ts`
-- **Tasks:**
-  1. `generateEncounter()` Methode in Presenter hinzufügen
-  2. Hex-Kontext aus Travel-Event lesen (Faction, Terrain, Region)
-  3. Creatures aus Library laden (Repository-Call)
-  4. Generator aufrufen mit Context + Options
-  5. Generierte Creatures via `addCreature()` hinzufügen
-  6. Bestehende Creatures vorher clearen (mit Confirmation-Modal)
+**⏳ Verbleibend (Geschätzt: 1-1.5h):**
 
-**Schritt 3: Loading & Error States** (Geschätzt: 30min)
-- **Ziel:** Feedback während Generation
-- **Tasks:**
-  1. Loading-State: Button disabled + Spinner während Generation
-  2. Success: Toast "Generated encounter: 3 creatures, 450 XP"
-  3. Error: Toast "Failed to generate: No matching creatures found"
-  4. Error: Toast "No hex context available (travel required)"
+**Schritt 3b: workspace-view.ts Wiring** (30min)
+- **Ziel:** `onGenerateEncounter` Callback mit Presenter verbinden
+- **Datei:** `src/workmodes/encounter/workspace-view.ts`
+- **Implementation:**
+  ```typescript
+  // In renderShell() beim EncounterCreatureList init:
+  onGenerateEncounter: (difficulty) => this.handleGenerateEncounter(difficulty)
 
-**Schritt 4: Confirmation-Modal** (Geschätzt: 30min)
-- **Ziel:** Warnung bei überschreiben bestehender Creatures
-- **Komponente:** Obsidian Modal
+  // Neue Methode:
+  private async handleGenerateEncounter(difficulty: Difficulty) {
+      // 1. Show loading
+      // 2. Check existing creatures → show confirmation modal
+      // 3. Call presenter.generateEncounter()
+      // 4. Show success/error toast
+      // 5. Hide loading
+  }
+  ```
+
+**Schritt 4: Confirmation-Modal** (20min)
+- **Komponente:** Obsidian Modal subclass
+- **Code:**
+  ```typescript
+  class ConfirmReplaceModal extends Modal {
+      constructor(app: App, creatureCount: number, onConfirm: () => void) { ... }
+  }
+  ```
 - **Text:** "Replace existing encounter? (X creatures will be removed)"
-- **Buttons:** "Cancel" (grey), "Replace" (red)
-- **Logic:** Nur zeigen wenn `creatures.length > 0`
+- **Buttons:** "Cancel" (default), "Replace" (warning style)
 
-**Schritt 5: Integration-Test** (Geschätzt: 1h)
-- **Ziel:** End-to-End Flow testen
-- **Datei:** `devkit/testing/integration/encounter/generator.integration.test.ts`
-- **Test-Cases:**
-  1. Generate mit Faction+Terrain+Region Context
-  2. Generate ohne Context (Error)
-  3. Generate mit leerer Library (Error)
-  4. Generate ersetzt bestehende Creatures
-  5. Difficulty-Änderung beeinflusst XP-Budget
+**Schritt 5: Toast-Notifications** (10min)
+- **Success:** `new Notice("✅ Generated encounter: X creatures, Y XP")`
+- **Errors:**
+  - "❌ No party members configured"
+  - "❌ No matching creatures found"
+  - "❌ Failed to generate: [error]"
 
-**Schritt 6: DevKit Integration** (Optional, Geschätzt: 30min)
-- **Ziel:** Generator via DevKit CLI testbar machen
-- **Command:** `./devkit encounter generate --partyLevel 3 --difficulty medium`
-- **Nutzen:** Manuelles Testen ohne UI
+**Schritt 6: Test-Validierung** (20min)
+- Alle Unit-Tests laufen lassen (sollten weiterhin 222/224 passing sein)
+- Manuelles Testen via Build + Plugin-Reload
+- Optional: Integration-Test schreiben (kann später erfolgen)
 
-**Gesamt-Schätzung:** 4-6 Stunden für komplette Phase 2.6
+**Gesamt-Schätzung:** 1-1.5 Stunden bis Phase 2.6 100% ✅
 
 ### Phase 2.5 – Faction Filtering ⏳ QoL
 Creature-Liste mit Faction-Filter-Dropdown, Relevance-Scoring (Exact > Partial > No match). Optional, da Random Generator bereits filtert.

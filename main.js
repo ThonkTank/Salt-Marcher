@@ -7500,7 +7500,7 @@ function createId(prefix) {
   const random = Math.random().toString(36).slice(2, 8);
   return `${prefix}-${Date.now().toString(36)}-${random}`;
 }
-var import_obsidian19, EncounterWorkspaceView, numberFormatter;
+var import_obsidian19, EncounterWorkspaceView, ConfirmReplaceModal, numberFormatter;
 var init_workspace_view = __esm({
   "src/workmodes/encounter/workspace-view.ts"() {
     "use strict";
@@ -7584,7 +7584,8 @@ var init_workspace_view = __esm({
         const creaturesLayout = creaturesSection.createDiv({ cls: "sm-encounter-creatures-layout" });
         const creatureListContainer = creaturesLayout.createDiv({ cls: "sm-encounter-creature-list-container" });
         this.creatureList = new EncounterCreatureList(this.app, creatureListContainer, {
-          onAddCreature: (creature) => this.handleAddCreature(creature)
+          onAddCreature: (creature) => this.handleAddCreature(creature),
+          onGenerateEncounter: (difficulty) => void this.handleGenerateEncounter(difficulty)
         });
         void this.creatureList.mount();
         const compositionContainer = creaturesLayout.createDiv({ cls: "sm-encounter-composition-container" });
@@ -8593,6 +8594,82 @@ var init_workspace_view = __esm({
           statblockPath: creature.path
         });
       }
+      async handleGenerateEncounter(difficulty) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        this.creatureList?.setGenerateButtonState(true);
+        try {
+          const state = presenter.getState();
+          const session = state.session;
+          const hasCreatures = session?.creatures && session.creatures.length > 0;
+          if (hasCreatures) {
+            const confirmed = await this.showConfirmReplaceModal(session.creatures.length);
+            if (!confirmed) {
+              this.creatureList?.setGenerateButtonState(false);
+              return;
+            }
+          }
+          const result = await presenter.generateEncounter(difficulty, this.app, hasCreatures);
+          if (result.success) {
+            const xpByCr = {
+              0: 10,
+              0.125: 25,
+              0.25: 50,
+              0.5: 100,
+              1: 200,
+              2: 450,
+              3: 700,
+              4: 1100,
+              5: 1800,
+              6: 2300,
+              7: 2900,
+              8: 3900,
+              9: 5e3,
+              10: 5900,
+              11: 7200,
+              12: 8400,
+              13: 1e4,
+              14: 11500,
+              15: 13e3,
+              16: 15e3,
+              17: 18e3,
+              18: 2e4,
+              19: 22e3,
+              20: 25e3,
+              21: 33e3,
+              22: 41e3,
+              23: 5e4,
+              24: 62e3,
+              25: 75e3,
+              26: 9e4,
+              27: 105e3,
+              28: 12e4,
+              29: 135e3,
+              30: 155e3
+            };
+            const totalXP = result.creatures.reduce((sum, c) => {
+              return sum + (xpByCr[c.cr] ?? 0) * c.count;
+            }, 0);
+            const totalCreatureCount = result.creatures.reduce((sum, c) => sum + c.count, 0);
+            new import_obsidian19.Notice(`\u2705 Generated encounter: ${totalCreatureCount} creatures, ${totalXP} XP`);
+          } else {
+            new import_obsidian19.Notice(`\u274C ${result.error}`);
+          }
+        } catch (err) {
+          logger.error("[workspace-view] Generate encounter failed", err);
+          new import_obsidian19.Notice(`\u274C Failed to generate encounter: ${err instanceof Error ? err.message : "Unknown error"}`);
+        } finally {
+          this.creatureList?.setGenerateButtonState(false);
+        }
+      }
+      async showConfirmReplaceModal(creatureCount) {
+        return new Promise((resolve) => {
+          const modal = new ConfirmReplaceModal(this.app, creatureCount, (confirmed) => {
+            resolve(confirmed);
+          });
+          modal.open();
+        });
+      }
       handleUpdateCreatureCount(id, count) {
         const presenter = this.presenter;
         if (!presenter) return;
@@ -8647,6 +8724,52 @@ var init_workspace_view = __esm({
         const presenter = this.presenter;
         if (!presenter) return;
         presenter.sortParticipantsByInitiative();
+      }
+    };
+    ConfirmReplaceModal = class extends import_obsidian19.Modal {
+      constructor(app, creatureCount, onConfirm) {
+        super(app);
+        this.creatureCount = creatureCount;
+        this.onConfirm = onConfirm;
+      }
+      onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        contentEl.addClass("sm-confirm-modal");
+        contentEl.createEl("h2", { text: "Replace Existing Encounter?" });
+        const message = contentEl.createDiv({ cls: "sm-confirm-message" });
+        message.createEl("p", {
+          text: `You have ${this.creatureCount} creature${this.creatureCount === 1 ? "" : "s"} in the current encounter.`
+        });
+        message.createEl("p", {
+          text: "Generating a new encounter will remove all existing creatures."
+        });
+        message.createEl("p", {
+          text: "Do you want to continue?",
+          cls: "sm-confirm-question"
+        });
+        const buttonRow = contentEl.createDiv({ cls: "sm-confirm-buttons" });
+        const cancelButton = buttonRow.createEl("button", {
+          text: "Cancel",
+          cls: "sm-confirm-button sm-confirm-button-secondary"
+        });
+        cancelButton.addEventListener("click", () => {
+          this.onConfirm(false);
+          this.close();
+        });
+        const replaceButton = buttonRow.createEl("button", {
+          text: "Replace Encounter",
+          cls: "sm-confirm-button sm-confirm-button-danger"
+        });
+        replaceButton.addEventListener("click", () => {
+          this.onConfirm(true);
+          this.close();
+        });
+        cancelButton.focus();
+      }
+      onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
       }
     };
     numberFormatter = new Intl.NumberFormat(void 0, {

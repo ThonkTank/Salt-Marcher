@@ -1,6 +1,6 @@
 // src/workmodes/encounter/workspace-view.ts
 // Stellt die Encounter-Oberfläche für das Zentrumspanel bereit.
-import { App, Notice, TAbstractFile, TFile, normalizePath } from "obsidian";
+import { App, Modal, Notice, TAbstractFile, TFile, normalizePath } from "obsidian";
 import { NameInputModal } from "../../ui/components/modals";
 import type { EncounterPresenter, EncounterViewState } from "./presenter";
 import type { EncounterRuleModifierType, EncounterXpRule } from "./session-store";
@@ -139,6 +139,7 @@ export class EncounterWorkspaceView {
         const creatureListContainer = creaturesLayout.createDiv({ cls: "sm-encounter-creature-list-container" });
         this.creatureList = new EncounterCreatureList(this.app, creatureListContainer, {
             onAddCreature: (creature) => this.handleAddCreature(creature),
+            onGenerateEncounter: (difficulty) => void this.handleGenerateEncounter(difficulty),
         });
         void this.creatureList.mount();
 
@@ -1222,6 +1223,70 @@ export class EncounterWorkspaceView {
         });
     }
 
+    private async handleGenerateEncounter(difficulty: import("./generator").Difficulty) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+
+        // Show loading state
+        this.creatureList?.setGenerateButtonState(true);
+
+        try {
+            // Check for existing creatures
+            const state = presenter.getState();
+            const session = state.session;
+            const hasCreatures = session?.creatures && session.creatures.length > 0;
+
+            // Show confirmation modal if creatures exist
+            if (hasCreatures) {
+                const confirmed = await this.showConfirmReplaceModal(session.creatures.length);
+                if (!confirmed) {
+                    this.creatureList?.setGenerateButtonState(false);
+                    return;
+                }
+            }
+
+            // Generate encounter
+            const result = await presenter.generateEncounter(difficulty, this.app, hasCreatures);
+
+            // Show feedback
+            if (result.success) {
+                // Calculate total XP for display
+                const xpByCr: Record<number, number> = {
+                    0: 10, 0.125: 25, 0.25: 50, 0.5: 100,
+                    1: 200, 2: 450, 3: 700, 4: 1100, 5: 1800,
+                    6: 2300, 7: 2900, 8: 3900, 9: 5000, 10: 5900,
+                    11: 7200, 12: 8400, 13: 10000, 14: 11500, 15: 13000,
+                    16: 15000, 17: 18000, 18: 20000, 19: 22000, 20: 25000,
+                    21: 33000, 22: 41000, 23: 50000, 24: 62000, 25: 75000,
+                    26: 90000, 27: 105000, 28: 120000, 29: 135000, 30: 155000,
+                };
+                const totalXP = result.creatures.reduce((sum, c) => {
+                    return sum + ((xpByCr[c.cr] ?? 0) * c.count);
+                }, 0);
+
+                const totalCreatureCount = result.creatures.reduce((sum, c) => sum + c.count, 0);
+                new Notice(`✅ Generated encounter: ${totalCreatureCount} creatures, ${totalXP} XP`);
+            } else {
+                new Notice(`❌ ${result.error}`);
+            }
+        } catch (err) {
+            logger.error("[workspace-view] Generate encounter failed", err);
+            new Notice(`❌ Failed to generate encounter: ${err instanceof Error ? err.message : "Unknown error"}`);
+        } finally {
+            // Hide loading state
+            this.creatureList?.setGenerateButtonState(false);
+        }
+    }
+
+    private async showConfirmReplaceModal(creatureCount: number): Promise<boolean> {
+        return new Promise((resolve) => {
+            const modal = new ConfirmReplaceModal(this.app, creatureCount, (confirmed) => {
+                resolve(confirmed);
+            });
+            modal.open();
+        });
+    }
+
     private handleUpdateCreatureCount(id: string, count: number) {
         const presenter = this.presenter;
         if (!presenter) return;
@@ -1288,6 +1353,76 @@ export class EncounterWorkspaceView {
         presenter.sortParticipantsByInitiative();
     }
 }
+
+// ============================================================================
+// CONFIRMATION MODAL
+// ============================================================================
+
+class ConfirmReplaceModal extends Modal {
+    private readonly creatureCount: number;
+    private readonly onConfirm: (confirmed: boolean) => void;
+
+    constructor(app: App, creatureCount: number, onConfirm: (confirmed: boolean) => void) {
+        super(app);
+        this.creatureCount = creatureCount;
+        this.onConfirm = onConfirm;
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        contentEl.addClass("sm-confirm-modal");
+
+        // Title
+        contentEl.createEl("h2", { text: "Replace Existing Encounter?" });
+
+        // Message
+        const message = contentEl.createDiv({ cls: "sm-confirm-message" });
+        message.createEl("p", {
+            text: `You have ${this.creatureCount} creature${this.creatureCount === 1 ? "" : "s"} in the current encounter.`
+        });
+        message.createEl("p", {
+            text: "Generating a new encounter will remove all existing creatures."
+        });
+        message.createEl("p", {
+            text: "Do you want to continue?",
+            cls: "sm-confirm-question"
+        });
+
+        // Buttons
+        const buttonRow = contentEl.createDiv({ cls: "sm-confirm-buttons" });
+
+        const cancelButton = buttonRow.createEl("button", {
+            text: "Cancel",
+            cls: "sm-confirm-button sm-confirm-button-secondary"
+        });
+        cancelButton.addEventListener("click", () => {
+            this.onConfirm(false);
+            this.close();
+        });
+
+        const replaceButton = buttonRow.createEl("button", {
+            text: "Replace Encounter",
+            cls: "sm-confirm-button sm-confirm-button-danger"
+        });
+        replaceButton.addEventListener("click", () => {
+            this.onConfirm(true);
+            this.close();
+        });
+
+        // Focus cancel button by default (safer)
+        cancelButton.focus();
+    }
+
+    onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
+    }
+}
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
 
 function createSection(parent: HTMLElement, className: string): HTMLDivElement {
     return parent.createDiv({ cls: `sm-encounter-section ${className}` });
