@@ -324,7 +324,8 @@ Ziele:
 | Phase 2.1-2.7 – Encounter System | ✅ Abgeschlossen | Travel → Combat E2E | Full workflow: Territory, Combat, Generation ✅ |
 | Phase 2.3.1 – Faction Members | ✅ Abgeschlossen | Display Members | Faction members in Encounter Composer ✅ |
 | **Phase 3.1 – Location CRUD** | ✅ **Abgeschlossen** | Library Integration | Locations fully integrated in Library ✅ |
-| Phase 3.2 – Location Hierarchy | ⏳ **NÄCHSTER SCHRITT** | Tree View | Hierarchie-Visualisierung & Navigation |
+| **Phase 3.2 – Tree Core** | ✅ **Abgeschlossen** | Tree Infrastructure | Tree-Builder, Components, Tests ✅ |
+| Phase 3.2.1 – Tree UI Integration | ⏳ **NÄCHSTER SCHRITT** | Library Toggle | Tree View in Library integrieren |
 | Phase 3.3 – Map POI Markers | ⏳ Geplant | Hex Markers | Orte auf Karte platzieren |
 | Phase 2.3.2+ – Advanced Factions | ⏳ Optional | Population, Jobs | Inkrementell nach Bedarf |
 | Phase 2.5 – Faction Filtering | ⏳ QoL | UI-Filter | Optional (Generator filtert bereits) |
@@ -332,7 +333,7 @@ Ziele:
 | Phase 5 – Loot & Presets | ⏳ Geplant | Loot-Pipeline | Nach Phase 4 |
 | Phase 6 – Audio & Release | ⏳ Geplant | UX-Finishing | Release-Phase |
 
-**Aktueller Fokus:** Phase 3.2 (Location Hierarchy) ← **NÄCHSTER SCHRITT**
+**Aktueller Fokus:** Phase 3.2.1 (Tree UI Integration) ← **NÄCHSTER SCHRITT**
 
 **Test-Suite:** 239/241 grün (99% pass rate) ✅ ALL TESTS PASSING (+17 neue Location Tree Tests)
 
@@ -684,19 +685,19 @@ Umfassendes Orts-Management-System:
 
 ---
 
-#### Phase 3.2 - Location Hierarchy ⏳ 80% COMPLETE (Core Done, UI Integration Pending)
+#### Phase 3.2 - Location Hierarchy (Core Infrastructure) ✅ ABGESCHLOSSEN
 **Scope:** Hierarchie-Visualisierung und Navigation
 
 **User Story:**
 > "Als GM will ich die hierarchische Struktur von Orten (Stadt → Viertel → Gebäude → Raum) visualisieren und navigieren, damit ich Ortsbeziehungen auf einen Blick verstehe."
 
-**Acceptance Criteria:**
+**Acceptance Criteria (Core Infrastructure):**
 1. ✅ Tree View Component für Location-Hierarchie
 2. ✅ Automatic Parent-Child Resolution (basierend auf `parent` field)
 3. ✅ Expandable/Collapsible Nodes
-4. ⏳ Click → Open Location Details (Component ready, integration pending)
+4. ✅ Click Callback API (ready for integration)
 5. ✅ Visual Indicators für Location Type (Icons: 🏙️ 🏘️ 🏢 ⚔️ ⛺ etc.)
-6. ✅ Breadcrumb Navigation Component (ready, integration pending)
+6. ✅ Breadcrumb Navigation Component
 
 **Implementation Status:**
 
@@ -730,20 +731,11 @@ Umfassendes Orts-Management-System:
 - ✅ **Test Results**: 17/17 passing (100%)
 - ✅ **Overall Suite**: 239/241 passing (99%)
 
-**⏳ Pending Step (UI Integration):**
-
-**Schritt 3: Integration in Library** ⏳ (30-45min estimated)
-- ⏳ Add "Tree View" toggle button in locations browse view
-- ⏳ Switch between list view (existing) and tree view (new)
-- ⏳ Wire up click handlers to open locations
-- ⏳ Add breadcrumb to location edit/create modal
-- ⏳ Optional: Persist view preference in settings
-
-**Completed:**
+**Status:**
 - ✅ Core tree infrastructure (100%)
 - ✅ All components tested (17/17 tests)
 - ✅ Cycle detection & orphan handling
-- ⏳ Library UI integration (pending)
+- ✅ Ready for UI integration (→ Phase 3.2.1)
 
 **Out of Scope:**
 - ❌ Drag & Drop re-parenting → später
@@ -753,7 +745,72 @@ Umfassendes Orts-Management-System:
 **Commits:**
 - `7a3b611` feat(locations): Add Phase 3.2 core - Tree view & breadcrumb components
 
-**Actual Time So Far:** ~1.5 hours (core infrastructure)
+**Actual Time:** ~1.5 hours (core infrastructure)
+
+---
+
+#### Phase 3.2.1 - Tree UI Integration ⏳ NÄCHSTER SCHRITT
+**Scope:** Integration der Tree View Components in die Library UI
+
+**User Story:**
+> "Als GM will ich in der Library zwischen List- und Tree-View für Locations wechseln können, damit ich entweder alle Locations flach oder hierarchisch sehen kann."
+
+**Acceptance Criteria:**
+1. ⏳ Toggle Button "List/Tree" in Location Browse View
+2. ⏳ View Switching zwischen GenericListRenderer und Tree View
+3. ⏳ Click Handler → Opens location in browse view
+4. ⏳ Breadcrumb in Location Edit/Create Modal
+5. ⏳ Optional: Persist view preference in Plugin Settings
+
+**Implementation Plan:**
+
+**Herausforderung:** TabbedBrowseView ist generisch und nutzt GenericListRenderer. Tree View erfordert parallelen Renderer-Mechanismus.
+
+**Ansatz: Location-Specific Override**
+Statt TabbedBrowseView zu modifizieren, überschreiben wir Rendering für `locations` Mode:
+
+**Schritt 1: Custom Location List Renderer** (45min)
+- Erstelle `LocationListRenderer` extends `GenericListRenderer`
+- Füge `viewMode: "list" | "tree"` state hinzu
+- Override `render()` um zwischen list/tree zu switchen
+- Toggle Button in toolbar
+
+**Schritt 2: Tree View Integration** (30min)
+- Import `LocationTreeView` in renderer
+- Load all locations, build tree with `buildLocationTree()`
+- Render tree view in container
+- Wire `onLocationClick` callback → open location
+
+**Schritt 3: Breadcrumb in Modal** (20min)
+- Location Create/Edit Modal: Add breadcrumb header
+- Show path using `buildBreadcrumbs()`
+- Make breadcrumb items clickable
+
+**Schritt 4: Settings Persistence** (15min, optional)
+- Add `locationViewMode` to plugin settings
+- Save/restore on toggle
+
+**Schritt 5: Tests & Validation** (20min)
+- Build & manual test
+- Verify toggle works
+- Verify click handlers
+- Run full test suite
+
+**Alternative Ansatz (wenn Override nicht funktioniert):**
+- Spezielle Location Browse View (nicht TabbedBrowseView)
+- Direkter Zugriff auf DataSource
+- Vollständige Kontrolle, mehr Code
+
+**Dateien:**
+- `src/workmodes/library/locations/location-list-renderer.ts` (NEW)
+- `src/workmodes/library/locations/location-modal.ts` (modify for breadcrumbs)
+- `src/workmodes/library/view.ts` (inject custom renderer for locations mode)
+
+**Estimated Time:** 2-2.5 hours
+
+**Test Strategy:**
+- Manual: Toggle zwischen List/Tree, Click locations, Check breadcrumbs
+- Automated: Existing test suite should still pass
 
 ---
 
