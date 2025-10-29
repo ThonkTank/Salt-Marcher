@@ -326,16 +326,16 @@ Ziele:
 | **Phase 3.1 – Location CRUD** | ✅ **Abgeschlossen** | Library Integration | Locations fully integrated in Library ✅ |
 | **Phase 3.2 – Tree Core** | ✅ **Abgeschlossen** | Tree Infrastructure | Tree-Builder, Components, Tests ✅ |
 | **Phase 3.2.1 – Tree UI Integration** | ✅ **Abgeschlossen** | Library Toggle | List/Tree toggle in Library ✅ |
-| **Phase 3.3 – Map POI Markers** | ⏳ **IN ARBEIT** | Hex Markers | Orte auf Karte platzieren |
+| **Phase 3.3 – Map POI Markers** | ✅ **Abgeschlossen** | Hex Markers | Location markers auf Karte ✅ |
 | Phase 2.3.2+ – Advanced Factions | ⏳ Optional | Population, Jobs | Inkrementell nach Bedarf |
 | Phase 2.5 – Faction Filtering | ⏳ QoL | UI-Filter | Optional (Generator filtert bereits) |
 | Phase 4 – Event Engine | ⏳ Geplant | Kalender-Automation | Nach Phase 3 |
 | Phase 5 – Loot & Presets | ⏳ Geplant | Loot-Pipeline | Nach Phase 4 |
 | Phase 6 – Audio & Release | ⏳ Geplant | UX-Finishing | Release-Phase |
 
-**Aktueller Fokus:** Phase 3.3 (Map POI Markers) ← **NÄCHSTER SCHRITT**
+**Aktueller Fokus:** Phase 3.4 (Dungeons) oder Phase 4 (Event Engine) ← **NÄCHSTE SCHRITTE**
 
-**Test-Suite:** 239/241 grün (99% pass rate) ✅ ALL TESTS PASSING (+17 neue Location Tree Tests)
+**Test-Suite:** 258/260 grün (99.2% pass rate) ✅ ALL TESTS PASSING (+19 neue Location Marker Tests)
 
 ### Phase 0 – Taxonomie & Schemas ✅
 Vollständige Tag-Taxonomie in `docs/TAGS.md`, Schema-Validatoren in `src/domain/schemas.ts`, Samples in `samples/**`. Library-Formulare mit Tag-Support.
@@ -865,6 +865,80 @@ Umfassendes Orts-Management-System:
 - ❌ Multi-Hex Locations (große Städte) → später
 
 **Estimated Time:** 3-3.5 hours
+
+**Actual Time:** ~3 hours
+
+---
+
+#### Phase 3.3 - Map POI Markers ✅ ABGESCHLOSSEN
+**Scope:** Locations auf der Hex-Karte platzieren und visualisieren
+
+**Implementation Summary:**
+
+**✅ Completed Steps (1-3, 5):**
+
+**Step 1: Location Marker Store** (200 lines)
+- Created `location-marker-store.ts` with full store API
+- Registry pattern per map file
+- Icon mapping for location types (emoji-based)
+- Store API: `setMarkers()`, `get()`, `list()`, `getByLocationName()`, `clear()`
+- Follows `faction-overlay-store` pattern
+
+**Step 2: Marker Rendering** (80 lines)
+- Integrated marker layer in `hex-render.ts`
+- SVG <g> element for location markers
+- Subscribe to location-marker-store
+- Render markers as SVG <text> with emojis
+- Automatic positioning above hex center
+- Tooltip support via SVG <title>
+- Non-invasive: no changes to scene.ts
+
+**Step 3: Inspector Integration** (90 lines)
+- Added location marker info display to Inspector sidebar
+- Shows: name, type, parent, owner when hex with marker is clicked
+- "Open in Library" button navigates to Library view
+- Automatic lookup from location-marker-store on hex selection
+- Conditional rendering: only shown if marker exists
+
+**Step 5: Unit Tests** (440 lines, 19 tests)
+- Comprehensive test suite for `location-marker-store`
+- Coverage: store creation, setMarkers validation, get/list/clear operations
+- Bug fixes: Replace Obsidian `.empty()` with native DOM API
+- Fixed test mocks for region-repository imports
+- All 258/260 tests passing (99.2%)
+
+**⏸ Deferred:**
+- ❌ Step 4: Editor Mode Integration (marker placement tool)
+  - Reason: Complex UI work, requires separate planning
+  - Status: Deferred to Phase 3.3.1
+
+**Architecture:**
+- Marker store: WeakMap-based registry per App + Map file
+- Rendering: Separate SVG <g> layer in contentG
+- Inspector: Conditional UI section after "Notiz" field
+- Tests: Mock-based unit tests, no E2E yet
+
+**Files:**
+- `src/features/maps/state/location-marker-store.ts` (200 lines) - Store
+- `src/features/maps/rendering/hex-render.ts` (+80 lines) - Rendering
+- `src/workmodes/cartographer/modes/inspector.ts` (+90 lines) - Inspector
+- `devkit/testing/unit/maps/location-marker-store.test.ts` (440 lines, 19 tests)
+
+**Commits:**
+- `52a4351` feat(locations): Steps 1-2 - Marker infrastructure
+- `10e69c5` feat(locations): Step 3 - Inspector integration
+- `a181f08` feat(locations): Step 5 - Unit tests + bug fixes
+
+**Test Results:**
+- ✅ Build: 2.8mb (successful)
+- ✅ Tests: 258/260 passing (99.2%)
+- ✅ +19 new location-marker-store tests
+- ⏭️ 2 skipped (todo-governance, header-policy)
+
+**Next Steps:**
+- Phase 3.3.1 - Editor Mode Integration (marker placement UI)
+- Phase 3.4 - Dungeons (grid maps, room features)
+- Phase 4 - Event Engine (calendar automation)
 
 ---
 
